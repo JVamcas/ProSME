@@ -24,7 +24,7 @@ export default function Home() {
       <div className="brand-pattern absolute -bottom-16 right-0 h-56 w-[42%] text-sky/10 opacity-70" />
       <div className="container relative flex min-h-[520px] items-center py-20">
         <div className="max-w-3xl">
-          <p className="mb-5 text-xs font-bold uppercase tracking-[.2em] text-sky">A ProSME initiative</p>
+          <p className="mb-5 text-xs font-bold uppercase tracking-[.2em] text-sky">SME Fund programme</p>
           <h1 className="display max-w-3xl text-5xl font-normal leading-[1.04] sm:text-6xl">Empowering SMEs.<br />Building Namibia&apos;s Future.</h1>
           <p className="mt-6 max-w-xl text-base leading-7 text-white/75">Accessible grant funding and tailored business support for Namibian enterprises ready to grow, innovate and create jobs.</p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row"><Button asChild variant="gold" size="lg"><Link href="/funding">Explore funding <ArrowRight className="size-4" /></Link></Button><Button asChild size="lg" className="border border-white/45 bg-transparent hover:bg-white/10"><Link href="/eligibility">Eligibility checker</Link></Button></div>

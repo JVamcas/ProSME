@@ -22,7 +22,7 @@ export function SiteHeader() {
           ))}
         </nav>
         <div className="hidden items-center gap-2 md:flex">
-          <Button asChild variant="ghost"><Link href="/dashboard">Applicant portal</Link></Button>
+          {/* <Button asChild variant="ghost"><Link href="/dashboard">Applicant portal</Link></Button> */}
           <Button asChild variant="gold"><Link href="/apply">Apply now</Link></Button>
         </div>
         <details className="group relative md:hidden">

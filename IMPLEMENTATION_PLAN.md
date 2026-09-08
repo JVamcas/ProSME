@@ -1,14 +1,14 @@
-# SME Fund Platform — Implementation Plan
+# ProSME Platform — Implementation Plan
 
 ## 1. Purpose
 
-This document defines the proposed implementation approach for the SME Fund digital platform. It translates the supplied background document, website requirements, user journeys, wireframes, and site maps into a phased Next.js delivery plan.
+This document defines the proposed implementation approach for the ProSME digital platform's SME Fund experience. It translates the supplied background document, website requirements, user journeys, wireframes, site maps, and ProSME Brand Guide into a phased Next.js delivery plan.
 
 The immediate objective is to prepare a credible initial demonstration that communicates the intended user experience. The demo is not intended to represent production-ready authentication, document storage, workflow automation, or infrastructure.
 
 ## 2. Product Context
 
-The SME Fund is an initiative under the ProSME Project. It is implemented by the Namibia Investment Promotion and Development Board (NIPDB) in partnership with the National Planning Commission (NPC), with support from GIZ.
+ProSME is the platform/project identity. The SME Fund is a funding initiative presented within ProSME. It is implemented by the Namibia Investment Promotion and Development Board (NIPDB) in partnership with the National Planning Commission (NPC), with support from GIZ.
 
 The Fund aims to improve access to finance and business support for Namibian MSMEs. The initial allocation is EUR 430,000, intended to be distributed through seven funding calls. Individual grants are expected to range from N$50,000 to N$100,000.
 
@@ -61,6 +61,7 @@ Landing page
 | `/apply/confirmation` | Submission confirmation and reference number | Must have |
 | `/dashboard` | Applicant application status and next actions | Must have |
 | `/admin` | Internal application overview | Time permitting |
+| `/admin/applications` | Internal application register | Time permitting |
 | `/admin/applications/[id]` | Application review summary | Time permitting |
 
 ### 4.4 Demo behaviour
@@ -213,12 +214,12 @@ Draft
 
 The internal experience will ultimately require role-based views for administrators, operational users, assessors, finance users, management, communications users, and system administrators.
 
-For an initial prototype, the internal dashboard may show:
+For the initial prototype, the internal dashboard follows the supplied Annexure dashboard composition and shows:
 
 - Total applications and status counts.
 - Recent applications.
 - Applications requiring attention.
-- Sector and regional summaries.
+- A sector summary.
 - A read-only application details screen.
 - A visual representation of the review workflow.
 
@@ -400,7 +401,7 @@ The stated 1 GB limit per individual file should be reviewed. It introduces subs
    - Establish the App Router and TypeScript project.
    - Configure Tailwind CSS and shadcn/ui.
    - Implement the responsive public layout, navigation, and footer.
-   - Apply the supplied SME Fund logo, ProSME palette, Blanquotey display type, Bahnschrift interface type, and reusable UI components.
+   - Apply the supplied ProSME wordmark as the primary identity, together with its official palette, Blanquotey display type, Bahnschrift interface type, and reusable UI components. Present SME Fund as a programme rather than the application brand.
 
 2. **Public landing and funding information**
    - Explain the Fund, beneficiaries, objectives, and available support.
@@ -430,14 +431,24 @@ The stated 1 GB limit per individual file should be reviewed. It introduces subs
 
 #### Phase 0B — Time permitting
 
+**Implementation status: complete for the initial demonstrator.**
+
 6. **Internal dashboard prototype**
    - Display application totals and status counts.
    - Display recent applications and items requiring attention.
-   - Show simple sector or regional summaries.
+   - Show the application trend and sector summary from the supplied Annexure mockup.
    - Provide a read-only application detail view.
    - Represent the intended internal review workflow without implying that production approvals are active.
 
 The internal dashboard must not delay or destabilise the primary applicant journey.
+
+Implemented Phase 0B routes:
+
+| Route | Demonstrated capability |
+| --- | --- |
+| `/admin` | Four status metrics, application trend, sector breakdown, recent applications, system alerts, and date selector matching the supplied Annexure composition |
+| `/admin/applications` | Separate searchable and sortable application register |
+| `/admin/applications/[id]` | Read-only applicant, business, eligibility, funding, document, and workflow review |
 
 #### Phase 0C — Presentation readiness
 
@@ -552,7 +563,7 @@ The initial demonstration is successful when:
 | Demo mistaken for completed production functionality | Incorrect expectations | Label mock data and state prototype boundaries during the demo |
 | Unconfirmed workflow and scoring rules | Rework in internal portal | Keep workflow configurable and defer irreversible design decisions |
 | WordPress and Next.js requirements conflict | Architecture uncertainty | Agree whether WordPress is headless, replaced, or separately hosted |
-| Partner-brand hierarchy is not fully specified | Incorrect logo prominence | Use the SME Fund mark as primary and confirm required NIPDB, NPC, and GIZ placements |
+| Partner-brand hierarchy is not fully specified | Incorrect logo prominence | Use ProSME as the primary application brand and SME Fund as the programme; confirm required NIPDB, NPC, and GIZ placements |
 | Large document limits | Cost and security risk | Confirm realistic file sizes and upload process during discovery |
 | Limited content and no beneficiary stories | Sparse public pages | Use approved background content and neutral placeholders only where necessary |
 | Undefined privacy and retention requirements | Compliance risk | Make these mandatory discovery outputs before production uploads |
@@ -562,7 +573,7 @@ The initial demonstration is successful when:
 
 The following questions should be captured during or immediately after the initial demo:
 
-1. Is the public product specifically the SME Fund, or part of a broader NIPDB investment platform?
+1. Confirm the final lock-up and placement rules for the ProSME platform identity and the SME Fund programme mark.
 2. Is WordPress mandatory, and if so, may it operate as a headless CMS behind Next.js?
 3. What are the required placement and minimum-size rules for NIPDB, NPC, GIZ, and other partner marks on the website?
 4. What are the opening and closing dates for the first funding call?
