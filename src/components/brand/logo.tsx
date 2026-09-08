@@ -17,7 +17,6 @@ export function Logo({ inverted = false, compact = false, className, href = "/" 
         alt=""
         width={530}
         height={205}
-        priority
         className={cn("h-auto", compact ? "w-32" : "w-36", inverted && "brightness-110")}
       />
     </Link>
