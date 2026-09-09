@@ -4,12 +4,9 @@
   font-family: "Bahnschrift";
   src: url("./fonts/bahnschrift.ttf") format("truetype");
   font-display: swap;
-}
-
-@font-face {
-  font-family: "Blanquotey";
-  src: url("./fonts/blanquotey.ttf") format("truetype");
-  font-display: swap;
+  font-style: normal;
+  font-weight: 100 900;
+  font-stretch: 75% 100%;
 }
 
 @theme inline {
@@ -24,7 +21,9 @@
   --color-green: #16a34a;
   --color-green-dark: #12863d;
   --font-sans: "Bahnschrift", "Arial Narrow", Arial, sans-serif;
-  --font-display: "Blanquotey", "Bahnschrift", "Arial Narrow", Arial, sans-serif;
+  /* The brand PDF contains only a partial Blanquotey font, so Bahnschrift is
+     used for live display text until the licensed webfont kit is available. */
+  --font-display: "Bahnschrift", "Arial Narrow", Arial, sans-serif;
 }
 
 * { box-sizing: border-box; }
