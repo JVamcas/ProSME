@@ -1,416 +1,548 @@
+import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
-  Banknote,
-  BookOpen,
+  BarChart3,
   BriefcaseBusiness,
   CalendarDays,
-  CheckCircle2,
-  FileCheck2,
-  Globe2,
-  GraduationCap,
-  Network,
-  ShieldCheck,
+  CircleDollarSign,
+  FileText,
+  Leaf,
+  Send,
+  Tag,
   Users,
+  Venus,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
-const quickLinks = [
+const opportunities = [
   {
-    href: "/funding",
-    icon: Banknote,
-    title: "Funding calls",
-    text: "View available support",
+    image: "/brand/pic2.png",
+    status: "OPEN NOW",
+    title: "Green Business Growth Fund",
+    text: "Support for SMEs investing in green solutions, clean energy and climate-resilient businesses.",
+    amount: "NAD 250,000 – 2,000,000",
+    date: "Closes 30 Apr 2025",
+    audience: "All eligible SMEs",
   },
   {
-    href: "/eligibility",
-    icon: CheckCircle2,
-    title: "Eligibility checker",
-    text: "See if your business qualifies",
+    image: "/brand/pic3.png",
+    status: "OPEN NOW",
+    title: "Women in Business Fund",
+    text: "Funding and support for women-owned SMEs to scale and create jobs.",
+    amount: "NAD 100,000 – 1,000,000",
+    date: "Closes 15 May 2025",
+    audience: "Women-owned SMEs",
   },
   {
-    href: "/apply",
-    icon: FileCheck2,
-    title: "Apply now",
-    text: "Start your application",
-  },
-  {
-    href: "/how-to-apply",
-    icon: BookOpen,
-    title: "Application guide",
-    text: "Prepare before you apply",
+    image: "/brand/pic4.png",
+    status: "COMING SOON",
+    title: "SME Growth & Competitiveness Fund",
+    text: "Support for growth-stage SMEs in priority sectors.",
+    amount: "NAD 500,000 – 5,000,000",
+    date: "Opens June 2025",
+    audience: "Growth-stage SMEs",
   },
 ];
 
-const support = [
+const supportGroups = [
   {
-    icon: Banknote,
-    title: "Grant funding",
-    text: "N$50,000 to N$100,000 for eligible business growth activities.",
+    icon: Users,
+    title: "Youth-owned businesses",
+    text: "Supporting young entrepreneurs to build a brighter future.",
+    tone: "blue",
   },
   {
-    icon: GraduationCap,
-    title: "Business support",
-    text: "Capacity building, mentorship, coaching and technical guidance.",
+    icon: Venus,
+    title: "Women-owned businesses",
+    text: "Backing women-led enterprises to grow and create opportunities.",
+    tone: "orange",
   },
   {
-    icon: Globe2,
-    title: "Market linkages",
-    text: "Support to prepare for expansion, exports and investment opportunities.",
+    icon: BarChart3,
+    title: "Growth-stage SMEs",
+    text: "Helping established SMEs scale, innovate and create jobs.",
+    tone: "blue",
+  },
+  {
+    icon: Leaf,
+    title: "Businesses in priority sectors",
+    text: "Including green economy, agro-processing, tourism, manufacturing and more.",
+    tone: "green",
+  },
+];
+
+const stories = [
+  {
+    image: "/brand/pic6.png",
+    focal: "50% 8%",
+    label: "SUCCESS STORY",
+    title: "From idea to export: A Namibian maker’s journey",
+    text: "How SME Fund support helped a local manufacturer scale beyond borders.",
+    link: "Read story",
+  },
+  {
+    image: "/brand/pic7.png",
+    focal: "50% 10%",
+    label: "BUSINESS TIPS",
+    title: "5 ways to strengthen your funding application",
+    text: "Practical tips to help you stand out and improve your chances.",
+    link: "Read more",
+  },
+  {
+    image: "/brand/pic8.png",
+    focal: "50% 50%",
+    label: "INSIGHTS",
+    title: "Why green business is Namibia’s next big opportunity",
+    text: "Exploring the role of SMEs in a more sustainable and resilient economy.",
+    link: "Read more",
   },
 ];
 
 export default function Home() {
   return (
     <>
-      <section className="relative isolate overflow-hidden bg-[#0A183B] text-white">
-        {/* Soft ambient light */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_30%,rgba(107,174,214,0.16),transparent_34%)]" />
-
-        {/* Large brand accent */}
-        <div className="absolute -right-32 -top-40 size-[520px] rounded-full border border-white/[0.05]" />
-        <div className="absolute -right-10 -top-20 size-[360px] rounded-full border border-[#FFCA45]/10" />
-
-        {/* Pattern */}
-        <div
-          className="
-      brand-pattern
-      absolute bottom-0 right-0
-      hidden h-[62%] w-[44%]
-      text-[#FFCA45]/[0.055]
-      lg:block
-    "
-        />
-
-        {/* Decorative network */}
-        <Network
-          className="
-      absolute right-[9%] top-1/2
-      hidden size-[300px]
-      -translate-y-1/2
-      text-[#6BAED6]/[0.12]
-      xl:block
-    "
-          strokeWidth={0.55}
-        />
-
-        <div className="container relative z-10">
-          <div className="grid min-h-[640px] items-center lg:grid-cols-[1.1fr_.9fr]">
-            {/* Content */}
-            <div className="max-w-3xl py-20 sm:py-24 lg:py-28">
-              {/* Eyebrow */}
-              <div className="mb-7 flex items-center gap-3">
-                <span className="h-px w-9 bg-[#FFCA45]" />
-                <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[#FFCA45]">
-                  SME Fund Programme
-                </span>
-              </div>
-
-              {/* Heading */}
-              <h1
-                className="
-            max-w-3xl
-            text-5xl font-semibold
-            leading-[1.03] tracking-[-0.04em]
-            sm:text-6xl
-            lg:text-[4.5rem]
-          "
-              >
-                Empowering SMEs.
-                <span className="mt-1 block text-[#F6F4E2]">
-                  Building Namibia&apos;s future.
-                </span>
-              </h1>
-
-              {/* Description */}
-              <p className="mt-7 max-w-xl text-base leading-7 text-white/65 sm:text-lg sm:leading-8">
-                Accessible grant funding and tailored business support for
-                Namibian enterprises ready to grow, innovate and create jobs.
-              </p>
-
-              {/* CTAs */}
-              <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-                <Button
-                  asChild
-                  size="lg"
-                  className="
-              h-12 rounded-md
-              bg-[#FF6F00]
-              px-6 text-white
-              shadow-[0_8px_30px_rgba(255,111,0,0.18)]
-              hover:bg-[#E96400]
-            "
-                >
-                  <Link href="/funding">
-                    Explore funding
-                    <ArrowRight className="ml-2 size-4" />
-                  </Link>
-                </Button>
-
-                <Button
-                  asChild
-                  size="lg"
-                  variant="outline"
-                  className="
-              h-12 rounded-md
-              border-white/20
-              bg-white/[0.04]
-              px-6 text-white
-              hover:bg-white/[0.08]
-              hover:text-white
-            "
-                >
-                  <Link href="/eligibility">Check eligibility</Link>
-                </Button>
-              </div>
-
-              {/* Trust / programme points */}
-              <div className="mt-12 grid max-w-2xl grid-cols-1 gap-5 border-t border-white/10 pt-6 sm:grid-cols-3">
-                <div>
-                  <p className="text-sm font-semibold text-white">
-                    Namibian SMEs
-                  </p>
-                  <p className="mt-1 text-xs text-white/45">
-                    Supporting local enterprise
-                  </p>
-                </div>
-
-                <div>
-                  <p className="text-sm font-semibold text-white">
-                    Grant funding
-                  </p>
-                  <p className="mt-1 text-xs text-white/45">
-                    Growth-focused support
-                  </p>
-                </div>
-
-                <div>
-                  <p className="text-sm font-semibold text-white">
-                    Business support
-                  </p>
-                  <p className="mt-1 text-xs text-white/45">
-                    Beyond financial assistance
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Right visual space */}
-            <div className="relative hidden h-full lg:block">
-              <div
-                className="
-            absolute right-[6%] top-1/2
-            w-[360px] -translate-y-1/2
-            rounded-2xl
-            border border-white/[0.08]
-            bg-white/[0.035]
-            p-8
-            backdrop-blur-sm
-          "
-              >
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#6BAED6]">
-                  SME Fund
-                </p>
-
-                <p className="mt-4 text-2xl font-medium leading-snug text-[#F6F4E2]">
-                  Funding businesses that are ready to grow.
-                </p>
-
-                <div className="mt-8 space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div className="size-2 rounded-full bg-[#FFCA45]" />
-                    <span className="text-sm text-white/65">
-                      Growth & expansion
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <div className="size-2 rounded-full bg-[#6BAED6]" />
-                    <span className="text-sm text-white/65">
-                      Innovation support
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <div className="size-2 rounded-full bg-[#16A34A]" />
-                    <span className="text-sm text-white/65">
-                      Enterprise development
-                    </span>
-                  </div>
-                </div>
-              </div>
+    <section className="hero hero-animated relative overflow-hidden bg-white">
+        <div className="absolute inset-0 opacity-[.045] lg:block">
+          <Image
+            src="/brand/pic1.png"
+            alt=""
+            fill
+            priority
+            className="object-cover object-left grayscale"
+            sizes="100vw"
+          />
+        </div>
+        <div className="absolute inset-y-0 left-0 w-[55%] bg-gradient-to-r from-white via-white/95 to-white/65" />
+        <div className="absolute inset-y-0 right-0 hidden w-[64%] lg:block">
+          <Image
+            src="/brand/pic1.png"
+            alt="Namibian entrepreneur in her shop"
+            fill
+            priority
+            className="hero-main-photo object-cover object-top"
+            sizes="64vw"
+          />
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "linear-gradient(to right, #fff 0%, rgba(255,255,255,.9) 12%, rgba(255,255,255,.35) 25%, transparent 42%)",
+            }}
+          />
+          <div className="campaign-script hero-campaign absolute right-[4%] top-[9%] w-[220px] rotate-[-6deg] text-right text-[clamp(1.8rem,2.15vw,2.45rem)] leading-[.88] tracking-[-.025em] text-white [text-shadow:0_2px_5px_rgba(0,0,0,.55)]">
+            Bigger
+            <br />
+            Businesses
+            <br />
+            <span className="text-[#fff8e8]">
+              Brighter
+              <br />
+              Namibia
+            </span>
+            <span className="ml-auto mt-2 block h-1.5 w-28 rotate-[-4deg] rounded-full bg-[#f2a900]" />
+          </div>
+          <div className="hero-quote absolute bottom-[14%] right-[4%] w-[250px] rounded-xl border border-slate-200 bg-white p-4 shadow-xl">
+            <p className="text-sm font-semibold leading-5 text-navy">
+              “With the right support, small businesses do extraordinary
+              things.”
+            </p>
+            <div className="mt-3 flex items-center gap-2 text-[10px] text-slate-500">
+              <span className="h-1 w-7 bg-gold" />
+              Namibian Entrepreneur
             </div>
           </div>
         </div>
-
-        {/* Bottom accent */}
-        <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-[#FF6F00] via-[#FFCA45] to-[#6BAED6]" />
+        <div className="hero-container relative z-10 grid min-h-[520px] items-center lg:grid-cols-[1.05fr_.95fr]">
+          <div className="hero-copy max-w-[650px] py-14 lg:py-16">
+            <p className="text-[11px] font-bold uppercase tracking-[.2em] text-[#4fa7d8]">
+              Funding today. A stronger tomorrow.
+            </p>
+            <h1 className="mt-4 text-[clamp(2.6rem,4vw,3.35rem)] font-bold leading-[1.04] tracking-[-.035em] text-navy">
+              <span className="block">Your business has</span>
+              <span className="block">
+                potential. <span className="text-gold-dark">We help you</span>
+              </span>
+              <span className="block text-gold-dark">take the next step.</span>
+            </h1>
+            <p className="mt-5 max-w-lg text-lg leading-7 text-[#294768]">
+              Funding and business development support for Namibian SMEs ready
+              to grow.
+            </p>
+            <div className="mt-7 flex flex-wrap gap-3">
+              <Link href="/funding" className="home-primary">
+                Find Funding <ArrowRight className="size-4" />
+              </Link>
+              <Link href="/eligibility" className="home-secondary">
+                Check My Eligibility
+              </Link>
+            </div>
+            <div className="mt-8 flex flex-wrap gap-x-8 gap-y-3 text-xs font-medium text-[#365b82]">
+              <span className="flex items-center gap-2">
+                <BarChart3 className="size-5 text-[#4fa7d8]" />
+                Access funding
+              </span>
+              <span className="flex items-center gap-2">
+                <Users className="size-5 text-[#4fa7d8]" />
+                Build your capacity
+              </span>
+              <span className="flex items-center gap-2">
+                <Leaf className="size-5 text-[#4fa7d8]" />
+                Create opportunities
+              </span>
+            </div>
+          </div>
+          <div className="hidden lg:block" />
+        </div>
       </section>
 
-      <section className="relative z-10 border-b border-slate-200 bg-white shadow-sm">
-        <div className="container grid divide-y divide-slate-200 sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
+      <section className="container relative z-20 grid gap-3 py-5 md:grid-cols-3">
+        {[
+          {
+            href: "/funding",
+            icon: CircleDollarSign,
+            title: "I want funding",
+            text: "Explore current opportunities and find the right funding for your business.",
+            bg: "bg-[#eef8ff]",
+            color: "bg-[#49a6dc]",
+          },
+          {
+            href: "/eligibility",
+            icon: FileText,
+            title: "Am I eligible?",
+            text: "Check if your business meets the key criteria before you apply.",
+            bg: "bg-[#fffaf0]",
+            color: "bg-[#cda13c]",
+          },
+          {
+            href: "/dashboard",
+            icon: CalendarDays,
+            title: "I already applied",
+            text: "Track your application and stay updated on the next steps.",
+            bg: "bg-[#fff5ed]",
+            color: "bg-[#f4763a]",
+          },
+        ].map(({ href, icon: Icon, title, text, bg, color }) => (
+          <Link
+            href={href}
+            key={title}
+            className={`${bg} group flex min-h-40 items-center gap-5 rounded-xl border border-white p-5 transition duration-500 hover:-translate-y-1 hover:shadow-lg`}
+          >
+            <div className="flex-1">
+              <span
+                className={`${color} grid size-12 place-items-center rounded-full text-white shadow-sm`}
+              >
+                <Icon className="size-6" />
+              </span>
+              <h2 className="mt-4 text-2xl font-bold text-navy">{title}</h2>
+              <p className="mt-2 max-w-[270px] text-sm leading-5 text-[#365b82]">
+                {text}
+              </p>
+            </div>
+            <span
+              className={`${color} grid size-9 shrink-0 place-items-center rounded-full text-white`}
+            >
+              <ArrowRight className="size-4 transition group-hover:translate-x-0.5" />
+            </span>
+          </Link>
+        ))}
+      </section>
+
+      <section className="container pb-12">
+        <SectionHeading
+          title="Current funding opportunities"
+          text="Explore our latest funding opportunities designed to support Namibian SMEs across key sectors."
+          link="View all opportunities"
+        />
+        <div className="mt-6 grid gap-5 md:grid-cols-3">
+          {opportunities.map((item) => (
+            <OpportunityCard key={item.title} {...item} />
+          ))}
+        </div>
+      </section>
+
+      <section className="container pb-14">
+        <SectionHeading
+          title="How it works"
+          text="A simple, transparent process to get you from application to support."
+        />
+        <div className="mt-8 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
           {[
-            { icon: BriefcaseBusiness, n: "7", l: "Funding calls" },
-            { icon: Users, n: "MSMEs", l: "Growth focused" },
-            { icon: Banknote, n: "N$430k", l: "Initial fund allocation" },
-            { icon: Globe2, n: "14", l: "Regions reached" },
-          ].map(({ icon: Icon, n, l }) => (
-            <div key={l} className="flex items-center gap-4 px-5 py-6">
-              <Icon className="size-7 text-green" />
-              <div>
-                <strong className="block text-xl text-navy">{n}</strong>
-                <span className="text-xs text-slate-500">{l}</span>
-              </div>
+            {
+              icon: FileText,
+              title: "Check eligibility",
+              text: "See if your business meets the key criteria.",
+            },
+            {
+              icon: FileText,
+              title: "Prepare your business",
+              text: "Get your documents ready and strengthen your application.",
+            },
+            {
+              icon: Send,
+              title: "Apply online",
+              text: "Submit your application through our secure portal.",
+            },
+            {
+              icon: BarChart3,
+              title: "Track your application",
+              text: "Stay updated on your progress every step of the way.",
+            },
+          ].map(({ icon: Icon, title, text }, index) => (
+            <div key={title} className="relative text-center">
+              {index < 3 && (
+                <span className="absolute left-[72%] top-9 hidden w-[56%] border-t-2 border-dotted border-[#87b8db] lg:block" />
+              )}
+              <span
+                className={`absolute left-3 top-3 z-10 grid size-8 place-items-center rounded-full text-sm font-bold text-white ${index % 2 ? "bg-gold" : "bg-[#49a6dc]"}`}
+              >
+                {index + 1}
+              </span>
+              <span className="mx-auto grid size-[84px] place-items-center rounded-full bg-[#eef8ff] text-navy">
+                <Icon className="size-9" strokeWidth={1.8} />
+              </span>
+              <h3 className="mt-5 text-lg font-bold text-navy">{title}</h3>
+              <p className="mx-auto mt-2 max-w-[220px] text-sm leading-5 text-[#486786]">
+                {text}
+              </p>
             </div>
           ))}
         </div>
       </section>
 
-      <section className="bg-cream py-12">
+      <section className="border-y border-[#eee8dd] bg-[#fffcf7] py-10">
         <div className="container">
-          <p className="text-xs font-bold uppercase tracking-[.16em] text-orange">
-            Quick access
-          </p>
-          <h2 className="mt-2 text-2xl font-bold text-navy">
-            What would you like to do?
+          <SectionHeading
+            title="Who we support"
+            text="We invest in Namibian SMEs with high potential, inclusive impact and a commitment to growth."
+          />
+        </div>
+        <div className="support-marquee mt-6 overflow-hidden py-5">
+          <div className="support-track">
+            {[0, 1].map((copy) => (
+              <div
+                key={copy}
+                className="support-group"
+                aria-hidden={copy === 1}
+              >
+                {supportGroups.map(({ icon: Icon, title, text, tone }) => {
+                  const accent =
+                    tone === "orange"
+                      ? "bg-[#f4763a]"
+                      : tone === "green"
+                        ? "bg-[#5e963d]"
+                        : "bg-[#49a6dc]";
+                  return (
+                    <article
+                      key={`${copy}-${title}`}
+                      className="support-card rounded-xl border border-slate-100 bg-white p-4"
+                    >
+                      <span
+                        className={`${accent} grid size-12 place-items-center rounded-full text-white`}
+                      >
+                        <Icon className="size-6" />
+                      </span>
+                      <h3 className="mt-4 min-h-12 text-xl font-bold leading-6 text-navy">
+                        {title}
+                      </h3>
+                      <p className="mt-2 text-sm leading-5 text-[#486786]">
+                        {text}
+                      </p>
+                    </article>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="relative overflow-hidden py-8">
+        <Image
+          src="/brand/pic5.png"
+          alt="Namibian landscape"
+          fill
+          className="object-cover object-center"
+          sizes="100vw"
+        />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,.94)_0%,rgba(255,255,255,.78)_42%,rgba(255,255,255,.12)_82%)]" />
+        <div className="hero-container relative z-10">
+          <h2 className="text-3xl font-bold text-navy">
+            Real businesses. Lasting impact.
           </h2>
-          <div className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {quickLinks.map(({ href, icon: Icon, title, text }) => (
-              <Link
-                href={href}
-                key={title}
-                className="group rounded-xl border border-navy/10 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-sky hover:shadow-md"
+          <p className="mt-1 text-sm text-[#365b82]">
+            Together, we’re building a more inclusive and competitive Namibia.
+          </p>
+          <div className="mt-7 grid max-w-3xl grid-cols-2 gap-6 sm:grid-cols-4">
+            {[
+              { icon: Users, value: "300+", label: "Enterprises supported" },
+              { icon: FileText, value: "7", label: "Funding calls" },
+              {
+                icon: BriefcaseBusiness,
+                value: "1,200+",
+                label: "Jobs enabled",
+              },
+              {
+                icon: Leaf,
+                value: "Stronger SMEs",
+                label: "More inclusive growth",
+              },
+            ].map(({ icon: Icon, value, label }) => (
+              <div
+                key={label}
+                className="border-r border-[#aac5d8] last:border-0"
               >
-                <div className="flex items-center justify-between">
-                  <span className="grid size-10 place-items-center rounded-lg bg-sky-pale text-navy">
-                    <Icon className="size-5" />
-                  </span>
-                  <ArrowRight className="size-4 text-slate-300 transition group-hover:text-orange" />
-                </div>
-                <h3 className="mt-5 text-sm font-bold text-navy">{title}</h3>
-                <p className="mt-1 text-xs text-slate-500">{text}</p>
-              </Link>
+                <Icon className="size-7 text-[#49a6dc]" />
+                <strong className="mt-2 block text-2xl text-navy">
+                  {value}
+                </strong>
+                <span className="text-xs text-[#365b82]">{label}</span>
+              </div>
             ))}
           </div>
         </div>
-      </section>
-
-      <section className="section bg-white">
-        <div className="container">
-          <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
-            <div className="max-w-2xl">
-              <p className="text-xs font-bold uppercase tracking-[.16em] text-orange">
-                Featured opportunity
-              </p>
-              <h2 className="display mt-3 text-4xl font-normal text-navy">
-                SME Growth Grant
-              </h2>
-              <p className="mt-4 leading-7 text-slate-600">
-                A competitive, merit-based funding opportunity for established
-                Namibian MSMEs with a feasible business model and clear growth
-                potential.
-              </p>
-            </div>
-            <Button asChild variant="outline">
-              <Link href="/funding">
-                View details <ArrowRight className="size-4" />
-              </Link>
-            </Button>
-          </div>
-          <div className="mt-9 grid gap-5 md:grid-cols-[1.3fr_.7fr]">
-            <div className="overflow-hidden rounded-xl border border-slate-200">
-              <div className="grid gap-6 bg-navy p-7 text-white sm:grid-cols-3">
-                <div>
-                  <p className="text-xs text-white/55">Grant amount</p>
-                  <p className="mt-2 text-2xl font-bold text-yellow-300">
-                    N$50k–100k
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-white/55">Business history</p>
-                  <p className="mt-2 text-2xl font-bold">1+ year</p>
-                </div>
-                <div>
-                  <p className="text-xs text-white/55">Ownership</p>
-                  <p className="mt-2 text-2xl font-bold">51% Namibian</p>
-                </div>
-              </div>
-              <div className="grid gap-4 p-7 sm:grid-cols-2">
-                {[
-                  "Youth and women-owned enterprises",
-                  "Existing SMEs ready to expand",
-                  "Enterprises in priority sectors",
-                  "Businesses with job-creation potential",
-                ].map((x) => (
-                  <p key={x} className="flex gap-3 text-sm text-slate-700">
-                    <CheckCircle2 className="size-5 shrink-0 text-green" />
-                    {x}
-                  </p>
-                ))}
-              </div>
-            </div>
-            <div className="rounded-xl border border-sky/40 bg-sky-pale p-7">
-              <CalendarDays className="size-7 text-navy" />
-              <h3 className="mt-5 font-bold text-navy">
-                Applications opening soon
-              </h3>
-              <p className="mt-3 text-sm leading-6 text-slate-600">
-                Check your eligibility and prepare the required documents before
-                the first call opens.
-              </p>
-              <Button asChild variant="gold" className="mt-6 w-full">
-                <Link href="/eligibility">Check eligibility</Link>
-              </Button>
-            </div>
-          </div>
+        <div className="campaign-script absolute right-[4%] top-1/2 hidden w-[230px] -translate-y-1/2 rotate-[-6deg] text-right text-[clamp(1.65rem,2vw,2.35rem)] leading-[.98] text-white [text-shadow:0_2px_5px_rgba(0,0,0,.55)] lg:block">
+          Small
+          <br />
+          Businesses.
+          <br />A Brighter
+          <br />
+          Namibia
+          <span className="ml-auto mt-2 block h-1.5 w-28 rotate-[-4deg] rounded-full bg-[#f2a900]" />
         </div>
       </section>
 
-      <section className="section border-y border-slate-200 bg-cream">
-        <div className="container">
-          <div className="text-center">
-            <p className="text-xs font-bold uppercase tracking-[.16em] text-orange">
-              Enterprise development
-            </p>
-            <h2 className="display mt-3 text-4xl font-normal text-navy">
-              Financial and non-financial support
-            </h2>
-          </div>
-          <div className="mt-10 grid gap-5 md:grid-cols-3">
-            {support.map(({ icon: Icon, title, text }) => (
-              <article
-                key={title}
-                className="rounded-xl border border-navy/10 bg-white p-7 shadow-sm"
-              >
-                <Icon className="size-7 text-sky" />
-                <h3 className="mt-5 font-bold text-navy">{title}</h3>
-                <p className="mt-3 text-sm leading-6 text-slate-600">{text}</p>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
+      <section className="container py-10">
+        <SectionHeading
+          title="Success stories & insights"
+          text="Real stories. Practical resources. Useful insights for your business journey."
+          link="View all stories and resources"
+        />
+        <div className="mt-6 grid gap-5 md:grid-cols-3">
+          {stories.map((story) => (
+            <article
+              key={story.title}
+              className="story-card flex min-h-[390px] flex-col overflow-hidden rounded-lg border border-slate-200 bg-white translation duration-300 hover:-translate-y-1 hover:shadow-lg"
+            >
+              <div className="story-image relative shrink-0 overflow-hidden">
+                <Image
+                  src={story.image}
+                  alt={story.title}
+                  fill
+                  className="object-cover"
+                  style={{ objectPosition: story.focal }}
+                  sizes="(min-width: 768px) 33vw, 100vw"
+                />
 
-      <section className="bg-navy py-14 text-white">
-        <div className="container flex flex-col items-start justify-between gap-7 sm:flex-row sm:items-center">
-          <div className="flex gap-4">
-            <ShieldCheck className="mt-1 size-8 shrink-0 text-sky" />
-            <div>
-              <h2 className="text-2xl font-bold">
-                Ready to find out if you qualify?
-              </h2>
-              <p className="mt-2 text-sm text-white/60">
-                Complete the initial check before starting an application.
-              </p>
-            </div>
-          </div>
-          <Button asChild variant="gold" size="lg">
-            <Link href="/eligibility">
-              Check eligibility <ArrowRight className="size-4" />
-            </Link>
-          </Button>
+                <span className="absolute left-4 top-4 rounded bg-white/90 px-3 py-1 text-[10px] font-bold text-navy">
+                  {story.label}
+                </span>
+              </div>
+
+              <div className="flex flex-1 flex-col p-5">
+                <h3 className="text-lg font-bold leading-5 text-navy">
+                  {story.title}
+                </h3>
+
+                <p className="mt-2 text-sm leading-5 text-[#486786]">
+                  {story.text}
+                </p>
+
+                <Link
+                  href="/funding"
+                  className="mt-auto inline-flex items-center gap-2 pt-4 text-sm font-bold text-[#1671bd]"
+                >
+                  {story.link}
+                  <ArrowRight className="size-4" />
+                </Link>
+              </div>
+            </article>
+          ))}
         </div>
       </section>
     </>
+  );
+}
+
+function SectionHeading({
+  title,
+  text,
+  link,
+}: {
+  title: string;
+  text: string;
+  link?: string;
+}) {
+  return (
+    <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
+      <div>
+        <h2 className="text-3xl font-bold tracking-tight text-navy">{title}</h2>
+        <p className="mt-1 text-sm text-[#486786]">{text}</p>
+      </div>
+      {link && (
+        <Link
+          href="/funding"
+          className="inline-flex shrink-0 items-center gap-2 text-sm font-bold text-[#1671bd]"
+        >
+          {link}
+          <ArrowRight className="size-4" />
+        </Link>
+      )}
+    </div>
+  );
+}
+
+function OpportunityCard(item: (typeof opportunities)[number]) {
+  return (
+    <article className="funding-card flex h-[440px] flex-col overflow-hidden rounded-lg border border-slate-100 bg-white ">
+      <div className="relative h-[250px] shrink-0 overflow-hidden">
+        <Image
+          src={item.image}
+          alt={item.title}
+          fill
+          className="object-cover"
+          sizes="(min-width: 768px) 33vw, 100vw"
+        />
+
+        <span
+          className={`absolute left-4 top-3 rounded px-3 py-1 text-[10px] font-bold ${
+            item.status === "OPEN NOW"
+              ? "bg-[#ffca45] text-navy"
+              : "bg-white text-[#2a5b89]"
+          }`}
+        >
+          {item.status}
+        </span>
+      </div>
+
+      <div className="flex flex-1 flex-col p-5">
+        <h3 className="text-lg font-bold text-navy">{item.title}</h3>
+
+        <p className="mt-1 text-sm leading-5 text-[#486786]">{item.text}</p>
+
+        <div className="mt-4 space-y-2 text-xs text-[#486786]">
+          <p className="flex gap-2">
+            <CircleDollarSign className="size-4 shrink-0 text-navy" />
+            {item.amount}
+          </p>
+
+          <p className="flex gap-2">
+            <CalendarDays className="size-4 shrink-0 text-navy" />
+            {item.date}
+          </p>
+
+          <p className="flex gap-2">
+            <Tag className="size-4 shrink-0 text-navy" />
+            {item.audience}
+          </p>
+        </div>
+
+        <Link
+          href="/funding"
+          className="mt-auto inline-flex items-center gap-2 pt-4 text-sm font-bold text-[#1671bd]"
+        >
+          Learn more <ArrowRight className="size-4" />
+        </Link>
+      </div>
+    </article>
   );
 }
