@@ -1,0 +1,53 @@
+import { z } from "zod";
+
+export const applicationSchema = z.object({
+  firstName: z.string().min(2, "Enter your first name"),
+  lastName: z.string().min(2, "Enter your surname"),
+  email: z.email("Enter a valid email address"),
+  phone: z.string().min(7, "Enter a contact number"),
+  gender: z.string().min(1, "Select an option"),
+  age: z.number().min(18, "Applicant must be at least 18").max(100, "Enter a valid age"),
+  nationality: z.string().min(2, "Enter your nationality"),
+  businessName: z.string().min(2, "Enter the registered business name"),
+  registrationNumber: z.string().min(2, "Enter the registration number"),
+  position: z.string().min(2, "Enter your position"),
+  yearsOperating: z.string().min(1, "Select an operating period"),
+  annualTurnover: z.string().min(1, "Select a turnover range"),
+  employees: z.number().min(0, "Enter a valid number").max(100000, "Enter a valid number"),
+  sector: z.string().min(1, "Select a sector"),
+  region: z.string().min(1, "Select a region"),
+  exportReady: z.string().min(1, "Select an option"),
+  amountRequested: z.number().min(50000, "Minimum request is N$50,000").max(100000, "Maximum request is N$100,000"),
+  useOfFunds: z.string().min(40, "Please provide at least 40 characters"),
+  expectedOutcomes: z.string().min(40, "Please provide at least 40 characters"),
+  jobs: z.number().min(0, "Enter a valid number").max(10000, "Enter a valid number"),
+  declaration: z.boolean().refine(Boolean, "You must accept the declaration"),
+  consent: z.boolean().refine(Boolean, "You must consent to verification"),
+});
+
+export type ApplicationValues = z.infer<typeof applicationSchema>;
+
+export const demoApplication: ApplicationValues = {
+  firstName: "Selma",
+  lastName: "Nghidinwa",
+  email: "selma@example.com",
+  phone: "+264 81 234 5678",
+  gender: "Female",
+  age: 32,
+  nationality: "Namibian",
+  businessName: "Oshana Harvest Foods CC",
+  registrationNumber: "CC/2023/10482",
+  position: "Founder and Managing Member",
+  yearsOperating: "2–3 years",
+  annualTurnover: "N$500,001–N$1,000,000",
+  employees: 7,
+  sector: "Agro-processing",
+  region: "Oshana",
+  exportReady: "Preparing for regional export",
+  amountRequested: 85000,
+  useOfFunds: "Purchase food-grade packaging equipment and complete product certification for retail distribution.",
+  expectedOutcomes: "Increase monthly production by 60%, enter two national retail chains and improve product shelf life.",
+  jobs: 4,
+  declaration: true,
+  consent: true,
+};

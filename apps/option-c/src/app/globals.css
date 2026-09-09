@@ -1,0 +1,31 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-navy: #0a183b;
+  --color-navy-light: #142957;
+  --color-sky: #6baed6;
+  --color-sky-pale: #eaf5fb;
+  --color-gold: #c9a24d;
+  --color-gold-dark: #a98432;
+  --color-cream: #f6f4e2;
+  --color-orange: #ff6f00;
+  --color-green: #16a34a;
+  --color-green-dark: #12863d;
+  --font-sans: "Bahnschrift", "Arial Narrow", Arial, sans-serif;
+  --font-display: "Blanquotey", "Bahnschrift", "Arial Narrow", Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: #f8fafc; color: #0a183b; }
+a { text-decoration: none; }
+button, summary, select { cursor: pointer; }
+.container { width: min(1180px, calc(100% - 2rem)); margin-inline: auto; }
+.eyebrow { font-size: .75rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: #b88d31; }
+.display { font-family: var(--font-display); letter-spacing: -.025em; }
+.brand-pattern { background-image: radial-gradient(circle at 50% 50%, transparent 0 24%, currentColor 25% 39%, transparent 40%), linear-gradient(45deg, transparent 45%, currentColor 46% 54%, transparent 55%); background-size: 52px 52px; }
+.soft-grid { background-image: linear-gradient(rgba(255,255,255,.055) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.055) 1px, transparent 1px); background-size: 32px 32px; }
+.card { border: 1px solid #e2e8f0; border-radius: 1.25rem; background: white; box-shadow: 0 12px 35px rgba(8,42,74,.06); }
+.section { padding-block: 5.5rem; }
+@media (max-width: 640px) { .section { padding-block: 4rem; } }
+@media print { header, footer, .no-print { display: none !important; } body { background: white; } }

@@ -1,24 +1,61 @@
-# ProSME Platform
+# ProSME Mockups
 
-Phase 0A and 0B demonstrator for the SME Fund applicant and internal review journeys within ProSME, built with Next.js, TypeScript, Tailwind CSS, React Hook Form, Zod, Zustand, TanStack Table, Recharts, Sonner, Lucide React, and accessible UI primitives.
+Three independently deployable UI options for the SME Fund applicant and internal review journeys. The repository is an npm workspace; each option is a complete Next.js application and can be connected to its own Vercel project.
 
-ProSME is the platform identity and SME Fund is a programme within it. The interface follows the supplied ProSME Brand Guide, including the official gold-and-yellow wordmark treatment, colour palette, and local Blanquotey/Bahnschrift typography.
+```text
+apps/
+├── option-a/
+├── option-b/
+└── option-c/
+```
+
+## Add mockup references
+
+Place each option's reference images or exported UI files in its matching folder:
+
+```text
+apps/option-a/public/mockups/
+apps/option-b/public/mockups/
+apps/option-c/public/mockups/
+```
 
 ## Run locally
 
+Install dependencies once from the repository root:
+
 ```bash
 npm install
-npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
-
-For a production-mode rehearsal:
+Then start the required option:
 
 ```bash
-npm run build
-npm run start
+npm run dev:option-a
+npm run dev:option-b
+npm run dev:option-c
 ```
+
+Each command defaults to [http://localhost:3000](http://localhost:3000). To run the options simultaneously, pass a different port to each workspace command, for example:
+
+```bash
+npm run dev:option-a -- --port 3001
+npm run dev:option-b -- --port 3002
+npm run dev:option-c -- --port 3003
+```
+
+Build all three options with `npm run build`, or build one with `npm run build:option-a`, `npm run build:option-b`, or `npm run build:option-c`.
+
+## Vercel projects
+
+Import this Git repository three times in Vercel and configure the Root Directory for each project:
+
+| Project | Root Directory |
+| --- | --- |
+| ProSME Option A | `apps/option-a` |
+| ProSME Option B | `apps/option-b` |
+| ProSME Option C | `apps/option-c` |
+
+Vercel should detect Next.js and the npm workspace automatically. Use the repository's normal production branch for all three projects.
 
 ## Recommended demo journey
 

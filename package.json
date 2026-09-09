@@ -1,38 +1,19 @@
 {
-  "name": "sme-fund-platform",
+  "name": "prosme-mockups",
   "version": "0.1.0",
   "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint ."
-  },
-  "dependencies": {
-    "@hookform/resolvers": "latest",
-    "@radix-ui/react-slot": "latest",
-    "@tanstack/react-table": "^9.2.4",
-    "class-variance-authority": "latest",
-    "clsx": "latest",
-    "lucide-react": "latest",
-    "next": "latest",
-    "react": "latest",
-    "react-dom": "latest",
-    "react-hook-form": "latest",
-    "recharts": "^3.10.1",
-    "sonner": "latest",
-    "tailwind-merge": "latest",
-    "zod": "latest",
-    "zustand": "latest"
-  },
-  "devDependencies": {
-    "@tailwindcss/postcss": "latest",
-    "@types/node": "latest",
-    "@types/react": "latest",
-    "@types/react-dom": "latest",
-    "eslint": "latest",
-    "eslint-config-next": "latest",
-    "tailwindcss": "latest",
-    "typescript": "latest"
+    "dev": "npm run dev:option-a",
+    "dev:option-a": "npm run dev --workspace @prosme/option-a",
+    "dev:option-b": "npm run dev --workspace @prosme/option-b",
+    "dev:option-c": "npm run dev --workspace @prosme/option-c",
+    "build": "npm run build --workspaces --if-present",
+    "build:option-a": "npm run build --workspace @prosme/option-a",
+    "build:option-b": "npm run build --workspace @prosme/option-b",
+    "build:option-c": "npm run build --workspace @prosme/option-c",
+    "lint": "npm run lint --workspaces --if-present"
   }
 }
