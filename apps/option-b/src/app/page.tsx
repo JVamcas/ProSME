@@ -102,34 +102,30 @@ export default function Home() {
   return (
     <>
     <section className="hero hero-animated relative overflow-hidden bg-white">
-        <div className="absolute inset-0 opacity-[.045] lg:block">
-          <Image
-            src="/brand/pic1.png"
-            alt=""
-            fill
-            priority
-            className="object-cover object-left grayscale"
-            sizes="100vw"
-          />
-        </div>
-        <div className="absolute inset-y-0 left-0 w-[55%] bg-gradient-to-r from-white via-white/95 to-white/65" />
-        <div className="absolute inset-y-0 right-0 hidden w-[64%] lg:block">
+        <div className="absolute inset-0 lg:inset-y-0 lg:left-auto lg:right-0 lg:w-[64%]">
           <Image
             src="/brand/pic1.png"
             alt="Namibian entrepreneur in her shop"
             fill
             priority
-            className="hero-main-photo object-cover object-top"
-            sizes="64vw"
+            className="hero-main-photo object-cover object-[58%_top] lg:object-top"
+            sizes="(max-width: 1023px) 100vw, 64vw"
           />
           <div
-            className="absolute inset-0"
+            className="absolute inset-0 lg:hidden"
+            style={{
+              background:
+                "linear-gradient(to right, rgba(255,255,255,.92) 0%, rgba(255,255,255,.78) 52%, rgba(255,255,255,.48) 100%), linear-gradient(to bottom, rgba(255,255,255,.08) 0%, transparent 62%, rgba(255,255,255,.32) 100%)",
+            }}
+          />
+          <div
+            className="absolute inset-0 hidden lg:block"
             style={{
               background:
                 "linear-gradient(to right, #fff 0%, rgba(255,255,255,.9) 12%, rgba(255,255,255,.35) 25%, transparent 42%)",
             }}
           />
-          <div className="campaign-script hero-campaign absolute right-[4%] top-[9%] w-[220px] rotate-[-6deg] text-right text-[clamp(1.8rem,2.15vw,2.45rem)] leading-[.88] tracking-[-.025em] text-white [text-shadow:0_2px_5px_rgba(0,0,0,.55)]">
+          <div className="campaign-script hero-campaign absolute right-[4%] top-[9%] hidden w-[220px] rotate-[-6deg] text-right text-[clamp(1.8rem,2.15vw,2.45rem)] leading-[.88] tracking-[-.025em] text-white [text-shadow:0_2px_5px_rgba(0,0,0,.55)] lg:block">
             Bigger
             <br />
             Businesses
@@ -141,7 +137,7 @@ export default function Home() {
             </span>
             <span className="ml-auto mt-2 block h-1.5 w-28 rotate-[-4deg] rounded-full bg-[#f2a900]" />
           </div>
-          <div className="hero-quote absolute bottom-[14%] right-[4%] w-[250px] rounded-xl border border-slate-200 bg-white p-4 shadow-xl">
+          <div className="hero-quote absolute bottom-[14%] right-[4%] hidden w-[250px] rounded-xl border border-slate-200 bg-white p-4 shadow-xl lg:block">
             <p className="text-sm font-semibold leading-5 text-navy">
               “With the right support, small businesses do extraordinary
               things.”
@@ -152,17 +148,18 @@ export default function Home() {
             </div>
           </div>
         </div>
+        <div className="absolute inset-y-0 left-0 hidden w-[55%] bg-gradient-to-r from-white via-white/95 to-white/65 lg:block" />
         <div className="hero-container relative z-10 grid min-h-[520px] items-center lg:grid-cols-[1.05fr_.95fr]">
           <div className="hero-copy max-w-[650px] py-14 lg:py-16">
-            <p className="text-[11px] font-bold uppercase tracking-[.2em] text-[#4fa7d8]">
+            <p className="text-[11px] font-bold uppercase tracking-[.2em] text-orange-dark">
               Funding today. A stronger tomorrow.
             </p>
             <h1 className="mt-4 text-[clamp(2.6rem,4vw,3.35rem)] font-bold leading-[1.04] tracking-[-.035em] text-navy">
               <span className="block">Your business has</span>
               <span className="block">
-                potential. <span className="text-gold-dark">We help you</span>
+                potential. <span className="text-orange">We help you</span>
               </span>
-              <span className="block text-gold-dark">take the next step.</span>
+              <span className="block text-orange">take the next step.</span>
             </h1>
             <p className="mt-5 max-w-lg text-lg leading-7 text-[#294768]">
               Funding and business development support for Namibian SMEs ready
@@ -178,15 +175,15 @@ export default function Home() {
             </div>
             <div className="mt-8 flex flex-wrap gap-x-8 gap-y-3 text-xs font-medium text-[#365b82]">
               <span className="flex items-center gap-2">
-                <BarChart3 className="size-5 text-[#4fa7d8]" />
+                <BarChart3 className="size-5 text-orange" />
                 Access funding
               </span>
               <span className="flex items-center gap-2">
-                <Users className="size-5 text-[#4fa7d8]" />
+                <Users className="size-5 text-orange" />
                 Build your capacity
               </span>
               <span className="flex items-center gap-2">
-                <Leaf className="size-5 text-[#4fa7d8]" />
+                <Leaf className="size-5 text-orange" />
                 Create opportunities
               </span>
             </div>
@@ -202,24 +199,24 @@ export default function Home() {
             icon: CircleDollarSign,
             title: "I want funding",
             text: "Explore current opportunities and find the right funding for your business.",
-            bg: "bg-[#eef8ff]",
-            color: "bg-[#49a6dc]",
+            bg: "bg-[#fff3e8]",
+            color: "bg-orange",
           },
           {
             href: "/eligibility",
             icon: FileText,
             title: "Am I eligible?",
             text: "Check if your business meets the key criteria before you apply.",
-            bg: "bg-[#fffaf0]",
-            color: "bg-[#cda13c]",
+            bg: "bg-[#f6f4e2]",
+            color: "bg-[#ffca45]",
           },
           {
             href: "/dashboard",
             icon: CalendarDays,
             title: "I already applied",
             text: "Track your application and stay updated on the next steps.",
-            bg: "bg-[#fff5ed]",
-            color: "bg-[#f4763a]",
+            bg: "bg-[#fff8f2]",
+            color: "bg-orange",
           },
         ].map(({ href, icon: Icon, title, text, bg, color }) => (
           <Link
@@ -290,14 +287,14 @@ export default function Home() {
           ].map(({ icon: Icon, title, text }, index) => (
             <div key={title} className="relative text-center">
               {index < 3 && (
-                <span className="absolute left-[72%] top-9 hidden w-[56%] border-t-2 border-dotted border-[#87b8db] lg:block" />
+                <span className="absolute left-[72%] top-9 hidden w-[56%] border-t-2 border-dotted border-[#ffca45] lg:block" />
               )}
               <span
-                className={`absolute left-3 top-3 z-10 grid size-8 place-items-center rounded-full text-sm font-bold text-white ${index % 2 ? "bg-gold" : "bg-[#49a6dc]"}`}
+                className={`absolute left-3 top-3 z-10 grid size-8 place-items-center rounded-full text-sm font-bold ${index % 2 ? "bg-[#ffca45] text-navy" : "bg-orange text-white"}`}
               >
                 {index + 1}
               </span>
-              <span className="mx-auto grid size-[84px] place-items-center rounded-full bg-[#eef8ff] text-navy">
+              <span className="mx-auto grid size-[84px] place-items-center rounded-full bg-orange-pale text-orange-dark">
                 <Icon className="size-9" strokeWidth={1.8} />
               </span>
               <h3 className="mt-5 text-lg font-bold text-navy">{title}</h3>
@@ -330,7 +327,7 @@ export default function Home() {
                       ? "bg-[#f4763a]"
                       : tone === "green"
                         ? "bg-[#5e963d]"
-                        : "bg-[#49a6dc]";
+                        : "bg-orange";
                   return (
                     <article
                       key={`${copy}-${title}`}
@@ -389,9 +386,9 @@ export default function Home() {
             ].map(({ icon: Icon, value, label }) => (
               <div
                 key={label}
-                className="border-r border-[#aac5d8] last:border-0"
+                className="border-r border-[#ffc08f] last:border-0"
               >
-                <Icon className="size-7 text-[#49a6dc]" />
+                <Icon className="size-7 text-orange" />
                 <strong className="mt-2 block text-2xl text-navy">
                   {value}
                 </strong>
@@ -449,7 +446,7 @@ export default function Home() {
 
                 <Link
                   href="/funding"
-                  className="mt-auto inline-flex items-center gap-2 pt-4 text-sm font-bold text-[#1671bd]"
+                  className="mt-auto inline-flex items-center gap-2 pt-4 text-sm font-bold text-orange-dark"
                 >
                   {story.link}
                   <ArrowRight className="size-4" />
@@ -481,7 +478,7 @@ function SectionHeading({
       {link && (
         <Link
           href="/funding"
-          className="inline-flex shrink-0 items-center gap-2 text-sm font-bold text-[#1671bd]"
+          className="inline-flex shrink-0 items-center gap-2 text-sm font-bold text-orange-dark"
         >
           {link}
           <ArrowRight className="size-4" />
@@ -507,7 +504,7 @@ function OpportunityCard(item: (typeof opportunities)[number]) {
           className={`absolute left-4 top-3 rounded px-3 py-1 text-[10px] font-bold ${
             item.status === "OPEN NOW"
               ? "bg-[#ffca45] text-navy"
-              : "bg-white text-[#2a5b89]"
+              : "bg-white text-orange-dark"
           }`}
         >
           {item.status}
@@ -538,7 +535,7 @@ function OpportunityCard(item: (typeof opportunities)[number]) {
 
         <Link
           href="/funding"
-          className="mt-auto inline-flex items-center gap-2 pt-4 text-sm font-bold text-[#1671bd]"
+          className="mt-auto inline-flex items-center gap-2 pt-4 text-sm font-bold text-orange-dark"
         >
           Learn more <ArrowRight className="size-4" />
         </Link>

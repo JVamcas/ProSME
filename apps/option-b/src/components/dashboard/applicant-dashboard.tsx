@@ -46,7 +46,7 @@ export function ApplicantDashboard() {
           <Logo href="/" inverted compact />
         </div>
         <div className="flex items-center gap-3 border-b border-white/10 pb-6">
-          <span className="grid size-10 place-items-center rounded-full bg-sky font-bold text-navy">
+          <span className="grid size-10 place-items-center rounded-full bg-orange font-bold text-navy">
             {name.charAt(0)}
           </span>
           <div className="min-w-0">
@@ -56,7 +56,7 @@ export function ApplicantDashboard() {
         </div>
         <nav className="mt-6 grid gap-1 text-sm">
           <span className="flex items-center gap-3 rounded-xl bg-white/10 px-4 py-3 font-semibold">
-            <LayoutDashboard className="size-4 text-sky" />
+            <LayoutDashboard className="size-4 text-orange" />
             Dashboard
           </span>
           <span className="flex items-center gap-3 px-4 py-3 text-white/55">
@@ -108,7 +108,7 @@ export function ApplicantDashboard() {
         </div>
         {!hasApplication ? (
           <div className="card mt-8 p-10 text-center">
-            <FileText className="mx-auto size-10 text-sky" />
+            <FileText className="mx-auto size-10 text-orange" />
             <h2 className="display mt-4 text-2xl font-semibold text-navy">
               No submitted application yet
             </h2>
@@ -146,7 +146,7 @@ export function ApplicantDashboard() {
             <section className="card mt-6 overflow-hidden">
               <div className="flex flex-col justify-between gap-4 border-b border-slate-200 p-6 sm:flex-row sm:items-center">
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-wider text-sky">
+                  <p className="text-xs font-bold uppercase tracking-wider text-orange">
                     {reference}
                   </p>
                   <h2 className="mt-2 text-lg font-bold text-navy">
@@ -180,7 +180,7 @@ export function ApplicantDashboard() {
                       className="relative flex gap-4 pb-6 md:block md:pb-0"
                     >
                       <div
-                        className={`relative z-10 grid size-8 shrink-0 place-items-center rounded-full border-2 ${item.done ? "border-emerald-600 bg-emerald-600 text-white" : item.active ? "border-sky bg-white text-navy" : "border-slate-200 bg-white text-slate-300"}`}
+                        className={`relative z-10 grid size-8 shrink-0 place-items-center rounded-full border-2 ${item.done ? "border-emerald-600 bg-emerald-600 text-white" : item.active ? "border-orange bg-white text-navy" : "border-slate-200 bg-white text-slate-300"}`}
                       >
                         {item.done ? (
                           <Check className="size-4" />
@@ -210,9 +210,9 @@ export function ApplicantDashboard() {
               <section className="card p-6">
                 <div className="flex items-center justify-between">
                   <h2 className="text-sm font-bold text-navy">Next action</h2>
-                  <Clock3 className="size-4 text-sky" />
+                  <Clock3 className="size-4 text-orange" />
                 </div>
-                <div className="mt-4 flex gap-3 rounded-2xl bg-sky-pale p-4">
+                <div className="mt-4 flex gap-3 rounded-2xl bg-orange-pale p-4">
                   <Check className="mt-0.5 size-4 shrink-0 text-navy" />
                   <p className="text-xs leading-5 text-slate-600">
                     <strong className="block text-navy">

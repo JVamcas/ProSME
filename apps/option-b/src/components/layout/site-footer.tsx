@@ -53,7 +53,7 @@ export function SiteFooter() {
           </div>
         </div> */}
       </div>
-      <div className="bg-gradient-to-r from-[#092a4b] to-[#071c36] text-white">
+      <div className="bg-gradient-to-r from-[#ff6f00] to-[#d95e00] text-white">
         <div className="container grid gap-9 py-10 md:grid-cols-[1.1fr_.65fr_.75fr_1.2fr]">
           <div>
             <Image

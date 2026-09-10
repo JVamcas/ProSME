@@ -42,7 +42,7 @@ function Navigation({ pathname }: { pathname: string }) {
               active && "bg-white/12 font-bold text-white",
             )}
           >
-            <Icon className={cn("size-4", active && "text-sky")} />
+            <Icon className={cn("size-4", active && "text-orange")} />
             {label}
           </Link>
         );
@@ -60,7 +60,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           <Logo href="/" inverted compact />
         </div>
         <div className="mt-6 flex items-center gap-3 border-y border-white/10 py-5">
-          <span className="grid size-10 place-items-center rounded-full bg-sky font-bold text-navy">
+          <span className="grid size-10 place-items-center rounded-full bg-orange font-bold text-navy">
             AU
           </span>
           <div>

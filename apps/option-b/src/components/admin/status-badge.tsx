@@ -2,7 +2,7 @@ import type { ApplicationStatus } from "@/data/admin-applications";
 import { cn } from "@/lib/utils";
 
 const styles: Record<ApplicationStatus, string> = {
-  Submitted: "bg-sky-pale text-navy",
+  Submitted: "bg-orange-pale text-navy",
   "Completeness Check": "bg-amber-100 text-amber-800",
   "Technical Assessment": "bg-violet-100 text-violet-700",
   "Finance Review": "bg-blue-100 text-blue-700",
