@@ -1,5 +1,7 @@
 # ProSME Platform — Implementation Plan
 
+> **Document status:** Historical plan for the initial demonstrator. For the approved Option B production delivery, use [docs/IMPLEMENTATION_PLAN.md](./docs/IMPLEMENTATION_PLAN.md). The production plan records the approved architecture, corrected milestone sequence, and strict delivery gates.
+
 ## 1. Purpose
 
 This document defines the proposed implementation approach for the ProSME digital platform's SME Fund experience. It translates the supplied background document, website requirements, user journeys, wireframes, site maps, and ProSME Brand Guide into a phased Next.js delivery plan.

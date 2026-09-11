@@ -1,0 +1,10 @@
+.git
+.next
+**/.next
+node_modules
+**/node_modules
+.env*
+!.env.example
+archive
+docs/source-material
+npm-debug.log*

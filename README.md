@@ -1,78 +1,89 @@
-# ProSME Mockups
+# SME Fund Platform
 
-Three independently deployable UI options for the SME Fund applicant and internal review journeys. The repository is an npm workspace; each option is a complete Next.js application and can be connected to its own Vercel project.
+The production foundation for the SME Fund platform under the ProSME Project. The approved Option B experience, backend route handlers, applicant portal, internal operations, and Payload CMS run as one Next.js application.
 
-```text
-apps/
-├── option-a/
-├── option-b/
-└── option-c/
-```
+## Architecture
 
-## Add mockup references
+- Application: `apps/platform`
+- Frontend and backend: Next.js App Router with TypeScript
+- CMS: Payload CMS embedded at `/cms`
+- Authentication: real Firebase Authentication; no Firebase emulator
+- Authorization and application data: PostgreSQL
+- Local database: PostgreSQL 16 through Docker Compose
+- Eventual hosting: GCP after the landing zone and operational requirements are approved
 
-Place each option's reference images or exported UI files in its matching folder:
+Firebase owns credentials and authentication. PostgreSQL owns users, roles, and capabilities. Payload has no local password strategy.
 
-```text
-apps/option-a/public/mockups/
-apps/option-b/public/mockups/
-apps/option-c/public/mockups/
-```
+Read the controlling documents before changing the implementation:
 
-## Run locally
+- [Implementation plan](docs/IMPLEMENTATION_PLAN.md)
+- [Approved project structure](docs/architecture/PROJECT_STRUCTURE.md)
+- [Repository rules](AGENTS.md)
 
-Install dependencies once from the repository root:
+## Local prerequisites
+
+- Node.js 24.13.0
+- npm 11 or compatible
+- Docker with Compose
+- A real Firebase development project with Email/Password authentication enabled
+- A Firebase web application configuration
+- Firebase Admin credentials for local server use
+
+The Firebase Authentication Emulator is intentionally unsupported.
+
+## Configuration
+
+Copy `.env.example` to the repository-root `.env.local` and provide the real development Firebase values. Use either `FIREBASE_SERVICE_ACCOUNT_JSON` or the split client-email/private-key fields for local Firebase Admin access. On GCP, workload identity and Application Default Credentials will replace local service-account material.
+
+Never commit `.env.local`, service-account JSON, or real applicant data.
+
+## Start locally
 
 ```bash
-npm install
+npm ci
+docker compose -f infrastructure/local/compose.yaml up -d
+npm run db:migrate --workspace @prosme/platform
+npm run payload --workspace @prosme/platform -- migrate
+npm run dev
 ```
 
-Then start the required option:
+The default routes are:
 
-```bash
-npm run dev:option-a
-npm run dev:option-b
-npm run dev:option-c
-```
-
-Each command defaults to [http://localhost:3000](http://localhost:3000). To run the options simultaneously, pass a different port to each workspace command, for example:
-
-```bash
-npm run dev:option-a -- --port 3001
-npm run dev:option-b -- --port 3002
-npm run dev:option-c -- --port 3003
-```
-
-Build all three options with `npm run build`, or build one with `npm run build:option-a`, `npm run build:option-b`, or `npm run build:option-c`.
-
-## Vercel projects
-
-Import this Git repository three times in Vercel and configure the Root Directory for each project:
-
-| Project | Root Directory |
+| URL | Purpose |
 | --- | --- |
-| ProSME Option A | `apps/option-a` |
-| ProSME Option B | `apps/option-b` |
-| ProSME Option C | `apps/option-c` |
+| `http://localhost:3000` | Public website |
+| `http://localhost:3000/sign-in` | Firebase sign-in |
+| `http://localhost:3000/portal` | Applicant portal |
+| `http://localhost:3000/admin` | Internal operations |
+| `http://localhost:3000/cms` | Payload CMS |
+| `http://localhost:3000/api/health` | Application and database readiness |
 
-Vercel should detect Next.js and the npm workspace automatically. Use the repository's normal production branch for all three projects.
+## Staff bootstrap
 
-## Recommended demo journey
+First create and verify the staff account in the real Firebase development project. Then assign its PostgreSQL role and create its passwordless Payload principal:
 
-```text
-Home -> Eligibility -> Application -> Confirmation -> Applicant Dashboard
+```bash
+BOOTSTRAP_STAFF_EMAIL=staff@example.com \
+BOOTSTRAP_STAFF_ROLE=system_administrator \
+npm run bootstrap:staff --workspace @prosme/platform
 ```
 
-On the application page, use **Fill demo data** to populate the form and simulated supporting-document names. The eligibility checker and application are interactive. Submitted application data is kept in browser storage for continuity during the demo.
+Available seeded role codes include `cms_editor`, `programme_administrator`, and `system_administrator`.
 
-Continue to the internal experience at `/admin`. The application register supports searching and column sorting. Select a record to open its read-only review summary and workflow position.
+## Verification
 
-## Prototype boundaries
+```bash
+npm run check:files
+npm run lint
+npm run typecheck
+npm run test
+npm run build
+```
 
-- Authentication is not connected.
-- Submissions are not sent to a server or database.
-- Selected files are not uploaded; only their names are retained locally.
-- Email, SMS, screening, assessment, and approval workflows are simulated.
-- Internal assessment and approval actions are disabled; the dashboard and review records are read-only.
+The combined command is `npm run check`. Database migrations are verified separately because they require PostgreSQL.
 
-See [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) for the full delivery roadmap.
+Phase 1 cannot pass G1 until the real Firebase applicant and CMS access scenarios have been executed and recorded in `docs/testing/gates/G1-foundation.md`.
+
+## Archived concepts
+
+The inactive Option A and Option C applications are retained under `archive/design-concepts` as M2 evidence. They are not npm workspaces and are excluded from the active build.

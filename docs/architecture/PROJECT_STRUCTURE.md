@@ -1,0 +1,324 @@
+# SME Fund Platform — Approved Project Structure
+
+## Status
+
+This is the approved repository and file structure for production implementation of Option B. It is normative: implementation and gate reviews must use it as the structural source of truth.
+
+## Architecture decision
+
+The repository contains one deployable Next.js application at `apps/platform`. Payload CMS runs inside the same Next.js runtime. Firebase Authentication and the application domain remain independent of Payload.
+
+The former `apps/option-b` becomes `apps/platform`. Options A and C are retained under `archive/design-concepts` as M2 evidence and are excluded from active builds.
+
+## Repository structure
+
+```text
+NPIDsme_Funding/
+├── apps/
+│   └── platform/
+│       ├── src/
+│       │   ├── app/                       # Next.js routes
+│       │   ├── auth/                      # Firebase authentication and authorization
+│       │   ├── db/                        # Application PostgreSQL schema
+│       │   ├── modules/                   # Business and domain logic
+│       │   ├── payload/                   # Payload CMS implementation
+│       │   ├── components/                # Shared React components
+│       │   ├── integrations/              # Email, AI, storage, analytics
+│       │   ├── jobs/                      # Background tasks
+│       │   ├── lib/                       # Cross-cutting utilities
+│       │   ├── payload.config.ts
+│       │   └── payload-types.ts
+│       ├── public/
+│       │   ├── brand/
+│       │   ├── images/
+│       │   └── documents/
+│       ├── tests/
+│       │   ├── unit/
+│       │   ├── integration/
+│       │   ├── access-control/
+│       │   └── e2e/
+│       ├── drizzle/                       # Application migrations
+│       ├── drizzle.config.ts
+│       ├── next.config.mjs
+│       ├── package.json
+│       ├── Dockerfile
+│       └── tsconfig.json
+├── docs/
+│   ├── source-material/
+│   ├── architecture/
+│   ├── testing/
+│   ├── training/
+│   ├── handover/
+│   └── support/
+├── infrastructure/
+│   ├── local/
+│   └── gcp/
+├── scripts/
+│   ├── development/
+│   ├── migrations/
+│   ├── seed/
+│   └── deployment/
+├── archive/
+│   └── design-concepts/
+│       ├── option-a/
+│       └── option-c/
+├── .env.example
+├── package.json
+└── README.md
+```
+
+## Next.js route structure
+
+```text
+src/app/
+├── (public)/
+│   ├── layout.tsx
+│   ├── page.tsx
+│   ├── about/page.tsx
+│   ├── funding/
+│   │   ├── page.tsx
+│   │   └── [slug]/page.tsx
+│   ├── eligibility/page.tsx
+│   ├── how-to-apply/page.tsx
+│   ├── news/
+│   │   ├── page.tsx
+│   │   └── [slug]/page.tsx
+│   ├── resources/
+│   │   ├── page.tsx
+│   │   └── [slug]/page.tsx
+│   ├── events/
+│   │   ├── page.tsx
+│   │   └── [slug]/page.tsx
+│   ├── faq/page.tsx
+│   ├── contact/page.tsx
+│   ├── privacy/page.tsx
+│   └── terms/page.tsx
+├── (auth)/
+│   ├── layout.tsx
+│   ├── sign-in/page.tsx
+│   ├── register/page.tsx
+│   ├── verify-email/page.tsx
+│   ├── forgot-password/page.tsx
+│   └── unauthorized/page.tsx
+├── (portal)/
+│   └── portal/
+│       ├── layout.tsx
+│       ├── page.tsx
+│       ├── profile/page.tsx
+│       ├── business/page.tsx
+│       ├── applications/
+│       │   ├── page.tsx
+│       │   ├── new/page.tsx
+│       │   └── [id]/
+│       │       ├── page.tsx
+│       │       ├── edit/
+│       │       └── documents/
+│       ├── messages/page.tsx
+│       └── notifications/page.tsx
+├── (operations)/
+│   └── admin/
+│       ├── layout.tsx
+│       ├── page.tsx
+│       ├── applications/
+│       │   ├── page.tsx
+│       │   └── [id]/page.tsx
+│       ├── screening/
+│       ├── assessments/
+│       ├── finance/
+│       ├── decisions/
+│       ├── communications/
+│       ├── reports/
+│       ├── users/
+│       └── audit-log/
+├── (payload)/
+│   ├── cms/
+│   │   └── [[...segments]]/
+│   │       ├── page.tsx
+│   │       └── not-found.tsx
+│   ├── api/[...slug]/route.ts
+│   ├── custom.scss
+│   └── layout.tsx
+└── api/
+    ├── auth/
+    │   ├── session/route.ts
+    │   ├── logout/route.ts
+    │   └── me/route.ts
+    ├── chatbot/route.ts
+    ├── contact/route.ts
+    ├── newsletter/route.ts
+    ├── uploads/route.ts
+    ├── exports/route.ts
+    ├── webhooks/
+    └── health/route.ts
+```
+
+| URL | Owner |
+| --- | --- |
+| `/` | Public website |
+| `/portal` | Applicant portal |
+| `/admin` | Internal operational workflow |
+| `/cms` | Payload content administration |
+| `/api/*` | Explicit Next.js and Payload APIs |
+
+## Authentication structure
+
+```text
+src/auth/
+├── firebase/
+│   ├── client.ts
+│   ├── admin.ts
+│   ├── config.ts
+│   ├── session.ts
+│   └── errors.ts
+├── authorization/
+│   ├── capabilities.ts
+│   ├── policy.ts
+│   ├── current-user.ts
+│   ├── require-user.ts
+│   └── require-capability.ts
+├── csrf/
+│   ├── create-token.ts
+│   └── verify-token.ts
+└── types.ts
+```
+
+Browser Firebase code may import only browser-safe Firebase modules. Firebase Admin imports must remain server-only. Real Firebase projects are used; no emulator configuration is permitted.
+
+## PostgreSQL structure
+
+```text
+src/db/
+├── client.ts
+├── schema/
+│   ├── identity.ts
+│   ├── authorization.ts
+│   ├── applicants.ts
+│   ├── businesses.ts
+│   ├── funding-calls.ts
+│   ├── eligibility.ts
+│   ├── applications.ts
+│   ├── application-documents.ts
+│   ├── workflow.ts
+│   ├── reviews.ts
+│   ├── decisions.ts
+│   ├── communications.ts
+│   ├── audit.ts
+│   └── index.ts
+├── repositories/
+│   ├── user.repository.ts
+│   ├── application.repository.ts
+│   ├── workflow.repository.ts
+│   └── audit.repository.ts
+├── transaction.ts
+└── types.ts
+```
+
+Application tables use the `app_` prefix. Firebase retains credentials; PostgreSQL stores application users and capability assignments.
+
+## Payload structure
+
+```text
+src/payload/
+├── collections/
+│   ├── content/
+│   │   ├── Pages.ts
+│   │   ├── News.ts
+│   │   ├── Resources.ts
+│   │   ├── Events.ts
+│   │   ├── FAQs.ts
+│   │   └── Media.ts
+│   ├── programme/
+│   │   ├── FundingCalls.ts
+│   │   ├── EligibilityContent.ts
+│   │   └── ProgrammeStatistics.ts
+│   └── system/CmsPrincipals.ts
+├── globals/
+│   ├── Header.ts
+│   ├── Footer.ts
+│   ├── Homepage.ts
+│   ├── ContactDetails.ts
+│   └── SiteSettings.ts
+├── auth/firebase-session-strategy.ts
+├── access/
+│   ├── can-access-cms.ts
+│   ├── can-create-content.ts
+│   ├── can-review-content.ts
+│   └── can-publish-content.ts
+├── blocks/
+│   ├── Hero.ts
+│   ├── RichText.ts
+│   ├── CallToAction.ts
+│   ├── Statistics.ts
+│   ├── ResourceGrid.ts
+│   └── FAQList.ts
+├── fields/
+│   ├── slug.ts
+│   ├── seo.ts
+│   └── publishing.ts
+├── hooks/
+│   ├── revalidate-content.ts
+│   └── record-content-audit.ts
+├── migrations/
+└── seed/
+```
+
+Payload content tables use the `cms_` prefix. `CmsPrincipals` is the minimum passwordless Payload user representation needed by the Admin Panel.
+
+## Domain module convention
+
+```text
+src/modules/applications/
+├── application.schema.ts
+├── application.types.ts
+├── application.repository.ts
+├── application.service.ts
+├── application.policy.ts
+├── application.queries.ts
+├── application.commands.ts
+├── application.events.ts
+├── application.mapper.ts
+└── application.test.ts
+```
+
+The required call direction is:
+
+```text
+page or form
+  -> Server Action
+  -> validation schema
+  -> policy
+  -> service
+  -> PostgreSQL transaction
+  -> workflow event
+  -> audit event
+  -> notification job
+```
+
+Pages must not contain workflow or database logic.
+
+## Integration structure
+
+```text
+src/integrations/
+├── email/
+│   ├── email-provider.ts
+│   ├── smtp-provider.ts
+│   └── templates/
+├── storage/
+│   ├── storage-provider.ts
+│   ├── local-storage.ts
+│   └── gcs-storage.ts
+├── ai/
+│   ├── ai-provider.ts
+│   ├── chatbot.service.ts
+│   └── retrieval.service.ts
+├── analytics/
+│   ├── analytics-provider.ts
+│   ├── ga4.ts
+│   └── application-events.ts
+└── monitoring/
+    ├── logger.ts
+    └── telemetry.ts
+```
+
+GCP-specific adapters may be implemented only when the relevant hosting requirements and access are available.
