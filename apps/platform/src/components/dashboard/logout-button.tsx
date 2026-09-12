@@ -1,27 +1,32 @@
 "use client";
 
+import { useMutation } from "@tanstack/react-query";
 import { LogOutIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+import { authClientService } from "@/auth/firebase/auth-client.service";
+import { Button } from "@/components/ui/button";
+
 export function LogoutButton() {
   const router = useRouter();
-
-  async function logout() {
-    const tokenResponse = await fetch("/api/auth/session", { cache: "no-store" });
-    const { token } = await tokenResponse.json() as { token: string };
-    await fetch("/api/auth/logout", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ csrfToken: token }),
-    });
-    router.replace("/sign-in");
-    router.refresh();
-  }
+  const logout = useMutation({
+    mutationFn: authClientService.logout,
+    onSuccess: () => {
+      router.replace("/sign-in");
+      router.refresh();
+    },
+  });
 
   return (
-    <button type="button" onClick={logout} className="flex items-center gap-3 px-4 py-3 text-left text-white/55 hover:text-white">
+    <Button
+      type="button"
+      variant="ghost"
+      disabled={logout.isPending}
+      onClick={() => logout.mutate()}
+      className="h-auto justify-start rounded-none px-4 py-3 text-left text-white/55 hover:bg-transparent hover:text-white"
+    >
       <LogOutIcon className="size-4" />
-      Logout
-    </button>
+      {logout.isPending ? "Logging out…" : "Logout"}
+    </Button>
   );
 }

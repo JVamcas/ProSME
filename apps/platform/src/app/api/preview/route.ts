@@ -1,10 +1,12 @@
 import { draftMode } from "next/headers";
 import { NextResponse } from "next/server";
 
-import { cmsCapability } from "@/auth/authorization/capabilities";
 import { resolveUserFromHeaders } from "@/auth/authorization/current-user";
-import { can } from "@/auth/authorization/policy";
-import { previewResource } from "@/auth/authorization/preview-resource";
+import {
+  AuthenticationRequiredError,
+  PermissionDeniedError,
+} from "@/auth/authorization/policy";
+import { authorizeContentPreview } from "@/modules/content/content-preview.service";
 
 function safePath(value: string | null) {
   return value?.startsWith("/") && !value.startsWith("//") ? value : "/";
@@ -13,8 +15,26 @@ function safePath(value: string | null) {
 export async function GET(request: Request) {
   const user = await resolveUserFromHeaders(request.headers);
   const path = safePath(new URL(request.url).searchParams.get("path"));
-  if (!can(user, cmsCapability(previewResource(path), "read"))) {
-    return NextResponse.json({ error: "Content preview access is required" }, { status: user ? 403 : 401 });
+
+  try {
+    authorizeContentPreview(user, path);
+  } catch (error) {
+    const status = error instanceof AuthenticationRequiredError ? 401 : 403;
+    if (
+      error instanceof AuthenticationRequiredError ||
+      error instanceof PermissionDeniedError
+    ) {
+      return NextResponse.json(
+        {
+          error: "Content preview access is required",
+        },
+        {
+          status,
+        },
+      );
+    }
+
+    throw error;
   }
 
   (await draftMode()).enable();

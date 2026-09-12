@@ -2,21 +2,97 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { Toaster } from "sonner";
 import { AppShell } from "@/components/layout/app-shell";
+import { QueryProvider } from "@/components/layout/query-provider";
 import { AnalyticsConsent } from "@/integrations/analytics/analytics-consent";
+import { getServerEnvironment } from "@/lib/env/server";
 import { getContactDetails, getSiteSettings } from "@/modules/content/content.queries";
 import "../globals.css";
 
-const bahnschrift = localFont({ src: "../fonts/bahnschrift.ttf", variable: "--font-bahnschrift", display: "swap" });
+export const dynamic = "force-dynamic";
+
+const bahnschrift = localFont({
+  src: "../fonts/bahnschrift.ttf",
+  variable: "--font-bahnschrift",
+  display: "swap",
+});
 
 export async function generateMetadata(): Promise<Metadata> {
+  const environment = getServerEnvironment();
   const settings = await getSiteSettings();
-  const images = settings.defaultSocialImage ? [{ alt: settings.defaultSocialImage.alt, url: settings.defaultSocialImage.url }] : undefined;
-  return { description: settings.siteDescription, metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.smefund.na"), openGraph: { images, locale: "en_NA", siteName: settings.siteName, type: "website" }, robots: settings.allowIndexing ? undefined : { follow: false, index: false }, title: { default: settings.siteName, template: `%s | ${settings.siteName}` } };
+  const images = settings.defaultSocialImage
+    ? [
+        {
+          alt: settings.defaultSocialImage.alt,
+          url: settings.defaultSocialImage.url,
+        },
+      ]
+    : undefined;
+
+  return {
+    description: settings.siteDescription,
+    metadataBase: new URL(environment.PUBLIC_SITE_URL),
+    openGraph: {
+      images,
+      locale: "en_NA",
+      siteName: settings.siteName,
+      type: "website",
+    },
+    robots: settings.allowIndexing
+      ? undefined
+      : {
+          follow: false,
+          index: false,
+        },
+    title: {
+      default: settings.siteName,
+      template: `%s | ${settings.siteName}`,
+    },
+  };
 }
 
-export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  const [settings, contact] = await Promise.all([getSiteSettings(), getContactDetails()]);
+type RootLayoutProps = Readonly<{
+  children: React.ReactNode;
+}>;
+
+export default async function RootLayout({ children }: RootLayoutProps) {
+  const environment = getServerEnvironment();
+  const [settings, contact] = await Promise.all([
+    getSiteSettings(),
+    getContactDetails(),
+  ]);
+  const organization = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: settings.siteName,
+    email: contact.email,
+    url: environment.PUBLIC_SITE_URL,
+    parentOrganization: {
+      "@type": "Organization",
+      name: "ProSME Project",
+    },
+  };
+
   return (
-    <html lang="en" data-scroll-behavior="smooth" className={bahnschrift.variable}><body className="font-sans antialiased"><AppShell mainClassName="public-content">{children}</AppShell><AnalyticsConsent measurementId={settings.analyticsMeasurementId} /><Toaster richColors position="top-right" /><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "Organization", name: settings.siteName, email: contact.email, url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.smefund.na", parentOrganization: { "@type": "Organization", name: "ProSME Project" } }) }} /></body></html>
+    <html
+      lang="en"
+      data-scroll-behavior="smooth"
+      className={bahnschrift.variable}
+    >
+      <body className="font-sans antialiased">
+        <QueryProvider>
+          <AppShell mainClassName="public-content">{children}</AppShell>
+          <AnalyticsConsent
+            measurementId={settings.analyticsMeasurementId}
+          />
+          <Toaster richColors position="top-right" />
+        </QueryProvider>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(organization),
+          }}
+        />
+      </body>
+    </html>
   );
 }

@@ -31,7 +31,12 @@ const dirname = path.dirname(filename);
 const environment = getServerEnvironment();
 
 export default buildConfig({
-  bin: [{ key: "seed-phase2", scriptPath: path.resolve(dirname, "payload/seed/phase2.ts") }],
+  bin: [
+    {
+      key: "seed-database",
+      scriptPath: path.resolve(dirname, "payload/seed/seed.ts"),
+    },
+  ],
   admin: {
     importMap: {
       baseDir: path.resolve(dirname),
@@ -63,7 +68,7 @@ export default buildConfig({
   editor: lexicalEditor(),
   globals: [Header, Footer, Homepage, ContactDetails, SiteSettings],
   secret: environment.PAYLOAD_SECRET,
-  serverURL: environment.NEXT_PUBLIC_SITE_URL,
+  serverURL: environment.PUBLIC_SITE_URL,
   routes: { admin: "/cms" },
   sharp,
   typescript: { outputFile: path.resolve(dirname, "payload-types.ts") },

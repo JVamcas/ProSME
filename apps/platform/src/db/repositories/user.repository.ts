@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
 import {
@@ -20,42 +20,98 @@ export type VerifiedIdentity = {
   emailVerified: boolean;
 };
 
-export async function findUserByFirebaseSubject(subject: string): Promise<AuthenticatedUser | null> {
+type UserProjection = {
+  capabilityCodes: string[];
+  identitySubject: string;
+  roleCodes: string[];
+  user: typeof users.$inferSelect;
+};
+
+function toAuthenticatedUser(row: UserProjection): AuthenticatedUser {
+  return {
+    ...row.user,
+    identitySubject: row.identitySubject,
+    capabilities: new Set(row.capabilityCodes),
+    roleCodes: new Set(row.roleCodes),
+  };
+}
+
+export async function findUserByFirebaseSubject(
+  subject: string,
+): Promise<AuthenticatedUser | null> {
   const database = getDatabase();
-  const rows = await database
+  const [row] = await database
     .select({
       user: users,
       identitySubject: userIdentities.subject,
-      capability: capabilities.code,
-      roleCode: roles.code,
+      capabilityCodes: sql<string[]>`
+        coalesce(
+          array_agg(distinct ${capabilities.code})
+            filter (where ${capabilities.code} is not null),
+          '{}'::text[]
+        )
+      `,
+      roleCodes: sql<string[]>`
+        coalesce(
+          array_agg(distinct ${roles.code})
+            filter (where ${roles.code} is not null),
+          '{}'::text[]
+        )
+      `,
     })
     .from(userIdentities)
     .innerJoin(users, eq(users.id, userIdentities.userId))
     .leftJoin(userRoles, eq(userRoles.userId, users.id))
+    .leftJoin(roles, eq(roles.id, userRoles.roleId))
     .leftJoin(roleCapabilities, eq(roleCapabilities.roleId, userRoles.roleId))
     .leftJoin(capabilities, eq(capabilities.id, roleCapabilities.capabilityId))
-    .where(and(eq(userIdentities.provider, "firebase"), eq(userIdentities.subject, subject)));
+    .where(
+      and(
+        eq(userIdentities.provider, "firebase"),
+        eq(userIdentities.subject, subject),
+      ),
+    )
+    .groupBy(users.id, userIdentities.subject)
+    .limit(1);
 
-  if (rows.length === 0) return null;
-
-  return {
-    ...rows[0].user,
-    identitySubject: rows[0].identitySubject,
-    capabilities: new Set(rows.flatMap((row) => (row.capability ? [row.capability] : []))),
-    roleCodes: new Set(rows.flatMap((row) => (row.roleCode ? [row.roleCode] : []))),
-  };
-}
-
-export async function provisionApplicant(identity: VerifiedIdentity): Promise<AuthenticatedUser> {
-  const existing = await findUserByFirebaseSubject(identity.subject);
-  if (existing) {
-    await getDatabase()
-      .update(userIdentities)
-      .set({ emailVerified: identity.emailVerified, lastSeenAt: new Date() })
-      .where(and(eq(userIdentities.provider, "firebase"), eq(userIdentities.subject, identity.subject)));
-    return (await findUserByFirebaseSubject(identity.subject))!;
+  if (!row) {
+    return null;
   }
 
+  return toAuthenticatedUser(row);
+}
+
+async function requireResolvedUser(subject: string) {
+  const user = await findUserByFirebaseSubject(subject);
+
+  if (!user) {
+    throw new Error("Applicant provisioning did not resolve an application user");
+  }
+
+  return user;
+}
+
+async function touchIdentity(
+  identity: VerifiedIdentity,
+): Promise<boolean> {
+  const [existingIdentity] = await getDatabase()
+    .update(userIdentities)
+    .set({
+      emailVerified: identity.emailVerified,
+      lastSeenAt: new Date(),
+    })
+    .where(
+      and(
+        eq(userIdentities.provider, "firebase"),
+        eq(userIdentities.subject, identity.subject),
+      ),
+    )
+    .returning({ userId: userIdentities.userId });
+
+  return Boolean(existingIdentity);
+}
+
+async function createApplicantIdentity(identity: VerifiedIdentity) {
   await getDatabase().transaction(async (transaction) => {
     const [user] = await transaction
       .insert(users)
@@ -66,23 +122,59 @@ export async function provisionApplicant(identity: VerifiedIdentity): Promise<Au
         status: "active",
         lastLoginAt: new Date(),
       })
-      .returning();
+      .onConflictDoUpdate({
+        target: users.email,
+        set: {
+          displayName: identity.displayName || identity.email,
+          lastLoginAt: new Date(),
+          updatedAt: new Date(),
+        },
+      })
+      .returning({
+        id: users.id,
+        userType: users.userType,
+      });
 
-    await transaction.insert(userIdentities).values({
-      userId: user.id,
-      provider: "firebase",
-      subject: identity.subject,
-      emailVerified: identity.emailVerified,
-      lastSeenAt: new Date(),
-    });
+    const [linkedIdentity] = await transaction
+      .insert(userIdentities)
+      .values({
+        userId: user.id,
+        provider: "firebase",
+        subject: identity.subject,
+        emailVerified: identity.emailVerified,
+        lastSeenAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: [userIdentities.provider, userIdentities.subject],
+        set: {
+          emailVerified: identity.emailVerified,
+          lastSeenAt: new Date(),
+        },
+      })
+      .returning({ userId: userIdentities.userId });
 
-    const [applicantRole] = await transaction.select().from(roles).where(eq(roles.code, "applicant")).limit(1);
-    if (!applicantRole) throw new Error("The applicant role has not been seeded");
+    if (user.userType !== "applicant") {
+      return;
+    }
 
-    await transaction.insert(userRoles).values({ userId: user.id, roleId: applicantRole.id });
+    await transaction.execute(sql`
+      INSERT INTO "app_user_roles" ("user_id", "role_id")
+      SELECT ${linkedIdentity.userId}::uuid, ${roles.id}
+      FROM ${roles}
+      WHERE ${roles.code} = 'applicant'
+      ON CONFLICT DO NOTHING
+    `);
   });
+}
 
-  const created = await findUserByFirebaseSubject(identity.subject);
-  if (!created) throw new Error("Applicant provisioning did not create an application user");
-  return created;
+export async function provisionApplicant(
+  identity: VerifiedIdentity,
+): Promise<AuthenticatedUser> {
+  const identityExists = await touchIdentity(identity);
+
+  if (!identityExists) {
+    await createApplicantIdentity(identity);
+  }
+
+  return requireResolvedUser(identity.subject);
 }

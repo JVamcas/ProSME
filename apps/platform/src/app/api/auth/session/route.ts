@@ -4,9 +4,10 @@ import { z } from "zod";
 import { createCsrfToken } from "@/auth/csrf/create-token";
 import { csrfTokensMatch } from "@/auth/csrf/verify-token";
 import { csrfCookieName, getSessionCookieName, readCookie } from "@/auth/firebase/cookies";
-import { createFirebaseSession } from "@/auth/firebase/session";
-import { provisionApplicant } from "@/db/repositories/user.repository";
-import { logger } from "@/integrations/monitoring/logger";
+import {
+  establishApplicationSession,
+  RecentAuthenticationRequiredError,
+} from "@/auth/firebase/session.service";
 
 const requestSchema = z.object({
   idToken: z.string().min(1),
@@ -29,49 +30,74 @@ export function GET() {
   return response;
 }
 
+function sessionResponse(
+  session: Awaited<ReturnType<typeof establishApplicationSession>>,
+) {
+  const response = NextResponse.json({
+    user: {
+      id: session.user.id,
+      email: session.user.email,
+      displayName: session.user.displayName,
+      userType: session.user.userType,
+    },
+  });
+  response.cookies.set(getSessionCookieName(), session.sessionCookie, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: Math.floor(session.maxAge / 1000),
+  });
+  response.cookies.delete(csrfCookieName);
+  response.headers.set("Cache-Control", "no-store");
+  return response;
+}
+
+function sessionError(error: unknown) {
+  const message =
+    error instanceof RecentAuthenticationRequiredError
+      ? error.message
+      : "Unable to establish a session";
+  return NextResponse.json(
+    {
+      error: message,
+    },
+    {
+      status: 401,
+    },
+  );
+}
+
 export async function POST(request: Request) {
-  const parsed = requestSchema.safeParse(await request.json().catch(() => null));
-  if (!parsed.success) return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+  const body = await request.json().catch(() => null);
+  const parsed = requestSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      {
+        error: "Invalid request",
+      },
+      {
+        status: 400,
+      },
+    );
+  }
 
   const csrfCookie = readCookie(request.headers.get("cookie"), csrfCookieName);
   if (!csrfTokensMatch(csrfCookie, parsed.data.csrfToken)) {
-    return NextResponse.json({ error: "Invalid CSRF token" }, { status: 403 });
+    return NextResponse.json(
+      {
+        error: "Invalid CSRF token",
+      },
+      {
+        status: 403,
+      },
+    );
   }
 
   try {
-    const { decodedToken, maxAge, sessionCookie } = await createFirebaseSession(parsed.data.idToken);
-    const authenticatedAt = decodedToken.auth_time * 1000;
-    if (Date.now() - authenticatedAt > 5 * 60 * 1000) {
-      return NextResponse.json({ error: "Recent authentication is required" }, { status: 401 });
-    }
-
-    const user = await provisionApplicant({
-      subject: decodedToken.uid,
-      email: decodedToken.email!,
-      displayName: decodedToken.name ?? decodedToken.email!,
-      emailVerified: decodedToken.email_verified ?? false,
-    });
-
-    const response = NextResponse.json({
-      user: { id: user.id, email: user.email, displayName: user.displayName, userType: user.userType },
-    });
-    response.cookies.set(getSessionCookieName(), sessionCookie, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-      maxAge: Math.floor(maxAge / 1000),
-    });
-    response.cookies.delete(csrfCookieName);
-    response.headers.set("Cache-Control", "no-store");
-    return response;
+    const session = await establishApplicationSession(parsed.data.idToken);
+    return sessionResponse(session);
   } catch (error) {
-    logger.warn("auth.session.create_failed", {
-      errorType: error instanceof Error ? error.name : "UnknownError",
-      errorCode: error && typeof error === "object" && "code" in error
-        ? String(error.code)
-        : undefined,
-    });
-    return NextResponse.json({ error: "Unable to establish a session" }, { status: 401 });
+    return sessionError(error);
   }
 }

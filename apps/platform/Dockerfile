@@ -1,32 +1,56 @@
+# syntax=docker/dockerfile:1.7
+
 FROM node:24.13.0-bookworm-slim AS dependencies
 WORKDIR /workspace
+
 COPY package.json package-lock.json ./
 COPY apps/platform/package.json apps/platform/package.json
-RUN npm ci
 
-FROM dependencies AS build
-COPY . .
-ARG DATABASE_URL=postgresql://build:build@127.0.0.1:5432/build
-ARG PAYLOAD_SECRET=container-build-placeholder-secret-32-characters
-ARG FIREBASE_PROJECT_ID=container-build-placeholder
-ARG NEXT_PUBLIC_FIREBASE_API_KEY=container-build-placeholder
-ARG NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=container-build-placeholder.firebaseapp.com
-ARG NEXT_PUBLIC_FIREBASE_PROJECT_ID=container-build-placeholder
-ARG NEXT_PUBLIC_FIREBASE_APP_ID=container-build-placeholder
-ARG NEXT_PUBLIC_SITE_URL=http://localhost:3000
-ENV DATABASE_URL=$DATABASE_URL
-ENV PAYLOAD_SECRET=$PAYLOAD_SECRET
-ENV FIREBASE_PROJECT_ID=$FIREBASE_PROJECT_ID
-ENV NEXT_PUBLIC_FIREBASE_API_KEY=$NEXT_PUBLIC_FIREBASE_API_KEY
-ENV NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=$NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
-ENV NEXT_PUBLIC_FIREBASE_PROJECT_ID=$NEXT_PUBLIC_FIREBASE_PROJECT_ID
-ENV NEXT_PUBLIC_FIREBASE_APP_ID=$NEXT_PUBLIC_FIREBASE_APP_ID
-ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
-RUN npm run build
+RUN --mount=type=cache,id=prosme-npm,target=/root/.npm,sharing=locked \
+    npm ci --no-audit --no-fund
+
+FROM node:24.13.0-bookworm-slim AS builder
+WORKDIR /workspace
+
+COPY --from=dependencies /workspace/node_modules ./node_modules
+COPY package.json package-lock.json ./
+COPY apps/platform apps/platform
+COPY --chmod=755 scripts/container/build.sh scripts/container/build.sh
+
+RUN --mount=type=cache,id=prosme-next,target=/workspace/apps/platform/.next/cache,sharing=locked \
+    scripts/container/build.sh
+
+FROM dependencies AS migrations
+
+RUN groupadd --system --gid 1001 nodejs \
+    && useradd --system --uid 1001 --gid nodejs nextjs
+
+COPY --chown=nextjs:nodejs apps/platform apps/platform
+COPY --chown=nextjs:nodejs --chmod=755 \
+    scripts/container/migrate.sh scripts/container/migrate.sh
+
+USER nextjs
+CMD ["scripts/container/migrate.sh"]
 
 FROM node:24.13.0-bookworm-slim AS runtime
-ENV NODE_ENV=production
 WORKDIR /workspace
-COPY --from=build /workspace ./
-EXPOSE 3000
-CMD ["npm", "run", "start"]
+
+RUN groupadd --system --gid 1001 nodejs \
+    && useradd --system --uid 1001 --gid nodejs nextjs
+
+COPY --from=builder --chown=nextjs:nodejs \
+    /workspace/apps/platform/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs \
+    /workspace/apps/platform/.next/static ./apps/platform/.next/static
+COPY --from=builder --chown=nextjs:nodejs \
+    /workspace/apps/platform/public ./apps/platform/public
+COPY --from=builder --chown=nextjs:nodejs \
+    /workspace/apps/platform/media ./apps/platform/media
+COPY --chown=nextjs:nodejs --chmod=755 \
+    scripts/container/healthcheck.sh scripts/container/healthcheck.sh
+
+WORKDIR /workspace/apps/platform
+USER nextjs
+EXPOSE 3008
+
+CMD ["node", "server.js"]

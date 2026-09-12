@@ -8,6 +8,7 @@ import * as migration_20260912_121549_phase2_eligibility_focus_section from './2
 import * as migration_20260912_124200_phase2_impact_summary from './20260912_124200_phase2_impact_summary';
 import * as migration_20260912_124500_phase2_page_impact_summary from './20260912_124500_phase2_page_impact_summary';
 import * as migration_20260912_130000_phase2_impact_background from './20260912_130000_phase2_impact_background';
+import * as migration_20260912_181500_code_owned_primary_navigation from './20260912_181500_code_owned_primary_navigation';
 
 export const migrations = [
   {
@@ -59,5 +60,10 @@ export const migrations = [
     up: migration_20260912_130000_phase2_impact_background.up,
     down: migration_20260912_130000_phase2_impact_background.down,
     name: '20260912_130000_phase2_impact_background'
+  },
+  {
+    up: migration_20260912_181500_code_owned_primary_navigation.up,
+    down: migration_20260912_181500_code_owned_primary_navigation.down,
+    name: '20260912_181500_code_owned_primary_navigation'
   },
 ];

@@ -16,6 +16,6 @@ export const publishingFields: Field[] = [
   {
     name: "reviewNotes",
     type: "textarea",
-    admin: { description: "Internal notes for editors and publishers." },
+    admin: { description: "Internal notes for editors and reviewers." },
   },
 ];

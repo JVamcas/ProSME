@@ -1,6 +1,8 @@
 import { z } from "zod";
 
-const consent = z.literal(true, { error: "Consent is required" });
+const consent = z.boolean().refine((value) => value, {
+  message: "Consent is required",
+});
 const honeypot = z.string().max(0).optional();
 
 export const contactSubmissionSchema = z.object({
@@ -18,3 +20,8 @@ export const newsletterSubscriptionSchema = z.object({
   consent,
   email: z.email().max(254),
 });
+
+export type ContactSubmission = z.infer<typeof contactSubmissionSchema>;
+export type NewsletterSubscription = z.infer<
+  typeof newsletterSubscriptionSchema
+>;

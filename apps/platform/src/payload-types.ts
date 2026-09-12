@@ -340,7 +340,7 @@ export interface Page {
   featuredImage?: (number | null) | Media;
   reviewStatus: 'draft' | 'inReview' | 'approved';
   /**
-   * Internal notes for editors and publishers.
+   * Internal notes for editors and reviewers.
    */
   reviewNotes?: string | null;
   seoTitle?: string | null;
@@ -378,7 +378,7 @@ export interface News {
   publishedAt?: string | null;
   reviewStatus: 'draft' | 'inReview' | 'approved';
   /**
-   * Internal notes for editors and publishers.
+   * Internal notes for editors and reviewers.
    */
   reviewNotes?: string | null;
   seoTitle?: string | null;
@@ -404,7 +404,7 @@ export interface Resource {
   publishedAt?: string | null;
   reviewStatus: 'draft' | 'inReview' | 'approved';
   /**
-   * Internal notes for editors and publishers.
+   * Internal notes for editors and reviewers.
    */
   reviewNotes?: string | null;
   seoTitle?: string | null;
@@ -445,7 +445,7 @@ export interface Event {
   registrationUrl?: string | null;
   reviewStatus: 'draft' | 'inReview' | 'approved';
   /**
-   * Internal notes for editors and publishers.
+   * Internal notes for editors and reviewers.
    */
   reviewNotes?: string | null;
   seoTitle?: string | null;
@@ -481,7 +481,7 @@ export interface Faq {
   order: number;
   reviewStatus: 'draft' | 'inReview' | 'approved';
   /**
-   * Internal notes for editors and publishers.
+   * Internal notes for editors and reviewers.
    */
   reviewNotes?: string | null;
   updatedAt: string;
@@ -521,7 +521,7 @@ export interface FundingCall {
   applicationUrl?: string | null;
   reviewStatus: 'draft' | 'inReview' | 'approved';
   /**
-   * Internal notes for editors and publishers.
+   * Internal notes for editors and reviewers.
    */
   reviewNotes?: string | null;
   seoTitle?: string | null;
@@ -545,7 +545,7 @@ export interface EligibilityContent {
   order: number;
   reviewStatus: 'draft' | 'inReview' | 'approved';
   /**
-   * Internal notes for editors and publishers.
+   * Internal notes for editors and reviewers.
    */
   reviewNotes?: string | null;
   updatedAt: string;
@@ -563,7 +563,7 @@ export interface ProgrammeStatistic {
   order: number;
   reviewStatus: 'draft' | 'inReview' | 'approved';
   /**
-   * Internal notes for editors and publishers.
+   * Internal notes for editors and reviewers.
    */
   reviewNotes?: string | null;
   updatedAt: string;
@@ -1116,19 +1116,12 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
 export interface Header {
   id: number;
   announcement?: string | null;
-  navigation?:
-    | {
-        label: string;
-        href: string;
-        id?: string | null;
-      }[]
-    | null;
   signInLabel: string;
   applyLabel: string;
   applyHref: string;
   reviewStatus: 'draft' | 'inReview' | 'approved';
   /**
-   * Internal notes for editors and publishers.
+   * Internal notes for editors and reviewers.
    */
   reviewNotes?: string | null;
   _status?: ('draft' | 'published') | null;
@@ -1148,7 +1141,7 @@ export interface Footer {
   copyright?: string | null;
   reviewStatus: 'draft' | 'inReview' | 'approved';
   /**
-   * Internal notes for editors and publishers.
+   * Internal notes for editors and reviewers.
    */
   reviewNotes?: string | null;
   _status?: ('draft' | 'published') | null;
@@ -1251,7 +1244,7 @@ export interface Homepage {
     | null;
   reviewStatus: 'draft' | 'inReview' | 'approved';
   /**
-   * Internal notes for editors and publishers.
+   * Internal notes for editors and reviewers.
    */
   reviewNotes?: string | null;
   _status?: ('draft' | 'published') | null;
@@ -1270,7 +1263,7 @@ export interface ContactDetail {
   officeHours?: string | null;
   reviewStatus: 'draft' | 'inReview' | 'approved';
   /**
-   * Internal notes for editors and publishers.
+   * Internal notes for editors and reviewers.
    */
   reviewNotes?: string | null;
   _status?: ('draft' | 'published') | null;
@@ -1293,7 +1286,7 @@ export interface SiteSetting {
   defaultSocialImage?: (number | null) | Media;
   reviewStatus: 'draft' | 'inReview' | 'approved';
   /**
-   * Internal notes for editors and publishers.
+   * Internal notes for editors and reviewers.
    */
   reviewNotes?: string | null;
   _status?: ('draft' | 'published') | null;
@@ -1306,13 +1299,6 @@ export interface SiteSetting {
  */
 export interface HeaderSelect<T extends boolean = true> {
   announcement?: T;
-  navigation?:
-    | T
-    | {
-        label?: T;
-        href?: T;
-        id?: T;
-      };
   signInLabel?: T;
   applyLabel?: T;
   applyHref?: T;

@@ -45,7 +45,7 @@ G1 is not passed. The repository foundation is implemented and locally verified,
 | Invalid and revoked sessions | Pass | Invalid ID token returned 401; a previously valid session returned 401 after `revokeRefreshTokens` |
 | Applicant authorization | Pass | Applicant reached `/portal`, received applicant capabilities, and was redirected from `/admin` |
 | CMS authorization | Pass | Applicant received no Payload principal; CMS editor resolved through Firebase without a Payload password and reached `/cms` |
-| Operations authorization | Pass | CMS-only user was redirected from `/admin`; programme administrator reached `/admin` |
+| Operations authorization | Pass | CMS-only user was redirected from `/admin`; programme officer reached `/admin` |
 | Logout | Pass | CSRF-protected logout cleared the production session cookie |
 | Test-data cleanup | Pass | Disposable PostgreSQL records were removed and 3 stale Firebase G1 identities from interrupted attempts were deleted |
 

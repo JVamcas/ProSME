@@ -59,8 +59,12 @@ export type HomepageContent = {
   trackingLabel: string;
 };
 
-export type NavigationItem = { href: string; label: string };
-export type HeaderContent = { announcement: string; applyHref: string; applyLabel: string; navigation: NavigationItem[]; signInLabel: string };
+export type HeaderContent = {
+  announcement: string;
+  applyHref: string;
+  applyLabel: string;
+  signInLabel: string;
+};
 export type FooterContent = { copyright: string; newsletterHeading: string; newsletterSummary: string; summary: string; tagline: string };
 export type ContactContent = { address: string; email: string; officeHours?: string | null; phone?: string | null };
 export type SiteSettingsContent = { allowIndexing: boolean; analyticsMeasurementId?: string | null; defaultSocialImage?: CmsImage; siteDescription: string; siteName: string };

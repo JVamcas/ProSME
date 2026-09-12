@@ -1,5 +1,6 @@
 import config from "@payload-config";
 import { RootPage } from "@payloadcms/next/views";
+import { redirect } from "next/navigation";
 
 import { importMap } from "../importMap";
 
@@ -8,6 +9,17 @@ type Props = {
   searchParams: Promise<Record<string, string | string[]>>;
 };
 
-export default function PayloadAdminPage(props: Props) {
-  return RootPage({ config, importMap, params: props.params, searchParams: props.searchParams });
+export default async function PayloadAdminPage(props: Props) {
+  const { segments = [] } = await props.params;
+
+  if (segments[0] === "login") {
+    redirect("/cms");
+  }
+
+  return RootPage({
+    config,
+    importMap,
+    params: props.params,
+    searchParams: props.searchParams,
+  });
 }

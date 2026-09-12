@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { AlertCircle, ArrowLeft, Banknote, Building2, Check, FileCheck2, LockKeyhole, MapPin, UserRound, Users } from "lucide-react";
-import type { AdminApplication } from "@/data/admin-applications";
+import type { AdminApplication } from "@/modules/applications/application.types";
 import { StatusBadge } from "@/components/admin/status-badge";
 import { Button } from "@/components/ui/button";
 

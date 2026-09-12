@@ -33,19 +33,37 @@ The Firebase Authentication Emulator is intentionally unsupported.
 
 ## Configuration
 
-Copy `.env.example` to the repository-root `.env.local` and provide the real development Firebase values. Use either `FIREBASE_SERVICE_ACCOUNT_JSON` or the split client-email/private-key fields for local Firebase Admin access. On GCP, workload identity and Application Default Credentials will replace local service-account material.
+Copy `.env.example` to the repository-root `.env` and provide the real development Firebase values. Use either `FIREBASE_SERVICE_ACCOUNT_JSON` or the split client-email/private-key fields for local Firebase Admin access. On GCP, workload identity and Application Default Credentials will replace local service-account material.
 
-Never commit `.env.local`, service-account JSON, or real applicant data.
+Never commit `.env`, service-account JSON, or real applicant data.
 
-## Start locally
+## Start with Docker Compose
+
+After creating `.env`, build and start PostgreSQL and the application:
 
 ```bash
-npm ci
-docker compose -f infrastructure/local/compose.yaml up -d
-npm run db:migrate --workspace @prosme/platform
-npm run payload --workspace @prosme/platform -- migrate
-npm run seed:phase2 --workspace @prosme/platform
-npm run dev
+./scripts/docker-up.sh --build
+```
+
+The Bash wrapper validates Compose, builds the standalone image, starts
+PostgreSQL, runs the committed Drizzle and Payload migrations, and waits for the
+application health check. It also runs the single idempotent database seeder on
+every startup. PostgreSQL data and Payload media uploads are retained in named
+volumes. Environment-specific values are supplied by Compose at runtime; the
+image build does not read `.env` or receive deployment configuration.
+
+The temporary development database uses local-only `POSTGRES_*` defaults defined
+in Compose. The `DATABASE_URL` in `.env` uses the same development credentials
+and the `db` service hostname. Non-Compose deployments supply their own
+`DATABASE_URL` at runtime.
+
+The build uses reusable npm and Next.js BuildKit caches. After a successful
+build, the wrapper removes dangling images and cache entries unused for seven
+days. Inspect or prune Docker storage directly with:
+
+```bash
+./scripts/docker-maintenance.sh diagnose
+./scripts/docker-maintenance.sh prune
 ```
 
 Payload automatic development schema pushing is disabled. After a schema change, generate and apply a committed Payload migration before starting the application.
@@ -66,16 +84,20 @@ The default routes are:
 First create and verify the staff account in the real Firebase development project. Then assign its PostgreSQL role and create its passwordless Payload principal:
 
 ```bash
-BOOTSTRAP_STAFF_EMAIL=staff@example.com \
-BOOTSTRAP_STAFF_ROLE=system_administrator \
-npm run bootstrap:staff --workspace @prosme/platform
+./scripts/bootstrap-admin.sh staff@example.com
 ```
 
-Available seeded role codes include `cms_editor`, `programme_administrator`, and `system_administrator`.
+The bootstrap command only assigns `system_administrator`. Other staff roles
+must be assigned through the authorised role-management workflow.
+
+The TOR role codes are `cms_administrator`, `cms_editor`, `cms_author`,
+`cms_reviewer`, `programme_officer`, `sector_specialist`, and
+`approval_panel_member`. The platform also retains `applicant` for self-service
+users and `system_administrator` for secure platform bootstrap and recovery.
 
 ## Public content
 
-`npm run seed:phase2 --workspace @prosme/platform` idempotently publishes the approved Phase 2 baseline: public pages, site globals, homepage blocks, programme statistics, eligibility questions, focus sectors, FAQs, the closed first funding call, and its criteria document. Content editors can then manage media, versions, review state, authenticated previews, publishing, and restoration in `/cms`.
+`npm run db:seed --workspace @prosme/platform` is the single seeding entry point. It delegates to focused seed modules and idempotently publishes the baseline public pages, site globals, homepage blocks, programme statistics, eligibility questions, focus sectors, FAQs, funding call, and criteria document. Content editors can then manage media, versions, review state, authenticated previews, publishing, and restoration in `/cms`.
 
 Contact enquiries and consented newsletter subscriptions are stored in Payload under the Engagement group. Add the approved GA4 measurement ID under Site Settings; analytics remains disabled until a visitor consents. Approved photography can be uploaded in Media and selected on the homepage, pages, news, resources, events, and funding calls.
 

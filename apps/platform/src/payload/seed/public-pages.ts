@@ -20,9 +20,3 @@ export const publicPages = [
   { slug: "privacy", ...defaultPages.privacy, paragraphs: approvedPageParagraphs.privacy },
   { slug: "terms", ...defaultPages.terms, paragraphs: approvedPageParagraphs.terms },
 ];
-
-export const primaryNavigation = [
-  ["/", "Home"], ["/about", "About"], ["/funding", "Funding"], ["/eligibility", "Eligibility"],
-  ["/how-to-apply", "How to Apply"], ["/news", "News"], ["/resources", "Resources"],
-  ["/events", "Events"], ["/faq", "FAQs"], ["/contact", "Contact"],
-] as const;

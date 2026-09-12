@@ -14,7 +14,9 @@ const databaseGlobal = globalThis as typeof globalThis & {
 };
 
 export function getDatabase(): Database {
-  if (databaseGlobal.smeFundDatabase) return databaseGlobal.smeFundDatabase;
+  if (databaseGlobal.smeFundDatabase) {
+    return databaseGlobal.smeFundDatabase;
+  }
 
   const pool = new Pool({
     connectionString: getServerEnvironment().DATABASE_URL,
@@ -22,10 +24,8 @@ export function getDatabase(): Database {
   });
   const database = drizzle(pool, { schema });
 
-  if (process.env.NODE_ENV !== "production") {
-    databaseGlobal.smeFundPool = pool;
-    databaseGlobal.smeFundDatabase = database;
-  }
+  databaseGlobal.smeFundPool = pool;
+  databaseGlobal.smeFundDatabase = database;
 
   return database;
 }

@@ -1,22 +1,4 @@
-export type ApplicationStatus = "Submitted" | "Completeness Check" | "Technical Assessment" | "Finance Review" | "More Information" | "Approved" | "Declined";
-
-export type AdminApplication = {
-  id: string;
-  applicant: string;
-  business: string;
-  sector: string;
-  region: string;
-  requested: number;
-  submitted: string;
-  status: ApplicationStatus;
-  ownership: number;
-  employees: number;
-  jobs: number;
-  turnover: string;
-  summary: string;
-  useOfFunds: string;
-  documents: number;
-};
+import type { AdminApplication } from "@/modules/applications/application.types";
 
 export const adminApplications: AdminApplication[] = [
   { id: "SMEF-2026-00017", applicant: "Selma Nghidinwa", business: "Oshana Harvest Foods CC", sector: "Agro-processing", region: "Oshana", requested: 85000, submitted: "2026-09-08", status: "Completeness Check", ownership: 100, employees: 7, jobs: 4, turnover: "N$500,001–N$1,000,000", summary: "Produces shelf-stable mahangu and marula food products for independent retailers in northern Namibia.", useOfFunds: "Food-grade packaging equipment and product certification for national retail distribution.", documents: 8 },

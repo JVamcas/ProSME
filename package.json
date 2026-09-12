@@ -14,7 +14,8 @@
     "test": "npm run test --workspace @prosme/platform",
     "test:public": "npm run test:public --workspace @prosme/platform",
     "verify:g1:firebase": "node scripts/development/verify-firebase-g1.mjs",
+    "check:architecture": "npm run check:architecture --workspace @prosme/platform",
     "check:files": "npm run check:files --workspace @prosme/platform",
-    "check": "npm run check:files && npm run lint && npm run typecheck && npm run test && npm run build"
+    "check": "npm run check:architecture && npm run check:files && npm run lint && npm run typecheck && npm run test && npm run build"
   }
 }

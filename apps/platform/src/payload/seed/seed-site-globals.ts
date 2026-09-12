@@ -1,19 +1,25 @@
 import { fileURLToPath } from "node:url";
 import type { Payload } from "payload";
 
-import { primaryNavigation } from "./public-pages";
 import { findId, seedContext } from "./seed-helpers";
 
+const impactImageAlt = "Namibian mountain landscape";
+
 async function seedImpactImage(payload: Payload) {
-  const current = await findId(payload, "media", "filename", "pic5.png");
-  if (current) return current;
+  const current = await findId(payload, "media", "alt", impactImageAlt);
+
+  if (current) {
+    return current;
+  }
+
   const created = await payload.create({
     collection: "media",
     context: seedContext,
-    data: { alt: "Namibian mountain landscape" },
+    data: { alt: impactImageAlt },
     filePath: fileURLToPath(new URL("../../../public/brand/pic5.png", import.meta.url)),
     overrideAccess: true,
   });
+
   return created.id;
 }
 
@@ -51,7 +57,6 @@ export async function seedSiteGlobals(payload: Payload) {
         announcement: "An initiative under the ProSME Project",
         applyHref: "/portal/applications/new",
         applyLabel: "Apply Now",
-        navigation: primaryNavigation.map(([href, label]) => ({ href, label })),
         reviewStatus: "approved",
         signInLabel: "Sign in",
         _status: "published",

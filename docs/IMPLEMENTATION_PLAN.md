@@ -478,7 +478,7 @@ G5 passes only when:
 ### Required work
 
 1. Execute functional, integration, migration, security, accessibility, compatibility, performance, and recovery tests.
-2. Execute end-to-end tests for applicant, CMS, programme, assessor, finance, approver, communications, and system-administrator roles.
+2. Execute end-to-end tests for Applicant, Administrator, Editor, Author, Reviewer, Programme Officer, Sector Specialist, Approval Panel Member, and System Administrator roles.
 3. Test current supported Chrome, Firefox, Safari, Edge, Android, and iOS browser profiles agreed with the client.
 4. Test constrained-width and constrained-network behaviour.
 5. Conduct UAT with named client representatives.

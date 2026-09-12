@@ -1,4 +1,4 @@
-import type { ApplicationStatus } from "@/data/admin-applications";
+import type { ApplicationStatus } from "@/modules/applications/application.types";
 import { cn } from "@/lib/utils";
 
 const styles: Record<ApplicationStatus, string> = {

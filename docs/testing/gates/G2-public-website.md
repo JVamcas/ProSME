@@ -56,7 +56,7 @@ G2 is not accepted. The Phase 2 engineering implementation and local technical v
 - Technical-lead written acceptance of G1.
 - Client content owner approval of the seeded wording, generic privacy terms, generic website terms, and coming-soon states.
 - Client authority confirmation of the contact address and any telephone number before publication.
-- CMS editor/publisher UAT covering create, edit, preview, review, publish, unpublish, and restore with real assigned users.
+- CMS author/editor/reviewer UAT covering create, edit, preview, review, publish, unpublish, and restore with real assigned users.
 - Repeat the enhanced real-Firebase system-administrator bootstrap test when Google OAuth service-account token exchange is reachable from the execution environment; the attempted run timed out at `oauth2.googleapis.com` before a session could be established.
 - Manual stakeholder responsive review at the agreed mobile, tablet, and desktop breakpoints.
 - Manual keyboard and screen-reader acceptance; automated axe and contrast checks now pass.

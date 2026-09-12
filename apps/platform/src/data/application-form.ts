@@ -25,3 +25,47 @@ export const regions = [
   "Erongo", "Hardap", "//Kharas", "Kavango East", "Kavango West", "Khomas", "Kunene",
   "Ohangwena", "Omaheke", "Omusati", "Oshana", "Oshikoto", "Otjozondjupa", "Zambezi",
 ];
+
+function selectItems(values: readonly string[]) {
+  return values.map((value) => ({ label: value, value }));
+}
+
+export const genderItems = selectItems([
+  "Female",
+  "Male",
+  "Prefer not to say",
+]);
+
+export const yearsOperatingItems = selectItems([
+  "1–2 years",
+  "2–3 years",
+  "3–5 years",
+  "More than 5 years",
+]);
+
+export const annualTurnoverItems = selectItems([
+  "Up to N$250,000",
+  "N$250,001–N$500,000",
+  "N$500,001–N$1,000,000",
+  "Above N$1,000,000",
+]);
+
+export const sectorItems = selectItems([
+  "Agro-processing",
+  "Agriculture",
+  "Manufacturing",
+  "Tourism",
+  "Technology",
+  "Renewable energy",
+  "Creative industries",
+  "Other",
+]);
+
+export const regionItems = selectItems(regions);
+
+export const exportReadinessItems = selectItems([
+  "Ready to expand locally",
+  "Preparing for regional export",
+  "Already exporting",
+  "Seeking investment opportunities",
+]);

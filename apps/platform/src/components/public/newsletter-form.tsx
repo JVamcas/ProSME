@@ -1,33 +1,120 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowRight } from "lucide-react";
+import { FormProvider, useForm } from "react-hook-form";
 
-export function NewsletterForm() {
-  const [message, setMessage] = useState("");
-  const [pending, setPending] = useState(false);
+import { Button } from "@/components/ui/button";
+import { CheckboxField, HoneypotField } from "@/components/ui/form-field";
+import { FormInput } from "@/components/ui/form-fields";
+import {
+  newsletterSubscriptionSchema,
+  type NewsletterSubscription,
+} from "@/modules/engagement/engagement.schema";
+import { useNewsletterSubscription } from "@/modules/engagement/engagement.hooks";
 
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setPending(true);
-    const form = event.currentTarget;
-    const values = Object.fromEntries(new FormData(form));
+function useNewsletterForm() {
+  const subscription = useNewsletterSubscription();
+  const form = useForm<NewsletterSubscription>({
+    defaultValues: {
+      company: "",
+      consent: false,
+      email: "",
+    },
+    mode: "onTouched",
+    resolver: zodResolver(newsletterSubscriptionSchema),
+  });
+
+  async function submit(values: NewsletterSubscription) {
     try {
-      const response = await fetch("/api/newsletter", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...values, consent: values.consent === "on" }) });
-      const result = await response.json() as { error?: string; message?: string };
-      setMessage(result.message ?? result.error ?? "Please try again.");
-      if (response.ok) form.reset();
+      await subscription.mutateAsync(values);
+      form.reset();
     } catch {
-      setMessage("Subscription is temporarily unavailable. Please try again.");
-    } finally {
-      setPending(false);
+      // The mutation exposes the service error in the status region.
     }
   }
 
-  return <form onSubmit={submit} className="mt-4">
-    <label className="hidden" aria-hidden="true">Company<input name="company" tabIndex={-1} autoComplete="off" /></label>
-    <div className="flex rounded-full bg-white p-1"><label className="sr-only" htmlFor="newsletter-email">Email address</label><input id="newsletter-email" name="email" type="email" required autoComplete="email" placeholder="Your email address" className="min-w-0 flex-1 bg-transparent px-4 text-sm text-navy outline-none placeholder:text-slate-500" /><button disabled={pending} className="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-full bg-brand-navy px-5 text-xs font-bold text-brand-white disabled:opacity-60" aria-label="Subscribe">{pending ? "Submitting…" : "Subscribe"}<ArrowRight className="size-4" /></button></div>
-    <label className="mt-3 flex gap-2 text-[11px] leading-4 text-white/80"><input name="consent" type="checkbox" required className="mt-0.5 accent-navy" /><span>I agree to receive SME Fund updates and accept the <a href="/privacy" className="underline">privacy policy</a>.</span></label>
-    <p className="mt-2 min-h-4 text-xs text-white" role="status">{pending ? "Submitting…" : message}</p>
-  </form>;
+  return { form, submission: subscription, submit };
+}
+
+function NewsletterFields({ pending }: { pending: boolean }) {
+  return (
+    <>
+      <HoneypotField />
+      <div className="flex rounded-full bg-white p-1">
+        <FormInput
+          id="newsletter-email"
+          name="email"
+          label="Email address"
+          labelClassName="sr-only"
+          containerClassName="min-w-0 flex-1"
+          type="email"
+          autoComplete="email"
+          placeholder="Your email address"
+          className="h-full min-w-0 border-0 bg-transparent px-4 text-sm text-brand-navy focus:ring-0"
+        />
+        <Button
+          type="submit"
+          variant="navy"
+          size="sm"
+          disabled={pending}
+          className="min-h-10 shrink-0"
+          aria-label="Subscribe"
+        >
+          {pending ? "Submitting…" : "Subscribe"}
+          <ArrowRight className="size-4" />
+        </Button>
+      </div>
+      <CheckboxField
+        name="consent"
+        containerClassName="mt-3 gap-2 text-[11px] leading-4 text-white/80"
+        controlClassName="mt-0.5 accent-navy"
+        label={
+          <>
+            I agree to receive SME Fund updates and accept the{" "}
+            <a href="/privacy" className="underline">
+              privacy policy
+            </a>
+            .
+          </>
+        }
+      />
+    </>
+  );
+}
+
+function NewsletterStatus({
+  pending,
+  message,
+}: {
+  pending: boolean;
+  message?: string;
+}) {
+  return (
+    <p className="mt-2 min-h-4 text-xs text-white" role="status">
+      {pending ? "Submitting…" : message}
+    </p>
+  );
+}
+
+export function NewsletterForm() {
+  const newsletter = useNewsletterForm();
+  const message =
+    newsletter.submission.error?.message ?? newsletter.submission.data?.message;
+
+  return (
+    <FormProvider {...newsletter.form}>
+      <form
+        onSubmit={newsletter.form.handleSubmit(newsletter.submit)}
+        className="mt-4"
+        noValidate
+      >
+        <NewsletterFields pending={newsletter.submission.isPending} />
+        <NewsletterStatus
+          pending={newsletter.submission.isPending}
+          message={message}
+        />
+      </form>
+    </FormProvider>
+  );
 }

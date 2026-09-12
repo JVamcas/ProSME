@@ -12,24 +12,42 @@ export function getSessionDurationMilliseconds() {
 
 export async function createFirebaseSession(idToken: string) {
   const auth = getFirebaseAdminAuth();
-  const decodedToken = await auth.verifyIdToken(idToken, true);
+  const maxAge = getSessionDurationMilliseconds();
+  const [decodedToken, sessionCookie] = await Promise.all([
+    auth.verifyIdToken(idToken, true),
+    auth.createSessionCookie(idToken, {
+      expiresIn: maxAge,
+    }),
+  ]);
 
   if (!decodedToken.email || !decodedToken.email_verified) {
     throw new Error("A verified email address is required");
   }
 
-  const maxAge = getSessionDurationMilliseconds();
-  const sessionCookie = await auth.createSessionCookie(idToken, { expiresIn: maxAge });
-  return { decodedToken, maxAge, sessionCookie };
+  return {
+    decodedToken,
+    maxAge,
+    sessionCookie,
+  };
 }
 
-export async function verifyFirebaseSessionCookie(sessionCookie: string): Promise<DecodedIdToken> {
+export async function verifyFirebaseSessionCookie(
+  sessionCookie: string,
+): Promise<DecodedIdToken> {
   return getFirebaseAdminAuth().verifySessionCookie(sessionCookie, true);
 }
 
-export async function verifyFirebaseSessionFromHeaders(headers: Headers): Promise<DecodedIdToken | null> {
-  const sessionCookie = readCookie(headers.get("cookie"), getSessionCookieName());
-  if (!sessionCookie) return null;
+export async function verifyFirebaseSessionFromHeaders(
+  headers: Headers,
+): Promise<DecodedIdToken | null> {
+  const sessionCookie = readCookie(
+    headers.get("cookie"),
+    getSessionCookieName(),
+  );
+
+  if (!sessionCookie) {
+    return null;
+  }
 
   try {
     return await verifyFirebaseSessionCookie(sessionCookie);

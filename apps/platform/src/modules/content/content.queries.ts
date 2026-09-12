@@ -37,8 +37,18 @@ export async function getHomepage(): Promise<HomepageContent> {
 export async function getHeader(): Promise<HeaderContent> {
   const payload = await payloadClient();
   const { draft } = await queryMode("site-settings");
-  const value = await payload.findGlobal({ slug: "header", draft, overrideAccess: true });
-  return { announcement: value.announcement ?? "", applyHref: value.applyHref, applyLabel: value.applyLabel, navigation: (value.navigation ?? []).map(({ href, label }) => ({ href, label })), signInLabel: value.signInLabel };
+  const value = await payload.findGlobal({
+    slug: "header",
+    draft,
+    overrideAccess: true,
+  });
+
+  return {
+    announcement: value.announcement ?? "",
+    applyHref: value.applyHref,
+    applyLabel: value.applyLabel,
+    signInLabel: value.signInLabel,
+  };
 }
 
 export async function getFooter(): Promise<FooterContent> {

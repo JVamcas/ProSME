@@ -8,3 +8,5 @@ node_modules
 archive
 docs/source-material
 npm-debug.log*
+apps/platform/media/*
+!apps/platform/media/.gitkeep

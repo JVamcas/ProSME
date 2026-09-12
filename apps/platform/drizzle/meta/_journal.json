@@ -22,6 +22,27 @@
       "when": 1789218434545,
       "tag": "0002_authorization_audit_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1789228800000,
+      "tag": "0003_tor_role_catalogue",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1789228860000,
+      "tag": "0004_tor_reviewer_site_settings",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1789228920000,
+      "tag": "0005_tor_cms_role_names",
+      "breakpoints": true
     }
   ]
 }

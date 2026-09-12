@@ -3,6 +3,7 @@
 import { Bell } from "lucide-react";
 import { useEffect } from "react";
 
+import { IconButton } from "@/components/ui/button";
 import { useApplicationStore } from "@/store/application-store";
 import { ApplicationOverview } from "./application-overview";
 import { EmptyApplications } from "./empty-applications";
@@ -10,7 +11,8 @@ import { PortalSidebar } from "./portal-sidebar";
 import { PortalUpdates } from "./portal-updates";
 
 export function ApplicantDashboard() {
-  const { application, documents, reference, submittedAt } = useApplicationStore();
+  const { application, documents, reference, submittedAt } =
+    useApplicationStore();
 
   useEffect(() => {
     void useApplicationStore.persist.rehydrate();
@@ -26,17 +28,32 @@ export function ApplicantDashboard() {
       <div className="min-w-0 bg-slate-100 p-5 sm:p-8">
         <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
           <div>
-            <p className="text-sm text-slate-500">Welcome back, {application.firstName || "Applicant"}</p>
-            <h1 className="display mt-1 text-3xl font-semibold text-navy">Application overview</h1>
+            <p className="text-sm text-slate-500">
+              Welcome back, {application.firstName || "Applicant"}
+            </p>
+            <h1 className="display mt-1 text-3xl font-semibold text-navy">
+              Application overview
+            </h1>
           </div>
-          <button aria-label="Notifications" className="relative grid size-10 place-items-center rounded-full border border-slate-200 bg-white">
+          <IconButton
+            label="Notifications"
+            variant="outline"
+            className="relative border-slate-200 text-slate-600"
+          >
             <Bell className="size-4 text-slate-600" />
             <span className="absolute right-0 top-0 size-2.5 rounded-full bg-gold" />
-          </button>
+          </IconButton>
         </header>
-        {!reference ? <EmptyApplications /> : (
+        {!reference ? (
+          <EmptyApplications />
+        ) : (
           <>
-            <ApplicationOverview application={application} documentCount={Object.keys(documents).length} reference={reference} submittedAt={submittedAt} />
+            <ApplicationOverview
+              application={application}
+              documentCount={Object.keys(documents).length}
+              reference={reference}
+              submittedAt={submittedAt}
+            />
             <PortalUpdates reference={reference} />
           </>
         )}

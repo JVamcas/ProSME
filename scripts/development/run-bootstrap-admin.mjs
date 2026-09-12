@@ -2,17 +2,20 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 
-export function runBootstrapStaff(email, role = "system_administrator") {
+export function runBootstrapAdmin(email) {
   const result = spawnSync(
     process.execPath,
-    [path.resolve("node_modules/payload/bin.js"), "run", "../../scripts/seed/bootstrap-staff.ts"],
+    [
+      path.resolve("node_modules/payload/bin.js"),
+      "run",
+      "../../scripts/seed/bootstrap-admin.ts",
+    ],
     {
       cwd: path.resolve("apps/platform"),
       encoding: "utf8",
       env: {
         ...process.env,
-        BOOTSTRAP_STAFF_EMAIL: email,
-        BOOTSTRAP_STAFF_ROLE: role,
+        BOOTSTRAP_ADMIN_EMAIL: email,
         NODE_OPTIONS: "--conditions=react-server",
       },
     },

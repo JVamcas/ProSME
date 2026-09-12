@@ -5,14 +5,23 @@ import { config } from "dotenv";
 import { cert, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import pg from "pg";
-import { runBootstrapStaff } from "./run-bootstrap-staff.mjs";
+import { runBootstrapAdmin } from "./run-bootstrap-admin.mjs";
+import {
+  verifyAccess,
+  verifySystemAdministrator,
+} from "./verify-firebase-access.mjs";
 
-config({ path: ".env.local", quiet: true });
+config({ path: ".env", quiet: true });
 setDefaultResultOrder("ipv4first");
 
 const origin = process.env.G1_ORIGIN ?? "http://127.0.0.1:3014";
-const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
-const projectId = process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+const apiKey = process.env.PUBLIC_FIREBASE_API_KEY
+  || process.env.FIREBASE_WEB_API_KEY
+  || process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+const projectId = process.env.FIREBASE_PROJECT_ID
+  || process.env.PUBLIC_FIREBASE_PROJECT_ID
+  || process.env.FIREBASE_WEB_PROJECT_ID
+  || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
 const suffix = `${Date.now()}-${randomBytes(3).toString("hex")}`;
 const password = `G1-${randomBytes(12).toString("base64url")}aA1!`;
 const identities = [
@@ -22,7 +31,7 @@ const identities = [
   { kind: "system", email: `g1-system-${suffix}@example.test` },
 ];
 
-assert(apiKey, "NEXT_PUBLIC_FIREBASE_API_KEY is required");
+assert(apiKey, "PUBLIC_FIREBASE_API_KEY is required");
 assert(projectId, "A Firebase project ID is required");
 assert(process.env.FIREBASE_CLIENT_EMAIL, "FIREBASE_CLIENT_EMAIL is required");
 assert(process.env.FIREBASE_PRIVATE_KEY, "FIREBASE_PRIVATE_KEY is required");
@@ -100,33 +109,6 @@ async function get(path, cookie) {
   return fetch(`${origin}${path}`, { headers: cookie ? { Cookie: cookie } : {}, redirect: "manual" });
 }
 
-async function verifyAccess(applicantCookie, cmsCookie, operationsCookie) {
-  const applicantMe = await get("/api/auth/me", applicantCookie);
-  assert.equal(applicantMe.status, 200);
-  assert((await applicantMe.json()).user.capabilities.includes("application.read.own"));
-  assert.equal((await get("/portal", applicantCookie)).status, 200);
-  assert.equal((await get("/admin", applicantCookie)).headers.get("location"), "/unauthorized");
-  assert.equal((await (await get("/api/cms-principals/me", applicantCookie)).json()).user, null);
-
-  const cmsMe = await get("/api/cms-principals/me", cmsCookie);
-  assert.equal(cmsMe.status, 200);
-  assert.equal((await cmsMe.json()).user.email, identities[1].email);
-  assert.equal((await get("/cms", cmsCookie)).status, 200);
-  assert.equal((await get("/admin", cmsCookie)).headers.get("location"), "/unauthorized");
-
-  assert.equal((await get("/admin", operationsCookie)).status, 200);
-}
-
-async function verifySystemAdministrator(cookie) {
-  const response = await get("/api/auth/me", cookie);
-  assert.equal(response.status, 200);
-  const { user } = await response.json();
-  assert.equal(user.userType, "staff");
-  assert(user.roles.includes("system_administrator"));
-  assert(user.capabilities.includes("cms.principals.manage"));
-  assert.equal((await get("/cms", cookie)).status, 200);
-}
-
 async function verifyLogout(cookie) {
   const csrfResponse = await get("/api/auth/session", cookie);
   const csrfCookie = responseCookie(csrfResponse, "smefund_csrf");
@@ -169,14 +151,20 @@ try {
   const operationsCookie = await createSession(tokens[2]);
   const systemCookie = await createSession(tokens[3]);
   await assignRole(identities[1].email, "cms_editor", true);
-  await assignRole(identities[2].email, "programme_administrator", true);
-  runBootstrapStaff(identities[3].email);
+  await assignRole(identities[2].email, "programme_officer", true);
+  runBootstrapAdmin(identities[3].email);
   const auditCount = await pool.query("SELECT count(*) FROM app_authorization_audit_entries WHERE actor_id = $1", [`bootstrap:${identities[3].email}`]);
-  runBootstrapStaff(identities[3].email);
+  runBootstrapAdmin(identities[3].email);
   const repeatedCount = await pool.query("SELECT count(*) FROM app_authorization_audit_entries WHERE actor_id = $1", [`bootstrap:${identities[3].email}`]);
   assert.equal(repeatedCount.rows[0].count, auditCount.rows[0].count);
-  await verifyAccess(applicantCookie, cmsCookie, operationsCookie);
-  await verifySystemAdministrator(systemCookie);
+  await verifyAccess({
+    applicantCookie,
+    cmsCookie,
+    cmsEmail: identities[1].email,
+    get,
+    operationsCookie,
+  });
+  await verifySystemAdministrator(systemCookie, get);
   await verifyLogout(operationsCookie);
 
   await new Promise((resolve) => setTimeout(resolve, 1100));

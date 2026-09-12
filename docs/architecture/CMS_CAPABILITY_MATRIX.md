@@ -24,12 +24,20 @@ CMS capabilities use `cms.<resource>.<action>`.
 
 | Role | Granted CMS scope |
 | --- | --- |
-| CMS Editor | Create and update editorial collections; update site settings; manage media except deletion; cannot approve or publish |
-| CMS Publisher | Editor scope plus approval/publishing for editorial collections and site settings; can read the content audit |
-| Programme Administrator | Full Funding Calls, Eligibility, and Statistics management; engagement-submission management; media management; can read the content audit and enter `/admin` |
+| Administrator | Full CMS content and configuration management, except application-owned principal, role, and permission administration |
+| Editor | Create and update editorial collections; update site settings; manage media except deletion; cannot approve or publish |
+| Author | Create and update editorial collections and upload media; cannot change site settings, approve, or publish |
+| Reviewer | Review and publish approved editorial collections and site settings; can read the content audit; cannot create content |
+| Programme Officer | Full Funding Calls, Eligibility, and Statistics management; engagement-submission management; media management; can read the content audit and enter `/admin` |
+| Sector Specialist | TOR workflow role reserved for Phase 3 sector-specific assessment capabilities |
+| Approval Panel Member | TOR workflow role reserved for Phase 3 approval and decision capabilities |
 | System Administrator | Every Phase 2 CMS capability, principal-mirror visibility, content-audit visibility, and `/admin` access |
 
-The role is the permission group. No second permission-group model is introduced.
+Administrator, Editor, Author, and Reviewer are CMS-scoped roles. The seven
+business roles use the names stated in the TOR. Applicant and
+System Administrator remain platform roles required for self-service access and
+secure bootstrap/recovery respectively. The role is the permission group. No
+second permission-group model is introduced.
 
 ## Enforcement rules
 
@@ -38,4 +46,4 @@ The role is the permission group. No second permission-group model is introduced
 - Draft-mode public rendering rechecks the matching resource read capability server-side; a preview cookie alone cannot expose another resource's drafts.
 - Application routes use the same PostgreSQL-resolved capability set. Frontend visibility is a usability layer only; layouts, route handlers, services, and Payload remain authoritative.
 - Removing `cms.access`, suspending, or disabling the PostgreSQL user prevents the Firebase session from resolving a Payload principal on the next request.
-- The first administrator is created only by the idempotent `bootstrap:staff` script. It verifies Firebase email state and never handles a password.
+- The first administrator is created only by the idempotent `bootstrap:admin` script. It verifies Firebase email state and never handles a password.

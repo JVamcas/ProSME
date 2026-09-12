@@ -1,23 +1,24 @@
 import { NextResponse } from "next/server";
 
-import { resolveUserFromHeaders } from "@/auth/authorization/current-user";
+import { getAuthenticatedUserProfile } from "@/auth/authorization/user-profile.service";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
-  const user = await resolveUserFromHeaders(request.headers);
-  if (!user) return NextResponse.json({ user: null }, { status: 401 });
+  const user = await getAuthenticatedUserProfile(request.headers);
+  if (!user) {
+    return NextResponse.json(
+      {
+        user: null,
+      },
+      {
+        status: 401,
+      },
+    );
+  }
 
   const response = NextResponse.json({
-    user: {
-      id: user.id,
-      email: user.email,
-      displayName: user.displayName,
-      userType: user.userType,
-      status: user.status,
-      roles: [...user.roleCodes].sort(),
-      capabilities: [...user.capabilities].sort(),
-    },
+    user,
   });
   response.headers.set("Cache-Control", "no-store");
   return response;

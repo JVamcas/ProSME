@@ -8,6 +8,11 @@ This is the approved repository and file structure for production implementation
 
 The repository contains one deployable Next.js application at `apps/platform`. Payload CMS runs inside the same Next.js runtime. Firebase Authentication and the application domain remain independent of Payload.
 
+Client and server data access must follow the layered contract in
+[`CLIENT_DATA_ACCESS.md`](./CLIENT_DATA_ACCESS.md). The contract applies across
+the platform application and explicitly excludes Payload's internal `/cms`
+data-loading implementation.
+
 The former `apps/option-b` becomes `apps/platform`. Options A and C are retained under `archive/design-concepts` as M2 evidence and are excluded from active builds.
 
 ## Repository structure
@@ -183,6 +188,14 @@ src/auth/
 ```
 
 Browser Firebase code may import only browser-safe Firebase modules. Firebase Admin imports must remain server-only. Real Firebase projects are used; no emulator configuration is permitted.
+
+The TOR business-role catalogue is Administrator, Editor, Author, Reviewer,
+Programme Officer, Sector Specialist, and Approval Panel Member. The first four
+roles are CMS-scoped and use `cms_`-prefixed internal codes to distinguish them
+from platform administration.
+Applicant and System Administrator are platform roles required for self-service
+access and secure bootstrap/recovery. PostgreSQL owns these roles and their
+capabilities; Payload only consumes the resolved capability set.
 
 ## PostgreSQL structure
 

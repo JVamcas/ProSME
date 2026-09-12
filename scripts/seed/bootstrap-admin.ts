@@ -11,13 +11,15 @@ import {
 } from "../../apps/platform/src/db/schema";
 import { syncCmsPrincipal } from "../../apps/platform/src/payload/system/sync-cms-principal";
 
-const email = process.env.BOOTSTRAP_STAFF_EMAIL?.trim().toLowerCase();
-const roleCode =
-  process.env.BOOTSTRAP_STAFF_ROLE?.trim() || "system_administrator";
+const configuredEmail = process.env.BOOTSTRAP_ADMIN_EMAIL
+  ?.trim()
+  .toLowerCase();
+const roleCode = "system_administrator";
 
-if (!email) throw new Error("BOOTSTRAP_STAFF_EMAIL is required");
-if (roleCode === "applicant")
-  throw new Error("The staff bootstrap cannot assign the applicant role");
+if (!configuredEmail) {
+  throw new Error("BOOTSTRAP_ADMIN_EMAIL is required");
+}
+const email: string = configuredEmail;
 
 const firebaseUser = await getFirebaseAdminAuth().getUserByEmail(email);
 if (!firebaseUser.email || !firebaseUser.emailVerified) {
@@ -28,18 +30,52 @@ const database = getDatabase();
 type Transaction = Parameters<Parameters<typeof database.transaction>[0]>[0];
 type Audit = typeof authorizationAuditEntries.$inferInsert;
 const actorId = `bootstrap:${email}`;
-
 const [role] = await database
   .select()
   .from(roles)
   .where(eq(roles.code, roleCode))
   .limit(1);
-if (!role)
+if (!role) {
   throw new Error(
     `Unknown role: ${roleCode}. Apply the application migration first.`,
   );
+}
 
-async function upsertStaffUser(transaction: Transaction) {
+async function createAdminUser(transaction: Transaction) {
+  const [created] = await transaction
+    .insert(users)
+    .values({
+      email,
+      displayName: firebaseUser.displayName || email,
+      userType: "staff",
+      status: "active",
+    })
+    .returning({ id: users.id });
+
+  await transaction.insert(userIdentities).values({
+    userId: created.id,
+    provider: "firebase",
+    subject: firebaseUser.uid,
+    emailVerified: true,
+  });
+
+  return {
+    userId: created.id,
+    audit: [
+      {
+        action: "user.bootstrapped",
+        actorId,
+        targetUserId: created.id,
+        changes: {
+          status: "active",
+          userType: "staff",
+        },
+      },
+    ] satisfies Audit[],
+  };
+}
+
+async function upsertAdminUser(transaction: Transaction) {
   const [identity] = await transaction
     .select({ userId: userIdentities.userId })
     .from(userIdentities)
@@ -51,34 +87,8 @@ async function upsertStaffUser(transaction: Transaction) {
     )
     .limit(1);
   if (!identity) {
-    const [created] = await transaction
-      .insert(users)
-      .values({
-        email: email!,
-        displayName: firebaseUser.displayName || email!,
-        userType: "staff",
-        status: "active",
-      })
-      .returning({ id: users.id });
-    await transaction.insert(userIdentities).values({
-      userId: created.id,
-      provider: "firebase",
-      subject: firebaseUser.uid,
-      emailVerified: true,
-    });
-    return {
-      userId: created.id,
-      audit: [
-        {
-          action: "user.bootstrapped",
-          actorId,
-          targetUserId: created.id,
-          changes: { status: "active", userType: "staff" },
-        },
-      ] satisfies Audit[],
-    };
+    return createAdminUser(transaction);
   }
-
   const [previous] = await transaction
     .select()
     .from(users)
@@ -87,8 +97,8 @@ async function upsertStaffUser(transaction: Transaction) {
   await transaction
     .update(users)
     .set({
-      email: email!,
-      displayName: firebaseUser.displayName || email!,
+      email,
+      displayName: firebaseUser.displayName || email,
       userType: "staff",
       status: "active",
       updatedAt: new Date(),
@@ -118,10 +128,13 @@ async function upsertStaffUser(transaction: Transaction) {
         },
       ]
     : [];
-  return { userId: identity.userId, audit };
+  return {
+    userId: identity.userId,
+    audit,
+  };
 }
 
-async function assignStaffRole(transaction: Transaction, userId: string) {
+async function assignAdminRole(transaction: Transaction, userId: string) {
   const audit: Audit[] = [];
   const [applicantRole] = await transaction
     .select()
@@ -138,37 +151,41 @@ async function assignStaffRole(transaction: Transaction, userId: string) {
         ),
       )
       .returning({ roleId: userRoles.roleId });
-    if (removed.length)
+    if (removed.length) {
       audit.push({
         action: "role.removed",
         actorId,
         targetUserId: userId,
         roleCode: "applicant",
       });
+    }
   }
   const assigned = await transaction
     .insert(userRoles)
     .values({ userId, roleId: role.id })
     .onConflictDoNothing()
     .returning({ roleId: userRoles.roleId });
-  if (assigned.length)
+  if (assigned.length) {
     audit.push({
       action: "role.assigned",
       actorId,
       targetUserId: userId,
       roleCode,
     });
+  }
   return audit;
 }
 
 const applicationUserId = await database.transaction(async (transaction) => {
-  const result = await upsertStaffUser(transaction);
+  const result = await upsertAdminUser(transaction);
   const audit = [
     ...result.audit,
-    ...(await assignStaffRole(transaction, result.userId)),
+    ...(await assignAdminRole(transaction, result.userId)),
   ];
-  if (audit.length)
+
+  if (audit.length) {
     await transaction.insert(authorizationAuditEntries).values(audit);
+  }
   return result.userId;
 });
 

@@ -1,15 +1,19 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 
 import { AuthCard } from "@/components/auth/auth-card";
-import { Button } from "@/components/ui/button";
+import { EmailVerificationPanel } from "@/components/auth/email-verification-panel";
 
-export const metadata: Metadata = { title: "Email verified" };
+export const metadata: Metadata = {
+  title: "Verify email",
+};
 
 export default function VerifyEmailPage() {
   return (
-    <AuthCard title="Check your verification" description="After Firebase confirms your email address, return here to continue.">
-      <Button asChild className="w-full"><Link href="/sign-in">Continue to sign in</Link></Button>
+    <AuthCard
+      title="Verify your email"
+      description="Open the verification link sent by Firebase. If it has not arrived, request another one below."
+    >
+      <EmailVerificationPanel />
     </AuthCard>
   );
 }

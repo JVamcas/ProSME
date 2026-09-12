@@ -4,12 +4,38 @@ import { newsletterSubscriptionSchema } from "@/modules/engagement/engagement.sc
 import { saveNewsletterSubscription } from "@/modules/engagement/engagement.service";
 
 export async function POST(request: Request) {
-  const result = newsletterSubscriptionSchema.safeParse(await request.json().catch(() => null));
-  if (!result.success) return NextResponse.json({ error: "Enter a valid email and accept the consent checkbox." }, { status: 400 });
+  const body = await request.json().catch(() => null);
+  const result = newsletterSubscriptionSchema.safeParse(body);
+
+  if (!result.success) {
+    return NextResponse.json(
+      {
+        error: "Enter a valid email and accept the consent checkbox.",
+      },
+      {
+        status: 400,
+      },
+    );
+  }
+
   try {
     await saveNewsletterSubscription(result.data);
-    return NextResponse.json({ message: "You are subscribed for SME Fund updates." }, { status: 201 });
+    return NextResponse.json(
+      {
+        message: "You are subscribed for SME Fund updates.",
+      },
+      {
+        status: 201,
+      },
+    );
   } catch {
-    return NextResponse.json({ error: "Subscription is temporarily unavailable. Please try again." }, { status: 503 });
+    return NextResponse.json(
+      {
+        error: "Subscription is temporarily unavailable. Please try again.",
+      },
+      {
+        status: 503,
+      },
+    );
   }
 }
