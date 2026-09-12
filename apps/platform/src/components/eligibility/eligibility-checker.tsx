@@ -4,24 +4,24 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { AlertCircle, ArrowLeft, ArrowRight, Check, CheckCircle2, RotateCcw, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { eligibilityRules } from "@/data/eligibility-rules";
+import type { EligibilityRule } from "@/modules/content/content.types";
 
 type Answer = "yes" | "no";
 
-export function EligibilityChecker() {
+export function EligibilityChecker({ rules }: { rules: EligibilityRule[] }) {
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, Answer>>({});
-  const complete = index >= eligibilityRules.length;
-  const rule = eligibilityRules[index];
-  const progress = complete ? 100 : (index / eligibilityRules.length) * 100;
+  const complete = index >= rules.length;
+  const rule = rules[index];
+  const progress = complete ? 100 : (index / rules.length) * 100;
 
   const result = useMemo(() => {
-    const hardFailures = eligibilityRules.filter(r => r.hardStop && answers[r.id] === "no");
-    const actions = eligibilityRules.filter(r => !r.hardStop && answers[r.id] === "no");
+    const hardFailures = rules.filter(r => r.hardStop && answers[r.id] === "no");
+    const actions = rules.filter(r => !r.hardStop && answers[r.id] === "no");
     if (hardFailures.length) return { type: "not-eligible" as const, items: hardFailures };
     if (actions.length) return { type: "action" as const, items: actions };
     return { type: "eligible" as const, items: [] };
-  }, [answers]);
+  }, [answers, rules]);
 
   function answer(value: Answer) {
     setAnswers(current => ({ ...current, [rule.id]: value }));
@@ -29,6 +29,8 @@ export function EligibilityChecker() {
   }
 
   function reset() { setAnswers({}); setIndex(0); }
+
+  if (!rules.length) return <div className="card p-8"><h2 className="text-xl font-bold text-navy">Eligibility checker unavailable</h2><p className="mt-3 text-sm text-slate-600">The screening questions have not been published yet. Please check the current funding criteria or contact the programme team.</p></div>;
 
   if (complete) {
     const eligible = result.type === "eligible";
@@ -46,8 +48,8 @@ export function EligibilityChecker() {
   }
 
   return <div className="card overflow-hidden">
-    <div className="border-b border-slate-200 px-6 py-5 sm:px-9"><div className="flex items-center justify-between text-xs font-bold"><span className="text-navy">Question {index + 1} of {eligibilityRules.length}</span><span className="text-slate-400">{Math.round(progress)}% complete</span></div><div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-orange transition-all duration-300" style={{ width: `${progress}%` }} /></div></div>
+    <div className="border-b border-slate-200 px-6 py-5 sm:px-9"><div className="flex items-center justify-between text-xs font-bold"><span className="text-navy">Question {index + 1} of {rules.length}</span><span className="text-slate-600">{Math.round(progress)}% complete</span></div><div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-orange transition-all duration-300" style={{ width: `${progress}%` }} /></div></div>
     <div className="p-7 sm:p-10"><p className="eyebrow">Initial eligibility</p><h2 className="display mt-3 text-3xl font-semibold leading-tight text-navy sm:text-4xl">{rule.question}</h2><p className="mt-4 max-w-xl text-sm leading-6 text-slate-500">{rule.help}</p><div className="mt-9 grid gap-3 sm:grid-cols-2"><button onClick={() => answer("yes")} className="group flex items-center gap-4 rounded-2xl border-2 border-slate-200 p-5 text-left transition hover:border-emerald-500 hover:bg-emerald-50"><span className="grid size-10 place-items-center rounded-full bg-emerald-100 text-emerald-700"><Check className="size-5" /></span><span><strong className="block text-navy">Yes</strong><span className="text-xs text-slate-500">This applies to my business</span></span></button><button onClick={() => answer("no")} className="group flex items-center gap-4 rounded-2xl border-2 border-slate-200 p-5 text-left transition hover:border-red-400 hover:bg-red-50"><span className="grid size-10 place-items-center rounded-full bg-red-100 text-red-600"><X className="size-5" /></span><span><strong className="block text-navy">No</strong><span className="text-xs text-slate-500">Not yet or not applicable</span></span></button></div></div>
-    <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-6 py-4 sm:px-9"><Button variant="ghost" size="sm" disabled={index === 0} onClick={() => setIndex(i => i - 1)}><ArrowLeft className="size-4" />Previous</Button><p className="text-xs text-slate-400">Your answers stay on this device</p></div>
+    <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-6 py-4 sm:px-9"><Button variant="ghost" size="sm" disabled={index === 0} onClick={() => setIndex(i => i - 1)}><ArrowLeft className="size-4" />Previous</Button><p className="text-xs text-slate-600">Your answers stay on this device</p></div>
   </div>;
 }

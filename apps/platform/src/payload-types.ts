@@ -72,7 +72,14 @@ export interface Config {
     pages: Page;
     news: News;
     resources: Resource;
+    events: Event;
+    faqs: Faq;
     'funding-calls': FundingCall;
+    'eligibility-content': EligibilityContent;
+    'programme-statistics': ProgrammeStatistic;
+    'contact-submissions': ContactSubmission;
+    'newsletter-subscriptions': NewsletterSubscription;
+    'content-audit-entries': ContentAuditEntry;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -85,7 +92,14 @@ export interface Config {
     pages: PagesSelect<false> | PagesSelect<true>;
     news: NewsSelect<false> | NewsSelect<true>;
     resources: ResourcesSelect<false> | ResourcesSelect<true>;
+    events: EventsSelect<false> | EventsSelect<true>;
+    faqs: FaqsSelect<false> | FaqsSelect<true>;
     'funding-calls': FundingCallsSelect<false> | FundingCallsSelect<true>;
+    'eligibility-content': EligibilityContentSelect<false> | EligibilityContentSelect<true>;
+    'programme-statistics': ProgrammeStatisticsSelect<false> | ProgrammeStatisticsSelect<true>;
+    'contact-submissions': ContactSubmissionsSelect<false> | ContactSubmissionsSelect<true>;
+    'newsletter-subscriptions': NewsletterSubscriptionsSelect<false> | NewsletterSubscriptionsSelect<true>;
+    'content-audit-entries': ContentAuditEntriesSelect<false> | ContentAuditEntriesSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -95,8 +109,20 @@ export interface Config {
     defaultIDType: number;
   };
   fallbackLocale: null;
-  globals: {};
-  globalsSelect: {};
+  globals: {
+    header: Header;
+    footer: Footer;
+    homepage: Homepage;
+    'contact-details': ContactDetail;
+    'site-settings': SiteSetting;
+  };
+  globalsSelect: {
+    header: HeaderSelect<false> | HeaderSelect<true>;
+    footer: FooterSelect<false> | FooterSelect<true>;
+    homepage: HomepageSelect<false> | HomepageSelect<true>;
+    'contact-details': ContactDetailsSelect<false> | ContactDetailsSelect<true>;
+    'site-settings': SiteSettingsSelect<false> | SiteSettingsSelect<true>;
+  };
   locale: null;
   widgets: {
     collections: CollectionsWidget;
@@ -188,9 +214,138 @@ export interface Page {
     };
     [k: string]: unknown;
   };
+  layout?:
+    | (
+        | {
+            eyebrow?: string | null;
+            heading: string;
+            summary?: string | null;
+            image?: (number | null) | Media;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'hero';
+          }
+        | {
+            content: {
+              root: {
+                type: string;
+                children: {
+                  type: any;
+                  version: number;
+                  [k: string]: unknown;
+                }[];
+                direction: ('ltr' | 'rtl') | null;
+                format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+                indent: number;
+                version: number;
+              };
+              [k: string]: unknown;
+            };
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'richText';
+          }
+        | {
+            heading: string;
+            summary?: string | null;
+            label: string;
+            href: string;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'callToAction';
+          }
+        | {
+            heading: string;
+            summary?: string | null;
+            backgroundImage?: (number | null) | Media;
+            /**
+             * Leave empty to use the published programme statistics.
+             */
+            items?:
+              | {
+                  value: string;
+                  label: string;
+                  id?: string | null;
+                }[]
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'statistics';
+          }
+        | {
+            heading: string;
+            limit?: number | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'resourceGrid';
+          }
+        | {
+            heading: string;
+            /**
+             * Leave empty to show all published FAQs.
+             */
+            category?: string | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'faqList';
+          }
+        | {
+            eyebrow: string;
+            heading: string;
+            description: string;
+            uses?:
+              | {
+                  label: string;
+                  id?: string | null;
+                }[]
+              | null;
+            cards?:
+              | {
+                  icon: 'grant' | 'mentorship' | 'market' | 'innovation' | 'inclusive' | 'growth' | 'impact';
+                  title: string;
+                  description: string;
+                  id?: string | null;
+                }[]
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'fundingSupport';
+          }
+        | {
+            eyebrow: string;
+            heading: string;
+            items?:
+              | {
+                  icon: 'grant' | 'mentorship' | 'market' | 'innovation' | 'inclusive' | 'growth' | 'impact';
+                  title: string;
+                  description: string;
+                  id?: string | null;
+                }[]
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'fundingPriorities';
+          }
+        | {
+            eyebrow: string;
+            heading: string;
+            noticeHeading: string;
+            notice: string;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'eligibilityFocusSectors';
+          }
+      )[]
+    | null;
   featuredImage?: (number | null) | Media;
+  reviewStatus: 'draft' | 'inReview' | 'approved';
+  /**
+   * Internal notes for editors and publishers.
+   */
+  reviewNotes?: string | null;
   seoTitle?: string | null;
   seoDescription?: string | null;
+  excludeFromSearch?: boolean | null;
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
@@ -221,6 +376,14 @@ export interface News {
   };
   image?: (number | null) | Media;
   publishedAt?: string | null;
+  reviewStatus: 'draft' | 'inReview' | 'approved';
+  /**
+   * Internal notes for editors and publishers.
+   */
+  reviewNotes?: string | null;
+  seoTitle?: string | null;
+  seoDescription?: string | null;
+  excludeFromSearch?: boolean | null;
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
@@ -232,10 +395,95 @@ export interface News {
 export interface Resource {
   id: number;
   title: string;
+  slug: string;
   description: string;
   category: string;
   file?: (number | null) | Media;
+  thumbnail?: (number | null) | Media;
   externalUrl?: string | null;
+  publishedAt?: string | null;
+  reviewStatus: 'draft' | 'inReview' | 'approved';
+  /**
+   * Internal notes for editors and publishers.
+   */
+  reviewNotes?: string | null;
+  seoTitle?: string | null;
+  seoDescription?: string | null;
+  excludeFromSearch?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "events".
+ */
+export interface Event {
+  id: number;
+  title: string;
+  slug: string;
+  summary: string;
+  body: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  image?: (number | null) | Media;
+  startsAt: string;
+  endsAt?: string | null;
+  location: string;
+  registrationUrl?: string | null;
+  reviewStatus: 'draft' | 'inReview' | 'approved';
+  /**
+   * Internal notes for editors and publishers.
+   */
+  reviewNotes?: string | null;
+  seoTitle?: string | null;
+  seoDescription?: string | null;
+  excludeFromSearch?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "faqs".
+ */
+export interface Faq {
+  id: number;
+  question: string;
+  answer: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  category: string;
+  order: number;
+  reviewStatus: 'draft' | 'inReview' | 'approved';
+  /**
+   * Internal notes for editors and publishers.
+   */
+  reviewNotes?: string | null;
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
@@ -247,9 +495,12 @@ export interface Resource {
 export interface FundingCall {
   id: number;
   title: string;
+  slug: string;
   summary: string;
+  image?: (number | null) | Media;
   opensAt: string;
   closesAt: string;
+  callStatus: 'upcoming' | 'open' | 'closed';
   eligibility: {
     root: {
       type: string;
@@ -265,11 +516,102 @@ export interface FundingCall {
     };
     [k: string]: unknown;
   };
+  minimumAmount?: number | null;
   maximumAmount?: number | null;
   applicationUrl?: string | null;
+  reviewStatus: 'draft' | 'inReview' | 'approved';
+  /**
+   * Internal notes for editors and publishers.
+   */
+  reviewNotes?: string | null;
+  seoTitle?: string | null;
+  seoDescription?: string | null;
+  excludeFromSearch?: boolean | null;
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "eligibility-content".
+ */
+export interface EligibilityContent {
+  id: number;
+  label: string;
+  description: string;
+  kind: 'criterion' | 'focusSector' | 'checkerQuestion';
+  key?: string | null;
+  hardStop?: boolean | null;
+  order: number;
+  reviewStatus: 'draft' | 'inReview' | 'approved';
+  /**
+   * Internal notes for editors and publishers.
+   */
+  reviewNotes?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "programme-statistics".
+ */
+export interface ProgrammeStatistic {
+  id: number;
+  value: string;
+  label: string;
+  order: number;
+  reviewStatus: 'draft' | 'inReview' | 'approved';
+  /**
+   * Internal notes for editors and publishers.
+   */
+  reviewNotes?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "contact-submissions".
+ */
+export interface ContactSubmission {
+  id: number;
+  name: string;
+  email: string;
+  phone?: string | null;
+  subject: string;
+  message: string;
+  consent: boolean;
+  status: 'new' | 'inProgress' | 'resolved';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "newsletter-subscriptions".
+ */
+export interface NewsletterSubscription {
+  id: number;
+  email: string;
+  consent: boolean;
+  status: 'subscribed' | 'unsubscribed';
+  source?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "content-audit-entries".
+ */
+export interface ContentAuditEntry {
+  id: number;
+  collection: string;
+  documentId: string;
+  action: string;
+  actorId: string;
+  actorEmail: string;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -316,8 +658,36 @@ export interface PayloadLockedDocument {
         value: number | Resource;
       } | null)
     | ({
+        relationTo: 'events';
+        value: number | Event;
+      } | null)
+    | ({
+        relationTo: 'faqs';
+        value: number | Faq;
+      } | null)
+    | ({
         relationTo: 'funding-calls';
         value: number | FundingCall;
+      } | null)
+    | ({
+        relationTo: 'eligibility-content';
+        value: number | EligibilityContent;
+      } | null)
+    | ({
+        relationTo: 'programme-statistics';
+        value: number | ProgrammeStatistic;
+      } | null)
+    | ({
+        relationTo: 'contact-submissions';
+        value: number | ContactSubmission;
+      } | null)
+    | ({
+        relationTo: 'newsletter-subscriptions';
+        value: number | NewsletterSubscription;
+      } | null)
+    | ({
+        relationTo: 'content-audit-entries';
+        value: number | ContentAuditEntry;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -401,9 +771,124 @@ export interface PagesSelect<T extends boolean = true> {
   slug?: T;
   summary?: T;
   content?: T;
+  layout?:
+    | T
+    | {
+        hero?:
+          | T
+          | {
+              eyebrow?: T;
+              heading?: T;
+              summary?: T;
+              image?: T;
+              id?: T;
+              blockName?: T;
+            };
+        richText?:
+          | T
+          | {
+              content?: T;
+              id?: T;
+              blockName?: T;
+            };
+        callToAction?:
+          | T
+          | {
+              heading?: T;
+              summary?: T;
+              label?: T;
+              href?: T;
+              id?: T;
+              blockName?: T;
+            };
+        statistics?:
+          | T
+          | {
+              heading?: T;
+              summary?: T;
+              backgroundImage?: T;
+              items?:
+                | T
+                | {
+                    value?: T;
+                    label?: T;
+                    id?: T;
+                  };
+              id?: T;
+              blockName?: T;
+            };
+        resourceGrid?:
+          | T
+          | {
+              heading?: T;
+              limit?: T;
+              id?: T;
+              blockName?: T;
+            };
+        faqList?:
+          | T
+          | {
+              heading?: T;
+              category?: T;
+              id?: T;
+              blockName?: T;
+            };
+        fundingSupport?:
+          | T
+          | {
+              eyebrow?: T;
+              heading?: T;
+              description?: T;
+              uses?:
+                | T
+                | {
+                    label?: T;
+                    id?: T;
+                  };
+              cards?:
+                | T
+                | {
+                    icon?: T;
+                    title?: T;
+                    description?: T;
+                    id?: T;
+                  };
+              id?: T;
+              blockName?: T;
+            };
+        fundingPriorities?:
+          | T
+          | {
+              eyebrow?: T;
+              heading?: T;
+              items?:
+                | T
+                | {
+                    icon?: T;
+                    title?: T;
+                    description?: T;
+                    id?: T;
+                  };
+              id?: T;
+              blockName?: T;
+            };
+        eligibilityFocusSectors?:
+          | T
+          | {
+              eyebrow?: T;
+              heading?: T;
+              noticeHeading?: T;
+              notice?: T;
+              id?: T;
+              blockName?: T;
+            };
+      };
   featuredImage?: T;
+  reviewStatus?: T;
+  reviewNotes?: T;
   seoTitle?: T;
   seoDescription?: T;
+  excludeFromSearch?: T;
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
@@ -419,6 +904,11 @@ export interface NewsSelect<T extends boolean = true> {
   body?: T;
   image?: T;
   publishedAt?: T;
+  reviewStatus?: T;
+  reviewNotes?: T;
+  seoTitle?: T;
+  seoDescription?: T;
+  excludeFromSearch?: T;
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
@@ -429,10 +919,56 @@ export interface NewsSelect<T extends boolean = true> {
  */
 export interface ResourcesSelect<T extends boolean = true> {
   title?: T;
+  slug?: T;
   description?: T;
   category?: T;
   file?: T;
+  thumbnail?: T;
   externalUrl?: T;
+  publishedAt?: T;
+  reviewStatus?: T;
+  reviewNotes?: T;
+  seoTitle?: T;
+  seoDescription?: T;
+  excludeFromSearch?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "events_select".
+ */
+export interface EventsSelect<T extends boolean = true> {
+  title?: T;
+  slug?: T;
+  summary?: T;
+  body?: T;
+  image?: T;
+  startsAt?: T;
+  endsAt?: T;
+  location?: T;
+  registrationUrl?: T;
+  reviewStatus?: T;
+  reviewNotes?: T;
+  seoTitle?: T;
+  seoDescription?: T;
+  excludeFromSearch?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "faqs_select".
+ */
+export interface FaqsSelect<T extends boolean = true> {
+  question?: T;
+  answer?: T;
+  category?: T;
+  order?: T;
+  reviewStatus?: T;
+  reviewNotes?: T;
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
@@ -443,15 +979,95 @@ export interface ResourcesSelect<T extends boolean = true> {
  */
 export interface FundingCallsSelect<T extends boolean = true> {
   title?: T;
+  slug?: T;
   summary?: T;
+  image?: T;
   opensAt?: T;
   closesAt?: T;
+  callStatus?: T;
   eligibility?: T;
+  minimumAmount?: T;
   maximumAmount?: T;
   applicationUrl?: T;
+  reviewStatus?: T;
+  reviewNotes?: T;
+  seoTitle?: T;
+  seoDescription?: T;
+  excludeFromSearch?: T;
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "eligibility-content_select".
+ */
+export interface EligibilityContentSelect<T extends boolean = true> {
+  label?: T;
+  description?: T;
+  kind?: T;
+  key?: T;
+  hardStop?: T;
+  order?: T;
+  reviewStatus?: T;
+  reviewNotes?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "programme-statistics_select".
+ */
+export interface ProgrammeStatisticsSelect<T extends boolean = true> {
+  value?: T;
+  label?: T;
+  order?: T;
+  reviewStatus?: T;
+  reviewNotes?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "contact-submissions_select".
+ */
+export interface ContactSubmissionsSelect<T extends boolean = true> {
+  name?: T;
+  email?: T;
+  phone?: T;
+  subject?: T;
+  message?: T;
+  consent?: T;
+  status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "newsletter-subscriptions_select".
+ */
+export interface NewsletterSubscriptionsSelect<T extends boolean = true> {
+  email?: T;
+  consent?: T;
+  status?: T;
+  source?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "content-audit-entries_select".
+ */
+export interface ContentAuditEntriesSelect<T extends boolean = true> {
+  collection?: T;
+  documentId?: T;
+  action?: T;
+  actorId?: T;
+  actorEmail?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -492,6 +1108,356 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
   batch?: T;
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "header".
+ */
+export interface Header {
+  id: number;
+  announcement?: string | null;
+  navigation?:
+    | {
+        label: string;
+        href: string;
+        id?: string | null;
+      }[]
+    | null;
+  signInLabel: string;
+  applyLabel: string;
+  applyHref: string;
+  reviewStatus: 'draft' | 'inReview' | 'approved';
+  /**
+   * Internal notes for editors and publishers.
+   */
+  reviewNotes?: string | null;
+  _status?: ('draft' | 'published') | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "footer".
+ */
+export interface Footer {
+  id: number;
+  tagline?: string | null;
+  summary?: string | null;
+  newsletterHeading?: string | null;
+  newsletterSummary?: string | null;
+  copyright?: string | null;
+  reviewStatus: 'draft' | 'inReview' | 'approved';
+  /**
+   * Internal notes for editors and publishers.
+   */
+  reviewNotes?: string | null;
+  _status?: ('draft' | 'published') | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "homepage".
+ */
+export interface Homepage {
+  id: number;
+  eyebrow?: string | null;
+  title?: string | null;
+  summary?: string | null;
+  heroImage?: (number | null) | Media;
+  applyLabel: string;
+  applyHref: string;
+  eligibilityLabel: string;
+  trackingLabel: string;
+  heroPanelHeading?: string | null;
+  heroPanelSummary?: string | null;
+  newsHeading?: string | null;
+  layout?:
+    | (
+        | {
+            eyebrow?: string | null;
+            heading: string;
+            summary?: string | null;
+            image?: (number | null) | Media;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'hero';
+          }
+        | {
+            content: {
+              root: {
+                type: string;
+                children: {
+                  type: any;
+                  version: number;
+                  [k: string]: unknown;
+                }[];
+                direction: ('ltr' | 'rtl') | null;
+                format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+                indent: number;
+                version: number;
+              };
+              [k: string]: unknown;
+            };
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'richText';
+          }
+        | {
+            heading: string;
+            summary?: string | null;
+            label: string;
+            href: string;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'callToAction';
+          }
+        | {
+            heading: string;
+            summary?: string | null;
+            backgroundImage?: (number | null) | Media;
+            /**
+             * Leave empty to use the published programme statistics.
+             */
+            items?:
+              | {
+                  value: string;
+                  label: string;
+                  id?: string | null;
+                }[]
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'statistics';
+          }
+        | {
+            heading: string;
+            limit?: number | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'resourceGrid';
+          }
+        | {
+            heading: string;
+            /**
+             * Leave empty to show all published FAQs.
+             */
+            category?: string | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'faqList';
+          }
+      )[]
+    | null;
+  reviewStatus: 'draft' | 'inReview' | 'approved';
+  /**
+   * Internal notes for editors and publishers.
+   */
+  reviewNotes?: string | null;
+  _status?: ('draft' | 'published') | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "contact-details".
+ */
+export interface ContactDetail {
+  id: number;
+  email: string;
+  address: string;
+  phone?: string | null;
+  officeHours?: string | null;
+  reviewStatus: 'draft' | 'inReview' | 'approved';
+  /**
+   * Internal notes for editors and publishers.
+   */
+  reviewNotes?: string | null;
+  _status?: ('draft' | 'published') | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "site-settings".
+ */
+export interface SiteSetting {
+  id: number;
+  siteName: string;
+  siteDescription: string;
+  /**
+   * Optional GA4 measurement ID. Analytics loads only after consent.
+   */
+  analyticsMeasurementId?: string | null;
+  allowIndexing?: boolean | null;
+  defaultSocialImage?: (number | null) | Media;
+  reviewStatus: 'draft' | 'inReview' | 'approved';
+  /**
+   * Internal notes for editors and publishers.
+   */
+  reviewNotes?: string | null;
+  _status?: ('draft' | 'published') | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "header_select".
+ */
+export interface HeaderSelect<T extends boolean = true> {
+  announcement?: T;
+  navigation?:
+    | T
+    | {
+        label?: T;
+        href?: T;
+        id?: T;
+      };
+  signInLabel?: T;
+  applyLabel?: T;
+  applyHref?: T;
+  reviewStatus?: T;
+  reviewNotes?: T;
+  _status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "footer_select".
+ */
+export interface FooterSelect<T extends boolean = true> {
+  tagline?: T;
+  summary?: T;
+  newsletterHeading?: T;
+  newsletterSummary?: T;
+  copyright?: T;
+  reviewStatus?: T;
+  reviewNotes?: T;
+  _status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "homepage_select".
+ */
+export interface HomepageSelect<T extends boolean = true> {
+  eyebrow?: T;
+  title?: T;
+  summary?: T;
+  heroImage?: T;
+  applyLabel?: T;
+  applyHref?: T;
+  eligibilityLabel?: T;
+  trackingLabel?: T;
+  heroPanelHeading?: T;
+  heroPanelSummary?: T;
+  newsHeading?: T;
+  layout?:
+    | T
+    | {
+        hero?:
+          | T
+          | {
+              eyebrow?: T;
+              heading?: T;
+              summary?: T;
+              image?: T;
+              id?: T;
+              blockName?: T;
+            };
+        richText?:
+          | T
+          | {
+              content?: T;
+              id?: T;
+              blockName?: T;
+            };
+        callToAction?:
+          | T
+          | {
+              heading?: T;
+              summary?: T;
+              label?: T;
+              href?: T;
+              id?: T;
+              blockName?: T;
+            };
+        statistics?:
+          | T
+          | {
+              heading?: T;
+              summary?: T;
+              backgroundImage?: T;
+              items?:
+                | T
+                | {
+                    value?: T;
+                    label?: T;
+                    id?: T;
+                  };
+              id?: T;
+              blockName?: T;
+            };
+        resourceGrid?:
+          | T
+          | {
+              heading?: T;
+              limit?: T;
+              id?: T;
+              blockName?: T;
+            };
+        faqList?:
+          | T
+          | {
+              heading?: T;
+              category?: T;
+              id?: T;
+              blockName?: T;
+            };
+      };
+  reviewStatus?: T;
+  reviewNotes?: T;
+  _status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "contact-details_select".
+ */
+export interface ContactDetailsSelect<T extends boolean = true> {
+  email?: T;
+  address?: T;
+  phone?: T;
+  officeHours?: T;
+  reviewStatus?: T;
+  reviewNotes?: T;
+  _status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "site-settings_select".
+ */
+export interface SiteSettingsSelect<T extends boolean = true> {
+  siteName?: T;
+  siteDescription?: T;
+  analyticsMeasurementId?: T;
+  allowIndexing?: T;
+  defaultSocialImage?: T;
+  reviewStatus?: T;
+  reviewNotes?: T;
+  _status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

@@ -6,12 +6,13 @@
     "apps/platform"
   ],
   "scripts": {
-    "dev": "npm run dev --workspace @prosme/platform",
+    "dev": "npm run dev --workspace @prosme/platform -- --port 3008",
     "build": "npm run build --workspace @prosme/platform",
-    "start": "npm run start --workspace @prosme/platform",
+    "start": "npm run start --workspace @prosme/platform -- --port 3008",
     "lint": "npm run lint --workspace @prosme/platform",
     "typecheck": "npm run typecheck --workspace @prosme/platform",
     "test": "npm run test --workspace @prosme/platform",
+    "test:public": "npm run test:public --workspace @prosme/platform",
     "verify:g1:firebase": "node scripts/development/verify-firebase-g1.mjs",
     "check:files": "npm run check:files --workspace @prosme/platform",
     "check": "npm run check:files && npm run lint && npm run typecheck && npm run test && npm run build"

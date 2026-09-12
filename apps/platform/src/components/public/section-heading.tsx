@@ -1,7 +1,6 @@
-import { ArrowRight } from "lucide-react";
-import Link from "next/link";
+import { ArrowLink } from "@/components/ui/arrow-link";
 
-export function SectionHeading({ title, text, link }: { title: string; text: string; link?: string }) {
+export function SectionHeading({ title, text, link, href = "/funding" }: { title: string; text: string; link?: string; href?: string }) {
   return (
     <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
       <div>
@@ -9,10 +8,7 @@ export function SectionHeading({ title, text, link }: { title: string; text: str
         <p className="mt-1 text-sm text-[#486786]">{text}</p>
       </div>
       {link ? (
-        <Link href="/funding" className="inline-flex shrink-0 items-center gap-2 text-sm font-bold text-orange-dark">
-          {link}
-          <ArrowRight className="size-4" />
-        </Link>
+        <ArrowLink href={href}>{link}</ArrowLink>
       ) : null}
     </div>
   );

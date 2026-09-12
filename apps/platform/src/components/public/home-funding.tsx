@@ -1,47 +1,108 @@
-import { ArrowRight, CalendarDays, CircleDollarSign, Tag } from "lucide-react";
-import Image from "next/image";
-import Link from "next/link";
+import { CalendarDays, Download, Newspaper } from "lucide-react";
 
+import { getNews, getResources } from "@/modules/content/content.queries";
+import { ArrowLink } from "@/components/ui/arrow-link";
 import { SectionHeading } from "./section-heading";
+import { CmsImage } from "./cms-image";
+import { EmptyState } from "./empty-state";
 
-const opportunities = [
-  { image: "/brand/pic2.png", status: "OPEN NOW", title: "Green Business Growth Fund", text: "Support for SMEs investing in green solutions, clean energy and climate-resilient businesses.", amount: "NAD 250,000 – 2,000,000", date: "Closes 30 Apr 2025", audience: "All eligible SMEs" },
-  { image: "/brand/pic3.png", status: "OPEN NOW", title: "Women in Business Fund", text: "Funding and support for women-owned SMEs to scale and create jobs.", amount: "NAD 100,000 – 1,000,000", date: "Closes 15 May 2025", audience: "Women-owned SMEs" },
-  { image: "/brand/pic4.png", status: "COMING SOON", title: "SME Growth & Competitiveness Fund", text: "Support for growth-stage SMEs in priority sectors.", amount: "NAD 500,000 – 5,000,000", date: "Opens June 2025", audience: "Growth-stage SMEs" },
-];
+export async function HomeFunding({
+  heading,
+  limit = 4,
+}: {
+  heading: string;
+  limit?: number;
+}) {
+  const [news, resources] = await Promise.all([getNews(), getResources()]);
+  const newsLimit = Math.min(2, limit);
+  const latestNews = news.slice(0, newsLimit);
+  const items = [
+    ...latestNews.map((item) => ({
+      ...item,
+      type: "News",
+      href: `/news/${item.slug}`,
+    })),
+    ...resources
+      .slice(0, limit - latestNews.length)
+      .map((item) => ({
+        ...item,
+        type: item.category ?? "Resource",
+        href: item.href ?? `/resources/${item.slug}`,
+      })),
+  ].slice(0, limit);
 
-export function HomeFunding() {
   return (
-    <section className="container pb-12">
-      <SectionHeading title="Current funding opportunities" text="Explore our latest funding opportunities designed to support Namibian SMEs across key sectors." link="View all opportunities" />
+    <section className="container py-14">
+      <SectionHeading
+        title={heading}
+        text="Updates, stories and useful materials for Namibian entrepreneurs."
+        link="Browse resources"
+        href="/resources"
+      />
+      {!items.length ? (
+        <div className="mt-6">
+          <EmptyState
+            title="News and resources coming soon"
+            message="Published programme updates and application resources will appear here."
+          />
+        </div>
+      ) : null}
       <div className="mt-6 grid gap-5 md:grid-cols-3">
-        {opportunities.map((item) => <OpportunityCard key={item.title} item={item} />)}
+        {items.map((item) => (
+          <article
+            className="funding-card flex min-h-72 flex-col overflow-hidden rounded-xl border border-brand-blue/20 bg-white"
+            key={`${item.type}-${item.slug}`}
+          >
+            {item.image ? (
+              <CmsImage
+                className="aspect-video w-full object-cover"
+                image={item.image}
+                sizes="(max-width: 768px) 100vw, 33vw"
+              />
+            ) : (
+              <div className="grid aspect-video place-items-center bg-brand-cream text-brand-orange">
+                {item.type === "News" ? (
+                  <Newspaper className="size-10" />
+                ) : (
+                  <Download className="size-10" />
+                )}
+              </div>
+            )}
+            <div className="flex flex-1 flex-col p-6">
+              <span className="grid size-11 place-items-center rounded-full bg-brand-cream text-brand-orange">
+                {item.type === "News" ? (
+                  <Newspaper className="size-5" />
+                ) : (
+                  <Download className="size-5" />
+                )}
+              </span>
+              <p className="mt-5 text-xs font-extrabold uppercase tracking-wider text-brand-navy">
+                {item.type}
+              </p>
+              <h3 className="mt-2 text-xl font-bold text-brand-navy">
+                {item.title}
+              </h3>
+              <p className="mt-3 text-sm leading-6 text-brand-navy">
+                {item.summary}
+              </p>
+              {item.date ? (
+                <p className="mt-4 flex items-center gap-2 text-xs text-brand-navy">
+                  <CalendarDays className="size-4 text-brand-orange" />
+                  {new Intl.DateTimeFormat("en-NA", {
+                    dateStyle: "medium",
+                  }).format(new Date(item.date))}
+                </p>
+              ) : null}
+              <ArrowLink
+                href={item.href}
+                className="mt-auto pt-6 underline"
+              >
+                {item.type === "News" ? "Read update" : "Open resource"}
+              </ArrowLink>
+            </div>
+          </article>
+        ))}
       </div>
     </section>
   );
-}
-
-function OpportunityCard({ item }: { item: (typeof opportunities)[number] }) {
-  return (
-    <article className="funding-card flex h-[440px] flex-col overflow-hidden rounded-lg border border-slate-100 bg-white">
-      <div className="relative h-[250px] shrink-0 overflow-hidden">
-        <Image src={item.image} alt={item.title} fill className="object-cover" sizes="(min-width: 768px) 33vw, 100vw" />
-        <span className={`absolute left-4 top-3 rounded px-3 py-1 text-[10px] font-bold ${item.status === "OPEN NOW" ? "bg-[#ffca45] text-navy" : "bg-white text-orange-dark"}`}>{item.status}</span>
-      </div>
-      <div className="flex flex-1 flex-col p-5">
-        <h3 className="text-lg font-bold text-navy">{item.title}</h3>
-        <p className="mt-1 text-sm leading-5 text-[#486786]">{item.text}</p>
-        <div className="mt-4 space-y-2 text-xs text-[#486786]">
-          <Detail icon={<CircleDollarSign />} text={item.amount} />
-          <Detail icon={<CalendarDays />} text={item.date} />
-          <Detail icon={<Tag />} text={item.audience} />
-        </div>
-        <Link href="/funding" className="mt-auto inline-flex items-center gap-2 pt-4 text-sm font-bold text-orange-dark">Learn more <ArrowRight className="size-4" /></Link>
-      </div>
-    </article>
-  );
-}
-
-function Detail({ icon, text }: { icon: React.ReactNode; text: string }) {
-  return <p className="flex gap-2 [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-navy">{icon}{text}</p>;
 }

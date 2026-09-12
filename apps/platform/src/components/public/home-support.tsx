@@ -1,35 +1,71 @@
 import { BarChart3, Leaf, Users, Venus } from "lucide-react";
 
-import { SectionHeading } from "./section-heading";
+import { ArrowLink } from "@/components/ui/arrow-link";
+import { defaultSupportGroups } from "@/modules/content/content.defaults";
+import type { EligibilityItem } from "@/modules/content/content.types";
 
-const groups = [
-  { icon: Users, title: "Youth-owned businesses", text: "Supporting young entrepreneurs to build a brighter future.", accent: "bg-orange" },
-  { icon: Venus, title: "Women-owned businesses", text: "Backing women-led enterprises to grow and create opportunities.", accent: "bg-[#f4763a]" },
-  { icon: BarChart3, title: "Growth-stage SMEs", text: "Helping established SMEs scale, innovate and create jobs.", accent: "bg-orange" },
-  { icon: Leaf, title: "Businesses in priority sectors", text: "Including green economy, agro-processing, tourism, manufacturing and more.", accent: "bg-[#5e963d]" },
-];
+const icons = [Users, Venus, BarChart3, Leaf];
 
-export function HomeSupport() {
+export function HomeSupport({ items }: { items: EligibilityItem[] }) {
+  const published = items.filter((item) => item.kind === "criterion");
+  const groups = published.length ? published : defaultSupportGroups;
   return (
-    <section className="border-y border-[#eee8dd] bg-[#fffcf7] py-10">
+    <section className="bg-brand-cream/30 py-12">
       <div className="container">
-        <SectionHeading title="Who we support" text="We invest in Namibian SMEs with high potential, inclusive impact and a commitment to growth." />
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="text-3xl font-bold text-brand-navy">
+              Who we support
+            </h2>
+            <p className="mt-3 max-w-4xl text-base leading-7 text-brand-navy">
+              The SME Fund is open to any Namibian MSME with high potential,
+              inclusive impact and a commitment to growth. Our priority areas
+              include:
+            </p>
+          </div>
+          <ArrowLink href="/eligibility">
+            See eligibility details
+          </ArrowLink>
+        </div>
       </div>
-      <div className="support-marquee mt-6 overflow-hidden py-5">
+      <div className="support-marquee mt-6 overflow-hidden py-3">
         <div className="support-track">
-          {[0, 1].map((copy) => (
-            <div key={copy} className="support-group" aria-hidden={copy === 1}>
-              {groups.map(({ icon: Icon, title, text, accent }) => (
-                <article key={`${copy}-${title}`} className="support-card rounded-xl border border-slate-100 bg-white p-4">
-                  <span className={`${accent} grid size-12 place-items-center rounded-full text-white`}><Icon className="size-6" /></span>
-                  <h3 className="mt-4 min-h-12 text-xl font-bold leading-6 text-navy">{title}</h3>
-                  <p className="mt-2 text-sm leading-5 text-[#486786]">{text}</p>
-                </article>
-              ))}
-            </div>
-          ))}
+          <SupportGroup groups={groups} />
+          <SupportGroup groups={groups} hidden />
         </div>
       </div>
     </section>
+  );
+}
+
+function SupportGroup({
+  groups,
+  hidden = false,
+}: {
+  groups: { label: string; description: string }[];
+  hidden?: boolean;
+}) {
+  return (
+    <div aria-hidden={hidden || undefined} className="support-group">
+      {groups.map((group, index) => {
+        const Icon = icons[index % icons.length];
+        return (
+          <article
+            className="support-card rounded-xl border border-brand-blue/20 bg-white p-5"
+            key={`${hidden ? "copy" : "main"}-${group.label}`}
+          >
+            <span className="grid size-12 place-items-center rounded-full bg-brand-orange text-white">
+              <Icon className="size-6" />
+            </span>
+            <h3 className="mt-4 min-h-12 text-xl font-bold leading-6 text-brand-navy">
+              {group.label}
+            </h3>
+            <p className="mt-2 text-sm leading-6 text-brand-navy">
+              {group.description}
+            </p>
+          </article>
+        );
+      })}
+    </div>
   );
 }

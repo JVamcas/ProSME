@@ -13,7 +13,7 @@ function safeNextPath(value: string | string[] | undefined) {
 export default async function SignInPage({ searchParams }: { searchParams: Promise<{ next?: string | string[] }> }) {
   const query = await searchParams;
   return (
-    <AuthCard title="Welcome back" description="Sign in with your verified SME Fund account.">
+    <AuthCard title="Welcome back" description="Sign in to access your account.">
       <AuthForm mode="sign-in" nextPath={safeNextPath(query.next)} />
     </AuthCard>
   );

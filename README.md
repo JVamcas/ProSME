@@ -44,19 +44,22 @@ npm ci
 docker compose -f infrastructure/local/compose.yaml up -d
 npm run db:migrate --workspace @prosme/platform
 npm run payload --workspace @prosme/platform -- migrate
+npm run seed:phase2 --workspace @prosme/platform
 npm run dev
 ```
+
+Payload automatic development schema pushing is disabled. After a schema change, generate and apply a committed Payload migration before starting the application.
 
 The default routes are:
 
 | URL | Purpose |
 | --- | --- |
-| `http://localhost:3000` | Public website |
-| `http://localhost:3000/sign-in` | Firebase sign-in |
-| `http://localhost:3000/portal` | Applicant portal |
-| `http://localhost:3000/admin` | Internal operations |
-| `http://localhost:3000/cms` | Payload CMS |
-| `http://localhost:3000/api/health` | Application and database readiness |
+| `http://localhost:3008` | Public website |
+| `http://localhost:3008/sign-in` | Firebase sign-in |
+| `http://localhost:3008/portal` | Applicant portal |
+| `http://localhost:3008/admin` | Internal operations |
+| `http://localhost:3008/cms` | Payload CMS |
+| `http://localhost:3008/api/health` | Application and database readiness |
 
 ## Staff bootstrap
 
@@ -70,6 +73,12 @@ npm run bootstrap:staff --workspace @prosme/platform
 
 Available seeded role codes include `cms_editor`, `programme_administrator`, and `system_administrator`.
 
+## Public content
+
+`npm run seed:phase2 --workspace @prosme/platform` idempotently publishes the approved Phase 2 baseline: public pages, site globals, homepage blocks, programme statistics, eligibility questions, focus sectors, FAQs, the closed first funding call, and its criteria document. Content editors can then manage media, versions, review state, authenticated previews, publishing, and restoration in `/cms`.
+
+Contact enquiries and consented newsletter subscriptions are stored in Payload under the Engagement group. Add the approved GA4 measurement ID under Site Settings; analytics remains disabled until a visitor consents. Approved photography can be uploaded in Media and selected on the homepage, pages, news, resources, events, and funding calls.
+
 ## Verification
 
 ```bash
@@ -82,7 +91,9 @@ npm run build
 
 The combined command is `npm run check`. Database migrations are verified separately because they require PostgreSQL.
 
-Phase 1 cannot pass G1 until the real Firebase applicant and CMS access scenarios have been executed and recorded in `docs/testing/gates/G1-foundation.md`.
+Install Chromium once with `npx playwright install --with-deps chromium`, then run `npm run test:public` for the public-route axe, responsive-layout, and asset-budget checks.
+
+Gate evidence and outstanding acceptance items are recorded in `docs/testing/gates/G1-foundation.md` and `docs/testing/gates/G2-public-website.md`.
 
 ## Archived concepts
 

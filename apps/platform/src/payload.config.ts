@@ -8,17 +8,30 @@ import sharp from "sharp";
 
 import { getServerEnvironment } from "@/lib/env/server";
 import { Media } from "@/payload/collections/content/Media";
+import { ContactSubmissions } from "@/payload/collections/content/ContactSubmissions";
+import { Events } from "@/payload/collections/content/Events";
+import { FAQs } from "@/payload/collections/content/FAQs";
 import { News } from "@/payload/collections/content/News";
+import { NewsletterSubscriptions } from "@/payload/collections/content/NewsletterSubscriptions";
 import { Pages } from "@/payload/collections/content/Pages";
 import { Resources } from "@/payload/collections/content/Resources";
+import { EligibilityContent } from "@/payload/collections/programme/EligibilityContent";
 import { FundingCalls } from "@/payload/collections/programme/FundingCalls";
+import { ProgrammeStatistics } from "@/payload/collections/programme/ProgrammeStatistics";
 import { CmsPrincipals } from "@/payload/collections/system/CmsPrincipals";
+import { ContentAuditEntries } from "@/payload/collections/system/ContentAuditEntries";
+import { ContactDetails } from "@/payload/globals/ContactDetails";
+import { Footer } from "@/payload/globals/Footer";
+import { Header } from "@/payload/globals/Header";
+import { Homepage } from "@/payload/globals/Homepage";
+import { SiteSettings } from "@/payload/globals/SiteSettings";
 
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
 const environment = getServerEnvironment();
 
 export default buildConfig({
+  bin: [{ key: "seed-phase2", scriptPath: path.resolve(dirname, "payload/seed/phase2.ts") }],
   admin: {
     importMap: {
       baseDir: path.resolve(dirname),
@@ -27,12 +40,28 @@ export default buildConfig({
     meta: { titleSuffix: " | ProSME CMS" },
     user: "cms-principals",
   },
-  collections: [CmsPrincipals, Media, Pages, News, Resources, FundingCalls],
+  collections: [
+    CmsPrincipals,
+    Media,
+    Pages,
+    News,
+    Resources,
+    Events,
+    FAQs,
+    FundingCalls,
+    EligibilityContent,
+    ProgrammeStatistics,
+    ContactSubmissions,
+    NewsletterSubscriptions,
+    ContentAuditEntries,
+  ],
   db: postgresAdapter({
     migrationDir: path.resolve(dirname, "payload/migrations"),
     pool: { connectionString: environment.DATABASE_URL },
+    push: false,
   }),
   editor: lexicalEditor(),
+  globals: [Header, Footer, Homepage, ContactDetails, SiteSettings],
   secret: environment.PAYLOAD_SECRET,
   serverURL: environment.NEXT_PUBLIC_SITE_URL,
   routes: { admin: "/cms" },
