@@ -1,12 +1,12 @@
 import type { CollectionConfig } from "payload";
 
-import { canAccessCms } from "@/payload/access/can-access-cms";
+import { cmsEngagementAccess } from "@/payload/access/cms-resource-access";
 
 export const ContactSubmissions: CollectionConfig = {
   slug: "contact-submissions",
   dbName: "cms_contact_submissions",
   admin: { group: "Engagement", useAsTitle: "email", defaultColumns: ["name", "email", "subject", "createdAt"] },
-  access: { create: () => false, delete: canAccessCms, read: canAccessCms, update: canAccessCms },
+  access: cmsEngagementAccess(),
   fields: [
     { name: "name", type: "text", required: true },
     { name: "email", type: "email", required: true, index: true },

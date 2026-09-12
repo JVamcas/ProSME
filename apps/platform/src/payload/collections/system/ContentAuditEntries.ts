@@ -1,12 +1,12 @@
 import type { CollectionConfig } from "payload";
 
-import { canAccessCms } from "@/payload/access/can-access-cms";
+import { canReadCmsAudit, canReadCmsAuditAdmin } from "@/payload/access/can-access-cms";
 
 export const ContentAuditEntries: CollectionConfig = {
   slug: "content-audit-entries",
   dbName: "cms_content_audit_entries",
   admin: { group: "Administration", useAsTitle: "action", defaultColumns: ["collection", "action", "actorEmail", "createdAt"] },
-  access: { create: () => false, delete: () => false, read: canAccessCms, update: () => false },
+  access: { admin: canReadCmsAuditAdmin, create: () => false, delete: () => false, read: canReadCmsAudit, update: () => false },
   fields: [
     { name: "collection", type: "text", required: true, index: true },
     { name: "documentId", type: "text", required: true, index: true },

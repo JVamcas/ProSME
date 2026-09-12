@@ -1,8 +1,7 @@
 import type { CollectionConfig } from "payload";
 
-import { readPublishedOrCms } from "@/payload/access/can-access-cms";
-import { canCreateContent, canDeleteContent, canUpdateContent } from "@/payload/access/can-create-content";
-import { enforcePublishCapability } from "@/payload/access/can-publish-content";
+import { collectionPublishGuard } from "@/payload/access/can-publish-content";
+import { cmsCollectionAccess } from "@/payload/access/cms-resource-access";
 import { publishingFields } from "@/payload/fields/publishing";
 import { recordCollectionChange, recordCollectionDelete } from "@/payload/hooks/record-content-audit";
 import { revalidateCollection, revalidateCollectionDelete } from "@/payload/hooks/revalidate-public-content";
@@ -11,8 +10,8 @@ export const FAQs: CollectionConfig = {
   slug: "faqs",
   dbName: "cms_faqs",
   admin: { group: "Content", useAsTitle: "question", defaultColumns: ["question", "category", "order", "_status"], preview: () => "/api/preview?path=%2Ffaq" },
-  access: { create: canCreateContent, delete: canDeleteContent, read: readPublishedOrCms, update: canUpdateContent },
-  hooks: { afterChange: [recordCollectionChange, revalidateCollection], afterDelete: [recordCollectionDelete, revalidateCollectionDelete], beforeChange: [enforcePublishCapability] },
+  access: cmsCollectionAccess("faqs"),
+  hooks: { afterChange: [recordCollectionChange, revalidateCollection], afterDelete: [recordCollectionDelete, revalidateCollectionDelete], beforeChange: [collectionPublishGuard("faqs")] },
   versions: { drafts: true, maxPerDoc: 50 },
   fields: [
     { name: "question", type: "text", required: true },

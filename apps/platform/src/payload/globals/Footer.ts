@@ -1,7 +1,7 @@
 import type { GlobalConfig } from "payload";
 
-import { canAccessCms, readPublicContent } from "@/payload/access/can-access-cms";
-import { enforceGlobalPublishCapability } from "@/payload/access/can-publish-content";
+import { globalPublishGuard } from "@/payload/access/can-publish-content";
+import { cmsGlobalAccess } from "@/payload/access/cms-resource-access";
 import { recordGlobalChange } from "@/payload/hooks/record-content-audit";
 import { publishingFields } from "@/payload/fields/publishing";
 import { revalidateGlobal } from "@/payload/hooks/revalidate-public-content";
@@ -10,8 +10,8 @@ export const Footer: GlobalConfig = {
   slug: "footer",
   dbName: "cms_footer",
   admin: { group: "Site settings" },
-  access: { read: readPublicContent, update: canAccessCms },
-  hooks: { afterChange: [recordGlobalChange, revalidateGlobal], beforeChange: [enforceGlobalPublishCapability] },
+  access: cmsGlobalAccess(),
+  hooks: { afterChange: [recordGlobalChange, revalidateGlobal], beforeChange: [globalPublishGuard()] },
   versions: { drafts: true, max: 50 },
   fields: [
     { name: "tagline", type: "text", defaultValue: "Funding today. A stronger tomorrow." },

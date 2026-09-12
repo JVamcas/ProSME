@@ -20,6 +20,8 @@ G2 is not accepted. The Phase 2 engineering implementation and local technical v
 - CMS-driven public content covers the homepage block layout, pages, navigation, footer, contact details, news, resources, events, FAQs, funding calls, eligibility questions, statistics, SEO, indexing, analytics configuration, and site globals.
 - Payload media fields render responsive images on the homepage, page headers, cards, and detail views. Alt text is required. Approved photography still needs to be supplied and uploaded by the client.
 - Payload drafts, versions, authenticated draft previews, enforced review approval, publish permission, unpublishing, restoration history, immutable content audit entries, and post-publication route revalidation are configured.
+- The resource-specific CMS capability matrix is enforced for Pages, News, Resources, Events, FAQs, Funding Calls, Eligibility, Statistics, Media, Site Settings, and engagement submissions. Frontend draft rendering rechecks the same PostgreSQL permissions.
+- CMS principals are passwordless, read-only mirrors in Payload and are visible only to system administrators. The first-administrator bootstrap is idempotent and records role/status changes in the immutable application audit table.
 - Reusable Hero, Rich Text, Call to Action, Statistics, Resource Grid, and FAQ List blocks are available to editors.
 - The published baseline uses the approved four statistics and states that all sectors may apply while presenting priority focus sectors.
 - Fictional funding opportunities, testimonials, outcomes, and success stories were removed.
@@ -35,7 +37,8 @@ G2 is not accepted. The Phase 2 engineering implementation and local technical v
 | Handwritten file limits | Pass | 167 files checked; no limit exceeded |
 | ESLint | Pass | Zero errors and zero warnings |
 | TypeScript | Pass | `tsc --noEmit` exited successfully |
-| Unit/access tests | Pass | 5 files and 15 tests passed, including review/publish workflow and CMS SEO controls |
+| Unit/access tests | Pass | 9 files and 33 tests passed, including resource isolation, role separation, review/publish workflow, disabled-user denial, migration coverage, and frontend preview scoping |
+| Application authorization migrations | Pass | Three migrations applied to an empty database; 8 roles, 61 capabilities, 53 CMS permissions, and the immutable audit trigger were verified |
 | Payload migrations | Pass | Four repeatable Phase 2 migrations applied successfully |
 | Approved content seed | Pass | Idempotent production-mode seed completed after the final migration |
 | Production build | Pass | Next.js 16.3.4 compiled and generated all application routes |
@@ -54,6 +57,7 @@ G2 is not accepted. The Phase 2 engineering implementation and local technical v
 - Client content owner approval of the seeded wording, generic privacy terms, generic website terms, and coming-soon states.
 - Client authority confirmation of the contact address and any telephone number before publication.
 - CMS editor/publisher UAT covering create, edit, preview, review, publish, unpublish, and restore with real assigned users.
+- Repeat the enhanced real-Firebase system-administrator bootstrap test when Google OAuth service-account token exchange is reachable from the execution environment; the attempted run timed out at `oauth2.googleapis.com` before a session could be established.
 - Manual stakeholder responsive review at the agreed mobile, tablet, and desktop breakpoints.
 - Manual keyboard and screen-reader acceptance; automated axe and contrast checks now pass.
 - Client-approved photography and alt text uploaded through the configured Payload media fields.

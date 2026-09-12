@@ -1,24 +1,12 @@
 import type { CollectionConfig } from "payload";
 
-import {
-  readPublicContent,
-} from "@/payload/access/can-access-cms";
-import {
-  canCreateContent,
-  canDeleteContent,
-  canUpdateContent,
-} from "@/payload/access/can-create-content";
+import { cmsMediaAccess } from "@/payload/access/cms-resource-access";
 
 export const Media: CollectionConfig = {
   slug: "media",
   dbName: "cms_media",
   admin: { group: "Content", useAsTitle: "alt" },
-  access: {
-    create: canCreateContent,
-    delete: canDeleteContent,
-    read: readPublicContent,
-    update: canUpdateContent,
-  },
+  access: cmsMediaAccess(),
   upload: {
     mimeTypes: ["image/*", "application/pdf"],
     staticDir: "media",

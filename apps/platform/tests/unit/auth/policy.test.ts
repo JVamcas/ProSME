@@ -20,6 +20,7 @@ function user(status: AuthenticatedUser["status"], granted: string[]): Authentic
     lastLoginAt: null,
     identitySubject: "firebase-subject",
     capabilities: new Set(granted),
+    roleCodes: new Set(),
   };
 }
 
@@ -30,6 +31,10 @@ describe("capability policy", () => {
 
   it("denies suspended users even when the capability is assigned", () => {
     expect(can(user("suspended", ["cms.access"]), "cms.access")).toBe(false);
+  });
+
+  it("denies disabled users immediately", () => {
+    expect(can(user("disabled", ["cms.access"]), "cms.access")).toBe(false);
   });
 
   it("distinguishes missing authentication from missing permission", () => {

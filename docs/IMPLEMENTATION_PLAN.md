@@ -313,6 +313,8 @@ G1 passes only when:
 10. Implement working contact and newsletter forms with consent and error states.
 11. Add metadata, sitemap, robots controls, structured data, and analytics consent integration points.
 12. Optimise images, fonts, and page payloads for constrained connectivity.
+13. Finalise and enforce the resource-specific CMS capability matrix for content, programme, media, site-setting, and engagement resources.
+14. Keep CMS principals read-only in Payload and visible only to system administrators; bootstrap the first administrator through the application-owned script.
 
 ### Gate G2 — M4 website accepted
 
@@ -323,6 +325,8 @@ G2 passes only when:
 
 - Every required public route exists and has approved content or an explicitly accepted “coming soon” state.
 - Content editors can create, edit, preview, review, publish, unpublish, and restore content according to their permissions.
+- CMS resource permissions are independently enforced in Payload and in authenticated frontend draft rendering.
+- An applicant cannot access `/cms`, and no CMS role can manage application users, roles, or capabilities through Payload.
 - Published website content is read from Payload rather than duplicated in page source.
 - Option B feedback items are traceably closed or formally excepted.
 - Navigation and footer contain no placeholder links.
@@ -361,6 +365,10 @@ G2 passes only when:
 10. Implement CSV/Excel export with authorization and audit logging.
 11. Prevent duplicate submissions and make critical commands idempotent.
 12. Use PostgreSQL transactions for submission and workflow transitions.
+13. Add granular operational permissions for applications, assessment, finance, decisions, communication, exports, and overrides.
+14. Add application-owned user and role management under `/admin`, including verified-user promotion or staff invitation; do not administer permissions in Payload.
+15. Allow only authorised administrators to assign roles to verified users, treating each role as the permission group rather than adding a duplicate grouping model.
+16. Record immutable audit events for every role, permission, and application-user status change.
 
 ### Gate G3 — M5 workflow accepted
 

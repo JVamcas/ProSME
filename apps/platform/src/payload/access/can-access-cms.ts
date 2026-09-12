@@ -16,9 +16,13 @@ export const canAccessCms: Access = ({ req }) =>
 export const canAccessCmsAdmin = ({ req }: { req: PayloadRequest }) =>
   hasCmsCapability(req.user as CmsRequestUser, capabilities.cmsAccess);
 
-export const readPublicContent: Access = () => true;
+export const canManageCmsPrincipals = ({ req }: { req: PayloadRequest }) =>
+  hasCmsCapability(req.user as CmsRequestUser, capabilities.cmsPrincipalsManage);
 
-export const readPublishedOrCms: Access = ({ req }) => {
-  if (hasCmsCapability(req.user as CmsRequestUser, capabilities.cmsAccess)) return true;
-  return { _status: { equals: "published" } };
-};
+export const canReadCmsAudit: Access = ({ req }) =>
+  hasCmsCapability(req.user as CmsRequestUser, capabilities.cmsAuditRead);
+
+export const canReadCmsAuditAdmin = ({ req }: { req: PayloadRequest }) =>
+  hasCmsCapability(req.user as CmsRequestUser, capabilities.cmsAuditRead);
+
+export const readPublicContent: Access = () => true;

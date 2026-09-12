@@ -1,14 +1,7 @@
 import type { CollectionConfig } from "payload";
 
-import {
-  readPublishedOrCms,
-} from "@/payload/access/can-access-cms";
-import {
-  canCreateContent,
-  canDeleteContent,
-  canUpdateContent,
-} from "@/payload/access/can-create-content";
-import { enforcePublishCapability } from "@/payload/access/can-publish-content";
+import { collectionPublishGuard } from "@/payload/access/can-publish-content";
+import { cmsCollectionAccess } from "@/payload/access/cms-resource-access";
 import { publishingFields } from "@/payload/fields/publishing";
 import { seoFields } from "@/payload/fields/seo";
 import { recordCollectionChange, recordCollectionDelete } from "@/payload/hooks/record-content-audit";
@@ -19,13 +12,8 @@ export const FundingCalls: CollectionConfig = {
   slug: "funding-calls",
   dbName: "cms_funding_calls",
   admin: { group: "Programmes", useAsTitle: "title", preview: fundingPreviewUrl },
-  access: {
-    create: canCreateContent,
-    delete: canDeleteContent,
-    read: readPublishedOrCms,
-    update: canUpdateContent,
-  },
-  hooks: { afterChange: [recordCollectionChange, revalidateCollection], afterDelete: [recordCollectionDelete, revalidateCollectionDelete], beforeChange: [enforcePublishCapability] },
+  access: cmsCollectionAccess("funding-calls"),
+  hooks: { afterChange: [recordCollectionChange, revalidateCollection], afterDelete: [recordCollectionDelete, revalidateCollectionDelete], beforeChange: [collectionPublishGuard("funding-calls")] },
   versions: { drafts: true, maxPerDoc: 50 },
   fields: [
     { name: "title", type: "text", required: true },

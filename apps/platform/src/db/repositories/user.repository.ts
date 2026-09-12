@@ -27,6 +27,7 @@ export async function findUserByFirebaseSubject(subject: string): Promise<Authen
       user: users,
       identitySubject: userIdentities.subject,
       capability: capabilities.code,
+      roleCode: roles.code,
     })
     .from(userIdentities)
     .innerJoin(users, eq(users.id, userIdentities.userId))
@@ -41,6 +42,7 @@ export async function findUserByFirebaseSubject(subject: string): Promise<Authen
     ...rows[0].user,
     identitySubject: rows[0].identitySubject,
     capabilities: new Set(rows.flatMap((row) => (row.capability ? [row.capability] : []))),
+    roleCodes: new Set(rows.flatMap((row) => (row.roleCode ? [row.roleCode] : []))),
   };
 }
 

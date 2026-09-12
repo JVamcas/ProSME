@@ -16,7 +16,7 @@
     "payload": "payload",
     "payload:types": "payload generate:types",
     "payload:importmap": "payload generate:importmap",
-    "bootstrap:staff": "NODE_OPTIONS=--conditions=react-server payload run ../../scripts/seed/bootstrap-staff.ts",
+    "bootstrap:staff": "NODE_OPTIONS=--conditions=react-server node --env-file-if-exists=../../.env.local ../../node_modules/payload/bin.js run ../../scripts/seed/bootstrap-staff.ts",
     "seed:phase2": "NODE_ENV=production NODE_OPTIONS=--conditions=react-server payload seed-phase2",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",

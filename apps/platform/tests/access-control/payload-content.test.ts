@@ -1,53 +1,91 @@
 import { describe, expect, it } from "vitest";
 
-import { hasCmsCapability } from "@/payload/access/can-access-cms";
-import { enforceGlobalPublishCapability, enforcePublishCapability } from "@/payload/access/can-publish-content";
+import { cmsCapability } from "@/auth/authorization/capabilities";
+import { cmsRoleCapabilities } from "@/auth/authorization/cms-role-matrix";
+import { canAccessCms, canManageCmsPrincipals, hasCmsCapability } from "@/payload/access/can-access-cms";
+import { enforceCmsPublishing } from "@/payload/access/can-publish-content";
+import { cmsCollectionAccess, cmsGlobalAccess } from "@/payload/access/cms-resource-access";
+
+function request(capabilities: readonly string[]) {
+  return { user: { capabilities } } as never;
+}
+
+function access(resource: "news" | "funding-calls", action: "create" | "read" | "update" | "delete", granted: string[]) {
+  const policy = cmsCollectionAccess(resource)?.[action];
+  if (typeof policy !== "function") throw new Error(`Missing ${resource}.${action} policy`);
+  return policy({ req: request(granted) } as never);
+}
 
 describe("Payload content authorization", () => {
   it("reads capabilities attached by the Firebase session strategy", () => {
     expect(hasCmsCapability({ capabilities: ["cms.access"] }, "cms.access")).toBe(true);
     expect(hasCmsCapability({ capabilities: [] }, "cms.access")).toBe(false);
     expect(hasCmsCapability(null, "cms.access")).toBe(false);
+    expect(canAccessCms({ req: request([]) } as never)).toBe(false);
   });
 
   it("blocks publishing without the explicit publish capability", () => {
-    const operation = () => enforcePublishCapability({
+    const operation = () => enforceCmsPublishing("news", {
       data: { _status: "published" },
-      req: { user: { capabilities: ["content.update"] } },
-    } as never);
-    expect(operation).toThrow("Publishing requires the content.publish capability");
+      req: request([cmsCapability("news", "update")]),
+    });
+    expect(operation).toThrow("Publishing requires the cms.news.publish capability");
   });
 
   it("allows draft updates and authorized publishing", () => {
     const draft = { _status: "draft" };
     const published = { _status: "published", reviewStatus: "approved" };
-    expect(enforcePublishCapability({ data: draft, req: { user: null } } as never)).toBe(draft);
-    expect(enforcePublishCapability({
+    expect(enforceCmsPublishing("news", { data: draft, req: request([]) })).toBe(draft);
+    expect(enforceCmsPublishing("news", {
       data: published,
-      req: { user: { capabilities: ["content.publish"] } },
-    } as never)).toBe(published);
+      req: request([cmsCapability("news", "publish")]),
+    })).toBe(published);
   });
 
   it("applies the same publishing permission to site globals", () => {
     const published = { _status: "published", reviewStatus: "approved" };
-    expect(() => enforceGlobalPublishCapability({ data: published, req: { user: null } } as never)).toThrow("Publishing requires the content.publish capability");
-    expect(enforceGlobalPublishCapability({ data: published, req: { user: { capabilities: ["content.publish"] } } } as never)).toBe(published);
+    expect(() => enforceCmsPublishing("site-settings", { data: published, req: request([]) })).toThrow("cms.site-settings.publish");
+    expect(enforceCmsPublishing("site-settings", { data: published, req: request([cmsCapability("site-settings", "publish")]) })).toBe(published);
   });
 
   it("requires approval before an authorized publisher can publish", () => {
-    expect(() => enforcePublishCapability({
+    expect(() => enforceCmsPublishing("news", {
       data: { _status: "published", reviewStatus: "inReview" },
-      req: { user: { capabilities: ["content.publish"] } },
-    } as never)).toThrow("Content must be approved");
+      req: request([cmsCapability("news", "publish")]),
+    })).toThrow("Content must be approved");
   });
 
   it("prevents editors from approving and returns edited approved content to review", () => {
-    expect(() => enforcePublishCapability({
+    expect(() => enforceCmsPublishing("news", {
       data: { _status: "draft", reviewStatus: "approved" },
       originalDoc: { reviewStatus: "draft" },
-      req: { user: { capabilities: ["content.update"] } },
-    } as never)).toThrow("Approval requires the content.publish capability");
+      req: request([cmsCapability("news", "update")]),
+    })).toThrow("Approval requires the cms.news.publish capability");
     const data = { _status: "draft", reviewStatus: "approved" };
-    expect(enforcePublishCapability({ data, originalDoc: { reviewStatus: "approved" }, req: { user: { capabilities: ["content.update"] } } } as never)).toEqual({ _status: "draft", reviewStatus: "inReview" });
+    expect(enforceCmsPublishing("news", { data, originalDoc: { reviewStatus: "approved" }, req: request([cmsCapability("news", "update")]) })).toEqual({ _status: "draft", reviewStatus: "inReview" });
+  });
+
+  it("isolates News permissions from Funding Calls and Site Settings", () => {
+    const granted = [cmsCapability("news", "read"), cmsCapability("news", "update")];
+    expect(access("news", "update", granted)).toBe(true);
+    expect(access("funding-calls", "update", granted)).toBe(false);
+    expect(cmsCollectionAccess("funding-calls")?.admin?.({ req: request(granted) })).toBe(false);
+    const updateGlobal = cmsGlobalAccess()?.update;
+    if (typeof updateGlobal !== "function") throw new Error("Missing site settings policy");
+    expect(updateGlobal({ req: request(granted) } as never)).toBe(false);
+  });
+
+  it("keeps editor, publisher, programme and system roles separated", () => {
+    expect(cmsRoleCapabilities.cms_editor).toContain(cmsCapability("news", "update"));
+    expect(cmsRoleCapabilities.cms_editor).not.toContain(cmsCapability("news", "publish") as never);
+    expect(cmsRoleCapabilities.cms_publisher).toContain(cmsCapability("news", "publish"));
+    expect(cmsRoleCapabilities.programme_administrator).toContain(cmsCapability("funding-calls", "publish"));
+    expect(cmsRoleCapabilities.programme_administrator).not.toContain(cmsCapability("news", "update") as never);
+    expect(cmsRoleCapabilities.system_administrator).toContain("cms.principals.manage");
+  });
+
+  it("restricts the principal mirror to system administrators", () => {
+    expect(canManageCmsPrincipals({ req: request(cmsRoleCapabilities.cms_publisher) } as never)).toBe(false);
+    expect(canManageCmsPrincipals({ req: request(cmsRoleCapabilities.system_administrator) } as never)).toBe(true);
   });
 });

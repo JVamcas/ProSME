@@ -68,6 +68,9 @@ export async function POST(request: Request) {
   } catch (error) {
     logger.warn("auth.session.create_failed", {
       errorType: error instanceof Error ? error.name : "UnknownError",
+      errorCode: error && typeof error === "object" && "code" in error
+        ? String(error.code)
+        : undefined,
     });
     return NextResponse.json({ error: "Unable to establish a session" }, { status: 401 });
   }

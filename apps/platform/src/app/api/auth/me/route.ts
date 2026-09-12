@@ -14,6 +14,8 @@ export async function GET(request: Request) {
       email: user.email,
       displayName: user.displayName,
       userType: user.userType,
+      status: user.status,
+      roles: [...user.roleCodes].sort(),
       capabilities: [...user.capabilities].sort(),
     },
   });

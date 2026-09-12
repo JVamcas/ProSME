@@ -1,16 +1,26 @@
-import type { CollectionBeforeChangeHook, GlobalBeforeChangeHook } from "payload";
+import type { CollectionBeforeChangeHook, GlobalBeforeChangeHook, PayloadRequest } from "payload";
 
-import { capabilities } from "@/auth/authorization/capabilities";
+import { cmsCapability, type CmsResource } from "@/auth/authorization/capabilities";
 import { hasCmsCapability, type CmsRequestUser } from "./can-access-cms";
 
-function enforceWorkflow(data: Record<string, unknown>, originalDoc: Record<string, unknown> | undefined, req: Parameters<CollectionBeforeChangeHook>[0]["req"]) {
+type WorkflowInput = {
+  data: Record<string, unknown>;
+  originalDoc?: Record<string, unknown>;
+  req: PayloadRequest;
+};
+
+export function enforceCmsPublishing(resource: CmsResource, input: WorkflowInput) {
+  const { data, originalDoc, req } = input;
   if (req.context?.skipPublishCapability === true) return data;
-  const canPublish = hasCmsCapability(req.user as CmsRequestUser, capabilities.contentPublish);
+  const permission = cmsCapability(resource, "publish");
+  const canPublish = hasCmsCapability(req.user as CmsRequestUser, permission);
   if (data._status === "published" && !canPublish) {
-    throw new Error("Publishing requires the content.publish capability");
+    throw new Error(`Publishing requires the ${permission} capability`);
   }
   if (!canPublish && data.reviewStatus === "approved") {
-    if (originalDoc?.reviewStatus !== "approved") throw new Error("Approval requires the content.publish capability");
+    if (originalDoc?.reviewStatus !== "approved") {
+      throw new Error(`Approval requires the ${permission} capability`);
+    }
     data.reviewStatus = "inReview";
     data._status = "draft";
   }
@@ -20,10 +30,10 @@ function enforceWorkflow(data: Record<string, unknown>, originalDoc: Record<stri
   return data;
 }
 
-export const enforcePublishCapability: CollectionBeforeChangeHook = ({ data, originalDoc, req }) => {
-  return enforceWorkflow(data, originalDoc, req);
-};
+export function collectionPublishGuard(resource: CmsResource): CollectionBeforeChangeHook {
+  return ({ data, originalDoc, req }) => enforceCmsPublishing(resource, { data, originalDoc, req });
+}
 
-export const enforceGlobalPublishCapability: GlobalBeforeChangeHook = ({ data, originalDoc, req }) => {
-  return enforceWorkflow(data, originalDoc, req);
-};
+export function globalPublishGuard(): GlobalBeforeChangeHook {
+  return ({ data, originalDoc, req }) => enforceCmsPublishing("site-settings", { data, originalDoc, req });
+}
