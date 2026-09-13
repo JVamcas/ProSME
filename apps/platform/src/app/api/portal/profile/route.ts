@@ -2,8 +2,8 @@ import { resolveUserFromHeaders } from "@/auth/authorization/current-user";
 import { applicantProfileUpdateSchema } from "@/modules/profiles/ProfileSchemas";
 import {
   createCorrelationId,
-  profileRouteError,
-  profileRouteSuccess,
+  portalRouteError,
+  portalRouteSuccess,
 } from "@/lib/api/PortalApiResponse";
 import {
   getApplicantProfile,
@@ -18,9 +18,9 @@ export async function GET(request: Request) {
   try {
     const user = await resolveUserFromHeaders(request.headers);
     const profile = await getApplicantProfile(user);
-    return profileRouteSuccess(profile, correlationId);
+    return portalRouteSuccess(profile, correlationId);
   } catch (error) {
-    return profileRouteError(error, correlationId);
+    return portalRouteError(error, correlationId);
   }
 }
 
@@ -32,8 +32,8 @@ export async function PATCH(request: Request) {
     const body = await request.json().catch(() => undefined);
     const input = applicantProfileUpdateSchema.parse(body);
     const profile = await updateApplicantProfile(user, input);
-    return profileRouteSuccess(profile, correlationId);
+    return portalRouteSuccess(profile, correlationId);
   } catch (error) {
-    return profileRouteError(error, correlationId);
+    return portalRouteError(error, correlationId);
   }
 }

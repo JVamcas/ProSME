@@ -16,6 +16,7 @@ const servicePairs = [
   ["applications", "Application"],
   ["businesses", "Business"],
   ["engagement", "Engagement"],
+  ["funding-opportunities", "FundingOpportunity"],
   ["profiles", "Profile"],
 ] as const;
 

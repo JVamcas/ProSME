@@ -34,11 +34,10 @@ export const applicantPortalRoutes: readonly PortalRoute[] = [
   },
   {
     id: "funding-opportunities",
-    href: "/funding",
-    label: "Available Fundings",
+    href: "/portal/funding-opportunities",
+    label: "Funding opportunities",
     icon: BriefcaseBusiness,
     space: "applicant",
-    openInNewTab: true,
   },
   {
     id: "applicant-businesses",

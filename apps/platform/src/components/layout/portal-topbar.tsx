@@ -39,7 +39,9 @@ function NotificationEntry({ enabled }: { enabled: boolean }) {
 
 export function PortalTopbar({ context, space }: PortalTopbarProps) {
   const applicantSpace = space === "applicant";
-  const searchHref = applicantSpace ? "/funding" : "/admin/applications";
+  const searchHref = applicantSpace
+    ? "/portal/funding-opportunities"
+    : "/admin/applications";
   const searchLabel = applicantSpace
     ? "Search funding opportunities"
     : "Search applications";

@@ -1,6 +1,6 @@
-import { RichText } from "@payloadcms/richtext-lexical/react";
 import type { SerializedEditorState } from "@payloadcms/richtext-lexical/lexical";
+import { RichText } from "@payloadcms/richtext-lexical/react";
 
 export function CmsRichText({ data }: { data: SerializedEditorState }) {
-  return <RichText data={data} className="cms-rich-text" />;
+  return <RichText className="cms-rich-text" data={data} />;
 }

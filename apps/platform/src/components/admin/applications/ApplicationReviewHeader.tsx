@@ -2,7 +2,7 @@ import { AlertCircle, ArrowLeft, Check, LockKeyhole } from "lucide-react";
 import Link from "next/link";
 
 import type { AdminApplication } from "@/modules/applications/ApplicationTypes";
-import { StatusBadge } from "./StatusBadge";
+import { StatusBadge } from "@/components/ui/status-badge";
 
 const workflow = [
   "Submitted",

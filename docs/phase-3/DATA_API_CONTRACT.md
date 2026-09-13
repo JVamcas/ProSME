@@ -199,6 +199,8 @@ Error codes are `UNAUTHENTICATED`, `FORBIDDEN`, `NOT_FOUND`,
 | `GET/PATCH /api/portal/profile`                       | Own applicant profile           | `profile.read.own` / `profile.update.own`         |
 | `GET/POST /api/portal/businesses`                     | Own business collection         | `business.read.own` / `business.update.own`       |
 | `GET/PATCH/DELETE /api/portal/businesses/{id}`        | Own business detail             | `business.read.own` / `business.update.own`       |
+| `GET /api/portal/funding-opportunities`               | Published funding-call projection | active applicant portal access                  |
+| `GET /api/portal/funding-opportunities/{slug}`        | Published funding-call detail   | active applicant portal access                    |
 | `GET/POST /api/portal/eligibility-assessments`        | Own versioned results           | `eligibility.read.own` / `eligibility.create`     |
 | `GET/POST /api/portal/applications`                   | Own list/create                 | `application.read.own` / `application.create`     |
 | `GET/PATCH /api/portal/applications/{id}`             | Own workspace/draft update      | `application.read.own` / `application.update.own` |

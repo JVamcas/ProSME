@@ -44,10 +44,9 @@ describe("P3.1 shared authenticated portal shell", () => {
     expect(markup).toContain('aria-current="page"');
     expect(markup).toContain('aria-label="Open portal navigation"');
     expect(markup).toContain("Search funding opportunities");
-    expect(markup).toContain('href="/funding"');
-    expect(markup).toContain('target="_blank"');
-    expect(markup).toContain('rel="noopener noreferrer"');
-    expect(markup).toContain("opens in a new tab");
+    expect(markup).toContain('href="/portal/funding-opportunities"');
+    expect(markup).not.toContain('target="_blank"');
+    expect(markup).not.toContain("opens in a new tab");
     expect(markup).toContain('aria-label="Notifications unavailable"');
     expect(markup).toContain("AN");
     expect(markup).toContain("My profile");

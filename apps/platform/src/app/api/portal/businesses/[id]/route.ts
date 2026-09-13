@@ -9,8 +9,8 @@ import {
 import { businessProfileSchema } from "@/modules/businesses/BusinessSchemas";
 import {
   createCorrelationId,
-  profileRouteError,
-  profileRouteSuccess,
+  portalRouteError,
+  portalRouteSuccess,
 } from "@/lib/api/PortalApiResponse";
 
 type BusinessRouteContext = { params: Promise<{ id: string }> };
@@ -28,12 +28,12 @@ export async function GET(request: Request, route: BusinessRouteContext) {
   const correlationId = createCorrelationId();
   try {
     const resolved = await context(request, route);
-    return profileRouteSuccess(
+    return portalRouteSuccess(
       await getBusiness(resolved.user, resolved.id),
       correlationId,
     );
   } catch (error) {
-    return profileRouteError(error, correlationId);
+    return portalRouteError(error, correlationId);
   }
 }
 
@@ -43,12 +43,12 @@ export async function PATCH(request: Request, route: BusinessRouteContext) {
     const resolved = await context(request, route);
     const body = await request.json().catch(() => undefined);
     const input = businessProfileSchema.parse(body);
-    return profileRouteSuccess(
+    return portalRouteSuccess(
       await updateBusiness(resolved.user, resolved.id, input),
       correlationId,
     );
   } catch (error) {
-    return profileRouteError(error, correlationId);
+    return portalRouteError(error, correlationId);
   }
 }
 
@@ -57,8 +57,8 @@ export async function DELETE(request: Request, route: BusinessRouteContext) {
   try {
     const resolved = await context(request, route);
     await deleteBusiness(resolved.user, resolved.id);
-    return profileRouteSuccess({ deleted: true }, correlationId);
+    return portalRouteSuccess({ deleted: true }, correlationId);
   } catch (error) {
-    return profileRouteError(error, correlationId);
+    return portalRouteError(error, correlationId);
   }
 }

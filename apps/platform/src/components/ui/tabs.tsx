@@ -11,7 +11,7 @@ import {
 import { cn } from "@/lib/utils";
 
 export type TabItem<T extends string = string> = {
-  content: ReactNode;
+  content?: ReactNode;
   icon?: ReactNode;
   id: T;
   label: string;
@@ -24,6 +24,7 @@ type TabsProps<T extends string> = {
   leadingContent?: ReactNode;
   onSelectionChange?: (id: T) => void;
   orientation?: "horizontal" | "vertical";
+  selectedContent?: ReactNode;
   selectedId?: T;
 };
 
@@ -88,6 +89,7 @@ export function Tabs<T extends string>({
   leadingContent,
   onSelectionChange,
   orientation = "horizontal",
+  selectedContent,
   selectedId,
 }: TabsProps<T>) {
   const vertical = orientation === "vertical";
@@ -121,7 +123,9 @@ export function Tabs<T extends string>({
           key={item.id}
           shouldForceMount
         >
-          {item.content}
+          {selectedContent && item.id === selectedId
+            ? selectedContent
+            : item.content}
         </TabPanel>
       ))}
     </AriaTabs>

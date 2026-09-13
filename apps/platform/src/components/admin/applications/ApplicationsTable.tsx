@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ChevronRight, Search } from "lucide-react";
-import { StatusBadge } from "@/components/admin/applications/StatusBadge";
+import { StatusBadge } from "@/components/ui/status-badge";
 import {
   DataTable,
   type DataTableColumn,

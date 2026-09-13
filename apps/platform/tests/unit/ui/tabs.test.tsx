@@ -58,4 +58,31 @@ describe("reusable tabs", () => {
 
     await act(async () => root.unmount());
   });
+
+  it("renders shared controlled content in the selected panel", async () => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(
+        <Tabs
+          ariaLabel="Opportunity status"
+          defaultSelectedId="all"
+          items={[
+            { id: "all", label: "All" },
+            { id: "open", label: "Open now" },
+          ]}
+          selectedContent={<p>Server-filtered opportunities</p>}
+          selectedId="open"
+        />,
+      );
+    });
+
+    expect(container.querySelectorAll('[role="tab"]')).toHaveLength(2);
+    expect(container.querySelectorAll('[role="tabpanel"]')).toHaveLength(1);
+    expect(container.textContent).toContain("Server-filtered opportunities");
+
+    await act(async () => root.unmount());
+  });
 });

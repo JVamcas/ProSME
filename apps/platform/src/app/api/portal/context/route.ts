@@ -1,8 +1,8 @@
 import { resolveUserFromHeaders } from "@/auth/authorization/current-user";
 import {
   createCorrelationId,
-  profileRouteError,
-  profileRouteSuccess,
+  portalRouteError,
+  portalRouteSuccess,
 } from "@/lib/api/PortalApiResponse";
 import { createApplicantPortalContext } from "@/modules/profiles/ServerProfileService";
 
@@ -14,8 +14,8 @@ export async function GET(request: Request) {
   try {
     const user = await resolveUserFromHeaders(request.headers);
     const context = createApplicantPortalContext(user);
-    return profileRouteSuccess(context, correlationId);
+    return portalRouteSuccess(context, correlationId);
   } catch (error) {
-    return profileRouteError(error, correlationId);
+    return portalRouteError(error, correlationId);
   }
 }

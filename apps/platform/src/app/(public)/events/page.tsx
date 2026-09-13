@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, CalendarDays, MapPin } from "lucide-react";
 
-import { EmptyState } from "@/components/public/empty-state";
+import { EmptyState } from "@/components/ui/empty-state";
 import { CmsImage } from "@/components/public/cms-image";
 import { PublicPageHeader } from "@/components/public/public-page-header";
 import { contentMetadata } from "@/modules/content/ContentMetadata";

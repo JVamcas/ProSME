@@ -10,10 +10,16 @@ import {
   listOwnedBusinesses,
   updateOwnedBusiness,
 } from "@/db/repositories/BusinessRepository";
+import { ResourceNotFoundError } from "@/lib/resource-errors";
 import type { BusinessProfileInput } from "./BusinessSchemas";
 import type { BusinessView } from "./BusinessTypes";
 
-export class BusinessNotFoundError extends Error {}
+export class BusinessNotFoundError extends ResourceNotFoundError {
+  constructor() {
+    super("business");
+    this.name = "BusinessNotFoundError";
+  }
+}
 
 function view(
   business: NonNullable<Awaited<ReturnType<typeof findOwnedBusiness>>>,

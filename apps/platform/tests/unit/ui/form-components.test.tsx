@@ -49,6 +49,21 @@ describe("shared form components", () => {
     expect(markup).toContain('aria-invalid="true"');
   });
 
+  it("renders leading content inside a padded input control", () => {
+    const markup = renderToStaticMarkup(
+      <FormInput
+        label="Search"
+        leadingContent={<span aria-hidden="true">Icon</span>}
+        name="search"
+        type="search"
+      />,
+    );
+
+    expect(markup).toContain("Icon");
+    expect(markup).toContain("pl-12");
+    expect(markup).toContain('type="search"');
+  });
+
   it("keeps checkbox semantics inside the shared field", () => {
     const markup = renderToStaticMarkup(
       <CheckboxField name="consent" label="I consent" required />,

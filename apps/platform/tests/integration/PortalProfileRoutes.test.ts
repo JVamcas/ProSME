@@ -155,7 +155,7 @@ describe("protected applicant profile routes", () => {
 
     expect(response.status).toBe(500);
     expect(body.error.message).not.toContain("database details");
-    expect(log).toHaveBeenCalledWith("Portal profile request failed", {
+    expect(log).toHaveBeenCalledWith("Portal request failed", {
       correlationId: body.meta.correlationId,
       error,
     });

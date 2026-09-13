@@ -12,6 +12,9 @@ const repositoryRoot = path.resolve(applicationRoot, "../..");
 /** @type {import("next").NextConfig} */
 const nextConfig = {
   agentRules: false,
+  experimental: {
+    useTypeScriptCli: false,
+  },
   output: "standalone",
   outputFileTracingRoot: repositoryRoot,
   reactStrictMode: true,

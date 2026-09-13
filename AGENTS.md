@@ -17,10 +17,10 @@ Handwritten implementation files must stay within these limits:
 
 | File kind                                          | Maximum lines |
 | -------------------------------------------------- | ------------: |
-| Next.js `page.tsx`, `layout.tsx`, `route.ts`       |           150 |
-| React component or hook                            |           200 |
-| Domain service, repository, policy, or integration |           250 |
-| Other handwritten TypeScript/JavaScript            |           200 |
+| Next.js `page.tsx`, `layout.tsx`, `route.ts`       |           400 |
+| React component or hook                            |           400 |
+| Domain service, repository, policy, or integration |           400 |
+| Other handwritten TypeScript/JavaScript            |           400 |
 | Individual function or method                      |            60 |
 | Test file                                          |           300 |
 

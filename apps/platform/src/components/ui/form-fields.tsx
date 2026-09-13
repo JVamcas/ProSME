@@ -1,5 +1,6 @@
 import * as React from "react";
 
+import { cn } from "@/lib/utils";
 import { Input, Select, Textarea } from "./form-controls";
 import { type FormBindingProps, useFormBinding } from "./form-binding";
 import { FormField } from "./form-field";
@@ -25,7 +26,9 @@ export type FormInputProps = Omit<
   React.InputHTMLAttributes<HTMLInputElement>,
   "name"
 > &
-  FieldOptions;
+  FieldOptions & {
+    leadingContent?: React.ReactNode;
+  };
 
 export function FormInput({
   containerClassName,
@@ -34,6 +37,7 @@ export function FormInput({
   label,
   labelAccessory,
   labelClassName,
+  leadingContent,
   name,
   registrationOptions,
   ...props
@@ -51,14 +55,18 @@ export function FormInput({
       labelAccessory={labelAccessory}
       labelClassName={labelClassName}
     >
-      <Input
-        {...binding.registration}
-        {...props}
-        id={ids.controlId}
-        name={binding.name}
-        aria-describedby={describedBy}
-        aria-invalid={binding.error ? true : props["aria-invalid"]}
-      />
+      <div className="relative">
+        {leadingContent}
+        <Input
+          {...binding.registration}
+          {...props}
+          id={ids.controlId}
+          name={binding.name}
+          className={cn(leadingContent && "pl-12", props.className)}
+          aria-describedby={describedBy}
+          aria-invalid={binding.error ? true : props["aria-invalid"]}
+        />
+      </div>
     </FormField>
   );
 }

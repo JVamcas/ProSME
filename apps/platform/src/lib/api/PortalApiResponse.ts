@@ -5,7 +5,7 @@ import {
   AuthenticationRequiredError,
   PermissionDeniedError,
 } from "@/auth/authorization/policy";
-import { BusinessNotFoundError } from "@/modules/businesses/ServerBusinessService";
+import { ResourceNotFoundError } from "@/lib/resource-errors";
 
 type ApiErrorCode =
   | "FORBIDDEN"
@@ -58,7 +58,7 @@ export function createCorrelationId() {
   return crypto.randomUUID();
 }
 
-export function profileRouteSuccess<TData>(
+export function portalRouteSuccess<TData>(
   data: TData,
   correlationId: string,
 ) {
@@ -75,7 +75,29 @@ export function profileRouteSuccess<TData>(
   );
 }
 
-export function profileRouteError(
+export function portalListRouteSuccess<TData>(
+  data: TData[],
+  correlationId: string,
+  page: {
+    nextCursor: string | null;
+    total: number;
+  },
+) {
+  return NextResponse.json(
+    {
+      data,
+      page,
+      meta: {
+        correlationId,
+      },
+    },
+    {
+      headers: responseHeaders(correlationId),
+    },
+  );
+}
+
+export function portalRouteError(
   error: unknown,
   correlationId: string,
 ) {
@@ -102,21 +124,21 @@ export function profileRouteError(
       correlationId,
       400,
       "VALIDATION_ERROR",
-      "Review the highlighted profile fields.",
+      "Review the highlighted request fields.",
       validationFields(error),
     );
   }
 
-  if (error instanceof BusinessNotFoundError) {
+  if (error instanceof ResourceNotFoundError) {
     return errorResponse(
       correlationId,
       404,
       "NOT_FOUND",
-      "The requested business was not found.",
+      error.userMessage,
     );
   }
 
-  console.error("Portal profile request failed", {
+  console.error("Portal request failed", {
     correlationId,
     error,
   });

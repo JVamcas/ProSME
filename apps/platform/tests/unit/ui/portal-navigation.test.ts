@@ -20,7 +20,7 @@ describe("P3.1 capability-aware portal navigation", () => {
 
     expect(routes.map((route) => route.href)).toEqual([
       "/portal",
-      "/funding",
+      "/portal/funding-opportunities",
       "/portal/profile",
     ]);
   });
@@ -28,7 +28,7 @@ describe("P3.1 capability-aware portal navigation", () => {
   it("matches the accepted applicant information architecture", () => {
     expect(applicantPortalRoutes.map((route) => route.label)).toEqual([
       "Dashboard",
-      "Available Fundings",
+      "Funding opportunities",
       "My businesses",
       "My applications",
       "Notifications",
@@ -36,16 +36,16 @@ describe("P3.1 capability-aware portal navigation", () => {
     ]);
   });
 
-  it("opens Available Funding in a safe new tab", () => {
+  it("keeps funding discovery inside the applicant portal", () => {
     const fundingRoute = applicantPortalRoutes.find(
       (route) => route.id === "funding-opportunities",
     );
 
     expect(fundingRoute).toMatchObject({
-      href: "/funding",
-      label: "Available Fundings",
-      openInNewTab: true,
+      href: "/portal/funding-opportunities",
+      label: "Funding opportunities",
     });
+    expect(fundingRoute?.openInNewTab).toBeUndefined();
   });
 
   it("does not expose operations routes to an applicant", () => {
