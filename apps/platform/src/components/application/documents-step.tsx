@@ -8,10 +8,7 @@ type DocumentsStepProps = {
   onSelect: (key: string, name: string) => void;
 };
 
-export function DocumentsStep({
-  documents,
-  onSelect,
-}: DocumentsStepProps) {
+export function DocumentsStep({ documents, onSelect }: DocumentsStepProps) {
   return (
     <div>
       <div className="rounded-2xl border border-orange/30 bg-orange-pale p-5 text-sm leading-6 text-slate-600">
@@ -29,7 +26,7 @@ export function DocumentsStep({
               className={`grid size-10 shrink-0 place-items-center rounded-xl ${
                 documents[key]
                   ? "bg-emerald-100 text-emerald-700"
-                  : "bg-slate-100 text-slate-500"
+                  : "bg-slate-100 text-brand-orange"
               }`}
             >
               {documents[key] ? (

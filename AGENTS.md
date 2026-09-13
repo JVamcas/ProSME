@@ -15,20 +15,38 @@ These instructions apply to the entire repository. They are mandatory for human 
 
 Handwritten implementation files must stay within these limits:
 
-| File kind | Maximum lines |
-| --- | ---: |
-| Next.js `page.tsx`, `layout.tsx`, `route.ts` | 150 |
-| React component or hook | 200 |
-| Domain service, repository, policy, or integration | 250 |
-| Other handwritten TypeScript/JavaScript | 200 |
-| Individual function or method | 60 |
-| Test file | 300 |
+| File kind                                          | Maximum lines |
+| -------------------------------------------------- | ------------: |
+| Next.js `page.tsx`, `layout.tsx`, `route.ts`       |           150 |
+| React component or hook                            |           200 |
+| Domain service, repository, policy, or integration |           250 |
+| Other handwritten TypeScript/JavaScript            |           200 |
+| Individual function or method                      |            60 |
+| Test file                                          |           300 |
 
 - These are hard limits, not targets. Split a file before it crosses its limit.
 - A page or route should normally be substantially shorter than its maximum.
 - Do not evade limits by compressing code, placing several statements on one line, or embedding large data objects in implementation files.
 - Generated files, lockfiles, generated migrations, imported source material, and generated Payload types/import maps are exempt.
 - Configuration or documentation that genuinely cannot be split must include a short justification in the relevant gate record.
+
+### Readable source formatting is mandatory
+
+- Maintainability takes precedence over minimizing line count. Never compress
+  implementation code to stay below a file-size limit; split responsibilities
+  into focused files instead.
+- Do not write pages, components, functions, JSX trees, object literals, or
+  control flow as dense single-line expressions when they contain nested
+  structure or multiple concerns.
+- Use one statement per line. Format nested JSX, conditional rendering, mapped
+  content, long prop lists, and chained operations across clear, readable lines.
+- Prefer named variables, focused functions, and extracted components over
+  deeply nested ternaries or substantial inline logic.
+- When modifying an existing compressed component or function, reformat the
+  complete affected component or function into readable multiline source as
+  part of the change. Do not perpetuate unreadable formatting in touched code.
+- A file can fail review for unreadable or artificially compressed source even
+  when lint, type checking, tests, and the production build pass.
 
 ## 3. Components and reuse
 

@@ -36,7 +36,9 @@ export function AdminDashboardPanels() {
               className="grid grid-cols-[1fr_1.5fr_1fr_.7fr] gap-3 px-5 py-4 text-[10px] text-slate-500"
             >
               <span>{id}</span>
-              <strong className="font-semibold text-slate-700">{project}</strong>
+              <strong className="font-semibold text-slate-700">
+                {project}
+              </strong>
               <span>{date}</span>
               <span>{status}</span>
             </div>
@@ -53,7 +55,7 @@ export function AdminDashboardPanels() {
               key={text}
               className="flex items-center gap-3 text-xs text-slate-600"
             >
-              <Icon className="size-5 shrink-0 text-navy" />
+              <Icon className="size-5 shrink-0 text-brand-orange" />
               <span>{text}</span>
             </div>
           ))}

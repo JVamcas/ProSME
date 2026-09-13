@@ -22,7 +22,7 @@ export function DateControl({ className, error }: DateControlProps) {
     <div className="relative">
       <CalendarDays
         aria-hidden="true"
-        className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-slate-400"
+        className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-brand-orange"
       />
       <DateInput
         className={cn(
@@ -98,12 +98,6 @@ export function DateRegistrationInput({
   value,
 }: DateRegistrationInputProps) {
   return (
-    <input
-      ref={inputRef}
-      type="hidden"
-      name={name}
-      value={value}
-      readOnly
-    />
+    <input ref={inputRef} type="hidden" name={name} value={value} readOnly />
   );
 }

@@ -25,7 +25,7 @@ export function LogoutButton() {
       onClick={() => logout.mutate()}
       className="h-auto justify-start rounded-none px-4 py-3 text-left text-white/55 hover:bg-transparent hover:text-white"
     >
-      <LogOutIcon className="size-4" />
+      <LogOutIcon className="size-4 text-brand-orange" />
       {logout.isPending ? "Logging out…" : "Logout"}
     </Button>
   );

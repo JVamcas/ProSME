@@ -22,13 +22,11 @@ export async function HomeFunding({
       type: "News",
       href: `/news/${item.slug}`,
     })),
-    ...resources
-      .slice(0, limit - latestNews.length)
-      .map((item) => ({
-        ...item,
-        type: item.category ?? "Resource",
-        href: item.href ?? `/resources/${item.slug}`,
-      })),
+    ...resources.slice(0, limit - latestNews.length).map((item) => ({
+      ...item,
+      type: item.category ?? "Resource",
+      href: item.href ?? `/resources/${item.slug}`,
+    })),
   ].slice(0, limit);
 
   return (
@@ -60,7 +58,7 @@ export async function HomeFunding({
                 sizes="(max-width: 768px) 100vw, 33vw"
               />
             ) : (
-              <div className="grid aspect-video place-items-center bg-brand-cream text-brand-navy">
+              <div className="grid aspect-video place-items-center bg-brand-cream text-brand-orange">
                 {item.type === "News" ? (
                   <Newspaper className="size-10" />
                 ) : (
@@ -69,7 +67,7 @@ export async function HomeFunding({
               </div>
             )}
             <div className="flex flex-1 flex-col p-6">
-              <span className="grid size-11 place-items-center rounded-full bg-brand-cream text-brand-navy">
+              <span className="grid size-11 place-items-center rounded-full bg-brand-cream text-brand-orange">
                 {item.type === "News" ? (
                   <Newspaper className="size-5" />
                 ) : (
@@ -87,16 +85,13 @@ export async function HomeFunding({
               </p>
               {item.date ? (
                 <p className="mt-4 flex items-center gap-2 text-xs text-brand-navy">
-                  <CalendarDays className="size-4 text-brand-navy" />
+                  <CalendarDays className="size-4 text-brand-orange" />
                   {new Intl.DateTimeFormat("en-NA", {
                     dateStyle: "medium",
                   }).format(new Date(item.date))}
                 </p>
               ) : null}
-              <ArrowLink
-                href={item.href}
-                className="mt-auto pt-6 underline"
-              >
+              <ArrowLink href={item.href} className="mt-auto pt-6 underline">
                 {item.type === "News" ? "Read update" : "Open resource"}
               </ArrowLink>
             </div>

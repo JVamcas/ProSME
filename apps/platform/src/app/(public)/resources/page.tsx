@@ -42,7 +42,7 @@ export default async function ResourcesPage() {
                   />
                   <div className="flex items-start gap-5 p-6">
                     <span className="grid size-12 shrink-0 place-items-center rounded-full bg-brand-orange/10">
-                      <Download className="size-5 text-brand-navy" />
+                      <Download className="size-5 text-brand-orange" />
                     </span>
                     <div>
                       <p className="text-xs font-extrabold uppercase tracking-wider text-brand-navy">

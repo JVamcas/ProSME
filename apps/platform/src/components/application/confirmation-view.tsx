@@ -59,7 +59,7 @@ export function ConfirmationView() {
         </div>
         <div className="mx-auto mt-8 grid max-w-2xl gap-4 text-left sm:grid-cols-2">
           <div className="flex gap-3 rounded-2xl bg-orange-pale p-5">
-            <Clock3 className="size-5 shrink-0 text-navy" />
+            <Clock3 className="size-5 shrink-0 text-brand-orange" />
             <div>
               <strong className="text-sm text-navy">What happens next?</strong>
               <p className="mt-1 text-xs leading-5 text-slate-600">
@@ -69,7 +69,7 @@ export function ConfirmationView() {
             </div>
           </div>
           <div className="flex gap-3 rounded-2xl bg-amber-50 p-5">
-            <Mail className="size-5 shrink-0 text-amber-700" />
+            <Mail className="size-5 shrink-0 text-brand-orange" />
             <div>
               <strong className="text-sm text-navy">Stay reachable</strong>
               <p className="mt-1 text-xs leading-5 text-slate-600">
@@ -79,7 +79,7 @@ export function ConfirmationView() {
             </div>
           </div>
         </div>
-        <Button asChild variant="gold" size="lg" className="mt-9">
+        <Button asChild variant="brand" size="lg" className="mt-9">
           <Link href="/portal">
             View my application <ArrowRight className="size-4" />
           </Link>

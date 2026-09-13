@@ -42,7 +42,7 @@ function Navigation({ pathname }: { pathname: string }) {
               active && "bg-white/12 font-bold text-white",
             )}
           >
-            <Icon className={cn("size-4", active && "text-orange")} />
+            <Icon className="size-4 text-brand-orange" />
             {label}
           </Link>
         );
@@ -71,19 +71,31 @@ function AdminSidebar({ pathname }: { pathname: string }) {
         <Logo href="/" inverted compact />
       </div>
       <div className="mt-6 flex items-center gap-3 border-y border-white/10 py-5">
-        <span className="grid size-10 place-items-center rounded-full bg-orange font-bold text-navy">AU</span>
+        <span className="grid size-10 place-items-center rounded-full bg-orange font-bold text-navy">
+          AU
+        </span>
         <div>
           <p className="text-xs font-bold">Admin User</p>
           <p className="mt-0.5 text-[10px] text-white/40">Administrator</p>
         </div>
       </div>
-      <div className="mt-5"><Navigation pathname={pathname} /></div>
+      <div className="mt-5">
+        <Navigation pathname={pathname} />
+      </div>
       <div className="mt-auto grid gap-1 border-t border-white/10 pt-5">
-        <Link href="#settings" className="flex items-center gap-3 rounded-md px-3 py-2.5 text-xs text-white/60">
-          <Settings className="size-4" />Settings
+        <Link
+          href="#settings"
+          className="flex items-center gap-3 rounded-md px-3 py-2.5 text-xs text-white/60"
+        >
+          <Settings className="size-4 text-brand-orange" />
+          Settings
         </Link>
-        <Link href="#audit" className="flex items-center gap-3 rounded-md px-3 py-2.5 text-xs text-white/60">
-          <ShieldCheck className="size-4" />Audit Log
+        <Link
+          href="#audit"
+          className="flex items-center gap-3 rounded-md px-3 py-2.5 text-xs text-white/60"
+        >
+          <ShieldCheck className="size-4 text-brand-orange" />
+          Audit Log
         </Link>
         <LogoutButton />
       </div>
@@ -96,7 +108,7 @@ function MobileAdminHeader({ pathname }: { pathname: string }) {
     <header className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-4 lg:hidden">
       <details className="relative">
         <summary className="grid size-9 list-none place-items-center rounded-lg border border-slate-200 [&::-webkit-details-marker]:hidden">
-          <Menu className="size-4" />
+          <Menu className="size-4 text-brand-orange" />
         </summary>
         <div className="absolute left-0 top-11 z-50 w-64 rounded-xl bg-navy p-4 shadow-xl">
           <Navigation pathname={pathname} />

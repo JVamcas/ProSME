@@ -28,7 +28,11 @@ function RegisteredInput() {
 describe("shared form components", () => {
   it("associates input labels and validation errors", () => {
     const markup = renderToStaticMarkup(
-      <FormInput id="email" label="Email address" error="Enter a valid email" />,
+      <FormInput
+        id="email"
+        label="Email address"
+        error="Enter a valid email"
+      />,
     );
 
     expect(markup).toContain('for="email"');
@@ -90,9 +94,15 @@ describe("shared form components", () => {
 
 describe("shared buttons", () => {
   it("applies variants and accessible icon labels", () => {
-    const brandButton = renderToStaticMarkup(<Button variant="brand">Submit</Button>);
-    const iconButton = renderToStaticMarkup(<IconButton label="Copy">C</IconButton>);
+    const defaultButton = renderToStaticMarkup(<Button>Continue</Button>);
+    const brandButton = renderToStaticMarkup(
+      <Button variant="brand">Submit</Button>,
+    );
+    const iconButton = renderToStaticMarkup(
+      <IconButton label="Copy">C</IconButton>,
+    );
 
+    expect(defaultButton).toContain("bg-brand-orange");
     expect(brandButton).toContain("bg-brand-orange");
     expect(iconButton).toContain('aria-label="Copy"');
   });

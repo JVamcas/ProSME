@@ -16,8 +16,8 @@ export async function SiteHeader() {
         <div className="container flex h-10 items-center overflow-hidden text-[10px] text-brand-navy">
           <p className="shrink-0 font-semibold">
             {content.announcement}
-            <span className="mx-3 text-brand-blue">|</span>
-            A partnership for a more competitive and inclusive Namibia
+            <span className="mx-3 text-brand-blue">|</span>A partnership for a
+            more competitive and inclusive Namibia
           </p>
           <div
             className="partner-marquee ml-8 h-full min-w-0 flex-1 overflow-hidden"
@@ -52,7 +52,7 @@ export async function SiteHeader() {
             </Link>
             <Link
               href={content.applyHref}
-              className="inline-flex h-11 items-center gap-2 rounded-full bg-brand-navy px-6 text-sm font-bold text-white"
+              className="inline-flex h-11 items-center gap-2 rounded-full bg-brand-orange px-6 text-sm font-bold text-brand-navy hover:bg-brand-yellow"
             >
               {content.applyLabel}
               <ArrowRight className="size-4" />
@@ -118,7 +118,7 @@ function MobileNavigation({ content }: { content: HeaderContent }) {
   return (
     <details className="group relative lg:hidden">
       <summary className="grid size-11 list-none place-items-center rounded-full border border-brand-navy [&::-webkit-details-marker]:hidden">
-        <Menu className="size-5" />
+        <Menu className="size-5 text-brand-orange" />
         <span className="sr-only">Open navigation</span>
       </summary>
       <nav

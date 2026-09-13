@@ -104,11 +104,11 @@ function WizardActions({
         Back
       </Button>
       {step < applicationStepCount - 1 ? (
-        <Button type="button" variant="gold" onClick={onNext}>
+        <Button type="button" variant="brand" onClick={onNext}>
           Save and continue <ArrowRight className="size-4" />
         </Button>
       ) : (
-        <Button type="submit" variant="gold" disabled={busy}>
+        <Button type="submit" variant="brand" disabled={busy}>
           Submit application <ArrowRight className="size-4" />
         </Button>
       )}

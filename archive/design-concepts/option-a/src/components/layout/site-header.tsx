@@ -40,7 +40,7 @@ export function SiteHeader() {
         <div className="hidden shrink-0 items-center gap-3 md:flex">
           <Link href="#news" aria-label="Search" className="grid size-10 place-items-center text-navy"><Search className="size-5" /></Link>
           <Link href="/dashboard" className="inline-flex h-11 items-center rounded-lg border border-navy px-6 text-sm font-bold text-navy transition hover:bg-slate-50">Sign In</Link>
-          <Link href="/apply" className="inline-flex h-11 items-center rounded-lg bg-[#efb538] px-6 text-sm font-bold text-navy transition hover:bg-[#e4a91f]">Apply Now</Link>
+          <Link href="/apply" className="inline-flex h-11 items-center rounded-lg  px-6 text-sm font-bold text-white transition bg-brand-yellow">Apply Now</Link>
         </div>
         <details className="group relative xl:hidden">
           <summary className="grid size-11 list-none place-items-center rounded-lg border border-slate-200 text-navy [&::-webkit-details-marker]:hidden"><Menu className="size-5" /><span className="sr-only">Open navigation</span></summary>

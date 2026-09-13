@@ -378,7 +378,9 @@ before implementation continues.
 | --- | --- |
 | Brand | Applicant and operations portals use the SME Fund logo, not the ProSME logo. |
 | Portal colour | The shared authenticated portal sidebar uses the canonical SME Fund orange. Navy is used for readable sidebar text/icons and the active item. |
-| Application palette | Phase 3 uses only the canonical `brand-*` palette tokens: white, cream, yellow, blue, navy, gold, green, and orange. It does not use legacy orange compatibility aliases or hard-coded legacy orange values. |
+| Application palette | Phase 3 uses the client brand-guide colours: cream `#F6F4E2`, yellow `#FFCA45`, blue `#6BAED6`, navy `#0A183B`, gold `#C9A24D`, green `#16A34A`, and orange `#FF6F00`, with white as a supporting application neutral. It does not use legacy orange compatibility aliases or hard-coded legacy orange values. |
+| Primary colour | Canonical SME Fund orange `#FF6F00` is the primary brand and action colour. Primary calls to action use an orange surface with navy content. |
+| Icon colour | Standalone brand and navigation icons use canonical orange. Icons on an orange surface use navy for visibility; status icons may use an approved semantic colour when they communicate success, warning, or error. |
 | Accessible colour use | Orange is a brand surface/accent, not body text on white. When canonical orange would not meet text/icon contrast, use brand navy rather than introducing or reusing a darker orange. |
 | Deployment | Phase 3 remains inside the one approved `apps/platform` Next.js application. No separate applicant, admin, API, or workflow application is created. |
 | Portal model | One authenticated portal system has permission-scoped applicant and operations route spaces. It does not duplicate portal infrastructure. |
@@ -532,6 +534,12 @@ navigation rendering must not create a request waterfall.
   `brand-navy`, `brand-gold`, `brand-green`, and `brand-orange` tokens. Phase 3
   components must not use generic orange Tailwind colours, legacy orange
   compatibility aliases, or hard-coded orange hex values.
+- Treat `brand-orange` as the primary colour. Primary calls to action use a
+  `brand-orange` surface with `brand-navy` text and icons.
+- Standalone brand, feature, navigation, and action icons use `brand-orange`.
+  Icons use `brand-navy` when placed on a `brand-orange` surface so they remain
+  visible. Success, warning, and error icons may use their approved semantic
+  token only when colour communicates that state and a text cue is also shown.
 - Do not solve contrast by darkening the SME Fund orange. Use navy for text,
   icons, links, and focus indicators on white, cream, yellow, and orange
   surfaces. Use white, orange, yellow, or blue only where their contrast against
@@ -652,14 +660,23 @@ its exit evidence first.
 | Increment | Scope | State | Exit evidence |
 | --- | --- | --- | --- |
 | P3.0 Design and contracts | Portal IA, canonical and semantic colour-token contract, shared shell contract, capability catalogue, workflow model, task registry, status vocabulary, SQL read models, API contracts | In progress | Written design agreement, palette audit, and traceability review |
-| P3.1 Identity and profiles | Shared authenticated portal shell, capability context/gates, applicant profile, business profile, ownership policy | Not started | Policy tests, projection tests, responsive/accessibility evidence |
-| P3.2 Eligibility and application drafts | Versioned eligibility rules/results, funding-call linkage, draft/save/resume, form validation | Not started | Applicant-owned draft round trip and rule-version tests |
-| P3.3 Documents and submission | Private storage adapter, metadata, scan states, declaration, idempotent submission/reference, initial workflow instance | Not started | Transaction, duplicate-submit, access and upload tests |
-| P3.4 Work queue and screening | Task projection, assignment/claim, completeness/document tasks, information request/response | Not started | Queue query plan, capability tests, end-to-end request loop |
-| P3.5 Assessment and finance | Type-driven assessment and finance tasks, scoring configuration, comments, recommendations, return paths | Not started | Versioned config/result and transition tests |
-| P3.6 Decision and communication | Panel decision, reasoned override, outcome templates, notification outbox and delivery states | Not started | Authority, audit, idempotency and happy-path evidence |
-| P3.7 Administration and bulk operations | Workflow draft/preview/publish, user/role management, bulk status, batch communication, audited CSV/Excel export | Not started | Permission matrix, export projection, bulk transaction tests |
-| P3.8 G3 acceptance | Full responsive, accessibility, security, performance, recovery and UAT journeys | Not started | Completed `G3-application-workflow.md` and written acceptance |
+| P3.1 Workflow-definition foundation | Definition/version/stage/task/transition migrations and repositories, draft/publish/retire lifecycle, published-version immutability, definition validation, typed task registry, configuration projections, and TOR-aligned seed workflow | Not started | Migration round trip, definition-validation tests, immutable-version tests, registry contract tests, projection/query evidence, and reviewed seed configuration |
+| P3.2 Identity and profiles | Shared authenticated portal shell, capability context/gates, applicant profile, business profile, ownership policy | Not started | Policy tests, projection tests, responsive/accessibility evidence |
+| P3.3 Eligibility and application drafts | Versioned eligibility rules/results, funding-call linkage, draft/save/resume, form validation | Not started | Applicant-owned draft round trip and rule-version tests |
+| P3.4 Documents, submission, and workflow instantiation | Private storage adapter, metadata, scan states, declaration, idempotent submission/reference, and transactional creation of a workflow instance pinned to an exact published definition version | Not started | Transaction, version-pinning, duplicate-submit, access, and upload tests |
+| P3.5 Work queue and screening | Task projection, assignment/claim, completeness/document tasks, information request/response | Not started | Queue query plan, capability tests, end-to-end request loop |
+| P3.6 Assessment and finance | Type-driven assessment and finance tasks, scoring configuration, comments, recommendations, return paths | Not started | Versioned config/result and transition tests |
+| P3.7 Decision and communication | Panel decision, reasoned override, outcome templates, notification outbox and delivery states | Not started | Authority, audit, idempotency and happy-path evidence |
+| P3.8 Administration and bulk operations | Workflow draft/clone/preview/publish/retire UI over the P3.1 services, user/role management, bulk status, batch communication, audited CSV/Excel export | Not started | Permission matrix, workflow-publication UI tests, export projection, bulk transaction tests |
+| P3.9 G3 acceptance | Full responsive, accessibility, security, performance, recovery and UAT journeys | Not started | Completed `G3-application-workflow.md` and written acceptance |
+
+P3.1 is the first production implementation increment. It establishes the
+workflow-definition system before any application can instantiate a workflow.
+P3.4 may create a `WorkflowInstance` only from an existing published,
+immutable `WorkflowDefinitionVersion`; it must never assemble stages or tasks
+from hard-coded application logic. P3.8 adds the administration UI to the
+already-tested definition services rather than introducing the workflow model
+late in delivery.
 
 ### Entry conditions
 
@@ -675,22 +692,27 @@ its exit evidence first.
 
 ### Required work
 
-1. Integrate the existing application into the platform domain and PostgreSQL persistence model.
-2. Implement applicant registration, profile, business profile, and identity linking.
-3. Implement eligibility assessments with configurable rules and recorded rule versions.
-4. Implement application draft, save/resume, validation, review, declaration, submission, and reference generation.
-5. Implement secure document upload, metadata, access control, validation, and malware-scanning integration point.
-6. Implement applicant status tracking, messages, notifications, information requests, and additional-document responses.
-7. Implement internal completeness screening, assignment, technical assessment, scoring, finance review, recommendation, decision, and controlled communication.
-8. Implement manual override only for authorised capabilities and require a reason.
-9. Create immutable workflow and audit events for sensitive state changes.
-10. Implement CSV/Excel export with authorization and audit logging.
-11. Prevent duplicate submissions and make critical commands idempotent.
-12. Use PostgreSQL transactions for submission and workflow transitions.
-13. Add granular operational permissions for applications, assessment, finance, decisions, communication, exports, and overrides.
-14. Add application-owned user and role management under `/admin`, including verified-user promotion or staff invitation; do not administer permissions in Payload.
-15. Allow only authorised administrators to assign roles to verified users, treating each role as the permission group rather than adding a duplicate grouping model.
-16. Record immutable audit events for every role, permission, and application-user status change.
+1. Implement the workflow-definition schema, migrations, repositories,
+   services, lifecycle, validation, typed task registry, and TOR-aligned seed
+   workflow before implementing submission or work-queue behavior.
+2. Integrate the existing application into the platform domain and PostgreSQL persistence model.
+3. Implement applicant registration, profile, business profile, and identity linking.
+4. Implement eligibility assessments with configurable rules and recorded rule versions.
+5. Implement application draft, save/resume, validation, review, declaration, submission, and reference generation.
+6. Implement secure document upload, metadata, access control, validation, and malware-scanning integration point.
+7. On submission, create the workflow, stage, and task instances atomically from
+   the exact published workflow-definition version pinned to the application.
+8. Implement applicant status tracking, messages, notifications, information requests, and additional-document responses.
+9. Implement internal completeness screening, assignment, technical assessment, scoring, finance review, recommendation, decision, and controlled communication.
+10. Implement manual override only for authorised capabilities and require a reason.
+11. Create immutable workflow and audit events for sensitive state changes.
+12. Implement CSV/Excel export with authorization and audit logging.
+13. Prevent duplicate submissions and make critical commands idempotent.
+14. Use PostgreSQL transactions for submission and workflow transitions.
+15. Add granular operational permissions for applications, assessment, finance, decisions, communication, exports, and overrides.
+16. Add application-owned user and role management under `/admin`, including verified-user promotion or staff invitation; do not administer permissions in Payload.
+17. Allow only authorised administrators to assign roles to verified users, treating each role as the permission group rather than adding a duplicate grouping model.
+18. Record immutable audit events for every role, permission, and application-user status change.
 
 ### Gate G3 — M5 workflow accepted
 
@@ -700,7 +722,9 @@ its exit evidence first.
 G3 passes only when:
 
 - A new applicant can register, verify their email, complete a profile, assess eligibility, save a draft, resume, upload approved documents, review, declare, and submit.
-- Submission generates one unique immutable reference and one initial workflow event.
+- Submission generates one unique immutable reference and atomically creates one
+  workflow instance pinned to the exact approved published definition version,
+  with its initial stage, tasks, and workflow event.
 - Refreshing or repeating a submission request cannot create duplicate applications.
 - Applicant users can access only their own business, applications, documents, messages, and notifications.
 - Internal roles can perform only their explicitly granted capabilities.
@@ -1063,22 +1087,25 @@ Each change request must document scope, reason, affected requirements, schedule
 1. Preserve the completed G1 foundation and accepted G2 public website.
 2. Review this Phase 3 conversation record and mark P3.0 agreed before making
    Phase 3 implementation changes.
-3. Deliver P3.1 identity, profiles, shared authenticated shell, typed route
+3. Deliver P3.1 workflow-definition persistence, lifecycle, validation, task
+   registry, services, projections, and seed workflow; record its evidence.
+4. Deliver P3.2 identity, profiles, shared authenticated shell, typed route
    filtering, and capability gates; record its evidence.
-4. Deliver P3.2 eligibility and application drafts; record its evidence.
-5. Deliver P3.3 documents and idempotent submission; record its evidence.
-6. Deliver P3.4 work queue, screening, and the information-request round trip;
+5. Deliver P3.3 eligibility and application drafts; record its evidence.
+6. Deliver P3.4 documents, idempotent submission, and transactional workflow
+   instantiation from a published definition version; record its evidence.
+7. Deliver P3.5 work queue, screening, and the information-request round trip;
    record its evidence.
-7. Deliver P3.5 assessment and finance tasks; record its evidence.
-8. Deliver P3.6 decision and outcome communication; record its evidence.
-9. Deliver P3.7 workflow/user administration, bulk operations, and exports;
-   record its evidence.
-10. Execute P3.8 and pass G3 only after all earlier Phase 3 evidence is accepted.
-11. Deliver M6 and M7, then pass G4 and G5.
-12. Execute UAT and pass G6.
-13. Complete training, documentation, and handover; pass G7.
-14. Provision the approved GCP production environment and pass G8.
-15. Complete the 30-day support period and pass G9.
+8. Deliver P3.6 assessment and finance tasks; record its evidence.
+9. Deliver P3.7 decision and outcome communication; record its evidence.
+10. Deliver P3.8 workflow/user administration, bulk operations, and exports;
+    record its evidence.
+11. Execute P3.9 and pass G3 only after all earlier Phase 3 evidence is accepted.
+12. Deliver M6 and M7, then pass G4 and G5.
+13. Execute UAT and pass G6.
+14. Complete training, documentation, and handover; pass G7.
+15. Provision the approved GCP production environment and pass G8.
+16. Complete the 30-day support period and pass G9.
 
 ## 14. Completion condition
 

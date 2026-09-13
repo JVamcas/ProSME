@@ -46,14 +46,14 @@ type DataTableInstance<TData extends RowData> = ReactTable<
 
 function SortIcon({ direction }: { direction: false | "asc" | "desc" }) {
   if (direction === "asc") {
-    return <ArrowUp className="size-3" />;
+    return <ArrowUp className="size-3 text-brand-orange" />;
   }
 
   if (direction === "desc") {
-    return <ArrowDown className="size-3" />;
+    return <ArrowDown className="size-3 text-brand-orange" />;
   }
 
-  return <ArrowUpDown className="size-3" />;
+  return <ArrowUpDown className="size-3 text-brand-orange" />;
 }
 
 function ariaSort(direction: false | "asc" | "desc", canSort: boolean) {
@@ -145,7 +145,7 @@ function DataTableBody<TData extends RowData>({
             colSpan={table.getAllLeafColumns().length}
             className="px-5 py-12 text-center text-slate-500"
           >
-            <Inbox className="mx-auto mb-3 size-6 text-slate-300" />
+            <Inbox className="mx-auto mb-3 size-6 text-brand-orange" />
             {emptyMessage}
           </td>
         </tr>
@@ -163,9 +163,8 @@ export function DataTable<TData extends RowData>({
   rowClassName,
 }: DataTableProps<TData>) {
   const table = useTable({ features: dataTableFeatures, columns, data });
-  const resolvedMinWidth = typeof minWidth === "number"
-    ? `${minWidth}px`
-    : minWidth;
+  const resolvedMinWidth =
+    typeof minWidth === "number" ? `${minWidth}px` : minWidth;
 
   return (
     <>

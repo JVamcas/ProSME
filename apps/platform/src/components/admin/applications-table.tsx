@@ -4,7 +4,10 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ChevronRight, Search } from "lucide-react";
 import { StatusBadge } from "@/components/admin/status-badge";
-import { createDataTableColumnHelper, DataTable } from "@/components/ui/data-table";
+import {
+  createDataTableColumnHelper,
+  DataTable,
+} from "@/components/ui/data-table";
 import { Input } from "@/components/ui/form-controls";
 import { useApplications } from "@/modules/applications/application.hooks";
 import type { AdminApplication } from "@/modules/applications/application.types";
@@ -56,7 +59,7 @@ const columns = helper.columns([
         className="grid size-8 place-items-center rounded-full border border-slate-200 text-slate-400 hover:border-orange hover:text-navy"
         aria-label={`View ${info.row.original.id}`}
       >
-        <ChevronRight className="size-4" />
+        <ChevronRight className="size-4 text-brand-orange" />
       </Link>
     ),
   }),
@@ -103,7 +106,7 @@ export function ApplicationsTable() {
           </p>
         </div>
         <div className="relative w-full sm:w-72">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-brand-orange" />
           <Input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
@@ -121,7 +124,9 @@ export function ApplicationsTable() {
         footer={
           <div className="flex items-center justify-between border-t border-slate-200 px-5 py-4 text-xs text-slate-400">
             <span>{data.length} applications shown</span>
-            <span>{applications.isFetching ? "Refreshing…" : "Current records"}</span>
+            <span>
+              {applications.isFetching ? "Refreshing…" : "Current records"}
+            </span>
           </div>
         }
       />

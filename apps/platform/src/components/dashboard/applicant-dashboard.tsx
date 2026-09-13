@@ -40,7 +40,7 @@ export function ApplicantDashboard() {
             variant="outline"
             className="relative border-slate-200 text-slate-600"
           >
-            <Bell className="size-4 text-slate-600" />
+            <Bell className="size-4 text-brand-orange" />
             <span className="absolute right-0 top-0 size-2.5 rounded-full bg-gold" />
           </IconButton>
         </header>

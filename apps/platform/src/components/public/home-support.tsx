@@ -23,9 +23,7 @@ export function HomeSupport({ items }: { items: EligibilityItem[] }) {
               include:
             </p>
           </div>
-          <ArrowLink href="/eligibility">
-            See eligibility details
-          </ArrowLink>
+          <ArrowLink href="/eligibility">See eligibility details</ArrowLink>
         </div>
       </div>
       <div className="support-marquee mt-6 overflow-hidden py-3">
@@ -54,7 +52,7 @@ function SupportGroup({
             className="support-card rounded-xl border border-brand-blue/20 bg-white p-5"
             key={`${hidden ? "copy" : "main"}-${group.label}`}
           >
-            <span className="grid size-12 place-items-center rounded-full bg-brand-orange text-brand-navy">
+            <span className="grid size-12 place-items-center rounded-full bg-brand-orange/10 text-brand-orange">
               <Icon className="size-6" />
             </span>
             <h3 className="mt-4 min-h-12 text-xl font-bold leading-6 text-brand-navy">

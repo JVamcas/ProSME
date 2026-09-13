@@ -8,14 +8,25 @@ type ArrowLinkProps = ComponentProps<typeof Link> & {
   iconClassName?: string;
 };
 
-export function ArrowLink({ children, className, iconClassName, ...props }: ArrowLinkProps) {
+export function ArrowLink({
+  children,
+  className,
+  iconClassName,
+  ...props
+}: ArrowLinkProps) {
   return (
     <Link
-      className={cn("inline-flex shrink-0 items-center gap-2 text-sm font-bold text-brand-navy", className)}
+      className={cn(
+        "inline-flex shrink-0 items-center gap-2 text-sm font-bold text-brand-navy",
+        className,
+      )}
       {...props}
     >
       {children}
-      <ArrowUpRight aria-hidden="true" className={cn("size-4 underline", iconClassName)} />
+      <ArrowUpRight
+        aria-hidden="true"
+        className={cn("size-4 text-brand-orange underline", iconClassName)}
+      />
     </Link>
   );
 }

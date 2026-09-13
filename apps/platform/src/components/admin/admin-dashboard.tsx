@@ -17,7 +17,7 @@ export function AdminDashboard() {
           </p>
         </div>
         <div className="flex items-center gap-4">
-          <Bell className="size-5 text-slate-500" />
+          <Bell className="size-5 text-brand-orange" />
           <Select
             aria-label="Dashboard date range"
             className="h-10 rounded-md border-slate-200 px-3 text-xs text-slate-600"

@@ -50,9 +50,7 @@ export function HomeHero({ content }: HomeHeroProps) {
         <div className="hidden lg:block" />
       </div>
 
-      {content.heroImage ? (
-        <MobileHeroImage content={content} />
-      ) : null}
+      {content.heroImage ? <MobileHeroImage content={content} /> : null}
     </section>
   );
 }
@@ -174,15 +172,9 @@ function HeroQuote({ message }: { message: string }) {
   );
 }
 
-function HeroBenefit({
-  icon,
-  text,
-}: {
-  icon: React.ReactNode;
-  text: string;
-}) {
+function HeroBenefit({ icon, text }: { icon: React.ReactNode; text: string }) {
   return (
-    <span className="flex items-center gap-2 [&_svg]:size-5 [&_svg]:text-brand-navy">
+    <span className="flex items-center gap-2 [&_svg]:size-5 [&_svg]:text-brand-orange">
       {icon}
       {text}
     </span>
