@@ -1,22 +1,38 @@
 import "server-only";
 
 import { capabilities } from "@/auth/authorization/capabilities";
-import { requireCapability } from "@/auth/authorization/policy";
+import {
+  can,
+  requireAnyCapability,
+} from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import {
   findAllApplications,
+  findApplicationsAssignedTo,
+  findAssignedApplicationById,
   findApplicationById,
 } from "@/db/repositories/application.repository";
 
+function requireApplicationReader(user: AuthenticatedUser | null) {
+  return requireAnyCapability(user, [
+    capabilities.applicationReadAssigned,
+    capabilities.applicationReadAll,
+  ]);
+}
+
 export async function getApplications(user: AuthenticatedUser | null) {
-  requireCapability(user, capabilities.adminAccess);
-  return findAllApplications();
+  const actor = requireApplicationReader(user);
+  return can(actor, capabilities.applicationReadAll)
+    ? findAllApplications()
+    : findApplicationsAssignedTo(actor.id);
 }
 
 export async function getApplication(
   user: AuthenticatedUser | null,
   id: string,
 ) {
-  requireCapability(user, capabilities.adminAccess);
-  return findApplicationById(id);
+  const actor = requireApplicationReader(user);
+  return can(actor, capabilities.applicationReadAll)
+    ? findApplicationById(id)
+    : findAssignedApplicationById(actor.id, id);
 }

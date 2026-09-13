@@ -5,9 +5,9 @@
 | Field | Value |
 | --- | --- |
 | Document | Production implementation and delivery plan |
-| Version | 1.1 |
+| Version | 2.0 |
 | Date | 13 September 2026 |
-| Status | Execution baseline; Phase 3 design agreement in progress |
+| Status | Execution baseline; P3.1 ready for review |
 | Product | SME Fund platform under the ProSME Project |
 | Selected design | Option B |
 | Delivery scope | Remaining milestones M4–M12 |
@@ -20,6 +20,15 @@ This document is the authoritative implementation plan for production delivery a
 | --- | --- | --- |
 | 1.0 | 11 September 2026 | Initial gated production-delivery baseline |
 | 1.1 | 13 September 2026 | Recorded the Phase 3 portal, workflow, permission, UI, reuse, query, and incremental-delivery agreement before implementation |
+| 1.2 | 13 September 2026 | Accepted P3.0 and linked the detailed portal, workflow, capability, data/API, palette-audit, and TOR-traceability contracts |
+| 1.3 | 13 September 2026 | Implemented P3.1 shared portal identity context, capability-filtered shell, owned applicant/business profiles, APIs, SQL projections, migration, tests, and review evidence |
+| 1.4 | 13 September 2026 | Corrected the Phase 3 delivery sequence and visual targets, moved workflow configuration and funding-opportunity assignment before submission, and aligned portal navigation with the agreed UI boards |
+| 1.5 | 13 September 2026 | Added a blocking acceptance gate and gate record for every Phase 3 increment, with P3.9 serving as the final G3 milestone acceptance |
+| 1.6 | 13 September 2026 | Recorded P3.1 as not done and explicitly blocked P3.2 until the P3.1 gate is accepted |
+| 1.7 | 13 September 2026 | Completed the P3.1 visual-target remediation, profile position persistence, identity refresh, phase-scoped applicant grants, and replacement verification evidence |
+| 1.8 | 13 September 2026 | Added reusable accessible route tabs and consolidated all applicant profile sections under the My Profile route |
+| 1.9 | 13 September 2026 | Remediated P3.1 review findings for independent profile submissions, operations application scope, read-only UI, shared route states, correlated error logging, and approved dashboard hierarchy |
+| 2.0 | 13 September 2026 | Replaced the one-business-per-applicant profile assumption with an owned business collection and dedicated My Businesses CRUD workspace |
 
 ## 1. Purpose
 
@@ -79,7 +88,7 @@ The client-approved milestone sequence is:
 | M2 | Three Website Design Concepts | Week 1 | Complete |
 | M3 | Approved Final Design Prototype — Option B | Week 2 | Complete |
 | M4 | Fully Developed and Operational Website | Week 3 | Accepted — G2 passed |
-| M5 | Online Application System with Workflow Engine | Week 3 | Planning — production implementation not started |
+| M5 | Online Application System with Workflow Engine | Week 3 | In progress — P3.1 ready for review |
 | M6 | AI Chatbot Trained and Deployed | Week 3 | Pending |
 | M7 | Analytics Dashboard Configured | Week 4 | Pending |
 | M8 | User Acceptance Testing Report | Weeks 5–7 | Pending |
@@ -349,7 +358,7 @@ G2 passes only when:
 
 **Milestone:** M5  
 **Gate:** G3
-**Status:** Planning and design agreement in progress; Phase 3 production implementation has not started
+**Status:** P3.0 complete; P3.1 ready for review; P3.2 blocked
 
 ### Current delivery record
 
@@ -358,15 +367,14 @@ G2 passes only when:
 | G1 foundation | Passed | Recorded in `docs/testing/gates/G1-foundation.md` |
 | G2 public website | Passed | Recorded in `docs/testing/gates/G2-public-website.md` |
 | TOR and Phase 3 UI review | Complete | Requirements and proposed screens reviewed for the plan |
-| Portal, workflow, data, and permission design | Proposed | Requires agreement through this implementation plan before code changes |
-| Phase 3 database/domain implementation | Not started | No Phase 3 schema, migration, repository, or service is accepted |
-| Applicant portal implementation | Not started | Existing demonstrator components are inputs, not Phase 3 completion evidence |
+| Portal, workflow, data, and permission design | Agreed | P3.0 contracts accepted in `docs/testing/gates/P3.0-design-contracts.md` |
+| Phase 3 database/domain implementation | In progress | P3.1 implementation complete and awaiting acceptance; later domains are not started |
+| Applicant portal implementation | In progress | P3.1 implementation complete and awaiting acceptance |
 | Operations/work-queue implementation | Not started | Existing fixture-backed screens are inputs, not Phase 3 completion evidence |
 | G3 evidence and acceptance | Not started | Created only as independently testable increments are completed |
 
-No Phase 3 route, component, schema, migration, repository, service, or test is
-started until the P3.0 design-and-contract record is reviewed and marked
-agreed in this document.
+P3.0 is agreed. P3.1 is ready for review. P3.2 may not begin until the P3.1
+gate is accepted.
 
 ### Conversation decision record
 
@@ -390,6 +398,7 @@ before implementation continues.
 | Security boundary | Sidebar filtering and `CapabilityGate` improve usability only. Layouts/pages, API or Server Actions, services, repositories, and storage access enforce the same policy server-side. |
 | Workflow model | Definition/version/stage/task/transition configuration is separated from application workflow/stage/task instances. |
 | Versioning | Published workflow versions are immutable; each submitted application pins the exact published version it uses. |
+| Funding-opportunity workflow assignment | Workflow Configuration assigns a published workflow version to a funding opportunity. Applicants may discover opportunities, assess eligibility, create, save, resume, and complete drafts without that assignment; only submission requires it. The assignment is a state within Workflow Configuration and is not a separate sidebar route. |
 | Configurability | Stages, tasks, order, assignments, criteria, labels, actions, and transitions are configuration rather than hard-coded pages. |
 | Task extensibility | Registered task types have typed configuration/result schemas and renderers. More configured tasks need no deployment; genuinely new behaviour is added as a new registry entry. |
 | Form extensibility | A bounded `STRUCTURED_FORM` type covers ordinary future staff forms without becoming an unrestricted form/BPM builder. |
@@ -413,19 +422,18 @@ The applicant navigation contains:
 - Funding Opportunities, linked to the public funding-call catalogue rather
   than duplicated portal content.
 - My Applications.
-- My Documents.
-- Messages.
 - Notifications.
-- Saved Resources.
-- Business Profile.
 - My Profile.
-- Help and Support.
+
+Help and Support and Logout are footer actions. Reviewer information requests
+and applicant responses remain contextual to an application; they are not a
+generic Messages sidebar route.
 
 The application workspace keeps stable sections regardless of the internal
 workflow configuration:
 
 ```text
-Overview | Application | Documents | Status | Requests & Messages
+Overview | Documents | Status | Information Requests
 ```
 
 The primary screen surfaces the next applicant action, autosave/connectivity
@@ -447,21 +455,25 @@ capabilities:
 - Dashboard.
 - Work Queue.
 - Applications.
-- Communications.
+- Information Requests.
 - Reports.
-- Workflow Configuration.
 - Users & Access.
 - Audit Log.
+
+Help and Support and Logout are footer actions. Workflow Configuration is a
+capability-gated administrative workspace. Funding Opportunity–Workflow
+Assignment is one state within that workspace and is never another sidebar
+route.
 
 Screening, technical assessment, finance review, recommendation, and decision
 are configurable work-queue filters and saved views rather than permanent
 sidebar modules. The application workspace keeps stable contextual sections:
 
 ```text
-Overview | Applicant | Documents | Workflow | Communications | History
+Overview | Applicant | Documents | Assessment | Finance Review | Recommendation | Decision | History
 ```
 
-The Workflow section renders the active registered task UI. The Work Queue
+The task-specific workspace section renders the active registered task UI. The Work Queue
 projection shows task name/type, application reference and applicant summary,
 stage, priority, role/user assignment, status, and due date without loading the
 full application or task payload.
@@ -471,10 +483,10 @@ tasks, role/user assignment rules, applicant-visible labels, allowed actions
 and transitions, type-specific configuration, validation, plain-language
 preview, publish, and retire. Published versions cannot be edited or deleted.
 
-The applications and communications areas provide capability-gated selection,
-bulk status action, batch communication, and explicit export projections. The
-user/access area manages application-owned roles and capabilities; it does not
-delegate platform authorization to Payload.
+The Applications and Information Requests areas provide capability-gated
+selection, bulk status action, batch communication, and explicit export
+projections. The user/access area manages application-owned roles and
+capabilities; it does not delegate platform authorization to Payload.
 
 ### Agreed portal architecture
 
@@ -525,6 +537,20 @@ permission context. Refreshing permissions may use one dedicated query, but
 navigation rendering must not create a request waterfall.
 
 ### Phase 3 visual direction
+
+The Phase 3 implementation targets are the complete screen boards below. The
+numbered screen references in the incremental delivery table refer to these
+boards:
+
+- `apps/platform/public/mockups/phase-3/applicant-portal-all-screens-desktop-v1.png`
+- `apps/platform/public/mockups/phase-3/applicant-portal-all-screens-mobile-v1.png`
+- `apps/platform/public/mockups/phase-3/admin-portal-all-screens-desktop-v1.png`
+- `apps/platform/public/mockups/phase-3/admin-portal-all-screens-mobile-v1.png`
+
+Each increment must implement both the desktop and mobile target for every
+screen assigned to it. The boards define the intended information hierarchy,
+navigation, fields, actions, responsive composition, and workflow presentation;
+implementation still applies the canonical accessible design tokens below.
 
 - Use the SME Fund logo, not the ProSME logo, throughout the applicant and
   operations portal shell.
@@ -653,30 +679,43 @@ templates, and assignments remain editable draft configuration.
 
 ### Incremental Phase 3 delivery plan
 
-Phase 3 is delivered and reviewed in the following increments. Work does not
-advance merely because later screens can be mocked; each increment must meet
-its exit evidence first.
+Phase 3 is delivered and reviewed in the following increments. Every increment
+has a formal gate record. An increment is complete only when its gate record is
+marked **Accepted** by the named review authority. Work on `P3.n+1` must not
+begin while the `P3.n` gate is Not started, In progress, Ready for review,
+Rejected, or otherwise unaccepted. Mocked later screens do not satisfy or
+bypass an earlier gate.
 
-| Increment | Scope | State | Exit evidence |
-| --- | --- | --- | --- |
-| P3.0 Design and contracts | Portal IA, canonical and semantic colour-token contract, shared shell contract, capability catalogue, workflow model, task registry, status vocabulary, SQL read models, API contracts | In progress | Written design agreement, palette audit, and traceability review |
-| P3.1 Workflow-definition foundation | Definition/version/stage/task/transition migrations and repositories, draft/publish/retire lifecycle, published-version immutability, definition validation, typed task registry, configuration projections, and TOR-aligned seed workflow | Not started | Migration round trip, definition-validation tests, immutable-version tests, registry contract tests, projection/query evidence, and reviewed seed configuration |
-| P3.2 Identity and profiles | Shared authenticated portal shell, capability context/gates, applicant profile, business profile, ownership policy | Not started | Policy tests, projection tests, responsive/accessibility evidence |
-| P3.3 Eligibility and application drafts | Versioned eligibility rules/results, funding-call linkage, draft/save/resume, form validation | Not started | Applicant-owned draft round trip and rule-version tests |
-| P3.4 Documents, submission, and workflow instantiation | Private storage adapter, metadata, scan states, declaration, idempotent submission/reference, and transactional creation of a workflow instance pinned to an exact published definition version | Not started | Transaction, version-pinning, duplicate-submit, access, and upload tests |
-| P3.5 Work queue and screening | Task projection, assignment/claim, completeness/document tasks, information request/response | Not started | Queue query plan, capability tests, end-to-end request loop |
-| P3.6 Assessment and finance | Type-driven assessment and finance tasks, scoring configuration, comments, recommendations, return paths | Not started | Versioned config/result and transition tests |
-| P3.7 Decision and communication | Panel decision, reasoned override, outcome templates, notification outbox and delivery states | Not started | Authority, audit, idempotency and happy-path evidence |
-| P3.8 Administration and bulk operations | Workflow draft/clone/preview/publish/retire UI over the P3.1 services, user/role management, bulk status, batch communication, audited CSV/Excel export | Not started | Permission matrix, workflow-publication UI tests, export projection, bulk transaction tests |
-| P3.9 G3 acceptance | Full responsive, accessibility, security, performance, recovery and UAT journeys | Not started | Completed `G3-application-workflow.md` and written acceptance |
+| Increment | Scope | Target screens | Gate record | State | Exit evidence |
+| --- | --- | --- | --- | --- | --- |
+| P3.0 Design, contracts and visual targets | Portal IA, accessible colour-token contract, shared shell contract, capability catalogue, workflow model, task registry, status vocabulary, SQL read models, API contracts, and complete desktop/mobile visual targets | Complete UI boards | `docs/testing/gates/P3.0-design-contracts.md` | Complete | Accepted gate record and four complete Phase 3 target boards |
+| P3.1 Identity, profiles and shared portal shell | Shared authenticated portal shell, capability context/gates, applicant profile, owned business collection, and ownership policy | Applicant Dashboard, My Profile, and My Businesses | `docs/testing/gates/P3.1-identity-profiles.md` | Ready for review | Completed implementation, verified evidence, and explicit reviewer acceptance |
+| P3.2 Funding opportunities, eligibility and application drafts | Funding-call linkage, versioned eligibility rules/results, application creation, draft/save/resume, form validation, and application section completion without submission | Applicant screens 2–9 | `docs/testing/gates/P3.2-funding-eligibility-drafts.md` | Not started | Funding-call projection, applicant-owned draft round trip, validation, and rule-version tests |
+| P3.3 Workflow configuration and opportunity assignment | Definition/version/stage/task/transition persistence, typed task registry, TOR-aligned seed workflow, draft/clone/validate/preview/publish/retire lifecycle, published-version immutability, and funding-opportunity assignment | Workflow Definitions, Workflow Editor, and Funding Opportunity–Workflow Assignment within Workflow Configuration | `docs/testing/gates/P3.3-workflow-configuration.md` | Not started | Migration, definition-validation, registry, immutable-version, publication, authorization, audit, assignment, and projection/query evidence |
+| P3.4 Documents, declarations and submission | Private storage adapter, document metadata and scan states, declarations, review, idempotent submission/reference, and transactional creation of the initial workflow instance from the opportunity's assigned published workflow version | Applicant screens 10–13 | `docs/testing/gates/P3.4-documents-submission.md` | Not started | Transaction, assignment/version-pinning, duplicate-submit, access, declaration, and upload tests |
+| P3.5 Work queue, screening and information requests | Task projection, assignment/claim, completeness and document-review tasks, and the information request/response loop | Admin screens 2 and 4–9; Applicant screen 14 | `docs/testing/gates/P3.5-work-queue-screening.md` | Not started | Queue query plan, capability and assignment tests, screening transitions, and end-to-end request loop |
+| P3.6 Assessment, finance and recommendations | Type-driven assessment and finance tasks, scoring configuration, comments, recommendations, and return paths | Admin screens 10–12 | `docs/testing/gates/P3.6-assessment-finance.md` | Not started | Versioned configuration/result, capability, scoring, and transition tests |
+| P3.7 Decision and outcome communication | Panel decision, reasoned override, conditions, outcome templates, notification outbox, delivery states, applicant-safe status, and notifications | Admin screens 13–14; Applicant Notifications and Status | `docs/testing/gates/P3.7-decision-communication.md` | Not started | Authority, override, audit, outbox, delivery-idempotency, and happy-path evidence |
+| P3.8 Users, access, reports, audit and bulk operations | User/role/capability management, reports, audited CSV/Excel export, bulk status, batch communication, audit log, and remaining workflow-administration operations | Admin screens 3 and 15–20 | `docs/testing/gates/P3.8-administration-reporting.md` | Not started | Permission matrix, export projection, audit, reporting, and bulk transaction tests |
+| P3.9 Full G3 acceptance | Full responsive, accessibility, security, performance, recovery, and UAT journeys | All desktop/mobile journeys | `docs/testing/gates/G3-application-workflow.md` | Not started | Completed G3 gate record and written milestone acceptance |
 
-P3.1 is the first production implementation increment. It establishes the
-workflow-definition system before any application can instantiate a workflow.
-P3.4 may create a `WorkflowInstance` only from an existing published,
-immutable `WorkflowDefinitionVersion`; it must never assemble stages or tasks
-from hard-coded application logic. P3.8 adds the administration UI to the
-already-tested definition services rather than introducing the workflow model
-late in delivery.
+P3.2 does not depend on a configured workflow. Applicants may discover funding
+opportunities, assess eligibility, create applications, save, resume, and
+complete drafts before a workflow is assigned.
+
+P3.3 implements the workflow-definition system and allows an authorised
+administrator to assign a published workflow version to a funding opportunity.
+Funding Opportunity–Workflow Assignment is a state within Workflow
+Configuration, not a separate sidebar route and not an additional visual-board
+deliverable.
+
+Only submission depends on workflow assignment. P3.4 must reject submission
+unless the selected funding opportunity has an assigned published,
+immutable `WorkflowDefinitionVersion`. A successful submission pins that exact
+version and atomically creates the application reference, workflow instance,
+initial stage, initial tasks, workflow event, audit event, and required
+notification-outbox records. It must never assemble stages or tasks from
+hard-coded application logic.
 
 ### Entry conditions
 
@@ -692,27 +731,52 @@ late in delivery.
 
 ### Required work
 
-1. Implement the workflow-definition schema, migrations, repositories,
+1. Integrate the existing application into the platform domain and PostgreSQL
+   persistence model.
+2. Implement applicant registration, profile, business profile, and identity
+   linking.
+3. Link portal funding opportunities to the public funding-call catalogue
+   without duplicating CMS-owned content.
+4. Implement eligibility assessments with configurable rules and recorded rule
+   versions.
+5. Implement applicant-owned application creation, draft/save/resume,
+   validation, and application-section completion without requiring a workflow.
+6. Implement the workflow-definition schema, migrations, repositories,
    services, lifecycle, validation, typed task registry, and TOR-aligned seed
-   workflow before implementing submission or work-queue behavior.
-2. Integrate the existing application into the platform domain and PostgreSQL persistence model.
-3. Implement applicant registration, profile, business profile, and identity linking.
-4. Implement eligibility assessments with configurable rules and recorded rule versions.
-5. Implement application draft, save/resume, validation, review, declaration, submission, and reference generation.
-6. Implement secure document upload, metadata, access control, validation, and malware-scanning integration point.
-7. On submission, create the workflow, stage, and task instances atomically from
-   the exact published workflow-definition version pinned to the application.
-8. Implement applicant status tracking, messages, notifications, information requests, and additional-document responses.
-9. Implement internal completeness screening, assignment, technical assessment, scoring, finance review, recommendation, decision, and controlled communication.
-10. Implement manual override only for authorised capabilities and require a reason.
-11. Create immutable workflow and audit events for sensitive state changes.
-12. Implement CSV/Excel export with authorization and audit logging.
-13. Prevent duplicate submissions and make critical commands idempotent.
-14. Use PostgreSQL transactions for submission and workflow transitions.
-15. Add granular operational permissions for applications, assessment, finance, decisions, communication, exports, and overrides.
-16. Add application-owned user and role management under `/admin`, including verified-user promotion or staff invitation; do not administer permissions in Payload.
-17. Allow only authorised administrators to assign roles to verified users, treating each role as the permission group rather than adding a duplicate grouping model.
-18. Record immutable audit events for every role, permission, and application-user status change.
+   workflow before implementing submission or work-queue behaviour.
+7. Allow an authorised administrator to assign a published workflow version to
+   a funding opportunity within Workflow Configuration. Do not create a
+   separate sidebar route for the assignment state.
+8. Implement secure document upload, metadata, access control, validation, and
+   the malware-scanning integration point.
+9. Implement application review, declarations, idempotent submission, and
+   immutable reference generation. Submission, but not draft work, requires the
+   selected opportunity to have an assigned published workflow version.
+10. On submission, atomically create the workflow, stage, and task instances
+    from the exact assigned published workflow-definition version pinned to the
+    application.
+11. Implement applicant-safe status tracking, notifications, information
+    requests, and additional-document responses without a generic Messages
+    route.
+12. Implement internal completeness screening, assignment, technical
+    assessment, scoring, finance review, recommendation, decision, and
+    controlled outcome communication.
+13. Implement manual override only for authorised capabilities and require a
+    reason.
+14. Create immutable workflow and audit events for sensitive state changes.
+15. Implement CSV/Excel export with authorization and audit logging.
+16. Prevent duplicate submissions and make critical commands idempotent.
+17. Use PostgreSQL transactions for submission and workflow transitions.
+18. Add granular operational permissions for applications, assessment,
+    finance, decisions, communication, exports, and overrides.
+19. Add application-owned user and role management under `/admin`, including
+    verified-user promotion or staff invitation; do not administer permissions
+    in Payload.
+20. Allow only authorised administrators to assign roles to verified users,
+    treating each role as the permission group rather than adding a duplicate
+    grouping model.
+21. Record immutable audit events for every role, permission, and
+    application-user status change.
 
 ### Gate G3 — M5 workflow accepted
 
@@ -1085,21 +1149,23 @@ Each change request must document scope, reason, affected requirements, schedule
 ## 13. Immediate execution order
 
 1. Preserve the completed G1 foundation and accepted G2 public website.
-2. Review this Phase 3 conversation record and mark P3.0 agreed before making
-   Phase 3 implementation changes.
-3. Deliver P3.1 workflow-definition persistence, lifecycle, validation, task
-   registry, services, projections, and seed workflow; record its evidence.
-4. Deliver P3.2 identity, profiles, shared authenticated shell, typed route
+2. Preserve the accepted P3.0 contracts and trace later changes through their
+   acceptance record.
+3. Deliver P3.1 identity, profiles, shared authenticated shell, typed route
    filtering, and capability gates; record its evidence.
-5. Deliver P3.3 eligibility and application drafts; record its evidence.
-6. Deliver P3.4 documents, idempotent submission, and transactional workflow
-   instantiation from a published definition version; record its evidence.
+4. Deliver P3.2 funding opportunities, eligibility, and application drafts;
+   record its evidence. Draft work does not require a configured workflow.
+5. Deliver P3.3 workflow configuration, publication, and funding-opportunity
+   assignment; record its evidence.
+6. Deliver P3.4 documents, declarations, idempotent submission, and
+   transactional workflow instantiation from the opportunity's assigned
+   published version; record its evidence.
 7. Deliver P3.5 work queue, screening, and the information-request round trip;
    record its evidence.
-8. Deliver P3.6 assessment and finance tasks; record its evidence.
+8. Deliver P3.6 assessment, finance, and recommendations; record its evidence.
 9. Deliver P3.7 decision and outcome communication; record its evidence.
-10. Deliver P3.8 workflow/user administration, bulk operations, and exports;
-    record its evidence.
+10. Deliver P3.8 users, access, reports, audit, and bulk operations; record its
+    evidence.
 11. Execute P3.9 and pass G3 only after all earlier Phase 3 evidence is accepted.
 12. Deliver M6 and M7, then pass G4 and G5.
 13. Execute UAT and pass G6.

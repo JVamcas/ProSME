@@ -1,9 +1,14 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import { getDefaultAuthenticatedPath } from "@/auth/authorization/portal-access";
 import { createCsrfToken } from "@/auth/csrf/create-token";
 import { csrfTokensMatch } from "@/auth/csrf/verify-token";
-import { csrfCookieName, getSessionCookieName, readCookie } from "@/auth/firebase/cookies";
+import {
+  csrfCookieName,
+  getSessionCookieName,
+  readCookie,
+} from "@/auth/firebase/cookies";
 import {
   establishApplicationSession,
   RecentAuthenticationRequiredError,
@@ -40,6 +45,7 @@ function sessionResponse(
       displayName: session.user.displayName,
       userType: session.user.userType,
     },
+    defaultPath: getDefaultAuthenticatedPath(session.user),
   });
   response.cookies.set(getSessionCookieName(), session.sessionCookie, {
     httpOnly: true,

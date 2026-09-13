@@ -5,65 +5,72 @@ import Link from "next/link";
 import { ChevronRight, Search } from "lucide-react";
 import { StatusBadge } from "@/components/admin/status-badge";
 import {
-  createDataTableColumnHelper,
   DataTable,
+  type DataTableColumn,
 } from "@/components/ui/data-table";
 import { Input } from "@/components/ui/form-controls";
 import { useApplications } from "@/modules/applications/application.hooks";
 import type { AdminApplication } from "@/modules/applications/application.types";
 
-const helper = createDataTableColumnHelper<AdminApplication>();
-const columns = helper.columns([
-  helper.accessor("id", {
+const columns: DataTableColumn<AdminApplication>[] = [
+  {
+    accessorKey: "id",
     header: "Reference",
-    cell: (info) => (
-      <span className="font-bold text-navy">{info.getValue()}</span>
+    cell: ({ row }) => (
+      <span className="font-bold text-navy">{row.original.id}</span>
     ),
-  }),
-  helper.accessor("business", {
+  },
+  {
+    accessorKey: "business",
     header: "Business",
-    cell: (info) => (
+    cell: ({ row }) => (
       <div>
-        <p className="font-semibold text-slate-800">{info.getValue()}</p>
+        <p className="font-semibold text-slate-800">
+          {row.original.business}
+        </p>
         <p className="mt-0.5 text-[10px] text-slate-400">
-          {info.row.original.applicant}
+          {row.original.applicant}
         </p>
       </div>
     ),
-  }),
-  helper.accessor("sector", { header: "Sector" }),
-  helper.accessor("region", { header: "Region" }),
-  helper.accessor("requested", {
+  },
+  { accessorKey: "sector", header: "Sector" },
+  { accessorKey: "region", header: "Region" },
+  {
+    accessorKey: "requested",
     header: "Requested",
-    cell: (info) => `N$${info.getValue().toLocaleString("en-NA")}`,
-  }),
-  helper.accessor("submitted", {
+    cell: ({ row }) => `N$${row.original.requested.toLocaleString("en-NA")}`,
+  },
+  {
+    accessorKey: "submitted",
     header: "Submitted",
-    cell: (info) =>
+    cell: ({ row }) =>
       new Intl.DateTimeFormat("en-NA", {
         day: "2-digit",
         month: "short",
         year: "numeric",
-      }).format(new Date(info.getValue())),
-  }),
-  helper.accessor("status", {
+      }).format(new Date(row.original.submitted)),
+  },
+  {
+    accessorKey: "status",
     header: "Status",
-    cell: (info) => <StatusBadge status={info.getValue()} />,
-  }),
-  helper.display({
+    cell: ({ row }) => <StatusBadge status={row.original.status} />,
+  },
+  {
     id: "action",
     header: "",
-    cell: (info) => (
+    enableSorting: false,
+    cell: ({ row }) => (
       <Link
-        href={`/admin/applications/${info.row.original.id}`}
+        href={`/admin/applications/${row.original.id}`}
         className="grid size-8 place-items-center rounded-full border border-slate-200 text-slate-400 hover:border-orange hover:text-navy"
-        aria-label={`View ${info.row.original.id}`}
+        aria-label={`View ${row.original.id}`}
       >
         <ChevronRight className="size-4 text-brand-orange" />
       </Link>
     ),
-  }),
-]);
+  },
+];
 
 export function ApplicationsTable() {
   const [search, setSearch] = useState("");

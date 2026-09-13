@@ -17,7 +17,7 @@ export function ArrowLink({
   return (
     <Link
       className={cn(
-        "inline-flex shrink-0 items-center gap-2 text-sm font-bold text-brand-navy",
+        "inline-flex shrink-0 items-center gap-2 text-sm font-bold text-brand-orange transition-colors hover:text-brand-orange/80",
         className,
       )}
       {...props}

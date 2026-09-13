@@ -1,12 +1,18 @@
 import type { Metadata } from "next";
 
+import { getCurrentUser } from "@/auth/authorization/current-user";
 import { ApplicantDashboard } from "@/components/dashboard/applicant-dashboard";
+import { createApplicantDashboardSummary } from "@/modules/profiles/profile.service";
 
 export const metadata: Metadata = { title: "Applicant dashboard" };
-export default function PortalPage() {
+
+export default async function PortalPage() {
+  const user = await getCurrentUser();
+  const dashboard = createApplicantDashboardSummary(user);
+
   return (
-    <section className="min-h-screen bg-slate-100">
-      <ApplicantDashboard />
+    <section>
+      <ApplicantDashboard {...dashboard} />
     </section>
   );
 }

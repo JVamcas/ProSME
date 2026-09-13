@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 
 import { getFirebaseAdminAuth } from "../../apps/platform/src/auth/firebase/admin";
 import { getDatabase } from "../../apps/platform/src/db/client";
@@ -14,7 +14,7 @@ import { syncCmsPrincipal } from "../../apps/platform/src/payload/system/sync-cm
 const configuredEmail = process.env.BOOTSTRAP_ADMIN_EMAIL
   ?.trim()
   .toLowerCase();
-const roleCode = "system_administrator";
+const bootstrapRoleCodes = ["system_administrator", "applicant"] as const;
 
 if (!configuredEmail) {
   throw new Error("BOOTSTRAP_ADMIN_EMAIL is required");
@@ -30,14 +30,13 @@ const database = getDatabase();
 type Transaction = Parameters<Parameters<typeof database.transaction>[0]>[0];
 type Audit = typeof authorizationAuditEntries.$inferInsert;
 const actorId = `bootstrap:${email}`;
-const [role] = await database
+const bootstrapRoles = await database
   .select()
   .from(roles)
-  .where(eq(roles.code, roleCode))
-  .limit(1);
-if (!role) {
+  .where(inArray(roles.code, bootstrapRoleCodes));
+if (bootstrapRoles.length !== bootstrapRoleCodes.length) {
   throw new Error(
-    `Unknown role: ${roleCode}. Apply the application migration first.`,
+    "Required bootstrap roles are missing. Apply the application migration first.",
   );
 }
 
@@ -134,53 +133,33 @@ async function upsertAdminUser(transaction: Transaction) {
   };
 }
 
-async function assignAdminRole(transaction: Transaction, userId: string) {
-  const audit: Audit[] = [];
-  const [applicantRole] = await transaction
-    .select()
-    .from(roles)
-    .where(eq(roles.code, "applicant"))
-    .limit(1);
-  if (applicantRole) {
-    const removed = await transaction
-      .delete(userRoles)
-      .where(
-        and(
-          eq(userRoles.userId, userId),
-          eq(userRoles.roleId, applicantRole.id),
-        ),
-      )
-      .returning({ roleId: userRoles.roleId });
-    if (removed.length) {
-      audit.push({
-        action: "role.removed",
-        actorId,
-        targetUserId: userId,
-        roleCode: "applicant",
-      });
-    }
-  }
+async function assignBootstrapRoles(transaction: Transaction, userId: string) {
   const assigned = await transaction
     .insert(userRoles)
-    .values({ userId, roleId: role.id })
+    .values(bootstrapRoles.map((role) => ({ userId, roleId: role.id })))
     .onConflictDoNothing()
     .returning({ roleId: userRoles.roleId });
-  if (assigned.length) {
-    audit.push({
+
+  const assignedIds = new Set(assigned.map((item) => item.roleId));
+  return bootstrapRoles.flatMap((role): Audit[] => {
+    if (!assignedIds.has(role.id)) {
+      return [];
+    }
+
+    return [{
       action: "role.assigned",
       actorId,
       targetUserId: userId,
-      roleCode,
-    });
-  }
-  return audit;
+      roleCode: role.code,
+    }];
+  });
 }
 
 const applicationUserId = await database.transaction(async (transaction) => {
   const result = await upsertAdminUser(transaction);
   const audit = [
     ...result.audit,
-    ...(await assignAdminRole(transaction, result.userId)),
+    ...(await assignBootstrapRoles(transaction, result.userId)),
   ];
 
   if (audit.length) {
@@ -195,5 +174,5 @@ await syncCmsPrincipal({
   displayName: firebaseUser.displayName || email,
 });
 
-console.info(`Bootstrapped ${email} as ${roleCode}`);
+console.info(`Bootstrapped ${email} as ${bootstrapRoleCodes.join(" + ")}`);
 process.exit(0);

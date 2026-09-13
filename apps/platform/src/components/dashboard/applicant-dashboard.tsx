@@ -1,63 +1,102 @@
-"use client";
+import {
+  BellRing,
+  BriefcaseBusiness,
+  CircleAlert,
+  FileClock,
+  Send,
+} from "lucide-react";
+import Image from "next/image";
 
-import { Bell } from "lucide-react";
-import { useEffect } from "react";
+import type { ApplicantDashboardSummary } from "@/modules/profiles/profile.types";
+import { DashboardMetricCard } from "./dashboard-metric-card";
 
-import { IconButton } from "@/components/ui/button";
-import { useApplicationStore } from "@/store/application-store";
-import { ApplicationOverview } from "./application-overview";
-import { EmptyApplications } from "./empty-applications";
-import { PortalSidebar } from "./portal-sidebar";
-import { PortalUpdates } from "./portal-updates";
-
-export function ApplicantDashboard() {
-  const { application, documents, reference, submittedAt } =
-    useApplicationStore();
-
-  useEffect(() => {
-    void useApplicationStore.persist.rehydrate();
-  }, []);
-
-  const name = application.firstName
-    ? `${application.firstName} ${application.lastName ?? ""}`
-    : "Applicant";
-
+export function ApplicantDashboard({
+  displayName,
+}: ApplicantDashboardSummary) {
   return (
-    <div className="grid min-h-screen lg:grid-cols-[280px_1fr]">
-      <PortalSidebar name={name} />
-      <div className="min-w-0 bg-slate-100 p-5 sm:p-8">
-        <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+    <div>
+      <header className="grid min-h-32 overflow-hidden rounded-2xl border border-brand-blue/40 bg-brand-blue/15 shadow-sm sm:grid-cols-[1fr_15rem]">
+        <div className="self-center p-5 sm:p-6">
+          <h1 className="display text-2xl font-bold text-brand-navy sm:text-3xl">
+            Welcome back, {displayName}
+          </h1>
+          <p className="mt-1 text-sm text-brand-navy/70">
+            Here&apos;s an overview of your SME Fund activity.
+          </p>
+        </div>
+        <div className="relative hidden min-h-32 sm:block">
+          <Image
+            alt=""
+            aria-hidden="true"
+            className="object-contain object-right"
+            fill
+            priority
+            sizes="240px"
+            src="/brand/pic1.png"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-brand-blue/30 to-transparent" />
+        </div>
+      </header>
+
+      <section aria-labelledby="application-status-heading" className="mt-6">
+        <h2
+          id="application-status-heading"
+          className="text-lg font-bold text-brand-navy"
+        >
+          Application status
+        </h2>
+        <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <DashboardMetricCard
+            icon={FileClock}
+            label="Applications in progress"
+            supportingText="No active applications"
+            value="0"
+          />
+          <DashboardMetricCard
+            icon={Send}
+            label="Submitted"
+            supportingText="You have not submitted any applications"
+            value="0"
+          />
+          <DashboardMetricCard
+            icon={CircleAlert}
+            label="Action required"
+            supportingText="Nothing needs attention"
+            value="0"
+          />
+          <DashboardMetricCard
+            icon={BriefcaseBusiness}
+            label="Funding opportunities"
+            supportingText="No funding opportunities available"
+            value="—"
+          />
+        </div>
+      </section>
+
+      <section
+        aria-labelledby="recent-activity-heading"
+        className="mt-6 min-h-48 rounded-2xl border border-brand-navy/15 bg-brand-white shadow-sm"
+      >
+        <div className="border-b border-brand-navy/10 px-5 py-4">
+          <h2 id="recent-activity-heading" className="font-bold text-brand-navy">
+            Recent activity
+          </h2>
+        </div>
+        <div className="grid min-h-36 place-items-center px-5 py-8 text-center">
           <div>
-            <p className="text-sm text-slate-500">
-              Welcome back, {application.firstName || "Applicant"}
-            </p>
-            <h1 className="display mt-1 text-3xl font-semibold text-navy">
-              Application overview
-            </h1>
-          </div>
-          <IconButton
-            label="Notifications"
-            variant="outline"
-            className="relative border-slate-200 text-slate-600"
-          >
-            <Bell className="size-4 text-brand-orange" />
-            <span className="absolute right-0 top-0 size-2.5 rounded-full bg-gold" />
-          </IconButton>
-        </header>
-        {!reference ? (
-          <EmptyApplications />
-        ) : (
-          <>
-            <ApplicationOverview
-              application={application}
-              documentCount={Object.keys(documents).length}
-              reference={reference}
-              submittedAt={submittedAt}
+            <BellRing
+              aria-hidden="true"
+              className="mx-auto size-7 text-brand-orange"
             />
-            <PortalUpdates reference={reference} />
-          </>
-        )}
-      </div>
+            <p className="mt-3 font-bold text-brand-navy">
+              No recent activity yet
+            </p>
+            <p className="mt-1 text-sm text-brand-navy/65">
+              Application updates will appear here when they become available.
+            </p>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

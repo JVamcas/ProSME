@@ -16,7 +16,7 @@ import {
 import { useSignIn } from "./use-sign-in";
 
 type SignInFormProps = {
-  nextPath: string;
+  nextPath?: string;
 };
 
 export function SignInForm({ nextPath }: SignInFormProps) {

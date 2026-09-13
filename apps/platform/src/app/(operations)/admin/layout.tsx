@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-import { capabilities } from "@/auth/authorization/capabilities";
 import { getCurrentUser } from "@/auth/authorization/current-user";
-import { can } from "@/auth/authorization/policy";
-import { AdminShell } from "@/components/admin/admin-shell";
+import { canAccessOperationsPortal } from "@/auth/authorization/portal-access";
+import { AuthenticatedPortalShell } from "@/components/layout/authenticated-portal-shell";
 import { QueryProvider } from "@/components/layout/query-provider";
+import { createPortalContext } from "@/modules/profiles/profile.service";
 import "../../globals.css";
 
 export const dynamic = "force-dynamic";
@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: {
     default: "Internal dashboard",
-    template: "%s | ProSME Internal",
+    template: "%s | SME Fund Internal",
   },
 };
 
@@ -27,7 +27,7 @@ export default async function AdminLayout({ children }: AdminLayoutProps) {
     redirect("/sign-in?next=/admin");
   }
 
-  if (!can(user, capabilities.adminAccess)) {
+  if (!canAccessOperationsPortal(user)) {
     redirect("/unauthorized");
   }
 
@@ -35,7 +35,12 @@ export default async function AdminLayout({ children }: AdminLayoutProps) {
     <html lang="en" data-scroll-behavior="smooth">
       <body className="font-sans antialiased">
         <QueryProvider>
-          <AdminShell>{children}</AdminShell>
+          <AuthenticatedPortalShell
+            context={createPortalContext(user)}
+            space="operations"
+          >
+            {children}
+          </AuthenticatedPortalShell>
         </QueryProvider>
       </body>
     </html>

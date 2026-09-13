@@ -33,6 +33,10 @@ type CsrfResponse = {
   token: string;
 };
 
+type SessionResponse = {
+  defaultPath: string;
+};
+
 export type EmailVerificationStatus = {
   email: string;
   verified: boolean;
@@ -46,10 +50,13 @@ async function getCsrfToken() {
 }
 
 async function establishServerSession(idToken: string) {
-  await postJson("/api/auth/session", {
-    csrfToken: await getCsrfToken(),
-    idToken,
-  });
+  return postJson<SessionResponse, { csrfToken: string; idToken: string }>(
+    "/api/auth/session",
+    {
+      csrfToken: await getCsrfToken(),
+      idToken,
+    },
+  );
 }
 
 async function getPendingVerificationUser() {
@@ -123,8 +130,11 @@ async function signIn(input: SignInInput) {
     throw new Error("email-not-verified");
   }
 
-  await establishServerSession(await credential.user.getIdToken());
+  const session = await establishServerSession(
+    await credential.user.getIdToken(),
+  );
   await signOut(auth);
+  return session;
 }
 
 async function logout() {

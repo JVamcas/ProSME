@@ -2,9 +2,10 @@
 
 import { parseDate, type DateValue } from "@internationalized/date";
 import { useState, type ChangeEvent, type ReactNode } from "react";
-import { DateField } from "react-aria-components";
+import { DatePicker, I18nProvider } from "react-aria-components";
 
 import { type FormBindingProps, useFormBinding } from "./form-binding";
+import { DateCalendarPopover } from "./form-date-calendar";
 import {
   DateControl,
   DateFeedback,
@@ -84,30 +85,39 @@ export function FormDateInput({
     void binding.registration?.onChange(event);
   }
 
+  const parsedMinValue = parseDateValue(minValue) ?? undefined;
+  const parsedMaxValue = parseDateValue(maxValue) ?? undefined;
+
   return (
-    <DateField
-      value={parseDateValue(currentValue)}
-      minValue={parseDateValue(minValue) ?? undefined}
-      maxValue={parseDateValue(maxValue) ?? undefined}
-      isDisabled={disabled}
-      isReadOnly={readOnly}
-      isRequired={required}
-      isInvalid={Boolean(binding.error)}
-      onBlur={() => {
-        const event = createFieldEvent(binding.name, currentValue, "blur");
-        void binding.registration?.onBlur(event);
-      }}
-      onChange={change}
-      className={containerClassName}
-    >
-      <DateLabel className={labelClassName}>{label}</DateLabel>
-      <DateControl className={className} error={binding.error} />
-      <DateRegistrationInput
-        inputRef={binding.registration?.ref}
-        name={binding.name}
-        value={currentValue}
-      />
-      <DateFeedback description={description} error={binding.error} />
-    </DateField>
+    <I18nProvider locale="en-GB">
+      <DatePicker
+        value={parseDateValue(currentValue)}
+        minValue={parsedMinValue}
+        maxValue={parsedMaxValue}
+        isDisabled={disabled}
+        isReadOnly={readOnly}
+        isRequired={required}
+        isInvalid={Boolean(binding.error)}
+        onBlur={() => {
+          const event = createFieldEvent(binding.name, currentValue, "blur");
+          void binding.registration?.onBlur(event);
+        }}
+        onChange={change}
+        className={containerClassName}
+      >
+        <DateLabel className={labelClassName}>{label}</DateLabel>
+        <DateControl className={className} error={binding.error} />
+        <DateCalendarPopover
+          maxValue={parsedMaxValue}
+          minValue={parsedMinValue}
+        />
+        <DateRegistrationInput
+          inputRef={binding.registration?.ref}
+          name={binding.name}
+          value={currentValue}
+        />
+        <DateFeedback description={description} error={binding.error} />
+      </DatePicker>
+    </I18nProvider>
   );
 }

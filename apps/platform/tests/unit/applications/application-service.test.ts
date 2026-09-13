@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 vi.mock("@/db/repositories/application.repository", () => ({
   findAllApplications: vi.fn(),
+  findApplicationsAssignedTo: vi.fn(),
+  findAssignedApplicationById: vi.fn(),
   findApplicationById: vi.fn(),
 }));
 
@@ -11,6 +13,8 @@ import { PermissionDeniedError } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import {
   findAllApplications,
+  findApplicationsAssignedTo,
+  findAssignedApplicationById,
   findApplicationById,
 } from "@/db/repositories/application.repository";
 import {
@@ -41,19 +45,29 @@ beforeEach(() => {
 describe("application service authorization", () => {
   it("loads records through the repository for authorized staff", async () => {
     vi.mocked(findAllApplications).mockResolvedValue([]);
-    const user = staffUser([capabilities.adminAccess]);
+    const user = staffUser([capabilities.applicationReadAll]);
 
     await expect(getApplications(user)).resolves.toEqual([]);
     expect(findAllApplications).toHaveBeenCalledOnce();
   });
 
-  it("rejects staff without application administration access", async () => {
-    const user = staffUser([]);
+  it("limits assigned readers to their repository scope", async () => {
+    vi.mocked(findApplicationsAssignedTo).mockResolvedValue([]);
+    const user = staffUser([capabilities.applicationReadAssigned]);
+
+    await expect(getApplications(user)).resolves.toEqual([]);
+    expect(findApplicationsAssignedTo).toHaveBeenCalledWith(user.id);
+    expect(findAllApplications).not.toHaveBeenCalled();
+  });
+
+  it("rejects broad admin access without an application read grant", async () => {
+    const user = staffUser([capabilities.adminAccess]);
 
     await expect(getApplications(user)).rejects.toBeInstanceOf(
       PermissionDeniedError,
     );
     expect(findAllApplications).not.toHaveBeenCalled();
+    expect(findApplicationsAssignedTo).not.toHaveBeenCalled();
   });
 
   it("checks authorization before loading a single application", async () => {
@@ -63,5 +77,6 @@ describe("application service authorization", () => {
       PermissionDeniedError,
     );
     expect(findApplicationById).not.toHaveBeenCalled();
+    expect(findAssignedApplicationById).not.toHaveBeenCalled();
   });
 });

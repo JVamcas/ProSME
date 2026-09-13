@@ -8,7 +8,7 @@ export function Label({
   return (
     <label
       className={cn(
-        "mb-2 block text-sm font-semibold text-slate-800",
+        "mb-2 block text-sm font-semibold text-brand-navy",
         className,
       )}
       {...props}
@@ -23,7 +23,7 @@ export const Input = React.forwardRef<
   <input
     ref={ref}
     className={cn(
-      "h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-orange focus:ring-3 focus:ring-orange/15",
+      "h-12 w-full rounded-xl border border-brand-navy/25 bg-brand-white px-4 text-sm text-brand-navy outline-none transition placeholder:text-brand-navy/45 focus:border-brand-orange focus:ring-3 focus:ring-brand-orange/15",
       className,
     )}
     {...props}
@@ -39,7 +39,7 @@ export const Checkbox = React.forwardRef<
     ref={ref}
     type="checkbox"
     className={cn(
-      "size-4 shrink-0 accent-orange focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange/40",
+      "size-4 shrink-0 accent-brand-orange focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange/40",
       className,
     )}
     {...props}
@@ -54,7 +54,7 @@ export const Select = React.forwardRef<
   <select
     ref={ref}
     className={cn(
-      "h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm text-slate-950 outline-none transition focus:border-orange focus:ring-3 focus:ring-orange/15",
+      "h-12 w-full rounded-xl border border-brand-navy/25 bg-brand-white px-4 text-sm text-brand-navy outline-none transition focus:border-brand-orange focus:ring-3 focus:ring-brand-orange/15",
       className,
     )}
     {...props}
@@ -71,7 +71,7 @@ export const Textarea = React.forwardRef<
   <textarea
     ref={ref}
     className={cn(
-      "min-h-28 w-full resize-y rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-orange focus:ring-3 focus:ring-orange/15",
+      "min-h-28 w-full resize-y rounded-xl border border-brand-navy/25 bg-brand-white px-4 py-3 text-sm text-brand-navy outline-none transition placeholder:text-brand-navy/45 focus:border-brand-orange focus:ring-3 focus:ring-brand-orange/15",
       className,
     )}
     {...props}
@@ -81,7 +81,10 @@ Textarea.displayName = "Textarea";
 
 export function FieldError({ id, message }: { id?: string; message?: string }) {
   return message ? (
-    <p id={id} className="mt-1.5 text-xs font-medium text-red-600">
+    <p
+      id={id}
+      className="mt-1.5 border-l-2 border-brand-orange pl-2 text-xs font-medium text-brand-navy"
+    >
       {message}
     </p>
   ) : null;

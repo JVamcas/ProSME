@@ -13,6 +13,10 @@ Client and server data access must follow the layered contract in
 the platform application and explicitly excludes Payload's internal `/cms`
 data-loading implementation.
 
+Phase 3 applicant and workflow implementation must also follow the accepted
+contracts in [`../phase-3/`](../phase-3/), including the shared portal,
+capability, workflow, SQL-projection, and API boundaries.
+
 The former `apps/option-b` becomes `apps/platform`. Options A and C are retained under `archive/design-concepts` as M2 evidence and are excluded from active builds.
 
 ## Repository structure
@@ -110,7 +114,11 @@ src/app/
 │       ├── layout.tsx
 │       ├── page.tsx
 │       ├── profile/page.tsx
-│       ├── business/page.tsx
+│       ├── business/page.tsx          # Legacy redirect
+│       ├── businesses/
+│       │   ├── page.tsx
+│       │   ├── new/page.tsx
+│       │   └── [id]/edit/page.tsx
 │       ├── applications/
 │       │   ├── page.tsx
 │       │   ├── new/page.tsx
@@ -118,21 +126,22 @@ src/app/
 │       │       ├── page.tsx
 │       │       ├── edit/
 │       │       └── documents/
+│       ├── documents/page.tsx
 │       ├── messages/page.tsx
-│       └── notifications/page.tsx
+│       ├── notifications/page.tsx
+│       ├── saved-resources/page.tsx
+│       └── help/page.tsx
 ├── (operations)/
 │   └── admin/
 │       ├── layout.tsx
 │       ├── page.tsx
+│       ├── work-queue/page.tsx
 │       ├── applications/
 │       │   ├── page.tsx
 │       │   └── [id]/page.tsx
-│       ├── screening/
-│       ├── assessments/
-│       ├── finance/
-│       ├── decisions/
 │       ├── communications/
 │       ├── reports/
+│       ├── workflows/
 │       ├── users/
 │       └── audit-log/
 ├── (payload)/
@@ -293,21 +302,24 @@ src/modules/applications/
 └── application.test.ts
 ```
 
-The required call direction is:
+The required interactive client call direction is:
 
 ```text
-page or form
-  -> Server Action
-  -> validation schema
-  -> policy
-  -> service
-  -> PostgreSQL transaction
+client component
+  -> TanStack Query hook
+  -> frontend client service
+  -> API route and transport validation
+  -> backend policy/service
+  -> repository or integration adapter
+  -> PostgreSQL transaction when writing
   -> workflow event
   -> audit event
-  -> notification job
+  -> notification/integration outbox
 ```
 
-Pages must not contain workflow or database logic.
+Server Components may call a backend service/query directly when interactive
+browser caching is unnecessary. Pages and routes must not contain workflow or
+database logic. The complete contract is in `CLIENT_DATA_ACCESS.md`.
 
 ## Integration structure
 

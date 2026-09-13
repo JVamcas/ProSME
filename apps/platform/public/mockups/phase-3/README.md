@@ -1,41 +1,38 @@
 # Phase 3 UI mockups
 
-The `tor-aligned` directory contains the current design-reference set for
-Phase 3 / M5. The images are concept mockups, not application screenshots.
-All people, organisations, references, dates, scores, and amounts shown in
-the mockups are synthetic.
+These images are design references for Phase 3 / M5, not application
+screenshots. Names, organisations, references, dates, scores, and amounts are
+synthetic.
+
+## Implementation targets
+
+| Image                                                | Coverage                                      |
+| ---------------------------------------------------- | --------------------------------------------- |
+| `applicant-portal-all-screens-desktop-v1.png`        | Complete applicant desktop journey            |
+| `applicant-portal-all-screens-mobile-v1.png`         | Complete applicant mobile journey             |
+| `admin-portal-all-screens-desktop-v1.png`            | Complete permission-scoped operations desktop |
+| `admin-portal-all-screens-mobile-v1.png`             | Complete permission-scoped operations mobile  |
 
 ## Controlling sources
 
-- `docs/IMPLEMENTATION_PLAN.md` — authoritative production phase and gate plan.
-- `docs/source-material/Terms of Reference -2.pdf` — contractual functional
-  requirements for the applicant portal and workflow engine.
-- Approved Option B visual direction and the repository brand palette.
+1. `docs/phase-3/PORTAL_UI_CONTRACT.md`.
+2. `docs/phase-3/WORKFLOW_CONTRACT.md`.
+3. `docs/phase-3/CAPABILITY_MATRIX.md`.
+4. `docs/phase-3/DATA_API_CONTRACT.md`.
+5. `docs/IMPLEMENTATION_PLAN.md`.
+6. The TOR and SME Fund Brand Identity source documents.
 
-Where the documents differ, the precedence order in the production
-implementation plan applies. In particular, the corrected M5 milestone is the
-online application system and workflow engine.
+The written contracts control where an image conflicts with authorization,
+accessibility, responsive behavior, data exposure, or branding.
 
-## Current set
+## Hard visual rules
 
-| Image | Coverage |
-| --- | --- |
-| `tor-aligned/applicant-workspace-desktop.png` | Profile, business profile, saved eligibility, current and historical applications, status tracking, notifications, documents, and saved resources. |
-| `tor-aligned/application-documents-desktop.png` | Multi-step progress, save/resume, secure document upload, contextual help, validation, and review/declaration hand-off. |
-| `tor-aligned/information-request-mobile.png` | Responsive applicant response to a reviewer query with additional-document upload. |
-| `tor-aligned/internal-assessment-desktop.png` | Assignment, technical scoring, reviewer comments, information request, finance/committee workflow, audit visibility, and controlled override. |
-
-## Design constraints applied
-
-- ProSME is the primary platform identity; SME Fund is the programme.
-- Status is communicated with text and icons, not colour alone.
-- No unapproved production metrics or outcomes are presented.
-- Unconfirmed document formats and size limits are explicitly identified as
-  pending programme approval.
-- The interfaces avoid photography to remain lightweight for constrained
-  connectivity.
-- Operational screens expose role, assignment, audit, and override context
-  without implying that client-side visibility is authorization.
-
-The PNGs in the parent directory are the first visual exploration retained for
-comparison. Use the `tor-aligned` images for implementation reference.
+- Use the SME Fund logo, not ProSME, as the portal identity.
+- Orange `#FF6F00` is the primary colour and action surface.
+- Standalone icons are orange. Icons on orange surfaces are navy for contrast.
+- Yellow is the client brand value `#FFCA45`.
+- The authenticated sidebar is orange with navy text/icons and a navy active
+  item with white content.
+- Status always includes a text or icon cue and never relies on colour alone.
+- Applicant screens never expose internal scores, comments, recommendations,
+  assignments, or deliberation.

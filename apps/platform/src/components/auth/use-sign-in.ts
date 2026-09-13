@@ -20,7 +20,7 @@ function signInError(error: unknown) {
   return getFirebaseErrorMessage(error);
 }
 
-export function useSignIn(nextPath: string) {
+export function useSignIn(nextPath?: string) {
   const router = useRouter();
   const form = useForm<SignInValues>({
     defaultValues: {
@@ -38,8 +38,8 @@ export function useSignIn(nextPath: string) {
     signIn.reset();
 
     try {
-      await signIn.mutateAsync(values);
-      router.replace(nextPath);
+      const session = await signIn.mutateAsync(values);
+      router.replace(nextPath ?? session.defaultPath);
       router.refresh();
     } catch (caught) {
       if (caught instanceof Error && caught.message === "email-not-verified") {

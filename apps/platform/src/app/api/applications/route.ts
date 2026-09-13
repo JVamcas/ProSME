@@ -4,7 +4,9 @@ import { resolveUserFromHeaders } from "@/auth/authorization/current-user";
 import {
   AuthenticationRequiredError,
   PermissionDeniedError,
+  requireAnyCapability,
 } from "@/auth/authorization/policy";
+import { capabilities } from "@/auth/authorization/capabilities";
 import { getApplications } from "@/modules/applications/application.service";
 
 export const dynamic = "force-dynamic";
@@ -39,6 +41,10 @@ export async function GET(request: Request) {
   const user = await resolveUserFromHeaders(request.headers);
 
   try {
+    requireAnyCapability(user, [
+      capabilities.applicationReadAssigned,
+      capabilities.applicationReadAll,
+    ]);
     const applications = await getApplications(user);
     return NextResponse.json(applications);
   } catch (error) {

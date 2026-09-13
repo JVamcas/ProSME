@@ -3,9 +3,11 @@
 import { CalendarDays } from "lucide-react";
 import type { ReactNode } from "react";
 import {
+  Button,
   DateInput,
   DateSegment,
   FieldError,
+  Group,
   Label,
   Text,
 } from "react-aria-components";
@@ -19,19 +21,17 @@ type DateControlProps = {
 
 export function DateControl({ className, error }: DateControlProps) {
   return (
-    <div className="relative">
-      <CalendarDays
-        aria-hidden="true"
-        className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-brand-orange"
-      />
+    <Group
+      className={cn(
+        "flex h-12 w-full items-center rounded-xl border border-slate-300 bg-white",
+        "text-sm text-slate-950 outline-none transition",
+        "focus-within:border-brand-orange focus-within:ring-3 focus-within:ring-brand-orange/15",
+        error && "border-red-400",
+        className,
+      )}
+    >
       <DateInput
-        className={cn(
-          "flex h-12 w-full items-center rounded-xl border border-slate-300",
-          "bg-white pl-11 pr-4 text-sm text-slate-950 outline-none transition",
-          "focus-within:border-orange focus-within:ring-3 focus-within:ring-orange/15",
-          error && "border-red-400",
-          className,
-        )}
+        className="flex min-w-0 flex-1 items-center px-4 outline-none"
       >
         {(segment) => (
           <DateSegment
@@ -43,7 +43,13 @@ export function DateControl({ className, error }: DateControlProps) {
           />
         )}
       </DateInput>
-    </div>
+      <Button
+        aria-label="Open calendar"
+        className="mr-1 grid size-10 shrink-0 place-items-center rounded-lg text-brand-navy outline-none hover:bg-brand-cream focus-visible:ring-2 focus-visible:ring-brand-orange"
+      >
+        <CalendarDays aria-hidden="true" className="size-5" />
+      </Button>
+    </Group>
   );
 }
 

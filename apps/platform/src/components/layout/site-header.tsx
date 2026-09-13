@@ -46,13 +46,13 @@ export async function SiteHeader() {
           <div className="hidden items-center gap-3 lg:flex">
             <Link
               href="/sign-in"
-              className="inline-flex h-11 items-center rounded-full border border-brand-navy px-6 text-sm font-bold text-brand-navy hover:bg-brand-yellow/30"
+              className="inline-flex h-11 items-center rounded-full border border-white px-6 text-sm font-bold text-white hover:bg-brand-yellow"
             >
               {content.signInLabel}
             </Link>
             <Link
               href={content.applyHref}
-              className="inline-flex h-11 items-center gap-2 rounded-full bg-brand-orange px-6 text-sm font-bold text-brand-navy hover:bg-brand-yellow"
+              className="inline-flex h-11 items-center gap-2 rounded-full bg-brand-yellow px-6 text-sm font-bold text-brand-navy hover:bg-brand-yellow/80"
             >
               {content.applyLabel}
               <ArrowRight className="size-4" />

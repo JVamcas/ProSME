@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
+import { capabilities } from "@/auth/authorization/capabilities";
 import { getCurrentUser } from "@/auth/authorization/current-user";
+import { can } from "@/auth/authorization/policy";
 import { ApplicationReview } from "@/components/admin/application-review";
 import { getApplication } from "@/modules/applications/application.service";
 
@@ -18,6 +20,14 @@ export default async function ApplicationPage({
 }: ApplicationPageProps) {
   const { id } = await params;
   const user = await getCurrentUser();
+  const canRead =
+    can(user, capabilities.applicationReadAssigned) ||
+    can(user, capabilities.applicationReadAll);
+
+  if (!canRead) {
+    redirect("/unauthorized");
+  }
+
   const application = await getApplication(user, decodeURIComponent(id));
 
   if (!application) {

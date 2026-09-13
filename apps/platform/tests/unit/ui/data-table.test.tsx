@@ -2,8 +2,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import {
-  createDataTableColumnHelper,
   DataTable,
+  type DataTableColumn,
 } from "@/components/ui/data-table";
 
 type RecordRow = {
@@ -11,11 +11,10 @@ type RecordRow = {
   name: string;
 };
 
-const helper = createDataTableColumnHelper<RecordRow>();
-const columns = helper.columns([
-  helper.accessor("id", { header: "Reference" }),
-  helper.accessor("name", { header: "Name" }),
-]);
+const columns: DataTableColumn<RecordRow>[] = [
+  { accessorKey: "id", header: "Reference" },
+  { accessorKey: "name", header: "Name" },
+];
 
 describe("DataTable", () => {
   it("renders typed columns and rows", () => {

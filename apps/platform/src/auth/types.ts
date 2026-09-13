@@ -4,4 +4,6 @@ export type AuthenticatedUser = ApplicationUser & {
   identitySubject: string;
   capabilities: ReadonlySet<string>;
   roleCodes: ReadonlySet<string>;
+  profileComplete?: boolean;
+  businessProfileComplete?: boolean;
 };

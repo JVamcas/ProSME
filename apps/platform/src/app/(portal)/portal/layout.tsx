@@ -3,26 +3,46 @@ import { redirect } from "next/navigation";
 import { Toaster } from "sonner";
 
 import { getCurrentUser } from "@/auth/authorization/current-user";
+import { canAccessApplicantPortal } from "@/auth/authorization/portal-access";
+import { AuthenticatedPortalShell } from "@/components/layout/authenticated-portal-shell";
 import { QueryProvider } from "@/components/layout/query-provider";
+import { createApplicantPortalContext } from "@/modules/profiles/profile.service";
 import "../../globals.css";
 
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: { default: "Applicant portal", template: "%s | ProSME Applicant Portal" },
+  title: {
+    default: "Applicant portal",
+    template: "%s | SME Fund Applicant Portal",
+  },
 };
 
-export default async function PortalLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+type PortalLayoutProps = Readonly<{
+  children: React.ReactNode;
+}>;
+
+export default async function PortalLayout({ children }: PortalLayoutProps) {
   const user = await getCurrentUser();
+
   if (!user) {
     redirect("/sign-in?next=/portal");
+  }
+
+  if (!canAccessApplicantPortal(user)) {
+    redirect("/unauthorized");
   }
 
   return (
     <html lang="en" data-scroll-behavior="smooth">
       <body className="font-sans antialiased">
         <QueryProvider>
-          {children}
+          <AuthenticatedPortalShell
+            context={createApplicantPortalContext(user)}
+            space="applicant"
+          >
+            {children}
+          </AuthenticatedPortalShell>
           <Toaster richColors position="top-right" />
         </QueryProvider>
       </body>

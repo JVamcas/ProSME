@@ -5,6 +5,8 @@ import { and, eq, sql } from "drizzle-orm";
 import { getDatabase } from "@/db/client";
 import {
   capabilities,
+  applicantProfiles,
+  businessProfiles,
   roleCapabilities,
   roles,
   userIdentities,
@@ -21,16 +23,34 @@ export type VerifiedIdentity = {
 };
 
 type UserProjection = {
+  businessProfileComplete: boolean;
   capabilityCodes: string[];
+  createdAt: Date;
+  displayName: string;
+  email: string;
+  id: string;
   identitySubject: string;
+  lastLoginAt: Date | null;
+  profileComplete: boolean;
   roleCodes: string[];
-  user: typeof users.$inferSelect;
+  status: AuthenticatedUser["status"];
+  updatedAt: Date;
+  userType: AuthenticatedUser["userType"];
 };
 
 function toAuthenticatedUser(row: UserProjection): AuthenticatedUser {
   return {
-    ...row.user,
+    id: row.id,
+    email: row.email,
+    displayName: row.displayName,
+    userType: row.userType,
+    status: row.status,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+    lastLoginAt: row.lastLoginAt,
     identitySubject: row.identitySubject,
+    profileComplete: row.profileComplete,
+    businessProfileComplete: row.businessProfileComplete,
     capabilities: new Set(row.capabilityCodes),
     roleCodes: new Set(row.roleCodes),
   };
@@ -42,8 +62,29 @@ export async function findUserByFirebaseSubject(
   const database = getDatabase();
   const [row] = await database
     .select({
-      user: users,
+      id: users.id,
+      email: users.email,
+      displayName: users.displayName,
+      userType: users.userType,
+      status: users.status,
+      createdAt: users.createdAt,
+      updatedAt: users.updatedAt,
+      lastLoginAt: users.lastLoginAt,
       identitySubject: userIdentities.subject,
+      profileComplete: sql<boolean>`exists(
+        select 1 from ${applicantProfiles}
+        where ${applicantProfiles.userId} = ${users.id}
+          and length(trim(${applicantProfiles.firstName})) > 0
+          and length(trim(${applicantProfiles.surname})) > 0
+          and length(trim(${applicantProfiles.position})) > 0
+          and length(trim(${applicantProfiles.phoneNumber})) > 0
+          and length(trim(${applicantProfiles.nationality})) > 0
+          and length(trim(${applicantProfiles.region})) > 0
+      )`,
+      businessProfileComplete: sql<boolean>`exists(
+        select 1 from ${businessProfiles}
+        where ${businessProfiles.userId} = ${users.id}
+      )`,
       capabilityCodes: sql<string[]>`
         coalesce(
           array_agg(distinct ${capabilities.code})
@@ -94,21 +135,38 @@ async function requireResolvedUser(subject: string) {
 async function touchIdentity(
   identity: VerifiedIdentity,
 ): Promise<boolean> {
-  const [existingIdentity] = await getDatabase()
-    .update(userIdentities)
-    .set({
-      emailVerified: identity.emailVerified,
-      lastSeenAt: new Date(),
-    })
-    .where(
-      and(
-        eq(userIdentities.provider, "firebase"),
-        eq(userIdentities.subject, identity.subject),
-      ),
-    )
-    .returning({ userId: userIdentities.userId });
+  return getDatabase().transaction(async (transaction) => {
+    const now = new Date();
+    const [existingIdentity] = await transaction
+      .update(userIdentities)
+      .set({
+        emailVerified: identity.emailVerified,
+        lastSeenAt: now,
+      })
+      .where(
+        and(
+          eq(userIdentities.provider, "firebase"),
+          eq(userIdentities.subject, identity.subject),
+        ),
+      )
+      .returning({ userId: userIdentities.userId });
 
-  return Boolean(existingIdentity);
+    if (!existingIdentity) {
+      return false;
+    }
+
+    await transaction
+      .update(users)
+      .set({
+        email: identity.email.toLowerCase(),
+        displayName: identity.displayName || identity.email,
+        lastLoginAt: now,
+        updatedAt: now,
+      })
+      .where(eq(users.id, existingIdentity.userId));
+
+    return true;
+  });
 }
 
 async function createApplicantIdentity(identity: VerifiedIdentity) {

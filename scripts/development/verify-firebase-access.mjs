@@ -54,8 +54,10 @@ export async function verifySystemAdministrator(cookie, get) {
   const { user } = await response.json();
   assert.equal(user.userType, "staff");
   assert(user.roles.includes("system_administrator"));
+  assert(user.roles.includes("applicant"));
   assert(user.capabilities.includes("cms.principals.manage"));
   assert.equal((await get("/cms", cookie)).status, 200);
+  assert.equal((await get("/portal/profile", cookie)).status, 200);
 }
 
 export async function verifyRuntimeAuthorizationRevocation(options) {

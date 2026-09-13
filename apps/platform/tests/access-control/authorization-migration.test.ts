@@ -25,6 +25,21 @@ const torRoleNameMigration = readFileSync(
   path.resolve(process.cwd(), "drizzle/0005_tor_cms_role_names.sql"),
   "utf8",
 );
+const profileCompatibilityMigration = readFileSync(
+  path.resolve(
+    process.cwd(),
+    "drizzle/0007_profile_sections_application_scope.sql",
+  ),
+  "utf8",
+);
+const applicantBusinessesMigration = readFileSync(
+  path.resolve(process.cwd(), "drizzle/0008_applicant_businesses.sql"),
+  "utf8",
+);
+const bootstrapAdminScript = readFileSync(
+  path.resolve(process.cwd(), "../../scripts/seed/bootstrap-admin.ts"),
+  "utf8",
+);
 
 describe("Phase 2 authorization migration", () => {
   it("adds every CMS resource namespace", () => {
@@ -79,5 +94,29 @@ describe("Phase 2 authorization migration", () => {
     ]) {
       expect(torRoleNameMigration).toContain(`'${roleName}'`);
     }
+  });
+});
+
+describe("P3.1 migration compatibility", () => {
+  it("adds the position column for databases that applied early 0006", () => {
+    expect(profileCompatibilityMigration).toContain(
+      'ADD COLUMN IF NOT EXISTS "position"',
+    );
+  });
+
+  it("bootstraps administrators with additive applicant access", () => {
+    expect(bootstrapAdminScript).toContain(
+      '["system_administrator", "applicant"]',
+    );
+    expect(bootstrapAdminScript).not.toContain(".delete(userRoles)");
+  });
+
+  it("allows multiple businesses per applicant with an ownership index", () => {
+    expect(applicantBusinessesMigration).toContain(
+      'DROP INDEX IF EXISTS "app_business_profiles_user_unique"',
+    );
+    expect(applicantBusinessesMigration).toContain(
+      '"app_business_profiles_user_idx"',
+    );
   });
 });

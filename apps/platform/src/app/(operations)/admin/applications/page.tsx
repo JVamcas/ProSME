@@ -1,12 +1,25 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
+import { capabilities } from "@/auth/authorization/capabilities";
+import { getCurrentUser } from "@/auth/authorization/current-user";
+import { can } from "@/auth/authorization/policy";
 import { ApplicationsTable } from "@/components/admin/applications-table";
 
 export const metadata: Metadata = {
   title: "Applications",
 };
 
-export default function ApplicationsPage() {
+export default async function ApplicationsPage() {
+  const user = await getCurrentUser();
+  const canRead =
+    can(user, capabilities.applicationReadAssigned) ||
+    can(user, capabilities.applicationReadAll);
+
+  if (!canRead) {
+    redirect("/unauthorized");
+  }
+
   return (
     <div className="mx-auto max-w-[1240px] p-4 sm:p-7 lg:p-8">
       <div className="mb-6">

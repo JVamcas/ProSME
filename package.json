@@ -12,6 +12,7 @@
     "lint": "npm run lint --workspace @prosme/platform",
     "typecheck": "npm run typecheck --workspace @prosme/platform",
     "test": "npm run test --workspace @prosme/platform",
+    "test:p3.1:db": "./scripts/development/verify-p3-profile-database.sh",
     "test:public": "npm run test:public --workspace @prosme/platform",
     "verify:g1:firebase": "node scripts/development/verify-firebase-g1.mjs",
     "check:architecture": "npm run check:architecture --workspace @prosme/platform",

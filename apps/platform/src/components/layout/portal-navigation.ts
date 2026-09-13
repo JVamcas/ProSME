@@ -1,0 +1,144 @@
+import type { LucideIcon } from "lucide-react";
+import {
+  Bell,
+  BriefcaseBusiness,
+  ClipboardList,
+  LayoutDashboard,
+  Store,
+  UserRound,
+} from "lucide-react";
+
+import { capabilities } from "@/auth/authorization/capabilities";
+import type { PortalSpace } from "@/auth/authorization/portal-access";
+
+export type PortalRoute = {
+  id: string;
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  space: PortalSpace;
+  openInNewTab?: boolean;
+  requiredCapability?: string;
+  requiredAnyCapabilities?: readonly string[];
+  requiredAllCapabilities?: readonly string[];
+  children?: readonly PortalRoute[];
+};
+
+export const applicantPortalRoutes: readonly PortalRoute[] = [
+  {
+    id: "applicant-dashboard",
+    href: "/portal",
+    label: "Dashboard",
+    icon: LayoutDashboard,
+    space: "applicant",
+  },
+  {
+    id: "funding-opportunities",
+    href: "/funding",
+    label: "Available Fundings",
+    icon: BriefcaseBusiness,
+    space: "applicant",
+    openInNewTab: true,
+  },
+  {
+    id: "applicant-businesses",
+    href: "/portal/businesses",
+    label: "My businesses",
+    icon: Store,
+    space: "applicant",
+    requiredCapability: capabilities.businessReadOwn,
+  },
+  {
+    id: "applicant-applications",
+    href: "/portal/applications",
+    label: "My applications",
+    icon: ClipboardList,
+    space: "applicant",
+    requiredCapability: capabilities.applicationReadOwn,
+  },
+  {
+    id: "applicant-notifications",
+    href: "/portal/notifications",
+    label: "Notifications",
+    icon: Bell,
+    space: "applicant",
+    requiredCapability: capabilities.notificationReadOwn,
+  },
+  {
+    id: "applicant-profile",
+    href: "/portal/profile",
+    label: "My profile",
+    icon: UserRound,
+    space: "applicant",
+    requiredAnyCapabilities: [
+      capabilities.profileReadOwn,
+    ],
+  },
+];
+
+export const operationsPortalRoutes: readonly PortalRoute[] = [
+  {
+    id: "admin-dashboard",
+    href: "/admin",
+    label: "Dashboard",
+    icon: LayoutDashboard,
+    space: "operations",
+    requiredCapability: capabilities.adminAccess,
+  },
+  {
+    id: "admin-applications",
+    href: "/admin/applications",
+    label: "Applications",
+    icon: ClipboardList,
+    space: "operations",
+    requiredAnyCapabilities: [
+      capabilities.applicationReadAssigned,
+      capabilities.applicationReadAll,
+    ],
+  },
+];
+
+export const portalRoutes: readonly PortalRoute[] = [
+  ...applicantPortalRoutes,
+  ...operationsPortalRoutes,
+];
+
+function routeAllowed(route: PortalRoute, granted: ReadonlySet<string>) {
+  if (route.requiredCapability && !granted.has(route.requiredCapability)) {
+    return false;
+  }
+
+  if (
+    route.requiredAnyCapabilities &&
+    !route.requiredAnyCapabilities.some((item) => granted.has(item))
+  ) {
+    return false;
+  }
+
+  return (
+    !route.requiredAllCapabilities ||
+    route.requiredAllCapabilities.every((item) => granted.has(item))
+  );
+}
+
+export function filterPortalRoutes(
+  routes: readonly PortalRoute[],
+  space: PortalSpace,
+  granted: ReadonlySet<string>,
+): PortalRoute[] {
+  return routes.flatMap((route) => {
+    if (route.space !== space || !routeAllowed(route, granted)) {
+      return [];
+    }
+
+    const children = route.children
+      ? filterPortalRoutes(route.children, space, granted)
+      : undefined;
+
+    if (route.children?.length && children?.length === 0) {
+      return [];
+    }
+
+    return [{ ...route, children }];
+  });
+}

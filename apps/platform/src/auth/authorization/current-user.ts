@@ -1,6 +1,7 @@
 import "server-only";
 
 import { headers } from "next/headers";
+import { cache } from "react";
 
 import { findUserByFirebaseSubject } from "@/db/repositories/user.repository";
 import { verifyFirebaseSessionFromHeaders } from "../firebase/session";
@@ -12,6 +13,6 @@ export async function resolveUserFromHeaders(requestHeaders: Headers): Promise<A
   return findUserByFirebaseSubject(identity.uid);
 }
 
-export async function getCurrentUser() {
+export const getCurrentUser = cache(async function getCurrentUser() {
   return resolveUserFromHeaders(await headers());
-}
+});

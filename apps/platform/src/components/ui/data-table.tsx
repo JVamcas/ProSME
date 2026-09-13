@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  createColumnHelper,
   createSortedRowModel,
   rowSortingFeature,
   tableFeatures,
@@ -25,10 +24,6 @@ export type DataTableColumn<TData extends RowData> = ColumnDef<
   typeof dataTableFeatures,
   TData
 >;
-
-export function createDataTableColumnHelper<TData extends RowData>() {
-  return createColumnHelper<typeof dataTableFeatures, TData>();
-}
 
 type DataTableProps<TData extends RowData> = {
   columns: DataTableColumn<TData>[];
