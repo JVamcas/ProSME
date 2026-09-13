@@ -1,6 +1,12 @@
 import type { CollectionConfig } from "payload";
 
-import { canManageCmsPrincipals } from "@/payload/access/can-access-cms";
+import {
+  canAccessCmsAdmin,
+  canManageCmsPrincipals,
+  hasCmsCapability,
+  type CmsRequestUser,
+} from "@/payload/access/can-access-cms";
+import { capabilities } from "@/auth/authorization/capabilities";
 import { firebaseSessionStrategy } from "@/payload/auth/firebase-session-strategy";
 
 export const CmsPrincipals: CollectionConfig = {
@@ -14,9 +20,14 @@ export const CmsPrincipals: CollectionConfig = {
     group: "Administration",
     useAsTitle: "email",
     description: "CMS access mirrors. Credentials and permissions are managed outside Payload.",
+    hidden: ({ user }) =>
+      !hasCmsCapability(
+        user as CmsRequestUser,
+        capabilities.cmsPrincipalsManage,
+      ),
   },
   access: {
-    admin: canManageCmsPrincipals,
+    admin: canAccessCmsAdmin,
     create: () => false,
     delete: () => false,
     read: canManageCmsPrincipals,

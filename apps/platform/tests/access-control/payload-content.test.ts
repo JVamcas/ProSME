@@ -12,6 +12,7 @@ import {
   cmsCollectionAccess,
   cmsGlobalAccess,
 } from "@/payload/access/cms-resource-access";
+import { CmsPrincipals } from "@/payload/collections/system/CmsPrincipals";
 
 function request(capabilities: readonly string[]) {
   return { user: { capabilities } } as never;
@@ -135,6 +136,12 @@ describe("Payload content authorization", () => {
   });
 
   it("keeps the TOR CMS and programme roles separated", () => {
+    expect(
+      access("news", "create", [...cmsRoleCapabilities.cms_editor]),
+    ).toBe(true);
+    expect(
+      access("news", "update", [...cmsRoleCapabilities.cms_editor]),
+    ).toBe(true);
     expect(cmsRoleCapabilities.cms_author).toContain(
       cmsCapability("news", "update"),
     );
@@ -178,5 +185,19 @@ describe("Payload content authorization", () => {
         req: request(cmsRoleCapabilities.system_administrator),
       } as never),
     ).toBe(true);
+  });
+
+  it("prevents every Payload user from mutating principal mirrors", () => {
+    const systemRequest = {
+      req: request(cmsRoleCapabilities.system_administrator),
+    } as never;
+    const editorRequest = {
+      req: request(cmsRoleCapabilities.cms_editor),
+    } as never;
+
+    expect(CmsPrincipals.access?.admin?.(editorRequest)).toBe(true);
+    expect(CmsPrincipals.access?.create?.(systemRequest)).toBe(false);
+    expect(CmsPrincipals.access?.update?.(systemRequest)).toBe(false);
+    expect(CmsPrincipals.access?.delete?.(systemRequest)).toBe(false);
   });
 });

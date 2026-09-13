@@ -5,14 +5,21 @@
 | Field | Value |
 | --- | --- |
 | Document | Production implementation and delivery plan |
-| Version | 1.0 |
-| Date | 11 September 2026 |
-| Status | Execution baseline; gate acceptance must be recorded during delivery |
+| Version | 1.1 |
+| Date | 13 September 2026 |
+| Status | Execution baseline; Phase 3 design agreement in progress |
 | Product | SME Fund platform under the ProSME Project |
 | Selected design | Option B |
 | Delivery scope | Remaining milestones M4–M12 |
 
 This document is the authoritative implementation plan for production delivery after selection of Option B. The root-level `IMPLEMENTATION_PLAN.md` remains only as a record of the initial demonstrator.
+
+### Revision history
+
+| Version | Date | Change |
+| --- | --- | --- |
+| 1.0 | 11 September 2026 | Initial gated production-delivery baseline |
+| 1.1 | 13 September 2026 | Recorded the Phase 3 portal, workflow, permission, UI, reuse, query, and incremental-delivery agreement before implementation |
 
 ## 1. Purpose
 
@@ -71,8 +78,8 @@ The client-approved milestone sequence is:
 | M1 | Project Inception Report and Validated Requirements | Week 1 | Complete |
 | M2 | Three Website Design Concepts | Week 1 | Complete |
 | M3 | Approved Final Design Prototype — Option B | Week 2 | Complete |
-| M4 | Fully Developed and Operational Website | Week 3 | In delivery |
-| M5 | Online Application System with Workflow Engine | Week 3 | Existing component; integration and acceptance pending |
+| M4 | Fully Developed and Operational Website | Week 3 | Accepted — G2 passed |
+| M5 | Online Application System with Workflow Engine | Week 3 | Planning — production implementation not started |
 | M6 | AI Chatbot Trained and Deployed | Week 3 | Pending |
 | M7 | Analytics Dashboard Configured | Week 4 | Pending |
 | M8 | User Acceptance Testing Report | Weeks 5–7 | Pending |
@@ -241,7 +248,7 @@ Unresolved downstream details do not reopen M1–M3, but they must be resolved b
 
 **Supports:** M4 and M5  
 **Gate:** G1  
-**Status:** In progress — local foundation implemented; real-Firebase evidence and technical-lead acceptance pending
+**Status:** Passed — real-Firebase evidence, live authorization checks, and technical-lead acceptance recorded
 
 ### Entry conditions
 
@@ -293,6 +300,7 @@ G1 passes only when:
 
 **Milestone:** M4  
 **Gate:** G2
+**Status:** Passed — full validation and client acceptance recorded
 
 ### Entry conditions
 
@@ -341,15 +349,329 @@ G2 passes only when:
 
 **Milestone:** M5  
 **Gate:** G3
+**Status:** Planning and design agreement in progress; Phase 3 production implementation has not started
+
+### Current delivery record
+
+| Item | State | Evidence or note |
+| --- | --- | --- |
+| G1 foundation | Passed | Recorded in `docs/testing/gates/G1-foundation.md` |
+| G2 public website | Passed | Recorded in `docs/testing/gates/G2-public-website.md` |
+| TOR and Phase 3 UI review | Complete | Requirements and proposed screens reviewed for the plan |
+| Portal, workflow, data, and permission design | Proposed | Requires agreement through this implementation plan before code changes |
+| Phase 3 database/domain implementation | Not started | No Phase 3 schema, migration, repository, or service is accepted |
+| Applicant portal implementation | Not started | Existing demonstrator components are inputs, not Phase 3 completion evidence |
+| Operations/work-queue implementation | Not started | Existing fixture-backed screens are inputs, not Phase 3 completion evidence |
+| G3 evidence and acceptance | Not started | Created only as independently testable increments are completed |
+
+No Phase 3 route, component, schema, migration, repository, service, or test is
+started until the P3.0 design-and-contract record is reviewed and marked
+agreed in this document.
+
+### Conversation decision record
+
+This section is the Phase 3 decision record from the implementation-planning
+discussion. A later change must update the decision and its affected increment
+before implementation continues.
+
+| Topic | Agreed direction |
+| --- | --- |
+| Brand | Applicant and operations portals use the SME Fund logo, not the ProSME logo. |
+| Portal colour | The shared authenticated portal sidebar uses the canonical SME Fund orange. Navy is used for readable sidebar text/icons and the active item. |
+| Application palette | Phase 3 uses only the canonical `brand-*` palette tokens: white, cream, yellow, blue, navy, gold, green, and orange. It does not use legacy orange compatibility aliases or hard-coded legacy orange values. |
+| Accessible colour use | Orange is a brand surface/accent, not body text on white. When canonical orange would not meet text/icon contrast, use brand navy rather than introducing or reusing a darker orange. |
+| Deployment | Phase 3 remains inside the one approved `apps/platform` Next.js application. No separate applicant, admin, API, or workflow application is created. |
+| Portal model | One authenticated portal system has permission-scoped applicant and operations route spaces. It does not duplicate portal infrastructure. |
+| Route ownership | Applicant self-service remains under `/portal`; internal operations remains under `/admin`; Payload remains under `/cms`. |
+| Route visibility | Sidebars are produced from typed route metadata and filtered by capabilities, following the useful WorkflowHub route-filtering pattern. |
+| UI permission boundary | A reusable `CapabilityGate`, modelled on WorkflowHub's `PermissionGate`, supports one/any/all checks, hide/forbid modes, fallbacks, and resource context. |
+| Security boundary | Sidebar filtering and `CapabilityGate` improve usability only. Layouts/pages, API or Server Actions, services, repositories, and storage access enforce the same policy server-side. |
+| Workflow model | Definition/version/stage/task/transition configuration is separated from application workflow/stage/task instances. |
+| Versioning | Published workflow versions are immutable; each submitted application pins the exact published version it uses. |
+| Configurability | Stages, tasks, order, assignments, criteria, labels, actions, and transitions are configuration rather than hard-coded pages. |
+| Task extensibility | Registered task types have typed configuration/result schemas and renderers. More configured tasks need no deployment; genuinely new behaviour is added as a new registry entry. |
+| Form extensibility | A bounded `STRUCTURED_FORM` type covers ordinary future staff forms without becoming an unrestricted form/BPM builder. |
+| Assignment | Stages have a default role assignee; tasks may override it with a role or named user. Assignment and permission are separate concerns. |
+| Work queue | Queue rows represent actionable `StageTaskInstance` records assigned directly or through an eligible role, not whole applications. |
+| Applicant status | Applicant-facing labels/descriptions are configured separately and never expose internal stages, scores, comments, recommendations, assignments, or deliberations. |
+| Information requests | A request is a first-class request/response record that blocks the originating task and returns it to the queue after the applicant responds. It is not a brittle stage loop. |
+| Automated pre-screening | Rules categorise and prioritise applications with explanations; they assist staff and do not silently make the funding decision. |
+| Manual override | Override requires an explicit capability and reason and records actor, time, prior value, and new value in immutable audit history. |
+| Client uncertainty | The project provides a TOR-aligned draft reference workflow and guided preview. The client refines configuration rather than designing an engine from a blank page. |
+| Unknown programme rules | Exact criteria, weights, role labels, document limits, templates, and authority do not block engine development. They remain draft configuration until production publication/G3 acceptance. |
+| Scope control | The first release is a configurable SME Fund workflow engine, not a general-purpose BPM suite, arbitrary script host, or unrestricted page/form builder. |
+| Reuse | Shared portal, navigation, permission, status, table, form, upload, workflow, and task-frame components are composed and varied rather than copied. |
+| Data access | Read models use explicit SQL-level projection, database filtering/aggregation/pagination, reviewed indexes, and no N+1 or sequential independent queries. |
+
+### Applicant portal information architecture
+
+The applicant navigation contains:
+
+- Dashboard.
+- Funding Opportunities, linked to the public funding-call catalogue rather
+  than duplicated portal content.
+- My Applications.
+- My Documents.
+- Messages.
+- Notifications.
+- Saved Resources.
+- Business Profile.
+- My Profile.
+- Help and Support.
+
+The application workspace keeps stable sections regardless of the internal
+workflow configuration:
+
+```text
+Overview | Application | Documents | Status | Requests & Messages
+```
+
+The primary screen surfaces the next applicant action, autosave/connectivity
+state, the applicant-safe status timeline, and recent communication. After
+submission, the submitted form, declaration, and original evidence are
+read-only. Additional evidence is appended only through an information request
+or another explicitly authorised upload action.
+
+Applicant pages must cover loading, empty, recoverable error, offline/retry,
+conflicting/stale draft, upload/scan, session-expiry, success, conditional
+eligibility, and action-required states. Mobile status, form, upload, and
+information-response journeys are first-class acceptance targets.
+
+### Operations portal information architecture
+
+The operations navigation contains only routes allowed by the current user's
+capabilities:
+
+- Dashboard.
+- Work Queue.
+- Applications.
+- Communications.
+- Reports.
+- Workflow Configuration.
+- Users & Access.
+- Audit Log.
+
+Screening, technical assessment, finance review, recommendation, and decision
+are configurable work-queue filters and saved views rather than permanent
+sidebar modules. The application workspace keeps stable contextual sections:
+
+```text
+Overview | Applicant | Documents | Workflow | Communications | History
+```
+
+The Workflow section renders the active registered task UI. The Work Queue
+projection shows task name/type, application reference and applicant summary,
+stage, priority, role/user assignment, status, and due date without loading the
+full application or task payload.
+
+Workflow Configuration provides draft creation/cloning, ordered stages and
+tasks, role/user assignment rules, applicant-visible labels, allowed actions
+and transitions, type-specific configuration, validation, plain-language
+preview, publish, and retire. Published versions cannot be edited or deleted.
+
+The applications and communications areas provide capability-gated selection,
+bulk status action, batch communication, and explicit export projections. The
+user/access area manages application-owned roles and capabilities; it does not
+delegate platform authorization to Payload.
+
+### Agreed portal architecture
+
+Phase 3 is one authenticated portal system inside the single `apps/platform`
+application. It is not two applications or two independently implemented portal
+codebases. It retains two semantic route spaces:
+
+- `/portal` owns applicant self-service routes.
+- `/admin` owns internal operations routes.
+- `/cms` remains the separately owned Payload content-administration surface.
+
+The applicant and operations route spaces share an authenticated portal shell,
+navigation primitives, responsive behaviour, user menu, status components,
+permission context, and capability-gate component. Their route catalogues and
+page content differ because their information architecture and data exposure
+are materially different.
+
+Sidebar items are filtered from the resolved capability set. An applicant sees
+applicant routes; an authorised staff user sees operational routes; a user who
+legitimately holds both sets can switch between Applicant and Operations. A
+default post-login route is selected from capabilities rather than a hard-coded
+role name.
+
+The sidebar filter is a usability feature only. The matching layout/page guard,
+API or Server Action, backend service, repository projection, and document
+adapter must independently enforce access on the server.
+
+### Permission-driven UI pattern
+
+The implementation will adapt the proven WorkflowHub pattern:
+
+- A typed route catalogue declares `requiredCapability`,
+  `requiredAnyCapabilities`, or `requiredAllCapabilities`.
+- Recursive filtering removes inaccessible child routes and then empty parent
+  sections.
+- A reusable `CapabilityGate` supports one, any, or all capabilities; hide or
+  forbidden modes; loading and explicit fallback states; and optional resource
+  ownership/scope context.
+- The same gate is used for whole-page boundaries and individual actions such
+  as assign, export, override, approve, or publish.
+- Capability constants are centralised; components never compare human-facing
+  role labels.
+
+Unlike a client flow that fetches the session and then fetches grants in a
+second request, the portal layout will resolve the application user, roles, and
+capabilities through one explicit SQL projection and hydrate a shared client
+permission context. Refreshing permissions may use one dedicated query, but
+navigation rendering must not create a request waterfall.
+
+### Phase 3 visual direction
+
+- Use the SME Fund logo, not the ProSME logo, throughout the applicant and
+  operations portal shell.
+- Use the canonical `brand-orange` portal sidebar with `brand-navy` text and
+  icons. The active item uses a `brand-navy` surface with white text.
+- Use the canonical `brand-white`, `brand-cream`, `brand-yellow`, `brand-blue`,
+  `brand-navy`, `brand-gold`, `brand-green`, and `brand-orange` tokens. Phase 3
+  components must not use generic orange Tailwind colours, legacy orange
+  compatibility aliases, or hard-coded orange hex values.
+- Do not solve contrast by darkening the SME Fund orange. Use navy for text,
+  icons, links, and focus indicators on white, cream, yellow, and orange
+  surfaces. Use white, orange, yellow, or blue only where their contrast against
+  the background is verified.
+- Error, warning, success, information, draft, pending, and disabled states use
+  dedicated semantic tokens mapped to accessible application-palette
+  combinations. Workflow status must never overload orange as an error colour.
+- Use the same shell components for desktop and mobile; mobile uses a compact
+  header and labelled bottom navigation or drawer as appropriate.
+- Preserve text and icon status cues, visible keyboard focus, minimum touch
+  targets, responsive forms/tables, and low-bandwidth behaviour.
+- Internal workflow details, comments, scores, assignments, recommendations,
+  and panel deliberations are never exposed through applicant components.
+
+### Configurable workflow design
+
+```text
+WorkflowDefinition
+└── WorkflowDefinitionVersion
+    ├── WorkflowStageDefinition
+    │   └── StageTaskDefinition
+    └── WorkflowTransitionDefinition
+
+Application
+└── WorkflowInstance -> exact published definition version
+    └── WorkflowStageInstance
+        └── StageTaskInstance
+```
+
+Published definition versions are immutable. A change creates a new draft
+version, and existing applications continue using the version pinned at
+submission. Workflow, audit, and notification-outbox events record runtime
+changes without rewriting history.
+
+The initial controlled task-type registry is:
+
+```text
+AUTOMATED_RULE_CHECK
+CHECKLIST
+DOCUMENT_REVIEW
+STRUCTURED_FORM
+ASSESSMENT_FORM
+FINANCE_REVIEW
+INFORMATION_REQUEST
+RECOMMENDATION
+DECISION
+COMMUNICATION
+```
+
+Administrators may create, order, configure, and assign any number of tasks
+using registered task types without a deployment. `STRUCTURED_FORM` supports a
+bounded set of common fields for future review forms. A genuinely new UI or
+automated behaviour is introduced through a typed registry entry containing its
+configuration schema, result schema, renderer, service handler, capability
+rules, and tests; database configuration may never load arbitrary code.
+
+A stage provides a default assignee role. A task may override it with another
+role or a named user. Direct user assignment takes precedence, but assignment
+does not replace capability authorization. Role tasks are claimed atomically.
+
+The first draft reference workflow is Submission and automated pre-screening,
+Completeness Screening, Technical Assessment, Finance Review, Committee
+Decision, and Outcome Communication. It is a client-assistance starting point,
+not hard-coded programme policy. Unknown criteria, weights, document rules,
+templates, and assignments remain editable draft configuration.
+
+### Engineering quality constraints
+
+#### Component and code reuse
+
+- Search for and extend an existing primitive before creating a component,
+  hook, schema, mapper, constant, or service.
+- Shared authenticated shell, sidebar, route filtering, capability gates, page
+  headers, data tables, status badges, timelines, empty/loading/error states,
+  upload controls, task frames, and form fields have one implementation with
+  variants and composition.
+- Applicant and operations pages may compose the same primitive differently;
+  they must not copy it into feature folders.
+- UI repeated twice is reviewed for extraction; UI repeated three times is
+  extracted unless behaviour is materially different.
+- Task renderers share a common task-frame contract and common save, validation,
+  comments, assignment, history, and action components.
+- Route pages remain composition-only and comply with the repository file and
+  function-size gates.
+
+#### SQL-level projection and query discipline
+
+- Repositories return purpose-built read models such as `WorkQueueRow`,
+  `ApplicationSummary`, `ApplicationWorkspace`, and `ApplicantStatusView`.
+- Every read selects explicit required columns. Broad entity/table selection
+  followed by in-memory omission or remapping is not accepted.
+- Filtering, ownership, authorization scope, sorting, pagination, counts, and
+  aggregates are executed in PostgreSQL.
+- Related list data uses joins, lateral joins, CTEs, window functions, or JSON
+  aggregation where appropriate; repository code must not issue queries inside
+  a record loop.
+- Independent reads use one composed SQL statement where practical, otherwise
+  they execute concurrently. Sequential independent queries and client/API
+  request waterfalls are prohibited.
+- Dependent writes may be sequential only inside one transaction when an
+  earlier generated identifier or locked state is required. Collections use
+  bulk inserts/updates rather than per-row commands.
+- List endpoints return projections and page metadata from bounded queries;
+  they do not load full applications, documents, audit history, or task payloads.
+- Work-queue, application-list, status-timeline, and assignment queries require
+  reviewed indexes and recorded `EXPLAIN` evidence using representative test
+  volumes before their increment is accepted.
+- Tests must detect ownership leaks, over-projection of sensitive fields,
+  N+1/query-in-loop behaviour, unstable pagination, and duplicate command
+  execution.
+
+### Incremental Phase 3 delivery plan
+
+Phase 3 is delivered and reviewed in the following increments. Work does not
+advance merely because later screens can be mocked; each increment must meet
+its exit evidence first.
+
+| Increment | Scope | State | Exit evidence |
+| --- | --- | --- | --- |
+| P3.0 Design and contracts | Portal IA, canonical and semantic colour-token contract, shared shell contract, capability catalogue, workflow model, task registry, status vocabulary, SQL read models, API contracts | In progress | Written design agreement, palette audit, and traceability review |
+| P3.1 Identity and profiles | Shared authenticated portal shell, capability context/gates, applicant profile, business profile, ownership policy | Not started | Policy tests, projection tests, responsive/accessibility evidence |
+| P3.2 Eligibility and application drafts | Versioned eligibility rules/results, funding-call linkage, draft/save/resume, form validation | Not started | Applicant-owned draft round trip and rule-version tests |
+| P3.3 Documents and submission | Private storage adapter, metadata, scan states, declaration, idempotent submission/reference, initial workflow instance | Not started | Transaction, duplicate-submit, access and upload tests |
+| P3.4 Work queue and screening | Task projection, assignment/claim, completeness/document tasks, information request/response | Not started | Queue query plan, capability tests, end-to-end request loop |
+| P3.5 Assessment and finance | Type-driven assessment and finance tasks, scoring configuration, comments, recommendations, return paths | Not started | Versioned config/result and transition tests |
+| P3.6 Decision and communication | Panel decision, reasoned override, outcome templates, notification outbox and delivery states | Not started | Authority, audit, idempotency and happy-path evidence |
+| P3.7 Administration and bulk operations | Workflow draft/preview/publish, user/role management, bulk status, batch communication, audited CSV/Excel export | Not started | Permission matrix, export projection, bulk transaction tests |
+| P3.8 G3 acceptance | Full responsive, accessibility, security, performance, recovery and UAT journeys | Not started | Completed `G3-application-workflow.md` and written acceptance |
 
 ### Entry conditions
 
 - G1 passed.
-- Role/capability matrix is approved.
-- Eligibility rules and hard/conditional criteria are approved.
-- Screening, assessment, finance, and decision stages are approved.
-- Scoring rubric and approval authority are approved or the affected decision action remains explicitly disabled.
-- Document categories, accepted formats, and size limits are approved.
+- A configurable, TOR-aligned reference workflow and role/capability proposal
+  are available as draft configuration.
+- Unconfirmed eligibility, scoring, authority, document, and communication
+  rules are recorded as draft assumptions rather than embedded in code.
+- Development and testing may proceed with synthetic draft configuration.
+  Production publication and G3 acceptance require programme approval of the
+  active configuration; affected decision actions remain explicitly disabled
+  until their authority is approved.
 
 ### Required work
 
@@ -738,20 +1060,25 @@ Each change request must document scope, reason, affected requirements, schedule
 
 ## 13. Immediate execution order
 
-1. Obtain and inventory the existing application and Payload CMS source.
-2. Promote Option B into `apps/platform` and archive inactive design concepts.
-3. Establish real Firebase development authentication and PostgreSQL connectivity.
-4. Implement the application-user and capability model.
-5. Integrate Payload at `/cms` with Firebase identity and no local passwords.
-6. Establish migrations, CI checks, logging, health checks, and gate evidence templates.
-7. Pass G1.
-8. Deliver M4 and pass G2.
-9. Integrate and complete M5, then pass G3.
-10. Deliver M6 and M7, then pass G4 and G5.
-11. Execute UAT and pass G6.
-12. Complete training, documentation, and handover; pass G7.
-13. Provision the approved GCP production environment and pass G8.
-14. Complete the 30-day support period and pass G9.
+1. Preserve the completed G1 foundation and accepted G2 public website.
+2. Review this Phase 3 conversation record and mark P3.0 agreed before making
+   Phase 3 implementation changes.
+3. Deliver P3.1 identity, profiles, shared authenticated shell, typed route
+   filtering, and capability gates; record its evidence.
+4. Deliver P3.2 eligibility and application drafts; record its evidence.
+5. Deliver P3.3 documents and idempotent submission; record its evidence.
+6. Deliver P3.4 work queue, screening, and the information-request round trip;
+   record its evidence.
+7. Deliver P3.5 assessment and finance tasks; record its evidence.
+8. Deliver P3.6 decision and outcome communication; record its evidence.
+9. Deliver P3.7 workflow/user administration, bulk operations, and exports;
+   record its evidence.
+10. Execute P3.8 and pass G3 only after all earlier Phase 3 evidence is accepted.
+11. Deliver M6 and M7, then pass G4 and G5.
+12. Execute UAT and pass G6.
+13. Complete training, documentation, and handover; pass G7.
+14. Provision the approved GCP production environment and pass G8.
+15. Complete the 30-day support period and pass G9.
 
 ## 14. Completion condition
 

@@ -34,7 +34,6 @@ describe("authentication components", () => {
     expect(markup).toContain("text-brand-navy");
     expect(markup).toContain("text-brand-orange");
     expect(markup).toContain("bg-brand-orange");
-    expect(markup).not.toContain("bg-orange-dark");
   });
 
   it("provides verification resend and status controls", () => {

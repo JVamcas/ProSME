@@ -18,8 +18,8 @@ export function HomeProcess() {
         {steps.map(({ icon: Icon, title, text }, index) => (
           <div key={title} className="relative text-center">
             {index < 3 ? <span className="absolute left-[72%] top-9 hidden w-[56%] border-t-2 border-dotted border-brand-yellow lg:block" /> : null}
-            <span className={`absolute left-3 top-3 z-10 grid size-8 place-items-center rounded-full text-sm font-bold ${index % 2 ? "bg-brand-yellow text-brand-navy" : "bg-brand-orange text-brand-white"}`}>{index + 1}</span>
-            <span className="mx-auto grid size-[84px] place-items-center rounded-full bg-brand-orange/10 text-brand-orange"><Icon className="size-9" strokeWidth={1.8} /></span>
+            <span className={`absolute left-3 top-3 z-10 grid size-8 place-items-center rounded-full text-sm font-bold ${index % 2 ? "bg-brand-yellow text-brand-navy" : "bg-brand-orange text-brand-navy"}`}>{index + 1}</span>
+            <span className="mx-auto grid size-[84px] place-items-center rounded-full bg-brand-orange/10 text-brand-navy"><Icon className="size-9" strokeWidth={1.8} /></span>
             <h3 className="mt-5 text-lg font-bold text-brand-navy">{title}</h3>
             <p className="mx-auto mt-2 max-w-[220px] text-sm leading-5 text-brand-navy/70">{text}</p>
           </div>

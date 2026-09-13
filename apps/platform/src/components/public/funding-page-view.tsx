@@ -79,7 +79,7 @@ function FundingHero({
             to {money(call?.maximumAmount)}
           </p>
           <Link
-            className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-brand-orange px-5 text-sm font-bold text-brand-white shadow-[0_8px_20px_rgba(10,24,59,0.18)] transition-colors hover:bg-brand-navy"
+            className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-brand-orange px-5 text-sm font-bold text-brand-navy shadow-[0_8px_20px_rgba(10,24,59,0.18)] transition-colors hover:bg-brand-yellow"
             href="/eligibility"
           >
             Check eligibility <ArrowRight className="size-4" />
@@ -95,7 +95,7 @@ function FundingSupport({ content }: { content: FundingSupportContent }) {
     <section className="section bg-brand-white">
       <div className="container grid gap-12 lg:grid-cols-2">
         <div>
-          <p className="text-xs font-extrabold uppercase tracking-[.16em] text-brand-orange">{content.eyebrow}</p>
+          <p className="text-xs font-extrabold uppercase tracking-[.16em] text-brand-navy">{content.eyebrow}</p>
           <h2 className="display mt-3 text-4xl font-semibold text-brand-navy">
             {content.heading}
           </h2>
@@ -104,7 +104,7 @@ function FundingSupport({ content }: { content: FundingSupportContent }) {
             {content.uses.map((item) => (
               <li className="flex gap-3 text-base text-brand-navy/85" key={item}>
                 <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-brand-orange/10">
-                  <Check className="size-3 text-brand-orange" />
+                  <Check className="size-3 text-brand-navy" />
                 </span>
                 {item}
               </li>
@@ -116,7 +116,7 @@ function FundingSupport({ content }: { content: FundingSupportContent }) {
             const Icon = icons[icon];
             return (
               <article className="rounded-2xl border border-brand-blue/25 bg-brand-white p-6 shadow-[0_12px_35px_rgba(10,24,59,0.08)]" key={title}>
-                <Icon className="size-6 text-brand-orange" />
+                <Icon className="size-6 text-brand-navy" />
                 <h3 className="mt-4 font-bold text-brand-navy">{title}</h3>
                 <p className="mt-2 text-sm leading-5 text-brand-navy/75">
                   {description}
@@ -135,7 +135,7 @@ function FundingPriorities({ content }: { content: FundingPrioritiesContent }) {
     <section className="section bg-brand-cream/30">
       <div className="container">
         <div className="max-w-2xl">
-          <p className="text-xs font-extrabold uppercase tracking-[.16em] text-brand-orange">{content.eyebrow}</p>
+          <p className="text-xs font-extrabold uppercase tracking-[.16em] text-brand-navy">{content.eyebrow}</p>
           <h2 className="display mt-3 text-4xl font-semibold text-brand-navy">
             {content.heading}
           </h2>
@@ -145,7 +145,7 @@ function FundingPriorities({ content }: { content: FundingPrioritiesContent }) {
             const Icon = icons[icon];
             return (
               <article className="rounded-2xl border border-brand-blue/25 bg-brand-white p-7 shadow-[0_12px_35px_rgba(10,24,59,0.08)]" key={title}>
-                <Icon className="size-7 text-brand-orange" />
+                <Icon className="size-7 text-brand-navy" />
                 <h3 className="mt-5 text-lg font-bold text-brand-navy">
                   {title}
                 </h3>
@@ -174,7 +174,7 @@ function FundingCallToAction() {
           </p>
         </div>
         <Link
-          className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-brand-orange px-7 text-base font-bold text-brand-white shadow-[0_8px_20px_rgba(10,24,59,0.18)] transition-colors hover:bg-brand-navy"
+          className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-brand-orange px-7 text-base font-bold text-brand-navy shadow-[0_8px_20px_rgba(10,24,59,0.18)] transition-colors hover:bg-brand-yellow"
           href="/eligibility"
         >
           Check eligibility <ArrowRight className="size-4" />

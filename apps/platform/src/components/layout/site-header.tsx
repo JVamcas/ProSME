@@ -31,7 +31,7 @@ export async function SiteHeader() {
         </div>
       </div>
 
-      <div className="bg-brand-orange text-white">
+      <div className="bg-brand-orange text-brand-navy">
         <div className="container flex h-[76px] items-center justify-between gap-6">
           <Link href="/" aria-label="SME Fund home">
             <Image
@@ -46,7 +46,7 @@ export async function SiteHeader() {
           <div className="hidden items-center gap-3 lg:flex">
             <Link
               href="/sign-in"
-              className="inline-flex h-11 items-center rounded-full border border-white/70 px-6 text-sm font-bold text-white hover:bg-white/10"
+              className="inline-flex h-11 items-center rounded-full border border-brand-navy px-6 text-sm font-bold text-brand-navy hover:bg-brand-yellow/30"
             >
               {content.signInLabel}
             </Link>
@@ -69,7 +69,7 @@ export async function SiteHeader() {
         >
           {primaryNavigation.map((link) => (
             <ActiveNavigationLink
-              className="flex min-h-12 shrink-0 items-center px-1 text-[13px] font-semibold text-brand-navy hover:text-brand-orange hover:underline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand-navy"
+              className="flex min-h-12 shrink-0 items-center px-1 text-[13px] font-semibold text-brand-navy hover:text-brand-navy hover:underline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand-navy"
               key={link.href}
               {...link}
             />
@@ -117,7 +117,7 @@ function PartnerLogos({ hidden = false }: { hidden?: boolean }) {
 function MobileNavigation({ content }: { content: HeaderContent }) {
   return (
     <details className="group relative lg:hidden">
-      <summary className="grid size-11 list-none place-items-center rounded-full border border-white/70 [&::-webkit-details-marker]:hidden">
+      <summary className="grid size-11 list-none place-items-center rounded-full border border-brand-navy [&::-webkit-details-marker]:hidden">
         <Menu className="size-5" />
         <span className="sr-only">Open navigation</span>
       </summary>

@@ -4,19 +4,22 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 export const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 rounded-full text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex items-center justify-center gap-2 rounded-full text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-navy focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
-        default: "bg-orange-dark text-white shadow-sm hover:bg-navy-light",
-        gold: "bg-orange-dark text-white shadow-sm hover:bg-navy-light",
+        default:
+          "bg-brand-navy text-brand-white shadow-sm hover:bg-brand-orange hover:text-brand-navy",
+        gold: "bg-brand-gold text-brand-navy shadow-sm hover:bg-brand-yellow",
         outline:
-          "border border-orange/45 bg-white text-orange-dark hover:border-orange hover:bg-orange-pale",
-        ghost: "text-navy hover:bg-slate-100",
+          "border border-brand-navy/35 bg-brand-white text-brand-navy hover:border-brand-navy hover:bg-brand-cream",
+        ghost: "text-brand-navy hover:bg-brand-cream",
         danger: "bg-red-600 text-white hover:bg-red-700",
-        brand: "bg-brand-orange text-brand-white shadow-sm hover:bg-brand-navy",
-        navy: "bg-brand-navy text-brand-white shadow-sm hover:bg-brand-orange",
-        inverse: "border border-white/50 text-white hover:bg-white/10",
+        brand: "bg-brand-orange text-brand-navy shadow-sm hover:bg-brand-yellow",
+        navy:
+          "bg-brand-navy text-brand-white shadow-sm hover:bg-brand-orange hover:text-brand-navy",
+        inverse:
+          "border border-brand-white/50 text-brand-white hover:bg-brand-white/10",
       },
       size: {
         default: "h-11 px-5",

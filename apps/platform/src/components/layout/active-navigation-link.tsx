@@ -14,5 +14,5 @@ type Props = {
 export function ActiveNavigationLink({ className, href, label }: Props) {
   const pathname = usePathname();
   const active = href === "/" ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
-  return <Link aria-current={active ? "page" : undefined} className={cn(className, active && "text-brand-orange underline decoration-2 underline-offset-4")} href={href}>{label}</Link>;
+  return <Link aria-current={active ? "page" : undefined} className={cn(className, active && "text-brand-navy underline decoration-2 underline-offset-4")} href={href}>{label}</Link>;
 }

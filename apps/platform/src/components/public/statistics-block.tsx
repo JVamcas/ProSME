@@ -26,7 +26,7 @@ export async function StatisticsBlock({ block }: { block: Block }) {
           {items.map((item, itemIndex) => {
             const Icon = statisticIcons[itemIndex % statisticIcons.length];
             return <div className="border-r border-brand-orange/35 last:border-0" key={itemIndex}>
-              <Icon aria-hidden="true" className="size-7 text-brand-orange" />
+              <Icon aria-hidden="true" className="size-7 text-brand-navy" />
               <strong className="mt-2 block text-2xl text-brand-navy">{text(item.value)}</strong>
               <p className="text-xs text-brand-navy/80">{text(item.label)}</p>
             </div>;

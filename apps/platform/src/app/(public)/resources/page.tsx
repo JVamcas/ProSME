@@ -42,10 +42,10 @@ export default async function ResourcesPage() {
                   />
                   <div className="flex items-start gap-5 p-6">
                     <span className="grid size-12 shrink-0 place-items-center rounded-full bg-brand-orange/10">
-                      <Download className="size-5 text-brand-orange" />
+                      <Download className="size-5 text-brand-navy" />
                     </span>
                     <div>
-                      <p className="text-xs font-extrabold uppercase tracking-wider text-brand-orange">
+                      <p className="text-xs font-extrabold uppercase tracking-wider text-brand-navy">
                         {item.category}
                       </p>
                       <h2 className="mt-2 text-xl font-bold text-brand-navy">

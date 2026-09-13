@@ -103,7 +103,7 @@ function ContactMessageFields() {
             enquiry. See the{" "}
             <a
               href="/privacy"
-              className="font-bold text-brand-orange underline"
+              className="font-bold text-brand-navy underline"
             >
               privacy policy
             </a>
@@ -144,7 +144,7 @@ function ContactActions({
         id="contact-status"
         role="status"
         className={
-          isError ? "text-sm text-brand-orange" : "text-sm text-brand-green"
+          isError ? "text-sm text-brand-navy" : "text-sm text-green-dark"
         }
       >
         {error ?? message}

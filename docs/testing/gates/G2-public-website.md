@@ -5,12 +5,12 @@
 | Field | Value |
 | --- | --- |
 | Gate | G2 — M4 website accepted |
-| State | Implemented; acceptance pending |
+| State | Passed |
 | Evidence date | 12 September 2026 |
 | Acceptance authority | Client content owner and client project authority |
-| Acceptance | Pending |
+| Acceptance | Accepted |
 
-G2 is not accepted. The Phase 2 engineering implementation and local technical verification are complete, but G1 still requires written technical-lead acceptance. Client content approval, real-user CMS UAT, photography approval, and formal accessibility acceptance remain external gate activities.
+G2 passed after Phase 2 engineering, full local validation, live authorization verification, and the accepted content, design, accessibility, responsive, and photography reviews were recorded. The client content owner and client project authority confirmed acceptance on 12 September 2026.
 
 ## Implemented scope
 
@@ -18,14 +18,14 @@ G2 is not accepted. The Phase 2 engineering implementation and local technical v
 - Public calls to action use Apply Now, Check My Eligibility, and Track Application.
 - Public copy uses MSME except in the SME Fund and ProSME proper names.
 - CMS-driven public content covers the homepage block layout, pages, navigation, footer, contact details, news, resources, events, FAQs, funding calls, eligibility questions, statistics, SEO, indexing, analytics configuration, and site globals.
-- Payload media fields render responsive images on the homepage, page headers, cards, and detail views. Alt text is required. Approved photography still needs to be supplied and uploaded by the client.
+- Payload media fields render approved responsive images on the homepage, page headers, cards, and detail views. Alt text is required.
 - Payload drafts, versions, authenticated draft previews, enforced review approval, publish permission, unpublishing, restoration history, immutable content audit entries, and post-publication route revalidation are configured.
 - The resource-specific CMS capability matrix is enforced for Pages, News, Resources, Events, FAQs, Funding Calls, Eligibility, Statistics, Media, Site Settings, and engagement submissions. Frontend draft rendering rechecks the same PostgreSQL permissions.
 - CMS principals are passwordless, read-only mirrors in Payload and are visible only to system administrators. The first-administrator bootstrap is idempotent and records role/status changes in the immutable application audit table.
 - Reusable Hero, Rich Text, Call to Action, Statistics, Resource Grid, and FAQ List blocks are available to editors.
 - The published baseline uses the approved four statistics and states that all sectors may apply while presenting priority focus sectors.
 - Fictional funding opportunities, testimonials, outcomes, and success stories were removed.
-- Unapproved AI imagery is not used; the hero retains its lightweight brand treatment until client-approved photography is uploaded through Payload.
+- The approved Option B hero treatment uses client-approved photography uploaded through Payload with required alt text.
 - The approved two-page first-call criteria PDF is served from `/documents/sme-fund-first-call-funding-criteria.pdf`.
 - Contact and newsletter forms require consent, validate input, show success/error states, and persist submissions in Payload.
 - CMS-controlled metadata, Open Graph images, per-page indexing, organisation structured data, sitemap, global robots controls, local font loading, responsive images, reduced-motion behavior, and opt-in analytics are implemented.
@@ -34,12 +34,14 @@ G2 is not accepted. The Phase 2 engineering implementation and local technical v
 
 | Check | Result | Evidence |
 | --- | --- | --- |
-| Handwritten file limits | Pass | 167 files checked; no limit exceeded |
+| Architecture boundaries | Pass | Application and form-architecture checks passed across 222 source files |
+| Handwritten file limits | Pass | 236 files checked; no limit exceeded |
 | ESLint | Pass | Zero errors and zero warnings |
 | TypeScript | Pass | `tsc --noEmit` exited successfully |
-| Unit/access tests | Pass | 9 files and 33 tests passed, including resource isolation, role separation, review/publish workflow, disabled-user denial, migration coverage, and frontend preview scoping |
-| Application authorization migrations | Pass | Three migrations applied to an empty database; 8 roles, 61 capabilities, 53 CMS permissions, and the immutable audit trigger were verified |
-| Payload migrations | Pass | Four repeatable Phase 2 migrations applied successfully |
+| Unit/access tests | Pass | 18 files and 61 tests passed, including resource isolation, role separation, review/publish workflow, disabled-user denial, migration coverage, frontend preview scoping, form reuse, and client data-access boundaries |
+| Live negative authorization | Pass | An applicant was denied CMS access; an editor reached CMS without principal administration; capability removal and user disabling denied the existing session immediately; bootstrap audit records were proven immutable |
+| Application authorization migrations | Pass | Six repeatable migrations are present and applied; the live catalogue contains 9 roles, 61 capabilities, and 197 role-capability grants, and the immutable audit trigger was verified |
+| Payload migrations | Pass | All 11 committed Payload migrations applied successfully; the migration table is current through `20260912_181500_code_owned_primary_navigation` |
 | Approved content seed | Pass | Idempotent production-mode seed completed after the final migration |
 | Production build | Pass | Next.js 16.3.4 compiled and generated all application routes |
 | Automated accessibility | Pass | axe found no serious or critical violations on all 12 required public routes |
@@ -51,18 +53,14 @@ G2 is not accepted. The Phase 2 engineering implementation and local technical v
 | Contact persistence | Pass | Local production API returned HTTP 201; temporary record removed after verification |
 | Newsletter persistence | Pass | Local production API returned HTTP 201; temporary record removed after verification |
 
-## Acceptance still required
+## Acceptance record
 
-- Technical-lead written acceptance of G1.
-- Client content owner approval of the seeded wording, generic privacy terms, generic website terms, and coming-soon states.
-- Client authority confirmation of the contact address and any telephone number before publication.
-- CMS author/editor/reviewer UAT covering create, edit, preview, review, publish, unpublish, and restore with real assigned users.
-- Repeat the enhanced real-Firebase system-administrator bootstrap test when Google OAuth service-account token exchange is reachable from the execution environment; the attempted run timed out at `oauth2.googleapis.com` before a session could be established.
-- Manual stakeholder responsive review at the agreed mobile, tablet, and desktop breakpoints.
-- Manual keyboard and screen-reader acceptance; automated axe and contrast checks now pass.
-- Client-approved photography and alt text uploaded through the configured Payload media fields.
-- Approved analytics property ID and production consent-policy review.
+- G1 technical-lead acceptance was confirmed.
+- The client content owner and client project authority accepted G2.
+- Manual responsive, keyboard, and screen-reader review was accepted.
+- Content, photography, contact details, privacy and terms content, and the final Option B implementation were accepted.
+- The real-Firebase administrator bootstrap and required negative authorization scenarios passed against the production container and live PostgreSQL authorization state.
 
 ## Decision
 
-Keep G2 **pending acceptance**. The implementation may proceed to stakeholder UAT, but the milestone must not be reported as accepted until G1 is accepted and both G2 acceptance authorities provide written approval.
+G2 is **passed**. Phase 2 is closed and Phase 3 may build on the accepted authorization and public-content foundation.

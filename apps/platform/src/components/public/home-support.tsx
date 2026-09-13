@@ -54,7 +54,7 @@ function SupportGroup({
             className="support-card rounded-xl border border-brand-blue/20 bg-white p-5"
             key={`${hidden ? "copy" : "main"}-${group.label}`}
           >
-            <span className="grid size-12 place-items-center rounded-full bg-brand-orange text-white">
+            <span className="grid size-12 place-items-center rounded-full bg-brand-orange text-brand-navy">
               <Icon className="size-6" />
             </span>
             <h3 className="mt-4 min-h-12 text-xl font-bold leading-6 text-brand-navy">

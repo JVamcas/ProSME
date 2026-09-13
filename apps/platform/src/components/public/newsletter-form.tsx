@@ -67,7 +67,7 @@ function NewsletterFields({ pending }: { pending: boolean }) {
       </div>
       <CheckboxField
         name="consent"
-        containerClassName="mt-3 gap-2 text-[11px] leading-4 text-white/80"
+        containerClassName="mt-3 gap-2 text-[11px] leading-4 text-brand-navy"
         controlClassName="mt-0.5 accent-navy"
         label={
           <>
@@ -91,7 +91,7 @@ function NewsletterStatus({
   message?: string;
 }) {
   return (
-    <p className="mt-2 min-h-4 text-xs text-white" role="status">
+    <p className="mt-2 min-h-4 text-xs text-brand-navy" role="status">
       {pending ? "Submitting…" : message}
     </p>
   );

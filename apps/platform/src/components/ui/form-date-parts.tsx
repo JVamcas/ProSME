@@ -38,7 +38,7 @@ export function DateControl({ className, error }: DateControlProps) {
             segment={segment}
             className={cn(
               "rounded px-0.5 outline-none data-[placeholder]:text-slate-400",
-              "focus:bg-orange-pale focus:text-orange-dark",
+              "focus:bg-orange-pale focus:text-brand-navy",
             )}
           />
         )}

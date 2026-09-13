@@ -19,7 +19,7 @@ export function HomeHero({ content }: HomeHeroProps) {
 
       <div className="hero-container relative z-10 grid min-h-[520px] items-center lg:grid-cols-[1.05fr_.95fr]">
         <div className="hero-copy max-w-[650px] py-14 lg:py-16">
-          <p className="text-[11px] font-bold uppercase tracking-[.2em] text-brand-orange">
+          <p className="text-[11px] font-bold uppercase tracking-[.2em] text-brand-navy">
             {content.eyebrow}
           </p>
 
@@ -108,12 +108,12 @@ function DesktopHeroFallback({ content }: HomeHeroProps) {
   return (
     <div className="absolute inset-y-0 right-0 hidden w-[46%] bg-brand-orange lg:flex lg:items-center lg:justify-center">
       <div className="brand-pattern absolute inset-0 text-white/10" />
-      <div className="relative max-w-sm rounded-3xl border border-white/25 bg-white/10 p-8 text-white backdrop-blur-sm">
+      <div className="relative max-w-sm rounded-3xl border border-brand-navy/25 bg-white/20 p-8 text-brand-navy backdrop-blur-sm">
         <p className="text-4xl font-bold leading-tight">
           {content.heroPanelHeading}
         </p>
         <div className="mt-6 h-1.5 w-28 rounded-full bg-brand-yellow" />
-        <p className="mt-6 text-sm leading-6 text-white/85">
+        <p className="mt-6 text-sm leading-6 text-brand-navy">
           {content.heroPanelSummary}
         </p>
       </div>
@@ -132,7 +132,7 @@ function HeroTitle({ title }: { title: string }) {
       {emphasis ? (
         <>
           {" "}
-          <span className="text-brand-orange">{emphasis}</span>
+          <span className="text-brand-navy">{emphasis}</span>
         </>
       ) : null}
     </h1>
@@ -182,7 +182,7 @@ function HeroBenefit({
   text: string;
 }) {
   return (
-    <span className="flex items-center gap-2 [&_svg]:size-5 [&_svg]:text-brand-orange">
+    <span className="flex items-center gap-2 [&_svg]:size-5 [&_svg]:text-brand-navy">
       {icon}
       {text}
     </span>

@@ -5,12 +5,12 @@
 | Field | Value |
 | --- | --- |
 | Gate | G1 — Foundation ready |
-| State | In progress |
-| Evidence date | 11 September 2026 |
+| State | Passed |
+| Evidence date | 12 September 2026 |
 | Acceptance authority | Technical lead |
-| Acceptance | Pending |
+| Acceptance | Accepted |
 
-G1 is not passed. The repository foundation is implemented and locally verified, but the mandatory real-Firebase scenarios and written technical-lead acceptance cannot be completed until development-project credentials and test users are supplied.
+G1 passed after the repository foundation, real-Firebase scenarios, live PostgreSQL authorization checks, and production deployment path were verified. Technical-lead acceptance was confirmed on 12 September 2026.
 
 ## Implemented foundation
 
@@ -28,11 +28,11 @@ G1 is not passed. The repository foundation is implemented and locally verified,
 | Check | Result | Evidence |
 | --- | --- | --- |
 | Clean lockfile install | Pass | `npm ci`: 972 packages installed successfully from the committed lockfile |
-| Handwritten file limits | Pass | 110 files checked; no limit exceeded |
+| Handwritten file limits | Pass | 236 files checked; no limit exceeded |
 | ESLint | Pass | Zero errors and zero warnings |
 | TypeScript | Pass | `tsc --noEmit` exited successfully |
-| Unit/access tests | Pass | 3 files and 8 tests passed |
-| Production build | Pass | Next.js 16.3.4 Webpack build produced all 17 routes |
+| Unit/access tests | Pass | 18 files and 61 tests passed |
+| Production build | Pass | Next.js 16.3.4 Webpack production build generated all application routes |
 | Application migration on empty database | Pass | `0000_boring_stark_industries.sql` applied to clean `smefund_g1` database |
 | Payload migration on empty database | Pass | `20260911_180817_phase1_payload_foundation` applied as batch 1 |
 | Migration seed verification | Pass | 7 roles and 9 capabilities present |
@@ -45,18 +45,21 @@ G1 is not passed. The repository foundation is implemented and locally verified,
 | Invalid and revoked sessions | Pass | Invalid ID token returned 401; a previously valid session returned 401 after `revokeRefreshTokens` |
 | Applicant authorization | Pass | Applicant reached `/portal`, received applicant capabilities, and was redirected from `/admin` |
 | CMS authorization | Pass | Applicant received no Payload principal; CMS editor resolved through Firebase without a Payload password and reached `/cms` |
+| Live authorization changes | Pass | Removing the CMS role and disabling the PostgreSQL user each denied `/cms` on the next request using the existing Firebase session; restoring access took effect immediately |
+| Principal administration | Pass | CMS users can enter Payload but cannot read or mutate the principal mirror; it remains visible only to system administrators |
+| Authorization audit | Pass | Bootstrap role changes created audit entries and a live update attempt was rejected by the immutable database trigger |
 | Operations authorization | Pass | CMS-only user was redirected from `/admin`; programme officer reached `/admin` |
 | Logout | Pass | CSRF-protected logout cleared the production session cookie |
 | Test-data cleanup | Pass | Disposable PostgreSQL records were removed and 3 stale Firebase G1 identities from interrupted attempts were deleted |
 
 The sandbox initially prevented npm/esbuild and Next.js worker execution. The identical install and build commands passed with normal process-execution permission; this was an execution-environment restriction, not an application failure.
 
-## Mandatory checks still pending
+## Acceptance record
 
-- Complete a time-based test using an authentically issued, expired Firebase session. Invalid and revoked sessions are already proven.
-- Complete the manual inbox/email-link portion of applicant email verification; the automated test established and enforced Firebase's verified state without relying on an external mailbox.
-- Repeat mutation-level `/admin` authorization when Phase 3 introduces operational mutation endpoints; Phase 1 currently contains protected read-only prototype routes.
-- Obtain written G1 acceptance from the technical lead.
+- The technical lead accepted G1 on 12 September 2026.
+- Real Firebase registration, verified-email enforcement, session establishment, revocation, and logout passed.
+- Live capability removal, user disabling, CMS role separation, and immutable authorization auditing passed.
+- Operational mutation authorization remains Phase 3 scope because Phase 1 exposes only protected read-only operational prototypes.
 
 ## Dependency review
 
@@ -70,4 +73,4 @@ These findings must be tracked and rechecked before production acceptance. They 
 
 ## Decision
 
-Keep G1 **In progress**. Phase 2 or Phase 3 development may proceed at risk, but neither dependent milestone may be reported as accepted until every pending item above is evidenced and the technical lead signs off.
+G1 is **passed**. Phase 2 and Phase 3 may rely on the accepted authentication and authorization foundation.

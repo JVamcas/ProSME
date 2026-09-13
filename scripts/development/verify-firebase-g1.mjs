@@ -8,6 +8,8 @@ import pg from "pg";
 import { runBootstrapAdmin } from "./run-bootstrap-admin.mjs";
 import {
   verifyAccess,
+  verifyImmutableAuthorizationAudit,
+  verifyRuntimeAuthorizationRevocation,
   verifySystemAdministrator,
 } from "./verify-firebase-access.mjs";
 
@@ -154,15 +156,25 @@ try {
   await assignRole(identities[2].email, "programme_officer", true);
   runBootstrapAdmin(identities[3].email);
   const auditCount = await pool.query("SELECT count(*) FROM app_authorization_audit_entries WHERE actor_id = $1", [`bootstrap:${identities[3].email}`]);
+  assert(Number(auditCount.rows[0].count) > 0);
   runBootstrapAdmin(identities[3].email);
   const repeatedCount = await pool.query("SELECT count(*) FROM app_authorization_audit_entries WHERE actor_id = $1", [`bootstrap:${identities[3].email}`]);
   assert.equal(repeatedCount.rows[0].count, auditCount.rows[0].count);
   await verifyAccess({
     applicantCookie,
     cmsCookie,
-    cmsEmail: identities[1].email,
     get,
     operationsCookie,
+  });
+  await verifyRuntimeAuthorizationRevocation({
+    cmsCookie,
+    cmsEmail: identities[1].email,
+    get,
+    pool,
+  });
+  await verifyImmutableAuthorizationAudit({
+    actorId: `bootstrap:${identities[3].email}`,
+    pool,
   });
   await verifySystemAdministrator(systemCookie, get);
   await verifyLogout(operationsCookie);
@@ -170,7 +182,9 @@ try {
   await new Promise((resolve) => setTimeout(resolve, 1100));
   await admin.revokeRefreshTokens(identities[0].uid);
   assert.equal((await get("/api/auth/me", applicantCookie)).status, 401);
-  console.log("G1 Firebase verification passed: registration, verification state, sessions, revocation, logout, CMS and operations authorization.");
+  console.log(
+    "G1 Firebase verification passed: registration, sessions, live capability revocation, disabled-user denial, immutable authorization auditing, logout, CMS and operations authorization.",
+  );
 } finally {
   await pool.query("DELETE FROM cms_principals WHERE email = ANY($1)", [identities.map(({ email }) => email)]).catch(() => undefined);
   await pool.query("DELETE FROM app_users WHERE email = ANY($1)", [identities.map(({ email }) => email)]).catch(() => undefined);
