@@ -1,6 +1,6 @@
-import { approvedPageParagraphs, defaultPages } from "../../modules/content/content.defaults";
-import { defaultEligibilityFocusSection } from "../../modules/content/eligibility-page-content";
-import { defaultFundingPriorities, defaultFundingSupport } from "../../modules/content/funding-page-content";
+import { approvedPageParagraphs, defaultPages } from "../../modules/content/ContentDefaults";
+import { defaultEligibilityFocusSection } from "../../modules/content/EligibilityPageContent";
+import { defaultFundingPriorities, defaultFundingSupport } from "../../modules/content/FundingPageContent";
 
 export const publicPages = [
   { slug: "about", ...defaultPages.about, paragraphs: approvedPageParagraphs.about },

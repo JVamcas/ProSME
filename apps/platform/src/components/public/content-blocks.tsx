@@ -4,7 +4,7 @@ import { CmsImage } from "./cms-image";
 import { CmsRichText } from "./cms-rich-text";
 import { HomeFunding } from "./home-funding";
 import { StatisticsBlock } from "./statistics-block";
-import { getFaqs } from "@/modules/content/content.queries";
+import { getFaqs } from "@/modules/content/ServerContentQueries";
 
 type Block = Record<string, unknown> & { blockType?: string };
 

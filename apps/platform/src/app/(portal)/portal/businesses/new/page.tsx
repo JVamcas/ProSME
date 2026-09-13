@@ -4,8 +4,8 @@ import { redirect } from "next/navigation";
 import { capabilities } from "@/auth/authorization/capabilities";
 import { getCurrentUser } from "@/auth/authorization/current-user";
 import { can } from "@/auth/authorization/policy";
-import { BusinessForm } from "@/components/businesses/business-form";
-import { ProfilePageHeader } from "@/components/profile/profile-page-header";
+import { BusinessForm } from "@/components/applicant/businesses/BusinessForm";
+import { ProfilePageHeader } from "@/components/applicant/profile/ProfilePageHeader";
 
 export const metadata: Metadata = { title: "Add business" };
 

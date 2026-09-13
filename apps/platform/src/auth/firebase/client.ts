@@ -3,7 +3,7 @@
 import { getApp, getApps, initializeApp } from "firebase/app";
 import { getAuth, inMemoryPersistence, setPersistence, type Auth } from "firebase/auth";
 
-import { getFirebaseClientEnvironment } from "./firebase-config-client.service";
+import { getFirebaseClientEnvironment } from "./ClientFirebaseConfigService";
 
 let authPromise: Promise<Auth> | undefined;
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { defaultFundingPriorities, defaultFundingSupport, fundingPageSections } from "@/modules/content/funding-page-content";
+import { defaultFundingPriorities, defaultFundingSupport, fundingPageSections } from "@/modules/content/FundingPageContent";
 
 describe("funding page CMS sections", () => {
   it("maps published funding support and priority blocks", () => {

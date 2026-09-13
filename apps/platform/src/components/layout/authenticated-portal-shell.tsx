@@ -2,8 +2,8 @@
 
 import type { PortalSpace } from "@/auth/authorization/portal-access";
 import { Logo } from "@/components/brand/logo";
-import { LogoutButton } from "@/components/dashboard/logout-button";
-import type { PortalContext } from "@/modules/profiles/profile.types";
+import { LogoutButton } from "@/components/layout/LogoutButton";
+import type { PortalContext } from "@/modules/profiles/ProfileTypes";
 import { CapabilityProvider } from "./capability-context";
 import { PortalMobileHeader } from "./portal-mobile-header";
 import { PortalNavList } from "./portal-nav-list";
@@ -27,13 +27,12 @@ function Sidebar({
 }: Omit<AuthenticatedPortalShellProps, "children">) {
   const granted = new Set(context.capabilityCodes);
   const routes = filterPortalRoutes(portalRoutes, space, granted);
-  const homePath = space === "operations" ? "/admin" : "/portal";
 
   return (
     <aside className="sticky top-0 hidden h-screen overflow-hidden bg-brand-orange p-5 lg:flex lg:flex-col">
       <Logo
-        className="shrink-0 rounded-2xl bg-brand-white p-3 shadow-sm"
-        href={homePath}
+        className="shrink-0 p-3 shadow-sm"
+        href={"/"}
         compact
       />
       <div className="mt-6 shrink-0">

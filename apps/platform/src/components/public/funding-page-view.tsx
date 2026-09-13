@@ -4,8 +4,8 @@ import Link from "next/link";
 import type {
   FundingPrioritiesContent,
   FundingSupportContent,
-} from "@/modules/content/funding-page-content";
-import type { FundingCallItem } from "@/modules/content/content.types";
+} from "@/modules/content/FundingPageContent";
+import type { FundingCallItem } from "@/modules/content/ContentTypes";
 import {
   FundingCallToAction,
   FundingPriorities,

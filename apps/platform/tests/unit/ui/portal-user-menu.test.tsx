@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { PortalUserMenu } from "@/components/layout/portal-user-menu";
 import { createQueryClient } from "@/lib/query-client";
-import type { PortalContext } from "@/modules/profiles/profile.types";
+import type { PortalContext } from "@/modules/profiles/ProfileTypes";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: vi.fn(), replace: vi.fn() }),

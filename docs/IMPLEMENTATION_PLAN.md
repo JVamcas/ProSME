@@ -5,9 +5,9 @@
 | Field | Value |
 | --- | --- |
 | Document | Production implementation and delivery plan |
-| Version | 2.0 |
+| Version | 2.1 |
 | Date | 13 September 2026 |
-| Status | Execution baseline; P3.1 ready for review |
+| Status | Execution baseline; P3.1 accepted; P3.2.1 ready for review |
 | Product | SME Fund platform under the ProSME Project |
 | Selected design | Option B |
 | Delivery scope | Remaining milestones M4–M12 |
@@ -29,6 +29,7 @@ This document is the authoritative implementation plan for production delivery a
 | 1.8 | 13 September 2026 | Added reusable accessible route tabs and consolidated all applicant profile sections under the My Profile route |
 | 1.9 | 13 September 2026 | Remediated P3.1 review findings for independent profile submissions, operations application scope, read-only UI, shared route states, correlated error logging, and approved dashboard hierarchy |
 | 2.0 | 13 September 2026 | Replaced the one-business-per-applicant profile assumption with an owned business collection and dedicated My Businesses CRUD workspace |
+| 2.1 | 13 September 2026 | Added P3.2.1 as the blocking source-ownership increment, made client/server service boundaries explicit, and separated applicant, admin, public, and domain-owned source paths before P3.2 feature work |
 
 ## 1. Purpose
 
@@ -88,7 +89,7 @@ The client-approved milestone sequence is:
 | M2 | Three Website Design Concepts | Week 1 | Complete |
 | M3 | Approved Final Design Prototype — Option B | Week 2 | Complete |
 | M4 | Fully Developed and Operational Website | Week 3 | Accepted — G2 passed |
-| M5 | Online Application System with Workflow Engine | Week 3 | In progress — P3.1 ready for review |
+| M5 | Online Application System with Workflow Engine | Week 3 | In progress — P3.1 accepted; P3.2.1 ready for review |
 | M6 | AI Chatbot Trained and Deployed | Week 3 | Pending |
 | M7 | Analytics Dashboard Configured | Week 4 | Pending |
 | M8 | User Acceptance Testing Report | Weeks 5–7 | Pending |
@@ -358,7 +359,7 @@ G2 passes only when:
 
 **Milestone:** M5  
 **Gate:** G3
-**Status:** P3.0 complete; P3.1 ready for review; P3.2 blocked
+**Status:** P3.0 and P3.1 accepted; P3.2.1 ready for review; P3.2 blocked
 
 ### Current delivery record
 
@@ -368,13 +369,13 @@ G2 passes only when:
 | G2 public website | Passed | Recorded in `docs/testing/gates/G2-public-website.md` |
 | TOR and Phase 3 UI review | Complete | Requirements and proposed screens reviewed for the plan |
 | Portal, workflow, data, and permission design | Agreed | P3.0 contracts accepted in `docs/testing/gates/P3.0-design-contracts.md` |
-| Phase 3 database/domain implementation | In progress | P3.1 implementation complete and awaiting acceptance; later domains are not started |
-| Applicant portal implementation | In progress | P3.1 implementation complete and awaiting acceptance |
+| Phase 3 database/domain implementation | In progress | P3.1 accepted; P3.2.1 source ownership and service boundaries implemented and awaiting acceptance |
+| Applicant portal implementation | In progress | P3.1 accepted; P3.2 feature behavior has not started |
 | Operations/work-queue implementation | Not started | Existing fixture-backed screens are inputs, not Phase 3 completion evidence |
 | G3 evidence and acceptance | Not started | Created only as independently testable increments are completed |
 
-P3.0 is agreed. P3.1 is ready for review. P3.2 may not begin until the P3.1
-gate is accepted.
+P3.0 and P3.1 are accepted. P3.2.1 is ready for review. P3.2 feature work may
+not begin until the P3.2.1 gate is accepted.
 
 ### Conversation decision record
 
@@ -689,8 +690,9 @@ bypass an earlier gate.
 | Increment | Scope | Target screens | Gate record | State | Exit evidence |
 | --- | --- | --- | --- | --- | --- |
 | P3.0 Design, contracts and visual targets | Portal IA, accessible colour-token contract, shared shell contract, capability catalogue, workflow model, task registry, status vocabulary, SQL read models, API contracts, and complete desktop/mobile visual targets | Complete UI boards | `docs/testing/gates/P3.0-design-contracts.md` | Complete | Accepted gate record and four complete Phase 3 target boards |
-| P3.1 Identity, profiles and shared portal shell | Shared authenticated portal shell, capability context/gates, applicant profile, owned business collection, and ownership policy | Applicant Dashboard, My Profile, and My Businesses | `docs/testing/gates/P3.1-identity-profiles.md` | Ready for review | Completed implementation, verified evidence, and explicit reviewer acceptance |
-| P3.2 Funding opportunities, eligibility and application drafts | Funding-call linkage, versioned eligibility rules/results, application creation, draft/save/resume, form validation, and application section completion without submission | Applicant screens 2–9 | `docs/testing/gates/P3.2-funding-eligibility-drafts.md` | Not started | Funding-call projection, applicant-owned draft round trip, validation, and rule-version tests |
+| P3.1 Identity, profiles and shared portal shell | Shared authenticated portal shell, capability context/gates, applicant profile, owned business collection, and ownership policy | Applicant Dashboard, My Profile, and My Businesses | `docs/testing/gates/P3.1-identity-profiles.md` | Complete | Accepted implementation and verification evidence |
+| P3.2.1 Source ownership and service boundaries | Audience-owned applicant/admin/public component paths, domain-owned modules, explicit `Client<Domain>Service.ts` and `Server<Domain>Service.ts` names, and audience-owned API routes | Source architecture only | `docs/testing/gates/P3.2.1-structure-boundaries.md` | Ready for review | Automated structural tests, architecture and file gates, imports, tests, and production build |
+| P3.2 Funding opportunities, eligibility and application drafts | Funding-call linkage, versioned eligibility rules/results, application creation, draft/save/resume, form validation, and application section completion without submission | Applicant screens 2–9 | `docs/testing/gates/P3.2-funding-eligibility-drafts.md` | Not started | Funding-call projection, applicant-owned draft round trip, validation, and rule-version tests after P3.2.1 acceptance |
 | P3.3 Workflow configuration and opportunity assignment | Definition/version/stage/task/transition persistence, typed task registry, TOR-aligned seed workflow, draft/clone/validate/preview/publish/retire lifecycle, published-version immutability, and funding-opportunity assignment | Workflow Definitions, Workflow Editor, and Funding Opportunity–Workflow Assignment within Workflow Configuration | `docs/testing/gates/P3.3-workflow-configuration.md` | Not started | Migration, definition-validation, registry, immutable-version, publication, authorization, audit, assignment, and projection/query evidence |
 | P3.4 Documents, declarations and submission | Private storage adapter, document metadata and scan states, declarations, review, idempotent submission/reference, and transactional creation of the initial workflow instance from the opportunity's assigned published workflow version | Applicant screens 10–13 | `docs/testing/gates/P3.4-documents-submission.md` | Not started | Transaction, assignment/version-pinning, duplicate-submit, access, declaration, and upload tests |
 | P3.5 Work queue, screening and information requests | Task projection, assignment/claim, completeness and document-review tasks, and the information request/response loop | Admin screens 2 and 4–9; Applicant screen 14 | `docs/testing/gates/P3.5-work-queue-screening.md` | Not started | Queue query plan, capability and assignment tests, screening transitions, and end-to-end request loop |
@@ -1151,27 +1153,29 @@ Each change request must document scope, reason, affected requirements, schedule
 1. Preserve the completed G1 foundation and accepted G2 public website.
 2. Preserve the accepted P3.0 contracts and trace later changes through their
    acceptance record.
-3. Deliver P3.1 identity, profiles, shared authenticated shell, typed route
-   filtering, and capability gates; record its evidence.
-4. Deliver P3.2 funding opportunities, eligibility, and application drafts;
+3. Preserve accepted P3.1 identity, profiles, shared authenticated shell,
+   typed route filtering, and capability gates.
+4. Accept P3.2.1 source ownership and explicit client/server service
+   boundaries before adding more Phase 3 feature code.
+5. Deliver P3.2 funding opportunities, eligibility, and application drafts;
    record its evidence. Draft work does not require a configured workflow.
-5. Deliver P3.3 workflow configuration, publication, and funding-opportunity
+6. Deliver P3.3 workflow configuration, publication, and funding-opportunity
    assignment; record its evidence.
-6. Deliver P3.4 documents, declarations, idempotent submission, and
+7. Deliver P3.4 documents, declarations, idempotent submission, and
    transactional workflow instantiation from the opportunity's assigned
    published version; record its evidence.
-7. Deliver P3.5 work queue, screening, and the information-request round trip;
+8. Deliver P3.5 work queue, screening, and the information-request round trip;
    record its evidence.
-8. Deliver P3.6 assessment, finance, and recommendations; record its evidence.
-9. Deliver P3.7 decision and outcome communication; record its evidence.
-10. Deliver P3.8 users, access, reports, audit, and bulk operations; record its
+9. Deliver P3.6 assessment, finance, and recommendations; record its evidence.
+10. Deliver P3.7 decision and outcome communication; record its evidence.
+11. Deliver P3.8 users, access, reports, audit, and bulk operations; record its
     evidence.
-11. Execute P3.9 and pass G3 only after all earlier Phase 3 evidence is accepted.
-12. Deliver M6 and M7, then pass G4 and G5.
-13. Execute UAT and pass G6.
-14. Complete training, documentation, and handover; pass G7.
-15. Provision the approved GCP production environment and pass G8.
-16. Complete the 30-day support period and pass G9.
+12. Execute P3.9 and pass G3 only after all earlier Phase 3 evidence is accepted.
+13. Deliver M6 and M7, then pass G4 and G5.
+14. Execute UAT and pass G6.
+15. Complete training, documentation, and handover; pass G7.
+16. Provision the approved GCP production environment and pass G8.
+17. Complete the 30-day support period and pass G9.
 
 ## 14. Completion condition
 

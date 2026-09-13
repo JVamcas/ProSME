@@ -1,7 +1,7 @@
 import { ArrowRight, BarChart3, Leaf, Users } from "lucide-react";
 import Link from "next/link";
 
-import type { HomepageContent } from "@/modules/content/content.types";
+import type { HomepageContent } from "@/modules/content/ContentTypes";
 import { CmsImage } from "./cms-image";
 
 type HomeHeroProps = {

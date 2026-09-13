@@ -1,7 +1,7 @@
 import { Sprout } from "lucide-react";
 
-import type { EligibilityFocusSection } from "@/modules/content/eligibility-page-content";
-import type { EligibilityItem } from "@/modules/content/content.types";
+import type { EligibilityFocusSection } from "@/modules/content/EligibilityPageContent";
+import type { EligibilityItem } from "@/modules/content/ContentTypes";
 
 export function FocusSectors({
   content,

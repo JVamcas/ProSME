@@ -4,8 +4,8 @@ import { notFound, redirect } from "next/navigation";
 import { capabilities } from "@/auth/authorization/capabilities";
 import { getCurrentUser } from "@/auth/authorization/current-user";
 import { can } from "@/auth/authorization/policy";
-import { ApplicationReview } from "@/components/admin/application-review";
-import { getApplication } from "@/modules/applications/application.service";
+import { ApplicationReview } from "@/components/admin/applications/ApplicationReview";
+import { getApplication } from "@/modules/applications/ServerApplicationService";
 
 export const metadata: Metadata = { title: "Application review" };
 

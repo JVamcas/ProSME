@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
-import { newsletterSubscriptionSchema } from "@/modules/engagement/engagement.schema";
-import { saveNewsletterSubscription } from "@/modules/engagement/engagement.service";
+import { newsletterSubscriptionSchema } from "@/modules/engagement/EngagementSchemas";
+import { saveNewsletterSubscription } from "@/modules/engagement/ServerEngagementService";
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);

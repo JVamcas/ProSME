@@ -2,7 +2,7 @@ import { LifeBuoy } from "lucide-react";
 import Link from "next/link";
 
 import { userInitials } from "@/lib/user-initials";
-import type { PortalContext } from "@/modules/profiles/profile.types";
+import type { PortalContext } from "@/modules/profiles/ProfileTypes";
 
 export function PortalUserSummary({ context }: { context: PortalContext }) {
   return (

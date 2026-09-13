@@ -1,4 +1,4 @@
-import type { CmsImage as CmsImageValue } from "@/modules/content/content.types";
+import type { CmsImage as CmsImageValue } from "@/modules/content/ContentTypes";
 import { CmsImage } from "./cms-image";
 
 export function PublicPageHeader({ eyebrow, image, title, summary }: { eyebrow: string; image?: CmsImageValue; title: string; summary: string }) {

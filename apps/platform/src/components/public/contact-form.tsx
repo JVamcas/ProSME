@@ -10,8 +10,8 @@ import { FormInput, FormTextarea } from "@/components/ui/form-fields";
 import {
   contactSubmissionSchema,
   type ContactSubmission,
-} from "@/modules/engagement/engagement.schema";
-import { useContactSubmission } from "@/modules/engagement/engagement.hooks";
+} from "@/modules/engagement/EngagementSchemas";
+import { useContactSubmission } from "@/modules/engagement/EngagementHooks";
 
 const fieldClassName =
   "border-brand-blue/40 bg-brand-white text-base text-brand-navy focus:border-brand-orange focus:ring-brand-orange/20";

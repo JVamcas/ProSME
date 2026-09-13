@@ -2,6 +2,13 @@ import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 
+import {
+  isBackendService,
+  isClientService,
+  isHook,
+  isRepositorySpecifier,
+} from "./architecture-conventions.mjs";
+
 const repositoryRoot = path.resolve(import.meta.dirname, "../..");
 const sourceRoot = path.join(repositoryRoot, "apps/platform/src");
 const sourceExtensions = new Set([".ts", ".tsx"]);
@@ -31,24 +38,10 @@ function importsFrom(source) {
   return imports;
 }
 
-function isBackendService(specifier) {
-  return specifier.endsWith(".service")
-    && !specifier.endsWith("-client.service");
-}
-
-function isClientService(file) {
-  return file.endsWith("-client.service.ts");
-}
-
-function isHook(file) {
-  const name = path.basename(file);
-  return name.endsWith(".hooks.ts") || name.startsWith("use-");
-}
-
 function hasServerImport(imports) {
   return imports.some((specifier) =>
     specifier.startsWith("@/db")
-      || specifier.includes(".repository")
+      || isRepositorySpecifier(specifier)
       || specifier.startsWith("@/payload")
       || specifier === "@payload-config"
       || specifier === "firebase-admin"
@@ -81,9 +74,9 @@ function checkClientBoundary(context) {
 
   const ownsFirebaseBrowserAccess =
     relativeFile === "auth/firebase/client.ts"
-      || relativeFile.endsWith("auth-client.service.ts");
+      || relativeFile === "auth/firebase/ClientAuthService.ts";
   if (imports.includes("firebase/auth") && !ownsFirebaseBrowserAccess) {
-    addFailure(failures, relativeFile, "Firebase browser calls belong in auth-client.service.ts");
+    addFailure(failures, relativeFile, "Firebase browser calls belong in ClientAuthService.ts");
   }
 }
 
@@ -96,7 +89,8 @@ function checkUiDataAccess(context) {
   }
 
   const importsDataLayer = imports.some((specifier) =>
-    specifier.startsWith("@/db") || specifier.includes(".repository"),
+    specifier.startsWith("@/db")
+      || isRepositorySpecifier(specifier),
   );
   if (importsDataLayer) {
     addFailure(failures, relativeFile, "UI files must not import repositories or database code");
@@ -125,7 +119,8 @@ function checkRoute(context) {
   }
 
   const directDataImport = imports.some((specifier) =>
-    specifier.startsWith("@/db") || specifier.includes(".repository"),
+    specifier.startsWith("@/db")
+      || isRepositorySpecifier(specifier),
   );
   if (directDataImport && relativeFile !== "app/api/health/route.ts") {
     addFailure(failures, relativeFile, "route handlers must not import repositories or database code");
@@ -140,7 +135,10 @@ function checkRoute(context) {
 
 function checkBackendService(context) {
   const { failures, file, imports, relativeFile, source } = context;
-  if (!file.endsWith(".service.ts") || isClientService(file)) {
+  const name = path.basename(file);
+  const serverService = file.endsWith(".service.ts")
+    || /^Server[A-Z][A-Za-z0-9]*Service\.ts$/.test(name);
+  if (!serverService || isClientService(file)) {
     return;
   }
 
@@ -158,7 +156,7 @@ function checkBackendService(context) {
 
 function checkRepository(context) {
   const { failures, file, relativeFile, source } = context;
-  if (!file.endsWith(".repository.ts")) {
+  if (!file.endsWith(".repository.ts") && !file.endsWith("Repository.ts")) {
     return;
   }
 

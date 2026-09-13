@@ -8,7 +8,7 @@ import { CapabilityGate } from "@/components/layout/capability-gate";
 import { PortalErrorState } from "@/components/layout/portal-error-state";
 import { PortalLoadingState } from "@/components/layout/portal-loading-state";
 import { createQueryClient } from "@/lib/query-client";
-import type { PortalContext } from "@/modules/profiles/profile.types";
+import type { PortalContext } from "@/modules/profiles/ProfileTypes";
 
 vi.mock("next/navigation", () => ({
   usePathname: () => "/portal/profile",

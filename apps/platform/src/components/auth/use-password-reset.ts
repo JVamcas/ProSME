@@ -5,7 +5,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 
-import { authClientService } from "@/auth/firebase/auth-client.service";
+import { authClientService } from "@/auth/firebase/ClientAuthService";
 import {
   passwordResetSchema,
   type PasswordResetValues,

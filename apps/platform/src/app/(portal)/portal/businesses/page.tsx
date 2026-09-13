@@ -4,8 +4,8 @@ import { redirect } from "next/navigation";
 import { capabilities } from "@/auth/authorization/capabilities";
 import { getCurrentUser } from "@/auth/authorization/current-user";
 import { can } from "@/auth/authorization/policy";
-import { BusinessesTable } from "@/components/businesses/businesses-table";
-import { ProfilePageHeader } from "@/components/profile/profile-page-header";
+import { BusinessesTable } from "@/components/applicant/businesses/BusinessesTable";
+import { ProfilePageHeader } from "@/components/applicant/profile/ProfilePageHeader";
 
 export const metadata: Metadata = { title: "My businesses" };
 

@@ -3,8 +3,8 @@ import { Mail, MapPin } from "lucide-react";
 
 import { ContactForm } from "@/components/public/contact-form";
 import { PublicPageHeader } from "@/components/public/public-page-header";
-import { getContactDetails, getPage } from "@/modules/content/content.queries";
-import { contentMetadata } from "@/modules/content/content.metadata";
+import { getContactDetails, getPage } from "@/modules/content/ServerContentQueries";
+import { contentMetadata } from "@/modules/content/ContentMetadata";
 
 export async function generateMetadata(): Promise<Metadata> {
   const page = await getPage("contact");

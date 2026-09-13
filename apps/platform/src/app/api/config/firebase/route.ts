@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { getFirebaseWebConfiguration } from "@/auth/firebase/firebase-config.service";
+import { getFirebaseWebConfiguration } from "@/auth/firebase/ServerFirebaseConfigService";
 
 export const dynamic = "force-dynamic";
 

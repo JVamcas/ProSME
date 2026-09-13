@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import { ApplicantDashboard } from "@/components/dashboard/applicant-dashboard";
+import { ApplicantDashboard } from "@/components/applicant/dashboard/ApplicantDashboard";
 
 describe("P3.1 applicant dashboard", () => {
   it("renders the approved hierarchy with truthful empty states", () => {

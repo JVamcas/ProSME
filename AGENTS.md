@@ -54,7 +54,13 @@ Handwritten implementation files must stay within these limits:
 - Reuse or extend an existing implementation when its responsibility matches.
 - Put reusable, domain-neutral primitives in `src/components/ui`.
 - Put reusable layouts and navigation in `src/components/layout`.
-- Put feature-specific components with their owning feature area; do not turn `components/ui` into a feature dump.
+- Put applicant feature components under `src/components/applicant/<domain>`.
+- Put administrative feature components under `src/components/admin/<domain>`.
+- Put unauthenticated website components under `src/components/public`, and
+  do not use generic feature folders that hide whether a component belongs to
+  the applicant, admin, or public surface.
+- Component filenames must clearly describe their responsibility within the
+  owning audience/domain path; hook filenames begin with `use`.
 - Repeated UI appearing twice must be evaluated for extraction. Repeated UI appearing three times must be extracted unless the structures have materially different behavior.
 - Do not create duplicate buttons, inputs, cards, dialogs, tables, status badges, loaders, empty states, or form-field wrappers.
 - Prefer composition and variants over copying and editing an existing component.
@@ -67,10 +73,19 @@ Handwritten implementation files must stay within these limits:
 - Pages compose views and invoke use cases. They must not contain database, workflow, or authorization logic.
 - Maintain this dependency flow for client-side server state: client component → TanStack Query hook → frontend client service → Next.js API route → backend domain service → repository or integration adapter → database or external system.
 - Client components must not call `fetch` directly. They use `useQuery` or `useMutation` through a domain hook. Hooks own query keys, caching, invalidation, and mutation state.
-- Frontend client services own HTTP requests and response parsing. Name them `*-client.service.ts`; they must not import server-only modules, repositories, the database, Firebase Admin, or Payload server APIs.
+- Frontend client services own HTTP requests and response parsing. Name the
+  flattened domain service `Client<Domain>Service.ts`; it must not import
+  server-only modules, repositories, the database, Firebase Admin, or Payload
+  server APIs.
 - Route handlers validate transport input, resolve request context, invoke a backend service/command/query, and translate the result to HTTP. They must not implement domain workflows or import repositories/database code directly.
 - Business behavior belongs under `src/modules/<domain>` using the documented module convention.
-- Backend services enforce authorization and business rules and coordinate transactions, workflow, audit, and integrations. They may call repositories but must not query the database client/schema directly.
+- Backend services are named `Server<Domain>Service.ts`. They enforce
+  authorization and business rules and coordinate transactions, workflow,
+  audit, and integrations. They may call repositories but must not query the
+  database client/schema directly.
+- Application lifecycle states such as draft, ready to submit, submitted, and
+  under review are data states. Never create state-specific service, module,
+  repository, or component families.
 - PostgreSQL access belongs in `src/db/repositories` or a domain repository file. Repositories are the only feature layer allowed to query application tables.
 - Server Components may call a backend service/query directly when browser caching or interactive refetching is unnecessary. They must never access repositories or the database directly.
 - The health route may execute a minimal direct database probe because database connectivity is its explicit infrastructure responsibility.

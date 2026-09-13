@@ -3,8 +3,8 @@ import {
   createCorrelationId,
   profileRouteError,
   profileRouteSuccess,
-} from "@/modules/profiles/profile-route";
-import { createApplicantPortalContext } from "@/modules/profiles/profile.service";
+} from "@/lib/api/PortalApiResponse";
+import { createApplicantPortalContext } from "@/modules/profiles/ServerProfileService";
 
 export const dynamic = "force-dynamic";
 

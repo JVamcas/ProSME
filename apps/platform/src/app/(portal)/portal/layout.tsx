@@ -6,7 +6,7 @@ import { getCurrentUser } from "@/auth/authorization/current-user";
 import { canAccessApplicantPortal } from "@/auth/authorization/portal-access";
 import { AuthenticatedPortalShell } from "@/components/layout/authenticated-portal-shell";
 import { QueryProvider } from "@/components/layout/query-provider";
-import { createApplicantPortalContext } from "@/modules/profiles/profile.service";
+import { createApplicantPortalContext } from "@/modules/profiles/ServerProfileService";
 import "../../globals.css";
 
 export const dynamic = "force-dynamic";

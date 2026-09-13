@@ -4,9 +4,9 @@ import { ChevronDown, UserRound } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
-import { LogoutButton } from "@/components/dashboard/logout-button";
+import { LogoutButton } from "@/components/layout/LogoutButton";
 import { userInitials } from "@/lib/user-initials";
-import type { PortalContext } from "@/modules/profiles/profile.types";
+import type { PortalContext } from "@/modules/profiles/ProfileTypes";
 
 export function PortalUserMenu({ context }: { context: PortalContext }) {
   const [open, setOpen] = useState(false);

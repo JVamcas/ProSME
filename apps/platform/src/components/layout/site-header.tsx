@@ -4,8 +4,8 @@ import { ArrowRight, Menu } from "lucide-react";
 
 import { ActiveNavigationLink } from "@/components/layout/active-navigation-link";
 import { primaryNavigation } from "@/components/layout/primary-navigation";
-import { getHeader } from "@/modules/content/content.queries";
-import type { HeaderContent } from "@/modules/content/content.types";
+import { getHeader } from "@/modules/content/ServerContentQueries";
+import type { HeaderContent } from "@/modules/content/ContentTypes";
 
 export async function SiteHeader() {
   const content = await getHeader();

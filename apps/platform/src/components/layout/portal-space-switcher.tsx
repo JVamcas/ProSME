@@ -3,7 +3,7 @@
 import Link from "next/link";
 
 import type { PortalSpace } from "@/auth/authorization/portal-access";
-import type { PortalContext } from "@/modules/profiles/profile.types";
+import type { PortalContext } from "@/modules/profiles/ProfileTypes";
 import { cn } from "@/lib/utils";
 
 const spaceDetails: Record<

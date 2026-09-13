@@ -5,8 +5,8 @@ import { useCallback, useEffect, useRef } from "react";
 
 import type { PortalSpace } from "@/auth/authorization/portal-access";
 import { Logo } from "@/components/brand/logo";
-import { LogoutButton } from "@/components/dashboard/logout-button";
-import type { PortalContext } from "@/modules/profiles/profile.types";
+import { LogoutButton } from "@/components/layout/LogoutButton";
+import type { PortalContext } from "@/modules/profiles/ProfileTypes";
 import { PortalNavList } from "./portal-nav-list";
 import {
   filterPortalRoutes,

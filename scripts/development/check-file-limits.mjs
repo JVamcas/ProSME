@@ -18,6 +18,7 @@ function limitFor(file) {
   if (file.includes("/tests/") || name.endsWith(".test.ts") || name.endsWith(".test.tsx")) return 300;
   if (file.includes("/components/") || file.includes("/hooks/")) return 200;
   if (/\.(repository|service|policy|integration)\.ts$/.test(name)) return 250;
+  if (/(Repository|Service|Policy|Integration)\.ts$/.test(name)) return 250;
   return 200;
 }
 

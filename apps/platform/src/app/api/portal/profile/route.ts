@@ -1,14 +1,14 @@
 import { resolveUserFromHeaders } from "@/auth/authorization/current-user";
-import { applicantProfileUpdateSchema } from "@/modules/profiles/profile.schemas";
+import { applicantProfileUpdateSchema } from "@/modules/profiles/ProfileSchemas";
 import {
   createCorrelationId,
   profileRouteError,
   profileRouteSuccess,
-} from "@/modules/profiles/profile-route";
+} from "@/lib/api/PortalApiResponse";
 import {
   getApplicantProfile,
   updateApplicantProfile,
-} from "@/modules/profiles/profile.service";
+} from "@/modules/profiles/ServerProfileService";
 
 export const dynamic = "force-dynamic";
 

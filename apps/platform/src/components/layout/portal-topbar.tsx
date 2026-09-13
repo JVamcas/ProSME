@@ -5,7 +5,7 @@ import Link from "next/link";
 
 import { capabilities } from "@/auth/authorization/capabilities";
 import type { PortalSpace } from "@/auth/authorization/portal-access";
-import type { PortalContext } from "@/modules/profiles/profile.types";
+import type { PortalContext } from "@/modules/profiles/ProfileTypes";
 import { PortalUserMenu } from "./portal-user-menu";
 
 type PortalTopbarProps = {

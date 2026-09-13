@@ -83,9 +83,9 @@ repositories that are not marked server-only.
 ```text
 ApplicationsTable
     → useApplications
-    → applicationClientService.getAll
-    → GET /api/applications
-    → getApplications
+    → ClientApplicationService.getAll
+    → GET /api/admin/applications
+    → ServerApplicationService.getApplications
     → findAllApplications
 ```
 
@@ -94,6 +94,7 @@ is fixture-backed. Phase 3 replaces that repository implementation with the
 PostgreSQL application repository while preserving the client hook, service,
 API, and application-service boundaries.
 
-The `/api/applications` endpoint performs its own server-side capability check.
+The `/api/admin/applications` endpoint performs its own server-side capability
+check.
 The `/admin` layout check and client-side visibility are usability safeguards,
 not substitutes for endpoint authorization.

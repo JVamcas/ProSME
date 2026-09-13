@@ -4,8 +4,8 @@ import { notFound } from "next/navigation";
 import { CmsRichText } from "@/components/public/cms-rich-text";
 import { ContentBlocks } from "@/components/public/content-blocks";
 import { PublicPageHeader } from "@/components/public/public-page-header";
-import { contentMetadata } from "@/modules/content/content.metadata";
-import { getPage } from "@/modules/content/content.queries";
+import { contentMetadata } from "@/modules/content/ContentMetadata";
+import { getPage } from "@/modules/content/ServerContentQueries";
 
 export const dynamic = "force-dynamic";
 

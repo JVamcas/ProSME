@@ -5,7 +5,7 @@ import { NewsletterForm } from "@/components/public/newsletter-form";
 import {
   getContactDetails,
   getFooter,
-} from "@/modules/content/content.queries";
+} from "@/modules/content/ServerContentQueries";
 
 const explore = [
   ["/about", "About"],

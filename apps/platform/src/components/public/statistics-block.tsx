@@ -1,6 +1,6 @@
 import { Banknote, FileText, MapPinned, Users } from "lucide-react";
 
-import { getStatistics } from "@/modules/content/content.queries";
+import { getStatistics } from "@/modules/content/ServerContentQueries";
 import { CmsImage } from "./cms-image";
 
 type Block = Record<string, unknown>;

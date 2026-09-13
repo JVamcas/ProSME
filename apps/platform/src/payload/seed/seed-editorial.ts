@@ -1,6 +1,6 @@
 import type { Payload } from "payload";
 
-import { approvedFaqFallback } from "../../modules/content/content.defaults";
+import { approvedFaqFallback } from "../../modules/content/ContentDefaults";
 import { publicPages } from "./public-pages";
 import { findId, richText, seedContext } from "./seed-helpers";
 

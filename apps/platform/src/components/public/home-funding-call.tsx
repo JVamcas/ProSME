@@ -1,7 +1,7 @@
 import { ArrowRight, CalendarDays } from "lucide-react";
 import Link from "next/link";
 
-import type { FundingCallItem } from "@/modules/content/content.types";
+import type { FundingCallItem } from "@/modules/content/ContentTypes";
 
 export function HomeFundingCall({ call }: { call?: FundingCallItem }) {
   if (!call) return null;

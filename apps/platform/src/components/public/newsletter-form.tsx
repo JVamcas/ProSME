@@ -10,8 +10,8 @@ import { FormInput } from "@/components/ui/form-fields";
 import {
   newsletterSubscriptionSchema,
   type NewsletterSubscription,
-} from "@/modules/engagement/engagement.schema";
-import { useNewsletterSubscription } from "@/modules/engagement/engagement.hooks";
+} from "@/modules/engagement/EngagementSchemas";
+import { useNewsletterSubscription } from "@/modules/engagement/EngagementHooks";
 
 function useNewsletterForm() {
   const subscription = useNewsletterSubscription();

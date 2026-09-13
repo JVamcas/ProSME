@@ -5,8 +5,8 @@ import { ArrowRight, CalendarDays } from "lucide-react";
 import { EmptyState } from "@/components/public/empty-state";
 import { CmsImage } from "@/components/public/cms-image";
 import { PublicPageHeader } from "@/components/public/public-page-header";
-import { contentMetadata } from "@/modules/content/content.metadata";
-import { getNews, getPage } from "@/modules/content/content.queries";
+import { contentMetadata } from "@/modules/content/ContentMetadata";
+import { getNews, getPage } from "@/modules/content/ServerContentQueries";
 
 export const dynamic = "force-dynamic";
 export async function generateMetadata(): Promise<Metadata> {

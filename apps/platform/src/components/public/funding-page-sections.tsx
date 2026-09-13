@@ -15,7 +15,7 @@ import type {
   FundingIconKey,
   FundingPrioritiesContent,
   FundingSupportContent,
-} from "@/modules/content/funding-page-content";
+} from "@/modules/content/FundingPageContent";
 
 const icons: Record<FundingIconKey, LucideIcon> = {
   grant: Banknote,

@@ -6,7 +6,7 @@ import {
   AuthenticationRequiredError,
   PermissionDeniedError,
 } from "@/auth/authorization/policy";
-import { authorizeContentPreview } from "@/modules/content/content-preview.service";
+import { authorizeContentPreview } from "@/modules/content/ServerContentPreviewService";
 
 function safePath(value: string | null) {
   return value?.startsWith("/") && !value.startsWith("//") ? value : "/";

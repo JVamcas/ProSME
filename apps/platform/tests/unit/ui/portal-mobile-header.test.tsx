@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { capabilities } from "@/auth/authorization/capabilities";
 import { PortalMobileHeader } from "@/components/layout/portal-mobile-header";
 import { createQueryClient } from "@/lib/query-client";
-import type { PortalContext } from "@/modules/profiles/profile.types";
+import type { PortalContext } from "@/modules/profiles/ProfileTypes";
 
 vi.mock("next/navigation", () => ({
   usePathname: () => "/portal/profile",

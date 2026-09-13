@@ -1,6 +1,6 @@
 import Image from "next/image";
 
-import type { CmsImage as CmsImageValue } from "@/modules/content/content.types";
+import type { CmsImage as CmsImageValue } from "@/modules/content/ContentTypes";
 
 type Props = {
   className?: string;

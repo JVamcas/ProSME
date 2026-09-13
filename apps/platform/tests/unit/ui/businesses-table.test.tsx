@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("@/modules/profiles/business.hooks", () => ({
+vi.mock("@/modules/businesses/BusinessHooks", () => ({
   useBusinesses: () => ({
     data: [
       {
@@ -25,7 +25,7 @@ vi.mock("@/modules/profiles/business.hooks", () => ({
   useDeleteBusiness: () => ({ mutate: vi.fn() }),
 }));
 
-import { BusinessesTable } from "@/components/businesses/businesses-table";
+import { BusinessesTable } from "@/components/applicant/businesses/BusinessesTable";
 
 describe("my businesses table", () => {
   it("uses the shared data table for owned business actions", () => {

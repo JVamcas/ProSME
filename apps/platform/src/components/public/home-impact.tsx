@@ -1,6 +1,6 @@
 import { BarChart3 } from "lucide-react";
 
-import { getStatistics } from "@/modules/content/content.queries";
+import { getStatistics } from "@/modules/content/ServerContentQueries";
 
 export async function HomeImpact() {
   const statistics = await getStatistics();

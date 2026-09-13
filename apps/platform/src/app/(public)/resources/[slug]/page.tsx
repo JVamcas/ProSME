@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 
-import { getResources } from "@/modules/content/content.queries";
+import { getResources } from "@/modules/content/ServerContentQueries";
 
 export const dynamic = "force-dynamic";
 

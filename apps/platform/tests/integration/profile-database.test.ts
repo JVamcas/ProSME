@@ -6,15 +6,15 @@ vi.mock("server-only", () => ({}));
 import {
   findApplicantProfile,
   saveApplicantProfile,
-} from "@/db/repositories/profile.repository";
+} from "@/db/repositories/ProfileRepository";
 import {
   createOwnedBusiness,
   listOwnedBusinesses,
-} from "@/db/repositories/business.repository";
+} from "@/db/repositories/BusinessRepository";
 import {
   findUserByFirebaseSubject,
   provisionApplicant,
-} from "@/db/repositories/user.repository";
+} from "@/db/repositories/UserRepository";
 
 const { Pool } = pg;
 const enabled = process.env.RUN_P3_PROFILE_DATABASE_TESTS === "true";

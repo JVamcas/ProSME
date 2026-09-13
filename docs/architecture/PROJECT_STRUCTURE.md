@@ -227,10 +227,10 @@ src/db/
 │   ├── audit.ts
 │   └── index.ts
 ├── repositories/
-│   ├── user.repository.ts
-│   ├── application.repository.ts
-│   ├── workflow.repository.ts
-│   └── audit.repository.ts
+│   ├── UserRepository.ts
+│   ├── ApplicationRepository.ts
+│   ├── WorkflowRepository.ts
+│   └── AuditRepository.ts
 ├── transaction.ts
 └── types.ts
 ```
@@ -290,17 +290,40 @@ Payload content tables use the `cms_` prefix. `CmsPrincipals` is the minimum pas
 
 ```text
 src/modules/applications/
-├── application.schema.ts
-├── application.types.ts
-├── application.repository.ts
-├── application.service.ts
-├── application.policy.ts
-├── application.queries.ts
-├── application.commands.ts
-├── application.events.ts
-├── application.mapper.ts
-└── application.test.ts
+├── ClientApplicationService.ts
+├── ServerApplicationService.ts
+├── ApplicationHooks.ts
+├── ApplicationSchemas.ts
+└── ApplicationTypes.ts
 ```
+
+`Client<Domain>Service.ts` is browser-safe and owns HTTP calls and response
+parsing. `Server<Domain>Service.ts` is server-only and owns authorization and
+business orchestration. A domain has one lifecycle; statuses never become
+separate service or repository families. Split an oversized service by use
+case, such as commands and queries, rather than by status or audience.
+
+## Component ownership convention
+
+```text
+src/components/
+├── applicant/
+│   ├── applications/
+│   ├── businesses/
+│   ├── dashboard/
+│   └── profile/
+├── admin/
+│   ├── applications/
+│   └── dashboard/
+├── public/
+├── layout/
+├── ui/
+└── brand/
+```
+
+Audience is explicit in presentation paths. Core modules, schemas, and
+repositories remain domain-based because applicant and admin views operate on
+the same underlying domain records.
 
 The required interactive client call direction is:
 

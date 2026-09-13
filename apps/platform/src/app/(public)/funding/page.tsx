@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 import { FundingPageView } from "@/components/public/funding-page-view";
-import { contentMetadata } from "@/modules/content/content.metadata";
-import { getFundingCalls, getPage } from "@/modules/content/content.queries";
-import { fundingPageSections } from "@/modules/content/funding-page-content";
+import { contentMetadata } from "@/modules/content/ContentMetadata";
+import { getFundingCalls, getPage } from "@/modules/content/ServerContentQueries";
+import { fundingPageSections } from "@/modules/content/FundingPageContent";
 
 export const dynamic = "force-dynamic";
 

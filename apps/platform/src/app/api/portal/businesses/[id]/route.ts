@@ -5,13 +5,13 @@ import {
   deleteBusiness,
   getBusiness,
   updateBusiness,
-} from "@/modules/profiles/business.service";
-import { businessProfileSchema } from "@/modules/profiles/profile.schemas";
+} from "@/modules/businesses/ServerBusinessService";
+import { businessProfileSchema } from "@/modules/businesses/BusinessSchemas";
 import {
   createCorrelationId,
   profileRouteError,
   profileRouteSuccess,
-} from "@/modules/profiles/profile-route";
+} from "@/lib/api/PortalApiResponse";
 
 type BusinessRouteContext = { params: Promise<{ id: string }> };
 const businessIdSchema = z.uuid();

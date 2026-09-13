@@ -1,7 +1,7 @@
 import type { Payload } from "payload";
 
 import { eligibilityRules } from "../../data/eligibility-rules";
-import { defaultStatistics, defaultSupportGroups, focusSectors } from "../../modules/content/content.defaults";
+import { defaultStatistics, defaultSupportGroups, focusSectors } from "../../modules/content/ContentDefaults";
 import { findId, seedContext } from "./seed-helpers";
 
 export async function seedProgrammeContent(payload: Payload) {

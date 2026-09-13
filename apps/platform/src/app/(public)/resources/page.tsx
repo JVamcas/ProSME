@@ -5,8 +5,8 @@ import { EmptyState } from "@/components/public/empty-state";
 import { CmsImage } from "@/components/public/cms-image";
 import { PublicPageHeader } from "@/components/public/public-page-header";
 import { ArrowLink } from "@/components/ui/arrow-link";
-import { contentMetadata } from "@/modules/content/content.metadata";
-import { getPage, getResources } from "@/modules/content/content.queries";
+import { contentMetadata } from "@/modules/content/ContentMetadata";
+import { getPage, getResources } from "@/modules/content/ServerContentQueries";
 
 export const dynamic = "force-dynamic";
 export async function generateMetadata(): Promise<Metadata> {

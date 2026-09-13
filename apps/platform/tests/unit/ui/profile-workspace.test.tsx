@@ -4,8 +4,8 @@ import { describe, expect, it } from "vitest";
 import {
   profileTabs,
   ProfileWorkspace,
-} from "@/components/profile/profile-workspace";
-import { ProfileFormActions } from "@/components/profile/profile-form-actions";
+} from "@/components/applicant/profile/ProfileWorkspace";
+import { ProfileFormActions } from "@/components/applicant/profile/ProfileFormActions";
 
 describe("P3.1 profile workspace", () => {
   it("renders the accepted profile sections as horizontal tabs", () => {

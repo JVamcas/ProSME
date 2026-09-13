@@ -2,7 +2,7 @@
 
 import { createContext, useContext } from "react";
 
-import type { PortalContext } from "@/modules/profiles/profile.types";
+import type { PortalContext } from "@/modules/profiles/ProfileTypes";
 
 const PortalCapabilityContext = createContext<PortalContext | null>(null);
 

@@ -1,8 +1,8 @@
 import { BarChart3, Leaf, Users, Venus } from "lucide-react";
 
 import { ArrowLink } from "@/components/ui/arrow-link";
-import { defaultSupportGroups } from "@/modules/content/content.defaults";
-import type { EligibilityItem } from "@/modules/content/content.types";
+import { defaultSupportGroups } from "@/modules/content/ContentDefaults";
+import type { EligibilityItem } from "@/modules/content/ContentTypes";
 
 const icons = [Users, Venus, BarChart3, Leaf];
 

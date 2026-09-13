@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import { ShieldCheck } from "lucide-react";
-import { EligibilityChecker } from "@/components/eligibility/eligibility-checker";
+import { EligibilityChecker } from "@/components/public/eligibility/EligibilityChecker";
 import { FocusSectors } from "@/components/public/focus-sectors";
 import {
   getEligibilityContent,
   getEligibilityRules,
   getPage,
-} from "@/modules/content/content.queries";
-import { eligibilityFocusSection } from "@/modules/content/eligibility-page-content";
+} from "@/modules/content/ServerContentQueries";
+import { eligibilityFocusSection } from "@/modules/content/EligibilityPageContent";
 
 export const metadata: Metadata = { title: "Eligibility checker" };
 export const dynamic = "force-dynamic";

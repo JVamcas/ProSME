@@ -4,12 +4,12 @@ import { redirect } from "next/navigation";
 import { capabilities } from "@/auth/authorization/capabilities";
 import { getCurrentUser } from "@/auth/authorization/current-user";
 import { can } from "@/auth/authorization/policy";
-import { ProfilePageHeader } from "@/components/profile/profile-page-header";
-import { ProfileTabContent } from "@/components/profile/profile-tab-content";
+import { ProfilePageHeader } from "@/components/applicant/profile/ProfilePageHeader";
+import { ProfileTabContent } from "@/components/applicant/profile/ProfileTabContent";
 import {
   type ProfileTabId,
   ProfileWorkspace,
-} from "@/components/profile/profile-workspace";
+} from "@/components/applicant/profile/ProfileWorkspace";
 
 export const metadata: Metadata = { title: "My profile" };
 

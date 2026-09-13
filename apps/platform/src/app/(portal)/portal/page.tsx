@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
 import { getCurrentUser } from "@/auth/authorization/current-user";
-import { ApplicantDashboard } from "@/components/dashboard/applicant-dashboard";
-import { createApplicantDashboardSummary } from "@/modules/profiles/profile.service";
+import { ApplicantDashboard } from "@/components/applicant/dashboard/ApplicantDashboard";
+import { createApplicantDashboardSummary } from "@/modules/profiles/ServerProfileService";
 
 export const metadata: Metadata = { title: "Applicant dashboard" };
 

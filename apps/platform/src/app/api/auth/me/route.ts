@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { getAuthenticatedUserProfile } from "@/auth/authorization/user-profile.service";
+import { getAuthenticatedUserProfile } from "@/auth/authorization/ServerUserProfileService";
 
 export const dynamic = "force-dynamic";
 

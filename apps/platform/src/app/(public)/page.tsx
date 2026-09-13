@@ -8,7 +8,7 @@ import {
   getEligibilityContent,
   getFundingCalls,
   getHomepage,
-} from "@/modules/content/content.queries";
+} from "@/modules/content/ServerContentQueries";
 
 export default async function HomePage() {
 

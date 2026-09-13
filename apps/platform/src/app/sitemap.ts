@@ -7,7 +7,7 @@ import {
   getNews,
   getResources,
   getSiteSettings,
-} from "@/modules/content/content.queries";
+} from "@/modules/content/ServerContentQueries";
 
 export const dynamic = "force-dynamic";
 

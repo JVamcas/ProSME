@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { contentMetadata } from "@/modules/content/content.metadata";
+import { contentMetadata } from "@/modules/content/ContentMetadata";
 
 describe("CMS content metadata", () => {
   it("uses SEO overrides, social media and indexing controls", () => {

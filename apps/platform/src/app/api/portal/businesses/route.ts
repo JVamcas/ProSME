@@ -2,13 +2,13 @@ import { resolveUserFromHeaders } from "@/auth/authorization/current-user";
 import {
   createBusiness,
   listBusinesses,
-} from "@/modules/profiles/business.service";
-import { businessProfileSchema } from "@/modules/profiles/profile.schemas";
+} from "@/modules/businesses/ServerBusinessService";
+import { businessProfileSchema } from "@/modules/businesses/BusinessSchemas";
 import {
   createCorrelationId,
   profileRouteError,
   profileRouteSuccess,
-} from "@/modules/profiles/profile-route";
+} from "@/lib/api/PortalApiResponse";
 
 export const dynamic = "force-dynamic";
 

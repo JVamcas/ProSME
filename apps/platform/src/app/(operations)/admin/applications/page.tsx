@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { capabilities } from "@/auth/authorization/capabilities";
 import { getCurrentUser } from "@/auth/authorization/current-user";
 import { can } from "@/auth/authorization/policy";
-import { ApplicationsTable } from "@/components/admin/applications-table";
+import { ApplicationsTable } from "@/components/admin/applications/ApplicationsTable";
 
 export const metadata: Metadata = {
   title: "Applications",

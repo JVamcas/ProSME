@@ -4,7 +4,7 @@ vi.mock("server-only", () => ({}));
 vi.mock("@/auth/firebase/session", () => ({
   createFirebaseSession: vi.fn(),
 }));
-vi.mock("@/db/repositories/user.repository", () => ({
+vi.mock("@/db/repositories/UserRepository", () => ({
   provisionApplicant: vi.fn(),
 }));
 
@@ -12,8 +12,8 @@ import { createFirebaseSession } from "@/auth/firebase/session";
 import {
   establishApplicationSession,
   RecentAuthenticationRequiredError,
-} from "@/auth/firebase/session.service";
-import { provisionApplicant } from "@/db/repositories/user.repository";
+} from "@/auth/firebase/ServerSessionService";
+import { provisionApplicant } from "@/db/repositories/UserRepository";
 
 const currentTime = Date.UTC(2026, 8, 12, 12, 0, 0);
 const user = {

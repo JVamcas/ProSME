@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Clock3, LockKeyhole } from "lucide-react";
-import { ApplicationWizard } from "@/components/application/application-wizard";
+import { ApplicationWizard } from "@/components/applicant/applications/ApplicationWizard";
 
 export const metadata: Metadata = { title: "Apply" };
 

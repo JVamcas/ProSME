@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { defaultEligibilityFocusSection, eligibilityFocusSection } from "@/modules/content/eligibility-page-content";
+import { defaultEligibilityFocusSection, eligibilityFocusSection } from "@/modules/content/EligibilityPageContent";
 
 describe("eligibility focus-sector CMS section", () => {
   it("maps the published section copy", () => {
