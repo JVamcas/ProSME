@@ -14,8 +14,10 @@ import type { FundingOpportunityStatus } from "@/modules/funding-opportunities/F
 export type FundingOpportunityFilter = "all" | FundingOpportunityStatus;
 export const fundingOpportunityPageSize = 10;
 
-export function useFundingOpportunityBrowser() {
-  const [filter, setFilter] = useState<FundingOpportunityFilter>("all");
+export function useFundingOpportunityBrowser(
+  initialFilter: FundingOpportunityFilter = "all",
+) {
+  const [filter, setFilter] = useState<FundingOpportunityFilter>(initialFilter);
   const [pageIndex, setPageIndex] = useState(0);
   const [cursors, setCursors] = useState<(string | undefined)[]>([undefined]);
   const searchForm = useForm<FundingOpportunitySearchInput>({
@@ -44,10 +46,7 @@ export function useFundingOpportunityBrowser() {
   function nextPage() {
     const nextCursor = query.data?.nextCursor;
     if (!nextCursor) return;
-    setCursors((current) => [
-      ...current.slice(0, pageIndex + 1),
-      nextCursor,
-    ]);
+    setCursors((current) => [...current.slice(0, pageIndex + 1), nextCursor]);
     setPageIndex((current) => current + 1);
   }
 

@@ -1,7 +1,9 @@
 import type { LucideIcon } from "lucide-react";
+import Link from "next/link";
 
 type DashboardMetricCardProps = {
   icon: LucideIcon;
+  href?: string;
   label: string;
   supportingText: string;
   value: string;
@@ -9,12 +11,13 @@ type DashboardMetricCardProps = {
 
 export function DashboardMetricCard({
   icon: Icon,
+  href,
   label,
   supportingText,
   value,
 }: DashboardMetricCardProps) {
-  return (
-    <article className="rounded-2xl border border-brand-orange/15 bg-brand-white p-4 shadow-sm">
+  const content = (
+    <article className="h-full rounded-2xl border border-brand-orange/15 bg-brand-white p-4 shadow-sm transition hover:border-brand-orange/40 hover:shadow-md">
       <div className="flex items-start gap-3">
         <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-blue/20">
           <Icon aria-hidden="true" className="size-5 text-brand-orange" />
@@ -28,5 +31,16 @@ export function DashboardMetricCard({
         </div>
       </div>
     </article>
+  );
+
+  if (!href) return content;
+  return (
+    <Link
+      aria-label={`${label}: ${value}. ${supportingText}`}
+      className="rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange focus-visible:ring-offset-2"
+      href={href}
+    >
+      {content}
+    </Link>
   );
 }

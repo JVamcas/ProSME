@@ -64,6 +64,8 @@ describe("funding opportunity detail", () => {
     expect(markup).toContain("About this opportunity");
     expect(markup).toContain("Ready to apply?");
     expect(markup).toContain("Application deadline");
-    expect(markup).toContain('href="/eligibility"');
+    expect(markup).toContain(
+      'href="/portal/funding-opportunities/42/eligibility"',
+    );
   });
 });

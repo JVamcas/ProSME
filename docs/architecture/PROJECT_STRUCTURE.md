@@ -117,7 +117,9 @@ src/app/
 │       ├── business/page.tsx          # Legacy redirect
 │       ├── funding-opportunities/
 │       │   ├── page.tsx
-│       │   └── [slug]/page.tsx
+│       │   └── [id]/
+│       │       ├── page.tsx
+│       │       └── eligibility/page.tsx
 │       ├── businesses/
 │       │   ├── page.tsx
 │       │   ├── new/page.tsx

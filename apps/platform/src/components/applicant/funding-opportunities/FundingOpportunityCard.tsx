@@ -1,8 +1,9 @@
 import { Banknote, CalendarDays } from "lucide-react";
 import Link from "next/link";
+import type { ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
-import { StatusBadge } from "@/components/ui/status-badge";
+import { StatusBadge, statusStyles } from "@/components/ui/status-badge";
 import type { FundingOpportunitySummary } from "@/modules/funding-opportunities/FundingOpportunityTypes";
 import {
   formatOpportunityAmount,
@@ -10,10 +11,15 @@ import {
 } from "./FundingOpportunityFormat";
 
 export function FundingOpportunityCard({
+  action,
   opportunity,
 }: {
+  action?: ReactNode;
   opportunity: FundingOpportunitySummary;
 }) {
+  const statusStyle =
+    statusStyles[opportunity.status.toLocaleLowerCase()] ??
+    "bg-brand-cream text-brand-navy";
   return (
     <article className="rounded-2xl border border-brand-navy/15 bg-brand-white p-5 shadow-sm">
       <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
@@ -30,7 +36,7 @@ export function FundingOpportunityCard({
           <StatusBadge status={opportunity.status} />
           <span
             aria-label={`Important date: ${opportunityDateLabel(opportunity)}`}
-            className="inline-flex rounded-full border border-brand-gold/40 bg-brand-cream px-3 py-1 text-xs font-bold text-brand-navy"
+            className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${statusStyle}`}
           >
             {opportunityDateLabel(opportunity)}
           </span>
@@ -56,11 +62,18 @@ export function FundingOpportunityCard({
             </div>
           </div>
         </dl>
-        <Button asChild className="w-full sm:w-auto">
-          <Link href={`/portal/funding-opportunities/${opportunity.id}`}>
-            View details
-          </Link>
-        </Button>
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+          <Button
+            asChild
+            className="w-full sm:w-auto"
+            variant={action ? "outline" : "default"}
+          >
+            <Link href={`/portal/funding-opportunities/${opportunity.id}`}>
+              View details
+            </Link>
+          </Button>
+          {action}
+        </div>
       </div>
     </article>
   );

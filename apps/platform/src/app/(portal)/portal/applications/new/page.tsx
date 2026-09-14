@@ -1,38 +1,25 @@
 import type { Metadata } from "next";
-import { Clock3, LockKeyhole } from "lucide-react";
-import { ApplicationWizard } from "@/components/applicant/applications/ApplicationWizard";
+import { redirect } from "next/navigation";
+
+import { capabilities } from "@/auth/authorization/capabilities";
+import { getCurrentUser } from "@/auth/authorization/current-user";
+import { can } from "@/auth/authorization/policy";
+import { NewApplicationChooser } from "@/components/applicant/applications/NewApplicationChooser";
+import { ProfilePageHeader } from "@/components/applicant/profile/ProfilePageHeader";
 
 export const metadata: Metadata = { title: "Apply" };
 
-export default function ApplyPage() {
+export default async function ApplyPage() {
+  const user = await getCurrentUser();
+  if (!user || !can(user, capabilities.applicationCreate)) redirect("/unauthorized");
   return (
-    <section className="section bg-slate-50">
-      <div className="container">
-        <div className="mb-9 flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
-          <div>
-            <p className="eyebrow">SME Growth Grant</p>
-            <h1 className="display mt-3 text-4xl font-semibold text-navy sm:text-5xl">
-              Funding application
-            </h1>
-            <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-600">
-              Complete each section and review your information before
-              submitting. For this prototype, your progress remains in this
-              browser.
-            </p>
-          </div>
-          <div className="flex gap-5 text-xs text-slate-500">
-            <span className="flex items-center gap-2">
-              <Clock3 className="size-4 text-brand-orange" />
-              About 15 minutes
-            </span>
-            <span className="flex items-center gap-2">
-              <LockKeyhole className="size-4 text-brand-orange" />
-              Demo mode
-            </span>
-          </div>
-        </div>
-        <ApplicationWizard />
-      </div>
+    <section>
+      <ProfilePageHeader
+        description="Select a funding opportunity to start or resume its application draft."
+        eyebrow="Start an application"
+        title="New application"
+      />
+      <NewApplicationChooser />
     </section>
   );
 }

@@ -144,7 +144,7 @@ describeDatabase("P3.1 PostgreSQL persistence", () => {
     });
     expect(user?.roleCodes).toContain("applicant");
     expect(user?.capabilities).toContain("profile.read.own");
-    expect(user?.capabilities).not.toContain("application.read.own");
+    expect(user?.capabilities).toContain("application.read.own");
 
     const refreshed = await provisionApplicant({
       subject: firebaseSubject,

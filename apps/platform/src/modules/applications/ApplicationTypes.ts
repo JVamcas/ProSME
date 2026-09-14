@@ -24,3 +24,42 @@ export type AdminApplication = {
   turnover: string;
   useOfFunds: string;
 };
+
+import type {
+  ApplicationBusinessSection,
+  ApplicationFinancialSection,
+  ApplicationProjectSection,
+  ApplicationSection,
+  ApplicationSectionCompletion,
+} from "./ApplicationSchemas";
+
+export type ApplicationSummary = {
+  createdAt: string;
+  currentSection: ApplicationSection;
+  fundingOpportunityId: number;
+  fundingOpportunityTitle: string;
+  id: string;
+  progressPercent: number;
+  status: "draft";
+  updatedAt: string;
+};
+
+export type ApplicationListInput = {
+  after?: string;
+  limit: number;
+  status?: "draft";
+};
+
+export type ApplicationPage = {
+  items: ApplicationSummary[];
+  nextCursor: string | null;
+  total: number;
+};
+
+export type ApplicationView = ApplicationSummary & {
+  businessSection: Partial<ApplicationBusinessSection>;
+  financialSection: Partial<ApplicationFinancialSection>;
+  projectSection: Partial<ApplicationProjectSection>;
+  rowVersion: number;
+  sectionCompletion: ApplicationSectionCompletion;
+};

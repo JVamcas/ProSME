@@ -3,15 +3,193 @@ import "server-only";
 import { capabilities } from "@/auth/authorization/capabilities";
 import {
   can,
+  requireCapability,
   requireAnyCapability,
 } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import {
+  createOwnedApplication,
+  findOwnedApplication,
+  findOwnedApplicationByOpportunity,
   findAllApplications,
   findApplicationsAssignedTo,
   findAssignedApplicationById,
   findApplicationById,
+  listOwnedApplications,
+  updateOwnedApplication,
 } from "@/db/repositories/ApplicationRepository";
+import { findOwnedBusiness } from "@/db/repositories/BusinessRepository";
+import {
+  ResourceConflictError,
+  ResourceNotFoundError,
+} from "@/lib/resource-errors";
+import { findPublishedFundingOpportunity } from "@/modules/funding-opportunities/ServerFundingOpportunityIntegration";
+import type {
+  ApplicationSection,
+  ApplicationSectionCompletion,
+  ApplicationUpdateInput,
+} from "./ApplicationSchemas";
+import {
+  applicationBusinessSectionSchema,
+  applicationFinancialSectionSchema,
+  applicationProjectSectionSchema,
+} from "./ApplicationSchemas";
+import type { ApplicationListInput, ApplicationPage } from "./ApplicationTypes";
+import {
+  decodeApplicationCursor,
+  encodeApplicationCursor,
+  toApplicationSummary,
+  toApplicationView,
+} from "./ApplicationRepresentation";
+
+export class ApplicationNotFoundError extends ResourceNotFoundError {
+  constructor() {
+    super("application draft");
+    this.name = "ApplicationNotFoundError";
+  }
+}
+
+export class ApplicationConflictError extends ResourceConflictError {
+  constructor() {
+    super(
+      "This draft changed in another session. Reload it before saving again.",
+    );
+    this.name = "ApplicationConflictError";
+  }
+}
+
+export class ApplicationOpportunityUnavailableError extends ResourceNotFoundError {
+  constructor() {
+    super("open funding opportunity");
+    this.name = "ApplicationOpportunityUnavailableError";
+  }
+}
+
+export class ApplicationBusinessUnavailableError extends ResourceNotFoundError {
+  constructor() {
+    super("selected business");
+    this.name = "ApplicationBusinessUnavailableError";
+  }
+}
+
+function nextSection(
+  section: ApplicationSection,
+  completion: ApplicationSectionCompletion,
+): ApplicationSection {
+  if (section === "business") return "project";
+  if (section === "project") return "financial";
+  return completion.business ? "financial" : "business";
+}
+
+function sectionIsComplete(input: ApplicationUpdateInput) {
+  if (input.section === "business") {
+    return applicationBusinessSectionSchema.safeParse(input.data).success;
+  }
+  if (input.section === "project") {
+    return applicationProjectSectionSchema.safeParse(input.data).success;
+  }
+  return applicationFinancialSectionSchema.safeParse(input.data).success;
+}
+
+async function loadOwnedApplication(ownerUserId: string, id: string) {
+  const application = await findOwnedApplication(ownerUserId, id);
+  if (!application) throw new ApplicationNotFoundError();
+  return application;
+}
+
+async function requireOwnedSelectedBusiness(
+  ownerUserId: string,
+  input: ApplicationUpdateInput,
+) {
+  if (input.section !== "business" || !input.data.businessId) return;
+  const business = await findOwnedBusiness(ownerUserId, input.data.businessId);
+  if (!business) throw new ApplicationBusinessUnavailableError();
+}
+
+export async function listOwnApplications(
+  user: AuthenticatedUser | null,
+  input: ApplicationListInput,
+): Promise<ApplicationPage> {
+  const actor = requireCapability(user, capabilities.applicationReadOwn);
+  const result = await listOwnedApplications({
+    after: input.after ? decodeApplicationCursor(input.after) : undefined,
+    limit: input.limit,
+    ownerUserId: actor.id,
+    status: input.status,
+  });
+  const hasNextPage = result.items.length > input.limit;
+  const items = result.items.slice(0, input.limit);
+  return {
+    items: items.map(toApplicationSummary),
+    nextCursor: hasNextPage ? encodeApplicationCursor(items.at(-1)!) : null,
+    total: result.total,
+  };
+}
+
+export async function getOwnApplication(
+  user: AuthenticatedUser | null,
+  id: string,
+) {
+  const actor = requireCapability(user, capabilities.applicationReadOwn);
+  return toApplicationView(await loadOwnedApplication(actor.id, id));
+}
+
+export async function createApplication(
+  user: AuthenticatedUser | null,
+  fundingOpportunityId: number,
+) {
+  const actor = requireCapability(user, capabilities.applicationCreate);
+  const opportunity =
+    await findPublishedFundingOpportunity(fundingOpportunityId);
+  if (!opportunity || opportunity.status !== "open") {
+    throw new ApplicationOpportunityUnavailableError();
+  }
+  const existing = await findOwnedApplicationByOpportunity(
+    actor.id,
+    opportunity.id,
+  );
+  if (existing) return toApplicationView(existing);
+  const id = await createOwnedApplication({
+    fundingOpportunityId: opportunity.id,
+    fundingOpportunityTitle: opportunity.title,
+    ownerUserId: actor.id,
+  });
+  const application = id
+    ? await loadOwnedApplication(actor.id, id)
+    : await findOwnedApplicationByOpportunity(actor.id, opportunity.id);
+  if (!application) throw new ApplicationConflictError();
+  return toApplicationView(application);
+}
+
+export async function updateOwnApplication(
+  user: AuthenticatedUser | null,
+  id: string,
+  input: ApplicationUpdateInput,
+) {
+  const actor = requireCapability(user, capabilities.applicationUpdateOwn);
+  const current = await loadOwnedApplication(actor.id, id);
+  if (current.rowVersion !== input.expectedRowVersion) {
+    throw new ApplicationConflictError();
+  }
+  await requireOwnedSelectedBusiness(actor.id, input);
+  const completion = {
+    ...current.sectionCompletion,
+    [input.section]: sectionIsComplete(input),
+  };
+  const currentSection =
+    input.intent === "continue"
+      ? nextSection(input.section, completion)
+      : input.section;
+  const updatedId = await updateOwnedApplication(
+    actor.id,
+    id,
+    input,
+    completion,
+    currentSection,
+  );
+  if (!updatedId) throw new ApplicationConflictError();
+  return toApplicationView(await loadOwnedApplication(actor.id, updatedId));
+}
 
 function requireApplicationReader(user: AuthenticatedUser | null) {
   return requireAnyCapability(user, [

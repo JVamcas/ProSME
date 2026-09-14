@@ -1,5 +1,5 @@
-import type { Metadata } from "next";
-import { ConfirmationView } from "@/components/applicant/applications/ConfirmationView";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = { title: "Application received" };
-export default function ConfirmationPage() { return <section className="section bg-slate-50"><div className="container max-w-4xl"><ConfirmationView /></div></section>; }
+export default function SubmissionUnavailablePage() {
+  redirect("/portal/applications");
+}

@@ -6,6 +6,7 @@ import { Button, IconButton } from "@/components/ui/button";
 import { FormDateInput } from "@/components/ui/form-date-input";
 import { CheckboxField } from "@/components/ui/form-field";
 import { FormInput, FormSelect } from "@/components/ui/form-fields";
+import { MoneyField } from "@/components/ui/money-field";
 
 function RegisteredInput() {
   const form = useForm<{ email: string }>({
@@ -62,6 +63,18 @@ describe("shared form components", () => {
     expect(markup).toContain("Icon");
     expect(markup).toContain("pl-12");
     expect(markup).toContain('type="search"');
+  });
+
+  it("renders the shared money field with currency and decimal semantics", () => {
+    const markup = renderToStaticMarkup(
+      <MoneyField label="Amount" name="amount" />,
+    );
+
+    expect(markup).toContain("N$");
+    expect(markup).toContain('inputMode="decimal"');
+    expect(markup).toContain('min="0"');
+    expect(markup).toContain('step="0.01"');
+    expect(markup).toContain('type="number"');
   });
 
   it("keeps checkbox semantics inside the shared field", () => {

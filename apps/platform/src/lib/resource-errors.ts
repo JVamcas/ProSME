@@ -7,3 +7,13 @@ export class ResourceNotFoundError extends Error {
     this.userMessage = `The requested ${resourceName} was not found.`;
   }
 }
+
+export class ResourceConflictError extends Error {
+  readonly userMessage: string;
+
+  constructor(message: string) {
+    super(message);
+    this.name = "ResourceConflictError";
+    this.userMessage = message;
+  }
+}

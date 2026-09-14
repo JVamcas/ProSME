@@ -5,9 +5,13 @@ import {
   AuthenticationRequiredError,
   PermissionDeniedError,
 } from "@/auth/authorization/policy";
-import { ResourceNotFoundError } from "@/lib/resource-errors";
+import {
+  ResourceConflictError,
+  ResourceNotFoundError,
+} from "@/lib/resource-errors";
 
 type ApiErrorCode =
+  | "CONFLICT"
   | "FORBIDDEN"
   | "INTERNAL_ERROR"
   | "NOT_FOUND"
@@ -134,6 +138,15 @@ export function portalRouteError(
       correlationId,
       404,
       "NOT_FOUND",
+      error.userMessage,
+    );
+  }
+
+  if (error instanceof ResourceConflictError) {
+    return errorResponse(
+      correlationId,
+      409,
+      "CONFLICT",
       error.userMessage,
     );
   }

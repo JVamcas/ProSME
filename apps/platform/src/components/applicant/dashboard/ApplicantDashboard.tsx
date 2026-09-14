@@ -12,7 +12,8 @@ import { DashboardMetricCard } from "./DashboardMetricCard";
 
 export function ApplicantDashboard({
   displayName,
-}: ApplicantDashboardSummary) {
+  openFundingOpportunityCount,
+}: ApplicantDashboardSummary & { openFundingOpportunityCount: number }) {
   return (
     <div>
       <header className="grid min-h-32 overflow-hidden rounded-2xl border border-brand-blue/40 bg-brand-blue/15 shadow-sm sm:grid-cols-[1fr_15rem]">
@@ -65,10 +66,15 @@ export function ApplicantDashboard({
             value="0"
           />
           <DashboardMetricCard
+            href="/portal/funding-opportunities?status=open"
             icon={BriefcaseBusiness}
             label="Funding opportunities"
-            supportingText="No funding opportunities available"
-            value="—"
+            supportingText={
+              openFundingOpportunityCount === 1
+                ? "1 open funding opportunity"
+                : `${openFundingOpportunityCount} open funding opportunities`
+            }
+            value={String(openFundingOpportunityCount)}
           />
         </div>
       </section>
@@ -78,7 +84,10 @@ export function ApplicantDashboard({
         className="mt-6 min-h-48 rounded-2xl border border-brand-navy/15 bg-brand-white shadow-sm"
       >
         <div className="border-b border-brand-navy/10 px-5 py-4">
-          <h2 id="recent-activity-heading" className="font-bold text-brand-navy">
+          <h2
+            id="recent-activity-heading"
+            className="font-bold text-brand-navy"
+          >
             Recent activity
           </h2>
         </div>

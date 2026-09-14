@@ -1,0 +1,112 @@
+"use client";
+
+import { zodResolver } from "@hookform/resolvers/zod";
+import { ArrowRight, Building2, RefreshCw } from "lucide-react";
+import Link from "next/link";
+import { FormProvider, useForm } from "react-hook-form";
+
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { FormSelect } from "@/components/ui/form-fields";
+import {
+  applicationBusinessSectionSchema,
+  type ApplicationBusinessSection,
+} from "@/modules/applications/ApplicationSchemas";
+import { useBusinesses } from "@/modules/businesses/BusinessHooks";
+import type { BusinessView } from "@/modules/businesses/BusinessTypes";
+import { ApplicationFormActions } from "./ApplicationFormActions";
+import { useApplicationAutosave } from "./useApplicationAutosave";
+
+type Props = {
+  error: boolean;
+  initial: Partial<ApplicationBusinessSection>;
+  onContinue: (data: ApplicationBusinessSection) => Promise<unknown>;
+  onSave: (data: ApplicationBusinessSection) => Promise<unknown>;
+  pending: boolean;
+};
+
+function businessItems(businesses: BusinessView[]) {
+  return businesses.map((business) => ({
+    label: business.registrationNumber
+      ? `${business.legalName} · ${business.registrationNumber}`
+      : business.legalName,
+    value: business.id,
+  }));
+}
+
+function NoBusinesses() {
+  return (
+    <EmptyState
+      action={
+        <Button asChild>
+          <Link href="/portal/businesses">
+            <Building2 aria-hidden="true" className="size-4" />
+            Go to My Businesses
+            <ArrowRight aria-hidden="true" className="size-4" />
+          </Link>
+        </Button>
+      }
+      message="Applications must be linked to a business in My Businesses. Add your business there, then return to continue this application."
+      title="Add a business first"
+    />
+  );
+}
+
+function BusinessesError({ retry }: { retry: () => void }) {
+  return (
+    <div
+      className="rounded-xl border border-brand-orange/30 bg-brand-cream p-5"
+      role="alert"
+    >
+      <p className="font-semibold text-brand-navy">
+        Businesses could not be loaded.
+      </p>
+      <Button className="mt-3" onClick={retry} type="button" variant="outline">
+        <RefreshCw aria-hidden="true" className="size-4" />
+        Try again
+      </Button>
+    </div>
+  );
+}
+
+export function ApplicationBusinessForm(props: Props) {
+  const businesses = useBusinesses();
+  const form = useForm<ApplicationBusinessSection>({
+    defaultValues: { businessId: props.initial.businessId ?? "" },
+    resolver: zodResolver(applicationBusinessSectionSchema),
+  });
+  const autosave = useApplicationAutosave(form, props.onSave);
+  if (businesses.isError) {
+    return <BusinessesError retry={() => void businesses.refetch()} />;
+  }
+  if (!businesses.isPending && (businesses.data?.length ?? 0) === 0) {
+    return <NoBusinesses />;
+  }
+  return (
+    <FormProvider {...form}>
+      <form noValidate onSubmit={form.handleSubmit(props.onContinue)}>
+        <FormSelect
+          disabled={businesses.isPending}
+          items={businessItems(businesses.data ?? [])}
+          label="Business"
+          name="businessId"
+          placeholder={
+            businesses.isPending ? "Loading businesses…" : "Select a business"
+          }
+        />
+        <p className="mt-2 text-sm text-brand-navy/65">
+          Business details are managed under My Businesses.
+        </p>
+        <ApplicationFormActions
+          dirty={form.formState.isDirty}
+          error={props.error}
+          online={autosave.online}
+          pending={props.pending || autosave.saving || businesses.isPending}
+          onSave={() => {
+            void props.onSave(form.getValues()).catch(() => undefined);
+          }}
+        />
+      </form>
+    </FormProvider>
+  );
+}

@@ -41,7 +41,7 @@ describe("P3.2.1 source ownership convention", () => {
 
     expect(files).not.toEqual(
       expect.arrayContaining([
-        expect.stringMatching(/^(Draft|Operations)/),
+        expect.stringMatching(/Draft|^Operations/),
       ]),
     );
   });

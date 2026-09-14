@@ -5,14 +5,20 @@ import { ProfilePageHeader } from "@/components/applicant/profile/ProfilePageHea
 
 export const metadata: Metadata = { title: "Funding opportunities" };
 
-export default function FundingOpportunitiesPage() {
+export default async function FundingOpportunitiesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ status?: string }>;
+}) {
+  const status = (await searchParams).status;
+  const initialFilter = status === "open" ? "open" : "all";
   return (
     <section>
       <ProfilePageHeader
         description="Explore published funding programmes and find the right opportunity for your business."
         title="Funding opportunities"
       />
-      <FundingOpportunityBrowser />
+      <FundingOpportunityBrowser initialFilter={initialFilter} />
     </section>
   );
 }

@@ -64,6 +64,20 @@
       "when": 1789311720000,
       "tag": "0008_applicant_businesses",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1789330319794,
+      "tag": "0009_phase3_eligibility_assessments",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1789374351612,
+      "tag": "0010_phase3_application_creation",
+      "breakpoints": true
     }
   ]
 }

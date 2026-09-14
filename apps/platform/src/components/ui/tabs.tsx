@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 
 export type TabItem<T extends string = string> = {
   content?: ReactNode;
+  disabled?: boolean;
   icon?: ReactNode;
   id: T;
   label: string;
@@ -72,6 +73,7 @@ function TabsList<T extends string>({
               )
             }
             id={item.id}
+            isDisabled={item.disabled}
           >
             {item.icon}
             {item.label}

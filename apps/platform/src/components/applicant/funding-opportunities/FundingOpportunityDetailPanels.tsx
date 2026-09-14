@@ -14,6 +14,7 @@ import {
   formatOpportunityAmount,
   formatOpportunityDate,
 } from "./FundingOpportunityFormat";
+import { FundingOpportunityReadinessCard } from "./FundingOpportunityReadinessCard";
 
 const panelClass =
   "rounded-2xl border border-brand-navy/15 bg-brand-white p-6 shadow-sm";
@@ -43,7 +44,7 @@ export function OverviewPanel({
         </ul>
       </article>
       <div className="grid content-start gap-4">
-        <ReadinessCard opportunity={opportunity} />
+        <FundingOpportunityReadinessCard opportunity={opportunity} />
         <DeadlineCard opportunity={opportunity} />
       </div>
     </div>
@@ -59,37 +60,6 @@ function Highlight({ text }: { text: string }) {
       />
       {text}
     </li>
-  );
-}
-
-function ReadinessCard({
-  opportunity,
-}: {
-  opportunity: FundingOpportunityDetail;
-}) {
-  const canCheckEligibility = opportunity.status === "open";
-
-  return (
-    <aside className={panelClass}>
-      <h2 className="text-lg font-bold text-brand-navy">Ready to apply?</h2>
-      <p className="mt-2 text-sm leading-6 text-brand-navy/70">
-        Check whether you meet the eligibility criteria before starting an
-        application.
-      </p>
-      {canCheckEligibility ? (
-        <Button asChild className="mt-5 w-full">
-          <Link href="/eligibility">Check eligibility</Link>
-        </Button>
-      ) : (
-        <Button className="mt-5 w-full" disabled type="button">
-          Check eligibility
-        </Button>
-      )}
-      <Button className="mt-3 w-full" disabled type="button" variant="outline">
-        <FileDown aria-hidden="true" className="size-4" />
-        No Guidelines available
-      </Button>
-    </aside>
   );
 }
 

@@ -1,0 +1,66 @@
+import {
+  index,
+  integer,
+  jsonb,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+} from "drizzle-orm/pg-core";
+
+import type {
+  ApplicationBusinessSection,
+  ApplicationFinancialSection,
+  ApplicationProjectSection,
+  ApplicationSectionCompletion,
+} from "@/modules/applications/ApplicationSchemas";
+import { users } from "./identity";
+
+export const applications = pgTable("app_applications", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  ownerUserId: uuid("owner_user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  fundingOpportunityId: integer("funding_opportunity_id").notNull(),
+  fundingOpportunityTitle: text("funding_opportunity_title").notNull(),
+  status: text("status").$type<"draft">().notNull().default("draft"),
+  currentSection: text("current_section")
+    .$type<"business" | "project" | "financial">()
+    .notNull()
+    .default("business"),
+  businessSection: jsonb("business_section")
+    .$type<Partial<ApplicationBusinessSection>>()
+    .notNull()
+    .default({}),
+  projectSection: jsonb("project_section")
+    .$type<Partial<ApplicationProjectSection>>()
+    .notNull()
+    .default({}),
+  financialSection: jsonb("financial_section")
+    .$type<Partial<ApplicationFinancialSection>>()
+    .notNull()
+    .default({}),
+  sectionCompletion: jsonb("section_completion")
+    .$type<ApplicationSectionCompletion>()
+    .notNull()
+    .default({ business: false, project: false, financial: false }),
+  rowVersion: integer("row_version").notNull().default(1),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+}, (table) => [
+  uniqueIndex("app_applications_owner_opportunity_unique").on(
+    table.ownerUserId,
+    table.fundingOpportunityId,
+  ),
+  index("app_applications_owner_updated_idx").on(
+    table.ownerUserId,
+    table.updatedAt,
+  ),
+]);
+
+export type ApplicationRecord = typeof applications.$inferSelect;

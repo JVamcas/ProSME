@@ -59,8 +59,12 @@ function OpportunityList({
   );
 }
 
-export function FundingOpportunityBrowser() {
-  const browser = useFundingOpportunityBrowser();
+export function FundingOpportunityBrowser({
+  initialFilter = "all",
+}: {
+  initialFilter?: FundingOpportunityFilter;
+}) {
+  const browser = useFundingOpportunityBrowser(initialFilter);
   const { query } = browser;
 
   if (query.isPending) {

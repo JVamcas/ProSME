@@ -18,7 +18,7 @@ export default async function BusinessesPage() {
   return (
     <section>
       <ProfilePageHeader
-        eyebrow="Enterprise details"
+        eyebrow=""
         title="My businesses"
         description="Add and manage the businesses connected to your account."
       />

@@ -1,17 +1,17 @@
 import { cn } from "@/lib/utils";
 
-const statusStyles: Record<string, string> = {
+export const statusStyles: Record<string, string> = {
   approved: "bg-brand-green/15 text-brand-navy",
-  closed: "border border-red-500 bg-red-500 text-white",
+  closed: "border border-brand-navy bg-brand-cream text-brand-navy",
   "completeness check": "bg-brand-gold/40 text-brand-navy",
   declined: "border border-brand-navy bg-brand-cream text-brand-navy",
   draft: "bg-brand-cream text-brand-navy",
-  "finance review": "bg-brand-blue/40 text-brand-navy",
+  "finance review": "bg-brand-blue/20 text-brand-navy",
   "more information": "bg-brand-gold/40 text-brand-navy",
-  open: "bg-brand-green/40 text-brand-white",
+  open: "bg-brand-green/40 text-brand-navy",
   submitted: "bg-brand-blue/40 text-brand-navy",
   "technical assessment": "bg-brand-blue/40 text-brand-navy",
-  upcoming: "bg-brand-yellow text-white",
+  upcoming: "bg-brand-yellow text-brand-navy",
 };
 
 type StatusBadgeProps = {

@@ -12,6 +12,7 @@ describe("P3.1 applicant dashboard", () => {
           businessProfile: false,
         }}
         displayName="Anna Ndeitunga"
+        openFundingOpportunityCount={3}
       />,
     );
 
@@ -19,6 +20,10 @@ describe("P3.1 applicant dashboard", () => {
     expect(markup).toContain("Application status");
     expect(markup).toContain("Applications in progress");
     expect(markup).toContain("Funding opportunities");
+    expect(markup).toContain("3 open funding opportunities");
+    expect(markup).toContain(
+      'href="/portal/funding-opportunities?status=open"',
+    );
     expect(markup).toContain("Recent activity");
     expect(markup).toContain("No recent activity yet");
     expect(markup).not.toContain("Profile readiness");

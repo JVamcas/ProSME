@@ -55,7 +55,7 @@ function NewsletterFields({ pending }: { pending: boolean }) {
         />
         <Button
           type="submit"
-          variant="navy"
+          variant="brand"
           size="sm"
           disabled={pending}
           className="min-h-10 shrink-0"
