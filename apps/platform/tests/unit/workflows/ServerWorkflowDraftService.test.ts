@@ -11,6 +11,9 @@ vi.mock("@/db/repositories/WorkflowDraftRepository", () => ({
   createWorkflowDefinition: vi.fn(),
   replaceWorkflowDraft: vi.fn(),
 }));
+vi.mock("@/db/repositories/WorkflowDetailsRepository", () => ({
+  updateWorkflowDefinitionDetails: vi.fn(),
+}));
 vi.mock("@/modules/workflows/ServerWorkflowSupport", () => ({
   WorkflowConflictError: class WorkflowConflictError extends Error {},
   WorkflowNotFoundError: class WorkflowNotFoundError extends Error {},
@@ -20,12 +23,16 @@ vi.mock("@/modules/workflows/ServerWorkflowSupport", () => ({
 import { capabilities } from "@/auth/authorization/capabilities";
 import type { AuthenticatedUser } from "@/auth/types";
 import { replaceWorkflowDraft } from "@/db/repositories/WorkflowDraftRepository";
+import { updateWorkflowDefinitionDetails } from "@/db/repositories/WorkflowDetailsRepository";
 import {
   findDraftByDefinition,
   findLatestWorkflowVersionId,
 } from "@/db/repositories/WorkflowRepository";
 import { referenceWorkflow } from "@/modules/workflows/ReferenceWorkflow";
-import { updateWorkflowDraft } from "@/modules/workflows/ServerWorkflowService";
+import {
+  updateWorkflowDraft,
+  updateWorkflowDetails,
+} from "@/modules/workflows/ServerWorkflowService";
 import { workflowEditorView } from "@/modules/workflows/ServerWorkflowSupport";
 
 const actor: AuthenticatedUser = {
@@ -57,6 +64,31 @@ describe("workflow draft updates", () => {
     );
     expect(replaceWorkflowDraft).toHaveBeenCalledWith(
       expect.objectContaining({ versionId: "published-id" }),
+    );
+  });
+
+  it("updates workflow details with optimistic version data", async () => {
+    vi.mocked(findDraftByDefinition).mockResolvedValue("draft-id");
+    vi.mocked(updateWorkflowDefinitionDetails).mockResolvedValue("draft-id");
+    vi.mocked(workflowEditorView).mockResolvedValue(undefined as never);
+
+    await updateWorkflowDetails(
+      actor,
+      "definition-id",
+      {
+        code: "UPDATED",
+        description: "Updated details",
+        expectedRowVersion: 2,
+        name: "Updated workflow",
+      },
+      "correlation-id",
+    );
+    expect(updateWorkflowDefinitionDetails).toHaveBeenCalledWith(
+      expect.objectContaining({
+        definitionId: "definition-id",
+        expectedRowVersion: 2,
+        versionId: "draft-id",
+      }),
     );
   });
 });

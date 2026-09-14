@@ -128,7 +128,7 @@ function DataTableBody<TData extends RowData>({
         <tr
           key={row.id}
           className={cn(
-            "transition hover:bg-brand-navy/10",
+            "transition hover:bg-slate-50",
             rowClassName?.(row.original),
           )}
         >

@@ -7,10 +7,12 @@ vi.mock("next/navigation", () => ({
 }));
 
 import { WorkflowStageFlow } from "@/components/admin/workflows/WorkflowStageFlow";
+import { WorkflowDefinitionCreateForm } from "@/components/admin/workflows/WorkflowDefinitionCreateForm";
 import { WorkflowDefinitionDetailsCard } from "@/components/admin/workflows/WorkflowDefinitionDetailsCard";
 import { WorkflowDefinitionsWorkspace } from "@/components/admin/workflows/WorkflowDefinitionsWorkspace";
 import { WorkflowDefinitionsTable } from "@/components/admin/workflows/WorkflowDefinitionsTable";
 import { referenceWorkflow } from "@/modules/workflows/ReferenceWorkflow";
+import { workflowQueryKeys } from "@/modules/workflows/WorkflowHooks";
 
 describe("workflow configuration UI", () => {
   it("previews ordered stages, registered tasks and applicant-safe labels", () => {
@@ -108,6 +110,50 @@ describe("workflow configuration UI", () => {
     expect(markup).not.toContain("<details");
   });
 
+  it("uses the workflow dialog form with existing details in edit mode", () => {
+    const client = new QueryClient();
+    client.setQueryData(workflowQueryKeys.detail("definition"), {
+      allowedActions: ["UPDATE"],
+      definition: {
+        id: "definition",
+        code: "REFERENCE",
+        description: "Reference funding workflow",
+        name: "Reference",
+      },
+      graph: referenceWorkflow,
+      validation: { valid: true, errors: [], warnings: [] },
+      version: {
+        id: "version",
+        number: 1,
+        status: "DRAFT",
+        rowVersion: 1,
+        createdAt: "2026-09-14T00:00:00.000Z",
+        publishedAt: null,
+        retiredAt: null,
+      },
+    });
+    const markup = renderToStaticMarkup(
+      <QueryClientProvider client={client}>
+        <WorkflowDefinitionCreateForm
+          workflow={{
+            active: true,
+            code: "REFERENCE",
+            description: "Reference funding workflow",
+            id: "definition",
+            latestStatus: "DRAFT",
+            latestVersion: 1,
+            name: "Reference",
+            updatedAt: "2026-09-14T00:00:00.000Z",
+          }}
+        />
+      </QueryClientProvider>,
+    );
+    expect(markup).toContain("Workflow code");
+    expect(markup).toContain("Workflow name");
+    expect(markup).toContain("Save changes");
+    expect(markup).not.toContain("TOR-aligned reference workflow");
+  });
+
   it("shows lifecycle actions only for supported workflow states", () => {
     const baseWorkflow = {
       active: true,
@@ -119,6 +165,17 @@ describe("workflow configuration UI", () => {
     };
     const markup = renderToStaticMarkup(
       <WorkflowDefinitionsTable
+        assignments={[
+          {
+            assignedAt: "2026-09-14T08:00:00.000Z",
+            fundingOpportunityId: 42,
+            fundingOpportunityTitle: "Growth Fund",
+            rowVersion: 1,
+            versionNumber: 1,
+            workflowName: "Reference",
+            workflowVersionId: "89e20de0-3558-4d63-90a4-8c9f5125df07",
+          },
+        ]}
         canCreate
         canPublish
         canRetire
@@ -129,14 +186,38 @@ describe("workflow configuration UI", () => {
           { ...baseWorkflow, id: "published", latestStatus: "PUBLISHED" },
         ]}
         onActivate={() => undefined}
+        onAssign={() => undefined}
         onCreate={() => undefined}
         onDeactivate={() => undefined}
         onEdit={() => undefined}
+        opportunities={[
+          {
+            closesAt: "2026-12-31T00:00:00.000Z",
+            id: 42,
+            opensAt: "2026-09-01T00:00:00.000Z",
+            slug: "growth-fund",
+            status: "open",
+            summary: "Growth funding",
+            title: "Growth Fund",
+          },
+        ]}
+        publishedWorkflows={[
+          {
+            definitionId: "published",
+            name: "Reference",
+            versionId: "89e20de0-3558-4d63-90a4-8c9f5125df07",
+            versionNumber: 1,
+          },
+        ]}
       />,
     );
 
     expect(markup).toContain('aria-label="Edit Reference"');
     expect(markup).toContain('aria-label="Activate Reference"');
     expect(markup).toContain('aria-label="Deactivate Reference"');
+    expect(markup).toContain('aria-label="Assign funding to Reference"');
+    expect(markup).toContain("Assigned funding");
+    expect(markup).toContain('href="/funding/growth-fund"');
+    expect(markup).toContain("Updated");
   });
 });

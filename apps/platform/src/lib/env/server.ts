@@ -16,6 +16,11 @@ const serverEnvironmentSchema = z.object({
   FIREBASE_CLIENT_EMAIL: z.email().optional(),
   FIREBASE_PRIVATE_KEY: z.string().optional(),
   FIREBASE_SERVICE_ACCOUNT_JSON: z.string().optional(),
+  GCS_DOCUMENTS_BUCKET: z
+    .string()
+    .trim()
+    .min(3, "GCS_DOCUMENTS_BUCKET is required")
+    .optional(),
   SESSION_COOKIE_DAYS: z.coerce.number().int().min(1).max(14).default(5),
   PUBLIC_SITE_URL: z.url().default("http://localhost:3008"),
 });

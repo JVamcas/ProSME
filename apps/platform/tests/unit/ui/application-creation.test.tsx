@@ -3,24 +3,84 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 const useBusinesses = vi.hoisted(() => vi.fn());
-vi.mock("@/modules/businesses/BusinessHooks", () => ({ useBusinesses }));
+const useBusiness = vi.hoisted(() => vi.fn());
+const useApplicationDocuments = vi.hoisted(() => vi.fn());
+const useUploadApplicationDocument = vi.hoisted(() => vi.fn());
+vi.mock("@/modules/businesses/BusinessHooks", () => ({
+  useBusiness,
+  useBusinesses,
+}));
+vi.mock("@/modules/applications/ApplicationDocumentHooks", () => ({
+  useApplicationDocuments,
+  useUploadApplicationDocument,
+}));
 
 import {
   applicationSteps,
   completedApplicationStepIds,
 } from "@/components/applicant/applications/ApplicationStepConfig";
 import { ApplicationBusinessForm } from "@/components/applicant/applications/ApplicationBusinessForm";
+import { ApplicationDeclarationsForm } from "@/components/applicant/applications/ApplicationDeclarationsForm";
+import { ApplicationDocumentsForm } from "@/components/applicant/applications/ApplicationDocumentsForm";
 import { ApplicationProjectForm } from "@/components/applicant/applications/ApplicationProjectForm";
+import { ApplicationReview } from "@/components/applicant/applications/ApplicationReview";
 import { ApplicationsTable } from "@/components/applicant/applications/ApplicationTable";
 import { StepProgress } from "@/components/ui/step-progress";
+import type { ApplicationView } from "@/modules/applications/ApplicationTypes";
+
+const completedApplication: ApplicationView = {
+  businessSection: {
+    businessId: "89e20de0-3558-4d63-90a4-8c9f5125df07",
+  },
+  createdAt: "2026-09-14T08:00:00.000Z",
+  currentSection: "declarations",
+  declarationsSection: {
+    compliance: true,
+    falseInformation: true,
+    informationAccuracy: true,
+    privacyConsent: true,
+    terms: true,
+  },
+  financialSection: { amountRequested: 500000 },
+  fundingOpportunityId: 42,
+  fundingOpportunityTitle: "Growth Fund",
+  id: "99e20de0-3558-4d63-90a4-8c9f5125df07",
+  progressPercent: 100,
+  projectSection: { projectTitle: "Solar-powered cold storage" },
+  rowVersion: 6,
+  sectionCompletion: {
+    business: true,
+    declarations: true,
+    documents: true,
+    financial: true,
+    project: true,
+  },
+  status: "draft",
+  updatedAt: "2026-09-14T08:00:00.000Z",
+};
 
 describe("application creation UI", () => {
+  useApplicationDocuments.mockReturnValue({
+    data: [],
+    error: null,
+    isError: false,
+    isPending: false,
+  });
+  useUploadApplicationDocument.mockReturnValue({
+    error: null,
+    isError: false,
+    isPending: false,
+    mutateAsync: vi.fn(),
+  });
+
   it("shows the three P3.2 sections and later disabled steps", () => {
     const markup = renderToStaticMarkup(
       <StepProgress
         ariaLabel="Application sections"
         completedStepIds={completedApplicationStepIds({
           business: true,
+          declarations: false,
+          documents: false,
           financial: false,
           project: false,
         })}
@@ -90,6 +150,7 @@ describe("application creation UI", () => {
     const markup = renderToStaticMarkup(
       <ApplicationProjectForm
         initial={{}}
+        onBack={() => undefined}
         onContinue={() => Promise.resolve()}
         onSave={() => Promise.resolve()}
         error={false}
@@ -101,6 +162,63 @@ describe("application creation UI", () => {
     expect(markup).toContain("Project start date");
     expect(markup).toContain("Save draft");
     expect(markup).toContain("Save and continue");
+    expect(markup).toContain("Back");
+  });
+
+  it("renders the Phase 3.4 document register", () => {
+    const markup = renderToStaticMarkup(
+      <ApplicationDocumentsForm
+        applicationId="99e20de0-3558-4d63-90a4-8c9f5125df07"
+        onContinue={() => Promise.resolve()}
+        pending={false}
+      />,
+    );
+    expect(markup).toContain("Business Registration Certificate");
+    expect(markup).toContain("Latest Financial Statements");
+    expect(markup).toContain("Project Proposal");
+    expect(markup).toContain("Save and continue");
+    expect(markup).toContain('type="button">Save and continue');
+  });
+
+  it("renders all versioned declarations and consent actions", () => {
+    const markup = renderToStaticMarkup(
+      <ApplicationDeclarationsForm
+        error={false}
+        initial={{}}
+        onContinue={() => Promise.resolve()}
+        onSave={() => Promise.resolve()}
+        pending={false}
+      />,
+    );
+    expect(markup).toContain("all information provided is true and correct");
+    expect(markup).toContain("processing of my personal and business information");
+    expect(markup).toContain("View terms and conditions");
+  });
+
+  it("renders an unwired review and submit view", () => {
+    useBusiness.mockReturnValue({
+      data: { legalName: "JM Technologies (Pty) Ltd" },
+    });
+    useApplicationDocuments.mockReturnValue({
+      data: [{ id: "one" }, { id: "two" }, { id: "three" }, { id: "four" }],
+    });
+    const markup = renderToStaticMarkup(
+      <ApplicationReview
+        application={completedApplication}
+        onBack={() => undefined}
+        onEdit={() => undefined}
+      />,
+    );
+
+    expect(markup).toContain("JM Technologies (Pty) Ltd");
+    expect(markup).toContain("Solar-powered cold storage");
+    expect(markup).toContain("N$ 500,000 requested");
+    expect(markup).toContain("4 documents uploaded");
+    expect(markup).toContain("All declarations accepted");
+    expect(markup).toContain("Submit application");
+    expect(markup).toMatch(
+      /disabled=""[^>]*type="button"|type="button"[^>]*disabled=""/,
+    );
   });
 
   it("renders application records through the shared data table", () => {

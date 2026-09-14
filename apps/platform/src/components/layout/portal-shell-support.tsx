@@ -11,7 +11,7 @@ export function PortalUserSummary({ context }: { context: PortalContext }) {
         {userInitials(context.displayName) || "SF"}
       </span>
       <div className="min-w-0">
-        <p className="truncate text-sm font-bold text-brand-navy">
+        <p className="truncate text-sm font-bold text-brand-slate-50">
           {context.displayName}
         </p>
         <p className="truncate text-xs text-brand-navy/65">

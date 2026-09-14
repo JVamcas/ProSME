@@ -5,6 +5,7 @@ import {
   applicationProjectSectionSchema,
   updateApplicationSchema,
 } from "@/modules/applications/ApplicationSchemas";
+import { applicationDeclarationsSectionSchema } from "@/modules/applications/ApplicationDeclarationSchemas";
 
 describe("application draft validation", () => {
   it("allows incomplete data to be saved without marking a section complete", () => {
@@ -68,5 +69,17 @@ describe("application draft validation", () => {
         expect.arrayContaining(["amountRequested", "budgetBreakdown"]),
       );
     }
+  });
+
+  it("requires every declaration before continuing", () => {
+    expect(
+      applicationDeclarationsSectionSchema.safeParse({
+        compliance: true,
+        falseInformation: true,
+        informationAccuracy: true,
+        privacyConsent: false,
+        terms: true,
+      }).success,
+    ).toBe(false);
   });
 });

@@ -8,6 +8,7 @@ import {
 import {
   ResourceConflictError,
   ResourceNotFoundError,
+  RequestValidationError,
 } from "@/lib/resource-errors";
 
 type ApiErrorCode =
@@ -130,6 +131,15 @@ export function portalRouteError(
       "VALIDATION_ERROR",
       "Review the highlighted request fields.",
       validationFields(error),
+    );
+  }
+
+  if (error instanceof RequestValidationError) {
+    return errorResponse(
+      correlationId,
+      400,
+      "VALIDATION_ERROR",
+      error.userMessage,
     );
   }
 

@@ -8,7 +8,10 @@ import {
   applicationProjectSectionSchema,
   type ApplicationProjectSection,
 } from "@/modules/applications/ApplicationSchemas";
-import { ApplicationFormActions } from "./ApplicationFormActions";
+import {
+  ApplicationFormActions,
+  saveBeforeNavigate,
+} from "./ApplicationFormActions";
 import { useApplicationAutosave } from "./useApplicationAutosave";
 import { FormDateInput } from "@/components/ui/form-date-input";
 
@@ -50,12 +53,14 @@ function ProjectFields({ summary }: { summary: string }) {
 export function ApplicationProjectForm({
   error,
   initial,
+  onBack,
   onContinue,
   onSave,
   pending,
 }: {
   error: boolean;
   initial: Partial<ApplicationProjectSection>;
+  onBack?: () => void;
   onContinue: (data: ApplicationProjectSection) => Promise<unknown>;
   onSave: (data: ApplicationProjectSection) => Promise<unknown>;
   pending: boolean;
@@ -74,6 +79,10 @@ export function ApplicationProjectForm({
           dirty={form.formState.isDirty}
           error={error}
           online={autosave.online}
+          onBack={saveBeforeNavigate(
+            () => onSave(form.getValues()),
+            onBack,
+          )}
           pending={pending || autosave.saving}
           onSave={() => {
             void onSave(form.getValues()).catch(() => undefined);

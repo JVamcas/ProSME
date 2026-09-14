@@ -13,6 +13,10 @@ import type {
   ApplicationSectionCompletion,
   ApplicationUpdateInput,
 } from "@/modules/applications/ApplicationSchemas";
+import {
+  declarationVersion,
+  privacyNoticeVersion,
+} from "@/modules/applications/ApplicationDeclarations";
 
 export type ApplicationCursor = {
   id: string;
@@ -149,7 +153,23 @@ function sectionUpdate(
   if (input.section === "project") {
     return { ...common, projectSection: input.data };
   }
-  return { ...common, financialSection: input.data };
+  if (input.section === "financial") {
+    return { ...common, financialSection: input.data };
+  }
+  if (input.section === "declarations") {
+    return {
+      ...common,
+      declarationAcceptance: completion.declarations
+        ? {
+            acceptedAt: new Date().toISOString(),
+            declarationVersion,
+            privacyVersion: privacyNoticeVersion,
+          }
+        : null,
+      declarationsSection: input.data,
+    };
+  }
+  return common;
 }
 
 export async function updateOwnedApplication(

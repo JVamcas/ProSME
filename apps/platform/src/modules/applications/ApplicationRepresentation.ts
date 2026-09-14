@@ -27,7 +27,7 @@ export type ApplicationSummaryRecord = {
 
 function progress(completion: ApplicationSectionCompletion) {
   const completed = Object.values(completion).filter(Boolean).length;
-  return Math.round((completed / 3) * 100);
+  return Math.round((completed / 5) * 100);
 }
 
 export function toApplicationSummary(
@@ -78,6 +78,7 @@ export function toApplicationView(
   return {
     ...toApplicationSummary(application),
     businessSection: application.businessSection,
+    declarationsSection: application.declarationsSection,
     financialSection: application.financialSection,
     projectSection: application.projectSection,
     rowVersion: application.rowVersion,

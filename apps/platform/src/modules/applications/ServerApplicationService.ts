@@ -18,12 +18,16 @@ import {
   listOwnedApplications,
   updateOwnedApplication,
 } from "@/db/repositories/ApplicationRepository";
+import { hasRequiredApplicationDocuments } from "@/db/repositories/ApplicationDocumentRepository";
 import { findOwnedBusiness } from "@/db/repositories/BusinessRepository";
 import {
   ResourceConflictError,
   ResourceNotFoundError,
+  RequestValidationError,
 } from "@/lib/resource-errors";
 import { findPublishedFundingOpportunity } from "@/modules/funding-opportunities/ServerFundingOpportunityIntegration";
+import { applicationDeclarationsSectionSchema } from "./ApplicationDeclarationSchemas";
+import { applicationDocumentRequirements } from "./ApplicationDocumentSchemas";
 import type {
   ApplicationSection,
   ApplicationSectionCompletion,
@@ -78,7 +82,9 @@ function nextSection(
 ): ApplicationSection {
   if (section === "business") return "project";
   if (section === "project") return "financial";
-  return completion.business ? "financial" : "business";
+  if (section === "financial") return "documents";
+  if (section === "documents") return "declarations";
+  return completion.business ? "declarations" : "business";
 }
 
 function sectionIsComplete(input: ApplicationUpdateInput) {
@@ -88,7 +94,24 @@ function sectionIsComplete(input: ApplicationUpdateInput) {
   if (input.section === "project") {
     return applicationProjectSectionSchema.safeParse(input.data).success;
   }
-  return applicationFinancialSectionSchema.safeParse(input.data).success;
+  if (input.section === "financial") {
+    return applicationFinancialSectionSchema.safeParse(input.data).success;
+  }
+  if (input.section === "declarations") {
+    return applicationDeclarationsSectionSchema.safeParse(input.data).success;
+  }
+  return false;
+}
+
+async function documentsAreComplete(ownerUserId: string, applicationId: string) {
+  const requiredTypes = applicationDocumentRequirements
+    .filter((requirement) => requirement.required)
+    .map((requirement) => requirement.id);
+  return hasRequiredApplicationDocuments(
+    ownerUserId,
+    applicationId,
+    requiredTypes,
+  );
 }
 
 async function loadOwnedApplication(ownerUserId: string, id: string) {
@@ -172,14 +195,22 @@ export async function updateOwnApplication(
     throw new ApplicationConflictError();
   }
   await requireOwnedSelectedBusiness(actor.id, input);
+  const sectionComplete = input.section === "documents"
+    ? await documentsAreComplete(actor.id, id)
+    : sectionIsComplete(input);
+  if (input.section === "documents" && !sectionComplete) {
+    throw new RequestValidationError(
+      "Upload all required supporting documents before continuing.",
+    );
+  }
   const completion = {
     ...current.sectionCompletion,
-    [input.section]: sectionIsComplete(input),
+    [input.section]: sectionComplete,
   };
   const currentSection =
     input.intent === "continue"
       ? nextSection(input.section, completion)
-      : input.section;
+      : current.currentSection;
   const updatedId = await updateOwnedApplication(
     actor.id,
     id,

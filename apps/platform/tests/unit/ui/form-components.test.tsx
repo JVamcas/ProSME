@@ -26,6 +26,17 @@ function RegisteredInput() {
   );
 }
 
+function RegisteredMoneyInput() {
+  const form = useForm<{ amount: number }>({
+    defaultValues: { amount: 1_234_567.89 },
+  });
+  return (
+    <FormProvider {...form}>
+      <MoneyField label="Amount" name="amount" />
+    </FormProvider>
+  );
+}
+
 describe("shared form components", () => {
   it("associates input labels and validation errors", () => {
     const markup = renderToStaticMarkup(
@@ -72,9 +83,13 @@ describe("shared form components", () => {
 
     expect(markup).toContain("N$");
     expect(markup).toContain('inputMode="decimal"');
-    expect(markup).toContain('min="0"');
-    expect(markup).toContain('step="0.01"');
-    expect(markup).toContain('type="number"');
+    expect(markup).toContain('type="text"');
+  });
+
+  it("formats registered money values with thousands separators", () => {
+    const markup = renderToStaticMarkup(<RegisteredMoneyInput />);
+
+    expect(markup).toContain('value="1,234,567.89"');
   });
 
   it("keeps checkbox semantics inside the shared field", () => {

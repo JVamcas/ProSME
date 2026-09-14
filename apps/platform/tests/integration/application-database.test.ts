@@ -10,6 +10,11 @@ import {
   listOwnedApplications,
   updateOwnedApplication,
 } from "@/db/repositories/ApplicationRepository";
+import {
+  hasRequiredApplicationDocuments,
+  listOwnedApplicationDocuments,
+  replaceOwnedApplicationDocument,
+} from "@/db/repositories/ApplicationDocumentRepository";
 
 const { Pool } = pg;
 const enabled = process.env.RUN_P3_APPLICATION_DATABASE_TESTS === "true";
@@ -109,7 +114,13 @@ describeDatabase("P3.2 PostgreSQL application persistence", () => {
       intent: "save" as const,
       section: "business" as const,
     };
-    const completion = { business: false, financial: false, project: false };
+    const completion = {
+      business: false,
+      declarations: false,
+      documents: false,
+      financial: false,
+      project: false,
+    };
     const results = await Promise.all([
       updateOwnedApplication(
         firstOwnerId,
@@ -133,5 +144,51 @@ describeDatabase("P3.2 PostgreSQL application persistence", () => {
     ).resolves.toMatchObject({
       rowVersion: application!.rowVersion + 1,
     });
+  });
+
+  it("isolates supporting document metadata by application owner", async () => {
+    const application = await findOwnedApplicationByOpportunity(
+      firstOwnerId,
+      opportunityId,
+    );
+    expect(application).not.toBeNull();
+    await replaceOwnedApplicationDocument({
+      applicationId: application!.id,
+      contentType: "application/pdf",
+      documentType: "business-registration",
+      objectKey: `${firstOwnerId}/${application!.id}/registration.pdf`,
+      originalName: "registration.pdf",
+      ownerUserId: firstOwnerId,
+      sizeBytes: 512,
+    });
+
+    await expect(
+      listOwnedApplicationDocuments(firstOwnerId, application!.id),
+    ).resolves.toMatchObject([
+      {
+        documentType: "business-registration",
+        fileName: "registration.pdf",
+        scanStatus: "pending",
+      },
+    ]);
+    await expect(
+      listOwnedApplicationDocuments(secondOwnerId, application!.id),
+    ).resolves.toEqual([]);
+    await expect(
+      replaceOwnedApplicationDocument({
+        applicationId: application!.id,
+        contentType: "application/pdf",
+        documentType: "tax-clearance",
+        objectKey: `${secondOwnerId}/${application!.id}/tax-clearance.pdf`,
+        originalName: "tax-clearance.pdf",
+        ownerUserId: secondOwnerId,
+        sizeBytes: 512,
+      }),
+    ).resolves.toBeUndefined();
+    await expect(
+      hasRequiredApplicationDocuments(firstOwnerId, application!.id, [
+        "business-registration",
+      ]),
+    ).resolves.toBe(true);
   });
 });

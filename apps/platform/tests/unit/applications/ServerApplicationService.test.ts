@@ -15,6 +15,9 @@ vi.mock("@/db/repositories/ApplicationRepository", () => ({
 vi.mock("@/db/repositories/BusinessRepository", () => ({
   findOwnedBusiness: vi.fn(),
 }));
+vi.mock("@/db/repositories/ApplicationDocumentRepository", () => ({
+  hasRequiredApplicationDocuments: vi.fn(),
+}));
 vi.mock(
   "@/modules/funding-opportunities/ServerFundingOpportunityIntegration",
   () => ({
@@ -23,7 +26,6 @@ vi.mock(
 );
 
 import { capabilities } from "@/auth/authorization/capabilities";
-import { PermissionDeniedError } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import {
   createOwnedApplication,
@@ -31,19 +33,14 @@ import {
   findOwnedApplicationByOpportunity,
   listOwnedApplications,
   updateOwnedApplication,
-  findAllApplications,
-  findApplicationsAssignedTo,
-  findAssignedApplicationById,
-  findApplicationById,
 } from "@/db/repositories/ApplicationRepository";
 import { findOwnedBusiness } from "@/db/repositories/BusinessRepository";
+import { hasRequiredApplicationDocuments } from "@/db/repositories/ApplicationDocumentRepository";
 import { findPublishedFundingOpportunity } from "@/modules/funding-opportunities/ServerFundingOpportunityIntegration";
 import {
   ApplicationConflictError,
   createApplication,
   getOwnApplication,
-  getApplication,
-  getApplications,
   listOwnApplications,
   updateOwnApplication,
 } from "@/modules/applications/ServerApplicationService";
@@ -66,6 +63,8 @@ function staffUser(granted: string[]): AuthenticatedUser {
 
 const application = {
   businessSection: {},
+  declarationAcceptance: null,
+  declarationsSection: {},
   createdAt: new Date("2026-09-14T08:00:00.000Z"),
   currentSection: "business" as const,
   financialSection: {},
@@ -75,7 +74,13 @@ const application = {
   ownerUserId: "79e20de0-3558-4d63-90a4-8c9f5125df07",
   projectSection: {},
   rowVersion: 1,
-  sectionCompletion: { business: false, financial: false, project: false },
+  sectionCompletion: {
+    business: false,
+    declarations: false,
+    documents: false,
+    financial: false,
+    project: false,
+  },
   status: "draft" as const,
   updatedAt: new Date("2026-09-14T08:00:00.000Z"),
 };
@@ -83,45 +88,6 @@ const businessId = "89e20de0-3558-4d63-90a4-8c9f5125df07";
 
 beforeEach(() => {
   vi.clearAllMocks();
-});
-
-describe("application service authorization", () => {
-  it("loads records through the repository for authorized staff", async () => {
-    vi.mocked(findAllApplications).mockResolvedValue([]);
-    const user = staffUser([capabilities.applicationReadAll]);
-
-    await expect(getApplications(user)).resolves.toEqual([]);
-    expect(findAllApplications).toHaveBeenCalledOnce();
-  });
-
-  it("limits assigned readers to their repository scope", async () => {
-    vi.mocked(findApplicationsAssignedTo).mockResolvedValue([]);
-    const user = staffUser([capabilities.applicationReadAssigned]);
-
-    await expect(getApplications(user)).resolves.toEqual([]);
-    expect(findApplicationsAssignedTo).toHaveBeenCalledWith(user.id);
-    expect(findAllApplications).not.toHaveBeenCalled();
-  });
-
-  it("rejects broad admin access without an application read grant", async () => {
-    const user = staffUser([capabilities.adminAccess]);
-
-    await expect(getApplications(user)).rejects.toBeInstanceOf(
-      PermissionDeniedError,
-    );
-    expect(findAllApplications).not.toHaveBeenCalled();
-    expect(findApplicationsAssignedTo).not.toHaveBeenCalled();
-  });
-
-  it("checks authorization before loading a single application", async () => {
-    const user = staffUser([]);
-
-    await expect(getApplication(user, "SMEF-1")).rejects.toBeInstanceOf(
-      PermissionDeniedError,
-    );
-    expect(findApplicationById).not.toHaveBeenCalled();
-    expect(findAssignedApplicationById).not.toHaveBeenCalled();
-  });
 });
 
 describe("applicant-owned application drafts", () => {
@@ -202,7 +168,13 @@ describe("applicant-owned application drafts", () => {
       businessSection: { businessId },
       currentSection: "project" as const,
       rowVersion: 2,
-      sectionCompletion: { business: true, financial: false, project: false },
+      sectionCompletion: {
+        business: true,
+        declarations: false,
+        documents: false,
+        financial: false,
+        project: false,
+      },
     };
     vi.mocked(findOwnedApplication)
       .mockResolvedValueOnce(application)
@@ -217,7 +189,7 @@ describe("applicant-owned application drafts", () => {
       section: "business",
     });
     expect(result.currentSection).toBe("project");
-    expect(result.progressPercent).toBe(33);
+    expect(result.progressPercent).toBe(20);
     expect(updateOwnedApplication).toHaveBeenCalledWith(
       user.id,
       application.id,
@@ -246,9 +218,13 @@ describe("applicant-owned application drafts", () => {
 
   it("does not require workflow configuration to save a draft", async () => {
     const user = staffUser([capabilities.applicationUpdateOwn]);
+    const advanced = {
+      ...application,
+      currentSection: "financial" as const,
+    };
     vi.mocked(findOwnedApplication)
-      .mockResolvedValueOnce(application)
-      .mockResolvedValueOnce({ ...application, rowVersion: 2 });
+      .mockResolvedValueOnce(advanced)
+      .mockResolvedValueOnce({ ...advanced, rowVersion: 2 });
     vi.mocked(updateOwnedApplication).mockResolvedValue(application.id);
 
     await expect(
@@ -256,9 +232,32 @@ describe("applicant-owned application drafts", () => {
         data: {},
         expectedRowVersion: 1,
         intent: "save",
-        section: "business",
+        section: "project",
       }),
     ).resolves.toMatchObject({ id: application.id });
     expect(findPublishedFundingOpportunity).not.toHaveBeenCalled();
+    expect(updateOwnedApplication).toHaveBeenCalledWith(
+      user.id,
+      application.id,
+      expect.anything(),
+      expect.anything(),
+      "financial",
+    );
+  });
+
+  it("requires all supporting documents before advancing", async () => {
+    const user = staffUser([capabilities.applicationUpdateOwn]);
+    vi.mocked(findOwnedApplication).mockResolvedValue(application);
+    vi.mocked(hasRequiredApplicationDocuments).mockResolvedValue(false);
+
+    await expect(
+      updateOwnApplication(user, application.id, {
+        data: {},
+        expectedRowVersion: 1,
+        intent: "continue",
+        section: "documents",
+      }),
+    ).rejects.toMatchObject({ name: "RequestValidationError" });
+    expect(updateOwnedApplication).not.toHaveBeenCalled();
   });
 });

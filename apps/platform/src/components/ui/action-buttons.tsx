@@ -2,7 +2,8 @@
 
 import {
   LoaderCircle,
-  Pencil,
+  Link2,
+  PencilLine,
   Power,
   Trash2,
   type LucideIcon,
@@ -61,8 +62,19 @@ export function EditButton(props: ActionButtonProps) {
   return (
     <ActionButton
       defaultTitle="Edit"
-      icon={Pencil}
+      icon={PencilLine}
       iconClassName="[&_svg]:text-brand-navy"
+      {...props}
+    />
+  );
+}
+
+export function AssignButton(props: ActionButtonProps) {
+  return (
+    <ActionButton
+      defaultTitle="Assign"
+      icon={Link2}
+      iconClassName="hover:bg-brand-cream [&_svg]:text-brand-orange"
       {...props}
     />
   );

@@ -5,13 +5,20 @@ import { Plus } from "lucide-react";
 
 import {
   ActivateButton,
+  AssignButton,
   DeactivateButton,
   EditButton,
 } from "@/components/ui/action-buttons";
 import { GeneralButton } from "@/components/ui/button";
 import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
 import { StatusBadge } from "@/components/ui/status-badge";
-import type { WorkflowDefinitionSummary } from "@/modules/workflows/WorkflowTypes";
+import type { FundingOpportunitySummary } from "@/modules/funding-opportunities/FundingOpportunityTypes";
+import type {
+  PublishedWorkflowOption,
+  WorkflowDefinitionSummary,
+  WorkflowOpportunityAssignment,
+} from "@/modules/workflows/WorkflowTypes";
+import { WorkflowAssignedFundingLinks } from "./WorkflowAssignedFundingLinks";
 
 type PendingAction = {
   action: "activate" | "deactivate";
@@ -19,6 +26,7 @@ type PendingAction = {
 };
 
 type Props = {
+  assignments?: WorkflowOpportunityAssignment[];
   canPublish: boolean;
   canRetire: boolean;
   canUpdate: boolean;
@@ -27,11 +35,19 @@ type Props = {
   items: WorkflowDefinitionSummary[];
   lifecycleError?: string;
   onActivate: (workflow: WorkflowDefinitionSummary) => void;
+  onAssign?: (workflow: WorkflowDefinitionSummary) => void;
   onCreate: () => void;
   onDeactivate: (workflow: WorkflowDefinitionSummary) => void;
   onEdit: (workflow: WorkflowDefinitionSummary) => void;
   pendingAction?: PendingAction;
+  opportunities?: FundingOpportunitySummary[];
+  publishedWorkflows?: PublishedWorkflowOption[];
 };
+
+const updatedFormatter = new Intl.DateTimeFormat("en-NA", {
+  dateStyle: "medium",
+  timeStyle: "short",
+});
 
 function WorkflowDefinitionActions({
   options,
@@ -41,12 +57,23 @@ function WorkflowDefinitionActions({
   workflow: WorkflowDefinitionSummary;
 }) {
   const isPending = options.pendingAction?.id === workflow.id;
+  const canAssign = options.canUpdate
+    && options.onAssign
+    && options.publishedWorkflows?.some(
+      (item) => item.definitionId === workflow.id,
+    );
   return (
-    <div className="flex items-center justify-end gap-1">
+    <div className="flex items-center justify-start gap-1">
       {options.canUpdate ? (
         <EditButton
           onClick={() => options.onEdit(workflow)}
           title={`Edit ${workflow.name}`}
+        />
+      ) : null}
+      {canAssign ? (
+        <AssignButton
+          onClick={() => options.onAssign?.(workflow)}
+          title={`Assign funding to ${workflow.name}`}
         />
       ) : null}
       {options.canPublish && workflow.latestStatus === "DRAFT" ? (
@@ -97,8 +124,27 @@ function workflowColumns(options: Props) {
       cell: ({ row }) => <StatusBadge status={row.original.latestStatus} />,
     },
     {
+      id: "assignedFunding",
+      header: "Assigned funding",
+      enableSorting: false,
+      cell: ({ row }) => (
+        <WorkflowAssignedFundingLinks
+          assignments={options.assignments ?? []}
+          opportunities={options.opportunities ?? []}
+          publishedWorkflows={options.publishedWorkflows ?? []}
+          workflow={row.original}
+        />
+      ),
+    },
+    {
+      accessorKey: "updatedAt",
+      header: "Updated",
+      cell: ({ row }) =>
+        updatedFormatter.format(new Date(row.original.updatedAt)),
+    },
+    {
       id: "action",
-      header: "",
+      header: "Actions",
       enableSorting: false,
       cell: ({ row }) => (
         <WorkflowDefinitionActions options={options} workflow={row.original} />
@@ -124,7 +170,7 @@ export function WorkflowDefinitionsTable(props: Props) {
             </p>
           ) : null
         }
-        minWidth={720}
+        minWidth={980}
         toolbar={{
           title: "",
           description: "",

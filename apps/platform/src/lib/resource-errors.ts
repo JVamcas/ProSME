@@ -17,3 +17,13 @@ export class ResourceConflictError extends Error {
     this.userMessage = message;
   }
 }
+
+export class RequestValidationError extends Error {
+  readonly userMessage: string;
+
+  constructor(message: string) {
+    super(message);
+    this.name = "RequestValidationError";
+    this.userMessage = message;
+  }
+}

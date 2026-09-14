@@ -73,6 +73,9 @@ services:
       NEXT_TELEMETRY_DISABLED: "1"
       NODE_ENV: production
       PORT: "3008"
+      GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/gcp-adc.json
+      GCS_DOCUMENTS_BUCKET: smepro
+      GOOGLE_CLOUD_PROJECT: msmepro
     ports:
       - "${APPLICATION_BIND_ADDRESS:-0.0.0.0}:${APPLICATION_PORT:-3008}:3008"
     depends_on:
@@ -98,6 +101,7 @@ services:
         max-file: "3"
     volumes:
       - payload-media:/workspace/apps/platform/media
+      - ~/.config/gcloud/application_default_credentials.json:/run/secrets/gcp-adc.json:ro
     networks:
       - platform
 

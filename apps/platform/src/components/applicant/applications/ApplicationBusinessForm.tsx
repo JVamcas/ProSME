@@ -14,12 +14,16 @@ import {
 } from "@/modules/applications/ApplicationSchemas";
 import { useBusinesses } from "@/modules/businesses/BusinessHooks";
 import type { BusinessView } from "@/modules/businesses/BusinessTypes";
-import { ApplicationFormActions } from "./ApplicationFormActions";
+import {
+  ApplicationFormActions,
+  saveBeforeNavigate,
+} from "./ApplicationFormActions";
 import { useApplicationAutosave } from "./useApplicationAutosave";
 
 type Props = {
   error: boolean;
   initial: Partial<ApplicationBusinessSection>;
+  onBack?: () => void;
   onContinue: (data: ApplicationBusinessSection) => Promise<unknown>;
   onSave: (data: ApplicationBusinessSection) => Promise<unknown>;
   pending: boolean;
@@ -101,6 +105,10 @@ export function ApplicationBusinessForm(props: Props) {
           dirty={form.formState.isDirty}
           error={props.error}
           online={autosave.online}
+          onBack={saveBeforeNavigate(
+            () => props.onSave(form.getValues()),
+            props.onBack,
+          )}
           pending={props.pending || autosave.saving || businesses.isPending}
           onSave={() => {
             void props.onSave(form.getValues()).catch(() => undefined);

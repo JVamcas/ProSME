@@ -4,12 +4,44 @@ import { useState } from "react";
 
 import { DraggableDialog } from "@/components/ui/draggable-dialog";
 import {
+  usePublishedWorkflows,
+  useWorkflowAssignments,
   useWorkflowDefinitions,
   useWorkflowListLifecycle,
+  useWorkflowOpportunities,
 } from "@/modules/workflows/WorkflowHooks";
-import { WorkflowDefinitionCreateForm } from "./WorkflowDefinitionCreateForm";
-import { WorkflowDefinitionsTable } from "./WorkflowDefinitionsTable";
 import type { WorkflowDefinitionSummary } from "@/modules/workflows/WorkflowTypes";
+import { WorkflowDefinitionCreateForm } from "./WorkflowDefinitionCreateForm";
+import { WorkflowAssignmentDialog } from "./WorkflowAssignmentDialog";
+import { WorkflowDefinitionsTable } from "./WorkflowDefinitionsTable";
+
+function WorkflowDetailsDialog({
+  canCreate,
+  canUpdate,
+  isOpen,
+  onClose,
+  workflow,
+}: {
+  canCreate: boolean;
+  canUpdate: boolean;
+  isOpen: boolean;
+  onClose: () => void;
+  workflow?: WorkflowDefinitionSummary;
+}) {
+  return (
+    <DraggableDialog
+      isOpen={isOpen && (workflow ? canUpdate : canCreate)}
+      onClose={onClose}
+      size="2xl"
+      title={workflow ? "Edit workflow" : "Create workflow"}
+    >
+      <WorkflowDefinitionCreateForm
+        onCompleted={onClose}
+        workflow={workflow}
+      />
+    </DraggableDialog>
+  );
+}
 
 export function WorkflowDefinitionsWorkspace({
   canCreate,
@@ -25,12 +57,18 @@ export function WorkflowDefinitionsWorkspace({
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedWorkflow, setSelectedWorkflow] =
     useState<WorkflowDefinitionSummary>();
+  const [assignmentWorkflow, setAssignmentWorkflow] =
+    useState<WorkflowDefinitionSummary>();
   const query = useWorkflowDefinitions();
+  const assignments = useWorkflowAssignments();
+  const opportunities = useWorkflowOpportunities();
+  const publishedWorkflows = usePublishedWorkflows();
   const publish = useWorkflowListLifecycle("publish");
   const retire = useWorkflowListLifecycle("retire");
   return (
     <div>
       <WorkflowDefinitionsTable
+        assignments={assignments.data ?? []}
         canCreate={canCreate}
         canPublish={canPublish}
         canRetire={canRetire}
@@ -47,6 +85,7 @@ export function WorkflowDefinitionsWorkspace({
           retire.reset();
           publish.mutate(workflow.id);
         }}
+        onAssign={setAssignmentWorkflow}
         onCreate={() => {
           setSelectedWorkflow(undefined);
           setIsDialogOpen(true);
@@ -66,18 +105,22 @@ export function WorkflowDefinitionsWorkspace({
               ? { action: "deactivate", id: retire.variables }
               : undefined
         }
+        opportunities={opportunities.data?.items ?? []}
+        publishedWorkflows={publishedWorkflows.data ?? []}
       />
-      <DraggableDialog
-        isOpen={isDialogOpen && (selectedWorkflow ? canUpdate : canCreate)}
+      <WorkflowDetailsDialog
+        canCreate={canCreate}
+        canUpdate={canUpdate}
+        isOpen={isDialogOpen}
         onClose={() => setIsDialogOpen(false)}
-        size="2xl"
-        title={selectedWorkflow ? "Edit workflow" : "Create workflow"}
-      >
-        <WorkflowDefinitionCreateForm
-          onCompleted={() => setIsDialogOpen(false)}
-          workflow={selectedWorkflow}
+        workflow={selectedWorkflow}
+      />
+      {assignmentWorkflow ? (
+        <WorkflowAssignmentDialog
+          onClose={() => setAssignmentWorkflow(undefined)}
+          workflow={assignmentWorkflow}
         />
-      </DraggableDialog>
+      ) : null}
     </div>
   );
 }

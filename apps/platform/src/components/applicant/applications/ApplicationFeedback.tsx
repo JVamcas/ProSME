@@ -1,14 +1,12 @@
-import { CheckCircle2, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 
 import { GeneralButton } from "@/components/ui/button";
 import { ClientRequestError } from "@/lib/client-http";
 
 export function ApplicationFeedback({
-  completed,
   error,
   onReload,
 }: {
-  completed: boolean;
   error?: Error | null;
   onReload: () => void;
 }) {
@@ -33,21 +31,6 @@ export function ApplicationFeedback({
               Reload latest application
             </GeneralButton>
           ) : null}
-        </div>
-      ) : null}
-      {completed ? (
-        <div
-          className="mt-6 flex gap-3 rounded-xl bg-brand-green/10 p-4 text-sm text-brand-navy"
-          role="status"
-        >
-          <CheckCircle2
-            aria-hidden="true"
-            className="size-5 shrink-0 text-brand-green"
-          />
-          <p>
-            <strong>Application sections complete.</strong> Documents,
-            declarations, review, and submission will be added in Phase 3.4.
-          </p>
         </div>
       ) : null}
     </>

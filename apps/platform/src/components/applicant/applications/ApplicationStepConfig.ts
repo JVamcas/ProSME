@@ -5,15 +5,15 @@ import type {
 } from "@/modules/applications/ApplicationSchemas";
 
 export type ApplicationStepId =
-  ApplicationSection | "documents" | "declarations" | "review";
+  ApplicationSection | "review";
 
 export const applicationSteps: StepProgressItem<ApplicationStepId>[] = [
   { id: "business", label: "Business" },
   { id: "project", label: "Project details" },
   { id: "financial", label: "Financial information" },
-  { disabled: true, id: "documents", label: "Documents" },
-  { disabled: true, id: "declarations", label: "Declarations" },
-  { disabled: true, id: "review", label: "Review" },
+  { id: "documents", label: "Documents" },
+  { id: "declarations", label: "Declarations" },
+  { id: "review", label: "Review" },
 ];
 
 export function completedApplicationStepIds(
@@ -21,7 +21,7 @@ export function completedApplicationStepIds(
 ) {
   return applicationSteps
     .filter((step) =>
-      step.id === "business" || step.id === "project" || step.id === "financial"
+      step.id !== "review"
         ? completion[step.id]
         : false,
     )
@@ -31,5 +31,19 @@ export function completedApplicationStepIds(
 export function isApplicationSection(
   id: ApplicationStepId,
 ): id is ApplicationSection {
-  return id === "business" || id === "project" || id === "financial";
+  return id !== "review";
+}
+
+export function previousApplicationSection(section: ApplicationSection) {
+  if (section === "project") return "business";
+  if (section === "financial") return "project";
+  if (section === "documents") return "financial";
+  if (section === "declarations") return "documents";
+  return null;
+}
+
+export function previousApplicationStep(section: ApplicationStepId) {
+  return section === "review"
+    ? "declarations"
+    : previousApplicationSection(section);
 }

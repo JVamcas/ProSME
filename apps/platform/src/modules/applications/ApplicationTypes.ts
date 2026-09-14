@@ -32,6 +32,7 @@ import type {
   ApplicationSection,
   ApplicationSectionCompletion,
 } from "./ApplicationSchemas";
+import type { ApplicationDeclarationsSection } from "./ApplicationDeclarationSchemas";
 
 export type ApplicationSummary = {
   createdAt: string;
@@ -58,6 +59,7 @@ export type ApplicationPage = {
 
 export type ApplicationView = ApplicationSummary & {
   businessSection: Partial<ApplicationBusinessSection>;
+  declarationsSection: Partial<ApplicationDeclarationsSection>;
   financialSection: Partial<ApplicationFinancialSection>;
   projectSection: Partial<ApplicationProjectSection>;
   rowVersion: number;

@@ -15,6 +15,7 @@ import type {
   ApplicationProjectSection,
   ApplicationSectionCompletion,
 } from "@/modules/applications/ApplicationSchemas";
+import type { ApplicationDeclarationsSection } from "@/modules/applications/ApplicationDeclarationSchemas";
 import { users } from "./identity";
 
 export const applications = pgTable("app_applications", {
@@ -26,7 +27,9 @@ export const applications = pgTable("app_applications", {
   fundingOpportunityTitle: text("funding_opportunity_title").notNull(),
   status: text("status").$type<"draft">().notNull().default("draft"),
   currentSection: text("current_section")
-    .$type<"business" | "project" | "financial">()
+    .$type<
+      "business" | "project" | "financial" | "documents" | "declarations"
+    >()
     .notNull()
     .default("business"),
   businessSection: jsonb("business_section")
@@ -41,10 +44,25 @@ export const applications = pgTable("app_applications", {
     .$type<Partial<ApplicationFinancialSection>>()
     .notNull()
     .default({}),
+  declarationsSection: jsonb("declarations_section")
+    .$type<Partial<ApplicationDeclarationsSection>>()
+    .notNull()
+    .default({}),
+  declarationAcceptance: jsonb("declaration_acceptance").$type<{
+    acceptedAt: string;
+    declarationVersion: string;
+    privacyVersion: string;
+  } | null>(),
   sectionCompletion: jsonb("section_completion")
     .$type<ApplicationSectionCompletion>()
     .notNull()
-    .default({ business: false, project: false, financial: false }),
+    .default({
+      business: false,
+      declarations: false,
+      documents: false,
+      financial: false,
+      project: false,
+    }),
   rowVersion: integer("row_version").notNull().default(1),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()

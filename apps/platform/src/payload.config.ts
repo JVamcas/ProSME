@@ -3,10 +3,12 @@ import { fileURLToPath } from "node:url";
 
 import { postgresAdapter } from "@payloadcms/db-postgres";
 import { lexicalEditor } from "@payloadcms/richtext-lexical";
+import { gcsStorage } from "@payloadcms/storage-gcs";
 import { buildConfig } from "payload";
 import sharp from "sharp";
 
 import { getServerEnvironment } from "@/lib/env/server";
+import { gcsObjectPrefixes } from "@/integrations/storage/GcsObjectPrefixes";
 import { Media } from "@/payload/collections/content/Media";
 import { ContactSubmissions } from "@/payload/collections/content/ContactSubmissions";
 import { Events } from "@/payload/collections/content/Events";
@@ -67,6 +69,18 @@ export default buildConfig({
   }),
   editor: lexicalEditor(),
   globals: [Header, Footer, Homepage, ContactDetails, SiteSettings],
+  plugins: [
+    gcsStorage({
+      alwaysInsertFields: true,
+      bucket: environment.GCS_DOCUMENTS_BUCKET ?? "local-storage-disabled",
+      collections: {
+        media: { prefix: gcsObjectPrefixes.cms },
+      },
+      enabled: Boolean(environment.GCS_DOCUMENTS_BUCKET),
+      options: {},
+      useCompositePrefixes: true,
+    }),
+  ],
   secret: environment.PAYLOAD_SECRET,
   serverURL: environment.PUBLIC_SITE_URL,
   routes: { admin: "/cms" },

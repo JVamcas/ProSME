@@ -1,4 +1,8 @@
 import { z } from "zod";
+import {
+  applicationDeclarationsSectionSchema,
+  partialDeclarationsSectionSchema,
+} from "./ApplicationDeclarationSchemas";
 
 const requiredText = (label: string, maximum = 200) =>
   z.string().trim().min(1, `${label} is required`).max(maximum);
@@ -18,7 +22,6 @@ const money = (label: string) =>
 export const applicationBusinessSectionSchema = z.object({
   businessId: z.uuid({ error: "Select a business" }),
 });
-
 const applicationProjectSectionBaseSchema = z.object({
   projectTitle: requiredText("Project title"),
   projectSummary: requiredText("Project summary", 500).min(
@@ -28,7 +31,6 @@ const applicationProjectSectionBaseSchema = z.object({
   projectStartDate: isoDate("Project start date"),
   projectEndDate: isoDate("Project end date"),
 });
-
 export const applicationProjectSectionSchema =
   applicationProjectSectionBaseSchema.refine(
     (value) => value.projectEndDate >= value.projectStartDate,
@@ -46,7 +48,6 @@ export const budgetItemSchema = z.object({
   category: requiredText("Budget category", 100),
   description: requiredText("Budget description", 240),
 });
-
 const applicationFinancialSectionBaseSchema = z.object({
   totalProjectCost: money("Total project cost").min(
     1,
@@ -63,7 +64,6 @@ const applicationFinancialSectionBaseSchema = z.object({
     .min(1, "Add at least one budget item")
     .max(20),
 });
-
 const partialText = (maximum: number) =>
   z.string().trim().max(maximum).optional();
 const partialBusinessSectionSchema = z.object({
@@ -118,8 +118,9 @@ export const applicationSectionSchema = z.enum([
   "business",
   "project",
   "financial",
+  "documents",
+  "declarations",
 ]);
-
 export const createApplicationSchema = z.object({
   fundingOpportunityId: z.number().int().positive(),
 });
@@ -151,10 +152,24 @@ const updateApplicationBaseSchema = z.discriminatedUnion("section", [
     intent: z.enum(["save", "continue"]),
     section: z.literal("financial"),
   }),
+  z.object({
+    data: z.object({}),
+    expectedRowVersion: z.number().int().positive(),
+    intent: z.literal("continue"),
+    section: z.literal("documents"),
+  }),
+  z.object({
+    data: partialDeclarationsSectionSchema,
+    expectedRowVersion: z.number().int().positive(),
+    intent: z.enum(["save", "continue"]),
+    section: z.literal("declarations"),
+  }),
 ]);
 
 const sectionSchemas = {
   business: applicationBusinessSectionSchema,
+  declarations: applicationDeclarationsSectionSchema,
+  documents: z.object({}),
   financial: applicationFinancialSectionSchema,
   project: applicationProjectSectionSchema,
 };

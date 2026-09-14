@@ -1,4 +1,10 @@
-import { ArrowRight, Cloud, LoaderCircle, WifiOff } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Cloud,
+  LoaderCircle,
+  WifiOff,
+} from "lucide-react";
 
 import { GeneralButton } from "@/components/ui/button";
 
@@ -14,16 +20,28 @@ function saveLabel(input: {
   return input.dirty ? "Autosave pending" : "Draft saved";
 }
 
+export function saveBeforeNavigate(
+  save: () => Promise<unknown>,
+  navigate?: () => void,
+) {
+  if (!navigate) return undefined;
+  return () => {
+    void save().then(navigate).catch(() => undefined);
+  };
+}
+
 export function ApplicationFormActions({
   dirty,
   error,
   online,
+  onBack,
   pending,
   onSave,
 }: {
   dirty: boolean;
   error: boolean;
   online: boolean;
+  onBack?: () => void;
   pending: boolean;
   onSave: () => void;
 }) {
@@ -37,7 +55,18 @@ export function ApplicationFormActions({
         <StateIcon aria-hidden="true" className="size-4 text-brand-orange" />
         {saveLabel({ dirty, error, online, pending })}
       </div>
-      <div className="flex gap-3">
+      <div className="flex flex-wrap gap-3">
+        {onBack ? (
+          <GeneralButton
+            disabled={pending}
+            onClick={onBack}
+            type="button"
+            variant="ghost"
+          >
+            <ArrowLeft aria-hidden="true" className="size-4" />
+            Back
+          </GeneralButton>
+        ) : null}
         <GeneralButton
           disabled={pending || !online}
           onClick={onSave}

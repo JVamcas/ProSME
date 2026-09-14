@@ -9,7 +9,10 @@ import {
   applicationFinancialSectionSchema,
   type ApplicationFinancialSection,
 } from "@/modules/applications/ApplicationSchemas";
-import { ApplicationFormActions } from "./ApplicationFormActions";
+import {
+  ApplicationFormActions,
+  saveBeforeNavigate,
+} from "./ApplicationFormActions";
 import {
   ApplicationBudgetBreakdown,
   emptyBudgetItem,
@@ -27,12 +30,14 @@ const defaults: ApplicationFinancialSection = {
 export function ApplicationFinancialForm({
   error,
   initial,
+  onBack,
   onContinue,
   onSave,
   pending,
 }: {
   error: boolean;
   initial: Partial<ApplicationFinancialSection>;
+  onBack?: () => void;
   onContinue: (data: ApplicationFinancialSection) => Promise<unknown>;
   onSave: (data: ApplicationFinancialSection) => Promise<unknown>;
   pending: boolean;
@@ -66,6 +71,10 @@ export function ApplicationFinancialForm({
           dirty={form.formState.isDirty}
           error={error}
           online={autosave.online}
+          onBack={saveBeforeNavigate(
+            () => onSave(form.getValues()),
+            onBack,
+          )}
           pending={pending || autosave.saving}
           onSave={() => {
             void onSave(form.getValues()).catch(() => undefined);
