@@ -3,7 +3,7 @@
 import Script from "next/script";
 import { useEffect, useState } from "react";
 
-import { Button } from "@/components/ui/button";
+import { GeneralButton } from "@/components/ui/button";
 
 type Consent = "accepted" | "declined" | null;
 const cookieName = "smefund_analytics_consent";
@@ -63,22 +63,22 @@ export function AnalyticsConsent({
               functions do not depend on analytics.
             </p>
             <div className="flex gap-2">
-              <Button
+              <GeneralButton
                 type="button"
                 variant="inverse"
                 size="sm"
                 onClick={() => choose("declined")}
               >
                 Decline
-              </Button>
-              <Button
+              </GeneralButton>
+              <GeneralButton
                 type="button"
                 variant="brand"
                 size="sm"
                 onClick={() => choose("accepted")}
               >
                 Accept analytics
-              </Button>
+              </GeneralButton>
             </div>
           </div>
         </aside>

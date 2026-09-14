@@ -78,6 +78,27 @@
       "when": 1789374351612,
       "tag": "0010_phase3_application_creation",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1789392690627,
+      "tag": "0011_phase3_workflow_configuration",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1789411120341,
+      "tag": "0012_editable_workflows_before_instances",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1789411146770,
+      "tag": "0013_task_owned_assignment",
+      "breakpoints": true
     }
   ]
 }

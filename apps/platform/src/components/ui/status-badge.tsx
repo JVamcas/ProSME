@@ -9,6 +9,8 @@ export const statusStyles: Record<string, string> = {
   "finance review": "bg-brand-blue/20 text-brand-navy",
   "more information": "bg-brand-gold/40 text-brand-navy",
   open: "bg-brand-green/40 text-brand-navy",
+  published: "bg-brand-green/15 text-brand-navy",
+  retired: "border border-brand-navy bg-brand-cream text-brand-navy",
   submitted: "bg-brand-blue/40 text-brand-navy",
   "technical assessment": "bg-brand-blue/40 text-brand-navy",
   upcoming: "bg-brand-yellow text-brand-navy",

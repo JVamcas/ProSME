@@ -1,6 +1,6 @@
 import { CheckCircle2, RefreshCw } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { GeneralButton } from "@/components/ui/button";
 import { ClientRequestError } from "@/lib/client-http";
 
 export function ApplicationFeedback({
@@ -23,7 +23,7 @@ export function ApplicationFeedback({
         >
           <p className="font-semibold">{error.message}</p>
           {conflict ? (
-            <Button
+            <GeneralButton
               className="mt-3"
               onClick={onReload}
               type="button"
@@ -31,7 +31,7 @@ export function ApplicationFeedback({
             >
               <RefreshCw aria-hidden="true" className="size-4" />
               Reload latest application
-            </Button>
+            </GeneralButton>
           ) : null}
         </div>
       ) : null}

@@ -2,6 +2,26 @@ export const workflowStatuses = ["DRAFT", "PUBLISHED", "RETIRED"] as const;
 
 export type WorkflowStatus = (typeof workflowStatuses)[number];
 
+export const workflowActionCodes = [
+  "CLAIM",
+  "ASSIGN",
+  "START",
+  "SAVE",
+  "COMPLETE",
+  "SKIP",
+  "REQUEST_INFORMATION",
+  "ACCEPT_INFORMATION",
+  "RECOMMEND_PROCEED",
+  "RECOMMEND_REJECT",
+  "APPROVE",
+  "DECLINE",
+  "RETURN",
+  "OVERRIDE",
+  "CANCEL",
+] as const;
+
+export type WorkflowActionCode = (typeof workflowActionCodes)[number];
+
 export const taskTypeCodes = [
   "AUTOMATED_RULE_CHECK",
   "CHECKLIST",
@@ -16,6 +36,15 @@ export const taskTypeCodes = [
 ] as const;
 
 export type TaskTypeCode = (typeof taskTypeCodes)[number];
+
+export type WorkflowCondition =
+  | { type: "ALL_REQUIRED_TASKS_COMPLETE" }
+  | {
+      type: "TASK_RESULT_EQUALS";
+      taskCode: string;
+      field: string;
+      value: string | number | boolean;
+    };
 
 export type WorkflowTaskInput = {
   id?: string;
@@ -35,10 +64,15 @@ export type WorkflowStageInput = {
   name: string;
   sequence: number;
   initial: boolean;
-  applicantStatus: string;
+  applicantStatus:
+    | "SUBMITTED"
+    | "UNDER_REVIEW"
+    | "ACTION_REQUIRED"
+    | "OUTCOME_AVAILABLE"
+    | "CLOSED"
+    | "WITHDRAWN";
   applicantLabel: string;
   applicantDescription: string;
-  defaultRoleId?: string | null;
   slaHours?: number | null;
   tasks: WorkflowTaskInput[];
 };
@@ -46,11 +80,11 @@ export type WorkflowStageInput = {
 export type WorkflowTransitionInput = {
   id?: string;
   fromStageCode: string;
-  actionCode: string;
+  actionCode: WorkflowActionCode;
   toStageCode?: string | null;
   terminalOutcome?: string | null;
   requiredCapability: string;
-  condition?: Record<string, unknown> | null;
+  condition?: WorkflowCondition | null;
 };
 
 export type WorkflowGraphInput = {
@@ -82,6 +116,7 @@ export type WorkflowDefinitionSummary = {
 };
 
 export type WorkflowEditorView = {
+  assignmentOptions?: WorkflowAssignmentOptions;
   definition: {
     id: string;
     code: string;
@@ -110,4 +145,21 @@ export type WorkflowOpportunityAssignment = {
   versionNumber: number;
   assignedAt: string;
   rowVersion: number;
+};
+
+export type PublishedWorkflowOption = {
+  definitionId: string;
+  name: string;
+  versionId: string;
+  versionNumber: number;
+};
+
+export type WorkflowAssignmentOption = {
+  id: string;
+  label: string;
+};
+
+export type WorkflowAssignmentOptions = {
+  roles: WorkflowAssignmentOption[];
+  users: WorkflowAssignmentOption[];
 };

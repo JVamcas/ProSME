@@ -10,7 +10,7 @@ import {
   RotateCcw,
   X,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { GeneralButton } from "@/components/ui/button";
 import type { EligibilityRule } from "@/modules/content/ContentTypes";
 import { EligibilityAnswerButton } from "./EligibilityAnswerButton";
 
@@ -110,16 +110,16 @@ export function EligibilityChecker({ rules }: { rules: EligibilityRule[] }) {
           </div>
         )}
         <div className="flex flex-col gap-3 border-t border-slate-200 bg-white p-6 sm:flex-row sm:justify-between">
-          <Button variant="ghost" onClick={reset}>
+          <GeneralButton variant="ghost" onClick={reset}>
             <RotateCcw className="size-4" />
             Start again
-          </Button>
+          </GeneralButton>
           {result.type !== "not-eligible" && (
-            <Button asChild variant="brand">
+            <GeneralButton asChild variant="brand">
               <Link href="/portal/applications/new">
                 Start application <ArrowRight className="size-4" />
               </Link>
-            </Button>
+            </GeneralButton>
           )}
         </div>
       </div>
@@ -158,7 +158,7 @@ export function EligibilityChecker({ rules }: { rules: EligibilityRule[] }) {
         </div>
       </div>
       <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-6 py-4 sm:px-9">
-        <Button
+        <GeneralButton
           variant="ghost"
           size="sm"
           disabled={index === 0}
@@ -166,7 +166,7 @@ export function EligibilityChecker({ rules }: { rules: EligibilityRule[] }) {
         >
           <ArrowLeft className="size-4" />
           Previous
-        </Button>
+        </GeneralButton>
         <p className="text-xs text-slate-600">
           Your answers stay on this device
         </p>

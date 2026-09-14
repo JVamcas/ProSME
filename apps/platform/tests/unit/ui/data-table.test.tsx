@@ -41,4 +41,22 @@ describe("DataTable", () => {
 
     expect(markup).toContain("No applications found");
   });
+
+  it("renders table toolbar content and actions", () => {
+    const markup = renderToStaticMarkup(
+      <DataTable
+        columns={columns}
+        data={[]}
+        toolbar={{
+          title: "Workflow definitions",
+          description: "Manage workflow versions.",
+          actions: <button type="button">Create workflow</button>,
+        }}
+      />,
+    );
+
+    expect(markup).toContain("Workflow definitions");
+    expect(markup).toContain("Manage workflow versions.");
+    expect(markup).toContain("Create workflow");
+  });
 });

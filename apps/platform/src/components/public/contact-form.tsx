@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Send } from "lucide-react";
 import { FormProvider, useForm } from "react-hook-form";
 
-import { Button } from "@/components/ui/button";
+import { GeneralButton } from "@/components/ui/button";
 import { CheckboxField, HoneypotField } from "@/components/ui/form-field";
 import { FormInput, FormTextarea } from "@/components/ui/form-fields";
 import {
@@ -130,7 +130,7 @@ function ContactActions({
 }: ContactActionsProps) {
   return (
     <div className="sm:col-span-2 flex flex-wrap items-center gap-4">
-      <Button
+      <GeneralButton
         type="submit"
         variant="brand"
         size="lg"
@@ -139,7 +139,7 @@ function ContactActions({
       >
         {pending ? "Sending…" : "Send message"}
         <Send className="size-4" />
-      </Button>
+      </GeneralButton>
       <p
         id="contact-status"
         role="status"

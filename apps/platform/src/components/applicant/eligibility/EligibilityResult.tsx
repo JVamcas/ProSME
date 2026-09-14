@@ -1,7 +1,7 @@
 import { AlertCircle, ArrowRight, CheckCircle2, RotateCcw } from "lucide-react";
 import Link from "next/link";
 
-import { Button } from "@/components/ui/button";
+import { GeneralButton } from "@/components/ui/button";
 import type { EligibilityAssessmentView } from "@/modules/eligibility/EligibilityTypes";
 
 const resultContent = {
@@ -67,17 +67,17 @@ export function EligibilityResult({
         </div>
       ) : null}
       <div className="flex flex-col gap-3 border-t border-brand-navy/10 p-6 sm:flex-row sm:justify-between">
-        <Button onClick={onRestart} type="button" variant="ghost">
+        <GeneralButton onClick={onRestart} type="button" variant="ghost">
           <RotateCcw className="size-4" />
           Check again
-        </Button>
+        </GeneralButton>
         {assessment.outcome !== "not-currently-eligible" ? (
-          <Button asChild>
+          <GeneralButton asChild>
             <Link href={`/portal/applications/new?fundingOpportunityId=${assessment.fundingOpportunityId}`}>
               Start application
               <ArrowRight className="size-4" />
             </Link>
-          </Button>
+          </GeneralButton>
         ) : null}
       </div>
     </section>

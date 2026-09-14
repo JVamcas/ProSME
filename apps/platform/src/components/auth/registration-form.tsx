@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { FormProvider } from "react-hook-form";
 
-import { Button } from "@/components/ui/button";
+import { GeneralButton } from "@/components/ui/button";
 import { FormInput } from "@/components/ui/form-fields";
 import { AuthFeedback } from "./auth-feedback";
 import {
@@ -69,14 +69,14 @@ export function RegistrationForm() {
           labelClassName={authLabelClassName}
         />
         <AuthFeedback error={form.error} />
-        <Button
+        <GeneralButton
           type="submit"
           variant="brand"
           className="w-full"
           disabled={form.busy}
         >
           {form.busy ? "Please wait…" : "Create account"}
-        </Button>
+        </GeneralButton>
         <p className={authSupportingTextClassName}>
           Already registered?{" "}
           <Link className={authLinkClassName} href="/sign-in">

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { FormProvider } from "react-hook-form";
 
-import { Button } from "@/components/ui/button";
+import { GeneralButton } from "@/components/ui/button";
 import { FormInput } from "@/components/ui/form-fields";
 import { AuthFeedback } from "./auth-feedback";
 import { AuthPasswordField } from "./auth-password-field";
@@ -43,14 +43,14 @@ export function SignInForm({ nextPath }: SignInFormProps) {
           showForgotPassword
         />
         <AuthFeedback error={form.error} />
-        <Button
+        <GeneralButton
           type="submit"
           variant="brand"
           className="w-full"
           disabled={form.busy}
         >
           {form.busy ? "Please wait…" : "Sign in"}
-        </Button>
+        </GeneralButton>
         <p className={authSupportingTextClassName}>
           Don&apos;t have an account?{" "}
           <Link

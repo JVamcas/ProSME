@@ -1,6 +1,6 @@
 import { CircleAlert, LoaderCircle, RotateCcw } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { GeneralButton } from "@/components/ui/button";
 
 export function ProfileFormLoading() {
   return (
@@ -32,10 +32,10 @@ export function ProfileFormError({ onRetry }: { onRetry: () => void }) {
       <div>
         <p className="font-semibold">The profile could not be loaded.</p>
         <p className="mt-1">Check your connection, then try again.</p>
-        <Button className="mt-4" onClick={onRetry} size="sm" type="button">
+        <GeneralButton className="mt-4" onClick={onRetry} size="sm" type="button">
           <RotateCcw aria-hidden="true" className="size-4" />
           Retry
-        </Button>
+        </GeneralButton>
       </div>
     </div>
   );

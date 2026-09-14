@@ -5,7 +5,7 @@ import { ArrowRight, Building2, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { FormProvider, useForm } from "react-hook-form";
 
-import { Button } from "@/components/ui/button";
+import { GeneralButton } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { FormSelect } from "@/components/ui/form-fields";
 import {
@@ -38,13 +38,13 @@ function NoBusinesses() {
   return (
     <EmptyState
       action={
-        <Button asChild>
+        <GeneralButton asChild>
           <Link href="/portal/businesses">
             <Building2 aria-hidden="true" className="size-4" />
             Go to My Businesses
             <ArrowRight aria-hidden="true" className="size-4" />
           </Link>
-        </Button>
+        </GeneralButton>
       }
       message="Applications must be linked to a business in My Businesses. Add your business there, then return to continue this application."
       title="Add a business first"
@@ -61,10 +61,10 @@ function BusinessesError({ retry }: { retry: () => void }) {
       <p className="font-semibold text-brand-navy">
         Businesses could not be loaded.
       </p>
-      <Button className="mt-3" onClick={retry} type="button" variant="outline">
+      <GeneralButton className="mt-3" onClick={retry} type="button" variant="outline">
         <RefreshCw aria-hidden="true" className="size-4" />
         Try again
-      </Button>
+      </GeneralButton>
     </div>
   );
 }

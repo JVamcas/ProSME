@@ -2,7 +2,7 @@ import { Banknote, CalendarDays } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
-import { Button } from "@/components/ui/button";
+import { GeneralButton } from "@/components/ui/button";
 import { StatusBadge, statusStyles } from "@/components/ui/status-badge";
 import type { FundingOpportunitySummary } from "@/modules/funding-opportunities/FundingOpportunityTypes";
 import {
@@ -63,7 +63,7 @@ export function FundingOpportunityCard({
           </div>
         </dl>
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-          <Button
+          <GeneralButton
             asChild
             className="w-full sm:w-auto"
             variant={action ? "outline" : "default"}
@@ -71,7 +71,7 @@ export function FundingOpportunityCard({
             <Link href={`/portal/funding-opportunities/${opportunity.id}`}>
               View details
             </Link>
-          </Button>
+          </GeneralButton>
           {action}
         </div>
       </div>

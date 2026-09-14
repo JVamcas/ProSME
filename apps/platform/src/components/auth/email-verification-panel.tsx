@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-import { Button } from "@/components/ui/button";
+import { GeneralButton } from "@/components/ui/button";
 import { AuthFeedback } from "./auth-feedback";
 import {
   authLinkClassName,
@@ -34,7 +34,7 @@ export function EmailVerificationPanel() {
         error={verification.error}
         notice={verification.notice}
       />
-      <Button
+      <GeneralButton
         type="button"
         variant="brand"
         className="w-full"
@@ -42,8 +42,8 @@ export function EmailVerificationPanel() {
         onClick={verification.resendLink}
       >
         {verification.busy ? "Please wait…" : "Resend verification link"}
-      </Button>
-      <Button
+      </GeneralButton>
+      <GeneralButton
         type="button"
         variant="navy"
         className="w-full"
@@ -51,7 +51,7 @@ export function EmailVerificationPanel() {
         onClick={verification.checkVerification}
       >
         I have verified my email
-      </Button>
+      </GeneralButton>
       <p className={authSupportingTextClassName}>
         Already verified or using another browser?{" "}
         <Link className={authLinkClassName} href="/sign-in">

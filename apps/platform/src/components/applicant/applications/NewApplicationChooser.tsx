@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { FundingOpportunityCard } from "@/components/applicant/funding-opportunities/FundingOpportunityCard";
 import { PortalErrorState } from "@/components/layout/portal-error-state";
 import { PortalLoadingState } from "@/components/layout/portal-loading-state";
-import { Button } from "@/components/ui/button";
+import { GeneralButton } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Pagination } from "@/components/ui/pagination";
 import { useCreateApplication } from "@/modules/applications/ApplicationHooks";
@@ -33,14 +33,14 @@ function OpportunityResults({ items }: { items: FundingOpportunitySummary[] }) {
         return (
           <FundingOpportunityCard
             action={
-              <Button
+              <GeneralButton
                 className="w-full sm:w-auto"
                 disabled={creation.isPending}
                 onClick={() => void apply(opportunity.id)}
                 type="button"
               >
                 {applying ? "Starting…" : "Apply"}
-              </Button>
+              </GeneralButton>
             }
             key={opportunity.id}
             opportunity={opportunity}

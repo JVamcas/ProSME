@@ -8,7 +8,7 @@ import {
   Users,
 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { GeneralButton } from "@/components/ui/button";
 import type { AdminApplication } from "@/modules/applications/ApplicationTypes";
 import { Detail, SectionTitle } from "./ApplicationReviewPrimitives";
 
@@ -149,9 +149,9 @@ function SupportingDocuments({
           ? "All required document categories are represented."
           : `${8 - application.documents} document categories require attention.`}
       </p>
-      <Button className="mt-5 w-full" disabled variant="outline">
+      <GeneralButton className="mt-5 w-full" disabled variant="outline">
         Open document register
-      </Button>
+      </GeneralButton>
     </section>
   );
 }

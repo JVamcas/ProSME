@@ -1,7 +1,7 @@
 import { FileDown } from "lucide-react";
 import Link from "next/link";
 
-import { Button } from "@/components/ui/button";
+import { GeneralButton } from "@/components/ui/button";
 import type { FundingOpportunityDetail } from "@/modules/funding-opportunities/FundingOpportunityTypes";
 
 export function FundingOpportunityReadinessCard({
@@ -18,22 +18,22 @@ export function FundingOpportunityReadinessCard({
         application.
       </p>
       {canCheckEligibility ? (
-        <Button asChild className="mt-5 w-full">
+        <GeneralButton asChild className="mt-5 w-full">
           <Link
             href={`/portal/funding-opportunities/${opportunity.id}/eligibility`}
           >
             Check eligibility
           </Link>
-        </Button>
+        </GeneralButton>
       ) : (
-        <Button className="mt-5 w-full" disabled type="button">
+        <GeneralButton className="mt-5 w-full" disabled type="button">
           Check eligibility
-        </Button>
+        </GeneralButton>
       )}
-      <Button className="mt-3 w-full" disabled type="button" variant="outline">
+      <GeneralButton className="mt-3 w-full" disabled type="button" variant="outline">
         <FileDown aria-hidden="true" className="size-4" />
         No Guidelines available
-      </Button>
+      </GeneralButton>
     </aside>
   );
 }

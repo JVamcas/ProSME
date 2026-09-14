@@ -1,6 +1,6 @@
 import { AlertCircle, Bell, Check, ChevronRight, Clock3 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { GeneralButton } from "@/components/ui/button";
 
 export function PortalUpdates({ reference }: { reference: string }) {
   return (
@@ -23,7 +23,7 @@ export function PortalUpdates({ reference }: { reference: string }) {
           <h2 className="text-sm font-bold text-navy">Latest notification</h2>
           <AlertCircle className="size-4 text-brand-gold" />
         </div>
-        <Button
+        <GeneralButton
           type="button"
           variant="ghost"
           className="mt-4 h-auto w-full justify-start rounded-2xl bg-amber-50 p-4 text-left hover:bg-amber-100"
@@ -36,7 +36,7 @@ export function PortalUpdates({ reference }: { reference: string }) {
             Your reference is {reference}
           </span>
           <ChevronRight className="size-4 text-brand-orange" />
-        </Button>
+        </GeneralButton>
       </section>
     </div>
   );

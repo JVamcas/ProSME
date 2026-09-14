@@ -4,7 +4,7 @@ import { Pencil, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 
-import { Button, IconButton } from "@/components/ui/button";
+import { GeneralButton, IconButton } from "@/components/ui/button";
 import {
   DataTable,
   type DataTableColumn,
@@ -104,12 +104,12 @@ export function BusinessesTable({ canUpdate }: { canUpdate: boolean }) {
           </p>
         </div>
         {canUpdate ? (
-          <Button asChild>
+          <GeneralButton asChild>
             <Link href="/portal/businesses/new">
               <Plus aria-hidden="true" className="size-4" />
               Add business
             </Link>
-          </Button>
+          </GeneralButton>
         ) : null}
       </div>
       <DataTable

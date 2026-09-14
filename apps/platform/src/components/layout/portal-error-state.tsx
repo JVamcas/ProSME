@@ -2,7 +2,7 @@
 
 import { TriangleAlert } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { GeneralButton } from "@/components/ui/button";
 
 type PortalErrorStateProps = {
   actionLabel?: string;
@@ -31,9 +31,9 @@ export function PortalErrorState({
         {description}
       </p>
       {onAction ? (
-        <Button className="mt-5" onClick={onAction}>
+        <GeneralButton className="mt-5" onClick={onAction}>
           {actionLabel}
-        </Button>
+        </GeneralButton>
       ) : null}
     </div>
   );

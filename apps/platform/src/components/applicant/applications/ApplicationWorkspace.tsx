@@ -139,8 +139,8 @@ export function ApplicationWorkspace({
     <section>
       <ProfilePageHeader
         eyebrow="Funding applications"
-        title="Funding application"
-        description={application.fundingOpportunityTitle}
+        title={application.fundingOpportunityTitle}
+        description=""
       />
       <div className="mt-6 overflow-hidden rounded-2xl border border-brand-navy/15 bg-brand-white shadow-sm">
         <StepProgress

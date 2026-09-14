@@ -5,7 +5,7 @@ import Link from "next/link";
 
 import { PortalErrorState } from "@/components/layout/portal-error-state";
 import { PortalLoadingState } from "@/components/layout/portal-loading-state";
-import { Button } from "@/components/ui/button";
+import { GeneralButton } from "@/components/ui/button";
 import { Pagination } from "@/components/ui/pagination";
 import { Tabs, type TabItem } from "@/components/ui/tabs";
 import { ApplicationListContent } from "./ApplicationListContent";
@@ -52,12 +52,12 @@ export function ApplicationsList({ canCreate }: { canCreate: boolean }) {
     <section className="mt-6">
       <div className="mb-5 flex justify-end">
         {canCreate ? (
-          <Button asChild>
+          <GeneralButton asChild>
             <Link href="/portal/applications/new">
               <Plus aria-hidden="true" className="size-4" />
               New application
             </Link>
-          </Button>
+          </GeneralButton>
         ) : null}
       </div>
       <Tabs

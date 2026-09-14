@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   Store,
   UserRound,
+  Workflow,
 } from "lucide-react";
 
 import { capabilities } from "@/auth/authorization/capabilities";
@@ -93,6 +94,20 @@ export const operationsPortalRoutes: readonly PortalRoute[] = [
     requiredAnyCapabilities: [
       capabilities.applicationReadAssigned,
       capabilities.applicationReadAll,
+    ],
+  },
+  {
+    id: "admin-workflows",
+    href: "/admin/workflows",
+    label: "Workflow configuration",
+    icon: Workflow,
+    space: "operations",
+    requiredAnyCapabilities: [
+      capabilities.workflowDefinitionRead,
+      capabilities.workflowDefinitionCreate,
+      capabilities.workflowDefinitionUpdate,
+      capabilities.workflowDefinitionPublish,
+      capabilities.workflowDefinitionRetire,
     ],
   },
 ];

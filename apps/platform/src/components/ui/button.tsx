@@ -12,11 +12,11 @@ export const buttonVariants = cva(
           "bg-brand-orange text-brand-navy shadow-sm hover:bg-brand-yellow [&_svg]:text-brand-navy",
         gold: "bg-brand-gold text-brand-navy shadow-sm hover:bg-brand-yellow [&_svg]:text-brand-navy",
         outline:
-          "border border-brand-navy/35 bg-brand-white text-brand-navy hover:border-brand-navy hover:bg-brand-cream",
+          "border border-brand-orange/35 bg-brand-white text-brand-orange hover:bg-brand-cream",
         ghost: "text-brand-navy hover:bg-brand-cream",
         danger: "bg-red-600 text-white hover:bg-red-700 [&_svg]:text-white",
         brand:
-          "bg-brand-orange text-brand-navy shadow-sm hover:bg-brand-yellow [&_svg]:text-brand-navy",
+          "bg-brand-orange text-brand-white shadow-sm hover:bg-brand-yellow [&_svg]:text-brand-navy",
         navy: "bg-brand-navy text-brand-white shadow-sm hover:bg-brand-orange hover:text-brand-navy",
         inverse:
           "border border-brand-white/50 text-brand-white hover:bg-brand-white/10",
@@ -39,7 +39,7 @@ export interface ButtonProps
   asChild?: boolean;
 }
 
-export function Button({
+export function GeneralButton({
   className,
   variant,
   size,
@@ -63,5 +63,5 @@ export interface IconButtonProps extends Omit<
 }
 
 export function IconButton({ label, ...props }: IconButtonProps) {
-  return <Button aria-label={label} size="icon" {...props} />;
+  return <GeneralButton aria-label={label} size="icon" {...props} />;
 }

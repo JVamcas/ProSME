@@ -18,6 +18,7 @@ const servicePairs = [
   ["engagement", "Engagement"],
   ["funding-opportunities", "FundingOpportunity"],
   ["profiles", "Profile"],
+  ["workflows", "Workflow"],
 ] as const;
 
 describe("P3.2.1 source ownership convention", () => {

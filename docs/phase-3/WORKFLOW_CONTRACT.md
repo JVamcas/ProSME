@@ -35,8 +35,8 @@ history.
 | ------------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
 | `WorkflowDefinition`           | Stable ID, unique code, name, description, active flag, timestamps                                                          |
 | `WorkflowDefinitionVersion`    | Definition ID, positive version number, lifecycle status, timestamps, creator, publisher                                    |
-| `WorkflowStageDefinition`      | Version ID, unique code within version, name, sequence, applicant-safe status, default role assignment, SLA configuration   |
-| `StageTaskDefinition`          | Stage ID, unique code within stage, name, registered type, sequence, required flag, assignment override, configuration JSON |
+| `WorkflowStageDefinition`      | Version ID, unique code within version, name, sequence, applicant-safe status and SLA configuration                         |
+| `StageTaskDefinition`          | Stage ID, unique code within stage, name, registered type, sequence, required flag, role/user assignment, configuration JSON |
 | `WorkflowTransitionDefinition` | Version ID, from stage, action code, to stage or terminal outcome, required capability, optional declarative condition      |
 
 Definition codes are stable machine identifiers. Names and applicant-facing
@@ -52,8 +52,10 @@ DRAFT -> PUBLISHED -> RETIRED
 - A definition can have multiple versions and at most one mutable draft.
 - Publishing validates the complete stage/task/transition graph in one service
   transaction.
-- A published version and all its child records are immutable.
-- Editing a published version clones it to the next draft version.
+- A version and all its child records remain editable until the first workflow
+  instance is created from it.
+- Creating a workflow instance makes its pinned definition version immutable.
+- Editing an instance-backed version clones it to the next draft version.
 - Retiring prevents new applications from selecting the version but does not
   affect existing workflow instances.
 - An application pins one exact published version at submission.
@@ -84,7 +86,7 @@ handler. Database configuration cannot contain or execute code.
 | Record                  | Required contract                                                                                                                     |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
 | `WorkflowInstance`      | Application ID, pinned version ID, status, current stage ID, start/end timestamps                                                     |
-| `WorkflowStageInstance` | Workflow instance ID, stage definition ID, status, default assignment snapshot, start/end timestamps                                  |
+| `WorkflowStageInstance` | Workflow instance ID, stage definition ID, status and start/end timestamps                                                               |
 | `StageTaskInstance`     | Stage instance ID, task definition ID, type snapshot, status, assignment, due date, result payload, start/end timestamps, row version |
 
 Runtime instances snapshot the definition references and assignment used when
@@ -141,9 +143,9 @@ It does not support arbitrary HTML, JavaScript, SQL, or remote component URLs.
 
 ## Assignment contract
 
-- A stage definition may specify a default role.
-- A task definition may override with a role or named user.
-- Direct user assignment takes precedence over the role default.
+- A stage definition does not assign work.
+- A task definition owns its assignment and targets either a configured role or
+  a named user.
 - Assignment controls queue ownership; capability controls authority.
 - A user must satisfy both assignment scope and required capability.
 - Claiming a role task is an atomic compare-and-set operation.

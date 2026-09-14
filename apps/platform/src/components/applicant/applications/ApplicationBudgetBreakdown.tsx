@@ -3,7 +3,7 @@
 import { Plus, Trash2 } from "lucide-react";
 import { useFieldArray, useFormContext } from "react-hook-form";
 
-import { Button, IconButton } from "@/components/ui/button";
+import { GeneralButton, IconButton } from "@/components/ui/button";
 import { FormInput } from "@/components/ui/form-fields";
 import { MoneyField } from "@/components/ui/money-field";
 import type { ApplicationFinancialSection } from "@/modules/applications/ApplicationSchemas";
@@ -52,7 +52,7 @@ export function ApplicationBudgetBreakdown() {
           </div>
         ))}
       </div>
-      <Button
+      <GeneralButton
         className="mt-4"
         onClick={() => budget.append(emptyBudgetItem)}
         type="button"
@@ -60,7 +60,7 @@ export function ApplicationBudgetBreakdown() {
       >
         <Plus aria-hidden="true" className="size-4" />
         Add item
-      </Button>
+      </GeneralButton>
     </fieldset>
   );
 }

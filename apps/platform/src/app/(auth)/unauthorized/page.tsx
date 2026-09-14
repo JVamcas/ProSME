@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { AuthCard } from "@/components/auth/auth-card";
-import { Button } from "@/components/ui/button";
+import { GeneralButton } from "@/components/ui/button";
 
 export const metadata: Metadata = {
   title: "Access denied",
@@ -15,9 +15,9 @@ export default function UnauthorizedPage() {
       title="You cannot open this area"
       description="Your are not authorised to access this resource. Please contact your administrator if you believe this is an error."
     >
-      <Button asChild className="w-full" variant="brand">
+      <GeneralButton asChild className="w-full" variant="brand">
         <Link href="/portal">Return to the applicant portal</Link>
-      </Button>
+      </GeneralButton>
     </AuthCard>
   );
 }

@@ -399,12 +399,12 @@ before implementation continues.
 | UI permission boundary | A reusable `CapabilityGate`, modelled on WorkflowHub's `PermissionGate`, supports one/any/all checks, hide/forbid modes, fallbacks, and resource context. |
 | Security boundary | Sidebar filtering and `CapabilityGate` improve usability only. Layouts/pages, API or Server Actions, services, repositories, and storage access enforce the same policy server-side. |
 | Workflow model | Definition/version/stage/task/transition configuration is separated from application workflow/stage/task instances. |
-| Versioning | Published workflow versions are immutable; each submitted application pins the exact published version it uses. |
+| Versioning | A workflow version remains editable until a submitted application creates an instance pinned to it; instance-backed versions are immutable. |
 | Funding-opportunity workflow assignment | Workflow Configuration assigns a published workflow version to a funding opportunity. Applicants may discover opportunities, assess eligibility, create, save, resume, and complete drafts without that assignment; only submission requires it. The assignment is a state within Workflow Configuration and is not a separate sidebar route. |
 | Configurability | Stages, tasks, order, assignments, criteria, labels, actions, and transitions are configuration rather than hard-coded pages. |
 | Task extensibility | Registered task types have typed configuration/result schemas and renderers. More configured tasks need no deployment; genuinely new behaviour is added as a new registry entry. |
 | Form extensibility | A bounded `STRUCTURED_FORM` type covers ordinary future staff forms without becoming an unrestricted form/BPM builder. |
-| Assignment | Stages have a default role assignee; tasks may override it with a role or named user. Assignment and permission are separate concerns. |
+| Assignment | Assignment belongs to a task definition and targets either a configured role or a named user. Stages never assign work. Assignment and permission are separate concerns. |
 | Work queue | Queue rows represent actionable `StageTaskInstance` records assigned directly or through an eligible role, not whole applications. |
 | Applicant status | Applicant-facing labels/descriptions are configured separately and never expose internal stages, scores, comments, recommendations, assignments, or deliberations. |
 | Information requests | A request is a first-class request/response record that blocks the originating task and returns it to the queue after the applicant responds. It is not a brittle stage loop. |
@@ -483,7 +483,9 @@ full application or task payload.
 Workflow Configuration provides draft creation/cloning, ordered stages and
 tasks, role/user assignment rules, applicant-visible labels, allowed actions
 and transitions, type-specific configuration, validation, plain-language
-preview, publish, and retire. Published versions cannot be edited or deleted.
+preview, publish, and retire. A version becomes read-only when a workflow
+instance has been created from it; published versions without instances remain
+editable. Published versions cannot be deleted.
 
 The Applications and Information Requests areas provide capability-gated
 selection, bulk status action, batch communication, and explicit export
@@ -624,9 +626,9 @@ automated behaviour is introduced through a typed registry entry containing its
 configuration schema, result schema, renderer, service handler, capability
 rules, and tests; database configuration may never load arbitrary code.
 
-A stage provides a default assignee role. A task may override it with another
-role or a named user. Direct user assignment takes precedence, but assignment
-does not replace capability authorization. Role tasks are claimed atomically.
+A task owns its assignment rule and selects either a configured role or a named
+user when it is added or edited. Stages never assign tasks. Assignment does not
+replace capability authorization, and role tasks are claimed atomically.
 
 The first draft reference workflow is Submission and automated pre-screening,
 Completeness Screening, Technical Assessment, Finance Review, Committee
@@ -694,7 +696,7 @@ bypass an earlier gate.
 | P3.1 Identity, profiles and shared portal shell | Shared authenticated portal shell, capability context/gates, applicant profile, owned business collection, and ownership policy | Applicant Dashboard, My Profile, and My Businesses | `docs/testing/gates/P3.1-identity-profiles.md` | Complete | Accepted implementation and verification evidence |
 | P3.2.1 Source ownership and service boundaries | Audience-owned applicant/admin/public component paths, domain-owned modules, explicit `Client<Domain>Service.ts` and `Server<Domain>Service.ts` names, and audience-owned API routes | Source architecture only | `docs/testing/gates/P3.2.1-structure-boundaries.md` | Accepted | Automated structural tests, architecture and file gates, imports, tests, and production build |
 | P3.2 Funding opportunities, eligibility and applications | Funding-call linkage, versioned eligibility rules/results, application creation, draft/save/resume, form validation, and application section completion without submission | Applicant screens 2–9 | `docs/testing/gates/P3.2-funding-eligibility-applications.md` | In progress — implementation complete; independent review pending | Funding-call projection, applicant-owned application round trip, validation, and rule-version tests after P3.2.1 acceptance |
-| P3.3 Workflow configuration and opportunity assignment | Definition/version/stage/task/transition persistence, typed task registry, TOR-aligned seed workflow, draft/clone/validate/preview/publish/retire lifecycle, published-version immutability, and funding-opportunity assignment | Workflow Definitions, Workflow Editor, and Funding Opportunity–Workflow Assignment within Workflow Configuration | `docs/testing/gates/P3.3-workflow-configuration.md` | Not started | Migration, definition-validation, registry, immutable-version, publication, authorization, audit, assignment, and projection/query evidence |
+| P3.3 Workflow configuration and opportunity assignment | Definition/version/stage/task/transition persistence, typed task registry, TOR-aligned seed workflow, draft/clone/validate/preview/publish/retire lifecycle, pre-instance editing, and funding-opportunity assignment | Workflow Definitions, Workflow Editor, and Funding Opportunity–Workflow Assignment within Workflow Configuration | `docs/testing/gates/P3.3-workflow-configuration.md` | Implementation complete — awaiting P3.2 acceptance and independent review | Migration, definition-validation, registry, lifecycle, publication, authorization, audit, assignment, and projection/query evidence |
 | P3.4 Documents, declarations and submission | Private storage adapter, document metadata and scan states, declarations, review, idempotent submission/reference, and transactional creation of the initial workflow instance from the opportunity's assigned published workflow version | Applicant screens 10–13 | `docs/testing/gates/P3.4-documents-submission.md` | Not started | Transaction, assignment/version-pinning, duplicate-submit, access, declaration, and upload tests |
 | P3.5 Work queue, screening and information requests | Task projection, assignment/claim, completeness and document-review tasks, and the information request/response loop | Admin screens 2 and 4–9; Applicant screen 14 | `docs/testing/gates/P3.5-work-queue-screening.md` | Not started | Queue query plan, capability and assignment tests, screening transitions, and end-to-end request loop |
 | P3.6 Assessment, finance and recommendations | Type-driven assessment and finance tasks, scoring configuration, comments, recommendations, and return paths | Admin screens 10–12 | `docs/testing/gates/P3.6-assessment-finance.md` | Not started | Versioned configuration/result, capability, scoring, and transition tests |

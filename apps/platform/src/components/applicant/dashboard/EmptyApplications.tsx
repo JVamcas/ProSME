@@ -1,7 +1,7 @@
 import { FileText } from "lucide-react";
 import Link from "next/link";
 
-import { Button } from "@/components/ui/button";
+import { GeneralButton } from "@/components/ui/button";
 
 export function EmptyApplications() {
   return (
@@ -13,9 +13,9 @@ export function EmptyApplications() {
       <p className="mt-2 text-sm text-slate-500">
         Start an application to see its progress here.
       </p>
-      <Button asChild variant="brand" className="mt-6">
+      <GeneralButton asChild variant="brand" className="mt-6">
         <Link href="/portal/applications/new">Start application</Link>
-      </Button>
+      </GeneralButton>
     </div>
   );
 }

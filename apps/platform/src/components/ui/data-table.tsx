@@ -13,7 +13,11 @@ import { ArrowDown, ArrowUp, ArrowUpDown, Inbox } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
-import { Button } from "./button";
+import { GeneralButton } from "./button";
+import {
+  DataTableToolbar,
+  type DataTableToolbarConfig,
+} from "./data-table-toolbar";
 
 export const dataTableFeatures = tableFeatures({
   rowSortingFeature,
@@ -32,6 +36,7 @@ type DataTableProps<TData extends RowData> = {
   footer?: ReactNode;
   minWidth?: number | string;
   rowClassName?: (item: TData) => string | undefined;
+  toolbar?: DataTableToolbarConfig;
 };
 
 type DataTableInstance<TData extends RowData> = ReactTable<
@@ -69,7 +74,7 @@ function DataTableHeader<TData extends RowData>({
   table: DataTableInstance<TData>;
 }) {
   return (
-    <thead className="bg-slate-50 text-[10px] uppercase tracking-wider text-slate-400">
+    <thead className="bg-brand-white text-[10px] uppercase tracking-wider text-slate-400">
       {table.getHeaderGroups().map((group) => (
         <tr key={group.id}>
           {group.headers.map((header) => {
@@ -83,7 +88,7 @@ function DataTableHeader<TData extends RowData>({
                 aria-sort={ariaSort(direction, canSort)}
               >
                 {canSort ? (
-                  <Button
+                  <GeneralButton
                     type="button"
                     variant="ghost"
                     onClick={header.column.getToggleSortingHandler()}
@@ -93,7 +98,7 @@ function DataTableHeader<TData extends RowData>({
                       <table.FlexRender header={header} />
                     )}
                     <SortIcon direction={direction} />
-                  </Button>
+                  </GeneralButton>
                 ) : header.isPlaceholder ? null : (
                   <table.FlexRender header={header} />
                 )}
@@ -123,7 +128,7 @@ function DataTableBody<TData extends RowData>({
         <tr
           key={row.id}
           className={cn(
-            "transition hover:bg-orange-pale/40",
+            "transition hover:bg-brand-navy/10",
             rowClassName?.(row.original),
           )}
         >
@@ -156,6 +161,7 @@ export function DataTable<TData extends RowData>({
   footer,
   minWidth,
   rowClassName,
+  toolbar,
 }: DataTableProps<TData>) {
   const table = useTable({ features: dataTableFeatures, columns, data });
   const resolvedMinWidth =
@@ -163,6 +169,7 @@ export function DataTable<TData extends RowData>({
 
   return (
     <>
+      {toolbar ? <DataTableToolbar {...toolbar} /> : null}
       <div className="overflow-x-auto">
         <table
           className="w-full text-left text-xs"

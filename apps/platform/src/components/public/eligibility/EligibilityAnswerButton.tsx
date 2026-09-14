@@ -1,6 +1,6 @@
 import { Check, X } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { GeneralButton } from "@/components/ui/button";
 
 type Answer = "yes" | "no";
 
@@ -29,7 +29,7 @@ export function EligibilityAnswerButton({
   const { buttonClassName, detail, iconClassName, Icon } = answers[answer];
 
   return (
-    <Button
+    <GeneralButton
       type="button"
       variant="outline"
       onClick={() => onSelect(answer)}
@@ -46,6 +46,6 @@ export function EligibilityAnswerButton({
         </strong>
         <span className="text-xs font-normal text-slate-500">{detail}</span>
       </span>
-    </Button>
+    </GeneralButton>
   );
 }

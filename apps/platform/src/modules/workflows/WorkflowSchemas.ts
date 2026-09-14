@@ -1,8 +1,18 @@
 import { z } from "zod";
 
-import { taskTypeCodes, workflowStatuses } from "./WorkflowTypes";
+import {
+  taskTypeCodes,
+  workflowActionCodes,
+  workflowStatuses,
+} from "./WorkflowTypes";
+import { workflowConditionSchema } from "./WorkflowConditionRegistry";
 
-const codeSchema = z.string().trim().min(2).max(80).regex(/^[A-Z][A-Z0-9_]*$/);
+const codeSchema = z
+  .string()
+  .trim()
+  .min(2)
+  .max(80)
+  .regex(/^[A-Z][A-Z0-9_]*$/);
 const assignmentSchema = {
   assignmentRoleId: z.string().uuid().nullable().optional(),
   assignmentUserId: z.string().uuid().nullable().optional(),
@@ -25,10 +35,16 @@ export const workflowStageSchema = z.object({
   name: z.string().trim().min(2).max(160),
   sequence: z.number().int().positive(),
   initial: z.boolean(),
-  applicantStatus: z.enum(["SUBMITTED", "UNDER_REVIEW", "ACTION_REQUIRED", "OUTCOME_AVAILABLE", "CLOSED", "WITHDRAWN"]),
+  applicantStatus: z.enum([
+    "SUBMITTED",
+    "UNDER_REVIEW",
+    "ACTION_REQUIRED",
+    "OUTCOME_AVAILABLE",
+    "CLOSED",
+    "WITHDRAWN",
+  ]),
   applicantLabel: z.string().trim().min(2).max(120),
   applicantDescription: z.string().trim().min(2).max(300),
-  defaultRoleId: z.string().uuid().nullable().optional(),
   slaHours: z.number().int().positive().max(8760).nullable().optional(),
   tasks: z.array(workflowTaskSchema),
 });
@@ -36,11 +52,11 @@ export const workflowStageSchema = z.object({
 export const workflowTransitionSchema = z.object({
   id: z.string().uuid().optional(),
   fromStageCode: codeSchema,
-  actionCode: codeSchema,
+  actionCode: z.enum(workflowActionCodes),
   toStageCode: codeSchema.nullable().optional(),
   terminalOutcome: codeSchema.nullable().optional(),
   requiredCapability: z.string().trim().min(3).max(120),
-  condition: z.record(z.string(), z.unknown()).nullable().optional(),
+  condition: workflowConditionSchema.nullable().optional(),
 });
 
 export const workflowGraphSchema = z.object({
@@ -55,6 +71,12 @@ export const createWorkflowSchema = z.object({
   useReferenceWorkflow: z.boolean().default(true),
 });
 
+export const updateWorkflowDetailsSchema = createWorkflowSchema
+  .omit({ useReferenceWorkflow: true })
+  .extend({
+    expectedRowVersion: z.number().int().positive(),
+  });
+
 export const updateWorkflowDraftSchema = z.object({
   expectedRowVersion: z.number().int().positive(),
   graph: workflowGraphSchema,
@@ -62,7 +84,7 @@ export const updateWorkflowDraftSchema = z.object({
 
 export const workflowCommandSchema = z.object({
   expectedRowVersion: z.number().int().positive(),
-  versionId: z.string().uuid().optional(),
+  versionId: z.string().uuid(),
 });
 
 export const opportunityAssignmentSchema = z.object({

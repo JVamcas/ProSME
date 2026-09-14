@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowRight } from "lucide-react";
 import { FormProvider, useForm } from "react-hook-form";
 
-import { Button } from "@/components/ui/button";
+import { GeneralButton } from "@/components/ui/button";
 import { CheckboxField, HoneypotField } from "@/components/ui/form-field";
 import { FormInput } from "@/components/ui/form-fields";
 import {
@@ -53,7 +53,7 @@ function NewsletterFields({ pending }: { pending: boolean }) {
           placeholder="Your email address"
           className="h-full min-w-0 border-0 bg-transparent px-4 text-sm text-brand-navy focus:ring-0"
         />
-        <Button
+        <GeneralButton
           type="submit"
           variant="brand"
           size="sm"
@@ -63,7 +63,7 @@ function NewsletterFields({ pending }: { pending: boolean }) {
         >
           {pending ? "Submitting…" : "Subscribe"}
           <ArrowRight className="size-4" />
-        </Button>
+        </GeneralButton>
       </div>
       <CheckboxField
         name="consent"

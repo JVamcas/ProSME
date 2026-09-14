@@ -2,7 +2,7 @@
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-import { Button } from "./button";
+import { GeneralButton } from "./button";
 
 type PaginationProps = {
   disabled?: boolean;
@@ -36,7 +36,7 @@ export function Pagination({
         Showing {firstItem}–{lastItem} of {total}
       </p>
       <div className="flex items-center gap-3">
-        <Button
+        <GeneralButton
           disabled={disabled || page === 1}
           onClick={onPrevious}
           type="button"
@@ -44,11 +44,11 @@ export function Pagination({
         >
           <ChevronLeft aria-hidden="true" className="size-4" />
           Previous
-        </Button>
+        </GeneralButton>
         <span className="min-w-20 text-center text-sm font-semibold text-brand-navy">
           Page {page} of {totalPages}
         </span>
-        <Button
+        <GeneralButton
           disabled={disabled || !hasNextPage}
           onClick={onNext}
           type="button"
@@ -56,7 +56,7 @@ export function Pagination({
         >
           Next
           <ChevronRight aria-hidden="true" className="size-4" />
-        </Button>
+        </GeneralButton>
       </div>
     </nav>
   );

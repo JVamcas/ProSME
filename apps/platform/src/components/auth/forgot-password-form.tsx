@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { FormProvider } from "react-hook-form";
 
-import { Button } from "@/components/ui/button";
+import { GeneralButton } from "@/components/ui/button";
 import { FormInput } from "@/components/ui/form-fields";
 import { AuthFeedback } from "./auth-feedback";
 import {
@@ -33,14 +33,14 @@ export function ForgotPasswordForm() {
           labelClassName={authLabelClassName}
         />
         <AuthFeedback error={form.error} notice={form.notice} />
-        <Button
+        <GeneralButton
           className="w-full"
           type="submit"
           variant="brand"
           disabled={form.busy}
         >
           {form.busy ? "Please wait…" : "Send reset instructions"}
-        </Button>
+        </GeneralButton>
         <Link
           href="/sign-in"
           className={`block text-center text-sm ${authLinkClassName}`}

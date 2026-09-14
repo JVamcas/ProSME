@@ -5,7 +5,7 @@ import { LogOutIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { authClientService } from "@/auth/firebase/ClientAuthService";
-import { Button } from "@/components/ui/button";
+import { GeneralButton } from "@/components/ui/button";
 
 export function LogoutButton({ tone = "dark" }: { tone?: "brand" | "dark" }) {
   const router = useRouter();
@@ -18,7 +18,7 @@ export function LogoutButton({ tone = "dark" }: { tone?: "brand" | "dark" }) {
   });
 
   return (
-    <Button
+    <GeneralButton
       type="button"
       variant="ghost"
       disabled={logout.isPending}
@@ -31,6 +31,6 @@ export function LogoutButton({ tone = "dark" }: { tone?: "brand" | "dark" }) {
     >
       <LogOutIcon className="size-4 text-brand-navy" />
       {logout.isPending ? "Logging out…" : "Logout"}
-    </Button>
+    </GeneralButton>
   );
 }

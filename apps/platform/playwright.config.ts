@@ -11,7 +11,7 @@ export default defineConfig({
     command: `npm run dev -- --hostname 127.0.0.1 --port ${port}`,
     reuseExistingServer: true,
     timeout: 120_000,
-    url: baseURL,
+    url: `${baseURL}/api/auth/session`,
   },
   projects: [
     { name: "desktop", use: { ...devices["Desktop Chrome"] } },

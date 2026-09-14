@@ -4,7 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import { KeyRound } from "lucide-react";
 
 import { authClientService } from "@/auth/firebase/ClientAuthService";
-import { Button } from "@/components/ui/button";
+import { GeneralButton } from "@/components/ui/button";
 
 export function ProfilePasswordPanel({ email }: { email: string }) {
   const reset = useMutation({
@@ -39,7 +39,7 @@ export function ProfilePasswordPanel({ email }: { email: string }) {
           Reset instructions could not be sent. Please try again.
         </p>
       ) : null}
-      <Button
+      <GeneralButton
         className="mt-6"
         disabled={reset.isPending}
         onClick={() => reset.mutate()}
@@ -47,7 +47,7 @@ export function ProfilePasswordPanel({ email }: { email: string }) {
       >
         <KeyRound aria-hidden="true" className="size-4" />
         {reset.isPending ? "Sending…" : "Send reset instructions"}
-      </Button>
+      </GeneralButton>
     </section>
   );
 }

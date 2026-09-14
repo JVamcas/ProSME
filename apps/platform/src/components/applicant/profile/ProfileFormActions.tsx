@@ -1,6 +1,6 @@
 import { Save } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { GeneralButton } from "@/components/ui/button";
 
 type ProfileFormActionsProps = {
   error: boolean;
@@ -34,10 +34,10 @@ export function ProfileFormActions({
         </p>
       ) : null}
       <div className="mt-7 flex justify-end border-t border-brand-navy/15 pt-5">
-        <Button type="submit" disabled={pending}>
+        <GeneralButton type="submit" disabled={pending}>
           <Save aria-hidden="true" className="size-4" />
           {pending ? "Saving…" : saveLabel}
-        </Button>
+        </GeneralButton>
       </div>
     </>
   );

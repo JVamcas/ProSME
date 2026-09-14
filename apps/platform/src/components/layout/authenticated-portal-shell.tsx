@@ -21,16 +21,6 @@ type AuthenticatedPortalShellProps = {
   space: PortalSpace;
 };
 
-const sidebarLogoClassName = [
-  "shrink-0 rounded-2xl border border-brand-navy/15 bg-brand-cream px-4 py-3",
-  "shadow-[0_8px_24px_rgba(10,24,59,0.14)]",
-  "transition-[transform,background-color,box-shadow] duration-200",
-  "hover:-translate-y-0.5 hover:bg-brand-yellow",
-  "hover:shadow-[0_12px_28px_rgba(10,24,59,0.18)]",
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-navy",
-  "focus-visible:ring-offset-2 focus-visible:ring-offset-brand-orange",
-].join(" ");
-
 function Sidebar({
   context,
   space,
@@ -40,7 +30,7 @@ function Sidebar({
 
   return (
     <aside className="sticky top-0 hidden h-screen overflow-hidden bg-brand-orange p-5 lg:flex lg:flex-col">
-      <Logo className={sidebarLogoClassName} href="/" compact />
+      <Logo className={""} href="/" compact />
       <div className="mt-6 shrink-0">
         <PortalUserSummary context={context} />
       </div>

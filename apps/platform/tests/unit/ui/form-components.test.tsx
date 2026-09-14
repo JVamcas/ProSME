@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { FormProvider, useForm } from "react-hook-form";
 import { describe, expect, it } from "vitest";
 
-import { Button, IconButton } from "@/components/ui/button";
+import { GeneralButton, IconButton } from "@/components/ui/button";
 import { FormDateInput } from "@/components/ui/form-date-input";
 import { CheckboxField } from "@/components/ui/form-field";
 import { FormInput, FormSelect } from "@/components/ui/form-fields";
@@ -122,9 +122,9 @@ describe("shared form components", () => {
 
 describe("shared buttons", () => {
   it("applies variants and accessible icon labels", () => {
-    const defaultButton = renderToStaticMarkup(<Button>Continue</Button>);
+    const defaultButton = renderToStaticMarkup(<GeneralButton>Continue</GeneralButton>);
     const brandButton = renderToStaticMarkup(
-      <Button variant="brand">Submit</Button>,
+      <GeneralButton variant="brand">Submit</GeneralButton>,
     );
     const iconButton = renderToStaticMarkup(
       <IconButton label="Copy">C</IconButton>,

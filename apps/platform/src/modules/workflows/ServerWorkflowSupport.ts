@@ -1,0 +1,91 @@
+import "server-only";
+
+import { findWorkflowGraph } from "@/db/repositories/WorkflowGraphRepository";
+import {
+  findConfigurationReferences,
+  listWorkflowAssignmentOptions,
+} from "@/db/repositories/WorkflowRepository";
+import {
+  ResourceConflictError,
+  ResourceNotFoundError,
+} from "@/lib/resource-errors";
+import { toWorkflowEditor } from "./WorkflowRepresentation";
+import type { WorkflowGraphInput, WorkflowValidation } from "./WorkflowTypes";
+import { validateWorkflowGraph } from "./WorkflowValidation";
+
+export class WorkflowNotFoundError extends ResourceNotFoundError {
+  constructor() {
+    super("workflow version");
+  }
+}
+
+export class WorkflowConflictError extends ResourceConflictError {
+  constructor(
+    message = "The workflow changed in another session. Reload it and try again.",
+  ) {
+    super(message);
+  }
+}
+
+export function requireWorkflowIdempotencyKey(value?: string | null) {
+  if (!value?.trim())
+    throw new WorkflowConflictError("An Idempotency-Key header is required.");
+  return value.trim();
+}
+
+export async function loadWorkflowEditor(versionId: string) {
+  const record = await findWorkflowGraph(versionId);
+  if (!record) throw new WorkflowNotFoundError();
+  return record;
+}
+
+async function validateReferences(
+  graph: WorkflowGraphInput,
+  validation: WorkflowValidation,
+) {
+  const references = await findConfigurationReferences(graph);
+  graph.transitions.forEach((transition, index) => {
+    if (!references.capabilities.has(transition.requiredCapability)) {
+      validation.errors.push({
+        code: "UNKNOWN_CAPABILITY",
+        message: `${transition.requiredCapability} is not registered.`,
+        path: `transitions.${index}.requiredCapability`,
+      });
+    }
+  });
+  graph.stages.forEach((stage, index) => {
+    stage.tasks.forEach((task, taskIndex) => {
+      if (
+        task.assignmentRoleId &&
+        !references.roles.has(task.assignmentRoleId)
+      ) {
+        validation.errors.push({
+          code: "UNKNOWN_ROLE",
+          message: "The assigned role is not active.",
+          path: `stages.${index}.tasks.${taskIndex}.assignmentRoleId`,
+        });
+      }
+      if (
+        task.assignmentUserId &&
+        references.users.get(task.assignmentUserId) !== "active"
+      ) {
+        validation.errors.push({
+          code: "INACTIVE_USER",
+          message: "The assigned user is not active.",
+          path: `stages.${index}.tasks.${taskIndex}.assignmentUserId`,
+        });
+      }
+    });
+  });
+  validation.valid = validation.errors.length === 0;
+  return validation;
+}
+
+export async function workflowEditorView(versionId: string) {
+  const record = await loadWorkflowEditor(versionId);
+  const [validation, assignmentOptions] = await Promise.all([
+    validateReferences(record.graph, validateWorkflowGraph(record.graph)),
+    listWorkflowAssignmentOptions(),
+  ]);
+  return { ...toWorkflowEditor(record, validation), assignmentOptions };
+}

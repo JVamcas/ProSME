@@ -1,7 +1,7 @@
 import { ArrowLeft, ArrowRight, LoaderCircle, RefreshCw } from "lucide-react";
 import type { UseFormReturn } from "react-hook-form";
 
-import { Button } from "@/components/ui/button";
+import { GeneralButton } from "@/components/ui/button";
 import { FormRadioCard } from "@/components/ui/form-radio-card";
 import {
   StepProgress,
@@ -105,7 +105,7 @@ export function EligibilityError({
     >
       <p className="font-semibold">{error.message}</p>
       {conflict ? (
-        <Button
+        <GeneralButton
           className="mt-3"
           onClick={onRefresh}
           type="button"
@@ -113,7 +113,7 @@ export function EligibilityError({
         >
           <RefreshCw aria-hidden="true" className="size-4" />
           Load latest questions
-        </Button>
+        </GeneralButton>
       ) : null}
     </div>
   );
@@ -136,7 +136,7 @@ export function EligibilityActions({
 }) {
   return (
     <div className="mt-6 flex items-center justify-between">
-      <Button
+      <GeneralButton
         disabled={current === 0 || pending}
         onClick={onPrevious}
         type="button"
@@ -144,14 +144,14 @@ export function EligibilityActions({
       >
         <ArrowLeft aria-hidden="true" className="size-4" />
         Previous
-      </Button>
-      <Button disabled={!answer || pending} onClick={onNext} type="button">
+      </GeneralButton>
+      <GeneralButton disabled={!answer || pending} onClick={onNext} type="button">
         {pending ? (
           <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
         ) : null}
         {lastQuestion ? "See result" : "Next"}
         {!pending ? <ArrowRight aria-hidden="true" className="size-4" /> : null}
-      </Button>
+      </GeneralButton>
     </div>
   );
 }

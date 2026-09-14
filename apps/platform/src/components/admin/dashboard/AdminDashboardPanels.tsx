@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Bell, ChevronRight, FileWarning, RefreshCw } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { GeneralButton } from "@/components/ui/button";
 
 const recentApplications = [
   ["APP-2024-0015", "Green Hydrogen Project", "30 May 2024", "In Review"],
@@ -61,7 +61,7 @@ export function AdminDashboardPanels() {
           ))}
         </div>
         <div className="flex justify-end px-5 pb-4">
-          <Button
+          <GeneralButton
             type="button"
             variant="ghost"
             size="sm"
@@ -69,7 +69,7 @@ export function AdminDashboardPanels() {
           >
             View All
             <ChevronRight className="size-3" />
-          </Button>
+          </GeneralButton>
         </div>
       </section>
     </div>

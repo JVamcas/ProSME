@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
-import { Button } from "@/components/ui/button";
+import { GeneralButton } from "@/components/ui/button";
 import { CmsRichText } from "@/components/ui/cms-rich-text";
 import type { FundingOpportunityDetail } from "@/modules/funding-opportunities/FundingOpportunityTypes";
 import {
@@ -160,9 +160,9 @@ export function ContactPanel() {
       <p className="mt-2 text-sm leading-6 text-brand-navy/70">
         Contact the SME Fund team if you need clarification about this call.
       </p>
-      <Button asChild className="mt-5" variant="outline">
+      <GeneralButton asChild className="mt-5" variant="outline">
         <Link href="/contact">Contact us</Link>
-      </Button>
+      </GeneralButton>
     </article>
   );
 }

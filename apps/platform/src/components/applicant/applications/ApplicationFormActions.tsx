@@ -1,6 +1,6 @@
 import { ArrowRight, Cloud, LoaderCircle, WifiOff } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { GeneralButton } from "@/components/ui/button";
 
 function saveLabel(input: {
   dirty: boolean;
@@ -38,15 +38,15 @@ export function ApplicationFormActions({
         {saveLabel({ dirty, error, online, pending })}
       </div>
       <div className="flex gap-3">
-        <Button
+        <GeneralButton
           disabled={pending || !online}
           onClick={onSave}
           type="button"
           variant="outline"
         >
           {error ? "Retry save" : "Save draft"}
-        </Button>
-        <Button disabled={pending || !online} type="submit" variant="brand">
+        </GeneralButton>
+        <GeneralButton disabled={pending || !online} type="submit" variant="brand">
           {pending ? (
             <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
           ) : null}
@@ -54,7 +54,7 @@ export function ApplicationFormActions({
           {!pending ? (
             <ArrowRight aria-hidden="true" className="size-4" />
           ) : null}
-        </Button>
+        </GeneralButton>
       </div>
     </div>
   );
