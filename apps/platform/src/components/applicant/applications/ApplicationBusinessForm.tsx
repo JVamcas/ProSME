@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowRight, Building2, RefreshCw } from "lucide-react";
 import Link from "next/link";
+import { useEffect } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 
 import { GeneralButton } from "@/components/ui/button";
@@ -75,11 +76,20 @@ function BusinessesError({ retry }: { retry: () => void }) {
 
 export function ApplicationBusinessForm(props: Props) {
   const businesses = useBusinesses();
+  const initialBusinessId = props.initial.businessId ?? "";
   const form = useForm<ApplicationBusinessSection>({
-    defaultValues: { businessId: props.initial.businessId ?? "" },
+    defaultValues: { businessId: initialBusinessId },
     resolver: zodResolver(applicationBusinessSectionSchema),
   });
   const autosave = useApplicationAutosave(form, props.onSave);
+  useEffect(() => {
+    if (
+      !form.formState.isDirty &&
+      form.getValues("businessId") !== initialBusinessId
+    ) {
+      form.reset({ businessId: initialBusinessId });
+    }
+  }, [form, form.formState.isDirty, initialBusinessId]);
   if (businesses.isError) {
     return <BusinessesError retry={() => void businesses.refetch()} />;
   }

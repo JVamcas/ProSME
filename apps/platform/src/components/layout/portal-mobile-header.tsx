@@ -123,7 +123,7 @@ export function PortalMobileHeader({
           aria-label="Open portal navigation"
           className="grid size-10 list-none place-items-center rounded-xl border border-brand-navy/25 [&::-webkit-details-marker]:hidden"
         >
-          <Menu aria-hidden="true" className="size-5 text-brand-navy" />
+          <Menu aria-hidden="true" className="size-5 text-brand-white" />
         </summary>
         <MobileMenu
           closeMenu={closeMenu}
@@ -134,15 +134,10 @@ export function PortalMobileHeader({
         />
       </details>
       <Logo
-        className="rounded-lg bg-brand-white p-1.5"
+        className=" p-1.5"
         href={homePath}
         compact
       />
-      <span
-        className={`max-w-24 truncate text-xs font-semibold ${space === "operations" ? "text-white" : "text-brand-navy"}`}
-      >
-        {context.displayName}
-      </span>
     </header>
   );
 }

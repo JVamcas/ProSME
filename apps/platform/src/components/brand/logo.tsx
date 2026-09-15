@@ -22,7 +22,7 @@ export function Logo({
       aria-label="SME Fund home"
     >
       <Image
-        src="/brand/sme-fund-logo-navy.svg"
+        src="/brand/sme-fund-logo-white.svg"
         alt=""
         width={1640}
         height={330}

@@ -38,22 +38,8 @@ function ApplicationStatusMetrics({
       <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <DashboardMetricCard
           href="/portal/applications"
-          icon={FileClock}
-          label="Applications in progress"
-          supportingText={
-            countDescription(
-              metrics.applicationsInProgress,
-              "active application",
-              "active applications",
-              "No active applications",
-            )
-          }
-          value={String(metrics.applicationsInProgress)}
-        />
-        <DashboardMetricCard
-          href="/portal/applications"
           icon={Send}
-          label="Submitted"
+          label="Submitted Applications"
           supportingText={
             countDescription(
               metrics.submittedApplications,
@@ -63,6 +49,20 @@ function ApplicationStatusMetrics({
             )
           }
           value={String(metrics.submittedApplications)}
+        />
+         <DashboardMetricCard
+          href="/portal/applications"
+          icon={FileClock}
+          label="Draft Applications"
+          supportingText={
+            countDescription(
+              metrics.applicationsInProgress,
+              "active application",
+              "active applications",
+              "No draft applications",
+            )
+          }
+          value={String(metrics.applicationsInProgress)}
         />
         <DashboardMetricCard
           href="/portal/applications"
@@ -103,7 +103,7 @@ export function ApplicantDashboard({
 }: ApplicantDashboardView) {
   return (
     <div>
-      <header className="grid min-h-32 overflow-hidden rounded-2xl border border-brand-blue/10 bg-brand-blue/10 shadow-sm sm:grid-cols-[1fr_15rem]">
+      <header className="grid min-h-32 overflow-hidden rounded-2xl border border-brand-blue/10 bg-brand-blue/10 sm:grid-cols-[1fr_15rem]">
         <div className="self-center p-5 sm:p-6">
           <h1 className="display text-2xl font-bold text-brand-navy sm:text-3xl">
             Welcome back, {displayName}

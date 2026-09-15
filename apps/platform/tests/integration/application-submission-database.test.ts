@@ -15,6 +15,7 @@ const versionId = "62222222-2222-4222-8222-222222222222";
 const definitionId = "63333333-3333-4333-8333-333333333333";
 const stageId = "64444444-4444-4444-8444-444444444444";
 const taskId = "65555555-5555-4555-8555-555555555555";
+const businessId = "68888888-8888-4888-8888-888888888888";
 const applicationIds = [
   "66666666-6666-4666-8666-666666666661",
   "66666666-6666-4666-8666-666666666662",
@@ -23,24 +24,27 @@ const applicationIds = [
 const pool = enabled
   ? new Pool({ connectionString: process.env.DATABASE_URL })
   : null;
-
 async function query(text: string, values: unknown[] = []) {
   if (!pool) throw new Error("The P3.4 PostgreSQL test pool is not configured.");
   return pool.query(text, values);
 }
-
 const requiredTypes = [
   "business-registration",
   "financial-statements",
   "project-proposal",
 ] as const;
-
 beforeAll(async () => {
   if (!enabled) return;
   await query(
     `INSERT INTO app_users (id, email, display_name, user_type, status)
      VALUES ($1, 'submission-owner@example.test', 'Submission Owner', 'applicant', 'active')`,
     [ownerId],
+  );
+  await query(
+    `INSERT INTO app_business_profiles
+      (id, user_id, legal_name, business_type, sector, region, physical_address)
+     VALUES ($1, $2, 'Submission Business', 'cc', 'services', 'Khomas', 'Test')`,
+    [businessId, ownerId],
   );
   await query(
     `INSERT INTO app_workflow_definitions (id, code, name)
@@ -89,13 +93,15 @@ beforeAll(async () => {
   for (let index = 0; index < applicationIds.length; index += 1) {
     await query(
       `INSERT INTO app_applications
-        (id, owner_user_id, funding_opportunity_id, funding_opportunity_title,
-         declarations_section, declaration_acceptance, section_completion)
-       VALUES ($1, $2, $3, 'Submission test application',
+        (id, owner_user_id, business_id, funding_opportunity_id,
+         funding_opportunity_title, business_section, declarations_section,
+         declaration_acceptance, section_completion)
+       VALUES ($1, $2, $4, $3, 'Submission test application',
+         jsonb_build_object('businessId', $4::text),
          '{"accurate":true}'::jsonb,
          '{"acceptedAt":"2026-09-15T08:00:00.000Z","declarationVersion":"v1","privacyVersion":"v1"}'::jsonb,
          '{"business":true,"project":true,"financial":true,"documents":true,"declarations":true}'::jsonb)`,
-      [applicationIds[index], ownerId, 6101 + index],
+      [applicationIds[index], ownerId, 6101 + index, businessId],
     );
     for (const documentType of requiredTypes) {
       await query(
@@ -110,9 +116,7 @@ beforeAll(async () => {
     }
   }
 });
-
 afterAll(async () => pool?.end());
-
 describeDatabase("P3.4 transactional application submission", () => {
   it("installs runtime, idempotency, event, and outbox records", async () => {
     const records = await query(

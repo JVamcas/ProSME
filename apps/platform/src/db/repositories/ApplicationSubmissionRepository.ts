@@ -34,6 +34,7 @@ export type SubmitApplicationResult =
       kind:
         | "documents_invalid"
         | "draft_incomplete"
+        | "business_required"
         | "idempotency_conflict"
         | "not_found"
         | "workflow_unavailable";
@@ -202,6 +203,7 @@ async function submitInTransaction(
   if (!application) return { kind: "not_found" };
   const existing = await findExistingSubmission(transaction, application.id);
   if (existing) return { kind: "submitted", result: existing };
+  if (!application.businessId) return { kind: "business_required" };
   if (!draftIsComplete(application)) return { kind: "draft_incomplete" };
   const documentsValid = await requiredDocumentsAreClean(
     transaction,

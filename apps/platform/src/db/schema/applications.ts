@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import {
   index,
   integer,
@@ -17,6 +18,7 @@ import type {
 } from "@/modules/applications/ApplicationSchemas";
 import type { ApplicationDeclarationsSection } from "@/modules/applications/ApplicationDeclarationSchemas";
 import { users } from "./identity";
+import { businessProfiles } from "./profiles";
 import { workflowDefinitionVersions } from "./workflow";
 
 export const applications = pgTable("app_applications", {
@@ -26,6 +28,9 @@ export const applications = pgTable("app_applications", {
     .references(() => users.id, { onDelete: "cascade" }),
   fundingOpportunityId: integer("funding_opportunity_id").notNull(),
   fundingOpportunityTitle: text("funding_opportunity_title").notNull(),
+  businessId: uuid("business_id").references(() => businessProfiles.id, {
+    onDelete: "restrict",
+  }),
   status: text("status")
     .$type<"draft" | "submitted">()
     .notNull()
@@ -81,10 +86,12 @@ export const applications = pgTable("app_applications", {
     .notNull()
     .defaultNow(),
 }, (table) => [
-  uniqueIndex("app_applications_owner_opportunity_unique").on(
-    table.ownerUserId,
-    table.fundingOpportunityId,
-  ),
+  uniqueIndex("app_applications_business_opportunity_unique")
+    .on(table.businessId, table.fundingOpportunityId)
+    .where(sql`${table.businessId} IS NOT NULL`),
+  uniqueIndex("app_applications_unassigned_draft_unique")
+    .on(table.ownerUserId, table.fundingOpportunityId)
+    .where(sql`${table.businessId} IS NULL AND ${table.status} = 'draft'`),
   uniqueIndex("app_applications_reference_unique").on(table.reference),
   index("app_applications_owner_updated_idx").on(
     table.ownerUserId,

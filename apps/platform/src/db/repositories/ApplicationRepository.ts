@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, count, desc, eq, lt, or } from "drizzle-orm";
+import { and, count, desc, eq, isNull, lt, or } from "drizzle-orm";
 
 import {
   adminApplications,
@@ -116,6 +116,8 @@ export async function findOwnedApplicationByOpportunity(
     .where(and(
       eq(applications.ownerUserId, ownerUserId),
       eq(applications.fundingOpportunityId, fundingOpportunityId),
+      eq(applications.status, "draft"),
+      isNull(applications.businessId),
     ))
     .limit(1);
   return application ?? null;
@@ -129,9 +131,7 @@ export async function createOwnedApplication(input: {
   const [created] = await getDatabase()
     .insert(applications)
     .values(input)
-    .onConflictDoNothing({
-      target: [applications.ownerUserId, applications.fundingOpportunityId],
-    })
+    .onConflictDoNothing()
     .returning({ id: applications.id });
   return created?.id ?? null;
 }
@@ -179,15 +179,36 @@ export async function updateOwnedApplication(
   completion: ApplicationSectionCompletion,
   nextSection: ApplicationSection,
 ) {
-  const [updated] = await getDatabase()
-    .update(applications)
-    .set(sectionUpdate(input, completion, nextSection))
-    .where(and(
-      eq(applications.id, applicationId),
-      eq(applications.ownerUserId, ownerUserId),
-      eq(applications.status, "draft"),
-      eq(applications.rowVersion, input.expectedRowVersion),
-    ))
-    .returning({ id: applications.id });
-  return updated?.id ?? null;
+  try {
+    const [updated] = await getDatabase()
+      .update(applications)
+      .set({
+        ...sectionUpdate(input, completion, nextSection),
+        businessId: input.section === "business"
+          ? input.data.businessId
+          : undefined,
+      })
+      .where(and(
+        eq(applications.id, applicationId),
+        eq(applications.ownerUserId, ownerUserId),
+        eq(applications.status, "draft"),
+        eq(applications.rowVersion, input.expectedRowVersion),
+      ))
+      .returning({ id: applications.id });
+    return updated
+      ? { id: updated.id, kind: "updated" as const }
+      : { kind: "conflict" as const };
+  } catch (error) {
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      error.code === "23505" &&
+      "constraint" in error &&
+      error.constraint === "app_applications_business_opportunity_unique"
+    ) {
+      return { kind: "duplicate_business" as const };
+    }
+    throw error;
+  }
 }

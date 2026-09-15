@@ -67,6 +67,11 @@ export async function submitApplication(
       "All required documents must pass security scanning before submission.",
     );
   }
+  if (result.kind === "business_required") {
+    throw new ApplicationSubmissionConflictError(
+      "Select a business before submitting this application.",
+    );
+  }
   throw new ApplicationSubmissionConflictError(
     "This funding opportunity does not have an assigned published workflow.",
   );

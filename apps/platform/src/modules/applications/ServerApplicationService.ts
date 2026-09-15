@@ -76,6 +76,15 @@ export class ApplicationBusinessUnavailableError extends ResourceNotFoundError {
   }
 }
 
+export class ApplicationBusinessConflictError extends ResourceConflictError {
+  constructor() {
+    super(
+      "This business already has an application for this funding opportunity.",
+    );
+    this.name = "ApplicationBusinessConflictError";
+  }
+}
+
 function nextSection(
   section: ApplicationSection,
   completion: ApplicationSectionCompletion,
@@ -211,15 +220,18 @@ export async function updateOwnApplication(
     input.intent === "continue"
       ? nextSection(input.section, completion)
       : current.currentSection;
-  const updatedId = await updateOwnedApplication(
+  const update = await updateOwnedApplication(
     actor.id,
     id,
     input,
     completion,
     currentSection,
   );
-  if (!updatedId) throw new ApplicationConflictError();
-  return toApplicationView(await loadOwnedApplication(actor.id, updatedId));
+  if (update.kind === "duplicate_business") {
+    throw new ApplicationBusinessConflictError();
+  }
+  if (update.kind === "conflict") throw new ApplicationConflictError();
+  return toApplicationView(await loadOwnedApplication(actor.id, update.id));
 }
 
 function requireApplicationReader(user: AuthenticatedUser | null) {

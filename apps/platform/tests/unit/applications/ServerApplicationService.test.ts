@@ -38,6 +38,7 @@ import { findOwnedBusiness } from "@/db/repositories/BusinessRepository";
 import { hasRequiredApplicationDocuments } from "@/db/repositories/ApplicationDocumentRepository";
 import { findPublishedFundingOpportunity } from "@/modules/funding-opportunities/ServerFundingOpportunityIntegration";
 import {
+  ApplicationBusinessConflictError,
   ApplicationConflictError,
   createApplication,
   getOwnApplication,
@@ -62,6 +63,7 @@ function staffUser(granted: string[]): AuthenticatedUser {
 }
 
 const application = {
+  businessId: null,
   businessSection: {},
   declarationAcceptance: null,
   declarationsSection: {},
@@ -182,7 +184,10 @@ describe("applicant-owned application drafts", () => {
     vi.mocked(findOwnedApplication)
       .mockResolvedValueOnce(application)
       .mockResolvedValueOnce(completed);
-    vi.mocked(updateOwnedApplication).mockResolvedValue(application.id);
+    vi.mocked(updateOwnedApplication).mockResolvedValue({
+      id: application.id,
+      kind: "updated",
+    });
     vi.mocked(findOwnedBusiness).mockResolvedValue({ id: businessId } as never);
 
     const result = await updateOwnApplication(user, application.id, {
@@ -228,7 +233,10 @@ describe("applicant-owned application drafts", () => {
     vi.mocked(findOwnedApplication)
       .mockResolvedValueOnce(advanced)
       .mockResolvedValueOnce({ ...advanced, rowVersion: 2 });
-    vi.mocked(updateOwnedApplication).mockResolvedValue(application.id);
+    vi.mocked(updateOwnedApplication).mockResolvedValue({
+      id: application.id,
+      kind: "updated",
+    });
 
     await expect(
       updateOwnApplication(user, application.id, {
@@ -246,6 +254,24 @@ describe("applicant-owned application drafts", () => {
       expect.anything(),
       "financial",
     );
+  });
+
+  it("rejects another application for the same business and funding call", async () => {
+    const user = staffUser([capabilities.applicationUpdateOwn]);
+    vi.mocked(findOwnedApplication).mockResolvedValue(application);
+    vi.mocked(findOwnedBusiness).mockResolvedValue({ id: businessId } as never);
+    vi.mocked(updateOwnedApplication).mockResolvedValue({
+      kind: "duplicate_business",
+    });
+
+    await expect(
+      updateOwnApplication(user, application.id, {
+        data: { businessId },
+        expectedRowVersion: 1,
+        intent: "continue",
+        section: "business",
+      }),
+    ).rejects.toBeInstanceOf(ApplicationBusinessConflictError);
   });
 
   it("requires all supporting documents before advancing", async () => {

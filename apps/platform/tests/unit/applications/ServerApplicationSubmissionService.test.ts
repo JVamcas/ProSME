@@ -89,6 +89,7 @@ describe("application submission service", () => {
   });
 
   it.each([
+    ["business_required", "Select a business"],
     ["draft_incomplete", "Complete every application section"],
     ["documents_invalid", "pass security scanning"],
     ["workflow_unavailable", "assigned published workflow"],
