@@ -57,9 +57,9 @@ export function ApplicationFinancialForm({
     <FormProvider {...form}>
       <form noValidate onSubmit={form.handleSubmit(onContinue)}>
         <div className="grid gap-5 sm:grid-cols-3">
-          <MoneyField label="Total project cost" name="totalProjectCost" />
-          <MoneyField label="Amount requested" name="amountRequested" />
-          <MoneyField label="Your contribution" name="applicantContribution" />
+          <MoneyField label="Total project cost" name="totalProjectCost" required />
+          <MoneyField label="Amount requested" name="amountRequested" required />
+          <MoneyField label="Your contribution" name="applicantContribution" required />
           <FormInput
             containerClassName="sm:col-span-3"
             label="Other funding sources"

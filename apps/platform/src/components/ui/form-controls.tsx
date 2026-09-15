@@ -83,7 +83,7 @@ export function FieldError({ id, message }: { id?: string; message?: string }) {
   return message ? (
     <p
       id={id}
-      className="mt-1.5 border-l-2 border-brand-orange pl-2 text-xs font-medium text-brand-navy"
+      className="mt-1.5 border-l-2 border-red-500 pl-2 text-xs text-red-500"
     >
       {message}
     </p>

@@ -54,6 +54,7 @@ export function FormInput({
       label={label}
       labelAccessory={labelAccessory}
       labelClassName={labelClassName}
+      required={props.required}
     >
       <div className="relative">
         {leadingContent}
@@ -110,6 +111,7 @@ export function FormSelect({
       label={label}
       labelAccessory={labelAccessory}
       labelClassName={labelClassName}
+      required={props.required}
     >
       <Select
         {...binding.registration}
@@ -159,6 +161,7 @@ export function FormTextarea({
       label={label}
       labelAccessory={labelAccessory}
       labelClassName={labelClassName}
+      required={props.required}
     >
       <Textarea
         {...binding.registration}

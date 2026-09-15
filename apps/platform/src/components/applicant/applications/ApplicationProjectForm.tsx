@@ -29,6 +29,7 @@ function ProjectFields({ summary }: { summary: string }) {
         containerClassName="sm:col-span-2"
         label="Project title"
         name="projectTitle"
+        required
       />
       <FormTextarea
         containerClassName="sm:col-span-2"
@@ -40,12 +41,14 @@ function ProjectFields({ summary }: { summary: string }) {
         }
         maxLength={500}
         name="projectSummary"
+        required
       />
       <FormDateInput
         label="Project start date"
         name="projectStartDate"
+        required
       />
-      <FormDateInput label="Project end date" name="projectEndDate" />
+      <FormDateInput label="Project end date" name="projectEndDate" required />
     </div>
   );
 }

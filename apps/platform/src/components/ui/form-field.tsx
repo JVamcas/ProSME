@@ -16,6 +16,7 @@ type FieldLayoutProps = {
   label: React.ReactNode;
   labelAccessory?: React.ReactNode;
   labelClassName?: string;
+  required?: boolean;
 };
 
 export function FormField({
@@ -27,12 +28,18 @@ export function FormField({
   label,
   labelAccessory,
   labelClassName,
+  required = false,
 }: FieldLayoutProps) {
   return (
     <div className={className}>
       <div className="flex items-center justify-between">
         <Label className={labelClassName} htmlFor={htmlFor}>
           {label}
+          {required ? (
+            <span aria-hidden="true" className="ml-1 text-brand-orange">
+              *
+            </span>
+          ) : null}
         </Label>
         {labelAccessory}
       </div>

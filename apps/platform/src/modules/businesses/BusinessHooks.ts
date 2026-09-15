@@ -8,12 +8,36 @@ import { clientBusinessService } from "./ClientBusinessService";
 export const businessQueryKeys = {
   all: ["portal", "businesses"] as const,
   detail: (id: string) => ["portal", "businesses", id] as const,
+  applicationOptions: (applicationId: string, fundingOpportunityId: number) =>
+    [
+      "portal",
+      "businesses",
+      "application",
+      applicationId,
+      fundingOpportunityId,
+    ] as const,
 };
 
 export function useBusinesses() {
   return useQuery({
     queryKey: businessQueryKeys.all,
     queryFn: clientBusinessService.listBusinesses,
+  });
+}
+
+export function useApplicationBusinesses(
+  applicationId: string,
+  fundingOpportunityId: number,
+) {
+  return useQuery({
+    queryFn: () => clientBusinessService.listApplicationBusinesses(
+      applicationId,
+      fundingOpportunityId,
+    ),
+    queryKey: businessQueryKeys.applicationOptions(
+      applicationId,
+      fundingOpportunityId,
+    ),
   });
 }
 

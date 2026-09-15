@@ -5,3 +5,7 @@ export type BusinessView = BusinessProfileInput & {
   createdAt: string;
   updatedAt: string;
 };
+
+export type ApplicationBusinessOption = BusinessView & {
+  alreadyApplied: boolean;
+};

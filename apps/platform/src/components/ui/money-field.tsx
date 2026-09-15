@@ -90,6 +90,7 @@ function ControlledMoneyField({
   labelAccessory,
   labelClassName,
   name,
+  required,
   ...props
 }: MoneyFieldProps & { currencyLabel: ReactNode }) {
   const controlId = id ?? name;
@@ -109,6 +110,7 @@ function ControlledMoneyField({
       label={label}
       labelAccessory={labelAccessory}
       labelClassName={labelClassName}
+      required={required}
     >
       <div className="relative">
         <CurrencyPrefix>{currencyLabel}</CurrencyPrefix>
@@ -120,6 +122,7 @@ function ControlledMoneyField({
           defaultValue={formatMoneyValue(form.getValues(name))}
           id={controlId}
           inputMode="decimal"
+          required={required}
           {...registration}
           onChange={(event) => {
             event.target.value = formatMoneyText(event.target.value);

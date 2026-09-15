@@ -3,6 +3,13 @@
 import { parseDate, type DateValue } from "@internationalized/date";
 import { useState, type ChangeEvent, type ReactNode } from "react";
 import { DatePicker, I18nProvider } from "react-aria-components";
+import {
+  type Control,
+  type FieldValues,
+  type UseFormSetValue,
+  useFormContext,
+  useWatch,
+} from "react-hook-form";
 
 import { type FormBindingProps, useFormBinding } from "./form-binding";
 import { DateCalendarPopover } from "./form-date-calendar";
@@ -52,7 +59,7 @@ function createFieldEvent(
   } as unknown as ChangeEvent<HTMLInputElement>;
 }
 
-export function FormDateInput({
+function DateInputField({
   className,
   containerClassName,
   defaultValue,
@@ -80,9 +87,9 @@ export function FormDateInput({
       setInternalValue(next);
     }
 
-    onChangeValue?.(next);
     const event = createFieldEvent(binding.name, next, "change");
     void binding.registration?.onChange(event);
+    onChangeValue?.(next);
   }
 
   const parsedMinValue = parseDateValue(minValue) ?? undefined;
@@ -105,7 +112,14 @@ export function FormDateInput({
         onChange={change}
         className={containerClassName}
       >
-        <DateLabel className={labelClassName}>{label}</DateLabel>
+        <DateLabel className={labelClassName}>
+          {label}
+          {required ? (
+            <span aria-hidden="true" className="ml-1 text-brand-orange">
+              *
+            </span>
+          ) : null}
+        </DateLabel>
         <DateControl className={className} error={binding.error} />
         <DateCalendarPopover
           maxValue={parsedMaxValue}
@@ -120,4 +134,48 @@ export function FormDateInput({
       </DatePicker>
     </I18nProvider>
   );
+}
+
+function ControlledDateInput({
+  control,
+  setValue,
+  ...props
+}: FormDateInputProps & {
+  control: Control<FieldValues>;
+  name: string;
+  setValue: UseFormSetValue<FieldValues>;
+}) {
+  const formValue = useWatch({ control, name: props.name });
+  const value = props.value ?? (
+    typeof formValue === "string" ? formValue : ""
+  );
+  return (
+    <DateInputField
+      {...props}
+      onChangeValue={(nextValue) => {
+        setValue(props.name, nextValue, {
+          shouldDirty: true,
+          shouldTouch: true,
+          shouldValidate: true,
+        });
+        props.onChangeValue?.(nextValue);
+      }}
+      value={value}
+    />
+  );
+}
+
+export function FormDateInput(props: FormDateInputProps) {
+  const form = useFormContext<FieldValues>();
+  if (form && props.name) {
+    return (
+      <ControlledDateInput
+        {...props}
+        control={form.control}
+        name={props.name}
+        setValue={form.setValue}
+      />
+    );
+  }
+  return <DateInputField {...props} />;
 }

@@ -96,6 +96,11 @@ describe("application workspace navigation", () => {
     });
 
     expect(container.querySelector("output")?.textContent).toBe("business");
+    expect(
+      container.querySelector<HTMLButtonElement>(
+        'button[aria-label^="Project details"]',
+      )?.disabled,
+    ).toBe(true);
     await act(async () => {
       container.querySelector<HTMLButtonElement>(
         "button:not([aria-label])",

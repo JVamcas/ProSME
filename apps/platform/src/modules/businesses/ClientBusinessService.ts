@@ -2,12 +2,26 @@
 
 import { deleteData, patchData, postData, requestData } from "@/lib/client-http";
 import type { BusinessProfileInput } from "./BusinessSchemas";
-import type { BusinessView } from "./BusinessTypes";
+import type { ApplicationBusinessOption, BusinessView } from "./BusinessTypes";
 
 const noStore = { cache: "no-store" as const };
 
 function listBusinesses() {
   return requestData<BusinessView[]>("/api/portal/businesses", noStore);
+}
+
+function listApplicationBusinesses(
+  applicationId: string,
+  fundingOpportunityId: number,
+) {
+  const query = new URLSearchParams({
+    applicationId,
+    fundingOpportunityId: String(fundingOpportunityId),
+  });
+  return requestData<ApplicationBusinessOption[]>(
+    `/api/portal/businesses?${query.toString()}`,
+    noStore,
+  );
 }
 
 function getBusiness(id: string) {
@@ -36,6 +50,7 @@ export const clientBusinessService = {
   createBusiness,
   deleteBusiness,
   getBusiness,
+  listApplicationBusinesses,
   listBusinesses,
   updateBusiness,
 };

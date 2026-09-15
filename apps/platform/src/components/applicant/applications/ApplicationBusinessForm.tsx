@@ -13,8 +13,8 @@ import {
   applicationBusinessSectionSchema,
   type ApplicationBusinessSection,
 } from "@/modules/applications/ApplicationSchemas";
-import { useBusinesses } from "@/modules/businesses/BusinessHooks";
-import type { BusinessView } from "@/modules/businesses/BusinessTypes";
+import { useApplicationBusinesses } from "@/modules/businesses/BusinessHooks";
+import type { ApplicationBusinessOption } from "@/modules/businesses/BusinessTypes";
 import {
   ApplicationFormActions,
   saveBeforeNavigate,
@@ -22,7 +22,9 @@ import {
 import { useApplicationAutosave } from "./useApplicationAutosave";
 
 type Props = {
+  applicationId: string;
   error: boolean;
+  fundingOpportunityId: number;
   initial: Partial<ApplicationBusinessSection>;
   onBack?: () => void;
   onContinue: (data: ApplicationBusinessSection) => Promise<unknown>;
@@ -30,11 +32,17 @@ type Props = {
   pending: boolean;
 };
 
-function businessItems(businesses: BusinessView[]) {
+function businessLabel(business: ApplicationBusinessOption) {
+  const identity = business.registrationNumber
+    ? `${business.legalName} · ${business.registrationNumber}`
+    : business.legalName;
+  return business.alreadyApplied ? `${identity} · Already applied` : identity;
+}
+
+function businessItems(businesses: ApplicationBusinessOption[]) {
   return businesses.map((business) => ({
-    label: business.registrationNumber
-      ? `${business.legalName} · ${business.registrationNumber}`
-      : business.legalName,
+    disabled: business.alreadyApplied,
+    label: businessLabel(business),
     value: business.id,
   }));
 }
@@ -75,7 +83,10 @@ function BusinessesError({ retry }: { retry: () => void }) {
 }
 
 export function ApplicationBusinessForm(props: Props) {
-  const businesses = useBusinesses();
+  const businesses = useApplicationBusinesses(
+    props.applicationId,
+    props.fundingOpportunityId,
+  );
   const initialBusinessId = props.initial.businessId ?? "";
   const form = useForm<ApplicationBusinessSection>({
     defaultValues: { businessId: initialBusinessId },
@@ -104,6 +115,7 @@ export function ApplicationBusinessForm(props: Props) {
           items={businessItems(businesses.data ?? [])}
           label="Business"
           name="businessId"
+          required
           placeholder={
             businesses.isPending ? "Loading businesses…" : "Select a business"
           }

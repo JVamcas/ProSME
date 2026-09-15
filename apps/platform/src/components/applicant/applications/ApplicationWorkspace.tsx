@@ -49,9 +49,14 @@ export function ApplicationWorkspace({
     ? "Review and submit"
     : applicationSteps.find((item) => item.id === section)?.label;
   const previousSection = previousApplicationStep(section);
-  const visibleSteps = applicationSteps.map((step) => ({
+  const currentStepIndex = applicationSteps.findIndex(
+    (step) => step.id === section,
+  );
+  const visibleSteps = applicationSteps.map((step, index) => ({
     ...step,
-    disabled: step.id === "review" && !completed,
+    disabled:
+      index > currentStepIndex ||
+      (step.id === "review" && !completed),
   }));
   const saveAndNavigate: SaveApplication = async (input) => {
     const updated = await save(input);
@@ -82,6 +87,7 @@ export function ApplicationWorkspace({
             application.sectionCompletion,
           )}
           currentStepId={section}
+          disabled={pending}
           onStepChange={setSelected}
           steps={visibleSteps}
         />

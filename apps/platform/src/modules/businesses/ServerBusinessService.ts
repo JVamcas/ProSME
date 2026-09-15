@@ -8,6 +8,7 @@ import {
   deleteOwnedBusiness,
   findOwnedBusiness,
   listOwnedBusinesses,
+  listOwnedBusinessesForApplication,
   updateOwnedBusiness,
 } from "@/db/repositories/BusinessRepository";
 import { ResourceNotFoundError } from "@/lib/resource-errors";
@@ -36,6 +37,21 @@ function view(
 export async function listBusinesses(user: AuthenticatedUser | null) {
   const actor = requireCapability(user, capabilities.businessReadOwn);
   return (await listOwnedBusinesses(actor.id)).map(view);
+}
+
+export async function listApplicationBusinesses(
+  user: AuthenticatedUser | null,
+  input: { applicationId: string; fundingOpportunityId: number },
+) {
+  const actor = requireCapability(user, capabilities.businessReadOwn);
+  const businesses = await listOwnedBusinessesForApplication({
+    ...input,
+    ownerUserId: actor.id,
+  });
+  return businesses.map((business) => ({
+    ...view(business),
+    alreadyApplied: business.alreadyApplied,
+  }));
 }
 
 async function loadOwnedBusiness(ownerUserId: string, id: string) {

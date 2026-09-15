@@ -31,7 +31,9 @@ function BusinessForm({
   const expectedRowVersion = application.rowVersion;
   return (
     <ApplicationBusinessForm
+      applicationId={application.id}
       error={error}
+      fundingOpportunityId={application.fundingOpportunityId}
       initial={application.businessSection}
       onBack={onBack}
       pending={pending}

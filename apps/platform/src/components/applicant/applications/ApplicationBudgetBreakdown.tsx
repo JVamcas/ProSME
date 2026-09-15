@@ -18,7 +18,10 @@ export function ApplicationBudgetBreakdown() {
   });
   return (
     <fieldset className="mt-7 border-t border-brand-navy/10 pt-6">
-      <legend className="font-bold text-brand-navy">Budget breakdown</legend>
+      <legend className="font-bold text-brand-navy">
+        Budget breakdown
+        <span aria-hidden="true" className="ml-1 text-brand-orange">*</span>
+      </legend>
       <div className="mt-4 grid gap-4">
         {budget.fields.map((field, index) => (
           <div
@@ -29,15 +32,18 @@ export function ApplicationBudgetBreakdown() {
               label="Category"
               placeholder="e.g. Equipment, Materials"
               name={`budgetBreakdown.${index}.category`}
+              required
             />
             <MoneyField
               label="Amount"
               name={`budgetBreakdown.${index}.amount`}
+              required
             />
             <FormInput
               label="Description"
               placeholder="e.g. Laptops, Office supplies"
               name={`budgetBreakdown.${index}.description`}
+              required
             />
             <IconButton
               className="self-end"

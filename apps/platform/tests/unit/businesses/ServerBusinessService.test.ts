@@ -6,6 +6,7 @@ vi.mock("@/db/repositories/BusinessRepository", () => ({
   deleteOwnedBusiness: vi.fn(),
   findOwnedBusiness: vi.fn(),
   listOwnedBusinesses: vi.fn(),
+  listOwnedBusinessesForApplication: vi.fn(),
   updateOwnedBusiness: vi.fn(),
 }));
 
@@ -15,11 +16,13 @@ import type { AuthenticatedUser } from "@/auth/types";
 import {
   deleteOwnedBusiness,
   listOwnedBusinesses,
+  listOwnedBusinessesForApplication,
   updateOwnedBusiness,
 } from "@/db/repositories/BusinessRepository";
 import {
   BusinessNotFoundError,
   deleteBusiness,
+  listApplicationBusinesses,
   listBusinesses,
   updateBusiness,
 } from "@/modules/businesses/ServerBusinessService";
@@ -63,6 +66,31 @@ describe("owned business service", () => {
     vi.mocked(listOwnedBusinesses).mockResolvedValue([]);
     await listBusinesses(user([capabilities.businessReadOwn]));
     expect(listOwnedBusinesses).toHaveBeenCalledWith(ownerId);
+  });
+
+  it("marks businesses already used for the application funding call", async () => {
+    vi.mocked(listOwnedBusinessesForApplication).mockResolvedValue([
+      {
+        ...input,
+        alreadyApplied: true,
+        createdAt: new Date("2026-09-15T08:00:00.000Z"),
+        employeeCount: 4,
+        establishedYear: 2020,
+        id: businessId,
+        updatedAt: new Date("2026-09-15T08:00:00.000Z"),
+      },
+    ]);
+    const result = await listApplicationBusinesses(
+      user([capabilities.businessReadOwn]),
+      { applicationId: ownerId, fundingOpportunityId: 42 },
+    );
+
+    expect(result[0]).toMatchObject({ alreadyApplied: true, id: businessId });
+    expect(listOwnedBusinessesForApplication).toHaveBeenCalledWith({
+      applicationId: ownerId,
+      fundingOpportunityId: 42,
+      ownerUserId: ownerId,
+    });
   });
 
   it("rejects updates without business update permission", async () => {

@@ -3,14 +3,45 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, it } from "vitest";
+import { FormProvider, useForm } from "react-hook-form";
 
 import { FormDateInput } from "@/components/ui/form-date-input";
+
+function SavedDateForm() {
+  const form = useForm({
+    defaultValues: { projectStartDate: "2026-09-15" },
+  });
+  return (
+    <FormProvider {...form}>
+      <FormDateInput label="Project start date" name="projectStartDate" />
+    </FormProvider>
+  );
+}
 
 afterEach(() => {
   document.body.replaceChildren();
 });
 
 describe("form date input", () => {
+  it("displays the saved React Hook Form value", async () => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<SavedDateForm />);
+    });
+
+    const input = container.querySelector<HTMLInputElement>(
+      'input[name="projectStartDate"]',
+    );
+    expect(input?.value).toBe("2026-09-15");
+    expect(container.textContent).toContain("15");
+    expect(container.textContent).toContain("09");
+    expect(container.textContent).toContain("2026");
+    await act(async () => root.unmount());
+  });
+
   it("opens an accessible calendar popover", async () => {
     const container = document.createElement("div");
     document.body.append(container);

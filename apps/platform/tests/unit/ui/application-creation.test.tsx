@@ -2,13 +2,13 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
-const useBusinesses = vi.hoisted(() => vi.fn());
+const useApplicationBusinesses = vi.hoisted(() => vi.fn());
 const useBusiness = vi.hoisted(() => vi.fn());
 const useApplicationDocuments = vi.hoisted(() => vi.fn());
 const useUploadApplicationDocument = vi.hoisted(() => vi.fn());
 vi.mock("@/modules/businesses/BusinessHooks", () => ({
   useBusiness,
-  useBusinesses,
+  useApplicationBusinesses,
 }));
 vi.mock("@/modules/applications/ApplicationDocumentHooks", () => ({
   useApplicationDocuments,
@@ -100,12 +100,19 @@ describe("application creation UI", () => {
   });
 
   it("selects an existing business instead of duplicating its details", () => {
-    useBusinesses.mockReturnValue({
+    useApplicationBusinesses.mockReturnValue({
       data: [
         {
+          alreadyApplied: false,
           id: "89e20de0-3558-4d63-90a4-8c9f5125df07",
           legalName: "Anna Trading CC",
           registrationNumber: "CC/2020/1",
+        },
+        {
+          alreadyApplied: true,
+          id: "79e20de0-3558-4d63-90a4-8c9f5125df07",
+          legalName: "Applied Business",
+          registrationNumber: "CC/2020/2",
         },
       ],
       isError: false,
@@ -113,7 +120,9 @@ describe("application creation UI", () => {
     });
     const markup = renderToStaticMarkup(
       <ApplicationBusinessForm
+        applicationId={completedApplication.id}
         error={false}
+        fundingOpportunityId={completedApplication.fundingOpportunityId}
         initial={{}}
         onContinue={() => Promise.resolve()}
         onSave={() => Promise.resolve()}
@@ -123,18 +132,25 @@ describe("application creation UI", () => {
 
     expect(markup).toContain("Select a business");
     expect(markup).toContain("Anna Trading CC · CC/2020/1");
+    expect(markup).toContain("Applied Business · CC/2020/2 · Already applied");
+    expect(markup).toContain('value="79e20de0-3558-4d63-90a4-8c9f5125df07" disabled');
+    expect(markup).toContain(
+      '<span aria-hidden="true" class="ml-1 text-brand-orange">*</span>',
+    );
     expect(markup).not.toContain("Industry sector");
   });
 
   it("directs applicants without a business to My Businesses", () => {
-    useBusinesses.mockReturnValue({
+    useApplicationBusinesses.mockReturnValue({
       data: [],
       isError: false,
       isPending: false,
     });
     const markup = renderToStaticMarkup(
       <ApplicationBusinessForm
+        applicationId={completedApplication.id}
         error={false}
+        fundingOpportunityId={completedApplication.fundingOpportunityId}
         initial={{}}
         onContinue={() => Promise.resolve()}
         onSave={() => Promise.resolve()}

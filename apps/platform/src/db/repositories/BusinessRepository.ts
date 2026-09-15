@@ -1,9 +1,13 @@
 import "server-only";
 
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, ne, sql } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
-import { businessProfiles, profileAuditEntries } from "@/db/schema";
+import {
+  applications,
+  businessProfiles,
+  profileAuditEntries,
+} from "@/db/schema";
 import type { BusinessProfileInput } from "@/modules/businesses/BusinessSchemas";
 
 const columns = {
@@ -34,6 +38,29 @@ export function listOwnedBusinesses(ownerUserId: string) {
     .select(columns)
     .from(businessProfiles)
     .where(eq(businessProfiles.userId, ownerUserId))
+    .orderBy(asc(businessProfiles.legalName), asc(businessProfiles.id));
+}
+
+export function listOwnedBusinessesForApplication(input: {
+  applicationId: string;
+  fundingOpportunityId: number;
+  ownerUserId: string;
+}) {
+  return getDatabase()
+    .select({
+      ...columns,
+      alreadyApplied: sql<boolean>`${applications.id} IS NOT NULL`,
+    })
+    .from(businessProfiles)
+    .leftJoin(
+      applications,
+      and(
+        eq(applications.businessId, businessProfiles.id),
+        eq(applications.fundingOpportunityId, input.fundingOpportunityId),
+        ne(applications.id, input.applicationId),
+      ),
+    )
+    .where(eq(businessProfiles.userId, input.ownerUserId))
     .orderBy(asc(businessProfiles.legalName), asc(businessProfiles.id));
 }
 
