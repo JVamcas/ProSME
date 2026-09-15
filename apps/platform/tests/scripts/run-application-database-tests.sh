@@ -17,8 +17,12 @@ cleanup() {
 trap cleanup EXIT
 node apps/platform/tests/support/manage-test-database.mjs create "${test_database}"
 
-echo "Applying all migrations to the isolated P3.2 test database..."
+echo "Applying application migrations to the isolated P3.2 test database..."
 DATABASE_URL="${test_database_url}" npm run db:migrate --workspace @prosme/platform
+
+echo "Applying Payload migrations to the isolated P3.2 test database..."
+DATABASE_URL="${test_database_url}" \
+  npm run payload --workspace @prosme/platform -- migrate
 
 echo "Running real PostgreSQL application integration tests..."
 DATABASE_URL="${test_database_url}" \

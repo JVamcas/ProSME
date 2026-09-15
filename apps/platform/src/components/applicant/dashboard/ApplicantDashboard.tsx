@@ -1,19 +1,106 @@
 import {
-  BellRing,
   BriefcaseBusiness,
   CircleAlert,
   FileClock,
   Send,
 } from "lucide-react";
-import Image from "next/image";
 
-import type { ApplicantDashboardSummary } from "@/modules/profiles/ProfileTypes";
+import type {
+  ApplicantDashboardMetrics,
+  ApplicantDashboardView,
+} from "@/modules/dashboard/ApplicantDashboardTypes";
+import { ApplicantRecentActivity } from "./ApplicantRecentActivity";
 import { DashboardMetricCard } from "./DashboardMetricCard";
 
+function countDescription(
+  count: number,
+  singular: string,
+  plural: string,
+  emptyText?: string,
+) {
+  if (count === 0 && emptyText) return emptyText;
+  return `${count} ${count === 1 ? singular : plural}`;
+}
+
+function ApplicationStatusMetrics({
+  metrics,
+}: {
+  metrics: ApplicantDashboardMetrics;
+}) {
+  return (
+    <section aria-labelledby="application-status-heading" className="mt-6">
+      <h2
+        id="application-status-heading"
+        className="text-lg font-bold text-brand-navy"
+      >
+        Application status
+      </h2>
+      <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <DashboardMetricCard
+          href="/portal/applications"
+          icon={FileClock}
+          label="Applications in progress"
+          supportingText={
+            countDescription(
+              metrics.applicationsInProgress,
+              "active application",
+              "active applications",
+              "No active applications",
+            )
+          }
+          value={String(metrics.applicationsInProgress)}
+        />
+        <DashboardMetricCard
+          href="/portal/applications"
+          icon={Send}
+          label="Submitted"
+          supportingText={
+            countDescription(
+              metrics.submittedApplications,
+              "submitted application",
+              "submitted applications",
+              "You have not submitted any applications",
+            )
+          }
+          value={String(metrics.submittedApplications)}
+        />
+        <DashboardMetricCard
+          href="/portal/applications"
+          icon={CircleAlert}
+          label="Action required"
+          supportingText={
+            countDescription(
+              metrics.actionRequired,
+              "application needs attention",
+              "applications need attention",
+              "Nothing needs attention",
+            )
+          }
+          value={String(metrics.actionRequired)}
+        />
+        <DashboardMetricCard
+          href="/portal/funding-opportunities?status=open"
+          icon={BriefcaseBusiness}
+          label="Funding opportunities"
+          supportingText={
+            countDescription(
+              metrics.openFundingOpportunities,
+              "open funding opportunity",
+              "open funding opportunities",
+            )
+          }
+          value={String(metrics.openFundingOpportunities)}
+        />
+      </div>
+    </section>
+  );
+}
+
 export function ApplicantDashboard({
+  activities,
   displayName,
-  openFundingOpportunityCount,
-}: ApplicantDashboardSummary & { openFundingOpportunityCount: number }) {
+  metrics,
+}: ApplicantDashboardView) {
   return (
     <div>
       <header className="grid min-h-32 overflow-hidden rounded-2xl border border-brand-blue/10 bg-brand-blue/10 shadow-sm sm:grid-cols-[1fr_15rem]">
@@ -27,73 +114,9 @@ export function ApplicantDashboard({
         </div>
       </header>
 
-      <section aria-labelledby="application-status-heading" className="mt-6">
-        <h2
-          id="application-status-heading"
-          className="text-lg font-bold text-brand-navy"
-        >
-          Application status
-        </h2>
-        <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <DashboardMetricCard
-            icon={FileClock}
-            label="Applications in progress"
-            supportingText="No active applications"
-            value="0"
-          />
-          <DashboardMetricCard
-            icon={Send}
-            label="Submitted"
-            supportingText="You have not submitted any applications"
-            value="0"
-          />
-          <DashboardMetricCard
-            icon={CircleAlert}
-            label="Action required"
-            supportingText="Nothing needs attention"
-            value="0"
-          />
-          <DashboardMetricCard
-            href="/portal/funding-opportunities?status=open"
-            icon={BriefcaseBusiness}
-            label="Funding opportunities"
-            supportingText={
-              openFundingOpportunityCount === 1
-                ? "1 open funding opportunity"
-                : `${openFundingOpportunityCount} open funding opportunities`
-            }
-            value={String(openFundingOpportunityCount)}
-          />
-        </div>
-      </section>
+      <ApplicationStatusMetrics metrics={metrics} />
 
-      <section
-        aria-labelledby="recent-activity-heading"
-        className="mt-6 min-h-48 rounded-2xl border border-brand-navy/15 bg-brand-white shadow-sm"
-      >
-        <div className="border-b border-brand-navy/10 px-5 py-4">
-          <h2
-            id="recent-activity-heading"
-            className="font-bold text-brand-navy"
-          >
-            Recent activity
-          </h2>
-        </div>
-        <div className="grid min-h-36 place-items-center px-5 py-8 text-center">
-          <div>
-            <BellRing
-              aria-hidden="true"
-              className="mx-auto size-7 text-brand-orange"
-            />
-            <p className="mt-3 font-bold text-brand-navy">
-              No recent activity yet
-            </p>
-            <p className="mt-1 text-sm text-brand-navy/65">
-              Application updates will appear here when they become available.
-            </p>
-          </div>
-        </div>
-      </section>
+      <ApplicantRecentActivity activities={activities} />
     </div>
   );
 }

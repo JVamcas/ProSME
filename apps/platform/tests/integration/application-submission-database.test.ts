@@ -4,6 +4,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 
 import { submitOwnedApplication } from "@/db/repositories/ApplicationSubmissionRepository";
+import { readApplicantDashboard } from "@/db/repositories/ApplicantDashboardRepository";
 import { readAdminDashboard } from "@/db/repositories/AdminDashboardRepository";
 
 const { Pool } = pg;
@@ -76,6 +77,14 @@ beforeAll(async () => {
        (6101, 'Submission Fund', $1, $2),
        (6103, 'Rollback Fund', $1, $2)`,
     [versionId, ownerId],
+  );
+  await query(
+    `INSERT INTO cms_funding_calls
+       (id, title, call_status, _status)
+     VALUES
+       (96101, 'Open dashboard call', 'open', 'published'),
+       (96102, 'Draft dashboard call', 'open', 'draft'),
+       (96103, 'Closed dashboard call', 'closed', 'published')`,
   );
   for (let index = 0; index < applicationIds.length; index += 1) {
     await query(
@@ -260,5 +269,26 @@ describeDatabase("P3.4 transactional application submission", () => {
       visibility: "none",
     });
     expect(hidden.metrics.totalApplications).toBe(0);
+  });
+
+  it("calculates all applicant dashboard metrics in one projection", async () => {
+    const dashboard = await readApplicantDashboard(ownerId);
+
+    expect(dashboard.metrics).toEqual({
+      actionRequired: 0,
+      applicationsInProgress: 2,
+      openFundingOpportunities: 1,
+      submittedApplications: 1,
+    });
+    expect(dashboard.activities).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          applicationId: applicationIds[0],
+          applicationReference: expect.stringMatching(/^SMEF-\d{4}-\d{6}$/),
+          eventCode: "APPLICATION_SUBMITTED",
+          fundingOpportunityTitle: "Submission test application",
+        }),
+      ]),
+    );
   });
 });
