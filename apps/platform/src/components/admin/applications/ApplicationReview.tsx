@@ -1,20 +1,26 @@
-import type { AdminApplication } from "@/modules/applications/ApplicationTypes";
+import type { AdminApplicationOverview } from "@/modules/applications/ApplicationTypes";
 import {
   ApplicationReviewHeader,
-  ApplicationWorkflow,
+  ApplicationReviewTabs,
 } from "./ApplicationReviewHeader";
-import { ApplicationReviewDetails } from "./ApplicationReviewSections";
+import {
+  ApplicationDetailsCard,
+  ApplicationProgressCard,
+} from "./ApplicationReviewSections";
 
 export function ApplicationReview({
   application,
 }: {
-  application: AdminApplication;
+  application: AdminApplicationOverview;
 }) {
   return (
-    <div className="p-4 sm:p-7">
+    <div className="space-y-5">
       <ApplicationReviewHeader application={application} />
-      <ApplicationWorkflow status={application.status} />
-      <ApplicationReviewDetails application={application} />
+      <ApplicationReviewTabs />
+      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,.8fr)]">
+        <ApplicationDetailsCard application={application} />
+        <ApplicationProgressCard application={application} />
+      </div>
     </div>
   );
 }

@@ -28,6 +28,14 @@ export const workflowTaskFormSchema = z
         "Use uppercase letters, numbers and underscores.",
       ),
     configJson: z.string().min(2),
+    checklistItems: z.array(z.object({
+      code: z.string().trim().min(2).max(80).regex(
+        /^[A-Z][A-Z0-9_]*$/,
+        "Use uppercase letters, numbers and underscores.",
+      ),
+      label: z.string().trim().min(2).max(200),
+      required: z.boolean(),
+    })).max(30),
     name: z.string().trim().min(2).max(160),
     required: z.boolean(),
     type: z.enum(taskTypeCodes),
@@ -39,6 +47,24 @@ export const workflowTaskFormSchema = z
         message: "Select an assignee.",
         path: ["assignmentTarget"],
       });
+    }
+    if (values.type === "CHECKLIST") {
+      if (!values.checklistItems.length) {
+        context.addIssue({
+          code: "custom",
+          message: "Add at least one checklist item.",
+          path: ["checklistItems"],
+        });
+      }
+      const codes = values.checklistItems.map((item) => item.code);
+      if (new Set(codes).size !== codes.length) {
+        context.addIssue({
+          code: "custom",
+          message: "Checklist item codes must be unique.",
+          path: ["checklistItems"],
+        });
+      }
+      return;
     }
     const config = parseTaskConfiguration(values.configJson);
     if (
@@ -54,6 +80,17 @@ export const workflowTaskFormSchema = z
   });
 
 export type WorkflowTaskFormValues = z.infer<typeof workflowTaskFormSchema>;
+
+export function checklistItemDefaults(config: unknown) {
+  const result = z.object({
+    items: z.array(z.object({
+      code: z.string(),
+      label: z.string(),
+      required: z.boolean(),
+    })),
+  }).safeParse(config);
+  return result.success ? result.data.items : [];
+}
 
 export function taskAssignmentDefaults(task?: WorkflowTaskInput) {
   if (task?.assignmentUserId) {

@@ -73,6 +73,7 @@ const application = {
   id: "99e20de0-3558-4d63-90a4-8c9f5125df07",
   ownerUserId: "79e20de0-3558-4d63-90a4-8c9f5125df07",
   projectSection: {},
+  reference: null,
   rowVersion: 1,
   sectionCompletion: {
     business: false,
@@ -82,7 +83,9 @@ const application = {
     project: false,
   },
   status: "draft" as const,
+  submittedAt: null,
   updatedAt: new Date("2026-09-14T08:00:00.000Z"),
+  workflowVersionId: null,
 };
 const businessId = "89e20de0-3558-4d63-90a4-8c9f5125df07";
 

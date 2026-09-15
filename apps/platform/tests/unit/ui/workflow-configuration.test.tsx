@@ -43,7 +43,8 @@ describe("workflow configuration UI", () => {
         />
       </QueryClientProvider>,
     );
-    expect(markup).toContain("Submission and automated pre-screening");
+    expect(markup).toContain("Submission and pre-screening");
+    expect(markup).toContain("Pre-screening checklist");
     expect(markup).toContain("Outcome communication");
     expect(markup).toContain("Build the approval flow");
     expect(markup).toContain("Visual flow");
@@ -52,8 +53,8 @@ describe("workflow configuration UI", () => {
     expect(markup).toContain("Add Workflow stage");
     expect(markup).toContain("Assignee");
     expect(markup).toContain("Add task");
-    expect(markup).toContain("Edit Automated pre-screening");
-    expect(markup).toContain("Delete Automated pre-screening");
+    expect(markup).toContain("Edit Pre-screening checklist");
+    expect(markup).toContain("Delete Pre-screening checklist");
     expect(markup).not.toContain("Approver");
     expect(markup).not.toContain("Conditional routes");
     expect(markup).not.toContain("Committee score assigned");

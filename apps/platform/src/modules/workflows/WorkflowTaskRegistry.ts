@@ -31,15 +31,15 @@ const registry = {
     }),
   },
   CHECKLIST: {
-    config: z.object({ items: z.array(itemSchema).min(1) }),
+    config: z.object({ items: z.array(itemSchema).min(1).max(30) }),
     result: z.object({
       items: z.array(
         z.object({
-          code: z.string(),
+          code: z.string().min(1).max(80),
           accepted: z.boolean(),
-          comment: z.string().optional(),
+          comment: z.string().trim().max(1000).optional(),
         }),
-      ),
+      ).min(1).max(30),
     }),
   },
   DOCUMENT_REVIEW: {

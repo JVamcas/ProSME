@@ -29,7 +29,13 @@ export function LogoutButton({ tone = "dark" }: { tone?: "brand" | "dark" }) {
           : "h-auto justify-start rounded-none px-4 py-3 text-left text-white/55 hover:bg-transparent hover:text-white"
       }
     >
-      <LogOutIcon className="size-4 text-brand-navy" />
+      <LogOutIcon
+        className={
+          tone === "brand"
+            ? "size-4 text-brand-navy"
+            : "size-4 text-brand-orange"
+        }
+      />
       {logout.isPending ? "Logging out…" : "Logout"}
     </GeneralButton>
   );

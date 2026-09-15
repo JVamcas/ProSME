@@ -17,6 +17,7 @@ import type {
 } from "@/modules/applications/ApplicationSchemas";
 import type { ApplicationDeclarationsSection } from "@/modules/applications/ApplicationDeclarationSchemas";
 import { users } from "./identity";
+import { workflowDefinitionVersions } from "./workflow";
 
 export const applications = pgTable("app_applications", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -25,7 +26,16 @@ export const applications = pgTable("app_applications", {
     .references(() => users.id, { onDelete: "cascade" }),
   fundingOpportunityId: integer("funding_opportunity_id").notNull(),
   fundingOpportunityTitle: text("funding_opportunity_title").notNull(),
-  status: text("status").$type<"draft">().notNull().default("draft"),
+  status: text("status")
+    .$type<"draft" | "submitted">()
+    .notNull()
+    .default("draft"),
+  reference: text("reference"),
+  workflowVersionId: uuid("workflow_version_id").references(
+    () => workflowDefinitionVersions.id,
+    { onDelete: "restrict" },
+  ),
+  submittedAt: timestamp("submitted_at", { withTimezone: true }),
   currentSection: text("current_section")
     .$type<
       "business" | "project" | "financial" | "documents" | "declarations"
@@ -75,9 +85,15 @@ export const applications = pgTable("app_applications", {
     table.ownerUserId,
     table.fundingOpportunityId,
   ),
+  uniqueIndex("app_applications_reference_unique").on(table.reference),
   index("app_applications_owner_updated_idx").on(
     table.ownerUserId,
     table.updatedAt,
+  ),
+  index("app_applications_status_submitted_idx").on(
+    table.status,
+    table.submittedAt,
+    table.id,
   ),
 ]);
 

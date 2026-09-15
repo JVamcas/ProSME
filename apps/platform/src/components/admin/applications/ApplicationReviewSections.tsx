@@ -1,169 +1,170 @@
 import {
-  Banknote,
-  Building2,
   Check,
-  FileCheck2,
-  MapPin,
-  UserRound,
-  Users,
+  Circle,
+  Clock3,
+  FileText,
+  ListChecks,
 } from "lucide-react";
 
-import { GeneralButton } from "@/components/ui/button";
-import type { AdminApplication } from "@/modules/applications/ApplicationTypes";
-import { Detail, SectionTitle } from "./ApplicationReviewPrimitives";
+import type {
+  AdminApplicationOverview,
+  AdminApplicationStage,
+} from "@/modules/applications/ApplicationTypes";
 
-const cardClassName =
-  "rounded-xl border border-slate-200 bg-white p-6 shadow-sm";
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat("en-NA", { dateStyle: "medium" }).format(
+    new Date(value),
+  );
+}
 
-export function ApplicationReviewDetails({
-  application,
-}: {
-  application: AdminApplication;
-}) {
+function formatMoney(value: number | null) {
+  if (value === null) return "Not provided";
+  return `N$${value.toLocaleString("en-NA")}`;
+}
+
+function formatPriority(value: AdminApplicationOverview["priority"]) {
+  if (!value) return "Not assigned";
+  return `${value.charAt(0)}${value.slice(1).toLocaleLowerCase()}`;
+}
+
+function DetailRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="mt-5 grid gap-5 xl:grid-cols-[1.2fr_.8fr]">
-      <div className="grid gap-5">
-        <BusinessProfile application={application} />
-        <FundingRequest application={application} />
-      </div>
-      <div className="grid content-start gap-5">
-        <EligibilitySummary application={application} />
-        <SupportingDocuments application={application} />
-        <PrototypeBoundary />
-      </div>
+    <div className="grid gap-1 border-b border-brand-navy/8 py-3 last:border-b-0 sm:grid-cols-[minmax(8rem,.8fr)_1.2fr] sm:gap-4">
+      <dt className="text-sm font-semibold text-brand-navy/55">{label}</dt>
+      <dd className="text-sm font-bold text-brand-navy">{value}</dd>
     </div>
   );
 }
 
-function BusinessProfile({ application }: { application: AdminApplication }) {
+export function ApplicationDetailsCard({
+  application,
+}: {
+  application: AdminApplicationOverview;
+}) {
   const details = [
-    ["Applicant", application.applicant, UserRound],
-    ["Sector", application.sector, Building2],
-    ["Region", application.region, MapPin],
-    ["Current employees", String(application.employees), Users],
+    ["Application ID", application.reference],
+    ["Opportunity", application.opportunityTitle],
+    ["Submitted", formatDate(application.submittedAt)],
+    ["Current stage", application.currentStageName ?? "Submitted"],
+    ["Applicant", application.applicantName],
+    ["Priority", formatPriority(application.priority)],
+    ["Requested amount", formatMoney(application.requestedAmount)],
+    ["Co-funding", formatMoney(application.coFunding)],
+    ["Business type", application.businessType ?? "Not provided"],
+    ["Industry", application.industry ?? "Not provided"],
+    ["Location", application.location ?? "Not provided"],
   ] as const;
 
   return (
-    <section className={cardClassName}>
-      <SectionTitle icon={Building2}>Business profile</SectionTitle>
-      <p className="mt-5 text-sm leading-6 text-slate-600">
-        {application.summary}
-      </p>
-      <dl className="mt-6 grid gap-5 border-t border-slate-100 pt-5 sm:grid-cols-2">
-        {details.map(([label, value, Icon]) => (
-          <Detail icon={Icon} key={label} label={label} value={value} />
+    <section className="rounded-2xl border border-brand-navy/10 bg-white p-5 shadow-sm sm:p-6">
+      <div className="flex items-center gap-3">
+        <FileText aria-hidden="true" className="size-5 text-brand-orange" />
+        <h2 className="text-lg font-bold text-brand-navy">Application Details</h2>
+      </div>
+      <dl className="mt-4">
+        {details.map(([label, value]) => (
+          <DetailRow key={label} label={label} value={value} />
         ))}
-        <Detail label="Annual turnover" value={application.turnover} />
-        <Detail
-          label="Namibian ownership"
-          value={`${application.ownership}%`}
-        />
       </dl>
     </section>
   );
 }
 
-function FundingRequest({ application }: { application: AdminApplication }) {
+function ProgressMarker({ state }: { state: "done" | "active" | "pending" }) {
+  if (state === "done") {
+    return (
+      <span className="grid size-8 place-items-center rounded-full bg-brand-green text-white">
+        <Check aria-hidden="true" className="size-4" />
+      </span>
+    );
+  }
+
+  if (state === "active") {
+    return (
+      <span className="grid size-8 place-items-center rounded-full border-2 border-brand-orange bg-brand-orange/10 text-brand-orange">
+        <Clock3 aria-hidden="true" className="size-4" />
+      </span>
+    );
+  }
+
   return (
-    <section className={cardClassName}>
-      <SectionTitle icon={Banknote}>Funding request</SectionTitle>
-      <div className="mt-5 rounded-xl bg-navy p-5 text-white">
-        <p className="text-xs text-white/50">Amount requested</p>
-        <p className="mt-1 text-3xl font-bold text-brand-yellow">
-          N${application.requested.toLocaleString("en-NA")}
-        </p>
-      </div>
-      <h3 className="mt-5 text-xs font-bold uppercase tracking-wider text-slate-400">
-        Proposed use
-      </h3>
-      <p className="mt-2 text-sm leading-6 text-slate-600">
-        {application.useOfFunds}
-      </p>
-      <p className="mt-5 rounded-xl bg-emerald-50 p-4 text-xs text-emerald-800">
-        <strong>{application.jobs} new jobs</strong> expected if the proposed
-        expansion is implemented.
-      </p>
-    </section>
+    <span className="grid size-8 place-items-center rounded-full border-2 border-brand-navy/15 bg-brand-white text-brand-navy/30">
+      <Circle aria-hidden="true" className="size-3 fill-current" />
+    </span>
   );
 }
 
-function EligibilitySummary({
+export function ApplicationProgressCard({
   application,
 }: {
-  application: AdminApplication;
+  application: AdminApplicationOverview;
 }) {
-  const items = [
-    ["Namibian ownership", `${application.ownership}% verified`],
-    ["Operating history", "More than one year"],
-    ["Business bank account", "Confirmation supplied"],
-    ["Statutory registration", "Documents supplied"],
-    ["Growth potential", "Pending technical assessment"],
-  ];
+  const submittedStage: AdminApplicationStage = {
+    endedAt: application.submittedAt,
+    name: "Submitted",
+    startedAt: application.submittedAt,
+    status: "COMPLETED",
+  };
+  const stages = [submittedStage, ...application.stages];
 
   return (
-    <section className={cardClassName}>
-      <div className="flex items-center justify-between">
-        <SectionTitle icon={FileCheck2}>Eligibility summary</SectionTitle>
-        <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-bold text-emerald-700">
-          Initial pass
-        </span>
+    <section className="rounded-2xl border border-brand-navy/10 bg-white p-5 shadow-sm sm:p-6">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-bold text-brand-navy">Progress Tracking</h2>
+          <p className="mt-1 text-xs text-brand-navy/55">
+            Current position in the review process
+          </p>
+        </div>
+        <ListChecks aria-hidden="true" className="size-5 text-brand-orange" />
       </div>
-      <ul className="mt-5 divide-y divide-slate-100">
-        {items.map(([label, value]) => (
-          <li className="flex gap-3 py-3" key={label}>
-            <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-emerald-100 text-emerald-700">
-              <Check className="size-3" />
-            </span>
-            <div>
-              <p className="text-xs font-bold text-slate-700">{label}</p>
-              <p className="mt-1 text-[10px] text-slate-400">{value}</p>
-            </div>
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-}
+      <ol aria-label="Application progress" className="mt-6">
+        {stages.map((stage, index) => {
+          const state = stage.status === "COMPLETED"
+            ? "done"
+            : stage.status === "ACTIVE" || stage.status === "BLOCKED"
+              ? "active"
+              : "pending";
+          const isLast = index === stages.length - 1;
 
-function SupportingDocuments({
-  application,
-}: {
-  application: AdminApplication;
-}) {
-  const complete = application.documents === 8;
-
-  return (
-    <section className={cardClassName}>
-      <div className="flex items-center justify-between">
-        <h2 className="font-bold text-navy">Supporting documents</h2>
-        <strong className="text-sm text-navy">{application.documents}/8</strong>
+          return (
+            <li
+              className="relative flex gap-4"
+              key={`${stage.name}-${index}`}
+            >
+              {!isLast ? (
+                <span
+                  aria-hidden="true"
+                  className={`absolute left-[15px] top-8 h-[calc(100%-1.5rem)] w-0.5 ${
+                    state === "done" ? "bg-brand-green" : "bg-brand-navy/10"
+                  }`}
+                />
+              ) : null}
+              <div className="relative z-10 shrink-0">
+                <ProgressMarker state={state} />
+              </div>
+              <div className="min-w-0 pb-6 pt-1">
+                <p className="text-sm font-bold text-brand-navy">{stage.name}</p>
+                <p className="mt-1 text-xs text-brand-navy/55">
+                  {state === "done"
+                    ? stage.endedAt
+                      ? `Completed ${formatDate(stage.endedAt)}`
+                      : "Completed"
+                    : state === "active"
+                      ? stage.status === "BLOCKED"
+                        ? "Blocked"
+                        : "In progress"
+                      : "Not started"}
+                </p>
+              </div>
+            </li>
+          );
+        })}
+      </ol>
+      <div className="mt-1 rounded-xl bg-brand-cream px-4 py-3 text-xs text-brand-navy/70">
+        <span className="font-bold text-brand-navy">Submitted:</span>{" "}
+        {formatDate(application.submittedAt)}
       </div>
-      <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100">
-        <div
-          className="h-full rounded-full bg-orange"
-          style={{ width: `${(application.documents / 8) * 100}%` }}
-        />
-      </div>
-      <p className="mt-3 text-xs text-slate-500">
-        {complete
-          ? "All required document categories are represented."
-          : `${8 - application.documents} document categories require attention.`}
-      </p>
-      <GeneralButton className="mt-5 w-full" disabled variant="outline">
-        Open document register
-      </GeneralButton>
-    </section>
-  );
-}
-
-function PrototypeBoundary() {
-  return (
-    <section className="rounded-xl border border-orange/20 bg-orange/5 p-5">
-      <p className="text-xs font-bold text-orange">Prototype boundary</p>
-      <p className="mt-2 text-xs leading-5 text-slate-600">
-        Assessment, information-request and decision actions remain disabled
-        until roles, scoring rules and approval authority are confirmed.
-      </p>
     </section>
   );
 }

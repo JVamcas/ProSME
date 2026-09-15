@@ -3,8 +3,10 @@ import {
   Bell,
   BriefcaseBusiness,
   ClipboardList,
+  ListTodo,
   LayoutDashboard,
   Store,
+  UsersRound,
   UserRound,
   Workflow,
 } from "lucide-react";
@@ -86,6 +88,14 @@ export const operationsPortalRoutes: readonly PortalRoute[] = [
     requiredCapability: capabilities.adminAccess,
   },
   {
+    id: "admin-work-queue",
+    href: "/admin/work-queue",
+    label: "My Work Queue",
+    icon: ListTodo,
+    space: "operations",
+    requiredCapability: capabilities.workQueueRead,
+  },
+  {
     id: "admin-applications",
     href: "/admin/applications",
     label: "Applications",
@@ -108,6 +118,19 @@ export const operationsPortalRoutes: readonly PortalRoute[] = [
       capabilities.workflowDefinitionUpdate,
       capabilities.workflowDefinitionPublish,
       capabilities.workflowDefinitionRetire,
+    ],
+  },
+  {
+    id: "admin-users",
+    href: "/admin/users",
+    label: "Users & access",
+    icon: UsersRound,
+    space: "operations",
+    requiredAnyCapabilities: [
+      capabilities.userRead,
+      capabilities.userManage,
+      capabilities.roleRead,
+      capabilities.roleManage,
     ],
   },
 ];

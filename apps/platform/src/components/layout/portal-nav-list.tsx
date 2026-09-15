@@ -12,7 +12,13 @@ function isActive(pathname: string, href: string) {
     : pathname.startsWith(href);
 }
 
-export function PortalNavList({ routes }: { routes: readonly PortalRoute[] }) {
+export function PortalNavList({
+  dark = false,
+  routes,
+}: {
+  dark?: boolean;
+  routes: readonly PortalRoute[];
+}) {
   const pathname = usePathname();
 
   return (
@@ -31,13 +37,19 @@ export function PortalNavList({ routes }: { routes: readonly PortalRoute[] }) {
                 className={cn(
                   "flex min-h-11 items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold text-brand-navy transition",
                   "hover:bg-brand-navy/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-navy",
-                  active && "bg-brand-navy text-brand-orange shadow-sm hover:bg-brand-navy",
+                  dark &&
+                    "text-white/80 hover:bg-white/10 hover:text-white focus-visible:ring-white",
+                  active &&
+                    !dark &&
+                    "bg-brand-navy text-brand-orange shadow-sm hover:bg-brand-navy",
+                  dark && active && "bg-white/12 text-white hover:bg-white/15",
                 )}
               >
                 <Icon
                   aria-hidden="true"
                   className={cn(
                     "size-5 text-brand-navy",
+                    dark && "text-brand-orange",
                     active && "text-brand-orange",
                   )}
                 />

@@ -106,6 +106,48 @@
       "when": 1789418400000,
       "tag": "0014_phase3_documents_declarations",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1789460100000,
+      "tag": "0015_phase3_submission_workflow_runtime",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1789466400000,
+      "tag": "0016_admin_dashboard_projection_indexes",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1789467300000,
+      "tag": "0017_phase3_work_queue",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1789468200000,
+      "tag": "0018_phase3_checklist_tasks",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1789468800000,
+      "tag": "0019_task_claim_row_version_repair",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1789470000000,
+      "tag": "0020_phase3_user_access_management",
+      "breakpoints": true
     }
   ]
 }

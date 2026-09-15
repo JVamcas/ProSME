@@ -18,6 +18,10 @@ function ContinueLink({ application }: { application: ApplicationSummary }) {
 }
 
 function renderAction(application: ApplicationSummary) {
+  if (application.status !== "draft") {
+    return null;
+  }
+
   return <ContinueLink application={application} />;
 }
 

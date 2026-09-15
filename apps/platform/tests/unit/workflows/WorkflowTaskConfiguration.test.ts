@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { workflowTaskFormSchema } from "@/components/admin/workflows/WorkflowTaskFormSchema";
+import {
+  checklistItemDefaults,
+  workflowTaskFormSchema,
+} from "@/components/admin/workflows/WorkflowTaskFormSchema";
 import { referenceWorkflow } from "@/modules/workflows/ReferenceWorkflow";
 import {
   defaultTaskConfiguration,
@@ -44,6 +47,9 @@ describe("workflow task configuration", () => {
       assignmentTarget: "79e20de0-3558-4d63-90a4-8c9f5125df07",
       code: "REVIEW_TASK",
       configJson: formatTaskConfiguration(
+        defaultTaskConfiguration("CHECKLIST"),
+      ),
+      checklistItems: checklistItemDefaults(
         defaultTaskConfiguration("CHECKLIST"),
       ),
       name: "Review task",

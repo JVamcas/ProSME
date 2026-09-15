@@ -115,8 +115,9 @@ function ReviewConfirmationField({
   );
 }
 
-function ReviewActions({ onBack, reviewed }: {
+function ReviewActions({ onBack, pending, reviewed }: {
   onBack: () => void;
+  pending: boolean;
   reviewed: boolean;
 }) {
   return (
@@ -130,8 +131,8 @@ function ReviewActions({ onBack, reviewed }: {
           <ArrowLeft aria-hidden="true" className="size-4" />
           Back
         </GeneralButton>
-        <GeneralButton disabled={!reviewed} type="button">
-          Submit application
+        <GeneralButton disabled={!reviewed || pending} type="submit">
+          {pending ? "Submitting…" : "Submit application"}
         </GeneralButton>
       </div>
     </div>
@@ -142,10 +143,14 @@ export function ApplicationReview({
   application,
   onBack,
   onEdit,
+  onSubmit,
+  pending = false,
 }: {
   application: ApplicationView;
   onBack: () => void;
   onEdit: (section: ApplicationSection) => void;
+  onSubmit?: () => Promise<unknown>;
+  pending?: boolean;
 }) {
   const form = useForm<ReviewConfirmation>({
     defaultValues: { reviewed: false },
@@ -158,7 +163,9 @@ export function ApplicationReview({
     <FormProvider {...form}>
       <form
         noValidate
-        onSubmit={form.handleSubmit(() => undefined)}
+        onSubmit={form.handleSubmit(async () => {
+          await onSubmit?.();
+        })}
       >
         <p className="mb-5 text-sm text-brand-navy/65">
           Please review your application before submitting.
@@ -169,7 +176,7 @@ export function ApplicationReview({
           ))}
         </ul>
         <ReviewConfirmationField register={form.register} />
-        <ReviewActions onBack={onBack} reviewed={reviewed} />
+        <ReviewActions onBack={onBack} pending={pending} reviewed={reviewed} />
       </form>
     </FormProvider>
   );

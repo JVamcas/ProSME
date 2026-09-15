@@ -51,11 +51,13 @@ function useDismissableMenu() {
 function MobileMenu({
   closeMenu,
   context,
+  dark = false,
   routes,
   space,
 }: {
   closeMenu: () => void;
   context: PortalContext;
+  dark?: boolean;
   routes: readonly PortalRoute[];
   space: PortalSpace;
 }) {
@@ -67,7 +69,7 @@ function MobileMenu({
       }}
     >
       <div
-        className="flex h-full w-[min(21rem,90vw)] flex-col overflow-hidden bg-brand-orange px-4 pb-4 shadow-xl"
+        className={`flex h-full w-[min(21rem,90vw)] flex-col overflow-hidden px-4 pb-4 shadow-xl ${dark ? "bg-brand-navy" : "bg-brand-orange"}`}
         onClick={(event) => {
           const target = event.target;
           if (target instanceof Element && target.closest("a, button")) {
@@ -75,19 +77,22 @@ function MobileMenu({
           }
         }}
       >
-        <PortalUserSummary context={context} />
+        <PortalUserSummary context={context} dark={dark} />
         <div className="mt-4 shrink-0">
           <PortalSpaceSwitcher
             availableSpaces={context.availableSpaces}
             currentSpace={space}
+            dark={dark}
           />
         </div>
         <div className="mt-4 min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
-          <PortalNavList routes={routes} />
+          <PortalNavList dark={dark} routes={routes} />
         </div>
-        <div className="shrink-0 border-t border-brand-navy/15 pt-2">
-          <PortalHelpLink />
-          <LogoutButton tone="brand" />
+        <div
+          className={`shrink-0 border-t pt-2 ${dark ? "border-white/15" : "border-brand-navy/15"}`}
+        >
+          <PortalHelpLink dark={dark} />
+          <LogoutButton tone={dark ? "dark" : "brand"} />
         </div>
       </div>
     </div>
@@ -110,7 +115,9 @@ export function PortalMobileHeader({
   const homePath = space === "operations" ? "/admin" : "/portal";
 
   return (
-    <header className="sticky top-0 z-40 flex h-16 items-center justify-between bg-brand-orange px-4 lg:hidden">
+    <header
+      className={`sticky top-0 z-40 flex h-16 items-center justify-between px-4 lg:hidden ${space === "operations" ? "bg-brand-navy" : "bg-brand-orange"}`}
+    >
       <details className="relative" ref={menu}>
         <summary
           aria-label="Open portal navigation"
@@ -121,12 +128,19 @@ export function PortalMobileHeader({
         <MobileMenu
           closeMenu={closeMenu}
           context={context}
+          dark={space === "operations"}
           routes={routes}
           space={space}
         />
       </details>
-      <Logo className="rounded-lg bg-brand-white p-1.5" href={homePath} compact />
-      <span className="max-w-24 truncate text-xs font-semibold text-brand-navy">
+      <Logo
+        className="rounded-lg bg-brand-white p-1.5"
+        href={homePath}
+        compact
+      />
+      <span
+        className={`max-w-24 truncate text-xs font-semibold ${space === "operations" ? "text-white" : "text-brand-navy"}`}
+      >
         {context.displayName}
       </span>
     </header>

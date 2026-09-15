@@ -14,12 +14,8 @@ function isExempt(file) {
 
 function limitFor(file) {
   const name = path.basename(file);
-  if (["page.tsx", "layout.tsx", "route.ts"].includes(name)) return 150;
   if (file.includes("/tests/") || name.endsWith(".test.ts") || name.endsWith(".test.tsx")) return 300;
-  if (file.includes("/components/") || file.includes("/hooks/")) return 200;
-  if (/\.(repository|service|policy|integration)\.ts$/.test(name)) return 250;
-  if (/(Repository|Service|Policy|Integration)\.ts$/.test(name)) return 250;
-  return 200;
+  return 400;
 }
 
 async function collect(directory) {

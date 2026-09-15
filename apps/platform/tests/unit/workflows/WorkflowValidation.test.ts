@@ -137,8 +137,21 @@ describe("workflow task registry", () => {
 });
 
 describe("workflow graph validation", () => {
-  it("accepts the TOR-aligned draft reference workflow", () => {
-    expect(validateWorkflowGraph(referenceWorkflow)).toEqual({
+  it("requires assignments before publishing the reference workflow", () => {
+    const validation = validateWorkflowGraph(referenceWorkflow);
+    expect(validation.valid).toBe(false);
+    expect(validation.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: "MISSING_ASSIGNMENT" }),
+      ]),
+    );
+    const assigned = structuredClone(referenceWorkflow);
+    assigned.stages.forEach((stage) => {
+      stage.tasks.forEach((task) => {
+        task.assignmentRoleId = "79e20de0-3558-4d63-90a4-8c9f5125df07";
+      });
+    });
+    expect(validateWorkflowGraph(assigned)).toEqual({
       valid: true,
       errors: [],
       warnings: [],

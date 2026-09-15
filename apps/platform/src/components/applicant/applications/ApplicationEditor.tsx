@@ -6,6 +6,7 @@ import { PortalErrorState } from "@/components/layout/portal-error-state";
 import { PortalLoadingState } from "@/components/layout/portal-loading-state";
 import {
   useOwnApplication,
+  useSubmitApplication,
   useUpdateApplication,
 } from "@/modules/applications/ApplicationHooks";
 import type { ApplicationUpdateInput } from "@/modules/applications/ApplicationSchemas";
@@ -21,6 +22,7 @@ export function ApplicationEditor({
 }) {
   const application = useOwnApplication(applicationId);
   const mutation = useUpdateApplication(applicationId);
+  const submission = useSubmitApplication(applicationId);
 
   if (application.isPending) {
     return (
@@ -53,16 +55,24 @@ export function ApplicationEditor({
   };
   const reload = () => {
     mutation.reset();
+    submission.reset();
     void application.refetch();
+  };
+  const submit = async () => {
+    const result = await submission.mutateAsync();
+    toast.success("Application submitted");
+    return result;
   };
 
   return (
     <ApplicationWorkspace
       application={application.data}
-      error={mutation.error}
+      error={mutation.error ?? submission.error}
       onReload={reload}
-      pending={mutation.isPending}
+      pending={mutation.isPending || submission.isPending}
       save={save}
+      submission={submission.data}
+      submit={submit}
     />
   );
 }

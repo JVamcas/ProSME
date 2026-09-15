@@ -1,8 +1,8 @@
 import { z } from "zod";
 
 export const optionSchema = z.object({
-  code: z.string().min(1),
-  label: z.string().min(1),
+  code: z.string().min(1).max(80),
+  label: z.string().min(1).max(200),
 });
 
 export const itemSchema = optionSchema.extend({

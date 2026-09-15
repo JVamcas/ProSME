@@ -1,0 +1,48 @@
+"use client";
+
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+
+import { clientWorkQueueService } from "./ClientWorkQueueService";
+import type { WorkQueueListInput } from "./WorkQueueTypes";
+
+export const workQueueQueryKeys = {
+  all: ["admin", "work-queue"] as const,
+  list: (input: WorkQueueListInput) =>
+    ["admin", "work-queue", input] as const,
+  task: (taskId: string) => ["admin", "work-queue", "task", taskId] as const,
+};
+
+export function useWorkQueue(input: WorkQueueListInput) {
+  return useQuery({
+    queryFn: () => clientWorkQueueService.list(input),
+    queryKey: workQueueQueryKeys.list(input),
+  });
+}
+
+export function useWorkflowTask(taskId: string) {
+  return useQuery({
+    queryFn: () => clientWorkQueueService.getTask(taskId),
+    queryKey: workQueueQueryKeys.task(taskId),
+  });
+}
+
+export function useCompleteWorkflowTask(taskId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof clientWorkQueueService.completeTask>[1]) =>
+      clientWorkQueueService.completeTask(taskId, input),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: workQueueQueryKeys.all });
+    },
+  });
+}
+
+export function useClaimTask() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: clientWorkQueueService.claim,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: workQueueQueryKeys.all });
+    },
+  });
+}

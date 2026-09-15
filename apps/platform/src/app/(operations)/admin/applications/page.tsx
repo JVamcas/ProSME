@@ -21,13 +21,13 @@ export default async function ApplicationsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-[1240px] p-4 sm:p-7 lg:p-8">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-navy">Applications</h1>
-        <p className="mt-1 text-xs text-slate-400">
-          Search and review submitted applications.
+    <div className="space-y-5">
+      <header>
+        <h1 className="text-3xl font-bold text-brand-navy">Applications</h1>
+        <p className="mt-1 text-sm text-brand-navy/60">
+          Manage and track submitted funding applications.
         </p>
-      </div>
+      </header>
       <ApplicationsTable />
     </div>
   );

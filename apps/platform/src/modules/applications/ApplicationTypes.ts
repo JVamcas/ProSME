@@ -25,6 +25,30 @@ export type AdminApplication = {
   useOfFunds: string;
 };
 
+export type AdminApplicationStage = {
+  endedAt: string | null;
+  name: string;
+  startedAt: string | null;
+  status: "NOT_STARTED" | "ACTIVE" | "BLOCKED" | "COMPLETED" | "CANCELLED";
+};
+
+export type AdminApplicationOverview = {
+  applicantName: string;
+  applicationId: string;
+  businessName: string | null;
+  businessType: string | null;
+  coFunding: number | null;
+  currentStageName: string | null;
+  industry: string | null;
+  location: string | null;
+  opportunityTitle: string;
+  priority: "HIGH" | "MEDIUM" | "LOW" | null;
+  reference: string;
+  requestedAmount: number | null;
+  stages: AdminApplicationStage[];
+  submittedAt: string;
+};
+
 import type {
   ApplicationBusinessSection,
   ApplicationFinancialSection,
@@ -41,7 +65,7 @@ export type ApplicationSummary = {
   fundingOpportunityTitle: string;
   id: string;
   progressPercent: number;
-  status: "draft";
+  status: "draft" | "submitted";
   updatedAt: string;
 };
 
@@ -64,4 +88,57 @@ export type ApplicationView = ApplicationSummary & {
   projectSection: Partial<ApplicationProjectSection>;
   rowVersion: number;
   sectionCompletion: ApplicationSectionCompletion;
+};
+
+export type ApplicationSubmission = {
+  applicationId: string;
+  reference: string;
+  submittedAt: string;
+  workflowInstanceId: string;
+  workflowVersionId: string;
+};
+
+export const adminApplicationStatuses = [
+  "all",
+  "submitted",
+  "under-review",
+  "action-required",
+  "outcome-available",
+  "closed",
+] as const;
+
+export type AdminApplicationStatusFilter =
+  (typeof adminApplicationStatuses)[number];
+
+export type AdminApplicationListRow = {
+  activeStageName: string | null;
+  activeTaskCount: number;
+  applicantName: string;
+  applicantStatus: string;
+  applicationId: string;
+  assignedRoleName: string | null;
+  assignedUserName: string | null;
+  businessName: string | null;
+  dueAt: string | null;
+  fundingCallTitle: string;
+  internalStatus: string;
+  priority: "HIGH" | "MEDIUM" | "LOW" | null;
+  reference: string;
+  requestedAmount: number | null;
+  rowVersion: number;
+  submittedAt: string;
+};
+
+export type AdminApplicationListInput = {
+  after?: string;
+  limit: number;
+  search?: string;
+  stage?: string;
+  status: AdminApplicationStatusFilter;
+};
+
+export type AdminApplicationPage = {
+  items: AdminApplicationListRow[];
+  nextCursor: string | null;
+  total: number;
 };

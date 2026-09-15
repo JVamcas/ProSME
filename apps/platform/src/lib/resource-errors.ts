@@ -27,3 +27,10 @@ export class RequestValidationError extends Error {
     this.userMessage = message;
   }
 }
+
+export class IdempotencyConflictError extends ResourceConflictError {
+  constructor(message: string) {
+    super(message);
+    this.name = "IdempotencyConflictError";
+  }
+}

@@ -80,7 +80,7 @@ describeDatabase("P3.3 PostgreSQL workflow persistence", () => {
     const editor = await findWorkflowGraph(publishedVersionId);
     expect(editor?.graph.stages).toHaveLength(6);
     expect(editor?.graph.transitions).toHaveLength(6);
-    expect(editor?.graph.stages[0].tasks[0].type).toBe("AUTOMATED_RULE_CHECK");
+    expect(editor?.graph.stages[0].tasks[0].type).toBe("CHECKLIST");
     definitionId = editor!.definition.id;
   });
 

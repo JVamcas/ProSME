@@ -6,6 +6,7 @@ import {
   PermissionDeniedError,
 } from "@/auth/authorization/policy";
 import {
+  IdempotencyConflictError,
   ResourceConflictError,
   ResourceNotFoundError,
   RequestValidationError,
@@ -15,6 +16,7 @@ type ApiErrorCode =
   | "CONFLICT"
   | "FORBIDDEN"
   | "INTERNAL_ERROR"
+  | "IDEMPOTENCY_CONFLICT"
   | "NOT_FOUND"
   | "UNAUTHENTICATED"
   | "VALIDATION_ERROR";
@@ -148,6 +150,15 @@ export function portalRouteError(
       correlationId,
       404,
       "NOT_FOUND",
+      error.userMessage,
+    );
+  }
+
+  if (error instanceof IdempotencyConflictError) {
+    return errorResponse(
+      correlationId,
+      409,
+      "IDEMPOTENCY_CONFLICT",
       error.userMessage,
     );
   }

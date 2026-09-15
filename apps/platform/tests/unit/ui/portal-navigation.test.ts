@@ -73,7 +73,10 @@ describe("P3.1 capability-aware portal navigation", () => {
       ]),
     );
 
-    expect(operationsPortalRoutes[1].requiredAnyCapabilities).toEqual([
+    const applications = operationsPortalRoutes.find(
+      (route) => route.id === "admin-applications",
+    );
+    expect(applications?.requiredAnyCapabilities).toEqual([
       capabilities.applicationReadAssigned,
       capabilities.applicationReadAll,
     ]);
@@ -81,6 +84,18 @@ describe("P3.1 capability-aware portal navigation", () => {
     expect(assignedReader.map((route) => route.href)).toContain(
       "/admin/applications",
     );
+  });
+
+  it("exposes the work queue only with its dedicated capability", () => {
+    const routes = filterPortalRoutes(
+      portalRoutes,
+      "operations",
+      new Set([capabilities.adminAccess, capabilities.workQueueRead]),
+    );
+    expect(routes.map((route) => route.href)).toEqual([
+      "/admin",
+      "/admin/work-queue",
+    ]);
   });
 
   it("removes a parent when all nested routes are inaccessible", () => {

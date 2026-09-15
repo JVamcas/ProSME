@@ -10,7 +10,7 @@ export const referenceWorkflow: WorkflowGraphInput = {
   stages: [
     {
       code: "PRE_SCREENING",
-      name: "Submission and automated pre-screening",
+      name: "Submission and pre-screening",
       sequence: 1,
       initial: true,
       applicantStatus: "SUBMITTED",
@@ -19,18 +19,33 @@ export const referenceWorkflow: WorkflowGraphInput = {
         "Your application has been received and is being prepared for review.",
       tasks: [
         {
-          code: "AUTOMATED_PRE_SCREEN",
-          name: "Automated pre-screening",
-          type: "AUTOMATED_RULE_CHECK",
+          code: "PRE_SCREEN_CHECKLIST",
+          name: "Pre-screening checklist",
+          type: "CHECKLIST",
           sequence: 1,
           required: true,
           config: {
-            rulesetCode: "TOR_DRAFT_PRE_SCREEN",
-            ruleVersion: 1,
-            inputs: ["eligibilityResult", "requestedAmount"],
-            categories: [
-              { code: "PRIORITY_REVIEW", label: "Priority review" },
-              { code: "STANDARD_REVIEW", label: "Standard review" },
+            items: [
+              {
+                code: "NAMIBIAN_OWNERSHIP",
+                label: "At least 51% Namibian-owned",
+                required: true,
+              },
+              {
+                code: "STATUTORY_COMPLIANCE",
+                label: "Compliant with relevant statutory institutions",
+                required: true,
+              },
+              {
+                code: "NIPDB_MSME_REGISTRATION",
+                label: "Registered on the NIPDB MSME database",
+                required: true,
+              },
+              {
+                code: "OPERATING_HISTORY",
+                label: "Operating for at least one year",
+                required: true,
+              },
             ],
           },
         },

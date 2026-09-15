@@ -66,6 +66,15 @@ export function validateWorkflowStage(
         ),
       );
     }
+    if (!task.assignmentRoleId && !task.assignmentUserId) {
+      errors.push(
+        issue(
+          "MISSING_ASSIGNMENT",
+          `${task.name} must be assigned to a role or user before publication.`,
+          `${base}.tasks.${taskIndex}`,
+        ),
+      );
+    }
   });
   if (
     sensitiveApplicantTerms.test(

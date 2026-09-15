@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
+import { z } from "zod";
 
 import { capabilities } from "@/auth/authorization/capabilities";
 import { getCurrentUser } from "@/auth/authorization/current-user";
 import { can } from "@/auth/authorization/policy";
 import { ApplicationReview } from "@/components/admin/applications/ApplicationReview";
-import { getApplication } from "@/modules/applications/ServerApplicationService";
+import { getAdminApplicationOverview } from "@/modules/applications/ServerAdminApplicationService";
 
-export const metadata: Metadata = { title: "Application review" };
+export const metadata: Metadata = { title: "Application overview" };
 
 type ApplicationPageProps = {
   params: Promise<{
@@ -28,7 +29,11 @@ export default async function ApplicationPage({
     redirect("/unauthorized");
   }
 
-  const application = await getApplication(user, decodeURIComponent(id));
+  const applicationId = decodeURIComponent(id);
+  if (!z.uuid().safeParse(applicationId).success) {
+    notFound();
+  }
+  const application = await getAdminApplicationOverview(user, applicationId);
 
   if (!application) {
     notFound();

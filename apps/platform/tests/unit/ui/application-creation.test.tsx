@@ -25,6 +25,7 @@ import { ApplicationDocumentsForm } from "@/components/applicant/applications/Ap
 import { ApplicationProjectForm } from "@/components/applicant/applications/ApplicationProjectForm";
 import { ApplicationReview } from "@/components/applicant/applications/ApplicationReview";
 import { ApplicationsTable } from "@/components/applicant/applications/ApplicationTable";
+import { ApplicationListContent } from "@/components/applicant/applications/ApplicationListContent";
 import { StepProgress } from "@/components/ui/step-progress";
 import type { ApplicationView } from "@/modules/applications/ApplicationTypes";
 
@@ -195,7 +196,7 @@ describe("application creation UI", () => {
     expect(markup).toContain("View terms and conditions");
   });
 
-  it("renders an unwired review and submit view", () => {
+  it("renders the validated review and submit form", () => {
     useBusiness.mockReturnValue({
       data: { legalName: "JM Technologies (Pty) Ltd" },
     });
@@ -217,7 +218,7 @@ describe("application creation UI", () => {
     expect(markup).toContain("All declarations accepted");
     expect(markup).toContain("Submit application");
     expect(markup).toMatch(
-      /disabled=""[^>]*type="button"|type="button"[^>]*disabled=""/,
+      /disabled=""[^>]*type="submit"|type="submit"[^>]*disabled=""/,
     );
   });
 
@@ -243,5 +244,26 @@ describe("application creation UI", () => {
     expect(markup).toContain("Growth Fund");
     expect(markup).toContain("Application completion");
     expect(markup).toContain("aria-sort");
+  });
+
+  it("hides the continue action for non-draft applications", () => {
+    const markup = renderToStaticMarkup(
+      <ApplicationListContent
+        items={[
+          {
+            createdAt: "2026-09-01T08:00:00.000Z",
+            currentSection: "declarations",
+            fundingOpportunityId: 42,
+            fundingOpportunityTitle: "Growth Fund",
+            id: "99e20de0-3558-4d63-90a4-8c9f5125df07",
+            progressPercent: 100,
+            status: "submitted",
+            updatedAt: "2026-09-14T08:00:00.000Z",
+          },
+        ]}
+      />,
+    );
+
+    expect(markup).not.toContain("Continue");
   });
 });

@@ -29,7 +29,7 @@ export function Logo({
         className={cn(
           "h-auto",
           compact ? "w-32" : "w-36",
-          inverted && "brightness-110",
+          inverted && "brightness-0 invert",
         )}
       />
     </Link>

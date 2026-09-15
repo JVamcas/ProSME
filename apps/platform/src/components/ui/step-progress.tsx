@@ -26,7 +26,7 @@ type StepState = "complete" | "current" | "not complete" | "unavailable";
 
 function markerClassName(state: StepState) {
   if (state === "complete") {
-    return "border-brand-green bg-brand-green/40 text-brand-navy";
+    return "border-brand-green bg-brand-green-soft text-brand-navy";
   }
   if (state === "current") {
     return "border-brand-orange bg-brand-orange text-brand-navy";

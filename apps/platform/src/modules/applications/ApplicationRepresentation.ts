@@ -21,7 +21,7 @@ export type ApplicationSummaryRecord = {
   fundingOpportunityTitle: string;
   id: string;
   sectionCompletion: ApplicationSectionCompletion;
-  status: "draft";
+  status: "draft" | "submitted";
   updatedAt: Date;
 };
 

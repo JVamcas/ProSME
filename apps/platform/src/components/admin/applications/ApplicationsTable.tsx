@@ -1,141 +1,245 @@
 "use client";
 
-import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ChevronRight, Search } from "lucide-react";
-import { StatusBadge } from "@/components/ui/status-badge";
-import {
-  DataTable,
-  type DataTableColumn,
-} from "@/components/ui/data-table";
-import { Input } from "@/components/ui/form-controls";
-import { useApplications } from "@/modules/applications/ApplicationHooks";
-import type { AdminApplication } from "@/modules/applications/ApplicationTypes";
+import { Search } from "lucide-react";
+import { useState } from "react";
 
-const columns: DataTableColumn<AdminApplication>[] = [
+import { GeneralButton } from "@/components/ui/button";
+import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
+import { DataTableFilter } from "@/components/ui/data-table-filter";
+import { Input } from "@/components/ui/form-controls";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { cn } from "@/lib/utils";
+import { useAdminApplications } from "@/modules/applications/ApplicationHooks";
+import type {
+  AdminApplicationListRow,
+  AdminApplicationStatusFilter,
+} from "@/modules/applications/ApplicationTypes";
+
+const statuses: Array<{
+  label: string;
+  value: AdminApplicationStatusFilter;
+}> = [
+  { label: "All", value: "all" },
+  { label: "Submitted", value: "submitted" },
+  { label: "Under review", value: "under-review" },
+  { label: "Action required", value: "action-required" },
+  { label: "Outcome available", value: "outcome-available" },
+  { label: "Closed", value: "closed" },
+];
+
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat("en-NA", { dateStyle: "medium" }).format(
+    new Date(value),
+  );
+}
+
+function formatMoney(value: number | null) {
+  if (value === null) return "Not provided";
+  return new Intl.NumberFormat("en-NA", {
+    currency: "NAD",
+    maximumFractionDigits: 0,
+    style: "currency",
+  }).format(value);
+}
+
+const columns: DataTableColumn<AdminApplicationListRow>[] = [
   {
-    accessorKey: "id",
-    header: "Reference",
+    accessorKey: "reference",
+    header: "Application",
     cell: ({ row }) => (
-      <span className="font-bold text-navy">{row.original.id}</span>
+      <span className="font-bold text-brand-navy">{row.original.reference}</span>
     ),
   },
   {
-    accessorKey: "business",
-    header: "Business",
+    accessorKey: "businessName",
+    header: "Applicant",
     cell: ({ row }) => (
       <div>
-        <p className="font-semibold text-slate-800">
-          {row.original.business}
+        <p className="font-semibold text-brand-navy">
+          {row.original.businessName ?? "Business not selected"}
         </p>
-        <p className="mt-0.5 text-[10px] text-slate-400">
-          {row.original.applicant}
+        <p className="mt-1 text-[11px] text-brand-navy/55">
+          {row.original.applicantName}
         </p>
       </div>
     ),
   },
-  { accessorKey: "sector", header: "Sector" },
-  { accessorKey: "region", header: "Region" },
   {
-    accessorKey: "requested",
-    header: "Requested",
-    cell: ({ row }) => `N$${row.original.requested.toLocaleString("en-NA")}`,
+    accessorKey: "fundingCallTitle",
+    header: "Opportunity",
   },
   {
-    accessorKey: "submitted",
-    header: "Submitted",
-    cell: ({ row }) =>
-      new Intl.DateTimeFormat("en-NA", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      }).format(new Date(row.original.submitted)),
-  },
-  {
-    accessorKey: "status",
+    accessorKey: "internalStatus",
     header: "Status",
-    cell: ({ row }) => <StatusBadge status={row.original.status} />,
+    cell: ({ row }) => <StatusBadge status={row.original.internalStatus} />,
+  },
+  {
+    accessorKey: "requestedAmount",
+    header: "Requested",
+    cell: ({ row }) => formatMoney(row.original.requestedAmount),
+  },
+  {
+    accessorKey: "submittedAt",
+    header: "Submitted",
+    cell: ({ row }) => formatDate(row.original.submittedAt),
   },
   {
     id: "action",
-    header: "",
+    header: "Action",
     enableSorting: false,
     cell: ({ row }) => (
-      <Link
-        href={`/admin/applications/${row.original.id}`}
-        className="grid size-8 place-items-center rounded-full border border-slate-200 text-slate-400 hover:border-orange hover:text-navy"
-        aria-label={`View ${row.original.id}`}
-      >
-        <ChevronRight className="size-4 text-brand-orange" />
-      </Link>
+      <GeneralButton asChild size="sm" variant="outline">
+        <Link href={`/admin/applications/${row.original.applicationId}`}>
+          View
+        </Link>
+      </GeneralButton>
     ),
   },
 ];
 
+function StatusTabs({
+  onChange,
+  status,
+}: {
+  onChange: (status: AdminApplicationStatusFilter) => void;
+  status: AdminApplicationStatusFilter;
+}) {
+  return (
+    <div className="flex gap-1 overflow-x-auto border-b border-brand-navy/10">
+      {statuses.map((item) => (
+        <button
+          className={cn(
+            "whitespace-nowrap border-b-2 px-4 py-3 text-sm font-semibold",
+            status === item.value
+              ? "border-brand-orange text-brand-navy"
+              : "border-transparent text-brand-navy/55",
+          )}
+          key={item.value}
+          onClick={() => onChange(item.value)}
+          type="button"
+        >
+          {item.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function ApplicationPagination({
+  nextCursor,
+  onNext,
+  onPrevious,
+  pageDepth,
+  total,
+}: {
+  nextCursor: string | null;
+  onNext: () => void;
+  onPrevious: () => void;
+  pageDepth: number;
+  total: number;
+}) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-brand-navy/10 p-4 text-sm text-brand-navy/60">
+      <span>{total} submitted {total === 1 ? "application" : "applications"}</span>
+      <div className="flex gap-2">
+        <GeneralButton disabled={!pageDepth} onClick={onPrevious} size="sm" variant="outline">
+          Previous
+        </GeneralButton>
+        <GeneralButton disabled={!nextCursor} onClick={onNext} size="sm" variant="outline">
+          Next
+        </GeneralButton>
+      </div>
+    </div>
+  );
+}
+
 export function ApplicationsTable() {
+  const [status, setStatus] = useState<AdminApplicationStatusFilter>("all");
+  const [draftSearch, setDraftSearch] = useState("");
+  const [draftStage, setDraftStage] = useState("");
   const [search, setSearch] = useState("");
-  const applications = useApplications();
-  const data = useMemo(() => {
-    const items = applications.data ?? [];
-    const query = search.trim().toLowerCase();
-    if (!query) {
-      return items;
-    }
-
-    return items.filter((item) =>
-      [
-        item.id,
-        item.applicant,
-        item.business,
-        item.sector,
-        item.region,
-        item.status,
-      ].some((value) => value.toLowerCase().includes(query)),
-    );
-  }, [applications.data, search]);
-
+  const [stage, setStage] = useState("");
+  const [cursors, setCursors] = useState<string[]>([]);
+  const applications = useAdminApplications({
+    after: cursors.at(-1),
+    limit: 25,
+    search: search || undefined,
+    stage: stage || undefined,
+    status,
+  });
+  const applyFilters = () => {
+    setSearch(draftSearch.trim());
+    setStage(draftStage.trim());
+    setCursors([]);
+  };
+  const clearFilters = () => {
+    setDraftSearch("");
+    setDraftStage("");
+    setSearch("");
+    setStage("");
+    setCursors([]);
+  };
+  const changeStatus = (next: AdminApplicationStatusFilter) => {
+    setStatus(next);
+    setCursors([]);
+  };
   const emptyMessage = applications.isPending
     ? "Loading applications…"
     : applications.isError
       ? applications.error.message
-      : "No applications match your search";
+      : "No submitted applications match these filters.";
 
   return (
-    <section
-      id="applications"
-      className="rounded-xl border border-slate-200 bg-white shadow-sm"
-    >
-      <div className="flex flex-col justify-between gap-4 border-b border-slate-200 p-5 sm:flex-row sm:items-center">
-        <div>
-          <h2 className="font-bold text-navy">Recent applications</h2>
-          <p className="mt-1 text-xs text-slate-400">
-            Select a record to view the submitted information.
-          </p>
-        </div>
-        <div className="relative w-full sm:w-72">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-brand-orange" />
-          <Input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search applications"
-            className="h-10 pl-9"
-            aria-label="Search applications"
-          />
-        </div>
+    <section className="overflow-hidden rounded-2xl border border-brand-navy/10 bg-white shadow-sm">
+      <StatusTabs onChange={changeStatus} status={status} />
+      <div className="p-4">
+        <DataTableFilter
+          defaultExpanded={false}
+          description="Filter the safe application list projection."
+          onApply={applyFilters}
+          onClear={clearFilters}
+          title="Application filters"
+        >
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-brand-orange" />
+              <Input
+                aria-label="Search applications"
+                className="pl-10"
+                onChange={(event) => setDraftSearch(event.target.value)}
+                placeholder="Search reference, applicant, business or opportunity"
+                value={draftSearch}
+              />
+            </div>
+            <Input
+              aria-label="Filter by workflow stage"
+              onChange={(event) => setDraftStage(event.target.value)}
+              placeholder="Workflow stage"
+              value={draftStage}
+            />
+          </div>
+        </DataTableFilter>
       </div>
       <DataTable
         columns={columns}
-        data={data}
-        minWidth={900}
+        data={applications.data?.items ?? []}
         emptyMessage={emptyMessage}
-        footer={
-          <div className="flex items-center justify-between border-t border-slate-200 px-5 py-4 text-xs text-slate-400">
-            <span>{data.length} applications shown</span>
-            <span>
-              {applications.isFetching ? "Refreshing…" : "Current records"}
-            </span>
-          </div>
-        }
+        minWidth={1120}
+      />
+      <ApplicationPagination
+        nextCursor={applications.data?.nextCursor ?? null}
+        onNext={() => {
+          if (applications.data?.nextCursor) {
+            setCursors((current) => [
+              ...current,
+              applications.data!.nextCursor!,
+            ]);
+          }
+        }}
+        onPrevious={() => setCursors((current) => current.slice(0, -1))}
+        pageDepth={cursors.length}
+        total={applications.data?.total ?? 0}
       />
     </section>
   );

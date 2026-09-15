@@ -16,7 +16,7 @@ export function ApplicantDashboard({
 }: ApplicantDashboardSummary & { openFundingOpportunityCount: number }) {
   return (
     <div>
-      <header className="grid min-h-32 overflow-hidden rounded-2xl border border-brand-blue/40 bg-brand-blue/15 shadow-sm sm:grid-cols-[1fr_15rem]">
+      <header className="grid min-h-32 overflow-hidden rounded-2xl border border-brand-blue/10 bg-brand-blue/10 shadow-sm sm:grid-cols-[1fr_15rem]">
         <div className="self-center p-5 sm:p-6">
           <h1 className="display text-2xl font-bold text-brand-navy sm:text-3xl">
             Welcome back, {displayName}
@@ -24,18 +24,6 @@ export function ApplicantDashboard({
           <p className="mt-1 text-sm text-brand-navy/70">
             Here&apos;s an overview of your SME Fund activity.
           </p>
-        </div>
-        <div className="relative hidden min-h-32 sm:block">
-          <Image
-            alt=""
-            aria-hidden="true"
-            className="object-contain object-right"
-            fill
-            priority
-            sizes="240px"
-            src="/brand/pic1.png"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-brand-blue/30 to-transparent" />
         </div>
       </header>
 

@@ -3,9 +3,13 @@
 import { useState } from "react";
 
 import { StepProgress } from "@/components/ui/step-progress";
-import type { ApplicationView } from "@/modules/applications/ApplicationTypes";
+import type {
+  ApplicationSubmission,
+  ApplicationView,
+} from "@/modules/applications/ApplicationTypes";
 import { ApplicationFeedback } from "./ApplicationFeedback";
 import { ApplicationReview } from "./ApplicationReview";
+import { ApplicationSubmissionConfirmation } from "./ApplicationSubmissionConfirmation";
 import {
   ApplicationSectionForm,
   type SaveApplication,
@@ -27,12 +31,16 @@ export function ApplicationWorkspace({
   onReload,
   pending,
   save,
+  submission,
+  submit = async () => undefined,
 }: {
   application: ApplicationView;
   error?: Error | null;
   onReload: () => void;
   pending: boolean;
   save: SaveApplication;
+  submission?: ApplicationSubmission;
+  submit?: () => Promise<unknown>;
 }) {
   const completed = Object.values(application.sectionCompletion).every(Boolean);
   const [selected, setSelected] = useState<ApplicationStepId | null>(null);
@@ -54,6 +62,10 @@ export function ApplicationWorkspace({
     }
     return updated;
   };
+
+  if (submission) {
+    return <ApplicationSubmissionConfirmation submission={submission} />;
+  }
 
   return (
     <section>
@@ -93,6 +105,8 @@ export function ApplicationWorkspace({
               application={application}
               onBack={() => setSelected("declarations")}
               onEdit={setSelected}
+              onSubmit={submit}
+              pending={pending}
             />
           )}
           <ApplicationFeedback

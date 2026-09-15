@@ -1,77 +1,63 @@
-import Link from "next/link";
-import { Bell, ChevronRight, FileWarning, RefreshCw } from "lucide-react";
+import { ClipboardCheck } from "lucide-react";
 
-import { GeneralButton } from "@/components/ui/button";
+import type { AdminDashboardActivity } from "@/modules/dashboard/AdminDashboardTypes";
+import { formatLocalTime24 } from "@/lib/dateUtils";
 
-const recentApplications = [
-  ["APP-2024-0015", "Green Hydrogen Project", "30 May 2024", "In Review"],
-  ["APP-2024-0014", "Agri Processing Plant", "29 May 2024", "In Review"],
-  ["APP-2024-0013", "Wind Farm Development", "28 May 2024", "Submitted"],
-  ["APP-2024-0012", "Solar Power Project", "12 May 2024", "In Review"],
-];
+function activityLabel(eventCode: string) {
+  if (eventCode === "APPLICATION_SUBMITTED") return "Application submitted";
+  return eventCode
+    .toLocaleLowerCase()
+    .split("_")
+    .map((word) => `${word.charAt(0).toLocaleUpperCase()}${word.slice(1)}`)
+    .join(" ");
+}
 
-const alerts = [
-  { icon: Bell, text: "3 applications require attention" },
-  { icon: FileWarning, text: "2 documents expiring soon" },
-  { icon: RefreshCw, text: "1 system update available" },
-];
-
-export function AdminDashboardPanels() {
+export function AdminDashboardPanels({
+  activities,
+}: {
+  activities: AdminDashboardActivity[];
+}) {
   return (
-    <div className="mt-5 grid gap-5 xl:grid-cols-[1.65fr_.75fr]">
-      <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
-        <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-          <h2 className="text-sm font-bold text-navy">Recent Applications</h2>
-          <Link
-            href="/admin/applications"
-            className="text-[10px] font-bold text-orange"
-          >
-            View All
-          </Link>
-        </div>
-        <div className="divide-y divide-slate-100">
-          {recentApplications.map(([id, project, date, status]) => (
-            <div
-              key={id}
-              className="grid grid-cols-[1fr_1.5fr_1fr_.7fr] gap-3 px-5 py-4 text-[10px] text-slate-500"
+    <section className="rounded-2xl border border-brand-navy/10 bg-brand-white p-5 shadow-sm">
+      <div className="flex items-center justify-between gap-4">
+        <h2 className="text-base font-bold text-brand-navy">Recent activity</h2>
+        <span className="text-xs text-brand-navy/50">Latest 6 events</span>
+      </div>
+      {activities.length ? (
+        <ol className="mt-4 divide-y divide-brand-navy/10">
+          {activities.map((activity) => (
+            <li
+              className="flex gap-3 py-4 first:pt-2"
+              key={`${activity.eventCode}-${activity.applicationId}-${activity.occurredAt}`}
             >
-              <span>{id}</span>
-              <strong className="font-semibold text-slate-700">
-                {project}
-              </strong>
-              <span>{date}</span>
-              <span>{status}</span>
-            </div>
+              <span className="grid size-10 shrink-0 place-items-center rounded-full bg-brand-orange/10">
+                <ClipboardCheck
+                  aria-hidden="true"
+                  className="size-5 text-brand-orange"
+                />
+              </span>
+              <div className="min-w-0">
+                <p className="font-semibold text-brand-navy">
+                  {activityLabel(activity.eventCode)}
+                </p>
+                <p className="mt-0.5 truncate text-sm text-brand-navy/65">
+                  {activity.applicationReference} · {activity.actorName}
+                </p>
+                <time
+                  className="mt-1 block text-xs text-brand-navy/45"
+                  dateTime={activity.occurredAt}
+                >
+                  {formatLocalTime24(activity.occurredAt)}
+                </time>
+              </div>
+            </li>
           ))}
-        </div>
-      </section>
-      <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
-        <div className="border-b border-slate-100 px-5 py-4">
-          <h2 className="text-sm font-bold text-navy">System Alerts</h2>
-        </div>
-        <div className="grid gap-5 p-5">
-          {alerts.map(({ icon: Icon, text }) => (
-            <div
-              key={text}
-              className="flex items-center gap-3 text-xs text-slate-600"
-            >
-              <Icon className="size-5 shrink-0 text-brand-orange" />
-              <span>{text}</span>
-            </div>
-          ))}
-        </div>
-        <div className="flex justify-end px-5 pb-4">
-          <GeneralButton
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-auto px-0 text-[10px] text-orange"
-          >
-            View All
-            <ChevronRight className="size-3" />
-          </GeneralButton>
-        </div>
-      </section>
-    </div>
+        </ol>
+      ) : (
+        <p className="mt-8 rounded-xl bg-brand-navy/5 px-5 py-8 text-center text-sm text-brand-navy/65">
+          No workflow activity exists for this period and access scope.
+        </p>
+      )}
+    </section>
   );
 }

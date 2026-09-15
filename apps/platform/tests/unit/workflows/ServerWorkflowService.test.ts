@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-
 vi.mock("server-only", () => ({}));
 vi.mock("@/db/repositories/WorkflowRepository", () => ({
   findConfigurationReferences: vi.fn(),
@@ -34,7 +33,6 @@ vi.mock(
     listPublishedFundingOpportunities: vi.fn(),
   }),
 );
-
 import { capabilities } from "@/auth/authorization/capabilities";
 import { PermissionDeniedError } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
@@ -63,7 +61,6 @@ import {
   updateWorkflowDraft,
   WorkflowConflictError,
 } from "@/modules/workflows/ServerWorkflowService";
-
 const actor: AuthenticatedUser = {
   id: "79e20de0-3558-4d63-90a4-8c9f5125df07",
   capabilities: new Set(),
@@ -77,10 +74,15 @@ const actor: AuthenticatedUser = {
   updatedAt: new Date(),
   userType: "staff",
 };
-
 const userWith = (...grants: string[]): AuthenticatedUser =>
   ({ ...actor, capabilities: new Set(grants) });
 
+const assignedReferenceWorkflow = structuredClone(referenceWorkflow);
+for (const stage of assignedReferenceWorkflow.stages) {
+  for (const task of stage.tasks) {
+    task.assignmentUserId = actor.id;
+  }
+}
 const record = {
   definition: {
     id: "definition-id",
@@ -91,7 +93,7 @@ const record = {
     createdAt: new Date(),
     updatedAt: new Date(),
   },
-  graph: referenceWorkflow,
+  graph: assignedReferenceWorkflow,
   version: {
     id: "version-id",
     definitionId: "definition-id",
@@ -106,7 +108,6 @@ const record = {
     retiredAt: null,
   },
 };
-
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(findConfigurationReferences).mockResolvedValue({
@@ -114,10 +115,9 @@ beforeEach(() => {
       referenceWorkflow.transitions.map((item) => item.requiredCapability),
     ),
     roles: new Set(),
-    users: new Map(),
+    users: new Map([[actor.id, "active"]]),
   });
 });
-
 describe("workflow service authorization and lifecycle", () => {
   it("rejects workflow reads without the explicit capability", async () => {
     await expect(getWorkflowDefinitions(userWith())).rejects.toBeInstanceOf(

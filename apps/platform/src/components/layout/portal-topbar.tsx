@@ -19,7 +19,11 @@ function NotificationEntry({ enabled }: { enabled: boolean }) {
 
   if (enabled) {
     return (
-      <Link aria-label="Notifications" className={styles} href="/portal/notifications">
+      <Link
+        aria-label="Notifications"
+        className={styles}
+        href="/portal/notifications"
+      >
         <Bell aria-hidden="true" className="size-5 text-brand-orange" />
       </Link>
     );
@@ -44,7 +48,7 @@ export function PortalTopbar({ context, space }: PortalTopbarProps) {
     : "/admin/applications";
   const searchLabel = applicantSpace
     ? "Search funding opportunities"
-    : "Search applications";
+    : "Search applications, users, documents...";
   const canViewNotifications = context.capabilityCodes.includes(
     capabilities.notificationReadOwn,
   );

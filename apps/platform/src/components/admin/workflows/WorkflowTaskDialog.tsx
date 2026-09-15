@@ -18,13 +18,15 @@ import {
 } from "@/modules/workflows/WorkflowTypes";
 import {
   parseTaskConfiguration,
+  checklistItemDefaults,
   taskAssignmentDefaults,
   type WorkflowTaskFormValues,
   workflowTaskFormSchema,
 } from "./WorkflowTaskFormSchema";
-import { FormInput, FormSelect } from "@/components/ui/form-fields";
+import { FormInput, FormSelect, FormTextarea } from "@/components/ui/form-fields";
 import { CheckboxField } from "@/components/ui/form-field";
 import { GeneralButton } from "@/components/ui/button";
+import { WorkflowChecklistConfiguration } from "./WorkflowChecklistConfiguration";
 
 type Props = {
   editor: WorkflowEditorView;
@@ -46,6 +48,9 @@ export function WorkflowTaskDialog({
   const form = useForm<WorkflowTaskFormValues>({
     defaultValues: {
       ...taskAssignmentDefaults(task),
+      checklistItems: checklistItemDefaults(
+        task?.config ?? defaultTaskConfiguration(initialType),
+      ),
       code: task?.code ?? "",
       configJson: formatTaskConfiguration(
         task?.config ?? defaultTaskConfiguration(initialType),
@@ -78,6 +83,11 @@ export function WorkflowTaskDialog({
       formatTaskConfiguration(defaultTaskConfiguration(taskType)),
       { shouldValidate: true },
     );
+    form.setValue(
+      "checklistItems",
+      checklistItemDefaults(defaultTaskConfiguration(taskType)),
+      { shouldValidate: true },
+    );
   }, [form, taskType]);
 
   const submit = form.handleSubmit(async (values) => {
@@ -97,7 +107,9 @@ export function WorkflowTaskDialog({
       assignmentUserId:
         values.assignmentMode === "USER" ? values.assignmentTarget : null,
       code: values.code,
-      config: parseTaskConfiguration(values.configJson),
+      config: values.type === "CHECKLIST"
+        ? { items: values.checklistItems }
+        : parseTaskConfiguration(values.configJson),
       name: values.name,
       required: values.required,
       sequence: task?.sequence ?? stage.tasks.length + 1,
@@ -144,8 +156,8 @@ export function WorkflowTaskDialog({
       title={task ? "Edit workflow task" : "Add workflow task"}
     >
       <FormProvider {...form}>
-        <form className="grid gap-4 grid-cols-1" onSubmit={submit}>
-          <div className="grid gap-4 grid-cols-2">
+        <form className="flex flex-col gap-4" onSubmit={submit}>
+          <div className="grid gap-4 sm:grid-cols-2">
             <FormInput
               label="Task code"
               name="code"
@@ -166,7 +178,16 @@ export function WorkflowTaskDialog({
             label="Task type"
             name="type"
           />
-          <div className="grid gap-4 grid-cols-2">
+          {taskType === "CHECKLIST" ? (
+            <WorkflowChecklistConfiguration />
+          ) : (
+            <FormTextarea
+              className="min-h-44 font-mono text-xs"
+              label="Task configuration (JSON)"
+              name="configJson"
+            />
+          )}
+          <div className="grid gap-4 sm:grid-cols-2">
             <FormSelect
               items={[
                 { label: "Configured role", value: "ROLE" },

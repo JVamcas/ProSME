@@ -96,7 +96,7 @@ function WorkflowDetailsFields({
       {!isEditing ? (
         <CheckboxField
           containerClassName="text-sm text-brand-navy"
-          label="Start with the TOR-aligned reference workflow"
+          label="Is Active"
           name="useReferenceWorkflow"
         />
       ) : null}
