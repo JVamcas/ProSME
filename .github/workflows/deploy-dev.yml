@@ -1,0 +1,81 @@
+name: Deploy development
+
+on:
+  push:
+    branches:
+      - dev
+
+permissions:
+  contents: read
+
+concurrency:
+  group: prosme-dev
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment: development
+    runs-on: [self-hosted, linux, x64, prosme-dev]
+    timeout-minutes: 30
+
+    env:
+      DEPLOY_PATH: /opt/prosme-dev
+      EXPECTED_ENVIRONMENT: dev
+      BUILDKIT_CACHE_MAX_AGE_HOURS: 168
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Ensure target directory exists
+        run: mkdir -p "${DEPLOY_PATH}"
+
+      - name: Sync repository into deployment directory
+        run: |
+          rsync -az --delete \
+            --exclude '.git/' \
+            --exclude '.github/' \
+            --exclude '.env' \
+            --exclude '.runtime/' \
+            ./ "${DEPLOY_PATH}/"
+
+      - name: Verify development environment
+        run: |
+          cd "${DEPLOY_PATH}"
+
+          if [ ! -f .env ]; then
+            echo "Missing ${DEPLOY_PATH}/.env. Create the server-local development environment file before deploying." >&2
+            exit 1
+          fi
+
+          set -a
+          # shellcheck disable=SC1091
+          source .env
+          set +a
+
+          if [ "${ENVIRONMENT:-}" != "${EXPECTED_ENVIRONMENT}" ]; then
+            echo "Deployment environment mismatch: expected ${EXPECTED_ENVIRONMENT}, but .env specifies ${ENVIRONMENT:-<unset>}." >&2
+            exit 1
+          fi
+
+      - name: Build and start application
+        run: |
+          cd "${DEPLOY_PATH}"
+          chmod +x scripts/docker-up.sh scripts/docker-maintenance.sh
+          ./scripts/docker-up.sh --build --force-recreate
+
+      - name: Post-deployment Docker diagnostics
+        if: always()
+        run: |
+          maintenance_script="${DEPLOY_PATH}/scripts/docker-maintenance.sh"
+          if [ ! -f "${maintenance_script}" ]; then
+            maintenance_script="${GITHUB_WORKSPACE}/scripts/docker-maintenance.sh"
+          fi
+
+          if [ ! -f "${maintenance_script}" ]; then
+            echo "Docker maintenance script is unavailable."
+            exit 0
+          fi
+
+          chmod +x "${maintenance_script}"
+          "${maintenance_script}" diagnose
