@@ -30,6 +30,7 @@ NPIDsme_Funding/
 │       │   ├── auth/                      # Firebase authentication and authorization
 │       │   ├── db/                        # Application PostgreSQL schema
 │       │   ├── modules/                   # Business and domain logic
+│       │   │   └── forms/                 # Reusable dynamic forms and submissions
 │       │   ├── payload/                   # Payload CMS implementation
 │       │   ├── components/                # Shared React components
 │       │   ├── integrations/              # Email, AI, storage, analytics
@@ -319,6 +320,7 @@ src/components/
 │   └── profile/
 ├── admin/
 │   ├── applications/
+│   ├── forms/
 │   └── dashboard/
 ├── public/
 ├── layout/

@@ -4,18 +4,13 @@ import type { ReactNode } from "react";
 
 import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { formatLocalDateTime24 } from "@/lib/dateUtils";
 import type { ApplicationSummary } from "@/modules/applications/ApplicationTypes";
 
 type Props = {
   items: ApplicationSummary[];
   renderAction: (application: ApplicationSummary) => ReactNode;
 };
-
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("en-NA", { dateStyle: "medium" }).format(
-    new Date(value),
-  );
-}
 
 function ProgressBar({ value }: { value: number }) {
   return (
@@ -49,6 +44,11 @@ function applicationColumns(
       ),
     },
     {
+      accessorKey: "businessName",
+      header: "Business",
+      cell: ({ row }) => row.original.businessName ?? "Not selected",
+    },
+    {
       accessorKey: "status",
       header: "Status",
       cell: ({ row }) => <StatusBadge status={row.original.status} />,
@@ -61,7 +61,7 @@ function applicationColumns(
     {
       accessorKey: "updatedAt",
       header: "Last updated",
-      cell: ({ row }) => formatDate(row.original.updatedAt),
+      cell: ({ row }) => formatLocalDateTime24(row.original.updatedAt),
     },
     {
       id: "actions",
@@ -79,7 +79,7 @@ export function ApplicationsTable({ items, renderAction }: Props) {
         columns={applicationColumns(renderAction)}
         data={items}
         emptyMessage="No applications found"
-        minWidth={760}
+        minWidth={900}
       />
     </div>
   );
@@ -100,7 +100,10 @@ export function ApplicationCards({ items, renderAction }: Props) {
             <StatusBadge status={application.status} />
           </div>
           <p className="mt-2 text-xs text-brand-navy/60">
-            Last saved {formatDate(application.updatedAt)}
+            {application.businessName ?? "Business not selected"}
+          </p>
+          <p className="mt-1 text-xs text-brand-navy/60">
+            Last saved {formatLocalDateTime24(application.updatedAt)}
           </p>
           <div className="mt-4">
             <ProgressBar value={application.progressPercent} />

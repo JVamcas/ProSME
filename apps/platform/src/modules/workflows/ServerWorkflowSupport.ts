@@ -42,8 +42,13 @@ export async function loadWorkflowEditor(versionId: string) {
 async function validateReferences(
   graph: WorkflowGraphInput,
   validation: WorkflowValidation,
+  references: Omit<
+    Awaited<ReturnType<typeof findConfigurationReferences>>,
+    "forms"
+  > & {
+    forms?: Map<string, string>;
+  },
 ) {
-  const references = await findConfigurationReferences(graph);
   graph.transitions.forEach((transition, index) => {
     if (!references.capabilities.has(transition.requiredCapability)) {
       validation.errors.push({
@@ -66,6 +71,16 @@ async function validateReferences(
         });
       }
       if (
+        task.formVersionId &&
+        references.forms?.get(task.formVersionId) !== "PUBLISHED"
+      ) {
+        validation.errors.push({
+          code: "INVALID_FORM_VERSION",
+          message: "New workflow tasks must reference a published form version.",
+          path: `stages.${index}.tasks.${taskIndex}.formVersionId`,
+        });
+      }
+      if (
         task.assignmentUserId &&
         references.users.get(task.assignmentUserId) !== "active"
       ) {
@@ -84,7 +99,11 @@ async function validateReferences(
 export async function workflowEditorView(versionId: string) {
   const record = await loadWorkflowEditor(versionId);
   const [validation, assignmentOptions] = await Promise.all([
-    validateReferences(record.graph, validateWorkflowGraph(record.graph)),
+    validateReferences(
+      record.graph,
+      validateWorkflowGraph(record.graph),
+      await findConfigurationReferences(record.graph),
+    ),
     listWorkflowAssignmentOptions(),
   ]);
   return { ...toWorkflowEditor(record, validation), assignmentOptions };

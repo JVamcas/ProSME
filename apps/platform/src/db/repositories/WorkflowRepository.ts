@@ -5,6 +5,7 @@ import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { getDatabase } from "@/db/client";
 import {
   capabilities as capabilityRecords,
+  formVersions,
   roles,
   users,
   workflowDefinitionVersions,
@@ -93,49 +94,68 @@ export async function findDraftByDefinition(
   return draft?.id ?? null;
 }
 
-export async function findConfigurationReferences(graph: WorkflowGraphInput) {
-  const capabilityCodes = [
-    ...new Set(graph.transitions.map((item) => item.requiredCapability)),
-  ];
-  const userIds = [
-    ...new Set(
-      graph.stages.flatMap((stage) =>
-        stage.tasks.map((task) => task.assignmentUserId).filter(Boolean),
-      ),
-    ),
-  ] as string[];
-  const roleIds = [
-    ...new Set(
-      graph.stages
-        .flatMap((stage) =>
-          stage.tasks.map((task) => task.assignmentRoleId),
-        )
-        .filter(Boolean),
-    ),
-  ] as string[];
-  const [foundCapabilities, foundUsers, foundRoles] = await Promise.all([
+export async function findConfigurationReferences(
+  graph: WorkflowGraphInput,
+): Promise<{
+  capabilities: Set<string>;
+  roles: Set<string>;
+  users: Map<string, string>;
+  forms?: Map<string, string>;
+}> {
+  const references = collectConfigurationReferences(graph);
+  const [foundCapabilities, foundUsers, foundRoles, foundForms] = await Promise.all([
     getDatabase()
       .select({ code: capabilityRecords.code })
       .from(capabilityRecords)
-      .where(inArray(capabilityRecords.code, capabilityCodes)),
-    userIds.length
+      .where(inArray(capabilityRecords.code, references.capabilityCodes)),
+    references.userIds.length
       ? getDatabase()
           .select({ id: users.id, status: users.status })
           .from(users)
-          .where(inArray(users.id, userIds))
+          .where(inArray(users.id, references.userIds))
       : [],
-    roleIds.length
+    references.roleIds.length
       ? getDatabase()
           .select({ id: roles.id })
           .from(roles)
-          .where(inArray(roles.id, roleIds))
+          .where(inArray(roles.id, references.roleIds))
+      : [],
+    references.formVersionIds.length
+      ? getDatabase()
+          .select({ id: formVersions.id, status: formVersions.status })
+          .from(formVersions)
+          .where(inArray(formVersions.id, references.formVersionIds))
       : [],
   ]);
   return {
     capabilities: new Set(foundCapabilities.map((item) => item.code)),
     roles: new Set(foundRoles.map((item) => item.id)),
     users: new Map(foundUsers.map((item) => [item.id, item.status])),
+    forms: new Map(foundForms.map((item) => [item.id, item.status])),
   };
+}
+
+function collectConfigurationReferences(graph: WorkflowGraphInput) {
+  const capabilityCodes = [
+    ...new Set(graph.transitions.map((item) => item.requiredCapability)),
+  ];
+  const userIds = uniqueTaskValues(graph, "assignmentUserId");
+  const roleIds = uniqueTaskValues(graph, "assignmentRoleId");
+  const formVersionIds = uniqueTaskValues(graph, "formVersionId");
+  return { capabilityCodes, formVersionIds, roleIds, userIds };
+}
+
+function uniqueTaskValues(
+  graph: WorkflowGraphInput,
+  key: "assignmentUserId" | "assignmentRoleId" | "formVersionId",
+) {
+  return [
+    ...new Set(
+      graph.stages
+        .flatMap((stage) => stage.tasks.map((task) => task[key]))
+        .filter(Boolean),
+    ),
+  ] as string[];
 }
 
 export async function listWorkflowAssignmentOptions() {

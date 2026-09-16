@@ -8,6 +8,7 @@ import { PortalLoadingState } from "@/components/layout/portal-loading-state";
 import { GeneralButton } from "@/components/ui/button";
 import { Pagination } from "@/components/ui/pagination";
 import { Tabs, type TabItem } from "@/components/ui/tabs";
+import type { ApplicationStatusCounts } from "@/modules/applications/ApplicationTypes";
 import { ApplicationListContent } from "./ApplicationListContent";
 import {
   applicationPageSize,
@@ -15,15 +16,15 @@ import {
   useApplicationBrowser,
 } from "./useApplicationBrowser";
 
-type ApplicationTab = ApplicationFilter | "submitted" | "review" | "completed";
-
-function applicationTabs(total: number): TabItem<ApplicationTab>[] {
+export function applicationTabs(
+  counts: ApplicationStatusCounts,
+): TabItem<ApplicationFilter>[] {
   return [
-    { id: "all", label: `All (${total})` },
-    { id: "draft", label: `Drafts (${total})` },
-    { disabled: true, id: "submitted", label: "Submitted (0)" },
-    { disabled: true, id: "review", label: "Under review (0)" },
-    { disabled: true, id: "completed", label: "Completed (0)" },
+    { id: "all", label: `All (${counts.all})` },
+    { id: "draft", label: `Drafts (${counts.draft})` },
+    { id: "submitted", label: `Submitted (${counts.submitted})` },
+    { id: "review", label: `Under review (${counts.underReview})` },
+    { id: "completed", label: `Completed (${counts.completed})` },
   ];
 }
 
@@ -63,10 +64,8 @@ export function ApplicationsList({ canCreate }: { canCreate: boolean }) {
       <Tabs
         ariaLabel="Application status"
         defaultSelectedId="all"
-        items={applicationTabs(query.data.total)}
-        onSelectionChange={(id) => {
-          if (id === "all" || id === "draft") browser.selectFilter(id);
-        }}
+        items={applicationTabs(query.data.counts)}
+        onSelectionChange={browser.selectFilter}
         selectedContent={content}
         selectedId={browser.filter}
       />

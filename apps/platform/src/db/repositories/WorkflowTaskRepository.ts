@@ -21,6 +21,7 @@ export async function readWorkflowTask(
   const result = await getDatabase().execute(sql`
     SELECT task.id AS "taskInstanceId", task.status AS "taskStatus",
       task.type_snapshot AS "taskType", task.row_version AS "rowVersion",
+      task.form_version_id AS "formVersionId",
       task.due_at AS "dueAt", task.result,
       definition.name AS "taskName", definition.config,
       stage_definition.name AS "stageName",
@@ -53,4 +54,28 @@ export async function readWorkflowTask(
       )
   `);
   return (result.rows[0] as TaskDetailRow | undefined) ?? null;
+}
+
+export async function readAssignedFormTask(actorId: string, taskId: string) {
+  const result = await getDatabase().execute(sql`
+    SELECT task.id AS "taskInstanceId",
+      task.form_version_id AS "formVersionId",
+      task.row_version AS "rowVersion",
+      task.status AS "taskStatus"
+    FROM app_stage_task_instances task
+    JOIN app_workflow_stage_instances stage
+      ON stage.id = task.stage_instance_id
+    JOIN app_workflow_instances workflow
+      ON workflow.id = stage.workflow_instance_id
+    WHERE task.id = ${taskId}::uuid
+      AND task.assignment_user_id = ${actorId}::uuid
+      AND stage.status = 'ACTIVE'
+      AND workflow.status = 'ACTIVE'
+  `);
+  return (result.rows[0] as {
+    formVersionId: string | null;
+    rowVersion: number;
+    taskInstanceId: string;
+    taskStatus: string;
+  } | undefined) ?? null;
 }

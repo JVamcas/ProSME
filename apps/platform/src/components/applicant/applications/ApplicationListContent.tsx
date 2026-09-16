@@ -1,28 +1,23 @@
-import { ArrowRight } from "lucide-react";
-import Link from "next/link";
 
-import { GeneralButton } from "@/components/ui/button";
+import { EditButton } from "@/components/ui/action-buttons";
 import { EmptyState } from "@/components/ui/empty-state";
 import type { ApplicationSummary } from "@/modules/applications/ApplicationTypes";
+import { useRouter } from "next/router";
 import { ApplicationCards, ApplicationsTable } from "./ApplicationTable";
 
-function ContinueLink({ application }: { application: ApplicationSummary }) {
-  return (
-    <GeneralButton asChild size="sm" variant="outline">
-      <Link href={`/portal/applications/${application.id}/edit`}>
-        Continue
-        <ArrowRight aria-hidden="true" className="size-4" />
-      </Link>
-    </GeneralButton>
-  );
-}
-
 function renderAction(application: ApplicationSummary) {
-  if (application.status !== "draft") {
-    return null;
-  }
+  const router = useRouter();
 
-  return <ContinueLink application={application} />;
+  return (
+    <>
+      <EditButton
+        disabled={application.status !== "draft"}
+        onClick={() => {
+          router.push(`/portal/applications/${application.id}/edit`);
+        }}
+      />
+    </>
+  );
 }
 
 export function ApplicationListContent({

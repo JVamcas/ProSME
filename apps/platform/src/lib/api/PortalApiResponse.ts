@@ -82,13 +82,13 @@ export function portalRouteSuccess<TData>(
   );
 }
 
-export function portalListRouteSuccess<TData>(
+export function portalListRouteSuccess<
+  TData,
+  TPage extends { nextCursor: string | null; total: number },
+>(
   data: TData[],
   correlationId: string,
-  page: {
-    nextCursor: string | null;
-    total: number;
-  },
+  page: TPage,
 ) {
   return NextResponse.json(
     {

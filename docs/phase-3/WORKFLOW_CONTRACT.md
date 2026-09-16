@@ -10,6 +10,13 @@ This is a configurable SME Fund workflow engine, not a general-purpose BPM
 suite, script host, or unrestricted form builder. Unknown programme rules are
 configuration and do not block the engine foundation.
 
+The approved dynamic-forms implementation in
+[`DYNAMIC_FORMS_IMPLEMENTATION.md`](./DYNAMIC_FORMS_IMPLEMENTATION.md)
+supersedes the typed-task registry, task configuration JSON, and configurable
+transition-routing portions of this contract for new definitions. Legacy typed
+definitions remain readable during the additive migration. New human tasks use
+one immutable published form version and stages advance by ascending sequence.
+
 ## Aggregate model
 
 ```text
@@ -36,7 +43,7 @@ history.
 | `WorkflowDefinition`           | Stable ID, unique code, name, description, active flag, timestamps                                                          |
 | `WorkflowDefinitionVersion`    | Definition ID, positive version number, lifecycle status, timestamps, creator, publisher                                    |
 | `WorkflowStageDefinition`      | Version ID, unique code within version, name, sequence, applicant-safe status and SLA configuration                         |
-| `StageTaskDefinition`          | Stage ID, unique code within stage, name, registered type, sequence, required flag, role/user assignment, configuration JSON |
+| `StageTaskDefinition`          | Stage ID, unique code within stage, name, sequence, required flag, role/user assignment, pinned published form version; legacy type/configuration columns remain readable temporarily |
 | `WorkflowTransitionDefinition` | Version ID, from stage, action code, to stage or terminal outcome, required capability, optional declarative condition      |
 
 Definition codes are stable machine identifiers. Names and applicant-facing

@@ -4,7 +4,12 @@ import { useState } from "react";
 
 import { useOwnApplications } from "@/modules/applications/ApplicationHooks";
 
-export type ApplicationFilter = "all" | "draft";
+export type ApplicationFilter =
+  | "all"
+  | "draft"
+  | "submitted"
+  | "review"
+  | "completed";
 export const applicationPageSize = 10;
 
 export function useApplicationBrowser() {
@@ -14,7 +19,11 @@ export function useApplicationBrowser() {
   const query = useOwnApplications({
     after: cursors[pageIndex],
     limit: applicationPageSize,
-    status: filter === "draft" ? "draft" : undefined,
+    status: filter === "all"
+      ? undefined
+      : filter === "review"
+        ? "under-review"
+        : filter,
   });
 
   function selectFilter(value: ApplicationFilter) {

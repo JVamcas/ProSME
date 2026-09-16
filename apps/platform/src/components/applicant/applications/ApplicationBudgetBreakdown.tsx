@@ -4,6 +4,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { useFieldArray, useFormContext } from "react-hook-form";
 
 import { GeneralButton, IconButton } from "@/components/ui/button";
+import { FieldError } from "@/components/ui/form-controls";
 import { FormInput } from "@/components/ui/form-fields";
 import { MoneyField } from "@/components/ui/money-field";
 import type { ApplicationFinancialSection } from "@/modules/applications/ApplicationSchemas";
@@ -12,12 +13,17 @@ export const emptyBudgetItem = { amount: 0, category: "", description: "" };
 
 export function ApplicationBudgetBreakdown() {
   const form = useFormContext<ApplicationFinancialSection>();
+  const budgetErrors = form.formState.errors.budgetBreakdown;
+  const budgetError = budgetErrors?.message ?? budgetErrors?.root?.message;
   const budget = useFieldArray({
     control: form.control,
     name: "budgetBreakdown",
   });
   return (
-    <fieldset className="mt-7 border-t border-brand-navy/10 pt-6">
+    <fieldset
+      aria-describedby={budgetError ? "budget-breakdown-error" : undefined}
+      className="mt-7 border-t border-brand-navy/10 pt-6"
+    >
       <legend className="font-bold text-brand-navy">
         Budget breakdown
         <span aria-hidden="true" className="ml-1 text-brand-orange">*</span>
@@ -58,6 +64,10 @@ export function ApplicationBudgetBreakdown() {
           </div>
         ))}
       </div>
+      <FieldError
+        id="budget-breakdown-error"
+        message={budgetError}
+      />
       <GeneralButton
         className="mt-4"
         onClick={() => budget.append(emptyBudgetItem)}

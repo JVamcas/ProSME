@@ -107,6 +107,7 @@ async function createInitialTasks(
       stageInstanceId,
       taskDefinitionId: task.id,
       typeSnapshot: task.type,
+      formVersionId: task.formVersionId,
     })),
   );
 }

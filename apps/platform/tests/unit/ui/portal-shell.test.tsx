@@ -119,6 +119,59 @@ describe("P3.1 shared authenticated portal shell", () => {
     expect(markup).toContain('href="/admin"');
   });
 
+  it("renders permitted nested operations routes", () => {
+    const operationsContext: PortalContext = {
+      ...context,
+      roleCodes: ["system_administrator"],
+      capabilityCodes: [
+        capabilities.adminAccess,
+        capabilities.formRead,
+      ],
+      availableSpaces: ["operations"],
+      defaultSpace: "operations",
+    };
+    const markup = renderToStaticMarkup(
+      <QueryClientProvider client={createQueryClient()}>
+        <AuthenticatedPortalShell
+          context={operationsContext}
+          space="operations"
+        >
+          <h1>Settings</h1>
+        </AuthenticatedPortalShell>
+      </QueryClientProvider>,
+    );
+
+    expect(markup).toContain("Settings");
+    expect(markup).toContain("Forms");
+    expect(markup).toContain('href="/admin/settings/forms"');
+  });
+
+  it("renders the CMS link only for permitted operations users", () => {
+    const operationsContext: PortalContext = {
+      ...context,
+      roleCodes: ["programme_administrator"],
+      capabilityCodes: [
+        capabilities.adminAccess,
+        capabilities.cmsAccess,
+      ],
+      availableSpaces: ["operations"],
+      defaultSpace: "operations",
+    };
+    const markup = renderToStaticMarkup(
+      <QueryClientProvider client={createQueryClient()}>
+        <AuthenticatedPortalShell
+          context={operationsContext}
+          space="operations"
+        >
+          <h1>Operations</h1>
+        </AuthenticatedPortalShell>
+      </QueryClientProvider>,
+    );
+
+    expect(markup).toContain("Content management");
+    expect(markup).toContain('href="/cms"');
+  });
+
   it("composes the generic portal error state with caller content", () => {
     const markup = renderToStaticMarkup(
       <PortalErrorState

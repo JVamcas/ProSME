@@ -152,6 +152,7 @@ export async function listOwnApplications(
   const hasNextPage = result.items.length > input.limit;
   const items = result.items.slice(0, input.limit);
   return {
+    counts: result.counts,
     items: items.map(toApplicationSummary),
     nextCursor: hasNextPage ? encodeApplicationCursor(items.at(-1)!) : null,
     total: result.total,

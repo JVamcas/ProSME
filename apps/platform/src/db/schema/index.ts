@@ -3,6 +3,8 @@ export * from "./audit";
 export * from "./applications";
 export * from "./application-documents";
 export * from "./eligibility";
+export * from "./forms";
+export * from "./form-submissions";
 export * from "./identity";
 export * from "./profiles";
 export * from "./workflow";

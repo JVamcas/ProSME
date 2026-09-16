@@ -73,6 +73,9 @@ export function CheckboxField({
   const generatedId = React.useId();
   const controlId = id ?? binding.name ?? generatedId;
   const errorId = binding.error ? `${controlId}-error` : undefined;
+  const describedBy = [errorId, props["aria-describedby"]]
+    .filter(Boolean)
+    .join(" ") || undefined;
 
   return (
     <div>
@@ -88,7 +91,7 @@ export function CheckboxField({
           id={controlId}
           name={binding.name}
           className={cn("mt-1", className, controlClassName)}
-          aria-describedby={errorId ?? props["aria-describedby"]}
+          aria-describedby={describedBy}
           aria-invalid={binding.error ? true : props["aria-invalid"]}
         />
         <span>{label}</span>

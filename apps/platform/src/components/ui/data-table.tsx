@@ -74,7 +74,7 @@ function DataTableHeader<TData extends RowData>({
   table: DataTableInstance<TData>;
 }) {
   return (
-    <thead className="bg-brand-white text-[10px] uppercase tracking-wider text-slate-400">
+    <thead className="bg-brand-slate-50 text-[10px] uppercase tracking-wider text-slate-400 border-t border-slate-50">
       {table.getHeaderGroups().map((group) => (
         <tr key={group.id}>
           {group.headers.map((header) => {

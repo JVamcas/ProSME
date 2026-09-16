@@ -25,6 +25,7 @@ export type TaskDetail = {
   taskName: string;
   taskStatus: string;
   taskType: string;
+  formVersionId?: string | null;
 };
 
 export type CompleteChecklistTaskInput = {

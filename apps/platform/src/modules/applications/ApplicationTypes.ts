@@ -59,6 +59,7 @@ import type {
 import type { ApplicationDeclarationsSection } from "./ApplicationDeclarationSchemas";
 
 export type ApplicationSummary = {
+  businessName: string | null;
   createdAt: string;
   currentSection: ApplicationSection;
   fundingOpportunityId: number;
@@ -72,10 +73,19 @@ export type ApplicationSummary = {
 export type ApplicationListInput = {
   after?: string;
   limit: number;
-  status?: "draft";
+  status?: "draft" | "submitted" | "under-review" | "completed";
+};
+
+export type ApplicationStatusCounts = {
+  all: number;
+  completed: number;
+  draft: number;
+  submitted: number;
+  underReview: number;
 };
 
 export type ApplicationPage = {
+  counts: ApplicationStatusCounts;
   items: ApplicationSummary[];
   nextCursor: string | null;
   total: number;
