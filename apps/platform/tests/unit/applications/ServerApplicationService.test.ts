@@ -45,6 +45,7 @@ import {
   listOwnApplications,
   updateOwnApplication,
 } from "@/modules/applications/ServerApplicationService";
+import { applicationStatusCounts } from "../../support/application-status-counts";
 
 function staffUser(granted: string[]): AuthenticatedUser {
   return {
@@ -64,6 +65,7 @@ function staffUser(granted: string[]): AuthenticatedUser {
 
 const application = {
   businessId: null,
+  businessName: null,
   businessSection: {},
   declarationAcceptance: null,
   declarationsSection: {},
@@ -122,6 +124,7 @@ describe("applicant-owned application drafts", () => {
   it("scopes list and detail reads to the authenticated owner", async () => {
     const user = staffUser([capabilities.applicationReadOwn]);
     vi.mocked(listOwnedApplications).mockResolvedValue({
+      counts: applicationStatusCounts,
       items: [application],
       total: 1,
     });
@@ -130,6 +133,7 @@ describe("applicant-owned application drafts", () => {
     await expect(
       listOwnApplications(user, { limit: 25 }),
     ).resolves.toMatchObject({
+      counts: { all: 2, draft: 1, submitted: 1 },
       items: [{ id: application.id, progressPercent: 0 }],
       total: 1,
     });

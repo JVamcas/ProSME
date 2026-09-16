@@ -204,9 +204,9 @@ async function createNextTasks(
   await transaction.execute(sql`
     INSERT INTO app_stage_task_instances
       (stage_instance_id, task_definition_id, type_snapshot, status,
-       assignment_role_id, assignment_user_id, due_at)
+       assignment_role_id, assignment_user_id, form_version_id, due_at)
     SELECT ${stageInstanceId}::uuid, task.id, task.type, 'READY',
-      task.assignment_role_id, task.assignment_user_id,
+      task.assignment_role_id, task.assignment_user_id, task.form_version_id,
       CASE WHEN stage.sla_hours IS NULL THEN NULL
         ELSE ${startedAt}::timestamptz
           + make_interval(hours => stage.sla_hours) END

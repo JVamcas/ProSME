@@ -30,6 +30,7 @@ import { StepProgress } from "@/components/ui/step-progress";
 import type { ApplicationView } from "@/modules/applications/ApplicationTypes";
 
 const completedApplication: ApplicationView = {
+  businessName: "JM Technologies",
   businessSection: {
     businessId: "89e20de0-3558-4d63-90a4-8c9f5125df07",
   },
@@ -243,6 +244,7 @@ describe("application creation UI", () => {
       <ApplicationsTable
         items={[
           {
+            businessName: "JM Technologies",
             createdAt: "2026-09-01T08:00:00.000Z",
             currentSection: "project",
             fundingOpportunityId: 42,
@@ -258,6 +260,9 @@ describe("application creation UI", () => {
     );
 
     expect(markup).toContain("Growth Fund");
+    expect(markup).toContain("Business");
+    expect(markup).toContain("JM Technologies");
+    expect(markup).toMatch(/Last updated[\s\S]*\d{1,2}:\d{2}/);
     expect(markup).toContain("Application completion");
     expect(markup).toContain("aria-sort");
   });
@@ -267,6 +272,7 @@ describe("application creation UI", () => {
       <ApplicationListContent
         items={[
           {
+            businessName: "JM Technologies",
             createdAt: "2026-09-01T08:00:00.000Z",
             currentSection: "declarations",
             fundingOpportunityId: 42,

@@ -33,5 +33,6 @@ DATABASE_URL="${test_database_url}" \
     --configLoader runner \
     --fsModuleCachePath "${vitest_module_cache}" \
     tests/integration/application-database.test.ts \
+    tests/integration/application-status-counts-database.test.ts \
     tests/integration/application-submission-database.test.ts \
     tests/integration/work-queue-database.test.ts

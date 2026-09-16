@@ -15,6 +15,7 @@ const cursorSchema = z.object({
 });
 
 export type ApplicationSummaryRecord = {
+  businessName?: string | null;
   createdAt: Date;
   currentSection: ApplicationSection;
   fundingOpportunityId: number;
@@ -34,6 +35,7 @@ export function toApplicationSummary(
   application: ApplicationSummaryRecord,
 ): ApplicationSummary {
   return {
+    businessName: application.businessName ?? null,
     createdAt: application.createdAt.toISOString(),
     currentSection: application.currentSection,
     fundingOpportunityId: application.fundingOpportunityId,

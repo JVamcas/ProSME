@@ -98,6 +98,28 @@ describe("P3.1 capability-aware portal navigation", () => {
     ]);
   });
 
+  it("exposes content management only with CMS access", () => {
+    const withoutCmsAccess = filterPortalRoutes(
+      portalRoutes,
+      "operations",
+      new Set([capabilities.adminAccess]),
+    );
+    const withCmsAccess = filterPortalRoutes(
+      portalRoutes,
+      "operations",
+      new Set([capabilities.adminAccess, capabilities.cmsAccess]),
+    );
+
+    expect(withoutCmsAccess.map((route) => route.href)).not.toContain("/cms");
+    expect(withCmsAccess.map((route) => route.href)).toContain("/cms");
+    expect(
+      operationsPortalRoutes.find((route) => route.href === "/cms"),
+    ).toMatchObject({
+      label: "Content management",
+      requiredCapability: capabilities.cmsAccess,
+    });
+  });
+
   it("removes a parent when all nested routes are inaccessible", () => {
     const routes = filterPortalRoutes(
       [

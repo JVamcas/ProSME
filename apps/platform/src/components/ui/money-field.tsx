@@ -38,6 +38,11 @@ export function formatMoneyValue(value: unknown) {
     : "";
 }
 
+function formatInitialMoneyValue(value: unknown) {
+  const numericValue = typeof value === "number" ? value : Number(value);
+  return numericValue === 0 ? "" : formatMoneyValue(value);
+}
+
 function parseMoneyValue(value: string) {
   const normalized = value.replaceAll(",", "").replace(/[^\d.]/g, "");
   const [whole = "", ...fractionParts] = normalized.split(".");
@@ -101,6 +106,7 @@ function ControlledMoneyField({
   const fieldError = get(form.formState.errors, name) as unknown;
   const message = moneyErrorMessage(error, fieldError);
   const errorId = message ? `${controlId}-error` : undefined;
+  const initialDisplayValue = formatInitialMoneyValue(form.getValues(name));
   return (
     <FormField
       className={containerClassName}
@@ -119,11 +125,15 @@ function ControlledMoneyField({
           aria-describedby={errorId ?? props["aria-describedby"]}
           aria-invalid={message ? true : props["aria-invalid"]}
           className={cn("pl-12", props.className)}
-          defaultValue={formatMoneyValue(form.getValues(name))}
+          defaultValue={initialDisplayValue}
           id={controlId}
           inputMode="decimal"
           required={required}
           {...registration}
+          ref={(element) => {
+            registration.ref(element);
+            if (element && initialDisplayValue === "") element.value = "";
+          }}
           onChange={(event) => {
             event.target.value = formatMoneyText(event.target.value);
             void registration.onChange(event);

@@ -24,6 +24,7 @@ export async function GET(request: Request) {
     const input = applicationListSchema.parse(Object.fromEntries(url.searchParams));
     const result = await listOwnApplications(user, input);
     return portalListRouteSuccess(result.items, correlationId, {
+      counts: result.counts,
       nextCursor: result.nextCursor,
       total: result.total,
     });

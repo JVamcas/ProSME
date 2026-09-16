@@ -47,9 +47,6 @@ export function ApplicationReviewHeader({
             }
             status={application.currentStageName ?? "Submitted"}
           />
-          <GeneralButton disabled variant="outline">
-            View programme guideline
-          </GeneralButton>
         </div>
       </div>
     </header>
@@ -60,10 +57,6 @@ const tabs = [
   "Overview",
   "Applicant",
   "Documents",
-  "Assessment",
-  "Finance Review",
-  "Recommendation",
-  "Decision",
   "History",
 ] as const;
 

@@ -44,9 +44,16 @@ beforeEach(() => {
 describe("portal application routes", () => {
   it("lists and creates applications through the server service", async () => {
     vi.mocked(listOwnApplications).mockResolvedValue({
+      counts: {
+        all: 2,
+        completed: 0,
+        draft: 1,
+        submitted: 1,
+        underReview: 0,
+      },
       items: [],
       nextCursor: null,
-      total: 0,
+      total: 2,
     });
     const listResponse = await listRoute.GET(
       request("/api/portal/applications"),
@@ -55,7 +62,11 @@ describe("portal application routes", () => {
     expect(listOwnApplications).toHaveBeenCalledWith(actor, { limit: 25 });
     await expect(listResponse.json()).resolves.toMatchObject({
       data: [],
-      page: { nextCursor: null, total: 0 },
+      page: {
+        counts: { all: 2, draft: 1, submitted: 1 },
+        nextCursor: null,
+        total: 2,
+      },
     });
 
     const created = { id: applicationId } as never;

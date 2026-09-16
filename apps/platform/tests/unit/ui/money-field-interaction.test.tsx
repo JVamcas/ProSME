@@ -29,6 +29,17 @@ afterEach(() => {
 });
 
 describe("money field interaction", () => {
+  it("renders an initial zero as an empty input", async () => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+    await act(async () => root.render(<MoneyForm />));
+
+    expect(container.querySelector<HTMLInputElement>("input")?.value).toBe("");
+    expect(container.querySelector("output")?.textContent).toBe("0");
+    await act(async () => root.unmount());
+  });
+
   it("groups typed digits while retaining a numeric form value", async () => {
     const container = document.createElement("div");
     document.body.append(container);

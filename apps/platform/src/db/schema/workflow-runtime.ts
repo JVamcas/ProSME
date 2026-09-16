@@ -11,6 +11,7 @@ import {
 } from "drizzle-orm/pg-core";
 
 import type { TaskTypeCode } from "@/modules/workflows/WorkflowTypes";
+import { formVersions } from "./forms";
 import { applications } from "./applications";
 import { roles } from "./authorization";
 import { users } from "./identity";
@@ -92,6 +93,9 @@ export const stageTaskInstances = pgTable(
       .notNull()
       .references(() => stageTaskDefinitions.id, { onDelete: "restrict" }),
     typeSnapshot: text("type_snapshot").$type<TaskTypeCode>().notNull(),
+    formVersionId: uuid("form_version_id").references(() => formVersions.id, {
+      onDelete: "restrict",
+    }),
     status: text("status").notNull().default("READY"),
     assignmentRoleId: uuid("assignment_role_id").references(() => roles.id, {
       onDelete: "restrict",

@@ -129,7 +129,9 @@ export const applicationListSchema = z
   .object({
     after: z.string().max(500).optional(),
     limit: z.coerce.number().int().min(1).max(100).default(25),
-    status: z.literal("draft").optional(),
+    status: z
+      .enum(["draft", "submitted", "under-review", "completed"])
+      .optional(),
   })
   .strict();
 

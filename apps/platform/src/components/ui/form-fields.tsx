@@ -44,7 +44,9 @@ export function FormInput({
 }: FormInputProps) {
   const binding = useFormBinding({ error, name, registrationOptions });
   const ids = useFieldIds(id, binding.name, binding.error);
-  const describedBy = ids.errorId ?? props["aria-describedby"];
+  const describedBy = [ids.errorId, props["aria-describedby"]]
+    .filter(Boolean)
+    .join(" ") || undefined;
   return (
     <FormField
       className={containerClassName}
@@ -101,7 +103,9 @@ export function FormSelect({
 }: FormSelectProps) {
   const binding = useFormBinding({ error, name, registrationOptions });
   const ids = useFieldIds(id, binding.name, binding.error);
-  const describedBy = ids.errorId ?? props["aria-describedby"];
+  const describedBy = [ids.errorId, props["aria-describedby"]]
+    .filter(Boolean)
+    .join(" ") || undefined;
   return (
     <FormField
       className={containerClassName}
@@ -151,7 +155,9 @@ export function FormTextarea({
 }: FormTextareaProps) {
   const binding = useFormBinding({ error, name, registrationOptions });
   const ids = useFieldIds(id, binding.name, binding.error);
-  const describedBy = ids.errorId ?? props["aria-describedby"];
+  const describedBy = [ids.errorId, props["aria-describedby"]]
+    .filter(Boolean)
+    .join(" ") || undefined;
   return (
     <FormField
       className={containerClassName}

@@ -12,56 +12,59 @@ import {
 } from "@/db/schema";
 import type { WorkflowGraphInput } from "@/modules/workflows/WorkflowTypes";
 
+const graphSelection = {
+  definition: {
+    id: workflowDefinitions.id,
+    code: workflowDefinitions.code,
+    name: workflowDefinitions.name,
+    description: workflowDefinitions.description,
+  },
+  version: {
+    id: workflowDefinitionVersions.id,
+    versionNumber: workflowDefinitionVersions.versionNumber,
+    status: workflowDefinitionVersions.status,
+    rowVersion: workflowDefinitionVersions.rowVersion,
+    createdAt: workflowDefinitionVersions.createdAt,
+    publishedAt: workflowDefinitionVersions.publishedAt,
+    retiredAt: workflowDefinitionVersions.retiredAt,
+  },
+  stage: {
+    id: workflowStageDefinitions.id,
+    code: workflowStageDefinitions.code,
+    name: workflowStageDefinitions.name,
+    sequence: workflowStageDefinitions.sequence,
+    initial: workflowStageDefinitions.initial,
+    applicantStatus: workflowStageDefinitions.applicantStatus,
+    applicantLabel: workflowStageDefinitions.applicantLabel,
+    applicantDescription: workflowStageDefinitions.applicantDescription,
+    slaHours: workflowStageDefinitions.slaHours,
+  },
+  task: {
+    id: stageTaskDefinitions.id,
+    code: stageTaskDefinitions.code,
+    name: stageTaskDefinitions.name,
+    type: stageTaskDefinitions.type,
+    sequence: stageTaskDefinitions.sequence,
+    required: stageTaskDefinitions.required,
+    assignmentRoleId: stageTaskDefinitions.assignmentRoleId,
+    assignmentUserId: stageTaskDefinitions.assignmentUserId,
+    config: stageTaskDefinitions.config,
+    formVersionId: stageTaskDefinitions.formVersionId,
+  },
+  transition: {
+    id: workflowTransitionDefinitions.id,
+    fromStageId: workflowTransitionDefinitions.fromStageId,
+    actionCode: workflowTransitionDefinitions.actionCode,
+    toStageId: workflowTransitionDefinitions.toStageId,
+    terminalOutcome: workflowTransitionDefinitions.terminalOutcome,
+    requiredCapability: workflowTransitionDefinitions.requiredCapability,
+    condition: workflowTransitionDefinitions.condition,
+  },
+};
+
 function loadGraphRows(versionId: string) {
   return getDatabase()
-    .select({
-      definition: {
-        id: workflowDefinitions.id,
-        code: workflowDefinitions.code,
-        name: workflowDefinitions.name,
-        description: workflowDefinitions.description,
-      },
-      version: {
-        id: workflowDefinitionVersions.id,
-        versionNumber: workflowDefinitionVersions.versionNumber,
-        status: workflowDefinitionVersions.status,
-        rowVersion: workflowDefinitionVersions.rowVersion,
-        createdAt: workflowDefinitionVersions.createdAt,
-        publishedAt: workflowDefinitionVersions.publishedAt,
-        retiredAt: workflowDefinitionVersions.retiredAt,
-      },
-      stage: {
-        id: workflowStageDefinitions.id,
-        code: workflowStageDefinitions.code,
-        name: workflowStageDefinitions.name,
-        sequence: workflowStageDefinitions.sequence,
-        initial: workflowStageDefinitions.initial,
-        applicantStatus: workflowStageDefinitions.applicantStatus,
-        applicantLabel: workflowStageDefinitions.applicantLabel,
-        applicantDescription: workflowStageDefinitions.applicantDescription,
-        slaHours: workflowStageDefinitions.slaHours,
-      },
-      task: {
-        id: stageTaskDefinitions.id,
-        code: stageTaskDefinitions.code,
-        name: stageTaskDefinitions.name,
-        type: stageTaskDefinitions.type,
-        sequence: stageTaskDefinitions.sequence,
-        required: stageTaskDefinitions.required,
-        assignmentRoleId: stageTaskDefinitions.assignmentRoleId,
-        assignmentUserId: stageTaskDefinitions.assignmentUserId,
-        config: stageTaskDefinitions.config,
-      },
-      transition: {
-        id: workflowTransitionDefinitions.id,
-        fromStageId: workflowTransitionDefinitions.fromStageId,
-        actionCode: workflowTransitionDefinitions.actionCode,
-        toStageId: workflowTransitionDefinitions.toStageId,
-        terminalOutcome: workflowTransitionDefinitions.terminalOutcome,
-        requiredCapability: workflowTransitionDefinitions.requiredCapability,
-        condition: workflowTransitionDefinitions.condition,
-      },
-    })
+    .select(graphSelection)
     .from(workflowDefinitionVersions)
     .innerJoin(
       workflowDefinitions,

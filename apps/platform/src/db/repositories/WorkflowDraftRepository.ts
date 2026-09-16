@@ -48,6 +48,7 @@ async function insertGraph(
       assignmentUserId: task.assignmentUserId ?? null,
       code: task.code,
       config: task.config,
+      formVersionId: task.formVersionId ?? null,
       name: task.name,
       required: task.required,
       sequence: task.sequence,

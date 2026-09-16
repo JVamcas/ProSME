@@ -48,6 +48,7 @@ import type { ApplicationView } from "@/modules/applications/ApplicationTypes";
 }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const application: ApplicationView = {
+  businessName: null,
   businessSection: {},
   createdAt: "2026-09-14T08:00:00.000Z",
   currentSection: "business",

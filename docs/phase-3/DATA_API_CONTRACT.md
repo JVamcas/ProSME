@@ -213,6 +213,24 @@ Error codes are `UNAUTHENTICATED`, `FORBIDDEN`, `NOT_FOUND`,
 
 ## Operations API surface
 
+Dynamic form administration and runtime endpoints are:
+
+| Method and route | Contract | Capability |
+| --- | --- | --- |
+| `GET/POST /api/admin/forms` | Form definition list/create | `form.read` / `form.create` |
+| `GET/PATCH /api/admin/forms/{id}` | Form editor projection/draft update | `form.read` / `form.update` |
+| `GET /api/admin/forms/published` | Published form-version selector options | `form.read` or workflow definition read |
+| `POST /api/admin/forms/{id}/publish` | Publish immutable version | `form.publish` |
+| `POST /api/admin/forms/{id}/retire` | Retire version | `form.retire` |
+| `GET /api/admin/tasks/{id}/form` | Assignment-scoped pinned runtime schema and submission | `workflow.task.read` |
+| `PATCH /api/admin/tasks/{id}/form` | Assignment-scoped draft save | `workflow.task.complete` |
+| `POST /api/admin/tasks/{id}/form` | Validate, complete, and sequentially advance a pinned form task | `workflow.task.complete` plus assignment scope |
+
+The form-backed PATCH uses the submitted task and submission row versions for
+optimistic concurrency. The POST completion command uses an Idempotency-Key;
+legacy typed task routes below retain their type-specific/action-specific
+capability terminology until those records are migrated.
+
 | Method and route                                       | Contract                             | Capability                            |
 | ------------------------------------------------------ | ------------------------------------ | ------------------------------------- |
 | `GET /api/admin/work-queue`                            | Paged `WorkQueueRow`                 | `work_queue.read`                     |
@@ -221,8 +239,8 @@ Error codes are `UNAUTHENTICATED`, `FORBIDDEN`, `NOT_FOUND`,
 | `GET /api/admin/tasks/{id}`                            | Typed task projection                | task read capability plus assignment  |
 | `POST /api/admin/tasks/{id}/claim`                     | Atomic claim                         | `workflow.task.claim`                 |
 | `POST /api/admin/tasks/{id}/assign`                    | Audited assignment                   | `workflow.task.assign`                |
-| `PATCH /api/admin/tasks/{id}`                          | Save validated task result           | type-specific capability              |
-| `POST /api/admin/tasks/{id}/actions`                   | Complete/transition/request/decision | action-specific capability            |
+| `PATCH /api/admin/tasks/{id}`                          | Save validated legacy typed task result | type-specific capability (legacy)  |
+| `POST /api/admin/tasks/{id}/actions`                   | Complete/transition/request/decision for legacy tasks | action-specific capability (legacy) |
 | `POST /api/admin/applications/bulk-actions`            | Set-based bounded update             | `application.bulk_update`             |
 | `POST /api/admin/communications/batches`               | Batch outbox command                 | `communication.batch`                 |
 | `POST /api/admin/exports`                              | Audited export job                   | `application.export`                  |

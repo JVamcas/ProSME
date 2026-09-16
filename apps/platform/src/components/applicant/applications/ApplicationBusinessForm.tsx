@@ -113,16 +113,13 @@ export function ApplicationBusinessForm(props: Props) {
         <FormSelect
           disabled={businesses.isPending}
           items={businessItems(businesses.data ?? [])}
-          label="Business"
+          label="Business Name"
           name="businessId"
           required
           placeholder={
             businesses.isPending ? "Loading businesses…" : "Select a business"
           }
         />
-        <p className="mt-2 text-sm text-brand-navy/65">
-          Business details are managed under My Businesses.
-        </p>
         <ApplicationFormActions
           dirty={form.formState.isDirty}
           error={props.error}

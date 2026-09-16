@@ -1,13 +1,20 @@
 import "server-only";
 
-import { and, count, desc, eq, isNull, lt, or } from "drizzle-orm";
+import { and, count, desc, eq, isNull, lt, or, sql } from "drizzle-orm";
 
 import {
   adminApplications,
   getAdminApplication,
 } from "@/data/admin-applications";
 import { getDatabase } from "@/db/client";
-import { applications, type ApplicationRecord } from "@/db/schema";
+import {
+  applications,
+  businessProfiles,
+  type ApplicationRecord,
+  workflowInstances,
+  workflowStageDefinitions,
+  workflowStageInstances,
+} from "@/db/schema";
 import type {
   ApplicationSection,
   ApplicationSectionCompletion,
@@ -17,13 +24,27 @@ import {
   declarationVersion,
   privacyNoticeVersion,
 } from "@/modules/applications/ApplicationDeclarations";
+import type {
+  ApplicationListInput,
+  ApplicationStatusCounts,
+} from "@/modules/applications/ApplicationTypes";
 
 export type ApplicationCursor = {
   id: string;
   updatedAt: Date;
 };
 
+type OwnedApplicationListInput = {
+  after?: ApplicationCursor;
+  limit: number;
+  ownerUserId: string;
+  status?: ApplicationListInput["status"];
+};
+
 const listColumns = {
+  businessName: sql<string | null>`
+    COALESCE(NULLIF(${businessProfiles.tradingName}, ''), ${businessProfiles.legalName})
+  `,
   createdAt: applications.createdAt,
   currentSection: applications.currentSection,
   fundingOpportunityId: applications.fundingOpportunityId,
@@ -33,6 +54,131 @@ const listColumns = {
   status: applications.status,
   updatedAt: applications.updatedAt,
 };
+
+const effectiveApplicantStatus = sql`
+  COALESCE(${workflowStageDefinitions.applicantStatus}, 'SUBMITTED')
+`;
+const openWorkflow = sql`
+  COALESCE(${workflowInstances.status}, 'ACTIVE') NOT IN ('COMPLETED', 'CANCELLED')
+`;
+const applicationCategories = {
+  completed: and(
+    eq(applications.status, "submitted"),
+    sql`(
+      ${workflowInstances.status} IN ('COMPLETED', 'CANCELLED')
+      OR ${effectiveApplicantStatus} IN ('OUTCOME_AVAILABLE', 'CLOSED', 'WITHDRAWN')
+    )`,
+  ),
+  draft: eq(applications.status, "draft"),
+  submitted: and(
+    eq(applications.status, "submitted"),
+    openWorkflow,
+    sql`${effectiveApplicantStatus} = 'SUBMITTED'`,
+  ),
+  "under-review": and(
+    eq(applications.status, "submitted"),
+    openWorkflow,
+    sql`${effectiveApplicantStatus} IN ('UNDER_REVIEW', 'ACTION_REQUIRED')`,
+  ),
+} satisfies Record<
+  NonNullable<ApplicationListInput["status"]>,
+  ReturnType<typeof and>
+>;
+
+function ownedApplicationFilter(input: OwnedApplicationListInput) {
+  return and(
+    eq(applications.ownerUserId, input.ownerUserId),
+    input.status ? applicationCategories[input.status] : undefined,
+  );
+}
+
+function applicationCursorFilter(after?: ApplicationCursor) {
+  if (!after) return undefined;
+  return or(
+    lt(applications.updatedAt, after.updatedAt),
+    and(
+      eq(applications.updatedAt, after.updatedAt),
+      lt(applications.id, after.id),
+    ),
+  );
+}
+
+function applicationStatusJoins() {
+  return getDatabase()
+    .select(listColumns)
+    .from(applications)
+    .leftJoin(
+      businessProfiles,
+      eq(businessProfiles.id, applications.businessId),
+    )
+    .leftJoin(
+      workflowInstances,
+      eq(workflowInstances.applicationId, applications.id),
+    )
+    .leftJoin(
+      workflowStageInstances,
+      eq(workflowStageInstances.id, workflowInstances.currentStageInstanceId),
+    )
+    .leftJoin(
+      workflowStageDefinitions,
+      eq(workflowStageDefinitions.id, workflowStageInstances.stageDefinitionId),
+    );
+}
+
+function readOwnedApplicationItems(input: OwnedApplicationListInput) {
+  return applicationStatusJoins()
+    .where(and(
+      ownedApplicationFilter(input),
+      applicationCursorFilter(input.after),
+    ))
+    .orderBy(desc(applications.updatedAt), desc(applications.id))
+    .limit(input.limit + 1);
+}
+
+async function countOwnedApplicationsByStatus(ownerUserId: string) {
+  const rows = await getDatabase()
+    .select({
+      all: count(),
+      completed: sql<number>`
+        count(*) FILTER (WHERE ${applicationCategories.completed})::integer
+      `,
+      draft: sql<number>`
+        count(*) FILTER (WHERE ${applicationCategories.draft})::integer
+      `,
+      submitted: sql<number>`
+        count(*) FILTER (WHERE ${applicationCategories.submitted})::integer
+      `,
+      underReview: sql<number>`
+        count(*) FILTER (
+          WHERE ${applicationCategories["under-review"]}
+        )::integer
+      `,
+    })
+    .from(applications)
+    .leftJoin(
+      workflowInstances,
+      eq(workflowInstances.applicationId, applications.id),
+    )
+    .leftJoin(
+      workflowStageInstances,
+      eq(workflowStageInstances.id, workflowInstances.currentStageInstanceId),
+    )
+    .leftJoin(
+      workflowStageDefinitions,
+      eq(workflowStageDefinitions.id, workflowStageInstances.stageDefinitionId),
+    )
+    .where(eq(applications.ownerUserId, ownerUserId));
+  return rows[0];
+}
+
+function filteredApplicationCount(
+  counts: ApplicationStatusCounts,
+  status: ApplicationListInput["status"],
+) {
+  if (!status) return counts.all;
+  if (status === "under-review") return counts.underReview;
+  return counts[status];
+}
 
 export async function findAllApplications() {
   return adminApplications;
@@ -56,39 +202,24 @@ export async function findAssignedApplicationById(
   return null;
 }
 
-export async function listOwnedApplications(input: {
-  after?: ApplicationCursor;
-  limit: number;
-  ownerUserId: string;
-  status?: "draft";
-}) {
-  const base = and(
-    eq(applications.ownerUserId, input.ownerUserId),
-    input.status ? eq(applications.status, input.status) : undefined,
-  );
-  const cursor = input.after
-    ? or(
-        lt(applications.updatedAt, input.after.updatedAt),
-        and(
-          eq(applications.updatedAt, input.after.updatedAt),
-          lt(applications.id, input.after.id),
-        ),
-      )
-    : undefined;
-  const database = getDatabase();
-  const [items, totals] = await Promise.all([
-    database
-      .select(listColumns)
-      .from(applications)
-      .where(and(base, cursor))
-      .orderBy(desc(applications.updatedAt), desc(applications.id))
-      .limit(input.limit + 1),
-    database
-      .select({ value: count() })
-      .from(applications)
-      .where(base),
+export async function listOwnedApplications(input: OwnedApplicationListInput) {
+  const [items, resultCounts] = await Promise.all([
+    readOwnedApplicationItems(input),
+    countOwnedApplicationsByStatus(input.ownerUserId),
   ]);
-  return { items, total: totals[0]?.value ?? 0 };
+  const emptyCounts: ApplicationStatusCounts = {
+    all: 0,
+    completed: 0,
+    draft: 0,
+    submitted: 0,
+    underReview: 0,
+  };
+  const counts = resultCounts ?? emptyCounts;
+  return {
+    counts,
+    items,
+    total: filteredApplicationCount(counts, input.status),
+  };
 }
 
 export async function findOwnedApplication(

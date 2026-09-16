@@ -56,6 +56,7 @@ export type WorkflowTaskInput = {
   assignmentRoleId?: string | null;
   assignmentUserId?: string | null;
   config: unknown;
+  formVersionId?: string | null;
 };
 
 export type WorkflowStageInput = {

@@ -18,6 +18,7 @@ import type {
   WorkflowActionCode,
 } from "@/modules/workflows/WorkflowTypes";
 import { roles } from "./authorization";
+import { formVersions } from "./forms";
 import { users } from "./identity";
 
 export const workflowDefinitions = pgTable(
@@ -128,6 +129,9 @@ export const stageTaskDefinitions = pgTable(
       onDelete: "restrict",
     }),
     config: jsonb("config").notNull().default({}),
+    formVersionId: uuid("form_version_id").references(() => formVersions.id, {
+      onDelete: "restrict",
+    }),
   },
   (table) => [
     uniqueIndex("app_stage_tasks_stage_code_unique").on(
