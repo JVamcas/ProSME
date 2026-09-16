@@ -1,6 +1,11 @@
 "use client";
 
-import { ChevronDown, ChevronUp, SlidersHorizontal } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronUp,
+  Search,
+  SlidersHorizontal,
+} from "lucide-react";
 import { useState, type ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
@@ -56,19 +61,30 @@ function FilterHeader({
   title,
 }: FilterHeaderProps) {
   const Chevron = expanded ? ChevronUp : ChevronDown;
+
   return (
-    <div className="flex flex-wrap items-start justify-between gap-3">
-      <div className="space-y-1">
-        <div className="inline-flex items-center gap-2 rounded-full bg-brand-navy/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-navy/70">
-          <SlidersHorizontal aria-hidden="true" className="size-3.5" />
-          {title}
+    <div className="flex flex-wrap items-center justify-between gap-4 px-5 py-4">
+      <div className="flex min-w-0 items-start gap-3">
+        <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-brand-navy/[0.06] text-brand-navy">
+          <SlidersHorizontal aria-hidden="true" className="size-5" />
         </div>
-        {description ? (
-          <p className="text-sm text-brand-navy/65">{description}</p>
-        ) : null}
+
+        <div className="min-w-0">
+          <div className="inline-flex rounded-lg bg-brand-navy/[0.06] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-navy">
+            {title}
+          </div>
+
+          {description ? (
+            <p className="mt-2 text-sm leading-5 text-brand-navy/65">
+              {description}
+            </p>
+          ) : null}
+        </div>
       </div>
-      <div className="flex flex-wrap items-center gap-3">
+
+      <div className="flex flex-wrap items-center gap-2">
         {headerActions}
+
         {collapsible ? (
           <GeneralButton
             aria-expanded={expanded}
@@ -76,15 +92,17 @@ function FilterHeader({
             onClick={onToggle}
             size="sm"
             type="button"
-            variant="ghost"
+            variant="outline"
+            className="gap-2"
           >
-            <Chevron aria-hidden="true" className="size-4" />
             {expanded ? "Hide filters" : "Show filters"}
+            <Chevron aria-hidden="true" className="size-4" />
           </GeneralButton>
         ) : null}
+
         {onClear ? (
           <GeneralButton
-            disabled={!expanded || isClearDisabled || isApplying}
+            disabled={isClearDisabled || isApplying}
             onClick={onClear}
             size="sm"
             type="button"
@@ -105,7 +123,10 @@ type FilterFooterProps = Pick<
   | "footerActions"
   | "isApplyDisabled"
   | "isApplying"
+  | "isClearDisabled"
+  | "clearLabel"
   | "onApply"
+  | "onClear"
 >;
 
 function FilterFooter({
@@ -114,18 +135,35 @@ function FilterFooter({
   footerActions,
   isApplyDisabled,
   isApplying,
+  isClearDisabled,
+  clearLabel,
   onApply,
+  onClear,
 }: FilterFooterProps) {
-  if (!footerActions && !onApply) return null;
+  if (!footerActions && !onApply && !onClear) return null;
+
   return (
-    <div className="mt-5 flex flex-wrap items-center justify-end gap-3">
+    <div className="mt-5 flex flex-wrap items-center justify-end gap-2 border-t border-brand-navy/10 pt-4">
       {footerActions}
+
+      {onClear ? (
+        <GeneralButton
+          disabled={isClearDisabled || isApplying}
+          onClick={onClear}
+          type="button"
+          variant="outline"
+        >
+          {clearLabel}
+        </GeneralButton>
+      ) : null}
+
       {onApply ? (
         <GeneralButton
           aria-busy={isApplying}
           disabled={isApplyDisabled || isApplying}
           onClick={onApply}
           type="button"
+          className="min-w-32"
         >
           {isApplying ? applyLoadingText : applyLabel}
         </GeneralButton>
@@ -143,24 +181,41 @@ function FilterContent({
   contentClassName?: string;
 }) {
   return (
-    <>
-      <div className={cn("mt-4", contentClassName)}>{children}</div>
+    <div className="border-t border-brand-navy/10 px-5 py-5">
+      <div
+        className={cn(
+          "grid gap-4 md:grid-cols-2 xl:grid-cols-3",
+          contentClassName,
+        )}
+      >
+        {children}
+      </div>
+
       <FilterFooter {...footer} />
-    </>
+    </div>
   );
 }
 
-function useFilterExpansion(input: Pick<
-  DataTableFilterProps,
-  "collapsible" | "defaultExpanded" | "expanded" | "onExpandedChange"
->) {
+function useFilterExpansion(
+  input: Pick<
+    DataTableFilterProps,
+    "collapsible" | "defaultExpanded" | "expanded" | "onExpandedChange"
+  >,
+) {
   const [internal, setInternal] = useState(input.defaultExpanded ?? false);
+
   const expanded = input.collapsible ? (input.expanded ?? internal) : true;
+
   const toggle = () => {
     const next = !expanded;
-    if (input.expanded === undefined) setInternal(next);
+
+    if (input.expanded === undefined) {
+      setInternal(next);
+    }
+
     input.onExpandedChange?.(next);
   };
+
   return [expanded, toggle] as const;
 }
 
@@ -185,12 +240,17 @@ export function DataTableFilter({
   onExpandedChange,
   title,
 }: DataTableFilterProps) {
-  const expansion = { collapsible, defaultExpanded, expanded, onExpandedChange };
-  const [isExpanded, toggle] = useFilterExpansion(expansion);
+  const [isExpanded, toggle] = useFilterExpansion({
+    collapsible,
+    defaultExpanded,
+    expanded,
+    onExpandedChange,
+  });
+
   return (
     <section
       className={cn(
-        "rounded-2xl border border-brand-navy/10 bg-brand-navy/[0.025] p-4 sm:p-5",
+        "overflow-hidden rounded-2xl border border-brand-navy/10 bg-white shadow-sm",
         className,
       )}
     >
@@ -202,19 +262,23 @@ export function DataTableFilter({
         headerActions={headerActions}
         isApplying={isApplying}
         isClearDisabled={isClearDisabled}
-        onClear={onClear}
+        onClear={isExpanded ? undefined : onClear}
         onToggle={toggle}
         title={title}
       />
+
       {isExpanded ? (
         <FilterContent
           applyLabel={applyLabel}
           applyLoadingText={applyLoadingText}
+          clearLabel={clearLabel}
           contentClassName={contentClassName}
           footerActions={footerActions}
           isApplyDisabled={isApplyDisabled}
           isApplying={isApplying}
+          isClearDisabled={isClearDisabled}
           onApply={onApply}
+          onClear={onClear}
         >
           {children}
         </FilterContent>

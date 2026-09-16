@@ -72,9 +72,8 @@ export function FormDefinitionDialogForm(props: Props) {
       <form className="space-y-4" onSubmit={submit}>
         <FormInput label="Form code" name="code" placeholder="FINANCE_REVIEW" />
         <FormInput label="Form name" name="name" placeholder="Finance Review" />
+         <FormInput label="Submit button label" name="submitLabel" />
         <FormTextarea label="Description" name="description" />
-        <FormTextarea label="Instructions" name="instructions" />
-        <FormInput label="Submit button label" name="submitLabel" />
         {props.mutation.error ? (
           <p className="text-sm text-red-700" role="alert">
             {props.mutation.error.message}
