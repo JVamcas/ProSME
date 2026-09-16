@@ -4,6 +4,7 @@ set -euo pipefail
 DOMAIN="${DOMAIN:-smefund.na}"
 APP_PORT="${APP_PORT:-3008}"
 ENABLE_WWW="${ENABLE_WWW:-true}"
+CLIENT_MAX_BODY_SIZE="${CLIENT_MAX_BODY_SIZE:-10m}"
 
 NGINX_SITE="/etc/nginx/sites-available/${DOMAIN}"
 NGINX_ENABLED="/etc/nginx/sites-enabled/${DOMAIN}"
@@ -27,6 +28,7 @@ server {
     listen [::]:80;
 
     server_name ${SERVER_NAMES};
+    client_max_body_size ${CLIENT_MAX_BODY_SIZE};
 
     location / {
         proxy_pass http://127.0.0.1:${APP_PORT};
