@@ -14,6 +14,8 @@ const bahnschrift = localFont({
   src: "../fonts/bahnschrift.ttf",
   variable: "--font-bahnschrift",
   display: "swap",
+  style: "normal",
+  weight: "100 900",
 });
 
 export async function generateMetadata(): Promise<Metadata> {
