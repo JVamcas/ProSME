@@ -9,10 +9,6 @@ import { toast } from "sonner";
 import { BusinessProfileFields } from "@/components/applicant/businesses/BusinessProfileFields";
 import { ProfileFormActions } from "@/components/applicant/profile/ProfileFormActions";
 import {
-  ProfileFormError,
-  ProfileFormLoading,
-} from "@/components/applicant/profile/ProfileFormState";
-import {
   useBusiness,
   useCreateBusiness,
   useUpdateBusiness,
@@ -21,6 +17,8 @@ import {
   businessProfileSchema,
   type BusinessProfileInput,
 } from "@/modules/businesses/BusinessSchemas";
+import { PortalErrorState } from "@/components/layout/PortalErrorState";
+import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
 
 const defaults: BusinessProfileInput = {
   businessType: "",
@@ -48,9 +46,22 @@ export function BusinessForm({ businessId }: { businessId?: string }) {
     if (business.data) form.reset(business.data);
   }, [business.data, form]);
 
-  if (businessId && business.isPending) return <ProfileFormLoading />;
+  if (businessId && business.isPending)
+    return (
+      <PortalLoadingState
+        title="Loading business"
+        description="Just a moment..."
+      />
+    );
   if (businessId && (business.isError || !business.data)) {
-    return <ProfileFormError onRetry={() => void business.refetch()} />;
+    return (
+      <PortalErrorState
+        onAction={() => void business.refetch()}
+        actionLabel="Retry"
+        title="Error"
+        description="There was an error loading the business. Please check your connection and try again."
+      />
+    );
   }
 
   const mutation = businessId ? updateBusiness : createBusiness;

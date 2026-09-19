@@ -15,7 +15,7 @@ import { ResourceNotFoundError } from "@/lib/resource-errors";
 import {
   findPublishedFundingOpportunity,
   listPublishedFundingOpportunities,
-} from "@/modules/funding-opportunities/ServerFundingOpportunityIntegration";
+} from "@/modules/funding-calls/ServerFundingOpportunityIntegration";
 import { toWorkflowAssignment } from "./WorkflowRepresentation";
 import {
   requireWorkflowIdempotencyKey,

@@ -9,7 +9,7 @@ import { FormInput } from "@/components/ui/form-fields";
 import {
   fundingOpportunitySearchSchema,
   type FundingOpportunitySearchInput,
-} from "@/modules/funding-opportunities/FundingOpportunitySchemas";
+} from "@/modules/funding-calls/FundingOpportunitySchemas";
 
 export function ApplicationOpportunitySearch({
   onChange,

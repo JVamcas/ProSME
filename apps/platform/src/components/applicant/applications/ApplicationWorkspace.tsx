@@ -21,7 +21,7 @@ import {
   isApplicationSection,
   previousApplicationStep,
 } from "./ApplicationStepConfig";
-import { ProfilePageHeader } from "../profile/ProfilePageHeader";
+import { PageHeader } from "../../ui/PageHeader";
 
 export type { SaveApplication } from "./ApplicationSectionForm";
 
@@ -74,7 +74,7 @@ export function ApplicationWorkspace({
 
   return (
     <section>
-      <ProfilePageHeader
+      <PageHeader
         eyebrow="Funding applications"
         title={application.fundingOpportunityTitle}
         description=""

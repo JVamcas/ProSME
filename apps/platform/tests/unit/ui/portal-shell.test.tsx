@@ -5,8 +5,8 @@ import { describe, expect, it, vi } from "vitest";
 import { capabilities } from "@/auth/authorization/capabilities";
 import { AuthenticatedPortalShell } from "@/components/layout/authenticated-portal-shell";
 import { CapabilityGate } from "@/components/layout/capability-gate";
-import { PortalErrorState } from "@/components/layout/portal-error-state";
-import { PortalLoadingState } from "@/components/layout/portal-loading-state";
+import { PortalErrorState } from "@/components/layout/PortalErrorState";
+import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
 import { createQueryClient } from "@/lib/query-client";
 import type { PortalContext } from "@/modules/profiles/ProfileTypes";
 

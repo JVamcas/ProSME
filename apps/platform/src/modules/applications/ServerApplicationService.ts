@@ -25,7 +25,7 @@ import {
   ResourceNotFoundError,
   RequestValidationError,
 } from "@/lib/resource-errors";
-import { findPublishedFundingOpportunity } from "@/modules/funding-opportunities/ServerFundingOpportunityIntegration";
+import { findPublishedFundingOpportunity } from "@/modules/funding-calls/ServerFundingOpportunityIntegration";
 import { applicationDeclarationsSectionSchema } from "./ApplicationDeclarationSchemas";
 import { applicationDocumentRequirements } from "./ApplicationDocumentSchemas";
 import type {

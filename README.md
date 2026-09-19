@@ -52,6 +52,11 @@ every startup. PostgreSQL data and Payload media uploads are retained in named
 volumes. Environment-specific values are supplied by Compose at runtime; the
 image build does not read `.env` or receive deployment configuration.
 
+When `.env` contains `ENVIRONMENT=local`, the wrapper combines
+`infrastructure/compose.yaml` with
+`infrastructure/local/compose.local.override.yml`. Other environments, including
+GCP deployments, use only `infrastructure/compose.yaml`.
+
 The temporary development database uses local-only `POSTGRES_*` defaults defined
 in Compose. The `DATABASE_URL` in `.env` uses the same development credentials
 and the `db` service hostname. Non-Compose deployments supply their own

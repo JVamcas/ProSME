@@ -12,7 +12,7 @@ import {
 import { GeneralButton } from "@/components/ui/button";
 import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
 import { StatusBadge } from "@/components/ui/status-badge";
-import type { FundingOpportunitySummary } from "@/modules/funding-opportunities/FundingOpportunityTypes";
+import type { FundingOpportunitySummary } from "@/modules/funding-calls/FundingOpportunityTypes";
 import type {
   PublishedWorkflowOption,
   WorkflowDefinitionSummary,

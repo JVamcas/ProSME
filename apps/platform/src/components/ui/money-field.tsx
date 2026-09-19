@@ -1,12 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import {
-  get,
-  useFormContext,
-  type FieldValues,
-  type UseFormReturn,
-} from "react-hook-form";
+import { get, useFormContext, type FieldValues } from "react-hook-form";
 
 import { cn } from "@/lib/utils";
 import { Input } from "./form-controls";
@@ -31,35 +26,75 @@ const moneyFormatter = new Intl.NumberFormat("en-NA", {
   useGrouping: true,
 });
 
+function normalizeMoneyInput(value: string) {
+  const sanitized = value.replace(/[^\d.]/g, "");
+  const [whole = "", ...decimalParts] = sanitized.split(".");
+  const decimal = decimalParts.join("").slice(0, 2);
+
+  return {
+    whole,
+    decimal,
+    hasDecimal: decimalParts.length > 0,
+  };
+}
+
 export function formatMoneyValue(value: unknown) {
-  const numericValue = typeof value === "number" ? value : Number(value);
+  if (value === "" || value === null || value === undefined) {
+    return "";
+  }
+
+  const numericValue = Number(value);
+
   return Number.isFinite(numericValue)
     ? moneyFormatter.format(numericValue)
     : "";
 }
 
-function formatInitialMoneyValue(value: unknown) {
-  const numericValue = typeof value === "number" ? value : Number(value);
-  return numericValue === 0 ? "" : formatMoneyValue(value);
+export function formatNAD(value: number | null | undefined) {
+  if (value === null || value === undefined) {
+    return "Not provided";
+  }
+
+  return `N$ ${moneyFormatter.format(value)}`;
 }
 
-function parseMoneyValue(value: string) {
-  const normalized = value.replaceAll(",", "").replace(/[^\d.]/g, "");
-  const [whole = "", ...fractionParts] = normalized.split(".");
-  const fraction = fractionParts.join("").slice(0, 2);
-  const normalizedNumber = fractionParts.length
-    ? `${whole}.${fraction}`
-    : whole;
-  const numericValue = Number(normalizedNumber);
-  return Number.isFinite(numericValue) ? numericValue : 0;
-}
+function formatMoneyInput(value: string) {
+  const { whole, decimal, hasDecimal } = normalizeMoneyInput(value);
 
-function formatMoneyText(value: string) {
-  const normalized = value.replaceAll(",", "").replace(/[^\d.]/g, "");
-  const [whole = "", ...fractionParts] = normalized.split(".");
   const groupedWhole = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-  if (fractionParts.length === 0) return groupedWhole;
-  return `${groupedWhole}.${fractionParts.join("").slice(0, 2)}`;
+
+  return hasDecimal ? `${groupedWhole}.${decimal}` : groupedWhole;
+}
+
+function parseMoneyInput(value: string) {
+  const { whole, decimal, hasDecimal } = normalizeMoneyInput(value);
+
+  if (!whole && !decimal) {
+    return undefined;
+  }
+
+  const numericValue = Number(
+    hasDecimal ? `${whole || "0"}.${decimal}` : whole,
+  );
+
+  return Number.isFinite(numericValue) ? numericValue : undefined;
+}
+
+function getErrorMessage(error: unknown) {
+  if (typeof error === "string") {
+    return error;
+  }
+
+  if (
+    error &&
+    typeof error === "object" &&
+    "message" in error &&
+    typeof error.message === "string"
+  ) {
+    return error.message;
+  }
+
+  return undefined;
 }
 
 function CurrencyPrefix({ children }: { children: ReactNode }) {
@@ -73,19 +108,6 @@ function CurrencyPrefix({ children }: { children: ReactNode }) {
   );
 }
 
-function moneyErrorMessage(error: unknown, contextError: unknown) {
-  if (typeof error === "string") return error;
-  if (
-    contextError
-    && typeof contextError === "object"
-    && "message" in contextError
-    && typeof contextError.message === "string"
-  ) {
-    return contextError.message;
-  }
-  return undefined;
-}
-
 function ControlledMoneyField({
   containerClassName,
   currencyLabel,
@@ -96,21 +118,29 @@ function ControlledMoneyField({
   labelClassName,
   name,
   required,
-  ...props
+  ...inputProps
 }: MoneyFieldProps & { currencyLabel: ReactNode }) {
-  const controlId = id ?? name;
   const form = useFormContext<FieldValues>();
+  const controlId = id ?? name;
+
   const registration = form.register(name, {
-    setValueAs: (value) => parseMoneyValue(String(value)),
+    setValueAs: (value) => parseMoneyInput(String(value)),
   });
-  const fieldError = get(form.formState.errors, name) as unknown;
-  const message = moneyErrorMessage(error, fieldError);
-  const errorId = message ? `${controlId}-error` : undefined;
-  const initialDisplayValue = formatInitialMoneyValue(form.getValues(name));
+
+  const fieldError = get(form.formState.errors, name);
+  const errorMessage =
+    getErrorMessage(error) ?? getErrorMessage(fieldError);
+
+  const errorId = errorMessage ? `${controlId}-error` : undefined;
+
+  const currentValue = form.getValues(name);
+  const initialValue =
+    Number(currentValue) === 0 ? "" : formatMoneyValue(currentValue);
+
   return (
     <FormField
       className={containerClassName}
-      error={message}
+      error={errorMessage}
       errorId={errorId}
       htmlFor={controlId}
       label={label}
@@ -120,30 +150,30 @@ function ControlledMoneyField({
     >
       <div className="relative">
         <CurrencyPrefix>{currencyLabel}</CurrencyPrefix>
+
         <Input
-          {...props}
-          aria-describedby={errorId ?? props["aria-describedby"]}
-          aria-invalid={message ? true : props["aria-invalid"]}
-          className={cn("pl-12", props.className)}
-          defaultValue={initialDisplayValue}
+          {...inputProps}
+          {...registration}
           id={controlId}
+          type="text"
           inputMode="decimal"
           required={required}
-          {...registration}
-          ref={(element) => {
-            registration.ref(element);
-            if (element && initialDisplayValue === "") element.value = "";
-          }}
+          defaultValue={initialValue}
+          aria-describedby={errorId ?? inputProps["aria-describedby"]}
+          aria-invalid={
+            errorMessage ? true : inputProps["aria-invalid"]
+          }
+          className={cn("pl-12", inputProps.className)}
           onChange={(event) => {
-            event.target.value = formatMoneyText(event.target.value);
+            event.target.value = formatMoneyInput(event.target.value);
+
             void registration.onChange(event);
-            props.onChange?.(event);
+            inputProps.onChange?.(event);
           }}
           onBlur={(event) => {
             void registration.onBlur(event);
-            props.onBlur?.(event);
+            inputProps.onBlur?.(event);
           }}
-          type="text"
         />
       </div>
     </FormField>
@@ -154,16 +184,25 @@ export function MoneyField({
   currencyLabel = "N$",
   ...props
 }: MoneyFieldProps) {
-  const context = useFormContext() as UseFormReturn<FieldValues> | null;
-  if (context) {
-    return <ControlledMoneyField currencyLabel={currencyLabel} {...props} />;
+  const form = useFormContext<FieldValues>();
+
+  if (form) {
+    return (
+      <ControlledMoneyField
+        {...props}
+        currencyLabel={currencyLabel}
+      />
+    );
   }
+
   return (
     <FormInput
       {...props}
-      inputMode="decimal"
-      leadingContent={<CurrencyPrefix>{currencyLabel}</CurrencyPrefix>}
       type="text"
+      inputMode="decimal"
+      leadingContent={
+        <CurrencyPrefix>{currencyLabel}</CurrencyPrefix>
+      }
     />
   );
 }

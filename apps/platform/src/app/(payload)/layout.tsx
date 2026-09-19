@@ -13,7 +13,7 @@ import "./custom.scss";
 
 type Props = { children: React.ReactNode };
 
-export const dynamic = "force-dynamic";
+
 
 const serverFunction: ServerFunctionClient = async (args) => {
   "use server";

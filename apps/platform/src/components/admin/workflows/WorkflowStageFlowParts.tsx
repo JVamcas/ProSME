@@ -32,7 +32,7 @@ export function WorkflowStagesHeader({
       <GeneralButton
         disabled={disabled}
         onClick={onAddStage}
-        variant="brand"
+        variant="primary"
         type="button"
       >
         <Plus className="size-4 text-white" />

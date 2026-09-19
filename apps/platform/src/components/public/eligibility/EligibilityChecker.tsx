@@ -115,7 +115,7 @@ export function EligibilityChecker({ rules }: { rules: EligibilityRule[] }) {
             Start again
           </GeneralButton>
           {result.type !== "not-eligible" && (
-            <GeneralButton asChild variant="brand">
+            <GeneralButton asChild variant="primary">
               <Link href="/portal/applications/new">
                 Start application <ArrowRight className="size-4" />
               </Link>

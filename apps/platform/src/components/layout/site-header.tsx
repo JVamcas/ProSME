@@ -6,6 +6,7 @@ import { ActiveNavigationLink } from "@/components/layout/active-navigation-link
 import { primaryNavigation } from "@/components/layout/primary-navigation";
 import { getHeader } from "@/modules/content/ServerContentQueries";
 import type { HeaderContent } from "@/modules/content/ContentTypes";
+import { GeneralButtonLink } from "../ui/button";
 
 export async function SiteHeader() {
   const content = await getHeader();
@@ -44,19 +45,12 @@ export async function SiteHeader() {
             />
           </Link>
           <div className="hidden items-center gap-3 lg:flex">
-            <Link
-              href="/sign-in"
-              className="inline-flex h-11 items-center rounded-full border border-white px-6 text-sm font-bold text-white hover:bg-brand-yellow"
-            >
-              {content.signInLabel}
-            </Link>
-            <Link
-              href={content.applyHref}
-              className="inline-flex h-11 items-center gap-2 rounded-full bg-brand-yellow px-6 text-sm font-bold text-brand-navy hover:bg-brand-yellow/80"
-            >
-              {content.applyLabel}
-              <ArrowRight className="size-4" />
-            </Link>
+            <GeneralButtonLink href="/sign-in" variant={"outlineWhite"}>
+              Sign in
+            </GeneralButtonLink>
+            <GeneralButtonLink variant={"yellow"} href={"/portal/applications/new"}>
+              Apply Now
+            </GeneralButtonLink>
           </div>
           <MobileNavigation content={content} />
         </div>
@@ -117,8 +111,8 @@ function PartnerLogos({ hidden = false }: { hidden?: boolean }) {
 function MobileNavigation({ content }: { content: HeaderContent }) {
   return (
     <details className="group relative lg:hidden">
-      <summary className="grid size-11 list-none place-items-center rounded-full border border-brand-navy [&::-webkit-details-marker]:hidden">
-        <Menu className="size-5 text-brand-orange" />
+      <summary className="grid size-11 list-none place-items-center rounded-full border border-brand-white [&::-webkit-details-marker]:hidden">
+        <Menu className="size-5 text-brand-white" />
         <span className="sr-only">Open navigation</span>
       </summary>
       <nav

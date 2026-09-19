@@ -4,7 +4,7 @@ import { Search } from "lucide-react";
 import { FormProvider, type UseFormReturn } from "react-hook-form";
 
 import { FormInput } from "@/components/ui/form-fields";
-import type { FundingOpportunitySearchInput } from "@/modules/funding-opportunities/FundingOpportunitySchemas";
+import type { FundingOpportunitySearchInput } from "@/modules/funding-calls/FundingOpportunitySchemas";
 
 type FundingOpportunitySearchFormProps = {
   form: UseFormReturn<FundingOpportunitySearchInput>;

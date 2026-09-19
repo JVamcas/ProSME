@@ -12,7 +12,7 @@ import {
   portalRouteSuccess,
 } from "@/lib/api/PortalApiResponse";
 
-export const dynamic = "force-dynamic";
+
 
 const applicationScopeSchema = z.object({
   applicationId: z.uuid(),

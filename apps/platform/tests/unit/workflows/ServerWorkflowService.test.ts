@@ -49,7 +49,7 @@ import {
   findConfigurationReferences,
   findWorkflowVersion,
 } from "@/db/repositories/WorkflowRepository";
-import { findPublishedFundingOpportunity } from "@/modules/funding-opportunities/ServerFundingOpportunityIntegration";
+import { findPublishedFundingOpportunity } from "@/modules/funding-calls/ServerFundingOpportunityIntegration";
 import { referenceWorkflow } from "@/modules/workflows/ReferenceWorkflow";
 import { assignOpportunityWorkflow } from "@/modules/workflows/ServerWorkflowAssignmentService";
 import {

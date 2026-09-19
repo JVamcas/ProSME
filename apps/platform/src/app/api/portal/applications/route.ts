@@ -14,7 +14,7 @@ import {
   listOwnApplications,
 } from "@/modules/applications/ServerApplicationService";
 
-export const dynamic = "force-dynamic";
+
 
 export async function GET(request: Request) {
   const correlationId = createCorrelationId();

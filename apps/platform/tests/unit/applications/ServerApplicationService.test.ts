@@ -36,7 +36,7 @@ import {
 } from "@/db/repositories/ApplicationRepository";
 import { findOwnedBusiness } from "@/db/repositories/BusinessRepository";
 import { hasRequiredApplicationDocuments } from "@/db/repositories/ApplicationDocumentRepository";
-import { findPublishedFundingOpportunity } from "@/modules/funding-opportunities/ServerFundingOpportunityIntegration";
+import { findPublishedFundingOpportunity } from "@/modules/funding-calls/ServerFundingOpportunityIntegration";
 import {
   ApplicationBusinessConflictError,
   ApplicationConflictError,

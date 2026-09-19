@@ -2,6 +2,9 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn() }),
+}));
 const useApplicationBusinesses = vi.hoisted(() => vi.fn());
 const useBusiness = vi.hoisted(() => vi.fn());
 const useApplicationDocuments = vi.hoisted(() => vi.fn());

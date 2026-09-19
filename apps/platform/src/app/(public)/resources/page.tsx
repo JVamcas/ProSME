@@ -4,11 +4,11 @@ import { Download } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { CmsImage } from "@/components/public/cms-image";
 import { PublicPageHeader } from "@/components/public/public-page-header";
-import { ArrowLink } from "@/components/ui/arrow-link";
+import { ArrowLink } from "@/components/ui/links";
 import { contentMetadata } from "@/modules/content/ContentMetadata";
 import { getPage, getResources } from "@/modules/content/ServerContentQueries";
 
-export const dynamic = "force-dynamic";
+
 export async function generateMetadata(): Promise<Metadata> {
   const page = await getPage("resources");
   return page ? contentMetadata(page) : {};

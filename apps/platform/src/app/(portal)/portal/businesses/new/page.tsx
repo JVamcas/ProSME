@@ -5,7 +5,7 @@ import { capabilities } from "@/auth/authorization/capabilities";
 import { getCurrentUser } from "@/auth/authorization/current-user";
 import { can } from "@/auth/authorization/policy";
 import { BusinessForm } from "@/components/applicant/businesses/BusinessForm";
-import { ProfilePageHeader } from "@/components/applicant/profile/ProfilePageHeader";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 export const metadata: Metadata = { title: "Add business" };
 
@@ -17,7 +17,7 @@ export default async function NewBusinessPage() {
 
   return (
     <section>
-      <ProfilePageHeader
+      <PageHeader
         eyebrow="My businesses"
         title="Add business"
         description="Enter the enterprise details used in funding applications."

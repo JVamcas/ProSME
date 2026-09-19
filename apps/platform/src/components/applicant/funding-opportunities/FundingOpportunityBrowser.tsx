@@ -1,11 +1,11 @@
 "use client";
 
-import { PortalErrorState } from "@/components/layout/portal-error-state";
-import { PortalLoadingState } from "@/components/layout/portal-loading-state";
+import { PortalErrorState } from "@/components/layout/PortalErrorState";
+import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Pagination } from "@/components/ui/pagination";
 import { Tabs, type TabItem } from "@/components/ui/tabs";
-import type { FundingOpportunitySummary } from "@/modules/funding-opportunities/FundingOpportunityTypes";
+import type { FundingOpportunitySummary } from "@/modules/funding-calls/FundingOpportunityTypes";
 import { FundingOpportunityCard } from "./FundingOpportunityCard";
 import { FundingOpportunitySearchForm } from "./FundingOpportunitySearchForm";
 import {

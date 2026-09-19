@@ -5,6 +5,7 @@ import { capabilities } from "@/auth/authorization/capabilities";
 import { getCurrentUser } from "@/auth/authorization/current-user";
 import { can } from "@/auth/authorization/policy";
 import { ApplicationsTable } from "@/components/admin/applications/ApplicationsTable";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 export const metadata: Metadata = {
   title: "Applications",
@@ -22,12 +23,13 @@ export default async function ApplicationsPage() {
 
   return (
     <div className="space-y-5">
-      <header>
-        <h1 className="text-3xl font-bold text-brand-navy">Applications</h1>
-        <p className="mt-1 text-sm text-brand-navy/60">
-          Manage and track submitted funding applications.
-        </p>
-      </header>
+      <PageHeader
+        title="Applications"
+        description="Manage and track submitted funding applications."
+        variant="contained"
+        align="left"
+        className="px-5 py-5 sm:px-6 sm:py-6"
+      />
       <ApplicationsTable />
     </div>
   );

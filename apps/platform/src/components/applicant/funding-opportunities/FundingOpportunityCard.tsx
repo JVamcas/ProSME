@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 
 import { GeneralButton } from "@/components/ui/button";
 import { StatusBadge, statusStyles } from "@/components/ui/status-badge";
-import type { FundingOpportunitySummary } from "@/modules/funding-opportunities/FundingOpportunityTypes";
+import type { FundingOpportunitySummary } from "@/modules/funding-calls/FundingOpportunityTypes";
 import {
   formatOpportunityAmount,
   opportunityDateLabel,
@@ -66,7 +66,7 @@ export function FundingOpportunityCard({
           <GeneralButton
             asChild
             className="w-full sm:w-auto"
-            variant={action ? "outline" : "default"}
+            variant={action ? "outline" : "primary"}
           >
             <Link href={`/portal/funding-opportunities/${opportunity.id}`}>
               View details

@@ -15,6 +15,9 @@ import type {
   AdminApplicationListRow,
   AdminApplicationStatusFilter,
 } from "@/modules/applications/ApplicationTypes";
+import { formatNAD } from "@/components/ui/money-field";
+import { formatLocalDateTime24 } from "@/lib/dateUtils";
+import { ArrowLink } from "@/components/ui/links";
 
 const statuses: Array<{
   label: string;
@@ -28,27 +31,14 @@ const statuses: Array<{
   { label: "Closed", value: "closed" },
 ];
 
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("en-NA", { dateStyle: "medium" }).format(
-    new Date(value),
-  );
-}
-
-function formatMoney(value: number | null) {
-  if (value === null) return "Not provided";
-  return new Intl.NumberFormat("en-NA", {
-    currency: "NAD",
-    maximumFractionDigits: 0,
-    style: "currency",
-  }).format(value);
-}
-
 const columns: DataTableColumn<AdminApplicationListRow>[] = [
   {
     accessorKey: "reference",
     header: "Application",
     cell: ({ row }) => (
-      <span className="font-bold text-brand-navy">{row.original.reference}</span>
+      <ArrowLink href={`/admin/applications/${row.original.applicationId}`}>
+        {row.original.reference}
+      </ArrowLink>
     ),
   },
   {
@@ -77,24 +67,12 @@ const columns: DataTableColumn<AdminApplicationListRow>[] = [
   {
     accessorKey: "requestedAmount",
     header: "Requested",
-    cell: ({ row }) => formatMoney(row.original.requestedAmount),
+    cell: ({ row }) => formatNAD(row.original.requestedAmount),
   },
   {
     accessorKey: "submittedAt",
     header: "Submitted",
-    cell: ({ row }) => formatDate(row.original.submittedAt),
-  },
-  {
-    id: "action",
-    header: "Action",
-    enableSorting: false,
-    cell: ({ row }) => (
-      <GeneralButton asChild size="sm" variant="outline">
-        <Link href={`/admin/applications/${row.original.applicationId}`}>
-          View
-        </Link>
-      </GeneralButton>
-    ),
+    cell: ({ row }) => formatLocalDateTime24(row.original.submittedAt),
   },
 ];
 
@@ -141,12 +119,24 @@ function ApplicationPagination({
 }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 border-t border-brand-navy/10 p-4 text-sm text-brand-navy/60">
-      <span>{total} submitted {total === 1 ? "application" : "applications"}</span>
+      <span>
+        {total} submitted {total === 1 ? "application" : "applications"}
+      </span>
       <div className="flex gap-2">
-        <GeneralButton disabled={!pageDepth} onClick={onPrevious} size="sm" variant="outline">
+        <GeneralButton
+          disabled={!pageDepth}
+          onClick={onPrevious}
+          size="sm"
+          variant="outline"
+        >
           Previous
         </GeneralButton>
-        <GeneralButton disabled={!nextCursor} onClick={onNext} size="sm" variant="outline">
+        <GeneralButton
+          disabled={!nextCursor}
+          onClick={onNext}
+          size="sm"
+          variant="outline"
+        >
           Next
         </GeneralButton>
       </div>
@@ -191,9 +181,9 @@ export function ApplicationsTable() {
       : "No submitted applications match these filters.";
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-brand-navy/10 bg-white shadow-sm">
+    <section className="overflow-hidden rounded-2xl border border-brand-navy/10 bg-white shadow-sm p-4">
       <StatusTabs onChange={changeStatus} status={status} />
-      <div className="p-4">
+      <div className="py-4 px-1">
         <DataTableFilter
           defaultExpanded={false}
           description="Filter the safe application list projection."

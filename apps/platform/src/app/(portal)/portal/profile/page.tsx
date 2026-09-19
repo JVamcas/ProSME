@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { capabilities } from "@/auth/authorization/capabilities";
 import { getCurrentUser } from "@/auth/authorization/current-user";
 import { can } from "@/auth/authorization/policy";
-import { ProfilePageHeader } from "@/components/applicant/profile/ProfilePageHeader";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { ProfileTabContent } from "@/components/applicant/profile/ProfileTabContent";
 import {
   type ProfileTabId,
@@ -65,7 +65,7 @@ export default async function ApplicantProfilePage({
 
   return (
     <section>
-      <ProfilePageHeader
+      <PageHeader
         className="lg:hidden"
         title="My profile"
         description="Manage your personal, contact, and account information."

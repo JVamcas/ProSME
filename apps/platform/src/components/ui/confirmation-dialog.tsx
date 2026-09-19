@@ -52,7 +52,7 @@ export function ConfirmationDialog({
             disabled={isLoading}
             onClick={onConfirm}
             type="button"
-            variant={isDangerous ? "danger" : "default"}
+            variant={isDangerous ? "danger" : "primary"}
           >
             {isLoading ? "Deleting…" : confirmText}
           </GeneralButton>

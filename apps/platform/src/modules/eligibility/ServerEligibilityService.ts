@@ -8,7 +8,7 @@ import {
   listOwnedEligibilityAssessments,
 } from "@/db/repositories/EligibilityAssessmentRepository";
 import { ResourceConflictError, ResourceNotFoundError } from "@/lib/resource-errors";
-import { findPublishedFundingOpportunity } from "@/modules/funding-opportunities/ServerFundingOpportunityIntegration";
+import { findPublishedFundingOpportunity } from "@/modules/funding-calls/ServerFundingOpportunityIntegration";
 import { loadPublishedEligibilityRuleSet } from "./ServerEligibilityIntegration";
 import type {
   EligibilityAnswer,

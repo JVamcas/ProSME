@@ -2,8 +2,8 @@
 
 import { toast } from "sonner";
 
-import { PortalErrorState } from "@/components/layout/portal-error-state";
-import { PortalLoadingState } from "@/components/layout/portal-loading-state";
+import { PortalErrorState } from "@/components/layout/PortalErrorState";
+import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
 import {
   useOwnApplication,
   useSubmitApplication,

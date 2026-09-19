@@ -3,8 +3,8 @@
 import { Plus } from "lucide-react";
 import Link from "next/link";
 
-import { PortalErrorState } from "@/components/layout/portal-error-state";
-import { PortalLoadingState } from "@/components/layout/portal-loading-state";
+import { PortalErrorState } from "@/components/layout/PortalErrorState";
+import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
 import { GeneralButton } from "@/components/ui/button";
 import { Pagination } from "@/components/ui/pagination";
 import { Tabs, type TabItem } from "@/components/ui/tabs";

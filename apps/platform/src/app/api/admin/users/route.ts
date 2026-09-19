@@ -14,7 +14,7 @@ import {
   inviteUser,
 } from "@/modules/users/ServerUserAccessService";
 
-export const dynamic = "force-dynamic";
+
 
 export async function GET(request: Request) {
   const correlationId = createCorrelationId();

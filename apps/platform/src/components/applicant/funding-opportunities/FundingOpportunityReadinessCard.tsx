@@ -2,7 +2,7 @@ import { FileDown } from "lucide-react";
 import Link from "next/link";
 
 import { GeneralButton } from "@/components/ui/button";
-import type { FundingOpportunityDetail } from "@/modules/funding-opportunities/FundingOpportunityTypes";
+import type { FundingOpportunityDetail } from "@/modules/funding-calls/FundingOpportunityTypes";
 
 export function FundingOpportunityReadinessCard({
   opportunity,

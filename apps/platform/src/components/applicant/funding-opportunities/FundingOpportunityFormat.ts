@@ -1,4 +1,4 @@
-import type { FundingOpportunitySummary } from "@/modules/funding-opportunities/FundingOpportunityTypes";
+import type { FundingOpportunitySummary } from "@/modules/funding-calls/FundingOpportunityTypes";
 
 const dateFormatter = new Intl.DateTimeFormat("en-NA", {
   day: "2-digit",

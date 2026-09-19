@@ -1,6 +1,6 @@
 "use client";
 
-import { PortalRouteError } from "@/components/layout/portal-route-error";
+import { PortalErrorState } from "@/components/layout/PortalErrorState";
 
 export default function ErrorBoundary({
   error,
@@ -9,5 +9,12 @@ export default function ErrorBoundary({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  return <PortalRouteError error={error} reset={reset} />;
+  return (
+    <PortalErrorState
+      title="Error"
+      description={error.message}
+      actionLabel="Retry"
+      onAction={reset}
+    />
+  );
 }

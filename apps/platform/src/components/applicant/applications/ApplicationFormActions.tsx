@@ -75,7 +75,7 @@ export function ApplicationFormActions({
         >
           {error ? "Retry save" : "Save draft"}
         </GeneralButton>
-        <GeneralButton disabled={pending || !online} type="submit" variant="brand">
+        <GeneralButton disabled={pending || !online} type="submit" variant="primary">
           {pending ? (
             <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
           ) : null}

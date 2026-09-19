@@ -9,7 +9,7 @@ import { getPayload } from "payload";
 import {
   findPublishedFundingOpportunity,
   listPublishedFundingOpportunities,
-} from "@/modules/funding-opportunities/ServerFundingOpportunityIntegration";
+} from "@/modules/funding-calls/ServerFundingOpportunityIntegration";
 
 const fundingCall = {
   callStatus: "open" as const,

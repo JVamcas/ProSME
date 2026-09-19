@@ -5,9 +5,9 @@ import { capabilities } from "@/auth/authorization/capabilities";
 import { getCurrentUser } from "@/auth/authorization/current-user";
 import { can, requireAnyCapability } from "@/auth/authorization/policy";
 import { UserAccessWorkspace } from "@/components/admin/users/UserAccessWorkspace";
-import { ProfilePageHeader } from "@/components/applicant/profile/ProfilePageHeader";
+import { PageHeader } from "@/components/ui/PageHeader";
 
-export const metadata: Metadata = { title: "Users & access" };
+export const metadata: Metadata = { title: "Users & roles" };
 
 export default async function UsersAccessPage() {
   const user = await getCurrentUser();
@@ -21,16 +21,19 @@ export default async function UsersAccessPage() {
 
   return (
     <section>
-      <ProfilePageHeader
-        title="Users & access"
+      <PageHeader
+        description="Manage people, roles, and permissions."
         eyebrow="Administration"
-        description="Manage user access."
+        title="Users & Roles"
       />
       <UserAccessWorkspace
         canManageRoles={can(user, capabilities.roleManage)}
         canManageUsers={can(user, capabilities.userManage)}
         canReadRoles={
           can(user, capabilities.roleRead) || can(user, capabilities.roleManage)
+        }
+        canReadUsers={
+          can(user, capabilities.userRead) || can(user, capabilities.userManage)
         }
       />
     </section>

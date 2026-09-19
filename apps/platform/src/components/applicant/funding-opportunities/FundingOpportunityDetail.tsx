@@ -3,12 +3,12 @@
 import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
 
-import { PortalErrorState } from "@/components/layout/portal-error-state";
-import { PortalLoadingState } from "@/components/layout/portal-loading-state";
+import { PortalErrorState } from "@/components/layout/PortalErrorState";
+import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
 import { Tabs, type TabItem } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { useFundingOpportunity } from "@/modules/funding-opportunities/FundingOpportunityHooks";
-import type { FundingOpportunityDetail as Opportunity } from "@/modules/funding-opportunities/FundingOpportunityTypes";
+import { useFundingOpportunity } from "@/modules/funding-calls/FundingOpportunityHooks";
+import type { FundingOpportunityDetail as Opportunity } from "@/modules/funding-calls/FundingOpportunityTypes";
 import { formatOpportunityDate } from "./FundingOpportunityFormat";
 import {
   ContactPanel,

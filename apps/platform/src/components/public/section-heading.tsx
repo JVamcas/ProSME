@@ -1,4 +1,4 @@
-import { ArrowLink } from "@/components/ui/arrow-link";
+import { ArrowLink } from "@/components/ui/links";
 
 export function SectionHeading({ title, text, link, href = "/funding" }: { title: string; text: string; link?: string; href?: string }) {
   return (

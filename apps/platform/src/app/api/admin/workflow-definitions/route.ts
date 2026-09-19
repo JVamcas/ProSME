@@ -10,7 +10,7 @@ import {
   getWorkflowDefinitions,
 } from "@/modules/workflows/ServerWorkflowService";
 
-export const dynamic = "force-dynamic";
+
 
 export async function GET(request: Request) {
   const correlationId = createCorrelationId();

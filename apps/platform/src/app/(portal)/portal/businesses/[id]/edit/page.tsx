@@ -5,7 +5,7 @@ import { capabilities } from "@/auth/authorization/capabilities";
 import { getCurrentUser } from "@/auth/authorization/current-user";
 import { can } from "@/auth/authorization/policy";
 import { BusinessForm } from "@/components/applicant/businesses/BusinessForm";
-import { ProfilePageHeader } from "@/components/applicant/profile/ProfilePageHeader";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 export const metadata: Metadata = { title: "Edit business" };
 
@@ -21,7 +21,7 @@ export default async function EditBusinessPage({
 
   return (
     <section>
-      <ProfilePageHeader
+      <PageHeader
         eyebrow="My businesses"
         title="Edit business"
         description="Update this enterprise's information."

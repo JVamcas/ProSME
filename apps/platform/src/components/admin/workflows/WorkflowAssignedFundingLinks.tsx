@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import type { FundingOpportunitySummary } from "@/modules/funding-opportunities/FundingOpportunityTypes";
+import type { FundingOpportunitySummary } from "@/modules/funding-calls/FundingOpportunityTypes";
 import type {
   PublishedWorkflowOption,
   WorkflowDefinitionSummary,

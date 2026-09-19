@@ -25,7 +25,7 @@ import {
   getEligibilityWorkspace,
 } from "@/modules/eligibility/ServerEligibilityService";
 import { loadPublishedEligibilityRuleSet } from "@/modules/eligibility/ServerEligibilityIntegration";
-import { findPublishedFundingOpportunity } from "@/modules/funding-opportunities/ServerFundingOpportunityIntegration";
+import { findPublishedFundingOpportunity } from "@/modules/funding-calls/ServerFundingOpportunityIntegration";
 
 const ownerId = "79e20de0-3558-4d63-90a4-8c9f5125df07";
 const rules = [

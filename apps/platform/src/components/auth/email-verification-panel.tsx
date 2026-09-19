@@ -36,7 +36,7 @@ export function EmailVerificationPanel() {
       />
       <GeneralButton
         type="button"
-        variant="brand"
+        variant="primary"
         className="w-full"
         disabled={!canManage || verification.busy}
         onClick={verification.resendLink}

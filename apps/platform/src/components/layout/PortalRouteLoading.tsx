@@ -1,4 +1,4 @@
-import { PortalLoadingState } from "./portal-loading-state";
+import { PortalLoadingState } from "./PortalLoadingState";
 
 export function PortalRouteLoading() {
   return (

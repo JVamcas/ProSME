@@ -5,8 +5,6 @@ import { AppShell } from "@/components/layout/app-shell";
 import { QueryProvider } from "@/components/layout/query-provider";
 import "../globals.css";
 
-export const dynamic = "force-dynamic";
-
 export const metadata: Metadata = {
   title: { default: "Account", template: "%s | ProSME Namibia" },
 };

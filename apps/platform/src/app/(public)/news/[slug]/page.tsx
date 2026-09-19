@@ -6,7 +6,7 @@ import { PublicPageHeader } from "@/components/public/public-page-header";
 import { getListingItem } from "@/modules/content/ServerContentQueries";
 import { contentMetadata } from "@/modules/content/ContentMetadata";
 
-export const dynamic = "force-dynamic";
+
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const item = await getListingItem("news", (await params).slug);

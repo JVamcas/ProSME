@@ -20,7 +20,7 @@ import type { AuthenticatedUser } from "@/auth/types";
 import {
   findPublishedFundingOpportunity,
   listPublishedFundingOpportunities,
-} from "@/modules/funding-opportunities/ServerFundingOpportunityIntegration";
+} from "@/modules/funding-calls/ServerFundingOpportunityIntegration";
 
 const opportunity = {
   closesAt: "2026-10-31T21:59:59.000Z",

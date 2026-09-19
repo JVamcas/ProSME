@@ -16,7 +16,7 @@ const querySchema = z.object({
   fundingOpportunityId: z.coerce.number().int().positive(),
 }).strict();
 
-export const dynamic = "force-dynamic";
+
 
 export async function GET(request: Request) {
   const correlationId = createCorrelationId();

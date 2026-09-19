@@ -1,218 +1,273 @@
 "use client";
 
-import { MoreHorizontal, Search, UserRoundCheck } from "lucide-react";
-import { useState } from "react";
+import { ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { useMemo, useState } from "react";
 
 import { IconButton } from "@/components/ui/button";
 import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
-import { DataTableFilter } from "@/components/ui/data-table-filter";
-import { Input } from "@/components/ui/form-controls";
-import { StatusBadge } from "@/components/ui/status-badge";
-import { useUpdateUserAccess } from "@/modules/users/UserAccessHooks";
-import type { UserAccessRow } from "@/modules/users/UserAccessTypes";
+import { Input, Select } from "@/components/ui/form-controls";
+import type {
+  RoleAccessRow,
+  UserAccessRow,
+} from "@/modules/users/UserAccessTypes";
+import {
+  formatLastActive,
+  RolePills,
+  UserIdentity,
+  UserRowActions,
+  UserStatus,
+} from "./UserListPrimitives";
 
-function UserRowActions({
-  canManageRoles,
-  canManageUsers,
-  onEditRoles,
-  onPromote,
-  user,
-}: {
+const PAGE_SIZE = 8;
+
+export type UsersTabPanelProps = {
   canManageRoles: boolean;
   canManageUsers: boolean;
-  onEditRoles: () => void;
-  onPromote: () => void;
-  user: UserAccessRow;
-}) {
-  const [open, setOpen] = useState(false);
-  const update = useUpdateUserAccess();
-  const canActivate = user.emailVerified || user.status === "active";
+  onEditRoles: (user: UserAccessRow) => void;
+  roles: RoleAccessRow[];
+  users: UserAccessRow[];
+};
 
-  function changeStatus() {
-    update.mutate({
-      input: { status: user.status === "active" ? "suspended" : "active" },
-      userId: user.id,
-    });
-    setOpen(false);
-  }
-
-  return (
-    <div className="relative flex justify-end">
-      <IconButton
-        label={`Actions for ${user.displayName}`}
-        onClick={() => setOpen((current) => !current)}
-        variant="ghost"
-      >
-        <MoreHorizontal className="size-5" />
-      </IconButton>
-      {open ? (
-        <div className="absolute right-0 top-11 z-20 w-44 rounded-xl border border-brand-navy/10 bg-white p-1.5 shadow-xl">
-          {canManageUsers &&
-          user.userType === "applicant" &&
-          user.emailVerified ? (
-            <button
-              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-semibold text-brand-navy hover:bg-brand-cream"
-              onClick={() => {
-                onPromote();
-                setOpen(false);
-              }}
-              type="button"
-            >
-              <UserRoundCheck className="size-4 text-brand-orange" />
-              Promote to staff
-            </button>
-          ) : null}
-          {canManageUsers && user.userType === "staff" && canActivate ? (
-            <button
-              className="w-full rounded-lg px-3 py-2 text-left text-xs font-semibold text-brand-navy hover:bg-brand-cream"
-              disabled={update.isPending}
-              onClick={changeStatus}
-              type="button"
-            >
-              {user.status === "active" ? "Suspend user" : "Activate user"}
-            </button>
-          ) : null}
-          {canManageRoles ? (
-            <button
-              className="w-full rounded-lg px-3 py-2 text-left text-xs font-semibold text-brand-navy hover:bg-brand-cream"
-              onClick={() => {
-                onEditRoles();
-                setOpen(false);
-              }}
-              type="button"
-            >
-              Edit roles
-            </button>
-          ) : null}
-          {update.error ? (
-            <p className="px-3 py-2 text-xs text-red-700" role="alert">
-              {update.error.message}
-            </p>
-          ) : null}
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function formatLastLogin(value: string | null) {
-  if (!value) return "Never";
-
-  return new Intl.DateTimeFormat("en-NA", {
-    dateStyle: "medium",
-  }).format(new Date(value));
-}
-
-function createColumns({
-  canManageRoles,
-  canManageUsers,
-  onEditRoles,
-  onPromote,
-}: Omit<UsersTabPanelProps, "users">): DataTableColumn<UserAccessRow>[] {
+function createColumns(
+  props: UsersTabPanelProps,
+): DataTableColumn<UserAccessRow>[] {
   return [
     {
       accessorKey: "displayName",
       header: "Name",
-      cell: ({ row }) => (
-        <span className="font-semibold text-brand-navy">
-          {row.original.displayName}
-        </span>
-      ),
+      cell: ({ row }) => <UserIdentity user={row.original} />,
     },
-    {
-      accessorKey: "email",
-      header: "Email",
-    },
+    { accessorKey: "email", header: "Email" },
     {
       accessorKey: "roleCodes",
-      header: "Role(s)",
+      header: "Roles",
       enableSorting: false,
-      cell: ({ row }) =>
-        row.original.roleCodes.length ? row.original.roleCodes.join(", ") : "—",
+      cell: ({ row }) => <RolePills codes={row.original.roleCodes} />,
     },
     {
       accessorKey: "status",
       header: "Status",
-      cell: ({ row }) => <StatusBadge status={row.original.status} />,
+      cell: ({ row }) => <UserStatus status={row.original.status} />,
     },
     {
       accessorKey: "lastLoginAt",
-      header: "Last login",
-      cell: ({ row }) => formatLastLogin(row.original.lastLoginAt),
+      header: "Last active",
+      cell: ({ row }) => formatLastActive(row.original.lastLoginAt),
     },
     {
       id: "actions",
       header: "Actions",
       enableSorting: false,
-      cell: ({ row }) => (
-        <UserRowActions
-          canManageRoles={canManageRoles}
-          canManageUsers={canManageUsers}
-          onEditRoles={() => onEditRoles(row.original)}
-          onPromote={() => onPromote(row.original)}
-          user={row.original}
-        />
-      ),
+      cell: ({ row }) => <UserRowActions {...props} user={row.original} />,
     },
   ];
 }
 
-type UsersTabPanelProps = {
-  canManageRoles: boolean;
-  canManageUsers: boolean;
-  onEditRoles: (user: UserAccessRow) => void;
-  onPromote: (user: UserAccessRow) => void;
-  users: UserAccessRow[];
-};
-
-export function UsersTabPanel({
-  canManageRoles,
-  canManageUsers,
-  onEditRoles,
-  onPromote,
-  users,
-}: UsersTabPanelProps) {
+export function UsersTabPanel(props: UsersTabPanelProps) {
   const [search, setSearch] = useState("");
-  const columns = createColumns({
-    canManageRoles,
-    canManageUsers,
-    onEditRoles,
-    onPromote,
-  });
-  const filteredUsers = users.filter((user) => {
-    const term = search.trim().toLowerCase();
-    return (
-      !term || `${user.displayName} ${user.email}`.toLowerCase().includes(term)
-    );
-  });
+  const [role, setRole] = useState("");
+  const [status, setStatus] = useState("");
+  const [page, setPage] = useState(1);
+  const filteredUsers = useMemo(
+    () => filterUsers(props.users, search, role, status),
+    [props.users, role, search, status],
+  );
+  const pageCount = Math.max(1, Math.ceil(filteredUsers.length / PAGE_SIZE));
+  const activePage = Math.min(page, pageCount);
+  const visibleUsers = filteredUsers.slice(
+    (activePage - 1) * PAGE_SIZE,
+    activePage * PAGE_SIZE,
+  );
+  const columns = createColumns(props);
 
   return (
-    <div>
-      <DataTableFilter
-        className="rounded-none border-x-0 border-t-0"
-        collapsible={false}
-        contentClassName="mt-3"
-        isClearDisabled={!search}
-        onClear={() => setSearch("")}
-        title="User filters"
-      >
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-brand-orange" />
-          <Input
-            aria-label="Search users"
-            className="h-10 pl-10"
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search users..."
-            value={search}
-          />
-        </div>
-      </DataTableFilter>
-      <DataTable
-        columns={columns}
-        data={filteredUsers}
-        emptyMessage="No users match your search."
-        minWidth={820}
+    <div className="p-4 sm:p-6">
+      <UserFilters
+        onRoleChange={(value) => {
+          setRole(value);
+          setPage(1);
+        }}
+        onSearchChange={(value) => {
+          setSearch(value);
+          setPage(1);
+        }}
+        onStatusChange={(value) => {
+          setStatus(value);
+          setPage(1);
+        }}
+        role={role}
+        roles={props.roles}
+        search={search}
+        status={status}
       />
+      <div className="hidden md:block">
+        <DataTable
+          columns={columns}
+          data={visibleUsers}
+          emptyMessage="No users match your filters."
+          footer={
+            <Pagination
+              count={filteredUsers.length}
+              onPageChange={setPage}
+              page={activePage}
+              pageCount={pageCount}
+            />
+          }
+          minWidth={880}
+        />
+      </div>
+      <div className="space-y-3 md:hidden">
+        {visibleUsers.map((user) => (
+          <MobileUserCard key={user.id} props={props} user={user} />
+        ))}
+        {!visibleUsers.length ? (
+          <p className="py-10 text-center text-sm text-slate-500">
+            No users match your filters.
+          </p>
+        ) : null}
+        <Pagination
+          count={filteredUsers.length}
+          onPageChange={setPage}
+          page={activePage}
+          pageCount={pageCount}
+        />
+      </div>
+    </div>
+  );
+}
+
+function filterUsers(
+  users: UserAccessRow[],
+  search: string,
+  role: string,
+  status: string,
+) {
+  const term = search.trim().toLowerCase();
+  return users.filter((user) => {
+    const matchesSearch =
+      !term ||
+      `${user.displayName} ${user.email} ${user.roleCodes.join(" ")}`
+        .toLowerCase()
+        .includes(term);
+    return (
+      matchesSearch &&
+      (!role || user.roleCodes.includes(role)) &&
+      (!status || user.status === status)
+    );
+  });
+}
+
+function UserFilters(props: {
+  onRoleChange: (value: string) => void;
+  onSearchChange: (value: string) => void;
+  onStatusChange: (value: string) => void;
+  role: string;
+  roles: RoleAccessRow[];
+  search: string;
+  status: string;
+}) {
+  return (
+    <div className="mb-4 grid gap-3 md:grid-cols-[minmax(16rem,1fr)_11rem_11rem]">
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+        <Input
+          className="h-10 rounded-lg border-slate-200 pl-10"
+          onChange={(event) => props.onSearchChange(event.target.value)}
+          placeholder="Search by name, email, or role…"
+          value={props.search}
+        />
+      </div>
+      <Select
+        className="h-10 rounded-lg border-slate-200"
+        onChange={(event) => props.onRoleChange(event.target.value)}
+        value={props.role}
+      >
+        <option value="">All roles</option>
+        {props.roles.map((item) => (
+          <option key={item.id} value={item.code}>
+            {item.name}
+          </option>
+        ))}
+      </Select>
+      <Select
+        className="h-10 rounded-lg border-slate-200"
+        onChange={(event) => props.onStatusChange(event.target.value)}
+        value={props.status}
+      >
+        <option value="">All statuses</option>
+        <option value="active">Active</option>
+        <option value="invited">Invited</option>
+        <option value="suspended">Suspended</option>
+        <option value="disabled">Disabled</option>
+      </Select>
+    </div>
+  );
+}
+
+function MobileUserCard({
+  props,
+  user,
+}: {
+  props: UsersTabPanelProps;
+  user: UserAccessRow;
+}) {
+  return (
+    <article className="rounded-xl border border-slate-200 p-4 shadow-sm">
+      <div className="flex items-start justify-between gap-3">
+        <UserIdentity user={user} />
+        <UserRowActions {...props} user={user} />
+      </div>
+      <p className="mt-2 pl-12 text-sm text-slate-500">{user.email}</p>
+      <div className="mt-4 flex items-center justify-between gap-3 border-t border-slate-100 pt-3">
+        <RolePills codes={user.roleCodes} />
+        <UserStatus status={user.status} />
+      </div>
+    </article>
+  );
+}
+
+function Pagination({
+  count,
+  onPageChange,
+  page,
+  pageCount,
+}: {
+  count: number;
+  onPageChange: (page: number) => void;
+  page: number;
+  pageCount: number;
+}) {
+  const first = count ? (page - 1) * PAGE_SIZE + 1 : 0;
+  const last = Math.min(page * PAGE_SIZE, count);
+  return (
+    <div className="flex items-center justify-between gap-3 text-xs text-slate-500">
+      <span>
+        Showing {first}–{last} of {count}
+      </span>
+      <div className="flex items-center gap-1">
+        <IconButton
+          className="size-8 rounded-lg"
+          disabled={page === 1}
+          label="Previous page"
+          onClick={() => onPageChange(page - 1)}
+          variant="outline"
+        >
+          <ChevronLeft className="size-4" />
+        </IconButton>
+        <span className="min-w-8 rounded-lg bg-blue-600 px-2 py-2 text-center font-semibold text-white">
+          {page}
+        </span>
+        <span className="px-1">of {pageCount}</span>
+        <IconButton
+          className="size-8 rounded-lg"
+          disabled={page === pageCount}
+          label="Next page"
+          onClick={() => onPageChange(page + 1)}
+          variant="outline"
+        >
+          <ChevronRight className="size-4" />
+        </IconButton>
+      </div>
     </div>
   );
 }

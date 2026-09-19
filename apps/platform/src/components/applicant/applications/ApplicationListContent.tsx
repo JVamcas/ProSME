@@ -1,22 +1,21 @@
+"use client";
+
+import { useRouter } from "next/navigation";
 
 import { EditButton } from "@/components/ui/action-buttons";
 import { EmptyState } from "@/components/ui/empty-state";
 import type { ApplicationSummary } from "@/modules/applications/ApplicationTypes";
-import { useRouter } from "next/router";
 import { ApplicationCards, ApplicationsTable } from "./ApplicationTable";
 
-function renderAction(application: ApplicationSummary) {
-  const router = useRouter();
-
+function renderAction(
+  application: ApplicationSummary,
+  onEdit: (applicationId: string) => void,
+) {
   return (
-    <>
-      <EditButton
-        disabled={application.status !== "draft"}
-        onClick={() => {
-          router.push(`/portal/applications/${application.id}/edit`);
-        }}
-      />
-    </>
+    <EditButton
+      disabled={application.status !== "draft"}
+      onClick={() => onEdit(application.id)}
+    />
   );
 }
 
@@ -25,6 +24,8 @@ export function ApplicationListContent({
 }: {
   items: ApplicationSummary[];
 }) {
+  const router = useRouter();
+
   if (!items.length) {
     return (
       <EmptyState
@@ -34,10 +35,23 @@ export function ApplicationListContent({
     );
   }
 
+  const handleEdit = (applicationId: string) => {
+    router.push(`/portal/applications/${applicationId}/edit`);
+  };
+
+  const renderApplicationAction = (application: ApplicationSummary) =>
+    renderAction(application, handleEdit);
+
   return (
     <>
-      <ApplicationsTable items={items} renderAction={renderAction} />
-      <ApplicationCards items={items} renderAction={renderAction} />
+      <ApplicationsTable
+        items={items}
+        renderAction={renderApplicationAction}
+      />
+      <ApplicationCards
+        items={items}
+        renderAction={renderApplicationAction}
+      />
     </>
   );
 }

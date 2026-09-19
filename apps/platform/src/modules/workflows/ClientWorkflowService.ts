@@ -1,7 +1,7 @@
 "use client";
 
 import { requestData } from "@/lib/client-http";
-import type { FundingOpportunityPage } from "@/modules/funding-opportunities/FundingOpportunityTypes";
+import type { FundingOpportunityPage } from "@/modules/funding-calls/FundingOpportunityTypes";
 import type {
   CreateWorkflowInput,
   OpportunityAssignmentInput,

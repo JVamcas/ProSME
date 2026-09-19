@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import type { HomepageContent } from "@/modules/content/ContentTypes";
 import { CmsImage } from "./cms-image";
+import { GeneralButton, GeneralButtonLink } from "../ui/button";
 
 type HomeHeroProps = {
   content: HomepageContent;
@@ -30,14 +31,12 @@ export function HomeHero({ content }: HomeHeroProps) {
           </p>
 
           <div className="mt-7 flex flex-wrap gap-3">
-            <Link href={content.applyHref} className="home-primary">
-              {content.applyLabel}
-              <ArrowRight className="size-4" />
-            </Link>
-
-            <Link href="/eligibility" className="home-secondary">
-              {content.eligibilityLabel}
-            </Link>
+            <GeneralButtonLink variant={"primary"} href={"/portal/applications/new"}>
+              Apply Now
+            </GeneralButtonLink>
+            <GeneralButtonLink variant={"outlineOrange"} href={"/funding"}>
+              Funding Opportunities
+            </GeneralButtonLink>
           </div>
 
           <div className="mt-8 flex flex-wrap gap-x-8 gap-y-3 text-xs font-medium text-brand-navy/80">

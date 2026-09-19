@@ -52,7 +52,7 @@ export function WorkflowStageTaskTable({
           onClick={onAdd}
           size="sm"
           type="button"
-          variant="brand"
+          variant="primary"
         >
           <Plus className="size-4" /> Add task
         </GeneralButton>

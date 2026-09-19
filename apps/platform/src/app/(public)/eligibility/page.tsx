@@ -10,7 +10,7 @@ import {
 import { eligibilityFocusSection } from "@/modules/content/EligibilityPageContent";
 
 export const metadata: Metadata = { title: "Eligibility checker" };
-export const dynamic = "force-dynamic";
+
 
 export default async function EligibilityPage() {
   const [content, rules, page] = await Promise.all([

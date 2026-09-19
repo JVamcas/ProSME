@@ -55,8 +55,8 @@ function NewsletterFields({ pending }: { pending: boolean }) {
         />
         <GeneralButton
           type="submit"
-          variant="brand"
-          size="sm"
+          variant="primary"
+          size="compact"
           disabled={pending}
           className="min-h-10 shrink-0"
           aria-label="Subscribe"

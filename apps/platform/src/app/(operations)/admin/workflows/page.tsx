@@ -5,7 +5,7 @@ import { capabilities } from "@/auth/authorization/capabilities";
 import { getCurrentUser } from "@/auth/authorization/current-user";
 import { can } from "@/auth/authorization/policy";
 import { WorkflowDefinitionsWorkspace } from "@/components/admin/workflows/WorkflowDefinitionsWorkspace";
-import { ProfilePageHeader } from "@/components/applicant/profile/ProfilePageHeader";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 export const metadata: Metadata = { title: "Workflow configuration" };
 
@@ -15,7 +15,7 @@ export default async function WorkflowsPage() {
     redirect("/unauthorized");
   return (
     <section>
-      <ProfilePageHeader
+      <PageHeader
         description="Manage reusable workflow versions and configuration."
         eyebrow="Administration"
         title="Workflow Definitions"

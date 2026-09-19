@@ -139,7 +139,7 @@ describe("shared buttons", () => {
   it("applies variants and accessible icon labels", () => {
     const defaultButton = renderToStaticMarkup(<GeneralButton>Continue</GeneralButton>);
     const brandButton = renderToStaticMarkup(
-      <GeneralButton variant="brand">Submit</GeneralButton>,
+      <GeneralButton variant="primary">Submit</GeneralButton>,
     );
     const iconButton = renderToStaticMarkup(
       <IconButton label="Copy">C</IconButton>,

@@ -7,9 +7,21 @@ import configPromise from "@payload-config";
 import { cmsCapability, type CmsResource } from "@/auth/authorization/capabilities";
 import { getCurrentUser } from "@/auth/authorization/current-user";
 import { can } from "@/auth/authorization/policy";
+import {
+  buildContact,
+  buildFooter,
+  buildHeader,
+  buildHomepage,
+  buildSiteSettings,
+  getBuildPage,
+} from "./ContentBuildFallbacks";
 import type { CmsImage, ContactContent, EligibilityItem, EligibilityRule, FaqItem, FooterContent, FundingCallItem, HeaderContent, HomepageContent, ListingItem, PublicPageContent, SeoContent, SiteSettingsContent, StatisticItem } from "./ContentTypes";
 
 async function payloadClient() { return getPayload({ config: configPromise }); }
+
+function isBuildFallbackEnabled() {
+  return process.env.SKIP_CMS_PRERENDER === "1";
+}
 
 async function queryMode(resource: CmsResource) {
   const requested = (await draftMode()).isEnabled;
@@ -28,6 +40,7 @@ function seo(item: SeoContent): SeoContent {
 }
 
 export async function getHomepage(): Promise<HomepageContent> {
+  if (isBuildFallbackEnabled()) return buildHomepage;
   const payload = await payloadClient();
   const { draft } = await queryMode("site-settings");
   const page = await payload.findGlobal({ slug: "homepage", depth: 1, draft, overrideAccess: true });
@@ -35,6 +48,7 @@ export async function getHomepage(): Promise<HomepageContent> {
 }
 
 export async function getHeader(): Promise<HeaderContent> {
+  if (isBuildFallbackEnabled()) return buildHeader;
   const payload = await payloadClient();
   const { draft } = await queryMode("site-settings");
   const value = await payload.findGlobal({
@@ -52,6 +66,7 @@ export async function getHeader(): Promise<HeaderContent> {
 }
 
 export async function getFooter(): Promise<FooterContent> {
+  if (isBuildFallbackEnabled()) return buildFooter;
   const payload = await payloadClient();
   const { draft } = await queryMode("site-settings");
   const value = await payload.findGlobal({ slug: "footer", draft, overrideAccess: true });
@@ -59,12 +74,14 @@ export async function getFooter(): Promise<FooterContent> {
 }
 
 export async function getContactDetails(): Promise<ContactContent> {
+  if (isBuildFallbackEnabled()) return buildContact;
   const payload = await payloadClient();
   const { draft } = await queryMode("site-settings");
   return payload.findGlobal({ slug: "contact-details", draft, overrideAccess: true });
 }
 
 export async function getSiteSettings(): Promise<SiteSettingsContent> {
+  if (isBuildFallbackEnabled()) return buildSiteSettings;
   const payload = await payloadClient();
   const { draft } = await queryMode("site-settings");
   const value = await payload.findGlobal({ slug: "site-settings", depth: 1, draft, overrideAccess: true });
@@ -72,6 +89,7 @@ export async function getSiteSettings(): Promise<SiteSettingsContent> {
 }
 
 export async function getPage(slug: string): Promise<PublicPageContent | null> {
+  if (isBuildFallbackEnabled()) return getBuildPage(slug);
   const payload = await payloadClient();
   const mode = await queryMode("pages");
   const result = await payload.find({ collection: "pages", depth: 2, draft: mode.draft, limit: 1, overrideAccess: true, where: { and: [{ slug: { equals: slug } }, mode.where] } });
@@ -80,6 +98,7 @@ export async function getPage(slug: string): Promise<PublicPageContent | null> {
 }
 
 export async function getNews(): Promise<ListingItem[]> {
+  if (isBuildFallbackEnabled()) return [];
   const payload = await payloadClient();
   const mode = await queryMode("news");
   const result = await payload.find({ collection: "news", depth: 1, draft: mode.draft, limit: 20, overrideAccess: true, sort: "-publishedAt", where: mode.where });
@@ -87,6 +106,7 @@ export async function getNews(): Promise<ListingItem[]> {
 }
 
 export async function getResources(): Promise<ListingItem[]> {
+  if (isBuildFallbackEnabled()) return [];
   const payload = await payloadClient();
   const mode = await queryMode("resources");
   const result = await payload.find({ collection: "resources", depth: 1, draft: mode.draft, limit: 20, overrideAccess: true, sort: "-publishedAt", where: mode.where });
@@ -99,6 +119,7 @@ function resourceHref(file: unknown, externalUrl?: string | null) {
 }
 
 export async function getEvents(): Promise<ListingItem[]> {
+  if (isBuildFallbackEnabled()) return [];
   const payload = await payloadClient();
   const mode = await queryMode("events");
   const result = await payload.find({ collection: "events", depth: 1, draft: mode.draft, limit: 20, overrideAccess: true, sort: "startsAt", where: mode.where });
@@ -106,6 +127,7 @@ export async function getEvents(): Promise<ListingItem[]> {
 }
 
 export async function getFaqs(): Promise<FaqItem[]> {
+  if (isBuildFallbackEnabled()) return [];
   const payload = await payloadClient();
   const mode = await queryMode("faqs");
   const result = await payload.find({ collection: "faqs", draft: mode.draft, limit: 50, overrideAccess: true, sort: "order", where: mode.where });
@@ -113,6 +135,7 @@ export async function getFaqs(): Promise<FaqItem[]> {
 }
 
 export async function getStatistics(): Promise<StatisticItem[]> {
+  if (isBuildFallbackEnabled()) return [];
   const payload = await payloadClient();
   const mode = await queryMode("statistics");
   const result = await payload.find({ collection: "programme-statistics", draft: mode.draft, limit: 10, overrideAccess: true, sort: "order", where: mode.where });
@@ -120,6 +143,7 @@ export async function getStatistics(): Promise<StatisticItem[]> {
 }
 
 export async function getEligibilityContent(): Promise<EligibilityItem[]> {
+  if (isBuildFallbackEnabled()) return [];
   const payload = await payloadClient();
   const mode = await queryMode("eligibility");
   const result = await payload.find({ collection: "eligibility-content", draft: mode.draft, limit: 50, overrideAccess: true, sort: "order", where: mode.where });
@@ -132,6 +156,7 @@ export async function getEligibilityRules(): Promise<EligibilityRule[]> {
 }
 
 export async function getFundingCalls(): Promise<FundingCallItem[]> {
+  if (isBuildFallbackEnabled()) return [];
   const payload = await payloadClient();
   const mode = await queryMode("funding-calls");
   const result = await payload.find({ collection: "funding-calls", depth: 1, draft: mode.draft, limit: 20, overrideAccess: true, sort: "-opensAt", where: mode.where });

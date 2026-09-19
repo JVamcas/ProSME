@@ -6,9 +6,9 @@ import { useState } from "react";
 
 import { EligibilityAssessmentForm } from "./EligibilityAssessmentForm";
 import { EligibilityResult } from "./EligibilityResult";
-import { PortalErrorState } from "@/components/layout/portal-error-state";
-import { PortalLoadingState } from "@/components/layout/portal-loading-state";
-import { ProfilePageHeader } from "@/components/applicant/profile/ProfilePageHeader";
+import { PortalErrorState } from "@/components/layout/PortalErrorState";
+import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { useEligibilityWorkspace } from "@/modules/eligibility/EligibilityHooks";
 import type { EligibilityAssessmentView } from "@/modules/eligibility/EligibilityTypes";
 
@@ -46,7 +46,7 @@ export function EligibilityAssessment({
         <ChevronLeft className="size-4 text-brand-orange" aria-hidden="true" />
         Back to opportunity
       </Link>
-      <ProfilePageHeader
+      <PageHeader
         className="mt-2"
         description={`Answer a few questions to confirm whether you meet the initial criteria for ${query.data.fundingOpportunity.title}.`}
         title="Check your eligibility"

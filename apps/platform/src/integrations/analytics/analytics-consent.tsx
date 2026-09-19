@@ -73,7 +73,7 @@ export function AnalyticsConsent({
               </GeneralButton>
               <GeneralButton
                 type="button"
-                variant="brand"
+                variant="primary"
                 size="sm"
                 onClick={() => choose("accepted")}
               >

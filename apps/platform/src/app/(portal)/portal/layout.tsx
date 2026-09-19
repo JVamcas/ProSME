@@ -9,7 +9,7 @@ import { QueryProvider } from "@/components/layout/query-provider";
 import { createApplicantPortalContext } from "@/modules/profiles/ServerProfileService";
 import "../../globals.css";
 
-export const dynamic = "force-dynamic";
+
 
 export const metadata: Metadata = {
   title: {

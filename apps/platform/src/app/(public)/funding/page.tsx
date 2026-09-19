@@ -5,7 +5,7 @@ import { contentMetadata } from "@/modules/content/ContentMetadata";
 import { getFundingCalls, getPage } from "@/modules/content/ServerContentQueries";
 import { fundingPageSections } from "@/modules/content/FundingPageContent";
 
-export const dynamic = "force-dynamic";
+
 
 export async function generateMetadata(): Promise<Metadata> {
   const page = await getPage("funding");

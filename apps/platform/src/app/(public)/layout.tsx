@@ -8,7 +8,7 @@ import { getServerEnvironment } from "@/lib/env/server";
 import { getContactDetails, getSiteSettings } from "@/modules/content/ServerContentQueries";
 import "../globals.css";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 const bahnschrift = localFont({
   src: "../fonts/bahnschrift.ttf",

@@ -15,12 +15,12 @@ import type { AuthenticatedUser } from "@/auth/types";
 import {
   findPublishedFundingOpportunity,
   listPublishedFundingOpportunities,
-} from "@/modules/funding-opportunities/ServerFundingOpportunityIntegration";
+} from "@/modules/funding-calls/ServerFundingOpportunityIntegration";
 import {
   FundingOpportunityNotFoundError,
   getFundingOpportunity,
   listFundingOpportunities,
-} from "@/modules/funding-opportunities/ServerFundingOpportunityService";
+} from "@/modules/funding-calls/ServerFundingOpportunityService";
 
 function user(status: "active" | "disabled" = "active"): AuthenticatedUser {
   return {

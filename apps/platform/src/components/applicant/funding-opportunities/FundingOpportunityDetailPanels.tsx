@@ -9,7 +9,7 @@ import Link from "next/link";
 
 import { GeneralButton } from "@/components/ui/button";
 import { CmsRichText } from "@/components/ui/cms-rich-text";
-import type { FundingOpportunityDetail } from "@/modules/funding-opportunities/FundingOpportunityTypes";
+import type { FundingOpportunityDetail } from "@/modules/funding-calls/FundingOpportunityTypes";
 import {
   formatOpportunityAmount,
   formatOpportunityDate,

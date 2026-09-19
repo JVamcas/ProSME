@@ -45,7 +45,7 @@ export function SignInForm({ nextPath }: SignInFormProps) {
         <AuthFeedback error={form.error} />
         <GeneralButton
           type="submit"
-          variant="brand"
+          variant="primary"
           className="w-full"
           disabled={form.busy}
         >

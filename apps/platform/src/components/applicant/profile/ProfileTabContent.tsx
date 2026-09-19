@@ -1,6 +1,6 @@
 import { ContactProfileForm } from "./ContactProfileForm";
 import { PersonalProfileForm } from "./PersonalProfileForm";
-import { ProfilePageHeader } from "./ProfilePageHeader";
+import { PageHeader } from "../../ui/PageHeader";
 import { ProfilePasswordPanel } from "./ProfilePasswordPanel";
 import type { ProfileTabId } from "./ProfileWorkspace";
 
@@ -16,7 +16,7 @@ export function ProfileTabContent({
   if (tab === "contact") {
     return (
       <>
-        <ProfilePageHeader
+        <PageHeader
           eyebrow="Contact details"
           title="Contact details"
           description="Keep your contact and address details updated."
@@ -32,7 +32,7 @@ export function ProfileTabContent({
 
   return (
     <>
-      <ProfilePageHeader
+      <PageHeader
         eyebrow="Personal information"
         title="Personal information"
         description="Maintain the personal details linked to your account."

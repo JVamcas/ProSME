@@ -8,7 +8,7 @@ import { PublicPageHeader } from "@/components/public/public-page-header";
 import { contentMetadata } from "@/modules/content/ContentMetadata";
 import { getEvents, getPage } from "@/modules/content/ServerContentQueries";
 
-export const dynamic = "force-dynamic";
+
 export async function generateMetadata(): Promise<Metadata> {
   const page = await getPage("events");
   return page ? contentMetadata(page) : {};
