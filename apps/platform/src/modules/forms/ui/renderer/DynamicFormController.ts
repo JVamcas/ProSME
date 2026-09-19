@@ -1,21 +1,17 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import {
   useCompleteTaskForm,
   useSaveTaskForm,
 } from "@/modules/forms/FormHooks";
-import type { FormRuntimeSchema, FormSubmission } from "@/modules/forms/FormTypes";
+import type { TaskFormData } from "@/modules/forms/FormTypes";
 import type { DynamicFormValues } from "./FormRenderer";
 
-export type TaskFormData = {
-  schema: FormRuntimeSchema;
-  submission: FormSubmission | null;
-  taskRowVersion: number;
-};
+export const formDraftAutosaveDelayMs = 800;
 
 export function useDynamicFormController(taskId: string, data: TaskFormData) {
   const router = useRouter();
@@ -24,14 +20,55 @@ export function useDynamicFormController(taskId: string, data: TaskFormData) {
   const [values, setValues] = useState<DynamicFormValues>(
     data.submission?.values ?? {},
   );
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const revision = useRef(0);
+  const lastAutosaveRevision = useRef(0);
 
-  const saveDraftValues = () => {
-    save.mutate({
-      expectedSubmissionRowVersion: data.submission?.rowVersion,
-      expectedTaskRowVersion: data.taskRowVersion,
-      values,
-    });
-  };
+  const changeValues = useCallback((nextValues: DynamicFormValues) => {
+    revision.current += 1;
+    setHasUnsavedChanges(true);
+    setValues(nextValues);
+  }, []);
+
+  const saveDraftValues = useCallback(() => {
+    if (save.isPending || complete.isPending) return;
+
+    const savingRevision = revision.current;
+    save.mutate(
+      {
+        expectedSubmissionRowVersion: data.submission?.rowVersion,
+        expectedTaskRowVersion: data.taskRowVersion,
+        values,
+      },
+      {
+        onSuccess: () => {
+          if (revision.current === savingRevision) {
+            setHasUnsavedChanges(false);
+          }
+        },
+      },
+    );
+  }, [complete.isPending, data, save, values]);
+
+  useEffect(() => {
+    if (
+      !hasUnsavedChanges
+      || save.isPending
+      || complete.isPending
+      || lastAutosaveRevision.current === revision.current
+    ) {
+      return;
+    }
+
+    const autosaveRevision = revision.current;
+    const timer = window.setTimeout(() => {
+      lastAutosaveRevision.current = autosaveRevision;
+      saveDraftValues();
+    }, formDraftAutosaveDelayMs);
+
+    return () => window.clearTimeout(timer);
+  }, [complete.isPending, hasUnsavedChanges, save.isPending, saveDraftValues]);
+
   const completeFormValues = (completedValues: DynamicFormValues) => {
     complete.mutate(
       {
@@ -55,9 +92,10 @@ export function useDynamicFormController(taskId: string, data: TaskFormData) {
   return {
     complete,
     completeFormValues,
+    hasUnsavedChanges,
     save,
     saveDraftValues,
-    setValues,
+    setValues: changeValues,
     values,
   };
 }

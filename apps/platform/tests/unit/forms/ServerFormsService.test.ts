@@ -5,12 +5,12 @@ vi.mock("@/modules/forms/infrastructure/FormRepository", () => ({
   getFormEditor: vi.fn(),
   getFormRuntime: vi.fn(),
   getPublishedFormRuntime: vi.fn(),
-  getSubmission: vi.fn(),
   listForms: vi.fn(),
   listPublishedFormVersions: vi.fn(),
 }));
-vi.mock("@/db/repositories/FormSubmissionRepository", () => ({
-  saveSubmission: vi.fn(),
+vi.mock("@/modules/forms/infrastructure/FormResponseRepository", () => ({
+  readFormResponse: vi.fn(),
+  saveDraftFormResponse: vi.fn(),
 }));
 vi.mock("@/db/repositories/FormTaskCompletionRepository", () => ({
   completeFormTask: vi.fn(),
@@ -33,15 +33,21 @@ import { PermissionDeniedError } from "@/auth/authorization/policy";
 import {
   getFormEditor,
   getFormRuntime,
-  getSubmission,
   listForms,
 } from "@/modules/forms/infrastructure/FormRepository";
 import { saveFormDraft } from "@/modules/forms/infrastructure/FormWriteRepository";
-import { saveSubmission } from "@/db/repositories/FormSubmissionRepository";
+import {
+  readFormResponse,
+  saveDraftFormResponse,
+} from "@/modules/forms/infrastructure/FormResponseRepository";
 import { readFormTaskCompletion } from "@/db/repositories/FormTaskCompletionRepository";
-import { readAssignedFormTask } from "@/db/repositories/WorkflowTaskRepository";
+import {
+  readAssignedFormTask,
+  readWorkflowTask,
+} from "@/db/repositories/WorkflowTaskRepository";
 import {
   completeTaskForm,
+  getTaskForm,
   getForms,
   saveTaskForm,
   updateFormDraft,
@@ -81,7 +87,7 @@ const runtime = {
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(getFormRuntime).mockResolvedValue(runtime);
-  vi.mocked(getSubmission).mockResolvedValue(null as never);
+  vi.mocked(readFormResponse).mockResolvedValue(null as never);
 });
 
 describe("ServerFormsService", () => {
@@ -99,7 +105,7 @@ describe("ServerFormsService", () => {
       taskInstanceId: taskId,
       taskStatus: "IN_PROGRESS",
     });
-    vi.mocked(saveSubmission).mockResolvedValue({
+    vi.mocked(saveDraftFormResponse).mockResolvedValue({
       id: "submission",
       rowVersion: 2,
     } as never);
@@ -109,12 +115,76 @@ describe("ServerFormsService", () => {
       taskInstanceId: taskId,
       values: {},
     });
-    expect(saveSubmission).toHaveBeenCalledWith(expect.objectContaining({
+    expect(saveDraftFormResponse).toHaveBeenCalledWith(expect.objectContaining({
       actorId,
       expectedSubmissionRowVersion: 1,
       formVersionId: versionId,
       taskInstanceId: taskId,
     }));
+  });
+
+  it("reloads a draft only for the task's exact Form Version", async () => {
+    vi.mocked(readWorkflowTask).mockResolvedValue({
+      formVersionId: versionId,
+      rowVersion: 3,
+      taskInstanceId: taskId,
+      taskStatus: "IN_PROGRESS",
+    } as never);
+    vi.mocked(readFormResponse).mockResolvedValue({
+      completedAt: null,
+      formVersionId: versionId,
+      id: "submission",
+      rowVersion: 2,
+      status: "DRAFT",
+      values: { NOTES: "Resume here" },
+    } as never);
+
+    const result = await getTaskForm(
+      staff([permissionCodes.workflowTaskAssignedRead]),
+      taskId,
+    );
+
+    expect(readFormResponse).toHaveBeenCalledWith(taskId, versionId);
+    expect(result.schema.versionId).toBe(versionId);
+    expect(result.submission?.values).toEqual({ NOTES: "Resume here" });
+  });
+
+  it("persists partial values without requiring incomplete fields", async () => {
+    vi.mocked(readAssignedFormTask).mockResolvedValue({
+      formVersionId: versionId,
+      rowVersion: 3,
+      taskInstanceId: taskId,
+      taskStatus: "IN_PROGRESS",
+    });
+    vi.mocked(getFormRuntime).mockResolvedValue({
+      ...runtime,
+      fields: [{
+        columnSpan: 1,
+        key: "NOTES",
+        label: "Notes",
+        order: 1,
+        required: true,
+        sectionId: "20000000-0000-4000-8000-000000000001",
+        type: "TEXTAREA",
+      }],
+    });
+    vi.mocked(saveDraftFormResponse).mockResolvedValue({
+      id: "submission",
+      rowVersion: 1,
+    } as never);
+
+    await saveTaskForm(
+      staff([permissionCodes.workflowTaskAssignedProcess]),
+      {
+        expectedTaskRowVersion: 3,
+        taskInstanceId: taskId,
+        values: {},
+      },
+    );
+
+    expect(saveDraftFormResponse).toHaveBeenCalledWith(
+      expect.objectContaining({ values: {} }),
+    );
   });
 
   it("does not persist runtime context as captured response values", async () => {
@@ -148,7 +218,7 @@ describe("ServerFormsService", () => {
         },
       },
     )).rejects.toBeInstanceOf(RequestValidationError);
-    expect(saveSubmission).not.toHaveBeenCalled();
+    expect(saveDraftFormResponse).not.toHaveBeenCalled();
   });
 
   it("updates definition and version settings together", async () => {

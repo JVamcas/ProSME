@@ -98,3 +98,9 @@ export type FormSubmission = {
   rowVersion: number;
   completedAt: string | null;
 };
+
+export type TaskFormData = {
+  schema: FormRuntimeSchema;
+  submission: FormSubmission | null;
+  taskRowVersion: number;
+};

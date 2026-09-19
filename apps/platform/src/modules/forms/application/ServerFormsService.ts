@@ -13,7 +13,10 @@ import {
   retireFormVersion,
   saveFormDraft,
 } from "@/modules/forms/infrastructure/FormWriteRepository";
-import { saveSubmission } from "@/db/repositories/FormSubmissionRepository";
+import {
+  readFormResponse,
+  saveDraftFormResponse,
+} from "@/modules/forms/infrastructure/FormResponseRepository";
 import {
   completeFormTask,
   readFormTaskCompletion,
@@ -21,7 +24,6 @@ import {
 import {
   getFormEditor,
   getFormRuntime,
-  getSubmission,
   listForms,
   listPublishedFormVersions,
 } from "@/modules/forms/infrastructure/FormRepository";
@@ -233,7 +235,7 @@ export async function getTaskForm(
   }
   const schema = await getFormRuntime(task.formVersionId);
   if (!schema) throw new ResourceNotFoundError("published form");
-  const submission = await getSubmission(taskInstanceId);
+  const submission = await readFormResponse(taskInstanceId, task.formVersionId);
   return {
     schema,
     submission: submission
@@ -262,12 +264,11 @@ export async function saveTaskForm(
   if (!validateFormValues(schema.fields, values, false)) {
     throw new RequestValidationError("The form values are invalid.");
   }
-  const saved = await saveSubmission({
+  const saved = await saveDraftFormResponse({
     actorId: actor.id,
     expectedTaskRowVersion: input.expectedTaskRowVersion,
     expectedSubmissionRowVersion: input.expectedSubmissionRowVersion,
     formVersionId: task.formVersionId,
-    status: "DRAFT",
     taskInstanceId: input.taskInstanceId,
     values,
   });

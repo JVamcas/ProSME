@@ -52,8 +52,8 @@ describe("form preview dialog", () => {
     document.body.append(container);
     const root = createRoot(container);
     const editor = editorView();
-    editor.fields = editor.fields.map((field) => ({
-      ...field,
+    editor.sections = editor.sections.map((section) => ({
+      ...section,
       columnSpan: 1,
     }));
     await act(async () => {
@@ -67,6 +67,7 @@ describe("form preview dialog", () => {
     });
 
     const dialog = document.querySelector('[role="dialog"]');
+    expect(dialog?.className).toContain("sm:w-fit");
     expect(dialog?.className).toContain("max-w-xl");
     expect(dialog?.textContent).toContain("Finance Review preview");
     expect(dialog?.textContent).toContain("Preview only");
@@ -81,9 +82,9 @@ describe("form preview dialog", () => {
     document.body.append(container);
     const root = createRoot(container);
     const editor = editorView();
-    editor.fields = editor.fields.map((field, index) => ({
-      ...field,
-      columnSpan: index === 0 ? 2 : 1,
+    editor.sections = editor.sections.map((section) => ({
+      ...section,
+      columnSpan: 2,
     }));
     await act(async () => {
       root.render(
@@ -96,12 +97,12 @@ describe("form preview dialog", () => {
     });
 
     expect(document.querySelector('[role="dialog"]')?.className)
-      .toContain("max-w-2xl");
+      .toContain("max-w-4xl");
 
     await act(async () => root.unmount());
   });
 
-  it("does not widen for unused section columns", async () => {
+  it("caps a three-column preview at the three-column outer width", async () => {
     const container = document.createElement("div");
     document.body.append(container);
     const root = createRoot(container);
@@ -110,10 +111,6 @@ describe("form preview dialog", () => {
       ...section,
       columnSpan: 3,
     }));
-    editor.fields = editor.fields.map((field, index) => ({
-      ...field,
-      columnSpan: index === 0 ? 2 : 1,
-    }));
     await act(async () => {
       root.render(
         <FormPreviewDialog
@@ -125,7 +122,7 @@ describe("form preview dialog", () => {
     });
 
     expect(document.querySelector('[role="dialog"]')?.className)
-      .toContain("max-w-2xl");
+      .toContain("max-w-6xl");
 
     await act(async () => root.unmount());
   });

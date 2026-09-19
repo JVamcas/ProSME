@@ -19,6 +19,8 @@ describe("RJSF form renderer", () => {
 
     expect(markup).toContain("Complete the form.");
     expect(markup).toContain('class="rjsf"');
+    expect(markup).toContain("grid-cols-1 md:grid-cols-2 xl:grid-cols-3");
+    expect(markup).toContain("col-span-1 md:col-span-2 xl:col-span-3");
     expect(markup).toContain("Basic information");
     expect(markup).toContain('name="root_NAME"');
     expect(markup).toContain("<textarea");

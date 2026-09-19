@@ -4,7 +4,7 @@ export * from "./applications";
 export * from "./application-documents";
 export * from "./eligibility";
 export * from "@/modules/forms/infrastructure/form.schema";
-export * from "./form-submissions";
+export * from "@/modules/forms/infrastructure/form-response.schema";
 export * from "./identity";
 export * from "./profiles";
 export * from "@/modules/workflows/infrastructure/workflow.schema";

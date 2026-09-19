@@ -8,7 +8,6 @@ import {
   formFieldOptions,
   formFields,
   formSections,
-  formSubmissions,
   formVersions,
 } from "@/db/schema";
 import type {
@@ -216,15 +215,6 @@ export async function getPublishedFormRuntime(versionId: string) {
   const runtime = await getFormRuntime(versionId);
   if (!runtime) return null;
   return runtime;
-}
-
-export async function getSubmission(taskInstanceId: string) {
-  const [submission] = await getDatabase()
-    .select()
-    .from(formSubmissions)
-    .where(eq(formSubmissions.taskInstanceId, taskInstanceId))
-    .limit(1);
-  return submission ?? null;
 }
 
 export async function getFormVersionForWrite(versionId: string) {

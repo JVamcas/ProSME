@@ -8,6 +8,7 @@ import type {
   TaskFormSubmissionInput,
   UpdateFormInput,
 } from "./api/FormTransportTypes";
+import type { TaskFormData } from "./FormTypes";
 
 export const formQueryKeys = {
   all: ["admin", "forms"] as const,
@@ -105,8 +106,11 @@ export function useSaveTaskForm(taskId: string) {
   return useMutation({
     mutationFn: (input: TaskFormSubmissionInput) =>
       clientFormsService.saveTaskForm(taskId, input),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: formQueryKeys.task(taskId) });
+    onSuccess: (submission) => {
+      queryClient.setQueryData<TaskFormData>(
+        formQueryKeys.task(taskId),
+        (current) => current ? { ...current, submission } : current,
+      );
     },
   });
 }

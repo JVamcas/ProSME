@@ -5,6 +5,7 @@ import { useState } from "react";
 import { GeneralButton } from "@/components/ui/button";
 import { DraggableDialog } from "@/components/ui/draggable-dialog";
 import type { FormEditorView, FormRuntimeSchema } from "@/modules/forms/FormTypes";
+import { formColumnCount, previewPanelClass } from "./FormLayout";
 import { FormRenderer, type DynamicFormValues } from "./FormRenderer";
 
 function runtimeDefinition(editor: FormEditorView): FormRuntimeSchema {
@@ -16,16 +17,6 @@ function runtimeDefinition(editor: FormEditorView): FormRuntimeSchema {
     versionId: editor.version.id,
     versionNumber: editor.version.versionNumber,
   };
-}
-
-function previewWidth(editor: FormEditorView) {
-  const widestField = Math.max(
-    1,
-    ...editor.fields.map((field) => field.columnSpan),
-  );
-  if (widestField === 1) return "max-w-xl";
-  if (widestField === 2) return "max-w-2xl";
-  return "max-w-5xl";
 }
 
 function FormPreviewContent({
@@ -88,7 +79,7 @@ export function FormPreviewDialog({
     <DraggableDialog
       isOpen
       onClose={onClose}
-      panelClassName={previewWidth(editor)}
+      panelClassName={previewPanelClass(formColumnCount(editor.sections))}
       size="2xl"
       title={`${editor.definition.name} preview`}
     >

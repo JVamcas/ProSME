@@ -11,6 +11,7 @@ import {
   parseFormDefinition,
   type RenderSection,
 } from "@/modules/forms/engine/FormDefinitionParser";
+import { formColumnCount, formGridClass } from "./FormLayout";
 import {
   FormBaseInputTemplate,
   FormCurrencyWidget,
@@ -30,8 +31,8 @@ type RendererContext = {
 
 function sectionSpan(columnSpan: RenderSection["columnSpan"]) {
   if (columnSpan === 1) return "col-span-1";
-  if (columnSpan === 2) return "col-span-1 lg:col-span-2";
-  return "col-span-1 lg:col-span-2 2xl:col-span-3";
+  if (columnSpan === 2) return "col-span-1 md:col-span-2";
+  return "col-span-1 md:col-span-2 xl:col-span-3";
 }
 
 function sectionColumns(columnSpan: RenderSection["columnSpan"]) {
@@ -57,7 +58,9 @@ function FormObjectTemplate(
     props.properties.map((property) => [property.name, property.content]),
   );
   return (
-    <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+    <div className={cn("grid gap-5", formGridClass(
+      formColumnCount(props.registry.formContext.sections),
+    ))}>
       {props.registry.formContext.sections.map((section) => (
         <section
           aria-labelledby={`form-section-${section.id}`}

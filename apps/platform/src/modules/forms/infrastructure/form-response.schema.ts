@@ -1,19 +1,19 @@
+import { sql } from "drizzle-orm";
 import {
+  check,
   index,
   integer,
   jsonb,
   pgTable,
-  check,
   text,
   timestamp,
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
-import { sql } from "drizzle-orm";
 
-import { users } from "./identity";
-import { stageTaskInstances } from "./workflow-runtime";
-import { formVersions } from "@/modules/forms/infrastructure/form.schema";
+import { users } from "@/db/schema/identity";
+import { stageTaskInstances } from "@/db/schema/workflow-runtime";
+import { formVersions } from "./form.schema";
 
 export const formSubmissions = pgTable(
   "app_form_submissions",
