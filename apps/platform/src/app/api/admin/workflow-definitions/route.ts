@@ -4,11 +4,11 @@ import {
   portalRouteError,
   portalRouteSuccess,
 } from "@/lib/api/PortalApiResponse";
-import { createWorkflowSchema } from "@/modules/workflows/WorkflowSchemas";
+import { createWorkflowSchema } from "@/modules/workflows/api/WorkflowSchemas";
 import {
   createWorkflow,
   getWorkflowDefinitions,
-} from "@/modules/workflows/ServerWorkflowService";
+} from "@/modules/workflows/application/definitions/ServerWorkflowService";
 
 
 

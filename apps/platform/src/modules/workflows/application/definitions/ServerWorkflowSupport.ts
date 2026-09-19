@@ -1,17 +1,20 @@
 import "server-only";
 
-import { findWorkflowGraph } from "@/db/repositories/WorkflowGraphRepository";
+import { findWorkflowGraph } from "@/modules/workflows/infrastructure/WorkflowGraphRepository";
 import {
   findConfigurationReferences,
   listWorkflowAssignmentOptions,
-} from "@/db/repositories/WorkflowRepository";
+} from "@/modules/workflows/infrastructure/WorkflowRepository";
 import {
   ResourceConflictError,
   ResourceNotFoundError,
 } from "@/lib/resource-errors";
-import { toWorkflowEditor } from "./WorkflowRepresentation";
-import type { WorkflowGraphInput, WorkflowValidation } from "./WorkflowTypes";
-import { validateWorkflowGraph } from "./WorkflowValidation";
+import { toWorkflowEditor } from "@/modules/workflows/api/WorkflowRepresentation";
+import type {
+  WorkflowGraphInput,
+  WorkflowValidation,
+} from "@/modules/workflows/domain/definitions/WorkflowTypes";
+import { validateWorkflowGraph } from "@/modules/workflows/WorkflowValidation";
 
 export class WorkflowNotFoundError extends ResourceNotFoundError {
   constructor() {
@@ -76,7 +79,8 @@ async function validateReferences(
       ) {
         validation.errors.push({
           code: "INVALID_FORM_VERSION",
-          message: "New workflow tasks must reference a published form version.",
+          message:
+            "New workflow tasks must reference a published form version.",
           path: `stages.${index}.tasks.${taskIndex}.formVersionId`,
         });
       }

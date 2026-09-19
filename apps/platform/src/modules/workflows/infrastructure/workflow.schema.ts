@@ -10,16 +10,18 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
+import type { WorkflowTemplateDetails } from "../domain/definitions/WorkflowTemplate";
+
 import type {
   WorkflowCondition,
   WorkflowStageInput,
   WorkflowStatus,
   TaskTypeCode,
   WorkflowActionCode,
-} from "@/modules/workflows/WorkflowTypes";
-import { roles } from "./authorization";
-import { formVersions } from "./forms";
-import { users } from "./identity";
+} from "@/modules/workflows/domain/definitions/WorkflowTypes";
+import { roles } from "@/db/schema/authorization";
+import { formVersions } from "@/db/schema/forms";
+import { users } from "@/db/schema/identity";
 
 export const workflowDefinitions = pgTable(
   "app_workflow_definitions",
@@ -50,6 +52,10 @@ export const workflowDefinitionVersions = pgTable(
       .references(() => workflowDefinitions.id, { onDelete: "restrict" }),
     versionNumber: integer("version_number").notNull(),
     status: text("status").$type<WorkflowStatus>().notNull().default("DRAFT"),
+    metadata: jsonb("metadata")
+      .$type<WorkflowTemplateDetails>()
+      .notNull()
+      .default({ code: "", name: "", description: "" }),
     rowVersion: integer("row_version").notNull().default(1),
     createdBy: uuid("created_by")
       .notNull()

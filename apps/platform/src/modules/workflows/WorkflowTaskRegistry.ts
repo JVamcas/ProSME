@@ -5,7 +5,7 @@ import {
   type WorkflowTaskContract,
   workflowTaskContracts,
 } from "./WorkflowTaskContracts";
-import type { TaskTypeCode } from "./WorkflowTypes";
+import type { TaskTypeCode } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 
 export type WorkflowTaskHandler = (result: unknown) => unknown;
 

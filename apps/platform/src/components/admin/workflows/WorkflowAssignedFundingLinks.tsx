@@ -5,7 +5,7 @@ import type {
   PublishedWorkflowOption,
   WorkflowDefinitionSummary,
   WorkflowOpportunityAssignment,
-} from "@/modules/workflows/WorkflowTypes";
+} from "@/modules/workflows/domain/definitions/WorkflowTypes";
 
 export function WorkflowAssignedFundingLinks({
   assignments,

@@ -4,10 +4,18 @@ These instructions apply to the entire repository. They are mandatory for human 
 
 ## 1. Architecture is fixed
 
-- Follow [`docs/architecture/PROJECT_STRUCTURE.md`](docs/architecture/PROJECT_STRUCTURE.md).
+- [`docs/SME_Fund_Project_Structure_Contract_FINAL.md`](docs/SME_Fund_Project_Structure_Contract_FINAL.md)
+  is the authoritative target-state structure contract. The committed end state
+  of this repository is the structure defined in that document.
+- Every new file and every file touched during feature work must move the
+  codebase toward that target. Existing legacy placement is not precedent for
+  new code and must not be used to justify divergence from the contract.
+- Migration is intentionally incremental: migrate code related to the active
+  task, preserve unrelated code, and do not attempt a repository-wide move in a
+  focused change. Incremental migration changes the timing, not the destination.
 - The product is one deployable Next.js application at `apps/platform`.
 - Payload CMS is embedded in that application. Do not create separate web, API, or CMS applications.
-- Do not rename, relocate, or add top-level architectural boundaries without first updating the architecture document and obtaining approval.
+- Do not rename, relocate, or add top-level architectural boundaries without first updating the structure contract and obtaining approval.
 - Preserve route ownership: public `(public)`, authentication `(auth)`, applicant `(portal)`, staff `(operations)`, Payload `(payload)`, and explicit APIs under `app/api`.
 - Firebase owns authentication. PostgreSQL owns application users, roles, and capabilities. Payload must not own platform credentials or authorization policy.
 
@@ -52,13 +60,15 @@ Handwritten implementation files must stay within these limits:
 
 - Search the repository before creating a component, hook, helper, schema, type, or constant.
 - Reuse or extend an existing implementation when its responsibility matches.
-- Put reusable, domain-neutral primitives in `src/components/ui`.
-- Put reusable layouts and navigation in `src/components/layout`.
-- Put applicant feature components under `src/components/applicant/<domain>`.
-- Put administrative feature components under `src/components/admin/<domain>`.
-- Put unauthenticated website components under `src/components/public`, and
-  do not use generic feature folders that hide whether a component belongs to
-  the applicant, admin, or public surface.
+- Put reusable, domain-neutral primitives, layouts, and navigation in
+  `src/shared/ui`.
+- Put feature-specific UI in `src/modules/<feature>/ui`. Where audience-specific
+  variants are necessary, make that ownership clear inside the feature UI
+  folder rather than adding new horizontal `components/admin`,
+  `components/applicant`, or `components/public` trees.
+- Existing files under legacy `src/components/*` paths may remain until their
+  owning feature is actively migrated, but new feature UI must not extend those
+  legacy horizontal folders.
 - Component filenames must clearly describe their responsibility within the
   owning audience/domain path; hook filenames begin with `use`.
 - Repeated UI appearing twice must be evaluated for extraction. Repeated UI appearing three times must be extracted unless the structures have materially different behavior.
@@ -86,15 +96,54 @@ Handwritten implementation files must stay within these limits:
 - Application lifecycle states such as draft, ready to submit, submitted, and
   under review are data states. Never create state-specific service, module,
   repository, or component families.
-- PostgreSQL access belongs in `src/db/repositories` or a domain repository file. Repositories are the only feature layer allowed to query application tables.
+- New or migrated PostgreSQL schemas and repositories belong in the owning
+  module's `infrastructure` folder. Shared database bootstrap belongs in
+  `src/platform/database`. Existing `src/db/repositories` and `src/db/schema`
+  files are transitional and must move when their owning feature is migrated.
+  Repositories remain the only feature layer allowed to query application
+  tables.
 - Server Components may call a backend service/query directly when browser caching or interactive refetching is unnecessary. They must never access repositories or the database directly.
 - The health route may execute a minimal direct database probe because database connectivity is its explicit infrastructure responsibility.
-- Every protected server operation must perform server-side capability checks.
+- Every protected server operation must perform server-side permission checks
+  using the canonical permission codes described below.
 - Client-side visibility checks are usability enhancements only and never authorization controls.
 - Multi-record writes must use a transaction and create required workflow/audit records atomically.
 - Run the architecture boundary gate before reporting changes complete. Do not bypass it with dynamic imports, re-export indirection, or renamed files.
 
-## 5. Firebase and Payload boundaries
+## 5. Fine-grained, contextual authorization
+
+- The only authoritative location for permission codes, definitions,
+  catalogue entries, and permission groups is
+  [`apps/platform/src/auth/authorization/permissions`](apps/platform/src/auth/authorization/permissions).
+- Do not import, reference, extend, or add permission values to
+  [`apps/platform/src/auth/authorization/capabilities.ts`](apps/platform/src/auth/authorization/capabilities.ts).
+  That file must not be used for authorization decisions or new development.
+- Import permission codes from the canonical `permissions` directory and use
+  them with the authorization policy helpers. When feature work touches code
+  that still imports `capabilities.ts`, replace that usage with the canonical
+  permission code in the same focused change.
+- Permissions must be fine-grained and contextual, following the canonical
+  model in
+  [`apps/platform/src/auth/authorization/permissions`](apps/platform/src/auth/authorization/permissions).
+  Define access in terms of the specific resource, action, and applicable scope
+  or relationship, such as `own`, `assigned`, or `all`.
+- Use the narrowest permission that represents the operation. Do not replace
+  specific permissions with broad `manage` permissions, role-name checks, route
+  ownership, or client-side visibility rules.
+- A contextual permission grant is necessary but not sufficient. Server-side
+  policy must also validate the context against the target resource. For
+  example, an `own` permission requires verified ownership and an `assigned`
+  permission requires verified assignment for that resource.
+- Authorization is deny-by-default. Every protected server operation must
+  perform both the permission check and any required resource-context check
+  before reading data, changing state, or triggering side effects.
+- Add new permission codes, catalogue descriptions, and groups in the canonical
+  permissions directory. Keep labels and descriptions explicit about scope,
+  and add tests for allowed, denied, and context-mismatch cases.
+- PostgreSQL remains the source of truth for users, roles, grants, and effective
+  permissions. UI checks improve usability only and never establish authority.
+
+## 6. Firebase and Payload boundaries
 
 - Browser Firebase access belongs in the frontend authentication client service. React components and hooks must not call Firebase directly.
 - Browser Firebase imports may use only the client/config/error modules intended for browser use.
@@ -105,7 +154,7 @@ Handwritten implementation files must stay within these limits:
 - Payload collection tables use the `cms_` prefix. Application tables use the `app_` prefix.
 - Payload's internal `/cms` data loading is excluded from the TanStack Query/client-service flow. Do not wrap the Payload route group in the platform Query provider or rewrite Payload internals to use platform API routes.
 
-## 6. Quality and change discipline
+## 7. Quality and change discipline
 
 - Use exact dependency versions and commit the lockfile.
 - Do not commit secrets, service-account files, real applicant data, or production exports.

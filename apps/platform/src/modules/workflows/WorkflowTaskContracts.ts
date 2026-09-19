@@ -1,4 +1,4 @@
-import type { TaskTypeCode, WorkflowActionCode } from "./WorkflowTypes";
+import type { TaskTypeCode, WorkflowActionCode } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 
 export type WorkflowTaskContract = {
   allowedActions: readonly WorkflowActionCode[];

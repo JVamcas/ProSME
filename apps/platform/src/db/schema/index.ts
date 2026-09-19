@@ -7,6 +7,6 @@ export * from "./forms";
 export * from "./form-submissions";
 export * from "./identity";
 export * from "./profiles";
-export * from "./workflow";
-export * from "./workflow-audit";
+export * from "@/modules/workflows/infrastructure/workflow.schema";
+export * from "@/modules/workflows/infrastructure/workflow-audit.schema";
 export * from "./workflow-runtime";

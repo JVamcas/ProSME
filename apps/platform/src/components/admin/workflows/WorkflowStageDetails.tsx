@@ -3,7 +3,7 @@ import type {
   WorkflowAssignmentOptions,
   WorkflowStageInput,
   WorkflowTaskInput,
-} from "@/modules/workflows/WorkflowTypes";
+} from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import { WorkflowStageTaskTable } from "./WorkflowStageTaskTable";
 
 type Props = {

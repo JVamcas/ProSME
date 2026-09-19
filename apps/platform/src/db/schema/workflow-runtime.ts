@@ -10,7 +10,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
-import type { TaskTypeCode } from "@/modules/workflows/WorkflowTypes";
+import type { TaskTypeCode } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import { formVersions } from "./forms";
 import { applications } from "./applications";
 import { roles } from "./authorization";
@@ -19,7 +19,7 @@ import {
   stageTaskDefinitions,
   workflowDefinitionVersions,
   workflowStageDefinitions,
-} from "./workflow";
+} from "@/modules/workflows/infrastructure/workflow.schema";
 
 export const workflowInstances = pgTable(
   "app_workflow_instances",

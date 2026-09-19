@@ -8,7 +8,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
-import { users } from "./identity";
+import { users } from "@/db/schema/identity";
 
 export const workflowAuditEntries = pgTable(
   "app_workflow_audit_entries",

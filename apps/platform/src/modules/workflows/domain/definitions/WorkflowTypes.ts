@@ -1,4 +1,6 @@
-export const workflowStatuses = ["DRAFT", "PUBLISHED", "RETIRED"] as const;
+import { workflowTemplateStatuses } from "./WorkflowTemplate";
+
+export const workflowStatuses = workflowTemplateStatuses;
 
 export type WorkflowStatus = (typeof workflowStatuses)[number];
 

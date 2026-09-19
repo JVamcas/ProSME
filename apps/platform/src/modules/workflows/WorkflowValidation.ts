@@ -4,7 +4,7 @@ import type {
   WorkflowGraphInput,
   WorkflowValidation,
   WorkflowValidationIssue,
-} from "./WorkflowTypes";
+} from "@/modules/workflows/domain/definitions/WorkflowTypes";
 
 function issue(
   code: string,

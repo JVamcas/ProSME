@@ -7,19 +7,35 @@ import type {
   OpportunityAssignmentInput,
   UpdateWorkflowDraftInput,
   UpdateWorkflowDetailsInput,
-} from "./WorkflowTransportTypes";
+} from "@/modules/workflows/api/WorkflowTransportTypes";
 import type {
   PublishedWorkflowOption,
   WorkflowDefinitionSummary,
   WorkflowEditorView,
   WorkflowOpportunityAssignment,
   WorkflowValidation,
-} from "./WorkflowTypes";
+} from "@/modules/workflows/domain/definitions/WorkflowTypes";
+import type { CreateWorkflowTemplateInput } from "@/modules/workflows/api/WorkflowTemplateSchemas";
+import type { WorkflowTemplateListItem } from "@/modules/workflows/domain/definitions/WorkflowTemplate";
 
 const jsonHeaders = { "Content-Type": "application/json" };
 
 function commandHeaders() {
   return { ...jsonHeaders, "Idempotency-Key": crypto.randomUUID() };
+}
+
+function listTemplates() {
+  return requestData<WorkflowTemplateListItem[]>("/api/workflows", {
+    cache: "no-store",
+  });
+}
+
+function createTemplate(input: CreateWorkflowTemplateInput) {
+  return requestData<WorkflowTemplateListItem>("/api/workflows", {
+    body: JSON.stringify(input),
+    headers: jsonHeaders,
+    method: "POST",
+  });
 }
 
 function listDefinitions() {
@@ -62,7 +78,10 @@ function updateDraft(definitionId: string, input: UpdateWorkflowDraftInput) {
   );
 }
 
-function updateDetails(definitionId: string, input: UpdateWorkflowDetailsInput) {
+function updateDetails(
+  definitionId: string,
+  input: UpdateWorkflowDetailsInput,
+) {
   return requestData<WorkflowEditorView>(
     `/api/admin/workflow-definitions/${definitionId}`,
     {
@@ -137,6 +156,7 @@ function assignOpportunity(input: OpportunityAssignmentInput) {
 export const clientWorkflowService = {
   assignOpportunity,
   cloneDefinition,
+  createTemplate,
   createDefinition,
   getEditor,
   lifecycleCommand,
@@ -144,6 +164,7 @@ export const clientWorkflowService = {
   listDefinitions,
   listOpportunities,
   listPublished,
+  listTemplates,
   updateDraft,
   updateDetails,
   validateDefinition,

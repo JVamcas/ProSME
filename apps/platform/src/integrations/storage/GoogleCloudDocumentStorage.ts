@@ -3,6 +3,7 @@ import "server-only";
 import { Storage } from "@google-cloud/storage";
 
 import { getServerEnvironment } from "@/lib/env/server";
+import { getGoogleCloudStorageOptions } from "./GoogleCloudStorageOptions";
 import type {
   DocumentStorage,
   StoredDocument,
@@ -11,7 +12,7 @@ import type {
 let storage: Storage | undefined;
 
 function client() {
-  storage ??= new Storage();
+  storage ??= new Storage(getGoogleCloudStorageOptions());
   return storage;
 }
 

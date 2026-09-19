@@ -1,6 +1,7 @@
 import "server-only";
 
 import { capabilities } from "@/auth/authorization/capabilities";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import {
   requireAnyCapability,
   requireCapability,
@@ -113,7 +114,7 @@ export async function getForms(user: AuthenticatedUser | null) {
 export async function getPublishedForms(user: AuthenticatedUser | null) {
   requireAnyCapability(user, [
     capabilities.formRead,
-    capabilities.workflowDefinitionRead,
+    permissionCodes.workflowDefinitionRead,
   ]);
   return listPublishedFormVersions();
 }

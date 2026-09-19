@@ -7,7 +7,7 @@ import type {
   WorkflowEditorView,
   WorkflowStageInput,
   WorkflowTaskInput,
-} from "@/modules/workflows/WorkflowTypes";
+} from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import { WorkflowStageCreateDialog } from "./WorkflowStageCreateDialog";
 import { WorkflowStageDetails } from "./WorkflowStageDetails";
 import { WorkflowTaskDialog } from "./WorkflowTaskDialog";

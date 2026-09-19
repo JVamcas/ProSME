@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
 
 import { referenceWorkflow } from "@/modules/workflows/ReferenceWorkflow";
-import { workflowGraphSchema } from "@/modules/workflows/WorkflowSchemas";
+import { workflowGraphSchema } from "@/modules/workflows/api/WorkflowSchemas";
 import {
   handleTaskResult,
   listTaskRegistryEntries,
   validateTaskConfiguration,
   validateTaskResult,
 } from "@/modules/workflows/WorkflowTaskRegistry";
-import type { TaskTypeCode } from "@/modules/workflows/WorkflowTypes";
+import type { TaskTypeCode } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import { validateWorkflowGraph } from "@/modules/workflows/WorkflowValidation";
 
 const samples: Record<TaskTypeCode, { config: unknown; result: unknown }> = {

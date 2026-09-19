@@ -11,7 +11,7 @@ import { useSaveWorkflowGraph } from "@/modules/workflows/WorkflowHooks";
 import type {
   WorkflowEditorView,
   WorkflowStageInput,
-} from "@/modules/workflows/WorkflowTypes";
+} from "@/modules/workflows/domain/definitions/WorkflowTypes";
 
 const stageFormSchema = z.object({
   applicantDescription: z.string().trim().min(2).max(300),

@@ -1,4 +1,4 @@
-import type { TaskTypeCode } from "./WorkflowTypes";
+import type { TaskTypeCode } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 
 const defaults: Record<TaskTypeCode, unknown> = {
   AUTOMATED_RULE_CHECK: {

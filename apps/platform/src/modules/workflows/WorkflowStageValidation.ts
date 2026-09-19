@@ -2,7 +2,7 @@ import { validateTaskConfiguration } from "./WorkflowTaskRegistry";
 import type {
   WorkflowGraphInput,
   WorkflowValidationIssue,
-} from "./WorkflowTypes";
+} from "@/modules/workflows/domain/definitions/WorkflowTypes";
 
 const sensitiveApplicantTerms =
   /score|recommendation|assignee|assignment|committee/i;

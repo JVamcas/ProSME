@@ -12,6 +12,8 @@ services:
       - ../.env
     environment:
       DATABASE_URL: ${DATABASE_URL}
+      GCS_DOCUMENTS_BUCKET: ${GCS_DOCUMENTS_BUCKET:-smepro}
+      GOOGLE_CLOUD_PROJECT: ${GOOGLE_CLOUD_PROJECT:-msmepro}
       NODE_ENV: production
     security_opt:
       - no-new-privileges:true

@@ -4,8 +4,8 @@ import {
   taskTypeCodes,
   workflowActionCodes,
   workflowStatuses,
-} from "./WorkflowTypes";
-import { workflowConditionSchema } from "./WorkflowConditionRegistry";
+} from "@/modules/workflows/domain/definitions/WorkflowTypes";
+import { workflowConditionSchema } from "@/modules/workflows/WorkflowConditionRegistry";
 
 const codeSchema = z
   .string()

@@ -6,7 +6,7 @@ import type {
   WorkflowAssignmentOptions,
   WorkflowStageInput,
   WorkflowTaskInput,
-} from "@/modules/workflows/WorkflowTypes";
+} from "@/modules/workflows/domain/definitions/WorkflowTypes";
 
 type Props = {
   assignmentOptions?: WorkflowAssignmentOptions;

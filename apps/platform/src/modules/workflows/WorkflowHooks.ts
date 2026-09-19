@@ -8,8 +8,9 @@ import type {
   OpportunityAssignmentInput,
   UpdateWorkflowDraftInput,
   UpdateWorkflowDetailsInput,
-} from "./WorkflowTransportTypes";
-import type { WorkflowEditorView } from "./WorkflowTypes";
+} from "@/modules/workflows/api/WorkflowTransportTypes";
+import type { WorkflowEditorView } from "@/modules/workflows/domain/definitions/WorkflowTypes";
+import type { CreateWorkflowTemplateInput } from "@/modules/workflows/api/WorkflowTemplateSchemas";
 
 export const workflowQueryKeys = {
   all: ["admin", "workflows"] as const,
@@ -17,7 +18,25 @@ export const workflowQueryKeys = {
   detail: (id: string) => ["admin", "workflows", id] as const,
   opportunities: ["admin", "workflows", "opportunities"] as const,
   published: ["admin", "workflows", "published"] as const,
+  templates: ["admin", "workflow-templates"] as const,
 };
+
+export function useWorkflowTemplates() {
+  return useQuery({
+    queryKey: workflowQueryKeys.templates,
+    queryFn: clientWorkflowService.listTemplates,
+  });
+}
+
+export function useCreateWorkflowTemplate() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreateWorkflowTemplateInput) =>
+      clientWorkflowService.createTemplate(input),
+    onSuccess: () =>
+      client.invalidateQueries({ queryKey: workflowQueryKeys.templates }),
+  });
+}
 
 export function useWorkflowDefinitions() {
   return useQuery({

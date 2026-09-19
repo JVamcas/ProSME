@@ -10,7 +10,7 @@ import {
   useWorkflowListLifecycle,
   useWorkflowOpportunities,
 } from "@/modules/workflows/WorkflowHooks";
-import type { WorkflowDefinitionSummary } from "@/modules/workflows/WorkflowTypes";
+import type { WorkflowDefinitionSummary } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import { WorkflowDefinitionCreateForm } from "./WorkflowDefinitionCreateForm";
 import { WorkflowAssignmentDialog } from "./WorkflowAssignmentDialog";
 import { WorkflowDefinitionsTable } from "./WorkflowDefinitionsTable";

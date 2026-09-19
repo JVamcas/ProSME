@@ -10,7 +10,7 @@ import {
   workflowStageDefinitions,
   workflowTransitionDefinitions,
 } from "@/db/schema";
-import type { WorkflowGraphInput } from "@/modules/workflows/WorkflowTypes";
+import type { WorkflowGraphInput } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 
 const graphSelection = {
   definition: {
@@ -22,6 +22,7 @@ const graphSelection = {
   version: {
     id: workflowDefinitionVersions.id,
     versionNumber: workflowDefinitionVersions.versionNumber,
+    metadata: workflowDefinitionVersions.metadata,
     status: workflowDefinitionVersions.status,
     rowVersion: workflowDefinitionVersions.rowVersion,
     createdAt: workflowDefinitionVersions.createdAt,
@@ -124,7 +125,7 @@ function assembleGraph(rows: Awaited<ReturnType<typeof loadGraphRows>>) {
     }
   });
   return {
-    definition: rows[0].definition,
+    definition: { ...rows[0].definition, ...rows[0].version.metadata },
     graph: {
       stages: [...stages.values()],
       transitions: [...transitions.values()],

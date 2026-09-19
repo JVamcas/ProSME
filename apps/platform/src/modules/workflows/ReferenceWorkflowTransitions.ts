@@ -1,4 +1,4 @@
-import type { WorkflowTransitionInput } from "./WorkflowTypes";
+import type { WorkflowTransitionInput } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 
 const stageTransitions = [
   ["PRE_SCREENING", "COMPLETENESS", "workflow.task.complete"],

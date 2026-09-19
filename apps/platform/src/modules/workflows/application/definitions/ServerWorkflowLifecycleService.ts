@@ -1,22 +1,22 @@
 import "server-only";
 
-import { capabilities } from "@/auth/authorization/capabilities";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import { requireCapability } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
-import { cloneWorkflowVersion } from "@/db/repositories/WorkflowDraftRepository";
+import { cloneWorkflowVersion } from "@/modules/workflows/infrastructure/WorkflowTemplateWriteRepository";
 import {
   findLifecycleReplay,
   publishWorkflowVersion,
   retireWorkflowVersion,
-} from "@/db/repositories/WorkflowLifecycleRepository";
-import { findDraftByDefinition } from "@/db/repositories/WorkflowRepository";
+} from "@/modules/workflows/infrastructure/WorkflowLifecycleRepository";
+import { findDraftByDefinition } from "@/modules/workflows/infrastructure/WorkflowRepository";
 import {
   loadWorkflowEditor,
   requireWorkflowIdempotencyKey,
   WorkflowConflictError,
   WorkflowNotFoundError,
   workflowEditorView,
-} from "./ServerWorkflowSupport";
+} from "@/modules/workflows/application/definitions/ServerWorkflowSupport";
 
 export async function cloneWorkflow(
   user: AuthenticatedUser | null,
@@ -24,7 +24,7 @@ export async function cloneWorkflow(
   sourceVersionId: string,
   correlationId: string,
 ) {
-  const actor = requireCapability(user, capabilities.workflowDefinitionUpdate);
+  const actor = requireCapability(user, permissionCodes.workflowDefinitionUpdate);
   const source = await loadWorkflowEditor(sourceVersionId);
   if (source.definition.id !== definitionId) throw new WorkflowNotFoundError();
   if (await findDraftByDefinition(source.definition.id)) {
@@ -60,7 +60,7 @@ export async function publishWorkflow(
   idempotencyKey: string | null,
   correlationId: string,
 ) {
-  const actor = requireCapability(user, capabilities.workflowDefinitionPublish);
+  const actor = requireCapability(user, permissionCodes.workflowDefinitionPublish);
   const key = requireWorkflowIdempotencyKey(idempotencyKey);
   const current = await loadWorkflowEditor(versionId);
   if (current.definition.id !== definitionId) throw new WorkflowNotFoundError();
@@ -70,8 +70,13 @@ export async function publishWorkflow(
     versionId,
   );
   if (replay) return replay;
+  if (current.version.status !== "APPROVED") {
+    throw new WorkflowConflictError(
+      "Only approved workflow versions can be published.",
+    );
+  }
   const editor = await workflowEditorView(versionId);
-  if (!editor.validation.valid)
+  if (editor.graph.stages.length > 0 && !editor.validation.valid)
     throw new WorkflowConflictError(
       "Resolve all workflow validation errors before publishing.",
     );
@@ -94,7 +99,7 @@ export async function retireWorkflow(
   idempotencyKey: string | null,
   correlationId: string,
 ) {
-  const actor = requireCapability(user, capabilities.workflowDefinitionRetire);
+  const actor = requireCapability(user, permissionCodes.workflowDefinitionRetire);
   const key = requireWorkflowIdempotencyKey(idempotencyKey);
   const editor = await workflowEditorView(versionId);
   if (editor.definition.id !== definitionId) throw new WorkflowNotFoundError();

@@ -5,7 +5,7 @@ import {
   opportunityAssignmentSchema,
   updateWorkflowDraftSchema,
   updateWorkflowDetailsSchema,
-} from "./WorkflowSchemas";
+} from "@/modules/workflows/api/WorkflowSchemas";
 
 export type CreateWorkflowInput = z.infer<typeof createWorkflowSchema>;
 export type OpportunityAssignmentInput = z.infer<

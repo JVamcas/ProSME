@@ -2,34 +2,34 @@ import "server-only";
 
 import { z } from "zod";
 
-import { capabilities } from "@/auth/authorization/capabilities";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import { requireCapability } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import {
   assignWorkflowToOpportunity,
   listWorkflowAssignments,
 } from "@/db/repositories/WorkflowAssignmentRepository";
-import { findLifecycleReplay } from "@/db/repositories/WorkflowLifecycleRepository";
-import { findWorkflowVersion } from "@/db/repositories/WorkflowRepository";
+import { findLifecycleReplay } from "@/modules/workflows/infrastructure/WorkflowLifecycleRepository";
+import { findWorkflowVersion } from "@/modules/workflows/infrastructure/WorkflowRepository";
 import { ResourceNotFoundError } from "@/lib/resource-errors";
 import {
   findPublishedFundingOpportunity,
   listPublishedFundingOpportunities,
 } from "@/modules/funding-calls/ServerFundingOpportunityIntegration";
-import { toWorkflowAssignment } from "./WorkflowRepresentation";
+import { toWorkflowAssignment } from "@/modules/workflows/api/WorkflowRepresentation";
 import {
   requireWorkflowIdempotencyKey,
   WorkflowConflictError,
-} from "./ServerWorkflowSupport";
-import type { OpportunityAssignmentInput } from "./WorkflowTransportTypes";
+} from "@/modules/workflows/application/definitions/ServerWorkflowSupport";
+import type { OpportunityAssignmentInput } from "@/modules/workflows/api/WorkflowTransportTypes";
 
 export async function getWorkflowAssignments(user: AuthenticatedUser | null) {
-  requireCapability(user, capabilities.workflowDefinitionRead);
+  requireCapability(user, permissionCodes.workflowDefinitionRead);
   return (await listWorkflowAssignments()).map(toWorkflowAssignment);
 }
 
 export async function getWorkflowOpportunities(user: AuthenticatedUser | null) {
-  requireCapability(user, capabilities.workflowDefinitionRead);
+  requireCapability(user, permissionCodes.workflowDefinitionRead);
   return listPublishedFundingOpportunities({ limit: 100 });
 }
 
@@ -49,7 +49,7 @@ export async function assignOpportunityWorkflow(
   idempotencyKey: string | null,
   correlationId: string,
 ) {
-  const actor = requireCapability(user, capabilities.workflowDefinitionUpdate);
+  const actor = requireCapability(user, permissionCodes.workflowDefinitionUpdate);
   const key = requireWorkflowIdempotencyKey(idempotencyKey);
   const replay = await findLifecycleReplay(key);
   if (

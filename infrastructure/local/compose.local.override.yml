@@ -37,6 +37,10 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/gcp-adc.json
+    volumes:
+      - ${HOME}/.config/gcloud/application_default_credentials.json:/run/secrets/gcp-adc.json:ro
 
   app:
     environment:

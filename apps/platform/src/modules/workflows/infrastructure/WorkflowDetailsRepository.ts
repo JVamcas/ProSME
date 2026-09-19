@@ -8,7 +8,7 @@ import {
   workflowDefinitions,
   workflowDefinitionVersions,
 } from "@/db/schema";
-import type { UpdateWorkflowDetailsInput } from "@/modules/workflows/WorkflowTransportTypes";
+import type { UpdateWorkflowDetailsInput } from "@/modules/workflows/api/WorkflowTransportTypes";
 
 type DetailsUpdate = UpdateWorkflowDetailsInput & {
   actorId: string;
@@ -21,10 +21,19 @@ export async function updateWorkflowDefinitionDetails(input: DetailsUpdate) {
   return getDatabase().transaction(async (transaction) => {
     const [updatedVersion] = await transaction
       .update(workflowDefinitionVersions)
-      .set({ rowVersion: input.expectedRowVersion + 1, updatedAt: new Date() })
+      .set({
+        metadata: {
+          code: input.code,
+          name: input.name,
+          description: input.description,
+        },
+        rowVersion: input.expectedRowVersion + 1,
+        updatedAt: new Date(),
+      })
       .where(
         and(
           eq(workflowDefinitionVersions.id, input.versionId),
+          eq(workflowDefinitionVersions.status, "DRAFT"),
           eq(workflowDefinitionVersions.definitionId, input.definitionId),
           eq(workflowDefinitionVersions.rowVersion, input.expectedRowVersion),
         ),
@@ -55,8 +64,8 @@ export async function updateWorkflowDefinitionDetails(input: DetailsUpdate) {
       after,
       before,
       correlationId: input.correlationId,
-      targetId: input.definitionId,
-      targetType: "WORKFLOW_DEFINITION",
+      targetId: input.versionId,
+      targetType: "WORKFLOW_VERSION",
     });
     return input.versionId;
   });

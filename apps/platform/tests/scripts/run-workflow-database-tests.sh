@@ -28,4 +28,5 @@ DATABASE_URL="${test_database_url}" \
     vitest run \
     --configLoader runner \
     --fsModuleCachePath "${vitest_module_cache}" \
-    tests/integration/workflow-database.test.ts
+    tests/integration/workflow-database.test.ts \
+    tests/integration/workflow-template-storage.test.ts

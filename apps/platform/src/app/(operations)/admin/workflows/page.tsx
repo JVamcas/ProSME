@@ -1,30 +1,27 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-import { capabilities } from "@/auth/authorization/capabilities";
 import { getCurrentUser } from "@/auth/authorization/current-user";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import { can } from "@/auth/authorization/policy";
-import { WorkflowDefinitionsWorkspace } from "@/components/admin/workflows/WorkflowDefinitionsWorkspace";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { WorkflowTemplateAdminWorkspace } from "@/modules/workflows/ui/definitions/WorkflowTemplateAdminWorkspace";
 
-export const metadata: Metadata = { title: "Workflow configuration" };
+export const metadata: Metadata = { title: "Workflow templates" };
 
 export default async function WorkflowsPage() {
   const user = await getCurrentUser();
-  if (!user || !can(user, capabilities.workflowDefinitionRead))
+  if (!user || !can(user, permissionCodes.workflowDefinitionRead))
     redirect("/unauthorized");
   return (
     <section>
       <PageHeader
-        description="Manage reusable workflow versions and configuration."
+        description="Manage workflow templates."
         eyebrow="Administration"
-        title="Workflow Definitions"
+        title="Workflow Templates"
       />
-      <WorkflowDefinitionsWorkspace
-        canCreate={can(user, capabilities.workflowDefinitionCreate)}
-        canPublish={can(user, capabilities.workflowDefinitionPublish)}
-        canRetire={can(user, capabilities.workflowDefinitionRetire)}
-        canUpdate={can(user, capabilities.workflowDefinitionUpdate)}
+      <WorkflowTemplateAdminWorkspace
+        canCreate={can(user, permissionCodes.workflowDefinitionCreate)}
       />
     </section>
   );

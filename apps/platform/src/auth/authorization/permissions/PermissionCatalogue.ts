@@ -180,6 +180,21 @@ export const permissionCatalogue: readonly PermissionDefinition[] = [
     "Update workflow drafts and assignments.",
   ),
   define(
+    permissionCodes.workflowDefinitionSubmit,
+    "Submit all workflow templates for approval",
+    "Submit any draft workflow template version for approval.",
+  ),
+  define(
+    permissionCodes.workflowDefinitionReturn,
+    "Return all workflow templates to draft",
+    "Return any pending workflow template version to draft with a reason.",
+  ),
+  define(
+    permissionCodes.workflowDefinitionApprove,
+    "Approve all workflow templates",
+    "Approve any pending workflow template version without publishing it.",
+  ),
+  define(
     permissionCodes.workflowDefinitionPublish,
     "Publish workflow definitions",
     "Publish validated workflow versions.",

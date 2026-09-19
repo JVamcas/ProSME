@@ -1,42 +1,48 @@
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
-vi.mock("@/db/repositories/WorkflowRepository", () => ({
+vi.mock("@/modules/workflows/infrastructure/WorkflowRepository", () => ({
   findDraftByDefinition: vi.fn(),
   findLatestWorkflowVersionId: vi.fn(),
   listPublishedWorkflowVersions: vi.fn(),
   listWorkflowDefinitions: vi.fn(),
 }));
-vi.mock("@/db/repositories/WorkflowDraftRepository", () => ({
-  createWorkflowDefinition: vi.fn(),
-  replaceWorkflowDraft: vi.fn(),
-}));
-vi.mock("@/db/repositories/WorkflowDetailsRepository", () => ({
+vi.mock(
+  "@/modules/workflows/infrastructure/WorkflowTemplateWriteRepository",
+  () => ({
+    createWorkflowDefinition: vi.fn(),
+    replaceWorkflowDraft: vi.fn(),
+  }),
+);
+vi.mock("@/modules/workflows/infrastructure/WorkflowDetailsRepository", () => ({
   updateWorkflowDefinitionDetails: vi.fn(),
 }));
-vi.mock("@/modules/workflows/ServerWorkflowSupport", () => ({
-  WorkflowConflictError: class WorkflowConflictError extends Error {},
-  WorkflowNotFoundError: class WorkflowNotFoundError extends Error {},
-  workflowEditorView: vi.fn(),
-}));
+vi.mock(
+  "@/modules/workflows/application/definitions/ServerWorkflowSupport",
+  () => ({
+    WorkflowConflictError: class WorkflowConflictError extends Error {},
+    WorkflowNotFoundError: class WorkflowNotFoundError extends Error {},
+    workflowEditorView: vi.fn(),
+  }),
+);
 
-import { capabilities } from "@/auth/authorization/capabilities";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import type { AuthenticatedUser } from "@/auth/types";
-import { replaceWorkflowDraft } from "@/db/repositories/WorkflowDraftRepository";
-import { updateWorkflowDefinitionDetails } from "@/db/repositories/WorkflowDetailsRepository";
+import { replaceWorkflowDraft } from "@/modules/workflows/infrastructure/WorkflowTemplateWriteRepository";
+import { updateWorkflowDefinitionDetails } from "@/modules/workflows/infrastructure/WorkflowDetailsRepository";
 import {
   findDraftByDefinition,
   findLatestWorkflowVersionId,
-} from "@/db/repositories/WorkflowRepository";
+} from "@/modules/workflows/infrastructure/WorkflowRepository";
 import { referenceWorkflow } from "@/modules/workflows/ReferenceWorkflow";
 import {
   updateWorkflowDraft,
   updateWorkflowDetails,
-} from "@/modules/workflows/ServerWorkflowService";
-import { workflowEditorView } from "@/modules/workflows/ServerWorkflowSupport";
+} from "@/modules/workflows/application/definitions/ServerWorkflowService";
+import { workflowEditorView } from "@/modules/workflows/application/definitions/ServerWorkflowSupport";
 
 const actor: AuthenticatedUser = {
-  capabilities: new Set([capabilities.workflowDefinitionUpdate]),
+  capabilities: new Set([permissionCodes.workflowDefinitionUpdate]),
   createdAt: new Date(),
   displayName: "Workflow administrator",
   email: "workflow@example.test",
@@ -50,21 +56,18 @@ const actor: AuthenticatedUser = {
 };
 
 describe("workflow draft updates", () => {
-  it("updates the latest published version when no draft exists", async () => {
+  it("rejects edits when no draft exists", async () => {
     vi.mocked(findDraftByDefinition).mockResolvedValue(null);
     vi.mocked(findLatestWorkflowVersionId).mockResolvedValue("published-id");
-    vi.mocked(replaceWorkflowDraft).mockResolvedValue("published-id");
-    vi.mocked(workflowEditorView).mockResolvedValue(undefined as never);
-
-    await updateWorkflowDraft(
-      actor,
-      "definition-id",
-      { expectedRowVersion: 2, graph: referenceWorkflow },
-      "correlation-id",
-    );
-    expect(replaceWorkflowDraft).toHaveBeenCalledWith(
-      expect.objectContaining({ versionId: "published-id" }),
-    );
+    await expect(
+      updateWorkflowDraft(
+        actor,
+        "definition-id",
+        { expectedRowVersion: 2, graph: referenceWorkflow },
+        "correlation-id",
+      ),
+    ).rejects.toThrow("Only draft versions can be edited.");
+    expect(replaceWorkflowDraft).not.toHaveBeenCalled();
   });
 
   it("updates workflow details with optimistic version data", async () => {

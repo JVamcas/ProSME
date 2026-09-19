@@ -1,6 +1,6 @@
 import { ArrowDown, ArrowUp, ChevronDown, GitBranch, Plus } from "lucide-react";
 
-import type { WorkflowStageInput } from "@/modules/workflows/WorkflowTypes";
+import type { WorkflowStageInput } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import { GeneralButton } from "@/components/ui/button";
 
 type StageSelectionProps = {

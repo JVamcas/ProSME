@@ -88,7 +88,7 @@ function DataTableHeader<TData extends RowData>({
   table: DataTableInstance<TData>;
 }) {
   return (
-    <thead className="border-b border-slate-200 bg-slate-50">
+    <thead className="border-b border-slate-200 bg-slate-100">
       {table.getHeaderGroups().map((group) => (
         <tr key={group.id}>
           {group.headers.map((header) => {
@@ -99,7 +99,7 @@ function DataTableHeader<TData extends RowData>({
               <th
                 key={header.id}
                 aria-sort={ariaSort(direction, canSort)}
-                className="h-12 whitespace-nowrap px-5 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-600"
+                className="h-12 whitespace-nowrap px-5 text-left text-[11px] font-semibold tracking-[0.08em] text-slate-600"
               >
                 {canSort ? (
                   <GeneralButton
@@ -209,7 +209,7 @@ export function DataTable<TData extends RowData>({
     typeof minWidth === "number" ? `${minWidth}px` : minWidth;
 
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm mx-1">
+    <div className="overflow-hidden rounded-md border border-slate-100 bg-white shadow-sm mx-1">
       {toolbar ? (
         <div className="border-b border-slate-100 bg-white px-5 py-4">
           <DataTableToolbar {...toolbar} />

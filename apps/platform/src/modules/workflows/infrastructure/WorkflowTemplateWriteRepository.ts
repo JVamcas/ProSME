@@ -11,7 +11,7 @@ import {
   workflowStageDefinitions,
   workflowTransitionDefinitions,
 } from "@/db/schema";
-import type { WorkflowGraphInput } from "@/modules/workflows/WorkflowTypes";
+import type { WorkflowGraphInput } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 
 type Transaction = Parameters<
   Parameters<ReturnType<typeof getDatabase>["transaction"]>[0]
@@ -114,13 +114,23 @@ export async function createWorkflowDefinition(input: {
         createdBy: input.actorId,
         definitionId: definition.id,
         versionNumber: 1,
+        metadata: {
+          code: input.code,
+          name: input.name,
+          description: input.description,
+        },
       })
       .returning();
     await insertGraph(transaction, version.id, input.graph);
     await audit(transaction, {
       action: "WORKFLOW_CREATED",
       actorId: input.actorId,
-      after: { code: definition.code, version: 1 },
+      after: {
+        code: definition.code,
+        version: 1,
+        versionId: version.id,
+        status: "DRAFT",
+      },
       correlationId: input.correlationId,
       targetId: definition.id,
       targetType: "WORKFLOW_DEFINITION",
@@ -143,6 +153,7 @@ export async function replaceWorkflowDraft(input: {
       .where(
         and(
           eq(workflowDefinitionVersions.id, input.versionId),
+          eq(workflowDefinitionVersions.status, "DRAFT"),
           eq(workflowDefinitionVersions.rowVersion, input.expectedRowVersion),
         ),
       )
@@ -184,6 +195,12 @@ export async function cloneWorkflowVersion(input: {
   graph: WorkflowGraphInput;
 }) {
   return getDatabase().transaction(async (transaction) => {
+    const [definition] = await transaction
+      .select()
+      .from(workflowDefinitions)
+      .where(eq(workflowDefinitions.id, input.definitionId))
+      .for("update");
+    if (!definition) throw new Error("Workflow template not found.");
     const [latest] = await transaction
       .select({ value: max(workflowDefinitionVersions.versionNumber) })
       .from(workflowDefinitionVersions)
@@ -194,6 +211,11 @@ export async function cloneWorkflowVersion(input: {
         createdBy: input.actorId,
         definitionId: input.definitionId,
         versionNumber: (latest?.value ?? 0) + 1,
+        metadata: {
+          code: definition.code,
+          name: definition.name,
+          description: definition.description,
+        },
       })
       .returning();
     await insertGraph(transaction, version.id, input.graph);

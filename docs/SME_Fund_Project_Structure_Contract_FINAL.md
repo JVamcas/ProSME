@@ -2,9 +2,16 @@
 
 ## 1. Purpose
 
-This document defines where SME Fund code belongs.
+This document defines the mandatory target structure for SME Fund code.
 
-Codex must follow it whenever creating or moving files. Note that the goal is to finally end up with this structure but it does not means you should move or refactor everything in one go.
+The project is committed to ending with the structure defined in this contract.
+Codex and human contributors must follow it whenever creating or moving files.
+Existing legacy placement does not weaken or replace the target structure.
+
+Migration toward the target is incremental: do not move or refactor everything
+in one change. New code must follow the contract immediately, and code related
+to an active feature must move toward the contract as that feature is changed.
+Incremental migration changes the timing of the work, not the agreed end state.
 
 The codebase should be feature-first. Business functionality must not be scattered across global component, repository and schema folders.
 
@@ -451,6 +458,25 @@ Authentication/authorization infrastructure:
 
 Feature-specific business permission decisions remain in the owning module.
 
+Authorization permissions must remain fine-grained and contextual. The
+canonical permission vocabulary and grouping are maintained in:
+
+```text
+apps/platform/src/auth/authorization/permissions/
+```
+
+Permissions must identify the specific resource, action and, when applicable,
+the relationship or scope such as `own`, `assigned`, or `all`. Always use the
+narrowest permission that represents the operation; do not substitute broad
+`manage` permissions or role-name checks for an explicit permission.
+
+Holding a contextual permission does not by itself authorize access to every
+record. Server-side policy must validate the permission's context against the
+target resource—for example, verify ownership for `own` and assignment for
+`assigned`. Authorization is deny-by-default, and both permission and context
+checks must occur before protected reads, writes, or side effects. Client-side
+visibility checks are never authorization controls.
+
 ---
 
 # 24. `platform/storage`
@@ -762,7 +788,9 @@ Before creating a file, determine:
 Every implementation task must comply with:
 
 1. `SME_Fund_Implementation_Plan.md`
-2. `SME_Fund_Project_Structure_Contract.md`
+2. `SME_Fund_Project_Structure_Contract_FINAL.md` (this document)
+3. The fine-grained, contextual permission model in
+   `apps/platform/src/auth/authorization/permissions/`
 
 When existing code conflicts:
 - new code follows the target structure;
@@ -770,3 +798,6 @@ When existing code conflicts:
 - avoid duplicate implementations;
 - avoid unrelated cleanup;
 - document temporary compatibility layers where unavoidable.
+
+No implementation may treat the current legacy layout as the desired final
+state. Each change must preserve or improve convergence toward this contract.

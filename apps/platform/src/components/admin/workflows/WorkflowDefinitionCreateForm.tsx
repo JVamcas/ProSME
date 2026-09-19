@@ -12,8 +12,8 @@ import {
   useUpdateWorkflowDetails,
   useWorkflowEditor,
 } from "@/modules/workflows/WorkflowHooks";
-import { createWorkflowSchema } from "@/modules/workflows/WorkflowSchemas";
-import type { WorkflowDefinitionSummary } from "@/modules/workflows/WorkflowTypes";
+import { createWorkflowSchema } from "@/modules/workflows/api/WorkflowSchemas";
+import type { WorkflowDefinitionSummary } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 
 type Props = {
   onCompleted?: () => void;

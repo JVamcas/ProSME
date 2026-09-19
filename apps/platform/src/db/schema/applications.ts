@@ -19,7 +19,7 @@ import type {
 import type { ApplicationDeclarationsSection } from "@/modules/applications/ApplicationDeclarationSchemas";
 import { users } from "./identity";
 import { businessProfiles } from "./profiles";
-import { workflowDefinitionVersions } from "./workflow";
+import { workflowDefinitionVersions } from "@/modules/workflows/infrastructure/workflow.schema";
 
 export const applications = pgTable("app_applications", {
   id: uuid("id").primaryKey().defaultRandom(),

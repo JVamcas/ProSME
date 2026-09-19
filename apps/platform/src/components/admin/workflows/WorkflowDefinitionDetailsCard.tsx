@@ -1,4 +1,4 @@
-import type { WorkflowEditorView } from "@/modules/workflows/WorkflowTypes";
+import type { WorkflowEditorView } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 
 type Props = {
   editor: WorkflowEditorView;

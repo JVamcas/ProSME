@@ -4,7 +4,7 @@ import {
   portalRouteError,
   portalRouteSuccess,
 } from "@/lib/api/PortalApiResponse";
-import { validateWorkflow } from "@/modules/workflows/ServerWorkflowService";
+import { validateWorkflow } from "@/modules/workflows/application/definitions/ServerWorkflowService";
 
 type RouteContext = { params: Promise<{ id: string }> };
 

@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-import type { WorkflowTaskInput } from "@/modules/workflows/WorkflowTypes";
-import { taskTypeCodes } from "@/modules/workflows/WorkflowTypes";
+import type { WorkflowTaskInput } from "@/modules/workflows/domain/definitions/WorkflowTypes";
+import { taskTypeCodes } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 
 const checklistItemSchema = z.object({
   code: z.string(),

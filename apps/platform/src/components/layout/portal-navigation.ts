@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 
 import { capabilities } from "@/auth/authorization/capabilities";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import type { PortalSpace } from "@/auth/authorization/portal-access";
 
 export type PortalRoute = {
@@ -115,11 +116,11 @@ export const operationsPortalRoutes: readonly PortalRoute[] = [
     icon: Workflow,
     space: "operations",
     requiredAnyCapabilities: [
-      capabilities.workflowDefinitionRead,
-      capabilities.workflowDefinitionCreate,
-      capabilities.workflowDefinitionUpdate,
-      capabilities.workflowDefinitionPublish,
-      capabilities.workflowDefinitionRetire,
+      permissionCodes.workflowDefinitionRead,
+      permissionCodes.workflowDefinitionCreate,
+      permissionCodes.workflowDefinitionUpdate,
+      permissionCodes.workflowDefinitionPublish,
+      permissionCodes.workflowDefinitionRetire,
     ],
   },
   {

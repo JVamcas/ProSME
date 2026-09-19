@@ -9,6 +9,7 @@ import sharp from "sharp";
 
 import { getServerEnvironment } from "@/lib/env/server";
 import { gcsObjectPrefixes } from "@/integrations/storage/GcsObjectPrefixes";
+import { getGoogleCloudStorageOptions } from "@/integrations/storage/GoogleCloudStorageOptions";
 import { Media } from "@/payload/collections/content/Media";
 import { ContactSubmissions } from "@/payload/collections/content/ContactSubmissions";
 import { Events } from "@/payload/collections/content/Events";
@@ -77,7 +78,7 @@ export default buildConfig({
         media: { prefix: gcsObjectPrefixes.cms },
       },
       enabled: Boolean(environment.GCS_DOCUMENTS_BUCKET),
-      options: {},
+      options: getGoogleCloudStorageOptions(),
       useCompositePrefixes: true,
     }),
   ],

@@ -1,44 +1,44 @@
 import "server-only";
 
-import { capabilities } from "@/auth/authorization/capabilities";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import { requireCapability } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import {
   createWorkflowDefinition,
   replaceWorkflowDraft,
-} from "@/db/repositories/WorkflowDraftRepository";
-import { updateWorkflowDefinitionDetails } from "@/db/repositories/WorkflowDetailsRepository";
+} from "@/modules/workflows/infrastructure/WorkflowTemplateWriteRepository";
+import { updateWorkflowDefinitionDetails } from "@/modules/workflows/infrastructure/WorkflowDetailsRepository";
 import {
   findDraftByDefinition,
   findLatestWorkflowVersionId,
   listPublishedWorkflowVersions,
   listWorkflowDefinitions,
-} from "@/db/repositories/WorkflowRepository";
-import { referenceWorkflow } from "./ReferenceWorkflow";
+} from "@/modules/workflows/infrastructure/WorkflowRepository";
+import { referenceWorkflow } from "@/modules/workflows/ReferenceWorkflow";
 import {
   WorkflowConflictError,
   WorkflowNotFoundError,
   workflowEditorView,
-} from "./ServerWorkflowSupport";
-import { toWorkflowSummaries } from "./WorkflowRepresentation";
+} from "@/modules/workflows/application/definitions/ServerWorkflowSupport";
+import { toWorkflowSummaries } from "@/modules/workflows/api/WorkflowRepresentation";
 import type {
   CreateWorkflowInput,
   UpdateWorkflowDraftInput,
   UpdateWorkflowDetailsInput,
-} from "./WorkflowTransportTypes";
+} from "@/modules/workflows/api/WorkflowTransportTypes";
 
 export {
   WorkflowConflictError,
   WorkflowNotFoundError,
-} from "./ServerWorkflowSupport";
+} from "@/modules/workflows/application/definitions/ServerWorkflowSupport";
 
 export async function getWorkflowDefinitions(user: AuthenticatedUser | null) {
-  requireCapability(user, capabilities.workflowDefinitionRead);
+  requireCapability(user, permissionCodes.workflowDefinitionRead);
   return toWorkflowSummaries(await listWorkflowDefinitions());
 }
 
 export async function getPublishedWorkflows(user: AuthenticatedUser | null) {
-  requireCapability(user, capabilities.workflowDefinitionRead);
+  requireCapability(user, permissionCodes.workflowDefinitionRead);
   return listPublishedWorkflowVersions();
 }
 
@@ -46,7 +46,7 @@ export async function getWorkflowEditor(
   user: AuthenticatedUser | null,
   definitionId: string,
 ) {
-  requireCapability(user, capabilities.workflowDefinitionRead);
+  requireCapability(user, permissionCodes.workflowDefinitionRead);
   const versionId =
     (await findDraftByDefinition(definitionId)) ??
     (await findLatestWorkflowVersionId(definitionId));
@@ -59,7 +59,7 @@ export async function createWorkflow(
   input: CreateWorkflowInput,
   correlationId: string,
 ) {
-  const actor = requireCapability(user, capabilities.workflowDefinitionCreate);
+  const actor = requireCapability(user, permissionCodes.workflowDefinitionCreate);
   const graph = input.useReferenceWorkflow
     ? referenceWorkflow
     : { stages: [], transitions: [] };
@@ -78,11 +78,10 @@ export async function updateWorkflowDraft(
   input: UpdateWorkflowDraftInput,
   correlationId: string,
 ) {
-  const actor = requireCapability(user, capabilities.workflowDefinitionUpdate);
-  const versionId =
-    (await findDraftByDefinition(definitionId)) ??
-    (await findLatestWorkflowVersionId(definitionId));
-  if (!versionId) throw new WorkflowNotFoundError();
+  const actor = requireCapability(user, permissionCodes.workflowDefinitionUpdate);
+  const versionId = await findDraftByDefinition(definitionId);
+  if (!versionId)
+    throw new WorkflowConflictError("Only draft versions can be edited.");
   const updated = await replaceWorkflowDraft({
     ...input,
     actorId: actor.id,
@@ -99,11 +98,10 @@ export async function updateWorkflowDetails(
   input: UpdateWorkflowDetailsInput,
   correlationId: string,
 ) {
-  const actor = requireCapability(user, capabilities.workflowDefinitionUpdate);
-  const versionId =
-    (await findDraftByDefinition(definitionId)) ??
-    (await findLatestWorkflowVersionId(definitionId));
-  if (!versionId) throw new WorkflowNotFoundError();
+  const actor = requireCapability(user, permissionCodes.workflowDefinitionUpdate);
+  const versionId = await findDraftByDefinition(definitionId);
+  if (!versionId)
+    throw new WorkflowConflictError("Only draft versions can be edited.");
   const updated = await updateWorkflowDefinitionDetails({
     ...input,
     actorId: actor.id,
@@ -119,8 +117,9 @@ export async function validateWorkflow(
   user: AuthenticatedUser | null,
   definitionId: string,
 ) {
-  requireCapability(user, capabilities.workflowDefinitionUpdate);
+  requireCapability(user, permissionCodes.workflowDefinitionUpdate);
   const versionId = await findDraftByDefinition(definitionId);
-  if (!versionId) throw new WorkflowNotFoundError();
+  if (!versionId)
+    throw new WorkflowConflictError("Only draft versions can be edited.");
   return (await workflowEditorView(versionId)).validation;
 }

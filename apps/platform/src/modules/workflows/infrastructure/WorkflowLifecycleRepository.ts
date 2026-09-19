@@ -8,6 +8,10 @@ import {
   workflowAuditEntries,
   workflowDefinitionVersions,
 } from "@/db/schema";
+import {
+  workflowTemplateTransitions,
+  type WorkflowTemplateCommand,
+} from "../domain/definitions/WorkflowTemplate";
 
 type LifecycleInput = {
   actorId: string;
@@ -15,6 +19,7 @@ type LifecycleInput = {
   expectedRowVersion: number;
   idempotencyKey: string;
   versionId: string;
+  reason?: string;
 };
 
 export async function findLifecycleReplay(idempotencyKey: string) {
@@ -30,28 +35,33 @@ export async function findLifecycleReplay(idempotencyKey: string) {
   return audit ?? null;
 }
 
-async function changeLifecycle(
+export async function changeWorkflowTemplateLifecycle(
   input: LifecycleInput,
-  fromStatus: "DRAFT" | "PUBLISHED",
-  toStatus: "PUBLISHED" | "RETIRED",
+  command: WorkflowTemplateCommand,
 ) {
+  const transition = workflowTemplateTransitions[command];
+  const reason = input.reason?.trim();
+  if (command === "RETURN" && !reason) {
+    throw new Error("A reason is required to return a workflow to Draft.");
+  }
   return getDatabase().transaction(async (transaction) => {
-    const now = new Date();
+    const [lockedVersion] = await transaction
+      .select()
+      .from(workflowDefinitionVersions)
+      .where(
+        and(
+          eq(workflowDefinitionVersions.id, input.versionId),
+          eq(workflowDefinitionVersions.status, transition.from),
+          eq(workflowDefinitionVersions.rowVersion, input.expectedRowVersion),
+        ),
+      )
+      .for("update");
+    if (!lockedVersion) return null;
+
+    // Existing opportunity bindings are detached on retirement. Runtime instances
+    // retain their exact version foreign key and the retired version is retained.
     let detachedAssignmentCount = 0;
-    if (toStatus === "RETIRED") {
-      const [lockedVersion] = await transaction
-        .select({ id: workflowDefinitionVersions.id })
-        .from(workflowDefinitionVersions)
-        .where(
-          and(
-            eq(workflowDefinitionVersions.id, input.versionId),
-            eq(workflowDefinitionVersions.status, fromStatus),
-            eq(workflowDefinitionVersions.rowVersion, input.expectedRowVersion),
-          ),
-        )
-        .for("update")
-        .limit(1);
-      if (!lockedVersion) return null;
+    if (command === "RETIRE") {
       const detached = await transaction
         .delete(fundingOpportunityWorkflowAssignments)
         .where(
@@ -60,48 +70,34 @@ async function changeLifecycle(
             input.versionId,
           ),
         )
-        .returning({
-          fundingOpportunityId:
-            fundingOpportunityWorkflowAssignments.fundingOpportunityId,
-        });
+        .returning();
       detachedAssignmentCount = detached.length;
     }
-    const values =
-      toStatus === "PUBLISHED"
-        ? {
-            publishedAt: now,
-            publishedBy: input.actorId,
-            rowVersion: input.expectedRowVersion + 1,
-            status: toStatus,
-            updatedAt: now,
-          }
-        : {
-            retiredAt: now,
-            rowVersion: input.expectedRowVersion + 1,
-            status: toStatus,
-            updatedAt: now,
-          };
+    const now = new Date();
     const [version] = await transaction
       .update(workflowDefinitionVersions)
-      .set(values)
-      .where(
-        and(
-          eq(workflowDefinitionVersions.id, input.versionId),
-          eq(workflowDefinitionVersions.status, fromStatus),
-          eq(workflowDefinitionVersions.rowVersion, input.expectedRowVersion),
-        ),
-      )
+      .set({
+        status: transition.to,
+        rowVersion: input.expectedRowVersion + 1,
+        updatedAt: now,
+        ...(command === "PUBLISH"
+          ? { publishedAt: now, publishedBy: input.actorId }
+          : {}),
+        ...(command === "RETIRE" ? { retiredAt: now } : {}),
+      })
+      .where(eq(workflowDefinitionVersions.id, input.versionId))
       .returning();
-    if (!version) return null;
     await transaction.insert(workflowAuditEntries).values({
-      action: `WORKFLOW_VERSION_${toStatus}`,
+      action: `WORKFLOW_VERSION_${transition.to}`,
       actorId: input.actorId,
       after: {
+        command,
         detachedAssignmentCount,
+        reason: reason ?? null,
         rowVersion: version.rowVersion,
-        status: toStatus,
+        status: transition.to,
       },
-      before: { rowVersion: input.expectedRowVersion, status: fromStatus },
+      before: { rowVersion: input.expectedRowVersion, status: transition.from },
       correlationId: input.correlationId,
       idempotencyKey: input.idempotencyKey,
       targetId: version.id,
@@ -112,9 +108,9 @@ async function changeLifecycle(
 }
 
 export function publishWorkflowVersion(input: LifecycleInput) {
-  return changeLifecycle(input, "DRAFT", "PUBLISHED");
+  return changeWorkflowTemplateLifecycle(input, "PUBLISH");
 }
 
 export function retireWorkflowVersion(input: LifecycleInput) {
-  return changeLifecycle(input, "PUBLISHED", "RETIRED");
+  return changeWorkflowTemplateLifecycle(input, "RETIRE");
 }

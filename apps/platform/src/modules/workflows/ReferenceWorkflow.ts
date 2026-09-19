@@ -1,4 +1,4 @@
-import type { WorkflowGraphInput } from "./WorkflowTypes";
+import type { WorkflowGraphInput } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import { referenceWorkflowTransitions } from "./ReferenceWorkflowTransitions";
 
 const reviewOutcomes = [

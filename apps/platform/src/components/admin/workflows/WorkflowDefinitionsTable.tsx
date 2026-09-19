@@ -17,7 +17,7 @@ import type {
   PublishedWorkflowOption,
   WorkflowDefinitionSummary,
   WorkflowOpportunityAssignment,
-} from "@/modules/workflows/WorkflowTypes";
+} from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import { WorkflowAssignedFundingLinks } from "./WorkflowAssignedFundingLinks";
 
 type PendingAction = {

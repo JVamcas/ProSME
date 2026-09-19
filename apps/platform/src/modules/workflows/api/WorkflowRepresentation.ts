@@ -4,12 +4,13 @@ import type {
   WorkflowGraphInput,
   WorkflowOpportunityAssignment,
   WorkflowValidation,
-} from "./WorkflowTypes";
+  WorkflowStatus,
+} from "@/modules/workflows/domain/definitions/WorkflowTypes";
 
 export function toWorkflowSummaries(
   rows: Awaited<
     ReturnType<
-      typeof import("@/db/repositories/WorkflowRepository").listWorkflowDefinitions
+      typeof import("@/modules/workflows/infrastructure/WorkflowRepository").listWorkflowDefinitions
     >
   >,
 ): WorkflowDefinitionSummary[] {
@@ -33,7 +34,7 @@ export function toWorkflowEditor(
     version: {
       id: string;
       versionNumber: number;
-      status: "DRAFT" | "PUBLISHED" | "RETIRED";
+      status: WorkflowStatus;
       createdAt: Date;
       publishedAt: Date | null;
       retiredAt: Date | null;
@@ -56,12 +57,13 @@ export function toWorkflowEditor(
     },
     graph: record.graph,
     validation,
-    allowedActions:
-      status === "DRAFT"
-        ? ["UPDATE", "VALIDATE", "PREVIEW", "PUBLISH"]
-        : status === "PUBLISHED"
-          ? ["UPDATE", "PREVIEW", "CLONE", "RETIRE", "ASSIGN"]
-          : ["UPDATE", "PREVIEW", "CLONE"],
+    allowedActions: {
+      DRAFT: ["UPDATE", "VALIDATE", "PREVIEW", "SUBMIT"],
+      PENDING_APPROVAL: ["PREVIEW", "RETURN", "APPROVE"],
+      APPROVED: ["PREVIEW", "PUBLISH"],
+      PUBLISHED: ["PREVIEW", "CLONE", "RETIRE", "ASSIGN"],
+      RETIRED: ["PREVIEW", "CLONE"],
+    }[status],
   };
 }
 

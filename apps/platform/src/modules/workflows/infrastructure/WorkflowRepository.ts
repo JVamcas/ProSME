@@ -11,7 +11,7 @@ import {
   workflowDefinitionVersions,
   workflowDefinitions,
 } from "@/db/schema";
-import type { WorkflowGraphInput } from "@/modules/workflows/WorkflowTypes";
+import type { WorkflowGraphInput } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 
 export async function listWorkflowDefinitions() {
   return getDatabase()
@@ -103,30 +103,31 @@ export async function findConfigurationReferences(
   forms?: Map<string, string>;
 }> {
   const references = collectConfigurationReferences(graph);
-  const [foundCapabilities, foundUsers, foundRoles, foundForms] = await Promise.all([
-    getDatabase()
-      .select({ code: capabilityRecords.code })
-      .from(capabilityRecords)
-      .where(inArray(capabilityRecords.code, references.capabilityCodes)),
-    references.userIds.length
-      ? getDatabase()
-          .select({ id: users.id, status: users.status })
-          .from(users)
-          .where(inArray(users.id, references.userIds))
-      : [],
-    references.roleIds.length
-      ? getDatabase()
-          .select({ id: roles.id })
-          .from(roles)
-          .where(inArray(roles.id, references.roleIds))
-      : [],
-    references.formVersionIds.length
-      ? getDatabase()
-          .select({ id: formVersions.id, status: formVersions.status })
-          .from(formVersions)
-          .where(inArray(formVersions.id, references.formVersionIds))
-      : [],
-  ]);
+  const [foundCapabilities, foundUsers, foundRoles, foundForms] =
+    await Promise.all([
+      getDatabase()
+        .select({ code: capabilityRecords.code })
+        .from(capabilityRecords)
+        .where(inArray(capabilityRecords.code, references.capabilityCodes)),
+      references.userIds.length
+        ? getDatabase()
+            .select({ id: users.id, status: users.status })
+            .from(users)
+            .where(inArray(users.id, references.userIds))
+        : [],
+      references.roleIds.length
+        ? getDatabase()
+            .select({ id: roles.id })
+            .from(roles)
+            .where(inArray(roles.id, references.roleIds))
+        : [],
+      references.formVersionIds.length
+        ? getDatabase()
+            .select({ id: formVersions.id, status: formVersions.status })
+            .from(formVersions)
+            .where(inArray(formVersions.id, references.formVersionIds))
+        : [],
+    ]);
   return {
     capabilities: new Set(foundCapabilities.map((item) => item.code)),
     roles: new Set(foundRoles.map((item) => item.id)),

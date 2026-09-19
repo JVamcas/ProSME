@@ -1,4 +1,4 @@
-import type { WorkflowGraphInput } from "./WorkflowTypes";
+import type { WorkflowGraphInput } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 
 export function reachableStages(
   graph: WorkflowGraphInput,

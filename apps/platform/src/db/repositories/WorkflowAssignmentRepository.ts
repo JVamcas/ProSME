@@ -9,7 +9,7 @@ import {
   workflowDefinitionVersions,
   workflowDefinitions,
 } from "@/db/schema";
-import type { WorkflowOpportunityAssignment } from "@/modules/workflows/WorkflowTypes";
+import type { WorkflowOpportunityAssignment } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 
 export async function listWorkflowAssignments() {
   return getDatabase()
