@@ -138,11 +138,11 @@ export const operationsPortalRoutes: readonly PortalRoute[] = [
     icon: Settings,
     space: "operations",
     requiredAnyCapabilities: [
-      capabilities.formRead,
-      capabilities.formCreate,
-      capabilities.formUpdate,
-      capabilities.formPublish,
-      capabilities.formRetire,
+      permissionCodes.workflowFormRead,
+      permissionCodes.workflowFormCreate,
+      permissionCodes.workflowFormUpdate,
+      permissionCodes.workflowFormPublish,
+      permissionCodes.workflowFormRetire,
     ],
     children: [
       {
@@ -152,11 +152,11 @@ export const operationsPortalRoutes: readonly PortalRoute[] = [
         icon: ClipboardList,
         space: "operations",
         requiredAnyCapabilities: [
-          capabilities.formRead,
-          capabilities.formCreate,
-          capabilities.formUpdate,
-          capabilities.formPublish,
-          capabilities.formRetire,
+          permissionCodes.workflowFormRead,
+          permissionCodes.workflowFormCreate,
+          permissionCodes.workflowFormUpdate,
+          permissionCodes.workflowFormPublish,
+          permissionCodes.workflowFormRetire,
         ],
       },
     ],

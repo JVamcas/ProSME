@@ -13,7 +13,7 @@ import { sql } from "drizzle-orm";
 
 import { users } from "./identity";
 import { stageTaskInstances } from "./workflow-runtime";
-import { formVersions } from "./forms";
+import { formVersions } from "@/modules/forms/infrastructure/form.schema";
 
 export const formSubmissions = pgTable(
   "app_form_submissions",

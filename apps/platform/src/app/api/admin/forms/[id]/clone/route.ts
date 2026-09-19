@@ -5,7 +5,7 @@ import {
   portalRouteSuccess,
 } from "@/lib/api/PortalApiResponse";
 import { z } from "zod";
-import { clonePublishedForm } from "@/modules/forms/ServerFormsService";
+import { clonePublishedForm } from "@/modules/forms/application/ServerFormsService";
 
 const inputSchema = z.object({ sourceVersionId: z.string().uuid() });
 

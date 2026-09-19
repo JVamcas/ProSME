@@ -4,7 +4,7 @@ import {
   formDataTypes,
   formInputTypes,
   formStatuses,
-} from "./FormTypes";
+} from "@/modules/forms/FormTypes";
 
 const code = z
   .string()
@@ -150,15 +150,44 @@ export const formVersionSchema = z.object({
   submitLabel: z.string().trim().min(1).max(80),
 });
 
+export const formSectionSchema = z.object({
+  id: z.string().uuid().optional(),
+  key: code,
+  title: z.string().trim().min(1).max(160),
+  description: z.string().trim().max(1000),
+  order: z.coerce.number().int().positive(),
+});
+
 export const formDefinitionDialogSchema = formDefinitionSchema.extend({
   ...formVersionSchema.shape,
 });
 
-export const formEditorSchema = formDefinitionSchema.partial().extend({
-  ...formVersionSchema.shape,
-  expectedRowVersion: z.number().int().positive(),
-  fields: z.array(formFieldSchema).max(100),
-});
+export const formEditorSchema = formDefinitionSchema
+  .partial()
+  .extend({
+    ...formVersionSchema.shape,
+    expectedRowVersion: z.number().int().positive(),
+    fields: z.array(formFieldSchema).max(100),
+    sections: z.array(formSectionSchema).max(50),
+  })
+  .superRefine((value, context) => {
+    const keys = value.sections.map((section) => section.key);
+    if (new Set(keys).size !== keys.length) {
+      context.addIssue({
+        code: "custom",
+        message: "Section keys must be unique within a form version.",
+        path: ["sections"],
+      });
+    }
+    const orders = value.sections.map((section) => section.order).sort((a, b) => a - b);
+    if (orders.some((order, index) => order !== index + 1)) {
+      context.addIssue({
+        code: "custom",
+        message: "Section order must be contiguous and start at one.",
+        path: ["sections"],
+      });
+    }
+  });
 
 export const formCommandSchema = z.object({
   versionId: z.string().uuid(),

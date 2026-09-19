@@ -7,13 +7,13 @@ import {
 import {
   taskFormCompletionSchema,
   taskFormSubmissionSchema,
-} from "@/modules/forms/FormSchemas";
+} from "@/modules/forms/api/FormSchemas";
 import { z } from "zod";
 import {
   completeTaskForm,
   getTaskForm,
   saveTaskForm,
-} from "@/modules/forms/ServerFormsService";
+} from "@/modules/forms/application/ServerFormsService";
 
 export async function GET(
   request: Request,

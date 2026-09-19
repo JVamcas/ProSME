@@ -7,7 +7,7 @@ import type {
   CreateFormInput,
   TaskFormSubmissionInput,
   UpdateFormInput,
-} from "./FormTransportTypes";
+} from "./api/FormTransportTypes";
 
 export const formQueryKeys = {
   all: ["admin", "forms"] as const,

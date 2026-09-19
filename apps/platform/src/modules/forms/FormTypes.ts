@@ -1,9 +1,16 @@
-export const formStatuses = [
-  "DRAFT",
-  "PUBLISHED",
-  "RETIRED",
-] as const;
-export type FormStatus = (typeof formStatuses)[number];
+import type {
+  FormDefinitionSummary,
+  FormSection,
+  FormVersionSummary,
+} from "./domain/FormDefinition";
+
+export {
+  formStatuses,
+  type FormDefinitionSummary,
+  type FormSection,
+  type FormStatus,
+  type FormVersionSummary,
+} from "./domain/FormDefinition";
 
 export const formInputTypes = [
   "TEXT",
@@ -54,38 +61,17 @@ export type FormField = {
   options?: FormOption[];
 };
 
-export type FormVersionSummary = {
-  id: string;
-  formDefinitionId: string;
-  versionNumber: number;
-  status: FormStatus;
-  instructions: string | null;
-  submitLabel: string;
-  rowVersion: number;
-  createdAt: string;
-  publishedAt: string | null;
-  retiredAt: string | null;
-};
-
-export type FormDefinitionSummary = {
-  id: string;
-  code: string;
-  name: string;
-  description: string;
-  active: boolean;
-  latestVersion: number | null;
-  latestStatus: FormStatus | null;
-  fieldCount: number;
-  usedByCount: number;
-  updatedAt: string;
-};
-
 export type FormEditorView = {
   definition: Omit<
     FormDefinitionSummary,
-    "fieldCount" | "usedByCount" | "latestVersion" | "latestStatus"
+    | "fieldCount"
+    | "sectionCount"
+    | "usedByCount"
+    | "latestVersion"
+    | "latestStatus"
   >;
   version: FormVersionSummary;
+  sections: FormSection[];
   fields: FormField[];
   versions: FormVersionSummary[];
   allowedActions: string[];
@@ -96,6 +82,7 @@ export type FormRuntimeSchema = {
   versionNumber: number;
   instructions: string | null;
   submitLabel: string;
+  sections: FormSection[];
   fields: FormField[];
 };
 

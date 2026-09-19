@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useMemo, useRef } from "react";
 import { useFieldArray, useForm, useWatch } from "react-hook-form";
 
-import { formFieldSchema } from "@/modules/forms/FormSchemas";
+import { formFieldSchema } from "@/modules/forms/api/FormSchemas";
 import type { FormField } from "@/modules/forms/FormTypes";
 import { z } from "zod";
 

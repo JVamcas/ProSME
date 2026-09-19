@@ -1,18 +1,18 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-import { capabilities } from "@/auth/authorization/capabilities";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import { getCurrentUser } from "@/auth/authorization/current-user";
 import { can } from "@/auth/authorization/policy";
 import { FormsWorkspace } from "@/components/admin/forms/FormsWorkspace";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { Users } from "lucide-react";
+import { Form } from "lucide-react";
 
 export const metadata: Metadata = { title: "Forms" };
 
 export default async function FormsPage() {
   const user = await getCurrentUser();
-  if (!user || !can(user, capabilities.formRead)) {
+  if (!user || !can(user, permissionCodes.workflowFormRead)) {
     redirect("/unauthorized");
   }
   return (
@@ -21,11 +21,11 @@ export default async function FormsPage() {
         description="Create reusable, versioned forms for operational tasks."
         eyebrow="Settings"
         title="Forms"
-        icon={<Users />}
+        icon={<Form />}
       />
       <FormsWorkspace
-        canCreate={can(user, capabilities.formCreate)}
-        canUpdate={can(user, capabilities.formUpdate)}
+        canCreate={can(user, permissionCodes.workflowFormCreate)}
+        canUpdate={can(user, permissionCodes.workflowFormUpdate)}
       />
     </section>
   );

@@ -7,14 +7,38 @@ import {
   formDefinitions,
   formFieldOptions,
   formFields,
+  formSections,
   formVersions,
 } from "@/db/schema";
-import type { FormField } from "@/modules/forms/FormTypes";
+import type { FormField, FormSection } from "@/modules/forms/FormTypes";
 import { formPublicationErrors } from "@/modules/forms/FormValidation";
 
 type Transaction = Parameters<
   Parameters<ReturnType<typeof getDatabase>["transaction"]>[0]
 >[0];
+
+async function copySections(
+  transaction: Transaction,
+  sourceVersionId: string,
+  targetVersionId: string,
+) {
+  const sections = await transaction
+    .select({
+      description: formSections.description,
+      key: formSections.key,
+      order: formSections.order,
+      title: formSections.title,
+    })
+    .from(formSections)
+    .where(eq(formSections.formVersionId, sourceVersionId));
+  if (!sections.length) return;
+  await transaction.insert(formSections).values(
+    sections.map((section) => ({
+      ...section,
+      formVersionId: targetVersionId,
+    })),
+  );
+}
 
 async function copyFieldOptions(
   transaction: Transaction,
@@ -102,6 +126,26 @@ async function replaceDraftFields(
       );
     }
   }
+}
+
+async function replaceDraftSections(
+  transaction: Transaction,
+  versionId: string,
+  sections: FormSection[],
+) {
+  await transaction
+    .delete(formSections)
+    .where(eq(formSections.formVersionId, versionId));
+  if (!sections.length) return;
+  await transaction.insert(formSections).values(
+    sections.map((section) => ({
+      description: section.description,
+      formVersionId: versionId,
+      key: section.key,
+      order: section.order,
+      title: section.title,
+    })),
+  );
 }
 
 async function readPublicationFields(
@@ -230,6 +274,7 @@ export async function cloneFormVersion(input: {
       })
       .returning();
     await copyFields(transaction, source.id, version.id);
+    await copySections(transaction, source.id, version.id);
     return version;
   });
 }
@@ -243,6 +288,7 @@ export async function saveFormDraft(input: {
   fields: FormField[];
   instructions?: string | null;
   name?: string;
+  sections: FormSection[];
   submitLabel: string;
 }) {
   return getDatabase().transaction(async (transaction) => {
@@ -275,6 +321,7 @@ export async function saveFormDraft(input: {
         .where(eq(formDefinitions.id, input.definitionId));
     }
     await replaceDraftFields(transaction, version.id, input.fields);
+    await replaceDraftSections(transaction, version.id, input.sections);
     return version;
   });
 }

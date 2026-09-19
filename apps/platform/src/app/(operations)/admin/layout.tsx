@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { Toaster } from "sonner";
 
 import { getCurrentUser } from "@/auth/authorization/current-user";
 import { canAccessOperationsPortal } from "@/auth/authorization/portal-access";
@@ -41,6 +42,7 @@ export default async function AdminLayout({ children }: AdminLayoutProps) {
           >
             {children}
           </AuthenticatedPortalShell>
+          <Toaster richColors position="top-right" />
         </QueryProvider>
       </body>
     </html>

@@ -1,6 +1,5 @@
 import "server-only";
 
-import { capabilities } from "@/auth/authorization/capabilities";
 import { permissionCodes } from "@/auth/authorization/permissions";
 import {
   requireAnyCapability,
@@ -13,7 +12,7 @@ import {
   publishFormVersion,
   retireFormVersion,
   saveFormDraft,
-} from "@/db/repositories/FormWriteRepository";
+} from "@/modules/forms/infrastructure/FormWriteRepository";
 import { saveSubmission } from "@/db/repositories/FormSubmissionRepository";
 import {
   completeFormTask,
@@ -25,7 +24,7 @@ import {
   getSubmission,
   listForms,
   listPublishedFormVersions,
-} from "@/db/repositories/FormRepository";
+} from "@/modules/forms/infrastructure/FormRepository";
 import {
   readAssignedFormTask,
   readWorkflowTask,
@@ -36,14 +35,17 @@ import {
   ResourceConflictError,
   ResourceNotFoundError,
 } from "@/lib/resource-errors";
-import { formPublicationErrors, validateFormValues } from "./FormValidation";
+import {
+  formPublicationErrors,
+  validateFormValues,
+} from "@/modules/forms/FormValidation";
 import type {
   CreateFormInput,
   FormCommandInput,
   TaskFormSubmissionInput,
   UpdateFormInput,
-} from "./FormTransportTypes";
-import type { FormVersionSummary } from "./FormTypes";
+} from "@/modules/forms/api/FormTransportTypes";
+import type { FormVersionSummary } from "@/modules/forms/FormTypes";
 
 function toIso(value: Date | string | null) {
   return value ? new Date(value).toISOString() : null;
@@ -101,26 +103,27 @@ async function editorView(definitionId: string) {
       updatedAt: editor.definition.updatedAt.toISOString(),
     },
     fields: editor.fields,
+    sections: editor.sections,
     version: versionView(editor.version),
     versions: editor.versions.map(versionView),
   };
 }
 
 export async function getForms(user: AuthenticatedUser | null) {
-  requireCapability(user, capabilities.formRead);
+  requireCapability(user, permissionCodes.workflowFormRead);
   return listForms();
 }
 
 export async function getPublishedForms(user: AuthenticatedUser | null) {
   requireAnyCapability(user, [
-    capabilities.formRead,
+    permissionCodes.workflowFormRead,
     permissionCodes.workflowDefinitionRead,
   ]);
   return listPublishedFormVersions();
 }
 
 export async function getForm(user: AuthenticatedUser | null, definitionId: string) {
-  requireCapability(user, capabilities.formRead);
+  requireCapability(user, permissionCodes.workflowFormRead);
   return editorView(definitionId);
 }
 
@@ -128,7 +131,7 @@ export async function createNewForm(
   user: AuthenticatedUser | null,
   input: CreateFormInput,
 ) {
-  const actor = requireCapability(user, capabilities.formCreate);
+  const actor = requireCapability(user, permissionCodes.workflowFormCreate);
   const created = await createForm({ ...input, actorId: actor.id });
   return editorView(created.definition.id);
 }
@@ -138,7 +141,7 @@ export async function updateFormDraft(
   definitionId: string,
   input: UpdateFormInput,
 ) {
-  const actor = requireCapability(user, capabilities.formUpdate);
+  const actor = requireCapability(user, permissionCodes.workflowFormUpdate);
   const errors = formPublicationErrors(
     input.fields,
     input.submitLabel,
@@ -160,7 +163,7 @@ export async function clonePublishedForm(
   definitionId: string,
   sourceVersionId: string,
 ) {
-  const actor = requireCapability(user, capabilities.formUpdate);
+  const actor = requireCapability(user, permissionCodes.workflowFormUpdate);
   const version = await cloneFormVersion({ actorId: actor.id, definitionId, sourceVersionId });
   if (!version) throw new ResourceNotFoundError("form version");
   return editorView(definitionId);
@@ -171,7 +174,7 @@ export async function publishForm(
   definitionId: string,
   input: FormCommandInput,
 ) {
-  const actor = requireCapability(user, capabilities.formPublish);
+  const actor = requireCapability(user, permissionCodes.workflowFormPublish);
   const result = await publishFormVersion({
     ...input,
     actorId: actor.id,
@@ -191,7 +194,7 @@ export async function retireForm(
   definitionId: string,
   input: FormCommandInput,
 ) {
-  const actor = requireCapability(user, capabilities.formRetire);
+  const actor = requireCapability(user, permissionCodes.workflowFormRetire);
   const version = await retireFormVersion({
     ...input,
     actorId: actor.id,
@@ -205,7 +208,7 @@ export async function getTaskForm(
   user: AuthenticatedUser | null,
   taskInstanceId: string,
 ) {
-  const actor = requireCapability(user, capabilities.workflowTaskRead);
+  const actor = requireCapability(user, permissionCodes.workflowTaskAssignedRead);
   const task = await readWorkflowTask(actor.id, taskInstanceId);
   if (!task || !task.formVersionId) {
     throw new ResourceNotFoundError("form task");
@@ -229,7 +232,10 @@ export async function saveTaskForm(
   user: AuthenticatedUser | null,
   input: TaskFormSubmissionInput & { taskInstanceId: string },
 ) {
-  const actor = requireCapability(user, capabilities.workflowTaskComplete);
+  const actor = requireCapability(
+    user,
+    permissionCodes.workflowTaskAssignedProcess,
+  );
   const task = await readAssignedFormTask(actor.id, input.taskInstanceId);
   if (!task?.formVersionId) throw new ResourceNotFoundError("assigned form task");
   const schema = await getFormRuntime(task.formVersionId);
@@ -258,7 +264,10 @@ export async function completeTaskForm(
     taskInstanceId: string;
   },
 ) {
-  const actor = requireCapability(user, capabilities.workflowTaskComplete);
+  const actor = requireCapability(
+    user,
+    permissionCodes.workflowTaskAssignedProcess,
+  );
   const replay = await readFormTaskCompletion({
     actorId: actor.id,
     expectedTaskRowVersion: input.expectedTaskRowVersion,

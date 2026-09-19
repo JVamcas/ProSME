@@ -12,7 +12,7 @@ import type {
   CreateFormInput,
   TaskFormSubmissionInput,
   UpdateFormInput,
-} from "./FormTransportTypes";
+} from "./api/FormTransportTypes";
 
 const jsonHeaders = { "Content-Type": "application/json" };
 

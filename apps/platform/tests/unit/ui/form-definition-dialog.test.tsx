@@ -27,6 +27,7 @@ function queryClient() {
     latestStatus: "DRAFT" as const,
     latestVersion: 1,
     name: "Finance Review",
+    sectionCount: 0,
     updatedAt: "2026-09-14T08:00:00.000Z",
     usedByCount: 0,
   };
@@ -43,6 +44,7 @@ function queryClient() {
       updatedAt: definition.updatedAt,
     },
     fields: [],
+    sections: [],
     version: {
       createdAt: definition.updatedAt,
       formDefinitionId: definitionId,
@@ -65,7 +67,7 @@ afterEach(() => {
 });
 
 describe("form definition dialog", () => {
-  it("includes instructions and the submit label when creating a form", async () => {
+  it("shows only definition metadata when creating a form", async () => {
     const container = document.createElement("div");
     document.body.append(container);
     const root = createRoot(container);
@@ -83,11 +85,14 @@ describe("form definition dialog", () => {
         ?.click();
     });
 
-    expect(document.body.textContent).toContain("Instructions");
-    expect(document.body.textContent).toContain("Submit button label");
+    expect(document.body.textContent).toContain("Form code");
+    expect(document.body.textContent).toContain("Form name");
+    expect(document.body.textContent).toContain("Description");
+    expect(document.body.textContent).not.toContain("Submit button label");
+    expect(document.body.textContent).not.toContain("Instructions");
     expect(
-      document.querySelector<HTMLInputElement>('[name="submitLabel"]')?.value,
-    ).toBe("Submit");
+      document.body.querySelectorAll('label span[aria-hidden="true"]'),
+    ).toHaveLength(2);
     await act(async () => root.unmount());
   });
 
@@ -110,15 +115,11 @@ describe("form definition dialog", () => {
     });
 
     expect(document.body.textContent).toContain("Edit form");
-    expect(document.body.textContent).toContain("Instructions");
-    expect(document.body.textContent).toContain("Submit button label");
-    expect(
-      document.querySelector<HTMLInputElement>('[name="submitLabel"]')?.value,
-    ).toBe("Complete review");
-    expect(
-      document.querySelector<HTMLTextAreaElement>('[name="instructions"]')
-        ?.value,
-    ).toBe("Complete every finance check.");
+    expect(document.body.textContent).toContain("Form code");
+    expect(document.body.textContent).toContain("Form name");
+    expect(document.body.textContent).toContain("Description");
+    expect(document.body.textContent).not.toContain("Submit button label");
+    expect(document.body.textContent).not.toContain("Instructions");
     await act(async () => root.unmount());
   });
 });

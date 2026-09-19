@@ -42,6 +42,7 @@ function FormEditorTopContent({
         isDraft={isDraft}
         isPublished={isPublished}
         onAddField={controller.openNewField}
+        onAddSection={controller.openNewSection}
         onClone={() => controller.clone.mutate(editor.version.id)}
         onPublish={() => controller.publish.mutate({
           definitionId: id,
@@ -108,6 +109,17 @@ function LoadedFormEditorWorkspace({
         onDelete={controller.setFieldToRemove}
         onEdit={controller.openExistingField}
         onSave={controller.saveField}
+        onCancelSectionDelete={() => controller.setSectionToRemove(undefined)}
+        onCloseSectionDialog={() => controller.setSectionDialogOpen(false)}
+        onConfirmSectionDelete={controller.removeSection}
+        onDeleteSection={controller.setSectionToRemove}
+        onEditSection={controller.openExistingSection}
+        onReorderSections={controller.reorderSections}
+        onSaveSection={controller.saveSection}
+        section={controller.section}
+        sectionDialogOpen={controller.sectionDialogOpen}
+        sections={editor.sections}
+        sectionToRemove={controller.sectionToRemove}
         versions={editor.versions}
       />
     </div>

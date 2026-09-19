@@ -11,7 +11,7 @@ import {
 } from "drizzle-orm/pg-core";
 
 import type { TaskTypeCode } from "@/modules/workflows/domain/definitions/WorkflowTypes";
-import { formVersions } from "./forms";
+import { formVersions } from "@/modules/forms/infrastructure/form.schema";
 import { applications } from "./applications";
 import { roles } from "./authorization";
 import { users } from "./identity";

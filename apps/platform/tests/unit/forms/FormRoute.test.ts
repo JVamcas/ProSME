@@ -4,7 +4,7 @@ vi.mock("server-only", () => ({}));
 vi.mock("@/auth/authorization/current-user", () => ({
   resolveUserFromHeaders: vi.fn().mockResolvedValue(null),
 }));
-vi.mock("@/modules/forms/ServerFormsService", () => ({
+vi.mock("@/modules/forms/application/ServerFormsService", () => ({
   completeTaskForm: vi.fn().mockResolvedValue({
     nextStageName: null,
     rowVersion: 2,
@@ -16,7 +16,7 @@ vi.mock("@/modules/forms/ServerFormsService", () => ({
   saveTaskForm: vi.fn(),
 }));
 
-import { completeTaskForm } from "@/modules/forms/ServerFormsService";
+import { completeTaskForm } from "@/modules/forms/application/ServerFormsService";
 import { POST } from "@/app/api/admin/tasks/[id]/form/route";
 
 const taskId = "c6ee71ce-0ed0-43b9-9381-e2c568634364";

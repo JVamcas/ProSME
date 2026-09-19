@@ -4,8 +4,11 @@ import {
   portalRouteError,
   portalRouteSuccess,
 } from "@/lib/api/PortalApiResponse";
-import { formDefinitionDialogSchema } from "@/modules/forms/FormSchemas";
-import { createNewForm, getForms } from "@/modules/forms/ServerFormsService";
+import { formDefinitionDialogSchema } from "@/modules/forms/api/FormSchemas";
+import {
+  createNewForm,
+  getForms,
+} from "@/modules/forms/application/ServerFormsService";
 
 export async function GET(request: Request) {
   const correlationId = createCorrelationId();

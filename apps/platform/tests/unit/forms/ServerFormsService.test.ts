@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
-vi.mock("@/db/repositories/FormRepository", () => ({
+vi.mock("@/modules/forms/infrastructure/FormRepository", () => ({
   getFormEditor: vi.fn(),
   getFormRuntime: vi.fn(),
   getPublishedFormRuntime: vi.fn(),
@@ -16,7 +16,7 @@ vi.mock("@/db/repositories/FormTaskCompletionRepository", () => ({
   completeFormTask: vi.fn(),
   readFormTaskCompletion: vi.fn(),
 }));
-vi.mock("@/db/repositories/FormWriteRepository", () => ({
+vi.mock("@/modules/forms/infrastructure/FormWriteRepository", () => ({
   cloneFormVersion: vi.fn(),
   createForm: vi.fn(),
   publishFormVersion: vi.fn(),
@@ -28,15 +28,15 @@ vi.mock("@/db/repositories/WorkflowTaskRepository", () => ({
   readWorkflowTask: vi.fn(),
 }));
 
-import { capabilities } from "@/auth/authorization/capabilities";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import { PermissionDeniedError } from "@/auth/authorization/policy";
 import {
   getFormEditor,
   getFormRuntime,
   getSubmission,
   listForms,
-} from "@/db/repositories/FormRepository";
-import { saveFormDraft } from "@/db/repositories/FormWriteRepository";
+} from "@/modules/forms/infrastructure/FormRepository";
+import { saveFormDraft } from "@/modules/forms/infrastructure/FormWriteRepository";
 import { saveSubmission } from "@/db/repositories/FormSubmissionRepository";
 import { readFormTaskCompletion } from "@/db/repositories/FormTaskCompletionRepository";
 import { readAssignedFormTask } from "@/db/repositories/WorkflowTaskRepository";
@@ -45,7 +45,7 @@ import {
   getForms,
   saveTaskForm,
   updateFormDraft,
-} from "@/modules/forms/ServerFormsService";
+} from "@/modules/forms/application/ServerFormsService";
 import type { AuthenticatedUser } from "@/auth/types";
 
 const actorId = "79e20de0-3558-4d63-90a4-8c9f5125df07";
@@ -71,6 +71,7 @@ function staff(granted: string[]): AuthenticatedUser {
 const runtime = {
   fields: [],
   instructions: null,
+  sections: [],
   submitLabel: "Submit",
   versionId,
   versionNumber: 1,
@@ -101,7 +102,7 @@ describe("ServerFormsService", () => {
       id: "submission",
       rowVersion: 2,
     } as never);
-    await saveTaskForm(staff([capabilities.workflowTaskComplete]), {
+    await saveTaskForm(staff([permissionCodes.workflowTaskAssignedProcess]), {
       expectedSubmissionRowVersion: 1,
       expectedTaskRowVersion: 3,
       taskInstanceId: taskId,
@@ -128,6 +129,7 @@ describe("ServerFormsService", () => {
         updatedAt: new Date(),
       },
       fields: [],
+      sections: [],
       version: {
         createdAt: new Date(),
         formDefinitionId: taskId,
@@ -144,13 +146,14 @@ describe("ServerFormsService", () => {
       versions: [],
     } as never);
 
-    await updateFormDraft(staff([capabilities.formUpdate]), taskId, {
+    await updateFormDraft(staff([permissionCodes.workflowFormUpdate]), taskId, {
       code: "UPDATED_FORM",
       description: "Updated description",
       expectedRowVersion: 1,
       fields: [],
       instructions: "Updated instructions",
       name: "Updated form",
+      sections: [],
       submitLabel: "Complete",
     });
 
@@ -175,13 +178,15 @@ describe("ServerFormsService", () => {
       kind: "completed",
       result,
     });
-    await expect(completeTaskForm(staff([capabilities.workflowTaskComplete]), {
+    await expect(completeTaskForm(
+      staff([permissionCodes.workflowTaskAssignedProcess]), {
       correlationId: versionId,
       expectedTaskRowVersion: 3,
       idempotencyKey: versionId,
       taskInstanceId: taskId,
       values: {},
-    })).resolves.toEqual(result);
+      },
+    )).resolves.toEqual(result);
     expect(readAssignedFormTask).not.toHaveBeenCalled();
   });
 });

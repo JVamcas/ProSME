@@ -28,9 +28,11 @@ type StatusBadgeProps = {
 };
 
 function defaultLabel(status: string) {
-  return status.length
-    ? `${status.charAt(0).toLocaleUpperCase()}${status.slice(1)}`
-    : status;
+  return status
+    .trim()
+    .toLocaleLowerCase()
+    .replaceAll(/[_-]+/g, " ")
+    .replaceAll(/\b\p{L}/gu, (letter) => letter.toLocaleUpperCase());
 }
 
 export function StatusBadge({ className, label, status }: StatusBadgeProps) {

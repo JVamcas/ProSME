@@ -4,8 +4,8 @@ import {
   portalRouteError,
   portalRouteSuccess,
 } from "@/lib/api/PortalApiResponse";
-import { formCommandSchema } from "@/modules/forms/FormSchemas";
-import { publishForm } from "@/modules/forms/ServerFormsService";
+import { formCommandSchema } from "@/modules/forms/api/FormSchemas";
+import { publishForm } from "@/modules/forms/application/ServerFormsService";
 
 export async function POST(
   request: Request,

@@ -1,0 +1,38 @@
+export const formStatuses = ["DRAFT", "PUBLISHED", "RETIRED"] as const;
+
+export type FormStatus = (typeof formStatuses)[number];
+
+export type FormSection = {
+  id?: string;
+  key: string;
+  title: string;
+  description: string;
+  order: number;
+};
+
+export type FormVersionSummary = {
+  id: string;
+  formDefinitionId: string;
+  versionNumber: number;
+  status: FormStatus;
+  instructions: string | null;
+  submitLabel: string;
+  rowVersion: number;
+  createdAt: string;
+  publishedAt: string | null;
+  retiredAt: string | null;
+};
+
+export type FormDefinitionSummary = {
+  id: string;
+  code: string;
+  name: string;
+  description: string;
+  active: boolean;
+  latestVersion: number | null;
+  latestStatus: FormStatus | null;
+  sectionCount: number;
+  fieldCount: number;
+  usedByCount: number;
+  updatedAt: string;
+};

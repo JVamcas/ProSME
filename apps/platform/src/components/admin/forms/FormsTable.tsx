@@ -5,6 +5,8 @@ import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
 import { GeneralButton } from "@/components/ui/button";
 import type { FormDefinitionSummary } from "@/modules/forms/FormTypes";
 import { EditButton } from "@/components/ui/action-buttons";
+import { formatLocalDateTime24 } from "@/lib/dateUtils";
+import { StatusBadge } from "@/components/ui/status-badge";
 
 function formColumns(
   canUpdate: boolean,
@@ -15,24 +17,30 @@ function formColumns(
       accessorKey: "name",
       header: "Name",
       cell: ({ row }) => (
-        <Link
-          className="font-semibold text-brand-orange underline"
-          href={`/admin/settings/forms/${row.original.id}`}
-        >
-          {row.original.name}
-        </Link>
+        <div className="flex flex-col gap-1">
+          <Link
+            className="font-semibold text-brand-orange underline"
+            href={`/admin/settings/forms/${row.original.id}`}
+          >
+            {row.original.name}
+          </Link>
+          <span>{row.original.code}</span>
+        </div>
       ),
     },
-    { accessorKey: "code", header: "Code" },
     { accessorKey: "latestVersion", header: "Latest version" },
-    { accessorKey: "latestStatus", header: "Status" },
-    { accessorKey: "fieldCount", header: "Fields" },
-    { accessorKey: "usedByCount", header: "Used by" },
+    {
+      accessorKey: "latestStatus",
+      header: "Status",
+
+      cell: ({ row }) => row.original.latestStatus ? (
+        <StatusBadge status={row.original.latestStatus} />
+      ) : null,
+    },
     {
       accessorKey: "updatedAt",
-      cell: ({ row }) =>
-        new Date(row.original.updatedAt).toLocaleDateString("en-NA"),
       header: "Updated",
+      cell: ({ row }) => formatLocalDateTime24(row.original.updatedAt),
     },
     {
       cell: ({ row }) => (

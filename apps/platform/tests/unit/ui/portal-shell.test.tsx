@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 import { capabilities } from "@/auth/authorization/capabilities";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import { AuthenticatedPortalShell } from "@/components/layout/authenticated-portal-shell";
 import { CapabilityGate } from "@/components/layout/capability-gate";
 import { PortalErrorState } from "@/components/layout/PortalErrorState";
@@ -125,7 +126,7 @@ describe("P3.1 shared authenticated portal shell", () => {
       roleCodes: ["system_administrator"],
       capabilityCodes: [
         capabilities.adminAccess,
-        capabilities.formRead,
+        permissionCodes.workflowFormRead,
       ],
       availableSpaces: ["operations"],
       defaultSpace: "operations",

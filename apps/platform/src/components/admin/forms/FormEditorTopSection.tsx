@@ -29,6 +29,7 @@ export function FormEditorTopSection({
   isDraft,
   isPublished,
   onAddField,
+  onAddSection,
   onClone,
   onPublish,
   onRetire,
@@ -41,6 +42,7 @@ export function FormEditorTopSection({
   isDraft: boolean;
   isPublished: boolean;
   onAddField: () => void;
+  onAddSection: () => void;
   onClone: () => void;
   onPublish: () => void;
   onRetire: () => void;
@@ -50,6 +52,13 @@ export function FormEditorTopSection({
     <>
       <EditorHeader editor={editor} />
       <div className="flex flex-wrap gap-3">
+        <GeneralButton
+          disabled={!canUpdate || !isDraft}
+          onClick={onAddSection}
+          type="button"
+        >
+          Add section
+        </GeneralButton>
         <GeneralButton
           disabled={!canUpdate || !isDraft}
           onClick={onAddField}

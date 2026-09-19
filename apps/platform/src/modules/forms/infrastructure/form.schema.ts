@@ -17,7 +17,7 @@ import type {
   FormInputType,
   FormStatus,
 } from "@/modules/forms/FormTypes";
-import { users } from "./identity";
+import { users } from "@/db/schema/identity";
 
 export const formDefinitions = pgTable(
   "app_form_definitions",
@@ -87,6 +87,31 @@ export const formVersions = pgTable(
     ),
     check("app_form_versions_positive_check", sql`${table.versionNumber} > 0`),
     check("app_form_versions_row_version_check", sql`${table.rowVersion} > 0`),
+  ],
+);
+
+export const formSections = pgTable(
+  "app_form_sections",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    formVersionId: uuid("form_version_id")
+      .notNull()
+      .references(() => formVersions.id, { onDelete: "restrict" }),
+    key: text("key").notNull(),
+    title: text("title").notNull(),
+    description: text("description").notNull().default(""),
+    order: integer("display_order").notNull(),
+  },
+  (table) => [
+    uniqueIndex("app_form_sections_version_key_unique").on(
+      table.formVersionId,
+      table.key,
+    ),
+    uniqueIndex("app_form_sections_version_order_unique").on(
+      table.formVersionId,
+      table.order,
+    ),
+    check("app_form_sections_order_check", sql`${table.order} > 0`),
   ],
 );
 

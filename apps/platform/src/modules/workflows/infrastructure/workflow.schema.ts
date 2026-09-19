@@ -22,7 +22,7 @@ import type {
   TaskTypeCode,
 } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import { roles } from "@/db/schema/authorization";
-import { formVersions } from "@/db/schema/forms";
+import { formVersions } from "@/modules/forms/infrastructure/form.schema";
 import { users } from "@/db/schema/identity";
 
 export const workflowDefinitions = pgTable(

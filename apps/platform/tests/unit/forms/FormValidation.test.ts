@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { formFieldSchema } from "@/modules/forms/FormSchemas";
+import {
+  formEditorSchema,
+  formFieldSchema,
+  formSectionSchema,
+} from "@/modules/forms/api/FormSchemas";
 import {
   validateFormFields,
   validateFormValues,
@@ -62,6 +66,37 @@ describe("dynamic form field validation", () => {
     ).toBe(false);
   });
 
+});
+
+describe("form section validation", () => {
+  const first = {
+    description: "Business identity and ownership.",
+    key: "BUSINESS_DETAILS",
+    order: 1,
+    title: "Business details",
+  };
+
+  it("accepts the section contract", () => {
+    expect(formSectionSchema.safeParse(first).success).toBe(true);
+  });
+
+  it("requires unique keys and contiguous order within a version", () => {
+    const result = formEditorSchema.safeParse({
+      expectedRowVersion: 1,
+      fields: [],
+      sections: [first, { ...first, order: 3 }],
+      submitLabel: "Submit",
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues.map((issue) => issue.message)).toEqual(
+        expect.arrayContaining([
+          "Section keys must be unique within a form version.",
+          "Section order must be contiguous and start at one.",
+        ]),
+      );
+    }
+  });
 });
 
 describe("dynamic form completion schema", () => {
