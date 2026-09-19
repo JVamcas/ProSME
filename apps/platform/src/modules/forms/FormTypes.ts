@@ -11,6 +11,15 @@ export {
   type FormStatus,
   type FormVersionSummary,
 } from "./domain/FormDefinition";
+export {
+  formContextUsages,
+  type FormBindingHost,
+  type FormBindingPrincipal,
+  type FormContextContract,
+  type FormContextUsage,
+  type FormRuntimeBinding,
+  type FormRuntimeBindingInput,
+} from "./domain/FormRuntimeBinding";
 
 export const formFieldTypes = [
   "TEXT",

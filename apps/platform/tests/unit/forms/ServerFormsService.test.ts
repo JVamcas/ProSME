@@ -46,6 +46,7 @@ import {
   saveTaskForm,
   updateFormDraft,
 } from "@/modules/forms/application/ServerFormsService";
+import { RequestValidationError } from "@/lib/resource-errors";
 import type { AuthenticatedUser } from "@/auth/types";
 
 const actorId = "79e20de0-3558-4d63-90a4-8c9f5125df07";
@@ -114,6 +115,40 @@ describe("ServerFormsService", () => {
       formVersionId: versionId,
       taskInstanceId: taskId,
     }));
+  });
+
+  it("does not persist runtime context as captured response values", async () => {
+    vi.mocked(readAssignedFormTask).mockResolvedValue({
+      formVersionId: versionId,
+      rowVersion: 3,
+      taskInstanceId: taskId,
+      taskStatus: "IN_PROGRESS",
+    });
+    vi.mocked(getFormRuntime).mockResolvedValue({
+      ...runtime,
+      fields: [{
+        columnSpan: 1,
+        key: "RECOMMENDATION",
+        label: "Recommendation",
+        order: 1,
+        required: false,
+        sectionId: "20000000-0000-4000-8000-000000000001",
+        type: "TEXTAREA",
+      }],
+    });
+
+    await expect(saveTaskForm(
+      staff([permissionCodes.workflowTaskAssignedProcess]),
+      {
+        expectedTaskRowVersion: 3,
+        taskInstanceId: taskId,
+        values: {
+          "application.project_title": "Harbour expansion",
+          RECOMMENDATION: "Proceed",
+        },
+      },
+    )).rejects.toBeInstanceOf(RequestValidationError);
+    expect(saveSubmission).not.toHaveBeenCalled();
   });
 
   it("updates definition and version settings together", async () => {

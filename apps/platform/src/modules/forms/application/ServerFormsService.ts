@@ -39,6 +39,10 @@ import {
   formPublicationErrors,
   validateFormValues,
 } from "@/modules/forms/FormValidation";
+import {
+  captureFormResponseValues,
+  InvalidFormRuntimeBindingError,
+} from "@/modules/forms/engine/FormRuntimeContext";
 import type {
   CreateFormInput,
   FormCommandInput,
@@ -59,6 +63,20 @@ function allowedActions(status: FormVersionSummary["status"]) {
   if (status === "DRAFT") return ["UPDATE", "PUBLISH", "CLONE"];
   if (status === "PUBLISHED") return ["RETIRE", "CLONE"];
   return ["CLONE"];
+}
+
+function capturedResponseValues(
+  fields: Parameters<typeof captureFormResponseValues>[0],
+  values: Record<string, unknown>,
+) {
+  try {
+    return captureFormResponseValues(fields, values);
+  } catch (error) {
+    if (error instanceof InvalidFormRuntimeBindingError) {
+      throw new RequestValidationError(error.message);
+    }
+    throw error;
+  }
 }
 
 function versionView(version: {
@@ -240,7 +258,8 @@ export async function saveTaskForm(
   if (!task?.formVersionId) throw new ResourceNotFoundError("assigned form task");
   const schema = await getFormRuntime(task.formVersionId);
   if (!schema) throw new ResourceNotFoundError("published form");
-  if (!validateFormValues(schema.fields, input.values, false)) {
+  const values = capturedResponseValues(schema.fields, input.values);
+  if (!validateFormValues(schema.fields, values, false)) {
     throw new RequestValidationError("The form values are invalid.");
   }
   const saved = await saveSubmission({
@@ -250,7 +269,7 @@ export async function saveTaskForm(
     formVersionId: task.formVersionId,
     status: "DRAFT",
     taskInstanceId: input.taskInstanceId,
-    values: input.values,
+    values,
   });
   if (!saved) throw new ResourceConflictError("The saved form changed. Refresh and retry.");
   return saved;
@@ -284,7 +303,9 @@ export async function completeTaskForm(
   const task = await readAssignedFormTask(actor.id, input.taskInstanceId);
   if (!task?.formVersionId) throw new ResourceNotFoundError("assigned form task");
   const schema = await getFormRuntime(task.formVersionId);
-  if (!schema || !validateFormValues(schema.fields, input.values, true)) {
+  if (!schema) throw new ResourceNotFoundError("published form");
+  const values = capturedResponseValues(schema.fields, input.values);
+  if (!validateFormValues(schema.fields, values, true)) {
     throw new RequestValidationError("Complete all required form fields with valid values.");
   }
   const result = await completeFormTask({
@@ -295,7 +316,7 @@ export async function completeTaskForm(
     formVersionId: task.formVersionId,
     idempotencyKey: input.idempotencyKey,
     taskInstanceId: input.taskInstanceId,
-    values: input.values,
+    values,
   });
   if (result.kind === "completed") return result.result;
   if (result.kind === "idempotency_conflict") {
