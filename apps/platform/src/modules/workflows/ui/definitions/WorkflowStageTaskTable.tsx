@@ -1,7 +1,13 @@
+"use client";
+
 import { CheckCircle2, Plus } from "lucide-react";
 
 import { DeleteButton, EditButton } from "@/components/ui/action-buttons";
 import { GeneralButton } from "@/components/ui/button";
+import {
+  DataTable,
+  type DataTableColumn,
+} from "@/components/ui/data-table";
 import type {
   WorkflowAssignmentOptions,
   WorkflowStageInput,
@@ -33,6 +39,68 @@ function assignmentLabel(
   return role ?? "Configured role";
 }
 
+function taskColumns(
+  assignmentOptions: WorkflowAssignmentOptions | undefined,
+  canEdit: boolean,
+  onDelete: (task: WorkflowTaskInput) => void,
+  onEdit: (task: WorkflowTaskInput) => void,
+): DataTableColumn<WorkflowTaskInput>[] {
+  return [
+    {
+      accessorKey: "name",
+      header: "Task",
+      cell: ({ row }) => (
+        <span className="font-semibold text-brand-navy">
+          {row.original.name}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "type",
+      header: "Task type",
+      cell: ({ row }) => row.original.type.replaceAll("_", " "),
+    },
+    {
+      id: "assignee",
+      header: "Assignee",
+      cell: ({ row }) => (
+        <span className="block max-w-56 truncate">
+          {assignmentLabel(row.original, assignmentOptions)}
+        </span>
+      ),
+    },
+    {
+      id: "status",
+      header: "Status",
+      cell: ({ row }) => (
+        <span className="inline-flex items-center gap-1.5 font-semibold text-brand-green">
+          <CheckCircle2 className="size-3.5" />
+          {row.original.quorum ? "Quorum" : "Configured"}
+        </span>
+      ),
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      enableSorting: false,
+      cell: ({ row }) => (
+        <div className="flex justify-end gap-1">
+          <EditButton
+            disabled={!canEdit}
+            onClick={() => onEdit(row.original)}
+            title={`Edit ${row.original.name}`}
+          />
+          <DeleteButton
+            disabled={!canEdit}
+            onClick={() => onDelete(row.original)}
+            title={`Delete ${row.original.name}`}
+          />
+        </div>
+      ),
+    },
+  ];
+}
+
 export function WorkflowStageTaskTable({
   assignmentOptions,
   canEdit,
@@ -42,7 +110,7 @@ export function WorkflowStageTaskTable({
   stage,
 }: Props) {
   return (
-    <section className="mt-5 overflow-x-auto">
+    <section className="mt-5">
       <div className="mb-3 flex items-center justify-between gap-3">
         <h4 className="text-sm font-bold text-brand-navy">
           Tasks ({stage.tasks.length})
@@ -57,65 +125,17 @@ export function WorkflowStageTaskTable({
           <Plus className="size-4" /> Add task
         </GeneralButton>
       </div>
-      <table className="w-full min-w-[820px] overflow-hidden rounded-xl border border-brand-navy/15 text-left text-xs">
-        <thead className="bg-brand-cream text-[10px] text-brand-navy/55">
-          <tr>
-            <th className="px-4 py-3">Task</th>
-            <th className="px-4 py-3">Task Type</th>
-            <th className="px-4 py-3">Completion</th>
-            <th className="px-4 py-3">Assignee</th>
-            <th className="px-4 py-3">Status</th>
-            <th className="px-4 py-3 text-right">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {stage.tasks.map((task) => (
-            <tr className="border-t border-brand-navy/10" key={task.stableKey}>
-              <td className="px-4 py-3 font-semibold text-brand-navy">
-                {task.name}
-              </td>
-              <td className="px-4 py-3 text-brand-navy/65">
-                {task.type.replaceAll("_", " ")}
-              </td>
-              <td className="px-4 py-3">
-                <span className="rounded-full bg-brand-cream px-2 py-1 font-semibold text-brand-navy/65">
-                  {task.requiredCompletionCount} of {task.reviewerCount}
-                </span>
-              </td>
-              <td className="max-w-56 truncate px-4 py-3 text-brand-navy/65">
-                {assignmentLabel(task, assignmentOptions)}
-              </td>
-              <td className="px-4 py-3">
-                <span className="inline-flex items-center gap-1.5 font-semibold text-brand-green">
-                  <CheckCircle2 className="size-3.5" />
-                  {task.quorum ? "Quorum" : "Configured"}
-                </span>
-              </td>
-              <td className="px-4 py-3">
-                <div className="flex justify-end gap-1">
-                  <EditButton
-                    disabled={!canEdit}
-                    onClick={() => onEdit(task)}
-                    title={`Edit ${task.name}`}
-                  />
-                  <DeleteButton
-                    disabled={!canEdit}
-                    onClick={() => onDelete(task)}
-                    title={`Delete ${task.name}`}
-                  />
-                </div>
-              </td>
-            </tr>
-          ))}
-          {stage.tasks.length === 0 ? (
-            <tr className="border-t border-brand-navy/10">
-              <td className="px-4 py-8 text-center text-brand-navy/55" colSpan={6}>
-                No tasks have been added to this stage.
-              </td>
-            </tr>
-          ) : null}
-        </tbody>
-      </table>
+      <DataTable
+        columns={taskColumns(
+          assignmentOptions,
+          canEdit,
+          onDelete,
+          onEdit,
+        )}
+        data={stage.tasks}
+        emptyMessage="No tasks have been added to this stage."
+        minWidth={820}
+      />
     </section>
   );
 }

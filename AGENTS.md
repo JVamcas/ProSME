@@ -110,6 +110,39 @@ Handwritten implementation files must stay within these limits:
 - Multi-record writes must use a transaction and create required workflow/audit records atomically.
 - Run the architecture boundary gate before reporting changes complete. Do not bypass it with dynamic imports, re-export indirection, or renamed files.
 
+### Database query performance and projections
+
+- Do not execute independent database queries sequentially. Prefer one set-based
+  SQL query when it expresses the operation clearly; otherwise execute
+  independent reads concurrently with `Promise.all`.
+- Sequential queries are allowed only when a later query genuinely depends on
+  an earlier result, when transaction ordering is required, or when concurrency
+  would violate a database or external-system constraint. Make that dependency
+  evident in the code.
+- Prevent N+1 query patterns. Load related records with joins, subqueries, CTEs,
+  relation queries, or bounded batched queries instead of querying once per
+  item in a loop.
+- Perform filtering, searching, sorting, pagination, distinct selection,
+  grouping, aggregation, and existence checks in SQL whenever the database can
+  express them correctly. Do not load an unbounded result set and reproduce
+  those operations in application memory.
+- Select only the columns required by the use case or response projection. Do
+  not use full-row selection for list screens, existence checks, identifiers,
+  counts, or other narrow read models.
+- Build list and reporting reads as explicit SQL-level projections shaped for
+  their consumer. Domain entities remain appropriate when the use case truly
+  requires the complete aggregate and its invariants.
+- Reuse named selections, query fragments, pagination helpers, and repository
+  methods when their semantics match. Do not copy substantial SQL or Drizzle
+  query construction across routes, services, or repositories.
+- Keep query construction and database-specific optimization inside the owning
+  module's infrastructure layer. Routes, pages, components, and backend
+  services must not compensate for inefficient repositories by reshaping large
+  database results themselves.
+- Add or update repository tests for material query changes, including
+  projection shape, filtering, ordering, pagination boundaries, and
+  authorization scope where applicable.
+
 ## 5. Fine-grained, contextual authorization
 
 - The only authoritative location for permission codes, definitions,

@@ -109,7 +109,7 @@ export function WorkflowTaskDialogFields({
       <div className="grid gap-3 sm:grid-cols-2">
         <CheckboxField
           containerClassName="text-sm font-semibold text-brand-navy"
-          label="Require reviewer quorum"
+          label="Require majority quorum."
           name="quorum"
         />
         <CheckboxField
