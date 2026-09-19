@@ -18,6 +18,10 @@ describe("RJSF form renderer", () => {
     );
 
     expect(markup).toContain("Complete the form.");
+    expect(markup).toContain('aria-label="Form completeness"');
+    expect(markup).toContain("0 of 1 required fields complete");
+    expect(markup).toContain("1 required field remaining");
+    expect(markup).toContain('aria-valuenow="0"');
     expect(markup).toContain('class="rjsf"');
     expect(markup).toContain("grid-cols-1 md:grid-cols-2 xl:grid-cols-3");
     expect(markup).toContain("col-span-1 md:col-span-2 xl:col-span-3");

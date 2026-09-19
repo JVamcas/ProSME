@@ -14,6 +14,7 @@ import {
 import { users } from "@/db/schema/identity";
 import { stageTaskInstances } from "@/db/schema/workflow-runtime";
 import { formVersions } from "./form.schema";
+import type { FormRuntimeSchema } from "@/modules/forms/FormTypes";
 
 export const formSubmissions = pgTable(
   "app_form_submissions",
@@ -33,6 +34,8 @@ export const formSubmissions = pgTable(
       .$type<Record<string, unknown>>()
       .notNull()
       .default({}),
+    definitionSnapshot: jsonb("definition_snapshot")
+      .$type<FormRuntimeSchema | null>(),
     rowVersion: integer("row_version").notNull().default(1),
     createdBy: uuid("created_by")
       .notNull()
@@ -58,6 +61,10 @@ export const formSubmissions = pgTable(
     check(
       "app_form_submissions_row_version_check",
       sql`${table.rowVersion} > 0`,
+    ),
+    check(
+      "app_form_submissions_completion_snapshot_check",
+      sql`(${table.status} = 'DRAFT' and ${table.completedAt} is null and ${table.definitionSnapshot} is null) or (${table.status} = 'COMPLETED' and ${table.completedAt} is not null and ${table.definitionSnapshot} is not null and jsonb_typeof(${table.definitionSnapshot}) = 'object' and ${table.definitionSnapshot}->>'versionId' = ${table.formVersionId}::text)`,
     ),
   ],
 );

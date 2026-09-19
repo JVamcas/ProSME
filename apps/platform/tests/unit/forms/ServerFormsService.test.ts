@@ -12,7 +12,7 @@ vi.mock("@/modules/forms/infrastructure/FormResponseRepository", () => ({
   readFormResponse: vi.fn(),
   saveDraftFormResponse: vi.fn(),
 }));
-vi.mock("@/db/repositories/FormTaskCompletionRepository", () => ({
+vi.mock("@/modules/forms/infrastructure/FormTaskCompletionRepository", () => ({
   completeFormTask: vi.fn(),
   readFormTaskCompletion: vi.fn(),
 }));
@@ -40,7 +40,7 @@ import {
   readFormResponse,
   saveDraftFormResponse,
 } from "@/modules/forms/infrastructure/FormResponseRepository";
-import { readFormTaskCompletion } from "@/db/repositories/FormTaskCompletionRepository";
+import { readFormTaskCompletion } from "@/modules/forms/infrastructure/FormTaskCompletionRepository";
 import {
   readAssignedFormTask,
   readWorkflowTask,
@@ -132,6 +132,7 @@ describe("ServerFormsService", () => {
     } as never);
     vi.mocked(readFormResponse).mockResolvedValue({
       completedAt: null,
+      definitionSnapshot: null,
       formVersionId: versionId,
       id: "submission",
       rowVersion: 2,
@@ -294,4 +295,5 @@ describe("ServerFormsService", () => {
     )).resolves.toEqual(result);
     expect(readAssignedFormTask).not.toHaveBeenCalled();
   });
+
 });

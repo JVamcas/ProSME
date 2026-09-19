@@ -11,6 +11,8 @@ import {
   parseFormDefinition,
   type RenderSection,
 } from "@/modules/forms/engine/FormDefinitionParser";
+import { calculateFormCompleteness } from "@/modules/forms/engine/FormCompleteness";
+import { FormCompletenessSummary } from "./FormCompletenessSummary";
 import { formColumnCount, formGridClass } from "./FormLayout";
 import {
   FormBaseInputTemplate,
@@ -58,9 +60,12 @@ function FormObjectTemplate(
     props.properties.map((property) => [property.name, property.content]),
   );
   return (
-    <div className={cn("grid gap-5", formGridClass(
-      formColumnCount(props.registry.formContext.sections),
-    ))}>
+    <div
+      className={cn(
+        "grid gap-5",
+        formGridClass(formColumnCount(props.registry.formContext.sections)),
+      )}
+    >
       {props.registry.formContext.sections.map((section) => (
         <section
           aria-labelledby={`form-section-${section.id}`}
@@ -128,12 +133,17 @@ export function FormRenderer({
     () => ({ sections: parsed.sections }),
     [parsed.sections],
   );
+  const completeness = useMemo(
+    () => calculateFormCompleteness(definition, formData),
+    [definition, formData],
+  );
 
   return (
     <div className="space-y-5">
       {parsed.instructions ? (
         <p className="text-sm text-brand-navy/70">{parsed.instructions}</p>
       ) : null}
+      <FormCompletenessSummary completeness={completeness} />
       <Form<DynamicFormValues, RJSFSchema, RendererContext>
         disabled={readOnly}
         formContext={context}

@@ -20,7 +20,7 @@ import {
 import {
   completeFormTask,
   readFormTaskCompletion,
-} from "@/db/repositories/FormTaskCompletionRepository";
+} from "@/modules/forms/infrastructure/FormTaskCompletionRepository";
 import {
   getFormEditor,
   getFormRuntime,
@@ -233,9 +233,14 @@ export async function getTaskForm(
   if (!task || !task.formVersionId) {
     throw new ResourceNotFoundError("form task");
   }
-  const schema = await getFormRuntime(task.formVersionId);
+  const [currentSchema, submission] = await Promise.all([
+    getFormRuntime(task.formVersionId),
+    readFormResponse(taskInstanceId, task.formVersionId),
+  ]);
+  const schema = submission?.status === "COMPLETED"
+    ? submission.definitionSnapshot
+    : currentSchema;
   if (!schema) throw new ResourceNotFoundError("published form");
-  const submission = await readFormResponse(taskInstanceId, task.formVersionId);
   return {
     schema,
     submission: submission
@@ -315,6 +320,7 @@ export async function completeTaskForm(
     expectedTaskRowVersion: input.expectedTaskRowVersion,
     expectedSubmissionRowVersion: input.expectedSubmissionRowVersion,
     formVersionId: task.formVersionId,
+    definitionSnapshot: schema,
     idempotencyKey: input.idempotencyKey,
     taskInstanceId: input.taskInstanceId,
     values,

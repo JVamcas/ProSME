@@ -48,6 +48,7 @@ function taskFormData(): TaskFormData {
     },
     submission: {
       completedAt: null,
+      definitionSnapshot: null,
       formVersionId: versionId,
       id: "response-id",
       rowVersion: 2,

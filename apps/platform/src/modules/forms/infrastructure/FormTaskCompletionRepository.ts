@@ -3,6 +3,7 @@ import "server-only";
 import { sql } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
+import type { FormRuntimeSchema } from "@/modules/forms/FormTypes";
 
 type Transaction = Parameters<
   Parameters<ReturnType<typeof getDatabase>["transaction"]>[0]
@@ -16,6 +17,7 @@ type CompletionInput = {
   idempotencyKey: string;
   taskInstanceId: string;
   formVersionId: string;
+  definitionSnapshot: FormRuntimeSchema;
   values: Record<string, unknown>;
 };
 
@@ -124,13 +126,15 @@ async function completeSubmission(
   const expectedVersion = input.expectedSubmissionRowVersion ?? null;
   const result = await transaction.execute(sql`
     INSERT INTO app_form_submissions
-      (task_instance_id, form_version_id, status, values, created_by,
-       updated_by, completed_at)
+      (task_instance_id, form_version_id, status, values, definition_snapshot,
+       created_by, updated_by, completed_at)
     VALUES (${input.taskInstanceId}::uuid, ${input.formVersionId}::uuid,
       'COMPLETED', ${JSON.stringify(input.values)}::jsonb,
+      ${JSON.stringify(input.definitionSnapshot)}::jsonb,
       ${input.actorId}::uuid, ${input.actorId}::uuid, ${completedAt})
     ON CONFLICT (task_instance_id) DO UPDATE SET
       status = 'COMPLETED', values = EXCLUDED.values,
+      definition_snapshot = EXCLUDED.definition_snapshot,
       updated_by = EXCLUDED.updated_by, updated_at = ${completedAt},
       completed_at = ${completedAt},
       row_version = app_form_submissions.row_version + 1

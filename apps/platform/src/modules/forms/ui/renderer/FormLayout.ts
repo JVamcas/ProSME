@@ -6,7 +6,9 @@ export function formColumnCount(
   sections: readonly Pick<FormSection, "columnSpan">[],
 ): FormColumnCount {
   return sections.reduce<FormColumnCount>(
-    (maximum, section) => Math.max(maximum, section.columnSpan) as FormColumnCount,
+    (maximum, section) => (
+      Math.max(maximum, section.columnSpan) as FormColumnCount
+    ),
     1,
   );
 }

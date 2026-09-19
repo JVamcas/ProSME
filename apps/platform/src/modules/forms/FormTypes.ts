@@ -95,6 +95,7 @@ export type FormSubmission = {
   formVersionId: string;
   status: "DRAFT" | "COMPLETED";
   values: Record<string, unknown>;
+  definitionSnapshot: FormRuntimeSchema | null;
   rowVersion: number;
   completedAt: string | null;
 };
