@@ -70,6 +70,7 @@ afterAll(async () => {
           coiGated: true,
           initial: true,
           slaHours: null,
+          actions: [],
           tasks: [],
         },
       ],

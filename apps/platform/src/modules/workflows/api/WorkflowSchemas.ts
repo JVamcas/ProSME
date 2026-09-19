@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { workflowActionTypes } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
 import {
   taskTypeCodes,
   workflowActionCodes,
@@ -62,6 +63,16 @@ export const workflowTaskSchema = z
     }
   });
 
+export const workflowActionDefinitionSchema = z.object({
+  id: z.string().uuid().optional(),
+  stableKey: codeSchema,
+  label: z.string().trim().min(2).max(160),
+  actionType: z.enum(workflowActionTypes),
+  enabled: z.boolean(),
+  reasonCodeRequired: z.boolean(),
+  displayOrder: z.number().int().positive(),
+});
+
 export const workflowStageSchema = z.object({
   id: z.string().uuid().optional(),
   stableKey: codeSchema,
@@ -79,6 +90,7 @@ export const workflowStageSchema = z.object({
   coiGated: z.boolean(),
   initial: z.boolean(),
   slaHours: z.number().int().positive().max(8760).nullable().optional(),
+  actions: z.array(workflowActionDefinitionSchema),
   tasks: z.array(workflowTaskSchema),
 });
 

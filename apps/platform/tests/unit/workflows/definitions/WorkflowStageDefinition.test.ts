@@ -21,6 +21,7 @@ const stage = {
   coiGated: true,
   initial: true,
   slaHours: null,
+  actions: [],
   tasks: [],
 };
 

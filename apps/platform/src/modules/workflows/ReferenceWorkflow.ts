@@ -24,6 +24,7 @@ export const referenceWorkflow: WorkflowGraphInput = {
         description:
           "Your application has been received and is being prepared for review.",
       },
+      actions: [],
       tasks: [
         {
           stableKey: "PRE_SCREEN_CHECKLIST",
@@ -80,6 +81,7 @@ export const referenceWorkflow: WorkflowGraphInput = {
         description:
           "We are checking that the required application information is present.",
       },
+      actions: [],
       tasks: [
         {
           stableKey: "COMPLETENESS_CHECK",
@@ -126,6 +128,7 @@ export const referenceWorkflow: WorkflowGraphInput = {
         description:
           "Your application is undergoing a detailed programme review.",
       },
+      actions: [],
       tasks: [
         {
           stableKey: "TECHNICAL_SCORE",
@@ -176,6 +179,7 @@ export const referenceWorkflow: WorkflowGraphInput = {
         description:
           "The financial information in your application is being reviewed.",
       },
+      actions: [],
       tasks: [
         {
           stableKey: "FINANCE_CHECK",
@@ -218,6 +222,7 @@ export const referenceWorkflow: WorkflowGraphInput = {
         label: "Final review",
         description: "Your application is in the final review step.",
       },
+      actions: [],
       tasks: [
         {
           stableKey: "PANEL_DECISION",
@@ -258,6 +263,7 @@ export const referenceWorkflow: WorkflowGraphInput = {
         description:
           "An outcome is available in your application workspace.",
       },
+      actions: [],
       tasks: [
         {
           stableKey: "SEND_OUTCOME",

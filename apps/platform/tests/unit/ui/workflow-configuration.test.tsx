@@ -16,6 +16,17 @@ import { workflowQueryKeys } from "@/modules/workflows/WorkflowHooks";
 
 describe("workflow configuration UI", () => {
   it("previews ordered stages, registered tasks and applicant-safe labels", () => {
+    const graph = structuredClone(referenceWorkflow);
+    graph.stages[0].actions = [
+      {
+        stableKey: "ADVANCE_REVIEW",
+        label: "Advance review",
+        actionType: "APPROVE_ADVANCE",
+        enabled: true,
+        reasonCodeRequired: false,
+        displayOrder: 1,
+      },
+    ];
     const markup = renderToStaticMarkup(
       <QueryClientProvider client={new QueryClient()}>
         <WorkflowStageFlow
@@ -28,7 +39,7 @@ describe("workflow configuration UI", () => {
               name: "Reference",
               description: "",
             },
-            graph: referenceWorkflow,
+            graph,
             validation: { valid: true, errors: [], warnings: [] },
             version: {
               id: "version",
@@ -54,9 +65,13 @@ describe("workflow configuration UI", () => {
     expect(markup).toContain("Single-run");
     expect(markup).toContain("No COI gate");
     expect(markup).toContain("Tasks (1)");
+    expect(markup).toContain("Actions (1)");
+    expect(markup).toContain("Advance review");
+    expect(markup).toContain("Approve / Advance");
     expect(markup).toContain("Add Workflow stage");
     expect(markup).toContain("Assignee");
     expect(markup).toContain("Add task");
+    expect(markup).toContain("Add action");
     expect(markup).toContain("Edit Pre-screening checklist");
     expect(markup).toContain("Delete Pre-screening checklist");
     expect(markup).not.toContain("Approver");

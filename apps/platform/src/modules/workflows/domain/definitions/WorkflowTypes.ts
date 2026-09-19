@@ -1,4 +1,5 @@
 import { workflowTemplateStatuses } from "./WorkflowTemplate";
+import type { WorkflowActionDefinition } from "../actions/WorkflowActionDefinition";
 import type { WorkflowStageDefinition } from "./WorkflowStageDefinition";
 import type { WorkflowTaskDefinition } from "./WorkflowTaskDefinition";
 
@@ -60,6 +61,7 @@ export type WorkflowTaskInput = WorkflowTaskDefinition & {
 export type WorkflowStageInput = WorkflowStageDefinition & {
   initial: boolean;
   slaHours?: number | null;
+  actions: WorkflowActionDefinition[];
   tasks: WorkflowTaskInput[];
 };
 

@@ -17,6 +17,7 @@ const stage = (code: string, sequence: number, initial: boolean) => ({
   },
   repeatable: false,
   coiGated: false,
+  actions: [],
   tasks: [{
     assignmentMode: "ROLE" as const,
     roleId: "00000000-0000-0000-0000-000000000001",

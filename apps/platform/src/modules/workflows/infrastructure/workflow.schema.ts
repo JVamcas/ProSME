@@ -11,6 +11,7 @@ import {
 } from "drizzle-orm/pg-core";
 
 import type { WorkflowTemplateDetails } from "../domain/definitions/WorkflowTemplate";
+import type { WorkflowActionType } from "../domain/actions/WorkflowActionDefinition";
 import type { WorkflowPublicStatus } from "../domain/definitions/WorkflowStageDefinition";
 import type { WorkflowTaskAssignmentMode } from "../domain/definitions/WorkflowTaskDefinition";
 
@@ -162,6 +163,34 @@ export const stageTaskDefinitions = pgTable(
       table.stableKey,
     ),
     uniqueIndex("app_stage_tasks_stage_sequence_unique").on(
+      table.stageId,
+      table.displayOrder,
+    ),
+  ],
+);
+
+export const workflowActionDefinitions = pgTable(
+  "app_workflow_action_definitions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    stageId: uuid("stage_id")
+      .notNull()
+      .references(() => workflowStageDefinitions.id, { onDelete: "restrict" }),
+    stableKey: text("stable_key").notNull(),
+    label: text("label").notNull(),
+    actionType: text("action_type").$type<WorkflowActionType>().notNull(),
+    enabled: boolean("enabled").notNull().default(true),
+    reasonCodeRequired: boolean("reason_code_required")
+      .notNull()
+      .default(false),
+    displayOrder: integer("display_order").notNull(),
+  },
+  (table) => [
+    uniqueIndex("app_workflow_actions_stage_key_unique").on(
+      table.stageId,
+      table.stableKey,
+    ),
+    uniqueIndex("app_workflow_actions_stage_order_unique").on(
       table.stageId,
       table.displayOrder,
     ),

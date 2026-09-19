@@ -5,6 +5,7 @@ import { asc, eq } from "drizzle-orm";
 import { getDatabase } from "@/db/client";
 import {
   stageTaskDefinitions,
+  workflowActionDefinitions,
   workflowDefinitionVersions,
   workflowDefinitions,
   workflowStageDefinitions,
@@ -44,6 +45,15 @@ const graphSelection = {
     repeatable: workflowStageDefinitions.repeatable,
     coiGated: workflowStageDefinitions.coiGated,
     slaHours: workflowStageDefinitions.slaHours,
+  },
+  action: {
+    id: workflowActionDefinitions.id,
+    stableKey: workflowActionDefinitions.stableKey,
+    label: workflowActionDefinitions.label,
+    actionType: workflowActionDefinitions.actionType,
+    enabled: workflowActionDefinitions.enabled,
+    reasonCodeRequired: workflowActionDefinitions.reasonCodeRequired,
+    displayOrder: workflowActionDefinitions.displayOrder,
   },
   task: {
     id: stageTaskDefinitions.id,
@@ -87,6 +97,10 @@ function loadGraphRows(versionId: string) {
       eq(workflowStageDefinitions.versionId, workflowDefinitionVersions.id),
     )
     .leftJoin(
+      workflowActionDefinitions,
+      eq(workflowActionDefinitions.stageId, workflowStageDefinitions.id),
+    )
+    .leftJoin(
       stageTaskDefinitions,
       eq(stageTaskDefinitions.stageId, workflowStageDefinitions.id),
     )
@@ -100,6 +114,7 @@ function loadGraphRows(versionId: string) {
     .where(eq(workflowDefinitionVersions.id, versionId))
     .orderBy(
       asc(workflowStageDefinitions.sequence),
+      asc(workflowActionDefinitions.displayOrder),
       asc(stageTaskDefinitions.displayOrder),
     );
 }
@@ -115,7 +130,7 @@ function assembleGraph(rows: Awaited<ReturnType<typeof loadGraphRows>>) {
       row.stage?.id ? [[row.stage.id, row.stage.stableKey] as const] : [],
     ),
   );
-  rows.forEach(({ stage, task, transition }) => {
+  rows.forEach(({ action, stage, task, transition }) => {
     if (stage?.id && !stages.has(stage.id))
       stages.set(stage.id, {
         id: stage.id,
@@ -134,9 +149,17 @@ function assembleGraph(rows: Awaited<ReturnType<typeof loadGraphRows>>) {
         coiGated: stage.coiGated,
         initial: stage.initial,
         slaHours: stage.slaHours,
+        actions: [],
         tasks: [],
       });
     const target = stage?.id ? stages.get(stage.id) : undefined;
+    if (
+      target &&
+      action?.id &&
+      !target.actions.some((item) => item.id === action.id)
+    ) {
+      target.actions.push({ ...action });
+    }
     if (target && task?.id && !target.tasks.some((item) => item.id === task.id))
       target.tasks.push({ ...task });
     if (transition?.id && !transitions.has(transition.id)) {

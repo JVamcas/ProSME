@@ -8,6 +8,7 @@ import {
   workflowAuditEntries,
   workflowDefinitionVersions,
   workflowDefinitions,
+  workflowActionDefinitions,
   workflowStageDefinitions,
   workflowTransitionDefinitions,
 } from "@/db/schema";
@@ -47,6 +48,20 @@ async function insertGraph(
       code: workflowStageDefinitions.code,
     });
   const stageIds = new Map(stageRows.map((stage) => [stage.code, stage.id]));
+  const actions = graph.stages.flatMap((stage) =>
+    stage.actions.map((action) => ({
+      actionType: action.actionType,
+      displayOrder: action.displayOrder,
+      enabled: action.enabled,
+      label: action.label,
+      reasonCodeRequired: action.reasonCodeRequired,
+      stableKey: action.stableKey,
+      stageId: stageIds.get(stage.stableKey)!,
+    })),
+  );
+  if (actions.length) {
+    await transaction.insert(workflowActionDefinitions).values(actions);
+  }
   const tasks = graph.stages.flatMap((stage) =>
     stage.tasks.map((task) => ({
       assignmentMode: task.assignmentMode,
@@ -178,6 +193,10 @@ export async function replaceWorkflowDraft(input: {
     await transaction
       .delete(workflowTransitionDefinitions)
       .where(eq(workflowTransitionDefinitions.versionId, input.versionId));
+    if (stageIds.length)
+      await transaction
+        .delete(workflowActionDefinitions)
+        .where(inArray(workflowActionDefinitions.stageId, stageIds));
     if (stageIds.length)
       await transaction
         .delete(stageTaskDefinitions)

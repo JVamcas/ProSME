@@ -49,11 +49,6 @@ function taskColumns(
     {
       accessorKey: "name",
       header: "Task",
-      cell: ({ row }) => (
-        <span className="font-semibold text-brand-navy">
-          {row.original.name}
-        </span>
-      ),
     },
     {
       accessorKey: "type",
@@ -84,7 +79,7 @@ function taskColumns(
       header: "Actions",
       enableSorting: false,
       cell: ({ row }) => (
-        <div className="flex justify-end gap-1">
+        <div className="flex justify-start gap-1">
           <EditButton
             disabled={!canEdit}
             onClick={() => onEdit(row.original)}
@@ -118,7 +113,7 @@ export function WorkflowStageTaskTable({
         <GeneralButton
           disabled={!canEdit}
           onClick={onAdd}
-          size="sm"
+          size="compact"
           type="button"
           variant="primary"
         >
@@ -133,6 +128,7 @@ export function WorkflowStageTaskTable({
           onEdit,
         )}
         data={stage.tasks}
+        density="compact"
         emptyMessage="No tasks have been added to this stage."
         minWidth={820}
       />

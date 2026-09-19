@@ -77,6 +77,7 @@ export function WorkflowFlowToolbar({
           <GitBranch className="size-3.5" />
           Auto arrange
         </span>
+        
         <span className="rounded-full border border-brand-navy/15 bg-brand-cream px-3 py-1.5 text-xs font-semibold text-brand-navy/60">
           {stageCount} stages
         </span>

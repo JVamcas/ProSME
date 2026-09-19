@@ -37,6 +37,7 @@ export type DataTableColumn<TData extends RowData> = ColumnDef<
 type DataTableProps<TData extends RowData> = {
   columns: DataTableColumn<TData>[];
   data: TData[];
+  density?: "default" | "compact";
   emptyMessage?: string;
   footer?: ReactNode;
   minWidth?: number | string;
@@ -83,8 +84,10 @@ function ariaSort(
 }
 
 function DataTableHeader<TData extends RowData>({
+  density,
   table,
 }: {
+  density: "default" | "compact";
   table: DataTableInstance<TData>;
 }) {
   return (
@@ -99,7 +102,10 @@ function DataTableHeader<TData extends RowData>({
               <th
                 key={header.id}
                 aria-sort={ariaSort(direction, canSort)}
-                className="h-12 whitespace-nowrap px-5 text-left text-[11px] font-semibold tracking-[0.08em] text-slate-600"
+                className={cn(
+                  "whitespace-nowrap text-left text-[11px] font-semibold tracking-[0.08em] text-slate-600",
+                  density === "compact" ? "h-10 px-4" : "h-12 px-5",
+                )}
               >
                 {canSort ? (
                   <GeneralButton
@@ -132,10 +138,12 @@ function DataTableHeader<TData extends RowData>({
 }
 
 function DataTableBody<TData extends RowData>({
+  density,
   emptyMessage,
   rowClassName,
   table,
 }: {
+  density: "default" | "compact";
   emptyMessage: string;
   rowClassName?: (item: TData) => string | undefined;
   table: DataTableInstance<TData>;
@@ -156,7 +164,12 @@ function DataTableBody<TData extends RowData>({
           {row.getAllCells().map((cell) => (
             <td
               key={cell.id}
-              className="h-[68px] px-5 py-3.5 align-middle text-sm text-slate-700"
+              className={cn(
+                "align-middle text-sm text-slate-700",
+                density === "compact"
+                  ? "h-12 px-4 py-2"
+                  : "h-[68px] px-5 py-3.5",
+              )}
             >
               <table.FlexRender cell={cell} />
             </td>
@@ -168,7 +181,10 @@ function DataTableBody<TData extends RowData>({
         <tr>
           <td
             colSpan={table.getAllLeafColumns().length}
-            className="px-5 py-16 text-center"
+            className={cn(
+              "px-5 text-center",
+              density === "compact" ? "py-10" : "py-16",
+            )}
           >
             <div className="flex flex-col items-center justify-center">
               <div className="mb-3 flex size-10 items-center justify-center rounded-full bg-slate-100">
@@ -193,6 +209,7 @@ function DataTableBody<TData extends RowData>({
 export function DataTable<TData extends RowData>({
   columns,
   data,
+  density = "default",
   emptyMessage = "No records found",
   footer,
   minWidth,
@@ -221,9 +238,10 @@ export function DataTable<TData extends RowData>({
           className="w-full text-left"
           style={{ minWidth: resolvedMinWidth }}
         >
-          <DataTableHeader table={table} />
+          <DataTableHeader density={density} table={table} />
 
           <DataTableBody
+            density={density}
             table={table}
             emptyMessage={emptyMessage}
             rowClassName={rowClassName}

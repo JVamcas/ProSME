@@ -1,19 +1,25 @@
 import { DeleteButton, EditButton } from "@/components/ui/action-buttons";
+import type { WorkflowActionDefinition } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
 import type {
   WorkflowAssignmentOptions,
   WorkflowStageInput,
   WorkflowTaskInput,
 } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import { WorkflowStageTaskTable } from "@/modules/workflows/ui/definitions/WorkflowStageTaskTable";
+import { WorkflowStageActionTable } from "@/modules/workflows/ui/definitions/WorkflowStageActionTable";
+import { Badge, type BadgeProps } from "@/shared/ui/Badge";
 
 type Props = {
   canEdit: boolean;
   canDelete: boolean;
   isDeleting: boolean;
   assignmentOptions?: WorkflowAssignmentOptions;
+  onAddAction: () => void;
   onAddTask: () => void;
   onDelete: () => void;
+  onDeleteAction: (action: WorkflowActionDefinition) => void;
   onEdit: () => void;
+  onEditAction: (action: WorkflowActionDefinition) => void;
   onDeleteTask: (task: WorkflowTaskInput) => void;
   onEditTask: (task: WorkflowTaskInput) => void;
   stage?: WorkflowStageInput;
@@ -25,9 +31,12 @@ export function WorkflowStageDetails({
   canDelete,
   isDeleting,
   assignmentOptions,
+  onAddAction,
   onAddTask,
   onDelete,
+  onDeleteAction,
   onEdit,
+  onEditAction,
   onDeleteTask,
   onEditTask,
   stage,
@@ -53,7 +62,13 @@ export function WorkflowStageDetails({
         stageIndex={stageIndex}
       />
       <StageConfiguration stage={stage} />
-      <ApprovalRule stage={stage} />
+      <WorkflowStageActionTable
+        canEdit={canEdit}
+        onAdd={onAddAction}
+        onDelete={onDeleteAction}
+        onEdit={onEditAction}
+        stage={stage}
+      />
       <WorkflowStageTaskTable
         assignmentOptions={assignmentOptions}
         canEdit={canEdit}
@@ -67,6 +82,25 @@ export function WorkflowStageDetails({
 }
 
 function StageConfiguration({ stage }: { stage: WorkflowStageInput }) {
+  const badges = [
+    {
+      label: stage.enabled ? "Enabled" : "Disabled",
+      variant: stage.enabled ? "success" : "outline",
+    },
+    {
+      label: stage.optional ? "Optional" : "Required",
+      variant: stage.optional ? "gold" : "navy",
+    },
+    {
+      label: stage.repeatable ? "Repeatable" : "Single-run",
+      variant: stage.repeatable ? "yellow" : "subtle",
+    },
+    {
+      label: stage.coiGated ? "COI-gated" : "No COI gate",
+      variant: stage.coiGated ? "primary" : "outlineOrange",
+    },
+  ] satisfies Array<{ label: string; variant: BadgeProps["variant"] }>;
+
   return (
     <dl className="mt-4 grid gap-3 rounded-xl border border-brand-navy/10 p-4 text-sm sm:grid-cols-2">
       <div>
@@ -83,13 +117,12 @@ function StageConfiguration({ stage }: { stage: WorkflowStageInput }) {
       </div>
       <div>
         <dt className="text-xs font-semibold text-brand-navy/55">Configuration</dt>
-        <dd className="text-brand-navy">
-          {[
-            stage.enabled ? "Enabled" : "Disabled",
-            stage.optional ? "Optional" : "Required",
-            stage.repeatable ? "Repeatable" : "Single-run",
-            stage.coiGated ? "COI-gated" : "No COI gate",
-          ].join(" · ")}
+        <dd className="mt-1.5 flex flex-wrap gap-2">
+          {badges.map((badge) => (
+            <Badge key={badge.label} variant={badge.variant}>
+              {badge.label}
+            </Badge>
+          ))}
         </dd>
       </div>
     </dl>
@@ -131,31 +164,5 @@ function StageDetailHeader({
         />
       </div>
     </header>
-  );
-}
-
-function ApprovalRule({ stage }: { stage: WorkflowStageInput }) {
-  const required = stage.tasks.reduce(
-    (total, task) => total + task.requiredCompletionCount,
-    0,
-  );
-  const reviewers = stage.tasks.reduce(
-    (total, task) => total + task.reviewerCount,
-    0,
-  );
-  return (
-    <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-brand-blue/15 px-4 py-3">
-      <div>
-        <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-brand-navy/60">
-          Approval rule
-        </p>
-        <p className="mt-1 text-sm font-semibold text-brand-navy">
-          {required} required completions across {reviewers} reviewer slots
-        </p>
-      </div>
-      <span className="rounded-full border border-brand-orange bg-white px-3 py-1 text-[10px] font-bold text-brand-orange">
-        {stage.tasks.filter((task) => task.quorum).length} quorum tasks
-      </span>
-    </div>
   );
 }

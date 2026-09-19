@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useSaveWorkflowGraph } from "@/modules/workflows/WorkflowHooks";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
+import type { WorkflowActionDefinition } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
 import type {
   WorkflowEditorView,
   WorkflowStageInput,
@@ -11,6 +12,7 @@ import type {
 import { WorkflowStageCreateDialog } from "./WorkflowStageCreateDialog";
 import { WorkflowStageDetails } from "./WorkflowStageDetails";
 import { WorkflowTaskDialog } from "@/modules/workflows/ui/definitions/WorkflowTaskDialog";
+import { WorkflowActionOverlays } from "@/modules/workflows/ui/definitions/WorkflowActionOverlays";
 import {
   WorkflowFlowPreview,
   WorkflowFlowToolbar,
@@ -18,13 +20,12 @@ import {
   WorkflowStagesHeader,
 } from "./WorkflowStageFlowParts";
 
-export function WorkflowStageFlow({
-  canEdit,
-  editor,
-}: {
+type Props = {
   canEdit: boolean;
   editor: WorkflowEditorView;
-}) {
+};
+
+export function WorkflowStageFlow({ canEdit, editor }: Props) {
   const stages = useMemo(
     () =>
       [...editor.graph.stages].sort(
@@ -42,6 +43,11 @@ export function WorkflowStageFlow({
   const [stageToDelete, setStageToDelete] = useState<WorkflowStageInput | null>(
     null,
   );
+  const [actionDialog, setActionDialog] = useState<
+    "create" | WorkflowActionDefinition | null
+  >(null);
+  const [actionToDelete, setActionToDelete] =
+    useState<WorkflowActionDefinition | null>(null);
   const [taskDialog, setTaskDialog] = useState<
     "create" | WorkflowTaskInput | null
   >(null);
@@ -142,13 +148,16 @@ export function WorkflowStageFlow({
         />
         <WorkflowStageDetails
           assignmentOptions={editor.assignmentOptions}
-          canDelete={!isEditingLocked && stages.length > 1}
+          canDelete={!isEditingLocked}
           canEdit={!isEditingLocked}
           isDeleting={deleteMutation.isPending}
+          onAddAction={() => setActionDialog("create")}
           onAddTask={() => setTaskDialog("create")}
           onDelete={() => selectedStage && setStageToDelete(selectedStage)}
+          onDeleteAction={setActionToDelete}
           onDeleteTask={setTaskToDelete}
           onEdit={() => selectedStage && setStageDialog(selectedStage)}
+          onEditAction={setActionDialog}
           onEditTask={setTaskDialog}
           stage={selectedStage}
           stageIndex={selectedIndex}
@@ -172,6 +181,14 @@ export function WorkflowStageFlow({
           task={taskDialog === "create" ? undefined : taskDialog}
         />
       ) : null}
+      <WorkflowActionOverlays
+        actionDialog={actionDialog}
+        actionToDelete={actionToDelete}
+        editor={editor}
+        onCloseDelete={() => setActionToDelete(null)}
+        onCloseDialog={() => setActionDialog(null)}
+        stage={selectedStage}
+      />
       <ConfirmationDialog
         confirmText="Delete stage"
         errorMessage={deleteMutation.error?.message}

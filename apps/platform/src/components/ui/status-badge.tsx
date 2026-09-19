@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { Badge } from "@/shared/ui/Badge";
 
 export const statusStyles: Record<string, string> = {
   approved: "bg-brand-green/15 text-brand-navy",
@@ -38,14 +39,8 @@ export function StatusBadge({ className, label, status }: StatusBadgeProps) {
     "bg-brand-cream text-brand-navy";
 
   return (
-    <span
-      className={cn(
-        "inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-3 py-1 text-xs font-bold",
-        style,
-        className,
-      )}
-    >
+    <Badge className={cn(style, className)}>
       {label ?? defaultLabel(status)}
-    </span>
+    </Badge>
   );
 }

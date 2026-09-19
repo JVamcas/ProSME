@@ -87,6 +87,7 @@ export function WorkflowStageCreateDialog({
                 description: "Your application is being reviewed.",
               },
               slaHours: null,
+              actions: [],
               tasks: [],
             },
           ],

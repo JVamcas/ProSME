@@ -131,6 +131,38 @@ function validateTaskUniqueness(
   return errors;
 }
 
+function validateActionUniqueness(
+  stage: WorkflowGraphInput["stages"][number],
+  base: string,
+) {
+  const errors: WorkflowValidationIssue[] = [];
+  const duplicateKeys = new Set(
+    duplicates(stage.actions.map((action) => action.stableKey)),
+  );
+  for (const stableKey of duplicateKeys) {
+    errors.push(
+      issue(
+        "DUPLICATE_ACTION_KEY",
+        `Action key ${stableKey} is duplicated.`,
+        `${base}.actions`,
+      ),
+    );
+  }
+  const duplicateOrders = new Set(
+    duplicates(stage.actions.map((action) => action.displayOrder)),
+  );
+  for (const displayOrder of duplicateOrders) {
+    errors.push(
+      issue(
+        "DUPLICATE_ACTION_ORDER",
+        `Action display order ${displayOrder} is duplicated.`,
+        `${base}.actions`,
+      ),
+    );
+  }
+  return errors;
+}
+
 function validateApplicantLabels(
   stage: WorkflowGraphInput["stages"][number],
   base: string,
@@ -157,6 +189,7 @@ export function validateWorkflowStage(
 ) {
   const errors: WorkflowValidationIssue[] = [];
   const base = `stages.${index}`;
+  errors.push(...validateActionUniqueness(stage, base));
   errors.push(...validateTaskUniqueness(stage, base));
   stage.tasks.forEach((task, taskIndex) => {
     errors.push(...validateTaskIdentity(task, base, taskIndex));
