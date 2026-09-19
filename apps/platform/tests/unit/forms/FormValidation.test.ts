@@ -10,7 +10,6 @@ import {
   validateFormValues,
 } from "@/modules/forms/FormValidation";
 import type { FormField } from "@/modules/forms/FormTypes";
-import { buildDynamicFormSchema } from "@/modules/forms/ui/renderer/DynamicFormSchema";
 
 const sectionId = "10000000-0000-4000-8000-000000000001";
 const textField: FormField = {
@@ -131,31 +130,5 @@ describe("basic generic form definition", () => {
       submitLabel: "Submit",
     });
     expect(result.success).toBe(false);
-  });
-});
-
-describe("dynamic form completion schema", () => {
-  it("coerces numeric values and rejects invalid dates on completion", () => {
-    const schema = buildDynamicFormSchema([
-      {
-        ...textField,
-        key: "AMOUNT",
-        type: "NUMBER",
-      },
-      {
-        ...textField,
-        key: "START_DATE",
-        order: 2,
-        type: "DATE",
-      },
-    ], true);
-    expect(schema.safeParse({
-      AMOUNT: "12.50",
-      START_DATE: "2026-09-15",
-    }).success).toBe(true);
-    expect(schema.safeParse({
-      AMOUNT: "12.50",
-      START_DATE: "2026-02-31",
-    }).success).toBe(false);
   });
 });

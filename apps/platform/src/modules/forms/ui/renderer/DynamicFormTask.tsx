@@ -1,24 +1,22 @@
 "use client";
 
-import { FormProvider } from "react-hook-form";
-
 import { GeneralButton } from "@/components/ui/button";
 import { useTaskForm } from "@/modules/forms/FormHooks";
 import {
   useDynamicFormController,
   type TaskFormData,
 } from "./DynamicFormController";
-import { DynamicFormSection } from "./DynamicFormSection";
+import { FormRenderer } from "./FormRenderer";
 
 function FormActions({
   completePending,
-  onComplete,
+  onSave,
   readOnly,
   savePending,
   submitLabel,
 }: {
   completePending: boolean;
-  onComplete: () => void;
+  onSave: () => void;
   readOnly: boolean;
   savePending: boolean;
   submitLabel: string;
@@ -27,10 +25,14 @@ function FormActions({
   const disabled = savePending || completePending;
   return (
     <div className="flex justify-end gap-3">
-      <GeneralButton disabled={disabled} type="submit">
+      <GeneralButton
+        disabled={disabled}
+        onClick={onSave}
+        type="button"
+      >
         {savePending ? "Saving…" : "Save draft"}
       </GeneralButton>
-      <GeneralButton disabled={disabled} onClick={onComplete} type="button">
+      <GeneralButton disabled={disabled} type="submit">
         {completePending ? "Submitting…" : submitLabel}
       </GeneralButton>
     </div>
@@ -57,42 +59,29 @@ function LoadedDynamicFormTask({
   taskId: string;
 }) {
   const controller = useDynamicFormController(taskId, data);
-  const saveDraft = controller.form.handleSubmit(controller.saveDraftValues);
-  const completeForm = controller.form.handleSubmit(
-    controller.completeFormValues,
-  );
   const readOnly = data.submission?.status === "COMPLETED";
   return (
-    <FormProvider {...controller.form}>
-      <form className="space-y-5" noValidate onSubmit={saveDraft}>
-        {data.schema.instructions ? (
-          <p className="text-sm text-brand-navy/70">{data.schema.instructions}</p>
-        ) : null}
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {data.schema.sections.map((section) => (
-            <DynamicFormSection
-              fields={data.schema.fields.filter(
-                (field) => field.sectionId === section.id,
-              )}
-              key={section.id ?? section.key}
-              readOnly={readOnly}
-              section={section}
-            />
-          ))}
-        </div>
+    <FormRenderer
+      definition={data.schema}
+      formData={controller.values}
+      onChange={controller.setValues}
+      onSubmit={controller.completeFormValues}
+      readOnly={readOnly}
+    >
+      <div className="mt-5 space-y-3">
         <FormErrors
           completeError={controller.complete.error}
           saveError={controller.save.error}
         />
         <FormActions
           completePending={controller.complete.isPending}
-          onComplete={completeForm}
+          onSave={controller.saveDraftValues}
           readOnly={readOnly}
           savePending={controller.save.isPending}
           submitLabel={data.schema.submitLabel}
         />
-      </form>
-    </FormProvider>
+      </div>
+    </FormRenderer>
   );
 }
 

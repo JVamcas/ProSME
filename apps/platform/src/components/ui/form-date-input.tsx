@@ -30,7 +30,9 @@ export type FormDateInputProps = FormBindingProps & {
   labelClassName?: string;
   maxValue?: string;
   minValue?: string;
+  onBlurValue?: (value: string) => void;
   onChangeValue?: (value: string) => void;
+  onFocusValue?: (value: string) => void;
   readOnly?: boolean;
   required?: boolean;
   value?: string;
@@ -71,7 +73,9 @@ function DateInputField({
   maxValue,
   minValue,
   name,
+  onBlurValue,
   onChangeValue,
+  onFocusValue,
   readOnly,
   registrationOptions,
   required,
@@ -108,7 +112,9 @@ function DateInputField({
         onBlur={() => {
           const event = createFieldEvent(binding.name, currentValue, "blur");
           void binding.registration?.onBlur(event);
+          onBlurValue?.(currentValue);
         }}
+        onFocus={() => onFocusValue?.(currentValue)}
         onChange={change}
         className={containerClassName}
       >

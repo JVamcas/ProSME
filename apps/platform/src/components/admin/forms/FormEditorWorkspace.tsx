@@ -4,6 +4,7 @@ import { useFormEditorController } from "./FormEditorController";
 import { FormEditorMutationError } from "./FormEditorLifecycleActions";
 import { FormEditorBody } from "./FormEditorBody";
 import { FormEditorTopSection } from "./FormEditorTopSection";
+import { FormPreviewDialog } from "@/modules/forms/ui/renderer/FormPreviewDialog";
 
 type FormEditorController = ReturnType<typeof useFormEditorController>;
 
@@ -40,6 +41,7 @@ function FormEditorTopContent({
         isDraft={isDraft}
         isPublished={isPublished}
         onClone={() => controller.clone.mutate(editor.version.id)}
+        onPreview={() => controller.setPreviewOpen(true)}
         onPublish={() => controller.publish.mutate({
           definitionId: id,
           expectedRowVersion: editor.version.rowVersion,
@@ -116,6 +118,11 @@ function LoadedFormEditorWorkspace({
         sectionDialogOpen={controller.sectionDialogOpen}
         sections={editor.sections}
         sectionToRemove={controller.sectionToRemove}
+      />
+      <FormPreviewDialog
+        editor={editor}
+        isOpen={controller.previewOpen}
+        onClose={() => controller.setPreviewOpen(false)}
       />
     </div>
   );

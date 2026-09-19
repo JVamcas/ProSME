@@ -95,7 +95,7 @@ export function SortableFormField({
               {field.key}
             </code>
             <span className="text-xs text-brand-navy/55">
-              Width {field.columnSpan}
+              Width {field.columnSpan} columns
             </span>
           </div>
           {field.helpText ? (

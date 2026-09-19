@@ -10,6 +10,7 @@ export function FormEditorLifecycleActions({
   isDraft,
   isPublished,
   onClone,
+  onPreview,
   onPublish,
   onRetire,
   publishPending,
@@ -22,6 +23,7 @@ export function FormEditorLifecycleActions({
   isDraft: boolean;
   isPublished: boolean;
   onClone: () => void;
+  onPreview: () => void;
   onPublish: () => void;
   onRetire: () => void;
   publishPending: boolean;
@@ -30,13 +32,23 @@ export function FormEditorLifecycleActions({
   return (
     <div className="flex flex-wrap gap-3">
       <GeneralButton
+        onClick={onPreview}
+        size="compact"
+        type="button"
+        variant="outline"
+      >
+        Preview
+      </GeneralButton>
+      <GeneralButton
         disabled={!canPublish || !isDraft || publishPending}
         onClick={onPublish}
+        size={"compact"}
         type="button"
       >
         {publishPending ? "Publishing…" : "Publish"}
       </GeneralButton>
       <GeneralButton
+        size={"compact"}
         disabled={!canRetire || !isPublished || retirePending}
         onClick={onRetire}
         type="button"
@@ -45,6 +57,7 @@ export function FormEditorLifecycleActions({
         {retirePending ? "Retiring…" : "Retire"}
       </GeneralButton>
       <GeneralButton
+        size={"compact"}
         disabled={!canUpdate || isDraft || clonePending}
         onClick={onClone}
         type="button"

@@ -28,6 +28,7 @@ export function useFormEditorController(id: string) {
   const [section, setSection] = useState<FormSection>();
   const [sectionDialogOpen, setSectionDialogOpen] = useState(false);
   const [sectionToRemove, setSectionToRemove] = useState<FormSection>();
+  const [previewOpen, setPreviewOpen] = useState(false);
   const editor = query.data;
   const openNewField = useCallback((sectionId: string) => {
     setField(undefined);
@@ -137,6 +138,7 @@ export function useFormEditorController(id: string) {
     openExistingSection,
     openNewSection,
     publish,
+    previewOpen,
     query,
     removeField,
     removeSection,
@@ -150,6 +152,7 @@ export function useFormEditorController(id: string) {
     sectionToRemove,
     setDialogOpen,
     setFieldToRemove,
+    setPreviewOpen,
     setSectionDialogOpen,
     setSectionToRemove,
     update,

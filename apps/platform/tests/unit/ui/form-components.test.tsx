@@ -7,6 +7,7 @@ import { FormDateInput } from "@/components/ui/form-date-input";
 import { CheckboxField } from "@/components/ui/form-field";
 import { FormInput, FormSelect } from "@/components/ui/form-fields";
 import { MoneyField } from "@/components/ui/money-field";
+import { FormRadioGroup } from "@/shared/ui/FormRadioGroup";
 
 function RegisteredInput() {
   const form = useForm<{ email: string }>({
@@ -118,6 +119,29 @@ describe("shared form components", () => {
     expect(markup).toContain("Select region");
     expect(markup).toContain("Khomas");
     expect(markup).toContain("Oshana");
+  });
+
+  it("renders a shared controlled radio group", () => {
+    const markup = renderToStaticMarkup(
+      <FormRadioGroup
+        helpText="Choose one answer."
+        id="approval"
+        label="Approved"
+        name="approval"
+        onValueChange={() => undefined}
+        options={[
+          { label: "Yes", value: true },
+          { label: "No", value: false },
+        ]}
+        required
+        value={false}
+      />,
+    );
+
+    expect(markup).toContain('role="radiogroup"');
+    expect(markup).toContain("Approved");
+    expect(markup).toContain("Choose one answer.");
+    expect(markup).toContain('checked=""');
   });
 
   it("renders an ISO-backed React Aria date field", () => {

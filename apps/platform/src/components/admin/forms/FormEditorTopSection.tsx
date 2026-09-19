@@ -14,6 +14,7 @@ export function FormEditorTopSection({
   isDraft,
   isPublished,
   onClone,
+  onPreview,
   onPublish,
   onRetire,
   publishPending,
@@ -27,34 +28,36 @@ export function FormEditorTopSection({
   isDraft: boolean;
   isPublished: boolean;
   onClone: () => void;
+  onPreview: () => void;
   onPublish: () => void;
   onRetire: () => void;
   publishPending: boolean;
   retirePending: boolean;
 }) {
   return (
-    <>
-      <PageHeader
-        title={editor.definition.name}
-        description={editor.definition.description}
-        eyebrow={"Settings / Forms"}
-        actions={<StatusBadge status={editor.version.status} />}
-      />
-      <div className="flex flex-wrap gap-3">
-        <FormEditorLifecycleActions
-          canPublish={canPublish}
-          canRetire={canRetire}
-          canUpdate={canUpdate}
-          clonePending={clonePending}
-          isDraft={isDraft}
-          isPublished={isPublished}
-          onClone={onClone}
-          onPublish={onPublish}
-          onRetire={onRetire}
-          publishPending={publishPending}
-          retirePending={retirePending}
-        />
-      </div>
-    </>
+    <PageHeader
+      title={editor.definition.name}
+      description={editor.definition.description}
+      eyebrow={"Settings / Forms"}
+      actions={
+        <div className="flex flex-row gap-2">
+          <FormEditorLifecycleActions
+            canPublish={canPublish}
+            canRetire={canRetire}
+            canUpdate={canUpdate}
+            clonePending={clonePending}
+            isDraft={isDraft}
+            isPublished={isPublished}
+            onClone={onClone}
+            onPreview={onPreview}
+            onPublish={onPublish}
+            onRetire={onRetire}
+            publishPending={publishPending}
+            retirePending={retirePending}
+          />
+          <StatusBadge status={editor.version.status} />
+        </div>
+      }
+    />
   );
 }
