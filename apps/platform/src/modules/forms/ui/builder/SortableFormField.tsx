@@ -13,6 +13,7 @@ function fieldTypeLabel(type: FormField["type"]) {
   if (type === "YES_NO") return "Yes/No";
   return type
     .toLowerCase()
+    .replaceAll("_", " ")
     .replace(/^./, (character) => character.toUpperCase());
 }
 

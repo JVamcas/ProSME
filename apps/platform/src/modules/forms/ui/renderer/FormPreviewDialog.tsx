@@ -19,13 +19,13 @@ function runtimeDefinition(editor: FormEditorView): FormRuntimeSchema {
 }
 
 function previewWidth(editor: FormEditorView) {
-  const widestSection = Math.max(
+  const widestField = Math.max(
     1,
-    ...editor.sections.map((section) => section.columnSpan),
+    ...editor.fields.map((field) => field.columnSpan),
   );
-  if (widestSection === 1) return "max-w-xl";
-  if (widestSection === 2) return "max-w-4xl";
-  return "max-w-6xl";
+  if (widestField === 1) return "max-w-xl";
+  if (widestField === 2) return "max-w-2xl";
+  return "max-w-5xl";
 }
 
 function FormPreviewContent({

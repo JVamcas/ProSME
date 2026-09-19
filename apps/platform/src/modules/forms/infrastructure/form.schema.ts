@@ -165,7 +165,7 @@ export const formFields = pgTable(
     }).onDelete("restrict"),
     check(
       "app_form_fields_type_check",
-      sql`${table.type} in ('TEXT', 'TEXTAREA', 'NUMBER', 'DATE', 'YES_NO', 'SELECT')`,
+      sql`${table.type} in ('TEXT', 'TEXTAREA', 'NUMBER', 'CURRENCY', 'PERCENTAGE', 'DATE', 'YES_NO', 'SINGLE_SELECT', 'MULTI_SELECT', 'DOCUMENT')`,
     ),
     check("app_form_fields_order_check", sql`${table.order} > 0`),
     check(
@@ -174,7 +174,7 @@ export const formFields = pgTable(
     ),
     check(
       "app_form_fields_number_limits_check",
-      sql`(${table.minimum} is null and ${table.maximum} is null) or (${table.type} = 'NUMBER' and (${table.minimum} is null or ${table.maximum} is null or ${table.minimum} <= ${table.maximum}))`,
+      sql`(${table.minimum} is null and ${table.maximum} is null) or (${table.type} in ('NUMBER', 'CURRENCY', 'PERCENTAGE') and (${table.minimum} is null or ${table.maximum} is null or ${table.minimum} <= ${table.maximum}) and (${table.type} <> 'PERCENTAGE' or (coalesce(${table.minimum}, 0) >= 0 and coalesce(${table.maximum}, 100) <= 100)))`,
     ),
     check(
       "app_form_fields_length_limits_check",

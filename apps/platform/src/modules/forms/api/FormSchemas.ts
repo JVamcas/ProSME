@@ -47,10 +47,14 @@ const formFieldSchemaBase = z.object({
 });
 
 export const formFieldSchema = formFieldSchemaBase.superRefine((field, context) => {
-  const supportsOptions = field.type === "SELECT";
+  const supportsOptions = ["SINGLE_SELECT", "MULTI_SELECT"].includes(field.type);
   const options = field.options ?? [];
   if (!supportsOptions && options.length) {
-    context.addIssue({ code: "custom", message: "Only Select fields may have options.", path: ["options"] });
+    context.addIssue({
+      code: "custom",
+      message: "Only Single Select and Multi Select fields may have options.",
+      path: ["options"],
+    });
   }
   if (supportsOptions && !options.length) {
     context.addIssue({ code: "custom", message: "Add at least one option.", path: ["options"] });
@@ -70,12 +74,28 @@ export const formFieldSchema = formFieldSchemaBase.superRefine((field, context) 
       path: ["options"],
     });
   }
-  if (field.type !== "NUMBER" && (
+  const supportsNumberLimits = [
+    "NUMBER",
+    "CURRENCY",
+    "PERCENTAGE",
+  ].includes(field.type);
+  if (!supportsNumberLimits && (
     field.minimum !== undefined || field.maximum !== undefined
   )) {
     context.addIssue({
       code: "custom",
-      message: "Only Number fields may have minimum or maximum values.",
+      message: "Only numeric fields may have minimum or maximum values.",
+      path: ["minimum"],
+    });
+  }
+  if (
+    field.type === "PERCENTAGE" &&
+    (field.minimum !== undefined && field.minimum < 0 ||
+      field.maximum !== undefined && field.maximum > 100)
+  ) {
+    context.addIssue({
+      code: "custom",
+      message: "Percentage limits must be between zero and one hundred.",
       path: ["minimum"],
     });
   }

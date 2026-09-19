@@ -44,16 +44,30 @@ function ordered<T extends { order: number }>(items: readonly T[], label: string
   return result;
 }
 
-function fieldSchema(field: FormField): RJSFSchema {
+function optionSchema(field: FormField) {
+  const options = ordered(field.options ?? [], `Options for ${field.key}`);
+  if (options.length === 0) invalid(`Select field ${field.key} has no options.`);
+  assertUnique(options.map((option) => option.key), `Options for ${field.key}`);
+  return {
+    keys: options.map((option) => option.key),
+    labels: options.map((option) => option.label),
+  };
+}
+
+function fieldSchema(
+  field: FormField,
+  requireCompletedFields: boolean,
+): RJSFSchema {
   const common = {
     description: field.helpText ?? undefined,
     title: field.label,
   };
-  if (field.type === "NUMBER") {
+  if (["NUMBER", "CURRENCY", "PERCENTAGE"].includes(field.type)) {
+    const percentage = field.type === "PERCENTAGE";
     return {
       ...common,
-      maximum: field.maximum ?? undefined,
-      minimum: field.minimum ?? undefined,
+      maximum: percentage ? field.maximum ?? 100 : field.maximum ?? undefined,
+      minimum: percentage ? field.minimum ?? 0 : field.minimum ?? undefined,
       type: "number",
     };
   }
@@ -67,15 +81,29 @@ function fieldSchema(field: FormField): RJSFSchema {
       type: "boolean",
     };
   }
-  if (field.type === "SELECT") {
-    const options = ordered(field.options ?? [], `Options for ${field.key}`);
-    if (options.length === 0) invalid(`Select field ${field.key} has no options.`);
-    assertUnique(options.map((option) => option.key), `Options for ${field.key}`);
+  if (field.type === "SINGLE_SELECT") {
+    const options = optionSchema(field);
     return {
       ...common,
-      enum: options.map((option) => option.key),
+      enum: options.keys,
       type: "string",
     };
+  }
+  if (field.type === "MULTI_SELECT") {
+    const options = optionSchema(field);
+    return {
+      ...common,
+      items: {
+        enum: options.keys,
+        type: "string",
+      },
+      minItems: requireCompletedFields && field.required ? 1 : undefined,
+      type: "array",
+      uniqueItems: true,
+    };
+  }
+  if (field.type === "DOCUMENT") {
+    return { ...common, format: "data-url", type: "string" };
   }
   if ((field.options ?? []).length > 0) {
     invalid(`Field ${field.key} does not support options.`);
@@ -95,7 +123,10 @@ export function buildFormValueSchema(
   return {
     additionalProperties: false,
     properties: Object.fromEntries(
-      fields.map((field) => [field.key, fieldSchema(field)]),
+      fields.map((field) => [
+        field.key,
+        fieldSchema(field, requireCompletedFields),
+      ]),
     ),
     required: requireCompletedFields
       ? fields.filter((field) => field.required).map((field) => field.key)
@@ -112,10 +143,16 @@ function fieldUiSchema(field: FormField): UiSchema {
       "ui:widget": "radio",
     };
   }
-  if (field.type === "SELECT") {
-    const options = ordered(field.options ?? [], `Options for ${field.key}`);
-    return { "ui:enumNames": options.map((option) => option.label) };
+  if (field.type === "SINGLE_SELECT" || field.type === "MULTI_SELECT") {
+    const options = optionSchema(field);
+    return {
+      "ui:enumNames": options.labels,
+      "ui:widget": "select",
+    };
   }
+  if (field.type === "CURRENCY") return { "ui:widget": "currency" };
+  if (field.type === "PERCENTAGE") return { "ui:widget": "percentage" };
+  if (field.type === "DOCUMENT") return { "ui:widget": "file" };
   return {};
 }
 

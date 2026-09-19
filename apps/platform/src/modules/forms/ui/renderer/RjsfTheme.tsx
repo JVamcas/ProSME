@@ -9,7 +9,13 @@ import {
   type RJSFSchema,
   type WidgetProps,
 } from "@rjsf/utils";
-import type { ChangeEvent, FocusEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type FocusEvent,
+} from "react";
 
 import { FormDateInput } from "@/components/ui/form-date-input";
 import {
@@ -17,6 +23,12 @@ import {
   FormSelect,
   FormTextarea,
 } from "@/components/ui/form-fields";
+import {
+  formatMoneyInput,
+  formatMoneyValue,
+  MoneyField,
+  parseMoneyInput,
+} from "@/components/ui/money-field";
 import { FormRadioGroup } from "@/shared/ui/FormRadioGroup";
 
 type Values = Record<string, unknown>;
@@ -126,6 +138,85 @@ export function FormDateWidget(props: FormWidgetProps) {
   );
 }
 
+function numberValue(value: string, emptyValue: unknown) {
+  if (value === "") return emptyValue;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : emptyValue;
+}
+
+export function FormCurrencyWidget(props: FormWidgetProps) {
+  const [displayValue, setDisplayValue] = useState(
+    () => formatMoneyValue(props.value),
+  );
+  const lastEmittedValue = useRef<unknown>(props.value);
+
+  useEffect(() => {
+    if (props.value === lastEmittedValue.current) return;
+    setDisplayValue(formatMoneyValue(props.value));
+  }, [props.value]);
+
+  return (
+    <div>
+      <MoneyField
+        aria-describedby={`${props.id}-help`}
+        autoFocus={props.autofocus}
+        disabled={props.disabled}
+        error={errorMessage(props.rawErrors)}
+        id={props.id}
+        label={props.label}
+        name={props.htmlName ?? props.id}
+        onBlur={() => {
+          const value = parseMoneyInput(displayValue);
+          setDisplayValue(formatMoneyValue(value));
+          props.onBlur(props.id, value);
+        }}
+        onChange={(event) => {
+          const formatted = formatMoneyInput(event.target.value);
+          const value = parseMoneyInput(formatted) ?? props.options.emptyValue;
+          setDisplayValue(formatted);
+          lastEmittedValue.current = value;
+          props.onChange(value);
+        }}
+        onFocus={() => props.onFocus(props.id, parseMoneyInput(displayValue))}
+        readOnly={props.readonly}
+        required={props.required}
+        value={displayValue}
+      />
+      <HelpText description={props.schema.description} id={props.id} />
+    </div>
+  );
+}
+
+export function FormPercentageWidget(props: FormWidgetProps) {
+  return (
+    <div>
+      <FormInput
+        aria-describedby={`${props.id}-help`}
+        autoFocus={props.autofocus}
+        disabled={props.disabled}
+        error={errorMessage(props.rawErrors)}
+        id={props.id}
+        inputMode="decimal"
+        label={`${props.label} (%)`}
+        max={props.schema.maximum ?? 100}
+        min={props.schema.minimum ?? 0}
+        name={props.htmlName ?? props.id}
+        onBlur={(event) => props.onBlur(props.id, event.target.value)}
+        onChange={(event) => {
+          props.onChange(numberValue(event.target.value, props.options.emptyValue));
+        }}
+        onFocus={(event) => props.onFocus(props.id, event.target.value)}
+        readOnly={props.readonly}
+        required={props.required}
+        step="any"
+        type="number"
+        value={props.value ?? ""}
+      />
+      <HelpText description={props.schema.description} id={props.id} />
+    </div>
+  );
+}
+
 function selectedValue(props: FormWidgetProps) {
   return enumOptionsIndexForValue(
     props.value,
@@ -166,6 +257,33 @@ export function FormSelectWidget(props: FormWidgetProps) {
         label={props.label}
         multiple={props.multiple}
         name={props.htmlName ?? props.id}
+        onMultipleBlur={(values) => {
+          props.onBlur(
+            props.id,
+            enumOptionsValueForIndex(
+              values,
+              props.options.enumOptions,
+              props.options.emptyValue,
+            ),
+          );
+        }}
+        onMultipleChange={(values) => {
+          props.onChange(enumOptionsValueForIndex(
+            values,
+            props.options.enumOptions,
+            props.options.emptyValue,
+          ));
+        }}
+        onMultipleFocus={(values) => {
+          props.onFocus(
+            props.id,
+            enumOptionsValueForIndex(
+              values,
+              props.options.enumOptions,
+              props.options.emptyValue,
+            ),
+          );
+        }}
         onBlur={(event) => props.onBlur(props.id, selectValue(props, event))}
         onChange={(event) => props.onChange(selectValue(props, event))}
         onFocus={(event) => props.onFocus(props.id, selectValue(props, event))}

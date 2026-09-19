@@ -21,9 +21,13 @@ import {
 type FieldDialogValues = z.input<typeof formFieldSchema>;
 
 const fieldTypeLabels: Record<FormFieldType, string> = {
+  CURRENCY: "Currency",
   DATE: "Date",
+  DOCUMENT: "Document",
+  MULTI_SELECT: "Multi Select",
   NUMBER: "Number",
-  SELECT: "Select",
+  PERCENTAGE: "Percentage",
+  SINGLE_SELECT: "Single Select",
   TEXT: "Text",
   TEXTAREA: "Textarea",
   YES_NO: "Yes/No",
@@ -126,8 +130,10 @@ function FormFieldDialogContent({
   const options = useFieldArray({ control: form.control, name: "options" });
 
   useEffect(() => {
-    if (type !== "SELECT") form.setValue("options", []);
-    if (type !== "NUMBER") {
+    if (type !== "SINGLE_SELECT" && type !== "MULTI_SELECT") {
+      form.setValue("options", []);
+    }
+    if (!["NUMBER", "CURRENCY", "PERCENTAGE"].includes(type)) {
       form.setValue("minimum", undefined);
       form.setValue("maximum", undefined);
     }
@@ -184,7 +190,7 @@ function FormFieldDialogContent({
           />
           <FormTextarea label="Help text" name="helpText" />
           <CheckboxField label="Required" name="required" />
-          {type === "NUMBER" ? (
+          {["NUMBER", "CURRENCY", "PERCENTAGE"].includes(type) ? (
             <div className="grid gap-4 sm:grid-cols-2">
               <FormInput label="Minimum" name="minimum" type="number" />
               <FormInput label="Maximum" name="maximum" type="number" />
@@ -208,7 +214,7 @@ function FormFieldDialogContent({
               />
             </div>
           ) : null}
-          {type === "SELECT" ? (
+          {type === "SINGLE_SELECT" || type === "MULTI_SELECT" ? (
             <SelectOptions
               append={options.append}
               fields={options.fields}

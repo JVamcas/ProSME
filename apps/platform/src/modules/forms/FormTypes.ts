@@ -16,9 +16,13 @@ export const formFieldTypes = [
   "TEXT",
   "TEXTAREA",
   "NUMBER",
+  "CURRENCY",
+  "PERCENTAGE",
   "DATE",
   "YES_NO",
-  "SELECT",
+  "SINGLE_SELECT",
+  "MULTI_SELECT",
+  "DOCUMENT",
 ] as const;
 export type FormFieldType = (typeof formFieldTypes)[number];
 

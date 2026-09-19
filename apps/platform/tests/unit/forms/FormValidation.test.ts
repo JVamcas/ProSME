@@ -25,25 +25,44 @@ const textField: FormField = {
 };
 
 describe("basic form field validation", () => {
-  it("accepts exactly the six phase 2.3 field types", () => {
-    const types = ["TEXT", "TEXTAREA", "NUMBER", "DATE", "YES_NO"] as const;
+  it("accepts all supported scalar field types", () => {
+    const types = [
+      "TEXT",
+      "TEXTAREA",
+      "NUMBER",
+      "CURRENCY",
+      "PERCENTAGE",
+      "DATE",
+      "YES_NO",
+      "DOCUMENT",
+    ] as const;
     expect(types.every((type) => (
       formFieldSchema.safeParse({ ...textField, type }).success
     ))).toBe(true);
     expect(formFieldSchema.safeParse({
       ...textField,
       options: [{ key: "FIRST", label: "First", order: 1 }],
-      type: "SELECT",
+      type: "SINGLE_SELECT",
+    }).success).toBe(true);
+    expect(formFieldSchema.safeParse({
+      ...textField,
+      options: [{ key: "FIRST", label: "First", order: 1 }],
+      type: "MULTI_SELECT",
     }).success).toBe(true);
     expect(formFieldSchema.safeParse({ ...textField, type: "MONEY" }).success)
       .toBe(false);
   });
 
-  it("requires Select options and rejects options on other field types", () => {
+  it("requires options for both select types and rejects them elsewhere", () => {
     expect(formFieldSchema.safeParse({
       ...textField,
       options: [],
-      type: "SELECT",
+      type: "SINGLE_SELECT",
+    }).success).toBe(false);
+    expect(formFieldSchema.safeParse({
+      ...textField,
+      options: [],
+      type: "MULTI_SELECT",
     }).success).toBe(false);
     expect(formFieldSchema.safeParse({
       ...textField,
@@ -92,6 +111,67 @@ describe("basic form field validation", () => {
     expect(validateFormValues([field], { NOTES: 21 }, true)).toBe(false);
   });
 
+  it("validates currency and percentage as bounded numbers", () => {
+    const currency: FormField = {
+      ...textField,
+      key: "BUDGET",
+      minimum: 0,
+      type: "CURRENCY",
+    };
+    const percentage: FormField = {
+      ...textField,
+      key: "RATE",
+      type: "PERCENTAGE",
+    };
+
+    expect(validateFormValues([currency], { BUDGET: 12.5 }, true)).toBe(true);
+    expect(validateFormValues([currency], { BUDGET: "12.5" }, true)).toBe(false);
+    expect(validateFormValues([percentage], { RATE: 75 }, true)).toBe(true);
+    expect(validateFormValues([percentage], { RATE: 101 }, true)).toBe(false);
+  });
+
+  it("validates single and multi select values against configured options", () => {
+    const options = [
+      { key: "FIRST", label: "First", order: 1 },
+      { key: "SECOND", label: "Second", order: 2 },
+    ];
+    const single: FormField = {
+      ...textField,
+      key: "REGION",
+      options,
+      type: "SINGLE_SELECT",
+    };
+    const multi: FormField = {
+      ...textField,
+      key: "SECTORS",
+      options,
+      type: "MULTI_SELECT",
+    };
+
+    expect(validateFormValues([single], { REGION: "FIRST" }, true)).toBe(true);
+    expect(validateFormValues([single], { REGION: "OTHER" }, true)).toBe(false);
+    expect(validateFormValues([multi], { SECTORS: ["FIRST", "SECOND"] }, true))
+      .toBe(true);
+    expect(validateFormValues([multi], { SECTORS: ["OTHER"] }, true)).toBe(false);
+    expect(validateFormValues([multi], { SECTORS: [] }, true)).toBe(false);
+  });
+
+  it("validates document values as data URLs", () => {
+    const field: FormField = {
+      ...textField,
+      key: "DOCUMENT",
+      type: "DOCUMENT",
+    };
+
+    expect(validateFormValues(
+      [field],
+      { DOCUMENT: "data:text/plain;name=note.txt;base64,SGVsbG8=" },
+      true,
+    )).toBe(true);
+    expect(validateFormValues([field], { DOCUMENT: "note.txt" }, true))
+      .toBe(false);
+  });
+
   it("rejects invalid or inapplicable validation rules", () => {
     expect(formFieldSchema.safeParse({
       ...textField,
@@ -108,6 +188,11 @@ describe("basic form field validation", () => {
       minimum: 1,
       type: "NUMBER",
     }).success).toBe(true);
+    expect(formFieldSchema.safeParse({
+      ...textField,
+      maximum: 101,
+      type: "PERCENTAGE",
+    }).success).toBe(false);
   });
 
   it("allows empty draft values while validating entered draft values", () => {

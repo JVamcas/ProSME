@@ -58,7 +58,7 @@ export function formatNAD(value: number | null | undefined) {
   return `N$ ${moneyFormatter.format(value)}`;
 }
 
-function formatMoneyInput(value: string) {
+export function formatMoneyInput(value: string) {
   const { whole, decimal, hasDecimal } = normalizeMoneyInput(value);
 
   const groupedWhole = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
@@ -66,7 +66,7 @@ function formatMoneyInput(value: string) {
   return hasDecimal ? `${groupedWhole}.${decimal}` : groupedWhole;
 }
 
-function parseMoneyInput(value: string) {
+export function parseMoneyInput(value: string) {
   const { whole, decimal, hasDecimal } = normalizeMoneyInput(value);
 
   if (!whole && !decimal) {

@@ -5,7 +5,9 @@ import type { FormField } from "./FormTypes";
 
 export function validateFieldOptions(field: FormField) {
   const options = field.options ?? [];
-  if (field.type !== "SELECT") return options.length === 0;
+  if (!["SINGLE_SELECT", "MULTI_SELECT"].includes(field.type)) {
+    return options.length === 0;
+  }
   if (options.length === 0) return false;
   const keys = options.map((option) => option.key);
   return (
@@ -39,7 +41,15 @@ export function validateFormFields(fields: readonly FormField[]) {
 export function validateFieldConstraints(field: FormField) {
   const hasNumberLimits = field.minimum != null || field.maximum != null;
   const hasLengthLimits = field.minLength != null || field.maxLength != null;
-  if (hasNumberLimits && field.type !== "NUMBER") return false;
+  if (
+    hasNumberLimits &&
+    !["NUMBER", "CURRENCY", "PERCENTAGE"].includes(field.type)
+  ) return false;
+  if (
+    field.type === "PERCENTAGE" &&
+    (field.minimum != null && field.minimum < 0 ||
+      field.maximum != null && field.maximum > 100)
+  ) return false;
   if (hasLengthLimits && !["TEXT", "TEXTAREA"].includes(field.type)) {
     return false;
   }
@@ -68,7 +78,10 @@ export function validateFormValues(
 ) {
   const presentValues = Object.fromEntries(
     Object.entries(values).filter(([, value]) => (
-      value !== undefined && value !== null && value !== ""
+      value !== undefined &&
+      value !== null &&
+      value !== "" &&
+      (!Array.isArray(value) || value.length > 0)
     )),
   );
   try {

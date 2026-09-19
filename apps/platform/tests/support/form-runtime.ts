@@ -12,7 +12,7 @@ function field(
     helpText: `${key} help`,
     key,
     label: `${key} label`,
-    options: type === "SELECT"
+    options: type === "SINGLE_SELECT" || type === "MULTI_SELECT"
       ? [
           { key: "SECOND", label: "Second option", order: 2 },
           { key: "FIRST", label: "First option", order: 1 },
@@ -42,7 +42,11 @@ export function runtimeDefinition(): FormRuntimeSchema {
       field("AMOUNT", "NUMBER", 3),
       field("START_DATE", "DATE", 4),
       field("APPROVED", "YES_NO", 5),
-      field("REGION", "SELECT", 6),
+      field("REGION", "SINGLE_SELECT", 6),
+      field("SECTORS", "MULTI_SELECT", 7),
+      field("BUDGET", "CURRENCY", 8),
+      field("SUCCESS_RATE", "PERCENTAGE", 9),
+      field("SUPPORTING_DOCUMENT", "DOCUMENT", 10),
     ],
     instructions: "Complete the form.",
     sections: [{

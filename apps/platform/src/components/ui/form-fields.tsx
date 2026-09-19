@@ -1,6 +1,7 @@
 import * as React from "react";
 
 import { cn } from "@/lib/utils";
+import { FormMultiSelect } from "@/shared/ui/FormMultiSelect";
 import { Input, Select, Textarea } from "./form-controls";
 import { type FormBindingProps, useFormBinding } from "./form-binding";
 import { FormField } from "./form-field";
@@ -92,6 +93,9 @@ export type FormSelectProps = Omit<
 > &
   FieldOptions & {
     items: readonly FormSelectItem[];
+    onMultipleBlur?: (values: string[]) => void;
+    onMultipleChange?: (values: string[]) => void;
+    onMultipleFocus?: (values: string[]) => void;
     placeholder?: string;
   };
 
@@ -106,6 +110,9 @@ export function FormSelect({
   labelAccessory,
   labelClassName,
   name,
+  onMultipleBlur,
+  onMultipleChange,
+  onMultipleFocus,
   placeholder,
   registrationOptions,
   ...props
@@ -115,6 +122,41 @@ export function FormSelect({
   const describedBy = [ids.errorId, props["aria-describedby"]]
     .filter(Boolean)
     .join(" ") || undefined;
+
+  if (props.multiple) {
+    return (
+      <FormField
+        className={containerClassName}
+        error={binding.error}
+        errorId={ids.errorId}
+        htmlFor={ids.controlId}
+        infoTooltip={infoTooltip}
+        infoTooltipSide={infoTooltipSide}
+        label={label}
+        labelAccessory={labelAccessory}
+        labelClassName={labelClassName}
+        required={props.required}
+      >
+        <FormMultiSelect
+          className={props.className}
+          defaultValue={Array.isArray(props.defaultValue) ? props.defaultValue : []}
+          describedBy={describedBy}
+          disabled={props.disabled}
+          id={ids.controlId}
+          invalid={Boolean(binding.error ?? props["aria-invalid"])}
+          items={items}
+          name={binding.name}
+          onBlur={onMultipleBlur}
+          onChange={onMultipleChange}
+          onFocus={onMultipleFocus}
+          placeholder={placeholder}
+          registration={binding.registration}
+          value={Array.isArray(props.value) ? props.value : undefined}
+        />
+      </FormField>
+    );
+  }
+
   return (
     <FormField
       className={containerClassName}

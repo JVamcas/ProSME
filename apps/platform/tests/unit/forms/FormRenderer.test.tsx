@@ -30,6 +30,10 @@ describe("RJSF form renderer", () => {
     expect(markup).toContain("No");
     expect(markup).toContain("First option");
     expect(markup).toContain("Second option");
+    expect(markup).toContain('multiple=""');
+    expect(markup).toContain("N$");
+    expect(markup).toContain("SUCCESS_RATE label (%)");
+    expect(markup).toContain('type="file"');
     expect(markup).toContain("rounded-xl");
     expect(markup).toContain("focus:border-brand-orange");
   });

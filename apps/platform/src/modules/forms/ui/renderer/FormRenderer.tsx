@@ -13,9 +13,11 @@ import {
 } from "@/modules/forms/engine/FormDefinitionParser";
 import {
   FormBaseInputTemplate,
+  FormCurrencyWidget,
   FormDateWidget,
   FormFieldTemplate,
   FormRadioWidget,
+  FormPercentageWidget,
   FormSelectWidget,
   FormTextareaWidget,
 } from "./RjsfTheme";
@@ -151,7 +153,9 @@ export function FormRenderer({
         uiSchema={parsed.uiSchema}
         validator={validator}
         widgets={{
+          currency: FormCurrencyWidget,
           DateWidget: FormDateWidget,
+          percentage: FormPercentageWidget,
           RadioWidget: FormRadioWidget,
           SelectWidget: FormSelectWidget,
           TextareaWidget: FormTextareaWidget,
