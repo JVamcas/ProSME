@@ -12,6 +12,7 @@ import {
   workflowTransitionDefinitions,
 } from "@/db/schema";
 import type { WorkflowGraphInput } from "@/modules/workflows/domain/definitions/WorkflowTypes";
+import { workflowActionDefinitionSchema } from "@/modules/workflows/domain/actions/WorkflowActionSchemas";
 
 const graphSelection = {
   definition: {
@@ -51,6 +52,7 @@ const graphSelection = {
     stableKey: workflowActionDefinitions.stableKey,
     label: workflowActionDefinitions.label,
     actionType: workflowActionDefinitions.actionType,
+    configuration: workflowActionDefinitions.configuration,
     enabled: workflowActionDefinitions.enabled,
     reasonCodeRequired: workflowActionDefinitions.reasonCodeRequired,
     displayOrder: workflowActionDefinitions.displayOrder,
@@ -76,11 +78,10 @@ const graphSelection = {
   transition: {
     id: workflowTransitionDefinitions.id,
     fromStageId: workflowTransitionDefinitions.fromStageId,
-    actionCode: workflowTransitionDefinitions.actionCode,
+    actionKey: workflowTransitionDefinitions.actionKey,
     toStageId: workflowTransitionDefinitions.toStageId,
     terminalOutcome: workflowTransitionDefinitions.terminalOutcome,
-    requiredCapability: workflowTransitionDefinitions.requiredCapability,
-    condition: workflowTransitionDefinitions.condition,
+    priority: workflowTransitionDefinitions.priority,
   },
 };
 
@@ -116,6 +117,7 @@ function loadGraphRows(versionId: string) {
       asc(workflowStageDefinitions.sequence),
       asc(workflowActionDefinitions.displayOrder),
       asc(stageTaskDefinitions.displayOrder),
+      asc(workflowTransitionDefinitions.priority),
     );
 }
 
@@ -158,19 +160,18 @@ function assembleGraph(rows: Awaited<ReturnType<typeof loadGraphRows>>) {
       action?.id &&
       !target.actions.some((item) => item.id === action.id)
     ) {
-      target.actions.push({ ...action });
+      target.actions.push(workflowActionDefinitionSchema.parse(action));
     }
     if (target && task?.id && !target.tasks.some((item) => item.id === task.id))
       target.tasks.push({ ...task });
     if (transition?.id && !transitions.has(transition.id)) {
       transitions.set(transition.id, {
         id: transition.id,
-        actionCode: transition.actionCode,
-        condition: transition.condition,
-        fromStageCode: codes.get(transition.fromStageId) ?? "",
-        requiredCapability: transition.requiredCapability,
+        actionKey: transition.actionKey,
+        sourceStageKey: codes.get(transition.fromStageId) ?? "",
+        priority: transition.priority,
         terminalOutcome: transition.terminalOutcome,
-        toStageCode: transition.toStageId
+        targetStageKey: transition.toStageId
           ? (codes.get(transition.toStageId) ?? "")
           : null,
       });

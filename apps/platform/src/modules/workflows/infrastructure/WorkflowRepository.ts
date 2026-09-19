@@ -4,7 +4,6 @@ import { and, asc, desc, eq, inArray } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
 import {
-  capabilities as capabilityRecords,
   formVersions,
   roles,
   users,
@@ -97,18 +96,13 @@ export async function findDraftByDefinition(
 export async function findConfigurationReferences(
   graph: WorkflowGraphInput,
 ): Promise<{
-  capabilities: Set<string>;
   roles: Set<string>;
   users: Map<string, string>;
   forms?: Map<string, string>;
 }> {
   const references = collectConfigurationReferences(graph);
-  const [foundCapabilities, foundUsers, foundRoles, foundForms] =
+  const [foundUsers, foundRoles, foundForms] =
     await Promise.all([
-      getDatabase()
-        .select({ code: capabilityRecords.code })
-        .from(capabilityRecords)
-        .where(inArray(capabilityRecords.code, references.capabilityCodes)),
       references.userIds.length
         ? getDatabase()
             .select({ id: users.id, status: users.status })
@@ -129,7 +123,6 @@ export async function findConfigurationReferences(
         : [],
     ]);
   return {
-    capabilities: new Set(foundCapabilities.map((item) => item.code)),
     roles: new Set(foundRoles.map((item) => item.id)),
     users: new Map(foundUsers.map((item) => [item.id, item.status])),
     forms: new Map(foundForms.map((item) => [item.id, item.status])),
@@ -137,13 +130,22 @@ export async function findConfigurationReferences(
 }
 
 function collectConfigurationReferences(graph: WorkflowGraphInput) {
-  const capabilityCodes = [
-    ...new Set(graph.transitions.map((item) => item.requiredCapability)),
-  ];
   const userIds = uniqueTaskValues(graph, "namedUserOverrideId");
   const roleIds = uniqueTaskValues(graph, "roleId");
+  graph.stages.forEach((stage) => {
+    stage.actions.forEach((action) => {
+      if (action.actionType !== "ESCALATE") return;
+      const targets =
+        action.configuration.targetType === "ROLE" ? roleIds : userIds;
+      targets.push(action.configuration.targetId);
+    });
+  });
   const formVersionIds = uniqueTaskValues(graph, "formVersionId");
-  return { capabilityCodes, formVersionIds, roleIds, userIds };
+  return {
+    formVersionIds,
+    roleIds: [...new Set(roleIds)],
+    userIds: [...new Set(userIds)],
+  };
 }
 
 function uniqueTaskValues(

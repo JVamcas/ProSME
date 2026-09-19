@@ -78,13 +78,13 @@ export function WorkflowStageFlow({ canEdit, editor }: Props) {
       stages: remaining,
       transitions: editor.graph.transitions
         .filter(
-          (transition) => transition.fromStageCode !== stage.stableKey,
+          (transition) => transition.sourceStageKey !== stage.stableKey,
         )
         .flatMap((transition) =>
-          transition.toStageCode !== stage.stableKey
+          transition.targetStageKey !== stage.stableKey
             ? [transition]
             : successor
-              ? [{ ...transition, toStageCode: successor }]
+              ? [{ ...transition, targetStageKey: successor }]
               : [],
         ),
     });
@@ -107,15 +107,7 @@ export function WorkflowStageFlow({ canEdit, editor }: Props) {
             }
           : stage,
       ),
-      transitions: editor.graph.transitions.map((transition) => ({
-        ...transition,
-        condition:
-          transition.condition?.type === "TASK_RESULT_EQUALS" &&
-          transition.fromStageCode === selectedStage.stableKey &&
-          transition.condition.taskCode === task.stableKey
-            ? null
-            : transition.condition,
-      })),
+      transitions: editor.graph.transitions,
     });
     setTaskToDelete(null);
   }
@@ -150,6 +142,7 @@ export function WorkflowStageFlow({ canEdit, editor }: Props) {
           assignmentOptions={editor.assignmentOptions}
           canDelete={!isEditingLocked}
           canEdit={!isEditingLocked}
+          editor={editor}
           isDeleting={deleteMutation.isPending}
           onAddAction={() => setActionDialog("create")}
           onAddTask={() => setTaskDialog("create")}

@@ -1,3 +1,5 @@
+import type { WorkflowActionConfigurationByType } from "./WorkflowActionConfiguration";
+
 export const workflowActionTypes = [
   "APPROVE_ADVANCE",
   "REJECT",
@@ -12,12 +14,18 @@ export const workflowActionTypes = [
 
 export type WorkflowActionType = (typeof workflowActionTypes)[number];
 
-export type WorkflowActionDefinition = {
+type WorkflowActionDefinitionCommon = {
   id?: string;
   stableKey: string;
   label: string;
-  actionType: WorkflowActionType;
   enabled: boolean;
   reasonCodeRequired: boolean;
   displayOrder: number;
 };
+
+export type WorkflowActionDefinition = {
+  [ActionType in WorkflowActionType]: WorkflowActionDefinitionCommon & {
+    actionType: ActionType;
+    configuration: WorkflowActionConfigurationByType[ActionType];
+  };
+}[WorkflowActionType];

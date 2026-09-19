@@ -52,16 +52,31 @@ async function validateReferences(
     forms?: Map<string, string>;
   },
 ) {
-  graph.transitions.forEach((transition, index) => {
-    if (!references.capabilities.has(transition.requiredCapability)) {
-      validation.errors.push({
-        code: "UNKNOWN_CAPABILITY",
-        message: `${transition.requiredCapability} is not registered.`,
-        path: `transitions.${index}.requiredCapability`,
-      });
-    }
-  });
   graph.stages.forEach((stage, index) => {
+    stage.actions.forEach((action, actionIndex) => {
+      if (action.actionType !== "ESCALATE") return;
+      const path = `stages.${index}.actions.${actionIndex}.configuration.targetId`;
+      if (
+        action.configuration.targetType === "ROLE" &&
+        !references.roles.has(action.configuration.targetId)
+      ) {
+        validation.errors.push({
+          code: "UNKNOWN_ESCALATION_ROLE",
+          message: "The escalation role is not active.",
+          path,
+        });
+      }
+      if (
+        action.configuration.targetType === "USER" &&
+        references.users.get(action.configuration.targetId) !== "active"
+      ) {
+        validation.errors.push({
+          code: "INACTIVE_ESCALATION_USER",
+          message: "The escalation user is not active.",
+          path,
+        });
+      }
+    });
     stage.tasks.forEach((task, taskIndex) => {
       if (
         task.roleId &&

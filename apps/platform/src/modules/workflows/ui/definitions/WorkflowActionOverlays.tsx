@@ -44,7 +44,11 @@ export function WorkflowActionOverlays({
             }
           : item,
       ),
-      transitions: editor.graph.transitions,
+      transitions: editor.graph.transitions.filter(
+        (transition) =>
+          transition.sourceStageKey !== stage.stableKey ||
+          transition.actionKey !== action.stableKey,
+      ),
     });
     onCloseDelete();
   }
@@ -69,6 +73,7 @@ export function WorkflowActionOverlays({
         message={
           <p>
             Delete <strong>{actionToDelete?.label}</strong> from this stage?
+            Its transitions will also be deleted.
           </p>
         }
         onCancel={onCloseDelete}

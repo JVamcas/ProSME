@@ -1,14 +1,16 @@
 import { z } from "zod";
 
-import { workflowActionTypes } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
 import {
   taskTypeCodes,
-  workflowActionCodes,
   workflowStatuses,
 } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import { workflowPublicStatuses } from "@/modules/workflows/domain/definitions/WorkflowStageDefinition";
 import { workflowTaskAssignmentModes } from "@/modules/workflows/domain/definitions/WorkflowTaskDefinition";
-import { workflowConditionSchema } from "@/modules/workflows/WorkflowConditionRegistry";
+import { workflowActionDefinitionSchema } from "@/modules/workflows/domain/actions/WorkflowActionSchemas";
+import { workflowTransitionSchema } from "@/modules/workflows/domain/transitions/WorkflowTransitionSchemas";
+import { validateWorkflowTransitions } from "@/modules/workflows/domain/transitions/WorkflowTransitionValidation";
+
+export { workflowActionDefinitionSchema } from "@/modules/workflows/domain/actions/WorkflowActionSchemas";
 
 const codeSchema = z
   .string()
@@ -63,16 +65,6 @@ export const workflowTaskSchema = z
     }
   });
 
-export const workflowActionDefinitionSchema = z.object({
-  id: z.string().uuid().optional(),
-  stableKey: codeSchema,
-  label: z.string().trim().min(2).max(160),
-  actionType: z.enum(workflowActionTypes),
-  enabled: z.boolean(),
-  reasonCodeRequired: z.boolean(),
-  displayOrder: z.number().int().positive(),
-});
-
 export const workflowStageSchema = z.object({
   id: z.string().uuid().optional(),
   stableKey: codeSchema,
@@ -94,20 +86,22 @@ export const workflowStageSchema = z.object({
   tasks: z.array(workflowTaskSchema),
 });
 
-export const workflowTransitionSchema = z.object({
-  id: z.string().uuid().optional(),
-  fromStageCode: codeSchema,
-  actionCode: z.enum(workflowActionCodes),
-  toStageCode: codeSchema.nullable().optional(),
-  terminalOutcome: codeSchema.nullable().optional(),
-  requiredCapability: z.string().trim().min(3).max(120),
-  condition: workflowConditionSchema.nullable().optional(),
-});
+export { workflowTransitionSchema } from "@/modules/workflows/domain/transitions/WorkflowTransitionSchemas";
 
-export const workflowGraphSchema = z.object({
-  stages: z.array(workflowStageSchema),
-  transitions: z.array(workflowTransitionSchema),
-});
+export const workflowGraphSchema = z
+  .object({
+    stages: z.array(workflowStageSchema),
+    transitions: z.array(workflowTransitionSchema),
+  })
+  .superRefine((graph, context) => {
+    validateWorkflowTransitions(graph).forEach((error) => {
+      context.addIssue({
+        code: "custom",
+        message: error.message,
+        path: error.path.split("."),
+      });
+    });
+  });
 
 export const createWorkflowSchema = z.object({
   code: codeSchema,

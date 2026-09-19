@@ -127,11 +127,11 @@ describe("workflow task registry", () => {
     ).toBe(false);
   });
 
-  it("rejects transition actions outside the controlled vocabulary", () => {
+  it("rejects transitions that do not reference a configured action", () => {
     const graph = structuredClone(referenceWorkflow) as unknown as {
       transitions: Array<Record<string, unknown>>;
     };
-    graph.transitions[0].actionCode = "ARBITRARY_ACTION";
+    graph.transitions[0].actionKey = "ARBITRARY_ACTION";
     expect(workflowGraphSchema.safeParse(graph).success).toBe(false);
   });
 });
@@ -162,7 +162,7 @@ describe("workflow graph validation", () => {
     const graph = structuredClone(referenceWorkflow);
     graph.stages[1].publicStatusMapping.label = "Committee score assigned";
     graph.stages[1].tasks[0].config = { items: [] };
-    graph.transitions[4].toStageCode = "COMPLETENESS";
+    graph.transitions[4].targetStageKey = "COMPLETENESS";
     const validation = validateWorkflowGraph(graph);
     expect(validation.valid).toBe(false);
     expect(validation.errors.map((item) => item.code)).toEqual(
@@ -170,6 +170,32 @@ describe("workflow graph validation", () => {
         "INVALID_TASK_CONFIG",
         "UNSAFE_APPLICANT_LABEL",
         "WORKFLOW_CYCLE",
+      ]),
+    );
+  });
+
+  it("supports multiple prioritized targets for one configured action", () => {
+    const graph = structuredClone(referenceWorkflow);
+    graph.transitions.push({
+      sourceStageKey: "PRE_SCREENING",
+      actionKey: "ADVANCE",
+      targetStageKey: "TECHNICAL_ASSESSMENT",
+      priority: 2,
+    });
+    expect(workflowGraphSchema.safeParse(graph).success).toBe(true);
+  });
+
+  it("rejects duplicate priorities for the same source action", () => {
+    const graph = structuredClone(referenceWorkflow);
+    graph.transitions.push({
+      sourceStageKey: "PRE_SCREENING",
+      actionKey: "ADVANCE",
+      targetStageKey: "TECHNICAL_ASSESSMENT",
+      priority: 1,
+    });
+    expect(validateWorkflowGraph(graph).errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: "DUPLICATE_TRANSITION_PRIORITY" }),
       ]),
     );
   });

@@ -1,10 +1,26 @@
 import type { WorkflowGraphInput } from "@/modules/workflows/domain/definitions/WorkflowTypes";
+import type { WorkflowActionDefinition } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
 import { referenceWorkflowTransitions } from "./ReferenceWorkflowTransitions";
 
 const reviewOutcomes = [
   { code: "ACCEPT", label: "Accept" },
   { code: "RETURN", label: "Return for clarification" },
 ];
+
+function routingAction(
+  stableKey: string,
+  label: string,
+): WorkflowActionDefinition {
+  return {
+    stableKey,
+    label,
+    actionType: "APPROVE_ADVANCE",
+    configuration: {},
+    enabled: true,
+    reasonCodeRequired: false,
+    displayOrder: 1,
+  };
+}
 
 export const referenceWorkflow: WorkflowGraphInput = {
   stages: [
@@ -24,7 +40,7 @@ export const referenceWorkflow: WorkflowGraphInput = {
         description:
           "Your application has been received and is being prepared for review.",
       },
-      actions: [],
+      actions: [routingAction("ADVANCE", "Advance")],
       tasks: [
         {
           stableKey: "PRE_SCREEN_CHECKLIST",
@@ -81,7 +97,7 @@ export const referenceWorkflow: WorkflowGraphInput = {
         description:
           "We are checking that the required application information is present.",
       },
-      actions: [],
+      actions: [routingAction("ADVANCE", "Advance")],
       tasks: [
         {
           stableKey: "COMPLETENESS_CHECK",
@@ -128,7 +144,7 @@ export const referenceWorkflow: WorkflowGraphInput = {
         description:
           "Your application is undergoing a detailed programme review.",
       },
-      actions: [],
+      actions: [routingAction("ADVANCE", "Advance")],
       tasks: [
         {
           stableKey: "TECHNICAL_SCORE",
@@ -179,7 +195,7 @@ export const referenceWorkflow: WorkflowGraphInput = {
         description:
           "The financial information in your application is being reviewed.",
       },
-      actions: [],
+      actions: [routingAction("ADVANCE", "Advance")],
       tasks: [
         {
           stableKey: "FINANCE_CHECK",
@@ -222,7 +238,7 @@ export const referenceWorkflow: WorkflowGraphInput = {
         label: "Final review",
         description: "Your application is in the final review step.",
       },
-      actions: [],
+      actions: [routingAction("ADVANCE", "Advance")],
       tasks: [
         {
           stableKey: "PANEL_DECISION",
@@ -263,7 +279,7 @@ export const referenceWorkflow: WorkflowGraphInput = {
         description:
           "An outcome is available in your application workspace.",
       },
-      actions: [],
+      actions: [routingAction("COMPLETE", "Complete workflow")],
       tasks: [
         {
           stableKey: "SEND_OUTCOME",

@@ -135,6 +135,13 @@ describeDatabase("P3.3 PostgreSQL workflow persistence", () => {
       ),
     ).rejects.toThrow("only draft workflow versions are editable");
     await expect(
+      query(
+        `UPDATE app_workflow_transition_definitions
+         SET priority = priority + 1 WHERE version_id = $1`,
+        [publishedVersionId],
+      ),
+    ).rejects.toThrow("only draft workflow versions are editable");
+    await expect(
       query(`DELETE FROM app_workflow_definition_versions WHERE id = $1`, [
         publishedVersionId,
       ]),
@@ -167,6 +174,10 @@ describeDatabase("P3.3 PostgreSQL workflow persistence", () => {
     );
     await query(
       `DELETE FROM app_stage_task_definitions WHERE stage_id = ANY($1::uuid[])`,
+      [stages.rows.map((row) => row.id)],
+    );
+    await query(
+      `DELETE FROM app_workflow_action_definitions WHERE stage_id = ANY($1::uuid[])`,
       [stages.rows.map((row) => row.id)],
     );
     await query(

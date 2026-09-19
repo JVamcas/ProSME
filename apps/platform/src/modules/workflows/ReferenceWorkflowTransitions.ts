@@ -1,26 +1,26 @@
 import type { WorkflowTransitionInput } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 
 const stageTransitions = [
-  ["PRE_SCREENING", "COMPLETENESS", "workflow.task.complete"],
-  ["COMPLETENESS", "TECHNICAL_ASSESSMENT", "application.screen"],
-  ["TECHNICAL_ASSESSMENT", "FINANCE_REVIEW", "application.assess"],
-  ["FINANCE_REVIEW", "COMMITTEE_DECISION", "application.finance_review"],
-  ["COMMITTEE_DECISION", "OUTCOME_COMMUNICATION", "application.decide"],
+  ["PRE_SCREENING", "COMPLETENESS"],
+  ["COMPLETENESS", "TECHNICAL_ASSESSMENT"],
+  ["TECHNICAL_ASSESSMENT", "FINANCE_REVIEW"],
+  ["FINANCE_REVIEW", "COMMITTEE_DECISION"],
+  ["COMMITTEE_DECISION", "OUTCOME_COMMUNICATION"],
 ] as const;
 
 export const referenceWorkflowTransitions: WorkflowTransitionInput[] = [
   ...stageTransitions.map(
-    ([fromStageCode, toStageCode, requiredCapability]) => ({
-      fromStageCode,
-      actionCode: "COMPLETE" as const,
-      toStageCode,
-      requiredCapability,
+    ([sourceStageKey, targetStageKey]) => ({
+      sourceStageKey,
+      actionKey: "ADVANCE",
+      targetStageKey,
+      priority: 1,
     }),
   ),
   {
-    fromStageCode: "OUTCOME_COMMUNICATION",
-    actionCode: "COMPLETE",
+    sourceStageKey: "OUTCOME_COMMUNICATION",
+    actionKey: "COMPLETE",
     terminalOutcome: "CLOSED",
-    requiredCapability: "communication.send",
+    priority: 1,
   },
 ];

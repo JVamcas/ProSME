@@ -1,12 +1,17 @@
+import type { ReactNode } from "react";
+
 import { DeleteButton, EditButton } from "@/components/ui/action-buttons";
+import { Tabs, type TabItem } from "@/components/ui/tabs";
 import type { WorkflowActionDefinition } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
 import type {
   WorkflowAssignmentOptions,
+  WorkflowEditorView,
   WorkflowStageInput,
   WorkflowTaskInput,
 } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import { WorkflowStageTaskTable } from "@/modules/workflows/ui/definitions/WorkflowStageTaskTable";
 import { WorkflowStageActionTable } from "@/modules/workflows/ui/definitions/WorkflowStageActionTable";
+import { WorkflowStageTransitionTable } from "@/modules/workflows/ui/definitions/WorkflowStageTransitionTable";
 import { Badge, type BadgeProps } from "@/shared/ui/Badge";
 
 type Props = {
@@ -14,6 +19,7 @@ type Props = {
   canDelete: boolean;
   isDeleting: boolean;
   assignmentOptions?: WorkflowAssignmentOptions;
+  editor: WorkflowEditorView;
   onAddAction: () => void;
   onAddTask: () => void;
   onDelete: () => void;
@@ -31,6 +37,7 @@ export function WorkflowStageDetails({
   canDelete,
   isDeleting,
   assignmentOptions,
+  editor,
   onAddAction,
   onAddTask,
   onDelete,
@@ -50,6 +57,53 @@ export function WorkflowStageDetails({
     );
   }
 
+  const workTabs = [
+    {
+      id: "tasks",
+      label: "Tasks",
+      content: (
+        <StageTabContent>
+          <WorkflowStageTaskTable
+            assignmentOptions={assignmentOptions}
+            canEdit={canEdit}
+            onAdd={onAddTask}
+            onDelete={onDeleteTask}
+            onEdit={onEditTask}
+            stage={stage}
+          />
+        </StageTabContent>
+      ),
+    },
+    {
+      id: "actions",
+      label: "Actions",
+      content: (
+        <StageTabContent>
+          <WorkflowStageActionTable
+            canEdit={canEdit}
+            onAdd={onAddAction}
+            onDelete={onDeleteAction}
+            onEdit={onEditAction}
+            stage={stage}
+          />
+        </StageTabContent>
+      ),
+    },
+    {
+      id: "transition",
+      label: "Transition",
+      content: (
+        <StageTabContent>
+          <WorkflowStageTransitionTable
+            canEdit={canEdit}
+            editor={editor}
+            stage={stage}
+          />
+        </StageTabContent>
+      ),
+    },
+  ] satisfies readonly TabItem<"tasks" | "actions" | "transition">[];
+
   return (
     <article className="rounded-2xl border border-brand-navy/15 bg-brand-white p-5">
       <StageDetailHeader
@@ -62,23 +116,19 @@ export function WorkflowStageDetails({
         stageIndex={stageIndex}
       />
       <StageConfiguration stage={stage} />
-      <WorkflowStageActionTable
-        canEdit={canEdit}
-        onAdd={onAddAction}
-        onDelete={onDeleteAction}
-        onEdit={onEditAction}
-        stage={stage}
-      />
-      <WorkflowStageTaskTable
-        assignmentOptions={assignmentOptions}
-        canEdit={canEdit}
-        onAdd={onAddTask}
-        onDelete={onDeleteTask}
-        onEdit={onEditTask}
-        stage={stage}
-      />
+      <div className="mt-5">
+        <Tabs
+          ariaLabel={`${stage.name} stage configuration`}
+          defaultSelectedId="tasks"
+          items={workTabs}
+        />
+      </div>
     </article>
   );
+}
+
+function StageTabContent({ children }: { children: ReactNode }) {
+  return <div className="[&>section]:mt-0">{children}</div>;
 }
 
 function StageConfiguration({ stage }: { stage: WorkflowStageInput }) {

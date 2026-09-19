@@ -7,6 +7,7 @@ vi.mock("server-only", () => ({}));
 import { permissionCodes } from "@/auth/authorization/permissions/PermissionCodes";
 import type { AuthenticatedUser } from "@/auth/types";
 import { createWorkflowTemplate } from "@/modules/workflows/application/definitions/ServerWorkflowTemplateService";
+import type { WorkflowActionDefinition } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
 import { findWorkflowGraph } from "@/modules/workflows/infrastructure/WorkflowGraphRepository";
 import { replaceWorkflowDraft } from "@/modules/workflows/infrastructure/WorkflowTemplateWriteRepository";
 
@@ -52,7 +53,7 @@ afterAll(async () => {
       },
       randomUUID(),
     );
-    const actions = [
+    const actions: WorkflowActionDefinition[] = [
       {
         stableKey: "ADVANCE_REVIEW",
         label: "Advance review",
@@ -60,6 +61,7 @@ afterAll(async () => {
         enabled: true,
         reasonCodeRequired: false,
         displayOrder: 1,
+        configuration: {},
       },
       {
         stableKey: "REJECT_REVIEW",
@@ -68,6 +70,9 @@ afterAll(async () => {
         enabled: true,
         reasonCodeRequired: true,
         displayOrder: 2,
+        configuration: {
+          reasonCodes: ["INSUFFICIENT_EVIDENCE"],
+        },
       },
     ];
     await replaceWorkflowDraft({

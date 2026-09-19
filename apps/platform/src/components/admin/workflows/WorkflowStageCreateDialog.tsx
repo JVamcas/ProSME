@@ -94,14 +94,14 @@ export function WorkflowStageCreateDialog({
       transitions: stage
         ? editor.graph.transitions.map((transition) => ({
             ...transition,
-            fromStageCode:
-              transition.fromStageCode === stage.stableKey
+            sourceStageKey:
+              transition.sourceStageKey === stage.stableKey
                 ? values.stableKey
-                : transition.fromStageCode,
-            toStageCode:
-              transition.toStageCode === stage.stableKey
+                : transition.sourceStageKey,
+            targetStageKey:
+              transition.targetStageKey === stage.stableKey
                 ? values.stableKey
-                : transition.toStageCode,
+                : transition.targetStageKey,
           }))
         : editor.graph.transitions,
     });

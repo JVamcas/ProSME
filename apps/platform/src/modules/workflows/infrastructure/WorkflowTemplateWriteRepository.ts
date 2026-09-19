@@ -51,6 +51,7 @@ async function insertGraph(
   const actions = graph.stages.flatMap((stage) =>
     stage.actions.map((action) => ({
       actionType: action.actionType,
+      configuration: action.configuration,
       displayOrder: action.displayOrder,
       enabled: action.enabled,
       label: action.label,
@@ -85,13 +86,12 @@ async function insertGraph(
   if (tasks.length)
     await transaction.insert(stageTaskDefinitions).values(tasks);
   const transitions = graph.transitions.map((transition) => ({
-    actionCode: transition.actionCode,
-    condition: transition.condition ?? null,
-    fromStageId: stageIds.get(transition.fromStageCode)!,
-    requiredCapability: transition.requiredCapability,
+    actionKey: transition.actionKey,
+    fromStageId: stageIds.get(transition.sourceStageKey)!,
+    priority: transition.priority,
     terminalOutcome: transition.terminalOutcome ?? null,
-    toStageId: transition.toStageCode
-      ? stageIds.get(transition.toStageCode)!
+    toStageId: transition.targetStageKey
+      ? stageIds.get(transition.targetStageKey)!
       : null,
     versionId,
   }));

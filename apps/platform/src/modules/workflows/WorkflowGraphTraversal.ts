@@ -13,9 +13,9 @@ export function reachableStages(
     graph.transitions
       .filter(
         (transition) =>
-          transition.fromStageCode === code && transition.toStageCode,
+          transition.sourceStageKey === code && transition.targetStageKey,
       )
-      .forEach((transition) => pending.push(transition.toStageCode!));
+      .forEach((transition) => pending.push(transition.targetStageKey!));
   }
   return visited;
 }
@@ -30,9 +30,9 @@ export function hasWorkflowCycle(graph: WorkflowGraphInput) {
     const cyclic = graph.transitions
       .filter(
         (transition) =>
-          transition.fromStageCode === code && transition.toStageCode,
+          transition.sourceStageKey === code && transition.targetStageKey,
       )
-      .some((transition) => visit(transition.toStageCode!));
+      .some((transition) => visit(transition.targetStageKey!));
     active.delete(code);
     complete.add(code);
     return cyclic;

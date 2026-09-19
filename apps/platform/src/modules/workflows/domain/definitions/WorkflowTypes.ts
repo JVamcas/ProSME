@@ -2,6 +2,7 @@ import { workflowTemplateStatuses } from "./WorkflowTemplate";
 import type { WorkflowActionDefinition } from "../actions/WorkflowActionDefinition";
 import type { WorkflowStageDefinition } from "./WorkflowStageDefinition";
 import type { WorkflowTaskDefinition } from "./WorkflowTaskDefinition";
+import type { WorkflowTransitionDefinition } from "../transitions/WorkflowTransitionDefinition";
 
 export const workflowStatuses = workflowTemplateStatuses;
 
@@ -42,15 +43,6 @@ export const taskTypeCodes = [
 
 export type TaskTypeCode = (typeof taskTypeCodes)[number];
 
-export type WorkflowCondition =
-  | { type: "ALL_REQUIRED_TASKS_COMPLETE" }
-  | {
-      type: "TASK_RESULT_EQUALS";
-      taskCode: string;
-      field: string;
-      value: string | number | boolean;
-    };
-
 export type WorkflowTaskInput = WorkflowTaskDefinition & {
   type: TaskTypeCode;
   required: boolean;
@@ -65,15 +57,7 @@ export type WorkflowStageInput = WorkflowStageDefinition & {
   tasks: WorkflowTaskInput[];
 };
 
-export type WorkflowTransitionInput = {
-  id?: string;
-  fromStageCode: string;
-  actionCode: WorkflowActionCode;
-  toStageCode?: string | null;
-  terminalOutcome?: string | null;
-  requiredCapability: string;
-  condition?: WorkflowCondition | null;
-};
+export type WorkflowTransitionInput = WorkflowTransitionDefinition;
 
 export type WorkflowGraphInput = {
   stages: WorkflowStageInput[];

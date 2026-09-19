@@ -58,7 +58,7 @@ function actionColumns(
     },
     {
       id: "controls",
-      header: "Controls",
+      header: "Actions",
       enableSorting: false,
       cell: ({ row }) => (
         <div className="flex justify-start gap-1">

@@ -65,14 +65,12 @@ import {
   updateWorkflowDraft,
   WorkflowConflictError,
 } from "@/modules/workflows/application/definitions/ServerWorkflowService";
+import { workflowEditorView } from "@/modules/workflows/application/definitions/ServerWorkflowSupport";
 import { actor, record, userWith } from "./WorkflowServiceFixtures";
 
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(findConfigurationReferences).mockResolvedValue({
-    capabilities: new Set(
-      referenceWorkflow.transitions.map((item) => item.requiredCapability),
-    ),
     roles: new Set(),
     users: new Map([[actor.id, "active"]]),
   });
@@ -148,6 +146,34 @@ describe("workflow service authorization and lifecycle", () => {
       ),
     ).rejects.toBeInstanceOf(WorkflowConflictError);
     expect(publishWorkflowVersion).not.toHaveBeenCalled();
+  });
+
+  it("rejects an escalation target that is not an active role", async () => {
+    const graph = structuredClone(record.graph);
+    graph.stages[0].actions = [
+      {
+        stableKey: "ESCALATE_REVIEW",
+        label: "Escalate review",
+        actionType: "ESCALATE",
+        enabled: true,
+        reasonCodeRequired: false,
+        displayOrder: 1,
+        configuration: {
+          targetType: "ROLE",
+          targetId: "79e20de0-3558-4d63-90a4-8c9f5125df09",
+          trigger: "SLA_BREACH",
+        },
+      },
+    ];
+    vi.mocked(findWorkflowGraph).mockResolvedValue({ ...record, graph });
+
+    const editor = await workflowEditorView(record.version.id);
+
+    expect(editor.validation.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: "UNKNOWN_ESCALATION_ROLE" }),
+      ]),
+    );
   });
 });
 

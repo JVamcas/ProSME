@@ -1,5 +1,7 @@
 import { hasWorkflowCycle, reachableStages } from "./WorkflowGraphTraversal";
 import { validateWorkflowStage } from "./WorkflowStageValidation";
+import { validateWorkflowActionTargets } from "./domain/actions/WorkflowActionValidation";
+import { validateWorkflowTransitions } from "./domain/transitions/WorkflowTransitionValidation";
 import type {
   WorkflowGraphInput,
   WorkflowValidation,
@@ -18,25 +20,16 @@ function duplicates(values: (string | number)[]) {
   return values.filter((value, index) => values.indexOf(value) !== index);
 }
 
-function validateTransitions(graph: WorkflowGraphInput, initialCode?: string) {
+function validateTransitionTargets(
+  graph: WorkflowGraphInput,
+  initialCode?: string,
+) {
   const errors: WorkflowValidationIssue[] = [];
-  const stageCodes = new Set(graph.stages.map((stage) => stage.stableKey));
   graph.transitions.forEach((transition, index) => {
     const path = `transitions.${index}`;
     if (
-      !stageCodes.has(transition.fromStageCode) ||
-      (transition.toStageCode && !stageCodes.has(transition.toStageCode))
-    ) {
-      errors.push(
-        issue(
-          "INVALID_TRANSITION_STAGE",
-          "Transition stages must belong to this version.",
-          path,
-        ),
-      );
-    }
-    if (
-      Boolean(transition.toStageCode) === Boolean(transition.terminalOutcome)
+      Boolean(transition.targetStageKey) ===
+      Boolean(transition.terminalOutcome)
     ) {
       errors.push(
         issue(
@@ -46,7 +39,7 @@ function validateTransitions(graph: WorkflowGraphInput, initialCode?: string) {
         ),
       );
     }
-    if (initialCode && transition.toStageCode === initialCode) {
+    if (initialCode && transition.targetStageKey === initialCode) {
       errors.push(
         issue(
           "INITIAL_STAGE_TARGET",
@@ -70,7 +63,9 @@ function isSequentialFormGraph(graph: WorkflowGraphInput) {
 function missingTransitionErrors(graph: WorkflowGraphInput) {
   const errors: WorkflowValidationIssue[] = [];
   graph.stages.forEach((stage, index) => {
-    if (!graph.transitions.some((transition) => transition.fromStageCode === stage.stableKey)) {
+    if (!graph.transitions.some(
+      (transition) => transition.sourceStageKey === stage.stableKey,
+    )) {
       errors.push(
         issue(
           "MISSING_TRANSITION",
@@ -106,7 +101,7 @@ function validateLegacyGraph(
   graph: WorkflowGraphInput,
   initialCode: string | undefined,
 ) {
-  const errors = validateTransitions(graph, initialCode);
+  const errors = validateTransitionTargets(graph, initialCode);
   if (!graph.transitions.some((transition) => transition.terminalOutcome)) {
     errors.push(
       issue(
@@ -134,6 +129,8 @@ export function validateWorkflowGraph(
   graph: WorkflowGraphInput,
 ): WorkflowValidation {
   const errors = graph.stages.flatMap(validateWorkflowStage);
+  errors.push(...validateWorkflowActionTargets(graph));
+  errors.push(...validateWorkflowTransitions(graph));
   if (graph.stages.length === 0) {
     errors.push(
       issue("MISSING_STAGE", "At least one enabled stage is required.", "stages"),

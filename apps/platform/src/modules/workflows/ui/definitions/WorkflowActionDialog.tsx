@@ -1,7 +1,8 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { FormProvider, useForm } from "react-hook-form";
+import { useEffect, useRef } from "react";
+import { FormProvider, useForm, useWatch } from "react-hook-form";
 
 import { GeneralButton } from "@/components/ui/button";
 import { DraggableDialog } from "@/components/ui/draggable-dialog";
@@ -18,6 +19,11 @@ import {
   workflowActionFormSchema,
   workflowActionTypeItems,
 } from "./WorkflowActionFormSchema";
+import {
+  toWorkflowActionDefinition,
+  workflowActionFormDefaults,
+} from "./WorkflowActionFormMapping";
+import { WorkflowActionConfigurationFields } from "./WorkflowActionConfigurationFields";
 
 type Props = {
   action?: WorkflowActionDefinition;
@@ -36,16 +42,29 @@ export function WorkflowActionDialog({
 }: Props) {
   const mutation = useSaveWorkflowGraph(editor);
   const form = useForm<WorkflowActionFormValues>({
-    defaultValues: {
-      stableKey: action?.stableKey ?? "",
-      label: action?.label ?? "",
-      actionType: action?.actionType ?? "APPROVE_ADVANCE",
-      enabled: action?.enabled ?? true,
-      reasonCodeRequired: action?.reasonCodeRequired ?? false,
-      displayOrder: action?.displayOrder ?? stage.actions.length + 1,
-    },
+    defaultValues: workflowActionFormDefaults(
+      action,
+      stage.actions.length + 1,
+    ),
     resolver: zodResolver(workflowActionFormSchema),
   });
+  const actionType = useWatch({ control: form.control, name: "actionType" });
+  const deferTargetType = useWatch({
+    control: form.control,
+    name: "deferTargetType",
+  });
+  const escalationTargetType = useWatch({
+    control: form.control,
+    name: "escalationTargetType",
+  });
+  const previousEscalationTargetType = useRef(escalationTargetType);
+
+  useEffect(() => {
+    if (previousEscalationTargetType.current === escalationTargetType) return;
+    previousEscalationTargetType.current = escalationTargetType;
+    form.setValue("escalationTargetId", "", { shouldValidate: true });
+  }, [escalationTargetType, form]);
+
   const submit = form.handleSubmit(async (values) => {
     const duplicateKey = stage.actions.some(
       (item) =>
@@ -69,10 +88,7 @@ export function WorkflowActionDialog({
       });
       return;
     }
-    const nextAction: WorkflowActionDefinition = {
-      ...(action?.id ? { id: action.id } : {}),
-      ...values,
-    };
+    const nextAction = toWorkflowActionDefinition(values, action?.id);
     await mutation.mutateAsync({
       stages: editor.graph.stages.map((item) =>
         item.stableKey === stage.stableKey
@@ -88,7 +104,16 @@ export function WorkflowActionDialog({
             }
           : item,
       ),
-      transitions: editor.graph.transitions,
+      transitions: action
+        ? editor.graph.transitions.map((transition) => ({
+            ...transition,
+            actionKey:
+              transition.sourceStageKey === stage.stableKey &&
+              transition.actionKey === action.stableKey
+                ? nextAction.stableKey
+                : transition.actionKey,
+          }))
+        : editor.graph.transitions,
     });
     onClose();
   });
@@ -132,6 +157,19 @@ export function WorkflowActionDialog({
           <CheckboxField
             label="Require a reason code"
             name="reasonCodeRequired"
+          />
+          <div className="sm:col-span-2 border-t border-brand-navy/10 pt-4">
+            <h3 className="text-sm font-bold text-brand-navy">
+              Action-specific configuration
+            </h3>
+          </div>
+          <WorkflowActionConfigurationFields
+            actionType={actionType}
+            assignmentOptions={
+              editor.assignmentOptions ?? { roles: [], users: [] }
+            }
+            deferTargetType={deferTargetType}
+            escalationTargetType={escalationTargetType}
           />
           {mutation.error ? (
             <p className="sm:col-span-2 text-sm text-red-700" role="alert">

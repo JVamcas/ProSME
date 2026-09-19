@@ -190,6 +190,20 @@
       "when": 1790035200000,
       "tag": "0026_workflow_action_definitions",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1790121600000,
+      "tag": "0027_workflow_action_configuration",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1790208000000,
+      "tag": "0028_workflow_transitions",
+      "breakpoints": true
     }
   ]
 }

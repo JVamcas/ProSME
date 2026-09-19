@@ -1,5 +1,6 @@
 import {
   boolean,
+  foreignKey,
   index,
   integer,
   jsonb,
@@ -12,14 +13,13 @@ import {
 
 import type { WorkflowTemplateDetails } from "../domain/definitions/WorkflowTemplate";
 import type { WorkflowActionType } from "../domain/actions/WorkflowActionDefinition";
+import type { WorkflowActionConfiguration } from "../domain/actions/WorkflowActionConfiguration";
 import type { WorkflowPublicStatus } from "../domain/definitions/WorkflowStageDefinition";
 import type { WorkflowTaskAssignmentMode } from "../domain/definitions/WorkflowTaskDefinition";
 
 import type {
-  WorkflowCondition,
   WorkflowStatus,
   TaskTypeCode,
-  WorkflowActionCode,
 } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import { roles } from "@/db/schema/authorization";
 import { formVersions } from "@/db/schema/forms";
@@ -184,6 +184,9 @@ export const workflowActionDefinitions = pgTable(
       .notNull()
       .default(false),
     displayOrder: integer("display_order").notNull(),
+    configuration: jsonb("configuration")
+      .$type<WorkflowActionConfiguration>()
+      .notNull(),
   },
   (table) => [
     uniqueIndex("app_workflow_actions_stage_key_unique").on(
@@ -209,22 +212,30 @@ export const workflowTransitionDefinitions = pgTable(
     fromStageId: uuid("from_stage_id")
       .notNull()
       .references(() => workflowStageDefinitions.id, { onDelete: "restrict" }),
-    actionCode: text("action_code").$type<WorkflowActionCode>().notNull(),
+    actionKey: text("action_key").notNull(),
     toStageId: uuid("to_stage_id").references(
       () => workflowStageDefinitions.id,
       { onDelete: "restrict" },
     ),
     terminalOutcome: text("terminal_outcome"),
-    requiredCapability: text("required_capability").notNull(),
-    condition: jsonb("condition").$type<WorkflowCondition | null>(),
+    priority: integer("priority").notNull(),
   },
   (table) => [
-    uniqueIndex("app_workflow_transitions_source_action_unique").on(
+    uniqueIndex("app_workflow_transitions_source_action_priority_unique").on(
       table.versionId,
       table.fromStageId,
-      table.actionCode,
+      table.actionKey,
+      table.priority,
     ),
     index("app_workflow_transitions_version_idx").on(table.versionId),
+    foreignKey({
+      columns: [table.fromStageId, table.actionKey],
+      foreignColumns: [
+        workflowActionDefinitions.stageId,
+        workflowActionDefinitions.stableKey,
+      ],
+      name: "app_workflow_transitions_source_action_fk",
+    }).onDelete("restrict"),
   ],
 );
 

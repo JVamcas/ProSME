@@ -32,4 +32,5 @@ DATABASE_URL="${test_database_url}" \
     tests/integration/workflow-template-storage.test.ts \
     tests/integration/workflow-stage-definitions.test.ts \
     tests/integration/workflow-task-definitions.test.ts \
-    tests/integration/workflow-action-definitions.test.ts
+    tests/integration/workflow-action-definitions.test.ts \
+    tests/integration/workflow-transition-definitions.test.ts
