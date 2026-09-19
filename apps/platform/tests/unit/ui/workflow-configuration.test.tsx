@@ -49,6 +49,10 @@ describe("workflow configuration UI", () => {
     expect(markup).toContain("Build the approval flow");
     expect(markup).toContain("Visual flow");
     expect(markup).toContain("Stage details");
+    expect(markup).toContain("Stable key");
+    expect(markup).toContain("PRE_SCREENING");
+    expect(markup).toContain("Single-run");
+    expect(markup).toContain("No COI gate");
     expect(markup).toContain("Tasks (1)");
     expect(markup).toContain("Add Workflow stage");
     expect(markup).toContain("Assignee");

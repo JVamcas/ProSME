@@ -1,4 +1,6 @@
 import { workflowTemplateStatuses } from "./WorkflowTemplate";
+import type { WorkflowStageDefinition } from "./WorkflowStageDefinition";
+import type { WorkflowTaskDefinition } from "./WorkflowTaskDefinition";
 
 export const workflowStatuses = workflowTemplateStatuses;
 
@@ -48,34 +50,15 @@ export type WorkflowCondition =
       value: string | number | boolean;
     };
 
-export type WorkflowTaskInput = {
-  id?: string;
-  code: string;
-  name: string;
+export type WorkflowTaskInput = WorkflowTaskDefinition & {
   type: TaskTypeCode;
-  sequence: number;
   required: boolean;
-  assignmentRoleId?: string | null;
-  assignmentUserId?: string | null;
   config: unknown;
   formVersionId?: string | null;
 };
 
-export type WorkflowStageInput = {
-  id?: string;
-  code: string;
-  name: string;
-  sequence: number;
+export type WorkflowStageInput = WorkflowStageDefinition & {
   initial: boolean;
-  applicantStatus:
-    | "SUBMITTED"
-    | "UNDER_REVIEW"
-    | "ACTION_REQUIRED"
-    | "OUTCOME_AVAILABLE"
-    | "CLOSED"
-    | "WITHDRAWN";
-  applicantLabel: string;
-  applicantDescription: string;
   slaHours?: number | null;
   tasks: WorkflowTaskInput[];
 };

@@ -169,6 +169,20 @@
       "when": 1789776000000,
       "tag": "0023_workflow_template_governance",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1789862400000,
+      "tag": "0024_workflow_stage_definitions",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1789948800000,
+      "tag": "0025_workflow_task_definitions",
+      "breakpoints": true
     }
   ]
 }

@@ -4,9 +4,12 @@ import { cn } from "@/lib/utils";
 import { Input, Select, Textarea } from "./form-controls";
 import { type FormBindingProps, useFormBinding } from "./form-binding";
 import { FormField } from "./form-field";
+import type { InfoTooltipSide } from "@/shared/ui/InfoTooltip";
 
 type FieldOptions = {
   containerClassName?: string;
+  infoTooltip?: React.ReactNode;
+  infoTooltipSide?: InfoTooltipSide;
   label: React.ReactNode;
   labelAccessory?: React.ReactNode;
   labelClassName?: string;
@@ -34,6 +37,8 @@ export function FormInput({
   containerClassName,
   error,
   id,
+  infoTooltip,
+  infoTooltipSide,
   label,
   labelAccessory,
   labelClassName,
@@ -53,6 +58,8 @@ export function FormInput({
       error={binding.error}
       errorId={ids.errorId}
       htmlFor={ids.controlId}
+      infoTooltip={infoTooltip}
+      infoTooltipSide={infoTooltipSide}
       label={label}
       labelAccessory={labelAccessory}
       labelClassName={labelClassName}
@@ -92,6 +99,8 @@ export function FormSelect({
   containerClassName,
   error,
   id,
+  infoTooltip,
+  infoTooltipSide,
   items,
   label,
   labelAccessory,
@@ -112,6 +121,8 @@ export function FormSelect({
       error={binding.error}
       errorId={ids.errorId}
       htmlFor={ids.controlId}
+      infoTooltip={infoTooltip}
+      infoTooltipSide={infoTooltipSide}
       label={label}
       labelAccessory={labelAccessory}
       labelClassName={labelClassName}
@@ -146,6 +157,8 @@ export function FormTextarea({
   containerClassName,
   error,
   id,
+  infoTooltip,
+  infoTooltipSide,
   label,
   labelAccessory,
   labelClassName,
@@ -164,6 +177,8 @@ export function FormTextarea({
       error={binding.error}
       errorId={ids.errorId}
       htmlFor={ids.controlId}
+      infoTooltip={infoTooltip}
+      infoTooltipSide={infoTooltipSide}
       label={label}
       labelAccessory={labelAccessory}
       labelClassName={labelClassName}

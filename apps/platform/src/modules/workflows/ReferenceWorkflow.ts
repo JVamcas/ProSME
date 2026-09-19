@@ -9,20 +9,33 @@ const reviewOutcomes = [
 export const referenceWorkflow: WorkflowGraphInput = {
   stages: [
     {
-      code: "PRE_SCREENING",
+      stableKey: "PRE_SCREENING",
       name: "Submission and pre-screening",
-      sequence: 1,
+      description: "Receive and pre-screen the submitted application.",
+      enabled: true,
+      optional: false,
+      displayOrder: 1,
+      repeatable: false,
+      coiGated: false,
       initial: true,
-      applicantStatus: "SUBMITTED",
-      applicantLabel: "Application received",
-      applicantDescription:
-        "Your application has been received and is being prepared for review.",
+      publicStatusMapping: {
+        status: "SUBMITTED",
+        label: "Application received",
+        description:
+          "Your application has been received and is being prepared for review.",
+      },
       tasks: [
         {
-          code: "PRE_SCREEN_CHECKLIST",
+          stableKey: "PRE_SCREEN_CHECKLIST",
           name: "Pre-screening checklist",
+          description: "Verify the initial eligibility and compliance checks.",
+          assignmentMode: "ROLE",
+          reviewerCount: 1,
+          requiredCompletionCount: 1,
+          quorum: false,
+          coiRequired: false,
           type: "CHECKLIST",
-          sequence: 1,
+          displayOrder: 1,
           required: true,
           config: {
             items: [
@@ -52,20 +65,33 @@ export const referenceWorkflow: WorkflowGraphInput = {
       ],
     },
     {
-      code: "COMPLETENESS",
+      stableKey: "COMPLETENESS",
       name: "Completeness screening",
-      sequence: 2,
+      description: "Check that the application information is complete.",
+      enabled: true,
+      optional: false,
+      displayOrder: 2,
+      repeatable: false,
+      coiGated: false,
       initial: false,
-      applicantStatus: "UNDER_REVIEW",
-      applicantLabel: "Completeness review",
-      applicantDescription:
-        "We are checking that the required application information is present.",
+      publicStatusMapping: {
+        status: "UNDER_REVIEW",
+        label: "Completeness review",
+        description:
+          "We are checking that the required application information is present.",
+      },
       tasks: [
         {
-          code: "COMPLETENESS_CHECK",
+          stableKey: "COMPLETENESS_CHECK",
           name: "Completeness checklist",
+          description: "Confirm that the submitted application is complete.",
+          assignmentMode: "ROLE",
+          reviewerCount: 1,
+          requiredCompletionCount: 1,
+          quorum: false,
+          coiRequired: false,
           type: "CHECKLIST",
-          sequence: 1,
+          displayOrder: 1,
           required: true,
           config: {
             items: [
@@ -85,20 +111,33 @@ export const referenceWorkflow: WorkflowGraphInput = {
       ],
     },
     {
-      code: "TECHNICAL_ASSESSMENT",
+      stableKey: "TECHNICAL_ASSESSMENT",
       name: "Technical assessment",
-      sequence: 3,
+      description: "Assess the application's technical merits.",
+      enabled: true,
+      optional: false,
+      displayOrder: 3,
+      repeatable: false,
+      coiGated: true,
       initial: false,
-      applicantStatus: "UNDER_REVIEW",
-      applicantLabel: "Detailed review",
-      applicantDescription:
-        "Your application is undergoing a detailed programme review.",
+      publicStatusMapping: {
+        status: "UNDER_REVIEW",
+        label: "Detailed review",
+        description:
+          "Your application is undergoing a detailed programme review.",
+      },
       tasks: [
         {
-          code: "TECHNICAL_SCORE",
+          stableKey: "TECHNICAL_SCORE",
           name: "Technical assessment form",
+          description: "Score the application against the technical criteria.",
+          assignmentMode: "ROLE",
+          reviewerCount: 1,
+          requiredCompletionCount: 1,
+          quorum: false,
+          coiRequired: true,
           type: "ASSESSMENT_FORM",
-          sequence: 1,
+          displayOrder: 1,
           required: true,
           config: {
             criteria: [
@@ -122,20 +161,33 @@ export const referenceWorkflow: WorkflowGraphInput = {
       ],
     },
     {
-      code: "FINANCE_REVIEW",
+      stableKey: "FINANCE_REVIEW",
       name: "Finance review",
-      sequence: 4,
+      description: "Review the application's financial information.",
+      enabled: true,
+      optional: false,
+      displayOrder: 4,
+      repeatable: false,
+      coiGated: true,
       initial: false,
-      applicantStatus: "UNDER_REVIEW",
-      applicantLabel: "Financial review",
-      applicantDescription:
-        "The financial information in your application is being reviewed.",
+      publicStatusMapping: {
+        status: "UNDER_REVIEW",
+        label: "Financial review",
+        description:
+          "The financial information in your application is being reviewed.",
+      },
       tasks: [
         {
-          code: "FINANCE_CHECK",
+          stableKey: "FINANCE_CHECK",
           name: "Finance review",
+          description: "Review the financial information and recommendation.",
+          assignmentMode: "ROLE",
+          reviewerCount: 1,
+          requiredCompletionCount: 1,
+          quorum: false,
+          coiRequired: true,
           type: "FINANCE_REVIEW",
-          sequence: 1,
+          displayOrder: 1,
           required: true,
           config: {
             fields: [
@@ -152,19 +204,32 @@ export const referenceWorkflow: WorkflowGraphInput = {
       ],
     },
     {
-      code: "COMMITTEE_DECISION",
+      stableKey: "COMMITTEE_DECISION",
       name: "Committee decision",
-      sequence: 5,
+      description: "Record the committee's funding decision.",
+      enabled: true,
+      optional: false,
+      displayOrder: 5,
+      repeatable: false,
+      coiGated: true,
       initial: false,
-      applicantStatus: "UNDER_REVIEW",
-      applicantLabel: "Final review",
-      applicantDescription: "Your application is in the final review step.",
+      publicStatusMapping: {
+        status: "UNDER_REVIEW",
+        label: "Final review",
+        description: "Your application is in the final review step.",
+      },
       tasks: [
         {
-          code: "PANEL_DECISION",
+          stableKey: "PANEL_DECISION",
           name: "Record outcome",
+          description: "Record the committee's funding decision.",
+          assignmentMode: "ROLE",
+          reviewerCount: 1,
+          requiredCompletionCount: 1,
+          quorum: false,
+          coiRequired: true,
           type: "DECISION",
-          sequence: 1,
+          displayOrder: 1,
           required: true,
           config: {
             outcomes: [
@@ -178,20 +243,33 @@ export const referenceWorkflow: WorkflowGraphInput = {
       ],
     },
     {
-      code: "OUTCOME_COMMUNICATION",
+      stableKey: "OUTCOME_COMMUNICATION",
       name: "Outcome communication",
-      sequence: 6,
+      description: "Communicate the recorded outcome to the applicant.",
+      enabled: true,
+      optional: false,
+      displayOrder: 6,
+      repeatable: false,
+      coiGated: false,
       initial: false,
-      applicantStatus: "OUTCOME_AVAILABLE",
-      applicantLabel: "Outcome available",
-      applicantDescription:
-        "An outcome is available in your application workspace.",
+      publicStatusMapping: {
+        status: "OUTCOME_AVAILABLE",
+        label: "Outcome available",
+        description:
+          "An outcome is available in your application workspace.",
+      },
       tasks: [
         {
-          code: "SEND_OUTCOME",
+          stableKey: "SEND_OUTCOME",
           name: "Send outcome communication",
+          description: "Send the recorded outcome to the applicant.",
+          assignmentMode: "ROLE",
+          reviewerCount: 1,
+          requiredCompletionCount: 1,
+          quorum: false,
+          coiRequired: false,
           type: "COMMUNICATION",
-          sequence: 1,
+          displayOrder: 1,
           required: true,
           config: {
             template: "TOR_DRAFT_OUTCOME",

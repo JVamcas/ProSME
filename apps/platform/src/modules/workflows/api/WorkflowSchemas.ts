@@ -5,6 +5,8 @@ import {
   workflowActionCodes,
   workflowStatuses,
 } from "@/modules/workflows/domain/definitions/WorkflowTypes";
+import { workflowPublicStatuses } from "@/modules/workflows/domain/definitions/WorkflowStageDefinition";
+import { workflowTaskAssignmentModes } from "@/modules/workflows/domain/definitions/WorkflowTaskDefinition";
 import { workflowConditionSchema } from "@/modules/workflows/WorkflowConditionRegistry";
 
 const codeSchema = z
@@ -13,38 +15,69 @@ const codeSchema = z
   .min(2)
   .max(80)
   .regex(/^[A-Z][A-Z0-9_]*$/);
-const assignmentSchema = {
-  assignmentRoleId: z.string().uuid().nullable().optional(),
-  assignmentUserId: z.string().uuid().nullable().optional(),
-};
-
-export const workflowTaskSchema = z.object({
-  id: z.string().uuid().optional(),
-  code: codeSchema,
-  name: z.string().trim().min(2).max(160),
-  type: z.enum(taskTypeCodes),
-  sequence: z.number().int().positive(),
-  required: z.boolean(),
-  ...assignmentSchema,
-  config: z.unknown(),
-});
+export const workflowTaskSchema = z
+  .object({
+    id: z.string().uuid().optional(),
+    stableKey: codeSchema,
+    name: z.string().trim().min(2).max(160),
+    description: z.string().trim().max(1000),
+    roleId: z.string().uuid().nullable().optional(),
+    namedUserOverrideId: z.string().uuid().nullable().optional(),
+    assignmentMode: z.enum(workflowTaskAssignmentModes),
+    reviewerCount: z.number().int().positive().max(100),
+    requiredCompletionCount: z.number().int().positive().max(100),
+    quorum: z.boolean(),
+    coiRequired: z.boolean(),
+    displayOrder: z.number().int().positive(),
+    type: z.enum(taskTypeCodes),
+    required: z.boolean(),
+    config: z.unknown(),
+    formVersionId: z.string().uuid().nullable().optional(),
+  })
+  .superRefine((task, context) => {
+    if (task.requiredCompletionCount > task.reviewerCount) {
+      context.addIssue({
+        code: "custom",
+        message: "Required completions cannot exceed the reviewer count.",
+        path: ["requiredCompletionCount"],
+      });
+    }
+    if (task.assignmentMode === "NAMED_USER" && task.reviewerCount !== 1) {
+      context.addIssue({
+        code: "custom",
+        message: "Named-user assignment supports exactly one reviewer.",
+        path: ["reviewerCount"],
+      });
+    }
+    if (
+      task.quorum &&
+      (task.reviewerCount < 2 ||
+        task.requiredCompletionCount * 2 <= task.reviewerCount)
+    ) {
+      context.addIssue({
+        code: "custom",
+        message: "Quorum requires a majority of at least two reviewers.",
+        path: ["quorum"],
+      });
+    }
+  });
 
 export const workflowStageSchema = z.object({
   id: z.string().uuid().optional(),
-  code: codeSchema,
+  stableKey: codeSchema,
   name: z.string().trim().min(2).max(160),
-  sequence: z.number().int().positive(),
+  description: z.string().trim().max(1000).default(""),
+  enabled: z.boolean(),
+  optional: z.boolean(),
+  displayOrder: z.number().int().positive(),
+  publicStatusMapping: z.object({
+    status: z.enum(workflowPublicStatuses),
+    label: z.string().trim().min(2).max(120),
+    description: z.string().trim().min(2).max(300),
+  }),
+  repeatable: z.boolean(),
+  coiGated: z.boolean(),
   initial: z.boolean(),
-  applicantStatus: z.enum([
-    "SUBMITTED",
-    "UNDER_REVIEW",
-    "ACTION_REQUIRED",
-    "OUTCOME_AVAILABLE",
-    "CLOSED",
-    "WITHDRAWN",
-  ]),
-  applicantLabel: z.string().trim().min(2).max(120),
-  applicantDescription: z.string().trim().min(2).max(300),
   slaHours: z.number().int().positive().max(8760).nullable().optional(),
   tasks: z.array(workflowTaskSchema),
 });
@@ -60,8 +93,8 @@ export const workflowTransitionSchema = z.object({
 });
 
 export const workflowGraphSchema = z.object({
-  stages: z.array(workflowStageSchema).min(1),
-  transitions: z.array(workflowTransitionSchema).min(1),
+  stages: z.array(workflowStageSchema),
+  transitions: z.array(workflowTransitionSchema),
 });
 
 export const createWorkflowSchema = z.object({

@@ -64,13 +64,13 @@ async function validateReferences(
   graph.stages.forEach((stage, index) => {
     stage.tasks.forEach((task, taskIndex) => {
       if (
-        task.assignmentRoleId &&
-        !references.roles.has(task.assignmentRoleId)
+        task.roleId &&
+        !references.roles.has(task.roleId)
       ) {
         validation.errors.push({
           code: "UNKNOWN_ROLE",
           message: "The assigned role is not active.",
-          path: `stages.${index}.tasks.${taskIndex}.assignmentRoleId`,
+          path: `stages.${index}.tasks.${taskIndex}.roleId`,
         });
       }
       if (
@@ -85,13 +85,13 @@ async function validateReferences(
         });
       }
       if (
-        task.assignmentUserId &&
-        references.users.get(task.assignmentUserId) !== "active"
+        task.namedUserOverrideId &&
+        references.users.get(task.namedUserOverrideId) !== "active"
       ) {
         validation.errors.push({
           code: "INACTIVE_USER",
           message: "The assigned user is not active.",
-          path: `stages.${index}.tasks.${taskIndex}.assignmentUserId`,
+          path: `stages.${index}.tasks.${taskIndex}.namedUserOverrideId`,
         });
       }
     });

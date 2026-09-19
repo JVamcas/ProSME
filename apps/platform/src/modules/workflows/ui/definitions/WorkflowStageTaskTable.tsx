@@ -21,13 +21,13 @@ function assignmentLabel(
   task: WorkflowTaskInput,
   options?: WorkflowAssignmentOptions,
 ) {
-  if (task.assignmentUserId) {
+  if (task.assignmentMode === "NAMED_USER" && task.namedUserOverrideId) {
     return (
-      options?.users.find((item) => item.id === task.assignmentUserId)?.label ??
+      options?.users.find((item) => item.id === task.namedUserOverrideId)?.label ??
       "Specific user"
     );
   }
-  const roleId = task.assignmentRoleId;
+  const roleId = task.roleId;
   if (!roleId) return "Unassigned";
   const role = options?.roles.find((item) => item.id === roleId)?.label;
   return role ?? "Configured role";
@@ -62,7 +62,7 @@ export function WorkflowStageTaskTable({
           <tr>
             <th className="px-4 py-3">Task</th>
             <th className="px-4 py-3">Task Type</th>
-            <th className="px-4 py-3">Requirement</th>
+            <th className="px-4 py-3">Completion</th>
             <th className="px-4 py-3">Assignee</th>
             <th className="px-4 py-3">Status</th>
             <th className="px-4 py-3 text-right">Actions</th>
@@ -70,7 +70,7 @@ export function WorkflowStageTaskTable({
         </thead>
         <tbody>
           {stage.tasks.map((task) => (
-            <tr className="border-t border-brand-navy/10" key={task.code}>
+            <tr className="border-t border-brand-navy/10" key={task.stableKey}>
               <td className="px-4 py-3 font-semibold text-brand-navy">
                 {task.name}
               </td>
@@ -79,7 +79,7 @@ export function WorkflowStageTaskTable({
               </td>
               <td className="px-4 py-3">
                 <span className="rounded-full bg-brand-cream px-2 py-1 font-semibold text-brand-navy/65">
-                  {task.required ? "Mandatory" : "Optional"}
+                  {task.requiredCompletionCount} of {task.reviewerCount}
                 </span>
               </td>
               <td className="max-w-56 truncate px-4 py-3 text-brand-navy/65">
@@ -87,7 +87,8 @@ export function WorkflowStageTaskTable({
               </td>
               <td className="px-4 py-3">
                 <span className="inline-flex items-center gap-1.5 font-semibold text-brand-green">
-                  <CheckCircle2 className="size-3.5" /> Active
+                  <CheckCircle2 className="size-3.5" />
+                  {task.quorum ? "Quorum" : "Configured"}
                 </span>
               </td>
               <td className="px-4 py-3">

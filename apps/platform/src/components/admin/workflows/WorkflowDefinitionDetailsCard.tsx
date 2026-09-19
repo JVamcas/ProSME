@@ -9,6 +9,7 @@ const detailLabelClass =
 
 export function WorkflowDefinitionDetailsCard({ editor }: Props) {
   const details = [
+    { label: "Name", value: editor.definition.name },
     { label: "Code", value: editor.definition.code },
     { label: "Version", value: `v${editor.version.number}` },
     { label: "Revision", value: editor.version.rowVersion },
@@ -17,7 +18,7 @@ export function WorkflowDefinitionDetailsCard({ editor }: Props) {
   return (
     <section
       aria-label="Workflow definition details"
-      className="mt-6 rounded-2xl border border-brand-navy/10 bg-brand-cream/60 p-4 sm:p-5"
+      className="mt-6 rounded-2xl border border-slate-50 p-2"
     >
       <div className="rounded-2xl border border-brand-navy/15 bg-brand-white px-5 py-6 shadow-sm sm:px-7 sm:py-7">
         <dl className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">

@@ -101,8 +101,8 @@ async function createInitialTasks(
       );
   await transaction.insert(stageTaskInstances).values(
     definitions.map((task) => ({
-      assignmentRoleId: task.assignmentRoleId,
-      assignmentUserId: task.assignmentUserId,
+      assignmentRoleId: task.roleId,
+      assignmentUserId: task.namedUserOverrideId,
       dueAt,
       stageInstanceId,
       taskDefinitionId: task.id,

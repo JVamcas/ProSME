@@ -11,10 +11,11 @@ import {
 } from "drizzle-orm/pg-core";
 
 import type { WorkflowTemplateDetails } from "../domain/definitions/WorkflowTemplate";
+import type { WorkflowPublicStatus } from "../domain/definitions/WorkflowStageDefinition";
+import type { WorkflowTaskAssignmentMode } from "../domain/definitions/WorkflowTaskDefinition";
 
 import type {
   WorkflowCondition,
-  WorkflowStageInput,
   WorkflowStatus,
   TaskTypeCode,
   WorkflowActionCode,
@@ -95,13 +96,18 @@ export const workflowStageDefinitions = pgTable(
       }),
     code: text("code").notNull(),
     name: text("name").notNull(),
+    description: text("description").notNull().default(""),
+    enabled: boolean("enabled").notNull().default(true),
+    optional: boolean("optional").notNull().default(false),
     sequence: integer("sequence").notNull(),
     initial: boolean("initial").notNull().default(false),
     applicantStatus: text("applicant_status")
-      .$type<WorkflowStageInput["applicantStatus"]>()
+      .$type<WorkflowPublicStatus>()
       .notNull(),
     applicantLabel: text("applicant_label").notNull(),
     applicantDescription: text("applicant_description").notNull(),
+    repeatable: boolean("repeatable").notNull().default(false),
+    coiGated: boolean("coi_gated").notNull().default(false),
     slaHours: integer("sla_hours"),
   },
   (table) => [
@@ -123,17 +129,28 @@ export const stageTaskDefinitions = pgTable(
     stageId: uuid("stage_id")
       .notNull()
       .references(() => workflowStageDefinitions.id, { onDelete: "restrict" }),
-    code: text("code").notNull(),
+    stableKey: text("code").notNull(),
     name: text("name").notNull(),
+    description: text("description").notNull().default(""),
     type: text("type").$type<TaskTypeCode>().notNull(),
-    sequence: integer("sequence").notNull(),
+    displayOrder: integer("sequence").notNull(),
     required: boolean("required").notNull().default(true),
-    assignmentRoleId: uuid("assignment_role_id").references(() => roles.id, {
+    roleId: uuid("assignment_role_id").references(() => roles.id, {
       onDelete: "restrict",
     }),
-    assignmentUserId: uuid("assignment_user_id").references(() => users.id, {
+    namedUserOverrideId: uuid("assignment_user_id").references(() => users.id, {
       onDelete: "restrict",
     }),
+    assignmentMode: text("assignment_mode")
+      .$type<WorkflowTaskAssignmentMode>()
+      .notNull()
+      .default("ROLE"),
+    reviewerCount: integer("reviewer_count").notNull().default(1),
+    requiredCompletionCount: integer("required_completion_count")
+      .notNull()
+      .default(1),
+    quorum: boolean("quorum").notNull().default(false),
+    coiRequired: boolean("coi_required").notNull().default(false),
     config: jsonb("config").notNull().default({}),
     formVersionId: uuid("form_version_id").references(() => formVersions.id, {
       onDelete: "restrict",
@@ -142,11 +159,11 @@ export const stageTaskDefinitions = pgTable(
   (table) => [
     uniqueIndex("app_stage_tasks_stage_code_unique").on(
       table.stageId,
-      table.code,
+      table.stableKey,
     ),
     uniqueIndex("app_stage_tasks_stage_sequence_unique").on(
       table.stageId,
-      table.sequence,
+      table.displayOrder,
     ),
   ],
 );

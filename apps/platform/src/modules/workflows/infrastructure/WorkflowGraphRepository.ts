@@ -31,24 +31,35 @@ const graphSelection = {
   },
   stage: {
     id: workflowStageDefinitions.id,
-    code: workflowStageDefinitions.code,
+    stableKey: workflowStageDefinitions.code,
     name: workflowStageDefinitions.name,
-    sequence: workflowStageDefinitions.sequence,
+    description: workflowStageDefinitions.description,
+    enabled: workflowStageDefinitions.enabled,
+    optional: workflowStageDefinitions.optional,
+    displayOrder: workflowStageDefinitions.sequence,
     initial: workflowStageDefinitions.initial,
-    applicantStatus: workflowStageDefinitions.applicantStatus,
-    applicantLabel: workflowStageDefinitions.applicantLabel,
-    applicantDescription: workflowStageDefinitions.applicantDescription,
+    publicStatus: workflowStageDefinitions.applicantStatus,
+    publicLabel: workflowStageDefinitions.applicantLabel,
+    publicDescription: workflowStageDefinitions.applicantDescription,
+    repeatable: workflowStageDefinitions.repeatable,
+    coiGated: workflowStageDefinitions.coiGated,
     slaHours: workflowStageDefinitions.slaHours,
   },
   task: {
     id: stageTaskDefinitions.id,
-    code: stageTaskDefinitions.code,
+    stableKey: stageTaskDefinitions.stableKey,
     name: stageTaskDefinitions.name,
+    description: stageTaskDefinitions.description,
     type: stageTaskDefinitions.type,
-    sequence: stageTaskDefinitions.sequence,
+    displayOrder: stageTaskDefinitions.displayOrder,
     required: stageTaskDefinitions.required,
-    assignmentRoleId: stageTaskDefinitions.assignmentRoleId,
-    assignmentUserId: stageTaskDefinitions.assignmentUserId,
+    roleId: stageTaskDefinitions.roleId,
+    namedUserOverrideId: stageTaskDefinitions.namedUserOverrideId,
+    assignmentMode: stageTaskDefinitions.assignmentMode,
+    reviewerCount: stageTaskDefinitions.reviewerCount,
+    requiredCompletionCount: stageTaskDefinitions.requiredCompletionCount,
+    quorum: stageTaskDefinitions.quorum,
+    coiRequired: stageTaskDefinitions.coiRequired,
     config: stageTaskDefinitions.config,
     formVersionId: stageTaskDefinitions.formVersionId,
   },
@@ -89,7 +100,7 @@ function loadGraphRows(versionId: string) {
     .where(eq(workflowDefinitionVersions.id, versionId))
     .orderBy(
       asc(workflowStageDefinitions.sequence),
-      asc(stageTaskDefinitions.sequence),
+      asc(stageTaskDefinitions.displayOrder),
     );
 }
 
@@ -101,12 +112,30 @@ function assembleGraph(rows: Awaited<ReturnType<typeof loadGraphRows>>) {
   >();
   const codes = new Map(
     rows.flatMap((row) =>
-      row.stage?.id ? [[row.stage.id, row.stage.code] as const] : [],
+      row.stage?.id ? [[row.stage.id, row.stage.stableKey] as const] : [],
     ),
   );
   rows.forEach(({ stage, task, transition }) => {
     if (stage?.id && !stages.has(stage.id))
-      stages.set(stage.id, { ...stage, tasks: [] });
+      stages.set(stage.id, {
+        id: stage.id,
+        stableKey: stage.stableKey,
+        name: stage.name,
+        description: stage.description,
+        enabled: stage.enabled,
+        optional: stage.optional,
+        displayOrder: stage.displayOrder,
+        publicStatusMapping: {
+          status: stage.publicStatus,
+          label: stage.publicLabel,
+          description: stage.publicDescription,
+        },
+        repeatable: stage.repeatable,
+        coiGated: stage.coiGated,
+        initial: stage.initial,
+        slaHours: stage.slaHours,
+        tasks: [],
+      });
     const target = stage?.id ? stages.get(stage.id) : undefined;
     if (target && task?.id && !target.tasks.some((item) => item.id === task.id))
       target.tasks.push({ ...task });

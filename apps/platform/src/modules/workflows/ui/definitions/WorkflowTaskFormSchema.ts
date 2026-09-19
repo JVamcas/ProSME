@@ -10,9 +10,9 @@ const checklistItemSchema = z.object({
 });
 
 export const workflowTaskFormSchema = z.object({
-  assignmentMode: z.enum(["ROLE", "USER"]),
+  assignmentMode: z.enum(["ROLE", "NAMED_USER"]),
   assignmentTarget: z.string().min(1, "Select an assignee."),
-  code: z
+  stableKey: z
     .string()
     .trim()
     .min(2)
@@ -21,18 +21,42 @@ export const workflowTaskFormSchema = z.object({
       /^[A-Z][A-Z0-9_]*$/,
       "Use uppercase letters, numbers and underscores.",
     ),
-  formVersionId: z.string().uuid().optional(),
+  formVersionId: z.union([z.string().uuid(), z.literal("")]).optional(),
+  description: z.string().trim().max(1000),
+  displayOrder: z.number().int().positive(),
   name: z.string().trim().min(2).max(160),
+  reviewerCount: z.number().int().positive().max(100),
+  requiredCompletionCount: z.number().int().positive().max(100),
+  quorum: z.boolean(),
+  coiRequired: z.boolean(),
   required: z.boolean(),
   type: z.enum(taskTypeCodes).optional(),
   configJson: z.string().optional(),
   checklistItems: z.array(checklistItemSchema),
 }).superRefine((values, context) => {
-  if (!values.formVersionId && !values.type) {
+  if (values.requiredCompletionCount > values.reviewerCount) {
     context.addIssue({
       code: "custom",
-      message: "Select a published form version.",
-      path: ["formVersionId"],
+      message: "Required completions cannot exceed the reviewer count.",
+      path: ["requiredCompletionCount"],
+    });
+  }
+  if (values.assignmentMode === "NAMED_USER" && values.reviewerCount !== 1) {
+    context.addIssue({
+      code: "custom",
+      message: "Named-user assignment supports exactly one reviewer.",
+      path: ["reviewerCount"],
+    });
+  }
+  if (
+    values.quorum &&
+    (values.reviewerCount < 2 ||
+      values.requiredCompletionCount * 2 <= values.reviewerCount)
+  ) {
+    context.addIssue({
+      code: "custom",
+      message: "Quorum requires a majority of at least two reviewers.",
+      path: ["quorum"],
     });
   }
 });
@@ -45,16 +69,16 @@ export function checklistItemDefaults(config: unknown) {
 }
 
 export function taskAssignmentDefaults(task?: WorkflowTaskInput) {
-  if (task?.assignmentUserId) {
+  if (task?.assignmentMode === "NAMED_USER") {
     return {
-      assignmentMode: "USER" as const,
-      assignmentTarget: task.assignmentUserId,
+      assignmentMode: "NAMED_USER" as const,
+      assignmentTarget: task.namedUserOverrideId ?? "",
     };
   }
-  if (task?.assignmentRoleId) {
+  if (task?.roleId) {
     return {
       assignmentMode: "ROLE" as const,
-      assignmentTarget: task.assignmentRoleId,
+      assignmentTarget: task.roleId,
     };
   }
   return {

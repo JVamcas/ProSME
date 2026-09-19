@@ -10,7 +10,7 @@ import type {
 } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import { WorkflowStageCreateDialog } from "./WorkflowStageCreateDialog";
 import { WorkflowStageDetails } from "./WorkflowStageDetails";
-import { WorkflowTaskDialog } from "./WorkflowTaskDialog";
+import { WorkflowTaskDialog } from "@/modules/workflows/ui/definitions/WorkflowTaskDialog";
 import {
   WorkflowFlowPreview,
   WorkflowFlowToolbar,
@@ -26,10 +26,15 @@ export function WorkflowStageFlow({
   editor: WorkflowEditorView;
 }) {
   const stages = useMemo(
-    () => [...editor.graph.stages].sort((a, b) => a.sequence - b.sequence),
+    () =>
+      [...editor.graph.stages].sort(
+        (left, right) => left.displayOrder - right.displayOrder,
+      ),
     [editor.graph.stages],
   );
-  const [selectedCode, setSelectedCode] = useState(stages[0]?.code ?? "");
+  const [selectedCode, setSelectedCode] = useState(
+    stages[0]?.stableKey ?? "",
+  );
   const [showVisualFlow, setShowVisualFlow] = useState(false);
   const [stageDialog, setStageDialog] = useState<
     "create" | WorkflowStageInput | null
@@ -47,34 +52,39 @@ export function WorkflowStageFlow({
   const taskDeleteMutation = useSaveWorkflowGraph(editor);
   const isEditingLocked = !canEdit;
 
-  const selectedStage = stages.find((stage) => stage.code === selectedCode) ?? stages[0];
+  const selectedStage =
+    stages.find((stage) => stage.stableKey === selectedCode) ?? stages[0];
   const selectedIndex = selectedStage
-    ? stages.findIndex((stage) => stage.code === selectedStage.code)
+    ? stages.findIndex((stage) => stage.stableKey === selectedStage.stableKey)
     : -1;
 
   async function deleteStage(stage: WorkflowStageInput) {
     if (stages.length <= 1) return;
-    const successor = stages[selectedIndex + 1]?.code;
+    const successor = stages[selectedIndex + 1]?.stableKey;
     const remaining = stages
-      .filter((item) => item.code !== stage.code)
+      .filter((item) => item.stableKey !== stage.stableKey)
       .map((item, index) => ({
         ...item,
         initial: index === 0,
-        sequence: index + 1,
+        displayOrder: index + 1,
       }));
     await deleteMutation.mutateAsync({
       stages: remaining,
       transitions: editor.graph.transitions
-        .filter((transition) => transition.fromStageCode !== stage.code)
+        .filter(
+          (transition) => transition.fromStageCode !== stage.stableKey,
+        )
         .flatMap((transition) =>
-          transition.toStageCode !== stage.code
+          transition.toStageCode !== stage.stableKey
             ? [transition]
             : successor
               ? [{ ...transition, toStageCode: successor }]
               : [],
         ),
     });
-    setSelectedCode(remaining[Math.min(selectedIndex, remaining.length - 1)].code);
+    setSelectedCode(
+      remaining[Math.min(selectedIndex, remaining.length - 1)].stableKey,
+    );
     setStageToDelete(null);
   }
 
@@ -82,12 +92,12 @@ export function WorkflowStageFlow({
     if (!selectedStage) return;
     await taskDeleteMutation.mutateAsync({
       stages: editor.graph.stages.map((stage) =>
-        stage.code === selectedStage.code
+        stage.stableKey === selectedStage.stableKey
           ? {
               ...stage,
               tasks: stage.tasks
-                .filter((item) => item.code !== task.code)
-                .map((item, index) => ({ ...item, sequence: index + 1 })),
+                .filter((item) => item.stableKey !== task.stableKey)
+                .map((item, index) => ({ ...item, displayOrder: index + 1 })),
             }
           : stage,
       ),
@@ -95,8 +105,8 @@ export function WorkflowStageFlow({
         ...transition,
         condition:
           transition.condition?.type === "TASK_RESULT_EQUALS" &&
-          transition.fromStageCode === selectedStage.code &&
-          transition.condition.taskCode === task.code
+          transition.fromStageCode === selectedStage.stableKey &&
+          transition.condition.taskCode === task.stableKey
             ? null
             : transition.condition,
       })),
@@ -118,7 +128,7 @@ export function WorkflowStageFlow({
         />
         {showVisualFlow ? (
           <WorkflowFlowPreview
-            selectedCode={selectedStage?.code}
+            selectedCode={selectedStage?.stableKey}
             stages={stages}
             onSelect={setSelectedCode}
           />
@@ -126,7 +136,7 @@ export function WorkflowStageFlow({
       </div>
       <div className="mt-6 grid gap-4 lg:grid-cols-[240px_minmax(0,1fr)]">
         <WorkflowStageList
-          selectedCode={selectedStage?.code}
+          selectedCode={selectedStage?.stableKey}
           stages={stages}
           onSelect={setSelectedCode}
         />

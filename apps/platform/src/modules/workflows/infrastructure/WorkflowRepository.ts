@@ -140,15 +140,15 @@ function collectConfigurationReferences(graph: WorkflowGraphInput) {
   const capabilityCodes = [
     ...new Set(graph.transitions.map((item) => item.requiredCapability)),
   ];
-  const userIds = uniqueTaskValues(graph, "assignmentUserId");
-  const roleIds = uniqueTaskValues(graph, "assignmentRoleId");
+  const userIds = uniqueTaskValues(graph, "namedUserOverrideId");
+  const roleIds = uniqueTaskValues(graph, "roleId");
   const formVersionIds = uniqueTaskValues(graph, "formVersionId");
   return { capabilityCodes, formVersionIds, roleIds, userIds };
 }
 
 function uniqueTaskValues(
   graph: WorkflowGraphInput,
-  key: "assignmentUserId" | "assignmentRoleId" | "formVersionId",
+  key: "namedUserOverrideId" | "roleId" | "formVersionId",
 ) {
   return [
     ...new Set(

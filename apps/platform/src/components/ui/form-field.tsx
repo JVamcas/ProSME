@@ -2,6 +2,10 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 import {
+  InfoTooltip,
+  type InfoTooltipSide,
+} from "@/shared/ui/InfoTooltip";
+import {
   type FormBindingProps,
   useFormBinding,
 } from "./form-binding";
@@ -13,6 +17,8 @@ type FieldLayoutProps = {
   error?: string;
   errorId?: string;
   htmlFor?: string;
+  infoTooltip?: React.ReactNode;
+  infoTooltipSide?: InfoTooltipSide;
   label: React.ReactNode;
   labelAccessory?: React.ReactNode;
   labelClassName?: string;
@@ -25,22 +31,35 @@ export function FormField({
   error,
   errorId,
   htmlFor,
+  infoTooltip,
+  infoTooltipSide,
   label,
   labelAccessory,
   labelClassName,
   required = false,
 }: FieldLayoutProps) {
+  const labelNode = (
+    <Label className={labelClassName} htmlFor={htmlFor}>
+      {label}
+      {required ? (
+        <>
+          <span aria-hidden="true" className="ml-1 text-red-500">
+            *
+          </span>
+          <span className="sr-only">(required)</span>
+        </>
+      ) : null}
+    </Label>
+  );
+
   return (
     <div className={className}>
       <div className="flex items-center justify-between">
-        <Label className={labelClassName} htmlFor={htmlFor}>
-          {label}
-          {required ? (
-            <span aria-hidden="true" className="ml-1 text-brand-orange">
-              *
-            </span>
-          ) : null}
-        </Label>
+        {infoTooltip ? (
+          <InfoTooltip content={infoTooltip} side={infoTooltipSide}>
+            {labelNode}
+          </InfoTooltip>
+        ) : labelNode}
         {labelAccessory}
       </div>
       {children}

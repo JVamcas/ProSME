@@ -22,7 +22,8 @@ export const userWith = (...grants: string[]): AuthenticatedUser => ({
 const assignedReferenceWorkflow = structuredClone(referenceWorkflow);
 for (const stage of assignedReferenceWorkflow.stages) {
   for (const task of stage.tasks) {
-    task.assignmentUserId = actor.id;
+    task.assignmentMode = "NAMED_USER";
+    task.namedUserOverrideId = actor.id;
   }
 }
 export const record = {

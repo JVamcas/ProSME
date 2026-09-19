@@ -20,7 +20,7 @@ function duplicates(values: (string | number)[]) {
 
 function validateTransitions(graph: WorkflowGraphInput, initialCode?: string) {
   const errors: WorkflowValidationIssue[] = [];
-  const stageCodes = new Set(graph.stages.map((stage) => stage.code));
+  const stageCodes = new Set(graph.stages.map((stage) => stage.stableKey));
   graph.transitions.forEach((transition, index) => {
     const path = `transitions.${index}`;
     if (
@@ -70,7 +70,7 @@ function isSequentialFormGraph(graph: WorkflowGraphInput) {
 function missingTransitionErrors(graph: WorkflowGraphInput) {
   const errors: WorkflowValidationIssue[] = [];
   graph.stages.forEach((stage, index) => {
-    if (!graph.transitions.some((transition) => transition.fromStageCode === stage.code)) {
+    if (!graph.transitions.some((transition) => transition.fromStageCode === stage.stableKey)) {
       errors.push(
         issue(
           "MISSING_TRANSITION",
@@ -90,7 +90,7 @@ function unreachableErrors(
   if (!initialCode) return [];
   const reachable = reachableStages(graph, initialCode);
   return graph.stages.flatMap((stage, index) =>
-    reachable.has(stage.code)
+    reachable.has(stage.stableKey)
       ? []
       : [
           issue(
@@ -134,6 +134,16 @@ export function validateWorkflowGraph(
   graph: WorkflowGraphInput,
 ): WorkflowValidation {
   const errors = graph.stages.flatMap(validateWorkflowStage);
+  if (graph.stages.length === 0) {
+    errors.push(
+      issue("MISSING_STAGE", "At least one enabled stage is required.", "stages"),
+    );
+  }
+  if (graph.stages.length > 0 && !graph.stages.some((stage) => stage.enabled)) {
+    errors.push(
+      issue("MISSING_ENABLED_STAGE", "At least one stage must be enabled.", "stages"),
+    );
+  }
   const initial = graph.stages.filter((stage) => stage.initial);
   if (initial.length !== 1)
     errors.push(
@@ -144,7 +154,7 @@ export function validateWorkflowGraph(
       ),
     );
   for (const code of new Set(
-    duplicates(graph.stages.map((stage) => stage.code)),
+    duplicates(graph.stages.map((stage) => stage.stableKey)),
   )) {
     errors.push(
       issue(
@@ -155,7 +165,7 @@ export function validateWorkflowGraph(
     );
   }
   for (const sequence of new Set(
-    duplicates(graph.stages.map((stage) => stage.sequence)),
+    duplicates(graph.stages.map((stage) => stage.displayOrder)),
   )) {
     errors.push(
       issue(
@@ -169,7 +179,9 @@ export function validateWorkflowGraph(
   if (
     sequentialFormGraph
     && initial[0]
-    && graph.stages.some((stage) => stage.sequence < initial[0].sequence)
+    && graph.stages.some(
+      (stage) => stage.displayOrder < initial[0].displayOrder,
+    )
   ) {
     errors.push(
       issue(
@@ -186,6 +198,6 @@ export function validateWorkflowGraph(
       warnings: [],
     };
   }
-  errors.push(...validateLegacyGraph(graph, initial[0]?.code));
+  errors.push(...validateLegacyGraph(graph, initial[0]?.stableKey));
   return { valid: errors.length === 0, errors, warnings: [] };
 }

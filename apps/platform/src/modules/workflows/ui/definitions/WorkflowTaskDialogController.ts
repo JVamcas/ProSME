@@ -33,36 +33,44 @@ async function saveWorkflowTask({
   values: WorkflowTaskFormValues;
 }) {
   const duplicate = stage.tasks.some(
-    (item) => item.code === values.code && item.code !== task?.code,
+    (item) =>
+      item.stableKey === values.stableKey &&
+      item.stableKey !== task?.stableKey,
   );
   if (duplicate) {
-    formSetError("code", {
+    formSetError("stableKey", {
       message: "Task code must be unique in this stage.",
     });
     return false;
   }
   const nextTask: WorkflowTaskInput = {
     ...(task?.id ? { id: task.id } : {}),
-    assignmentRoleId:
+    assignmentMode: values.assignmentMode,
+    roleId:
       values.assignmentMode === "ROLE" ? values.assignmentTarget : null,
-    assignmentUserId:
-      values.assignmentMode === "USER" ? values.assignmentTarget : null,
-    code: values.code,
+    namedUserOverrideId:
+      values.assignmentMode === "NAMED_USER" ? values.assignmentTarget : null,
+    stableKey: values.stableKey,
+    description: values.description,
+    displayOrder: values.displayOrder,
+    reviewerCount: values.reviewerCount,
+    requiredCompletionCount: values.requiredCompletionCount,
+    quorum: values.quorum,
+    coiRequired: values.coiRequired,
     config: task?.config ?? {},
-    formVersionId: values.formVersionId,
+    formVersionId: values.formVersionId || null,
     name: values.name,
     required: values.required,
-    sequence: task?.sequence ?? stage.tasks.length + 1,
     type: task?.type ?? "STRUCTURED_FORM",
   };
   await mutateAsync({
     stages: editor.graph.stages.map((item) =>
-      item.code === stage.code
+      item.stableKey === stage.stableKey
         ? {
             ...item,
             tasks: task
               ? item.tasks.map((current) =>
-                  current.code === task.code ? nextTask : current,
+                  current.stableKey === task.stableKey ? nextTask : current,
                 )
               : [...item.tasks, nextTask],
           }
@@ -84,9 +92,15 @@ export function useWorkflowTaskDialogController(
     defaultValues: {
       ...taskAssignmentDefaults(task),
       checklistItems: [],
-      code: task?.code ?? "",
+      stableKey: task?.stableKey ?? "",
+      description: task?.description ?? "",
+      displayOrder: task?.displayOrder ?? stage.tasks.length + 1,
       formVersionId: task?.formVersionId ?? "",
       name: task?.name ?? "",
+      reviewerCount: task?.reviewerCount ?? 1,
+      requiredCompletionCount: task?.requiredCompletionCount ?? 1,
+      quorum: task?.quorum ?? false,
+      coiRequired: task?.coiRequired ?? false,
       required: task?.required ?? true,
     },
     resolver: zodResolver(workflowTaskFormSchema),

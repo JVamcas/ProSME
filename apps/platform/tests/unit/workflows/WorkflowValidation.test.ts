@@ -148,7 +148,7 @@ describe("workflow graph validation", () => {
     const assigned = structuredClone(referenceWorkflow);
     assigned.stages.forEach((stage) => {
       stage.tasks.forEach((task) => {
-        task.assignmentRoleId = "79e20de0-3558-4d63-90a4-8c9f5125df07";
+        task.roleId = "79e20de0-3558-4d63-90a4-8c9f5125df07";
       });
     });
     expect(validateWorkflowGraph(assigned)).toEqual({
@@ -160,7 +160,7 @@ describe("workflow graph validation", () => {
 
   it("rejects cycles, unsafe applicant labels and invalid task configuration", () => {
     const graph = structuredClone(referenceWorkflow);
-    graph.stages[1].applicantLabel = "Committee score assigned";
+    graph.stages[1].publicStatusMapping.label = "Committee score assigned";
     graph.stages[1].tasks[0].config = { items: [] };
     graph.transitions[4].toStageCode = "COMPLETENESS";
     const validation = validateWorkflowGraph(graph);

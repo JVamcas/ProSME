@@ -4,7 +4,7 @@ import type {
   WorkflowStageInput,
   WorkflowTaskInput,
 } from "@/modules/workflows/domain/definitions/WorkflowTypes";
-import { WorkflowStageTaskTable } from "./WorkflowStageTaskTable";
+import { WorkflowStageTaskTable } from "@/modules/workflows/ui/definitions/WorkflowStageTaskTable";
 
 type Props = {
   canEdit: boolean;
@@ -52,6 +52,7 @@ export function WorkflowStageDetails({
         stage={stage}
         stageIndex={stageIndex}
       />
+      <StageConfiguration stage={stage} />
       <ApprovalRule stage={stage} />
       <WorkflowStageTaskTable
         assignmentOptions={assignmentOptions}
@@ -62,6 +63,36 @@ export function WorkflowStageDetails({
         stage={stage}
       />
     </article>
+  );
+}
+
+function StageConfiguration({ stage }: { stage: WorkflowStageInput }) {
+  return (
+    <dl className="mt-4 grid gap-3 rounded-xl border border-brand-navy/10 p-4 text-sm sm:grid-cols-2">
+      <div>
+        <dt className="text-xs font-semibold text-brand-navy/55">Stable key</dt>
+        <dd className="font-mono text-brand-navy">{stage.stableKey}</dd>
+      </div>
+      <div>
+        <dt className="text-xs font-semibold text-brand-navy/55">Display order</dt>
+        <dd className="text-brand-navy">{stage.displayOrder}</dd>
+      </div>
+      <div className="sm:col-span-2">
+        <dt className="text-xs font-semibold text-brand-navy/55">Description</dt>
+        <dd className="text-brand-navy">{stage.description || "No description"}</dd>
+      </div>
+      <div>
+        <dt className="text-xs font-semibold text-brand-navy/55">Configuration</dt>
+        <dd className="text-brand-navy">
+          {[
+            stage.enabled ? "Enabled" : "Disabled",
+            stage.optional ? "Optional" : "Required",
+            stage.repeatable ? "Repeatable" : "Single-run",
+            stage.coiGated ? "COI-gated" : "No COI gate",
+          ].join(" · ")}
+        </dd>
+      </div>
+    </dl>
   );
 }
 
@@ -104,7 +135,14 @@ function StageDetailHeader({
 }
 
 function ApprovalRule({ stage }: { stage: WorkflowStageInput }) {
-  const required = stage.tasks.filter((task) => task.required).length;
+  const required = stage.tasks.reduce(
+    (total, task) => total + task.requiredCompletionCount,
+    0,
+  );
+  const reviewers = stage.tasks.reduce(
+    (total, task) => total + task.reviewerCount,
+    0,
+  );
   return (
     <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-brand-blue/15 px-4 py-3">
       <div>
@@ -112,11 +150,11 @@ function ApprovalRule({ stage }: { stage: WorkflowStageInput }) {
           Approval rule
         </p>
         <p className="mt-1 text-sm font-semibold text-brand-navy">
-          {required} of {stage.tasks.length} tasks required
+          {required} required completions across {reviewers} reviewer slots
         </p>
       </div>
-      <span className="rounded-full border border-brand-blue bg-white px-3 py-1 text-[10px] font-bold text-brand-navy">
-        {required} mandatory
+      <span className="rounded-full border border-brand-orange bg-white px-3 py-1 text-[10px] font-bold text-brand-orange">
+        {stage.tasks.filter((task) => task.quorum).length} quorum tasks
       </span>
     </div>
   );

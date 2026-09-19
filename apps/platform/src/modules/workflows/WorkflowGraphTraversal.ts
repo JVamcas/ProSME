@@ -37,5 +37,5 @@ export function hasWorkflowCycle(graph: WorkflowGraphInput) {
     complete.add(code);
     return cyclic;
   }
-  return graph.stages.some((stage) => visit(stage.code));
+  return graph.stages.some((stage) => visit(stage.stableKey));
 }

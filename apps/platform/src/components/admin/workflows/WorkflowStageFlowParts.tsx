@@ -94,10 +94,10 @@ export function WorkflowFlowPreview({
     <div className="overflow-x-auto border-t border-brand-navy/10 bg-brand-cream/50 p-6">
       <div className="flex min-w-max items-center gap-3">
         {stages.map((stage, index) => (
-          <div className="flex items-center gap-3" key={stage.code}>
+          <div className="flex items-center gap-3" key={stage.stableKey}>
             <button
-              className={`min-w-52 rounded-xl border bg-white px-4 py-3 text-left shadow-sm ${stage.code === selectedCode ? "border-brand-navy ring-2 ring-brand-blue/40" : "border-brand-navy/15"}`}
-              onClick={() => onSelect(stage.code)}
+              className={`min-w-52 rounded-xl border bg-white px-4 py-3 text-left shadow-sm ${stage.stableKey === selectedCode ? "border-brand-navy ring-2 ring-brand-blue/40" : "border-brand-navy/15"}`}
+              onClick={() => onSelect(stage.stableKey)}
               type="button"
             >
               <span className="text-[10px] font-bold uppercase tracking-wider text-brand-navy/50">
@@ -141,8 +141,8 @@ export function WorkflowStageList({
         {stages.map((stage, index) => (
           <StageListItem
             index={index}
-            isSelected={stage.code === selectedCode}
-            key={stage.code}
+            isSelected={stage.stableKey === selectedCode}
+            key={stage.stableKey}
             onSelect={onSelect}
             stage={stage}
             stageCount={stages.length}
@@ -170,7 +170,7 @@ function StageListItem({
     <button
       aria-pressed={isSelected}
       className={`flex w-full items-center gap-2 rounded-xl px-2 py-2.5 text-left transition ${isSelected ? "bg-brand-blue/20 ring-1 ring-brand-blue" : "hover:bg-slate-50"}`}
-      onClick={() => onSelect(stage.code)}
+      onClick={() => onSelect(stage.stableKey)}
       type="button"
     >
       <span

@@ -47,21 +47,52 @@ function validateTaskIdentity(
       ),
     );
   }
-  if (task.assignmentRoleId && task.assignmentUserId) {
+  if (task.requiredCompletionCount > task.reviewerCount) {
     errors.push(
       issue(
-        "AMBIGUOUS_ASSIGNMENT",
-        `${task.name} cannot assign both a role and a user.`,
-        taskPath,
+        "INVALID_COMPLETION_COUNT",
+        `${task.name} cannot require more completions than reviewers.`,
+        `${taskPath}.requiredCompletionCount`,
       ),
     );
   }
-  if (!task.assignmentRoleId && !task.assignmentUserId) {
+  if (task.assignmentMode === "ROLE" && !task.roleId) {
     errors.push(
       issue(
         "MISSING_ASSIGNMENT",
-        `${task.name} must be assigned to a role or user before publication.`,
-        taskPath,
+        `${task.name} must be assigned to a role before publication.`,
+        `${taskPath}.roleId`,
+      ),
+    );
+  }
+  if (task.assignmentMode === "NAMED_USER" && !task.namedUserOverrideId) {
+    errors.push(
+      issue(
+        "MISSING_ASSIGNMENT",
+        `${task.name} must select a named user before publication.`,
+        `${taskPath}.namedUserOverrideId`,
+      ),
+    );
+  }
+  if (task.assignmentMode === "NAMED_USER" && task.reviewerCount !== 1) {
+    errors.push(
+      issue(
+        "INVALID_NAMED_USER_REVIEWER_COUNT",
+        `${task.name} must have exactly one reviewer when assigned to a named user.`,
+        `${taskPath}.reviewerCount`,
+      ),
+    );
+  }
+  if (
+    task.quorum &&
+    (task.reviewerCount < 2 ||
+      task.requiredCompletionCount * 2 <= task.reviewerCount)
+  ) {
+    errors.push(
+      issue(
+        "INVALID_QUORUM",
+        `${task.name} must require a majority of at least two reviewers for quorum.`,
+        `${taskPath}.quorum`,
       ),
     );
   }
@@ -73,7 +104,9 @@ function validateTaskUniqueness(
   base: string,
 ) {
   const errors: WorkflowValidationIssue[] = [];
-  const duplicateCodes = new Set(duplicates(stage.tasks.map((task) => task.code)));
+  const duplicateCodes = new Set(
+    duplicates(stage.tasks.map((task) => task.stableKey)),
+  );
   for (const code of duplicateCodes) {
     errors.push(
       issue(
@@ -84,7 +117,7 @@ function validateTaskUniqueness(
     );
   }
   const duplicateSequences = new Set(
-    duplicates(stage.tasks.map((task) => task.sequence)),
+    duplicates(stage.tasks.map((task) => task.displayOrder)),
   );
   for (const sequence of duplicateSequences) {
     errors.push(
@@ -104,7 +137,7 @@ function validateApplicantLabels(
 ) {
   if (
     !sensitiveApplicantTerms.test(
-      `${stage.applicantLabel} ${stage.applicantDescription}`,
+      `${stage.publicStatusMapping.label} ${stage.publicStatusMapping.description}`,
     )
   ) {
     return [];

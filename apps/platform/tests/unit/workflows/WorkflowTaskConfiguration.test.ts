@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   checklistItemDefaults,
   workflowTaskFormSchema,
-} from "@/components/admin/workflows/WorkflowTaskFormSchema";
+} from "@/modules/workflows/ui/definitions/WorkflowTaskFormSchema";
 import { referenceWorkflow } from "@/modules/workflows/ReferenceWorkflow";
 import {
   defaultTaskConfiguration,
@@ -27,16 +27,15 @@ describe("workflow task configuration", () => {
     });
   });
 
-  it("rejects a task assigned to both a role and a named user", () => {
+  it("rejects completion thresholds above the reviewer count", () => {
     const graph = structuredClone(referenceWorkflow);
-    graph.stages[0].tasks[0].assignmentRoleId =
+    graph.stages[0].tasks[0].roleId =
       "79e20de0-3558-4d63-90a4-8c9f5125df07";
-    graph.stages[0].tasks[0].assignmentUserId =
-      "79e20de0-3558-4d63-90a4-8c9f5125df08";
+    graph.stages[0].tasks[0].requiredCompletionCount = 2;
     const validation = validateWorkflowGraph(graph);
     expect(validation.errors).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ code: "AMBIGUOUS_ASSIGNMENT" }),
+        expect.objectContaining({ code: "INVALID_COMPLETION_COUNT" }),
       ]),
     );
   });
@@ -45,7 +44,13 @@ describe("workflow task configuration", () => {
     const values = {
       assignmentMode: "ROLE",
       assignmentTarget: "79e20de0-3558-4d63-90a4-8c9f5125df07",
-      code: "REVIEW_TASK",
+      stableKey: "REVIEW_TASK",
+      description: "Review the application.",
+      displayOrder: 1,
+      reviewerCount: 3,
+      requiredCompletionCount: 2,
+      quorum: true,
+      coiRequired: true,
       configJson: formatTaskConfiguration(
         defaultTaskConfiguration("CHECKLIST"),
       ),
@@ -58,12 +63,25 @@ describe("workflow task configuration", () => {
     };
     expect(workflowTaskFormSchema.safeParse(values).success).toBe(true);
     expect(
+      workflowTaskFormSchema.safeParse({
+        ...values,
+        formVersionId: "",
+        type: undefined,
+      }).success,
+    ).toBe(true);
+    expect(
       workflowTaskFormSchema.safeParse({ ...values, assignmentTarget: "" })
         .success,
     ).toBe(false);
     expect(
       workflowTaskFormSchema.safeParse({ ...values, assignmentMode: "INHERIT" })
         .success,
+    ).toBe(false);
+    expect(
+      workflowTaskFormSchema.safeParse({
+        ...values,
+        requiredCompletionCount: 4,
+      }).success,
     ).toBe(false);
   });
 });
