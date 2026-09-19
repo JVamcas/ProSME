@@ -232,6 +232,13 @@
       "when": 1790553600000,
       "tag": "0032_form_layout_options",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1790640000000,
+      "tag": "0033_form_validation_rules",
+      "breakpoints": true
     }
   ]
 }

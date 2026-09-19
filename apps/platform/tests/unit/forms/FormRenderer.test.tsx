@@ -23,6 +23,8 @@ describe("RJSF form renderer", () => {
     expect(markup).toContain('name="root_NAME"');
     expect(markup).toContain("<textarea");
     expect(markup).toContain('type="number"');
+    expect(markup).toContain('min="100"');
+    expect(markup).toContain('max="1000"');
     expect(markup).toContain('aria-label="Open calendar"');
     expect(markup).toContain("Yes");
     expect(markup).toContain("No");

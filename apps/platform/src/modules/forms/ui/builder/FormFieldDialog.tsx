@@ -35,6 +35,10 @@ function defaultField(sectionId: string, order: number): FieldDialogValues {
     helpText: "",
     key: "",
     label: "",
+    maximum: undefined,
+    maxLength: undefined,
+    minimum: undefined,
+    minLength: undefined,
     options: [],
     order,
     required: false,
@@ -123,6 +127,14 @@ function FormFieldDialogContent({
 
   useEffect(() => {
     if (type !== "SELECT") form.setValue("options", []);
+    if (type !== "NUMBER") {
+      form.setValue("minimum", undefined);
+      form.setValue("maximum", undefined);
+    }
+    if (type !== "TEXT" && type !== "TEXTAREA") {
+      form.setValue("minLength", undefined);
+      form.setValue("maxLength", undefined);
+    }
   }, [form, type]);
 
   const submit = form.handleSubmit(async (values) => {
@@ -172,6 +184,30 @@ function FormFieldDialogContent({
           />
           <FormTextarea label="Help text" name="helpText" />
           <CheckboxField label="Required" name="required" />
+          {type === "NUMBER" ? (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormInput label="Minimum" name="minimum" type="number" />
+              <FormInput label="Maximum" name="maximum" type="number" />
+            </div>
+          ) : null}
+          {type === "TEXT" || type === "TEXTAREA" ? (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormInput
+                label="Minimum length"
+                min={0}
+                name="minLength"
+                step={1}
+                type="number"
+              />
+              <FormInput
+                label="Maximum length"
+                min={0}
+                name="maxLength"
+                step={1}
+                type="number"
+              />
+            </div>
+          ) : null}
           {type === "SELECT" ? (
             <SelectOptions
               append={options.append}

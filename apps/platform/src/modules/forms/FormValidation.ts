@@ -1,3 +1,6 @@
+import validator from "@rjsf/validator-ajv8";
+
+import { buildFormValueSchema } from "./engine/FormDefinitionParser";
 import type { FormField } from "./FormTypes";
 
 export function validateFieldOptions(field: FormField) {
@@ -28,26 +31,34 @@ export function validateFormFields(fields: readonly FormField[]) {
     fields.length > 0 &&
     new Set(keys).size === keys.length &&
     fields.every(validateFieldOptions) &&
+    fields.every(validateFieldConstraints) &&
     validateFieldOrder(fields)
   );
 }
 
-function primitiveValid(field: FormField, value: unknown) {
-  if (value === null || value === undefined || value === "") return true;
-  if (field.type === "YES_NO") return typeof value === "boolean";
-  if (field.type === "DATE") return validDate(value);
-  if (field.type === "NUMBER") {
-    return typeof value === "number" && Number.isFinite(value);
-  }
-  return typeof value === "string";
-}
-
-function validDate(value: unknown) {
-  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+export function validateFieldConstraints(field: FormField) {
+  const hasNumberLimits = field.minimum != null || field.maximum != null;
+  const hasLengthLimits = field.minLength != null || field.maxLength != null;
+  if (hasNumberLimits && field.type !== "NUMBER") return false;
+  if (hasLengthLimits && !["TEXT", "TEXTAREA"].includes(field.type)) {
     return false;
   }
-  const date = new Date(`${value}T00:00:00.000Z`);
-  return !Number.isNaN(date.getTime()) && date.toISOString().startsWith(value);
+  if (![field.minimum, field.maximum].every((value) => (
+    value == null || Number.isFinite(value)
+  ))) return false;
+  if (
+    field.minimum != null &&
+    field.maximum != null &&
+    field.minimum > field.maximum
+  ) return false;
+  if (
+    field.minLength != null &&
+    field.maxLength != null &&
+    field.minLength > field.maxLength
+  ) return false;
+  return [field.minLength, field.maxLength].every((value) => (
+    value == null || Number.isInteger(value) && value >= 0
+  ));
 }
 
 export function validateFormValues(
@@ -55,28 +66,20 @@ export function validateFormValues(
   values: Record<string, unknown>,
   complete: boolean,
 ) {
-  const knownKeys = new Set(fields.map((field) => field.key));
-  if (Object.keys(values).some((key) => !knownKeys.has(key))) return false;
-  return fields.every((field) => {
-    const value = values[field.key];
-    if (
-      complete &&
-      field.required &&
-      (value === undefined || value === null || value === "")
-    ) {
-      return false;
-    }
-    if (!primitiveValid(field, value)) return false;
-    if (
-      value !== undefined &&
-      value !== null &&
-      value !== "" &&
-      field.type === "SELECT"
-    ) {
-      return (field.options ?? []).some((option) => option.key === value);
-    }
-    return true;
-  });
+  const presentValues = Object.fromEntries(
+    Object.entries(values).filter(([, value]) => (
+      value !== undefined && value !== null && value !== ""
+    )),
+  );
+  try {
+    const result = validator.rawValidation(
+      buildFormValueSchema(fields, complete),
+      presentValues,
+    );
+    return !result.errors?.length;
+  } catch {
+    return false;
+  }
 }
 
 export function formPublicationErrors(
@@ -86,7 +89,7 @@ export function formPublicationErrors(
   const errors: string[] = [];
   if (!submitLabel.trim()) errors.push("A submit label is required.");
   if (!validateFormFields(fields)) {
-    errors.push("Fields contain invalid keys, options, or ordering.");
+    errors.push("Fields contain invalid keys, options, ordering, or validation rules.");
   }
   return errors;
 }

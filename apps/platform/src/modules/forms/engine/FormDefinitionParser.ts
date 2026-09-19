@@ -49,7 +49,14 @@ function fieldSchema(field: FormField): RJSFSchema {
     description: field.helpText ?? undefined,
     title: field.label,
   };
-  if (field.type === "NUMBER") return { ...common, type: "number" };
+  if (field.type === "NUMBER") {
+    return {
+      ...common,
+      maximum: field.maximum ?? undefined,
+      minimum: field.minimum ?? undefined,
+      type: "number",
+    };
+  }
   if (field.type === "DATE") {
     return { ...common, format: "date", type: "string" };
   }
@@ -73,7 +80,28 @@ function fieldSchema(field: FormField): RJSFSchema {
   if ((field.options ?? []).length > 0) {
     invalid(`Field ${field.key} does not support options.`);
   }
-  return { ...common, type: "string" };
+  return {
+    ...common,
+    maxLength: field.maxLength ?? undefined,
+    minLength: field.minLength ?? undefined,
+    type: "string",
+  };
+}
+
+export function buildFormValueSchema(
+  fields: readonly FormField[],
+  requireCompletedFields = true,
+): RJSFSchema {
+  return {
+    additionalProperties: false,
+    properties: Object.fromEntries(
+      fields.map((field) => [field.key, fieldSchema(field)]),
+    ),
+    required: requireCompletedFields
+      ? fields.filter((field) => field.required).map((field) => field.key)
+      : [],
+    type: "object",
+  };
 }
 
 function fieldUiSchema(field: FormField): UiSchema {
@@ -136,9 +164,6 @@ export function parseFormDefinition(
   const orphan = fields.find((field) => !sectionIds.has(field.sectionId));
   if (orphan) invalid(`Field ${orphan.key} has no section.`);
 
-  const properties = Object.fromEntries(
-    fields.map((field) => [field.key, fieldSchema(field)]),
-  );
   const uiSchema = Object.fromEntries(
     fields.map((field) => [field.key, fieldUiSchema(field)]),
   ) as UiSchema;
@@ -148,12 +173,7 @@ export function parseFormDefinition(
 
   return {
     instructions: definition.instructions,
-    schema: {
-      additionalProperties: false,
-      properties,
-      required: fields.filter((field) => field.required).map((field) => field.key),
-      type: "object",
-    },
+    schema: buildFormValueSchema(fields),
     sections,
     submitLabel: definition.submitLabel,
     uiSchema,

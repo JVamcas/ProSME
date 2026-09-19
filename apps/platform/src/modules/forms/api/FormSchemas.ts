@@ -17,6 +17,16 @@ export const formOptionSchema = z.object({
   order: z.coerce.number().int().positive(),
 });
 
+const optionalNumber = z.preprocess(
+  (value) => value === "" || value === null ? undefined : value,
+  z.coerce.number().finite().optional(),
+);
+
+const optionalLength = z.preprocess(
+  (value) => value === "" || value === null ? undefined : value,
+  z.coerce.number().int().nonnegative().optional(),
+);
+
 const formFieldSchemaBase = z.object({
   id: z.string().uuid().optional(),
   sectionId: z.string().uuid(),
@@ -28,6 +38,10 @@ const formFieldSchemaBase = z.object({
   type: z.enum(formFieldTypes),
   required: z.boolean(),
   helpText: z.string().trim().max(500).nullable().optional(),
+  minimum: optionalNumber,
+  maximum: optionalNumber,
+  minLength: optionalLength,
+  maxLength: optionalLength,
   order: z.coerce.number().int().positive(),
   options: z.array(formOptionSchema).max(100).optional(),
 });
@@ -54,6 +68,46 @@ export const formFieldSchema = formFieldSchemaBase.superRefine((field, context) 
       code: "custom",
       message: "Option order must be contiguous and start at one.",
       path: ["options"],
+    });
+  }
+  if (field.type !== "NUMBER" && (
+    field.minimum !== undefined || field.maximum !== undefined
+  )) {
+    context.addIssue({
+      code: "custom",
+      message: "Only Number fields may have minimum or maximum values.",
+      path: ["minimum"],
+    });
+  }
+  if (field.type !== "TEXT" && field.type !== "TEXTAREA" && (
+    field.minLength !== undefined || field.maxLength !== undefined
+  )) {
+    context.addIssue({
+      code: "custom",
+      message: "Only Text and Textarea fields may have length limits.",
+      path: ["minLength"],
+    });
+  }
+  if (
+    field.minimum !== undefined &&
+    field.maximum !== undefined &&
+    field.minimum > field.maximum
+  ) {
+    context.addIssue({
+      code: "custom",
+      message: "Minimum cannot be greater than maximum.",
+      path: ["minimum"],
+    });
+  }
+  if (
+    field.minLength !== undefined &&
+    field.maxLength !== undefined &&
+    field.minLength > field.maxLength
+  ) {
+    context.addIssue({
+      code: "custom",
+      message: "Minimum length cannot be greater than maximum length.",
+      path: ["minLength"],
     });
   }
 });

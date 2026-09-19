@@ -83,6 +83,10 @@ async function copyFields(
       columnSpan: field.columnSpan,
       formVersionId: targetVersionId,
       helpText: field.helpText,
+      maximum: field.maximum,
+      maxLength: field.maxLength,
+      minimum: field.minimum,
+      minLength: field.minLength,
       id: fieldIds.get(field.id)!,
       key: field.key,
       label: field.label,
@@ -169,6 +173,10 @@ async function insertDraftFields(
       columnSpan: field.columnSpan,
       formVersionId: versionId,
       helpText: field.helpText ?? null,
+      maximum: field.maximum ?? null,
+      maxLength: field.maxLength ?? null,
+      minimum: field.minimum ?? null,
+      minLength: field.minLength ?? null,
       id: fieldIds[index],
       key: field.key,
       label: field.label,
@@ -212,6 +220,10 @@ export async function readPublicationFields(
         id: formFields.id,
         key: formFields.key,
         label: formFields.label,
+        maximum: formFields.maximum,
+        maxLength: formFields.maxLength,
+        minimum: formFields.minimum,
+        minLength: formFields.minLength,
         order: formFields.order,
         required: formFields.required,
         sectionId: formFields.sectionId,
@@ -238,6 +250,10 @@ export async function readPublicationFields(
   }
   return fields.map((field) => ({
     ...field,
+    maximum: field.maximum ?? undefined,
+    maxLength: field.maxLength ?? undefined,
+    minimum: field.minimum ?? undefined,
+    minLength: field.minLength ?? undefined,
     options: optionsByField.get(field.id) ?? [],
   }));
 }

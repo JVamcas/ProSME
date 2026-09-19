@@ -69,6 +69,53 @@ describe("basic form field validation", () => {
     expect(validateFormValues([textField], { NOTES: "Ready" }, true)).toBe(true);
     expect(validateFormValues([textField], { UNKNOWN: "nope" }, false)).toBe(false);
   });
+
+  it("enforces configured length limits with AJV", () => {
+    const field = { ...textField, maxLength: 10, minLength: 3 };
+
+    expect(validateFormValues([field], { NOTES: "Okay" }, true)).toBe(true);
+    expect(validateFormValues([field], { NOTES: "No" }, true)).toBe(false);
+    expect(validateFormValues([field], { NOTES: "Far too long" }, true))
+      .toBe(false);
+  });
+
+  it("enforces configured numeric limits with AJV", () => {
+    const field: FormField = {
+      ...textField,
+      maximum: 20,
+      minimum: 10,
+      type: "NUMBER",
+    };
+
+    expect(validateFormValues([field], { NOTES: 15 }, true)).toBe(true);
+    expect(validateFormValues([field], { NOTES: 9 }, true)).toBe(false);
+    expect(validateFormValues([field], { NOTES: 21 }, true)).toBe(false);
+  });
+
+  it("rejects invalid or inapplicable validation rules", () => {
+    expect(formFieldSchema.safeParse({
+      ...textField,
+      maximum: 5,
+    }).success).toBe(false);
+    expect(formFieldSchema.safeParse({
+      ...textField,
+      maxLength: 2,
+      minLength: 3,
+    }).success).toBe(false);
+    expect(formFieldSchema.safeParse({
+      ...textField,
+      maximum: 10,
+      minimum: 1,
+      type: "NUMBER",
+    }).success).toBe(true);
+  });
+
+  it("allows empty draft values while validating entered draft values", () => {
+    const field = { ...textField, minLength: 3 };
+
+    expect(validateFormValues([field], { NOTES: "" }, false)).toBe(true);
+    expect(validateFormValues([field], { NOTES: "No" }, false)).toBe(false);
+  });
 });
 
 describe("basic generic form definition", () => {

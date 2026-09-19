@@ -19,7 +19,16 @@ describe("form definition parser", () => {
       "APPROVED",
       "REGION",
     ]);
-    expect(properties.AMOUNT).toMatchObject({ type: "number" });
+    expect(properties.AMOUNT).toMatchObject({
+      maximum: 1_000,
+      minimum: 100,
+      type: "number",
+    });
+    expect(properties.NAME).toMatchObject({
+      maxLength: 50,
+      minLength: 2,
+      type: "string",
+    });
     expect(properties.START_DATE).toMatchObject({ format: "date" });
     expect(properties.APPROVED).toMatchObject({
       enum: [true, false],

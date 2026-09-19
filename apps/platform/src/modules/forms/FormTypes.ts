@@ -36,6 +36,10 @@ export type FormField = {
   type: FormFieldType;
   required: boolean;
   helpText?: string | null;
+  minimum?: number;
+  maximum?: number;
+  minLength?: number;
+  maxLength?: number;
   order: number;
   options?: FormOption[];
 };

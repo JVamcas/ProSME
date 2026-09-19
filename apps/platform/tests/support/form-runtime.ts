@@ -7,7 +7,7 @@ function field(
   type: FormField["type"],
   order: number,
 ): FormField {
-  return {
+  const result: FormField = {
     columnSpan: 1,
     helpText: `${key} help`,
     key,
@@ -23,6 +23,15 @@ function field(
     sectionId,
     type,
   };
+  if (key === "NAME") {
+    result.minLength = 2;
+    result.maxLength = 50;
+  }
+  if (key === "AMOUNT") {
+    result.minimum = 100;
+    result.maximum = 1_000;
+  }
+  return result;
 }
 
 export function runtimeDefinition(): FormRuntimeSchema {
