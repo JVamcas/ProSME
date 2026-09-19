@@ -1,10 +1,9 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useMemo } from "react";
-import type { FieldPath, UseFormReturn } from "react-hook-form";
-import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
+import { useEffect, useMemo } from "react";
+import { useForm, type FieldPath, type UseFormReturn } from "react-hook-form";
 import { toast } from "sonner";
 
 import {
@@ -28,9 +27,9 @@ function setCompletionErrors(
   issues: { message: string; path: PropertyKey[] }[],
 ) {
   issues.forEach((issue) => {
-    const code = issue.path[0];
-    if (typeof code === "string") {
-      form.setError(code as FieldPath<DynamicFormValues>, {
+    const key = issue.path[0];
+    if (typeof key === "string") {
+      form.setError(key as FieldPath<DynamicFormValues>, {
         message: issue.message,
       });
     }
@@ -40,15 +39,15 @@ function setCompletionErrors(
 function completeValues({
   completionSchema,
   complete,
-  form,
   data,
+  form,
   router,
   values,
 }: {
   completionSchema: ReturnType<typeof buildDynamicFormSchema>;
   complete: ReturnType<typeof useCompleteTaskForm>;
-  form: UseFormReturn<DynamicFormValues>;
   data: TaskFormData;
+  form: UseFormReturn<DynamicFormValues>;
   router: ReturnType<typeof useRouter>;
   values: DynamicFormValues;
 }) {

@@ -12,52 +12,31 @@ export {
   type FormVersionSummary,
 } from "./domain/FormDefinition";
 
-export const formInputTypes = [
+export const formFieldTypes = [
   "TEXT",
   "TEXTAREA",
   "NUMBER",
-  "MONEY",
   "DATE",
+  "YES_NO",
   "SELECT",
-  "RADIO",
-  "CHECKBOX",
 ] as const;
-export type FormInputType = (typeof formInputTypes)[number];
-
-export const formDataTypes = [
-  "TEXT",
-  "INTEGER",
-  "DECIMAL",
-  "MONEY",
-  "DATE",
-  "BOOLEAN",
-] as const;
-export type FormDataType = (typeof formDataTypes)[number];
+export type FormFieldType = (typeof formFieldTypes)[number];
 
 export type FormOption = {
-  code: string;
+  key: string;
   label: string;
-  position: number;
-};
-export type FormValidation = {
-  max?: number;
-  maxLength?: number;
-  min?: number;
-  minLength?: number;
+  order: number;
 };
 export type FormField = {
   id?: string;
-  code: string;
+  sectionId: string;
+  columnSpan: 1 | 2 | 3;
+  key: string;
   label: string;
-  inputType: FormInputType;
-  dataType: FormDataType;
-  rowIndex: number;
-  columnIndex: 1 | 2;
-  columnSpan: 1 | 2;
+  type: FormFieldType;
   required: boolean;
-  placeholder?: string | null;
   helpText?: string | null;
-  validation?: FormValidation | null;
+  order: number;
   options?: FormOption[];
 };
 

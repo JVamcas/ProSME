@@ -80,56 +80,66 @@ async function readFields(versionId: string) {
   const database = getDatabase();
   const [fields, options] = await Promise.all([
     database
-      .select()
+      .select({
+        columnSpan: formFields.columnSpan,
+        helpText: formFields.helpText,
+        id: formFields.id,
+        key: formFields.key,
+        label: formFields.label,
+        order: formFields.order,
+        required: formFields.required,
+        sectionId: formFields.sectionId,
+        type: formFields.type,
+      })
       .from(formFields)
+      .innerJoin(formSections, eq(formSections.id, formFields.sectionId))
       .where(eq(formFields.formVersionId, versionId))
-      .orderBy(asc(formFields.rowIndex), asc(formFields.columnIndex)),
+      .orderBy(asc(formSections.order), asc(formFields.order)),
     database
       .select({
-        code: formFieldOptions.code,
         fieldId: formFieldOptions.fieldId,
+        key: formFieldOptions.key,
         label: formFieldOptions.label,
-        position: formFieldOptions.position,
+        order: formFieldOptions.order,
       })
       .from(formFieldOptions)
       .innerJoin(formFields, eq(formFields.id, formFieldOptions.fieldId))
       .where(eq(formFields.formVersionId, versionId))
-      .orderBy(asc(formFieldOptions.position)),
+      .orderBy(asc(formFieldOptions.order)),
   ]);
   const byField = new Map<string, FormField["options"]>();
   for (const option of options) {
     const current = byField.get(option.fieldId) ?? [];
     current.push({
-      code: option.code,
+      key: option.key,
       label: option.label,
-      position: option.position,
+      order: option.order,
     });
     byField.set(option.fieldId, current);
   }
   return fields.map((field) => ({
-    code: field.code,
-    columnIndex: field.columnIndex as 1 | 2,
-    columnSpan: field.columnSpan as 1 | 2,
-    dataType: field.dataType,
+    columnSpan: field.columnSpan,
     helpText: field.helpText,
     id: field.id,
-    inputType: field.inputType,
+    key: field.key,
     label: field.label,
     options: byField.get(field.id) ?? [],
-    placeholder: field.placeholder,
+    order: field.order,
     required: field.required,
-    rowIndex: field.rowIndex,
-    validation: field.validation as FormField["validation"],
+    sectionId: field.sectionId,
+    type: field.type,
   }));
 }
 
 async function readSections(versionId: string) {
   return getDatabase()
     .select({
+      columnSpan: formSections.columnSpan,
       description: formSections.description,
       id: formSections.id,
       key: formSections.key,
       order: formSections.order,
+      showContainer: formSections.showContainer,
       title: formSections.title,
     })
     .from(formSections)

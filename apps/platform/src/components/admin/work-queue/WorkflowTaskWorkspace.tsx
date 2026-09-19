@@ -5,7 +5,7 @@ import { CalendarDays, FileText } from "lucide-react";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useWorkflowTask } from "@/modules/work-queue/WorkQueueHooks";
 import { ChecklistTaskForm } from "./ChecklistTaskForm";
-import { DynamicFormTask } from "../forms/DynamicFormTask";
+import { DynamicFormTask } from "@/modules/forms/ui/renderer/DynamicFormTask";
 
 function formatDate(value: string | null) {
   if (!value) return "No due date";

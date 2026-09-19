@@ -1,9 +1,9 @@
 import {
   boolean,
   check,
+  foreignKey,
   index,
   integer,
-  jsonb,
   pgTable,
   text,
   timestamp,
@@ -13,8 +13,7 @@ import {
 import { sql } from "drizzle-orm";
 
 import type {
-  FormDataType,
-  FormInputType,
+  FormFieldType,
   FormStatus,
 } from "@/modules/forms/FormTypes";
 import { users } from "@/db/schema/identity";
@@ -100,6 +99,8 @@ export const formSections = pgTable(
     key: text("key").notNull(),
     title: text("title").notNull(),
     description: text("description").notNull().default(""),
+    columnSpan: integer("column_span").$type<1 | 2 | 3>().notNull().default(3),
+    showContainer: boolean("show_container").notNull().default(true),
     order: integer("display_order").notNull(),
   },
   (table) => [
@@ -111,7 +112,15 @@ export const formSections = pgTable(
       table.formVersionId,
       table.order,
     ),
+    uniqueIndex("app_form_sections_id_version_unique").on(
+      table.id,
+      table.formVersionId,
+    ),
     check("app_form_sections_order_check", sql`${table.order} > 0`),
+    check(
+      "app_form_sections_column_span_check",
+      sql`${table.columnSpan} in (1, 2, 3)`,
+    ),
   ],
 );
 
@@ -122,45 +131,41 @@ export const formFields = pgTable(
     formVersionId: uuid("form_version_id")
       .notNull()
       .references(() => formVersions.id, { onDelete: "restrict" }),
-    code: text("code").notNull(),
+    sectionId: uuid("section_id").notNull(),
+    columnSpan: integer("column_span").$type<1 | 2 | 3>().notNull().default(1),
+    key: text("key").notNull(),
     label: text("label").notNull(),
-    inputType: text("input_type").$type<FormInputType>().notNull(),
-    dataType: text("data_type").$type<FormDataType>().notNull(),
-    rowIndex: integer("row_index").notNull(),
-    columnIndex: integer("column_index").notNull(),
-    columnSpan: integer("column_span").notNull().default(1),
+    type: text("type").$type<FormFieldType>().notNull(),
     required: boolean("required").notNull().default(false),
-    placeholder: text("placeholder"),
     helpText: text("help_text"),
-    validation: jsonb("validation").$type<Record<string, unknown> | null>(),
+    order: integer("display_order").notNull(),
   },
   (table) => [
-    uniqueIndex("app_form_fields_version_code_unique").on(
+    uniqueIndex("app_form_fields_version_key_unique").on(
       table.formVersionId,
-      table.code,
+      table.key,
     ),
-    uniqueIndex("app_form_fields_version_position_unique").on(
-      table.formVersionId,
-      table.rowIndex,
-      table.columnIndex,
+    uniqueIndex("app_form_fields_section_order_unique").on(
+      table.sectionId,
+      table.order,
     ),
-    index("app_form_fields_version_order_idx").on(
-      table.formVersionId,
-      table.rowIndex,
-      table.columnIndex,
+    index("app_form_fields_section_order_idx").on(
+      table.sectionId,
+      table.order,
     ),
-    check("app_form_fields_row_positive_check", sql`${table.rowIndex} > 0`),
+    foreignKey({
+      columns: [table.sectionId, table.formVersionId],
+      foreignColumns: [formSections.id, formSections.formVersionId],
+      name: "app_form_fields_section_version_fk",
+    }).onDelete("restrict"),
     check(
-      "app_form_fields_column_check",
-      sql`${table.columnIndex} in (1, 2)`,
+      "app_form_fields_type_check",
+      sql`${table.type} in ('TEXT', 'TEXTAREA', 'NUMBER', 'DATE', 'YES_NO', 'SELECT')`,
     ),
+    check("app_form_fields_order_check", sql`${table.order} > 0`),
     check(
-      "app_form_fields_span_check",
-      sql`${table.columnSpan} in (1, 2)`,
-    ),
-    check(
-      "app_form_fields_span_start_check",
-      sql`${table.columnSpan} <> 2 or ${table.columnIndex} = 1`,
+      "app_form_fields_column_span_check",
+      sql`${table.columnSpan} in (1, 2, 3)`,
     ),
   ],
 );
@@ -172,22 +177,22 @@ export const formFieldOptions = pgTable(
     fieldId: uuid("field_id")
       .notNull()
       .references(() => formFields.id, { onDelete: "restrict" }),
-    code: text("code").notNull(),
+    key: text("key").notNull(),
     label: text("label").notNull(),
-    position: integer("position").notNull(),
+    order: integer("display_order").notNull(),
   },
   (table) => [
-    uniqueIndex("app_form_field_options_code_unique").on(
+    uniqueIndex("app_form_field_options_key_unique").on(
       table.fieldId,
-      table.code,
+      table.key,
     ),
-    uniqueIndex("app_form_field_options_position_unique").on(
+    uniqueIndex("app_form_field_options_order_unique").on(
       table.fieldId,
-      table.position,
+      table.order,
     ),
     check(
-      "app_form_field_options_position_check",
-      sql`${table.position} > 0`,
+      "app_form_field_options_order_check",
+      sql`${table.order} > 0`,
     ),
   ],
 );

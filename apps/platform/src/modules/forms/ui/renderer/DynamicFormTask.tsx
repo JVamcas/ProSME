@@ -4,24 +4,24 @@ import { FormProvider } from "react-hook-form";
 
 import { GeneralButton } from "@/components/ui/button";
 import { useTaskForm } from "@/modules/forms/FormHooks";
-import { DynamicFormField } from "./DynamicFormField";
 import {
   useDynamicFormController,
   type TaskFormData,
 } from "./DynamicFormController";
+import { DynamicFormSection } from "./DynamicFormSection";
 
 function FormActions({
   completePending,
+  onComplete,
   readOnly,
   savePending,
   submitLabel,
-  onComplete,
 }: {
   completePending: boolean;
+  onComplete: () => void;
   readOnly: boolean;
   savePending: boolean;
   submitLabel: string;
-  onComplete: () => void;
 }) {
   if (readOnly) return null;
   const disabled = savePending || completePending;
@@ -38,11 +38,11 @@ function FormActions({
 }
 
 function FormErrors({
-  saveError,
   completeError,
+  saveError,
 }: {
-  saveError?: Error | null;
   completeError?: Error | null;
+  saveError?: Error | null;
 }) {
   const message = saveError?.message ?? completeError?.message;
   if (!message) return null;
@@ -50,11 +50,11 @@ function FormErrors({
 }
 
 function LoadedDynamicFormTask({
-  taskId,
   data,
+  taskId,
 }: {
-  taskId: string;
   data: TaskFormData;
+  taskId: string;
 }) {
   const controller = useDynamicFormController(taskId, data);
   const saveDraft = controller.form.handleSubmit(controller.saveDraftValues);
@@ -68,12 +68,15 @@ function LoadedDynamicFormTask({
         {data.schema.instructions ? (
           <p className="text-sm text-brand-navy/70">{data.schema.instructions}</p>
         ) : null}
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-          {data.schema.fields.map((field) => (
-            <DynamicFormField
-              field={field}
-              key={field.code}
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+          {data.schema.sections.map((section) => (
+            <DynamicFormSection
+              fields={data.schema.fields.filter(
+                (field) => field.sectionId === section.id,
+              )}
+              key={section.id ?? section.key}
               readOnly={readOnly}
+              section={section}
             />
           ))}
         </div>

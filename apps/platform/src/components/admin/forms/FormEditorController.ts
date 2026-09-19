@@ -8,6 +8,11 @@ import {
   useFormLifecycle,
   useUpdateForm,
 } from "@/modules/forms/FormHooks";
+import {
+  formFieldIdentity,
+  removeFormField,
+  removeFormSectionFields,
+} from "@/modules/forms/domain/FormFieldOrdering";
 import type { FormField, FormSection } from "@/modules/forms/FormTypes";
 
 export function useFormEditorController(id: string) {
@@ -17,18 +22,21 @@ export function useFormEditorController(id: string) {
   const publish = useFormLifecycle("publish");
   const retire = useFormLifecycle("retire");
   const [field, setField] = useState<FormField>();
+  const [fieldSectionId, setFieldSectionId] = useState<string>();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [fieldToRemove, setFieldToRemove] = useState<FormField>();
   const [section, setSection] = useState<FormSection>();
   const [sectionDialogOpen, setSectionDialogOpen] = useState(false);
   const [sectionToRemove, setSectionToRemove] = useState<FormSection>();
   const editor = query.data;
-  const openNewField = useCallback(() => {
+  const openNewField = useCallback((sectionId: string) => {
     setField(undefined);
+    setFieldSectionId(sectionId);
     setDialogOpen(true);
   }, []);
   const openExistingField = useCallback((target: FormField) => {
     setField(target);
+    setFieldSectionId(target.sectionId);
     setDialogOpen(true);
   }, []);
   const openNewSection = useCallback(() => {
@@ -39,14 +47,14 @@ export function useFormEditorController(id: string) {
     setSection(target);
     setSectionDialogOpen(true);
   }, []);
-  const saveField = useCallback((next: FormField) => {
+  const saveField = useCallback(async (next: FormField) => {
     if (!editor) return;
     const fields = editor.fields.some((item) => item.id === field?.id)
       ? editor.fields.map((item) =>
           item.id === field?.id ? { ...next, id: item.id } : item,
         )
       : [...editor.fields, next];
-    update.mutate({
+    await update.mutateAsync({
       expectedRowVersion: editor.version.rowVersion,
       fields,
       instructions: editor.version.instructions,
@@ -58,21 +66,24 @@ export function useFormEditorController(id: string) {
     if (!editor || !fieldToRemove) return;
     update.mutate({
       expectedRowVersion: editor.version.rowVersion,
-      fields: editor.fields.filter((item) => item.id !== fieldToRemove.id),
+      fields: removeFormField(
+        editor.fields,
+        formFieldIdentity(fieldToRemove),
+      ),
       instructions: editor.version.instructions,
       sections: editor.sections,
       submitLabel: editor.version.submitLabel,
     });
     setFieldToRemove(undefined);
   }, [editor, fieldToRemove, update]);
-  const saveSection = useCallback((next: FormSection) => {
+  const saveSection = useCallback(async (next: FormSection) => {
     if (!editor) return;
     const sections = section
       ? editor.sections.map((item) =>
           item.id === section.id ? { ...next, id: item.id } : item,
         )
       : [...editor.sections, next];
-    update.mutate({
+    await update.mutateAsync({
       expectedRowVersion: editor.version.rowVersion,
       fields: editor.fields,
       instructions: editor.version.instructions,
@@ -87,7 +98,7 @@ export function useFormEditorController(id: string) {
       .map((item, index) => ({ ...item, order: index + 1 }));
     update.mutate({
       expectedRowVersion: editor.version.rowVersion,
-      fields: editor.fields,
+      fields: removeFormSectionFields(editor.fields, sectionToRemove.id ?? ""),
       instructions: editor.version.instructions,
       sections,
       submitLabel: editor.version.submitLabel,
@@ -104,11 +115,22 @@ export function useFormEditorController(id: string) {
       submitLabel: editor.version.submitLabel,
     });
   }, [editor, update]);
+  const reorderFields = useCallback((fields: FormField[]) => {
+    if (!editor) return;
+    update.mutate({
+      expectedRowVersion: editor.version.rowVersion,
+      fields,
+      instructions: editor.version.instructions,
+      sections: editor.sections,
+      submitLabel: editor.version.submitLabel,
+    });
+  }, [editor, update]);
   return {
     clone,
     dialogOpen,
     editor,
     field,
+    fieldSectionId,
     fieldToRemove,
     openExistingField,
     openNewField,
@@ -118,6 +140,7 @@ export function useFormEditorController(id: string) {
     query,
     removeField,
     removeSection,
+    reorderFields,
     reorderSections,
     retire,
     saveField,

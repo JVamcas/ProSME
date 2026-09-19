@@ -2,11 +2,17 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FormProvider, useForm } from "react-hook-form";
+import { toast } from "sonner";
 import type { z } from "zod";
 
 import { GeneralButton } from "@/components/ui/button";
 import { DraggableDialog } from "@/components/ui/draggable-dialog";
-import { FormInput, FormTextarea } from "@/components/ui/form-fields";
+import { CheckboxField } from "@/components/ui/form-field";
+import {
+  FormInput,
+  FormSelect,
+  FormTextarea,
+} from "@/components/ui/form-fields";
 import { formSectionSchema } from "@/modules/forms/api/FormSchemas";
 import type { FormSection } from "@/modules/forms/FormTypes";
 
@@ -20,7 +26,7 @@ export function FormSectionDialog({
   isOpen: boolean;
   nextOrder: number;
   onClose: () => void;
-  onSave: (section: FormSection) => void;
+  onSave: (section: FormSection) => Promise<void>;
   section?: FormSection;
 }) {
   return isOpen ? (
@@ -45,16 +51,24 @@ function FormSectionDialogContent({
     z.output<typeof formSectionSchema>
   >({
     defaultValues: section ?? {
+      columnSpan: 3,
       description: "",
       key: "",
       order: nextOrder,
+      showContainer: true,
       title: "",
     },
     resolver: zodResolver(formSectionSchema),
   });
-  const submit = form.handleSubmit((values) => {
-    onSave(values);
-    onClose();
+  const submit = form.handleSubmit(async (values) => {
+    try {
+      await onSave(values);
+      onClose();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Unable to save the section.",
+      );
+    }
   });
   return (
     <DraggableDialog
@@ -71,9 +85,28 @@ function FormSectionDialogContent({
             required
           />
           <FormInput label="Title" name="title" required />
+          <FormSelect
+            items={[
+              { label: "One column (one-third width)", value: 1 },
+              { label: "Two columns (two-thirds width)", value: 2 },
+              { label: "Three columns (full width)", value: 3 },
+            ]}
+            label="Section width"
+            name="columnSpan"
+            required
+          />
           <FormTextarea label="Description" name="description" />
+          <CheckboxField
+            label="Show section title and container"
+            name="showContainer"
+          />
           <div className="flex justify-end">
-            <GeneralButton type="submit">Save section</GeneralButton>
+            <GeneralButton
+              disabled={form.formState.isSubmitting}
+              type="submit"
+            >
+              {form.formState.isSubmitting ? "Saving…" : "Save section"}
+            </GeneralButton>
           </div>
         </form>
       </FormProvider>

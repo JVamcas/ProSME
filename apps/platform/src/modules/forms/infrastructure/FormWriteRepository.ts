@@ -5,190 +5,15 @@ import { and, eq, sql } from "drizzle-orm";
 import { getDatabase } from "@/db/client";
 import {
   formDefinitions,
-  formFieldOptions,
-  formFields,
-  formSections,
   formVersions,
 } from "@/db/schema";
 import type { FormField, FormSection } from "@/modules/forms/FormTypes";
 import { formPublicationErrors } from "@/modules/forms/FormValidation";
-
-type Transaction = Parameters<
-  Parameters<ReturnType<typeof getDatabase>["transaction"]>[0]
->[0];
-
-async function copySections(
-  transaction: Transaction,
-  sourceVersionId: string,
-  targetVersionId: string,
-) {
-  const sections = await transaction
-    .select({
-      description: formSections.description,
-      key: formSections.key,
-      order: formSections.order,
-      title: formSections.title,
-    })
-    .from(formSections)
-    .where(eq(formSections.formVersionId, sourceVersionId));
-  if (!sections.length) return;
-  await transaction.insert(formSections).values(
-    sections.map((section) => ({
-      ...section,
-      formVersionId: targetVersionId,
-    })),
-  );
-}
-
-async function copyFieldOptions(
-  transaction: Transaction,
-  sourceFieldId: string,
-  targetFieldId: string,
-) {
-  const options = await transaction
-    .select()
-    .from(formFieldOptions)
-    .where(eq(formFieldOptions.fieldId, sourceFieldId));
-  if (!options.length) return;
-  await transaction.insert(formFieldOptions).values(
-    options.map((option) => ({
-      code: option.code,
-      fieldId: targetFieldId,
-      label: option.label,
-      position: option.position,
-    })),
-  );
-}
-
-async function copyFields(
-  transaction: Transaction,
-  sourceVersionId: string,
-  targetVersionId: string,
-) {
-  const fields = await transaction
-    .select()
-    .from(formFields)
-    .where(eq(formFields.formVersionId, sourceVersionId));
-  for (const field of fields) {
-    const [createdField] = await transaction
-      .insert(formFields)
-      .values({
-        code: field.code,
-        columnIndex: field.columnIndex,
-        columnSpan: field.columnSpan,
-        dataType: field.dataType,
-        formVersionId: targetVersionId,
-        helpText: field.helpText,
-        inputType: field.inputType,
-        label: field.label,
-        placeholder: field.placeholder,
-        required: field.required,
-        rowIndex: field.rowIndex,
-        validation: field.validation,
-      })
-      .returning();
-    await copyFieldOptions(transaction, field.id, createdField.id);
-  }
-}
-
-async function replaceDraftFields(
-  transaction: Transaction,
-  versionId: string,
-  fields: FormField[],
-) {
-  await transaction.delete(formFieldOptions).where(
-    sql`${formFieldOptions.fieldId} in (select ${formFields.id} from ${formFields} where ${formFields.formVersionId} = ${versionId})`,
-  );
-  await transaction
-    .delete(formFields)
-    .where(eq(formFields.formVersionId, versionId));
-  for (const field of fields) {
-    const [record] = await transaction
-      .insert(formFields)
-      .values({
-        code: field.code,
-        columnIndex: field.columnIndex,
-        columnSpan: field.columnSpan,
-        dataType: field.dataType,
-        formVersionId: versionId,
-        helpText: field.helpText ?? null,
-        inputType: field.inputType,
-        label: field.label,
-        placeholder: field.placeholder ?? null,
-        required: field.required,
-        rowIndex: field.rowIndex,
-        validation: field.validation ?? null,
-      })
-      .returning();
-    if (field.options?.length) {
-      await transaction.insert(formFieldOptions).values(
-        field.options.map((option) => ({ ...option, fieldId: record.id })),
-      );
-    }
-  }
-}
-
-async function replaceDraftSections(
-  transaction: Transaction,
-  versionId: string,
-  sections: FormSection[],
-) {
-  await transaction
-    .delete(formSections)
-    .where(eq(formSections.formVersionId, versionId));
-  if (!sections.length) return;
-  await transaction.insert(formSections).values(
-    sections.map((section) => ({
-      description: section.description,
-      formVersionId: versionId,
-      key: section.key,
-      order: section.order,
-      title: section.title,
-    })),
-  );
-}
-
-async function readPublicationFields(
-  transaction: Transaction,
-  versionId: string,
-) {
-  const fields = await transaction
-    .select()
-    .from(formFields)
-    .where(eq(formFields.formVersionId, versionId));
-  const options = await transaction
-    .select()
-    .from(formFieldOptions)
-    .innerJoin(formFields, eq(formFields.id, formFieldOptions.fieldId))
-    .where(eq(formFields.formVersionId, versionId));
-  const optionsByField = new Map<string, FormField["options"]>();
-  for (const item of options) {
-    const fieldOptions = optionsByField.get(
-      item.app_form_field_options.fieldId,
-    ) ?? [];
-    fieldOptions.push({
-      code: item.app_form_field_options.code,
-      label: item.app_form_field_options.label,
-      position: item.app_form_field_options.position,
-    });
-    optionsByField.set(item.app_form_field_options.fieldId, fieldOptions);
-  }
-  return fields.map((field) => ({
-    code: field.code,
-    columnIndex: field.columnIndex as 1 | 2,
-    columnSpan: field.columnSpan as 1 | 2,
-    dataType: field.dataType,
-    helpText: field.helpText,
-    id: field.id,
-    inputType: field.inputType,
-    label: field.label,
-    options: optionsByField.get(field.id) ?? [],
-    placeholder: field.placeholder,
-    required: field.required,
-    rowIndex: field.rowIndex,
-    validation: field.validation as FormField["validation"],
-  }));
-}
+import {
+  copyFormVersionChildren,
+  readPublicationFields,
+  replaceDraftContent,
+} from "./FormFieldWriteRepository";
 
 export async function createForm(input: {
   actorId: string;
@@ -273,8 +98,7 @@ export async function cloneFormVersion(input: {
         versionNumber: Number(latest.versionNumber) + 1,
       })
       .returning();
-    await copyFields(transaction, source.id, version.id);
-    await copySections(transaction, source.id, version.id);
+    await copyFormVersionChildren(transaction, source.id, version.id);
     return version;
   });
 }
@@ -320,8 +144,12 @@ export async function saveFormDraft(input: {
         })
         .where(eq(formDefinitions.id, input.definitionId));
     }
-    await replaceDraftFields(transaction, version.id, input.fields);
-    await replaceDraftSections(transaction, version.id, input.sections);
+    await replaceDraftContent(
+      transaction,
+      version.id,
+      input.fields,
+      input.sections,
+    );
     return version;
   });
 }

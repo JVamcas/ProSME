@@ -1,7 +1,7 @@
 import type { FormSection } from "./FormDefinition";
 
 export function formSectionIdentity(section: FormSection) {
-  return section.id ?? section.key;
+  return `section:${section.id ?? section.key}`;
 }
 
 export function moveFormSection(

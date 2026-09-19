@@ -1,8 +1,7 @@
 import { z } from "zod";
 
 import {
-  formDataTypes,
-  formInputTypes,
+  formFieldTypes,
   formStatuses,
 } from "@/modules/forms/FormTypes";
 
@@ -12,130 +11,50 @@ const code = z
   .min(2)
   .max(80)
   .regex(/^[A-Z][A-Z0-9_]*$/);
-function optionalNumber(schema: z.ZodType<number>) {
-  return z.preprocess(
-    (value) => value === "" || value === null ? undefined : value,
-    schema.optional(),
-  ) as z.ZodType<number | undefined>;
-}
-
-const validation = z
-  .object({
-    max: optionalNumber(z.coerce.number().finite()),
-    maxLength: optionalNumber(z.coerce.number().int().nonnegative()),
-    min: optionalNumber(z.coerce.number().finite()),
-    minLength: optionalNumber(z.coerce.number().int().nonnegative()),
-  })
-  .partial()
-  .strict()
-  .nullable()
-  .optional();
-
 export const formOptionSchema = z.object({
-  code,
+  key: code,
   label: z.string().trim().min(1).max(200),
-  position: z.coerce.number().int().positive(),
+  order: z.coerce.number().int().positive(),
 });
 
 const formFieldSchemaBase = z.object({
   id: z.string().uuid().optional(),
-  code,
+  sectionId: z.string().uuid(),
+  columnSpan: z.coerce.number().pipe(
+    z.union([z.literal(1), z.literal(2), z.literal(3)]),
+  ),
+  key: code,
   label: z.string().trim().min(1).max(160),
-  inputType: z.enum(formInputTypes),
-  dataType: z.enum(formDataTypes),
-  rowIndex: z.coerce.number().int().positive(),
-  columnIndex: z.coerce.number().pipe(z.union([z.literal(1), z.literal(2)])),
-  columnSpan: z.coerce.number().pipe(z.union([z.literal(1), z.literal(2)])),
+  type: z.enum(formFieldTypes),
   required: z.boolean(),
-  placeholder: z.string().trim().max(160).nullable().optional(),
   helpText: z.string().trim().max(500).nullable().optional(),
-  validation: validation.nullable().optional(),
+  order: z.coerce.number().int().positive(),
   options: z.array(formOptionSchema).max(100).optional(),
 });
 
-function fieldValidationIssues(field: z.infer<typeof formFieldSchemaBase>) {
-  const issues: { message: string; path: string[] }[] = [];
-  const supportsLength = ["TEXT", "TEXTAREA"].includes(field.inputType);
-  const supportsRange = ["NUMBER", "MONEY"].includes(field.inputType);
-  const rules = field.validation;
-  if (
-    rules
-    && (rules.minLength !== undefined || rules.maxLength !== undefined)
-    && !supportsLength
-  ) {
-    issues.push({
-      message: "Length validation is only valid for text fields.",
-      path: ["validation"],
-    });
-  }
-  if (
-    rules
-    && (rules.min !== undefined || rules.max !== undefined)
-    && !supportsRange
-  ) {
-    issues.push({
-      message: "Range validation is only valid for numeric fields.",
-      path: ["validation"],
-    });
-  }
-  if (
-    rules?.min !== undefined
-    && rules.max !== undefined
-    && rules.min > rules.max
-  ) {
-    issues.push({
-      message: "Minimum cannot exceed maximum.",
-      path: ["validation"],
-    });
-  }
-  if (
-    rules?.minLength !== undefined
-    && rules.maxLength !== undefined
-    && rules.minLength > rules.maxLength
-  ) {
-    issues.push({
-      message: "Minimum length cannot exceed maximum length.",
-      path: ["validation"],
-    });
-  }
-  return issues;
-}
-
 export const formFieldSchema = formFieldSchemaBase.superRefine((field, context) => {
-  const supportsOptions = field.inputType === "SELECT" || field.inputType === "RADIO";
+  const supportsOptions = field.type === "SELECT";
   const options = field.options ?? [];
-  const validCombination = {
-    TEXT: ["TEXT"],
-    TEXTAREA: ["TEXT"],
-    NUMBER: ["INTEGER", "DECIMAL"],
-    MONEY: ["MONEY"],
-    DATE: ["DATE"],
-    SELECT: ["TEXT"],
-    RADIO: ["TEXT"],
-    CHECKBOX: ["BOOLEAN"],
-  }[field.inputType].includes(field.dataType);
-  if (!validCombination) {
-    context.addIssue({ code: "custom", message: "Input and data types are incompatible.", path: ["dataType"] });
-  }
-  if (field.columnSpan === 2 && field.columnIndex !== 1) {
-    context.addIssue({ code: "custom", message: "A two-column field must start in column 1.", path: ["columnSpan"] });
-  }
   if (!supportsOptions && options.length) {
-    context.addIssue({ code: "custom", message: "Only select and radio fields may have options.", path: ["options"] });
+    context.addIssue({ code: "custom", message: "Only Select fields may have options.", path: ["options"] });
   }
   if (supportsOptions && !options.length) {
     context.addIssue({ code: "custom", message: "Add at least one option.", path: ["options"] });
   }
-  for (const validationIssue of fieldValidationIssues(field)) {
+  const keys = options.map((option) => option.key);
+  if (new Set(keys).size !== keys.length) {
     context.addIssue({
       code: "custom",
-      message: validationIssue.message,
-      path: validationIssue.path,
+      message: "Option keys must be unique.",
+      path: ["options"],
     });
   }
-  const codes = options.map((option) => option.code);
-  if (new Set(codes).size !== codes.length) {
-    context.addIssue({ code: "custom", message: "Option codes must be unique.", path: ["options"] });
+  if (options.some((option, index) => option.order !== index + 1)) {
+    context.addIssue({
+      code: "custom",
+      message: "Option order must be contiguous and start at one.",
+      path: ["options"],
+    });
   }
 });
 
@@ -152,6 +71,10 @@ export const formVersionSchema = z.object({
 
 export const formSectionSchema = z.object({
   id: z.string().uuid().optional(),
+  columnSpan: z.coerce.number().pipe(
+    z.union([z.literal(1), z.literal(2), z.literal(3)]),
+  ),
+  showContainer: z.boolean(),
   key: code,
   title: z.string().trim().min(1).max(160),
   description: z.string().trim().max(1000),
@@ -186,6 +109,50 @@ export const formEditorSchema = formDefinitionSchema
         message: "Section order must be contiguous and start at one.",
         path: ["sections"],
       });
+    }
+    const sectionIds = new Set(
+      value.sections.flatMap((section) => section.id ? [section.id] : []),
+    );
+    const fieldKeys = value.fields.map((field) => field.key);
+    if (new Set(fieldKeys).size !== fieldKeys.length) {
+      context.addIssue({
+        code: "custom",
+        message: "Field keys must be unique within a form version.",
+        path: ["fields"],
+      });
+    }
+    for (const field of value.fields) {
+      if (!sectionIds.has(field.sectionId)) {
+        context.addIssue({
+          code: "custom",
+          message: "Every field must belong to a section in this form version.",
+          path: ["fields"],
+        });
+        continue;
+      }
+      const section = value.sections.find(
+        (candidate) => candidate.id === field.sectionId,
+      );
+      if (section && field.columnSpan > section.columnSpan) {
+        context.addIssue({
+          code: "custom",
+          message: "A field width cannot exceed its section width.",
+          path: ["fields"],
+        });
+      }
+    }
+    for (const sectionId of sectionIds) {
+      const fieldOrders = value.fields
+        .filter((field) => field.sectionId === sectionId)
+        .map((field) => field.order)
+        .sort((a, b) => a - b);
+      if (fieldOrders.some((order, index) => order !== index + 1)) {
+        context.addIssue({
+          code: "custom",
+          message: "Field order must be contiguous within each section.",
+          path: ["fields"],
+        });
+      }
     }
   });
 

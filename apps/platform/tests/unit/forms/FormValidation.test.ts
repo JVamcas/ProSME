@@ -10,38 +10,58 @@ import {
   validateFormValues,
 } from "@/modules/forms/FormValidation";
 import type { FormField } from "@/modules/forms/FormTypes";
-import { buildDynamicFormSchema } from "@/components/admin/forms/DynamicFormSchema";
+import { buildDynamicFormSchema } from "@/modules/forms/ui/renderer/DynamicFormSchema";
 
+const sectionId = "10000000-0000-4000-8000-000000000001";
 const textField: FormField = {
-  code: "NOTES",
+  columnSpan: 1,
+  helpText: "Add relevant detail.",
+  key: "NOTES",
   label: "Notes",
-  inputType: "TEXTAREA",
-  dataType: "TEXT",
-  rowIndex: 1,
-  columnIndex: 1,
-  columnSpan: 2,
-  required: true,
   options: [],
+  order: 1,
+  required: true,
+  sectionId,
+  type: "TEXTAREA",
 };
 
-describe("dynamic form field validation", () => {
-  it("accepts supported combinations and rejects unsupported ones", () => {
-    expect(formFieldSchema.safeParse(textField).success).toBe(true);
-    expect(
-      formFieldSchema.safeParse({ ...textField, dataType: "INTEGER" }).success,
-    ).toBe(false);
+describe("basic form field validation", () => {
+  it("accepts exactly the six phase 2.3 field types", () => {
+    const types = ["TEXT", "TEXTAREA", "NUMBER", "DATE", "YES_NO"] as const;
+    expect(types.every((type) => (
+      formFieldSchema.safeParse({ ...textField, type }).success
+    ))).toBe(true);
+    expect(formFieldSchema.safeParse({
+      ...textField,
+      options: [{ key: "FIRST", label: "First", order: 1 }],
+      type: "SELECT",
+    }).success).toBe(true);
+    expect(formFieldSchema.safeParse({ ...textField, type: "MONEY" }).success)
+      .toBe(false);
   });
 
-  it("rejects collisions and invalid spans", () => {
-    expect(
-      validateFormFields([
-        textField,
-        { ...textField, code: "OTHER", columnIndex: 2, columnSpan: 1 },
-      ]),
-    ).toBe(false);
-    expect(
-      formFieldSchema.safeParse({ ...textField, columnIndex: 2, columnSpan: 2 }).success,
-    ).toBe(false);
+  it("requires Select options and rejects options on other field types", () => {
+    expect(formFieldSchema.safeParse({
+      ...textField,
+      options: [],
+      type: "SELECT",
+    }).success).toBe(false);
+    expect(formFieldSchema.safeParse({
+      ...textField,
+      options: [{ key: "FIRST", label: "First", order: 1 }],
+      type: "TEXT",
+    }).success).toBe(false);
+  });
+
+  it("requires unique keys and contiguous order per section", () => {
+    expect(validateFormFields([
+      textField,
+      { ...textField, key: "OTHER", order: 3 },
+    ])).toBe(false);
+    expect(validateFormFields([
+      textField,
+      { ...textField, key: "NOTES", order: 2 },
+    ])).toBe(false);
   });
 
   it("allows incomplete drafts but enforces required values on completion", () => {
@@ -50,52 +70,67 @@ describe("dynamic form field validation", () => {
     expect(validateFormValues([textField], { NOTES: "Ready" }, true)).toBe(true);
     expect(validateFormValues([textField], { UNKNOWN: "nope" }, false)).toBe(false);
   });
-
-  it("enforces bounded validation and real dates", () => {
-    const bounded = {
-      ...textField,
-      validation: { maxLength: 4, minLength: 2 },
-    };
-    expect(validateFormValues([bounded], { NOTES: "ok" }, true)).toBe(true);
-    expect(validateFormValues([bounded], { NOTES: "x" }, true)).toBe(false);
-    expect(
-      formFieldSchema.safeParse({
-        ...bounded,
-        validation: { maxLength: 1, minLength: 2 },
-      }).success,
-    ).toBe(false);
-  });
-
 });
 
-describe("form section validation", () => {
-  const first = {
+describe("basic generic form definition", () => {
+  const section = {
+    columnSpan: 3,
     description: "Business identity and ownership.",
+    id: sectionId,
     key: "BUSINESS_DETAILS",
     order: 1,
+    showContainer: true,
     title: "Business details",
   };
 
   it("accepts the section contract", () => {
-    expect(formSectionSchema.safeParse(first).success).toBe(true);
+    expect(formSectionSchema.safeParse(section).success).toBe(true);
   });
 
-  it("requires unique keys and contiguous order within a version", () => {
+  it("limits section width to the three-column grid", () => {
+    expect(formSectionSchema.safeParse({ ...section, columnSpan: 1 }).success)
+      .toBe(true);
+    expect(formSectionSchema.safeParse({ ...section, columnSpan: 2 }).success)
+      .toBe(true);
+    expect(formSectionSchema.safeParse({ ...section, columnSpan: 4 }).success)
+      .toBe(false);
+  });
+
+  it("supports hidden section chrome", () => {
+    expect(formSectionSchema.safeParse({
+      ...section,
+      showContainer: false,
+    }).success).toBe(true);
+  });
+
+  it("defines fields inside an ordered section", () => {
     const result = formEditorSchema.safeParse({
       expectedRowVersion: 1,
-      fields: [],
-      sections: [first, { ...first, order: 3 }],
+      fields: [textField],
+      sections: [section],
+      submitLabel: "Submit",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects fields assigned outside the form version", () => {
+    const result = formEditorSchema.safeParse({
+      expectedRowVersion: 1,
+      fields: [{ ...textField, sectionId: crypto.randomUUID() }],
+      sections: [section],
       submitLabel: "Submit",
     });
     expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error.issues.map((issue) => issue.message)).toEqual(
-        expect.arrayContaining([
-          "Section keys must be unique within a form version.",
-          "Section order must be contiguous and start at one.",
-        ]),
-      );
-    }
+  });
+
+  it("bounds field width by its parent section", () => {
+    const result = formEditorSchema.safeParse({
+      expectedRowVersion: 1,
+      fields: [{ ...textField, columnSpan: 2 }],
+      sections: [{ ...section, columnSpan: 1 }],
+      submitLabel: "Submit",
+    });
+    expect(result.success).toBe(false);
   });
 });
 
@@ -104,21 +139,23 @@ describe("dynamic form completion schema", () => {
     const schema = buildDynamicFormSchema([
       {
         ...textField,
-        code: "AMOUNT",
-        dataType: "DECIMAL",
-        inputType: "NUMBER",
-        required: true,
+        key: "AMOUNT",
+        type: "NUMBER",
       },
       {
         ...textField,
-        code: "START_DATE",
-        columnSpan: 1,
-        dataType: "DATE",
-        inputType: "DATE",
-        required: true,
+        key: "START_DATE",
+        order: 2,
+        type: "DATE",
       },
     ], true);
-    expect(schema.safeParse({ AMOUNT: "12.50", START_DATE: "2026-09-15" }).success).toBe(true);
-    expect(schema.safeParse({ AMOUNT: "12.50", START_DATE: "2026-02-31" }).success).toBe(false);
+    expect(schema.safeParse({
+      AMOUNT: "12.50",
+      START_DATE: "2026-09-15",
+    }).success).toBe(true);
+    expect(schema.safeParse({
+      AMOUNT: "12.50",
+      START_DATE: "2026-02-31",
+    }).success).toBe(false);
   });
 });

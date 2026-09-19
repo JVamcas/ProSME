@@ -4,6 +4,8 @@ export type FormStatus = (typeof formStatuses)[number];
 
 export type FormSection = {
   id?: string;
+  columnSpan: 1 | 2 | 3;
+  showContainer: boolean;
   key: string;
   title: string;
   description: string;

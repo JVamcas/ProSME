@@ -6,47 +6,51 @@ export function FormEditorLifecycleActions({
   canPublish,
   canRetire,
   canUpdate,
+  clonePending,
   isDraft,
   isPublished,
   onClone,
   onPublish,
   onRetire,
-  pending,
+  publishPending,
+  retirePending,
 }: {
   canPublish: boolean;
   canRetire: boolean;
   canUpdate: boolean;
+  clonePending: boolean;
   isDraft: boolean;
   isPublished: boolean;
   onClone: () => void;
   onPublish: () => void;
   onRetire: () => void;
-  pending: boolean;
+  publishPending: boolean;
+  retirePending: boolean;
 }) {
   return (
     <div className="flex flex-wrap gap-3">
       <GeneralButton
-        disabled={!canPublish || !isDraft || pending}
+        disabled={!canPublish || !isDraft || publishPending}
         onClick={onPublish}
         type="button"
       >
-        {pending ? "Working…" : "Publish"}
+        {publishPending ? "Publishing…" : "Publish"}
       </GeneralButton>
       <GeneralButton
-        disabled={!canRetire || !isPublished || pending}
+        disabled={!canRetire || !isPublished || retirePending}
         onClick={onRetire}
         type="button"
         variant="outline"
       >
-        Retire
+        {retirePending ? "Retiring…" : "Retire"}
       </GeneralButton>
       <GeneralButton
-        disabled={!canUpdate || isDraft || pending}
+        disabled={!canUpdate || isDraft || clonePending}
         onClick={onClone}
         type="button"
         variant="outline"
       >
-        Create new draft
+        {clonePending ? "Creating…" : "Create new draft"}
       </GeneralButton>
     </div>
   );
