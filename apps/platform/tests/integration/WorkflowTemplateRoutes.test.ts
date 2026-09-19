@@ -34,7 +34,12 @@ describe("workflow template routes", () => {
     vi.mocked(getWorkflowTemplates).mockResolvedValue([
       {
         code: "TEST",
-        currentVersion: { id: version.id, number: 1, status: "DRAFT" },
+        currentVersion: {
+          id: version.id,
+          number: 1,
+          rowVersion: 1,
+          status: "DRAFT",
+        },
         description: "",
         id: template.id,
         name: "Test template",

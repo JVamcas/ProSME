@@ -1,12 +1,16 @@
 import "server-only";
 
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
 import {
+  stageTaskDefinitions,
+  workflowActionDefinitions,
   workflowAuditEntries,
   workflowDefinitions,
   workflowDefinitionVersions,
+  workflowStageDefinitions,
+  workflowTransitionDefinitions,
 } from "@/db/schema";
 import type { UpdateWorkflowDetailsInput } from "@/modules/workflows/api/WorkflowTransportTypes";
 
@@ -68,5 +72,77 @@ export async function updateWorkflowDefinitionDetails(input: DetailsUpdate) {
       targetType: "WORKFLOW_VERSION",
     });
     return input.versionId;
+  });
+}
+
+export async function deleteWorkflowDefinition(input: {
+  actorId: string;
+  correlationId: string;
+  definitionId: string;
+  expectedRowVersion: number;
+  versionId: string;
+}) {
+  return getDatabase().transaction(async (transaction) => {
+    const versions = await transaction
+      .select({
+        id: workflowDefinitionVersions.id,
+        rowVersion: workflowDefinitionVersions.rowVersion,
+        status: workflowDefinitionVersions.status,
+      })
+      .from(workflowDefinitionVersions)
+      .where(eq(workflowDefinitionVersions.definitionId, input.definitionId))
+      .for("update");
+    const [version] = versions;
+    if (
+      versions.length !== 1 ||
+      version.id !== input.versionId ||
+      version.status !== "DRAFT" ||
+      version.rowVersion !== input.expectedRowVersion
+    ) {
+      return null;
+    }
+    const [definition] = await transaction
+      .select({ id: workflowDefinitions.id })
+      .from(workflowDefinitions)
+      .where(eq(workflowDefinitions.id, input.definitionId))
+      .for("update");
+    if (!definition) return null;
+
+    await transaction.insert(workflowAuditEntries).values({
+      action: "WORKFLOW_DEFINITION_DELETED",
+      actorId: input.actorId,
+      after: { deleted: true },
+      before: { rowVersion: input.expectedRowVersion, status: "DRAFT" },
+      correlationId: input.correlationId,
+      targetId: input.definitionId,
+      targetType: "WORKFLOW_DEFINITION",
+    });
+
+    const stages = await transaction
+      .select({ id: workflowStageDefinitions.id })
+      .from(workflowStageDefinitions)
+      .where(eq(workflowStageDefinitions.versionId, input.versionId));
+    const stageIds = stages.map((stage) => stage.id);
+    await transaction
+      .delete(workflowTransitionDefinitions)
+      .where(eq(workflowTransitionDefinitions.versionId, input.versionId));
+    if (stageIds.length) {
+      await transaction
+        .delete(workflowActionDefinitions)
+        .where(inArray(workflowActionDefinitions.stageId, stageIds));
+      await transaction
+        .delete(stageTaskDefinitions)
+        .where(inArray(stageTaskDefinitions.stageId, stageIds));
+    }
+    await transaction
+      .delete(workflowStageDefinitions)
+      .where(eq(workflowStageDefinitions.versionId, input.versionId));
+    await transaction
+      .delete(workflowDefinitionVersions)
+      .where(eq(workflowDefinitionVersions.id, input.versionId));
+    await transaction
+      .delete(workflowDefinitions)
+      .where(eq(workflowDefinitions.id, input.definitionId));
+    return definition.id;
   });
 }

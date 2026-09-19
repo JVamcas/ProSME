@@ -189,6 +189,15 @@ export function validateWorkflowStage(
 ) {
   const errors: WorkflowValidationIssue[] = [];
   const base = `stages.${index}`;
+  if (stage.tasks.length === 0) {
+    errors.push(
+      issue(
+        "MISSING_RESPONSIBILITY",
+        `${stage.name} needs at least one assigned task.`,
+        `${base}.tasks`,
+      ),
+    );
+  }
   errors.push(...validateActionUniqueness(stage, base));
   errors.push(...validateTaskUniqueness(stage, base));
   stage.tasks.forEach((task, taskIndex) => {

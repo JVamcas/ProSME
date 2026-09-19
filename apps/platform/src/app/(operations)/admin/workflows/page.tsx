@@ -22,6 +22,7 @@ export default async function WorkflowsPage() {
       />
       <WorkflowTemplateAdminWorkspace
         canCreate={can(user, permissionCodes.workflowDefinitionCreate)}
+        canUpdate={can(user, permissionCodes.workflowDefinitionUpdate)}
       />
     </section>
   );

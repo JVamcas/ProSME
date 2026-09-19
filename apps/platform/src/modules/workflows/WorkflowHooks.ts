@@ -11,6 +11,7 @@ import type {
 } from "@/modules/workflows/api/WorkflowTransportTypes";
 import type { WorkflowEditorView } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import type { CreateWorkflowTemplateInput } from "@/modules/workflows/api/WorkflowTemplateSchemas";
+import type { WorkflowTemplateListItem } from "@/modules/workflows/domain/definitions/WorkflowTemplate";
 
 export const workflowQueryKeys = {
   all: ["admin", "workflows"] as const,
@@ -60,6 +61,7 @@ function useRefreshWorkflow(id?: string) {
     void client.invalidateQueries({ queryKey: workflowQueryKeys.all });
     void client.invalidateQueries({ queryKey: workflowQueryKeys.assignments });
     void client.invalidateQueries({ queryKey: workflowQueryKeys.published });
+    void client.invalidateQueries({ queryKey: workflowQueryKeys.templates });
   };
 }
 
@@ -144,6 +146,31 @@ export function useCloneWorkflow(id: string) {
     mutationFn: (sourceVersionId: string) =>
       clientWorkflowService.cloneDefinition(id, sourceVersionId),
     onSuccess: refresh,
+  });
+}
+
+export function useCloneWorkflowTemplate() {
+  const refresh = useRefreshWorkflow();
+  return useMutation({
+    mutationFn: (template: WorkflowTemplateListItem) =>
+      clientWorkflowService.cloneDefinition(
+        template.id,
+        template.currentVersion.id,
+      ),
+    onSuccess: refresh,
+  });
+}
+
+export function useDeleteWorkflowTemplate() {
+  const refresh = useRefreshWorkflow();
+  return useMutation({
+    mutationFn: (template: WorkflowTemplateListItem) =>
+      clientWorkflowService.deleteDefinition(
+        template.id,
+        template.currentVersion.id,
+        template.currentVersion.rowVersion,
+      ),
+    onSuccess: () => refresh(),
   });
 }
 

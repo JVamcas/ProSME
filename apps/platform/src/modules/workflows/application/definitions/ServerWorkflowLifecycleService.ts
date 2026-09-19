@@ -3,6 +3,7 @@ import "server-only";
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { requireCapability } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
+import { cloneWorkflowGraph } from "@/modules/workflows/domain/definitions/WorkflowGraphCloning";
 import { cloneWorkflowVersion } from "@/modules/workflows/infrastructure/WorkflowTemplateWriteRepository";
 import {
   findLifecycleReplay,
@@ -36,7 +37,8 @@ export async function cloneWorkflow(
     actorId: actor.id,
     correlationId,
     definitionId: source.definition.id,
-    graph: source.graph,
+    graph: cloneWorkflowGraph(source.graph),
+    sourceVersionId,
   });
   return workflowEditorView(versionId);
 }
@@ -76,7 +78,7 @@ export async function publishWorkflow(
     );
   }
   const editor = await workflowEditorView(versionId);
-  if (editor.graph.stages.length > 0 && !editor.validation.valid)
+  if (!editor.validation.valid)
     throw new WorkflowConflictError(
       "Resolve all workflow validation errors before publishing.",
     );

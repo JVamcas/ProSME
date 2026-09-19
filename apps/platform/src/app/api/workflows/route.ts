@@ -35,6 +35,7 @@ export async function POST(request: Request) {
         currentVersion: {
           id: created.version.id,
           number: created.version.versionNumber,
+          rowVersion: created.version.rowVersion,
           status: created.version.status,
         },
         updatedAt: created.version.updatedAt.toISOString(),

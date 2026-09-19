@@ -41,6 +41,7 @@ export type WorkflowTemplateListItem = WorkflowTemplateDetails & {
   currentVersion: {
     id: string;
     number: number;
+    rowVersion: number;
     status: WorkflowTemplateStatus;
   };
   updatedAt: string;

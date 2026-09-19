@@ -10,31 +10,45 @@ import {
   workflowTemplateDetailsSchema,
   type CreateWorkflowTemplateInput,
 } from "../../api/WorkflowTemplateSchemas";
-import { useCreateWorkflowTemplate } from "../../WorkflowHooks";
+import type { WorkflowTemplateListItem } from "../../domain/definitions/WorkflowTemplate";
+import {
+  useCreateWorkflowTemplate,
+  useUpdateWorkflowDetails,
+} from "../../WorkflowHooks";
 
 type Props = {
-  onCreated: () => void;
+  onCompleted: () => void;
+  template?: WorkflowTemplateListItem;
 };
 
-export function WorkflowTemplateCreateForm({ onCreated }: Props) {
-  const mutation = useCreateWorkflowTemplate();
+export function WorkflowTemplateCreateForm({ onCompleted, template }: Props) {
+  const createMutation = useCreateWorkflowTemplate();
+  const updateMutation = useUpdateWorkflowDetails(template?.id ?? "");
   const form = useForm<
     z.input<typeof workflowTemplateDetailsSchema>,
     unknown,
     CreateWorkflowTemplateInput
   >({
     defaultValues: {
-      code: "",
-      description: "",
-      name: "",
+      code: template?.code ?? "",
+      description: template?.description ?? "",
+      name: template?.name ?? "",
     },
     resolver: zodResolver(workflowTemplateDetailsSchema),
   });
   const submit = form.handleSubmit(async (input) => {
-    await mutation.mutateAsync(input);
+    if (template) {
+      await updateMutation.mutateAsync({
+        ...input,
+        expectedRowVersion: template.currentVersion.rowVersion,
+      });
+    } else {
+      await createMutation.mutateAsync(input);
+    }
     form.reset();
-    onCreated();
+    onCompleted();
   });
+  const mutation = template ? updateMutation : createMutation;
 
   return (
     <FormProvider {...form}>
@@ -59,7 +73,9 @@ export function WorkflowTemplateCreateForm({ onCreated }: Props) {
         ) : null}
         <div className="flex justify-end">
           <GeneralButton disabled={mutation.isPending} type="submit">
-            {mutation.isPending ? "Creating…" : "Create template"}
+            {mutation.isPending
+              ? (template ? "Saving…" : "Creating…")
+              : (template ? "Save template" : "Create template")}
           </GeneralButton>
         </div>
       </form>

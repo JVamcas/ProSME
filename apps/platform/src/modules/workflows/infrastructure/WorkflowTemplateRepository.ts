@@ -18,6 +18,7 @@ export async function listCurrentWorkflowTemplates() {
     .selectDistinctOn([workflowDefinitions.id], {
       currentVersionId: workflowDefinitionVersions.id,
       currentVersionNumber: workflowDefinitionVersions.versionNumber,
+      currentVersionRowVersion: workflowDefinitionVersions.rowVersion,
       currentVersionStatus: workflowDefinitionVersions.status,
       id: workflowDefinitions.id,
       metadata: workflowDefinitionVersions.metadata,
@@ -28,6 +29,7 @@ export async function listCurrentWorkflowTemplates() {
       workflowDefinitionVersions,
       eq(workflowDefinitionVersions.definitionId, workflowDefinitions.id),
     )
+    .where(eq(workflowDefinitions.active, true))
     .orderBy(
       workflowDefinitions.id,
       desc(workflowDefinitionVersions.versionNumber),

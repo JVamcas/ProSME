@@ -158,7 +158,7 @@ describe("workflow graph validation", () => {
     });
   });
 
-  it("rejects cycles, unsafe applicant labels and invalid task configuration", () => {
+  it("rejects invalid repeatable references and invalid stage configuration", () => {
     const graph = structuredClone(referenceWorkflow);
     graph.stages[1].publicStatusMapping.label = "Committee score assigned";
     graph.stages[1].tasks[0].config = { items: [] };
@@ -169,7 +169,56 @@ describe("workflow graph validation", () => {
       expect.arrayContaining([
         "INVALID_TASK_CONFIG",
         "UNSAFE_APPLICANT_LABEL",
-        "WORKFLOW_CYCLE",
+        "INVALID_REPEATABLE_REFERENCE",
+      ]),
+    );
+  });
+
+  it("accepts a loop only when every referenced stage is repeatable", () => {
+    const graph = structuredClone(referenceWorkflow);
+    graph.stages[1].repeatable = true;
+    graph.stages[2].repeatable = true;
+    graph.stages[3].repeatable = true;
+    graph.stages[4].repeatable = true;
+    graph.transitions[4].targetStageKey = "COMPLETENESS";
+
+    expect(
+      validateWorkflowGraph(graph).errors.some(
+        (error) => error.code === "INVALID_REPEATABLE_REFERENCE",
+      ),
+    ).toBe(false);
+  });
+
+  it("rejects duplicate stage keys, unreachable stages and missing responsibility", () => {
+    const graph = structuredClone(referenceWorkflow);
+    graph.stages[1].stableKey = graph.stages[0].stableKey;
+    graph.stages[2].tasks = [];
+    graph.transitions = graph.transitions.filter(
+      (transition) => transition.targetStageKey !== "FINANCE_REVIEW",
+    );
+
+    const codes = validateWorkflowGraph(graph).errors.map(
+      (error) => error.code,
+    );
+    expect(codes).toEqual(
+      expect.arrayContaining([
+        "DUPLICATE_STAGE_CODE",
+        "UNREACHABLE_STAGE",
+        "MISSING_RESPONSIBILITY",
+      ]),
+    );
+  });
+
+  it("rejects a terminal stage without a terminal decision", () => {
+    const graph = structuredClone(referenceWorkflow);
+    graph.transitions.pop();
+
+    expect(validateWorkflowGraph(graph).errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "TERMINAL_STAGE_WITHOUT_DECISION",
+          path: "stages.5",
+        }),
       ]),
     );
   });

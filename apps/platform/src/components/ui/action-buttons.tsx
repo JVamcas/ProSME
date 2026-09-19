@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Copy,
   LoaderCircle,
   Link2,
   PencilLine,
@@ -64,6 +65,17 @@ export function EditButton(props: ActionButtonProps) {
       defaultTitle="Edit"
       icon={PencilLine}
       iconClassName="[&_svg]:text-brand-navy"
+      {...props}
+    />
+  );
+}
+
+export function CloneButton(props: ActionButtonProps) {
+  return (
+    <ActionButton
+      defaultTitle="Clone"
+      icon={Copy}
+      iconClassName="hover:bg-brand-cream [&_svg]:text-brand-orange"
       {...props}
     />
   );

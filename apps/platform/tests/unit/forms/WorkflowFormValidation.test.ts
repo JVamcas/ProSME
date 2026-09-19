@@ -17,7 +17,15 @@ const stage = (code: string, sequence: number, initial: boolean) => ({
   },
   repeatable: false,
   coiGated: false,
-  actions: [],
+  actions: [{
+    stableKey: "ADVANCE",
+    label: "Advance",
+    actionType: "APPROVE_ADVANCE" as const,
+    configuration: {},
+    enabled: true,
+    reasonCodeRequired: false,
+    displayOrder: 1,
+  }],
   tasks: [{
     assignmentMode: "ROLE" as const,
     roleId: "00000000-0000-0000-0000-000000000001",
@@ -38,23 +46,38 @@ const stage = (code: string, sequence: number, initial: boolean) => ({
 });
 
 describe("form-backed workflow validation", () => {
-  it("allows sequential form stages without transition definitions", () => {
+  it("identifies a draft without transition definitions as structurally invalid", () => {
     const validation = validateWorkflowGraph({
       stages: [stage("FIRST", 1, true), stage("SECOND", 2, false)],
       transitions: [],
     });
-    expect(validation.valid).toBe(true);
+    expect(validation.valid).toBe(false);
+    expect(validation.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: "UNREACHABLE_STAGE" }),
+        expect.objectContaining({ code: "TERMINAL_STAGE_WITHOUT_DECISION" }),
+      ]),
+    );
   });
 
-  it("requires the initial stage to have the lowest sequence", () => {
+  it("does not infer workflow routing from stage display order", () => {
     const validation = validateWorkflowGraph({
       stages: [stage("FIRST", 2, true), stage("SECOND", 1, false)],
-      transitions: [],
+      transitions: [
+        {
+          sourceStageKey: "FIRST",
+          actionKey: "ADVANCE",
+          targetStageKey: "SECOND",
+          priority: 1,
+        },
+        {
+          sourceStageKey: "SECOND",
+          actionKey: "ADVANCE",
+          terminalOutcome: "COMPLETED",
+          priority: 1,
+        },
+      ],
     });
-    expect(
-      validation.errors.some(
-        (error) => error.code === "INITIAL_STAGE_SEQUENCE",
-      ),
-    ).toBe(true);
+    expect(validation.valid).toBe(true);
   });
 });

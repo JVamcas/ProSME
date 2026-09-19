@@ -223,6 +223,7 @@ export async function cloneWorkflowVersion(input: {
   correlationId: string;
   definitionId: string;
   graph: WorkflowGraphInput;
+  sourceVersionId: string;
 }) {
   return getDatabase().transaction(async (transaction) => {
     const [definition] = await transaction
@@ -252,7 +253,10 @@ export async function cloneWorkflowVersion(input: {
     await audit(transaction, {
       action: "WORKFLOW_VERSION_CLONED",
       actorId: input.actorId,
-      after: { version: version.versionNumber },
+      after: {
+        sourceVersionId: input.sourceVersionId,
+        version: version.versionNumber,
+      },
       correlationId: input.correlationId,
       targetId: version.id,
       targetType: "WORKFLOW_VERSION",

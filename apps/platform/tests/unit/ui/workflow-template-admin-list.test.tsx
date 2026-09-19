@@ -8,7 +8,10 @@ import { afterEach, describe, expect, it } from "vitest";
 import { workflowQueryKeys } from "@/modules/workflows/WorkflowHooks";
 import { WorkflowTemplateAdminWorkspace } from "@/modules/workflows/ui/definitions/WorkflowTemplateAdminWorkspace";
 
-function queryClient() {
+function queryClient(
+  status: "DRAFT" | "PENDING_APPROVAL" = "PENDING_APPROVAL",
+  versionNumber = 2,
+) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false, staleTime: Infinity } },
   });
@@ -17,8 +20,9 @@ function queryClient() {
       code: "SME_STANDARD_GRANT",
       currentVersion: {
         id: "42222222-2222-4222-8222-222222222222",
-        number: 2,
-        status: "PENDING_APPROVAL",
+        number: versionNumber,
+        rowVersion: 1,
+        status,
       },
       description: "Standard grant workflow",
       id: "41111111-1111-4111-8111-111111111111",
@@ -41,7 +45,7 @@ describe("workflow template admin list", () => {
     await act(async () => {
       root.render(
         <QueryClientProvider client={queryClient()}>
-          <WorkflowTemplateAdminWorkspace canCreate />
+          <WorkflowTemplateAdminWorkspace canCreate canUpdate />
         </QueryClientProvider>,
       );
     });
@@ -49,6 +53,10 @@ describe("workflow template admin list", () => {
     expect(container.textContent).toContain("Standard grant");
     expect(container.textContent).toContain("Version 2");
     expect(container.textContent).toContain("Pending Approval");
+    expect(container.textContent).toContain("Actions");
+    expect(container.querySelector('[aria-label="Edit Standard grant"]')).not.toBeNull();
+    expect(container.querySelector('[aria-label="Clone Standard grant"]')).not.toBeNull();
+    expect(container.querySelector('[aria-label="Delete Standard grant"]')).not.toBeNull();
     expect(
       container.querySelector<HTMLAnchorElement>(
         'a[href="/admin/workflows/41111111-1111-4111-8111-111111111111"]',
@@ -64,7 +72,7 @@ describe("workflow template admin list", () => {
     await act(async () => {
       root.render(
         <QueryClientProvider client={queryClient()}>
-          <WorkflowTemplateAdminWorkspace canCreate />
+          <WorkflowTemplateAdminWorkspace canCreate canUpdate />
         </QueryClientProvider>,
       );
     });
@@ -77,8 +85,8 @@ describe("workflow template admin list", () => {
       'input[required]',
     );
     expect(requiredInputs).toHaveLength(2);
-    expect(requiredInputs[0]?.labels?.[0]?.textContent).toBe("Template code*");
-    expect(requiredInputs[1]?.labels?.[0]?.textContent).toBe("Template name*");
+    expect(requiredInputs[0]?.labels?.[0]?.textContent).toContain("Template code*");
+    expect(requiredInputs[1]?.labels?.[0]?.textContent).toContain("Template name*");
     await act(async () => root.unmount());
 
     const readOnlyContainer = document.createElement("div");
@@ -87,11 +95,65 @@ describe("workflow template admin list", () => {
     await act(async () => {
       readOnlyRoot.render(
         <QueryClientProvider client={queryClient()}>
-          <WorkflowTemplateAdminWorkspace canCreate={false} />
+          <WorkflowTemplateAdminWorkspace canCreate={false} canUpdate={false} />
         </QueryClientProvider>,
       );
     });
     expect(readOnlyContainer.textContent).not.toContain("Create template");
     await act(async () => readOnlyRoot.unmount());
+  });
+
+  it("opens the create-template dialog with draft values for editing", async () => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient("DRAFT")}>
+          <WorkflowTemplateAdminWorkspace canCreate canUpdate />
+        </QueryClientProvider>,
+      );
+    });
+    await act(async () => {
+      container
+        .querySelector<HTMLButtonElement>('[aria-label="Edit Standard grant"]')
+        ?.click();
+    });
+
+    expect(document.body.textContent).toContain("Edit workflow template");
+    expect(
+      document.body.querySelector<HTMLInputElement>('input[name="code"]')
+        ?.value,
+    ).toBe("SME_STANDARD_GRANT");
+    expect(document.body.textContent).toContain("Save template");
+    await act(async () => root.unmount());
+  });
+
+  it("opens an in-app confirmation dialog before deleting", async () => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient("DRAFT", 1)}>
+          <WorkflowTemplateAdminWorkspace canCreate canUpdate />
+        </QueryClientProvider>,
+      );
+    });
+    await act(async () => {
+      container
+        .querySelector<HTMLButtonElement>(
+          '[aria-label="Delete Standard grant"]',
+        )
+        ?.click();
+    });
+
+    const dialog = document.body.querySelector<HTMLElement>('[role="dialog"]');
+    expect(dialog?.textContent).toContain(
+      "Delete Standard grant? This cannot be undone.",
+    );
+    expect(dialog?.textContent).toContain("Cancel");
+    expect(dialog?.textContent).toContain("Delete");
+    await act(async () => root.unmount());
   });
 });

@@ -1,6 +1,7 @@
 import type { AuthenticatedUser } from "@/auth/types";
 import { permissionCodes } from "@/auth/authorization/permissions/PermissionCodes";
 import type { WorkflowTemplateStatus } from "@/modules/workflows/domain/definitions/WorkflowTemplate";
+import { referenceWorkflow } from "@/modules/workflows/ReferenceWorkflow";
 
 export const templateId = "41111111-1111-4111-8111-111111111111";
 export const versionId = "42222222-2222-4222-8222-222222222222";
@@ -49,4 +50,17 @@ export const input = {
   versionId,
   expectedRowVersion: 1,
   idempotencyKey: "lifecycle-key",
+};
+
+const assignedGraph = structuredClone(referenceWorkflow);
+assignedGraph.stages.forEach((stage) => {
+  stage.tasks.forEach((task) => {
+    task.roleId = actor.id;
+  });
+});
+
+export const workflowGraphRecord = {
+  definition: template,
+  graph: assignedGraph,
+  version,
 };

@@ -236,6 +236,7 @@ import {
             correlationId,
             definitionId: templateId,
             graph: { stages: [], transitions: [] },
+            sourceVersionId: version.id,
           }),
         ),
       );

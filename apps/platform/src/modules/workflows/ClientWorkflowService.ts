@@ -128,6 +128,21 @@ function cloneDefinition(definitionId: string, sourceVersionId: string) {
   );
 }
 
+function deleteDefinition(
+  definitionId: string,
+  versionId: string,
+  expectedRowVersion: number,
+) {
+  return requestData<{ id: string }>(
+    `/api/admin/workflow-definitions/${definitionId}`,
+    {
+      body: JSON.stringify({ expectedRowVersion, versionId }),
+      headers: jsonHeaders,
+      method: "DELETE",
+    },
+  );
+}
+
 function listAssignments() {
   return requestData<WorkflowOpportunityAssignment[]>(
     "/api/admin/workflow-assignments",
@@ -158,6 +173,7 @@ export const clientWorkflowService = {
   cloneDefinition,
   createTemplate,
   createDefinition,
+  deleteDefinition,
   getEditor,
   lifecycleCommand,
   listAssignments,

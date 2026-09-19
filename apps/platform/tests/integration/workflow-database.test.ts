@@ -2,7 +2,6 @@ import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
-
 import { assignWorkflowToOpportunity } from "@/db/repositories/WorkflowAssignmentRepository";
 import {
   cloneWorkflowVersion,
@@ -26,7 +25,6 @@ const pool = enabled
   : null;
 let definitionId = "";
 let publishedVersionId = "";
-
 async function query(text: string, values: unknown[] = []) {
   if (!pool)
     throw new Error("The P3.3 PostgreSQL test pool is not configured.");
@@ -155,6 +153,7 @@ describeDatabase("P3.3 PostgreSQL workflow persistence", () => {
       correlationId,
       definitionId,
       graph: source!.graph,
+      sourceVersionId: publishedVersionId,
     });
     await expect(
       cloneWorkflowVersion({
@@ -162,6 +161,7 @@ describeDatabase("P3.3 PostgreSQL workflow persistence", () => {
         correlationId,
         definitionId,
         graph: source!.graph,
+        sourceVersionId: publishedVersionId,
       }),
     ).rejects.toThrow();
     await query(

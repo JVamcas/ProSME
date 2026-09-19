@@ -19,10 +19,12 @@ import {
 } from "../../domain/definitions/WorkflowTemplate";
 import { createWorkflowDefinition } from "../../infrastructure/WorkflowTemplateWriteRepository";
 import { updateWorkflowDefinitionDetails } from "../../infrastructure/WorkflowDetailsRepository";
+import { deleteWorkflowDefinition } from "../../infrastructure/WorkflowDetailsRepository";
 import {
   changeWorkflowTemplateLifecycle,
   findLifecycleReplay,
 } from "../../infrastructure/WorkflowLifecycleRepository";
+import { findWorkflowGraph } from "../../infrastructure/WorkflowGraphRepository";
 import {
   findWorkflowTemplateByVersion,
   findWorkflowTemplateVersion,
@@ -34,6 +36,7 @@ import {
   WorkflowConflictError,
   WorkflowNotFoundError,
 } from "./ServerWorkflowSupport";
+import { validateWorkflowGraph } from "../../WorkflowValidation";
 
 const commandPermissions = {
   SUBMIT: permissionCodes.workflowDefinitionSubmit,
@@ -54,6 +57,16 @@ async function requireVersion(templateId: string, versionId: string) {
   );
   if (!record) throw new WorkflowNotFoundError();
   return record;
+}
+
+async function requireValidWorkflowStructure(versionId: string) {
+  const record = await findWorkflowGraph(versionId);
+  if (!record) throw new WorkflowNotFoundError();
+  if (!validateWorkflowGraph(record.graph).valid) {
+    throw new WorkflowConflictError(
+      "Resolve all workflow validation errors before approval or publication.",
+    );
+  }
 }
 
 export async function createWorkflowTemplate(
@@ -86,6 +99,7 @@ function toListItem(
     currentVersion: {
       id: record.currentVersionId,
       number: record.currentVersionNumber,
+      rowVersion: record.currentVersionRowVersion,
       status: record.currentVersionStatus,
     },
     updatedAt: record.updatedAt.toISOString(),
@@ -153,6 +167,32 @@ export async function updateWorkflowTemplateDraft(
   return requireVersion(parsed.templateId, parsed.versionId);
 }
 
+export async function deleteWorkflowTemplate(
+  user: AuthenticatedUser | null,
+  definitionId: string,
+  versionId: string,
+  expectedRowVersion: number,
+  correlationId: string,
+) {
+  const actor = requireCapability(
+    user,
+    permissionCodes.workflowDefinitionUpdate,
+  );
+  const deleted = await deleteWorkflowDefinition({
+    actorId: actor.id,
+    correlationId: z.string().uuid().parse(correlationId),
+    definitionId: z.string().uuid().parse(definitionId),
+    expectedRowVersion,
+    versionId: z.string().uuid().parse(versionId),
+  });
+  if (!deleted) {
+    throw new WorkflowConflictError(
+      "Only a draft workflow template can be deleted.",
+    );
+  }
+  return { id: definitionId };
+}
+
 export async function changeWorkflowTemplateStatus(
   user: AuthenticatedUser | null,
   input: WorkflowTemplateLifecycleInput,
@@ -182,6 +222,9 @@ export async function changeWorkflowTemplateStatus(
     throw new WorkflowConflictError(
       `Only ${transition.from} versions can perform ${parsed.command}.`,
     );
+  }
+  if (parsed.command === "APPROVE" || parsed.command === "PUBLISH") {
+    await requireValidWorkflowStructure(parsed.versionId);
   }
   const updated = await changeWorkflowTemplateLifecycle(
     {

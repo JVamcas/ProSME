@@ -1,4 +1,4 @@
-import { hasWorkflowCycle, reachableStages } from "./WorkflowGraphTraversal";
+import { reachableStages, stagesInCycles } from "./WorkflowGraphTraversal";
 import { validateWorkflowStage } from "./WorkflowStageValidation";
 import { validateWorkflowActionTargets } from "./domain/actions/WorkflowActionValidation";
 import { validateWorkflowTransitions } from "./domain/transitions/WorkflowTransitionValidation";
@@ -20,10 +20,7 @@ function duplicates(values: (string | number)[]) {
   return values.filter((value, index) => values.indexOf(value) !== index);
 }
 
-function validateTransitionTargets(
-  graph: WorkflowGraphInput,
-  initialCode?: string,
-) {
+function validateTransitionTargets(graph: WorkflowGraphInput) {
   const errors: WorkflowValidationIssue[] = [];
   graph.transitions.forEach((transition, index) => {
     const path = `transitions.${index}`;
@@ -39,28 +36,11 @@ function validateTransitionTargets(
         ),
       );
     }
-    if (initialCode && transition.targetStageKey === initialCode) {
-      errors.push(
-        issue(
-          "INITIAL_STAGE_TARGET",
-          "Transitions cannot return to the initial stage.",
-          path,
-        ),
-      );
-    }
   });
   return errors;
 }
 
-function isSequentialFormGraph(graph: WorkflowGraphInput) {
-  return graph.stages.length > 0
-    && graph.stages.every((stage) =>
-      stage.tasks.length > 0
-      && stage.tasks.every((task) => Boolean(task.formVersionId))
-    );
-}
-
-function missingTransitionErrors(graph: WorkflowGraphInput) {
+function terminalDecisionErrors(graph: WorkflowGraphInput) {
   const errors: WorkflowValidationIssue[] = [];
   graph.stages.forEach((stage, index) => {
     if (!graph.transitions.some(
@@ -68,14 +48,29 @@ function missingTransitionErrors(graph: WorkflowGraphInput) {
     )) {
       errors.push(
         issue(
-          "MISSING_TRANSITION",
-          `${stage.name} needs an outgoing transition.`,
+          "TERMINAL_STAGE_WITHOUT_DECISION",
+          `${stage.name} is terminal but has no terminal decision.`,
           `stages.${index}`,
         ),
       );
     }
   });
   return errors;
+}
+
+function repeatableReferenceErrors(graph: WorkflowGraphInput) {
+  const cyclicStageKeys = stagesInCycles(graph);
+  return graph.stages.flatMap((stage, index) =>
+    cyclicStageKeys.has(stage.stableKey) && !stage.repeatable
+      ? [
+          issue(
+            "INVALID_REPEATABLE_REFERENCE",
+            `${stage.name} participates in a loop but is not repeatable.`,
+            `stages.${index}.repeatable`,
+          ),
+        ]
+      : [],
+  );
 }
 
 function unreachableErrors(
@@ -97,11 +92,11 @@ function unreachableErrors(
   );
 }
 
-function validateLegacyGraph(
+function validateDirectedGraph(
   graph: WorkflowGraphInput,
   initialCode: string | undefined,
 ) {
-  const errors = validateTransitionTargets(graph, initialCode);
+  const errors = validateTransitionTargets(graph);
   if (!graph.transitions.some((transition) => transition.terminalOutcome)) {
     errors.push(
       issue(
@@ -111,17 +106,9 @@ function validateLegacyGraph(
       ),
     );
   }
-  if (hasWorkflowCycle(graph)) {
-    errors.push(
-      issue(
-        "WORKFLOW_CYCLE",
-        "Workflow stages cannot contain a cycle.",
-        "transitions",
-      ),
-    );
-  }
-  errors.push(...missingTransitionErrors(graph));
+  errors.push(...terminalDecisionErrors(graph));
   errors.push(...unreachableErrors(graph, initialCode));
+  errors.push(...repeatableReferenceErrors(graph));
   return errors;
 }
 
@@ -172,29 +159,6 @@ export function validateWorkflowGraph(
       ),
     );
   }
-  const sequentialFormGraph = isSequentialFormGraph(graph);
-  if (
-    sequentialFormGraph
-    && initial[0]
-    && graph.stages.some(
-      (stage) => stage.displayOrder < initial[0].displayOrder,
-    )
-  ) {
-    errors.push(
-      issue(
-        "INITIAL_STAGE_SEQUENCE",
-        "The initial stage must have the lowest sequence.",
-        "stages",
-      ),
-    );
-  }
-  if (sequentialFormGraph) {
-    return {
-      valid: errors.length === 0,
-      errors,
-      warnings: [],
-    };
-  }
-  errors.push(...validateLegacyGraph(graph, initial[0]?.stableKey));
+  errors.push(...validateDirectedGraph(graph, initial[0]?.stableKey));
   return { valid: errors.length === 0, errors, warnings: [] };
 }

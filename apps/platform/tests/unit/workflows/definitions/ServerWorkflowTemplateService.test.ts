@@ -26,6 +26,9 @@ vi.mock(
     findLifecycleReplay: vi.fn(),
   }),
 );
+vi.mock("@/modules/workflows/infrastructure/WorkflowGraphRepository", () => ({
+  findWorkflowGraph: vi.fn(),
+}));
 
 import { permissionCodes } from "@/auth/authorization/permissions/PermissionCodes";
 import {
@@ -47,6 +50,7 @@ import {
   changeWorkflowTemplateLifecycle,
   findLifecycleReplay,
 } from "@/modules/workflows/infrastructure/WorkflowLifecycleRepository";
+import { findWorkflowGraph } from "@/modules/workflows/infrastructure/WorkflowGraphRepository";
 import {
   workflowTemplateTransitions,
   type WorkflowTemplateCommand,
@@ -61,8 +65,8 @@ import {
   versionId,
   correlationId,
   input,
+  workflowGraphRecord,
 } from "./WorkflowTemplateFixtures";
-
 beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(findWorkflowTemplateVersion).mockResolvedValue({
@@ -73,8 +77,8 @@ beforeEach(() => {
   vi.mocked(createWorkflowDefinition).mockResolvedValue(versionId);
   vi.mocked(changeWorkflowTemplateLifecycle).mockResolvedValue(version);
   vi.mocked(updateWorkflowDefinitionDetails).mockResolvedValue(versionId);
+  vi.mocked(findWorkflowGraph).mockResolvedValue(workflowGraphRecord);
 });
-
 describe("workflow template storage service", () => {
   it("creates an empty reusable template with draft version 1", async () => {
     const result = await createWorkflowTemplate(actor, metadata, correlationId);
@@ -204,6 +208,25 @@ describe("workflow template storage service", () => {
         correlationId,
       ),
     ).rejects.toThrow();
+    expect(changeWorkflowTemplateLifecycle).not.toHaveBeenCalled();
+  });
+
+  it("rejects structurally invalid workflows before approval", async () => {
+    vi.mocked(findWorkflowTemplateVersion).mockResolvedValue({
+      template,
+      version: { ...version, status: "PENDING_APPROVAL" },
+    });
+    vi.mocked(findWorkflowGraph).mockResolvedValue({
+      ...workflowGraphRecord,
+      graph: { stages: [], transitions: [] },
+    });
+    await expect(
+      changeWorkflowTemplateStatus(
+        actor,
+        { ...input, command: "APPROVE" },
+        correlationId,
+      ),
+    ).rejects.toThrow("validation errors");
     expect(changeWorkflowTemplateLifecycle).not.toHaveBeenCalled();
   });
 
