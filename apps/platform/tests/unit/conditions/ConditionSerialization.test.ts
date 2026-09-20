@@ -77,4 +77,65 @@ describe("condition serialization", () => {
       }),
     ).toThrow();
   });
+
+  it("round-trips a computed ratio without executable expressions", () => {
+    const computedOperand = {
+      kind: "COMPUTED" as const,
+      operation: "DIVIDE" as const,
+      leftOperand: {
+        kind: "FIELD" as const,
+        key: "application.requested_amount",
+      },
+      rightOperand: {
+        kind: "FIELD" as const,
+        key: "business.annual_turnover",
+      },
+    };
+    const computedGroup: ConditionGroup = {
+      ...group,
+      children: [
+        {
+          id: "00000000-0000-4000-8000-000000000005",
+          kind: "CONDITION",
+          leftOperand: computedOperand,
+          operator: basicOperators.LESS_THAN_OR_EQUAL,
+          rightOperand: { kind: "CONSTANT", value: 0.25 },
+        },
+      ],
+    };
+
+    expect(
+      deserializeConditionGroup(
+        JSON.parse(JSON.stringify(serializeConditionGroup(computedGroup))),
+      ),
+    ).toEqual(computedGroup);
+    expect(() =>
+      deserializeConditionGroup({
+        ...computedGroup,
+        children: [
+          {
+            ...computedGroup.children[0],
+            leftOperand: {
+              ...computedOperand,
+              expression: "requested_amount / annual_turnover",
+            },
+          },
+        ],
+      }),
+    ).toThrow();
+    expect(() =>
+      deserializeConditionGroup({
+        ...computedGroup,
+        children: [
+          {
+            ...computedGroup.children[0],
+            leftOperand: {
+              ...computedOperand,
+              operation: "MODULO",
+            },
+          },
+        ],
+      }),
+    ).toThrow();
+  });
 });

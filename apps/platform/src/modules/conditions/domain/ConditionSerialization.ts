@@ -2,7 +2,11 @@ import { z } from "zod";
 
 import type { Condition } from "./Condition";
 import type { ConditionGroup, ConditionNode } from "./ConditionGroup";
-import type { JsonValue, Operand } from "./Operand";
+import {
+  computedOperandOperations,
+  type JsonValue,
+  type Operand,
+} from "./Operand";
 import { operator, type Operator } from "./Operator";
 
 const jsonValueSchema: z.ZodType<JsonValue> = z.lazy(() =>
@@ -30,9 +34,22 @@ const constantOperandSchema = z
   })
   .strict();
 
+const directOperandSchema = z.discriminatedUnion("kind", [
+  fieldOperandSchema,
+  constantOperandSchema,
+]);
+
 export const operandSchema: z.ZodType<Operand> = z.discriminatedUnion("kind", [
   fieldOperandSchema,
   constantOperandSchema,
+  z
+    .object({
+      kind: z.literal("COMPUTED"),
+      operation: z.enum(computedOperandOperations),
+      leftOperand: directOperandSchema,
+      rightOperand: directOperandSchema,
+    })
+    .strict(),
 ]);
 
 export const operatorSchema: z.ZodType<Operator> = z

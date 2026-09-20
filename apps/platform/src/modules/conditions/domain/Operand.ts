@@ -15,4 +15,23 @@ export type ConstantOperand = {
   value: JsonValue;
 };
 
-export type Operand = FieldOperand | ConstantOperand;
+export type DirectOperand = FieldOperand | ConstantOperand;
+
+export const computedOperandOperations = [
+  "ADD",
+  "SUBTRACT",
+  "MULTIPLY",
+  "DIVIDE",
+] as const;
+
+export type ComputedOperandOperation =
+  (typeof computedOperandOperations)[number];
+
+export type ComputedOperand = {
+  kind: "COMPUTED";
+  operation: ComputedOperandOperation;
+  leftOperand: DirectOperand;
+  rightOperand: DirectOperand;
+};
+
+export type Operand = DirectOperand | ComputedOperand;

@@ -26,7 +26,7 @@ export function isBasicOperator(value: Operator): value is BasicOperator {
   return basicOperatorCodes.has(value);
 }
 
-function jsonValuesEqual(left: JsonValue, right: JsonValue): boolean {
+export function jsonValuesEqual(left: JsonValue, right: JsonValue): boolean {
   if (left === right) {
     return true;
   }
