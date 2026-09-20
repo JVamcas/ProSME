@@ -101,6 +101,16 @@ export function WorkflowActionDialog({
                       : current,
                   )
                 : [...item.actions, nextAction],
+              tasks: action && action.stableKey !== nextAction.stableKey
+                ? item.tasks.map((task) => ({
+                    ...task,
+                    actionKeys: task.actionKeys.map((actionKey) =>
+                      actionKey === action.stableKey
+                        ? nextAction.stableKey
+                        : actionKey,
+                    ),
+                  }))
+                : item.tasks,
             }
           : item,
       ),

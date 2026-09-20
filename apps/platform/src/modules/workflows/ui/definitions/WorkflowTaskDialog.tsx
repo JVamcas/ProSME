@@ -41,12 +41,16 @@ export function WorkflowTaskDialog({
       <FormProvider {...controller.form}>
         <form className="flex flex-col gap-4" onSubmit={submit}>
           <WorkflowTaskDialogFields
+            actionItems={controller.actionItems}
+            actionKeys={controller.actionKeys}
             assignmentItems={controller.assignmentItems}
             assignmentMode={controller.assignmentMode}
             formItems={controller.formItems}
+            formVersionId={controller.formVersionId}
             formsPending={controller.forms.isPending}
             mutationError={controller.mutation.error}
             mutationPending={controller.mutation.isPending}
+            onActionKeysChange={controller.setActionKeys}
           />
         </form>
       </FormProvider>

@@ -1,7 +1,7 @@
 import "server-only";
 
 import { capabilities } from "@/auth/authorization/capabilities";
-import { can, requireAnyCapability } from "@/auth/authorization/policy";
+import { can, requireAnyPermission } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import {
   readAdminApplication,
@@ -20,7 +20,7 @@ export async function listAdminApplications(
   user: AuthenticatedUser | null,
   input: AdminApplicationListInput,
 ): Promise<AdminApplicationPage> {
-  const actor = requireAnyCapability(user, [
+  const actor = requireAnyPermission(user, [
     capabilities.applicationReadAssigned,
     capabilities.applicationReadAll,
   ]);
@@ -49,7 +49,7 @@ export async function getAdminApplicationOverview(
   user: AuthenticatedUser | null,
   applicationId: string,
 ) {
-  const actor = requireAnyCapability(user, [
+  const actor = requireAnyPermission(user, [
     capabilities.applicationReadAssigned,
     capabilities.applicationReadAll,
   ]);

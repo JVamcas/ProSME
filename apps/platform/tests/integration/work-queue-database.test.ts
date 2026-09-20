@@ -111,6 +111,7 @@ beforeAll(async () => {
   await configureWorkflowAction(query, {
     nextStageDefinitionId,
     stageDefinitionId,
+    taskDefinitionId,
     versionId,
   });
   await query(

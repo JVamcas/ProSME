@@ -13,7 +13,10 @@ import {
 } from "@/modules/forms/engine/FormDefinitionParser";
 import { calculateFormCompleteness } from "@/modules/forms/engine/FormCompleteness";
 import { FormCompletenessSummary } from "./FormCompletenessSummary";
-import { formColumnCount, formGridClass } from "./FormLayout";
+import {
+  formColumnCount,
+  formGridClass,
+} from "./FormLayout";
 import {
   FormBaseInputTemplate,
   FormCurrencyWidget,
@@ -66,46 +69,48 @@ function FormObjectTemplate(
         formGridClass(formColumnCount(props.registry.formContext.sections)),
       )}
     >
-      {props.registry.formContext.sections.map((section) => (
-        <section
-          aria-labelledby={`form-section-${section.id}`}
-          className={cn(
-            sectionSpan(section.columnSpan),
-            section.showContainer
-              ? "rounded-2xl border border-brand-navy/10 bg-brand-white p-5"
-              : "",
-          )}
-          key={section.id}
-        >
-          <h2
+      {props.registry.formContext.sections.map((section) => {
+        return (
+          <section
+            aria-labelledby={`form-section-${section.id}`}
             className={cn(
-              "font-bold text-brand-navy",
-              !section.showContainer && "sr-only",
+              sectionSpan(section.columnSpan),
+              section.showContainer
+                ? "rounded-2xl border border-brand-navy/10 bg-brand-white p-5"
+                : "",
             )}
-            id={`form-section-${section.id}`}
+            key={section.id}
           >
-            {section.title}
-          </h2>
-          {section.showContainer && section.description ? (
-            <p className="mt-1 text-sm text-brand-navy/65">
-              {section.description}
-            </p>
-          ) : null}
-          <div
-            className={cn(
-              "grid gap-5",
-              section.showContainer && "mt-4",
-              sectionColumns(section.columnSpan),
-            )}
-          >
-            {section.fields.map((field) => (
-              <div className={fieldSpan(field.columnSpan)} key={field.key}>
-                {properties.get(field.key)}
-              </div>
-            ))}
-          </div>
-        </section>
-      ))}
+            <h2
+              className={cn(
+                "font-bold text-brand-navy",
+                !section.showContainer && "sr-only",
+              )}
+              id={`form-section-${section.id}`}
+            >
+              {section.title}
+            </h2>
+            {section.showContainer && section.description ? (
+              <p className="mt-1 text-sm text-brand-navy/65">
+                {section.description}
+              </p>
+            ) : null}
+            <div
+              className={cn(
+                "grid gap-5",
+                section.showContainer && "mt-4",
+                sectionColumns(section.columnSpan),
+              )}
+            >
+              {section.fields.map((field) => (
+                <div className={fieldSpan(field.columnSpan)} key={field.key}>
+                  {properties.get(field.key)}
+                </div>
+              ))}
+            </div>
+          </section>
+        );
+      })}
     </div>
   );
 }

@@ -1,5 +1,7 @@
 "use client";
 
+import { PortalErrorState } from "@/components/layout/PortalErrorState";
+import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
 import { GeneralButton } from "@/components/ui/button";
 import { useTaskForm } from "@/modules/forms/FormHooks";
 import type { TaskFormData } from "@/modules/forms/FormTypes";
@@ -131,12 +133,21 @@ export function DynamicFormTask({
   taskId: string;
 }) {
   const query = useTaskForm(taskId);
-  if (query.isPending) return <p>Loading form…</p>;
+  if (query.isPending) {
+    return (
+      <PortalLoadingState
+        description="Preparing the published form for this task."
+        title="Loading form"
+      />
+    );
+  }
   if (query.isError || !query.data) {
     return (
-      <p className="text-sm text-red-700" role="alert">
-        {query.error?.message ?? "Form unavailable."}
-      </p>
+      <PortalErrorState
+        description={query.error?.message ?? "Form unavailable."}
+        onAction={() => void query.refetch()}
+        title="Form could not be loaded"
+      />
     );
   }
   return (

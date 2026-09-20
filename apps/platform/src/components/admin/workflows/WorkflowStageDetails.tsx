@@ -28,6 +28,7 @@ type Props = {
   onEditAction: (action: WorkflowActionDefinition) => void;
   onDeleteTask: (task: WorkflowTaskInput) => void;
   onEditTask: (task: WorkflowTaskInput) => void;
+  onPreviewTask: (task: WorkflowTaskInput) => void;
   stage?: WorkflowStageInput;
   stageIndex: number;
 };
@@ -46,6 +47,7 @@ export function WorkflowStageDetails({
   onEditAction,
   onDeleteTask,
   onEditTask,
+  onPreviewTask,
   stage,
   stageIndex,
 }: Props) {
@@ -69,6 +71,7 @@ export function WorkflowStageDetails({
             onAdd={onAddTask}
             onDelete={onDeleteTask}
             onEdit={onEditTask}
+            onPreview={onPreviewTask}
             stage={stage}
           />
         </StageTabContent>

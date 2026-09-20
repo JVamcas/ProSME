@@ -120,6 +120,8 @@ async function lockTask(
       workflow.id AS "workflowInstanceId",
       workflow.workflow_version_id AS "workflowVersionId"
     FROM app_stage_task_instances task
+    JOIN app_stage_task_definitions definition
+      ON definition.id = task.task_definition_id
     JOIN app_workflow_stage_instances stage ON stage.id = task.stage_instance_id
     JOIN app_workflow_instances workflow ON workflow.id = stage.workflow_instance_id
     WHERE task.id = ${input.taskInstanceId}::uuid
@@ -143,6 +145,12 @@ async function lockTask(
         WHERE action.stage_id = stage.stage_definition_id
           AND action.stable_key = ${input.actionKey}
           AND action.enabled = TRUE
+          AND EXISTS (
+            SELECT 1 FROM app_stage_task_action_bindings binding
+            WHERE binding.task_definition_id = definition.id
+              AND binding.stage_id = stage.stage_definition_id
+              AND binding.action_key = action.stable_key
+          )
       )
     FOR UPDATE OF task, stage, workflow
   `);

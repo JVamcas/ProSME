@@ -74,6 +74,7 @@ export type CheckboxFieldProps = Omit<
 > & {
   containerClassName?: string;
   controlClassName?: string;
+  description?: React.ReactNode;
   label: React.ReactNode;
 } & FormBindingProps;
 
@@ -81,6 +82,7 @@ export function CheckboxField({
   className,
   containerClassName,
   controlClassName,
+  description,
   error,
   id,
   label,
@@ -91,8 +93,9 @@ export function CheckboxField({
   const binding = useFormBinding({ error, name, registrationOptions });
   const generatedId = React.useId();
   const controlId = id ?? binding.name ?? generatedId;
+  const descriptionId = description ? `${controlId}-description` : undefined;
   const errorId = binding.error ? `${controlId}-error` : undefined;
-  const describedBy = [errorId, props["aria-describedby"]]
+  const describedBy = [descriptionId, errorId, props["aria-describedby"]]
     .filter(Boolean)
     .join(" ") || undefined;
 
@@ -115,6 +118,14 @@ export function CheckboxField({
         />
         <span>{label}</span>
       </label>
+      {description ? (
+        <p
+          className="ml-7 mt-1 text-xs font-normal leading-relaxed text-brand-navy/60"
+          id={descriptionId}
+        >
+          {description}
+        </p>
+      ) : null}
       <FieldError id={errorId} message={binding.error} />
     </div>
   );

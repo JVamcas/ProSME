@@ -44,6 +44,7 @@ export const referenceWorkflow: WorkflowGraphInput = {
       tasks: [
         {
           stableKey: "PRE_SCREEN_CHECKLIST",
+          actionKeys: ["ADVANCE"],
           name: "Pre-screening checklist",
           description: "Verify the initial eligibility and compliance checks.",
           assignmentMode: "ROLE",
@@ -101,6 +102,7 @@ export const referenceWorkflow: WorkflowGraphInput = {
       tasks: [
         {
           stableKey: "COMPLETENESS_CHECK",
+          actionKeys: ["ADVANCE"],
           name: "Completeness checklist",
           description: "Confirm that the submitted application is complete.",
           assignmentMode: "ROLE",
@@ -148,6 +150,7 @@ export const referenceWorkflow: WorkflowGraphInput = {
       tasks: [
         {
           stableKey: "TECHNICAL_SCORE",
+          actionKeys: ["ADVANCE"],
           name: "Technical assessment form",
           description: "Score the application against the technical criteria.",
           assignmentMode: "ROLE",
@@ -199,6 +202,7 @@ export const referenceWorkflow: WorkflowGraphInput = {
       tasks: [
         {
           stableKey: "FINANCE_CHECK",
+          actionKeys: ["ADVANCE"],
           name: "Finance review",
           description: "Review the financial information and recommendation.",
           assignmentMode: "ROLE",
@@ -242,6 +246,7 @@ export const referenceWorkflow: WorkflowGraphInput = {
       tasks: [
         {
           stableKey: "PANEL_DECISION",
+          actionKeys: ["ADVANCE"],
           name: "Record outcome",
           description: "Record the committee's funding decision.",
           assignmentMode: "ROLE",
@@ -283,6 +288,7 @@ export const referenceWorkflow: WorkflowGraphInput = {
       tasks: [
         {
           stableKey: "SEND_OUTCOME",
+          actionKeys: ["COMPLETE"],
           name: "Send outcome communication",
           description: "Send the recorded outcome to the applicant.",
           assignmentMode: "ROLE",

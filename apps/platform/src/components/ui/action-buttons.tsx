@@ -2,6 +2,7 @@
 
 import {
   Copy,
+  Eye,
   LoaderCircle,
   Link2,
   PencilLine,
@@ -65,6 +66,17 @@ export function EditButton(props: ActionButtonProps) {
       defaultTitle="Edit"
       icon={PencilLine}
       iconClassName="[&_svg]:text-brand-navy"
+      {...props}
+    />
+  );
+}
+
+export function PreviewButton(props: ActionButtonProps) {
+  return (
+    <ActionButton
+      defaultTitle="Preview"
+      icon={Eye}
+      iconClassName="[&_svg]:text-brand-orange"
       {...props}
     />
   );

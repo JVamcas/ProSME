@@ -3,7 +3,7 @@ import "server-only";
 import { z } from "zod";
 
 import { permissionCodes } from "@/auth/authorization/permissions";
-import { requireCapability } from "@/auth/authorization/policy";
+import { requirePermission } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import {
   assignWorkflowToOpportunity,
@@ -24,12 +24,12 @@ import {
 import type { OpportunityAssignmentInput } from "@/modules/workflows/api/WorkflowTransportTypes";
 
 export async function getWorkflowAssignments(user: AuthenticatedUser | null) {
-  requireCapability(user, permissionCodes.workflowDefinitionRead);
+  requirePermission(user, permissionCodes.workflowDefinitionRead);
   return (await listWorkflowAssignments()).map(toWorkflowAssignment);
 }
 
 export async function getWorkflowOpportunities(user: AuthenticatedUser | null) {
-  requireCapability(user, permissionCodes.workflowDefinitionRead);
+  requirePermission(user, permissionCodes.workflowDefinitionRead);
   return listPublishedFundingOpportunities({ limit: 100 });
 }
 
@@ -49,7 +49,7 @@ export async function assignOpportunityWorkflow(
   idempotencyKey: string | null,
   correlationId: string,
 ) {
-  const actor = requireCapability(user, permissionCodes.workflowDefinitionUpdate);
+  const actor = requirePermission(user, permissionCodes.workflowDefinitionUpdate);
   const key = requireWorkflowIdempotencyKey(idempotencyKey);
   const replay = await findLifecycleReplay(key);
   if (

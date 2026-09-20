@@ -1,7 +1,7 @@
 import "server-only";
 
 import { capabilities } from "@/auth/authorization/capabilities";
-import { requireCapability } from "@/auth/authorization/policy";
+import { requirePermission } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import { submitOwnedApplication } from "@/db/repositories/ApplicationSubmissionRepository";
 import {
@@ -38,7 +38,7 @@ export async function submitApplication(
   idempotencyKey: string | null,
   correlationId: string,
 ) {
-  const actor = requireCapability(user, capabilities.applicationSubmit);
+  const actor = requirePermission(user, capabilities.applicationSubmit);
   const result = await submitOwnedApplication({
     actorId: actor.id,
     applicationId,

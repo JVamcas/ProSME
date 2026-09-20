@@ -4,6 +4,7 @@ import { asc, eq } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
 import {
+  stageTaskActionBindings,
   stageTaskDefinitions,
   workflowActionDefinitions,
   workflowDefinitionVersions,
@@ -75,6 +76,10 @@ const graphSelection = {
     config: stageTaskDefinitions.config,
     formVersionId: stageTaskDefinitions.formVersionId,
   },
+  taskAction: {
+    actionKey: stageTaskActionBindings.actionKey,
+    taskDefinitionId: stageTaskActionBindings.taskDefinitionId,
+  },
   transition: {
     id: workflowTransitionDefinitions.id,
     fromStageId: workflowTransitionDefinitions.fromStageId,
@@ -106,6 +111,10 @@ function loadGraphRows(versionId: string) {
       eq(stageTaskDefinitions.stageId, workflowStageDefinitions.id),
     )
     .leftJoin(
+      stageTaskActionBindings,
+      eq(stageTaskActionBindings.taskDefinitionId, stageTaskDefinitions.id),
+    )
+    .leftJoin(
       workflowTransitionDefinitions,
       eq(
         workflowTransitionDefinitions.versionId,
@@ -132,7 +141,7 @@ function assembleGraph(rows: Awaited<ReturnType<typeof loadGraphRows>>) {
       row.stage?.id ? [[row.stage.id, row.stage.stableKey] as const] : [],
     ),
   );
-  rows.forEach(({ action, stage, task, transition }) => {
+  rows.forEach(({ action, stage, task, taskAction, transition }) => {
     if (stage?.id && !stages.has(stage.id))
       stages.set(stage.id, {
         id: stage.id,
@@ -162,8 +171,19 @@ function assembleGraph(rows: Awaited<ReturnType<typeof loadGraphRows>>) {
     ) {
       target.actions.push(workflowActionDefinitionSchema.parse(action));
     }
-    if (target && task?.id && !target.tasks.some((item) => item.id === task.id))
-      target.tasks.push({ ...task });
+    if (target && task?.id && !target.tasks.some((item) => item.id === task.id)) {
+      target.tasks.push({ ...task, actionKeys: [] });
+    }
+    const targetTask = target?.tasks.find(
+      (item) => item.id === taskAction?.taskDefinitionId,
+    );
+    if (
+      targetTask
+      && taskAction?.actionKey
+      && !targetTask.actionKeys.includes(taskAction.actionKey)
+    ) {
+      targetTask.actionKeys.push(taskAction.actionKey);
+    }
     if (transition?.id && !transitions.has(transition.id)) {
       transitions.set(transition.id, {
         id: transition.id,

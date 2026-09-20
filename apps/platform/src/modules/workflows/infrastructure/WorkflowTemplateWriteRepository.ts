@@ -4,6 +4,7 @@ import { and, eq, inArray, max } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
 import {
+  stageTaskActionBindings,
   stageTaskDefinitions,
   workflowAuditEntries,
   workflowDefinitionVersions,
@@ -83,8 +84,32 @@ async function insertGraph(
       type: task.type,
     })),
   );
-  if (tasks.length)
-    await transaction.insert(stageTaskDefinitions).values(tasks);
+  const taskRows = tasks.length
+    ? await transaction
+        .insert(stageTaskDefinitions)
+        .values(tasks)
+        .returning({
+          id: stageTaskDefinitions.id,
+          stableKey: stageTaskDefinitions.stableKey,
+          stageId: stageTaskDefinitions.stageId,
+        })
+    : [];
+  const taskIds = new Map(
+    taskRows.map((task) => [`${task.stageId}:${task.stableKey}`, task.id]),
+  );
+  const taskActions = graph.stages.flatMap((stage) => {
+    const stageId = stageIds.get(stage.stableKey)!;
+    return stage.tasks.flatMap((task) =>
+      task.actionKeys.map((actionKey) => ({
+        actionKey,
+        stageId,
+        taskDefinitionId: taskIds.get(`${stageId}:${task.stableKey}`)!,
+      })),
+    );
+  });
+  if (taskActions.length) {
+    await transaction.insert(stageTaskActionBindings).values(taskActions);
+  }
   const transitions = graph.transitions.map((transition) => ({
     actionKey: transition.actionKey,
     fromStageId: stageIds.get(transition.sourceStageKey)!,
@@ -190,6 +215,11 @@ export async function replaceWorkflowDraft(input: {
       .from(workflowStageDefinitions)
       .where(eq(workflowStageDefinitions.versionId, input.versionId));
     const stageIds = stages.map((stage) => stage.id);
+    if (stageIds.length) {
+      await transaction
+        .delete(stageTaskActionBindings)
+        .where(inArray(stageTaskActionBindings.stageId, stageIds));
+    }
     await transaction
       .delete(workflowTransitionDefinitions)
       .where(eq(workflowTransitionDefinitions.versionId, input.versionId));

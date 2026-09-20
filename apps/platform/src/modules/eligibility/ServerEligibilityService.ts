@@ -1,7 +1,7 @@
 import "server-only";
 
 import { capabilities } from "@/auth/authorization/capabilities";
-import { requireCapability } from "@/auth/authorization/policy";
+import { requirePermission } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import {
   createOwnedEligibilityAssessment,
@@ -84,7 +84,7 @@ export async function getEligibilityWorkspace(
   user: AuthenticatedUser | null,
   fundingOpportunityId: number,
 ) {
-  const actor = requireCapability(user, capabilities.eligibilityReadOwn);
+  const actor = requirePermission(user, capabilities.eligibilityReadOwn);
   const [{ opportunity, ruleSet }, assessments] = await Promise.all([
     loadAvailableWorkspace(fundingOpportunityId),
     listOwnedEligibilityAssessments(actor.id, fundingOpportunityId),
@@ -101,7 +101,7 @@ export async function createEligibilityAssessment(
   user: AuthenticatedUser | null,
   input: EligibilityAssessmentInput,
 ) {
-  const actor = requireCapability(user, capabilities.eligibilityCreate);
+  const actor = requirePermission(user, capabilities.eligibilityCreate);
   const { opportunity, ruleSet } = await loadAvailableWorkspace(
     input.fundingOpportunityId,
   );

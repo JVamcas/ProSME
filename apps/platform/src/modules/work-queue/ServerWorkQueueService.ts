@@ -1,7 +1,7 @@
 import "server-only";
 
 import { capabilities } from "@/auth/authorization/capabilities";
-import { requireCapability } from "@/auth/authorization/policy";
+import { requirePermission } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import {
   readWorkQueue,
@@ -21,7 +21,7 @@ export async function getWorkQueue(
   user: AuthenticatedUser | null,
   input: WorkQueueListInput,
 ): Promise<WorkQueuePage> {
-  const actor = requireCapability(user, capabilities.workQueueRead);
+  const actor = requirePermission(user, capabilities.workQueueRead);
   const projection = await readWorkQueue(
     actor.id,
     input,
@@ -47,7 +47,7 @@ export async function claimTask(
     taskId: string;
   },
 ) {
-  const actor = requireCapability(user, capabilities.workflowTaskClaim);
+  const actor = requirePermission(user, capabilities.workflowTaskClaim);
   const outcome = await writeTaskClaim({ ...input, actorId: actor.id });
   if (outcome.kind === "idempotency_conflict") {
     throw new IdempotencyConflictError(

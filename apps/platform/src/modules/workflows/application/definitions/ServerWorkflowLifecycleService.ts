@@ -1,7 +1,7 @@
 import "server-only";
 
 import { permissionCodes } from "@/auth/authorization/permissions";
-import { requireCapability } from "@/auth/authorization/policy";
+import { requirePermission } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import { cloneWorkflowGraph } from "@/modules/workflows/domain/definitions/WorkflowGraphCloning";
 import { cloneWorkflowVersion } from "@/modules/workflows/infrastructure/WorkflowTemplateWriteRepository";
@@ -25,7 +25,7 @@ export async function cloneWorkflow(
   sourceVersionId: string,
   correlationId: string,
 ) {
-  const actor = requireCapability(user, permissionCodes.workflowDefinitionUpdate);
+  const actor = requirePermission(user, permissionCodes.workflowDefinitionUpdate);
   const source = await loadWorkflowEditor(sourceVersionId);
   if (source.definition.id !== definitionId) throw new WorkflowNotFoundError();
   if (await findDraftByDefinition(source.definition.id)) {
@@ -62,7 +62,7 @@ export async function publishWorkflow(
   idempotencyKey: string | null,
   correlationId: string,
 ) {
-  const actor = requireCapability(user, permissionCodes.workflowDefinitionPublish);
+  const actor = requirePermission(user, permissionCodes.workflowDefinitionPublish);
   const key = requireWorkflowIdempotencyKey(idempotencyKey);
   const current = await loadWorkflowEditor(versionId);
   if (current.definition.id !== definitionId) throw new WorkflowNotFoundError();
@@ -101,7 +101,7 @@ export async function retireWorkflow(
   idempotencyKey: string | null,
   correlationId: string,
 ) {
-  const actor = requireCapability(user, permissionCodes.workflowDefinitionRetire);
+  const actor = requirePermission(user, permissionCodes.workflowDefinitionRetire);
   const key = requireWorkflowIdempotencyKey(idempotencyKey);
   const editor = await workflowEditorView(versionId);
   if (editor.definition.id !== definitionId) throw new WorkflowNotFoundError();

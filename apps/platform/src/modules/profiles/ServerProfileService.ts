@@ -7,7 +7,7 @@ import {
   requireApplicantPortalAccess,
 } from "@/auth/authorization/portal-access";
 import { PermissionDeniedError } from "@/auth/authorization/policy";
-import { requireCapability } from "@/auth/authorization/policy";
+import { requirePermission } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import {
   findApplicantProfile,
@@ -76,7 +76,7 @@ export function createApplicantDashboardSummary(
 export async function getApplicantProfile(
   user: AuthenticatedUser | null,
 ): Promise<ApplicantProfileView> {
-  const actor = requireCapability(user, capabilities.profileReadOwn);
+  const actor = requirePermission(user, capabilities.profileReadOwn);
   const profile = await findApplicantProfile(actor.id);
 
   if (profile) {
@@ -102,7 +102,7 @@ export async function updateApplicantProfile(
   user: AuthenticatedUser | null,
   input: ApplicantProfileUpdateInput,
 ): Promise<ApplicantProfileView> {
-  const actor = requireCapability(user, capabilities.profileUpdateOwn);
+  const actor = requirePermission(user, capabilities.profileUpdateOwn);
   await saveApplicantProfile(actor.id, input);
   const profile = await findApplicantProfile(actor.id);
 

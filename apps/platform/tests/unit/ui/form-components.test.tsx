@@ -95,12 +95,19 @@ describe("shared form components", () => {
 
   it("keeps checkbox semantics inside the shared field", () => {
     const markup = renderToStaticMarkup(
-      <CheckboxField name="consent" label="I consent" required />,
+      <CheckboxField
+        description="Explains the choice."
+        name="consent"
+        label="I consent"
+        required
+      />,
     );
 
     expect(markup).toContain('type="checkbox"');
     expect(markup).toContain('name="consent"');
     expect(markup).toContain("I consent");
+    expect(markup).toContain("Explains the choice.");
+    expect(markup).toContain('aria-describedby="consent-description"');
   });
 
   it("renders select items from data instead of JSX children", () => {

@@ -44,6 +44,13 @@ function listPublished() {
   });
 }
 
+function getPublishedRuntime(versionId: string) {
+  return requestData<FormRuntimeSchema>(
+    `/api/admin/forms/published/${versionId}`,
+    { cache: "no-store" },
+  );
+}
+
 function update(id: string, input: UpdateFormInput) {
   return requestData<FormEditorView>(`/api/admin/forms/${id}`, {
     body: JSON.stringify(input),
@@ -113,6 +120,7 @@ export const clientFormsService = {
   completeTaskForm,
   get,
   getTaskForm,
+  getPublishedRuntime,
   lifecycle,
   list,
   listPublished,

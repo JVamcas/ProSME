@@ -2,7 +2,7 @@ import "server-only";
 
 import { z } from "zod";
 import { permissionCodes } from "@/auth/authorization/permissions/PermissionCodes";
-import { requireCapability } from "@/auth/authorization/policy";
+import { requirePermission } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import {
   workflowTemplateDetailsSchema,
@@ -74,7 +74,7 @@ export async function createWorkflowTemplate(
   input: CreateWorkflowTemplateInput,
   correlationId: string,
 ) {
-  const actor = requireCapability(
+  const actor = requirePermission(
     user,
     permissionCodes.workflowDefinitionCreate,
   );
@@ -109,7 +109,7 @@ function toListItem(
 export async function getWorkflowTemplates(
   user: AuthenticatedUser | null,
 ): Promise<WorkflowTemplateListItem[]> {
-  requireCapability(user, permissionCodes.workflowDefinitionRead);
+  requirePermission(user, permissionCodes.workflowDefinitionRead);
   const records = await listCurrentWorkflowTemplates();
   return records
     .map(toListItem)
@@ -121,7 +121,7 @@ export async function getWorkflowTemplateVersion(
   templateId: string,
   versionId: string,
 ) {
-  requireCapability(user, permissionCodes.workflowDefinitionRead);
+  requirePermission(user, permissionCodes.workflowDefinitionRead);
   return requireVersion(templateId, versionId);
 }
 
@@ -129,7 +129,7 @@ export async function getWorkflowTemplateVersions(
   user: AuthenticatedUser | null,
   templateId: string,
 ) {
-  requireCapability(user, permissionCodes.workflowDefinitionRead);
+  requirePermission(user, permissionCodes.workflowDefinitionRead);
   return listWorkflowTemplateVersions(z.string().uuid().parse(templateId));
 }
 
@@ -138,7 +138,7 @@ export async function getWorkflowTemplateAudit(
   templateId: string,
   versionId: string,
 ) {
-  requireCapability(user, permissionCodes.workflowDefinitionRead);
+  requirePermission(user, permissionCodes.workflowDefinitionRead);
   await requireVersion(templateId, versionId);
   return listWorkflowTemplateAudit(templateId, versionId);
 }
@@ -148,7 +148,7 @@ export async function updateWorkflowTemplateDraft(
   input: WorkflowTemplateUpdateInput,
   correlationId: string,
 ) {
-  const actor = requireCapability(
+  const actor = requirePermission(
     user,
     permissionCodes.workflowDefinitionUpdate,
   );
@@ -174,7 +174,7 @@ export async function deleteWorkflowTemplate(
   expectedRowVersion: number,
   correlationId: string,
 ) {
-  const actor = requireCapability(
+  const actor = requirePermission(
     user,
     permissionCodes.workflowDefinitionUpdate,
   );
@@ -199,7 +199,7 @@ export async function changeWorkflowTemplateStatus(
   correlationId: string,
 ) {
   const parsed = workflowTemplateLifecycleSchema.parse(input);
-  const actor = requireCapability(user, commandPermissions[parsed.command]);
+  const actor = requirePermission(user, commandPermissions[parsed.command]);
   const record = await requireVersion(parsed.templateId, parsed.versionId);
   const transition = workflowTemplateTransitions[parsed.command];
   const reason = parsed.command === "RETURN" ? parsed.reason : undefined;

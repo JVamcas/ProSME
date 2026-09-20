@@ -60,6 +60,7 @@ afterAll(async () => {
     );
     const tasks = [
       {
+        actionKeys: ["RECOMMEND"],
         stableKey: "TECHNICAL_REVIEW",
         name: "Technical review",
         description: "Complete the technical assessment.",
@@ -76,6 +77,7 @@ afterAll(async () => {
         config: {},
       },
       {
+        actionKeys: ["DECIDE"],
         stableKey: "CHAIR_REVIEW",
         name: "Chair review",
         description: "Complete the chairperson review.",
@@ -109,7 +111,26 @@ afterAll(async () => {
         coiGated: true,
         initial: true,
         slaHours: null,
-        actions: [],
+        actions: [
+          {
+            actionType: "APPROVE_ADVANCE" as const,
+            configuration: {},
+            displayOrder: 1,
+            enabled: true,
+            label: "Recommend",
+            reasonCodeRequired: false,
+            stableKey: "RECOMMEND",
+          },
+          {
+            actionType: "APPROVE_ADVANCE" as const,
+            configuration: {},
+            displayOrder: 2,
+            enabled: true,
+            label: "Decide",
+            reasonCodeRequired: false,
+            stableKey: "DECIDE",
+          },
+        ],
         tasks,
       }],
       transitions: [],

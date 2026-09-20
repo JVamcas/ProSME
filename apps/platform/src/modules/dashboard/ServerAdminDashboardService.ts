@@ -1,7 +1,7 @@
 import "server-only";
 
 import { capabilities } from "@/auth/authorization/capabilities";
-import { can, requireCapability } from "@/auth/authorization/policy";
+import { can, requirePermission } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import { readAdminDashboard } from "@/db/repositories/AdminDashboardRepository";
 import type {
@@ -29,7 +29,7 @@ export async function getAdminDashboard(
   period: AdminDashboardPeriod,
   now = new Date(),
 ): Promise<AdminDashboardView> {
-  const actor = requireCapability(user, capabilities.adminAccess);
+  const actor = requirePermission(user, capabilities.adminAccess);
   const visibility = visibilityFor(actor);
   const projection = await readAdminDashboard({
     actorId: actor.id,

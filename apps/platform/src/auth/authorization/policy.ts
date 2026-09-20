@@ -21,7 +21,7 @@ export class PermissionDeniedError extends Error {
   }
 }
 
-export function requireCapability(
+export function requirePermission(
   user: AuthenticatedUser | null,
   capability: string,
 ) {
@@ -36,7 +36,7 @@ export function requireCapability(
   return user;
 }
 
-export function requireAnyCapability(
+export function requireAnyPermission(
   user: AuthenticatedUser | null,
   capabilityCodes: readonly string[],
 ) {

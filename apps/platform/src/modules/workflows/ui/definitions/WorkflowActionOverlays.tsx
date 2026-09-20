@@ -41,6 +41,12 @@ export function WorkflowActionOverlays({
                   ...current,
                   displayOrder: index + 1,
                 })),
+              tasks: item.tasks.map((task) => ({
+                ...task,
+                actionKeys: task.actionKeys.filter(
+                  (actionKey) => actionKey !== action.stableKey,
+                ),
+              })),
             }
           : item,
       ),
@@ -73,7 +79,7 @@ export function WorkflowActionOverlays({
         message={
           <p>
             Delete <strong>{actionToDelete?.label}</strong> from this stage?
-            Its transitions will also be deleted.
+            Its transitions and Task bindings will also be deleted.
           </p>
         }
         onCancel={onCloseDelete}

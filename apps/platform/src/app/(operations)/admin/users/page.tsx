@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 
 import { capabilities } from "@/auth/authorization/capabilities";
 import { getCurrentUser } from "@/auth/authorization/current-user";
-import { can, requireAnyCapability } from "@/auth/authorization/policy";
+import { can, requireAnyPermission } from "@/auth/authorization/policy";
 import { UserAccessWorkspace } from "@/components/admin/users/UserAccessWorkspace";
 import { PageHeader } from "@/components/ui/PageHeader";
 
@@ -12,7 +12,7 @@ export const metadata: Metadata = { title: "Users & roles" };
 export default async function UsersAccessPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/sign-in?next=/admin/users");
-  requireAnyCapability(user, [
+  requireAnyPermission(user, [
     capabilities.userRead,
     capabilities.userManage,
     capabilities.roleRead,

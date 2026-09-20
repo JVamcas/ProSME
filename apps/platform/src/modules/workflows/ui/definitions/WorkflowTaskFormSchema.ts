@@ -10,6 +10,7 @@ const checklistItemSchema = z.object({
 });
 
 export const workflowTaskFormSchema = z.object({
+  actionKeys: z.array(z.string()).max(100),
   assignmentMode: z.enum(["ROLE", "NAMED_USER"]),
   assignmentTarget: z.string().min(1, "Select an assignee."),
   stableKey: z

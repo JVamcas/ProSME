@@ -45,6 +45,7 @@ async function saveWorkflowTask({
   }
   const nextTask: WorkflowTaskInput = {
     ...(task?.id ? { id: task.id } : {}),
+    actionKeys: values.actionKeys,
     assignmentMode: values.assignmentMode,
     roleId:
       values.assignmentMode === "ROLE" ? values.assignmentTarget : null,
@@ -91,6 +92,7 @@ export function useWorkflowTaskDialogController(
   const form = useForm<WorkflowTaskFormValues>({
     defaultValues: {
       ...taskAssignmentDefaults(task),
+      actionKeys: task?.actionKeys ?? [],
       checklistItems: [],
       stableKey: task?.stableKey ?? "",
       description: task?.description ?? "",
@@ -109,6 +111,14 @@ export function useWorkflowTaskDialogController(
     control: form.control,
     name: "assignmentMode",
   });
+  const actionKeys = useWatch({
+    control: form.control,
+    name: "actionKeys",
+  });
+  const formVersionId = useWatch({
+    control: form.control,
+    name: "formVersionId",
+  });
   const previousAssignmentMode = useRef(assignmentMode);
 
   useEffect(() => {
@@ -125,6 +135,13 @@ export function useWorkflowTaskDialogController(
     label: `${item.formName} · v${item.versionNumber}`,
     value: item.versionId,
   }));
+  const actionItems = [...stage.actions]
+    .sort((left, right) => left.displayOrder - right.displayOrder)
+    .map((action) => ({
+      disabled: !action.enabled,
+      label: action.enabled ? action.label : `${action.label} (disabled)`,
+      value: action.stableKey,
+    }));
 
   const save = (values: WorkflowTaskFormValues) =>
     saveWorkflowTask({
@@ -137,12 +154,21 @@ export function useWorkflowTaskDialogController(
     });
 
   return {
+    actionKeys,
+    actionItems,
     assignmentItems,
     assignmentMode,
     form,
     formItems,
+    formVersionId: formVersionId ?? "",
     forms,
     mutation,
+    setActionKeys: (values: string[]) => {
+      form.setValue("actionKeys", values, {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+    },
     save,
   };
 }

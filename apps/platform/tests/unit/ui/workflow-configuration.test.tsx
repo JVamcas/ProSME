@@ -116,6 +116,7 @@ describe("workflow configuration UI", () => {
     expect(markup).toContain("Add task");
     expect(markup).toContain("Add action");
     expect(markup).toContain("Edit Pre-screening checklist");
+    expect(markup).toContain("Preview Pre-screening checklist");
     expect(markup).toContain("Delete Pre-screening checklist");
     expect(markup).not.toContain("Approver");
     expect(markup).not.toContain("Conditional routes");

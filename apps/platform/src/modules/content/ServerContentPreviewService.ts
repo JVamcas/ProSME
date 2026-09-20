@@ -1,7 +1,7 @@
 import "server-only";
 
 import { cmsCapability } from "@/auth/authorization/capabilities";
-import { requireCapability } from "@/auth/authorization/policy";
+import { requirePermission } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import { previewResource } from "@/auth/authorization/preview-resource";
 
@@ -10,5 +10,5 @@ export function authorizeContentPreview(
   path: string,
 ) {
   const capability = cmsCapability(previewResource(path), "read");
-  requireCapability(user, capability);
+  requirePermission(user, capability);
 }

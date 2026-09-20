@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { workflowTaskSchema } from "@/modules/workflows/api/WorkflowSchemas";
 
 const task = {
+  actionKeys: ["RECOMMEND", "REQUEST_INFORMATION"],
   stableKey: "TECHNICAL_REVIEW",
   name: "Technical review",
   description: "Review the application's technical merits.",

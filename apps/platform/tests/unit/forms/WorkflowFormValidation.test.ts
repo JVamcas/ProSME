@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { validateWorkflowGraph } from "@/modules/workflows/WorkflowValidation";
+import { workflowGraphSchema } from "@/modules/workflows/api/WorkflowSchemas";
 
 const stage = (code: string, sequence: number, initial: boolean) => ({
   stableKey: code,
@@ -27,6 +28,7 @@ const stage = (code: string, sequence: number, initial: boolean) => ({
     displayOrder: 1,
   }],
   tasks: [{
+    actionKeys: ["ADVANCE"],
     assignmentMode: "ROLE" as const,
     roleId: "00000000-0000-0000-0000-000000000001",
     namedUserOverrideId: null,
@@ -46,6 +48,16 @@ const stage = (code: string, sequence: number, initial: boolean) => ({
 });
 
 describe("form-backed workflow validation", () => {
+  it("rejects a task binding to an action from outside its stage", () => {
+    const first = stage("FIRST", 1, true);
+    first.tasks[0].actionKeys = ["UNCONFIGURED_ACTION"];
+
+    expect(workflowGraphSchema.safeParse({
+      stages: [first],
+      transitions: [],
+    }).success).toBe(false);
+  });
+
   it("identifies a draft without transition definitions as structurally invalid", () => {
     const validation = validateWorkflowGraph({
       stages: [stage("FIRST", 1, true), stage("SECOND", 2, false)],

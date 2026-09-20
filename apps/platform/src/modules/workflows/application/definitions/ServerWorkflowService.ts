@@ -1,7 +1,7 @@
 import "server-only";
 
 import { permissionCodes } from "@/auth/authorization/permissions";
-import { requireCapability } from "@/auth/authorization/policy";
+import { requirePermission } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import {
   createWorkflowDefinition,
@@ -33,12 +33,12 @@ export {
 } from "@/modules/workflows/application/definitions/ServerWorkflowSupport";
 
 export async function getWorkflowDefinitions(user: AuthenticatedUser | null) {
-  requireCapability(user, permissionCodes.workflowDefinitionRead);
+  requirePermission(user, permissionCodes.workflowDefinitionRead);
   return toWorkflowSummaries(await listWorkflowDefinitions());
 }
 
 export async function getPublishedWorkflows(user: AuthenticatedUser | null) {
-  requireCapability(user, permissionCodes.workflowDefinitionRead);
+  requirePermission(user, permissionCodes.workflowDefinitionRead);
   return listPublishedWorkflowVersions();
 }
 
@@ -46,7 +46,7 @@ export async function getWorkflowEditor(
   user: AuthenticatedUser | null,
   definitionId: string,
 ) {
-  requireCapability(user, permissionCodes.workflowDefinitionRead);
+  requirePermission(user, permissionCodes.workflowDefinitionRead);
   const versionId =
     (await findDraftByDefinition(definitionId)) ??
     (await findLatestWorkflowVersionId(definitionId));
@@ -59,7 +59,7 @@ export async function createWorkflow(
   input: CreateWorkflowInput,
   correlationId: string,
 ) {
-  const actor = requireCapability(user, permissionCodes.workflowDefinitionCreate);
+  const actor = requirePermission(user, permissionCodes.workflowDefinitionCreate);
   const graph = input.useReferenceWorkflow
     ? referenceWorkflow
     : { stages: [], transitions: [] };
@@ -78,7 +78,7 @@ export async function updateWorkflowDraft(
   input: UpdateWorkflowDraftInput,
   correlationId: string,
 ) {
-  const actor = requireCapability(user, permissionCodes.workflowDefinitionUpdate);
+  const actor = requirePermission(user, permissionCodes.workflowDefinitionUpdate);
   const versionId = await findDraftByDefinition(definitionId);
   if (!versionId)
     throw new WorkflowConflictError("Only draft versions can be edited.");
@@ -98,7 +98,7 @@ export async function updateWorkflowDetails(
   input: UpdateWorkflowDetailsInput,
   correlationId: string,
 ) {
-  const actor = requireCapability(user, permissionCodes.workflowDefinitionUpdate);
+  const actor = requirePermission(user, permissionCodes.workflowDefinitionUpdate);
   const versionId = await findDraftByDefinition(definitionId);
   if (!versionId)
     throw new WorkflowConflictError("Only draft versions can be edited.");
@@ -117,7 +117,7 @@ export async function validateWorkflow(
   user: AuthenticatedUser | null,
   definitionId: string,
 ) {
-  requireCapability(user, permissionCodes.workflowDefinitionUpdate);
+  requirePermission(user, permissionCodes.workflowDefinitionUpdate);
   const versionId = await findDraftByDefinition(definitionId);
   if (!versionId)
     throw new WorkflowConflictError("Only draft versions can be edited.");

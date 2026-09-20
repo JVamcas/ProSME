@@ -12,6 +12,7 @@ import type {
 import { WorkflowStageCreateDialog } from "./WorkflowStageCreateDialog";
 import { WorkflowStageDetails } from "./WorkflowStageDetails";
 import { WorkflowTaskDialog } from "@/modules/workflows/ui/definitions/WorkflowTaskDialog";
+import { WorkflowTaskPreviewDialog } from "@/modules/workflows/ui/definitions/WorkflowTaskPreviewDialog";
 import { WorkflowActionOverlays } from "@/modules/workflows/ui/definitions/WorkflowActionOverlays";
 import {
   WorkflowFlowPreview,
@@ -52,6 +53,9 @@ export function WorkflowStageFlow({ canEdit, editor }: Props) {
     "create" | WorkflowTaskInput | null
   >(null);
   const [taskToDelete, setTaskToDelete] = useState<WorkflowTaskInput | null>(
+    null,
+  );
+  const [taskToPreview, setTaskToPreview] = useState<WorkflowTaskInput | null>(
     null,
   );
   const deleteMutation = useSaveWorkflowGraph(editor);
@@ -152,6 +156,7 @@ export function WorkflowStageFlow({ canEdit, editor }: Props) {
           onEdit={() => selectedStage && setStageDialog(selectedStage)}
           onEditAction={setActionDialog}
           onEditTask={setTaskDialog}
+          onPreviewTask={setTaskToPreview}
           stage={selectedStage}
           stageIndex={selectedIndex}
         />
@@ -172,6 +177,14 @@ export function WorkflowStageFlow({ canEdit, editor }: Props) {
           onClose={() => setTaskDialog(null)}
           stage={selectedStage}
           task={taskDialog === "create" ? undefined : taskDialog}
+        />
+      ) : null}
+      {taskToPreview && selectedStage ? (
+        <WorkflowTaskPreviewDialog
+          onClose={() => setTaskToPreview(null)}
+          stage={selectedStage}
+          task={taskToPreview}
+          transitions={editor.graph.transitions}
         />
       ) : null}
       <WorkflowActionOverlays

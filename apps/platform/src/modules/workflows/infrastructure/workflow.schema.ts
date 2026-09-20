@@ -158,6 +158,10 @@ export const stageTaskDefinitions = pgTable(
     }),
   },
   (table) => [
+    uniqueIndex("app_stage_tasks_id_stage_unique").on(
+      table.id,
+      table.stageId,
+    ),
     uniqueIndex("app_stage_tasks_stage_code_unique").on(
       table.stageId,
       table.stableKey,
@@ -197,6 +201,35 @@ export const workflowActionDefinitions = pgTable(
       table.stageId,
       table.displayOrder,
     ),
+  ],
+);
+
+export const stageTaskActionBindings = pgTable(
+  "app_stage_task_action_bindings",
+  {
+    taskDefinitionId: uuid("task_definition_id").notNull(),
+    stageId: uuid("stage_id").notNull(),
+    actionKey: text("action_key").notNull(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.taskDefinitionId, table.stageId],
+      foreignColumns: [stageTaskDefinitions.id, stageTaskDefinitions.stageId],
+      name: "app_task_action_bindings_task_stage_fk",
+    }).onDelete("restrict"),
+    foreignKey({
+      columns: [table.stageId, table.actionKey],
+      foreignColumns: [
+        workflowActionDefinitions.stageId,
+        workflowActionDefinitions.stableKey,
+      ],
+      name: "app_task_action_bindings_stage_action_fk",
+    }).onDelete("restrict"),
+    uniqueIndex("app_task_action_bindings_unique").on(
+      table.taskDefinitionId,
+      table.actionKey,
+    ),
+    index("app_task_action_bindings_stage_idx").on(table.stageId),
   ],
 );
 

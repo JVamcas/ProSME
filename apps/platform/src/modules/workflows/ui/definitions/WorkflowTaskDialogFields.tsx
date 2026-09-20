@@ -35,29 +35,56 @@ function TaskIdentityFields() {
 }
 
 export function WorkflowTaskDialogFields({
+  actionItems,
+  actionKeys,
   assignmentItems,
   assignmentMode,
   formItems,
+  formVersionId,
   formsPending,
   mutationError,
   mutationPending,
+  onActionKeysChange,
 }: {
+  actionItems: { disabled?: boolean; label: string; value: string }[];
+  actionKeys: string[];
   assignmentItems: { label: string; value: string }[];
   assignmentMode: "ROLE" | "NAMED_USER";
   formItems: { label: string; value: string }[];
+  formVersionId: string;
   formsPending: boolean;
   mutationError?: Error | null;
   mutationPending: boolean;
+  onActionKeysChange: (values: string[]) => void;
 }) {
   return (
     <>
       <TaskIdentityFields />
-      <FormSelect
-        items={formItems}
-        label="Published form version"
-        name="formVersionId"
-        placeholder={formsPending ? "Loading forms…" : "No form selected"}
-      />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <FormSelect
+          items={formItems}
+          label="Form version"
+          name="formVersionId"
+          infoTooltip="The form used to capture details by the reviewer."
+          placeholder={formsPending ? "Loading forms…" : "No form selected"}
+          value={formVersionId}
+        />
+        <FormSelect
+          infoTooltip="Only these Stage Actions will be presented when a reviewer works on this task."
+          items={actionItems}
+          label="Workflow actions"
+          multiple
+          name="actionKeys"
+          onMultipleChange={onActionKeysChange}
+          placeholder={
+            actionItems.length
+              ? "Select actions for this task"
+              : "No stage actions"
+          }
+          value={actionKeys}
+        />
+      </div>
+
       <div className="grid gap-4 sm:grid-cols-2">
         <FormSelect
           items={[
@@ -109,6 +136,7 @@ export function WorkflowTaskDialogFields({
       <div className="grid gap-3 sm:grid-cols-2">
         <CheckboxField
           containerClassName="text-sm font-semibold text-brand-navy"
+          description="The required completions must be more than half of the reviewer count—for example, 2 of 3 reviewers."
           label="Require majority quorum."
           name="quorum"
         />

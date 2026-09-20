@@ -16,6 +16,8 @@ export const formQueryKeys = {
   all: ["admin", "forms"] as const,
   detail: (id: string) => ["admin", "forms", id] as const,
   task: (id: string) => ["admin", "tasks", id, "form"] as const,
+  publishedRuntime: (versionId: string) =>
+    ["admin", "forms", "published", versionId] as const,
 };
 
 export function useForms() {
@@ -37,6 +39,14 @@ export function usePublishedForms() {
   return useQuery({
     queryKey: [...formQueryKeys.all, "published"],
     queryFn: clientFormsService.listPublished,
+  });
+}
+
+export function usePublishedFormRuntime(versionId: string | null) {
+  return useQuery({
+    enabled: Boolean(versionId),
+    queryKey: formQueryKeys.publishedRuntime(versionId ?? ""),
+    queryFn: () => clientFormsService.getPublishedRuntime(versionId!),
   });
 }
 

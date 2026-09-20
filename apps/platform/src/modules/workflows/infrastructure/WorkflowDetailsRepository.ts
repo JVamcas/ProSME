@@ -4,6 +4,7 @@ import { and, eq, inArray } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
 import {
+  stageTaskActionBindings,
   stageTaskDefinitions,
   workflowActionDefinitions,
   workflowAuditEntries,
@@ -123,6 +124,11 @@ export async function deleteWorkflowDefinition(input: {
       .from(workflowStageDefinitions)
       .where(eq(workflowStageDefinitions.versionId, input.versionId));
     const stageIds = stages.map((stage) => stage.id);
+    if (stageIds.length) {
+      await transaction
+        .delete(stageTaskActionBindings)
+        .where(inArray(stageTaskActionBindings.stageId, stageIds));
+    }
     await transaction
       .delete(workflowTransitionDefinitions)
       .where(eq(workflowTransitionDefinitions.versionId, input.versionId));

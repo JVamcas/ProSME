@@ -2,8 +2,8 @@ import "server-only";
 
 import { permissionCodes } from "@/auth/authorization/permissions";
 import {
-  requireAnyCapability,
-  requireCapability,
+  requireAnyPermission,
+  requirePermission,
 } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import {
@@ -130,20 +130,33 @@ async function editorView(definitionId: string) {
 }
 
 export async function getForms(user: AuthenticatedUser | null) {
-  requireCapability(user, permissionCodes.workflowFormRead);
+  requirePermission(user, permissionCodes.workflowFormRead);
   return listForms();
 }
 
 export async function getPublishedForms(user: AuthenticatedUser | null) {
-  requireAnyCapability(user, [
+  requireAnyPermission(user, [
     permissionCodes.workflowFormRead,
     permissionCodes.workflowDefinitionRead,
   ]);
   return listPublishedFormVersions();
 }
 
+export async function getPublishedFormPreview(
+  user: AuthenticatedUser | null,
+  versionId: string,
+) {
+  requireAnyPermission(user, [
+    permissionCodes.workflowFormRead,
+    permissionCodes.workflowDefinitionRead,
+  ]);
+  const runtime = await getFormRuntime(versionId);
+  if (!runtime) throw new ResourceNotFoundError("published form");
+  return runtime;
+}
+
 export async function getForm(user: AuthenticatedUser | null, definitionId: string) {
-  requireCapability(user, permissionCodes.workflowFormRead);
+  requirePermission(user, permissionCodes.workflowFormRead);
   return editorView(definitionId);
 }
 
@@ -151,7 +164,7 @@ export async function createNewForm(
   user: AuthenticatedUser | null,
   input: CreateFormInput,
 ) {
-  const actor = requireCapability(user, permissionCodes.workflowFormCreate);
+  const actor = requirePermission(user, permissionCodes.workflowFormCreate);
   const created = await createForm({ ...input, actorId: actor.id });
   return editorView(created.definition.id);
 }
@@ -161,7 +174,7 @@ export async function updateFormDraft(
   definitionId: string,
   input: UpdateFormInput,
 ) {
-  const actor = requireCapability(user, permissionCodes.workflowFormUpdate);
+  const actor = requirePermission(user, permissionCodes.workflowFormUpdate);
   const errors = formPublicationErrors(
     input.fields,
     input.submitLabel,
@@ -183,7 +196,7 @@ export async function clonePublishedForm(
   definitionId: string,
   sourceVersionId: string,
 ) {
-  const actor = requireCapability(user, permissionCodes.workflowFormUpdate);
+  const actor = requirePermission(user, permissionCodes.workflowFormUpdate);
   const version = await cloneFormVersion({ actorId: actor.id, definitionId, sourceVersionId });
   if (!version) throw new ResourceNotFoundError("form version");
   return editorView(definitionId);
@@ -194,7 +207,7 @@ export async function publishForm(
   definitionId: string,
   input: FormCommandInput,
 ) {
-  const actor = requireCapability(user, permissionCodes.workflowFormPublish);
+  const actor = requirePermission(user, permissionCodes.workflowFormPublish);
   const result = await publishFormVersion({
     ...input,
     actorId: actor.id,
@@ -214,7 +227,7 @@ export async function retireForm(
   definitionId: string,
   input: FormCommandInput,
 ) {
-  const actor = requireCapability(user, permissionCodes.workflowFormRetire);
+  const actor = requirePermission(user, permissionCodes.workflowFormRetire);
   const version = await retireFormVersion({
     ...input,
     actorId: actor.id,
@@ -228,7 +241,7 @@ export async function getTaskForm(
   user: AuthenticatedUser | null,
   taskInstanceId: string,
 ) {
-  const actor = requireCapability(user, permissionCodes.workflowTaskAssignedRead);
+  const actor = requirePermission(user, permissionCodes.workflowTaskAssignedRead);
   const task = await readWorkflowTask(actor.id, taskInstanceId);
   if (!task || !task.formVersionId) {
     throw new ResourceNotFoundError("form task");
@@ -257,7 +270,7 @@ export async function saveTaskForm(
   user: AuthenticatedUser | null,
   input: TaskFormSubmissionInput & { taskInstanceId: string },
 ) {
-  const actor = requireCapability(
+  const actor = requirePermission(
     user,
     permissionCodes.workflowTaskAssignedProcess,
   );
@@ -290,7 +303,7 @@ export async function completeTaskForm(
     taskInstanceId: string;
   },
 ) {
-  const actor = requireCapability(
+  const actor = requirePermission(
     user,
     permissionCodes.workflowTaskAssignedProcess,
   );

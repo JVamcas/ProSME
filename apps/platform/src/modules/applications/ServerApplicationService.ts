@@ -3,8 +3,8 @@ import "server-only";
 import { capabilities } from "@/auth/authorization/capabilities";
 import {
   can,
-  requireCapability,
-  requireAnyCapability,
+  requirePermission,
+  requireAnyPermission,
 } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import {
@@ -142,7 +142,7 @@ export async function listOwnApplications(
   user: AuthenticatedUser | null,
   input: ApplicationListInput,
 ): Promise<ApplicationPage> {
-  const actor = requireCapability(user, capabilities.applicationReadOwn);
+  const actor = requirePermission(user, capabilities.applicationReadOwn);
   const result = await listOwnedApplications({
     after: input.after ? decodeApplicationCursor(input.after) : undefined,
     limit: input.limit,
@@ -163,7 +163,7 @@ export async function getOwnApplication(
   user: AuthenticatedUser | null,
   id: string,
 ) {
-  const actor = requireCapability(user, capabilities.applicationReadOwn);
+  const actor = requirePermission(user, capabilities.applicationReadOwn);
   return toApplicationView(await loadOwnedApplication(actor.id, id));
 }
 
@@ -171,7 +171,7 @@ export async function createApplication(
   user: AuthenticatedUser | null,
   fundingOpportunityId: number,
 ) {
-  const actor = requireCapability(user, capabilities.applicationCreate);
+  const actor = requirePermission(user, capabilities.applicationCreate);
   const opportunity =
     await findPublishedFundingOpportunity(fundingOpportunityId);
   if (!opportunity || opportunity.status !== "open") {
@@ -199,7 +199,7 @@ export async function updateOwnApplication(
   id: string,
   input: ApplicationUpdateInput,
 ) {
-  const actor = requireCapability(user, capabilities.applicationUpdateOwn);
+  const actor = requirePermission(user, capabilities.applicationUpdateOwn);
   const current = await loadOwnedApplication(actor.id, id);
   if (current.rowVersion !== input.expectedRowVersion) {
     throw new ApplicationConflictError();
@@ -236,7 +236,7 @@ export async function updateOwnApplication(
 }
 
 function requireApplicationReader(user: AuthenticatedUser | null) {
-  return requireAnyCapability(user, [
+  return requireAnyPermission(user, [
     capabilities.applicationReadAssigned,
     capabilities.applicationReadAll,
   ]);

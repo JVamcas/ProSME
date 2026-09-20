@@ -2,7 +2,11 @@
 
 import { CheckCircle2, Plus } from "lucide-react";
 
-import { DeleteButton, EditButton } from "@/components/ui/action-buttons";
+import {
+  DeleteButton,
+  EditButton,
+  PreviewButton,
+} from "@/components/ui/action-buttons";
 import { GeneralButton } from "@/components/ui/button";
 import {
   DataTable,
@@ -20,6 +24,7 @@ type Props = {
   onAdd: () => void;
   onDelete: (task: WorkflowTaskInput) => void;
   onEdit: (task: WorkflowTaskInput) => void;
+  onPreview: (task: WorkflowTaskInput) => void;
   stage: WorkflowStageInput;
 };
 
@@ -44,6 +49,7 @@ function taskColumns(
   canEdit: boolean,
   onDelete: (task: WorkflowTaskInput) => void,
   onEdit: (task: WorkflowTaskInput) => void,
+  onPreview: (task: WorkflowTaskInput) => void,
 ): DataTableColumn<WorkflowTaskInput>[] {
   return [
     {
@@ -71,6 +77,9 @@ function taskColumns(
         <span className="inline-flex items-center gap-1.5 font-semibold text-brand-green">
           <CheckCircle2 className="size-3.5" />
           {row.original.quorum ? "Quorum" : "Configured"}
+          {` · ${row.original.actionKeys.length} ${
+            row.original.actionKeys.length === 1 ? "action" : "actions"
+          }`}
         </span>
       ),
     },
@@ -80,6 +89,10 @@ function taskColumns(
       enableSorting: false,
       cell: ({ row }) => (
         <div className="flex justify-start gap-1">
+          <PreviewButton
+            onClick={() => onPreview(row.original)}
+            title={`Preview ${row.original.name}`}
+          />
           <EditButton
             disabled={!canEdit}
             onClick={() => onEdit(row.original)}
@@ -102,6 +115,7 @@ export function WorkflowStageTaskTable({
   onAdd,
   onDelete,
   onEdit,
+  onPreview,
   stage,
 }: Props) {
   return (
@@ -126,6 +140,7 @@ export function WorkflowStageTaskTable({
           canEdit,
           onDelete,
           onEdit,
+          onPreview,
         )}
         data={stage.tasks}
         density="compact"

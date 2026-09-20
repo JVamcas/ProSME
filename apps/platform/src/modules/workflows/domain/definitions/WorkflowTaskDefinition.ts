@@ -4,6 +4,7 @@ export type WorkflowTaskAssignmentMode =
   (typeof workflowTaskAssignmentModes)[number];
 
 export type WorkflowTaskDefinition = {
+  actionKeys: string[];
   id?: string;
   stableKey: string;
   name: string;

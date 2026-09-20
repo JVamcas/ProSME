@@ -20,6 +20,10 @@ const codeSchema = z
   .regex(/^[A-Z][A-Z0-9_]*$/);
 export const workflowTaskSchema = z
   .object({
+    actionKeys: z.array(codeSchema).max(100).refine(
+      (values) => new Set(values).size === values.length,
+      "Task action bindings must be unique.",
+    ),
     id: z.string().uuid().optional(),
     stableKey: codeSchema,
     name: z.string().trim().min(2).max(160),
@@ -84,6 +88,19 @@ export const workflowStageSchema = z.object({
   slaHours: z.number().int().positive().max(8760).nullable().optional(),
   actions: z.array(workflowActionDefinitionSchema),
   tasks: z.array(workflowTaskSchema),
+}).superRefine((stage, context) => {
+  const actionKeys = new Set(stage.actions.map((action) => action.stableKey));
+  stage.tasks.forEach((task, taskIndex) => {
+    task.actionKeys.forEach((actionKey, actionIndex) => {
+      if (!actionKeys.has(actionKey)) {
+        context.addIssue({
+          code: "custom",
+          message: `Action ${actionKey} is not configured on this stage.`,
+          path: ["tasks", taskIndex, "actionKeys", actionIndex],
+        });
+      }
+    });
+  });
 });
 
 export { workflowTransitionSchema } from "@/modules/workflows/domain/transitions/WorkflowTransitionSchemas";

@@ -42,6 +42,7 @@ describe("workflow task configuration", () => {
 
   it("requires each edited task to select a role or a named user", () => {
     const values = {
+      actionKeys: ["ADVANCE"],
       assignmentMode: "ROLE",
       assignmentTarget: "79e20de0-3558-4d63-90a4-8c9f5125df07",
       stableKey: "REVIEW_TASK",
