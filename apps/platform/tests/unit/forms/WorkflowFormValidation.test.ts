@@ -18,6 +18,8 @@ const stage = (code: string, sequence: number, initial: boolean) => ({
   },
   repeatable: false,
   coiGated: false,
+  entryCondition: null,
+  exitCondition: null,
   actions: [{
     stableKey: "ADVANCE",
     label: "Advance",
@@ -39,7 +41,14 @@ const stage = (code: string, sequence: number, initial: boolean) => ({
     quorum: false,
     coiRequired: false,
     config: {},
-    formVersionId: "00000000-0000-0000-0000-000000000002",
+    formBinding: {
+      contextFields: [{
+        key: "application.requested_amount",
+        label: "Requested amount",
+        type: "NUMBER" as const,
+      }],
+      formVersionId: "00000000-0000-0000-0000-000000000002",
+    },
     name: "Complete form",
     required: true,
     displayOrder: 1,
@@ -81,12 +90,14 @@ describe("form-backed workflow validation", () => {
           actionKey: "ADVANCE",
           targetStageKey: "SECOND",
           priority: 1,
+          condition: null,
         },
         {
           sourceStageKey: "SECOND",
           actionKey: "ADVANCE",
           terminalOutcome: "COMPLETED",
           priority: 1,
+          condition: null,
         },
       ],
     });

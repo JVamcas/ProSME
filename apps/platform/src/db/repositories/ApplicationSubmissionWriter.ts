@@ -6,6 +6,7 @@ import {
   applications,
   applicationSubmissionCommands,
   stageTaskDefinitions,
+  stageTaskFormBindings,
   stageTaskInstances,
   transactionalOutbox,
   workflowAuditEntries,
@@ -90,8 +91,18 @@ async function createInitialTasks(
   submittedAt: Date,
 ) {
   const definitions = await transaction
-    .select()
+    .select({
+      formVersionId: stageTaskFormBindings.formVersionId,
+      id: stageTaskDefinitions.id,
+      namedUserOverrideId: stageTaskDefinitions.namedUserOverrideId,
+      roleId: stageTaskDefinitions.roleId,
+      type: stageTaskDefinitions.type,
+    })
     .from(stageTaskDefinitions)
+    .leftJoin(
+      stageTaskFormBindings,
+      eq(stageTaskFormBindings.taskDefinitionId, stageTaskDefinitions.id),
+    )
     .where(eq(stageTaskDefinitions.stageId, input.configuration.stageId));
   if (!definitions.length) return;
   const dueAt = input.configuration.slaHours === null

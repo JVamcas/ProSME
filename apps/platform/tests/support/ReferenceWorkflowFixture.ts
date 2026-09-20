@@ -1,6 +1,11 @@
 import type { WorkflowGraphInput } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import { referenceWorkflowTransitionsFixture } from "./ReferenceWorkflowTransitionFixture";
-import { reviewOutcomes, routingAction } from "./ReferenceWorkflowFixtureHelpers";
+import {
+  emptyStageConditions,
+  referenceTaskDefaults,
+  reviewOutcomes,
+  routingAction,
+} from "./ReferenceWorkflowFixtureHelpers";
 
 export const referenceWorkflow: WorkflowGraphInput = {
   stages: [
@@ -13,6 +18,7 @@ export const referenceWorkflow: WorkflowGraphInput = {
       displayOrder: 1,
       repeatable: false,
       coiGated: false,
+      ...emptyStageConditions,
       initial: true,
       publicStatusMapping: {
         status: "SUBMITTED",
@@ -27,14 +33,8 @@ export const referenceWorkflow: WorkflowGraphInput = {
           actionKeys: ["ADVANCE"],
           name: "Pre-screening checklist",
           description: "Verify the initial eligibility and compliance checks.",
-          assignmentMode: "ROLE",
-          reviewerCount: 1,
-          requiredCompletionCount: 1,
-          quorum: false,
-          coiRequired: false,
+          ...referenceTaskDefaults(false),
           type: "CHECKLIST",
-          displayOrder: 1,
-          required: true,
           config: {
             items: [
               {
@@ -71,6 +71,7 @@ export const referenceWorkflow: WorkflowGraphInput = {
       displayOrder: 2,
       repeatable: false,
       coiGated: false,
+      ...emptyStageConditions,
       initial: false,
       publicStatusMapping: {
         status: "UNDER_REVIEW",
@@ -85,14 +86,8 @@ export const referenceWorkflow: WorkflowGraphInput = {
           actionKeys: ["ADVANCE"],
           name: "Completeness checklist",
           description: "Confirm that the submitted application is complete.",
-          assignmentMode: "ROLE",
-          reviewerCount: 1,
-          requiredCompletionCount: 1,
-          quorum: false,
-          coiRequired: false,
+          ...referenceTaskDefaults(false),
           type: "CHECKLIST",
-          displayOrder: 1,
-          required: true,
           config: {
             items: [
               {
@@ -119,6 +114,7 @@ export const referenceWorkflow: WorkflowGraphInput = {
       displayOrder: 3,
       repeatable: false,
       coiGated: true,
+      ...emptyStageConditions,
       initial: false,
       publicStatusMapping: {
         status: "UNDER_REVIEW",
@@ -133,14 +129,8 @@ export const referenceWorkflow: WorkflowGraphInput = {
           actionKeys: ["ADVANCE"],
           name: "Technical assessment form",
           description: "Score the application against the technical criteria.",
-          assignmentMode: "ROLE",
-          reviewerCount: 1,
-          requiredCompletionCount: 1,
-          quorum: false,
-          coiRequired: true,
+          ...referenceTaskDefaults(true),
           type: "ASSESSMENT_FORM",
-          displayOrder: 1,
-          required: true,
           config: {
             criteria: [
               {
@@ -171,6 +161,7 @@ export const referenceWorkflow: WorkflowGraphInput = {
       displayOrder: 4,
       repeatable: false,
       coiGated: true,
+      ...emptyStageConditions,
       initial: false,
       publicStatusMapping: {
         status: "UNDER_REVIEW",
@@ -185,14 +176,8 @@ export const referenceWorkflow: WorkflowGraphInput = {
           actionKeys: ["ADVANCE"],
           name: "Finance review",
           description: "Review the financial information and recommendation.",
-          assignmentMode: "ROLE",
-          reviewerCount: 1,
-          requiredCompletionCount: 1,
-          quorum: false,
-          coiRequired: true,
+          ...referenceTaskDefaults(true),
           type: "FINANCE_REVIEW",
-          displayOrder: 1,
-          required: true,
           config: {
             fields: [
               {
@@ -216,6 +201,7 @@ export const referenceWorkflow: WorkflowGraphInput = {
       displayOrder: 5,
       repeatable: false,
       coiGated: true,
+      ...emptyStageConditions,
       initial: false,
       publicStatusMapping: {
         status: "UNDER_REVIEW",
@@ -229,14 +215,8 @@ export const referenceWorkflow: WorkflowGraphInput = {
           actionKeys: ["ADVANCE"],
           name: "Record outcome",
           description: "Record the committee's funding decision.",
-          assignmentMode: "ROLE",
-          reviewerCount: 1,
-          requiredCompletionCount: 1,
-          quorum: false,
-          coiRequired: true,
+          ...referenceTaskDefaults(true),
           type: "DECISION",
-          displayOrder: 1,
-          required: true,
           config: {
             outcomes: [
               { code: "APPROVE", label: "Approve" },
@@ -257,6 +237,7 @@ export const referenceWorkflow: WorkflowGraphInput = {
       displayOrder: 6,
       repeatable: false,
       coiGated: false,
+      ...emptyStageConditions,
       initial: false,
       publicStatusMapping: {
         status: "OUTCOME_AVAILABLE",
@@ -271,14 +252,8 @@ export const referenceWorkflow: WorkflowGraphInput = {
           actionKeys: ["COMPLETE"],
           name: "Send outcome communication",
           description: "Send the recorded outcome to the applicant.",
-          assignmentMode: "ROLE",
-          reviewerCount: 1,
-          requiredCompletionCount: 1,
-          quorum: false,
-          coiRequired: false,
+          ...referenceTaskDefaults(false),
           type: "COMMUNICATION",
-          displayOrder: 1,
-          required: true,
           config: {
             template: "TOR_DRAFT_OUTCOME",
             channel: "EMAIL",

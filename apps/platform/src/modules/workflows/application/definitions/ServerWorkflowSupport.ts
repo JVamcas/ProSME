@@ -89,14 +89,14 @@ async function validateReferences(
         });
       }
       if (
-        task.formVersionId &&
-        references.forms?.get(task.formVersionId) !== "PUBLISHED"
+        task.formBinding &&
+        references.forms?.get(task.formBinding.formVersionId) !== "PUBLISHED"
       ) {
         validation.errors.push({
           code: "INVALID_FORM_VERSION",
           message:
             "New workflow tasks must reference a published form version.",
-          path: `stages.${index}.tasks.${taskIndex}.formVersionId`,
+          path: `stages.${index}.tasks.${taskIndex}.formBinding.formVersionId`,
         });
       }
       if (

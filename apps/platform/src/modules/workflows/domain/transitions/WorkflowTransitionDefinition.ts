@@ -1,3 +1,5 @@
+import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup";
+
 export type WorkflowTransitionDefinition = {
   id?: string;
   sourceStageKey: string;
@@ -5,4 +7,5 @@ export type WorkflowTransitionDefinition = {
   targetStageKey?: string | null;
   terminalOutcome?: string | null;
   priority: number;
+  condition: ConditionGroup | null;
 };

@@ -29,7 +29,6 @@ import {
 } from "@/modules/forms/infrastructure/FormRepository";
 import {
   readAssignedFormTask,
-  readWorkflowTask,
 } from "@/db/repositories/WorkflowTaskRepository";
 import {
   RequestValidationError,
@@ -45,6 +44,8 @@ import {
   captureFormResponseValues,
   InvalidFormRuntimeBindingError,
 } from "@/modules/forms/engine/FormRuntimeContext";
+import { readWorkflowTaskRuntimeContext } from "@/modules/workflows/infrastructure/WorkflowRuntimeContextRepository";
+import { exposeTaskFormRuntimeContext } from "@/modules/forms/application/FormTaskRuntimeContext";
 import {
   activeFormDefinition,
   sanitizeFormResponseValues,
@@ -251,19 +252,21 @@ export async function getTaskForm(
   taskInstanceId: string,
 ) {
   const actor = requirePermission(user, permissionCodes.workflowTaskAssignedRead);
-  const task = await readWorkflowTask(actor.id, taskInstanceId);
-  if (!task || !task.formVersionId) {
+  const task = await readWorkflowTaskRuntimeContext(actor.id, taskInstanceId);
+  if (!task) {
     throw new ResourceNotFoundError("form task");
   }
-  const [currentSchema, submission] = await Promise.all([
-    getFormRuntime(task.formVersionId),
-    readFormResponse(taskInstanceId, task.formVersionId),
+  const [currentSchema, submission, context] = await Promise.all([
+    getFormRuntime(task.binding.formVersionId),
+    readFormResponse(taskInstanceId, task.binding.formVersionId),
+    exposeTaskFormRuntimeContext(task),
   ]);
   const schema = submission?.status === "COMPLETED"
     ? submission.definitionSnapshot
     : currentSchema;
   if (!schema) throw new ResourceNotFoundError("published form");
   return {
+    context,
     schema,
     submission: submission
       ? {
@@ -271,7 +274,7 @@ export async function getTaskForm(
           completedAt: toIso(submission.completedAt),
         }
       : null,
-    taskRowVersion: task.rowVersion,
+    taskRowVersion: Number(task.task.rowVersion),
   };
 }
 

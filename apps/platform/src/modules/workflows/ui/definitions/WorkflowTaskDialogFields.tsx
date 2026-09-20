@@ -7,6 +7,7 @@ import {
   FormSelect,
   FormTextarea,
 } from "@/components/ui/form-fields";
+import { WorkflowContextFieldConfiguration } from "./WorkflowContextFieldConfiguration";
 
 function TaskIdentityFields() {
   return (
@@ -84,6 +85,7 @@ export function WorkflowTaskDialogFields({
           value={actionKeys}
         />
       </div>
+      <WorkflowContextFieldConfiguration disabled={!formVersionId} />
 
       <div className="grid gap-4 sm:grid-cols-2">
         <FormSelect

@@ -22,7 +22,8 @@ export class InvalidFormRuntimeBindingError extends Error {
   }
 }
 
-const contextPathPattern = /^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/;
+const contextPathPattern =
+  /^(fundingCall|[a-z][a-z0-9_]*)(\.[a-z][a-z0-9_]*)+$/;
 const bindingKeyPattern = /^[A-Z][A-Z0-9_]*$/;
 
 function requireText(value: string, label: string) {
@@ -177,4 +178,3 @@ export function captureFormResponseValues(
     )),
   );
 }
-

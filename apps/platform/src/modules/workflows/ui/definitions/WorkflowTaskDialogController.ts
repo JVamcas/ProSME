@@ -59,7 +59,12 @@ async function saveWorkflowTask({
     quorum: values.quorum,
     coiRequired: values.coiRequired,
     config: task?.config ?? {},
-    formVersionId: values.formVersionId || null,
+    formBinding: values.formVersionId
+      ? {
+          contextFields: values.contextFields,
+          formVersionId: values.formVersionId,
+        }
+      : null,
     name: values.name,
     required: values.required,
     type: task?.type ?? "STRUCTURED_FORM",
@@ -97,12 +102,13 @@ export function useWorkflowTaskDialogController(
       stableKey: task?.stableKey ?? "",
       description: task?.description ?? "",
       displayOrder: task?.displayOrder ?? stage.tasks.length + 1,
-      formVersionId: task?.formVersionId ?? "",
+      formVersionId: task?.formBinding?.formVersionId ?? "",
       name: task?.name ?? "",
       reviewerCount: task?.reviewerCount ?? 1,
       requiredCompletionCount: task?.requiredCompletionCount ?? 1,
       quorum: task?.quorum ?? false,
       coiRequired: task?.coiRequired ?? false,
+      contextFields: task?.formBinding?.contextFields ?? [],
       required: task?.required ?? true,
     },
     resolver: zodResolver(workflowTaskFormSchema),

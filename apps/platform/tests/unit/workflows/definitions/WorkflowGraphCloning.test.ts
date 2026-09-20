@@ -13,8 +13,14 @@ describe("workflow graph cloning", () => {
       "43333333-3333-4333-8333-333333333333";
     source.stages[0].tasks[0].roleId =
       "44444444-4444-4444-8444-444444444444";
-    source.stages[0].tasks[0].formVersionId =
-      "45555555-5555-4555-8555-555555555555";
+    source.stages[0].tasks[0].formBinding = {
+      contextFields: [{
+        key: "application.requested_amount",
+        label: "Requested amount",
+        type: "NUMBER",
+      }],
+      formVersionId: "45555555-5555-4555-8555-555555555555",
+    };
     source.stages[0].actions[0] = {
       ...source.stages[0].actions[0],
       actionType: "REJECT",
@@ -32,7 +38,7 @@ describe("workflow graph cloning", () => {
       id: undefined,
       roleId: source.stages[0].tasks[0].roleId,
       assignmentMode: source.stages[0].tasks[0].assignmentMode,
-      formVersionId: null,
+      formBinding: source.stages[0].tasks[0].formBinding,
     });
     expect(clone.stages[0].actions[0]).toEqual({
       ...source.stages[0].actions[0],

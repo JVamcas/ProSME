@@ -7,6 +7,7 @@ import { useMemo, type ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 import type { FormRuntimeSchema } from "@/modules/forms/FormTypes";
+import type { FormRuntimeContext } from "@/modules/forms/engine/FormRuntimeContext";
 import {
   parseFormDefinition,
   type RenderSection,
@@ -32,6 +33,7 @@ import {
 export type DynamicFormValues = Record<string, unknown>;
 
 type RendererContext = {
+  runtimeContext: FormRuntimeContext;
   sections: RenderSection[];
 };
 
@@ -123,6 +125,7 @@ export function FormRenderer({
   onChange,
   onSubmit,
   readOnly = false,
+  runtimeContext = {},
 }: {
   children?: ReactNode;
   definition: FormRuntimeSchema;
@@ -130,6 +133,7 @@ export function FormRenderer({
   onChange: (values: DynamicFormValues) => void;
   onSubmit: (values: DynamicFormValues) => void;
   readOnly?: boolean;
+  runtimeContext?: FormRuntimeContext;
 }) {
   const activeDefinition = useMemo(
     () => activeFormDefinition(definition, formData),
@@ -140,8 +144,8 @@ export function FormRenderer({
     [definition, formData],
   );
   const context = useMemo(
-    () => ({ sections: parsed.sections }),
-    [parsed.sections],
+    () => ({ runtimeContext, sections: parsed.sections }),
+    [parsed.sections, runtimeContext],
   );
   const completeness = useMemo(
     () => calculateFormCompleteness(activeDefinition, formData),

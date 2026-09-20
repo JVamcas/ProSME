@@ -6,6 +6,7 @@ import { getDatabase } from "@/db/client";
 import {
   stageTaskActionBindings,
   stageTaskDefinitions,
+  stageTaskFormBindings,
   workflowAuditEntries,
   workflowDefinitionVersions,
   workflowDefinitions,
@@ -32,6 +33,8 @@ async function insertGraph(
     coiGated: stage.coiGated,
     description: stage.description,
     enabled: stage.enabled,
+    entryCondition: stage.entryCondition,
+    exitCondition: stage.exitCondition,
     initial: stage.initial,
     name: stage.name,
     optional: stage.optional,
@@ -71,7 +74,6 @@ async function insertGraph(
       config: task.config,
       description: task.description,
       displayOrder: task.displayOrder,
-      formVersionId: task.formVersionId ?? null,
       name: task.name,
       namedUserOverrideId: task.namedUserOverrideId ?? null,
       quorum: task.quorum,
@@ -97,6 +99,21 @@ async function insertGraph(
   const taskIds = new Map(
     taskRows.map((task) => [`${task.stageId}:${task.stableKey}`, task.id]),
   );
+  const formBindings = graph.stages.flatMap((stage) => {
+    const stageId = stageIds.get(stage.stableKey)!;
+    return stage.tasks.flatMap((task) =>
+      task.formBinding
+        ? [{
+            contextFields: task.formBinding.contextFields,
+            formVersionId: task.formBinding.formVersionId,
+            taskDefinitionId: taskIds.get(`${stageId}:${task.stableKey}`)!,
+          }]
+        : [],
+    );
+  });
+  if (formBindings.length) {
+    await transaction.insert(stageTaskFormBindings).values(formBindings);
+  }
   const taskActions = graph.stages.flatMap((stage) => {
     const stageId = stageIds.get(stage.stableKey)!;
     return stage.tasks.flatMap((task) =>
@@ -112,6 +129,7 @@ async function insertGraph(
   }
   const transitions = graph.transitions.map((transition) => ({
     actionKey: transition.actionKey,
+    condition: transition.condition,
     fromStageId: stageIds.get(transition.sourceStageKey)!,
     priority: transition.priority,
     terminalOutcome: transition.terminalOutcome ?? null,
@@ -215,6 +233,13 @@ export async function replaceWorkflowDraft(input: {
       .from(workflowStageDefinitions)
       .where(eq(workflowStageDefinitions.versionId, input.versionId));
     const stageIds = stages.map((stage) => stage.id);
+    const taskRows = stageIds.length
+      ? await transaction
+          .select({ id: stageTaskDefinitions.id })
+          .from(stageTaskDefinitions)
+          .where(inArray(stageTaskDefinitions.stageId, stageIds))
+      : [];
+    const taskIds = taskRows.map((task) => task.id);
     if (stageIds.length) {
       await transaction
         .delete(stageTaskActionBindings)
@@ -223,6 +248,10 @@ export async function replaceWorkflowDraft(input: {
     await transaction
       .delete(workflowTransitionDefinitions)
       .where(eq(workflowTransitionDefinitions.versionId, input.versionId));
+    if (taskIds.length)
+      await transaction
+        .delete(stageTaskFormBindings)
+        .where(inArray(stageTaskFormBindings.taskDefinitionId, taskIds));
     if (stageIds.length)
       await transaction
         .delete(workflowActionDefinitions)

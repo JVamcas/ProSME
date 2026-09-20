@@ -1,3 +1,5 @@
+import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup";
+
 export const workflowPublicStatuses = [
   "SUBMITTED",
   "UNDER_REVIEW",
@@ -26,4 +28,6 @@ export type WorkflowStageDefinition = {
   publicStatusMapping: WorkflowPublicStatusMapping;
   repeatable: boolean;
   coiGated: boolean;
+  entryCondition: ConditionGroup | null;
+  exitCondition: ConditionGroup | null;
 };

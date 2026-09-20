@@ -74,12 +74,14 @@ async function createNextStage(
       (stage_instance_id, task_definition_id, type_snapshot, form_version_id,
        status, assignment_role_id, assignment_user_id, due_at)
     SELECT ${stageId}::uuid, definition.id, definition.type,
-      definition.form_version_id, 'READY', definition.assignment_role_id,
+      binding.form_version_id, 'READY', definition.assignment_role_id,
       definition.assignment_user_id,
       CASE WHEN stage.sla_hours IS NULL THEN NULL
         ELSE ${startedAt} + make_interval(hours => stage.sla_hours) END
     FROM app_stage_task_definitions definition
     JOIN app_workflow_stage_definitions stage ON stage.id = definition.stage_id
+    LEFT JOIN app_stage_task_form_bindings binding
+      ON binding.task_definition_id = definition.id
     WHERE definition.stage_id = ${nextStage.id}::uuid
   `);
   await transaction.execute(sql`

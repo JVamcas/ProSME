@@ -19,6 +19,8 @@ const stage = {
   },
   repeatable: true,
   coiGated: true,
+  entryCondition: null,
+  exitCondition: null,
   initial: true,
   slaHours: null,
   actions: [],

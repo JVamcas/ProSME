@@ -67,7 +67,7 @@ export function AuthenticatedPortalShell({
         <div className="min-w-0 bg-brand-white">
           <PortalMobileHeader context={context} space={space} />
           <PortalTopbar context={context} space={space} />
-          <main className="mx-auto w-full max-w-[1440px] p-4 sm:p-6 lg:p-8">
+          <main className="w-full p-4 sm:p-6 lg:p-8">
             {children}
           </main>
         </div>

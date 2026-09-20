@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { conditionGroupSchema } from "@/modules/conditions/domain/ConditionSerialization";
 import type { WorkflowTransitionDefinition } from "@/modules/workflows/domain/transitions/WorkflowTransitionDefinition";
 
 const stableKeyPattern = /^[A-Z][A-Z0-9_]*$/;
@@ -11,6 +12,7 @@ export const workflowTransitionFormSchema = z
     targetStageKey: z.string(),
     terminalOutcome: z.string(),
     priority: z.number().int().positive(),
+    condition: conditionGroupSchema.nullable(),
   })
   .superRefine((values, context) => {
     const field = values.targetType === "STAGE"
@@ -57,6 +59,7 @@ export function workflowTransitionFormDefaults(
     targetStageKey: transition?.targetStageKey ?? targetStageKey,
     terminalOutcome: transition?.terminalOutcome ?? "",
     priority: transition?.priority ?? priority,
+    condition: transition?.condition ?? null,
   };
 }
 
@@ -74,5 +77,6 @@ export function toWorkflowTransition(
     terminalOutcome:
       values.targetType === "TERMINAL" ? values.terminalOutcome : null,
     priority: values.priority,
+    condition: values.condition,
   };
 }

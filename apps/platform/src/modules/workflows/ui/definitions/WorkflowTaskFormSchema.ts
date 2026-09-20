@@ -2,11 +2,21 @@ import { z } from "zod";
 
 import type { WorkflowTaskInput } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import { taskTypeCodes } from "@/modules/workflows/domain/definitions/WorkflowTypes";
+import { conditionFieldTypes } from "@/modules/conditions/domain/ConditionConfiguration";
 
 const checklistItemSchema = z.object({
   code: z.string(),
   label: z.string(),
   required: z.boolean(),
+});
+
+const contextFieldSchema = z.object({
+  key: z.string().regex(
+    /^(application|fundingCall|workflow|stage|task)\.[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$/,
+    "Use a supported stable runtime context path.",
+  ),
+  label: z.string().trim().min(2).max(160),
+  type: z.enum(conditionFieldTypes),
 });
 
 export const workflowTaskFormSchema = z.object({
@@ -22,7 +32,8 @@ export const workflowTaskFormSchema = z.object({
       /^[A-Z][A-Z0-9_]*$/,
       "Use uppercase letters, numbers and underscores.",
     ),
-  formVersionId: z.union([z.string().uuid(), z.literal("")]).optional(),
+  formVersionId: z.union([z.string().uuid(), z.literal("")]),
+  contextFields: z.array(contextFieldSchema).max(200),
   description: z.string().trim().max(1000),
   displayOrder: z.number().int().positive(),
   name: z.string().trim().min(2).max(160),
@@ -35,6 +46,16 @@ export const workflowTaskFormSchema = z.object({
   configJson: z.string().optional(),
   checklistItems: z.array(checklistItemSchema),
 }).superRefine((values, context) => {
+  if (
+    new Set(values.contextFields.map((field) => field.key)).size
+      !== values.contextFields.length
+  ) {
+    context.addIssue({
+      code: "custom",
+      message: "Runtime context fields must use unique paths.",
+      path: ["contextFields"],
+    });
+  }
   if (values.requiredCompletionCount > values.reviewerCount) {
     context.addIssue({
       code: "custom",

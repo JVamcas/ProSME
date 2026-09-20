@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { conditionGroupSchema } from "@/modules/conditions/domain/ConditionSerialization";
+
 const stableKeySchema = z
   .string()
   .trim()
@@ -15,6 +17,7 @@ export const workflowTransitionSchema = z
     targetStageKey: stableKeySchema.nullable().optional(),
     terminalOutcome: stableKeySchema.nullable().optional(),
     priority: z.number().int().positive(),
+    condition: conditionGroupSchema.nullable(),
   })
   .strict()
   .superRefine((transition, context) => {

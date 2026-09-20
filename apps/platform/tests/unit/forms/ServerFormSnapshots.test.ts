@@ -13,7 +13,12 @@ vi.mock("@/modules/forms/infrastructure/FormTaskCompletionRepository", () => ({
 }));
 vi.mock("@/db/repositories/WorkflowTaskRepository", () => ({
   readAssignedFormTask: vi.fn(),
-  readWorkflowTask: vi.fn(),
+}));
+vi.mock("@/modules/workflows/infrastructure/WorkflowRuntimeContextRepository", () => ({
+  readWorkflowTaskRuntimeContext: vi.fn(),
+}));
+vi.mock("@/modules/funding-calls/ServerFundingOpportunityIntegration", () => ({
+  findPublishedFundingOpportunity: vi.fn(),
 }));
 
 import { permissionCodes } from "@/auth/authorization/permissions";
@@ -30,8 +35,9 @@ import {
 } from "@/modules/forms/infrastructure/FormTaskCompletionRepository";
 import {
   readAssignedFormTask,
-  readWorkflowTask,
 } from "@/db/repositories/WorkflowTaskRepository";
+import { readWorkflowTaskRuntimeContext } from "@/modules/workflows/infrastructure/WorkflowRuntimeContextRepository";
+import { findPublishedFundingOpportunity } from "@/modules/funding-calls/ServerFundingOpportunityIntegration";
 
 const actorId = "79e20de0-3558-4d63-90a4-8c9f5125df07";
 const taskId = "c6ee71ce-0ed0-43b9-9381-e2c568634364";
@@ -80,6 +86,7 @@ function staff(permission: string): AuthenticatedUser {
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(readFormTaskCompletion).mockResolvedValue(null);
+  vi.mocked(findPublishedFundingOpportunity).mockResolvedValue(null);
 });
 
 describe("submitted form snapshots", () => {
@@ -131,12 +138,30 @@ describe("submitted form snapshots", () => {
       ...runtime,
       instructions: "Instructions at submission time",
     };
-    vi.mocked(readWorkflowTask).mockResolvedValue({
-      formVersionId: versionId,
-      rowVersion: 4,
-      taskInstanceId: taskId,
-      taskStatus: "COMPLETED",
-    } as never);
+    vi.mocked(readWorkflowTaskRuntimeContext).mockResolvedValue({
+      application: {
+        business: {},
+        declarations: {},
+        financial: {},
+        fundingOpportunityId: 42,
+        id: "10000000-0000-4000-8000-000000000001",
+        project: {},
+        reference: "SMEF-1",
+        sectionCompletion: {},
+        status: "submitted",
+      },
+      binding: { contextFields: [], formVersionId: versionId },
+      fundingCallTitle: "Growth Fund",
+      priorStageValues: [],
+      stage: {},
+      task: {
+        definitionId: "30000000-0000-4000-8000-000000000001",
+        id: taskId,
+        key: "REVIEW_FORM",
+        rowVersion: 4,
+      },
+      workflow: {},
+    });
     vi.mocked(getFormRuntime).mockResolvedValue({
       ...runtime,
       instructions: "Current definition",

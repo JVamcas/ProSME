@@ -274,6 +274,34 @@
       "when": 1791072000000,
       "tag": "0038_conditional_form_visibility",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1791158400000,
+      "tag": "0039_workflow_stage_conditions",
+      "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1791244800000,
+      "tag": "0040_workflow_transition_conditions",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1791331200000,
+      "tag": "0041_workflow_task_form_bindings",
+      "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1791417600000,
+      "tag": "0042_workflow_form_runtime_context",
+      "breakpoints": true
     }
   ]
 }

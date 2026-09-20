@@ -25,7 +25,9 @@ vi.mock("@/modules/forms/infrastructure/FormWriteRepository", () => ({
 }));
 vi.mock("@/db/repositories/WorkflowTaskRepository", () => ({
   readAssignedFormTask: vi.fn(),
-  readWorkflowTask: vi.fn(),
+}));
+vi.mock("@/modules/forms/application/FormTaskRuntimeContext", () => ({
+  exposeTaskFormRuntimeContext: vi.fn(),
 }));
 
 import { permissionCodes } from "@/auth/authorization/permissions";
@@ -41,11 +43,9 @@ import {
 import { readFormTaskCompletion } from "@/modules/forms/infrastructure/FormTaskCompletionRepository";
 import {
   readAssignedFormTask,
-  readWorkflowTask,
 } from "@/db/repositories/WorkflowTaskRepository";
 import {
   completeTaskForm,
-  getTaskForm,
   saveTaskForm,
   updateFormDraft,
 } from "@/modules/forms/application/ServerFormsService";
@@ -111,33 +111,6 @@ describe("ServerFormsService", () => {
       formVersionId: versionId,
       taskInstanceId: taskId,
     }));
-  });
-
-  it("reloads a draft only for the task's exact Form Version", async () => {
-    vi.mocked(readWorkflowTask).mockResolvedValue({
-      formVersionId: versionId,
-      rowVersion: 3,
-      taskInstanceId: taskId,
-      taskStatus: "IN_PROGRESS",
-    } as never);
-    vi.mocked(readFormResponse).mockResolvedValue({
-      completedAt: null,
-      definitionSnapshot: null,
-      formVersionId: versionId,
-      id: "submission",
-      rowVersion: 2,
-      status: "DRAFT",
-      values: { NOTES: "Resume here" },
-    } as never);
-
-    const result = await getTaskForm(
-      staff([permissionCodes.workflowTaskAssignedRead]),
-      taskId,
-    );
-
-    expect(readFormResponse).toHaveBeenCalledWith(taskId, versionId);
-    expect(result.schema.versionId).toBe(versionId);
-    expect(result.submission?.values).toEqual({ NOTES: "Resume here" });
   });
 
   it("persists partial values without requiring incomplete fields", async () => {

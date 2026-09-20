@@ -54,8 +54,14 @@ beforeEach(() => {
 describe("workflow cloning service", () => {
   it("creates a mutable copy of the configured graph", async () => {
     const graph = structuredClone(record.graph);
-    graph.stages[0].tasks[0].formVersionId =
-      "79e20de0-3558-4d63-90a4-8c9f5125df08";
+    graph.stages[0].tasks[0].formBinding = {
+      contextFields: [{
+        key: "application.requested_amount",
+        label: "Requested amount",
+        type: "NUMBER",
+      }],
+      formVersionId: "79e20de0-3558-4d63-90a4-8c9f5125df08",
+    };
     vi.mocked(findWorkflowGraph).mockResolvedValue({ ...record, graph });
 
     await cloneWorkflow(
@@ -73,7 +79,9 @@ describe("workflow cloning service", () => {
           stages: expect.arrayContaining([
             expect.objectContaining({
               tasks: expect.arrayContaining([
-                expect.objectContaining({ formVersionId: null }),
+                expect.objectContaining({
+                  formBinding: graph.stages[0].tasks[0].formBinding,
+                }),
               ]),
             }),
           ]),

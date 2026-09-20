@@ -140,7 +140,15 @@ function collectConfigurationReferences(graph: WorkflowGraphInput) {
       targets.push(action.configuration.targetId);
     });
   });
-  const formVersionIds = uniqueTaskValues(graph, "formVersionId");
+  const formVersionIds = [
+    ...new Set(
+      graph.stages.flatMap((stage) =>
+        stage.tasks.flatMap((task) =>
+          task.formBinding ? [task.formBinding.formVersionId] : [],
+        ),
+      ),
+    ),
+  ];
   return {
     formVersionIds,
     roleIds: [...new Set(roleIds)],
@@ -150,7 +158,7 @@ function collectConfigurationReferences(graph: WorkflowGraphInput) {
 
 function uniqueTaskValues(
   graph: WorkflowGraphInput,
-  key: "namedUserOverrideId" | "roleId" | "formVersionId",
+  key: "namedUserOverrideId" | "roleId",
 ) {
   return [
     ...new Set(

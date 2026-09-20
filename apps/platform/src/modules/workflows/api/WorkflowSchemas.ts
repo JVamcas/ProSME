@@ -9,6 +9,8 @@ import { workflowTaskAssignmentModes } from "@/modules/workflows/domain/definiti
 import { workflowActionDefinitionSchema } from "@/modules/workflows/domain/actions/WorkflowActionSchemas";
 import { workflowTransitionSchema } from "@/modules/workflows/domain/transitions/WorkflowTransitionSchemas";
 import { validateWorkflowTransitions } from "@/modules/workflows/domain/transitions/WorkflowTransitionValidation";
+import { conditionGroupSchema } from "@/modules/conditions/domain/ConditionSerialization";
+import { conditionFieldTypes } from "@/modules/conditions/domain/ConditionConfiguration";
 
 export { workflowActionDefinitionSchema } from "@/modules/workflows/domain/actions/WorkflowActionSchemas";
 
@@ -39,8 +41,22 @@ export const workflowTaskSchema = z
     type: z.enum(taskTypeCodes),
     required: z.boolean(),
     config: z.unknown(),
-    formVersionId: z.string().uuid().nullable().optional(),
+    formBinding: z.object({
+      contextFields: z.array(z.object({
+        key: z.string().regex(
+          /^(application|fundingCall|workflow|stage|task)\.[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$/,
+          "Use an application, fundingCall, workflow, stage or task context path.",
+        ),
+        label: z.string().trim().min(2).max(160),
+        type: z.enum(conditionFieldTypes),
+      }).strict()).max(200).refine(
+        (fields) => new Set(fields.map((field) => field.key)).size === fields.length,
+        "Selected context fields must be unique.",
+      ),
+      formVersionId: z.string().uuid(),
+    }).strict().nullable(),
   })
+  .strict()
   .superRefine((task, context) => {
     if (task.requiredCompletionCount > task.reviewerCount) {
       context.addIssue({
@@ -84,6 +100,8 @@ export const workflowStageSchema = z.object({
   }),
   repeatable: z.boolean(),
   coiGated: z.boolean(),
+  entryCondition: conditionGroupSchema.nullable(),
+  exitCondition: conditionGroupSchema.nullable(),
   initial: z.boolean(),
   slaHours: z.number().int().positive().max(8760).nullable().optional(),
   actions: z.array(workflowActionDefinitionSchema),

@@ -2,6 +2,7 @@ import { workflowTemplateStatuses } from "./WorkflowTemplate";
 import type { WorkflowActionDefinition } from "../actions/WorkflowActionDefinition";
 import type { WorkflowStageDefinition } from "./WorkflowStageDefinition";
 import type { WorkflowTaskDefinition } from "./WorkflowTaskDefinition";
+import type { WorkflowTaskFormBinding } from "./WorkflowTaskDefinition";
 import type { WorkflowTransitionDefinition } from "../transitions/WorkflowTransitionDefinition";
 
 export const workflowStatuses = workflowTemplateStatuses;
@@ -47,7 +48,7 @@ export type WorkflowTaskInput = WorkflowTaskDefinition & {
   type: TaskTypeCode;
   required: boolean;
   config: unknown;
-  formVersionId?: string | null;
+  formBinding: WorkflowTaskFormBinding | null;
 };
 
 export type WorkflowStageInput = WorkflowStageDefinition & {

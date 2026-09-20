@@ -1,9 +1,9 @@
+import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup";
 import type {
   FormDefinitionSummary,
   FormSection,
   FormVersionSummary,
 } from "./domain/FormDefinition";
-import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup";
 
 export {
   formStatuses,
@@ -113,6 +113,10 @@ export type FormSubmission = {
 };
 
 export type TaskFormData = {
+  context: Readonly<Record<
+    string,
+    import("./engine/FormRuntimeContext").FormContextValue
+  >>;
   schema: FormRuntimeSchema;
   submission: FormSubmission | null;
   taskRowVersion: number;

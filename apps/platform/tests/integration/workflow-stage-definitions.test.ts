@@ -9,6 +9,7 @@ import type { AuthenticatedUser } from "@/auth/types";
 import { createWorkflowTemplate } from "@/modules/workflows/application/definitions/ServerWorkflowTemplateService";
 import { findWorkflowGraph } from "@/modules/workflows/infrastructure/WorkflowGraphRepository";
 import { replaceWorkflowDraft } from "@/modules/workflows/infrastructure/WorkflowTemplateWriteRepository";
+import { basicOperators } from "@/modules/conditions/engine/BasicOperators";
 
 const enabled = process.env.RUN_P3_WORKFLOW_DATABASE_TESTS === "true";
 const pool = enabled
@@ -70,6 +71,46 @@ afterAll(async () => {
           coiGated: true,
           initial: true,
           slaHours: null,
+          entryCondition: {
+            id: randomUUID(),
+            kind: "GROUP" as const,
+            combinator: "AND" as const,
+            children: [
+              {
+                id: randomUUID(),
+                kind: "CONDITION" as const,
+                leftOperand: {
+                  kind: "FIELD" as const,
+                  key: "application.user_defined_eligibility_answer",
+                },
+                operator: basicOperators.EQUALS,
+                rightOperand: {
+                  kind: "CONSTANT" as const,
+                  value: true,
+                },
+              },
+            ],
+          },
+          exitCondition: {
+            id: randomUUID(),
+            kind: "GROUP" as const,
+            combinator: "AND" as const,
+            children: [
+              {
+                id: randomUUID(),
+                kind: "CONDITION" as const,
+                leftOperand: {
+                  kind: "FIELD" as const,
+                  key: "stage.technical_review.configured_review_result",
+                },
+                operator: basicOperators.EQUALS,
+                rightOperand: {
+                  kind: "CONSTANT" as const,
+                  value: true,
+                },
+              },
+            ],
+          },
           actions: [],
           tasks: [],
         },

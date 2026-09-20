@@ -93,6 +93,7 @@ function LoadedDynamicFormTask({
         }
       }}
       readOnly={readOnly}
+      runtimeContext={data.context}
     >
       <div className="mt-5 space-y-3">
         {!readOnly ? (

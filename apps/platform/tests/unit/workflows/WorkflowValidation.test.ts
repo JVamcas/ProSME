@@ -230,6 +230,7 @@ describe("workflow graph validation", () => {
       actionKey: "ADVANCE",
       targetStageKey: "TECHNICAL_ASSESSMENT",
       priority: 2,
+      condition: null,
     });
     expect(workflowGraphSchema.safeParse(graph).success).toBe(true);
   });
@@ -241,6 +242,7 @@ describe("workflow graph validation", () => {
       actionKey: "ADVANCE",
       targetStageKey: "TECHNICAL_ASSESSMENT",
       priority: 1,
+      condition: null,
     });
     expect(validateWorkflowGraph(graph).errors).toEqual(
       expect.arrayContaining([

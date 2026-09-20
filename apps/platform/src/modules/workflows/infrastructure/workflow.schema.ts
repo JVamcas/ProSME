@@ -16,6 +16,8 @@ import type { WorkflowActionType } from "../domain/actions/WorkflowActionDefinit
 import type { WorkflowActionConfiguration } from "../domain/actions/WorkflowActionConfiguration";
 import type { WorkflowPublicStatus } from "../domain/definitions/WorkflowStageDefinition";
 import type { WorkflowTaskAssignmentMode } from "../domain/definitions/WorkflowTaskDefinition";
+import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup";
+import type { ConditionFieldDefinition } from "@/modules/conditions/domain/ConditionConfiguration";
 
 import type {
   WorkflowStatus,
@@ -110,6 +112,8 @@ export const workflowStageDefinitions = pgTable(
     repeatable: boolean("repeatable").notNull().default(false),
     coiGated: boolean("coi_gated").notNull().default(false),
     slaHours: integer("sla_hours"),
+    entryCondition: jsonb("entry_condition").$type<ConditionGroup>(),
+    exitCondition: jsonb("exit_condition").$type<ConditionGroup>(),
   },
   (table) => [
     uniqueIndex("app_workflow_stages_version_code_unique").on(
@@ -153,9 +157,6 @@ export const stageTaskDefinitions = pgTable(
     quorum: boolean("quorum").notNull().default(false),
     coiRequired: boolean("coi_required").notNull().default(false),
     config: jsonb("config").notNull().default({}),
-    formVersionId: uuid("form_version_id").references(() => formVersions.id, {
-      onDelete: "restrict",
-    }),
   },
   (table) => [
     uniqueIndex("app_stage_tasks_id_stage_unique").on(
@@ -170,6 +171,30 @@ export const stageTaskDefinitions = pgTable(
       table.stageId,
       table.displayOrder,
     ),
+  ],
+);
+
+export const stageTaskFormBindings = pgTable(
+  "app_stage_task_form_bindings",
+  {
+    taskDefinitionId: uuid("task_definition_id").primaryKey(),
+    formVersionId: uuid("form_version_id").notNull(),
+    contextFields: jsonb("context_fields")
+      .$type<ConditionFieldDefinition[]>()
+      .notNull(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.taskDefinitionId],
+      foreignColumns: [stageTaskDefinitions.id],
+      name: "app_task_form_bindings_task_fk",
+    }).onDelete("restrict"),
+    foreignKey({
+      columns: [table.formVersionId],
+      foreignColumns: [formVersions.id],
+      name: "app_task_form_bindings_form_version_fk",
+    }).onDelete("restrict"),
+    index("app_task_form_bindings_form_version_idx").on(table.formVersionId),
   ],
 );
 
@@ -252,6 +277,7 @@ export const workflowTransitionDefinitions = pgTable(
     ),
     terminalOutcome: text("terminal_outcome"),
     priority: integer("priority").notNull(),
+    condition: jsonb("condition").$type<ConditionGroup>(),
   },
   (table) => [
     uniqueIndex("app_workflow_transitions_source_action_priority_unique").on(

@@ -1,11 +1,13 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { FormProvider, useForm, useWatch } from "react-hook-form";
+import { Controller, FormProvider, useForm, useWatch } from "react-hook-form";
+import { z } from "zod";
 
 import { GeneralButton } from "@/components/ui/button";
 import { DraggableDialog } from "@/components/ui/draggable-dialog";
 import { FormInput, FormSelect } from "@/components/ui/form-fields";
+import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup";
 import type {
   WorkflowEditorView,
   WorkflowStageInput,
@@ -18,6 +20,8 @@ import {
   workflowTransitionFormDefaults,
   workflowTransitionFormSchema,
 } from "./WorkflowTransitionFormSchema";
+import { WorkflowConditionEditor } from "./WorkflowConditionEditor";
+import { useWorkflowConditionFields } from "./useWorkflowConditionFields";
 
 type Props = {
   editor: WorkflowEditorView;
@@ -47,6 +51,7 @@ export function WorkflowTransitionDialog({
   transition,
 }: Props) {
   const mutation = useSaveWorkflowGraph(editor);
+  const conditionFields = useWorkflowConditionFields(editor, stage);
   const sourceTransitions = editor.graph.transitions.filter(
     (item) => item.sourceStageKey === stage.stableKey,
   );
@@ -57,7 +62,11 @@ export function WorkflowTransitionDialog({
       .filter((item) => item.actionKey === defaultActionKey)
       .map((item) => item.priority),
   ) + 1;
-  const form = useForm<WorkflowTransitionFormValues>({
+  const form = useForm<
+    z.input<typeof workflowTransitionFormSchema>,
+    unknown,
+    WorkflowTransitionFormValues
+  >({
     defaultValues: workflowTransitionFormDefaults(
       transition,
       defaultActionKey,
@@ -151,6 +160,21 @@ export function WorkflowTransitionDialog({
               required
             />
           )}
+          <div className="sm:col-span-2">
+            <Controller
+              control={form.control}
+              name="condition"
+              render={({ field }) => (
+                <WorkflowConditionEditor
+                  fields={conditionFields.completionFields}
+                  isPending={conditionFields.isPending}
+                  label="Transition condition"
+                  onChange={field.onChange}
+                  value={field.value as ConditionGroup | null}
+                />
+              )}
+            />
+          </div>
           {mutation.error ? (
             <p className="sm:col-span-2 text-sm text-red-700" role="alert">
               {mutation.error.message}

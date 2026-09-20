@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
+vi.mock("@/modules/forms/application/FormTaskRuntimeContext", () => ({
+  exposeTaskFormRuntimeContext: vi.fn(),
+}));
 vi.mock("@/modules/forms/infrastructure/FormRepository", () => ({
   getFormRuntime: vi.fn(),
 }));

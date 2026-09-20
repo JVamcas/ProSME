@@ -26,7 +26,7 @@ function TaskWorkPreview({
   form: PublishedFormQuery;
   task: WorkflowTaskInput;
 }) {
-  if (task.formVersionId) {
+  if (task.formBinding) {
     if (form.isPending) return <p className="text-sm">Loading form preview…</p>;
     if (form.isError || !form.data) {
       return (
@@ -84,7 +84,7 @@ export function WorkflowTaskPreviewDialog({
   task: WorkflowTaskInput;
   transitions: WorkflowTransitionInput[];
 }) {
-  const form = usePublishedFormRuntime(task.formVersionId ?? null);
+  const form = usePublishedFormRuntime(task.formBinding?.formVersionId ?? null);
   const actions = workflowTaskPreviewActions(stage, task, transitions);
   return (
     <DraggableDialog

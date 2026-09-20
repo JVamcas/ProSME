@@ -38,6 +38,7 @@ const versionId = "16f2a85b-82a6-4594-9d37-c8ce4f284443";
 
 function taskFormData(): TaskFormData {
   return {
+    context: {},
     schema: {
       fields: [],
       instructions: null,

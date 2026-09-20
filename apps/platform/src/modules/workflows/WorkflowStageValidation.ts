@@ -27,7 +27,7 @@ function validateTaskIdentity(
   const errors: WorkflowValidationIssue[] = [];
   const taskPath = `${base}.tasks.${taskIndex}`;
   if (
-    !task.formVersionId &&
+    !task.formBinding &&
     !validateTaskConfiguration(task.type, task.config).success
   ) {
     errors.push(
@@ -38,12 +38,12 @@ function validateTaskIdentity(
       ),
     );
   }
-  if (!task.formVersionId && task.type === "STRUCTURED_FORM") {
+  if (!task.formBinding && task.type === "STRUCTURED_FORM") {
     errors.push(
       issue(
         "MISSING_FORM_VERSION",
         `${task.name} must reference a published form version.`,
-        `${taskPath}.formVersionId`,
+        `${taskPath}.formBinding`,
       ),
     );
   }

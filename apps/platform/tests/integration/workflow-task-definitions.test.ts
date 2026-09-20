@@ -28,6 +28,8 @@ const actor: AuthenticatedUser = {
   capabilities: new Set(Object.values(permissionCodes)),
 };
 const roleId = randomUUID();
+const formDefinitionId = randomUUID();
+const formVersionId = randomUUID();
 
 beforeAll(async () => {
   if (!pool) return;
@@ -40,6 +42,22 @@ beforeAll(async () => {
     `INSERT INTO app_roles (id, code, name, description)
      VALUES ($1, $2, 'Task reviewers', 'Phase 1.4 test role')`,
     [roleId, `TASK_${randomUUID().replaceAll("-", "").toUpperCase()}`],
+  );
+  await pool.query(
+    `INSERT INTO app_form_definitions
+       (id, code, name, description, created_by)
+     VALUES ($1, $2, 'Technical assessment', 'Task binding form', $3)`,
+    [
+      formDefinitionId,
+      `FORM_${randomUUID().replaceAll("-", "").toUpperCase()}`,
+      actor.id,
+    ],
+  );
+  await pool.query(
+    `INSERT INTO app_form_versions
+       (id, form_definition_id, version_number, status, created_by)
+     VALUES ($1, $2, 1, 'PUBLISHED', $3)`,
+    [formVersionId, formDefinitionId, actor.id],
   );
 });
 
@@ -75,6 +93,14 @@ afterAll(async () => {
         type: "ASSESSMENT_FORM" as const,
         required: true,
         config: {},
+        formBinding: {
+          contextFields: [{
+            key: "application.requested_amount",
+            label: "Requested amount",
+            type: "NUMBER" as const,
+          }],
+          formVersionId,
+        },
       },
       {
         actionKeys: ["DECIDE"],
@@ -92,6 +118,7 @@ afterAll(async () => {
         type: "DECISION" as const,
         required: true,
         config: {},
+        formBinding: null,
       },
     ];
     const graph = {
@@ -109,6 +136,8 @@ afterAll(async () => {
         },
         repeatable: false,
         coiGated: true,
+        entryCondition: null,
+        exitCondition: null,
         initial: true,
         slaHours: null,
         actions: [

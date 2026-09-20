@@ -6,6 +6,7 @@ import { getDatabase } from "@/db/client";
 import {
   stageTaskActionBindings,
   stageTaskDefinitions,
+  stageTaskFormBindings,
   workflowActionDefinitions,
   workflowDefinitionVersions,
   workflowDefinitions,
@@ -47,6 +48,8 @@ const graphSelection = {
     repeatable: workflowStageDefinitions.repeatable,
     coiGated: workflowStageDefinitions.coiGated,
     slaHours: workflowStageDefinitions.slaHours,
+    entryCondition: workflowStageDefinitions.entryCondition,
+    exitCondition: workflowStageDefinitions.exitCondition,
   },
   action: {
     id: workflowActionDefinitions.id,
@@ -74,7 +77,10 @@ const graphSelection = {
     quorum: stageTaskDefinitions.quorum,
     coiRequired: stageTaskDefinitions.coiRequired,
     config: stageTaskDefinitions.config,
-    formVersionId: stageTaskDefinitions.formVersionId,
+  },
+  formBinding: {
+    contextFields: stageTaskFormBindings.contextFields,
+    formVersionId: stageTaskFormBindings.formVersionId,
   },
   taskAction: {
     actionKey: stageTaskActionBindings.actionKey,
@@ -87,6 +93,7 @@ const graphSelection = {
     toStageId: workflowTransitionDefinitions.toStageId,
     terminalOutcome: workflowTransitionDefinitions.terminalOutcome,
     priority: workflowTransitionDefinitions.priority,
+    condition: workflowTransitionDefinitions.condition,
   },
 };
 
@@ -109,6 +116,10 @@ function loadGraphRows(versionId: string) {
     .leftJoin(
       stageTaskDefinitions,
       eq(stageTaskDefinitions.stageId, workflowStageDefinitions.id),
+    )
+    .leftJoin(
+      stageTaskFormBindings,
+      eq(stageTaskFormBindings.taskDefinitionId, stageTaskDefinitions.id),
     )
     .leftJoin(
       stageTaskActionBindings,
@@ -141,7 +152,14 @@ function assembleGraph(rows: Awaited<ReturnType<typeof loadGraphRows>>) {
       row.stage?.id ? [[row.stage.id, row.stage.stableKey] as const] : [],
     ),
   );
-  rows.forEach(({ action, stage, task, taskAction, transition }) => {
+  rows.forEach(({
+    action,
+    formBinding,
+    stage,
+    task,
+    taskAction,
+    transition,
+  }) => {
     if (stage?.id && !stages.has(stage.id))
       stages.set(stage.id, {
         id: stage.id,
@@ -158,6 +176,8 @@ function assembleGraph(rows: Awaited<ReturnType<typeof loadGraphRows>>) {
         },
         repeatable: stage.repeatable,
         coiGated: stage.coiGated,
+        entryCondition: stage.entryCondition,
+        exitCondition: stage.exitCondition,
         initial: stage.initial,
         slaHours: stage.slaHours,
         actions: [],
@@ -172,7 +192,16 @@ function assembleGraph(rows: Awaited<ReturnType<typeof loadGraphRows>>) {
       target.actions.push(workflowActionDefinitionSchema.parse(action));
     }
     if (target && task?.id && !target.tasks.some((item) => item.id === task.id)) {
-      target.tasks.push({ ...task, actionKeys: [] });
+      target.tasks.push({
+        ...task,
+        actionKeys: [],
+        formBinding: formBinding?.formVersionId
+          ? {
+              contextFields: formBinding.contextFields,
+              formVersionId: formBinding.formVersionId,
+            }
+          : null,
+      });
     }
     const targetTask = target?.tasks.find(
       (item) => item.id === taskAction?.taskDefinitionId,
@@ -191,6 +220,7 @@ function assembleGraph(rows: Awaited<ReturnType<typeof loadGraphRows>>) {
         sourceStageKey: codes.get(transition.fromStageId) ?? "",
         priority: transition.priority,
         terminalOutcome: transition.terminalOutcome,
+        condition: transition.condition,
         targetStageKey: transition.toStageId
           ? (codes.get(transition.toStageId) ?? "")
           : null,

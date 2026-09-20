@@ -26,6 +26,11 @@ function TaskFields({
       assignmentTarget: "reviewer",
       checklistItems: [],
       coiRequired: false,
+      contextFields: [{
+        key: "application.requested_amount",
+        label: "Requested amount",
+        type: "NUMBER",
+      }],
       description: "",
       displayOrder: 1,
       formVersionId: attachedVersionId,
@@ -83,6 +88,9 @@ describe("workflow task form selection", () => {
       'select[name="formVersionId"]',
     );
     expect(formSelect?.value).toBe(attachedVersionId);
+    expect(container.querySelector<HTMLInputElement>(
+      'input[name="contextFields.0.key"]',
+    )?.value).toBe("application.requested_amount");
 
     await act(async () => root.unmount());
   });

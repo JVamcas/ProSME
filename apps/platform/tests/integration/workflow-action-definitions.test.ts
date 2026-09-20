@@ -96,6 +96,8 @@ afterAll(async () => {
             },
             repeatable: false,
             coiGated: false,
+            entryCondition: null,
+            exitCondition: null,
             initial: true,
             slaHours: null,
             actions,

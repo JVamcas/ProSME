@@ -57,9 +57,9 @@ export async function listForms(
     ) section_counts ON TRUE
     LEFT JOIN LATERAL (
       SELECT count(*) AS used_by_count
-      FROM app_stage_task_definitions task
+      FROM app_stage_task_form_bindings binding
       JOIN app_form_versions referenced_version
-        ON referenced_version.id = task.form_version_id
+        ON referenced_version.id = binding.form_version_id
       WHERE referenced_version.form_definition_id = definition.id
     ) usage_counts ON TRUE
     ORDER BY definition.name ASC, definition.id ASC

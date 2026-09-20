@@ -16,7 +16,6 @@ export function cloneWorkflowGraph(
       tasks: stage.tasks.map((task) => ({
         ...task,
         id: undefined,
-        formVersionId: null,
       })),
     })),
     transitions: graph.transitions.map((transition) => ({

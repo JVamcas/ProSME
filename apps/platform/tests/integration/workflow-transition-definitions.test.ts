@@ -10,6 +10,7 @@ import { createWorkflowTemplate } from "@/modules/workflows/application/definiti
 import type { WorkflowStageInput } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import { findWorkflowGraph } from "@/modules/workflows/infrastructure/WorkflowGraphRepository";
 import { replaceWorkflowDraft } from "@/modules/workflows/infrastructure/WorkflowTemplateWriteRepository";
+import { basicOperators } from "@/modules/conditions/engine/BasicOperators";
 
 const enabled = process.env.RUN_P3_WORKFLOW_DATABASE_TESTS === "true";
 const pool = enabled
@@ -48,6 +49,8 @@ function stage(
     },
     repeatable: false,
     coiGated: false,
+    entryCondition: null,
+    exitCondition: null,
     initial: displayOrder === 1,
     slaHours: null,
     actions: [
@@ -101,12 +104,33 @@ afterAll(async () => {
           actionKey: "ADVANCE",
           targetStageKey: "ASSESSMENT",
           priority: 1,
+          condition: {
+            id: randomUUID(),
+            kind: "GROUP" as const,
+            combinator: "AND" as const,
+            children: [
+              {
+                id: randomUUID(),
+                kind: "CONDITION" as const,
+                leftOperand: {
+                  kind: "FIELD" as const,
+                  key: "stage.screening.user_defined_outcome",
+                },
+                operator: basicOperators.EQUALS,
+                rightOperand: {
+                  kind: "CONSTANT" as const,
+                  value: "ASSESSMENT",
+                },
+              },
+            ],
+          },
         },
         {
           sourceStageKey: "SCREENING",
           actionKey: "ADVANCE",
           targetStageKey: "COMMITTEE",
           priority: 2,
+          condition: null,
         },
       ],
     };

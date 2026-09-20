@@ -8,6 +8,7 @@ import type {
   FormRuntimeSchema,
   FormSubmission,
   PublishedFormOption,
+  TaskFormData,
 } from "./FormTypes";
 import type {
   CreateFormInput,
@@ -96,11 +97,9 @@ function lifecycle(
 }
 
 function getTaskForm(taskId: string) {
-  return requestData<{
-    schema: FormRuntimeSchema;
-    submission: FormSubmission | null;
-    taskRowVersion: number;
-  }>(`/api/admin/tasks/${taskId}/form`, { cache: "no-store" });
+  return requestData<TaskFormData>(`/api/admin/tasks/${taskId}/form`, {
+    cache: "no-store",
+  });
 }
 
 function saveTaskForm(taskId: string, input: TaskFormSubmissionInput) {
