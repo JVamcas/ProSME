@@ -18,9 +18,10 @@
     "payload:types": "payload generate:types",
     "payload:importmap": "payload generate:importmap",
     "bootstrap:admin": "NODE_OPTIONS=--conditions=react-server node --env-file-if-exists=../../.env ../../node_modules/payload/bin.js run ../../scripts/seed/bootstrap-admin.ts",
-    "db:seed": "npm run db:seed:content && npm run db:seed:forms",
+    "db:seed": "npm run db:seed:content && npm run db:seed:forms && npm run db:seed:workflow",
     "db:seed:content": "NODE_ENV=production NODE_OPTIONS=--conditions=react-server payload seed-database",
     "db:seed:forms": "NODE_OPTIONS=--conditions=react-server node --env-file-if-exists=../../.env ../../node_modules/payload/bin.js run ../../scripts/seed/seed-standard-forms.ts",
+    "db:seed:workflow": "NODE_OPTIONS=--conditions=react-server node --env-file-if-exists=../../.env ../../node_modules/payload/bin.js run ../../scripts/seed/seed-standard-workflow.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio"

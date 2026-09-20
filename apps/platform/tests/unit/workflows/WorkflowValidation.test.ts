@@ -189,6 +189,25 @@ describe("workflow graph validation", () => {
     ).toBe(false);
   });
 
+  it("allows a return transition to a non-repeatable earlier stage", () => {
+    const graph = structuredClone(referenceWorkflow);
+    graph.stages[4].actions[0] = {
+      ...graph.stages[4].actions[0],
+      actionType: "RETURN",
+      configuration: {
+        dataHandling: "RETAIN",
+        reasonRequired: true,
+      },
+    };
+    graph.transitions[4].targetStageKey = "COMPLETENESS";
+
+    expect(
+      validateWorkflowGraph(graph).errors.some(
+        (error) => error.code === "INVALID_REPEATABLE_REFERENCE",
+      ),
+    ).toBe(false);
+  });
+
   it("rejects duplicate stage keys, unreachable stages and missing responsibility", () => {
     const graph = structuredClone(referenceWorkflow);
     graph.stages[1].stableKey = graph.stages[0].stableKey;

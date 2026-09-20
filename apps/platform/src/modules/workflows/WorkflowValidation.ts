@@ -59,7 +59,22 @@ function terminalDecisionErrors(graph: WorkflowGraphInput) {
 }
 
 function repeatableReferenceErrors(graph: WorkflowGraphInput) {
-  const cyclicStageKeys = stagesInCycles(graph);
+  const stageActions = new Map(
+    graph.stages.flatMap((stage) => stage.actions.map((action) => [
+      `${stage.stableKey}:${action.stableKey}`,
+      action.actionType,
+    ])),
+  );
+  const repeatableGraph = {
+    ...graph,
+    transitions: graph.transitions.filter((transition) => {
+      const actionType = stageActions.get(
+        `${transition.sourceStageKey}:${transition.actionKey}`,
+      );
+      return actionType !== "RETURN" && actionType !== "REFER";
+    }),
+  };
+  const cyclicStageKeys = stagesInCycles(repeatableGraph);
   return graph.stages.flatMap((stage, index) =>
     cyclicStageKeys.has(stage.stableKey) && !stage.repeatable
       ? [

@@ -5,6 +5,8 @@
 This document records the proposed standard forms derived from the M&E
 Workflow Engine Specification dated 17 September 2026. The forms are seeded
 as editable draft Form Version 1 records for administrator and client review.
+Their intended Workflow Task bindings are maintained in
+[`SME_Fund_Standard_Workflow_Template.md`](SME_Fund_Standard_Workflow_Template.md).
 
 The catalogue deliberately separates:
 
@@ -30,12 +32,23 @@ Seeded definitions and versions are attributed to the disabled, non-login
 PostgreSQL principal named System. Forms created interactively continue to
 record the authenticated administrator who created them.
 
-The standard deployment seed command runs both the Payload content seed and
-the application-owned form seed. The form-only command is db:seed:forms in the
-platform package.
+The standard deployment seed command runs the Payload content seed, the
+application-owned form seed and the standard workflow seed. The form-only
+command is `db:seed:forms`; the workflow-only command is `db:seed:workflow` in
+the platform package. The Draft workflow binds the latest applicable standard
+Form Version, preferring Published over Draft. A Draft binding becomes runtime
+eligible when that same Form Version is reviewed and published.
 
 Forms marked Deferred require repeatable structured inputs that the current
 Generic Form Engine does not yet support.
+
+The client specification describes 14 end-to-end business stages. The
+standard executable Application Workflow contains 12 stages, beginning with
+Administrative and Eligibility Screening. Call Setup and Publication is owned
+by the Funding Call lifecycle, while Application Submission is owned by the
+applicant Application lifecycle and creates the Workflow Instance. Forms in
+this catalogue may support any of those three connected lifecycles without
+moving the first two activities into the Application Workflow.
 
 ## 3. Ready forms
 
@@ -280,6 +293,11 @@ Blocked repeatable structures:
 ## 5. Configuration that is not a generic form
 
 - Funding Call setup is a Funding Call domain record.
+- Call approval, scheduling and publication belong to the Funding Call
+  lifecycle rather than the Application Workflow.
+- Application draft, validation and submission belong to the applicant
+  Application lifecycle; successful submission starts the 12-stage
+  Application Workflow at Administrative and Eligibility Screening.
 - Administrative screening uses checklists, document verification,
   eligibility results and Workflow Actions.
 - Criterion scores use scoring configuration.

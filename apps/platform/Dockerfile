@@ -27,7 +27,10 @@ RUN groupadd --system --gid 1001 nodejs \
 
 COPY --chown=nextjs:nodejs apps/platform apps/platform
 COPY --chown=nextjs:nodejs \
-    scripts/seed/package.json scripts/seed/seed-standard-forms.ts scripts/seed/
+    scripts/seed/package.json \
+    scripts/seed/seed-standard-forms.ts \
+    scripts/seed/seed-standard-workflow.ts \
+    scripts/seed/
 COPY --chown=nextjs:nodejs --chmod=755 \
     scripts/container/migrate.sh scripts/container/migrate.sh
 

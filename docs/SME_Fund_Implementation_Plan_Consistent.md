@@ -316,7 +316,7 @@ After sequential runtime works:
 - quorum;
 - COI;
 - reassignment;
-- delegation;
+- delegation by configured authority/value bands;
 - parallel branches;
 - joins;
 - RFI;
@@ -326,9 +326,18 @@ After sequential runtime works:
 
 ## Step 11 — Standard Client Seed
 
+The client specification describes 14 end-to-end business stages, but only
+12 are Application Workflow Stages. Call Setup and Publication belongs to the
+Funding Call lifecycle, and Application Submission belongs to the applicant
+Application lifecycle. Submission creates the Workflow Instance directly at
+Administrative and Eligibility Screening.
+
 Seed the client configuration using the same engines and builders:
 - roles;
-- 14 stages;
+- 12 Application Workflow Stages, from Administrative and Eligibility
+  Screening through Evaluation and Close-out;
+- Funding Call setup/publication lifecycle configuration;
+- applicant Application submission lifecycle configuration;
 - Forms;
 - Task Definitions;
 - bindings;
@@ -1436,6 +1445,10 @@ Configure:
 ### Done When
 
 Configure: - name; - mandatory; - accepted file types; - max size; - expiry; - uploader/verifier; - template.
+
+Document requirements are design-time configuration. Runtime document
+replacement, version history, verification status per version, expiry and
+re-verification are implemented as cross-cutting capabilities in Phase 16.
 ## 4.10 Stage Scoring
 
 ### Goal
@@ -2191,7 +2204,10 @@ Implement:
 - quorum;
 - COI gate;
 - reassignment;
-- delegation;
+- delegation by configured authority/value bands;
+- amount-based resolution of the required delegated approver;
+- server-side validation that the acting approver's band covers the decision
+  amount;
 - round-robin;
 - expertise;
 - workload;
@@ -2199,7 +2215,9 @@ Implement:
 
 ### Done When
 
-Task ownership, reviewer isolation and assignment history work reliably.
+Task ownership, reviewer isolation, assignment history and value-band
+delegation work reliably. An approval cannot be completed by an actor whose
+configured authority band does not cover the decision amount.
 
 ---
 
@@ -2453,18 +2471,48 @@ Implement:
 - reason codes;
 - workflow notification configuration;
 - send log;
+- immutable document version history;
+- replacement that creates a new Document Version without overwriting the
+  prior version;
+- verification status, verifier, verification time and notes per Document
+  Version;
+- expiry and re-verification rules against the current Document Version;
+- document replacement and verification audit events;
 - concurrency protection;
 - bulk allocation;
 - bulk screening;
 - bulk notifications.
 
+### Done When
+
+Cross-cutting workflow operations are auditable and safe under concurrent
+use. Document replacement preserves every prior version, and verification is
+recorded against the exact version that was reviewed.
+
 ---
 
 # Phase 17 — Standard Client Seed
 
+The canonical seed content and its evolving implementation status are
+maintained in
+[`SME_Fund_Standard_Workflow_Template.md`](SME_Fund_Standard_Workflow_Template.md).
+
+The standard seed spans three connected lifecycles rather than placing all
+client stages inside one Application Workflow:
+
+1. Call Setup and Publication is seeded/configured through the Funding Call
+   lifecycle from Phase 15.
+2. Application Submission is seeded/configured through the applicant
+   Application lifecycle from Phase 14.
+3. The Application Workflow contains the remaining 12 client stages and
+   starts at Administrative and Eligibility Screening after submission.
+
 Seed as configuration:
 - standard roles;
-- 14 standard stages;
+- 12 standard Application Workflow Stages, from Administrative and
+  Eligibility Screening through Evaluation and Close-out;
+- Funding Call setup/publication lifecycle configuration;
+- applicant Application submission lifecycle configuration;
 - reusable Forms;
 - Funding Application Form;
 - Task Definitions;
@@ -2490,17 +2538,23 @@ Seed as configuration:
 Validate the seed using the same validators used for user-created configuration.
 
 Then clone it into a test Funding Call and verify:
-1. Application submission;
-2. Screening;
-3. parallel Technical + Financial;
-4. join to Moderation;
-5. Committee/Approval path;
-6. public status;
-7. audit/task creation.
+1. Funding Call approval, scheduling and publication;
+2. Application draft, submission and immutable snapshot creation;
+3. Workflow Instance creation directly at Administrative and Eligibility
+   Screening;
+4. screening;
+5. parallel Technical + Financial;
+6. join to Moderation;
+7. Committee/Approval path, including delegated-authority value bands;
+8. document replacement and per-version verification;
+9. public status;
+10. audit/task creation.
 
 ### Done When
 
-The client standard process runs from seeded configuration without developer-specific runtime logic.
+The client standard process runs across the seeded Funding Call, applicant
+Application and 12-stage Application Workflow configurations without
+developer-specific runtime logic.
 
 ---
 

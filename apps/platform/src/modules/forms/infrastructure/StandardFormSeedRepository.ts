@@ -9,39 +9,17 @@ import {
   formFields,
   formSections,
   formVersions,
-  users,
 } from "@/db/schema";
 import type { StandardFormDraft } from "@/modules/forms/domain/StandardFormCatalogue";
+import {
+  ensureSystemSeedPrincipal,
+  systemSeedUserId,
+} from "@/platform/database/SystemSeedPrincipal";
 
 export type StandardFormSeedResult = {
   createdCodes: string[];
   skippedCodes: string[];
 };
-
-const systemUserId = "00000000-0000-4000-8000-000000000001";
-const systemUserEmail = "system@internal.sme-fund";
-
-async function ensureSystemUser(
-  transaction: Parameters<
-    Parameters<ReturnType<typeof getDatabase>["transaction"]>[0]
-  >[0],
-) {
-  await transaction.insert(users).values({
-    displayName: "System",
-    email: systemUserEmail,
-    id: systemUserId,
-    status: "disabled",
-    userType: "staff",
-  }).onConflictDoNothing();
-  const [systemUser] = await transaction
-    .select({ email: users.email })
-    .from(users)
-    .where(inArray(users.id, [systemUserId]))
-    .limit(1);
-  if (systemUser?.email !== systemUserEmail) {
-    throw new Error("The reserved System user identifier is unavailable.");
-  }
-}
 
 export async function insertMissingStandardFormDrafts(
   drafts: StandardFormDraft[],
@@ -62,7 +40,7 @@ export async function insertMissingStandardFormDrafts(
       return { createdCodes: [], skippedCodes };
     }
 
-    await ensureSystemUser(transaction);
+    await ensureSystemSeedPrincipal(transaction);
 
     const records = missing.map((draft) => ({
       definitionId: crypto.randomUUID(),
@@ -73,7 +51,7 @@ export async function insertMissingStandardFormDrafts(
     await transaction.insert(formDefinitions).values(
       records.map(({ definitionId, draft }) => ({
         code: draft.code,
-        createdBy: systemUserId,
+        createdBy: systemSeedUserId,
         description: draft.description,
         id: definitionId,
         name: draft.name,
@@ -81,7 +59,7 @@ export async function insertMissingStandardFormDrafts(
     );
     await transaction.insert(formVersions).values(
       records.map(({ definitionId, draft, versionId }) => ({
-        createdBy: systemUserId,
+        createdBy: systemSeedUserId,
         formDefinitionId: definitionId,
         id: versionId,
         instructions: draft.instructions,
