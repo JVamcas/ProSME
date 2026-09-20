@@ -7,6 +7,10 @@ import {
   stageTaskActionBindings,
   stageTaskDefinitions,
   stageTaskFormBindings,
+  workflowStageChecklistDefinitions,
+  workflowStageDocumentRequirements,
+  workflowStageScoringConfigurations,
+  workflowStageScoringCriteria,
   workflowActionDefinitions,
   workflowDefinitionVersions,
   workflowDefinitions,
@@ -141,6 +145,111 @@ function loadGraphRows(versionId: string) {
     );
 }
 
+function loadChecklistRows(versionId: string) {
+  return getDatabase()
+    .select({
+      id: workflowStageChecklistDefinitions.id,
+      stageId: workflowStageChecklistDefinitions.stageId,
+      key: workflowStageChecklistDefinitions.key,
+      text: workflowStageChecklistDefinitions.text,
+      mandatory: workflowStageChecklistDefinitions.mandatory,
+      responseType: workflowStageChecklistDefinitions.responseType,
+      evidenceRequirement:
+        workflowStageChecklistDefinitions.evidenceRequirement,
+      notes: workflowStageChecklistDefinitions.notes,
+      displayOrder: workflowStageChecklistDefinitions.displayOrder,
+    })
+    .from(workflowStageChecklistDefinitions)
+    .innerJoin(
+      workflowStageDefinitions,
+      eq(
+        workflowStageDefinitions.id,
+        workflowStageChecklistDefinitions.stageId,
+      ),
+    )
+    .where(eq(workflowStageDefinitions.versionId, versionId))
+    .orderBy(
+      asc(workflowStageChecklistDefinitions.stageId),
+      asc(workflowStageChecklistDefinitions.displayOrder),
+    );
+}
+
+function loadDocumentRequirementRows(versionId: string) {
+  return getDatabase()
+    .select({
+      id: workflowStageDocumentRequirements.id,
+      stageId: workflowStageDocumentRequirements.stageId,
+      name: workflowStageDocumentRequirements.name,
+      mandatory: workflowStageDocumentRequirements.mandatory,
+      acceptedFileTypes:
+        workflowStageDocumentRequirements.acceptedFileTypes,
+      maximumSizeMb: workflowStageDocumentRequirements.maximumSizeMb,
+      expiryDays: workflowStageDocumentRequirements.expiryDays,
+      uploader: workflowStageDocumentRequirements.uploader,
+      verifier: workflowStageDocumentRequirements.verifier,
+      templateReference:
+        workflowStageDocumentRequirements.templateReference,
+    })
+    .from(workflowStageDocumentRequirements)
+    .innerJoin(
+      workflowStageDefinitions,
+      eq(
+        workflowStageDefinitions.id,
+        workflowStageDocumentRequirements.stageId,
+      ),
+    )
+    .where(eq(workflowStageDefinitions.versionId, versionId))
+    .orderBy(
+      asc(workflowStageDocumentRequirements.stageId),
+      asc(workflowStageDocumentRequirements.name),
+    );
+}
+
+function loadScoringConfigurationRows(versionId: string) {
+  return getDatabase()
+    .select({
+      stageId: workflowStageScoringConfigurations.stageId,
+      aggregation: workflowStageScoringConfigurations.aggregation,
+    })
+    .from(workflowStageScoringConfigurations)
+    .innerJoin(
+      workflowStageDefinitions,
+      eq(
+        workflowStageDefinitions.id,
+        workflowStageScoringConfigurations.stageId,
+      ),
+    )
+    .where(eq(workflowStageDefinitions.versionId, versionId));
+}
+
+function loadScoringCriterionRows(versionId: string) {
+  return getDatabase()
+    .select({
+      id: workflowStageScoringCriteria.id,
+      stageId: workflowStageScoringCriteria.stageId,
+      criterion: workflowStageScoringCriteria.criterion,
+      description: workflowStageScoringCriteria.description,
+      weight: workflowStageScoringCriteria.weight,
+      scaleMinimum: workflowStageScoringCriteria.scaleMinimum,
+      scaleMaximum: workflowStageScoringCriteria.scaleMaximum,
+      threshold: workflowStageScoringCriteria.threshold,
+      mandatoryComment: workflowStageScoringCriteria.mandatoryComment,
+    })
+    .from(workflowStageScoringCriteria)
+    .innerJoin(
+      workflowStageDefinitions,
+      eq(
+        workflowStageDefinitions.id,
+        workflowStageScoringCriteria.stageId,
+      ),
+    )
+    .where(eq(workflowStageDefinitions.versionId, versionId))
+    .orderBy(
+      asc(workflowStageScoringCriteria.stageId),
+      asc(workflowStageScoringCriteria.criterion),
+    );
+}
+
 function assembleGraph(rows: Awaited<ReturnType<typeof loadGraphRows>>) {
   const stages = new Map<string, WorkflowGraphInput["stages"][number]>();
   const transitions = new Map<
@@ -178,6 +287,9 @@ function assembleGraph(rows: Awaited<ReturnType<typeof loadGraphRows>>) {
         coiGated: stage.coiGated,
         entryCondition: stage.entryCondition,
         exitCondition: stage.exitCondition,
+        checklistItems: [],
+        documentRequirements: [],
+        scoring: null,
         initial: stage.initial,
         slaHours: stage.slaHours,
         actions: [],
@@ -238,6 +350,36 @@ function assembleGraph(rows: Awaited<ReturnType<typeof loadGraphRows>>) {
 }
 
 export async function findWorkflowGraph(versionId: string) {
-  const rows = await loadGraphRows(versionId);
-  return rows[0] ? assembleGraph(rows) : null;
+  const [
+    rows,
+    checklistRows,
+    documentRequirementRows,
+    scoringConfigurationRows,
+    scoringCriterionRows,
+  ] = await Promise.all([
+    loadGraphRows(versionId),
+    loadChecklistRows(versionId),
+    loadDocumentRequirementRows(versionId),
+    loadScoringConfigurationRows(versionId),
+    loadScoringCriterionRows(versionId),
+  ]);
+  if (!rows[0]) return null;
+  const assembled = assembleGraph(rows);
+  const stages = new Map(
+    assembled.graph.stages.map((stage) => [stage.id, stage]),
+  );
+  checklistRows.forEach(({ stageId, ...checklistItem }) => {
+    stages.get(stageId)?.checklistItems.push(checklistItem);
+  });
+  documentRequirementRows.forEach(({ stageId, ...requirement }) => {
+    stages.get(stageId)?.documentRequirements.push(requirement);
+  });
+  scoringConfigurationRows.forEach(({ stageId, aggregation }) => {
+    const stage = stages.get(stageId);
+    if (stage) stage.scoring = { aggregation, criteria: [] };
+  });
+  scoringCriterionRows.forEach(({ stageId, ...criterion }) => {
+    stages.get(stageId)?.scoring?.criteria.push(criterion);
+  });
+  return assembled;
 }

@@ -2,6 +2,7 @@
 
 import { GeneralButton } from "@/components/ui/button";
 import { CheckboxField } from "@/components/ui/form-field";
+import type { ConditionFieldDefinition } from "@/modules/conditions/domain/ConditionConfiguration";
 import {
   FormInput,
   FormSelect,
@@ -40,23 +41,31 @@ export function WorkflowTaskDialogFields({
   actionKeys,
   assignmentItems,
   assignmentMode,
+  contextFieldItems,
+  contextFieldKeys,
+  contextFieldsPending,
   formItems,
   formVersionId,
   formsPending,
   mutationError,
   mutationPending,
   onActionKeysChange,
+  onContextFieldKeysChange,
 }: {
   actionItems: { disabled?: boolean; label: string; value: string }[];
   actionKeys: string[];
   assignmentItems: { label: string; value: string }[];
   assignmentMode: "ROLE" | "NAMED_USER";
+  contextFieldItems: readonly ConditionFieldDefinition[];
+  contextFieldKeys: readonly string[];
+  contextFieldsPending: boolean;
   formItems: { label: string; value: string }[];
   formVersionId: string;
   formsPending: boolean;
   mutationError?: Error | null;
   mutationPending: boolean;
   onActionKeysChange: (values: string[]) => void;
+  onContextFieldKeysChange: (values: string[]) => void;
 }) {
   return (
     <>
@@ -85,7 +94,13 @@ export function WorkflowTaskDialogFields({
           value={actionKeys}
         />
       </div>
-      <WorkflowContextFieldConfiguration disabled={!formVersionId} />
+      <WorkflowContextFieldConfiguration
+        disabled={!formVersionId}
+        fields={contextFieldItems}
+        isPending={contextFieldsPending}
+        onChange={onContextFieldKeysChange}
+        selectedKeys={contextFieldKeys}
+      />
 
       <div className="grid gap-4 sm:grid-cols-2">
         <FormSelect

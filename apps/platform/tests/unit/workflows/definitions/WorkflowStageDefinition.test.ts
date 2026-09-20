@@ -24,6 +24,9 @@ const stage = {
   initial: true,
   slaHours: null,
   actions: [],
+  checklistItems: [],
+  documentRequirements: [],
+  scoring: null,
   tasks: [],
 };
 

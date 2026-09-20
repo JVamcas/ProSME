@@ -18,6 +18,9 @@ function stage(
 ): WorkflowStageInput {
   return {
     actions: [],
+    checklistItems: [],
+    documentRequirements: [],
+    scoring: null,
     coiGated: false,
     description: "Review the application",
     displayOrder,

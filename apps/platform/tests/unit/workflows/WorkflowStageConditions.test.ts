@@ -28,6 +28,9 @@ function stage(
     exitCondition: null,
     initial: displayOrder === 1,
     actions: [],
+    checklistItems: [],
+    documentRequirements: [],
+    scoring: null,
     tasks: [],
   };
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { DeleteButton } from "@/components/ui/action-buttons";
 import { GeneralButton } from "@/components/ui/button";
 import type { ConditionFieldDefinition } from "@/modules/conditions/domain/ConditionConfiguration";
 import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup";
@@ -46,14 +47,11 @@ export function WorkflowConditionEditor({
             onChange={onChange}
             value={value}
           />
-          <GeneralButton
-            disabled={disabled}
+          <DeleteButton
+          disabled={disabled}
             onClick={() => onChange(null)}
-            type="button"
-            variant="outline"
-          >
-            Remove condition
-          </GeneralButton>
+            title="Remove condition"
+          />
         </>
       ) : (
         <GeneralButton
@@ -61,6 +59,7 @@ export function WorkflowConditionEditor({
           onClick={() => onChange(emptyConditionGroup())}
           type="button"
           variant="outline"
+          size={"compact"}
         >
           Add condition
         </GeneralButton>

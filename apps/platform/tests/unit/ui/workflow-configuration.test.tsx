@@ -100,7 +100,10 @@ describe("workflow configuration UI", () => {
     expect(markup).toContain(
       'aria-label="Submission and pre-screening stage configuration"',
     );
-    expect(markup.match(/role="tab"/g)).toHaveLength(3);
+    expect(markup.match(/role="tab"/g)).toHaveLength(6);
+    expect(markup).toContain("Checklists");
+    expect(markup).toContain("Documents");
+    expect(markup).toContain("Scoring");
     expect(markup).toContain("Stable key");
     expect(markup).toContain("PRE_SCREENING");
     expect(markup).toContain("Single-run");

@@ -12,6 +12,40 @@ describe("workflow graph cloning", () => {
       "42222222-2222-4222-8222-222222222222";
     source.stages[0].tasks[0].id =
       "43333333-3333-4333-8333-333333333333";
+    source.stages[0].checklistItems = [{
+      id: "47777777-7777-4777-8777-777777777777",
+      key: "OWNERSHIP_CONFIRMED",
+      text: "Confirm ownership.",
+      mandatory: true,
+      responseType: "YES_NO",
+      evidenceRequirement: "REQUIRED",
+      notes: "Use current ownership records.",
+      displayOrder: 1,
+    }];
+    source.stages[0].documentRequirements = [{
+      id: "48888888-8888-4888-8888-888888888888",
+      name: "Tax clearance certificate",
+      mandatory: true,
+      acceptedFileTypes: ["PDF"],
+      maximumSizeMb: 10,
+      expiryDays: 180,
+      uploader: "APPLICANT",
+      verifier: "ASSIGNED_REVIEWER",
+      templateReference: "TAX_CLEARANCE_TEMPLATE",
+    }];
+    source.stages[0].scoring = {
+      aggregation: "WEIGHTED_AVERAGE",
+      criteria: [{
+        id: "49999999-9999-4999-8999-999999999999",
+        criterion: "Business viability",
+        description: "Assess viability.",
+        weight: 100,
+        scaleMinimum: 0,
+        scaleMaximum: 10,
+        threshold: 6,
+        mandatoryComment: true,
+      }],
+    };
     source.stages[0].tasks[0].roleId =
       "44444444-4444-4444-8444-444444444444";
     source.stages[0].tasks[0].formBinding = {
@@ -90,6 +124,18 @@ describe("workflow graph cloning", () => {
     });
     expect(clone.stages[0].actions[0]).toEqual({
       ...source.stages[0].actions[0],
+      id: undefined,
+    });
+    expect(clone.stages[0].checklistItems[0]).toEqual({
+      ...source.stages[0].checklistItems[0],
+      id: undefined,
+    });
+    expect(clone.stages[0].documentRequirements[0]).toEqual({
+      ...source.stages[0].documentRequirements[0],
+      id: undefined,
+    });
+    expect(clone.stages[0].scoring?.criteria[0]).toEqual({
+      ...source.stages[0].scoring.criteria[0],
       id: undefined,
     });
     expect(clone.transitions[0]).toEqual({

@@ -54,11 +54,19 @@ function TaskFields({
         actionKeys={[]}
         assignmentItems={[{ label: "Reviewer", value: "reviewer" }]}
         assignmentMode="ROLE"
+        contextFieldItems={[{
+          key: "application.requested_amount",
+          label: "Requested amount",
+          type: "NUMBER",
+        }]}
+        contextFieldKeys={["application.requested_amount"]}
+        contextFieldsPending={false}
         formItems={formItems}
         formVersionId={formVersionId ?? ""}
         formsPending={formItems.length === 0}
         mutationPending={false}
         onActionKeysChange={() => undefined}
+        onContextFieldKeysChange={() => undefined}
       />
     </FormProvider>
   );
@@ -88,9 +96,12 @@ describe("workflow task form selection", () => {
       'select[name="formVersionId"]',
     );
     expect(formSelect?.value).toBe(attachedVersionId);
-    expect(container.querySelector<HTMLInputElement>(
-      'input[name="contextFields.0.key"]',
+    expect(container.querySelector<HTMLSelectElement>(
+      "#workflow-context-fields-values",
     )?.value).toBe("application.requested_amount");
+    expect(container.textContent).toContain(
+      "Requested amount · application.requested_amount",
+    );
 
     await act(async () => root.unmount());
   });

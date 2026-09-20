@@ -1,4 +1,7 @@
 import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup";
+import type { WorkflowStageChecklistDefinition } from "./WorkflowStageChecklistDefinition";
+import type { WorkflowStageDocumentRequirement } from "./WorkflowStageDocumentRequirement";
+import type { WorkflowStageScoringDefinition } from "./WorkflowStageScoringDefinition";
 
 export const workflowPublicStatuses = [
   "SUBMITTED",
@@ -30,4 +33,7 @@ export type WorkflowStageDefinition = {
   coiGated: boolean;
   entryCondition: ConditionGroup | null;
   exitCondition: ConditionGroup | null;
+  checklistItems: WorkflowStageChecklistDefinition[];
+  documentRequirements: WorkflowStageDocumentRequirement[];
+  scoring: WorkflowStageScoringDefinition | null;
 };

@@ -12,6 +12,12 @@ import type {
 import { WorkflowStageTaskTable } from "@/modules/workflows/ui/definitions/WorkflowStageTaskTable";
 import { WorkflowStageActionTable } from "@/modules/workflows/ui/definitions/WorkflowStageActionTable";
 import { WorkflowStageTransitionTable } from "@/modules/workflows/ui/definitions/WorkflowStageTransitionTable";
+import { WorkflowStageChecklistTable } from "@/modules/workflows/ui/definitions/WorkflowStageChecklistTable";
+import type { WorkflowStageChecklistDefinition } from "@/modules/workflows/domain/definitions/WorkflowStageChecklistDefinition";
+import { WorkflowStageDocumentRequirementTable } from "@/modules/workflows/ui/definitions/WorkflowStageDocumentRequirementTable";
+import type { WorkflowStageDocumentRequirement } from "@/modules/workflows/domain/definitions/WorkflowStageDocumentRequirement";
+import { WorkflowStageScoringTable } from "@/modules/workflows/ui/definitions/WorkflowStageScoringTable";
+import type { WorkflowStageScoringCriterion } from "@/modules/workflows/domain/definitions/WorkflowStageScoringDefinition";
 import { Badge, type BadgeProps } from "@/shared/ui/Badge";
 
 type Props = {
@@ -22,12 +28,29 @@ type Props = {
   editor: WorkflowEditorView;
   onAddAction: () => void;
   onAddTask: () => void;
+  onAddChecklistItem: () => void;
+  onAddDocumentRequirement: () => void;
+  onAddScoringCriterion: () => void;
   onDelete: () => void;
   onDeleteAction: (action: WorkflowActionDefinition) => void;
   onEdit: () => void;
   onEditAction: (action: WorkflowActionDefinition) => void;
   onDeleteTask: (task: WorkflowTaskInput) => void;
   onEditTask: (task: WorkflowTaskInput) => void;
+  onDeleteChecklistItem: (item: WorkflowStageChecklistDefinition) => void;
+  onEditChecklistItem: (item: WorkflowStageChecklistDefinition) => void;
+  onDeleteDocumentRequirement: (
+    requirement: WorkflowStageDocumentRequirement,
+  ) => void;
+  onEditDocumentRequirement: (
+    requirement: WorkflowStageDocumentRequirement,
+  ) => void;
+  onDeleteScoringCriterion: (
+    criterion: WorkflowStageScoringCriterion,
+  ) => void;
+  onEditScoringCriterion: (
+    criterion: WorkflowStageScoringCriterion,
+  ) => void;
   onPreviewTask: (task: WorkflowTaskInput) => void;
   stage?: WorkflowStageInput;
   stageIndex: number;
@@ -41,12 +64,21 @@ export function WorkflowStageDetails({
   editor,
   onAddAction,
   onAddTask,
+  onAddChecklistItem,
+  onAddDocumentRequirement,
+  onAddScoringCriterion,
   onDelete,
   onDeleteAction,
   onEdit,
   onEditAction,
   onDeleteTask,
   onEditTask,
+  onDeleteChecklistItem,
+  onEditChecklistItem,
+  onDeleteDocumentRequirement,
+  onEditDocumentRequirement,
+  onDeleteScoringCriterion,
+  onEditScoringCriterion,
   onPreviewTask,
   stage,
   stageIndex,
@@ -72,6 +104,52 @@ export function WorkflowStageDetails({
             onDelete={onDeleteTask}
             onEdit={onEditTask}
             onPreview={onPreviewTask}
+            stage={stage}
+          />
+        </StageTabContent>
+      ),
+    },
+    {
+      id: "checklists",
+      label: "Checklists",
+      content: (
+        <StageTabContent>
+          <WorkflowStageChecklistTable
+            canEdit={canEdit}
+            onAdd={onAddChecklistItem}
+            onDelete={onDeleteChecklistItem}
+            onEdit={onEditChecklistItem}
+            stage={stage}
+          />
+        </StageTabContent>
+      ),
+    },
+    {
+      id: "documents",
+      label: "Documents",
+      content: (
+        <StageTabContent>
+          <WorkflowStageDocumentRequirementTable
+            canEdit={canEdit}
+            onAdd={onAddDocumentRequirement}
+            onDelete={onDeleteDocumentRequirement}
+            onEdit={onEditDocumentRequirement}
+            stage={stage}
+          />
+        </StageTabContent>
+      ),
+    },
+    {
+      id: "scoring",
+      label: "Scoring",
+      content: (
+        <StageTabContent>
+          <WorkflowStageScoringTable
+            canEdit={canEdit}
+            editor={editor}
+            onAdd={onAddScoringCriterion}
+            onDelete={onDeleteScoringCriterion}
+            onEdit={onEditScoringCriterion}
             stage={stage}
           />
         </StageTabContent>
@@ -105,7 +183,14 @@ export function WorkflowStageDetails({
         </StageTabContent>
       ),
     },
-  ] satisfies readonly TabItem<"tasks" | "actions" | "transition">[];
+  ] satisfies readonly TabItem<
+    | "tasks"
+    | "checklists"
+    | "documents"
+    | "scoring"
+    | "actions"
+    | "transition"
+  >[];
 
   return (
     <article className="rounded-2xl border border-brand-navy/15 bg-brand-white p-5">

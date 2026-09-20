@@ -64,6 +64,9 @@ function stage(
         displayOrder: 1,
       },
     ],
+    checklistItems: [],
+    documentRequirements: [],
+    scoring: null,
     tasks: [],
   };
 }

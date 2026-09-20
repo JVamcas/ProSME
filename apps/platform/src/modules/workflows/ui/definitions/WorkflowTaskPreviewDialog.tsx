@@ -13,7 +13,6 @@ import { WorkflowTaskActions } from "@/modules/work-queue/ui/WorkflowTaskActions
 import type {
   WorkflowStageInput,
   WorkflowTaskInput,
-  WorkflowTransitionInput,
 } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import { checklistItemDefaults } from "./WorkflowTaskFormSchema";
 
@@ -77,15 +76,13 @@ export function WorkflowTaskPreviewDialog({
   onClose,
   stage,
   task,
-  transitions,
 }: {
   onClose: () => void;
   stage: WorkflowStageInput;
   task: WorkflowTaskInput;
-  transitions: WorkflowTransitionInput[];
 }) {
   const form = usePublishedFormRuntime(task.formBinding?.formVersionId ?? null);
-  const actions = workflowTaskPreviewActions(stage, task, transitions);
+  const actions = workflowTaskPreviewActions(stage, task);
   return (
     <DraggableDialog
       isOpen
@@ -125,19 +122,13 @@ export function workflowTaskPreviewPanelClass(
 export function workflowTaskPreviewActions(
   stage: WorkflowStageInput,
   task: WorkflowTaskInput,
-  transitions: WorkflowTransitionInput[],
 ) {
   const selected = new Set(task.actionKeys);
   return stage.actions
     .filter(
       (action) =>
         action.enabled
-        && selected.has(action.stableKey)
-        && transitions.some(
-          (transition) =>
-            transition.sourceStageKey === stage.stableKey
-            && transition.actionKey === action.stableKey,
-        ),
+        && selected.has(action.stableKey),
     )
     .sort((left, right) => left.displayOrder - right.displayOrder)
     .map((action) => ({

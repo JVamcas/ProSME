@@ -9,5 +9,6 @@ export * from "@/modules/forms/infrastructure/form-response.schema";
 export * from "./identity";
 export * from "./profiles";
 export * from "@/modules/workflows/infrastructure/workflow.schema";
+export * from "@/modules/workflows/infrastructure/workflow-stage-requirements.schema";
 export * from "@/modules/workflows/infrastructure/workflow-audit.schema";
 export * from "./workflow-runtime";

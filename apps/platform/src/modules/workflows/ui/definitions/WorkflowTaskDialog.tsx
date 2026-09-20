@@ -45,12 +45,16 @@ export function WorkflowTaskDialog({
             actionKeys={controller.actionKeys}
             assignmentItems={controller.assignmentItems}
             assignmentMode={controller.assignmentMode}
+            contextFieldItems={controller.contextFieldItems}
+            contextFieldKeys={controller.contextFieldKeys}
+            contextFieldsPending={controller.contextFieldsPending}
             formItems={controller.formItems}
             formVersionId={controller.formVersionId}
             formsPending={controller.forms.isPending}
             mutationError={controller.mutation.error}
             mutationPending={controller.mutation.isPending}
             onActionKeysChange={controller.setActionKeys}
+            onContextFieldKeysChange={controller.setContextFieldKeys}
           />
         </form>
       </FormProvider>

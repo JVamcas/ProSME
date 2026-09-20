@@ -29,6 +29,9 @@ const stage = (code: string, sequence: number, initial: boolean) => ({
     reasonCodeRequired: false,
     displayOrder: 1,
   }],
+  checklistItems: [],
+  documentRequirements: [],
+  scoring: null,
   tasks: [{
     actionKeys: ["ADVANCE"],
     assignmentMode: "ROLE" as const,

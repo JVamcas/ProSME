@@ -75,6 +75,37 @@ const transitionCondition = {
 const graph: WorkflowGraphInput = {
   stages: [{
     actions: [],
+    checklistItems: [{
+      key: "OWNERSHIP_CONFIRMED",
+      text: "Confirm ownership.",
+      mandatory: true,
+      responseType: "YES_NO",
+      evidenceRequirement: "REQUIRED",
+      notes: "Review current records.",
+      displayOrder: 1,
+    }],
+    documentRequirements: [{
+      name: "Review evidence",
+      mandatory: true,
+      acceptedFileTypes: ["PDF"],
+      maximumSizeMb: 10,
+      expiryDays: null,
+      uploader: "APPLICANT",
+      verifier: "ASSIGNED_REVIEWER",
+      templateReference: "REVIEW_EVIDENCE_TEMPLATE",
+    }],
+    scoring: {
+      aggregation: "WEIGHTED_AVERAGE",
+      criteria: [{
+        criterion: "Business viability",
+        description: "Assess viability.",
+        weight: 100,
+        scaleMinimum: 0,
+        scaleMaximum: 10,
+        threshold: 6,
+        mandatoryComment: true,
+      }],
+    },
     coiGated: false,
     description: "Review the application",
     displayOrder: 1,
@@ -159,6 +190,25 @@ afterAll(async () => {
 
     expect(clone?.graph.stages[0].entryCondition).toEqual(entryCondition);
     expect(clone?.graph.stages[0].exitCondition).toEqual(exitCondition);
+    expect(clone?.graph.stages[0].checklistItems).toEqual([
+      expect.objectContaining({
+        key: "OWNERSHIP_CONFIRMED",
+        evidenceRequirement: "REQUIRED",
+      }),
+    ]);
+    expect(clone?.graph.stages[0].documentRequirements).toEqual([
+      expect.objectContaining({
+        name: "Review evidence",
+        templateReference: "REVIEW_EVIDENCE_TEMPLATE",
+      }),
+    ]);
+    expect(clone?.graph.stages[0].scoring).toEqual({
+      aggregation: "WEIGHTED_AVERAGE",
+      criteria: [expect.objectContaining({
+        criterion: "Business viability",
+        mandatoryComment: true,
+      })],
+    });
     expect(clone?.graph.transitions[0].condition).toEqual(
       transitionCondition,
     );

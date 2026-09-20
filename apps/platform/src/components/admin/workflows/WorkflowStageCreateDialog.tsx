@@ -73,6 +73,9 @@ export function WorkflowStageCreateDialog({
   });
   const conditionStage = stage ?? {
     actions: [],
+    checklistItems: [],
+    documentRequirements: [],
+    scoring: null,
     coiGated: false,
     description: "",
     displayOrder: editor.graph.stages.length + 1,
@@ -113,6 +116,9 @@ export function WorkflowStageCreateDialog({
             ...editor.graph.stages,
             {
               ...values,
+              checklistItems: [],
+              documentRequirements: [],
+              scoring: null,
               initial: editor.graph.stages.length === 0,
               displayOrder: editor.graph.stages.length + 1,
               publicStatusMapping: {

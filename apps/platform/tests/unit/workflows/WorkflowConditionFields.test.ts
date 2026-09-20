@@ -17,6 +17,9 @@ function stage(
 ): WorkflowStageInput {
   return {
     actions: [],
+    checklistItems: [],
+    documentRequirements: [],
+    scoring: null,
     coiGated: false,
     description: `${stableKey} stage`,
     displayOrder,

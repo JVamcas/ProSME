@@ -8,7 +8,7 @@ import {
 import { runtimeDefinition } from "../../support/form-runtime";
 
 describe("workflow task reviewer preview", () => {
-  it("shows only enabled actions bound to the selected task with a transition", () => {
+  it("shows every enabled action bound to the selected task", () => {
     const stage = structuredClone(referenceWorkflow.stages[0]);
     const task = stage.tasks[0];
     stage.actions.push({
@@ -20,18 +20,20 @@ describe("workflow task reviewer preview", () => {
       reasonCodeRequired: true,
       stableKey: "REJECT",
     });
+    task.actionKeys.push("REJECT");
 
     expect(
-      workflowTaskPreviewActions(
-        stage,
-        task,
-        referenceWorkflow.transitions,
-      ),
+      workflowTaskPreviewActions(stage, task),
     ).toEqual([
       {
         actionType: "APPROVE_ADVANCE",
         key: "ADVANCE",
         label: "Advance",
+      },
+      {
+        actionType: "REJECT",
+        key: "REJECT",
+        label: "Reject",
       },
     ]);
   });

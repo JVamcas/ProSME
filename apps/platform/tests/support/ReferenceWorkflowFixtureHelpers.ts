@@ -1,6 +1,9 @@
 import type { WorkflowActionDefinition } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
 
 export const emptyStageConditions = {
+  checklistItems: [],
+  documentRequirements: [],
+  scoring: null,
   entryCondition: null,
   exitCondition: null,
 };

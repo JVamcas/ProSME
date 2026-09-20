@@ -1,0 +1,72 @@
+import type { ConditionFieldDefinition } from "@/modules/conditions/domain/ConditionConfiguration";
+
+export const workflowRuntimeContextFields = [
+  { key: "application.id", label: "Application ID", type: "TEXT" },
+  {
+    key: "application.funding_opportunity_id",
+    label: "Application funding opportunity ID",
+    type: "NUMBER",
+  },
+  {
+    key: "application.reference",
+    label: "Application reference",
+    type: "TEXT",
+  },
+  { key: "application.status", label: "Application status", type: "TEXT" },
+  { key: "fundingCall.id", label: "Funding Call ID", type: "NUMBER" },
+  { key: "fundingCall.title", label: "Funding Call title", type: "TEXT" },
+  { key: "fundingCall.slug", label: "Funding Call slug", type: "TEXT" },
+  { key: "fundingCall.status", label: "Funding Call status", type: "TEXT" },
+  {
+    key: "fundingCall.minimum_amount",
+    label: "Funding Call minimum amount",
+    type: "NUMBER",
+  },
+  {
+    key: "fundingCall.maximum_amount",
+    label: "Funding Call maximum amount",
+    type: "NUMBER",
+  },
+  {
+    key: "fundingCall.opens_at",
+    label: "Funding Call opening date",
+    type: "DATE",
+  },
+  {
+    key: "fundingCall.closes_at",
+    label: "Funding Call closing date",
+    type: "DATE",
+  },
+  { key: "workflow.id", label: "Workflow ID", type: "TEXT" },
+  { key: "workflow.code", label: "Workflow code", type: "TEXT" },
+  { key: "workflow.name", label: "Workflow name", type: "TEXT" },
+  { key: "workflow.status", label: "Workflow status", type: "TEXT" },
+  {
+    key: "workflow.version_id",
+    label: "Workflow version ID",
+    type: "TEXT",
+  },
+  {
+    key: "workflow.version_number",
+    label: "Workflow version number",
+    type: "NUMBER",
+  },
+  {
+    key: "workflow.started_at",
+    label: "Workflow start date",
+    type: "DATE",
+  },
+  { key: "stage.id", label: "Stage instance ID", type: "TEXT" },
+  { key: "stage.definition_id", label: "Stage definition ID", type: "TEXT" },
+  { key: "stage.key", label: "Stage key", type: "TEXT" },
+  { key: "stage.name", label: "Stage name", type: "TEXT" },
+  { key: "stage.status", label: "Stage status", type: "TEXT" },
+  { key: "stage.started_at", label: "Stage start date", type: "DATE" },
+  { key: "task.id", label: "Task instance ID", type: "TEXT" },
+  { key: "task.definition_id", label: "Task definition ID", type: "TEXT" },
+  { key: "task.key", label: "Task key", type: "TEXT" },
+  { key: "task.name", label: "Task name", type: "TEXT" },
+  { key: "task.status", label: "Task status", type: "TEXT" },
+  { key: "task.type", label: "Task type", type: "TEXT" },
+  { key: "task.row_version", label: "Task row version", type: "NUMBER" },
+] as const satisfies readonly ConditionFieldDefinition[];

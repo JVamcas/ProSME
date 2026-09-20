@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { useForm, useWatch, type UseFormSetError } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
+import type { ConditionFieldDefinition } from "@/modules/conditions/domain/ConditionConfiguration";
 import { usePublishedForms } from "@/modules/forms/FormHooks";
 import { useSaveWorkflowGraph } from "@/modules/workflows/WorkflowHooks";
 import type {
@@ -11,11 +12,13 @@ import type {
   WorkflowStageInput,
   WorkflowTaskInput,
 } from "@/modules/workflows/domain/definitions/WorkflowTypes";
+import { workflowRuntimeContextFields } from "@/modules/workflows/domain/WorkflowRuntimeContextFieldCatalogue";
 import {
   taskAssignmentDefaults,
   type WorkflowTaskFormValues,
   workflowTaskFormSchema,
 } from "./WorkflowTaskFormSchema";
+import { useWorkflowConditionFields } from "./useWorkflowConditionFields";
 
 async function saveWorkflowTask({
   editor,
@@ -94,6 +97,7 @@ export function useWorkflowTaskDialogController(
 ) {
   const mutation = useSaveWorkflowGraph(editor);
   const forms = usePublishedForms();
+  const contextFieldPool = useWorkflowConditionFields(editor, stage);
   const form = useForm<WorkflowTaskFormValues>({
     defaultValues: {
       ...taskAssignmentDefaults(task),
@@ -125,6 +129,10 @@ export function useWorkflowTaskDialogController(
     control: form.control,
     name: "formVersionId",
   });
+  const selectedContextFields = useWatch({
+    control: form.control,
+    name: "contextFields",
+  }) ?? [];
   const previousAssignmentMode = useRef(assignmentMode);
 
   useEffect(() => {
@@ -148,6 +156,15 @@ export function useWorkflowTaskDialogController(
       label: action.enabled ? action.label : `${action.label} (disabled)`,
       value: action.stableKey,
     }));
+  const contextFieldsByKey = new Map<string, ConditionFieldDefinition>();
+  [
+    ...workflowRuntimeContextFields,
+    ...contextFieldPool.entryFields,
+    ...selectedContextFields,
+  ].forEach(
+    (field) => contextFieldsByKey.set(field.key, field),
+  );
+  const contextFields = [...contextFieldsByKey.values()];
 
   const save = (values: WorkflowTaskFormValues) =>
     saveWorkflowTask({
@@ -164,6 +181,9 @@ export function useWorkflowTaskDialogController(
     actionItems,
     assignmentItems,
     assignmentMode,
+    contextFieldItems: contextFields,
+    contextFieldKeys: selectedContextFields.map((field) => field.key),
+    contextFieldsPending: contextFieldPool.isPending,
     form,
     formItems,
     formVersionId: formVersionId ?? "",
@@ -174,6 +194,19 @@ export function useWorkflowTaskDialogController(
         shouldDirty: true,
         shouldValidate: true,
       });
+    },
+    setContextFieldKeys: (keys: string[]) => {
+      form.setValue(
+        "contextFields",
+        keys.flatMap((key) => {
+          const field = contextFieldsByKey.get(key);
+          return field ? [field] : [];
+        }),
+        {
+          shouldDirty: true,
+          shouldValidate: true,
+        },
+      );
     },
     save,
   };

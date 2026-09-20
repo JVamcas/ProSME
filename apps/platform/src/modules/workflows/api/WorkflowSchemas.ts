@@ -11,6 +11,16 @@ import { workflowTransitionSchema } from "@/modules/workflows/domain/transitions
 import { validateWorkflowTransitions } from "@/modules/workflows/domain/transitions/WorkflowTransitionValidation";
 import { conditionGroupSchema } from "@/modules/conditions/domain/ConditionSerialization";
 import { conditionFieldTypes } from "@/modules/conditions/domain/ConditionConfiguration";
+import {
+  workflowChecklistEvidenceRequirements,
+  workflowChecklistResponseTypes,
+} from "@/modules/workflows/domain/definitions/WorkflowStageChecklistDefinition";
+import {
+  workflowDocumentActors,
+  workflowDocumentFileTypes,
+  workflowDocumentVerifierActors,
+} from "@/modules/workflows/domain/definitions/WorkflowStageDocumentRequirement";
+import { workflowScoringAggregations } from "@/modules/workflows/domain/definitions/WorkflowStageScoringDefinition";
 
 export { workflowActionDefinitionSchema } from "@/modules/workflows/domain/actions/WorkflowActionSchemas";
 
@@ -20,6 +30,80 @@ const codeSchema = z
   .min(2)
   .max(80)
   .regex(/^[A-Z][A-Z0-9_]*$/);
+
+export const workflowStageChecklistSchema = z.object({
+  id: z.string().uuid().optional(),
+  key: codeSchema,
+  text: z.string().trim().min(2).max(500),
+  mandatory: z.boolean(),
+  responseType: z.enum(workflowChecklistResponseTypes),
+  evidenceRequirement: z.enum(workflowChecklistEvidenceRequirements),
+  notes: z.string().trim().max(1000),
+  displayOrder: z.number().int().positive(),
+}).strict();
+
+export const workflowStageDocumentRequirementSchema = z.object({
+  id: z.string().uuid().optional(),
+  name: z.string().trim().min(2).max(160),
+  mandatory: z.boolean(),
+  acceptedFileTypes: z.array(z.enum(workflowDocumentFileTypes))
+    .min(1)
+    .max(workflowDocumentFileTypes.length)
+    .refine(
+      (values) => new Set(values).size === values.length,
+      "Accepted file types must be unique.",
+    ),
+  maximumSizeMb: z.number().int().min(1).max(100),
+  expiryDays: z.number().int().min(1).max(3650).nullable(),
+  uploader: z.enum(workflowDocumentActors),
+  verifier: z.enum(workflowDocumentVerifierActors),
+  templateReference: z.string().trim().max(500),
+}).strict();
+
+export const workflowStageScoringCriterionSchema = z.object({
+  id: z.string().uuid().optional(),
+  criterion: z.string().trim().min(2).max(160),
+  description: z.string().trim().max(1000),
+  weight: z.number().positive().max(100),
+  scaleMinimum: z.number().min(0).max(1000),
+  scaleMaximum: z.number().positive().max(1000),
+  threshold: z.number().min(0).max(1000),
+  mandatoryComment: z.boolean(),
+}).strict().superRefine((criterion, context) => {
+  if (criterion.scaleMaximum <= criterion.scaleMinimum) {
+    context.addIssue({
+      code: "custom",
+      message: "Scale maximum must be greater than scale minimum.",
+      path: ["scaleMaximum"],
+    });
+  }
+  if (
+    criterion.threshold < criterion.scaleMinimum
+    || criterion.threshold > criterion.scaleMaximum
+  ) {
+    context.addIssue({
+      code: "custom",
+      message: "Threshold must fall within the configured scale.",
+      path: ["threshold"],
+    });
+  }
+});
+
+export const workflowStageScoringSchema = z.object({
+  aggregation: z.enum(workflowScoringAggregations),
+  criteria: z.array(workflowStageScoringCriterionSchema).max(100),
+}).strict().superRefine((scoring, context) => {
+  const criterionNames = scoring.criteria.map(
+    (criterion) => criterion.criterion.toLowerCase(),
+  );
+  if (new Set(criterionNames).size !== criterionNames.length) {
+    context.addIssue({
+      code: "custom",
+      message: "Scoring criteria must be unique within the stage.",
+      path: ["criteria"],
+    });
+  }
+});
 export const workflowTaskSchema = z
   .object({
     actionKeys: z.array(codeSchema).max(100).refine(
@@ -102,11 +186,43 @@ export const workflowStageSchema = z.object({
   coiGated: z.boolean(),
   entryCondition: conditionGroupSchema.nullable(),
   exitCondition: conditionGroupSchema.nullable(),
+  checklistItems: z.array(workflowStageChecklistSchema).max(100),
+  documentRequirements: z.array(workflowStageDocumentRequirementSchema)
+    .max(100),
+  scoring: workflowStageScoringSchema.nullable(),
   initial: z.boolean(),
   slaHours: z.number().int().positive().max(8760).nullable().optional(),
   actions: z.array(workflowActionDefinitionSchema),
   tasks: z.array(workflowTaskSchema),
 }).superRefine((stage, context) => {
+  const checklistKeys = stage.checklistItems.map((item) => item.key);
+  if (new Set(checklistKeys).size !== checklistKeys.length) {
+    context.addIssue({
+      code: "custom",
+      message: "Checklist keys must be unique within the stage.",
+      path: ["checklistItems"],
+    });
+  }
+  const checklistOrders = stage.checklistItems.map(
+    (item) => item.displayOrder,
+  );
+  if (new Set(checklistOrders).size !== checklistOrders.length) {
+    context.addIssue({
+      code: "custom",
+      message: "Checklist display orders must be unique within the stage.",
+      path: ["checklistItems"],
+    });
+  }
+  const documentNames = stage.documentRequirements.map(
+    (requirement) => requirement.name.toLowerCase(),
+  );
+  if (new Set(documentNames).size !== documentNames.length) {
+    context.addIssue({
+      code: "custom",
+      message: "Document requirement names must be unique within the stage.",
+      path: ["documentRequirements"],
+    });
+  }
   const actionKeys = new Set(stage.actions.map((action) => action.stableKey));
   stage.tasks.forEach((task, taskIndex) => {
     task.actionKeys.forEach((actionKey, actionIndex) => {
