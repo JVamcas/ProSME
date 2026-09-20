@@ -1,9 +1,9 @@
-import { additionalOperators } from "../../engine/AdditionalOperators";
-import { basicOperators } from "../../engine/BasicOperators";
 import type {
   ConditionFieldType,
   ConditionOperatorDefinition,
-} from "../../domain/ConditionConfiguration";
+} from "../domain/ConditionConfiguration";
+import { additionalOperators } from "./AdditionalOperators";
+import { basicOperators } from "./BasicOperators";
 
 const allFieldTypes = [
   "TEXT",

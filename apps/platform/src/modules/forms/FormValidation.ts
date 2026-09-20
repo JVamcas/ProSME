@@ -1,7 +1,8 @@
 import validator from "@rjsf/validator-ajv8";
 
 import { buildFormValueSchema } from "./engine/FormDefinitionParser";
-import type { FormField } from "./FormTypes";
+import { formVisibilityConfigurationErrors } from "./engine/FormVisibility";
+import type { FormField, FormSection } from "./FormTypes";
 
 export function validateFieldOptions(field: FormField) {
   const options = field.options ?? [];
@@ -97,6 +98,7 @@ export function validateFormValues(
 
 export function formPublicationErrors(
   fields: readonly FormField[],
+  sections: readonly FormSection[],
   submitLabel: string,
 ) {
   const errors: string[] = [];
@@ -104,5 +106,6 @@ export function formPublicationErrors(
   if (!validateFormFields(fields)) {
     errors.push("Fields contain invalid keys, options, ordering, or validation rules.");
   }
+  errors.push(...formVisibilityConfigurationErrors(fields, sections));
   return errors;
 }

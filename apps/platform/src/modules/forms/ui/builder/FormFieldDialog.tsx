@@ -2,7 +2,13 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
-import { FormProvider, useFieldArray, useForm, useWatch } from "react-hook-form";
+import {
+  Controller,
+  FormProvider,
+  useFieldArray,
+  useForm,
+  useWatch,
+} from "react-hook-form";
 import { toast } from "sonner";
 import type { z } from "zod";
 
@@ -10,6 +16,7 @@ import { GeneralButton } from "@/components/ui/button";
 import { DraggableDialog } from "@/components/ui/draggable-dialog";
 import { CheckboxField } from "@/components/ui/form-field";
 import { FormInput, FormSelect, FormTextarea } from "@/components/ui/form-fields";
+import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup";
 import { formFieldSchema } from "@/modules/forms/api/FormSchemas";
 import {
   formFieldTypes,
@@ -17,6 +24,7 @@ import {
   type FormFieldType,
   type FormSection,
 } from "@/modules/forms/FormTypes";
+import { FormVisibilityConditionEditor } from "./FormVisibilityConditionEditor";
 
 type FieldDialogValues = z.input<typeof formFieldSchema>;
 
@@ -48,6 +56,7 @@ function defaultField(sectionId: string, order: number): FieldDialogValues {
     required: false,
     sectionId,
     type: "TEXT",
+    visibilityCondition: null,
   };
 }
 
@@ -105,6 +114,7 @@ function SelectOptions({
 
 function FormFieldDialogContent({
   field,
+  fields,
   nextOrder,
   onClose,
   onSave,
@@ -112,6 +122,7 @@ function FormFieldDialogContent({
   sectionId,
 }: {
   field?: FormField;
+  fields: readonly FormField[];
   nextOrder: number;
   onClose: () => void;
   onSave: (field: FormField) => Promise<void>;
@@ -159,6 +170,7 @@ function FormFieldDialogContent({
       isOpen
       onClose={onClose}
       title={field ? "Edit field" : "Add field"}
+      size="2xl"
     >
       <FormProvider {...form}>
         <form className="grid gap-4" onSubmit={submit}>
@@ -190,6 +202,17 @@ function FormFieldDialogContent({
           />
           <FormTextarea label="Help text" name="helpText" />
           <CheckboxField label="Required" name="required" />
+          <Controller
+            control={form.control}
+            name="visibilityCondition"
+            render={({ field: condition }) => (
+              <FormVisibilityConditionEditor
+                fields={fields.filter((item) => item.id !== field?.id)}
+                onChange={condition.onChange}
+                value={condition.value as ConditionGroup | null | undefined}
+              />
+            )}
+          />
           {["NUMBER", "CURRENCY", "PERCENTAGE"].includes(type) ? (
             <div className="grid gap-4 sm:grid-cols-2">
               <FormInput label="Minimum" name="minimum" type="number" />
@@ -247,6 +270,7 @@ function FormFieldDialogContent({
 
 export function FormFieldDialog({
   field,
+  fields,
   isOpen,
   nextOrder,
   onClose,
@@ -255,6 +279,7 @@ export function FormFieldDialog({
   sectionId,
 }: {
   field?: FormField;
+  fields: readonly FormField[];
   isOpen: boolean;
   nextOrder: number;
   onClose: () => void;
@@ -266,6 +291,7 @@ export function FormFieldDialog({
   return (
     <FormFieldDialogContent
       field={field}
+      fields={fields}
       key={field?.id ?? `${sectionId}-${nextOrder}`}
       nextOrder={nextOrder}
       onClose={onClose}

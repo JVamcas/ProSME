@@ -3,6 +3,7 @@ import type {
   FormSection,
   FormVersionSummary,
 } from "./domain/FormDefinition";
+import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup";
 
 export {
   formStatuses,
@@ -55,6 +56,7 @@ export type FormField = {
   maxLength?: number;
   order: number;
   options?: FormOption[];
+  visibilityCondition?: ConditionGroup | null;
 };
 
 export type FormEditorView = {

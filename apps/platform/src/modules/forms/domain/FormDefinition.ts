@@ -1,3 +1,5 @@
+import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup";
+
 export const formStatuses = ["DRAFT", "PUBLISHED", "RETIRED"] as const;
 
 export type FormStatus = (typeof formStatuses)[number];
@@ -10,6 +12,7 @@ export type FormSection = {
   title: string;
   description: string;
   order: number;
+  visibilityCondition?: ConditionGroup | null;
 };
 
 export type FormVersionSummary = {

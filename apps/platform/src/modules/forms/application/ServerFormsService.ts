@@ -45,6 +45,10 @@ import {
   captureFormResponseValues,
   InvalidFormRuntimeBindingError,
 } from "@/modules/forms/engine/FormRuntimeContext";
+import {
+  activeFormDefinition,
+  sanitizeFormResponseValues,
+} from "@/modules/forms/engine/FormVisibility";
 import type {
   CreateFormInput,
   FormCommandInput,
@@ -177,6 +181,7 @@ export async function updateFormDraft(
   const actor = requirePermission(user, permissionCodes.workflowFormUpdate);
   const errors = formPublicationErrors(
     input.fields,
+    input.sections,
     input.submitLabel,
   );
   if (errors.length && input.fields.length > 0) {
@@ -278,8 +283,10 @@ export async function saveTaskForm(
   if (!task?.formVersionId) throw new ResourceNotFoundError("assigned form task");
   const schema = await getFormRuntime(task.formVersionId);
   if (!schema) throw new ResourceNotFoundError("published form");
-  const values = capturedResponseValues(schema.fields, input.values);
-  if (!validateFormValues(schema.fields, values, false)) {
+  const captured = capturedResponseValues(schema.fields, input.values);
+  const values = sanitizeFormResponseValues(schema, captured);
+  const activeDefinition = activeFormDefinition(schema, captured);
+  if (!validateFormValues(activeDefinition.fields, values, false)) {
     throw new RequestValidationError("The form values are invalid.");
   }
   const saved = await saveDraftFormResponse({
@@ -325,8 +332,10 @@ export async function completeTaskForm(
   if (!task?.formVersionId) throw new ResourceNotFoundError("assigned form task");
   const schema = await getFormRuntime(task.formVersionId);
   if (!schema) throw new ResourceNotFoundError("published form");
-  const values = capturedResponseValues(schema.fields, input.values);
-  if (!validateFormValues(schema.fields, values, true)) {
+  const captured = capturedResponseValues(schema.fields, input.values);
+  const values = sanitizeFormResponseValues(schema, captured);
+  const activeDefinition = activeFormDefinition(schema, captured);
+  if (!validateFormValues(activeDefinition.fields, values, true)) {
     throw new RequestValidationError("Complete all required form fields with valid values.");
   }
   const result = await completeFormTask({

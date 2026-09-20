@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { FormProvider, useForm } from "react-hook-form";
+import { Controller, FormProvider, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type { z } from "zod";
 
@@ -13,17 +13,21 @@ import {
   FormSelect,
   FormTextarea,
 } from "@/components/ui/form-fields";
+import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup";
 import { formSectionSchema } from "@/modules/forms/api/FormSchemas";
-import type { FormSection } from "@/modules/forms/FormTypes";
+import type { FormField, FormSection } from "@/modules/forms/FormTypes";
+import { FormVisibilityConditionEditor } from "./FormVisibilityConditionEditor";
 
 export function FormSectionDialog({
   isOpen,
+  fields,
   nextOrder,
   onClose,
   onSave,
   section,
 }: {
   isOpen: boolean;
+  fields: readonly FormField[];
   nextOrder: number;
   onClose: () => void;
   onSave: (section: FormSection) => Promise<void>;
@@ -32,6 +36,7 @@ export function FormSectionDialog({
   return isOpen ? (
     <FormSectionDialogContent
       nextOrder={nextOrder}
+      fields={fields}
       onClose={onClose}
       onSave={onSave}
       section={section}
@@ -40,6 +45,7 @@ export function FormSectionDialog({
 }
 
 function FormSectionDialogContent({
+  fields,
   nextOrder,
   onClose,
   onSave,
@@ -57,6 +63,7 @@ function FormSectionDialogContent({
       order: nextOrder,
       showContainer: true,
       title: "",
+      visibilityCondition: null,
     },
     resolver: zodResolver(formSectionSchema),
   });
@@ -75,6 +82,7 @@ function FormSectionDialogContent({
       isOpen
       onClose={onClose}
       title={section ? "Edit section" : "Add section"}
+      size="2xl"
     >
       <FormProvider {...form}>
         <form className="space-y-4" onSubmit={submit}>
@@ -99,6 +107,17 @@ function FormSectionDialogContent({
           <CheckboxField
             label="Show section title and container"
             name="showContainer"
+          />
+          <Controller
+            control={form.control}
+            name="visibilityCondition"
+            render={({ field }) => (
+              <FormVisibilityConditionEditor
+                fields={fields}
+                onChange={field.onChange}
+                value={field.value as ConditionGroup | null | undefined}
+              />
+            )}
           />
           <div className="flex justify-end">
             <GeneralButton

@@ -5,6 +5,7 @@ import {
   index,
   integer,
   doublePrecision,
+  jsonb,
   pgTable,
   text,
   timestamp,
@@ -18,6 +19,7 @@ import type {
   FormStatus,
 } from "@/modules/forms/FormTypes";
 import { users } from "@/db/schema/identity";
+import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup";
 
 export const formDefinitions = pgTable(
   "app_form_definitions",
@@ -103,6 +105,8 @@ export const formSections = pgTable(
     columnSpan: integer("column_span").$type<1 | 2 | 3>().notNull().default(3),
     showContainer: boolean("show_container").notNull().default(true),
     order: integer("display_order").notNull(),
+    visibilityCondition: jsonb("visibility_condition")
+      .$type<ConditionGroup>(),
   },
   (table) => [
     uniqueIndex("app_form_sections_version_key_unique").on(
@@ -121,6 +125,14 @@ export const formSections = pgTable(
     check(
       "app_form_sections_column_span_check",
       sql`${table.columnSpan} in (1, 2, 3)`,
+    ),
+    check(
+      "app_form_sections_visibility_condition_check",
+      sql`${table.visibilityCondition} is null or (
+        jsonb_typeof(${table.visibilityCondition}) = 'object'
+        and ${table.visibilityCondition}->>'kind' = 'GROUP'
+        and jsonb_typeof(${table.visibilityCondition}->'children') = 'array'
+      )`,
     ),
   ],
 );
@@ -144,6 +156,8 @@ export const formFields = pgTable(
     minLength: integer("min_length"),
     maxLength: integer("max_length"),
     order: integer("display_order").notNull(),
+    visibilityCondition: jsonb("visibility_condition")
+      .$type<ConditionGroup>(),
   },
   (table) => [
     uniqueIndex("app_form_fields_version_key_unique").on(
@@ -171,6 +185,14 @@ export const formFields = pgTable(
     check(
       "app_form_fields_column_span_check",
       sql`${table.columnSpan} in (1, 2, 3)`,
+    ),
+    check(
+      "app_form_fields_visibility_condition_check",
+      sql`${table.visibilityCondition} is null or (
+        jsonb_typeof(${table.visibilityCondition}) = 'object'
+        and ${table.visibilityCondition}->>'kind' = 'GROUP'
+        and jsonb_typeof(${table.visibilityCondition}->'children') = 'array'
+      )`,
     ),
     check(
       "app_form_fields_number_limits_check",

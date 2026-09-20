@@ -5,6 +5,7 @@ import { and, eq, sql } from "drizzle-orm";
 import { getDatabase } from "@/db/client";
 import {
   formDefinitions,
+  formSections,
   formVersions,
 } from "@/db/schema";
 import type { FormField, FormSection } from "@/modules/forms/FormTypes";
@@ -175,8 +176,18 @@ export async function publishFormVersion(input: {
       .for("update")
       .limit(1);
     if (!current) return { kind: "conflict" as const };
-    const fields = await readPublicationFields(transaction, input.versionId);
-    const errors = formPublicationErrors(fields, current.submitLabel);
+    const [fields, sections] = await Promise.all([
+      readPublicationFields(transaction, input.versionId),
+      transaction
+        .select()
+        .from(formSections)
+        .where(eq(formSections.formVersionId, input.versionId)),
+    ]);
+    const errors = formPublicationErrors(
+      fields,
+      sections,
+      current.submitLabel,
+    );
     if (errors.length) return { errors, kind: "invalid" as const };
     const [version] = await transaction
       .update(formVersions)

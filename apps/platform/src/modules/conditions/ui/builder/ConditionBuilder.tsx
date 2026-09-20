@@ -25,7 +25,7 @@ import {
   ConditionValueSelector,
 } from "./ConditionBuilderControls";
 import styles from "./ConditionBuilder.module.css";
-import { conditionBuilderOperators } from "./ConditionBuilderOperators";
+import { conditionBuilderOperators } from "../../engine/ConditionOperatorCatalogue";
 import { ConditionValidationPreview } from "./ConditionValidationPreview";
 
 function inputType(field: ConditionFieldDefinition) {

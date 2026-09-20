@@ -93,6 +93,7 @@ async function readFields(versionId: string) {
         required: formFields.required,
         sectionId: formFields.sectionId,
         type: formFields.type,
+        visibilityCondition: formFields.visibilityCondition,
       })
       .from(formFields)
       .innerJoin(formSections, eq(formSections.id, formFields.sectionId))
@@ -135,6 +136,7 @@ async function readFields(versionId: string) {
     required: field.required,
     sectionId: field.sectionId,
     type: field.type,
+    visibilityCondition: field.visibilityCondition,
   }));
 }
 
@@ -148,6 +150,7 @@ async function readSections(versionId: string) {
       order: formSections.order,
       showContainer: formSections.showContainer,
       title: formSections.title,
+      visibilityCondition: formSections.visibilityCondition,
     })
     .from(formSections)
     .where(eq(formSections.formVersionId, versionId))

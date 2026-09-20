@@ -12,6 +12,7 @@ import {
   type RenderSection,
 } from "@/modules/forms/engine/FormDefinitionParser";
 import { calculateFormCompleteness } from "@/modules/forms/engine/FormCompleteness";
+import { activeFormDefinition } from "@/modules/forms/engine/FormVisibility";
 import { FormCompletenessSummary } from "./FormCompletenessSummary";
 import {
   formColumnCount,
@@ -130,17 +131,21 @@ export function FormRenderer({
   onSubmit: (values: DynamicFormValues) => void;
   readOnly?: boolean;
 }) {
+  const activeDefinition = useMemo(
+    () => activeFormDefinition(definition, formData),
+    [definition, formData],
+  );
   const parsed = useMemo(
-    () => parseFormDefinition(definition),
-    [definition],
+    () => parseFormDefinition(definition, formData),
+    [definition, formData],
   );
   const context = useMemo(
     () => ({ sections: parsed.sections }),
     [parsed.sections],
   );
   const completeness = useMemo(
-    () => calculateFormCompleteness(definition, formData),
-    [definition, formData],
+    () => calculateFormCompleteness(activeDefinition, formData),
+    [activeDefinition, formData],
   );
 
   return (

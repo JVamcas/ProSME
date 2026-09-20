@@ -5,6 +5,7 @@ import type {
   FormRuntimeSchema,
   FormSection,
 } from "@/modules/forms/FormTypes";
+import { activeFormDefinition } from "./FormVisibility";
 
 export type RenderSection = FormSection & {
   id: string;
@@ -184,6 +185,7 @@ function parseSections(
 
 export function parseFormDefinition(
   definition: FormRuntimeSchema,
+  values: Readonly<Record<string, unknown>> = {},
 ): ParsedFormDefinition {
   if (!definition.versionId || definition.versionNumber < 1) {
     invalid("The saved form version is invalid.");
@@ -194,8 +196,9 @@ export function parseFormDefinition(
   }
   assertUnique(definition.fields.map((field) => field.key), "Field keys");
 
-  const fields = [...definition.fields];
-  const sections = parseSections(definition, fields);
+  const activeDefinition = activeFormDefinition(definition, values);
+  const fields = [...activeDefinition.fields];
+  const sections = parseSections(activeDefinition, fields);
   assertUnique(sections.map((section) => section.id), "Section identifiers");
   const sectionIds = new Set(sections.map((section) => section.id));
   const orphan = fields.find((field) => !sectionIds.has(field.sectionId));

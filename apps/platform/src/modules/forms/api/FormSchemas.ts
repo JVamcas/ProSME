@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { conditionGroupSchema } from "@/modules/conditions/domain/ConditionSerialization";
 
 import { workflowActionKeySchema } from "@/modules/work-queue/WorkQueueSchemas";
 
@@ -46,6 +47,7 @@ const formFieldSchemaBase = z.object({
   maxLength: optionalLength,
   order: z.coerce.number().int().positive(),
   options: z.array(formOptionSchema).max(100).optional(),
+  visibilityCondition: conditionGroupSchema.nullable().optional(),
 });
 
 export const formFieldSchema = formFieldSchemaBase.superRefine((field, context) => {
@@ -155,6 +157,7 @@ export const formSectionSchema = z.object({
   title: z.string().trim().min(1).max(160),
   description: z.string().trim().max(1000),
   order: z.coerce.number().int().positive(),
+  visibilityCondition: conditionGroupSchema.nullable().optional(),
 });
 
 export const formDefinitionDialogSchema = formDefinitionSchema.extend({

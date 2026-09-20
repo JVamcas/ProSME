@@ -2,6 +2,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 import { FormRenderer } from "@/modules/forms/ui/renderer/FormRenderer";
+import { basicOperators } from "@/modules/conditions/engine/BasicOperators";
 import { runtimeDefinition } from "../../support/form-runtime";
 
 describe("RJSF form renderer", () => {
@@ -128,5 +129,56 @@ describe("RJSF form renderer", () => {
 
     expect(markup).not.toContain(">Submit<");
     expect(markup).not.toContain('type="submit"');
+  });
+
+  it("does not render fields in a section whose visibility condition fails", () => {
+    const definition = runtimeDefinition();
+    const detailsSectionId = "10000000-0000-4000-8000-000000000002";
+    const name = definition.fields.find((field) => field.key === "NAME")!;
+    name.sectionId = detailsSectionId;
+    name.order = 1;
+    definition.fields
+      .filter((field) => field.sectionId === definition.sections[0].id)
+      .sort((left, right) => left.order - right.order)
+      .forEach((field, index) => {
+        field.order = index + 1;
+      });
+    definition.sections.push({
+      columnSpan: 1,
+      description: "Conditionally visible details.",
+      id: detailsSectionId,
+      key: "DETAILS",
+      order: 2,
+      showContainer: true,
+      title: "Hidden details",
+      visibilityCondition: {
+      id: "30000000-0000-4000-8000-000000000001",
+      kind: "GROUP",
+      combinator: "AND",
+      children: [{
+        id: "30000000-0000-4000-8000-000000000002",
+        kind: "CONDITION",
+        leftOperand: { kind: "FIELD", key: "APPROVED" },
+        operator: basicOperators.EQUALS,
+        rightOperand: { kind: "CONSTANT", value: true },
+      }],
+      },
+    });
+
+    const markup = renderToStaticMarkup(
+      <FormRenderer
+        definition={definition}
+        formData={{ APPROVED: false, NAME: "Retained in browser state" }}
+        onChange={vi.fn()}
+        onSubmit={vi.fn()}
+      >
+        <button type="submit">Submit form</button>
+      </FormRenderer>,
+    );
+
+    expect(markup).toContain("Basic information");
+    expect(markup).not.toContain("Hidden details");
+    expect(markup).not.toContain('name="root_NAME"');
+    expect(markup).toContain("0 of 0 required fields complete");
   });
 });

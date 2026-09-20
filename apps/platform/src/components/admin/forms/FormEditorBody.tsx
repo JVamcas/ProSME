@@ -70,6 +70,22 @@ export function FormEditorBody({
     (item) => item.sectionId === fieldSectionId,
   ).length + 1;
   const fieldSection = sections.find((item) => item.id === fieldSectionId);
+  const sectionOrders = new Map(
+    sections.flatMap((item) => item.id ? [[item.id, item.order] as const] : []),
+  );
+  const targetSectionOrder = section?.order ?? sections.length + 1;
+  const sectionVisibilityFields = fields.filter((item) => (
+    (sectionOrders.get(item.sectionId) ?? Infinity) < targetSectionOrder
+  ));
+  const targetFieldOrder = field?.order ?? nextFieldOrder;
+  const targetFieldSectionOrder = sectionOrders.get(fieldSectionId ?? "")
+    ?? Infinity;
+  const fieldVisibilityFields = fields.filter((item) => {
+    const sourceSectionOrder = sectionOrders.get(item.sectionId) ?? Infinity;
+    return sourceSectionOrder < targetFieldSectionOrder
+      || sourceSectionOrder === targetFieldSectionOrder
+        && item.order < targetFieldOrder;
+  });
   return (
     <>
       <FormSectionBuilder
@@ -86,6 +102,7 @@ export function FormEditorBody({
         sections={sections}
       />
       <FormSectionDialog
+        fields={sectionVisibilityFields}
         isOpen={sectionDialogOpen}
         nextOrder={sections.length + 1}
         onClose={onCloseSectionDialog}
@@ -94,6 +111,7 @@ export function FormEditorBody({
       />
       <FormFieldDialog
         field={field?.id ? field : undefined}
+        fields={fieldVisibilityFields}
         isOpen={dialogOpen}
         nextOrder={nextFieldOrder}
         onClose={onCloseDialog}

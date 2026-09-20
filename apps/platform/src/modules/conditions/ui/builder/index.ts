@@ -3,7 +3,7 @@ export {
   conditionGroupToQuery,
   queryToConditionGroup,
 } from "./ConditionBuilderAdapter";
-export { conditionBuilderOperators } from "./ConditionBuilderOperators";
+export { conditionBuilderOperators } from "../../engine/ConditionOperatorCatalogue";
 export { formatConditionGroupPreview } from "../../engine/ConditionPreview";
 export {
   validateConditionGroup,

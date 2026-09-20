@@ -12,6 +12,8 @@ import {
   saveFormDraft,
 } from "@/modules/forms/infrastructure/FormWriteRepository";
 import type { FormField } from "@/modules/forms/FormTypes";
+import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup";
+import { basicOperators } from "@/modules/conditions/engine/BasicOperators";
 
 const enabled = process.env.RUN_P3_WORKFLOW_DATABASE_TESTS === "true";
 const pool = enabled
@@ -57,9 +59,25 @@ function field(
   };
 }
 
+function equals(key: string, value: string): ConditionGroup {
+  return {
+    id: randomUUID(),
+    kind: "GROUP",
+    combinator: "AND",
+    children: [{
+      id: randomUUID(),
+      kind: "CONDITION",
+      leftOperand: { kind: "FIELD", key },
+      operator: basicOperators.EQUALS,
+      rightOperand: { kind: "CONSTANT", value },
+    }],
+  };
+}
+
 (enabled ? describe : describe.skip)("additional form field type storage", () => {
   it("persists, projects, publishes, and clones every additional type", async () => {
     const sectionId = randomUUID();
+    const detailSectionId = randomUUID();
     const created = await createForm({
       actorId,
       code: `ADDITIONAL_${actorId.replaceAll("-", "").toUpperCase()}`,
@@ -67,27 +85,44 @@ function field(
       name: "Additional field types persistence test",
       submitLabel: "Submit",
     });
+    const rateVisibility = equals("REGION", "FIRST");
+    const sectionVisibility = equals("REGION", "SECOND");
     const fields = [
       field(sectionId, "AMOUNT", "CURRENCY", 1),
       field(sectionId, "REGION", "SINGLE_SELECT", 2),
       field(sectionId, "SECTORS", "MULTI_SELECT", 3),
-      field(sectionId, "RATE", "PERCENTAGE", 4),
-      field(sectionId, "EVIDENCE", "DOCUMENT", 5),
+      {
+        ...field(sectionId, "RATE", "PERCENTAGE", 4),
+        visibilityCondition: rateVisibility,
+      },
+      field(detailSectionId, "EVIDENCE", "DOCUMENT", 1),
     ];
     const saved = await saveFormDraft({
       actorId,
       definitionId: created.definition.id,
       expectedRowVersion: 1,
       fields,
-      sections: [{
-        columnSpan: 3,
-        description: "Additional fields",
-        id: sectionId,
-        key: "ADDITIONAL_FIELDS",
-        order: 1,
-        showContainer: true,
-        title: "Additional fields",
-      }],
+      sections: [
+        {
+          columnSpan: 3,
+          description: "Additional fields",
+          id: sectionId,
+          key: "ADDITIONAL_FIELDS",
+          order: 1,
+          showContainer: true,
+          title: "Additional fields",
+        },
+        {
+          columnSpan: 3,
+          description: "Conditional fields",
+          id: detailSectionId,
+          key: "CONDITIONAL_FIELDS",
+          order: 2,
+          showContainer: true,
+          title: "Conditional fields",
+          visibilityCondition: sectionVisibility,
+        },
+      ],
       submitLabel: "Submit",
     });
     expect(saved?.rowVersion).toBe(2);
@@ -100,6 +135,10 @@ function field(
         type: expected.type,
       })
     )));
+    expect(editor?.fields.find((item) => item.key === "RATE")
+      ?.visibilityCondition).toEqual(rateVisibility);
+    expect(editor?.sections.find((item) => item.key === "CONDITIONAL_FIELDS")
+      ?.visibilityCondition).toEqual(sectionVisibility);
 
     const publication = await publishFormVersion({
       actorId,
@@ -122,5 +161,10 @@ function field(
         type: expected.type,
       })),
     );
+    const cloned = await getFormEditor(created.definition.id);
+    expect(cloned?.fields.find((item) => item.key === "RATE")
+      ?.visibilityCondition).toEqual(rateVisibility);
+    expect(cloned?.sections.find((item) => item.key === "CONDITIONAL_FIELDS")
+      ?.visibilityCondition).toEqual(sectionVisibility);
   });
 });

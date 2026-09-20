@@ -28,6 +28,7 @@ async function copySections(
       order: formSections.order,
       showContainer: formSections.showContainer,
       title: formSections.title,
+      visibilityCondition: formSections.visibilityCondition,
     })
     .from(formSections)
     .where(eq(formSections.formVersionId, sourceVersionId));
@@ -46,6 +47,7 @@ async function copySections(
         order: section.order,
         showContainer: section.showContainer,
         title: section.title,
+        visibilityCondition: section.visibilityCondition,
       };
     }),
   );
@@ -94,6 +96,7 @@ async function copyFields(
       required: field.required,
       sectionId: sectionIds.get(field.sectionId)!,
       type: field.type,
+      visibilityCondition: field.visibilityCondition,
     })),
   );
   if (options.length) {
@@ -157,6 +160,7 @@ async function replaceDraftSections(
       order: section.order,
       showContainer: section.showContainer,
       title: section.title,
+      visibilityCondition: section.visibilityCondition ?? null,
     })),
   );
 }
@@ -184,6 +188,7 @@ async function insertDraftFields(
       required: field.required,
       sectionId: field.sectionId,
       type: field.type,
+      visibilityCondition: field.visibilityCondition ?? null,
     })),
   );
   const options = fields.flatMap((field, index) => (
@@ -228,6 +233,7 @@ export async function readPublicationFields(
         required: formFields.required,
         sectionId: formFields.sectionId,
         type: formFields.type,
+        visibilityCondition: formFields.visibilityCondition,
       })
       .from(formFields)
       .where(eq(formFields.formVersionId, versionId)),
