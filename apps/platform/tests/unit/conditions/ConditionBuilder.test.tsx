@@ -69,6 +69,11 @@ describe("ConditionBuilder", () => {
     expect(container.querySelector<HTMLInputElement>(
       '[aria-label="Value"]',
     )?.value).toBe("100000");
+    expect(container.textContent).toContain("Condition preview");
+    expect(container.textContent).toContain(
+      "Requested amount Equals 100000",
+    );
+    expect(container.textContent).toContain("Valid");
 
     await act(async () => root?.render(
       <ConditionBuilder
@@ -184,5 +189,9 @@ describe("ConditionBuilder", () => {
       combinator: "OR",
       children: [{ kind: "GROUP" }],
     });
+    expect(container.textContent).toContain("validation issues");
+    expect(container.textContent).toContain(
+      "A condition group must contain at least one condition or group.",
+    );
   });
 });

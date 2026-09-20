@@ -1,68 +1,106 @@
 import { additionalOperators } from "../../engine/AdditionalOperators";
 import { basicOperators } from "../../engine/BasicOperators";
-import type { ConditionBuilderOperator } from "./ConditionBuilderTypes";
+import type {
+  ConditionFieldType,
+  ConditionOperatorDefinition,
+} from "../../domain/ConditionConfiguration";
+
+const allFieldTypes = [
+  "TEXT",
+  "NUMBER",
+  "BOOLEAN",
+  "DATE",
+] as const satisfies readonly ConditionFieldType[];
+
+const orderedFieldTypes = [
+  "TEXT",
+  "NUMBER",
+  "DATE",
+] as const satisfies readonly ConditionFieldType[];
 
 export const conditionBuilderOperators = [
-  { code: basicOperators.EQUALS, label: "Equals", valueEditor: "SINGLE" },
   {
+    allowedFieldTypes: allFieldTypes,
+    code: basicOperators.EQUALS,
+    label: "Equals",
+    valueShape: "SINGLE",
+  },
+  {
+    allowedFieldTypes: allFieldTypes,
     code: basicOperators.NOT_EQUALS,
     label: "Does not equal",
-    valueEditor: "SINGLE",
+    valueShape: "SINGLE",
   },
   {
+    allowedFieldTypes: orderedFieldTypes,
     code: basicOperators.GREATER_THAN,
     label: "Greater than",
-    valueEditor: "SINGLE",
+    valueShape: "SINGLE",
   },
   {
+    allowedFieldTypes: orderedFieldTypes,
     code: basicOperators.LESS_THAN,
     label: "Less than",
-    valueEditor: "SINGLE",
+    valueShape: "SINGLE",
   },
   {
+    allowedFieldTypes: orderedFieldTypes,
     code: basicOperators.GREATER_THAN_OR_EQUAL,
     label: "Greater than or equal",
-    valueEditor: "SINGLE",
+    valueShape: "SINGLE",
   },
   {
+    allowedFieldTypes: orderedFieldTypes,
     code: basicOperators.LESS_THAN_OR_EQUAL,
     label: "Less than or equal",
-    valueEditor: "SINGLE",
+    valueShape: "SINGLE",
   },
-  { code: additionalOperators.IN, label: "Is in", valueEditor: "LIST" },
   {
+    allowedFieldTypes: allFieldTypes,
+    code: additionalOperators.IN,
+    label: "Is in",
+    valueShape: "LIST",
+  },
+  {
+    allowedFieldTypes: allFieldTypes,
     code: additionalOperators.NOT_IN,
     label: "Is not in",
-    valueEditor: "LIST",
+    valueShape: "LIST",
   },
   {
+    allowedFieldTypes: ["NUMBER", "DATE"],
     code: additionalOperators.BETWEEN,
     label: "Is between",
-    valueEditor: "RANGE",
+    valueShape: "RANGE",
   },
   {
+    allowedFieldTypes: ["DATE"],
     code: additionalOperators.BEFORE,
     label: "Is before",
-    valueEditor: "SINGLE",
+    valueShape: "SINGLE",
   },
   {
+    allowedFieldTypes: ["DATE"],
     code: additionalOperators.AFTER,
     label: "Is after",
-    valueEditor: "SINGLE",
+    valueShape: "SINGLE",
   },
   {
+    allowedFieldTypes: allFieldTypes,
     code: additionalOperators.IS_EMPTY,
     label: "Is empty",
-    valueEditor: "NONE",
+    valueShape: "NONE",
   },
   {
+    allowedFieldTypes: allFieldTypes,
     code: additionalOperators.IS_NOT_EMPTY,
     label: "Is not empty",
-    valueEditor: "NONE",
+    valueShape: "NONE",
   },
   {
+    allowedFieldTypes: ["DATE"],
     code: additionalOperators.WITHIN_LAST_N_MONTHS,
     label: "Is within the last N months",
-    valueEditor: "SINGLE",
+    valueShape: "SINGLE",
   },
-] as const satisfies readonly ConditionBuilderOperator[];
+] as const satisfies readonly ConditionOperatorDefinition[];

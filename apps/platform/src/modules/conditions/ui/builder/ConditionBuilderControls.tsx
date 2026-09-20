@@ -7,7 +7,7 @@ import type {
 import { GeneralButton } from "@/components/ui/button";
 import { FormInput, FormSelect } from "@/components/ui/form-fields";
 
-import type { ConditionFieldType } from "./ConditionBuilderTypes";
+import type { ConditionFieldType } from "../../domain/ConditionConfiguration";
 
 function selectItems(options: ValueSelectorProps["options"]) {
   return options.flatMap((option) => {

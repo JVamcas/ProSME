@@ -5,9 +5,16 @@ import {
   QueryBuilder,
   type Field,
   type FullOperator,
+  type ValidationMap,
 } from "react-querybuilder";
 
 import type { ConditionGroup } from "../../domain/ConditionGroup";
+import type {
+  ConditionFieldDefinition,
+  ConditionOperatorDefinition,
+} from "../../domain/ConditionConfiguration";
+import { formatConditionGroupPreview } from "../../engine/ConditionPreview";
+import { validateConditionGroup } from "../../engine/ConditionValidation";
 import {
   conditionGroupToQuery,
   queryToConditionGroup,
@@ -19,18 +26,15 @@ import {
 } from "./ConditionBuilderControls";
 import styles from "./ConditionBuilder.module.css";
 import { conditionBuilderOperators } from "./ConditionBuilderOperators";
-import type {
-  ConditionBuilderField,
-  ConditionBuilderOperator,
-} from "./ConditionBuilderTypes";
+import { ConditionValidationPreview } from "./ConditionValidationPreview";
 
-function inputType(field: ConditionBuilderField) {
+function inputType(field: ConditionFieldDefinition) {
   if (field.type === "NUMBER") return "number";
   if (field.type === "DATE") return "date";
   return "text";
 }
 
-function queryBuilderFields(fields: readonly ConditionBuilderField[]): Field[] {
+function queryBuilderFields(fields: readonly ConditionFieldDefinition[]): Field[] {
   return fields.map((field) => ({
     conditionType: field.type,
     inputType: inputType(field),
@@ -47,10 +51,10 @@ function queryBuilderFields(fields: readonly ConditionBuilderField[]): Field[] {
 }
 
 function queryBuilderOperators(
-  operators: readonly ConditionBuilderOperator[],
+  operators: readonly ConditionOperatorDefinition[],
 ): FullOperator[] {
   return operators.map((item) => ({
-    arity: item.valueEditor === "NONE" ? "unary" : undefined,
+    arity: item.valueShape === "NONE" ? "unary" : undefined,
     label: item.label,
     name: item.code,
     value: item.code,
@@ -67,9 +71,9 @@ export function ConditionBuilder({
 }: {
   createId?: () => string;
   disabled?: boolean;
-  fields: readonly ConditionBuilderField[];
+  fields: readonly ConditionFieldDefinition[];
   onChange: (value: ConditionGroup) => void;
-  operators?: readonly ConditionBuilderOperator[];
+  operators?: readonly ConditionOperatorDefinition[];
   value: ConditionGroup;
 }) {
   const query = useMemo(() => conditionGroupToQuery(value), [value]);
@@ -77,6 +81,28 @@ export function ConditionBuilder({
   const builderOperators = useMemo(
     () => queryBuilderOperators(operators),
     [operators],
+  );
+  const validation = useMemo(
+    () => validateConditionGroup(value, fields, operators),
+    [fields, operators, value],
+  );
+  const validationMap = useMemo<ValidationMap>(() => {
+    const result: ValidationMap = {};
+    for (const issue of validation.issues) {
+      const current = result[issue.nodeId];
+      const reasons = typeof current === "object" && current.reasons
+        ? current.reasons
+        : [];
+      result[issue.nodeId] = {
+        reasons: [...reasons, issue.message],
+        valid: false,
+      };
+    }
+    return result;
+  }, [validation]);
+  const preview = useMemo(
+    () => formatConditionGroupPreview(value, fields, operators),
+    [fields, operators, value],
   );
 
   return (
@@ -124,6 +150,11 @@ export function ConditionBuilder({
           },
           value: { title: "Value" },
         }}
+        validator={() => validationMap}
+      />
+      <ConditionValidationPreview
+        preview={preview}
+        validation={validation}
       />
     </div>
   );

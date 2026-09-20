@@ -1,10 +1,10 @@
 import type { RuleGroupType, RuleType } from "react-querybuilder";
 
 import type { Condition } from "../../domain/Condition";
+import type { ConditionOperatorDefinition } from "../../domain/ConditionConfiguration";
 import type { ConditionGroup, ConditionNode } from "../../domain/ConditionGroup";
 import type { JsonValue } from "../../domain/Operand";
 import { operator } from "../../domain/Operator";
-import type { ConditionBuilderOperator } from "./ConditionBuilderTypes";
 
 function conditionToRule(condition: Condition): RuleType {
   if (condition.leftOperand.kind !== "FIELD") {
@@ -36,7 +36,7 @@ export function conditionGroupToQuery(group: ConditionGroup): RuleGroupType {
 
 function ruleToCondition(
   rule: RuleType,
-  operators: readonly ConditionBuilderOperator[],
+  operators: readonly ConditionOperatorDefinition[],
   createId: () => string,
 ): Condition {
   const definition = operators.find((item) => item.code === rule.operator);
@@ -46,7 +46,7 @@ function ruleToCondition(
     leftOperand: { kind: "FIELD", key: rule.field },
     operator: operator(rule.operator),
   };
-  if (definition?.valueEditor !== "NONE") {
+  if (definition?.valueShape !== "NONE") {
     condition.rightOperand = {
       kind: "CONSTANT",
       value: rule.value as JsonValue,
@@ -57,7 +57,7 @@ function ruleToCondition(
 
 export function queryToConditionGroup(
   query: RuleGroupType,
-  operators: readonly ConditionBuilderOperator[],
+  operators: readonly ConditionOperatorDefinition[],
   createId: () => string,
 ): ConditionGroup {
   return {

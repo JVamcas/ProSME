@@ -46,3 +46,8 @@
 .builder :global(.rule-remove) {
   color: var(--color-red-600);
 }
+
+.builder :global(.ruleGroup-invalid),
+.builder :global(.rule-invalid) {
+  border-color: var(--color-red-600);
+}
