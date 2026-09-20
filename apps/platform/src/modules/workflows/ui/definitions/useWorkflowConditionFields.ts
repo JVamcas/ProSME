@@ -30,7 +30,7 @@ export function useWorkflowConditionFields(
   });
   const forms = new Map(
     queries.flatMap((query, index) =>
-      query.data ? [[versionIds[index], query.data] as const] : []
+      query.data ? [[versionIds[index], query.data.fields] as const] : []
     ),
   );
   return {

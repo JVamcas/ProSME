@@ -37,6 +37,7 @@ import {
   WorkflowNotFoundError,
 } from "./ServerWorkflowSupport";
 import { validateWorkflowGraph } from "../../WorkflowValidation";
+import { validateStoredWorkflowConditions } from "./ServerWorkflowConditionValidation";
 
 const commandPermissions = {
   SUBMIT: permissionCodes.workflowDefinitionSubmit,
@@ -62,7 +63,11 @@ async function requireVersion(templateId: string, versionId: string) {
 async function requireValidWorkflowStructure(versionId: string) {
   const record = await findWorkflowGraph(versionId);
   if (!record) throw new WorkflowNotFoundError();
-  if (!validateWorkflowGraph(record.graph).valid) {
+  const structure = validateWorkflowGraph(record.graph);
+  const conditionErrors = structure.valid
+    ? await validateStoredWorkflowConditions(record.graph)
+    : [];
+  if (!structure.valid || conditionErrors.length) {
     throw new WorkflowConflictError(
       "Resolve all workflow validation errors before approval or publication.",
     );

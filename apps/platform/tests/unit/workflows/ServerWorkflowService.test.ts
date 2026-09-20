@@ -71,6 +71,8 @@ import { actor, record, userWith } from "./WorkflowServiceFixtures";
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(findConfigurationReferences).mockResolvedValue({
+    formFields: new Map(),
+    forms: new Map(),
     roles: new Set(),
     users: new Map([[actor.id, "active"]]),
   });

@@ -23,6 +23,7 @@ vi.mock(
 );
 
 import { permissionCodes } from "@/auth/authorization/permissions";
+import { basicOperators } from "@/modules/conditions/engine/BasicOperators";
 import { cloneWorkflow } from "@/modules/workflows/application/definitions/ServerWorkflowLifecycleService";
 import { cloneWorkflowVersion } from "@/modules/workflows/infrastructure/WorkflowTemplateWriteRepository";
 import { findWorkflowGraph } from "@/modules/workflows/infrastructure/WorkflowGraphRepository";
@@ -42,6 +43,8 @@ beforeEach(() => {
   vi.mocked(findDraftByDefinition).mockResolvedValue(null);
   vi.mocked(cloneWorkflowVersion).mockResolvedValue(clonedVersionId);
   vi.mocked(findConfigurationReferences).mockResolvedValue({
+    formFields: new Map(),
+    forms: new Map(),
     roles: new Set(),
     users: new Map(),
   });
@@ -62,6 +65,36 @@ describe("workflow cloning service", () => {
       }],
       formVersionId: "79e20de0-3558-4d63-90a4-8c9f5125df08",
     };
+    graph.stages[0].entryCondition = {
+      children: [{
+        id: "clone-entry-condition",
+        kind: "CONDITION",
+        leftOperand: {
+          key: "application.user_defined_answer",
+          kind: "FIELD",
+        },
+        operator: basicOperators.EQUALS,
+        rightOperand: { kind: "CONSTANT", value: true },
+      }],
+      combinator: "AND",
+      id: "clone-entry-group",
+      kind: "GROUP",
+    };
+    graph.transitions[0].condition = {
+      children: [{
+        id: "clone-transition-condition",
+        kind: "CONDITION",
+        leftOperand: {
+          key: "stage.pre_screening.USER_DEFINED_RESULT",
+          kind: "FIELD",
+        },
+        operator: basicOperators.EQUALS,
+        rightOperand: { kind: "CONSTANT", value: "COMPLETE" },
+      }],
+      combinator: "AND",
+      id: "clone-transition-group",
+      kind: "GROUP",
+    };
     vi.mocked(findWorkflowGraph).mockResolvedValue({ ...record, graph });
 
     await cloneWorkflow(
@@ -78,11 +111,17 @@ describe("workflow cloning service", () => {
         graph: expect.objectContaining({
           stages: expect.arrayContaining([
             expect.objectContaining({
+              entryCondition: graph.stages[0].entryCondition,
               tasks: expect.arrayContaining([
                 expect.objectContaining({
                   formBinding: graph.stages[0].tasks[0].formBinding,
                 }),
               ]),
+            }),
+          ]),
+          transitions: expect.arrayContaining([
+            expect.objectContaining({
+              condition: graph.transitions[0].condition,
             }),
           ]),
         }),

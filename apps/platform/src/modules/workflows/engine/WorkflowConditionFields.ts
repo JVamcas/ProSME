@@ -1,15 +1,12 @@
 import type { ConditionFieldDefinition } from "@/modules/conditions/domain/ConditionConfiguration";
-import type {
-  FormField,
-  FormRuntimeSchema,
-} from "@/modules/forms/FormTypes";
+import type { FormField } from "@/modules/forms/FormTypes";
 import type {
   WorkflowGraphInput,
   WorkflowStageInput,
 } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 
 function formConditionType(
-  field: FormField,
+  field: Pick<FormField, "type">,
 ): ConditionFieldDefinition["type"] | null {
   if (["NUMBER", "CURRENCY", "PERCENTAGE"].includes(field.type)) {
     return "NUMBER";
@@ -26,15 +23,25 @@ function stagePathKey(value: string) {
   return value.toLowerCase();
 }
 
+export type WorkflowConditionFormField = Pick<
+  FormField,
+  "key" | "label" | "type"
+>;
+
+export type WorkflowConditionFormFields = ReadonlyMap<
+  string,
+  readonly WorkflowConditionFormField[]
+>;
+
 function boundFormFields(
   stage: WorkflowStageInput,
-  forms: ReadonlyMap<string, FormRuntimeSchema>,
+  forms: WorkflowConditionFormFields,
 ) {
   return stage.tasks.flatMap((task) => {
     if (!task.formBinding) return [];
     const form = forms.get(task.formBinding.formVersionId);
     if (!form) return [];
-    return form.fields.flatMap((field) => {
+    return form.flatMap((field) => {
       const type = formConditionType(field);
       return type
         ? [{
@@ -49,7 +56,12 @@ function boundFormFields(
 
 function boundContextFields(stage: WorkflowStageInput) {
   return stage.tasks.flatMap(
-    (task) => task.formBinding?.contextFields ?? [],
+    (task) => (task.formBinding?.contextFields ?? []).filter((field) => {
+      const segments = field.key.split(".");
+      return segments[0] === "application"
+        || segments[0] === "fundingCall"
+        || segments[0] === "stage" && segments.length >= 3;
+    }),
   );
 }
 
@@ -66,7 +78,7 @@ function uniqueFields(fields: readonly ConditionFieldDefinition[]) {
 
 export function workflowConditionFields(
   graph: WorkflowGraphInput,
-  forms: ReadonlyMap<string, FormRuntimeSchema>,
+  forms: WorkflowConditionFormFields,
   stage: WorkflowStageInput,
   includeCurrentStageValues: boolean,
 ) {

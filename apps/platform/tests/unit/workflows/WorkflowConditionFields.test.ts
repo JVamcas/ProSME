@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import { resolveWorkflowDataPath } from "@/modules/conditions/engine/WorkflowDataResolver";
-import type { FormRuntimeSchema } from "@/modules/forms/FormTypes";
 import type {
   WorkflowGraphInput,
   WorkflowStageInput,
@@ -61,9 +60,8 @@ function stage(
   };
 }
 
-function form(versionId: string, key: string): FormRuntimeSchema {
-  return {
-    fields: [{
+function form(key: string) {
+  return [{
       columnSpan: 1,
       key,
       label: key.replaceAll("_", " "),
@@ -71,13 +69,7 @@ function form(versionId: string, key: string): FormRuntimeSchema {
       required: true,
       sectionId: "20000000-0000-4000-8000-000000000001",
       type: "CURRENCY",
-    }],
-    instructions: null,
-    sections: [],
-    submitLabel: "Submit",
-    versionId,
-    versionNumber: 1,
-  };
+    }] as const;
 }
 
 describe("workflow condition fields", () => {
@@ -89,8 +81,8 @@ describe("workflow condition fields", () => {
       transitions: [],
     };
     const forms = new Map([
-      [screeningFormVersionId, form(screeningFormVersionId, "CUSTOM_RESULT")],
-      [reviewFormVersionId, form(reviewFormVersionId, "RECOMMENDED_AMOUNT")],
+      [screeningFormVersionId, form("CUSTOM_RESULT")],
+      [reviewFormVersionId, form("RECOMMENDED_AMOUNT")],
     ]);
 
     const entryFields = workflowConditionFields(graph, forms, review, false);

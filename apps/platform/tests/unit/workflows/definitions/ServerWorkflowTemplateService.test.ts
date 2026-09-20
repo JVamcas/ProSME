@@ -29,7 +29,6 @@ vi.mock(
 vi.mock("@/modules/workflows/infrastructure/WorkflowGraphRepository", () => ({
   findWorkflowGraph: vi.fn(),
 }));
-
 import { permissionCodes } from "@/auth/authorization/permissions/PermissionCodes";
 import {
   changeWorkflowTemplateStatus,

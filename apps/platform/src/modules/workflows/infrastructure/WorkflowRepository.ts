@@ -4,6 +4,7 @@ import { and, asc, desc, eq, inArray } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
 import {
+  formFields as formFieldRecords,
   formVersions,
   roles,
   users,
@@ -11,6 +12,7 @@ import {
   workflowDefinitions,
 } from "@/db/schema";
 import type { WorkflowGraphInput } from "@/modules/workflows/domain/definitions/WorkflowTypes";
+import type { WorkflowConditionFormField } from "@/modules/workflows/engine/WorkflowConditionFields";
 
 export async function listWorkflowDefinitions() {
   return getDatabase()
@@ -96,12 +98,13 @@ export async function findDraftByDefinition(
 export async function findConfigurationReferences(
   graph: WorkflowGraphInput,
 ): Promise<{
+  formFields: Map<string, WorkflowConditionFormField[]>;
   roles: Set<string>;
   users: Map<string, string>;
-  forms?: Map<string, string>;
+  forms: Map<string, string>;
 }> {
   const references = collectConfigurationReferences(graph);
-  const [foundUsers, foundRoles, foundForms] =
+  const [foundUsers, foundRoles, foundForms, fieldsByVersion] =
     await Promise.all([
       references.userIds.length
         ? getDatabase()
@@ -121,12 +124,39 @@ export async function findConfigurationReferences(
             .from(formVersions)
             .where(inArray(formVersions.id, references.formVersionIds))
         : [],
+      findWorkflowConditionFormFields(graph),
     ]);
   return {
+    formFields: fieldsByVersion,
     roles: new Set(foundRoles.map((item) => item.id)),
     users: new Map(foundUsers.map((item) => [item.id, item.status])),
     forms: new Map(foundForms.map((item) => [item.id, item.status])),
   };
+}
+
+export async function findWorkflowConditionFormFields(
+  graph: WorkflowGraphInput,
+) {
+  const versionIds = collectConfigurationReferences(graph).formVersionIds;
+  if (!versionIds.length) {
+    return new Map<string, WorkflowConditionFormField[]>();
+  }
+  const records = await getDatabase()
+    .select({
+      key: formFieldRecords.key,
+      label: formFieldRecords.label,
+      type: formFieldRecords.type,
+      versionId: formFieldRecords.formVersionId,
+    })
+    .from(formFieldRecords)
+    .where(inArray(formFieldRecords.formVersionId, versionIds));
+  const fieldsByVersion = new Map<string, WorkflowConditionFormField[]>();
+  for (const field of records) {
+    const fields = fieldsByVersion.get(field.versionId) ?? [];
+    fields.push({ key: field.key, label: field.label, type: field.type });
+    fieldsByVersion.set(field.versionId, fields);
+  }
+  return fieldsByVersion;
 }
 
 function collectConfigurationReferences(graph: WorkflowGraphInput) {

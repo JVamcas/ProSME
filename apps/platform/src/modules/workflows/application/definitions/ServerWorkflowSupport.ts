@@ -15,6 +15,7 @@ import type {
   WorkflowValidation,
 } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import { validateWorkflowGraph } from "@/modules/workflows/WorkflowValidation";
+import { validateWorkflowConditions } from "@/modules/workflows/engine/WorkflowConditionValidation";
 
 export class WorkflowNotFoundError extends ResourceNotFoundError {
   constructor() {
@@ -45,12 +46,7 @@ export async function loadWorkflowEditor(versionId: string) {
 async function validateReferences(
   graph: WorkflowGraphInput,
   validation: WorkflowValidation,
-  references: Omit<
-    Awaited<ReturnType<typeof findConfigurationReferences>>,
-    "forms"
-  > & {
-    forms?: Map<string, string>;
-  },
+  references: Awaited<ReturnType<typeof findConfigurationReferences>>,
 ) {
   graph.stages.forEach((stage, index) => {
     stage.actions.forEach((action, actionIndex) => {
@@ -90,7 +86,7 @@ async function validateReferences(
       }
       if (
         task.formBinding &&
-        references.forms?.get(task.formBinding.formVersionId) !== "PUBLISHED"
+        references.forms.get(task.formBinding.formVersionId) !== "PUBLISHED"
       ) {
         validation.errors.push({
           code: "INVALID_FORM_VERSION",
@@ -111,18 +107,26 @@ async function validateReferences(
       }
     });
   });
+  validation.errors.push(...validateWorkflowConditions(
+    graph,
+    references.formFields,
+  ));
   validation.valid = validation.errors.length === 0;
   return validation;
+}
+
+export async function validateWorkflowConfiguration(graph: WorkflowGraphInput) {
+  return validateReferences(
+    graph,
+    validateWorkflowGraph(graph),
+    await findConfigurationReferences(graph),
+  );
 }
 
 export async function workflowEditorView(versionId: string) {
   const record = await loadWorkflowEditor(versionId);
   const [validation, assignmentOptions] = await Promise.all([
-    validateReferences(
-      record.graph,
-      validateWorkflowGraph(record.graph),
-      await findConfigurationReferences(record.graph),
-    ),
+    validateWorkflowConfiguration(record.graph),
     listWorkflowAssignmentOptions(),
   ]);
   return { ...toWorkflowEditor(record, validation), assignmentOptions };

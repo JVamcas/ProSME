@@ -8,6 +8,7 @@ import { permissionCodes } from "@/auth/authorization/permissions/PermissionCode
 import type { AuthenticatedUser } from "@/auth/types";
 import { createWorkflowTemplate } from "@/modules/workflows/application/definitions/ServerWorkflowTemplateService";
 import { findWorkflowGraph } from "@/modules/workflows/infrastructure/WorkflowGraphRepository";
+import { findWorkflowConditionFormFields } from "@/modules/workflows/infrastructure/WorkflowRepository";
 import { replaceWorkflowDraft } from "@/modules/workflows/infrastructure/WorkflowTemplateWriteRepository";
 
 const enabled = process.env.RUN_P3_WORKFLOW_DATABASE_TESTS === "true";
@@ -30,6 +31,7 @@ const actor: AuthenticatedUser = {
 const roleId = randomUUID();
 const formDefinitionId = randomUUID();
 const formVersionId = randomUUID();
+const formSectionId = randomUUID();
 
 beforeAll(async () => {
   if (!pool) return;
@@ -58,6 +60,18 @@ beforeAll(async () => {
        (id, form_definition_id, version_number, status, created_by)
      VALUES ($1, $2, 1, 'PUBLISHED', $3)`,
     [formVersionId, formDefinitionId, actor.id],
+  );
+  await pool.query(
+    `INSERT INTO app_form_sections
+       (id, form_version_id, key, title, display_order)
+     VALUES ($1, $2, 'ASSESSMENT', 'Assessment', 1)`,
+    [formSectionId, formVersionId],
+  );
+  await pool.query(
+    `INSERT INTO app_form_fields
+       (form_version_id, section_id, key, label, type, display_order)
+     VALUES ($1, $2, 'CUSTOM_SCORE', 'Custom score', 'NUMBER', 1)`,
+    [formVersionId, formSectionId],
   );
 });
 
@@ -175,5 +189,12 @@ afterAll(async () => {
     expect(stored?.stages[0].tasks).toHaveLength(2);
     expect(stored?.stages[0].tasks[0]).toMatchObject(tasks[0]);
     expect(stored?.stages[0].tasks[1]).toMatchObject(tasks[1]);
+    expect(await findWorkflowConditionFormFields(graph)).toEqual(new Map([
+      [formVersionId, [{
+        key: "CUSTOM_SCORE",
+        label: "Custom score",
+        type: "NUMBER",
+      }]],
+    ]));
   });
 });

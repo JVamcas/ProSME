@@ -25,6 +25,8 @@ const formVersionId = "45555555-5555-4555-8555-555555555555";
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(findConfigurationReferences).mockResolvedValue({
+    formFields: new Map(),
+    forms: new Map(),
     roles: new Set(),
     users: new Map([[actor.id, "active"]]),
   });
@@ -47,6 +49,7 @@ describe("workflow task form bindings", () => {
   it("rejects a binding unless the exact form version is published", async () => {
     vi.mocked(findWorkflowGraph).mockResolvedValue(recordWithFormBinding());
     vi.mocked(findConfigurationReferences).mockResolvedValue({
+      formFields: new Map(),
       roles: new Set(),
       users: new Map([[actor.id, "active"]]),
       forms: new Map([[formVersionId, "DRAFT"]]),
@@ -67,6 +70,7 @@ describe("workflow task form bindings", () => {
   it("accepts a binding to the exact published form version", async () => {
     vi.mocked(findWorkflowGraph).mockResolvedValue(recordWithFormBinding());
     vi.mocked(findConfigurationReferences).mockResolvedValue({
+      formFields: new Map(),
       roles: new Set(),
       users: new Map([[actor.id, "active"]]),
       forms: new Map([[formVersionId, "PUBLISHED"]]),
