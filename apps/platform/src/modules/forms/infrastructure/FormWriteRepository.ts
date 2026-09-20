@@ -9,7 +9,7 @@ import {
   formVersions,
 } from "@/db/schema";
 import type { FormField, FormSection } from "@/modules/forms/FormTypes";
-import { formPublicationErrors } from "@/modules/forms/FormValidation";
+import { formPublicationErrors } from "@/modules/forms/FormDefinitionValidation";
 import {
   copyFormVersionChildren,
   readPublicationFields,

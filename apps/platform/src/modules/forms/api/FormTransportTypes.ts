@@ -4,10 +4,12 @@ import {
   formCommandSchema,
   formDefinitionDialogSchema,
   formEditorSchema,
+  formListSchema,
   taskFormSubmissionSchema,
 } from "./FormSchemas";
 
 export type CreateFormInput = z.infer<typeof formDefinitionDialogSchema>;
 export type UpdateFormInput = z.infer<typeof formEditorSchema>;
 export type FormCommandInput = z.infer<typeof formCommandSchema>;
+export type FormListInput = z.infer<typeof formListSchema>;
 export type TaskFormSubmissionInput = z.infer<typeof taskFormSubmissionSchema>;

@@ -52,6 +52,7 @@ import {
 import type {
   CreateFormInput,
   FormCommandInput,
+  FormListInput,
   TaskFormSubmissionInput,
   UpdateFormInput,
 } from "@/modules/forms/api/FormTransportTypes";
@@ -133,9 +134,12 @@ async function editorView(definitionId: string) {
   };
 }
 
-export async function getForms(user: AuthenticatedUser | null) {
+export async function getForms(
+  user: AuthenticatedUser | null,
+  input: FormListInput,
+) {
   requirePermission(user, permissionCodes.workflowFormRead);
-  return listForms();
+  return listForms(input);
 }
 
 export async function getPublishedForms(user: AuthenticatedUser | null) {

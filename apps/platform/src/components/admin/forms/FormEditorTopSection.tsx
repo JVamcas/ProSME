@@ -36,7 +36,7 @@ export function FormEditorTopSection({
 }) {
   return (
     <PageHeader
-      title={editor.definition.name}
+      title={`${editor.definition.name} - V${editor.version.versionNumber}`}
       description={editor.definition.description}
       eyebrow={"Settings / Forms"}
       actions={

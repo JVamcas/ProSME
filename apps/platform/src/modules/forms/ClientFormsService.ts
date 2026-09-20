@@ -1,7 +1,8 @@
 "use client";
 
-import { requestData } from "@/lib/client-http";
+import { requestData, requestJson } from "@/lib/client-http";
 import type {
+  FormDefinitionPage,
   FormDefinitionSummary,
   FormEditorView,
   FormRuntimeSchema,
@@ -10,6 +11,7 @@ import type {
 } from "./FormTypes";
 import type {
   CreateFormInput,
+  FormListInput,
   TaskFormSubmissionInput,
   UpdateFormInput,
 } from "./api/FormTransportTypes";
@@ -18,10 +20,23 @@ type CompleteTaskFormInput = TaskFormSubmissionInput & { actionKey: string };
 
 const jsonHeaders = { "Content-Type": "application/json" };
 
-function list() {
-  return requestData<FormDefinitionSummary[]>("/api/admin/forms", {
-    cache: "no-store",
+type FormListEnvelope = {
+  data: FormDefinitionSummary[];
+  page: Omit<FormDefinitionPage, "items"> & { nextCursor: string | null };
+};
+
+async function list(input: FormListInput): Promise<FormDefinitionPage> {
+  const query = new URLSearchParams({
+    page: String(input.page),
+    pageSize: String(input.pageSize),
   });
+  const envelope = await requestJson<FormListEnvelope>(
+    `/api/admin/forms?${query.toString()}`,
+    {
+    cache: "no-store",
+    },
+  );
+  return { items: envelope.data, ...envelope.page };
 }
 
 function create(input: CreateFormInput) {

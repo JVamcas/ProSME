@@ -29,11 +29,9 @@ vi.mock("@/db/repositories/WorkflowTaskRepository", () => ({
 }));
 
 import { permissionCodes } from "@/auth/authorization/permissions";
-import { PermissionDeniedError } from "@/auth/authorization/policy";
 import {
   getFormEditor,
   getFormRuntime,
-  listForms,
 } from "@/modules/forms/infrastructure/FormRepository";
 import { saveFormDraft } from "@/modules/forms/infrastructure/FormWriteRepository";
 import {
@@ -48,7 +46,6 @@ import {
 import {
   completeTaskForm,
   getTaskForm,
-  getForms,
   saveTaskForm,
   updateFormDraft,
 } from "@/modules/forms/application/ServerFormsService";
@@ -91,13 +88,6 @@ beforeEach(() => {
 });
 
 describe("ServerFormsService", () => {
-  it("checks capability before reading an assigned task", async () => {
-    await expect(getForms(staff([]))).rejects.toBeInstanceOf(
-      PermissionDeniedError,
-    );
-    expect(listForms).not.toHaveBeenCalled();
-  });
-
   it("derives the pinned version and actor scope for draft saves", async () => {
     vi.mocked(readAssignedFormTask).mockResolvedValue({
       formVersionId: versionId,

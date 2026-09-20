@@ -30,10 +30,6 @@ export function FormVisibilityConditionEditor({
       <legend className="px-2 text-sm font-bold text-brand-navy">
         Visibility condition
       </legend>
-      <p className="text-sm text-brand-navy/65">
-        This item is shown only when the condition passes. Hidden fields are
-        not required, validated, or included in saved responses.
-      </p>
       {value ? (
         <>
           <ConditionBuilder

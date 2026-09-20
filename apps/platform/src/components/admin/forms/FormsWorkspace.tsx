@@ -20,8 +20,10 @@ export function FormsWorkspace({
   canUpdate: boolean;
 }) {
   const [creating, setCreating] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [selected, setSelected] = useState<FormDefinitionSummary>();
-  const query = useForms();
+  const query = useForms({ page, pageSize });
   const create = useCreateForm();
   const editor = useFormEditor(selected?.id ?? "");
   const update = useUpdateForm(selected?.id ?? "");
@@ -36,9 +38,19 @@ export function FormsWorkspace({
             ? "Loading forms…"
             : query.error?.message ?? "No forms have been configured."
         }
-        items={query.data ?? []}
+        items={query.data?.items ?? []}
+        loading={query.isFetching}
         onCreate={() => setCreating(true)}
         onEdit={setSelected}
+        onPageChange={setPage}
+        onPageSizeChange={(nextPageSize) => {
+          setPageSize(nextPageSize);
+          setPage(1);
+        }}
+        page={query.data?.page ?? page}
+        pageSize={query.data?.pageSize ?? pageSize}
+        total={query.data?.total ?? 0}
+        totalPages={query.data?.totalPages ?? 0}
       />
       <DraggableDialog
         isOpen={creating && canCreate}

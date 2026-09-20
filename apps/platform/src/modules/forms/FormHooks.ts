@@ -1,10 +1,16 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 
 import { clientFormsService } from "./ClientFormsService";
 import type {
   CreateFormInput,
+  FormListInput,
   TaskFormSubmissionInput,
   UpdateFormInput,
 } from "./api/FormTransportTypes";
@@ -14,16 +20,24 @@ type CompleteTaskFormInput = TaskFormSubmissionInput & { actionKey: string };
 
 export const formQueryKeys = {
   all: ["admin", "forms"] as const,
+  list: (input: FormListInput) => [
+    "admin",
+    "forms",
+    "list",
+    input.page,
+    input.pageSize,
+  ] as const,
   detail: (id: string) => ["admin", "forms", id] as const,
   task: (id: string) => ["admin", "tasks", id, "form"] as const,
   publishedRuntime: (versionId: string) =>
     ["admin", "forms", "published", versionId] as const,
 };
 
-export function useForms() {
+export function useForms(input: FormListInput) {
   return useQuery({
-    queryKey: formQueryKeys.all,
-    queryFn: clientFormsService.list,
+    placeholderData: keepPreviousData,
+    queryKey: formQueryKeys.list(input),
+    queryFn: () => clientFormsService.list(input),
   });
 }
 

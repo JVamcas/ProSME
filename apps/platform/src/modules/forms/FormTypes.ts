@@ -91,6 +91,14 @@ export type PublishedFormOption = {
   versionNumber: number;
 };
 
+export type FormDefinitionPage = {
+  items: FormDefinitionSummary[];
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+};
+
 export type FormSubmission = {
   id: string;
   taskInstanceId: string;

@@ -11,12 +11,19 @@ import {
   formVersions,
 } from "@/db/schema";
 import type {
+  FormDefinitionPage,
   FormField,
   FormRuntimeSchema,
 } from "@/modules/forms/FormTypes";
+import type { FormListInput } from "@/modules/forms/api/FormTransportTypes";
 
-export async function listForms() {
-  const result = await getDatabase().execute(sql`
+export async function listForms(
+  input: FormListInput,
+): Promise<FormDefinitionPage> {
+  const database = getDatabase();
+  const offset = (input.page - 1) * input.pageSize;
+  const [result, countResult] = await Promise.all([
+    database.execute(sql`
     SELECT definition.id,
       definition.code,
       definition.name,
@@ -54,8 +61,22 @@ export async function listForms() {
       WHERE referenced_version.form_definition_id = definition.id
     ) usage_counts ON TRUE
     ORDER BY definition.name ASC, definition.id ASC
-  `);
-  return result.rows;
+    LIMIT ${input.pageSize}
+    OFFSET ${offset}
+  `),
+    database.execute(sql`
+      SELECT count(*)::integer AS total
+      FROM app_form_definitions
+    `),
+  ]);
+  const total = Number(countResult.rows[0]?.total ?? 0);
+  return {
+    items: result.rows as FormDefinitionPage["items"],
+    page: input.page,
+    pageSize: input.pageSize,
+    total,
+    totalPages: Math.ceil(total / input.pageSize),
+  };
 }
 
 export async function listPublishedFormVersions() {

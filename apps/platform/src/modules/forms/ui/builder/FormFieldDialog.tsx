@@ -200,7 +200,7 @@ function FormFieldDialogContent({
             name="columnSpan"
             required
           />
-          <FormTextarea label="Help text" name="helpText" />
+          <FormInput label="Help text" name="helpText" />
           <CheckboxField label="Required" name="required" />
           <Controller
             control={form.control}

@@ -112,7 +112,7 @@ export const operationsPortalRoutes: readonly PortalRoute[] = [
   {
     id: "admin-workflows",
     href: "/admin/workflows",
-    label: "Workflow configuration",
+    label: "Workflow Templates",
     icon: Workflow,
     space: "operations",
     requiredAnyCapabilities: [

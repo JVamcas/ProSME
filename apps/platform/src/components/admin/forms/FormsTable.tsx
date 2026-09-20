@@ -7,6 +7,7 @@ import type { FormDefinitionSummary } from "@/modules/forms/FormTypes";
 import { EditButton } from "@/components/ui/action-buttons";
 import { formatLocalDateTime24 } from "@/lib/dateUtils";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { DataTablePagination } from "@/shared/ui/DataTablePagination";
 
 function formColumns(
   canUpdate: boolean,
@@ -63,15 +64,29 @@ export function FormsTable({
   canUpdate,
   emptyMessage,
   items,
+  loading,
   onCreate,
   onEdit,
+  onPageChange,
+  onPageSizeChange,
+  page,
+  pageSize,
+  total,
+  totalPages,
 }: {
   canCreate: boolean;
   canUpdate: boolean;
   emptyMessage: string;
   items: FormDefinitionSummary[];
+  loading: boolean;
   onCreate: () => void;
   onEdit: (form: FormDefinitionSummary) => void;
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (pageSize: number) => void;
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
 }) {
   return (
     <div className="space-y-4">
@@ -84,6 +99,17 @@ export function FormsTable({
         columns={formColumns(canUpdate, onEdit)}
         data={items}
         emptyMessage={emptyMessage}
+        footer={(
+          <DataTablePagination
+            disabled={loading}
+            onPageChange={onPageChange}
+            onPageSizeChange={onPageSizeChange}
+            page={page}
+            pageSize={pageSize}
+            total={total}
+            totalPages={totalPages}
+          />
+        )}
       />
     </div>
   );
