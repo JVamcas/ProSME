@@ -30,6 +30,7 @@ function stage(
     actions: [],
     checklistItems: [],
     documentRequirements: [],
+    commentFields: [],
     scoring: null,
     tasks: [],
   };

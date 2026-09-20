@@ -323,6 +323,13 @@
       "when": 1791676800000,
       "tag": "0045_workflow_stage_scoring",
       "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1791763200000,
+      "tag": "0046_workflow_stage_comment_fields",
+      "breakpoints": true
     }
   ]
 }

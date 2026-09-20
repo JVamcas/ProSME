@@ -9,6 +9,7 @@ import {
   type DataTableColumn,
 } from "@/components/ui/data-table";
 import type { WorkflowStageDocumentRequirement } from "@/modules/workflows/domain/definitions/WorkflowStageDocumentRequirement";
+import { WorkflowStageTabHeader } from "./WorkflowStageTabHeader";
 import type { WorkflowStageInput } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import { documentActorItems } from "./WorkflowStageDocumentRequirementFormSchema";
 
@@ -106,20 +107,22 @@ export function WorkflowStageDocumentRequirementTable({
 }: Props) {
   return (
     <section className="mt-5">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <h4 className="text-sm font-bold text-brand-navy">
-          Document requirements ({stage.documentRequirements.length})
-        </h4>
-        <GeneralButton
-          disabled={!canEdit}
-          onClick={onAdd}
-          size="compact"
-          type="button"
-          variant="primary"
-        >
-          <Plus className="size-4" /> Add document requirement
-        </GeneralButton>
-      </div>
+      <WorkflowStageTabHeader
+        action={
+          <GeneralButton
+            disabled={!canEdit}
+            onClick={onAdd}
+            size="compact"
+            type="button"
+            variant="primary"
+          >
+            <Plus className="size-4" /> Add document requirement
+          </GeneralButton>
+        }
+        count={stage.documentRequirements.length}
+        description="Specify the documents required to complete this stage."
+        title="Document requirements"
+      />
       <DataTable
         columns={documentRequirementColumns(canEdit, onDelete, onEdit)}
         data={stage.documentRequirements}

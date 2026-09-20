@@ -1,7 +1,23 @@
 "use client";
 
-import { GeneralButton } from "@/components/ui/button";
+import {
+  GeneralButton,
+  type ButtonProps,
+} from "@/components/ui/button";
+import type { WorkflowActionType } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
 import type { WorkflowTaskAction } from "../TaskTypes";
+
+export const workflowActionButtonVariants = {
+  APPROVE_ADVANCE: "success",
+  DEFER: "subtle",
+  ESCALATE: "primary",
+  PUT_ON_HOLD: "yellow",
+  REFER: "navy",
+  REJECT: "danger",
+  REQUEST_INFORMATION: "outlineOrange",
+  RETURN: "outlineOrange",
+  WITHDRAW: "danger",
+} satisfies Record<WorkflowActionType, ButtonProps["variant"]>;
 
 export function WorkflowTaskActions({
   actions,
@@ -31,7 +47,7 @@ export function WorkflowTaskActions({
               key={action.key}
               onClick={() => onSelect(action.key)}
               type="submit"
-              variant={action.actionType === "REJECT" ? "outline" : "primary"}
+              variant={workflowActionButtonVariants[action.actionType]}
             >
               {action.label}
             </GeneralButton>

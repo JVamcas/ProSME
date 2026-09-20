@@ -9,6 +9,7 @@ import {
   type DataTableColumn,
 } from "@/components/ui/data-table";
 import type { WorkflowActionDefinition } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
+import { WorkflowStageTabHeader } from "./WorkflowStageTabHeader";
 import type { WorkflowStageInput } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import { workflowActionTypeItems } from "./WorkflowActionFormSchema";
 
@@ -87,20 +88,22 @@ export function WorkflowStageActionTable({
 }: Props) {
   return (
     <section className="mt-5">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <h4 className="text-sm font-bold text-brand-navy">
-          Actions ({stage.actions.length})
-        </h4>
-        <GeneralButton
-          disabled={!canEdit}
-          onClick={onAdd}
-          size="compact"
-          type="button"
-          variant="primary"
-        >
-          <Plus className="size-4" /> Add action
-        </GeneralButton>
-      </div>
+      <WorkflowStageTabHeader
+        action={
+          <GeneralButton
+            disabled={!canEdit}
+            onClick={onAdd}
+            size="compact"
+            type="button"
+            variant="primary"
+          >
+            <Plus className="size-4" /> Add action
+          </GeneralButton>
+        }
+        count={stage.actions.length}
+        description="Configure the decisions users can make during this stage."
+        title="Actions"
+      />
       <DataTable
         columns={actionColumns(canEdit, onDelete, onEdit)}
         data={stage.actions}

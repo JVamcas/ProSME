@@ -20,6 +20,7 @@ import type {
   WorkflowDocumentVerifierActor,
 } from "../domain/definitions/WorkflowStageDocumentRequirement";
 import type { WorkflowScoringAggregation } from "../domain/definitions/WorkflowStageScoringDefinition";
+import type { WorkflowCommentFieldVisibility } from "../domain/definitions/WorkflowStageCommentField";
 import { workflowStageDefinitions } from "./workflow.schema";
 
 export const workflowStageChecklistDefinitions = pgTable(
@@ -117,5 +118,33 @@ export const workflowStageScoringCriteria = pgTable(
       table.criterion,
     ),
     index("app_stage_scoring_criteria_stage_idx").on(table.stageId),
+  ],
+);
+
+export const workflowStageCommentFields = pgTable(
+  "app_workflow_stage_comment_fields",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    stageId: uuid("stage_id")
+      .notNull()
+      .references(() => workflowStageDefinitions.id, { onDelete: "restrict" }),
+    key: text("key").notNull(),
+    label: text("label").notNull(),
+    helpText: text("help_text").notNull().default(""),
+    mandatory: boolean("mandatory").notNull().default(false),
+    visibility: text("visibility")
+      .$type<WorkflowCommentFieldVisibility>()
+      .notNull(),
+    displayOrder: integer("display_order").notNull(),
+  },
+  (table) => [
+    uniqueIndex("app_stage_comments_stage_key_unique").on(
+      table.stageId,
+      table.key,
+    ),
+    uniqueIndex("app_stage_comments_stage_order_unique").on(
+      table.stageId,
+      table.displayOrder,
+    ),
   ],
 );

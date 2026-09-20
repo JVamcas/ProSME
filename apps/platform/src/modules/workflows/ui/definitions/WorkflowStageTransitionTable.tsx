@@ -13,6 +13,7 @@ import type {
 } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import type { WorkflowTransitionDefinition } from "@/modules/workflows/domain/transitions/WorkflowTransitionDefinition";
 import { useSaveWorkflowGraph } from "@/modules/workflows/WorkflowHooks";
+import { WorkflowStageTabHeader } from "./WorkflowStageTabHeader";
 import { WorkflowTransitionDialog } from "./WorkflowTransitionDialog";
 
 type Props = {
@@ -103,27 +104,23 @@ export function WorkflowStageTransitionTable({
 
   return (
     <section className="mt-5">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <div>
-          <h4 className="text-sm font-bold text-brand-navy">
-            Transitions ({transitions.length})
-          </h4>
-          <p className="mt-1 text-xs text-brand-navy/55">
-            Connect a configured action to a stage or terminal outcome.
-          </p>
-        </div>
-        {canEdit && stage.actions.length != 0 && (
-          <GeneralButton
-            disabled={!canEdit || stage.actions.length === 0}
-            onClick={() => setDialog("create")}
-            size="compact"
-            type="button"
-            variant="primary"
-          >
-            <Plus className="size-4" /> Add transition
-          </GeneralButton>
-        )}
-      </div>
+      <WorkflowStageTabHeader
+        action={
+          canEdit && stage.actions.length !== 0 ? (
+            <GeneralButton
+              onClick={() => setDialog("create")}
+              size="compact"
+              type="button"
+              variant="primary"
+            >
+              <Plus className="size-4" /> Add transition
+            </GeneralButton>
+          ) : undefined
+        }
+        count={transitions.length}
+        description="Define how this stage routes to another stage or a terminal outcome."
+        title="Transitions"
+      />
       <DataTable
         columns={transitionColumns(
           canEdit,

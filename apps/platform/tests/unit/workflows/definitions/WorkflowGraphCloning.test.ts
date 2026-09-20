@@ -33,6 +33,15 @@ describe("workflow graph cloning", () => {
       verifier: "ASSIGNED_REVIEWER",
       templateReference: "TAX_CLEARANCE_TEMPLATE",
     }];
+    source.stages[0].commentFields = [{
+      id: "4aaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      key: "REVIEW_RECOMMENDATION",
+      label: "Review recommendation",
+      helpText: "Summarise the recommendation.",
+      mandatory: true,
+      visibility: "INTERNAL_ONLY",
+      displayOrder: 1,
+    }];
     source.stages[0].scoring = {
       aggregation: "WEIGHTED_AVERAGE",
       criteria: [{
@@ -132,6 +141,10 @@ describe("workflow graph cloning", () => {
     });
     expect(clone.stages[0].documentRequirements[0]).toEqual({
       ...source.stages[0].documentRequirements[0],
+      id: undefined,
+    });
+    expect(clone.stages[0].commentFields[0]).toEqual({
+      ...source.stages[0].commentFields[0],
       id: undefined,
     });
     expect(clone.stages[0].scoring?.criteria[0]).toEqual({

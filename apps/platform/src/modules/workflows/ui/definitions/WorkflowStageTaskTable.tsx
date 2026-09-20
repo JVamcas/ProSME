@@ -17,6 +17,7 @@ import type {
   WorkflowStageInput,
   WorkflowTaskInput,
 } from "@/modules/workflows/domain/definitions/WorkflowTypes";
+import { WorkflowStageTabHeader } from "./WorkflowStageTabHeader";
 
 type Props = {
   assignmentOptions?: WorkflowAssignmentOptions;
@@ -120,20 +121,22 @@ export function WorkflowStageTaskTable({
 }: Props) {
   return (
     <section className="mt-5">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <h4 className="text-sm font-bold text-brand-navy">
-          Tasks ({stage.tasks.length})
-        </h4>
-        <GeneralButton
-          disabled={!canEdit}
-          onClick={onAdd}
-          size="compact"
-          type="button"
-          variant="primary"
-        >
-          <Plus className="size-4" /> Add task
-        </GeneralButton>
-      </div>
+      <WorkflowStageTabHeader
+        action={
+          <GeneralButton
+            disabled={!canEdit}
+            onClick={onAdd}
+            size="compact"
+            type="button"
+            variant="primary"
+          >
+            <Plus className="size-4" /> Add task
+          </GeneralButton>
+        }
+        count={stage.tasks.length}
+        description="Define the work and assignment rules for this stage."
+        title="Tasks"
+      />
       <DataTable
         columns={taskColumns(
           assignmentOptions,

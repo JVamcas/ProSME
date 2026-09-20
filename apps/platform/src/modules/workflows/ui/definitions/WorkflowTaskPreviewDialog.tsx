@@ -1,8 +1,14 @@
 "use client";
 
 import { DraggableDialog } from "@/components/ui/draggable-dialog";
-import { usePublishedFormRuntime } from "@/modules/forms/FormHooks";
-import type { FormRuntimeSchema } from "@/modules/forms/FormTypes";
+import {
+  usePublishedFormRuntime,
+  usePublishedForms,
+} from "@/modules/forms/FormHooks";
+import type {
+  FormRuntimeSchema,
+  PublishedFormOption,
+} from "@/modules/forms/FormTypes";
 import {
   formColumnCount,
   previewPanelClass,
@@ -14,61 +20,40 @@ import type {
   WorkflowStageInput,
   WorkflowTaskInput,
 } from "@/modules/workflows/domain/definitions/WorkflowTypes";
-import { checklistItemDefaults } from "./WorkflowTaskFormSchema";
+import {
+  WorkflowChecklistPreview,
+  WorkflowCommentsPreview,
+  WorkflowDocumentRequirementsPreview,
+  WorkflowScoringPreview,
+  WorkflowTaskPreviewSection,
+  WorkflowTaskPreviewSummary,
+} from "./WorkflowTaskPreviewSections";
 
 type PublishedFormQuery = ReturnType<typeof usePublishedFormRuntime>;
 
-function TaskWorkPreview({
+function StructuredFormPreview({
   form,
-  task,
 }: {
   form: PublishedFormQuery;
-  task: WorkflowTaskInput;
 }) {
-  if (task.formBinding) {
-    if (form.isPending) return <p className="text-sm">Loading form preview…</p>;
-    if (form.isError || !form.data) {
-      return (
-        <p className="text-sm text-red-700" role="alert">
-          {form.error?.message ?? "The bound form is unavailable."}
-        </p>
-      );
-    }
+  if (form.isPending) return <p className="text-sm">Loading form preview…</p>;
+  if (form.isError || !form.data) {
     return (
-      <FormRenderer
-        definition={form.data}
-        formData={{}}
-        onChange={() => undefined}
-        onSubmit={() => undefined}
-        readOnly
-      >
-        <></>
-      </FormRenderer>
-    );
-  }
-  const checklistItems = checklistItemDefaults(task.config);
-  if (checklistItems.length) {
-    return (
-      <div className="space-y-3">
-        {checklistItems.map((item) => (
-          <label
-            className="flex gap-3 rounded-xl border border-brand-navy/10 p-4 text-sm text-brand-navy"
-            key={item.code}
-          >
-            <input disabled type="checkbox" />
-            <span>
-              {item.label}
-              {item.required ? <span className="text-brand-orange"> *</span> : null}
-            </span>
-          </label>
-        ))}
-      </div>
+      <p className="text-sm text-red-700" role="alert">
+        {form.error?.message ?? "The bound form is unavailable."}
+      </p>
     );
   }
   return (
-    <p className="rounded-xl bg-brand-cream p-4 text-sm text-brand-navy/70">
-      This task uses its configured {task.type.replaceAll("_", " ").toLowerCase()} controls.
-    </p>
+    <FormRenderer
+      definition={form.data}
+      formData={{}}
+      onChange={() => undefined}
+      onSubmit={() => undefined}
+      readOnly
+    >
+      <></>
+    </FormRenderer>
   );
 }
 
@@ -82,7 +67,31 @@ export function WorkflowTaskPreviewDialog({
   task: WorkflowTaskInput;
 }) {
   const form = usePublishedFormRuntime(task.formBinding?.formVersionId ?? null);
+  const publishedForms = usePublishedForms();
   const actions = workflowTaskPreviewActions(stage, task);
+  const hasForm = Boolean(task.formBinding);
+  const hasChecklist = stage.checklistItems.length > 0;
+  const hasDocuments = stage.documentRequirements.length > 0;
+  const hasScoring = Boolean(stage.scoring?.criteria.length);
+  const hasComments = stage.commentFields.length > 0;
+  const sectionCount = [
+    hasForm,
+    hasChecklist,
+    hasDocuments,
+    hasScoring,
+    hasComments,
+  ]
+    .filter(Boolean).length;
+  const requiredCount =
+    (form.data?.fields.filter((field) => field.required).length ?? 0)
+    + stage.checklistItems.filter((item) => item.mandatory).length
+    + stage.documentRequirements.filter((item) => item.mandatory).length
+    + (stage.scoring?.criteria.length ?? 0)
+    + stage.commentFields.filter((field) => field.mandatory).length;
+  const formName = workflowTaskPreviewFormName(
+    publishedForms.data,
+    task.formBinding?.formVersionId,
+  );
   return (
     <DraggableDialog
       isOpen
@@ -100,7 +109,57 @@ export function WorkflowTaskPreviewDialog({
             <p className="mt-1 text-sm text-brand-navy/70">{task.description}</p>
           ) : null}
         </div>
-        <TaskWorkPreview form={form} task={task} />
+        <WorkflowTaskPreviewSummary
+          requiredCount={requiredCount}
+          sectionCount={sectionCount}
+        />
+        <div className="space-y-3">
+          {hasForm ? (
+            <WorkflowTaskPreviewSection
+              status={`${form.data?.fields.filter((field) => field.required).length ?? 0} required fields`}
+              title={formName}
+            >
+              <StructuredFormPreview form={form} />
+            </WorkflowTaskPreviewSection>
+          ) : null}
+          {hasChecklist ? (
+            <WorkflowTaskPreviewSection
+              status={`${stage.checklistItems.filter((item) => item.mandatory).length} required items`}
+              title="Checklist"
+            >
+              <WorkflowChecklistPreview stage={stage} />
+            </WorkflowTaskPreviewSection>
+          ) : null}
+          {hasDocuments ? (
+            <WorkflowTaskPreviewSection
+              status={`${stage.documentRequirements.filter((item) => item.mandatory).length} required documents`}
+              title="Documents"
+            >
+              <WorkflowDocumentRequirementsPreview stage={stage} />
+            </WorkflowTaskPreviewSection>
+          ) : null}
+          {hasScoring ? (
+            <WorkflowTaskPreviewSection
+              status={`${stage.scoring?.criteria.length ?? 0} criteria`}
+              title="Scoring"
+            >
+              <WorkflowScoringPreview stage={stage} />
+            </WorkflowTaskPreviewSection>
+          ) : null}
+          {hasComments ? (
+            <WorkflowTaskPreviewSection
+              status={`${stage.commentFields.filter((field) => field.mandatory).length} required fields`}
+              title="Comments & recommendations"
+            >
+              <WorkflowCommentsPreview stage={stage} />
+            </WorkflowTaskPreviewSection>
+          ) : null}
+          {!sectionCount ? (
+            <p className="rounded-xl bg-brand-cream p-4 text-sm text-brand-navy/70">
+              No reviewer work sections are configured for this task.
+            </p>
+          ) : null}
+        </div>
         <WorkflowTaskActions
           actions={actions}
           disabled
@@ -115,8 +174,18 @@ export function workflowTaskPreviewPanelClass(
   definition?: Pick<FormRuntimeSchema, "sections">,
 ) {
   return definition
-    ? previewPanelClass(formColumnCount(definition.sections))
+    ? previewPanelClass(formColumnCount(definition.sections)).replace(
+        " sm:w-fit",
+        "",
+      )
     : undefined;
+}
+
+export function workflowTaskPreviewFormName(
+  forms: PublishedFormOption[] | undefined,
+  versionId: string | undefined,
+) {
+  return forms?.find((form) => form.versionId === versionId)?.formName ?? "Form";
 }
 
 export function workflowTaskPreviewActions(

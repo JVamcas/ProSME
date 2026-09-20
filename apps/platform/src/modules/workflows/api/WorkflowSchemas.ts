@@ -21,6 +21,7 @@ import {
   workflowDocumentVerifierActors,
 } from "@/modules/workflows/domain/definitions/WorkflowStageDocumentRequirement";
 import { workflowScoringAggregations } from "@/modules/workflows/domain/definitions/WorkflowStageScoringDefinition";
+import { workflowCommentFieldVisibilities } from "@/modules/workflows/domain/definitions/WorkflowStageCommentField";
 
 export { workflowActionDefinitionSchema } from "@/modules/workflows/domain/actions/WorkflowActionSchemas";
 
@@ -104,6 +105,16 @@ export const workflowStageScoringSchema = z.object({
     });
   }
 });
+
+export const workflowStageCommentFieldSchema = z.object({
+  id: z.string().uuid().optional(),
+  key: codeSchema,
+  label: z.string().trim().min(2).max(160),
+  helpText: z.string().trim().max(1000),
+  mandatory: z.boolean(),
+  visibility: z.enum(workflowCommentFieldVisibilities),
+  displayOrder: z.number().int().positive(),
+}).strict();
 export const workflowTaskSchema = z
   .object({
     actionKeys: z.array(codeSchema).max(100).refine(
@@ -190,6 +201,7 @@ export const workflowStageSchema = z.object({
   documentRequirements: z.array(workflowStageDocumentRequirementSchema)
     .max(100),
   scoring: workflowStageScoringSchema.nullable(),
+  commentFields: z.array(workflowStageCommentFieldSchema).max(100),
   initial: z.boolean(),
   slaHours: z.number().int().positive().max(8760).nullable().optional(),
   actions: z.array(workflowActionDefinitionSchema),
@@ -221,6 +233,22 @@ export const workflowStageSchema = z.object({
       code: "custom",
       message: "Document requirement names must be unique within the stage.",
       path: ["documentRequirements"],
+    });
+  }
+  const commentKeys = stage.commentFields.map((field) => field.key);
+  if (new Set(commentKeys).size !== commentKeys.length) {
+    context.addIssue({
+      code: "custom",
+      message: "Comment and recommendation keys must be unique within the stage.",
+      path: ["commentFields"],
+    });
+  }
+  const commentOrders = stage.commentFields.map((field) => field.displayOrder);
+  if (new Set(commentOrders).size !== commentOrders.length) {
+    context.addIssue({
+      code: "custom",
+      message: "Comment and recommendation display orders must be unique within the stage.",
+      path: ["commentFields"],
     });
   }
   const actionKeys = new Set(stage.actions.map((action) => action.stableKey));

@@ -103,6 +103,7 @@ afterAll(async () => {
             actions,
             checklistItems: [],
             documentRequirements: [],
+            commentFields: [],
             scoring: null,
             tasks: [],
           },

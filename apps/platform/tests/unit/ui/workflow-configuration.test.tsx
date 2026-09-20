@@ -100,7 +100,7 @@ describe("workflow configuration UI", () => {
     expect(markup).toContain(
       'aria-label="Submission and pre-screening stage configuration"',
     );
-    expect(markup.match(/role="tab"/g)).toHaveLength(6);
+    expect(markup.match(/role="tab"/g)).toHaveLength(7);
     expect(markup).toContain("Checklists");
     expect(markup).toContain("Documents");
     expect(markup).toContain("Scoring");
@@ -111,6 +111,16 @@ describe("workflow configuration UI", () => {
     expect(markup).toContain("Tasks (1)");
     expect(markup).toContain("Actions (1)");
     expect(markup).toContain("Transitions (1)");
+    const tabDescriptions = [
+      "Define the work and assignment rules for this stage.",
+      "Define the checks reviewers must complete during this stage.",
+      "Specify the documents required to complete this stage.",
+      "Define the criteria and aggregation method used to score this stage.",
+      "Configure reviewer comments and recommendations for this stage.",
+      "Configure the decisions users can make during this stage.",
+      "Define how this stage routes to another stage or a terminal outcome.",
+    ];
+    tabDescriptions.forEach((description) => expect(markup).toContain(description));
     expect(markup).toContain("Completeness screening");
     expect(markup).toContain("Advance review");
     expect(markup).toContain("Approve / Advance");
@@ -278,7 +288,6 @@ describe("workflow configuration UI", () => {
         ]}
       />,
     );
-
     expect(markup).toContain('aria-label="Edit Reference"');
     expect(markup).toContain('aria-label="Activate Reference"');
     expect(markup).toContain('aria-label="Deactivate Reference"');

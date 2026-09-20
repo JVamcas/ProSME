@@ -7,6 +7,7 @@ import {
   stageTaskFormBindings,
   workflowActionDefinitions,
   workflowStageChecklistDefinitions,
+  workflowStageCommentFields,
   workflowStageDefinitions,
   workflowStageDocumentRequirements,
   workflowStageScoringConfigurations,
@@ -85,6 +86,16 @@ async function insertStageRequirements(
     await transaction
       .insert(workflowStageChecklistDefinitions)
       .values(checklistItems);
+  }
+  const commentFields = graph.stages.flatMap((stage) =>
+    stage.commentFields.map((field) => ({
+      ...field,
+      id: undefined,
+      stageId: stageIds.get(stage.stableKey)!,
+    })),
+  );
+  if (commentFields.length) {
+    await transaction.insert(workflowStageCommentFields).values(commentFields);
   }
   const documentRequirements = graph.stages.flatMap((stage) =>
     stage.documentRequirements.map((requirement) => ({

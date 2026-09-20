@@ -3,6 +3,7 @@ import type { WorkflowActionDefinition } from "@/modules/workflows/domain/action
 export const emptyStageConditions = {
   checklistItems: [],
   documentRequirements: [],
+  commentFields: [],
   scoring: null,
   entryCondition: null,
   exitCondition: null,

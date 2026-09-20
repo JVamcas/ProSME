@@ -94,6 +94,14 @@ const graph: WorkflowGraphInput = {
       verifier: "ASSIGNED_REVIEWER",
       templateReference: "REVIEW_EVIDENCE_TEMPLATE",
     }],
+    commentFields: [{
+      key: "REVIEW_RECOMMENDATION",
+      label: "Review recommendation",
+      helpText: "Summarise the recommendation.",
+      mandatory: true,
+      visibility: "INTERNAL_ONLY",
+      displayOrder: 1,
+    }],
     scoring: {
       aggregation: "WEIGHTED_AVERAGE",
       criteria: [{
@@ -200,6 +208,12 @@ afterAll(async () => {
       expect.objectContaining({
         name: "Review evidence",
         templateReference: "REVIEW_EVIDENCE_TEMPLATE",
+      }),
+    ]);
+    expect(clone?.graph.stages[0].commentFields).toEqual([
+      expect.objectContaining({
+        key: "REVIEW_RECOMMENDATION",
+        visibility: "INTERNAL_ONLY",
       }),
     ]);
     expect(clone?.graph.stages[0].scoring).toEqual({

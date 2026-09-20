@@ -9,6 +9,7 @@ import {
   type DataTableColumn,
 } from "@/components/ui/data-table";
 import type { WorkflowStageChecklistDefinition } from "@/modules/workflows/domain/definitions/WorkflowStageChecklistDefinition";
+import { WorkflowStageTabHeader } from "./WorkflowStageTabHeader";
 import type { WorkflowStageInput } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import {
   checklistEvidenceRequirementItems,
@@ -116,20 +117,22 @@ export function WorkflowStageChecklistTable({
   );
   return (
     <section className="mt-5">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <h4 className="text-sm font-bold text-brand-navy">
-          Checklist items ({checklistItems.length})
-        </h4>
-        <GeneralButton
-          disabled={!canEdit}
-          onClick={onAdd}
-          size="compact"
-          type="button"
-          variant="primary"
-        >
-          <Plus className="size-4" /> Add checklist item
-        </GeneralButton>
-      </div>
+      <WorkflowStageTabHeader
+        action={
+          <GeneralButton
+            disabled={!canEdit}
+            onClick={onAdd}
+            size="compact"
+            type="button"
+            variant="primary"
+          >
+            <Plus className="size-4" /> Add checklist item
+          </GeneralButton>
+        }
+        count={checklistItems.length}
+        description="Define the checks reviewers must complete during this stage."
+        title="Checklist items"
+      />
       <DataTable
         columns={checklistColumns(canEdit, onDelete, onEdit)}
         data={checklistItems}

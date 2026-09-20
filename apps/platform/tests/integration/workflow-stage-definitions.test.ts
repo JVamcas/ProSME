@@ -154,6 +154,24 @@ afterAll(async () => {
               templateReference: "",
             },
           ],
+          commentFields: [
+            {
+              key: "REVIEW_RECOMMENDATION",
+              label: "Review recommendation",
+              helpText: "Summarise the recommendation and supporting reasons.",
+              mandatory: true,
+              visibility: "INTERNAL_ONLY" as const,
+              displayOrder: 1,
+            },
+            {
+              key: "APPLICANT_FEEDBACK",
+              label: "Applicant feedback",
+              helpText: "Provide feedback suitable for the applicant.",
+              mandatory: false,
+              visibility: "APPLICANT_VISIBLE" as const,
+              displayOrder: 2,
+            },
+          ],
           scoring: {
             aggregation: "WEIGHTED_AVERAGE" as const,
             criteria: [

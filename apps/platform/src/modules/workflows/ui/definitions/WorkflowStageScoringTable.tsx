@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/data-table";
 import { FormSelect } from "@/components/ui/form-fields";
 import { useSaveWorkflowGraph } from "@/modules/workflows/WorkflowHooks";
+import { WorkflowStageTabHeader } from "./WorkflowStageTabHeader";
 import type { WorkflowStageScoringCriterion } from "@/modules/workflows/domain/definitions/WorkflowStageScoringDefinition";
 import type {
   WorkflowEditorView,
@@ -136,6 +137,22 @@ export function WorkflowStageScoringTable({
 
   return (
     <section className="mt-5">
+      <WorkflowStageTabHeader
+        action={
+          <GeneralButton
+            disabled={!canEdit}
+            onClick={onAdd}
+            size="compact"
+            type="button"
+            variant="primary"
+          >
+            <Plus className="size-4" /> Add scoring criterion
+          </GeneralButton>
+        }
+        count={criteria.length}
+        description="Define the criteria and aggregation method used to score this stage."
+        title="Scoring criteria"
+      />
       <FormProvider {...form}>
         <form
           className="mb-5 flex flex-wrap items-end gap-3 rounded-xl border border-brand-navy/10 p-4"
@@ -158,20 +175,6 @@ export function WorkflowStageScoringTable({
           </GeneralButton>
         </form>
       </FormProvider>
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <h4 className="text-sm font-bold text-brand-navy">
-          Scoring criteria ({criteria.length})
-        </h4>
-        <GeneralButton
-          disabled={!canEdit}
-          onClick={onAdd}
-          size="compact"
-          type="button"
-          variant="primary"
-        >
-          <Plus className="size-4" /> Add scoring criterion
-        </GeneralButton>
-      </div>
       <DataTable
         columns={scoringColumns(canEdit, onDelete, onEdit)}
         data={criteria}
