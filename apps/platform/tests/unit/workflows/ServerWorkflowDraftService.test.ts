@@ -28,14 +28,18 @@ vi.mock(
 
 import { permissionCodes } from "@/auth/authorization/permissions";
 import type { AuthenticatedUser } from "@/auth/types";
-import { replaceWorkflowDraft } from "@/modules/workflows/infrastructure/WorkflowTemplateWriteRepository";
+import {
+  createWorkflowDefinition,
+  replaceWorkflowDraft,
+} from "@/modules/workflows/infrastructure/WorkflowTemplateWriteRepository";
 import { updateWorkflowDefinitionDetails } from "@/modules/workflows/infrastructure/WorkflowDetailsRepository";
 import {
   findDraftByDefinition,
   findLatestWorkflowVersionId,
 } from "@/modules/workflows/infrastructure/WorkflowRepository";
-import { referenceWorkflow } from "@/modules/workflows/ReferenceWorkflow";
+import { referenceWorkflow } from "../../support/ReferenceWorkflowFixture";
 import {
+  createWorkflow,
   updateWorkflowDraft,
   updateWorkflowDetails,
 } from "@/modules/workflows/application/definitions/ServerWorkflowService";
@@ -56,6 +60,30 @@ const actor: AuthenticatedUser = {
 };
 
 describe("workflow draft updates", () => {
+  it("creates an empty workflow instead of inserting a reference graph", async () => {
+    vi.mocked(createWorkflowDefinition).mockResolvedValue("draft-id");
+    vi.mocked(workflowEditorView).mockResolvedValue(undefined as never);
+
+    await createWorkflow(
+      {
+        ...actor,
+        capabilities: new Set([permissionCodes.workflowDefinitionCreate]),
+      },
+      {
+        code: "CLIENT_WORKFLOW",
+        description: "Configured from the client specification",
+        name: "Client workflow",
+      },
+      "correlation-id",
+    );
+
+    expect(createWorkflowDefinition).toHaveBeenCalledWith(
+      expect.objectContaining({
+        graph: { stages: [], transitions: [] },
+      }),
+    );
+  });
+
   it("rejects edits when no draft exists", async () => {
     vi.mocked(findDraftByDefinition).mockResolvedValue(null);
     vi.mocked(findLatestWorkflowVersionId).mockResolvedValue("published-id");

@@ -14,7 +14,6 @@ import {
   listPublishedWorkflowVersions,
   listWorkflowDefinitions,
 } from "@/modules/workflows/infrastructure/WorkflowRepository";
-import { referenceWorkflow } from "@/modules/workflows/ReferenceWorkflow";
 import {
   WorkflowConflictError,
   WorkflowNotFoundError,
@@ -60,14 +59,11 @@ export async function createWorkflow(
   correlationId: string,
 ) {
   const actor = requirePermission(user, permissionCodes.workflowDefinitionCreate);
-  const graph = input.useReferenceWorkflow
-    ? referenceWorkflow
-    : { stages: [], transitions: [] };
   const versionId = await createWorkflowDefinition({
     ...input,
     actorId: actor.id,
     correlationId,
-    graph,
+    graph: { stages: [], transitions: [] },
   });
   return workflowEditorView(versionId);
 }

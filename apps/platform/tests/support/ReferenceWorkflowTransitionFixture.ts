@@ -8,7 +8,7 @@ const stageTransitions = [
   ["COMMITTEE_DECISION", "OUTCOME_COMMUNICATION"],
 ] as const;
 
-export const referenceWorkflowTransitions: WorkflowTransitionInput[] = [
+export const referenceWorkflowTransitionsFixture: WorkflowTransitionInput[] = [
   ...stageTransitions.map(
     ([sourceStageKey, targetStageKey]) => ({
       sourceStageKey,

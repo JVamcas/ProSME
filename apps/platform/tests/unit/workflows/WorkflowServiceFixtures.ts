@@ -1,5 +1,5 @@
 import type { AuthenticatedUser } from "@/auth/types";
-import { referenceWorkflow } from "@/modules/workflows/ReferenceWorkflow";
+import { referenceWorkflow } from "../../support/ReferenceWorkflowFixture";
 
 export const actor: AuthenticatedUser = {
   id: "79e20de0-3558-4d63-90a4-8c9f5125df07",

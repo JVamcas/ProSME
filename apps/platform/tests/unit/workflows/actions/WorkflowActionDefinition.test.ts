@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { workflowActionDefinitionSchema } from "@/modules/workflows/api/WorkflowSchemas";
 import { workflowActionTypes } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
-import { referenceWorkflow } from "@/modules/workflows/ReferenceWorkflow";
+import { referenceWorkflow } from "../../../support/ReferenceWorkflowFixture";
 import { validateWorkflowGraph } from "@/modules/workflows/WorkflowValidation";
 import {
   toWorkflowActionDefinition,

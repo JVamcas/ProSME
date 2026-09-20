@@ -5,7 +5,6 @@ import { FormProvider, useForm } from "react-hook-form";
 import type { z } from "zod";
 
 import { GeneralButton } from "@/components/ui/button";
-import { CheckboxField } from "@/components/ui/form-field";
 import { FormInput, FormTextarea } from "@/components/ui/form-fields";
 import {
   useCreateWorkflow,
@@ -33,7 +32,6 @@ function useWorkflowDetailsForm({ onCompleted, workflow }: Props) {
       code: workflow?.code ?? "",
       description: workflow?.description ?? "",
       name: workflow?.name ?? "",
-      useReferenceWorkflow: true,
     },
     resolver: zodResolver(createWorkflowSchema),
   });
@@ -93,13 +91,6 @@ function WorkflowDetailsFields({
         name="description"
         rows={2}
       />
-      {!isEditing ? (
-        <CheckboxField
-          containerClassName="text-sm text-brand-navy"
-          label="Is Active"
-          name="useReferenceWorkflow"
-        />
-      ) : null}
       <div className="flex items-end justify-end">
         <GeneralButton disabled={isPending} type="submit">
           {submitLabel}

@@ -26,12 +26,20 @@ function queryClient() {
     id: definitionId,
     latestStatus: "DRAFT" as const,
     latestVersion: 1,
+    latestVersionId: "89e20de0-3558-4d63-90a4-8c9f5125df07",
+    latestVersionRowVersion: 1,
     name: "Finance Review",
     sectionCount: 0,
     updatedAt: "2026-09-14T08:00:00.000Z",
     usedByCount: 0,
   };
-  client.setQueryData(formQueryKeys.all, [definition]);
+  client.setQueryData(formQueryKeys.list({ page: 1, pageSize: 10 }), {
+    items: [definition],
+    page: 1,
+    pageSize: 10,
+    total: 1,
+    totalPages: 1,
+  });
   client.setQueryData(formQueryKeys.detail(definitionId), {
     allowedActions: ["UPDATE", "PUBLISH", "CLONE"],
     definition: {
@@ -74,10 +82,23 @@ describe("form definition dialog", () => {
     await act(async () => {
       root.render(
         <QueryClientProvider client={queryClient()}>
-          <FormsWorkspace canCreate canUpdate />
+          <FormsWorkspace canCreate canPublish canRetire canUpdate />
         </QueryClientProvider>,
       );
     });
+
+    expect(container.querySelector(
+      '[aria-label="Preview Finance Review"]',
+    )).not.toBeNull();
+    expect(container.querySelector(
+      '[aria-label="Publish Finance Review"]',
+    )).not.toBeNull();
+    expect(container.querySelector<HTMLButtonElement>(
+      '[aria-label="Retire Finance Review"]',
+    )?.disabled).toBe(true);
+    expect(container.querySelector<HTMLButtonElement>(
+      '[aria-label="Create new draft for Finance Review"]',
+    )?.disabled).toBe(true);
 
     await act(async () => {
       Array.from(container.querySelectorAll("button"))
@@ -103,14 +124,14 @@ describe("form definition dialog", () => {
     await act(async () => {
       root.render(
         <QueryClientProvider client={queryClient()}>
-          <FormsWorkspace canCreate canUpdate />
+          <FormsWorkspace canCreate canPublish canRetire canUpdate />
         </QueryClientProvider>,
       );
     });
 
     await act(async () => {
       container.querySelector<HTMLButtonElement>(
-        '[aria-label="Edit form"]',
+        '[aria-label="Edit Finance Review"]',
       )?.click();
     });
 

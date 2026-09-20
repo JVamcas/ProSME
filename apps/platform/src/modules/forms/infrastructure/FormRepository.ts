@@ -29,7 +29,9 @@ export async function listForms(
       definition.name,
       definition.description,
       definition.active,
+      latest.id AS "latestVersionId",
       latest.version_number AS "latestVersion",
+      latest.row_version AS "latestVersionRowVersion",
       latest.status AS "latestStatus",
       COALESCE(field_counts.field_count, 0)::integer AS "fieldCount",
       COALESCE(section_counts.section_count, 0)::integer AS "sectionCount",
@@ -37,7 +39,7 @@ export async function listForms(
       definition.updated_at AS "updatedAt"
     FROM app_form_definitions definition
     LEFT JOIN LATERAL (
-      SELECT version_number, status, id
+      SELECT version_number, row_version, status, id
       FROM app_form_versions
       WHERE form_definition_id = definition.id
       ORDER BY version_number DESC

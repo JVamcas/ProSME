@@ -54,7 +54,7 @@ import {
   findWorkflowVersion,
 } from "@/modules/workflows/infrastructure/WorkflowRepository";
 import { findPublishedFundingOpportunity } from "@/modules/funding-calls/ServerFundingOpportunityIntegration";
-import { referenceWorkflow } from "@/modules/workflows/ReferenceWorkflow";
+import { referenceWorkflow } from "../../support/ReferenceWorkflowFixture";
 import { assignOpportunityWorkflow } from "@/modules/workflows/ServerWorkflowAssignmentService";
 import {
   publishWorkflow,

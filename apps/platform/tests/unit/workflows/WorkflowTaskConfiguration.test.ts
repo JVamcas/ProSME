@@ -4,7 +4,7 @@ import {
   checklistItemDefaults,
   workflowTaskFormSchema,
 } from "@/modules/workflows/ui/definitions/WorkflowTaskFormSchema";
-import { referenceWorkflow } from "@/modules/workflows/ReferenceWorkflow";
+import { referenceWorkflow } from "../../support/ReferenceWorkflowFixture";
 import {
   defaultTaskConfiguration,
   formatTaskConfiguration,

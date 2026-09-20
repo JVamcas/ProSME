@@ -13,7 +13,7 @@ import {
   retireWorkflowVersion,
 } from "@/modules/workflows/infrastructure/WorkflowLifecycleRepository";
 import { findWorkflowGraph } from "@/modules/workflows/infrastructure/WorkflowGraphRepository";
-import { referenceWorkflow } from "@/modules/workflows/ReferenceWorkflow";
+import { referenceWorkflow } from "../support/ReferenceWorkflowFixture";
 
 const { Pool } = pg;
 const enabled = process.env.RUN_P3_WORKFLOW_DATABASE_TESTS === "true";

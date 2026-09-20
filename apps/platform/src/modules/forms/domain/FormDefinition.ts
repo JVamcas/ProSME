@@ -34,7 +34,9 @@ export type FormDefinitionSummary = {
   name: string;
   description: string;
   active: boolean;
+  latestVersionId: string | null;
   latestVersion: number | null;
+  latestVersionRowVersion: number | null;
   latestStatus: FormStatus | null;
   sectionCount: number;
   fieldCount: number;

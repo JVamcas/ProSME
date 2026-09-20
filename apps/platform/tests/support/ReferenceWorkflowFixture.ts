@@ -1,26 +1,6 @@
 import type { WorkflowGraphInput } from "@/modules/workflows/domain/definitions/WorkflowTypes";
-import type { WorkflowActionDefinition } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
-import { referenceWorkflowTransitions } from "./ReferenceWorkflowTransitions";
-
-const reviewOutcomes = [
-  { code: "ACCEPT", label: "Accept" },
-  { code: "RETURN", label: "Return for clarification" },
-];
-
-function routingAction(
-  stableKey: string,
-  label: string,
-): WorkflowActionDefinition {
-  return {
-    stableKey,
-    label,
-    actionType: "APPROVE_ADVANCE",
-    configuration: {},
-    enabled: true,
-    reasonCodeRequired: false,
-    displayOrder: 1,
-  };
-}
+import { referenceWorkflowTransitionsFixture } from "./ReferenceWorkflowTransitionFixture";
+import { reviewOutcomes, routingAction } from "./ReferenceWorkflowFixtureHelpers";
 
 export const referenceWorkflow: WorkflowGraphInput = {
   stages: [
@@ -309,5 +289,5 @@ export const referenceWorkflow: WorkflowGraphInput = {
       ],
     },
   ],
-  transitions: referenceWorkflowTransitions,
+  transitions: referenceWorkflowTransitionsFixture,
 };

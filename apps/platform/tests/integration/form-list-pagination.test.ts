@@ -67,6 +67,8 @@ afterAll(async () => {
       fieldCount: 0,
       latestStatus: "DRAFT",
       latestVersion: 1,
+      latestVersionId: expect.any(String),
+      latestVersionRowVersion: 1,
       sectionCount: 0,
       usedByCount: 0,
     }));

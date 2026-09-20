@@ -25,6 +25,8 @@ export default async function FormsPage() {
       />
       <FormsWorkspace
         canCreate={can(user, permissionCodes.workflowFormCreate)}
+        canPublish={can(user, permissionCodes.workflowFormPublish)}
+        canRetire={can(user, permissionCodes.workflowFormRetire)}
         canUpdate={can(user, permissionCodes.workflowFormUpdate)}
       />
     </section>

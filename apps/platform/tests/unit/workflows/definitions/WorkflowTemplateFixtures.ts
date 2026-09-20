@@ -1,7 +1,7 @@
 import type { AuthenticatedUser } from "@/auth/types";
 import { permissionCodes } from "@/auth/authorization/permissions/PermissionCodes";
 import type { WorkflowTemplateStatus } from "@/modules/workflows/domain/definitions/WorkflowTemplate";
-import { referenceWorkflow } from "@/modules/workflows/ReferenceWorkflow";
+import { referenceWorkflow } from "../../../support/ReferenceWorkflowFixture";
 
 export const templateId = "41111111-1111-4111-8111-111111111111";
 export const versionId = "42222222-2222-4222-8222-222222222222";

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { referenceWorkflow } from "@/modules/workflows/ReferenceWorkflow";
+import { referenceWorkflow } from "../../../support/ReferenceWorkflowFixture";
 import { validateWorkflowGraph } from "@/modules/workflows/WorkflowValidation";
 import { workflowTransitionSchema } from "@/modules/workflows/domain/transitions/WorkflowTransitionSchemas";
 import {

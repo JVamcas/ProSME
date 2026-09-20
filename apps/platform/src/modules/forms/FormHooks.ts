@@ -107,13 +107,21 @@ export function useFormLifecycle(action: "publish" | "retire") {
   });
 }
 
-export function useCloneForm(id: string) {
+export function useCloneForm() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (sourceVersionId: string) =>
-      clientFormsService.clone(id, sourceVersionId),
-    onSuccess: (view) => {
-      queryClient.setQueryData(formQueryKeys.detail(id), view);
+    mutationFn: (input: {
+      definitionId: string;
+      sourceVersionId: string;
+    }) => clientFormsService.clone(
+      input.definitionId,
+      input.sourceVersionId,
+    ),
+    onSuccess: (view, input) => {
+      queryClient.setQueryData(
+        formQueryKeys.detail(input.definitionId),
+        view,
+      );
       void queryClient.invalidateQueries({ queryKey: formQueryKeys.all });
     },
   });

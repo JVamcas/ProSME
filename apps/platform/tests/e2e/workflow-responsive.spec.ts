@@ -1,7 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page, type Route } from "playwright/test";
 
-import { referenceWorkflow } from "@/modules/workflows/ReferenceWorkflow";
+import { referenceWorkflow } from "../support/ReferenceWorkflowFixture";
 import {
   createWorkflowScreenIdentity,
   deleteWorkflowScreenIdentity,

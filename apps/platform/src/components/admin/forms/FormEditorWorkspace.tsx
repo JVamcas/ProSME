@@ -40,7 +40,10 @@ function FormEditorTopContent({
         editor={editor}
         isDraft={isDraft}
         isPublished={isPublished}
-        onClone={() => controller.clone.mutate(editor.version.id)}
+        onClone={() => controller.clone.mutate({
+          definitionId: id,
+          sourceVersionId: editor.version.id,
+        })}
         onPreview={() => controller.setPreviewOpen(true)}
         onPublish={() => controller.publish.mutate({
           definitionId: id,

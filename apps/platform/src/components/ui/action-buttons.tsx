@@ -1,12 +1,15 @@
 "use client";
 
 import {
+  Archive,
   Copy,
+  CopyPlus,
   Eye,
   LoaderCircle,
   Link2,
   PencilLine,
   Power,
+  Send,
   Trash2,
   type LucideIcon,
 } from "lucide-react";
@@ -77,6 +80,39 @@ export function PreviewButton(props: ActionButtonProps) {
       defaultTitle="Preview"
       icon={Eye}
       iconClassName="[&_svg]:text-brand-orange"
+      {...props}
+    />
+  );
+}
+
+export function PublishButton(props: ActionButtonProps) {
+  return (
+    <ActionButton
+      defaultTitle="Publish"
+      icon={Send}
+      iconClassName="hover:bg-green-50 [&_svg]:text-green-700"
+      {...props}
+    />
+  );
+}
+
+export function RetireButton(props: ActionButtonProps) {
+  return (
+    <ActionButton
+      defaultTitle="Retire"
+      icon={Archive}
+      iconClassName="hover:bg-red-50 [&_svg]:text-red-600"
+      {...props}
+    />
+  );
+}
+
+export function CreateDraftButton(props: ActionButtonProps) {
+  return (
+    <ActionButton
+      defaultTitle="Create new draft"
+      icon={CopyPlus}
+      iconClassName="hover:bg-brand-cream [&_svg]:text-brand-orange"
       {...props}
     />
   );

@@ -12,7 +12,7 @@ import { WorkflowDefinitionCreateForm } from "@/components/admin/workflows/Workf
 import { WorkflowDefinitionDetailsCard } from "@/components/admin/workflows/WorkflowDefinitionDetailsCard";
 import { WorkflowDefinitionsWorkspace } from "@/components/admin/workflows/WorkflowDefinitionsWorkspace";
 import { WorkflowDefinitionsTable } from "@/components/admin/workflows/WorkflowDefinitionsTable";
-import { referenceWorkflow } from "@/modules/workflows/ReferenceWorkflow";
+import { referenceWorkflow } from "../../support/ReferenceWorkflowFixture";
 import { workflowQueryKeys } from "@/modules/workflows/WorkflowHooks";
 import { WorkflowActionConfigurationFields } from "@/modules/workflows/ui/definitions/WorkflowActionConfigurationFields";
 import {

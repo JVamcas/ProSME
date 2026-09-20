@@ -124,11 +124,9 @@ export const createWorkflowSchema = z.object({
   code: codeSchema,
   name: z.string().trim().min(2).max(160),
   description: z.string().trim().max(1000).default(""),
-  useReferenceWorkflow: z.boolean().default(true),
 });
 
 export const updateWorkflowDetailsSchema = createWorkflowSchema
-  .omit({ useReferenceWorkflow: true })
   .extend({
     expectedRowVersion: z.number().int().positive(),
   });

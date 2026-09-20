@@ -65,7 +65,9 @@ export type FormEditorView = {
     | "fieldCount"
     | "sectionCount"
     | "usedByCount"
+    | "latestVersionId"
     | "latestVersion"
+    | "latestVersionRowVersion"
     | "latestStatus"
   >;
   version: FormVersionSummary;

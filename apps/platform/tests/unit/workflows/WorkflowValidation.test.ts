@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { referenceWorkflow } from "@/modules/workflows/ReferenceWorkflow";
+import { referenceWorkflow } from "../../support/ReferenceWorkflowFixture";
 import { workflowGraphSchema } from "@/modules/workflows/api/WorkflowSchemas";
 import {
   handleTaskResult,

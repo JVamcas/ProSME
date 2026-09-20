@@ -26,6 +26,8 @@ RUN groupadd --system --gid 1001 nodejs \
     && useradd --system --uid 1001 --gid nodejs nextjs
 
 COPY --chown=nextjs:nodejs apps/platform apps/platform
+COPY --chown=nextjs:nodejs \
+    scripts/seed/package.json scripts/seed/seed-standard-forms.ts scripts/seed/
 COPY --chown=nextjs:nodejs --chmod=755 \
     scripts/container/migrate.sh scripts/container/migrate.sh
 
