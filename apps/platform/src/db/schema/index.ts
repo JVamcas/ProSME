@@ -3,6 +3,7 @@ export * from "./audit";
 export * from "./applications";
 export * from "./application-documents";
 export * from "./eligibility";
+export * from "@/modules/conditions/infrastructure/condition.schema";
 export * from "@/modules/forms/infrastructure/form.schema";
 export * from "@/modules/forms/infrastructure/form-response.schema";
 export * from "./identity";
