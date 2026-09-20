@@ -8,11 +8,11 @@ vi.mock("@/db/repositories/EligibilityAssessmentRepository", () => ({
 vi.mock("@/modules/eligibility/ServerEligibilityIntegration", () => ({
   loadPublishedEligibilityRuleSet: vi.fn(),
 }));
-vi.mock("@/modules/funding-opportunities/ServerFundingOpportunityIntegration", () => ({
+vi.mock("@/modules/funding-calls/ServerFundingOpportunityIntegration", () => ({
   findPublishedFundingOpportunity: vi.fn(),
 }));
 
-import { capabilities } from "@/auth/authorization/capabilities";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import { PermissionDeniedError } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import {
@@ -66,7 +66,7 @@ beforeEach(() => {
 describe("eligibility assessment service", () => {
   it("scopes prior assessments to the authenticated owner and opportunity", async () => {
     await getEligibilityWorkspace(
-      user([capabilities.eligibilityReadOwn]),
+      user([permissionCodes.fundingCallEligibilityOwnRead]),
       42,
     );
     expect(listOwnedEligibilityAssessments).toHaveBeenCalledWith(ownerId, 42);
@@ -80,7 +80,7 @@ describe("eligibility assessment service", () => {
       ruleSnapshot: input.rules,
     }));
     const result = await createEligibilityAssessment(
-      user([capabilities.eligibilityCreate]),
+      user([permissionCodes.fundingCallEligibilityCreate]),
       {
         answers: { bank: "no", ownership: "yes" },
         expectedRuleSetVersion: "v1",
@@ -102,7 +102,7 @@ describe("eligibility assessment service", () => {
 
   it("rejects a stale rule-set version without writing", async () => {
     await expect(createEligibilityAssessment(
-      user([capabilities.eligibilityCreate]),
+      user([permissionCodes.fundingCallEligibilityCreate]),
       {
         answers: { bank: "yes", ownership: "yes" },
         expectedRuleSetVersion: "old-version",
@@ -114,7 +114,7 @@ describe("eligibility assessment service", () => {
 
   it("rejects creating an assessment without the capability", async () => {
     await expect(createEligibilityAssessment(
-      user([capabilities.eligibilityReadOwn]),
+      user([permissionCodes.fundingCallEligibilityOwnRead]),
       {
         answers: { bank: "yes", ownership: "yes" },
         expectedRuleSetVersion: "v1",
@@ -124,4 +124,3 @@ describe("eligibility assessment service", () => {
     expect(findPublishedFundingOpportunity).not.toHaveBeenCalled();
   });
 });
-

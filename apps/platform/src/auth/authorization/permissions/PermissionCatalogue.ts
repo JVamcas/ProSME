@@ -85,6 +85,31 @@ export const permissionCatalogue: readonly PermissionDefinition[] = [
     "Read eligibility assessments owned by the signed-in user.",
   ),
   define(
+    permissionCodes.eligibilityRuleSetRead,
+    "Read eligibility rulesets",
+    "Read eligibility rulesets and their exact versions.",
+  ),
+  define(
+    permissionCodes.eligibilityRuleSetCreate,
+    "Create eligibility rulesets",
+    "Create eligibility rulesets with an initial draft version.",
+  ),
+  define(
+    permissionCodes.eligibilityRuleSetUpdate,
+    "Update eligibility rulesets",
+    "Update draft eligibility ruleset versions.",
+  ),
+  define(
+    permissionCodes.eligibilityRuleSetPublish,
+    "Publish eligibility rulesets",
+    "Publish draft eligibility ruleset versions.",
+  ),
+  define(
+    permissionCodes.eligibilityRuleSetRetire,
+    "Retire eligibility rulesets",
+    "Retire published eligibility ruleset versions.",
+  ),
+  define(
     permissionCodes.fundingApplicationCreate,
     "Create applications",
     "Create funding applications.",

@@ -8,6 +8,7 @@ export type PermissionGroupId =
   | "user"
   | "business"
   | "funding-calls"
+  | "eligibility-configuration"
   | "funding-applications"
   | "workflow-tasks"
   | "workflow-configuration"
@@ -72,6 +73,17 @@ export const permissionGroups: readonly PermissionGroup[] = [
       permissionCodes.fundingApplicationInformationRequestCreate,
       permissionCodes.fundingApplicationInformationRequestOwnRead,
       permissionCodes.fundingApplicationInformationRequestOwnRespond,
+    ],
+  },
+  {
+    id: "eligibility-configuration",
+    label: "Eligibility Configuration",
+    permissionCodes: [
+      permissionCodes.eligibilityRuleSetRead,
+      permissionCodes.eligibilityRuleSetCreate,
+      permissionCodes.eligibilityRuleSetUpdate,
+      permissionCodes.eligibilityRuleSetPublish,
+      permissionCodes.eligibilityRuleSetRetire,
     ],
   },
   {

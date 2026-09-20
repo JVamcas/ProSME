@@ -76,7 +76,7 @@ describe("P3.1 capability-aware portal navigation", () => {
     const applications = operationsPortalRoutes.find(
       (route) => route.id === "admin-applications",
     );
-    expect(applications?.requiredAnyCapabilities).toEqual([
+    expect(applications?.requiredAnyPermissions).toEqual([
       capabilities.applicationReadAssigned,
       capabilities.applicationReadAll,
     ]);
@@ -136,7 +136,7 @@ describe("P3.1 capability-aware portal navigation", () => {
               label: "Child",
               icon: portalRoutes[0].icon,
               space: "applicant",
-              requiredCapability: capabilities.businessReadOwn,
+              requiredPermission: capabilities.businessReadOwn,
             },
           ],
         },

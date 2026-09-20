@@ -24,8 +24,8 @@ export type PortalRoute = {
   icon: LucideIcon;
   space: PortalSpace;
   openInNewTab?: boolean;
-  requiredCapability?: string;
-  requiredAnyCapabilities?: readonly string[];
+  requiredPermission?: string;
+  requiredAnyPermissions?: readonly string[];
   requiredAllCapabilities?: readonly string[];
   children?: readonly PortalRoute[];
 };
@@ -51,7 +51,7 @@ export const applicantPortalRoutes: readonly PortalRoute[] = [
     label: "My businesses",
     icon: Store,
     space: "applicant",
-    requiredCapability: capabilities.businessReadOwn,
+    requiredPermission: capabilities.businessReadOwn,
   },
   {
     id: "applicant-applications",
@@ -59,7 +59,7 @@ export const applicantPortalRoutes: readonly PortalRoute[] = [
     label: "My applications",
     icon: ClipboardList,
     space: "applicant",
-    requiredCapability: capabilities.applicationReadOwn,
+    requiredPermission: capabilities.applicationReadOwn,
   },
   {
     id: "applicant-notifications",
@@ -67,7 +67,7 @@ export const applicantPortalRoutes: readonly PortalRoute[] = [
     label: "Notifications",
     icon: Bell,
     space: "applicant",
-    requiredCapability: capabilities.notificationReadOwn,
+    requiredPermission: capabilities.notificationReadOwn,
   },
   {
     id: "applicant-profile",
@@ -75,9 +75,7 @@ export const applicantPortalRoutes: readonly PortalRoute[] = [
     label: "My profile",
     icon: UserRound,
     space: "applicant",
-    requiredAnyCapabilities: [
-      capabilities.profileReadOwn,
-    ],
+    requiredAnyPermissions: [capabilities.profileReadOwn],
   },
 ];
 
@@ -88,7 +86,7 @@ export const operationsPortalRoutes: readonly PortalRoute[] = [
     label: "Dashboard",
     icon: LayoutDashboard,
     space: "operations",
-    requiredCapability: capabilities.adminAccess,
+    requiredPermission: capabilities.adminAccess,
   },
   {
     id: "admin-work-queue",
@@ -96,7 +94,7 @@ export const operationsPortalRoutes: readonly PortalRoute[] = [
     label: "My Work Queue",
     icon: ListTodo,
     space: "operations",
-    requiredCapability: capabilities.workQueueRead,
+    requiredPermission: capabilities.workQueueRead,
   },
   {
     id: "admin-applications",
@@ -104,23 +102,9 @@ export const operationsPortalRoutes: readonly PortalRoute[] = [
     label: "Applications",
     icon: ClipboardList,
     space: "operations",
-    requiredAnyCapabilities: [
+    requiredAnyPermissions: [
       capabilities.applicationReadAssigned,
       capabilities.applicationReadAll,
-    ],
-  },
-  {
-    id: "admin-workflows",
-    href: "/admin/workflows",
-    label: "Workflow Templates",
-    icon: Workflow,
-    space: "operations",
-    requiredAnyCapabilities: [
-      permissionCodes.workflowDefinitionRead,
-      permissionCodes.workflowDefinitionCreate,
-      permissionCodes.workflowDefinitionUpdate,
-      permissionCodes.workflowDefinitionPublish,
-      permissionCodes.workflowDefinitionRetire,
     ],
   },
   {
@@ -129,20 +113,25 @@ export const operationsPortalRoutes: readonly PortalRoute[] = [
     label: "Content management",
     icon: FileText,
     space: "operations",
-    requiredCapability: capabilities.cmsAccess,
+    requiredPermission: capabilities.cmsAccess,
   },
   {
     id: "admin-settings",
     href: "/admin/settings",
-    label: "Settings",
+    label: "Administration",
     icon: Settings,
     space: "operations",
-    requiredAnyCapabilities: [
+    requiredAnyPermissions: [
       permissionCodes.workflowFormRead,
       permissionCodes.workflowFormCreate,
       permissionCodes.workflowFormUpdate,
       permissionCodes.workflowFormPublish,
       permissionCodes.workflowFormRetire,
+      permissionCodes.workflowDefinitionRead,
+      permissionCodes.workflowDefinitionCreate,
+      permissionCodes.workflowDefinitionUpdate,
+      permissionCodes.workflowDefinitionPublish,
+      permissionCodes.workflowDefinitionRetire,
     ],
     children: [
       {
@@ -151,12 +140,26 @@ export const operationsPortalRoutes: readonly PortalRoute[] = [
         label: "Forms",
         icon: ClipboardList,
         space: "operations",
-        requiredAnyCapabilities: [
+        requiredAnyPermissions: [
           permissionCodes.workflowFormRead,
           permissionCodes.workflowFormCreate,
           permissionCodes.workflowFormUpdate,
           permissionCodes.workflowFormPublish,
           permissionCodes.workflowFormRetire,
+        ],
+      },
+      {
+        id: "admin-workflows",
+        href: "/admin/workflows",
+        label: "Workflow Templates",
+        icon: Workflow,
+        space: "operations",
+        requiredAnyPermissions: [
+          permissionCodes.workflowDefinitionRead,
+          permissionCodes.workflowDefinitionCreate,
+          permissionCodes.workflowDefinitionUpdate,
+          permissionCodes.workflowDefinitionPublish,
+          permissionCodes.workflowDefinitionRetire,
         ],
       },
     ],
@@ -167,7 +170,7 @@ export const operationsPortalRoutes: readonly PortalRoute[] = [
     label: "Users & access",
     icon: UsersRound,
     space: "operations",
-    requiredAnyCapabilities: [
+    requiredAnyPermissions: [
       capabilities.userRead,
       capabilities.userManage,
       capabilities.roleRead,
@@ -182,13 +185,13 @@ export const portalRoutes: readonly PortalRoute[] = [
 ];
 
 function routeAllowed(route: PortalRoute, granted: ReadonlySet<string>) {
-  if (route.requiredCapability && !granted.has(route.requiredCapability)) {
+  if (route.requiredPermission && !granted.has(route.requiredPermission)) {
     return false;
   }
 
   if (
-    route.requiredAnyCapabilities &&
-    !route.requiredAnyCapabilities.some((item) => granted.has(item))
+    route.requiredAnyPermissions &&
+    !route.requiredAnyPermissions.some((item) => granted.has(item))
   ) {
     return false;
   }

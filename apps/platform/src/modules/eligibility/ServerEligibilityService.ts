@@ -1,6 +1,6 @@
 import "server-only";
 
-import { capabilities } from "@/auth/authorization/capabilities";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import { requirePermission } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import {
@@ -84,7 +84,10 @@ export async function getEligibilityWorkspace(
   user: AuthenticatedUser | null,
   fundingOpportunityId: number,
 ) {
-  const actor = requirePermission(user, capabilities.eligibilityReadOwn);
+  const actor = requirePermission(
+    user,
+    permissionCodes.fundingCallEligibilityOwnRead,
+  );
   const [{ opportunity, ruleSet }, assessments] = await Promise.all([
     loadAvailableWorkspace(fundingOpportunityId),
     listOwnedEligibilityAssessments(actor.id, fundingOpportunityId),
@@ -101,7 +104,10 @@ export async function createEligibilityAssessment(
   user: AuthenticatedUser | null,
   input: EligibilityAssessmentInput,
 ) {
-  const actor = requirePermission(user, capabilities.eligibilityCreate);
+  const actor = requirePermission(
+    user,
+    permissionCodes.fundingCallEligibilityCreate,
+  );
   const { opportunity, ruleSet } = await loadAvailableWorkspace(
     input.fundingOpportunityId,
   );
@@ -120,4 +126,3 @@ export async function createEligibilityAssessment(
   });
   return assessmentView(assessment);
 }
-

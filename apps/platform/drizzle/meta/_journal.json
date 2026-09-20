@@ -337,6 +337,13 @@
       "when": 1791849600000,
       "tag": "0047_workflow_element_permissions",
       "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1791936000000,
+      "tag": "0048_eligibility_rulesets",
+      "breakpoints": true
     }
   ]
 }
