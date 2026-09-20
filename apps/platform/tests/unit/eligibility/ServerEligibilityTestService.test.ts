@@ -1,0 +1,103 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("server-only", () => ({}));
+vi.mock("@/modules/eligibility/infrastructure/EligibilityEvaluationRepository", () => ({
+  findTestableEligibilityRuleSetForEvaluation: vi.fn(),
+}));
+
+import { permissionCodes } from "@/auth/authorization/permissions";
+import { PermissionDeniedError } from "@/auth/authorization/policy";
+import type { AuthenticatedUser } from "@/auth/types";
+import { ResourceNotFoundError } from "@/lib/resource-errors";
+import type { EligibilityTestInput } from "@/modules/eligibility/api/EligibilityTestSchemas";
+import { testEligibilityRuleSet } from "@/modules/eligibility/application/ServerEligibilityTestService";
+import { findTestableEligibilityRuleSetForEvaluation } from "@/modules/eligibility/infrastructure/EligibilityEvaluationRepository";
+
+const ruleSetId = "80000000-0000-4000-8000-000000000001";
+const versionId = "80000000-0000-4000-8000-000000000002";
+
+function user(grants: string[]): AuthenticatedUser {
+  return {
+    capabilities: new Set(grants),
+    createdAt: new Date(),
+    displayName: "Eligibility tester",
+    email: "tester@example.test",
+    id: "80000000-0000-4000-8000-000000000003",
+    identitySubject: "eligibility-tester",
+    lastLoginAt: null,
+    roleCodes: new Set(),
+    status: "active",
+    updatedAt: new Date(),
+    userType: "staff",
+  };
+}
+
+const input: EligibilityTestInput = {
+  mode: "SCREENING",
+  values: {
+    application: {
+      annual_turnover: 100_000,
+      business: {
+        bank_account_active: true,
+        employee_count: 2,
+        operating_months: 12,
+        ownership_percentage: 80,
+        registered: true,
+        statutory_good_standing: true,
+      },
+      requested_amount: 50_000,
+    },
+    fundingCall: { maximum_grant_amount: 200_000 },
+  },
+  versionId,
+};
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  vi.mocked(findTestableEligibilityRuleSetForEvaluation).mockResolvedValue({
+    ruleSetId,
+    rules: [],
+    versionId,
+    versionNumber: 2,
+  });
+});
+
+describe("ServerEligibilityTestService", () => {
+  it("runs a non-authoritative test with the read permission", async () => {
+    const result = await testEligibilityRuleSet(
+      user([permissionCodes.eligibilityRuleSetRead]),
+      ruleSetId,
+      input,
+    );
+
+    expect(findTestableEligibilityRuleSetForEvaluation)
+      .toHaveBeenCalledWith(versionId);
+    expect(result).toMatchObject({
+      authoritative: false,
+      eligible: true,
+      mode: "SCREENING",
+      ruleSetVersionId: versionId,
+    });
+  });
+
+  it("denies tests without the canonical read permission", async () => {
+    await expect(testEligibilityRuleSet(user([]), ruleSetId, input))
+      .rejects.toBeInstanceOf(PermissionDeniedError);
+    expect(findTestableEligibilityRuleSetForEvaluation).not.toHaveBeenCalled();
+  });
+
+  it("rejects versions that do not belong to the requested ruleset", async () => {
+    vi.mocked(findTestableEligibilityRuleSetForEvaluation).mockResolvedValue({
+      ruleSetId: "80000000-0000-4000-8000-000000000099",
+      rules: [],
+      versionId,
+      versionNumber: 1,
+    });
+
+    await expect(testEligibilityRuleSet(
+      user([permissionCodes.eligibilityRuleSetRead]),
+      ruleSetId,
+      input,
+    )).rejects.toBeInstanceOf(ResourceNotFoundError);
+  });
+});

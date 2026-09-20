@@ -1,0 +1,31 @@
+import { Scale } from "lucide-react";
+import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+
+import { getCurrentUser } from "@/auth/authorization/current-user";
+import { permissionCodes } from "@/auth/authorization/permissions";
+import { can } from "@/auth/authorization/policy";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { EligibilityRuleSetList } from "@/modules/eligibility/ui/EligibilityRuleSetList";
+
+export const metadata: Metadata = { title: "Eligibility rulesets" };
+
+export default async function EligibilityRuleSetsPage() {
+  const user = await getCurrentUser();
+  if (!user || !can(user, permissionCodes.eligibilityRuleSetRead)) {
+    redirect("/unauthorized");
+  }
+  return (
+    <section>
+      <PageHeader
+        description="Create reusable, versioned eligibility rulesets."
+        eyebrow="Settings"
+        icon={<Scale />}
+        title="Eligibility rulesets"
+      />
+      <EligibilityRuleSetList
+        canCreate={can(user, permissionCodes.eligibilityRuleSetCreate)}
+      />
+    </section>
+  );
+}

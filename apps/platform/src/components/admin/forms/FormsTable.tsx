@@ -14,6 +14,7 @@ import {
 import { formatLocalDateTime24 } from "@/lib/dateUtils";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { DataTablePagination } from "@/shared/ui/DataTablePagination";
+import { FormVersionsTable } from "@/modules/forms/ui/FormVersionsTable";
 
 export type FormTablePendingAction = {
   action: "clone" | "preview" | "publish" | "retire";
@@ -202,6 +203,10 @@ export function FormsTable({
       })}
       data={items}
       emptyMessage={emptyMessage}
+      renderExpandedRow={(form) => (
+        <FormVersionsTable definitionId={form.id} />
+      )}
+      rowKey={(form) => form.id}
       footer={(
         <div className="space-y-3">
           {errorMessage ? (

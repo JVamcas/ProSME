@@ -13,9 +13,10 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
+  ChevronDown,
   Inbox,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode, useState } from "react";
 
 import { cn } from "@/lib/utils";
 import { GeneralButton } from "./button";
@@ -41,6 +42,8 @@ type DataTableProps<TData extends RowData> = {
   emptyMessage?: string;
   footer?: ReactNode;
   minWidth?: number | string;
+  renderExpandedRow?: (item: TData) => ReactNode;
+  rowKey?: (item: TData) => string;
   rowClassName?: (item: TData) => string | undefined;
   toolbar?: DataTableToolbarConfig;
 };
@@ -85,15 +88,24 @@ function ariaSort(
 
 function DataTableHeader<TData extends RowData>({
   density,
+  expandable,
   table,
 }: {
   density: "default" | "compact";
+  expandable: boolean;
   table: DataTableInstance<TData>;
 }) {
   return (
     <thead className="border-b border-slate-200 bg-slate-100">
       {table.getHeaderGroups().map((group) => (
         <tr key={group.id}>
+          {expandable ? (
+            <th
+              className={density === "compact" ? "w-12 px-4" : "w-14 px-5"}
+            >
+              <span className="sr-only">Expand row</span>
+            </th>
+          ) : null}
           {group.headers.map((header) => {
             const direction = header.column.getIsSorted();
             const canSort = header.column.getCanSort();
@@ -140,47 +152,93 @@ function DataTableHeader<TData extends RowData>({
 function DataTableBody<TData extends RowData>({
   density,
   emptyMessage,
+  expandedRows,
+  renderExpandedRow,
+  rowKey,
   rowClassName,
+  toggleExpanded,
   table,
 }: {
   density: "default" | "compact";
   emptyMessage: string;
+  expandedRows: ReadonlySet<string>;
+  renderExpandedRow?: (item: TData) => ReactNode;
+  rowKey: (item: TData, index: number) => string;
   rowClassName?: (item: TData) => string | undefined;
+  toggleExpanded: (key: string) => void;
   table: DataTableInstance<TData>;
 }) {
   const rows = table.getRowModel().rows;
 
   return (
     <tbody className="divide-y divide-slate-200 bg-white">
-      {rows.map((row) => (
-        <tr
-          key={row.id}
-          className={cn(
-            "group transition-colors duration-150",
-            "hover:bg-slate-50/80",
-            rowClassName?.(row.original),
-          )}
-        >
-          {row.getAllCells().map((cell) => (
-            <td
-              key={cell.id}
+      {rows.map((row, index) => {
+        const key = rowKey(row.original, index);
+        const expanded = expandedRows.has(key);
+
+        return (
+          <Fragment key={key}>
+            <tr
               className={cn(
-                "align-middle text-sm text-slate-700",
-                density === "compact"
-                  ? "h-12 px-4 py-2"
-                  : "h-[68px] px-5 py-3.5",
+                "group transition-colors duration-150",
+                "hover:bg-slate-50/80",
+                rowClassName?.(row.original),
               )}
             >
-              <table.FlexRender cell={cell} />
-            </td>
-          ))}
-        </tr>
-      ))}
+              {renderExpandedRow ? (
+                <td className={density === "compact" ? "px-4" : "px-5"}>
+                  <GeneralButton
+                    aria-expanded={expanded}
+                    aria-label={expanded ? "Collapse row" : "Expand row"}
+                    className="size-8 p-0"
+                    onClick={() => toggleExpanded(key)}
+                    type="button"
+                    variant="ghost"
+                  >
+                    <ChevronDown
+                      aria-hidden="true"
+                      className={cn(
+                        "size-4 transition-transform",
+                        expanded && "rotate-180",
+                      )}
+                    />
+                  </GeneralButton>
+                </td>
+              ) : null}
+              {row.getAllCells().map((cell) => (
+                <td
+                  key={cell.id}
+                  className={cn(
+                    "align-middle text-sm text-slate-700",
+                    density === "compact"
+                      ? "h-12 px-4 py-2"
+                      : "h-[68px] px-5 py-3.5",
+                  )}
+                >
+                  <table.FlexRender cell={cell} />
+                </td>
+              ))}
+            </tr>
+            {expanded && renderExpandedRow ? (
+              <tr className="bg-slate-50/70">
+                <td
+                  className="px-5 py-4"
+                  colSpan={table.getAllLeafColumns().length + 1}
+                >
+                  {renderExpandedRow(row.original)}
+                </td>
+              </tr>
+            ) : null}
+          </Fragment>
+        );
+      })}
 
       {!rows.length && (
         <tr>
           <td
-            colSpan={table.getAllLeafColumns().length}
+            colSpan={
+              table.getAllLeafColumns().length + (renderExpandedRow ? 1 : 0)
+            }
             className={cn(
               "px-5 text-center",
               density === "compact" ? "py-10" : "py-16",
@@ -213,9 +271,12 @@ export function DataTable<TData extends RowData>({
   emptyMessage = "No records found",
   footer,
   minWidth,
+  renderExpandedRow,
+  rowKey,
   rowClassName,
   toolbar,
 }: DataTableProps<TData>) {
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const table = useTable({
     features: dataTableFeatures,
     columns,
@@ -224,6 +285,19 @@ export function DataTable<TData extends RowData>({
 
   const resolvedMinWidth =
     typeof minWidth === "number" ? `${minWidth}px` : minWidth;
+  const resolveRowKey = (item: TData, index: number) =>
+    rowKey?.(item) ?? String(index);
+  const toggleExpanded = (key: string) => {
+    setExpandedRows((current) => {
+      const next = new Set(current);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  };
 
   return (
     <div className="overflow-hidden rounded-md border border-slate-100 bg-white shadow-sm mx-1">
@@ -238,13 +312,21 @@ export function DataTable<TData extends RowData>({
           className="w-full text-left"
           style={{ minWidth: resolvedMinWidth }}
         >
-          <DataTableHeader density={density} table={table} />
+          <DataTableHeader
+            density={density}
+            expandable={Boolean(renderExpandedRow)}
+            table={table}
+          />
 
           <DataTableBody
             density={density}
             table={table}
             emptyMessage={emptyMessage}
+            expandedRows={expandedRows}
+            renderExpandedRow={renderExpandedRow}
+            rowKey={resolveRowKey}
             rowClassName={rowClassName}
+            toggleExpanded={toggleExpanded}
           />
         </table>
       </div>

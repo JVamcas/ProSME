@@ -21,8 +21,8 @@ import {
   InvalidEligibilityRulesError,
   publishEligibilityRuleSetVersion,
   retireEligibilityRuleSetVersion,
-  updateEligibilityRuleSetDraft,
 } from "../infrastructure/EligibilityRuleSetRepository";
+import { updateEligibilityRuleSetDraft } from "../infrastructure/EligibilityRuleSetWriteRepository";
 
 async function requireRuleSet(ruleSetId: string) {
   const ruleSet = await findEligibilityRuleSet(ruleSetId);

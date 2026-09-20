@@ -1,4 +1,5 @@
-import type { ConditionGroup, ConditionNode } from "@/modules/conditions/domain/ConditionGroup";
+import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup";
+import { findConditionNode } from "@/modules/conditions/domain/ConditionTree";
 import type { EligibilityRule } from "./EligibilityRule";
 
 export type EligibilityRuleValidationIssue = {
@@ -6,11 +7,6 @@ export type EligibilityRuleValidationIssue = {
   message: string;
   ruleIndex: number;
 };
-
-function hasCondition(node: ConditionNode, conditionId: string): boolean {
-  if (node.kind === "CONDITION") return node.id === conditionId;
-  return node.children.some((child) => hasCondition(child, conditionId));
-}
 
 export function validateEligibilityRules(
   rules: readonly EligibilityRule[],
@@ -30,7 +26,8 @@ export function validateEligibilityRules(
       });
     } else if (
       rule.condition.kind === "CONDITION"
-      && !hasCondition(group, rule.condition.conditionId)
+      && findConditionNode(group, rule.condition.conditionId)?.kind
+        !== "CONDITION"
     ) {
       issues.push({
         code: "CONDITION_NOT_FOUND",

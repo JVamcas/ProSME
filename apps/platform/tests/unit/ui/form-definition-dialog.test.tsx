@@ -25,7 +25,7 @@ function queryClient() {
     fieldCount: 0,
     id: definitionId,
     latestStatus: "DRAFT" as const,
-    latestVersion: 1,
+    latestVersion: 2,
     latestVersionId: "89e20de0-3558-4d63-90a4-8c9f5125df07",
     latestVersionRowVersion: 1,
     name: "Finance Review",
@@ -63,9 +63,34 @@ function queryClient() {
       rowVersion: 1,
       status: "DRAFT",
       submitLabel: "Complete review",
-      versionNumber: 1,
+      versionNumber: 2,
     },
-    versions: [],
+    versions: [
+      {
+        createdAt: definition.updatedAt,
+        formDefinitionId: definitionId,
+        id: "89e20de0-3558-4d63-90a4-8c9f5125df07",
+        instructions: "Complete every finance check.",
+        publishedAt: null,
+        retiredAt: null,
+        rowVersion: 1,
+        status: "DRAFT",
+        submitLabel: "Complete review",
+        versionNumber: 2,
+      },
+      {
+        createdAt: "2026-09-10T08:00:00.000Z",
+        formDefinitionId: definitionId,
+        id: "99e20de0-3558-4d63-90a4-8c9f5125df07",
+        instructions: "Complete every finance check.",
+        publishedAt: "2026-09-11T08:00:00.000Z",
+        retiredAt: "2026-09-13T08:00:00.000Z",
+        rowVersion: 3,
+        status: "RETIRED",
+        submitLabel: "Complete review",
+        versionNumber: 1,
+      },
+    ],
   });
   return client;
 }
@@ -75,6 +100,43 @@ afterEach(() => {
 });
 
 describe("form definition dialog", () => {
+  it("expands a form row to show its versions table", async () => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient()}>
+          <FormsWorkspace canCreate canPublish canRetire canUpdate />
+        </QueryClientProvider>,
+      );
+    });
+
+    expect(container.textContent).not.toContain("Version 2");
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>(
+        '[aria-label="Expand row"]',
+      )?.click();
+    });
+
+    expect(container.textContent).toContain("Version 2");
+    expect(container.textContent).toContain("Version 1");
+    expect(container.textContent).toContain("Retired");
+    expect(container.querySelector('[aria-label="Finance Review versions"]'))
+      .not.toBeNull();
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>(
+        '[aria-label="Collapse row"]',
+      )?.click();
+    });
+
+    expect(container.textContent).not.toContain("Version 2");
+
+    await act(async () => root.unmount());
+  });
+
   it("shows only definition metadata when creating a form", async () => {
     const container = document.createElement("div");
     document.body.append(container);

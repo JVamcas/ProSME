@@ -15,7 +15,12 @@ import {
   retireEligibilityRuleSet,
   updateEligibilityRuleSet,
 } from "@/modules/eligibility/application/ServerEligibilityRuleSetService";
-import { ResourceConflictError } from "@/lib/resource-errors";
+import {
+  ResourceConflictError,
+  ResourceNotFoundError,
+} from "@/lib/resource-errors";
+import { evaluatePublishedEligibilityRuleSet } from "@/modules/eligibility/application/ServerEligibilityEvaluatorService";
+import { testEligibilityRuleSet } from "@/modules/eligibility/application/ServerEligibilityTestService";
 
 const enabled = process.env.RUN_P5_ELIGIBILITY_DATABASE_TESTS === "true";
 const pool = enabled
@@ -55,7 +60,10 @@ afterAll(async () => {
         {
           id: randomUUID(),
           kind: "CONDITION",
-          leftOperand: { key: "business.employee_count", kind: "FIELD" },
+          leftOperand: {
+            key: "application.business.employee_count",
+            kind: "FIELD",
+          },
           operator: "GREATER_THAN" as never,
           rightOperand: { kind: "CONSTANT", value: 0 },
         },
@@ -79,6 +87,7 @@ afterAll(async () => {
       created.definition.id,
       created.version.id,
       {
+        conditionDefinitions: [],
         expectedRowVersion: created.version.rowVersion,
         rules: [
           {
@@ -112,6 +121,34 @@ afterAll(async () => {
         ],
       },
     );
+    const draftTest = await testEligibilityRuleSet(
+      actor,
+      created.definition.id,
+      {
+        mode: "SELF_CHECK",
+        values: {
+          application: {
+            annual_turnover: 100_000,
+            business: {
+              bank_account_active: true,
+              employee_count: 0,
+              operating_months: 12,
+              ownership_percentage: 80,
+              registered: true,
+              statutory_good_standing: true,
+            },
+            requested_amount: 50_000,
+          },
+          fundingCall: { maximum_grant_amount: 200_000 },
+        },
+        versionId: draft.version.id,
+      },
+    );
+    expect(draftTest).toMatchObject({
+      authoritative: false,
+      eligible: false,
+      ruleSetVersionId: draft.version.id,
+    });
     const published = await publishEligibilityRuleSet(
       actor,
       created.definition.id,
@@ -136,12 +173,33 @@ afterAll(async () => {
         reasonCode: "EMPLOYEE_WARNING",
       },
     ]);
+    const evaluation = await evaluatePublishedEligibilityRuleSet(
+      actor,
+      published.version.id,
+      "SELF_CHECK",
+      {
+        application: { business: { employee_count: 0 } },
+        fundingCall: {},
+        stages: [],
+      },
+    );
+    expect(evaluation).toMatchObject({
+      eligible: false,
+      reasonCodes: ["EMPLOYEE_REQUIRED", "EMPLOYEE_WARNING"],
+      ruleSetVersionId: published.version.id,
+      ruleSetVersionNumber: 1,
+      softFailures: [],
+    });
 
     await expect(updateEligibilityRuleSet(
       actor,
       created.definition.id,
       created.version.id,
-      { expectedRowVersion: published.version.rowVersion, rules: [] },
+      {
+        conditionDefinitions: [],
+        expectedRowVersion: published.version.rowVersion,
+        rules: [],
+      },
     )).rejects.toBeInstanceOf(ResourceConflictError);
     await expect(saveConditionGroup(group)).rejects.toThrow(
       "conditions referenced by published eligibility rules are immutable",
@@ -154,6 +212,29 @@ afterAll(async () => {
       { expectedRowVersion: published.version.rowVersion },
     );
     expect(retired.version.status).toBe("RETIRED");
+    await expect(testEligibilityRuleSet(
+      actor,
+      created.definition.id,
+      {
+        mode: "SCREENING",
+        values: {
+          application: {
+            annual_turnover: 100_000,
+            business: {
+              bank_account_active: true,
+              employee_count: 1,
+              operating_months: 12,
+              ownership_percentage: 80,
+              registered: true,
+              statutory_good_standing: true,
+            },
+            requested_amount: 50_000,
+          },
+          fundingCall: { maximum_grant_amount: 200_000 },
+        },
+        versionId: retired.version.id,
+      },
+    )).rejects.toBeInstanceOf(ResourceNotFoundError);
     await expect(getEligibilityRuleSetVersion(
       actor,
       retired.version.id,

@@ -206,8 +206,12 @@ function collectNodePaths(node: ConditionNode, paths: Set<string>) {
 }
 
 export function workflowConditionFieldPaths(group: ConditionGroup) {
+  return workflowConditionNodeFieldPaths(group);
+}
+
+export function workflowConditionNodeFieldPaths(node: ConditionNode) {
   const paths = new Set<string>();
-  group.children.forEach((child) => collectNodePaths(child, paths));
+  collectNodePaths(node, paths);
   return [...paths];
 }
 
@@ -215,8 +219,15 @@ export function resolveWorkflowConditionValues(
   group: ConditionGroup,
   context: WorkflowDataContext,
 ) {
+  return resolveWorkflowConditionNodeValues(group, context);
+}
+
+export function resolveWorkflowConditionNodeValues(
+  node: ConditionNode,
+  context: WorkflowDataContext,
+) {
   return resolveWorkflowFieldValues(
-    workflowConditionFieldPaths(group),
+    workflowConditionNodeFieldPaths(node),
     context,
   );
 }

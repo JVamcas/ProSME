@@ -11,6 +11,8 @@ vi.mock("@/modules/eligibility/infrastructure/EligibilityRuleSetRepository", () 
   },
   publishEligibilityRuleSetVersion: vi.fn(),
   retireEligibilityRuleSetVersion: vi.fn(),
+}));
+vi.mock("@/modules/eligibility/infrastructure/EligibilityRuleSetWriteRepository", () => ({
   updateEligibilityRuleSetDraft: vi.fn(),
 }));
 
@@ -22,11 +24,11 @@ import {
   getEligibilityRuleSetVersion,
   updateEligibilityRuleSet,
 } from "@/modules/eligibility/application/ServerEligibilityRuleSetService";
+import { updateEligibilityRuleSetDraft } from "@/modules/eligibility/infrastructure/EligibilityRuleSetWriteRepository";
 import {
   createEligibilityRuleSet,
   findEligibilityRuleSet,
   findEligibilityRuleSetVersion,
-  updateEligibilityRuleSetDraft,
 } from "@/modules/eligibility/infrastructure/EligibilityRuleSetRepository";
 
 const actorId = "10000000-0000-4000-8000-000000000001";
@@ -90,11 +92,12 @@ describe("ServerEligibilityRuleSetService", () => {
       user([permissionCodes.eligibilityRuleSetUpdate]),
       ruleSetId,
       versionId,
-      { expectedRowVersion: 1, rules: [] },
+      { conditionDefinitions: [], expectedRowVersion: 1, rules: [] },
     );
 
     expect(updateEligibilityRuleSetDraft).toHaveBeenCalledWith({
       actorId,
+      conditionDefinitions: [],
       expectedRowVersion: 1,
       ruleSetId,
       rules: [],

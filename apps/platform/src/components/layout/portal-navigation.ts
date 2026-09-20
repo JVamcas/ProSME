@@ -11,6 +11,7 @@ import {
   UsersRound,
   UserRound,
   Workflow,
+  BadgeQuestionMark,
 } from "lucide-react";
 
 import { capabilities } from "@/auth/authorization/capabilities";
@@ -132,6 +133,11 @@ export const operationsPortalRoutes: readonly PortalRoute[] = [
       permissionCodes.workflowDefinitionUpdate,
       permissionCodes.workflowDefinitionPublish,
       permissionCodes.workflowDefinitionRetire,
+      permissionCodes.eligibilityRuleSetCreate,
+      permissionCodes.eligibilityRuleSetPublish,
+      permissionCodes.eligibilityRuleSetRead,
+      permissionCodes.eligibilityRuleSetRetire,
+      permissionCodes.eligibilityRuleSetUpdate,
     ],
     children: [
       {
@@ -160,6 +166,20 @@ export const operationsPortalRoutes: readonly PortalRoute[] = [
           permissionCodes.workflowDefinitionUpdate,
           permissionCodes.workflowDefinitionPublish,
           permissionCodes.workflowDefinitionRetire,
+        ],
+      },
+      {
+        id: "funding-call-eligibility",
+        href: "/admin/eligibility-rulesets",
+        label: "Eligibility Checkers",
+        icon: BadgeQuestionMark,
+        space: "operations",
+        requiredAnyPermissions: [
+          permissionCodes.eligibilityRuleSetCreate,
+          permissionCodes.eligibilityRuleSetPublish,
+          permissionCodes.eligibilityRuleSetRead,
+          permissionCodes.eligibilityRuleSetRetire,
+          permissionCodes.eligibilityRuleSetUpdate,
         ],
       },
     ],

@@ -31,7 +31,7 @@ export type ConditionTreeEvaluation =
   | ConditionNodeEvaluation
   | ConditionGroupEvaluation;
 
-function evaluateNode(
+export function evaluateConditionNode(
   node: ConditionNode,
   fieldValues: FieldValues,
 ): ConditionTreeEvaluation {
@@ -51,7 +51,7 @@ export function evaluateConditionGroup(
   fieldValues: FieldValues,
 ): ConditionGroupEvaluation {
   const children = group.children.map((child) =>
-    evaluateNode(child, fieldValues),
+    evaluateConditionNode(child, fieldValues),
   );
   const passed = group.combinator === "AND"
     ? children.every((child) => child.passed)
