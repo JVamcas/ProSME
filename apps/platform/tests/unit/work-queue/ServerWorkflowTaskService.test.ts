@@ -9,7 +9,7 @@ vi.mock("@/db/repositories/WorkflowTaskActionRepository", () => ({
   writeChecklistTaskCompletion: vi.fn(),
 }));
 
-import { capabilities } from "@/auth/authorization/capabilities";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import { PermissionDeniedError } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import {
@@ -25,9 +25,8 @@ import {
 
 const actor: AuthenticatedUser = {
   capabilities: new Set([
-    capabilities.applicationScreen,
-    capabilities.workflowTaskComplete,
-    capabilities.workflowTaskRead,
+    permissionCodes.workflowTaskAssignedProcess,
+    permissionCodes.workflowTaskAssignedRead,
   ]),
   createdAt: new Date(),
   displayName: "Reviewer",
@@ -42,6 +41,11 @@ const actor: AuthenticatedUser = {
 };
 
 const task = {
+  actions: [{
+    actionType: "APPROVE_ADVANCE" as const,
+    key: "ADVANCE",
+    label: "Advance",
+  }],
   applicantName: "Applicant",
   applicationId: "79e20de0-3558-4d63-90a4-8c9f5125df08",
   businessName: "Business",
@@ -88,6 +92,7 @@ describe("workflow checklist task service", () => {
       actor,
       task.taskInstanceId,
       {
+        actionKey: "ADVANCE",
         expectedRowVersion: 2,
         items: [{ accepted: false, code: "OWNERSHIP" }],
       },
@@ -98,6 +103,7 @@ describe("workflow checklist task service", () => {
 
   it("completes valid decisions and returns idempotent results", async () => {
     const completion = {
+      actionKey: "ADVANCE",
       nextStageName: "Completeness screening",
       rowVersion: 3,
       taskInstanceId: task.taskInstanceId,
@@ -112,6 +118,7 @@ describe("workflow checklist task service", () => {
       actor,
       task.taskInstanceId,
       {
+        actionKey: "ADVANCE",
         expectedRowVersion: 2,
         items: [{ accepted: true, code: "OWNERSHIP" }],
       },
@@ -120,11 +127,11 @@ describe("workflow checklist task service", () => {
     expect(result).toEqual(completion);
   });
 
-  it("enforces both completion and screening capabilities", async () => {
+  it("requires the assigned-task process permission", async () => {
     await expect(completeChecklistTask(
-      { ...actor, capabilities: new Set([capabilities.workflowTaskComplete]) },
+      { ...actor, capabilities: new Set() },
       task.taskInstanceId,
-      { expectedRowVersion: 2, items: [] },
+      { actionKey: "ADVANCE", expectedRowVersion: 2, items: [] },
       command,
     )).rejects.toBeInstanceOf(PermissionDeniedError);
   });

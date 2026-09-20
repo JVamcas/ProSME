@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { workflowActionKeySchema } from "@/modules/work-queue/WorkQueueSchemas";
+
 import {
   formFieldTypes,
   formStatuses,
@@ -242,6 +244,8 @@ export const taskFormSubmissionSchema = z.object({
   values: z.record(z.string(), z.unknown()),
 });
 
-export const taskFormCompletionSchema = taskFormSubmissionSchema;
+export const taskFormCompletionSchema = taskFormSubmissionSchema.extend({
+  actionKey: workflowActionKeySchema,
+});
 
 export type FormEditorInput = z.infer<typeof formEditorSchema>;

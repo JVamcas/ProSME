@@ -1,6 +1,6 @@
 import "server-only";
 
-import { capabilities } from "@/auth/authorization/capabilities";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import { requireCapability } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import {
@@ -70,7 +70,7 @@ export async function getWorkflowTask(
   user: AuthenticatedUser | null,
   taskId: string,
 ) {
-  const actor = requireCapability(user, capabilities.workflowTaskRead);
+  const actor = requireCapability(user, permissionCodes.workflowTaskAssignedRead);
   const task = await readWorkflowTask(actor.id, taskId);
   if (!task) throw new ResourceNotFoundError("workflow task");
   const { config, result, ...view } = task;
@@ -96,8 +96,10 @@ export async function completeChecklistTask(
   input: CompleteChecklistTaskInput,
   command: { correlationId: string; idempotencyKey: string },
 ) {
-  const actor = requireCapability(user, capabilities.workflowTaskComplete);
-  requireCapability(user, capabilities.applicationScreen);
+  const actor = requireCapability(
+    user,
+    permissionCodes.workflowTaskAssignedProcess,
+  );
   const writeInput = {
     ...command,
     ...input,

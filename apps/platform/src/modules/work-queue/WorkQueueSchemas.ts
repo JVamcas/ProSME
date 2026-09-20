@@ -15,8 +15,15 @@ export const claimTaskSchema = z.object({
 
 export const idempotencyKeySchema = z.uuid();
 export const taskInstanceIdSchema = z.uuid();
+export const workflowActionKeySchema = z
+  .string()
+  .trim()
+  .min(2)
+  .max(80)
+  .regex(/^[A-Z][A-Z0-9_]*$/);
 
 export const completeChecklistTaskSchema = z.object({
+  actionKey: workflowActionKeySchema,
   expectedRowVersion: z.number().int().positive(),
   items: z.array(z.object({
     accepted: z.boolean(),

@@ -25,6 +25,27 @@ export async function readWorkflowTask(
       task.due_at AS "dueAt", task.result,
       definition.name AS "taskName", definition.config,
       stage_definition.name AS "stageName",
+      COALESCE((
+        SELECT jsonb_agg(
+          jsonb_build_object(
+            'actionType', action.action_type,
+            'key', action.stable_key,
+            'label', action.label
+          )
+          ORDER BY action.display_order
+        )
+        FROM app_workflow_action_definitions action
+        WHERE action.stage_id = stage.stage_definition_id
+          AND action.enabled = TRUE
+          AND task.status IN ('READY', 'CLAIMED', 'IN_PROGRESS')
+          AND EXISTS (
+            SELECT 1
+            FROM app_workflow_transition_definitions transition
+            WHERE transition.version_id = workflow.workflow_version_id
+              AND transition.from_stage_id = stage.stage_definition_id
+              AND transition.action_key = action.stable_key
+          )
+      ), '[]'::jsonb) AS actions,
       application.id AS "applicationId", application.reference,
       applicant.display_name AS "applicantName",
       NULLIF(COALESCE(business.trading_name, business.legal_name), '') AS "businessName",

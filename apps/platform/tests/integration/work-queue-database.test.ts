@@ -14,6 +14,7 @@ import {
 } from "@/db/repositories/WorkQueueRepository";
 import { writeChecklistTaskCompletion } from "@/db/repositories/WorkflowTaskActionRepository";
 import { readWorkflowTask } from "@/db/repositories/WorkflowTaskRepository";
+import { configureWorkflowAction } from "./support/workflow-action-fixture";
 
 const { Pool } = pg;
 const enabled = process.env.RUN_P3_APPLICATION_DATABASE_TESTS === "true";
@@ -107,14 +108,11 @@ beforeAll(async () => {
      FROM app_roles role WHERE role.code = 'programme_officer'`,
     [nextTaskDefinitionId, nextStageDefinitionId],
   );
-  await query(
-    `INSERT INTO app_workflow_transition_definitions
-      (version_id, from_stage_id, action_code, to_stage_id,
-       required_capability, condition)
-     VALUES ($1, $2, 'COMPLETE', $3, 'workflow.task.complete',
-       '{"type":"ALL_REQUIRED_TASKS_COMPLETE"}'::jsonb)`,
-    [versionId, stageDefinitionId, nextStageDefinitionId],
-  );
+  await configureWorkflowAction(query, {
+    nextStageDefinitionId,
+    stageDefinitionId,
+    versionId,
+  });
   await query(
     `INSERT INTO app_applications
       (id, owner_user_id, funding_opportunity_id, funding_opportunity_title,
@@ -257,6 +255,7 @@ describeDatabase("P3.5 work queue projections and claim", () => {
       taskType: "CHECKLIST",
     });
     const command = {
+      actionKey: "ADVANCE",
       actorId: claimedBy,
       correlationId: randomUUID(),
       expectedRowVersion: 2,

@@ -27,6 +27,7 @@ describe("form completion route", () => {
     const response = await POST(
       new Request("http://localhost/api/admin/tasks/task/form", {
         body: JSON.stringify({
+          actionKey: "ADVANCE",
           expectedTaskRowVersion: 1,
           values: {},
         }),
@@ -43,6 +44,7 @@ describe("form completion route", () => {
     const response = await POST(
       new Request("http://localhost/api/admin/tasks/task/form", {
         body: JSON.stringify({
+          actionKey: "ADVANCE",
           expectedTaskRowVersion: 1,
           values: { NOTES: "Ready" },
         }),
@@ -58,6 +60,7 @@ describe("form completion route", () => {
     expect(completeTaskForm).toHaveBeenCalledWith(
       null,
       expect.objectContaining({
+        actionKey: "ADVANCE",
         idempotencyKey,
         taskInstanceId: taskId,
       }),

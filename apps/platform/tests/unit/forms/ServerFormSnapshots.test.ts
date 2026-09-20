@@ -87,6 +87,7 @@ describe("submitted form snapshots", () => {
     vi.mocked(writeFormTaskCompletion).mockResolvedValue({
       kind: "completed",
       result: {
+        actionKey: "ADVANCE",
         nextStageName: null,
         rowVersion: 4,
         taskInstanceId: taskId,
@@ -98,6 +99,7 @@ describe("submitted form snapshots", () => {
     await completeTaskForm(
       staff(permissionCodes.workflowTaskAssignedProcess),
       {
+        actionKey: "ADVANCE",
         correlationId: versionId,
         expectedTaskRowVersion: 3,
         idempotencyKey: versionId,
@@ -108,6 +110,7 @@ describe("submitted form snapshots", () => {
 
     expect(writeFormTaskCompletion).toHaveBeenCalledWith(
       expect.objectContaining({
+        actionKey: "ADVANCE",
         definitionSnapshot: runtime,
         formVersionId: versionId,
         values,

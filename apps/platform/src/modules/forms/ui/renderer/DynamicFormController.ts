@@ -69,9 +69,13 @@ export function useDynamicFormController(taskId: string, data: TaskFormData) {
     return () => window.clearTimeout(timer);
   }, [complete.isPending, hasUnsavedChanges, save.isPending, saveDraftValues]);
 
-  const completeFormValues = (completedValues: DynamicFormValues) => {
+  const completeFormValues = (
+    completedValues: DynamicFormValues,
+    actionKey: string,
+  ) => {
     complete.mutate(
       {
+        actionKey,
         expectedSubmissionRowVersion: data.submission?.rowVersion,
         expectedTaskRowVersion: data.taskRowVersion,
         values: completedValues,

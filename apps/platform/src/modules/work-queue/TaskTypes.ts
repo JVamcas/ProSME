@@ -10,7 +10,14 @@ export type ChecklistResultItem = {
   comment?: string;
 };
 
+export type WorkflowTaskAction = {
+  actionType: WorkflowActionType;
+  key: string;
+  label: string;
+};
+
 export type TaskDetail = {
+  actions: WorkflowTaskAction[];
   applicantName: string;
   applicationId: string;
   businessName: string | null;
@@ -29,14 +36,17 @@ export type TaskDetail = {
 };
 
 export type CompleteChecklistTaskInput = {
+  actionKey: string;
   expectedRowVersion: number;
   items: ChecklistResultItem[];
 };
 
 export type TaskCompletionResult = {
+  actionKey: string;
   nextStageName: string | null;
   rowVersion: number;
   taskInstanceId: string;
   taskStatus: "COMPLETED";
   workflowStatus: "ACTIVE" | "COMPLETED";
 };
+import type { WorkflowActionType } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";

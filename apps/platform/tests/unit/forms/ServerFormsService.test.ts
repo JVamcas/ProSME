@@ -271,9 +271,9 @@ describe("ServerFormsService", () => {
       submitLabel: "Complete",
     }));
   });
-
   it("returns a completion replay before requiring the task to remain active", async () => {
     const result = {
+      actionKey: "ADVANCE",
       nextStageName: "Finance",
       rowVersion: 4,
       taskInstanceId: taskId,
@@ -286,6 +286,7 @@ describe("ServerFormsService", () => {
     });
     await expect(completeTaskForm(
       staff([permissionCodes.workflowTaskAssignedProcess]), {
+      actionKey: "ADVANCE",
       correlationId: versionId,
       expectedTaskRowVersion: 3,
       idempotencyKey: versionId,
@@ -295,5 +296,4 @@ describe("ServerFormsService", () => {
     )).resolves.toEqual(result);
     expect(readAssignedFormTask).not.toHaveBeenCalled();
   });
-
 });

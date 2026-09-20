@@ -4,12 +4,17 @@ import { sql } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
 import type { FormRuntimeSchema } from "@/modules/forms/FormTypes";
+import {
+  advanceFormTaskWorkflow,
+  findFormTaskTransition,
+} from "./FormTaskTransitionRepository";
 
 type Transaction = Parameters<
   Parameters<ReturnType<typeof getDatabase>["transaction"]>[0]
 >[0];
 
 type CompletionInput = {
+  actionKey: string;
   actorId: string;
   correlationId: string;
   expectedTaskRowVersion: number;
@@ -23,10 +28,16 @@ type CompletionInput = {
 
 type ReplayInput = Pick<
   CompletionInput,
-  "actorId" | "expectedTaskRowVersion" | "idempotencyKey" | "taskInstanceId" | "values"
+  | "actionKey"
+  | "actorId"
+  | "expectedTaskRowVersion"
+  | "idempotencyKey"
+  | "taskInstanceId"
+  | "values"
 >;
 
 type CompletionResult = {
+  actionKey: string;
   nextStageName: string | null;
   rowVersion: number;
   taskInstanceId: string;
@@ -60,7 +71,10 @@ async function findCommand(
     SELECT actor_id AS "actorId", task_instance_id AS "taskInstanceId",
       row_version AS "rowVersion", next_stage_name AS "nextStageName",
       workflow_status AS "workflowStatus",
-      result = ${JSON.stringify({ values: input.values })}::jsonb AS "sameResult"
+      result = ${JSON.stringify({
+        actionKey: input.actionKey,
+        values: input.values,
+      })}::jsonb AS "sameResult"
     FROM app_task_completion_commands
     WHERE idempotency_key = ${input.idempotencyKey}
   `);
@@ -81,6 +95,7 @@ async function findCommand(
   return {
     kind: "completed",
     result: {
+      actionKey: input.actionKey,
       nextStageName: replay.nextStageName,
       rowVersion: replay.rowVersion,
       taskInstanceId: replay.taskInstanceId,
@@ -108,11 +123,27 @@ async function lockTask(
     JOIN app_workflow_stage_instances stage ON stage.id = task.stage_instance_id
     JOIN app_workflow_instances workflow ON workflow.id = stage.workflow_instance_id
     WHERE task.id = ${input.taskInstanceId}::uuid
-      AND task.assignment_user_id = ${input.actorId}::uuid
+      AND (
+        task.assignment_user_id = ${input.actorId}::uuid
+        OR (
+          task.assignment_user_id IS NULL
+          AND task.assignment_role_id IN (
+            SELECT role_id FROM app_user_roles
+            WHERE user_id = ${input.actorId}::uuid
+          )
+        )
+      )
       AND task.form_version_id = ${input.formVersionId}::uuid
       AND task.row_version = ${input.expectedTaskRowVersion}
       AND task.status IN ('READY', 'CLAIMED', 'IN_PROGRESS')
       AND stage.status = 'ACTIVE' AND workflow.status = 'ACTIVE'
+      AND EXISTS (
+        SELECT 1
+        FROM app_workflow_action_definitions action
+        WHERE action.stage_id = stage.stage_definition_id
+          AND action.stable_key = ${input.actionKey}
+          AND action.enabled = TRUE
+      )
     FOR UPDATE OF task, stage, workflow
   `);
   return (result.rows[0] as LockedTask | undefined) ?? null;
@@ -176,100 +207,6 @@ async function stageHasRequiredTasks(
   return Number((result.rows[0] as { count: number }).count) > 0;
 }
 
-async function cancelOptionalTasks(
-  transaction: Transaction,
-  stageInstanceId: string,
-  completedAt: Date,
-) {
-  await transaction.execute(sql`
-    UPDATE app_stage_task_instances task
-    SET status = 'CANCELLED', ended_at = ${completedAt}, row_version = row_version + 1
-    FROM app_stage_task_definitions definition
-    WHERE task.task_definition_id = definition.id
-      AND task.stage_instance_id = ${stageInstanceId}::uuid
-      AND definition.required = FALSE
-      AND task.status NOT IN ('COMPLETED', 'CANCELLED')
-  `);
-}
-
-async function findNextStage(
-  transaction: Transaction,
-  task: LockedTask,
-) {
-  const result = await transaction.execute(sql`
-    SELECT id, name
-    FROM app_workflow_stage_definitions
-    WHERE version_id = ${task.workflowVersionId}::uuid
-      AND sequence > (
-        SELECT sequence FROM app_workflow_stage_definitions
-        WHERE id = ${task.stageDefinitionId}::uuid
-      )
-    ORDER BY sequence ASC
-    LIMIT 1
-  `);
-  return result.rows[0] as { id: string; name: string } | undefined;
-}
-
-async function createNextStage(
-  transaction: Transaction,
-  task: LockedTask,
-  nextStage: { id: string; name: string },
-  startedAt: Date,
-) {
-  const created = await transaction.execute(sql`
-    INSERT INTO app_workflow_stage_instances
-      (workflow_instance_id, stage_definition_id, status, started_at)
-    VALUES (${task.workflowInstanceId}::uuid, ${nextStage.id}::uuid,
-      'ACTIVE', ${startedAt})
-    RETURNING id
-  `);
-  const stageId = (created.rows[0] as { id: string }).id;
-  await transaction.execute(sql`
-    INSERT INTO app_stage_task_instances
-      (stage_instance_id, task_definition_id, type_snapshot, form_version_id,
-       status, assignment_role_id, assignment_user_id, due_at)
-    SELECT ${stageId}::uuid, definition.id, definition.type,
-      definition.form_version_id, 'READY', definition.assignment_role_id,
-      definition.assignment_user_id,
-      CASE WHEN stage.sla_hours IS NULL THEN NULL
-        ELSE ${startedAt} + make_interval(hours => stage.sla_hours) END
-    FROM app_stage_task_definitions definition
-    JOIN app_workflow_stage_definitions stage ON stage.id = definition.stage_id
-    WHERE definition.stage_id = ${nextStage.id}::uuid
-  `);
-  await transaction.execute(sql`
-    UPDATE app_workflow_instances
-    SET current_stage_instance_id = ${stageId}::uuid
-    WHERE id = ${task.workflowInstanceId}::uuid
-  `);
-  return nextStage.name;
-}
-
-async function advanceWorkflow(
-  transaction: Transaction,
-  task: LockedTask,
-  completedAt: Date,
-) {
-  await transaction.execute(sql`
-    UPDATE app_workflow_stage_instances
-    SET status = 'COMPLETED', ended_at = ${completedAt}
-    WHERE id = ${task.stageInstanceId}::uuid
-  `);
-  await cancelOptionalTasks(transaction, task.stageInstanceId, completedAt);
-  const nextStage = await findNextStage(transaction, task);
-  if (!nextStage) {
-    await transaction.execute(sql`
-      UPDATE app_workflow_instances SET status = 'COMPLETED', ended_at = ${completedAt}
-      WHERE id = ${task.workflowInstanceId}::uuid
-    `);
-    return { nextStageName: null, workflowStatus: "COMPLETED" as const };
-  }
-  return {
-    nextStageName: await createNextStage(transaction, task, nextStage, completedAt),
-    workflowStatus: "ACTIVE" as const,
-  };
-}
-
 async function appendCompletionRecords(
   transaction: Transaction,
   input: CompletionInput,
@@ -282,7 +219,8 @@ async function appendCompletionRecords(
       (idempotency_key, task_instance_id, actor_id, result, completed_at,
        row_version, next_stage_name, workflow_status)
     VALUES (${input.idempotencyKey}, ${input.taskInstanceId}::uuid,
-      ${input.actorId}::uuid, ${JSON.stringify({ values: input.values })}::jsonb,
+      ${input.actorId}::uuid,
+      ${JSON.stringify({ actionKey: input.actionKey, values: input.values })}::jsonb,
       ${completedAt}, ${result.rowVersion}, ${result.nextStageName},
       ${result.workflowStatus})
     ON CONFLICT (idempotency_key) DO NOTHING
@@ -319,6 +257,12 @@ async function writeCompletion(
   input: CompletionInput,
   task: LockedTask,
 ): Promise<CompletionResult | null> {
+  const transition = await findFormTaskTransition(
+    transaction,
+    task,
+    input.actionKey,
+  );
+  if (!transition) return null;
   const completedAt = new Date();
   if (!(await completeSubmission(transaction, input, completedAt))) return null;
   await completeTaskRow(transaction, input, completedAt);
@@ -328,8 +272,14 @@ async function writeCompletion(
   );
   const advancement = remaining
     ? { nextStageName: null, workflowStatus: "ACTIVE" as const }
-    : await advanceWorkflow(transaction, task, completedAt);
+    : await advanceFormTaskWorkflow(
+        transaction,
+        task,
+        transition,
+        completedAt,
+      );
   const result: CompletionResult = {
+    actionKey: input.actionKey,
     ...advancement,
     rowVersion: input.expectedTaskRowVersion + 1,
     taskInstanceId: input.taskInstanceId,

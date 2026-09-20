@@ -29,6 +29,7 @@ type CompletionWriteResult =
   | { kind: "not_found" };
 
 type WriteInput = {
+  actionKey: string;
   actorId: string;
   correlationId: string;
   expectedRowVersion: number;
@@ -48,7 +49,10 @@ async function findCommand(
     SELECT task_instance_id AS "taskInstanceId", actor_id AS "actorId",
       row_version AS "rowVersion", next_stage_name AS "nextStageName",
       workflow_status AS "workflowStatus",
-      result = ${JSON.stringify({ items: input.items })}::jsonb AS "sameResult",
+      result = ${JSON.stringify({
+        actionKey: input.actionKey,
+        items: input.items,
+      })}::jsonb AS "sameResult",
       'COMPLETED'::text AS "taskStatus"
     FROM app_task_completion_commands
     WHERE idempotency_key = ${input.idempotencyKey}
@@ -67,6 +71,7 @@ async function findCommand(
   return {
     kind: "completed",
     result: {
+      actionKey: input.actionKey,
       nextStageName: row.nextStageName,
       rowVersion: row.rowVersion,
       taskInstanceId: row.taskInstanceId,
@@ -96,10 +101,26 @@ async function lockTask(
     JOIN app_workflow_stage_instances stage ON stage.id = task.stage_instance_id
     JOIN app_workflow_instances workflow ON workflow.id = stage.workflow_instance_id
     WHERE task.id = ${input.taskId}::uuid
-      AND task.assignment_user_id = ${input.actorId}::uuid
+      AND (
+        task.assignment_user_id = ${input.actorId}::uuid
+        OR (
+          task.assignment_user_id IS NULL
+          AND task.assignment_role_id IN (
+            SELECT role_id FROM app_user_roles
+            WHERE user_id = ${input.actorId}::uuid
+          )
+        )
+      )
       AND task.row_version = ${input.expectedRowVersion}
       AND task.status IN ('CLAIMED', 'IN_PROGRESS', 'READY')
       AND stage.status = 'ACTIVE' AND workflow.status = 'ACTIVE'
+      AND EXISTS (
+        SELECT 1
+        FROM app_workflow_action_definitions action
+        WHERE action.stage_id = stage.stage_definition_id
+          AND action.stable_key = ${input.actionKey}
+          AND action.enabled = TRUE
+      )
     FOR UPDATE OF task
   `);
   return (locked.rows[0] as LockedTask | undefined) ?? null;
@@ -138,6 +159,7 @@ async function requiredTasksRemain(
 async function findTransition(
   transaction: Transaction,
   task: LockedTask,
+  actionKey: string,
 ) {
   const result = await transaction.execute(sql`
     SELECT transition.to_stage_id AS "toStageId",
@@ -148,11 +170,9 @@ async function findTransition(
       ON target.id = transition.to_stage_id
     WHERE transition.version_id = ${task.workflowVersionId}::uuid
       AND transition.from_stage_id = ${task.stageDefinitionId}::uuid
-      AND transition.action_code = 'COMPLETE'
-      AND (
-        transition.condition IS NULL
-        OR transition.condition ->> 'type' = 'ALL_REQUIRED_TASKS_COMPLETE'
-      )
+      AND transition.action_key = ${actionKey}
+    ORDER BY transition.priority ASC
+    LIMIT 1
   `);
   return result.rows[0] as {
     nextStageName: string | null;
@@ -228,7 +248,7 @@ async function appendCompletion(
       (idempotency_key, task_instance_id, actor_id, result, completed_at,
        row_version, next_stage_name, workflow_status)
     VALUES (${input.idempotencyKey}, ${input.taskId}::uuid, ${input.actorId}::uuid,
-      ${JSON.stringify({ items: input.items })}::jsonb, ${completedAt},
+      ${JSON.stringify({ actionKey: input.actionKey, items: input.items })}::jsonb, ${completedAt},
       ${result.rowVersion}, ${result.nextStageName}, ${result.workflowStatus})
     ON CONFLICT (idempotency_key) DO NOTHING RETURNING idempotency_key
   `);
@@ -286,13 +306,18 @@ export async function writeChecklistTaskCompletion(
       if (task.taskType !== "CHECKLIST") return { kind: "conflict" } as const;
       const completedAt = new Date();
       await completeTask(transaction, input, completedAt);
-      const transition = await findTransition(transaction, task);
+      const transition = await findTransition(
+        transaction,
+        task,
+        input.actionKey,
+      );
       const hasRemaining = await requiredTasksRemain(transaction, task.stageInstanceId);
       if (!hasRemaining && !transition) throw new WorkflowWriteConflict();
       const workflowStatus = hasRemaining
         ? "ACTIVE" as const
         : await activateNextStage(transaction, task, transition, completedAt);
       const result: TaskCompletionResult = {
+        actionKey: input.actionKey,
         nextStageName: hasRemaining ? null : transition?.nextStageName ?? null,
         rowVersion: input.expectedRowVersion + 1,
         taskInstanceId: input.taskId,

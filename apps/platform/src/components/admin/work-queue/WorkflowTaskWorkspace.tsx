@@ -99,7 +99,10 @@ export function WorkflowTaskWorkspace({ taskId }: { taskId: string }) {
         reference={task.reference}
       />
       {task.formVersionId ? (
-        <DynamicFormTask taskId={task.taskInstanceId} />
+        <DynamicFormTask
+          actions={task.actions}
+          taskId={task.taskInstanceId}
+        />
       ) : task.taskType === "CHECKLIST" ? (
         <ChecklistTaskForm task={task} />
       ) : (

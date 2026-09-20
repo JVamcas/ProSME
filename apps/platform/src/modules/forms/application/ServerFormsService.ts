@@ -284,6 +284,7 @@ export async function saveTaskForm(
 export async function completeTaskForm(
   user: AuthenticatedUser | null,
   input: TaskFormSubmissionInput & {
+    actionKey: string;
     correlationId: string;
     idempotencyKey: string;
     taskInstanceId: string;
@@ -294,6 +295,7 @@ export async function completeTaskForm(
     permissionCodes.workflowTaskAssignedProcess,
   );
   const replay = await readFormTaskCompletion({
+    actionKey: input.actionKey,
     actorId: actor.id,
     expectedTaskRowVersion: input.expectedTaskRowVersion,
     idempotencyKey: input.idempotencyKey,
@@ -315,6 +317,7 @@ export async function completeTaskForm(
     throw new RequestValidationError("Complete all required form fields with valid values.");
   }
   const result = await completeFormTask({
+    actionKey: input.actionKey,
     actorId: actor.id,
     correlationId: input.correlationId,
     expectedTaskRowVersion: input.expectedTaskRowVersion,

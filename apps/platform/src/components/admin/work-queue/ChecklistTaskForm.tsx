@@ -1,10 +1,11 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeft, CheckCircle2 } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormProvider, useForm } from "react-hook-form";
+import { useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -13,6 +14,7 @@ import { CheckboxField } from "@/components/ui/form-field";
 import { FormTextarea } from "@/components/ui/form-fields";
 import { useCompleteWorkflowTask } from "@/modules/work-queue/WorkQueueHooks";
 import type { TaskDetail } from "@/modules/work-queue/TaskTypes";
+import { WorkflowTaskActions } from "@/modules/work-queue/ui/WorkflowTaskActions";
 
 const checklistFormSchema = z.object({
   items: z.array(z.object({
@@ -38,13 +40,21 @@ function defaultValues(task: TaskDetail): ChecklistFormValues {
 export function ChecklistTaskForm({ task }: { task: TaskDetail }) {
   const router = useRouter();
   const completion = useCompleteWorkflowTask(task.taskInstanceId);
+  const [selectedActionKey, setSelectedActionKey] = useState<string | null>(
+    null,
+  );
   const form = useForm<ChecklistFormValues>({
     defaultValues: defaultValues(task),
     resolver: zodResolver(checklistFormSchema),
   });
   const submit = form.handleSubmit((values) => {
+    if (!selectedActionKey) return;
     completion.mutate(
-      { expectedRowVersion: task.rowVersion, items: values.items },
+      {
+        actionKey: selectedActionKey,
+        expectedRowVersion: task.rowVersion,
+        items: values.items,
+      },
       {
         onSuccess: (result) => {
           toast.success(
@@ -101,15 +111,12 @@ export function ChecklistTaskForm({ task }: { task: TaskDetail }) {
               <ArrowLeft aria-hidden="true" className="size-4" /> Back to queue
             </Link>
           </GeneralButton>
-          <GeneralButton
-            aria-busy={completion.isPending}
-            disabled={completion.isPending || task.taskStatus === "COMPLETED"}
-            type="submit"
-          >
-            <CheckCircle2 aria-hidden="true" className="size-4" />
-            {completion.isPending ? "Completing…" : "Complete pre-screening"}
-          </GeneralButton>
         </div>
+        <WorkflowTaskActions
+          actions={task.actions}
+          disabled={completion.isPending || task.taskStatus === "COMPLETED"}
+          onSelect={setSelectedActionKey}
+        />
       </form>
     </FormProvider>
   );

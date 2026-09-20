@@ -10,6 +10,8 @@ import type {
 } from "./api/FormTransportTypes";
 import type { TaskFormData } from "./FormTypes";
 
+type CompleteTaskFormInput = TaskFormSubmissionInput & { actionKey: string };
+
 export const formQueryKeys = {
   all: ["admin", "forms"] as const,
   detail: (id: string) => ["admin", "forms", id] as const,
@@ -118,7 +120,7 @@ export function useSaveTaskForm(taskId: string) {
 export function useCompleteTaskForm(taskId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: TaskFormSubmissionInput) =>
+    mutationFn: (input: CompleteTaskFormInput) =>
       clientFormsService.completeTaskForm(taskId, input),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: formQueryKeys.task(taskId) });
