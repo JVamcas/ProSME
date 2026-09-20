@@ -330,6 +330,13 @@
       "when": 1791763200000,
       "tag": "0046_workflow_stage_comment_fields",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1791849600000,
+      "tag": "0047_workflow_element_permissions",
+      "breakpoints": true
     }
   ]
 }

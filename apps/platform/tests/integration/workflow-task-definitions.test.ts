@@ -10,6 +10,7 @@ import { createWorkflowTemplate } from "@/modules/workflows/application/definiti
 import { findWorkflowGraph } from "@/modules/workflows/infrastructure/WorkflowGraphRepository";
 import { findWorkflowConditionFormFields } from "@/modules/workflows/infrastructure/WorkflowRepository";
 import { replaceWorkflowDraft } from "@/modules/workflows/infrastructure/WorkflowTemplateWriteRepository";
+import { defaultWorkflowElementPermissions } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
 
 const enabled = process.env.RUN_P3_WORKFLOW_DATABASE_TESTS === "true";
 const pool = enabled
@@ -93,6 +94,7 @@ afterAll(async () => {
     const tasks = [
       {
         actionKeys: ["RECOMMEND"],
+        permissions: defaultWorkflowElementPermissions,
         stableKey: "TECHNICAL_REVIEW",
         name: "Technical review",
         description: "Complete the technical assessment.",
@@ -118,6 +120,10 @@ afterAll(async () => {
       },
       {
         actionKeys: ["DECIDE"],
+        permissions: {
+          ...defaultWorkflowElementPermissions,
+          visibility: "APPLICANT_VISIBLE" as const,
+        },
         stableKey: "CHAIR_REVIEW",
         name: "Chair review",
         description: "Complete the chairperson review.",

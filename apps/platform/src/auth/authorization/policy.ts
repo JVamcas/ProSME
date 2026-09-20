@@ -21,19 +21,24 @@ export class PermissionDeniedError extends Error {
   }
 }
 
+export function requireAuthenticatedUser(user: AuthenticatedUser | null) {
+  if (!user) {
+    throw new AuthenticationRequiredError();
+  }
+  return user;
+}
+
 export function requirePermission(
   user: AuthenticatedUser | null,
   capability: string,
 ) {
-  if (!user) {
-    throw new AuthenticationRequiredError();
-  }
+  const actor = requireAuthenticatedUser(user);
 
-  if (!can(user, capability)) {
+  if (!can(actor, capability)) {
     throw new PermissionDeniedError(capability);
   }
 
-  return user;
+  return actor;
 }
 
 export function requireAnyPermission(

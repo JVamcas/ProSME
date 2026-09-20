@@ -13,7 +13,7 @@ import {
   writeTaskClaim,
 } from "@/db/repositories/WorkQueueRepository";
 import { writeChecklistTaskCompletion } from "@/db/repositories/WorkflowTaskActionRepository";
-import { readWorkflowTask } from "@/db/repositories/WorkflowTaskRepository";
+import { readWorkflowTask } from "@/modules/workflows/infrastructure/WorkflowTaskRepository";
 import { configureWorkflowAction } from "./support/workflow-action-fixture";
 
 const { Pool } = pg;

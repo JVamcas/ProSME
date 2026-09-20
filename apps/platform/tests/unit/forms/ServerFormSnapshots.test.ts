@@ -11,7 +11,7 @@ vi.mock("@/modules/forms/infrastructure/FormTaskCompletionRepository", () => ({
   completeFormTask: vi.fn(),
   readFormTaskCompletion: vi.fn(),
 }));
-vi.mock("@/db/repositories/WorkflowTaskRepository", () => ({
+vi.mock("@/modules/workflows/infrastructure/WorkflowTaskRepository", () => ({
   readAssignedFormTask: vi.fn(),
 }));
 vi.mock("@/modules/workflows/infrastructure/WorkflowRuntimeContextRepository", () => ({
@@ -22,6 +22,7 @@ vi.mock("@/modules/funding-calls/ServerFundingOpportunityIntegration", () => ({
 }));
 
 import { permissionCodes } from "@/auth/authorization/permissions";
+import { defaultWorkflowElementPermissions } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
 import type { AuthenticatedUser } from "@/auth/types";
 import {
   completeTaskForm,
@@ -35,7 +36,7 @@ import {
 } from "@/modules/forms/infrastructure/FormTaskCompletionRepository";
 import {
   readAssignedFormTask,
-} from "@/db/repositories/WorkflowTaskRepository";
+} from "@/modules/workflows/infrastructure/WorkflowTaskRepository";
 import { readWorkflowTaskRuntimeContext } from "@/modules/workflows/infrastructure/WorkflowRuntimeContextRepository";
 import { findPublishedFundingOpportunity } from "@/modules/funding-calls/ServerFundingOpportunityIntegration";
 
@@ -94,6 +95,7 @@ describe("submitted form snapshots", () => {
     const values = { NOTES: "Final answer" };
     vi.mocked(readAssignedFormTask).mockResolvedValue({
       formVersionId: versionId,
+      permissions: defaultWorkflowElementPermissions,
       rowVersion: 3,
       taskInstanceId: taskId,
       taskStatus: "IN_PROGRESS",
@@ -112,7 +114,7 @@ describe("submitted form snapshots", () => {
     });
 
     await completeTaskForm(
-      staff(permissionCodes.workflowTaskAssignedProcess),
+      staff(permissionCodes.workflowTaskAssignedDecide),
       {
         actionKey: "ADVANCE",
         correlationId: versionId,
@@ -152,6 +154,7 @@ describe("submitted form snapshots", () => {
       },
       binding: { contextFields: [], formVersionId: versionId },
       fundingCallTitle: "Growth Fund",
+      permissions: defaultWorkflowElementPermissions,
       priorStageValues: [],
       stage: {},
       task: {

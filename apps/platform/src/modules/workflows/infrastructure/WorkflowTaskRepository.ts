@@ -4,6 +4,7 @@ import { sql } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
 import type { TaskDetail } from "@/modules/work-queue/TaskTypes";
+import type { WorkflowElementPermissions } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
 
 type TaskDetailRow = Omit<
   TaskDetail,
@@ -12,6 +13,7 @@ type TaskDetailRow = Omit<
   config: unknown;
   dueAt: Date | string | null;
   result: unknown;
+  permissions: WorkflowElementPermissions;
 };
 
 export async function readWorkflowTask(
@@ -24,6 +26,7 @@ export async function readWorkflowTask(
       task.form_version_id AS "formVersionId",
       task.due_at AS "dueAt", task.result,
       definition.name AS "taskName", definition.config,
+      definition.permissions,
       stage_definition.name AS "stageName",
       COALESCE((
         SELECT jsonb_agg(
@@ -88,8 +91,11 @@ export async function readAssignedFormTask(actorId: string, taskId: string) {
     SELECT task.id AS "taskInstanceId",
       task.form_version_id AS "formVersionId",
       task.row_version AS "rowVersion",
-      task.status AS "taskStatus"
+      task.status AS "taskStatus",
+      definition.permissions
     FROM app_stage_task_instances task
+    JOIN app_stage_task_definitions definition
+      ON definition.id = task.task_definition_id
     JOIN app_workflow_stage_instances stage
       ON stage.id = task.stage_instance_id
     JOIN app_workflow_instances workflow
@@ -104,5 +110,6 @@ export async function readAssignedFormTask(actorId: string, taskId: string) {
     rowVersion: number;
     taskInstanceId: string;
     taskStatus: string;
+    permissions: WorkflowElementPermissions;
   } | undefined) ?? null;
 }

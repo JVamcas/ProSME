@@ -14,11 +14,12 @@ vi.mock("@/modules/forms/infrastructure/FormTaskCompletionRepository", () => ({
   completeFormTask: vi.fn(),
   readFormTaskCompletion: vi.fn(),
 }));
-vi.mock("@/db/repositories/WorkflowTaskRepository", () => ({
+vi.mock("@/modules/workflows/infrastructure/WorkflowTaskRepository", () => ({
   readAssignedFormTask: vi.fn(),
 }));
 
 import { permissionCodes } from "@/auth/authorization/permissions";
+import { defaultWorkflowElementPermissions } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
 import type { AuthenticatedUser } from "@/auth/types";
 import { basicOperators } from "@/modules/conditions/engine/BasicOperators";
 import {
@@ -31,7 +32,7 @@ import {
   completeFormTask as writeFormTaskCompletion,
   readFormTaskCompletion,
 } from "@/modules/forms/infrastructure/FormTaskCompletionRepository";
-import { readAssignedFormTask } from "@/db/repositories/WorkflowTaskRepository";
+import { readAssignedFormTask } from "@/modules/workflows/infrastructure/WorkflowTaskRepository";
 
 const actorId = "79e20de0-3558-4d63-90a4-8c9f5125df07";
 const taskId = "c6ee71ce-0ed0-43b9-9381-e2c568634364";
@@ -100,7 +101,10 @@ const runtime = {
 
 function staff(): AuthenticatedUser {
   return {
-    capabilities: new Set([permissionCodes.workflowTaskAssignedProcess]),
+    capabilities: new Set([
+      permissionCodes.workflowTaskAssignedProcess,
+      permissionCodes.workflowTaskAssignedDecide,
+    ]),
     createdAt: new Date(),
     displayName: "Forms User",
     email: "forms@example.test",
@@ -118,6 +122,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(readAssignedFormTask).mockResolvedValue({
     formVersionId: versionId,
+    permissions: defaultWorkflowElementPermissions,
     rowVersion: 3,
     taskInstanceId: taskId,
     taskStatus: "IN_PROGRESS",

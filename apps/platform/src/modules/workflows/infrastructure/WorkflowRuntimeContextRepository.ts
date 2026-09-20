@@ -8,6 +8,7 @@ import type {
   WorkflowTaskRuntimeContextSource,
 } from "@/modules/workflows/domain/WorkflowRuntimeContext";
 import type { ConditionFieldDefinition } from "@/modules/conditions/domain/ConditionConfiguration";
+import type { WorkflowElementPermissions } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
 
 type RuntimeContextRow = {
   applicationBusiness: Record<string, unknown>;
@@ -23,6 +24,7 @@ type RuntimeContextRow = {
   formVersionId: string;
   fundingCallTitle: string;
   priorStageValues: PriorStageRuntimeValues[];
+  permissions: WorkflowElementPermissions;
   stageDefinitionId: string;
   stageInstanceId: string;
   stageKey: string;
@@ -63,6 +65,7 @@ function toRuntimeContextSource(row: RuntimeContextRow) {
       formVersionId: row.formVersionId,
     },
     fundingCallTitle: row.fundingCallTitle,
+    permissions: row.permissions,
     priorStageValues: row.priorStageValues,
     stage: {
       definitionId: row.stageDefinitionId,
@@ -128,6 +131,7 @@ export async function readWorkflowTaskRuntimeContext(
       task.row_version AS "taskRowVersion",
       task_definition.code AS "taskKey",
       task_definition.name AS "taskName",
+      task_definition.permissions,
       task.form_version_id AS "formVersionId",
       binding.context_fields AS "contextFields",
       COALESCE(history.values, '[]'::jsonb) AS "priorStageValues"

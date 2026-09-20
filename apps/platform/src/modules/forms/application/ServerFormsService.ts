@@ -3,6 +3,7 @@ import "server-only";
 import { permissionCodes } from "@/auth/authorization/permissions";
 import {
   requireAnyPermission,
+  requireAuthenticatedUser,
   requirePermission,
 } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
@@ -29,7 +30,7 @@ import {
 } from "@/modules/forms/infrastructure/FormRepository";
 import {
   readAssignedFormTask,
-} from "@/db/repositories/WorkflowTaskRepository";
+} from "@/modules/workflows/infrastructure/WorkflowTaskRepository";
 import {
   RequestValidationError,
   IdempotencyConflictError,
@@ -251,11 +252,12 @@ export async function getTaskForm(
   user: AuthenticatedUser | null,
   taskInstanceId: string,
 ) {
-  const actor = requirePermission(user, permissionCodes.workflowTaskAssignedRead);
+  const actor = requireAuthenticatedUser(user);
   const task = await readWorkflowTaskRuntimeContext(actor.id, taskInstanceId);
   if (!task) {
     throw new ResourceNotFoundError("form task");
   }
+  requirePermission(actor, task.permissions.view);
   const [currentSchema, submission, context] = await Promise.all([
     getFormRuntime(task.binding.formVersionId),
     readFormResponse(taskInstanceId, task.binding.formVersionId),
@@ -282,12 +284,10 @@ export async function saveTaskForm(
   user: AuthenticatedUser | null,
   input: TaskFormSubmissionInput & { taskInstanceId: string },
 ) {
-  const actor = requirePermission(
-    user,
-    permissionCodes.workflowTaskAssignedProcess,
-  );
+  const actor = requireAuthenticatedUser(user);
   const task = await readAssignedFormTask(actor.id, input.taskInstanceId);
   if (!task?.formVersionId) throw new ResourceNotFoundError("assigned form task");
+  requirePermission(actor, task.permissions.edit);
   const schema = await getFormRuntime(task.formVersionId);
   if (!schema) throw new ResourceNotFoundError("published form");
   const captured = capturedResponseValues(schema.fields, input.values);
@@ -317,10 +317,10 @@ export async function completeTaskForm(
     taskInstanceId: string;
   },
 ) {
-  const actor = requirePermission(
-    user,
-    permissionCodes.workflowTaskAssignedProcess,
-  );
+  const actor = requireAuthenticatedUser(user);
+  const task = await readAssignedFormTask(actor.id, input.taskInstanceId);
+  if (!task?.formVersionId) throw new ResourceNotFoundError("assigned form task");
+  requirePermission(actor, task.permissions.decide);
   const replay = await readFormTaskCompletion({
     actionKey: input.actionKey,
     actorId: actor.id,
@@ -335,8 +335,6 @@ export async function completeTaskForm(
       "That idempotency key was already used with different task data.",
     );
   }
-  const task = await readAssignedFormTask(actor.id, input.taskInstanceId);
-  if (!task?.formVersionId) throw new ResourceNotFoundError("assigned form task");
   const schema = await getFormRuntime(task.formVersionId);
   if (!schema) throw new ResourceNotFoundError("published form");
   const captured = capturedResponseValues(schema.fields, input.values);

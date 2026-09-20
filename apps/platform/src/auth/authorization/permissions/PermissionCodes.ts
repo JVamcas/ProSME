@@ -56,6 +56,7 @@ export const permissionCodes = {
     "funding.application.information-request.own.respond",
   workflowTaskAssignedRead: "workflow.task.assigned.read",
   workflowTaskAssignedProcess: "workflow.task.assigned.process",
+  workflowTaskAssignedDecide: "workflow.task.assigned.decide",
   workflowTaskClaim: "workflow.task.claim",
   workflowTaskAssign: "workflow.task.assign",
   workflowDefinitionRead: "workflow.definition.read",
@@ -87,6 +88,10 @@ export const permissionCodes = {
 
 export type StaticPermissionCode =
   (typeof permissionCodes)[keyof typeof permissionCodes];
+export const staticPermissionCodes = Object.values(permissionCodes) as [
+  StaticPermissionCode,
+  ...StaticPermissionCode[],
+];
 export type PermissionCode = StaticPermissionCode | CmsPermissionCode;
 
 export function cmsPermissionCode(

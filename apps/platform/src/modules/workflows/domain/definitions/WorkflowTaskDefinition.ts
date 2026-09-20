@@ -1,4 +1,5 @@
 import type { ConditionFieldDefinition } from "@/modules/conditions/domain/ConditionConfiguration";
+import type { WorkflowElementPermissions } from "./WorkflowElementPermissions";
 
 export const workflowTaskAssignmentModes = ["ROLE", "NAMED_USER"] as const;
 
@@ -12,6 +13,7 @@ export type WorkflowTaskFormBinding = {
 
 export type WorkflowTaskDefinition = {
   actionKeys: string[];
+  permissions: WorkflowElementPermissions;
   id?: string;
   stableKey: string;
   name: string;

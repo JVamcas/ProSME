@@ -15,6 +15,7 @@ vi.mock("@/modules/forms/application/FormTaskRuntimeContext", () => ({
 }));
 
 import { permissionCodes } from "@/auth/authorization/permissions";
+import { defaultWorkflowElementPermissions } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
 import type { AuthenticatedUser } from "@/auth/types";
 import { getTaskForm } from "@/modules/forms/application/ServerFormsService";
 import { exposeTaskFormRuntimeContext } from "@/modules/forms/application/FormTaskRuntimeContext";
@@ -61,6 +62,7 @@ const source = {
     formVersionId: versionId,
   },
   fundingCallTitle: "Growth Fund",
+  permissions: defaultWorkflowElementPermissions,
   priorStageValues: [],
   stage: {},
   task: {

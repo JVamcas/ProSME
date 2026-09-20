@@ -155,6 +155,11 @@ export const permissionCatalogue: readonly PermissionDefinition[] = [
     "Process an assigned task using its configured actions.",
   ),
   define(
+    permissionCodes.workflowTaskAssignedDecide,
+    "Decide assigned tasks",
+    "Complete an assigned task using its configured decision actions.",
+  ),
+  define(
     permissionCodes.workflowTaskClaim,
     "Claim tasks",
     "Claim an eligible workflow task.",

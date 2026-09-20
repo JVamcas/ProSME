@@ -3,6 +3,8 @@ import { z } from "zod";
 import type { WorkflowTaskInput } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import { taskTypeCodes } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import { conditionFieldTypes } from "@/modules/conditions/domain/ConditionConfiguration";
+import { staticPermissionCodes } from "@/auth/authorization/permissions";
+import { workflowElementVisibilities } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
 
 const checklistItemSchema = z.object({
   code: z.string(),
@@ -21,6 +23,10 @@ const contextFieldSchema = z.object({
 
 export const workflowTaskFormSchema = z.object({
   actionKeys: z.array(z.string()).max(100),
+  viewPermission: z.enum(staticPermissionCodes),
+  editPermission: z.enum(staticPermissionCodes),
+  decidePermission: z.enum(staticPermissionCodes),
+  visibility: z.enum(workflowElementVisibilities),
   assignmentMode: z.enum(["ROLE", "NAMED_USER"]),
   assignmentTarget: z.string().min(1, "Select an assignee."),
   stableKey: z

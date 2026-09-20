@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import { workflowTaskSchema } from "@/modules/workflows/api/WorkflowSchemas";
+import { defaultWorkflowElementPermissions } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
 
 const task = {
   actionKeys: ["RECOMMEND", "REQUEST_INFORMATION"],
+  permissions: defaultWorkflowElementPermissions,
   stableKey: "TECHNICAL_REVIEW",
   name: "Technical review",
   description: "Review the application's technical merits.",
@@ -24,6 +26,28 @@ const task = {
 describe("WorkflowTaskDefinition", () => {
   it("accepts every configurable Phase 1.4 field", () => {
     expect(workflowTaskSchema.parse(task)).toEqual(task);
+  });
+
+  it("requires canonical element permissions and controlled visibility", () => {
+    expect(workflowTaskSchema.safeParse({
+      ...task,
+      permissions: {
+        ...task.permissions,
+        view: "workflow.task.unregistered.read",
+      },
+    }).success).toBe(false);
+    expect(workflowTaskSchema.safeParse({
+      ...task,
+      permissions: {
+        ...task.permissions,
+        visibility: "PUBLIC",
+      },
+    }).success).toBe(false);
+    expect(workflowTaskSchema.safeParse({
+      ...task,
+      permissions: undefined,
+    }).success)
+      .toBe(false);
   });
 
   it("stores an exact form version through the task form binding", () => {

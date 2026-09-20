@@ -13,6 +13,7 @@ import type {
   WorkflowTaskInput,
 } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import { workflowRuntimeContextFields } from "@/modules/workflows/domain/WorkflowRuntimeContextFieldCatalogue";
+import { defaultWorkflowElementPermissions } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
 import {
   taskAssignmentDefaults,
   type WorkflowTaskFormValues,
@@ -49,6 +50,12 @@ async function saveWorkflowTask({
   const nextTask: WorkflowTaskInput = {
     ...(task?.id ? { id: task.id } : {}),
     actionKeys: values.actionKeys,
+    permissions: {
+      view: values.viewPermission,
+      edit: values.editPermission,
+      decide: values.decidePermission,
+      visibility: values.visibility,
+    },
     assignmentMode: values.assignmentMode,
     roleId:
       values.assignmentMode === "ROLE" ? values.assignmentTarget : null,
@@ -102,6 +109,18 @@ export function useWorkflowTaskDialogController(
     defaultValues: {
       ...taskAssignmentDefaults(task),
       actionKeys: task?.actionKeys ?? [],
+      viewPermission: task
+        ? task.permissions.view
+        : defaultWorkflowElementPermissions.view,
+      editPermission: task
+        ? task.permissions.edit
+        : defaultWorkflowElementPermissions.edit,
+      decidePermission: task
+        ? task.permissions.decide
+        : defaultWorkflowElementPermissions.decide,
+      visibility: task
+        ? task.permissions.visibility
+        : defaultWorkflowElementPermissions.visibility,
       checklistItems: [],
       stableKey: task?.stableKey ?? "",
       description: task?.description ?? "",

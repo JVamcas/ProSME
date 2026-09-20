@@ -1,13 +1,15 @@
 import "server-only";
 
-import { permissionCodes } from "@/auth/authorization/permissions";
-import { requirePermission } from "@/auth/authorization/policy";
+import {
+  requireAuthenticatedUser,
+  requirePermission,
+} from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import {
   readChecklistTaskCompletion,
   writeChecklistTaskCompletion,
 } from "@/db/repositories/WorkflowTaskActionRepository";
-import { readWorkflowTask } from "@/db/repositories/WorkflowTaskRepository";
+import { readWorkflowTask } from "@/modules/workflows/infrastructure/WorkflowTaskRepository";
 import {
   IdempotencyConflictError,
   RequestValidationError,
@@ -70,10 +72,11 @@ export async function getWorkflowTask(
   user: AuthenticatedUser | null,
   taskId: string,
 ) {
-  const actor = requirePermission(user, permissionCodes.workflowTaskAssignedRead);
+  const actor = requireAuthenticatedUser(user);
   const task = await readWorkflowTask(actor.id, taskId);
   if (!task) throw new ResourceNotFoundError("workflow task");
-  const { config, result, ...view } = task;
+  const { config, permissions, result, ...view } = task;
+  requirePermission(actor, permissions.view);
   if (task.taskType !== "CHECKLIST") {
     return {
       ...view,
@@ -96,16 +99,16 @@ export async function completeChecklistTask(
   input: CompleteChecklistTaskInput,
   command: { correlationId: string; idempotencyKey: string },
 ) {
-  const actor = requirePermission(
-    user,
-    permissionCodes.workflowTaskAssignedProcess,
-  );
+  const actor = requireAuthenticatedUser(user);
   const writeInput = {
     ...command,
     ...input,
     actorId: actor.id,
     taskId,
   };
+  const task = await readWorkflowTask(actor.id, taskId);
+  if (!task) throw new ResourceNotFoundError("workflow task");
+  requirePermission(actor, task.permissions.decide);
   const replay = await readChecklistTaskCompletion(writeInput);
   if (replay?.kind === "completed") return replay.result;
   if (replay?.kind === "idempotency_conflict") {
@@ -113,8 +116,6 @@ export async function completeChecklistTask(
       "That idempotency key was already used with different task data.",
     );
   }
-  const task = await readWorkflowTask(actor.id, taskId);
-  if (!task) throw new ResourceNotFoundError("workflow task");
   if (task.taskType !== "CHECKLIST") {
     throw new ResourceConflictError("This task is not a checklist task.");
   }

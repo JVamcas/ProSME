@@ -1,4 +1,5 @@
 import type { WorkflowActionDefinition } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
+import { defaultWorkflowElementPermissions } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
 
 export const emptyStageConditions = {
   checklistItems: [],
@@ -20,6 +21,7 @@ export function referenceTaskDefaults(coiRequired: boolean) {
     coiRequired,
     displayOrder: 1,
     formBinding: null,
+    permissions: defaultWorkflowElementPermissions,
     quorum: false,
     required: true,
     requiredCompletionCount: 1,

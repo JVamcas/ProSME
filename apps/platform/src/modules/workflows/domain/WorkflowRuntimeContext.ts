@@ -1,4 +1,5 @@
 import type { ConditionFieldDefinition } from "@/modules/conditions/domain/ConditionConfiguration";
+import type { WorkflowElementPermissions } from "./definitions/WorkflowElementPermissions";
 
 export type WorkflowRuntimeContextRecord = Readonly<Record<string, unknown>>;
 
@@ -25,6 +26,7 @@ export type WorkflowTaskRuntimeContextSource = {
     formVersionId: string;
   };
   fundingCallTitle: string;
+  permissions: WorkflowElementPermissions;
   priorStageValues: PriorStageRuntimeValues[];
   stage: WorkflowRuntimeContextRecord;
   task: WorkflowRuntimeContextRecord;

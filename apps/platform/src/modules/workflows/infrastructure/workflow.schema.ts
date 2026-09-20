@@ -16,6 +16,7 @@ import type { WorkflowActionType } from "../domain/actions/WorkflowActionDefinit
 import type { WorkflowActionConfiguration } from "../domain/actions/WorkflowActionConfiguration";
 import type { WorkflowPublicStatus } from "../domain/definitions/WorkflowStageDefinition";
 import type { WorkflowTaskAssignmentMode } from "../domain/definitions/WorkflowTaskDefinition";
+import type { WorkflowElementPermissions } from "../domain/definitions/WorkflowElementPermissions";
 import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup";
 import type { ConditionFieldDefinition } from "@/modules/conditions/domain/ConditionConfiguration";
 
@@ -157,6 +158,9 @@ export const stageTaskDefinitions = pgTable(
     quorum: boolean("quorum").notNull().default(false),
     coiRequired: boolean("coi_required").notNull().default(false),
     config: jsonb("config").notNull().default({}),
+    permissions: jsonb("permissions")
+      .$type<WorkflowElementPermissions>()
+      .notNull(),
   },
   (table) => [
     uniqueIndex("app_stage_tasks_id_stage_unique").on(

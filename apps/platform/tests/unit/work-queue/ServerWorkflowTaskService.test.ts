@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
-vi.mock("@/db/repositories/WorkflowTaskRepository", () => ({
+vi.mock("@/modules/workflows/infrastructure/WorkflowTaskRepository", () => ({
   readWorkflowTask: vi.fn(),
 }));
 vi.mock("@/db/repositories/WorkflowTaskActionRepository", () => ({
@@ -12,11 +12,12 @@ vi.mock("@/db/repositories/WorkflowTaskActionRepository", () => ({
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { PermissionDeniedError } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
+import { defaultWorkflowElementPermissions } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
 import {
   readChecklistTaskCompletion,
   writeChecklistTaskCompletion,
 } from "@/db/repositories/WorkflowTaskActionRepository";
-import { readWorkflowTask } from "@/db/repositories/WorkflowTaskRepository";
+import { readWorkflowTask } from "@/modules/workflows/infrastructure/WorkflowTaskRepository";
 import { RequestValidationError } from "@/lib/resource-errors";
 import {
   completeChecklistTask,
@@ -27,6 +28,7 @@ const actor: AuthenticatedUser = {
   capabilities: new Set([
     permissionCodes.workflowTaskAssignedProcess,
     permissionCodes.workflowTaskAssignedRead,
+    permissionCodes.workflowTaskAssignedDecide,
   ]),
   createdAt: new Date(),
   displayName: "Reviewer",
@@ -56,6 +58,7 @@ const task = {
   fundingCallTitle: "Funding call",
   reference: "SMEF-2026-000001",
   result: null,
+  permissions: defaultWorkflowElementPermissions,
   rowVersion: 2,
   stageName: "Pre-screening",
   taskInstanceId: "79e20de0-3558-4d63-90a4-8c9f5125df09",
@@ -84,6 +87,7 @@ describe("workflow checklist task service", () => {
       resultItems: [],
     });
     expect(result).not.toHaveProperty("config");
+    expect(result).not.toHaveProperty("permissions");
     expect(result).not.toHaveProperty("result");
   });
 
@@ -127,7 +131,7 @@ describe("workflow checklist task service", () => {
     expect(result).toEqual(completion);
   });
 
-  it("requires the assigned-task process permission", async () => {
+  it("requires the configured decide permission", async () => {
     await expect(completeChecklistTask(
       { ...actor, capabilities: new Set() },
       task.taskInstanceId,

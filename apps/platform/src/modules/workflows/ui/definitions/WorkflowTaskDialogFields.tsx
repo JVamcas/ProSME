@@ -9,6 +9,7 @@ import {
   FormTextarea,
 } from "@/components/ui/form-fields";
 import { WorkflowContextFieldConfiguration } from "./WorkflowContextFieldConfiguration";
+import { permissionCatalogue } from "@/auth/authorization/permissions";
 
 function TaskIdentityFields() {
   return (
@@ -101,6 +102,48 @@ export function WorkflowTaskDialogFields({
         onChange={onContextFieldKeysChange}
         selectedKeys={contextFieldKeys}
       />
+
+      <fieldset className="grid gap-4 rounded-lg border border-slate-200 p-4 sm:grid-cols-2">
+        <legend className="px-1 text-sm font-semibold text-brand-navy">
+          Element permissions
+        </legend>
+        <FormSelect
+          items={permissionCatalogue.map((permission) => ({
+            label: permission.label,
+            value: permission.code,
+          }))}
+          label="View permission"
+          name="viewPermission"
+          required
+        />
+        <FormSelect
+          items={permissionCatalogue.map((permission) => ({
+            label: permission.label,
+            value: permission.code,
+          }))}
+          label="Edit permission"
+          name="editPermission"
+          required
+        />
+        <FormSelect
+          items={permissionCatalogue.map((permission) => ({
+            label: permission.label,
+            value: permission.code,
+          }))}
+          label="Decide permission"
+          name="decidePermission"
+          required
+        />
+        <FormSelect
+          items={[
+            { label: "Applicant visible", value: "APPLICANT_VISIBLE" },
+            { label: "Internal only", value: "INTERNAL_ONLY" },
+          ]}
+          label="Visibility"
+          name="visibility"
+          required
+        />
+      </fieldset>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <FormSelect

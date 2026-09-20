@@ -14,6 +14,7 @@ import {
   validateTaskConfiguration,
 } from "@/modules/workflows/WorkflowTaskRegistry";
 import { validateWorkflowGraph } from "@/modules/workflows/WorkflowValidation";
+import { defaultWorkflowElementPermissions } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
 
 describe("workflow task configuration", () => {
   it("provides a valid editable starting configuration for every task type", () => {
@@ -43,6 +44,10 @@ describe("workflow task configuration", () => {
   it("requires each edited task to select a role or a named user", () => {
     const values = {
       actionKeys: ["ADVANCE"],
+      viewPermission: defaultWorkflowElementPermissions.view,
+      editPermission: defaultWorkflowElementPermissions.edit,
+      decidePermission: defaultWorkflowElementPermissions.decide,
+      visibility: defaultWorkflowElementPermissions.visibility,
       assignmentMode: "ROLE",
       assignmentTarget: "79e20de0-3558-4d63-90a4-8c9f5125df07",
       contextFields: [],

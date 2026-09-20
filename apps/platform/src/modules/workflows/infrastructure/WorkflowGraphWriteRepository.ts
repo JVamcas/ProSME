@@ -157,6 +157,7 @@ async function insertActionsAndTasks(
       description: task.description,
       displayOrder: task.displayOrder,
       name: task.name,
+      permissions: task.permissions,
       namedUserOverrideId: task.namedUserOverrideId ?? null,
       quorum: task.quorum,
       required: task.required,

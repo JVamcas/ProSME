@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { validateWorkflowGraph } from "@/modules/workflows/WorkflowValidation";
 import { workflowGraphSchema } from "@/modules/workflows/api/WorkflowSchemas";
+import { defaultWorkflowElementPermissions } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
 
 const stage = (code: string, sequence: number, initial: boolean) => ({
   stableKey: code,
@@ -35,6 +36,7 @@ const stage = (code: string, sequence: number, initial: boolean) => ({
   scoring: null,
   tasks: [{
     actionKeys: ["ADVANCE"],
+    permissions: defaultWorkflowElementPermissions,
     assignmentMode: "ROLE" as const,
     roleId: "00000000-0000-0000-0000-000000000001",
     namedUserOverrideId: null,

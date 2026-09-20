@@ -22,6 +22,8 @@ import {
 } from "@/modules/workflows/domain/definitions/WorkflowStageDocumentRequirement";
 import { workflowScoringAggregations } from "@/modules/workflows/domain/definitions/WorkflowStageScoringDefinition";
 import { workflowCommentFieldVisibilities } from "@/modules/workflows/domain/definitions/WorkflowStageCommentField";
+import { staticPermissionCodes } from "@/auth/authorization/permissions";
+import { workflowElementVisibilities } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
 
 export { workflowActionDefinitionSchema } from "@/modules/workflows/domain/actions/WorkflowActionSchemas";
 
@@ -121,6 +123,12 @@ export const workflowTaskSchema = z
       (values) => new Set(values).size === values.length,
       "Task action bindings must be unique.",
     ),
+    permissions: z.object({
+      view: z.enum(staticPermissionCodes),
+      edit: z.enum(staticPermissionCodes),
+      decide: z.enum(staticPermissionCodes),
+      visibility: z.enum(workflowElementVisibilities),
+    }).strict(),
     id: z.string().uuid().optional(),
     stableKey: codeSchema,
     name: z.string().trim().min(2).max(160),

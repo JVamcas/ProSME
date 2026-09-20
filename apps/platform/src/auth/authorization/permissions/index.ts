@@ -3,6 +3,7 @@ export {
   cmsPermissionCode,
   cmsPermissionResources,
   permissionCodes,
+  staticPermissionCodes,
   type CmsPermissionAction,
   type CmsPermissionCode,
   type CmsPermissionResource,

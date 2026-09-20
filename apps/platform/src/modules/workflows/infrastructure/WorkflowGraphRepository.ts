@@ -81,6 +81,7 @@ const graphSelection = {
     quorum: stageTaskDefinitions.quorum,
     coiRequired: stageTaskDefinitions.coiRequired,
     config: stageTaskDefinitions.config,
+    permissions: stageTaskDefinitions.permissions,
   },
   formBinding: {
     contextFields: stageTaskFormBindings.contextFields,

@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { WorkflowTaskDialogFields } from "@/modules/workflows/ui/definitions/WorkflowTaskDialogFields";
 import type { WorkflowTaskFormValues } from "@/modules/workflows/ui/definitions/WorkflowTaskFormSchema";
+import { defaultWorkflowElementPermissions } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
 
 const attachedVersionId = "68cecb68-3f4f-4862-a958-92942187cf04";
 
@@ -22,6 +23,10 @@ function TaskFields({
   const form = useForm<WorkflowTaskFormValues>({
     defaultValues: {
       actionKeys: [],
+      viewPermission: defaultWorkflowElementPermissions.view,
+      editPermission: defaultWorkflowElementPermissions.edit,
+      decidePermission: defaultWorkflowElementPermissions.decide,
+      visibility: defaultWorkflowElementPermissions.visibility,
       assignmentMode: "ROLE",
       assignmentTarget: "reviewer",
       checklistItems: [],
@@ -102,6 +107,13 @@ describe("workflow task form selection", () => {
     expect(container.textContent).toContain(
       "Requested amount · application.requested_amount",
     );
+    expect(container.textContent).toContain("Element permissions");
+    expect(container.textContent).toContain("View permission");
+    expect(container.textContent).toContain("Edit permission");
+    expect(container.textContent).toContain("Decide permission");
+    expect(container.querySelector<HTMLSelectElement>(
+      'select[name="visibility"]',
+    )?.value).toBe("INTERNAL_ONLY");
 
     await act(async () => root.unmount());
   });

@@ -7,6 +7,7 @@ import type {
   WorkflowStageInput,
 } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import { validateWorkflowConditions } from "@/modules/workflows/engine/WorkflowConditionValidation";
+import { defaultWorkflowElementPermissions } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
 
 const firstFormVersionId = "10000000-0000-4000-8000-000000000001";
 const secondFormVersionId = "10000000-0000-4000-8000-000000000002";
@@ -40,6 +41,7 @@ function stage(
     stableKey,
     tasks: [{
       actionKeys: [],
+      permissions: defaultWorkflowElementPermissions,
       assignmentMode: "ROLE",
       coiRequired: false,
       config: {},

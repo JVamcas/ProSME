@@ -5,6 +5,7 @@ import {
   exposeFormRuntimeContext,
 } from "@/modules/forms/engine/FormRuntimeContext";
 import type { WorkflowTaskRuntimeContextSource } from "@/modules/workflows/domain/WorkflowRuntimeContext";
+import { defaultWorkflowElementPermissions } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
 import { buildWorkflowRuntimeContext } from "@/modules/workflows/engine/WorkflowRuntimeContext";
 
 const selectedPaths = [
@@ -43,6 +44,7 @@ const source: WorkflowTaskRuntimeContextSource = {
     formVersionId: "20000000-0000-4000-8000-000000000001",
   },
   fundingCallTitle: "Growth Fund",
+  permissions: defaultWorkflowElementPermissions,
   priorStageValues: [{
     result: {},
     stageKey: "SCREENING",
