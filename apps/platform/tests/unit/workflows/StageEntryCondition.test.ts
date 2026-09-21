@@ -3,9 +3,9 @@ import { describe, expect, it } from "vitest";
 import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup";
 import { basicOperators } from "@/modules/conditions/engine/BasicOperators";
 import {
-  evaluateStageEntryCondition,
+  evaluateStageCondition,
   normalizeStageConditionRecord,
-} from "@/modules/workflows/engine/StageEntryCondition";
+} from "@/modules/workflows/engine/StageCondition";
 
 const condition: ConditionGroup = {
   children: [{
@@ -22,7 +22,7 @@ const condition: ConditionGroup = {
 
 describe("stage entry condition", () => {
   it("passes stages without an entry condition", () => {
-    expect(evaluateStageEntryCondition(null, {
+    expect(evaluateStageCondition(null, {
       application: {},
       fundingCall: {},
       stages: [],
@@ -34,7 +34,7 @@ describe("stage entry condition", () => {
   });
 
   it("evaluates application and funding-call values", () => {
-    const result = evaluateStageEntryCondition(condition, {
+    const result = evaluateStageCondition(condition, {
       application: { requested_amount: 250_000 },
       fundingCall: { maximum_amount: 500_000 },
       stages: [],
@@ -46,7 +46,7 @@ describe("stage entry condition", () => {
   });
 
   it("fails closed when a referenced runtime value is unavailable", () => {
-    const result = evaluateStageEntryCondition(condition, {
+    const result = evaluateStageCondition(condition, {
       application: {},
       fundingCall: { maximum_amount: 500_000 },
       stages: [],

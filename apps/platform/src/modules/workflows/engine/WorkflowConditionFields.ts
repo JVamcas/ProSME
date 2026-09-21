@@ -4,6 +4,7 @@ import type {
   WorkflowGraphInput,
   WorkflowStageInput,
 } from "@/modules/workflows/domain/definitions/WorkflowTypes";
+import { validateTaskConfiguration } from "@/modules/workflows/WorkflowTaskRegistry";
 
 function formConditionType(
   field: Pick<FormField, "type">,
@@ -45,12 +46,88 @@ function boundFormFields(
       const type = formConditionType(field);
       return type
         ? [{
-            key: `stage.${stagePathKey(stage.stableKey)}.${field.key}`,
+            key: `stage.${stagePathKey(stage.stableKey)}.${stagePathKey(field.key)}`,
             label: `${stage.name} · ${task.name} · ${field.label}`,
             type,
           }]
         : [];
     });
+  });
+}
+
+function taskResultField(
+  stage: WorkflowStageInput,
+  key: string,
+  label: string,
+  type: ConditionFieldDefinition["type"],
+) {
+  return {
+    key: `stage.${stagePathKey(stage.stableKey)}.${stagePathKey(key)}`,
+    label,
+    type,
+  };
+}
+
+function boundTaskResultFields(stage: WorkflowStageInput) {
+  return stage.tasks.flatMap((task) => {
+    const parsed = validateTaskConfiguration(task.type, task.config);
+    if (!parsed.success) return [];
+    if (task.type === "CHECKLIST") {
+      const config = parsed.data as {
+        items: { code: string; label: string }[];
+      };
+      return config.items.map((item) => taskResultField(
+        stage,
+        item.code,
+        `${stage.name} · ${task.name} · ${item.label}`,
+        "BOOLEAN",
+      ));
+    }
+    if (task.type === "DOCUMENT_REVIEW") {
+      const config = parsed.data as {
+        categories: { code: string; label: string }[];
+      };
+      return config.categories.map((category) => taskResultField(
+        stage,
+        category.code,
+        `${stage.name} · ${task.name} · ${category.label}`,
+        "TEXT",
+      ));
+    }
+    if (task.type === "ASSESSMENT_FORM") {
+      const config = parsed.data as {
+        criteria: {
+          code: string;
+          commentRequired: boolean;
+          label: string;
+        }[];
+      };
+      return [
+        ...config.criteria.flatMap((criterion) => [
+          taskResultField(
+            stage,
+            criterion.code,
+            `${stage.name} · ${task.name} · ${criterion.label}`,
+            "NUMBER",
+          ),
+          ...(criterion.commentRequired
+            ? [taskResultField(
+                stage,
+                `${criterion.code}_COMMENT`,
+                `${stage.name} · ${task.name} · ${criterion.label} comment`,
+                "TEXT",
+              )]
+            : []),
+        ]),
+        taskResultField(
+          stage,
+          "WEIGHTED_TOTAL",
+          `${stage.name} · ${task.name} · Weighted total`,
+          "NUMBER",
+        ),
+      ];
+    }
+    return [];
   });
 }
 
@@ -93,7 +170,10 @@ export function workflowConditionFields(
   return uniqueFields([
     ...contextStages.flatMap(boundContextFields),
     ...valueStages.flatMap((candidate) =>
-      boundFormFields(candidate, forms)
+      [
+        ...boundFormFields(candidate, forms),
+        ...boundTaskResultFields(candidate),
+      ]
     ),
   ]);
 }

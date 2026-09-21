@@ -39,23 +39,6 @@ export async function findFormTaskTransition(
   return result.rows[0] as FormTaskTransition | undefined;
 }
 
-async function cancelOptionalTasks(
-  transaction: Transaction,
-  stageInstanceId: string,
-  completedAt: Date,
-) {
-  await transaction.execute(sql`
-    UPDATE app_workflow_tasks task
-    SET status = 'CANCELLED', completed_at = ${completedAt},
-      row_version = row_version + 1
-    FROM app_stage_task_definitions definition
-    WHERE task.workflow_task_definition_id = definition.id
-      AND task.stage_instance_id = ${stageInstanceId}::uuid
-      AND definition.required = FALSE
-      AND task.status NOT IN ('COMPLETED', 'CANCELLED')
-  `);
-}
-
 async function createNextStage(
   transaction: Transaction,
   task: FormTaskRuntimeContext,
@@ -99,12 +82,6 @@ export async function advanceFormTaskWorkflow(
   transition: FormTaskTransition,
   completedAt: Date,
 ) {
-  await transaction.execute(sql`
-    UPDATE app_workflow_stage_instances
-    SET status = 'COMPLETED', completed_at = ${completedAt}
-    WHERE id = ${task.stageInstanceId}::uuid
-  `);
-  await cancelOptionalTasks(transaction, task.stageInstanceId, completedAt);
   if (!transition.id) {
     await transaction.execute(sql`
       UPDATE app_workflow_instances

@@ -1,9 +1,7 @@
 import { randomUUID } from "node:crypto";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-
 vi.mock("server-only", () => ({}));
-
 import {
   readAdminApplication,
   readAdminApplications,
@@ -13,9 +11,9 @@ import {
   writeTaskClaim,
 } from "@/db/repositories/WorkQueueRepository";
 import { writeChecklistTaskCompletion } from "@/db/repositories/WorkflowTaskActionRepository";
+import { completeStageInTransaction } from "@/modules/workflows/application/runtime/ServerStageCompletionService";
 import { readWorkflowTask } from "@/modules/workflows/infrastructure/WorkflowTaskRepository";
 import { configureWorkflowAction } from "./support/workflow-action-fixture";
-
 const { Pool } = pg;
 const enabled = process.env.RUN_P3_APPLICATION_DATABASE_TESTS === "true";
 const describeDatabase = enabled ? describe : describe.skip;
@@ -39,12 +37,10 @@ let claimedBy = "";
 const pool = enabled
   ? new Pool({ connectionString: process.env.DATABASE_URL })
   : null;
-
 async function query(text: string, values: unknown[] = []) {
   if (!pool) throw new Error("The P3.5 PostgreSQL test pool is not configured.");
   return pool.query(text, values);
 }
-
 beforeAll(async () => {
   if (!enabled) return;
   await query(
@@ -194,7 +190,6 @@ describeDatabase("P3.5 work queue projections and claim", () => {
       currentStageName: "Completeness screening",
     });
   });
-
   it("allows exactly one reviewer to atomically claim a role task", async () => {
     const keys = [
       randomUUID(),
@@ -248,7 +243,6 @@ describeDatabase("P3.5 work queue projections and claim", () => {
       status: "CLAIMED",
     });
   });
-
   it("completes the configured checklist and advances atomically", async () => {
     const task = await readWorkflowTask(claimedBy, taskInstanceId);
     expect(task).toMatchObject({
@@ -264,12 +258,18 @@ describeDatabase("P3.5 work queue projections and claim", () => {
       items: [{ accepted: true, code: "OWNERSHIP", comment: "Verified" }],
       taskId: taskInstanceId,
     };
-    const completed = await writeChecklistTaskCompletion(command);
+    const completed = await writeChecklistTaskCompletion(
+      command,
+      completeStageInTransaction,
+    );
     expect(completed).toMatchObject({
       kind: "completed",
       result: { nextStageName: "Technical assessment" },
     });
-    expect(await writeChecklistTaskCompletion(command)).toEqual(completed);
+    expect(await writeChecklistTaskCompletion(
+      command,
+      completeStageInTransaction,
+    )).toEqual(completed);
     const persisted = await query(
       `SELECT task.status, task.result,
         workflow.status AS workflow_status,

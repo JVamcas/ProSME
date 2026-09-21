@@ -23,6 +23,7 @@ export type LockedWorkflowTask = {
   id: string;
   permissions: WorkflowElementPermissions;
   rowVersion: number;
+  stageInstanceId: string;
   status: WorkflowTaskStatus;
   workflowInstanceId: string;
 };
@@ -60,6 +61,7 @@ export async function lockWorkflowTaskForLifecycle(
       id: workflowTasks.id,
       permissions: stageTaskDefinitions.permissions,
       rowVersion: workflowTasks.rowVersion,
+      stageInstanceId: stageInstances.id,
       status: workflowTasks.status,
       workflowInstanceId: workflowInstances.id,
     })

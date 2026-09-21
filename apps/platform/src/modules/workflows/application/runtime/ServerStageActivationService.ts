@@ -1,10 +1,10 @@
 import "server-only";
 
-import type { StageEntryConditionEvaluation } from "../../engine/StageEntryCondition";
+import type { StageConditionEvaluation } from "../../engine/StageCondition";
 import {
-  evaluateStageEntryCondition,
+  evaluateStageCondition,
   normalizeStageConditionRecord,
-} from "../../engine/StageEntryCondition";
+} from "../../engine/StageCondition";
 import {
   findStageInstanceStatus,
   findStageIteration,
@@ -38,7 +38,7 @@ export type StageActivationResult =
     }
   | {
       kind: "entry_condition_failed";
-      evaluation: StageEntryConditionEvaluation;
+      evaluation: StageConditionEvaluation;
     }
   | {
       kind: "invalid_iteration" | "stage_conflict" | "stage_not_found";
@@ -89,7 +89,7 @@ export async function activateStageInTransaction(
     loadPriorStageContext(transaction, input.workflowInstanceId),
     loadStageActivationTasks(transaction, input.stageDefinitionId),
   ]);
-  const evaluation = evaluateStageEntryCondition(target.entryCondition, {
+  const evaluation = evaluateStageCondition(target.entryCondition, {
     application: normalizeStageConditionRecord(target.application),
     fundingCall: normalizeStageConditionRecord(target.fundingCall),
     stages: priorStages.map((stage) => ({

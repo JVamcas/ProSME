@@ -181,6 +181,7 @@ describe("server form visibility", () => {
 
     expect(writeFormTaskCompletion).toHaveBeenCalledWith(
       expect.objectContaining({ values: { HAS_DETAILS: false } }),
+      expect.any(Function),
     );
   });
 });

@@ -10,7 +10,7 @@ import {
   type WorkflowDataContext,
 } from "@/modules/conditions/engine/WorkflowDataResolver";
 
-export type StageEntryConditionEvaluation = {
+export type StageConditionEvaluation = {
   passed: boolean;
   evaluation: ConditionGroupEvaluation | null;
   resolutionError: {
@@ -46,7 +46,7 @@ function normalizeValue(value: unknown): JsonValue {
       )),
     );
   }
-  throw new TypeError("Stage activation context contains an unsupported value.");
+  throw new TypeError("Stage condition context contains an unsupported value.");
 }
 
 export function normalizeStageConditionRecord(
@@ -55,10 +55,10 @@ export function normalizeStageConditionRecord(
   return normalizeValue(value) as Record<string, JsonValue>;
 }
 
-export function evaluateStageEntryCondition(
+export function evaluateStageCondition(
   condition: ConditionGroup | null,
   context: WorkflowDataContext,
-): StageEntryConditionEvaluation {
+): StageConditionEvaluation {
   if (!condition) {
     return { evaluation: null, passed: true, resolutionError: null };
   }

@@ -2,6 +2,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 vi.mock(
+  "@/modules/workflows/application/runtime/ServerStageCompletionService",
+  () => ({ completeStageInTransaction: vi.fn() }),
+);
+vi.mock(
   "@/modules/workflows/infrastructure/WorkflowTaskLifecycleRepository",
   () => ({
     lockWorkflowTaskForLifecycle: vi.fn(),
@@ -20,6 +24,7 @@ import {
   startWorkflowTask,
 } from "@/modules/workflows/application/runtime/ServerWorkflowTaskLifecycleService";
 import { defaultWorkflowElementPermissions } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
+import { completeStageInTransaction } from "@/modules/workflows/application/runtime/ServerStageCompletionService";
 import {
   lockWorkflowTaskForLifecycle,
   persistWorkflowTaskTransition,
@@ -57,6 +62,7 @@ const task = {
   id: input.taskId,
   permissions: defaultWorkflowElementPermissions,
   rowVersion: 1,
+  stageInstanceId: "55555555-5555-4555-8555-555555555555",
   status: "PENDING" as const,
   workflowInstanceId: "44444444-4444-4444-8444-444444444444",
 };
@@ -67,6 +73,10 @@ beforeEach(() => {
     async (work) => work({} as never),
   );
   vi.mocked(lockWorkflowTaskForLifecycle).mockResolvedValue(task);
+  vi.mocked(completeStageInTransaction).mockResolvedValue({
+    kind: "requirements_not_met",
+    requirements: [],
+  });
   vi.mocked(persistWorkflowTaskTransition).mockImplementation(
     async (_transaction, transition) => ({
       assignedUserId: transition.actorId,
@@ -118,6 +128,13 @@ describe("server workflow task lifecycle service", () => {
       completedAt: expect.any(Date),
       status: "COMPLETED",
     });
+    expect(completeStageInTransaction).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        actorId: actor.id,
+        stageInstanceId: task.stageInstanceId,
+      }),
+    );
   });
 
   it("rejects invalid direct completion from pending", async () => {

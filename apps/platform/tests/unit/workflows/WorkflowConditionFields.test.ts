@@ -100,31 +100,84 @@ describe("workflow condition fields", () => {
         type: "NUMBER",
       }),
       expect.objectContaining({
-        key: "stage.screening.CUSTOM_RESULT",
+        key: "stage.screening.custom_result",
         type: "NUMBER",
       }),
     ]));
     expect(entryFields).not.toEqual(expect.arrayContaining([
       expect.objectContaining({
-        key: "stage.finance_review.RECOMMENDED_AMOUNT",
+        key: "stage.finance_review.recommended_amount",
       }),
     ]));
     expect(completionFields).toEqual(expect.arrayContaining([
       expect.objectContaining({
-        key: "stage.finance_review.RECOMMENDED_AMOUNT",
+        key: "stage.finance_review.recommended_amount",
         type: "NUMBER",
       }),
     ]));
     expect(resolveWorkflowDataPath(
-      "stage.finance_review.RECOMMENDED_AMOUNT",
+      "stage.finance_review.recommended_amount",
       {
         application: {},
         fundingCall: {},
         stages: [{
           stableKey: "FINANCE_REVIEW",
-          values: { RECOMMENDED_AMOUNT: 125_000 },
+          values: { recommended_amount: 125_000 },
         }],
       },
     )).toBe(125_000);
+  });
+
+  it("exposes configured checklist, document and scoring result paths", () => {
+    const review = stage("TECHNICAL_REVIEW", 1, reviewFormVersionId);
+    const taskTemplate = review.tasks[0];
+    review.tasks = [
+      {
+        ...taskTemplate,
+        config: {
+          items: [{ code: "DOCUMENTS_VALID", label: "Documents valid" }],
+        },
+        stableKey: "CHECK_DOCUMENTS",
+        type: "CHECKLIST",
+      },
+      {
+        ...taskTemplate,
+        config: {
+          categories: [{ code: "TAX_STATUS", label: "Tax status" }],
+          outcomes: [{ code: "VERIFIED", label: "Verified" }],
+        },
+        stableKey: "DOCUMENT_REVIEW",
+        type: "DOCUMENT_REVIEW",
+      },
+      {
+        ...taskTemplate,
+        config: {
+          criteria: [{
+            code: "DELIVERY",
+            commentRequired: true,
+            label: "Delivery capacity",
+            maximumScore: 10,
+            weight: 100,
+          }],
+        },
+        stableKey: "SCORING",
+        type: "ASSESSMENT_FORM",
+      },
+    ];
+
+    const fields = workflowConditionFields(
+      { stages: [review], transitions: [] },
+      new Map(),
+      review,
+      true,
+    );
+
+    expect(fields.map((field) => field.key)).toEqual(expect.arrayContaining([
+      "stage.technical_review.delivery",
+      "stage.technical_review.delivery_comment",
+      "stage.technical_review.documents_valid",
+      "stage.technical_review.tax_status",
+      "stage.technical_review.weighted_total",
+    ]));
   });
 });

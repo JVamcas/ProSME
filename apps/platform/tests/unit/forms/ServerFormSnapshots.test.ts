@@ -132,6 +132,7 @@ describe("submitted form snapshots", () => {
         formVersionId: versionId,
         values,
       }),
+      expect.any(Function),
     );
   });
 

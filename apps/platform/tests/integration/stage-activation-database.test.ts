@@ -4,6 +4,12 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 
 import { activateStage } from "@/modules/workflows/application/runtime/ServerStageActivationService";
+import {
+  completeWorkflowTask,
+  startWorkflowTask,
+} from "@/modules/workflows/application/runtime/ServerWorkflowTaskLifecycleService";
+import { permissionCodes } from "@/auth/authorization/permissions";
+import type { AuthenticatedUser } from "@/auth/types";
 
 const { Pool } = pg;
 const enabled = process.env.RUN_STAGE_ACTIVATION_DATABASE_TESTS === "true";
@@ -16,6 +22,23 @@ const taskDefinitionId = "a5555555-5555-4555-8555-555555555555";
 const fundingCallId = "a6666666-6666-4666-8666-666666666666";
 const applicationId = "a7777777-7777-4777-8777-777777777777";
 const workflowInstanceId = "a8888888-8888-4888-8888-888888888888";
+let runtimeTaskId = "";
+const actor: AuthenticatedUser = {
+  capabilities: new Set([
+    permissionCodes.workflowTaskAssignedProcess,
+    permissionCodes.workflowTaskAssignedDecide,
+  ]),
+  createdAt: new Date(),
+  displayName: "Stage Actor",
+  email: "stage-activation@example.test",
+  id: actorId,
+  identitySubject: "stage-actor",
+  lastLoginAt: null,
+  roleCodes: new Set(["programme_officer"]),
+  status: "active",
+  updatedAt: new Date(),
+  userType: "staff",
+};
 const pool = enabled
   ? new Pool({ connectionString: process.env.DATABASE_URL })
   : null;
@@ -55,8 +78,9 @@ beforeAll(async () => {
   await query(
     `INSERT INTO app_stage_task_definitions
        (id, stage_id, code, name, type, sequence, required, assignment_user_id,
-        permissions)
+        assignment_mode, permissions)
      VALUES ($1, $2, 'REVIEW', 'Review application', 'CHECKLIST', 1, true, $3,
+       'NAMED_USER',
        '{"view":"workflow.task.assigned.read","edit":"workflow.task.assigned.process","decide":"workflow.task.assigned.decide","visibility":"INTERNAL_ONLY"}'::jsonb)`,
     [taskDefinitionId, stageId, actorId],
   );
@@ -89,10 +113,10 @@ beforeAll(async () => {
   await query(
     `INSERT INTO app_applications
        (id, owner_user_id, funding_opportunity_id, funding_opportunity_title,
-        status, financial_section)
+        status, financial_section, reference, workflow_version_id, submitted_at)
      VALUES ($1, $2, $3, 'Activation Fund', 'submitted',
-       '{"requestedAmount":75000}'::jsonb)`,
-    [applicationId, actorId, fundingCallId],
+       '{"requestedAmount":75000}'::jsonb, 'STAGE-ACTIVATION-001', $4, now())`,
+    [applicationId, actorId, fundingCallId, versionId],
   );
   await query(
     `INSERT INTO app_workflow_instances
@@ -122,6 +146,9 @@ describeDatabase("stage activation persistence", () => {
         ? activated.stageInstanceId
         : "",
     });
+    if (activated.kind === "activated") {
+      [runtimeTaskId] = activated.taskIds;
+    }
     const counts = await query(
       `SELECT
         (SELECT count(*)::integer FROM app_workflow_stage_instances
@@ -140,6 +167,44 @@ describeDatabase("stage activation persistence", () => {
       events: 1,
       stages: 1,
       tasks: 1,
+    });
+  });
+
+  it("completes and audits the stage once its required task count passes", async () => {
+    await query(
+      `UPDATE app_workflow_tasks
+       SET status = 'CLAIMED', claimed_at = now(), row_version = 2
+       WHERE id = $1`,
+      [runtimeTaskId],
+    );
+    await startWorkflowTask(actor, {
+      correlationId: "b1111111-1111-4111-8111-111111111111",
+      expectedRowVersion: 2,
+      taskId: runtimeTaskId,
+    });
+    await completeWorkflowTask(actor, {
+      correlationId: "b2222222-2222-4222-8222-222222222222",
+      expectedRowVersion: 3,
+      taskId: runtimeTaskId,
+    });
+
+    const persisted = await query(
+      `SELECT stage.status, stage.completed_at IS NOT NULL AS completed,
+        (SELECT count(*)::integer FROM app_workflow_events
+          WHERE workflow_instance_id = $1
+            AND event_code = 'STAGE_COMPLETED') AS events,
+        (SELECT count(*)::integer FROM app_workflow_audit_entries
+          WHERE target_id = stage.id::text
+            AND action = 'STAGE_COMPLETED') AS audits
+       FROM app_workflow_stage_instances stage
+       WHERE stage.workflow_instance_id = $1`,
+      [workflowInstanceId],
+    );
+    expect(persisted.rows[0]).toEqual({
+      audits: 1,
+      completed: true,
+      events: 1,
+      status: "COMPLETED",
     });
   });
 });

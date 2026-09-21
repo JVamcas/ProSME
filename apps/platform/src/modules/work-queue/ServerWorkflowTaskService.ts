@@ -17,6 +17,7 @@ import {
   ResourceNotFoundError,
 } from "@/lib/resource-errors";
 import { validateTaskConfiguration, validateTaskResult } from "@/modules/workflows/WorkflowTaskRegistry";
+import { completeStageInTransaction } from "@/modules/workflows/application/runtime/ServerStageCompletionService";
 import type {
   ChecklistConfigurationItem,
   ChecklistResultItem,
@@ -121,7 +122,10 @@ export async function completeChecklistTask(
   }
   const configured = parseChecklistConfiguration(task.config);
   validateChecklistItems(configured, input.items);
-  const outcome = await writeChecklistTaskCompletion(writeInput);
+  const outcome = await writeChecklistTaskCompletion(
+    writeInput,
+    completeStageInTransaction,
+  );
   if (outcome.kind === "idempotency_conflict") {
     throw new IdempotencyConflictError(
       "That idempotency key was already used for another task completion.",

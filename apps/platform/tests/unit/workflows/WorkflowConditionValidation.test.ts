@@ -106,7 +106,7 @@ function fixture() {
 describe("workflow condition publication validation", () => {
   it("allows entry conditions to use prior-stage outputs", () => {
     const { fields, graph, second } = fixture();
-    second.entryCondition = condition("stage.screening.CUSTOM_RESULT", 10);
+    second.entryCondition = condition("stage.screening.custom_result", 10);
 
     expect(validateWorkflowConditions(graph, fields)).toEqual([]);
   });
@@ -114,7 +114,7 @@ describe("workflow condition publication validation", () => {
   it("rejects entry conditions that use current-stage outputs", () => {
     const { fields, graph, second } = fixture();
     second.entryCondition = condition(
-      "stage.finance_review.RECOMMENDED_AMOUNT",
+      "stage.finance_review.recommended_amount",
       10,
     );
 
@@ -129,12 +129,12 @@ describe("workflow condition publication validation", () => {
   it("validates exit and transition conditions against current outputs", () => {
     const { fields, graph, second } = fixture();
     second.exitCondition = condition(
-      "stage.finance_review.RECOMMENDED_AMOUNT",
+      "stage.finance_review.recommended_amount",
       100,
     );
     graph.transitions.push({
       actionKey: "ADVANCE",
-      condition: condition("stage.finance_review.UNKNOWN_FIELD", 100),
+      condition: condition("stage.finance_review.unknown_field", 100),
       priority: 1,
       sourceStageKey: second.stableKey,
       targetStageKey: null,

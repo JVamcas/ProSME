@@ -12,6 +12,7 @@ import {
 } from "@/lib/resource-errors";
 import { canTransitionWorkflowTask } from "../../domain/runtime/WorkflowTaskLifecycle";
 import type { WorkflowTaskStatus } from "../../domain/runtime/WorkflowTask";
+import { completeStageInTransaction } from "./ServerStageCompletionService";
 import {
   lockWorkflowTaskForLifecycle,
   persistWorkflowTaskTransition,
@@ -93,6 +94,13 @@ async function changeTaskState(
     });
     if (!updated) {
       throw new ResourceConflictError("This task changed. Refresh and try again.");
+    }
+    if (action === "COMPLETE") {
+      await completeStageInTransaction(transaction, {
+        actorId: actor.id,
+        correlationId: input.correlationId,
+        stageInstanceId: task.stageInstanceId,
+      });
     }
     return updated;
   });

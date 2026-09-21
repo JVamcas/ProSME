@@ -7,10 +7,20 @@ import type {
   ChecklistResultItem,
   TaskCompletionResult,
 } from "@/modules/work-queue/TaskTypes";
+import type { StageCompletionResult } from "@/modules/workflows/domain/runtime/StageCompletion";
 
 type Transaction = Parameters<
   Parameters<ReturnType<typeof getDatabase>["transaction"]>[0]
 >[0];
+
+type CompleteStage = (
+  transaction: Transaction,
+  input: {
+    actorId: string;
+    correlationId: string;
+    stageInstanceId: string;
+  },
+) => Promise<StageCompletionResult>;
 
 type LockedTask = {
   config: unknown;
@@ -147,22 +157,6 @@ async function completeTask(
   `);
 }
 
-async function requiredTasksRemain(
-  transaction: Transaction,
-  stageInstanceId: string,
-) {
-  const result = await transaction.execute(sql`
-    SELECT count(*)::integer AS count
-    FROM app_workflow_tasks task
-    JOIN app_stage_task_definitions definition
-      ON definition.id = task.workflow_task_definition_id
-    WHERE task.stage_instance_id = ${stageInstanceId}::uuid
-      AND definition.required = TRUE
-      AND task.status <> 'COMPLETED'
-  `);
-  return Number((result.rows[0] as { count: number }).count) > 0;
-}
-
 async function findTransition(
   transaction: Transaction,
   task: LockedTask,
@@ -195,11 +189,6 @@ async function activateNextStage(
   transition: Awaited<ReturnType<typeof findTransition>>,
   completedAt: Date,
 ) {
-  await transaction.execute(sql`
-    UPDATE app_workflow_stage_instances
-    SET status = 'COMPLETED', completed_at = ${completedAt}
-    WHERE id = ${task.stageInstanceId}::uuid
-  `);
   if (!transition?.toStageId) {
     await transaction.execute(sql`
       UPDATE app_workflow_instances
@@ -304,6 +293,7 @@ function isAuditKeyConflict(error: unknown) {
 
 export async function writeChecklistTaskCompletion(
   input: WriteInput,
+  completeStage: CompleteStage,
 ): Promise<CompletionWriteResult> {
   const database = getDatabase();
   const replay = await findCommand(database, input);
@@ -317,19 +307,23 @@ export async function writeChecklistTaskCompletion(
       if (task.taskType !== "CHECKLIST") return { kind: "conflict" } as const;
       const completedAt = new Date();
       await completeTask(transaction, input, completedAt);
-      const transition = await findTransition(
-        transaction,
-        task,
-        input.actionKey,
-      );
-      const hasRemaining = await requiredTasksRemain(transaction, task.stageInstanceId);
-      if (!hasRemaining && !transition) throw new WorkflowWriteConflict();
-      const workflowStatus = hasRemaining
-        ? "ACTIVE" as const
-        : await activateNextStage(transaction, task, transition, completedAt);
+      const stageCompletion = await completeStage(transaction, {
+        actorId: input.actorId,
+        correlationId: input.correlationId,
+        stageInstanceId: task.stageInstanceId,
+      });
+      const stageCompleted = stageCompletion.kind === "completed"
+        || stageCompletion.kind === "already_completed";
+      const transition = stageCompleted
+        ? await findTransition(transaction, task, input.actionKey)
+        : undefined;
+      if (stageCompleted && !transition) throw new WorkflowWriteConflict();
+      const workflowStatus = stageCompleted
+        ? await activateNextStage(transaction, task, transition, completedAt)
+        : "ACTIVE" as const;
       const result: TaskCompletionResult = {
         actionKey: input.actionKey,
-        nextStageName: hasRemaining ? null : transition?.nextStageName ?? null,
+        nextStageName: stageCompleted ? transition?.nextStageName ?? null : null,
         rowVersion: input.expectedRowVersion + 1,
         taskInstanceId: input.taskId,
         taskStatus: "COMPLETED",

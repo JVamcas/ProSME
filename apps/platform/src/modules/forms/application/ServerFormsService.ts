@@ -59,6 +59,7 @@ import type {
   UpdateFormInput,
 } from "@/modules/forms/api/FormTransportTypes";
 import type { FormVersionSummary } from "@/modules/forms/FormTypes";
+import { completeStageInTransaction } from "@/modules/workflows/application/runtime/ServerStageCompletionService";
 
 function toIso(value: Date | string | null) {
   return value ? new Date(value).toISOString() : null;
@@ -347,18 +348,21 @@ export async function completeTaskForm(
   if (!validateFormValues(activeDefinition.fields, values, true)) {
     throw new RequestValidationError("Complete all required form fields with valid values.");
   }
-  const result = await completeFormTask({
-    actionKey: input.actionKey,
-    actorId: actor.id,
-    correlationId: input.correlationId,
-    expectedTaskRowVersion: input.expectedTaskRowVersion,
-    expectedResponseRowVersion: input.expectedResponseRowVersion,
-    formVersionId: task.formVersionId,
-    definitionSnapshot: schema,
-    idempotencyKey: input.idempotencyKey,
-    taskInstanceId: input.taskInstanceId,
-    values,
-  });
+  const result = await completeFormTask(
+    {
+      actionKey: input.actionKey,
+      actorId: actor.id,
+      correlationId: input.correlationId,
+      expectedTaskRowVersion: input.expectedTaskRowVersion,
+      expectedResponseRowVersion: input.expectedResponseRowVersion,
+      formVersionId: task.formVersionId,
+      definitionSnapshot: schema,
+      idempotencyKey: input.idempotencyKey,
+      taskInstanceId: input.taskInstanceId,
+      values,
+    },
+    completeStageInTransaction,
+  );
   if (result.kind === "completed") return result.result;
   if (result.kind === "idempotency_conflict") {
     throw new IdempotencyConflictError(

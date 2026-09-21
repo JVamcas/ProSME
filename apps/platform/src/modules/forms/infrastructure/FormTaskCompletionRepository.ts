@@ -4,6 +4,7 @@ import { sql } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
 import type { FormRuntimeSchema } from "@/modules/forms/FormTypes";
+import type { StageCompletionResult } from "@/modules/workflows/domain/runtime/StageCompletion";
 import {
   advanceFormTaskWorkflow,
   findFormTaskTransition,
@@ -12,6 +13,15 @@ import {
 type Transaction = Parameters<
   Parameters<ReturnType<typeof getDatabase>["transaction"]>[0]
 >[0];
+
+type CompleteStage = (
+  transaction: Transaction,
+  input: {
+    actorId: string;
+    correlationId: string;
+    stageInstanceId: string;
+  },
+) => Promise<StageCompletionResult>;
 
 type CompletionInput = {
   actionKey: string;
@@ -206,21 +216,6 @@ async function completeTaskRow(
   `);
 }
 
-async function stageHasRequiredTasks(
-  transaction: Transaction,
-  stageInstanceId: string,
-) {
-  const result = await transaction.execute(sql`
-    SELECT count(*)::integer AS count
-    FROM app_workflow_tasks task
-    JOIN app_stage_task_definitions definition ON definition.id = task.workflow_task_definition_id
-    WHERE task.stage_instance_id = ${stageInstanceId}::uuid
-      AND definition.required = TRUE
-      AND task.status <> 'COMPLETED'
-  `);
-  return Number((result.rows[0] as { count: number }).count) > 0;
-}
-
 async function appendCompletionRecords(
   transaction: Transaction,
   input: CompletionInput,
@@ -294,6 +289,7 @@ async function writeCompletion(
   transaction: Transaction,
   input: CompletionInput,
   task: LockedTask,
+  completeStage: CompleteStage,
 ): Promise<CompletionResult | null> {
   const transition = await findFormTaskTransition(
     transaction,
@@ -305,18 +301,21 @@ async function writeCompletion(
   const response = await completeSubmission(transaction, input, completedAt);
   if (!response) return null;
   await completeTaskRow(transaction, input, completedAt);
-  const remaining = await stageHasRequiredTasks(
-    transaction,
-    task.stageInstanceId,
-  );
-  const advancement = remaining
-    ? { nextStageName: null, workflowStatus: "ACTIVE" as const }
-    : await advanceFormTaskWorkflow(
+  const stageCompletion = await completeStage(transaction, {
+    actorId: input.actorId,
+    correlationId: input.correlationId,
+    stageInstanceId: task.stageInstanceId,
+  });
+  const stageCompleted = stageCompletion.kind === "completed"
+    || stageCompletion.kind === "already_completed";
+  const advancement = stageCompleted
+    ? await advanceFormTaskWorkflow(
         transaction,
         task,
         transition,
         completedAt,
-      );
+      )
+    : { nextStageName: null, workflowStatus: "ACTIVE" as const };
   const result: CompletionResult = {
     actionKey: input.actionKey,
     ...advancement,
@@ -337,6 +336,7 @@ async function writeCompletion(
 
 export async function completeFormTask(
   input: CompletionInput,
+  completeStage: CompleteStage,
 ): Promise<CompletionWriteResult> {
   const database = getDatabase();
   const replay = await findCommand(database, input);
@@ -350,7 +350,12 @@ export async function completeFormTask(
       }
       const insideReplay = await findCommand(transaction, input);
       if (insideReplay) return insideReplay;
-      const result = await writeCompletion(transaction, input, task);
+      const result = await writeCompletion(
+        transaction,
+        input,
+        task,
+        completeStage,
+      );
       return result
         ? { kind: "completed" as const, result }
         : { kind: "conflict" as const };
