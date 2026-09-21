@@ -18,7 +18,7 @@ type CompletionInput = {
   actorId: string;
   correlationId: string;
   expectedTaskRowVersion: number;
-  expectedSubmissionRowVersion?: number;
+  expectedResponseRowVersion?: number;
   idempotencyKey: string;
   taskInstanceId: string;
   formVersionId: string;
@@ -162,27 +162,32 @@ async function completeSubmission(
   input: CompletionInput,
   completedAt: Date,
 ) {
-  const expectedVersion = input.expectedSubmissionRowVersion ?? null;
+  const expectedVersion = input.expectedResponseRowVersion ?? null;
   const result = await transaction.execute(sql`
-    INSERT INTO app_form_submissions
-      (task_instance_id, form_version_id, status, values, definition_snapshot,
-       created_by, updated_by, completed_at)
+    INSERT INTO app_form_responses
+      (workflow_task_id, form_version_id, status, values, definition_snapshot,
+       respondent_user_id, created_by, updated_by, completed_at)
     VALUES (${input.taskInstanceId}::uuid, ${input.formVersionId}::uuid,
       'COMPLETED', ${JSON.stringify(input.values)}::jsonb,
       ${JSON.stringify(input.definitionSnapshot)}::jsonb,
+      ${input.actorId}::uuid,
       ${input.actorId}::uuid, ${input.actorId}::uuid, ${completedAt})
-    ON CONFLICT (task_instance_id) DO UPDATE SET
+    ON CONFLICT (workflow_task_id, respondent_user_id) DO UPDATE SET
       status = 'COMPLETED', values = EXCLUDED.values,
       definition_snapshot = EXCLUDED.definition_snapshot,
       updated_by = EXCLUDED.updated_by, updated_at = ${completedAt},
       completed_at = ${completedAt},
-      row_version = app_form_submissions.row_version + 1
-    WHERE app_form_submissions.status <> 'COMPLETED'
+      row_version = app_form_responses.row_version + 1
+    WHERE app_form_responses.status <> 'COMPLETED'
+      AND app_form_responses.form_version_id = ${input.formVersionId}::uuid
       AND ${expectedVersion}::integer IS NOT NULL
-      AND app_form_submissions.row_version = ${expectedVersion}
-    RETURNING id
+      AND app_form_responses.row_version = ${expectedVersion}
+    RETURNING id, row_version AS "rowVersion"
   `);
-  return Boolean(result.rowCount);
+  return (result.rows[0] as {
+    id: string;
+    rowVersion: number;
+  } | undefined) ?? null;
 }
 
 async function completeTaskRow(
@@ -221,6 +226,7 @@ async function appendCompletionRecords(
   input: CompletionInput,
   task: LockedTask,
   result: CompletionResult,
+  response: { id: string; rowVersion: number },
   completedAt: Date,
 ) {
   const command = await transaction.execute(sql`
@@ -254,6 +260,29 @@ async function appendCompletionRecords(
       ${JSON.stringify(result)}::jsonb)
   `);
   await transaction.execute(sql`
+    INSERT INTO app_workflow_audit_entries
+      (actor_id, action, target_type, target_id, correlation_id,
+       before, after)
+    VALUES (${input.actorId}::uuid, 'FORM_RESPONSE_COMPLETED', 'FORM_RESPONSE',
+      ${response.id}, ${input.correlationId}::uuid,
+      jsonb_build_object(
+        'rowVersion', ${input.expectedResponseRowVersion ?? null}::integer,
+        'status', CASE
+          WHEN ${input.expectedResponseRowVersion ?? null}::integer IS NULL
+            THEN NULL
+          ELSE 'DRAFT'
+        END
+      ),
+      jsonb_build_object(
+        'formVersionId', ${input.formVersionId}::text,
+        'respondentUserId', ${input.actorId}::text,
+        'rowVersion', ${response.rowVersion},
+        'status', 'COMPLETED',
+        'values', ${JSON.stringify(input.values)}::jsonb,
+        'workflowTaskId', ${input.taskInstanceId}::text
+      ))
+  `);
+  await transaction.execute(sql`
     INSERT INTO app_transactional_outbox
       (event_code, aggregate_id, schema_version, payload, correlation_id)
     VALUES ('FORM_TASK_COMPLETED', ${input.taskInstanceId}::uuid, 1,
@@ -273,7 +302,8 @@ async function writeCompletion(
   );
   if (!transition) return null;
   const completedAt = new Date();
-  if (!(await completeSubmission(transaction, input, completedAt))) return null;
+  const response = await completeSubmission(transaction, input, completedAt);
+  if (!response) return null;
   await completeTaskRow(transaction, input, completedAt);
   const remaining = await stageHasRequiredTasks(
     transaction,
@@ -294,7 +324,14 @@ async function writeCompletion(
     taskInstanceId: input.taskInstanceId,
     taskStatus: "COMPLETED",
   };
-  await appendCompletionRecords(transaction, input, task, result, completedAt);
+  await appendCompletionRecords(
+    transaction,
+    input,
+    task,
+    result,
+    response,
+    completedAt,
+  );
   return result;
 }
 

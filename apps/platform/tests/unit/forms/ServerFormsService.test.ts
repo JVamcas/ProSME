@@ -103,16 +103,18 @@ describe("ServerFormsService", () => {
       rowVersion: 2,
     } as never);
     await saveTaskForm(staff([permissionCodes.workflowTaskAssignedProcess]), {
-      expectedSubmissionRowVersion: 1,
+      correlationId: versionId,
+      expectedResponseRowVersion: 1,
       expectedTaskRowVersion: 3,
       taskInstanceId: taskId,
       values: {},
     });
     expect(saveDraftFormResponse).toHaveBeenCalledWith(expect.objectContaining({
       actorId,
-      expectedSubmissionRowVersion: 1,
+      correlationId: versionId,
+      expectedResponseRowVersion: 1,
       formVersionId: versionId,
-      taskInstanceId: taskId,
+      workflowTaskId: taskId,
     }));
   });
 
@@ -140,16 +142,15 @@ describe("ServerFormsService", () => {
       id: "submission",
       rowVersion: 1,
     } as never);
-
     await saveTaskForm(
       staff([permissionCodes.workflowTaskAssignedProcess]),
       {
+        correlationId: versionId,
         expectedTaskRowVersion: 3,
         taskInstanceId: taskId,
         values: {},
       },
     );
-
     expect(saveDraftFormResponse).toHaveBeenCalledWith(
       expect.objectContaining({ values: {} }),
     );
@@ -166,10 +167,10 @@ describe("ServerFormsService", () => {
       taskInstanceId: taskId,
       taskStatus: "IN_PROGRESS",
     });
-
     await expect(saveTaskForm(
       staff([permissionCodes.workflowTaskAssignedProcess]),
       {
+        correlationId: versionId,
         expectedTaskRowVersion: 3,
         taskInstanceId: taskId,
         values: {},
@@ -202,6 +203,7 @@ describe("ServerFormsService", () => {
     await expect(saveTaskForm(
       staff([permissionCodes.workflowTaskAssignedProcess]),
       {
+        correlationId: versionId,
         expectedTaskRowVersion: 3,
         taskInstanceId: taskId,
         values: {

@@ -150,6 +150,7 @@ describe("server form visibility", () => {
     vi.mocked(getFormRuntime).mockResolvedValue(runtime);
 
     await saveTaskForm(staff(), {
+      correlationId: versionId,
       expectedTaskRowVersion: 3,
       taskInstanceId: taskId,
       values: {

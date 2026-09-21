@@ -45,7 +45,7 @@ export async function PATCH(
     return portalRouteSuccess(
       await saveTaskForm(
         await resolveUserFromHeaders(request.headers),
-        { ...input, taskInstanceId: id },
+        { ...input, correlationId, taskInstanceId: id },
       ),
       correlationId,
     );

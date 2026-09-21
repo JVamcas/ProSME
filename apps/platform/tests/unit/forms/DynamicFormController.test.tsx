@@ -47,14 +47,15 @@ function taskFormData(): TaskFormData {
       versionId,
       versionNumber: 4,
     },
-    submission: {
+    response: {
       completedAt: null,
       definitionSnapshot: null,
       formVersionId: versionId,
       id: "response-id",
+      respondentUserId: "79e20de0-3558-4d63-90a4-8c9f5125df07",
       rowVersion: 2,
       status: "DRAFT",
-      taskInstanceId: taskId,
+      workflowTaskId: taskId,
       values: { NOTES: "Saved note" },
     },
     taskRowVersion: 7,
@@ -128,7 +129,7 @@ describe("dynamic Form draft persistence", () => {
     });
     expect(mocks.saveMutate).toHaveBeenCalledWith(
       {
-        expectedSubmissionRowVersion: 2,
+        expectedResponseRowVersion: 2,
         expectedTaskRowVersion: 7,
         values: { NOTES: "Changed note" },
       },

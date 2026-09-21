@@ -258,22 +258,22 @@ export async function getTaskForm(
     throw new ResourceNotFoundError("form task");
   }
   requirePermission(actor, task.permissions.view);
-  const [currentSchema, submission, context] = await Promise.all([
+  const [currentSchema, response, context] = await Promise.all([
     getFormRuntime(task.binding.formVersionId),
-    readFormResponse(taskInstanceId, task.binding.formVersionId),
+    readFormResponse(actor.id, taskInstanceId, task.binding.formVersionId),
     exposeTaskFormRuntimeContext(task),
   ]);
-  const schema = submission?.status === "COMPLETED"
-    ? submission.definitionSnapshot
+  const schema = response?.status === "COMPLETED"
+    ? response.definitionSnapshot
     : currentSchema;
   if (!schema) throw new ResourceNotFoundError("published form");
   return {
     context,
     schema,
-    submission: submission
+    response: response
       ? {
-          ...submission,
-          completedAt: toIso(submission.completedAt),
+          ...response,
+          completedAt: toIso(response.completedAt),
         }
       : null,
     taskRowVersion: Number(task.task.rowVersion),
@@ -282,7 +282,10 @@ export async function getTaskForm(
 
 export async function saveTaskForm(
   user: AuthenticatedUser | null,
-  input: TaskFormSubmissionInput & { taskInstanceId: string },
+  input: TaskFormSubmissionInput & {
+    correlationId: string;
+    taskInstanceId: string;
+  },
 ) {
   const actor = requireAuthenticatedUser(user);
   const task = await readAssignedFormTask(actor.id, input.taskInstanceId);
@@ -298,10 +301,11 @@ export async function saveTaskForm(
   }
   const saved = await saveDraftFormResponse({
     actorId: actor.id,
+    correlationId: input.correlationId,
     expectedTaskRowVersion: input.expectedTaskRowVersion,
-    expectedSubmissionRowVersion: input.expectedSubmissionRowVersion,
+    expectedResponseRowVersion: input.expectedResponseRowVersion,
     formVersionId: task.formVersionId,
-    taskInstanceId: input.taskInstanceId,
+    workflowTaskId: input.taskInstanceId,
     values,
   });
   if (!saved) throw new ResourceConflictError("The saved form changed. Refresh and retry.");
@@ -348,7 +352,7 @@ export async function completeTaskForm(
     actorId: actor.id,
     correlationId: input.correlationId,
     expectedTaskRowVersion: input.expectedTaskRowVersion,
-    expectedSubmissionRowVersion: input.expectedSubmissionRowVersion,
+    expectedResponseRowVersion: input.expectedResponseRowVersion,
     formVersionId: task.formVersionId,
     definitionSnapshot: schema,
     idempotencyKey: input.idempotencyKey,

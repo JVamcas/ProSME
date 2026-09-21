@@ -81,7 +81,7 @@ function LoadedDynamicFormTask({
   const [selectedActionKey, setSelectedActionKey] = useState<string | null>(
     null,
   );
-  const readOnly = data.submission?.status === "COMPLETED";
+  const readOnly = data.response?.status === "COMPLETED";
   return (
     <FormRenderer
       definition={data.schema}

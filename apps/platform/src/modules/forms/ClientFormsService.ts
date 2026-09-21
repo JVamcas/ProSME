@@ -6,7 +6,7 @@ import type {
   FormDefinitionSummary,
   FormEditorView,
   FormRuntimeSchema,
-  FormSubmission,
+  FormResponse,
   PublishedFormOption,
   TaskFormData,
 } from "./FormTypes";
@@ -103,7 +103,7 @@ function getTaskForm(taskId: string) {
 }
 
 function saveTaskForm(taskId: string, input: TaskFormSubmissionInput) {
-  return requestData<FormSubmission>(`/api/admin/tasks/${taskId}/form`, {
+  return requestData<FormResponse>(`/api/admin/tasks/${taskId}/form`, {
     body: JSON.stringify(input),
     headers: jsonHeaders,
     method: "PATCH",

@@ -95,7 +95,7 @@ describe("task form runtime context", () => {
   it("returns selected read-only context with the exact bound form", async () => {
     const result = await getTaskForm(actor, taskId);
 
-    expect(readFormResponse).toHaveBeenCalledWith(taskId, versionId);
+    expect(readFormResponse).toHaveBeenCalledWith(actorId, taskId, versionId);
     expect(exposeTaskFormRuntimeContext).toHaveBeenCalledWith(source);
     expect(result.context).toEqual({
       "application.requested_amount": 250000,

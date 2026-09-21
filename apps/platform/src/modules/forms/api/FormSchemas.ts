@@ -248,7 +248,7 @@ export const formCommandSchema = z.object({
 export const formStatusSchema = z.enum(formStatuses);
 export const taskFormSubmissionSchema = z.object({
   expectedTaskRowVersion: z.number().int().positive(),
-  expectedSubmissionRowVersion: z.number().int().positive().optional(),
+  expectedResponseRowVersion: z.number().int().positive().optional(),
   values: z.record(z.string(), z.unknown()),
 });
 

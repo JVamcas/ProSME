@@ -185,6 +185,6 @@ describe("submitted form snapshots", () => {
     );
 
     expect(result.schema).toEqual(lodgedSchema);
-    expect(result.submission?.values).toEqual({ NOTES: "Lodged answer" });
+    expect(result.response?.values).toEqual({ NOTES: "Lodged answer" });
   });
 });

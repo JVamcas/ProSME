@@ -239,14 +239,14 @@ export async function loadPriorStageContext(
         stage.completed_at DESC, stage.id DESC
     )
     SELECT latest.code AS "stageKey",
-      submission.values,
+      response.values,
       task.result
     FROM latest_completed_stage latest
     LEFT JOIN app_workflow_tasks task
       ON task.stage_instance_id = latest.id
-    LEFT JOIN app_form_submissions submission
-      ON submission.task_instance_id = task.id
-      AND submission.status = 'COMPLETED'
+    LEFT JOIN app_form_responses response
+      ON response.workflow_task_id = task.id
+      AND response.status = 'COMPLETED'
     ORDER BY latest.code, task.created_at, task.id
   `);
   const stages = new Map<string, Record<string, unknown>>();

@@ -18,7 +18,7 @@ export function useDynamicFormController(taskId: string, data: TaskFormData) {
   const save = useSaveTaskForm(taskId);
   const complete = useCompleteTaskForm(taskId);
   const [values, setValues] = useState<DynamicFormValues>(
-    data.submission?.values ?? {},
+    data.response?.values ?? {},
   );
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const revision = useRef(0);
@@ -36,7 +36,7 @@ export function useDynamicFormController(taskId: string, data: TaskFormData) {
     const savingRevision = revision.current;
     save.mutate(
       {
-        expectedSubmissionRowVersion: data.submission?.rowVersion,
+        expectedResponseRowVersion: data.response?.rowVersion,
         expectedTaskRowVersion: data.taskRowVersion,
         values,
       },
@@ -76,7 +76,7 @@ export function useDynamicFormController(taskId: string, data: TaskFormData) {
     complete.mutate(
       {
         actionKey,
-        expectedSubmissionRowVersion: data.submission?.rowVersion,
+        expectedResponseRowVersion: data.response?.rowVersion,
         expectedTaskRowVersion: data.taskRowVersion,
         values: completedValues,
       },

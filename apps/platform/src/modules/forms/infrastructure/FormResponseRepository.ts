@@ -3,15 +3,17 @@ import "server-only";
 import { and, eq } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
+import { workflowAuditEntries } from "@/modules/workflows/infrastructure/workflow-audit.schema";
 import { workflowTasks } from "@/modules/workflows/infrastructure/workflow-runtime.schema";
-import { formSubmissions } from "./form-response.schema";
+import { formResponses } from "./form-response.schema";
 
 export type SaveDraftFormResponseInput = {
   actorId: string;
-  taskInstanceId: string;
+  correlationId: string;
+  workflowTaskId: string;
   formVersionId: string;
   expectedTaskRowVersion: number;
-  expectedSubmissionRowVersion?: number;
+  expectedResponseRowVersion?: number;
   values: Record<string, unknown>;
 };
 
@@ -20,22 +22,24 @@ type LockedTask = Pick<
   "assignedUserId" | "formVersionId" | "rowVersion" | "status"
 >;
 
-type FormResponse = typeof formSubmissions.$inferSelect;
+type FormResponse = typeof formResponses.$inferSelect;
 
 type DatabaseTransaction = Parameters<
   Parameters<ReturnType<typeof getDatabase>["transaction"]>[0]
 >[0];
 
 export async function readFormResponse(
-  taskInstanceId: string,
+  actorId: string,
+  workflowTaskId: string,
   formVersionId: string,
 ) {
   const [response] = await getDatabase()
     .select()
-    .from(formSubmissions)
+    .from(formResponses)
     .where(and(
-      eq(formSubmissions.taskInstanceId, taskInstanceId),
-      eq(formSubmissions.formVersionId, formVersionId),
+      eq(formResponses.respondentUserId, actorId),
+      eq(formResponses.workflowTaskId, workflowTaskId),
+      eq(formResponses.formVersionId, formVersionId),
     ))
     .limit(1);
   return response ?? null;
@@ -53,7 +57,7 @@ async function lockTask(
       status: workflowTasks.status,
     })
     .from(workflowTasks)
-    .where(eq(workflowTasks.id, input.taskInstanceId))
+    .where(eq(workflowTasks.id, input.workflowTaskId))
     .for("update")
     .limit(1);
   return task ?? null;
@@ -77,12 +81,16 @@ function taskIsEditable(
 
 async function lockResponse(
   transaction: DatabaseTransaction,
-  taskInstanceId: string,
+  actorId: string,
+  workflowTaskId: string,
 ): Promise<FormResponse | null> {
   const [response] = await transaction
     .select()
-    .from(formSubmissions)
-    .where(eq(formSubmissions.taskInstanceId, taskInstanceId))
+    .from(formResponses)
+    .where(and(
+      eq(formResponses.respondentUserId, actorId),
+      eq(formResponses.workflowTaskId, workflowTaskId),
+    ))
     .for("update")
     .limit(1);
   return response ?? null;
@@ -93,11 +101,11 @@ function responseIsWritable(
   input: SaveDraftFormResponseInput,
 ) {
   if (!response) {
-    return input.expectedSubmissionRowVersion === undefined;
+    return input.expectedResponseRowVersion === undefined;
   }
   return response.status === "DRAFT"
     && response.formVersionId === input.formVersionId
-    && response.rowVersion === input.expectedSubmissionRowVersion;
+    && response.rowVersion === input.expectedResponseRowVersion;
 }
 
 async function insertDraftResponse(
@@ -105,17 +113,24 @@ async function insertDraftResponse(
   input: SaveDraftFormResponseInput,
 ) {
   const [created] = await transaction
-    .insert(formSubmissions)
+    .insert(formResponses)
     .values({
       createdBy: input.actorId,
       formVersionId: input.formVersionId,
+      respondentUserId: input.actorId,
       status: "DRAFT",
-      taskInstanceId: input.taskInstanceId,
+      workflowTaskId: input.workflowTaskId,
       updatedBy: input.actorId,
       values: input.values,
     })
+    .onConflictDoNothing({
+      target: [
+        formResponses.workflowTaskId,
+        formResponses.respondentUserId,
+      ],
+    })
     .returning();
-  return created;
+  return created ?? null;
 }
 
 async function updateDraftResponse(
@@ -124,7 +139,7 @@ async function updateDraftResponse(
   current: FormResponse,
 ) {
   const [updated] = await transaction
-    .update(formSubmissions)
+    .update(formResponses)
     .set({
       rowVersion: current.rowVersion + 1,
       updatedAt: new Date(),
@@ -132,9 +147,9 @@ async function updateDraftResponse(
       values: input.values,
     })
     .where(and(
-      eq(formSubmissions.id, current.id),
-      eq(formSubmissions.rowVersion, current.rowVersion),
-      eq(formSubmissions.status, "DRAFT"),
+      eq(formResponses.id, current.id),
+      eq(formResponses.rowVersion, current.rowVersion),
+      eq(formResponses.status, "DRAFT"),
     ))
     .returning();
   return updated ?? null;
@@ -147,12 +162,43 @@ async function saveDraftInTransaction(
   const task = await lockTask(transaction, input);
   if (!taskIsEditable(task, input)) return null;
 
-  const current = await lockResponse(transaction, input.taskInstanceId);
+  const current = await lockResponse(
+    transaction,
+    input.actorId,
+    input.workflowTaskId,
+  );
   if (!responseIsWritable(current, input)) return null;
 
-  return current
+  const saved = await (current
     ? updateDraftResponse(transaction, input, current)
-    : insertDraftResponse(transaction, input);
+    : insertDraftResponse(transaction, input));
+  if (!saved) return null;
+  await transaction.insert(workflowAuditEntries).values({
+    action: current ? "FORM_RESPONSE_UPDATED" : "FORM_RESPONSE_CREATED",
+    actorId: input.actorId,
+    after: {
+      formVersionId: saved.formVersionId,
+      respondentUserId: saved.respondentUserId,
+      rowVersion: saved.rowVersion,
+      status: saved.status,
+      values: saved.values,
+      workflowTaskId: saved.workflowTaskId,
+    },
+    before: current
+      ? {
+          formVersionId: current.formVersionId,
+          respondentUserId: current.respondentUserId,
+          rowVersion: current.rowVersion,
+          status: current.status,
+          values: current.values,
+          workflowTaskId: current.workflowTaskId,
+        }
+      : null,
+    correlationId: input.correlationId,
+    targetId: saved.id,
+    targetType: "FORM_RESPONSE",
+  });
+  return saved;
 }
 
 export async function saveDraftFormResponse(

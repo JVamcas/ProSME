@@ -140,10 +140,10 @@ export function useSaveTaskForm(taskId: string) {
   return useMutation({
     mutationFn: (input: TaskFormSubmissionInput) =>
       clientFormsService.saveTaskForm(taskId, input),
-    onSuccess: (submission) => {
+    onSuccess: (response) => {
       queryClient.setQueryData<TaskFormData>(
         formQueryKeys.task(taskId),
-        (current) => current ? { ...current, submission } : current,
+        (current) => current ? { ...current, response } : current,
       );
     },
   });

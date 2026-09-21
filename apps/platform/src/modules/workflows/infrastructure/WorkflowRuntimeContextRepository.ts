@@ -156,7 +156,7 @@ export async function readWorkflowTaskRuntimeContext(
     LEFT JOIN LATERAL (
       SELECT jsonb_agg(jsonb_build_object(
         'stageKey', prior_definition.code,
-        'values', COALESCE(submission.values, '{}'::jsonb),
+        'values', COALESCE(response.values, '{}'::jsonb),
         'result', COALESCE(prior_task.result, '{}'::jsonb)
       ) ORDER BY prior_stage.completed_at, prior_task.created_at) AS values
       FROM app_workflow_stage_instances prior_stage
@@ -164,9 +164,9 @@ export async function readWorkflowTaskRuntimeContext(
         ON prior_definition.id = prior_stage.workflow_stage_definition_id
       JOIN app_workflow_tasks prior_task
         ON prior_task.stage_instance_id = prior_stage.id
-      LEFT JOIN app_form_submissions submission
-        ON submission.task_instance_id = prior_task.id
-        AND submission.status = 'COMPLETED'
+      LEFT JOIN app_form_responses response
+        ON response.workflow_task_id = prior_task.id
+        AND response.status = 'COMPLETED'
       WHERE prior_stage.workflow_instance_id = workflow.id
         AND prior_stage.id <> stage.id
         AND prior_stage.status = 'COMPLETED'
@@ -178,8 +178,12 @@ export async function readWorkflowTaskRuntimeContext(
       AND stage.status = 'ACTIVE'
       AND (
         task.assigned_user_id = ${actorId}::uuid
-        OR task.assigned_role_id IN (
-          SELECT role_id FROM app_user_roles WHERE user_id = ${actorId}::uuid
+        OR (
+          task.assigned_user_id IS NULL
+          AND task.assigned_role_id IN (
+            SELECT role_id FROM app_user_roles
+            WHERE user_id = ${actorId}::uuid
+          )
         )
       )
   `);

@@ -101,10 +101,11 @@ export type FormDefinitionPage = {
   totalPages: number;
 };
 
-export type FormSubmission = {
+export type FormResponse = {
   id: string;
-  taskInstanceId: string;
+  workflowTaskId: string;
   formVersionId: string;
+  respondentUserId: string;
   status: "DRAFT" | "COMPLETED";
   values: Record<string, unknown>;
   definitionSnapshot: FormRuntimeSchema | null;
@@ -118,6 +119,6 @@ export type TaskFormData = {
     import("./engine/FormRuntimeContext").FormContextValue
   >>;
   schema: FormRuntimeSchema;
-  submission: FormSubmission | null;
+  response: FormResponse | null;
   taskRowVersion: number;
 };
