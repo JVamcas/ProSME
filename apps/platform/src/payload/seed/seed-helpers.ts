@@ -1,9 +1,9 @@
 import type { CollectionSlug, Payload } from "payload";
 
-import type { Faq, FundingCall, Page } from "../../payload-types";
+import type { Faq, Page } from "../../payload-types";
 
 export const seedContext = { skipPublishCapability: true, skipRevalidation: true };
-export type SeedRichText = Page["content"] & Faq["answer"] & FundingCall["eligibility"];
+export type SeedRichText = Page["content"] & Faq["answer"];
 
 export function richText(paragraphs: readonly string[]): SeedRichText {
   return {

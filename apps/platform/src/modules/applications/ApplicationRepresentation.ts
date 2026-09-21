@@ -18,7 +18,7 @@ export type ApplicationSummaryRecord = {
   businessName?: string | null;
   createdAt: Date;
   currentSection: ApplicationSection;
-  fundingOpportunityId: number;
+  fundingOpportunityId: string;
   fundingOpportunityTitle: string;
   id: string;
   sectionCompletion: ApplicationSectionCompletion;

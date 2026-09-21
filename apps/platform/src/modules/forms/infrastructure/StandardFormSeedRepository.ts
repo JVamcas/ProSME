@@ -10,7 +10,7 @@ import {
   formSections,
   formVersions,
 } from "@/db/schema";
-import type { StandardFormDraft } from "@/modules/forms/domain/StandardFormCatalogue";
+import type { StandardFormSeed } from "@/modules/forms/domain/StandardFormDefinition";
 import {
   ensureSystemSeedPrincipal,
   systemSeedUserId,
@@ -21,20 +21,20 @@ export type StandardFormSeedResult = {
   skippedCodes: string[];
 };
 
-export async function insertMissingStandardFormDrafts(
-  drafts: StandardFormDraft[],
+export async function insertMissingStandardForms(
+  forms: StandardFormSeed[],
 ): Promise<StandardFormSeedResult> {
   return getDatabase().transaction(async (transaction) => {
-    const requestedCodes = drafts.map((draft) => draft.code);
+    const requestedCodes = forms.map((form) => form.code);
     const existing = await transaction
       .select({ code: formDefinitions.code })
       .from(formDefinitions)
       .where(inArray(formDefinitions.code, requestedCodes));
     const existingCodes = new Set(existing.map((item) => item.code));
-    const missing = drafts.filter((draft) => !existingCodes.has(draft.code));
-    const skippedCodes = drafts
-      .filter((draft) => existingCodes.has(draft.code))
-      .map((draft) => draft.code);
+    const missing = forms.filter((form) => !existingCodes.has(form.code));
+    const skippedCodes = forms
+      .filter((form) => existingCodes.has(form.code))
+      .map((form) => form.code);
 
     if (!missing.length) {
       return { createdCodes: [], skippedCodes };
@@ -42,35 +42,35 @@ export async function insertMissingStandardFormDrafts(
 
     await ensureSystemSeedPrincipal(transaction);
 
-    const records = missing.map((draft) => ({
+    const records = missing.map((form) => ({
       definitionId: crypto.randomUUID(),
-      draft,
+      form,
       versionId: crypto.randomUUID(),
     }));
 
     await transaction.insert(formDefinitions).values(
-      records.map(({ definitionId, draft }) => ({
-        code: draft.code,
+      records.map(({ definitionId, form }) => ({
+        code: form.code,
         createdBy: systemSeedUserId,
-        description: draft.description,
+        description: form.description,
         id: definitionId,
-        name: draft.name,
+        name: form.name,
       })),
     );
     await transaction.insert(formVersions).values(
-      records.map(({ definitionId, draft, versionId }) => ({
+      records.map(({ definitionId, form, versionId }) => ({
         createdBy: systemSeedUserId,
         formDefinitionId: definitionId,
         id: versionId,
-        instructions: draft.instructions,
+        instructions: form.instructions,
         status: "DRAFT" as const,
-        submitLabel: draft.submitLabel,
+        submitLabel: form.submitLabel,
         versionNumber: 1,
       })),
     );
 
     await transaction.insert(formSections).values(
-      records.flatMap(({ draft, versionId }) => draft.sections.map((section) => ({
+      records.flatMap(({ form, versionId }) => form.sections.map((section) => ({
         columnSpan: section.columnSpan,
         description: section.description,
         formVersionId: versionId,
@@ -83,8 +83,8 @@ export async function insertMissingStandardFormDrafts(
       }))),
     );
 
-    const seededFields = records.flatMap(({ draft, versionId }) => (
-      draft.fields.map((field) => ({
+    const seededFields = records.flatMap(({ form, versionId }) => (
+      form.fields.map((field) => ({
         field,
         fieldId: crypto.randomUUID(),
         versionId,
@@ -122,8 +122,25 @@ export async function insertMissingStandardFormDrafts(
       await transaction.insert(formFieldOptions).values(seededOptions);
     }
 
+    const publishedVersionIds = records
+      .filter(({ form }) => form.publishOnSeed)
+      .map(({ versionId }) => versionId);
+    if (publishedVersionIds.length) {
+      const publishedAt = new Date();
+      await transaction
+        .update(formVersions)
+        .set({
+          publishedAt,
+          publishedBy: systemSeedUserId,
+          rowVersion: 2,
+          status: "PUBLISHED",
+          updatedAt: publishedAt,
+        })
+        .where(inArray(formVersions.id, publishedVersionIds));
+    }
+
     return {
-      createdCodes: missing.map((draft) => draft.code),
+      createdCodes: missing.map((form) => form.code),
       skippedCodes,
     };
   });

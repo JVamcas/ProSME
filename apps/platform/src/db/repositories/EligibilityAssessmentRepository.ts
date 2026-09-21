@@ -23,7 +23,7 @@ const columns = {
 
 export function listOwnedEligibilityAssessments(
   ownerUserId: string,
-  fundingOpportunityId: number,
+  fundingOpportunityId: string,
 ) {
   return getDatabase()
     .select(columns)
@@ -41,7 +41,7 @@ export function listOwnedEligibilityAssessments(
 
 export async function createOwnedEligibilityAssessment(input: {
   answers: Record<string, EligibilityAnswer>;
-  fundingOpportunityId: number;
+  fundingOpportunityId: string;
   fundingOpportunityTitle: string;
   outcome: EligibilityOutcome;
   ownerUserId: string;
@@ -63,4 +63,3 @@ export async function createOwnedEligibilityAssessment(input: {
 
   return assessment;
 }
-

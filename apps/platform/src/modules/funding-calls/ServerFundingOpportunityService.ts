@@ -1,6 +1,7 @@
 import "server-only";
 
-import { requireApplicantPortalAccess } from "@/auth/authorization/portal-access";
+import { permissionCodes } from "@/auth/authorization/permissions";
+import { requirePermission } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import { ResourceNotFoundError } from "@/lib/resource-errors";
 import type { FundingOpportunityListInput } from "./FundingOpportunityTypes";
@@ -20,15 +21,15 @@ export async function listFundingOpportunities(
   user: AuthenticatedUser | null,
   input: FundingOpportunityListInput,
 ) {
-  requireApplicantPortalAccess(user);
+  requirePermission(user, permissionCodes.fundingCallRead);
   return listPublishedFundingOpportunities(input);
 }
 
 export async function getFundingOpportunity(
   user: AuthenticatedUser | null,
-  id: number,
+  id: string,
 ) {
-  requireApplicantPortalAccess(user);
+  requirePermission(user, permissionCodes.fundingCallRead);
   const opportunity = await findPublishedFundingOpportunity(id);
 
   if (!opportunity) {

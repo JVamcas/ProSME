@@ -2,6 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   Bell,
   BriefcaseBusiness,
+  CircleDollarSign,
   ClipboardList,
   FileText,
   ListTodo,
@@ -90,6 +91,14 @@ export const operationsPortalRoutes: readonly PortalRoute[] = [
     requiredPermission: capabilities.adminAccess,
   },
   {
+    id: "admin-funding-calls",
+    href: "/admin/funding-calls",
+    label: "Funding calls",
+    icon: CircleDollarSign,
+    space: "operations",
+    requiredPermission: permissionCodes.fundingCallRead,
+  },
+  {
     id: "admin-work-queue",
     href: "/admin/work-queue",
     label: "My Work Queue",
@@ -170,7 +179,7 @@ export const operationsPortalRoutes: readonly PortalRoute[] = [
       },
       {
         id: "funding-call-eligibility",
-        href: "/admin/eligibility-rulesets",
+        href: "/admin/settings/eligibility-rulesets",
         label: "Eligibility Checkers",
         icon: BadgeQuestionMark,
         space: "operations",

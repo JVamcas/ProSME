@@ -52,7 +52,7 @@ async function mockWorkflowQueries(page: Page) {
     response(route, [
       {
         assignedAt: "2026-09-14T00:00:00.000Z",
-        fundingOpportunityId: 3301,
+        fundingOpportunityId: "00000000-0000-4000-8000-000000003301",
         fundingOpportunityTitle: "SME Growth Fund",
         rowVersion: 1,
         versionNumber: 1,
@@ -65,7 +65,7 @@ async function mockWorkflowQueries(page: Page) {
     response(route, {
       items: [
         {
-          id: 3301,
+          id: "00000000-0000-4000-8000-000000003301",
           slug: "sme-growth-fund",
           title: "SME Growth Fund",
         },

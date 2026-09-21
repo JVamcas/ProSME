@@ -6,7 +6,7 @@ import {
 } from "./capabilities";
 
 const editorialResources: CmsResource[] = ["pages", "news", "resources", "events", "faqs"];
-const programmeResources: CmsResource[] = ["funding-calls", "eligibility", "statistics"];
+const programmeResources: CmsResource[] = ["eligibility", "statistics"];
 
 function grants(resources: CmsResource[], actions: CmsAction[]) {
   return resources.flatMap((resource) =>

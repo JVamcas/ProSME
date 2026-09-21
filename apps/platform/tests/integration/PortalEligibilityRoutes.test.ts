@@ -19,6 +19,7 @@ import {
 } from "@/modules/eligibility/ServerEligibilityService";
 
 const actor = { id: "actor-id" } as AuthenticatedUser;
+const fundingOpportunityId = "00000000-0000-4000-8000-000000000042";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -29,16 +30,19 @@ describe("portal eligibility assessment routes", () => {
   it("returns the current workspace for an opportunity", async () => {
     vi.mocked(getEligibilityWorkspace).mockResolvedValue({
       assessments: [],
-      fundingOpportunity: { id: 42, title: "Growth Fund" },
+      fundingOpportunity: { id: fundingOpportunityId, title: "Growth Fund" },
       rules: [],
       ruleSetVersion: "v1",
     });
     const response = await route.GET(new Request(
-      "http://localhost:3008/api/portal/eligibility-assessments?fundingOpportunityId=42",
+      `http://localhost:3008/api/portal/eligibility-assessments?fundingOpportunityId=${fundingOpportunityId}`,
     ));
 
     expect(response.status).toBe(200);
-    expect(getEligibilityWorkspace).toHaveBeenCalledWith(actor, 42);
+    expect(getEligibilityWorkspace).toHaveBeenCalledWith(
+      actor,
+      fundingOpportunityId,
+    );
   });
 
   it("validates assessment answers before invoking the service", async () => {
@@ -48,7 +52,7 @@ describe("portal eligibility assessment routes", () => {
         body: JSON.stringify({
           answers: { ownership: "maybe" },
           expectedRuleSetVersion: "v1",
-          fundingOpportunityId: 42,
+          fundingOpportunityId,
         }),
         headers: { "Content-Type": "application/json" },
         method: "POST",
@@ -69,7 +73,7 @@ describe("portal eligibility assessment routes", () => {
         body: JSON.stringify({
           answers: { ownership: "yes" },
           expectedRuleSetVersion: "v1",
-          fundingOpportunityId: 42,
+          fundingOpportunityId,
         }),
         headers: { "Content-Type": "application/json" },
         method: "POST",
@@ -82,4 +86,3 @@ describe("portal eligibility assessment routes", () => {
     });
   });
 });
-

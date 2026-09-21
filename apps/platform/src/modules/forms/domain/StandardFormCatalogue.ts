@@ -6,6 +6,8 @@ import type {
   FormOption,
   FormSection,
 } from "@/modules/forms/FormTypes";
+import { fundingApplicationForm } from "./FundingApplicationForm";
+import type { StandardFormSeed } from "./StandardFormDefinition";
 
 type FieldInput = {
   columnSpan?: 1 | 2 | 3;
@@ -25,16 +27,6 @@ type SectionInput = {
   fields: FieldInput[];
   key: string;
   title: string;
-};
-
-export type StandardFormDraft = {
-  code: string;
-  description: string;
-  fields: FormField[];
-  instructions: string;
-  name: string;
-  sections: FormSection[];
-  submitLabel: string;
 };
 
 function formOptions(labels: readonly string[]): FormOption[] {
@@ -67,7 +59,7 @@ function defineForm(input: {
   name: string;
   sections: SectionInput[];
   submitLabel?: string;
-}): StandardFormDraft {
+}): StandardFormSeed {
   const sections = input.sections.map((section, index): FormSection => ({
     id: crypto.randomUUID(),
     columnSpan: 2,
@@ -106,7 +98,7 @@ function defineForm(input: {
 
 const riskOptions = ["Low", "Medium", "High", "Critical"] as const;
 
-function technicalReview(): StandardFormDraft {
+function technicalReview(): StandardFormSeed {
   return defineForm({
     code: "TECHNICAL_REVIEW",
     name: "Technical Review Form",
@@ -135,7 +127,7 @@ function technicalReview(): StandardFormDraft {
   });
 }
 
-function dueDiligenceReview(): StandardFormDraft {
+function dueDiligenceReview(): StandardFormSeed {
   return defineForm({
     code: "DUE_DILIGENCE_RISK",
     name: "Due Diligence and Risk Form",
@@ -177,7 +169,7 @@ function dueDiligenceReview(): StandardFormDraft {
   });
 }
 
-function moderationReview(): StandardFormDraft {
+function moderationReview(): StandardFormSeed {
   return defineForm({
     code: "MODERATION",
     name: "Moderation Form",
@@ -197,7 +189,7 @@ function moderationReview(): StandardFormDraft {
   });
 }
 
-function committeeReview(): StandardFormDraft {
+function committeeReview(): StandardFormSeed {
   return defineForm({
     code: "COMMITTEE_REVIEW",
     name: "Committee Review Form",
@@ -218,7 +210,7 @@ function committeeReview(): StandardFormDraft {
   });
 }
 
-function approvalReview(): StandardFormDraft {
+function approvalReview(): StandardFormSeed {
   return defineForm({
     code: "APPROVAL",
     name: "Approval Form",
@@ -238,7 +230,7 @@ function approvalReview(): StandardFormDraft {
   });
 }
 
-function appealSubmission(): StandardFormDraft {
+function appealSubmission(): StandardFormSeed {
   return defineForm({
     code: "APPEAL_SUBMISSION",
     name: "Appeal Submission Form",
@@ -256,7 +248,7 @@ function appealSubmission(): StandardFormDraft {
   });
 }
 
-function appealReview(): StandardFormDraft {
+function appealReview(): StandardFormSeed {
   return defineForm({
     code: "APPEAL_REVIEW",
     name: "Appeal Review Form",
@@ -274,7 +266,7 @@ function appealReview(): StandardFormDraft {
   });
 }
 
-function trancheClaim(): StandardFormDraft {
+function trancheClaim(): StandardFormSeed {
   return defineForm({
     code: "TRANCHE_CLAIM",
     name: "Tranche Claim Form",
@@ -297,7 +289,7 @@ function trancheClaim(): StandardFormDraft {
   });
 }
 
-function disbursementReview(): StandardFormDraft {
+function disbursementReview(): StandardFormSeed {
   return defineForm({
     code: "DISBURSEMENT_REVIEW",
     name: "Disbursement Review Form",
@@ -317,7 +309,7 @@ function disbursementReview(): StandardFormDraft {
   });
 }
 
-function monitoringReview(): StandardFormDraft {
+function monitoringReview(): StandardFormSeed {
   return defineForm({
     code: "MONITORING_REVIEW",
     name: "Monitoring Review Form",
@@ -338,7 +330,7 @@ function monitoringReview(): StandardFormDraft {
   });
 }
 
-function evaluationCloseOutReview(): StandardFormDraft {
+function evaluationCloseOutReview(): StandardFormSeed {
   return defineForm({
     code: "EVALUATION_CLOSE_OUT_REVIEW",
     name: "Evaluation and Close-out Review Form",
@@ -358,8 +350,9 @@ function evaluationCloseOutReview(): StandardFormDraft {
   });
 }
 
-export function createStandardFormDrafts(): StandardFormDraft[] {
+export function createStandardForms(): StandardFormSeed[] {
   return [
+    fundingApplicationForm(),
     technicalReview(),
     dueDiligenceReview(),
     moderationReview(),

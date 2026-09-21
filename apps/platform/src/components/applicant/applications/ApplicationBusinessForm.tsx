@@ -24,7 +24,7 @@ import { useApplicationAutosave } from "./useApplicationAutosave";
 type Props = {
   applicationId: string;
   error: boolean;
-  fundingOpportunityId: number;
+  fundingOpportunityId: string;
   initial: Partial<ApplicationBusinessSection>;
   onBack?: () => void;
   onContinue: (data: ApplicationBusinessSection) => Promise<unknown>;

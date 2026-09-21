@@ -6,7 +6,6 @@ import type { FundingCallItem } from "@/modules/content/ContentTypes";
 export function HomeFundingCall({ call }: { call?: FundingCallItem }) {
   if (!call) return null;
   const status = statusContent(call);
-  const applicationUrl = call.status === "open" ? call.applicationUrl : null;
 
   return (
     <section
@@ -48,14 +47,6 @@ export function HomeFundingCall({ call }: { call?: FundingCallItem }) {
             </p>
           </div>
           <div className="mt-7 flex flex-wrap gap-3">
-            {applicationUrl ? (
-              <Link
-                href={applicationUrl}
-                className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-brand-orange px-6 text-sm font-bold text-brand-navy"
-              >
-                Apply Now <ArrowRight className="size-4" />
-              </Link>
-            ) : null}
             <Link
               href="/portal"
               className="inline-flex min-h-12 items-center rounded-xl border border-brand-orange bg-white px-6 text-sm font-bold text-brand-navy"

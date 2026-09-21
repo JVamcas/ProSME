@@ -4,17 +4,14 @@ vi.mock("server-only", () => ({}));
 vi.mock("@/auth/authorization/current-user", () => ({
   resolveUserFromHeaders: vi.fn(),
 }));
-vi.mock(
-  "@/modules/funding-opportunities/ServerFundingOpportunityIntegration",
-  () => ({
-    findPublishedFundingOpportunity: vi.fn(),
-    listPublishedFundingOpportunities: vi.fn(),
-  }),
-);
+vi.mock("@/modules/funding-calls/ServerFundingOpportunityIntegration", () => ({
+  findPublishedFundingOpportunity: vi.fn(),
+  listPublishedFundingOpportunities: vi.fn(),
+}));
 
 import * as itemRoute from "@/app/api/portal/funding-opportunities/[id]/route";
 import * as listRoute from "@/app/api/portal/funding-opportunities/route";
-import { capabilities } from "@/auth/authorization/capabilities";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import { resolveUserFromHeaders } from "@/auth/authorization/current-user";
 import type { AuthenticatedUser } from "@/auth/types";
 import {
@@ -22,10 +19,12 @@ import {
   listPublishedFundingOpportunities,
 } from "@/modules/funding-calls/ServerFundingOpportunityIntegration";
 
+const opportunityId = "00000000-0000-4000-8000-000000000042";
+const missingOpportunityId = "00000000-0000-4000-8000-000000000404";
 const opportunity = {
   closesAt: "2026-10-31T21:59:59.000Z",
-  eligibility: { root: { children: [] } } as never,
-  id: 42,
+  description: "<p>Support for growing Namibian businesses.</p>",
+  id: opportunityId,
   maximumAmount: 200000,
   minimumAmount: 50000,
   opensAt: "2026-09-01T00:00:00.000Z",
@@ -37,7 +36,7 @@ const opportunity = {
 
 function user(): AuthenticatedUser {
   return {
-    capabilities: new Set([capabilities.profileReadOwn]),
+    capabilities: new Set([permissionCodes.fundingCallRead]),
     createdAt: new Date(),
     displayName: "Anna Ndeitunga",
     email: "owner@example.test",
@@ -117,18 +116,18 @@ describe("portal funding opportunity routes", () => {
     vi.mocked(findPublishedFundingOpportunity).mockResolvedValue(opportunity);
 
     const response = await itemRoute.GET(
-      request("/api/portal/funding-opportunities/42"),
-      { params: Promise.resolve({ id: "42" }) },
+      request(`/api/portal/funding-opportunities/${opportunityId}`),
+      { params: Promise.resolve({ id: opportunityId }) },
     );
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toMatchObject({
-      data: { id: 42, slug: "growth-fund" },
+      data: { id: opportunityId, slug: "growth-fund" },
     });
-    expect(findPublishedFundingOpportunity).toHaveBeenCalledWith(42);
+    expect(findPublishedFundingOpportunity).toHaveBeenCalledWith(opportunityId);
   });
 
-  it("rejects non-numeric ids", async () => {
+  it("rejects invalid UUIDs", async () => {
     const response = await itemRoute.GET(
       request("/api/portal/funding-opportunities/not-an-id"),
       { params: Promise.resolve({ id: "not-an-id" }) },
@@ -142,8 +141,8 @@ describe("portal funding opportunity routes", () => {
     vi.mocked(findPublishedFundingOpportunity).mockResolvedValue(null);
 
     const response = await itemRoute.GET(
-      request("/api/portal/funding-opportunities/404"),
-      { params: Promise.resolve({ id: "404" }) },
+      request(`/api/portal/funding-opportunities/${missingOpportunityId}`),
+      { params: Promise.resolve({ id: missingOpportunityId }) },
     );
 
     expect(response.status).toBe(404);

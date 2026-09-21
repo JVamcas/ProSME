@@ -245,7 +245,7 @@ describe("workflow configuration UI", () => {
         assignments={[
           {
             assignedAt: "2026-09-14T08:00:00.000Z",
-            fundingOpportunityId: 42,
+            fundingOpportunityId: "00000000-0000-4000-8000-000000000042",
             fundingOpportunityTitle: "Growth Fund",
             rowVersion: 1,
             versionNumber: 1,
@@ -270,7 +270,7 @@ describe("workflow configuration UI", () => {
         opportunities={[
           {
             closesAt: "2026-12-31T00:00:00.000Z",
-            id: 42,
+            id: "00000000-0000-4000-8000-000000000042",
             opensAt: "2026-09-01T00:00:00.000Z",
             slug: "growth-fund",
             status: "open",

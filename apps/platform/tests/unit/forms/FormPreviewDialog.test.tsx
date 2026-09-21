@@ -5,12 +5,15 @@ import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { FormEditorView } from "@/modules/forms/FormTypes";
+import { fundingApplicationForm } from "@/modules/forms/domain/FundingApplicationForm";
 import { FormPreviewDialog } from "@/modules/forms/ui/renderer/FormPreviewDialog";
 import { runtimeDefinition } from "../../support/form-runtime";
 
-(globalThis as typeof globalThis & {
-  IS_REACT_ACT_ENVIRONMENT: boolean;
-}).IS_REACT_ACT_ENVIRONMENT = true;
+(
+  globalThis as typeof globalThis & {
+    IS_REACT_ACT_ENVIRONMENT: boolean;
+  }
+).IS_REACT_ACT_ENVIRONMENT = true;
 
 function editorView(): FormEditorView {
   const runtime = runtimeDefinition();
@@ -42,6 +45,38 @@ function editorView(): FormEditorView {
   };
 }
 
+function fundingApplicationEditorView(): FormEditorView {
+  const form = fundingApplicationForm();
+  const definitionId = "30000000-0000-4000-8000-000000000003";
+  const versionId = "30000000-0000-4000-8000-000000000004";
+  return {
+    allowedActions: ["CLONE", "RETIRE"],
+    definition: {
+      active: true,
+      code: form.code,
+      description: form.description,
+      id: definitionId,
+      name: form.name,
+      updatedAt: "2026-09-20T00:00:00.000Z",
+    },
+    fields: form.fields,
+    sections: form.sections,
+    version: {
+      createdAt: "2026-09-20T00:00:00.000Z",
+      formDefinitionId: definitionId,
+      id: versionId,
+      instructions: form.instructions,
+      publishedAt: "2026-09-20T00:00:00.000Z",
+      retiredAt: null,
+      rowVersion: 2,
+      status: "PUBLISHED",
+      submitLabel: form.submitLabel,
+      versionNumber: 1,
+    },
+    versions: [],
+  };
+}
+
 afterEach(() => {
   document.body.replaceChildren();
 });
@@ -58,11 +93,7 @@ describe("form preview dialog", () => {
     }));
     await act(async () => {
       root.render(
-        <FormPreviewDialog
-          editor={editor}
-          isOpen
-          onClose={vi.fn()}
-        />,
+        <FormPreviewDialog editor={editor} isOpen onClose={vi.fn()} />,
       );
     });
 
@@ -88,16 +119,13 @@ describe("form preview dialog", () => {
     }));
     await act(async () => {
       root.render(
-        <FormPreviewDialog
-          editor={editor}
-          isOpen
-          onClose={vi.fn()}
-        />,
+        <FormPreviewDialog editor={editor} isOpen onClose={vi.fn()} />,
       );
     });
 
-    expect(document.querySelector('[role="dialog"]')?.className)
-      .toContain("max-w-4xl");
+    expect(document.querySelector('[role="dialog"]')?.className).toContain(
+      "max-w-4xl",
+    );
 
     await act(async () => root.unmount());
   });
@@ -113,16 +141,38 @@ describe("form preview dialog", () => {
     }));
     await act(async () => {
       root.render(
+        <FormPreviewDialog editor={editor} isOpen onClose={vi.fn()} />,
+      );
+    });
+
+    expect(document.querySelector('[role="dialog"]')?.className).toContain(
+      "max-w-6xl",
+    );
+
+    await act(async () => root.unmount());
+  });
+
+  it("previews the published funding application through the generic renderer", async () => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(
         <FormPreviewDialog
-          editor={editor}
+          editor={fundingApplicationEditorView()}
           isOpen
           onClose={vi.fn()}
         />,
       );
     });
 
-    expect(document.querySelector('[role="dialog"]')?.className)
-      .toContain("max-w-6xl");
+    const dialog = document.querySelector('[role="dialog"]');
+    expect(dialog?.textContent).toContain("Funding Application Form preview");
+    expect(dialog?.textContent).toContain("Entity details");
+    expect(dialog?.textContent).toContain("Declarations and consent");
+    expect(dialog?.querySelector('[name="root_PROJECT_TITLE"]')).not.toBeNull();
+    expect(dialog?.textContent).toContain("Submit application");
 
     await act(async () => root.unmount());
   });

@@ -157,14 +157,14 @@ describe("Payload content authorization", () => {
     expect(cmsRoleCapabilities.cms_reviewer).toContain(
       cmsCapability("news", "publish"),
     );
-    expect(cmsRoleCapabilities.cms_administrator).toContain(
-      cmsCapability("funding-calls", "delete"),
+    expect(cmsRoleCapabilities.cms_administrator).not.toContain(
+      "cms.funding-calls.delete" as never,
     );
     expect(cmsRoleCapabilities.cms_administrator).not.toContain(
       "cms.principals.manage" as never,
     );
-    expect(cmsRoleCapabilities.programme_officer).toContain(
-      cmsCapability("funding-calls", "publish"),
+    expect(cmsRoleCapabilities.programme_officer).not.toContain(
+      "cms.funding-calls.publish" as never,
     );
     expect(cmsRoleCapabilities.programme_officer).not.toContain(
       cmsCapability("news", "update") as never,

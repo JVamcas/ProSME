@@ -1,7 +1,16 @@
 import type { SerializedEditorState } from "@payloadcms/richtext-lexical/lexical";
 
-export type CmsImage = { alt: string; height?: number | null; url: string; width?: number | null };
-export type SeoContent = { excludeFromSearch?: boolean | null; seoDescription?: string | null; seoTitle?: string | null };
+export type CmsImage = {
+  alt: string;
+  height?: number | null;
+  url: string;
+  width?: number | null;
+};
+export type SeoContent = {
+  excludeFromSearch?: boolean | null;
+  seoDescription?: string | null;
+  seoTitle?: string | null;
+};
 
 export type PublicPageContent = SeoContent & {
   blocks: unknown[];
@@ -24,17 +33,31 @@ export type ListingItem = SeoContent & {
   title: string;
 };
 
-export type FaqItem = { id: number; question: string; answer: SerializedEditorState; category: string };
+export type FaqItem = {
+  id: number;
+  question: string;
+  answer: SerializedEditorState;
+  category: string;
+};
 export type StatisticItem = { value: string; label: string };
-export type EligibilityItem = { description: string; hardStop?: boolean | null; key?: string | null; kind: "criterion" | "focusSector" | "checkerQuestion"; label: string };
-export type EligibilityRule = { id: string; question: string; help: string; hardStop: boolean };
+export type EligibilityItem = {
+  description: string;
+  hardStop?: boolean | null;
+  key?: string | null;
+  kind: "criterion" | "focusSector" | "checkerQuestion";
+  label: string;
+};
+export type EligibilityRule = {
+  id: string;
+  question: string;
+  help: string;
+  hardStop: boolean;
+};
 
 export type FundingCallItem = SeoContent & {
-  applicationUrl?: string | null;
   closesAt: string;
-  eligibility: SerializedEditorState;
-  id: number;
-  image?: CmsImage;
+  description: string;
+  id: string;
   maximumAmount?: number | null;
   minimumAmount?: number | null;
   opensAt: string;
@@ -65,6 +88,23 @@ export type HeaderContent = {
   applyLabel: string;
   signInLabel: string;
 };
-export type FooterContent = { copyright: string; newsletterHeading: string; newsletterSummary: string; summary: string; tagline: string };
-export type ContactContent = { address: string; email: string; officeHours?: string | null; phone?: string | null };
-export type SiteSettingsContent = { allowIndexing: boolean; analyticsMeasurementId?: string | null; defaultSocialImage?: CmsImage; siteDescription: string; siteName: string };
+export type FooterContent = {
+  copyright: string;
+  newsletterHeading: string;
+  newsletterSummary: string;
+  summary: string;
+  tagline: string;
+};
+export type ContactContent = {
+  address: string;
+  email: string;
+  officeHours?: string | null;
+  phone?: string | null;
+};
+export type SiteSettingsContent = {
+  allowIndexing: boolean;
+  analyticsMeasurementId?: string | null;
+  defaultSocialImage?: CmsImage;
+  siteDescription: string;
+  siteName: string;
+};

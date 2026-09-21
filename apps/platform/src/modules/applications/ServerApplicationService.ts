@@ -169,7 +169,7 @@ export async function getOwnApplication(
 
 export async function createApplication(
   user: AuthenticatedUser | null,
-  fundingOpportunityId: number,
+  fundingOpportunityId: string,
 ) {
   const actor = requirePermission(user, capabilities.applicationCreate);
   const opportunity =

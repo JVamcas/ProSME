@@ -1,5 +1,3 @@
-import type { SerializedEditorState } from "@payloadcms/richtext-lexical/lexical";
-
 export type FundingOpportunityStatus = "upcoming" | "open" | "closed";
 
 export type FundingOpportunityListInput = {
@@ -11,7 +9,7 @@ export type FundingOpportunityListInput = {
 
 export type FundingOpportunitySummary = {
   closesAt: string;
-  id: number;
+  id: string;
   maximumAmount?: number | null;
   minimumAmount?: number | null;
   opensAt: string;
@@ -22,7 +20,7 @@ export type FundingOpportunitySummary = {
 };
 
 export type FundingOpportunityDetail = FundingOpportunitySummary & {
-  eligibility: SerializedEditorState;
+  description: string;
 };
 
 export type FundingOpportunityPage = {

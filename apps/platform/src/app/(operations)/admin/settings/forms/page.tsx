@@ -18,7 +18,7 @@ export default async function FormsPage() {
   return (
     <section>
       <PageHeader
-        description="Create reusable, versioned forms for operational tasks."
+        description="Create reusable, versioned forms for applications and workflow tasks."
         eyebrow="Settings"
         title="Forms"
         icon={<Form />}

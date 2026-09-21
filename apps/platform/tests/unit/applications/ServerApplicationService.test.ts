@@ -19,7 +19,7 @@ vi.mock("@/db/repositories/ApplicationDocumentRepository", () => ({
   hasRequiredApplicationDocuments: vi.fn(),
 }));
 vi.mock(
-  "@/modules/funding-opportunities/ServerFundingOpportunityIntegration",
+  "@/modules/funding-calls/ServerFundingOpportunityIntegration",
   () => ({
     findPublishedFundingOpportunity: vi.fn(),
   }),
@@ -47,6 +47,8 @@ import {
 } from "@/modules/applications/ServerApplicationService";
 import { applicationStatusCounts } from "../../support/application-status-counts";
 
+const fundingOpportunityId = "00000000-0000-4000-8000-000000000042";
+
 function staffUser(granted: string[]): AuthenticatedUser {
   return {
     id: "79e20de0-3558-4d63-90a4-8c9f5125df07",
@@ -72,7 +74,7 @@ const application = {
   createdAt: new Date("2026-09-14T08:00:00.000Z"),
   currentSection: "business" as const,
   financialSection: {},
-  fundingOpportunityId: 42,
+  fundingOpportunityId,
   fundingOpportunityTitle: "Growth Fund",
   id: "99e20de0-3558-4d63-90a4-8c9f5125df07",
   ownerUserId: "79e20de0-3558-4d63-90a4-8c9f5125df07",
@@ -101,7 +103,7 @@ describe("applicant-owned application drafts", () => {
   it("creates an owner-scoped draft for an open opportunity", async () => {
     const user = staffUser([capabilities.applicationCreate]);
     vi.mocked(findPublishedFundingOpportunity).mockResolvedValue({
-      id: 42,
+      id: fundingOpportunityId,
       status: "open",
       title: "Growth Fund",
     } as never);
@@ -110,12 +112,13 @@ describe("applicant-owned application drafts", () => {
       .mockResolvedValueOnce(application);
     vi.mocked(createOwnedApplication).mockResolvedValue(null);
 
-    await expect(createApplication(user, 42)).resolves.toMatchObject({
-      fundingOpportunityId: 42,
+    await expect(createApplication(user, fundingOpportunityId))
+      .resolves.toMatchObject({
+      fundingOpportunityId,
       id: application.id,
     });
     expect(createOwnedApplication).toHaveBeenCalledWith({
-      fundingOpportunityId: 42,
+      fundingOpportunityId,
       fundingOpportunityTitle: "Growth Fund",
       ownerUserId: user.id,
     });

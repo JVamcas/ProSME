@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { z } from "zod";
 
 import { EligibilityAssessment } from "@/components/applicant/eligibility/EligibilityAssessment";
 
@@ -11,10 +12,9 @@ export default async function EligibilityPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const opportunityId = Number(id);
-  if (!Number.isInteger(opportunityId) || opportunityId <= 0) {
+  const opportunityId = z.uuid().safeParse(id);
+  if (!opportunityId.success) {
     notFound();
   }
-  return <EligibilityAssessment fundingOpportunityId={opportunityId} />;
+  return <EligibilityAssessment fundingOpportunityId={opportunityId.data} />;
 }
-

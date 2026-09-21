@@ -13,7 +13,7 @@ import {
 } from "@/modules/eligibility/ServerEligibilityService";
 
 const querySchema = z.object({
-  fundingOpportunityId: z.coerce.number().int().positive(),
+  fundingOpportunityId: z.uuid(),
 }).strict();
 
 
@@ -45,4 +45,3 @@ export async function POST(request: Request) {
     return portalRouteError(error, correlationId);
   }
 }
-

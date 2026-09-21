@@ -180,9 +180,10 @@ describe("workflow service authorization and lifecycle", () => {
 });
 
 describe("funding-opportunity workflow assignment", () => {
+  const fundingOpportunityId = "00000000-0000-4000-8000-000000000042";
   const input = {
     expectedRowVersion: 0,
-    fundingOpportunityId: 42,
+    fundingOpportunityId,
     fundingOpportunityTitle: "Client value is replaced",
     workflowVersionId: record.version.id,
   };
@@ -220,12 +221,12 @@ describe("funding-opportunity workflow assignment", () => {
       status: "PUBLISHED",
     });
     vi.mocked(findPublishedFundingOpportunity).mockResolvedValue({
-      id: 42,
+      id: fundingOpportunityId,
       title: "Growth Fund",
     } as never);
     vi.mocked(assignWorkflowToOpportunity).mockResolvedValue({
       assignedAt: new Date().toISOString(),
-      fundingOpportunityId: 42,
+      fundingOpportunityId,
       fundingOpportunityTitle: "Growth Fund",
       rowVersion: 1,
       versionNumber: 1,
@@ -251,7 +252,7 @@ describe("funding-opportunity workflow assignment", () => {
   it("replays the original assignment result after a later reassignment", async () => {
     const original = {
       assignedAt: "2026-09-14T08:00:00.000Z",
-      fundingOpportunityId: 42,
+      fundingOpportunityId,
       fundingOpportunityTitle: "Growth Fund",
       rowVersion: 1,
       versionNumber: 1,
@@ -261,7 +262,7 @@ describe("funding-opportunity workflow assignment", () => {
     vi.mocked(findLifecycleReplay).mockResolvedValue({
       action: "FUNDING_OPPORTUNITY_WORKFLOW_ASSIGNED",
       after: original,
-      targetId: "42",
+      targetId: fundingOpportunityId,
     });
     vi.mocked(listWorkflowAssignments).mockResolvedValue([
       {

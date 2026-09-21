@@ -2,15 +2,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 vi.mock(
-  "@/modules/funding-opportunities/ServerFundingOpportunityIntegration",
+  "@/modules/funding-calls/ServerFundingOpportunityIntegration",
   () => ({
     findPublishedFundingOpportunity: vi.fn(),
     listPublishedFundingOpportunities: vi.fn(),
   }),
 );
 
-import { capabilities } from "@/auth/authorization/capabilities";
 import { PermissionDeniedError } from "@/auth/authorization/policy";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import type { AuthenticatedUser } from "@/auth/types";
 import {
   findPublishedFundingOpportunity,
@@ -25,7 +25,7 @@ import {
 function user(status: "active" | "disabled" = "active"): AuthenticatedUser {
   return {
     businessProfileComplete: false,
-    capabilities: new Set([capabilities.profileReadOwn]),
+    capabilities: new Set([permissionCodes.fundingCallRead]),
     createdAt: new Date(),
     displayName: "Anna Ndeitunga",
     email: "owner@example.test",
@@ -43,7 +43,9 @@ function user(status: "active" | "disabled" = "active"): AuthenticatedUser {
 beforeEach(() => vi.clearAllMocks());
 
 describe("funding opportunity service", () => {
-  it("lists the published CMS projection for an active applicant", async () => {
+  const fundingCallId = "00000000-0000-4000-8000-000000000404";
+
+  it("lists published business funding calls for an active applicant", async () => {
     const input = { limit: 25 };
     const page = { items: [], nextCursor: null, total: 0 };
     vi.mocked(listPublishedFundingOpportunities).mockResolvedValue(page);
@@ -52,7 +54,7 @@ describe("funding opportunity service", () => {
     expect(listPublishedFundingOpportunities).toHaveBeenCalledWith(input);
   });
 
-  it("rejects a disabled applicant before querying CMS", async () => {
+  it("rejects a disabled applicant before querying funding calls", async () => {
     await expect(
       listFundingOpportunities(user("disabled"), { limit: 25 }),
     ).rejects.toBeInstanceOf(PermissionDeniedError);
@@ -63,7 +65,7 @@ describe("funding opportunity service", () => {
     vi.mocked(findPublishedFundingOpportunity).mockResolvedValue(null);
 
     await expect(
-      getFundingOpportunity(user(), 404),
+      getFundingOpportunity(user(), fundingCallId),
     ).rejects.toBeInstanceOf(FundingOpportunityNotFoundError);
   });
 });

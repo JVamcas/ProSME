@@ -305,7 +305,7 @@ export const workflowTransitionDefinitions = pgTable(
 export const fundingOpportunityWorkflowAssignments = pgTable(
   "app_funding_opportunity_workflows",
   {
-    fundingOpportunityId: integer("funding_opportunity_id").primaryKey(),
+    fundingOpportunityId: uuid("funding_opportunity_id").primaryKey(),
     fundingOpportunityTitle: text("funding_opportunity_title").notNull(),
     workflowVersionId: uuid("workflow_version_id")
       .notNull()

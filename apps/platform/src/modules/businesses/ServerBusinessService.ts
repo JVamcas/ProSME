@@ -41,7 +41,7 @@ export async function listBusinesses(user: AuthenticatedUser | null) {
 
 export async function listApplicationBusinesses(
   user: AuthenticatedUser | null,
-  input: { applicationId: string; fundingOpportunityId: number },
+  input: { applicationId: string; fundingOpportunityId: string },
 ) {
   const actor = requirePermission(user, capabilities.businessReadOwn);
   const businesses = await listOwnedBusinessesForApplication({

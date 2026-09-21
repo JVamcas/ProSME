@@ -7,6 +7,7 @@ export * from "@/modules/conditions/infrastructure/condition.schema";
 export * from "@/modules/eligibility/infrastructure/eligibility-ruleset.schema";
 export * from "@/modules/forms/infrastructure/form.schema";
 export * from "@/modules/forms/infrastructure/form-response.schema";
+export * from "@/modules/funding-calls/infrastructure/funding-call.schema";
 export * from "./identity";
 export * from "./profiles";
 export * from "@/modules/workflows/infrastructure/workflow.schema";

@@ -7,7 +7,7 @@ import type {
   EligibilityWorkspace,
 } from "./EligibilityTypes";
 
-function getWorkspace(fundingOpportunityId: number) {
+function getWorkspace(fundingOpportunityId: string) {
   return requestData<EligibilityWorkspace>(
     `/api/portal/eligibility-assessments?fundingOpportunityId=${fundingOpportunityId}`,
     { cache: "no-store" },
@@ -25,4 +25,3 @@ export const clientEligibilityService = {
   createAssessment,
   getWorkspace,
 };
-

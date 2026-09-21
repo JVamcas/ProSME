@@ -26,7 +26,7 @@ export const applications = pgTable("app_applications", {
   ownerUserId: uuid("owner_user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
-  fundingOpportunityId: integer("funding_opportunity_id").notNull(),
+  fundingOpportunityId: uuid("funding_opportunity_id").notNull(),
   fundingOpportunityTitle: text("funding_opportunity_title").notNull(),
   businessId: uuid("business_id").references(() => businessProfiles.id, {
     onDelete: "restrict",

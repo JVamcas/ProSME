@@ -9,10 +9,8 @@ import {
 import { getFundingOpportunity } from "@/modules/funding-calls/ServerFundingOpportunityService";
 
 const paramsSchema = z.object({
-  id: z.coerce.number().int().positive(),
+  id: z.uuid(),
 });
-
-
 
 export async function GET(
   request: Request,

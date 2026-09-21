@@ -15,13 +15,13 @@ export type EligibilityRuleSnapshot = {
 export type EligibilityAssessmentInput = {
   answers: Record<string, EligibilityAnswer>;
   expectedRuleSetVersion: string;
-  fundingOpportunityId: number;
+  fundingOpportunityId: string;
 };
 
 export type EligibilityAssessmentView = {
   answers: Record<string, EligibilityAnswer>;
   createdAt: string;
-  fundingOpportunityId: number;
+  fundingOpportunityId: string;
   fundingOpportunityTitle: string;
   id: string;
   outcome: EligibilityOutcome;
@@ -32,10 +32,9 @@ export type EligibilityAssessmentView = {
 export type EligibilityWorkspace = {
   assessments: EligibilityAssessmentView[];
   fundingOpportunity: {
-    id: number;
+    id: string;
     title: string;
   };
   rules: EligibilityRuleSnapshot[];
   ruleSetVersion: string;
 };
-

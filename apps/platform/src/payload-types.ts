@@ -74,7 +74,6 @@ export interface Config {
     resources: Resource;
     events: Event;
     faqs: Faq;
-    'funding-calls': FundingCall;
     'eligibility-content': EligibilityContent;
     'programme-statistics': ProgrammeStatistic;
     'contact-submissions': ContactSubmission;
@@ -94,7 +93,6 @@ export interface Config {
     resources: ResourcesSelect<false> | ResourcesSelect<true>;
     events: EventsSelect<false> | EventsSelect<true>;
     faqs: FaqsSelect<false> | FaqsSelect<true>;
-    'funding-calls': FundingCallsSelect<false> | FundingCallsSelect<true>;
     'eligibility-content': EligibilityContentSelect<false> | EligibilityContentSelect<true>;
     'programme-statistics': ProgrammeStatisticsSelect<false> | ProgrammeStatisticsSelect<true>;
     'contact-submissions': ContactSubmissionsSelect<false> | ContactSubmissionsSelect<true>;
@@ -178,7 +176,6 @@ export interface Media {
   id: number;
   alt: string;
   caption?: string | null;
-  prefix?: string | null;
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -491,49 +488,6 @@ export interface Faq {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "funding-calls".
- */
-export interface FundingCall {
-  id: number;
-  title: string;
-  slug: string;
-  summary: string;
-  image?: (number | null) | Media;
-  opensAt: string;
-  closesAt: string;
-  callStatus: 'upcoming' | 'open' | 'closed';
-  eligibility: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  };
-  minimumAmount?: number | null;
-  maximumAmount?: number | null;
-  applicationUrl?: string | null;
-  reviewStatus: 'draft' | 'inReview' | 'approved';
-  /**
-   * Internal notes for editors and reviewers.
-   */
-  reviewNotes?: string | null;
-  seoTitle?: string | null;
-  seoDescription?: string | null;
-  excludeFromSearch?: boolean | null;
-  updatedAt: string;
-  createdAt: string;
-  _status?: ('draft' | 'published') | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "eligibility-content".
  */
 export interface EligibilityContent {
@@ -667,10 +621,6 @@ export interface PayloadLockedDocument {
         value: number | Faq;
       } | null)
     | ({
-        relationTo: 'funding-calls';
-        value: number | FundingCall;
-      } | null)
-    | ({
         relationTo: 'eligibility-content';
         value: number | EligibilityContent;
       } | null)
@@ -751,7 +701,6 @@ export interface CmsPrincipalsSelect<T extends boolean = true> {
 export interface MediaSelect<T extends boolean = true> {
   alt?: T;
   caption?: T;
-  prefix?: T;
   updatedAt?: T;
   createdAt?: T;
   url?: T;
@@ -971,31 +920,6 @@ export interface FaqsSelect<T extends boolean = true> {
   order?: T;
   reviewStatus?: T;
   reviewNotes?: T;
-  updatedAt?: T;
-  createdAt?: T;
-  _status?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "funding-calls_select".
- */
-export interface FundingCallsSelect<T extends boolean = true> {
-  title?: T;
-  slug?: T;
-  summary?: T;
-  image?: T;
-  opensAt?: T;
-  closesAt?: T;
-  callStatus?: T;
-  eligibility?: T;
-  minimumAmount?: T;
-  maximumAmount?: T;
-  applicationUrl?: T;
-  reviewStatus?: T;
-  reviewNotes?: T;
-  seoTitle?: T;
-  seoDescription?: T;
-  excludeFromSearch?: T;
   updatedAt?: T;
   createdAt?: T;
   _status?: T;

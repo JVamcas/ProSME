@@ -4,7 +4,6 @@ import type { CollectionAfterChangeHook, CollectionAfterDeleteHook, GlobalAfterC
 const roots: Record<string, string> = {
   events: "/events",
   faqs: "/faq",
-  "funding-calls": "/funding",
   news: "/news",
   resources: "/resources",
 };

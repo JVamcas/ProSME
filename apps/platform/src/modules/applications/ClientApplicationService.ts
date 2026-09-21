@@ -71,8 +71,8 @@ function getOwnApplication(id: string) {
   });
 }
 
-function createApplication(fundingOpportunityId: number) {
-  return postData<ApplicationView, { fundingOpportunityId: number }>(
+function createApplication(fundingOpportunityId: string) {
+  return postData<ApplicationView, { fundingOpportunityId: string }>(
     "/api/portal/applications",
     { fundingOpportunityId },
   );

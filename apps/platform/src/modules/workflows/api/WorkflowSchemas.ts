@@ -312,7 +312,7 @@ export const workflowCommandSchema = z.object({
 });
 
 export const opportunityAssignmentSchema = z.object({
-  fundingOpportunityId: z.number().int().positive(),
+  fundingOpportunityId: z.uuid(),
   fundingOpportunityTitle: z.string().trim().min(2).max(200),
   workflowVersionId: z.string().uuid(),
   expectedRowVersion: z.number().int().nonnegative().default(0),

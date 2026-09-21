@@ -14,7 +14,7 @@ type RuntimeContextRow = {
   applicationBusiness: Record<string, unknown>;
   applicationDeclarations: Record<string, unknown>;
   applicationFinancial: Record<string, unknown>;
-  applicationFundingOpportunityId: number;
+  applicationFundingOpportunityId: string;
   applicationId: string;
   applicationProject: Record<string, unknown>;
   applicationReference: string | null;

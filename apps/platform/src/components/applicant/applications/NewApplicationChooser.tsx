@@ -20,7 +20,7 @@ function OpportunityResults({ items }: { items: FundingOpportunitySummary[] }) {
   const router = useRouter();
   const creation = useCreateApplication();
 
-  async function apply(opportunityId: number) {
+  async function apply(opportunityId: string) {
     const application = await creation.mutateAsync(opportunityId);
     router.push(`/portal/applications/${application.id}/edit`);
   }

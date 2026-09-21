@@ -6,11 +6,11 @@ import { clientEligibilityService } from "./ClientEligibilityService";
 import type { EligibilityAssessmentInput } from "./EligibilityTypes";
 
 export const eligibilityQueryKeys = {
-  workspace: (fundingOpportunityId: number) =>
+  workspace: (fundingOpportunityId: string) =>
     ["portal", "eligibility-assessments", fundingOpportunityId] as const,
 };
 
-export function useEligibilityWorkspace(fundingOpportunityId: number) {
+export function useEligibilityWorkspace(fundingOpportunityId: string) {
   return useQuery({
     queryFn: () => clientEligibilityService.getWorkspace(fundingOpportunityId),
     queryKey: eligibilityQueryKeys.workspace(fundingOpportunityId),
@@ -29,4 +29,3 @@ export function useCreateEligibilityAssessment() {
     }),
   });
 }
-

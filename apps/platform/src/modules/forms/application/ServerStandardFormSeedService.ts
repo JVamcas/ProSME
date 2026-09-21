@@ -4,26 +4,24 @@ import {
   formDefinitionDialogSchema,
   formEditorSchema,
 } from "@/modules/forms/api/FormSchemas";
-import {
-  createStandardFormDrafts,
-  type StandardFormDraft,
-} from "@/modules/forms/domain/StandardFormCatalogue";
+import { createStandardForms } from "@/modules/forms/domain/StandardFormCatalogue";
+import type { StandardFormSeed } from "@/modules/forms/domain/StandardFormDefinition";
 import { formPublicationErrors } from "@/modules/forms/FormDefinitionValidation";
-import { insertMissingStandardFormDrafts } from "@/modules/forms/infrastructure/StandardFormSeedRepository";
+import { insertMissingStandardForms } from "@/modules/forms/infrastructure/StandardFormSeedRepository";
 
-function validateDraft(draft: StandardFormDraft): StandardFormDraft {
+function validateSeed(seed: StandardFormSeed): StandardFormSeed {
   const definition = formDefinitionDialogSchema.parse({
-    code: draft.code,
-    description: draft.description,
-    instructions: draft.instructions,
-    name: draft.name,
-    submitLabel: draft.submitLabel,
+    code: seed.code,
+    description: seed.description,
+    instructions: seed.instructions,
+    name: seed.name,
+    submitLabel: seed.submitLabel,
   });
   const editor = formEditorSchema.parse({
     expectedRowVersion: 1,
-    fields: draft.fields,
-    sections: draft.sections,
-    submitLabel: draft.submitLabel,
+    fields: seed.fields,
+    sections: seed.sections,
+    submitLabel: seed.submitLabel,
   });
   const errors = formPublicationErrors(
     editor.fields,
@@ -31,21 +29,22 @@ function validateDraft(draft: StandardFormDraft): StandardFormDraft {
     editor.submitLabel,
   );
   if (errors.length) {
-    throw new Error(`${draft.code}: ${errors.join(" ")}`);
+    throw new Error(`${seed.code}: ${errors.join(" ")}`);
   }
   return {
     ...definition,
     fields: editor.fields,
     instructions: definition.instructions ?? "",
+    publishOnSeed: seed.publishOnSeed,
     sections: editor.sections,
   };
 }
 
-export async function seedStandardFormDrafts() {
-  const drafts = createStandardFormDrafts().map(validateDraft);
-  const uniqueCodes = new Set(drafts.map((draft) => draft.code));
-  if (uniqueCodes.size !== drafts.length) {
+export async function seedStandardForms() {
+  const forms = createStandardForms().map(validateSeed);
+  const uniqueCodes = new Set(forms.map((form) => form.code));
+  if (uniqueCodes.size !== forms.length) {
     throw new Error("The standard form catalogue contains duplicate codes.");
   }
-  return insertMissingStandardFormDrafts(drafts);
+  return insertMissingStandardForms(forms);
 }

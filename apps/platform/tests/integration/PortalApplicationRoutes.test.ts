@@ -72,10 +72,15 @@ describe("portal application routes", () => {
     const created = { id: applicationId } as never;
     vi.mocked(createApplication).mockResolvedValue(created);
     const createResponse = await listRoute.POST(
-      request("/api/portal/applications", "POST", { fundingOpportunityId: 42 }),
+      request("/api/portal/applications", "POST", {
+        fundingOpportunityId: "00000000-0000-4000-8000-000000000042",
+      }),
     );
     expect(createResponse.status).toBe(200);
-    expect(createApplication).toHaveBeenCalledWith(actor, 42);
+    expect(createApplication).toHaveBeenCalledWith(
+      actor,
+      "00000000-0000-4000-8000-000000000042",
+    );
   });
 
   it("validates section data before continuing", async () => {

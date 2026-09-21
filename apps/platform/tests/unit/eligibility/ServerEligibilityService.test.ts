@@ -28,6 +28,7 @@ import { loadPublishedEligibilityRuleSet } from "@/modules/eligibility/ServerEli
 import { findPublishedFundingOpportunity } from "@/modules/funding-calls/ServerFundingOpportunityIntegration";
 
 const ownerId = "79e20de0-3558-4d63-90a4-8c9f5125df07";
+const fundingOpportunityId = "00000000-0000-4000-8000-000000000042";
 const rules = [
   { hardStop: true, help: "Core requirement", id: "ownership", question: "Namibian owned?" },
   { hardStop: false, help: "Can be resolved", id: "bank", question: "Bank account?" },
@@ -52,7 +53,7 @@ function user(granted: string[]): AuthenticatedUser {
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(findPublishedFundingOpportunity).mockResolvedValue({
-    id: 42,
+    id: fundingOpportunityId,
     status: "open",
     title: "Growth Fund",
   } as never);
@@ -67,9 +68,12 @@ describe("eligibility assessment service", () => {
   it("scopes prior assessments to the authenticated owner and opportunity", async () => {
     await getEligibilityWorkspace(
       user([permissionCodes.fundingCallEligibilityOwnRead]),
-      42,
+      fundingOpportunityId,
     );
-    expect(listOwnedEligibilityAssessments).toHaveBeenCalledWith(ownerId, 42);
+    expect(listOwnedEligibilityAssessments).toHaveBeenCalledWith(
+      ownerId,
+      fundingOpportunityId,
+    );
   });
 
   it("persists the exact rule version, snapshot, answers and server outcome", async () => {
@@ -84,7 +88,7 @@ describe("eligibility assessment service", () => {
       {
         answers: { bank: "no", ownership: "yes" },
         expectedRuleSetVersion: "v1",
-        fundingOpportunityId: 42,
+        fundingOpportunityId,
       },
     );
 
@@ -106,7 +110,7 @@ describe("eligibility assessment service", () => {
       {
         answers: { bank: "yes", ownership: "yes" },
         expectedRuleSetVersion: "old-version",
-        fundingOpportunityId: 42,
+        fundingOpportunityId,
       },
     )).rejects.toBeInstanceOf(EligibilityRulesChangedError);
     expect(createOwnedEligibilityAssessment).not.toHaveBeenCalled();
@@ -118,7 +122,7 @@ describe("eligibility assessment service", () => {
       {
         answers: { bank: "yes", ownership: "yes" },
         expectedRuleSetVersion: "v1",
-        fundingOpportunityId: 42,
+        fundingOpportunityId,
       },
     )).rejects.toBeInstanceOf(PermissionDeniedError);
     expect(findPublishedFundingOpportunity).not.toHaveBeenCalled();

@@ -62,7 +62,7 @@ export type ApplicationSummary = {
   businessName: string | null;
   createdAt: string;
   currentSection: ApplicationSection;
-  fundingOpportunityId: number;
+  fundingOpportunityId: string;
   fundingOpportunityTitle: string;
   id: string;
   progressPercent: number;

@@ -8,8 +8,8 @@ import {
 import Link from "next/link";
 
 import { GeneralButton } from "@/components/ui/button";
-import { CmsRichText } from "@/components/ui/cms-rich-text";
 import type { FundingOpportunityDetail } from "@/modules/funding-calls/FundingOpportunityTypes";
+import { SanitizedRichTextContent } from "@/shared/ui/SanitizedRichTextContent";
 import {
   formatOpportunityAmount,
   formatOpportunityDate,
@@ -30,9 +30,10 @@ export function OverviewPanel({
         <h2 className="text-xl font-bold text-brand-navy">
           About this opportunity
         </h2>
-        <p className="mt-3 leading-7 text-brand-navy/75">
-          {opportunity.summary}
-        </p>
+        <SanitizedRichTextContent
+          className="mt-3"
+          sanitizedHtml={opportunity.description}
+        />
         <ul className="mt-6 grid gap-4 text-sm text-brand-navy">
           <Highlight text={formatOpportunityAmount(opportunity)} />
           <Highlight
@@ -79,23 +80,6 @@ function DeadlineCard({
         {formatOpportunityDate(date)}
       </p>
     </aside>
-  );
-}
-
-export function EligibilityPanel({
-  opportunity,
-}: {
-  opportunity: FundingOpportunityDetail;
-}) {
-  return (
-    <article className={panelClass}>
-      <h2 className="text-xl font-bold text-brand-navy">
-        Eligibility criteria
-      </h2>
-      <div className="mt-5 text-brand-navy">
-        <CmsRichText data={opportunity.eligibility} />
-      </div>
-    </article>
   );
 }
 

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { z } from "zod";
 
 import { FundingOpportunityDetail } from "@/components/applicant/funding-opportunities/FundingOpportunityDetail";
 
@@ -11,11 +12,11 @@ export default async function FundingOpportunityPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const opportunityId = Number(id);
+  const opportunityId = z.uuid().safeParse(id);
 
-  if (!Number.isInteger(opportunityId) || opportunityId <= 0) {
+  if (!opportunityId.success) {
     notFound();
   }
 
-  return <FundingOpportunityDetail opportunityId={opportunityId} />;
+  return <FundingOpportunityDetail opportunityId={opportunityId.data} />;
 }

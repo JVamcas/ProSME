@@ -16,7 +16,7 @@ import {
 
 const applicationScopeSchema = z.object({
   applicationId: z.uuid(),
-  fundingOpportunityId: z.coerce.number().int().positive(),
+  fundingOpportunityId: z.uuid(),
 });
 
 export async function GET(request: Request) {

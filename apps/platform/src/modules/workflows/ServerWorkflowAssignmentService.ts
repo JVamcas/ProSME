@@ -35,7 +35,7 @@ export async function getWorkflowOpportunities(user: AuthenticatedUser | null) {
 
 const assignmentResultSchema = z.object({
   assignedAt: z.string().datetime(),
-  fundingOpportunityId: z.number().int().positive(),
+  fundingOpportunityId: z.uuid(),
   fundingOpportunityTitle: z.string(),
   rowVersion: z.number().int().positive(),
   versionNumber: z.number().int().positive(),

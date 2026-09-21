@@ -14,7 +14,7 @@ export type WorkflowTaskRuntimeContextSource = {
     business: WorkflowRuntimeContextRecord;
     declarations: WorkflowRuntimeContextRecord;
     financial: WorkflowRuntimeContextRecord;
-    fundingOpportunityId: number;
+    fundingOpportunityId: string;
     id: string;
     project: WorkflowRuntimeContextRecord;
     reference: string | null;

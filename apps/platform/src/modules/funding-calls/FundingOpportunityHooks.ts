@@ -9,7 +9,7 @@ export const fundingOpportunityQueryKeys = {
   all: ["portal", "funding-opportunities"] as const,
   list: (input: FundingOpportunityListInput) =>
     ["portal", "funding-opportunities", "list", input] as const,
-  detail: (id: number) =>
+  detail: (id: string) =>
     ["portal", "funding-opportunities", "detail", id] as const,
 };
 
@@ -24,7 +24,7 @@ export function useFundingOpportunities(
   });
 }
 
-export function useFundingOpportunity(id: number) {
+export function useFundingOpportunity(id: string) {
   return useQuery({
     queryFn: () =>
       clientFundingOpportunityService.getFundingOpportunity(id),

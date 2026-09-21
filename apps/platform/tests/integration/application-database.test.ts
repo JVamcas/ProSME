@@ -21,8 +21,8 @@ const enabled = process.env.RUN_P3_APPLICATION_DATABASE_TESTS === "true";
 const describeDatabase = enabled ? describe : describe.skip;
 const firstOwnerId = "31111111-1111-4111-8111-111111111111";
 const secondOwnerId = "32222222-2222-4222-8222-222222222222";
-const opportunityId = 4242;
-const businessOpportunityId = 4343;
+const opportunityId = "00000000-0000-4000-8000-000000004242";
+const businessOpportunityId = "00000000-0000-4000-8000-000000004343";
 const firstBusinessId = "33333333-3333-4333-8333-333333333331";
 const secondBusinessId = "33333333-3333-4333-8333-333333333332";
 const pool = enabled

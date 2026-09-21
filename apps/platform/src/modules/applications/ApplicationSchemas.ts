@@ -122,7 +122,7 @@ export const applicationSectionSchema = z.enum([
   "declarations",
 ]);
 export const createApplicationSchema = z.object({
-  fundingOpportunityId: z.number().int().positive(),
+  fundingOpportunityId: z.uuid(),
 });
 
 export const applicationListSchema = z

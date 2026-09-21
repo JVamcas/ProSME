@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { capabilities } from "@/auth/authorization/capabilities";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import {
   applicantPortalRoutes,
   filterPortalRoutes,
@@ -67,10 +68,7 @@ describe("P3.1 capability-aware portal navigation", () => {
     const assignedReader = filterPortalRoutes(
       portalRoutes,
       "operations",
-      new Set([
-        capabilities.adminAccess,
-        capabilities.applicationReadAssigned,
-      ]),
+      new Set([capabilities.adminAccess, capabilities.applicationReadAssigned]),
     );
 
     const applications = operationsPortalRoutes.find(
@@ -96,6 +94,34 @@ describe("P3.1 capability-aware portal navigation", () => {
       "/admin",
       "/admin/work-queue",
     ]);
+  });
+
+  it("exposes funding calls only with the canonical read permission", () => {
+    const withoutFundingCalls = filterPortalRoutes(
+      portalRoutes,
+      "operations",
+      new Set([capabilities.adminAccess]),
+    );
+    const withFundingCalls = filterPortalRoutes(
+      portalRoutes,
+      "operations",
+      new Set([permissionCodes.fundingCallRead]),
+    );
+
+    expect(withoutFundingCalls.map((route) => route.href)).not.toContain(
+      "/admin/funding-calls",
+    );
+    expect(withFundingCalls.map((route) => route.href)).toContain(
+      "/admin/funding-calls",
+    );
+    expect(
+      operationsPortalRoutes.find(
+        (route) => route.href === "/admin/funding-calls",
+      ),
+    ).toMatchObject({
+      label: "Funding calls",
+      requiredPermission: permissionCodes.fundingCallRead,
+    });
   });
 
   it("exposes content management only with CMS access", () => {
@@ -157,10 +183,7 @@ describe("P3.1 capability-aware portal navigation", () => {
       "utf8",
     );
     const mobileHeader = readFileSync(
-      resolve(
-        process.cwd(),
-        "src/components/layout/portal-mobile-header.tsx",
-      ),
+      resolve(process.cwd(), "src/components/layout/portal-mobile-header.tsx"),
       "utf8",
     );
 

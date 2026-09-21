@@ -29,7 +29,7 @@ const source: WorkflowTaskRuntimeContextSource = {
     business: {},
     declarations: {},
     financial: {},
-    fundingOpportunityId: 42,
+    fundingOpportunityId: "00000000-0000-4000-8000-000000000042",
     id: "10000000-0000-4000-8000-000000000001",
     project: {
       clientDefinedMetric: 73,
@@ -80,7 +80,7 @@ describe("workflow runtime context", () => {
       principal: { type: "ASSIGNED_REVIEWER" },
     });
     const available = buildWorkflowRuntimeContext(source, {
-      id: 42,
+      id: "00000000-0000-4000-8000-000000000042",
       maximumAmount: 1_000_000,
       title: "Growth Fund",
     });

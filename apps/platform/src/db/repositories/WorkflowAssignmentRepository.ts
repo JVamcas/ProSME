@@ -44,7 +44,7 @@ export async function assignWorkflowToOpportunity(input: {
   actorId: string;
   correlationId: string;
   expectedRowVersion: number;
-  fundingOpportunityId: number;
+  fundingOpportunityId: string;
   fundingOpportunityTitle: string;
   idempotencyKey: string;
   workflowVersionId: string;

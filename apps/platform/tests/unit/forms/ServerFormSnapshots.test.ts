@@ -145,7 +145,7 @@ describe("submitted form snapshots", () => {
         business: {},
         declarations: {},
         financial: {},
-        fundingOpportunityId: 42,
+        fundingOpportunityId: "00000000-0000-4000-8000-000000000042",
         id: "10000000-0000-4000-8000-000000000001",
         project: {},
         reference: "SMEF-1",

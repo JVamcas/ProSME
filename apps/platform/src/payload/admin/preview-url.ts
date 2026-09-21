@@ -12,10 +12,6 @@ export function eventPreviewUrl({ slug }: { slug?: string | null }) {
   return publicPath(slug ? `/events/${slug}` : "/events");
 }
 
-export function fundingPreviewUrl({ slug }: { slug?: string | null }) {
-  return publicPath(slug ? `/funding/${slug}` : "/funding");
-}
-
 export function resourcePreviewUrl({ slug }: { slug?: string | null }) {
   return publicPath(slug ? `/resources/${slug}` : "/resources");
 }

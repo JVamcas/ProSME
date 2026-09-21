@@ -34,7 +34,7 @@ async function listFundingOpportunities(
   };
 }
 
-function getFundingOpportunity(id: number) {
+function getFundingOpportunity(id: string) {
   return requestData<FundingOpportunityDetail>(
     `/api/portal/funding-opportunities/${id}`,
     noStore,

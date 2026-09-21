@@ -111,7 +111,7 @@ export type WorkflowEditorView = {
 };
 
 export type WorkflowOpportunityAssignment = {
-  fundingOpportunityId: number;
+  fundingOpportunityId: string;
   fundingOpportunityTitle: string;
   workflowVersionId: string;
   workflowName: string;

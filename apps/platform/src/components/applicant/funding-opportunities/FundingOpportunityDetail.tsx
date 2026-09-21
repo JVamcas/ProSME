@@ -13,12 +13,11 @@ import { formatOpportunityDate } from "./FundingOpportunityFormat";
 import {
   ContactPanel,
   DocumentsPanel,
-  EligibilityPanel,
   KeyInformationPanel,
   OverviewPanel,
 } from "./FundingOpportunityDetailPanels";
 
-type DetailTab = "overview" | "eligibility" | "key" | "documents" | "contact";
+type DetailTab = "overview" | "key" | "documents" | "contact";
 
 const statusDateStyles: Record<Opportunity["status"], string> = {
   closed: "text-brand-orange",
@@ -32,11 +31,6 @@ function detailTabs(opportunity: Opportunity): TabItem<DetailTab>[] {
       content: <OverviewPanel opportunity={opportunity} />,
       id: "overview",
       label: "Overview",
-    },
-    {
-      content: <EligibilityPanel opportunity={opportunity} />,
-      id: "eligibility",
-      label: "Eligibility",
     },
     {
       content: <KeyInformationPanel opportunity={opportunity} />,
@@ -59,7 +53,7 @@ function detailTabs(opportunity: Opportunity): TabItem<DetailTab>[] {
 export function FundingOpportunityDetail({
   opportunityId,
 }: {
-  opportunityId: number;
+  opportunityId: string;
 }) {
   const query = useFundingOpportunity(opportunityId);
 

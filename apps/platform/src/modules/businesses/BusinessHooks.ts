@@ -8,7 +8,7 @@ import { clientBusinessService } from "./ClientBusinessService";
 export const businessQueryKeys = {
   all: ["portal", "businesses"] as const,
   detail: (id: string) => ["portal", "businesses", id] as const,
-  applicationOptions: (applicationId: string, fundingOpportunityId: number) =>
+  applicationOptions: (applicationId: string, fundingOpportunityId: string) =>
     [
       "portal",
       "businesses",
@@ -27,7 +27,7 @@ export function useBusinesses() {
 
 export function useApplicationBusinesses(
   applicationId: string,
-  fundingOpportunityId: number,
+  fundingOpportunityId: string,
 ) {
   return useQuery({
     queryFn: () => clientBusinessService.listApplicationBusinesses(

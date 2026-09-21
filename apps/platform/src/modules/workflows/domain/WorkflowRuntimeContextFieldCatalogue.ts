@@ -13,7 +13,7 @@ export const workflowRuntimeContextFields = [
     type: "TEXT",
   },
   { key: "application.status", label: "Application status", type: "TEXT" },
-  { key: "fundingCall.id", label: "Funding Call ID", type: "NUMBER" },
+  { key: "fundingCall.id", label: "Funding Call ID", type: "TEXT" },
   { key: "fundingCall.title", label: "Funding Call title", type: "TEXT" },
   { key: "fundingCall.slug", label: "Funding Call slug", type: "TEXT" },
   { key: "fundingCall.status", label: "Funding Call status", type: "TEXT" },

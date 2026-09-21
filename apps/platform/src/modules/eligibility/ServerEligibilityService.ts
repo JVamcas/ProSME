@@ -69,7 +69,7 @@ function validateAnswers(
   }
 }
 
-async function loadAvailableWorkspace(fundingOpportunityId: number) {
+async function loadAvailableWorkspace(fundingOpportunityId: string) {
   const [opportunity, ruleSet] = await Promise.all([
     findPublishedFundingOpportunity(fundingOpportunityId),
     loadPublishedEligibilityRuleSet(),
@@ -82,7 +82,7 @@ async function loadAvailableWorkspace(fundingOpportunityId: number) {
 
 export async function getEligibilityWorkspace(
   user: AuthenticatedUser | null,
-  fundingOpportunityId: number,
+  fundingOpportunityId: string,
 ) {
   const actor = requirePermission(
     user,

@@ -1,4 +1,4 @@
-import { index, integer, jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { index, jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
 import type {
   EligibilityAnswer,
@@ -12,7 +12,7 @@ export const eligibilityAssessments = pgTable("app_eligibility_assessments", {
   userId: uuid("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
-  fundingOpportunityId: integer("funding_opportunity_id").notNull(),
+  fundingOpportunityId: uuid("funding_opportunity_id").notNull(),
   fundingOpportunityTitle: text("funding_opportunity_title").notNull(),
   ruleSetVersion: text("rule_set_version").notNull(),
   ruleSnapshot: jsonb("rule_snapshot")
@@ -34,4 +34,3 @@ export const eligibilityAssessments = pgTable("app_eligibility_assessments", {
     table.fundingOpportunityId,
   ),
 ]);
-

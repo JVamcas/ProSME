@@ -15,7 +15,7 @@ import type { EligibilityAssessmentView } from "@/modules/eligibility/Eligibilit
 export function EligibilityAssessment({
   fundingOpportunityId,
 }: {
-  fundingOpportunityId: number;
+  fundingOpportunityId: string;
 }) {
   const query = useEligibilityWorkspace(fundingOpportunityId);
   const [result, setResult] = useState<EligibilityAssessmentView | null>(null);
@@ -67,4 +67,3 @@ export function EligibilityAssessment({
     </section>
   );
 }
-

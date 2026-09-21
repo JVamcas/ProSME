@@ -196,7 +196,7 @@ describeDatabase("workflow binding compatibility", () => {
       actorId,
       correlationId,
       expectedRowVersion: 0,
-      fundingOpportunityId: 3301,
+      fundingOpportunityId: "00000000-0000-4000-8000-000000003301",
       fundingOpportunityTitle: "Integration Funding Call",
       idempotencyKey: "database-assignment",
       workflowVersionId: publishedVersionId,

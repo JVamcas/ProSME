@@ -4,7 +4,7 @@ import {
   formDefinitionDialogSchema,
   formEditorSchema,
 } from "@/modules/forms/api/FormSchemas";
-import { createStandardFormDrafts } from "@/modules/forms/domain/StandardFormCatalogue";
+import { createStandardForms } from "@/modules/forms/domain/StandardFormCatalogue";
 import { formPublicationErrors } from "@/modules/forms/FormDefinitionValidation";
 
 const expectedCodes = [
@@ -15,6 +15,7 @@ const expectedCodes = [
   "DISBURSEMENT_REVIEW",
   "DUE_DILIGENCE_RISK",
   "EVALUATION_CLOSE_OUT_REVIEW",
+  "FUNDING_APPLICATION",
   "MODERATION",
   "MONITORING_REVIEW",
   "TECHNICAL_REVIEW",
@@ -22,8 +23,8 @@ const expectedCodes = [
 ];
 
 describe("standard form catalogue", () => {
-  it("contains exactly the eleven agreed ready forms", () => {
-    const codes = createStandardFormDrafts()
+  it("contains the agreed ready forms", () => {
+    const codes = createStandardForms()
       .map((form) => form.code)
       .sort();
 
@@ -32,26 +33,25 @@ describe("standard form catalogue", () => {
   });
 
   it("passes the same schema and publication validation as admin forms", () => {
-    for (const form of createStandardFormDrafts()) {
+    for (const form of createStandardForms()) {
       expect(formDefinitionDialogSchema.safeParse(form).success).toBe(true);
-      expect(formEditorSchema.safeParse({
-        expectedRowVersion: 1,
-        fields: form.fields,
-        sections: form.sections,
-        submitLabel: form.submitLabel,
-      }).success).toBe(true);
-      expect(formPublicationErrors(
-        form.fields,
-        form.sections,
-        form.submitLabel,
-      )).toEqual([]);
+      expect(
+        formEditorSchema.safeParse({
+          expectedRowVersion: 1,
+          fields: form.fields,
+          sections: form.sections,
+          submitLabel: form.submitLabel,
+        }).success,
+      ).toBe(true);
+      expect(
+        formPublicationErrors(form.fields, form.sections, form.submitLabel),
+      ).toEqual([]);
     }
   });
 
   it("keeps deferred repeatable forms out of the seed", () => {
-    const codes = new Set(createStandardFormDrafts().map((form) => form.code));
+    const codes = new Set(createStandardForms().map((form) => form.code));
 
-    expect(codes.has("FUNDING_APPLICATION")).toBe(false);
     expect(codes.has("FINANCIAL_REVIEW")).toBe(false);
     expect(codes.has("CONTRACTING")).toBe(false);
     expect(codes.has("PROGRESS_REPORT")).toBe(false);
@@ -59,7 +59,7 @@ describe("standard form catalogue", () => {
   });
 
   it("seeds conditional details as required only while visible", () => {
-    const forms = createStandardFormDrafts();
+    const forms = createStandardForms();
     const conditionalKeys = [
       "ADDITIONAL_VERIFICATION_DETAILS",
       "ADJUSTMENT_JUSTIFICATION",
@@ -67,14 +67,59 @@ describe("standard form catalogue", () => {
       "VARIANCE_EXPLANATION",
       "CORRECTIVE_ACTION_DETAILS",
     ];
-    const conditionalFields = forms.flatMap((form) => form.fields)
+    const conditionalFields = forms
+      .flatMap((form) => form.fields)
       .filter((field) => conditionalKeys.includes(field.key));
 
     expect(conditionalFields.map((field) => field.key).sort()).toEqual(
       [...conditionalKeys].sort(),
     );
-    expect(conditionalFields.every((field) => (
-      field.required && field.visibilityCondition
-    ))).toBe(true);
+    expect(
+      conditionalFields.every(
+        (field) => field.required && field.visibilityCondition,
+      ),
+    ).toBe(true);
+  });
+
+  it("defines a published reusable funding application with stable keys", () => {
+    const first = createStandardForms().find(
+      (form) => form.code === "FUNDING_APPLICATION",
+    );
+    const second = createStandardForms().find(
+      (form) => form.code === "FUNDING_APPLICATION",
+    );
+    expect(first?.publishOnSeed).toBe(true);
+    expect(first?.submitLabel).toBe("Submit application");
+    expect(first?.sections.map((section) => section.key)).toEqual([
+      "ENTITY_DETAILS",
+      "REGISTRATION_AND_TAX",
+      "PROJECT",
+      "BUDGET_AND_COFUNDING",
+      "TEAM",
+      "RESULTS_AND_INDICATORS",
+      "DECLARATIONS_AND_CONSENT",
+    ]);
+    expect(first?.fields.map((field) => field.key)).toEqual(
+      second?.fields.map((field) => field.key),
+    );
+    expect(first?.fields.map((field) => field.key)).toEqual(
+      expect.arrayContaining([
+        "LEGAL_ENTITY_NAME",
+        "REGISTRATION_NUMBER",
+        "PROJECT_TITLE",
+        "PROJECT_ABSTRACT",
+        "PROJECT_OBJECTIVES",
+        "PROJECT_DURATION_MONTHS",
+        "REQUESTED_GRANT_AMOUNT",
+        "BUDGET_BREAKDOWN",
+        "APPLICANT_COFUNDING_AMOUNT",
+        "TEAM_CV_DOCUMENT",
+        "PRIMARY_INDICATOR",
+        "PRIMARY_INDICATOR_BASELINE",
+        "PRIMARY_INDICATOR_TARGET",
+        "DECLARATION_ACCURACY_CONFIRMATION",
+        "DATA_PROCESSING_CONSENT",
+      ]),
+    );
   });
 });

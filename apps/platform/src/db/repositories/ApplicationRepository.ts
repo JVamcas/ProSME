@@ -239,7 +239,7 @@ export async function findOwnedApplication(
 
 export async function findOwnedApplicationByOpportunity(
   ownerUserId: string,
-  fundingOpportunityId: number,
+  fundingOpportunityId: string,
 ): Promise<ApplicationRecord | null> {
   const [application] = await getDatabase()
     .select()
@@ -255,7 +255,7 @@ export async function findOwnedApplicationByOpportunity(
 }
 
 export async function createOwnedApplication(input: {
-  fundingOpportunityId: number;
+  fundingOpportunityId: string;
   fundingOpportunityTitle: string;
   ownerUserId: string;
 }): Promise<string | null> {

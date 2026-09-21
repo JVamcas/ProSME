@@ -133,7 +133,7 @@ async function requiredDocumentsAreClean(
 
 async function findInitialConfiguration(
   transaction: SubmissionTransaction,
-  fundingOpportunityId: number,
+  fundingOpportunityId: string,
 ) {
   const [configuration] = await transaction
     .select({

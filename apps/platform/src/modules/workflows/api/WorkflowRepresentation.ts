@@ -69,7 +69,7 @@ export function toWorkflowEditor(
 
 export function toWorkflowAssignment(record: {
   assignedAt: Date;
-  fundingOpportunityId: number;
+  fundingOpportunityId: string;
   fundingOpportunityTitle: string;
   rowVersion: number;
   versionNumber: number;
