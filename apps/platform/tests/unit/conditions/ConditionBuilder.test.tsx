@@ -24,6 +24,11 @@ const fields = [
     label: "Sector",
     type: "TEXT" as const,
   },
+  {
+    key: "application.submitted_at",
+    label: "Submitted at",
+    type: "DATE" as const,
+  },
 ];
 
 function definition(value: number): ConditionGroup {
@@ -66,9 +71,20 @@ describe("ConditionBuilder", () => {
     expect(container.querySelector<HTMLSelectElement>(
       '[aria-label="Field"]',
     )?.value).toBe("application.requested_amount");
-    expect(container.querySelector<HTMLInputElement>(
+    expect(container.querySelector<HTMLSelectElement>(
+      '[aria-label="Group match"]',
+    )?.className).toContain("h-8");
+    expect(container.querySelector<HTMLSelectElement>(
+      '[aria-label="Field"]',
+    )?.className).toContain("h-8");
+    expect(container.querySelector<HTMLSelectElement>(
+      '[aria-label="Operator"]',
+    )?.className).toContain("h-8");
+    const valueInput = container.querySelector<HTMLInputElement>(
       '[aria-label="Value"]',
-    )?.value).toBe("100000");
+    );
+    expect(valueInput?.value).toBe("100000");
+    expect(valueInput?.className).toContain("h-8");
     expect(container.textContent).toContain("Condition preview");
     expect(container.textContent).toContain(
       "Requested amount Equals 100000",
@@ -90,6 +106,37 @@ describe("ConditionBuilder", () => {
       '[aria-label="Value"]',
     )?.value).toBe("250000");
     expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("uses a compact date editor", async () => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    const dateCondition = definition(0);
+    dateCondition.children[0] = {
+      ...dateCondition.children[0],
+      leftOperand: {
+        key: "application.submitted_at",
+        kind: "FIELD",
+      },
+      rightOperand: { kind: "CONSTANT", value: "2026-09-21" },
+    };
+
+    await act(async () =>
+      root?.render(
+        <ConditionBuilder
+          fields={fields}
+          onChange={() => undefined}
+          value={dateCondition}
+        />,
+      ),
+    );
+
+    const dateInput = container.querySelector<HTMLInputElement>(
+      '[aria-label="Value"]',
+    );
+    expect(dateInput?.type).toBe("date");
+    expect(dateInput?.className).toContain("h-8");
   });
 
   it("emits condition, group, nested group, and combinator edits", async () => {

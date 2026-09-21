@@ -102,11 +102,20 @@ function getErrorMessage(error: unknown) {
   return undefined;
 }
 
-function CurrencyPrefix({ children }: { children: ReactNode }) {
+function CurrencyPrefix({
+  children,
+  size = "default",
+}: {
+  children: ReactNode;
+  size?: "compact" | "default";
+}) {
   return (
     <span
       aria-hidden="true"
-      className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-sm font-semibold text-brand-navy/60"
+      className={cn(
+        "pointer-events-none absolute inset-y-0 flex items-center font-semibold text-brand-navy/60",
+        size === "compact" ? "left-3 text-xs" : "left-4 text-sm",
+      )}
     >
       {children}
     </span>
@@ -123,6 +132,7 @@ function ControlledMoneyField({
   labelClassName,
   name,
   required,
+  size = "default",
   ...inputProps
 }: MoneyFieldProps & { currencyLabel: ReactNode }) {
   const form = useFormContext<FieldValues>();
@@ -162,7 +172,7 @@ function ControlledMoneyField({
       required={required}
     >
       <div className="relative">
-        <CurrencyPrefix>{currencyLabel}</CurrencyPrefix>
+        <CurrencyPrefix size={size}>{currencyLabel}</CurrencyPrefix>
 
         <Input
           {...inputProps}
@@ -180,7 +190,11 @@ function ControlledMoneyField({
           aria-invalid={
             errorMessage ? true : inputProps["aria-invalid"]
           }
-          className={cn("pl-12", inputProps.className)}
+          className={cn(
+            size === "compact" && "h-8 rounded-lg px-3 text-xs",
+            size === "compact" ? "pl-10" : "pl-12",
+            inputProps.className,
+          )}
           onChange={(event) => {
             isEditingRef.current = true;
             event.target.value = formatMoneyInput(event.target.value);
@@ -220,7 +234,7 @@ export function MoneyField({
       type="text"
       inputMode="decimal"
       leadingContent={
-        <CurrencyPrefix>{currencyLabel}</CurrencyPrefix>
+        <CurrencyPrefix size={props.size}>{currencyLabel}</CurrencyPrefix>
       }
     />
   );

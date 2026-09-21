@@ -110,6 +110,13 @@ describe("EligibilityRuleSetEditor", () => {
     expect(container.textContent).toContain("Reason code");
     expect(container.textContent).toContain("Applicant message");
     expect(container.textContent).toContain("Condition");
+    const addRuleButton = [...container.querySelectorAll("button")].find(
+      (button) => button.textContent?.includes("Add rule"),
+    );
+    expect(addRuleButton?.closest("header")).toBeNull();
+    expect(
+      addRuleButton?.closest("section")?.querySelector("table"),
+    ).not.toBeNull();
 
     await act(async () => container.querySelector<HTMLButtonElement>(
       '[aria-label="Edit EMPLOYEE_REQUIRED"]',

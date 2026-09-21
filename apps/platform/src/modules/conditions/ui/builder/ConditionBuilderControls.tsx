@@ -45,6 +45,7 @@ export function ConditionValueSelector({
       label={label}
       labelClassName="sr-only"
       onChange={(event) => handleOnChange(event.target.value)}
+      size="compact"
       value={value}
     />
   );
@@ -79,10 +80,20 @@ function ScalarValueEditor({
         label={label}
         labelClassName="sr-only"
         onChange={(event) => onChange(event.target.value === "true")}
+        size="compact"
         value={String(value)}
       />
     );
   }
+  const inputType =
+    fieldType === "NUMBER"
+      ? "number"
+      : fieldType === "DATE"
+        ? "date"
+        : "text";
+  const inputValue =
+    typeof value === "number" || typeof value === "string" ? value : "";
+
   return (
     <FormInput
       aria-label={label}
@@ -90,8 +101,9 @@ function ScalarValueEditor({
       label={label}
       labelClassName="sr-only"
       onChange={(event) => onChange(parseScalar(event.target.value, fieldType))}
-      type={fieldType === "NUMBER" ? "number" : fieldType === "DATE" ? "date" : "text"}
-      value={typeof value === "number" || typeof value === "string" ? value : ""}
+      size="compact"
+      type={inputType}
+      value={inputValue}
     />
   );
 }
@@ -104,9 +116,8 @@ export function ConditionValueInput({
   value,
 }: ValueEditorProps) {
   const configuredFieldType = fieldData.conditionType as ConditionFieldType;
-  const fieldType = operator === "WITHIN_LAST_N_MONTHS"
-    ? "NUMBER"
-    : configuredFieldType;
+  const fieldType =
+    operator === "WITHIN_LAST_N_MONTHS" ? "NUMBER" : configuredFieldType;
   if (operator === "IN" || operator === "NOT_IN") {
     const list = Array.isArray(value) ? value : [];
     return (
@@ -115,14 +126,17 @@ export function ConditionValueInput({
         disabled={disabled}
         label="Value"
         labelClassName="sr-only"
-        onChange={(event) => handleOnChange(
-          event.target.value
-            .split(",")
-            .map((item) => item.trim())
-            .filter(Boolean)
-            .map((item) => parseScalar(item, fieldType)),
-        )}
+        onChange={(event) =>
+          handleOnChange(
+            event.target.value
+              .split(",")
+              .map((item) => item.trim())
+              .filter(Boolean)
+              .map((item) => parseScalar(item, fieldType)),
+          )
+        }
         placeholder="Comma-separated values"
+        size="compact"
         value={list.join(", ")}
       />
     );

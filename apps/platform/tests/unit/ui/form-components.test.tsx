@@ -77,6 +77,35 @@ describe("shared form components", () => {
     expect(markup).toContain('type="search"');
   });
 
+  it("renders a compact form input", () => {
+    const markup = renderToStaticMarkup(
+      <FormInput label="Value" name="value" size="compact" />,
+    );
+
+    expect(markup).toContain("h-8");
+    expect(markup).toContain("text-xs");
+    expect(markup).not.toContain('size="compact"');
+  });
+
+  it("renders compact select and money controls", () => {
+    const selectMarkup = renderToStaticMarkup(
+      <FormSelect
+        items={[{ label: "Open", value: "OPEN" }]}
+        label="Status"
+        name="status"
+        size="compact"
+      />,
+    );
+    const moneyMarkup = renderToStaticMarkup(
+      <MoneyField label="Amount" name="amount" size="compact" />,
+    );
+
+    expect(selectMarkup).toContain("h-8");
+    expect(selectMarkup).not.toContain('size="compact"');
+    expect(moneyMarkup).toContain("h-8");
+    expect(moneyMarkup).not.toContain('size="compact"');
+  });
+
   it("renders the shared money field with currency and decimal semantics", () => {
     const markup = renderToStaticMarkup(
       <MoneyField label="Amount" name="amount" />,

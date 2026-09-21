@@ -105,7 +105,7 @@ export function EligibilityRuleDialog({
             required
           />
         </div>
-        <FormTextarea
+        <FormInput
           label="Applicant-facing message"
           name="applicantMessage"
           required

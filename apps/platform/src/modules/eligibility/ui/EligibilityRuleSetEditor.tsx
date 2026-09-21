@@ -221,21 +221,15 @@ export function EligibilityRuleSetEditor({
         <div className="flex flex-wrap gap-2">
           <GeneralButtonLink
             href={`/admin/settings/eligibility-rulesets/${id}/test`}
-            variant="outline"
+            variant="outlineOrange"
           >
             <FlaskConical className="size-4" />
             Test ruleset
           </GeneralButtonLink>
-          {editable ? (
-            <GeneralButton onClick={() => setEditing("new")}>
-              <Plus className="size-4" />
-              Add rule
-            </GeneralButton>
-          ) : null}
           <GeneralButton
             disabled={!canRunLifecycle || lifecycle.isPending}
             onClick={runLifecycle}
-            variant="outline"
+            variant="outlineOrange"
           >
             {lifecycle.isPending
               ? "Working…"
@@ -255,13 +249,7 @@ export function EligibilityRuleSetEditor({
         </p>
       ) : null}
 
-      <section className="space-y-3" aria-labelledby="eligibility-rules-heading">
-        <h2
-          className="text-lg font-bold text-brand-navy"
-          id="eligibility-rules-heading"
-        >
-          Eligibility rules
-        </h2>
+      <section aria-label="Eligibility rules">
         <DataTable
           columns={ruleColumns({
             editable,
@@ -277,6 +265,18 @@ export function EligibilityRuleSetEditor({
           emptyMessage="No eligibility rules configured."
           minWidth={1180}
           rowKey={(rule) => rule.id}
+          toolbar={{
+            actions: editable ? (
+              <GeneralButton
+                onClick={() => setEditing("new")}
+                size="compact"
+              >
+                <Plus className="size-4" />
+                Add rule
+              </GeneralButton>
+            ) : undefined,
+            title: "Eligibility rules",
+          }}
         />
       </section>
 

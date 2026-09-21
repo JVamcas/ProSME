@@ -16,6 +16,8 @@ type FieldOptions = {
   labelClassName?: string;
 } & FormBindingProps;
 
+export type FormControlSize = "compact" | "default";
+
 function useFieldIds(
   id: string | undefined,
   name: string | undefined,
@@ -28,10 +30,11 @@ function useFieldIds(
 
 export type FormInputProps = Omit<
   React.InputHTMLAttributes<HTMLInputElement>,
-  "name"
+  "name" | "size"
 > &
   FieldOptions & {
     leadingContent?: React.ReactNode;
+    size?: FormControlSize;
   };
 
 export function FormInput({
@@ -46,6 +49,7 @@ export function FormInput({
   leadingContent,
   name,
   registrationOptions,
+  size = "default",
   ...props
 }: FormInputProps) {
   const binding = useFormBinding({ error, name, registrationOptions });
@@ -73,7 +77,11 @@ export function FormInput({
           {...props}
           id={ids.controlId}
           name={binding.name}
-          className={cn(leadingContent && "pl-12", props.className)}
+          className={cn(
+            size === "compact" && "h-8 rounded-lg px-3 text-xs",
+            leadingContent && "pl-12",
+            props.className,
+          )}
           aria-describedby={describedBy}
           aria-invalid={binding.error ? true : props["aria-invalid"]}
         />
@@ -89,7 +97,7 @@ export type FormSelectItem = {
 };
 export type FormSelectProps = Omit<
   React.SelectHTMLAttributes<HTMLSelectElement>,
-  "children" | "name"
+  "children" | "name" | "size"
 > &
   FieldOptions & {
     items: readonly FormSelectItem[];
@@ -97,6 +105,7 @@ export type FormSelectProps = Omit<
     onMultipleChange?: (values: string[]) => void;
     onMultipleFocus?: (values: string[]) => void;
     placeholder?: string;
+    size?: FormControlSize;
   };
 
 export function FormSelect({
@@ -115,6 +124,7 @@ export function FormSelect({
   onMultipleFocus,
   placeholder,
   registrationOptions,
+  size = "default",
   ...props
 }: FormSelectProps) {
   const binding = useFormBinding({ error, name, registrationOptions });
@@ -138,7 +148,10 @@ export function FormSelect({
         required={props.required}
       >
         <FormMultiSelect
-          className={props.className}
+          className={cn(
+            size === "compact" && "h-8 rounded-lg px-3 text-xs",
+            props.className,
+          )}
           defaultValue={Array.isArray(props.defaultValue) ? props.defaultValue : []}
           describedBy={describedBy}
           disabled={props.disabled}
@@ -175,6 +188,10 @@ export function FormSelect({
         {...props}
         id={ids.controlId}
         name={binding.name}
+        className={cn(
+          size === "compact" && "h-8 rounded-lg px-3 text-xs",
+          props.className,
+        )}
         aria-describedby={describedBy}
         aria-invalid={binding.error ? true : props["aria-invalid"]}
       >
