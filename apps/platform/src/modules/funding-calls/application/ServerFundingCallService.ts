@@ -15,6 +15,10 @@ import {
   formVersionIsPublished,
   listPublishedFormVersions,
 } from "@/modules/forms/infrastructure/FormRepository";
+import {
+  eligibilityRuleSetVersionIsPublished,
+  listPublishedEligibilityRuleSetVersions,
+} from "@/modules/eligibility/infrastructure/EligibilityRuleSetRepository";
 import type {
   FundingCallCreateInput,
   FundingCallListInput,
@@ -41,6 +45,28 @@ function view(call: FundingCall): FundingCallView {
     opensAt: call.opensAt.toISOString(),
     updatedAt: call.updatedAt.toISOString(),
   };
+}
+
+async function requirePublishedBindings(
+  input: Pick<
+    FundingCallCreateInput,
+    "eligibilityRuleSetVersionId" | "formVersionId"
+  >,
+) {
+  const [formIsPublished, eligibilityIsPublished] = await Promise.all([
+    formVersionIsPublished(input.formVersionId),
+    eligibilityRuleSetVersionIsPublished(input.eligibilityRuleSetVersionId),
+  ]);
+  if (!formIsPublished) {
+    throw new RequestValidationError(
+      "Select an application form version that is published.",
+    );
+  }
+  if (!eligibilityIsPublished) {
+    throw new RequestValidationError(
+      "Select an eligibility ruleset version that is published.",
+    );
+  }
 }
 
 export async function listFundingCalls(
@@ -77,11 +103,7 @@ export async function createFundingCall(
   input: FundingCallCreateInput,
 ): Promise<FundingCallView> {
   const actor = requirePermission(user, permissionCodes.fundingCallCreate);
-  if (!await formVersionIsPublished(input.formVersionId)) {
-    throw new RequestValidationError(
-      "Select an application form version that is published.",
-    );
-  }
+  await requirePublishedBindings(input);
   return view(await insertFundingCall(actor.id, input));
 }
 
@@ -95,17 +117,23 @@ export async function listBindableApplicationFormVersions(
   return listPublishedFormVersions();
 }
 
+export async function listBindableEligibilityRuleSetVersions(
+  user: AuthenticatedUser | null,
+) {
+  requireAnyPermission(user, [
+    permissionCodes.fundingCallCreate,
+    permissionCodes.fundingCallUpdate,
+  ]);
+  return listPublishedEligibilityRuleSetVersions();
+}
+
 export async function updateFundingCall(
   user: AuthenticatedUser | null,
   id: string,
   input: FundingCallUpdateInput,
 ): Promise<FundingCallView> {
   const actor = requirePermission(user, permissionCodes.fundingCallUpdate);
-  if (!await formVersionIsPublished(input.formVersionId)) {
-    throw new RequestValidationError(
-      "Select an application form version that is published.",
-    );
-  }
+  await requirePublishedBindings(input);
   const updated = await updateDraftFundingCall(actor.id, id, input);
   if (updated) return view(updated);
 

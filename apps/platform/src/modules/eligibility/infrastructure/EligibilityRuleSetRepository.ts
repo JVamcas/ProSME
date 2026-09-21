@@ -115,6 +115,46 @@ export async function findEligibilityRuleSet(
   return version ? findEligibilityRuleSetVersion(version.id) : null;
 }
 
+export async function eligibilityRuleSetVersionIsPublished(versionId: string) {
+  const [version] = await getDatabase()
+    .select({ id: eligibilityRuleSetVersions.id })
+    .from(eligibilityRuleSetVersions)
+    .where(
+      and(
+        eq(eligibilityRuleSetVersions.id, versionId),
+        eq(eligibilityRuleSetVersions.status, "PUBLISHED"),
+      ),
+    )
+    .limit(1);
+  return Boolean(version);
+}
+
+export async function listPublishedEligibilityRuleSetVersions() {
+  return getDatabase()
+    .select({
+      ruleSetCode: eligibilityRuleSets.code,
+      ruleSetId: eligibilityRuleSets.id,
+      ruleSetName: eligibilityRuleSets.name,
+      versionId: eligibilityRuleSetVersions.id,
+      versionNumber: eligibilityRuleSetVersions.versionNumber,
+    })
+    .from(eligibilityRuleSetVersions)
+    .innerJoin(
+      eligibilityRuleSets,
+      eq(eligibilityRuleSets.id, eligibilityRuleSetVersions.ruleSetId),
+    )
+    .where(
+      and(
+        eq(eligibilityRuleSetVersions.status, "PUBLISHED"),
+        eq(eligibilityRuleSets.active, true),
+      ),
+    )
+    .orderBy(
+      asc(eligibilityRuleSets.name),
+      desc(eligibilityRuleSetVersions.versionNumber),
+    );
+}
+
 export async function createEligibilityRuleSet(input: {
   actorId: string;
   code: string;

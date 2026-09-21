@@ -14,6 +14,7 @@ export type FundingCall = {
   slug: string;
   title: string;
   description: string;
+  eligibilityRuleSetVersionId: string | null;
   formVersionId: string | null;
   fundingInstrument: string | null;
   thematicArea: string | null;

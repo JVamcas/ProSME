@@ -189,12 +189,16 @@ export async function createApplication(
   if (!opportunity.formVersionId) {
     throw new ApplicationOpportunityUnavailableError();
   }
+  if (!opportunity.eligibilityRuleSetVersionId) {
+    throw new ApplicationOpportunityUnavailableError();
+  }
   const existing = await findOwnedApplicationByOpportunity(
     actor.id,
     opportunity.id,
   );
   if (existing) return toApplicationView(existing);
   const id = await createOwnedApplication({
+    eligibilityRuleSetVersionId: opportunity.eligibilityRuleSetVersionId,
     formVersionId: opportunity.formVersionId,
     fundingOpportunityId: opportunity.id,
     fundingOpportunityTitle: opportunity.title,

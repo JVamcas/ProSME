@@ -6,8 +6,10 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { GeneralButton } from "@/components/ui/button";
+import { FormDateTimeInput } from "@/components/ui/form-date-time-input";
 import { FormInput, FormSelect } from "@/components/ui/form-fields";
 import { MoneyField } from "@/components/ui/money-field";
+import { toInputDateTimeLocal } from "@/lib/dateUtils";
 import { FormRichTextField } from "@/shared/ui/FormRichTextField";
 import {
   fundingCallCreateSchema,
@@ -15,8 +17,10 @@ import {
 } from "../api/FundingCallSchemas";
 import type { FundingCallCreateInput } from "../api/FundingCallSchemas";
 import type { FundingCallView } from "../api/FundingCallTransport";
-import { FormDateInput } from "@/components/ui/form-date-input";
-import { useBindableApplicationFormVersions } from "../FundingCallHooks";
+import {
+  useBindableApplicationFormVersions,
+  useBindableEligibilityRuleSetVersions,
+} from "../FundingCallHooks";
 
 const localMoneySchema = z
   .union([z.number().nonnegative(), z.string().trim().min(1)])
@@ -25,6 +29,9 @@ const localMoneySchema = z
 const localFormSchema = z.object({
   closesAt: z.string().min(1, "Closing date is required."),
   description: fundingCallDescriptionSchema,
+  eligibilityRuleSetVersionId: z.uuid(
+    "Select a published eligibility ruleset version.",
+  ),
   formVersionId: z.uuid("Select a published application form version."),
   fundingInstrument: z.string().trim().max(160),
   maximumGrantAmount: localMoneySchema,
@@ -41,21 +48,16 @@ const localFormSchema = z.object({
 type LocalFormInput = z.input<typeof localFormSchema>;
 type LocalFormOutput = z.output<typeof localFormSchema>;
 
-function localDateTime(value: string) {
-  const date = new Date(value);
-  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
-  return local.toISOString().slice(0, 16);
-}
-
 function defaults(call?: FundingCallView): LocalFormInput {
   return {
-    closesAt: call ? localDateTime(call.closesAt) : "",
+    closesAt: call ? toInputDateTimeLocal(call.closesAt) : "",
     description: call?.description ?? "",
+    eligibilityRuleSetVersionId: call?.eligibilityRuleSetVersionId ?? "",
     formVersionId: call?.formVersionId ?? "",
     fundingInstrument: call?.fundingInstrument ?? "",
     maximumGrantAmount: call?.maximumGrantAmount ?? "",
     minimumGrantAmount: call?.minimumGrantAmount ?? "",
-    opensAt: call ? localDateTime(call.opensAt) : "",
+    opensAt: call ? toInputDateTimeLocal(call.opensAt) : "",
     publicContactEmail: call?.publicContactEmail ?? "",
     publicContactName: call?.publicContactName ?? "",
     publicContactPhone: call?.publicContactPhone ?? "",
@@ -90,6 +92,7 @@ export function FundingCallForm({
   disabled?: boolean;
   onSubmit: (input: FundingCallCreateInput) => Promise<void>;
 }) {
+  const eligibilityVersions = useBindableEligibilityRuleSetVersions();
   const formVersions = useBindableApplicationFormVersions();
   const form = useForm<LocalFormInput, unknown, LocalFormOutput>({
     defaultValues: defaults(call),
@@ -154,6 +157,24 @@ export function FundingCallForm({
             required
           />
 
+          <FormSelect
+            containerClassName="md:col-span-2"
+            disabled={disabled || eligibilityVersions.isPending}
+            infoTooltip="The exact published ruleset version used for self-check and authoritative screening."
+            items={(eligibilityVersions.data ?? []).map((version) => ({
+              label: `${version.ruleSetName} — version ${version.versionNumber}`,
+              value: version.versionId,
+            }))}
+            label="Eligibility ruleset version"
+            name="eligibilityRuleSetVersionId"
+            placeholder={
+              eligibilityVersions.isPending
+                ? "Loading published rulesets…"
+                : "Select a published ruleset version"
+            }
+            required
+          />
+
           <FormInput
             infoTooltip="The type of financial support offered, such as a grant, loan, or guarantee."
             label="Funding instrument"
@@ -185,13 +206,13 @@ export function FundingCallForm({
             required
           />
 
-          <FormDateInput
+          <FormDateTimeInput
             label="Opening date and time"
             name="opensAt"
             required
           />
 
-          <FormDateInput
+          <FormDateTimeInput
             label="Closing date and time"
             minValue={opensAt}
             name="closesAt"

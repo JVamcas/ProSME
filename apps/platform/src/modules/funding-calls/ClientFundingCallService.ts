@@ -7,6 +7,7 @@ import type {
 } from "./api/FundingCallSchemas";
 import type { FundingCallPage, FundingCallView } from "./api/FundingCallTransport";
 import type { PublishedFormOption } from "@/modules/forms/FormTypes";
+import type { PublishedEligibilityRuleSetOption } from "@/modules/eligibility/api/EligibilityRuleSetTransport";
 
 const jsonHeaders = { "Content-Type": "application/json" };
 
@@ -56,10 +57,18 @@ function listBindableFormVersions() {
   );
 }
 
+function listBindableEligibilityRuleSetVersions() {
+  return requestData<PublishedEligibilityRuleSetOption[]>(
+    "/api/admin/funding-calls/eligibility-ruleset-versions",
+    { cache: "no-store" },
+  );
+}
+
 export const clientFundingCallService = {
   create,
   get,
   list,
+  listBindableEligibilityRuleSetVersions,
   listBindableFormVersions,
   update,
 };

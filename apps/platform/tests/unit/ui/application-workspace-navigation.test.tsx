@@ -54,6 +54,7 @@ const application: ApplicationView = {
   currentSection: "business",
   declarationsSection: {},
   financialSection: {},
+  eligibilityRuleSetVersionId: "30000000-0000-4000-8000-000000000001",
   formVersionId: "20000000-0000-4000-8000-000000000001",
   fundingOpportunityId: "00000000-0000-4000-8000-000000000042",
   fundingOpportunityTitle: "Growth Fund",

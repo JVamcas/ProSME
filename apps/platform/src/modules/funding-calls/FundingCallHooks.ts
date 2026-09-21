@@ -15,6 +15,11 @@ import { clientFundingCallService } from "./ClientFundingCallService";
 
 export const fundingCallQueryKeys = {
   all: ["admin", "funding-calls"] as const,
+  bindableEligibilityRuleSetVersions: [
+    "admin",
+    "funding-calls",
+    "eligibility-ruleset-versions",
+  ] as const,
   bindableFormVersions: ["admin", "funding-calls", "form-versions"] as const,
   detail: (id: string) => ["admin", "funding-calls", id] as const,
   list: (page: number, pageSize: number) => [
@@ -25,6 +30,13 @@ export const fundingCallQueryKeys = {
     pageSize,
   ] as const,
 };
+
+export function useBindableEligibilityRuleSetVersions() {
+  return useQuery({
+    queryFn: clientFundingCallService.listBindableEligibilityRuleSetVersions,
+    queryKey: fundingCallQueryKeys.bindableEligibilityRuleSetVersions,
+  });
+}
 
 export function useBindableApplicationFormVersions() {
   return useQuery({

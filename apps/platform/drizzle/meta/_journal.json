@@ -372,6 +372,13 @@
       "when": 1792281600000,
       "tag": "0052_normalize_funding_call_uuids",
       "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1792368000000,
+      "tag": "0053_bind_eligibility_ruleset_version",
+      "breakpoints": true
     }
   ]
 }

@@ -80,11 +80,15 @@ export function toApplicationView(
   if (!application.formVersionId) {
     throw new Error("Application is missing its bound form version.");
   }
+  if (!application.eligibilityRuleSetVersionId) {
+    throw new Error("Application is missing its bound eligibility version.");
+  }
   return {
     ...toApplicationSummary(application),
     businessSection: application.businessSection,
     declarationsSection: application.declarationsSection,
     financialSection: application.financialSection,
+    eligibilityRuleSetVersionId: application.eligibilityRuleSetVersionId,
     formVersionId: application.formVersionId,
     projectSection: application.projectSection,
     rowVersion: application.rowVersion,

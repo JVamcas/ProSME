@@ -102,9 +102,20 @@ export async function resolvePublishedApplicationFormBinding(id: string) {
   const call = await readPublishedFundingCall(id);
   if (!call) return null;
   return {
+    eligibilityRuleSetVersionId: call.eligibilityRuleSetVersionId,
     formVersionId: call.formVersionId,
     id: call.id,
     status: opportunityStatus(call),
     title: call.title,
+  };
+}
+
+export async function resolvePublishedEligibilityRuleSetBinding(id: string) {
+  const call = await readPublishedFundingCall(id);
+  if (!call) return null;
+  return {
+    eligibilityRuleSetVersionId: call.eligibilityRuleSetVersionId,
+    fundingCallId: call.id,
+    status: opportunityStatus(call),
   };
 }

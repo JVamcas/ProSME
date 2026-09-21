@@ -48,6 +48,14 @@ export type EligibilityRuleSetPage = {
   totalPages: number;
 };
 
+export type PublishedEligibilityRuleSetOption = {
+  ruleSetCode: string;
+  ruleSetId: string;
+  ruleSetName: string;
+  versionId: string;
+  versionNumber: number;
+};
+
 export type CreateEligibilityRuleSetInput = {
   code: string;
   description: string;

@@ -13,6 +13,7 @@ import {
 
 import { users } from "@/db/schema/identity";
 import { formVersions } from "@/modules/forms/infrastructure/form.schema";
+import { eligibilityRuleSetVersions } from "@/modules/eligibility/infrastructure/eligibility-ruleset.schema";
 import type { FundingCallStatus } from "../domain/FundingCall";
 
 export const fundingCalls = pgTable(
@@ -23,6 +24,10 @@ export const fundingCalls = pgTable(
     slug: text("slug").notNull(),
     title: text("title").notNull(),
     description: text("description").notNull(),
+    eligibilityRuleSetVersionId: uuid("eligibility_rule_set_version_id")
+      .references(() => eligibilityRuleSetVersions.id, {
+        onDelete: "restrict",
+      }),
     formVersionId: uuid("form_version_id").references(() => formVersions.id, {
       onDelete: "restrict",
     }),
@@ -69,6 +74,9 @@ export const fundingCalls = pgTable(
       table.closesAt,
     ),
     index("app_funding_calls_form_version_idx").on(table.formVersionId),
+    index("app_funding_calls_eligibility_version_idx").on(
+      table.eligibilityRuleSetVersionId,
+    ),
     check(
       "app_funding_calls_status_check",
       sql`${table.status} in ('DRAFT', 'SCHEDULED', 'OPEN', 'CLOSED', 'CANCELLED')`,

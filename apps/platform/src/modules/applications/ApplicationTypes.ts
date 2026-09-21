@@ -95,6 +95,7 @@ export type ApplicationView = ApplicationSummary & {
   businessSection: Partial<ApplicationBusinessSection>;
   declarationsSection: Partial<ApplicationDeclarationsSection>;
   financialSection: Partial<ApplicationFinancialSection>;
+  eligibilityRuleSetVersionId: string;
   formVersionId: string;
   projectSection: Partial<ApplicationProjectSection>;
   rowVersion: number;

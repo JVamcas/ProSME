@@ -120,7 +120,7 @@ describe("P3.1 shared authenticated portal shell", () => {
     expect(markup).toContain('href="/admin"');
   });
 
-  it("renders permitted nested operations routes", () => {
+  it("renders permitted nested operations routes closed by default", () => {
     const operationsContext: PortalContext = {
       ...context,
       roleCodes: ["system_administrator"],
@@ -143,8 +143,10 @@ describe("P3.1 shared authenticated portal shell", () => {
     );
 
     expect(markup).toContain("Settings");
-    expect(markup).toContain("Forms");
-    expect(markup).toContain('href="/admin/settings/forms"');
+    expect(markup).toContain("Administration");
+    expect(markup).toContain('aria-expanded="false"');
+    expect(markup).not.toContain(">Forms<");
+    expect(markup).not.toContain('href="/admin/settings/forms"');
   });
 
   it("renders the CMS link only for permitted operations users", () => {

@@ -5,6 +5,7 @@ import { fundingCallCreateSchema } from "@/modules/funding-calls/api/FundingCall
 const validInput = {
   closesAt: "2027-03-31T15:00:00.000Z",
   description: "Growth funding for qualifying SMEs.",
+  eligibilityRuleSetVersionId: "30000000-0000-4000-8000-000000000001",
   formVersionId: "20000000-0000-4000-8000-000000000001",
   fundingInstrument: "Grant",
   maximumGrantAmount: "500000.00",

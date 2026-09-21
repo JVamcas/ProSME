@@ -112,6 +112,13 @@ export function findPublishedEligibilityRuleSetForEvaluation(versionId: string) 
   return findEligibilityRuleSetForEvaluation(versionId, ["PUBLISHED"]);
 }
 
+export function findRuntimeEligibilityRuleSetForEvaluation(versionId: string) {
+  return findEligibilityRuleSetForEvaluation(
+    versionId,
+    ["PUBLISHED", "RETIRED"],
+  );
+}
+
 export function findTestableEligibilityRuleSetForEvaluation(versionId: string) {
   return findEligibilityRuleSetForEvaluation(
     versionId,

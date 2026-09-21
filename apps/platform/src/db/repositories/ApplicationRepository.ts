@@ -254,7 +254,23 @@ export async function findOwnedApplicationByOpportunity(
   return application ?? null;
 }
 
+export async function readApplicationEligibilityBinding(
+  applicationId: string,
+) {
+  const [application] = await getDatabase()
+    .select({
+      eligibilityRuleSetVersionId: applications.eligibilityRuleSetVersionId,
+      fundingOpportunityId: applications.fundingOpportunityId,
+      id: applications.id,
+    })
+    .from(applications)
+    .where(eq(applications.id, applicationId))
+    .limit(1);
+  return application ?? null;
+}
+
 export async function createOwnedApplication(input: {
+  eligibilityRuleSetVersionId: string;
   formVersionId: string;
   fundingOpportunityId: string;
   fundingOpportunityTitle: string;

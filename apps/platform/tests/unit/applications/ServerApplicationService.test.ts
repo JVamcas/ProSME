@@ -48,6 +48,7 @@ import {
 import { applicationStatusCounts } from "../../support/application-status-counts";
 const fundingOpportunityId = "00000000-0000-4000-8000-000000000042";
 const formVersionId = "20000000-0000-4000-8000-000000000001";
+const eligibilityRuleSetVersionId = "30000000-0000-4000-8000-000000000001";
 
 function staffUser(granted: string[]): AuthenticatedUser {
   return {
@@ -74,6 +75,7 @@ const application = {
   createdAt: new Date("2026-09-14T08:00:00.000Z"),
   currentSection: "business" as const,
   financialSection: {},
+  eligibilityRuleSetVersionId,
   formVersionId,
   fundingOpportunityId,
   fundingOpportunityTitle: "Growth Fund",
@@ -103,6 +105,7 @@ describe("applicant-owned application drafts", () => {
   it("creates an owner-scoped draft for an open opportunity", async () => {
     const user = staffUser([permissionCodes.fundingApplicationCreate]);
     vi.mocked(resolvePublishedApplicationFormBinding).mockResolvedValue({
+      eligibilityRuleSetVersionId,
       id: fundingOpportunityId,
       formVersionId,
       status: "open",
@@ -119,6 +122,7 @@ describe("applicant-owned application drafts", () => {
       id: application.id,
     });
     expect(createOwnedApplication).toHaveBeenCalledWith({
+      eligibilityRuleSetVersionId,
       formVersionId,
       fundingOpportunityId,
       fundingOpportunityTitle: "Growth Fund",
@@ -155,7 +159,6 @@ describe("applicant-owned application drafts", () => {
     });
     expect(findOwnedApplication).toHaveBeenCalledWith(user.id, application.id);
   });
-
   it("rejects a stale update without writing", async () => {
     const user = staffUser([permissionCodes.fundingApplicationOwnUpdate]);
     vi.mocked(findOwnedApplication).mockResolvedValue({
@@ -213,7 +216,6 @@ describe("applicant-owned application drafts", () => {
       "project",
     );
   });
-
   it("rejects a business that is not owned by the applicant", async () => {
     const user = staffUser([permissionCodes.fundingApplicationOwnUpdate]);
     vi.mocked(findOwnedApplication).mockResolvedValue(application);
@@ -230,7 +232,6 @@ describe("applicant-owned application drafts", () => {
     expect(findOwnedBusiness).toHaveBeenCalledWith(user.id, businessId);
     expect(updateOwnedApplication).not.toHaveBeenCalled();
   });
-
   it("does not require workflow configuration to save a draft", async () => {
     const user = staffUser([permissionCodes.fundingApplicationOwnUpdate]);
     const advanced = {
@@ -262,7 +263,6 @@ describe("applicant-owned application drafts", () => {
       "financial",
     );
   });
-
   it("rejects another application for the same business and funding call", async () => {
     const user = staffUser([permissionCodes.fundingApplicationOwnUpdate]);
     vi.mocked(findOwnedApplication).mockResolvedValue(application);

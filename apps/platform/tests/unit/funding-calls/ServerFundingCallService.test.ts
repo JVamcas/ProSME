@@ -5,6 +5,10 @@ vi.mock("@/modules/forms/infrastructure/FormRepository", () => ({
   formVersionIsPublished: vi.fn(),
   listPublishedFormVersions: vi.fn(),
 }));
+vi.mock("@/modules/eligibility/infrastructure/EligibilityRuleSetRepository", () => ({
+  eligibilityRuleSetVersionIsPublished: vi.fn(),
+  listPublishedEligibilityRuleSetVersions: vi.fn(),
+}));
 vi.mock("@/modules/funding-calls/infrastructure/FundingCallRepository", () => ({
   insertFundingCall: vi.fn(),
   readFundingCallById: vi.fn(),
@@ -29,13 +33,16 @@ import {
   updateDraftFundingCall,
 } from "@/modules/funding-calls/infrastructure/FundingCallRepository";
 import { formVersionIsPublished } from "@/modules/forms/infrastructure/FormRepository";
+import { eligibilityRuleSetVersionIsPublished } from "@/modules/eligibility/infrastructure/EligibilityRuleSetRepository";
 
 const actorId = "10000000-0000-4000-8000-000000000001";
 const callId = "00000000-0000-4000-8000-000000000042";
 const formVersionId = "20000000-0000-4000-8000-000000000001";
+const eligibilityRuleSetVersionId = "30000000-0000-4000-8000-000000000001";
 const input = {
   closesAt: "2027-03-31T15:00:00.000Z",
   description: "Growth funding for qualifying SMEs.",
+  eligibilityRuleSetVersionId,
   formVersionId,
   fundingInstrument: "Grant",
   maximumGrantAmount: "500000.00",
@@ -81,6 +88,7 @@ function user(grants: string[]): AuthenticatedUser {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(eligibilityRuleSetVersionIsPublished).mockResolvedValue(true);
   vi.mocked(formVersionIsPublished).mockResolvedValue(true);
   vi.mocked(readFundingCallById).mockResolvedValue(stored);
 });
@@ -112,6 +120,17 @@ describe("ServerFundingCallService", () => {
 
   it("rejects a form version that is not published", async () => {
     vi.mocked(formVersionIsPublished).mockResolvedValue(false);
+
+    await expect(createFundingCall(
+      user([permissionCodes.fundingCallCreate]),
+      input,
+    )).rejects.toBeInstanceOf(RequestValidationError);
+
+    expect(insertFundingCall).not.toHaveBeenCalled();
+  });
+
+  it("rejects an eligibility ruleset version that is not published", async () => {
+    vi.mocked(eligibilityRuleSetVersionIsPublished).mockResolvedValue(false);
 
     await expect(createFundingCall(
       user([permissionCodes.fundingCallCreate]),

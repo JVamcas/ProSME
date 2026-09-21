@@ -42,7 +42,23 @@ beforeEach(() => {
 describe("application form-version binding", () => {
   it("fails closed when an open call has no application form binding", async () => {
     vi.mocked(resolvePublishedApplicationFormBinding).mockResolvedValue({
+      eligibilityRuleSetVersionId:
+        "30000000-0000-4000-8000-000000000001",
       formVersionId: null,
+      id: fundingCallId,
+      status: "open",
+      title: "Growth Fund",
+    } as never);
+
+    await expect(createApplication(applicant, fundingCallId)).rejects
+      .toBeInstanceOf(ApplicationOpportunityUnavailableError);
+    expect(createOwnedApplication).not.toHaveBeenCalled();
+  });
+
+  it("fails closed when an open call has no eligibility binding", async () => {
+    vi.mocked(resolvePublishedApplicationFormBinding).mockResolvedValue({
+      eligibilityRuleSetVersionId: null,
+      formVersionId: "20000000-0000-4000-8000-000000000001",
       id: fundingCallId,
       status: "open",
       title: "Growth Fund",

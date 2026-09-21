@@ -10,6 +10,7 @@ vi.mock("@/modules/funding-calls/infrastructure/FundingCallRepository", () => ({
 import {
   findPublishedFundingOpportunity,
   listPublishedFundingOpportunities,
+  resolvePublishedEligibilityRuleSetBinding,
 } from "@/modules/funding-calls/ServerFundingOpportunityIntegration";
 import {
   readPublishedFundingCall,
@@ -24,6 +25,7 @@ const fundingCall = {
   createdBy: "10000000-0000-4000-8000-000000000001",
   description:
     "<p>Support for <strong>growing</strong> Namibian businesses.</p>",
+  eligibilityRuleSetVersionId: "30000000-0000-4000-8000-000000000001",
   formVersionId: "20000000-0000-4000-8000-000000000001",
   fundingInstrument: "Grant",
   id: fundingCallId,
@@ -122,5 +124,17 @@ describe("published funding-call integration", () => {
       }),
     );
     expect(readPublishedFundingCall).toHaveBeenCalledWith(fundingCallId);
+  });
+
+  it("resolves the exact eligibility version bound to a published call", async () => {
+    vi.mocked(readPublishedFundingCall).mockResolvedValue(fundingCall);
+
+    await expect(
+      resolvePublishedEligibilityRuleSetBinding(fundingCallId),
+    ).resolves.toEqual({
+      eligibilityRuleSetVersionId: fundingCall.eligibilityRuleSetVersionId,
+      fundingCallId,
+      status: "open",
+    });
   });
 });
