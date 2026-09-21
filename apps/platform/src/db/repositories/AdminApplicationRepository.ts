@@ -43,15 +43,15 @@ function visibilityFilter(
   if (visibility === "all") return sql`TRUE`;
   return sql`EXISTS (
     SELECT 1
-    FROM app_stage_task_instances visible_task
+    FROM app_workflow_tasks visible_task
     JOIN app_workflow_stage_instances visible_stage
       ON visible_stage.id = visible_task.stage_instance_id
     WHERE visible_stage.workflow_instance_id = workflow.id
       AND visible_stage.status IN ('ACTIVE', 'BLOCKED')
       AND visible_task.status IN ('PENDING', 'READY', 'CLAIMED', 'IN_PROGRESS', 'BLOCKED')
       AND (
-        visible_task.assignment_user_id = ${actorId}::uuid
-        OR visible_task.assignment_role_id IN (
+        visible_task.assigned_user_id = ${actorId}::uuid
+        OR visible_task.assigned_role_id IN (
           SELECT role_id FROM app_user_roles WHERE user_id = ${actorId}::uuid
         )
       )
@@ -124,15 +124,15 @@ function applicationQuery(input: {
       LEFT JOIN app_workflow_stage_instances stage
         ON stage.id = workflow.current_stage_instance_id
       LEFT JOIN app_workflow_stage_definitions stage_definition
-        ON stage_definition.id = stage.stage_definition_id
+        ON stage_definition.id = stage.workflow_stage_definition_id
       LEFT JOIN LATERAL (
         SELECT count(*) AS active_count,
           string_agg(DISTINCT role.name, ', ') AS role_names,
           string_agg(DISTINCT assignee.display_name, ', ') AS user_names,
           min(task.due_at) AS due_at
-        FROM app_stage_task_instances task
-        LEFT JOIN app_roles role ON role.id = task.assignment_role_id
-        LEFT JOIN app_users assignee ON assignee.id = task.assignment_user_id
+        FROM app_workflow_tasks task
+        LEFT JOIN app_roles role ON role.id = task.assigned_role_id
+        LEFT JOIN app_users assignee ON assignee.id = task.assigned_user_id
         WHERE task.stage_instance_id = stage.id
           AND task.status IN ('PENDING', 'READY', 'CLAIMED', 'IN_PROGRESS', 'BLOCKED')
       ) task_summary ON TRUE
@@ -202,19 +202,19 @@ function detailQuery(input: {
     LEFT JOIN app_workflow_stage_instances stage
       ON stage.id = workflow.current_stage_instance_id
     LEFT JOIN app_workflow_stage_definitions stage_definition
-      ON stage_definition.id = stage.stage_definition_id
+      ON stage_definition.id = stage.workflow_stage_definition_id
     LEFT JOIN LATERAL (
       SELECT jsonb_agg(
         jsonb_build_object(
-          'endedAt', stage_instance.ended_at,
+          'endedAt', stage_instance.completed_at,
           'name', definition.name,
-          'startedAt', stage_instance.started_at,
+          'startedAt', stage_instance.activated_at,
           'status', COALESCE(stage_instance.status, 'NOT_STARTED')
         ) ORDER BY definition.sequence
       ) AS stages
       FROM app_workflow_stage_definitions definition
       LEFT JOIN app_workflow_stage_instances stage_instance
-        ON stage_instance.stage_definition_id = definition.id
+        ON stage_instance.workflow_stage_definition_id = definition.id
         AND stage_instance.workflow_instance_id = workflow.id
       WHERE definition.version_id = workflow.workflow_template_version_id
     ) stage_timeline ON TRUE

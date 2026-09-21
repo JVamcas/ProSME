@@ -45,10 +45,11 @@ async function cancelOptionalTasks(
   completedAt: Date,
 ) {
   await transaction.execute(sql`
-    UPDATE app_stage_task_instances task
-    SET status = 'CANCELLED', ended_at = ${completedAt}, row_version = row_version + 1
+    UPDATE app_workflow_tasks task
+    SET status = 'CANCELLED', completed_at = ${completedAt},
+      row_version = row_version + 1
     FROM app_stage_task_definitions definition
-    WHERE task.task_definition_id = definition.id
+    WHERE task.workflow_task_definition_id = definition.id
       AND task.stage_instance_id = ${stageInstanceId}::uuid
       AND definition.required = FALSE
       AND task.status NOT IN ('COMPLETED', 'CANCELLED')
@@ -63,16 +64,16 @@ async function createNextStage(
 ) {
   const created = await transaction.execute(sql`
     INSERT INTO app_workflow_stage_instances
-      (workflow_instance_id, stage_definition_id, status, started_at)
+      (workflow_instance_id, workflow_stage_definition_id, status, activated_at)
     VALUES (${task.workflowInstanceId}::uuid, ${nextStage.id}::uuid,
       'ACTIVE', ${startedAt})
     RETURNING id
   `);
   const stageId = (created.rows[0] as { id: string }).id;
   await transaction.execute(sql`
-    INSERT INTO app_stage_task_instances
-      (stage_instance_id, task_definition_id, type_snapshot, form_version_id,
-       status, assignment_role_id, assignment_user_id, due_at)
+    INSERT INTO app_workflow_tasks
+      (stage_instance_id, workflow_task_definition_id, type_snapshot,
+       form_version_id, status, assigned_role_id, assigned_user_id, due_at)
     SELECT ${stageId}::uuid, definition.id, definition.type,
       binding.form_version_id, 'READY', definition.assignment_role_id,
       definition.assignment_user_id,
@@ -100,7 +101,7 @@ export async function advanceFormTaskWorkflow(
 ) {
   await transaction.execute(sql`
     UPDATE app_workflow_stage_instances
-    SET status = 'COMPLETED', ended_at = ${completedAt}
+    SET status = 'COMPLETED', completed_at = ${completedAt}
     WHERE id = ${task.stageInstanceId}::uuid
   `);
   await cancelOptionalTasks(transaction, task.stageInstanceId, completedAt);

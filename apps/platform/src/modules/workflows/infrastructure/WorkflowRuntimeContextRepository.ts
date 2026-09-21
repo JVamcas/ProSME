@@ -119,13 +119,13 @@ export async function readWorkflowTaskRuntimeContext(
       workflow_definition.name AS "workflowName",
       workflow_version.version_number AS "workflowVersionNumber",
       stage.id AS "stageInstanceId",
-      stage.stage_definition_id AS "stageDefinitionId",
+      stage.workflow_stage_definition_id AS "stageDefinitionId",
       stage.status AS "stageStatus",
-      stage.started_at AS "stageStartedAt",
+      stage.activated_at AS "stageStartedAt",
       stage_definition.code AS "stageKey",
       stage_definition.name AS "stageName",
       task.id AS "taskInstanceId",
-      task.task_definition_id AS "taskDefinitionId",
+      task.workflow_task_definition_id AS "taskDefinitionId",
       task.type_snapshot AS "taskType",
       task.status AS "taskStatus",
       task.row_version AS "taskRowVersion",
@@ -135,16 +135,16 @@ export async function readWorkflowTaskRuntimeContext(
       task.form_version_id AS "formVersionId",
       binding.context_fields AS "contextFields",
       COALESCE(history.values, '[]'::jsonb) AS "priorStageValues"
-    FROM app_stage_task_instances task
+    FROM app_workflow_tasks task
     JOIN app_stage_task_definitions task_definition
-      ON task_definition.id = task.task_definition_id
+      ON task_definition.id = task.workflow_task_definition_id
     JOIN app_stage_task_form_bindings binding
-      ON binding.task_definition_id = task.task_definition_id
+      ON binding.task_definition_id = task.workflow_task_definition_id
       AND binding.form_version_id = task.form_version_id
     JOIN app_workflow_stage_instances stage
       ON stage.id = task.stage_instance_id
     JOIN app_workflow_stage_definitions stage_definition
-      ON stage_definition.id = stage.stage_definition_id
+      ON stage_definition.id = stage.workflow_stage_definition_id
     JOIN app_workflow_instances workflow
       ON workflow.id = stage.workflow_instance_id
     JOIN app_workflow_definition_versions workflow_version
@@ -158,11 +158,11 @@ export async function readWorkflowTaskRuntimeContext(
         'stageKey', prior_definition.code,
         'values', COALESCE(submission.values, '{}'::jsonb),
         'result', COALESCE(prior_task.result, '{}'::jsonb)
-      ) ORDER BY prior_stage.ended_at, prior_task.created_at) AS values
+      ) ORDER BY prior_stage.completed_at, prior_task.created_at) AS values
       FROM app_workflow_stage_instances prior_stage
       JOIN app_workflow_stage_definitions prior_definition
-        ON prior_definition.id = prior_stage.stage_definition_id
-      JOIN app_stage_task_instances prior_task
+        ON prior_definition.id = prior_stage.workflow_stage_definition_id
+      JOIN app_workflow_tasks prior_task
         ON prior_task.stage_instance_id = prior_stage.id
       LEFT JOIN app_form_submissions submission
         ON submission.task_instance_id = prior_task.id
@@ -170,15 +170,15 @@ export async function readWorkflowTaskRuntimeContext(
       WHERE prior_stage.workflow_instance_id = workflow.id
         AND prior_stage.id <> stage.id
         AND prior_stage.status = 'COMPLETED'
-        AND prior_stage.ended_at <= stage.started_at
+        AND prior_stage.completed_at <= stage.activated_at
     ) history ON TRUE
     WHERE task.id = ${taskInstanceId}::uuid
       AND task.form_version_id IS NOT NULL
       AND workflow.status = 'ACTIVE'
       AND stage.status = 'ACTIVE'
       AND (
-        task.assignment_user_id = ${actorId}::uuid
-        OR task.assignment_role_id IN (
+        task.assigned_user_id = ${actorId}::uuid
+        OR task.assigned_role_id IN (
           SELECT role_id FROM app_user_roles WHERE user_id = ${actorId}::uuid
         )
       )

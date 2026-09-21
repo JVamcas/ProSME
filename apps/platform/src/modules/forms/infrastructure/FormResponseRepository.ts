@@ -3,7 +3,7 @@ import "server-only";
 import { and, eq } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
-import { stageTaskInstances } from "@/modules/workflows/infrastructure/workflow-runtime.schema";
+import { workflowTasks } from "@/modules/workflows/infrastructure/workflow-runtime.schema";
 import { formSubmissions } from "./form-response.schema";
 
 export type SaveDraftFormResponseInput = {
@@ -16,8 +16,8 @@ export type SaveDraftFormResponseInput = {
 };
 
 type LockedTask = Pick<
-  typeof stageTaskInstances.$inferSelect,
-  "assignmentUserId" | "formVersionId" | "rowVersion" | "status"
+  typeof workflowTasks.$inferSelect,
+  "assignedUserId" | "formVersionId" | "rowVersion" | "status"
 >;
 
 type FormResponse = typeof formSubmissions.$inferSelect;
@@ -47,13 +47,13 @@ async function lockTask(
 ): Promise<LockedTask | null> {
   const [task] = await transaction
     .select({
-      assignmentUserId: stageTaskInstances.assignmentUserId,
-      formVersionId: stageTaskInstances.formVersionId,
-      rowVersion: stageTaskInstances.rowVersion,
-      status: stageTaskInstances.status,
+      assignedUserId: workflowTasks.assignedUserId,
+      formVersionId: workflowTasks.formVersionId,
+      rowVersion: workflowTasks.rowVersion,
+      status: workflowTasks.status,
     })
-    .from(stageTaskInstances)
-    .where(eq(stageTaskInstances.id, input.taskInstanceId))
+    .from(workflowTasks)
+    .where(eq(workflowTasks.id, input.taskInstanceId))
     .for("update")
     .limit(1);
   return task ?? null;
@@ -68,7 +68,7 @@ function taskIsEditable(
   );
   return Boolean(
     task
-      && task.assignmentUserId === input.actorId
+      && task.assignedUserId === input.actorId
       && task.formVersionId === input.formVersionId
       && task.rowVersion === input.expectedTaskRowVersion
       && editable,

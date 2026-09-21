@@ -12,6 +12,8 @@ import {
 
 import type { TaskTypeCode } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import type { WorkflowInstanceStatus } from "@/modules/workflows/domain/runtime/WorkflowInstance";
+import type { StageInstanceStatus } from "@/modules/workflows/domain/runtime/StageInstance";
+import type { WorkflowTaskStatus } from "@/modules/workflows/domain/runtime/WorkflowTask";
 import { formVersions } from "@/modules/forms/infrastructure/form.schema";
 import { applications } from "@/db/schema/applications";
 import { roles } from "@/db/schema/authorization";
@@ -38,7 +40,7 @@ export const workflowInstances = pgTable(
       .notNull()
       .default("ACTIVE"),
     currentStageInstanceId: uuid("current_stage_instance_id").references(
-      (): AnyPgColumn => workflowStageInstances.id,
+      (): AnyPgColumn => stageInstances.id,
       { onDelete: "restrict" },
     ),
     startedAt: timestamp("started_at", { withTimezone: true })
@@ -59,54 +61,66 @@ export const workflowInstances = pgTable(
   ],
 );
 
-export const workflowStageInstances = pgTable(
+export const stageInstances = pgTable(
   "app_workflow_stage_instances",
   {
     id: uuid("id").primaryKey().defaultRandom(),
     workflowInstanceId: uuid("workflow_instance_id")
       .notNull()
       .references(() => workflowInstances.id, { onDelete: "restrict" }),
-    stageDefinitionId: uuid("stage_definition_id")
+    workflowStageDefinitionId: uuid("workflow_stage_definition_id")
       .notNull()
       .references(() => workflowStageDefinitions.id, {
         onDelete: "restrict",
       }),
-    status: text("status")
-      .$type<"NOT_STARTED" | "ACTIVE" | "BLOCKED" | "COMPLETED" | "CANCELLED">()
+    status: text("status").$type<StageInstanceStatus>()
       .notNull()
       .default("ACTIVE"),
-    startedAt: timestamp("started_at", { withTimezone: true })
+    iterationNumber: integer("iteration_number").notNull().default(1),
+    referralContext: jsonb("referral_context")
+      .$type<Record<string, unknown> | null>(),
+    returnContext: jsonb("return_context")
+      .$type<Record<string, unknown> | null>(),
+    activatedAt: timestamp("activated_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
-    endedAt: timestamp("ended_at", { withTimezone: true }),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
   },
   (table) => [
-    uniqueIndex("app_workflow_stage_instances_definition_unique").on(
+    uniqueIndex("app_workflow_stage_instances_iteration_unique").on(
       table.workflowInstanceId,
-      table.stageDefinitionId,
+      table.workflowStageDefinitionId,
+      table.iterationNumber,
+    ),
+    index("app_workflow_stage_instances_workflow_status_idx").on(
+      table.workflowInstanceId,
+      table.status,
     ),
   ],
 );
 
-export const stageTaskInstances = pgTable(
-  "app_stage_task_instances",
+export const workflowTasks = pgTable(
+  "app_workflow_tasks",
   {
     id: uuid("id").primaryKey().defaultRandom(),
     stageInstanceId: uuid("stage_instance_id")
       .notNull()
-      .references(() => workflowStageInstances.id, { onDelete: "restrict" }),
-    taskDefinitionId: uuid("task_definition_id")
+      .references(() => stageInstances.id, { onDelete: "restrict" }),
+    workflowTaskDefinitionId: uuid("workflow_task_definition_id")
       .notNull()
       .references(() => stageTaskDefinitions.id, { onDelete: "restrict" }),
     typeSnapshot: text("type_snapshot").$type<TaskTypeCode>().notNull(),
     formVersionId: uuid("form_version_id").references(() => formVersions.id, {
       onDelete: "restrict",
     }),
-    status: text("status").notNull().default("READY"),
-    assignmentRoleId: uuid("assignment_role_id").references(() => roles.id, {
+    status: text("status")
+      .$type<WorkflowTaskStatus>()
+      .notNull()
+      .default("READY"),
+    assignedRoleId: uuid("assigned_role_id").references(() => roles.id, {
       onDelete: "restrict",
     }),
-    assignmentUserId: uuid("assignment_user_id").references(() => users.id, {
+    assignedUserId: uuid("assigned_user_id").references(() => users.id, {
       onDelete: "restrict",
     }),
     dueAt: timestamp("due_at", { withTimezone: true }),
@@ -114,20 +128,20 @@ export const stageTaskInstances = pgTable(
     result: jsonb("result").$type<Record<string, unknown> | null>(),
     rowVersion: integer("row_version").notNull().default(1),
     startedAt: timestamp("started_at", { withTimezone: true }),
-    endedAt: timestamp("ended_at", { withTimezone: true }),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
   },
   (table) => [
-    uniqueIndex("app_stage_task_instances_definition_unique").on(
+    uniqueIndex("app_workflow_tasks_definition_unique").on(
       table.stageInstanceId,
-      table.taskDefinitionId,
+      table.workflowTaskDefinitionId,
     ),
-    index("app_stage_task_instances_assignment_idx").on(
+    index("app_workflow_tasks_assignment_idx").on(
       table.status,
-      table.assignmentRoleId,
-      table.assignmentUserId,
+      table.assignedRoleId,
+      table.assignedUserId,
     ),
   ],
 );
@@ -138,7 +152,7 @@ export const taskClaimCommands = pgTable(
     idempotencyKey: text("idempotency_key").primaryKey(),
     taskInstanceId: uuid("task_instance_id")
       .notNull()
-      .references(() => stageTaskInstances.id, { onDelete: "restrict" }),
+      .references(() => workflowTasks.id, { onDelete: "restrict" }),
     actorId: uuid("actor_id")
       .notNull()
       .references(() => users.id, { onDelete: "restrict" }),
@@ -157,7 +171,7 @@ export const taskCompletionCommands = pgTable(
     idempotencyKey: text("idempotency_key").primaryKey(),
     taskInstanceId: uuid("task_instance_id")
       .notNull()
-      .references(() => stageTaskInstances.id, { onDelete: "restrict" }),
+      .references(() => workflowTasks.id, { onDelete: "restrict" }),
     actorId: uuid("actor_id")
       .notNull()
       .references(() => users.id, { onDelete: "restrict" }),

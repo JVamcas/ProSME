@@ -16,8 +16,8 @@ type QueueDatabaseRow = Omit<WorkQueueRow, "claimedAt" | "dueAt"> & {
 
 function actorScope(actorId: string) {
   return sql`(
-    task.assignment_user_id = ${actorId}::uuid
-    OR task.assignment_role_id IN (
+    task.assigned_user_id = ${actorId}::uuid
+    OR task.assigned_role_id IN (
       SELECT role_id FROM app_user_roles WHERE user_id = ${actorId}::uuid
     )
   )`;
@@ -71,24 +71,24 @@ function queueQuery(input: WorkQueueListInput, actorId: string, cursor?: WorkQue
         stage_definition.name AS "stageName",
         NULL::text AS "priority",
         task.status AS "taskStatus",
-        task.assignment_role_id AS "assignedRoleId",
+        task.assigned_role_id AS "assignedRoleId",
         role.name AS "assignedRoleName",
-        task.assignment_user_id AS "assignedUserId",
+        task.assigned_user_id AS "assignedUserId",
         assignee.display_name AS "assignedUserName",
         task.due_at AS "dueAt",
         task.claimed_at AS "claimedAt",
         task.row_version AS "rowVersion"
-      FROM app_stage_task_instances task
-      JOIN app_stage_task_definitions task_definition ON task_definition.id = task.task_definition_id
+      FROM app_workflow_tasks task
+      JOIN app_stage_task_definitions task_definition ON task_definition.id = task.workflow_task_definition_id
       JOIN app_workflow_stage_instances stage ON stage.id = task.stage_instance_id
-      JOIN app_workflow_stage_definitions stage_definition ON stage_definition.id = stage.stage_definition_id
+      JOIN app_workflow_stage_definitions stage_definition ON stage_definition.id = stage.workflow_stage_definition_id
       JOIN app_workflow_instances workflow ON workflow.id = stage.workflow_instance_id
       JOIN app_applications application ON application.id = workflow.application_id
       JOIN app_users applicant ON applicant.id = application.owner_user_id
       LEFT JOIN app_business_profiles business
         ON business.id::text = application.business_section ->> 'businessId'
-      LEFT JOIN app_roles role ON role.id = task.assignment_role_id
-      LEFT JOIN app_users assignee ON assignee.id = task.assignment_user_id
+      LEFT JOIN app_roles role ON role.id = task.assigned_role_id
+      LEFT JOIN app_users assignee ON assignee.id = task.assigned_user_id
       WHERE workflow.status = 'ACTIVE'
         AND stage.status IN ('ACTIVE', 'BLOCKED')
         AND task.status IN ${actionableStatuses}
@@ -174,9 +174,9 @@ async function existingClaim(
 function claimResultQuery(taskId: string, actorId: string): SQL {
   return sql`
     SELECT task.id AS "taskInstanceId", task.status AS "taskStatus",
-      task.assignment_user_id AS "assignedUserId", actor.display_name AS "assignedUserName",
+      task.assigned_user_id AS "assignedUserId", actor.display_name AS "assignedUserName",
       task.claimed_at AS "claimedAt", task.row_version AS "rowVersion"
-    FROM app_stage_task_instances task
+    FROM app_workflow_tasks task
     JOIN app_users actor ON actor.id = ${actorId}::uuid
     WHERE task.id = ${taskId}::uuid
   `;
@@ -210,15 +210,15 @@ export async function writeTaskClaim(input: {
         throw new ClaimWriteConflict();
       }
       const updated = await transaction.execute(sql`
-      UPDATE app_stage_task_instances task
-      SET assignment_user_id = ${input.actorId}::uuid, assignment_role_id = NULL,
+      UPDATE app_workflow_tasks task
+      SET assigned_user_id = ${input.actorId}::uuid, assigned_role_id = NULL,
         claimed_at = ${claimedAt}, status = 'CLAIMED',
         row_version = row_version + 1, started_at = COALESCE(started_at, CURRENT_TIMESTAMP)
       WHERE task.id = ${input.taskId}::uuid
         AND task.row_version = ${input.expectedRowVersion}
-        AND task.assignment_user_id IS NULL
+        AND task.assigned_user_id IS NULL
         AND task.status IN ('PENDING', 'READY')
-        AND task.assignment_role_id IN (
+        AND task.assigned_role_id IN (
           SELECT role_id FROM app_user_roles WHERE user_id = ${input.actorId}::uuid
         )
         AND EXISTS (
@@ -230,7 +230,7 @@ export async function writeTaskClaim(input: {
             AND active_stage.status = 'ACTIVE'
             AND active_workflow.status = 'ACTIVE'
         )
-      RETURNING task.assignment_role_id AS "previousRoleId"
+      RETURNING task.assigned_role_id AS "previousRoleId"
       `);
       if (!updated.rowCount) throw new ClaimWriteConflict();
       await transaction.execute(sql`

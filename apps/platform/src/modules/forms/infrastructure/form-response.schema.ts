@@ -12,7 +12,7 @@ import {
 } from "drizzle-orm/pg-core";
 
 import { users } from "@/db/schema/identity";
-import { stageTaskInstances } from "@/modules/workflows/infrastructure/workflow-runtime.schema";
+import { workflowTasks } from "@/modules/workflows/infrastructure/workflow-runtime.schema";
 import { formVersions } from "./form.schema";
 import type { FormRuntimeSchema } from "@/modules/forms/FormTypes";
 
@@ -22,7 +22,7 @@ export const formSubmissions = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     taskInstanceId: uuid("task_instance_id")
       .notNull()
-      .references(() => stageTaskInstances.id, { onDelete: "restrict" }),
+      .references(() => workflowTasks.id, { onDelete: "restrict" }),
     formVersionId: uuid("form_version_id")
       .notNull()
       .references(() => formVersions.id, { onDelete: "restrict" }),

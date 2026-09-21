@@ -40,7 +40,7 @@ function dashboardCtes(ownerUserId: string) {
       LEFT JOIN app_workflow_stage_instances stage
         ON stage.id = workflow.current_stage_instance_id
       LEFT JOIN app_workflow_stage_definitions stage_definition
-        ON stage_definition.id = stage.stage_definition_id
+        ON stage_definition.id = stage.workflow_stage_definition_id
       WHERE application.owner_user_id = ${ownerUserId}::uuid
     ), activity_candidates AS (
       SELECT

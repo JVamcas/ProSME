@@ -137,7 +137,7 @@ beforeAll(async () => {
   );
   await query(
     `INSERT INTO app_workflow_stage_instances
-      (id, workflow_instance_id, stage_definition_id, status)
+      (id, workflow_instance_id, workflow_stage_definition_id, status)
      VALUES ($1, $2, $3, 'ACTIVE')`,
     [stageInstanceId, workflowId, stageDefinitionId],
   );
@@ -146,9 +146,9 @@ beforeAll(async () => {
     [stageInstanceId, workflowId],
   );
   await query(
-    `INSERT INTO app_stage_task_instances
-      (id, stage_instance_id, task_definition_id, type_snapshot, status,
-       assignment_role_id, due_at)
+    `INSERT INTO app_workflow_tasks
+      (id, stage_instance_id, workflow_task_definition_id, type_snapshot,
+       status, assigned_role_id, due_at)
      SELECT $1, $2, $3, 'CHECKLIST', 'READY', role.id, now() + interval '24 hours'
      FROM app_roles role WHERE role.code = 'programme_officer'`,
     [taskInstanceId, stageInstanceId, taskDefinitionId],
@@ -232,16 +232,16 @@ describeDatabase("P3.5 work queue projections and claim", () => {
     });
     expect(replay).toMatchObject({ kind: "claimed" });
     const persisted = await query(
-      `SELECT assignment_user_id, assignment_role_id, status, row_version,
+      `SELECT assigned_user_id, assigned_role_id, status, row_version,
         claimed_at IS NOT NULL AS claimed,
         (SELECT count(*)::integer FROM app_workflow_audit_entries
           WHERE target_id = $1::text AND action = 'TASK_CLAIMED') AS audits
-       FROM app_stage_task_instances WHERE id = $1::uuid`,
+       FROM app_workflow_tasks WHERE id = $1::uuid`,
       [taskInstanceId],
     );
     expect(persisted.rows[0]).toMatchObject({
-      assignment_role_id: null,
-      assignment_user_id: winnerId,
+      assigned_role_id: null,
+      assigned_user_id: winnerId,
       audits: 1,
       claimed: true,
       row_version: 2,
@@ -274,18 +274,18 @@ describeDatabase("P3.5 work queue projections and claim", () => {
       `SELECT task.status, task.result,
         workflow.status AS workflow_status,
         stage_definition.name AS current_stage,
-        (SELECT count(*)::integer FROM app_stage_task_instances next_task
+        (SELECT count(*)::integer FROM app_workflow_tasks next_task
           JOIN app_workflow_stage_instances next_stage
             ON next_stage.id = next_task.stage_instance_id
           WHERE next_stage.workflow_instance_id = workflow.id
             AND next_stage.status = 'ACTIVE') AS next_tasks
-       FROM app_stage_task_instances task
+       FROM app_workflow_tasks task
        JOIN app_workflow_stage_instances stage ON stage.id = task.stage_instance_id
        JOIN app_workflow_instances workflow ON workflow.id = stage.workflow_instance_id
        JOIN app_workflow_stage_instances current_stage
          ON current_stage.id = workflow.current_stage_instance_id
        JOIN app_workflow_stage_definitions stage_definition
-         ON stage_definition.id = current_stage.stage_definition_id
+         ON stage_definition.id = current_stage.workflow_stage_definition_id
        WHERE task.id = $1`,
       [taskInstanceId],
     );

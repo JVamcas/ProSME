@@ -158,7 +158,7 @@ describeDatabase("P3.4 transactional application submission", () => {
         (SELECT count(*)::integer FROM app_workflow_stage_instances stage
           JOIN app_workflow_instances workflow ON workflow.id = stage.workflow_instance_id
           WHERE workflow.application_id = $1) AS stages,
-        (SELECT count(*)::integer FROM app_stage_task_instances task
+        (SELECT count(*)::integer FROM app_workflow_tasks task
           JOIN app_workflow_stage_instances stage ON stage.id = task.stage_instance_id
           JOIN app_workflow_instances workflow ON workflow.id = stage.workflow_instance_id
           WHERE workflow.application_id = $1) AS tasks,

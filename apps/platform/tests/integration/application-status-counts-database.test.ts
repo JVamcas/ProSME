@@ -89,7 +89,7 @@ beforeAll(async () => {
   );
   await query(
     `INSERT INTO app_workflow_stage_instances
-       (id, workflow_instance_id, stage_definition_id, status)
+       (id, workflow_instance_id, workflow_stage_definition_id, status)
      VALUES ($1, $3, $5, 'ACTIVE'), ($2, $4, $5, 'COMPLETED')`,
     [
       reviewStageId,

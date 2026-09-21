@@ -13,7 +13,7 @@ import {
   type ApplicationRecord,
   workflowInstances,
   workflowStageDefinitions,
-  workflowStageInstances,
+  stageInstances,
 } from "@/db/schema";
 import type {
   ApplicationSection,
@@ -116,12 +116,15 @@ function applicationStatusJoins() {
       eq(workflowInstances.applicationId, applications.id),
     )
     .leftJoin(
-      workflowStageInstances,
-      eq(workflowStageInstances.id, workflowInstances.currentStageInstanceId),
+      stageInstances,
+      eq(stageInstances.id, workflowInstances.currentStageInstanceId),
     )
     .leftJoin(
       workflowStageDefinitions,
-      eq(workflowStageDefinitions.id, workflowStageInstances.stageDefinitionId),
+      eq(
+        workflowStageDefinitions.id,
+        stageInstances.workflowStageDefinitionId,
+      ),
     );
 }
 
@@ -160,12 +163,15 @@ async function countOwnedApplicationsByStatus(ownerUserId: string) {
       eq(workflowInstances.applicationId, applications.id),
     )
     .leftJoin(
-      workflowStageInstances,
-      eq(workflowStageInstances.id, workflowInstances.currentStageInstanceId),
+      stageInstances,
+      eq(stageInstances.id, workflowInstances.currentStageInstanceId),
     )
     .leftJoin(
       workflowStageDefinitions,
-      eq(workflowStageDefinitions.id, workflowStageInstances.stageDefinitionId),
+      eq(
+        workflowStageDefinitions.id,
+        stageInstances.workflowStageDefinitionId,
+      ),
     )
     .where(eq(applications.ownerUserId, ownerUserId));
   return rows[0];

@@ -7,14 +7,14 @@ import {
   applicationSubmissionCommands,
   stageTaskDefinitions,
   stageTaskFormBindings,
-  stageTaskInstances,
   transactionalOutbox,
   workflowAuditEntries,
   workflowEvents,
   workflowInstances,
-  workflowStageInstances,
 } from "@/db/schema";
+import { createStageInstance } from "@/modules/workflows/infrastructure/StageInstanceRepository";
 import { createWorkflowInstance } from "@/modules/workflows/infrastructure/WorkflowInstanceRepository";
+import { createWorkflowTasks } from "@/modules/workflows/infrastructure/WorkflowTaskWriteRepository";
 import type {
   SubmissionResult,
   SubmissionTransaction,
@@ -68,14 +68,11 @@ async function createInitialRuntime(
     workflowTemplateVersionId:
       input.configuration.workflowTemplateVersionId,
   });
-  const [stage] = await transaction
-    .insert(workflowStageInstances)
-    .values({
-      stageDefinitionId: input.configuration.stageId,
-      startedAt: submittedAt,
-      workflowInstanceId: workflow.id,
-    })
-    .returning({ id: workflowStageInstances.id });
+  const stage = await createStageInstance(transaction, {
+    activatedAt: submittedAt,
+    workflowInstanceId: workflow.id,
+    workflowStageDefinitionId: input.configuration.stageId,
+  });
   await transaction
     .update(workflowInstances)
     .set({ currentStageInstanceId: stage.id })
@@ -110,13 +107,15 @@ async function createInitialTasks(
       : new Date(
           submittedAt.getTime() + input.configuration.slaHours * 3_600_000,
         );
-  await transaction.insert(stageTaskInstances).values(
+  await createWorkflowTasks(
+    transaction,
     definitions.map((task) => ({
-      assignmentRoleId: task.roleId,
-      assignmentUserId: task.namedUserOverrideId,
+      assignedRoleId: task.roleId,
+      assignedUserId: task.namedUserOverrideId,
+      createdAt: submittedAt,
       dueAt,
       stageInstanceId,
-      taskDefinitionId: task.id,
+      workflowTaskDefinitionId: task.id,
       typeSnapshot: task.type,
       formVersionId: task.formVersionId,
     })),

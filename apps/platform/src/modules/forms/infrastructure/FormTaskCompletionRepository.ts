@@ -116,20 +116,20 @@ async function lockTask(
   const result = await transaction.execute(sql`
     SELECT task.row_version AS "rowVersion",
       stage.id AS "stageInstanceId",
-      stage.stage_definition_id AS "stageDefinitionId",
+      stage.workflow_stage_definition_id AS "stageDefinitionId",
       workflow.id AS "workflowInstanceId",
       workflow.workflow_template_version_id AS "workflowVersionId"
-    FROM app_stage_task_instances task
+    FROM app_workflow_tasks task
     JOIN app_stage_task_definitions definition
-      ON definition.id = task.task_definition_id
+      ON definition.id = task.workflow_task_definition_id
     JOIN app_workflow_stage_instances stage ON stage.id = task.stage_instance_id
     JOIN app_workflow_instances workflow ON workflow.id = stage.workflow_instance_id
     WHERE task.id = ${input.taskInstanceId}::uuid
       AND (
-        task.assignment_user_id = ${input.actorId}::uuid
+        task.assigned_user_id = ${input.actorId}::uuid
         OR (
-          task.assignment_user_id IS NULL
-          AND task.assignment_role_id IN (
+          task.assigned_user_id IS NULL
+          AND task.assigned_role_id IN (
             SELECT role_id FROM app_user_roles
             WHERE user_id = ${input.actorId}::uuid
           )
@@ -142,13 +142,13 @@ async function lockTask(
       AND EXISTS (
         SELECT 1
         FROM app_workflow_action_definitions action
-        WHERE action.stage_id = stage.stage_definition_id
+        WHERE action.stage_id = stage.workflow_stage_definition_id
           AND action.stable_key = ${input.actionKey}
           AND action.enabled = TRUE
           AND EXISTS (
             SELECT 1 FROM app_stage_task_action_bindings binding
             WHERE binding.task_definition_id = definition.id
-              AND binding.stage_id = stage.stage_definition_id
+              AND binding.stage_id = stage.workflow_stage_definition_id
               AND binding.action_key = action.stable_key
           )
       )
@@ -191,10 +191,11 @@ async function completeTaskRow(
   completedAt: Date,
 ) {
   await transaction.execute(sql`
-    UPDATE app_stage_task_instances
+    UPDATE app_workflow_tasks
     SET status = 'COMPLETED',
       result = ${JSON.stringify({ values: input.values })}::jsonb,
-      ended_at = ${completedAt}, started_at = COALESCE(started_at, ${completedAt}),
+      completed_at = ${completedAt},
+      started_at = COALESCE(started_at, ${completedAt}),
       row_version = row_version + 1
     WHERE id = ${input.taskInstanceId}::uuid
   `);
@@ -206,8 +207,8 @@ async function stageHasRequiredTasks(
 ) {
   const result = await transaction.execute(sql`
     SELECT count(*)::integer AS count
-    FROM app_stage_task_instances task
-    JOIN app_stage_task_definitions definition ON definition.id = task.task_definition_id
+    FROM app_workflow_tasks task
+    JOIN app_stage_task_definitions definition ON definition.id = task.workflow_task_definition_id
     WHERE task.stage_instance_id = ${stageInstanceId}::uuid
       AND definition.required = TRUE
       AND task.status NOT IN ('COMPLETED', 'SKIPPED')

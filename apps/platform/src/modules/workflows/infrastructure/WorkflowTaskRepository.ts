@@ -38,20 +38,20 @@ export async function readWorkflowTask(
           ORDER BY action.display_order
         )
         FROM app_workflow_action_definitions action
-        WHERE action.stage_id = stage.stage_definition_id
+        WHERE action.stage_id = stage.workflow_stage_definition_id
           AND action.enabled = TRUE
           AND task.status IN ('READY', 'CLAIMED', 'IN_PROGRESS')
           AND EXISTS (
             SELECT 1 FROM app_stage_task_action_bindings binding
             WHERE binding.task_definition_id = definition.id
-              AND binding.stage_id = stage.stage_definition_id
+              AND binding.stage_id = stage.workflow_stage_definition_id
               AND binding.action_key = action.stable_key
           )
           AND EXISTS (
             SELECT 1
             FROM app_workflow_transition_definitions transition
             WHERE transition.version_id = workflow.workflow_template_version_id
-              AND transition.from_stage_id = stage.stage_definition_id
+              AND transition.from_stage_id = stage.workflow_stage_definition_id
               AND transition.action_key = action.stable_key
           )
       ), '[]'::jsonb) AS actions,
@@ -59,12 +59,12 @@ export async function readWorkflowTask(
       applicant.display_name AS "applicantName",
       NULLIF(COALESCE(business.trading_name, business.legal_name), '') AS "businessName",
       opportunity.funding_opportunity_title AS "fundingCallTitle"
-    FROM app_stage_task_instances task
+    FROM app_workflow_tasks task
     JOIN app_stage_task_definitions definition
-      ON definition.id = task.task_definition_id
+      ON definition.id = task.workflow_task_definition_id
     JOIN app_workflow_stage_instances stage ON stage.id = task.stage_instance_id
     JOIN app_workflow_stage_definitions stage_definition
-      ON stage_definition.id = stage.stage_definition_id
+      ON stage_definition.id = stage.workflow_stage_definition_id
     JOIN app_workflow_instances workflow ON workflow.id = stage.workflow_instance_id
     JOIN app_applications application ON application.id = workflow.application_id
     JOIN app_users applicant ON applicant.id = application.owner_user_id
@@ -77,8 +77,8 @@ export async function readWorkflowTask(
       AND workflow.status = 'ACTIVE'
       AND stage.status = 'ACTIVE'
       AND (
-        task.assignment_user_id = ${actorId}::uuid
-        OR task.assignment_role_id IN (
+        task.assigned_user_id = ${actorId}::uuid
+        OR task.assigned_role_id IN (
           SELECT role_id FROM app_user_roles WHERE user_id = ${actorId}::uuid
         )
       )
@@ -93,15 +93,15 @@ export async function readAssignedFormTask(actorId: string, taskId: string) {
       task.row_version AS "rowVersion",
       task.status AS "taskStatus",
       definition.permissions
-    FROM app_stage_task_instances task
+    FROM app_workflow_tasks task
     JOIN app_stage_task_definitions definition
-      ON definition.id = task.task_definition_id
+      ON definition.id = task.workflow_task_definition_id
     JOIN app_workflow_stage_instances stage
       ON stage.id = task.stage_instance_id
     JOIN app_workflow_instances workflow
       ON workflow.id = stage.workflow_instance_id
     WHERE task.id = ${taskId}::uuid
-      AND task.assignment_user_id = ${actorId}::uuid
+      AND task.assigned_user_id = ${actorId}::uuid
       AND stage.status = 'ACTIVE'
       AND workflow.status = 'ACTIVE'
   `);
