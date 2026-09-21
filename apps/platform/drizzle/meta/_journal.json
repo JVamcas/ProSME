@@ -393,6 +393,13 @@
       "when": 1792540800000,
       "tag": "0055_public_funding_call_read_model",
       "breakpoints": true
+    },
+    {
+      "idx": 56,
+      "version": "7",
+      "when": 1792627200000,
+      "tag": "0056_workflow_instance",
+      "breakpoints": true
     }
   ]
 }

@@ -94,7 +94,7 @@ async function lockTask(
       definition.config, stage.id AS "stageInstanceId",
       stage.stage_definition_id AS "stageDefinitionId",
       workflow.id AS "workflowInstanceId",
-      workflow.workflow_version_id AS "workflowVersionId"
+      workflow.workflow_template_version_id AS "workflowVersionId"
     FROM app_stage_task_instances task
     JOIN app_stage_task_definitions definition
       ON definition.id = task.task_definition_id
@@ -201,7 +201,8 @@ async function activateNextStage(
   `);
   if (!transition?.toStageId) {
     await transaction.execute(sql`
-      UPDATE app_workflow_instances SET status = 'COMPLETED', ended_at = ${completedAt}
+      UPDATE app_workflow_instances
+      SET status = 'COMPLETED', completed_at = ${completedAt}
       WHERE id = ${task.workflowInstanceId}::uuid
     `);
     return "COMPLETED" as const;

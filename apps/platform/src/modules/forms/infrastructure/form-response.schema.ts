@@ -12,7 +12,7 @@ import {
 } from "drizzle-orm/pg-core";
 
 import { users } from "@/db/schema/identity";
-import { stageTaskInstances } from "@/db/schema/workflow-runtime";
+import { stageTaskInstances } from "@/modules/workflows/infrastructure/workflow-runtime.schema";
 import { formVersions } from "./form.schema";
 import type { FormRuntimeSchema } from "@/modules/forms/FormTypes";
 

@@ -43,7 +43,7 @@ describe("application submission service", () => {
       reference: "SMEF-2026-000001",
       submittedAt: "2026-09-15T08:00:00.000Z",
       workflowInstanceId: "69e20de0-3558-4d63-90a4-8c9f5125df07",
-      workflowVersionId: "59e20de0-3558-4d63-90a4-8c9f5125df07",
+      workflowTemplateVersionId: "59e20de0-3558-4d63-90a4-8c9f5125df07",
     };
     vi.mocked(submitOwnedApplication).mockResolvedValue({
       kind: "submitted",

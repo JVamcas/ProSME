@@ -50,7 +50,7 @@ export async function readWorkflowTask(
           AND EXISTS (
             SELECT 1
             FROM app_workflow_transition_definitions transition
-            WHERE transition.version_id = workflow.workflow_version_id
+            WHERE transition.version_id = workflow.workflow_template_version_id
               AND transition.from_stage_id = stage.stage_definition_id
               AND transition.action_key = action.stable_key
           )
@@ -70,7 +70,7 @@ export async function readWorkflowTask(
     JOIN app_users applicant ON applicant.id = application.owner_user_id
     JOIN app_funding_opportunity_workflows opportunity
       ON opportunity.funding_opportunity_id = application.funding_opportunity_id
-      AND opportunity.workflow_version_id = workflow.workflow_version_id
+      AND opportunity.workflow_version_id = workflow.workflow_template_version_id
     LEFT JOIN app_business_profiles business
       ON business.id::text = application.business_section ->> 'businessId'
     WHERE task.id = ${taskId}::uuid

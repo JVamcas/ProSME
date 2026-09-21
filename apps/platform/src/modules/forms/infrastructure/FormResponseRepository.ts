@@ -3,7 +3,7 @@ import "server-only";
 import { and, eq } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
-import { stageTaskInstances } from "@/db/schema/workflow-runtime";
+import { stageTaskInstances } from "@/modules/workflows/infrastructure/workflow-runtime.schema";
 import { formSubmissions } from "./form-response.schema";
 
 export type SaveDraftFormResponseInput = {

@@ -131,7 +131,7 @@ beforeAll(async () => {
   );
   await query(
     `INSERT INTO app_workflow_instances
-      (id, application_id, workflow_version_id, current_stage_instance_id)
+      (id, application_id, workflow_template_version_id, current_stage_instance_id)
      VALUES ($1, $2, $3, NULL)`,
     [workflowId, applicationId, versionId],
   );

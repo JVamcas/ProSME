@@ -11,10 +11,11 @@ import {
 } from "drizzle-orm/pg-core";
 
 import type { TaskTypeCode } from "@/modules/workflows/domain/definitions/WorkflowTypes";
+import type { WorkflowInstanceStatus } from "@/modules/workflows/domain/runtime/WorkflowInstance";
 import { formVersions } from "@/modules/forms/infrastructure/form.schema";
-import { applications } from "./applications";
-import { roles } from "./authorization";
-import { users } from "./identity";
+import { applications } from "@/db/schema/applications";
+import { roles } from "@/db/schema/authorization";
+import { users } from "@/db/schema/identity";
 import {
   stageTaskDefinitions,
   workflowDefinitionVersions,
@@ -28,12 +29,12 @@ export const workflowInstances = pgTable(
     applicationId: uuid("application_id")
       .notNull()
       .references(() => applications.id, { onDelete: "restrict" }),
-    workflowVersionId: uuid("workflow_version_id")
+    workflowTemplateVersionId: uuid("workflow_template_version_id")
       .notNull()
       .references(() => workflowDefinitionVersions.id, {
         onDelete: "restrict",
       }),
-    status: text("status").$type<"ACTIVE" | "COMPLETED" | "CANCELLED">()
+    status: text("status").$type<WorkflowInstanceStatus>()
       .notNull()
       .default("ACTIVE"),
     currentStageInstanceId: uuid("current_stage_instance_id").references(
@@ -43,13 +44,18 @@ export const workflowInstances = pgTable(
     startedAt: timestamp("started_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
-    endedAt: timestamp("ended_at", { withTimezone: true }),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (table) => [
     uniqueIndex("app_workflow_instances_application_unique").on(
       table.applicationId,
     ),
-    index("app_workflow_instances_version_idx").on(table.workflowVersionId),
+    index("app_workflow_instances_template_version_idx").on(
+      table.workflowTemplateVersionId,
+    ),
   ],
 );
 

@@ -25,7 +25,7 @@ export type SubmissionResult = {
   reference: string;
   submittedAt: string;
   workflowInstanceId: string;
-  workflowVersionId: string;
+  workflowTemplateVersionId: string;
 };
 
 export type SubmitApplicationResult =
@@ -45,7 +45,7 @@ function submissionView(record: {
   reference: string;
   submittedAt: Date;
   workflowInstanceId: string;
-  workflowVersionId: string;
+  workflowTemplateVersionId: string;
 }): SubmissionResult {
   return { ...record, submittedAt: record.submittedAt.toISOString() };
 }
@@ -71,7 +71,10 @@ async function findKeyReplay(
   }
   if (!command) return null;
   const [instance] = await transaction
-    .select({ workflowVersionId: workflowInstances.workflowVersionId })
+    .select({
+      workflowTemplateVersionId:
+        workflowInstances.workflowTemplateVersionId,
+    })
     .from(workflowInstances)
     .where(eq(workflowInstances.id, command.workflowInstanceId))
     .limit(1);
@@ -100,7 +103,8 @@ async function findExistingSubmission(
   if (!existing) return null;
   return submissionView({
     ...existing.app_application_submission_commands,
-    workflowVersionId: existing.app_workflow_instances.workflowVersionId,
+    workflowTemplateVersionId:
+      existing.app_workflow_instances.workflowTemplateVersionId,
   });
 }
 
@@ -139,7 +143,7 @@ async function findInitialConfiguration(
     .select({
       stageId: workflowStageDefinitions.id,
       slaHours: workflowStageDefinitions.slaHours,
-      workflowVersionId: workflowDefinitionVersions.id,
+      workflowTemplateVersionId: workflowDefinitionVersions.id,
     })
     .from(fundingCalls)
     .innerJoin(

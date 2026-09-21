@@ -106,7 +106,8 @@ export async function advanceFormTaskWorkflow(
   await cancelOptionalTasks(transaction, task.stageInstanceId, completedAt);
   if (!transition.id) {
     await transaction.execute(sql`
-      UPDATE app_workflow_instances SET status = 'COMPLETED', ended_at = ${completedAt}
+      UPDATE app_workflow_instances
+      SET status = 'COMPLETED', completed_at = ${completedAt}
       WHERE id = ${task.workflowInstanceId}::uuid
     `);
     return { nextStageName: null, workflowStatus: "COMPLETED" as const };

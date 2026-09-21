@@ -216,7 +216,7 @@ function detailQuery(input: {
       LEFT JOIN app_workflow_stage_instances stage_instance
         ON stage_instance.stage_definition_id = definition.id
         AND stage_instance.workflow_instance_id = workflow.id
-      WHERE definition.version_id = workflow.workflow_version_id
+      WHERE definition.version_id = workflow.workflow_template_version_id
     ) stage_timeline ON TRUE
     WHERE application.id = ${input.applicationId}::uuid
       AND application.status = 'submitted'

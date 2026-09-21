@@ -14,6 +14,7 @@ import {
   workflowInstances,
   workflowStageInstances,
 } from "@/db/schema";
+import { createWorkflowInstance } from "@/modules/workflows/infrastructure/WorkflowInstanceRepository";
 import type {
   SubmissionResult,
   SubmissionTransaction,
@@ -27,7 +28,7 @@ type WriteInput = {
   configuration: {
     stageId: string;
     slaHours: number | null;
-    workflowVersionId: string;
+    workflowTemplateVersionId: string;
   };
   correlationId: string;
   idempotencyKey: string;
@@ -46,7 +47,7 @@ async function markApplicationSubmitted(
       status: "submitted",
       submittedAt,
       updatedAt: submittedAt,
-      workflowVersionId: input.configuration.workflowVersionId,
+      workflowVersionId: input.configuration.workflowTemplateVersionId,
     })
     .where(and(
       eq(applications.id, input.application.id),
@@ -61,14 +62,12 @@ async function createInitialRuntime(
   input: WriteInput,
   submittedAt: Date,
 ) {
-  const [workflow] = await transaction
-    .insert(workflowInstances)
-    .values({
-      applicationId: input.application.id,
-      startedAt: submittedAt,
-      workflowVersionId: input.configuration.workflowVersionId,
-    })
-    .returning({ id: workflowInstances.id });
+  const workflow = await createWorkflowInstance(transaction, {
+    applicationId: input.application.id,
+    startedAt: submittedAt,
+    workflowTemplateVersionId:
+      input.configuration.workflowTemplateVersionId,
+  });
   const [stage] = await transaction
     .insert(workflowStageInstances)
     .values({
@@ -185,7 +184,8 @@ export async function writeApplicationSubmission(
     reference,
     submittedAt: submittedAt.toISOString(),
     workflowInstanceId: runtime.workflowInstanceId,
-    workflowVersionId: input.configuration.workflowVersionId,
+    workflowTemplateVersionId:
+      input.configuration.workflowTemplateVersionId,
   };
   await appendSubmissionHistory(transaction, input, result);
   return { kind: "submitted", result };

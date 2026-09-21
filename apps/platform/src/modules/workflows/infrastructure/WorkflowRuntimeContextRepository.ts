@@ -112,7 +112,7 @@ export async function readWorkflowTaskRuntimeContext(
       application.declarations_section AS "applicationDeclarations",
       application.section_completion AS "applicationSectionCompletion",
       workflow.id AS "workflowInstanceId",
-      workflow.workflow_version_id AS "workflowVersionId",
+      workflow.workflow_template_version_id AS "workflowVersionId",
       workflow.status AS "workflowStatus",
       workflow.started_at AS "workflowStartedAt",
       workflow_definition.code AS "workflowCode",
@@ -148,7 +148,7 @@ export async function readWorkflowTaskRuntimeContext(
     JOIN app_workflow_instances workflow
       ON workflow.id = stage.workflow_instance_id
     JOIN app_workflow_definition_versions workflow_version
-      ON workflow_version.id = workflow.workflow_version_id
+      ON workflow_version.id = workflow.workflow_template_version_id
     JOIN app_workflow_definitions workflow_definition
       ON workflow_definition.id = workflow_version.definition_id
     JOIN app_applications application

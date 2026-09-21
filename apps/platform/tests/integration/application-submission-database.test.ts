@@ -13,6 +13,7 @@ const enabled = process.env.RUN_P3_APPLICATION_DATABASE_TESTS === "true";
 const describeDatabase = enabled ? describe : describe.skip;
 const ownerId = "61111111-1111-4111-8111-111111111111";
 const versionId = "62222222-2222-4222-8222-222222222222";
+const newerVersionId = "62222222-2222-4222-8222-222222222223";
 const definitionId = "63333333-3333-4333-8333-333333333333";
 const stageId = "64444444-4444-4444-8444-444444444444";
 const taskId = "65555555-5555-4555-8555-555555555555";
@@ -147,7 +148,7 @@ describeDatabase("P3.4 transactional application submission", () => {
     if (first.kind !== "submitted" || second.kind !== "submitted") return;
     expect(first.result.reference).toBe(second.result.reference);
     expect(first.result.workflowInstanceId).toBe(second.result.workflowInstanceId);
-    expect(first.result.workflowVersionId).toBe(versionId);
+    expect(first.result.workflowTemplateVersionId).toBe(versionId);
 
     await workflowBindingFixture.publishNewerWorkflowVersion(query, ownerId, definitionId);
 
@@ -168,8 +169,11 @@ describeDatabase("P3.4 transactional application submission", () => {
           WHERE target_id = $1::text AND action = 'APPLICATION_SUBMITTED') AS audits,
         (SELECT count(*)::integer FROM app_transactional_outbox
           WHERE aggregate_id = $1) AS outbox,
-        (SELECT workflow_version_id FROM app_workflow_instances
-          WHERE application_id = $1) AS pinned_version`,
+        (SELECT workflow_template_version_id FROM app_workflow_instances
+          WHERE application_id = $1) AS pinned_version,
+        (SELECT created_at = started_at AND completed_at IS NULL
+          AND status = 'ACTIVE' FROM app_workflow_instances
+          WHERE application_id = $1) AS runtime_initialized`,
       [applicationIds[0]],
     );
     expect(counts.rows[0]).toEqual({
@@ -177,6 +181,7 @@ describeDatabase("P3.4 transactional application submission", () => {
       events: 1,
       outbox: 1,
       pinned_version: versionId,
+      runtime_initialized: true,
       stages: 1,
       tasks: 1,
       workflows: 1,
@@ -187,9 +192,9 @@ describeDatabase("P3.4 transactional application submission", () => {
     await expect(
       query(
         `UPDATE app_workflow_instances
-         SET started_at = started_at + interval '1 second'
+         SET workflow_template_version_id = $2
          WHERE application_id = $1`,
-        [applicationIds[0]],
+        [applicationIds[0], newerVersionId],
       ),
     ).rejects.toThrow("workflow instance version pin is immutable");
   });

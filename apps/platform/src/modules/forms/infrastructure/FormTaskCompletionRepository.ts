@@ -118,7 +118,7 @@ async function lockTask(
       stage.id AS "stageInstanceId",
       stage.stage_definition_id AS "stageDefinitionId",
       workflow.id AS "workflowInstanceId",
-      workflow.workflow_version_id AS "workflowVersionId"
+      workflow.workflow_template_version_id AS "workflowVersionId"
     FROM app_stage_task_instances task
     JOIN app_stage_task_definitions definition
       ON definition.id = task.task_definition_id
