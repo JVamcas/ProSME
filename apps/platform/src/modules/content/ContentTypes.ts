@@ -42,16 +42,8 @@ export type FaqItem = {
 export type StatisticItem = { value: string; label: string };
 export type EligibilityItem = {
   description: string;
-  hardStop?: boolean | null;
-  key?: string | null;
-  kind: "criterion" | "focusSector" | "checkerQuestion";
+  kind: "criterion" | "focusSector";
   label: string;
-};
-export type EligibilityRule = {
-  id: string;
-  question: string;
-  help: string;
-  hardStop: boolean;
 };
 
 export type HomepageContent = {

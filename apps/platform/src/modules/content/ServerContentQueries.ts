@@ -22,7 +22,6 @@ import type {
   CmsImage,
   ContactContent,
   EligibilityItem,
-  EligibilityRule,
   FaqItem,
   FooterContent,
   HeaderContent,
@@ -333,25 +332,11 @@ export async function getEligibilityContent(): Promise<EligibilityItem[]> {
     sort: "order",
     where: mode.where,
   });
-  return result.docs.map(({ description, hardStop, key, kind, label }) => ({
+  return result.docs.map(({ description, kind, label }) => ({
     description,
-    hardStop,
-    key,
     kind,
     label,
   }));
-}
-
-export async function getEligibilityRules(): Promise<EligibilityRule[]> {
-  const items = await getEligibilityContent();
-  return items
-    .filter((item) => item.kind === "checkerQuestion" && item.key)
-    .map((item) => ({
-      hardStop: item.hardStop ?? false,
-      help: item.description,
-      id: item.key!,
-      question: item.label,
-    }));
 }
 
 export async function getListingItem(kind: "news" | "events", slug: string) {

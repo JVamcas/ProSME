@@ -435,6 +435,13 @@
       "when": 1793059200000,
       "tag": "0061_runtime_audit_trail",
       "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1793145600000,
+      "tag": "0062_remove_legacy_eligibility_checker",
+      "breakpoints": true
     }
   ]
 }

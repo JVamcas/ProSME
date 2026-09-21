@@ -494,9 +494,7 @@ export interface EligibilityContent {
   id: number;
   label: string;
   description: string;
-  kind: 'criterion' | 'focusSector' | 'checkerQuestion';
-  key?: string | null;
-  hardStop?: boolean | null;
+  kind: 'criterion' | 'focusSector';
   order: number;
   reviewStatus: 'draft' | 'inReview' | 'approved';
   /**
@@ -932,8 +930,6 @@ export interface EligibilityContentSelect<T extends boolean = true> {
   label?: T;
   description?: T;
   kind?: T;
-  key?: T;
-  hardStop?: T;
   order?: T;
   reviewStatus?: T;
   reviewNotes?: T;

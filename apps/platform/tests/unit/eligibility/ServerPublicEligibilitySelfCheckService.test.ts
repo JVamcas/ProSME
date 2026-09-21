@@ -9,11 +9,6 @@ vi.mock(
   "@/modules/eligibility/application/ServerEligibilityBindingService",
   () => ({ resolveSelfCheckEligibilityRuleSet: vi.fn() }),
 );
-vi.mock("@/db/repositories/EligibilityAssessmentRepository", () => ({
-  createOwnedEligibilityAssessment: vi.fn(),
-}));
-
-import { createOwnedEligibilityAssessment } from "@/db/repositories/EligibilityAssessmentRepository";
 import { basicOperators } from "@/modules/conditions/engine/BasicOperators";
 import {
   evaluatePublicEligibilitySelfCheck,
@@ -178,7 +173,6 @@ describe("public eligibility self-check", () => {
         severity: "warning",
       },
     ]);
-    expect(createOwnedEligibilityAssessment).not.toHaveBeenCalled();
     expect(JSON.stringify(result)).not.toContain("ruleId");
     expect(JSON.stringify(result)).not.toContain("reasonCode");
   });
