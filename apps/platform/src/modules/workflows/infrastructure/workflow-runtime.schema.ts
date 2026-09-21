@@ -116,7 +116,7 @@ export const workflowTasks = pgTable(
     status: text("status")
       .$type<WorkflowTaskStatus>()
       .notNull()
-      .default("READY"),
+      .default("PENDING"),
     assignedRoleId: uuid("assigned_role_id").references(() => roles.id, {
       onDelete: "restrict",
     }),

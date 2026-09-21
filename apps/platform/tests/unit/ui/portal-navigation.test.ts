@@ -88,7 +88,10 @@ describe("P3.1 capability-aware portal navigation", () => {
     const routes = filterPortalRoutes(
       portalRoutes,
       "operations",
-      new Set([capabilities.adminAccess, capabilities.workQueueRead]),
+      new Set([
+        capabilities.adminAccess,
+        permissionCodes.workflowTaskPoolRead,
+      ]),
     );
     expect(routes.map((route) => route.href)).toEqual([
       "/admin",

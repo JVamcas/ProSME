@@ -178,7 +178,7 @@ describeDatabase("P3.4 transactional application submission", () => {
     );
     expect(counts.rows[0]).toEqual({
       audits: 1,
-      events: 1,
+      events: 2,
       outbox: 1,
       pinned_version: versionId,
       runtime_initialized: true,
@@ -255,13 +255,13 @@ describeDatabase("P3.4 transactional application submission", () => {
       underReview: 0,
     });
     expect(all.statuses).toEqual([{ count: 1, label: "Initial review" }]);
-    expect(all.activities).toMatchObject([
-      {
+    expect(all.activities.find(
+      (activity) => activity.eventCode === "APPLICATION_SUBMITTED",
+    )).toMatchObject({
         actorName: "Submission Owner",
         applicationReference: expect.stringMatching(/^SMEF-\d{4}-\d{6}$/),
         eventCode: "APPLICATION_SUBMITTED",
-      },
-    ]);
+    });
     const assigned = await readAdminDashboard({
       actorId: ownerId,
       since: null,

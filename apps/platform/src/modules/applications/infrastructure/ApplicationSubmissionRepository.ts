@@ -14,7 +14,10 @@ import {
   workflowStageDefinitions,
 } from "@/db/schema";
 import type { ApplicationDocumentType } from "@/modules/applications/ApplicationDocumentSchemas";
-import { writeApplicationSubmission } from "./ApplicationSubmissionWriter";
+import {
+  InitialStageActivationError,
+  writeApplicationSubmission,
+} from "./ApplicationSubmissionWriter";
 
 export type SubmissionTransaction = Parameters<
   Parameters<ReturnType<typeof getDatabase>["transaction"]>[0]
@@ -37,6 +40,7 @@ export type SubmitApplicationResult =
         | "business_required"
         | "idempotency_conflict"
         | "not_found"
+        | "stage_entry_condition_failed"
         | "workflow_unavailable";
     };
 
@@ -142,7 +146,6 @@ async function findInitialConfiguration(
   const [configuration] = await transaction
     .select({
       stageId: workflowStageDefinitions.id,
-      slaHours: workflowStageDefinitions.slaHours,
       workflowTemplateVersionId: workflowDefinitionVersions.id,
     })
     .from(fundingCalls)
@@ -234,7 +237,15 @@ type SubmitApplicationInput = {
 export function submitOwnedApplication(
   input: SubmitApplicationInput,
 ): Promise<SubmitApplicationResult> {
-  return getDatabase().transaction((transaction) =>
-    submitInTransaction(transaction, input),
-  );
+  return getDatabase()
+    .transaction((transaction) => submitInTransaction(transaction, input))
+    .catch((error: unknown) => {
+      if (error instanceof InitialStageActivationError) {
+        if (error.resultKind === "entry_condition_failed") {
+          return { kind: "stage_entry_condition_failed" as const };
+        }
+        return { kind: "workflow_unavailable" as const };
+      }
+      throw error;
+    });
 }

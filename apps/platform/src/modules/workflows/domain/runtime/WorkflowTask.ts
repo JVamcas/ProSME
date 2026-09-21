@@ -2,12 +2,9 @@ import type { TaskTypeCode } from "../definitions/WorkflowTypes";
 
 export const workflowTaskStatuses = [
   "PENDING",
-  "READY",
   "CLAIMED",
   "IN_PROGRESS",
-  "BLOCKED",
   "COMPLETED",
-  "SKIPPED",
   "CANCELLED",
 ] as const;
 
@@ -22,7 +19,9 @@ export type WorkflowTask = {
   assignedRoleId: string | null;
   assignedUserId: string | null;
   status: WorkflowTaskStatus;
+  rowVersion: number;
   createdAt: Date;
+  claimedAt: Date | null;
   startedAt: Date | null;
   completedAt: Date | null;
   dueAt: Date | null;

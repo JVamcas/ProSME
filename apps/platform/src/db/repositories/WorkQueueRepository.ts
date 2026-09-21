@@ -6,7 +6,7 @@ import { getDatabase } from "@/db/client";
 import type { TaskClaimResult, WorkQueueListInput, WorkQueueRow } from "@/modules/work-queue/WorkQueueTypes";
 import type { WorkQueueCursor } from "@/modules/work-queue/WorkQueueCursor";
 
-const actionableStatuses = sql`('PENDING', 'READY', 'CLAIMED', 'IN_PROGRESS')`;
+const actionableStatuses = sql`('PENDING', 'CLAIMED', 'IN_PROGRESS')`;
 
 type QueueDatabaseRow = Omit<WorkQueueRow, "claimedAt" | "dueAt"> & {
   claimedAt: Date | string | null;
@@ -217,7 +217,7 @@ export async function writeTaskClaim(input: {
       WHERE task.id = ${input.taskId}::uuid
         AND task.row_version = ${input.expectedRowVersion}
         AND task.assigned_user_id IS NULL
-        AND task.status IN ('PENDING', 'READY')
+        AND task.status = 'PENDING'
         AND task.assigned_role_id IN (
           SELECT role_id FROM app_user_roles WHERE user_id = ${input.actorId}::uuid
         )

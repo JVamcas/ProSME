@@ -112,7 +112,7 @@ async function lockTask(
         )
       )
       AND task.row_version = ${input.expectedRowVersion}
-      AND task.status IN ('CLAIMED', 'IN_PROGRESS', 'READY')
+      AND task.status IN ('CLAIMED', 'IN_PROGRESS')
       AND stage.status = 'ACTIVE' AND workflow.status = 'ACTIVE'
       AND EXISTS (
         SELECT 1
@@ -158,7 +158,7 @@ async function requiredTasksRemain(
       ON definition.id = task.workflow_task_definition_id
     WHERE task.stage_instance_id = ${stageInstanceId}::uuid
       AND definition.required = TRUE
-      AND task.status NOT IN ('COMPLETED', 'SKIPPED')
+      AND task.status <> 'COMPLETED'
   `);
   return Number((result.rows[0] as { count: number }).count) > 0;
 }
@@ -233,7 +233,7 @@ async function createNextTasks(
     INSERT INTO app_workflow_tasks
       (stage_instance_id, workflow_task_definition_id, type_snapshot, status,
        assigned_role_id, assigned_user_id, form_version_id, due_at)
-    SELECT ${stageInstanceId}::uuid, task.id, task.type, 'READY',
+    SELECT ${stageInstanceId}::uuid, task.id, task.type, 'PENDING',
       task.assignment_role_id, task.assignment_user_id,
       binding.form_version_id,
       CASE WHEN stage.sla_hours IS NULL THEN NULL

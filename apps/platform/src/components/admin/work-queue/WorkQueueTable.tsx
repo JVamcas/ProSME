@@ -7,7 +7,7 @@ import { CapabilityGate } from "@/components/layout/capability-gate";
 import { GeneralButton } from "@/components/ui/button";
 import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { capabilities } from "@/auth/authorization/capabilities";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import type { WorkQueueRow } from "@/modules/work-queue/WorkQueueTypes";
 
 function formatDate(value: string | null) {
@@ -94,7 +94,7 @@ function queueColumns(
           </Link>
         </GeneralButton>
       ) : row.original.assignedRoleId ? (
-        <CapabilityGate capability={capabilities.workflowTaskClaim}>
+        <CapabilityGate capability={permissionCodes.workflowTaskClaim}>
           <GeneralButton
             aria-busy={claimingId === row.original.taskInstanceId}
             disabled={claimingId !== null}

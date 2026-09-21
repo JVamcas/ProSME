@@ -63,7 +63,7 @@ function taskIsEditable(
   task: LockedTask | null,
   input: SaveDraftFormResponseInput,
 ) {
-  const editable = ["READY", "CLAIMED", "IN_PROGRESS"].includes(
+  const editable = ["CLAIMED", "IN_PROGRESS"].includes(
     task?.status ?? "",
   );
   return Boolean(

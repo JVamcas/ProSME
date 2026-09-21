@@ -75,6 +75,11 @@ export async function submitApplication(
       "Select a business before submitting this application.",
     );
   }
+  if (result.kind === "stage_entry_condition_failed") {
+    throw new ApplicationSubmissionConflictError(
+      "The workflow's initial stage entry conditions were not met.",
+    );
+  }
   throw new ApplicationSubmissionConflictError(
     "This funding call does not have a bound published workflow template version.",
   );

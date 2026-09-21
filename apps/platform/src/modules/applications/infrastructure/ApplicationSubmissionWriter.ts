@@ -5,16 +5,12 @@ import { and, eq, sql } from "drizzle-orm";
 import {
   applications,
   applicationSubmissionCommands,
-  stageTaskDefinitions,
-  stageTaskFormBindings,
   transactionalOutbox,
   workflowAuditEntries,
   workflowEvents,
-  workflowInstances,
 } from "@/db/schema";
-import { createStageInstance } from "@/modules/workflows/infrastructure/StageInstanceRepository";
+import { activateStageInTransaction } from "@/modules/workflows/application/runtime/ServerStageActivationService";
 import { createWorkflowInstance } from "@/modules/workflows/infrastructure/WorkflowInstanceRepository";
-import { createWorkflowTasks } from "@/modules/workflows/infrastructure/WorkflowTaskWriteRepository";
 import type {
   SubmissionResult,
   SubmissionTransaction,
@@ -27,12 +23,21 @@ type WriteInput = {
   applicationId: string;
   configuration: {
     stageId: string;
-    slaHours: number | null;
     workflowTemplateVersionId: string;
   };
   correlationId: string;
   idempotencyKey: string;
 };
+
+export class InitialStageActivationError extends Error {
+  readonly resultKind: string;
+
+  constructor(resultKind: string) {
+    super(`Initial workflow stage activation failed: ${resultKind}.`);
+    this.name = "InitialStageActivationError";
+    this.resultKind = resultKind;
+  }
+}
 
 async function markApplicationSubmitted(
   transaction: SubmissionTransaction,
@@ -68,58 +73,17 @@ async function createInitialRuntime(
     workflowTemplateVersionId:
       input.configuration.workflowTemplateVersionId,
   });
-  const stage = await createStageInstance(transaction, {
-    activatedAt: submittedAt,
+  const activation = await activateStageInTransaction(transaction, {
+    actorId: input.actorId,
+    correlationId: input.correlationId,
+    iterationNumber: 1,
+    stageDefinitionId: input.configuration.stageId,
     workflowInstanceId: workflow.id,
-    workflowStageDefinitionId: input.configuration.stageId,
   });
-  await transaction
-    .update(workflowInstances)
-    .set({ currentStageInstanceId: stage.id })
-    .where(eq(workflowInstances.id, workflow.id));
-  return { stageId: stage.id, workflowInstanceId: workflow.id };
-}
-
-async function createInitialTasks(
-  transaction: SubmissionTransaction,
-  input: WriteInput,
-  stageInstanceId: string,
-  submittedAt: Date,
-) {
-  const definitions = await transaction
-    .select({
-      formVersionId: stageTaskFormBindings.formVersionId,
-      id: stageTaskDefinitions.id,
-      namedUserOverrideId: stageTaskDefinitions.namedUserOverrideId,
-      roleId: stageTaskDefinitions.roleId,
-      type: stageTaskDefinitions.type,
-    })
-    .from(stageTaskDefinitions)
-    .leftJoin(
-      stageTaskFormBindings,
-      eq(stageTaskFormBindings.taskDefinitionId, stageTaskDefinitions.id),
-    )
-    .where(eq(stageTaskDefinitions.stageId, input.configuration.stageId));
-  if (!definitions.length) return;
-  const dueAt =
-    input.configuration.slaHours === null
-      ? null
-      : new Date(
-          submittedAt.getTime() + input.configuration.slaHours * 3_600_000,
-        );
-  await createWorkflowTasks(
-    transaction,
-    definitions.map((task) => ({
-      assignedRoleId: task.roleId,
-      assignedUserId: task.namedUserOverrideId,
-      createdAt: submittedAt,
-      dueAt,
-      stageInstanceId,
-      workflowTaskDefinitionId: task.id,
-      typeSnapshot: task.type,
-      formVersionId: task.formVersionId,
-    })),
-  );
+  if (activation.kind !== "activated") {
+    throw new InitialStageActivationError(activation.kind);
+  }
+  return { workflowInstanceId: workflow.id };
 }
 
 async function appendSubmissionHistory(
@@ -177,7 +141,6 @@ export async function writeApplicationSubmission(
   );
   if (!reference) return { kind: "idempotency_conflict" };
   const runtime = await createInitialRuntime(transaction, input, submittedAt);
-  await createInitialTasks(transaction, input, runtime.stageId, submittedAt);
   const result = {
     applicationId: input.application.id,
     reference,

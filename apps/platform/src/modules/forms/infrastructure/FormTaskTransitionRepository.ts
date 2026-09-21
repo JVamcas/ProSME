@@ -75,7 +75,7 @@ async function createNextStage(
       (stage_instance_id, workflow_task_definition_id, type_snapshot,
        form_version_id, status, assigned_role_id, assigned_user_id, due_at)
     SELECT ${stageId}::uuid, definition.id, definition.type,
-      binding.form_version_id, 'READY', definition.assignment_role_id,
+      binding.form_version_id, 'PENDING', definition.assignment_role_id,
       definition.assignment_user_id,
       CASE WHEN stage.sla_hours IS NULL THEN NULL
         ELSE ${startedAt} + make_interval(hours => stage.sla_hours) END

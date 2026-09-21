@@ -95,6 +95,7 @@ export const permissionGroups: readonly PermissionGroup[] = [
       permissionCodes.workflowTaskAssignedDecide,
       permissionCodes.workflowTaskClaim,
       permissionCodes.workflowTaskAssign,
+      permissionCodes.workflowTaskCancelAll,
     ],
   },
   {

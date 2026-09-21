@@ -36,7 +36,7 @@ function applicationScope(input: {
       AND assigned_stage.status IN ('ACTIVE', 'BLOCKED')
     JOIN app_workflow_tasks assigned_task
       ON assigned_task.stage_instance_id = assigned_stage.id
-      AND assigned_task.status IN ('PENDING', 'READY', 'CLAIMED', 'IN_PROGRESS', 'BLOCKED')
+      AND assigned_task.status IN ('PENDING', 'CLAIMED', 'IN_PROGRESS')
     WHERE assigned_workflow.application_id = application.id
       AND (
         assigned_task.assigned_user_id = ${input.actorId}::uuid
@@ -124,7 +124,7 @@ const dashboardSelect = sql`
         JOIN app_workflow_tasks task
           ON task.stage_instance_id = stage.id
           AND task.type_snapshot = 'DECISION'
-          AND task.status IN ('PENDING', 'READY', 'CLAIMED', 'IN_PROGRESS', 'BLOCKED'))
+          AND task.status IN ('PENDING', 'CLAIMED', 'IN_PROGRESS'))
         AS "pendingDecision",
       COALESCE((SELECT json_agg(status_counts) FROM status_counts), '[]'::json)
         AS statuses,

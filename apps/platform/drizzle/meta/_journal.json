@@ -407,6 +407,13 @@
       "when": 1792713600000,
       "tag": "0057_stage_instance_and_workflow_task",
       "breakpoints": true
+    },
+    {
+      "idx": 58,
+      "version": "7",
+      "when": 1792800000000,
+      "tag": "0058_workflow_task_lifecycle",
+      "breakpoints": true
     }
   ]
 }

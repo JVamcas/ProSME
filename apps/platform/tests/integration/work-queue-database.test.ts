@@ -149,7 +149,7 @@ beforeAll(async () => {
     `INSERT INTO app_workflow_tasks
       (id, stage_instance_id, workflow_task_definition_id, type_snapshot,
        status, assigned_role_id, due_at)
-     SELECT $1, $2, $3, 'CHECKLIST', 'READY', role.id, now() + interval '24 hours'
+     SELECT $1, $2, $3, 'CHECKLIST', 'PENDING', role.id, now() + interval '24 hours'
      FROM app_roles role WHERE role.code = 'programme_officer'`,
     [taskInstanceId, stageInstanceId, taskDefinitionId],
   );

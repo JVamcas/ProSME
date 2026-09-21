@@ -195,6 +195,11 @@ export const permissionCatalogue: readonly PermissionDefinition[] = [
     "Assign or reassign workflow tasks.",
   ),
   define(
+    permissionCodes.workflowTaskCancelAll,
+    "Cancel all tasks",
+    "Cancel any active workflow task.",
+  ),
+  define(
     permissionCodes.workflowDefinitionRead,
     "Read workflow definitions",
     "Read workflow definitions and versions.",

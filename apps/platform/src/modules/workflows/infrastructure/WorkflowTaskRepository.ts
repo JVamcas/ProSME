@@ -40,7 +40,7 @@ export async function readWorkflowTask(
         FROM app_workflow_action_definitions action
         WHERE action.stage_id = stage.workflow_stage_definition_id
           AND action.enabled = TRUE
-          AND task.status IN ('READY', 'CLAIMED', 'IN_PROGRESS')
+          AND task.status IN ('CLAIMED', 'IN_PROGRESS')
           AND EXISTS (
             SELECT 1 FROM app_stage_task_action_bindings binding
             WHERE binding.task_definition_id = definition.id

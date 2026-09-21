@@ -48,7 +48,7 @@ function visibilityFilter(
       ON visible_stage.id = visible_task.stage_instance_id
     WHERE visible_stage.workflow_instance_id = workflow.id
       AND visible_stage.status IN ('ACTIVE', 'BLOCKED')
-      AND visible_task.status IN ('PENDING', 'READY', 'CLAIMED', 'IN_PROGRESS', 'BLOCKED')
+      AND visible_task.status IN ('PENDING', 'CLAIMED', 'IN_PROGRESS')
       AND (
         visible_task.assigned_user_id = ${actorId}::uuid
         OR visible_task.assigned_role_id IN (
@@ -134,7 +134,7 @@ function applicationQuery(input: {
         LEFT JOIN app_roles role ON role.id = task.assigned_role_id
         LEFT JOIN app_users assignee ON assignee.id = task.assigned_user_id
         WHERE task.stage_instance_id = stage.id
-          AND task.status IN ('PENDING', 'READY', 'CLAIMED', 'IN_PROGRESS', 'BLOCKED')
+          AND task.status IN ('PENDING', 'CLAIMED', 'IN_PROGRESS')
       ) task_summary ON TRUE
       WHERE application.status = 'submitted'
         AND ${visibilityFilter(input.actorId, input.visibility)}

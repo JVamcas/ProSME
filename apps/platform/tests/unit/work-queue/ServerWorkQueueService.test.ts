@@ -6,7 +6,7 @@ vi.mock("@/db/repositories/WorkQueueRepository", () => ({
   writeTaskClaim: vi.fn(),
 }));
 
-import { capabilities } from "@/auth/authorization/capabilities";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import { PermissionDeniedError } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import {
@@ -51,7 +51,7 @@ describe("work queue service", () => {
 
   it("passes actor scope and filters to the repository", async () => {
     const input = { limit: 25, scope: "mine" as const, search: "SMEF" };
-    await getWorkQueue(staff([capabilities.workQueueRead]), input);
+    await getWorkQueue(staff([permissionCodes.workflowTaskPoolRead]), input);
     expect(readWorkQueue).toHaveBeenCalledWith(
       "79e20de0-3558-4d63-90a4-8c9f5125df07",
       input,
@@ -71,7 +71,7 @@ describe("work queue service", () => {
     );
     vi.mocked(writeTaskClaim).mockResolvedValue({ kind: "conflict" });
     await expect(
-      claimTask(staff([capabilities.workflowTaskClaim]), input),
+      claimTask(staff([permissionCodes.workflowTaskClaim]), input),
     ).rejects.toBeInstanceOf(ResourceConflictError);
   });
 });

@@ -137,7 +137,7 @@ async function lockTask(
       )
       AND task.form_version_id = ${input.formVersionId}::uuid
       AND task.row_version = ${input.expectedTaskRowVersion}
-      AND task.status IN ('READY', 'CLAIMED', 'IN_PROGRESS')
+      AND task.status IN ('CLAIMED', 'IN_PROGRESS')
       AND stage.status = 'ACTIVE' AND workflow.status = 'ACTIVE'
       AND EXISTS (
         SELECT 1
@@ -211,7 +211,7 @@ async function stageHasRequiredTasks(
     JOIN app_stage_task_definitions definition ON definition.id = task.workflow_task_definition_id
     WHERE task.stage_instance_id = ${stageInstanceId}::uuid
       AND definition.required = TRUE
-      AND task.status NOT IN ('COMPLETED', 'SKIPPED')
+      AND task.status <> 'COMPLETED'
   `);
   return Number((result.rows[0] as { count: number }).count) > 0;
 }
