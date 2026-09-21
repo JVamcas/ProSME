@@ -178,7 +178,7 @@ describeDatabase("P3.4 transactional application submission", () => {
     );
     expect(counts.rows[0]).toEqual({
       audits: 1,
-      events: 2,
+      events: 5,
       outbox: 1,
       pinned_version: versionId,
       runtime_initialized: true,

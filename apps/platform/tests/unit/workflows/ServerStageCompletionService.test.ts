@@ -34,9 +34,11 @@ const target = {
   exitCondition: null,
   fundingCall: {},
   stageInstanceId,
+  stageDefinitionId: "60000000-0000-4000-8000-000000000001",
   stageKey: "FINANCE_REVIEW",
   status: "ACTIVE" as const,
   workflowInstanceId: "40000000-0000-4000-8000-000000000001",
+  workflowVersionId: "70000000-0000-4000-8000-000000000001",
 };
 const completedRequirement = {
   completedCount: 1,

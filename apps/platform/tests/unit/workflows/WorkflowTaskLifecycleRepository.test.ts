@@ -43,6 +43,7 @@ describe("workflow task lifecycle repository", () => {
       currentStatus: "IN_PROGRESS",
       occurredAt: completedAt,
       rowVersion: 3,
+      stageInstanceId: "55555555-5555-4555-8555-555555555555",
       targetStatus: "COMPLETED",
       taskId: updated.id,
       workflowInstanceId: "44444444-4444-4444-8444-444444444444",
@@ -64,7 +65,10 @@ describe("workflow task lifecycle repository", () => {
         value: expect.objectContaining({
           action: "TASK_COMPLETED",
           before: { rowVersion: 3, status: "IN_PROGRESS" },
+          stageInstanceId: "55555555-5555-4555-8555-555555555555",
+          taskId: updated.id,
           targetType: "WORKFLOW_TASK",
+          workflowInstanceId: "44444444-4444-4444-8444-444444444444",
         }),
       },
     ]));

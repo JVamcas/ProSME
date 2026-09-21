@@ -4,7 +4,7 @@ vi.mock("server-only", () => ({}));
 vi.mock("@/modules/workflows/infrastructure/WorkflowTaskRepository", () => ({
   readWorkflowTask: vi.fn(),
 }));
-vi.mock("@/db/repositories/WorkflowTaskActionRepository", () => ({
+vi.mock("@/modules/workflows/infrastructure/WorkflowTaskActionRepository", () => ({
   readChecklistTaskCompletion: vi.fn(),
   writeChecklistTaskCompletion: vi.fn(),
 }));
@@ -16,7 +16,7 @@ import { defaultWorkflowElementPermissions } from "@/modules/workflows/domain/de
 import {
   readChecklistTaskCompletion,
   writeChecklistTaskCompletion,
-} from "@/db/repositories/WorkflowTaskActionRepository";
+} from "@/modules/workflows/infrastructure/WorkflowTaskActionRepository";
 import { readWorkflowTask } from "@/modules/workflows/infrastructure/WorkflowTaskRepository";
 import { RequestValidationError } from "@/lib/resource-errors";
 import {

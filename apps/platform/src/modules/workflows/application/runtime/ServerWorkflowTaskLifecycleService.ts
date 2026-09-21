@@ -88,6 +88,7 @@ async function changeTaskState(
       currentStatus: task.status,
       occurredAt: new Date(),
       rowVersion: task.rowVersion,
+      stageInstanceId: task.stageInstanceId,
       targetStatus,
       taskId: task.id,
       workflowInstanceId: task.workflowInstanceId,

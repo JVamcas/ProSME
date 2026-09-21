@@ -83,7 +83,7 @@ function columns(options: Props): DataTableColumn<WorkflowTemplateListItem>[] {
     {
       id: "currentVersion",
       header: "Current version",
-      cell: ({ row }) => `Version ${row.original.currentVersion.number}`,
+      cell: ({ row }) => `v${row.original.currentVersion.number}`,
     },
     {
       id: "status",

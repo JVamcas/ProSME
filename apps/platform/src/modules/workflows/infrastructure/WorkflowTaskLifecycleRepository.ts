@@ -36,6 +36,7 @@ export type PersistWorkflowTaskTransitionInput = {
   rowVersion: number;
   targetStatus: WorkflowTaskStatus;
   taskId: string;
+  stageInstanceId: string;
   workflowInstanceId: string;
 };
 
@@ -132,7 +133,11 @@ export async function persistWorkflowTaskTransition(
     taskId: input.taskId,
     toStatus: input.targetStatus,
   };
-  const action = `TASK_${input.targetStatus}`;
+  const action = input.targetStatus === "CLAIMED"
+    ? "TASK_ASSIGNED"
+    : input.targetStatus === "IN_PROGRESS"
+      ? "TASK_STARTED"
+      : `TASK_${input.targetStatus}`;
   await transaction.insert(workflowEvents).values({
     actorId: input.actorId,
     correlationId: input.correlationId,
@@ -156,8 +161,14 @@ export async function persistWorkflowTaskTransition(
       status: input.currentStatus,
     },
     correlationId: input.correlationId,
+    reason: input.targetStatus === "CLAIMED"
+      ? "Task claimed by eligible user"
+      : null,
+    stageInstanceId: input.stageInstanceId,
     targetId: input.taskId,
     targetType: "WORKFLOW_TASK",
+    taskId: input.taskId,
+    workflowInstanceId: input.workflowInstanceId,
   });
   return task;
 }

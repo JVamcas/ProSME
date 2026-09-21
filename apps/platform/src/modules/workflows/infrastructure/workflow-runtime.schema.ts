@@ -14,6 +14,7 @@ import type { TaskTypeCode } from "@/modules/workflows/domain/definitions/Workfl
 import type { WorkflowInstanceStatus } from "@/modules/workflows/domain/runtime/WorkflowInstance";
 import type { StageInstanceStatus } from "@/modules/workflows/domain/runtime/StageInstance";
 import type { WorkflowTaskStatus } from "@/modules/workflows/domain/runtime/WorkflowTask";
+import type { TransitionExecutionOutcome } from "@/modules/workflows/domain/runtime/TransitionExecution";
 import { formVersions } from "@/modules/forms/infrastructure/form.schema";
 import { applications } from "@/db/schema/applications";
 import { roles } from "@/db/schema/authorization";
@@ -22,6 +23,7 @@ import {
   stageTaskDefinitions,
   workflowDefinitionVersions,
   workflowStageDefinitions,
+  workflowTransitionDefinitions,
 } from "@/modules/workflows/infrastructure/workflow.schema";
 
 export const workflowInstances = pgTable(
@@ -142,6 +144,52 @@ export const workflowTasks = pgTable(
       table.status,
       table.assignedRoleId,
       table.assignedUserId,
+    ),
+  ],
+);
+
+export const transitionExecutions = pgTable(
+  "app_workflow_transition_executions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    workflowInstanceId: uuid("workflow_instance_id")
+      .notNull()
+      .references(() => workflowInstances.id, { onDelete: "restrict" }),
+    sourceStageInstanceId: uuid("source_stage_instance_id")
+      .notNull()
+      .references(() => stageInstances.id, { onDelete: "restrict" }),
+    transitionDefinitionId: uuid("transition_definition_id")
+      .notNull()
+      .references(() => workflowTransitionDefinitions.id, {
+        onDelete: "restrict",
+      }),
+    actionKey: text("action_key").notNull(),
+    targetStageDefinitionId: uuid("target_stage_definition_id")
+      .references(() => workflowStageDefinitions.id, { onDelete: "restrict" }),
+    targetStageInstanceId: uuid("target_stage_instance_id")
+      .references(() => stageInstances.id, { onDelete: "restrict" }),
+    outcome: text("outcome")
+      .$type<TransitionExecutionOutcome>()
+      .notNull()
+      .default("RECORDED"),
+    conditionEvaluation: jsonb("condition_evaluation")
+      .$type<Record<string, unknown>>()
+      .notNull(),
+    actorId: uuid("actor_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    correlationId: uuid("correlation_id").notNull(),
+    executedAt: timestamp("executed_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("app_workflow_transition_executions_source_unique").on(
+      table.sourceStageInstanceId,
+    ),
+    index("app_workflow_transition_executions_instance_idx").on(
+      table.workflowInstanceId,
+      table.executedAt,
     ),
   ],
 );

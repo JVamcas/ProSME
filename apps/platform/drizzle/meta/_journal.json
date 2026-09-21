@@ -421,6 +421,20 @@
       "when": 1792886400000,
       "tag": "0059_stage_task_form_responses",
       "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1792972800000,
+      "tag": "0060_sequential_transition_execution",
+      "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "7",
+      "when": 1793059200000,
+      "tag": "0061_runtime_audit_trail",
+      "breakpoints": true
     }
   ]
 }

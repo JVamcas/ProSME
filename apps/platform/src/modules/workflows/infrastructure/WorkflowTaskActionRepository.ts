@@ -7,20 +7,24 @@ import type {
   ChecklistResultItem,
   TaskCompletionResult,
 } from "@/modules/work-queue/TaskTypes";
-import type { StageCompletionResult } from "@/modules/workflows/domain/runtime/StageCompletion";
+import type {
+  SequentialTransitionResult,
+} from "@/modules/workflows/application/runtime/ServerSequentialTransitionService";
+import { appendTaskCompletionAndActionAudit } from "./RuntimeAuditWriteRepository";
 
 type Transaction = Parameters<
   Parameters<ReturnType<typeof getDatabase>["transaction"]>[0]
 >[0];
 
-type CompleteStage = (
+type ExecuteTransition = (
   transaction: Transaction,
   input: {
+    actionKey: string;
     actorId: string;
     correlationId: string;
-    stageInstanceId: string;
+    sourceStageInstanceId: string;
   },
-) => Promise<StageCompletionResult>;
+) => Promise<SequentialTransitionResult>;
 
 type LockedTask = {
   config: unknown;
@@ -157,89 +161,34 @@ async function completeTask(
   `);
 }
 
-async function findTransition(
-  transaction: Transaction,
-  task: LockedTask,
-  actionKey: string,
-) {
-  const result = await transaction.execute(sql`
-    SELECT transition.to_stage_id AS "toStageId",
-      transition.terminal_outcome AS "terminalOutcome",
-      target.name AS "nextStageName", target.sla_hours AS "slaHours"
-    FROM app_workflow_transition_definitions transition
-    LEFT JOIN app_workflow_stage_definitions target
-      ON target.id = transition.to_stage_id
-    WHERE transition.version_id = ${task.workflowVersionId}::uuid
-      AND transition.from_stage_id = ${task.stageDefinitionId}::uuid
-      AND transition.action_key = ${actionKey}
-    ORDER BY transition.priority ASC
-    LIMIT 1
-  `);
-  return result.rows[0] as {
-    nextStageName: string | null;
-    slaHours: number | null;
-    terminalOutcome: string | null;
-    toStageId: string | null;
-  } | undefined;
-}
-
-async function activateNextStage(
-  transaction: Transaction,
-  task: LockedTask,
-  transition: Awaited<ReturnType<typeof findTransition>>,
-  completedAt: Date,
-) {
-  if (!transition?.toStageId) {
-    await transaction.execute(sql`
-      UPDATE app_workflow_instances
-      SET status = 'COMPLETED', completed_at = ${completedAt}
-      WHERE id = ${task.workflowInstanceId}::uuid
-    `);
-    return "COMPLETED" as const;
+function transitionAdvancement(result: SequentialTransitionResult) {
+  if (result.kind === "source_stage_not_completed"
+    || result.kind === "target_entry_condition_failed") {
+    return { nextStageName: null, workflowStatus: "ACTIVE" as const };
   }
-  const inserted = await transaction.execute(sql`
-    INSERT INTO app_workflow_stage_instances
-      (workflow_instance_id, workflow_stage_definition_id, status, activated_at)
-    VALUES (${task.workflowInstanceId}::uuid, ${transition.toStageId}::uuid, 'ACTIVE', ${completedAt})
-    RETURNING id
-  `);
-  const nextStageId = (inserted.rows[0] as { id: string }).id;
-  await createNextTasks(transaction, transition.toStageId, nextStageId, completedAt);
-  await transaction.execute(sql`
-    UPDATE app_workflow_instances SET current_stage_instance_id = ${nextStageId}::uuid
-    WHERE id = ${task.workflowInstanceId}::uuid
-  `);
-  return "ACTIVE" as const;
+  if (result.kind === "transitioned") {
+    return {
+      nextStageName: result.targetStageName,
+      workflowStatus: result.workflowStatus,
+    };
+  }
+  if (result.kind === "workflow_completed") {
+    return { nextStageName: null, workflowStatus: result.workflowStatus };
+  }
+  if (result.kind === "already_executed") {
+    return {
+      nextStageName: result.execution.targetStageName,
+      workflowStatus: result.execution.workflowStatus === "COMPLETED"
+        ? "COMPLETED" as const
+        : "ACTIVE" as const,
+    };
+  }
+  throw new WorkflowWriteConflict();
 }
 
-async function createNextTasks(
-  transaction: Transaction,
-  stageDefinitionId: string,
-  stageInstanceId: string,
-  startedAt: Date,
-) {
-  await transaction.execute(sql`
-    INSERT INTO app_workflow_tasks
-      (stage_instance_id, workflow_task_definition_id, type_snapshot, status,
-       assigned_role_id, assigned_user_id, form_version_id, due_at)
-    SELECT ${stageInstanceId}::uuid, task.id, task.type, 'PENDING',
-      task.assignment_role_id, task.assignment_user_id,
-      binding.form_version_id,
-      CASE WHEN stage.sla_hours IS NULL THEN NULL
-        ELSE ${startedAt}::timestamptz
-          + make_interval(hours => stage.sla_hours) END
-    FROM app_stage_task_definitions task
-    JOIN app_workflow_stage_definitions stage ON stage.id = task.stage_id
-    LEFT JOIN app_stage_task_form_bindings binding
-      ON binding.task_definition_id = task.id
-    WHERE task.stage_id = ${stageDefinitionId}::uuid
-  `);
-}
-
-async function appendCompletion(
+async function appendCompletionRecords(
   transaction: Transaction,
   input: WriteInput,
-  task: LockedTask,
   result: TaskCompletionResult,
   completedAt: Date,
 ) {
@@ -253,25 +202,6 @@ async function appendCompletion(
     ON CONFLICT (idempotency_key) DO NOTHING RETURNING idempotency_key
   `);
   if (!command.rowCount) throw new CommandKeyConflict();
-  await transaction.execute(sql`
-    INSERT INTO app_workflow_events
-      (workflow_instance_id, event_code, actor_id, correlation_id, payload)
-    VALUES (${task.workflowInstanceId}::uuid, 'TASK_COMPLETED',
-      ${input.actorId}::uuid, ${input.correlationId}::uuid,
-      ${JSON.stringify(result)}::jsonb)
-  `);
-  await transaction.execute(sql`
-    INSERT INTO app_workflow_audit_entries
-      (actor_id, action, target_type, target_id, correlation_id,
-       idempotency_key, before, after)
-    VALUES (${input.actorId}::uuid, 'TASK_COMPLETED', 'TASK', ${input.taskId},
-      ${input.correlationId}::uuid, ${input.idempotencyKey},
-      jsonb_build_object(
-        'status', ${task.taskStatus}::text,
-        'rowVersion', ${input.expectedRowVersion}::integer
-      ),
-      ${JSON.stringify(result)}::jsonb)
-  `);
   await transaction.execute(sql`
     INSERT INTO app_transactional_outbox
       (event_code, aggregate_id, schema_version, payload, correlation_id)
@@ -293,7 +223,7 @@ function isAuditKeyConflict(error: unknown) {
 
 export async function writeChecklistTaskCompletion(
   input: WriteInput,
-  completeStage: CompleteStage,
+  executeTransition: ExecuteTransition,
 ): Promise<CompletionWriteResult> {
   const database = getDatabase();
   const replay = await findCommand(database, input);
@@ -307,29 +237,33 @@ export async function writeChecklistTaskCompletion(
       if (task.taskType !== "CHECKLIST") return { kind: "conflict" } as const;
       const completedAt = new Date();
       await completeTask(transaction, input, completedAt);
-      const stageCompletion = await completeStage(transaction, {
+      await appendTaskCompletionAndActionAudit(transaction, {
+        actionKey: input.actionKey,
+        actorId: input.actorId,
+        beforeRowVersion: input.expectedRowVersion,
+        beforeStatus: task.taskStatus,
+        completedAt,
+        correlationId: input.correlationId,
+        idempotencyKey: input.idempotencyKey,
+        stageInstanceId: task.stageInstanceId,
+        taskId: input.taskId,
+        workflowInstanceId: task.workflowInstanceId,
+      });
+      const transition = await executeTransition(transaction, {
+        actionKey: input.actionKey,
         actorId: input.actorId,
         correlationId: input.correlationId,
-        stageInstanceId: task.stageInstanceId,
+        sourceStageInstanceId: task.stageInstanceId,
       });
-      const stageCompleted = stageCompletion.kind === "completed"
-        || stageCompletion.kind === "already_completed";
-      const transition = stageCompleted
-        ? await findTransition(transaction, task, input.actionKey)
-        : undefined;
-      if (stageCompleted && !transition) throw new WorkflowWriteConflict();
-      const workflowStatus = stageCompleted
-        ? await activateNextStage(transaction, task, transition, completedAt)
-        : "ACTIVE" as const;
+      const advancement = transitionAdvancement(transition);
       const result: TaskCompletionResult = {
         actionKey: input.actionKey,
-        nextStageName: stageCompleted ? transition?.nextStageName ?? null : null,
+        ...advancement,
         rowVersion: input.expectedRowVersion + 1,
         taskInstanceId: input.taskId,
         taskStatus: "COMPLETED",
-        workflowStatus,
       };
-      await appendCompletion(transaction, input, task, result, completedAt);
+      await appendCompletionRecords(transaction, input, result, completedAt);
       return { kind: "completed", result };
     });
   } catch (error) {

@@ -189,12 +189,12 @@ export function FundingCallForm({
               label: `${version.ruleSetName} — version ${version.versionNumber}`,
               value: version.versionId,
             }))}
-            label="Eligibility ruleset version"
+            label="Eligibility ruleset"
             name="eligibilityRuleSetVersionId"
             placeholder={
               eligibilityVersions.isPending
-                ? "Loading published rulesets…"
-                : "Select a published ruleset version"
+                ? "Loading eligibility rulesets…"
+                : "Select a eligibility ruleset"
             }
           />
 

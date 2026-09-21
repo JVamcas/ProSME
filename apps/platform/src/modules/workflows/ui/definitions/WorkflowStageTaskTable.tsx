@@ -58,11 +58,6 @@ function taskColumns(
       header: "Task",
     },
     {
-      accessorKey: "type",
-      header: "Task type",
-      cell: ({ row }) => row.original.type.replaceAll("_", " "),
-    },
-    {
       id: "assignee",
       header: "Assignee",
       cell: ({ row }) => (

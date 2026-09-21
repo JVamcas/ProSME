@@ -59,7 +59,7 @@ import type {
   UpdateFormInput,
 } from "@/modules/forms/api/FormTransportTypes";
 import type { FormVersionSummary } from "@/modules/forms/FormTypes";
-import { completeStageInTransaction } from "@/modules/workflows/application/runtime/ServerStageCompletionService";
+import { executeSequentialTransitionInTransaction } from "@/modules/workflows/application/runtime/ServerSequentialTransitionService";
 
 function toIso(value: Date | string | null) {
   return value ? new Date(value).toISOString() : null;
@@ -361,7 +361,7 @@ export async function completeTaskForm(
       taskInstanceId: input.taskInstanceId,
       values,
     },
-    completeStageInTransaction,
+    executeSequentialTransitionInTransaction,
   );
   if (result.kind === "completed") return result.result;
   if (result.kind === "idempotency_conflict") {

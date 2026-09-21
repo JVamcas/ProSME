@@ -8,7 +8,7 @@ import type { AuthenticatedUser } from "@/auth/types";
 import {
   readChecklistTaskCompletion,
   writeChecklistTaskCompletion,
-} from "@/db/repositories/WorkflowTaskActionRepository";
+} from "@/modules/workflows/infrastructure/WorkflowTaskActionRepository";
 import { readWorkflowTask } from "@/modules/workflows/infrastructure/WorkflowTaskRepository";
 import {
   IdempotencyConflictError,
@@ -17,7 +17,7 @@ import {
   ResourceNotFoundError,
 } from "@/lib/resource-errors";
 import { validateTaskConfiguration, validateTaskResult } from "@/modules/workflows/WorkflowTaskRegistry";
-import { completeStageInTransaction } from "@/modules/workflows/application/runtime/ServerStageCompletionService";
+import { executeSequentialTransitionInTransaction } from "@/modules/workflows/application/runtime/ServerSequentialTransitionService";
 import type {
   ChecklistConfigurationItem,
   ChecklistResultItem,
@@ -124,7 +124,7 @@ export async function completeChecklistTask(
   validateChecklistItems(configured, input.items);
   const outcome = await writeChecklistTaskCompletion(
     writeInput,
-    completeStageInTransaction,
+    executeSequentialTransitionInTransaction,
   );
   if (outcome.kind === "idempotency_conflict") {
     throw new IdempotencyConflictError(

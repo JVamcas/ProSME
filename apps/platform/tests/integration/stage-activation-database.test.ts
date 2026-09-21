@@ -206,5 +206,32 @@ describeDatabase("stage activation persistence", () => {
       events: 1,
       status: "COMPLETED",
     });
+    const trail = await query(
+      `SELECT id, action, actor_id, workflow_instance_id, stage_instance_id,
+        task_id, before, after, created_at, runtime_sequence
+       FROM app_workflow_audit_entries
+       WHERE workflow_instance_id = $1
+       ORDER BY runtime_sequence`,
+      [workflowInstanceId],
+    );
+    expect(trail.rows.map((entry) => entry.action)).toEqual([
+      "STAGE_ACTIVATED",
+      "TASK_CREATED",
+      "TASK_ASSIGNED",
+      "TASK_STARTED",
+      "TASK_COMPLETED",
+      "STAGE_COMPLETED",
+    ]);
+    expect(trail.rows.every((entry) => (
+      entry.actor_id === actorId
+      && entry.workflow_instance_id === workflowInstanceId
+      && entry.created_at
+      && entry.runtime_sequence
+    ))).toBe(true);
+    await expect(query(
+      `UPDATE app_workflow_audit_entries
+       SET action = 'TAMPERED' WHERE id = $1`,
+      [trail.rows[0].id],
+    )).rejects.toThrow("workflow audit entries are immutable");
   });
 });

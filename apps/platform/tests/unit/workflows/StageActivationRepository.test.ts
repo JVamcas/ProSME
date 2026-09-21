@@ -112,10 +112,29 @@ describe("stage activation repository", () => {
         table: workflowAuditEntries,
         value: expect.objectContaining({
           action: "STAGE_ACTIVATED",
+          stageInstanceId: stageId,
           targetId: stageId,
           targetType: "WORKFLOW_STAGE_INSTANCE",
+          workflowInstanceId: "33333333-3333-4333-8333-333333333333",
         }),
       },
     ]));
+    const runtimeTaskAudit = inserted.find(
+      (entry) => entry.table === workflowAuditEntries
+        && Array.isArray(entry.value),
+    );
+    expect(runtimeTaskAudit?.value).toEqual([
+      expect.objectContaining({
+        action: "TASK_CREATED",
+        stageInstanceId: stageId,
+        taskId,
+        workflowInstanceId: "33333333-3333-4333-8333-333333333333",
+      }),
+      expect.objectContaining({
+        action: "TASK_ASSIGNED",
+        reason: "Configured task assignment",
+        taskId,
+      }),
+    ]);
   });
 });

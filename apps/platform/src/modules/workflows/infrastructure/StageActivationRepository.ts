@@ -311,8 +311,59 @@ export async function persistStageActivation(
     after: auditPayload,
     before: null,
     correlationId: input.correlationId,
+    stageInstanceId: stage.id,
     targetId: stage.id,
     targetType: "WORKFLOW_STAGE_INSTANCE",
+    workflowInstanceId: input.target.workflowInstanceId,
   });
+  const taskEvents = tasks.flatMap((task) => {
+    const createdPayload = {
+      assignedRoleId: task.assignedRoleId,
+      assignedUserId: task.assignedUserId,
+      dueAt: task.dueAt?.toISOString() ?? null,
+      status: task.status,
+      taskDefinitionId: task.workflowTaskDefinitionId,
+      type: task.typeSnapshot,
+    };
+    const created = {
+      action: "TASK_CREATED",
+      actorId: input.actorId,
+      after: createdPayload,
+      before: null,
+      correlationId: input.correlationId,
+      stageInstanceId: stage.id,
+      targetId: task.id,
+      targetType: "WORKFLOW_TASK",
+      taskId: task.id,
+      workflowInstanceId: input.target.workflowInstanceId,
+    };
+    if (!task.assignedRoleId && !task.assignedUserId) return [created];
+    return [
+      created,
+      {
+        ...created,
+        action: "TASK_ASSIGNED",
+        after: {
+          assignedRoleId: task.assignedRoleId,
+          assignedUserId: task.assignedUserId,
+        },
+        reason: "Configured task assignment",
+      },
+    ];
+  });
+  if (taskEvents.length) {
+    await transaction.insert(workflowAuditEntries).values(taskEvents);
+    await transaction.insert(workflowEvents).values(taskEvents.map((event) => ({
+      actorId: event.actorId,
+      correlationId: event.correlationId,
+      eventCode: event.action,
+      payload: {
+        ...event.after,
+        stageInstanceId: event.stageInstanceId,
+        taskId: event.taskId,
+      },
+      workflowInstanceId: event.workflowInstanceId,
+    })));
+  }
   return { stage, tasks };
 }

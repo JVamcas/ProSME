@@ -71,7 +71,7 @@ function ruleColumns({
     },
     {
       accessorKey: "executionMode",
-      header: "Execution",
+      header: "Execution Mode",
       cell: ({ row }) => (
         <span className="rounded-full bg-brand-blue/15 px-2.5 py-1 text-xs font-semibold text-brand-navy">
           {executionLabels[row.original.executionMode]}

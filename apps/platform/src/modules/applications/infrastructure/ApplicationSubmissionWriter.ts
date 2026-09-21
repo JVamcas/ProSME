@@ -73,6 +73,28 @@ async function createInitialRuntime(
     workflowTemplateVersionId:
       input.configuration.workflowTemplateVersionId,
   });
+  const workflowPayload = {
+    applicationId: input.application.id,
+    startedAt: submittedAt.toISOString(),
+    workflowTemplateVersionId: input.configuration.workflowTemplateVersionId,
+  };
+  await transaction.insert(workflowEvents).values({
+    actorId: input.actorId,
+    correlationId: input.correlationId,
+    eventCode: "WORKFLOW_CREATED",
+    payload: workflowPayload,
+    workflowInstanceId: workflow.id,
+  });
+  await transaction.insert(workflowAuditEntries).values({
+    action: "WORKFLOW_CREATED",
+    actorId: input.actorId,
+    after: workflowPayload,
+    before: null,
+    correlationId: input.correlationId,
+    targetId: workflow.id,
+    targetType: "WORKFLOW_INSTANCE",
+    workflowInstanceId: workflow.id,
+  });
   const activation = await activateStageInTransaction(transaction, {
     actorId: input.actorId,
     correlationId: input.correlationId,

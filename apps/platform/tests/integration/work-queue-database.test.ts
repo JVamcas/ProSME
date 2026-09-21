@@ -10,8 +10,8 @@ import {
   readWorkQueue,
   writeTaskClaim,
 } from "@/db/repositories/WorkQueueRepository";
-import { writeChecklistTaskCompletion } from "@/db/repositories/WorkflowTaskActionRepository";
-import { completeStageInTransaction } from "@/modules/workflows/application/runtime/ServerStageCompletionService";
+import { writeChecklistTaskCompletion } from "@/modules/workflows/infrastructure/WorkflowTaskActionRepository";
+import { executeSequentialTransitionInTransaction } from "@/modules/workflows/application/runtime/ServerSequentialTransitionService";
 import { readWorkflowTask } from "@/modules/workflows/infrastructure/WorkflowTaskRepository";
 import { configureWorkflowAction } from "./support/workflow-action-fixture";
 const { Pool } = pg;
@@ -230,7 +230,7 @@ describeDatabase("P3.5 work queue projections and claim", () => {
       `SELECT assigned_user_id, assigned_role_id, status, row_version,
         claimed_at IS NOT NULL AS claimed,
         (SELECT count(*)::integer FROM app_workflow_audit_entries
-          WHERE target_id = $1::text AND action = 'TASK_CLAIMED') AS audits
+          WHERE target_id = $1::text AND action = 'TASK_ASSIGNED') AS audits
        FROM app_workflow_tasks WHERE id = $1::uuid`,
       [taskInstanceId],
     );
@@ -260,7 +260,7 @@ describeDatabase("P3.5 work queue projections and claim", () => {
     };
     const completed = await writeChecklistTaskCompletion(
       command,
-      completeStageInTransaction,
+      executeSequentialTransitionInTransaction,
     );
     expect(completed).toMatchObject({
       kind: "completed",
@@ -268,7 +268,7 @@ describeDatabase("P3.5 work queue projections and claim", () => {
     });
     expect(await writeChecklistTaskCompletion(
       command,
-      completeStageInTransaction,
+      executeSequentialTransitionInTransaction,
     )).toEqual(completed);
     const persisted = await query(
       `SELECT task.status, task.result,

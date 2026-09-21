@@ -26,9 +26,11 @@ export type StageCompletionTarget = {
   exitCondition: typeof workflowStageDefinitions.$inferSelect.exitCondition;
   fundingCall: Record<string, unknown>;
   stageInstanceId: string;
+  stageDefinitionId: string;
   stageKey: string;
   status: StageInstanceStatus;
   workflowInstanceId: string;
+  workflowVersionId: string;
 };
 
 export type StageCompletionValueRow = {
@@ -67,9 +69,11 @@ export async function lockStageCompletionTarget(
         title: fundingCalls.title,
       },
       stageInstanceId: stageInstances.id,
+      stageDefinitionId: stageInstances.workflowStageDefinitionId,
       stageKey: workflowStageDefinitions.code,
       status: stageInstances.status,
       workflowInstanceId: workflowInstances.id,
+      workflowVersionId: workflowInstances.workflowTemplateVersionId,
     })
     .from(stageInstances)
     .innerJoin(
@@ -217,8 +221,10 @@ export async function persistStageCompletion(
     after: { ...payload, status: "COMPLETED" },
     before: { completedAt: null, status: input.target.status },
     correlationId: input.correlationId,
+    stageInstanceId: input.target.stageInstanceId,
     targetId: input.target.stageInstanceId,
     targetType: "WORKFLOW_STAGE_INSTANCE",
+    workflowInstanceId: input.target.workflowInstanceId,
   });
   return completed;
 }
