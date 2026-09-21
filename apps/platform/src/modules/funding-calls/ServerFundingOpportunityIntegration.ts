@@ -115,6 +115,7 @@ export async function resolvePublishedEligibilityRuleSetBinding(id: string) {
   if (!call) return null;
   return {
     eligibilityRuleSetVersionId: call.eligibilityRuleSetVersionId,
+    formVersionId: call.formVersionId,
     fundingCallId: call.id,
     status: opportunityStatus(call),
   };

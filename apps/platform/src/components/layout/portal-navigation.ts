@@ -180,7 +180,7 @@ export const operationsPortalRoutes: readonly PortalRoute[] = [
       {
         id: "funding-call-eligibility",
         href: "/admin/settings/eligibility-rulesets",
-        label: "Eligibility Checkers",
+        label: "Eligibility rulesets",
         icon: BadgeQuestionMark,
         space: "operations",
         requiredAnyPermissions: [

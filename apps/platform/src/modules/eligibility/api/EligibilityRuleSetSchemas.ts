@@ -1,9 +1,6 @@
 import { z } from "zod";
 
 import { conditionGroupSchema } from "@/modules/conditions/domain/ConditionSerialization";
-import { conditionBuilderOperators } from "@/modules/conditions/engine/ConditionOperatorCatalogue";
-import { validateConditionGroup } from "@/modules/conditions/engine/ConditionValidation";
-import { eligibilityConditionFields } from "../domain/EligibilityConditionFields";
 import {
   eligibilityExecutionModes,
   eligibilityFailureTypes,
@@ -38,15 +35,15 @@ export const eligibilityBuilderRuleSchema = z.object({
   order: z.number().int().positive(),
   reasonCode: reasonCodeSchema,
 }).superRefine((rule, context) => {
-  const validation = validateConditionGroup(
-    rule.condition,
-    eligibilityConditionFields,
-    conditionBuilderOperators,
-  );
-  for (const issue of validation.issues) {
+  function containsEmptyGroup(node: typeof rule.condition): boolean {
+    return node.children.length === 0 || node.children.some((child) =>
+      child.kind === "GROUP" && containsEmptyGroup(child)
+    );
+  }
+  if (containsEmptyGroup(rule.condition)) {
     context.addIssue({
       code: "custom",
-      message: issue.message,
+      message: "Condition groups must contain at least one condition.",
       path: ["condition"],
     });
   }

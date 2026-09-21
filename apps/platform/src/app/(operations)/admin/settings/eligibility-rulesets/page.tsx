@@ -18,8 +18,8 @@ export default async function EligibilityRuleSetsPage() {
   return (
     <section>
       <PageHeader
-        description="Create reusable, versioned eligibility rulesets."
-        eyebrow="Settings"
+        description="Manage eligibility rulesets for funding calls."
+        eyebrow="Administration"
         icon={<Scale />}
         title="Eligibility rulesets"
       />

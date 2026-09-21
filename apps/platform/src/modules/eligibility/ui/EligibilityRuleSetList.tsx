@@ -33,7 +33,31 @@ const columns: DataTableColumn<EligibilityRuleSetSummary>[] = [
       </div>
     ),
   },
-  { accessorKey: "latestVersion", header: "Version" },
+  {
+    accessorKey: "fundingCalls",
+    header: "Funding Call",
+    cell: ({ row }) =>
+      row.original.fundingCalls.length ? (
+        <div className="flex flex-col gap-1">
+          {row.original.fundingCalls.map((call) => (
+            <Link
+              className="font-semibold text-brand-orange underline"
+              href={`/admin/funding-calls?fundingCallId=${call.id}`}
+              key={call.id}
+            >
+              {call.title}
+            </Link>
+          ))}
+        </div>
+      ) : (
+        <span className="text-brand-navy/55">Not bound</span>
+      ),
+  },
+  {
+    accessorKey: "latestVersion",
+    header: "Version",
+    cell: ({ row }) => `v${row.original.latestVersion}`,
+  },
   {
     accessorKey: "latestStatus",
     header: "Status",
@@ -63,9 +87,9 @@ export function EligibilityRuleSetList({ canCreate }: { canCreate: boolean }) {
         emptyMessage={
           query.isPending
             ? "Loading eligibility rulesets…"
-            : query.error?.message ?? "No eligibility rulesets configured."
+            : (query.error?.message ?? "No eligibility rulesets configured.")
         }
-        footer={(
+        footer={
           <DataTablePagination
             disabled={query.isFetching}
             onPageChange={setPage}
@@ -78,7 +102,7 @@ export function EligibilityRuleSetList({ canCreate }: { canCreate: boolean }) {
             total={query.data?.total ?? 0}
             totalPages={query.data?.totalPages ?? 0}
           />
-        )}
+        }
         rowKey={(ruleset) => ruleset.id}
         toolbar={{
           actions: (

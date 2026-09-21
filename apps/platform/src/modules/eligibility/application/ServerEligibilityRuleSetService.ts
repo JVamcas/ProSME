@@ -3,6 +3,9 @@ import "server-only";
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { requirePermission } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
+import { conditionBuilderOperators } from "@/modules/conditions/engine/ConditionOperatorCatalogue";
+import { validateConditionGroup } from "@/modules/conditions/engine/ConditionValidation";
+import { resolveEligibilityRuleSetContexts } from "@/modules/funding-calls/ServerFundingCallEligibilityContextIntegration";
 import {
   RequestValidationError,
   ResourceConflictError,
@@ -23,6 +26,8 @@ import {
   retireEligibilityRuleSetVersion,
 } from "../infrastructure/EligibilityRuleSetRepository";
 import { updateEligibilityRuleSetDraft } from "../infrastructure/EligibilityRuleSetWriteRepository";
+import { findEligibilityRuleSetBuilder } from "../infrastructure/EligibilityBuilderRepository";
+import { eligibilityFieldsForBoundForms } from "../domain/EligibilityConditionFields";
 
 async function requireRuleSet(ruleSetId: string) {
   const ruleSet = await findEligibilityRuleSet(ruleSetId);
@@ -110,6 +115,28 @@ export async function publishEligibilityRuleSet(
     user,
     permissionCodes.eligibilityRuleSetPublish,
   );
+  const [builder, contexts] = await Promise.all([
+    findEligibilityRuleSetBuilder(ruleSetId),
+    resolveEligibilityRuleSetContexts(versionId),
+  ]);
+  const fields = eligibilityFieldsForBoundForms(
+    contexts.map((context) => context.formFields ?? []),
+  );
+  if (!builder || builder.version.id !== versionId || !fields.length) {
+    throw new RequestValidationError(
+      "Bind this draft ruleset to a draft funding call before publishing it.",
+    );
+  }
+  const contextIssues = builder.rules.flatMap((rule) =>
+    validateConditionGroup(
+      rule.condition,
+      fields,
+      conditionBuilderOperators,
+    ).issues.map((issue) => `${rule.reasonCode}: ${issue.message}`)
+  );
+  if (contextIssues.length) {
+    throw new RequestValidationError(contextIssues.join(" "));
+  }
   let version;
   try {
     version = await publishEligibilityRuleSetVersion({

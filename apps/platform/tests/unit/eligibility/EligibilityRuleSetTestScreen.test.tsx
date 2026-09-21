@@ -33,6 +33,17 @@ function queryClient() {
       name: "SME Standard",
       updatedAt: timestamp,
     },
+    conditionFields: [{
+      key: "application.EMPLOYEE_COUNT",
+      label: "Employee count",
+      type: "NUMBER",
+    }],
+    context: {
+      fundingCalls: [{
+        id: "90000000-0000-4000-8000-000000000010",
+        title: "Growth Fund",
+      }],
+    },
     rules: [],
     version: {
       createdAt: timestamp,
@@ -128,8 +139,8 @@ describe("EligibilityRuleSetTestScreen", () => {
       </QueryClientProvider>,
     ));
 
-    expect(container.textContent).toContain("Version 2 · DRAFT");
-    expect(container.textContent).toContain("Version 1 · PUBLISHED");
+    expect(container.textContent).toContain("Growth Fund");
+    expect(container.textContent).toContain("Employee count");
     await act(async () => {
       container.querySelector("form")?.dispatchEvent(
         new Event("submit", { bubbles: true, cancelable: true }),

@@ -12,13 +12,12 @@ import { GeneralButton } from "@/components/ui/button";
 import {
   FormInput,
   FormSelect,
-  FormTextarea,
 } from "@/components/ui/form-fields";
 import { ConditionBuilder } from "@/modules/conditions/ui/builder";
+import type { ConditionFieldDefinition } from "@/modules/conditions/domain/ConditionConfiguration";
 import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup";
 import { eligibilityBuilderRuleSchema } from "../api/EligibilityRuleSetSchemas";
 import type { EligibilityBuilderRule } from "../api/EligibilityRuleSetTransport";
-import { eligibilityConditionFields } from "../domain/EligibilityConditionFields";
 
 type EligibilityRuleFormValues = Omit<EligibilityBuilderRule, "condition"> & {
   condition: unknown;
@@ -48,11 +47,13 @@ function newRule(order: number): EligibilityBuilderRule {
 
 export function EligibilityRuleDialog({
   initialRule,
+  fields,
   nextOrder,
   onCancel,
   onSave,
   saving,
 }: {
+  fields: readonly ConditionFieldDefinition[];
   initialRule?: EligibilityBuilderRule;
   nextOrder: number;
   onCancel: () => void;
@@ -119,7 +120,7 @@ export function EligibilityRuleDialog({
                 Conditions
               </h3>
               <ConditionBuilder
-                fields={eligibilityConditionFields}
+                fields={fields}
                 onChange={field.onChange}
                 value={field.value as ConditionGroup}
               />

@@ -34,6 +34,7 @@ export default async function FundingCallPage({
         title="Edit funding call"
       />
       <FundingCallEditor
+        canPublish={can(user, permissionCodes.fundingCallPublish)}
         canUpdate={can(user, permissionCodes.fundingCallUpdate)}
         id={id.data}
       />

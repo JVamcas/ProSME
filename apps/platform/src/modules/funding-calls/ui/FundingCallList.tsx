@@ -44,10 +44,16 @@ const columns: DataTableColumn<FundingCallView>[] = [
   },
 ];
 
-export function FundingCallList({ canCreate }: { canCreate: boolean }) {
+export function FundingCallList({
+  canCreate,
+  fundingCallId,
+}: {
+  canCreate: boolean;
+  fundingCallId?: string;
+}) {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const query = useFundingCalls(page, pageSize);
+  const query = useFundingCalls(page, pageSize, fundingCallId);
 
   return (
     <DataTable
@@ -74,15 +80,31 @@ export function FundingCallList({ canCreate }: { canCreate: boolean }) {
       )}
       rowKey={(call) => String(call.id)}
       toolbar={{
-        actions: canCreate ? (
-          <GeneralButtonLink href="/admin/funding-calls/new">
-            Create funding call
-          </GeneralButtonLink>
-        ) : (
-          <GeneralButton disabled>
-            Create funding call
-          </GeneralButton>
+        actions: (
+          <>
+            {fundingCallId ? (
+              <GeneralButtonLink
+                href="/admin/funding-calls"
+                variant="outline"
+              >
+                Clear filter
+              </GeneralButtonLink>
+            ) : null}
+            {canCreate ? (
+              <GeneralButtonLink href="/admin/funding-calls/new">
+                Create funding call
+              </GeneralButtonLink>
+            ) : (
+              <GeneralButton disabled>
+                Create funding call
+              </GeneralButton>
+            )}
+          </>
         ),
+        description: fundingCallId
+          ? "Showing the funding call selected from its eligibility ruleset."
+          : undefined,
+        title: fundingCallId ? "Filtered funding call" : undefined,
       }}
     />
   );

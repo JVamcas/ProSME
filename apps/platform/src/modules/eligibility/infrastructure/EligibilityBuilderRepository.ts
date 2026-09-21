@@ -90,6 +90,8 @@ export async function findEligibilityRuleSetBuilder(
   });
   return {
     allowedActions: allowedActions(ruleSet.version.status),
+    conditionFields: [],
+    context: { fundingCalls: [] },
     definition: ruleSet.definition,
     rules,
     version: ruleSet.version,
@@ -114,6 +116,7 @@ export async function listEligibilityRuleSets(input: {
         latest.row_version AS "latestVersionRowVersion",
         latest.status AS "latestStatus",
         COALESCE(rule_counts.rule_count, 0)::integer AS "ruleCount",
+        COALESCE(bindings.funding_calls, '[]'::jsonb) AS "fundingCalls",
         definition.updated_at AS "updatedAt"
       FROM app_eligibility_rule_sets definition
       JOIN LATERAL (
@@ -130,6 +133,18 @@ export async function listEligibilityRuleSets(input: {
         FROM app_eligibility_rules rule
         WHERE rule.version_id = latest.id
       ) rule_counts ON TRUE
+      LEFT JOIN LATERAL (
+        SELECT jsonb_agg(
+          jsonb_build_object(
+            'id', funding_call.id,
+            'reference', funding_call.reference,
+            'title', funding_call.title
+          )
+          ORDER BY funding_call.title, funding_call.id
+        ) AS funding_calls
+        FROM app_funding_calls funding_call
+        WHERE funding_call.eligibility_rule_set_version_id = latest.id
+      ) bindings ON TRUE
       ORDER BY definition.name ASC, definition.id ASC
       LIMIT ${input.pageSize}
       OFFSET ${offset}

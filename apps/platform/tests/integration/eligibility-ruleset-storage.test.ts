@@ -3,6 +3,27 @@ import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
+vi.mock("@/modules/funding-calls/ServerFundingCallEligibilityContextIntegration", () => ({
+  resolveEligibilityRuleSetContexts: vi.fn(async () => [{
+    formFields: [{
+      key: "business.employee_count",
+      label: "Employee count",
+      type: "NUMBER",
+    }],
+    id: "95000000-0000-4000-8000-000000000001",
+    title: "Test funding call",
+  }]),
+  resolveEligibilityTestFundingCall: vi.fn(async (_fundingCallId, versionId) => ({
+    closesAt: new Date("2026-12-31T00:00:00.000Z"),
+    eligibilityRuleSetVersionId: versionId,
+    fundingInstrument: "Grant",
+    maximumGrantAmount: "200000",
+    minimumGrantAmount: "1000",
+    opensAt: new Date("2026-01-01T00:00:00.000Z"),
+    thematicArea: "Growth",
+    totalBudgetEnvelope: "1000000",
+  })),
+}));
 
 import { permissionCodes } from "@/auth/authorization/permissions";
 import type { AuthenticatedUser } from "@/auth/types";
@@ -125,6 +146,7 @@ afterAll(async () => {
       actor,
       created.definition.id,
       {
+        fundingCallId: randomUUID(),
         mode: "SELF_CHECK",
         values: {
           application: {
@@ -139,7 +161,6 @@ afterAll(async () => {
             },
             requested_amount: 50_000,
           },
-          fundingCall: { maximum_grant_amount: 200_000 },
         },
         versionId: draft.version.id,
       },
@@ -217,6 +238,7 @@ afterAll(async () => {
       actor,
       created.definition.id,
       {
+        fundingCallId: randomUUID(),
         mode: "SCREENING",
         values: {
           application: {
@@ -231,7 +253,6 @@ afterAll(async () => {
             },
             requested_amount: 50_000,
           },
-          fundingCall: { maximum_grant_amount: 200_000 },
         },
         versionId: retired.version.id,
       },

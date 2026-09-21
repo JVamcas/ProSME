@@ -1,6 +1,7 @@
 import { CircleDollarSign } from "lucide-react";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { z } from "zod";
 
 import { getCurrentUser } from "@/auth/authorization/current-user";
 import { permissionCodes } from "@/auth/authorization/permissions";
@@ -10,11 +11,17 @@ import { FundingCallList } from "@/modules/funding-calls/ui/FundingCallList";
 
 export const metadata: Metadata = { title: "Funding calls" };
 
-export default async function FundingCallsPage() {
+export default async function FundingCallsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ fundingCallId?: string }>;
+}) {
   const user = await getCurrentUser();
   if (!user || !can(user, permissionCodes.fundingCallRead)) {
     redirect("/unauthorized");
   }
+  const requestedFundingCallId = (await searchParams).fundingCallId;
+  const fundingCallId = z.uuid().safeParse(requestedFundingCallId);
 
   return (
     <section>
@@ -26,8 +33,8 @@ export default async function FundingCallsPage() {
       />
       <FundingCallList
         canCreate={can(user, permissionCodes.fundingCallCreate)}
+        fundingCallId={fundingCallId.success ? fundingCallId.data : undefined}
       />
     </section>
   );
 }
-

@@ -4,6 +4,11 @@ import { permissionCodes } from "@/auth/authorization/permissions";
 import { requirePermission } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import { ResourceNotFoundError } from "@/lib/resource-errors";
+import { RequestValidationError } from "@/lib/resource-errors";
+import type { ConditionFieldDefinition } from "@/modules/conditions/domain/ConditionConfiguration";
+import { conditionBuilderOperators } from "@/modules/conditions/engine/ConditionOperatorCatalogue";
+import { validateConditionGroup } from "@/modules/conditions/engine/ConditionValidation";
+import { resolveEligibilityRuleSetContexts } from "@/modules/funding-calls/ServerFundingCallEligibilityContextIntegration";
 import type {
   UpdateEligibilityRuleSetBuilderInput,
 } from "../api/EligibilityRuleSetTransport";
@@ -12,6 +17,9 @@ import {
   findEligibilityRuleSetBuilder,
   listEligibilityRuleSets,
 } from "../infrastructure/EligibilityBuilderRepository";
+import {
+  eligibilityFieldsForBoundForms,
+} from "../domain/EligibilityConditionFields";
 import { updateEligibilityRuleSet } from "./ServerEligibilityRuleSetService";
 
 export async function getEligibilityRuleSets(
@@ -29,7 +37,42 @@ export async function getEligibilityRuleSetBuilder(
   requirePermission(user, permissionCodes.eligibilityRuleSetRead);
   const builder = await findEligibilityRuleSetBuilder(ruleSetId);
   if (!builder) throw new ResourceNotFoundError("eligibility ruleset");
-  return builder;
+  const context = await eligibilityBuilderContext(builder.version.id);
+  return { ...builder, ...context };
+}
+
+export async function eligibilityBuilderContext(versionId: string) {
+  const contexts = await resolveEligibilityRuleSetContexts(versionId);
+  return {
+    conditionFields: eligibilityFieldsForBoundForms(
+      contexts.map((context) => context.formFields ?? []),
+    ),
+    context: {
+      fundingCalls: contexts.map(({ id, title }) => ({ id, title })),
+    },
+  };
+}
+
+function validateContextualRules(
+  rules: UpdateEligibilityRuleSetBuilderInput["rules"],
+  fields: readonly ConditionFieldDefinition[],
+) {
+  if (!rules.length) return;
+  if (!fields.length) {
+    throw new RequestValidationError(
+      "Bind this ruleset version to a draft funding call before configuring rules.",
+    );
+  }
+  const messages = rules.flatMap((rule) =>
+    validateConditionGroup(
+      rule.condition,
+      fields,
+      conditionBuilderOperators,
+    ).issues.map((issue) => `${rule.reasonCode}: ${issue.message}`)
+  );
+  if (messages.length) {
+    throw new RequestValidationError(messages.join(" "));
+  }
 }
 
 export async function saveEligibilityRuleSetBuilder(
@@ -38,6 +81,7 @@ export async function saveEligibilityRuleSetBuilder(
   input: UpdateEligibilityRuleSetBuilderInput,
 ) {
   const builder = await getEligibilityRuleSetBuilder(user, ruleSetId);
+  validateContextualRules(input.rules, builder.conditionFields);
   await updateEligibilityRuleSet(
     user,
     ruleSetId,

@@ -109,10 +109,16 @@ export const fundingCallUpdateSchema = z
   .superRefine(validateRange);
 
 export const fundingCallListSchema = z.object({
+  fundingCallId: z.uuid().optional(),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(10),
+});
+
+export const fundingCallPublishSchema = z.object({
+  expectedRowVersion: z.number().int().positive(),
 });
 
 export type FundingCallCreateInput = z.infer<typeof fundingCallCreateSchema>;
 export type FundingCallUpdateInput = z.infer<typeof fundingCallUpdateSchema>;
 export type FundingCallListInput = z.infer<typeof fundingCallListSchema>;
+export type FundingCallPublishInput = z.infer<typeof fundingCallPublishSchema>;

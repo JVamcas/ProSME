@@ -5,6 +5,7 @@ import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
 import { GeneralButton } from "@/components/ui/button";
 import type { FormDefinitionSummary } from "@/modules/forms/FormTypes";
 import {
+  CloneButton,
   CreateDraftButton,
   EditButton,
   PreviewButton,
@@ -85,7 +86,7 @@ function FormTableActions({
         onClick={() => options.onRetire(form)}
         title={`Retire ${form.name}`}
       />
-      <CreateDraftButton
+      <CloneButton
         disabled={
           !options.canUpdate
           || form.latestStatus === "DRAFT"
@@ -94,7 +95,7 @@ function FormTableActions({
         }
         isLoading={pending === "clone"}
         onClick={() => options.onClone(form)}
-        title={`Create new draft for ${form.name}`}
+        title={`Clone ${form.name}`}
       />
     </div>
   );

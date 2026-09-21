@@ -17,6 +17,7 @@ const actor = { id: "eligibility-tester" } as AuthenticatedUser;
 const ruleSetId = "92000000-0000-4000-8000-000000000001";
 const versionId = "92000000-0000-4000-8000-000000000002";
 const input = {
+  fundingCallId: "92000000-0000-4000-8000-000000000003",
   mode: "SELF_CHECK",
   values: {
     application: {
@@ -31,7 +32,6 @@ const input = {
       },
       requested_amount: 50_000,
     },
-    fundingCall: { maximum_grant_amount: 200_000 },
   },
   versionId,
 };

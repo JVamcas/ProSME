@@ -56,7 +56,7 @@ export function EligibilityRuleSetCreateForm({
         <FormTextarea label="Description" name="description" />
         <div className="flex justify-end">
           <GeneralButton disabled={mutation.isPending} type="submit">
-            {mutation.isPending ? "Creating…" : "Create ruleset"}
+            {mutation.isPending ? "Saving" : "Save"}
           </GeneralButton>
         </div>
       </form>

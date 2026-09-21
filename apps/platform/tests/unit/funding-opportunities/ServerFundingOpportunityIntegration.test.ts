@@ -135,6 +135,7 @@ describe("published funding-call integration", () => {
       resolvePublishedEligibilityRuleSetBinding(fundingCallId),
     ).resolves.toEqual({
       eligibilityRuleSetVersionId: fundingCall.eligibilityRuleSetVersionId,
+      formVersionId: fundingCall.formVersionId,
       fundingCallId,
       status: "open",
     });

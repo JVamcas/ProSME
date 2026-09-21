@@ -8,6 +8,9 @@ vi.mock("@/modules/eligibility/infrastructure/EligibilityBuilderRepository", () 
 vi.mock("@/modules/eligibility/application/ServerEligibilityRuleSetService", () => ({
   updateEligibilityRuleSet: vi.fn(),
 }));
+vi.mock("@/modules/funding-calls/ServerFundingCallEligibilityContextIntegration", () => ({
+  resolveEligibilityRuleSetContexts: vi.fn(),
+}));
 
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { PermissionDeniedError } from "@/auth/authorization/policy";
@@ -18,6 +21,7 @@ import {
 } from "@/modules/eligibility/application/ServerEligibilityBuilderService";
 import { updateEligibilityRuleSet } from "@/modules/eligibility/application/ServerEligibilityRuleSetService";
 import { findEligibilityRuleSetBuilder } from "@/modules/eligibility/infrastructure/EligibilityBuilderRepository";
+import { resolveEligibilityRuleSetContexts } from "@/modules/funding-calls/ServerFundingCallEligibilityContextIntegration";
 
 const actorId = "60000000-0000-4000-8000-000000000001";
 const ruleSetId = "60000000-0000-4000-8000-000000000002";
@@ -46,7 +50,7 @@ const condition = {
     id: "60000000-0000-4000-8000-000000000006",
     kind: "CONDITION" as const,
     leftOperand: {
-      key: "application.business.employee_count",
+      key: "application.EMPLOYEE_COUNT",
       kind: "FIELD" as const,
     },
     operator: "GREATER_THAN" as never,
@@ -69,6 +73,15 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(findEligibilityRuleSetBuilder).mockResolvedValue(builder);
   vi.mocked(updateEligibilityRuleSet).mockResolvedValue({} as never);
+  vi.mocked(resolveEligibilityRuleSetContexts).mockResolvedValue([{
+    formFields: [{
+      key: "EMPLOYEE_COUNT",
+      label: "Employee count",
+      type: "NUMBER",
+    }],
+    id: "60000000-0000-4000-8000-000000000007",
+    title: "Growth Fund",
+  }] as never);
 });
 
 describe("ServerEligibilityBuilderService", () => {
@@ -117,6 +130,30 @@ describe("ServerEligibilityBuilderService", () => {
           order: 1,
           reasonCode: "EMPLOYEE_REQUIRED",
         }],
+      },
+    );
+  });
+
+  it("allows every rule to be deleted after its binding is removed", async () => {
+    const actor = user([
+      permissionCodes.eligibilityRuleSetRead,
+      permissionCodes.eligibilityRuleSetUpdate,
+    ]);
+    vi.mocked(resolveEligibilityRuleSetContexts).mockResolvedValue([]);
+
+    await saveEligibilityRuleSetBuilder(actor, ruleSetId, {
+      expectedRowVersion: 1,
+      rules: [],
+    });
+
+    expect(updateEligibilityRuleSet).toHaveBeenCalledWith(
+      actor,
+      ruleSetId,
+      versionId,
+      {
+        conditionDefinitions: [],
+        expectedRowVersion: 1,
+        rules: [],
       },
     );
   });

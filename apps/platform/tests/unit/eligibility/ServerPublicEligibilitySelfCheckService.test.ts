@@ -7,7 +7,7 @@ vi.mock(
 );
 vi.mock(
   "@/modules/eligibility/application/ServerEligibilityBindingService",
-  () => ({ resolveSelfCheckEligibilityRuleSet: vi.fn() }),
+  () => ({ resolveSelfCheckEligibilityConfiguration: vi.fn() }),
 );
 import { basicOperators } from "@/modules/conditions/engine/BasicOperators";
 import {
@@ -16,7 +16,7 @@ import {
   PublicEligibilitySelfCheckChangedError,
   PublicEligibilitySelfCheckUnavailableError,
 } from "@/modules/eligibility/application/ServerPublicEligibilitySelfCheckService";
-import { resolveSelfCheckEligibilityRuleSet } from "@/modules/eligibility/application/ServerEligibilityBindingService";
+import { resolveSelfCheckEligibilityConfiguration } from "@/modules/eligibility/application/ServerEligibilityBindingService";
 import type {
   EligibilityEvaluationRule,
   EligibilityEvaluationRuleSet,
@@ -61,7 +61,7 @@ const ruleSet: EligibilityEvaluationRuleSet = {
   rules: [
     rule(
       "30000000-0000-4000-8000-000000000001",
-      "application.business.registered",
+      "application.REGISTERED",
       true,
       "HARD_FAIL",
       "BOTH",
@@ -70,7 +70,7 @@ const ruleSet: EligibilityEvaluationRuleSet = {
     ),
     rule(
       "30000000-0000-4000-8000-000000000002",
-      "application.business.statutory_good_standing",
+      "application.STATUTORY_GOOD_STANDING",
       true,
       "SOFT_FAIL",
       "SELF_CHECK",
@@ -79,7 +79,7 @@ const ruleSet: EligibilityEvaluationRuleSet = {
     ),
     rule(
       "30000000-0000-4000-8000-000000000003",
-      "application.business.bank_account_active",
+      "application.BANK_ACCOUNT_ACTIVE",
       true,
       "WARNING",
       "SELF_CHECK",
@@ -88,7 +88,7 @@ const ruleSet: EligibilityEvaluationRuleSet = {
     ),
     rule(
       "30000000-0000-4000-8000-000000000004",
-      "application.annual_turnover",
+      "application.ANNUAL_TURNOVER",
       100,
       "HARD_FAIL",
       "SCREENING",
@@ -125,7 +125,33 @@ const fundingCall = {
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(findPublicFundingCallById).mockResolvedValue(fundingCall);
-  vi.mocked(resolveSelfCheckEligibilityRuleSet).mockResolvedValue(ruleSet);
+  vi.mocked(resolveSelfCheckEligibilityConfiguration).mockResolvedValue({
+    form: {
+      fields: [
+        {
+          key: "REGISTERED",
+          label: "Business is registered",
+          type: "YES_NO",
+        },
+        {
+          key: "STATUTORY_GOOD_STANDING",
+          label: "Statutory good standing",
+          type: "YES_NO",
+        },
+        {
+          key: "BANK_ACCOUNT_ACTIVE",
+          label: "Active business bank account",
+          type: "YES_NO",
+        },
+        {
+          key: "ANNUAL_TURNOVER",
+          label: "Annual turnover",
+          type: "CURRENCY",
+        },
+      ],
+    },
+    ruleSet,
+  } as never);
 });
 
 describe("public eligibility self-check", () => {
@@ -141,7 +167,8 @@ describe("public eligibility self-check", () => {
       "Statutory good standing",
       "Active business bank account",
     ]);
-    expect(resolveSelfCheckEligibilityRuleSet).toHaveBeenCalledWith(fundingCallId);
+    expect(resolveSelfCheckEligibilityConfiguration)
+      .toHaveBeenCalledWith(fundingCallId);
     expect(workspace).not.toHaveProperty("ruleSetVersionId");
     expect(workspace).not.toHaveProperty("ruleSetVersionNumber");
     expect(JSON.stringify(workspace)).not.toContain("INTERNAL_");

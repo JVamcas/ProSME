@@ -6,18 +6,16 @@ import { toast } from "sonner";
 
 import { DeleteButton, EditButton } from "@/components/ui/action-buttons";
 import { GeneralButton, GeneralButtonLink } from "@/components/ui/button";
-import {
-  DataTable,
-  type DataTableColumn,
-} from "@/components/ui/data-table";
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
+import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
 import { DraggableDialog } from "@/components/ui/draggable-dialog";
 import { StatusBadge } from "@/components/ui/status-badge";
 import {
   conditionBuilderOperators,
   formatConditionGroupPreview,
 } from "@/modules/conditions/ui/builder";
+import type { ConditionFieldDefinition } from "@/modules/conditions/domain/ConditionConfiguration";
 import type { EligibilityBuilderRule } from "../api/EligibilityRuleSetTransport";
-import { eligibilityConditionFields } from "../domain/EligibilityConditionFields";
 import {
   useEligibilityRuleSetBuilder,
   useEligibilityRuleSetLifecycle,
@@ -39,10 +37,12 @@ const executionLabels = {
 
 function ruleColumns({
   editable,
+  fields,
   onDelete,
   onEdit,
 }: {
   editable: boolean;
+  fields: readonly ConditionFieldDefinition[];
   onDelete: (rule: EligibilityBuilderRule) => void;
   onEdit: (rule: EligibilityBuilderRule) => void;
 }): DataTableColumn<EligibilityBuilderRule>[] {
@@ -86,7 +86,7 @@ function ruleColumns({
         <span className="block min-w-72">
           {formatConditionGroupPreview(
             row.original.condition,
-            eligibilityConditionFields,
+            fields,
             conditionBuilderOperators,
           )}
         </span>
@@ -137,6 +137,7 @@ export function EligibilityRuleSetEditor({
   const query = useEligibilityRuleSetBuilder(id);
   const update = useUpdateEligibilityRuleSet(id);
   const lifecycle = useEligibilityRuleSetLifecycle(id);
+  const [deleting, setDeleting] = useState<EligibilityBuilderRule>();
   const [editing, setEditing] = useState<EligibilityBuilderRule | "new">();
   const editor = query.data;
   if (query.isPending) return <p>Loading eligibility ruleset…</p>;
@@ -151,6 +152,7 @@ export function EligibilityRuleSetEditor({
 
   const isDraft = currentEditor.version.status === "DRAFT";
   const editable = isDraft && canUpdate;
+  const hasContext = currentEditor.conditionFields.length > 0;
 
   async function saveRules(rules: EligibilityBuilderRule[]) {
     try {
@@ -188,14 +190,16 @@ export function EligibilityRuleSetEditor({
       }
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Unable to update the version.",
+        error instanceof Error
+          ? error.message
+          : "Unable to update the version.",
       );
     }
   }
 
   const canRunLifecycle =
     currentEditor.version.status === "DRAFT"
-      ? canPublish
+      ? canPublish && hasContext
       : currentEditor.version.status === "PUBLISHED"
         ? canRetire
         : canUpdate;
@@ -222,6 +226,7 @@ export function EligibilityRuleSetEditor({
           <GeneralButtonLink
             href={`/admin/settings/eligibility-rulesets/${id}/test`}
             variant="outlineOrange"
+            size={"compact"}
           >
             <FlaskConical className="size-4" />
             Test ruleset
@@ -230,6 +235,7 @@ export function EligibilityRuleSetEditor({
             disabled={!canRunLifecycle || lifecycle.isPending}
             onClick={runLifecycle}
             variant="outlineOrange"
+            size={"compact"}
           >
             {lifecycle.isPending
               ? "Working…"
@@ -243,6 +249,16 @@ export function EligibilityRuleSetEditor({
           This version is read-only. Create a new Draft to change its rules.
         </p>
       ) : null}
+
+      {currentEditor.context.fundingCalls.length ? (
+        <p className="rounded-xl border border-brand-blue/20 bg-brand-blue/10 px-4 py-3 text-sm text-brand-navy">
+          Available fields come from:{" "}
+          {currentEditor.context.fundingCalls
+            .map((call) => call.title)
+            .join(", ")}
+          .
+        </p>
+      ) : null}
       {lifecycle.error ? (
         <p className="text-sm text-red-700" role="alert">
           {lifecycle.error.message}
@@ -253,12 +269,8 @@ export function EligibilityRuleSetEditor({
         <DataTable
           columns={ruleColumns({
             editable,
-            onDelete: (rule) => {
-              const remaining = currentEditor.rules
-                .filter((item) => item.id !== rule.id)
-                .map((item, index) => ({ ...item, order: index + 1 }));
-              void saveRules(remaining).catch(() => undefined);
-            },
+            fields: currentEditor.conditionFields,
+            onDelete: setDeleting,
             onEdit: setEditing,
           })}
           data={currentEditor.rules}
@@ -266,15 +278,13 @@ export function EligibilityRuleSetEditor({
           minWidth={1180}
           rowKey={(rule) => rule.id}
           toolbar={{
-            actions: editable ? (
-              <GeneralButton
-                onClick={() => setEditing("new")}
-                size="compact"
-              >
-                <Plus className="size-4" />
-                Add rule
-              </GeneralButton>
-            ) : undefined,
+            actions:
+              editable && hasContext ? (
+                <GeneralButton onClick={() => setEditing("new")} size="compact">
+                  <Plus className="size-4" />
+                  Add rule
+                </GeneralButton>
+              ) : undefined,
             title: "Eligibility rules",
           }}
         />
@@ -289,6 +299,7 @@ export function EligibilityRuleSetEditor({
         }
       >
         <EligibilityRuleDialog
+          fields={currentEditor.conditionFields}
           initialRule={editing === "new" ? undefined : editing}
           nextOrder={currentEditor.rules.length + 1}
           onCancel={() => setEditing(undefined)}
@@ -305,6 +316,26 @@ export function EligibilityRuleSetEditor({
           saving={update.isPending}
         />
       </DraggableDialog>
+      <ConfirmationDialog
+        confirmText="Delete rule"
+        isDangerous
+        isLoading={update.isPending}
+        isOpen={Boolean(deleting) && editable}
+        message={
+          `Delete ${deleting?.reasonCode ?? "this eligibility rule"}? This only changes the mutable draft.`
+        }
+        onCancel={() => setDeleting(undefined)}
+        onConfirm={() => {
+          if (!deleting) return;
+          const remaining = currentEditor.rules
+            .filter((item) => item.id !== deleting.id)
+            .map((item, index) => ({ ...item, order: index + 1 }));
+          void saveRules(remaining)
+            .then(() => setDeleting(undefined))
+            .catch(() => undefined);
+        }}
+        title="Delete eligibility rule"
+      />
     </div>
   );
 }

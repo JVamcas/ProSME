@@ -4,6 +4,9 @@ vi.mock("server-only", () => ({}));
 vi.mock("@/modules/eligibility/infrastructure/EligibilityEvaluationRepository", () => ({
   findTestableEligibilityRuleSetForEvaluation: vi.fn(),
 }));
+vi.mock("@/modules/funding-calls/ServerFundingCallEligibilityContextIntegration", () => ({
+  resolveEligibilityTestFundingCall: vi.fn(),
+}));
 
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { PermissionDeniedError } from "@/auth/authorization/policy";
@@ -12,9 +15,11 @@ import { ResourceNotFoundError } from "@/lib/resource-errors";
 import type { EligibilityTestInput } from "@/modules/eligibility/api/EligibilityTestSchemas";
 import { testEligibilityRuleSet } from "@/modules/eligibility/application/ServerEligibilityTestService";
 import { findTestableEligibilityRuleSetForEvaluation } from "@/modules/eligibility/infrastructure/EligibilityEvaluationRepository";
+import { resolveEligibilityTestFundingCall } from "@/modules/funding-calls/ServerFundingCallEligibilityContextIntegration";
 
 const ruleSetId = "80000000-0000-4000-8000-000000000001";
 const versionId = "80000000-0000-4000-8000-000000000002";
+const fundingCallId = "80000000-0000-4000-8000-000000000004";
 
 function user(grants: string[]): AuthenticatedUser {
   return {
@@ -33,6 +38,7 @@ function user(grants: string[]): AuthenticatedUser {
 }
 
 const input: EligibilityTestInput = {
+  fundingCallId,
   mode: "SCREENING",
   values: {
     application: {
@@ -47,7 +53,6 @@ const input: EligibilityTestInput = {
       },
       requested_amount: 50_000,
     },
-    fundingCall: { maximum_grant_amount: 200_000 },
   },
   versionId,
 };
@@ -60,6 +65,16 @@ beforeEach(() => {
     versionId,
     versionNumber: 2,
   });
+  vi.mocked(resolveEligibilityTestFundingCall).mockResolvedValue({
+    closesAt: new Date("2026-12-31T00:00:00.000Z"),
+    eligibilityRuleSetVersionId: versionId,
+    fundingInstrument: "Grant",
+    maximumGrantAmount: "200000",
+    minimumGrantAmount: "1000",
+    opensAt: new Date("2026-01-01T00:00:00.000Z"),
+    thematicArea: "Growth",
+    totalBudgetEnvelope: "1000000",
+  } as never);
 });
 
 describe("ServerEligibilityTestService", () => {

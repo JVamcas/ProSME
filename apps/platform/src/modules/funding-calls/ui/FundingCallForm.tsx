@@ -5,7 +5,7 @@ import { FormProvider, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
-import { GeneralButton } from "@/components/ui/button";
+import { GeneralButton, GeneralButtonLink } from "@/components/ui/button";
 import { FormDateTimeInput } from "@/components/ui/form-date-time-input";
 import { FormInput, FormSelect } from "@/components/ui/form-fields";
 import { MoneyField } from "@/components/ui/money-field";
@@ -107,6 +107,13 @@ export function FundingCallForm({
     resolver: zodResolver(localFormSchema),
   });
   const opensAt = useWatch({ control: form.control, name: "opensAt" });
+  const eligibilityVersionId = useWatch({
+    control: form.control,
+    name: "eligibilityRuleSetVersionId",
+  });
+  const selectedEligibility = eligibilityVersions.data?.find(
+    (version) => version.versionId === eligibilityVersionId,
+  );
   const submit = form.handleSubmit(async (values) => {
     try {
       const identifiers = call
@@ -167,26 +174,26 @@ export function FundingCallForm({
           <FormSelect
             containerClassName="md:col-span-2"
             disabled={disabled || formVersions.isPending}
-            infoTooltip="The exact published form version used when applicants create applications for this call. Optional for drafts and required before publishing."
+            infoTooltip="Draft calls may bind draft or published forms for configuration and testing. The form must be published before the funding call can be published."
             items={(formVersions.data ?? []).map((version) => ({
-              label: `${version.formName} — version ${version.versionNumber}`,
+              label: `${version.formName} — version ${version.versionNumber} · ${version.status ?? "PUBLISHED"}`,
               value: version.versionId,
             }))}
             label="Application form version"
             name="formVersionId"
             placeholder={
               formVersions.isPending
-                ? "Loading published forms…"
-                : "Select a published form version"
+                ? "Loading form versions…"
+                : "Select a form version"
             }
           />
 
           <FormSelect
             containerClassName="md:col-span-2"
             disabled={disabled || eligibilityVersions.isPending}
-            infoTooltip="The exact published ruleset version used for self-check and authoritative screening. Optional for drafts and required before publishing."
+            infoTooltip="Draft calls may bind draft or published rulesets for configuration and testing. The ruleset must be published before the funding call can be published."
             items={(eligibilityVersions.data ?? []).map((version) => ({
-              label: `${version.ruleSetName} — version ${version.versionNumber}`,
+              label: `${version.ruleSetName} — version ${version.versionNumber} · ${version.status}`,
               value: version.versionId,
             }))}
             label="Eligibility ruleset"
@@ -194,9 +201,21 @@ export function FundingCallForm({
             placeholder={
               eligibilityVersions.isPending
                 ? "Loading eligibility rulesets…"
-                : "Select a eligibility ruleset"
+                : "Select an eligibility ruleset"
             }
           />
+
+          {call && selectedEligibility
+            && call.eligibilityRuleSetVersionId === selectedEligibility.versionId ? (
+              <div className="md:col-span-2">
+                <GeneralButtonLink
+                  href={`/admin/settings/eligibility-rulesets/${selectedEligibility.ruleSetId}`}
+                  variant="outlineOrange"
+                >
+                  Configure bound eligibility ruleset
+                </GeneralButtonLink>
+              </div>
+            ) : null}
 
           <FormInput
             infoTooltip="The type of financial support offered, such as a grant, loan, or guarantee."

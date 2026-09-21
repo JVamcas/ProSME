@@ -1,16 +1,16 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { FormProvider, useForm } from "react-hook-form";
+import { FormProvider, useForm, type Resolver } from "react-hook-form";
 import { toast } from "sonner";
 
 import { GeneralButton } from "@/components/ui/button";
 import { FormInput, FormSelect } from "@/components/ui/form-fields";
+import type { ConditionFieldDefinition } from "@/modules/conditions/domain/ConditionConfiguration";
 import type { EligibilityRuleSetVersion } from "../domain/EligibilityRuleSet";
 import type { EligibilityEvaluationResult } from "../domain/EligibilityEvaluation";
 import {
   eligibilityTestSchema,
-  type EligibilityTestInput,
 } from "../api/EligibilityTestSchemas";
 import {
   useEligibilityRuleSetBuilder,
@@ -22,27 +22,49 @@ const booleanItems = [
   { label: "No", value: "false" },
 ];
 
+const numberRegistration = { valueAsNumber: true };
+
 const booleanRegistration = {
   setValueAs: (value: string) => value === "true",
 };
 
-const numberRegistration = { valueAsNumber: true };
+function applicationKey(field: ConditionFieldDefinition) {
+  return field.key.slice("application.".length);
+}
 
-const defaultValues: EligibilityTestInput["values"] = {
-  application: {
-    annual_turnover: 0,
-    business: {
-      bank_account_active: false,
-      employee_count: 0,
-      operating_months: 0,
-      ownership_percentage: 0,
-      registered: false,
-      statutory_good_standing: false,
-    },
-    requested_amount: 0,
-  },
-  fundingCall: { maximum_grant_amount: 0 },
-};
+function sampleValue(field: ConditionFieldDefinition) {
+  if (field.type === "BOOLEAN") return false;
+  if (field.type === "NUMBER") return 0;
+  if (field.type === "DATE") return "2026-01-01";
+  return "Sample value";
+}
+
+function SampleField({ field }: { field: ConditionFieldDefinition }) {
+  const name = `values.application.${applicationKey(field)}`;
+  if (field.type === "BOOLEAN") {
+    return (
+      <FormSelect
+        items={booleanItems}
+        label={field.label}
+        name={name}
+        registrationOptions={booleanRegistration}
+        required
+      />
+    );
+  }
+  return (
+    <FormInput
+      label={field.label}
+      name={name}
+      registrationOptions={field.type === "NUMBER"
+        ? numberRegistration
+        : undefined}
+      required
+      step={field.type === "NUMBER" ? "any" : undefined}
+      type={field.type.toLowerCase()}
+    />
+  );
+}
 
 function TestResult({ result }: { result: EligibilityEvaluationResult }) {
   return (
@@ -133,24 +155,39 @@ function TestResult({ result }: { result: EligibilityEvaluationResult }) {
 }
 
 function EligibilityTestForm({
+  fields,
+  fundingCalls,
   ruleSetId,
-  versions,
+  version,
 }: {
+  fields: ConditionFieldDefinition[];
+  fundingCalls: Array<{ id: string; title: string }>;
   ruleSetId: string;
-  versions: EligibilityRuleSetVersion[];
+  version: EligibilityRuleSetVersion;
 }) {
   const test = useEligibilityRuleSetTest(ruleSetId);
-  const form = useForm<EligibilityTestInput>({
+  type TestFormValues = {
+    fundingCallId: string;
+    mode: "SELF_CHECK" | "SCREENING";
+    values: { application: Record<string, boolean | number | string> };
+    versionId: string;
+  };
+  const form = useForm<TestFormValues>({
     defaultValues: {
+      fundingCallId: fundingCalls[0].id,
       mode: "SELF_CHECK",
-      values: defaultValues,
-      versionId: versions[0].id,
+      values: {
+        application: Object.fromEntries(
+          fields.map((field) => [applicationKey(field), sampleValue(field)]),
+        ),
+      },
+      versionId: version.id,
     },
-    resolver: zodResolver(eligibilityTestSchema),
+    resolver: zodResolver(eligibilityTestSchema) as Resolver<TestFormValues>,
   });
-  const submit = form.handleSubmit(async (input) => {
+  const submit = form.handleSubmit(async (values) => {
     try {
-      await test.mutateAsync(input);
+      await test.mutateAsync(eligibilityTestSchema.parse(values));
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Unable to test the ruleset.",
@@ -167,12 +204,12 @@ function EligibilityTestForm({
         >
           <div className="grid gap-4 md:grid-cols-2">
             <FormSelect
-              items={versions.map((version) => ({
-                label: `Version ${version.versionNumber} · ${version.status}`,
-                value: version.id,
+              items={fundingCalls.map((call) => ({
+                label: call.title,
+                value: call.id,
               }))}
-              label="Ruleset version"
-              name="versionId"
+              label="Funding call context"
+              name="fundingCallId"
               required
             />
             <FormSelect
@@ -191,82 +228,9 @@ function EligibilityTestForm({
               Sample application values
             </legend>
             <div className="grid gap-4 md:grid-cols-2">
-              <FormInput
-                label="Requested amount"
-                min="0"
-                name="values.application.requested_amount"
-                registrationOptions={numberRegistration}
-                required
-                step="0.01"
-                type="number"
-              />
-              <FormInput
-                label="Annual turnover"
-                min="0"
-                name="values.application.annual_turnover"
-                registrationOptions={numberRegistration}
-                required
-                step="0.01"
-                type="number"
-              />
-              <FormInput
-                label="Employee count"
-                min="0"
-                name="values.application.business.employee_count"
-                registrationOptions={numberRegistration}
-                required
-                step="1"
-                type="number"
-              />
-              <FormInput
-                label="Namibian ownership percentage"
-                max="100"
-                min="0"
-                name="values.application.business.ownership_percentage"
-                registrationOptions={numberRegistration}
-                required
-                step="0.01"
-                type="number"
-              />
-              <FormInput
-                label="Months in operation"
-                min="0"
-                name="values.application.business.operating_months"
-                registrationOptions={numberRegistration}
-                required
-                step="1"
-                type="number"
-              />
-              <FormInput
-                label="Funding Call maximum grant amount"
-                min="0"
-                name="values.fundingCall.maximum_grant_amount"
-                registrationOptions={numberRegistration}
-                required
-                step="0.01"
-                type="number"
-              />
-              <FormSelect
-                items={booleanItems}
-                label="Business is registered"
-                name="values.application.business.registered"
-                registrationOptions={booleanRegistration}
-                required
-              />
-              <FormSelect
-                items={booleanItems}
-                label="Statutory good standing"
-                name="values.application.business.statutory_good_standing"
-                registrationOptions={booleanRegistration}
-                required
-              />
-              <FormSelect
-                items={booleanItems}
-                label="Active business bank account"
-                name="values.application.business.bank_account_active"
-                registrationOptions={booleanRegistration}
-                required
-              />
+              {fields.map((field) => (
+                <SampleField field={field} key={field.key} />
+              ))}
             </div>
           </fieldset>
 
@@ -292,11 +256,22 @@ export function EligibilityRuleSetTestScreen({ id }: { id: string }) {
       </p>
     );
   }
-  const versions = query.data.versions
-    .filter((version) => version.status !== "RETIRED")
-    .sort((left, right) => right.versionNumber - left.versionNumber);
-  if (!versions.length) {
-    return <p>No Draft or Published version is available to test.</p>;
+  const applicationFields = query.data.conditionFields.filter(
+    (field) => field.key.startsWith("application."),
+  );
+  if (!query.data.context.fundingCalls.length) {
+    return (
+      <p>
+        Bind this ruleset version to a funding call before testing it.
+      </p>
+    );
   }
-  return <EligibilityTestForm ruleSetId={id} versions={versions} />;
+  return (
+    <EligibilityTestForm
+      fields={applicationFields}
+      fundingCalls={query.data.context.fundingCalls}
+      ruleSetId={id}
+      version={query.data.version}
+    />
+  );
 }

@@ -1,4 +1,5 @@
 import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup";
+import type { ConditionFieldDefinition } from "@/modules/conditions/domain/ConditionConfiguration";
 import type {
   EligibilityExecutionMode,
   EligibilityFailureType,
@@ -22,6 +23,10 @@ export type EligibilityBuilderRule = {
 export type EligibilityRuleSetBuilderView = {
   allowedActions: Array<"CLONE" | "PUBLISH" | "RETIRE" | "UPDATE">;
   definition: EligibilityRuleSetDefinition;
+  conditionFields: ConditionFieldDefinition[];
+  context: {
+    fundingCalls: Array<{ id: string; title: string }>;
+  };
   rules: EligibilityBuilderRule[];
   version: EligibilityRuleSetVersion;
   versions: EligibilityRuleSetVersion[];
@@ -30,6 +35,11 @@ export type EligibilityRuleSetBuilderView = {
 export type EligibilityRuleSetSummary = {
   code: string;
   description: string;
+  fundingCalls: Array<{
+    id: string;
+    reference: string;
+    title: string;
+  }>;
   id: string;
   latestStatus: EligibilityRuleSetStatus;
   latestVersion: number;
@@ -54,6 +64,7 @@ export type PublishedEligibilityRuleSetOption = {
   ruleSetName: string;
   versionId: string;
   versionNumber: number;
+  status: "DRAFT" | "PUBLISHED";
 };
 
 export type CreateEligibilityRuleSetInput = {

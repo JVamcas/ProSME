@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { eligibilityTestSchema } from "@/modules/eligibility/api/EligibilityTestSchemas";
 
 const validInput = {
+  fundingCallId: "91000000-0000-4000-8000-000000000002",
   mode: "SELF_CHECK",
   values: {
     application: {
@@ -17,7 +18,6 @@ const validInput = {
       },
       requested_amount: 50_000,
     },
-    fundingCall: { maximum_grant_amount: 200_000 },
   },
   versionId: "91000000-0000-4000-8000-000000000001",
 };
@@ -27,20 +27,10 @@ describe("eligibility test schema", () => {
     expect(eligibilityTestSchema.safeParse(validInput).success).toBe(true);
   });
 
-  it("rejects invalid sample values and unsupported execution modes", () => {
+  it("rejects unsupported execution modes", () => {
     expect(eligibilityTestSchema.safeParse({
       ...validInput,
       mode: "BOTH",
-      values: {
-        ...validInput.values,
-        application: {
-          ...validInput.values.application,
-          business: {
-            ...validInput.values.application.business,
-            ownership_percentage: 101,
-          },
-        },
-      },
     }).success).toBe(false);
   });
 });

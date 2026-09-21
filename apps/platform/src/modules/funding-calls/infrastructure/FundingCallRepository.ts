@@ -19,7 +19,6 @@ import {
 import { getDatabase } from "@/db/client";
 import type {
   FundingCallCreateInput,
-  FundingCallListInput,
   FundingCallUpdateInput,
 } from "../api/FundingCallSchemas";
 import type { FundingCall } from "../domain/FundingCall";
@@ -80,28 +79,6 @@ export async function readFundingCallByPublicIdentifier(
     )
     .limit(1);
   return row ? toFundingCall(row) : null;
-}
-
-export async function readFundingCalls(input: FundingCallListInput) {
-  const database = getDatabase();
-  const offset = (input.page - 1) * input.pageSize;
-  const [rows, totals] = await Promise.all([
-    database
-      .select()
-      .from(fundingCalls)
-      .orderBy(desc(fundingCalls.updatedAt), desc(fundingCalls.id))
-      .limit(input.pageSize)
-      .offset(offset),
-    database.select({ value: count() }).from(fundingCalls),
-  ]);
-  const total = totals[0]?.value ?? 0;
-  return {
-    items: rows.map(toFundingCall),
-    page: input.page,
-    pageSize: input.pageSize,
-    total,
-    totalPages: Math.ceil(total / input.pageSize),
-  };
 }
 
 export async function updateDraftFundingCall(

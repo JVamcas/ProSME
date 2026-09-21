@@ -32,6 +32,17 @@ function builder(status: "DRAFT" | "PUBLISHED") {
       name: "SME Standard",
       updatedAt: timestamp,
     },
+    conditionFields: [{
+      key: "application.EMPLOYEE_COUNT",
+      label: "Employee count",
+      type: "NUMBER",
+    }],
+    context: {
+      fundingCalls: [{
+        id: "70000000-0000-4000-8000-000000000010",
+        title: "Growth Fund",
+      }],
+    },
     rules: [{
       applicantMessage: "Your business must employ at least one person.",
       condition: {
@@ -39,7 +50,7 @@ function builder(status: "DRAFT" | "PUBLISHED") {
           id: "70000000-0000-4000-8000-000000000005",
           kind: "CONDITION",
           leftOperand: {
-            key: "application.business.employee_count",
+            key: "application.EMPLOYEE_COUNT",
             kind: "FIELD",
           },
           operator: "GREATER_THAN",
@@ -153,5 +164,29 @@ describe("EligibilityRuleSetEditor", () => {
     expect(container.querySelector(
       '[aria-label="Delete EMPLOYEE_REQUIRED"]',
     )).toBeNull();
+  });
+
+  it("asks for confirmation before deleting a draft rule", async () => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    await act(async () => root?.render(
+      <QueryClientProvider client={queryClient("DRAFT")}>
+        <EligibilityRuleSetEditor
+          canPublish
+          canRetire={false}
+          canUpdate
+          id={ruleSetId}
+        />
+      </QueryClientProvider>,
+    ));
+
+    await act(async () => container.querySelector<HTMLButtonElement>(
+      '[aria-label="Delete EMPLOYEE_REQUIRED"]',
+    )?.click());
+
+    expect(document.body.textContent).toContain("Delete eligibility rule");
+    expect(document.body.textContent).toContain("Delete EMPLOYEE_REQUIRED?");
+    expect(container.textContent).toContain("EMPLOYEE_REQUIRED");
   });
 });

@@ -27,12 +27,13 @@ export const fundingCallQueryKeys = {
     "workflow-template-versions",
   ] as const,
   detail: (id: string) => ["admin", "funding-calls", id] as const,
-  list: (page: number, pageSize: number) => [
+  list: (page: number, pageSize: number, fundingCallId?: string) => [
     "admin",
     "funding-calls",
     "list",
     page,
     pageSize,
+    fundingCallId ?? "all",
   ] as const,
 };
 
@@ -57,11 +58,19 @@ export function useBindableWorkflowTemplateVersions() {
   });
 }
 
-export function useFundingCalls(page: number, pageSize: number) {
+export function useFundingCalls(
+  page: number,
+  pageSize: number,
+  fundingCallId?: string,
+) {
   return useQuery({
     placeholderData: keepPreviousData,
-    queryFn: () => clientFundingCallService.list({ page, pageSize }),
-    queryKey: fundingCallQueryKeys.list(page, pageSize),
+    queryFn: () => clientFundingCallService.list({
+      fundingCallId,
+      page,
+      pageSize,
+    }),
+    queryKey: fundingCallQueryKeys.list(page, pageSize, fundingCallId),
   });
 }
 
@@ -89,6 +98,18 @@ export function useUpdateFundingCall(id: string) {
   return useMutation({
     mutationFn: (input: FundingCallUpdateInput) =>
       clientFundingCallService.update(id, input),
+    onSuccess: (call) => {
+      queryClient.setQueryData(fundingCallQueryKeys.detail(id), call);
+      void queryClient.invalidateQueries({ queryKey: fundingCallQueryKeys.all });
+    },
+  });
+}
+
+export function usePublishFundingCall(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (expectedRowVersion: number) =>
+      clientFundingCallService.publish(id, expectedRowVersion),
     onSuccess: (call) => {
       queryClient.setQueryData(fundingCallQueryKeys.detail(id), call);
       void queryClient.invalidateQueries({ queryKey: fundingCallQueryKeys.all });

@@ -2,12 +2,20 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 vi.mock("@/modules/forms/infrastructure/FormRepository", () => ({
+  formVersionIsBindable: vi.fn(),
   formVersionIsPublished: vi.fn(),
+  getConfigurableFormFields: vi.fn(),
+  listBindableFormVersions: vi.fn(),
   listPublishedFormVersions: vi.fn(),
 }));
 vi.mock("@/modules/eligibility/infrastructure/EligibilityRuleSetRepository", () => ({
+  eligibilityRuleSetVersionIsBindable: vi.fn(),
   eligibilityRuleSetVersionIsPublished: vi.fn(),
+  listBindableEligibilityRuleSetVersions: vi.fn(),
   listPublishedEligibilityRuleSetVersions: vi.fn(),
+}));
+vi.mock("@/modules/eligibility/infrastructure/EligibilityEvaluationRepository", () => ({
+  findTestableEligibilityRuleSetForEvaluation: vi.fn(),
 }));
 vi.mock("@/modules/workflows/infrastructure/WorkflowRepository", () => ({
   listPublishedWorkflowVersions: vi.fn(),
@@ -20,7 +28,6 @@ vi.mock("@/modules/funding-calls/infrastructure/FundingCallRepository", () => ({
   readFundingCalls: vi.fn(),
   updateDraftFundingCall: vi.fn(),
 }));
-
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { PermissionDeniedError } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
@@ -36,8 +43,16 @@ import {
   readFundingCallByPublicIdentifier,
   updateDraftFundingCall,
 } from "@/modules/funding-calls/infrastructure/FundingCallRepository";
-import { formVersionIsPublished } from "@/modules/forms/infrastructure/FormRepository";
-import { eligibilityRuleSetVersionIsPublished } from "@/modules/eligibility/infrastructure/EligibilityRuleSetRepository";
+import {
+  formVersionIsBindable,
+  formVersionIsPublished,
+  getConfigurableFormFields,
+} from "@/modules/forms/infrastructure/FormRepository";
+import {
+  eligibilityRuleSetVersionIsBindable,
+  eligibilityRuleSetVersionIsPublished,
+} from "@/modules/eligibility/infrastructure/EligibilityRuleSetRepository";
+import { findTestableEligibilityRuleSetForEvaluation } from "@/modules/eligibility/infrastructure/EligibilityEvaluationRepository";
 import { workflowTemplateVersionIsPublished } from "@/modules/workflows/infrastructure/WorkflowRepository";
 
 const actorId = "10000000-0000-4000-8000-000000000001";
@@ -96,8 +111,17 @@ function user(grants: string[]): AuthenticatedUser {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(eligibilityRuleSetVersionIsBindable).mockResolvedValue(true);
   vi.mocked(eligibilityRuleSetVersionIsPublished).mockResolvedValue(true);
+  vi.mocked(formVersionIsBindable).mockResolvedValue(true);
   vi.mocked(formVersionIsPublished).mockResolvedValue(true);
+  vi.mocked(getConfigurableFormFields).mockResolvedValue([]);
+  vi.mocked(findTestableEligibilityRuleSetForEvaluation).mockResolvedValue({
+    ruleSetId: "30000000-0000-4000-8000-000000000002",
+    rules: [],
+    versionId: eligibilityRuleSetVersionId,
+    versionNumber: 1,
+  });
   vi.mocked(workflowTemplateVersionIsPublished).mockResolvedValue(true);
   vi.mocked(readFundingCallById).mockResolvedValue(stored);
 });
@@ -112,6 +136,25 @@ describe("ServerFundingCallService", () => {
     );
 
     expect(insertFundingCall).toHaveBeenCalledWith(actorId, input);
+    expect(result.status).toBe("DRAFT");
+  });
+
+  it("allows draft form and eligibility versions on a draft call", async () => {
+    vi.mocked(formVersionIsPublished).mockResolvedValue(false);
+    vi.mocked(eligibilityRuleSetVersionIsPublished).mockResolvedValue(false);
+    vi.mocked(insertFundingCall).mockResolvedValue(stored);
+
+    const result = await createFundingCall(
+      user([permissionCodes.fundingCallCreate]),
+      input,
+    );
+
+    expect(formVersionIsBindable).toHaveBeenCalledWith(formVersionId);
+    expect(eligibilityRuleSetVersionIsBindable).toHaveBeenCalledWith(
+      eligibilityRuleSetVersionId,
+    );
+    expect(formVersionIsPublished).not.toHaveBeenCalled();
+    expect(eligibilityRuleSetVersionIsPublished).not.toHaveBeenCalled();
     expect(result.status).toBe("DRAFT");
   });
 
@@ -136,14 +179,41 @@ describe("ServerFundingCallService", () => {
     );
 
     expect(insertFundingCall).toHaveBeenCalledWith(actorId, draftInput);
-    expect(formVersionIsPublished).not.toHaveBeenCalled();
-    expect(eligibilityRuleSetVersionIsPublished).not.toHaveBeenCalled();
+    expect(formVersionIsBindable).not.toHaveBeenCalled();
+    expect(eligibilityRuleSetVersionIsBindable).not.toHaveBeenCalled();
     expect(workflowTemplateVersionIsPublished).not.toHaveBeenCalled();
     expect(result).toMatchObject({
       eligibilityRuleSetVersionId: null,
       formVersionId: null,
       status: "DRAFT",
       workflowTemplateVersionId: null,
+    });
+  });
+
+  it("allows an eligibility version before an application form is bound", async () => {
+    const draftInput = {
+      ...input,
+      formVersionId: null,
+    };
+    const draft = {
+      ...stored,
+      formVersionId: null,
+    };
+    vi.mocked(insertFundingCall).mockResolvedValue(draft);
+
+    const result = await createFundingCall(
+      user([permissionCodes.fundingCallCreate]),
+      draftInput,
+    );
+
+    expect(eligibilityRuleSetVersionIsBindable).toHaveBeenCalledWith(
+      eligibilityRuleSetVersionId,
+    );
+    expect(getConfigurableFormFields).not.toHaveBeenCalled();
+    expect(result).toMatchObject({
+      eligibilityRuleSetVersionId,
+      formVersionId: null,
+      status: "DRAFT",
     });
   });
 
@@ -159,8 +229,8 @@ describe("ServerFundingCallService", () => {
     expect(result.id).toBe(callId);
   });
 
-  it("rejects a form version that is not published", async () => {
-    vi.mocked(formVersionIsPublished).mockResolvedValue(false);
+  it("rejects a form version that is not bindable", async () => {
+    vi.mocked(formVersionIsBindable).mockResolvedValue(false);
 
     await expect(createFundingCall(
       user([permissionCodes.fundingCallCreate]),
@@ -170,8 +240,8 @@ describe("ServerFundingCallService", () => {
     expect(insertFundingCall).not.toHaveBeenCalled();
   });
 
-  it("rejects an eligibility ruleset version that is not published", async () => {
-    vi.mocked(eligibilityRuleSetVersionIsPublished).mockResolvedValue(false);
+  it("rejects an eligibility ruleset version that is not bindable", async () => {
+    vi.mocked(eligibilityRuleSetVersionIsBindable).mockResolvedValue(false);
 
     await expect(createFundingCall(
       user([permissionCodes.fundingCallCreate]),

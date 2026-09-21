@@ -1632,12 +1632,23 @@ Reuse the Generic Condition Builder and add:
 - applicant-facing message;
 - execution mode.
 
+The Builder's field catalogue is binding-driven:
+- `fundingCall.*` fields come from a Draft Funding Call bound to the Ruleset Version;
+- `application.*` fields come from that Funding Call's bound Form Version using
+  the Form fields' stable keys;
+- when a Ruleset Version is bound to multiple Funding Calls, only compatible
+  application fields common to every bound Form Version are configurable.
+
 ### Acceptance Criteria
 
 1. Admin can create/edit Rules in a Draft Ruleset.
 2. Generic Condition Builder is reused.
 3. Rules can be grouped through the shared Conditions model.
 4. Published Rulesets cannot be edited.
+5. A Draft Ruleset can be bound to a Draft Funding Call for configuration and
+   non-authoritative testing.
+6. Contextual field references are validated against the bound Funding Call and
+   Form Versions.
 
 ### Done When
 
@@ -1786,10 +1797,14 @@ Bind the Funding Call to the exact published Form Version applicants must comple
 ### Scope
 
 - Implement the Bind Application Form Version capability described by this phase.
+- A Draft Funding Call may bind a Draft or Published Form Version for
+  configuration and testing.
+- Publishing the Funding Call requires the bound Form Version to be Published.
 
 ### Acceptance Criteria
 
-1. Only Published Form Versions can be selected for a published/live call.
+1. Draft or Published Form Versions can be selected for a Draft Funding Call;
+   only Published Form Versions can be used by a published/live call.
 2. `FormVersionId` persists on the Funding Call.
 3. Applicant application creation resolves that exact version.
 4. A newer Form Version does not silently change existing Applications.
@@ -1806,10 +1821,15 @@ Bind the Funding Call to the exact published Eligibility Ruleset Version used fo
 ### Scope
 
 - Implement the Bind Eligibility Ruleset Version capability described by this phase.
+- A Draft Funding Call may bind a Draft or Published Eligibility Ruleset Version
+  for configuration and non-authoritative testing.
+- Publishing the Funding Call requires the bound Eligibility Ruleset Version to
+  be Published.
 
 ### Acceptance Criteria
 
-1. Only Published Ruleset Versions can be selected.
+1. Draft or Published Ruleset Versions can be selected for a Draft Funding Call;
+   only Published Ruleset Versions can be used by a published/live call.
 2. `EligibilityRuleSetVersionId` persists.
 3. Public Self Check resolves the bound version.
 4. Authoritative Screening resolves the same bound version.

@@ -129,6 +129,20 @@ export async function eligibilityRuleSetVersionIsPublished(versionId: string) {
   return Boolean(version);
 }
 
+export async function eligibilityRuleSetVersionIsBindable(versionId: string) {
+  const [version] = await getDatabase()
+    .select({ id: eligibilityRuleSetVersions.id })
+    .from(eligibilityRuleSetVersions)
+    .where(
+      and(
+        eq(eligibilityRuleSetVersions.id, versionId),
+        inArray(eligibilityRuleSetVersions.status, ["DRAFT", "PUBLISHED"]),
+      ),
+    )
+    .limit(1);
+  return Boolean(version);
+}
+
 export async function listPublishedEligibilityRuleSetVersions() {
   return getDatabase()
     .select({
@@ -146,6 +160,33 @@ export async function listPublishedEligibilityRuleSetVersions() {
     .where(
       and(
         eq(eligibilityRuleSetVersions.status, "PUBLISHED"),
+        eq(eligibilityRuleSets.active, true),
+      ),
+    )
+    .orderBy(
+      asc(eligibilityRuleSets.name),
+      desc(eligibilityRuleSetVersions.versionNumber),
+    );
+}
+
+export async function listBindableEligibilityRuleSetVersions() {
+  return getDatabase()
+    .select({
+      ruleSetCode: eligibilityRuleSets.code,
+      ruleSetId: eligibilityRuleSets.id,
+      ruleSetName: eligibilityRuleSets.name,
+      status: eligibilityRuleSetVersions.status,
+      versionId: eligibilityRuleSetVersions.id,
+      versionNumber: eligibilityRuleSetVersions.versionNumber,
+    })
+    .from(eligibilityRuleSetVersions)
+    .innerJoin(
+      eligibilityRuleSets,
+      eq(eligibilityRuleSets.id, eligibilityRuleSetVersions.ruleSetId),
+    )
+    .where(
+      and(
+        inArray(eligibilityRuleSetVersions.status, ["DRAFT", "PUBLISHED"]),
         eq(eligibilityRuleSets.active, true),
       ),
     )

@@ -49,7 +49,7 @@ describe("eligibility builder schemas", () => {
     expect(result.success).toBe(true);
   });
 
-  it("rejects unknown fields and incomplete condition groups", () => {
+  it("defers contextual field validation and rejects incomplete groups", () => {
     const unknownField = validRule();
     const condition = (
       unknownField.condition as {
@@ -68,7 +68,7 @@ describe("eligibility builder schemas", () => {
       },
     }));
 
-    expect(unknownResult.success).toBe(false);
+    expect(unknownResult.success).toBe(true);
     expect(emptyResult.success).toBe(false);
   });
 

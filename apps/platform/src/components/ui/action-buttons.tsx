@@ -122,7 +122,7 @@ export function CloneButton(props: ActionButtonProps) {
   return (
     <ActionButton
       defaultTitle="Clone"
-      icon={Copy}
+      icon={CopyPlus}
       iconClassName="hover:bg-brand-cream [&_svg]:text-brand-orange"
       {...props}
     />

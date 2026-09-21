@@ -3,6 +3,7 @@
 import { requestData, requestJson } from "@/lib/client-http";
 import type {
   FundingCallCreateInput,
+  FundingCallListInput,
   FundingCallUpdateInput,
 } from "./api/FundingCallSchemas";
 import type { FundingCallPage, FundingCallView } from "./api/FundingCallTransport";
@@ -23,11 +24,12 @@ type ListEnvelope = {
   page: Omit<FundingCallPage, "items"> & { nextCursor: string | null };
 };
 
-async function list(input: { page: number; pageSize: number }) {
+async function list(input: FundingCallListInput) {
   const query = new URLSearchParams({
     page: String(input.page),
     pageSize: String(input.pageSize),
   });
+  if (input.fundingCallId) query.set("fundingCallId", input.fundingCallId);
   const envelope = await requestJson<ListEnvelope>(
     `/api/admin/funding-calls?${query.toString()}`,
     { cache: "no-store" },
@@ -55,6 +57,17 @@ function update(id: string, input: FundingCallUpdateInput) {
     headers: jsonHeaders,
     method: "PATCH",
   });
+}
+
+function publish(id: string, expectedRowVersion: number) {
+  return requestData<FundingCallView>(
+    `/api/admin/funding-calls/${id}/publish`,
+    {
+      body: JSON.stringify({ expectedRowVersion }),
+      headers: jsonHeaders,
+      method: "POST",
+    },
+  );
 }
 
 function listBindableFormVersions() {
@@ -85,5 +98,6 @@ export const clientFundingCallService = {
   listBindableEligibilityRuleSetVersions,
   listBindableFormVersions,
   listBindableWorkflowTemplateVersions,
+  publish,
   update,
 };

@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, asc, desc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
 import {
@@ -96,6 +96,36 @@ export async function listPublishedFormVersions() {
     )
     .where(eq(formVersions.status, "PUBLISHED"))
     .orderBy(asc(formDefinitions.name), desc(formVersions.versionNumber));
+}
+
+export async function listBindableFormVersions() {
+  return getDatabase()
+    .select({
+      definitionId: formDefinitions.id,
+      formName: formDefinitions.name,
+      status: formVersions.status,
+      versionId: formVersions.id,
+      versionNumber: formVersions.versionNumber,
+    })
+    .from(formVersions)
+    .innerJoin(
+      formDefinitions,
+      eq(formDefinitions.id, formVersions.formDefinitionId),
+    )
+    .where(inArray(formVersions.status, ["DRAFT", "PUBLISHED"]))
+    .orderBy(asc(formDefinitions.name), desc(formVersions.versionNumber));
+}
+
+export async function formVersionIsBindable(versionId: string) {
+  const [version] = await getDatabase()
+    .select({ id: formVersions.id })
+    .from(formVersions)
+    .where(and(
+      eq(formVersions.id, versionId),
+      inArray(formVersions.status, ["DRAFT", "PUBLISHED"]),
+    ))
+    .limit(1);
+  return Boolean(version);
 }
 
 export async function formVersionIsPublished(versionId: string) {
@@ -267,4 +297,12 @@ export async function getFormVersionForWrite(versionId: string) {
     fields: await readFields(versionId),
     version,
   };
+}
+
+export async function getConfigurableFormFields(versionId: string) {
+  const value = await getFormVersionForWrite(versionId);
+  if (!value || !["DRAFT", "PUBLISHED"].includes(value.version.status)) {
+    return null;
+  }
+  return value.fields;
 }

@@ -89,6 +89,7 @@ export type FormRuntimeSchema = {
 export type PublishedFormOption = {
   definitionId: string;
   formName: string;
+  status?: "DRAFT" | "PUBLISHED";
   versionId: string;
   versionNumber: number;
 };
