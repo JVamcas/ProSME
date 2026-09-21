@@ -100,6 +100,7 @@ export function buildWorkflowRuntimeContext(
     source.application.sectionCompletion,
   );
   addRecord(available, "fundingCall", fundingCall);
+  addRecord(available, "eligibility", source.eligibility);
   addRecord(available, "workflow", source.workflow);
   addRecord(available, "stage", source.stage);
   addRecord(available, "task", source.task);

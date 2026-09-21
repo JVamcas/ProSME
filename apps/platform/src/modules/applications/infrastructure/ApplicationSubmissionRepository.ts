@@ -7,6 +7,7 @@ import {
   applicationDocuments,
   applications,
   applicationSubmissionCommands,
+  businessProfiles,
   fundingCalls,
   workflowAuditEntries,
   workflowDefinitionVersions,
@@ -14,6 +15,10 @@ import {
   workflowStageDefinitions,
 } from "@/db/schema";
 import type { ApplicationDocumentType } from "@/modules/applications/ApplicationDocumentSchemas";
+import {
+  AuthoritativeEligibilityUnavailableError,
+  prepareAuthoritativeEligibilityOutcome,
+} from "@/modules/eligibility/application/ServerAuthoritativeEligibilityService";
 import {
   InitialStageActivationError,
   writeApplicationSubmission,
@@ -38,6 +43,7 @@ export type SubmitApplicationResult =
         | "documents_invalid"
         | "draft_incomplete"
         | "business_required"
+        | "eligibility_unavailable"
         | "idempotency_conflict"
         | "not_found"
         | "stage_entry_condition_failed"
@@ -145,6 +151,10 @@ async function findInitialConfiguration(
 ) {
   const [configuration] = await transaction
     .select({
+      eligibilityRuleSetVersionId:
+        fundingCalls.eligibilityRuleSetVersionId,
+      fundingCallId: fundingCalls.id,
+      maximumGrantAmount: fundingCalls.maximumGrantAmount,
       stageId: workflowStageDefinitions.id,
       workflowTemplateVersionId: workflowDefinitionVersions.id,
     })
@@ -169,6 +179,18 @@ async function findInitialConfiguration(
     .where(eq(fundingCalls.id, fundingOpportunityId))
     .limit(1);
   return configuration ?? null;
+}
+
+async function findBusinessForEvaluation(
+  transaction: SubmissionTransaction,
+  businessId: string,
+) {
+  const [business] = await transaction
+    .select()
+    .from(businessProfiles)
+    .where(eq(businessProfiles.id, businessId))
+    .limit(1);
+  return business ?? null;
 }
 
 function draftIsComplete(application: {
@@ -219,11 +241,40 @@ async function submitInTransaction(
     application.fundingOpportunityId,
   );
   if (!configuration) return { kind: "workflow_unavailable" };
-  return writeApplicationSubmission(transaction, {
-    ...input,
-    application,
-    configuration,
-  });
+  const business = await findBusinessForEvaluation(
+    transaction,
+    application.businessId,
+  );
+  if (!business) return { kind: "business_required" };
+  try {
+    const eligibilityOutcome = await prepareAuthoritativeEligibilityOutcome(
+      transaction,
+      {
+        actorId: input.actorId,
+        application,
+        business,
+        correlationId: input.correlationId,
+        evaluatedAt: new Date(),
+        fundingCall: {
+          eligibilityRuleSetVersionId:
+            configuration.eligibilityRuleSetVersionId,
+          id: configuration.fundingCallId,
+          maximumGrantAmount: configuration.maximumGrantAmount,
+        },
+      },
+    );
+    return writeApplicationSubmission(transaction, {
+      ...input,
+      application,
+      configuration,
+      eligibilityOutcome,
+    });
+  } catch (error) {
+    if (error instanceof AuthoritativeEligibilityUnavailableError) {
+      return { kind: "eligibility_unavailable" };
+    }
+    throw error;
+  }
 }
 
 type SubmitApplicationInput = {

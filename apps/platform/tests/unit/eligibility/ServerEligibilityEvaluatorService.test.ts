@@ -13,7 +13,12 @@ import { evaluatePublishedEligibilityRuleSet } from "@/modules/eligibility/appli
 import { findPublishedEligibilityRuleSetForEvaluation } from "@/modules/eligibility/infrastructure/EligibilityEvaluationRepository";
 
 const versionId = "30000000-0000-4000-8000-000000000001";
-const data = { application: {}, fundingCall: {}, stages: [] };
+const data = {
+  application: {},
+  eligibility: {},
+  fundingCall: {},
+  stages: [],
+};
 
 function user(grants: string[]): AuthenticatedUser {
   return {

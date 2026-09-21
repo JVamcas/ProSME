@@ -24,6 +24,7 @@ describe("stage entry condition", () => {
   it("passes stages without an entry condition", () => {
     expect(evaluateStageCondition(null, {
       application: {},
+      eligibility: {},
       fundingCall: {},
       stages: [],
     })).toEqual({
@@ -36,6 +37,7 @@ describe("stage entry condition", () => {
   it("evaluates application and funding-call values", () => {
     const result = evaluateStageCondition(condition, {
       application: { requested_amount: 250_000 },
+      eligibility: {},
       fundingCall: { maximum_amount: 500_000 },
       stages: [],
     });
@@ -48,6 +50,7 @@ describe("stage entry condition", () => {
   it("fails closed when a referenced runtime value is unavailable", () => {
     const result = evaluateStageCondition(condition, {
       application: {},
+      eligibility: {},
       fundingCall: { maximum_amount: 500_000 },
       stages: [],
     });

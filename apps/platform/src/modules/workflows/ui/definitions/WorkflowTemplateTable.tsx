@@ -39,12 +39,12 @@ function actionCell(template: WorkflowTemplateListItem, options: Props) {
   return (
     <div className="flex items-center gap-1">
       <EditButton
-        disabled={!options.canUpdate || !isDraft}
+        disabled={!options.canUpdate}
         onClick={() => options.onEdit(template)}
         title={`Edit ${template.name}`}
       />
       <CloneButton
-        disabled={!options.canUpdate || isDraft || Boolean(options.cloningId)}
+        disabled={!options.canUpdate || Boolean(options.cloningId)}
         isLoading={options.cloningId === template.id}
         onClick={() => options.onClone(template)}
         title={`Clone ${template.name}`}

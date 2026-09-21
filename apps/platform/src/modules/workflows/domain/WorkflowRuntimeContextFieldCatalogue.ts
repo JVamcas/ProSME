@@ -37,6 +37,51 @@ export const workflowRuntimeContextFields = [
     label: "Funding Call closing date",
     type: "DATE",
   },
+  {
+    key: "eligibility.outcome",
+    label: "Authoritative eligibility outcome",
+    type: "TEXT",
+  },
+  {
+    key: "eligibility.eligible",
+    label: "Authoritative eligibility passed",
+    type: "BOOLEAN",
+  },
+  {
+    key: "eligibility.manual_screening_required",
+    label: "Manual eligibility screening required",
+    type: "BOOLEAN",
+  },
+  {
+    key: "eligibility.hard_failure_count",
+    label: "Eligibility hard failure count",
+    type: "NUMBER",
+  },
+  {
+    key: "eligibility.soft_failure_count",
+    label: "Eligibility soft failure count",
+    type: "NUMBER",
+  },
+  {
+    key: "eligibility.warning_count",
+    label: "Eligibility warning count",
+    type: "NUMBER",
+  },
+  {
+    key: "eligibility.evaluated_at",
+    label: "Eligibility evaluation date",
+    type: "DATE",
+  },
+  {
+    key: "eligibility.rule_set_version_id",
+    label: "Eligibility Ruleset Version ID",
+    type: "TEXT",
+  },
+  {
+    key: "eligibility.rule_set_version_number",
+    label: "Eligibility Ruleset version number",
+    type: "NUMBER",
+  },
   { key: "workflow.id", label: "Workflow ID", type: "TEXT" },
   { key: "workflow.code", label: "Workflow code", type: "TEXT" },
   { key: "workflow.name", label: "Workflow name", type: "TEXT" },

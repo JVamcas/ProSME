@@ -3,6 +3,7 @@ import "server-only";
 import { and, asc, eq, inArray } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
+import type { DatabaseTransaction } from "@/db/client";
 import { deserializeConditionGroup } from "@/modules/conditions/domain/ConditionSerialization";
 import { findConditionNode } from "@/modules/conditions/domain/ConditionTree";
 import { conditionGroups } from "@/modules/conditions/infrastructure/condition.schema";
@@ -26,8 +27,9 @@ export class InvalidEligibilityEvaluationRuleSetError extends Error {
 async function findEligibilityRuleSetForEvaluation(
   versionId: string,
   statuses: EligibilityRuleSetStatus[],
+  database: ReturnType<typeof getDatabase> | DatabaseTransaction,
 ): Promise<EligibilityEvaluationRuleSet | null> {
-  const rows = await getDatabase()
+  const rows = await database
     .select({
       applicantMessage: eligibilityRules.applicantMessage,
       conditionDefinition: conditionGroups.definition,
@@ -109,13 +111,21 @@ async function findEligibilityRuleSetForEvaluation(
 }
 
 export function findPublishedEligibilityRuleSetForEvaluation(versionId: string) {
-  return findEligibilityRuleSetForEvaluation(versionId, ["PUBLISHED"]);
+  return findEligibilityRuleSetForEvaluation(
+    versionId,
+    ["PUBLISHED"],
+    getDatabase(),
+  );
 }
 
-export function findRuntimeEligibilityRuleSetForEvaluation(versionId: string) {
+export function findRuntimeEligibilityRuleSetForEvaluation(
+  versionId: string,
+  database: ReturnType<typeof getDatabase> | DatabaseTransaction = getDatabase(),
+) {
   return findEligibilityRuleSetForEvaluation(
     versionId,
     ["PUBLISHED", "RETIRED"],
+    database,
   );
 }
 
@@ -123,5 +133,6 @@ export function findTestableEligibilityRuleSetForEvaluation(versionId: string) {
   return findEligibilityRuleSetForEvaluation(
     versionId,
     ["DRAFT", "PUBLISHED"],
+    getDatabase(),
   );
 }

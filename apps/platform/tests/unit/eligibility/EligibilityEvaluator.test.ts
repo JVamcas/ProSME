@@ -70,6 +70,7 @@ const data = {
     region: "Khomas",
     requested_amount: 600_000,
   },
+  eligibility: {},
   fundingCall: { maximum_amount: 500_000 },
   stages: [],
 };

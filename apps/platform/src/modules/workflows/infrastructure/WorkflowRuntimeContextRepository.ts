@@ -23,6 +23,15 @@ type RuntimeContextRow = {
   contextFields: ConditionFieldDefinition[];
   formVersionId: string;
   fundingCallTitle: string;
+  eligibilityEligible: boolean;
+  eligibilityEvaluatedAt: Date;
+  eligibilityOutcome: string | null;
+  eligibilityHardFailureCount: number;
+  eligibilityManualScreeningRequired: boolean;
+  eligibilityRuleSetVersionId: string;
+  eligibilityRuleSetVersionNumber: number;
+  eligibilitySoftFailureCount: number;
+  eligibilityWarningCount: number;
   priorStageValues: PriorStageRuntimeValues[];
   permissions: WorkflowElementPermissions;
   stageDefinitionId: string;
@@ -65,6 +74,17 @@ function toRuntimeContextSource(row: RuntimeContextRow) {
       formVersionId: row.formVersionId,
     },
     fundingCallTitle: row.fundingCallTitle,
+    eligibility: {
+      eligible: row.eligibilityEligible,
+      evaluatedAt: row.eligibilityEvaluatedAt,
+      outcome: row.eligibilityOutcome,
+      hardFailureCount: row.eligibilityHardFailureCount,
+      manualScreeningRequired: row.eligibilityManualScreeningRequired,
+      ruleSetVersionId: row.eligibilityRuleSetVersionId,
+      ruleSetVersionNumber: row.eligibilityRuleSetVersionNumber,
+      softFailureCount: row.eligibilitySoftFailureCount,
+      warningCount: row.eligibilityWarningCount,
+    },
     permissions: row.permissions,
     priorStageValues: row.priorStageValues,
     stage: {
@@ -111,6 +131,15 @@ export async function readWorkflowTaskRuntimeContext(
       application.financial_section AS "applicationFinancial",
       application.declarations_section AS "applicationDeclarations",
       application.section_completion AS "applicationSectionCompletion",
+      eligibility.eligible AS "eligibilityEligible",
+      eligibility.evaluated_at AS "eligibilityEvaluatedAt",
+      eligibility.final_screening_outcome AS "eligibilityOutcome",
+      jsonb_array_length(eligibility.hard_failures) AS "eligibilityHardFailureCount",
+      eligibility.manual_screening_required AS "eligibilityManualScreeningRequired",
+      eligibility.eligibility_rule_set_version_id AS "eligibilityRuleSetVersionId",
+      eligibility.rule_set_version_number AS "eligibilityRuleSetVersionNumber",
+      jsonb_array_length(eligibility.soft_failures) AS "eligibilitySoftFailureCount",
+      jsonb_array_length(eligibility.warnings) AS "eligibilityWarningCount",
       workflow.id AS "workflowInstanceId",
       workflow.workflow_template_version_id AS "workflowVersionId",
       workflow.status AS "workflowStatus",
@@ -153,6 +182,8 @@ export async function readWorkflowTaskRuntimeContext(
       ON workflow_definition.id = workflow_version.definition_id
     JOIN app_applications application
       ON application.id = workflow.application_id
+    JOIN app_authoritative_eligibility_outcomes eligibility
+      ON eligibility.application_id = application.id
     LEFT JOIN LATERAL (
       SELECT jsonb_agg(jsonb_build_object(
         'stageKey', prior_definition.code,

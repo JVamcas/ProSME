@@ -260,6 +260,7 @@ export async function evaluatePublicEligibilitySelfCheck(
   );
   const result = evaluateEligibilityRuleSet(value.ruleSet, "SELF_CHECK", {
     application,
+    eligibility: {},
     fundingCall: {
       maximum_grant_amount: value.fundingCall.maximumAmount,
     },

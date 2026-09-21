@@ -1,0 +1,32 @@
+import type { JsonValue } from "@/modules/conditions/domain/Operand";
+import type {
+  EligibilityFinding,
+  EligibilityRuleOutcome,
+} from "./EligibilityEvaluation";
+
+export type FinalScreeningOutcome = "ELIGIBLE" | "INELIGIBLE";
+
+export type EligibilityContextReference = {
+  applicationId: string;
+  applicationRowVersion: number;
+  businessProfileUpdatedAt: string;
+  correlationId: string;
+  fundingCallId: string;
+};
+
+export type AuthoritativeEligibilityOutcome = {
+  applicationId: string;
+  contextReference: EligibilityContextReference;
+  eligible: boolean;
+  evaluatedAt: Date;
+  evaluatedValues: Record<string, JsonValue>;
+  finalOutcome: FinalScreeningOutcome | null;
+  hardFailures: EligibilityFinding[];
+  id: string;
+  manualScreeningRequired: boolean;
+  ruleOutcomes: EligibilityRuleOutcome[];
+  ruleSetVersionId: string;
+  ruleSetVersionNumber: number;
+  softFailures: EligibilityFinding[];
+  warnings: EligibilityFinding[];
+};

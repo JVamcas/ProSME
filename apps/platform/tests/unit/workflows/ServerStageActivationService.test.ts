@@ -50,6 +50,7 @@ const passingCondition = {
 const target = {
   application: { requestedAmount: 250_000 },
   currentStageInstanceId: null,
+  eligibility: { eligible: true, outcome: "ELIGIBLE" },
   entryCondition: passingCondition,
   fundingCall: { maximumAmount: 500_000 },
   repeatable: false,

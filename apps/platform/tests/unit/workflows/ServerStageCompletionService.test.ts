@@ -31,6 +31,7 @@ const input = {
 const target = {
   application: {},
   completedAt: null,
+  eligibility: { eligible: true, outcome: "ELIGIBLE" },
   exitCondition: null,
   fundingCall: {},
   stageInstanceId,

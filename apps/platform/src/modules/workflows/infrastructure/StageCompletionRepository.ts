@@ -5,6 +5,7 @@ import { and, eq, sql } from "drizzle-orm";
 import { getDatabase } from "@/db/client";
 import {
   applications,
+  authoritativeEligibilityOutcomes,
   fundingCalls,
   stageInstances,
   workflowAuditEntries,
@@ -23,6 +24,7 @@ export type StageCompletionTransaction = Parameters<
 export type StageCompletionTarget = {
   application: Record<string, unknown>;
   completedAt: Date | null;
+  eligibility: Record<string, unknown>;
   exitCondition: typeof workflowStageDefinitions.$inferSelect.exitCondition;
   fundingCall: Record<string, unknown>;
   stageInstanceId: string;
@@ -57,6 +59,20 @@ export async function lockStageCompletionTarget(
         status: applications.status,
       },
       completedAt: stageInstances.completedAt,
+      eligibility: {
+        eligible: authoritativeEligibilityOutcomes.eligible,
+        evaluatedAt: authoritativeEligibilityOutcomes.evaluatedAt,
+        outcome: authoritativeEligibilityOutcomes.finalOutcome,
+        hardFailureCount: sql<number>`jsonb_array_length(${authoritativeEligibilityOutcomes.hardFailures})`,
+        manualScreeningRequired:
+          authoritativeEligibilityOutcomes.manualScreeningRequired,
+        ruleSetVersionId:
+          authoritativeEligibilityOutcomes.ruleSetVersionId,
+        ruleSetVersionNumber:
+          authoritativeEligibilityOutcomes.ruleSetVersionNumber,
+        softFailureCount: sql<number>`jsonb_array_length(${authoritativeEligibilityOutcomes.softFailures})`,
+        warningCount: sql<number>`jsonb_array_length(${authoritativeEligibilityOutcomes.warnings})`,
+      },
       exitCondition: workflowStageDefinitions.exitCondition,
       fundingCall: {
         closesAt: fundingCalls.closesAt,
@@ -94,6 +110,13 @@ export async function lockStageCompletionTarget(
     .innerJoin(
       fundingCalls,
       eq(fundingCalls.id, applications.fundingOpportunityId),
+    )
+    .innerJoin(
+      authoritativeEligibilityOutcomes,
+      eq(
+        authoritativeEligibilityOutcomes.applicationId,
+        applications.id,
+      ),
     )
     .where(and(
       eq(stageInstances.id, stageInstanceId),

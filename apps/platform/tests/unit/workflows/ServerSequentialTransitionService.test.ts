@@ -54,6 +54,7 @@ const input = {
 const source = {
   application: { requestedAmount: 100 },
   completedAt: null,
+  eligibility: { eligible: true, outcome: "ELIGIBLE" },
   exitCondition: null,
   fundingCall: { maximumAmount: 200 },
   stageDefinitionId: "40000000-0000-4000-8000-000000000001",

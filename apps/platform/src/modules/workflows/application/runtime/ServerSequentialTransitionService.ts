@@ -130,6 +130,7 @@ export async function executeSequentialTransitionInTransaction(
   );
   const selected = selectTransition(configured.transitions, {
     application: normalizeStageConditionRecord(source.application),
+    eligibility: normalizeStageConditionRecord(source.eligibility),
     fundingCall: normalizeStageConditionRecord(source.fundingCall),
     stages: [
       ...priorStages

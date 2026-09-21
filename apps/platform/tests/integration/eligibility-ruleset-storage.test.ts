@@ -179,6 +179,7 @@ afterAll(async () => {
       "SELF_CHECK",
       {
         application: { business: { employee_count: 0 } },
+        eligibility: {},
         fundingCall: {},
         stages: [],
       },

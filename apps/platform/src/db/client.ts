@@ -8,6 +8,10 @@ import * as schema from "./schema";
 
 type Database = NodePgDatabase<typeof schema>;
 
+export type DatabaseTransaction = Parameters<
+  Parameters<Database["transaction"]>[0]
+>[0];
+
 const databaseGlobal = globalThis as typeof globalThis & {
   smeFundDatabase?: Database;
   smeFundPool?: Pool;

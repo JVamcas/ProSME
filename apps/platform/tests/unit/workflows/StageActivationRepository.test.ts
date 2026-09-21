@@ -73,6 +73,7 @@ describe("stage activation repository", () => {
         target: {
           application: {},
           currentStageInstanceId: null,
+          eligibility: { eligible: true, outcome: "ELIGIBLE" },
           entryCondition: null,
           fundingCall: {},
           repeatable: false,

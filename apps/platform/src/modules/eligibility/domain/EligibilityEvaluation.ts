@@ -1,4 +1,5 @@
 import type { ConditionNode } from "@/modules/conditions/domain/ConditionGroup";
+import type { JsonValue } from "@/modules/conditions/domain/Operand";
 import type {
   EligibilityExecutionMode,
   EligibilityFailureType,
@@ -36,6 +37,7 @@ export type EligibilityRuleOutcome = EligibilityFinding & {
 export type EligibilityEvaluationResult = {
   applicantMessages: string[];
   eligible: boolean;
+  evaluatedValues: Record<string, JsonValue>;
   hardFailures: EligibilityFinding[];
   manualScreeningRequired: boolean;
   mode: EligibilityEvaluationMode;

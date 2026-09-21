@@ -24,8 +24,9 @@ export async function testEligibilityRuleSet(
   }
   return {
     ...evaluateEligibilityRuleSet(ruleSet, input.mode, {
-      application: input.values.application,
-      fundingCall: input.values.fundingCall,
+    application: input.values.application,
+    eligibility: {},
+    fundingCall: input.values.fundingCall,
       stages: [],
     }),
     authoritative: false as const,

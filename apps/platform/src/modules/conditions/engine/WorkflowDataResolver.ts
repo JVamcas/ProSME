@@ -11,6 +11,7 @@ export type WorkflowStageData = {
 
 export type WorkflowDataContext = {
   application: WorkflowDataRecord;
+  eligibility: WorkflowDataRecord;
   fundingCall: WorkflowDataRecord;
   stages: readonly WorkflowStageData[];
 };
@@ -137,7 +138,11 @@ export function resolveWorkflowDataPath(
 ): JsonValue {
   const segments = parsePath(path);
   const [root] = segments;
-  if (root === "application" || root === "fundingCall") {
+  if (
+    root === "application"
+    || root === "eligibility"
+    || root === "fundingCall"
+  ) {
     requireMinimumSegments(path, segments, 2);
     return resolveRecordValue(context[root], segments.slice(1), path);
   }

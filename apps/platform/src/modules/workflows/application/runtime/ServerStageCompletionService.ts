@@ -64,6 +64,7 @@ export async function completeStageInTransaction(
   const currentStageValues = buildStageCompletionValues(valueRows);
   const evaluation = evaluateStageCondition(target.exitCondition, {
     application: normalizeStageConditionRecord(target.application),
+    eligibility: normalizeStageConditionRecord(target.eligibility),
     fundingCall: normalizeStageConditionRecord(target.fundingCall),
     stages: [
       ...priorStages

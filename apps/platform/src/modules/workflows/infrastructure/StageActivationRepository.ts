@@ -5,6 +5,7 @@ import { and, asc, eq, sql } from "drizzle-orm";
 import { getDatabase } from "@/db/client";
 import {
   applications,
+  authoritativeEligibilityOutcomes,
   fundingCalls,
   stageInstances,
   stageTaskDefinitions,
@@ -24,6 +25,7 @@ export type StageActivationTransaction = WorkflowInstanceTransaction;
 export type StageActivationTarget = {
   application: Record<string, unknown>;
   currentStageInstanceId: string | null;
+  eligibility: Record<string, unknown>;
   entryCondition: typeof workflowStageDefinitions.$inferSelect.entryCondition;
   fundingCall: Record<string, unknown>;
   repeatable: boolean;
@@ -90,6 +92,20 @@ export async function lockStageActivationTarget(
         status: applications.status,
       },
       currentStageInstanceId: workflowInstances.currentStageInstanceId,
+      eligibility: {
+        eligible: authoritativeEligibilityOutcomes.eligible,
+        evaluatedAt: authoritativeEligibilityOutcomes.evaluatedAt,
+        outcome: authoritativeEligibilityOutcomes.finalOutcome,
+        hardFailureCount: sql<number>`jsonb_array_length(${authoritativeEligibilityOutcomes.hardFailures})`,
+        manualScreeningRequired:
+          authoritativeEligibilityOutcomes.manualScreeningRequired,
+        ruleSetVersionId:
+          authoritativeEligibilityOutcomes.ruleSetVersionId,
+        ruleSetVersionNumber:
+          authoritativeEligibilityOutcomes.ruleSetVersionNumber,
+        softFailureCount: sql<number>`jsonb_array_length(${authoritativeEligibilityOutcomes.softFailures})`,
+        warningCount: sql<number>`jsonb_array_length(${authoritativeEligibilityOutcomes.warnings})`,
+      },
       entryCondition: workflowStageDefinitions.entryCondition,
       fundingCall: {
         closesAt: fundingCalls.closesAt,
@@ -115,6 +131,13 @@ export async function lockStageActivationTarget(
     .innerJoin(
       fundingCalls,
       eq(fundingCalls.id, applications.fundingOpportunityId),
+    )
+    .innerJoin(
+      authoritativeEligibilityOutcomes,
+      eq(
+        authoritativeEligibilityOutcomes.applicationId,
+        applications.id,
+      ),
     )
     .innerJoin(
       workflowStageDefinitions,

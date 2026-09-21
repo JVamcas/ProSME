@@ -35,6 +35,7 @@ export function evaluateEligibilityRuleSet(
   const hardFailures: EligibilityFinding[] = [];
   const softFailures: EligibilityFinding[] = [];
   const warnings: EligibilityFinding[] = [];
+  const evaluatedValues: EligibilityEvaluationResult["evaluatedValues"] = {};
   const findings: EligibilityFinding[] = [];
   const ruleOutcomes: EligibilityEvaluationResult["ruleOutcomes"] = [];
 
@@ -47,6 +48,7 @@ export function evaluateEligibilityRuleSet(
       rule.conditionDefinition,
       data,
     );
+    Object.assign(evaluatedValues, values);
     const result = evaluateConditionNode(rule.conditionDefinition, values);
     ruleOutcomes.push({ ...finding(rule), passed: result.passed });
     if (result.passed) continue;
@@ -61,6 +63,7 @@ export function evaluateEligibilityRuleSet(
   return {
     applicantMessages: findings.map((item) => item.applicantMessage),
     eligible: hardFailures.length === 0,
+    evaluatedValues,
     hardFailures,
     manualScreeningRequired: softFailures.length > 0,
     mode,

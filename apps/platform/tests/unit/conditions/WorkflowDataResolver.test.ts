@@ -19,6 +19,10 @@ function workflowContext(): WorkflowDataContext {
       requested_amount: 350_000,
       summary: { sector: "Agriculture" },
     },
+    eligibility: {
+      eligible: true,
+      outcome: "ELIGIBLE",
+    },
     fundingCall: {
       maximum_grant_amount: 500_000,
     },
@@ -98,6 +102,10 @@ describe("workflow data resolver", () => {
       "application.optional_value",
       context,
     )).toBeNull();
+    expect(resolveWorkflowDataPath(
+      "eligibility.outcome",
+      context,
+    )).toBe("ELIGIBLE");
   });
 
   it("resolves stage outputs by stable key regardless of stage order", () => {

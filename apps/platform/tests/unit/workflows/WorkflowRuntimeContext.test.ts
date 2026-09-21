@@ -10,6 +10,7 @@ import { buildWorkflowRuntimeContext } from "@/modules/workflows/engine/Workflow
 
 const selectedPaths = [
   "application.client_defined_metric",
+  "eligibility.outcome",
   "fundingCall.maximum_amount",
   "workflow.version_number",
   "stage.name",
@@ -43,6 +44,7 @@ const source: WorkflowTaskRuntimeContextSource = {
     contextFields: selectedFields,
     formVersionId: "20000000-0000-4000-8000-000000000001",
   },
+  eligibility: { eligible: true, outcome: "ELIGIBLE" },
   fundingCallTitle: "Growth Fund",
   permissions: defaultWorkflowElementPermissions,
   priorStageValues: [{
@@ -89,6 +91,7 @@ describe("workflow runtime context", () => {
 
     expect(context).toEqual({
       "application.client_defined_metric": 73,
+      "eligibility.outcome": "ELIGIBLE",
       "fundingCall.maximum_amount": 1_000_000,
       "stage.name": "Finance review",
       "stage.screening.eligibility_result": "ELIGIBLE",

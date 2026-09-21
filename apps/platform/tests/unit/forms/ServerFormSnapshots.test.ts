@@ -154,6 +154,7 @@ describe("submitted form snapshots", () => {
         status: "submitted",
       },
       binding: { contextFields: [], formVersionId: versionId },
+      eligibility: { eligible: true, outcome: "ELIGIBLE" },
       fundingCallTitle: "Growth Fund",
       permissions: defaultWorkflowElementPermissions,
       priorStageValues: [],

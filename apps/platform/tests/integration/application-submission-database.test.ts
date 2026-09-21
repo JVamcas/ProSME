@@ -6,6 +6,11 @@ vi.mock("server-only", () => ({}));
 import { submitOwnedApplication } from "@/modules/applications/infrastructure/ApplicationSubmissionRepository";
 import { readApplicantDashboard } from "@/db/repositories/ApplicantDashboardRepository";
 import { readAdminDashboard } from "@/db/repositories/AdminDashboardRepository";
+import {
+  eligibilityVersionId,
+  expectPersistedAuthoritativeEligibility,
+  installAuthoritativeEligibilityConfiguration,
+} from "../support/AuthoritativeEligibilityDatabaseFixture";
 import * as workflowBindingFixture from "../support/WorkflowBindingDatabaseFixture";
 
 const { Pool } = pg;
@@ -40,10 +45,13 @@ beforeAll(async () => {
   );
   await query(
     `INSERT INTO app_business_profiles
-      (id, user_id, legal_name, business_type, sector, region, physical_address)
-     VALUES ($1, $2, 'Submission Business', 'cc', 'services', 'Khomas', 'Test')`,
+      (id, user_id, legal_name, registration_number, business_type, sector,
+       region, physical_address, established_year, employee_count)
+     VALUES ($1, $2, 'Submission Business', 'B-123', 'cc', 'services',
+       'Khomas', 'Test', 2024, 3)`,
     [businessId, ownerId],
   );
+  await installAuthoritativeEligibilityConfiguration(query, ownerId);
   await query(
     `INSERT INTO app_workflow_definitions (id, code, name)
      VALUES ($1, 'SUBMISSION_TEST', 'Submission test workflow')`,
@@ -72,7 +80,12 @@ beforeAll(async () => {
        '{"items":[{"code":"received","label":"Application received","required":true}]}'::jsonb)`,
     [taskId, stageId, ownerId],
   );
-  await workflowBindingFixture.insertSubmissionFundingCalls(query, versionId, ownerId);
+  await workflowBindingFixture.insertSubmissionFundingCalls(
+    query,
+    versionId,
+    eligibilityVersionId,
+    ownerId,
+  );
   await query(
     `INSERT INTO cms_funding_calls
        (id, title, call_status, _status)
@@ -81,32 +94,12 @@ beforeAll(async () => {
        (96102, 'Draft dashboard call', 'open', 'draft'),
        (96103, 'Closed dashboard call', 'closed', 'published')`,
   );
-  for (let index = 0; index < applicationIds.length; index += 1) {
-    await query(
-      `INSERT INTO app_applications
-        (id, owner_user_id, business_id, funding_opportunity_id,
-         funding_opportunity_title, business_section, declarations_section,
-         declaration_acceptance, section_completion)
-       VALUES ($1, $2, $4, $3, 'Submission test application',
-         jsonb_build_object('businessId', $4::text),
-         '{"accurate":true}'::jsonb,
-         '{"acceptedAt":"2026-09-15T08:00:00.000Z","declarationVersion":"v1","privacyVersion":"v1"}'::jsonb,
-         '{"business":true,"project":true,"financial":true,"documents":true,"declarations":true}'::jsonb)`,
-        [applicationIds[index], ownerId,
-          workflowBindingFixture.submissionFundingCallIds[index], businessId],
-    );
-    for (const documentType of requiredTypes) {
-      await query(
-        `INSERT INTO app_application_documents
-          (application_id, owner_user_id, document_type, object_key,
-           original_name, content_type, size_bytes, scan_status)
-         VALUES ($1::uuid, $2::uuid, $3::text,
-           $1::text || '/' || $3::text, $3::text || '.pdf',
-           'application/pdf', 512, 'clean')`,
-        [applicationIds[index], ownerId, documentType],
-      );
-    }
-  }
+  await workflowBindingFixture.insertCompleteSubmissionApplications(query, {
+    applicationIds,
+    businessId,
+    eligibilityVersionId,
+    ownerId,
+  });
 });
 afterAll(async () => pool?.end());
 describeDatabase("P3.4 transactional application submission", () => {
@@ -125,7 +118,6 @@ describeDatabase("P3.4 transactional application submission", () => {
       workflow_instances: "app_workflow_instances",
     });
   });
-
   it("pins one published version and creates the initial runtime atomically", async () => {
     const [first, second] = await Promise.all([
       submitOwnedApplication({
@@ -169,6 +161,9 @@ describeDatabase("P3.4 transactional application submission", () => {
           WHERE target_id = $1::text AND action = 'APPLICATION_SUBMITTED') AS audits,
         (SELECT count(*)::integer FROM app_transactional_outbox
           WHERE aggregate_id = $1) AS outbox,
+        (SELECT count(*)::integer
+          FROM app_authoritative_eligibility_outcomes
+          WHERE application_id = $1) AS eligibility_outcomes,
         (SELECT workflow_template_version_id FROM app_workflow_instances
           WHERE application_id = $1) AS pinned_version,
         (SELECT created_at = started_at AND completed_at IS NULL
@@ -179,6 +174,7 @@ describeDatabase("P3.4 transactional application submission", () => {
     expect(counts.rows[0]).toEqual({
       audits: 1,
       events: 5,
+      eligibility_outcomes: 1,
       outbox: 1,
       pinned_version: versionId,
       runtime_initialized: true,
@@ -197,8 +193,8 @@ describeDatabase("P3.4 transactional application submission", () => {
         [applicationIds[0], newerVersionId],
       ),
     ).rejects.toThrow("workflow instance version pin is immutable");
+    await expectPersistedAuthoritativeEligibility(query, applicationIds[0]);
   });
-
   it("rejects a missing published assignment without partial writes", async () => {
     const result = await submitOwnedApplication({
       actorId: ownerId,
@@ -232,11 +228,15 @@ describeDatabase("P3.4 transactional application submission", () => {
     const state = await query(
       `SELECT status, reference,
         (SELECT count(*)::integer FROM app_workflow_instances
-          WHERE application_id = $1) AS workflows
+          WHERE application_id = $1) AS workflows,
+        (SELECT count(*)::integer
+          FROM app_authoritative_eligibility_outcomes
+          WHERE application_id = $1) AS eligibility_outcomes
        FROM app_applications WHERE id = $1`,
       [applicationIds[2]],
     );
     expect(state.rows[0]).toEqual({
+      eligibility_outcomes: 0,
       reference: null,
       status: "draft",
       workflows: 0,

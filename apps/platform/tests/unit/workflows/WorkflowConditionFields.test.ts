@@ -119,6 +119,7 @@ describe("workflow condition fields", () => {
       "stage.finance_review.recommended_amount",
       {
         application: {},
+        eligibility: {},
         fundingCall: {},
         stages: [{
           stableKey: "FINANCE_REVIEW",

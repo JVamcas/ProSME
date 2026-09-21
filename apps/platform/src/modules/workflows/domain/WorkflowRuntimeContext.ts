@@ -26,6 +26,7 @@ export type WorkflowTaskRuntimeContextSource = {
     formVersionId: string;
   };
   fundingCallTitle: string;
+  eligibility: WorkflowRuntimeContextRecord;
   permissions: WorkflowElementPermissions;
   priorStageValues: PriorStageRuntimeValues[];
   stage: WorkflowRuntimeContextRecord;
