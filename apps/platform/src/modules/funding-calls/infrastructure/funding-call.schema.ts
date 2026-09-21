@@ -14,6 +14,7 @@ import {
 import { users } from "@/db/schema/identity";
 import { formVersions } from "@/modules/forms/infrastructure/form.schema";
 import { eligibilityRuleSetVersions } from "@/modules/eligibility/infrastructure/eligibility-ruleset.schema";
+import { workflowDefinitionVersions } from "@/modules/workflows/infrastructure/workflow.schema";
 import type { FundingCallStatus } from "../domain/FundingCall";
 
 export const fundingCalls = pgTable(
@@ -31,6 +32,10 @@ export const fundingCalls = pgTable(
     formVersionId: uuid("form_version_id").references(() => formVersions.id, {
       onDelete: "restrict",
     }),
+    workflowTemplateVersionId: uuid("workflow_template_version_id").references(
+      () => workflowDefinitionVersions.id,
+      { onDelete: "restrict" },
+    ),
     fundingInstrument: text("funding_instrument"),
     thematicArea: text("thematic_area"),
     totalBudgetEnvelope: numeric("total_budget_envelope", {
@@ -74,6 +79,9 @@ export const fundingCalls = pgTable(
       table.closesAt,
     ),
     index("app_funding_calls_form_version_idx").on(table.formVersionId),
+    index("app_funding_calls_workflow_template_version_idx").on(
+      table.workflowTemplateVersionId,
+    ),
     index("app_funding_calls_eligibility_version_idx").on(
       table.eligibilityRuleSetVersionId,
     ),

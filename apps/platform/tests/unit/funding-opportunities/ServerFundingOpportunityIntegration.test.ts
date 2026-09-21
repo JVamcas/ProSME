@@ -44,6 +44,7 @@ const fundingCall = {
   totalBudgetEnvelope: "1000000.00",
   updatedAt: new Date("2026-08-01T00:00:00.000Z"),
   updatedBy: "10000000-0000-4000-8000-000000000001",
+  workflowTemplateVersionId: "40000000-0000-4000-8000-000000000001",
 };
 
 beforeEach(() => {

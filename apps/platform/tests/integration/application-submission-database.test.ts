@@ -3,9 +3,10 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
-import { submitOwnedApplication } from "@/db/repositories/ApplicationSubmissionRepository";
+import { submitOwnedApplication } from "@/modules/applications/infrastructure/ApplicationSubmissionRepository";
 import { readApplicantDashboard } from "@/db/repositories/ApplicantDashboardRepository";
 import { readAdminDashboard } from "@/db/repositories/AdminDashboardRepository";
+import * as workflowBindingFixture from "../support/WorkflowBindingDatabaseFixture";
 
 const { Pool } = pg;
 const enabled = process.env.RUN_P3_APPLICATION_DATABASE_TESTS === "true";
@@ -28,11 +29,7 @@ async function query(text: string, values: unknown[] = []) {
   if (!pool) throw new Error("The P3.4 PostgreSQL test pool is not configured.");
   return pool.query(text, values);
 }
-const requiredTypes = [
-  "business-registration",
-  "financial-statements",
-  "project-proposal",
-] as const;
+const requiredTypes = workflowBindingFixture.requiredSubmissionDocumentTypes;
 beforeAll(async () => {
   if (!enabled) return;
   await query(
@@ -74,14 +71,7 @@ beforeAll(async () => {
        '{"items":[{"code":"received","label":"Application received","required":true}]}'::jsonb)`,
     [taskId, stageId, ownerId],
   );
-  await query(
-    `INSERT INTO app_funding_opportunity_workflows
-       (funding_opportunity_id, funding_opportunity_title, workflow_version_id, assigned_by)
-     VALUES
-       (6101, 'Submission Fund', $1, $2),
-       (6103, 'Rollback Fund', $1, $2)`,
-    [versionId, ownerId],
-  );
+  await workflowBindingFixture.insertSubmissionFundingCalls(query, versionId, ownerId);
   await query(
     `INSERT INTO cms_funding_calls
        (id, title, call_status, _status)
@@ -101,7 +91,8 @@ beforeAll(async () => {
          '{"accurate":true}'::jsonb,
          '{"acceptedAt":"2026-09-15T08:00:00.000Z","declarationVersion":"v1","privacyVersion":"v1"}'::jsonb,
          '{"business":true,"project":true,"financial":true,"documents":true,"declarations":true}'::jsonb)`,
-      [applicationIds[index], ownerId, 6101 + index, businessId],
+        [applicationIds[index], ownerId,
+          workflowBindingFixture.submissionFundingCallIds[index], businessId],
     );
     for (const documentType of requiredTypes) {
       await query(
@@ -158,6 +149,8 @@ describeDatabase("P3.4 transactional application submission", () => {
     expect(first.result.workflowInstanceId).toBe(second.result.workflowInstanceId);
     expect(first.result.workflowVersionId).toBe(versionId);
 
+    await workflowBindingFixture.publishNewerWorkflowVersion(query, ownerId, definitionId);
+
     const counts = await query(
       `SELECT
         (SELECT count(*)::integer FROM app_workflow_instances WHERE application_id = $1) AS workflows,
@@ -174,13 +167,16 @@ describeDatabase("P3.4 transactional application submission", () => {
         (SELECT count(*)::integer FROM app_workflow_audit_entries
           WHERE target_id = $1::text AND action = 'APPLICATION_SUBMITTED') AS audits,
         (SELECT count(*)::integer FROM app_transactional_outbox
-          WHERE aggregate_id = $1) AS outbox`,
+          WHERE aggregate_id = $1) AS outbox,
+        (SELECT workflow_version_id FROM app_workflow_instances
+          WHERE application_id = $1) AS pinned_version`,
       [applicationIds[0]],
     );
     expect(counts.rows[0]).toEqual({
       audits: 1,
       events: 1,
       outbox: 1,
+      pinned_version: versionId,
       stages: 1,
       tasks: 1,
       workflows: 1,

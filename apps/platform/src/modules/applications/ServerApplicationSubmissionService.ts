@@ -1,9 +1,9 @@
 import "server-only";
 
-import { capabilities } from "@/auth/authorization/capabilities";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import { requirePermission } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
-import { submitOwnedApplication } from "@/db/repositories/ApplicationSubmissionRepository";
+import { submitOwnedApplication } from "./infrastructure/ApplicationSubmissionRepository";
 import {
   IdempotencyConflictError,
   RequestValidationError,
@@ -38,7 +38,10 @@ export async function submitApplication(
   idempotencyKey: string | null,
   correlationId: string,
 ) {
-  const actor = requirePermission(user, capabilities.applicationSubmit);
+  const actor = requirePermission(
+    user,
+    permissionCodes.fundingApplicationSubmit,
+  );
   const result = await submitOwnedApplication({
     actorId: actor.id,
     applicationId,
@@ -73,6 +76,6 @@ export async function submitApplication(
     );
   }
   throw new ApplicationSubmissionConflictError(
-    "This funding opportunity does not have an assigned published workflow.",
+    "This funding call does not have a bound published workflow template version.",
   );
 }

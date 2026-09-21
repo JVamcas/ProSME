@@ -19,6 +19,7 @@ export type FundingCall = {
   fundingInstrument: string | null;
   thematicArea: string | null;
   totalBudgetEnvelope: string;
+  workflowTemplateVersionId: string | null;
   minimumGrantAmount: string;
   maximumGrantAmount: string;
   opensAt: Date;

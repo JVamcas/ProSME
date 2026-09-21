@@ -9,6 +9,13 @@ import type { FundingCallPage, FundingCallView } from "./api/FundingCallTranspor
 import type { PublishedFormOption } from "@/modules/forms/FormTypes";
 import type { PublishedEligibilityRuleSetOption } from "@/modules/eligibility/api/EligibilityRuleSetTransport";
 
+type PublishedWorkflowTemplateVersionOption = {
+  definitionId: string;
+  name: string;
+  versionId: string;
+  versionNumber: number;
+};
+
 const jsonHeaders = { "Content-Type": "application/json" };
 
 type ListEnvelope = {
@@ -64,11 +71,19 @@ function listBindableEligibilityRuleSetVersions() {
   );
 }
 
+function listBindableWorkflowTemplateVersions() {
+  return requestData<PublishedWorkflowTemplateVersionOption[]>(
+    "/api/admin/funding-calls/workflow-template-versions",
+    { cache: "no-store" },
+  );
+}
+
 export const clientFundingCallService = {
   create,
   get,
   list,
   listBindableEligibilityRuleSetVersions,
   listBindableFormVersions,
+  listBindableWorkflowTemplateVersions,
   update,
 };

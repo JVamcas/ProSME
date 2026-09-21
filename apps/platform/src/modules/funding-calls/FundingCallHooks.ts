@@ -21,6 +21,11 @@ export const fundingCallQueryKeys = {
     "eligibility-ruleset-versions",
   ] as const,
   bindableFormVersions: ["admin", "funding-calls", "form-versions"] as const,
+  bindableWorkflowTemplateVersions: [
+    "admin",
+    "funding-calls",
+    "workflow-template-versions",
+  ] as const,
   detail: (id: string) => ["admin", "funding-calls", id] as const,
   list: (page: number, pageSize: number) => [
     "admin",
@@ -42,6 +47,13 @@ export function useBindableApplicationFormVersions() {
   return useQuery({
     queryFn: clientFundingCallService.listBindableFormVersions,
     queryKey: fundingCallQueryKeys.bindableFormVersions,
+  });
+}
+
+export function useBindableWorkflowTemplateVersions() {
+  return useQuery({
+    queryFn: clientFundingCallService.listBindableWorkflowTemplateVersions,
+    queryKey: fundingCallQueryKeys.bindableWorkflowTemplateVersions,
   });
 }
 

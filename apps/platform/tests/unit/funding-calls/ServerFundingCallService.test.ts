@@ -9,6 +9,10 @@ vi.mock("@/modules/eligibility/infrastructure/EligibilityRuleSetRepository", () 
   eligibilityRuleSetVersionIsPublished: vi.fn(),
   listPublishedEligibilityRuleSetVersions: vi.fn(),
 }));
+vi.mock("@/modules/workflows/infrastructure/WorkflowRepository", () => ({
+  listPublishedWorkflowVersions: vi.fn(),
+  workflowTemplateVersionIsPublished: vi.fn(),
+}));
 vi.mock("@/modules/funding-calls/infrastructure/FundingCallRepository", () => ({
   insertFundingCall: vi.fn(),
   readFundingCallById: vi.fn(),
@@ -34,11 +38,13 @@ import {
 } from "@/modules/funding-calls/infrastructure/FundingCallRepository";
 import { formVersionIsPublished } from "@/modules/forms/infrastructure/FormRepository";
 import { eligibilityRuleSetVersionIsPublished } from "@/modules/eligibility/infrastructure/EligibilityRuleSetRepository";
+import { workflowTemplateVersionIsPublished } from "@/modules/workflows/infrastructure/WorkflowRepository";
 
 const actorId = "10000000-0000-4000-8000-000000000001";
 const callId = "00000000-0000-4000-8000-000000000042";
 const formVersionId = "20000000-0000-4000-8000-000000000001";
 const eligibilityRuleSetVersionId = "30000000-0000-4000-8000-000000000001";
+const workflowTemplateVersionId = "40000000-0000-4000-8000-000000000001";
 const input = {
   closesAt: "2027-03-31T15:00:00.000Z",
   description: "Growth funding for qualifying SMEs.",
@@ -56,6 +62,7 @@ const input = {
   thematicArea: "Business growth",
   title: "SME Growth Fund 2027",
   totalBudgetEnvelope: "10000000.00",
+  workflowTemplateVersionId,
 };
 const stored = {
   ...input,
@@ -90,6 +97,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(eligibilityRuleSetVersionIsPublished).mockResolvedValue(true);
   vi.mocked(formVersionIsPublished).mockResolvedValue(true);
+  vi.mocked(workflowTemplateVersionIsPublished).mockResolvedValue(true);
   vi.mocked(readFundingCallById).mockResolvedValue(stored);
 });
 
@@ -131,6 +139,17 @@ describe("ServerFundingCallService", () => {
 
   it("rejects an eligibility ruleset version that is not published", async () => {
     vi.mocked(eligibilityRuleSetVersionIsPublished).mockResolvedValue(false);
+
+    await expect(createFundingCall(
+      user([permissionCodes.fundingCallCreate]),
+      input,
+    )).rejects.toBeInstanceOf(RequestValidationError);
+
+    expect(insertFundingCall).not.toHaveBeenCalled();
+  });
+
+  it("rejects a workflow template version that is not published", async () => {
+    vi.mocked(workflowTemplateVersionIsPublished).mockResolvedValue(false);
 
     await expect(createFundingCall(
       user([permissionCodes.fundingCallCreate]),

@@ -105,11 +105,12 @@ async function createInitialTasks(
     )
     .where(eq(stageTaskDefinitions.stageId, input.configuration.stageId));
   if (!definitions.length) return;
-  const dueAt = input.configuration.slaHours === null
-    ? null
-    : new Date(
-        submittedAt.getTime() + input.configuration.slaHours * 3_600_000,
-      );
+  const dueAt =
+    input.configuration.slaHours === null
+      ? null
+      : new Date(
+          submittedAt.getTime() + input.configuration.slaHours * 3_600_000,
+        );
   await transaction.insert(stageTaskInstances).values(
     definitions.map((task) => ({
       assignmentRoleId: task.roleId,

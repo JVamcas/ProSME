@@ -57,6 +57,9 @@ const fundingCallFields = {
   thematicArea: optionalText(160),
   title: z.string().trim().min(2).max(240),
   totalBudgetEnvelope: moneySchema,
+  workflowTemplateVersionId: z.uuid(
+    "Select a published workflow template version.",
+  ),
 };
 
 function validateRange(

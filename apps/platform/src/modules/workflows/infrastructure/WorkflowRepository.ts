@@ -69,6 +69,20 @@ export async function findWorkflowVersion(versionId: string) {
   return record ?? null;
 }
 
+export async function workflowTemplateVersionIsPublished(versionId: string) {
+  const [record] = await getDatabase()
+    .select({ id: workflowDefinitionVersions.id })
+    .from(workflowDefinitionVersions)
+    .where(
+      and(
+        eq(workflowDefinitionVersions.id, versionId),
+        eq(workflowDefinitionVersions.status, "PUBLISHED"),
+      ),
+    )
+    .limit(1);
+  return Boolean(record);
+}
+
 export async function findLatestWorkflowVersionId(definitionId: string) {
   const [record] = await getDatabase()
     .select({ id: workflowDefinitionVersions.id })

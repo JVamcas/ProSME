@@ -1,14 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
-vi.mock("@/db/repositories/ApplicationSubmissionRepository", () => ({
+vi.mock("@/modules/applications/infrastructure/ApplicationSubmissionRepository", () => ({
   submitOwnedApplication: vi.fn(),
 }));
 
-import { capabilities } from "@/auth/authorization/capabilities";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import { PermissionDeniedError } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
-import { submitOwnedApplication } from "@/db/repositories/ApplicationSubmissionRepository";
+import { submitOwnedApplication } from "@/modules/applications/infrastructure/ApplicationSubmissionRepository";
 import { IdempotencyConflictError } from "@/lib/resource-errors";
 import {
   ApplicationSubmissionConflictError,
@@ -51,7 +51,7 @@ describe("application submission service", () => {
     });
 
     await expect(submitApplication(
-      applicant([capabilities.applicationSubmit]),
+      applicant([permissionCodes.fundingApplicationSubmit]),
       applicationId,
       " submission-command ",
       correlationId,
@@ -80,7 +80,7 @@ describe("application submission service", () => {
 
   it("requires an idempotency key", async () => {
     await expect(submitApplication(
-      applicant([capabilities.applicationSubmit]),
+      applicant([permissionCodes.fundingApplicationSubmit]),
       applicationId,
       null,
       correlationId,
@@ -92,11 +92,11 @@ describe("application submission service", () => {
     ["business_required", "Select a business"],
     ["draft_incomplete", "Complete every application section"],
     ["documents_invalid", "pass security scanning"],
-    ["workflow_unavailable", "assigned published workflow"],
+    ["workflow_unavailable", "bound published workflow template version"],
   ] as const)("returns a safe conflict for %s", async (kind, message) => {
     vi.mocked(submitOwnedApplication).mockResolvedValue({ kind });
     await expect(submitApplication(
-      applicant([capabilities.applicationSubmit]),
+      applicant([permissionCodes.fundingApplicationSubmit]),
       applicationId,
       `key-${kind}`,
       correlationId,
@@ -111,7 +111,7 @@ describe("application submission service", () => {
       kind: "idempotency_conflict",
     });
     await expect(submitApplication(
-      applicant([capabilities.applicationSubmit]),
+      applicant([permissionCodes.fundingApplicationSubmit]),
       applicationId,
       "reused-key",
       correlationId,

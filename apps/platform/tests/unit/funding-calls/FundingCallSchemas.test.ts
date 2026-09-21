@@ -19,6 +19,7 @@ const validInput = {
   thematicArea: "Business growth",
   title: "SME Growth Fund 2027",
   totalBudgetEnvelope: "10000000.00",
+  workflowTemplateVersionId: "40000000-0000-4000-8000-000000000001",
 };
 
 describe("fundingCallCreateSchema", () => {

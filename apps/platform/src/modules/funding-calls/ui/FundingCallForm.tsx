@@ -20,6 +20,7 @@ import type { FundingCallView } from "../api/FundingCallTransport";
 import {
   useBindableApplicationFormVersions,
   useBindableEligibilityRuleSetVersions,
+  useBindableWorkflowTemplateVersions,
 } from "../FundingCallHooks";
 
 const localMoneySchema = z
@@ -43,6 +44,9 @@ const localFormSchema = z.object({
   thematicArea: z.string().trim().max(160),
   title: z.string().trim().min(2).max(240),
   totalBudgetEnvelope: localMoneySchema,
+  workflowTemplateVersionId: z.uuid(
+    "Select a published workflow template version.",
+  ),
 });
 
 type LocalFormInput = z.input<typeof localFormSchema>;
@@ -64,6 +68,7 @@ function defaults(call?: FundingCallView): LocalFormInput {
     thematicArea: call?.thematicArea ?? "",
     title: call?.title ?? "",
     totalBudgetEnvelope: call?.totalBudgetEnvelope ?? "",
+    workflowTemplateVersionId: call?.workflowTemplateVersionId ?? "",
   };
 }
 
@@ -94,6 +99,7 @@ export function FundingCallForm({
 }) {
   const eligibilityVersions = useBindableEligibilityRuleSetVersions();
   const formVersions = useBindableApplicationFormVersions();
+  const workflowVersions = useBindableWorkflowTemplateVersions();
   const form = useForm<LocalFormInput, unknown, LocalFormOutput>({
     defaultValues: defaults(call),
     resolver: zodResolver(localFormSchema),
@@ -136,6 +142,24 @@ export function FundingCallForm({
             disabled={disabled}
             label="Description"
             name="description"
+            required
+          />
+
+          <FormSelect
+            containerClassName="md:col-span-2"
+            disabled={disabled || workflowVersions.isPending}
+            infoTooltip="The exact published workflow template version used when an application is submitted."
+            items={(workflowVersions.data ?? []).map((version) => ({
+              label: `${version.name} — version ${version.versionNumber}`,
+              value: version.versionId,
+            }))}
+            label="Workflow template version"
+            name="workflowTemplateVersionId"
+            placeholder={
+              workflowVersions.isPending
+                ? "Loading published workflows…"
+                : "Select a published workflow template version"
+            }
             required
           />
 

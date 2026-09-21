@@ -19,6 +19,10 @@ import {
   eligibilityRuleSetVersionIsPublished,
   listPublishedEligibilityRuleSetVersions,
 } from "@/modules/eligibility/infrastructure/EligibilityRuleSetRepository";
+import {
+  listPublishedWorkflowVersions,
+  workflowTemplateVersionIsPublished,
+} from "@/modules/workflows/infrastructure/WorkflowRepository";
 import type {
   FundingCallCreateInput,
   FundingCallListInput,
@@ -50,13 +54,17 @@ function view(call: FundingCall): FundingCallView {
 async function requirePublishedBindings(
   input: Pick<
     FundingCallCreateInput,
-    "eligibilityRuleSetVersionId" | "formVersionId"
+    | "eligibilityRuleSetVersionId"
+    | "formVersionId"
+    | "workflowTemplateVersionId"
   >,
 ) {
-  const [formIsPublished, eligibilityIsPublished] = await Promise.all([
-    formVersionIsPublished(input.formVersionId),
-    eligibilityRuleSetVersionIsPublished(input.eligibilityRuleSetVersionId),
-  ]);
+  const [formIsPublished, eligibilityIsPublished, workflowIsPublished] =
+    await Promise.all([
+      formVersionIsPublished(input.formVersionId),
+      eligibilityRuleSetVersionIsPublished(input.eligibilityRuleSetVersionId),
+      workflowTemplateVersionIsPublished(input.workflowTemplateVersionId),
+    ]);
   if (!formIsPublished) {
     throw new RequestValidationError(
       "Select an application form version that is published.",
@@ -65,6 +73,11 @@ async function requirePublishedBindings(
   if (!eligibilityIsPublished) {
     throw new RequestValidationError(
       "Select an eligibility ruleset version that is published.",
+    );
+  }
+  if (!workflowIsPublished) {
+    throw new RequestValidationError(
+      "Select a workflow template version that is published.",
     );
   }
 }
@@ -125,6 +138,16 @@ export async function listBindableEligibilityRuleSetVersions(
     permissionCodes.fundingCallUpdate,
   ]);
   return listPublishedEligibilityRuleSetVersions();
+}
+
+export async function listBindableWorkflowTemplateVersions(
+  user: AuthenticatedUser | null,
+) {
+  requireAnyPermission(user, [
+    permissionCodes.fundingCallCreate,
+    permissionCodes.fundingCallUpdate,
+  ]);
+  return listPublishedWorkflowVersions();
 }
 
 export async function updateFundingCall(

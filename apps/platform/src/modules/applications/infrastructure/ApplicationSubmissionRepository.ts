@@ -7,7 +7,7 @@ import {
   applicationDocuments,
   applications,
   applicationSubmissionCommands,
-  fundingOpportunityWorkflowAssignments,
+  fundingCalls,
   workflowAuditEntries,
   workflowDefinitionVersions,
   workflowInstances,
@@ -141,13 +141,13 @@ async function findInitialConfiguration(
       slaHours: workflowStageDefinitions.slaHours,
       workflowVersionId: workflowDefinitionVersions.id,
     })
-    .from(fundingOpportunityWorkflowAssignments)
+    .from(fundingCalls)
     .innerJoin(
       workflowDefinitionVersions,
       and(
         eq(
           workflowDefinitionVersions.id,
-          fundingOpportunityWorkflowAssignments.workflowVersionId,
+          fundingCalls.workflowTemplateVersionId,
         ),
         eq(workflowDefinitionVersions.status, "PUBLISHED"),
       ),
@@ -159,12 +159,7 @@ async function findInitialConfiguration(
         eq(workflowStageDefinitions.initial, true),
       ),
     )
-    .where(
-      eq(
-        fundingOpportunityWorkflowAssignments.fundingOpportunityId,
-        fundingOpportunityId,
-      ),
-    )
+    .where(eq(fundingCalls.id, fundingOpportunityId))
     .limit(1);
   return configuration ?? null;
 }

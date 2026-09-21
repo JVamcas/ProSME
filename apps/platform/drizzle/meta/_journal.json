@@ -379,6 +379,13 @@
       "when": 1792368000000,
       "tag": "0053_bind_eligibility_ruleset_version",
       "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1792454400000,
+      "tag": "0054_bind_workflow_template_version",
+      "breakpoints": true
     }
   ]
 }
