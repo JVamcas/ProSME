@@ -77,11 +77,15 @@ export function encodeApplicationCursor(application: ApplicationSummaryRecord) {
 export function toApplicationView(
   application: NonNullable<Awaited<ReturnType<typeof findOwnedApplication>>>,
 ): ApplicationView {
+  if (!application.formVersionId) {
+    throw new Error("Application is missing its bound form version.");
+  }
   return {
     ...toApplicationSummary(application),
     businessSection: application.businessSection,
     declarationsSection: application.declarationsSection,
     financialSection: application.financialSection,
+    formVersionId: application.formVersionId,
     projectSection: application.projectSection,
     rowVersion: application.rowVersion,
     sectionCompletion: application.sectionCompletion,

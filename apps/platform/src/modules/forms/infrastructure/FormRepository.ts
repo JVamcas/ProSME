@@ -1,6 +1,6 @@
 import "server-only";
 
-import { asc, desc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, sql } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
 import {
@@ -96,6 +96,18 @@ export async function listPublishedFormVersions() {
     )
     .where(eq(formVersions.status, "PUBLISHED"))
     .orderBy(asc(formDefinitions.name), desc(formVersions.versionNumber));
+}
+
+export async function formVersionIsPublished(versionId: string) {
+  const [version] = await getDatabase()
+    .select({ id: formVersions.id })
+    .from(formVersions)
+    .where(and(
+      eq(formVersions.id, versionId),
+      eq(formVersions.status, "PUBLISHED"),
+    ))
+    .limit(1);
+  return Boolean(version);
 }
 
 async function readFields(versionId: string) {

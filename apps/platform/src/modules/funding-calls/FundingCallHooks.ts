@@ -15,6 +15,7 @@ import { clientFundingCallService } from "./ClientFundingCallService";
 
 export const fundingCallQueryKeys = {
   all: ["admin", "funding-calls"] as const,
+  bindableFormVersions: ["admin", "funding-calls", "form-versions"] as const,
   detail: (id: string) => ["admin", "funding-calls", id] as const,
   list: (page: number, pageSize: number) => [
     "admin",
@@ -24,6 +25,13 @@ export const fundingCallQueryKeys = {
     pageSize,
   ] as const,
 };
+
+export function useBindableApplicationFormVersions() {
+  return useQuery({
+    queryFn: clientFundingCallService.listBindableFormVersions,
+    queryKey: fundingCallQueryKeys.bindableFormVersions,
+  });
+}
 
 export function useFundingCalls(page: number, pageSize: number) {
   return useQuery({

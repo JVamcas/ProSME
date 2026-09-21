@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
+vi.mock("@/modules/forms/infrastructure/FormRepository", () => ({
+  formVersionIsPublished: vi.fn(),
+  listPublishedFormVersions: vi.fn(),
+}));
 vi.mock("@/modules/funding-calls/infrastructure/FundingCallRepository", () => ({
   insertFundingCall: vi.fn(),
   readFundingCallById: vi.fn(),
@@ -12,6 +16,7 @@ vi.mock("@/modules/funding-calls/infrastructure/FundingCallRepository", () => ({
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { PermissionDeniedError } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
+import { RequestValidationError } from "@/lib/resource-errors";
 import {
   createFundingCall,
   getFundingCallByPublicIdentifier,
@@ -23,12 +28,15 @@ import {
   readFundingCallByPublicIdentifier,
   updateDraftFundingCall,
 } from "@/modules/funding-calls/infrastructure/FundingCallRepository";
+import { formVersionIsPublished } from "@/modules/forms/infrastructure/FormRepository";
 
 const actorId = "10000000-0000-4000-8000-000000000001";
 const callId = "00000000-0000-4000-8000-000000000042";
+const formVersionId = "20000000-0000-4000-8000-000000000001";
 const input = {
   closesAt: "2027-03-31T15:00:00.000Z",
   description: "Growth funding for qualifying SMEs.",
+  formVersionId,
   fundingInstrument: "Grant",
   maximumGrantAmount: "500000.00",
   minimumGrantAmount: "50000.00",
@@ -73,6 +81,7 @@ function user(grants: string[]): AuthenticatedUser {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(formVersionIsPublished).mockResolvedValue(true);
   vi.mocked(readFundingCallById).mockResolvedValue(stored);
 });
 
@@ -99,6 +108,17 @@ describe("ServerFundingCallService", () => {
 
     expect(readFundingCallByPublicIdentifier).toHaveBeenCalledWith(input.slug);
     expect(result.id).toBe(callId);
+  });
+
+  it("rejects a form version that is not published", async () => {
+    vi.mocked(formVersionIsPublished).mockResolvedValue(false);
+
+    await expect(createFundingCall(
+      user([permissionCodes.fundingCallCreate]),
+      input,
+    )).rejects.toBeInstanceOf(RequestValidationError);
+
+    expect(insertFundingCall).not.toHaveBeenCalled();
   });
 
   it("denies draft edits without the canonical update permission", async () => {

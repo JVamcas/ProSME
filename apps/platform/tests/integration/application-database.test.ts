@@ -23,6 +23,8 @@ const firstOwnerId = "31111111-1111-4111-8111-111111111111";
 const secondOwnerId = "32222222-2222-4222-8222-222222222222";
 const opportunityId = "00000000-0000-4000-8000-000000004242";
 const businessOpportunityId = "00000000-0000-4000-8000-000000004343";
+const formDefinitionId = "20000000-0000-4000-8000-000000000001";
+const formVersionId = "20000000-0000-4000-8000-000000000002";
 const firstBusinessId = "33333333-3333-4333-8333-333333333331";
 const secondBusinessId = "33333333-3333-4333-8333-333333333332";
 const pool = enabled
@@ -53,6 +55,19 @@ beforeAll(async () => {
       ($2, $3, 'Second Business', 'cc', 'services', 'Khomas', 'Test')`,
     [firstBusinessId, secondBusinessId, firstOwnerId],
   );
+  await query(
+    `INSERT INTO app_form_definitions
+      (id, code, name, description, created_by)
+     VALUES ($1, 'APPLICATION_DATABASE_TEST', 'Application database test', '', $2)`,
+    [formDefinitionId, firstOwnerId],
+  );
+  await query(
+    `INSERT INTO app_form_versions
+      (id, form_definition_id, version_number, status, created_by, published_by,
+       published_at)
+     VALUES ($1, $2, 1, 'PUBLISHED', $3, $3, now())`,
+    [formVersionId, formDefinitionId, firstOwnerId],
+  );
 });
 
 afterAll(async () => {
@@ -81,6 +96,7 @@ describeDatabase("P3.2 PostgreSQL application persistence", () => {
 
   it("allows different businesses but rejects the same business for one call", async () => {
     const firstId = await createOwnedApplication({
+      formVersionId,
       fundingOpportunityId: businessOpportunityId,
       fundingOpportunityTitle: "Business-scoped Fund",
       ownerUserId: firstOwnerId,
@@ -104,6 +120,7 @@ describeDatabase("P3.2 PostgreSQL application persistence", () => {
       "project",
     );
     const secondId = await createOwnedApplication({
+      formVersionId,
       fundingOpportunityId: businessOpportunityId,
       fundingOpportunityTitle: "Business-scoped Fund",
       ownerUserId: firstOwnerId,
@@ -152,16 +169,19 @@ describeDatabase("P3.2 PostgreSQL application persistence", () => {
 
   it("creates once, resumes by lookup, and isolates owners", async () => {
     const firstId = await createOwnedApplication({
+      formVersionId,
       fundingOpportunityId: opportunityId,
       fundingOpportunityTitle: "Database Integration Fund",
       ownerUserId: firstOwnerId,
     });
     const duplicateId = await createOwnedApplication({
+      formVersionId,
       fundingOpportunityId: opportunityId,
       fundingOpportunityTitle: "Database Integration Fund",
       ownerUserId: firstOwnerId,
     });
     const secondId = await createOwnedApplication({
+      formVersionId,
       fundingOpportunityId: opportunityId,
       fundingOpportunityTitle: "Database Integration Fund",
       ownerUserId: secondOwnerId,

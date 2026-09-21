@@ -97,3 +97,14 @@ export async function findPublishedFundingOpportunity(
   const call = await readPublishedFundingCall(id);
   return call ? { ...summary(call), description: call.description } : null;
 }
+
+export async function resolvePublishedApplicationFormBinding(id: string) {
+  const call = await readPublishedFundingCall(id);
+  if (!call) return null;
+  return {
+    formVersionId: call.formVersionId,
+    id: call.id,
+    status: opportunityStatus(call),
+    title: call.title,
+  };
+}

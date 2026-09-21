@@ -12,6 +12,7 @@ import {
 } from "drizzle-orm/pg-core";
 
 import { users } from "@/db/schema/identity";
+import { formVersions } from "@/modules/forms/infrastructure/form.schema";
 import type { FundingCallStatus } from "../domain/FundingCall";
 
 export const fundingCalls = pgTable(
@@ -22,6 +23,9 @@ export const fundingCalls = pgTable(
     slug: text("slug").notNull(),
     title: text("title").notNull(),
     description: text("description").notNull(),
+    formVersionId: uuid("form_version_id").references(() => formVersions.id, {
+      onDelete: "restrict",
+    }),
     fundingInstrument: text("funding_instrument"),
     thematicArea: text("thematic_area"),
     totalBudgetEnvelope: numeric("total_budget_envelope", {
@@ -64,6 +68,7 @@ export const fundingCalls = pgTable(
       table.opensAt,
       table.closesAt,
     ),
+    index("app_funding_calls_form_version_idx").on(table.formVersionId),
     check(
       "app_funding_calls_status_check",
       sql`${table.status} in ('DRAFT', 'SCHEDULED', 'OPEN', 'CLOSED', 'CANCELLED')`,

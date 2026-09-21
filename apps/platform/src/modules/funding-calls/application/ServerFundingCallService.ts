@@ -1,12 +1,20 @@
 import "server-only";
 
 import { permissionCodes } from "@/auth/authorization/permissions";
-import { requirePermission } from "@/auth/authorization/policy";
+import {
+  requireAnyPermission,
+  requirePermission,
+} from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import {
+  RequestValidationError,
   ResourceConflictError,
   ResourceNotFoundError,
 } from "@/lib/resource-errors";
+import {
+  formVersionIsPublished,
+  listPublishedFormVersions,
+} from "@/modules/forms/infrastructure/FormRepository";
 import type {
   FundingCallCreateInput,
   FundingCallListInput,
@@ -69,7 +77,22 @@ export async function createFundingCall(
   input: FundingCallCreateInput,
 ): Promise<FundingCallView> {
   const actor = requirePermission(user, permissionCodes.fundingCallCreate);
+  if (!await formVersionIsPublished(input.formVersionId)) {
+    throw new RequestValidationError(
+      "Select an application form version that is published.",
+    );
+  }
   return view(await insertFundingCall(actor.id, input));
+}
+
+export async function listBindableApplicationFormVersions(
+  user: AuthenticatedUser | null,
+) {
+  requireAnyPermission(user, [
+    permissionCodes.fundingCallCreate,
+    permissionCodes.fundingCallUpdate,
+  ]);
+  return listPublishedFormVersions();
 }
 
 export async function updateFundingCall(
@@ -78,6 +101,11 @@ export async function updateFundingCall(
   input: FundingCallUpdateInput,
 ): Promise<FundingCallView> {
   const actor = requirePermission(user, permissionCodes.fundingCallUpdate);
+  if (!await formVersionIsPublished(input.formVersionId)) {
+    throw new RequestValidationError(
+      "Select an application form version that is published.",
+    );
+  }
   const updated = await updateDraftFundingCall(actor.id, id, input);
   if (updated) return view(updated);
 

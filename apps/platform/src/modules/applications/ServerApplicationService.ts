@@ -1,6 +1,6 @@
 import "server-only";
 
-import { capabilities } from "@/auth/authorization/capabilities";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import {
   can,
   requirePermission,
@@ -25,7 +25,7 @@ import {
   ResourceNotFoundError,
   RequestValidationError,
 } from "@/lib/resource-errors";
-import { findPublishedFundingOpportunity } from "@/modules/funding-calls/ServerFundingOpportunityIntegration";
+import { resolvePublishedApplicationFormBinding } from "@/modules/funding-calls/ServerFundingOpportunityIntegration";
 import { applicationDeclarationsSectionSchema } from "./ApplicationDeclarationSchemas";
 import { applicationDocumentRequirements } from "./ApplicationDocumentSchemas";
 import type {
@@ -142,7 +142,10 @@ export async function listOwnApplications(
   user: AuthenticatedUser | null,
   input: ApplicationListInput,
 ): Promise<ApplicationPage> {
-  const actor = requirePermission(user, capabilities.applicationReadOwn);
+  const actor = requirePermission(
+    user,
+    permissionCodes.fundingApplicationOwnRead,
+  );
   const result = await listOwnedApplications({
     after: input.after ? decodeApplicationCursor(input.after) : undefined,
     limit: input.limit,
@@ -163,7 +166,10 @@ export async function getOwnApplication(
   user: AuthenticatedUser | null,
   id: string,
 ) {
-  const actor = requirePermission(user, capabilities.applicationReadOwn);
+  const actor = requirePermission(
+    user,
+    permissionCodes.fundingApplicationOwnRead,
+  );
   return toApplicationView(await loadOwnedApplication(actor.id, id));
 }
 
@@ -171,10 +177,16 @@ export async function createApplication(
   user: AuthenticatedUser | null,
   fundingOpportunityId: string,
 ) {
-  const actor = requirePermission(user, capabilities.applicationCreate);
+  const actor = requirePermission(
+    user,
+    permissionCodes.fundingApplicationCreate,
+  );
   const opportunity =
-    await findPublishedFundingOpportunity(fundingOpportunityId);
+    await resolvePublishedApplicationFormBinding(fundingOpportunityId);
   if (!opportunity || opportunity.status !== "open") {
+    throw new ApplicationOpportunityUnavailableError();
+  }
+  if (!opportunity.formVersionId) {
     throw new ApplicationOpportunityUnavailableError();
   }
   const existing = await findOwnedApplicationByOpportunity(
@@ -183,6 +195,7 @@ export async function createApplication(
   );
   if (existing) return toApplicationView(existing);
   const id = await createOwnedApplication({
+    formVersionId: opportunity.formVersionId,
     fundingOpportunityId: opportunity.id,
     fundingOpportunityTitle: opportunity.title,
     ownerUserId: actor.id,
@@ -199,7 +212,10 @@ export async function updateOwnApplication(
   id: string,
   input: ApplicationUpdateInput,
 ) {
-  const actor = requirePermission(user, capabilities.applicationUpdateOwn);
+  const actor = requirePermission(
+    user,
+    permissionCodes.fundingApplicationOwnUpdate,
+  );
   const current = await loadOwnedApplication(actor.id, id);
   if (current.rowVersion !== input.expectedRowVersion) {
     throw new ApplicationConflictError();
@@ -237,14 +253,14 @@ export async function updateOwnApplication(
 
 function requireApplicationReader(user: AuthenticatedUser | null) {
   return requireAnyPermission(user, [
-    capabilities.applicationReadAssigned,
-    capabilities.applicationReadAll,
+    permissionCodes.workflowTaskAssignedRead,
+    permissionCodes.fundingApplicationAllRead,
   ]);
 }
 
 export async function getApplications(user: AuthenticatedUser | null) {
   const actor = requireApplicationReader(user);
-  return can(actor, capabilities.applicationReadAll)
+  return can(actor, permissionCodes.fundingApplicationAllRead)
     ? findAllApplications()
     : findApplicationsAssignedTo(actor.id);
 }
@@ -254,7 +270,7 @@ export async function getApplication(
   id: string,
 ) {
   const actor = requireApplicationReader(user);
-  return can(actor, capabilities.applicationReadAll)
+  return can(actor, permissionCodes.fundingApplicationAllRead)
     ? findApplicationById(id)
     : findAssignedApplicationById(actor.id, id);
 }

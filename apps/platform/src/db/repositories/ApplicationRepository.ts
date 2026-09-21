@@ -255,6 +255,7 @@ export async function findOwnedApplicationByOpportunity(
 }
 
 export async function createOwnedApplication(input: {
+  formVersionId: string;
   fundingOpportunityId: string;
   fundingOpportunityTitle: string;
   ownerUserId: string;

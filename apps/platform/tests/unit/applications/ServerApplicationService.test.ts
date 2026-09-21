@@ -21,11 +21,11 @@ vi.mock("@/db/repositories/ApplicationDocumentRepository", () => ({
 vi.mock(
   "@/modules/funding-calls/ServerFundingOpportunityIntegration",
   () => ({
-    findPublishedFundingOpportunity: vi.fn(),
+    resolvePublishedApplicationFormBinding: vi.fn(),
   }),
 );
 
-import { capabilities } from "@/auth/authorization/capabilities";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import type { AuthenticatedUser } from "@/auth/types";
 import {
   createOwnedApplication,
@@ -36,7 +36,7 @@ import {
 } from "@/db/repositories/ApplicationRepository";
 import { findOwnedBusiness } from "@/db/repositories/BusinessRepository";
 import { hasRequiredApplicationDocuments } from "@/db/repositories/ApplicationDocumentRepository";
-import { findPublishedFundingOpportunity } from "@/modules/funding-calls/ServerFundingOpportunityIntegration";
+import { resolvePublishedApplicationFormBinding } from "@/modules/funding-calls/ServerFundingOpportunityIntegration";
 import {
   ApplicationBusinessConflictError,
   ApplicationConflictError,
@@ -46,8 +46,8 @@ import {
   updateOwnApplication,
 } from "@/modules/applications/ServerApplicationService";
 import { applicationStatusCounts } from "../../support/application-status-counts";
-
 const fundingOpportunityId = "00000000-0000-4000-8000-000000000042";
+const formVersionId = "20000000-0000-4000-8000-000000000001";
 
 function staffUser(granted: string[]): AuthenticatedUser {
   return {
@@ -74,6 +74,7 @@ const application = {
   createdAt: new Date("2026-09-14T08:00:00.000Z"),
   currentSection: "business" as const,
   financialSection: {},
+  formVersionId,
   fundingOpportunityId,
   fundingOpportunityTitle: "Growth Fund",
   id: "99e20de0-3558-4d63-90a4-8c9f5125df07",
@@ -98,12 +99,12 @@ const businessId = "89e20de0-3558-4d63-90a4-8c9f5125df07";
 beforeEach(() => {
   vi.clearAllMocks();
 });
-
 describe("applicant-owned application drafts", () => {
   it("creates an owner-scoped draft for an open opportunity", async () => {
-    const user = staffUser([capabilities.applicationCreate]);
-    vi.mocked(findPublishedFundingOpportunity).mockResolvedValue({
+    const user = staffUser([permissionCodes.fundingApplicationCreate]);
+    vi.mocked(resolvePublishedApplicationFormBinding).mockResolvedValue({
       id: fundingOpportunityId,
+      formVersionId,
       status: "open",
       title: "Growth Fund",
     } as never);
@@ -118,14 +119,14 @@ describe("applicant-owned application drafts", () => {
       id: application.id,
     });
     expect(createOwnedApplication).toHaveBeenCalledWith({
+      formVersionId,
       fundingOpportunityId,
       fundingOpportunityTitle: "Growth Fund",
       ownerUserId: user.id,
     });
   });
-
   it("scopes list and detail reads to the authenticated owner", async () => {
-    const user = staffUser([capabilities.applicationReadOwn]);
+    const user = staffUser([permissionCodes.fundingApplicationOwnRead]);
     vi.mocked(listOwnedApplications).mockResolvedValue({
       counts: applicationStatusCounts,
       items: [application],
@@ -156,7 +157,7 @@ describe("applicant-owned application drafts", () => {
   });
 
   it("rejects a stale update without writing", async () => {
-    const user = staffUser([capabilities.applicationUpdateOwn]);
+    const user = staffUser([permissionCodes.fundingApplicationOwnUpdate]);
     vi.mocked(findOwnedApplication).mockResolvedValue({
       ...application,
       rowVersion: 2,
@@ -172,9 +173,8 @@ describe("applicant-owned application drafts", () => {
     ).rejects.toBeInstanceOf(ApplicationConflictError);
     expect(updateOwnedApplication).not.toHaveBeenCalled();
   });
-
   it("derives completion and advances a valid section", async () => {
-    const user = staffUser([capabilities.applicationUpdateOwn]);
+    const user = staffUser([permissionCodes.fundingApplicationOwnUpdate]);
     const completed = {
       ...application,
       businessSection: { businessId },
@@ -215,7 +215,7 @@ describe("applicant-owned application drafts", () => {
   });
 
   it("rejects a business that is not owned by the applicant", async () => {
-    const user = staffUser([capabilities.applicationUpdateOwn]);
+    const user = staffUser([permissionCodes.fundingApplicationOwnUpdate]);
     vi.mocked(findOwnedApplication).mockResolvedValue(application);
     vi.mocked(findOwnedBusiness).mockResolvedValue(null as never);
 
@@ -232,7 +232,7 @@ describe("applicant-owned application drafts", () => {
   });
 
   it("does not require workflow configuration to save a draft", async () => {
-    const user = staffUser([capabilities.applicationUpdateOwn]);
+    const user = staffUser([permissionCodes.fundingApplicationOwnUpdate]);
     const advanced = {
       ...application,
       currentSection: "financial" as const,
@@ -253,7 +253,7 @@ describe("applicant-owned application drafts", () => {
         section: "project",
       }),
     ).resolves.toMatchObject({ id: application.id });
-    expect(findPublishedFundingOpportunity).not.toHaveBeenCalled();
+    expect(resolvePublishedApplicationFormBinding).not.toHaveBeenCalled();
     expect(updateOwnedApplication).toHaveBeenCalledWith(
       user.id,
       application.id,
@@ -264,7 +264,7 @@ describe("applicant-owned application drafts", () => {
   });
 
   it("rejects another application for the same business and funding call", async () => {
-    const user = staffUser([capabilities.applicationUpdateOwn]);
+    const user = staffUser([permissionCodes.fundingApplicationOwnUpdate]);
     vi.mocked(findOwnedApplication).mockResolvedValue(application);
     vi.mocked(findOwnedBusiness).mockResolvedValue({ id: businessId } as never);
     vi.mocked(updateOwnedApplication).mockResolvedValue({
@@ -282,7 +282,7 @@ describe("applicant-owned application drafts", () => {
   });
 
   it("requires all supporting documents before advancing", async () => {
-    const user = staffUser([capabilities.applicationUpdateOwn]);
+    const user = staffUser([permissionCodes.fundingApplicationOwnUpdate]);
     vi.mocked(findOwnedApplication).mockResolvedValue(application);
     vi.mocked(hasRequiredApplicationDocuments).mockResolvedValue(false);
 

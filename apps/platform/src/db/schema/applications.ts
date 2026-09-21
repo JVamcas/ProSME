@@ -20,6 +20,7 @@ import type { ApplicationDeclarationsSection } from "@/modules/applications/Appl
 import { users } from "./identity";
 import { businessProfiles } from "./profiles";
 import { workflowDefinitionVersions } from "@/modules/workflows/infrastructure/workflow.schema";
+import { formVersions } from "@/modules/forms/infrastructure/form.schema";
 
 export const applications = pgTable("app_applications", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -28,6 +29,9 @@ export const applications = pgTable("app_applications", {
     .references(() => users.id, { onDelete: "cascade" }),
   fundingOpportunityId: uuid("funding_opportunity_id").notNull(),
   fundingOpportunityTitle: text("funding_opportunity_title").notNull(),
+  formVersionId: uuid("form_version_id").references(() => formVersions.id, {
+    onDelete: "restrict",
+  }),
   businessId: uuid("business_id").references(() => businessProfiles.id, {
     onDelete: "restrict",
   }),
@@ -97,6 +101,7 @@ export const applications = pgTable("app_applications", {
     table.ownerUserId,
     table.updatedAt,
   ),
+  index("app_applications_form_version_idx").on(table.formVersionId),
   index("app_applications_status_submitted_idx").on(
     table.status,
     table.submittedAt,

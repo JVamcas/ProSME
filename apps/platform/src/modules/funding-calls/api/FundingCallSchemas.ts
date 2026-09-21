@@ -29,6 +29,7 @@ export const fundingCallDescriptionSchema = z
 const fundingCallFields = {
   closesAt: z.iso.datetime({ offset: true }),
   description: fundingCallDescriptionSchema,
+  formVersionId: z.uuid("Select a published application form version."),
   fundingInstrument: optionalText(160),
   maximumGrantAmount: moneySchema,
   minimumGrantAmount: moneySchema,

@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { GeneralButton } from "@/components/ui/button";
-import { FormInput } from "@/components/ui/form-fields";
+import { FormInput, FormSelect } from "@/components/ui/form-fields";
 import { MoneyField } from "@/components/ui/money-field";
 import { FormRichTextField } from "@/shared/ui/FormRichTextField";
 import {
@@ -16,6 +16,7 @@ import {
 import type { FundingCallCreateInput } from "../api/FundingCallSchemas";
 import type { FundingCallView } from "../api/FundingCallTransport";
 import { FormDateInput } from "@/components/ui/form-date-input";
+import { useBindableApplicationFormVersions } from "../FundingCallHooks";
 
 const localMoneySchema = z
   .union([z.number().nonnegative(), z.string().trim().min(1)])
@@ -24,6 +25,7 @@ const localMoneySchema = z
 const localFormSchema = z.object({
   closesAt: z.string().min(1, "Closing date is required."),
   description: fundingCallDescriptionSchema,
+  formVersionId: z.uuid("Select a published application form version."),
   fundingInstrument: z.string().trim().max(160),
   maximumGrantAmount: localMoneySchema,
   minimumGrantAmount: localMoneySchema,
@@ -49,6 +51,7 @@ function defaults(call?: FundingCallView): LocalFormInput {
   return {
     closesAt: call ? localDateTime(call.closesAt) : "",
     description: call?.description ?? "",
+    formVersionId: call?.formVersionId ?? "",
     fundingInstrument: call?.fundingInstrument ?? "",
     maximumGrantAmount: call?.maximumGrantAmount ?? "",
     minimumGrantAmount: call?.minimumGrantAmount ?? "",
@@ -87,6 +90,7 @@ export function FundingCallForm({
   disabled?: boolean;
   onSubmit: (input: FundingCallCreateInput) => Promise<void>;
 }) {
+  const formVersions = useBindableApplicationFormVersions();
   const form = useForm<LocalFormInput, unknown, LocalFormOutput>({
     defaultValues: defaults(call),
     resolver: zodResolver(localFormSchema),
@@ -129,6 +133,24 @@ export function FundingCallForm({
             disabled={disabled}
             label="Description"
             name="description"
+            required
+          />
+
+          <FormSelect
+            containerClassName="md:col-span-2"
+            disabled={disabled || formVersions.isPending}
+            infoTooltip="The exact published form version used when applicants create applications for this call."
+            items={(formVersions.data ?? []).map((version) => ({
+              label: `${version.formName} — version ${version.versionNumber}`,
+              value: version.versionId,
+            }))}
+            label="Application form version"
+            name="formVersionId"
+            placeholder={
+              formVersions.isPending
+                ? "Loading published forms…"
+                : "Select a published form version"
+            }
             required
           />
 

@@ -19,13 +19,13 @@ vi.mock("@/db/repositories/ApplicationDocumentRepository", () => ({
   hasRequiredApplicationDocuments: vi.fn(),
 }));
 vi.mock(
-  "@/modules/funding-opportunities/ServerFundingOpportunityIntegration",
+  "@/modules/funding-calls/ServerFundingOpportunityIntegration",
   () => ({
-    findPublishedFundingOpportunity: vi.fn(),
+    resolvePublishedApplicationFormBinding: vi.fn(),
   }),
 );
 
-import { capabilities } from "@/auth/authorization/capabilities";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import { PermissionDeniedError } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import {
@@ -62,7 +62,7 @@ beforeEach(() => {
 describe("application service authorization", () => {
   it("loads records through the repository for authorized staff", async () => {
     vi.mocked(findAllApplications).mockResolvedValue([]);
-    const user = staffUser([capabilities.applicationReadAll]);
+    const user = staffUser([permissionCodes.fundingApplicationAllRead]);
 
     await expect(getApplications(user)).resolves.toEqual([]);
     expect(findAllApplications).toHaveBeenCalledOnce();
@@ -70,7 +70,7 @@ describe("application service authorization", () => {
 
   it("limits assigned readers to their repository scope", async () => {
     vi.mocked(findApplicationsAssignedTo).mockResolvedValue([]);
-    const user = staffUser([capabilities.applicationReadAssigned]);
+    const user = staffUser([permissionCodes.workflowTaskAssignedRead]);
 
     await expect(getApplications(user)).resolves.toEqual([]);
     expect(findApplicationsAssignedTo).toHaveBeenCalledWith(user.id);
@@ -78,7 +78,7 @@ describe("application service authorization", () => {
   });
 
   it("rejects broad admin access without an application read grant", async () => {
-    const user = staffUser([capabilities.adminAccess]);
+    const user = staffUser([permissionCodes.userManage]);
 
     await expect(getApplications(user)).rejects.toBeInstanceOf(
       PermissionDeniedError,

@@ -6,6 +6,7 @@ import type {
   FundingCallUpdateInput,
 } from "./api/FundingCallSchemas";
 import type { FundingCallPage, FundingCallView } from "./api/FundingCallTransport";
+import type { PublishedFormOption } from "@/modules/forms/FormTypes";
 
 const jsonHeaders = { "Content-Type": "application/json" };
 
@@ -48,4 +49,17 @@ function update(id: string, input: FundingCallUpdateInput) {
   });
 }
 
-export const clientFundingCallService = { create, get, list, update };
+function listBindableFormVersions() {
+  return requestData<PublishedFormOption[]>(
+    "/api/admin/funding-calls/form-versions",
+    { cache: "no-store" },
+  );
+}
+
+export const clientFundingCallService = {
+  create,
+  get,
+  list,
+  listBindableFormVersions,
+  update,
+};
