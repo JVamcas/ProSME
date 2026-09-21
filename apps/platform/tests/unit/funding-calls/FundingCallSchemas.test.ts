@@ -23,13 +23,21 @@ const validInput = {
 };
 
 describe("fundingCallCreateSchema", () => {
-  it("accepts a valid funding call and normalizes blank optional fields", () => {
+  it("accepts a draft without version bindings", () => {
+    const draftInput: Partial<typeof validInput> = { ...validInput };
+    delete draftInput.eligibilityRuleSetVersionId;
+    delete draftInput.formVersionId;
+    delete draftInput.workflowTemplateVersionId;
     const result = fundingCallCreateSchema.parse({
-      ...validInput,
+      ...draftInput,
       fundingInstrument: "",
     });
 
     expect(result.fundingInstrument).toBeNull();
+    expect(result.eligibilitySummary).toBeNull();
+    expect(result.eligibilityRuleSetVersionId).toBeNull();
+    expect(result.formVersionId).toBeNull();
+    expect(result.workflowTemplateVersionId).toBeNull();
   });
 
   it("requires the closing date to follow the opening date", () => {

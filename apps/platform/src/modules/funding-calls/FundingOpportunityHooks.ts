@@ -3,18 +3,18 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
 import { clientFundingOpportunityService } from "./ClientFundingOpportunityService";
-import type { FundingOpportunityListInput } from "./FundingOpportunityTypes";
+import type { PublicFundingCallListInput } from "./api/PublicFundingCallTransport";
 
 export const fundingOpportunityQueryKeys = {
   all: ["portal", "funding-opportunities"] as const,
-  list: (input: FundingOpportunityListInput) =>
+  list: (input: PublicFundingCallListInput) =>
     ["portal", "funding-opportunities", "list", input] as const,
   detail: (id: string) =>
     ["portal", "funding-opportunities", "detail", id] as const,
 };
 
 export function useFundingOpportunities(
-  input: FundingOpportunityListInput,
+  input: PublicFundingCallListInput,
 ) {
   return useQuery({
     placeholderData: keepPreviousData,

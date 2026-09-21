@@ -1,4 +1,4 @@
-import type { FundingOpportunitySummary } from "@/modules/funding-calls/FundingOpportunityTypes";
+import type { PublicFundingCallSummary } from "@/modules/funding-calls/api/PublicFundingCallTransport";
 
 const dateFormatter = new Intl.DateTimeFormat("en-NA", {
   day: "2-digit",
@@ -17,7 +17,7 @@ export function formatOpportunityDate(value: string) {
 
 export function formatOpportunityAmount(
   opportunity: Pick<
-    FundingOpportunitySummary,
+    PublicFundingCallSummary,
     "maximumAmount" | "minimumAmount"
   >,
 ) {
@@ -34,7 +34,7 @@ export function formatOpportunityAmount(
 
 export function opportunityDateLabel(
   opportunity: Pick<
-    FundingOpportunitySummary,
+    PublicFundingCallSummary,
     "closesAt" | "opensAt" | "status"
   >,
 ) {

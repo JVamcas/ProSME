@@ -2,21 +2,21 @@
 
 import { requestData, requestJson } from "@/lib/client-http";
 import type {
-  FundingOpportunityDetail,
-  FundingOpportunityListInput,
-  FundingOpportunityPage,
-} from "./FundingOpportunityTypes";
+  PublicFundingCallDetail,
+  PublicFundingCallListInput,
+  PublicFundingCallPage,
+} from "./api/PublicFundingCallTransport";
 
 const noStore = { cache: "no-store" as const };
 
 type FundingOpportunityListEnvelope = {
-  data: FundingOpportunityPage["items"];
-  page: Omit<FundingOpportunityPage, "items">;
+  data: PublicFundingCallPage["items"];
+  page: Omit<PublicFundingCallPage, "items">;
 };
 
 async function listFundingOpportunities(
-  input: FundingOpportunityListInput,
-): Promise<FundingOpportunityPage> {
+  input: PublicFundingCallListInput,
+): Promise<PublicFundingCallPage> {
   const query = new URLSearchParams({ limit: String(input.limit) });
 
   if (input.after) query.set("after", input.after);
@@ -35,7 +35,7 @@ async function listFundingOpportunities(
 }
 
 function getFundingOpportunity(id: string) {
-  return requestData<FundingOpportunityDetail>(
+  return requestData<PublicFundingCallDetail>(
     `/api/portal/funding-opportunities/${id}`,
     noStore,
   );

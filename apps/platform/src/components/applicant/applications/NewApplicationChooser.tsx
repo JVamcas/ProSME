@@ -9,14 +9,14 @@ import { GeneralButton } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Pagination } from "@/components/ui/pagination";
 import { useCreateApplication } from "@/modules/applications/ApplicationHooks";
-import type { FundingOpportunitySummary } from "@/modules/funding-calls/FundingOpportunityTypes";
+import type { PublicFundingCallSummary } from "@/modules/funding-calls/api/PublicFundingCallTransport";
 import { ApplicationOpportunitySearch } from "./ApplicationOpportunitySearch";
 import {
   opportunityChooserPageSize,
   useApplicationOpportunityChooser,
 } from "./useApplicationOpportunityChooser";
 
-function OpportunityResults({ items }: { items: FundingOpportunitySummary[] }) {
+function OpportunityResults({ items }: { items: PublicFundingCallSummary[] }) {
   const router = useRouter();
   const creation = useCreateApplication();
 

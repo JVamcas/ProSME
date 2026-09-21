@@ -386,6 +386,13 @@
       "when": 1792454400000,
       "tag": "0054_bind_workflow_template_version",
       "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "7",
+      "when": 1792540800000,
+      "tag": "0055_public_funding_call_read_model",
+      "breakpoints": true
     }
   ]
 }

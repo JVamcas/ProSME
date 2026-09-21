@@ -1,14 +1,15 @@
 "use client";
 
-import { FlaskConical, Pencil, Plus, Trash2 } from "lucide-react";
+import { FlaskConical, Plus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { DeleteButton, EditButton } from "@/components/ui/action-buttons";
+import { GeneralButton, GeneralButtonLink } from "@/components/ui/button";
 import {
-  GeneralButton,
-  GeneralButtonLink,
-  IconButton,
-} from "@/components/ui/button";
+  DataTable,
+  type DataTableColumn,
+} from "@/components/ui/data-table";
 import { DraggableDialog } from "@/components/ui/draggable-dialog";
 import { StatusBadge } from "@/components/ui/status-badge";
 import {
@@ -36,59 +37,84 @@ const executionLabels = {
   SELF_CHECK: "Self Check",
 } as const;
 
-function RuleCard({
+function ruleColumns({
   editable,
   onDelete,
   onEdit,
-  rule,
 }: {
   editable: boolean;
-  onDelete: () => void;
-  onEdit: () => void;
-  rule: EligibilityBuilderRule;
-}) {
-  return (
-    <article className="rounded-2xl border border-brand-navy/15 bg-white p-5 shadow-sm">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <h3 className="font-bold text-brand-navy">{rule.reasonCode}</h3>
-            <span className="rounded-full bg-brand-orange/10 px-2.5 py-1 text-xs font-semibold text-brand-orange">
-              {failureLabels[rule.failureType]}
-            </span>
-            <span className="rounded-full bg-brand-blue/15 px-2.5 py-1 text-xs font-semibold text-brand-navy">
-              {executionLabels[rule.executionMode]}
-            </span>
-          </div>
-          <p className="mt-2 text-sm text-brand-navy/70">
-            {rule.applicantMessage}
-          </p>
+  onDelete: (rule: EligibilityBuilderRule) => void;
+  onEdit: (rule: EligibilityBuilderRule) => void;
+}): DataTableColumn<EligibilityBuilderRule>[] {
+  const columns: DataTableColumn<EligibilityBuilderRule>[] = [
+    {
+      accessorKey: "reasonCode",
+      header: "Reason code",
+      cell: ({ row }) => (
+        <span className="font-semibold text-brand-navy">
+          {row.original.reasonCode}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "applicantMessage",
+      header: "Applicant message",
+    },
+    {
+      accessorKey: "failureType",
+      header: "Failure type",
+      cell: ({ row }) => (
+        <span className="rounded-full bg-brand-orange/10 px-2.5 py-1 text-xs font-semibold text-brand-orange">
+          {failureLabels[row.original.failureType]}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "executionMode",
+      header: "Execution",
+      cell: ({ row }) => (
+        <span className="rounded-full bg-brand-blue/15 px-2.5 py-1 text-xs font-semibold text-brand-navy">
+          {executionLabels[row.original.executionMode]}
+        </span>
+      ),
+    },
+    {
+      id: "condition",
+      header: "Condition",
+      enableSorting: false,
+      cell: ({ row }) => (
+        <span className="block min-w-72">
+          {formatConditionGroupPreview(
+            row.original.condition,
+            eligibilityConditionFields,
+            conditionBuilderOperators,
+          )}
+        </span>
+      ),
+    },
+  ];
+
+  if (editable) {
+    columns.push({
+      id: "actions",
+      header: "Actions",
+      enableSorting: false,
+      cell: ({ row }) => (
+        <div className="flex gap-1">
+          <EditButton
+            onClick={() => onEdit(row.original)}
+            title={`Edit ${row.original.reasonCode}`}
+          />
+          <DeleteButton
+            onClick={() => onDelete(row.original)}
+            title={`Delete ${row.original.reasonCode}`}
+          />
         </div>
-        {editable ? (
-          <div className="flex gap-1">
-            <IconButton compact label={`Edit ${rule.reasonCode}`} onClick={onEdit}>
-              <Pencil className="size-4" />
-            </IconButton>
-            <IconButton
-              compact
-              label={`Delete ${rule.reasonCode}`}
-              onClick={onDelete}
-              variant="danger"
-            >
-              <Trash2 className="size-4" />
-            </IconButton>
-          </div>
-        ) : null}
-      </div>
-      <div className="mt-4 rounded-xl bg-brand-cream px-4 py-3 text-sm text-brand-navy">
-        {formatConditionGroupPreview(
-          rule.condition,
-          eligibilityConditionFields,
-          conditionBuilderOperators,
-        )}
-      </div>
-    </article>
-  );
+      ),
+    });
+  }
+
+  return columns;
 }
 
 function lifecycleLabel(status: "DRAFT" | "PUBLISHED" | "RETIRED") {
@@ -133,7 +159,9 @@ export function EligibilityRuleSetEditor({
         rules,
       });
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Unable to save rules.");
+      toast.error(
+        error instanceof Error ? error.message : "Unable to save rules.",
+      );
       throw error;
     }
   }
@@ -165,11 +193,12 @@ export function EligibilityRuleSetEditor({
     }
   }
 
-  const canRunLifecycle = currentEditor.version.status === "DRAFT"
-    ? canPublish
-    : currentEditor.version.status === "PUBLISHED"
-    ? canRetire
-    : canUpdate;
+  const canRunLifecycle =
+    currentEditor.version.status === "DRAFT"
+      ? canPublish
+      : currentEditor.version.status === "PUBLISHED"
+        ? canRetire
+        : canUpdate;
 
   return (
     <div className="space-y-6">
@@ -182,7 +211,8 @@ export function EligibilityRuleSetEditor({
             <StatusBadge status={currentEditor.version.status} />
           </div>
           <p className="mt-1 text-sm text-brand-navy/65">
-            {currentEditor.definition.code} · Version {currentEditor.version.versionNumber}
+            {currentEditor.definition.code} · Version{" "}
+            {currentEditor.version.versionNumber}
           </p>
           <p className="mt-2 text-sm text-brand-navy/75">
             {currentEditor.definition.description}
@@ -226,43 +256,49 @@ export function EligibilityRuleSetEditor({
       ) : null}
 
       <section className="space-y-3" aria-labelledby="eligibility-rules-heading">
-        <h2 className="text-lg font-bold text-brand-navy" id="eligibility-rules-heading">
+        <h2
+          className="text-lg font-bold text-brand-navy"
+          id="eligibility-rules-heading"
+        >
           Eligibility rules
         </h2>
-        {currentEditor.rules.length ? currentEditor.rules.map((rule) => (
-          <RuleCard
-            editable={editable}
-            key={rule.id}
-            onDelete={() => {
+        <DataTable
+          columns={ruleColumns({
+            editable,
+            onDelete: (rule) => {
               const remaining = currentEditor.rules
                 .filter((item) => item.id !== rule.id)
                 .map((item, index) => ({ ...item, order: index + 1 }));
               void saveRules(remaining).catch(() => undefined);
-            }}
-            onEdit={() => setEditing(rule)}
-            rule={rule}
-          />
-        )) : (
-          <p className="rounded-2xl border border-dashed border-brand-navy/20 p-8 text-center text-sm text-brand-navy/60">
-            No eligibility rules configured.
-          </p>
-        )}
+            },
+            onEdit: setEditing,
+          })}
+          data={currentEditor.rules}
+          emptyMessage="No eligibility rules configured."
+          minWidth={1180}
+          rowKey={(rule) => rule.id}
+        />
       </section>
 
       <DraggableDialog
         isOpen={Boolean(editing) && editable}
         onClose={() => setEditing(undefined)}
         size="2xl"
-        title={editing === "new" ? "Add eligibility rule" : "Edit eligibility rule"}
+        title={
+          editing === "new" ? "Add eligibility rule" : "Edit eligibility rule"
+        }
       >
         <EligibilityRuleDialog
           initialRule={editing === "new" ? undefined : editing}
           nextOrder={currentEditor.rules.length + 1}
           onCancel={() => setEditing(undefined)}
           onSave={async (rule) => {
-            const rules = editing === "new"
-              ? [...currentEditor.rules, rule]
-              : currentEditor.rules.map((item) => item.id === rule.id ? rule : item);
+            const rules =
+              editing === "new"
+                ? [...currentEditor.rules, rule]
+                : currentEditor.rules.map((item) =>
+                    item.id === rule.id ? rule : item,
+                  );
             await saveRules(rules);
             setEditing(undefined);
           }}

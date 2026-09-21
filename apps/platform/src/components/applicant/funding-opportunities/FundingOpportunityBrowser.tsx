@@ -5,7 +5,7 @@ import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Pagination } from "@/components/ui/pagination";
 import { Tabs, type TabItem } from "@/components/ui/tabs";
-import type { FundingOpportunitySummary } from "@/modules/funding-calls/FundingOpportunityTypes";
+import type { PublicFundingCallSummary } from "@/modules/funding-calls/api/PublicFundingCallTransport";
 import { FundingOpportunityCard } from "./FundingOpportunityCard";
 import { FundingOpportunitySearchForm } from "./FundingOpportunitySearchForm";
 import {
@@ -26,7 +26,7 @@ function OpportunityList({
   opportunities,
 }: {
   hasActiveCriteria: boolean;
-  opportunities: FundingOpportunitySummary[];
+  opportunities: PublicFundingCallSummary[];
 }) {
   if (opportunities.length) {
     return (

@@ -6,6 +6,7 @@ export type FundingCallView = {
   slug: string;
   title: string;
   description: string;
+  eligibilitySummary: string | null;
   eligibilityRuleSetVersionId: string | null;
   formVersionId: string | null;
   fundingInstrument: string | null;

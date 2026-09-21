@@ -25,6 +25,7 @@ export const fundingCalls = pgTable(
     slug: text("slug").notNull(),
     title: text("title").notNull(),
     description: text("description").notNull(),
+    eligibilitySummary: text("eligibility_summary"),
     eligibilityRuleSetVersionId: uuid("eligibility_rule_set_version_id")
       .references(() => eligibilityRuleSetVersions.id, {
         onDelete: "restrict",
@@ -103,6 +104,34 @@ export const fundingCalls = pgTable(
     check(
       "app_funding_calls_row_version_check",
       sql`${table.rowVersion} > 0`,
+    ),
+  ],
+);
+
+export const fundingCallPublicDocuments = pgTable(
+  "app_funding_call_public_documents",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    fundingCallId: uuid("funding_call_id")
+      .notNull()
+      .references(() => fundingCalls.id, { onDelete: "cascade" }),
+    label: text("label").notNull(),
+    url: text("url").notNull(),
+    displayOrder: integer("display_order").notNull().default(0),
+    publishedAt: timestamp("published_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("app_funding_call_public_documents_call_idx").on(
+      table.fundingCallId,
+      table.displayOrder,
+    ),
+    check(
+      "app_funding_call_public_documents_display_order_check",
+      sql`${table.displayOrder} >= 0`,
+    ),
+    check(
+      "app_funding_call_public_documents_url_check",
+      sql`${table.url} ~ '^(https?://|/)'`,
     ),
   ],
 );

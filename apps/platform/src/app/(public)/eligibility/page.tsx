@@ -1,23 +1,35 @@
 import type { Metadata } from "next";
 import { ShieldCheck } from "lucide-react";
-import { EligibilityChecker } from "@/components/public/eligibility/EligibilityChecker";
+import Link from "next/link";
 import { FocusSectors } from "@/components/public/focus-sectors";
 import {
   getEligibilityContent,
-  getEligibilityRules,
   getPage,
 } from "@/modules/content/ServerContentQueries";
 import { eligibilityFocusSection } from "@/modules/content/EligibilityPageContent";
+import { PublicEligibilitySelfCheck } from "@/modules/eligibility/ui/self-check/PublicEligibilitySelfCheck";
+import { listPublicFundingCalls } from "@/modules/funding-calls/application/ServerPublicFundingCallService";
 
 export const metadata: Metadata = { title: "Eligibility checker" };
 
 
-export default async function EligibilityPage() {
-  const [content, rules, page] = await Promise.all([
+export default async function EligibilityPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ fundingCall?: string }>;
+}) {
+  const requestedSlug = (await searchParams).fundingCall;
+  const [content, calls, page] = await Promise.all([
     getEligibilityContent(),
-    getEligibilityRules(),
+    listPublicFundingCalls({ limit: 100 }),
     getPage("eligibility"),
   ]);
+  const availableCalls = calls.items.filter(
+    (call) => call.selfCheckAvailable && call.status !== "closed",
+  );
+  const selectedCall = requestedSlug
+    ? availableCalls.find((call) => call.slug === requestedSlug)
+    : availableCalls[0];
   const focus = eligibilityFocusSection(page?.blocks ?? []);
   return (
     <>
@@ -42,7 +54,40 @@ export default async function EligibilityPage() {
               </p>
             </div>
           </aside>
-          <EligibilityChecker rules={rules} />
+          <div>
+            {availableCalls.length > 1 ? (
+              <nav
+                aria-label="Funding call eligibility checks"
+                className="mb-5 flex flex-wrap gap-2"
+              >
+                {availableCalls.map((call) => (
+                  <Link
+                    className={
+                      call.id === selectedCall?.id
+                        ? "rounded-full bg-brand-navy px-4 py-2 text-sm font-semibold text-white"
+                        : "rounded-full border border-brand-navy/20 bg-white px-4 py-2 text-sm font-semibold text-brand-navy"
+                    }
+                    href={`/eligibility?fundingCall=${call.slug}`}
+                    key={call.id}
+                  >
+                    {call.title}
+                  </Link>
+                ))}
+              </nav>
+            ) : null}
+            {selectedCall ? (
+              <PublicEligibilitySelfCheck fundingCallId={selectedCall.id} />
+            ) : (
+              <div className="card p-8">
+                <h2 className="text-xl font-bold text-navy">
+                  Eligibility self-check unavailable
+                </h2>
+                <p className="mt-3 text-sm text-slate-600">
+                  No published funding call currently offers a self-check.
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </section>
       <section className="bg-brand-white py-12">

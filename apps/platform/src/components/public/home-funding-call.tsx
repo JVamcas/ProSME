@@ -1,9 +1,9 @@
 import { ArrowRight, CalendarDays } from "lucide-react";
 import Link from "next/link";
 
-import type { FundingCallItem } from "@/modules/content/ContentTypes";
+import type { PublicFundingCallSummary } from "@/modules/funding-calls/api/PublicFundingCallTransport";
 
-export function HomeFundingCall({ call }: { call?: FundingCallItem }) {
+export function HomeFundingCall({ call }: { call?: PublicFundingCallSummary }) {
   if (!call) return null;
   const status = statusContent(call);
 
@@ -60,7 +60,7 @@ export function HomeFundingCall({ call }: { call?: FundingCallItem }) {
   );
 }
 
-function statusContent(call: FundingCallItem) {
+function statusContent(call: PublicFundingCallSummary) {
   if (call.status === "open")
     return {
       badge: "Current funding call",

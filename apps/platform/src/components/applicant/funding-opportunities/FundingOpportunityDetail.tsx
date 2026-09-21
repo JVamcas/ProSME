@@ -8,7 +8,7 @@ import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
 import { Tabs, type TabItem } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useFundingOpportunity } from "@/modules/funding-calls/FundingOpportunityHooks";
-import type { FundingOpportunityDetail as Opportunity } from "@/modules/funding-calls/FundingOpportunityTypes";
+import type { PublicFundingCallDetail as Opportunity } from "@/modules/funding-calls/api/PublicFundingCallTransport";
 import { formatOpportunityDate } from "./FundingOpportunityFormat";
 import {
   ContactPanel,
@@ -38,12 +38,12 @@ function detailTabs(opportunity: Opportunity): TabItem<DetailTab>[] {
       label: "Key information",
     },
     {
-      content: <DocumentsPanel />,
+      content: <DocumentsPanel opportunity={opportunity} />,
       id: "documents",
       label: "Documents",
     },
     {
-      content: <ContactPanel />,
+      content: <ContactPanel opportunity={opportunity} />,
       id: "contact",
       label: "Contact",
     },

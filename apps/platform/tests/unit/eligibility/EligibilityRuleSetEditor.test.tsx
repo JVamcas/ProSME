@@ -106,6 +106,11 @@ describe("EligibilityRuleSetEditor", () => {
       </QueryClientProvider>,
     ));
 
+    expect(container.querySelector("table")).not.toBeNull();
+    expect(container.textContent).toContain("Reason code");
+    expect(container.textContent).toContain("Applicant message");
+    expect(container.textContent).toContain("Condition");
+
     await act(async () => container.querySelector<HTMLButtonElement>(
       '[aria-label="Edit EMPLOYEE_REQUIRED"]',
     )?.click());

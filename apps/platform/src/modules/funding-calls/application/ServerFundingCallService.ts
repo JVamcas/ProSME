@@ -61,9 +61,17 @@ async function requirePublishedBindings(
 ) {
   const [formIsPublished, eligibilityIsPublished, workflowIsPublished] =
     await Promise.all([
-      formVersionIsPublished(input.formVersionId),
-      eligibilityRuleSetVersionIsPublished(input.eligibilityRuleSetVersionId),
-      workflowTemplateVersionIsPublished(input.workflowTemplateVersionId),
+      input.formVersionId
+        ? formVersionIsPublished(input.formVersionId)
+        : Promise.resolve(true),
+      input.eligibilityRuleSetVersionId
+        ? eligibilityRuleSetVersionIsPublished(
+            input.eligibilityRuleSetVersionId,
+          )
+        : Promise.resolve(true),
+      input.workflowTemplateVersionId
+        ? workflowTemplateVersionIsPublished(input.workflowTemplateVersionId)
+        : Promise.resolve(true),
     ]);
   if (!formIsPublished) {
     throw new RequestValidationError(

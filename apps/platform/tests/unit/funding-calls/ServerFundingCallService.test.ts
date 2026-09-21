@@ -48,6 +48,7 @@ const workflowTemplateVersionId = "40000000-0000-4000-8000-000000000001";
 const input = {
   closesAt: "2027-03-31T15:00:00.000Z",
   description: "Growth funding for qualifying SMEs.",
+  eligibilitySummary: "Registered Namibian SMEs may qualify.",
   eligibilityRuleSetVersionId,
   formVersionId,
   fundingInstrument: "Grant",
@@ -112,6 +113,38 @@ describe("ServerFundingCallService", () => {
 
     expect(insertFundingCall).toHaveBeenCalledWith(actorId, input);
     expect(result.status).toBe("DRAFT");
+  });
+
+  it("creates a draft without publish-time version bindings", async () => {
+    const draftInput = {
+      ...input,
+      eligibilityRuleSetVersionId: null,
+      formVersionId: null,
+      workflowTemplateVersionId: null,
+    };
+    const draft = {
+      ...stored,
+      eligibilityRuleSetVersionId: null,
+      formVersionId: null,
+      workflowTemplateVersionId: null,
+    };
+    vi.mocked(insertFundingCall).mockResolvedValue(draft);
+
+    const result = await createFundingCall(
+      user([permissionCodes.fundingCallCreate]),
+      draftInput,
+    );
+
+    expect(insertFundingCall).toHaveBeenCalledWith(actorId, draftInput);
+    expect(formVersionIsPublished).not.toHaveBeenCalled();
+    expect(eligibilityRuleSetVersionIsPublished).not.toHaveBeenCalled();
+    expect(workflowTemplateVersionIsPublished).not.toHaveBeenCalled();
+    expect(result).toMatchObject({
+      eligibilityRuleSetVersionId: null,
+      formVersionId: null,
+      status: "DRAFT",
+      workflowTemplateVersionId: null,
+    });
   });
 
   it("queries by public identifier using the read permission", async () => {

@@ -2,14 +2,16 @@ import { FileDown } from "lucide-react";
 import Link from "next/link";
 
 import { GeneralButton } from "@/components/ui/button";
-import type { FundingOpportunityDetail } from "@/modules/funding-calls/FundingOpportunityTypes";
+import type { PublicFundingCallDetail } from "@/modules/funding-calls/api/PublicFundingCallTransport";
 
 export function FundingOpportunityReadinessCard({
   opportunity,
 }: {
-  opportunity: FundingOpportunityDetail;
+  opportunity: PublicFundingCallDetail;
 }) {
-  const canCheckEligibility = opportunity.status === "open";
+  const canCheckEligibility =
+    opportunity.selfCheckAvailable && opportunity.status !== "closed";
+  const guidanceDocument = opportunity.publicDocuments[0];
   return (
     <aside className="rounded-2xl border border-brand-navy/15 bg-brand-white p-6 shadow-sm">
       <h2 className="text-lg font-bold text-brand-navy">Ready to apply?</h2>
@@ -30,10 +32,24 @@ export function FundingOpportunityReadinessCard({
           Check eligibility
         </GeneralButton>
       )}
-      <GeneralButton className="mt-3 w-full" disabled type="button" variant="outline">
-        <FileDown aria-hidden="true" className="size-4" />
-        No Guidelines available
-      </GeneralButton>
+      {guidanceDocument ? (
+        <GeneralButton asChild className="mt-3 w-full" variant="outline">
+          <a href={guidanceDocument.url}>
+            <FileDown aria-hidden="true" className="size-4" />
+            {guidanceDocument.label}
+          </a>
+        </GeneralButton>
+      ) : (
+        <GeneralButton
+          className="mt-3 w-full"
+          disabled
+          type="button"
+          variant="outline"
+        >
+          <FileDown aria-hidden="true" className="size-4" />
+          No guidelines available
+        </GeneralButton>
+      )}
     </aside>
   );
 }

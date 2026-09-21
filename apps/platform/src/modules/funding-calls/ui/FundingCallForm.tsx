@@ -27,13 +27,16 @@ const localMoneySchema = z
   .union([z.number().nonnegative(), z.string().trim().min(1)])
   .transform(String);
 
+const localOptionalVersionId = z
+  .union([z.literal(""), z.uuid()])
+  .transform((value) => value || null);
+
 const localFormSchema = z.object({
   closesAt: z.string().min(1, "Closing date is required."),
   description: fundingCallDescriptionSchema,
-  eligibilityRuleSetVersionId: z.uuid(
-    "Select a published eligibility ruleset version.",
-  ),
-  formVersionId: z.uuid("Select a published application form version."),
+  eligibilitySummary: z.string().trim().max(2000),
+  eligibilityRuleSetVersionId: localOptionalVersionId,
+  formVersionId: localOptionalVersionId,
   fundingInstrument: z.string().trim().max(160),
   maximumGrantAmount: localMoneySchema,
   minimumGrantAmount: localMoneySchema,
@@ -44,9 +47,7 @@ const localFormSchema = z.object({
   thematicArea: z.string().trim().max(160),
   title: z.string().trim().min(2).max(240),
   totalBudgetEnvelope: localMoneySchema,
-  workflowTemplateVersionId: z.uuid(
-    "Select a published workflow template version.",
-  ),
+  workflowTemplateVersionId: localOptionalVersionId,
 });
 
 type LocalFormInput = z.input<typeof localFormSchema>;
@@ -56,6 +57,7 @@ function defaults(call?: FundingCallView): LocalFormInput {
   return {
     closesAt: call ? toInputDateTimeLocal(call.closesAt) : "",
     description: call?.description ?? "",
+    eligibilitySummary: call?.eligibilitySummary ?? "",
     eligibilityRuleSetVersionId: call?.eligibilityRuleSetVersionId ?? "",
     formVersionId: call?.formVersionId ?? "",
     fundingInstrument: call?.fundingInstrument ?? "",
@@ -148,7 +150,7 @@ export function FundingCallForm({
           <FormSelect
             containerClassName="md:col-span-2"
             disabled={disabled || workflowVersions.isPending}
-            infoTooltip="The exact published workflow template version used when an application is submitted."
+            infoTooltip="The exact published workflow template version used when an application is submitted. Optional for drafts and required before publishing."
             items={(workflowVersions.data ?? []).map((version) => ({
               label: `${version.name} — version ${version.versionNumber}`,
               value: version.versionId,
@@ -160,13 +162,12 @@ export function FundingCallForm({
                 ? "Loading published workflows…"
                 : "Select a published workflow template version"
             }
-            required
           />
 
           <FormSelect
             containerClassName="md:col-span-2"
             disabled={disabled || formVersions.isPending}
-            infoTooltip="The exact published form version used when applicants create applications for this call."
+            infoTooltip="The exact published form version used when applicants create applications for this call. Optional for drafts and required before publishing."
             items={(formVersions.data ?? []).map((version) => ({
               label: `${version.formName} — version ${version.versionNumber}`,
               value: version.versionId,
@@ -178,13 +179,12 @@ export function FundingCallForm({
                 ? "Loading published forms…"
                 : "Select a published form version"
             }
-            required
           />
 
           <FormSelect
             containerClassName="md:col-span-2"
             disabled={disabled || eligibilityVersions.isPending}
-            infoTooltip="The exact published ruleset version used for self-check and authoritative screening."
+            infoTooltip="The exact published ruleset version used for self-check and authoritative screening. Optional for drafts and required before publishing."
             items={(eligibilityVersions.data ?? []).map((version) => ({
               label: `${version.ruleSetName} — version ${version.versionNumber}`,
               value: version.versionId,
@@ -196,7 +196,6 @@ export function FundingCallForm({
                 ? "Loading published rulesets…"
                 : "Select a published ruleset version"
             }
-            required
           />
 
           <FormInput

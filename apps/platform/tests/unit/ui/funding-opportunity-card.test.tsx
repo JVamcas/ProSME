@@ -10,15 +10,21 @@ describe("funding opportunity card", () => {
     const markup = renderToStaticMarkup(
       <FundingOpportunityCard
         opportunity={{
+          applicationsOpen: true,
           closesAt: "2026-10-31T21:59:59.000Z",
+          fundingInstrument: "Grant",
           id: fundingOpportunityId,
           maximumAmount: 200000,
           minimumAmount: 50000,
           opensAt: "2026-09-01T00:00:00.000Z",
+          reference: "GROWTH-2026",
+          selfCheckAvailable: true,
           slug: "growth-fund",
           status: "open",
           summary: "Support for growing Namibian businesses.",
+          thematicArea: "Growth",
           title: "Growth Fund",
+          totalFundingAmount: 1000000,
         }}
       />,
     );
@@ -38,15 +44,21 @@ describe("funding opportunity card", () => {
       <FundingOpportunityCard
         action={<button type="button">Apply</button>}
         opportunity={{
+          applicationsOpen: true,
           closesAt: "2026-10-31T21:59:59.000Z",
+          fundingInstrument: "Grant",
           id: fundingOpportunityId,
           maximumAmount: 200000,
           minimumAmount: 50000,
           opensAt: "2026-09-01T00:00:00.000Z",
+          reference: "GROWTH-2026",
+          selfCheckAvailable: true,
           slug: "growth-fund",
           status: "open",
           summary: "Support for growing Namibian businesses.",
+          thematicArea: "Growth",
           title: "Growth Fund",
+          totalFundingAmount: 1000000,
         }}
       />,
     );

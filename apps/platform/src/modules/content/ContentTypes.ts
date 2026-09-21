@@ -54,19 +54,6 @@ export type EligibilityRule = {
   hardStop: boolean;
 };
 
-export type FundingCallItem = SeoContent & {
-  closesAt: string;
-  description: string;
-  id: string;
-  maximumAmount?: number | null;
-  minimumAmount?: number | null;
-  opensAt: string;
-  slug: string;
-  status: "upcoming" | "open" | "closed";
-  summary: string;
-  title: string;
-};
-
 export type HomepageContent = {
   applyHref: string;
   applyLabel: string;

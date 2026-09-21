@@ -1,6 +1,20 @@
 import "server-only";
 
-import { and, count, desc, eq, ilike, inArray, lt, or } from "drizzle-orm";
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  gt,
+  ilike,
+  inArray,
+  lt,
+  lte,
+  ne,
+  or,
+  sql,
+} from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
 import type {
@@ -10,7 +24,10 @@ import type {
 } from "../api/FundingCallSchemas";
 import type { FundingCall } from "../domain/FundingCall";
 import { sanitizeFundingCallDescription } from "./FundingCallRichText";
-import { fundingCalls } from "./funding-call.schema";
+import {
+  fundingCallPublicDocuments,
+  fundingCalls,
+} from "./funding-call.schema";
 
 function toFundingCall(row: typeof fundingCalls.$inferSelect): FundingCall {
   return {
@@ -122,7 +139,58 @@ type PublishedFundingCallQuery = {
   status?: "CLOSED" | "OPEN" | "SCHEDULED";
 };
 
+export type PublicFundingCallRecord = {
+  closesAt: Date;
+  description: string;
+  eligibilitySummary: string | null;
+  eligibilityRuleSetVersionId: string | null;
+  fundingInstrument: string | null;
+  id: string;
+  maximumGrantAmount: string;
+  minimumGrantAmount: string;
+  opensAt: Date;
+  publicContactEmail: string | null;
+  publicContactName: string | null;
+  publicContactPhone: string | null;
+  reference: string;
+  slug: string;
+  status: "CLOSED" | "OPEN" | "SCHEDULED";
+  thematicArea: string | null;
+  title: string;
+  totalBudgetEnvelope: string;
+  publicDocuments: { label: string; url: string }[];
+};
+
+export type PublicFundingCallQuery = {
+  after?: { id: string; opensAt: Date };
+  limit: number;
+  now: Date;
+  search?: string;
+  status?: "closed" | "open" | "upcoming";
+};
+
 const publishedStatuses = ["SCHEDULED", "OPEN", "CLOSED"] as const;
+
+const publicSelection = {
+  closesAt: fundingCalls.closesAt,
+  description: fundingCalls.description,
+  eligibilitySummary: fundingCalls.eligibilitySummary,
+  eligibilityRuleSetVersionId: fundingCalls.eligibilityRuleSetVersionId,
+  fundingInstrument: fundingCalls.fundingInstrument,
+  id: fundingCalls.id,
+  maximumGrantAmount: fundingCalls.maximumGrantAmount,
+  minimumGrantAmount: fundingCalls.minimumGrantAmount,
+  opensAt: fundingCalls.opensAt,
+  publicContactEmail: fundingCalls.publicContactEmail,
+  publicContactName: fundingCalls.publicContactName,
+  publicContactPhone: fundingCalls.publicContactPhone,
+  reference: fundingCalls.reference,
+  slug: fundingCalls.slug,
+  status: sql<PublicFundingCallRecord["status"]>`${fundingCalls.status}`,
+  thematicArea: fundingCalls.thematicArea,
+  title: fundingCalls.title,
+  totalBudgetEnvelope: fundingCalls.totalBudgetEnvelope,
+};
 
 function publishedConditions(input: PublishedFundingCallQuery) {
   const conditions = [
@@ -189,21 +257,90 @@ export async function readPublishedFundingCall(
   return row ? toFundingCall(row) : null;
 }
 
-export async function readPublicFundingCalls(): Promise<FundingCall[]> {
-  const rows = await getDatabase()
-    .select()
-    .from(fundingCalls)
-    .where(inArray(fundingCalls.status, publishedStatuses))
-    .orderBy(desc(fundingCalls.opensAt), desc(fundingCalls.id))
-    .limit(20);
-  return rows.map(toFundingCall);
+function publicConditions(input: PublicFundingCallQuery) {
+  const conditions = [inArray(fundingCalls.status, publishedStatuses)];
+  if (input.search) {
+    conditions.push(
+      or(
+        ilike(fundingCalls.reference, `%${input.search}%`),
+        ilike(fundingCalls.title, `%${input.search}%`),
+        ilike(fundingCalls.description, `%${input.search}%`),
+      )!,
+    );
+  }
+  if (input.status === "open") {
+    conditions.push(
+      and(
+        eq(fundingCalls.status, "OPEN"),
+        lte(fundingCalls.opensAt, input.now),
+        gt(fundingCalls.closesAt, input.now),
+      )!,
+    );
+  }
+  if (input.status === "upcoming") {
+    conditions.push(
+      and(
+        ne(fundingCalls.status, "CLOSED"),
+        gt(fundingCalls.closesAt, input.now),
+        or(
+          gt(fundingCalls.opensAt, input.now),
+          eq(fundingCalls.status, "SCHEDULED"),
+        ),
+      )!,
+    );
+  }
+  if (input.status === "closed") {
+    conditions.push(
+      or(
+        eq(fundingCalls.status, "CLOSED"),
+        lte(fundingCalls.closesAt, input.now),
+      )!,
+    );
+  }
+  return conditions;
+}
+
+export async function readPublicFundingCalls(
+  input: PublicFundingCallQuery,
+): Promise<{ items: PublicFundingCallRecord[]; total: number }> {
+  const database = getDatabase();
+  const conditions = publicConditions(input);
+  const cursorCondition = input.after
+    ? or(
+        lt(fundingCalls.opensAt, input.after.opensAt),
+        and(
+          eq(fundingCalls.opensAt, input.after.opensAt),
+          lt(fundingCalls.id, input.after.id),
+        ),
+      )
+    : undefined;
+  const [rows, totals] = await Promise.all([
+    database
+      .select(publicSelection)
+      .from(fundingCalls)
+      .where(and(...conditions, cursorCondition))
+      .orderBy(desc(fundingCalls.opensAt), desc(fundingCalls.id))
+      .limit(input.limit + 1),
+    database
+      .select({ value: count() })
+      .from(fundingCalls)
+      .where(and(...conditions)),
+  ]);
+  return {
+    items: rows.map((row) => ({
+      ...row,
+      description: sanitizeFundingCallDescription(row.description),
+      publicDocuments: [],
+    })),
+    total: totals[0]?.value ?? 0,
+  };
 }
 
 export async function readPublicFundingCallBySlug(
   slug: string,
-): Promise<FundingCall | null> {
+): Promise<PublicFundingCallRecord | null> {
   const [row] = await getDatabase()
-    .select()
+    .select(publicSelection)
     .from(fundingCalls)
     .where(
       and(
@@ -212,5 +349,50 @@ export async function readPublicFundingCallBySlug(
       ),
     )
     .limit(1);
-  return row ? toFundingCall(row) : null;
+  if (!row) return null;
+  return {
+    ...row,
+    description: sanitizeFundingCallDescription(row.description),
+    publicDocuments: await readPublishedPublicDocuments(row.id),
+  };
+}
+
+export async function readPublicFundingCallById(
+  id: string,
+): Promise<PublicFundingCallRecord | null> {
+  const [row] = await getDatabase()
+    .select(publicSelection)
+    .from(fundingCalls)
+    .where(
+      and(
+        eq(fundingCalls.id, id),
+        inArray(fundingCalls.status, publishedStatuses),
+      ),
+    )
+    .limit(1);
+  if (!row) return null;
+  return {
+    ...row,
+    description: sanitizeFundingCallDescription(row.description),
+    publicDocuments: await readPublishedPublicDocuments(row.id),
+  };
+}
+
+async function readPublishedPublicDocuments(fundingCallId: string) {
+  return getDatabase()
+    .select({
+      label: fundingCallPublicDocuments.label,
+      url: fundingCallPublicDocuments.url,
+    })
+    .from(fundingCallPublicDocuments)
+    .where(
+      and(
+        eq(fundingCallPublicDocuments.fundingCallId, fundingCallId),
+        lte(fundingCallPublicDocuments.publishedAt, new Date()),
+      ),
+    )
+    .orderBy(
+      asc(fundingCallPublicDocuments.displayOrder),
+      asc(fundingCallPublicDocuments.id),
+    );
 }

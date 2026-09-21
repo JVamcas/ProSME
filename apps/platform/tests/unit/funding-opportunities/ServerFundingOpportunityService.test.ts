@@ -2,10 +2,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 vi.mock(
-  "@/modules/funding-calls/ServerFundingOpportunityIntegration",
+  "@/modules/funding-calls/application/ServerPublicFundingCallService",
   () => ({
-    findPublishedFundingOpportunity: vi.fn(),
-    listPublishedFundingOpportunities: vi.fn(),
+    findPublicFundingCallById: vi.fn(),
+    listPublicFundingCalls: vi.fn(),
   }),
 );
 
@@ -13,9 +13,9 @@ import { PermissionDeniedError } from "@/auth/authorization/policy";
 import { permissionCodes } from "@/auth/authorization/permissions";
 import type { AuthenticatedUser } from "@/auth/types";
 import {
-  findPublishedFundingOpportunity,
-  listPublishedFundingOpportunities,
-} from "@/modules/funding-calls/ServerFundingOpportunityIntegration";
+  findPublicFundingCallById,
+  listPublicFundingCalls,
+} from "@/modules/funding-calls/application/ServerPublicFundingCallService";
 import {
   FundingOpportunityNotFoundError,
   getFundingOpportunity,
@@ -48,21 +48,21 @@ describe("funding opportunity service", () => {
   it("lists published business funding calls for an active applicant", async () => {
     const input = { limit: 25 };
     const page = { items: [], nextCursor: null, total: 0 };
-    vi.mocked(listPublishedFundingOpportunities).mockResolvedValue(page);
+    vi.mocked(listPublicFundingCalls).mockResolvedValue(page);
 
     await expect(listFundingOpportunities(user(), input)).resolves.toEqual(page);
-    expect(listPublishedFundingOpportunities).toHaveBeenCalledWith(input);
+    expect(listPublicFundingCalls).toHaveBeenCalledWith(input);
   });
 
   it("rejects a disabled applicant before querying funding calls", async () => {
     await expect(
       listFundingOpportunities(user("disabled"), { limit: 25 }),
     ).rejects.toBeInstanceOf(PermissionDeniedError);
-    expect(listPublishedFundingOpportunities).not.toHaveBeenCalled();
+    expect(listPublicFundingCalls).not.toHaveBeenCalled();
   });
 
   it("returns not found for a missing published opportunity", async () => {
-    vi.mocked(findPublishedFundingOpportunity).mockResolvedValue(null);
+    vi.mocked(findPublicFundingCallById).mockResolvedValue(null);
 
     await expect(
       getFundingOpportunity(user(), fundingCallId),

@@ -9,9 +9,9 @@ import {
   fundingOpportunitySearchSchema,
   type FundingOpportunitySearchInput,
 } from "@/modules/funding-calls/FundingOpportunitySchemas";
-import type { FundingOpportunityStatus } from "@/modules/funding-calls/FundingOpportunityTypes";
+import type { PublicFundingCallStatus } from "@/modules/funding-calls/api/PublicFundingCallTransport";
 
-export type FundingOpportunityFilter = "all" | FundingOpportunityStatus;
+export type FundingOpportunityFilter = "all" | PublicFundingCallStatus;
 export const fundingOpportunityPageSize = 10;
 
 export function useFundingOpportunityBrowser(

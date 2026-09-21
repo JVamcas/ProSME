@@ -21,11 +21,11 @@ import type { WorkflowStageDocumentRequirement } from "@/modules/workflows/domai
 import { useWorkflowStageScoringOverlays } from "@/modules/workflows/ui/definitions/useWorkflowStageScoringOverlays";
 import { useWorkflowStageCommentFieldOverlays } from "@/modules/workflows/ui/definitions/useWorkflowStageCommentFieldOverlays";
 import {
-  WorkflowFlowPreview,
   WorkflowFlowToolbar,
   WorkflowStageList,
   WorkflowStagesHeader,
 } from "./WorkflowStageFlowParts";
+import { WorkflowVisualGraph } from "@/modules/workflows/ui/definitions/WorkflowVisualGraph";
 
 type Props = {
   canEdit: boolean;
@@ -44,6 +44,7 @@ export function WorkflowStageFlow({ canEdit, editor }: Props) {
     stages[0]?.stableKey ?? "",
   );
   const [showVisualFlow, setShowVisualFlow] = useState(false);
+  const [layoutRevision, setLayoutRevision] = useState(0);
   const [stageDialog, setStageDialog] = useState<
     "create" | WorkflowStageInput | null
   >(null);
@@ -195,13 +196,19 @@ export function WorkflowStageFlow({ canEdit, editor }: Props) {
       <div className="mt-7 overflow-hidden rounded-2xl border border-brand-navy/15">
         <WorkflowFlowToolbar
           isExpanded={showVisualFlow}
+          onAutoArrange={() => {
+            setShowVisualFlow(true);
+            setLayoutRevision((revision) => revision + 1);
+          }}
           stageCount={stages.length}
           onToggle={() => setShowVisualFlow((value) => !value)}
         />
         {showVisualFlow ? (
-          <WorkflowFlowPreview
+          <WorkflowVisualGraph
+            key={`${editor.version.rowVersion}-${layoutRevision}`}
             selectedCode={selectedStage?.stableKey}
             stages={stages}
+            transitions={editor.graph.transitions}
             onSelect={setSelectedCode}
           />
         ) : null}

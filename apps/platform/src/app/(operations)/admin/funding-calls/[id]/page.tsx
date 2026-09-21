@@ -28,8 +28,8 @@ export default async function FundingCallPage({
   return (
     <section>
       <PageHeader
-        description="Edit the business details and application window while this call is a draft."
-        eyebrow="Programmes"
+        description="Manage funding call"
+        eyebrow="Funding calls"
         icon={<CircleDollarSign />}
         title="Edit funding call"
       />

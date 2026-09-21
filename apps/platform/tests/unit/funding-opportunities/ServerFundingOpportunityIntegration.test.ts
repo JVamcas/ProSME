@@ -25,6 +25,7 @@ const fundingCall = {
   createdBy: "10000000-0000-4000-8000-000000000001",
   description:
     "<p>Support for <strong>growing</strong> Namibian businesses.</p>",
+  eligibilitySummary: "Registered Namibian SMEs may qualify.",
   eligibilityRuleSetVersionId: "30000000-0000-4000-8000-000000000001",
   formVersionId: "20000000-0000-4000-8000-000000000001",
   fundingInstrument: "Grant",

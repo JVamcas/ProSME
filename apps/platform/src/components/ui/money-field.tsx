@@ -1,7 +1,12 @@
 "use client";
 
-import type { ReactNode } from "react";
-import { get, useFormContext, type FieldValues } from "react-hook-form";
+import { useLayoutEffect, useRef, type ReactNode } from "react";
+import {
+  get,
+  useFormContext,
+  useWatch,
+  type FieldValues,
+} from "react-hook-form";
 
 import { cn } from "@/lib/utils";
 import { Input } from "./form-controls";
@@ -122,6 +127,9 @@ function ControlledMoneyField({
 }: MoneyFieldProps & { currencyLabel: ReactNode }) {
   const form = useFormContext<FieldValues>();
   const controlId = id ?? name;
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const isEditingRef = useRef(false);
+  const currentValue = useWatch({ control: form.control, name });
 
   const registration = form.register(name, {
     setValueAs: (value) => parseMoneyInput(String(value)),
@@ -133,9 +141,14 @@ function ControlledMoneyField({
 
   const errorId = errorMessage ? `${controlId}-error` : undefined;
 
-  const currentValue = form.getValues(name);
-  const initialValue =
+  const displayValue =
     Number(currentValue) === 0 ? "" : formatMoneyValue(currentValue);
+
+  useLayoutEffect(() => {
+    if (inputRef.current && !isEditingRef.current) {
+      inputRef.current.value = displayValue;
+    }
+  }, [displayValue]);
 
   return (
     <FormField
@@ -154,23 +167,29 @@ function ControlledMoneyField({
         <Input
           {...inputProps}
           {...registration}
+          ref={(element) => {
+            inputRef.current = element;
+            registration.ref(element);
+          }}
           id={controlId}
           type="text"
           inputMode="decimal"
           required={required}
-          defaultValue={initialValue}
+          defaultValue={displayValue}
           aria-describedby={errorId ?? inputProps["aria-describedby"]}
           aria-invalid={
             errorMessage ? true : inputProps["aria-invalid"]
           }
           className={cn("pl-12", inputProps.className)}
           onChange={(event) => {
+            isEditingRef.current = true;
             event.target.value = formatMoneyInput(event.target.value);
 
             void registration.onChange(event);
             inputProps.onChange?.(event);
           }}
           onBlur={(event) => {
+            isEditingRef.current = false;
             void registration.onBlur(event);
             inputProps.onBlur?.(event);
           }}

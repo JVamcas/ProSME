@@ -9,17 +9,18 @@ import {
 } from "react-hook-form";
 
 import { GeneralButton } from "@/components/ui/button";
-import { FormInput, FormSelect, FormTextarea } from "@/components/ui/form-fields";
+import {
+  FormInput,
+  FormSelect,
+  FormTextarea,
+} from "@/components/ui/form-fields";
 import { ConditionBuilder } from "@/modules/conditions/ui/builder";
 import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup";
 import { eligibilityBuilderRuleSchema } from "../api/EligibilityRuleSetSchemas";
 import type { EligibilityBuilderRule } from "../api/EligibilityRuleSetTransport";
 import { eligibilityConditionFields } from "../domain/EligibilityConditionFields";
 
-type EligibilityRuleFormValues = Omit<
-  EligibilityBuilderRule,
-  "condition"
-> & {
+type EligibilityRuleFormValues = Omit<EligibilityBuilderRule, "condition"> & {
   condition: unknown;
 };
 
@@ -71,7 +72,10 @@ export function EligibilityRuleDialog({
     <FormProvider {...form}>
       <form className="space-y-5" onSubmit={submit}>
         <input type="hidden" {...form.register("id")} />
-        <input type="hidden" {...form.register("order", { valueAsNumber: true })} />
+        <input
+          type="hidden"
+          {...form.register("order", { valueAsNumber: true })}
+        />
         <div className="grid gap-4 sm:grid-cols-2">
           <FormInput
             label="Reason code"
@@ -90,6 +94,7 @@ export function EligibilityRuleDialog({
             required
           />
           <FormSelect
+            containerClassName="md:col-span-2"
             items={[
               { label: "Self Check", value: "SELF_CHECK" },
               { label: "Screening", value: "SCREENING" },
@@ -120,8 +125,8 @@ export function EligibilityRuleDialog({
               />
               {fieldState.error ? (
                 <p className="text-sm text-red-700" role="alert">
-                  {fieldState.error.message
-                    ?? "Resolve the condition errors before saving."}
+                  {fieldState.error.message ??
+                    "Resolve the condition errors before saving."}
                 </p>
               ) : null}
             </div>

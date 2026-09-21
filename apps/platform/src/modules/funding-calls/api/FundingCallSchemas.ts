@@ -18,6 +18,11 @@ const optionalText = (maximum: number) =>
     .transform((value) => value || null)
     .nullable();
 
+const optionalVersionId = z
+  .union([z.literal(""), z.uuid(), z.null()])
+  .transform((value) => value || null)
+  .default(null);
+
 export const fundingCallDescriptionSchema = z
   .string()
   .trim()
@@ -29,10 +34,9 @@ export const fundingCallDescriptionSchema = z
 const fundingCallFields = {
   closesAt: z.iso.datetime({ offset: true }),
   description: fundingCallDescriptionSchema,
-  eligibilityRuleSetVersionId: z.uuid(
-    "Select a published eligibility ruleset version.",
-  ),
-  formVersionId: z.uuid("Select a published application form version."),
+  eligibilitySummary: optionalText(2000).default(null),
+  eligibilityRuleSetVersionId: optionalVersionId,
+  formVersionId: optionalVersionId,
   fundingInstrument: optionalText(160),
   maximumGrantAmount: moneySchema,
   minimumGrantAmount: moneySchema,
@@ -57,9 +61,7 @@ const fundingCallFields = {
   thematicArea: optionalText(160),
   title: z.string().trim().min(2).max(240),
   totalBudgetEnvelope: moneySchema,
-  workflowTemplateVersionId: z.uuid(
-    "Select a published workflow template version.",
-  ),
+  workflowTemplateVersionId: optionalVersionId,
 };
 
 function validateRange(

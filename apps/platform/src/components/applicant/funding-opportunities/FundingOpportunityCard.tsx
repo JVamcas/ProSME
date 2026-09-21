@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 
 import { GeneralButton } from "@/components/ui/button";
 import { StatusBadge, statusStyles } from "@/components/ui/status-badge";
-import type { FundingOpportunitySummary } from "@/modules/funding-calls/FundingOpportunityTypes";
+import type { PublicFundingCallSummary } from "@/modules/funding-calls/api/PublicFundingCallTransport";
 import {
   formatOpportunityAmount,
   opportunityDateLabel,
@@ -15,7 +15,7 @@ export function FundingOpportunityCard({
   opportunity,
 }: {
   action?: ReactNode;
-  opportunity: FundingOpportunitySummary;
+  opportunity: PublicFundingCallSummary;
 }) {
   const statusStyle =
     statusStyles[opportunity.status.toLocaleLowerCase()] ??

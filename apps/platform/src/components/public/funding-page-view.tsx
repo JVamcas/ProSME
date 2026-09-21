@@ -5,7 +5,7 @@ import type {
   FundingPrioritiesContent,
   FundingSupportContent,
 } from "@/modules/content/FundingPageContent";
-import type { FundingCallItem } from "@/modules/content/ContentTypes";
+import type { PublicFundingCallSummary } from "@/modules/funding-calls/api/PublicFundingCallTransport";
 import {
   FundingCallToAction,
   FundingPriorities,
@@ -13,7 +13,7 @@ import {
 } from "./funding-page-sections";
 
 type Props = {
-  call?: FundingCallItem;
+  calls: PublicFundingCallSummary[];
   priorities: FundingPrioritiesContent;
   summary: string;
   support: FundingSupportContent;
@@ -21,7 +21,7 @@ type Props = {
 };
 
 export function FundingPageView({
-  call,
+  calls,
   priorities,
   summary,
   support,
@@ -29,7 +29,8 @@ export function FundingPageView({
 }: Props) {
   return (
     <>
-      <FundingHero call={call} summary={summary} title={title} />
+      <FundingHero call={calls[0]} summary={summary} title={title} />
+      <FundingCallList calls={calls} />
       <FundingSupport content={support} />
       <FundingPriorities content={priorities} />
       <FundingCallToAction />
@@ -37,11 +38,50 @@ export function FundingPageView({
   );
 }
 
+function FundingCallList({ calls }: Pick<Props, "calls">) {
+  if (!calls.length) return null;
+  return (
+    <section className="section" aria-labelledby="funding-calls-heading">
+      <div className="container">
+        <h2
+          className="text-3xl font-bold text-brand-navy"
+          id="funding-calls-heading"
+        >
+          Funding calls
+        </h2>
+        <div className="mt-6 grid gap-5 md:grid-cols-2">
+          {calls.map((call) => (
+            <article className="card p-6" key={call.id}>
+              <p className="text-xs font-bold uppercase tracking-wide text-brand-orange">
+                {call.reference} · {call.status}
+              </p>
+              <h3 className="mt-3 text-xl font-bold text-brand-navy">
+                {call.title}
+              </h3>
+              <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-700">
+                {call.summary}
+              </p>
+              <Link
+                className="mt-5 inline-flex items-center gap-2 font-bold text-brand-navy underline"
+                href={`/funding/${call.slug}`}
+              >
+                View call details <ArrowRight className="size-4" />
+              </Link>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function FundingHero({
   call,
   summary,
   title,
-}: Pick<Props, "call" | "summary" | "title">) {
+}: Pick<Props, "summary" | "title"> & {
+  call?: PublicFundingCallSummary;
+}) {
   return (
     <section className="bg-brand-navy py-20 text-brand-white">
       <div className="container grid gap-12 lg:grid-cols-[1fr_360px] lg:items-end">

@@ -25,7 +25,6 @@ import type {
   EligibilityRule,
   FaqItem,
   FooterContent,
-  FundingCallItem,
   HeaderContent,
   HomepageContent,
   ListingItem,
@@ -34,11 +33,6 @@ import type {
   SiteSettingsContent,
   StatisticItem,
 } from "./ContentTypes";
-import {
-  readPublicFundingCallBySlug,
-  readPublicFundingCalls,
-} from "@/modules/funding-calls/infrastructure/FundingCallRepository";
-import { fundingCallContentItem } from "./FundingCallContent";
 
 async function payloadClient() {
   return getPayload({ config: configPromise });
@@ -358,20 +352,6 @@ export async function getEligibilityRules(): Promise<EligibilityRule[]> {
       id: item.key!,
       question: item.label,
     }));
-}
-
-export async function getFundingCalls(): Promise<FundingCallItem[]> {
-  if (isBuildFallbackEnabled()) return [];
-  const calls = await readPublicFundingCalls();
-  return calls.map(fundingCallContentItem);
-}
-
-export async function getFundingCall(
-  slug: string,
-): Promise<FundingCallItem | null> {
-  if (isBuildFallbackEnabled()) return null;
-  const call = await readPublicFundingCallBySlug(slug);
-  return call ? fundingCallContentItem(call) : null;
 }
 
 export async function getListingItem(kind: "news" | "events", slug: string) {

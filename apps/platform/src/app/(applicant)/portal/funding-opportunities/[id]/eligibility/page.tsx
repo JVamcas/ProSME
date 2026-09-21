@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 
-import { EligibilityAssessment } from "@/components/applicant/eligibility/EligibilityAssessment";
+import { PublicEligibilitySelfCheck } from "@/modules/eligibility/ui/self-check/PublicEligibilitySelfCheck";
 
 export const metadata: Metadata = { title: "Eligibility check" };
 
@@ -16,5 +16,12 @@ export default async function EligibilityPage({
   if (!opportunityId.success) {
     notFound();
   }
-  return <EligibilityAssessment fundingOpportunityId={opportunityId.data} />;
+  return (
+    <section className="mx-auto max-w-4xl">
+      <PublicEligibilitySelfCheck
+        backHref={`/portal/funding-opportunities/${opportunityId.data}`}
+        fundingCallId={opportunityId.data}
+      />
+    </section>
+  );
 }
