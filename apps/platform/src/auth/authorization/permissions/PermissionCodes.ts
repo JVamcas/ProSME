@@ -94,6 +94,12 @@ export const permissionCodes = {
   cmsAccess: "cms.access",
   cmsPrincipalsManage: "cms.principals.manage",
   cmsAuditRead: "cms.audit.read",
+  integrationEligibilityRead: "integration.eligibility.read",
+  integrationEligibilityCreate: "integration.eligibility.create",
+  integrationEligibilityPublish: "integration.eligibility.publish",
+  integrationEligibilityBind: "integration.eligibility.bind",
+  integrationEligibilityExecute: "integration.eligibility.execute",
+  integrationEligibilityManualVerify: "integration.eligibility.manual-verify",
   integrationErpEnqueue: "integration.erp.enqueue",
 } as const;
 

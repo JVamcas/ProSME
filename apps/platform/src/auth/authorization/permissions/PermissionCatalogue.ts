@@ -6,6 +6,7 @@ import {
   type PermissionCode,
   type StaticPermissionCode,
 } from "./PermissionCodes";
+import { integrationPermissionCatalogue } from "./IntegrationPermissionCatalogue";
 
 export type PermissionDefinition = {
   code: PermissionCode;
@@ -322,11 +323,7 @@ const staticPermissionCatalogue: readonly PermissionDefinition[] = [
     "Read CMS audit log",
     "Read content-management audit events.",
   ),
-  define(
-    permissionCodes.integrationErpEnqueue,
-    "Enqueue ERP events",
-    "Enqueue an approved ERP integration event.",
-  ),
+  ...integrationPermissionCatalogue,
 ];
 
 const cmsPermissionCatalogue: readonly PermissionDefinition[] =

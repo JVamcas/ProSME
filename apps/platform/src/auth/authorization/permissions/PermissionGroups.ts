@@ -149,7 +149,15 @@ export const permissionGroups: readonly PermissionGroup[] = [
   {
     id: "integrations",
     label: "Integrations",
-    permissionCodes: [permissionCodes.integrationErpEnqueue],
+    permissionCodes: [
+      permissionCodes.integrationEligibilityRead,
+      permissionCodes.integrationEligibilityCreate,
+      permissionCodes.integrationEligibilityPublish,
+      permissionCodes.integrationEligibilityBind,
+      permissionCodes.integrationEligibilityExecute,
+      permissionCodes.integrationEligibilityManualVerify,
+      permissionCodes.integrationErpEnqueue,
+    ],
   },
 ];
 

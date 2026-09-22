@@ -1,6 +1,6 @@
 "use client";
 
-import { Copy } from "lucide-react";
+import { Copy, Workflow } from "lucide-react";
 
 import { PortalErrorState } from "@/components/layout/PortalErrorState";
 import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
@@ -13,6 +13,8 @@ import {
 import { PageShell } from "@/shared/ui/PageShell";
 import { WorkflowDefinitionDetailsCard } from "./WorkflowDefinitionDetailsCard";
 import { WorkflowStageFlow } from "./WorkflowStageFlow";
+import { error } from "node:console";
+import { CloneButton } from "@/components/ui/action-buttons";
 
 type Props = {
   canPublish: boolean;
@@ -32,7 +34,7 @@ export function WorkflowEditorWorkspace({ canUpdate, definitionId }: Props) {
   if (query.error || !query.data)
     return (
       <PortalErrorState
-        title="Error"
+        title={query.error?.name}
         description={query.error?.message ?? "Workflow could not be loaded."}
       />
     );
@@ -42,23 +44,19 @@ export function WorkflowEditorWorkspace({ canUpdate, definitionId }: Props) {
 
   return (
     <PageShell
-        title="Workflow definitions"
-        description={editor.definition.description}
-        icon={<StatusBadge status={editor.version.status} />}
-        actions={
-          <div className="flex flex-wrap gap-2">
-            {editor.version.status !== "DRAFT" && canUpdate ? (
-              <GeneralButton
-                variant="outline"
-                disabled={busy}
-                onClick={() => clone.mutate(editor.version.id)}
-              >
-                <Copy className="size-4" />
-                Clone
-              </GeneralButton>
-            ) : null}
-          </div>
-        }
+      eyebrow="Admin / Workflow Definitions"
+      title="Workflow definitions"
+      description={editor.definition.description}
+      icon={<Workflow size={18} className="text-brand-orange" />}
+      actions={
+        <div className="flex flex-wrap gap-2">
+          <CloneButton
+            onClick={() => clone.mutate(editor.version.id)}
+            disabled={busy && !(editor.version.status !== "DRAFT" && canUpdate)}
+          />
+          <StatusBadge status={editor.version.status} />
+        </div>
+      }
     >
       <div className="space-y-6">
         <WorkflowDefinitionDetailsCard editor={editor} />

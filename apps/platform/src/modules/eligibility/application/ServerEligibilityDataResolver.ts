@@ -19,6 +19,7 @@ import {
   type EligibilitySourceReader,
   type EligibilitySourceRecord,
 } from "./EligibilitySourceAdapter";
+import { createEligibilityIntegrationOutputAdapter } from "./EligibilityIntegrationOutputAdapter";
 
 type SourceObject = Readonly<Record<string, JsonValue>>;
 
@@ -89,12 +90,6 @@ function workflowReader(
   };
 }
 
-const unavailableIntegrationReader: EligibilitySourceReader = {
-  async read() {
-    throw new Error("No configured integration output provider is available.");
-  },
-};
-
 export async function resolveAuthoritativeEligibilityData(
   input: ScreeningResolutionInput,
 ) {
@@ -130,10 +125,7 @@ export async function resolveAuthoritativeEligibilityData(
         sourceKind,
         workflowReader(input.database, sourceKind),
       )),
-      createEligibilitySourceAdapter(
-        "INTEGRATION_OUTPUT",
-        unavailableIntegrationReader,
-      ),
+      createEligibilityIntegrationOutputAdapter(input.database),
     ],
     applicationId: input.applicationId,
     evaluatedAt: input.evaluatedAt,

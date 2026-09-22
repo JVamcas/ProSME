@@ -12,7 +12,7 @@ export function PortalLoadingState({
   return (
     <div
       aria-live="polite"
-      className="mx-auto mt-16 flex max-w-lg items-center gap-4 rounded-2xl bg-slate-50 p-6"
+      className="mx-auto mt-16 flex max-w-lg items-center gap-4 rounded-2xl bg-slate-50 p-6 my-auto"
       role="status"
     >
       <LoaderCircle

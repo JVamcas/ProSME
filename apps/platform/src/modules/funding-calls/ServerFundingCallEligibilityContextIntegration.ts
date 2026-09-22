@@ -6,6 +6,8 @@ import { readEligibilityFormSources } from "@/modules/forms/infrastructure/Eligi
 import { readWorkflowEligibilitySources } from "@/modules/workflows/infrastructure/WorkflowEligibilitySourceRepository";
 import { readEligibilityRuleSetContexts } from "./infrastructure/FundingCallEligibilityContextRepository";
 import { readFundingCallById } from "./infrastructure/FundingCallRepository";
+import { readEligibilityIntegrationSources } from "@/modules/eligibility/infrastructure/EligibilityIntegrationRepository";
+import { integrationOutputSourceDescriptors } from "@/modules/eligibility/domain/EligibilityIntegrationFieldSources";
 
 type EligibilityContextBinding = {
   formVersionId: string | null;
@@ -21,9 +23,10 @@ async function resolveContexts(calls: readonly EligibilityContextBinding[]) {
   const workflowVersionIds = [...new Set(calls.flatMap((call) =>
     call.workflowTemplateVersionId ? [call.workflowTemplateVersionId] : []
   ))];
-  const [formSources, workflowSources] = await Promise.all([
+  const [formSources, workflowSources, integrationSources] = await Promise.all([
     readEligibilityFormSources(formVersionIds),
     readWorkflowEligibilitySources(workflowVersionIds),
+    readEligibilityIntegrationSources(calls.map((call) => call.id)),
   ]);
   return calls.map((call): EligibilityFieldRegistryContext => ({
     fundingCallId: call.id,
@@ -56,6 +59,7 @@ async function resolveContexts(calls: readonly EligibilityContextBinding[]) {
           source.workflowVersionId === call.workflowTemplateVersionId
         )
         .map((source) => ({ ...source, fundingCallId: call.id })),
+      ...integrationOutputSourceDescriptors(call.id, integrationSources),
     ],
   }));
 }
