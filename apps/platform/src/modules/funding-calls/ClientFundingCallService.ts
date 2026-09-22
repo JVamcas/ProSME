@@ -3,6 +3,7 @@
 import { requestData, requestJson } from "@/lib/client-http";
 import type {
   FundingCallCreateInput,
+  FundingCallGovernanceCommandInput,
   FundingCallListInput,
   FundingCallUpdateInput,
 } from "./api/FundingCallSchemas";
@@ -74,6 +75,23 @@ function publish(id: string, expectedRowVersion: number) {
   );
 }
 
+function changeGovernanceStatus(
+  id: string,
+  input: FundingCallGovernanceCommandInput,
+) {
+  return requestData<FundingCallView>(
+    `/api/admin/funding-calls/${id}/governance`,
+    {
+      body: JSON.stringify(input),
+      headers: {
+        ...jsonHeaders,
+        "Idempotency-Key": crypto.randomUUID(),
+      },
+      method: "POST",
+    },
+  );
+}
+
 function previewReadiness(id: string) {
   return requestData<FundingCallReadinessResult>(
     `/api/admin/funding-calls/${id}/readiness`,
@@ -103,6 +121,7 @@ function listBindableWorkflowTemplateVersions() {
 }
 
 export const clientFundingCallService = {
+  changeGovernanceStatus,
   create,
   get,
   list,

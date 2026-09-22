@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { fundingCallCreateSchema } from "@/modules/funding-calls/api/FundingCallSchemas";
+import {
+  fundingCallCreateSchema,
+  fundingCallGovernanceCommandSchema,
+} from "@/modules/funding-calls/api/FundingCallSchemas";
 
 const validInput = {
   closesAt: "2027-03-31T15:00:00.000Z",
@@ -65,5 +68,24 @@ describe("fundingCallCreateSchema", () => {
     });
 
     expect(result.success).toBe(false);
+  });
+});
+
+describe("fundingCallGovernanceCommandSchema", () => {
+  it("requires a non-empty reason only when returning for amendment", () => {
+    expect(fundingCallGovernanceCommandSchema.safeParse({
+      command: "RETURN_FOR_AMENDMENT",
+      expectedRowVersion: 2,
+      reason: "   ",
+    }).success).toBe(false);
+    expect(fundingCallGovernanceCommandSchema.safeParse({
+      command: "RETURN_FOR_AMENDMENT",
+      expectedRowVersion: 2,
+      reason: "Add the missing public guidance.",
+    }).success).toBe(true);
+    expect(fundingCallGovernanceCommandSchema.safeParse({
+      command: "APPROVE",
+      expectedRowVersion: 2,
+    }).success).toBe(true);
   });
 });

@@ -65,6 +65,26 @@ export const permissionCatalogue: readonly PermissionDefinition[] = [
     "Update funding calls.",
   ),
   define(
+    permissionCodes.fundingCallSubmitAll,
+    "Submit funding calls",
+    "Submit any draft funding call for governance approval.",
+  ),
+  define(
+    permissionCodes.fundingCallApproveAll,
+    "Approve funding calls",
+    "Approve any pending funding call subject to maker-checker policy.",
+  ),
+  define(
+    permissionCodes.fundingCallReturnAll,
+    "Return funding calls",
+    "Return any pending funding call to draft with a reason.",
+  ),
+  define(
+    permissionCodes.fundingCallApprovalRequestOwnWithdraw,
+    "Withdraw own funding call approval requests",
+    "Withdraw an approval request submitted by the signed-in user when policy permits.",
+  ),
+  define(
     permissionCodes.fundingCallPublish,
     "Publish funding calls",
     "Publish funding calls.",

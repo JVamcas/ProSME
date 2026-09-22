@@ -8,14 +8,23 @@ import {
   useUpdateFundingCall,
 } from "../FundingCallHooks";
 import { FundingCallForm } from "./FundingCallForm";
+import { FundingCallGovernanceActions } from "./FundingCallGovernanceActions";
 
 export function FundingCallEditor({
   canPublish,
+  canApprove,
+  canReturn,
+  canSubmit,
   canUpdate,
+  canWithdrawOwnRequest,
   id,
 }: {
+  canApprove: boolean;
   canPublish: boolean;
+  canReturn: boolean;
+  canSubmit: boolean;
   canUpdate: boolean;
+  canWithdrawOwnRequest: boolean;
   id: string;
 }) {
   const query = useFundingCall(id);
@@ -82,6 +91,13 @@ export function FundingCallEditor({
           {publish.error.message}
         </p>
       ) : null}
+      <FundingCallGovernanceActions
+        call={call}
+        canApprove={canApprove}
+        canReturn={canReturn}
+        canSubmit={canSubmit}
+        canWithdrawOwnRequest={canWithdrawOwnRequest}
+      />
       <FundingCallForm
         call={call}
         disabled={

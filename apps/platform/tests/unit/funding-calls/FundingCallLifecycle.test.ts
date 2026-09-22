@@ -23,6 +23,7 @@ describe("funding call lifecycle", () => {
   it.each([
     ["DRAFT", "SUBMIT_FOR_APPROVAL", "APPROVAL_PENDING"],
     ["APPROVAL_PENDING", "RETURN_FOR_AMENDMENT", "DRAFT"],
+    ["APPROVAL_PENDING", "WITHDRAW_APPROVAL_REQUEST", "DRAFT"],
     ["APPROVAL_PENDING", "APPROVE", "APPROVED"],
     ["APPROVED", "PUBLISH", "LIVE"],
     ["APPROVED", "WITHDRAW", "WITHDRAWN"],
@@ -50,6 +51,7 @@ describe("funding call lifecycle", () => {
     const allowed = new Set([
       "DRAFT:SUBMIT_FOR_APPROVAL",
       "APPROVAL_PENDING:RETURN_FOR_AMENDMENT",
+      "APPROVAL_PENDING:WITHDRAW_APPROVAL_REQUEST",
       "APPROVAL_PENDING:APPROVE",
       "APPROVED:PUBLISH",
       "APPROVED:WITHDRAW",

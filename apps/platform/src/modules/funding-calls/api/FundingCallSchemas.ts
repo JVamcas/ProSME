@@ -118,7 +118,33 @@ export const fundingCallPublishSchema = z.object({
   expectedRowVersion: z.number().int().positive(),
 });
 
+export const fundingCallGovernanceCommandSchema = z.discriminatedUnion(
+  "command",
+  [
+    z.object({
+      command: z.literal("SUBMIT_FOR_APPROVAL"),
+      expectedRowVersion: z.number().int().positive(),
+    }),
+    z.object({
+      command: z.literal("APPROVE"),
+      expectedRowVersion: z.number().int().positive(),
+    }),
+    z.object({
+      command: z.literal("RETURN_FOR_AMENDMENT"),
+      expectedRowVersion: z.number().int().positive(),
+      reason: z.string().trim().min(1).max(1000),
+    }),
+    z.object({
+      command: z.literal("WITHDRAW_APPROVAL_REQUEST"),
+      expectedRowVersion: z.number().int().positive(),
+    }),
+  ],
+);
+
 export type FundingCallCreateInput = z.infer<typeof fundingCallCreateSchema>;
 export type FundingCallUpdateInput = z.infer<typeof fundingCallUpdateSchema>;
 export type FundingCallListInput = z.infer<typeof fundingCallListSchema>;
 export type FundingCallPublishInput = z.infer<typeof fundingCallPublishSchema>;
+export type FundingCallGovernanceCommandInput = z.infer<
+  typeof fundingCallGovernanceCommandSchema
+>;

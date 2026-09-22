@@ -34,8 +34,15 @@ export default async function FundingCallPage({
         title="Edit funding call"
       />
       <FundingCallEditor
+        canApprove={can(user, permissionCodes.fundingCallApproveAll)}
         canPublish={can(user, permissionCodes.fundingCallPublish)}
+        canReturn={can(user, permissionCodes.fundingCallReturnAll)}
+        canSubmit={can(user, permissionCodes.fundingCallSubmitAll)}
         canUpdate={can(user, permissionCodes.fundingCallUpdate)}
+        canWithdrawOwnRequest={can(
+          user,
+          permissionCodes.fundingCallApprovalRequestOwnWithdraw,
+        )}
         id={id.data}
       />
     </section>

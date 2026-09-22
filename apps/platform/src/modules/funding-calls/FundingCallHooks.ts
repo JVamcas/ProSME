@@ -9,6 +9,7 @@ import {
 
 import type {
   FundingCallCreateInput,
+  FundingCallGovernanceCommandInput,
   FundingCallUpdateInput,
 } from "./api/FundingCallSchemas";
 import { clientFundingCallService } from "./ClientFundingCallService";
@@ -110,6 +111,18 @@ export function usePublishFundingCall(id: string) {
   return useMutation({
     mutationFn: (expectedRowVersion: number) =>
       clientFundingCallService.publish(id, expectedRowVersion),
+    onSuccess: (call) => {
+      queryClient.setQueryData(fundingCallQueryKeys.detail(id), call);
+      void queryClient.invalidateQueries({ queryKey: fundingCallQueryKeys.all });
+    },
+  });
+}
+
+export function useChangeFundingCallGovernanceStatus(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: FundingCallGovernanceCommandInput) =>
+      clientFundingCallService.changeGovernanceStatus(id, input),
     onSuccess: (call) => {
       queryClient.setQueryData(fundingCallQueryKeys.detail(id), call);
       void queryClient.invalidateQueries({ queryKey: fundingCallQueryKeys.all });
