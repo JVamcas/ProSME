@@ -19,6 +19,7 @@ import { PermissionDeniedError } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import {
   addEligibilityInput,
+  editEligibilityInput,
   EligibilityInputDependencyError,
   removeEligibilityInput,
 } from "@/modules/eligibility/application/ServerEligibilityInputService";
@@ -26,6 +27,7 @@ import { listEligibilityInputs } from "@/modules/eligibility/infrastructure/Elig
 import {
   createEligibilityInput,
   deleteEligibilityInput,
+  updateEligibilityInput,
 } from "@/modules/eligibility/infrastructure/EligibilityInputWriteRepository";
 import { findEligibilityRuleSetVersion } from "@/modules/eligibility/infrastructure/EligibilityRuleSetRepository";
 
@@ -136,5 +138,25 @@ describe("ServerEligibilityInputService", () => {
     await expect(operation).rejects.toThrow(
       "EMPLOYEE_MINIMUM",
     );
+  });
+
+  it("reports affected Draft rules when a source binding changes", async () => {
+    vi.mocked(updateEligibilityInput).mockResolvedValue({
+      dependencies: [{ reasonCode: "EMPLOYEE_MINIMUM", ruleId: inputId }],
+      kind: "DEPENDENCIES",
+    });
+
+    const operation = editEligibilityInput(
+      user([permissionCodes.eligibilityRuleSetUpdate]),
+      ruleSetId,
+      versionId,
+      inputId,
+      input,
+    );
+
+    await expect(operation).rejects.toBeInstanceOf(
+      EligibilityInputDependencyError,
+    );
+    await expect(operation).rejects.toThrow("Cannot change");
   });
 });

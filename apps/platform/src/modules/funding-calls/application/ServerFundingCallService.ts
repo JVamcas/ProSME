@@ -13,7 +13,6 @@ import {
 } from "@/lib/resource-errors";
 import {
   formVersionIsBindable,
-  getConfigurableFormFields,
   listBindableFormVersions,
 } from "@/modules/forms/infrastructure/FormRepository";
 import {
@@ -21,7 +20,11 @@ import {
   listBindableEligibilityRuleSetVersions as listBindableRuleSetVersions,
 } from "@/modules/eligibility/infrastructure/EligibilityRuleSetRepository";
 import { findTestableEligibilityRuleSetForEvaluation } from "@/modules/eligibility/infrastructure/EligibilityEvaluationRepository";
-import { eligibilityContextFields } from "@/modules/eligibility/domain/EligibilityConditionFields";
+import { listEligibilityInputs } from "@/modules/eligibility/infrastructure/EligibilityInputRepository";
+import {
+  buildEligibilityFieldRegistry,
+  eligibilityFieldsForExecutionMode,
+} from "@/modules/eligibility/domain/EligibilityFieldRegistry";
 import { workflowConditionNodeFieldPaths } from "@/modules/conditions/engine/WorkflowDataResolver";
 import {
   listBindableWorkflowVersions,
@@ -44,6 +47,10 @@ import {
   updateDraftFundingCall,
 } from "../infrastructure/FundingCallRepository";
 import { readFundingCalls } from "../infrastructure/FundingCallAdminListRepository";
+import {
+  resolveEligibilityRuleSetContexts,
+  resolveFundingCallEligibilityContext,
+} from "../ServerFundingCallEligibilityContextIntegration";
 
 function view(call: FundingCall): FundingCallView {
   return {
@@ -56,28 +63,53 @@ function view(call: FundingCall): FundingCallView {
 }
 
 async function requireEligibilityCompatibility(
-  formVersionId: string,
+  call: Pick<
+    FundingCallCreateInput,
+    "formVersionId" | "title" | "workflowTemplateVersionId"
+  > & { id?: string },
   eligibilityVersionId: string,
 ) {
-  const [formFields, ruleSet] = await Promise.all([
-    getConfigurableFormFields(formVersionId),
+  const [ruleSet, inputs, existingContexts, proposedContext] = await Promise.all([
     findTestableEligibilityRuleSetForEvaluation(eligibilityVersionId),
+    listEligibilityInputs(eligibilityVersionId),
+    resolveEligibilityRuleSetContexts(eligibilityVersionId),
+    resolveFundingCallEligibilityContext({
+      formVersionId: call.formVersionId,
+      id: call.id ?? "unpersisted-funding-call",
+      title: call.title,
+      workflowTemplateVersionId: call.workflowTemplateVersionId,
+    }),
   ]);
-  if (!formFields || !ruleSet) {
+  if (!ruleSet) {
     throw new RequestValidationError(
-      "The selected form or eligibility ruleset version is unavailable.",
+      "The selected eligibility ruleset version is unavailable.",
     );
   }
-  const available = new Set(
-    eligibilityContextFields(formFields).map((field) => field.key),
-  );
-  const missing = [...new Set(ruleSet.rules.flatMap((rule) =>
-    workflowConditionNodeFieldPaths(rule.conditionDefinition)
+  const registry = buildEligibilityFieldRegistry({
+    contexts: [
+      ...existingContexts.filter((context) => context.fundingCallId !== call.id),
+      proposedContext,
+    ],
+    inputs,
+  });
+  const ruleIssues = ruleSet.rules.flatMap((rule) => {
+    const available = new Set(
+      eligibilityFieldsForExecutionMode(registry.fields, rule.executionMode)
+        .map((field) => field.key),
+    );
+    return workflowConditionNodeFieldPaths(rule.conditionDefinition)
       .filter((path) => !available.has(path))
-  ))];
-  if (missing.length) {
+      .map((path) => `${rule.reasonCode}: field "${path}" is unavailable in ${rule.executionMode}.`);
+  });
+  const issues = [
+    ...registry.issues.map((issue) => issue.message),
+    ...ruleIssues,
+  ];
+  if (issues.length) {
     throw new RequestValidationError(
-      `The eligibility ruleset requires fields not supplied by this funding call and form: ${missing.join(", ")}.`,
+      `The eligibility ruleset is incompatible with these exact bindings: ${[
+        ...new Set(issues),
+      ].join(" ")}`,
     );
   }
 }
@@ -87,8 +119,10 @@ async function requireBindableBindings(
     FundingCallCreateInput,
     | "eligibilityRuleSetVersionId"
     | "formVersionId"
+    | "title"
     | "workflowTemplateVersionId"
   >,
+  fundingCallId?: string,
 ) {
   const [formIsBindable, eligibilityIsBindable, workflowIsBindable] =
     await Promise.all([
@@ -119,9 +153,9 @@ async function requireBindableBindings(
       "Select a draft or published workflow template version.",
     );
   }
-  if (input.eligibilityRuleSetVersionId && input.formVersionId) {
+  if (input.eligibilityRuleSetVersionId) {
     await requireEligibilityCompatibility(
-      input.formVersionId,
+      { ...input, id: fundingCallId },
       input.eligibilityRuleSetVersionId,
     );
   }
@@ -201,7 +235,7 @@ export async function updateFundingCall(
   input: FundingCallUpdateInput,
 ): Promise<FundingCallView> {
   const actor = requirePermission(user, permissionCodes.fundingCallUpdate);
-  await requireBindableBindings(input);
+  await requireBindableBindings(input, id);
   const updated = await updateDraftFundingCall(actor.id, id, input);
   if (updated) return view(updated);
 

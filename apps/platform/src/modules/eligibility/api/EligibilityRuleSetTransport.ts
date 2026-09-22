@@ -1,5 +1,9 @@
 import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup";
-import type { ConditionFieldDefinition } from "@/modules/conditions/domain/ConditionConfiguration";
+import type {
+  EligibilityFieldDescriptor,
+  EligibilityFieldRegistryIssue,
+  EligibilitySourceDescriptor,
+} from "../domain/EligibilityFieldRegistry";
 import type {
   EligibilityExecutionMode,
   EligibilityFailureType,
@@ -23,11 +27,13 @@ export type EligibilityBuilderRule = {
 export type EligibilityRuleSetBuilderView = {
   allowedActions: Array<"CLONE" | "PUBLISH" | "RETIRE" | "UPDATE">;
   definition: EligibilityRuleSetDefinition;
-  conditionFields: ConditionFieldDefinition[];
+  conditionFields: EligibilityFieldDescriptor[];
   context: {
     fundingCalls: Array<{ id: string; title: string }>;
   };
+  registryIssues: EligibilityFieldRegistryIssue[];
   rules: EligibilityBuilderRule[];
+  screeningSources: EligibilitySourceDescriptor[];
   version: EligibilityRuleSetVersion;
   versions: EligibilityRuleSetVersion[];
 };

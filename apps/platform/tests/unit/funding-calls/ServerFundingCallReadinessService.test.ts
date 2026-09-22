@@ -7,6 +7,16 @@ vi.mock("@/modules/forms/application/ServerFormReadinessService", () => ({
 vi.mock("@/modules/eligibility/application/ServerEligibilityReadinessService", () => ({
   readEligibilityReadinessProjection: vi.fn(),
 }));
+vi.mock("@/modules/eligibility/infrastructure/EligibilityInputRepository", () => ({
+  listEligibilityInputs: vi.fn(async () => []),
+}));
+vi.mock("@/modules/funding-calls/ServerFundingCallEligibilityContextIntegration", () => ({
+  resolveFundingCallEligibilityContext: vi.fn(async (call) => ({
+    fundingCallId: call.id,
+    fundingCallTitle: call.title,
+    sources: [],
+  })),
+}));
 vi.mock("@/modules/workflows/application/definitions/ServerWorkflowReadinessService", () => ({
   readWorkflowReadinessProjection: vi.fn(),
 }));

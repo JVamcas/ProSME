@@ -99,7 +99,9 @@ export async function findEligibilityRuleSetBuilder(
     conditionFields: [],
     context: { fundingCalls: [] },
     definition: ruleSet.definition,
+    registryIssues: [],
     rules,
+    screeningSources: [],
     version: ruleSet.version,
     versions: ruleSet.versions,
   };

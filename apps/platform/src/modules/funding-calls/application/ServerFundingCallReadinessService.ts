@@ -9,7 +9,12 @@ import { validateConditionGroup } from "@/modules/conditions/engine/ConditionVal
 import { conditionBuilderOperators } from "@/modules/conditions/engine/ConditionOperatorCatalogue";
 import type { ConditionGroup, ConditionNode } from "@/modules/conditions/domain/ConditionGroup";
 import { readEligibilityReadinessProjection } from "@/modules/eligibility/application/ServerEligibilityReadinessService";
-import { eligibilityContextFields } from "@/modules/eligibility/domain/EligibilityConditionFields";
+import { listEligibilityInputs } from "@/modules/eligibility/infrastructure/EligibilityInputRepository";
+import {
+  buildEligibilityFieldRegistry,
+  eligibilityFieldsForExecutionMode,
+  type EligibilityFieldRegistry,
+} from "@/modules/eligibility/domain/EligibilityFieldRegistry";
 import { readFormReadinessProjection } from "@/modules/forms/application/ServerFormReadinessService";
 import { readWorkflowReadinessProjection } from "@/modules/workflows/application/definitions/ServerWorkflowReadinessService";
 import type { FundingCall } from "../domain/FundingCall";
@@ -23,6 +28,7 @@ import {
 import {
   readFundingCallById,
 } from "../infrastructure/FundingCallRepository";
+import { resolveFundingCallEligibilityContext } from "../ServerFundingCallEligibilityContextIntegration";
 import {
   readFundingCallIdentifierConflicts,
   readFundingCallReadinessDocuments,
@@ -128,23 +134,39 @@ function asGroup(node: ConditionNode, ruleId: string): ConditionGroup {
 
 function eligibilityIssues(
   call: FundingCall,
-  form: FormProjection | null,
   eligibility: EligibilityProjection | null,
+  registry: EligibilityFieldRegistry | null,
 ) {
-  if (!call.eligibilityRuleSetVersionId || !form || !eligibility) return [];
-  const fields = eligibilityContextFields(form.fields);
-  return eligibility.rules.flatMap((rule, ruleIndex) =>
+  if (!call.eligibilityRuleSetVersionId || !eligibility || !registry) return [];
+  const reference = owner("ELIGIBILITY_VERSION", call.eligibilityRuleSetVersionId);
+  const issues = registry.issues.map((registryIssue, index) => issue(
+    "ELIGIBILITY_FIELD_INCOMPATIBLE",
+    registryIssue.message,
+    `eligibilityRegistry.${index}`,
+    reference,
+  ));
+  issues.push(...eligibility.rules.flatMap((rule, ruleIndex) =>
     validateConditionGroup(
       asGroup(rule.conditionDefinition, rule.id),
-      fields,
+      eligibilityFieldsForExecutionMode(registry.fields, rule.executionMode),
       conditionBuilderOperators,
     ).issues.map((validationIssue) => issue(
       "ELIGIBILITY_FIELD_INCOMPATIBLE",
       validationIssue.message,
       `rules.${ruleIndex}.condition${validationIssue.path.map((part) => `.children.${part}`).join("")}`,
-      owner("ELIGIBILITY_VERSION", call.eligibilityRuleSetVersionId!),
+      reference,
     ))
-  );
+  ));
+  return issues;
+}
+
+async function eligibilityRegistry(call: FundingCall) {
+  if (!call.eligibilityRuleSetVersionId) return null;
+  const [context, inputs] = await Promise.all([
+    resolveFundingCallEligibilityContext(call),
+    listEligibilityInputs(call.eligibilityRuleSetVersionId),
+  ]);
+  return buildEligibilityFieldRegistry({ contexts: [context], inputs });
 }
 
 function workflowIssues(
@@ -240,7 +262,7 @@ export async function validateFundingCallReadiness(
   call: FundingCall,
   now = new Date(),
 ): Promise<FundingCallReadinessResult> {
-  const [form, eligibility, workflow, documents, conflicts] = await Promise.all([
+  const [form, eligibility, workflow, documents, conflicts, registry] = await Promise.all([
     call.formVersionId
       ? readFormReadinessProjection(call.formVersionId)
       : Promise.resolve(null),
@@ -252,6 +274,7 @@ export async function validateFundingCallReadiness(
       : Promise.resolve(null),
     readFundingCallReadinessDocuments(call.id),
     readFundingCallIdentifierConflicts(call),
+    eligibilityRegistry(call),
   ]);
   const issues = validateFundingCallDetails(call, now);
   if (conflicts.reference) issues.push(issue(
@@ -264,7 +287,7 @@ export async function validateFundingCallReadiness(
   ));
   issues.push(
     ...versionIssues(call, form, eligibility, workflow),
-    ...eligibilityIssues(call, form, eligibility),
+    ...eligibilityIssues(call, eligibility, registry),
     ...workflowIssues(call, workflow),
     ...formConfigurationIssues(call, form),
     ...documentIssues(documents),

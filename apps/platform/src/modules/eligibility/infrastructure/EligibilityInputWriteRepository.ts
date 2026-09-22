@@ -127,15 +127,42 @@ export async function updateEligibilityInput(input: {
   versionId: string;
 }): Promise<MutationResult> {
   const [current] = await getDatabase()
-    .select({ stableKey: eligibilityInputDefinitions.stableKey })
+    .select({
+      availableIn: eligibilityInputDefinitions.availableIn,
+      screening: eligibilityScreeningSourceBindings,
+      stableKey: eligibilityInputDefinitions.stableKey,
+      type: eligibilityInputDefinitions.type,
+    })
     .from(eligibilityInputDefinitions)
+    .leftJoin(
+      eligibilityScreeningSourceBindings,
+      eq(
+        eligibilityScreeningSourceBindings.inputDefinitionId,
+        eligibilityInputDefinitions.id,
+      ),
+    )
     .where(and(
       eq(eligibilityInputDefinitions.id, input.inputId),
       eq(eligibilityInputDefinitions.versionId, input.versionId),
     ))
     .limit(1);
   if (!current) return { kind: "CONFLICT" };
-  if (current.stableKey !== input.definition.stableKey) {
+  const currentScreening = current.screening
+    ? {
+        sourceDefinitionId: current.screening.sourceDefinitionId,
+        sourceKey: current.screening.sourceKey,
+        sourceKind: current.screening.sourceKind,
+        sourceVersionId: current.screening.sourceVersionId,
+        valuePath: current.screening.valuePath,
+      }
+    : null;
+  const referenceChanged = current.stableKey !== input.definition.stableKey
+    || current.type !== input.definition.type
+    || JSON.stringify([...current.availableIn].sort())
+      !== JSON.stringify([...input.definition.availableIn].sort())
+    || JSON.stringify(currentScreening)
+      !== JSON.stringify(input.definition.screening);
+  if (referenceChanged) {
     const dependencies = await findEligibilityInputDependencies(
       input.versionId,
       current.stableKey,

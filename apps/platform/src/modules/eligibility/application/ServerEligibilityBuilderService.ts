@@ -5,10 +5,8 @@ import { requirePermission } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import { ResourceNotFoundError } from "@/lib/resource-errors";
 import { RequestValidationError } from "@/lib/resource-errors";
-import type { ConditionFieldDefinition } from "@/modules/conditions/domain/ConditionConfiguration";
 import { conditionBuilderOperators } from "@/modules/conditions/engine/ConditionOperatorCatalogue";
 import { validateConditionGroup } from "@/modules/conditions/engine/ConditionValidation";
-import { resolveEligibilityRuleSetContexts } from "@/modules/funding-calls/ServerFundingCallEligibilityContextIntegration";
 import type {
   UpdateEligibilityRuleSetBuilderInput,
 } from "../api/EligibilityRuleSetTransport";
@@ -18,9 +16,11 @@ import {
   listEligibilityRuleSets,
 } from "../infrastructure/EligibilityBuilderRepository";
 import {
-  eligibilityFieldsForBoundForms,
-} from "../domain/EligibilityConditionFields";
+  eligibilityFieldsForExecutionMode,
+  type EligibilityFieldDescriptor,
+} from "../domain/EligibilityFieldRegistry";
 import { updateEligibilityRuleSet } from "./ServerEligibilityRuleSetService";
+import { resolveEligibilityFieldRegistry } from "./ServerEligibilityFieldRegistryService";
 
 export async function getEligibilityRuleSets(
   user: AuthenticatedUser | null,
@@ -43,20 +43,20 @@ export async function getEligibilityRuleSetBuilder(
 }
 
 export async function eligibilityBuilderContext(versionId: string) {
-  const contexts = await resolveEligibilityRuleSetContexts(versionId);
+  const registry = await resolveEligibilityFieldRegistry(versionId);
   return {
-    conditionFields: eligibilityFieldsForBoundForms(
-      contexts.map((context) => context.formFields ?? []),
-    ),
+    conditionFields: registry.fields,
     context: {
-      fundingCalls: contexts.map(({ id, title }) => ({ id, title })),
+      fundingCalls: registry.fundingCalls,
     },
+    registryIssues: registry.issues,
+    screeningSources: registry.sources,
   };
 }
 
 function validateContextualRules(
   rules: UpdateEligibilityRuleSetBuilderInput["rules"],
-  fields: readonly ConditionFieldDefinition[],
+  fields: readonly EligibilityFieldDescriptor[],
 ) {
   if (!rules.length) return;
   if (!fields.length) {
@@ -67,7 +67,7 @@ function validateContextualRules(
   const messages = rules.flatMap((rule) =>
     validateConditionGroup(
       rule.condition,
-      fields,
+      eligibilityFieldsForExecutionMode(fields, rule.executionMode),
       conditionBuilderOperators,
     ).issues.map((issue) => `${rule.reasonCode}: ${issue.message}`)
   );

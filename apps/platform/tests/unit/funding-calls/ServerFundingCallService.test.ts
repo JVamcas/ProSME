@@ -17,6 +17,17 @@ vi.mock("@/modules/eligibility/infrastructure/EligibilityRuleSetRepository", () 
 vi.mock("@/modules/eligibility/infrastructure/EligibilityEvaluationRepository", () => ({
   findTestableEligibilityRuleSetForEvaluation: vi.fn(),
 }));
+vi.mock("@/modules/eligibility/infrastructure/EligibilityInputRepository", () => ({
+  listEligibilityInputs: vi.fn(async () => []),
+}));
+vi.mock("@/modules/funding-calls/ServerFundingCallEligibilityContextIntegration", () => ({
+  resolveEligibilityRuleSetContexts: vi.fn(async () => []),
+  resolveFundingCallEligibilityContext: vi.fn(async (call) => ({
+    fundingCallId: call.id,
+    fundingCallTitle: call.title,
+    sources: [],
+  })),
+}));
 vi.mock("@/modules/workflows/infrastructure/WorkflowRepository", () => ({
   listBindableWorkflowVersions: vi.fn(),
   listPublishedWorkflowVersions: vi.fn(),
@@ -95,7 +106,6 @@ const stored = {
   updatedAt: new Date("2026-09-20T08:00:00.000Z"),
   updatedBy: actorId,
 };
-
 function user(grants: string[]): AuthenticatedUser {
   return {
     capabilities: new Set(grants),
@@ -111,7 +121,6 @@ function user(grants: string[]): AuthenticatedUser {
     userType: "staff",
   };
 }
-
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(eligibilityRuleSetVersionIsBindable).mockResolvedValue(true);
@@ -128,7 +137,6 @@ beforeEach(() => {
   vi.mocked(workflowTemplateVersionIsBindable).mockResolvedValue(true);
   vi.mocked(readFundingCallById).mockResolvedValue(stored);
 });
-
 describe("ServerFundingCallService", () => {
   it("creates a draft using the canonical create permission", async () => {
     vi.mocked(insertFundingCall).mockResolvedValue(stored);

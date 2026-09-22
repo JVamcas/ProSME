@@ -29,7 +29,7 @@ export class EligibilityInputDependencyError extends ResourceConflictError {
   readonly dependencies: EligibilityInputDependency[];
 
   constructor(
-    action: "delete" | "rename",
+    action: "change" | "delete",
     dependencies: EligibilityInputDependency[],
   ) {
     const report = dependencies
@@ -117,7 +117,7 @@ export async function editEligibilityInput(
     versionId,
   });
   if (result.kind === "DEPENDENCIES") {
-    throw new EligibilityInputDependencyError("rename", result.dependencies);
+    throw new EligibilityInputDependencyError("change", result.dependencies);
   }
   if (result.kind !== "SUCCESS") mutationConflict();
   return inputView(ruleSetId, versionId);

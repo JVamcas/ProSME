@@ -8,20 +8,21 @@ vi.mock("@/modules/eligibility/infrastructure/EligibilityBuilderRepository", () 
 vi.mock("@/modules/eligibility/application/ServerEligibilityRuleSetService", () => ({
   updateEligibilityRuleSet: vi.fn(),
 }));
-vi.mock("@/modules/funding-calls/ServerFundingCallEligibilityContextIntegration", () => ({
-  resolveEligibilityRuleSetContexts: vi.fn(),
+vi.mock("@/modules/eligibility/application/ServerEligibilityFieldRegistryService", () => ({
+  resolveEligibilityFieldRegistry: vi.fn(),
 }));
 
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { PermissionDeniedError } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
+import { RequestValidationError } from "@/lib/resource-errors";
 import {
   getEligibilityRuleSetBuilder,
   saveEligibilityRuleSetBuilder,
 } from "@/modules/eligibility/application/ServerEligibilityBuilderService";
 import { updateEligibilityRuleSet } from "@/modules/eligibility/application/ServerEligibilityRuleSetService";
 import { findEligibilityRuleSetBuilder } from "@/modules/eligibility/infrastructure/EligibilityBuilderRepository";
-import { resolveEligibilityRuleSetContexts } from "@/modules/funding-calls/ServerFundingCallEligibilityContextIntegration";
+import { resolveEligibilityFieldRegistry } from "@/modules/eligibility/application/ServerEligibilityFieldRegistryService";
 
 const actorId = "60000000-0000-4000-8000-000000000001";
 const ruleSetId = "60000000-0000-4000-8000-000000000002";
@@ -50,7 +51,7 @@ const condition = {
     id: "60000000-0000-4000-8000-000000000006",
     kind: "CONDITION" as const,
     leftOperand: {
-      key: "application.EMPLOYEE_COUNT",
+      key: "eligibility.employee_count",
       kind: "FIELD" as const,
     },
     operator: "GREATER_THAN" as never,
@@ -73,15 +74,24 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(findEligibilityRuleSetBuilder).mockResolvedValue(builder);
   vi.mocked(updateEligibilityRuleSet).mockResolvedValue({} as never);
-  vi.mocked(resolveEligibilityRuleSetContexts).mockResolvedValue([{
-    formFields: [{
-      key: "EMPLOYEE_COUNT",
+  vi.mocked(resolveEligibilityFieldRegistry).mockResolvedValue({
+    fields: [{
+      availableIn: ["SELF_CHECK", "SCREENING"],
+      key: "eligibility.employee_count",
       label: "Employee count",
+      screeningSource: null,
+      sourceDefinitionId: ruleId,
+      sourceKind: "ELIGIBILITY_INPUT",
+      sourceVersionId: versionId,
       type: "NUMBER",
     }],
-    id: "60000000-0000-4000-8000-000000000007",
-    title: "Growth Fund",
-  }] as never);
+    fundingCalls: [{
+      id: "60000000-0000-4000-8000-000000000007",
+      title: "Growth Fund",
+    }],
+    issues: [],
+    sources: [],
+  });
 });
 
 describe("ServerEligibilityBuilderService", () => {
@@ -152,7 +162,15 @@ describe("ServerEligibilityBuilderService", () => {
       permissionCodes.eligibilityRuleSetRead,
       permissionCodes.eligibilityRuleSetUpdate,
     ]);
-    vi.mocked(resolveEligibilityRuleSetContexts).mockResolvedValue([]);
+    vi.mocked(resolveEligibilityFieldRegistry).mockResolvedValue({
+      fields: [],
+      fundingCalls: [],
+      issues: [{
+        code: "BINDING_REQUIRED",
+        message: "Binding required.",
+      }],
+      sources: [],
+    });
 
     await saveEligibilityRuleSetBuilder(actor, ruleSetId, {
       expectedRowVersion: 1,
@@ -169,5 +187,44 @@ describe("ServerEligibilityBuilderService", () => {
         rules: [],
       },
     );
+  });
+
+  it("rejects a Both-mode rule unless every field resolves in both modes", async () => {
+    vi.mocked(resolveEligibilityFieldRegistry).mockResolvedValue({
+      fields: [{
+        availableIn: ["SCREENING"],
+        key: "eligibility.employee_count",
+        label: "Employee count",
+        screeningSource: null,
+        sourceDefinitionId: ruleId,
+        sourceKind: "ELIGIBILITY_INPUT",
+        sourceVersionId: versionId,
+        type: "NUMBER",
+      }],
+      fundingCalls: [{ id: actorId, title: "Growth Fund" }],
+      issues: [],
+      sources: [],
+    });
+
+    await expect(saveEligibilityRuleSetBuilder(
+      user([
+        permissionCodes.eligibilityRuleSetRead,
+        permissionCodes.eligibilityRuleSetUpdate,
+      ]),
+      ruleSetId,
+      {
+        expectedRowVersion: 1,
+        rules: [{
+          applicantMessage: "Employ at least one person.",
+          condition,
+          executionMode: "BOTH",
+          failureType: "HARD_FAIL",
+          id: ruleId,
+          order: 1,
+          reasonCode: "EMPLOYEE_REQUIRED",
+        }],
+      },
+    )).rejects.toBeInstanceOf(RequestValidationError);
+    expect(updateEligibilityRuleSet).not.toHaveBeenCalled();
   });
 });
