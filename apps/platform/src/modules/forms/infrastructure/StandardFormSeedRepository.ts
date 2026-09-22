@@ -60,6 +60,7 @@ export async function insertMissingStandardForms(
     await transaction.insert(formVersions).values(
       records.map(({ definitionId, form, versionId }) => ({
         createdBy: systemSeedUserId,
+        displayMode: form.displayMode ?? "SINGLE_PAGE",
         formDefinitionId: definitionId,
         id: versionId,
         instructions: form.instructions,

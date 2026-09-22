@@ -17,7 +17,6 @@ import type {
   UpdateEligibilityRuleSetDraftCommand,
 } from "./EligibilityRuleSetCommands";
 import {
-  cloneEligibilityRuleSetVersion,
   createEligibilityRuleSet,
   findEligibilityRuleSet,
   findEligibilityRuleSetVersion,
@@ -26,10 +25,14 @@ import {
   retireEligibilityRuleSetVersion,
 } from "../infrastructure/EligibilityRuleSetRepository";
 import {
+  cloneEligibilityRuleSetVersion,
+} from "../infrastructure/EligibilityRuleSetCloneRepository";
+import {
   updateEligibilityRuleSetDefinition,
   updateEligibilityRuleSetDraft,
 } from "../infrastructure/EligibilityRuleSetWriteRepository";
 import { findEligibilityRuleSetBuilder } from "../infrastructure/EligibilityBuilderRepository";
+import { findEligibilityInputPublicationIssues } from "../infrastructure/EligibilityInputRepository";
 import { eligibilityFieldsForBoundForms } from "../domain/EligibilityConditionFields";
 
 async function requireRuleSet(ruleSetId: string) {
@@ -132,10 +135,14 @@ export async function publishEligibilityRuleSet(
     user,
     permissionCodes.eligibilityRuleSetPublish,
   );
-  const [builder, contexts] = await Promise.all([
+  const [builder, contexts, inputIssues] = await Promise.all([
     findEligibilityRuleSetBuilder(ruleSetId, versionId),
     resolveEligibilityRuleSetContexts(versionId),
+    findEligibilityInputPublicationIssues(versionId),
   ]);
+  if (inputIssues.length) {
+    throw new RequestValidationError(inputIssues.join(" "));
+  }
   const fields = eligibilityFieldsForBoundForms(
     contexts.map((context) => context.formFields ?? []),
   );

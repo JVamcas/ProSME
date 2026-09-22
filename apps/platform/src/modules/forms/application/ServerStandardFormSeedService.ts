@@ -13,12 +13,14 @@ function validateSeed(seed: StandardFormSeed): StandardFormSeed {
   const definition = formDefinitionDialogSchema.parse({
     code: seed.code,
     description: seed.description,
+    displayMode: seed.displayMode ?? "SINGLE_PAGE",
     instructions: seed.instructions,
     name: seed.name,
     submitLabel: seed.submitLabel,
   });
   const editor = formEditorSchema.parse({
     expectedRowVersion: 1,
+    displayMode: definition.displayMode,
     fields: seed.fields,
     sections: seed.sections,
     submitLabel: seed.submitLabel,

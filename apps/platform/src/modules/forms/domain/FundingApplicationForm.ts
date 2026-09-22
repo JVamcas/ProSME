@@ -360,6 +360,7 @@ export function fundingApplicationForm(): StandardFormSeed {
   return {
     code: "FUNDING_APPLICATION",
     description: "Reusable applicant-facing SME Fund application form.",
+    displayMode: "SINGLE_PAGE",
     fields: definition.fields,
     instructions:
       "Complete every required section and upload the requested supporting documents before submitting your application.",

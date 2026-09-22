@@ -1,13 +1,16 @@
 import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup";
 import type {
   FormDefinitionSummary,
+  FormDisplayMode,
   FormSection,
   FormVersionSummary,
 } from "./domain/FormDefinition";
 
 export {
+  formDisplayModes,
   formStatuses,
   type FormDefinitionSummary,
+  type FormDisplayMode,
   type FormSection,
   type FormStatus,
   type FormVersionSummary,
@@ -78,6 +81,7 @@ export type FormEditorView = {
 };
 
 export type FormRuntimeSchema = {
+  displayMode?: FormDisplayMode;
   versionId: string;
   versionNumber: number;
   instructions: string | null;

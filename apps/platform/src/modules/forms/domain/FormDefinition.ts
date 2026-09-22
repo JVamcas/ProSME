@@ -1,8 +1,10 @@
 import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup";
 
 export const formStatuses = ["DRAFT", "PUBLISHED", "RETIRED"] as const;
+export const formDisplayModes = ["SINGLE_PAGE", "STEPS"] as const;
 
 export type FormStatus = (typeof formStatuses)[number];
+export type FormDisplayMode = (typeof formDisplayModes)[number];
 
 export type FormSection = {
   id?: string;
@@ -21,6 +23,7 @@ export type FormVersionSummary = {
   versionNumber: number;
   status: FormStatus;
   instructions: string | null;
+  displayMode: FormDisplayMode;
   submitLabel: string;
   rowVersion: number;
   createdAt: string;

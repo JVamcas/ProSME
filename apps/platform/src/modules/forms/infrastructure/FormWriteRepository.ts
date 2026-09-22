@@ -8,7 +8,11 @@ import {
   formSections,
   formVersions,
 } from "@/db/schema";
-import type { FormField, FormSection } from "@/modules/forms/FormTypes";
+import type {
+  FormDisplayMode,
+  FormField,
+  FormSection,
+} from "@/modules/forms/FormTypes";
 import { formPublicationErrors } from "@/modules/forms/FormDefinitionValidation";
 import {
   copyFormVersionChildren,
@@ -20,6 +24,7 @@ export async function createForm(input: {
   actorId: string;
   code: string;
   description: string;
+  displayMode?: FormDisplayMode;
   instructions?: string | null;
   name: string;
   submitLabel: string;
@@ -38,6 +43,7 @@ export async function createForm(input: {
       .insert(formVersions)
       .values({
         createdBy: input.actorId,
+        displayMode: input.displayMode ?? "SINGLE_PAGE",
         formDefinitionId: definition.id,
         instructions: input.instructions ?? null,
         submitLabel: input.submitLabel,
@@ -93,6 +99,7 @@ export async function cloneFormVersion(input: {
       .insert(formVersions)
       .values({
         createdBy: input.actorId,
+        displayMode: source.displayMode,
         formDefinitionId: input.definitionId,
         instructions: source.instructions,
         submitLabel: source.submitLabel,
@@ -109,6 +116,7 @@ export async function saveFormDraft(input: {
   code?: string;
   definitionId: string;
   description?: string;
+  displayMode?: FormDisplayMode;
   expectedRowVersion: number;
   fields: FormField[];
   instructions?: string | null;
@@ -120,6 +128,7 @@ export async function saveFormDraft(input: {
     const [version] = await transaction
       .update(formVersions)
       .set({
+        displayMode: input.displayMode ?? "SINGLE_PAGE",
         instructions: input.instructions ?? null,
         rowVersion: input.expectedRowVersion + 1,
         submitLabel: input.submitLabel,

@@ -94,6 +94,7 @@ function versionView(version: {
   formDefinitionId: string;
   versionNumber: number;
   status: FormVersionSummary["status"];
+  displayMode: FormVersionSummary["displayMode"];
   instructions: string | null;
   submitLabel: string;
   rowVersion: number;
@@ -104,6 +105,7 @@ function versionView(version: {
 }): FormVersionSummary {
   return {
     formDefinitionId: version.formDefinitionId,
+    displayMode: version.displayMode,
     id: version.id,
     instructions: version.instructions,
     rowVersion: version.rowVersion,

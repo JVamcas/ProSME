@@ -244,10 +244,10 @@ describe("ServerFormsService", () => {
       },
       versions: [],
     } as never);
-
     await updateFormDraft(staff([permissionCodes.workflowFormUpdate]), taskId, {
       code: "UPDATED_FORM",
       description: "Updated description",
+      displayMode: "SINGLE_PAGE",
       expectedRowVersion: 1,
       fields: [],
       instructions: "Updated instructions",

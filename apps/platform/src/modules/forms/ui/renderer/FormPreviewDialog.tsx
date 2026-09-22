@@ -10,6 +10,7 @@ import { FormRenderer, type DynamicFormValues } from "./FormRenderer";
 
 function runtimeDefinition(editor: FormEditorView): FormRuntimeSchema {
   return {
+    displayMode: editor.version.displayMode,
     fields: editor.fields,
     instructions: editor.version.instructions,
     sections: editor.sections,

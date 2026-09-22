@@ -15,6 +15,7 @@ import {
 import { sql } from "drizzle-orm";
 
 import type {
+  FormDisplayMode,
   FormFieldType,
   FormStatus,
 } from "@/modules/forms/FormTypes";
@@ -53,6 +54,10 @@ export const formVersions = pgTable(
       .references(() => formDefinitions.id, { onDelete: "restrict" }),
     versionNumber: integer("version_number").notNull(),
     status: text("status").$type<FormStatus>().notNull().default("DRAFT"),
+    displayMode: text("display_mode")
+      .$type<FormDisplayMode>()
+      .notNull()
+      .default("SINGLE_PAGE"),
     instructions: text("instructions"),
     submitLabel: text("submit_label").notNull().default("Submit"),
     rowVersion: integer("row_version").notNull().default(1),
@@ -86,6 +91,10 @@ export const formVersions = pgTable(
     check(
       "app_form_versions_status_check",
       sql`${table.status} in ('DRAFT', 'PUBLISHED', 'RETIRED')`,
+    ),
+    check(
+      "app_form_versions_display_mode_check",
+      sql`${table.displayMode} in ('SINGLE_PAGE', 'STEPS')`,
     ),
     check("app_form_versions_positive_check", sql`${table.versionNumber} > 0`),
     check("app_form_versions_row_version_check", sql`${table.rowVersion} > 0`),

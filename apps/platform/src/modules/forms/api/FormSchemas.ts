@@ -4,6 +4,7 @@ import { conditionGroupSchema } from "@/modules/conditions/domain/ConditionSeria
 import { workflowActionKeySchema } from "@/modules/work-queue/WorkQueueSchemas";
 
 import {
+  formDisplayModes,
   formFieldTypes,
   formStatuses,
 } from "@/modules/forms/FormTypes";
@@ -143,6 +144,7 @@ export const formDefinitionSchema = z.object({
 });
 
 export const formVersionSchema = z.object({
+  displayMode: z.enum(formDisplayModes),
   instructions: z.string().trim().max(4000).nullable().optional(),
   submitLabel: z.string().trim().min(1).max(80),
 });
@@ -173,6 +175,7 @@ export const formEditorSchema = formDefinitionSchema
   .partial()
   .extend({
     ...formVersionSchema.shape,
+    displayMode: z.enum(formDisplayModes).default("SINGLE_PAGE"),
     expectedRowVersion: z.number().int().positive(),
     fields: z.array(formFieldSchema).max(100),
     sections: z.array(formSectionSchema).max(50),

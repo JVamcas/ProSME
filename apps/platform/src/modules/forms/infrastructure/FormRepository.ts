@@ -270,6 +270,7 @@ export async function getFormRuntime(
     readSections(versionId),
   ]);
   return {
+    displayMode: version.displayMode,
     fields,
     instructions: version.instructions,
     sections,

@@ -35,6 +35,7 @@ function defaultValues(props: Props): CreateFormInput {
     return {
       code: "",
       description: "",
+      displayMode: "SINGLE_PAGE",
       instructions: "",
       name: "",
       submitLabel: "Submit",
@@ -43,6 +44,7 @@ function defaultValues(props: Props): CreateFormInput {
   return {
     code: props.editor.definition.code,
     description: props.editor.definition.description,
+    displayMode: props.editor.version.displayMode,
     instructions: props.editor.version.instructions ?? "",
     name: props.editor.definition.name,
     submitLabel: props.editor.version.submitLabel,

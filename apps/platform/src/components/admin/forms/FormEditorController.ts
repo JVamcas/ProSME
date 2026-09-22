@@ -14,6 +14,7 @@ import {
   removeFormSectionFields,
 } from "@/modules/forms/domain/FormFieldOrdering";
 import type { FormField, FormSection } from "@/modules/forms/FormTypes";
+import type { FormDisplayMode } from "@/modules/forms/FormTypes";
 
 export function useFormEditorController(id: string) {
   const query = useFormEditor(id);
@@ -57,6 +58,7 @@ export function useFormEditorController(id: string) {
       : [...editor.fields, next];
     await update.mutateAsync({
       expectedRowVersion: editor.version.rowVersion,
+      displayMode: editor.version.displayMode,
       fields,
       instructions: editor.version.instructions,
       sections: editor.sections,
@@ -67,6 +69,7 @@ export function useFormEditorController(id: string) {
     if (!editor || !fieldToRemove) return;
     update.mutate({
       expectedRowVersion: editor.version.rowVersion,
+      displayMode: editor.version.displayMode,
       fields: removeFormField(
         editor.fields,
         formFieldIdentity(fieldToRemove),
@@ -86,6 +89,7 @@ export function useFormEditorController(id: string) {
       : [...editor.sections, next];
     await update.mutateAsync({
       expectedRowVersion: editor.version.rowVersion,
+      displayMode: editor.version.displayMode,
       fields: editor.fields,
       instructions: editor.version.instructions,
       sections,
@@ -99,6 +103,7 @@ export function useFormEditorController(id: string) {
       .map((item, index) => ({ ...item, order: index + 1 }));
     update.mutate({
       expectedRowVersion: editor.version.rowVersion,
+      displayMode: editor.version.displayMode,
       fields: removeFormSectionFields(editor.fields, sectionToRemove.id ?? ""),
       instructions: editor.version.instructions,
       sections,
@@ -110,6 +115,7 @@ export function useFormEditorController(id: string) {
     if (!editor) return;
     update.mutate({
       expectedRowVersion: editor.version.rowVersion,
+      displayMode: editor.version.displayMode,
       fields: editor.fields,
       instructions: editor.version.instructions,
       sections,
@@ -120,7 +126,19 @@ export function useFormEditorController(id: string) {
     if (!editor) return;
     update.mutate({
       expectedRowVersion: editor.version.rowVersion,
+      displayMode: editor.version.displayMode,
       fields,
+      instructions: editor.version.instructions,
+      sections: editor.sections,
+      submitLabel: editor.version.submitLabel,
+    });
+  }, [editor, update]);
+  const updateDisplayMode = useCallback((displayMode: FormDisplayMode) => {
+    if (!editor || displayMode === editor.version.displayMode) return;
+    update.mutate({
+      displayMode,
+      expectedRowVersion: editor.version.rowVersion,
+      fields: editor.fields,
       instructions: editor.version.instructions,
       sections: editor.sections,
       submitLabel: editor.version.submitLabel,
@@ -156,5 +174,6 @@ export function useFormEditorController(id: string) {
     setSectionDialogOpen,
     setSectionToRemove,
     update,
+    updateDisplayMode,
   };
 }

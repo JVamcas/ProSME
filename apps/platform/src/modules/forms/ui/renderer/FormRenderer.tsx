@@ -1,9 +1,13 @@
 "use client";
 
 import Form, { type IChangeEvent } from "@rjsf/core";
-import type { ObjectFieldTemplateProps, RJSFSchema } from "@rjsf/utils";
+import type {
+  ErrorSchema,
+  ObjectFieldTemplateProps,
+  RJSFSchema,
+} from "@rjsf/utils";
 import validator from "@rjsf/validator-ajv8";
-import { useMemo, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 import type { FormRuntimeSchema } from "@/modules/forms/FormTypes";
@@ -14,6 +18,7 @@ import {
 } from "@/modules/forms/engine/FormDefinitionParser";
 import { calculateFormCompleteness } from "@/modules/forms/engine/FormCompleteness";
 import { activeFormDefinition } from "@/modules/forms/engine/FormVisibility";
+import { validateFormValues } from "@/modules/forms/FormValidation";
 import { FormCompletenessSummary } from "./FormCompletenessSummary";
 import {
   formColumnCount,
@@ -29,10 +34,12 @@ import {
   FormSelectWidget,
   FormTextareaWidget,
 } from "./RjsfTheme";
+import { FormStepActions, FormStepProgress } from "./FormStepNavigation";
 
 export type DynamicFormValues = Record<string, unknown>;
 
 type RendererContext = {
+  activeSectionId?: string;
   runtimeContext: FormRuntimeContext;
   sections: RenderSection[];
 };
@@ -72,7 +79,12 @@ function FormObjectTemplate(
         formGridClass(formColumnCount(props.registry.formContext.sections)),
       )}
     >
-      {props.registry.formContext.sections.map((section) => {
+      {props.registry.formContext.sections
+        .filter((section) => (
+          !props.registry.formContext.activeSectionId
+          || section.id === props.registry.formContext.activeSectionId
+        ))
+        .map((section) => {
         return (
           <section
             aria-labelledby={`form-section-${section.id}`}
@@ -135,6 +147,8 @@ export function FormRenderer({
   readOnly?: boolean;
   runtimeContext?: FormRuntimeContext;
 }) {
+  const [currentSectionId, setCurrentSectionId] = useState<string>();
+  const [validationAttempted, setValidationAttempted] = useState(false);
   const activeDefinition = useMemo(
     () => activeFormDefinition(definition, formData),
     [definition, formData],
@@ -143,9 +157,35 @@ export function FormRenderer({
     () => parseFormDefinition(definition, formData),
     [definition, formData],
   );
+  const stepMode = definition.displayMode === "STEPS";
+  const currentIndex = stepMode
+    ? Math.max(
+        0,
+        parsed.sections.findIndex((section) => section.id === currentSectionId),
+      )
+    : 0;
+  const currentSection = parsed.sections[currentIndex];
+  const currentFields = currentSection
+    ? activeDefinition.fields.filter(
+        (field) => field.sectionId === currentSection.id,
+      )
+    : [];
+  const invalidFields = validationAttempted
+    ? currentFields.filter((field) => !validateFormValues([field], formData, true))
+    : [];
+  const extraErrors = Object.fromEntries(
+    invalidFields.map((field) => [
+      field.key,
+      { __errors: ["Complete or correct this field before continuing."] },
+    ]),
+  ) as ErrorSchema<DynamicFormValues>;
   const context = useMemo(
-    () => ({ runtimeContext, sections: parsed.sections }),
-    [parsed.sections, runtimeContext],
+    () => ({
+      activeSectionId: stepMode ? currentSection?.id : undefined,
+      runtimeContext,
+      sections: parsed.sections,
+    }),
+    [currentSection?.id, parsed.sections, runtimeContext, stepMode],
   );
   const completeness = useMemo(
     () => calculateFormCompleteness(activeDefinition, formData),
@@ -158,13 +198,21 @@ export function FormRenderer({
         <p className="text-sm text-brand-navy/70">{parsed.instructions}</p>
       ) : null}
       <FormCompletenessSummary completeness={completeness} />
+      {stepMode ? (
+        <FormStepProgress
+          currentIndex={currentIndex}
+          sections={parsed.sections}
+        />
+      ) : null}
       <Form<DynamicFormValues, RJSFSchema, RendererContext>
         disabled={readOnly}
         formContext={context}
         formData={formData}
+        extraErrors={extraErrors}
         noHtml5Validate
         omitExtraData
         onChange={(event: IChangeEvent<DynamicFormValues>) => {
+          setValidationAttempted(false);
           onChange(event.formData ?? {});
         }}
         onSubmit={(event: IChangeEvent<DynamicFormValues>) => {
@@ -188,7 +236,27 @@ export function FormRenderer({
           TextareaWidget: FormTextareaWidget,
         }}
       >
-        {children}
+        {stepMode ? (
+          <FormStepActions
+            currentIndex={currentIndex}
+            onBack={() => {
+              setValidationAttempted(false);
+              setCurrentSectionId(parsed.sections[currentIndex - 1]?.id);
+            }}
+            onNext={() => {
+              if (!readOnly && !validateFormValues(currentFields, formData, true)) {
+                setValidationAttempted(true);
+                return;
+              }
+              setValidationAttempted(false);
+              setCurrentSectionId(parsed.sections[currentIndex + 1]?.id);
+            }}
+            stepCount={parsed.sections.length}
+          />
+        ) : null}
+        {!stepMode || currentIndex === parsed.sections.length - 1
+          ? children
+          : null}
       </Form>
     </div>
   );

@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 vi.mock("@/modules/eligibility/infrastructure/EligibilityRuleSetRepository", () => ({
-  cloneEligibilityRuleSetVersion: vi.fn(),
   createEligibilityRuleSet: vi.fn(),
   findEligibilityRuleSet: vi.fn(),
   findEligibilityRuleSetVersion: vi.fn(),
@@ -11,6 +10,9 @@ vi.mock("@/modules/eligibility/infrastructure/EligibilityRuleSetRepository", () 
   },
   publishEligibilityRuleSetVersion: vi.fn(),
   retireEligibilityRuleSetVersion: vi.fn(),
+}));
+vi.mock("@/modules/eligibility/infrastructure/EligibilityRuleSetCloneRepository", () => ({
+  cloneEligibilityRuleSetVersion: vi.fn(),
 }));
 vi.mock("@/modules/eligibility/infrastructure/EligibilityRuleSetWriteRepository", () => ({
   updateEligibilityRuleSetDefinition: vi.fn(),

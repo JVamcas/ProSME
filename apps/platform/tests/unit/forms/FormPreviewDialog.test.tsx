@@ -31,6 +31,7 @@ function editorView(): FormEditorView {
     sections: runtime.sections,
     version: {
       createdAt: "2026-09-19T00:00:00.000Z",
+      displayMode: "SINGLE_PAGE",
       formDefinitionId: "30000000-0000-4000-8000-000000000001",
       id: runtime.versionId,
       instructions: runtime.instructions,
@@ -63,6 +64,7 @@ function fundingApplicationEditorView(): FormEditorView {
     sections: form.sections,
     version: {
       createdAt: "2026-09-20T00:00:00.000Z",
+      displayMode: "SINGLE_PAGE",
       formDefinitionId: definitionId,
       id: versionId,
       instructions: form.instructions,

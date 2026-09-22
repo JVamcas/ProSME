@@ -1,10 +1,15 @@
 "use client";
 
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
-import type { FormField, FormSection } from "@/modules/forms/FormTypes";
+import type {
+  FormDisplayMode,
+  FormField,
+  FormSection,
+} from "@/modules/forms/FormTypes";
 import { FormFieldDialog } from "@/modules/forms/ui/builder/FormFieldDialog";
 import { FormSectionBuilder } from "@/modules/forms/ui/builder/FormSectionBuilder";
 import { FormSectionDialog } from "@/modules/forms/ui/builder/FormSectionDialog";
+import { FormPresentationSettings } from "@/modules/forms/ui/builder/FormPresentationSettings";
 
 export function FormEditorBody({
   canEdit,
@@ -13,6 +18,7 @@ export function FormEditorBody({
   fieldSectionId,
   fieldToRemove,
   fields,
+  displayMode,
   isPending,
   onAddField,
   onAddSection,
@@ -26,6 +32,7 @@ export function FormEditorBody({
   onDeleteSection,
   onEdit,
   onEditSection,
+  onDisplayModeChange,
   onReorderFields,
   onReorderSections,
   onSave,
@@ -41,6 +48,7 @@ export function FormEditorBody({
   fieldSectionId?: string;
   fieldToRemove?: FormField;
   fields: FormField[];
+  displayMode: FormDisplayMode;
   isPending: boolean;
   onAddField: (sectionId: string) => void;
   onAddSection: () => void;
@@ -54,6 +62,7 @@ export function FormEditorBody({
   onDeleteSection: (section: FormSection) => void;
   onEdit: (field: FormField) => void;
   onEditSection: (section: FormSection) => void;
+  onDisplayModeChange: (displayMode: FormDisplayMode) => void;
   onReorderFields: (fields: FormField[]) => void;
   onReorderSections: (sections: FormSection[]) => void;
   onSave: (field: FormField) => Promise<void>;
@@ -88,6 +97,11 @@ export function FormEditorBody({
   });
   return (
     <>
+      <FormPresentationSettings
+        canEdit={canEdit && !isPending}
+        displayMode={displayMode}
+        onChange={onDisplayModeChange}
+      />
       <FormSectionBuilder
         canEdit={canEdit && !isPending}
         fields={fields}

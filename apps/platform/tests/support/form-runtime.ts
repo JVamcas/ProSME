@@ -36,6 +36,7 @@ function field(
 
 export function runtimeDefinition(): FormRuntimeSchema {
   return {
+    displayMode: "SINGLE_PAGE",
     fields: [
       field("NOTES", "TEXTAREA", 2),
       field("NAME", "TEXT", 1),

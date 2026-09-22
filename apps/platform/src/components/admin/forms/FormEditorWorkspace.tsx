@@ -100,6 +100,7 @@ function LoadedFormEditorWorkspace({
         fieldSectionId={controller.fieldSectionId}
         fieldToRemove={controller.fieldToRemove}
         fields={editor.fields}
+        displayMode={editor.version.displayMode}
         isPending={controller.update.isPending}
         onAddField={controller.openNewField}
         onAddSection={controller.openNewSection}
@@ -114,6 +115,7 @@ function LoadedFormEditorWorkspace({
         onConfirmSectionDelete={controller.removeSection}
         onDeleteSection={controller.setSectionToRemove}
         onEditSection={controller.openExistingSection}
+        onDisplayModeChange={controller.updateDisplayMode}
         onReorderSections={controller.reorderSections}
         onReorderFields={controller.reorderFields}
         onSaveSection={controller.saveSection}

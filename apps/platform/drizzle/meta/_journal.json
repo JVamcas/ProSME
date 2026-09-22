@@ -505,6 +505,20 @@
       "when": 1793923200000,
       "tag": "0071_canonical_permission_catalogue",
       "breakpoints": true
+    },
+    {
+      "idx": 72,
+      "version": "7",
+      "when": 1794009600000,
+      "tag": "0072_dynamic_eligibility_inputs",
+      "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "7",
+      "when": 1794096000000,
+      "tag": "0073_form_version_display_mode",
+      "breakpoints": true
     }
   ]
 }

@@ -88,6 +88,7 @@ function defineForm(input: {
   return {
     code: input.code,
     description: input.description,
+    displayMode: "SINGLE_PAGE",
     fields,
     instructions: input.instructions,
     name: input.name,

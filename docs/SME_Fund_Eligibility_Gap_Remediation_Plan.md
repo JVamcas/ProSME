@@ -294,6 +294,9 @@ For every proposed seed criterion capture:
 
 The programme baseline can be seeded entirely as versioned configuration.
 
+Implementation artefact:
+[`SME_Fund_Eligibility_Configuration_Decision_Matrix.md`](SME_Fund_Eligibility_Configuration_Decision_Matrix.md).
+
 ---
 
 # E2 — Dynamic Eligibility Input storage
