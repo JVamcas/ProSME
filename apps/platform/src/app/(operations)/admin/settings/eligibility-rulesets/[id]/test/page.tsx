@@ -12,14 +12,17 @@ export const metadata: Metadata = { title: "Test eligibility ruleset" };
 
 export default async function EligibilityRuleSetTestPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ versionId?: string }>;
 }) {
   const user = await getCurrentUser();
   if (!user || !can(user, permissionCodes.eligibilityRuleSetRead)) {
     redirect("/unauthorized");
   }
   const { id } = await params;
+  const { versionId } = await searchParams;
   return (
     <section>
       <PageHeader
@@ -28,7 +31,7 @@ export default async function EligibilityRuleSetTestPage({
         icon={<FlaskConical />}
         title="Test eligibility ruleset"
       />
-      <EligibilityRuleSetTestScreen id={id} />
+      <EligibilityRuleSetTestScreen id={id} versionId={versionId} />
     </section>
   );
 }

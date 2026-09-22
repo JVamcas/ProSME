@@ -155,6 +155,11 @@ export function FundingCallForm({
           />
 
           <FormSelect
+            key={
+              workflowVersions.isPending
+                ? "workflow-loading"
+                : "workflow-ready"
+            }
             containerClassName="md:col-span-2"
             disabled={disabled || workflowVersions.isPending}
             infoTooltip="The exact published workflow template version used when an application is submitted. Optional for drafts and required before publishing."
@@ -172,6 +177,7 @@ export function FundingCallForm({
           />
 
           <FormSelect
+            key={formVersions.isPending ? "form-loading" : "form-ready"}
             containerClassName="md:col-span-2"
             disabled={disabled || formVersions.isPending}
             infoTooltip="Draft calls may bind draft or published forms for configuration and testing. The form must be published before the funding call can be published."
@@ -189,6 +195,11 @@ export function FundingCallForm({
           />
 
           <FormSelect
+            key={
+              eligibilityVersions.isPending
+                ? "eligibility-loading"
+                : "eligibility-ready"
+            }
             containerClassName="md:col-span-2"
             disabled={disabled || eligibilityVersions.isPending}
             infoTooltip="Draft calls may bind draft or published rulesets for configuration and testing. The ruleset must be published before the funding call can be published."

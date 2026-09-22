@@ -16,6 +16,7 @@ export type StageInstance = {
   workflowStageDefinitionId: string;
   status: StageInstanceStatus;
   iterationNumber: number;
+  rowVersion: number;
   referralContext: StageRuntimeContext | null;
   returnContext: StageRuntimeContext | null;
   activatedAt: Date;

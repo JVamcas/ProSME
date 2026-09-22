@@ -29,17 +29,17 @@ describe("eligibility condition fields", () => {
     ])).toEqual([
       {
         key: "application.REQUESTED_AMOUNT",
-        label: "REQUESTED_AMOUNT",
+        label: "[Application] REQUESTED_AMOUNT",
         type: "NUMBER",
       },
       {
         key: "application.REGISTRATION_DATE",
-        label: "REGISTRATION_DATE",
+        label: "[Application] REGISTRATION_DATE",
         type: "DATE",
       },
       {
         key: "application.IS_REGISTERED",
-        label: "IS_REGISTERED",
+        label: "[Application] IS_REGISTERED",
         type: "BOOLEAN",
       },
     ]);

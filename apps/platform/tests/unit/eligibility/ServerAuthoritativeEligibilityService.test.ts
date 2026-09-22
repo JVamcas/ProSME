@@ -59,9 +59,18 @@ const business = {
   updatedAt: new Date("2026-09-20T08:00:00.000Z"),
 } as BusinessProfile;
 const fundingCall = {
+  closesAt: new Date("2027-03-31T15:00:00.000Z"),
   eligibilityRuleSetVersionId: versionId,
+  fundingInstrument: "Grant",
   id: fundingCallId,
   maximumGrantAmount: "500000.00",
+  minimumGrantAmount: "50000.00",
+  opensAt: new Date("2027-02-01T06:00:00.000Z"),
+  slug: "sme-growth-fund-2027",
+  status: "OPEN",
+  thematicArea: "Business growth",
+  title: "SME Growth Fund 2027",
+  totalBudgetEnvelope: "10000000.00",
 };
 
 beforeEach(() => {

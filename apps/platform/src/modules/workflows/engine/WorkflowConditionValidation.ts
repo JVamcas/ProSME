@@ -50,6 +50,13 @@ export function validateWorkflowConditions(
       workflowConditionFields(graph, forms, stage, true),
       `stages.${stageIndex}.exitCondition`,
     ));
+    stage.actions.forEach((action, actionIndex) => {
+      errors.push(...validateCondition(
+        action.condition ?? null,
+        workflowConditionFields(graph, forms, stage, true),
+        `stages.${stageIndex}.actions.${actionIndex}.condition`,
+      ));
+    });
   });
   const stages = new Map(
     graph.stages.map((stage) => [stage.stableKey, stage]),

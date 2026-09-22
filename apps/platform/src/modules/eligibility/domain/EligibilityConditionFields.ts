@@ -1,43 +1,14 @@
 import type { ConditionFieldDefinition } from "@/modules/conditions/domain/ConditionConfiguration";
 import type { FormField } from "@/modules/forms/FormTypes";
+import { workflowRuntimeContextFields } from "@/modules/workflows/domain/WorkflowRuntimeContextFieldCatalogue";
 
-export const fundingCallEligibilityFields = [
-  {
-    key: "fundingCall.minimum_grant_amount",
-    label: "Funding Call minimum grant amount",
-    type: "NUMBER",
-  },
-  {
-    key: "fundingCall.maximum_grant_amount",
-    label: "Funding Call maximum grant amount",
-    type: "NUMBER",
-  },
-  {
-    key: "fundingCall.total_budget_envelope",
-    label: "Funding Call total budget envelope",
-    type: "NUMBER",
-  },
-  {
-    key: "fundingCall.opens_at",
-    label: "Funding Call opening date",
-    type: "DATE",
-  },
-  {
-    key: "fundingCall.closes_at",
-    label: "Funding Call closing date",
-    type: "DATE",
-  },
-  {
-    key: "fundingCall.funding_instrument",
-    label: "Funding instrument",
-    type: "TEXT",
-  },
-  {
-    key: "fundingCall.thematic_area",
-    label: "Thematic area",
-    type: "TEXT",
-  },
-] as const satisfies readonly ConditionFieldDefinition[];
+export const fundingCallEligibilityFields: ConditionFieldDefinition[] =
+  workflowRuntimeContextFields
+    .filter((field) => field.key.startsWith("fundingCall."))
+    .map((field) => ({
+      ...field,
+      label: `[Funding Call] ${field.label.replace(/^Funding Call /, "")}`,
+    }));
 
 const formConditionTypes = {
   CURRENCY: "NUMBER",
@@ -58,9 +29,22 @@ export function eligibilityFieldsFromForm(
       field.type as keyof typeof formConditionTypes
     ];
     return type
-      ? [{ key: `application.${field.key}`, label: field.label, type }]
+      ? [{
+          key: `application.${field.key}`,
+          label: `[Application] ${field.label}`,
+          type,
+        }]
       : [];
   });
+}
+
+export function eligibilityQuestionFieldsFromForm(
+  fields: readonly FormField[],
+) {
+  return eligibilityFieldsFromForm(fields).map((field) => ({
+    ...field,
+    label: field.label.replace(/^\[Application\] /, ""),
+  }));
 }
 
 export function eligibilityContextFields(fields: readonly FormField[]) {

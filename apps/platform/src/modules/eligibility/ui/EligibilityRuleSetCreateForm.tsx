@@ -11,29 +11,31 @@ import { eligibilityRuleSetCreateSchema } from "../api/EligibilityRuleSetSchemas
 import type { CreateEligibilityRuleSetInput } from "../api/EligibilityRuleSetTransport";
 
 export function EligibilityRuleSetCreateForm({
+  initialValues,
   mutation,
-  onCreated,
+  onSaved,
 }: {
+  initialValues?: CreateEligibilityRuleSetInput;
   mutation: UseMutationResult<
     { definition: { id: string } },
     Error,
     CreateEligibilityRuleSetInput
   >;
-  onCreated: (id: string) => void;
+  onSaved: (id: string) => void;
 }) {
   const form = useForm<CreateEligibilityRuleSetInput>({
-    defaultValues: { code: "", description: "", name: "" },
+    defaultValues: initialValues ?? { code: "", description: "", name: "" },
     resolver: zodResolver(eligibilityRuleSetCreateSchema),
   });
   const submit = form.handleSubmit(async (values) => {
     try {
       const created = await mutation.mutateAsync(values);
-      onCreated(created.definition.id);
+      onSaved(created.definition.id);
     } catch (error) {
       toast.error(
         error instanceof Error
           ? error.message
-          : "Unable to create the eligibility ruleset.",
+          : "Unable to save the eligibility ruleset.",
       );
     }
   });

@@ -17,10 +17,13 @@ export async function GET(
   const correlationId = createCorrelationId();
   try {
     const { id } = await context.params;
+    const versionId = new URL(request.url).searchParams.get("versionId")
+      ?? undefined;
     return portalRouteSuccess(
       await getEligibilityRuleSetBuilder(
         await resolveUserFromHeaders(request.headers),
         id,
+        versionId,
       ),
       correlationId,
     );
@@ -37,11 +40,14 @@ export async function PATCH(
   try {
     const input = eligibilityRuleSetBuilderSchema.parse(await request.json());
     const { id } = await context.params;
+    const versionId = new URL(request.url).searchParams.get("versionId")
+      ?? undefined;
     return portalRouteSuccess(
       await saveEligibilityRuleSetBuilder(
         await resolveUserFromHeaders(request.headers),
         id,
         input,
+        versionId,
       ),
       correlationId,
     );

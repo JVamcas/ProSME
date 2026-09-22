@@ -13,6 +13,7 @@ vi.mock("@/modules/eligibility/infrastructure/EligibilityRuleSetRepository", () 
   retireEligibilityRuleSetVersion: vi.fn(),
 }));
 vi.mock("@/modules/eligibility/infrastructure/EligibilityRuleSetWriteRepository", () => ({
+  updateEligibilityRuleSetDefinition: vi.fn(),
   updateEligibilityRuleSetDraft: vi.fn(),
 }));
 
@@ -23,8 +24,12 @@ import {
   createNewEligibilityRuleSet,
   getEligibilityRuleSetVersion,
   updateEligibilityRuleSet,
+  updateEligibilityRuleSetMetadata,
 } from "@/modules/eligibility/application/ServerEligibilityRuleSetService";
-import { updateEligibilityRuleSetDraft } from "@/modules/eligibility/infrastructure/EligibilityRuleSetWriteRepository";
+import {
+  updateEligibilityRuleSetDefinition,
+  updateEligibilityRuleSetDraft,
+} from "@/modules/eligibility/infrastructure/EligibilityRuleSetWriteRepository";
 import {
   createEligibilityRuleSet,
   findEligibilityRuleSet,
@@ -102,6 +107,25 @@ describe("ServerEligibilityRuleSetService", () => {
       ruleSetId,
       rules: [],
       versionId,
+    });
+  });
+
+  it("updates definition metadata through the update permission", async () => {
+    vi.mocked(updateEligibilityRuleSetDefinition).mockResolvedValue({
+      id: ruleSetId,
+    } as never);
+
+    await updateEligibilityRuleSetMetadata(
+      user([permissionCodes.eligibilityRuleSetUpdate]),
+      ruleSetId,
+      { code: "SME", description: "Updated rules", name: "SME Fund" },
+    );
+
+    expect(updateEligibilityRuleSetDefinition).toHaveBeenCalledWith({
+      code: "SME",
+      description: "Updated rules",
+      name: "SME Fund",
+      ruleSetId,
     });
   });
 

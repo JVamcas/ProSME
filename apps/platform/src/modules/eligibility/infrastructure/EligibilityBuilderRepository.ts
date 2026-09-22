@@ -13,7 +13,10 @@ import type {
   EligibilityRuleSetPage,
 } from "../api/EligibilityRuleSetTransport";
 import type { EligibilityRule } from "../domain/EligibilityRule";
-import { findEligibilityRuleSet } from "./EligibilityRuleSetRepository";
+import {
+  findEligibilityRuleSet,
+  findEligibilityRuleSetVersion,
+} from "./EligibilityRuleSetRepository";
 
 function allowedActions(
   status: EligibilityRuleSetBuilderView["version"]["status"],
@@ -48,9 +51,12 @@ function editableGroup(
 
 export async function findEligibilityRuleSetBuilder(
   ruleSetId: string,
+  versionId?: string,
 ): Promise<EligibilityRuleSetBuilderView | null> {
-  const ruleSet = await findEligibilityRuleSet(ruleSetId);
-  if (!ruleSet) return null;
+  const ruleSet = versionId
+    ? await findEligibilityRuleSetVersion(versionId)
+    : await findEligibilityRuleSet(ruleSetId);
+  if (!ruleSet || ruleSet.definition.id !== ruleSetId) return null;
   const groupIds = [...new Set(
     ruleSet.rules.map((rule) => rule.condition.conditionGroupId),
   )];
@@ -111,27 +117,20 @@ export async function listEligibilityRuleSets(input: {
         definition.code,
         definition.name,
         definition.description,
-        latest.id AS "latestVersionId",
-        latest.version_number AS "latestVersion",
-        latest.row_version AS "latestVersionRowVersion",
-        latest.status AS "latestStatus",
+        version.id AS "versionId",
+        version.version_number AS "version",
+        version.row_version AS "versionRowVersion",
+        version.status AS "status",
         COALESCE(rule_counts.rule_count, 0)::integer AS "ruleCount",
         COALESCE(bindings.funding_calls, '[]'::jsonb) AS "fundingCalls",
-        definition.updated_at AS "updatedAt"
+        version.updated_at AS "updatedAt"
       FROM app_eligibility_rule_sets definition
-      JOIN LATERAL (
-        SELECT id, version_number, row_version, status
-        FROM app_eligibility_rule_set_versions
-        WHERE rule_set_id = definition.id
-        ORDER BY
-          CASE WHEN status = 'DRAFT' THEN 0 ELSE 1 END,
-          version_number DESC
-        LIMIT 1
-      ) latest ON TRUE
+      INNER JOIN app_eligibility_rule_set_versions version
+        ON version.rule_set_id = definition.id
       LEFT JOIN LATERAL (
         SELECT count(*) AS rule_count
         FROM app_eligibility_rules rule
-        WHERE rule.version_id = latest.id
+        WHERE rule.version_id = version.id
       ) rule_counts ON TRUE
       LEFT JOIN LATERAL (
         SELECT jsonb_agg(
@@ -143,15 +142,17 @@ export async function listEligibilityRuleSets(input: {
           ORDER BY funding_call.title, funding_call.id
         ) AS funding_calls
         FROM app_funding_calls funding_call
-        WHERE funding_call.eligibility_rule_set_version_id = latest.id
+        WHERE funding_call.eligibility_rule_set_version_id = version.id
       ) bindings ON TRUE
-      ORDER BY definition.name ASC, definition.id ASC
+      ORDER BY definition.name ASC, version.version_number DESC, version.id ASC
       LIMIT ${input.pageSize}
       OFFSET ${offset}
     `),
     database.execute(sql`
       SELECT count(*)::integer AS total
-      FROM app_eligibility_rule_sets
+      FROM app_eligibility_rule_set_versions version
+      INNER JOIN app_eligibility_rule_sets definition
+        ON definition.id = version.rule_set_id
     `),
   ]);
   const total = Number(countResult.rows[0]?.total ?? 0);

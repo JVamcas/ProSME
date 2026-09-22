@@ -6,6 +6,7 @@ import type {
   EligibilityRuleSetBuilderView,
   EligibilityRuleSetPage,
   EligibilityRuleSetSummary,
+  UpdateEligibilityRuleSetDefinitionInput,
   UpdateEligibilityRuleSetBuilderInput,
 } from "./api/EligibilityRuleSetTransport";
 import type { EligibilityTestInput } from "./api/EligibilityTestSchemas";
@@ -41,16 +42,40 @@ function create(input: CreateEligibilityRuleSetInput) {
   );
 }
 
-function get(id: string) {
+function updateDefinition(
+  id: string,
+  input: UpdateEligibilityRuleSetDefinitionInput,
+) {
+  return requestData<{ definition: { id: string } }>(
+    `/api/admin/eligibility-rulesets/${id}/definition`,
+    {
+      body: JSON.stringify(input),
+      headers: jsonHeaders,
+      method: "PATCH",
+    },
+  );
+}
+
+function versionQuery(versionId?: string) {
+  return versionId
+    ? `?${new URLSearchParams({ versionId }).toString()}`
+    : "";
+}
+
+function get(id: string, versionId?: string) {
   return requestData<EligibilityRuleSetBuilderView>(
-    `/api/admin/eligibility-rulesets/${id}`,
+    `/api/admin/eligibility-rulesets/${id}${versionQuery(versionId)}`,
     { cache: "no-store" },
   );
 }
 
-function update(id: string, input: UpdateEligibilityRuleSetBuilderInput) {
+function update(
+  id: string,
+  input: UpdateEligibilityRuleSetBuilderInput,
+  versionId?: string,
+) {
   return requestData<EligibilityRuleSetBuilderView>(
-    `/api/admin/eligibility-rulesets/${id}`,
+    `/api/admin/eligibility-rulesets/${id}${versionQuery(versionId)}`,
     {
       body: JSON.stringify(input),
       headers: jsonHeaders,
@@ -97,4 +122,5 @@ export const clientEligibilityRuleSetService = {
   list,
   test,
   update,
+  updateDefinition,
 };

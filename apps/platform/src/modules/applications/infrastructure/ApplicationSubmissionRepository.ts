@@ -151,11 +151,20 @@ async function findInitialConfiguration(
 ) {
   const [configuration] = await transaction
     .select({
+      closesAt: fundingCalls.closesAt,
       eligibilityRuleSetVersionId:
         fundingCalls.eligibilityRuleSetVersionId,
+      fundingInstrument: fundingCalls.fundingInstrument,
       fundingCallId: fundingCalls.id,
       maximumGrantAmount: fundingCalls.maximumGrantAmount,
+      minimumGrantAmount: fundingCalls.minimumGrantAmount,
+      opensAt: fundingCalls.opensAt,
+      slug: fundingCalls.slug,
       stageId: workflowStageDefinitions.id,
+      status: fundingCalls.status,
+      thematicArea: fundingCalls.thematicArea,
+      title: fundingCalls.title,
+      totalBudgetEnvelope: fundingCalls.totalBudgetEnvelope,
       workflowTemplateVersionId: workflowDefinitionVersions.id,
     })
     .from(fundingCalls)
@@ -256,10 +265,19 @@ async function submitInTransaction(
         correlationId: input.correlationId,
         evaluatedAt: new Date(),
         fundingCall: {
+          closesAt: configuration.closesAt,
           eligibilityRuleSetVersionId:
             configuration.eligibilityRuleSetVersionId,
+          fundingInstrument: configuration.fundingInstrument,
           id: configuration.fundingCallId,
           maximumGrantAmount: configuration.maximumGrantAmount,
+          minimumGrantAmount: configuration.minimumGrantAmount,
+          opensAt: configuration.opensAt,
+          slug: configuration.slug,
+          status: configuration.status,
+          thematicArea: configuration.thematicArea,
+          title: configuration.title,
+          totalBudgetEnvelope: configuration.totalBudgetEnvelope,
         },
       },
     );

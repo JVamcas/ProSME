@@ -18,9 +18,18 @@ import {
 import { findRuntimeEligibilityRuleSetForEvaluation } from "../infrastructure/EligibilityEvaluationRepository";
 
 type FundingCallEvaluationSource = {
+  closesAt: Date;
   eligibilityRuleSetVersionId: string | null;
+  fundingInstrument: string | null;
   id: string;
   maximumGrantAmount: string;
+  minimumGrantAmount: string;
+  opensAt: Date;
+  slug: string;
+  status: string;
+  thematicArea: string | null;
+  title: string;
+  totalBudgetEnvelope: string;
 };
 
 type ApplicationEvaluationSource = {
@@ -84,7 +93,17 @@ function evaluationContext(
     },
     eligibility: {},
     fundingCall: {
-      maximum_grant_amount: Number(fundingCall.maximumGrantAmount),
+      closes_at: fundingCall.closesAt.toISOString(),
+      funding_instrument: fundingCall.fundingInstrument,
+      id: fundingCall.id,
+      maximum_amount: Number(fundingCall.maximumGrantAmount),
+      minimum_amount: Number(fundingCall.minimumGrantAmount),
+      opens_at: fundingCall.opensAt.toISOString(),
+      slug: fundingCall.slug,
+      status: fundingCall.status,
+      thematic_area: fundingCall.thematicArea,
+      title: fundingCall.title,
+      total_funding_amount: Number(fundingCall.totalBudgetEnvelope),
     },
     stages: [],
   };

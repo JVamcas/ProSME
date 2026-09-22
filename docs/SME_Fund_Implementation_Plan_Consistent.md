@@ -2194,50 +2194,1273 @@ The runtime path of an Application can be reconstructed from immutable audit his
 ---
 # Phase 8 — Workflow Action Semantics
 
-Implement:
-- Approve / Advance;
-- Reject;
-- Return/Rework;
-- Refer;
-- Hold/Resume;
-- Withdraw;
-- Defer;
-- Escalate;
-- Request Information hook;
-- Automatic Transition Framework.
+This phase gives each configured Workflow Action a deterministic runtime
+meaning. It builds on the sequential runtime from Phase 7. Assignment and
+quorum remain in Phase 9, parallel fork/join behavior remains in Phase 10, the
+full RFI lifecycle remains in Phase 11, and SLA timing remains in Phase 12.
 
-All Actions must:
-- validate server-side;
-- use configured targets;
-- preserve audit history;
-- never assume Stage order.
+An Action is always executed against a specific active Stage Instance and,
+where the Action is task-scoped, a specific Workflow Task. The runtime must
+never infer the source Stage from a single `currentStageId` or infer a target
+from display order.
+
+## 8.1 Common Action Execution Contract
+
+### Goal
+
+Provide one server-side execution path for every manual and automatic Workflow
+Action.
+
+### Scope
+
+The execution request identifies:
+- Workflow Instance;
+- source Stage Instance;
+- Workflow Task where task-scoped;
+- configured Action key;
+- expected runtime version or equivalent concurrency token;
+- action-specific input validated by a discriminated Zod schema;
+- idempotency key for retry-safe command handling.
+
+The server resolves the immutable Workflow Template Version and validates:
+- the Stage Instance belongs to the Workflow Instance;
+- the Task belongs to the Stage Instance where supplied;
+- the Action is configured on the source Stage/Task;
+- the Action type and payload match its published configuration;
+- the Stage, Task and Workflow are in states that permit the Action;
+- the actor has the narrowest required canonical permission;
+- ownership, assignment, delegation or other resource context matches where
+  required;
+- Action Conditions and Transition Conditions pass against one consistent
+  runtime context snapshot;
+- required Form, checklist, document, score, reason and comment inputs are
+  present;
+- every configured target reference is valid.
+
+Client-side visibility is advisory. A hidden, disabled, stale or directly
+submitted Action receives the same server-side validation.
+
+### Transaction and Persistence Rules
+
+Within one database transaction:
+1. lock or concurrency-check the affected runtime records;
+2. create one immutable Action Execution record;
+3. apply the action-specific Stage, Task and Workflow state changes;
+4. create any Decision, referral, hold, deferral or escalation record required
+   by the Action type;
+5. complete or cancel affected Tasks only where the configured semantics
+   require it;
+6. execute or schedule the configured Transition behavior;
+7. append immutable audit events;
+8. commit all changes together.
+
+Persist at minimum:
+- Action Execution identifier;
+- configured Action definition/key and Action type;
+- actor type and actor identifier, including a system actor for automation;
+- Workflow, source Stage Instance and optional Task identifiers;
+- action-specific reason code and comment where applicable;
+- normalized action-specific input;
+- resolved target Stage definition identifiers or terminal outcome;
+- condition-evaluation result references or snapshot metadata;
+- execution time;
+- idempotency key;
+- resulting runtime state/version.
+
+Sensitive values must not be copied into audit payloads when stable references
+or appropriately redacted before/after values are sufficient.
+
+### Acceptance Criteria
+
+1. Every Action type uses the same server-side command boundary.
+2. An Action cannot execute against an unrelated Workflow, Stage or Task.
+3. Permission and resource-context mismatches are denied before mutation.
+4. Invalid state, stale version, invalid payload and failed Conditions produce
+   explicit domain errors.
+5. State changes, Action Execution, Decision/semantic records, Transition
+   effects and audit events commit atomically.
+6. Repeating the same idempotency key returns the original result without
+   creating duplicate records, transitions or Stage Instances.
+7. Two conflicting executions cannot both succeed against the same runtime
+   version.
+8. Action execution never depends on Stage display order or a singleton current
+   Stage.
+
+### Done When
+
+All Workflow Actions enter through one authorized, condition-aware,
+transactional and retry-safe runtime command.
+
+## 8.2 Action Availability Read Model
+
+### Goal
+
+Expose the Actions currently available to an actor without treating UI
+availability as authorization.
+
+### Scope
+
+For a Stage Instance or Workflow Task, return configured Actions with:
+- stable Action key and type;
+- label and presentation metadata;
+- whether the Action is currently available;
+- a safe, user-facing unavailable reason where disclosure is appropriate;
+- required input metadata such as reason, comment, target, review date or due
+  date;
+- confirmation requirements.
+
+Availability uses the same state, permission, context and Condition policies as
+execution. The execution command re-evaluates all rules to handle stale pages
+and concurrent changes.
+
+### Acceptance Criteria
+
+1. The UI does not hard-code Action buttons by Stage name.
+2. Different actors can receive different availability for the same Stage
+   Instance.
+3. Availability does not expose internal Condition details or unauthorized
+   data.
+4. An Action becoming invalid after the read is rejected during execution.
+5. Availability and execution share policy/evaluator logic rather than
+   duplicating business rules.
+
+### Done When
+
+Task and Stage screens can render configuration-driven Action controls while
+the server remains authoritative.
+
+## 8.3 Approve / Advance
+
+### Goal
+
+Record a positive decision and advance through its configured Transition.
+
+### Scope
+
+**Runtime Behaviour**
+
+1. Validate required work, Stage Exit Conditions and any decision inputs.
+2. Persist the actor's Decision where the Action is decision-bearing.
+3. Complete the acting Task when configured.
+4. Complete the source Stage only when its configured completion rule is met.
+5. Execute the Transition configured for this Action.
+6. Activate only the configured target Stage or Stages whose Entry Conditions
+   pass.
+
+Approving one reviewer Task does not imply Stage approval when later quorum or
+completion-threshold configuration requires additional Tasks. Phase 9 adds
+that aggregation behavior.
+
+### Acceptance Criteria
+
+1. Approve cannot bypass incomplete required work or failed Exit Conditions.
+2. A Decision retains actor, time, input and exact Action configuration
+   references.
+3. The source Stage advances only when its completion rule is satisfied.
+4. The resolved target comes from the configured Transition.
+5. Retried approval does not create a second Decision or Transition execution.
+
+### Done When
+
+A valid positive Action records the decision and advances exactly as configured.
+
+## 8.4 Reject
+
+### Goal
+
+Record a negative decision and apply the configured terminal or non-terminal
+rejection outcome.
+
+### Scope
+
+Reject configuration determines:
+- whether a reason code, comment or both are mandatory;
+- whether the outcome terminates the Workflow or follows a configured
+  Transition;
+- which open Tasks and Stage Instances are cancelled for a terminal outcome;
+- the internal outcome and safe public-status mapping;
+- whether rejection is reversible through a separately configured Action.
+
+For a terminal rejection, persist the Decision before setting the Workflow to
+its rejected terminal state. Do not delete Stage Instances, Tasks, responses or
+documents.
+
+### Acceptance Criteria
+
+1. Required rejection reasons are validated server-side.
+2. Terminal and non-terminal rejection behavior comes from published
+   configuration.
+3. Terminal rejection prevents further ordinary work and cancels configured
+   open Tasks atomically.
+4. Existing runtime history and captured responses remain available for audit.
+5. Internal rejection detail is not leaked through the public-status mapping.
+
+### Done When
+
+Rejection produces one auditable Decision and the configured terminal or
+transition outcome.
+
+## 8.5 Return / Rework
+
+### Goal
+
+Send work to an explicitly configured earlier or corrective Stage without
+rewinding or overwriting history.
+
+### Scope
+
+**Rules**
+
+- target a stable Stage definition identifier from Action/Transition
+  configuration;
+- require the configured reason/comment;
+- close or cancel source work according to configuration;
+- create a new target Stage Instance with the next iteration number;
+- preserve prior Stage Instances, Tasks, Form Responses and Decisions;
+- record the returning Stage/Task and the Stage Instance to which processing
+  should later return where configured;
+- carry forward, copy or clear editable working data only through an explicit
+  data-retention policy; immutable submitted responses are never overwritten.
+
+A Return is not implemented by changing an old completed Stage back to Active.
+
+### Acceptance Criteria
+
+1. Return uses a configured target and cannot accept an arbitrary Stage.
+2. The prior target-stage iteration remains immutable and auditable.
+3. A new target Stage Instance receives a unique iteration number and its own
+   Tasks/responses.
+4. Return context identifies origin, reason and intended continuation behavior.
+5. Data retention follows configuration and never destroys prior submitted
+   evidence.
+6. Return loops remain valid when Stage display order changes.
+
+### Done When
+
+Rework creates a traceable new Stage iteration without rewriting Workflow
+history.
+
+## 8.6 Refer
+
+### Goal
+
+Route a bounded question or specialist review to a configured Stage or Task and
+return control to the referrer when complete.
+
+### Scope
+
+Refer differs from Return/Rework: the original work is not invalidated. Persist
+a referral context containing:
+- referring Stage Instance and Task;
+- configured referral target;
+- reason/question and permitted context;
+- referral status;
+- return-to-referrer behavior.
+
+The configured policy determines whether the referring Task remains blocked or
+open while the referred work is active. Referral completion resumes or creates
+the configured continuation; it must not rediscover the referrer from display
+order.
+
+### Acceptance Criteria
+
+1. Referral targets are restricted to published configuration.
+2. Referred work has independent Task state and responses.
+3. The referrer and return path are persisted explicitly.
+4. Completion returns control at most once.
+5. Referral does not overwrite the referrer's work or masquerade as rework.
+
+### Done When
+
+A configured specialist referral can leave and return to its exact origin with
+complete history.
+
+## 8.7 Hold / Resume
+
+### Goal
+
+Pause permitted Workflow processing without completing, rejecting or rewinding
+the active work.
+
+### Scope
+
+Hold records:
+- hold reason code/comment;
+- actor and start time;
+- optional configured review date;
+- scope: Workflow Instance, Stage Instance or Task as supported by
+  configuration;
+- prior runtime state needed for valid resumption.
+
+While held, ordinary Actions and automatic transitions inside the hold scope
+are blocked except explicitly permitted Actions such as Resume or Withdraw.
+Resume closes the active hold period and restores the persisted prior state; it
+does not guess the state from current configuration.
+
+Phase 12 uses hold periods to pause and recalculate SLA clocks. This phase must
+emit stable hold-started and hold-ended facts but does not implement SLA
+calculation.
+
+### Acceptance Criteria
+
+1. Only configured scopes can be held by an authorized actor.
+2. A duplicate Hold cannot create overlapping active hold periods for the same
+   scope.
+3. Blocked Actions and automation cannot progress held work.
+4. Resume requires an active hold and restores the valid prior state once.
+5. Hold duration can be derived from immutable start/end timestamps.
+6. Hold and Resume are audited with actor and reason.
+
+### Done When
+
+Configured work can pause and resume without losing state or allowing hidden
+progression.
+
+## 8.8 Withdraw
+
+### Goal
+
+End processing through an authorized withdrawal while retaining the full
+Application and Workflow record.
+
+### Scope
+
+Validate:
+- the Action is allowed from the current runtime state;
+- the actor has the applicable own/all contextual permission;
+- any ownership or representative relationship matches the Application;
+- the configured reason and confirmation are present;
+- the configured resubmission or reinstatement rule.
+
+On success:
+- persist the withdrawal record;
+- set the Workflow to its withdrawn terminal state;
+- cancel configured open Stage Instances and Tasks;
+- prevent automatic transitions and ordinary Actions;
+- emit an integration result for the Application lifecycle and public-status
+  projection.
+
+Phase 14 exposes the applicant-facing Application withdrawal flow. It must call
+this same semantic operation rather than implement a second withdrawal path.
+
+### Acceptance Criteria
+
+1. An unrelated applicant cannot withdraw another applicant's Workflow.
+2. Withdrawal is rejected from disallowed or already terminal states.
+3. Open runtime work is closed consistently in the same transaction.
+4. No Workflow data, responses, documents or audit events are deleted.
+5. Resubmission/reinstatement is possible only when explicitly configured.
+6. Applicant-facing and staff-initiated withdrawal use the same domain
+   semantics with their respective permissions.
+
+### Done When
+
+Withdrawal terminates processing safely without erasing the record or creating
+an authorization bypass.
+
+## 8.9 Defer
+
+### Goal
+
+Suspend a decision until a configured date, event or Funding Call destination.
+
+### Scope
+
+Persist a deferral record containing:
+- reason;
+- actor and time;
+- deferral mode;
+- resume/review date when date-based;
+- configured target Funding Call or Stage when applicable;
+- source Stage Instance and pending continuation.
+
+Deferral is distinct from Hold: it records a deliberate processing outcome and
+its future continuation rule. A deferral must not silently clone or move an
+Application to another Funding Call. Any future-call transfer requires an
+explicit configured operation that preserves source and destination links.
+
+### Acceptance Criteria
+
+1. Deferral mode and destination conform to published configuration.
+2. Deferred work cannot continue through ordinary or automatic Actions.
+3. Resume/review behavior is explicit and auditable.
+4. Repeated scheduler/event delivery cannot resume a deferral twice.
+5. Cross-call deferral preserves the original Application and creates explicit
+   linkage rather than changing its Funding Call identifier in place.
+
+### Done When
+
+Deferred work has a durable reason, destination/trigger and single auditable
+continuation path.
+
+## 8.10 Escalate
+
+### Goal
+
+Raise active work to configured authority without pretending that the current
+Stage has completed.
+
+### Scope
+
+Escalation configuration identifies:
+- manual and/or automatic trigger;
+- target role, capability, assignment strategy or escalation Stage;
+- reason/comment requirements;
+- whether existing assignees retain, share or lose responsibility;
+- whether work is blocked pending escalation resolution.
+
+This phase records and routes the escalation intent. Phase 9 resolves advanced
+assignment, workload and delegated-authority behavior. Phase 12 supplies SLA
+breach triggers.
+
+### Acceptance Criteria
+
+1. Escalation destinations come from configuration, not role names embedded in
+   code.
+2. Escalation does not complete the source Stage unless a configured Transition
+   explicitly does so.
+3. Responsibility changes preserve assignment history.
+4. An escalation cannot target an unauthorized or structurally invalid
+   destination.
+5. Duplicate trigger delivery does not create duplicate active escalations.
+6. Resolution is linked to the escalation that caused it.
+
+### Done When
+
+Manual escalation is auditable and the runtime contract is ready for later
+assignment and SLA-driven triggers.
+
+## 8.11 Request Information Hook
+
+### Goal
+
+Define the Action-to-RFI integration boundary without duplicating the RFI
+lifecycle implemented in Phase 11.
+
+### Scope
+
+The Request Information Action validates and emits one transactional RFI
+creation request containing:
+- Application, Workflow, Stage and Task references;
+- requester;
+- configured recipient/participant scope;
+- question/instructions;
+- editable-field whitelist;
+- requested document categories;
+- response deadline/expiry configuration;
+- continuation behavior after response or expiry.
+
+Until Phase 11 supplies the lifecycle handler, the Action cannot report success
+or partially change Workflow state. Once integrated, RFI creation and the
+Workflow state change commit atomically.
+
+### Acceptance Criteria
+
+1. RFI input conforms to the published Action configuration.
+2. Editable fields use stable field paths and cannot broaden beyond the
+   configured whitelist.
+3. The hook carries stable source and continuation references.
+4. Missing RFI lifecycle support fails explicitly without partial mutation.
+5. Retrying the Action cannot create duplicate RFI conversations.
+6. Phase 11 can implement creation, response, expiry and correspondence without
+   changing the common Action execution contract.
+
+### Done When
+
+Request Information has a stable, atomic integration contract for the Phase 11
+RFI lifecycle.
+
+## 8.12 Automatic Transition Framework
+
+### Goal
+
+Execute configured Actions or Transitions from trusted system events when no
+human choice is required.
+
+### Scope
+
+Support an automation definition containing:
+- stable trigger key and trigger type;
+- source Stage/Workflow state;
+- configured Action or Transition reference;
+- Conditions;
+- action-specific input/defaults;
+- idempotency-key derivation;
+- enabled/disabled state;
+- execution priority where multiple automations may react to one event.
+
+Initial trigger types may include:
+- Stage activated;
+- Task/Stage completed;
+- Condition became satisfied from a committed domain event;
+- explicit internal domain event.
+
+Time/SLA/RFI-expiry triggers integrate in later phases. Automation executes as
+an identifiable system actor through the same validation, transaction and
+audit path as manual Actions, except for human-assignment checks that the
+Action explicitly declares inapplicable.
+
+**Safety Rules**
+
+- process only committed events through an outbox or equivalent reliable event
+  boundary;
+- deduplicate by automation definition and triggering event;
+- re-read current runtime state before execution;
+- do not bypass Conditions, state validation or target validation;
+- enforce a bounded execution chain and detect non-waiting automatic cycles;
+- route repeated failures to observable operational status rather than
+  silently dropping them;
+- do not activate a target more than once for the same semantic execution.
+
+### Acceptance Criteria
+
+1. An automatic Action produces the same semantic and audit records as its
+   manual equivalent.
+2. Audit identifies the system actor, trigger event and automation definition.
+3. Duplicate event delivery produces one outcome.
+4. A stale trigger cannot progress a Workflow whose state has changed.
+5. Invalid automatic cycles fail Workflow publication validation or stop at the
+   runtime execution bound.
+6. Failed automation is observable and retryable without duplicating effects.
+7. No timer, Stage-name or display-order-specific behavior is hard-coded.
+
+### Done When
+
+Committed domain events can drive safe, configuration-defined and auditable
+Workflow progression.
+
+## 8.13 Action Audit, Errors and Test Matrix
+
+### Goal
+
+Make Action behavior supportable and prove every semantic path at the domain,
+repository, API and end-to-end boundaries.
+
+### Scope
+
+Define stable domain error categories for at least:
+- Action not configured;
+- Action unavailable in current state;
+- permission denied;
+- resource-context mismatch;
+- validation/reason required;
+- Condition failed;
+- completion requirement failed;
+- stale runtime version/conflict;
+- duplicate request with mismatched payload;
+- invalid target/configuration;
+- unsupported dependent lifecycle.
+
+Audit every attempted execution that reaches the domain boundary as permitted
+by the security/audit policy, while keeping rejected requests free of sensitive
+payload values. Successful audit records include before/after state references,
+semantic record identifiers and Transition/target results.
+
+Automated tests cover, for each Action type:
+- allowed execution;
+- permission denial;
+- contextual authorization mismatch;
+- invalid state;
+- invalid payload or missing reason;
+- failed Conditions;
+- stale-version conflict;
+- identical retry;
+- conflicting retry using the same idempotency key;
+- transaction rollback after an injected downstream failure;
+- immutable audit reconstruction.
+
+Add focused scenarios for Return iteration preservation, Refer return routing,
+Hold/Resume blocking, terminal Reject/Withdraw cancellation, Defer continuation,
+Escalate routing, RFI integration failure and automatic-event deduplication.
+
+### Acceptance Criteria
+
+1. API responses map domain failures consistently without exposing internals.
+2. Tests prove no partial state remains after a failed Action.
+3. Tests prove Action and Transition history reconstructs the runtime path.
+4. Protected Action routes test allowed, denied and context-mismatch cases.
+5. Runtime Action tests are separated from definition, task, parallel and RFI
+   lifecycle tests in accordance with the Project Structure Contract.
+
+### Done When
+
+Every Phase 8 Action semantic is explicit, observable and protected by a shared
+negative/positive test matrix.
+
+## Phase 8 Done When
+
+Approve/Advance, Reject, Return/Rework, Refer, Hold/Resume, Withdraw, Defer and
+Escalate execute through the common Action contract; Request Information has an
+atomic integration hook; automatic transitions are retry-safe; and all paths
+are server-authorized, configuration-driven, concurrency-safe and auditable.
 
 ---
 
 # Phase 9 — Workflow Tasks, Assignment & Quorum
 
-Implement:
-- manual assignment;
-- role-based assignment;
-- multiple reviewer Tasks;
-- completion threshold;
-- quorum;
-- COI gate;
-- reassignment;
-- delegation by configured authority/value bands;
-- amount-based resolution of the required delegated approver;
-- server-side validation that the acting approver's band covers the decision
-  amount;
-- round-robin;
-- expertise;
-- workload;
-- self-assignment pool.
+This phase turns configured Task responsibility into secure runtime ownership.
+It builds on the Task lifecycle and Action execution contracts from Phases 7
+and 8. Assignment selects who may perform work; it never replaces the
+server-side permission and resource-context checks required when that work is
+read, saved, completed or used for a Workflow Action.
+
+Workflow Task assignment remains owned by the `workflows` module. PostgreSQL is
+the source of truth for users, roles, permission grants, authority and
+assignment history. Firebase identity proves who the actor is but does not
+decide what the actor may do.
+
+## 9.1 Assignment Model and Candidate Eligibility
+
+### Goal
+
+Define one assignment contract used by manual allocation, automatic allocation,
+reassignment and self-claim.
+
+### Scope
+
+Separate these concepts:
+- Task Definition responsibility: the published design-time role, assignment
+  mode and constraints;
+- Workflow Task: one runtime unit of work;
+- Task Assignment: one auditable period during which a user owns or
+  participates in that Task;
+- candidate: a user who currently satisfies every eligibility rule but is not
+  assigned until an allocation command succeeds.
+
+Persist for each Task Assignment:
+- Workflow Task identifier;
+- assigned user and responsibility/role under which the assignment was made;
+- assignment mode and strategy;
+- assignment status;
+- assigned by and assigned at;
+- accepted/claimed, started and ended timestamps where applicable;
+- end reason and superseding assignment where applicable;
+- strategy decision metadata sufficient to explain the allocation without
+  copying sensitive profile data;
+- runtime version/concurrency token.
+
+A candidate must satisfy all configured requirements at assignment time:
+- active PostgreSQL application-user status;
+- required role/responsibility and canonical permission grant;
+- required organisational, Funding Call, programme, region or other configured
+  scope;
+- expertise and authority requirements where applicable;
+- no disqualifying conflict or segregation-of-duties relationship known at
+  allocation time;
+- availability for the applicable assignment mode;
+- not already assigned to the same independent-review slot.
+
+The same eligibility policy is reused by all allocation strategies and is
+revalidated when a candidate accepts/claims work and when protected operations
+are performed. Candidate queries must filter, sort and limit in PostgreSQL and
+must not load all users for in-memory allocation.
+
+### Acceptance Criteria
+
+1. Task Definition responsibility, Workflow Task and Task Assignment are
+   independently identifiable.
+2. Assignment history is append-only; changing ownership ends one assignment
+   and creates another.
+3. Every allocation mode uses the same deny-by-default candidate-eligibility
+   policy.
+4. Inactive, out-of-scope or insufficiently permitted users cannot be assigned.
+5. Candidate reads select only the fields required for allocation and do not
+   expose sensitive user or conflict data.
+6. Assignment and Task projections can identify one current owner without
+   losing prior ownership periods.
+7. Concurrent allocation commands cannot create two current assignments for
+   one single-owner Task.
 
 ### Done When
 
-Task ownership, reviewer isolation, assignment history and value-band
-delegation work reliably. An approval cannot be completed by an actor whose
-configured authority band does not cover the decision amount.
+Every Task allocation is based on one contextual eligibility policy and creates
+a durable ownership record.
+
+## 9.2 Manual and Named-User Assignment
+
+### Goal
+
+Allow an authorized allocator to assign an eligible user explicitly.
+
+### Scope
+
+Manual assignment supports:
+- selection from a server-filtered eligible candidate list;
+- an optional design-time named-user override where published configuration
+  permits it;
+- a required reason when overriding the normal role-based strategy;
+- an optional due date only within configured limits;
+- optimistic concurrency and an idempotency key.
+
+The allocator must have the narrow canonical permission for the Task scope.
+Possessing assignment authority does not allow the allocator to assign an
+otherwise ineligible user. A named-user override changes selection priority,
+not authorization, COI, scope or delegated-authority rules.
+
+### Acceptance Criteria
+
+1. Only an authorized allocator can view candidates and submit an assignment.
+2. Candidate eligibility is revalidated after selection and before commit.
+3. A configured named-user override fails safely if the user is no longer
+   eligible.
+4. Override reason, allocator and configuration reference are audited.
+5. Retrying the command does not create another current assignment.
+6. A stale Task version returns a conflict rather than overwriting a newer
+   assignment.
+
+### Done When
+
+Authorized staff can assign a Task deliberately without bypassing its published
+responsibility or contextual controls.
+
+## 9.3 Role-Based Assignment
+
+### Goal
+
+Resolve Task responsibility from configured business roles and scopes rather
+than hard-coded user or Stage names.
+
+### Scope
+
+At Task creation or allocation time:
+1. resolve the Task Definition's stable responsibility/role reference;
+2. query active users with the required effective permission and scope;
+3. apply COI, segregation-of-duties, expertise, authority and availability
+   filters required by the Task;
+4. apply the configured selection strategy;
+5. assign one or more eligible candidates or leave the Task visibly
+   Unassigned when no permitted fallback exists.
+
+Role membership alone is insufficient. The actor must also hold the required
+canonical permission, and contextual scope must match the target resource.
+Absence of an eligible candidate must create an observable allocation outcome;
+it must not broaden the candidate set silently.
+
+### Acceptance Criteria
+
+1. Role resolution uses PostgreSQL application roles and permission grants.
+2. A matching role without the required permission or scope is excluded.
+3. Empty candidate results leave work safely unassigned and observable.
+4. Fallback roles/users are used only when explicitly configured and validated.
+5. Role labels can change without breaking stable responsibility references.
+6. Task creation and later allocation use the same candidate semantics.
+
+### Done When
+
+Configured role responsibility produces an eligible candidate pool without
+embedding client role names in runtime code.
+
+## 9.4 Multiple Reviewer Tasks and Isolation
+
+### Goal
+
+Create independent work for the configured number of reviewers without shared
+responses or accidental identity disclosure.
+
+### Scope
+
+For a Task Definition with multiple reviewers:
+- create one Workflow Task per reviewer slot;
+- give each Task its own assignment, lifecycle, Form Response, comments,
+  recommendation and Action/Decision records;
+- prevent the same user filling more than one independent slot unless a
+  published exception explicitly allows it;
+- prevent one reviewer from editing another reviewer's Task or response;
+- hide peer identities, draft responses, scores and recommendations until the
+  configured release/consolidation point;
+- expose only the minimum peer-completion metadata needed by the use case;
+- preserve slot identity when a reviewer is replaced so counts remain stable.
+
+Aggregate/consolidated results are computed from submitted eligible responses;
+they are not written back into individual reviewer responses. Phase 10 governs
+parallel Stage branches; multiple Tasks inside one Stage are not modeled as a
+fork.
+
+### Acceptance Criteria
+
+1. Configured reviewer count creates the same number of independent Task slots.
+2. Each reviewer can access only Tasks permitted by assignment and contextual
+   authorization.
+3. Draft and submitted responses cannot overwrite or mutate another slot.
+4. Peer identities and work remain hidden until configuration allows release.
+5. Replacement does not inflate the reviewer count or lose the slot's history.
+6. Aggregation includes only valid submitted responses from eligible slots.
+7. Adding a reviewer is an assignment operation, not a new Workflow Action
+   type.
+
+### Done When
+
+Multiple reviewers can work independently and confidentially while the Stage
+retains a stable review structure.
+
+## 9.5 Completion Threshold
+
+### Goal
+
+Complete multi-reviewer work only after the configured number or proportion of
+eligible reviewer Tasks is complete.
+
+### Scope
+
+Support published threshold modes such as:
+- all required slots;
+- fixed completed count;
+- configured percentage, with an explicit rounding rule.
+
+Threshold evaluation defines which Task terminal states count. By default,
+only valid Completed Tasks with submitted required responses count; Cancelled,
+recused, rejected-assignment, superseded and incomplete Tasks do not. Replacement
+slots preserve the configured denominator unless the Task Definition is
+explicitly amended through a permitted runtime operation.
+
+Evaluate the threshold in the same transaction that completes a reviewer Task
+or changes slot eligibility. Satisfying the threshold makes the Stage eligible
+for its remaining Exit Conditions and Action semantics; it does not bypass
+them.
+
+### Acceptance Criteria
+
+1. Count, percentage and all-required rules have deterministic rounding and
+   denominator behavior.
+2. Ineligible or cancelled work cannot satisfy the threshold.
+3. Concurrent final completions activate the threshold result once.
+4. A threshold does not itself complete a Stage whose other Exit Conditions
+   fail.
+5. Evaluation records the rule/version and contributing Task identifiers.
+6. Reassignment or recusal cannot double-count a reviewer slot.
+
+### Done When
+
+Reviewer completion requirements are deterministic, concurrency-safe and
+explainable from contributing Tasks.
+
+## 9.6 Quorum
+
+### Goal
+
+Represent and enforce participation quorum separately from reviewer-completion
+thresholds.
+
+### Scope
+
+Quorum configuration defines:
+- eligible participant population or configured seats;
+- minimum count and/or percentage;
+- rounding rule;
+- whether the chair or specified responsibility is mandatory;
+- which attendance/participation states count;
+- whether abstentions count toward presence but not a decision majority;
+- COI/recusal treatment;
+- the point at which quorum is frozen or re-evaluated.
+
+Persist a quorum evaluation snapshot containing:
+- configuration/version reference;
+- evaluation time;
+- eligible denominator;
+- present, cleared, recused and absent participant references;
+- calculated result;
+- actor/system trigger that confirmed the result.
+
+Quorum confirms that a body may act. It is not the same as vote outcome,
+reviewer threshold or delegated approval authority. Decision Actions revalidate
+the current or frozen quorum rule as configured.
+
+### Acceptance Criteria
+
+1. Quorum and completion threshold use separate configuration and evaluation
+   records.
+2. COI-disqualified participants are treated according to an explicit
+   denominator policy.
+3. Required-chair and attendance rules are enforced server-side.
+4. A decision cannot execute when its required quorum is absent.
+5. The exact participants and calculation used for a quorum result are
+   auditable.
+6. Concurrent attendance changes cannot produce two incompatible accepted
+   decisions.
+
+### Done When
+
+Committee or panel Actions can rely on an auditable, configuration-defined
+quorum result rather than a manually asserted boolean.
+
+## 9.7 Conflict-of-Interest Gate
+
+### Goal
+
+Prevent a reviewer or decision participant from viewing or acting on protected
+Application content until conflict-of-interest requirements are cleared.
+
+### Scope
+
+Conflict of interest is a gate, not an ordinary Form field. Support states such
+as:
+- declaration required;
+- no conflict declared and cleared;
+- potential conflict disclosed, pending independent review;
+- conflict confirmed / recused;
+- clearance revoked.
+
+Before clearance, expose only the minimum metadata necessary to identify and
+respond to the assignment without revealing protected Application content.
+Users cannot approve their own disclosed conflict. Confirmed conflict or
+recusal ends the assignment, prevents the Task from contributing to threshold
+or quorum results, and invokes the configured replacement policy.
+
+Store declarations and clearance decisions as restricted audit records. Do not
+copy sensitive disclosure text into general Workflow audit payloads.
+
+### Acceptance Criteria
+
+1. COI-gated content reads, Form loads, saves, Task completion and Actions all
+   enforce clearance server-side.
+2. A user cannot self-clear a disclosure that requires independent review.
+3. Recused work does not count toward completion threshold, quorum decision or
+   aggregated scoring.
+4. Revoked clearance immediately prevents further protected access.
+5. Replacement preserves the recused assignment and declaration history.
+6. Non-gated Tasks do not acquire unnecessary COI steps.
+7. Tests cover no-conflict, pending, confirmed-conflict, revoked and attempted
+   bypass cases.
+
+### Done When
+
+Protected work remains inaccessible until COI clearance, and recusals cannot
+influence the Workflow outcome.
+
+## 9.8 Reassignment and Replacement
+
+### Goal
+
+Change Task ownership without rewriting history, leaking reviewer data or
+double-counting work.
+
+### Scope
+
+Reassignment requires:
+- an authorized actor or configured automatic trigger;
+- a reason;
+- a currently eligible replacement;
+- concurrency validation;
+- an explicit policy for work already started or submitted.
+
+**Default Rules**
+
+- an unstarted Task may end its current assignment and assign a new user;
+- a Task with a draft response must not expose that draft to the replacement
+  unless an explicit handover policy permits it;
+- a submitted independent review remains immutable and attributed to its
+  author; replacement creates or reopens the slot according to configuration;
+- completed Tasks cannot have their author changed;
+- assignment history, response ownership and threshold contribution remain
+  separately traceable.
+
+Automatic replacement after rejection, expiry, deactivation or COI recusal
+uses the same command and policies as manual reassignment. Phase 12 supplies
+SLA-expiry triggers.
+
+### Acceptance Criteria
+
+1. Reassignment ends rather than overwrites the prior Assignment.
+2. Required reason, old/new owner, actor and timestamps are audited.
+3. Draft and submitted response visibility follows the configured handover
+   policy.
+4. Completed work is never silently reattributed.
+5. Replacement preserves reviewer-slot and threshold integrity.
+6. The old assignee loses protected access when the reassignment commits.
+7. Concurrent complete/reassign attempts yield one consistent result.
+
+### Done When
+
+Ownership can change safely while authorship, confidentiality and counting
+remain correct.
+
+## 9.9 Delegated Authority and Value Bands
+
+### Goal
+
+Resolve the required approver from the decision amount and prevent an actor
+from deciding outside their effective authority.
+
+### Scope
+
+Define versioned authority-band configuration with:
+- stable band key;
+- currency;
+- inclusive/exclusive lower and upper boundaries;
+- permitted decision/action types;
+- applicable Funding Call, programme or organisational scope;
+- required responsibility/role and optional named holder;
+- effective start/end dates;
+- required evidence/reference;
+- priority and validation rules that reject unintended gaps or overlaps.
+
+The Task Definition identifies the stable context path for the authoritative
+decision amount. Amount resolution must use a validated decimal/currency value
+from the committed runtime context, not client input supplied only to the
+Action request.
+
+At allocation time:
+1. resolve the amount and applicable authority configuration version;
+2. select the one matching band;
+3. restrict candidates to users with effective authority for that band, scope,
+   decision type and date;
+4. record the resolved band and amount snapshot on the approval Task.
+
+At decision time, Phase 8 Action execution re-resolves or verifies the current
+committed decision amount and validates the acting approver's effective band.
+Assignment to the Task is necessary but not sufficient authority to approve.
+
+Temporary/person-to-person delegation must be explicit, time-bounded,
+scope-bounded and non-transitive unless configuration expressly permits it. A
+delegate cannot receive a higher ceiling or broader decision scope than the
+delegator holds. Splitting one decision into smaller amounts must not be used
+to evade the applicable band.
+
+Currency conversion is allowed only when an approved conversion policy and
+rate snapshot are configured and audited; otherwise currencies must match.
+
+### Acceptance Criteria
+
+1. Boundary values resolve deterministically to exactly one authority band.
+2. Invalid gaps, overlaps, currencies and effective-date ranges block
+   publication or activation of authority configuration.
+3. The approval Task records the amount, currency and band/configuration
+   version used for allocation.
+4. An assigned actor outside the applicable band is denied at Action execution.
+5. A changed decision amount triggers revalidation and, where required,
+   reassignment before decision.
+6. Expired, revoked, out-of-scope or excessive temporary delegation is denied.
+7. Delegation cannot expand authority beyond the delegator's effective grant.
+8. Reduced/partial approval validates the configured governing amount rule and
+   cannot be used to bypass authority.
+9. Allowed, denied, exact-boundary, gap, overlap, currency, expiry and changed-
+   amount cases are tested.
+
+### Done When
+
+The required approver is selected from the authoritative amount and no decision
+can complete outside the actor's effective value band.
+
+## 9.10 Round-Robin Allocation
+
+### Goal
+
+Distribute eligible Tasks fairly using a deterministic, concurrency-safe
+rotation.
+
+### Scope
+
+Maintain a rotation cursor per configured allocation pool/scope. Allocation:
+1. resolves the eligible candidate set;
+2. orders candidates by stable rotation sequence and deterministic tie-breaker;
+3. selects the next eligible candidate after the cursor;
+4. creates the Assignment and advances the cursor atomically.
+
+Skipping an ineligible/unavailable user does not make that user eligible, and
+an empty pool leaves the Task Unassigned. Reassignment does not alter rotation
+unless the published strategy explicitly says it should.
+
+### Acceptance Criteria
+
+1. Concurrent allocations cannot select the same next slot because of a lost
+   cursor update.
+2. Rotation is scoped to the configured pool and does not leak across Funding
+   Calls/programmes where scopes differ.
+3. Ineligible users are skipped without corrupting the cursor.
+4. Tie-breaking is deterministic and testable.
+5. Strategy metadata explains the pool, prior cursor and selected candidate.
+6. An empty eligible pool produces an observable Unassigned result.
+
+### Done When
+
+Round-robin allocation is fair, scoped and safe under concurrent Task creation.
+
+## 9.11 Expertise-Based Allocation
+
+### Goal
+
+Match work to eligible reviewers using controlled expertise requirements.
+
+### Scope
+
+Use stable expertise/taxonomy identifiers rather than free-text matching.
+Configuration defines:
+- required and preferred expertise;
+- match mode for multiple requirements;
+- proficiency or accreditation threshold where applicable;
+- expiry/effective-date rules;
+- deterministic ranking and tie-breaker;
+- permitted fallback strategy.
+
+Expertise narrows or ranks candidates after permission, scope, COI and authority
+eligibility filters. It cannot make an otherwise unauthorized user eligible.
+Candidate matching and ranking occur in the repository query or a bounded
+set-based projection.
+
+### Acceptance Criteria
+
+1. Required expertise excludes candidates who do not satisfy it.
+2. Preferred expertise affects ranking without bypassing required controls.
+3. Expired or unverified expertise is treated according to configuration.
+4. Fallback occurs only when explicitly configured and is visible in the
+   Assignment decision metadata.
+5. Matching is deterministic for the same candidate/context snapshot.
+6. No per-candidate/N+1 expertise query is used.
+
+### Done When
+
+Expertise allocation selects a qualified, authorized reviewer through an
+explainable configured rule.
+
+## 9.12 Workload-Based Allocation
+
+### Goal
+
+Allocate to the least-loaded eligible candidate using a defined and auditable
+workload measure.
+
+### Scope
+
+Configuration defines which work contributes to load, for example:
+- active assigned Tasks;
+- weighted Task complexity/effort;
+- overdue or near-due work;
+- maximum concurrent assignments;
+- configured availability/capacity.
+
+Calculate workload with a set-based aggregate over the eligible candidate
+pool. Select using the calculated score plus a deterministic tie-breaker.
+Allocation and capacity enforcement must be concurrency-safe so simultaneous
+commands cannot both consume the final capacity slot.
+
+### Acceptance Criteria
+
+1. The workload formula and contributing states are explicit and versioned.
+2. Completed, cancelled or otherwise excluded work does not add load.
+3. Maximum capacity is enforced atomically.
+4. Equal-load candidates use a deterministic tie-breaker or configured
+   secondary strategy.
+5. Assignment records enough score metadata to explain the choice.
+6. Workload is calculated without N+1 queries or unbounded in-memory grouping.
+
+### Done When
+
+Workload allocation chooses an eligible candidate consistently without
+oversubscribing configured capacity.
+
+## 9.13 Self-Assignment Pool
+
+### Goal
+
+Allow an eligible user to claim available work from a controlled pool.
+
+### Scope
+
+The pool read model returns only Tasks the current user is eligible to claim
+and only the minimum metadata they may see before assignment and COI clearance.
+It supports database-level filtering, stable ordering and bounded pagination.
+
+Claim execution:
+1. identifies the Task and expected runtime version;
+2. revalidates user, permission, role, scope, capacity, segregation, authority
+   and pool eligibility;
+3. applies the COI pre-access policy;
+4. creates the Assignment and moves the Task to its configured claimed state in
+   one transaction;
+5. removes the Task from other users' pool results through committed state.
+
+Claiming does not by itself clear COI or reveal protected Application content.
+Release/unclaim is allowed only within configured rules and produces Assignment
+history rather than deleting the claim.
+
+### Acceptance Criteria
+
+1. Users cannot list or claim out-of-scope pool Tasks.
+2. Two simultaneous claims yield one owner and one conflict response.
+3. Eligibility and capacity are revalidated at claim time.
+4. Pre-claim metadata does not leak protected Application or reviewer data.
+5. Claim, release and subsequent claim preserve complete Assignment history.
+6. Pool filtering, ordering and pagination occur in PostgreSQL.
+7. A direct API request cannot bypass COI or contextual authorization.
+
+### Done When
+
+Eligible users can claim work atomically without exposing or stealing Tasks.
+
+## 9.14 Assignment Audit, Read Models and Test Matrix
+
+### Goal
+
+Make Task ownership, allocation decisions and aggregate completion behavior
+observable and verifiable.
+
+### Scope
+
+Provide audience-appropriate read models for:
+- My Tasks/current assignments;
+- unassigned Tasks requiring allocation;
+- self-assignment pools;
+- Stage reviewer-slot/completion progress;
+- restricted assignment history;
+- quorum status;
+- authority-band resolution;
+- allocation failure/exception queues;
+- workload data required by later reporting.
+
+Use explicit SQL projections with filtering, ordering and pagination. Reviewer
+identity, COI disclosure, authority evidence and strategy metadata are exposed
+only to actors with the applicable contextual permissions.
+
+Audit at minimum:
+- Task allocated, claimed, accepted, released, reassigned and ended;
+- candidate strategy/fallback outcome;
+- COI declaration, clearance, revocation and recusal using restricted detail;
+- reviewer threshold satisfied;
+- quorum evaluated/satisfied/lost;
+- authority band resolved, re-resolved and denied;
+- automatic allocation failure.
+
+Automated tests cover allowed, denied and context-mismatch cases for every
+protected route/command, plus:
+- no eligible candidate;
+- identical retry and stale version;
+- concurrent assignment, claim, completion and reassignment;
+- reviewer response isolation;
+- threshold denominator and rounding boundaries;
+- quorum attendance/COI combinations;
+- authority-band boundaries and changed amounts;
+- round-robin cursor contention;
+- expertise ranking/fallback;
+- workload ties/capacity contention;
+- audit reconstruction and rollback after injected failure.
+
+### Acceptance Criteria
+
+1. Current ownership and complete Assignment history can be reconstructed.
+2. Read models do not reveal reviewer, COI or authority data outside permitted
+   scopes.
+3. Repository tests cover projection shape, filters, ordering, pagination and
+   authorization scope for material assignment queries.
+4. Concurrency tests prove single ownership, stable reviewer counts and
+   once-only threshold/quorum effects.
+5. Integration tests prove an actor can complete/approve only an assigned,
+   context-authorized and authority-valid Task.
+6. All Assignment mutations and aggregate decisions are auditable without
+   storing unnecessary sensitive payloads.
+
+### Done When
+
+Operations staff can explain who owned every Task, why they were selected, and
+why a reviewer threshold, quorum or authority decision passed or failed.
+
+## Phase 9 Done When
+
+Manual, role-based, round-robin, expertise, workload and self-service allocation
+all use the same contextual eligibility rules; reviewer Tasks and responses are
+isolated; thresholds and quorum are deterministic; COI blocks content and
+actions until clearance; reassignment preserves authorship and history; and an
+approval cannot complete unless the actor's effective authority band covers the
+authoritative decision amount.
 
 ---
 

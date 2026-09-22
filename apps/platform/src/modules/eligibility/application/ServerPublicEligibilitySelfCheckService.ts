@@ -18,7 +18,7 @@ import type {
   EligibilityEvaluationRuleSet,
 } from "../domain/EligibilityEvaluation";
 import {
-  eligibilityFieldsFromForm,
+  eligibilityQuestionFieldsFromForm,
   fundingCallEligibilityFields,
 } from "../domain/EligibilityConditionFields";
 import { evaluateEligibilityRuleSet } from "../engine/EligibilityEvaluator";
@@ -140,7 +140,7 @@ async function loadSelfCheck(fundingCallId: string) {
     }
     const rules = applicableRules(ruleSet);
     if (!rules.length) throw new PublicEligibilitySelfCheckUnavailableError();
-    const fields = eligibilityFieldsFromForm(form.fields);
+    const fields = eligibilityQuestionFieldsFromForm(form.fields);
     const fieldDefinitions = new Map(fields.map((field) => [field.key, field]));
     const paths = requiredApplicationPaths(rules, new Set(fieldDefinitions.keys()));
     const questions = questionsFor(ruleSet, paths, fieldDefinitions);
@@ -276,11 +276,15 @@ export async function evaluatePublicEligibilitySelfCheck(
     fundingCall: {
       closes_at: value.fundingCall.closesAt,
       funding_instrument: value.fundingCall.fundingInstrument,
-      maximum_grant_amount: value.fundingCall.maximumAmount,
-      minimum_grant_amount: value.fundingCall.minimumAmount,
+      id: value.fundingCall.id,
+      maximum_amount: value.fundingCall.maximumAmount,
+      minimum_amount: value.fundingCall.minimumAmount,
       opens_at: value.fundingCall.opensAt,
+      slug: value.fundingCall.slug,
+      status: value.fundingCall.status,
       thematic_area: value.fundingCall.thematicArea,
-      total_budget_envelope: value.fundingCall.totalFundingAmount,
+      title: value.fundingCall.title,
+      total_funding_amount: value.fundingCall.totalFundingAmount,
     },
     stages: [],
   });

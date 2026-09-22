@@ -30,6 +30,7 @@ export type StageCompletionTarget = {
   stageInstanceId: string;
   stageDefinitionId: string;
   stageKey: string;
+  rowVersion?: number;
   status: StageInstanceStatus;
   workflowInstanceId: string;
   workflowVersionId: string;
@@ -87,6 +88,7 @@ export async function lockStageCompletionTarget(
       stageInstanceId: stageInstances.id,
       stageDefinitionId: stageInstances.workflowStageDefinitionId,
       stageKey: workflowStageDefinitions.code,
+      rowVersion: stageInstances.rowVersion,
       status: stageInstances.status,
       workflowInstanceId: workflowInstances.id,
       workflowVersionId: workflowInstances.workflowTemplateVersionId,
@@ -121,7 +123,7 @@ export async function lockStageCompletionTarget(
     .where(and(
       eq(stageInstances.id, stageInstanceId),
       eq(workflowInstances.status, "ACTIVE"),
-      eq(workflowInstances.currentStageInstanceId, stageInstanceId),
+      eq(stageInstances.status, "ACTIVE"),
     ))
     .for("update", { of: stageInstances })
     .limit(1);

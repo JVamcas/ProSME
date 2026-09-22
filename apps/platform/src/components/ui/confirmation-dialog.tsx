@@ -12,6 +12,7 @@ type Props = {
   isDangerous?: boolean;
   isLoading?: boolean;
   isOpen: boolean;
+  loadingText?: string;
   message: ReactNode;
   onCancel: () => void;
   onConfirm: () => void;
@@ -25,6 +26,7 @@ export function ConfirmationDialog({
   isDangerous = false,
   isLoading = false,
   isOpen,
+  loadingText = "Working…",
   message,
   onCancel,
   onConfirm,
@@ -54,7 +56,7 @@ export function ConfirmationDialog({
             type="button"
             variant={isDangerous ? "danger" : "primary"}
           >
-            {isLoading ? "Deleting…" : confirmText}
+            {isLoading ? loadingText : confirmText}
           </GeneralButton>
         </div>
       </div>

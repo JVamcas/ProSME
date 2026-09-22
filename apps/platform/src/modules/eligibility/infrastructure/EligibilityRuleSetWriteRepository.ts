@@ -18,6 +18,25 @@ import {
   eligibilityRuleSetVersions,
 } from "./eligibility-ruleset.schema";
 
+export async function updateEligibilityRuleSetDefinition(input: {
+  code: string;
+  description: string;
+  name: string;
+  ruleSetId: string;
+}) {
+  const [definition] = await getDatabase()
+    .update(eligibilityRuleSets)
+    .set({
+      code: input.code,
+      description: input.description,
+      name: input.name,
+      updatedAt: new Date(),
+    })
+    .where(eq(eligibilityRuleSets.id, input.ruleSetId))
+    .returning();
+  return definition ?? null;
+}
+
 export async function updateEligibilityRuleSetDraft(input: {
   actorId: string;
   code?: string;

@@ -79,7 +79,7 @@ export function EligibilityRuleDialog({
         />
         <div className="grid gap-4 sm:grid-cols-2">
           <FormInput
-            label="Reason code"
+            label="Rule Code"
             name="reasonCode"
             placeholder="OWNERSHIP_REQUIRED"
             required

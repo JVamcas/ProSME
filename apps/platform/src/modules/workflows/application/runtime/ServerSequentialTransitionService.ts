@@ -31,6 +31,7 @@ import { completeStageInTransaction } from "./ServerStageCompletionService";
 export type ExecuteSequentialTransitionInput = {
   actionKey: string;
   actorId: string;
+  conditionContext?: Parameters<typeof evaluateStageCondition>[1];
   correlationId: string;
   sourceStageInstanceId: string;
 };
@@ -120,33 +121,37 @@ export async function executeSequentialTransitionInTransaction(
 
   // A PostgreSQL transaction uses one connection, so dependent context reads
   // are deliberately sequenced here.
-  const priorStages = await loadPriorStageContext(
-    transaction,
-    source.workflowInstanceId,
-  );
-  const valueRows = await loadStageCompletionValues(
-    transaction,
-    source.stageInstanceId,
-  );
-  const selected = selectTransition(configured.transitions, {
-    application: normalizeStageConditionRecord(source.application),
-    eligibility: normalizeStageConditionRecord(source.eligibility),
-    fundingCall: normalizeStageConditionRecord(source.fundingCall),
-    stages: [
-      ...priorStages
-        .filter((stage) => stage.stableKey !== source.stageKey)
-        .map((stage) => ({
-          stableKey: stage.stableKey,
-          values: normalizeStageConditionRecord(stage.values),
-        })),
-      {
-        stableKey: source.stageKey,
-        values: normalizeStageConditionRecord(
-          buildStageCompletionValues(valueRows),
-        ),
-      },
-    ],
-  });
+  let conditionContext = input.conditionContext;
+  if (!conditionContext) {
+    const priorStages = await loadPriorStageContext(
+      transaction,
+      source.workflowInstanceId,
+    );
+    const valueRows = await loadStageCompletionValues(
+      transaction,
+      source.stageInstanceId,
+    );
+    conditionContext = {
+      application: normalizeStageConditionRecord(source.application),
+      eligibility: normalizeStageConditionRecord(source.eligibility),
+      fundingCall: normalizeStageConditionRecord(source.fundingCall),
+      stages: [
+        ...priorStages
+          .filter((stage) => stage.stableKey !== source.stageKey)
+          .map((stage) => ({
+            stableKey: stage.stableKey,
+            values: normalizeStageConditionRecord(stage.values),
+          })),
+        {
+          stableKey: source.stageKey,
+          values: normalizeStageConditionRecord(
+            buildStageCompletionValues(valueRows),
+          ),
+        },
+      ],
+    };
+  }
+  const selected = selectTransition(configured.transitions, conditionContext);
   if (!("transition" in selected)) {
     return {
       evaluations: selected.evaluations,

@@ -88,7 +88,11 @@ export function WorkflowActionDialog({
       });
       return;
     }
-    const nextAction = toWorkflowActionDefinition(values, action?.id);
+    const nextAction = toWorkflowActionDefinition(
+      values,
+      action?.id,
+      action?.condition,
+    );
     await mutation.mutateAsync({
       stages: editor.graph.stages.map((item) =>
         item.stableKey === stage.stableKey

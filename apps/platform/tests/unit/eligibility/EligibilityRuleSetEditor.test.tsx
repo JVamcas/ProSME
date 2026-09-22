@@ -8,6 +8,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   eligibilityRuleSetQueryKeys,
 } from "@/modules/eligibility/EligibilityRuleSetHooks";
+import type { EligibilityRuleSetBuilderView } from "@/modules/eligibility/api/EligibilityRuleSetTransport";
 import { EligibilityRuleSetEditor } from "@/modules/eligibility/ui/EligibilityRuleSetEditor";
 
 (globalThis as typeof globalThis & {
@@ -79,7 +80,7 @@ function builder(status: "DRAFT" | "PUBLISHED") {
       versionNumber: 1,
     },
     versions: [],
-  } as never;
+  } as unknown as EligibilityRuleSetBuilderView;
 }
 
 function queryClient(status: "DRAFT" | "PUBLISHED") {
@@ -89,6 +90,20 @@ function queryClient(status: "DRAFT" | "PUBLISHED") {
   client.setQueryData(
     eligibilityRuleSetQueryKeys.detail(ruleSetId),
     builder(status),
+  );
+  return client;
+}
+
+function unboundDraftQueryClient() {
+  const client = queryClient("DRAFT");
+  client.setQueryData(
+    eligibilityRuleSetQueryKeys.detail(ruleSetId),
+    {
+      ...builder("DRAFT"),
+      conditionFields: [],
+      context: { fundingCalls: [] },
+      rules: [],
+    },
   );
   return client;
 }
@@ -188,5 +203,53 @@ describe("EligibilityRuleSetEditor", () => {
     expect(document.body.textContent).toContain("Delete eligibility rule");
     expect(document.body.textContent).toContain("Delete EMPLOYEE_REQUIRED?");
     expect(container.textContent).toContain("EMPLOYEE_REQUIRED");
+  });
+
+  it("asks for confirmation before publishing a draft version", async () => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    await act(async () => root?.render(
+      <QueryClientProvider client={queryClient("DRAFT")}>
+        <EligibilityRuleSetEditor
+          canPublish
+          canRetire={false}
+          canUpdate
+          id={ruleSetId}
+        />
+      </QueryClientProvider>,
+    ));
+
+    await act(async () => container.querySelector<HTMLButtonElement>(
+      '[aria-label="Publish ruleset version"]',
+    )?.click());
+
+    expect(document.body.textContent).toContain("Publish eligibility ruleset");
+    expect(document.body.textContent).toContain("Publish SME Standard version 1?");
+  });
+
+  it("keeps the add-rule action visible while an unbound draft is empty", async () => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    await act(async () => root?.render(
+      <QueryClientProvider client={unboundDraftQueryClient()}>
+        <EligibilityRuleSetEditor
+          canPublish
+          canRetire={false}
+          canUpdate
+          id={ruleSetId}
+        />
+      </QueryClientProvider>,
+    ));
+
+    const addRule = [...container.querySelectorAll("button")].find(
+      (button) => button.textContent?.includes("Add rule"),
+    );
+    expect(addRule).not.toBeUndefined();
+    expect(addRule?.disabled).toBe(true);
+    expect(container.textContent).toContain(
+      "Bind this draft ruleset to a draft funding call before adding rules.",
+    );
   });
 });

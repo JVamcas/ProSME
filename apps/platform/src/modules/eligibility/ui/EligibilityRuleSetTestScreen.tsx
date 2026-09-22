@@ -246,8 +246,14 @@ function EligibilityTestForm({
   );
 }
 
-export function EligibilityRuleSetTestScreen({ id }: { id: string }) {
-  const query = useEligibilityRuleSetBuilder(id);
+export function EligibilityRuleSetTestScreen({
+  id,
+  versionId,
+}: {
+  id: string;
+  versionId?: string;
+}) {
+  const query = useEligibilityRuleSetBuilder(id, versionId);
   if (query.isPending) return <p>Loading eligibility ruleset…</p>;
   if (query.isError || !query.data) {
     return (

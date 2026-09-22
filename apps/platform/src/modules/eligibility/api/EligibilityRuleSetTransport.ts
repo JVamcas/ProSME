@@ -41,10 +41,10 @@ export type EligibilityRuleSetSummary = {
     title: string;
   }>;
   id: string;
-  latestStatus: EligibilityRuleSetStatus;
-  latestVersion: number;
-  latestVersionId: string;
-  latestVersionRowVersion: number;
+  status: EligibilityRuleSetStatus;
+  version: number;
+  versionId: string;
+  versionRowVersion: number;
   name: string;
   ruleCount: number;
   updatedAt: string;
@@ -72,6 +72,9 @@ export type CreateEligibilityRuleSetInput = {
   description: string;
   name: string;
 };
+
+export type UpdateEligibilityRuleSetDefinitionInput =
+  CreateEligibilityRuleSetInput;
 
 export type UpdateEligibilityRuleSetBuilderInput = {
   expectedRowVersion: number;

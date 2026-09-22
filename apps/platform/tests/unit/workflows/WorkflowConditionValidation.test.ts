@@ -149,6 +149,27 @@ describe("workflow condition publication validation", () => {
     ]);
   });
 
+  it("validates action conditions against the source-stage snapshot", () => {
+    const { fields, graph, second } = fixture();
+    second.actions.push({
+      actionType: "APPROVE_ADVANCE",
+      condition: condition("stage.finance_review.unknown_field", 100),
+      configuration: {},
+      displayOrder: 1,
+      enabled: true,
+      label: "Advance",
+      reasonCodeRequired: false,
+      stableKey: "ADVANCE",
+    });
+
+    expect(validateWorkflowConditions(graph, fields)).toEqual([
+      expect.objectContaining({
+        code: "INVALID_WORKFLOW_CONDITION",
+        path: "stages.1.actions.0.condition.children.0",
+      }),
+    ]);
+  });
+
   it("rejects empty groups and values incompatible with their fields", () => {
     const { fields, graph, first } = fixture();
     first.entryCondition = {

@@ -4,7 +4,13 @@ import { FlaskConical, Plus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { DeleteButton, EditButton } from "@/components/ui/action-buttons";
+import {
+  CloneButton,
+  DeleteButton,
+  EditButton,
+  PublishButton,
+  RetireButton,
+} from "@/components/ui/action-buttons";
 import { GeneralButton, GeneralButtonLink } from "@/components/ui/button";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
@@ -117,26 +123,23 @@ function ruleColumns({
   return columns;
 }
 
-function lifecycleLabel(status: "DRAFT" | "PUBLISHED" | "RETIRED") {
-  if (status === "DRAFT") return "Publish version";
-  if (status === "PUBLISHED") return "Retire version";
-  return "Create new draft";
-}
-
 export function EligibilityRuleSetEditor({
   canPublish,
   canRetire,
   canUpdate,
   id,
+  versionId,
 }: {
   canPublish: boolean;
   canRetire: boolean;
   canUpdate: boolean;
   id: string;
+  versionId?: string;
 }) {
-  const query = useEligibilityRuleSetBuilder(id);
-  const update = useUpdateEligibilityRuleSet(id);
+  const query = useEligibilityRuleSetBuilder(id, versionId);
+  const update = useUpdateEligibilityRuleSet(id, versionId);
   const lifecycle = useEligibilityRuleSetLifecycle(id);
+  const [confirmingPublish, setConfirmingPublish] = useState(false);
   const [deleting, setDeleting] = useState<EligibilityBuilderRule>();
   const [editing, setEditing] = useState<EligibilityBuilderRule | "new">();
   const editor = query.data;
@@ -168,15 +171,16 @@ export function EligibilityRuleSetEditor({
     }
   }
 
-  async function runLifecycle() {
+  async function runLifecycle(action: "CLONE" | "PUBLISH" | "RETIRE") {
     try {
-      if (currentEditor.version.status === "DRAFT") {
+      if (action === "PUBLISH") {
         await lifecycle.mutateAsync({
           action: "PUBLISH",
           expectedRowVersion: currentEditor.version.rowVersion,
           versionId: currentEditor.version.id,
         });
-      } else if (currentEditor.version.status === "PUBLISHED") {
+        setConfirmingPublish(false);
+      } else if (action === "RETIRE") {
         await lifecycle.mutateAsync({
           action: "RETIRE",
           expectedRowVersion: currentEditor.version.rowVersion,
@@ -197,13 +201,6 @@ export function EligibilityRuleSetEditor({
     }
   }
 
-  const canRunLifecycle =
-    currentEditor.version.status === "DRAFT"
-      ? canPublish && hasContext
-      : currentEditor.version.status === "PUBLISHED"
-        ? canRetire
-        : canUpdate;
-
   return (
     <div className="space-y-6">
       <header className="flex flex-wrap items-start justify-between gap-4 rounded-2xl border border-brand-navy/15 bg-white p-5 shadow-sm">
@@ -223,24 +220,42 @@ export function EligibilityRuleSetEditor({
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <EditButton
+            disabled={!editable}
+            onClick={() => document.getElementById("eligibility-rules")
+              ?.scrollIntoView({ behavior: "smooth" })}
+            title="Edit eligibility rules"
+          />
+          <CloneButton
+            disabled={isDraft || !canUpdate}
+            isLoading={lifecycle.isPending}
+            onClick={() => void runLifecycle("CLONE")}
+            title="Clone ruleset version"
+          />
+          <PublishButton
+            disabled={!isDraft || !canPublish || !hasContext}
+            isLoading={lifecycle.isPending}
+            onClick={() => setConfirmingPublish(true)}
+            title="Publish ruleset version"
+          />
+          {currentEditor.version.status === "PUBLISHED" ? (
+            <RetireButton
+              disabled={!canRetire}
+              isLoading={lifecycle.isPending}
+              onClick={() => void runLifecycle("RETIRE")}
+              title="Retire ruleset version"
+            />
+          ) : null}
           <GeneralButtonLink
-            href={`/admin/settings/eligibility-rulesets/${id}/test`}
+            href={versionId
+              ? `/admin/settings/eligibility-rulesets/${id}/test?versionId=${versionId}`
+              : `/admin/settings/eligibility-rulesets/${id}/test`}
             variant="outlineOrange"
             size={"compact"}
           >
             <FlaskConical className="size-4" />
             Test ruleset
           </GeneralButtonLink>
-          <GeneralButton
-            disabled={!canRunLifecycle || lifecycle.isPending}
-            onClick={runLifecycle}
-            variant="outlineOrange"
-            size={"compact"}
-          >
-            {lifecycle.isPending
-              ? "Working…"
-              : lifecycleLabel(currentEditor.version.status)}
-          </GeneralButton>
         </div>
       </header>
 
@@ -250,22 +265,19 @@ export function EligibilityRuleSetEditor({
         </p>
       ) : null}
 
-      {currentEditor.context.fundingCalls.length ? (
-        <p className="rounded-xl border border-brand-blue/20 bg-brand-blue/10 px-4 py-3 text-sm text-brand-navy">
-          Available fields come from:{" "}
-          {currentEditor.context.fundingCalls
-            .map((call) => call.title)
-            .join(", ")}
-          .
+      {isDraft && !hasContext ? (
+        <p className="rounded-xl border border-amber-400 bg-amber-50 px-4 py-3 text-sm text-brand-navy">
+          Bind this draft ruleset to a draft funding call before adding rules.
         </p>
       ) : null}
+
       {lifecycle.error ? (
         <p className="text-sm text-red-700" role="alert">
           {lifecycle.error.message}
         </p>
       ) : null}
 
-      <section aria-label="Eligibility rules">
+      <section aria-label="Eligibility rules" id="eligibility-rules">
         <DataTable
           columns={ruleColumns({
             editable,
@@ -279,8 +291,18 @@ export function EligibilityRuleSetEditor({
           rowKey={(rule) => rule.id}
           toolbar={{
             actions:
-              editable && hasContext ? (
-                <GeneralButton onClick={() => setEditing("new")} size="compact">
+              editable ? (
+                <GeneralButton
+                  disabled={!hasContext}
+                  onClick={() => setEditing("new")}
+                  size="compact"
+                  title={
+                    hasContext
+                      ? "Add eligibility rule"
+                      : "Bind this ruleset to a funding call before adding rules"
+                  }
+                  variant={"primary"}
+                >
                   <Plus className="size-4" />
                   Add rule
                 </GeneralButton>
@@ -317,10 +339,22 @@ export function EligibilityRuleSetEditor({
         />
       </DraggableDialog>
       <ConfirmationDialog
+        confirmText="Publish version"
+        errorMessage={lifecycle.error?.message}
+        isLoading={lifecycle.isPending}
+        isOpen={confirmingPublish}
+        loadingText="Publishing…"
+        message={`Publish ${currentEditor.definition.name} version ${currentEditor.version.versionNumber}? It will become available for use by its funding call.`}
+        onCancel={() => setConfirmingPublish(false)}
+        onConfirm={() => void runLifecycle("PUBLISH")}
+        title="Publish eligibility ruleset"
+      />
+      <ConfirmationDialog
         confirmText="Delete rule"
         isDangerous
         isLoading={update.isPending}
         isOpen={Boolean(deleting) && editable}
+        loadingText="Deleting…"
         message={
           `Delete ${deleting?.reasonCode ?? "this eligibility rule"}? This only changes the mutable draft.`
         }

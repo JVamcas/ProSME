@@ -25,6 +25,8 @@ export default async function EligibilityRuleSetsPage() {
       />
       <EligibilityRuleSetList
         canCreate={can(user, permissionCodes.eligibilityRuleSetCreate)}
+        canPublish={can(user, permissionCodes.eligibilityRuleSetPublish)}
+        canUpdate={can(user, permissionCodes.eligibilityRuleSetUpdate)}
       />
     </section>
   );

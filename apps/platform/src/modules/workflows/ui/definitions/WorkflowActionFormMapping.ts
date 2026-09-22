@@ -1,6 +1,7 @@
 import { workflowActionDefinitionSchema } from "@/modules/workflows/domain/actions/WorkflowActionSchemas";
 import type { WorkflowActionDefinition } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
 import type { WorkflowActionFormValues } from "./WorkflowActionFormSchema";
+import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup";
 
 function keys(value: string) {
   return value
@@ -162,9 +163,11 @@ function configuration(values: WorkflowActionFormValues) {
 export function toWorkflowActionDefinition(
   values: WorkflowActionFormValues,
   id?: string,
+  condition?: ConditionGroup | null,
 ): WorkflowActionDefinition {
   return workflowActionDefinitionSchema.parse({
     ...(id ? { id } : {}),
+    ...(condition ? { condition } : {}),
     stableKey: values.stableKey,
     label: values.label,
     actionType: values.actionType,

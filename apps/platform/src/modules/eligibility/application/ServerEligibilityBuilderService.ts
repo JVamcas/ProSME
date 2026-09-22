@@ -33,9 +33,10 @@ export async function getEligibilityRuleSets(
 export async function getEligibilityRuleSetBuilder(
   user: AuthenticatedUser | null,
   ruleSetId: string,
+  versionId?: string,
 ) {
   requirePermission(user, permissionCodes.eligibilityRuleSetRead);
-  const builder = await findEligibilityRuleSetBuilder(ruleSetId);
+  const builder = await findEligibilityRuleSetBuilder(ruleSetId, versionId);
   if (!builder) throw new ResourceNotFoundError("eligibility ruleset");
   const context = await eligibilityBuilderContext(builder.version.id);
   return { ...builder, ...context };
@@ -79,8 +80,9 @@ export async function saveEligibilityRuleSetBuilder(
   user: AuthenticatedUser | null,
   ruleSetId: string,
   input: UpdateEligibilityRuleSetBuilderInput,
+  versionId?: string,
 ) {
-  const builder = await getEligibilityRuleSetBuilder(user, ruleSetId);
+  const builder = await getEligibilityRuleSetBuilder(user, ruleSetId, versionId);
   validateContextualRules(input.rules, builder.conditionFields);
   await updateEligibilityRuleSet(
     user,
@@ -103,5 +105,5 @@ export async function saveEligibilityRuleSetBuilder(
       })),
     },
   );
-  return getEligibilityRuleSetBuilder(user, ruleSetId);
+  return getEligibilityRuleSetBuilder(user, ruleSetId, builder.version.id);
 }

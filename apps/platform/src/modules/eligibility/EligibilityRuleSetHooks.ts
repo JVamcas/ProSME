@@ -5,13 +5,19 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 import type {
   CreateEligibilityRuleSetInput,
   UpdateEligibilityRuleSetBuilderInput,
+  UpdateEligibilityRuleSetDefinitionInput,
 } from "./api/EligibilityRuleSetTransport";
 import type { EligibilityTestInput } from "./api/EligibilityTestSchemas";
 import { clientEligibilityRuleSetService } from "./ClientEligibilityRuleSetService";
 
 export const eligibilityRuleSetQueryKeys = {
   all: ["admin", "eligibility-rulesets"] as const,
-  detail: (id: string) => ["admin", "eligibility-rulesets", id] as const,
+  detail: (id: string, versionId?: string) => [
+    "admin",
+    "eligibility-rulesets",
+    id,
+    versionId ?? "preferred",
+  ] as const,
   list: (page: number, pageSize: number) => [
     "admin",
     "eligibility-rulesets",
@@ -29,11 +35,11 @@ export function useEligibilityRuleSets(page: number, pageSize: number) {
   });
 }
 
-export function useEligibilityRuleSetBuilder(id: string) {
+export function useEligibilityRuleSetBuilder(id: string, versionId?: string) {
   return useQuery({
     enabled: Boolean(id),
-    queryFn: () => clientEligibilityRuleSetService.get(id),
-    queryKey: eligibilityRuleSetQueryKeys.detail(id),
+    queryFn: () => clientEligibilityRuleSetService.get(id, versionId),
+    queryKey: eligibilityRuleSetQueryKeys.detail(id, versionId),
   });
 }
 
@@ -48,13 +54,29 @@ export function useCreateEligibilityRuleSet() {
   });
 }
 
-export function useUpdateEligibilityRuleSet(id: string) {
+export function useUpdateEligibilityRuleSetDefinition(id?: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: UpdateEligibilityRuleSetDefinitionInput) => {
+      if (!id) throw new Error("Select an eligibility ruleset to edit.");
+      return clientEligibilityRuleSetService.updateDefinition(id, input);
+    },
+    onSuccess: () => queryClient.invalidateQueries({
+      queryKey: eligibilityRuleSetQueryKeys.all,
+    }),
+  });
+}
+
+export function useUpdateEligibilityRuleSet(id: string, versionId?: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (input: UpdateEligibilityRuleSetBuilderInput) =>
-      clientEligibilityRuleSetService.update(id, input),
+      clientEligibilityRuleSetService.update(id, input, versionId),
     onSuccess: (view) => {
-      queryClient.setQueryData(eligibilityRuleSetQueryKeys.detail(id), view);
+      queryClient.setQueryData(
+        eligibilityRuleSetQueryKeys.detail(id, versionId),
+        view,
+      );
       void queryClient.invalidateQueries({
         queryKey: eligibilityRuleSetQueryKeys.all,
       });

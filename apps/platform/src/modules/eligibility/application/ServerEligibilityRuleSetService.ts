@@ -25,7 +25,10 @@ import {
   publishEligibilityRuleSetVersion,
   retireEligibilityRuleSetVersion,
 } from "../infrastructure/EligibilityRuleSetRepository";
-import { updateEligibilityRuleSetDraft } from "../infrastructure/EligibilityRuleSetWriteRepository";
+import {
+  updateEligibilityRuleSetDefinition,
+  updateEligibilityRuleSetDraft,
+} from "../infrastructure/EligibilityRuleSetWriteRepository";
 import { findEligibilityRuleSetBuilder } from "../infrastructure/EligibilityBuilderRepository";
 import { eligibilityFieldsForBoundForms } from "../domain/EligibilityConditionFields";
 
@@ -74,6 +77,20 @@ export async function createNewEligibilityRuleSet(
   return requireRuleSet(created.definition.id);
 }
 
+export async function updateEligibilityRuleSetMetadata(
+  user: AuthenticatedUser | null,
+  ruleSetId: string,
+  input: CreateEligibilityRuleSetCommand,
+) {
+  requirePermission(user, permissionCodes.eligibilityRuleSetUpdate);
+  const definition = await updateEligibilityRuleSetDefinition({
+    ...input,
+    ruleSetId,
+  });
+  if (!definition) throw new ResourceNotFoundError("eligibility ruleset");
+  return { definition };
+}
+
 export async function updateEligibilityRuleSet(
   user: AuthenticatedUser | null,
   ruleSetId: string,
@@ -116,7 +133,7 @@ export async function publishEligibilityRuleSet(
     permissionCodes.eligibilityRuleSetPublish,
   );
   const [builder, contexts] = await Promise.all([
-    findEligibilityRuleSetBuilder(ruleSetId),
+    findEligibilityRuleSetBuilder(ruleSetId, versionId),
     resolveEligibilityRuleSetContexts(versionId),
   ]);
   const fields = eligibilityFieldsForBoundForms(

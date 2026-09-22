@@ -11,6 +11,10 @@ import {
   ResourceNotFoundError,
   RequestValidationError,
 } from "@/lib/resource-errors";
+import {
+  WorkflowActionExecutionError,
+  type WorkflowActionExecutionErrorCode,
+} from "@/modules/workflows/domain/actions/WorkflowActionExecution";
 
 type ApiErrorCode =
   | "CONFLICT"
@@ -19,7 +23,8 @@ type ApiErrorCode =
   | "IDEMPOTENCY_CONFLICT"
   | "NOT_FOUND"
   | "UNAUTHENTICATED"
-  | "VALIDATION_ERROR";
+  | "VALIDATION_ERROR"
+  | WorkflowActionExecutionErrorCode;
 
 function responseHeaders(correlationId: string) {
   return {
@@ -159,6 +164,15 @@ export function portalRouteError(
       correlationId,
       409,
       "IDEMPOTENCY_CONFLICT",
+      error.userMessage,
+    );
+  }
+
+  if (error instanceof WorkflowActionExecutionError) {
+    return errorResponse(
+      correlationId,
+      409,
+      error.code,
       error.userMessage,
     );
   }

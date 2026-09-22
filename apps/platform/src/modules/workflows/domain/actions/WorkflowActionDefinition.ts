@@ -1,4 +1,5 @@
 import type { WorkflowActionConfigurationByType } from "./WorkflowActionConfiguration";
+import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup";
 
 export const workflowActionTypes = [
   "APPROVE_ADVANCE",
@@ -15,6 +16,7 @@ export const workflowActionTypes = [
 export type WorkflowActionType = (typeof workflowActionTypes)[number];
 
 type WorkflowActionDefinitionCommon = {
+  condition?: ConditionGroup | null;
   id?: string;
   stableKey: string;
   label: string;

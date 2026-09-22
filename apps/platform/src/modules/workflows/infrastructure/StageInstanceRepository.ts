@@ -34,6 +34,7 @@ export async function createStageInstance(
       iterationNumber: stageInstances.iterationNumber,
       referralContext: stageInstances.referralContext,
       returnContext: stageInstances.returnContext,
+      rowVersion: stageInstances.rowVersion,
       status: stageInstances.status,
       workflowInstanceId: stageInstances.workflowInstanceId,
       workflowStageDefinitionId:

@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { conditionGroupSchema } from "@/modules/conditions/domain/ConditionSerialization";
+
 const stableKeySchema = z
   .string()
   .trim()
@@ -108,6 +110,7 @@ export const deferConfigurationSchema = z.discriminatedUnion("targetType", [
 ]);
 
 const commonShape = {
+  condition: conditionGroupSchema.nullable().optional(),
   id: z.string().uuid().optional(),
   stableKey: stableKeySchema,
   label: z.string().trim().min(2).max(160),

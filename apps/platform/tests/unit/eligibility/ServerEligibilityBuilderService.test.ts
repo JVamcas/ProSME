@@ -94,6 +94,19 @@ describe("ServerEligibilityBuilderService", () => {
     expect(findEligibilityRuleSetBuilder).not.toHaveBeenCalled();
   });
 
+  it("loads the selected ruleset version", async () => {
+    await getEligibilityRuleSetBuilder(
+      user([permissionCodes.eligibilityRuleSetRead]),
+      ruleSetId,
+      versionId,
+    );
+
+    expect(findEligibilityRuleSetBuilder).toHaveBeenCalledWith(
+      ruleSetId,
+      versionId,
+    );
+  });
+
   it("maps visual condition groups into the draft update command", async () => {
     const actor = user([
       permissionCodes.eligibilityRuleSetRead,

@@ -60,6 +60,7 @@ const graphSelection = {
     stableKey: workflowActionDefinitions.stableKey,
     label: workflowActionDefinitions.label,
     actionType: workflowActionDefinitions.actionType,
+    condition: workflowActionDefinitions.condition,
     configuration: workflowActionDefinitions.configuration,
     enabled: workflowActionDefinitions.enabled,
     reasonCodeRequired: workflowActionDefinitions.reasonCodeRequired,

@@ -15,6 +15,7 @@ import type { WorkflowInstanceStatus } from "@/modules/workflows/domain/runtime/
 import type { StageInstanceStatus } from "@/modules/workflows/domain/runtime/StageInstance";
 import type { WorkflowTaskStatus } from "@/modules/workflows/domain/runtime/WorkflowTask";
 import type { TransitionExecutionOutcome } from "@/modules/workflows/domain/runtime/TransitionExecution";
+import type { WorkflowActionType } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
 import { formVersions } from "@/modules/forms/infrastructure/form.schema";
 import { applications } from "@/db/schema/applications";
 import { roles } from "@/db/schema/authorization";
@@ -23,6 +24,7 @@ import {
   stageTaskDefinitions,
   workflowDefinitionVersions,
   workflowStageDefinitions,
+  workflowActionDefinitions,
   workflowTransitionDefinitions,
 } from "@/modules/workflows/infrastructure/workflow.schema";
 
@@ -79,6 +81,7 @@ export const stageInstances = pgTable(
       .notNull()
       .default("ACTIVE"),
     iterationNumber: integer("iteration_number").notNull().default(1),
+    rowVersion: integer("row_version").notNull().default(1),
     referralContext: jsonb("referral_context")
       .$type<Record<string, unknown> | null>(),
     returnContext: jsonb("return_context")
@@ -97,6 +100,63 @@ export const stageInstances = pgTable(
     index("app_workflow_stage_instances_workflow_status_idx").on(
       table.workflowInstanceId,
       table.status,
+    ),
+  ],
+);
+
+export const workflowActionExecutions = pgTable(
+  "app_workflow_action_executions",
+  {
+    id: uuid("id").primaryKey(),
+    actionDefinitionId: uuid("action_definition_id")
+      .notNull()
+      .references(() => workflowActionDefinitions.id, { onDelete: "restrict" }),
+    actionKey: text("action_key").notNull(),
+    actionType: text("action_type").$type<WorkflowActionType>().notNull(),
+    actorType: text("actor_type").$type<"USER" | "SYSTEM">().notNull(),
+    actorId: uuid("actor_id").references(() => users.id, {
+      onDelete: "restrict",
+    }),
+    actorIdentifier: text("actor_identifier").notNull(),
+    workflowInstanceId: uuid("workflow_instance_id")
+      .notNull()
+      .references(() => workflowInstances.id, { onDelete: "restrict" }),
+    sourceStageInstanceId: uuid("source_stage_instance_id")
+      .notNull()
+      .references(() => stageInstances.id, { onDelete: "restrict" }),
+    taskId: uuid("task_id").references((): AnyPgColumn => workflowTasks.id, {
+      onDelete: "restrict",
+    }),
+    reasonCode: text("reason_code"),
+    comment: text("comment"),
+    normalizedInput: jsonb("normalized_input")
+      .$type<Record<string, unknown>>()
+      .notNull(),
+    resolvedTarget: jsonb("resolved_target")
+      .$type<Record<string, unknown> | null>(),
+    conditionEvaluation: jsonb("condition_evaluation")
+      .$type<Record<string, unknown>>()
+      .notNull(),
+    expectedRuntimeVersion: integer("expected_runtime_version").notNull(),
+    resultingRuntimeVersion: integer("resulting_runtime_version").notNull(),
+    result: jsonb("result").$type<Record<string, unknown>>().notNull(),
+    idempotencyKey: text("idempotency_key").notNull(),
+    correlationId: uuid("correlation_id").notNull(),
+    executedAt: timestamp("executed_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("app_workflow_action_executions_idempotency_unique").on(
+      table.idempotencyKey,
+    ),
+    index("app_workflow_action_executions_runtime_idx").on(
+      table.workflowInstanceId,
+      table.executedAt,
+    ),
+    index("app_workflow_action_executions_stage_idx").on(
+      table.sourceStageInstanceId,
+      table.executedAt,
     ),
   ],
 );
