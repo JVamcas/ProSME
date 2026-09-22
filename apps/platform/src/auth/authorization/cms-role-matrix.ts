@@ -1,63 +1,70 @@
 import {
-  capabilities,
-  cmsCapability,
-  type CmsAction,
-  type CmsResource,
-} from "./capabilities";
+  cmsPermissionCode,
+  permissionCodes,
+  type CmsPermissionAction,
+  type CmsPermissionResource,
+} from "./permissions";
 
-const editorialResources: CmsResource[] = ["pages", "news", "resources", "events", "faqs"];
-const programmeResources: CmsResource[] = ["eligibility", "statistics"];
+const editorialResources: CmsPermissionResource[] = [
+  "pages",
+  "news",
+  "resources",
+  "events",
+  "faqs",
+];
+const programmeResources: CmsPermissionResource[] = ["eligibility", "statistics"];
 
-function grants(resources: CmsResource[], actions: CmsAction[]) {
+function grants(
+  resources: CmsPermissionResource[],
+  actions: CmsPermissionAction[],
+) {
   return resources.flatMap((resource) =>
-    actions.map((action) => cmsCapability(resource, action)),
+    actions.map((action) => cmsPermissionCode(resource, action)),
   );
 }
 
-const editActions: CmsAction[] = ["read", "create", "update"];
-const publishActions: CmsAction[] = [...editActions, "publish"];
-const manageActions: CmsAction[] = [...publishActions, "delete"];
+const editActions: CmsPermissionAction[] = ["read", "create", "update"];
+const publishActions: CmsPermissionAction[] = [...editActions, "publish"];
+const manageActions: CmsPermissionAction[] = [...publishActions, "delete"];
 
 export const cmsRoleCapabilities = {
   cms_administrator: [
-    capabilities.cmsAccess,
-    capabilities.cmsAuditRead,
+    permissionCodes.cmsAccess,
+    permissionCodes.cmsAuditRead,
     ...grants([...editorialResources, ...programmeResources], manageActions),
     ...grants(["media"], ["read", "create", "update", "delete"]),
     ...grants(["site-settings"], ["read", "update", "publish"]),
     ...grants(["engagement-submissions"], ["read", "update", "delete"]),
   ],
   cms_author: [
-    capabilities.cmsAccess,
+    permissionCodes.cmsAccess,
     ...grants(editorialResources, editActions),
     ...grants(["media"], ["read", "create"]),
   ],
   cms_editor: [
-    capabilities.cmsAccess,
+    permissionCodes.cmsAccess,
     ...grants(editorialResources, editActions),
     ...grants(["media"], editActions),
     ...grants(["site-settings"], ["read", "update"]),
   ],
   cms_reviewer: [
-    capabilities.cmsAccess,
-    capabilities.cmsAuditRead,
+    permissionCodes.cmsAccess,
+    permissionCodes.cmsAuditRead,
     ...grants(editorialResources, ["read", "update", "publish"]),
     ...grants(["media"], ["read"]),
     ...grants(["site-settings"], ["read", "update", "publish"]),
   ],
   programme_officer: [
-    capabilities.adminAccess,
-    capabilities.cmsAccess,
-    capabilities.cmsAuditRead,
+    permissionCodes.cmsAccess,
+    permissionCodes.cmsAuditRead,
     ...grants(programmeResources, manageActions),
     ...grants(["media"], ["read", "create", "update", "delete"]),
     ...grants(["engagement-submissions"], ["read", "update", "delete"]),
   ],
   system_administrator: [
-    capabilities.adminAccess,
-    capabilities.cmsAccess,
-    capabilities.cmsAuditRead,
-    capabilities.cmsPrincipalsManage,
+    permissionCodes.cmsAccess,
+    permissionCodes.cmsAuditRead,
+    permissionCodes.cmsPrincipalsManage,
     ...grants([...editorialResources, ...programmeResources], manageActions),
     ...grants(["media"], ["read", "create", "update", "delete"]),
     ...grants(["site-settings"], ["read", "update", "publish"]),

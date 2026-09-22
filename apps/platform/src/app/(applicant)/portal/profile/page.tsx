@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-import { capabilities } from "@/auth/authorization/capabilities";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import { getCurrentUser } from "@/auth/authorization/current-user";
 import { can } from "@/auth/authorization/policy";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -34,7 +34,7 @@ function availableProfileTabs(
 ): ProfileTabId[] {
   const tabs: ProfileTabId[] = [];
 
-  if (can(user, capabilities.profileReadOwn)) {
+  if (can(user, permissionCodes.userProfileOwnRead)) {
     tabs.push("personal", "contact", "password");
   }
 
@@ -76,7 +76,7 @@ export default async function ApplicantProfilePage({
       >
         {availableTabs.map((availableTab) => (
           <ProfileTabContent
-            canUpdateApplicant={can(user, capabilities.profileUpdateOwn)}
+            canUpdateApplicant={can(user, permissionCodes.userProfileOwnUpdate)}
             email={user.email}
             key={availableTab}
             tab={availableTab}

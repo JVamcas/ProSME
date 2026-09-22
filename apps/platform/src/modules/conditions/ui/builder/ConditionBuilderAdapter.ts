@@ -3,24 +3,35 @@ import type { RuleGroupType, RuleType } from "react-querybuilder";
 import type { Condition } from "../../domain/Condition";
 import type { ConditionOperatorDefinition } from "../../domain/ConditionConfiguration";
 import type { ConditionGroup, ConditionNode } from "../../domain/ConditionGroup";
-import type { JsonValue } from "../../domain/Operand";
+import type { JsonValue, Operand } from "../../domain/Operand";
 import { operator } from "../../domain/Operator";
 
+type BuilderRuleMeta = {
+  leftOperand?: Operand;
+};
+
+function isOperand(value: unknown): value is Operand {
+  if (!value || typeof value !== "object" || !("kind" in value)) return false;
+  const kind = (value as { kind?: unknown }).kind;
+  return kind === "FIELD" || kind === "CONSTANT" || kind === "COMPUTED";
+}
+
+function firstFieldKey(operand: Operand): string {
+  if (operand.kind === "FIELD") return operand.key;
+  if (operand.kind === "COMPUTED") {
+    if (operand.leftOperand.kind === "FIELD") return operand.leftOperand.key;
+    if (operand.rightOperand.kind === "FIELD") return operand.rightOperand.key;
+  }
+  return "";
+}
+
 function conditionToRule(condition: Condition): RuleType {
-  if (condition.leftOperand.kind !== "FIELD") {
-    throw new Error("The condition builder requires a field left operand.");
-  }
-  if (
-    condition.rightOperand
-    && condition.rightOperand.kind !== "CONSTANT"
-  ) {
-    throw new Error("The condition builder requires a constant value operand.");
-  }
   return {
-    field: condition.leftOperand.key,
+    field: firstFieldKey(condition.leftOperand),
     id: condition.id,
+    meta: { leftOperand: condition.leftOperand } satisfies BuilderRuleMeta,
     operator: condition.operator,
-    value: condition.rightOperand?.value ?? "",
+    value: condition.rightOperand ?? "",
   };
 }
 
@@ -39,18 +50,18 @@ function ruleToCondition(
   operators: readonly ConditionOperatorDefinition[],
   createId: () => string,
 ): Condition {
+  const meta = rule.meta as BuilderRuleMeta | undefined;
   const definition = operators.find((item) => item.code === rule.operator);
   const condition: Condition = {
     id: rule.id ?? createId(),
     kind: "CONDITION",
-    leftOperand: { kind: "FIELD", key: rule.field },
+    leftOperand: meta?.leftOperand ?? { kind: "FIELD", key: rule.field },
     operator: operator(rule.operator),
   };
   if (definition?.valueShape !== "NONE") {
-    condition.rightOperand = {
-      kind: "CONSTANT",
-      value: rule.value as JsonValue,
-    };
+    condition.rightOperand = isOperand(rule.value)
+      ? rule.value
+      : { kind: "CONSTANT", value: rule.value as JsonValue };
   }
   return condition;
 }

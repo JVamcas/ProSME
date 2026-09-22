@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-import { capabilities } from "@/auth/authorization/capabilities";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import { getCurrentUser } from "@/auth/authorization/current-user";
 import { can } from "@/auth/authorization/policy";
 import { ApplicationsTable } from "@/components/admin/applications/ApplicationsTable";
@@ -14,8 +14,8 @@ export const metadata: Metadata = {
 export default async function ApplicationsPage() {
   const user = await getCurrentUser();
   const canRead =
-    can(user, capabilities.applicationReadAssigned) ||
-    can(user, capabilities.applicationReadAll);
+    can(user, permissionCodes.workflowTaskAssignedRead) ||
+    can(user, permissionCodes.fundingApplicationAllRead);
 
   if (!canRead) {
     redirect("/unauthorized");

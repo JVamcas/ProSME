@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-import { capabilities } from "@/auth/authorization/capabilities";
 import { getCurrentUser } from "@/auth/authorization/current-user";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import { can, requireAnyPermission } from "@/auth/authorization/policy";
 import { UserAccessWorkspace } from "@/components/admin/users/UserAccessWorkspace";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -13,10 +13,10 @@ export default async function UsersAccessPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/sign-in?next=/admin/users");
   requireAnyPermission(user, [
-    capabilities.userRead,
-    capabilities.userManage,
-    capabilities.roleRead,
-    capabilities.roleManage,
+    permissionCodes.userRead,
+    permissionCodes.userManage,
+    permissionCodes.roleRead,
+    permissionCodes.roleManage,
   ]);
 
   return (
@@ -27,13 +27,15 @@ export default async function UsersAccessPage() {
         title="Users & Roles"
       />
       <UserAccessWorkspace
-        canManageRoles={can(user, capabilities.roleManage)}
-        canManageUsers={can(user, capabilities.userManage)}
+        canManageRoles={can(user, permissionCodes.roleManage)}
+        canManageUsers={can(user, permissionCodes.userManage)}
         canReadRoles={
-          can(user, capabilities.roleRead) || can(user, capabilities.roleManage)
+          can(user, permissionCodes.roleRead) ||
+          can(user, permissionCodes.roleManage)
         }
         canReadUsers={
-          can(user, capabilities.userRead) || can(user, capabilities.userManage)
+          can(user, permissionCodes.userRead) ||
+          can(user, permissionCodes.userManage)
         }
       />
     </>

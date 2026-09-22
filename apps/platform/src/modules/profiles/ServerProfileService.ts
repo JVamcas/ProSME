@@ -1,6 +1,6 @@
 import "server-only";
 
-import { capabilities } from "@/auth/authorization/capabilities";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import {
   getAvailablePortalSpaces,
   getDefaultPortalSpace,
@@ -76,7 +76,7 @@ export function createApplicantDashboardSummary(
 export async function getApplicantProfile(
   user: AuthenticatedUser | null,
 ): Promise<ApplicantProfileView> {
-  const actor = requirePermission(user, capabilities.profileReadOwn);
+  const actor = requirePermission(user, permissionCodes.userProfileOwnRead);
   const profile = await findApplicantProfile(actor.id);
 
   if (profile) {
@@ -102,7 +102,7 @@ export async function updateApplicantProfile(
   user: AuthenticatedUser | null,
   input: ApplicantProfileUpdateInput,
 ): Promise<ApplicantProfileView> {
-  const actor = requirePermission(user, capabilities.profileUpdateOwn);
+  const actor = requirePermission(user, permissionCodes.userProfileOwnUpdate);
   await saveApplicantProfile(actor.id, input);
   const profile = await findApplicantProfile(actor.id);
 

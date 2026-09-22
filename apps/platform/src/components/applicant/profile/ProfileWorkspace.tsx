@@ -2,7 +2,7 @@
 
 import { Children, useEffect, useState } from "react";
 
-import { capabilities } from "@/auth/authorization/capabilities";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import { Tabs, type TabItem } from "@/components/ui/tabs";
 
 export type ProfileTabId = "contact" | "password" | "personal";
@@ -23,17 +23,17 @@ export const profileTabs: readonly ProfileTabItem[] = [
   {
     id: "personal",
     label: "Personal information",
-    requiredCapability: capabilities.profileReadOwn,
+    requiredCapability: permissionCodes.userProfileOwnRead,
   },
   {
     id: "contact",
     label: "Contact details",
-    requiredCapability: capabilities.profileReadOwn,
+    requiredCapability: permissionCodes.userProfileOwnRead,
   },
   {
     id: "password",
     label: "Change password",
-    requiredCapability: capabilities.profileReadOwn,
+    requiredCapability: permissionCodes.userProfileOwnRead,
   },
 ];
 

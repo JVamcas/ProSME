@@ -1,4 +1,7 @@
 import {
+  cmsPermissionActions,
+  cmsPermissionCode,
+  cmsPermissionResources,
   permissionCodes,
   type PermissionCode,
   type StaticPermissionCode,
@@ -18,7 +21,7 @@ function define(
   return { code, description, label };
 }
 
-export const permissionCatalogue: readonly PermissionDefinition[] = [
+const staticPermissionCatalogue: readonly PermissionDefinition[] = [
   define(
     permissionCodes.userRead,
     "Read users",
@@ -326,9 +329,27 @@ export const permissionCatalogue: readonly PermissionDefinition[] = [
   ),
 ];
 
+const cmsPermissionCatalogue: readonly PermissionDefinition[] =
+  cmsPermissionResources.flatMap((resource) =>
+    cmsPermissionActions.map((action) => ({
+      code: cmsPermissionCode(resource, action),
+      description: `${formatSegment(action)} ${formatSegment(resource)} content.`,
+      label: `${formatSegment(action)} ${formatSegment(resource)}`,
+    })),
+  );
+
+export const permissionCatalogue: readonly PermissionDefinition[] = [
+  ...staticPermissionCatalogue,
+  ...cmsPermissionCatalogue,
+];
+
 const definitionsByCode = new Map(
   permissionCatalogue.map((permission) => [permission.code, permission]),
 );
+
+export function isPermissionCode(code: string): code is PermissionCode {
+  return definitionsByCode.has(code as PermissionCode);
+}
 
 export function getPermissionDefinition(
   code: PermissionCode,

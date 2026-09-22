@@ -93,13 +93,6 @@ export async function listAccessRoles() {
   return rows;
 }
 
-export async function listAccessCapabilities() {
-  return getDatabase()
-    .select({ code: capabilities.code, description: capabilities.description })
-    .from(capabilities)
-    .orderBy(asc(capabilities.code));
-}
-
 export async function findAccessUser(userId: string) {
   const [row] = await getDatabase()
     .select({

@@ -7,7 +7,6 @@ vi.mock("@/db/repositories/AuditRepository", () => ({
 vi.mock("@/db/repositories/UserAccessRepository", () => ({
   findAccessUser: vi.fn(),
   inviteAccessUser: vi.fn(),
-  listAccessCapabilities: vi.fn(),
   listAccessRoles: vi.fn(),
   listAccessUsers: vi.fn(),
   promoteAccessUser: vi.fn(),
@@ -15,14 +14,13 @@ vi.mock("@/db/repositories/UserAccessRepository", () => ({
   updateAccessUser: vi.fn(),
 }));
 
-import { capabilities } from "@/auth/authorization/capabilities";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import { PermissionDeniedError } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import { listAccessAudit } from "@/db/repositories/AuditRepository";
 import {
   findAccessUser,
   inviteAccessUser,
-  listAccessCapabilities,
   listAccessRoles,
   listAccessUsers,
   promoteAccessUser,
@@ -61,7 +59,6 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(listAccessUsers).mockResolvedValue([]);
   vi.mocked(listAccessRoles).mockResolvedValue([]);
-  vi.mocked(listAccessCapabilities).mockResolvedValue([]);
   vi.mocked(listAccessAudit).mockResolvedValue([]);
   vi.mocked(findAccessUser).mockResolvedValue({
     capabilityCodes: [],
@@ -85,7 +82,7 @@ describe("user access service authorization", () => {
 
   it("allows user reads without exposing role records", async () => {
     await getUserAccessView(
-      userWith(capabilities.userRead),
+      userWith(permissionCodes.userRead),
       { limit: 100 },
       { limit: 100 },
     );
@@ -93,14 +90,32 @@ describe("user access service authorization", () => {
     expect(listAccessRoles).not.toHaveBeenCalled();
   });
 
+  it("serves only the canonical permission catalogue to role readers", async () => {
+    const view = await getUserAccessView(
+      userWith(permissionCodes.roleRead),
+      { limit: 100 },
+      { limit: 100 },
+    );
+
+    expect(view.capabilities).toContainEqual(
+      expect.objectContaining({ code: permissionCodes.fundingApplicationOwnRead }),
+    );
+    expect(view.capabilities).not.toContainEqual(
+      expect.objectContaining({ code: "application.read.own" }),
+    );
+    expect(view.capabilities).not.toContainEqual(
+      expect.objectContaining({ code: "admin.access" }),
+    );
+  });
+
   it("separates status and role mutation capabilities", async () => {
     await expect(
-      updateUserAccess(userWith(capabilities.userManage), "user-id", {
+      updateUserAccess(userWith(permissionCodes.userManage), "user-id", {
         roleCodes: ["programme_officer"],
       }),
     ).rejects.toBeInstanceOf(PermissionDeniedError);
     await expect(
-      updateUserAccess(userWith(capabilities.roleManage), "user-id", {
+      updateUserAccess(userWith(permissionCodes.roleManage), "user-id", {
         status: "suspended",
       }),
     ).rejects.toBeInstanceOf(PermissionDeniedError);
@@ -109,10 +124,10 @@ describe("user access service authorization", () => {
 
   it("requires both authorities for promotion and invitation", async () => {
     await expect(
-      promoteUser(userWith(capabilities.userManage), "user-id", ["programme_officer"]),
+      promoteUser(userWith(permissionCodes.userManage), "user-id", ["programme_officer"]),
     ).rejects.toBeInstanceOf(PermissionDeniedError);
     await expect(
-      inviteUser(userWith(capabilities.userManage), {
+      inviteUser(userWith(permissionCodes.userManage), {
         displayName: "New Staff",
         email: "staff@example.test",
         roleCodes: ["programme_officer"],
@@ -126,7 +141,7 @@ describe("user access service authorization", () => {
     await expect(getAuthorizationAudit(userWith(), { limit: 100 })).rejects.toBeInstanceOf(
       PermissionDeniedError,
     );
-    await getAuthorizationAudit(userWith(capabilities.auditRead), { limit: 100 });
+    await getAuthorizationAudit(userWith(permissionCodes.auditRead), { limit: 100 });
     expect(listAccessAudit).toHaveBeenCalled();
   });
 
@@ -143,7 +158,7 @@ describe("user access service authorization", () => {
       },
     ]);
     await expect(
-      updateRole(userWith(capabilities.roleManage), "role-id", {
+      updateRole(userWith(permissionCodes.roleManage), "role-id", {
         capabilityCodes: ["user.read"],
         description: null,
         name: "Role",

@@ -6,7 +6,7 @@ vi.mock("@/db/repositories/AdminApplicationRepository", () => ({
   readAdminApplications: vi.fn(),
 }));
 
-import { capabilities } from "@/auth/authorization/capabilities";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import { PermissionDeniedError } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import {
@@ -52,7 +52,7 @@ describe("admin applications service", () => {
 
   it("uses all visibility only for the broad read capability", async () => {
     await listAdminApplications(
-      staff([capabilities.applicationReadAll]),
+      staff([permissionCodes.fundingApplicationAllRead]),
       input,
     );
     expect(readAdminApplications).toHaveBeenCalledWith(expect.objectContaining({
@@ -64,7 +64,7 @@ describe("admin applications service", () => {
 
   it("uses task assignment scope for assigned readers", async () => {
     await listAdminApplications(
-      staff([capabilities.applicationReadAssigned]),
+      staff([permissionCodes.workflowTaskAssignedRead]),
       input,
     );
     expect(readAdminApplications).toHaveBeenCalledWith(expect.objectContaining({
@@ -76,7 +76,7 @@ describe("admin applications service", () => {
     const applicationId = "39e20de0-3558-4d63-90a4-8c9f5125df07";
 
     await getAdminApplicationOverview(
-      staff([capabilities.applicationReadAssigned]),
+      staff([permissionCodes.workflowTaskAssignedRead]),
       applicationId,
     );
 

@@ -9,7 +9,7 @@ vi.mock("@/db/repositories/ProfileRepository", () => ({
   saveApplicantProfile: vi.fn(),
 }));
 
-import { capabilities } from "@/auth/authorization/capabilities";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import { resolveUserFromHeaders } from "@/auth/authorization/current-user";
 import type { AuthenticatedUser } from "@/auth/types";
 import * as contextRoute from "@/app/api/portal/context/route";
@@ -97,7 +97,7 @@ describe("protected portal context route", () => {
     "rejects a %s applicant",
     async (status) => {
       vi.mocked(resolveUserFromHeaders).mockResolvedValue(
-        user([capabilities.profileReadOwn], status),
+        user([permissionCodes.userProfileOwnRead], status),
       );
 
       const response = await contextRoute.GET(
@@ -115,7 +115,7 @@ describe("protected portal context route", () => {
 
   it("rejects active operations staff without applicant scope", async () => {
     vi.mocked(resolveUserFromHeaders).mockResolvedValue(
-      user([capabilities.adminAccess]),
+      user([permissionCodes.fundingApplicationAllRead]),
     );
 
     const response = await contextRoute.GET(request("/api/portal/context"));
@@ -125,7 +125,7 @@ describe("protected portal context route", () => {
 
   it("returns the accepted safe context projection", async () => {
     vi.mocked(resolveUserFromHeaders).mockResolvedValue(
-      user([capabilities.profileReadOwn]),
+      user([permissionCodes.userProfileOwnRead]),
     );
 
     const response = await contextRoute.GET(request("/api/portal/context"));
@@ -135,7 +135,7 @@ describe("protected portal context route", () => {
     expect(body.data).toMatchObject({
       status: "active",
       roleCodes: ["applicant"],
-      capabilityCodes: [capabilities.profileReadOwn],
+      capabilityCodes: [permissionCodes.userProfileOwnRead],
       availableSpaces: ["applicant"],
       defaultSpace: "applicant",
     });
@@ -173,7 +173,7 @@ describe("protected applicant profile routes", () => {
 
   it("uses PATCH and returns structured validation fields", async () => {
     vi.mocked(resolveUserFromHeaders).mockResolvedValue(
-      user([capabilities.profileUpdateOwn]),
+      user([permissionCodes.userProfileOwnUpdate]),
     );
 
     const response = await profileRoute.PATCH(
@@ -188,7 +188,7 @@ describe("protected applicant profile routes", () => {
   });
 
   it("updates the authenticated owner's profile", async () => {
-    const actor = user([capabilities.profileUpdateOwn]);
+    const actor = user([permissionCodes.userProfileOwnUpdate]);
     vi.mocked(resolveUserFromHeaders).mockResolvedValue(actor);
     vi.mocked(findApplicantProfile).mockResolvedValue({
       ...applicantInput,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { cmsCapability } from "@/auth/authorization/capabilities";
+import { cmsPermissionCode } from "@/auth/authorization/permissions";
 import { cmsRoleCapabilities } from "@/auth/authorization/cms-role-matrix";
 import {
   canAccessCms,
@@ -19,7 +19,7 @@ function request(capabilities: readonly string[]) {
 }
 
 function access(
-  resource: "news" | "funding-calls",
+  resource: "news" | "eligibility",
   action: "create" | "read" | "update" | "delete",
   granted: string[],
 ) {
@@ -44,7 +44,7 @@ describe("Payload content authorization", () => {
     const operation = () =>
       enforceCmsPublishing("news", {
         data: { _status: "published" },
-        req: request([cmsCapability("news", "update")]),
+        req: request([cmsPermissionCode("news", "update")]),
       });
 
     expect(operation).toThrow(
@@ -64,7 +64,7 @@ describe("Payload content authorization", () => {
     expect(
       enforceCmsPublishing("news", {
         data: published,
-        req: request([cmsCapability("news", "publish")]),
+        req: request([cmsPermissionCode("news", "publish")]),
       }),
     ).toBe(published);
   });
@@ -80,7 +80,7 @@ describe("Payload content authorization", () => {
     expect(
       enforceCmsPublishing("site-settings", {
         data: published,
-        req: request([cmsCapability("site-settings", "publish")]),
+        req: request([cmsPermissionCode("site-settings", "publish")]),
       }),
     ).toBe(published);
   });
@@ -89,7 +89,7 @@ describe("Payload content authorization", () => {
     expect(() =>
       enforceCmsPublishing("news", {
         data: { _status: "published", reviewStatus: "inReview" },
-        req: request([cmsCapability("news", "publish")]),
+        req: request([cmsPermissionCode("news", "publish")]),
       }),
     ).toThrow("Content must be approved");
   });
@@ -99,7 +99,7 @@ describe("Payload content authorization", () => {
       enforceCmsPublishing("news", {
         data: { _status: "draft", reviewStatus: "approved" },
         originalDoc: { reviewStatus: "draft" },
-        req: request([cmsCapability("news", "update")]),
+        req: request([cmsPermissionCode("news", "update")]),
       }),
     ).toThrow("Approval requires the cms.news.publish capability");
     const data = { _status: "draft", reviewStatus: "approved" };
@@ -108,21 +108,21 @@ describe("Payload content authorization", () => {
       enforceCmsPublishing("news", {
         data,
         originalDoc: { reviewStatus: "approved" },
-        req: request([cmsCapability("news", "update")]),
+        req: request([cmsPermissionCode("news", "update")]),
       }),
     ).toEqual({ _status: "draft", reviewStatus: "inReview" });
   });
 
-  it("isolates News permissions from Funding Calls and Site Settings", () => {
+  it("isolates News permissions from Eligibility and Site Settings", () => {
     const granted = [
-      cmsCapability("news", "read"),
-      cmsCapability("news", "update"),
+      cmsPermissionCode("news", "read"),
+      cmsPermissionCode("news", "update"),
     ];
 
     expect(access("news", "update", granted)).toBe(true);
-    expect(access("funding-calls", "update", granted)).toBe(false);
+    expect(access("eligibility", "update", granted)).toBe(false);
     expect(
-      cmsCollectionAccess("funding-calls")?.admin?.({
+      cmsCollectionAccess("eligibility")?.admin?.({
         req: request(granted),
       }),
     ).toBe(false);
@@ -143,19 +143,19 @@ describe("Payload content authorization", () => {
       access("news", "update", [...cmsRoleCapabilities.cms_editor]),
     ).toBe(true);
     expect(cmsRoleCapabilities.cms_author).toContain(
-      cmsCapability("news", "update"),
+      cmsPermissionCode("news", "update"),
     );
     expect(cmsRoleCapabilities.cms_author).not.toContain(
-      cmsCapability("news", "publish") as never,
+      cmsPermissionCode("news", "publish") as never,
     );
     expect(cmsRoleCapabilities.cms_editor).toContain(
-      cmsCapability("news", "update"),
+      cmsPermissionCode("news", "update"),
     );
     expect(cmsRoleCapabilities.cms_editor).not.toContain(
-      cmsCapability("news", "publish") as never,
+      cmsPermissionCode("news", "publish") as never,
     );
     expect(cmsRoleCapabilities.cms_reviewer).toContain(
-      cmsCapability("news", "publish"),
+      cmsPermissionCode("news", "publish"),
     );
     expect(cmsRoleCapabilities.cms_administrator).not.toContain(
       "cms.funding-calls.delete" as never,
@@ -167,7 +167,7 @@ describe("Payload content authorization", () => {
       "cms.funding-calls.publish" as never,
     );
     expect(cmsRoleCapabilities.programme_officer).not.toContain(
-      cmsCapability("news", "update") as never,
+      cmsPermissionCode("news", "update") as never,
     );
     expect(cmsRoleCapabilities.system_administrator).toContain(
       "cms.principals.manage",

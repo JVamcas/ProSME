@@ -2,7 +2,6 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { capabilities } from "@/auth/authorization/capabilities";
 import { permissionCodes } from "@/auth/authorization/permissions";
 import {
   applicantPortalRoutes,
@@ -16,7 +15,7 @@ describe("P3.1 capability-aware portal navigation", () => {
     const routes = filterPortalRoutes(
       portalRoutes,
       "applicant",
-      new Set([capabilities.profileReadOwn]),
+      new Set([permissionCodes.userProfileOwnRead]),
     );
 
     expect(routes.map((route) => route.href)).toEqual([
@@ -53,7 +52,7 @@ describe("P3.1 capability-aware portal navigation", () => {
     const routes = filterPortalRoutes(
       portalRoutes,
       "operations",
-      new Set([capabilities.profileReadOwn]),
+      new Set([permissionCodes.userProfileOwnRead]),
     );
 
     expect(routes).toEqual([]);
@@ -63,22 +62,25 @@ describe("P3.1 capability-aware portal navigation", () => {
     const broadAdmin = filterPortalRoutes(
       portalRoutes,
       "operations",
-      new Set([capabilities.adminAccess]),
+      new Set([permissionCodes.fundingApplicationAllRead]),
     );
     const assignedReader = filterPortalRoutes(
       portalRoutes,
       "operations",
-      new Set([capabilities.adminAccess, capabilities.applicationReadAssigned]),
+      new Set([permissionCodes.workflowTaskAssignedRead]),
     );
 
     const applications = operationsPortalRoutes.find(
       (route) => route.id === "admin-applications",
     );
     expect(applications?.requiredAnyPermissions).toEqual([
-      capabilities.applicationReadAssigned,
-      capabilities.applicationReadAll,
+      permissionCodes.workflowTaskAssignedRead,
+      permissionCodes.fundingApplicationAllRead,
     ]);
-    expect(broadAdmin.map((route) => route.href)).toEqual(["/admin"]);
+    expect(broadAdmin.map((route) => route.href)).toEqual([
+      "/admin",
+      "/admin/applications",
+    ]);
     expect(assignedReader.map((route) => route.href)).toContain(
       "/admin/applications",
     );
@@ -88,10 +90,7 @@ describe("P3.1 capability-aware portal navigation", () => {
     const routes = filterPortalRoutes(
       portalRoutes,
       "operations",
-      new Set([
-        capabilities.adminAccess,
-        permissionCodes.workflowTaskPoolRead,
-      ]),
+      new Set([permissionCodes.workflowTaskPoolRead]),
     );
     expect(routes.map((route) => route.href)).toEqual([
       "/admin",
@@ -103,7 +102,7 @@ describe("P3.1 capability-aware portal navigation", () => {
     const withoutFundingCalls = filterPortalRoutes(
       portalRoutes,
       "operations",
-      new Set([capabilities.adminAccess]),
+      new Set([permissionCodes.fundingApplicationAllRead]),
     );
     const withFundingCalls = filterPortalRoutes(
       portalRoutes,
@@ -131,12 +130,12 @@ describe("P3.1 capability-aware portal navigation", () => {
     const withoutCmsAccess = filterPortalRoutes(
       portalRoutes,
       "operations",
-      new Set([capabilities.adminAccess]),
+      new Set([permissionCodes.fundingApplicationAllRead]),
     );
     const withCmsAccess = filterPortalRoutes(
       portalRoutes,
       "operations",
-      new Set([capabilities.adminAccess, capabilities.cmsAccess]),
+      new Set([permissionCodes.fundingApplicationAllRead, permissionCodes.cmsAccess]),
     );
 
     expect(withoutCmsAccess.map((route) => route.href)).not.toContain("/cms");
@@ -145,7 +144,7 @@ describe("P3.1 capability-aware portal navigation", () => {
       operationsPortalRoutes.find((route) => route.href === "/cms"),
     ).toMatchObject({
       label: "Content management",
-      requiredCapability: capabilities.cmsAccess,
+      requiredPermission: permissionCodes.cmsAccess,
     });
   });
 
@@ -165,13 +164,13 @@ describe("P3.1 capability-aware portal navigation", () => {
               label: "Child",
               icon: portalRoutes[0].icon,
               space: "applicant",
-              requiredPermission: capabilities.businessReadOwn,
+              requiredPermission: permissionCodes.businessOwnRead,
             },
           ],
         },
       ],
       "applicant",
-      new Set([capabilities.profileReadOwn]),
+      new Set([permissionCodes.userProfileOwnRead]),
     );
 
     expect(routes).toEqual([]);

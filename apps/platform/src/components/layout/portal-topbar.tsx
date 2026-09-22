@@ -3,7 +3,7 @@
 import { Bell, Search } from "lucide-react";
 import Link from "next/link";
 
-import { capabilities } from "@/auth/authorization/capabilities";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import type { PortalSpace } from "@/auth/authorization/portal-access";
 import type { PortalContext } from "@/modules/profiles/ProfileTypes";
 import { PortalUserMenu } from "./portal-user-menu";
@@ -50,7 +50,7 @@ export function PortalTopbar({ context, space }: PortalTopbarProps) {
     ? "Search funding opportunities"
     : "Search applications, users, documents...";
   const canViewNotifications = context.capabilityCodes.includes(
-    capabilities.notificationReadOwn,
+    permissionCodes.userNotificationOwnRead,
   );
 
   return (

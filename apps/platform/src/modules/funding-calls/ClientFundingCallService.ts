@@ -12,9 +12,10 @@ import type { FundingCallReadinessResult } from "./domain/FundingCallReadiness";
 import type { PublishedFormOption } from "@/modules/forms/FormTypes";
 import type { PublishedEligibilityRuleSetOption } from "@/modules/eligibility/api/EligibilityRuleSetTransport";
 
-type PublishedWorkflowTemplateVersionOption = {
+type BindableWorkflowTemplateVersionOption = {
   definitionId: string;
   name: string;
+  status: "DRAFT" | "PUBLISHED";
   versionId: string;
   versionNumber: number;
 };
@@ -114,7 +115,7 @@ function listBindableEligibilityRuleSetVersions() {
 }
 
 function listBindableWorkflowTemplateVersions() {
-  return requestData<PublishedWorkflowTemplateVersionOption[]>(
+  return requestData<BindableWorkflowTemplateVersionOption[]>(
     "/api/admin/funding-calls/workflow-template-versions",
     { cache: "no-store" },
   );

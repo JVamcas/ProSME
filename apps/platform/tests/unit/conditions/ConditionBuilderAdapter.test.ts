@@ -64,4 +64,68 @@ describe("condition builder adapter", () => {
 
     expect(result.children[0]).not.toHaveProperty("rightOperand");
   });
+
+  it("round-trips field-to-field comparisons", () => {
+    const group: ConditionGroup = {
+      id: "70000000-0000-4000-8000-000000000001",
+      kind: "GROUP",
+      combinator: "AND",
+      children: [{
+        id: "70000000-0000-4000-8000-000000000002",
+        kind: "CONDITION",
+        leftOperand: {
+          key: "application.requested_amount",
+          kind: "FIELD",
+        },
+        operator: basicOperators.LESS_THAN_OR_EQUAL,
+        rightOperand: {
+          key: "fundingCall.maximum_amount",
+          kind: "FIELD",
+        },
+      }],
+    };
+
+    expect(queryToConditionGroup(
+      conditionGroupToQuery(group),
+      conditionBuilderOperators,
+      () => "unused",
+    )).toEqual(group);
+  });
+
+  it("round-trips computed comparisons on either side", () => {
+    const group: ConditionGroup = {
+      id: "80000000-0000-4000-8000-000000000001",
+      kind: "GROUP",
+      combinator: "AND",
+      children: [{
+        id: "80000000-0000-4000-8000-000000000002",
+        kind: "CONDITION",
+        leftOperand: {
+          kind: "COMPUTED",
+          leftOperand: {
+            key: "application.requested_amount",
+            kind: "FIELD",
+          },
+          operation: "DIVIDE",
+          rightOperand: {
+            key: "application.annual_turnover",
+            kind: "FIELD",
+          },
+        },
+        operator: basicOperators.LESS_THAN_OR_EQUAL,
+        rightOperand: {
+          kind: "COMPUTED",
+          leftOperand: { kind: "CONSTANT", value: 25 },
+          operation: "DIVIDE",
+          rightOperand: { kind: "CONSTANT", value: 100 },
+        },
+      }],
+    };
+
+    expect(queryToConditionGroup(
+      conditionGroupToQuery(group),
+      conditionBuilderOperators,
+      () => "unused",
+    )).toEqual(group);
+  });
 });

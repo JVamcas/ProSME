@@ -18,7 +18,9 @@ vi.mock("@/modules/eligibility/infrastructure/EligibilityEvaluationRepository", 
   findTestableEligibilityRuleSetForEvaluation: vi.fn(),
 }));
 vi.mock("@/modules/workflows/infrastructure/WorkflowRepository", () => ({
+  listBindableWorkflowVersions: vi.fn(),
   listPublishedWorkflowVersions: vi.fn(),
+  workflowTemplateVersionIsBindable: vi.fn(),
   workflowTemplateVersionIsPublished: vi.fn(),
 }));
 vi.mock("@/modules/funding-calls/infrastructure/FundingCallRepository", () => ({
@@ -53,7 +55,7 @@ import {
   eligibilityRuleSetVersionIsPublished,
 } from "@/modules/eligibility/infrastructure/EligibilityRuleSetRepository";
 import { findTestableEligibilityRuleSetForEvaluation } from "@/modules/eligibility/infrastructure/EligibilityEvaluationRepository";
-import { workflowTemplateVersionIsPublished } from "@/modules/workflows/infrastructure/WorkflowRepository";
+import { workflowTemplateVersionIsBindable } from "@/modules/workflows/infrastructure/WorkflowRepository";
 
 const actorId = "10000000-0000-4000-8000-000000000001";
 const callId = "00000000-0000-4000-8000-000000000042";
@@ -123,7 +125,7 @@ beforeEach(() => {
     versionId: eligibilityRuleSetVersionId,
     versionNumber: 1,
   });
-  vi.mocked(workflowTemplateVersionIsPublished).mockResolvedValue(true);
+  vi.mocked(workflowTemplateVersionIsBindable).mockResolvedValue(true);
   vi.mocked(readFundingCallById).mockResolvedValue(stored);
 });
 
@@ -182,7 +184,7 @@ describe("ServerFundingCallService", () => {
     expect(insertFundingCall).toHaveBeenCalledWith(actorId, draftInput);
     expect(formVersionIsBindable).not.toHaveBeenCalled();
     expect(eligibilityRuleSetVersionIsBindable).not.toHaveBeenCalled();
-    expect(workflowTemplateVersionIsPublished).not.toHaveBeenCalled();
+    expect(workflowTemplateVersionIsBindable).not.toHaveBeenCalled();
     expect(result).toMatchObject({
       eligibilityRuleSetVersionId: null,
       formVersionId: null,
@@ -252,8 +254,22 @@ describe("ServerFundingCallService", () => {
     expect(insertFundingCall).not.toHaveBeenCalled();
   });
 
-  it("rejects a workflow template version that is not published", async () => {
-    vi.mocked(workflowTemplateVersionIsPublished).mockResolvedValue(false);
+  it("allows a draft workflow template version on a draft call", async () => {
+    vi.mocked(insertFundingCall).mockResolvedValue(stored);
+
+    const result = await createFundingCall(
+      user([permissionCodes.fundingCallCreate]),
+      input,
+    );
+
+    expect(workflowTemplateVersionIsBindable).toHaveBeenCalledWith(
+      workflowTemplateVersionId,
+    );
+    expect(result.status).toBe("DRAFT");
+  });
+
+  it("rejects a workflow template version that is not bindable", async () => {
+    vi.mocked(workflowTemplateVersionIsBindable).mockResolvedValue(false);
 
     await expect(createFundingCall(
       user([permissionCodes.fundingCallCreate]),

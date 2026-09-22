@@ -57,6 +57,27 @@ export async function listPublishedWorkflowVersions() {
     );
 }
 
+export async function listBindableWorkflowVersions() {
+  return getDatabase()
+    .select({
+      definitionId: workflowDefinitions.id,
+      name: workflowDefinitions.name,
+      status: workflowDefinitionVersions.status,
+      versionId: workflowDefinitionVersions.id,
+      versionNumber: workflowDefinitionVersions.versionNumber,
+    })
+    .from(workflowDefinitionVersions)
+    .innerJoin(
+      workflowDefinitions,
+      eq(workflowDefinitions.id, workflowDefinitionVersions.definitionId),
+    )
+    .where(inArray(workflowDefinitionVersions.status, ["DRAFT", "PUBLISHED"]))
+    .orderBy(
+      asc(workflowDefinitions.name),
+      desc(workflowDefinitionVersions.versionNumber),
+    );
+}
+
 export async function findWorkflowVersion(versionId: string) {
   const [record] = await getDatabase()
     .select({
@@ -77,6 +98,20 @@ export async function workflowTemplateVersionIsPublished(versionId: string) {
       and(
         eq(workflowDefinitionVersions.id, versionId),
         eq(workflowDefinitionVersions.status, "PUBLISHED"),
+      ),
+    )
+    .limit(1);
+  return Boolean(record);
+}
+
+export async function workflowTemplateVersionIsBindable(versionId: string) {
+  const [record] = await getDatabase()
+    .select({ id: workflowDefinitionVersions.id })
+    .from(workflowDefinitionVersions)
+    .where(
+      and(
+        eq(workflowDefinitionVersions.id, versionId),
+        inArray(workflowDefinitionVersions.status, ["DRAFT", "PUBLISHED"]),
       ),
     )
     .limit(1);

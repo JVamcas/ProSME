@@ -156,23 +156,21 @@ export function FundingCallForm({
 
           <FormSelect
             key={
-              workflowVersions.isPending
-                ? "workflow-loading"
-                : "workflow-ready"
+              workflowVersions.isPending ? "workflow-loading" : "workflow-ready"
             }
             containerClassName="md:col-span-2"
             disabled={disabled || workflowVersions.isPending}
-            infoTooltip="The exact published workflow template version used when an application is submitted. Optional for drafts and required before publishing."
+            infoTooltip="Draft calls may bind draft or published workflows for configuration and testing. The workflow must be published before the funding call can be published."
             items={(workflowVersions.data ?? []).map((version) => ({
-              label: `${version.name} — version ${version.versionNumber}`,
+              label: `${version.name} — version ${version.versionNumber} · ${version.status}`,
               value: version.versionId,
             }))}
             label="Workflow template version"
             name="workflowTemplateVersionId"
             placeholder={
               workflowVersions.isPending
-                ? "Loading published workflows…"
-                : "Select a published workflow template version"
+                ? "Loading workflow versions…"
+                : "Select a workflow template version"
             }
           />
 
@@ -216,17 +214,19 @@ export function FundingCallForm({
             }
           />
 
-          {call && selectedEligibility
-            && call.eligibilityRuleSetVersionId === selectedEligibility.versionId ? (
-              <div className="md:col-span-2">
-                <GeneralButtonLink
-                  href={`/admin/settings/eligibility-rulesets/${selectedEligibility.ruleSetId}`}
-                  variant="outlineOrange"
-                >
-                  Configure bound eligibility ruleset
-                </GeneralButtonLink>
-              </div>
-            ) : null}
+          {call &&
+          selectedEligibility &&
+          call.eligibilityRuleSetVersionId === selectedEligibility.versionId ? (
+            <div className="md:col-span-2">
+              <GeneralButtonLink
+                size={"compact"}
+                href={`/admin/settings/eligibility-rulesets/${selectedEligibility.ruleSetId}`}
+                variant="outlineOrange"
+              >
+                Configure eligibility ruleset
+              </GeneralButtonLink>
+            </div>
+          ) : null}
 
           <FormInput
             infoTooltip="The type of financial support offered, such as a grant, loan, or guarantee."

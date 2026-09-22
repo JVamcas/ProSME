@@ -3,6 +3,12 @@
 import { Check, ChevronDown, ShieldCheck } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import {
+  getPermissionDefinition,
+  getPermissionGroup,
+  permissionGroups,
+  type PermissionCode,
+} from "@/auth/authorization/permissions";
 import { cn } from "@/lib/utils";
 import type {
   CapabilityRow,
@@ -140,23 +146,22 @@ function PermissionItem({
 }
 
 function groupCapabilities(capabilities: CapabilityRow[]): CapabilityGroup[] {
-  const groups = new Map<string, CapabilityRow[]>();
+  const groups = new Map(
+    permissionGroups.map((group) => [group.id, [] as CapabilityRow[]]),
+  );
   for (const capability of capabilities) {
-    const key = capability.code.startsWith("cms.")
-      ? "cms"
-      : capability.code.split(".")[0];
-    groups.set(key, [...(groups.get(key) ?? []), capability]);
+    const group = getPermissionGroup(capability.code as PermissionCode);
+    if (!group) continue;
+    groups.get(group.id)?.push(capability);
   }
-  return [...groups.entries()].map(([key, items]) => ({
-    capabilities: items,
-    key,
-    label: key
-      .split("_")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" "),
-  }));
+  return permissionGroups.flatMap((group) => {
+    const items = groups.get(group.id) ?? [];
+    return items.length
+      ? [{ capabilities: items, key: group.id, label: group.label }]
+      : [];
+  });
 }
 
 function formatCapabilityName(code: string) {
-  return code.split(".").slice(1).join(" · ").replaceAll("_", " ");
+  return getPermissionDefinition(code as PermissionCode).label;
 }

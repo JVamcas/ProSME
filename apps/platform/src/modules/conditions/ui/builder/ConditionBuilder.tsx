@@ -21,9 +21,10 @@ import {
 } from "./ConditionBuilderAdapter";
 import {
   ConditionActionButton,
-  ConditionValueInput,
   ConditionValueSelector,
 } from "./ConditionBuilderControls";
+import { ConditionBuilderControlProvider } from "./ConditionBuilderContext";
+import { ConditionRule } from "./ConditionRule";
 import styles from "./ConditionBuilder.module.css";
 import { conditionBuilderOperators } from "../../engine/ConditionOperatorCatalogue";
 import { ConditionValidationPreview } from "./ConditionValidationPreview";
@@ -82,6 +83,10 @@ export function ConditionBuilder({
     () => queryBuilderOperators(operators),
     [operators],
   );
+  const controlContext = useMemo(
+    () => ({ fields, operators }),
+    [fields, operators],
+  );
   const validation = useMemo(
     () => validateConditionGroup(value, fields, operators),
     [fields, operators, value],
@@ -107,51 +112,53 @@ export function ConditionBuilder({
 
   return (
     <div className={styles.builder}>
-      <QueryBuilder
-        addRuleToNewGroups={false}
-        combinators={[
-          { label: "All (AND)", name: "AND" },
-          { label: "Any (OR)", name: "OR" },
-        ]}
-        controlElements={{
-          actionElement: ConditionActionButton,
-          valueEditor: ConditionValueInput,
-          valueSelector: ConditionValueSelector,
-        }}
-        disabled={disabled}
-        fields={builderFields}
-        idGenerator={createId}
-        listsAsArrays
-        onQueryChange={(nextQuery) => {
-          const nextValue = queryToConditionGroup(
-            nextQuery,
-            operators,
-            createId,
-          );
-          if (JSON.stringify(nextValue) !== JSON.stringify(value)) {
-            onChange(nextValue);
-          }
-        }}
-        operators={builderOperators}
-        parseNumbers="strict-limited"
-        query={query}
-        resetOnFieldChange
-        resetOnOperatorChange
-        translations={{
-          addGroup: { label: "+ Group", title: "Add group" },
-          addRule: { label: "+ Condition", title: "Add condition" },
-          combinators: { title: "Group match" },
-          fields: { title: "Field" },
-          operators: { title: "Operator" },
-          removeGroup: { label: "Remove group", title: "Remove group" },
-          removeRule: {
-            label: "Remove condition",
-            title: "Remove condition",
-          },
-          value: { title: "Value" },
-        }}
-        validator={() => validationMap}
-      />
+      <ConditionBuilderControlProvider value={controlContext}>
+        <QueryBuilder
+          addRuleToNewGroups={false}
+          combinators={[
+            { label: "All (AND)", name: "AND" },
+            { label: "Any (OR)", name: "OR" },
+          ]}
+          controlElements={{
+            actionElement: ConditionActionButton,
+            rule: ConditionRule,
+            valueSelector: ConditionValueSelector,
+          }}
+          disabled={disabled}
+          fields={builderFields}
+          idGenerator={createId}
+          listsAsArrays
+          onQueryChange={(nextQuery) => {
+            const nextValue = queryToConditionGroup(
+              nextQuery,
+              operators,
+              createId,
+            );
+            if (JSON.stringify(nextValue) !== JSON.stringify(value)) {
+              onChange(nextValue);
+            }
+          }}
+          operators={builderOperators}
+          parseNumbers="strict-limited"
+          query={query}
+          resetOnFieldChange
+          resetOnOperatorChange
+          translations={{
+            addGroup: { label: "+ Group", title: "Add group" },
+            addRule: { label: "+ Condition", title: "Add condition" },
+            combinators: { title: "Group match" },
+            fields: { title: "Field" },
+            operators: { title: "Operator" },
+            removeGroup: { label: "Remove group", title: "Remove group" },
+            removeRule: {
+              label: "Remove condition",
+              title: "Remove condition",
+            },
+            value: { title: "Value" },
+          }}
+          validator={() => validationMap}
+        />
+      </ConditionBuilderControlProvider>
       <ConditionValidationPreview
         preview={preview}
         validation={validation}

@@ -1,10 +1,11 @@
+import { permissionCodes, type PermissionCode } from "@/auth/authorization/permissions";
 import type { TaskTypeCode, WorkflowActionCode } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 
 export type WorkflowTaskContract = {
   allowedActions: readonly WorkflowActionCode[];
   handlerKey: string;
   rendererKey: string;
-  requiredCapabilities: readonly string[];
+  requiredCapabilities: readonly PermissionCode[];
 };
 
 export const workflowTaskContracts = {
@@ -12,63 +13,62 @@ export const workflowTaskContracts = {
     allowedActions: ["COMPLETE", "OVERRIDE"],
     handlerKey: "evaluate-versioned-rules",
     rendererKey: "automated-rule-check",
-    requiredCapabilities: ["workflow.task.complete"],
+    requiredCapabilities: [permissionCodes.workflowTaskAssignedProcess],
   },
   CHECKLIST: {
     allowedActions: ["SAVE", "COMPLETE", "REQUEST_INFORMATION"],
     handlerKey: "complete-checklist",
     rendererKey: "checklist",
-    requiredCapabilities: ["workflow.task.complete", "application.screen"],
+    requiredCapabilities: [permissionCodes.workflowTaskAssignedProcess],
   },
   DOCUMENT_REVIEW: {
     allowedActions: ["SAVE", "COMPLETE", "REQUEST_INFORMATION"],
     handlerKey: "record-document-review",
     rendererKey: "document-review",
-    requiredCapabilities: ["workflow.task.complete", "application.screen"],
+    requiredCapabilities: [permissionCodes.workflowTaskAssignedProcess],
   },
   STRUCTURED_FORM: {
     allowedActions: ["SAVE", "COMPLETE"],
     handlerKey: "save-structured-form",
     rendererKey: "structured-form",
-    requiredCapabilities: ["workflow.task.complete"],
+    requiredCapabilities: [permissionCodes.workflowTaskAssignedProcess],
   },
   ASSESSMENT_FORM: {
     allowedActions: ["SAVE", "COMPLETE", "REQUEST_INFORMATION"],
     handlerKey: "score-assessment",
     rendererKey: "assessment-form",
-    requiredCapabilities: ["workflow.task.complete", "application.assess"],
+    requiredCapabilities: [permissionCodes.workflowTaskAssignedProcess],
   },
   FINANCE_REVIEW: {
     allowedActions: ["SAVE", "COMPLETE", "REQUEST_INFORMATION"],
     handlerKey: "complete-finance-review",
     rendererKey: "finance-review",
-    requiredCapabilities: [
-      "workflow.task.complete",
-      "application.finance_review",
-    ],
+    requiredCapabilities: [permissionCodes.workflowTaskAssignedProcess],
   },
   INFORMATION_REQUEST: {
     allowedActions: ["REQUEST_INFORMATION", "ACCEPT_INFORMATION", "CANCEL"],
     handlerKey: "manage-information-request",
     rendererKey: "information-request",
-    requiredCapabilities: ["application.request_information"],
+    requiredCapabilities: [
+      permissionCodes.fundingApplicationInformationRequestCreate,
+    ],
   },
   RECOMMENDATION: {
     allowedActions: ["SAVE", "RECOMMEND_PROCEED", "RECOMMEND_REJECT", "RETURN"],
     handlerKey: "record-recommendation",
     rendererKey: "recommendation",
-    requiredCapabilities: ["application.recommend"],
+    requiredCapabilities: [permissionCodes.workflowTaskAssignedDecide],
   },
   DECISION: {
     allowedActions: ["APPROVE", "DECLINE", "RETURN", "OVERRIDE"],
     handlerKey: "record-decision",
     rendererKey: "decision",
-    requiredCapabilities: ["application.decide"],
+    requiredCapabilities: [permissionCodes.workflowTaskAssignedDecide],
   },
   COMMUNICATION: {
     allowedActions: ["SAVE", "COMPLETE", "CANCEL"],
     handlerKey: "enqueue-communication",
     rendererKey: "communication",
-    requiredCapabilities: ["communication.send"],
+    requiredCapabilities: [permissionCodes.workflowTaskAssignedProcess],
   },
 } satisfies Record<TaskTypeCode, WorkflowTaskContract>;

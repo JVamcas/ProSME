@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { z } from "zod";
 
-import { capabilities } from "@/auth/authorization/capabilities";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import { getCurrentUser } from "@/auth/authorization/current-user";
 import { can } from "@/auth/authorization/policy";
 import { ApplicationReview } from "@/components/admin/applications/ApplicationReview";
@@ -22,8 +22,8 @@ export default async function ApplicationPage({
   const { id } = await params;
   const user = await getCurrentUser();
   const canRead =
-    can(user, capabilities.applicationReadAssigned) ||
-    can(user, capabilities.applicationReadAll);
+    can(user, permissionCodes.workflowTaskAssignedRead) ||
+    can(user, permissionCodes.fundingApplicationAllRead);
 
   if (!canRead) {
     redirect("/unauthorized");

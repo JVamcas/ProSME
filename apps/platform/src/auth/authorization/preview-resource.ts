@@ -1,6 +1,6 @@
-import type { CmsResource } from "./capabilities";
+import type { CmsPermissionResource } from "./permissions";
 
-export function previewResource(path: string): CmsResource {
+export function previewResource(path: string): CmsPermissionResource {
   if (path === "/") return "site-settings";
   if (path.startsWith("/news")) return "news";
   if (path.startsWith("/resources")) return "resources";

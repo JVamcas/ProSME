@@ -12,6 +12,7 @@ export {
 } from "./PermissionCodes";
 export {
   getPermissionDefinition,
+  isPermissionCode,
   permissionCatalogue,
   type PermissionDefinition,
 } from "./PermissionCatalogue";

@@ -1,7 +1,8 @@
 import "server-only";
 
-import { capabilities } from "@/auth/authorization/capabilities";
-import { can, requirePermission } from "@/auth/authorization/policy";
+import { permissionCodes } from "@/auth/authorization/permissions";
+import { can } from "@/auth/authorization/policy";
+import { requireOperationsPortalAccess } from "@/auth/authorization/portal-access";
 import type { AuthenticatedUser } from "@/auth/types";
 import { readAdminDashboard } from "@/db/repositories/AdminDashboardRepository";
 import type {
@@ -10,8 +11,8 @@ import type {
 } from "./AdminDashboardTypes";
 
 function visibilityFor(user: AuthenticatedUser) {
-  if (can(user, capabilities.applicationReadAll)) return "all" as const;
-  if (can(user, capabilities.applicationReadAssigned)) {
+  if (can(user, permissionCodes.fundingApplicationAllRead)) return "all" as const;
+  if (can(user, permissionCodes.workflowTaskAssignedRead)) {
     return "assigned" as const;
   }
   return "none" as const;
@@ -29,7 +30,7 @@ export async function getAdminDashboard(
   period: AdminDashboardPeriod,
   now = new Date(),
 ): Promise<AdminDashboardView> {
-  const actor = requirePermission(user, capabilities.adminAccess);
+  const actor = requireOperationsPortalAccess(user);
   const visibility = visibilityFor(actor);
   const projection = await readAdminDashboard({
     actorId: actor.id,

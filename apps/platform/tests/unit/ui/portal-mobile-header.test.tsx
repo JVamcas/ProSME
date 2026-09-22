@@ -5,7 +5,7 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { capabilities } from "@/auth/authorization/capabilities";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import { PortalMobileHeader } from "@/components/layout/portal-mobile-header";
 import { createQueryClient } from "@/lib/query-client";
 import type { PortalContext } from "@/modules/profiles/ProfileTypes";
@@ -17,7 +17,7 @@ vi.mock("next/navigation", () => ({
 
 const context: PortalContext = {
   availableSpaces: ["applicant"],
-  capabilityCodes: [capabilities.profileReadOwn],
+  capabilityCodes: [permissionCodes.userProfileOwnRead],
   defaultSpace: "applicant",
   displayName: "Petrus Kambala",
   email: "petrus@example.test",

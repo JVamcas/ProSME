@@ -6,7 +6,7 @@ vi.mock("@/db/repositories/ProfileRepository", () => ({
   saveApplicantProfile: vi.fn(),
 }));
 
-import { capabilities } from "@/auth/authorization/capabilities";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import { PermissionDeniedError } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import {
@@ -47,13 +47,13 @@ beforeEach(() => {
 describe("P3.1 profile ownership policy", () => {
   it("uses the authenticated owner id for the SQL read projection", async () => {
     vi.mocked(findApplicantProfile).mockResolvedValue(null);
-    await getApplicantProfile(user([capabilities.profileReadOwn]));
+    await getApplicantProfile(user([permissionCodes.userProfileOwnRead]));
     expect(findApplicantProfile).toHaveBeenCalledWith(ownerId);
   });
 
   it("rejects a profile update without the update-own capability", async () => {
     const request = updateApplicantProfile(
-      user([capabilities.profileReadOwn]),
+      user([permissionCodes.userProfileOwnRead]),
       {
         section: "personal",
         data: {
@@ -74,13 +74,13 @@ describe("P3.1 profile ownership policy", () => {
   it("does not expose identity subjects in the portal projection", () => {
     const context = createPortalContext(
       user([
-        capabilities.profileReadOwn,
-        capabilities.businessReadOwn,
+        permissionCodes.userProfileOwnRead,
+        permissionCodes.businessOwnRead,
       ]),
     );
 
     const dashboard = createApplicantDashboardSummary(
-      user([capabilities.profileReadOwn]),
+      user([permissionCodes.userProfileOwnRead]),
     );
 
     expect(dashboard.completion).toEqual({
@@ -93,8 +93,8 @@ describe("P3.1 profile ownership policy", () => {
     expect(context.availableSpaces).toEqual(["applicant"]);
     expect(context.defaultSpace).toBe("applicant");
     expect(context.capabilityCodes).toEqual([
-      capabilities.businessReadOwn,
-      capabilities.profileReadOwn,
+      permissionCodes.businessOwnRead,
+      permissionCodes.userProfileOwnRead,
     ]);
   });
 });

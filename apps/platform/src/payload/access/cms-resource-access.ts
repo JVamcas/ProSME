@@ -1,24 +1,48 @@
-import type { Access, CollectionConfig, GlobalConfig, PayloadRequest } from "payload";
+import type {
+  Access,
+  CollectionConfig,
+  GlobalConfig,
+  PayloadRequest,
+} from "payload";
 
-import { cmsCapability, type CmsResource } from "@/auth/authorization/capabilities";
+import {
+  cmsPermissionCode,
+  type CmsPermissionResource,
+} from "@/auth/authorization/permissions";
 import { hasCmsCapability, type CmsRequestUser } from "./can-access-cms";
 
-function allows(resource: CmsResource, action: "read" | "create" | "update" | "delete"): Access {
-  return ({ req }) => hasCmsCapability(req.user as CmsRequestUser, cmsCapability(resource, action));
+function allows(
+  resource: CmsPermissionResource,
+  action: "read" | "create" | "update" | "delete",
+): Access {
+  return ({ req }) =>
+    hasCmsCapability(
+      req.user as CmsRequestUser,
+      cmsPermissionCode(resource, action),
+    );
 }
 
-function allowsAdmin(resource: CmsResource) {
+function allowsAdmin(resource: CmsPermissionResource) {
   return ({ req }: { req: PayloadRequest }) =>
-    hasCmsCapability(req.user as CmsRequestUser, cmsCapability(resource, "read"));
+    hasCmsCapability(
+      req.user as CmsRequestUser,
+      cmsPermissionCode(resource, "read"),
+    );
 }
 
-function publishedOrAllowed(resource: CmsResource): Access {
-  return ({ req }) => hasCmsCapability(req.user as CmsRequestUser, cmsCapability(resource, "read"))
-    ? true
-    : { _status: { equals: "published" } };
+function publishedOrAllowed(resource: CmsPermissionResource): Access {
+  return ({ req }) =>
+    hasCmsCapability(
+      req.user as CmsRequestUser,
+      cmsPermissionCode(resource, "read"),
+    )
+      ? true
+      : { _status: { equals: "published" } };
 }
 
-export function cmsCollectionAccess(resource: CmsResource): CollectionConfig["access"] {
+export function cmsCollectionAccess(
+  resource: CmsPermissionResource,
+): CollectionConfig["access"] {
   return {
     admin: allowsAdmin(resource),
     create: allows(resource, "create"),

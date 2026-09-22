@@ -5,9 +5,9 @@ import { getPayload, type Where } from "payload";
 import configPromise from "@payload-config";
 
 import {
-  cmsCapability,
-  type CmsResource,
-} from "@/auth/authorization/capabilities";
+  cmsPermissionCode,
+  type CmsPermissionResource,
+} from "@/auth/authorization/permissions";
 import { getCurrentUser } from "@/auth/authorization/current-user";
 import { can } from "@/auth/authorization/policy";
 import {
@@ -41,10 +41,10 @@ function isBuildFallbackEnabled() {
   return process.env.SKIP_CMS_PRERENDER === "1";
 }
 
-async function queryMode(resource: CmsResource) {
+async function queryMode(resource: CmsPermissionResource) {
   const requested = (await draftMode()).isEnabled;
   const draft = requested
-    ? can(await getCurrentUser(), cmsCapability(resource, "read"))
+    ? can(await getCurrentUser(), cmsPermissionCode(resource, "read"))
     : false;
   const where: Where = draft ? {} : { _status: { equals: "published" } };
   return { draft, where };

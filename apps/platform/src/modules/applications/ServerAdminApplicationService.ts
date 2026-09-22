@@ -1,6 +1,6 @@
 import "server-only";
 
-import { capabilities } from "@/auth/authorization/capabilities";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import { can, requireAnyPermission } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import {
@@ -21,8 +21,8 @@ export async function listAdminApplications(
   input: AdminApplicationListInput,
 ): Promise<AdminApplicationPage> {
   const actor = requireAnyPermission(user, [
-    capabilities.applicationReadAssigned,
-    capabilities.applicationReadAll,
+    permissionCodes.workflowTaskAssignedRead,
+    permissionCodes.fundingApplicationAllRead,
   ]);
   const projection = await readAdminApplications({
     actorId: actor.id,
@@ -30,7 +30,7 @@ export async function listAdminApplications(
       ? decodeAdminApplicationCursor(input.after)
       : undefined,
     filters: input,
-    visibility: can(actor, capabilities.applicationReadAll)
+    visibility: can(actor, permissionCodes.fundingApplicationAllRead)
       ? "all"
       : "assigned",
   });
@@ -50,13 +50,13 @@ export async function getAdminApplicationOverview(
   applicationId: string,
 ) {
   const actor = requireAnyPermission(user, [
-    capabilities.applicationReadAssigned,
-    capabilities.applicationReadAll,
+    permissionCodes.workflowTaskAssignedRead,
+    permissionCodes.fundingApplicationAllRead,
   ]);
   return readAdminApplication({
     actorId: actor.id,
     applicationId,
-    visibility: can(actor, capabilities.applicationReadAll)
+    visibility: can(actor, permissionCodes.fundingApplicationAllRead)
       ? "all"
       : "assigned",
   });

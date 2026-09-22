@@ -4,13 +4,13 @@ import {
   ArrowLeft,
   ChevronRight,
   Crown,
-  Pencil,
   ShieldCheck,
   UsersRound,
 } from "lucide-react";
 import { useState } from "react";
 
-import { GeneralButton } from "@/components/ui/button";
+import { EditButton } from "@/components/ui/action-buttons";
+import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
 import { DraggableDialog } from "@/components/ui/draggable-dialog";
 import { Tabs, type TabItem } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
@@ -20,6 +20,7 @@ import type {
   UserAccessRow,
 } from "@/modules/users/UserAccessTypes";
 import { RolePermissionGroups } from "./RolePermissionGroups";
+import { UserIdentity, UserStatus } from "./UserListPrimitives";
 import { UserRoleEditor } from "./UserRoleEditor";
 
 type RoleTab = "permissions" | "users";
@@ -212,14 +213,7 @@ function RoleDetail({
               </p>
             </div>
             {canManageRoles ? (
-              <GeneralButton
-                className="rounded-lg border-slate-200 text-blue-600"
-                onClick={onEdit}
-                size="sm"
-                variant="outline"
-              >
-                <Pencil className="size-4" /> Edit role
-              </GeneralButton>
+              <EditButton onClick={onEdit} title="Edit role" />
             ) : null}
           </div>
         }
@@ -231,31 +225,32 @@ function RoleDetail({
   );
 }
 
+const assignedUserColumns: DataTableColumn<UserAccessRow>[] = [
+  {
+    accessorKey: "displayName",
+    header: "Name",
+    cell: ({ row }) => <UserIdentity user={row.original} />,
+  },
+  {
+    accessorKey: "email",
+    header: "Email",
+  },
+  {
+    accessorKey: "status",
+    header: "Status",
+    cell: ({ row }) => <UserStatus status={row.original.status} />,
+  },
+];
+
 function AssignedUsers({ users }: { users: UserAccessRow[] }) {
-  if (!users.length)
-    return (
-      <p className="p-8 text-center text-sm text-slate-500">
-        No users are assigned to this role.
-      </p>
-    );
   return (
-    <div className="divide-y divide-slate-100 p-4 md:p-5">
-      {users.map((user) => (
-        <div
-          className="flex items-center justify-between gap-4 py-3"
-          key={user.id}
-        >
-          <div>
-            <strong className="block text-sm text-brand-navy">
-              {user.displayName}
-            </strong>
-            <span className="text-xs text-slate-500">{user.email}</span>
-          </div>
-          <span className="text-xs capitalize text-slate-500">
-            {user.status}
-          </span>
-        </div>
-      ))}
-    </div>
+    <DataTable
+      columns={assignedUserColumns}
+      data={users}
+      density="compact"
+      emptyMessage="No users are assigned to this role."
+      minWidth={560}
+      rowKey={(user) => user.id}
+    />
   );
 }

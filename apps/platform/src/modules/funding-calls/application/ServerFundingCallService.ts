@@ -24,8 +24,8 @@ import { findTestableEligibilityRuleSetForEvaluation } from "@/modules/eligibili
 import { eligibilityContextFields } from "@/modules/eligibility/domain/EligibilityConditionFields";
 import { workflowConditionNodeFieldPaths } from "@/modules/conditions/engine/WorkflowDataResolver";
 import {
-  listPublishedWorkflowVersions,
-  workflowTemplateVersionIsPublished,
+  listBindableWorkflowVersions,
+  workflowTemplateVersionIsBindable,
 } from "@/modules/workflows/infrastructure/WorkflowRepository";
 import type {
   FundingCallCreateInput,
@@ -90,7 +90,7 @@ async function requireBindableBindings(
     | "workflowTemplateVersionId"
   >,
 ) {
-  const [formIsBindable, eligibilityIsBindable, workflowIsPublished] =
+  const [formIsBindable, eligibilityIsBindable, workflowIsBindable] =
     await Promise.all([
       input.formVersionId
         ? formVersionIsBindable(input.formVersionId)
@@ -101,7 +101,7 @@ async function requireBindableBindings(
           )
         : Promise.resolve(true),
       input.workflowTemplateVersionId
-        ? workflowTemplateVersionIsPublished(input.workflowTemplateVersionId)
+        ? workflowTemplateVersionIsBindable(input.workflowTemplateVersionId)
         : Promise.resolve(true),
     ]);
   if (!formIsBindable) {
@@ -114,9 +114,9 @@ async function requireBindableBindings(
       "Select a draft or published eligibility ruleset version.",
     );
   }
-  if (!workflowIsPublished) {
+  if (!workflowIsBindable) {
     throw new RequestValidationError(
-      "Select a workflow template version that is published.",
+      "Select a draft or published workflow template version.",
     );
   }
   if (input.eligibilityRuleSetVersionId && input.formVersionId) {
@@ -192,7 +192,7 @@ export async function listBindableWorkflowTemplateVersions(
     permissionCodes.fundingCallCreate,
     permissionCodes.fundingCallUpdate,
   ]);
-  return listPublishedWorkflowVersions();
+  return listBindableWorkflowVersions();
 }
 
 export async function updateFundingCall(

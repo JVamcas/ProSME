@@ -186,6 +186,25 @@ describe("funding call publication readiness", () => {
     ]));
   });
 
+  it("blocks publication when the bound workflow version is still draft", async () => {
+    vi.mocked(readWorkflowReadinessProjection).mockResolvedValue({
+      active: true,
+      graph: { stages: [workflowStage], transitions: [] },
+      status: "DRAFT",
+      validation: { errors: [], valid: true, warnings: [] },
+      versionId: workflowId,
+    } as never);
+
+    const result = await validateFundingCallReadiness(call, now);
+
+    expect(result.ready).toBe(false);
+    expect(result.issues).toContainEqual(expect.objectContaining({
+      code: "WORKFLOW_VERSION_NOT_PUBLISHED",
+      location: "workflowTemplateVersionId",
+      owner: { id: workflowId, kind: "WORKFLOW_VERSION" },
+    }));
+  });
+
   it("reports typed eligibility field incompatibility at the rule location", async () => {
     vi.mocked(readEligibilityReadinessProjection).mockResolvedValue({
       active: true,

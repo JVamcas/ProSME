@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { FormProvider, useForm } from "react-hook-form";
 import type { z } from "zod";
 
+import { isPermissionCode } from "@/auth/authorization/permissions";
 import { GeneralButton } from "@/components/ui/button";
 import {
   FieldError,
@@ -18,7 +19,7 @@ import type {
   RoleAccessRow,
 } from "@/modules/users/UserAccessTypes";
 
-type FormInput = z.input<typeof updateRoleSchema>;
+type FormInput = z.infer<typeof updateRoleSchema>;
 
 export function UserRoleEditor({
   capabilities,
@@ -32,7 +33,7 @@ export function UserRoleEditor({
   const mutation = useUpdateRole();
   const form = useForm<FormInput>({
     defaultValues: {
-      capabilityCodes: role.capabilityCodes,
+      capabilityCodes: role.capabilityCodes.filter(isPermissionCode),
       description: role.description ?? "",
       name: role.name,
     },

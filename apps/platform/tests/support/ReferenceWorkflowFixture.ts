@@ -222,7 +222,7 @@ export const referenceWorkflow: WorkflowGraphInput = {
               { code: "APPROVE", label: "Approve" },
               { code: "DECLINE", label: "Decline" },
             ],
-            authorityCapability: "application.decide",
+            authorityCapability: "workflow.task.assigned.decide",
             rationaleRequired: true,
           },
         },

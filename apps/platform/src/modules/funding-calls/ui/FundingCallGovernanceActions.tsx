@@ -18,13 +18,11 @@ export function FundingCallGovernanceActions({
   call,
   canApprove,
   canReturn,
-  canSubmit,
   canWithdrawOwnRequest,
 }: {
   call: FundingCallView;
   canApprove: boolean;
   canReturn: boolean;
-  canSubmit: boolean;
   canWithdrawOwnRequest: boolean;
 }) {
   const governance = useChangeFundingCallGovernanceStatus(call.id);
@@ -33,10 +31,6 @@ export function FundingCallGovernanceActions({
     resolver: zodResolver(returnSchema),
   });
 
-  const submit = () => governance.mutate({
-    command: "SUBMIT_FOR_APPROVAL",
-    expectedRowVersion: call.rowVersion,
-  });
   const approve = () => governance.mutate({
     command: "APPROVE",
     expectedRowVersion: call.rowVersion,
@@ -55,58 +49,37 @@ export function FundingCallGovernanceActions({
   });
 
   if (
-    (call.status !== "DRAFT" || !canSubmit)
-    && (call.status !== "APPROVAL_PENDING"
-      || (!canApprove && !canReturn && !canWithdrawOwnRequest))
+    call.status !== "APPROVAL_PENDING"
+    || (!canApprove && !canReturn && !canWithdrawOwnRequest)
   ) {
     return null;
   }
 
   return (
     <section className="space-y-3 rounded-lg border border-slate-200 bg-white p-4">
-      <div>
-        <h2 className="font-semibold">Governance approval</h2>
-        <p className="text-sm text-slate-600">
-          Approval confirms this exact configuration. It does not publish the
-          funding call.
-        </p>
+      <div className="flex flex-wrap gap-3">
+        {canApprove ? (
+          <GeneralButton
+            disabled={governance.isPending}
+            onClick={approve}
+            type="button"
+          >
+            {governance.isPending ? "Processing…" : "Approve"}
+          </GeneralButton>
+        ) : null}
+        {canWithdrawOwnRequest ? (
+          <GeneralButton
+            disabled={governance.isPending}
+            onClick={withdraw}
+            type="button"
+            variant="outlineOrange"
+          >
+            Withdraw approval request
+          </GeneralButton>
+        ) : null}
       </div>
 
-      {call.status === "DRAFT" && canSubmit ? (
-        <GeneralButton
-          disabled={governance.isPending}
-          onClick={submit}
-          type="button"
-        >
-          {governance.isPending ? "Submitting…" : "Submit for approval"}
-        </GeneralButton>
-      ) : null}
-
-      {call.status === "APPROVAL_PENDING" ? (
-        <div className="flex flex-wrap gap-3">
-          {canApprove ? (
-            <GeneralButton
-              disabled={governance.isPending}
-              onClick={approve}
-              type="button"
-            >
-              {governance.isPending ? "Processing…" : "Approve"}
-            </GeneralButton>
-          ) : null}
-          {canWithdrawOwnRequest ? (
-            <GeneralButton
-              disabled={governance.isPending}
-              onClick={withdraw}
-              type="button"
-              variant="outlineOrange"
-            >
-              Withdraw approval request
-            </GeneralButton>
-          ) : null}
-        </div>
-      ) : null}
-
-      {call.status === "APPROVAL_PENDING" && canReturn ? (
+      {canReturn ? (
         <FormProvider {...form}>
           <form className="space-y-2" onSubmit={returnForAmendment}>
             <label className="block text-sm font-medium" htmlFor="return-reason">

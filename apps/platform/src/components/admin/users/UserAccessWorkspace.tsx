@@ -7,7 +7,7 @@ import { Tabs, type TabItem } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { useUserAccess } from "@/modules/users/UserAccessHooks";
 import type { UserAccessRow } from "@/modules/users/UserAccessTypes";
-import { RoleCapabilitiesPanel } from "./RoleCapabilitiesPanel";
+import { RoleCapabilitiesPanel } from "./RolePermissionsPanel";
 import { UserRoleAssignmentPanel } from "./UserRoleAssignmentPanel";
 import { UsersTabPanel } from "./UsersTabPanel";
 

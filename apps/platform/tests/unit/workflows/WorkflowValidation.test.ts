@@ -72,7 +72,7 @@ const samples: Record<TaskTypeCode, { config: unknown; result: unknown }> = {
   DECISION: {
     config: {
       outcomes: [{ code: "APPROVE", label: "Approve" }],
-      authorityCapability: "application.decide",
+      authorityCapability: "workflow.task.assigned.decide",
       rationaleRequired: true,
     },
     result: {

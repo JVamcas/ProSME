@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import type { ServerFunctionClient } from "payload";
 import React from "react";
 
-import { capabilities } from "@/auth/authorization/capabilities";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import { getCurrentUser } from "@/auth/authorization/current-user";
 import { can } from "@/auth/authorization/policy";
 import { importMap } from "./cms/importMap";
@@ -27,7 +27,7 @@ export default async function PayloadLayout({ children }: Props) {
     redirect("/sign-in?next=/cms");
   }
 
-  if (!can(user, capabilities.cmsAccess)) {
+  if (!can(user, permissionCodes.cmsAccess)) {
     redirect("/unauthorized");
   }
 

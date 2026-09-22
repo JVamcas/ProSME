@@ -29,6 +29,16 @@ const fields = [
     label: "Submitted at",
     type: "DATE" as const,
   },
+  {
+    key: "application.annual_turnover",
+    label: "Annual turnover",
+    type: "NUMBER" as const,
+  },
+  {
+    key: "fundingCall.maximum_amount",
+    label: "Maximum amount",
+    type: "NUMBER" as const,
+  },
 ];
 
 function definition(value: number): ConditionGroup {
@@ -113,8 +123,12 @@ describe("ConditionBuilder", () => {
     document.body.append(container);
     root = createRoot(container);
     const dateCondition = definition(0);
+    const currentCondition = dateCondition.children[0];
+    if (currentCondition.kind !== "CONDITION") {
+      throw new Error("Expected a condition test fixture.");
+    }
     dateCondition.children[0] = {
-      ...dateCondition.children[0],
+      ...currentCondition,
       leftOperand: {
         key: "application.submitted_at",
         kind: "FIELD",

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-import { capabilities } from "@/auth/authorization/capabilities";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import { getCurrentUser } from "@/auth/authorization/current-user";
 import { can } from "@/auth/authorization/policy";
 import { ApplicationsList } from "@/components/applicant/applications/ApplicationsList";
@@ -11,7 +11,7 @@ export const metadata: Metadata = { title: "My applications" };
 
 export default async function ApplicationsPage() {
   const user = await getCurrentUser();
-  if (!user || !can(user, capabilities.applicationReadOwn)) redirect("/unauthorized");
+  if (!user || !can(user, permissionCodes.fundingApplicationOwnRead)) redirect("/unauthorized");
   return (
     <section>
       <PageHeader
@@ -19,7 +19,7 @@ export default async function ApplicationsPage() {
         eyebrow="Funding applications"
         title="My applications"
       />
-      <ApplicationsList canCreate={can(user, capabilities.applicationCreate)} />
+      <ApplicationsList canCreate={can(user, permissionCodes.fundingApplicationCreate)} />
     </section>
   );
 }

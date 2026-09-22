@@ -41,6 +41,7 @@ vi.mock("@/modules/funding-calls/FundingCallHooks", () => ({
     : {
         data: [{
           name: "Standard workflow",
+          status: "DRAFT",
           versionId: workflowVersionId,
           versionNumber: 1,
         }],
@@ -103,6 +104,9 @@ describe("FundingCallForm", () => {
     expect(container.querySelector<HTMLSelectElement>(
       '[name="workflowTemplateVersionId"]',
     )?.value).toBe(workflowVersionId);
+    expect(container.textContent).toContain(
+      "Standard workflow — version 1 · DRAFT",
+    );
     expect(container.querySelector<HTMLSelectElement>(
       '[name="formVersionId"]',
     )?.value).toBe(formVersionId);

@@ -1,3 +1,4 @@
+import { permissionCodes } from "@/auth/authorization/permissions";
 import type { TaskTypeCode } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 
 const defaults: Record<TaskTypeCode, unknown> = {
@@ -56,7 +57,7 @@ const defaults: Record<TaskTypeCode, unknown> = {
     rationaleRequired: true,
   },
   DECISION: {
-    authorityCapability: "application.decide",
+    authorityCapability: permissionCodes.workflowTaskAssignedDecide,
     outcomes: [{ code: "APPROVE", label: "Approve" }],
     rationaleRequired: true,
   },

@@ -5,7 +5,7 @@ vi.mock("@/db/repositories/ApplicantDashboardRepository", () => ({
   readApplicantDashboard: vi.fn(),
 }));
 
-import { capabilities } from "@/auth/authorization/capabilities";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import { PermissionDeniedError } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import { readApplicantDashboard } from "@/db/repositories/ApplicantDashboardRepository";
@@ -52,7 +52,7 @@ describe("applicant dashboard service", () => {
 
   it("reads the authenticated applicant's metrics", async () => {
     const dashboard = await getApplicantDashboard(
-      applicant([capabilities.applicationReadOwn]),
+      applicant([permissionCodes.fundingApplicationOwnRead]),
     );
 
     expect(readApplicantDashboard).toHaveBeenCalledOnce();

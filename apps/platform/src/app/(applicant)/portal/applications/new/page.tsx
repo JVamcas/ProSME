@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-import { capabilities } from "@/auth/authorization/capabilities";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import { getCurrentUser } from "@/auth/authorization/current-user";
 import { can } from "@/auth/authorization/policy";
 import { NewApplicationChooser } from "@/components/applicant/applications/NewApplicationChooser";
@@ -11,7 +11,7 @@ export const metadata: Metadata = { title: "Apply" };
 
 export default async function ApplyPage() {
   const user = await getCurrentUser();
-  if (!user || !can(user, capabilities.applicationCreate)) redirect("/unauthorized");
+  if (!user || !can(user, permissionCodes.fundingApplicationCreate)) redirect("/unauthorized");
   return (
     <section>
       <PageHeader

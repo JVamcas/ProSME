@@ -15,9 +15,11 @@ import {
   BadgeQuestionMark,
 } from "lucide-react";
 
-import { capabilities } from "@/auth/authorization/capabilities";
 import { permissionCodes } from "@/auth/authorization/permissions";
-import type { PortalSpace } from "@/auth/authorization/portal-access";
+import {
+  operationsScopePermissions,
+  type PortalSpace,
+} from "@/auth/authorization/portal-access";
 
 export type PortalRoute = {
   id: string;
@@ -53,7 +55,7 @@ export const applicantPortalRoutes: readonly PortalRoute[] = [
     label: "My businesses",
     icon: Store,
     space: "applicant",
-    requiredPermission: capabilities.businessReadOwn,
+    requiredPermission: permissionCodes.businessOwnRead,
   },
   {
     id: "applicant-applications",
@@ -61,7 +63,7 @@ export const applicantPortalRoutes: readonly PortalRoute[] = [
     label: "My applications",
     icon: ClipboardList,
     space: "applicant",
-    requiredPermission: capabilities.applicationReadOwn,
+    requiredPermission: permissionCodes.fundingApplicationOwnRead,
   },
   {
     id: "applicant-notifications",
@@ -69,7 +71,7 @@ export const applicantPortalRoutes: readonly PortalRoute[] = [
     label: "Notifications",
     icon: Bell,
     space: "applicant",
-    requiredPermission: capabilities.notificationReadOwn,
+    requiredPermission: permissionCodes.userNotificationOwnRead,
   },
   {
     id: "applicant-profile",
@@ -77,7 +79,7 @@ export const applicantPortalRoutes: readonly PortalRoute[] = [
     label: "My profile",
     icon: UserRound,
     space: "applicant",
-    requiredAnyPermissions: [capabilities.profileReadOwn],
+    requiredAnyPermissions: [permissionCodes.userProfileOwnRead],
   },
 ];
 
@@ -88,7 +90,7 @@ export const operationsPortalRoutes: readonly PortalRoute[] = [
     label: "Dashboard",
     icon: LayoutDashboard,
     space: "operations",
-    requiredPermission: capabilities.adminAccess,
+    requiredAnyPermissions: operationsScopePermissions,
   },
   {
     id: "admin-funding-calls",
@@ -113,8 +115,8 @@ export const operationsPortalRoutes: readonly PortalRoute[] = [
     icon: ClipboardList,
     space: "operations",
     requiredAnyPermissions: [
-      capabilities.applicationReadAssigned,
-      capabilities.applicationReadAll,
+      permissionCodes.workflowTaskAssignedRead,
+      permissionCodes.fundingApplicationAllRead,
     ],
   },
   {
@@ -123,7 +125,7 @@ export const operationsPortalRoutes: readonly PortalRoute[] = [
     label: "Content management",
     icon: FileText,
     space: "operations",
-    requiredPermission: capabilities.cmsAccess,
+    requiredPermission: permissionCodes.cmsAccess,
   },
   {
     id: "admin-settings",
@@ -200,10 +202,10 @@ export const operationsPortalRoutes: readonly PortalRoute[] = [
     icon: UsersRound,
     space: "operations",
     requiredAnyPermissions: [
-      capabilities.userRead,
-      capabilities.userManage,
-      capabilities.roleRead,
-      capabilities.roleManage,
+      permissionCodes.userRead,
+      permissionCodes.userManage,
+      permissionCodes.roleRead,
+      permissionCodes.roleManage,
     ],
   },
 ];

@@ -3,7 +3,6 @@
 import { GeneralButton } from "@/components/ui/button";
 import {
   useFundingCall,
-  usePreviewFundingCallReadiness,
   usePublishFundingCall,
   useUpdateFundingCall,
 } from "../FundingCallHooks";
@@ -14,7 +13,6 @@ export function FundingCallEditor({
   canPublish,
   canApprove,
   canReturn,
-  canSubmit,
   canUpdate,
   canWithdrawOwnRequest,
   id,
@@ -22,14 +20,12 @@ export function FundingCallEditor({
   canApprove: boolean;
   canPublish: boolean;
   canReturn: boolean;
-  canSubmit: boolean;
   canUpdate: boolean;
   canWithdrawOwnRequest: boolean;
   id: string;
 }) {
   const query = useFundingCall(id);
   const publish = usePublishFundingCall(id);
-  const readiness = usePreviewFundingCallReadiness(id);
   const update = useUpdateFundingCall(id);
 
   if (query.isPending) return <p>Loading funding call…</p>;
@@ -40,16 +36,8 @@ export function FundingCallEditor({
   const call = query.data;
   return (
     <div className="space-y-5">
-      <div className="flex justify-end gap-3">
-        <GeneralButton
-          disabled={readiness.isPending}
-          onClick={() => readiness.mutate()}
-          type="button"
-          variant="outlineOrange"
-        >
-          {readiness.isPending ? "Validating…" : "Validate readiness"}
-        </GeneralButton>
-        {call.status === "APPROVED" && canPublish ? (
+      {call.status === "APPROVED" && canPublish ? (
+        <div className="flex justify-end gap-3">
           <GeneralButton
             disabled={publish.isPending || update.isPending}
             onClick={() => publish.mutate(call.rowVersion)}
@@ -57,34 +45,7 @@ export function FundingCallEditor({
           >
             {publish.isPending ? "Publishing…" : "Publish now or schedule"}
           </GeneralButton>
-        ) : null}
-      </div>
-      {readiness.error ? (
-        <p className="text-sm text-red-700" role="alert">
-          {readiness.error.message}
-        </p>
-      ) : null}
-      {readiness.data ? (
-        <section
-          aria-live="polite"
-          className="rounded-lg border border-slate-200 bg-white p-4"
-        >
-          <h2 className="font-semibold">
-            {readiness.data.ready
-              ? "Ready for publication"
-              : `${readiness.data.issues.length} readiness issue${readiness.data.issues.length === 1 ? "" : "s"}`}
-          </h2>
-          {readiness.data.issues.length > 0 ? (
-            <ul className="mt-3 space-y-2 text-sm">
-              {readiness.data.issues.map((issue, index) => (
-                <li key={`${issue.code}-${issue.location}-${index}`}>
-                  <span className="font-medium">{issue.code}</span>
-                  {` — ${issue.message} (${issue.location})`}
-                </li>
-              ))}
-            </ul>
-          ) : null}
-        </section>
+        </div>
       ) : null}
       {publish.error ? (
         <p className="text-sm text-red-700" role="alert">
@@ -95,7 +56,6 @@ export function FundingCallEditor({
         call={call}
         canApprove={canApprove}
         canReturn={canReturn}
-        canSubmit={canSubmit}
         canWithdrawOwnRequest={canWithdrawOwnRequest}
       />
       <FundingCallForm

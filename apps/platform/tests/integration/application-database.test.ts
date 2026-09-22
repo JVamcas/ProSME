@@ -58,7 +58,11 @@ describeDatabase("P3.2 PostgreSQL application persistence", () => {
         to_regclass('app_applications_unassigned_draft_unique') AS unassigned_unique_index,
         to_regclass('app_applications_owner_updated_idx') AS list_index,
         (SELECT count(*)::integer FROM app_capabilities
-          WHERE code IN ('application.create', 'application.read.own', 'application.update.own')) AS capability_count`,
+          WHERE code IN (
+            'funding.application.create',
+            'funding.application.own.read',
+            'funding.application.own.update'
+          )) AS capability_count`,
     );
     expect(result.rows[0]).toEqual({
       application_table: "app_applications",

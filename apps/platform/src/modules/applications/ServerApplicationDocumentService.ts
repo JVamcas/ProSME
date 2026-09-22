@@ -3,7 +3,7 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 
-import { capabilities } from "@/auth/authorization/capabilities";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import { requirePermission } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import {
@@ -96,7 +96,7 @@ export async function getOwnApplicationDocuments(
   user: AuthenticatedUser | null,
   applicationId: string,
 ) {
-  const actor = requirePermission(user, capabilities.documentReadOwn);
+  const actor = requirePermission(user, permissionCodes.fundingApplicationDocumentOwnRead);
   await requireOwnedDraft(actor.id, applicationId);
   return listOwnedApplicationDocuments(actor.id, applicationId);
 }
@@ -108,7 +108,7 @@ export async function uploadOwnApplicationDocument(
   file: File,
   storage: DocumentStorage = new GoogleCloudDocumentStorage(),
 ) {
-  const actor = requirePermission(user, capabilities.documentUploadOwn);
+  const actor = requirePermission(user, permissionCodes.fundingApplicationDocumentOwnUpload);
   const documentType = applicationDocumentTypeSchema.parse(documentTypeInput);
   await requireOwnedDraft(actor.id, applicationId);
   const validated = validateFile(file, documentType);

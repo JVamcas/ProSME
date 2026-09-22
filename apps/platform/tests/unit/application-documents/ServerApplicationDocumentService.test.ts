@@ -9,7 +9,7 @@ vi.mock("@/db/repositories/ApplicationRepository", () => ({
   findOwnedApplication: vi.fn(),
 }));
 
-import { capabilities } from "@/auth/authorization/capabilities";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import { PermissionDeniedError } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import {
@@ -27,8 +27,8 @@ import {
 const applicationId = "99e20de0-3558-4d63-90a4-8c9f5125df07";
 const actor = {
   capabilities: new Set([
-    capabilities.documentReadOwn,
-    capabilities.documentUploadOwn,
+    permissionCodes.fundingApplicationDocumentOwnRead,
+    permissionCodes.fundingApplicationDocumentOwnUpload,
   ]),
   createdAt: new Date(),
   displayName: "Applicant",
