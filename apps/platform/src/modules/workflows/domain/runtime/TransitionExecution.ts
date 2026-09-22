@@ -5,6 +5,7 @@ export const transitionExecutionOutcomes = [
   "TARGET_ACTIVATED",
   "TARGET_ENTRY_CONDITION_FAILED",
   "WORKFLOW_COMPLETED",
+  "WORKFLOW_REJECTED",
 ] as const;
 
 export type TransitionExecutionOutcome =

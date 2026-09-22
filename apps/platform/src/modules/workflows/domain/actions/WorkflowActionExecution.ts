@@ -106,10 +106,15 @@ export type WorkflowActionExecutionResult = {
   sourceStageInstanceId: string;
   taskId: string | null;
   transition: {
-    kind: "NONE" | "STAGE_ACTIVE" | "STAGE_ACTIVATED" | "WORKFLOW_COMPLETED";
+    kind:
+      | "NONE"
+      | "STAGE_ACTIVE"
+      | "STAGE_ACTIVATED"
+      | "WORKFLOW_COMPLETED"
+      | "WORKFLOW_REJECTED";
     targetStageInstanceId: string | null;
     targetStageName: string | null;
-    workflowStatus: "ACTIVE" | "COMPLETED";
+    workflowStatus: "ACTIVE" | "COMPLETED" | "REJECTED";
   };
   workflowInstanceId: string;
 };
@@ -152,9 +157,12 @@ export function validateActionInputAgainstConfiguration(
   }
   switch (action.actionType) {
     case "REJECT":
-      return input.reasonCode
-          && !action.configuration.reasonCodes.includes(input.reasonCode)
-        ? "The rejection reason is not configured for this action."
+      if (input.reasonCode
+        && !action.configuration.reasonCodes.includes(input.reasonCode)) {
+        return "The rejection reason is not configured for this action.";
+      }
+      return action.configuration.commentRequired && !input.comment
+        ? "A comment is required for this rejection."
         : null;
     case "REQUEST_INFORMATION":
       return input.actionType === "REQUEST_INFORMATION"

@@ -15,13 +15,37 @@ const uniqueStableKeyListSchema = stableKeyListSchema.refine(
   "Values must be unique.",
 );
 
+const publicStatusMappingSchema = z.object({
+  description: z.string().trim().min(2).max(300),
+  label: z.string().trim().min(2).max(120),
+  status: z.enum([
+    "SUBMITTED",
+    "UNDER_REVIEW",
+    "ACTION_REQUIRED",
+    "OUTCOME_AVAILABLE",
+    "CLOSED",
+    "WITHDRAWN",
+  ]),
+}).strict();
+
 export const approveAdvanceConfigurationSchema = z
   .object({})
   .strict();
 
 export const rejectConfigurationSchema = z
   .object({
+    commentRequired: z.boolean(),
+    outcome: z.discriminatedUnion("type", [
+      z.object({
+        cancelOpenStageInstances: z.boolean(),
+        cancelOpenTasks: z.boolean(),
+        publicStatusMapping: publicStatusMappingSchema,
+        type: z.literal("TERMINAL"),
+      }).strict(),
+      z.object({ type: z.literal("TRANSITION") }).strict(),
+    ]),
     reasonCodes: uniqueStableKeyListSchema,
+    reversibleActionKey: stableKeySchema.nullable(),
   })
   .strict();
 

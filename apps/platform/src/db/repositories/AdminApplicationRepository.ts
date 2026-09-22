@@ -61,7 +61,11 @@ function visibilityFilter(
 function statusFilter(status: AdminApplicationListInput["status"]) {
   if (status === "all") return sql`TRUE`;
   const code = status.replaceAll("-", "_").toUpperCase();
-  return sql`COALESCE(stage_definition.applicant_status, 'SUBMITTED') = ${code}`;
+  return sql`COALESCE(
+    workflow.public_status->>'status',
+    stage_definition.applicant_status,
+    'SUBMITTED'
+  ) = ${code}`;
 }
 
 function applicationSearch(search?: string) {
@@ -107,8 +111,13 @@ function applicationQuery(input: {
         application.funding_opportunity_title AS "fundingCallTitle",
         NULLIF(application.financial_section ->> 'amountRequested', '')::numeric AS "requestedAmount",
         application.submitted_at AS "submittedAt",
-        COALESCE(stage_definition.name, 'Submitted') AS "internalStatus",
-        COALESCE(stage_definition.applicant_status, 'SUBMITTED') AS "applicantStatus",
+        COALESCE(workflow.terminal_outcome, stage_definition.name, 'Submitted')
+          AS "internalStatus",
+        COALESCE(
+          workflow.public_status->>'status',
+          stage_definition.applicant_status,
+          'SUBMITTED'
+        ) AS "applicantStatus",
         stage_definition.name AS "activeStageName",
         COALESCE(task_summary.active_count, 0)::integer AS "activeTaskCount",
         task_summary.role_names AS "assignedRoleName",

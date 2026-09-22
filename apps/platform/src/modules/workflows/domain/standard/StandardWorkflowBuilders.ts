@@ -41,13 +41,30 @@ export function reject(
   label: string,
   order: number,
   reasonCodes: string[],
+  outcomeType: "TERMINAL" | "TRANSITION" = "TERMINAL",
 ) {
   return action(
     key,
     label,
     "REJECT",
     order,
-    { reasonCodes },
+    {
+      commentRequired: true,
+      outcome: outcomeType === "TERMINAL"
+        ? {
+            cancelOpenStageInstances: true,
+            cancelOpenTasks: true,
+            publicStatusMapping: {
+              description: "A decision is available for your application.",
+              label: "Decision available",
+              status: "OUTCOME_AVAILABLE",
+            },
+            type: "TERMINAL" as const,
+          }
+        : { type: "TRANSITION" as const },
+      reasonCodes,
+      reversibleActionKey: null,
+    },
     true,
   );
 }
@@ -205,4 +222,3 @@ export const yesNoChecklistConfig = (items: WorkflowStageChecklistDefinition[]) 
     required: item.mandatory,
   })),
 });
-

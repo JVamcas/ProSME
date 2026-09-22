@@ -135,7 +135,13 @@ function approval(dependencies: StandardWorkflowDependencies) {
     approve("APPROVE", "Approve", 1),
     approve("APPROVE_WITH_CONDITIONS", "Approve with conditions", 2),
     approve("PARTIAL_APPROVAL", "Partially approve at reduced amount", 3),
-    reject("DECLINE", "Decline", 4, ["AUTHORITY_DECLINED", "BUDGET_UNAVAILABLE"]),
+    reject(
+      "DECLINE",
+      "Decline",
+      4,
+      ["AUTHORITY_DECLINED", "BUDGET_UNAVAILABLE"],
+      "TRANSITION",
+    ),
     returnAction("REFER_COMMITTEE", "Refer back to committee", 5),
   ];
   return stage({
@@ -269,4 +275,3 @@ export function createStandardDecisionStages(
     notificationAppeals(dependencies),
   ];
 }
-

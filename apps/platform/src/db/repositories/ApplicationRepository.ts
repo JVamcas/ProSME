@@ -56,16 +56,21 @@ const listColumns = {
 };
 
 const effectiveApplicantStatus = sql`
-  COALESCE(${workflowStageDefinitions.applicantStatus}, 'SUBMITTED')
+  COALESCE(
+    ${workflowInstances.publicStatus}->>'status',
+    ${workflowStageDefinitions.applicantStatus},
+    'SUBMITTED'
+  )
 `;
 const openWorkflow = sql`
-  COALESCE(${workflowInstances.status}, 'ACTIVE') NOT IN ('COMPLETED', 'CANCELLED')
+  COALESCE(${workflowInstances.status}, 'ACTIVE')
+    NOT IN ('COMPLETED', 'CANCELLED', 'REJECTED')
 `;
 const applicationCategories = {
   completed: and(
     eq(applications.status, "submitted"),
     sql`(
-      ${workflowInstances.status} IN ('COMPLETED', 'CANCELLED')
+      ${workflowInstances.status} IN ('COMPLETED', 'CANCELLED', 'REJECTED')
       OR ${effectiveApplicantStatus} IN ('OUTCOME_AVAILABLE', 'CLOSED', 'WITHDRAWN')
     )`,
   ),

@@ -27,7 +27,7 @@ vi.mock(
 );
 vi.mock(
   "@/modules/workflows/infrastructure/WorkflowDecisionRepository",
-  () => ({ recordApprovalDecision: vi.fn() }),
+  () => ({ recordWorkflowDecision: vi.fn() }),
 );
 vi.mock(
   "@/modules/workflows/application/runtime/ServerSequentialTransitionService",
@@ -50,7 +50,7 @@ import {
   workflowActionExecutionDatabase,
 } from "@/modules/workflows/infrastructure/WorkflowActionExecutionRepository";
 import { configuredActionTargetsAreValid } from "@/modules/workflows/infrastructure/WorkflowActionTargetRepository";
-import { recordApprovalDecision } from "@/modules/workflows/infrastructure/WorkflowDecisionRepository";
+import { recordWorkflowDecision } from "@/modules/workflows/infrastructure/WorkflowDecisionRepository";
 import { executeSequentialTransitionInTransaction } from "@/modules/workflows/application/runtime/ServerSequentialTransitionService";
 
 const actorId = "10000000-0000-4000-8000-000000000001";
@@ -164,7 +164,7 @@ describe("server workflow action execution", () => {
       }),
     );
     expect(recordWorkflowActionExecution).toHaveBeenCalledOnce();
-    expect(recordApprovalDecision).toHaveBeenCalledWith(
+    expect(recordWorkflowDecision).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
         actionDefinitionId: target.action.id,
@@ -172,6 +172,7 @@ describe("server workflow action execution", () => {
         actorId,
         decisionId: result.decisionId,
         normalizedInput: input.input,
+        outcome: "APPROVED",
       }),
     );
   });
@@ -233,4 +234,5 @@ describe("server workflow action execution", () => {
     );
     expect(claimWorkflowActionRuntimeVersion).not.toHaveBeenCalled();
   });
+
 });

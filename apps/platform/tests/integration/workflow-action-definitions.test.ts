@@ -71,7 +71,10 @@ afterAll(async () => {
         reasonCodeRequired: true,
         displayOrder: 2,
         configuration: {
+          commentRequired: true,
+          outcome: { type: "TRANSITION" as const },
           reasonCodes: ["INSUFFICIENT_EVIDENCE"],
+          reversibleActionKey: null,
         },
       },
     ];

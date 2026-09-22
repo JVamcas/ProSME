@@ -24,7 +24,12 @@ describe("workflow task reviewer preview", () => {
     const task = stage.tasks[0];
     stage.actions.push({
       actionType: "REJECT",
-      configuration: { reasonCodes: ["INELIGIBLE"] },
+      configuration: {
+        commentRequired: true,
+        outcome: { type: "TRANSITION" },
+        reasonCodes: ["INELIGIBLE"],
+        reversibleActionKey: null,
+      },
       displayOrder: 2,
       enabled: true,
       label: "Reject",

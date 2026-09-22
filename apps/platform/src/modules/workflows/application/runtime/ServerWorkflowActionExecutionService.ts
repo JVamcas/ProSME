@@ -13,22 +13,22 @@ import {
   completeActionTask,
   findWorkflowActionExecution,
   lockWorkflowActionExecutionTarget,
-  recordWorkflowActionExecution,
   withWorkflowActionExecutionTransaction,
   workflowActionExecutionDatabase,
   type WorkflowActionExecutionTarget,
 } from "../../infrastructure/WorkflowActionExecutionRepository";
 import { configuredActionTargetsAreValid } from "../../infrastructure/WorkflowActionTargetRepository";
-import { recordApprovalDecision } from "../../infrastructure/WorkflowDecisionRepository";
 import {
   validateActionInputAgainstConfiguration,
   WorkflowActionExecutionError,
-  type WorkflowActionExecutionRequest,
   type WorkflowActionExecutionResult,
 } from "../../domain/actions/WorkflowActionExecution";
 import { workflowActionDefinitionSchema } from "../../domain/actions/WorkflowActionSchemas";
 import { loadSequentialTransitions } from "../../infrastructure/TransitionExecutionRepository";
-import { executeSequentialTransitionInTransaction } from "./ServerSequentialTransitionService";
+import {
+  executeConfiguredWorkflowActionOutcome,
+  type ExecuteWorkflowActionInput,
+} from "./ServerWorkflowActionOutcomeService";
 import { buildWorkflowActionConditionContext } from "./ServerWorkflowActionContextService";
 import {
   evaluateWorkflowActionConditions,
@@ -36,13 +36,6 @@ import {
   requiredWorkflowActionPermission,
   type WorkflowActionPolicyResult,
 } from "./WorkflowActionPolicy";
-
-type ExecuteInput = WorkflowActionExecutionRequest & {
-  actionKey: string;
-  correlationId: string;
-  idempotencyKey: string;
-  workflowInstanceId: string;
-};
 
 function fail(
   code: ConstructorParameters<typeof WorkflowActionExecutionError>[0],
@@ -78,7 +71,7 @@ function enforceWorkflowActionPolicy(
 
 function assertRuntimeIdentityAndVersion(
   target: WorkflowActionExecutionTarget,
-  input: ExecuteInput,
+  input: ExecuteWorkflowActionInput,
 ) {
   if (target.stage.workflowInstanceId !== input.workflowInstanceId) {
     fail("INVALID_RUNTIME_CONTEXT", "The stage does not belong to the workflow.");
@@ -97,52 +90,6 @@ function policyTarget(target: WorkflowActionExecutionTarget) {
   };
 }
 
-function transitionResult(
-  transition: Awaited<ReturnType<typeof executeSequentialTransitionInTransaction>>,
-) {
-  switch (transition.kind) {
-    case "source_stage_not_completed":
-      return {
-        kind: "STAGE_ACTIVE" as const,
-        targetStageInstanceId: null,
-        targetStageName: null,
-        workflowStatus: "ACTIVE" as const,
-      };
-    case "transitioned":
-      return {
-        kind: "STAGE_ACTIVATED" as const,
-        targetStageInstanceId: transition.targetStageInstanceId,
-        targetStageName: transition.targetStageName,
-        workflowStatus: transition.workflowStatus,
-      };
-    case "workflow_completed":
-      return {
-        kind: "WORKFLOW_COMPLETED" as const,
-        targetStageInstanceId: null,
-        targetStageName: null,
-        workflowStatus: transition.workflowStatus,
-      };
-    case "transition_not_found":
-      return {
-        kind: "NONE" as const,
-        targetStageInstanceId: null,
-        targetStageName: null,
-        workflowStatus: "ACTIVE" as const,
-      };
-    case "transition_condition_failed":
-    case "target_entry_condition_failed":
-      return fail(
-        "CONDITION_FAILED",
-        "The configured action or transition conditions did not pass.",
-      );
-    default:
-      return fail(
-        "ACTION_UNAVAILABLE",
-        "The configured action cannot execute from the current runtime state.",
-      );
-  }
-}
-
 function isIdempotencyConstraint(error: unknown) {
   return Boolean(
     error
@@ -154,7 +101,7 @@ function isIdempotencyConstraint(error: unknown) {
 
 export async function executeWorkflowAction(
   user: AuthenticatedUser | null,
-  input: ExecuteInput,
+  input: ExecuteWorkflowActionInput,
 ): Promise<WorkflowActionExecutionResult> {
   const actor = requireAuthenticatedUser(user);
   const replayCommand = {
@@ -272,77 +219,15 @@ export async function executeWorkflowAction(
           fail("ACTION_UNAVAILABLE", "The task changed before the action completed.");
         }
       }
-      const transition = transitionResult(
-        await executeSequentialTransitionInTransaction(transaction, {
-          actionKey: input.actionKey,
-          actorId: actor.id,
-          conditionSelection: {
-            selectedTransitionId: conditions.selectedTransitionId,
-            transitionEvaluations: conditions.transitionEvaluations,
-          },
-          conditionContext,
-          correlationId: input.correlationId,
-          sourceStageInstanceId: input.sourceStageInstanceId,
-        }),
-      );
-      const executionId = crypto.randomUUID();
-      const decisionId = target.action.actionType === "APPROVE_ADVANCE"
-        ? crypto.randomUUID()
-        : null;
-      const executedAt = new Date().toISOString();
-      const result: WorkflowActionExecutionResult = {
-        actionExecutionId: executionId,
-        actionKey: target.action.stableKey,
-        actionType: target.action.actionType,
-        decisionId,
-        executedAt,
-        resultingRuntimeVersion,
-        sourceStageInstanceId: target.stage.stageInstanceId,
-        taskId: target.task?.id ?? null,
-        transition,
-        workflowInstanceId: target.stage.workflowInstanceId,
-      };
-      await recordWorkflowActionExecution(transaction, {
-        action: target.action,
+      return executeConfiguredWorkflowActionOutcome(transaction, {
         actorId: actor.id,
-        conditionEvaluation: {
-          action: conditions.actionEvaluation,
-          capturedAt: executedAt,
-          transitions: conditions.transitionEvaluations,
-        },
-        correlationId: input.correlationId,
-        expectedRuntimeVersion: input.expectedRuntimeVersion,
-        id: executionId,
-        idempotencyKey: input.idempotencyKey,
-        normalizedInput: input.input,
-        resolvedTarget: {
-          kind: transition.kind,
-          targetStageInstanceId: transition.targetStageInstanceId,
-          targetStageName: transition.targetStageName,
-        },
-        result,
+        command: input,
+        conditions,
+        conditionContext,
+        configuredTransitions,
         resultingRuntimeVersion,
-        sourceStageInstanceId: target.stage.stageInstanceId,
-        taskBefore: target.task,
-        taskId: target.task?.id ?? null,
-        workflowInstanceId: target.stage.workflowInstanceId,
+        target,
       });
-      if (decisionId) {
-        await recordApprovalDecision(transaction, {
-          actionDefinitionId: target.action.id,
-          actionExecutionId: executionId,
-          actionKey: target.action.stableKey,
-          actorId: actor.id,
-          correlationId: input.correlationId,
-          decidedAt: new Date(executedAt),
-          decisionId,
-          normalizedInput: input.input,
-          sourceStageInstanceId: target.stage.stageInstanceId,
-          taskId: target.task?.id ?? null,
-          workflowInstanceId: target.stage.workflowInstanceId,
-        });
-      }
-      return result;
     });
   } catch (error) {
     if (!isIdempotencyConstraint(error)) throw error;

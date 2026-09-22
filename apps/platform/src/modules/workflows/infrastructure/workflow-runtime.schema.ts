@@ -12,6 +12,7 @@ import {
 
 import type { TaskTypeCode } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import type { WorkflowInstanceStatus } from "@/modules/workflows/domain/runtime/WorkflowInstance";
+import type { WorkflowPublicStatusMapping } from "@/modules/workflows/domain/definitions/WorkflowStageDefinition";
 import type { StageInstanceStatus } from "@/modules/workflows/domain/runtime/StageInstance";
 import type { WorkflowTaskStatus } from "@/modules/workflows/domain/runtime/WorkflowTask";
 import type { TransitionExecutionOutcome } from "@/modules/workflows/domain/runtime/TransitionExecution";
@@ -51,6 +52,9 @@ export const workflowInstances = pgTable(
       .notNull()
       .defaultNow(),
     completedAt: timestamp("completed_at", { withTimezone: true }),
+    terminalOutcome: text("terminal_outcome"),
+    publicStatus: jsonb("public_status")
+      .$type<WorkflowPublicStatusMapping | null>(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

@@ -14,6 +14,7 @@ type Props = {
   assignmentOptions: WorkflowAssignmentOptions;
   deferTargetType: "DATE" | "FUNDING_CALL";
   escalationTargetType: "ROLE" | "USER";
+  rejectionOutcomeType: "TERMINAL" | "TRANSITION";
 };
 
 function KeyListField({
@@ -153,6 +154,7 @@ export function WorkflowActionConfigurationFields({
   assignmentOptions,
   deferTargetType,
   escalationTargetType,
+  rejectionOutcomeType,
 }: Props) {
   switch (actionType) {
     case "APPROVE_ADVANCE":
@@ -165,6 +167,58 @@ export function WorkflowActionConfigurationFields({
             name="reasonCodes"
             placeholder="INELIGIBLE, INSUFFICIENT_EVIDENCE"
           />
+          <CheckboxField
+            label="Require a rejection comment"
+            name="rejectionCommentRequired"
+          />
+          <FormInput
+            label="Reversal action key"
+            name="reversibleActionKey"
+            placeholder="REOPEN_REJECTION"
+          />
+          <FormSelect
+            containerClassName="sm:col-span-2"
+            items={[
+              { label: "Terminal rejection", value: "TERMINAL" },
+              { label: "Follow configured transition", value: "TRANSITION" },
+            ]}
+            label="Rejection outcome"
+            name="rejectionOutcomeType"
+            required
+          />
+          {rejectionOutcomeType === "TERMINAL" ? (
+            <>
+              <CheckboxField
+                label="Cancel all open tasks"
+                name="cancelOpenTasks"
+              />
+              <CheckboxField
+                label="Cancel all open stages"
+                name="cancelOpenStageInstances"
+              />
+              <FormSelect
+                items={[
+                  { label: "Outcome available", value: "OUTCOME_AVAILABLE" },
+                  { label: "Closed", value: "CLOSED" },
+                ]}
+                label="Applicant status"
+                name="rejectionPublicStatus"
+                required
+              />
+              <FormInput
+                label="Applicant status label"
+                name="rejectionPublicLabel"
+                required
+              />
+              <FormTextarea
+                containerClassName="sm:col-span-2"
+                label="Applicant status description"
+                name="rejectionPublicDescription"
+                required
+                rows={2}
+              />
+            </>
+          ) : null}
         </>
       );
     case "REQUEST_INFORMATION":

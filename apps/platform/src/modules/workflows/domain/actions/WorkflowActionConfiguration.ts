@@ -1,7 +1,19 @@
+import type { WorkflowPublicStatusMapping } from "../definitions/WorkflowStageDefinition";
+
 export type ApproveAdvanceConfiguration = Record<string, never>;
 
 export type RejectConfiguration = {
+  commentRequired: boolean;
+  outcome:
+    | {
+        cancelOpenStageInstances: boolean;
+        cancelOpenTasks: boolean;
+        publicStatusMapping: WorkflowPublicStatusMapping;
+        type: "TERMINAL";
+      }
+    | { type: "TRANSITION" };
   reasonCodes: string[];
+  reversibleActionKey: string | null;
 };
 
 export type RequestInformationConfiguration = {

@@ -57,6 +57,10 @@ export function WorkflowActionDialog({
     control: form.control,
     name: "escalationTargetType",
   });
+  const rejectionOutcomeType = useWatch({
+    control: form.control,
+    name: "rejectionOutcomeType",
+  });
   const previousEscalationTargetType = useRef(escalationTargetType);
 
   useEffect(() => {
@@ -184,6 +188,7 @@ export function WorkflowActionDialog({
             }
             deferTargetType={deferTargetType}
             escalationTargetType={escalationTargetType}
+            rejectionOutcomeType={rejectionOutcomeType}
           />
           {mutation.error ? (
             <p className="sm:col-span-2 text-sm text-red-700" role="alert">

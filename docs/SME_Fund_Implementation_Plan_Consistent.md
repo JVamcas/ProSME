@@ -3670,41 +3670,1539 @@ Repeatable Stages are configuration-driven.
 
 # Phase 14 — Applicant Application Lifecycle
 
-Implement:
-- create Application;
-- autosave;
-- completeness;
-- document upload;
-- submission;
-- reference number;
-- immutable snapshot;
-- authoritative eligibility;
-- Workflow Instance creation;
-- submitted PDF;
-- public status;
-- withdrawal.
+This phase joins the applicant-facing Form, Funding Call, eligibility and
+Workflow capabilities into one Application lifecycle. The `applications`
+module owns Application drafts, lodged values, snapshots, declarations,
+documents, references and applicant/admin Application read models. It
+coordinates with the `funding-calls`, `eligibility` and `workflows` modules
+through their server-side services; it must not query their tables directly or
+reimplement their business rules.
+
+Call Setup and Publication remains in the Funding Call lifecycle. Application
+Submission is not modeled as a Workflow Stage. A successful submission creates
+the Application Workflow directly at its configured initial Stage.
+
+## 14.1 Application Domain and Lifecycle States
+
+### Goal
+
+Define the Application aggregate, ownership model and legal lifecycle
+transitions independently from internal Workflow Stage state.
+
+### Scope
+
+Store at minimum:
+- Application identifier;
+- owning applicant user and represented business/organisation where required;
+- Funding Call identifier;
+- exact Application Form Version identifier;
+- exact Eligibility Ruleset Version identifier resolved for the draft;
+- exact Workflow Template Version identifier captured through the linked
+  Workflow Instance when submission processing resolves it;
+- lifecycle status;
+- created, updated, submitted and withdrawn timestamps where applicable;
+- reference number after submission;
+- optimistic concurrency version;
+- latest draft response and immutable submission-snapshot references.
+
+Initial lifecycle states support at least:
+- Draft;
+- Submitted;
+- Withdrawn.
+
+Internal processing outcomes such as screening, assessment, approval and
+rejection belong to Workflow state and applicant-facing status projections;
+they must not produce a second hard-coded Application workflow.
+
+**Rules**
+
+- every protected operation verifies both canonical permission and ownership,
+  representation or staff scope;
+- lifecycle transitions are deny-by-default and server-authoritative;
+- a Submitted or Withdrawn Application cannot return to Draft unless an
+  explicitly configured, separately audited capability permits a new
+  Application or revision;
+- timestamps use server-authoritative time;
+- lifecycle records are never deleted to simulate withdrawal or rejection;
+- one-per-applicant/business/Funding Call constraints are configuration-driven
+  and enforced transactionally where enabled.
+
+### Acceptance Criteria
+
+1. Application state and Workflow state are distinct and linked explicitly.
+2. Invalid lifecycle transitions are rejected without mutation.
+3. Ownership and representative context are checked server-side for every
+   applicant operation.
+4. Staff access uses narrow canonical permissions and applicable resource
+   scope, not route ownership or role-name checks.
+5. Configured duplicate-Application rules are safe under concurrent creation.
+6. Later Workflow progress does not rewrite the lodged Application state.
 
 ### Done When
 
-Applicant submission starts the configured Workflow end-to-end.
+An Application has one durable applicant lifecycle and a separate linked
+processing lifecycle.
+
+## 14.2 Create Application Draft
+
+### Goal
+
+Create an owned draft against an open, eligible Funding Call and its exact
+published configuration.
+
+### Scope
+
+On creation:
+1. authenticate the applicant and require the create permission;
+2. resolve the Funding Call by stable identifier/slug;
+3. evaluate server time against its published/open window and suspension state;
+4. validate any configured applicant/business eligibility to start a draft;
+5. validate the represented business relationship where required;
+6. enforce configured duplicate limits;
+7. resolve and store the exact published Application Form and Eligibility
+   Ruleset Versions;
+8. create the initial draft Form Response and audit event;
+9. return a safe applicant draft contract.
+
+The Form and Eligibility Ruleset Versions are fixed for the draft so an
+administrator publishing newer versions does not silently reshape existing
+work or change its rule context. If draft migration to newer bound versions is
+supported, it is an explicit, validated and audited operation with a preview of
+incompatible fields; it is never an incidental page-load effect. In accordance
+with Phase 6.5, the exact published Workflow Template Version is resolved and
+captured at submission because that is when the Workflow Instance is created.
+
+Creation accepts an idempotency key. Concurrent requests must not bypass an
+enabled one-Application rule or create duplicate drafts for the same command.
+
+### Acceptance Criteria
+
+1. A permitted applicant can create a draft only while the Funding Call allows
+   new Applications.
+2. Closed, suspended, withdrawn, unpublished or misconfigured calls reject
+   creation with a safe domain error.
+3. The draft stores exact Form and Eligibility Ruleset Version references.
+4. Later publication of Form, Ruleset or Workflow versions does not silently
+   alter the draft.
+5. An applicant cannot create a draft for another applicant or an unrelated
+   business.
+6. Duplicate retries return the original draft and concurrent create limits are
+   enforced atomically.
+7. Draft creation is audited without copying sensitive Form values.
+
+### Done When
+
+An applicant can start one correctly owned, version-bound draft under the
+Funding Call's configured rules.
+
+## 14.3 Draft Form Rendering and Autosave
+
+### Goal
+
+Allow an applicant to complete and resume the exact Generic Form Version bound
+to the Application.
+
+### Scope
+
+The applicant page composes the Generic Form renderer from Phase 2. Client-side
+server state follows:
+
+```text
+Applicant component
+    -> TanStack Query hook
+    -> ClientApplicationService
+    -> Application API route
+    -> ServerApplicationService
+    -> Application repository
+```
+
+Autosave supports:
+- partial values permitted by draft validation;
+- stable field keys;
+- debounced/background mutation without direct component `fetch`;
+- optimistic concurrency using an Application/response version;
+- explicit Saving, Saved, Offline/Failed and Conflict states;
+- retry without duplicate revisions;
+- server-side validation against the stored Form Version;
+- reload on another session/device.
+
+Autosave must not overwrite a newer response after concurrent editing. A
+conflict returns enough safe metadata to refresh or deliberately reconcile; it
+does not apply last-write-wins silently. Once submission begins or succeeds,
+draft writes are rejected.
+
+### Acceptance Criteria
+
+1. The renderer uses the Application's stored Form Version rather than the
+   Funding Call's latest Form.
+2. Partial valid draft values survive refresh and sign-in on another device.
+3. Client components do not call APIs directly.
+4. Server validation rejects unknown fields and values invalid for the exact
+   schema.
+5. Concurrent edits cannot silently overwrite a newer draft.
+6. Autosave failure is visible and does not falsely display a Saved state.
+7. Submitted or withdrawn Applications reject draft mutation.
+
+### Done When
+
+Applicants can safely resume a version-bound draft without silent data loss.
+
+## 14.4 Applicant, Business and Declaration Context
+
+### Goal
+
+Bind the draft to the correct applicant/business context and capture required
+declarations without duplicating reusable profile data into editable Form
+fields.
+
+### Scope
+
+Use stable context paths for read-only applicant, business and Funding Call
+data exposed to Form visibility/validation. The Application stores references
+to reusable profiles during drafting and captures only the submission-time
+facts necessary to reproduce the lodged record in its immutable snapshot.
+
+Declarations support:
+- stable declaration key and version/text reference;
+- required/optional status;
+- acceptance boolean;
+- accepting actor and representative capacity;
+- accepted-at server timestamp;
+- invalidation when the declaration text/version materially changes before
+  submission;
+- withdrawal/re-acceptance history before submission.
+
+Consent and declarations are not inferred from a generic checkbox value alone.
+The server validates that the actor is permitted to make them for the selected
+business.
+
+### Acceptance Criteria
+
+1. Read-only context is resolved through stable paths and is not duplicated
+   into draft Form responses.
+2. Required declarations retain exact version/text references, actor, capacity
+   and timestamp.
+3. Materially changed declarations require explicit re-acceptance.
+4. An unauthorized representative cannot accept on behalf of a business.
+5. Submission can reproduce the relevant applicant/business/declaration facts
+   as lodged without allowing later profile edits to change them.
+
+### Done When
+
+The Application has trustworthy ownership, representation and declaration
+evidence for submission.
+
+## 14.5 Completeness and Submission Readiness
+
+### Goal
+
+Calculate whether the current draft is ready to submit using the exact bound
+configuration.
+
+### Scope
+
+The readiness evaluator combines:
+- Generic Form section and required-field completeness;
+- conditional visibility and conditional requirement results;
+- schema and cross-field validation;
+- required declarations;
+- selected business/representative requirements;
+- mandatory document presence and security status;
+- Funding Call submission window/status;
+- required version/configuration availability.
+
+Return a structured read model containing section-level progress, overall
+readiness and safe applicant-facing blockers. Do not expose internal eligibility
+rules, Workflow Conditions or security implementation detail.
+
+The UI readiness result is advisory. Submission recalculates every requirement
+inside its server-side command using current committed data and server time.
+
+### Acceptance Criteria
+
+1. Completeness uses the stored Form Version and shared Conditions/Data Resolver.
+2. Hidden non-required fields do not incorrectly block submission.
+3. Required visible fields, declarations and documents produce actionable
+   applicant-facing blockers.
+4. Security-pending or rejected mandatory documents prevent readiness.
+5. Client-reported completeness cannot bypass server validation.
+6. Readiness changes when relevant saved data/configured call state changes.
+7. Internal rule expressions and protected values are not returned to the
+   applicant.
+
+### Done When
+
+Applicants can see accurate progress while the server retains final authority
+over submission readiness.
+
+## 14.6 Application Document Upload
+
+### Goal
+
+Attach required applicant documents securely to the correct draft and document
+requirement.
+
+### Scope
+
+Upload processing validates:
+- Application ownership and Draft state;
+- stable document-requirement key from the bound configuration;
+- allowed content types and extension/signature agreement;
+- size and count limits;
+- non-empty content and checksum;
+- storage key generated by the server rather than supplied by the client;
+- malware/security scan status before the document can satisfy readiness;
+- safe filename/metadata handling;
+- access through authorized download endpoints or short-lived signed access.
+
+Persist document metadata and an initial immutable Document Version. Uploads
+remain Pending until required storage finalization and security scanning
+succeed. Failed or abandoned uploads do not satisfy requirements and are
+cleaned up through a safe background process.
+
+Phase 16 adds the complete replacement and per-version verification lifecycle.
+This phase must already use Document Version identity so later replacement does
+not overwrite the originally submitted object.
+
+### Acceptance Criteria
+
+1. An applicant cannot upload to or read another applicant's Application.
+2. Unknown requirements, disallowed files and configured limit violations are
+   rejected server-side.
+3. Object keys prevent cross-Application collision and path manipulation.
+4. Mandatory documents count only after successful finalization and security
+   scanning.
+5. Re-upload creates a distinct version/object and never overwrites a submitted
+   file.
+6. Database metadata and object-storage failure states are reconcilable and
+   observable.
+7. Download access is authorized and does not expose permanent public object
+   URLs.
+
+### Done When
+
+Applicants can attach safe, requirement-bound and version-addressable documents
+without weakening Application isolation.
+
+## 14.7 Submission Preflight
+
+### Goal
+
+Give the applicant a final, truthful validation result before the irreversible
+submission command.
+
+### Scope
+
+Preflight re-reads committed server state and validates:
+- ownership and representative authority;
+- Draft status and current concurrency version;
+- Funding Call is Live/open for submission at server time;
+- exact bound configuration remains valid for use;
+- Form values and cross-field rules;
+- declarations;
+- business requirements;
+- document presence/finalization/security state;
+- configured duplicate-submission constraints;
+- ability to resolve one valid initial Workflow Stage;
+- availability of required Eligibility and Workflow services.
+
+Return categorized, safe blockers and a short-lived readiness/version token or
+equivalent version set. Preflight never reserves a reference number, mutates the
+Application, runs an authoritative eligibility assessment or creates Workflow
+runtime records.
+
+### Acceptance Criteria
+
+1. Preflight reports all safe actionable blockers in one response where
+   practical.
+2. It uses server time and committed data rather than unsaved browser state.
+3. It produces no submission, eligibility, Workflow or reference side effects.
+4. A successful preflight does not guarantee success if state changes before
+   submission; the command revalidates.
+5. Internal Conditions, unpublished configuration and security details are not
+   disclosed.
+
+### Done When
+
+The applicant can review and correct current submission blockers without
+creating partial runtime state.
+
+## 14.8 Atomic Submission Command
+
+### Goal
+
+Lodge the Application exactly once and start its configured processing without
+partial state.
+
+### Scope
+
+The submission request includes:
+- Application identifier;
+- expected Application/readiness version;
+- idempotency key;
+- final confirmation.
+
+Within one database transaction:
+1. lock or concurrency-check the owned Draft Application;
+2. revalidate every preflight rule using server time and committed data;
+3. reserve/generate the unique Application reference;
+4. create the immutable submission snapshot;
+5. set the Application to Submitted with server timestamp;
+6. execute and persist the authoritative eligibility evaluation against the
+   snapshot and exact Ruleset Version;
+7. create the Workflow Instance for the exact Workflow Template Version;
+8. resolve and activate the configured initial Stage;
+9. create its configured Tasks;
+10. append Application and Workflow audit events;
+11. write transactional-outbox events for PDF generation, confirmation and
+    other later side effects;
+12. persist the idempotent command result;
+13. commit all database changes together.
+
+Uploads and security scanning must be finalized before this transaction; the
+command does not attempt a long-running object upload or malware scan while
+holding database locks. Notification delivery and PDF rendering occur after
+commit from outbox events and cannot roll back a valid submission.
+
+If any required database step fails, the Application remains Draft and no
+eligibility outcome, Workflow Instance, active Stage or consumed reference is
+treated as a successful submission. A repeated identical idempotency key
+returns the original result; reuse with a different payload/Application is a
+conflict.
+
+### Acceptance Criteria
+
+1. Submission rechecks ownership, state, readiness, call window and bound
+   configuration server-side.
+2. Application status, snapshot, eligibility outcome, Workflow bootstrap,
+   audit and outbox records commit atomically.
+3. No partial Workflow exists after an injected failure.
+4. Identical retries return the same reference, submission timestamp and
+   Workflow Instance.
+5. Conflicting retries and stale versions are rejected explicitly.
+6. Two concurrent submissions produce one lodged Application and one Workflow
+   Instance.
+7. Submission activates the configured initial Stage, never a hard-coded Stage
+   name or display-order position.
+8. A successful response contains stable identifiers and no internal
+   eligibility/Workflow details the applicant may not see.
+
+### Done When
+
+One retry-safe command converts a valid Draft into one lodged Application and
+one correctly initialized Workflow.
+
+## 14.9 Application Reference Number
+
+### Goal
+
+Generate a unique, stable and non-sensitive reference for a submitted
+Application.
+
+### Scope
+
+Reference format is configuration-driven within a controlled formatter and may
+contain approved elements such as:
+- Funding Call reference/prefix;
+- submission year;
+- database-backed sequence value;
+- check digit where configured.
+
+Reference generation must:
+- be unique under concurrent submission;
+- use a database sequence, uniqueness constraint or equivalent atomic
+  allocator;
+- avoid applicant/business personal information;
+- remain unchanged for the life of the Application;
+- tolerate sequence gaps caused by rolled-back or abandoned attempts;
+- avoid deriving uniqueness from a count query.
+
+### Acceptance Criteria
+
+1. Concurrent submissions cannot receive the same reference.
+2. Reference generation does not expose personal or predictable sensitive
+   information.
+3. The reference is persisted once and is immutable.
+4. A retried submission returns the original reference.
+5. Format/configuration errors block submission safely.
+6. Tests cover sequence boundaries, concurrency and Funding Call scoping.
+
+### Done When
+
+Every submitted Application has one immutable, human-usable and database-unique
+reference.
+
+## 14.10 Immutable Submission Snapshot
+
+### Goal
+
+Preserve exactly what was lodged, independently of later Form, profile,
+document or configuration changes.
+
+### Scope
+
+The snapshot records or references:
+- Application and reference identifiers;
+- submitted-at timestamp;
+- exact Form Version and normalized submitted values;
+- relevant applicant, representative and business facts as lodged;
+- accepted declaration versions and evidence;
+- exact submitted Document Version identifiers, filenames, metadata and content
+  checksums;
+- Funding Call identity and submission-relevant terms/version;
+- exact Eligibility Ruleset and Workflow Template Version identifiers;
+- a canonical snapshot schema version and integrity hash.
+
+Use a canonical serialization so the integrity hash is reproducible. Store
+large document content in protected object storage and reference immutable
+versions/checksums rather than embedding file bytes in JSON.
+
+The snapshot is append-only/immutable. Later RFI responses, document
+replacements, profile edits and Workflow decisions are separately versioned
+records linked to the original submission; they do not rewrite it.
+
+### Acceptance Criteria
+
+1. The lodged Form can be reproduced using the exact Form Version and snapshot
+   values.
+2. Later edits to a user, business, Funding Call, Form or document do not alter
+   the snapshot.
+3. Snapshot integrity can be verified from canonical content and its hash.
+4. Every lodged document resolves to the exact immutable Document Version.
+5. Sensitive snapshot access is protected and audited.
+6. Snapshot creation failure rolls back submission.
+
+### Done When
+
+The platform can prove what data, declarations and documents were lodged at the
+submission timestamp.
+
+## 14.11 Authoritative Eligibility at Submission
+
+### Goal
+
+Evaluate and persist the Funding Call's exact bound Eligibility Ruleset against
+the lodged snapshot.
+
+### Scope
+
+Use the Phase 5 Eligibility service and shared Data Resolver to:
+1. resolve the exact stored Ruleset Version;
+2. build evaluation context from the immutable snapshot and Funding Call;
+3. execute only rules configured for authoritative screening/both;
+4. persist rule outcomes, hard failures, soft failures, warnings, evaluation
+   time and Ruleset Version;
+5. expose the result to Workflow runtime through stable context paths.
+
+The public Self Check is advisory and is never reused as the authoritative
+result. A Hard Fail does not silently mutate the Application back to Draft.
+Whether it blocks lodging or enters the initial screening Stage for a configured
+rejection decision is an explicit Funding Call/Ruleset policy; the default
+client flow records the outcome and lets Administrative and Eligibility
+Screening apply the configured decision path.
+
+If later evidence verification requires re-evaluation, create a new versioned
+Eligibility Assessment linked to its evidence/context and preserve the
+submission-time result. Do not overwrite history.
+
+### Acceptance Criteria
+
+1. Submission uses the exact Ruleset Version stored for the Application.
+2. Evaluation reads the immutable snapshot rather than mutable browser or
+   profile values.
+3. The Self Check result cannot satisfy authoritative evaluation.
+4. Rule outcomes are persisted atomically with submission.
+5. Workflow Conditions can resolve the authoritative result through stable
+   paths without duplicating it.
+6. Hard/Soft/Warning behavior follows published policy and is auditable.
+7. Re-evaluation creates history rather than changing the original outcome.
+
+### Done When
+
+Every submitted Application has a reproducible, version-bound authoritative
+eligibility result available to its Workflow.
+
+## 14.12 Workflow Instance Bootstrap
+
+### Goal
+
+Create the version-frozen Workflow runtime directly at its configured initial
+Stage after Application submission.
+
+### Scope
+
+Use the Phase 7 Workflow application service to:
+- create exactly one Workflow Instance linked to the Application and exact
+  Workflow Template Version;
+- resolve exactly one valid initial Stage from published configuration;
+- evaluate its Entry Conditions using snapshot, eligibility and Funding Call
+  context;
+- activate its first Stage Instance;
+- create configured Tasks and begin Phase 9 assignment where applicable;
+- record Workflow-created, Stage-activated and Task-created audit events.
+
+Submission does not create Workflow Stages for Call Setup/Publication or
+Application Submission. The initial Stage is not inferred from array position,
+display order or a hard-coded standard-template key.
+
+If initial Entry Conditions fail or configuration has zero/multiple invalid
+initial Stages, submission fails atomically with an operationally useful error.
+Automatic allocation may leave Tasks observably Unassigned when no candidate is
+eligible; it must not silently assign an unauthorized user.
+
+### Acceptance Criteria
+
+1. One submitted Application has exactly one initial Workflow Instance.
+2. The Workflow stores the exact Template Version resolved for submission.
+3. Initial Stage resolution uses published configuration, not display order.
+4. Entry Conditions run against the same committed submission context.
+5. Required Stage Tasks are created once and retain definition references.
+6. Bootstrap failure leaves no submitted Application or partial Workflow.
+7. A newer Workflow version does not alter the created instance.
+
+### Done When
+
+Submission starts one version-frozen Workflow at its configured initial Stage
+with auditable Tasks ready for allocation.
+
+## 14.13 Submitted Application PDF
+
+### Goal
+
+Generate a durable human-readable rendition of the lodged Application without
+making PDF generation part of the submission transaction.
+
+### Scope
+
+After commit, a transactional-outbox consumer renders from:
+- immutable submission snapshot;
+- exact Form Version/schema and approved presentation metadata;
+- lodged declarations;
+- exact submitted Document Version manifest;
+- reference and submission timestamp.
+
+The PDF includes an approved header/footer, reference, generation timestamp and
+snapshot/integrity identifier. It must not fetch mutable live profile/Form data
+or expose internal eligibility, Workflow, reviewer or audit information.
+
+Persist the generated artifact as a protected immutable document with checksum,
+renderer/template version, generation status and retry history. Rendering is
+idempotent for one snapshot/render-version pair. A rendering failure is visible
+and retryable but does not invalidate the already committed submission.
+
+### Acceptance Criteria
+
+1. Submission succeeds independently of temporary PDF-renderer failure.
+2. Retrying the same render job does not create uncontrolled duplicate
+   artifacts.
+3. The PDF content comes only from the immutable snapshot and exact Form
+   presentation version.
+4. Applicant and authorized staff downloads enforce contextual permissions.
+5. Artifact checksum, renderer version and source snapshot are traceable.
+6. Regeneration from the same versions produces an equivalent lodged-content
+   representation.
+
+### Done When
+
+Each submitted Application can provide a protected, traceable PDF rendition of
+what was lodged.
+
+## 14.14 Applicant-Facing Status Projection
+
+### Goal
+
+Show applicants a safe, stable processing status without exposing internal
+Workflow structure or decisions prematurely.
+
+### Scope
+
+Resolve applicant-facing status from:
+- Application lifecycle state;
+- configured Workflow Stage public-status mapping;
+- terminal Workflow outcome and release policy;
+- hold, defer, RFI or withdrawal state where a public mapping exists.
+
+The projection returns only approved information such as:
+- Application reference;
+- safe status code and label;
+- submitted/updated timestamp;
+- outstanding applicant action such as an active RFI;
+- approved next-step guidance.
+
+It must not expose Stage keys, reviewer identities, scores, internal comments,
+COI data, assignment details, Conditions, unreleased decisions or audit
+payloads. When parallel Stages are active, resolve one configured public status
+by priority/policy rather than leaking branch names or relying on one
+`currentStageId`.
+
+### Acceptance Criteria
+
+1. Every applicant-visible runtime state resolves deterministically to an
+   approved public status or safe fallback.
+2. Parallel, held, deferred, RFI and terminal states follow configuration.
+3. Internal Workflow changes do not require hard-coded applicant UI labels.
+4. Unreleased outcome detail and protected operational data are absent.
+5. The applicant can read only owned/represented Applications.
+6. Projection updates are idempotent and reconstructable from authoritative
+   Application/Workflow state.
+
+### Done When
+
+Applicants can track progress using truthful public language without gaining
+access to internal processing details.
+
+## 14.15 Applicant Withdrawal
+
+### Goal
+
+Allow an applicant to withdraw an owned Application only when published
+configuration and current processing state permit it.
+
+### Scope
+
+The applicant-facing command:
+1. requires the narrow own-withdraw permission;
+2. verifies Application ownership/representation;
+3. resolves the linked Workflow and current permitted withdrawal state;
+4. validates confirmation and configured reason/comment;
+5. invokes the Phase 8 Withdraw semantic operation;
+6. updates the Application lifecycle/public projection from that one domain
+   result;
+7. writes audit and post-commit notification events.
+
+Do not implement a second withdrawal path in the portal. Workflow withdrawal
+and Application state change commit atomically. Withdrawal preserves the
+snapshot, documents, eligibility, Workflow history and reference. It does not
+mean deletion and does not automatically authorize a replacement Application.
+
+Draft abandonment/deletion, if supported, is a separate retention operation and
+must not be represented as withdrawal of a submitted Application.
+
+### Acceptance Criteria
+
+1. An applicant cannot withdraw another applicant's Application.
+2. Disallowed, already withdrawn or terminal states reject the command without
+   partial mutation.
+3. Application and Workflow withdrawal state commit together.
+4. Open Tasks/Stages are handled by the configured Phase 8 semantics.
+5. Identical retries produce one withdrawal record and audit path.
+6. Lodged evidence and history remain immutable and accessible according to
+   retention policy.
+7. Any reapplication/reinstatement follows explicit Funding Call policy.
+
+### Done When
+
+Applicant withdrawal uses the same authorized Workflow semantics and preserves
+the complete lodged record.
+
+## 14.16 Application Read Models, Audit and Test Matrix
+
+### Goal
+
+Provide secure applicant/staff views and prove the lifecycle across domain,
+repository, API and end-to-end boundaries.
+
+### Scope
+
+Provide explicit SQL-level projections for:
+- applicant Application list with status and progress summary;
+- applicant draft/resume detail;
+- submission confirmation and reference;
+- submitted snapshot/PDF/document manifest;
+- authorized operations Application list/detail;
+- Application/Workflow linkage and safe public-status history.
+
+Filtering, search, ordering, pagination and counts execute in PostgreSQL.
+Applicant projections are always owner/representation-scoped in the repository
+query; services and routes do not load broad result sets and filter them in
+memory.
+
+Audit at minimum:
+- draft created and explicit version migration;
+- representation/business selected;
+- declaration accepted/revoked;
+- document upload finalized/rejected;
+- submission attempted/succeeded/conflicted;
+- reference allocated;
+- snapshot created;
+- authoritative eligibility evaluated;
+- Workflow bootstrapped;
+- PDF generated/failed;
+- public status changed;
+- withdrawal completed/denied as permitted by security policy.
+
+Automated tests cover:
+- allowed, denied and ownership/context-mismatch cases for every protected
+  route;
+- create/autosave concurrency and duplicate limits;
+- exact-version rendering and validation;
+- completeness with conditional fields, declarations and documents;
+- unsafe, pending and failed document uploads;
+- call closing or suspension between preflight and submit;
+- identical retry, mismatched idempotency reuse and concurrent submit;
+- rollback injected at snapshot, eligibility, Workflow and audit/outbox steps;
+- reference uniqueness;
+- immutable snapshot reproduction and hash verification;
+- initial Stage resolution and Entry Condition failure;
+- PDF retry behavior;
+- public-status non-disclosure;
+- withdrawal and terminal-state races.
+
+End-to-end verification demonstrates:
+1. create an Application against a Live Funding Call;
+2. autosave and resume its bound Form;
+3. accept declarations and upload safe required documents;
+4. resolve completeness and pass submission preflight;
+5. submit once despite a simulated client retry;
+6. retrieve one reference and immutable snapshot/PDF;
+7. inspect the authoritative eligibility outcome;
+8. verify one Workflow at the configured initial Stage with required Tasks;
+9. view only the mapped applicant-facing status;
+10. withdraw where permitted and verify preserved history.
+
+### Acceptance Criteria
+
+1. Applicant and operations projections select only required, authorized
+   columns and scopes.
+2. Repository tests cover projection shape, ownership filters, ordering and
+   pagination boundaries.
+3. Transaction tests prove no partial submission runtime can persist.
+4. Security tests prove direct API calls cannot bypass ownership, readiness,
+   document, withdrawal or status-disclosure rules.
+5. Audit history reconstructs creation through submission, bootstrap and
+   withdrawal without storing unnecessary sensitive Form values.
+6. The end-to-end scenario starts the configured Workflow without
+   workflow-specific applicant code.
+
+### Done When
+
+The full applicant lifecycle is secure, retry-safe, auditable and demonstrable
+from draft creation through Workflow start and optional withdrawal.
+
+## Phase 14 Done When
+
+An applicant can create and resume a version-bound draft, satisfy declarations
+and document requirements, submit exactly once, receive an immutable reference,
+snapshot and PDF, and see a safe public status. Submission atomically persists
+the authoritative eligibility result and starts one configured Workflow at its
+initial Stage; withdrawal reuses Phase 8 semantics and preserves all lodged
+history.
 
 ---
 
 # Phase 15 — Funding Call Publication & Public Lifecycle
 
-Implement:
-- Draft;
-- Approved;
-- Scheduled;
-- Live;
-- Closed;
-- Archived;
-- Suspended/Withdrawn where applicable;
-- publication validation;
-- scheduled publication;
-- automatic closing;
-- public archive;
-- removal of Payload Funding Call ownership.
+This phase turns the Phase 6 Funding Call entity into a governed, scheduled and
+public lifecycle. Funding Calls remain owned by the `funding-calls` module and
+stored in PostgreSQL. Payload may supply surrounding editorial pages and Media,
+but it must not decide whether a Call exists, is open, accepts Applications or
+which Form, Eligibility Ruleset and Workflow versions it uses.
+
+All lifecycle commands use server-authoritative time, optimistic concurrency,
+idempotency where commands may be retried, canonical permissions and immutable
+audit history. A page, cached response or delayed scheduled job must never be
+the authority for whether an Application can be created or submitted.
+
+## 15.1 Funding Call State Machine
+
+### Goal
+
+Define explicit legal transitions and separate internal governance from public
+availability.
+
+### Scope
+
+Support at least these lifecycle states:
+
+| State | Meaning | Public visibility | New drafts/submissions |
+| --- | --- | --- | --- |
+| Draft | Editable configuration under preparation | Hidden | No |
+| Approval Pending | Submitted for governance review and locked from ordinary editing | Hidden | No |
+| Approved | Approved configuration not yet published | Hidden | No |
+| Scheduled | Published for a future opening time | Configurable upcoming visibility | No |
+| Live | Published and inside the opening window | Visible | Yes, subject to Phase 14 rules |
+| Suspended | Temporarily paused from its prior published state | Safe configured notice only | No |
+| Closed | Submission window ended | Visible as closed/archive candidate | No |
+| Withdrawn | Permanently withdrawn from publication/operation | Configurable notice or hidden | No |
+| Archived | Historical, read-only record | Archive policy determines visibility | No |
+
+Returning an Approval Pending Call for amendment moves it back to Draft and
+records the review outcome/reason; it does not erase the governance history.
+Legacy status names such as `OPEN` or `CANCELLED`, where present, are migrated to
+the canonical Live/Withdrawn semantics rather than retained as competing state
+families.
+
+**Time Boundaries**
+
+- `opensAt` is inclusive;
+- `closesAt` is exclusive;
+- a Call is effectively open only when it is in a published resumable state and
+  `opensAt <= serverNow < closesAt`;
+- timestamps are stored as instants and displayed using the configured business
+  timezone;
+- scheduled jobs reconcile persisted state, but API commands also enforce the
+  effective state from current server/database time.
+
+Persist lifecycle history containing source/target state, actor or system
+actor, reason, command time, effective time, row version and correlation/
+idempotency identifiers.
+
+### Acceptance Criteria
+
+1. Every permitted transition is represented explicitly and every unlisted
+   transition is denied.
+2. Governance states are not treated as public publication states.
+3. Opening is inclusive and closing is exclusive across public reads, draft
+   creation and submission.
+4. A delayed job cannot extend the effective submission window.
+5. Lifecycle history reconstructs every state change without relying only on
+   the current row.
+6. Conflicting commands using the same expected version cannot both succeed.
+7. Existing Applications and Workflow Instances remain linked when the Call
+   changes public state.
+
+### Done When
+
+Funding Call governance, publication, availability and historical states have
+one deterministic server-side state machine.
+
+## 15.2 Publication Readiness Validation
+
+### Goal
+
+Block approval/publication until the Funding Call and all referenced
+configuration are complete and compatible.
+
+### Scope
+
+Build one reusable validator that checks at minimum:
+- unique stable reference and slug;
+- required title, description, instrument/thematic metadata and public contact;
+- valid budget envelope and minimum/maximum award relationships;
+- `opensAt < closesAt` and closing remains in the future at publication;
+- exact bound Application Form Version exists and is Published;
+- exact bound Eligibility Ruleset Version exists and is Published;
+- exact bound Workflow Template Version exists and is Published;
+- Form fields referenced by Eligibility Conditions exist with compatible
+  types;
+- Workflow structural, Condition, Form-binding and initial-Stage validation has
+  passed;
+- required declarations, applicant document requirements and public guidance
+  are configured;
+- public documents are finalized, security-cleared and marked for publication;
+- applicant-facing status mappings and required notification hooks exist;
+- no retired, incompatible or cross-scope reference is used.
+
+Validation returns stable issue codes, safe administrator messages, owning
+configuration references and field/section locations where applicable. It
+supports a non-mutating preview and is rerun inside approval/publication
+commands. A stale earlier validation result cannot authorize publication.
+
+### Acceptance Criteria
+
+1. Administrators can run readiness validation without changing lifecycle
+   state.
+2. All referenced versions are resolved by exact identifier and status.
+3. Cross-capability compatibility errors identify actionable configuration
+   locations.
+4. Approval/publication reruns the validator against committed current state.
+5. Validation uses repository projections/services and does not query another
+   module's tables from a route or page.
+6. Invalid public documents, dates, budget relationships or initial Workflow
+   configuration block publication.
+7. Internal validator detail is not exposed by public APIs.
+
+### Done When
+
+Only a complete, compatible and publicly safe Funding Call can proceed through
+governance to publication.
+
+## 15.3 Governance Submission, Approval and Return
+
+### Goal
+
+Separate preparation from approval and enforce configured maker-checker
+governance.
+
+### Scope
+
+Support commands to:
+1. submit a Draft for approval;
+2. approve an Approval Pending Call;
+3. return it to Draft for amendment with a required reason;
+4. optionally withdraw the governance request back to Draft by its submitter
+   where policy permits.
+
+Submission for approval runs readiness validation and creates a governance
+review record. Ordinary edits are locked while review is pending. Approval
+records the exact Funding Call row/configuration version reviewed and produces
+an Approved state; approval alone does not make the Call public.
+
+Where segregation of duties is configured, the creator or last material editor
+cannot approve their own Call. Permissions are fine-grained and contextual:
+submit, approve and return are distinct operations. Client-side button hiding
+does not establish authority.
+
+### Acceptance Criteria
+
+1. Only a valid Draft can enter Approval Pending.
+2. Required readiness failures block governance submission/approval.
+3. Ordinary updates cannot mutate an Approval Pending or Approved Call.
+4. Maker-checker policy prevents prohibited self-approval.
+5. Return requires a reason and preserves the submitted review/configuration
+   history.
+6. Approval records approver, timestamp and exact reviewed row/configuration
+   version.
+7. Approved Calls remain absent from public endpoints until published.
+8. Concurrent edit/submit/approve commands yield one consistent result.
+
+### Done When
+
+Funding Call configuration receives an auditable independent approval before it
+can become public.
+
+## 15.4 Publish Now or Schedule Publication
+
+### Goal
+
+Publish an Approved Funding Call immediately or schedule it according to its
+opening time.
+
+### Scope
+
+The publish command:
+1. requires the narrow publish permission;
+2. concurrency-checks the Approved Call;
+3. reruns publication readiness validation;
+4. evaluates current server time;
+5. transitions to Scheduled when `serverNow < opensAt`;
+6. transitions to Live when `opensAt <= serverNow < closesAt`;
+7. rejects publication when `serverNow >= closesAt`;
+8. creates the immutable initial public-publication revision;
+9. writes audit and transactional-outbox events for cache invalidation and
+   configured notifications.
+
+Scheduled Calls may be publicly visible as Upcoming only when publication
+policy permits it. The public start date must not be confused with permission
+to create or submit an Application before `opensAt`.
+
+### Acceptance Criteria
+
+1. Only an Approved, current-version Call can be published.
+2. Server time selects Scheduled or Live deterministically.
+3. A past-closing Call cannot be published.
+4. Publication captures the exact public content and binding revision.
+5. Identical command retries do not create duplicate publication revisions or
+   notifications.
+6. Scheduled visibility never enables early Application creation/submission.
+7. Public cache invalidation/notification failure is retryable after commit and
+   does not roll back a valid lifecycle transition.
+
+### Done When
+
+An approved Call can enter one published lifecycle exactly once with a traceable
+public revision.
+
+## 15.5 Scheduled Opening
+
+### Goal
+
+Make a Scheduled Funding Call Live at its configured opening instant without
+depending on an administrator action.
+
+### Scope
+
+Implement `platform/jobs/publish-scheduled-calls.ts` as a thin scheduled entry
+point that calls the Funding Call application service. The service:
+- selects due Scheduled Calls using a bounded database query;
+- atomically transitions each Call only when `opensAt <= serverNow < closesAt`;
+- closes rather than opens a Call already past its closing instant;
+- uses a system actor and deterministic idempotency key;
+- emits lifecycle, cache and notification outbox events;
+- records per-Call success/failure for operational visibility.
+
+Public reads and Application commands must still calculate/enforce effective
+time boundaries. If the scheduler is late, a due Scheduled Call is treated as
+open for permitted requests once `opensAt` is reached, while the reconciler
+updates persisted state. If consistent persisted transition is required before
+serving, the application service performs that transition transactionally on
+the request path; it must not return a false Closed/Upcoming state.
+
+### Acceptance Criteria
+
+1. Due Scheduled Calls become Live without manual intervention.
+2. Early jobs cannot open Calls before `opensAt`.
+3. Duplicate/concurrent job delivery produces one transition and event set.
+4. One failing Call does not prevent other due Calls from being processed.
+5. A Call already past `closesAt` never becomes effectively open.
+6. Scheduler lag cannot wrongly reject a valid in-window Application or permit
+   an out-of-window one.
+7. Job queries are bounded and indexed for status/opening time.
+
+### Done When
+
+Scheduled opening is reliable, retry-safe and consistent with request-time
+server-authoritative availability.
+
+## 15.6 Automatic Closing
+
+### Goal
+
+Close a published Funding Call at the configured exclusive closing instant.
+
+### Scope
+
+Implement `platform/jobs/close-expired-funding-calls.ts` as a thin entry point
+to the Funding Call lifecycle service. The service:
+- selects Live, Scheduled or resumable published Calls where
+  `closesAt <= serverNow`;
+- transitions them to Closed atomically;
+- records system actor, effective closing instant and processing time;
+- emits cache, archive-read-model and notification events;
+- is idempotent and safe under overlapping job executions.
+
+Phase 14 draft creation, preflight and submission recheck the exclusive closing
+boundary independently. Drafts may remain viewable after closing, but cannot be
+submitted unless a later explicit reopening policy permits it. Automatic close
+does not cancel or mutate already submitted Applications or active Workflows.
+
+### Acceptance Criteria
+
+1. `serverNow >= closesAt` prevents new draft creation/submission even before
+   the close job persists Closed.
+2. Due Calls transition to Closed once under duplicate/concurrent jobs.
+3. Existing drafts receive a safe closed message and remain subject to
+   retention policy.
+4. Submitted Applications and Workflows continue unaffected.
+5. Closing audit distinguishes configured effective time from job processing
+   time.
+6. Cache/notification failures are retried through outbox processing.
+7. Job queries are bounded and indexed for status/closing time.
+
+### Done When
+
+No Application can enter after the closing boundary and the persisted Funding
+Call state is reconciled automatically.
+
+## 15.7 Controlled Amendments and Date Extensions
+
+### Goal
+
+Prevent silent mutation of published terms while allowing explicitly governed
+corrections and deadline changes.
+
+### Scope
+
+Draft Calls remain ordinarily editable. After approval/publication, classify
+changes as:
+- non-material public correction;
+- date extension/shortening;
+- material terms or budget change;
+- configuration-binding change.
+
+Every permitted amendment creates a revision containing before/after values,
+reason, proposer, approver where required, effective time and public-notice
+policy. Published content never changes merely because an editor saved a
+Payload page.
+
+**Rules**
+
+- bound Form, Eligibility Ruleset and Workflow Template Versions cannot be
+  replaced silently after publication;
+- existing drafts and submitted Applications keep their exact stored version
+  references;
+- changing a binding for future drafts requires an explicit compatible
+  amendment policy or a successor Funding Call;
+- a closing extension must set a future `closesAt` and emit configured notices;
+- shortening a window cannot invalidate an already accepted submission and
+  requires stricter approval/notice policy;
+- budget/award-term changes must preserve the terms revision applicable to each
+  submission;
+- slug/reference changes preserve stable redirects/aliases where permitted.
+
+Reopening a Closed Call is not an ordinary status toggle. It requires an
+approved amendment with a future exclusive closing time, an explicit treatment
+of existing drafts/duplicate rules and a new lifecycle/publication revision.
+
+### Acceptance Criteria
+
+1. Unauthorized or unclassified published changes are rejected.
+2. Every allowed amendment has an immutable revision and required approval.
+3. Existing Applications retain their original version and terms references.
+4. Date changes use server time and immediately affect effective availability
+   only after the amendment commits.
+5. Reopening requires explicit policy and cannot occur through scheduler side
+   effects.
+6. Public notices/cache updates are derived from committed amendment events.
+7. Tests cover extension, shortening, concurrent close/amend, binding changes
+   and existing-draft behavior.
+
+### Done When
+
+Published Calls can be corrected transparently without rewriting what existing
+applicants used or bypassing governance.
+
+## 15.8 Suspend and Resume
+
+### Goal
+
+Temporarily stop new Application activity for a published Funding Call without
+pretending that it closed or was withdrawn.
+
+### Scope
+
+Suspension requires:
+- suspend permission;
+- reason code/comment;
+- scope/effect confirmation;
+- optional review/resume time;
+- capture of the prior published state and time window;
+- configured public notice behavior.
+
+While Suspended:
+- new draft creation and submission are denied;
+- public Self Check availability follows configured policy;
+- existing drafts remain safely readable unless policy restricts them;
+- submitted Application Workflows continue unless a separate authorized
+  Workflow hold is executed;
+- public APIs expose only the approved suspension message/detail.
+
+Resume restores an effective state from current time, not blindly the prior
+status: Scheduled before `opensAt`, Live inside the window, or Closed at/after
+`closesAt`. Suspension does not automatically extend the closing date; any
+extension uses the amendment process.
+
+### Acceptance Criteria
+
+1. Suspend and Resume require distinct narrow permissions and concurrency
+   checks.
+2. Suspension immediately blocks create/submit commands server-side.
+3. Suspension alone does not pause active Application Workflows or SLA clocks.
+4. Resume computes Scheduled, Live or Closed from current server time.
+5. Overlapping active suspension periods cannot be created.
+6. Reason, actor, start/end times and public notice revision are auditable.
+7. Existing submitted Applications remain intact.
+
+### Done When
+
+A published Call can pause and resume safely without corrupting its schedule or
+silently changing active Workflows.
+
+## 15.9 Withdraw Funding Call
+
+### Goal
+
+Permanently remove a Funding Call from normal publication/operation while
+preserving its record and all applicant history.
+
+### Scope
+
+Withdrawal is a high-impact command requiring:
+- withdraw permission and configured approval/segregation of duties;
+- reason code and explanatory note;
+- expected row version and idempotency key;
+- confirmation of existing drafts/submissions;
+- configured public notice, contact and refund/remedy guidance where relevant.
+
+Withdrawal blocks new drafts, submissions, scheduled opening and automatic
+reopening. It does not delete the Funding Call, revisions, documents,
+Applications, snapshots, eligibility outcomes or Workflows. Existing submitted
+Workflows continue, pause or terminate only through an explicit configured
+operational decision; Funding Call withdrawal must not bulk-withdraw applicant
+Applications implicitly.
+
+Before opening, withdrawal may hide the Call or show a safe notice according to
+policy. After public release or received Applications, preserve a stable public
+notice/URL unless legal policy explicitly requires restricted visibility.
+
+### Acceptance Criteria
+
+1. Withdrawal cannot be performed through ordinary edit/publish permissions.
+2. Impact summary and required governance are evaluated before commit.
+3. Scheduled jobs cannot reopen or otherwise progress a Withdrawn Call.
+4. Existing Applications and Workflows are preserved and not silently changed.
+5. Public behavior follows the configured notice/visibility policy without
+   leaking internal reasons.
+6. Duplicate command delivery produces one withdrawal revision and event set.
+7. Reversal, if permitted at all, requires a separately defined governed
+   reinstatement command rather than Resume.
+
+### Done When
+
+A Call can be permanently withdrawn without erasing history or conflating Call
+withdrawal with applicant withdrawal.
+
+## 15.10 Archive and Retention
+
+### Goal
+
+Move completed historical Funding Calls into a read-only archive without
+breaking Application, reporting or public links.
+
+### Scope
+
+Archive only Closed or Withdrawn Calls that satisfy configured retention and
+operational prerequisites. Archiving:
+- marks the Call read-only;
+- preserves all configuration/publication revisions and exact bindings;
+- preserves stable internal identifiers, reference and slug/redirects;
+- retains Application and Workflow relationships;
+- updates public archive/search projections;
+- excludes the Call from active administrative defaults without deleting it.
+
+Public archive policy defines which title, summary, dates, award ranges,
+documents and outcome links remain visible. Expired or withdrawn public
+documents follow explicit retention/publication policy. Unarchive, if allowed,
+returns to Closed/Withdrawn historical state only; it never makes a Call Live.
+
+### Acceptance Criteria
+
+1. Draft, Approval Pending, Approved, Scheduled, Live or Suspended Calls cannot
+   be archived.
+2. Archived records and linked Applications remain queryable to authorized
+   users.
+3. Stable public URLs continue to resolve according to archive policy.
+4. Archive projections expose no internal bindings, rules or applicant data.
+5. Archiving does not delete documents or history before retention permits it.
+6. Unarchive cannot bypass publication or reopening governance.
+
+### Done When
+
+Historical Calls are safely read-only and discoverable without remaining in
+active operational queues.
+
+## 15.11 Public Funding Call Catalogue and Detail
+
+### Goal
+
+Serve all public Funding Call discovery from the PostgreSQL business domain
+with safe status, filtering and cache behavior.
+
+### Scope
+
+Provide public list/detail/archive projections containing only approved fields:
+- reference, slug, title and public description;
+- instrument/thematic area;
+- award range and total envelope where public;
+- opening/closing instants with display timezone;
+- safe public status: Upcoming, Open, Suspended, Closed, Withdrawn notice or
+  Archived as configured;
+- eligibility summary and advisory Self Check availability;
+- public contact and published document metadata;
+- whether Applications are effectively open at current server time.
+
+Filtering, status selection, search, ordering and cursor pagination execute in
+PostgreSQL. The repository selects only public columns/projections and excludes
+Draft, Approval Pending and Approved records.
+
+Cache keys/headers account for lifecycle revision and the next opening/closing
+boundary. Cache invalidation is emitted after committed lifecycle/amendment
+changes. Even if a public cache is stale, Phase 14 create/submit commands
+revalidate authoritative availability and cannot accept an out-of-window
+request.
+
+### Acceptance Criteria
+
+1. Public endpoints never return internal notes, binding configuration,
+   Conditions, reviewer data or unpublished documents.
+2. Effective Upcoming/Open/Closed status changes correctly at exact time
+   boundaries.
+3. Scheduled visibility, suspension, withdrawal and archive policies are
+   honored consistently in list and detail views.
+4. Search, filters, ordering and pagination are database-level and stable.
+5. Public document links are safe and restricted to published cleared versions.
+6. Cache policy cannot authorize Application activity.
+7. Unknown or non-public slugs return the safe not-found behavior.
+
+### Done When
+
+The public site can discover current and historical Funding Calls without
+reading Payload business collections or exposing internal configuration.
+
+## 15.12 Scheduled Job Reliability and Operations
+
+### Goal
+
+Make automatic opening/closing observable, retry-safe and recoverable.
+
+### Scope
+
+All Funding Call jobs:
+- are thin `platform/jobs` entry points calling application services;
+- authenticate as a restricted system principal;
+- use database/server time rather than worker-local display timezone;
+- select bounded batches with deterministic ordering;
+- claim/process work so overlapping workers remain safe;
+- derive idempotency from Call, transition and effective boundary;
+- record run, item success/failure and retry metadata;
+- emit committed events through the transactional outbox;
+- expose metrics/alerts for overdue transitions and repeated failures;
+- support a safe reconciliation command.
+
+Business transition rules remain in `ServerFundingCallService` or focused
+Funding Call application/domain policies, never copied into scheduler files.
+Poison items do not block the entire batch and are not silently discarded.
+
+### Acceptance Criteria
+
+1. Manual, scheduled and reconciliation entry points use the same lifecycle
+   policies.
+2. Overlapping workers cannot duplicate a lifecycle transition or notification
+   intent.
+3. Failed items are visible with safe diagnostic context and can be retried.
+4. Reconciliation detects persisted state inconsistent with time boundaries
+   without changing terminal/withdrawn states incorrectly.
+5. Metrics identify Scheduled Calls past opening and published Calls past
+   closing.
+6. Jobs remain bounded and do not perform N+1 configuration reads.
+
+### Done When
+
+Automatic lifecycle processing can be operated confidently and repaired
+without direct database edits.
+
+## 15.13 Remove Payload Funding Call Ownership
+
+### Goal
+
+Complete the controlled cutover from legacy Payload Funding Calls to the
+PostgreSQL Funding Call business domain.
+
+### Scope
+
+Inventory legacy Payload fields, documents, slugs, statuses and references, then
+define an explicit mapping to:
+- Funding Call domain records and lifecycle states;
+- published Form, Eligibility Ruleset and Workflow version bindings;
+- public documents/media references;
+- publication revisions and legacy source identifiers;
+- stable public URL aliases/redirects.
+
+Provide an idempotent migration with:
+- dry-run and validation report;
+- duplicate/conflict detection;
+- source-to-target identifier mapping;
+- content sanitization and document verification status;
+- row counts/checksums or equivalent reconciliation evidence;
+- resumable batches;
+- audit of migrated records and exceptions;
+- rollback/cutover procedure that does not delete the source prematurely.
+
+At cutover:
+1. stop legacy Payload Funding Call writes;
+2. migrate and reconcile approved records;
+3. switch all admin/public/Application reads and writes to SME Fund APIs;
+4. remove Funding Call collection ownership, hooks and duplicated business
+   logic from Payload;
+5. retain Payload only for editorial content/Media that remains within its
+   boundary;
+6. monitor not-found, redirect and lifecycle discrepancies.
+
+Do not introduce ongoing dual-write or two authoritative sources. Legacy
+Payload records may remain read-only for a bounded recovery/retention period,
+but operational truth changes only in PostgreSQL after cutover.
+
+### Acceptance Criteria
+
+1. Every migrated record has a validated source-to-target mapping or explicit
+   exception.
+2. Migration is idempotent and never overwrites post-cutover administrator
+   changes.
+3. Public slugs/documents resolve correctly after cutover.
+4. Funding Call create/edit/governance/publication no longer calls Payload.
+5. Application creation and submission resolve only PostgreSQL Funding Calls.
+6. Payload contains no active Funding Call authorization or lifecycle policy.
+7. Reconciliation evidence and rollback/cutover decisions are recorded before
+   legacy ownership is retired.
+
+### Done When
+
+PostgreSQL and the SME Fund Funding Call module are the sole operational source
+of truth, while Payload retains only its approved editorial responsibilities.
+
+## 15.14 Lifecycle Read Models, Audit and Test Matrix
+
+### Goal
+
+Provide secure operational views and prove every lifecycle boundary, automated
+transition and migration rule.
+
+### Scope
+
+Provide explicit SQL-level administrator projections for:
+- Calls by governance/publication state;
+- readiness issues;
+- upcoming openings and closings;
+- active suspensions;
+- amendments requiring review;
+- job failures/overdue reconciliation;
+- archive and legacy-migration status.
+
+Audit at minimum:
+- Draft created/updated;
+- submitted for approval, approved and returned;
+- readiness validation snapshot/reference;
+- published, scheduled, opened and closed;
+- amendment proposed/approved/applied;
+- suspended and resumed;
+- withdrawn, archived and unarchived;
+- scheduled-job execution/failure;
+- Payload record migrated/cut over.
+
+Automated tests cover:
+- every allowed and denied state transition;
+- permission denial and resource-context mismatch;
+- maker-checker separation;
+- stale versions, identical retry and conflicting retry;
+- publication-validation failures and exact binding compatibility;
+- `opensAt` inclusive and `closesAt` exclusive boundaries;
+- concurrent publish/open/close/suspend/amend commands;
+- scheduler delay, duplication, partial batch failure and reconciliation;
+- existing draft/submitted Application behavior across close, suspension,
+  amendment and withdrawal;
+- safe public projections and cache boundaries;
+- archive rules;
+- Payload migration dry-run, conflict, retry and cutover.
+
+End-to-end verification demonstrates:
+1. create and configure a Draft Funding Call;
+2. fail readiness with an invalid/unpublished binding;
+3. bind valid published versions and pass readiness;
+4. submit for approval and enforce maker-checker approval;
+5. schedule publication and observe safe Upcoming visibility;
+6. cross `opensAt` and accept an Application only from that instant;
+7. suspend and resume the Call without changing submitted Workflows;
+8. extend the deadline through an approved amendment;
+9. cross `closesAt` and reject a late submission;
+10. retain the Call in the public archive;
+11. verify public/admin views use PostgreSQL rather than Payload.
+
+### Acceptance Criteria
+
+1. Repository tests cover projection shape, filters, ordering, pagination and
+   public/internal column separation.
+2. Protected commands test allowed, denied and context-mismatch cases.
+3. Concurrency tests prove each lifecycle boundary commits once.
+4. Time-boundary tests use an injected server clock and do not depend on wall
+   clock sleeps.
+5. Audit history reconstructs governance, publication, amendments and terminal
+   state without exposing sensitive internal payloads publicly.
+6. The end-to-end scenario proves Funding Call availability controls Phase 14
+   draft creation/submission at every lifecycle state.
+
+### Done When
+
+Funding Call governance and public lifecycle are observable, secure,
+time-correct and protected by a complete positive/negative test matrix.
+
+## Phase 15 Done When
+
+A Funding Call moves through Draft, Approval Pending, Approved, Scheduled, Live,
+Suspended, Closed, Withdrawn and Archived states only through authorized and
+audited transitions. Publication validation protects all exact bindings;
+scheduled opening and closing remain correct under delay/retry; amendments
+preserve the terms used by existing Applications; public discovery is safe; and
+PostgreSQL has fully replaced Payload as the Funding Call source of truth.
 
 ---
 

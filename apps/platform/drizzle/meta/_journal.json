@@ -463,6 +463,13 @@
       "when": 1793404800000,
       "tag": "0065_approve_advance_decisions",
       "breakpoints": true
+    },
+    {
+      "idx": 66,
+      "version": "7",
+      "when": 1793491200000,
+      "tag": "0066_reject_action_semantics",
+      "breakpoints": true
     }
   ]
 }

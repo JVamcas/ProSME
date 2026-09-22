@@ -31,8 +31,10 @@ export async function createWorkflowInstance(
       completedAt: workflowInstances.completedAt,
       createdAt: workflowInstances.createdAt,
       id: workflowInstances.id,
+      publicStatus: workflowInstances.publicStatus,
       startedAt: workflowInstances.startedAt,
       status: workflowInstances.status,
+      terminalOutcome: workflowInstances.terminalOutcome,
       workflowTemplateVersionId:
         workflowInstances.workflowTemplateVersionId,
     });

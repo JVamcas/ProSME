@@ -68,7 +68,12 @@ describe("workflow graph cloning", () => {
     source.stages[0].actions[0] = {
       ...source.stages[0].actions[0],
       actionType: "REJECT",
-      configuration: { reasonCodes: ["INELIGIBLE"] },
+      configuration: {
+        commentRequired: true,
+        outcome: { type: "TRANSITION" },
+        reasonCodes: ["INELIGIBLE"],
+        reversibleActionKey: null,
+      },
     };
     source.transitions[0].id = "46666666-6666-4666-8666-666666666666";
     source.stages[0].entryCondition = {

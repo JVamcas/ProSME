@@ -30,6 +30,14 @@ export function workflowActionFormDefaults(
     reasonCodeRequired: action?.reasonCodeRequired ?? false,
     displayOrder: action?.displayOrder ?? displayOrder,
     reasonCodes: "",
+    rejectionCommentRequired: true,
+    rejectionOutcomeType: "TERMINAL",
+    cancelOpenStageInstances: true,
+    cancelOpenTasks: true,
+    rejectionPublicStatus: "OUTCOME_AVAILABLE",
+    rejectionPublicLabel: "Decision available",
+    rejectionPublicDescription: "A decision is available for your application.",
+    reversibleActionKey: "",
     deadlineDays: undefined,
     editableFieldKeys: "",
     reminderDayOffsets: "",
@@ -54,7 +62,26 @@ export function workflowActionFormDefaults(
     case "REJECT":
       return {
         ...defaults,
+        cancelOpenStageInstances: action.configuration.outcome.type === "TERMINAL"
+          ? action.configuration.outcome.cancelOpenStageInstances
+          : true,
+        cancelOpenTasks: action.configuration.outcome.type === "TERMINAL"
+          ? action.configuration.outcome.cancelOpenTasks
+          : true,
+        rejectionCommentRequired: action.configuration.commentRequired,
+        rejectionOutcomeType: action.configuration.outcome.type,
+        rejectionPublicDescription:
+          action.configuration.outcome.type === "TERMINAL"
+            ? action.configuration.outcome.publicStatusMapping.description
+            : defaults.rejectionPublicDescription,
+        rejectionPublicLabel: action.configuration.outcome.type === "TERMINAL"
+          ? action.configuration.outcome.publicStatusMapping.label
+          : defaults.rejectionPublicLabel,
+        rejectionPublicStatus: action.configuration.outcome.type === "TERMINAL"
+          ? action.configuration.outcome.publicStatusMapping.status
+          : defaults.rejectionPublicStatus,
         reasonCodes: action.configuration.reasonCodes.join(", "),
+        reversibleActionKey: action.configuration.reversibleActionKey ?? "",
       };
     case "REQUEST_INFORMATION":
       return {
@@ -116,7 +143,21 @@ function configuration(values: WorkflowActionFormValues) {
       return {};
     case "REJECT":
       return {
+        commentRequired: values.rejectionCommentRequired,
+        outcome: values.rejectionOutcomeType === "TERMINAL"
+          ? {
+              cancelOpenStageInstances: values.cancelOpenStageInstances,
+              cancelOpenTasks: values.cancelOpenTasks,
+              publicStatusMapping: {
+                description: values.rejectionPublicDescription,
+                label: values.rejectionPublicLabel,
+                status: values.rejectionPublicStatus,
+              },
+              type: "TERMINAL" as const,
+            }
+          : { type: "TRANSITION" as const },
         reasonCodes: keys(values.reasonCodes),
+        reversibleActionKey: values.reversibleActionKey || null,
       };
     case "REQUEST_INFORMATION":
       return {

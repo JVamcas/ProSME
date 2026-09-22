@@ -11,7 +11,12 @@ function action(
 ): WorkflowActionDefinition {
   return {
     actionType: "REJECT",
-    configuration: { reasonCodes: ["INELIGIBLE"] },
+    configuration: {
+      commentRequired: true,
+      outcome: { type: "TRANSITION" },
+      reasonCodes: ["INELIGIBLE"],
+      reversibleActionKey: null,
+    },
     displayOrder: 1,
     enabled: true,
     label: "Reject",
@@ -54,6 +59,11 @@ describe("workflow action execution contract", () => {
       { actionType: "REJECT", reasonCode: "OTHER" },
       "SCREENING",
     )).toContain("not configured");
+    expect(validateActionInputAgainstConfiguration(
+      configured,
+      { actionType: "REJECT", reasonCode: "INELIGIBLE" },
+      "SCREENING",
+    )).toContain("comment is required");
   });
 
   it("prevents information requests from broadening editable fields", () => {

@@ -32,11 +32,11 @@ function ApproveConfigurationForm() {
         assignmentOptions={{ roles: [], users: [] }}
         deferTargetType="DATE"
         escalationTargetType="ROLE"
+        rejectionOutcomeType="TERMINAL"
       />
     </FormProvider>
   );
 }
-
 describe("workflow configuration UI", () => {
   it("keeps approve routing out of action-specific configuration", () => {
     const markup = renderToStaticMarkup(<ApproveConfigurationForm />);

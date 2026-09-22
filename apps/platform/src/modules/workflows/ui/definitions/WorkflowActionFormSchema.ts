@@ -47,6 +47,21 @@ export const workflowActionFormSchema = z
     reasonCodeRequired: z.boolean(),
     displayOrder: z.number().int().positive(),
     reasonCodes: z.string(),
+    rejectionCommentRequired: z.boolean(),
+    rejectionOutcomeType: z.enum(["TERMINAL", "TRANSITION"]),
+    cancelOpenStageInstances: z.boolean(),
+    cancelOpenTasks: z.boolean(),
+    rejectionPublicStatus: z.enum([
+      "SUBMITTED",
+      "UNDER_REVIEW",
+      "ACTION_REQUIRED",
+      "OUTCOME_AVAILABLE",
+      "CLOSED",
+      "WITHDRAWN",
+    ]),
+    rejectionPublicLabel: z.string().trim().max(120),
+    rejectionPublicDescription: z.string().trim().max(300),
+    reversibleActionKey: z.string(),
     deadlineDays: z.number().int().positive().max(365).optional(),
     editableFieldKeys: z.string(),
     reminderDayOffsets: z.string(),
@@ -78,6 +93,28 @@ export const workflowActionFormSchema = z
         "reasonCodes",
         context,
       );
+      if (values.rejectionOutcomeType === "TERMINAL") {
+        requiredFor(
+          values.rejectionPublicLabel,
+          "Enter a safe applicant-facing label.",
+          "rejectionPublicLabel",
+          context,
+        );
+        requiredFor(
+          values.rejectionPublicDescription,
+          "Enter a safe applicant-facing description.",
+          "rejectionPublicDescription",
+          context,
+        );
+      }
+      if (values.reversibleActionKey
+        && !stableKeyPattern.test(values.reversibleActionKey)) {
+        context.addIssue({
+          code: "custom",
+          message: "Use an uppercase stable action key.",
+          path: ["reversibleActionKey"],
+        });
+      }
     }
     if (values.actionType === "REQUEST_INFORMATION") {
       requiredFor(

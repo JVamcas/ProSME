@@ -28,7 +28,7 @@ export const workflowDecisions = pgTable(
       .notNull()
       .references(() => workflowActionDefinitions.id, { onDelete: "restrict" }),
     actionKey: text("action_key").notNull(),
-    outcome: text("outcome").$type<"APPROVED">().notNull(),
+    outcome: text("outcome").$type<"APPROVED" | "REJECTED">().notNull(),
     actorId: uuid("actor_id")
       .notNull()
       .references(() => users.id, { onDelete: "restrict" }),

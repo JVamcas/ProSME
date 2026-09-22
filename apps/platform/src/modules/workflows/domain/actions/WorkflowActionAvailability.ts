@@ -117,7 +117,8 @@ export function workflowActionInputMetadata(
   return {
     comment: {
       maxLength: 4_000,
-      required: false,
+      required: action.actionType === "REJECT"
+        && action.configuration.commentRequired,
     },
     confirmation: {
       message: action.actionType === "WITHDRAW"

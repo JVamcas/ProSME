@@ -38,7 +38,12 @@ const source = {
   actions: [{
     actionType: "REJECT",
     condition: null,
-    configuration: { reasonCodes: ["INELIGIBLE", "INCOMPLETE"] },
+    configuration: {
+      commentRequired: true,
+      outcome: { type: "TRANSITION" },
+      reasonCodes: ["INELIGIBLE", "INCOMPLETE"],
+      reversibleActionKey: null,
+    },
     displayOrder: 4,
     enabled: true,
     id: "30000000-0000-4000-8000-000000000001",
@@ -109,6 +114,7 @@ describe("workflow action availability service", () => {
       label: "Reject",
       presentation: { displayOrder: 4, variant: "danger" },
       requiredInput: expect.objectContaining({
+        comment: { maxLength: 4_000, required: true },
         confirmation: {
           message: "Confirm this rejection decision.",
           required: true,

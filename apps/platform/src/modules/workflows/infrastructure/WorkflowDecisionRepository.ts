@@ -8,7 +8,7 @@ import {
 import type { WorkflowActionInput } from "../domain/actions/WorkflowActionExecution";
 import type { WorkflowActionExecutionTransaction } from "./WorkflowActionExecutionRepository";
 
-export async function recordApprovalDecision(
+export async function recordWorkflowDecision(
   transaction: WorkflowActionExecutionTransaction,
   input: {
     actionDefinitionId: string;
@@ -19,6 +19,7 @@ export async function recordApprovalDecision(
     decidedAt: Date;
     decisionId: string;
     normalizedInput: WorkflowActionInput;
+    outcome: "APPROVED" | "REJECTED";
     sourceStageInstanceId: string;
     taskId: string | null;
     workflowInstanceId: string;
@@ -32,7 +33,7 @@ export async function recordApprovalDecision(
     decidedAt: input.decidedAt,
     id: input.decisionId,
     input: input.normalizedInput,
-    outcome: "APPROVED",
+    outcome: input.outcome,
     sourceStageInstanceId: input.sourceStageInstanceId,
     taskId: input.taskId,
     workflowInstanceId: input.workflowInstanceId,
@@ -46,7 +47,7 @@ export async function recordApprovalDecision(
       actionExecutionId: input.actionExecutionId,
       actionKey: input.actionKey,
       decisionId: input.decisionId,
-      outcome: "APPROVED",
+      outcome: input.outcome,
       sourceStageInstanceId: input.sourceStageInstanceId,
       taskId: input.taskId,
     },
@@ -60,7 +61,7 @@ export async function recordApprovalDecision(
       actionExecutionId: input.actionExecutionId,
       actionKey: input.actionKey,
       decidedAt: input.decidedAt.toISOString(),
-      outcome: "APPROVED",
+      outcome: input.outcome,
     },
     before: null,
     correlationId: input.correlationId,
