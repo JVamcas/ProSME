@@ -31,6 +31,10 @@ import { completeStageInTransaction } from "./ServerStageCompletionService";
 export type ExecuteSequentialTransitionInput = {
   actionKey: string;
   actorId: string;
+  conditionSelection?: {
+    selectedTransitionId: string | null;
+    transitionEvaluations: StageConditionEvaluation[];
+  };
   conditionContext?: Parameters<typeof evaluateStageCondition>[1];
   correlationId: string;
   sourceStageInstanceId: string;
@@ -81,6 +85,25 @@ function selectTransition(
     if (evaluation.passed) return { evaluation, transition };
   }
   return { evaluations };
+}
+
+function selectEvaluatedTransition(
+  transitions: SequentialTransition[],
+  selection: NonNullable<
+    ExecuteSequentialTransitionInput["conditionSelection"]
+  >,
+): TransitionSelection {
+  if (!selection.selectedTransitionId) {
+    return { evaluations: selection.transitionEvaluations };
+  }
+  const transitionIndex = transitions.findIndex(
+    (transition) => transition.id === selection.selectedTransitionId,
+  );
+  const evaluation = selection.transitionEvaluations[transitionIndex];
+  const transition = transitions[transitionIndex];
+  return transition && evaluation?.passed
+    ? { evaluation, transition }
+    : { evaluations: selection.transitionEvaluations };
 }
 
 function completedStage(completion: StageCompletionResult) {
@@ -151,7 +174,9 @@ export async function executeSequentialTransitionInTransaction(
       ],
     };
   }
-  const selected = selectTransition(configured.transitions, conditionContext);
+  const selected = input.conditionSelection
+    ? selectEvaluatedTransition(configured.transitions, input.conditionSelection)
+    : selectTransition(configured.transitions, conditionContext);
   if (!("transition" in selected)) {
     return {
       evaluations: selected.evaluations,

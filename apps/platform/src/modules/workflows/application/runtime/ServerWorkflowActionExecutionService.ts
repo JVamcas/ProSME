@@ -1,6 +1,5 @@
 import "server-only";
 
-import { permissionCodes } from "@/auth/authorization/permissions";
 import {
   requireAuthenticatedUser,
   requirePermission,
@@ -9,17 +8,9 @@ import type { AuthenticatedUser } from "@/auth/types";
 import {
   IdempotencyConflictError,
 } from "@/lib/resource-errors";
-import { buildStageCompletionValues } from "../../engine/StageCompletionContext";
-import {
-  evaluateStageCondition,
-  normalizeStageConditionRecord,
-} from "../../engine/StageCondition";
-import { loadPriorStageContext } from "../../infrastructure/StageActivationRepository";
-import { loadStageCompletionValues } from "../../infrastructure/StageCompletionRepository";
 import {
   claimWorkflowActionRuntimeVersion,
   completeActionTask,
-  configuredActionTargetsAreValid,
   findWorkflowActionExecution,
   lockWorkflowActionExecutionTarget,
   recordWorkflowActionExecution,
@@ -27,6 +18,7 @@ import {
   workflowActionExecutionDatabase,
   type WorkflowActionExecutionTarget,
 } from "../../infrastructure/WorkflowActionExecutionRepository";
+import { configuredActionTargetsAreValid } from "../../infrastructure/WorkflowActionTargetRepository";
 import {
   validateActionInputAgainstConfiguration,
   WorkflowActionExecutionError,
@@ -34,16 +26,15 @@ import {
   type WorkflowActionExecutionResult,
 } from "../../domain/actions/WorkflowActionExecution";
 import { workflowActionDefinitionSchema } from "../../domain/actions/WorkflowActionSchemas";
-import type { WorkflowActionType } from "../../domain/actions/WorkflowActionDefinition";
+import { loadSequentialTransitions } from "../../infrastructure/TransitionExecutionRepository";
 import { executeSequentialTransitionInTransaction } from "./ServerSequentialTransitionService";
-
-const decisionActionTypes = new Set<WorkflowActionType>([
-  "APPROVE_ADVANCE",
-  "DEFER",
-  "REJECT",
-  "RETURN",
-  "WITHDRAW",
-]);
+import { buildWorkflowActionConditionContext } from "./ServerWorkflowActionContextService";
+import {
+  evaluateWorkflowActionConditions,
+  evaluateWorkflowActionPolicy,
+  requiredWorkflowActionPermission,
+  type WorkflowActionPolicyResult,
+} from "./WorkflowActionPolicy";
 
 type ExecuteInput = WorkflowActionExecutionRequest & {
   actionKey: string;
@@ -59,24 +50,32 @@ function fail(
   throw new WorkflowActionExecutionError(code, message);
 }
 
-function assertPermissionAndContext(
+function enforceWorkflowActionPolicy(
   actor: AuthenticatedUser,
   target: WorkflowActionExecutionTarget,
+  result: WorkflowActionPolicyResult,
 ) {
-  const permission = target.task
-    ? decisionActionTypes.has(target.action.actionType)
-      ? target.task.permissions.decide
-      : target.task.permissions.edit
-    : decisionActionTypes.has(target.action.actionType)
-      ? permissionCodes.workflowTaskAssignedDecide
-      : permissionCodes.workflowTaskAssignedProcess;
-  requirePermission(actor, permission);
-  if (target.task && !target.task.assignedToActor) {
-    fail("INVALID_RUNTIME_CONTEXT", "The task is not assigned to this actor.");
+  if (result.available) return;
+  switch (result.reason) {
+    case "PERMISSION_DENIED":
+      requirePermission(
+        actor,
+        requiredWorkflowActionPermission(target.action, target.task),
+      );
+      return;
+    case "CONDITION_FAILED":
+      fail("CONDITION_FAILED", result.unavailableReason!);
+    case "INVALID_CONFIGURATION":
+      fail("INVALID_RUNTIME_CONTEXT", result.unavailableReason!);
+    case "ACTION_DISABLED":
+    case "INVALID_STATE":
+      fail("ACTION_UNAVAILABLE", result.unavailableReason!);
+    default:
+      fail("INVALID_RUNTIME_CONTEXT", result.unavailableReason!);
   }
 }
 
-function assertRuntimeState(
+function assertRuntimeIdentityAndVersion(
   target: WorkflowActionExecutionTarget,
   input: ExecuteInput,
 ) {
@@ -86,44 +85,14 @@ function assertRuntimeState(
   if (target.stage.rowVersion !== input.expectedRuntimeVersion) {
     fail("STALE_RUNTIME_VERSION", "The workflow changed. Refresh and try again.");
   }
-  if (target.task
-    && !["CLAIMED", "IN_PROGRESS"].includes(target.task.status)) {
-    fail("ACTION_UNAVAILABLE", "The task state does not permit this action.");
-  }
 }
 
-async function buildConditionContext(
-  transaction: Parameters<
-    Parameters<typeof withWorkflowActionExecutionTransaction>[0]
-  >[0],
-  target: WorkflowActionExecutionTarget,
-) {
-  const priorStages = await loadPriorStageContext(
-    transaction,
-    target.stage.workflowInstanceId,
-  );
-  const values = await loadStageCompletionValues(
-    transaction,
-    target.stage.stageInstanceId,
-  );
+function policyTarget(target: WorkflowActionExecutionTarget) {
   return {
-    application: normalizeStageConditionRecord(target.stage.application),
-    eligibility: normalizeStageConditionRecord(target.stage.eligibility),
-    fundingCall: normalizeStageConditionRecord(target.stage.fundingCall),
-    stages: [
-      ...priorStages
-        .filter((stage) => stage.stableKey !== target.stage.stageKey)
-        .map((stage) => ({
-          stableKey: stage.stableKey,
-          values: normalizeStageConditionRecord(stage.values),
-        })),
-      {
-        stableKey: target.stage.stageKey,
-        values: normalizeStageConditionRecord(
-          buildStageCompletionValues(values),
-        ),
-      },
-    ],
+    action: target.action,
+    stageStatus: target.stage.status,
+    task: target.task,
+    workflowStatus: target.stage.workflowStatus ?? "ACTIVE",
   };
 }
 
@@ -234,37 +203,57 @@ export async function executeWorkflowAction(
           "The action is not configured for this workflow stage and task.",
         );
       }
-      assertRuntimeState(target, input);
-      assertPermissionAndContext(actor, target);
+      assertRuntimeIdentityAndVersion(target, input);
       const parsedAction = workflowActionDefinitionSchema.safeParse(target.action);
-      if (!parsedAction.success) {
-        fail(
-          "INVALID_RUNTIME_CONTEXT",
-          "The published action configuration is invalid.",
-        );
+      if (parsedAction.success) {
+        target.action = { ...parsedAction.data, id: target.action.id };
       }
-      target.action = { ...parsedAction.data, id: target.action.id };
+      enforceWorkflowActionPolicy(
+        actor,
+        target,
+        evaluateWorkflowActionPolicy(actor, policyTarget(target), {
+          conditionsPass: true,
+          configurationValid: parsedAction.success,
+          targetsValid: true,
+        }),
+      );
       const inputError = validateActionInputAgainstConfiguration(
         target.action,
         input.input,
         target.stage.stageKey,
       );
       if (inputError) fail("INVALID_ACTION_INPUT", inputError);
-      if (!await configuredActionTargetsAreValid(transaction, target)) {
-        fail(
-          "INVALID_RUNTIME_CONTEXT",
-          "The published action contains an invalid target reference.",
-        );
-      }
+      const targetsValid = await configuredActionTargetsAreValid(
+        transaction,
+        target,
+      );
 
-      const conditionContext = await buildConditionContext(transaction, target);
-      const actionEvaluation = evaluateStageCondition(
-        target.action.condition ?? null,
+      const conditionContext = await buildWorkflowActionConditionContext(
+        transaction,
+        target.stage,
+      );
+      const configuredTransitions = await loadSequentialTransitions(
+        transaction,
+        {
+          actionKey: target.action.stableKey,
+          sourceStageDefinitionId: target.stage.stageDefinitionId,
+          workflowVersionId: target.stage.workflowVersionId,
+        },
+      );
+      const conditions = evaluateWorkflowActionConditions(
+        target.action,
+        configuredTransitions.transitions,
         conditionContext,
       );
-      if (!actionEvaluation.passed) {
-        fail("CONDITION_FAILED", "The configured action conditions did not pass.");
-      }
+      enforceWorkflowActionPolicy(
+        actor,
+        target,
+        evaluateWorkflowActionPolicy(actor, policyTarget(target), {
+          conditionsPass: conditions.available,
+          configurationValid: true,
+          targetsValid,
+        }),
+      );
       const resultingRuntimeVersion = await claimWorkflowActionRuntimeVersion(
         transaction,
         target.stage.stageInstanceId,
@@ -286,6 +275,10 @@ export async function executeWorkflowAction(
         await executeSequentialTransitionInTransaction(transaction, {
           actionKey: input.actionKey,
           actorId: actor.id,
+          conditionSelection: {
+            selectedTransitionId: conditions.selectedTransitionId,
+            transitionEvaluations: conditions.transitionEvaluations,
+          },
           conditionContext,
           correlationId: input.correlationId,
           sourceStageInstanceId: input.sourceStageInstanceId,
@@ -308,8 +301,9 @@ export async function executeWorkflowAction(
         action: target.action,
         actorId: actor.id,
         conditionEvaluation: {
-          action: actionEvaluation,
+          action: conditions.actionEvaluation,
           capturedAt: executedAt,
+          transitions: conditions.transitionEvaluations,
         },
         correlationId: input.correlationId,
         expectedRuntimeVersion: input.expectedRuntimeVersion,

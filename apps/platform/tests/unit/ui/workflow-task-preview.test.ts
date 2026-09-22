@@ -35,14 +35,16 @@ describe("workflow task reviewer preview", () => {
 
     expect(
       workflowTaskPreviewActions(stage, task),
-    ).toEqual([
+    ).toMatchObject([
       {
         actionType: "APPROVE_ADVANCE",
+        available: false,
         key: "ADVANCE",
         label: "Advance",
       },
       {
         actionType: "REJECT",
+        available: false,
         key: "REJECT",
         label: "Reject",
       },

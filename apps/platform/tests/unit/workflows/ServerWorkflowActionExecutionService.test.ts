@@ -1,24 +1,29 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
-vi.mock("@/modules/workflows/infrastructure/StageActivationRepository", () => ({
-  loadPriorStageContext: vi.fn(),
-}));
-vi.mock("@/modules/workflows/infrastructure/StageCompletionRepository", () => ({
-  loadStageCompletionValues: vi.fn(),
-}));
+vi.mock(
+  "@/modules/workflows/application/runtime/ServerWorkflowActionContextService",
+  () => ({ buildWorkflowActionConditionContext: vi.fn() }),
+);
+vi.mock(
+  "@/modules/workflows/infrastructure/TransitionExecutionRepository",
+  () => ({ loadSequentialTransitions: vi.fn() }),
+);
 vi.mock(
   "@/modules/workflows/infrastructure/WorkflowActionExecutionRepository",
   () => ({
     claimWorkflowActionRuntimeVersion: vi.fn(),
     completeActionTask: vi.fn(),
-    configuredActionTargetsAreValid: vi.fn(),
     findWorkflowActionExecution: vi.fn(),
     lockWorkflowActionExecutionTarget: vi.fn(),
     recordWorkflowActionExecution: vi.fn(),
     withWorkflowActionExecutionTransaction: vi.fn(),
     workflowActionExecutionDatabase: vi.fn(),
   }),
+);
+vi.mock(
+  "@/modules/workflows/infrastructure/WorkflowActionTargetRepository",
+  () => ({ configuredActionTargetsAreValid: vi.fn() }),
 );
 vi.mock(
   "@/modules/workflows/application/runtime/ServerSequentialTransitionService",
@@ -29,18 +34,18 @@ import type { AuthenticatedUser } from "@/auth/types";
 import { PermissionDeniedError } from "@/auth/authorization/policy";
 import { WorkflowActionExecutionError } from "@/modules/workflows/domain/actions/WorkflowActionExecution";
 import { executeWorkflowAction } from "@/modules/workflows/application/runtime/ServerWorkflowActionExecutionService";
-import { loadPriorStageContext } from "@/modules/workflows/infrastructure/StageActivationRepository";
-import { loadStageCompletionValues } from "@/modules/workflows/infrastructure/StageCompletionRepository";
+import { buildWorkflowActionConditionContext } from "@/modules/workflows/application/runtime/ServerWorkflowActionContextService";
+import { loadSequentialTransitions } from "@/modules/workflows/infrastructure/TransitionExecutionRepository";
 import {
   claimWorkflowActionRuntimeVersion,
   completeActionTask,
-  configuredActionTargetsAreValid,
   findWorkflowActionExecution,
   lockWorkflowActionExecutionTarget,
   recordWorkflowActionExecution,
   withWorkflowActionExecutionTransaction,
   workflowActionExecutionDatabase,
 } from "@/modules/workflows/infrastructure/WorkflowActionExecutionRepository";
+import { configuredActionTargetsAreValid } from "@/modules/workflows/infrastructure/WorkflowActionTargetRepository";
 import { executeSequentialTransitionInTransaction } from "@/modules/workflows/application/runtime/ServerSequentialTransitionService";
 
 const actorId = "10000000-0000-4000-8000-000000000001";
@@ -113,8 +118,16 @@ beforeEach(() => {
     async (work) => work({} as never),
   );
   vi.mocked(lockWorkflowActionExecutionTarget).mockResolvedValue(target);
-  vi.mocked(loadPriorStageContext).mockResolvedValue([]);
-  vi.mocked(loadStageCompletionValues).mockResolvedValue([]);
+  vi.mocked(buildWorkflowActionConditionContext).mockResolvedValue({
+    application: {},
+    eligibility: {},
+    fundingCall: {},
+    stages: [],
+  });
+  vi.mocked(loadSequentialTransitions).mockResolvedValue({
+    actionExists: true,
+    transitions: [],
+  });
   vi.mocked(claimWorkflowActionRuntimeVersion).mockResolvedValue(3);
   vi.mocked(completeActionTask).mockResolvedValue({ id: taskId });
   vi.mocked(configuredActionTargetsAreValid).mockResolvedValue(true);
@@ -138,6 +151,10 @@ describe("server workflow action execution", () => {
       expect.anything(),
       expect.objectContaining({
         actionKey: "ADVANCE",
+        conditionSelection: {
+          selectedTransitionId: null,
+          transitionEvaluations: [],
+        },
         conditionContext: expect.any(Object),
       }),
     );

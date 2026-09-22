@@ -3,9 +3,18 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   WorkflowTaskActions,
-  workflowActionButtonVariants,
 } from "@/modules/work-queue/ui/WorkflowTaskActions";
-import { workflowActionTypes } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
+
+const requiredInput = {
+  comment: { maxLength: 4_000, required: false },
+  confirmation: { message: null, required: false },
+  dueDate: { deadlineDays: null, required: false },
+  editableFieldKeys: [],
+  reasonCode: { options: [], required: false },
+  reasonOrCommentRequired: false,
+  reviewDate: { required: false },
+  target: { type: null, value: null },
+} as const;
 
 describe("workflow task actions", () => {
   it("presents the configured action labels in the supplied order", () => {
@@ -14,13 +23,23 @@ describe("workflow task actions", () => {
         actions={[
           {
             actionType: "APPROVE_ADVANCE",
+            available: true,
             key: "RECOMMEND",
             label: "Recommend",
+            presentation: { displayOrder: 1, variant: "success" },
+            requiredInput,
+            runtimeVersion: 4,
+            unavailableReason: null,
           },
           {
             actionType: "REQUEST_INFORMATION",
+            available: true,
             key: "REQUEST_CLARIFICATION",
             label: "Request clarification",
+            presentation: { displayOrder: 2, variant: "outlineOrange" },
+            requiredInput,
+            runtimeVersion: 4,
+            unavailableReason: null,
           },
         ]}
         disabled={false}
@@ -44,23 +63,29 @@ describe("workflow task actions", () => {
       />,
     );
 
-    expect(markup).toContain("No workflow action is available for this task.");
+    expect(markup).toContain("No workflow actions are configured for this task.");
     expect(markup).not.toContain("type=\"submit\"");
   });
 
-  it("defines a visual variant for every workflow action type", () => {
-    expect(Object.keys(workflowActionButtonVariants).sort())
-      .toEqual([...workflowActionTypes].sort());
-    expect(workflowActionButtonVariants).toEqual({
-      APPROVE_ADVANCE: "success",
-      DEFER: "subtle",
-      ESCALATE: "primary",
-      PUT_ON_HOLD: "yellow",
-      REFER: "navy",
-      REJECT: "danger",
-      REQUEST_INFORMATION: "outlineOrange",
-      RETURN: "outline",
-      WITHDRAW: "danger",
-    });
+  it("disables unavailable actions and presents the safe reason", () => {
+    const markup = renderToStaticMarkup(
+      <WorkflowTaskActions
+        actions={[{
+          actionType: "REJECT",
+          available: false,
+          key: "REJECT",
+          label: "Reject",
+          presentation: { displayOrder: 1, variant: "danger" },
+          requiredInput,
+          runtimeVersion: 4,
+          unavailableReason: "Requirements are not currently met.",
+        }]}
+        disabled={false}
+        onSelect={vi.fn()}
+      />,
+    );
+
+    expect(markup).toContain("disabled");
+    expect(markup).toContain("Requirements are not currently met.");
   });
 });

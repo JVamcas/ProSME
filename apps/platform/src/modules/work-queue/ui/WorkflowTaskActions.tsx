@@ -2,22 +2,8 @@
 
 import {
   GeneralButton,
-  type ButtonProps,
 } from "@/components/ui/button";
-import type { WorkflowActionType } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
 import type { WorkflowTaskAction } from "../TaskTypes";
-
-export const workflowActionButtonVariants = {
-  APPROVE_ADVANCE: "success",
-  DEFER: "subtle",
-  ESCALATE: "primary",
-  PUT_ON_HOLD: "yellow",
-  REFER: "navy",
-  REJECT: "danger",
-  REQUEST_INFORMATION: "outlineOrange",
-  RETURN: "outlineOrange",
-  WITHDRAW: "danger",
-} satisfies Record<WorkflowActionType, ButtonProps["variant"]>;
 
 export function WorkflowTaskActions({
   actions,
@@ -43,11 +29,12 @@ export function WorkflowTaskActions({
         <div className="mt-4 flex flex-wrap gap-3">
           {actions.map((action) => (
             <GeneralButton
-              disabled={disabled}
+              disabled={disabled || !action.available}
               key={action.key}
               onClick={() => onSelect(action.key)}
+              title={action.unavailableReason ?? undefined}
               type="submit"
-              variant={workflowActionButtonVariants[action.actionType]}
+              variant={action.presentation.variant}
             >
               {action.label}
             </GeneralButton>
@@ -55,7 +42,7 @@ export function WorkflowTaskActions({
         </div>
       ) : (
         <p className="mt-2 text-sm text-brand-navy/65">
-          No workflow action is available for this task.
+          No workflow actions are configured for this task.
         </p>
       )}
     </section>

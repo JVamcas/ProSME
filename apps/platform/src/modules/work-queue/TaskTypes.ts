@@ -1,3 +1,5 @@
+import type { WorkflowActionAvailability } from "@/modules/workflows/domain/actions/WorkflowActionAvailability";
+
 export type ChecklistConfigurationItem = {
   code: string;
   label: string;
@@ -10,11 +12,7 @@ export type ChecklistResultItem = {
   comment?: string;
 };
 
-export type WorkflowTaskAction = {
-  actionType: WorkflowActionType;
-  key: string;
-  label: string;
-};
+export type WorkflowTaskAction = WorkflowActionAvailability;
 
 export type TaskDetail = {
   actions: WorkflowTaskAction[];
@@ -27,11 +25,14 @@ export type TaskDetail = {
   reference: string;
   resultItems: ChecklistResultItem[];
   rowVersion: number;
+  runtimeVersion: number;
+  stageInstanceId: string;
   stageName: string;
   taskInstanceId: string;
   taskName: string;
   taskStatus: string;
   taskType: string;
+  workflowInstanceId: string;
   formVersionId?: string | null;
 };
 
@@ -49,4 +50,3 @@ export type TaskCompletionResult = {
   taskStatus: "COMPLETED";
   workflowStatus: "ACTIVE" | "COMPLETED";
 };
-import type { WorkflowActionType } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";

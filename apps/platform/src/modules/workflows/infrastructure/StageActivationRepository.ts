@@ -245,7 +245,7 @@ type PriorStageRow = {
 };
 
 export async function loadPriorStageContext(
-  transaction: StageActivationTransaction,
+  transaction: Pick<StageActivationTransaction, "execute">,
   workflowInstanceId: string,
 ): Promise<PriorStageActivationContext[]> {
   const result = await transaction.execute(sql`

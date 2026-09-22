@@ -16,6 +16,7 @@ import {
 } from "@/db/schema";
 import type { StageInstanceStatus } from "../domain/runtime/StageInstance";
 import type { RequiredTaskCompletion } from "../domain/runtime/StageCompletion";
+import type { WorkflowInstanceStatus } from "../domain/runtime/WorkflowInstance";
 
 export type StageCompletionTransaction = Parameters<
   Parameters<ReturnType<typeof getDatabase>["transaction"]>[0]
@@ -33,6 +34,7 @@ export type StageCompletionTarget = {
   rowVersion?: number;
   status: StageInstanceStatus;
   workflowInstanceId: string;
+  workflowStatus?: WorkflowInstanceStatus;
   workflowVersionId: string;
 };
 
@@ -91,6 +93,7 @@ export async function lockStageCompletionTarget(
       rowVersion: stageInstances.rowVersion,
       status: stageInstances.status,
       workflowInstanceId: workflowInstances.id,
+      workflowStatus: workflowInstances.status,
       workflowVersionId: workflowInstances.workflowTemplateVersionId,
     })
     .from(stageInstances)
@@ -174,7 +177,7 @@ export async function loadRequiredTaskCompletions(
 }
 
 export async function loadStageCompletionValues(
-  transaction: StageCompletionTransaction,
+  transaction: Pick<StageCompletionTransaction, "execute">,
   stageInstanceId: string,
 ): Promise<StageCompletionValueRow[]> {
   const result = await transaction.execute(sql`

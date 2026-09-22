@@ -18,6 +18,7 @@ import {
 } from "@/lib/resource-errors";
 import { validateTaskConfiguration, validateTaskResult } from "@/modules/workflows/WorkflowTaskRegistry";
 import { executeSequentialTransitionInTransaction } from "@/modules/workflows/application/runtime/ServerSequentialTransitionService";
+import { getWorkflowActionAvailability } from "@/modules/workflows/application/runtime/ServerWorkflowActionAvailabilityService";
 import type {
   ChecklistConfigurationItem,
   ChecklistResultItem,
@@ -78,9 +79,15 @@ export async function getWorkflowTask(
   if (!task) throw new ResourceNotFoundError("workflow task");
   const { config, permissions, result, ...view } = task;
   requirePermission(actor, permissions.view);
+  const actions = await getWorkflowActionAvailability(actor, {
+    sourceStageInstanceId: task.stageInstanceId,
+    taskId: task.taskInstanceId,
+    workflowInstanceId: task.workflowInstanceId,
+  });
   if (task.taskType !== "CHECKLIST") {
     return {
       ...view,
+      actions,
       checklistItems: [],
       dueAt: task.dueAt ? new Date(task.dueAt).toISOString() : null,
       resultItems: [],
@@ -88,6 +95,7 @@ export async function getWorkflowTask(
   }
   return {
     ...view,
+    actions,
     checklistItems: parseChecklistConfiguration(config),
     dueAt: task.dueAt ? new Date(task.dueAt).toISOString() : null,
     resultItems: parseChecklistResult(result),

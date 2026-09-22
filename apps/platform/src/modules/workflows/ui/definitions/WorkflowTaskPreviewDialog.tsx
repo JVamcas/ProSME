@@ -16,6 +16,10 @@ import {
 import { FormRenderer } from "@/modules/forms/ui/renderer/FormRenderer";
 import type { WorkflowTaskAction } from "@/modules/work-queue/TaskTypes";
 import { WorkflowTaskActions } from "@/modules/work-queue/ui/WorkflowTaskActions";
+import {
+  workflowActionInputMetadata,
+  workflowActionPresentation,
+} from "@/modules/workflows/domain/actions/WorkflowActionAvailability";
 import type {
   WorkflowStageInput,
   WorkflowTaskInput,
@@ -202,7 +206,12 @@ export function workflowTaskPreviewActions(
     .sort((left, right) => left.displayOrder - right.displayOrder)
     .map((action) => ({
       actionType: action.actionType,
+      available: false,
       key: action.stableKey,
       label: action.label,
+      presentation: workflowActionPresentation(action),
+      requiredInput: workflowActionInputMetadata(action),
+      runtimeVersion: 1,
+      unavailableReason: "Preview only.",
     })) satisfies WorkflowTaskAction[];
 }

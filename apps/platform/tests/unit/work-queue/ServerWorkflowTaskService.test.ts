@@ -4,6 +4,10 @@ vi.mock("server-only", () => ({}));
 vi.mock("@/modules/workflows/infrastructure/WorkflowTaskRepository", () => ({
   readWorkflowTask: vi.fn(),
 }));
+vi.mock(
+  "@/modules/workflows/application/runtime/ServerWorkflowActionAvailabilityService",
+  () => ({ getWorkflowActionAvailability: vi.fn() }),
+);
 vi.mock("@/modules/workflows/infrastructure/WorkflowTaskActionRepository", () => ({
   readChecklistTaskCompletion: vi.fn(),
   writeChecklistTaskCompletion: vi.fn(),
@@ -13,6 +17,7 @@ import { permissionCodes } from "@/auth/authorization/permissions";
 import { PermissionDeniedError } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import { defaultWorkflowElementPermissions } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
+import { getWorkflowActionAvailability } from "@/modules/workflows/application/runtime/ServerWorkflowActionAvailabilityService";
 import {
   readChecklistTaskCompletion,
   writeChecklistTaskCompletion,
@@ -42,12 +47,27 @@ const actor: AuthenticatedUser = {
   userType: "staff",
 };
 
-const task = {
-  actions: [{
+const availableActions = [{
     actionType: "APPROVE_ADVANCE" as const,
+    available: true,
     key: "ADVANCE",
     label: "Advance",
-  }],
+    presentation: { displayOrder: 1, variant: "success" as const },
+    requiredInput: {
+      comment: { maxLength: 4_000, required: false },
+      confirmation: { message: null, required: false },
+      dueDate: { deadlineDays: null, required: false },
+      editableFieldKeys: [],
+      reasonCode: { options: [], required: false },
+      reasonOrCommentRequired: false,
+      reviewDate: { required: false },
+      target: { type: null, value: null },
+    },
+    runtimeVersion: 1,
+    unavailableReason: null,
+  }];
+
+const task = {
   applicantName: "Applicant",
   applicationId: "79e20de0-3558-4d63-90a4-8c9f5125df08",
   businessName: "Business",
@@ -60,11 +80,14 @@ const task = {
   result: null,
   permissions: defaultWorkflowElementPermissions,
   rowVersion: 2,
+  runtimeVersion: 1,
+  stageInstanceId: "79e20de0-3558-4d63-90a4-8c9f5125df12",
   stageName: "Pre-screening",
   taskInstanceId: "79e20de0-3558-4d63-90a4-8c9f5125df09",
   taskName: "Pre-screening checklist",
   taskStatus: "CLAIMED",
   taskType: "CHECKLIST",
+  workflowInstanceId: "79e20de0-3558-4d63-90a4-8c9f5125df13",
 };
 
 const command = {
@@ -75,6 +98,7 @@ const command = {
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(readWorkflowTask).mockResolvedValue(task);
+  vi.mocked(getWorkflowActionAvailability).mockResolvedValue(availableActions);
   vi.mocked(readChecklistTaskCompletion).mockResolvedValue(null);
 });
 
@@ -83,6 +107,7 @@ describe("workflow checklist task service", () => {
     const result = await getWorkflowTask(actor, task.taskInstanceId);
     expect(result).toMatchObject({
       checklistItems: task.config.items,
+      actions: availableActions,
       dueAt: "2026-09-20T08:00:00.000Z",
       resultItems: [],
     });

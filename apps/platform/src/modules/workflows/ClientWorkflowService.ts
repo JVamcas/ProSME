@@ -17,6 +17,13 @@ import type {
 } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import type { CreateWorkflowTemplateInput } from "@/modules/workflows/api/WorkflowTemplateSchemas";
 import type { WorkflowTemplateListItem } from "@/modules/workflows/domain/definitions/WorkflowTemplate";
+import type { WorkflowActionAvailability } from "@/modules/workflows/domain/actions/WorkflowActionAvailability";
+
+export type WorkflowActionAvailabilityQuery = {
+  sourceStageInstanceId: string;
+  taskId?: string;
+  workflowInstanceId: string;
+};
 
 const jsonHeaders = { "Content-Type": "application/json" };
 
@@ -28,6 +35,17 @@ function listTemplates() {
   return requestData<WorkflowTemplateListItem[]>("/api/workflows", {
     cache: "no-store",
   });
+}
+
+function getActionAvailability(input: WorkflowActionAvailabilityQuery) {
+  const query = new URLSearchParams({
+    sourceStageInstanceId: input.sourceStageInstanceId,
+  });
+  if (input.taskId) query.set("taskId", input.taskId);
+  return requestData<WorkflowActionAvailability[]>(
+    `/api/workflows/${input.workflowInstanceId}/actions?${query}`,
+    { cache: "no-store" },
+  );
 }
 
 function createTemplate(input: CreateWorkflowTemplateInput) {
@@ -174,6 +192,7 @@ export const clientWorkflowService = {
   createTemplate,
   createDefinition,
   deleteDefinition,
+  getActionAvailability,
   getEditor,
   lifecycleCommand,
   listAssignments,

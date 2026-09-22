@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { clientWorkflowService } from "./ClientWorkflowService";
+import type { WorkflowActionAvailabilityQuery } from "./ClientWorkflowService";
 import type {
   CreateWorkflowInput,
   OpportunityAssignmentInput,
@@ -16,11 +17,31 @@ import type { WorkflowTemplateListItem } from "@/modules/workflows/domain/defini
 export const workflowQueryKeys = {
   all: ["admin", "workflows"] as const,
   assignments: ["admin", "workflows", "assignments"] as const,
+  actionAvailability: (input: WorkflowActionAvailabilityQuery) => [
+    "workflows",
+    input.workflowInstanceId,
+    "actions",
+    input.sourceStageInstanceId,
+    input.taskId ?? null,
+  ] as const,
   detail: (id: string) => ["admin", "workflows", id] as const,
   opportunities: ["admin", "workflows", "opportunities"] as const,
   published: ["admin", "workflows", "published"] as const,
   templates: ["admin", "workflow-templates"] as const,
 };
+
+export function useWorkflowActionAvailability(
+  input: WorkflowActionAvailabilityQuery,
+  enabled = true,
+) {
+  return useQuery({
+    enabled: enabled
+      && Boolean(input.workflowInstanceId)
+      && Boolean(input.sourceStageInstanceId),
+    queryFn: () => clientWorkflowService.getActionAvailability(input),
+    queryKey: workflowQueryKeys.actionAvailability(input),
+  });
+}
 
 export function useWorkflowTemplates() {
   return useQuery({

@@ -63,7 +63,7 @@ export async function findTransitionExecution(
 }
 
 export async function loadSequentialTransitions(
-  transaction: StageCompletionTransaction,
+  transaction: Pick<StageCompletionTransaction, "execute">,
   input: {
     actionKey: string;
     sourceStageDefinitionId: string;
@@ -85,7 +85,6 @@ export async function loadSequentialTransitions(
       ON target.id = transition.to_stage_id
     WHERE action.stage_id = ${input.sourceStageDefinitionId}::uuid
       AND action.stable_key = ${input.actionKey}
-      AND action.enabled = TRUE
     ORDER BY transition.priority ASC, transition.id ASC
   `);
   const rows = result.rows as Array<TransitionRow & { id: string | null }>;
