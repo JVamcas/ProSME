@@ -540,6 +540,13 @@
       "when": 1794355200000,
       "tag": "0076_public_self_check_question_types",
       "breakpoints": true
+    },
+    {
+      "idx": 77,
+      "version": "7",
+      "when": 1794441600000,
+      "tag": "0077_authoritative_eligibility_execution",
+      "breakpoints": true
     }
   ]
 }

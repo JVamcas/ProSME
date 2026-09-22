@@ -25,7 +25,7 @@ export type StageCompletionTransaction = Parameters<
 export type StageCompletionTarget = {
   application: Record<string, unknown>;
   completedAt: Date | null;
-  eligibility: Record<string, unknown>;
+  eligibility: Record<string, unknown> | null;
   exitCondition: typeof workflowStageDefinitions.$inferSelect.exitCondition;
   fundingCall: Record<string, unknown>;
   stageInstanceId: string;
@@ -116,11 +116,15 @@ export async function lockStageCompletionTarget(
       fundingCalls,
       eq(fundingCalls.id, applications.fundingOpportunityId),
     )
-    .innerJoin(
+    .leftJoin(
       authoritativeEligibilityOutcomes,
-      eq(
-        authoritativeEligibilityOutcomes.applicationId,
-        applications.id,
+      and(
+        eq(authoritativeEligibilityOutcomes.applicationId, applications.id),
+        sql`${authoritativeEligibilityOutcomes.evaluationNumber} = (
+          SELECT max(latest.evaluation_number)
+          FROM app_authoritative_eligibility_outcomes latest
+          WHERE latest.application_id = ${applications.id}
+        )`,
       ),
     )
     .where(and(

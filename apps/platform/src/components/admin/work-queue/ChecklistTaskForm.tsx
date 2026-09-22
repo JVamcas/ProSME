@@ -5,7 +5,6 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormProvider, useForm } from "react-hook-form";
-import { useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -40,18 +39,19 @@ function defaultValues(task: TaskDetail): ChecklistFormValues {
 export function ChecklistTaskForm({ task }: { task: TaskDetail }) {
   const router = useRouter();
   const completion = useCompleteWorkflowTask(task.taskInstanceId);
-  const [selectedActionKey, setSelectedActionKey] = useState<string | null>(
-    null,
-  );
   const form = useForm<ChecklistFormValues>({
     defaultValues: defaultValues(task),
     resolver: zodResolver(checklistFormSchema),
   });
-  const submit = form.handleSubmit((values) => {
-    if (!selectedActionKey) return;
+  const submit = form.handleSubmit((values, event) => {
+    const submitter = (event?.nativeEvent as SubmitEvent | undefined)
+      ?.submitter as HTMLButtonElement | null | undefined;
+    const actionKey = submitter?.name === "workflowAction"
+      ? submitter.value
+      : undefined;
     completion.mutate(
       {
-        actionKey: selectedActionKey,
+        ...(actionKey ? { actionKey } : {}),
         expectedRowVersion: task.rowVersion,
         items: values.items,
       },
@@ -112,11 +112,22 @@ export function ChecklistTaskForm({ task }: { task: TaskDetail }) {
             </Link>
           </GeneralButton>
         </div>
-        <WorkflowTaskActions
-          actions={task.actions}
-          disabled={completion.isPending || task.taskStatus === "COMPLETED"}
-          onSelect={setSelectedActionKey}
-        />
+        {task.actions.length ? (
+          <WorkflowTaskActions
+            actions={task.actions}
+            disabled={completion.isPending || task.taskStatus === "COMPLETED"}
+            onSelect={() => undefined}
+          />
+        ) : (
+          <div className="flex justify-end">
+            <GeneralButton
+              disabled={completion.isPending || task.taskStatus === "COMPLETED"}
+              type="submit"
+            >
+              {completion.isPending ? "Completing…" : "Complete checklist"}
+            </GeneralButton>
+          </div>
+        )}
       </form>
     </FormProvider>
   );

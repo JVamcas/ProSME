@@ -10,10 +10,6 @@ import {
   workflowEvents,
 } from "@/db/schema";
 import { activateStageInTransaction } from "@/modules/workflows/application/runtime/ServerStageActivationService";
-import {
-  createAuthoritativeEligibilityOutcomeRecord,
-  type AuthoritativeEligibilityOutcomeWrite,
-} from "@/modules/eligibility/infrastructure/AuthoritativeEligibilityRepository";
 import { createWorkflowInstance } from "@/modules/workflows/infrastructure/WorkflowInstanceRepository";
 import type {
   SubmissionResult,
@@ -30,7 +26,6 @@ type WriteInput = {
     workflowTemplateVersionId: string;
   };
   correlationId: string;
-  eligibilityOutcome: AuthoritativeEligibilityOutcomeWrite;
   idempotencyKey: string;
 };
 
@@ -167,10 +162,6 @@ export async function writeApplicationSubmission(
     submittedAt,
   );
   if (!reference) return { kind: "idempotency_conflict" };
-  await createAuthoritativeEligibilityOutcomeRecord(
-    transaction,
-    input.eligibilityOutcome,
-  );
   const runtime = await createInitialRuntime(transaction, input, submittedAt);
   const result = {
     applicationId: input.application.id,

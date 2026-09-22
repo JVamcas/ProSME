@@ -7,7 +7,6 @@ import {
   applicationDocuments,
   applications,
   applicationSubmissionCommands,
-  businessProfiles,
   fundingCalls,
   workflowAuditEntries,
   workflowDefinitionVersions,
@@ -15,10 +14,6 @@ import {
   workflowStageDefinitions,
 } from "@/db/schema";
 import type { ApplicationDocumentType } from "@/modules/applications/ApplicationDocumentSchemas";
-import {
-  AuthoritativeEligibilityUnavailableError,
-  prepareAuthoritativeEligibilityOutcome,
-} from "@/modules/eligibility/application/ServerAuthoritativeEligibilityService";
 import { isFundingCallEffectivelyOpen } from "@/modules/funding-calls/domain/FundingCallLifecycle";
 import {
   InitialStageActivationError,
@@ -192,18 +187,6 @@ async function findInitialConfiguration(
   return configuration ?? null;
 }
 
-async function findBusinessForEvaluation(
-  transaction: SubmissionTransaction,
-  businessId: string,
-) {
-  const [business] = await transaction
-    .select()
-    .from(businessProfiles)
-    .where(eq(businessProfiles.id, businessId))
-    .limit(1);
-  return business ?? null;
-}
-
 function draftIsComplete(application: {
   declarationAcceptance: unknown;
   sectionCompletion: Record<string, boolean>;
@@ -255,49 +238,18 @@ async function submitInTransaction(
   if (!isFundingCallEffectivelyOpen(configuration, new Date())) {
     return { kind: "opportunity_unavailable" };
   }
-  const business = await findBusinessForEvaluation(
-    transaction,
-    application.businessId,
-  );
-  if (!business) return { kind: "business_required" };
-  try {
-    const eligibilityOutcome = await prepareAuthoritativeEligibilityOutcome(
-      transaction,
-      {
-        actorId: input.actorId,
-        application,
-        business,
-        correlationId: input.correlationId,
-        evaluatedAt: new Date(),
-        fundingCall: {
-          closesAt: configuration.closesAt,
-          eligibilityRuleSetVersionId:
-            configuration.eligibilityRuleSetVersionId,
-          fundingInstrument: configuration.fundingInstrument,
-          id: configuration.fundingCallId,
-          maximumGrantAmount: configuration.maximumGrantAmount,
-          minimumGrantAmount: configuration.minimumGrantAmount,
-          opensAt: configuration.opensAt,
-          slug: configuration.slug,
-          status: configuration.status,
-          thematicArea: configuration.thematicArea,
-          title: configuration.title,
-          totalBudgetEnvelope: configuration.totalBudgetEnvelope,
-        },
-      },
-    );
-    return writeApplicationSubmission(transaction, {
-      ...input,
-      application,
-      configuration,
-      eligibilityOutcome,
-    });
-  } catch (error) {
-    if (error instanceof AuthoritativeEligibilityUnavailableError) {
-      return { kind: "eligibility_unavailable" };
-    }
-    throw error;
+  if (
+    !application.eligibilityRuleSetVersionId
+    || application.eligibilityRuleSetVersionId
+      !== configuration.eligibilityRuleSetVersionId
+  ) {
+    return { kind: "eligibility_unavailable" };
   }
+  return writeApplicationSubmission(transaction, {
+    ...input,
+    application,
+    configuration,
+  });
 }
 
 type SubmitApplicationInput = {

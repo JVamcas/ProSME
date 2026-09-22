@@ -10,7 +10,10 @@ import type {
 import type {
   SequentialTransitionResult,
 } from "@/modules/workflows/application/runtime/ServerSequentialTransitionService";
-import { appendTaskCompletionAndActionAudit } from "./RuntimeAuditWriteRepository";
+import {
+  appendTaskCompletionAndActionAudit,
+  appendTaskCompletionAudit,
+} from "./RuntimeAuditWriteRepository";
 
 type Transaction = Parameters<
   Parameters<ReturnType<typeof getDatabase>["transaction"]>[0]
@@ -43,7 +46,7 @@ type CompletionWriteResult =
   | { kind: "not_found" };
 
 type WriteInput = {
-  actionKey: string;
+  actionKey: string | null;
   actorId: string;
   correlationId: string;
   expectedRowVersion: number;
@@ -128,18 +131,25 @@ async function lockTask(
       AND task.row_version = ${input.expectedRowVersion}
       AND task.status IN ('CLAIMED', 'IN_PROGRESS')
       AND stage.status = 'ACTIVE' AND workflow.status = 'ACTIVE'
-      AND EXISTS (
-        SELECT 1
-        FROM app_workflow_action_definitions action
-        WHERE action.stage_id = stage.workflow_stage_definition_id
-          AND action.stable_key = ${input.actionKey}
-          AND action.enabled = TRUE
-          AND EXISTS (
-            SELECT 1 FROM app_stage_task_action_bindings binding
-            WHERE binding.task_definition_id = definition.id
-              AND binding.stage_id = stage.workflow_stage_definition_id
-              AND binding.action_key = action.stable_key
-          )
+      AND (
+        (${input.actionKey}::text IS NULL AND NOT EXISTS (
+          SELECT 1 FROM app_stage_task_action_bindings binding
+          WHERE binding.task_definition_id = definition.id
+            AND binding.stage_id = stage.workflow_stage_definition_id
+        ))
+        OR (${input.actionKey}::text IS NOT NULL AND EXISTS (
+          SELECT 1
+          FROM app_workflow_action_definitions action
+          WHERE action.stage_id = stage.workflow_stage_definition_id
+            AND action.stable_key = ${input.actionKey}
+            AND action.enabled = TRUE
+            AND EXISTS (
+              SELECT 1 FROM app_stage_task_action_bindings binding
+              WHERE binding.task_definition_id = definition.id
+                AND binding.stage_id = stage.workflow_stage_definition_id
+                AND binding.action_key = action.stable_key
+            )
+        ))
       )
     FOR UPDATE OF task
   `);
@@ -237,8 +247,7 @@ export async function writeChecklistTaskCompletion(
       if (task.taskType !== "CHECKLIST") return { kind: "conflict" } as const;
       const completedAt = new Date();
       await completeTask(transaction, input, completedAt);
-      await appendTaskCompletionAndActionAudit(transaction, {
-        actionKey: input.actionKey,
+      const auditInput = {
         actorId: input.actorId,
         beforeRowVersion: input.expectedRowVersion,
         beforeStatus: task.taskStatus,
@@ -248,14 +257,23 @@ export async function writeChecklistTaskCompletion(
         stageInstanceId: task.stageInstanceId,
         taskId: input.taskId,
         workflowInstanceId: task.workflowInstanceId,
-      });
-      const transition = await executeTransition(transaction, {
-        actionKey: input.actionKey,
-        actorId: input.actorId,
-        correlationId: input.correlationId,
-        sourceStageInstanceId: task.stageInstanceId,
-      });
-      const advancement = transitionAdvancement(transition);
+      };
+      if (input.actionKey) {
+        await appendTaskCompletionAndActionAudit(transaction, {
+          ...auditInput,
+          actionKey: input.actionKey,
+        });
+      } else {
+        await appendTaskCompletionAudit(transaction, auditInput);
+      }
+      const advancement = input.actionKey
+        ? transitionAdvancement(await executeTransition(transaction, {
+            actionKey: input.actionKey,
+            actorId: input.actorId,
+            correlationId: input.correlationId,
+            sourceStageInstanceId: task.stageInstanceId,
+          }))
+        : { nextStageName: null, workflowStatus: "ACTIVE" as const };
       const result: TaskCompletionResult = {
         actionKey: input.actionKey,
         ...advancement,

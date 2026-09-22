@@ -14,12 +14,19 @@ import { validateWorkflowGraph } from "@/modules/workflows/WorkflowValidation";
 const samples: Record<TaskTypeCode, { config: unknown; result: unknown }> = {
   AUTOMATED_RULE_CHECK: {
     config: {
-      rulesetCode: "RULES",
-      ruleVersion: 1,
-      inputs: ["amount"],
-      categories: [{ code: "OK", label: "Okay" }],
+      command: "AUTHORITATIVE_ELIGIBILITY",
+      reevaluationPolicy: "WHEN_EVIDENCE_CHANGED",
     },
-    result: { category: "OK", reasons: [], ruleVersion: 1 },
+    result: {
+      eligible: true,
+      evaluationId: "79e20de0-3558-4d63-90a4-8c9f5125df06",
+      evaluationNumber: 1,
+      hardFailureCount: 0,
+      manualScreeningRequired: false,
+      outcome: "ELIGIBLE",
+      softFailureCount: 0,
+      warningCount: 0,
+    },
   },
   CHECKLIST: {
     config: { items: [{ code: "ONE", label: "One", required: true }] },

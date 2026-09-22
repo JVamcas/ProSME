@@ -156,6 +156,38 @@ describe("workflow checklist task service", () => {
     expect(result).toEqual(completion);
   });
 
+  it("completes a checklist with no bound action using process permission", async () => {
+    const completion = {
+      actionKey: null,
+      nextStageName: null,
+      rowVersion: 3,
+      taskInstanceId: task.taskInstanceId,
+      taskStatus: "COMPLETED" as const,
+      workflowStatus: "ACTIVE" as const,
+    };
+    vi.mocked(writeChecklistTaskCompletion).mockResolvedValue({
+      kind: "completed",
+      result: completion,
+    });
+
+    await expect(completeChecklistTask(
+      {
+        ...actor,
+        capabilities: new Set([permissionCodes.workflowTaskAssignedProcess]),
+      },
+      task.taskInstanceId,
+      {
+        expectedRowVersion: 2,
+        items: [{ accepted: true, code: "OWNERSHIP" }],
+      },
+      command,
+    )).resolves.toEqual(completion);
+    expect(writeChecklistTaskCompletion).toHaveBeenCalledWith(
+      expect.objectContaining({ actionKey: null }),
+      expect.any(Function),
+    );
+  });
+
   it("requires the configured decide permission", async () => {
     await expect(completeChecklistTask(
       { ...actor, capabilities: new Set() },

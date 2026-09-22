@@ -1,4 +1,6 @@
 import type { WorkflowStageInput } from "../definitions/WorkflowTypes";
+import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup";
+import { basicOperators } from "@/modules/conditions/engine/BasicOperators";
 import type { StandardWorkflowDependencies } from "./StandardWorkflowTypes";
 import {
   action,
@@ -16,6 +18,25 @@ import {
 
 const internalOption = (code: string, label: string) => ({ code, label });
 
+function eligibilityCondition(
+  id: string,
+  path: "eligibility.manual_screening_required" | "eligibility.outcome",
+  value: boolean | string,
+): ConditionGroup {
+  return {
+    children: [{
+      id: `${id.slice(0, -1)}2`,
+      kind: "CONDITION",
+      leftOperand: { key: path, kind: "FIELD" },
+      operator: basicOperators.EQUALS,
+      rightOperand: { kind: "CONSTANT", value },
+    }],
+    combinator: "AND",
+    id,
+    kind: "GROUP",
+  };
+}
+
 function screening(dependencies: StandardWorkflowDependencies) {
   const checklistItems = [
     checklist("APPLICATION_COMPLETE", "Application information is complete", 1),
@@ -25,17 +46,46 @@ function screening(dependencies: StandardWorkflowDependencies) {
     checklist("ELIGIBILITY_EVALUATED", "Authoritative eligibility evaluation is complete", 5),
   ];
   const actions = [
-    approve("ELIGIBLE_ADVANCE", "Eligible and advance", 1),
-    reject("INELIGIBLE_REJECT", "Ineligible", 2, [
-      "ELIGIBILITY_FAILED",
-      "MANDATORY_EVIDENCE_MISSING",
-    ]),
+    {
+      ...approve("ELIGIBLE_ADVANCE", "Eligible and advance", 1),
+      condition: eligibilityCondition(
+        "81000000-0000-4000-8000-000000000001",
+        "eligibility.outcome",
+        "ELIGIBLE",
+      ),
+    },
+    {
+      ...action(
+        "MANUAL_ELIGIBILITY_ADVANCE",
+        "Approve after manual eligibility review",
+        "APPROVE_ADVANCE",
+        2,
+        {},
+        true,
+      ),
+      condition: eligibilityCondition(
+        "81000000-0000-4000-8000-000000000003",
+        "eligibility.manual_screening_required",
+        true,
+      ),
+    },
+    {
+      ...reject("INELIGIBLE_REJECT", "Ineligible", 3, [
+        "ELIGIBILITY_FAILED",
+        "MANDATORY_EVIDENCE_MISSING",
+      ]),
+      condition: eligibilityCondition(
+        "81000000-0000-4000-8000-000000000005",
+        "eligibility.outcome",
+        "INELIGIBLE",
+      ),
+    },
     requestInformation(
       "REQUEST_ADDITIONAL_INFORMATION",
       "Request additional information",
-      3,
+      4,
     ),
-    refer("REFER_INTERNAL_CLARIFICATION", "Refer for internal clarification", 4),
+    refer("REFER_INTERNAL_CLARIFICATION", "Refer for internal clarification", 5),
   ];
   return stage({
     actions,
@@ -78,14 +128,8 @@ function screening(dependencies: StandardWorkflowDependencies) {
       task(dependencies, {
         actionKeys: actions.map((item) => item.stableKey),
         config: {
-          categories: [
-            internalOption("ELIGIBLE", "Eligible"),
-            internalOption("INELIGIBLE", "Ineligible"),
-            internalOption("MANUAL_REVIEW", "Manual review required"),
-          ],
-          inputs: ["application", "verified_documents"],
-          rulesetCode: "SME_FUND_ELIGIBILITY",
-          ruleVersion: 1,
+          command: "AUTHORITATIVE_ELIGIBILITY",
+          reevaluationPolicy: "WHEN_EVIDENCE_CHANGED",
         },
         description: "Record the authoritative eligibility outcome and route the application.",
         displayOrder: 2,

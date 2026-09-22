@@ -8,7 +8,6 @@ import { readApplicantDashboard } from "@/db/repositories/ApplicantDashboardRepo
 import { readAdminDashboard } from "@/db/repositories/AdminDashboardRepository";
 import {
   eligibilityVersionId,
-  expectPersistedAuthoritativeEligibility,
   installAuthoritativeEligibilityConfiguration,
 } from "../support/AuthoritativeEligibilityDatabaseFixture";
 import * as workflowBindingFixture from "../support/WorkflowBindingDatabaseFixture";
@@ -174,7 +173,7 @@ describeDatabase("P3.4 transactional application submission", () => {
     expect(counts.rows[0]).toEqual({
       audits: 1,
       events: 5,
-      eligibility_outcomes: 1,
+      eligibility_outcomes: 0,
       outbox: 1,
       pinned_version: versionId,
       runtime_initialized: true,
@@ -193,7 +192,6 @@ describeDatabase("P3.4 transactional application submission", () => {
         [applicationIds[0], newerVersionId],
       ),
     ).rejects.toThrow("workflow instance version pin is immutable");
-    await expectPersistedAuthoritativeEligibility(query, applicationIds[0]);
   });
   it("rejects a missing published assignment without partial writes", async () => {
     const result = await submitOwnedApplication({

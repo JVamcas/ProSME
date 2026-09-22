@@ -20,15 +20,18 @@ export type AuthoritativeEligibilityOutcome = {
   contextReference: EligibilityContextReference;
   eligible: boolean;
   evaluatedAt: Date;
+  evaluatedBy: string;
   evaluatedValueProvenance: Record<string, EligibilityValueProvenance>;
   evaluatedValues: Record<string, JsonValue>;
   finalOutcome: FinalScreeningOutcome | null;
   hardFailures: EligibilityFinding[];
   id: string;
+  evaluationNumber: number;
   manualScreeningRequired: boolean;
   ruleOutcomes: EligibilityRuleOutcome[];
   ruleSetVersionId: string;
   ruleSetVersionNumber: number;
   softFailures: EligibilityFinding[];
   warnings: EligibilityFinding[];
+  workflowTaskId: string | null;
 };

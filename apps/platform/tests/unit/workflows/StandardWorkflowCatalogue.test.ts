@@ -60,5 +60,41 @@ describe("standard workflow catalogue", () => {
       stage.stableKey
     ))).toEqual(["DISBURSEMENT", "IMPLEMENTATION_MONITORING"]);
   });
-});
 
+  it("gates Screening actions with authoritative eligibility outcomes", () => {
+    const graph = createStandardWorkflowDraft(dependencies()).graph;
+    const screening = graph.stages.find(
+      (stage) => stage.stableKey === "ADMIN_ELIGIBILITY_SCREENING",
+    )!;
+    const task = screening.tasks.find(
+      (item) => item.stableKey === "AUTHORITATIVE_ELIGIBILITY",
+    )!;
+    const prerequisiteTask = screening.tasks.find(
+      (item) => item.stableKey === "COMPLETENESS_SCREENING",
+    )!;
+
+    expect(prerequisiteTask.actionKeys).toEqual([]);
+    expect(task.config).toEqual({
+      command: "AUTHORITATIVE_ELIGIBILITY",
+      reevaluationPolicy: "WHEN_EVIDENCE_CHANGED",
+    });
+    expect(screening.actions.find(
+      (action) => action.stableKey === "ELIGIBLE_ADVANCE",
+    )?.condition).toMatchObject({
+      children: [expect.objectContaining({
+        leftOperand: { key: "eligibility.outcome", kind: "FIELD" },
+        rightOperand: { kind: "CONSTANT", value: "ELIGIBLE" },
+      })],
+    });
+    expect(screening.actions.find(
+      (action) => action.stableKey === "INELIGIBLE_REJECT",
+    )?.condition).toMatchObject({
+      children: [expect.objectContaining({
+        rightOperand: { kind: "CONSTANT", value: "INELIGIBLE" },
+      })],
+    });
+    expect(screening.actions.find(
+      (action) => action.stableKey === "MANUAL_ELIGIBILITY_ADVANCE",
+    )).toMatchObject({ reasonCodeRequired: true });
+  });
+});

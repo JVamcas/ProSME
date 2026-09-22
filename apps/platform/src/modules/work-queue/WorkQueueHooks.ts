@@ -37,6 +37,20 @@ export function useCompleteWorkflowTask(taskId: string) {
   });
 }
 
+export function useEvaluateAuthoritativeEligibility(taskId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (expectedRowVersion: number) =>
+      clientWorkQueueService.evaluateEligibility(taskId, expectedRowVersion),
+    onSuccess: () => Promise.all([
+      queryClient.invalidateQueries({ queryKey: workQueueQueryKeys.all }),
+      queryClient.invalidateQueries({
+        queryKey: workQueueQueryKeys.task(taskId),
+      }),
+    ]),
+  });
+}
+
 export function useClaimTask() {
   const queryClient = useQueryClient();
   return useMutation({

@@ -3,10 +3,8 @@ import type { TaskTypeCode } from "@/modules/workflows/domain/definitions/Workfl
 
 const defaults: Record<TaskTypeCode, unknown> = {
   AUTOMATED_RULE_CHECK: {
-    rulesetCode: "RULESET_CODE",
-    ruleVersion: 1,
-    inputs: ["application"],
-    categories: [{ code: "PASS", label: "Pass" }],
+    command: "AUTHORITATIVE_ELIGIBILITY",
+    reevaluationPolicy: "WHEN_EVIDENCE_CHANGED",
   },
   CHECKLIST: {
     items: [{ code: "ITEM_1", label: "Checklist item", required: true }],

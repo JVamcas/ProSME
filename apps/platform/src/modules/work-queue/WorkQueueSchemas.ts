@@ -23,7 +23,7 @@ export const workflowActionKeySchema = z
   .regex(/^[A-Z][A-Z0-9_]*$/);
 
 export const completeChecklistTaskSchema = z.object({
-  actionKey: workflowActionKeySchema,
+  actionKey: workflowActionKeySchema.optional(),
   expectedRowVersion: z.number().int().positive(),
   items: z.array(z.object({
     accepted: z.boolean(),

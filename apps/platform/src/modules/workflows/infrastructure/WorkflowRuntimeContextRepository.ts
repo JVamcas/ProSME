@@ -182,8 +182,13 @@ export async function readWorkflowTaskRuntimeContext(
       ON workflow_definition.id = workflow_version.definition_id
     JOIN app_applications application
       ON application.id = workflow.application_id
-    JOIN app_authoritative_eligibility_outcomes eligibility
-      ON eligibility.application_id = application.id
+    LEFT JOIN LATERAL (
+      SELECT outcome.*
+      FROM app_authoritative_eligibility_outcomes outcome
+      WHERE outcome.application_id = application.id
+      ORDER BY outcome.evaluation_number DESC
+      LIMIT 1
+    ) eligibility ON TRUE
     LEFT JOIN LATERAL (
       SELECT jsonb_agg(jsonb_build_object(
         'stageKey', prior_definition.code,

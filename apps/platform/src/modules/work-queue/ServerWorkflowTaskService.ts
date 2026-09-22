@@ -43,6 +43,12 @@ function parseChecklistResult(result: unknown) {
     : [];
 }
 
+function parseEligibilityResult(result: unknown) {
+  if (result === null) return null;
+  const parsed = validateTaskResult("AUTOMATED_RULE_CHECK", result);
+  return parsed.success ? parsed.data : null;
+}
+
 function validateChecklistItems(
   configured: ChecklistConfigurationItem[],
   submitted: ChecklistResultItem[],
@@ -90,6 +96,9 @@ export async function getWorkflowTask(
       actions,
       checklistItems: [],
       dueAt: task.dueAt ? new Date(task.dueAt).toISOString() : null,
+      eligibilityEvaluation: task.taskType === "AUTOMATED_RULE_CHECK"
+        ? parseEligibilityResult(result)
+        : null,
       resultItems: [],
     };
   }
@@ -98,6 +107,7 @@ export async function getWorkflowTask(
     actions,
     checklistItems: parseChecklistConfiguration(config),
     dueAt: task.dueAt ? new Date(task.dueAt).toISOString() : null,
+    eligibilityEvaluation: null,
     resultItems: parseChecklistResult(result),
   };
 }
@@ -112,12 +122,16 @@ export async function completeChecklistTask(
   const writeInput = {
     ...command,
     ...input,
+    actionKey: input.actionKey ?? null,
     actorId: actor.id,
     taskId,
   };
   const task = await readWorkflowTask(actor.id, taskId);
   if (!task) throw new ResourceNotFoundError("workflow task");
-  requirePermission(actor, task.permissions.decide);
+  requirePermission(
+    actor,
+    input.actionKey ? task.permissions.decide : task.permissions.edit,
+  );
   const replay = await readChecklistTaskCompletion(writeInput);
   if (replay?.kind === "completed") return replay.result;
   if (replay?.kind === "idempotency_conflict") {
@@ -146,7 +160,7 @@ export async function completeChecklistTask(
   }
   if (outcome.kind === "conflict") {
     throw new ResourceConflictError(
-      "The workflow cannot advance because its completion transition is missing.",
+      "The checklist cannot be completed in its current workflow configuration.",
     );
   }
   return outcome.result;

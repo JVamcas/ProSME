@@ -25,7 +25,7 @@ export async function buildWorkflowActionConditionContext(
       ];
   return {
     application: normalizeStageConditionRecord(stage.application),
-    eligibility: normalizeStageConditionRecord(stage.eligibility),
+    eligibility: normalizeStageConditionRecord(stage.eligibility ?? {}),
     fundingCall: normalizeStageConditionRecord(stage.fundingCall),
     stages: [
       ...priorStages

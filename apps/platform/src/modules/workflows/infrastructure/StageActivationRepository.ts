@@ -25,7 +25,7 @@ export type StageActivationTransaction = WorkflowInstanceTransaction;
 export type StageActivationTarget = {
   application: Record<string, unknown>;
   currentStageInstanceId: string | null;
-  eligibility: Record<string, unknown>;
+  eligibility: Record<string, unknown> | null;
   entryCondition: typeof workflowStageDefinitions.$inferSelect.entryCondition;
   fundingCall: Record<string, unknown>;
   repeatable: boolean;
@@ -132,11 +132,15 @@ export async function lockStageActivationTarget(
       fundingCalls,
       eq(fundingCalls.id, applications.fundingOpportunityId),
     )
-    .innerJoin(
+    .leftJoin(
       authoritativeEligibilityOutcomes,
-      eq(
-        authoritativeEligibilityOutcomes.applicationId,
-        applications.id,
+      and(
+        eq(authoritativeEligibilityOutcomes.applicationId, applications.id),
+        sql`${authoritativeEligibilityOutcomes.evaluationNumber} = (
+          SELECT max(latest.evaluation_number)
+          FROM app_authoritative_eligibility_outcomes latest
+          WHERE latest.application_id = ${applications.id}
+        )`,
       ),
     )
     .innerJoin(

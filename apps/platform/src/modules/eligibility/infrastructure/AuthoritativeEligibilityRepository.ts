@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 
 import { getDatabase, type DatabaseTransaction } from "@/db/client";
 import { applications } from "@/db/schema/applications";
@@ -13,7 +13,7 @@ export type AuthoritativeEligibilityOutcomeWrite = Omit<
   AuthoritativeEligibilityOutcome,
   "id"
 > & {
-  evaluatedBy: string;
+  commandKey?: string | null;
 };
 
 export async function createAuthoritativeEligibilityOutcomeRecord(
@@ -42,6 +42,7 @@ export async function findAuthoritativeEligibilityOutcome(
       eq(authoritativeEligibilityOutcomes.applicationId, applicationId),
       ownerUserId ? eq(applications.ownerUserId, ownerUserId) : undefined,
     ))
+    .orderBy(desc(authoritativeEligibilityOutcomes.evaluationNumber))
     .limit(1);
   return outcome?.outcome ?? null;
 }

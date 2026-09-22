@@ -118,11 +118,15 @@ async function readStage(
       fundingCalls,
       eq(fundingCalls.id, applications.fundingOpportunityId),
     )
-    .innerJoin(
+    .leftJoin(
       authoritativeEligibilityOutcomes,
-      eq(
-        authoritativeEligibilityOutcomes.applicationId,
-        applications.id,
+      and(
+        eq(authoritativeEligibilityOutcomes.applicationId, applications.id),
+        sql`${authoritativeEligibilityOutcomes.evaluationNumber} = (
+          SELECT max(latest.evaluation_number)
+          FROM app_authoritative_eligibility_outcomes latest
+          WHERE latest.application_id = ${applications.id}
+        )`,
       ),
     )
     .where(and(

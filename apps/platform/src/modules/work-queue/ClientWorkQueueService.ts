@@ -8,10 +8,14 @@ import type {
   WorkQueueRow,
 } from "./WorkQueueTypes";
 import type {
+  AuthoritativeEligibilityTaskResult,
   CompleteChecklistTaskInput,
   TaskCompletionResult,
   TaskDetail,
 } from "./TaskTypes";
+
+type AuthoritativeEligibilityExecutionResult =
+  AuthoritativeEligibilityTaskResult & { rowVersion: number };
 
 type QueueEnvelope = {
   data: WorkQueueRow[];
@@ -69,4 +73,24 @@ function completeTask(
   );
 }
 
-export const clientWorkQueueService = { claim, completeTask, getTask, list };
+function evaluateEligibility(taskId: string, expectedRowVersion: number) {
+  return requestData<AuthoritativeEligibilityExecutionResult>(
+    `/api/admin/tasks/${taskId}/eligibility-evaluation`,
+    {
+      body: JSON.stringify({ expectedRowVersion }),
+      headers: {
+        "Content-Type": "application/json",
+        "Idempotency-Key": crypto.randomUUID(),
+      },
+      method: "POST",
+    },
+  );
+}
+
+export const clientWorkQueueService = {
+  claim,
+  completeTask,
+  evaluateEligibility,
+  getTask,
+  list,
+};

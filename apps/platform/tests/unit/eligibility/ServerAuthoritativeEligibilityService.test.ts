@@ -134,7 +134,9 @@ describe("authoritative eligibility service", () => {
       business,
       correlationId: "submission-123",
       evaluatedAt,
+      evaluationNumber: 1,
       fundingCall,
+      workflowTaskId: "70000000-0000-4000-8000-000000000001",
     });
 
     expect(findRuntimeEligibilityRuleSetForEvaluation).toHaveBeenCalledWith(
@@ -174,11 +176,13 @@ describe("authoritative eligibility service", () => {
       business,
       correlationId: "submission-123",
       evaluatedAt,
+      evaluationNumber: 1,
       fundingCall: {
         ...fundingCall,
         eligibilityRuleSetVersionId:
           "b0000000-0000-4000-8000-000000000001",
       },
+      workflowTaskId: "70000000-0000-4000-8000-000000000001",
     })).rejects.toBeInstanceOf(AuthoritativeEligibilityUnavailableError);
   });
 

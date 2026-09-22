@@ -18,16 +18,18 @@ export type WorkflowTaskRegistryEntry = WorkflowTaskContract & {
 const registry = {
   AUTOMATED_RULE_CHECK: {
     config: z.object({
-      rulesetCode: z.string().min(1),
-      ruleVersion: z.number().int().positive(),
-      inputs: z.array(z.string()).min(1),
-      categories: z.array(optionSchema).min(1),
+      command: z.literal("AUTHORITATIVE_ELIGIBILITY"),
+      reevaluationPolicy: z.enum(["NEVER", "WHEN_EVIDENCE_CHANGED"]),
     }),
     result: z.object({
-      category: z.string().min(1),
-      score: z.number().optional(),
-      reasons: z.array(z.string()),
-      ruleVersion: z.number().int().positive(),
+      eligible: z.boolean(),
+      evaluationId: z.string().uuid(),
+      evaluationNumber: z.number().int().positive(),
+      hardFailureCount: z.number().int().nonnegative(),
+      manualScreeningRequired: z.boolean(),
+      outcome: z.enum(["ELIGIBLE", "INELIGIBLE"]).nullable(),
+      softFailureCount: z.number().int().nonnegative(),
+      warningCount: z.number().int().nonnegative(),
     }),
   },
   CHECKLIST: {

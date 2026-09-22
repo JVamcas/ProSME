@@ -31,9 +31,11 @@ export function WorkflowTaskActions({
             <GeneralButton
               disabled={disabled || !action.available}
               key={action.key}
+              name="workflowAction"
               onClick={() => onSelect(action.key)}
               title={action.unavailableReason ?? undefined}
               type="submit"
+              value={action.key}
               variant={action.presentation.variant}
             >
               {action.label}

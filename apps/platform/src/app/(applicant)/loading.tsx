@@ -1,5 +1,5 @@
-import { PortalRouteLoading } from "@/components/layout/PortalRouteLoading";
+import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
 
 export default function Loading() {
-  return <PortalRouteLoading />;
+  return <PortalLoadingState description="Just a moment ..." title="" />;
 }

@@ -14,8 +14,20 @@ export type ChecklistResultItem = {
 
 export type WorkflowTaskAction = WorkflowActionAvailability;
 
+export type AuthoritativeEligibilityTaskResult = {
+  eligible: boolean;
+  evaluationId: string;
+  evaluationNumber: number;
+  hardFailureCount: number;
+  manualScreeningRequired: boolean;
+  outcome: "ELIGIBLE" | "INELIGIBLE" | null;
+  softFailureCount: number;
+  warningCount: number;
+};
+
 export type TaskDetail = {
   actions: WorkflowTaskAction[];
+  eligibilityEvaluation: AuthoritativeEligibilityTaskResult | null;
   applicantName: string;
   applicationId: string;
   businessName: string | null;
@@ -37,13 +49,13 @@ export type TaskDetail = {
 };
 
 export type CompleteChecklistTaskInput = {
-  actionKey: string;
+  actionKey?: string;
   expectedRowVersion: number;
   items: ChecklistResultItem[];
 };
 
 export type TaskCompletionResult = {
-  actionKey: string;
+  actionKey: string | null;
   nextStageName: string | null;
   rowVersion: number;
   taskInstanceId: string;

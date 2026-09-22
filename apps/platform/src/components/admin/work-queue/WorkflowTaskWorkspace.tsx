@@ -7,6 +7,7 @@ import { useWorkflowTask } from "@/modules/work-queue/WorkQueueHooks";
 import { PageShell } from "@/shared/ui/PageShell";
 import { ChecklistTaskForm } from "./ChecklistTaskForm";
 import { DynamicFormTask } from "@/modules/forms/ui/renderer/DynamicFormTask";
+import { AuthoritativeEligibilityTask } from "@/modules/eligibility/ui/screening/AuthoritativeEligibilityTask";
 
 function formatDate(value: string | null) {
   if (!value) return "No due date";
@@ -93,7 +94,9 @@ export function WorkflowTaskWorkspace({ taskId }: { taskId: string }) {
         fundingCallTitle={task.fundingCallTitle}
         reference={task.reference}
       />
-        {task.formVersionId ? (
+        {task.taskType === "AUTOMATED_RULE_CHECK" ? (
+          <AuthoritativeEligibilityTask task={task} />
+        ) : task.formVersionId ? (
           <DynamicFormTask
             actions={task.actions}
             taskId={task.taskInstanceId}

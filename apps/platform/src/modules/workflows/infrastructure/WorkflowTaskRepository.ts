@@ -8,7 +8,11 @@ import type { WorkflowElementPermissions } from "@/modules/workflows/domain/defi
 
 type TaskDetailRow = Omit<
   TaskDetail,
-  "actions" | "checklistItems" | "dueAt" | "resultItems"
+  | "actions"
+  | "checklistItems"
+  | "dueAt"
+  | "eligibilityEvaluation"
+  | "resultItems"
 > & {
   config: unknown;
   dueAt: Date | string | null;

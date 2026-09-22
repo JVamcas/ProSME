@@ -156,7 +156,7 @@ export async function executeSequentialTransitionInTransaction(
     );
     conditionContext = {
       application: normalizeStageConditionRecord(source.application),
-      eligibility: normalizeStageConditionRecord(source.eligibility),
+      eligibility: normalizeStageConditionRecord(source.eligibility ?? {}),
       fundingCall: normalizeStageConditionRecord(source.fundingCall),
       stages: [
         ...priorStages

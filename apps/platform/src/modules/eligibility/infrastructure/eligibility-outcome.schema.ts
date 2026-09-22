@@ -25,6 +25,7 @@ import type {
 import type { JsonValue } from "@/modules/conditions/domain/Operand";
 import type { EligibilityValueProvenance } from "../domain/EligibilityDataResolution";
 import { eligibilityRuleSetVersions } from "./eligibility-ruleset.schema";
+import { workflowTasks } from "@/modules/workflows/infrastructure/workflow-runtime.schema";
 
 export const authoritativeEligibilityOutcomes = pgTable(
   "app_authoritative_eligibility_outcomes",
@@ -33,6 +34,12 @@ export const authoritativeEligibilityOutcomes = pgTable(
     applicationId: uuid("application_id")
       .notNull()
       .references(() => applications.id, { onDelete: "cascade" }),
+    evaluationNumber: integer("evaluation_number").notNull(),
+    workflowTaskId: uuid("workflow_task_id").references(
+      () => workflowTasks.id,
+      { onDelete: "restrict" },
+    ),
+    commandKey: text("command_key"),
     ruleSetVersionId: uuid("eligibility_rule_set_version_id")
       .notNull()
       .references(() => eligibilityRuleSetVersions.id, {
@@ -71,14 +78,23 @@ export const authoritativeEligibilityOutcomes = pgTable(
       .$type<FinalScreeningOutcome>(),
   },
   (table) => [
-    uniqueIndex("app_authoritative_eligibility_outcomes_application_unique")
-      .on(table.applicationId),
+    uniqueIndex("app_authoritative_eligibility_outcomes_application_number_unique")
+      .on(table.applicationId, table.evaluationNumber),
+    uniqueIndex("app_authoritative_eligibility_outcomes_command_unique")
+      .on(table.commandKey)
+      .where(sql`${table.commandKey} is not null`),
+    index("app_authoritative_eligibility_outcomes_application_latest_idx")
+      .on(table.applicationId, table.evaluationNumber),
     index("app_authoritative_eligibility_outcomes_version_idx").on(
       table.ruleSetVersionId,
     ),
     check(
       "app_authoritative_eligibility_outcomes_version_number_check",
       sql`${table.ruleSetVersionNumber} > 0`,
+    ),
+    check(
+      "app_authoritative_eligibility_outcomes_evaluation_number_check",
+      sql`${table.evaluationNumber} > 0`,
     ),
     check(
       "app_authoritative_eligibility_outcomes_final_outcome_check",

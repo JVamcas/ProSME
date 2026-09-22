@@ -91,7 +91,7 @@ export async function activateStageInTransaction(
   ]);
   const evaluation = evaluateStageCondition(target.entryCondition, {
     application: normalizeStageConditionRecord(target.application),
-    eligibility: normalizeStageConditionRecord(target.eligibility),
+    eligibility: normalizeStageConditionRecord(target.eligibility ?? {}),
     fundingCall: normalizeStageConditionRecord(target.fundingCall),
     stages: priorStages.map((stage) => ({
       stableKey: stage.stableKey,
