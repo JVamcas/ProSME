@@ -5,6 +5,7 @@ import {
   Controller,
   FormProvider,
   useForm,
+  useWatch,
   type Resolver,
 } from "react-hook-form";
 
@@ -14,10 +15,15 @@ import {
   FormSelect,
 } from "@/components/ui/form-fields";
 import { ConditionBuilder } from "@/modules/conditions/ui/builder";
-import type { ConditionFieldDefinition } from "@/modules/conditions/domain/ConditionConfiguration";
 import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup";
 import { eligibilityBuilderRuleSchema } from "../api/EligibilityRuleSetSchemas";
 import type { EligibilityBuilderRule } from "../api/EligibilityRuleSetTransport";
+import type {
+  EligibilityFieldDescriptor,
+  EligibilitySourceDescriptor,
+} from "../domain/EligibilityFieldRegistry";
+import { eligibilityBuilderFieldPresentations } from "./EligibilityBuilderFieldPresentation";
+import { EligibilityFieldCatalogue } from "./EligibilityFieldCatalogue";
 
 type EligibilityRuleFormValues = Omit<EligibilityBuilderRule, "condition"> & {
   condition: unknown;
@@ -52,18 +58,30 @@ export function EligibilityRuleDialog({
   onCancel,
   onSave,
   saving,
+  sources,
 }: {
-  fields: readonly ConditionFieldDefinition[];
+  fields: readonly EligibilityFieldDescriptor[];
   initialRule?: EligibilityBuilderRule;
   nextOrder: number;
   onCancel: () => void;
   onSave: (rule: EligibilityBuilderRule) => Promise<void>;
   saving: boolean;
+  sources: readonly EligibilitySourceDescriptor[];
 }) {
   const form = useForm<EligibilityRuleFormValues>({
     defaultValues: initialRule ?? newRule(nextOrder),
     resolver: ruleResolver,
   });
+  const executionMode = useWatch({
+    control: form.control,
+    name: "executionMode",
+  });
+  const fieldPresentations = eligibilityBuilderFieldPresentations(
+    fields,
+    sources,
+    executionMode,
+  );
+  const conditionFields = fieldPresentations.map((field) => field.builderField);
   const submit = form.handleSubmit(async (values) => {
     const rule = eligibilityBuilderRuleSchema.parse(values);
     await onSave(rule as EligibilityBuilderRule);
@@ -111,6 +129,7 @@ export function EligibilityRuleDialog({
           name="applicantMessage"
           required
         />
+        <EligibilityFieldCatalogue fields={fieldPresentations} />
         <Controller
           control={form.control}
           name="condition"
@@ -120,7 +139,7 @@ export function EligibilityRuleDialog({
                 Conditions
               </h3>
               <ConditionBuilder
-                fields={fields}
+                fields={conditionFields}
                 onChange={field.onChange}
                 value={field.value as ConditionGroup}
               />

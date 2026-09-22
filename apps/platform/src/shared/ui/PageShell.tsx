@@ -37,9 +37,7 @@ export function PageHeader({
   return (
     <header
       className={cn(
-        "w-full",
-        variant === "contained" &&
-          "bg-white px-5 py-5 ring-1 ring-inset ring-slate-200 sm:px-6 sm:py-6",
+        "w-full border-b mb-5 rounded-b border-slate-100 bg-white px-5 py-5 ring-1 ring-inset ring-slate-200 sm:px-6 sm:py-6",
         className,
       )}
     >

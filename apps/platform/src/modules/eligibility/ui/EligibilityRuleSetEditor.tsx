@@ -28,6 +28,10 @@ import {
   useUpdateEligibilityRuleSet,
 } from "../EligibilityRuleSetHooks";
 import { EligibilityRuleDialog } from "./EligibilityRuleDialog";
+import {
+  EligibilityPublicationValidation,
+  validateEligibilityPublicationPreview,
+} from "./EligibilityPublicationValidation";
 
 const failureLabels = {
   HARD_FAIL: "Hard Fail",
@@ -156,6 +160,11 @@ export function EligibilityRuleSetEditor({
   const isDraft = currentEditor.version.status === "DRAFT";
   const editable = isDraft && canUpdate;
   const hasContext = currentEditor.conditionFields.length > 0;
+  const publicationValidation = validateEligibilityPublicationPreview({
+    fields: currentEditor.conditionFields,
+    registryIssues: currentEditor.registryIssues,
+    rules: currentEditor.rules,
+  });
 
   async function saveRules(rules: EligibilityBuilderRule[]) {
     try {
@@ -233,7 +242,7 @@ export function EligibilityRuleSetEditor({
             title="Clone ruleset version"
           />
           <PublishButton
-            disabled={!isDraft || !canPublish || !hasContext}
+            disabled={!isDraft || !canPublish || !publicationValidation.ready}
             isLoading={lifecycle.isPending}
             onClick={() => setConfirmingPublish(true)}
             title="Publish ruleset version"
@@ -276,6 +285,8 @@ export function EligibilityRuleSetEditor({
           {lifecycle.error.message}
         </p>
       ) : null}
+
+      <EligibilityPublicationValidation result={publicationValidation} />
 
       <section aria-label="Eligibility rules" id="eligibility-rules">
         <DataTable
@@ -336,6 +347,7 @@ export function EligibilityRuleSetEditor({
             setEditing(undefined);
           }}
           saving={update.isPending}
+          sources={currentEditor.screeningSources}
         />
       </DraggableDialog>
       <ConfirmationDialog

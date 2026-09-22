@@ -34,8 +34,19 @@ function builder(status: "DRAFT" | "PUBLISHED") {
       updatedAt: timestamp,
     },
     conditionFields: [{
-      key: "application.EMPLOYEE_COUNT",
+      availableIn: ["SELF_CHECK", "SCREENING"],
+      key: "eligibility.EMPLOYEE_COUNT",
       label: "Employee count",
+      screeningSource: {
+        sourceDefinitionId: "70000000-0000-4000-8000-000000000011",
+        sourceKey: "EMPLOYEE_COUNT",
+        sourceKind: "APPLICATION_FORM_FIELD",
+        sourceVersionId: "70000000-0000-4000-8000-000000000012",
+        valuePath: "answers.EMPLOYEE_COUNT",
+      },
+      sourceDefinitionId: "70000000-0000-4000-8000-000000000013",
+      sourceKind: "ELIGIBILITY_INPUT",
+      sourceVersionId: versionId,
       type: "NUMBER",
     }],
     context: {
@@ -51,7 +62,7 @@ function builder(status: "DRAFT" | "PUBLISHED") {
           id: "70000000-0000-4000-8000-000000000005",
           kind: "CONDITION",
           leftOperand: {
-            key: "application.EMPLOYEE_COUNT",
+            key: "eligibility.EMPLOYEE_COUNT",
             kind: "FIELD",
           },
           operator: "GREATER_THAN",
@@ -66,6 +77,17 @@ function builder(status: "DRAFT" | "PUBLISHED") {
       id: "70000000-0000-4000-8000-000000000003",
       order: 1,
       reasonCode: "EMPLOYEE_REQUIRED",
+    }],
+    registryIssues: [],
+    screeningSources: [{
+      availableBeforeEligibility: true,
+      fundingCallId: "70000000-0000-4000-8000-000000000010",
+      label: "Verified employee count",
+      sourceDefinitionId: "70000000-0000-4000-8000-000000000011",
+      sourceKey: "EMPLOYEE_COUNT",
+      sourceKind: "APPLICATION_FORM_FIELD",
+      sourceVersionId: "70000000-0000-4000-8000-000000000012",
+      supportedTypes: ["NUMBER"],
     }],
     version: {
       createdAt: timestamp,
@@ -154,6 +176,10 @@ describe("EligibilityRuleSetEditor", () => {
     expect(document.body.textContent).toContain("Applicant-facing message");
     expect(document.body.querySelector('[aria-label="Field"]')).not.toBeNull();
     expect(document.body.querySelector('[aria-label="Operator"]')).not.toBeNull();
+    expect(document.body.textContent).toContain("Available fields");
+    expect(document.body.textContent).toContain(
+      "NUMBER · Self Check + Screening · Applicant answer / Verified employee count",
+    );
   });
 
   it("keeps Published rulesets read-only", async () => {

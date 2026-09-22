@@ -19,7 +19,7 @@ export default async function NewFundingCallPage() {
   return (
     <PageShell
       description="Enter the business details and application window for the new funding call."
-      eyebrow="Programmes"
+      eyebrow="Admin / Funding Calls"
       icon={<CircleDollarSign />}
       title="Create funding call"
     >
