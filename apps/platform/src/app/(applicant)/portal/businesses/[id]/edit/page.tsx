@@ -5,7 +5,7 @@ import { permissionCodes } from "@/auth/authorization/permissions";
 import { getCurrentUser } from "@/auth/authorization/current-user";
 import { can } from "@/auth/authorization/policy";
 import { BusinessForm } from "@/components/applicant/businesses/BusinessForm";
-import { PageHeader } from "@/components/ui/PageHeader";
+import { PageShell } from "@/shared/ui/PageShell";
 
 export const metadata: Metadata = { title: "Edit business" };
 
@@ -20,13 +20,12 @@ export default async function EditBusinessPage({
   }
 
   return (
-    <section>
-      <PageHeader
-        eyebrow="My businesses"
-        title="Edit business"
-        description="Update this enterprise's information."
-      />
+    <PageShell
+      eyebrow="My businesses"
+      title="Edit business"
+      description="Update this enterprise's information."
+    >
       <BusinessForm businessId={route.id} />
-    </section>
+    </PageShell>
   );
 }

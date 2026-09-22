@@ -5,12 +5,12 @@ import { Copy } from "lucide-react";
 import { PortalErrorState } from "@/components/layout/PortalErrorState";
 import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
 import { GeneralButton } from "@/components/ui/button";
-import { PageHeader } from "@/components/ui/PageHeader";
 import { StatusBadge } from "@/components/ui/status-badge";
 import {
   useCloneWorkflow,
   useWorkflowEditor,
 } from "@/modules/workflows/WorkflowHooks";
+import { PageShell } from "@/shared/ui/PageShell";
 import { WorkflowDefinitionDetailsCard } from "./WorkflowDefinitionDetailsCard";
 import { WorkflowStageFlow } from "./WorkflowStageFlow";
 
@@ -41,8 +41,7 @@ export function WorkflowEditorWorkspace({ canUpdate, definitionId }: Props) {
   const busy = clone.isPending;
 
   return (
-    <div>
-      <PageHeader
+    <PageShell
         title="Workflow definitions"
         description={editor.definition.description}
         icon={<StatusBadge status={editor.version.status} />}
@@ -60,11 +59,11 @@ export function WorkflowEditorWorkspace({ canUpdate, definitionId }: Props) {
             ) : null}
           </div>
         }
-      />
-      <WorkflowDefinitionDetailsCard editor={editor} />
-      <div className="mt-6 space-y-6">
+    >
+      <div className="space-y-6">
+        <WorkflowDefinitionDetailsCard editor={editor} />
         <WorkflowStageFlow canEdit={canUpdate} editor={editor} />
       </div>
-    </div>
+    </PageShell>
   );
 }

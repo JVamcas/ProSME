@@ -4,6 +4,7 @@ import { CalendarDays, FileText } from "lucide-react";
 
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useWorkflowTask } from "@/modules/work-queue/WorkQueueHooks";
+import { PageShell } from "@/shared/ui/PageShell";
 import { ChecklistTaskForm } from "./ChecklistTaskForm";
 import { DynamicFormTask } from "@/modules/forms/ui/renderer/DynamicFormTask";
 
@@ -79,37 +80,32 @@ export function WorkflowTaskWorkspace({ taskId }: { taskId: string }) {
   }
   const task = query.data;
   return (
-    <div className="space-y-5">
-      <header>
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-3xl font-bold text-brand-navy">
-            {task.taskName}
-          </h1>
-          <StatusBadge status={task.taskStatus} />
-        </div>
-        <p className="mt-1 text-sm text-brand-navy/60">
-          Complete the assigned task using its published form or configured review controls.
-        </p>
-      </header>
-      <TaskMetadata
+    <PageShell
+      actions={<StatusBadge status={task.taskStatus} />}
+      description="Complete the assigned task using its published form or configured review controls."
+      title={task.taskName}
+    >
+      <div className="space-y-5">
+        <TaskMetadata
         applicantName={task.applicantName}
         businessName={task.businessName}
         dueAt={task.dueAt}
         fundingCallTitle={task.fundingCallTitle}
         reference={task.reference}
       />
-      {task.formVersionId ? (
-        <DynamicFormTask
-          actions={task.actions}
-          taskId={task.taskInstanceId}
-        />
-      ) : task.taskType === "CHECKLIST" ? (
-        <ChecklistTaskForm task={task} />
-      ) : (
-        <p className="rounded-xl bg-brand-yellow/30 p-4 text-sm text-brand-navy">
-          This legacy task type does not yet have an interactive workspace.
-        </p>
-      )}
-    </div>
+        {task.formVersionId ? (
+          <DynamicFormTask
+            actions={task.actions}
+            taskId={task.taskInstanceId}
+          />
+        ) : task.taskType === "CHECKLIST" ? (
+          <ChecklistTaskForm task={task} />
+        ) : (
+          <p className="rounded-xl bg-brand-yellow/30 p-4 text-sm text-brand-navy">
+            This legacy task type does not yet have an interactive workspace.
+          </p>
+        )}
+      </div>
+    </PageShell>
   );
 }

@@ -15,6 +15,7 @@ import type {
   WorkQueueRow,
   WorkQueueScope,
 } from "@/modules/work-queue/WorkQueueTypes";
+import { PageShell } from "@/shared/ui/PageShell";
 import { WorkQueueTable } from "./WorkQueueTable";
 
 const scopes: Array<{ label: string; value: WorkQueueScope }> = [
@@ -113,13 +114,10 @@ export function WorkQueueWorkspace() {
       : "No actionable tasks match these filters.";
 
   return (
-    <div className="space-y-5">
-      <header>
-        <h1 className="text-3xl font-bold text-brand-navy">My Work Queue</h1>
-        <p className="mt-1 text-sm text-brand-navy/60">
-          Tasks assigned directly to you or available through one of your roles.
-        </p>
-      </header>
+    <PageShell
+      description="Tasks assigned directly to you or available through one of your roles."
+      title="My Work Queue"
+    >
       <section className="overflow-hidden rounded-2xl border border-brand-navy/10 bg-white shadow-sm">
         <QueueTabs onChange={changeScope} scope={scope} />
         <div className="p-4">
@@ -166,6 +164,6 @@ export function WorkQueueWorkspace() {
           total={queue.data?.total ?? 0}
         />
       </section>
-    </div>
+    </PageShell>
   );
 }

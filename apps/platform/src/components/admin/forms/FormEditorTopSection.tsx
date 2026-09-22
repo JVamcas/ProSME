@@ -3,7 +3,7 @@
 import { StatusBadge } from "@/components/ui/status-badge";
 import type { FormEditorView } from "@/modules/forms/FormTypes";
 import { FormEditorLifecycleActions } from "./FormEditorLifecycleActions";
-import { PageHeader } from "@/components/ui/PageHeader";
+import { PageHeader } from "@/shared/ui/PageShell";
 
 export function FormEditorTopSection({
   canPublish,

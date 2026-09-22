@@ -9,6 +9,7 @@ import type {
   ApplicantDashboardMetrics,
   ApplicantDashboardView,
 } from "@/modules/dashboard/ApplicantDashboardTypes";
+import { PageShell } from "@/shared/ui/PageShell";
 import { ApplicantRecentActivity } from "./ApplicantRecentActivity";
 import { DashboardMetricCard } from "./DashboardMetricCard";
 
@@ -102,21 +103,13 @@ export function ApplicantDashboard({
   metrics,
 }: ApplicantDashboardView) {
   return (
-    <div>
-      <header className="grid min-h-32 overflow-hidden rounded-2xl border border-brand-blue/10 bg-brand-blue/10 sm:grid-cols-[1fr_15rem]">
-        <div className="self-center p-5 sm:p-6">
-          <h1 className="display text-2xl font-bold text-brand-navy sm:text-3xl">
-            Welcome back, {displayName}
-          </h1>
-          <p className="mt-1 text-sm text-brand-navy/70">
-            Here&apos;s an overview of your SME Fund activity.
-          </p>
-        </div>
-      </header>
-
+    <PageShell
+      description="Here's an overview of your SME Fund activity."
+      title={`Welcome back, ${displayName}`}
+      variant="contained"
+    >
       <ApplicationStatusMetrics metrics={metrics} />
-
       <ApplicantRecentActivity activities={activities} />
-    </div>
+    </PageShell>
   );
 }

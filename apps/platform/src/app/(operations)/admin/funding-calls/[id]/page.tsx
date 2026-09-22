@@ -6,9 +6,9 @@ import { z } from "zod";
 import { getCurrentUser } from "@/auth/authorization/current-user";
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { can } from "@/auth/authorization/policy";
-import { PageHeader } from "@/components/ui/PageHeader";
 import { FundingCallEditor } from "@/modules/funding-calls/ui/FundingCallEditor";
 import { FundingCallPageActions } from "@/modules/funding-calls/ui/FundingCallPageActions";
+import { PageShell } from "@/shared/ui/PageShell";
 
 export const metadata: Metadata = { title: "Edit funding call" };
 
@@ -27,19 +27,18 @@ export default async function FundingCallPage({
   }
 
   return (
-    <section>
-      <PageHeader
-        actions={(
-          <FundingCallPageActions
-            canSubmit={can(user, permissionCodes.fundingCallSubmitAll)}
-            id={id.data}
-          />
-        )}
-        description="Manage funding call"
-        eyebrow="Funding calls"
-        icon={<CircleDollarSign />}
-        title="Edit funding call"
-      />
+    <PageShell
+      actions={(
+        <FundingCallPageActions
+          canSubmit={can(user, permissionCodes.fundingCallSubmitAll)}
+          id={id.data}
+        />
+      )}
+      description="Manage funding call"
+      eyebrow="Funding calls"
+      icon={<CircleDollarSign />}
+      title="Edit funding call"
+    >
       <FundingCallEditor
         canApprove={can(user, permissionCodes.fundingCallApproveAll)}
         canPublish={can(user, permissionCodes.fundingCallPublish)}
@@ -51,6 +50,6 @@ export default async function FundingCallPage({
         )}
         id={id.data}
       />
-    </section>
+    </PageShell>
   );
 }

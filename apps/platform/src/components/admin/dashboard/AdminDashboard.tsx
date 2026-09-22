@@ -3,6 +3,7 @@ import { ClipboardList, FileQuestion, Gavel, ScanSearch } from "lucide-react";
 import type {
   AdminDashboardView,
 } from "@/modules/dashboard/AdminDashboardTypes";
+import { PageShell } from "@/shared/ui/PageShell";
 import { AdminDashboardCharts } from "./AdminDashboardCharts";
 import { AdminDashboardPanels } from "./AdminDashboardPanels";
 import { DashboardPeriodFilter } from "./DashboardPeriodFilter";
@@ -35,28 +36,6 @@ function MetricCard({
         {description}
       </p>
     </article>
-  );
-}
-
-function DashboardHeader({ dashboard }: { dashboard: AdminDashboardView }) {
-  const limitedVisibility = dashboard.visibility !== "all";
-  return (
-    <header className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
-      <div>
-        <h1 className="text-3xl font-bold text-brand-navy">Dashboard</h1>
-        <p className="mt-1 text-sm text-brand-navy/65">
-          Overview of submitted applications and active workflow work.
-        </p>
-        {limitedVisibility ? (
-          <p className="mt-2 text-xs font-semibold text-brand-orange">
-            {dashboard.visibility === "assigned"
-              ? "Showing applications assigned to you or one of your roles."
-              : "You do not have permission to view application metrics."}
-          </p>
-        ) : null}
-      </div>
-      <DashboardPeriodFilter period={dashboard.period} />
-    </header>
   );
 }
 
@@ -95,17 +74,32 @@ function DashboardMetrics({ dashboard }: { dashboard: AdminDashboardView }) {
 }
 
 export function AdminDashboard({ dashboard }: { dashboard: AdminDashboardView }) {
+  const limitedVisibility = dashboard.visibility !== "all";
+
   return (
-    <div className="mx-auto max-w-[1240px]">
-      <DashboardHeader dashboard={dashboard} />
-      <DashboardMetrics dashboard={dashboard} />
-      <div className="mt-5 grid gap-5 xl:grid-cols-2">
-        <AdminDashboardCharts
-          statuses={dashboard.statuses}
-          total={dashboard.metrics.totalApplications}
-        />
-        <AdminDashboardPanels activities={dashboard.activities} />
+    <PageShell
+      actions={<DashboardPeriodFilter period={dashboard.period} />}
+      description="Overview of submitted applications and active workflow work."
+      className="mx-auto max-w-[1240px]"
+      title="Dashboard"
+    >
+      <div>
+        {limitedVisibility ? (
+          <p className="text-xs font-semibold text-brand-orange">
+            {dashboard.visibility === "assigned"
+              ? "Showing applications assigned to you or one of your roles."
+              : "You do not have permission to view application metrics."}
+          </p>
+        ) : null}
+        <DashboardMetrics dashboard={dashboard} />
+        <div className="mt-5 grid gap-5 xl:grid-cols-2">
+          <AdminDashboardCharts
+            statuses={dashboard.statuses}
+            total={dashboard.metrics.totalApplications}
+          />
+          <AdminDashboardPanels activities={dashboard.activities} />
+        </div>
       </div>
-    </div>
+    </PageShell>
   );
 }

@@ -5,7 +5,7 @@ import { getCurrentUser } from "@/auth/authorization/current-user";
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { can, requireAnyPermission } from "@/auth/authorization/policy";
 import { UserAccessWorkspace } from "@/components/admin/users/UserAccessWorkspace";
-import { PageHeader } from "@/components/ui/PageHeader";
+import { PageShell } from "@/shared/ui/PageShell";
 
 export const metadata: Metadata = { title: "Users & roles" };
 
@@ -20,12 +20,11 @@ export default async function UsersAccessPage() {
   ]);
 
   return (
-    <>
-      <PageHeader
-        description="Manage people, roles, and permissions."
-        eyebrow="Administration"
-        title="Users & Roles"
-      />
+    <PageShell
+      description="Manage people, roles, and permissions."
+      eyebrow="Administration"
+      title="Users & Roles"
+    >
       <UserAccessWorkspace
         canManageRoles={can(user, permissionCodes.roleManage)}
         canManageUsers={can(user, permissionCodes.userManage)}
@@ -38,6 +37,6 @@ export default async function UsersAccessPage() {
           can(user, permissionCodes.userManage)
         }
       />
-    </>
+    </PageShell>
   );
 }

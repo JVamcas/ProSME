@@ -5,7 +5,7 @@ import { permissionCodes } from "@/auth/authorization/permissions";
 import { getCurrentUser } from "@/auth/authorization/current-user";
 import { can } from "@/auth/authorization/policy";
 import { BusinessesTable } from "@/components/applicant/businesses/BusinessesTable";
-import { PageHeader } from "@/components/ui/PageHeader";
+import { PageShell } from "@/shared/ui/PageShell";
 
 export const metadata: Metadata = { title: "My businesses" };
 
@@ -16,15 +16,13 @@ export default async function BusinessesPage() {
   }
 
   return (
-    <section>
-      <PageHeader
-        eyebrow=""
-        title="My businesses"
-        description="Add and manage the businesses connected to your account."
-      />
+    <PageShell
+      title="My businesses"
+      description="Add and manage the businesses connected to your account."
+    >
       <BusinessesTable
         canUpdate={can(user, permissionCodes.businessOwnUpdate)}
       />
-    </section>
+    </PageShell>
   );
 }

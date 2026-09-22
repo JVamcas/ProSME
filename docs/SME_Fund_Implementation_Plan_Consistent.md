@@ -1525,6 +1525,10 @@ A Workflow Version can be fully configured using reusable Forms and Conditions.
 
 Eligibility is a specialised consumer of the Generic Conditions Engine. It must not implement its own operators, grouping, or field-resolution logic.
 
+The binding-driven input, verified-evidence, Self Check and authoritative
+Screening gaps are addressed in
+[`SME_Fund_Eligibility_Gap_Remediation_Plan.md`](SME_Fund_Eligibility_Gap_Remediation_Plan.md).
+
 ## 5.1 Eligibility Ruleset Storage
 
 ### Goal

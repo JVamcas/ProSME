@@ -5,8 +5,8 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/auth/authorization/current-user";
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { can } from "@/auth/authorization/policy";
-import { PageHeader } from "@/components/ui/PageHeader";
 import { FundingCallCreator } from "@/modules/funding-calls/ui/FundingCallCreator";
+import { PageShell } from "@/shared/ui/PageShell";
 
 export const metadata: Metadata = { title: "Create funding call" };
 
@@ -17,14 +17,13 @@ export default async function NewFundingCallPage() {
   }
 
   return (
-    <section>
-      <PageHeader
-        description="Enter the business details and application window for the new funding call."
-        eyebrow="Programmes"
-        icon={<CircleDollarSign />}
-        title="Create funding call"
-      />
+    <PageShell
+      description="Enter the business details and application window for the new funding call."
+      eyebrow="Programmes"
+      icon={<CircleDollarSign />}
+      title="Create funding call"
+    >
       <FundingCallCreator />
-    </section>
+    </PageShell>
   );
 }

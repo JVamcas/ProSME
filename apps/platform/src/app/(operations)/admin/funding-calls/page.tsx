@@ -6,8 +6,8 @@ import { z } from "zod";
 import { getCurrentUser } from "@/auth/authorization/current-user";
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { can } from "@/auth/authorization/policy";
-import { PageHeader } from "@/components/ui/PageHeader";
 import { FundingCallList } from "@/modules/funding-calls/ui/FundingCallList";
+import { PageShell } from "@/shared/ui/PageShell";
 
 export const metadata: Metadata = { title: "Funding calls" };
 
@@ -24,17 +24,16 @@ export default async function FundingCallsPage({
   const fundingCallId = z.uuid().safeParse(requestedFundingCallId);
 
   return (
-    <section>
-      <PageHeader
-        description="Create and maintain SME Fund business funding calls."
-        eyebrow="Programmes"
-        icon={<CircleDollarSign />}
-        title="Funding calls"
-      />
+    <PageShell
+      description="Create and maintain SME Fund business funding calls."
+      eyebrow="Programmes"
+      icon={<CircleDollarSign />}
+      title="Funding calls"
+    >
       <FundingCallList
         canCreate={can(user, permissionCodes.fundingCallCreate)}
         fundingCallId={fundingCallId.success ? fundingCallId.data : undefined}
       />
-    </section>
+    </PageShell>
   );
 }

@@ -5,7 +5,7 @@ import { permissionCodes } from "@/auth/authorization/permissions";
 import { getCurrentUser } from "@/auth/authorization/current-user";
 import { can } from "@/auth/authorization/policy";
 import { ApplicationsTable } from "@/components/admin/applications/ApplicationsTable";
-import { PageHeader } from "@/components/ui/PageHeader";
+import { PageShell } from "@/shared/ui/PageShell";
 
 export const metadata: Metadata = {
   title: "Applications",
@@ -22,15 +22,14 @@ export default async function ApplicationsPage() {
   }
 
   return (
-    <div className="space-y-5">
-      <PageHeader
-        title="Applications"
-        description="Manage and track submitted funding applications."
-        variant="contained"
-        align="left"
-        className="px-5 py-5 sm:px-6 sm:py-6"
-      />
+    <PageShell
+      title="Applications"
+      description="Manage and track submitted funding applications."
+      variant="contained"
+      align="left"
+      headerClassName="px-5 py-5 sm:px-6 sm:py-6"
+    >
       <ApplicationsTable />
-    </div>
+    </PageShell>
   );
 }

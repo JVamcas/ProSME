@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
-type PageHeaderProps = {
+export type PageHeaderProps = {
   title: string;
   description?: string;
   eyebrow?: string;
@@ -12,6 +12,13 @@ type PageHeaderProps = {
   contentClassName?: string;
   align?: "left" | "center";
   variant?: "plain" | "contained";
+};
+
+export type PageShellProps = Omit<PageHeaderProps, "className"> & {
+  children: ReactNode;
+  className?: string;
+  headerClassName?: string;
+  bodyClassName?: string;
 };
 
 export function PageHeader({
@@ -96,9 +103,7 @@ export function PageHeader({
           <div
             className={cn(
               "flex shrink-0 flex-wrap items-center gap-2",
-              centered
-                ? "justify-center"
-                : "sm:ml-6 sm:justify-end",
+              centered ? "justify-center" : "sm:ml-6 sm:justify-end",
             )}
           >
             {actions}
@@ -106,5 +111,22 @@ export function PageHeader({
         ) : null}
       </div>
     </header>
+  );
+}
+
+export function PageShell({
+  children,
+  className,
+  headerClassName,
+  bodyClassName,
+  ...headerProps
+}: PageShellProps) {
+  return (
+    <section className={cn("space-y-6", className)}>
+      <PageHeader className={headerClassName} {...headerProps} />
+      <div className={cn("min-w-0 [&>*:first-child]:mt-0", bodyClassName)}>
+        {children}
+      </div>
+    </section>
   );
 }

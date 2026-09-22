@@ -7,6 +7,7 @@ import type {
   ApplicationSubmission,
   ApplicationView,
 } from "@/modules/applications/ApplicationTypes";
+import { PageShell } from "@/shared/ui/PageShell";
 import { ApplicationFeedback } from "./ApplicationFeedback";
 import { ApplicationReview } from "./ApplicationReview";
 import { ApplicationSubmissionConfirmation } from "./ApplicationSubmissionConfirmation";
@@ -21,7 +22,6 @@ import {
   isApplicationSection,
   previousApplicationStep,
 } from "./ApplicationStepConfig";
-import { PageHeader } from "../../ui/PageHeader";
 
 export type { SaveApplication } from "./ApplicationSectionForm";
 
@@ -73,12 +73,10 @@ export function ApplicationWorkspace({
   }
 
   return (
-    <section>
-      <PageHeader
+    <PageShell
         eyebrow="Funding applications"
         title={application.fundingOpportunityTitle}
-        description=""
-      />
+    >
       <div className="mt-6 overflow-hidden rounded-2xl border border-brand-navy/15 bg-brand-white shadow-sm">
         <StepProgress
           ariaLabel="Application sections"
@@ -121,6 +119,6 @@ export function ApplicationWorkspace({
           />
         </div>
       </div>
-    </section>
+    </PageShell>
   );
 }

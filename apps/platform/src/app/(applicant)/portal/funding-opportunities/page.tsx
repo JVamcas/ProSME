@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import { FundingOpportunityBrowser } from "@/components/applicant/funding-opportunities/FundingOpportunityBrowser";
-import { PageHeader } from "@/components/ui/PageHeader";
+import { PageShell } from "@/shared/ui/PageShell";
 
 export const metadata: Metadata = { title: "Funding opportunities" };
 
@@ -13,12 +13,11 @@ export default async function FundingOpportunitiesPage({
   const status = (await searchParams).status;
   const initialFilter = status === "open" ? "open" : "all";
   return (
-    <section>
-      <PageHeader
-        description="Explore published funding programmes and find the right opportunity for your business."
-        title="Funding opportunities"
-      />
+    <PageShell
+      description="Explore published funding programmes and find the right opportunity for your business."
+      title="Funding opportunities"
+    >
       <FundingOpportunityBrowser initialFilter={initialFilter} />
-    </section>
+    </PageShell>
   );
 }

@@ -5,8 +5,8 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/auth/authorization/current-user";
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { can } from "@/auth/authorization/policy";
-import { PageHeader } from "@/components/ui/PageHeader";
 import { EligibilityRuleSetList } from "@/modules/eligibility/ui/EligibilityRuleSetList";
+import { PageShell } from "@/shared/ui/PageShell";
 
 export const metadata: Metadata = { title: "Eligibility rulesets" };
 
@@ -16,18 +16,17 @@ export default async function EligibilityRuleSetsPage() {
     redirect("/unauthorized");
   }
   return (
-    <section>
-      <PageHeader
-        description="Manage eligibility rulesets for funding calls."
-        eyebrow="Administration"
-        icon={<Scale />}
-        title="Eligibility rulesets"
-      />
+    <PageShell
+      description="Manage eligibility rulesets for funding calls."
+      eyebrow="Administration"
+      icon={<Scale />}
+      title="Eligibility rulesets"
+    >
       <EligibilityRuleSetList
         canCreate={can(user, permissionCodes.eligibilityRuleSetCreate)}
         canPublish={can(user, permissionCodes.eligibilityRuleSetPublish)}
         canUpdate={can(user, permissionCodes.eligibilityRuleSetUpdate)}
       />
-    </section>
+    </PageShell>
   );
 }

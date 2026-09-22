@@ -4,12 +4,12 @@ import { redirect } from "next/navigation";
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { getCurrentUser } from "@/auth/authorization/current-user";
 import { can } from "@/auth/authorization/policy";
-import { PageHeader } from "@/components/ui/PageHeader";
 import { ProfileTabContent } from "@/components/applicant/profile/ProfileTabContent";
 import {
   type ProfileTabId,
   ProfileWorkspace,
 } from "@/components/applicant/profile/ProfileWorkspace";
+import { PageShell } from "@/shared/ui/PageShell";
 
 export const metadata: Metadata = { title: "My profile" };
 
@@ -64,12 +64,11 @@ export default async function ApplicantProfilePage({
   }
 
   return (
-    <section>
-      <PageHeader
-        className="lg:hidden"
-        title="My profile"
-        description="Manage your personal, contact, and account information."
-      />
+    <PageShell
+      headerClassName="lg:hidden"
+      title="My profile"
+      description="Manage your personal, contact, and account information."
+    >
       <ProfileWorkspace
         allowedTabIds={availableTabs}
         defaultTabId={tab}
@@ -83,6 +82,6 @@ export default async function ApplicantProfilePage({
           />
         ))}
       </ProfileWorkspace>
-    </section>
+    </PageShell>
   );
 }

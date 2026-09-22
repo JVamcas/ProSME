@@ -5,7 +5,7 @@ import { permissionCodes } from "@/auth/authorization/permissions";
 import { getCurrentUser } from "@/auth/authorization/current-user";
 import { can } from "@/auth/authorization/policy";
 import { BusinessForm } from "@/components/applicant/businesses/BusinessForm";
-import { PageHeader } from "@/components/ui/PageHeader";
+import { PageShell } from "@/shared/ui/PageShell";
 
 export const metadata: Metadata = { title: "Add business" };
 
@@ -16,13 +16,12 @@ export default async function NewBusinessPage() {
   }
 
   return (
-    <section>
-      <PageHeader
-        eyebrow="My businesses"
-        title="Add business"
-        description="Enter the enterprise details used in funding applications."
-      />
+    <PageShell
+      eyebrow="My businesses"
+      title="Add business"
+      description="Enter the enterprise details used in funding applications."
+    >
       <BusinessForm />
-    </section>
+    </PageShell>
   );
 }

@@ -1,6 +1,6 @@
 import { ContactProfileForm } from "./ContactProfileForm";
 import { PersonalProfileForm } from "./PersonalProfileForm";
-import { PageHeader } from "../../ui/PageHeader";
+import { PageHeader } from "@/shared/ui/PageShell";
 import { ProfilePasswordPanel } from "./ProfilePasswordPanel";
 import type { ProfileTabId } from "./ProfileWorkspace";
 
