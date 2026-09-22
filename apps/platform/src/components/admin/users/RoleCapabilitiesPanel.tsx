@@ -56,10 +56,10 @@ export function RoleCapabilitiesPanel({
   }
 
   return (
-    <div className="min-h-[560px] md:grid md:grid-cols-[280px_minmax(0,1fr)]">
+    <div className="min-h-[560px] md:grid md:h-[calc(100dvh-8rem)] md:min-h-0 md:grid-cols-[280px_minmax(0,1fr)]">
       <aside
         className={cn(
-          "border-slate-200 md:border-r",
+          "border-slate-200 md:h-full md:overflow-y-auto md:overscroll-contain md:border-r",
           mobileDetailOpen && "hidden md:block",
         )}
       >
@@ -75,7 +75,12 @@ export function RoleCapabilitiesPanel({
           ))}
         </div>
       </aside>
-      <main className={cn(!mobileDetailOpen && "hidden md:block")}>
+      <main
+        className={cn(
+          "md:min-h-0 md:overflow-hidden",
+          !mobileDetailOpen && "hidden md:block",
+        )}
+      >
         <button
           className="m-4 inline-flex items-center gap-2 text-sm font-semibold text-blue-600 md:hidden"
           onClick={() => setMobileDetailOpen(false)}
@@ -180,42 +185,48 @@ function RoleDetail({
     },
   ];
   return (
-    <div>
-      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 px-4 pb-4 md:p-5">
-        <div>
-          <div className="flex items-center gap-3">
-            <span className="grid size-11 place-items-center rounded-xl bg-blue-50 text-blue-600 md:hidden">
-              <ShieldCheck className="size-6" />
-            </span>
+    <div className="md:h-full md:min-h-0">
+      <Tabs
+        ariaLabel={`${role.name} details`}
+        className="md:flex md:h-full md:min-h-0 md:flex-col"
+        defaultSelectedId="permissions"
+        items={tabs}
+        leadingContent={
+          <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 px-4 pb-4 md:p-5">
             <div>
-              <h2 className="text-xl font-bold text-brand-navy">{role.name}</h2>
-              <p className="mt-0.5 text-sm text-slate-500">
-                {role.description || "Custom access role"}
+              <div className="flex items-center gap-3">
+                <span className="grid size-11 place-items-center rounded-xl bg-blue-50 text-blue-600 md:hidden">
+                  <ShieldCheck className="size-6" />
+                </span>
+                <div>
+                  <h2 className="text-xl font-bold text-brand-navy">
+                    {role.name}
+                  </h2>
+                  <p className="mt-0.5 text-sm text-slate-500">
+                    {role.description || "Custom access role"}
+                  </p>
+                </div>
+              </div>
+              <p className="mt-3 flex items-center gap-2 text-xs text-slate-500 md:hidden">
+                <UsersRound className="size-4" /> {role.assignedUserCount} users
               </p>
             </div>
+            {canManageRoles ? (
+              <GeneralButton
+                className="rounded-lg border-slate-200 text-blue-600"
+                onClick={onEdit}
+                size="sm"
+                variant="outline"
+              >
+                <Pencil className="size-4" /> Edit role
+              </GeneralButton>
+            ) : null}
           </div>
-          <p className="mt-3 flex items-center gap-2 text-xs text-slate-500 md:hidden">
-            <UsersRound className="size-4" /> {role.assignedUserCount} users
-          </p>
-        </div>
-        {canManageRoles ? (
-          <GeneralButton
-            className="rounded-lg border-slate-200 text-blue-600"
-            onClick={onEdit}
-            size="sm"
-            variant="outline"
-          >
-            <Pencil className="size-4" /> Edit role
-          </GeneralButton>
-        ) : null}
-      </div>
-      <div className="px-4 md:px-5">
-        <Tabs
-          ariaLabel={`${role.name} details`}
-          defaultSelectedId="permissions"
-          items={tabs}
-        />
-      </div>
+        }
+        listClassName="md:relative md:z-10 md:shrink-0"
+        panelClassName="px-4 md:mt-0 md:min-h-0 md:flex-1 md:overflow-y-auto md:overscroll-contain md:px-5 md:pt-6 md:pb-5 md:[mask-image:linear-gradient(to_bottom,transparent_0,black_1.5rem)]"
+        tabListClassName="px-4 md:px-5"
+      />
     </div>
   );
 }

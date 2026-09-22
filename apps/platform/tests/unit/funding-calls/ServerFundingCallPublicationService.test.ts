@@ -1,24 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
-vi.mock("@/modules/forms/infrastructure/FormRepository", () => ({
-  formVersionIsPublished: vi.fn(),
-  getConfigurableFormFields: vi.fn(),
-}));
-vi.mock("@/modules/eligibility/infrastructure/EligibilityRuleSetRepository", () => ({
-  eligibilityRuleSetVersionIsPublished: vi.fn(),
-}));
-vi.mock("@/modules/eligibility/infrastructure/EligibilityEvaluationRepository", () => ({
-  findTestableEligibilityRuleSetForEvaluation: vi.fn(),
-}));
-vi.mock("@/modules/workflows/infrastructure/WorkflowRepository", () => ({
-  workflowTemplateVersionIsPublished: vi.fn(),
-}));
 vi.mock("@/modules/funding-calls/infrastructure/FundingCallRepository", () => ({
   readFundingCallById: vi.fn(),
 }));
 vi.mock("@/modules/funding-calls/infrastructure/FundingCallLifecycleRepository", () => ({
   transitionFundingCall: vi.fn(),
+}));
+vi.mock("@/modules/funding-calls/application/ServerFundingCallReadinessService", () => ({
+  validateFundingCallReadiness: vi.fn(),
 }));
 
 import { permissionCodes } from "@/auth/authorization/permissions";
@@ -26,17 +16,10 @@ import { PermissionDeniedError } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import {
   publishFundingCall,
-  requirePublishedFundingCallBindings,
 } from "@/modules/funding-calls/application/ServerFundingCallService";
+import { validateFundingCallReadiness } from "@/modules/funding-calls/application/ServerFundingCallReadinessService";
 import { transitionFundingCall } from "@/modules/funding-calls/infrastructure/FundingCallLifecycleRepository";
 import { readFundingCallById } from "@/modules/funding-calls/infrastructure/FundingCallRepository";
-import {
-  formVersionIsPublished,
-  getConfigurableFormFields,
-} from "@/modules/forms/infrastructure/FormRepository";
-import { eligibilityRuleSetVersionIsPublished } from "@/modules/eligibility/infrastructure/EligibilityRuleSetRepository";
-import { findTestableEligibilityRuleSetForEvaluation } from "@/modules/eligibility/infrastructure/EligibilityEvaluationRepository";
-import { workflowTemplateVersionIsPublished } from "@/modules/workflows/infrastructure/WorkflowRepository";
 
 const actorId = "10000000-0000-4000-8000-000000000001";
 const callId = "00000000-0000-4000-8000-000000000042";
@@ -91,15 +74,12 @@ function publisher(): AuthenticatedUser {
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(readFundingCallById).mockResolvedValue(call);
-  vi.mocked(formVersionIsPublished).mockResolvedValue(true);
-  vi.mocked(eligibilityRuleSetVersionIsPublished).mockResolvedValue(true);
-  vi.mocked(workflowTemplateVersionIsPublished).mockResolvedValue(true);
-  vi.mocked(getConfigurableFormFields).mockResolvedValue([]);
-  vi.mocked(findTestableEligibilityRuleSetForEvaluation).mockResolvedValue({
-    ruleSetId: "50000000-0000-4000-8000-000000000001",
-    rules: [],
-    versionId: eligibilityRuleSetVersionId,
-    versionNumber: 1,
+  vi.mocked(validateFundingCallReadiness).mockResolvedValue({
+    checkedAt: "2026-09-22T00:00:00.000Z",
+    fundingCallId: callId,
+    issues: [],
+    ready: true,
+    rowVersion: 1,
   });
 });
 
@@ -116,23 +96,7 @@ describe("funding call publication", () => {
     expect(transitionFundingCall).not.toHaveBeenCalled();
   });
 
-  it("blocks publication while the bound form is still draft", async () => {
-    vi.mocked(formVersionIsPublished).mockResolvedValue(false);
-
-    await expect(requirePublishedFundingCallBindings(call)).rejects.toThrow(
-      "Select an application form version that is published.",
-    );
-  });
-
-  it("blocks publication while the eligibility ruleset is still draft", async () => {
-    vi.mocked(eligibilityRuleSetVersionIsPublished).mockResolvedValue(false);
-
-    await expect(requirePublishedFundingCallBindings(call)).rejects.toThrow(
-      "Select an eligibility ruleset version that is published.",
-    );
-  });
-
-  it("publishes only after validating every bound version", async () => {
+  it("publishes only after rerunning readiness validation", async () => {
     vi.mocked(transitionFundingCall).mockResolvedValue({
       call: {
         ...call,
@@ -150,8 +114,9 @@ describe("funding call publication", () => {
       "correlation-id",
     );
 
-    expect(workflowTemplateVersionIsPublished).toHaveBeenCalledWith(
-      workflowTemplateVersionId,
+    expect(validateFundingCallReadiness).toHaveBeenCalledWith(
+      call,
+      expect.any(Date),
     );
     expect(transitionFundingCall).toHaveBeenCalledWith({
       actorId,
@@ -165,8 +130,19 @@ describe("funding call publication", () => {
     expect(result.status).toBe("SCHEDULED");
   });
 
-  it("does not publish when the bound form is still draft", async () => {
-    vi.mocked(formVersionIsPublished).mockResolvedValue(false);
+  it("does not publish when current readiness validation fails", async () => {
+    vi.mocked(validateFundingCallReadiness).mockResolvedValue({
+      checkedAt: "2026-09-22T00:00:00.000Z",
+      fundingCallId: callId,
+      issues: [{
+        code: "FORM_VERSION_NOT_PUBLISHED",
+        location: "formVersionId",
+        message: "The selected application form version is not published.",
+        owner: { id: formVersionId, kind: "FORM_VERSION" },
+      }],
+      ready: false,
+      rowVersion: 1,
+    });
 
     await expect(publishFundingCall(
       publisher(),
@@ -174,7 +150,7 @@ describe("funding call publication", () => {
       { expectedRowVersion: 1 },
       "publish-key",
       "correlation-id",
-    )).rejects.toThrow("Select an application form version that is published.");
+    )).rejects.toThrow("FORM_VERSION_NOT_PUBLISHED");
 
     expect(transitionFundingCall).not.toHaveBeenCalled();
   });

@@ -22,6 +22,7 @@ import {
 
 const graphSelection = {
   definition: {
+    active: workflowDefinitions.active,
     id: workflowDefinitions.id,
     code: workflowDefinitions.code,
     name: workflowDefinitions.name,

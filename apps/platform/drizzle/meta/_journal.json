@@ -477,6 +477,13 @@
       "when": 1793577600000,
       "tag": "0067_funding_call_state_machine",
       "breakpoints": true
+    },
+    {
+      "idx": 68,
+      "version": "7",
+      "when": 1793664000000,
+      "tag": "0068_funding_call_publication_readiness",
+      "breakpoints": true
     }
   ]
 }

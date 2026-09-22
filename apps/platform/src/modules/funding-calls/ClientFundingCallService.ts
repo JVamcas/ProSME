@@ -7,6 +7,7 @@ import type {
   FundingCallUpdateInput,
 } from "./api/FundingCallSchemas";
 import type { FundingCallPage, FundingCallView } from "./api/FundingCallTransport";
+import type { FundingCallReadinessResult } from "./domain/FundingCallReadiness";
 import type { PublishedFormOption } from "@/modules/forms/FormTypes";
 import type { PublishedEligibilityRuleSetOption } from "@/modules/eligibility/api/EligibilityRuleSetTransport";
 
@@ -73,6 +74,13 @@ function publish(id: string, expectedRowVersion: number) {
   );
 }
 
+function previewReadiness(id: string) {
+  return requestData<FundingCallReadinessResult>(
+    `/api/admin/funding-calls/${id}/readiness`,
+    { cache: "no-store" },
+  );
+}
+
 function listBindableFormVersions() {
   return requestData<PublishedFormOption[]>(
     "/api/admin/funding-calls/form-versions",
@@ -102,5 +110,6 @@ export const clientFundingCallService = {
   listBindableFormVersions,
   listBindableWorkflowTemplateVersions,
   publish,
+  previewReadiness,
   update,
 };

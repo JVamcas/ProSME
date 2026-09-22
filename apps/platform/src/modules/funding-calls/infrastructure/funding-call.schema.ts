@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  boolean,
   check,
   index,
   integer,
@@ -226,7 +227,12 @@ export const fundingCallPublicDocuments = pgTable(
     label: text("label").notNull(),
     url: text("url").notNull(),
     displayOrder: integer("display_order").notNull().default(0),
+    finalized: boolean("finalized").notNull().default(false),
+    markedForPublication: boolean("marked_for_publication")
+      .notNull()
+      .default(false),
     publishedAt: timestamp("published_at", { withTimezone: true }),
+    securityCleared: boolean("security_cleared").notNull().default(false),
   },
   (table) => [
     index("app_funding_call_public_documents_call_idx").on(

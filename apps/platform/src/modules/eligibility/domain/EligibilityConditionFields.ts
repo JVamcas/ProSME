@@ -22,7 +22,7 @@ const formConditionTypes = {
 } as const;
 
 export function eligibilityFieldsFromForm(
-  fields: readonly FormField[],
+  fields: readonly Pick<FormField, "key" | "label" | "type">[],
 ): ConditionFieldDefinition[] {
   return fields.flatMap((field) => {
     const type = formConditionTypes[
@@ -47,7 +47,9 @@ export function eligibilityQuestionFieldsFromForm(
   }));
 }
 
-export function eligibilityContextFields(fields: readonly FormField[]) {
+export function eligibilityContextFields(
+  fields: readonly Pick<FormField, "key" | "label" | "type">[],
+) {
   return [
     ...eligibilityFieldsFromForm(fields),
     ...fundingCallEligibilityFields,

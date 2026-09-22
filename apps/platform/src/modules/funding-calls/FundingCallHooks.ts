@@ -116,3 +116,9 @@ export function usePublishFundingCall(id: string) {
     },
   });
 }
+
+export function usePreviewFundingCallReadiness(id: string) {
+  return useMutation({
+    mutationFn: () => clientFundingCallService.previewReadiness(id),
+  });
+}

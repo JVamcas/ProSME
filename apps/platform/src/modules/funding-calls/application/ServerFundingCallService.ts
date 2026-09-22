@@ -14,13 +14,11 @@ import {
 } from "@/lib/resource-errors";
 import {
   formVersionIsBindable,
-  formVersionIsPublished,
   getConfigurableFormFields,
   listBindableFormVersions,
 } from "@/modules/forms/infrastructure/FormRepository";
 import {
   eligibilityRuleSetVersionIsBindable,
-  eligibilityRuleSetVersionIsPublished,
   listBindableEligibilityRuleSetVersions as listBindableRuleSetVersions,
 } from "@/modules/eligibility/infrastructure/EligibilityRuleSetRepository";
 import { findTestableEligibilityRuleSetForEvaluation } from "@/modules/eligibility/infrastructure/EligibilityEvaluationRepository";
@@ -49,6 +47,7 @@ import {
 } from "../infrastructure/FundingCallRepository";
 import { transitionFundingCall } from "../infrastructure/FundingCallLifecycleRepository";
 import { readFundingCalls } from "../infrastructure/FundingCallAdminListRepository";
+import { validateFundingCallReadiness } from "./ServerFundingCallReadinessService";
 
 function view(call: FundingCall): FundingCallView {
   return {
@@ -58,65 +57,6 @@ function view(call: FundingCall): FundingCallView {
     opensAt: call.opensAt.toISOString(),
     updatedAt: call.updatedAt.toISOString(),
   };
-}
-
-async function requirePublishedBindings(
-  input: Pick<
-    FundingCallCreateInput,
-    | "eligibilityRuleSetVersionId"
-    | "formVersionId"
-    | "workflowTemplateVersionId"
-  >,
-) {
-  const [formIsPublished, eligibilityIsPublished, workflowIsPublished] =
-    await Promise.all([
-      input.formVersionId
-        ? formVersionIsPublished(input.formVersionId)
-        : Promise.resolve(true),
-      input.eligibilityRuleSetVersionId
-        ? eligibilityRuleSetVersionIsPublished(
-            input.eligibilityRuleSetVersionId,
-          )
-        : Promise.resolve(true),
-      input.workflowTemplateVersionId
-        ? workflowTemplateVersionIsPublished(input.workflowTemplateVersionId)
-        : Promise.resolve(true),
-    ]);
-  if (!formIsPublished) {
-    throw new RequestValidationError(
-      "Select an application form version that is published.",
-    );
-  }
-  if (!eligibilityIsPublished) {
-    throw new RequestValidationError(
-      "Select an eligibility ruleset version that is published.",
-    );
-  }
-  if (!workflowIsPublished) {
-    throw new RequestValidationError(
-      "Select a workflow template version that is published.",
-    );
-  }
-}
-
-export async function requirePublishedFundingCallBindings(
-  input: Pick<
-    FundingCallCreateInput,
-    | "eligibilityRuleSetVersionId"
-    | "formVersionId"
-    | "workflowTemplateVersionId"
-  >,
-) {
-  if (
-    !input.formVersionId
-    || !input.eligibilityRuleSetVersionId
-    || !input.workflowTemplateVersionId
-  ) {
-    throw new RequestValidationError(
-      "A published funding call requires published form, eligibility ruleset, and workflow versions.",
-    );
-  }
-  await requirePublishedBindings(input);
 }
 
 async function requireEligibilityCompatibility(
@@ -296,16 +236,13 @@ export async function publishFundingCall(
     );
   }
   const now = new Date();
-  if (call.closesAt <= now) {
+  const readiness = await validateFundingCallReadiness(call, now);
+  if (!readiness.ready) {
+    const first = readiness.issues[0];
     throw new RequestValidationError(
-      "The funding call closing date must be in the future.",
+      `Publication readiness failed (${first.code}): ${first.message}`,
     );
   }
-  await requirePublishedFundingCallBindings(call);
-  await requireEligibilityCompatibility(
-    call.formVersionId!,
-    call.eligibilityRuleSetVersionId!,
-  );
   const published = await transitionFundingCall({
     actorId: actor.id,
     command: "PUBLISH",
