@@ -14,3 +14,4 @@ export * from "@/modules/workflows/infrastructure/workflow.schema";
 export * from "@/modules/workflows/infrastructure/workflow-stage-requirements.schema";
 export * from "@/modules/workflows/infrastructure/workflow-audit.schema";
 export * from "@/modules/workflows/infrastructure/workflow-runtime.schema";
+export * from "@/modules/workflows/infrastructure/workflow-decision.schema";

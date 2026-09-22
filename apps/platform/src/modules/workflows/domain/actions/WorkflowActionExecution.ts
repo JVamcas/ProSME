@@ -100,6 +100,7 @@ export type WorkflowActionExecutionResult = {
   actionExecutionId: string;
   actionKey: string;
   actionType: WorkflowActionInput["actionType"];
+  decisionId: string | null;
   executedAt: string;
   resultingRuntimeVersion: number;
   sourceStageInstanceId: string;

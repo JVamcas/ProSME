@@ -19,6 +19,7 @@ import {
   type WorkflowActionExecutionTarget,
 } from "../../infrastructure/WorkflowActionExecutionRepository";
 import { configuredActionTargetsAreValid } from "../../infrastructure/WorkflowActionTargetRepository";
+import { recordApprovalDecision } from "../../infrastructure/WorkflowDecisionRepository";
 import {
   validateActionInputAgainstConfiguration,
   WorkflowActionExecutionError,
@@ -285,11 +286,15 @@ export async function executeWorkflowAction(
         }),
       );
       const executionId = crypto.randomUUID();
+      const decisionId = target.action.actionType === "APPROVE_ADVANCE"
+        ? crypto.randomUUID()
+        : null;
       const executedAt = new Date().toISOString();
       const result: WorkflowActionExecutionResult = {
         actionExecutionId: executionId,
         actionKey: target.action.stableKey,
         actionType: target.action.actionType,
+        decisionId,
         executedAt,
         resultingRuntimeVersion,
         sourceStageInstanceId: target.stage.stageInstanceId,
@@ -322,6 +327,21 @@ export async function executeWorkflowAction(
         taskId: target.task?.id ?? null,
         workflowInstanceId: target.stage.workflowInstanceId,
       });
+      if (decisionId) {
+        await recordApprovalDecision(transaction, {
+          actionDefinitionId: target.action.id,
+          actionExecutionId: executionId,
+          actionKey: target.action.stableKey,
+          actorId: actor.id,
+          correlationId: input.correlationId,
+          decidedAt: new Date(executedAt),
+          decisionId,
+          normalizedInput: input.input,
+          sourceStageInstanceId: target.stage.stageInstanceId,
+          taskId: target.task?.id ?? null,
+          workflowInstanceId: target.stage.workflowInstanceId,
+        });
+      }
       return result;
     });
   } catch (error) {

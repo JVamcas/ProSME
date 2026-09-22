@@ -26,6 +26,10 @@ vi.mock(
   () => ({ configuredActionTargetsAreValid: vi.fn() }),
 );
 vi.mock(
+  "@/modules/workflows/infrastructure/WorkflowDecisionRepository",
+  () => ({ recordApprovalDecision: vi.fn() }),
+);
+vi.mock(
   "@/modules/workflows/application/runtime/ServerSequentialTransitionService",
   () => ({ executeSequentialTransitionInTransaction: vi.fn() }),
 );
@@ -46,6 +50,7 @@ import {
   workflowActionExecutionDatabase,
 } from "@/modules/workflows/infrastructure/WorkflowActionExecutionRepository";
 import { configuredActionTargetsAreValid } from "@/modules/workflows/infrastructure/WorkflowActionTargetRepository";
+import { recordApprovalDecision } from "@/modules/workflows/infrastructure/WorkflowDecisionRepository";
 import { executeSequentialTransitionInTransaction } from "@/modules/workflows/application/runtime/ServerSequentialTransitionService";
 
 const actorId = "10000000-0000-4000-8000-000000000001";
@@ -159,6 +164,16 @@ describe("server workflow action execution", () => {
       }),
     );
     expect(recordWorkflowActionExecution).toHaveBeenCalledOnce();
+    expect(recordApprovalDecision).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        actionDefinitionId: target.action.id,
+        actionExecutionId: result.actionExecutionId,
+        actorId,
+        decisionId: result.decisionId,
+        normalizedInput: input.input,
+      }),
+    );
   });
 
   it("returns an exact idempotent replay without entering a transaction", async () => {
@@ -166,6 +181,7 @@ describe("server workflow action execution", () => {
       actionExecutionId: "a0000000-0000-4000-8000-000000000001",
       actionKey: "ADVANCE",
       actionType: "APPROVE_ADVANCE" as const,
+      decisionId: "b0000000-0000-4000-8000-000000000001",
       executedAt: "2026-09-22T08:00:00.000Z",
       resultingRuntimeVersion: 3,
       sourceStageInstanceId: stageInstanceId,
