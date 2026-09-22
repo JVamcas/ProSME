@@ -171,6 +171,7 @@ export async function findEligibilityInputPublicationIssues(
               ON stage.id = checklist.stage_id
             WHERE checklist.id = source.source_definition_id
               AND stage.version_id = source.source_version_id
+              AND source.source_key IN ('response', 'completed')
           )
           WHEN 'DOCUMENT_REQUIREMENT_FACT' THEN EXISTS (
             SELECT 1
@@ -179,6 +180,10 @@ export async function findEligibilityInputPublicationIssues(
               ON stage.id = requirement.stage_id
             WHERE requirement.id = source.source_definition_id
               AND stage.version_id = source.source_version_id
+              AND source.source_key IN (
+                'present', 'verified', 'verificationStatus', 'validUntil',
+                'expiredAtEvaluation', 'latestAcceptedVersionId'
+              )
           )
           WHEN 'MANUAL_ASSESSMENT' THEN EXISTS (
             SELECT 1

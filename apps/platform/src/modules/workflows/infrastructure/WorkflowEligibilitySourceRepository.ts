@@ -6,6 +6,11 @@ import { getDatabase } from "@/db/client";
 import type { ConditionFieldType } from "@/modules/conditions/domain/ConditionConfiguration";
 import { formFields } from "@/modules/forms/infrastructure/form.schema";
 import {
+  checklistItemCompletionFactDefinition,
+  checklistItemResponseFactKey,
+  documentRequirementFactDefinitions,
+} from "../domain/EvidenceFacts";
+import {
   workflowStageChecklistDefinitions,
   workflowStageDocumentRequirements,
 } from "./workflow-stage-requirements.schema";
@@ -207,30 +212,39 @@ export async function readWorkflowEligibilitySources(
       workflowVersionId: field.workflowVersionId,
     }];
   });
-  const checklistSources = checklists.map((item) => {
+  const checklistSources = checklists.flatMap((item) => {
     const positions = (stageTaskPositions.get(
       positionKey(item.workflowVersionId, item.stageId),
     ) ?? []).filter((position) => position.taskType === "CHECKLIST");
     const sourcePosition = positions.toSorted((left, right) =>
       left.taskOrder - right.taskOrder
     )[0];
-    return {
-      availableBeforeEligibility: Boolean(
-        sourcePosition && isBefore(
-          sourcePosition,
-          eligibilityPositions.get(item.workflowVersionId),
-        ),
+    const availableBeforeEligibility = Boolean(
+      sourcePosition && isBefore(
+        sourcePosition,
+        eligibilityPositions.get(item.workflowVersionId),
       ),
-      label: item.label,
+    );
+    const identity = {
+      availableBeforeEligibility,
       sourceDefinitionId: item.id,
-      sourceKey: item.key,
       sourceKind: "SCREENING_CHECKLIST_ITEM" as const,
       sourceVersionId: item.workflowVersionId,
-      supportedTypes: [checklistConditionTypes[item.responseType]],
       workflowVersionId: item.workflowVersionId,
     };
+    return [{
+      ...identity,
+      label: `${item.label} — response`,
+      sourceKey: checklistItemResponseFactKey,
+      supportedTypes: [checklistConditionTypes[item.responseType]],
+    }, {
+      ...identity,
+      label: `${item.label} — ${checklistItemCompletionFactDefinition.label}`,
+      sourceKey: checklistItemCompletionFactDefinition.key,
+      supportedTypes: [checklistItemCompletionFactDefinition.type],
+    }];
   });
-  const documentSources = documents.map((document) => {
+  const documentSources = documents.flatMap((document) => {
     const positions = (stageTaskPositions.get(
       positionKey(document.workflowVersionId, document.stageId),
     ) ?? []).filter((position) =>
@@ -240,21 +254,24 @@ export async function readWorkflowEligibilitySources(
     const sourcePosition = positions.toSorted((left, right) =>
       left.taskOrder - right.taskOrder
     )[0];
-    return {
+    const identity = {
       availableBeforeEligibility: Boolean(
         sourcePosition && isBefore(
           sourcePosition,
           eligibilityPositions.get(document.workflowVersionId),
         ),
       ),
-      label: document.label,
       sourceDefinitionId: document.id,
-      sourceKey: document.id,
       sourceKind: "DOCUMENT_REQUIREMENT_FACT" as const,
       sourceVersionId: document.workflowVersionId,
-      supportedTypes: allConditionTypes,
       workflowVersionId: document.workflowVersionId,
     };
+    return documentRequirementFactDefinitions.map((fact) => ({
+      ...identity,
+      label: `${document.label} — ${fact.label}`,
+      sourceKey: fact.key,
+      supportedTypes: [fact.type],
+    }));
   });
   const manualSources = tasks
     .filter((task) => task.type !== "AUTOMATED_RULE_CHECK")
