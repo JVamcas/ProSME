@@ -64,7 +64,10 @@ function publish(id: string, expectedRowVersion: number) {
     `/api/admin/funding-calls/${id}/publish`,
     {
       body: JSON.stringify({ expectedRowVersion }),
-      headers: jsonHeaders,
+      headers: {
+        ...jsonHeaders,
+        "Idempotency-Key": crypto.randomUUID(),
+      },
       method: "POST",
     },
   );

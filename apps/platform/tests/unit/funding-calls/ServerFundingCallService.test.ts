@@ -89,6 +89,7 @@ const stored = {
   opensAt: new Date(input.opensAt),
   rowVersion: 1,
   status: "DRAFT" as const,
+  suspendedFromStatus: null,
   updatedAt: new Date("2026-09-20T08:00:00.000Z"),
   updatedBy: actorId,
 };

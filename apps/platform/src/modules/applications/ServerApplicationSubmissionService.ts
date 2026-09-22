@@ -80,6 +80,11 @@ export async function submitApplication(
       "This application does not have an authoritative eligibility configuration.",
     );
   }
+  if (result.kind === "opportunity_unavailable") {
+    throw new ApplicationSubmissionConflictError(
+      "This funding call is not accepting submissions.",
+    );
+  }
   if (result.kind === "stage_entry_condition_failed") {
     throw new ApplicationSubmissionConflictError(
       "The workflow's initial stage entry conditions were not met.",

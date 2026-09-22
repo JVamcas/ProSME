@@ -470,6 +470,13 @@
       "when": 1793491200000,
       "tag": "0066_reject_action_semantics",
       "breakpoints": true
+    },
+    {
+      "idx": 67,
+      "version": "7",
+      "when": 1793577600000,
+      "tag": "0067_funding_call_state_machine",
+      "breakpoints": true
     }
   ]
 }

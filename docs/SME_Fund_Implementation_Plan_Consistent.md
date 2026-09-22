@@ -4678,7 +4678,7 @@ The publish command:
 5. transitions to Scheduled when `serverNow < opensAt`;
 6. transitions to Live when `opensAt <= serverNow < closesAt`;
 7. rejects publication when `serverNow >= closesAt`;
-8. creates the immutable initial public-publication revision;
+8. creates the immutable initial public publication revision;
 9. writes audit and transactional-outbox events for cache invalidation and
    configured notifications.
 

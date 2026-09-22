@@ -8,7 +8,6 @@ import { cn } from "@/lib/utils";
 import { useUserAccess } from "@/modules/users/UserAccessHooks";
 import type { UserAccessRow } from "@/modules/users/UserAccessTypes";
 import { RoleCapabilitiesPanel } from "./RoleCapabilitiesPanel";
-import { UserPromotionForm } from "./UserPromotionForm";
 import { UserRoleAssignmentPanel } from "./UserRoleAssignmentPanel";
 import { UsersTabPanel } from "./UsersTabPanel";
 

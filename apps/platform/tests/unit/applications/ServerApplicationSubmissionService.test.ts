@@ -93,6 +93,7 @@ describe("application submission service", () => {
     ["draft_incomplete", "Complete every application section"],
     ["documents_invalid", "pass security scanning"],
     ["eligibility_unavailable", "authoritative eligibility configuration"],
+    ["opportunity_unavailable", "not accepting submissions"],
     ["stage_entry_condition_failed", "entry conditions were not met"],
     ["workflow_unavailable", "bound published workflow template version"],
   ] as const)("returns a safe conflict for %s", async (kind, message) => {

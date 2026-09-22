@@ -18,7 +18,7 @@ vi.mock("@/modules/funding-calls/infrastructure/FundingCallRepository", () => ({
   readFundingCallById: vi.fn(),
 }));
 vi.mock("@/modules/funding-calls/infrastructure/FundingCallLifecycleRepository", () => ({
-  publishDraftFundingCall: vi.fn(),
+  transitionFundingCall: vi.fn(),
 }));
 
 import { permissionCodes } from "@/auth/authorization/permissions";
@@ -28,7 +28,7 @@ import {
   publishFundingCall,
   requirePublishedFundingCallBindings,
 } from "@/modules/funding-calls/application/ServerFundingCallService";
-import { publishDraftFundingCall } from "@/modules/funding-calls/infrastructure/FundingCallLifecycleRepository";
+import { transitionFundingCall } from "@/modules/funding-calls/infrastructure/FundingCallLifecycleRepository";
 import { readFundingCallById } from "@/modules/funding-calls/infrastructure/FundingCallRepository";
 import {
   formVersionIsPublished,
@@ -62,7 +62,8 @@ const call = {
   reference: "SME-2027-01",
   rowVersion: 1,
   slug: "sme-growth-fund-2027",
-  status: "DRAFT" as const,
+  status: "APPROVED" as const,
+  suspendedFromStatus: null,
   thematicArea: "Business growth",
   title: "SME Growth Fund 2027",
   totalBudgetEnvelope: "10000000.00",
@@ -108,9 +109,11 @@ describe("funding call publication", () => {
       { ...publisher(), capabilities: new Set() },
       callId,
       { expectedRowVersion: 1 },
+      "publish-key",
+      "correlation-id",
     )).rejects.toBeInstanceOf(PermissionDeniedError);
 
-    expect(publishDraftFundingCall).not.toHaveBeenCalled();
+    expect(transitionFundingCall).not.toHaveBeenCalled();
   });
 
   it("blocks publication while the bound form is still draft", async () => {
@@ -130,27 +133,35 @@ describe("funding call publication", () => {
   });
 
   it("publishes only after validating every bound version", async () => {
-    vi.mocked(publishDraftFundingCall).mockResolvedValue({
-      ...call,
-      rowVersion: 2,
-      status: "SCHEDULED",
+    vi.mocked(transitionFundingCall).mockResolvedValue({
+      call: {
+        ...call,
+        rowVersion: 2,
+        status: "SCHEDULED",
+      },
+      kind: "transitioned",
     });
 
     const result = await publishFundingCall(
       publisher(),
       callId,
       { expectedRowVersion: 1 },
+      "publish-key",
+      "correlation-id",
     );
 
     expect(workflowTemplateVersionIsPublished).toHaveBeenCalledWith(
       workflowTemplateVersionId,
     );
-    expect(publishDraftFundingCall).toHaveBeenCalledWith(
+    expect(transitionFundingCall).toHaveBeenCalledWith({
       actorId,
-      callId,
-      1,
-      expect.any(Date),
-    );
+      command: "PUBLISH",
+      correlationId: "correlation-id",
+      expectedRowVersion: 1,
+      fundingCallId: callId,
+      idempotencyKey: "publish-key",
+      now: expect.any(Date),
+    });
     expect(result.status).toBe("SCHEDULED");
   });
 
@@ -161,8 +172,10 @@ describe("funding call publication", () => {
       publisher(),
       callId,
       { expectedRowVersion: 1 },
+      "publish-key",
+      "correlation-id",
     )).rejects.toThrow("Select an application form version that is published.");
 
-    expect(publishDraftFundingCall).not.toHaveBeenCalled();
+    expect(transitionFundingCall).not.toHaveBeenCalled();
   });
 });

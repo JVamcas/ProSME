@@ -67,7 +67,7 @@ const fundingCall = {
   minimumGrantAmount: "50000.00",
   opensAt: new Date("2027-02-01T06:00:00.000Z"),
   slug: "sme-growth-fund-2027",
-  status: "OPEN",
+  status: "LIVE",
   thematicArea: "Business growth",
   title: "SME Growth Fund 2027",
   totalBudgetEnvelope: "10000000.00",

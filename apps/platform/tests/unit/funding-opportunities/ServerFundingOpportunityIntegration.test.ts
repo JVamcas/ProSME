@@ -39,7 +39,8 @@ const fundingCall = {
   reference: "GROWTH-2026",
   rowVersion: 2,
   slug: "growth-fund",
-  status: "OPEN" as const,
+  status: "LIVE" as const,
+  suspendedFromStatus: null,
   thematicArea: "Growth",
   title: "Growth Fund",
   totalBudgetEnvelope: "1000000.00",
@@ -73,12 +74,13 @@ describe("published funding-call integration", () => {
     expect(readPublishedFundingCalls).toHaveBeenCalledWith({
       after: undefined,
       limit: 25,
+      now: expect.any(Date),
       search: undefined,
       status: undefined,
     });
   });
 
-  it("maps public status filters to domain status", async () => {
+  it("passes public status filters with server time", async () => {
     await listPublishedFundingOpportunities({
       limit: 10,
       search: "growth",
@@ -87,8 +89,9 @@ describe("published funding-call integration", () => {
     expect(readPublishedFundingCalls).toHaveBeenCalledWith({
       after: undefined,
       limit: 10,
+      now: expect.any(Date),
       search: "growth",
-      status: "OPEN",
+      status: "open",
     });
   });
 

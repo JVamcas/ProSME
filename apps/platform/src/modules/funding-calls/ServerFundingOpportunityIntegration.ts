@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { richTextToPlainText } from "@/shared/utils/RichText";
 import type { FundingCall } from "./domain/FundingCall";
+import { isFundingCallEffectivelyOpen } from "./domain/FundingCallLifecycle";
 import type {
   FundingOpportunityDetail,
   FundingOpportunityListInput,
@@ -23,12 +24,15 @@ const cursorSchema = z.object({
 
 type FundingOpportunityCursor = z.infer<typeof cursorSchema>;
 
-function opportunityStatus(call: FundingCall): FundingOpportunityStatus {
-  if (call.status === "SCHEDULED") return "upcoming";
-  if (call.status === "OPEN") return "open";
+function opportunityStatus(
+  call: FundingCall,
+  now: Date,
+): FundingOpportunityStatus {
+  if (isFundingCallEffectivelyOpen(call, now)) return "open";
+  if (call.status === "SCHEDULED" && now < call.opensAt) return "upcoming";
   return "closed";
 }
-function summary(call: FundingCall): FundingOpportunitySummary {
+function summary(call: FundingCall, now: Date): FundingOpportunitySummary {
   return {
     closesAt: call.closesAt.toISOString(),
     id: call.id,
@@ -36,7 +40,7 @@ function summary(call: FundingCall): FundingOpportunitySummary {
     minimumAmount: Number(call.minimumGrantAmount),
     opensAt: call.opensAt.toISOString(),
     slug: call.slug,
-    status: opportunityStatus(call),
+    status: opportunityStatus(call, now),
     summary: richTextToPlainText(call.description),
     title: call.title,
   };
@@ -64,28 +68,24 @@ function encodeCursor(call: FundingCall) {
   ).toString("base64url");
 }
 
-const statuses = {
-  closed: "CLOSED",
-  open: "OPEN",
-  upcoming: "SCHEDULED",
-} as const;
-
 export async function listPublishedFundingOpportunities(
   input: FundingOpportunityListInput,
 ): Promise<FundingOpportunityPage> {
+  const now = new Date();
   const cursor = input.after ? decodeCursor(input.after) : undefined;
   const result = await readPublishedFundingCalls({
     after: cursor
       ? { id: cursor.id, opensAt: new Date(cursor.opensAt) }
       : undefined,
     limit: input.limit,
+    now,
     search: input.search,
-    status: input.status ? statuses[input.status] : undefined,
+    status: input.status,
   });
   const hasNextPage = result.items.length > input.limit;
   const calls = result.items.slice(0, input.limit);
   return {
-    items: calls.map(summary),
+    items: calls.map((call) => summary(call, now)),
     nextCursor: hasNextPage ? encodeCursor(calls.at(-1)!) : null,
     total: result.total,
   };
@@ -95,7 +95,9 @@ export async function findPublishedFundingOpportunity(
   id: string,
 ): Promise<FundingOpportunityDetail | null> {
   const call = await readPublishedFundingCall(id);
-  return call ? { ...summary(call), description: call.description } : null;
+  return call
+    ? { ...summary(call, new Date()), description: call.description }
+    : null;
 }
 
 export async function resolvePublishedApplicationFormBinding(id: string) {
@@ -105,7 +107,7 @@ export async function resolvePublishedApplicationFormBinding(id: string) {
     eligibilityRuleSetVersionId: call.eligibilityRuleSetVersionId,
     formVersionId: call.formVersionId,
     id: call.id,
-    status: opportunityStatus(call),
+    status: opportunityStatus(call, new Date()),
     title: call.title,
   };
 }
@@ -117,6 +119,6 @@ export async function resolvePublishedEligibilityRuleSetBinding(id: string) {
     eligibilityRuleSetVersionId: call.eligibilityRuleSetVersionId,
     formVersionId: call.formVersionId,
     fundingCallId: call.id,
-    status: opportunityStatus(call),
+    status: opportunityStatus(call, new Date()),
   };
 }

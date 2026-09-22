@@ -19,6 +19,7 @@ import {
   AuthoritativeEligibilityUnavailableError,
   prepareAuthoritativeEligibilityOutcome,
 } from "@/modules/eligibility/application/ServerAuthoritativeEligibilityService";
+import { isFundingCallEffectivelyOpen } from "@/modules/funding-calls/domain/FundingCallLifecycle";
 import {
   InitialStageActivationError,
   writeApplicationSubmission,
@@ -46,6 +47,7 @@ export type SubmitApplicationResult =
         | "eligibility_unavailable"
         | "idempotency_conflict"
         | "not_found"
+        | "opportunity_unavailable"
         | "stage_entry_condition_failed"
         | "workflow_unavailable";
     };
@@ -250,6 +252,9 @@ async function submitInTransaction(
     application.fundingOpportunityId,
   );
   if (!configuration) return { kind: "workflow_unavailable" };
+  if (!isFundingCallEffectivelyOpen(configuration, new Date())) {
+    return { kind: "opportunity_unavailable" };
+  }
   const business = await findBusinessForEvaluation(
     transaction,
     application.businessId,

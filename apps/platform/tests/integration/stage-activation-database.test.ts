@@ -107,7 +107,7 @@ beforeAll(async () => {
         status, workflow_template_version_id, created_by, updated_by)
      VALUES ($1, 'ACTIVATION-FUND', 'activation-fund', 'Activation Fund', 'Test',
        1000000, 10000, 100000, now() - interval '1 day',
-       now() + interval '1 day', 'OPEN', $2, $3, $3)`,
+       now() + interval '1 day', 'LIVE', $2, $3, $3)`,
     [fundingCallId, versionId, actorId],
   );
   await query(

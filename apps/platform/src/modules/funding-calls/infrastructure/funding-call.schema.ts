@@ -16,6 +16,9 @@ import { formVersions } from "@/modules/forms/infrastructure/form.schema";
 import { eligibilityRuleSetVersions } from "@/modules/eligibility/infrastructure/eligibility-ruleset.schema";
 import { workflowDefinitionVersions } from "@/modules/workflows/infrastructure/workflow.schema";
 import type { FundingCallStatus } from "../domain/FundingCall";
+import type {
+  FundingCallLifecycleCommand,
+} from "../domain/FundingCallLifecycle";
 
 export const fundingCalls = pgTable(
   "app_funding_calls",
@@ -54,6 +57,9 @@ export const fundingCalls = pgTable(
     opensAt: timestamp("opens_at", { withTimezone: true }).notNull(),
     closesAt: timestamp("closes_at", { withTimezone: true }).notNull(),
     status: text("status").$type<FundingCallStatus>().notNull().default("DRAFT"),
+    suspendedFromStatus: text("suspended_from_status").$type<
+      "SCHEDULED" | "LIVE"
+    >(),
     publicContactName: text("public_contact_name"),
     publicContactEmail: text("public_contact_email"),
     publicContactPhone: text("public_contact_phone"),
@@ -88,7 +94,24 @@ export const fundingCalls = pgTable(
     ),
     check(
       "app_funding_calls_status_check",
-      sql`${table.status} in ('DRAFT', 'SCHEDULED', 'OPEN', 'CLOSED', 'CANCELLED')`,
+      sql`${table.status} in (
+        'DRAFT',
+        'APPROVAL_PENDING',
+        'APPROVED',
+        'SCHEDULED',
+        'LIVE',
+        'SUSPENDED',
+        'CLOSED',
+        'WITHDRAWN',
+        'ARCHIVED'
+      )`,
+    ),
+    check(
+      "app_funding_calls_suspended_from_status_check",
+      sql`(${table.status} = 'SUSPENDED'
+          and ${table.suspendedFromStatus} in ('SCHEDULED', 'LIVE'))
+        or (${table.status} <> 'SUSPENDED'
+          and ${table.suspendedFromStatus} is null)`,
     ),
     check(
       "app_funding_calls_budget_check",
@@ -104,6 +127,91 @@ export const fundingCalls = pgTable(
     check(
       "app_funding_calls_row_version_check",
       sql`${table.rowVersion} > 0`,
+    ),
+  ],
+);
+
+export const fundingCallLifecycleHistory = pgTable(
+  "app_funding_call_lifecycle_history",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    fundingCallId: uuid("funding_call_id")
+      .notNull()
+      .references(() => fundingCalls.id, { onDelete: "restrict" }),
+    command: text("command").$type<FundingCallLifecycleCommand>().notNull(),
+    sourceStatus: text("source_status").$type<FundingCallStatus>().notNull(),
+    targetStatus: text("target_status").$type<FundingCallStatus>().notNull(),
+    actorId: uuid("actor_id").references(() => users.id, {
+      onDelete: "restrict",
+    }),
+    systemActor: text("system_actor"),
+    reason: text("reason"),
+    commandTime: timestamp("command_time", { withTimezone: true }).notNull(),
+    effectiveTime: timestamp("effective_time", { withTimezone: true }).notNull(),
+    rowVersion: integer("row_version").notNull(),
+    correlationId: text("correlation_id").notNull(),
+    idempotencyKey: text("idempotency_key").notNull(),
+  },
+  (table) => [
+    index("app_funding_call_lifecycle_call_time_idx").on(
+      table.fundingCallId,
+      table.commandTime,
+      table.id,
+    ),
+    uniqueIndex("app_funding_call_lifecycle_idempotency_unique").on(
+      table.idempotencyKey,
+    ),
+    check(
+      "app_funding_call_lifecycle_command_check",
+      sql`${table.command} in (
+        'SUBMIT_FOR_APPROVAL',
+        'RETURN_FOR_AMENDMENT',
+        'APPROVE',
+        'PUBLISH',
+        'OPEN',
+        'SUSPEND',
+        'RESUME',
+        'CLOSE',
+        'WITHDRAW',
+        'ARCHIVE'
+      )`,
+    ),
+    check(
+      "app_funding_call_lifecycle_source_status_check",
+      sql`${table.sourceStatus} in (
+        'DRAFT',
+        'APPROVAL_PENDING',
+        'APPROVED',
+        'SCHEDULED',
+        'LIVE',
+        'SUSPENDED',
+        'CLOSED',
+        'WITHDRAWN',
+        'ARCHIVED'
+      )`,
+    ),
+    check(
+      "app_funding_call_lifecycle_target_status_check",
+      sql`${table.targetStatus} in (
+        'DRAFT',
+        'APPROVAL_PENDING',
+        'APPROVED',
+        'SCHEDULED',
+        'LIVE',
+        'SUSPENDED',
+        'CLOSED',
+        'WITHDRAWN',
+        'ARCHIVED'
+      )`,
+    ),
+    check(
+      "app_funding_call_lifecycle_actor_check",
+      sql`(${table.actorId} is not null and ${table.systemActor} is null)
+        or (${table.actorId} is null and length(trim(${table.systemActor})) > 0)`,
+    ),
+    check(
+      "app_funding_call_lifecycle_row_version_check",
+      sql`${table.rowVersion} > 1`,
     ),
   ],
 );

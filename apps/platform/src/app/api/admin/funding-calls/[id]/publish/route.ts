@@ -22,6 +22,8 @@ export async function POST(request: Request, context: RouteContext) {
         await resolveUserFromHeaders(request.headers),
         id,
         input,
+        request.headers.get("Idempotency-Key")?.trim() || correlationId,
+        correlationId,
       ),
       correlationId,
     );

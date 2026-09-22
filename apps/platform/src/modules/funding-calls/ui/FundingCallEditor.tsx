@@ -29,7 +29,7 @@ export function FundingCallEditor({
   const call = query.data;
   return (
     <div className="space-y-5">
-      {call.status === "DRAFT" && canPublish ? (
+      {call.status === "APPROVED" && canPublish ? (
         <div className="flex justify-end">
           <GeneralButton
             disabled={publish.isPending || update.isPending}

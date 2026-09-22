@@ -1,12 +1,18 @@
 export const fundingCallStatuses = [
   "DRAFT",
+  "APPROVAL_PENDING",
+  "APPROVED",
   "SCHEDULED",
-  "OPEN",
+  "LIVE",
+  "SUSPENDED",
   "CLOSED",
-  "CANCELLED",
+  "WITHDRAWN",
+  "ARCHIVED",
 ] as const;
 
 export type FundingCallStatus = (typeof fundingCallStatuses)[number];
+
+export type FundingCallPublishedStatus = "SCHEDULED" | "LIVE";
 
 export type FundingCall = {
   id: string;
@@ -26,6 +32,7 @@ export type FundingCall = {
   opensAt: Date;
   closesAt: Date;
   status: FundingCallStatus;
+  suspendedFromStatus: FundingCallPublishedStatus | null;
   publicContactName: string | null;
   publicContactEmail: string | null;
   publicContactPhone: string | null;

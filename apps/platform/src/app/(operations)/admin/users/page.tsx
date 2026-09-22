@@ -20,7 +20,7 @@ export default async function UsersAccessPage() {
   ]);
 
   return (
-    <section>
+    <>
       <PageHeader
         description="Manage people, roles, and permissions."
         eyebrow="Administration"
@@ -36,6 +36,6 @@ export default async function UsersAccessPage() {
           can(user, capabilities.userRead) || can(user, capabilities.userManage)
         }
       />
-    </section>
+    </>
   );
 }

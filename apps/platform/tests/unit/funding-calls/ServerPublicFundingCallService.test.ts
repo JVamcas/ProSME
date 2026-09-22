@@ -36,7 +36,7 @@ const call: PublicFundingCallRecord = {
   ],
   reference: "GROWTH-2026",
   slug: "growth-fund",
-  status: "OPEN",
+  status: "LIVE",
   thematicArea: "Growth",
   title: "Growth Fund",
   totalBudgetEnvelope: "1000000.00",
@@ -111,5 +111,11 @@ describe("public funding-call read model", () => {
     expect(
       publicFundingCallStatus(call, new Date("2026-10-31T22:00:00.000Z")),
     ).toBe("closed");
+    expect(
+      publicFundingCallStatus(
+        { ...call, status: "SCHEDULED" },
+        new Date("2026-09-01T00:00:00.000Z"),
+      ),
+    ).toBe("open");
   });
 });

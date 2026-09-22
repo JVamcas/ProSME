@@ -75,13 +75,13 @@ export function insertSubmissionFundingCalls(
      VALUES
        ($1, 'SUBMISSION-FUND', 'submission-fund', 'Submission Fund', 'Test',
         1000000, 10000, 100000, now() - interval '1 day',
-        now() + interval '1 day', 'OPEN', $4, $5, $6, $6),
+        now() + interval '1 day', 'LIVE', $4, $5, $6, $6),
        ($2, 'MISSING-FUND', 'missing-fund', 'Missing workflow fund', 'Test',
         1000000, 10000, 100000, now() - interval '1 day',
-        now() + interval '1 day', 'OPEN', NULL, $5, $6, $6),
+        now() + interval '1 day', 'LIVE', NULL, $5, $6, $6),
        ($3, 'ROLLBACK-FUND', 'rollback-fund', 'Rollback Fund', 'Test',
         1000000, 10000, 100000, now() - interval '1 day',
-        now() + interval '1 day', 'OPEN', $4, $5, $6, $6)`,
+        now() + interval '1 day', 'LIVE', $4, $5, $6, $6)`,
     [
       ...submissionFundingCallIds,
       workflowVersionId,

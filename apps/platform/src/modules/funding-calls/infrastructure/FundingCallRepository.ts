@@ -11,7 +11,6 @@ import {
   inArray,
   lt,
   lte,
-  ne,
   or,
   sql,
 } from "drizzle-orm";
@@ -112,8 +111,9 @@ export async function updateDraftFundingCall(
 type PublishedFundingCallQuery = {
   after?: { id: string; opensAt: Date };
   limit: number;
+  now: Date;
   search?: string;
-  status?: "CLOSED" | "OPEN" | "SCHEDULED";
+  status?: "closed" | "open" | "upcoming";
 };
 
 export type PublicFundingCallRecord = {
@@ -131,7 +131,7 @@ export type PublicFundingCallRecord = {
   publicContactPhone: string | null;
   reference: string;
   slug: string;
-  status: "CLOSED" | "OPEN" | "SCHEDULED";
+  status: "CLOSED" | "LIVE" | "SCHEDULED";
   thematicArea: string | null;
   title: string;
   totalBudgetEnvelope: string;
@@ -146,7 +146,7 @@ export type PublicFundingCallQuery = {
   status?: "closed" | "open" | "upcoming";
 };
 
-const publishedStatuses = ["SCHEDULED", "OPEN", "CLOSED"] as const;
+const publishedStatuses = ["SCHEDULED", "LIVE", "CLOSED"] as const;
 
 const publicSelection = {
   closesAt: fundingCalls.closesAt,
@@ -170,20 +170,7 @@ const publicSelection = {
 };
 
 function publishedConditions(input: PublishedFundingCallQuery) {
-  const conditions = [
-    input.status
-      ? eq(fundingCalls.status, input.status)
-      : inArray(fundingCalls.status, publishedStatuses),
-  ];
-  if (input.search) {
-    conditions.push(
-      or(
-        ilike(fundingCalls.title, `%${input.search}%`),
-        ilike(fundingCalls.description, `%${input.search}%`),
-      )!,
-    );
-  }
-  return conditions;
+  return publicConditions(input);
 }
 
 export async function readPublishedFundingCalls(
@@ -248,7 +235,7 @@ function publicConditions(input: PublicFundingCallQuery) {
   if (input.status === "open") {
     conditions.push(
       and(
-        eq(fundingCalls.status, "OPEN"),
+        inArray(fundingCalls.status, ["SCHEDULED", "LIVE"]),
         lte(fundingCalls.opensAt, input.now),
         gt(fundingCalls.closesAt, input.now),
       )!,
@@ -257,12 +244,9 @@ function publicConditions(input: PublicFundingCallQuery) {
   if (input.status === "upcoming") {
     conditions.push(
       and(
-        ne(fundingCalls.status, "CLOSED"),
+        eq(fundingCalls.status, "SCHEDULED"),
+        gt(fundingCalls.opensAt, input.now),
         gt(fundingCalls.closesAt, input.now),
-        or(
-          gt(fundingCalls.opensAt, input.now),
-          eq(fundingCalls.status, "SCHEDULED"),
-        ),
       )!,
     );
   }

@@ -37,7 +37,7 @@ export function publicFundingCallStatus(
   now: Date,
 ): PublicFundingCallStatus {
   if (call.status === "CLOSED" || now >= call.closesAt) return "closed";
-  if (call.status === "SCHEDULED" || now < call.opensAt) return "upcoming";
+  if (now < call.opensAt) return "upcoming";
   return "open";
 }
 
