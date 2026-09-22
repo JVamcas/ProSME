@@ -32,7 +32,7 @@ type Props = {
   users: UserAccessRow[];
 };
 
-export function RoleCapabilitiesPanel({
+export function RolePermissionsPanel({
   canManageRoles,
   capabilities,
   roles,

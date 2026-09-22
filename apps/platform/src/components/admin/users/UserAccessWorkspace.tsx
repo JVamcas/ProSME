@@ -7,9 +7,9 @@ import { Tabs, type TabItem } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { useUserAccess } from "@/modules/users/UserAccessHooks";
 import type { UserAccessRow } from "@/modules/users/UserAccessTypes";
-import { RoleCapabilitiesPanel } from "./RolePermissionsPanel";
 import { UserRoleAssignmentPanel } from "./UserRoleAssignmentPanel";
 import { UsersTabPanel } from "./UsersTabPanel";
+import { RolePermissionsPanel } from "./RolePermissionsPanel";
 
 type AccessTab = "users" | "roles";
 
@@ -54,7 +54,7 @@ export function UserAccessWorkspace(props: Props) {
   if (props.canReadRoles) {
     tabs.push({
       content: (
-        <RoleCapabilitiesPanel
+        <RolePermissionsPanel
           canManageRoles={props.canManageRoles}
           capabilities={view.capabilities}
           roles={view.roles}
