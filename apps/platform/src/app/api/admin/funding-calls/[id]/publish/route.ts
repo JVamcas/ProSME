@@ -7,7 +7,7 @@ import {
   portalRouteSuccess,
 } from "@/lib/api/PortalApiResponse";
 import { fundingCallPublishSchema } from "@/modules/funding-calls/api/FundingCallSchemas";
-import { publishFundingCall } from "@/modules/funding-calls/application/ServerFundingCallService";
+import { publishFundingCall } from "@/modules/funding-calls/application/ServerFundingCallPublicationService";
 
 type RouteContext = { params: Promise<{ id: string }> };
 const idSchema = z.uuid();

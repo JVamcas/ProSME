@@ -55,7 +55,7 @@ export function FundingCallEditor({
             onClick={() => publish.mutate(call.rowVersion)}
             type="button"
           >
-            {publish.isPending ? "Publishing…" : "Publish funding call"}
+            {publish.isPending ? "Publishing…" : "Publish now or schedule"}
           </GeneralButton>
         ) : null}
       </div>

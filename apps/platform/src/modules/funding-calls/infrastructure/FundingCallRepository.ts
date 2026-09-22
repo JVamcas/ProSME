@@ -2,7 +2,6 @@ import "server-only";
 
 import {
   and,
-  asc,
   count,
   desc,
   eq,
@@ -21,9 +20,12 @@ import type {
   FundingCallUpdateInput,
 } from "../api/FundingCallSchemas";
 import type { FundingCall } from "../domain/FundingCall";
+import type {
+  FundingCallPublicationSnapshot,
+} from "../domain/FundingCallPublication";
 import { sanitizeFundingCallDescription } from "./FundingCallRichText";
 import {
-  fundingCallPublicDocuments,
+  fundingCallPublicationRevisions,
   fundingCalls,
 } from "./funding-call.schema";
 
@@ -149,25 +151,29 @@ export type PublicFundingCallQuery = {
 const publishedStatuses = ["SCHEDULED", "LIVE", "CLOSED"] as const;
 
 const publicSelection = {
-  closesAt: fundingCalls.closesAt,
-  description: fundingCalls.description,
-  eligibilitySummary: fundingCalls.eligibilitySummary,
-  eligibilityRuleSetVersionId: fundingCalls.eligibilityRuleSetVersionId,
-  fundingInstrument: fundingCalls.fundingInstrument,
   id: fundingCalls.id,
-  maximumGrantAmount: fundingCalls.maximumGrantAmount,
-  minimumGrantAmount: fundingCalls.minimumGrantAmount,
-  opensAt: fundingCalls.opensAt,
-  publicContactEmail: fundingCalls.publicContactEmail,
-  publicContactName: fundingCalls.publicContactName,
-  publicContactPhone: fundingCalls.publicContactPhone,
-  reference: fundingCalls.reference,
-  slug: fundingCalls.slug,
+  snapshot: fundingCallPublicationRevisions.snapshot,
   status: sql<PublicFundingCallRecord["status"]>`${fundingCalls.status}`,
-  thematicArea: fundingCalls.thematicArea,
-  title: fundingCalls.title,
-  totalBudgetEnvelope: fundingCalls.totalBudgetEnvelope,
 };
+
+type PublicFundingCallSelection = {
+  id: string;
+  snapshot: FundingCallPublicationSnapshot;
+  status: PublicFundingCallRecord["status"];
+};
+
+function toPublicFundingCallRecord(
+  row: PublicFundingCallSelection,
+): PublicFundingCallRecord {
+  return {
+    ...row.snapshot,
+    closesAt: new Date(row.snapshot.closesAt),
+    description: sanitizeFundingCallDescription(row.snapshot.description),
+    id: row.id,
+    opensAt: new Date(row.snapshot.opensAt),
+    status: row.status,
+  };
+}
 
 function publishedConditions(input: PublishedFundingCallQuery) {
   return publicConditions(input);
@@ -279,20 +285,30 @@ export async function readPublicFundingCalls(
     database
       .select(publicSelection)
       .from(fundingCalls)
+      .innerJoin(
+        fundingCallPublicationRevisions,
+        and(
+          eq(fundingCallPublicationRevisions.fundingCallId, fundingCalls.id),
+          eq(fundingCallPublicationRevisions.revisionNumber, 1),
+        ),
+      )
       .where(and(...conditions, cursorCondition))
       .orderBy(desc(fundingCalls.opensAt), desc(fundingCalls.id))
       .limit(input.limit + 1),
     database
       .select({ value: count() })
       .from(fundingCalls)
+      .innerJoin(
+        fundingCallPublicationRevisions,
+        and(
+          eq(fundingCallPublicationRevisions.fundingCallId, fundingCalls.id),
+          eq(fundingCallPublicationRevisions.revisionNumber, 1),
+        ),
+      )
       .where(and(...conditions)),
   ]);
   return {
-    items: rows.map((row) => ({
-      ...row,
-      description: sanitizeFundingCallDescription(row.description),
-      publicDocuments: [],
-    })),
+    items: rows.map(toPublicFundingCallRecord),
     total: totals[0]?.value ?? 0,
   };
 }
@@ -303,6 +319,13 @@ export async function readPublicFundingCallBySlug(
   const [row] = await getDatabase()
     .select(publicSelection)
     .from(fundingCalls)
+    .innerJoin(
+      fundingCallPublicationRevisions,
+      and(
+        eq(fundingCallPublicationRevisions.fundingCallId, fundingCalls.id),
+        eq(fundingCallPublicationRevisions.revisionNumber, 1),
+      ),
+    )
     .where(
       and(
         eq(fundingCalls.slug, slug),
@@ -311,11 +334,7 @@ export async function readPublicFundingCallBySlug(
     )
     .limit(1);
   if (!row) return null;
-  return {
-    ...row,
-    description: sanitizeFundingCallDescription(row.description),
-    publicDocuments: await readPublishedPublicDocuments(row.id),
-  };
+  return toPublicFundingCallRecord(row);
 }
 
 export async function readPublicFundingCallById(
@@ -324,6 +343,13 @@ export async function readPublicFundingCallById(
   const [row] = await getDatabase()
     .select(publicSelection)
     .from(fundingCalls)
+    .innerJoin(
+      fundingCallPublicationRevisions,
+      and(
+        eq(fundingCallPublicationRevisions.fundingCallId, fundingCalls.id),
+        eq(fundingCallPublicationRevisions.revisionNumber, 1),
+      ),
+    )
     .where(
       and(
         eq(fundingCalls.id, id),
@@ -332,28 +358,5 @@ export async function readPublicFundingCallById(
     )
     .limit(1);
   if (!row) return null;
-  return {
-    ...row,
-    description: sanitizeFundingCallDescription(row.description),
-    publicDocuments: await readPublishedPublicDocuments(row.id),
-  };
-}
-
-async function readPublishedPublicDocuments(fundingCallId: string) {
-  return getDatabase()
-    .select({
-      label: fundingCallPublicDocuments.label,
-      url: fundingCallPublicDocuments.url,
-    })
-    .from(fundingCallPublicDocuments)
-    .where(
-      and(
-        eq(fundingCallPublicDocuments.fundingCallId, fundingCallId),
-        lte(fundingCallPublicDocuments.publishedAt, new Date()),
-      ),
-    )
-    .orderBy(
-      asc(fundingCallPublicDocuments.displayOrder),
-      asc(fundingCallPublicDocuments.id),
-    );
+  return toPublicFundingCallRecord(row);
 }

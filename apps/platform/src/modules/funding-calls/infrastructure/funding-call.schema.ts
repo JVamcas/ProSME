@@ -25,6 +25,9 @@ import type {
 import type {
   FundingCallLifecycleCommand,
 } from "../domain/FundingCallLifecycle";
+import type {
+  FundingCallPublicationSnapshot,
+} from "../domain/FundingCallPublication";
 
 export const fundingCalls = pgTable(
   "app_funding_calls",
@@ -241,6 +244,55 @@ export const fundingCallGovernancePolicy = pgTable(
   },
   (table) => [
     check("app_funding_call_governance_policy_singleton_check", sql`${table.id} = 1`),
+  ],
+);
+
+export const fundingCallPublicationRevisions = pgTable(
+  "app_funding_call_publication_revisions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    fundingCallId: uuid("funding_call_id")
+      .notNull()
+      .references(() => fundingCalls.id, { onDelete: "restrict" }),
+    revisionNumber: integer("revision_number").notNull(),
+    sourceRowVersion: integer("source_row_version").notNull(),
+    publishedStatus: text("published_status")
+      .$type<"SCHEDULED" | "LIVE">()
+      .notNull(),
+    snapshot: jsonb("snapshot")
+      .$type<FundingCallPublicationSnapshot>()
+      .notNull(),
+    lifecycleHistoryId: uuid("lifecycle_history_id")
+      .notNull()
+      .references(() => fundingCallLifecycleHistory.id, {
+        onDelete: "restrict",
+      }),
+    publishedBy: uuid("published_by")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    publishedAt: timestamp("published_at", { withTimezone: true }).notNull(),
+    correlationId: uuid("correlation_id").notNull(),
+  },
+  (table) => [
+    uniqueIndex("app_funding_call_publication_revision_unique").on(
+      table.fundingCallId,
+      table.revisionNumber,
+    ),
+    uniqueIndex("app_funding_call_publication_lifecycle_unique").on(
+      table.lifecycleHistoryId,
+    ),
+    check(
+      "app_funding_call_publication_revision_number_check",
+      sql`${table.revisionNumber} > 0`,
+    ),
+    check(
+      "app_funding_call_publication_source_version_check",
+      sql`${table.sourceRowVersion} > 0`,
+    ),
+    check(
+      "app_funding_call_publication_status_check",
+      sql`${table.publishedStatus} in ('SCHEDULED', 'LIVE')`,
+    ),
   ],
 );
 

@@ -19,7 +19,7 @@ type LifecycleActor =
   | { actorId?: never; systemActor: string };
 
 export type FundingCallLifecycleInput = LifecycleActor & {
-  command: FundingCallLifecycleCommand;
+  command: Exclude<FundingCallLifecycleCommand, "PUBLISH">;
   correlationId: string;
   effectiveTime?: Date;
   expectedRowVersion: number;

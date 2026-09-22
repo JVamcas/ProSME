@@ -4,8 +4,9 @@ vi.mock("server-only", () => ({}));
 vi.mock("@/modules/funding-calls/infrastructure/FundingCallRepository", () => ({
   readFundingCallById: vi.fn(),
 }));
-vi.mock("@/modules/funding-calls/infrastructure/FundingCallLifecycleRepository", () => ({
-  transitionFundingCall: vi.fn(),
+vi.mock("@/modules/funding-calls/infrastructure/FundingCallPublicationRepository", () => ({
+  publishApprovedFundingCall: vi.fn(),
+  readFundingCallPublicationReplay: vi.fn(),
 }));
 vi.mock("@/modules/funding-calls/application/ServerFundingCallReadinessService", () => ({
   validateFundingCallReadiness: vi.fn(),
@@ -16,9 +17,12 @@ import { PermissionDeniedError } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import {
   publishFundingCall,
-} from "@/modules/funding-calls/application/ServerFundingCallService";
+} from "@/modules/funding-calls/application/ServerFundingCallPublicationService";
 import { validateFundingCallReadiness } from "@/modules/funding-calls/application/ServerFundingCallReadinessService";
-import { transitionFundingCall } from "@/modules/funding-calls/infrastructure/FundingCallLifecycleRepository";
+import {
+  publishApprovedFundingCall,
+  readFundingCallPublicationReplay,
+} from "@/modules/funding-calls/infrastructure/FundingCallPublicationRepository";
 import { readFundingCallById } from "@/modules/funding-calls/infrastructure/FundingCallRepository";
 
 const actorId = "10000000-0000-4000-8000-000000000001";
@@ -73,6 +77,7 @@ function publisher(): AuthenticatedUser {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(readFundingCallPublicationReplay).mockResolvedValue(null);
   vi.mocked(readFundingCallById).mockResolvedValue(call);
   vi.mocked(validateFundingCallReadiness).mockResolvedValue({
     checkedAt: "2026-09-22T00:00:00.000Z",
@@ -93,17 +98,17 @@ describe("funding call publication", () => {
       "correlation-id",
     )).rejects.toBeInstanceOf(PermissionDeniedError);
 
-    expect(transitionFundingCall).not.toHaveBeenCalled();
+    expect(publishApprovedFundingCall).not.toHaveBeenCalled();
   });
 
   it("publishes only after rerunning readiness validation", async () => {
-    vi.mocked(transitionFundingCall).mockResolvedValue({
+    vi.mocked(publishApprovedFundingCall).mockResolvedValue({
       call: {
         ...call,
         rowVersion: 2,
         status: "SCHEDULED",
       },
-      kind: "transitioned",
+      kind: "published",
     });
 
     const result = await publishFundingCall(
@@ -118,9 +123,8 @@ describe("funding call publication", () => {
       call,
       expect.any(Date),
     );
-    expect(transitionFundingCall).toHaveBeenCalledWith({
+    expect(publishApprovedFundingCall).toHaveBeenCalledWith({
       actorId,
-      command: "PUBLISH",
       correlationId: "correlation-id",
       expectedRowVersion: 1,
       fundingCallId: callId,
@@ -152,6 +156,27 @@ describe("funding call publication", () => {
       "correlation-id",
     )).rejects.toThrow("FORM_VERSION_NOT_PUBLISHED");
 
-    expect(transitionFundingCall).not.toHaveBeenCalled();
+    expect(publishApprovedFundingCall).not.toHaveBeenCalled();
+  });
+
+  it("replays an identical command without creating another revision or event", async () => {
+    vi.mocked(readFundingCallPublicationReplay).mockResolvedValue({
+      ...call,
+      rowVersion: 2,
+      status: "SCHEDULED",
+    });
+
+    const result = await publishFundingCall(
+      publisher(),
+      callId,
+      { expectedRowVersion: 1 },
+      "publish-key",
+      "retry-correlation-id",
+    );
+
+    expect(result.status).toBe("SCHEDULED");
+    expect(readFundingCallById).not.toHaveBeenCalled();
+    expect(validateFundingCallReadiness).not.toHaveBeenCalled();
+    expect(publishApprovedFundingCall).not.toHaveBeenCalled();
   });
 });

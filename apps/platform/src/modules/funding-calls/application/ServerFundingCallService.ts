@@ -7,7 +7,6 @@ import {
 } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import {
-  IdempotencyConflictError,
   RequestValidationError,
   ResourceConflictError,
   ResourceNotFoundError,
@@ -31,7 +30,6 @@ import {
 import type {
   FundingCallCreateInput,
   FundingCallListInput,
-  FundingCallPublishInput,
   FundingCallUpdateInput,
 } from "../api/FundingCallSchemas";
 import type {
@@ -45,9 +43,7 @@ import {
   readFundingCallByPublicIdentifier,
   updateDraftFundingCall,
 } from "../infrastructure/FundingCallRepository";
-import { transitionFundingCall } from "../infrastructure/FundingCallLifecycleRepository";
 import { readFundingCalls } from "../infrastructure/FundingCallAdminListRepository";
-import { validateFundingCallReadiness } from "./ServerFundingCallReadinessService";
 
 function view(call: FundingCall): FundingCallView {
   return {
@@ -216,51 +212,4 @@ export async function updateFundingCall(
       ? "The funding call changed. Refresh it before saving again."
       : "Only draft funding calls can be edited.",
   );
-}
-
-export async function publishFundingCall(
-  user: AuthenticatedUser | null,
-  id: string,
-  input: FundingCallPublishInput,
-  idempotencyKey: string,
-  correlationId: string,
-): Promise<FundingCallView> {
-  const actor = requirePermission(user, permissionCodes.fundingCallPublish);
-  const call = await readFundingCallById(id);
-  if (!call) throw new ResourceNotFoundError("funding call");
-  if (call.status !== "APPROVED" || call.rowVersion !== input.expectedRowVersion) {
-    throw new ResourceConflictError(
-      call.status === "APPROVED"
-        ? "The funding call changed. Refresh it before publishing."
-        : "Only approved funding calls can be published.",
-    );
-  }
-  const now = new Date();
-  const readiness = await validateFundingCallReadiness(call, now);
-  if (!readiness.ready) {
-    const first = readiness.issues[0];
-    throw new RequestValidationError(
-      `Publication readiness failed (${first.code}): ${first.message}`,
-    );
-  }
-  const published = await transitionFundingCall({
-    actorId: actor.id,
-    command: "PUBLISH",
-    correlationId,
-    expectedRowVersion: input.expectedRowVersion,
-    fundingCallId: id,
-    idempotencyKey,
-    now,
-  });
-  if (published.kind === "idempotency_conflict") {
-    throw new IdempotencyConflictError(
-      "The idempotency key was already used for another command.",
-    );
-  }
-  if (published.kind === "conflict") {
-    throw new ResourceConflictError(
-      "The funding call changed. Refresh it before publishing.",
-    );
-  }
-  return view(published.call);
 }
