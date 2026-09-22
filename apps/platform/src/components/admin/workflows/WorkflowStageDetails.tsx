@@ -251,11 +251,11 @@ function StageConfiguration({ stage }: { stage: WorkflowStageInput }) {
     },
     {
       label: stage.optional ? "Optional" : "Required",
-      variant: stage.optional ? "gold" : "navy",
+      variant: stage.optional ? "outlineOrange" : "red",
     },
     {
       label: stage.repeatable ? "Repeatable" : "Single-run",
-      variant: stage.repeatable ? "yellow" : "subtle",
+      variant: stage.repeatable ? "yellow" : "outlineOrange",
     },
     {
       label: stage.coiGated ? "COI-gated" : "No COI gate",

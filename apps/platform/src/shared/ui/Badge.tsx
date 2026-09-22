@@ -15,6 +15,7 @@ export const badgeVariants = cva(
         primary: "bg-brand-orange text-brand-white",
         navy: "bg-brand-navy text-brand-white",
         gold: "bg-brand-gold text-brand-navy",
+        red: "bg-red-600 text-brand-white",
         outline:
           "border border-brand-navy/20 bg-brand-white text-brand-navy",
         yellow: "bg-brand-yellow text-brand-navy",

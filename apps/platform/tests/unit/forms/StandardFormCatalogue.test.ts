@@ -14,6 +14,7 @@ const expectedCodes = [
   "COMMITTEE_REVIEW",
   "DISBURSEMENT_REVIEW",
   "DUE_DILIGENCE_RISK",
+  "ELIGIBILITY_VERIFICATION",
   "EVALUATION_CLOSE_OUT_REVIEW",
   "FUNDING_APPLICATION",
   "MODERATION",
@@ -121,5 +122,30 @@ describe("standard form catalogue", () => {
         "DATA_PROCESSING_CONSENT",
       ]),
     );
+  });
+
+  it("defines published typed outputs for authoritative Eligibility", () => {
+    const form = createStandardForms().find(
+      (item) => item.code === "ELIGIBILITY_VERIFICATION",
+    );
+
+    expect(form?.publishOnSeed).toBe(true);
+    expect(form?.fields).toHaveLength(14);
+    expect(form?.fields.find(
+      (field) => field.key === "APPLICABLE_REGISTRATIONS_VERIFIED",
+    )).toMatchObject({
+      options: [
+        expect.objectContaining({ key: "YES" }),
+        expect.objectContaining({ key: "NO" }),
+        expect.objectContaining({ key: "NOT_APPLICABLE" }),
+      ],
+      type: "SINGLE_SELECT",
+    });
+    expect(form?.fields.find(
+      (field) => field.key === "NAMRA_GOOD_STANDING",
+    )?.type).toBe("YES_NO");
+    expect(form?.fields.find(
+      (field) => field.key === "SOCIAL_SECURITY_GOOD_STANDING",
+    )?.type).toBe("YES_NO");
   });
 });

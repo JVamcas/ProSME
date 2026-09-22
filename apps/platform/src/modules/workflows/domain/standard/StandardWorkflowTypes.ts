@@ -19,6 +19,7 @@ export type StandardWorkflowRoleCode =
   (typeof standardWorkflowRoleCodes)[number];
 
 export const standardWorkflowFormCodes = [
+  "ELIGIBILITY_VERIFICATION",
   "TECHNICAL_REVIEW",
   "FINANCE_REVIEW",
   "DUE_DILIGENCE_RISK",
@@ -47,4 +48,3 @@ export type StandardWorkflowDraft = {
   graph: WorkflowGraphInput;
   name: string;
 };
-

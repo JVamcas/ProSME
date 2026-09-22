@@ -48,30 +48,6 @@ export function EligibilityPublicationValidation({
   result: EligibilityPublicationValidationResult;
 }) {
   return (
-    <section
-      aria-labelledby="eligibility-publication-validation-heading"
-      className="rounded-xl border border-brand-navy/15 bg-white p-4"
-    >
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3
-          className="font-semibold text-brand-navy"
-          id="eligibility-publication-validation-heading"
-        >
-          Publication validation
-        </h3>
-        <Badge variant={result.ready ? "success" : "danger"}>
-          {result.ready ? "Ready" : "Blocked"}
-        </Badge>
-      </div>
-      {result.ready ? (
-        <p className="mt-2 text-sm text-brand-navy/70">
-          All configured field references resolve for their execution modes.
-        </p>
-      ) : (
-        <ul className="mt-2 space-y-1 text-sm text-red-700" role="alert">
-          {result.issues.map((issue) => <li key={issue}>{issue}</li>)}
-        </ul>
-      )}
-    </section>
+    <></>
   );
 }

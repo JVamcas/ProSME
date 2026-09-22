@@ -136,7 +136,9 @@ export async function findEligibilityInputDependencies(
 export async function findEligibilityInputPublicationIssues(
   versionId: string,
 ): Promise<string[]> {
-  const result = await getDatabase().execute<{ issue: string | null }>(sql`
+  const database = getDatabase();
+  const [result, unresolved] = await Promise.all([
+    database.execute<{ issue: string | null }>(sql`
     SELECT CASE
       WHEN 'SELF_CHECK' = ANY(input.available_in)
         AND question.input_definition_id IS NULL
@@ -208,6 +210,23 @@ export async function findEligibilityInputPublicationIssues(
     LEFT JOIN app_eligibility_screening_source_bindings source
       ON source.input_definition_id = input.id
     WHERE input.version_id = ${versionId}
-  `);
-  return result.rows.flatMap((row) => row.issue ? [row.issue] : []);
+    `),
+    database.execute<{ issue: string }>(sql`
+      SELECT DISTINCT rule.reason_code || ': unresolved field reference "'
+        || (path.value #>> '{}') || '".' AS issue
+      FROM app_eligibility_rules rule
+      INNER JOIN app_condition_groups condition_group
+        ON condition_group.id = rule.condition_group_id
+      CROSS JOIN LATERAL jsonb_path_query(
+        condition_group.definition,
+        '$.** ? (@.kind == "FIELD").key'
+      ) path(value)
+      WHERE rule.version_id = ${versionId}
+        AND (path.value #>> '{}') NOT LIKE 'eligibility.%'
+    `),
+  ]);
+  return [
+    ...result.rows.flatMap((row) => row.issue ? [row.issue] : []),
+    ...unresolved.rows.map((row) => row.issue),
+  ];
 }

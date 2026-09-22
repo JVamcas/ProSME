@@ -1,41 +1,9 @@
 import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup";
 import { operator } from "@/modules/conditions/domain/Operator";
-import type {
-  FormField,
-  FormFieldType,
-  FormOption,
-  FormSection,
-} from "@/modules/forms/FormTypes";
 import { fundingApplicationForm } from "./FundingApplicationForm";
+import { eligibilityVerificationForm } from "./EligibilityVerificationForm";
+import { defineStandardForm } from "./StandardFormBuilder";
 import type { StandardFormSeed } from "./StandardFormDefinition";
-
-type FieldInput = {
-  columnSpan?: 1 | 2 | 3;
-  helpText?: string;
-  key: string;
-  label: string;
-  maximum?: number;
-  minimum?: number;
-  options?: readonly string[];
-  required?: boolean;
-  type: FormFieldType;
-  visibilityCondition?: ConditionGroup;
-};
-
-type SectionInput = {
-  description?: string;
-  fields: FieldInput[];
-  key: string;
-  title: string;
-};
-
-function formOptions(labels: readonly string[]): FormOption[] {
-  return labels.map((label, index) => ({
-    key: label.toUpperCase().replaceAll(/[^A-Z0-9]+/g, "_"),
-    label,
-    order: index + 1,
-  }));
-}
 
 function equals(fieldKey: string, value: boolean): ConditionGroup {
   return {
@@ -52,55 +20,10 @@ function equals(fieldKey: string, value: boolean): ConditionGroup {
   };
 }
 
-function defineForm(input: {
-  code: string;
-  description: string;
-  instructions: string;
-  name: string;
-  sections: SectionInput[];
-  submitLabel?: string;
-}): StandardFormSeed {
-  const sections = input.sections.map((section, index): FormSection => ({
-    id: crypto.randomUUID(),
-    columnSpan: 2,
-    description: section.description ?? "",
-    key: section.key,
-    order: index + 1,
-    showContainer: true,
-    title: section.title,
-  }));
-  const fields = input.sections.flatMap((section, sectionIndex) => (
-    section.fields.map((field, fieldIndex): FormField => ({
-      columnSpan: field.columnSpan ?? 1,
-      helpText: field.helpText,
-      key: field.key,
-      label: field.label,
-      maximum: field.maximum,
-      minimum: field.minimum,
-      options: field.options ? formOptions(field.options) : undefined,
-      order: fieldIndex + 1,
-      required: field.required ?? false,
-      sectionId: sections[sectionIndex].id!,
-      type: field.type,
-      visibilityCondition: field.visibilityCondition,
-    }))
-  ));
-  return {
-    code: input.code,
-    description: input.description,
-    displayMode: "SINGLE_PAGE",
-    fields,
-    instructions: input.instructions,
-    name: input.name,
-    sections,
-    submitLabel: input.submitLabel ?? "Complete task",
-  };
-}
-
 const riskOptions = ["Low", "Medium", "High", "Critical"] as const;
 
 function technicalReview(): StandardFormSeed {
-  return defineForm({
+  return defineStandardForm({
     code: "TECHNICAL_REVIEW",
     name: "Technical Review Form",
     description: "Captures a technical reviewer's narrative and recommendation.",
@@ -129,7 +52,7 @@ function technicalReview(): StandardFormSeed {
 }
 
 function dueDiligenceReview(): StandardFormSeed {
-  return defineForm({
+  return defineStandardForm({
     code: "DUE_DILIGENCE_RISK",
     name: "Due Diligence and Risk Form",
     description: "Captures verification findings, risk ratings and mitigations.",
@@ -171,7 +94,7 @@ function dueDiligenceReview(): StandardFormSeed {
 }
 
 function moderationReview(): StandardFormSeed {
-  return defineForm({
+  return defineStandardForm({
     code: "MODERATION",
     name: "Moderation Form",
     description: "Captures justified moderation adjustments and provisional allocation.",
@@ -191,7 +114,7 @@ function moderationReview(): StandardFormSeed {
 }
 
 function committeeReview(): StandardFormSeed {
-  return defineForm({
+  return defineStandardForm({
     code: "COMMITTEE_REVIEW",
     name: "Committee Review Form",
     description: "Captures the application-level committee record.",
@@ -212,7 +135,7 @@ function committeeReview(): StandardFormSeed {
 }
 
 function approvalReview(): StandardFormSeed {
-  return defineForm({
+  return defineStandardForm({
     code: "APPROVAL",
     name: "Approval Form",
     description: "Captures the approved award details and funding allocation.",
@@ -232,7 +155,7 @@ function approvalReview(): StandardFormSeed {
 }
 
 function appealSubmission(): StandardFormSeed {
-  return defineForm({
+  return defineStandardForm({
     code: "APPEAL_SUBMISSION",
     name: "Appeal Submission Form",
     description: "Captures an applicant's grounds and details for an appeal.",
@@ -250,7 +173,7 @@ function appealSubmission(): StandardFormSeed {
 }
 
 function appealReview(): StandardFormSeed {
-  return defineForm({
+  return defineStandardForm({
     code: "APPEAL_REVIEW",
     name: "Appeal Review Form",
     description: "Captures the process-compliance review and rationale for an appeal.",
@@ -268,7 +191,7 @@ function appealReview(): StandardFormSeed {
 }
 
 function trancheClaim(): StandardFormSeed {
-  return defineForm({
+  return defineStandardForm({
     code: "TRANCHE_CLAIM",
     name: "Tranche Claim Form",
     description: "Captures one payment claim for one disbursement tranche.",
@@ -291,7 +214,7 @@ function trancheClaim(): StandardFormSeed {
 }
 
 function disbursementReview(): StandardFormSeed {
-  return defineForm({
+  return defineStandardForm({
     code: "DISBURSEMENT_REVIEW",
     name: "Disbursement Review Form",
     description: "Captures financial acquittal and payment-condition verification.",
@@ -311,7 +234,7 @@ function disbursementReview(): StandardFormSeed {
 }
 
 function monitoringReview(): StandardFormSeed {
-  return defineForm({
+  return defineStandardForm({
     code: "MONITORING_REVIEW",
     name: "Monitoring Review Form",
     description: "Captures performance, data-quality and compliance review findings.",
@@ -332,7 +255,7 @@ function monitoringReview(): StandardFormSeed {
 }
 
 function evaluationCloseOutReview(): StandardFormSeed {
-  return defineForm({
+  return defineStandardForm({
     code: "EVALUATION_CLOSE_OUT_REVIEW",
     name: "Evaluation and Close-out Review Form",
     description: "Captures evaluation findings, management response and close-out assurance.",
@@ -354,6 +277,7 @@ function evaluationCloseOutReview(): StandardFormSeed {
 export function createStandardForms(): StandardFormSeed[] {
   return [
     fundingApplicationForm(),
+    eligibilityVerificationForm(),
     technicalReview(),
     dueDiligenceReview(),
     moderationReview(),

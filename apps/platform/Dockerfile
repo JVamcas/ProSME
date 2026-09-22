@@ -29,6 +29,7 @@ COPY --chown=nextjs:nodejs apps/platform apps/platform
 COPY --chown=nextjs:nodejs \
     scripts/seed/package.json \
     scripts/seed/seed-standard-forms.ts \
+    scripts/seed/seed-standard-eligibility.ts \
     scripts/seed/seed-standard-workflow.ts \
     scripts/seed/
 COPY --chown=nextjs:nodejs --chmod=755 \

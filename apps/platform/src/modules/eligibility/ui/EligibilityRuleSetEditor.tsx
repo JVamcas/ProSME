@@ -276,7 +276,7 @@ export function EligibilityRuleSetEditor({
 
       {isDraft && !hasContext ? (
         <p className="rounded-xl border border-amber-400 bg-amber-50 px-4 py-3 text-sm text-brand-navy">
-          Bind this draft ruleset to a draft funding call before adding rules.
+          Bind this draft ruleset to a draft funding call before adding eligibility rules.
         </p>
       ) : null}
 
@@ -285,8 +285,6 @@ export function EligibilityRuleSetEditor({
           {lifecycle.error.message}
         </p>
       ) : null}
-
-      <EligibilityPublicationValidation result={publicationValidation} />
 
       <section aria-label="Eligibility rules" id="eligibility-rules">
         <DataTable

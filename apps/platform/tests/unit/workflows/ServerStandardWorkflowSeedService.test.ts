@@ -20,9 +20,12 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(prepareStandardWorkflowSeedDependencies).mockResolvedValue({
     formVersionIds: {
+      ELIGIBILITY_VERIFICATION:
+        "00000000-0000-4000-9000-000000000002",
       TECHNICAL_REVIEW: "00000000-0000-4000-9000-000000000001",
     },
     formVersionStatuses: {
+      ELIGIBILITY_VERIFICATION: "PUBLISHED",
       TECHNICAL_REVIEW: "DRAFT",
     },
     roleIds: Object.fromEntries(
@@ -59,9 +62,14 @@ describe("standard workflow seed service", () => {
         }),
       }),
     );
-    expect(result.boundFormCodes).toEqual(["TECHNICAL_REVIEW"]);
+    expect(result.boundFormCodes).toEqual([
+      "ELIGIBILITY_VERIFICATION",
+      "TECHNICAL_REVIEW",
+    ]);
     expect(result.boundDraftFormCodes).toEqual(["TECHNICAL_REVIEW"]);
-    expect(result.boundPublishedFormCodes).toEqual([]);
+    expect(result.boundPublishedFormCodes).toEqual([
+      "ELIGIBILITY_VERIFICATION",
+    ]);
     expect(result.unresolvedFormCodes).toEqual(["FINANCE_REVIEW"]);
   });
 });

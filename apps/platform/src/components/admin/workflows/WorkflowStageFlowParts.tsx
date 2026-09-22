@@ -34,6 +34,7 @@ export function WorkflowStagesHeader({
         onClick={onAddStage}
         variant="primary"
         type="button"
+        size={"compact"}
       >
         <Plus className="size-4 text-white" />
         Add Workflow stage

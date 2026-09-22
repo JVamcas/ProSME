@@ -561,6 +561,13 @@
       "when": 1794614400000,
       "tag": "0079_configurable_eligibility_integration_outputs",
       "breakpoints": true
+    },
+    {
+      "idx": 80,
+      "version": "7",
+      "when": 1794700800000,
+      "tag": "0080_eligibility_dynamic_model_migration",
+      "breakpoints": true
     }
   ]
 }

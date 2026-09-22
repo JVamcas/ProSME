@@ -14,19 +14,34 @@ export function createEligibilityIntegrationOutputAdapter(
     async resolve(requests) {
       const applicationId = requests[0]?.applicationId;
       if (!applicationId) return new Map();
-      const versionIds = [...new Set(requests.map(
+      const invalid = requests.filter(
+        (request) => request.binding.valuePath !== "value",
+      );
+      const valid = requests.filter(
+        (request) => request.binding.valuePath === "value",
+      );
+      const versionIds = [...new Set(valid.map(
         (request) => request.binding.sourceVersionId!,
       ))];
-      const executions = await readLatestEligibilityIntegrationExecutions(
-        applicationId,
-        versionIds,
-        database,
-      );
+      const executions = valid.length
+        ? await readLatestEligibilityIntegrationExecutions(
+            applicationId,
+            versionIds,
+            database,
+          )
+        : [];
       const byVersion = new Map(executions.map((execution) => [
         execution.integrationVersionId,
         execution,
       ]));
-      return new Map(requests.map((request): [
+      const invalidEntries = invalid.map((request): [
+        string,
+        EligibilityScreeningSourceResolution,
+      ] => [request.input.id, {
+        message: "The configured integration output path is invalid.",
+        status: "INVALID",
+      }]);
+      const resolvedEntries = valid.map((request): [
         string,
         EligibilityScreeningSourceResolution,
       ] => {
@@ -66,7 +81,8 @@ export function createEligibilityIntegrationOutputAdapter(
             value,
           },
         }];
-      }));
+      });
+      return new Map([...invalidEntries, ...resolvedEntries]);
     },
   };
 }

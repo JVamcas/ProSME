@@ -2,6 +2,7 @@ import type { WorkflowStageInput } from "../definitions/WorkflowTypes";
 import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup";
 import { basicOperators } from "@/modules/conditions/engine/BasicOperators";
 import type { StandardWorkflowDependencies } from "./StandardWorkflowTypes";
+import { eligibilityVerificationTask } from "./StandardEligibilityScreeningTask";
 import {
   action,
   approve,
@@ -125,6 +126,7 @@ function screening(dependencies: StandardWorkflowDependencies) {
         stableKey: "COMPLETENESS_SCREENING",
         type: "CHECKLIST",
       }),
+      eligibilityVerificationTask(dependencies),
       task(dependencies, {
         actionKeys: actions.map((item) => item.stableKey),
         config: {
@@ -132,7 +134,7 @@ function screening(dependencies: StandardWorkflowDependencies) {
           reevaluationPolicy: "WHEN_EVIDENCE_CHANGED",
         },
         description: "Record the authoritative eligibility outcome and route the application.",
-        displayOrder: 2,
+        displayOrder: 3,
         name: "Authoritative eligibility decision",
         roleCode: "programme_officer",
         stableKey: "AUTHORITATIVE_ELIGIBILITY",

@@ -90,4 +90,14 @@ describe("eligibility integration output adapter", () => {
       status: "UNAVAILABLE",
     });
   });
+
+  it("rejects an unnormalized integration value path", async () => {
+    const invalid = request();
+    invalid.binding.valuePath = "raw.match";
+
+    const result = await createEligibilityIntegrationOutputAdapter({} as never)
+      .resolve([invalid]);
+
+    expect(result.get("input-1")).toMatchObject({ status: "INVALID" });
+  });
 });

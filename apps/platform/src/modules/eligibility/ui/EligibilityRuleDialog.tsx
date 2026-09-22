@@ -14,8 +14,8 @@ import {
   FormInput,
   FormSelect,
 } from "@/components/ui/form-fields";
-import { ConditionBuilder } from "@/modules/conditions/ui/builder";
 import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup";
+import { ConditionBuilder } from "@/modules/conditions/ui/builder";
 import { eligibilityBuilderRuleSchema } from "../api/EligibilityRuleSetSchemas";
 import type { EligibilityBuilderRule } from "../api/EligibilityRuleSetTransport";
 import type {
@@ -23,7 +23,6 @@ import type {
   EligibilitySourceDescriptor,
 } from "../domain/EligibilityFieldRegistry";
 import { eligibilityBuilderFieldPresentations } from "./EligibilityBuilderFieldPresentation";
-import { EligibilityFieldCatalogue } from "./EligibilityFieldCatalogue";
 
 type EligibilityRuleFormValues = Omit<EligibilityBuilderRule, "condition"> & {
   condition: unknown;
@@ -129,7 +128,6 @@ export function EligibilityRuleDialog({
           name="applicantMessage"
           required
         />
-        <EligibilityFieldCatalogue fields={fieldPresentations} />
         <Controller
           control={form.control}
           name="condition"

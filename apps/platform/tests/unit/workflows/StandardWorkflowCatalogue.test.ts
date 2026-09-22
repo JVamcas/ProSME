@@ -10,7 +10,10 @@ import { validateWorkflowGraph } from "@/modules/workflows/WorkflowValidation";
 
 function dependencies(): StandardWorkflowDependencies {
   return {
-    formVersionIds: {},
+    formVersionIds: {
+      ELIGIBILITY_VERIFICATION:
+        "00000000-0000-4000-9000-000000000001",
+    },
     roleIds: Object.fromEntries(
       standardWorkflowRoleCodes.map((code, index) => [
         code,
@@ -72,8 +75,19 @@ describe("standard workflow catalogue", () => {
     const prerequisiteTask = screening.tasks.find(
       (item) => item.stableKey === "COMPLETENESS_SCREENING",
     )!;
+    const verificationTask = screening.tasks.find(
+      (item) => item.stableKey === "ELIGIBILITY_VERIFICATION",
+    )!;
 
     expect(prerequisiteTask.actionKeys).toEqual([]);
+    expect(verificationTask).toMatchObject({
+      displayOrder: 2,
+      formBinding: {
+        formVersionId: "00000000-0000-4000-9000-000000000001",
+      },
+      type: "STRUCTURED_FORM",
+    });
+    expect(task.displayOrder).toBe(3);
     expect(task.config).toEqual({
       command: "AUTHORITATIVE_ELIGIBILITY",
       reevaluationPolicy: "WHEN_EVIDENCE_CHANGED",

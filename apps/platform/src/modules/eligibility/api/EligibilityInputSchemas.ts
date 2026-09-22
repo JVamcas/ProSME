@@ -93,6 +93,16 @@ export const eligibilitySourceBindingSchema = z.object({
       path: ["sourceVersionId"],
     });
   }
+  if (
+    binding.sourceKind === "INTEGRATION_OUTPUT"
+    && binding.valuePath !== "value"
+  ) {
+    context.addIssue({
+      code: "custom",
+      message: "Integration outputs use the normalized value path.",
+      path: ["valuePath"],
+    });
+  }
 });
 
 const eligibilityInputDefinitionFields = {

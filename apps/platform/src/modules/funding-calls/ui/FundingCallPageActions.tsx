@@ -69,15 +69,6 @@ export function FundingCallPageActions({
 
   return (
     <>
-      <GeneralButton
-        disabled={readiness.isPending}
-        onClick={validateReadiness}
-        type="button"
-        variant="outlineOrange"
-        size={"compact"}
-      >
-        {readiness.isPending ? "Validating…" : "Validate readiness"}
-      </GeneralButton>
       {call.status === "DRAFT" && canSubmit ? (
         <GeneralButton
           disabled={governance.isPending}

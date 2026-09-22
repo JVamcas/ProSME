@@ -30,7 +30,11 @@ import {
   ensureSystemSeedPrincipal,
   systemSeedUserId,
 } from "@/platform/database/SystemSeedPrincipal";
-import { createWorkflowDefinition } from "./WorkflowTemplateWriteRepository";
+import {
+  cloneWorkflowVersion,
+  createWorkflowDefinition,
+  replaceWorkflowDraft,
+} from "./WorkflowTemplateWriteRepository";
 import { workflowDefinitions } from "./workflow.schema";
 
 const standardRoles: Array<{
@@ -293,10 +297,66 @@ export async function insertMissingStandardWorkflowDraft(
     .where(eq(workflowDefinitions.code, standardWorkflowCode))
     .limit(1);
   if (existing) {
+    const versions = await getDatabase()
+      .select({
+        id: workflowDefinitionVersions.id,
+        rowVersion: workflowDefinitionVersions.rowVersion,
+        status: workflowDefinitionVersions.status,
+      })
+      .from(workflowDefinitionVersions)
+      .where(eq(workflowDefinitionVersions.definitionId, existing.id))
+      .orderBy(desc(workflowDefinitionVersions.versionNumber));
+    const draftVersion = versions.find((version) => version.status === "DRAFT");
+    const verificationTask = draftVersion
+      ? await getDatabase()
+          .select({ id: stageTaskDefinitions.id })
+          .from(stageTaskDefinitions)
+          .innerJoin(
+            workflowStageDefinitions,
+            eq(stageTaskDefinitions.stageId, workflowStageDefinitions.id),
+          )
+          .where(and(
+            eq(workflowStageDefinitions.versionId, draftVersion.id),
+            eq(stageTaskDefinitions.stableKey, "ELIGIBILITY_VERIFICATION"),
+          ))
+          .limit(1)
+      : [];
+    if (draftVersion && verificationTask.length) {
+      return {
+        created: false,
+        definitionId: existing.id,
+        ...await bindMissingDraftForms(existing.id, draft),
+      };
+    }
+    const correlationId = crypto.randomUUID();
+    const versionId = draftVersion
+      ? await replaceWorkflowDraft({
+          actorId: systemSeedUserId,
+          correlationId,
+          expectedRowVersion: draftVersion.rowVersion,
+          graph: draft.graph,
+          versionId: draftVersion.id,
+        })
+      : await cloneWorkflowVersion({
+          actorId: systemSeedUserId,
+          correlationId,
+          definitionId: existing.id,
+          graph: draft.graph,
+          sourceVersionId: versions[0]!.id,
+        });
+    if (!versionId) {
+      throw new Error("The standard workflow draft changed during reseeding.");
+    }
     return {
+      bindingsAdded: draft.graph.stages.reduce(
+        (total, stage) => total + stage.tasks.filter(
+          (task) => task.formBinding,
+        ).length,
+        0,
+      ),
       created: false,
       definitionId: existing.id,
-      ...await bindMissingDraftForms(existing.id, draft),
+      versionId,
     };
   }
   const versionId = await createWorkflowDefinition({

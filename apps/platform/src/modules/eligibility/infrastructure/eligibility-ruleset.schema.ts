@@ -167,6 +167,76 @@ export const eligibilityRules = pgTable(
   ],
 );
 
+export const eligibilityConfigurationIssues = pgTable(
+  "app_eligibility_configuration_issues",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    versionId: uuid("version_id")
+      .notNull()
+      .references(() => eligibilityRuleSetVersions.id, {
+        onDelete: "restrict",
+      }),
+    ruleId: uuid("rule_id").references(() => eligibilityRules.id, {
+      onDelete: "restrict",
+    }),
+    origin: text("origin")
+      .$type<"LEGACY_MIGRATION" | "BASELINE_SEED">()
+      .notNull(),
+    referencePath: text("reference_path").notNull(),
+    message: text("message").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("app_eligibility_configuration_issues_unique").on(
+      table.versionId,
+      table.ruleId,
+      table.origin,
+      table.referencePath,
+    ),
+    index("app_eligibility_configuration_issues_version_idx").on(
+      table.versionId,
+      table.createdAt,
+    ),
+    check(
+      "app_eligibility_configuration_issues_origin_check",
+      sql`${table.origin} in ('LEGACY_MIGRATION', 'BASELINE_SEED')`,
+    ),
+    check(
+      "app_eligibility_configuration_issues_message_check",
+      sql`length(btrim(${table.message})) > 0`,
+    ),
+  ],
+);
+
+export const eligibilitySeedReviews = pgTable(
+  "app_eligibility_seed_reviews",
+  {
+    versionId: uuid("version_id")
+      .primaryKey()
+      .references(() => eligibilityRuleSetVersions.id, {
+        onDelete: "restrict",
+      }),
+    sourceDocument: text("source_document").notNull(),
+    approvalBasis: text("approval_basis").notNull(),
+    approvedBy: text("approved_by").notNull(),
+    approvedAt: timestamp("approved_at", { withTimezone: true }).notNull(),
+    decisionSnapshot: jsonb("decision_snapshot")
+      .$type<ReadonlyArray<Record<string, unknown>>>()
+      .notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    check(
+      "app_eligibility_seed_reviews_snapshot_check",
+      sql`jsonb_typeof(${table.decisionSnapshot}) = 'array'`,
+    ),
+  ],
+);
+
 export const eligibilityInputDefinitions = pgTable(
   "app_eligibility_input_definitions",
   {

@@ -89,7 +89,7 @@ function DraggableDialogPanel({
 
   const dialog = (
     <div
-      className="fixed inset-0 z-[100] flex items-end justify-center overflow-y-auto bg-brand-navy/30 p-2 sm:items-center sm:p-5"
+      className="fixed inset-0 z-[100] flex items-end justify-center overflow-y-auto bg-brand-navy/10 p-2 sm:items-center sm:p-5"
       onMouseDown={(event) => {
         if (event.currentTarget === event.target) onClose();
       }}
@@ -107,7 +107,7 @@ function DraggableDialogPanel({
         style={{ transform: `translate(${offset.x}px, ${offset.y}px)` }}
       >
         <header
-          className="flex cursor-grab touch-none select-none items-center bg-brand-orange justify-between border-b border-brand-navy/10 px-5 py-4 active:cursor-grabbing sm:px-6"
+          className="flex cursor-grab touch-none select-none items-center justify-between rounded-xl border-b border-t-2 border-slate-100 border-t-brand-orange px-5 py-4 active:cursor-grabbing sm:px-6"
           onPointerCancel={stopDrag}
           onPointerDown={startDrag}
           onPointerMove={moveDialog}

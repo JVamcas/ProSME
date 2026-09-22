@@ -71,6 +71,20 @@ describe("eligibility input schemas", () => {
     );
   });
 
+  it("requires integration outputs to use their normalized value", () => {
+    const input = validInput();
+    input.screening!.sourceKind = "INTEGRATION_OUTPUT";
+    input.screening!.valuePath = "raw.match";
+
+    const result = eligibilityInputCreateSchema.safeParse(input);
+
+    expect(result.success).toBe(false);
+    if (result.success) return;
+    expect(result.error.issues.map((issue) => issue.message)).toContain(
+      "Integration outputs use the normalized value path.",
+    );
+  });
+
   it("keeps optional groups paired and validates select options", () => {
     const input = validInput();
     input.groupLabel = null;

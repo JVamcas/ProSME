@@ -37,7 +37,7 @@ export function PageHeader({
   return (
     <header
       className={cn(
-        "w-full border-b mb-5 rounded-b border-slate-100 bg-white px-5 py-5 ring-1 ring-inset ring-slate-200 sm:px-6 sm:py-6",
+        "mb-5 w-full rounded-xl border-b border-t-2 border-slate-100 border-t-brand-orange bg-white px-5 py-5 ring-1 ring-inset ring-slate-200 sm:px-6 sm:py-6",
         className,
       )}
     >
