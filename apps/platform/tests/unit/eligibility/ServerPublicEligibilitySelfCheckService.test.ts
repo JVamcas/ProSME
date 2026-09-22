@@ -22,6 +22,7 @@ import type {
   EligibilityEvaluationRuleSet,
 } from "@/modules/eligibility/domain/EligibilityEvaluation";
 import type { EligibilityInputDefinition } from "@/modules/eligibility/domain/EligibilityInputDefinition";
+import type { SelfCheckQuestionDefinition } from "@/modules/eligibility/domain/EligibilityInputDefinition";
 import { findPublicFundingCallById } from "@/modules/funding-calls/application/ServerPublicFundingCallService";
 
 const fundingCallId = "00000000-0000-4000-8000-000000000042";
@@ -29,7 +30,7 @@ const fundingCallId = "00000000-0000-4000-8000-000000000042";
 function rule(
   id: string,
   path: string,
-  expected: boolean | number,
+  expected: boolean | number | string | string[],
   failureType: EligibilityEvaluationRule["failureType"],
   executionMode: EligibilityEvaluationRule["executionMode"],
   applicantMessage: string,
@@ -105,6 +106,9 @@ function selfCheckInput(
   stableKey: string,
   prompt: string,
   availableIn: EligibilityInputDefinition["availableIn"] = ["SELF_CHECK"],
+  order = 1,
+  question: Partial<SelfCheckQuestionDefinition> = {},
+  type: EligibilityInputDefinition["type"] = "BOOLEAN",
 ): EligibilityInputDefinition {
   return {
     availableIn,
@@ -114,7 +118,7 @@ function selfCheckInput(
     groupLabel: null,
     id: `50000000-0000-4000-8000-${stableKey.padEnd(12, "0").slice(0, 12)}`,
     label: prompt,
-    order: 1,
+    order,
     screening: availableIn.includes("SCREENING")
       ? {
           sourceDefinitionId: "60000000-0000-4000-8000-000000000001",
@@ -125,15 +129,15 @@ function selfCheckInput(
         }
       : null,
     selfCheck: {
-      answerType: "BOOLEAN",
-      explanation: "",
-      helpText: "",
-      options: [],
+      answerType: question.answerType ?? "BOOLEAN",
+      explanation: question.explanation ?? "",
+      helpText: question.helpText ?? "",
+      options: question.options ?? [],
       prompt,
-      required: true,
+      required: question.required ?? true,
     },
     stableKey,
-    type: "BOOLEAN",
+    type,
     updatedAt: new Date(),
     updatedBy: "10000000-0000-4000-8000-000000000001",
     versionId: ruleSet.versionId,
@@ -171,14 +175,19 @@ beforeEach(() => {
         "registered",
         "Business is registered",
         ["SELF_CHECK", "SCREENING"],
+        1,
       ),
       selfCheckInput(
         "statutory_good_standing",
         "Statutory good standing",
+        ["SELF_CHECK"],
+        2,
       ),
       selfCheckInput(
         "bank_account_active",
         "Active business bank account",
+        ["SELF_CHECK"],
+        3,
       ),
     ],
     ruleSet,

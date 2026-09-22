@@ -44,7 +44,11 @@ describe("public eligibility self-check route", () => {
   });
 
   it("evaluates submitted answers without an application", async () => {
-    const input = { answers: {}, configurationToken: token };
+    const questionId = "b".repeat(32);
+    const input = {
+      answers: { [questionId]: ["khomas", "oshana"] },
+      configurationToken: token,
+    };
     vi.mocked(evaluatePublicEligibilitySelfCheck).mockResolvedValue({
       advisory: true,
       applicationsOpen: true,

@@ -533,6 +533,13 @@
       "when": 1794268800000,
       "tag": "0075_mode_specific_eligibility_resolution",
       "breakpoints": true
+    },
+    {
+      "idx": 76,
+      "version": "7",
+      "when": 1794355200000,
+      "tag": "0076_public_self_check_question_types",
+      "breakpoints": true
     }
   ]
 }

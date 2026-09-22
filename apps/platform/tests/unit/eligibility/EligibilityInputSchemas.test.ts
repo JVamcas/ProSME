@@ -88,4 +88,24 @@ describe("eligibility input schemas", () => {
       ]),
     );
   });
+
+  it("requires the public response type to match the condition input type", () => {
+    const input = validInput();
+    input.selfCheck!.answerType = "YES_NO_NA";
+
+    const result = eligibilityInputCreateSchema.safeParse(input);
+
+    expect(result.success).toBe(false);
+    if (result.success) return;
+    expect(result.error.issues.map((issue) => issue.message)).toContain(
+      "The Self Check answer type must match the input data type.",
+    );
+  });
+
+  it("accepts percentage questions for numeric inputs", () => {
+    const input = validInput();
+    input.selfCheck!.answerType = "PERCENTAGE";
+
+    expect(eligibilityInputCreateSchema.safeParse(input).success).toBe(true);
+  });
 });

@@ -208,4 +208,43 @@ describe("mode-specific Eligibility input resolution", () => {
       values: {},
     })).toThrow(EligibilityInputResolutionError);
   });
+
+  it("resolves an unanswered optional Self Check question as null", () => {
+    const input = definition("APPLICATION_FORM_FIELD", "optional_answer");
+    input.selfCheck!.required = false;
+
+    const result = resolveSelfCheckEligibilityInputs({
+      answers: {},
+      inputs: [input],
+      paths: ["eligibility.optional_answer"],
+    });
+
+    expect(result.values).toEqual({ optional_answer: null });
+  });
+
+  it("resolves configured multi-select answers as a JSON list", () => {
+    const input = definition("APPLICATION_FORM_FIELD", "regions");
+    input.availableIn = ["SELF_CHECK"];
+    input.screening = null;
+    input.type = "TEXT";
+    input.selfCheck = {
+      answerType: "MULTI_SELECT",
+      explanation: "",
+      helpText: "",
+      options: [
+        { label: "Khomas", value: "khomas" },
+        { label: "Oshana", value: "oshana" },
+      ],
+      prompt: "Select regions",
+      required: true,
+    };
+
+    const result = resolveSelfCheckEligibilityInputs({
+      answers: { regions: ["khomas", "oshana"] },
+      inputs: [input],
+      paths: ["eligibility.regions"],
+    });
+
+    expect(result.values).toEqual({ regions: ["khomas", "oshana"] });
+  });
 });

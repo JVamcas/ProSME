@@ -262,7 +262,7 @@ export const eligibilitySelfCheckQuestions = pgTable(
     check(
       "app_eligibility_questions_answer_type_check",
       sql`${table.answerType} in (
-        'BOOLEAN', 'YES_NO_NA', 'TEXT', 'NUMBER', 'DATE',
+        'BOOLEAN', 'YES_NO_NA', 'TEXT', 'NUMBER', 'PERCENTAGE', 'DATE',
         'SINGLE_SELECT', 'MULTI_SELECT'
       )`,
     ),

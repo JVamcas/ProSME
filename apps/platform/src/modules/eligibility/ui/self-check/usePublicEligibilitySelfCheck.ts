@@ -1,7 +1,8 @@
 "use client";
 
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { ClientRequestError } from "@/lib/client-http";
 import { clientEligibilitySelfCheckService } from "../../ClientEligibilitySelfCheckService";
 import type { PublicEligibilitySelfCheckInput } from "../../api/PublicEligibilitySelfCheckTransport";
 
@@ -18,8 +19,16 @@ export function usePublicEligibilitySelfCheck(fundingCallId: string) {
 }
 
 export function useEvaluatePublicEligibilitySelfCheck(fundingCallId: string) {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (input: PublicEligibilitySelfCheckInput) =>
       clientEligibilitySelfCheckService.evaluate(fundingCallId, input),
+    onError: (error) => {
+      if (error instanceof ClientRequestError && error.code === "CONFLICT") {
+        void queryClient.invalidateQueries({
+          queryKey: publicEligibilitySelfCheckKeys.detail(fundingCallId),
+        });
+      }
+    },
   });
 }

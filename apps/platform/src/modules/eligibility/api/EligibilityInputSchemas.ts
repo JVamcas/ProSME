@@ -1,10 +1,14 @@
 import { z } from "zod";
 
-import { conditionFieldTypes } from "@/modules/conditions/domain/ConditionConfiguration";
+import {
+  conditionFieldTypes,
+  type ConditionFieldType,
+} from "@/modules/conditions/domain/ConditionConfiguration";
 import {
   eligibilityInputModes,
   eligibilityScreeningSourceKinds,
   selfCheckAnswerTypes,
+  type SelfCheckAnswerType,
 } from "../domain/EligibilityInputDefinition";
 
 const stableKeySchema = z.string().trim().min(2).max(100).regex(
@@ -19,6 +23,7 @@ export const selfCheckQuestionSchema = z.object({
   explanation: optionalMetadataSchema,
   helpText: optionalMetadataSchema,
   options: z.array(z.object({
+    description: z.string().trim().max(500).optional(),
     label: z.string().trim().min(1).max(160),
     value: z.string().trim().min(1).max(100),
   }).strict()).max(100).default([]),
@@ -50,6 +55,16 @@ export const selfCheckQuestionSchema = z.object({
     });
   }
 });
+
+const answerTypesByInputType: Record<
+  ConditionFieldType,
+  readonly SelfCheckAnswerType[]
+> = {
+  BOOLEAN: ["BOOLEAN"],
+  DATE: ["DATE"],
+  NUMBER: ["NUMBER", "PERCENTAGE"],
+  TEXT: ["TEXT", "YES_NO_NA", "SINGLE_SELECT", "MULTI_SELECT"],
+} as const;
 
 export const eligibilitySourceBindingSchema = z.object({
   sourceDefinitionId: z.string().uuid(),
@@ -98,7 +113,8 @@ function validateModeBindings(
     groupKey: string | null;
     groupLabel: string | null;
     screening: unknown | null;
-    selfCheck: unknown | null;
+    selfCheck: { answerType: SelfCheckAnswerType } | null;
+    type: ConditionFieldType;
   },
   context: z.RefinementCtx,
 ) {
@@ -116,6 +132,16 @@ function validateModeBindings(
       code: "custom",
       message: "Self Check availability and question configuration must match.",
       path: ["selfCheck"],
+    });
+  }
+  if (
+    input.selfCheck
+    && !answerTypesByInputType[input.type].includes(input.selfCheck.answerType)
+  ) {
+    context.addIssue({
+      code: "custom",
+      message: "The Self Check answer type must match the input data type.",
+      path: ["selfCheck", "answerType"],
     });
   }
   if (screening !== Boolean(input.screening)) {

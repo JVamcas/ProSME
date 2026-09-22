@@ -8,6 +8,7 @@ export const selfCheckAnswerTypes = [
   "YES_NO_NA",
   "TEXT",
   "NUMBER",
+  "PERCENTAGE",
   "DATE",
   "SINGLE_SELECT",
   "MULTI_SELECT",
@@ -27,6 +28,7 @@ export type EligibilityScreeningSourceKind =
   (typeof eligibilityScreeningSourceKinds)[number];
 
 export type SelfCheckQuestionOption = {
+  description?: string;
   label: string;
   value: string;
 };

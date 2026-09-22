@@ -114,7 +114,31 @@ export function resolveSelfCheckEligibilityInputs(input: {
     }
     const value = input.answers[definition.stableKey];
     if (value === undefined || value === null) {
+      if (!definition.selfCheck.required) {
+        return {
+          inputDefinitionId: definition.id,
+          path,
+          provenance: null,
+          stableKey: definition.stableKey,
+          status: "RESOLVED",
+          value: null,
+        };
+      }
       return unresolved(path, definition, "MISSING", `"${path}" is missing.`);
+    }
+    if (
+      definition.selfCheck.answerType === "MULTI_SELECT"
+      && Array.isArray(value)
+      && value.every((item) => typeof item === "string")
+    ) {
+      return {
+        inputDefinitionId: definition.id,
+        path,
+        provenance: null,
+        stableKey: definition.stableKey,
+        status: "RESOLVED",
+        value,
+      };
     }
     if (!hasExpectedType(value, definition.type)) {
       return unresolved(
