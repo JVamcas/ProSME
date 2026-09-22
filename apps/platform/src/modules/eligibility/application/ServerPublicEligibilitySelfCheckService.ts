@@ -7,20 +7,13 @@ import {
   ResourceNotFoundError,
   RequestValidationError,
 } from "@/lib/resource-errors";
-import type { ConditionFieldDefinition } from "@/modules/conditions/domain/ConditionConfiguration";
 import { workflowConditionNodeFieldPaths } from "@/modules/conditions/engine/WorkflowDataResolver";
-import type {
-  JsonValue,
-} from "@/modules/conditions/domain/Operand";
 import { findPublicFundingCallById } from "@/modules/funding-calls/application/ServerPublicFundingCallService";
 import type {
   EligibilityEvaluationRule,
   EligibilityEvaluationRuleSet,
 } from "../domain/EligibilityEvaluation";
-import {
-  eligibilityQuestionFieldsFromForm,
-  fundingCallEligibilityFields,
-} from "../domain/EligibilityConditionFields";
+import type { EligibilityInputDefinition } from "../domain/EligibilityInputDefinition";
 import { evaluateEligibilityRuleSet } from "../engine/EligibilityEvaluator";
 import type {
   PublicEligibilityAnswer,
@@ -32,6 +25,7 @@ import type {
   PublicEligibilitySelfCheckWorkspace,
 } from "../api/PublicEligibilitySelfCheckTransport";
 import { resolveSelfCheckEligibilityConfiguration } from "./ServerEligibilityBindingService";
+import { resolveSelfCheckEligibilityInputs } from "./EligibilityInputResolver";
 
 const disclaimer =
   "This self-check is advisory only. Final eligibility is determined during formal screening.";
@@ -79,28 +73,21 @@ function configurationToken(versionId: string, questions: string[]) {
     .digest("hex");
 }
 
-function questionType(type: string): PublicEligibilityQuestionType {
+function questionType(type: EligibilityInputDefinition["type"]): PublicEligibilityQuestionType {
   return type.toLowerCase() as PublicEligibilityQuestionType;
 }
 
-function requiredApplicationPaths(
-  rules: EligibilityEvaluationRule[],
-  availablePaths: ReadonlySet<string>,
-) {
+function requiredEligibilityPaths(rules: EligibilityEvaluationRule[]) {
   const paths = new Set<string>();
   for (const rule of rules) {
     for (const path of workflowConditionNodeFieldPaths(
       rule.conditionDefinition,
     )) {
-      if (path.startsWith("application.") && availablePaths.has(path)) {
+      if (path.startsWith("eligibility.")) {
         paths.add(path);
         continue;
       }
-      if (
-        !fundingCallEligibilityFields.some((field) => field.key === path)
-      ) {
-        throw new InvalidPublicEligibilitySelfCheckConfigurationError(path);
-      }
+      throw new InvalidPublicEligibilitySelfCheckConfigurationError(path);
     }
   }
   return [...paths];
@@ -109,16 +96,16 @@ function requiredApplicationPaths(
 function questionsFor(
   ruleSet: EligibilityEvaluationRuleSet,
   paths: string[],
-  fieldDefinitions: ReadonlyMap<string, ConditionFieldDefinition>,
+  inputDefinitions: ReadonlyMap<string, EligibilityInputDefinition>,
 ): PublicEligibilityQuestion[] {
   return paths.map((path) => {
-    const definition = fieldDefinitions.get(path);
-    if (!definition) {
+    const definition = inputDefinitions.get(path);
+    if (!definition?.selfCheck) {
       throw new InvalidPublicEligibilitySelfCheckConfigurationError(path);
     }
     return {
       id: questionId(ruleSet.versionId, path),
-      label: definition.label,
+      label: definition.selfCheck.prompt,
       type: questionType(definition.type),
     };
   });
@@ -130,7 +117,7 @@ async function loadSelfCheck(fundingCallId: string) {
       findPublicFundingCallById(fundingCallId),
       resolveSelfCheckEligibilityConfiguration(fundingCallId),
     ]);
-    const { form, ruleSet } = configuration;
+    const { inputs, ruleSet } = configuration;
     if (
       !fundingCall ||
       fundingCall.status === "closed" ||
@@ -140,11 +127,19 @@ async function loadSelfCheck(fundingCallId: string) {
     }
     const rules = applicableRules(ruleSet);
     if (!rules.length) throw new PublicEligibilitySelfCheckUnavailableError();
-    const fields = eligibilityQuestionFieldsFromForm(form.fields);
-    const fieldDefinitions = new Map(fields.map((field) => [field.key, field]));
-    const paths = requiredApplicationPaths(rules, new Set(fieldDefinitions.keys()));
-    const questions = questionsFor(ruleSet, paths, fieldDefinitions);
-    return { fieldDefinitions, fundingCall, paths, questions, ruleSet };
+    const paths = requiredEligibilityPaths(rules);
+    const inputDefinitions = new Map(inputs
+      .filter((input) => input.availableIn.includes("SELF_CHECK"))
+      .map((input) => [`eligibility.${input.stableKey}`, input]));
+    const questions = questionsFor(ruleSet, paths, inputDefinitions);
+    return {
+      fundingCall,
+      inputDefinitions,
+      inputs,
+      paths,
+      questions,
+      ruleSet,
+    };
   } catch (error) {
     if (error instanceof PublicEligibilitySelfCheckUnavailableError) throw error;
     if (error instanceof ResourceNotFoundError) {
@@ -188,11 +183,11 @@ function validateAnswer(
   return typeof answer === "string" && answer.trim().length > 0;
 }
 
-function answersByPath(
+function answersByStableKey(
   input: PublicEligibilitySelfCheckInput,
   ruleSet: EligibilityEvaluationRuleSet,
   paths: string[],
-  fieldDefinitions: ReadonlyMap<string, ConditionFieldDefinition>,
+  inputDefinitions: ReadonlyMap<string, EligibilityInputDefinition>,
 ) {
   const expectedToken = configurationToken(ruleSet.versionId, paths);
   if (input.configurationToken !== expectedToken) {
@@ -206,34 +201,14 @@ function answersByPath(
   }
   return Object.fromEntries(
     paths.map((path) => {
-      const definition = fieldDefinitions.get(path)!;
+      const definition = inputDefinitions.get(path)!;
       const answer = input.answers[questionId(ruleSet.versionId, path)];
       if (!validateAnswer(answer, questionType(definition.type))) {
         throw new RequestValidationError("Review the eligibility answers.");
       }
-      return [path, answer];
+      return [definition.stableKey, answer];
     }),
   );
-}
-
-function setApplicationValue(
-  application: Record<string, JsonValue>,
-  path: string,
-  value: JsonValue,
-) {
-  const segments = path.split(".").slice(1);
-  let target = application;
-  segments.forEach((segment, index) => {
-    if (index === segments.length - 1) {
-      target[segment] = value;
-      return;
-    }
-    const nested = target[segment];
-    if (!nested || Array.isArray(nested) || typeof nested !== "object") {
-      target[segment] = {};
-    }
-    target = target[segment] as Record<string, JsonValue>;
-  });
 }
 
 function guidance(
@@ -260,32 +235,21 @@ export async function evaluatePublicEligibilitySelfCheck(
   input: PublicEligibilitySelfCheckInput,
 ): Promise<PublicEligibilitySelfCheckResult> {
   const value = await loadSelfCheck(fundingCallId);
-  const answers = answersByPath(
+  const answers = answersByStableKey(
     input,
     value.ruleSet,
     value.paths,
-    value.fieldDefinitions,
+    value.inputDefinitions,
   );
-  const application: Record<string, JsonValue> = {};
-  Object.entries(answers).forEach(([path, answer]) =>
-    setApplicationValue(application, path, answer),
-  );
+  const resolved = resolveSelfCheckEligibilityInputs({
+    answers,
+    inputs: value.inputs,
+    paths: value.paths,
+  });
   const result = evaluateEligibilityRuleSet(value.ruleSet, "SELF_CHECK", {
-    application,
-    eligibility: {},
-    fundingCall: {
-      closes_at: value.fundingCall.closesAt,
-      funding_instrument: value.fundingCall.fundingInstrument,
-      id: value.fundingCall.id,
-      maximum_amount: value.fundingCall.maximumAmount,
-      minimum_amount: value.fundingCall.minimumAmount,
-      opens_at: value.fundingCall.opensAt,
-      slug: value.fundingCall.slug,
-      status: value.fundingCall.status,
-      thematic_area: value.fundingCall.thematicArea,
-      title: value.fundingCall.title,
-      total_funding_amount: value.fundingCall.totalFundingAmount,
-    },
+    application: {},
+    eligibility: resolved.values,
+    fundingCall: {},
     stages: [],
   });
   return {

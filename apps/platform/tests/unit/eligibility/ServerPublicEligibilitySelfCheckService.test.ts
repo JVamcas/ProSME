@@ -21,6 +21,7 @@ import type {
   EligibilityEvaluationRule,
   EligibilityEvaluationRuleSet,
 } from "@/modules/eligibility/domain/EligibilityEvaluation";
+import type { EligibilityInputDefinition } from "@/modules/eligibility/domain/EligibilityInputDefinition";
 import { findPublicFundingCallById } from "@/modules/funding-calls/application/ServerPublicFundingCallService";
 
 const fundingCallId = "00000000-0000-4000-8000-000000000042";
@@ -61,7 +62,7 @@ const ruleSet: EligibilityEvaluationRuleSet = {
   rules: [
     rule(
       "30000000-0000-4000-8000-000000000001",
-      "application.REGISTERED",
+      "eligibility.registered",
       true,
       "HARD_FAIL",
       "BOTH",
@@ -70,7 +71,7 @@ const ruleSet: EligibilityEvaluationRuleSet = {
     ),
     rule(
       "30000000-0000-4000-8000-000000000002",
-      "application.STATUTORY_GOOD_STANDING",
+      "eligibility.statutory_good_standing",
       true,
       "SOFT_FAIL",
       "SELF_CHECK",
@@ -79,7 +80,7 @@ const ruleSet: EligibilityEvaluationRuleSet = {
     ),
     rule(
       "30000000-0000-4000-8000-000000000003",
-      "application.BANK_ACCOUNT_ACTIVE",
+      "eligibility.bank_account_active",
       true,
       "WARNING",
       "SELF_CHECK",
@@ -88,7 +89,7 @@ const ruleSet: EligibilityEvaluationRuleSet = {
     ),
     rule(
       "30000000-0000-4000-8000-000000000004",
-      "application.ANNUAL_TURNOVER",
+      "eligibility.annual_turnover",
       100,
       "HARD_FAIL",
       "SCREENING",
@@ -99,6 +100,45 @@ const ruleSet: EligibilityEvaluationRuleSet = {
   versionId: "20000000-0000-4000-8000-000000000002",
   versionNumber: 4,
 };
+
+function selfCheckInput(
+  stableKey: string,
+  prompt: string,
+  availableIn: EligibilityInputDefinition["availableIn"] = ["SELF_CHECK"],
+): EligibilityInputDefinition {
+  return {
+    availableIn,
+    createdAt: new Date(),
+    createdBy: "10000000-0000-4000-8000-000000000001",
+    groupKey: null,
+    groupLabel: null,
+    id: `50000000-0000-4000-8000-${stableKey.padEnd(12, "0").slice(0, 12)}`,
+    label: prompt,
+    order: 1,
+    screening: availableIn.includes("SCREENING")
+      ? {
+          sourceDefinitionId: "60000000-0000-4000-8000-000000000001",
+          sourceKey: stableKey,
+          sourceKind: "APPLICATION_FORM_FIELD",
+          sourceVersionId: "60000000-0000-4000-8000-000000000002",
+          valuePath: "value",
+        }
+      : null,
+    selfCheck: {
+      answerType: "BOOLEAN",
+      explanation: "",
+      helpText: "",
+      options: [],
+      prompt,
+      required: true,
+    },
+    stableKey,
+    type: "BOOLEAN",
+    updatedAt: new Date(),
+    updatedBy: "10000000-0000-4000-8000-000000000001",
+    versionId: ruleSet.versionId,
+  };
+}
 
 const fundingCall = {
   applicationsOpen: true,
@@ -126,30 +166,21 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(findPublicFundingCallById).mockResolvedValue(fundingCall);
   vi.mocked(resolveSelfCheckEligibilityConfiguration).mockResolvedValue({
-    form: {
-      fields: [
-        {
-          key: "REGISTERED",
-          label: "Business is registered",
-          type: "YES_NO",
-        },
-        {
-          key: "STATUTORY_GOOD_STANDING",
-          label: "Statutory good standing",
-          type: "YES_NO",
-        },
-        {
-          key: "BANK_ACCOUNT_ACTIVE",
-          label: "Active business bank account",
-          type: "YES_NO",
-        },
-        {
-          key: "ANNUAL_TURNOVER",
-          label: "Annual turnover",
-          type: "CURRENCY",
-        },
-      ],
-    },
+    inputs: [
+      selfCheckInput(
+        "registered",
+        "Business is registered",
+        ["SELF_CHECK", "SCREENING"],
+      ),
+      selfCheckInput(
+        "statutory_good_standing",
+        "Statutory good standing",
+      ),
+      selfCheckInput(
+        "bank_account_active",
+        "Active business bank account",
+      ),
+    ],
     ruleSet,
   } as never);
 });

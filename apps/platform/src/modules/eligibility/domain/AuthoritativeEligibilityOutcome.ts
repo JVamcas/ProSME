@@ -3,6 +3,7 @@ import type {
   EligibilityFinding,
   EligibilityRuleOutcome,
 } from "./EligibilityEvaluation";
+import type { EligibilityValueProvenance } from "./EligibilityDataResolution";
 
 export type FinalScreeningOutcome = "ELIGIBLE" | "INELIGIBLE";
 
@@ -19,6 +20,7 @@ export type AuthoritativeEligibilityOutcome = {
   contextReference: EligibilityContextReference;
   eligible: boolean;
   evaluatedAt: Date;
+  evaluatedValueProvenance: Record<string, EligibilityValueProvenance>;
   evaluatedValues: Record<string, JsonValue>;
   finalOutcome: FinalScreeningOutcome | null;
   hardFailures: EligibilityFinding[];

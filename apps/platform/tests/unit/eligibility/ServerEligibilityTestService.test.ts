@@ -7,6 +7,9 @@ vi.mock("@/modules/eligibility/infrastructure/EligibilityEvaluationRepository", 
 vi.mock("@/modules/funding-calls/ServerFundingCallEligibilityContextIntegration", () => ({
   resolveEligibilityTestFundingCall: vi.fn(),
 }));
+vi.mock("@/modules/eligibility/infrastructure/EligibilityInputRepository", () => ({
+  listEligibilityInputs: vi.fn(),
+}));
 
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { PermissionDeniedError } from "@/auth/authorization/policy";
@@ -16,6 +19,7 @@ import type { EligibilityTestInput } from "@/modules/eligibility/api/Eligibility
 import { testEligibilityRuleSet } from "@/modules/eligibility/application/ServerEligibilityTestService";
 import { findTestableEligibilityRuleSetForEvaluation } from "@/modules/eligibility/infrastructure/EligibilityEvaluationRepository";
 import { resolveEligibilityTestFundingCall } from "@/modules/funding-calls/ServerFundingCallEligibilityContextIntegration";
+import { listEligibilityInputs } from "@/modules/eligibility/infrastructure/EligibilityInputRepository";
 
 const ruleSetId = "80000000-0000-4000-8000-000000000001";
 const versionId = "80000000-0000-4000-8000-000000000002";
@@ -41,18 +45,7 @@ const input: EligibilityTestInput = {
   fundingCallId,
   mode: "SCREENING",
   values: {
-    application: {
-      annual_turnover: 100_000,
-      business: {
-        bank_account_active: true,
-        employee_count: 2,
-        operating_months: 12,
-        ownership_percentage: 80,
-        registered: true,
-        statutory_good_standing: true,
-      },
-      requested_amount: 50_000,
-    },
+    eligibility: {},
   },
   versionId,
 };
@@ -75,6 +68,7 @@ beforeEach(() => {
     thematicArea: "Growth",
     totalBudgetEnvelope: "1000000",
   } as never);
+  vi.mocked(listEligibilityInputs).mockResolvedValue([]);
 });
 
 describe("ServerEligibilityTestService", () => {

@@ -7,6 +7,9 @@ vi.mock("@/modules/eligibility/infrastructure/AuthoritativeEligibilityRepository
 vi.mock("@/modules/eligibility/infrastructure/EligibilityEvaluationRepository", () => ({
   findRuntimeEligibilityRuleSetForEvaluation: vi.fn(),
 }));
+vi.mock("@/modules/eligibility/application/ServerEligibilityDataResolver", () => ({
+  resolveAuthoritativeEligibilityData: vi.fn(),
+}));
 
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { PermissionDeniedError } from "@/auth/authorization/policy";
@@ -21,6 +24,7 @@ import {
 } from "@/modules/eligibility/application/ServerAuthoritativeEligibilityService";
 import { findAuthoritativeEligibilityOutcome } from "@/modules/eligibility/infrastructure/AuthoritativeEligibilityRepository";
 import { findRuntimeEligibilityRuleSetForEvaluation } from "@/modules/eligibility/infrastructure/EligibilityEvaluationRepository";
+import { resolveAuthoritativeEligibilityData } from "@/modules/eligibility/application/ServerEligibilityDataResolver";
 
 const actorId = "10000000-0000-4000-8000-000000000001";
 const applicationId = "20000000-0000-4000-8000-000000000001";
@@ -88,7 +92,7 @@ beforeEach(() => {
         id: "90000000-0000-4000-8000-000000000001",
         kind: "CONDITION",
         leftOperand: {
-          key: "application.business.employee_count",
+          key: "eligibility.employee_count",
           kind: "FIELD",
         },
         operator: basicOperators.GREATER_THAN,
@@ -102,6 +106,23 @@ beforeEach(() => {
     }],
     versionId,
     versionNumber: 3,
+  });
+  vi.mocked(resolveAuthoritativeEligibilityData).mockResolvedValue({
+    provenance: {
+      "eligibility.employee_count": {
+        evaluatedAt: evaluatedAt.toISOString(),
+        inputDefinitionId: "60000000-0000-4000-8000-000000000001",
+        inputStableKey: "employee_count",
+        mode: "SCREENING",
+        sourceDefinitionId: "60000000-0000-4000-8000-000000000002",
+        sourceKey: "employeeCount",
+        sourceKind: "APPLICATION_FORM_FIELD",
+        sourceRecordId: applicationId,
+        sourceVersionId: "60000000-0000-4000-8000-000000000003",
+      },
+    },
+    resolutions: [],
+    values: { employee_count: 0 },
   });
 });
 
@@ -125,13 +146,18 @@ describe("authoritative eligibility service", () => {
       eligible: false,
       evaluatedAt,
       evaluatedValues: {
-        "application.business.employee_count": 0,
+        "eligibility.employee_count": 0,
       },
       finalOutcome: "INELIGIBLE",
       hardFailures: [{ reasonCode: "EMPLOYEE_REQUIRED" }],
       ruleSetVersionId: versionId,
       ruleSetVersionNumber: 3,
     });
+    expect(result.evaluatedValueProvenance)
+      .toHaveProperty("eligibility.employee_count", expect.objectContaining({
+        evaluatedAt: evaluatedAt.toISOString(),
+        sourceRecordId: applicationId,
+      }));
     expect(result.contextReference).toEqual({
       applicationId,
       applicationRowVersion: 7,

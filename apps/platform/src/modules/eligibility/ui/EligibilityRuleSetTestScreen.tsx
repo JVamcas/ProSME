@@ -28,8 +28,8 @@ const booleanRegistration = {
   setValueAs: (value: string) => value === "true",
 };
 
-function applicationKey(field: ConditionFieldDefinition) {
-  return field.key.slice("application.".length);
+function eligibilityKey(field: ConditionFieldDefinition) {
+  return field.key.slice("eligibility.".length);
 }
 
 function sampleValue(field: ConditionFieldDefinition) {
@@ -40,7 +40,7 @@ function sampleValue(field: ConditionFieldDefinition) {
 }
 
 function SampleField({ field }: { field: ConditionFieldDefinition }) {
-  const name = `values.application.${applicationKey(field)}`;
+  const name = `values.eligibility.${eligibilityKey(field)}`;
   if (field.type === "BOOLEAN") {
     return (
       <FormSelect
@@ -169,7 +169,7 @@ function EligibilityTestForm({
   type TestFormValues = {
     fundingCallId: string;
     mode: "SELF_CHECK" | "SCREENING";
-    values: { application: Record<string, boolean | number | string> };
+    values: { eligibility: Record<string, boolean | number | string> };
     versionId: string;
   };
   const form = useForm<TestFormValues>({
@@ -177,8 +177,8 @@ function EligibilityTestForm({
       fundingCallId: fundingCalls[0].id,
       mode: "SELF_CHECK",
       values: {
-        application: Object.fromEntries(
-          fields.map((field) => [applicationKey(field), sampleValue(field)]),
+        eligibility: Object.fromEntries(
+          fields.map((field) => [eligibilityKey(field), sampleValue(field)]),
         ),
       },
       versionId: version.id,
@@ -225,7 +225,7 @@ function EligibilityTestForm({
 
           <fieldset className="space-y-4">
             <legend className="text-lg font-bold text-brand-navy">
-              Sample application values
+              Sample eligibility input values
             </legend>
             <div className="grid gap-4 md:grid-cols-2">
               {fields.map((field) => (
@@ -262,8 +262,8 @@ export function EligibilityRuleSetTestScreen({
       </p>
     );
   }
-  const applicationFields = query.data.conditionFields.filter(
-    (field) => field.key.startsWith("application."),
+  const eligibilityFields = query.data.conditionFields.filter(
+    (field) => field.key.startsWith("eligibility."),
   );
   if (!query.data.context.fundingCalls.length) {
     return (
@@ -274,7 +274,7 @@ export function EligibilityRuleSetTestScreen({
   }
   return (
     <EligibilityTestForm
-      fields={applicationFields}
+      fields={eligibilityFields}
       fundingCalls={query.data.context.fundingCalls}
       ruleSetId={id}
       version={query.data.version}

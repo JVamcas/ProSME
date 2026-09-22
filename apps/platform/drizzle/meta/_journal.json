@@ -526,6 +526,13 @@
       "when": 1794182400000,
       "tag": "0074_generic_eligibility_evidence_facts",
       "breakpoints": true
+    },
+    {
+      "idx": 75,
+      "version": "7",
+      "when": 1794268800000,
+      "tag": "0075_mode_specific_eligibility_resolution",
+      "breakpoints": true
     }
   ]
 }

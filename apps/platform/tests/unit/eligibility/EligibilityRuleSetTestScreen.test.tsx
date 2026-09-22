@@ -34,7 +34,7 @@ function queryClient() {
       updatedAt: timestamp,
     },
     conditionFields: [{
-      key: "application.EMPLOYEE_COUNT",
+      key: "eligibility.employee_count",
       label: "Employee count",
       type: "NUMBER",
     }],
@@ -98,7 +98,7 @@ describe("EligibilityRuleSetTestScreen", () => {
         applicantMessages: ["Provide at least one employee."],
         authoritative: false,
         eligible: false,
-        evaluatedValues: { "application.business.employee_count": 0 },
+        evaluatedValues: { "eligibility.employee_count": 0 },
         hardFailures: [{
           applicantMessage: "Provide at least one employee.",
           failureType: "HARD_FAIL",

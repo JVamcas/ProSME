@@ -149,7 +149,7 @@ afterAll(async () => {
         fundingCallId: randomUUID(),
         mode: "SELF_CHECK",
         values: {
-          application: {
+          eligibility: {
             annual_turnover: 100_000,
             business: {
               bank_account_active: true,
@@ -241,7 +241,7 @@ afterAll(async () => {
         fundingCallId: randomUUID(),
         mode: "SCREENING",
         values: {
-          application: {
+          eligibility: {
             annual_turnover: 100_000,
             business: {
               bank_account_active: true,

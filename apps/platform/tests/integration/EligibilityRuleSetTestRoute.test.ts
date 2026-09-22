@@ -20,18 +20,7 @@ const input = {
   fundingCallId: "92000000-0000-4000-8000-000000000003",
   mode: "SELF_CHECK",
   values: {
-    application: {
-      annual_turnover: 100_000,
-      business: {
-        bank_account_active: true,
-        employee_count: 2,
-        operating_months: 12,
-        ownership_percentage: 80,
-        registered: true,
-        statutory_good_standing: true,
-      },
-      requested_amount: 50_000,
-    },
+    eligibility: { employee_count: 2 },
   },
   versionId,
 };

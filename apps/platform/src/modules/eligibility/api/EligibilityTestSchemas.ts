@@ -5,7 +5,7 @@ export const eligibilityTestSchema = z.object({
   mode: z.enum(["SELF_CHECK", "SCREENING"]),
   fundingCallId: z.uuid(),
   values: z.object({
-    application: z.record(z.string().min(1), jsonValueSchema),
+    eligibility: z.record(z.string().min(1), jsonValueSchema),
   }),
   versionId: z.string().uuid(),
 });

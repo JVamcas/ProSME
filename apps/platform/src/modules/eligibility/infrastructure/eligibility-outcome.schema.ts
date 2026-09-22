@@ -23,6 +23,7 @@ import type {
   EligibilityRuleOutcome,
 } from "../domain/EligibilityEvaluation";
 import type { JsonValue } from "@/modules/conditions/domain/Operand";
+import type { EligibilityValueProvenance } from "../domain/EligibilityDataResolution";
 import { eligibilityRuleSetVersions } from "./eligibility-ruleset.schema";
 
 export const authoritativeEligibilityOutcomes = pgTable(
@@ -48,6 +49,9 @@ export const authoritativeEligibilityOutcomes = pgTable(
       .notNull(),
     evaluatedValues: jsonb("evaluated_values")
       .$type<Record<string, JsonValue>>()
+      .notNull(),
+    evaluatedValueProvenance: jsonb("evaluated_value_provenance")
+      .$type<Record<string, EligibilityValueProvenance>>()
       .notNull(),
     hardFailures: jsonb("hard_failures")
       .$type<EligibilityFinding[]>()

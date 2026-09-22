@@ -6,9 +6,10 @@ import {
   requireAnyPermission,
 } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
-import type { WorkflowDataContext } from "@/modules/conditions/engine/WorkflowDataResolver";
+import type { JsonValue } from "@/modules/conditions/domain/Operand";
 import { ResourceNotFoundError } from "@/lib/resource-errors";
 import type { FinalScreeningOutcome } from "../domain/AuthoritativeEligibilityOutcome";
+import { EligibilityInputResolutionError } from "../domain/EligibilityDataResolution";
 import { evaluateEligibilityRuleSet } from "../engine/EligibilityEvaluator";
 import {
   findAuthoritativeEligibilityOutcome,
@@ -16,6 +17,7 @@ import {
   type AuthoritativeEligibilityOutcomeWrite,
 } from "../infrastructure/AuthoritativeEligibilityRepository";
 import { findRuntimeEligibilityRuleSetForEvaluation } from "../infrastructure/EligibilityEvaluationRepository";
+import { resolveAuthoritativeEligibilityData } from "./ServerEligibilityDataResolver";
 
 type FundingCallEvaluationSource = {
   closesAt: Date;
@@ -33,10 +35,13 @@ type FundingCallEvaluationSource = {
 };
 
 type ApplicationEvaluationSource = {
+  businessSection?: Record<string, JsonValue>;
   declarationsSection: { compliance?: boolean };
   eligibilityRuleSetVersionId: string | null;
   financialSection: { amountRequested?: number };
+  formVersionId?: string | null;
   id: string;
+  projectSection?: Record<string, JsonValue>;
   rowVersion: number;
 };
 
@@ -57,55 +62,51 @@ type CreateAuthoritativeOutcomeInput = {
 };
 
 export class AuthoritativeEligibilityUnavailableError extends Error {
-  constructor(message: string) {
+  readonly resolutionError: EligibilityInputResolutionError | null;
+
+  constructor(
+    message: string,
+    resolutionError: EligibilityInputResolutionError | null = null,
+  ) {
     super(message);
     this.name = "AuthoritativeEligibilityUnavailableError";
+    this.resolutionError = resolutionError;
   }
 }
 
-function monthsInOperation(establishedYear: number | null, evaluatedAt: Date) {
-  if (establishedYear === null) return null;
-  return Math.max(0, (evaluatedAt.getUTCFullYear() - establishedYear) * 12);
-}
-
-function evaluationContext(
+function applicationSourceValues(
   application: ApplicationEvaluationSource,
   business: BusinessEvaluationSource,
-  fundingCall: FundingCallEvaluationSource,
-  evaluatedAt: Date,
-): WorkflowDataContext {
+): Record<string, JsonValue> {
   return {
-    application: {
-      annual_turnover: null,
-      business: {
-        bank_account_active: null,
-        employee_count: business.employeeCount,
-        operating_months: monthsInOperation(
-          business.establishedYear,
-          evaluatedAt,
-        ),
-        ownership_percentage: null,
-        registered: business.registrationNumber.trim().length > 0,
-        statutory_good_standing:
-          application.declarationsSection.compliance ?? null,
-      },
-      requested_amount: application.financialSection.amountRequested ?? null,
+    business: {
+      employeeCount: business.employeeCount,
+      establishedYear: business.establishedYear,
+      registrationNumber: business.registrationNumber,
+      updatedAt: business.updatedAt.toISOString(),
     },
-    eligibility: {},
-    fundingCall: {
-      closes_at: fundingCall.closesAt.toISOString(),
-      funding_instrument: fundingCall.fundingInstrument,
-      id: fundingCall.id,
-      maximum_amount: Number(fundingCall.maximumGrantAmount),
-      minimum_amount: Number(fundingCall.minimumGrantAmount),
-      opens_at: fundingCall.opensAt.toISOString(),
-      slug: fundingCall.slug,
-      status: fundingCall.status,
-      thematic_area: fundingCall.thematicArea,
-      title: fundingCall.title,
-      total_funding_amount: Number(fundingCall.totalBudgetEnvelope),
-    },
-    stages: [],
+    businessSection: application.businessSection ?? {},
+    declarationsSection: application.declarationsSection,
+    financialSection: application.financialSection,
+    projectSection: application.projectSection ?? {},
+  };
+}
+
+function fundingCallSourceValues(
+  fundingCall: FundingCallEvaluationSource,
+): Record<string, JsonValue> {
+  return {
+    closesAt: fundingCall.closesAt.toISOString(),
+    fundingInstrument: fundingCall.fundingInstrument,
+    id: fundingCall.id,
+    maximumGrantAmount: Number(fundingCall.maximumGrantAmount),
+    minimumGrantAmount: Number(fundingCall.minimumGrantAmount),
+    opensAt: fundingCall.opensAt.toISOString(),
+    slug: fundingCall.slug,
+    status: fundingCall.status,
+    thematicArea: fundingCall.thematicArea,
+    title: fundingCall.title,
+    totalBudgetEnvelope: Number(fundingCall.totalBudgetEnvelope),
   };
 }
 
@@ -136,15 +137,39 @@ export async function prepareAuthoritativeEligibilityOutcome(
       "The bound eligibility ruleset version is unavailable.",
     );
   }
+  let resolved;
+  try {
+    resolved = await resolveAuthoritativeEligibilityData({
+      applicationId: input.application.id,
+      applicationSourceVersionId: input.application.formVersionId ?? null,
+      applicationValues: applicationSourceValues(
+        input.application,
+        input.business,
+      ),
+      database: transaction,
+      evaluatedAt: input.evaluatedAt,
+      fundingCallId: input.fundingCall.id,
+      fundingCallValues: fundingCallSourceValues(input.fundingCall),
+      ruleSet,
+    });
+  } catch (error) {
+    if (error instanceof EligibilityInputResolutionError) {
+      throw new AuthoritativeEligibilityUnavailableError(
+        "The configured Screening evidence is incomplete or unavailable.",
+        error,
+      );
+    }
+    throw error;
+  }
   const result = evaluateEligibilityRuleSet(
     ruleSet,
     "SCREENING",
-    evaluationContext(
-      input.application,
-      input.business,
-      input.fundingCall,
-      input.evaluatedAt,
-    ),
+    {
+      application: {},
+      eligibility: resolved.values,
+      fundingCall: {},
+      stages: [],
+    },
   );
   return {
     applicationId: input.application.id,
@@ -158,6 +183,7 @@ export async function prepareAuthoritativeEligibilityOutcome(
     eligible: result.eligible,
     evaluatedAt: input.evaluatedAt,
     evaluatedBy: input.actorId,
+    evaluatedValueProvenance: resolved.provenance,
     evaluatedValues: result.evaluatedValues,
     finalOutcome: finalOutcome(
       result.eligible,

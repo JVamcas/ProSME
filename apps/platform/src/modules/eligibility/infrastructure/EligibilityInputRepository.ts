@@ -2,7 +2,7 @@ import "server-only";
 
 import { asc, eq, sql } from "drizzle-orm";
 
-import { getDatabase } from "@/db/client";
+import { getDatabase, type DatabaseTransaction } from "@/db/client";
 import { deserializeConditionGroup } from "@/modules/conditions/domain/ConditionSerialization";
 import { findConditionNode } from "@/modules/conditions/domain/ConditionTree";
 import { conditionGroups } from "@/modules/conditions/infrastructure/condition.schema";
@@ -64,8 +64,11 @@ function mapInput(
   };
 }
 
-export async function listEligibilityInputs(versionId: string) {
-  const rows = await getDatabase()
+export async function listEligibilityInputs(
+  versionId: string,
+  database: ReturnType<typeof getDatabase> | DatabaseTransaction = getDatabase(),
+) {
+  const rows = await database
     .select({
       input: eligibilityInputDefinitions,
       question: eligibilitySelfCheckQuestions,
