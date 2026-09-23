@@ -44,10 +44,7 @@ function ChildRouteLink({
       >
         <Icon
           aria-hidden="true"
-          className={cn(
-            "size-4 text-brand-navy",
-            dark && "text-brand-orange",
-          )}
+          className={cn("size-4 text-brand-navy", dark && "text-brand-orange")}
         />
         {route.label}
       </Link>
@@ -56,11 +53,15 @@ function ChildRouteLink({
 }
 
 function PortalRouteItem({
+  collapsed,
   dark,
+  onRequestExpand,
   pathname,
   route,
 }: {
+  collapsed: boolean;
   dark: boolean;
+  onRequestExpand?: () => void;
   pathname: string;
   route: PortalRoute;
 }) {
@@ -72,7 +73,8 @@ function PortalRouteItem({
   const Icon = route.icon;
   const childListId = `${route.id}-children-${generatedId}`;
   const itemClassName = cn(
-    "flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm font-semibold text-brand-navy transition",
+    "flex min-h-11 w-full items-center rounded-xl py-2 text-left text-sm font-semibold text-brand-navy transition",
+    collapsed ? "justify-center px-2" : "gap-3 px-3",
     "hover:bg-brand-navy/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-navy",
     dark &&
       "text-white/80 hover:bg-white/10 hover:text-white focus-visible:ring-white",
@@ -91,7 +93,7 @@ function PortalRouteItem({
           active && "text-brand-orange",
         )}
       />
-      <span className="flex-1">{route.label}</span>
+      <span className={collapsed ? "sr-only" : "flex-1"}>{route.label}</span>
     </>
   );
 
@@ -102,17 +104,27 @@ function PortalRouteItem({
           aria-controls={childListId}
           aria-expanded={expanded}
           className={itemClassName}
-          onClick={() => setExpanded((current) => !current)}
+          onClick={() => {
+            if (collapsed) {
+              onRequestExpand?.();
+              return;
+            }
+
+            setExpanded((current) => !current);
+          }}
+          title={collapsed ? route.label : undefined}
           type="button"
         >
           {content}
-          <ChevronDown
-            aria-hidden="true"
-            className={cn(
-              "size-4 shrink-0 transition-transform",
-              expanded && "rotate-180",
-            )}
-          />
+          {!collapsed ? (
+            <ChevronDown
+              aria-hidden="true"
+              className={cn(
+                "size-4 shrink-0 transition-transform",
+                expanded && "rotate-180",
+              )}
+            />
+          ) : null}
         </button>
       ) : (
         <Link
@@ -121,6 +133,7 @@ function PortalRouteItem({
           href={route.href}
           rel={route.openInNewTab ? "noopener noreferrer" : undefined}
           target={route.openInNewTab ? "_blank" : undefined}
+          title={collapsed ? route.label : undefined}
         >
           {content}
           {route.openInNewTab ? (
@@ -128,7 +141,7 @@ function PortalRouteItem({
           ) : null}
         </Link>
       )}
-      {hasChildren && expanded ? (
+      {hasChildren && expanded && !collapsed ? (
         <ul
           className="ml-5 grid gap-1 border-l border-white/15 pl-3"
           id={childListId}
@@ -148,10 +161,14 @@ function PortalRouteItem({
 }
 
 export function PortalNavList({
+  collapsed = false,
   dark = false,
+  onRequestExpand,
   routes,
 }: {
+  collapsed?: boolean;
   dark?: boolean;
+  onRequestExpand?: () => void;
   routes: readonly PortalRoute[];
 }) {
   const pathname = usePathname();
@@ -161,8 +178,10 @@ export function PortalNavList({
       <ul className="grid gap-1.5">
         {routes.map((route) => (
           <PortalRouteItem
+            collapsed={collapsed}
             dark={dark}
             key={route.id}
+            onRequestExpand={onRequestExpand}
             pathname={pathname}
             route={route}
           />

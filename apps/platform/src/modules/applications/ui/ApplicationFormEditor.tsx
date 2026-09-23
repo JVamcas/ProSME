@@ -11,8 +11,8 @@ import { PageShell } from "@/shared/ui/PageShell";
 import { toast } from "@/shared/ui/Toast";
 import { useOwnApplication } from "../ApplicationHooks";
 import { applicationDocumentCompletion } from "../domain/ApplicationDocumentPolicy";
+import { attachedBusinessFieldKeys } from "../domain/AttachedApplicationForm";
 import { ApplicationDocumentRegisterPanel } from "./ApplicationDocumentsPanel";
-import { ApplicationReadinessPanel } from "./ApplicationReadinessPanel";
 import { useApplicationDocuments } from "./useApplicationDocuments";
 import {
   type DraftSaveStatus,
@@ -131,6 +131,7 @@ function LoadedApplicationDraft({
               : undefined
           }
           readOnly={data.status !== "draft"}
+          readOnlyFieldKeys={[...attachedBusinessFieldKeys]}
           supplementalCompletion={
             hasDocuments
               ? {
@@ -144,7 +145,6 @@ function LoadedApplicationDraft({
           }
         />
         {data.form.displayMode !== "STEPS" ? documents : null}
-        <ApplicationReadinessPanel applicationId={applicationId} />
       </div>
     </PageShell>
   );

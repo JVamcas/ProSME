@@ -59,11 +59,11 @@ function SortIcon({
   direction: false | "asc" | "desc";
 }) {
   if (direction === "asc") {
-    return <ArrowUp className="size-3.5 text-brand-orange" />;
+    return <ArrowUp className="size-3.5 text-brand-navy" />;
   }
 
   if (direction === "desc") {
-    return <ArrowDown className="size-3.5 text-brand-orange" />;
+    return <ArrowDown className="size-3.5 text-brand-navy" />;
   }
 
   return (
@@ -127,7 +127,7 @@ function DataTableHeader<TData extends RowData>({
                     className={cn(
                       "group h-auto gap-2 rounded-none p-0",
                       "justify-start text-left",
-                      "text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-600",
+                      "text-[11px] font-semibold tracking-[0.08em] text-slate-600",
                       "hover:bg-transparent hover:text-slate-900",
                     )}
                   >
@@ -135,7 +135,7 @@ function DataTableHeader<TData extends RowData>({
                       <table.FlexRender header={header} />
                     )}
 
-                    <SortIcon direction={direction} />
+                    <SortIcon direction={direction}/>
                   </GeneralButton>
                 ) : header.isPlaceholder ? null : (
                   <table.FlexRender header={header} />

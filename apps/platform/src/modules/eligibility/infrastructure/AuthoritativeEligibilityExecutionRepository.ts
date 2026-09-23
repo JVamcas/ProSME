@@ -85,6 +85,7 @@ export async function lockAuthoritativeEligibilityTask(
       stage.id AS "stageInstanceId", workflow.id AS "workflowInstanceId",
       application.id AS "applicationId",
       application.business_section AS "applicationBusinessSection",
+      snapshot.normalized_form_values AS "applicationFormValues",
       application.declarations_section AS "applicationDeclarationsSection",
       application.eligibility_rule_set_version_id AS "applicationEligibilityVersionId",
       application.financial_section AS "applicationFinancialSection",
@@ -151,6 +152,8 @@ export async function lockAuthoritativeEligibilityTask(
     JOIN app_workflow_instances workflow ON workflow.id = stage.workflow_instance_id
     JOIN app_applications application ON application.id = workflow.application_id
     JOIN app_business_profiles business ON business.id = application.business_id
+    LEFT JOIN app_application_submission_snapshots snapshot
+      ON snapshot.id = application.submission_snapshot_id
     JOIN app_funding_calls funding_call
       ON funding_call.id = application.funding_opportunity_id
     LEFT JOIN LATERAL (
@@ -188,7 +191,10 @@ export async function lockAuthoritativeEligibilityTask(
     : null;
   return {
     application: {
-      businessSection: row.applicationBusinessSection as Record<string, never>,
+      businessSection: {
+        ...(row.applicationFormValues as Record<string, never> | null ?? {}),
+        ...(row.applicationBusinessSection as Record<string, never>),
+      },
       declarationsSection: row.applicationDeclarationsSection as {
         compliance?: boolean;
       },

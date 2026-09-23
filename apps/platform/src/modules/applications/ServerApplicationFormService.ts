@@ -17,7 +17,8 @@ import {
   sanitizeFormResponseValues,
 } from "@/modules/forms/engine/FormVisibility";
 import { validateFormValues } from "@/modules/forms/FormValidation";
-import { getFormRuntime } from "@/modules/forms/infrastructure/FormRepository";
+import { preserveAttachedBusinessValues } from "./domain/AttachedApplicationForm";
+import { getAttachedApplicationForm } from "./infrastructure/AttachedApplicationFormRepository";
 import {
   applicationResponseForm,
   applicationResponseValues,
@@ -63,7 +64,10 @@ async function loadDraft(
   }
   const [response, form] = await Promise.all([
     readOwnedApplicationDraftResponse(actorId, applicationId),
-    getFormRuntime(application.formVersionId),
+    getAttachedApplicationForm(
+      application.formVersionId,
+      application.fundingOpportunityId,
+    ),
   ]);
   if (
     !response
@@ -170,7 +174,18 @@ export async function saveOwnApplicationDraft(
     permissionCodes.fundingApplicationOwnUpdate,
   );
   const current = await loadDraft(actor.id, applicationId);
-  const values = validateDraftValues(current.form, input.values);
+  const hasAttachedBusinessFields = current.form.fields.some(
+    (field) => field.key === "BUSINESS_LEGAL_NAME",
+  );
+  const values = validateDraftValues(
+    current.form,
+    hasAttachedBusinessFields
+      ? preserveAttachedBusinessValues(
+          input.values,
+          current.draftResponse.values,
+        )
+      : input.values,
+  );
   const result = await saveApplicationDraftResponse({
     ...input,
     actorUserId: actor.id,

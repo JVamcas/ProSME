@@ -141,6 +141,7 @@ export function FormRenderer({
   onSubmit,
   penultimateStep,
   readOnly = false,
+  readOnlyFieldKeys = [],
   runtimeContext = {},
   supplementalCompletion,
 }: {
@@ -151,6 +152,7 @@ export function FormRenderer({
   onSubmit: (values: DynamicFormValues) => void;
   penultimateStep?: { content: ReactNode; id: string; title: string };
   readOnly?: boolean;
+  readOnlyFieldKeys?: readonly string[];
   runtimeContext?: FormRuntimeContext;
   supplementalCompletion?: SupplementalCompletion;
 }) {
@@ -203,6 +205,17 @@ export function FormRenderer({
     }),
     [currentSection?.id, parsed.sections, runtimeContext, stepMode],
   );
+  const uiSchema = useMemo(() => ({
+    ...parsed.uiSchema,
+    ...Object.fromEntries(readOnlyFieldKeys.map((key) => [
+      key,
+      {
+        ...parsed.uiSchema[key],
+        "ui:disabled": true,
+        "ui:readonly": true,
+      },
+    ])),
+  }), [parsed.uiSchema, readOnlyFieldKeys]);
   const completeness = useMemo(
     () => calculateFormCompleteness(activeDefinition, formData),
     [activeDefinition, formData],
@@ -252,7 +265,7 @@ export function FormRenderer({
             FieldTemplate: FormFieldTemplate,
             ObjectFieldTemplate: FormObjectTemplate,
           }}
-          uiSchema={parsed.uiSchema}
+          uiSchema={uiSchema}
           validator={validator}
           widgets={{
             currency: FormCurrencyWidget,

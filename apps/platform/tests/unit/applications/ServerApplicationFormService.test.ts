@@ -15,8 +15,8 @@ vi.mock(
 vi.mock("@/modules/applications/infrastructure/ApplicationRepository", () => ({
   findOwnedApplication: vi.fn(),
 }));
-vi.mock("@/modules/forms/infrastructure/FormRepository", () => ({
-  getFormRuntime: vi.fn(),
+vi.mock("@/modules/applications/infrastructure/AttachedApplicationFormRepository", () => ({
+  getAttachedApplicationForm: vi.fn(),
 }));
 vi.mock("@/modules/applications/ServerApplicationService", async () => {
   const errors = await import("@/lib/resource-errors");
@@ -47,7 +47,7 @@ import {
   saveApplicationDraftResponse,
 } from "@/modules/applications/infrastructure/ApplicationResponseRepository";
 import { findOwnedApplication } from "@/modules/applications/infrastructure/ApplicationRepository";
-import { getFormRuntime } from "@/modules/forms/infrastructure/FormRepository";
+import { getAttachedApplicationForm } from "@/modules/applications/infrastructure/AttachedApplicationFormRepository";
 
 const actorId = "10000000-0000-4000-8000-000000000001";
 const applicationId = "20000000-0000-4000-8000-000000000001";
@@ -144,7 +144,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(findOwnedApplication).mockResolvedValue(application);
   vi.mocked(readOwnedApplicationDraftResponse).mockResolvedValue(response);
-  vi.mocked(getFormRuntime).mockResolvedValue(form);
+  vi.mocked(getAttachedApplicationForm).mockResolvedValue(form);
 });
 
 describe("application draft creation and exact-version autosave", () => {
@@ -180,7 +180,10 @@ describe("application draft creation and exact-version autosave", () => {
       user(permissionCodes.fundingApplicationOwnRead),
       applicationId,
     );
-    expect(getFormRuntime).toHaveBeenCalledWith(formVersionId);
+    expect(getAttachedApplicationForm).toHaveBeenCalledWith(
+      formVersionId,
+      application.fundingOpportunityId,
+    );
   });
 
   it("rejects unknown fields before persisting an autosave", async () => {

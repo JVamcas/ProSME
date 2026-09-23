@@ -30,6 +30,13 @@ export async function createSubmissionSnapshot(
       left.requirementKey.localeCompare(right.requirementKey)
       || left.id.localeCompare(right.id)
     ));
+  const formValues = input.context.response.values;
+  const copiedText = (key: string, fallback: string) => (
+    typeof formValues[key] === "string" ? formValues[key] as string : fallback
+  );
+  const copiedNumber = (key: string, fallback: number | null) => (
+    typeof formValues[key] === "number" ? formValues[key] as number : fallback
+  );
   const snapshotContent: ApplicationSubmissionSnapshotContent = {
     applicant: {
       dateOfBirth: input.applicant.dateOfBirth,
@@ -59,16 +66,31 @@ export async function createSubmissionSnapshot(
       status: "submitted",
     },
     business: {
-      businessType: input.business.businessType,
-      employeeCount: input.business.employeeCount,
-      establishedYear: input.business.establishedYear,
+      businessType: copiedText("BUSINESS_TYPE", input.business.businessType),
+      employeeCount: copiedNumber(
+        "BUSINESS_EMPLOYEE_COUNT",
+        input.business.employeeCount,
+      ),
+      establishedYear: copiedNumber(
+        "BUSINESS_ESTABLISHED_YEAR",
+        input.business.establishedYear,
+      ),
       id: input.business.id,
-      legalName: input.business.legalName,
-      physicalAddress: input.business.physicalAddress,
-      region: input.business.region,
-      registrationNumber: input.business.registrationNumber,
-      sector: input.business.sector,
-      tradingName: input.business.tradingName,
+      legalName: copiedText("BUSINESS_LEGAL_NAME", input.business.legalName),
+      physicalAddress: copiedText(
+        "BUSINESS_PHYSICAL_ADDRESS",
+        input.business.physicalAddress,
+      ),
+      region: copiedText("BUSINESS_REGION", input.business.region),
+      registrationNumber: copiedText(
+        "BUSINESS_REGISTRATION_NUMBER",
+        input.business.registrationNumber,
+      ),
+      sector: copiedText("BUSINESS_SECTOR", input.business.sector),
+      tradingName: copiedText(
+        "BUSINESS_TRADING_NAME",
+        input.business.tradingName,
+      ),
       updatedAt: input.business.updatedAt.toISOString(),
     },
     declarations: {

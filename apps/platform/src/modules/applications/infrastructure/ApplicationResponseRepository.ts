@@ -3,6 +3,9 @@ import "server-only";
 import { and, eq, isNull } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
+import { businessProfiles } from "@/db/schema/profiles";
+import { fundingCalls } from "@/modules/funding-calls/infrastructure/funding-call.schema";
+import { fillMissingAttachedBusinessValues } from "../domain/AttachedApplicationForm";
 import {
   applicationAuditEntries,
   applicationCommands,
@@ -38,18 +41,33 @@ export async function readOwnedApplicationDraftResponse(
   actorUserId: string,
   applicationId: string,
 ) {
-  const [response] = await getDatabase()
+  const [row] = await getDatabase()
     .select({
-      formVersionId: applicationDraftResponses.formVersionId,
-      id: applicationDraftResponses.id,
-      rowVersion: applicationDraftResponses.rowVersion,
-      updatedAt: applicationDraftResponses.updatedAt,
-      values: applicationDraftResponses.values,
+      attachedFormVersionId: fundingCalls.formVersionId,
+      business: businessProfiles,
+      response: {
+        formVersionId: applicationDraftResponses.formVersionId,
+        id: applicationDraftResponses.id,
+        rowVersion: applicationDraftResponses.rowVersion,
+        updatedAt: applicationDraftResponses.updatedAt,
+        values: applicationDraftResponses.values,
+      },
     })
     .from(applicationDraftResponses)
     .innerJoin(
       applications,
       eq(applications.latestDraftResponseId, applicationDraftResponses.id),
+    )
+    .innerJoin(
+      fundingCalls,
+      eq(fundingCalls.id, applications.fundingOpportunityId),
+    )
+    .leftJoin(
+      businessProfiles,
+      and(
+        eq(businessProfiles.id, applications.businessId),
+        eq(businessProfiles.userId, applications.ownerUserId),
+      ),
     )
     .where(and(
       eq(applications.id, applicationId),
@@ -58,7 +76,17 @@ export async function readOwnedApplicationDraftResponse(
       eq(applicationDraftResponses.respondentUserId, actorUserId),
     ))
     .limit(1);
-  return response ?? null;
+  if (!row) return null;
+  const { business, response } = row;
+  if (
+    !business
+    || row.attachedFormVersionId !== response.formVersionId
+    || Object.hasOwn(response.values, "BUSINESS_LEGAL_NAME")
+  ) return response;
+  return {
+    ...response,
+    values: fillMissingAttachedBusinessValues(response.values, business),
+  };
 }
 
 async function saveDraftInTransaction(

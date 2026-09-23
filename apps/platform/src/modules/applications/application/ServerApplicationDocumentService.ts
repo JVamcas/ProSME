@@ -13,7 +13,7 @@ import {
   RequestValidationError,
   ResourceNotFoundError,
 } from "@/lib/resource-errors";
-import { getFormRuntime } from "@/modules/forms/infrastructure/FormRepository";
+import { getAttachedApplicationForm } from "../infrastructure/AttachedApplicationFormRepository";
 import {
   applicationDocumentRequirementKeySchema,
   applicationDocumentVersionIdSchema,
@@ -62,7 +62,10 @@ async function loadDocumentContext(
     throw new ResourceNotFoundError("application draft");
   }
   const [form, response] = await Promise.all([
-    getFormRuntime(application.formVersionId),
+    getAttachedApplicationForm(
+      application.formVersionId,
+      application.fundingOpportunityId,
+    ),
     readOwnedApplicationDraftResponse(ownerUserId, applicationId),
   ]);
   if (

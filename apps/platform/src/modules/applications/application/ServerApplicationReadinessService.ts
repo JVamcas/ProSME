@@ -6,7 +6,7 @@ import type { AuthenticatedUser } from "@/auth/types";
 import { ResourceNotFoundError } from "@/lib/resource-errors";
 import { isFundingCallEffectivelyOpen } from "@/modules/funding-calls/domain/FundingCallLifecycle";
 import { readFundingCallById } from "@/modules/funding-calls/infrastructure/FundingCallRepository";
-import { getFormRuntime } from "@/modules/forms/infrastructure/FormRepository";
+import { getAttachedApplicationForm } from "../infrastructure/AttachedApplicationFormRepository";
 import { evaluateApplicationReadiness } from "../domain/ApplicationReadiness";
 import { listLatestOwnedApplicationDocumentVersions } from "../infrastructure/ApplicationDocumentRepository";
 import { findOwnedApplication } from "../infrastructure/ApplicationRepository";
@@ -29,7 +29,10 @@ export async function getOwnApplicationReadiness(
   const [call, documents, form, response] = await Promise.all([
     readFundingCallById(application.fundingOpportunityId),
     listLatestOwnedApplicationDocumentVersions(actor.id, applicationId),
-    getFormRuntime(application.formVersionId),
+    getAttachedApplicationForm(
+      application.formVersionId,
+      application.fundingOpportunityId,
+    ),
     readOwnedApplicationDraftResponse(actor.id, applicationId),
   ]);
   if (!call || !form || !response) {

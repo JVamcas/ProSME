@@ -84,6 +84,32 @@ describe("step form rendering", () => {
     await act(async () => root.unmount());
   });
 
+  it("disables copied business fields without disabling other form fields", async () => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(
+        <FormRenderer
+          definition={steppedDefinition()}
+          formData={{ NAME: "Selected business" }}
+          onChange={vi.fn()}
+          onSubmit={vi.fn()}
+          readOnlyFieldKeys={["NAME"]}
+        />,
+      );
+    });
+
+    const businessInput = container.querySelector<HTMLInputElement>(
+      'input[value="Selected business"]',
+    );
+    expect(businessInput?.disabled).toBe(true);
+    expect(businessInput?.value).toBe("Selected business");
+
+    await act(async () => root.unmount());
+  });
+
   it("adds supporting documents immediately before the final form section", async () => {
     const container = document.createElement("div");
     document.body.append(container);

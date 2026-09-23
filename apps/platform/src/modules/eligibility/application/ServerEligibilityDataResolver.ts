@@ -1,5 +1,10 @@
 import "server-only";
 
+import {
+  attachedBusinessFieldKeys,
+  attachedBusinessSourceDefinitionId,
+} from "@/modules/applications/domain/AttachedApplicationForm";
+
 import type { DatabaseTransaction } from "@/db/client";
 import type { JsonValue } from "@/modules/conditions/domain/Operand";
 import { readWorkflowEligibilityValueRecords } from "@/modules/workflows/infrastructure/WorkflowEligibilityValueRepository";
@@ -55,6 +60,7 @@ function valueAtPath(
 }
 
 function objectReader(input: {
+  allowStableBusinessFields?: boolean;
   recordId: string;
   sourceVersionId: string | null;
   values: SourceObject;
@@ -62,14 +68,22 @@ function objectReader(input: {
   return {
     async read(requests) {
       return requests.flatMap((request): EligibilitySourceRecord[] => {
-        if (request.binding.sourceVersionId !== input.sourceVersionId) return [];
+        const stableBusinessSource = input.allowStableBusinessFields
+          && request.binding.sourceVersionId === null
+          && request.binding.sourceDefinitionId
+            === attachedBusinessSourceDefinitionId
+          && attachedBusinessFieldKeys.has(request.binding.sourceKey);
+        if (
+          request.binding.sourceVersionId !== input.sourceVersionId
+          && !stableBusinessSource
+        ) return [];
         const value = valueAtPath(input.values, request.binding.sourceKey);
         if (value === undefined) return [];
         return [{
           sourceDefinitionId: request.binding.sourceDefinitionId,
           sourceKey: request.binding.sourceKey,
           sourceRecordId: input.recordId,
-          sourceVersionId: input.sourceVersionId,
+          sourceVersionId: request.binding.sourceVersionId,
           values: { value },
         }];
       });
@@ -109,6 +123,7 @@ export async function resolveAuthoritativeEligibilityData(
       createEligibilitySourceAdapter(
         "APPLICATION_FORM_FIELD",
         objectReader({
+          allowStableBusinessFields: true,
           recordId: input.applicationId,
           sourceVersionId: input.applicationSourceVersionId,
           values: input.applicationValues,

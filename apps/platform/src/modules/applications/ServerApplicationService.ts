@@ -25,7 +25,7 @@ import {
   RequestValidationError,
 } from "@/lib/resource-errors";
 import { resolvePublishedApplicationFormBinding } from "@/modules/funding-calls/ServerFundingOpportunityIntegration";
-import { getFormRuntime } from "@/modules/forms/infrastructure/FormRepository";
+import { getAttachedApplicationForm } from "./infrastructure/AttachedApplicationFormRepository";
 import { applicationDeclarationsSectionSchema } from "./ApplicationDeclarationSchemas";
 import { applicationDocumentRequirements } from "./domain/ApplicationDocumentPolicy";
 import type {
@@ -121,7 +121,10 @@ async function documentsAreComplete(
   if (!application.formVersionId) return false;
   const [documents, form, response] = await Promise.all([
     listLatestOwnedApplicationDocumentVersions(ownerUserId, application.id),
-    getFormRuntime(application.formVersionId),
+    getAttachedApplicationForm(
+      application.formVersionId,
+      application.fundingOpportunityId,
+    ),
     readOwnedApplicationDraftResponse(ownerUserId, application.id),
   ]);
   if (!form || !response || response.formVersionId !== application.formVersionId) {

@@ -4,6 +4,7 @@ import { and, desc, eq, isNull, or } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
 import { businessProfiles } from "@/db/schema/profiles";
+import { attachedBusinessFieldValues } from "../domain/AttachedApplicationForm";
 import { eligibilityRuleSetVersions } from "@/modules/eligibility/infrastructure/eligibility-ruleset.schema";
 import { formVersions } from "@/modules/forms/infrastructure/form.schema";
 import {
@@ -89,20 +90,20 @@ async function bindingIsPublished(
   return form?.status === "PUBLISHED" && rules?.status === "PUBLISHED";
 }
 
-async function businessIsOwned(
+async function readOwnedBusiness(
   transaction: ApplicationTransaction,
   actorUserId: string,
   businessId: string,
 ) {
   const [business] = await transaction
-    .select({ id: businessProfiles.id })
+    .select()
     .from(businessProfiles)
     .where(and(
       eq(businessProfiles.id, businessId),
       eq(businessProfiles.userId, actorUserId),
     ))
     .limit(1);
-  return Boolean(business);
+  return business ?? null;
 }
 
 async function hasDuplicate(
@@ -187,10 +188,10 @@ async function createDraftInTransaction(
   if (duplicatePolicy === "one_per_business") {
     if (!input.businessId) return { kind: "business_required" };
   }
-  if (
-    input.businessId
-    && !await businessIsOwned(transaction, input.actorUserId, input.businessId)
-  ) {
+  const business = input.businessId
+    ? await readOwnedBusiness(transaction, input.actorUserId, input.businessId)
+    : null;
+  if (input.businessId && !business) {
     return { kind: "unowned_business" };
   }
   if (await hasDuplicate(
@@ -219,7 +220,7 @@ async function createDraftInTransaction(
       applicationId: application.id,
       formVersionId,
       respondentUserId: input.actorUserId,
-      values: {},
+      values: business ? attachedBusinessFieldValues(business) : {},
     })
     .returning({ id: applicationDraftResponses.id });
   await transaction

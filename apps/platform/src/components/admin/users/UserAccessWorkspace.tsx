@@ -4,12 +4,13 @@ import { useState } from "react";
 
 import { DraggableDialog } from "@/components/ui/draggable-dialog";
 import { Tabs, type TabItem } from "@/components/ui/tabs";
-import { cn } from "@/lib/utils";
 import { useUserAccess } from "@/modules/users/UserAccessHooks";
 import type { UserAccessRow } from "@/modules/users/UserAccessTypes";
 import { UserRoleAssignmentPanel } from "./UserRoleAssignmentPanel";
 import { UsersTabPanel } from "./UsersTabPanel";
 import { RolePermissionsPanel } from "./RolePermissionsPanel";
+import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
+import { PortalErrorState } from "@/components/layout/PortalErrorState";
 
 type AccessTab = "users" | "roles";
 
@@ -27,10 +28,10 @@ export function UserAccessWorkspace(props: Props) {
   const query = useUserAccess({ limit: 100 });
 
   if (query.isPending) {
-    return <WorkspaceMessage>Loading users and roles…</WorkspaceMessage>;
+    return <PortalLoadingState title="" description="Just a moment..."/>
   }
   if (query.isError) {
-    return <WorkspaceMessage error>{query.error.message}</WorkspaceMessage>;
+    return <PortalErrorState title={query.error.name} description={query.error.message}/>
   }
   if (!query.data) return null;
 
@@ -94,22 +95,3 @@ export function UserAccessWorkspace(props: Props) {
   );
 }
 
-function WorkspaceMessage({
-  children,
-  error = false,
-}: {
-  children: React.ReactNode;
-  error?: boolean;
-}) {
-  return (
-    <div
-      className={cn(
-        "rounded-2xl border border-slate-200 bg-white p-8 text-sm shadow-sm",
-        error ? "text-red-700" : "text-slate-500",
-      )}
-      role={error ? "alert" : undefined}
-    >
-      {children}
-    </div>
-  );
-}

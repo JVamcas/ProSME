@@ -1,11 +1,11 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import { IconButton } from "@/components/ui/button";
 import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
 import { Input, Select } from "@/components/ui/form-controls";
+import { Pagination } from "@/components/ui/pagination";
 import type {
   RoleAccessRow,
   UserAccessRow,
@@ -107,10 +107,12 @@ export function UsersTabPanel(props: UsersTabPanelProps) {
           emptyMessage="No users match your filters."
           footer={
             <Pagination
-              count={filteredUsers.length}
-              onPageChange={setPage}
+              hasNextPage={activePage < pageCount}
+              onNext={() => setPage(activePage + 1)}
+              onPrevious={() => setPage(activePage - 1)}
               page={activePage}
-              pageCount={pageCount}
+              pageSize={PAGE_SIZE}
+              total={filteredUsers.length}
             />
           }
           minWidth={880}
@@ -126,10 +128,12 @@ export function UsersTabPanel(props: UsersTabPanelProps) {
           </p>
         ) : null}
         <Pagination
-          count={filteredUsers.length}
-          onPageChange={setPage}
+          hasNextPage={activePage < pageCount}
+          onNext={() => setPage(activePage + 1)}
+          onPrevious={() => setPage(activePage - 1)}
           page={activePage}
-          pageCount={pageCount}
+          pageSize={PAGE_SIZE}
+          total={filteredUsers.length}
         />
       </div>
     </div>
@@ -223,51 +227,5 @@ function MobileUserCard({
         <UserStatus status={user.status} />
       </div>
     </article>
-  );
-}
-
-function Pagination({
-  count,
-  onPageChange,
-  page,
-  pageCount,
-}: {
-  count: number;
-  onPageChange: (page: number) => void;
-  page: number;
-  pageCount: number;
-}) {
-  const first = count ? (page - 1) * PAGE_SIZE + 1 : 0;
-  const last = Math.min(page * PAGE_SIZE, count);
-  return (
-    <div className="flex items-center justify-between gap-3 text-xs text-slate-500">
-      <span>
-        Showing {first}–{last} of {count}
-      </span>
-      <div className="flex items-center gap-1">
-        <IconButton
-          className="size-8 rounded-lg"
-          disabled={page === 1}
-          label="Previous page"
-          onClick={() => onPageChange(page - 1)}
-          variant="outline"
-        >
-          <ChevronLeft className="size-4" />
-        </IconButton>
-        <span className="min-w-8 rounded-lg bg-blue-600 px-2 py-2 text-center font-semibold text-white">
-          {page}
-        </span>
-        <span className="px-1">of {pageCount}</span>
-        <IconButton
-          className="size-8 rounded-lg"
-          disabled={page === pageCount}
-          label="Next page"
-          onClick={() => onPageChange(page + 1)}
-          variant="outline"
-        >
-          <ChevronRight className="size-4" />
-        </IconButton>
-      </div>
-    </div>
   );
 }

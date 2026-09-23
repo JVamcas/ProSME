@@ -23,6 +23,7 @@ type AuthenticatedPortalShellProps = {
 };
 
 const DEFAULT_SIDEBAR_WIDTH = 272;
+const COLLAPSED_SIDEBAR_WIDTH = 80;
 const MIN_SIDEBAR_WIDTH = 240;
 const MAX_SIDEBAR_WIDTH = 480;
 
@@ -31,8 +32,9 @@ function clampSidebarWidth(width: number) {
 }
 
 function Sidebar({
+  collapsed,
   context,
-  onClose,
+  onToggleCollapsed,
   onPointerResize,
   onResize,
   onResizeEnd,
@@ -40,7 +42,8 @@ function Sidebar({
   space,
   width,
 }: Omit<AuthenticatedPortalShellProps, "children"> & {
-  onClose: () => void;
+  collapsed: boolean;
+  onToggleCollapsed: () => void;
   onPointerResize: (clientX: number) => void;
   onResize: (clientX: number) => void;
   onResizeEnd: () => void;
@@ -54,29 +57,58 @@ function Sidebar({
 
   return (
     // Keep the approved base class visible while operations overrides the surface inline.
-    // prettier-ignore
-    <aside className="sticky top-0 hidden h-screen overflow-hidden bg-brand-orange p-5 relative lg:flex lg:flex-col" style={dark ? { backgroundColor: "var(--color-brand-navy)", width } : { width }}>
-      <div className="flex shrink-0 items-center justify-between gap-3">
-        <Logo className="" href="/" compact inverted={dark} />
+    <aside
+      className={cn(
+        "relative sticky top-0 hidden h-screen overflow-hidden bg-brand-orange transition-[width,padding] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none lg:flex lg:flex-col",
+        collapsed ? "p-3" : "p-5",
+      )}
+      data-collapsed={collapsed}
+      style={
+        dark ? { backgroundColor: "var(--color-brand-navy)", width } : { width }
+      }
+    >
+      <div
+        className={cn(
+          "flex shrink-0 items-center",
+          collapsed ? "justify-center" : "justify-between gap-3",
+        )}
+      >
+        {!collapsed ? <Logo href="/" compact inverted={dark} /> : null}
         <button
-          aria-label="Close navigation sidebar"
+          aria-label={
+            collapsed
+              ? "Expand navigation sidebar"
+              : "Collapse navigation sidebar"
+          }
           className={cn(
             "grid size-9 shrink-0 place-items-center rounded-lg transition focus-visible:outline-none focus-visible:ring-2",
             dark
               ? "text-white/80 hover:bg-white/10 hover:text-white focus-visible:ring-white"
               : "text-brand-navy/80 hover:bg-brand-navy/10 hover:text-brand-navy focus-visible:ring-brand-navy",
           )}
-          onClick={onClose}
-          title="Close navigation sidebar"
+          onClick={onToggleCollapsed}
+          title={
+            collapsed
+              ? "Expand navigation sidebar"
+              : "Collapse navigation sidebar"
+          }
           type="button"
         >
-          <PanelLeftClose aria-hidden="true" className="size-5" />
+          {collapsed ? (
+            <PanelLeftOpen aria-hidden="true" className="size-5" />
+          ) : (
+            <PanelLeftClose aria-hidden="true" className="size-5" />
+          )}
         </button>
       </div>
       <div className="mt-6 shrink-0">
-        <PortalUserSummary context={context} dark={dark} />
+        <PortalUserSummary
+          collapsed={collapsed}
+          context={context}
+          dark={dark}
+        />
       </div>
-      <div className="mt-5 shrink-0">
+      <div className={cn("mt-5 shrink-0", collapsed && "hidden")}>
         <PortalSpaceSwitcher
           availableSpaces={context.availableSpaces}
           currentSpace={space}
@@ -84,56 +116,63 @@ function Sidebar({
         />
       </div>
       <div className="mt-6 min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
-        <PortalNavList dark={dark} routes={routes} />
+        <PortalNavList
+          collapsed={collapsed}
+          dark={dark}
+          onRequestExpand={onToggleCollapsed}
+          routes={routes}
+        />
       </div>
       <div
         className={`shrink-0 border-t pt-3 ${dark ? "border-white/15" : "border-brand-navy/15"}`}
       >
-        <PortalHelpLink dark={dark} />
-        <LogoutButton tone={dark ? "dark" : "brand"} />
+        <PortalHelpLink collapsed={collapsed} dark={dark} />
+        <LogoutButton collapsed={collapsed} tone={dark ? "dark" : "brand"} />
       </div>
-      <div
-        aria-label="Resize navigation sidebar"
-        aria-orientation="vertical"
-        aria-valuemax={MAX_SIDEBAR_WIDTH}
-        aria-valuemin={MIN_SIDEBAR_WIDTH}
-        aria-valuenow={width}
-        className={cn(
-          "absolute inset-y-0 right-0 w-2 cursor-col-resize touch-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset",
-          dark
-            ? "hover:bg-white/20 focus-visible:ring-white"
-            : "hover:bg-brand-navy/20 focus-visible:ring-brand-navy",
-        )}
-        onDoubleClick={() => onResize(DEFAULT_SIDEBAR_WIDTH)}
-        onKeyDown={(event) => {
-          if (event.key === "ArrowLeft") {
-            event.preventDefault();
-            onResize(width - 16);
-          } else if (event.key === "ArrowRight") {
-            event.preventDefault();
-            onResize(width + 16);
-          } else if (event.key === "Home") {
-            event.preventDefault();
-            onResize(MIN_SIDEBAR_WIDTH);
-          } else if (event.key === "End") {
-            event.preventDefault();
-            onResize(MAX_SIDEBAR_WIDTH);
-          }
-        }}
-        onLostPointerCapture={onResizeEnd}
-        onPointerDown={(event) => {
-          onResizeStart();
-          event.currentTarget.setPointerCapture?.(event.pointerId);
-        }}
-        onPointerMove={(event) => onPointerResize(event.clientX)}
-        onPointerUp={(event) => {
-          onResizeEnd();
-          event.currentTarget.releasePointerCapture?.(event.pointerId);
-        }}
-        role="separator"
-        tabIndex={0}
-        title="Drag to resize; double-click to reset"
-      />
+      {!collapsed ? (
+        <div
+          aria-label="Resize navigation sidebar"
+          aria-orientation="vertical"
+          aria-valuemax={MAX_SIDEBAR_WIDTH}
+          aria-valuemin={MIN_SIDEBAR_WIDTH}
+          aria-valuenow={width}
+          className={cn(
+            "absolute inset-y-0 right-0 w-2 cursor-col-resize touch-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset",
+            dark
+              ? "hover:bg-white/20 focus-visible:ring-white"
+              : "hover:bg-brand-navy/20 focus-visible:ring-brand-navy",
+          )}
+          onDoubleClick={() => onResize(DEFAULT_SIDEBAR_WIDTH)}
+          onKeyDown={(event) => {
+            if (event.key === "ArrowLeft") {
+              event.preventDefault();
+              onResize(width - 16);
+            } else if (event.key === "ArrowRight") {
+              event.preventDefault();
+              onResize(width + 16);
+            } else if (event.key === "Home") {
+              event.preventDefault();
+              onResize(MIN_SIDEBAR_WIDTH);
+            } else if (event.key === "End") {
+              event.preventDefault();
+              onResize(MAX_SIDEBAR_WIDTH);
+            }
+          }}
+          onLostPointerCapture={onResizeEnd}
+          onPointerDown={(event) => {
+            onResizeStart();
+            event.currentTarget.setPointerCapture?.(event.pointerId);
+          }}
+          onPointerMove={(event) => onPointerResize(event.clientX)}
+          onPointerUp={(event) => {
+            onResizeEnd();
+            event.currentTarget.releasePointerCapture?.(event.pointerId);
+          }}
+          role="separator"
+          tabIndex={0}
+          title="Drag to resize; double-click to reset"
+        />
+      ) : null}
     </aside>
   );
 }
@@ -143,7 +182,7 @@ export function AuthenticatedPortalShell({
   context,
   space,
 }: AuthenticatedPortalShellProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(DEFAULT_SIDEBAR_WIDTH);
   const resizing = useRef(false);
 
@@ -156,53 +195,34 @@ export function AuthenticatedPortalShell({
   return (
     <CapabilityProvider value={context}>
       <div
-        className="min-h-screen lg:grid"
+        className="min-h-screen transition-[grid-template-columns] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none lg:grid"
         style={{
-          backgroundColor: space === "operations"
-            ? "var(--color-brand-navy)"
-            : "var(--color-brand-orange)",
-          gridTemplateColumns: sidebarOpen
-            ? `${sidebarWidth}px minmax(0, 1fr)`
-            : "0 minmax(0, 1fr)",
+          backgroundColor:
+            space === "operations"
+              ? "var(--color-brand-navy)"
+              : "var(--color-brand-orange)",
+          gridTemplateColumns: `${sidebarCollapsed ? COLLAPSED_SIDEBAR_WIDTH : sidebarWidth}px minmax(0, 1fr)`,
         }}
       >
-        {sidebarOpen ? (
-          <Sidebar
-            context={context}
-            onClose={() => setSidebarOpen(false)}
-            onPointerResize={resizeSidebar}
-            onResize={(clientX) =>
-              setSidebarWidth(clampSidebarWidth(clientX))
-            }
-            onResizeEnd={() => {
-              resizing.current = false;
-            }}
-            onResizeStart={() => {
-              resizing.current = true;
-            }}
-            space={space}
-            width={sidebarWidth}
-          />
-        ) : (
-          <div aria-hidden="true" className="hidden lg:block" />
-        )}
-        {!sidebarOpen ? (
-          <button
-            aria-label="Open navigation sidebar"
-            className="fixed left-0 top-1/2 z-40 hidden size-11 -translate-y-1/2 place-items-center rounded-r-xl bg-brand-navy text-white shadow-lg transition hover:bg-brand-navy/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange lg:grid"
-            onClick={() => setSidebarOpen(true)}
-            title="Open navigation sidebar"
-            type="button"
-          >
-            <PanelLeftOpen aria-hidden="true" className="size-5" />
-          </button>
-        ) : null}
+        <Sidebar
+          collapsed={sidebarCollapsed}
+          context={context}
+          onToggleCollapsed={() => setSidebarCollapsed((current) => !current)}
+          onPointerResize={resizeSidebar}
+          onResize={(clientX) => setSidebarWidth(clampSidebarWidth(clientX))}
+          onResizeEnd={() => {
+            resizing.current = false;
+          }}
+          onResizeStart={() => {
+            resizing.current = true;
+          }}
+          space={space}
+          width={sidebarCollapsed ? COLLAPSED_SIDEBAR_WIDTH : sidebarWidth}
+        />
         <div className="min-w-0 bg-brand-white">
           <PortalMobileHeader context={context} space={space} />
           <PortalTopbar context={context} space={space} />
-          <main className="w-full p-4 sm:p-6 lg:p-8">
-            {children}
-          </main>
+          <main className="w-full p-4 sm:p-6 lg:p-8">{children}</main>
         </div>
       </div>
     </CapabilityProvider>

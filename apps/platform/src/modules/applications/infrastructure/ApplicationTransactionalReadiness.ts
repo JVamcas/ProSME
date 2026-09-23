@@ -10,6 +10,12 @@ import {
   formVersions,
 } from "@/modules/forms/infrastructure/form.schema";
 import { evaluateApplicationReadiness } from "../domain/ApplicationReadiness";
+import { applicationResponseValues } from "../domain/ApplicationDocumentPolicy";
+import {
+  attachBusinessFieldsToForm,
+  fillMissingAttachedBusinessValues,
+} from "../domain/AttachedApplicationForm";
+import { readApplicationBusinessInTransaction } from "./ApplicationBusinessContextRepository";
 import { applicationDocumentVersions } from "./application-document.schema";
 import type { ApplicationTransaction } from "./ApplicationCommandRepository";
 import {
@@ -120,8 +126,32 @@ export async function readTransactionalApplicationReadiness(
       eq(applicationDraftResponses.respondentUserId, application.ownerUserId),
     ))
     .limit(1);
-  const form = await readBoundForm(transaction, application.formVersionId);
-  if (!response || !form) return null;
+  const boundForm = await readBoundForm(transaction, application.formVersionId);
+  if (!response || !boundForm) return null;
+  const form = configurationAvailable
+    ? attachBusinessFieldsToForm(
+        boundForm,
+        application.fundingOpportunityId,
+      )
+    : boundForm;
+  if (
+    configurationAvailable
+    && application.businessId
+    && !Object.hasOwn(response.values, "BUSINESS_LEGAL_NAME")
+  ) {
+    const business = await readApplicationBusinessInTransaction(
+      transaction,
+      application.ownerUserId,
+      application.businessId,
+    );
+    if (business) {
+      response.values = fillMissingAttachedBusinessValues(
+        response.values,
+        business,
+      );
+    }
+  }
+  response.values = applicationResponseValues(form, response.values);
   const documentRows = await transaction
     .selectDistinctOn([applicationDocumentVersions.requirementKey], {
       checksumSha256: applicationDocumentVersions.checksumSha256,

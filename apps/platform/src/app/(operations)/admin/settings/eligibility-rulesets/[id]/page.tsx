@@ -40,8 +40,8 @@ export default async function EligibilityRuleSetBuilderPage({
         />
       )}
       description={editor.definition.description}
-      eyebrow={`${editor.definition.code} · Version ${editor.version.versionNumber}`}
-      title={editor.definition.name}
+      eyebrow={`Eligibility Ruleset`}
+      title={`editor.definition.name - v${editor.version.versionNumber}`}
     >
       <EligibilityRuleSetEditor
         canUpdate={can(user, permissionCodes.eligibilityRuleSetUpdate)}

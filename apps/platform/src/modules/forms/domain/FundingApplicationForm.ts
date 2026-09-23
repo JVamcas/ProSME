@@ -4,92 +4,16 @@ import {
 } from "./FundingApplicationFormBuilder";
 import type { StandardFormSeed } from "./StandardFormDefinition";
 
-const entityTypeOptions = [
-  { key: "CLOSE_CORPORATION", label: "Close corporation" },
-  { key: "COMPANY", label: "Company" },
-  { key: "COOPERATIVE", label: "Cooperative" },
-  { key: "SOLE_PROPRIETOR", label: "Sole proprietor" },
-  { key: "OTHER", label: "Other" },
-];
-
 const confirmationOption = [{ key: "CONFIRMED", label: "I confirm" }];
 
 const consentOption = [{ key: "CONSENT_GRANTED", label: "I consent" }];
 
 const sections: FundingApplicationSectionSeed[] = [
   {
-    description:
-      "Provide the legal and contact details for the applicant entity.",
-    key: "ENTITY_DETAILS",
-    title: "Entity details",
-    fields: [
-      {
-        key: "LEGAL_ENTITY_NAME",
-        label: "Legal entity name",
-        required: true,
-        type: "TEXT",
-      },
-      { key: "TRADING_NAME", label: "Trading name", type: "TEXT" },
-      {
-        key: "ENTITY_TYPE",
-        label: "Entity type",
-        options: entityTypeOptions,
-        required: true,
-        type: "SINGLE_SELECT",
-      },
-      {
-        key: "NAMIBIAN_OWNERSHIP_PERCENTAGE",
-        label: "Namibian ownership",
-        maximum: 100,
-        minimum: 0,
-        required: true,
-        type: "PERCENTAGE",
-      },
-      {
-        key: "EMPLOYEE_COUNT",
-        label: "Number of employees",
-        minimum: 0,
-        required: true,
-        type: "NUMBER",
-      },
-      {
-        key: "REGISTERED_ADDRESS",
-        label: "Registered address",
-        required: true,
-        type: "TEXTAREA",
-        columnSpan: 2,
-      },
-      {
-        key: "CONTACT_PERSON_NAME",
-        label: "Contact person",
-        required: true,
-        type: "TEXT",
-      },
-      {
-        key: "CONTACT_PERSON_EMAIL",
-        label: "Contact email",
-        required: true,
-        type: "TEXT",
-      },
-      {
-        key: "CONTACT_PERSON_PHONE",
-        label: "Contact phone",
-        required: true,
-        type: "TEXT",
-      },
-    ],
-  },
-  {
     description: "Provide registration and statutory compliance information.",
     key: "REGISTRATION_AND_TAX",
     title: "Registration and tax information",
     fields: [
-      {
-        key: "REGISTRATION_NUMBER",
-        label: "Registration number",
-        required: true,
-        type: "TEXT",
-      },
       {
         key: "REGISTRATION_DATE",
         label: "Registration date",
@@ -363,7 +287,7 @@ export function fundingApplicationForm(): StandardFormSeed {
     displayMode: "SINGLE_PAGE",
     fields: definition.fields,
     instructions:
-      "Complete every required section and upload the requested supporting documents before submitting your application.",
+      "",
     name: "Funding Application Form",
     publishOnSeed: true,
     sections: definition.sections,

@@ -92,7 +92,6 @@ describe("standard form catalogue", () => {
     expect(first?.publishOnSeed).toBe(true);
     expect(first?.submitLabel).toBe("Submit application");
     expect(first?.sections.map((section) => section.key)).toEqual([
-      "ENTITY_DETAILS",
       "REGISTRATION_AND_TAX",
       "PROJECT",
       "BUDGET_AND_COFUNDING",
@@ -105,8 +104,6 @@ describe("standard form catalogue", () => {
     );
     expect(first?.fields.map((field) => field.key)).toEqual(
       expect.arrayContaining([
-        "LEGAL_ENTITY_NAME",
-        "REGISTRATION_NUMBER",
         "PROJECT_TITLE",
         "PROJECT_ABSTRACT",
         "PROJECT_OBJECTIVES",

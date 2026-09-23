@@ -49,25 +49,29 @@ async function renderShell() {
 }
 
 describe("portal desktop sidebar", () => {
-  it("can be closed and opened again", async () => {
+  it("collapses to an icon rail and expands again", async () => {
     const { container, root } = await renderShell();
     const closeButton = container.querySelector<HTMLButtonElement>(
-      '[aria-label="Close navigation sidebar"]',
+      '[aria-label="Collapse navigation sidebar"]',
     );
 
     await act(async () => closeButton?.click());
 
-    const openButton = container.querySelector<HTMLButtonElement>(
-      '[aria-label="Open navigation sidebar"]',
+    const expandButton = container.querySelector<HTMLButtonElement>(
+      '[aria-label="Expand navigation sidebar"]',
     );
-    expect(openButton).not.toBeNull();
-    expect(container.querySelector("aside")).toBeNull();
+    const aside = container.querySelector("aside");
+    expect(expandButton).not.toBeNull();
+    expect(aside).not.toBeNull();
+    expect(aside?.getAttribute("data-collapsed")).toBe("true");
+    expect(aside?.getAttribute("style")).toContain("width: 80px");
+    expect(container.querySelector('a[title="My profile"]')).not.toBeNull();
 
-    await act(async () => openButton?.click());
+    await act(async () => expandButton?.click());
 
-    expect(container.querySelector("aside")).not.toBeNull();
+    expect(aside?.getAttribute("data-collapsed")).toBe("false");
     expect(
-      container.querySelector('[aria-label="Open navigation sidebar"]'),
+      container.querySelector('[aria-label="Expand navigation sidebar"]'),
     ).toBeNull();
     await act(async () => root.unmount());
   });

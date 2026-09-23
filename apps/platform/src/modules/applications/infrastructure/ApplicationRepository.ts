@@ -27,7 +27,11 @@ import type {
   ApplicationStatusCounts,
 } from "@/modules/applications/ApplicationTypes";
 import type { ApplicationDuplicatePolicy } from "../domain/Application";
-import { applications, type ApplicationRecord } from "./application.schema";
+import { applicationDraftResponses, applications, type ApplicationRecord } from "./application.schema";
+import {
+  attachedBusinessFieldKeys,
+  attachedBusinessFieldValues,
+} from "../domain/AttachedApplicationForm";
 
 export type ApplicationCursor = {
   id: string;
@@ -351,25 +355,68 @@ export async function updateOwnedApplication(
   nextSection: ApplicationSection,
 ) {
   try {
-    const [updated] = await getDatabase()
-      .update(applications)
-      .set({
-        ...sectionUpdate(input, completion, nextSection),
-        businessId: input.section === "business"
-          ? input.data.businessId
-          : undefined,
-      })
-      .where(and(
-        eq(applications.id, applicationId),
-        eq(applications.ownerUserId, ownerUserId),
-        eq(applications.status, "draft"),
-        isNull(applications.deletedAt),
-        eq(applications.rowVersion, input.expectedRowVersion),
-      ))
-      .returning({ id: applications.id });
-    return updated
-      ? { id: updated.id, kind: "updated" as const }
-      : { kind: "conflict" as const };
+    return await getDatabase().transaction(async (transaction) => {
+      const businessId = input.section === "business"
+        ? input.data.businessId
+        : undefined;
+      const business = businessId
+        ? (await transaction
+            .select()
+            .from(businessProfiles)
+            .where(and(
+              eq(businessProfiles.id, businessId),
+              eq(businessProfiles.userId, ownerUserId),
+            ))
+            .limit(1))[0]
+        : null;
+      if (input.section === "business" && !business) {
+        return { kind: "conflict" as const };
+      }
+      const [updated] = await transaction
+        .update(applications)
+        .set({
+          ...sectionUpdate(input, completion, nextSection),
+          businessId: input.section === "business"
+            ? input.data.businessId
+            : undefined,
+        })
+        .where(and(
+          eq(applications.id, applicationId),
+          eq(applications.ownerUserId, ownerUserId),
+          eq(applications.status, "draft"),
+          isNull(applications.deletedAt),
+          eq(applications.rowVersion, input.expectedRowVersion),
+        ))
+        .returning({
+          id: applications.id,
+          latestDraftResponseId: applications.latestDraftResponseId,
+        });
+      if (!updated) return { kind: "conflict" as const };
+      if (business && !updated.latestDraftResponseId) {
+        throw new Error("Application draft response is missing.");
+      }
+      if (business && updated.latestDraftResponseId) {
+        const [response] = await transaction
+          .select({ values: applicationDraftResponses.values })
+          .from(applicationDraftResponses)
+          .where(eq(applicationDraftResponses.id, updated.latestDraftResponseId))
+          .limit(1);
+        if (!response) throw new Error("Application draft response is missing.");
+        const businessKeys = new Set<string>(attachedBusinessFieldKeys);
+        const otherValues = Object.fromEntries(
+          Object.entries(response.values).filter(([key]) => !businessKeys.has(key)),
+        );
+        await transaction
+          .update(applicationDraftResponses)
+          .set({
+            rowVersion: sql`${applicationDraftResponses.rowVersion} + 1`,
+            updatedAt: new Date(),
+            values: { ...otherValues, ...attachedBusinessFieldValues(business) },
+          })
+          .where(eq(applicationDraftResponses.id, updated.latestDraftResponseId));
+      }
+      return { id: updated.id, kind: "updated" as const };
+    });
   } catch (error) {
     if (
       typeof error === "object" &&

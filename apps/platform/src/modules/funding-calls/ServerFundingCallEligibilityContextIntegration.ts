@@ -1,5 +1,9 @@
 import "server-only";
 
+import {
+  attachedBusinessFieldDefinitions,
+  attachedBusinessSourceDefinitionId,
+} from "@/modules/applications/domain/AttachedApplicationForm";
 import type { EligibilityFieldRegistryContext } from "@/modules/eligibility/domain/EligibilityFieldRegistry";
 import { fundingCallEligibilitySourceDefinitions } from "./domain/FundingCallEligibilitySources";
 import { readEligibilityFormSources } from "@/modules/forms/infrastructure/EligibilityFormSourceRepository";
@@ -42,6 +46,18 @@ async function resolveContexts(calls: readonly EligibilityContextBinding[]) {
         sourceVersionId: null,
         supportedTypes: [source.type],
       })),
+      ...(call.formVersionId
+        ? attachedBusinessFieldDefinitions(call.id).map((field) => ({
+            availableBeforeEligibility: true,
+            fundingCallId: call.id,
+            label: field.label,
+            sourceDefinitionId: attachedBusinessSourceDefinitionId,
+            sourceKey: field.key,
+            sourceKind: "APPLICATION_FORM_FIELD" as const,
+            sourceVersionId: null,
+            supportedTypes: [field.type === "NUMBER" ? "NUMBER" as const : "TEXT" as const],
+          }))
+        : []),
       ...formSources
         .filter((source) => source.versionId === call.formVersionId)
         .map((source) => ({

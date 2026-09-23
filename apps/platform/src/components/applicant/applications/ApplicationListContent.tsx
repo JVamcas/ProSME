@@ -18,7 +18,7 @@ export function ApplicationListContent({
 }: {
   canDeleteDraft: boolean;
   items: ApplicationSummary[];
-  onDeletedLastItem: () => void;
+  onDeletedLastItem?: () => void;
 }) {
   const router = useRouter();
   const deleteDraft = useDeleteApplicationDraft();
@@ -80,7 +80,7 @@ export function ApplicationListContent({
           deleteDraft.mutate(deleteCandidate.id, {
             onSuccess: () => {
               setDeleteCandidate(null);
-              if (items.length === 1) onDeletedLastItem();
+              if (items.length === 1) onDeletedLastItem?.();
               toast.success("Draft application deleted");
             },
           });
