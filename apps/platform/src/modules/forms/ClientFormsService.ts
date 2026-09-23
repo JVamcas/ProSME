@@ -17,7 +17,9 @@ import type {
   UpdateFormInput,
 } from "./api/FormTransportTypes";
 
-type CompleteTaskFormInput = TaskFormSubmissionInput & { actionKey: string };
+type CompleteTaskFormInput = TaskFormSubmissionInput & {
+  actionKey: string | null;
+};
 
 const jsonHeaders = { "Content-Type": "application/json" };
 
@@ -112,7 +114,7 @@ function saveTaskForm(taskId: string, input: TaskFormSubmissionInput) {
 
 function completeTaskForm(taskId: string, input: CompleteTaskFormInput) {
   return requestData<{
-    actionKey: string;
+    actionKey: string | null;
     nextStageName: string | null;
     rowVersion: number;
     taskInstanceId: string;

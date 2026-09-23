@@ -33,6 +33,7 @@ export const eligibilityBuilderRuleSchema = z.object({
   failureType: z.enum(eligibilityFailureTypes),
   id: z.string().uuid(),
   order: z.number().int().positive(),
+  questionId: z.string().uuid(),
   reasonCode: reasonCodeSchema,
 }).superRefine((rule, context) => {
   function containsEmptyGroup(node: typeof rule.condition): boolean {

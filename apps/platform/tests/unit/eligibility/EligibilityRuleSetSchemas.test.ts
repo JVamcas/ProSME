@@ -9,6 +9,7 @@ const ruleId = "50000000-0000-4000-8000-000000000001";
 const groupId = "50000000-0000-4000-8000-000000000002";
 const nestedGroupId = "50000000-0000-4000-8000-000000000003";
 const conditionId = "50000000-0000-4000-8000-000000000004";
+const questionId = "50000000-0000-4000-8000-000000000006";
 
 function validRule(overrides: Record<string, unknown> = {}) {
   return {
@@ -37,6 +38,7 @@ function validRule(overrides: Record<string, unknown> = {}) {
     failureType: "HARD_FAIL",
     id: ruleId,
     order: 1,
+    questionId,
     reasonCode: "EMPLOYEE_REQUIRED",
     ...overrides,
   };

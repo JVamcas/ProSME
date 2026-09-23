@@ -90,6 +90,8 @@ function LoadedDynamicFormTask({
       onSubmit={(values) => {
         if (selectedActionKey) {
           controller.completeFormValues(values, selectedActionKey);
+        } else if (!actions.length) {
+          controller.completeFormValues(values, null);
         }
       }}
       readOnly={readOnly}
@@ -112,15 +114,30 @@ function LoadedDynamicFormTask({
           readOnly={readOnly}
           savePending={controller.save.isPending}
         />
-        <WorkflowTaskActions
-          actions={actions}
-          disabled={
-            readOnly
-            || controller.complete.isPending
-            || controller.save.isPending
-          }
-          onSelect={setSelectedActionKey}
-        />
+        {actions.length ? (
+          <WorkflowTaskActions
+            actions={actions}
+            disabled={
+              readOnly
+              || controller.complete.isPending
+              || controller.save.isPending
+            }
+            onSelect={setSelectedActionKey}
+          />
+        ) : !readOnly ? (
+          <div className="flex justify-end">
+            <GeneralButton
+              disabled={
+                controller.complete.isPending || controller.save.isPending
+              }
+              type="submit"
+            >
+              {controller.complete.isPending
+                ? "Completing…"
+                : data.schema.submitLabel}
+            </GeneralButton>
+          </div>
+        ) : null}
       </div>
     </FormRenderer>
   );

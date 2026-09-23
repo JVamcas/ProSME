@@ -16,7 +16,9 @@ import type {
 } from "./api/FormTransportTypes";
 import type { TaskFormData } from "./FormTypes";
 
-type CompleteTaskFormInput = TaskFormSubmissionInput & { actionKey: string };
+type CompleteTaskFormInput = TaskFormSubmissionInput & {
+  actionKey: string | null;
+};
 
 export const formQueryKeys = {
   all: ["admin", "forms"] as const,

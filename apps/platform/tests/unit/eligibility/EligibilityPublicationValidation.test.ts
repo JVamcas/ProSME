@@ -34,6 +34,7 @@ const rule: EligibilityBuilderRule = {
   failureType: "HARD_FAIL",
   id: "82000000-0000-4000-8000-000000000005",
   order: 1,
+  questionId: "82000000-0000-4000-8000-000000000006",
   reasonCode: "TURNOVER_REQUIRED",
 };
 

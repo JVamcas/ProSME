@@ -5,22 +5,10 @@ import {
 } from "@/modules/eligibility/ui/EligibilityBuilderFieldPresentation";
 import type {
   EligibilityFieldDescriptor,
-  EligibilitySourceDescriptor,
 } from "@/modules/eligibility/domain/EligibilityFieldRegistry";
 
 const versionId = "81000000-0000-4000-8000-000000000001";
 const definitionId = "81000000-0000-4000-8000-000000000002";
-
-const source: EligibilitySourceDescriptor = {
-  availableBeforeEligibility: true,
-  fundingCallId: "81000000-0000-4000-8000-000000000003",
-  label: "Verified employee count",
-  sourceDefinitionId: definitionId,
-  sourceKey: "employee_count",
-  sourceKind: "APPLICATION_FORM_FIELD",
-  sourceVersionId: versionId,
-  supportedTypes: ["NUMBER"],
-};
 
 function field(
   availableIn: EligibilityFieldDescriptor["availableIn"],
@@ -52,7 +40,6 @@ describe("Eligibility Builder field presentation", () => {
 
     expect(eligibilityBuilderFieldPresentations(
       [selfCheckOnly, both],
-      [source],
       "BOTH",
     )).toHaveLength(1);
   });
@@ -60,16 +47,14 @@ describe("Eligibility Builder field presentation", () => {
   it("shows administrator-facing mode and source labels without internal ids", () => {
     const [presentation] = eligibilityBuilderFieldPresentations(
       [field(["SELF_CHECK", "SCREENING"])],
-      [source],
       "BOTH",
     );
 
     expect(presentation).toMatchObject({
-      modeLabel: "Self Check + Screening",
-      sourceLabel: "Applicant answer / Verified employee count",
+      sourceLabel: "Applicant / Application",
     });
     expect(presentation?.builderField.label).toBe(
-      "Employee count — Self Check + Screening · Applicant answer / Verified employee count",
+      "Employee count [Applicant / Application]",
     );
     expect(JSON.stringify(presentation)).not.toContain(definitionId);
     expect(JSON.stringify(presentation)).not.toContain(versionId);

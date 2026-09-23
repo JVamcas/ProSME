@@ -13,6 +13,7 @@ export type UpdateEligibilityRuleSetDraftCommand = {
   description?: string;
   expectedRowVersion: number;
   name?: string;
+  questionIds: string[];
   rules: EligibilityRule[];
 };
 

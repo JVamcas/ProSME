@@ -10,8 +10,6 @@ import {
   stageInstances,
   stageTaskDefinitions,
   stageTaskFormBindings,
-  workflowAuditEntries,
-  workflowEvents,
   workflowInstances,
   workflowStageDefinitions,
 } from "@/db/schema";
@@ -19,6 +17,8 @@ import type { StageInstanceStatus } from "../domain/runtime/StageInstance";
 import { createStageInstance } from "./StageInstanceRepository";
 import type { WorkflowInstanceTransaction } from "./WorkflowInstanceRepository";
 import { createWorkflowTasks } from "./WorkflowTaskWriteRepository";
+import { resolveEligibilityTaskFormVersion } from "./EligibilityTaskFormRepository";
+import { appendStageActivationAudit } from "./StageActivationAuditRepository";
 
 export type StageActivationTransaction = WorkflowInstanceTransaction;
 
@@ -40,6 +40,7 @@ export type StageActivationTaskDefinition = {
   id: string;
   namedUserOverrideId: string | null;
   roleId: string | null;
+  stableKey: string;
   type: typeof stageTaskDefinitions.$inferSelect.type;
 };
 
@@ -231,6 +232,7 @@ export async function loadStageActivationTasks(
       id: stageTaskDefinitions.id,
       namedUserOverrideId: stageTaskDefinitions.namedUserOverrideId,
       roleId: stageTaskDefinitions.roleId,
+      stableKey: stageTaskDefinitions.stableKey,
       type: stageTaskDefinitions.type,
     })
     .from(stageTaskDefinitions)
@@ -302,6 +304,20 @@ export async function persistStageActivation(
     : new Date(
       input.activatedAt.getTime() + input.target.slaHours * 3_600_000,
     );
+  const needsEligibilityForm = input.tasks.some(
+    (task) => task.stableKey === "ELIGIBILITY_VERIFICATION",
+  );
+  const eligibilityFormVersionId = needsEligibilityForm
+    ? await resolveEligibilityTaskFormVersion(
+        transaction,
+        input.target.workflowInstanceId,
+      )
+    : null;
+  if (needsEligibilityForm && !eligibilityFormVersionId) {
+    throw new Error(
+      "The application's published eligibility ruleset has no verification form.",
+    );
+  }
   const tasks = await createWorkflowTasks(
     transaction,
     input.tasks.map((task) => ({
@@ -309,7 +325,9 @@ export async function persistStageActivation(
       assignedUserId: task.namedUserOverrideId,
       createdAt: input.activatedAt,
       dueAt,
-      formVersionId: task.formVersionId,
+      formVersionId: task.stableKey === "ELIGIBILITY_VERIFICATION"
+        ? eligibilityFormVersionId!
+        : task.formVersionId,
       stageInstanceId: stage.id,
       typeSnapshot: task.type,
       workflowTaskDefinitionId: task.id,
@@ -319,78 +337,15 @@ export async function persistStageActivation(
     .update(workflowInstances)
     .set({ currentStageInstanceId: stage.id })
     .where(eq(workflowInstances.id, input.target.workflowInstanceId));
-  const auditPayload = {
+  await appendStageActivationAudit(transaction, {
+    actorId: input.actorId,
+    correlationId: input.correlationId,
     iterationNumber: stage.iterationNumber,
     stageDefinitionId: input.target.stageDefinitionId,
+    stageId: stage.id,
     stageKey: input.target.stageKey,
-    taskIds: tasks.map((task) => task.id),
-  };
-  await transaction.insert(workflowEvents).values({
-    actorId: input.actorId,
-    correlationId: input.correlationId,
-    eventCode: "STAGE_ACTIVATED",
-    payload: auditPayload,
+    tasks,
     workflowInstanceId: input.target.workflowInstanceId,
   });
-  await transaction.insert(workflowAuditEntries).values({
-    action: "STAGE_ACTIVATED",
-    actorId: input.actorId,
-    after: auditPayload,
-    before: null,
-    correlationId: input.correlationId,
-    stageInstanceId: stage.id,
-    targetId: stage.id,
-    targetType: "WORKFLOW_STAGE_INSTANCE",
-    workflowInstanceId: input.target.workflowInstanceId,
-  });
-  const taskEvents = tasks.flatMap((task) => {
-    const createdPayload = {
-      assignedRoleId: task.assignedRoleId,
-      assignedUserId: task.assignedUserId,
-      dueAt: task.dueAt?.toISOString() ?? null,
-      status: task.status,
-      taskDefinitionId: task.workflowTaskDefinitionId,
-      type: task.typeSnapshot,
-    };
-    const created = {
-      action: "TASK_CREATED",
-      actorId: input.actorId,
-      after: createdPayload,
-      before: null,
-      correlationId: input.correlationId,
-      stageInstanceId: stage.id,
-      targetId: task.id,
-      targetType: "WORKFLOW_TASK",
-      taskId: task.id,
-      workflowInstanceId: input.target.workflowInstanceId,
-    };
-    if (!task.assignedRoleId && !task.assignedUserId) return [created];
-    return [
-      created,
-      {
-        ...created,
-        action: "TASK_ASSIGNED",
-        after: {
-          assignedRoleId: task.assignedRoleId,
-          assignedUserId: task.assignedUserId,
-        },
-        reason: "Configured task assignment",
-      },
-    ];
-  });
-  if (taskEvents.length) {
-    await transaction.insert(workflowAuditEntries).values(taskEvents);
-    await transaction.insert(workflowEvents).values(taskEvents.map((event) => ({
-      actorId: event.actorId,
-      correlationId: event.correlationId,
-      eventCode: event.action,
-      payload: {
-        ...event.after,
-        stageInstanceId: event.stageInstanceId,
-        taskId: event.taskId,
-      },
-      workflowInstanceId: event.workflowInstanceId,
-    })));
-  }
   return { stage, tasks };
 }

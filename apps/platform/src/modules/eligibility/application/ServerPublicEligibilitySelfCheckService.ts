@@ -121,6 +121,7 @@ function requiredEligibilityPaths(rules: EligibilityEvaluationRule[]) {
         paths.add(path);
         continue;
       }
+      if (path.startsWith("fundingCall.")) continue;
       throw new InvalidPublicEligibilitySelfCheckConfigurationError(path);
     }
   }
@@ -343,7 +344,18 @@ export async function evaluatePublicEligibilitySelfCheck(
   const result = evaluateEligibilityRuleSet(value.ruleSet, "SELF_CHECK", {
     application: {},
     eligibility: resolved.values,
-    fundingCall: {},
+    fundingCall: {
+      closesAt: value.fundingCall.closesAt,
+      fundingInstrument: value.fundingCall.fundingInstrument,
+      id: value.fundingCall.id,
+      maximumGrantAmount: value.fundingCall.maximumAmount,
+      minimumGrantAmount: value.fundingCall.minimumAmount,
+      opensAt: value.fundingCall.opensAt,
+      status: value.fundingCall.status,
+      thematicArea: value.fundingCall.thematicArea,
+      title: value.fundingCall.title,
+      totalBudgetEnvelope: value.fundingCall.totalFundingAmount,
+    },
     stages: [],
   });
   return {

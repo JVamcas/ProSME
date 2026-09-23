@@ -65,6 +65,7 @@ const taskDefinition = {
   id: "55555555-5555-4555-8555-555555555555",
   namedUserOverrideId: null,
   roleId: "66666666-6666-4666-8666-666666666666",
+  stableKey: "CHECKLIST",
   type: "CHECKLIST" as const,
 };
 

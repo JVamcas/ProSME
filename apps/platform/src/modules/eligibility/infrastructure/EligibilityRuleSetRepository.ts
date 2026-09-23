@@ -13,6 +13,7 @@ import {
   eligibilityRuleSets,
   eligibilityRuleSetVersions,
 } from "./eligibility-ruleset.schema";
+import { createEligibilityVerificationForm } from "./EligibilityVerificationFormRepository";
 
 export class InvalidEligibilityRulesError extends Error {
   readonly issues: ReturnType<typeof validateEligibilityRules>;
@@ -271,6 +272,27 @@ export async function publishEligibilityRuleSetVersion(input: {
     );
     const issues = validateEligibilityRules(rules, groups);
     if (issues.length) throw new InvalidEligibilityRulesError(issues);
+
+    const [definition] = await transaction
+      .select({
+        code: eligibilityRuleSets.code,
+        name: eligibilityRuleSets.name,
+        versionNumber: eligibilityRuleSetVersions.versionNumber,
+      })
+      .from(eligibilityRuleSetVersions)
+      .innerJoin(
+        eligibilityRuleSets,
+        eq(eligibilityRuleSets.id, eligibilityRuleSetVersions.ruleSetId),
+      )
+      .where(eq(eligibilityRuleSetVersions.id, input.versionId))
+      .limit(1);
+    await createEligibilityVerificationForm(transaction, {
+      actorId: input.actorId,
+      ruleSetCode: definition!.code,
+      ruleSetName: definition!.name,
+      versionId: input.versionId,
+      versionNumber: definition!.versionNumber,
+    });
 
     const [version] = await transaction
       .update(eligibilityRuleSetVersions)

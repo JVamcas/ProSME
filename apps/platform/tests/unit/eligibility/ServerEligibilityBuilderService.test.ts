@@ -11,11 +11,13 @@ vi.mock("@/modules/eligibility/application/ServerEligibilityRuleSetService", () 
 vi.mock("@/modules/eligibility/application/ServerEligibilityFieldRegistryService", () => ({
   resolveEligibilityFieldRegistry: vi.fn(),
 }));
+vi.mock("@/modules/eligibility/infrastructure/EligibilityQuestionRepository", () => ({
+  listAvailableEligibilityQuestions: vi.fn(),
+}));
 
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { PermissionDeniedError } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
-import { RequestValidationError } from "@/lib/resource-errors";
 import {
   getEligibilityRuleSetBuilder,
   saveEligibilityRuleSetBuilder,
@@ -23,6 +25,7 @@ import {
 import { updateEligibilityRuleSet } from "@/modules/eligibility/application/ServerEligibilityRuleSetService";
 import { findEligibilityRuleSetBuilder } from "@/modules/eligibility/infrastructure/EligibilityBuilderRepository";
 import { resolveEligibilityFieldRegistry } from "@/modules/eligibility/application/ServerEligibilityFieldRegistryService";
+import { listAvailableEligibilityQuestions } from "@/modules/eligibility/infrastructure/EligibilityQuestionRepository";
 
 const actorId = "60000000-0000-4000-8000-000000000001";
 const ruleSetId = "60000000-0000-4000-8000-000000000002";
@@ -74,6 +77,13 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(findEligibilityRuleSetBuilder).mockResolvedValue(builder);
   vi.mocked(updateEligibilityRuleSet).mockResolvedValue({} as never);
+  vi.mocked(listAvailableEligibilityQuestions).mockResolvedValue([{
+      applicantLabel: "How many employees does your business have?",
+      code: "employee_count",
+      id: ruleId,
+      inputType: "NUMBER",
+      reviewerLabel: "Employee count",
+  }]);
   vi.mocked(resolveEligibilityFieldRegistry).mockResolvedValue({
     fields: [{
       availableIn: ["SELF_CHECK", "SCREENING"],
@@ -129,6 +139,7 @@ describe("ServerEligibilityBuilderService", () => {
       failureType: "HARD_FAIL" as const,
       id: ruleId,
       order: 1,
+      questionId: ruleId,
       reasonCode: "EMPLOYEE_REQUIRED",
     };
 
@@ -144,6 +155,7 @@ describe("ServerEligibilityBuilderService", () => {
       {
         conditionDefinitions: [condition],
         expectedRowVersion: 1,
+        questionIds: [ruleId],
         rules: [{
           applicantMessage: rule.applicantMessage,
           condition: { conditionGroupId: groupId, kind: "GROUP" },
@@ -184,12 +196,13 @@ describe("ServerEligibilityBuilderService", () => {
       {
         conditionDefinitions: [],
         expectedRowVersion: 1,
+        questionIds: [],
         rules: [],
       },
     );
   });
 
-  it("rejects a Both-mode rule unless every field resolves in both modes", async () => {
+  it("allows a newly selected question to be used in Both mode", async () => {
     vi.mocked(resolveEligibilityFieldRegistry).mockResolvedValue({
       fields: [{
         availableIn: ["SCREENING"],
@@ -206,7 +219,7 @@ describe("ServerEligibilityBuilderService", () => {
       sources: [],
     });
 
-    await expect(saveEligibilityRuleSetBuilder(
+    await saveEligibilityRuleSetBuilder(
       user([
         permissionCodes.eligibilityRuleSetRead,
         permissionCodes.eligibilityRuleSetUpdate,
@@ -221,10 +234,11 @@ describe("ServerEligibilityBuilderService", () => {
           failureType: "HARD_FAIL",
           id: ruleId,
           order: 1,
+          questionId: ruleId,
           reasonCode: "EMPLOYEE_REQUIRED",
         }],
       },
-    )).rejects.toBeInstanceOf(RequestValidationError);
-    expect(updateEligibilityRuleSet).not.toHaveBeenCalled();
+    );
+    expect(updateEligibilityRuleSet).toHaveBeenCalledOnce();
   });
 });

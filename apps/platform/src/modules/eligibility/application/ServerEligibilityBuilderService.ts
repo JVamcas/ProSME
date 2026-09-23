@@ -7,6 +7,7 @@ import { ResourceNotFoundError } from "@/lib/resource-errors";
 import { RequestValidationError } from "@/lib/resource-errors";
 import { conditionBuilderOperators } from "@/modules/conditions/engine/ConditionOperatorCatalogue";
 import { validateConditionGroup } from "@/modules/conditions/engine/ConditionValidation";
+import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup";
 import type {
   UpdateEligibilityRuleSetBuilderInput,
 } from "../api/EligibilityRuleSetTransport";
@@ -21,6 +22,8 @@ import {
 } from "../domain/EligibilityFieldRegistry";
 import { updateEligibilityRuleSet } from "./ServerEligibilityRuleSetService";
 import { resolveEligibilityFieldRegistry } from "./ServerEligibilityFieldRegistryService";
+import { listAvailableEligibilityQuestions } from "../infrastructure/EligibilityQuestionRepository";
+import { questionConditionType } from "../domain/EligibilityQuestion";
 
 export async function getEligibilityRuleSets(
   user: AuthenticatedUser | null,
@@ -43,8 +46,12 @@ export async function getEligibilityRuleSetBuilder(
 }
 
 export async function eligibilityBuilderContext(versionId: string) {
-  const registry = await resolveEligibilityFieldRegistry(versionId);
+  const [registry, availableQuestions] = await Promise.all([
+    resolveEligibilityFieldRegistry(versionId),
+    listAvailableEligibilityQuestions(),
+  ]);
   return {
+    availableQuestions,
     conditionFields: registry.fields,
     context: {
       fundingCalls: registry.fundingCalls,
@@ -76,6 +83,71 @@ function validateContextualRules(
   }
 }
 
+function referencedEligibilityFields(group: ConditionGroup): string[] {
+  return group.children.flatMap((child) => {
+    if (child.kind === "GROUP") return referencedEligibilityFields(child);
+    if (
+      child.leftOperand.kind === "FIELD"
+      && child.leftOperand.key.startsWith("eligibility.")
+    ) {
+      return [child.leftOperand.key];
+    }
+    return [];
+  });
+}
+
+function fieldsForSelectedQuestions(
+  rules: UpdateEligibilityRuleSetBuilderInput["rules"],
+  builder: Awaited<ReturnType<typeof getEligibilityRuleSetBuilder>>,
+) {
+  const questionsById = new Map(
+    builder.availableQuestions.map((question) => [question.id, question]),
+  );
+  const issues: string[] = [];
+  const selectedFields = rules.flatMap((rule): EligibilityFieldDescriptor[] => {
+    const question = questionsById.get(rule.questionId);
+    if (!question) {
+      issues.push(`${rule.reasonCode}: select an available eligibility question.`);
+      return [];
+    }
+    const selectedKey = `eligibility.${question.code}`;
+    const referenced = new Set(referencedEligibilityFields(rule.condition));
+    if (!referenced.has(selectedKey)) {
+      issues.push(
+        `${rule.reasonCode}: the condition must use the selected eligibility question.`,
+      );
+    }
+    const otherQuestions = [...referenced].filter((key) => key !== selectedKey);
+    if (otherQuestions.length) {
+      issues.push(
+        `${rule.reasonCode}: a rule can use only its selected eligibility question.`,
+      );
+    }
+    return [{
+      availableIn: ["SELF_CHECK", "SCREENING"],
+      key: selectedKey,
+      label: question.reviewerLabel,
+      screeningSource: {
+        sourceDefinitionId: question.id,
+        sourceKey: question.code,
+        sourceKind: "ELIGIBILITY_QUESTION_RESPONSE",
+        sourceVersionId: builder.version.id,
+        valuePath: "value",
+      },
+      sourceDefinitionId: question.id,
+      sourceKind: "ELIGIBILITY_INPUT",
+      sourceVersionId: builder.version.id,
+      type: questionConditionType(question.inputType),
+    }];
+  });
+  if (issues.length) throw new RequestValidationError(issues.join(" "));
+  const selectedKeys = new Set(selectedFields.map((field) => field.key));
+  return [
+    ...builder.conditionFields.filter((field) => !selectedKeys.has(field.key)),
+    ...selectedFields,
+  ];
+}
+
 export async function saveEligibilityRuleSetBuilder(
   user: AuthenticatedUser | null,
   ruleSetId: string,
@@ -83,7 +155,8 @@ export async function saveEligibilityRuleSetBuilder(
   versionId?: string,
 ) {
   const builder = await getEligibilityRuleSetBuilder(user, ruleSetId, versionId);
-  validateContextualRules(input.rules, builder.conditionFields);
+  const fields = fieldsForSelectedQuestions(input.rules, builder);
+  validateContextualRules(input.rules, fields);
   await updateEligibilityRuleSet(
     user,
     ruleSetId,
@@ -91,6 +164,7 @@ export async function saveEligibilityRuleSetBuilder(
     {
       conditionDefinitions: input.rules.map((rule) => rule.condition),
       expectedRowVersion: input.expectedRowVersion,
+      questionIds: [...new Set(input.rules.map((rule) => rule.questionId))],
       rules: input.rules.map((rule) => ({
         applicantMessage: rule.applicantMessage,
         condition: {

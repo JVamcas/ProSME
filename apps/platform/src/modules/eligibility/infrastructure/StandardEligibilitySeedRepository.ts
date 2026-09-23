@@ -6,16 +6,10 @@ import { getDatabase, type DatabaseTransaction } from "@/db/client";
 import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup";
 import { operator as conditionOperator } from "@/modules/conditions/domain/Operator";
 import { conditionGroups } from "@/modules/conditions/infrastructure/condition.schema";
-import {
-  formDefinitions,
-  formFields,
-  formVersions,
-} from "@/modules/forms/infrastructure/form.schema";
 import { fundingCalls } from "@/modules/funding-calls/infrastructure/funding-call.schema";
 import { standardWorkflowCode } from "@/modules/workflows/domain/standard/StandardWorkflowTypes";
 import {
   stageTaskDefinitions,
-  stageTaskFormBindings,
   workflowDefinitions,
   workflowDefinitionVersions,
   workflowStageDefinitions,
@@ -30,13 +24,14 @@ import {
   standardEligibilitySourceDocument,
 } from "../domain/standard/StandardEligibilityCatalogue";
 import {
-  eligibilityInputDefinitions,
+  eligibilityQuestions,
+  eligibilityRuleSetQuestionBindings,
+} from "./eligibility-question.schema";
+import {
   eligibilityRules,
   eligibilityRuleSets,
   eligibilityRuleSetVersions,
-  eligibilityScreeningSourceBindings,
   eligibilitySeedReviews,
-  eligibilitySelfCheckQuestions,
 } from "./eligibility-ruleset.schema";
 
 type SeedInput = {
@@ -45,51 +40,9 @@ type SeedInput = {
   fundingCallReferences: readonly string[];
 };
 
-type VerificationConfiguration = {
-  fields: Array<{
-    fieldId: string;
-    sourceKey: string;
-  }>;
-  formVersionId: string;
-  workflowVersionId: string;
-};
-
-async function findVerificationConfiguration(
+async function findWorkflowVersion(
   transaction: DatabaseTransaction,
-): Promise<VerificationConfiguration> {
-  const [version] = await transaction
-    .select({
-      formVersionId: formVersions.id,
-    })
-    .from(formDefinitions)
-    .innerJoin(
-      formVersions,
-      eq(formVersions.formDefinitionId, formDefinitions.id),
-    )
-    .where(and(
-      eq(formDefinitions.code, "ELIGIBILITY_VERIFICATION"),
-      eq(formVersions.status, "PUBLISHED"),
-    ))
-    .orderBy(desc(formVersions.versionNumber))
-    .limit(1);
-  if (!version) {
-    throw new Error(
-      "Run the standard form seed before the standard eligibility seed.",
-    );
-  }
-  const fields = await transaction
-    .select({ fieldId: formFields.id, sourceKey: formFields.key })
-    .from(formFields)
-    .where(eq(formFields.formVersionId, version.formVersionId));
-  const fieldKeys = new Set(fields.map((field) => field.sourceKey));
-  const missing = standardEligibilityCriteria
-    .map((criterion) => criterion.stableKey.toUpperCase())
-    .filter((key) => !fieldKeys.has(key));
-  if (missing.length) {
-    throw new Error(
-      `Eligibility verification fields are missing: ${missing.join(", ")}.`,
-    );
-  }
+): Promise<string> {
   const [workflow] = await transaction
     .select({ workflowVersionId: workflowDefinitionVersions.id })
     .from(workflowDefinitions)
@@ -105,14 +58,9 @@ async function findVerificationConfiguration(
       stageTaskDefinitions,
       eq(stageTaskDefinitions.stageId, workflowStageDefinitions.id),
     )
-    .innerJoin(
-      stageTaskFormBindings,
-      eq(stageTaskFormBindings.taskDefinitionId, stageTaskDefinitions.id),
-    )
     .where(and(
       eq(workflowDefinitions.code, standardWorkflowCode),
       eq(stageTaskDefinitions.stableKey, "ELIGIBILITY_VERIFICATION"),
-      eq(stageTaskFormBindings.formVersionId, version.formVersionId),
       inArray(workflowDefinitionVersions.status, ["DRAFT", "PUBLISHED"]),
     ))
     .orderBy(
@@ -125,11 +73,7 @@ async function findVerificationConfiguration(
       "Run the rebuilt standard workflow seed before the standard eligibility seed.",
     );
   }
-  return {
-    fields,
-    formVersionId: version.formVersionId,
-    workflowVersionId: workflow.workflowVersionId,
-  };
+  return workflow.workflowVersionId;
 }
 
 function conditionFor(
@@ -143,7 +87,7 @@ function conditionFor(
       id: crypto.randomUUID(),
       kind: "CONDITION",
       leftOperand: {
-        key: `eligibility.${stableKey}`,
+        key: `eligibility.${stableKey.toUpperCase()}`,
         kind: "FIELD",
       },
       operator: conditionOperator(operator),
@@ -218,45 +162,158 @@ async function bindFundingCalls(
 }
 
 async function existingBaseline(transaction: DatabaseTransaction) {
-  const [row] = await transaction
-    .select({
-      definitionId: eligibilityRuleSets.id,
-      versionId: eligibilityRuleSetVersions.id,
-    })
+  const [definition] = await transaction
+    .select({ definitionId: eligibilityRuleSets.id })
     .from(eligibilityRuleSets)
-    .innerJoin(
-      eligibilityRuleSetVersions,
-      eq(eligibilityRuleSetVersions.ruleSetId, eligibilityRuleSets.id),
-    )
-    .where(and(
-      eq(eligibilityRuleSets.code, standardEligibilityRuleSetCode),
-      eq(eligibilityRuleSetVersions.status, "DRAFT"),
-    ))
+    .where(eq(eligibilityRuleSets.code, standardEligibilityRuleSetCode))
+    .for("update")
     .limit(1);
-  return row ?? null;
+  if (!definition) return null;
+  const [version] = await transaction
+    .select({ versionId: eligibilityRuleSetVersions.id })
+    .from(eligibilityRuleSetVersions)
+    .where(eq(
+      eligibilityRuleSetVersions.ruleSetId,
+      definition.definitionId,
+    ))
+    .orderBy(
+      sql`CASE WHEN ${eligibilityRuleSetVersions.status} = 'DRAFT' THEN 0 ELSE 1 END`,
+      desc(eligibilityRuleSetVersions.versionNumber),
+    )
+    .limit(1);
+  if (!version) {
+    throw new Error(
+      "The standard eligibility baseline exists without a version.",
+    );
+  }
+  return {
+    definitionId: definition.definitionId,
+    versionId: version.versionId,
+  };
+}
+
+function seedSnapshot() {
+  return standardEligibilityCriteria.map((criterion) => ({
+    applicantMessage: criterion.applicantMessage,
+    constant: criterion.constant,
+    failureType: criterion.failureType,
+    inputType: criterion.inputType,
+    label: criterion.label,
+    operator: criterion.operator,
+    prompt: criterion.prompt,
+    questionType: criterion.questionType,
+    reasonCode: criterion.reasonCode,
+    stableKey: criterion.stableKey,
+  }));
+}
+
+async function replaceStandardVersionConfiguration(
+  transaction: DatabaseTransaction,
+  versionId: string,
+  input: Pick<SeedInput, "approvedAt" | "approvedBy">,
+) {
+  const priorGroups = await transaction
+    .select({ id: eligibilityRules.conditionGroupId })
+    .from(eligibilityRules)
+    .where(eq(eligibilityRules.versionId, versionId));
+  await transaction
+    .delete(eligibilityRules)
+    .where(eq(eligibilityRules.versionId, versionId));
+  await transaction
+    .delete(eligibilityRuleSetQuestionBindings)
+    .where(eq(eligibilityRuleSetQuestionBindings.versionId, versionId));
+  await transaction
+    .delete(eligibilitySeedReviews)
+    .where(eq(eligibilitySeedReviews.versionId, versionId));
+  if (priorGroups.length) {
+    await transaction.delete(conditionGroups).where(inArray(
+      conditionGroups.id,
+      priorGroups.map((group) => group.id),
+    ));
+  }
+  const groups = standardEligibilityCriteria.map((criterion) =>
+    conditionFor(criterion.stableKey, criterion.operator, criterion.constant)
+  );
+  await transaction.insert(conditionGroups).values(groups.map((group) => ({
+    definition: group,
+    id: group.id,
+  })));
+  await transaction.insert(eligibilityRules).values(
+    standardEligibilityCriteria.map((criterion, index) => ({
+      applicantMessage: criterion.applicantMessage,
+      conditionGroupId: groups[index]!.id,
+      conditionId: null,
+      conditionKind: "GROUP" as const,
+      executionMode: "BOTH" as const,
+      failureType: criterion.failureType,
+      order: index + 1,
+      reasonCode: criterion.reasonCode,
+      versionId,
+    })),
+  );
+  await transaction
+    .insert(eligibilityQuestions)
+    .values(standardEligibilityCriteria.map((criterion) => ({
+      applicantLabel: criterion.prompt,
+      code: criterion.stableKey.toUpperCase(),
+      createdBy: systemSeedUserId,
+      inputType: criterion.questionType!,
+      reviewerLabel: criterion.label,
+      updatedBy: systemSeedUserId,
+    })))
+    .onConflictDoNothing({ target: eligibilityQuestions.code });
+  const questionCodes = standardEligibilityCriteria.map(
+    (criterion) => criterion.stableKey.toUpperCase(),
+  );
+  const storedQuestions = await transaction
+    .select()
+    .from(eligibilityQuestions)
+    .where(inArray(eligibilityQuestions.code, questionCodes));
+  const questionsByCode = new Map(
+    storedQuestions.map((question) => [question.code, question]),
+  );
+  await transaction.insert(eligibilityRuleSetQuestionBindings).values(
+    standardEligibilityCriteria.map((criterion, index) => {
+      const question = questionsByCode.get(criterion.stableKey.toUpperCase())!;
+      return {
+        applicantLabel: question.applicantLabel,
+        code: question.code,
+        createdBy: systemSeedUserId,
+        inputType: question.inputType,
+        order: index + 1,
+        questionId: question.id,
+        reviewerLabel: question.reviewerLabel,
+        versionId,
+      };
+    }),
+  );
+  await transaction.insert(eligibilitySeedReviews).values({
+    approvalBasis:
+      "User directed on 22 September 2026 that Proposed decisions be treated as approved.",
+    approvedAt: input.approvedAt,
+    approvedBy: input.approvedBy,
+    decisionSnapshot: seedSnapshot(),
+    sourceDocument: standardEligibilitySourceDocument,
+    versionId,
+  });
 }
 
 export async function insertStandardEligibilityBaseline(input: SeedInput) {
   return getDatabase().transaction(async (transaction) => {
-    await ensureSystemSeedPrincipal(transaction);
-    const verification = await findVerificationConfiguration(transaction);
     const existing = await existingBaseline(transaction);
     if (existing) {
-      const boundFundingCallReferences = await bindFundingCalls(
-        transaction,
-        existing.versionId,
-        verification.workflowVersionId,
-        input.fundingCallReferences,
-      );
       return {
-        boundFundingCallReferences,
+        boundFundingCallReferences: [],
         created: false,
         definitionId: existing.definitionId,
         issueMessages: [],
+        synchronized: false,
         versionId: existing.versionId,
       };
     }
 
+    await ensureSystemSeedPrincipal(transaction);
+    const workflowVersionId = await findWorkflowVersion(transaction);
     const [definition] = await transaction
       .insert(eligibilityRuleSets)
       .values({
@@ -276,98 +333,11 @@ export async function insertStandardEligibilityBaseline(input: SeedInput) {
       })
       .returning({ id: eligibilityRuleSetVersions.id });
 
-    const groups = standardEligibilityCriteria.map((criterion) =>
-      conditionFor(criterion.stableKey, criterion.operator, criterion.constant)
-    );
-    await transaction.insert(conditionGroups).values(groups.map((group) => ({
-      definition: group,
-      id: group.id,
-    })));
-    await transaction
-      .insert(eligibilityRules)
-      .values(standardEligibilityCriteria.map((criterion, index) => ({
-        applicantMessage: criterion.applicantMessage,
-        conditionGroupId: groups[index]!.id,
-        conditionId: null,
-        conditionKind: "GROUP" as const,
-        executionMode: "BOTH" as const,
-        failureType: criterion.failureType,
-        order: index + 1,
-        reasonCode: criterion.reasonCode,
-        versionId: version!.id,
-      })))
-      .returning({ id: eligibilityRules.id });
-    const createdInputs = await transaction
-      .insert(eligibilityInputDefinitions)
-      .values(standardEligibilityCriteria.map((criterion, index) => ({
-        availableIn: ["SELF_CHECK", "SCREENING"] as Array<
-          "SELF_CHECK" | "SCREENING"
-        >,
-        createdBy: systemSeedUserId,
-        groupKey: "baseline",
-        groupLabel: "Eligibility",
-        label: criterion.label,
-        order: index + 1,
-        stableKey: criterion.stableKey,
-        type: criterion.inputType,
-        updatedBy: systemSeedUserId,
-        versionId: version!.id,
-      })))
-      .returning({
-        id: eligibilityInputDefinitions.id,
-        stableKey: eligibilityInputDefinitions.stableKey,
-      });
-    const inputIds = new Map(
-      createdInputs.map((item) => [item.stableKey, item.id]),
-    );
-    const questions = standardEligibilityCriteria.flatMap((criterion) =>
-      criterion.questionType
-        ? [{
-            answerType: criterion.questionType,
-            explanation:
-              "Your answer is advisory and will be verified during Screening.",
-            helpText: "Answer using the information currently available to you.",
-            inputDefinitionId: inputIds.get(criterion.stableKey)!,
-            options: [],
-            prompt: criterion.prompt,
-            required: true,
-          }]
-        : []
-    );
-    await transaction.insert(eligibilitySelfCheckQuestions).values(questions);
-    const fieldsByKey = new Map(
-      verification.fields.map((field) => [field.sourceKey, field]),
-    );
-    await transaction.insert(eligibilityScreeningSourceBindings).values(
-      standardEligibilityCriteria.map((criterion) => {
-        const field = fieldsByKey.get(criterion.stableKey.toUpperCase())!;
-        return {
-          inputDefinitionId: inputIds.get(criterion.stableKey)!,
-          sourceDefinitionId: field.fieldId,
-          sourceKey: field.sourceKey,
-          sourceKind: "WORKFLOW_FORM_FIELD" as const,
-          sourceVersionId: verification.formVersionId,
-          valuePath: "value",
-        };
-      }),
-    );
-    await transaction.insert(eligibilitySeedReviews).values({
-      approvalBasis:
-        "User directed on 22 September 2026 that Proposed decisions be treated as approved.",
-      approvedAt: input.approvedAt,
-      approvedBy: input.approvedBy,
-      decisionSnapshot: standardEligibilityCriteria.map((criterion) => ({
-        failureType: criterion.failureType,
-        reasonCode: criterion.reasonCode,
-        stableKey: criterion.stableKey,
-      })),
-      sourceDocument: standardEligibilitySourceDocument,
-      versionId: version!.id,
-    });
+    await replaceStandardVersionConfiguration(transaction, version!.id, input);
     const boundFundingCallReferences = await bindFundingCalls(
       transaction,
       version!.id,
-      verification.workflowVersionId,
+      workflowVersionId,
       input.fundingCallReferences,
     );
     return {
@@ -375,6 +345,7 @@ export async function insertStandardEligibilityBaseline(input: SeedInput) {
       created: true,
       definitionId: definition!.id,
       issueMessages: [],
+      synchronized: true,
       versionId: version!.id,
     };
   });

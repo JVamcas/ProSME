@@ -256,7 +256,7 @@ export const taskFormSubmissionSchema = z.object({
 });
 
 export const taskFormCompletionSchema = taskFormSubmissionSchema.extend({
-  actionKey: workflowActionKeySchema,
+  actionKey: workflowActionKeySchema.nullable(),
 });
 
 export type FormEditorInput = z.infer<typeof formEditorSchema>;

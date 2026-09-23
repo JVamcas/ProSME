@@ -12,7 +12,9 @@ const result = await seedStandardEligibilityBaseline({
 console.info(
   result.created
     ? `Created standard eligibility draft ${result.versionId}.`
-    : `Skipped existing standard eligibility draft ${result.versionId}.`,
+    : result.synchronized
+      ? `Synchronized standard eligibility draft ${result.versionId}.`
+      : `Skipped existing standard eligibility baseline ${result.versionId}.`,
 );
 console.info(
   `Funding Calls bound: ${result.boundFundingCallReferences.join(", ") || "none"}.`,

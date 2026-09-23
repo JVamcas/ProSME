@@ -124,28 +124,18 @@ describe("standard form catalogue", () => {
     );
   });
 
-  it("defines published typed outputs for authoritative Eligibility", () => {
+  it("keeps eligibility reviewer questions out of the workflow template", () => {
     const form = createStandardForms().find(
       (item) => item.code === "ELIGIBILITY_VERIFICATION",
     );
 
     expect(form?.publishOnSeed).toBe(true);
-    expect(form?.fields).toHaveLength(14);
-    expect(form?.fields.find(
-      (field) => field.key === "APPLICABLE_REGISTRATIONS_VERIFIED",
-    )).toMatchObject({
-      options: [
-        expect.objectContaining({ key: "YES" }),
-        expect.objectContaining({ key: "NO" }),
-        expect.objectContaining({ key: "NOT_APPLICABLE" }),
-      ],
-      type: "SINGLE_SELECT",
-    });
-    expect(form?.fields.find(
-      (field) => field.key === "NAMRA_GOOD_STANDING",
-    )?.type).toBe("YES_NO");
-    expect(form?.fields.find(
-      (field) => field.key === "SOCIAL_SECURITY_GOOD_STANDING",
-    )?.type).toBe("YES_NO");
+    expect(form?.fields).toEqual([
+      expect.objectContaining({
+        key: "RULESET_CONFIGURATION",
+        required: false,
+        type: "TEXT",
+      }),
+    ]);
   });
 });

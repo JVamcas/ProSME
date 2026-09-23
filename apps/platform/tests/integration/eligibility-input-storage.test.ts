@@ -159,6 +159,7 @@ afterAll(async () => {
       {
         conditionDefinitions: [],
         expectedRowVersion: selfCheckOnly.version.rowVersion,
+        questionIds: [],
         rules: [{
           applicantMessage: "At least one employee is required.",
           condition: {
@@ -204,6 +205,7 @@ afterAll(async () => {
       {
         conditionDefinitions: [],
         expectedRowVersion: dependencyDraft.version.rowVersion,
+        questionIds: [],
         rules: [{
           applicantMessage: "At least one employee is required.",
           condition: {

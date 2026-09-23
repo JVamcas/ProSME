@@ -4,13 +4,11 @@ import { and, eq, sql } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
 import {
-  eligibilityInputDefinitions,
   eligibilityRules,
   eligibilityRuleSets,
   eligibilityRuleSetVersions,
-  eligibilityScreeningSourceBindings,
-  eligibilitySelfCheckQuestions,
 } from "./eligibility-ruleset.schema";
+import { eligibilityRuleSetQuestionBindings } from "./eligibility-question.schema";
 
 export async function cloneEligibilityRuleSetVersion(input: {
   actorId: string;
@@ -58,34 +56,16 @@ export async function cloneEligibilityRuleSetVersion(input: {
         versionNumber: Number(latest[0]?.versionNumber ?? 0) + 1,
       })
       .returning();
-    const [sourceRules, sourceInputs] = await Promise.all([
+    const [sourceRules, sourceQuestions] = await Promise.all([
       transaction
         .select()
         .from(eligibilityRules)
         .where(eq(eligibilityRules.versionId, input.sourceVersionId)),
       transaction
-        .select({
-          input: eligibilityInputDefinitions,
-          question: eligibilitySelfCheckQuestions,
-          screening: eligibilityScreeningSourceBindings,
-        })
-        .from(eligibilityInputDefinitions)
-        .leftJoin(
-          eligibilitySelfCheckQuestions,
-          eq(
-            eligibilitySelfCheckQuestions.inputDefinitionId,
-            eligibilityInputDefinitions.id,
-          ),
-        )
-        .leftJoin(
-          eligibilityScreeningSourceBindings,
-          eq(
-            eligibilityScreeningSourceBindings.inputDefinitionId,
-            eligibilityInputDefinitions.id,
-          ),
-        )
+        .select()
+        .from(eligibilityRuleSetQuestionBindings)
         .where(eq(
-          eligibilityInputDefinitions.versionId,
+          eligibilityRuleSetQuestionBindings.versionId,
           input.sourceVersionId,
         )),
     ]);
@@ -104,60 +84,19 @@ export async function cloneEligibilityRuleSetVersion(input: {
         })),
       );
     }
-    if (sourceInputs.length) {
-      const createdInputs = await transaction
-        .insert(eligibilityInputDefinitions)
-        .values(sourceInputs.map((row) => ({
-          availableIn: row.input.availableIn,
+    if (sourceQuestions.length) {
+      await transaction.insert(eligibilityRuleSetQuestionBindings).values(
+        sourceQuestions.map((binding) => ({
+          applicantLabel: binding.applicantLabel,
+          code: binding.code,
           createdBy: input.actorId,
-          groupKey: row.input.groupKey,
-          groupLabel: row.input.groupLabel,
-          label: row.input.label,
-          order: row.input.order,
-          stableKey: row.input.stableKey,
-          type: row.input.type,
-          updatedBy: input.actorId,
+          inputType: binding.inputType,
+          order: binding.order,
+          questionId: binding.questionId,
+          reviewerLabel: binding.reviewerLabel,
           versionId: version.id,
-        })))
-        .returning({
-          id: eligibilityInputDefinitions.id,
-          stableKey: eligibilityInputDefinitions.stableKey,
-        });
-      const inputIds = new Map(
-        createdInputs.map((created) => [created.stableKey, created.id]),
+        })),
       );
-      const questions = sourceInputs.flatMap((row) => {
-        if (!row.question) return [];
-        return [{
-          answerType: row.question.answerType,
-          explanation: row.question.explanation,
-          helpText: row.question.helpText,
-          inputDefinitionId: inputIds.get(row.input.stableKey)!,
-          options: row.question.options,
-          prompt: row.question.prompt,
-          required: row.question.required,
-        }];
-      });
-      const sources = sourceInputs.flatMap((row) => {
-        if (!row.screening) return [];
-        return [{
-          inputDefinitionId: inputIds.get(row.input.stableKey)!,
-          sourceDefinitionId: row.screening.sourceDefinitionId,
-          sourceKey: row.screening.sourceKey,
-          sourceKind: row.screening.sourceKind,
-          sourceVersionId: row.screening.sourceVersionId,
-          valuePath: row.screening.valuePath,
-        }];
-      });
-      await Promise.all([
-        questions.length
-          ? transaction.insert(eligibilitySelfCheckQuestions).values(questions)
-          : Promise.resolve(),
-        sources.length
-          ? transaction.insert(eligibilityScreeningSourceBindings)
-              .values(sources)
-          : Promise.resolve(),
-      ]);
     }
     return version;
   });

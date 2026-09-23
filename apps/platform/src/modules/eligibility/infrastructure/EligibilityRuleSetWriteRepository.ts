@@ -17,6 +17,17 @@ import {
   eligibilityRuleSets,
   eligibilityRuleSetVersions,
 } from "./eligibility-ruleset.schema";
+import {
+  eligibilityQuestions,
+  eligibilityRuleSetQuestionBindings,
+} from "./eligibility-question.schema";
+
+export class InvalidEligibilityQuestionSelectionError extends Error {
+  constructor() {
+    super("One or more selected eligibility questions are unavailable.");
+    this.name = "InvalidEligibilityQuestionSelectionError";
+  }
+}
 
 export async function updateEligibilityRuleSetDefinition(input: {
   code: string;
@@ -44,6 +55,7 @@ export async function updateEligibilityRuleSetDraft(input: {
   description?: string;
   expectedRowVersion: number;
   name?: string;
+  questionIds: string[];
   ruleSetId: string;
   rules: EligibilityRule[];
   versionId: string;
@@ -101,6 +113,33 @@ export async function updateEligibilityRuleSetDraft(input: {
     const issues = validateEligibilityRules(input.rules, groups);
     if (issues.length) throw new InvalidEligibilityRulesError(issues);
 
+    const [questions, existingBindings] = await Promise.all([
+      input.questionIds.length
+        ? transaction
+            .select()
+            .from(eligibilityQuestions)
+            .where(and(
+              inArray(eligibilityQuestions.id, input.questionIds),
+              eq(eligibilityQuestions.active, true),
+            ))
+        : Promise.resolve([]),
+      transaction
+        .select()
+        .from(eligibilityRuleSetQuestionBindings)
+        .where(eq(eligibilityRuleSetQuestionBindings.versionId, input.versionId)),
+    ]);
+    if (questions.length !== input.questionIds.length) {
+      throw new InvalidEligibilityQuestionSelectionError();
+    }
+    const questionsById = new Map(questions.map((question) => [
+      question.id,
+      question,
+    ]));
+    const existingByQuestionId = new Map(existingBindings.map((binding) => [
+      binding.questionId,
+      binding,
+    ]));
+
     const [updated] = await transaction
       .update(eligibilityRuleSetVersions)
       .set({
@@ -123,6 +162,29 @@ export async function updateEligibilityRuleSetDraft(input: {
     await transaction
       .delete(eligibilityRules)
       .where(eq(eligibilityRules.versionId, input.versionId));
+    await transaction
+      .delete(eligibilityRuleSetQuestionBindings)
+      .where(eq(eligibilityRuleSetQuestionBindings.versionId, input.versionId));
+    if (input.questionIds.length) {
+      await transaction.insert(eligibilityRuleSetQuestionBindings).values(
+        input.questionIds.map((questionId, index) => {
+          const question = questionsById.get(questionId)!;
+          const existing = existingByQuestionId.get(questionId);
+          return {
+            applicantLabel: existing?.applicantLabel ?? question.applicantLabel,
+            code: existing?.code ?? question.code,
+            createdAt: existing?.createdAt ?? new Date(),
+            createdBy: existing?.createdBy ?? input.actorId,
+            id: existing?.id,
+            inputType: existing?.inputType ?? question.inputType,
+            order: index + 1,
+            questionId,
+            reviewerLabel: existing?.reviewerLabel ?? question.reviewerLabel,
+            versionId: input.versionId,
+          };
+        }),
+      );
+    }
     if (input.rules.length) {
       await transaction.insert(eligibilityRules).values(
         input.rules.map((rule) => ({

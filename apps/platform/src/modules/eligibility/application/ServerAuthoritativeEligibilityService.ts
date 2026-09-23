@@ -252,6 +252,10 @@ function applicationSourceValues(
   business: BusinessEvaluationSource,
 ): Record<string, JsonValue> {
   return {
+    ...application.businessSection,
+    ...application.declarationsSection,
+    ...application.financialSection,
+    ...application.projectSection,
     business: {
       employeeCount: business.employeeCount,
       establishedYear: business.establishedYear,
@@ -338,9 +342,9 @@ export async function prepareAuthoritativeEligibilityOutcome(
     ruleSet,
     "SCREENING",
     {
-      application: {},
+      application: applicationSourceValues(input.application, input.business),
       eligibility: resolved.values,
-      fundingCall: {},
+      fundingCall: fundingCallSourceValues(input.fundingCall),
       stages: [],
     },
   );

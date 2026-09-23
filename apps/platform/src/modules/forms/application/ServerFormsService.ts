@@ -318,7 +318,7 @@ export async function saveTaskForm(
 export async function completeTaskForm(
   user: AuthenticatedUser | null,
   input: TaskFormSubmissionInput & {
-    actionKey: string;
+    actionKey: string | null;
     correlationId: string;
     idempotencyKey: string;
     taskInstanceId: string;

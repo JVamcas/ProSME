@@ -1,6 +1,6 @@
 import "server-only";
 
-import { inArray, sql } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
 import { deserializeConditionGroup } from "@/modules/conditions/domain/ConditionSerialization";
@@ -13,6 +13,7 @@ import type {
   EligibilityRuleSetPage,
 } from "../api/EligibilityRuleSetTransport";
 import type { EligibilityRule } from "../domain/EligibilityRule";
+import { eligibilityRuleSetQuestionBindings } from "./eligibility-question.schema";
 import {
   findEligibilityRuleSet,
   findEligibilityRuleSetVersion,
@@ -49,6 +50,23 @@ function editableGroup(
   };
 }
 
+function firstQuestionCode(group: ConditionGroup): string | null {
+  for (const child of group.children) {
+    if (child.kind === "GROUP") {
+      const nested = firstQuestionCode(child);
+      if (nested) return nested;
+      continue;
+    }
+    if (
+      child.leftOperand.kind === "FIELD"
+      && child.leftOperand.key.startsWith("eligibility.")
+    ) {
+      return child.leftOperand.key.slice("eligibility.".length);
+    }
+  }
+  return null;
+}
+
 export async function findEligibilityRuleSetBuilder(
   ruleSetId: string,
   versionId?: string,
@@ -60,15 +78,28 @@ export async function findEligibilityRuleSetBuilder(
   const groupIds = [...new Set(
     ruleSet.rules.map((rule) => rule.condition.conditionGroupId),
   )];
-  const storedGroups = groupIds.length
-    ? await getDatabase()
+  const database = getDatabase();
+  const [storedGroups, questionBindings] = await Promise.all([
+    groupIds.length
+      ? database
         .select({
           definition: conditionGroups.definition,
           id: conditionGroups.id,
         })
         .from(conditionGroups)
         .where(inArray(conditionGroups.id, groupIds))
-    : [];
+      : Promise.resolve([]),
+    database
+      .select({
+        code: eligibilityRuleSetQuestionBindings.code,
+        questionId: eligibilityRuleSetQuestionBindings.questionId,
+      })
+      .from(eligibilityRuleSetQuestionBindings)
+      .where(eq(eligibilityRuleSetQuestionBindings.versionId, ruleSet.version.id)),
+  ]);
+  const questionIdsByCode = new Map(
+    questionBindings.map((binding) => [binding.code, binding.questionId]),
+  );
   const groups = new Map(
     storedGroups.map((group) => [
       group.id,
@@ -80,22 +111,28 @@ export async function findEligibilityRuleSetBuilder(
     if (!rule.id) throw new Error("Stored eligibility rule has no identifier.");
     const group = groups.get(rule.condition.conditionGroupId);
     if (!group) throw new Error(`Eligibility rule "${rule.id}" has no condition group.`);
+    const editableCondition = editableGroup(
+      rule as EligibilityRule & { id: string },
+      group,
+      draft,
+    );
+    const questionCode = firstQuestionCode(editableCondition);
     return {
       applicantMessage: rule.applicantMessage,
-      condition: editableGroup(
-        rule as EligibilityRule & { id: string },
-        group,
-        draft,
-      ),
+      condition: editableCondition,
       executionMode: rule.executionMode,
       failureType: rule.failureType,
       id: rule.id,
       order: rule.order,
+      questionId: questionCode
+        ? questionIdsByCode.get(questionCode) ?? ""
+        : "",
       reasonCode: rule.reasonCode,
     };
   });
   return {
     allowedActions: allowedActions(ruleSet.version.status),
+    availableQuestions: [],
     conditionFields: [],
     context: { fundingCalls: [] },
     definition: ruleSet.definition,

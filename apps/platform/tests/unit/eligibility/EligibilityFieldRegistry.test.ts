@@ -93,7 +93,17 @@ describe("binding-driven eligibility field registry", () => {
     });
 
     expect(registry.issues).toEqual([]);
-    expect(registry.fields).toHaveLength(kinds.length);
+    expect(registry.fields).toHaveLength(kinds.length + 2);
+    expect(registry.fields).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        availableIn: ["SCREENING"],
+        key: "application.source_1",
+      }),
+      expect.objectContaining({
+        availableIn: ["SELF_CHECK", "SCREENING"],
+        key: "fundingCall.source_2",
+      }),
+    ]));
     expect(registry.sources.map((item) => item.sourceKind)).toEqual(kinds);
   });
 

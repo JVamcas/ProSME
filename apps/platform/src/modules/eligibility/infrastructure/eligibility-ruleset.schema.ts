@@ -371,7 +371,7 @@ export const eligibilityScreeningSourceBindings = pgTable(
         'APPLICATION_FORM_FIELD', 'FUNDING_CALL_FIELD',
         'WORKFLOW_FORM_FIELD', 'SCREENING_CHECKLIST_ITEM',
         'DOCUMENT_REQUIREMENT_FACT', 'MANUAL_ASSESSMENT',
-        'INTEGRATION_OUTPUT'
+        'INTEGRATION_OUTPUT', 'ELIGIBILITY_QUESTION_RESPONSE'
       )`,
     ),
     check(

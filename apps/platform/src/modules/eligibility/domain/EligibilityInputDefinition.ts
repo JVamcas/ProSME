@@ -23,6 +23,7 @@ export const eligibilityScreeningSourceKinds = [
   "DOCUMENT_REQUIREMENT_FACT",
   "MANUAL_ASSESSMENT",
   "INTEGRATION_OUTPUT",
+  "ELIGIBILITY_QUESTION_RESPONSE",
 ] as const;
 export type EligibilityScreeningSourceKind =
   (typeof eligibilityScreeningSourceKinds)[number];

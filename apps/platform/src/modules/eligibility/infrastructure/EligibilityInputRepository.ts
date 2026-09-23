@@ -12,93 +12,60 @@ import type {
 } from "../domain/EligibilityInputDefinition";
 import { conditionNodeReferencesEligibilityInput } from "../domain/EligibilityInputDependencies";
 import {
-  eligibilityInputDefinitions,
   eligibilityRules,
-  eligibilityScreeningSourceBindings,
-  eligibilitySelfCheckQuestions,
 } from "./eligibility-ruleset.schema";
-
-type StoredInput = typeof eligibilityInputDefinitions.$inferSelect;
-type StoredQuestion = typeof eligibilitySelfCheckQuestions.$inferSelect | null;
-type StoredScreening =
-  typeof eligibilityScreeningSourceBindings.$inferSelect | null;
-
-function mapInput(
-  input: StoredInput,
-  question: StoredQuestion,
-  screening: StoredScreening,
-): EligibilityInputDefinition {
-  return {
-    availableIn: input.availableIn,
-    createdAt: input.createdAt,
-    createdBy: input.createdBy,
-    groupKey: input.groupKey,
-    groupLabel: input.groupLabel,
-    id: input.id,
-    label: input.label,
-    order: input.order,
-    screening: screening
-      ? {
-          sourceDefinitionId: screening.sourceDefinitionId,
-          sourceKey: screening.sourceKey,
-          sourceKind: screening.sourceKind,
-          sourceVersionId: screening.sourceVersionId,
-          valuePath: screening.valuePath,
-        }
-      : null,
-    selfCheck: question
-      ? {
-          answerType: question.answerType,
-          explanation: question.explanation,
-          helpText: question.helpText,
-          options: question.options,
-          prompt: question.prompt,
-          required: question.required,
-        }
-      : null,
-    stableKey: input.stableKey,
-    type: input.type,
-    updatedAt: input.updatedAt,
-    updatedBy: input.updatedBy,
-    versionId: input.versionId,
-  };
-}
+import { eligibilityRuleSetQuestionBindings } from "./eligibility-question.schema";
 
 export async function listEligibilityInputs(
   versionId: string,
   database: ReturnType<typeof getDatabase> | DatabaseTransaction = getDatabase(),
 ) {
-  const rows = await database
-    .select({
-      input: eligibilityInputDefinitions,
-      question: eligibilitySelfCheckQuestions,
-      screening: eligibilityScreeningSourceBindings,
-    })
-    .from(eligibilityInputDefinitions)
-    .leftJoin(
-      eligibilitySelfCheckQuestions,
-      eq(
-        eligibilitySelfCheckQuestions.inputDefinitionId,
-        eligibilityInputDefinitions.id,
-      ),
-    )
-    .leftJoin(
-      eligibilityScreeningSourceBindings,
-      eq(
-        eligibilityScreeningSourceBindings.inputDefinitionId,
-        eligibilityInputDefinitions.id,
-      ),
-    )
-    .where(eq(eligibilityInputDefinitions.versionId, versionId))
+  const questionRows = await database
+    .select()
+    .from(eligibilityRuleSetQuestionBindings)
+    .where(eq(eligibilityRuleSetQuestionBindings.versionId, versionId))
     .orderBy(
-      asc(eligibilityInputDefinitions.order),
-      asc(eligibilityInputDefinitions.id),
+      asc(eligibilityRuleSetQuestionBindings.order),
+      asc(eligibilityRuleSetQuestionBindings.id),
     );
-  return rows.map((row) => mapInput(
-    row.input,
-    row.question,
-    row.screening,
-  ));
+  return questionRows.map((binding): EligibilityInputDefinition => ({
+      availableIn: ["SELF_CHECK", "SCREENING"],
+      createdAt: binding.createdAt,
+      createdBy: binding.createdBy,
+      groupKey: "eligibility",
+      groupLabel: "Eligibility questions",
+      id: binding.id,
+      label: binding.reviewerLabel,
+      order: binding.order,
+      screening: {
+        sourceDefinitionId: binding.questionId,
+        sourceKey: binding.code,
+        sourceKind: "ELIGIBILITY_QUESTION_RESPONSE",
+        sourceVersionId: binding.versionId,
+        valuePath: "value",
+      },
+      selfCheck: {
+        answerType: binding.inputType,
+        explanation: "Your answer will be independently verified during Screening.",
+        helpText: "Answer using the information currently available to you.",
+        options: binding.inputType === "YES_NO_NA" ? [
+          { label: "Yes", value: "YES" },
+          { label: "No", value: "NO" },
+          { label: "Not applicable", value: "NOT_APPLICABLE" },
+        ] : [],
+        prompt: binding.applicantLabel,
+        required: true,
+      },
+      stableKey: binding.code,
+      type: binding.inputType === "PERCENTAGE"
+        ? "NUMBER"
+        : binding.inputType === "YES_NO_NA"
+          ? "TEXT"
+          : binding.inputType,
+      updatedAt: binding.createdAt,
+      updatedBy: binding.createdBy,
+      versionId: binding.versionId,
+    }));
 }
 
 export async function findEligibilityInputDependencies(
@@ -137,83 +104,9 @@ export async function findEligibilityInputPublicationIssues(
   versionId: string,
 ): Promise<string[]> {
   const database = getDatabase();
-  const [result, unresolved] = await Promise.all([
-    database.execute<{ issue: string | null }>(sql`
-    SELECT CASE
-      WHEN 'SELF_CHECK' = ANY(input.available_in)
-        AND question.input_definition_id IS NULL
-        THEN input.stable_key || ': Self Check question is missing.'
-      WHEN NOT ('SELF_CHECK' = ANY(input.available_in))
-        AND question.input_definition_id IS NOT NULL
-        THEN input.stable_key || ': unexpected Self Check question.'
-      WHEN 'SCREENING' = ANY(input.available_in)
-        AND source.input_definition_id IS NULL
-        THEN input.stable_key || ': Screening source is missing.'
-      WHEN NOT ('SCREENING' = ANY(input.available_in))
-        AND source.input_definition_id IS NOT NULL
-        THEN input.stable_key || ': unexpected Screening source.'
-      WHEN source.input_definition_id IS NOT NULL AND NOT (
-        CASE source.source_kind
-          WHEN 'APPLICATION_FORM_FIELD' THEN EXISTS (
-            SELECT 1 FROM app_form_fields field
-            WHERE field.id = source.source_definition_id
-              AND field.form_version_id = source.source_version_id
-          )
-          WHEN 'FUNDING_CALL_FIELD' THEN EXISTS (
-            SELECT 1 FROM app_funding_calls funding_call
-            WHERE funding_call.id = source.source_definition_id
-              AND funding_call.eligibility_rule_set_version_id = input.version_id
-          )
-          WHEN 'WORKFLOW_FORM_FIELD' THEN EXISTS (
-            SELECT 1 FROM app_form_fields field
-            WHERE field.id = source.source_definition_id
-              AND field.form_version_id = source.source_version_id
-          )
-          WHEN 'SCREENING_CHECKLIST_ITEM' THEN EXISTS (
-            SELECT 1
-            FROM app_workflow_stage_checklist_definitions checklist
-            JOIN app_workflow_stage_definitions stage
-              ON stage.id = checklist.stage_id
-            WHERE checklist.id = source.source_definition_id
-              AND stage.version_id = source.source_version_id
-              AND source.source_key IN ('response', 'completed')
-          )
-          WHEN 'DOCUMENT_REQUIREMENT_FACT' THEN EXISTS (
-            SELECT 1
-            FROM app_workflow_stage_document_requirements requirement
-            JOIN app_workflow_stage_definitions stage
-              ON stage.id = requirement.stage_id
-            WHERE requirement.id = source.source_definition_id
-              AND stage.version_id = source.source_version_id
-              AND source.source_key IN (
-                'present', 'verified', 'verificationStatus', 'validUntil',
-                'expiredAtEvaluation', 'latestAcceptedVersionId'
-              )
-          )
-          WHEN 'MANUAL_ASSESSMENT' THEN EXISTS (
-            SELECT 1
-            FROM app_stage_task_definitions task
-            JOIN app_workflow_stage_definitions stage
-              ON stage.id = task.stage_id
-            WHERE task.id = source.source_definition_id
-              AND stage.version_id = source.source_version_id
-          )
-          WHEN 'INTEGRATION_OUTPUT' THEN FALSE
-          ELSE FALSE
-        END
-      ) THEN input.stable_key || ': Screening source is unresolved.'
-      ELSE NULL
-    END AS issue
-    FROM app_eligibility_input_definitions input
-    LEFT JOIN app_eligibility_self_check_questions question
-      ON question.input_definition_id = input.id
-    LEFT JOIN app_eligibility_screening_source_bindings source
-      ON source.input_definition_id = input.id
-    WHERE input.version_id = ${versionId}
-    `),
-    database.execute<{ issue: string }>(sql`
+  const unresolved = await database.execute<{ issue: string }>(sql`
       SELECT DISTINCT rule.reason_code || ': unresolved field reference "'
-        || (path.value #>> '{}') || '".' AS issue
+        || trim(both '"' from path.value::text) || '".' AS issue
       FROM app_eligibility_rules rule
       INNER JOIN app_condition_groups condition_group
         ON condition_group.id = rule.condition_group_id
@@ -221,12 +114,13 @@ export async function findEligibilityInputPublicationIssues(
         condition_group.definition,
         '$.** ? (@.kind == "FIELD").key'
       ) path(value)
+      LEFT JOIN app_eligibility_rule_set_question_bindings binding
+        ON binding.version_id = rule.version_id
+        AND 'eligibility.' || binding.code_snapshot
+          = trim(both '"' from path.value::text)
       WHERE rule.version_id = ${versionId}
-        AND (path.value #>> '{}') NOT LIKE 'eligibility.%'
-    `),
-  ]);
-  return [
-    ...result.rows.flatMap((row) => row.issue ? [row.issue] : []),
-    ...unresolved.rows.map((row) => row.issue),
-  ];
+        AND trim(both '"' from path.value::text) LIKE 'eligibility.%'
+        AND binding.id IS NULL
+    `);
+  return unresolved.rows.map((row) => row.issue);
 }

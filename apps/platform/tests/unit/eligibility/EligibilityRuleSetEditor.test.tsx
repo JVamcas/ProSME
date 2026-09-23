@@ -10,6 +10,7 @@ import {
 } from "@/modules/eligibility/EligibilityRuleSetHooks";
 import type { EligibilityRuleSetBuilderView } from "@/modules/eligibility/api/EligibilityRuleSetTransport";
 import { EligibilityRuleSetEditor } from "@/modules/eligibility/ui/EligibilityRuleSetEditor";
+import { EligibilityRuleSetHeaderActions } from "@/modules/eligibility/ui/EligibilityRuleSetHeaderActions";
 
 (globalThis as typeof globalThis & {
   IS_REACT_ACT_ENVIRONMENT: boolean;
@@ -17,13 +18,25 @@ import { EligibilityRuleSetEditor } from "@/modules/eligibility/ui/EligibilityRu
 
 const ruleSetId = "70000000-0000-4000-8000-000000000001";
 const versionId = "70000000-0000-4000-8000-000000000002";
-
 function builder(status: "DRAFT" | "PUBLISHED") {
   const timestamp = "2026-09-20T08:00:00.000Z";
   return {
     allowedActions: status === "DRAFT"
       ? ["UPDATE", "PUBLISH"]
       : ["RETIRE", "CLONE"],
+    availableQuestions: [{
+      applicantLabel: "How many people does your business employ?",
+      code: "EMPLOYEE_COUNT",
+      id: "70000000-0000-4000-8000-000000000014",
+      inputType: "NUMBER",
+      reviewerLabel: "Employee count",
+    }, {
+      applicantLabel: "Is your business registered?",
+      code: "BUSINESS_REGISTERED",
+      id: "70000000-0000-4000-8000-000000000015",
+      inputType: "BOOLEAN",
+      reviewerLabel: "Business registration",
+    }],
     definition: {
       code: "SME_STANDARD",
       createdAt: timestamp,
@@ -76,6 +89,7 @@ function builder(status: "DRAFT" | "PUBLISHED") {
       failureType: "HARD_FAIL",
       id: "70000000-0000-4000-8000-000000000003",
       order: 1,
+      questionId: "70000000-0000-4000-8000-000000000014",
       reasonCode: "EMPLOYEE_REQUIRED",
     }],
     registryIssues: [],
@@ -146,8 +160,6 @@ describe("EligibilityRuleSetEditor", () => {
     await act(async () => root?.render(
       <QueryClientProvider client={queryClient("DRAFT")}>
         <EligibilityRuleSetEditor
-          canPublish
-          canRetire={false}
           canUpdate
           id={ruleSetId}
         />
@@ -173,12 +185,17 @@ describe("EligibilityRuleSetEditor", () => {
     expect(document.body.textContent).toContain("Edit eligibility rule");
     expect(document.body.textContent).toContain("Failure type");
     expect(document.body.textContent).toContain("Execution mode");
-    expect(document.body.textContent).toContain("Applicant-facing message");
+    expect(document.body.textContent).toContain("Eligibility question");
+    expect(document.body.textContent).toContain(
+      "Is your business registered?",
+    );
+    expect(document.body.textContent).toContain(
+      "Message shown when this rule is not met",
+    );
     expect(document.body.querySelector('[aria-label="Field"]')).not.toBeNull();
     expect(document.body.querySelector('[aria-label="Operator"]')).not.toBeNull();
-    expect(document.body.textContent).toContain("Available fields");
     expect(document.body.textContent).toContain(
-      "NUMBER · Self Check + Screening · Applicant answer / Verified employee count",
+      "Employee count [Applicant / Application]",
     );
   });
 
@@ -189,8 +206,6 @@ describe("EligibilityRuleSetEditor", () => {
     await act(async () => root?.render(
       <QueryClientProvider client={queryClient("PUBLISHED")}>
         <EligibilityRuleSetEditor
-          canPublish={false}
-          canRetire
           canUpdate
           id={ruleSetId}
         />
@@ -214,8 +229,6 @@ describe("EligibilityRuleSetEditor", () => {
     await act(async () => root?.render(
       <QueryClientProvider client={queryClient("DRAFT")}>
         <EligibilityRuleSetEditor
-          canPublish
-          canRetire={false}
           canUpdate
           id={ruleSetId}
         />
@@ -237,11 +250,14 @@ describe("EligibilityRuleSetEditor", () => {
     root = createRoot(container);
     await act(async () => root?.render(
       <QueryClientProvider client={queryClient("DRAFT")}>
-        <EligibilityRuleSetEditor
+        <EligibilityRuleSetHeaderActions
           canPublish
           canRetire={false}
           canUpdate
           id={ruleSetId}
+          initialName="SME Standard"
+          initialStatus="DRAFT"
+          initialVersionNumber={1}
         />
       </QueryClientProvider>,
     ));
@@ -261,8 +277,6 @@ describe("EligibilityRuleSetEditor", () => {
     await act(async () => root?.render(
       <QueryClientProvider client={unboundDraftQueryClient()}>
         <EligibilityRuleSetEditor
-          canPublish
-          canRetire={false}
           canUpdate
           id={ruleSetId}
         />
@@ -275,7 +289,7 @@ describe("EligibilityRuleSetEditor", () => {
     expect(addRule).not.toBeUndefined();
     expect(addRule?.disabled).toBe(true);
     expect(container.textContent).toContain(
-      "Bind this draft ruleset to a draft funding call before adding rules.",
+      "Bind this draft ruleset to a draft funding call before adding eligibility rules.",
     );
   });
 });

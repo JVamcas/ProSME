@@ -30,8 +30,8 @@ export type EligibilityFieldRegistryContext = {
 export type EligibilityFieldDescriptor = ConditionFieldDefinition & {
   availableIn: EligibilityInputMode[];
   sourceDefinitionId: string;
-  sourceKind: "ELIGIBILITY_INPUT";
-  sourceVersionId: string;
+  sourceKind: "ELIGIBILITY_INPUT" | EligibilityScreeningSourceKind;
+  sourceVersionId: string | null;
   screeningSource: EligibilitySourceBinding | null;
 };
 
@@ -67,6 +67,9 @@ function sameSource(
 }
 
 function sourceIdentity(source: EligibilitySourceDescriptor) {
+  if (source.sourceKind === "FUNDING_CALL_FIELD") {
+    return [source.sourceKind, source.sourceKey].join(":");
+  }
   return [
     source.sourceKind,
     source.sourceDefinitionId,
@@ -102,6 +105,10 @@ function validateInput(
     });
   }
   if (!screening || !input.screening) return issues;
+
+  if (input.screening.sourceKind === "ELIGIBILITY_QUESTION_RESPONSE") {
+    return issues;
+  }
 
   if (
     input.screening.sourceKey === input.stableKey
@@ -172,7 +179,7 @@ export function buildEligibilityFieldRegistry(input: {
     inputIssues.set(definition.id, definitionIssues);
     return definitionIssues;
   });
-  const fields = input.inputs
+  const questionFields = input.inputs
     .filter((definition) => !inputIssues.get(definition.id)?.length)
     .map((definition): EligibilityFieldDescriptor => ({
       availableIn: definition.availableIn,
@@ -184,6 +191,38 @@ export function buildEligibilityFieldRegistry(input: {
       sourceVersionId: definition.versionId,
       type: definition.type,
     }));
+  const sourceFields = commonSources(input.contexts).flatMap(
+    (source): EligibilityFieldDescriptor[] => {
+      if (
+        source.sourceKind !== "APPLICATION_FORM_FIELD"
+        && source.sourceKind !== "FUNDING_CALL_FIELD"
+      ) {
+        return [];
+      }
+      const [type] = source.supportedTypes;
+      if (!type) return [];
+      const fundingCallField = source.sourceKind === "FUNDING_CALL_FIELD";
+      return [{
+        availableIn: fundingCallField
+          ? ["SELF_CHECK", "SCREENING"]
+          : ["SCREENING"],
+        key: `${fundingCallField ? "fundingCall" : "application"}.${source.sourceKey}`,
+        label: source.label,
+        screeningSource: {
+          sourceDefinitionId: source.sourceDefinitionId,
+          sourceKey: source.sourceKey,
+          sourceKind: source.sourceKind,
+          sourceVersionId: source.sourceVersionId,
+          valuePath: "value",
+        },
+        sourceDefinitionId: source.sourceDefinitionId,
+        sourceKind: source.sourceKind,
+        sourceVersionId: source.sourceVersionId,
+        type,
+      }];
+    },
+  );
+  const fields = [...questionFields, ...sourceFields];
 
   return {
     fields,

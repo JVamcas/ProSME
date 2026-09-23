@@ -88,6 +88,9 @@ export const permissionGroups: readonly PermissionGroup[] = [
       permissionCodes.eligibilityRuleSetUpdate,
       permissionCodes.eligibilityRuleSetPublish,
       permissionCodes.eligibilityRuleSetRetire,
+      permissionCodes.eligibilityQuestionRead,
+      permissionCodes.eligibilityQuestionCreate,
+      permissionCodes.eligibilityQuestionUpdate,
     ],
   },
   {

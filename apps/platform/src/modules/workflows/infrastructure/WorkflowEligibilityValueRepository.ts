@@ -31,6 +31,55 @@ type WorkflowFormRow = {
   value: JsonValue;
 };
 
+type EligibilityQuestionResponseRow = {
+  code: string;
+  questionId: string;
+  responseId: string;
+  value: JsonValue;
+  versionId: string;
+};
+
+export async function readEligibilityQuestionResponseRecords(
+  requests: readonly EligibilityScreeningSourceRequest[],
+  database: ReturnType<typeof getDatabase> | DatabaseTransaction = getDatabase(),
+) {
+  const [first] = requests;
+  if (!first) return [];
+  const questionIds = requests.map((request) =>
+    request.binding.sourceDefinitionId
+  );
+  const result = await database.execute<EligibilityQuestionResponseRow>(sql`
+    SELECT binding.question_id AS "questionId",
+      binding.version_id AS "versionId", binding.code_snapshot AS code,
+      response.id AS "responseId",
+      response.values -> binding.code_snapshot AS value
+    FROM app_eligibility_rule_set_question_bindings binding
+    JOIN app_applications application
+      ON application.eligibility_rule_set_version_id = binding.version_id
+    JOIN app_workflow_instances workflow
+      ON workflow.application_id = application.id
+    JOIN app_workflow_stage_instances stage
+      ON stage.workflow_instance_id = workflow.id
+    JOIN app_workflow_tasks task ON task.stage_instance_id = stage.id
+    JOIN app_stage_task_definitions definition
+      ON definition.id = task.workflow_task_definition_id
+      AND definition.code = 'ELIGIBILITY_VERIFICATION'
+    JOIN app_form_responses response
+      ON response.workflow_task_id = task.id
+      AND response.status = 'COMPLETED'
+    WHERE application.id = ${first.applicationId}::uuid
+      AND binding.question_id = ANY(${questionIds}::uuid[])
+      AND response.values ? binding.code_snapshot
+  `);
+  return result.rows.map((row): WorkflowEligibilityValueRecord => ({
+    sourceDefinitionId: row.questionId,
+    sourceKey: row.code,
+    sourceRecordId: row.responseId,
+    sourceVersionId: row.versionId,
+    values: { value: row.value },
+  }));
+}
+
 type TaskRow = {
   completedAt: Date | null;
   definitionId: string;

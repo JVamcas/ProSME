@@ -192,9 +192,7 @@ describe("P3.1 capability-aware portal navigation", () => {
     expect(shell).toContain(
       '<aside className="sticky top-0 hidden h-screen overflow-hidden bg-brand-orange',
     );
-    expect(shell).toContain(
-      '<div className="min-h-screen bg-brand-white lg:grid',
-    );
+    expect(shell).toContain('className="min-h-screen bg-brand-white lg:grid"');
     expect(mobileHeader).toContain("bg-brand-orange");
     expect(mobileHeader).toContain("fixed inset-x-0 bottom-0 top-16");
     expect(mobileHeader).toContain("lg:hidden");

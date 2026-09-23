@@ -107,7 +107,7 @@ function DraggableDialogPanel({
         style={{ transform: `translate(${offset.x}px, ${offset.y}px)` }}
       >
         <header
-          className="flex cursor-grab touch-none select-none items-center justify-between rounded-xl border-b border-t-2 border-slate-100 border-t-brand-orange px-5 py-4 active:cursor-grabbing sm:px-6"
+          className="flex cursor-grab touch-none bg-brand-orange select-none items-center justify-between rounded-xl border-b border-t-2 border-slate-100 border-t-brand-orange px-5 py-4 active:cursor-grabbing sm:px-6"
           onPointerCancel={stopDrag}
           onPointerDown={startDrag}
           onPointerMove={moveDialog}

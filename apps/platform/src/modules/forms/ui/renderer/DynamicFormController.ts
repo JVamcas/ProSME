@@ -71,7 +71,7 @@ export function useDynamicFormController(taskId: string, data: TaskFormData) {
 
   const completeFormValues = (
     completedValues: DynamicFormValues,
-    actionKey: string,
+    actionKey: string | null,
   ) => {
     complete.mutate(
       {

@@ -1,37 +1,28 @@
 "use client";
 
-import { FlaskConical, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
 import {
-  CloneButton,
   DeleteButton,
   EditButton,
-  PublishButton,
-  RetireButton,
 } from "@/components/ui/action-buttons";
-import { GeneralButton, GeneralButtonLink } from "@/components/ui/button";
+import { GeneralButton } from "@/components/ui/button";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
 import { DraggableDialog } from "@/components/ui/draggable-dialog";
-import { StatusBadge } from "@/components/ui/status-badge";
+import type { ConditionFieldDefinition } from "@/modules/conditions/domain/ConditionConfiguration";
 import {
   conditionBuilderOperators,
   formatConditionGroupPreview,
 } from "@/modules/conditions/ui/builder";
-import type { ConditionFieldDefinition } from "@/modules/conditions/domain/ConditionConfiguration";
 import type { EligibilityBuilderRule } from "../api/EligibilityRuleSetTransport";
 import {
   useEligibilityRuleSetBuilder,
-  useEligibilityRuleSetLifecycle,
   useUpdateEligibilityRuleSet,
 } from "../EligibilityRuleSetHooks";
 import { EligibilityRuleDialog } from "./EligibilityRuleDialog";
-import {
-  EligibilityPublicationValidation,
-  validateEligibilityPublicationPreview,
-} from "./EligibilityPublicationValidation";
 
 const failureLabels = {
   HARD_FAIL: "Hard Fail",
@@ -128,25 +119,19 @@ function ruleColumns({
 }
 
 export function EligibilityRuleSetEditor({
-  canPublish,
-  canRetire,
   canUpdate,
   id,
   versionId,
 }: {
-  canPublish: boolean;
-  canRetire: boolean;
   canUpdate: boolean;
   id: string;
   versionId?: string;
 }) {
   const query = useEligibilityRuleSetBuilder(id, versionId);
+  const editor = query.data;
   const update = useUpdateEligibilityRuleSet(id, versionId);
-  const lifecycle = useEligibilityRuleSetLifecycle(id);
-  const [confirmingPublish, setConfirmingPublish] = useState(false);
   const [deleting, setDeleting] = useState<EligibilityBuilderRule>();
   const [editing, setEditing] = useState<EligibilityBuilderRule | "new">();
-  const editor = query.data;
   if (query.isPending) return <p>Loading eligibility ruleset…</p>;
   if (query.isError || !editor) {
     return (
@@ -160,11 +145,6 @@ export function EligibilityRuleSetEditor({
   const isDraft = currentEditor.version.status === "DRAFT";
   const editable = isDraft && canUpdate;
   const hasContext = currentEditor.conditionFields.length > 0;
-  const publicationValidation = validateEligibilityPublicationPreview({
-    fields: currentEditor.conditionFields,
-    registryIssues: currentEditor.registryIssues,
-    rules: currentEditor.rules,
-  });
 
   async function saveRules(rules: EligibilityBuilderRule[]) {
     try {
@@ -180,96 +160,11 @@ export function EligibilityRuleSetEditor({
     }
   }
 
-  async function runLifecycle(action: "CLONE" | "PUBLISH" | "RETIRE") {
-    try {
-      if (action === "PUBLISH") {
-        await lifecycle.mutateAsync({
-          action: "PUBLISH",
-          expectedRowVersion: currentEditor.version.rowVersion,
-          versionId: currentEditor.version.id,
-        });
-        setConfirmingPublish(false);
-      } else if (action === "RETIRE") {
-        await lifecycle.mutateAsync({
-          action: "RETIRE",
-          expectedRowVersion: currentEditor.version.rowVersion,
-          versionId: currentEditor.version.id,
-        });
-      } else {
-        await lifecycle.mutateAsync({
-          action: "CLONE",
-          sourceVersionId: currentEditor.version.id,
-        });
-      }
-    } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Unable to update the version.",
-      );
-    }
-  }
-
   return (
     <div className="space-y-6">
-      <header className="flex flex-wrap items-start justify-between gap-4 rounded-2xl border border-brand-navy/15 bg-white p-5 shadow-sm">
-        <div>
-          <div className="flex flex-wrap items-center gap-3">
-            <h2 className="text-2xl font-bold text-brand-navy">
-              {currentEditor.definition.name}
-            </h2>
-            <StatusBadge status={currentEditor.version.status} />
-          </div>
-          <p className="mt-1 text-sm text-brand-navy/65">
-            {currentEditor.definition.code} · Version{" "}
-            {currentEditor.version.versionNumber}
-          </p>
-          <p className="mt-2 text-sm text-brand-navy/75">
-            {currentEditor.definition.description}
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <EditButton
-            disabled={!editable}
-            onClick={() => document.getElementById("eligibility-rules")
-              ?.scrollIntoView({ behavior: "smooth" })}
-            title="Edit eligibility rules"
-          />
-          <CloneButton
-            disabled={isDraft || !canUpdate}
-            isLoading={lifecycle.isPending}
-            onClick={() => void runLifecycle("CLONE")}
-            title="Clone ruleset version"
-          />
-          <PublishButton
-            disabled={!isDraft || !canPublish || !publicationValidation.ready}
-            isLoading={lifecycle.isPending}
-            onClick={() => setConfirmingPublish(true)}
-            title="Publish ruleset version"
-          />
-          {currentEditor.version.status === "PUBLISHED" ? (
-            <RetireButton
-              disabled={!canRetire}
-              isLoading={lifecycle.isPending}
-              onClick={() => void runLifecycle("RETIRE")}
-              title="Retire ruleset version"
-            />
-          ) : null}
-          <GeneralButtonLink
-            href={versionId
-              ? `/admin/settings/eligibility-rulesets/${id}/test?versionId=${versionId}`
-              : `/admin/settings/eligibility-rulesets/${id}/test`}
-            variant="outlineOrange"
-            size={"compact"}
-          >
-            <FlaskConical className="size-4" />
-            Test ruleset
-          </GeneralButtonLink>
-        </div>
-      </header>
 
       {!isDraft ? (
-        <p className="rounded-xl border border-brand-blue/20 bg-brand-blue/10 px-4 py-3 text-sm text-brand-navy">
+        <p className="rounded-xl border border-brand-blue/20 bg-brand-blue/10 px-4 py-3 text-sm text-brand-orange mb-5">
           This version is read-only. Create a new Draft to change its rules.
         </p>
       ) : null}
@@ -277,12 +172,6 @@ export function EligibilityRuleSetEditor({
       {isDraft && !hasContext ? (
         <p className="rounded-xl border border-amber-400 bg-amber-50 px-4 py-3 text-sm text-brand-navy">
           Bind this draft ruleset to a draft funding call before adding eligibility rules.
-        </p>
-      ) : null}
-
-      {lifecycle.error ? (
-        <p className="text-sm text-red-700" role="alert">
-          {lifecycle.error.message}
         </p>
       ) : null}
 
@@ -344,21 +233,10 @@ export function EligibilityRuleSetEditor({
             await saveRules(rules);
             setEditing(undefined);
           }}
+          questions={currentEditor.availableQuestions}
           saving={update.isPending}
-          sources={currentEditor.screeningSources}
         />
       </DraggableDialog>
-      <ConfirmationDialog
-        confirmText="Publish version"
-        errorMessage={lifecycle.error?.message}
-        isLoading={lifecycle.isPending}
-        isOpen={confirmingPublish}
-        loadingText="Publishing…"
-        message={`Publish ${currentEditor.definition.name} version ${currentEditor.version.versionNumber}? It will become available for use by its funding call.`}
-        onCancel={() => setConfirmingPublish(false)}
-        onConfirm={() => void runLifecycle("PUBLISH")}
-        title="Publish eligibility ruleset"
-      />
       <ConfirmationDialog
         confirmText="Delete rule"
         isDangerous

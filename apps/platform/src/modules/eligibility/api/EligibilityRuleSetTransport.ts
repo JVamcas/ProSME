@@ -13,6 +13,15 @@ import type {
   EligibilityRuleSetStatus,
   EligibilityRuleSetVersion,
 } from "../domain/EligibilityRuleSet";
+import type { EligibilityQuestionInputType } from "../domain/EligibilityQuestion";
+
+export type EligibilityQuestionOption = {
+  applicantLabel: string;
+  code: string;
+  id: string;
+  inputType: EligibilityQuestionInputType;
+  reviewerLabel: string;
+};
 
 export type EligibilityBuilderRule = {
   applicantMessage: string;
@@ -21,11 +30,13 @@ export type EligibilityBuilderRule = {
   failureType: EligibilityFailureType;
   id: string;
   order: number;
+  questionId: string;
   reasonCode: string;
 };
 
 export type EligibilityRuleSetBuilderView = {
   allowedActions: Array<"CLONE" | "PUBLISH" | "RETIRE" | "UPDATE">;
+  availableQuestions: EligibilityQuestionOption[];
   definition: EligibilityRuleSetDefinition;
   conditionFields: EligibilityFieldDescriptor[];
   context: {

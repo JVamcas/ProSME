@@ -3,6 +3,7 @@ import "server-only";
 import type { DatabaseTransaction } from "@/db/client";
 import type { JsonValue } from "@/modules/conditions/domain/Operand";
 import { readWorkflowEligibilityValueRecords } from "@/modules/workflows/infrastructure/WorkflowEligibilityValueRepository";
+import { readEligibilityQuestionResponseRecords } from "@/modules/workflows/infrastructure/WorkflowEligibilityValueRepository";
 import type {
   EligibilityEvaluationRuleSet,
 } from "../domain/EligibilityEvaluation";
@@ -125,6 +126,15 @@ export async function resolveAuthoritativeEligibilityData(
         sourceKind,
         workflowReader(input.database, sourceKind),
       )),
+      createEligibilitySourceAdapter(
+        "ELIGIBILITY_QUESTION_RESPONSE",
+        {
+          read: (requests) => readEligibilityQuestionResponseRecords(
+            requests,
+            input.database,
+          ),
+        },
+      ),
       createEligibilityIntegrationOutputAdapter(input.database),
     ],
     applicationId: input.applicationId,

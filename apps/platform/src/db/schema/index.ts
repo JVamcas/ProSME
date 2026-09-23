@@ -4,6 +4,7 @@ export * from "./applications";
 export * from "./application-documents";
 export * from "@/modules/conditions/infrastructure/condition.schema";
 export * from "@/modules/eligibility/infrastructure/eligibility-ruleset.schema";
+export * from "@/modules/eligibility/infrastructure/eligibility-question.schema";
 export * from "@/modules/eligibility/infrastructure/eligibility-outcome.schema";
 export * from "@/modules/eligibility/infrastructure/eligibility-integration.schema";
 export * from "@/modules/forms/infrastructure/form.schema";

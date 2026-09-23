@@ -134,6 +134,21 @@ const staticPermissionCatalogue: readonly PermissionDefinition[] = [
     "Retire published eligibility ruleset versions.",
   ),
   define(
+    permissionCodes.eligibilityQuestionRead,
+    "Read eligibility questions",
+    "Read reusable eligibility questions and their ruleset bindings.",
+  ),
+  define(
+    permissionCodes.eligibilityQuestionCreate,
+    "Create eligibility questions",
+    "Create reusable eligibility questions.",
+  ),
+  define(
+    permissionCodes.eligibilityQuestionUpdate,
+    "Update eligibility questions",
+    "Update reusable eligibility question definitions.",
+  ),
+  define(
     permissionCodes.fundingApplicationCreate,
     "Create applications",
     "Create funding applications.",

@@ -110,6 +110,7 @@ afterAll(async () => {
       {
         conditionDefinitions: [],
         expectedRowVersion: created.version.rowVersion,
+        questionIds: [],
         rules: [
           {
             applicantMessage: "At least one employee is required.",
@@ -220,6 +221,7 @@ afterAll(async () => {
       {
         conditionDefinitions: [],
         expectedRowVersion: published.version.rowVersion,
+        questionIds: [],
         rules: [],
       },
     )).rejects.toBeInstanceOf(ResourceConflictError);

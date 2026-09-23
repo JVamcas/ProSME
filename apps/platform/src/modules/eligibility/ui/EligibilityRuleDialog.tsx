@@ -17,16 +17,48 @@ import {
 import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup";
 import { ConditionBuilder } from "@/modules/conditions/ui/builder";
 import { eligibilityBuilderRuleSchema } from "../api/EligibilityRuleSetSchemas";
-import type { EligibilityBuilderRule } from "../api/EligibilityRuleSetTransport";
+import type {
+  EligibilityBuilderRule,
+  EligibilityQuestionOption,
+} from "../api/EligibilityRuleSetTransport";
 import type {
   EligibilityFieldDescriptor,
-  EligibilitySourceDescriptor,
 } from "../domain/EligibilityFieldRegistry";
+import { questionConditionType } from "../domain/EligibilityQuestion";
 import { eligibilityBuilderFieldPresentations } from "./EligibilityBuilderFieldPresentation";
 
 type EligibilityRuleFormValues = Omit<EligibilityBuilderRule, "condition"> & {
   condition: unknown;
 };
+
+function questionFieldKey(question: EligibilityQuestionOption) {
+  return `eligibility.${question.code}`;
+}
+
+function replaceQuestionFields(
+  group: ConditionGroup,
+  questionKeys: ReadonlySet<string>,
+  nextKey: string,
+): ConditionGroup {
+  return {
+    ...group,
+    children: group.children.map((child) => {
+      if (child.kind === "GROUP") {
+        return replaceQuestionFields(child, questionKeys, nextKey);
+      }
+      if (
+        child.leftOperand.kind !== "FIELD"
+        || !questionKeys.has(child.leftOperand.key)
+      ) {
+        return child;
+      }
+      return {
+        ...child,
+        leftOperand: { key: nextKey, kind: "FIELD" as const },
+      };
+    }),
+  };
+}
 
 const ruleResolver = zodResolver(
   eligibilityBuilderRuleSchema as never,
@@ -46,6 +78,7 @@ function newRule(order: number): EligibilityBuilderRule {
     failureType: "HARD_FAIL",
     id,
     order,
+    questionId: "",
     reasonCode: "",
   };
 }
@@ -56,16 +89,16 @@ export function EligibilityRuleDialog({
   nextOrder,
   onCancel,
   onSave,
+  questions,
   saving,
-  sources,
 }: {
   fields: readonly EligibilityFieldDescriptor[];
   initialRule?: EligibilityBuilderRule;
   nextOrder: number;
   onCancel: () => void;
   onSave: (rule: EligibilityBuilderRule) => Promise<void>;
+  questions: readonly EligibilityQuestionOption[];
   saving: boolean;
-  sources: readonly EligibilitySourceDescriptor[];
 }) {
   const form = useForm<EligibilityRuleFormValues>({
     defaultValues: initialRule ?? newRule(nextOrder),
@@ -75,12 +108,36 @@ export function EligibilityRuleDialog({
     control: form.control,
     name: "executionMode",
   });
+  const questionId = useWatch({
+    control: form.control,
+    name: "questionId",
+  });
+  const selectedQuestion = questions.find((question) =>
+    question.id === questionId
+  );
+  const questionKeys = new Set(questions.map(questionFieldKey));
   const fieldPresentations = eligibilityBuilderFieldPresentations(
     fields,
-    sources,
     executionMode,
   );
-  const conditionFields = fieldPresentations.map((field) => field.builderField);
+  const selectedQuestionKey = selectedQuestion
+    ? questionFieldKey(selectedQuestion)
+    : "";
+  const selectedField = fieldPresentations.find((field) =>
+    field.key === selectedQuestionKey
+  )?.builderField ?? (selectedQuestion
+    ? {
+        key: selectedQuestionKey,
+        label: `${selectedQuestion.reviewerLabel} [Applicant / Screening Answer]`,
+        type: questionConditionType(selectedQuestion.inputType),
+      }
+    : null);
+  const conditionFields = [
+    ...(selectedField ? [selectedField] : []),
+    ...fieldPresentations
+      .filter((field) => !questionKeys.has(field.key))
+      .map((field) => field.builderField),
+  ];
   const submit = form.handleSubmit(async (values) => {
     const rule = eligibilityBuilderRuleSchema.parse(values);
     await onSave(rule as EligibilityBuilderRule);
@@ -123,8 +180,39 @@ export function EligibilityRuleDialog({
             required
           />
         </div>
+        <FormSelect
+          items={questions.map((question) => ({
+            label: `${question.applicantLabel}`,
+            value: question.id,
+          }))}
+          label="Eligibility question"
+          name="questionId"
+          onChange={(event) => {
+            form.setValue("questionId", event.target.value, {
+              shouldDirty: true,
+              shouldValidate: true,
+            });
+            const question = questions.find((item) =>
+              item.id === event.target.value
+            );
+            if (!question) return;
+            form.setValue(
+              "condition",
+              replaceQuestionFields(
+                form.getValues("condition") as ConditionGroup,
+                questionKeys,
+                questionFieldKey(question),
+              ),
+              { shouldDirty: true, shouldValidate: true },
+            );
+          }}
+          placeholder={questions.length
+            ? "Select a question"
+            : "Create an eligibility question first"}
+          required
+        />
         <FormInput
-          label="Applicant-facing message"
+          label="Message shown when this rule is not met"
           name="applicantMessage"
           required
         />

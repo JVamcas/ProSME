@@ -99,13 +99,19 @@ describe("ServerEligibilityRuleSetService", () => {
       user([permissionCodes.eligibilityRuleSetUpdate]),
       ruleSetId,
       versionId,
-      { conditionDefinitions: [], expectedRowVersion: 1, rules: [] },
+      {
+        conditionDefinitions: [],
+        expectedRowVersion: 1,
+        questionIds: [],
+        rules: [],
+      },
     );
 
     expect(updateEligibilityRuleSetDraft).toHaveBeenCalledWith({
       actorId,
       conditionDefinitions: [],
       expectedRowVersion: 1,
+      questionIds: [],
       ruleSetId,
       rules: [],
       versionId,

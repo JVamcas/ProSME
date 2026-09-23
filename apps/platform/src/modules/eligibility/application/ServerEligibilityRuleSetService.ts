@@ -27,6 +27,7 @@ import {
   cloneEligibilityRuleSetVersion,
 } from "../infrastructure/EligibilityRuleSetCloneRepository";
 import {
+  InvalidEligibilityQuestionSelectionError,
   updateEligibilityRuleSetDefinition,
   updateEligibilityRuleSetDraft,
 } from "../infrastructure/EligibilityRuleSetWriteRepository";
@@ -117,7 +118,10 @@ export async function updateEligibilityRuleSet(
       );
     }
   } catch (error) {
-    if (error instanceof InvalidEligibilityRulesError) {
+    if (
+      error instanceof InvalidEligibilityRulesError
+      || error instanceof InvalidEligibilityQuestionSelectionError
+    ) {
       throw new RequestValidationError(error.message);
     }
     throw error;
