@@ -18,7 +18,6 @@ import {
   listOwnedApplications,
   updateOwnedApplication,
 } from "@/modules/applications/infrastructure/ApplicationRepository";
-import { hasRequiredApplicationDocuments } from "@/db/repositories/ApplicationDocumentRepository";
 import { findOwnedBusiness } from "@/db/repositories/BusinessRepository";
 import {
   ResourceConflictError,
@@ -26,8 +25,9 @@ import {
   RequestValidationError,
 } from "@/lib/resource-errors";
 import { resolvePublishedApplicationFormBinding } from "@/modules/funding-calls/ServerFundingOpportunityIntegration";
+import { getFormRuntime } from "@/modules/forms/infrastructure/FormRepository";
 import { applicationDeclarationsSectionSchema } from "./ApplicationDeclarationSchemas";
-import { applicationDocumentRequirements } from "./ApplicationDocumentSchemas";
+import { applicationDocumentRequirements } from "./domain/ApplicationDocumentPolicy";
 import type {
   ApplicationSection,
   ApplicationSectionCompletion,
@@ -39,6 +39,8 @@ import {
   applicationProjectSectionSchema,
 } from "./ApplicationSchemas";
 import type { ApplicationListInput, ApplicationPage } from "./ApplicationTypes";
+import { listLatestOwnedApplicationDocumentVersions } from "./infrastructure/ApplicationDocumentRepository";
+import { readOwnedApplicationDraftResponse } from "./infrastructure/ApplicationResponseRepository";
 import {
   decodeApplicationCursor,
   encodeApplicationCursor,
@@ -112,15 +114,29 @@ function sectionIsComplete(input: ApplicationUpdateInput) {
   return false;
 }
 
-async function documentsAreComplete(ownerUserId: string, applicationId: string) {
-  const requiredTypes = applicationDocumentRequirements
-    .filter((requirement) => requirement.required)
-    .map((requirement) => requirement.id);
-  return hasRequiredApplicationDocuments(
-    ownerUserId,
-    applicationId,
-    requiredTypes,
+async function documentsAreComplete(
+  ownerUserId: string,
+  application: Awaited<ReturnType<typeof findOwnedApplication>> & {},
+) {
+  if (!application.formVersionId) return false;
+  const [documents, form, response] = await Promise.all([
+    listLatestOwnedApplicationDocumentVersions(ownerUserId, application.id),
+    getFormRuntime(application.formVersionId),
+    readOwnedApplicationDraftResponse(ownerUserId, application.id),
+  ]);
+  if (!form || !response || response.formVersionId !== application.formVersionId) {
+    return false;
+  }
+  const current = new Map(
+    documents.map((document) => [document.requirementKey, document]),
   );
+  return applicationDocumentRequirements(form, response.values)
+    .filter((requirement) => requirement.required)
+    .every((requirement) => {
+      const document = current.get(requirement.key);
+      return document?.storageStatus === "finalized"
+        && document.scanStatus === "clean";
+    });
 }
 
 async function loadOwnedApplication(ownerUserId: string, id: string) {
@@ -227,7 +243,7 @@ export async function updateOwnApplication(
   }
   await requireOwnedSelectedBusiness(actor.id, input);
   const sectionComplete = input.section === "documents"
-    ? await documentsAreComplete(actor.id, id)
+    ? await documentsAreComplete(actor.id, current)
     : sectionIsComplete(input);
   if (input.section === "documents" && !sectionComplete) {
     throw new RequestValidationError(

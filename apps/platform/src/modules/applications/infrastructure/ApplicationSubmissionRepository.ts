@@ -1,10 +1,9 @@
 import "server-only";
 
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
 import {
-  applicationDocuments,
   applications,
   applicationSubmissionCommands,
   fundingCalls,
@@ -13,8 +12,8 @@ import {
   workflowInstances,
   workflowStageDefinitions,
 } from "@/db/schema";
-import type { ApplicationDocumentType } from "@/modules/applications/ApplicationDocumentSchemas";
 import { isFundingCallEffectivelyOpen } from "@/modules/funding-calls/domain/FundingCallLifecycle";
+import { readTransactionalApplicationReadiness } from "./ApplicationTransactionalReadiness";
 import {
   InitialStageActivationError,
   writeApplicationSubmission,
@@ -115,33 +114,6 @@ async function findExistingSubmission(
   });
 }
 
-async function requiredDocumentsAreClean(
-  transaction: SubmissionTransaction,
-  applicationId: string,
-  ownerUserId: string,
-  requiredTypes: ApplicationDocumentType[],
-) {
-  const documents = await transaction
-    .select({
-      documentType: applicationDocuments.documentType,
-      scanStatus: applicationDocuments.scanStatus,
-    })
-    .from(applicationDocuments)
-    .where(
-      and(
-        eq(applicationDocuments.applicationId, applicationId),
-        eq(applicationDocuments.ownerUserId, ownerUserId),
-        inArray(applicationDocuments.documentType, requiredTypes),
-      ),
-    );
-  const cleanTypes = new Set(
-    documents
-      // .filter((document) => document.scanStatus === "clean")
-      .map((document) => document.documentType),
-  );
-  return requiredTypes.every((type) => cleanTypes.has(type));
-}
-
 async function findInitialConfiguration(
   transaction: SubmissionTransaction,
   fundingOpportunityId: string,
@@ -153,6 +125,7 @@ async function findInitialConfiguration(
         fundingCalls.eligibilityRuleSetVersionId,
       fundingInstrument: fundingCalls.fundingInstrument,
       fundingCallId: fundingCalls.id,
+      formVersionId: fundingCalls.formVersionId,
       maximumGrantAmount: fundingCalls.maximumGrantAmount,
       minimumGrantAmount: fundingCalls.minimumGrantAmount,
       opensAt: fundingCalls.opensAt,
@@ -187,16 +160,6 @@ async function findInitialConfiguration(
   return configuration ?? null;
 }
 
-function draftIsComplete(application: {
-  declarationAcceptance: unknown;
-  sectionCompletion: Record<string, boolean>;
-}) {
-  return (
-    application.declarationAcceptance !== null &&
-    Object.values(application.sectionCompletion).every(Boolean)
-  );
-}
-
 async function submitInTransaction(
   transaction: SubmissionTransaction,
   input: SubmitApplicationInput,
@@ -222,29 +185,40 @@ async function submitInTransaction(
   const existing = await findExistingSubmission(transaction, application.id);
   if (existing) return { kind: "submitted", result: existing };
   if (!application.businessId) return { kind: "business_required" };
-  if (!draftIsComplete(application)) return { kind: "draft_incomplete" };
-  const documentsValid = await requiredDocumentsAreClean(
-    transaction,
-    application.id,
-    input.actorId,
-    input.requiredDocumentTypes,
-  );
-  if (!documentsValid) return { kind: "documents_invalid" };
   const configuration = await findInitialConfiguration(
     transaction,
     application.fundingOpportunityId,
   );
   if (!configuration) return { kind: "workflow_unavailable" };
-  if (!isFundingCallEffectivelyOpen(configuration, new Date())) {
+  const now = new Date();
+  const callOpen = isFundingCallEffectivelyOpen(configuration, now);
+  if (!application.formVersionId) return { kind: "draft_incomplete" };
+  const eligibilityAvailable = Boolean(
+    application.eligibilityRuleSetVersionId
+    && application.eligibilityRuleSetVersionId
+      === configuration.eligibilityRuleSetVersionId,
+  );
+  const readiness = await readTransactionalApplicationReadiness(
+    transaction,
+    { ...application, formVersionId: application.formVersionId },
+    callOpen,
+    Boolean(
+      eligibilityAvailable
+      && application.formVersionId === configuration.formVersionId,
+    ),
+    now,
+  );
+  if (!readiness) return { kind: "draft_incomplete" };
+  if (readiness.blockers.some((blocker) => blocker.category === "document")) {
+    return { kind: "documents_invalid" };
+  }
+  if (!callOpen) {
     return { kind: "opportunity_unavailable" };
   }
-  if (
-    !application.eligibilityRuleSetVersionId
-    || application.eligibilityRuleSetVersionId
-      !== configuration.eligibilityRuleSetVersionId
-  ) {
+  if (!eligibilityAvailable) {
     return { kind: "eligibility_unavailable" };
   }
+  if (!readiness.ready) return { kind: "draft_incomplete" };
   return writeApplicationSubmission(transaction, {
     ...input,
     application,
@@ -257,7 +231,6 @@ type SubmitApplicationInput = {
   applicationId: string;
   correlationId: string;
   idempotencyKey: string;
-  requiredDocumentTypes: ApplicationDocumentType[];
 };
 
 export function submitOwnedApplication(

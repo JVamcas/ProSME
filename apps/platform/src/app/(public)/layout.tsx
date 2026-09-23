@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
-import { Toaster } from "sonner";
 import { AppShell } from "@/components/layout/app-shell";
 import { QueryProvider } from "@/components/layout/query-provider";
 import { AnalyticsConsent } from "@/integrations/analytics/analytics-consent";
 import { getServerEnvironment } from "@/lib/env/server";
 import { getContactDetails, getSiteSettings } from "@/modules/content/ServerContentQueries";
+import { Toast } from "@/shared/ui/Toast";
 import "../globals.css";
 
 export const revalidate = 300;
@@ -86,7 +86,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
           <AnalyticsConsent
             measurementId={settings.analyticsMeasurementId}
           />
-          <Toaster richColors position="top-right" />
+          <Toast />
         </QueryProvider>
         <script
           type="application/ld+json"

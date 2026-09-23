@@ -7,6 +7,11 @@ export type StoredDocument = {
 };
 
 export interface DocumentStorage {
+  createSignedDownloadUrl(input: {
+    expiresAt: Date;
+    fileName: string;
+    objectKey: string;
+  }): Promise<string>;
   delete(objectKey: string): Promise<void>;
   put(document: StoredDocument): Promise<void>;
 }

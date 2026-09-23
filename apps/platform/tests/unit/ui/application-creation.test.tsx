@@ -8,14 +8,12 @@ vi.mock("next/navigation", () => ({
 const useApplicationBusinesses = vi.hoisted(() => vi.fn());
 const useBusiness = vi.hoisted(() => vi.fn());
 const useApplicationDocuments = vi.hoisted(() => vi.fn());
-const useUploadApplicationDocument = vi.hoisted(() => vi.fn());
 vi.mock("@/modules/businesses/BusinessHooks", () => ({
   useBusiness,
   useApplicationBusinesses,
 }));
-vi.mock("@/modules/applications/ApplicationDocumentHooks", () => ({
+vi.mock("@/modules/applications/ui/useApplicationDocuments", () => ({
   useApplicationDocuments,
-  useUploadApplicationDocument,
 }));
 
 import {
@@ -24,7 +22,6 @@ import {
 } from "@/components/applicant/applications/ApplicationStepConfig";
 import { ApplicationBusinessForm } from "@/components/applicant/applications/ApplicationBusinessForm";
 import { ApplicationDeclarationsForm } from "@/components/applicant/applications/ApplicationDeclarationsForm";
-import { ApplicationDocumentsForm } from "@/components/applicant/applications/ApplicationDocumentsForm";
 import { ApplicationProjectForm } from "@/components/applicant/applications/ApplicationProjectForm";
 import { ApplicationReview } from "@/components/applicant/applications/ApplicationReview";
 import { ApplicationsTable } from "@/components/applicant/applications/ApplicationTable";
@@ -68,16 +65,13 @@ const completedApplication: ApplicationView = {
 
 describe("application creation UI", () => {
   useApplicationDocuments.mockReturnValue({
-    data: [],
+    data: {
+      documents: [],
+      requirements: [],
+    },
     error: null,
     isError: false,
     isPending: false,
-  });
-  useUploadApplicationDocument.mockReturnValue({
-    error: null,
-    isError: false,
-    isPending: false,
-    mutateAsync: vi.fn(),
   });
 
   it("shows the three P3.2 sections and later disabled steps", () => {
@@ -188,21 +182,6 @@ describe("application creation UI", () => {
     expect(markup).toContain("Back");
   });
 
-  it("renders the Phase 3.4 document register", () => {
-    const markup = renderToStaticMarkup(
-      <ApplicationDocumentsForm
-        applicationId="99e20de0-3558-4d63-90a4-8c9f5125df07"
-        onContinue={() => Promise.resolve()}
-        pending={false}
-      />,
-    );
-    expect(markup).toContain("Business Registration Certificate");
-    expect(markup).toContain("Latest Financial Statements");
-    expect(markup).toContain("Project Proposal");
-    expect(markup).toContain("Save and continue");
-    expect(markup).toContain('type="button">Save and continue');
-  });
-
   it("renders all versioned declarations and consent actions", () => {
     const markup = renderToStaticMarkup(
       <ApplicationDeclarationsForm
@@ -223,7 +202,10 @@ describe("application creation UI", () => {
       data: { legalName: "JM Technologies (Pty) Ltd" },
     });
     useApplicationDocuments.mockReturnValue({
-      data: [{ id: "one" }, { id: "two" }, { id: "three" }, { id: "four" }],
+      data: {
+        documents: [{}, {}, {}, {}],
+        requirements: [],
+      },
     });
     const markup = renderToStaticMarkup(
       <ApplicationReview

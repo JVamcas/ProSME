@@ -37,7 +37,7 @@ function applicant(granted: string[]): AuthenticatedUser {
 beforeEach(() => vi.clearAllMocks());
 
 describe("application submission service", () => {
-  it("authorizes and passes command identity and required documents", async () => {
+  it("authorizes and passes the submission command identity", async () => {
     const result = {
       applicationId,
       reference: "SMEF-2026-000001",
@@ -60,11 +60,6 @@ describe("application submission service", () => {
       actorId: "79e20de0-3558-4d63-90a4-8c9f5125df07",
       applicationId,
       idempotencyKey: "submission-command",
-      requiredDocumentTypes: [
-        "business-registration",
-        "financial-statements",
-        "project-proposal",
-      ],
     }));
   });
 

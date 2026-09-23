@@ -48,6 +48,10 @@ import {
 } from "../infrastructure/FundingCallRepository";
 import { readFundingCalls } from "../infrastructure/FundingCallAdminListRepository";
 import {
+  cloneFundingCallRecord,
+  deleteFundingCallRecord,
+} from "../infrastructure/FundingCallCommandRepository";
+import {
   resolveEligibilityRuleSetContexts,
   resolveFundingCallEligibilityContext,
 } from "../ServerFundingCallEligibilityContextIntegration";
@@ -197,6 +201,31 @@ export async function createFundingCall(
   const actor = requirePermission(user, permissionCodes.fundingCallCreate);
   await requireBindableBindings(input);
   return view(await insertFundingCall(actor.id, input));
+}
+
+export async function cloneFundingCall(
+  user: AuthenticatedUser | null,
+  id: string,
+): Promise<FundingCallView> {
+  const actor = requirePermission(user, permissionCodes.fundingCallCreate);
+  const cloned = await cloneFundingCallRecord(actor.id, id);
+  if (!cloned) throw new ResourceNotFoundError("funding call");
+  return view(cloned);
+}
+
+export async function deleteFundingCall(
+  user: AuthenticatedUser | null,
+  id: string,
+): Promise<{ id: string }> {
+  requirePermission(user, permissionCodes.fundingCallDelete);
+  const result = await deleteFundingCallRecord(id);
+  if (result === "not_found") throw new ResourceNotFoundError("funding call");
+  if (result === "has_applications") {
+    throw new ResourceConflictError(
+      "Funding calls with applications cannot be deleted.",
+    );
+  }
+  return { id };
 }
 
 export async function listBindableApplicationFormVersions(

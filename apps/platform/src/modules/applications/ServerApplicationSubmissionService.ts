@@ -10,7 +10,6 @@ import {
   ResourceConflictError,
   ResourceNotFoundError,
 } from "@/lib/resource-errors";
-import { applicationDocumentRequirements } from "./ApplicationDocumentSchemas";
 
 export class ApplicationSubmissionConflictError extends ResourceConflictError {
   constructor(message: string) {
@@ -47,9 +46,6 @@ export async function submitApplication(
     applicationId,
     correlationId,
     idempotencyKey: requireIdempotencyKey(idempotencyKey),
-    requiredDocumentTypes: applicationDocumentRequirements
-      .filter((requirement) => requirement.required)
-      .map((requirement) => requirement.id),
   });
   if (result.kind === "submitted") return result.result;
   if (result.kind === "not_found") {

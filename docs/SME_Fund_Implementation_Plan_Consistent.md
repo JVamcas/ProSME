@@ -3853,6 +3853,8 @@ Applicants can safely resume a version-bound draft without silent data loss.
 
 ## 14.4 Applicant, Business and Declaration Context
 
+**Status:** Not done
+
 ### Goal
 
 Bind the draft to the correct applicant/business context and capture required

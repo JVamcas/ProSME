@@ -1,13 +1,10 @@
 "use client";
 
 import { requestData } from "@/lib/client-http";
-import type {
-  ApplicationDocumentType,
-  ApplicationDocumentView,
-} from "./ApplicationDocumentSchemas";
+import type { ApplicationDocumentRegister } from "../api/ApplicationDocumentSchemas";
 
 function list(applicationId: string) {
-  return requestData<ApplicationDocumentView[]>(
+  return requestData<ApplicationDocumentRegister>(
     `/api/portal/applications/${applicationId}/documents`,
     { cache: "no-store" },
   );
@@ -15,13 +12,13 @@ function list(applicationId: string) {
 
 function upload(
   applicationId: string,
-  documentType: ApplicationDocumentType,
+  requirementKey: string,
   file: File,
 ) {
   const body = new FormData();
-  body.set("documentType", documentType);
+  body.set("requirementKey", requirementKey);
   body.set("file", file);
-  return requestData<ApplicationDocumentView[]>(
+  return requestData<ApplicationDocumentRegister>(
     `/api/portal/applications/${applicationId}/documents`,
     { body, method: "POST" },
   );

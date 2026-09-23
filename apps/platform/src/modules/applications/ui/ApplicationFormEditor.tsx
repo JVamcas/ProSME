@@ -1,13 +1,17 @@
 "use client";
 
 import { RefreshCw, RotateCw } from "lucide-react";
+import { useEffect } from "react";
 
 import { PortalErrorState } from "@/components/layout/PortalErrorState";
 import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
 import { GeneralButton } from "@/components/ui/button";
 import { FormRenderer } from "@/modules/forms/ui/renderer/FormRenderer";
 import { PageShell } from "@/shared/ui/PageShell";
+import { toast } from "@/shared/ui/Toast";
 import { useOwnApplication } from "../ApplicationHooks";
+import { ApplicationDocumentsPanel } from "./ApplicationDocumentsPanel";
+import { ApplicationReadinessPanel } from "./ApplicationReadinessPanel";
 import {
   type DraftSaveStatus,
   useApplicationAutosave,
@@ -25,9 +29,11 @@ function DraftPersistenceStatus({ status }: { status: DraftSaveStatus }) {
   return (
     <p
       aria-live="polite"
-      className={status === "saved"
-        ? "text-sm font-semibold text-brand-green"
-        : "text-sm font-semibold text-brand-navy"}
+      className={
+        status === "saved"
+          ? "text-sm font-semibold text-brand-green"
+          : "text-sm font-semibold text-brand-navy"
+      }
     >
       {statusLabels[status]}
     </p>
@@ -44,13 +50,21 @@ function LoadedApplicationDraft({
   onReload: () => void;
 }) {
   const autosave = useApplicationAutosave(applicationId, data);
+
+  useEffect(() => {
+    if (autosave.error && autosave.status === "failed") {
+      toast.error("Changes could not be saved", {
+        description: autosave.error.message,
+      });
+    }
+  }, [autosave.error, autosave.status]);
+
   return (
     <PageShell
-      description="Your answers save automatically to this application draft."
-      eyebrow="Funding application draft"
+      description="Manage your applications for fundings"
+      eyebrow="Funding calls applications"
       title={data.fundingOpportunityTitle}
-    >
-      <div className="mt-6 space-y-5 rounded-2xl border border-brand-navy/15 bg-brand-white p-5 shadow-sm sm:p-8">
+      actions={
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-brand-navy/10 pb-4">
           <DraftPersistenceStatus status={autosave.status} />
           {autosave.status === "failed" ? (
@@ -66,20 +80,18 @@ function LoadedApplicationDraft({
             </GeneralButton>
           ) : null}
         </div>
-        {autosave.error && autosave.status === "failed" ? (
-          <p className="text-sm text-red-700" role="alert">
-            {autosave.error.message}
-          </p>
-        ) : null}
+      }
+    >
+      <div className="space-y-6">
         <FormRenderer
           definition={data.form}
           formData={autosave.values}
           onChange={autosave.setValues}
           onSubmit={() => undefined}
           readOnly={data.status !== "draft"}
-        >
-          <></>
-        </FormRenderer>
+        />
+        <ApplicationDocumentsPanel applicationId={applicationId} />
+        <ApplicationReadinessPanel applicationId={applicationId} />
       </div>
     </PageShell>
   );

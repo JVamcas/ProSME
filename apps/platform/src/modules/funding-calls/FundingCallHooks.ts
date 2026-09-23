@@ -94,6 +94,26 @@ export function useCreateFundingCall() {
   });
 }
 
+export function useCloneFundingCall() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => clientFundingCallService.clone(id),
+    onSuccess: () => queryClient.invalidateQueries({
+      queryKey: fundingCallQueryKeys.all,
+    }),
+  });
+}
+
+export function useDeleteFundingCall() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => clientFundingCallService.delete(id),
+    onSuccess: () => queryClient.invalidateQueries({
+      queryKey: fundingCallQueryKeys.all,
+    }),
+  });
+}
+
 export function useUpdateFundingCall(id: string) {
   const queryClient = useQueryClient();
   return useMutation({

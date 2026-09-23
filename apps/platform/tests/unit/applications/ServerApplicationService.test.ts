@@ -15,9 +15,6 @@ vi.mock("@/modules/applications/infrastructure/ApplicationRepository", () => ({
 vi.mock("@/db/repositories/BusinessRepository", () => ({
   findOwnedBusiness: vi.fn(),
 }));
-vi.mock("@/db/repositories/ApplicationDocumentRepository", () => ({
-  hasRequiredApplicationDocuments: vi.fn(),
-}));
 vi.mock(
   "@/modules/funding-calls/ServerFundingOpportunityIntegration",
   () => ({
@@ -35,7 +32,6 @@ import {
   updateOwnedApplication,
 } from "@/modules/applications/infrastructure/ApplicationRepository";
 import { findOwnedBusiness } from "@/db/repositories/BusinessRepository";
-import { hasRequiredApplicationDocuments } from "@/db/repositories/ApplicationDocumentRepository";
 import { resolvePublishedApplicationFormBinding } from "@/modules/funding-calls/ServerFundingOpportunityIntegration";
 import {
   ApplicationBusinessConflictError,
@@ -282,18 +278,4 @@ describe("applicant-owned application drafts", () => {
     ).rejects.toBeInstanceOf(ApplicationBusinessConflictError);
   });
 
-  it("requires all supporting documents before advancing", async () => {
-    const user = staffUser([permissionCodes.fundingApplicationOwnUpdate]);
-    vi.mocked(findOwnedApplication).mockResolvedValue(application);
-    vi.mocked(hasRequiredApplicationDocuments).mockResolvedValue(false);
-    await expect(
-      updateOwnApplication(user, application.id, {
-        data: {},
-        expectedRowVersion: 1,
-        intent: "continue",
-        section: "documents",
-      }),
-    ).rejects.toMatchObject({ name: "RequestValidationError" });
-    expect(updateOwnedApplication).not.toHaveBeenCalled();
-  });
 });

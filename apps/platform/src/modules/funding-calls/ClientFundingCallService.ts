@@ -48,6 +48,19 @@ function create(input: FundingCallCreateInput) {
   });
 }
 
+function clone(id: string) {
+  return requestData<FundingCallView>(
+    `/api/admin/funding-calls/${id}/clone`,
+    { method: "POST" },
+  );
+}
+
+function deleteFundingCall(id: string) {
+  return requestData<{ id: string }>(`/api/admin/funding-calls/${id}`, {
+    method: "DELETE",
+  });
+}
+
 function get(id: string) {
   return requestData<FundingCallView>(`/api/admin/funding-calls/${id}`, {
     cache: "no-store",
@@ -123,7 +136,9 @@ function listBindableWorkflowTemplateVersions() {
 
 export const clientFundingCallService = {
   changeGovernanceStatus,
+  clone,
   create,
+  delete: deleteFundingCall,
   get,
   list,
   listBindableEligibilityRuleSetVersions,

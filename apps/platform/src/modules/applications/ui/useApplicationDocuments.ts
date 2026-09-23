@@ -2,7 +2,6 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import type { ApplicationDocumentType } from "./ApplicationDocumentSchemas";
 import { clientApplicationDocumentService } from "./ClientApplicationDocumentService";
 
 export const applicationDocumentQueryKeys = {
@@ -14,23 +13,30 @@ export function useApplicationDocuments(applicationId: string) {
   return useQuery({
     queryFn: () => clientApplicationDocumentService.list(applicationId),
     queryKey: applicationDocumentQueryKeys.list(applicationId),
+    refetchInterval: (query) => query.state.data?.documents.some(
+      (document) => document.storageStatus === "pending"
+        || document.scanStatus === "pending",
+    ) ? 5_000 : false,
   });
 }
 
 export function useUploadApplicationDocument(applicationId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: { documentType: ApplicationDocumentType; file: File }) =>
+    mutationFn: (input: { file: File; requirementKey: string }) =>
       clientApplicationDocumentService.upload(
         applicationId,
-        input.documentType,
+        input.requirementKey,
         input.file,
       ),
-    onSuccess: (documents) => {
+    onSuccess: (register) => {
       queryClient.setQueryData(
         applicationDocumentQueryKeys.list(applicationId),
-        documents,
+        register,
       );
+      void queryClient.invalidateQueries({
+        queryKey: ["portal", "applications", applicationId, "readiness"],
+      });
     },
   });
 }

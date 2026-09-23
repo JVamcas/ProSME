@@ -15,9 +15,6 @@ vi.mock("@/modules/applications/infrastructure/ApplicationRepository", () => ({
 vi.mock("@/db/repositories/BusinessRepository", () => ({
   findOwnedBusiness: vi.fn(),
 }));
-vi.mock("@/db/repositories/ApplicationDocumentRepository", () => ({
-  hasRequiredApplicationDocuments: vi.fn(),
-}));
 vi.mock(
   "@/modules/funding-calls/ServerFundingOpportunityIntegration",
   () => ({

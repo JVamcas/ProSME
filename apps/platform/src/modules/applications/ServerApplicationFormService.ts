@@ -20,6 +20,10 @@ import {
 } from "@/modules/forms/engine/FormVisibility";
 import { validateFormValues } from "@/modules/forms/FormValidation";
 import { getFormRuntime } from "@/modules/forms/infrastructure/FormRepository";
+import {
+  applicationResponseForm,
+  applicationResponseValues,
+} from "./domain/ApplicationDocumentPolicy";
 import type {
   CreateApplicationDraftInput,
   SaveApplicationDraftInput,
@@ -80,15 +84,16 @@ async function loadDraft(
   ) {
     throw new ApplicationOpportunityUnavailableError();
   }
+  const responseForm = applicationResponseForm(form);
   return {
     ...toApplicationView(application),
     draftResponse: {
       id: response.id,
       rowVersion: response.rowVersion,
       updatedAt: response.updatedAt.toISOString(),
-      values: response.values,
+      values: applicationResponseValues(form, response.values),
     },
-    form,
+    form: responseForm,
   };
 }
 

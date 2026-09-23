@@ -11,10 +11,10 @@ import {
   updateOwnedApplication,
 } from "@/modules/applications/infrastructure/ApplicationRepository";
 import {
-  hasRequiredApplicationDocuments,
-  listOwnedApplicationDocuments,
-  replaceOwnedApplicationDocument,
-} from "@/db/repositories/ApplicationDocumentRepository";
+  createPendingApplicationDocumentVersion,
+  finalizeApplicationDocumentVersion,
+  listLatestOwnedApplicationDocumentVersions,
+} from "@/modules/applications/infrastructure/ApplicationDocumentRepository";
 import {
   businessOpportunityId,
   eligibilityRuleSetVersionId,
@@ -255,43 +255,44 @@ describeDatabase("P3.2 PostgreSQL application persistence", () => {
       opportunityId,
     );
     expect(application).not.toBeNull();
-    await replaceOwnedApplicationDocument({
+    const created = await createPendingApplicationDocumentVersion({
       applicationId: application!.id,
+      checksumSha256: "a".repeat(64),
       contentType: "application/pdf",
-      documentType: "business-registration",
+      extension: ".pdf",
       objectKey: `${firstOwnerId}/${application!.id}/registration.pdf`,
       originalName: "registration.pdf",
       ownerUserId: firstOwnerId,
+      requirementKey: "BUSINESS_REGISTRATION_DOCUMENT",
       sizeBytes: 512,
     });
+    await finalizeApplicationDocumentVersion(created!.id);
 
     await expect(
-      listOwnedApplicationDocuments(firstOwnerId, application!.id),
+      listLatestOwnedApplicationDocumentVersions(firstOwnerId, application!.id),
     ).resolves.toMatchObject([
       {
-        documentType: "business-registration",
         fileName: "registration.pdf",
+        requirementKey: "BUSINESS_REGISTRATION_DOCUMENT",
         scanStatus: "pending",
+        storageStatus: "finalized",
       },
     ]);
     await expect(
-      listOwnedApplicationDocuments(secondOwnerId, application!.id),
+      listLatestOwnedApplicationDocumentVersions(secondOwnerId, application!.id),
     ).resolves.toEqual([]);
     await expect(
-      replaceOwnedApplicationDocument({
+      createPendingApplicationDocumentVersion({
         applicationId: application!.id,
+        checksumSha256: "b".repeat(64),
         contentType: "application/pdf",
-        documentType: "tax-clearance",
+        extension: ".pdf",
         objectKey: `${secondOwnerId}/${application!.id}/tax-clearance.pdf`,
         originalName: "tax-clearance.pdf",
         ownerUserId: secondOwnerId,
+        requirementKey: "TAX_CLEARANCE_DOCUMENT",
         sizeBytes: 512,
       }),
-    ).resolves.toBeUndefined();
-    await expect(
-      hasRequiredApplicationDocuments(firstOwnerId, application!.id, [
-        "business-registration",
-      ]),
-    ).resolves.toBe(true);
+    ).resolves.toBeNull();
   });
 });

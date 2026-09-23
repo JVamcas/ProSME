@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { Toaster } from "sonner";
 
 import { getCurrentUser } from "@/auth/authorization/current-user";
 import { canAccessOperationsPortal } from "@/auth/authorization/portal-access";
 import { AuthenticatedPortalShell } from "@/components/layout/authenticated-portal-shell";
 import { QueryProvider } from "@/components/layout/query-provider";
 import { createPortalContext } from "@/modules/profiles/ServerProfileService";
+import { Toast } from "@/shared/ui/Toast";
 import "../../globals.css";
 
 
@@ -42,7 +42,7 @@ export default async function AdminLayout({ children }: AdminLayoutProps) {
           >
             {children}
           </AuthenticatedPortalShell>
-          <Toaster richColors position="top-right" />
+          <Toast />
         </QueryProvider>
       </body>
     </html>

@@ -13,7 +13,7 @@ import { z } from "zod";
 import { GeneralButton } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/form-controls";
 import { formatMoneyValue } from "@/components/ui/money-field";
-import { useApplicationDocuments } from "@/modules/applications/ApplicationDocumentHooks";
+import { useApplicationDocuments } from "@/modules/applications/ui/useApplicationDocuments";
 import { applicationDeclarationItems } from "@/modules/applications/ApplicationDeclarations";
 import type { ApplicationSection } from "@/modules/applications/ApplicationSchemas";
 import type { ApplicationView } from "@/modules/applications/ApplicationTypes";
@@ -88,7 +88,7 @@ function useReviewItems(application: ApplicationView): ReviewItem[] {
     {
       label: "Supporting documents",
       section: "documents",
-      summary: `${documents.data?.length ?? 0} documents uploaded`,
+      summary: `${documents.data?.documents.length ?? 0} documents uploaded`,
     },
     {
       label: "Declarations",

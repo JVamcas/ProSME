@@ -7,6 +7,7 @@ import {
 import { fundingCallUpdateSchema } from "@/modules/funding-calls/api/FundingCallSchemas";
 import { z } from "zod";
 import {
+  deleteFundingCall,
   getFundingCall,
   updateFundingCall,
 } from "@/modules/funding-calls/application/ServerFundingCallService";
@@ -40,6 +41,22 @@ export async function PATCH(request: Request, context: RouteContext) {
         await resolveUserFromHeaders(request.headers),
         id,
         input,
+      ),
+      correlationId,
+    );
+  } catch (error) {
+    return portalRouteError(error, correlationId);
+  }
+}
+
+export async function DELETE(request: Request, context: RouteContext) {
+  const correlationId = createCorrelationId();
+  try {
+    const id = idSchema.parse((await context.params).id);
+    return portalRouteSuccess(
+      await deleteFundingCall(
+        await resolveUserFromHeaders(request.headers),
+        id,
       ),
       correlationId,
     );

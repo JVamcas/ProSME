@@ -67,6 +67,9 @@ export function useUpdateApplication(id: string) {
     onSuccess: (application) => {
       queryClient.setQueryData(applicationQueryKeys.detail(id), application);
       void queryClient.invalidateQueries({ queryKey: applicationQueryKeys.own });
+      void queryClient.invalidateQueries({
+        queryKey: ["portal", "applications", id, "readiness"],
+      });
     },
   });
 }

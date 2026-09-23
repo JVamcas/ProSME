@@ -10,7 +10,7 @@ import { RequestValidationError } from "@/lib/resource-errors";
 import {
   getOwnApplicationDocuments,
   uploadOwnApplicationDocument,
-} from "@/modules/applications/ServerApplicationDocumentService";
+} from "@/modules/applications/application/ServerApplicationDocumentService";
 
 type DocumentsRouteContext = { params: Promise<{ id: string }> };
 const applicationIdSchema = z.uuid();
@@ -42,9 +42,9 @@ export async function POST(request: Request, route: DocumentsRouteContext) {
   try {
     const context = await routeContext(request, route);
     const form = await request.formData();
-    const documentType = form.get("documentType");
+    const requirementKey = form.get("requirementKey");
     const file = form.get("file");
-    if (typeof documentType !== "string" || !(file instanceof File)) {
+    if (typeof requirementKey !== "string" || !(file instanceof File)) {
       throw new RequestValidationError(
         "Select a document type and file to upload.",
       );
@@ -52,7 +52,7 @@ export async function POST(request: Request, route: DocumentsRouteContext) {
     const documents = await uploadOwnApplicationDocument(
       context.user,
       context.id,
-      documentType,
+      requirementKey,
       file,
     );
     return portalRouteSuccess(documents, correlationId);

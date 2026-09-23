@@ -34,7 +34,6 @@ async function query(text: string, values: unknown[] = []) {
   if (!pool) throw new Error("The P3.4 PostgreSQL test pool is not configured.");
   return pool.query(text, values);
 }
-const requiredTypes = workflowBindingFixture.requiredSubmissionDocumentTypes;
 beforeAll(async () => {
   if (!enabled) return;
   await query(
@@ -124,14 +123,12 @@ describeDatabase("P3.4 transactional application submission", () => {
         applicationId: applicationIds[0],
         correlationId: "67777777-7777-4777-8777-777777777771",
         idempotencyKey: "concurrent-submission-one",
-        requiredDocumentTypes: [...requiredTypes],
       }),
       submitOwnedApplication({
         actorId: ownerId,
         applicationId: applicationIds[0],
         correlationId: "67777777-7777-4777-8777-777777777772",
         idempotencyKey: "concurrent-submission-two",
-        requiredDocumentTypes: [...requiredTypes],
       }),
     ]);
     expect(first.kind).toBe("submitted");
@@ -199,7 +196,6 @@ describeDatabase("P3.4 transactional application submission", () => {
       applicationId: applicationIds[1],
       correlationId: "67777777-7777-4777-8777-777777777773",
       idempotencyKey: "missing-workflow",
-      requiredDocumentTypes: [...requiredTypes],
     });
     expect(result).toEqual({ kind: "workflow_unavailable" });
     const application = await query(
@@ -221,7 +217,6 @@ describeDatabase("P3.4 transactional application submission", () => {
       applicationId: applicationIds[2],
       correlationId: "67777777-7777-4777-8777-777777777775",
       idempotencyKey: "forced-rollback",
-      requiredDocumentTypes: [...requiredTypes],
     })).rejects.toThrow();
     const state = await query(
       `SELECT status, reference,
