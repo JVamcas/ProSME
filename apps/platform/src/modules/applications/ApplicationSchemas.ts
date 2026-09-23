@@ -121,9 +121,17 @@ export const applicationSectionSchema = z.enum([
   "documents",
   "declarations",
 ]);
-export const createApplicationSchema = z.object({
-  fundingOpportunityId: z.uuid(),
-});
+export const createApplicationDraftSchema = z.object({
+  businessId: z.uuid().optional(),
+  fundingCallIdOrSlug: z.string().trim().min(1).max(160),
+}).strict();
+
+export const saveApplicationDraftSchema = z.object({
+  expectedApplicationRowVersion: z.number().int().positive(),
+  expectedResponseRowVersion: z.number().int().positive(),
+  idempotencyKey: z.uuid(),
+  values: z.record(z.string(), z.unknown()),
+}).strict();
 
 export const applicationListSchema = z
   .object({
@@ -199,3 +207,9 @@ export type ApplicationFinancialSection = z.infer<
 export type ApplicationSection = z.infer<typeof applicationSectionSchema>;
 export type ApplicationUpdateInput = z.infer<typeof updateApplicationSchema>;
 export type ApplicationSectionCompletion = Record<ApplicationSection, boolean>;
+export type CreateApplicationDraftInput = z.infer<
+  typeof createApplicationDraftSchema
+>;
+export type SaveApplicationDraftInput = z.infer<
+  typeof saveApplicationDraftSchema
+>;

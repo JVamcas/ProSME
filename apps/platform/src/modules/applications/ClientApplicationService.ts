@@ -2,11 +2,13 @@
 
 import {
   patchData,
-  postData,
   requestData,
   requestJson,
 } from "@/lib/client-http";
-import type { ApplicationUpdateInput } from "./ApplicationSchemas";
+import type {
+  CreateApplicationDraftInput,
+  SaveApplicationDraftInput,
+} from "./ApplicationSchemas";
 import type {
   AdminApplication,
   AdminApplicationListInput,
@@ -15,8 +17,8 @@ import type {
   ApplicationSummary,
   ApplicationListInput,
   ApplicationPage,
-  ApplicationView,
   ApplicationSubmission,
+  ApplicationDraftView,
 } from "./ApplicationTypes";
 
 async function getAll() {
@@ -66,20 +68,24 @@ async function listOwnApplications(
 }
 
 function getOwnApplication(id: string) {
-  return requestData<ApplicationView>(`/api/portal/applications/${id}`, {
+  return requestData<ApplicationDraftView>(`/api/portal/applications/${id}`, {
     cache: "no-store",
   });
 }
 
-function createApplication(fundingOpportunityId: string) {
-  return postData<ApplicationView, { fundingOpportunityId: string }>(
-    "/api/portal/applications",
-    { fundingOpportunityId },
-  );
+function createApplication(input: CreateApplicationDraftInput) {
+  return requestData<ApplicationDraftView>("/api/portal/applications", {
+    body: JSON.stringify(input),
+    headers: {
+      "Content-Type": "application/json",
+      "Idempotency-Key": crypto.randomUUID(),
+    },
+    method: "POST",
+  });
 }
 
-function updateOwnApplication(id: string, input: ApplicationUpdateInput) {
-  return patchData<ApplicationView, ApplicationUpdateInput>(
+function saveApplicationDraft(id: string, input: SaveApplicationDraftInput) {
+  return patchData<ApplicationDraftView, SaveApplicationDraftInput>(
     `/api/portal/applications/${id}`,
     input,
   );
@@ -102,5 +108,5 @@ export const clientApplicationService = {
   listAdminApplications,
   listOwnApplications,
   submitApplication,
-  updateOwnApplication,
+  saveApplicationDraft,
 };

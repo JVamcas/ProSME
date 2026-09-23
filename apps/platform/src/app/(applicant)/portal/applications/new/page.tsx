@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { getCurrentUser } from "@/auth/authorization/current-user";
 import { can } from "@/auth/authorization/policy";
-import { NewApplicationChooser } from "@/components/applicant/applications/NewApplicationChooser";
+import { NewApplicationChooser } from "@/modules/applications/ui/NewApplicationChooser";
 import { PageShell } from "@/shared/ui/PageShell";
 
 export const metadata: Metadata = { title: "Apply" };

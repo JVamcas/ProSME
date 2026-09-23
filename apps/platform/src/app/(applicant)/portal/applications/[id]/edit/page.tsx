@@ -5,7 +5,7 @@ import { z } from "zod";
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { getCurrentUser } from "@/auth/authorization/current-user";
 import { can } from "@/auth/authorization/policy";
-import { ApplicationEditor } from "@/components/applicant/applications/ApplicationEditor";
+import { ApplicationFormEditor } from "@/modules/applications/ui/ApplicationFormEditor";
 
 export const metadata: Metadata = { title: "Edit application draft" };
 
@@ -14,5 +14,5 @@ export default async function EditApplicationPage({ params }: { params: Promise<
   if (!user || !can(user, permissionCodes.fundingApplicationOwnRead)) redirect("/unauthorized");
   const { id } = await params;
   if (!z.uuid().safeParse(id).success) notFound();
-  return <ApplicationEditor applicationId={id} />;
+  return <ApplicationFormEditor applicationId={id} />;
 }

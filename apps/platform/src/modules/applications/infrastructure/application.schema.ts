@@ -188,4 +188,115 @@ export const applicationLifecycleHistory = pgTable(
   ],
 );
 
+export const applicationDraftResponses = pgTable(
+  "app_application_draft_responses",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    applicationId: uuid("application_id")
+      .notNull()
+      .references(() => applications.id, { onDelete: "restrict" }),
+    formVersionId: uuid("form_version_id")
+      .notNull()
+      .references(() => formVersions.id, { onDelete: "restrict" }),
+    respondentUserId: uuid("respondent_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    values: jsonb("values")
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default({}),
+    rowVersion: integer("row_version").notNull().default(1),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("app_application_draft_responses_application_unique").on(
+      table.applicationId,
+    ),
+    index("app_application_draft_responses_form_version_idx").on(
+      table.formVersionId,
+    ),
+    check(
+      "app_application_draft_responses_row_version_check",
+      sql`${table.rowVersion} > 0`,
+    ),
+  ],
+);
+
+export const applicationCommands = pgTable(
+  "app_application_commands",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    actorUserId: uuid("actor_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    applicationId: uuid("application_id")
+      .notNull()
+      .references(() => applications.id, { onDelete: "restrict" }),
+    commandType: text("command_type")
+      .$type<"CREATE_DRAFT" | "SAVE_DRAFT_RESPONSE">()
+      .notNull(),
+    idempotencyKey: uuid("idempotency_key").notNull(),
+    requestFingerprint: text("request_fingerprint").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("app_application_commands_actor_key_unique").on(
+      table.actorUserId,
+      table.idempotencyKey,
+    ),
+    index("app_application_commands_application_idx").on(
+      table.applicationId,
+      table.createdAt,
+    ),
+    check(
+      "app_application_commands_type_check",
+      sql`${table.commandType} in ('CREATE_DRAFT', 'SAVE_DRAFT_RESPONSE')`,
+    ),
+  ],
+);
+
+export const applicationAuditEntries = pgTable(
+  "app_application_audit_entries",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    applicationId: uuid("application_id")
+      .notNull()
+      .references(() => applications.id, { onDelete: "restrict" }),
+    actorUserId: uuid("actor_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    action: text("action")
+      .$type<"APPLICATION_DRAFT_CREATED" | "APPLICATION_DRAFT_SAVED">()
+      .notNull(),
+    metadata: jsonb("metadata")
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default({}),
+    correlationId: uuid("correlation_id").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("app_application_audit_entries_application_idx").on(
+      table.applicationId,
+      table.createdAt,
+      table.id,
+    ),
+    check(
+      "app_application_audit_entries_action_check",
+      sql`${table.action} in ('APPLICATION_DRAFT_CREATED', 'APPLICATION_DRAFT_SAVED')`,
+    ),
+  ],
+);
+
 export type ApplicationRecord = typeof applications.$inferSelect;
+export type ApplicationDraftResponseRecord =
+  typeof applicationDraftResponses.$inferSelect;

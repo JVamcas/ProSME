@@ -589,6 +589,13 @@
       "when": 1794960000000,
       "tag": "0083_application_domain_lifecycle",
       "breakpoints": true
+    },
+    {
+      "idx": 84,
+      "version": "7",
+      "when": 1795046400000,
+      "tag": "0084_application_draft_autosave",
+      "breakpoints": true
     }
   ]
 }

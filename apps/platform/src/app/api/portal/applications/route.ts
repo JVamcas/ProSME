@@ -7,12 +7,13 @@ import {
 } from "@/lib/api/PortalApiResponse";
 import {
   applicationListSchema,
-  createApplicationSchema,
+  createApplicationDraftSchema,
 } from "@/modules/applications/ApplicationSchemas";
+import { createApplicationDraft } from "@/modules/applications/ServerApplicationFormService";
 import {
-  createApplication,
   listOwnApplications,
 } from "@/modules/applications/ServerApplicationService";
+import { z } from "zod";
 
 
 
@@ -38,9 +39,16 @@ export async function POST(request: Request) {
   try {
     const user = await resolveUserFromHeaders(request.headers);
     const body = await request.json().catch(() => undefined);
-    const input = createApplicationSchema.parse(body);
+    const input = createApplicationDraftSchema.parse(body);
+    const idempotencyKey = z.uuid().parse(
+      request.headers.get("Idempotency-Key"),
+    );
     return portalRouteSuccess(
-      await createApplication(user, input.fundingOpportunityId),
+      await createApplicationDraft(user, {
+        ...input,
+        correlationId,
+        idempotencyKey,
+      }),
       correlationId,
     );
   } catch (error) {

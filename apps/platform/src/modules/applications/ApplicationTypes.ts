@@ -57,6 +57,7 @@ import type {
   ApplicationSectionCompletion,
 } from "./ApplicationSchemas";
 import type { ApplicationDeclarationsSection } from "./ApplicationDeclarationSchemas";
+import type { FormRuntimeSchema } from "@/modules/forms/FormTypes";
 
 export type ApplicationSummary = {
   businessName: string | null;
@@ -100,6 +101,16 @@ export type ApplicationView = ApplicationSummary & {
   projectSection: Partial<ApplicationProjectSection>;
   rowVersion: number;
   sectionCompletion: ApplicationSectionCompletion;
+};
+
+export type ApplicationDraftView = ApplicationView & {
+  draftResponse: {
+    id: string;
+    rowVersion: number;
+    updatedAt: string;
+    values: Record<string, unknown>;
+  };
+  form: FormRuntimeSchema;
 };
 
 export type ApplicationSubmission = {

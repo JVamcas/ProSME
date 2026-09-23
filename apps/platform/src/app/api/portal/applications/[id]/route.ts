@@ -6,11 +6,11 @@ import {
   portalRouteError,
   portalRouteSuccess,
 } from "@/lib/api/PortalApiResponse";
-import { updateApplicationSchema } from "@/modules/applications/ApplicationSchemas";
+import { saveApplicationDraftSchema } from "@/modules/applications/ApplicationSchemas";
 import {
-  getOwnApplication,
-  updateOwnApplication,
-} from "@/modules/applications/ServerApplicationService";
+  getOwnApplicationDraft,
+  saveOwnApplicationDraft,
+} from "@/modules/applications/ServerApplicationFormService";
 
 type ApplicationRouteContext = { params: Promise<{ id: string }> };
 const applicationIdSchema = z.uuid();
@@ -28,7 +28,7 @@ export async function GET(request: Request, route: ApplicationRouteContext) {
   try {
     const resolved = await context(request, route);
     return portalRouteSuccess(
-      await getOwnApplication(resolved.user, resolved.id),
+      await getOwnApplicationDraft(resolved.user, resolved.id),
       correlationId,
     );
   } catch (error) {
@@ -41,9 +41,12 @@ export async function PATCH(request: Request, route: ApplicationRouteContext) {
   try {
     const resolved = await context(request, route);
     const body = await request.json().catch(() => undefined);
-    const input = updateApplicationSchema.parse(body);
+    const input = saveApplicationDraftSchema.parse(body);
     return portalRouteSuccess(
-      await updateOwnApplication(resolved.user, resolved.id, input),
+      await saveOwnApplicationDraft(resolved.user, resolved.id, {
+        ...input,
+        correlationId,
+      }),
       correlationId,
     );
   } catch (error) {

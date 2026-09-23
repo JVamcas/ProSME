@@ -26,6 +26,10 @@ import {
   secondOwnerId,
   seedApplicationDatabaseFixture,
 } from "../support/application-database-fixture";
+import {
+  assertApplicationDraftCreation,
+  assertApplicationResponseConcurrency,
+} from "../support/application-form-response-database-assertions";
 
 const { Pool } = pg;
 const enabled = process.env.RUN_P3_APPLICATION_DATABASE_TESTS === "true";
@@ -72,6 +76,12 @@ describeDatabase("P3.2 PostgreSQL application persistence", () => {
       unassigned_unique_index: "app_applications_unassigned_draft_unique",
     });
   });
+
+  it("creates one audited, version-bound response and replays the command", () =>
+    assertApplicationDraftCreation(query));
+
+  it("prevents stale autosave and replays a successful revision once", () =>
+    assertApplicationResponseConcurrency(query));
 
   it("allows different businesses but rejects the same business for one call", async () => {
     const firstId = await createOwnedApplication({

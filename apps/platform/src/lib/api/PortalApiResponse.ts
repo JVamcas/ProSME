@@ -39,11 +39,13 @@ function errorResponse(
   code: ApiErrorCode,
   message: string,
   fields: Record<string, string[]> = {},
+  conflict?: Record<string, number | string>,
 ) {
   return NextResponse.json(
     {
       error: {
         code,
+        conflict,
         message,
         fields,
       },
@@ -183,6 +185,8 @@ export function portalRouteError(
       409,
       "CONFLICT",
       error.userMessage,
+      {},
+      error.conflict,
     );
   }
 
