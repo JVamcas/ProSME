@@ -32,7 +32,6 @@ export type ApplicationDocumentView = {
   contentType: string;
   fileName: string;
   requirementKey: string;
-  scanStatus: "pending" | "clean" | "rejected";
   sizeBytes: number;
   storageStatus: "pending" | "finalized" | "failed" | "abandoned";
   uploadedAt: string;

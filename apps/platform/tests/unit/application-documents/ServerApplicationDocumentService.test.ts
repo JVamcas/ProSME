@@ -16,8 +16,8 @@ vi.mock("@/modules/applications/infrastructure/ApplicationRepository", () => ({
 vi.mock("@/modules/applications/infrastructure/ApplicationResponseRepository", () => ({
   readOwnedApplicationDraftResponse: vi.fn(),
 }));
-vi.mock("@/modules/forms/infrastructure/FormRepository", () => ({
-  getFormRuntime: vi.fn(),
+vi.mock("@/modules/applications/infrastructure/AttachedApplicationFormRepository", () => ({
+  getAttachedApplicationForm: vi.fn(),
 }));
 
 import { permissionCodes } from "@/auth/authorization/permissions";
@@ -39,9 +39,10 @@ import {
 } from "@/modules/applications/infrastructure/ApplicationDocumentRepository";
 import { findOwnedApplication } from "@/modules/applications/infrastructure/ApplicationRepository";
 import { readOwnedApplicationDraftResponse } from "@/modules/applications/infrastructure/ApplicationResponseRepository";
-import { getFormRuntime } from "@/modules/forms/infrastructure/FormRepository";
+import { getAttachedApplicationForm } from "@/modules/applications/infrastructure/AttachedApplicationFormRepository";
 
 const applicationId = "99e20de0-3558-4d63-90a4-8c9f5125df07";
+const fundingOpportunityId = "79e20de0-3558-4d63-90a4-8c9f5125df08";
 const formVersionId = "89e20de0-3558-4d63-90a4-8c9f5125df07";
 const versionId = "69e20de0-3558-4d63-90a4-8c9f5125df07";
 const actor = {
@@ -79,13 +80,14 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(findOwnedApplication).mockResolvedValue({
     formVersionId,
+    fundingOpportunityId,
     status: "draft",
   } as never);
   vi.mocked(readOwnedApplicationDraftResponse).mockResolvedValue({
     formVersionId,
     values: {},
   } as never);
-  vi.mocked(getFormRuntime).mockResolvedValue({
+  vi.mocked(getAttachedApplicationForm).mockResolvedValue({
     fields: [{
       columnSpan: 1,
       key: "BUSINESS_REGISTRATION_DOCUMENT",
@@ -133,7 +135,10 @@ describe("application document service", () => {
       documents: [],
       requirements: [{ key: "BUSINESS_REGISTRATION_DOCUMENT", required: true }],
     });
-    expect(getFormRuntime).toHaveBeenCalledWith(formVersionId);
+    expect(getAttachedApplicationForm).toHaveBeenCalledWith(
+      formVersionId,
+      fundingOpportunityId,
+    );
   });
 
   it("rejects content whose signature does not match its extension", async () => {

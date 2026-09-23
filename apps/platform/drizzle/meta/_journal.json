@@ -624,6 +624,13 @@
       "when": 1795392000000,
       "tag": "0088_delete_owned_application_drafts",
       "breakpoints": true
+    },
+    {
+      "idx": 89,
+      "version": "7",
+      "when": 1795478400000,
+      "tag": "0089_remove_document_security_scan",
+      "breakpoints": true
     }
   ]
 }

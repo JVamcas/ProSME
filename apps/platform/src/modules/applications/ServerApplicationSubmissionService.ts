@@ -61,7 +61,7 @@ export async function submitApplication(
   }
   const messages = {
     documents_invalid:
-      "All required documents must be finalized and pass security scanning before submission.",
+      "All required documents must finish uploading before submission.",
     draft_incomplete:
       "Complete every application section and accept the declarations before submitting.",
     duplicate_submission:

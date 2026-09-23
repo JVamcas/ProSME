@@ -96,7 +96,7 @@ describe("application submission service", () => {
 
   it.each([
     ["draft_incomplete", "Complete every application section"],
-    ["documents_invalid", "pass security scanning"],
+    ["documents_invalid", "finish uploading"],
     ["duplicate_submission", "submission already exists"],
     ["eligibility_unavailable", "Eligibility validation is unavailable"],
     ["opportunity_unavailable", "not accepting submissions"],

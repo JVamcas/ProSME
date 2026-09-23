@@ -84,9 +84,16 @@ const dashboardSelect = sql`
       )::integer AS "actionRequired",
       (
         SELECT count(*)::integer
-        FROM cms_funding_calls
-        WHERE _status = 'published'
-          AND call_status = 'open'
+        FROM app_funding_calls funding_call
+        WHERE funding_call.status IN ('SCHEDULED', 'LIVE')
+          AND funding_call.opens_at <= CURRENT_TIMESTAMP
+          AND funding_call.closes_at > CURRENT_TIMESTAMP
+          AND EXISTS (
+            SELECT 1
+            FROM app_funding_call_publication_revisions publication
+            WHERE publication.funding_call_id = funding_call.id
+              AND publication.revision_number = 1
+          )
       ) AS "openFundingOpportunities",
       COALESCE((
         SELECT json_agg(

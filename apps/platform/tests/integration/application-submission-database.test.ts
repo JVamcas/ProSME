@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 import { preflightOwnedApplication } from "@/modules/applications/infrastructure/ApplicationPreflightRepository";
 import { submitOwnedApplication } from "@/modules/applications/infrastructure/ApplicationSubmissionRepository";
-import { readApplicantDashboard } from "@/db/repositories/ApplicantDashboardRepository";
+import { readApplicantDashboard } from "@/modules/dashboard/infrastructure/ApplicantDashboardRepository";
 import { readAdminDashboard } from "@/db/repositories/AdminDashboardRepository";
 import {
   eligibilityVersionId,
@@ -94,14 +94,6 @@ beforeAll(async () => {
     versionId,
     eligibilityVersionId,
     ownerId,
-  );
-  await query(
-    `INSERT INTO cms_funding_calls
-       (id, title, call_status, _status)
-     VALUES
-       (96101, 'Open dashboard call', 'open', 'published'),
-       (96102, 'Draft dashboard call', 'open', 'draft'),
-       (96103, 'Closed dashboard call', 'closed', 'published')`,
   );
   await workflowBindingFixture.insertCompleteSubmissionApplications(query, {
     applicationIds,
@@ -282,7 +274,7 @@ describeDatabase("P3.4 transactional application submission", () => {
     expect(dashboard.metrics).toEqual({
       actionRequired: 0,
       applicationsInProgress: 2,
-      openFundingOpportunities: 1,
+      openFundingOpportunities: 3,
       submittedApplications: 1,
     });
     expect(dashboard.activities).toEqual(

@@ -58,7 +58,10 @@ describe("step form rendering", () => {
       root.render(
         <FormRenderer
           definition={steppedDefinition()}
-          formData={{ NAME: "Valid name" }}
+          formData={{
+            NAME: "Valid name",
+            NOTES: "A saved value from the next step",
+          }}
           onChange={vi.fn()}
           onSubmit={vi.fn()}
         >

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { FormProvider, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 
-import { FundingOpportunityCard } from "@/components/applicant/funding-opportunities/FundingOpportunityCard";
+import { FundingOpportunityCard } from "@/modules/funding-calls/ui/applicant/FundingOpportunityCard";
 import { PortalErrorState } from "@/components/layout/PortalErrorState";
 import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
 import { GeneralButton, GeneralButtonLink } from "@/components/ui/button";

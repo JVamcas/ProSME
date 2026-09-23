@@ -268,7 +268,6 @@ export async function validateApplicationSubmissionState(
     context?.documents.map((document) => ({
       id: document.id,
       requirementKey: document.requirementKey,
-      scanStatus: document.scanStatus,
       storageStatus: document.storageStatus,
       versionNumber: document.versionNumber,
     })) ?? [],

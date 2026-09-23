@@ -19,7 +19,6 @@ function toView(row: {
   contentType: string;
   originalName: string;
   requirementKey: string;
-  scanStatus: ApplicationDocumentVersionRecord["scanStatus"];
   sizeBytes: number;
   storageStatus: ApplicationDocumentVersionRecord["storageStatus"];
   uploadedAt: Date;
@@ -30,7 +29,6 @@ function toView(row: {
     contentType: row.contentType,
     fileName: row.originalName,
     requirementKey: row.requirementKey,
-    scanStatus: row.scanStatus,
     sizeBytes: row.sizeBytes,
     storageStatus: row.storageStatus,
     uploadedAt: row.uploadedAt.toISOString(),
@@ -50,7 +48,6 @@ export async function listLatestOwnedApplicationDocumentVersions(
         originalName: applicationDocumentVersions.originalName,
         rank: latestVersionRank.as("version_rank"),
         requirementKey: applicationDocumentVersions.requirementKey,
-        scanStatus: applicationDocumentVersions.scanStatus,
         sizeBytes: applicationDocumentVersions.sizeBytes,
         storageStatus: applicationDocumentVersions.storageStatus,
         uploadedAt: applicationDocumentVersions.uploadedAt,
@@ -144,22 +141,6 @@ export async function failApplicationDocumentVersion(
     ));
 }
 
-export async function setApplicationDocumentSecurityResult(
-  versionId: string,
-  result: "clean" | "rejected",
-) {
-  const [version] = await getDatabase()
-    .update(applicationDocumentVersions)
-    .set({ scanStatus: result, scannedAt: new Date() })
-    .where(and(
-      eq(applicationDocumentVersions.id, versionId),
-      eq(applicationDocumentVersions.storageStatus, "finalized"),
-      eq(applicationDocumentVersions.scanStatus, "pending"),
-    ))
-    .returning({ id: applicationDocumentVersions.id });
-  return Boolean(version);
-}
-
 export async function findOwnedDownloadableApplicationDocumentVersion(
   ownerUserId: string,
   applicationId: string,
@@ -182,7 +163,6 @@ export async function findOwnedDownloadableApplicationDocumentVersion(
       eq(applications.ownerUserId, ownerUserId),
       isNull(applications.deletedAt),
       eq(applicationDocumentVersions.storageStatus, "finalized"),
-      eq(applicationDocumentVersions.scanStatus, "clean"),
     ))
     .limit(1);
   return version ?? null;

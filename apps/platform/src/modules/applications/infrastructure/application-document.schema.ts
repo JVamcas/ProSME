@@ -36,16 +36,11 @@ export const applicationDocumentVersions = pgTable(
       .$type<"pending" | "finalized" | "failed" | "abandoned">()
       .notNull()
       .default("pending"),
-    scanStatus: text("scan_status")
-      .$type<"pending" | "clean" | "rejected">()
-      .notNull()
-      .default("pending"),
     failureCode: text("failure_code"),
     uploadedAt: timestamp("uploaded_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
     finalizedAt: timestamp("finalized_at", { withTimezone: true }),
-    scannedAt: timestamp("scanned_at", { withTimezone: true }),
   },
   (table) => [
     uniqueIndex("app_document_version_number_unique").on(
@@ -83,18 +78,9 @@ export const applicationDocumentVersions = pgTable(
       sql`${table.storageStatus} in ('pending', 'finalized', 'failed', 'abandoned')`,
     ),
     check(
-      "app_document_version_scan_status_check",
-      sql`${table.scanStatus} in ('pending', 'clean', 'rejected')`,
-    ),
-    check(
       "app_document_version_finalization_check",
       sql`(${table.storageStatus} = 'finalized' and ${table.finalizedAt} is not null)
         or (${table.storageStatus} <> 'finalized')`,
-    ),
-    check(
-      "app_document_version_scan_time_check",
-      sql`(${table.scanStatus} = 'pending' and ${table.scannedAt} is null)
-        or (${table.scanStatus} <> 'pending' and ${table.scannedAt} is not null)`,
     ),
   ],
 );

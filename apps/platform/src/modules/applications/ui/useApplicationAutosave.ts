@@ -78,7 +78,8 @@ export function useApplicationAutosave(
     pendingSave.current = request;
     lastAttemptedRevision.current = request.revision;
     setStatus("saving");
-    mutation.mutate(request, {
+    const { revision: requestRevision, ...payload } = request;
+    mutation.mutate(payload, {
       onError: (error) => {
         if (error instanceof ClientRequestError && error.code === "CONFLICT") {
           setStatus("conflict");
@@ -90,7 +91,7 @@ export function useApplicationAutosave(
         applicationRowVersion.current = saved.rowVersion;
         responseRowVersion.current = saved.draftResponse.rowVersion;
         pendingSave.current = null;
-        if (revision.current === request.revision) {
+        if (revision.current === requestRevision) {
           setValues(saved.draftResponse.values);
           setStatus("saved");
         }

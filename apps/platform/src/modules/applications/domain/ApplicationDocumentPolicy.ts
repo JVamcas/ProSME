@@ -87,8 +87,7 @@ export function applicationDocumentCompletion(
   );
   const completedCount = required.filter((requirement) => {
     const document = documents.get(requirement.key);
-    return document?.storageStatus === "finalized"
-      && document.scanStatus === "clean";
+    return document?.storageStatus === "finalized";
   }).length;
   return { completedCount, requiredCount: required.length };
 }

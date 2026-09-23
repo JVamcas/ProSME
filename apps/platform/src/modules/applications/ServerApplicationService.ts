@@ -137,8 +137,7 @@ async function documentsAreComplete(
     .filter((requirement) => requirement.required)
     .every((requirement) => {
       const document = current.get(requirement.key);
-      return document?.storageStatus === "finalized"
-        && document.scanStatus === "clean";
+      return document?.storageStatus === "finalized";
     });
 }
 

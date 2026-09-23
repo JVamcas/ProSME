@@ -14,8 +14,7 @@ export function useApplicationDocuments(applicationId: string) {
     queryFn: () => clientApplicationDocumentService.list(applicationId),
     queryKey: applicationDocumentQueryKeys.list(applicationId),
     refetchInterval: (query) => query.state.data?.documents.some(
-      (document) => document.storageStatus === "pending"
-        || document.scanStatus === "pending",
+      (document) => document.storageStatus === "pending",
     ) ? 5_000 : false,
   });
 }

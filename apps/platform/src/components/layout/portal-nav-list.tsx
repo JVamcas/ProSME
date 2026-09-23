@@ -37,7 +37,7 @@ function ChildRouteLink({
             "text-white/70 hover:bg-white/10 hover:text-white focus-visible:ring-white",
           active &&
             !dark &&
-            "bg-brand-navy text-brand-orange hover:bg-brand-navy",
+            "bg-brand-navy/50 text-brand-white hover:bg-brand-white",
           dark && active && "bg-white/12 text-white hover:bg-white/15",
         )}
         href={route.href}

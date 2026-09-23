@@ -6,7 +6,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Pagination } from "@/components/ui/pagination";
 import { Tabs, type TabItem } from "@/components/ui/tabs";
 import type { PublicFundingCallSummary } from "@/modules/funding-calls/api/PublicFundingCallTransport";
-import { FundingOpportunityCard } from "./FundingOpportunityCard";
+import { FundingOpportunityCard } from "@/modules/funding-calls/ui/applicant/FundingOpportunityCard";
 import { FundingOpportunitySearchForm } from "./FundingOpportunitySearchForm";
 import {
   fundingOpportunityPageSize,

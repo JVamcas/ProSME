@@ -3,8 +3,8 @@ import "server-only";
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { requirePermission } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
-import { readApplicantDashboard } from "@/db/repositories/ApplicantDashboardRepository";
 import type { ApplicantDashboardView } from "./ApplicantDashboardTypes";
+import { readApplicantDashboard } from "./infrastructure/ApplicantDashboardRepository";
 
 export async function getApplicantDashboard(
   user: AuthenticatedUser | null,

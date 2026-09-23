@@ -161,7 +161,6 @@ export async function readTransactionalApplicationReadiness(
       objectKey: applicationDocumentVersions.objectKey,
       originalName: applicationDocumentVersions.originalName,
       requirementKey: applicationDocumentVersions.requirementKey,
-      scanStatus: applicationDocumentVersions.scanStatus,
       sizeBytes: applicationDocumentVersions.sizeBytes,
       storageStatus: applicationDocumentVersions.storageStatus,
       uploadedAt: applicationDocumentVersions.uploadedAt,

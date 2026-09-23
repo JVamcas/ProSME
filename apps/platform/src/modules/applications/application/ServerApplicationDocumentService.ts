@@ -36,7 +36,6 @@ import {
   listAbandonedApplicationDocumentObjects,
   listLatestOwnedApplicationDocumentVersions,
   markApplicationDocumentVersionAbandoned,
-  setApplicationDocumentSecurityResult,
 } from "../infrastructure/ApplicationDocumentRepository";
 import { findOwnedApplication } from "../infrastructure/ApplicationRepository";
 import { readOwnedApplicationDraftResponse } from "../infrastructure/ApplicationResponseRepository";
@@ -239,12 +238,4 @@ export async function cleanupAbandonedApplicationDocumentUploads(
     }
   }
   return { cleaned, inspected: candidates.length };
-}
-
-export async function recordApplicationDocumentSecurityResult(
-  versionIdInput: string,
-  result: "clean" | "rejected",
-) {
-  const versionId = applicationDocumentVersionIdSchema.parse(versionIdInput);
-  return setApplicationDocumentSecurityResult(versionId, result);
 }

@@ -47,6 +47,15 @@ type RendererContext = {
   sections: RenderSection[];
 };
 
+function valuesForFields(
+  fields: readonly { key: string }[],
+  values: DynamicFormValues,
+) {
+  return Object.fromEntries(
+    fields.map((field) => [field.key, values[field.key]]),
+  );
+}
+
 function sectionSpan(columnSpan: RenderSection["columnSpan"]) {
   if (columnSpan === 1) return "col-span-1";
   if (columnSpan === 2) return "col-span-1 md:col-span-2";
@@ -189,7 +198,13 @@ export function FormRenderer({
       )
     : [];
   const invalidFields = validationAttempted
-    ? currentFields.filter((field) => !validateFormValues([field], formData, true))
+    ? currentFields.filter((field) => (
+        !validateFormValues(
+          [field],
+          valuesForFields([field], formData),
+          true,
+        )
+      ))
     : [];
   const extraErrors = Object.fromEntries(
     invalidFields.map((field) => [
@@ -284,7 +299,11 @@ export function FormRenderer({
                 setCurrentStepId(steps[currentIndex - 1]?.id);
               }}
               onNext={() => {
-                if (!readOnly && !validateFormValues(currentFields, formData, true)) {
+                if (!readOnly && !validateFormValues(
+                  currentFields,
+                  valuesForFields(currentFields, formData),
+                  true,
+                )) {
                   setValidationAttempted(true);
                   return;
                 }

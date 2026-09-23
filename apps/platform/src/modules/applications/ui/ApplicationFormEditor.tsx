@@ -1,7 +1,7 @@
 "use client";
 
 import { RefreshCw, RotateCw } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import { PortalErrorState } from "@/components/layout/PortalErrorState";
 import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
@@ -155,6 +155,7 @@ export function ApplicationFormEditor({
 }: {
   applicationId: string;
 }) {
+  const [reloadVersion, setReloadVersion] = useState(0);
   const application = useOwnApplication(applicationId);
   if (application.isPending) {
     return (
@@ -177,8 +178,14 @@ export function ApplicationFormEditor({
     <LoadedApplicationDraft
       applicationId={applicationId}
       data={application.data}
-      key={application.data.draftResponse.rowVersion}
-      onReload={() => void application.refetch()}
+      key={`${applicationId}:${reloadVersion}`}
+      onReload={() => {
+        void application.refetch().then((result) => {
+          if (result.isSuccess) {
+            setReloadVersion((version) => version + 1);
+          }
+        });
+      }}
     />
   );
 }

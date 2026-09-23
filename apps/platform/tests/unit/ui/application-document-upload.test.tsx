@@ -46,7 +46,7 @@ describe("application document upload", () => {
       />,
     );
     expect(markup).toContain("Business Registration Certificate");
-    expect(markup).toContain("security scanning");
+    expect(markup).toContain("uploads finish successfully");
     expect(markup).toContain("Save and continue");
   });
 });

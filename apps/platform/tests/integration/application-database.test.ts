@@ -274,7 +274,6 @@ describeDatabase("P3.2 PostgreSQL application persistence", () => {
       {
         fileName: "registration.pdf",
         requirementKey: "BUSINESS_REGISTRATION_DOCUMENT",
-        scanStatus: "pending",
         storageStatus: "finalized",
       },
     ]);

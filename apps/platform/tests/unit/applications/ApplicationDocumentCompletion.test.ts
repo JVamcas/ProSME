@@ -9,13 +9,11 @@ import { applicationDocumentCompletion } from "@/modules/applications/domain/App
 function document(
   requirementKey: string,
   storageStatus: ApplicationDocumentView["storageStatus"],
-  scanStatus: ApplicationDocumentView["scanStatus"],
 ): ApplicationDocumentView {
   return {
     contentType: "application/pdf",
     fileName: `${requirementKey}.pdf`,
     requirementKey,
-    scanStatus,
     sizeBytes: 100,
     storageStatus,
     uploadedAt: "2026-09-23T00:00:00.000Z",
@@ -63,16 +61,16 @@ function register(documents: ApplicationDocumentView[]): ApplicationDocumentRegi
 }
 
 describe("application document completion", () => {
-  it("counts only required versions that are finalized and clean", () => {
+  it("counts only required versions that are finalized", () => {
     expect(applicationDocumentCompletion(register([
-      document("REGISTRATION", "finalized", "clean"),
-      document("TAX", "finalized", "pending"),
-      document("OPTIONAL", "finalized", "clean"),
-    ]))).toEqual({ completedCount: 1, requiredCount: 2 });
+      document("REGISTRATION", "finalized"),
+      document("TAX", "finalized"),
+      document("OPTIONAL", "finalized"),
+    ]))).toEqual({ completedCount: 2, requiredCount: 2 });
 
     expect(applicationDocumentCompletion(register([
-      document("REGISTRATION", "pending", "clean"),
-      document("TAX", "finalized", "rejected"),
+      document("REGISTRATION", "pending"),
+      document("TAX", "failed"),
     ]))).toEqual({ completedCount: 0, requiredCount: 2 });
   });
 });

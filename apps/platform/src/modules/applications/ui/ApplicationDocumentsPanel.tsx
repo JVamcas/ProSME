@@ -25,10 +25,8 @@ function statusText(document?: ApplicationDocumentView) {
   if (!document) return "Not uploaded";
   if (document.storageStatus === "failed") return "Upload finalization failed";
   if (document.storageStatus === "abandoned") return "Upload expired";
-  if (document.storageStatus !== "finalized") return "Finalizing upload";
-  if (document.scanStatus === "clean") return "Security check passed";
-  if (document.scanStatus === "rejected") return "Security check rejected the file";
-  return "Security check pending";
+  if (document.storageStatus === "finalized") return "Uploaded";
+  return "Finalizing upload";
 }
 
 function RequirementRow({
@@ -46,9 +44,8 @@ function RequirementRow({
   requirement: ApplicationDocumentRequirement;
   uploading: boolean;
 }) {
-  const clean = document?.storageStatus === "finalized"
-    && document.scanStatus === "clean";
-  const StateIcon = clean ? CheckCircle2 : FileText;
+  const finalized = document?.storageStatus === "finalized";
+  const StateIcon = finalized ? CheckCircle2 : FileText;
   return (
     <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex min-w-0 items-start gap-3">
@@ -56,7 +53,7 @@ function RequirementRow({
           aria-hidden="true"
           className={cn(
             "mt-0.5 size-5 shrink-0",
-            clean ? "text-brand-green" : "text-brand-orange",
+            finalized ? "text-brand-green" : "text-brand-orange",
           )}
         />
         <div className="min-w-0">
@@ -74,7 +71,7 @@ function RequirementRow({
         </div>
       </div>
       <div className="flex gap-2">
-        {clean && document ? (
+        {finalized && document ? (
           <GeneralButtonLink
             href={`/api/portal/applications/${applicationId}/documents/${document.versionId}/download`}
             size="sm"
@@ -147,8 +144,7 @@ export function ApplicationDocumentRegisterPanel({
             Supporting documents
           </h2>
           <p className="text-sm text-brand-navy/65">
-            Files count only after storage finalization and security scanning
-            succeed.
+            Files count after their uploads finish successfully.
           </p>
         </div>
         <form

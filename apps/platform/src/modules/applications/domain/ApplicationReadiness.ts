@@ -115,25 +115,16 @@ function formSectionProgress(
     )).length;
     for (const requirement of sectionRequirements) {
       const document = documents.get(requirement.key);
-      if (
-        document?.storageStatus === "finalized"
-        && document.scanStatus === "clean"
-      ) {
+      if (document?.storageStatus === "finalized") {
         completedRequired += 1;
         continue;
       }
-      const state = document?.scanStatus === "rejected"
-        ? "was rejected by security scanning; upload a new file"
-        : document
-          ? "is still being finalized or security checked"
-          : "has not been uploaded";
+      const state = document
+        ? "is still being finalized"
+        : "has not been uploaded";
       blockers.push({
         category: "document",
-        code: document?.scanStatus === "rejected"
-          ? "DOCUMENT_REJECTED"
-          : document
-            ? "DOCUMENT_PENDING"
-            : "DOCUMENT_MISSING",
+        code: document ? "DOCUMENT_PENDING" : "DOCUMENT_MISSING",
         message: `${requirement.label} ${state}.`,
         requirementKey: requirement.key,
         sectionKey: section.key,

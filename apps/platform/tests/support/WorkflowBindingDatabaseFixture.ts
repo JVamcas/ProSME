@@ -63,10 +63,10 @@ export async function insertCompleteSubmissionApplications(
       `INSERT INTO app_application_document_versions
         (application_id, owner_user_id, requirement_key, version_number,
          object_key, original_name, content_type, extension, size_bytes,
-         checksum_sha256, storage_status, scan_status, finalized_at, scanned_at)
+         checksum_sha256, storage_status, finalized_at)
        VALUES ($1, $2, 'REGISTRATION_DOCUMENT', 1,
          ($1::uuid)::text || '/registration-document', 'registration.pdf',
-         'application/pdf', '.pdf', 512, $3, 'finalized', 'clean', now(), now())`,
+         'application/pdf', '.pdf', 512, $3, 'finalized', now())`,
       [applicationId, input.ownerId, "a".repeat(64)],
     );
   }

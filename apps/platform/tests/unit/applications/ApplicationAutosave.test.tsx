@@ -112,12 +112,12 @@ describe("application draft autosave", () => {
       vi.advanceTimersByTime(applicationDraftAutosaveDelayMs);
     });
     expect(mocks.mutate).toHaveBeenCalledWith(
-      expect.objectContaining({
+      {
         expectedApplicationRowVersion: 7,
         expectedResponseRowVersion: 4,
         idempotencyKey: expect.any(String),
         values: { NAME: "Changed" },
-      }),
+      },
       expect.objectContaining({
         onError: expect.any(Function),
         onSuccess: expect.any(Function),

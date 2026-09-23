@@ -9,11 +9,8 @@ COPY apps/platform/package.json apps/platform/package.json
 RUN --mount=type=cache,id=prosme-npm,target=/root/.npm,sharing=locked \
     npm ci --no-audit --no-fund
 
-FROM node:24.13.0-bookworm-slim AS builder
-WORKDIR /workspace
+FROM dependencies AS builder
 
-COPY --from=dependencies /workspace/node_modules ./node_modules
-COPY package.json package-lock.json ./
 COPY apps/platform apps/platform
 COPY --chmod=755 scripts/container/build.sh scripts/container/build.sh
 

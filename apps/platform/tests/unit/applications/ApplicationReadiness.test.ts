@@ -117,7 +117,6 @@ function input(): Parameters<typeof evaluateApplicationReadiness>[0] {
       contentType: "application/pdf",
       fileName: "registration.pdf",
       requirementKey: "REGISTRATION_DOCUMENT",
-      scanStatus: "clean" as const,
       sizeBytes: 100,
       storageStatus: "finalized" as const,
       uploadedAt: "2026-09-23T08:00:00.000Z",
@@ -145,23 +144,21 @@ describe("application completeness and submission readiness", () => {
     ]));
   });
 
-  it.each([
-    ["pending", "finalized", "DOCUMENT_PENDING"],
-    ["rejected", "finalized", "DOCUMENT_REJECTED"],
-    ["clean", "failed", "DOCUMENT_PENDING"],
-  ] as const)(
-    "blocks a mandatory document with %s scan and %s storage",
-    (scanStatus, storageStatus, code) => {
+  it.each(["pending", "failed", "abandoned"] as const)(
+    "blocks a mandatory document with %s storage",
+    (storageStatus) => {
       const candidate = input();
       candidate.documents[0] = {
         ...candidate.documents[0],
-        scanStatus,
         storageStatus,
       };
       const readiness = evaluateApplicationReadiness(candidate);
       expect(readiness.ready).toBe(false);
       expect(readiness.blockers).toEqual(expect.arrayContaining([
-        expect.objectContaining({ code, requirementKey: "REGISTRATION_DOCUMENT" }),
+        expect.objectContaining({
+          code: "DOCUMENT_PENDING",
+          requirementKey: "REGISTRATION_DOCUMENT",
+        }),
       ]));
     },
   );
