@@ -5,6 +5,7 @@ import { captureFundingCallPublication } from "@/modules/funding-calls/domain/Fu
 describe("funding call publication snapshot", () => {
   it("captures exact public content, bindings, dates, and documents", () => {
     const call = {
+      applicationDuplicatePolicy: "one_per_business" as const,
       closesAt: new Date("2027-03-31T15:00:00.000Z"),
       createdAt: new Date("2026-09-20T08:00:00.000Z"),
       createdBy: "10000000-0000-4000-8000-000000000001",

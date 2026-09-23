@@ -3,7 +3,7 @@ import "server-only";
 import { and, desc, eq } from "drizzle-orm";
 
 import { getDatabase, type DatabaseTransaction } from "@/db/client";
-import { applications } from "@/db/schema/applications";
+import { applications } from "@/modules/applications/infrastructure/application.schema";
 import type { AuthoritativeEligibilityOutcome } from "../domain/AuthoritativeEligibilityOutcome";
 import { authoritativeEligibilityOutcomes } from "./eligibility-outcome.schema";
 

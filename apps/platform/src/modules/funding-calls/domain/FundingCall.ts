@@ -14,7 +14,12 @@ export type FundingCallStatus = (typeof fundingCallStatuses)[number];
 
 export type FundingCallPublishedStatus = "SCHEDULED" | "LIVE";
 
+export type ApplicationDuplicatePolicy = import(
+  "@/modules/applications/domain/Application"
+).ApplicationDuplicatePolicy;
+
 export type FundingCall = {
+  applicationDuplicatePolicy: ApplicationDuplicatePolicy;
   id: string;
   reference: string;
   slug: string;

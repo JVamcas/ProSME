@@ -41,6 +41,7 @@ export function Pagination({
           onClick={onPrevious}
           type="button"
           variant="outline"
+          size={"compact"}
         >
           <ChevronLeft aria-hidden="true" className="size-4" />
           Previous
@@ -53,6 +54,7 @@ export function Pagination({
           onClick={onNext}
           type="button"
           variant="outline"
+          size={"compact"}
         >
           Next
           <ChevronRight aria-hidden="true" className="size-4" />

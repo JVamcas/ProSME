@@ -66,7 +66,7 @@ export type ApplicationSummary = {
   fundingOpportunityTitle: string;
   id: string;
   progressPercent: number;
-  status: "draft" | "submitted";
+  status: import("./domain/Application").ApplicationLifecycleStatus;
   updatedAt: string;
 };
 

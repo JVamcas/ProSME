@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
-vi.mock("@/db/repositories/ApplicationRepository", () => ({
+vi.mock("@/modules/applications/infrastructure/ApplicationRepository", () => ({
   createOwnedApplication: vi.fn(),
   findOwnedApplicationByOpportunity: vi.fn(),
 }));
@@ -12,7 +12,7 @@ vi.mock(
 
 import { permissionCodes } from "@/auth/authorization/permissions";
 import type { AuthenticatedUser } from "@/auth/types";
-import { createOwnedApplication } from "@/db/repositories/ApplicationRepository";
+import { createOwnedApplication } from "@/modules/applications/infrastructure/ApplicationRepository";
 import {
   ApplicationOpportunityUnavailableError,
   createApplication,

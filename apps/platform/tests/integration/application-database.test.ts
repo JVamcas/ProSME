@@ -9,7 +9,7 @@ import {
   findOwnedApplicationByOpportunity,
   listOwnedApplications,
   updateOwnedApplication,
-} from "@/db/repositories/ApplicationRepository";
+} from "@/modules/applications/infrastructure/ApplicationRepository";
 import {
   hasRequiredApplicationDocuments,
   listOwnedApplicationDocuments,
@@ -75,6 +75,7 @@ describeDatabase("P3.2 PostgreSQL application persistence", () => {
 
   it("allows different businesses but rejects the same business for one call", async () => {
     const firstId = await createOwnedApplication({
+      duplicatePolicy: "one_per_business",
       eligibilityRuleSetVersionId,
       formVersionId,
       fundingOpportunityId: businessOpportunityId,
@@ -100,6 +101,7 @@ describeDatabase("P3.2 PostgreSQL application persistence", () => {
       "project",
     );
     const secondId = await createOwnedApplication({
+      duplicatePolicy: "one_per_business",
       eligibilityRuleSetVersionId,
       formVersionId,
       fundingOpportunityId: businessOpportunityId,
@@ -150,6 +152,7 @@ describeDatabase("P3.2 PostgreSQL application persistence", () => {
 
   it("creates once, resumes by lookup, and isolates owners", async () => {
     const firstId = await createOwnedApplication({
+      duplicatePolicy: "one_per_business",
       eligibilityRuleSetVersionId,
       formVersionId,
       fundingOpportunityId: opportunityId,
@@ -157,6 +160,7 @@ describeDatabase("P3.2 PostgreSQL application persistence", () => {
       ownerUserId: firstOwnerId,
     });
     const duplicateId = await createOwnedApplication({
+      duplicatePolicy: "one_per_business",
       eligibilityRuleSetVersionId,
       formVersionId,
       fundingOpportunityId: opportunityId,
@@ -164,6 +168,7 @@ describeDatabase("P3.2 PostgreSQL application persistence", () => {
       ownerUserId: firstOwnerId,
     });
     const secondId = await createOwnedApplication({
+      duplicatePolicy: "one_per_business",
       eligibilityRuleSetVersionId,
       formVersionId,
       fundingOpportunityId: opportunityId,

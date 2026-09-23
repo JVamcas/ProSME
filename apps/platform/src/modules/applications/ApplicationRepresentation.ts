@@ -2,12 +2,13 @@ import "server-only";
 
 import { z } from "zod";
 
-import type { findOwnedApplication } from "@/db/repositories/ApplicationRepository";
+import type { findOwnedApplication } from "@/modules/applications/infrastructure/ApplicationRepository";
 import type {
   ApplicationSection,
   ApplicationSectionCompletion,
 } from "./ApplicationSchemas";
 import type { ApplicationSummary, ApplicationView } from "./ApplicationTypes";
+import type { ApplicationLifecycleStatus } from "./domain/Application";
 
 const cursorSchema = z.object({
   id: z.uuid(),
@@ -22,7 +23,7 @@ export type ApplicationSummaryRecord = {
   fundingOpportunityTitle: string;
   id: string;
   sectionCompletion: ApplicationSectionCompletion;
-  status: "draft" | "submitted";
+  status: ApplicationLifecycleStatus;
   updatedAt: Date;
 };
 

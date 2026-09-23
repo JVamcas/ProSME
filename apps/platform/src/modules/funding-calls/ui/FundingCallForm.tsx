@@ -32,6 +32,11 @@ const localOptionalVersionId = z
   .transform((value) => value || null);
 
 const localFormSchema = z.object({
+  applicationDuplicatePolicy: z.enum([
+    "one_per_applicant",
+    "one_per_business",
+    "none",
+  ]),
   closesAt: z.string().min(1, "Closing date is required."),
   description: fundingCallDescriptionSchema,
   eligibilitySummary: z.string().trim().max(2000),
@@ -55,6 +60,8 @@ type LocalFormOutput = z.output<typeof localFormSchema>;
 
 function defaults(call?: FundingCallView): LocalFormInput {
   return {
+    applicationDuplicatePolicy:
+      call?.applicationDuplicatePolicy ?? "one_per_business",
     closesAt: call ? toInputDateTimeLocal(call.closesAt) : "",
     description: call?.description ?? "",
     eligibilitySummary: call?.eligibilitySummary ?? "",
@@ -144,6 +151,18 @@ export function FundingCallForm({
             label="Title"
             name="title"
             required
+          />
+
+          <FormSelect
+            containerClassName="md:col-span-2"
+            infoTooltip="Controls whether this call accepts one application per applicant, one per represented business, or multiple applications."
+            items={[
+              { label: "One per represented business", value: "one_per_business" },
+              { label: "One per applicant", value: "one_per_applicant" },
+              { label: "Multiple applications allowed", value: "none" },
+            ]}
+            label="Application limit"
+            name="applicationDuplicatePolicy"
           />
 
           <FormRichTextField

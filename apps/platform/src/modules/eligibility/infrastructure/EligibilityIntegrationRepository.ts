@@ -3,8 +3,9 @@ import "server-only";
 import { and, desc, eq, inArray, max } from "drizzle-orm";
 
 import { getDatabase, type DatabaseTransaction } from "@/db/client";
-import { applications } from "@/db/schema/applications";
+import { applications } from "@/modules/applications/infrastructure/application.schema";
 import { fundingCalls } from "@/modules/funding-calls/infrastructure/funding-call.schema";
+import { workflowInstances } from "@/modules/workflows/infrastructure/workflow-runtime.schema";
 import type {
   EligibilityIntegrationBindingInput,
   EligibilityIntegrationCreateInput,
@@ -269,8 +270,13 @@ export async function readApplicationIntegrationBinding(
         applications.fundingOpportunityId,
         fundingCallEligibilityIntegrationBindings.fundingCallId,
       ),
+    ),
+  ).innerJoin(
+    workflowInstances,
+    and(
+      eq(workflowInstances.applicationId, applications.id),
       eq(
-        applications.workflowVersionId,
+        workflowInstances.workflowTemplateVersionId,
         fundingCallEligibilityIntegrationBindings.workflowTemplateVersionId,
       ),
     ),

@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
-import { listOwnedApplications } from "@/db/repositories/ApplicationRepository";
+import { listOwnedApplications } from "@/modules/applications/infrastructure/ApplicationRepository";
 
 const { Pool } = pg;
 const enabled = process.env.RUN_P3_APPLICATION_DATABASE_TESTS === "true";

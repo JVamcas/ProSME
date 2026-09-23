@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  check,
   index,
   integer,
   jsonb,
@@ -17,9 +18,13 @@ import type {
   ApplicationSectionCompletion,
 } from "@/modules/applications/ApplicationSchemas";
 import type { ApplicationDeclarationsSection } from "@/modules/applications/ApplicationDeclarationSchemas";
-import { users } from "./identity";
-import { businessProfiles } from "./profiles";
-import { workflowDefinitionVersions } from "@/modules/workflows/infrastructure/workflow.schema";
+import type {
+  ApplicationDuplicatePolicy,
+  ApplicationLifecycleStatus,
+} from "@/modules/applications/domain/Application";
+import { users } from "@/db/schema/identity";
+import { businessProfiles } from "@/db/schema/profiles";
+import { fundingCalls } from "@/modules/funding-calls/infrastructure/funding-call.schema";
 import { formVersions } from "@/modules/forms/infrastructure/form.schema";
 import { eligibilityRuleSetVersions } from "@/modules/eligibility/infrastructure/eligibility-ruleset.schema";
 
@@ -28,7 +33,9 @@ export const applications = pgTable("app_applications", {
   ownerUserId: uuid("owner_user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
-  fundingOpportunityId: uuid("funding_opportunity_id").notNull(),
+  fundingOpportunityId: uuid("funding_opportunity_id")
+    .notNull()
+    .references(() => fundingCalls.id, { onDelete: "restrict" }),
   fundingOpportunityTitle: text("funding_opportunity_title").notNull(),
   eligibilityRuleSetVersionId: uuid("eligibility_rule_set_version_id")
     .references(() => eligibilityRuleSetVersions.id, {
@@ -41,15 +48,18 @@ export const applications = pgTable("app_applications", {
     onDelete: "restrict",
   }),
   status: text("status")
-    .$type<"draft" | "submitted">()
+    .$type<ApplicationLifecycleStatus>()
     .notNull()
     .default("draft"),
+  duplicatePolicy: text("duplicate_policy")
+    .$type<ApplicationDuplicatePolicy>()
+    .notNull()
+    .default("one_per_business"),
   reference: text("reference"),
-  workflowVersionId: uuid("workflow_version_id").references(
-    () => workflowDefinitionVersions.id,
-    { onDelete: "restrict" },
-  ),
+  latestDraftResponseId: uuid("latest_draft_response_id"),
+  submissionSnapshotId: uuid("submission_snapshot_id"),
   submittedAt: timestamp("submitted_at", { withTimezone: true }),
+  withdrawnAt: timestamp("withdrawn_at", { withTimezone: true }),
   currentSection: text("current_section")
     .$type<
       "business" | "project" | "financial" | "documents" | "declarations"
@@ -97,10 +107,13 @@ export const applications = pgTable("app_applications", {
 }, (table) => [
   uniqueIndex("app_applications_business_opportunity_unique")
     .on(table.businessId, table.fundingOpportunityId)
-    .where(sql`${table.businessId} IS NOT NULL`),
+    .where(sql`${table.duplicatePolicy} = 'one_per_business' AND ${table.businessId} IS NOT NULL`),
+  uniqueIndex("app_applications_applicant_opportunity_unique")
+    .on(table.ownerUserId, table.fundingOpportunityId)
+    .where(sql`${table.duplicatePolicy} = 'one_per_applicant'`),
   uniqueIndex("app_applications_unassigned_draft_unique")
     .on(table.ownerUserId, table.fundingOpportunityId)
-    .where(sql`${table.businessId} IS NULL AND ${table.status} = 'draft'`),
+    .where(sql`${table.duplicatePolicy} = 'one_per_business' AND ${table.businessId} IS NULL AND ${table.status} = 'draft'`),
   uniqueIndex("app_applications_reference_unique").on(table.reference),
   index("app_applications_owner_updated_idx").on(
     table.ownerUserId,
@@ -115,6 +128,64 @@ export const applications = pgTable("app_applications", {
     table.submittedAt,
     table.id,
   ),
+  check(
+    "app_applications_status_check",
+    sql`${table.status} in ('draft', 'submitted', 'withdrawn')`,
+  ),
+  check(
+    "app_applications_duplicate_policy_check",
+    sql`${table.duplicatePolicy} in ('one_per_applicant', 'one_per_business', 'none')`,
+  ),
+  check(
+    "app_applications_row_version_check",
+    sql`${table.rowVersion} > 0`,
+  ),
+  check(
+    "app_applications_lifecycle_timestamps_check",
+    sql`(${table.status} = 'draft' and ${table.submittedAt} is null and ${table.withdrawnAt} is null and ${table.reference} is null and ${table.submissionSnapshotId} is null)
+      or (${table.status} = 'submitted' and ${table.submittedAt} is not null and ${table.withdrawnAt} is null and ${table.reference} is not null)
+      or (${table.status} = 'withdrawn' and ${table.submittedAt} is not null and ${table.withdrawnAt} is not null and ${table.reference} is not null)`,
+  ),
 ]);
+
+export const applicationLifecycleHistory = pgTable(
+  "app_application_lifecycle_history",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    applicationId: uuid("application_id")
+      .notNull()
+      .references(() => applications.id, { onDelete: "restrict" }),
+    sourceStatus: text("source_status")
+      .$type<ApplicationLifecycleStatus>()
+      .notNull(),
+    targetStatus: text("target_status")
+      .$type<ApplicationLifecycleStatus>()
+      .notNull(),
+    actorUserId: uuid("actor_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    reason: text("reason"),
+    sourceRowVersion: integer("source_row_version").notNull(),
+    resultingRowVersion: integer("resulting_row_version").notNull(),
+    occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    index("app_application_lifecycle_history_application_idx").on(
+      table.applicationId,
+      table.occurredAt,
+      table.id,
+    ),
+    check(
+      "app_application_lifecycle_history_status_check",
+      sql`${table.sourceStatus} in ('draft', 'submitted', 'withdrawn')
+        and ${table.targetStatus} in ('draft', 'submitted', 'withdrawn')`,
+    ),
+    check(
+      "app_application_lifecycle_history_version_check",
+      sql`${table.sourceRowVersion} > 0
+        and ${table.resultingRowVersion} = ${table.sourceRowVersion} + 1`,
+    ),
+  ],
+);
 
 export type ApplicationRecord = typeof applications.$inferSelect;

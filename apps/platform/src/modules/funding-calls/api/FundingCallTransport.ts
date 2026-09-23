@@ -1,6 +1,9 @@
 import type { FundingCallStatus } from "../domain/FundingCall";
 
 export type FundingCallView = {
+  applicationDuplicatePolicy: import(
+    "@/modules/applications/domain/Application"
+  ).ApplicationDuplicatePolicy;
   id: string;
   reference: string;
   slug: string;

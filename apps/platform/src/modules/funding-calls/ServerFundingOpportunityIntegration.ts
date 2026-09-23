@@ -104,6 +104,7 @@ export async function resolvePublishedApplicationFormBinding(id: string) {
   const call = await readPublishedFundingCall(id);
   if (!call) return null;
   return {
+    applicationDuplicatePolicy: call.applicationDuplicatePolicy,
     eligibilityRuleSetVersionId: call.eligibilityRuleSetVersionId,
     formVersionId: call.formVersionId,
     id: call.id,

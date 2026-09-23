@@ -20,6 +20,7 @@ import {
 const fundingCallId = "00000000-0000-4000-8000-000000000042";
 const previousFundingCallId = "00000000-0000-4000-8000-000000000041";
 const fundingCall = {
+  applicationDuplicatePolicy: "one_per_business" as const,
   closesAt: new Date("2026-10-31T21:59:59.000Z"),
   createdAt: new Date("2026-08-01T00:00:00.000Z"),
   createdBy: "10000000-0000-4000-8000-000000000001",

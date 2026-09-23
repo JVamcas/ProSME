@@ -54,6 +54,7 @@ vi.mock("@/shared/ui/FormRichTextField", () => ({
 }));
 
 const call: FundingCallView = {
+  applicationDuplicatePolicy: "one_per_business",
   closesAt: "2027-03-31T15:00:00.000Z",
   createdAt: "2026-09-20T08:00:00.000Z",
   description: "Growth funding for qualifying SMEs.",

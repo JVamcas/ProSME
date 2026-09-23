@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
-vi.mock("@/db/repositories/ApplicationRepository", () => ({
+vi.mock("@/modules/applications/infrastructure/ApplicationRepository", () => ({
   createOwnedApplication: vi.fn(),
   findOwnedApplication: vi.fn(),
   findOwnedApplicationByOpportunity: vi.fn(),
@@ -33,7 +33,7 @@ import {
   findApplicationById,
   findApplicationsAssignedTo,
   findAssignedApplicationById,
-} from "@/db/repositories/ApplicationRepository";
+} from "@/modules/applications/infrastructure/ApplicationRepository";
 import {
   getApplication,
   getApplications,

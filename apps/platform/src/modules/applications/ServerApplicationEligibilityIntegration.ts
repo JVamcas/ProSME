@@ -1,6 +1,6 @@
 import "server-only";
 
-import { readApplicationEligibilityBinding } from "@/db/repositories/ApplicationRepository";
+import { readApplicationEligibilityBinding } from "@/modules/applications/infrastructure/ApplicationRepository";
 
 export function resolveApplicationEligibilityRuleSetBinding(
   applicationId: string,

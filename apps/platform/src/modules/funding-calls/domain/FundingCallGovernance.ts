@@ -12,6 +12,7 @@ export type FundingCallGovernanceOutcome =
 
 export type FundingCallGovernanceSnapshot = Pick<
   FundingCall,
+  | "applicationDuplicatePolicy"
   | "closesAt"
   | "description"
   | "eligibilityRuleSetVersionId"
@@ -44,6 +45,7 @@ export function createFundingCallGovernanceSnapshot(
   call: FundingCall,
 ): SerializedFundingCallGovernanceSnapshot {
   return {
+    applicationDuplicatePolicy: call.applicationDuplicatePolicy,
     closesAt: call.closesAt.toISOString(),
     description: call.description,
     eligibilityRuleSetVersionId: call.eligibilityRuleSetVersionId,

@@ -5,7 +5,7 @@ vi.mock("@/db/repositories/ApplicationDocumentRepository", () => ({
   listOwnedApplicationDocuments: vi.fn(),
   replaceOwnedApplicationDocument: vi.fn(),
 }));
-vi.mock("@/db/repositories/ApplicationRepository", () => ({
+vi.mock("@/modules/applications/infrastructure/ApplicationRepository", () => ({
   findOwnedApplication: vi.fn(),
 }));
 
@@ -16,7 +16,7 @@ import {
   listOwnedApplicationDocuments,
   replaceOwnedApplicationDocument,
 } from "@/db/repositories/ApplicationDocumentRepository";
-import { findOwnedApplication } from "@/db/repositories/ApplicationRepository";
+import { findOwnedApplication } from "@/modules/applications/infrastructure/ApplicationRepository";
 import type { DocumentStorage } from "@/integrations/storage/DocumentStorage";
 import {
   InvalidApplicationDocumentError,

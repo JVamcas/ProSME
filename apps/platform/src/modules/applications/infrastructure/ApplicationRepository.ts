@@ -8,9 +8,7 @@ import {
 } from "@/data/admin-applications";
 import { getDatabase } from "@/db/client";
 import {
-  applications,
   businessProfiles,
-  type ApplicationRecord,
   workflowInstances,
   workflowStageDefinitions,
   stageInstances,
@@ -28,6 +26,8 @@ import type {
   ApplicationListInput,
   ApplicationStatusCounts,
 } from "@/modules/applications/ApplicationTypes";
+import type { ApplicationDuplicatePolicy } from "../domain/Application";
+import { applications, type ApplicationRecord } from "./application.schema";
 
 export type ApplicationCursor = {
   id: string;
@@ -68,11 +68,16 @@ const openWorkflow = sql`
 `;
 const applicationCategories = {
   completed: and(
-    eq(applications.status, "submitted"),
-    sql`(
-      ${workflowInstances.status} IN ('COMPLETED', 'CANCELLED', 'REJECTED')
-      OR ${effectiveApplicantStatus} IN ('OUTCOME_AVAILABLE', 'CLOSED', 'WITHDRAWN')
-    )`,
+    or(
+      eq(applications.status, "withdrawn"),
+      and(
+        eq(applications.status, "submitted"),
+        sql`(
+          ${workflowInstances.status} IN ('COMPLETED', 'CANCELLED', 'REJECTED')
+          OR ${effectiveApplicantStatus} IN ('OUTCOME_AVAILABLE', 'CLOSED', 'WITHDRAWN')
+        )`,
+      ),
+    ),
   ),
   draft: eq(applications.status, "draft"),
   submitted: and(
@@ -281,6 +286,7 @@ export async function readApplicationEligibilityBinding(
 }
 
 export async function createOwnedApplication(input: {
+  duplicatePolicy: ApplicationDuplicatePolicy;
   eligibilityRuleSetVersionId: string;
   formVersionId: string;
   fundingOpportunityId: string;
@@ -364,7 +370,10 @@ export async function updateOwnedApplication(
       "code" in error &&
       error.code === "23505" &&
       "constraint" in error &&
-      error.constraint === "app_applications_business_opportunity_unique"
+      (
+        error.constraint === "app_applications_business_opportunity_unique"
+        || error.constraint === "app_applications_applicant_opportunity_unique"
+      )
     ) {
       return { kind: "duplicate_business" as const };
     }

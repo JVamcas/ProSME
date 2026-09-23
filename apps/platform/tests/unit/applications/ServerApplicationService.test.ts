@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
-vi.mock("@/db/repositories/ApplicationRepository", () => ({
+vi.mock("@/modules/applications/infrastructure/ApplicationRepository", () => ({
   createOwnedApplication: vi.fn(),
   findOwnedApplication: vi.fn(),
   findOwnedApplicationByOpportunity: vi.fn(),
@@ -33,7 +33,7 @@ import {
   findOwnedApplicationByOpportunity,
   listOwnedApplications,
   updateOwnedApplication,
-} from "@/db/repositories/ApplicationRepository";
+} from "@/modules/applications/infrastructure/ApplicationRepository";
 import { findOwnedBusiness } from "@/db/repositories/BusinessRepository";
 import { hasRequiredApplicationDocuments } from "@/db/repositories/ApplicationDocumentRepository";
 import { resolvePublishedApplicationFormBinding } from "@/modules/funding-calls/ServerFundingOpportunityIntegration";
@@ -49,7 +49,6 @@ import { applicationStatusCounts } from "../../support/application-status-counts
 const fundingOpportunityId = "00000000-0000-4000-8000-000000000042";
 const formVersionId = "20000000-0000-4000-8000-000000000001";
 const eligibilityRuleSetVersionId = "30000000-0000-4000-8000-000000000001";
-
 function staffUser(granted: string[]): AuthenticatedUser {
   return {
     id: "79e20de0-3558-4d63-90a4-8c9f5125df07",
@@ -72,6 +71,7 @@ const application = {
   businessSection: {},
   declarationAcceptance: null,
   declarationsSection: {},
+  duplicatePolicy: "one_per_business" as const,
   createdAt: new Date("2026-09-14T08:00:00.000Z"),
   currentSection: "business" as const,
   financialSection: {},
@@ -80,6 +80,7 @@ const application = {
   fundingOpportunityId,
   fundingOpportunityTitle: "Growth Fund",
   id: "99e20de0-3558-4d63-90a4-8c9f5125df07",
+  latestDraftResponseId: null,
   ownerUserId: "79e20de0-3558-4d63-90a4-8c9f5125df07",
   projectSection: {},
   reference: null,
@@ -92,12 +93,12 @@ const application = {
     project: false,
   },
   status: "draft" as const,
+  submissionSnapshotId: null,
   submittedAt: null,
   updatedAt: new Date("2026-09-14T08:00:00.000Z"),
-  workflowVersionId: null,
+  withdrawnAt: null,
 };
 const businessId = "89e20de0-3558-4d63-90a4-8c9f5125df07";
-
 beforeEach(() => {
   vi.clearAllMocks();
 });
@@ -105,6 +106,7 @@ describe("applicant-owned application drafts", () => {
   it("creates an owner-scoped draft for an open opportunity", async () => {
     const user = staffUser([permissionCodes.fundingApplicationCreate]);
     vi.mocked(resolvePublishedApplicationFormBinding).mockResolvedValue({
+      applicationDuplicatePolicy: "one_per_business",
       eligibilityRuleSetVersionId,
       id: fundingOpportunityId,
       formVersionId,
@@ -122,6 +124,7 @@ describe("applicant-owned application drafts", () => {
       id: application.id,
     });
     expect(createOwnedApplication).toHaveBeenCalledWith({
+      duplicatePolicy: "one_per_business",
       eligibilityRuleSetVersionId,
       formVersionId,
       fundingOpportunityId,
@@ -245,7 +248,6 @@ describe("applicant-owned application drafts", () => {
       id: application.id,
       kind: "updated",
     });
-
     await expect(
       updateOwnApplication(user, application.id, {
         data: {},
@@ -270,7 +272,6 @@ describe("applicant-owned application drafts", () => {
     vi.mocked(updateOwnedApplication).mockResolvedValue({
       kind: "duplicate_business",
     });
-
     await expect(
       updateOwnApplication(user, application.id, {
         data: { businessId },
@@ -285,7 +286,6 @@ describe("applicant-owned application drafts", () => {
     const user = staffUser([permissionCodes.fundingApplicationOwnUpdate]);
     vi.mocked(findOwnedApplication).mockResolvedValue(application);
     vi.mocked(hasRequiredApplicationDocuments).mockResolvedValue(false);
-
     await expect(
       updateOwnApplication(user, application.id, {
         data: {},

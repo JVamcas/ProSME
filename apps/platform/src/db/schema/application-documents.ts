@@ -9,7 +9,7 @@ import {
 } from "drizzle-orm/pg-core";
 
 import type { ApplicationDocumentType } from "@/modules/applications/ApplicationDocumentSchemas";
-import { applications } from "./applications";
+import { applications } from "@/modules/applications/infrastructure/application.schema";
 import { users } from "./identity";
 
 export const applicationDocuments = pgTable(

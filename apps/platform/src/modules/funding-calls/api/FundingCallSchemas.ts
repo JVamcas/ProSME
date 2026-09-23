@@ -32,6 +32,11 @@ export const fundingCallDescriptionSchema = z
   });
 
 const fundingCallFields = {
+  applicationDuplicatePolicy: z.enum([
+    "one_per_applicant",
+    "one_per_business",
+    "none",
+  ]).default("one_per_business"),
   closesAt: z.iso.datetime({ offset: true }),
   description: fundingCallDescriptionSchema,
   eligibilitySummary: optionalText(2000).default(null),

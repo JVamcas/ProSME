@@ -17,17 +17,14 @@ import { users } from "@/db/schema/identity";
 import { formVersions } from "@/modules/forms/infrastructure/form.schema";
 import { eligibilityRuleSetVersions } from "@/modules/eligibility/infrastructure/eligibility-ruleset.schema";
 import { workflowDefinitionVersions } from "@/modules/workflows/infrastructure/workflow.schema";
+import type { ApplicationDuplicatePolicy } from "@/modules/applications/domain/Application";
 import type { FundingCallStatus } from "../domain/FundingCall";
 import type {
   FundingCallGovernanceOutcome,
   SerializedFundingCallGovernanceSnapshot,
 } from "../domain/FundingCallGovernance";
-import type {
-  FundingCallLifecycleCommand,
-} from "../domain/FundingCallLifecycle";
-import type {
-  FundingCallPublicationSnapshot,
-} from "../domain/FundingCallPublication";
+import type { FundingCallLifecycleCommand } from "../domain/FundingCallLifecycle";
+import type { FundingCallPublicationSnapshot } from "../domain/FundingCallPublication";
 
 export const fundingCalls = pgTable(
   "app_funding_calls",
@@ -49,6 +46,10 @@ export const fundingCalls = pgTable(
       () => workflowDefinitionVersions.id,
       { onDelete: "restrict" },
     ),
+    applicationDuplicatePolicy: text("application_duplicate_policy")
+      .$type<ApplicationDuplicatePolicy>()
+      .notNull()
+      .default("one_per_business"),
     fundingInstrument: text("funding_instrument"),
     thematicArea: text("thematic_area"),
     totalBudgetEnvelope: numeric("total_budget_envelope", {
@@ -102,6 +103,10 @@ export const fundingCalls = pgTable(
       table.eligibilityRuleSetVersionId,
     ),
     check(
+      "app_funding_calls_application_duplicate_policy_check",
+      sql`${table.applicationDuplicatePolicy} in ('one_per_applicant', 'one_per_business', 'none')`,
+    ),
+    check(
       "app_funding_calls_status_check",
       sql`${table.status} in (
         'DRAFT',
@@ -139,7 +144,6 @@ export const fundingCalls = pgTable(
     ),
   ],
 );
-
 export const fundingCallLifecycleHistory = pgTable(
   "app_funding_call_lifecycle_history",
   {
@@ -224,7 +228,6 @@ export const fundingCallLifecycleHistory = pgTable(
     ),
   ],
 );
-
 export const fundingCallGovernancePolicy = pgTable(
   "app_funding_call_governance_policy",
   {
@@ -246,7 +249,6 @@ export const fundingCallGovernancePolicy = pgTable(
     check("app_funding_call_governance_policy_singleton_check", sql`${table.id} = 1`),
   ],
 );
-
 export const fundingCallPublicationRevisions = pgTable(
   "app_funding_call_publication_revisions",
   {
@@ -295,7 +297,6 @@ export const fundingCallPublicationRevisions = pgTable(
     ),
   ],
 );
-
 export const fundingCallGovernanceReviews = pgTable(
   "app_funding_call_governance_reviews",
   {
@@ -364,7 +365,6 @@ export const fundingCallGovernanceReviews = pgTable(
     ),
   ],
 );
-
 export const fundingCallPublicDocuments = pgTable(
   "app_funding_call_public_documents",
   {

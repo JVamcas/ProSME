@@ -74,6 +74,7 @@ const formVersionId = "20000000-0000-4000-8000-000000000001";
 const eligibilityRuleSetVersionId = "30000000-0000-4000-8000-000000000001";
 const workflowTemplateVersionId = "40000000-0000-4000-8000-000000000001";
 const input = {
+  applicationDuplicatePolicy: "one_per_business" as const,
   closesAt: "2027-03-31T15:00:00.000Z",
   description: "Growth funding for qualifying SMEs.",
   eligibilitySummary: "Registered Namibian SMEs may qualify.",

@@ -4,6 +4,7 @@ import { and, eq, sql } from "drizzle-orm";
 
 import {
   applications,
+  applicationLifecycleHistory,
   applicationSubmissionCommands,
   transactionalOutbox,
   workflowAuditEntries,
@@ -52,7 +53,6 @@ async function markApplicationSubmitted(
       status: "submitted",
       submittedAt,
       updatedAt: submittedAt,
-      workflowVersionId: input.configuration.workflowTemplateVersionId,
     })
     .where(and(
       eq(applications.id, input.application.id),
@@ -171,6 +171,15 @@ export async function writeApplicationSubmission(
     workflowTemplateVersionId:
       input.configuration.workflowTemplateVersionId,
   };
+  await transaction.insert(applicationLifecycleHistory).values({
+    actorUserId: input.actorId,
+    applicationId: input.application.id,
+    occurredAt: submittedAt,
+    resultingRowVersion: input.application.rowVersion + 1,
+    sourceRowVersion: input.application.rowVersion,
+    sourceStatus: "draft",
+    targetStatus: "submitted",
+  });
   await appendSubmissionHistory(transaction, input, result);
   return { kind: "submitted", result };
 }

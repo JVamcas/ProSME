@@ -14,7 +14,7 @@ vi.mock("@/modules/eligibility/application/ServerEligibilityDataResolver", () =>
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { PermissionDeniedError } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
-import type { ApplicationRecord } from "@/db/schema/applications";
+import type { ApplicationRecord } from "@/modules/applications/infrastructure/application.schema";
 import type { BusinessProfile } from "@/db/schema/profiles";
 import { basicOperators } from "@/modules/conditions/engine/BasicOperators";
 import {

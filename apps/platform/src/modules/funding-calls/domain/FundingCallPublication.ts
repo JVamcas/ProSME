@@ -2,6 +2,7 @@ import type { FundingCall, FundingCallPublicDocument } from "./FundingCall";
 
 type PublicationFields = Pick<
   FundingCall,
+  | "applicationDuplicatePolicy"
   | "description"
   | "eligibilityRuleSetVersionId"
   | "eligibilitySummary"
@@ -31,6 +32,7 @@ export function captureFundingCallPublication(
   publicDocuments: FundingCallPublicDocument[],
 ): FundingCallPublicationSnapshot {
   return {
+    applicationDuplicatePolicy: call.applicationDuplicatePolicy,
     closesAt: call.closesAt.toISOString(),
     description: call.description,
     eligibilityRuleSetVersionId: call.eligibilityRuleSetVersionId,

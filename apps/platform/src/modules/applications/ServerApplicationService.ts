@@ -17,7 +17,7 @@ import {
   findApplicationById,
   listOwnedApplications,
   updateOwnedApplication,
-} from "@/db/repositories/ApplicationRepository";
+} from "@/modules/applications/infrastructure/ApplicationRepository";
 import { hasRequiredApplicationDocuments } from "@/db/repositories/ApplicationDocumentRepository";
 import { findOwnedBusiness } from "@/db/repositories/BusinessRepository";
 import {
@@ -198,6 +198,7 @@ export async function createApplication(
   );
   if (existing) return toApplicationView(existing);
   const id = await createOwnedApplication({
+    duplicatePolicy: opportunity.applicationDuplicatePolicy,
     eligibilityRuleSetVersionId: opportunity.eligibilityRuleSetVersionId,
     formVersionId: opportunity.formVersionId,
     fundingOpportunityId: opportunity.id,

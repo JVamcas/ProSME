@@ -18,7 +18,7 @@ import type { WorkflowTaskStatus } from "@/modules/workflows/domain/runtime/Work
 import type { TransitionExecutionOutcome } from "@/modules/workflows/domain/runtime/TransitionExecution";
 import type { WorkflowActionType } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
 import { formVersions } from "@/modules/forms/infrastructure/form.schema";
-import { applications } from "@/db/schema/applications";
+import { applications } from "@/modules/applications/infrastructure/application.schema";
 import { roles } from "@/db/schema/authorization";
 import { users } from "@/db/schema/identity";
 import {

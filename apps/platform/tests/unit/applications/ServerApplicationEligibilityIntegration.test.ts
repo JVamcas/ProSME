@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
-vi.mock("@/db/repositories/ApplicationRepository", () => ({
+vi.mock("@/modules/applications/infrastructure/ApplicationRepository", () => ({
   readApplicationEligibilityBinding: vi.fn(),
 }));
 
-import { readApplicationEligibilityBinding } from "@/db/repositories/ApplicationRepository";
+import { readApplicationEligibilityBinding } from "@/modules/applications/infrastructure/ApplicationRepository";
 import { resolveApplicationEligibilityRuleSetBinding } from "@/modules/applications/ServerApplicationEligibilityIntegration";
 
 const applicationId = "40000000-0000-4000-8000-000000000001";

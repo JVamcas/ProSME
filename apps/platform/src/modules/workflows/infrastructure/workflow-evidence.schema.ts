@@ -11,7 +11,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
-import { applications } from "@/db/schema/applications";
+import { applications } from "@/modules/applications/infrastructure/application.schema";
 import { users } from "@/db/schema/identity";
 import { workflowStageDocumentRequirements } from "./workflow-stage-requirements.schema";
 

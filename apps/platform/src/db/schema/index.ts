@@ -1,6 +1,6 @@
 export * from "./authorization";
 export * from "./audit";
-export * from "./applications";
+export * from "@/modules/applications/infrastructure/application.schema";
 export * from "./application-documents";
 export * from "@/modules/conditions/infrastructure/condition.schema";
 export * from "@/modules/eligibility/infrastructure/eligibility-ruleset.schema";

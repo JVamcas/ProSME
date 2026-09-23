@@ -54,9 +54,6 @@ function TabsList<T extends string>({
     <div
       className={cn(
         "overflow-hidden bg-brand-white",
-        vertical
-          ? "self-start rounded-2xl border border-brand-navy/15 shadow-sm"
-          : "border-b border-brand-navy/15",
         listClassName,
       )}
     >

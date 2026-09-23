@@ -12,7 +12,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
-import { applications } from "@/db/schema/applications";
+import { applications } from "@/modules/applications/infrastructure/application.schema";
 import { users } from "@/db/schema/identity";
 import type { JsonValue } from "@/modules/conditions/domain/Operand";
 import { fundingCalls } from "@/modules/funding-calls/infrastructure/funding-call.schema";

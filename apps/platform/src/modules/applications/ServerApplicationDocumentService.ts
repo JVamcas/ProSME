@@ -10,7 +10,7 @@ import {
   listOwnedApplicationDocuments,
   replaceOwnedApplicationDocument,
 } from "@/db/repositories/ApplicationDocumentRepository";
-import { findOwnedApplication } from "@/db/repositories/ApplicationRepository";
+import { findOwnedApplication } from "@/modules/applications/infrastructure/ApplicationRepository";
 import type { DocumentStorage } from "@/integrations/storage/DocumentStorage";
 import { gcsObjectPrefixes } from "@/integrations/storage/GcsObjectPrefixes";
 import { GoogleCloudDocumentStorage } from "@/integrations/storage/GoogleCloudDocumentStorage";
