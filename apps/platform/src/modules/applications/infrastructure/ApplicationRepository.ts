@@ -98,6 +98,7 @@ const applicationCategories = {
 function ownedApplicationFilter(input: OwnedApplicationListInput) {
   return and(
     eq(applications.ownerUserId, input.ownerUserId),
+    isNull(applications.deletedAt),
     input.status ? applicationCategories[input.status] : undefined,
   );
 }
@@ -183,7 +184,10 @@ async function countOwnedApplicationsByStatus(ownerUserId: string) {
         stageInstances.workflowStageDefinitionId,
       ),
     )
-    .where(eq(applications.ownerUserId, ownerUserId));
+    .where(and(
+      eq(applications.ownerUserId, ownerUserId),
+      isNull(applications.deletedAt),
+    ));
   return rows[0];
 }
 
@@ -248,6 +252,7 @@ export async function findOwnedApplication(
     .where(and(
       eq(applications.id, applicationId),
       eq(applications.ownerUserId, ownerUserId),
+      isNull(applications.deletedAt),
     ))
     .limit(1);
   return application ?? null;
@@ -264,6 +269,7 @@ export async function findOwnedApplicationByOpportunity(
       eq(applications.ownerUserId, ownerUserId),
       eq(applications.fundingOpportunityId, fundingOpportunityId),
       eq(applications.status, "draft"),
+      isNull(applications.deletedAt),
       isNull(applications.businessId),
     ))
     .limit(1);
@@ -357,6 +363,7 @@ export async function updateOwnedApplication(
         eq(applications.id, applicationId),
         eq(applications.ownerUserId, ownerUserId),
         eq(applications.status, "draft"),
+        isNull(applications.deletedAt),
         eq(applications.rowVersion, input.expectedRowVersion),
       ))
       .returning({ id: applications.id });

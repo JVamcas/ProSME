@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, asc, desc, eq, inArray, lt, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, lt, sql } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
 import type { ApplicationDocumentView } from "../api/ApplicationDocumentSchemas";
@@ -91,6 +91,7 @@ export async function createPendingApplicationDocumentVersion(input: {
         eq(applications.id, input.applicationId),
         eq(applications.ownerUserId, input.ownerUserId),
         eq(applications.status, "draft"),
+        isNull(applications.deletedAt),
       ))
       .for("update")
       .limit(1);
@@ -179,6 +180,7 @@ export async function findOwnedDownloadableApplicationDocumentVersion(
       eq(applicationDocumentVersions.applicationId, applicationId),
       eq(applicationDocumentVersions.ownerUserId, ownerUserId),
       eq(applications.ownerUserId, ownerUserId),
+      isNull(applications.deletedAt),
       eq(applicationDocumentVersions.storageStatus, "finalized"),
       eq(applicationDocumentVersions.scanStatus, "clean"),
     ))

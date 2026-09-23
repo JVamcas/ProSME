@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
 import {
@@ -54,6 +54,7 @@ export async function readOwnedApplicationDraftResponse(
     .where(and(
       eq(applications.id, applicationId),
       eq(applications.ownerUserId, actorUserId),
+      isNull(applications.deletedAt),
       eq(applicationDraftResponses.respondentUserId, actorUserId),
     ))
     .limit(1);
@@ -85,6 +86,7 @@ async function saveDraftInTransaction(
     .where(and(
       eq(applications.id, input.applicationId),
       eq(applications.ownerUserId, input.actorUserId),
+      isNull(applications.deletedAt),
     ))
     .for("update")
     .limit(1);

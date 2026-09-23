@@ -10,8 +10,10 @@ import { FormRenderer } from "@/modules/forms/ui/renderer/FormRenderer";
 import { PageShell } from "@/shared/ui/PageShell";
 import { toast } from "@/shared/ui/Toast";
 import { useOwnApplication } from "../ApplicationHooks";
-import { ApplicationDocumentsPanel } from "./ApplicationDocumentsPanel";
+import { applicationDocumentCompletion } from "../domain/ApplicationDocumentPolicy";
+import { ApplicationDocumentRegisterPanel } from "./ApplicationDocumentsPanel";
 import { ApplicationReadinessPanel } from "./ApplicationReadinessPanel";
+import { useApplicationDocuments } from "./useApplicationDocuments";
 import {
   type DraftSaveStatus,
   useApplicationAutosave,
@@ -50,6 +52,7 @@ function LoadedApplicationDraft({
   onReload: () => void;
 }) {
   const autosave = useApplicationAutosave(applicationId, data);
+  const documentRegister = useApplicationDocuments(applicationId);
 
   useEffect(() => {
     if (autosave.error && autosave.status === "failed") {
@@ -58,6 +61,36 @@ function LoadedApplicationDraft({
       });
     }
   }, [autosave.error, autosave.status]);
+
+  if (documentRegister.isPending) {
+    return (
+      <PortalLoadingState
+        description="Checking the document requirements for this application."
+        title="Loading application"
+      />
+    );
+  }
+  if (documentRegister.isError || !documentRegister.data) {
+    return (
+      <PortalErrorState
+        description={documentRegister.error?.message ?? "Document requirements are unavailable."}
+        onAction={() => void documentRegister.refetch()}
+        title="Application could not be loaded"
+      />
+    );
+  }
+
+  const hasDocuments = documentRegister.data.requirements.length > 0;
+  const documentCompletion = applicationDocumentCompletion(documentRegister.data);
+  const documents = hasDocuments
+    ? (
+        <ApplicationDocumentRegisterPanel
+          applicationId={applicationId}
+          readOnly={data.status !== "draft"}
+          register={documentRegister.data}
+        />
+      )
+    : null;
 
   return (
     <PageShell
@@ -88,9 +121,29 @@ function LoadedApplicationDraft({
           formData={autosave.values}
           onChange={autosave.setValues}
           onSubmit={() => undefined}
+          penultimateStep={
+            data.form.displayMode === "STEPS" && documents
+              ? {
+                  content: documents,
+                  id: "supporting-documents",
+                  title: "Supporting documents",
+                }
+              : undefined
+          }
           readOnly={data.status !== "draft"}
+          supplementalCompletion={
+            hasDocuments
+              ? {
+                  completedCount: documentCompletion.completedCount,
+                  id: "supporting-documents",
+                  requiredCount: documentCompletion.requiredCount,
+                  title: "Supporting documents",
+                  unit: "document",
+                }
+              : undefined
+          }
         />
-        <ApplicationDocumentsPanel applicationId={applicationId} />
+        {data.form.displayMode !== "STEPS" ? documents : null}
         <ApplicationReadinessPanel applicationId={applicationId} />
       </div>
     </PageShell>

@@ -1,13 +1,16 @@
 import "server-only";
 
 import { createHash } from "node:crypto";
-import { and, eq, ne } from "drizzle-orm";
+import { and, desc, eq, isNull, ne } from "drizzle-orm";
 
 import type { DatabaseTransaction } from "@/db/client";
 import {
+  applicantProfiles,
   applications,
   businessProfiles,
+  fundingCallPublicationRevisions,
   fundingCalls,
+  users,
   workflowDefinitionVersions,
   workflowStageDefinitions,
 } from "@/db/schema";
@@ -48,6 +51,7 @@ async function readApplication(
     .where(and(
       eq(applications.id, input.applicationId),
       eq(applications.ownerUserId, input.actorId),
+      isNull(applications.deletedAt),
     ));
   const rows = input.lockApplication
     ? await query.for("update").limit(1)
@@ -101,7 +105,13 @@ export async function validateApplicationSubmissionState(
 ) {
   const application = await readApplication(transaction, input);
   if (!application) return null;
-  const [businessRows, callRows, duplicate] = await Promise.all([
+  const [
+    businessRows,
+    callRows,
+    applicantRows,
+    publicationRows,
+    duplicate,
+  ] = await Promise.all([
     application.businessId
       ? transaction.select().from(businessProfiles).where(and(
           eq(businessProfiles.id, application.businessId),
@@ -111,10 +121,46 @@ export async function validateApplicationSubmissionState(
     transaction.select().from(fundingCalls).where(
       eq(fundingCalls.id, application.fundingOpportunityId),
     ).limit(1),
+    transaction
+      .select({
+        dateOfBirth: applicantProfiles.dateOfBirth,
+        displayName: users.displayName,
+        email: users.email,
+        firstName: applicantProfiles.firstName,
+        nationality: applicantProfiles.nationality,
+        phoneNumber: applicantProfiles.phoneNumber,
+        position: applicantProfiles.position,
+        postalAddress: applicantProfiles.postalAddress,
+        profileUpdatedAt: applicantProfiles.updatedAt,
+        region: applicantProfiles.region,
+        surname: applicantProfiles.surname,
+        userId: users.id,
+      })
+      .from(users)
+      .leftJoin(applicantProfiles, eq(applicantProfiles.userId, users.id))
+      .where(eq(users.id, application.ownerUserId))
+      .limit(1),
+    transaction
+      .select({
+        id: fundingCallPublicationRevisions.id,
+        publishedAt: fundingCallPublicationRevisions.publishedAt,
+        revisionNumber: fundingCallPublicationRevisions.revisionNumber,
+        snapshot: fundingCallPublicationRevisions.snapshot,
+        sourceRowVersion: fundingCallPublicationRevisions.sourceRowVersion,
+      })
+      .from(fundingCallPublicationRevisions)
+      .where(eq(
+        fundingCallPublicationRevisions.fundingCallId,
+        application.fundingOpportunityId,
+      ))
+      .orderBy(desc(fundingCallPublicationRevisions.revisionNumber))
+      .limit(1),
     hasDuplicateSubmission(transaction, application),
   ]);
   const business = businessRows[0] ?? null;
   const fundingCall = callRows[0] ?? null;
+  const applicant = applicantRows[0] ?? null;
+  const publicationRevision = publicationRows[0] ?? null;
   const workflowRows = fundingCall?.workflowTemplateVersionId
     ? await transaction
         .select({
@@ -130,6 +176,7 @@ export async function validateApplicationSubmissionState(
               workflowDefinitionVersions.id,
             ),
             eq(workflowStageDefinitions.initial, true),
+            eq(workflowStageDefinitions.enabled, true),
           ),
         )
         .where(and(
@@ -151,6 +198,8 @@ export async function validateApplicationSubmissionState(
     : false;
   const exactConfiguration = Boolean(
     fundingCall
+    && applicant
+    && publicationRevision
     && application.formVersionId
     && application.formVersionId === fundingCall.formVersionId
     && application.eligibilityRuleSetVersionId
@@ -225,6 +274,7 @@ export async function validateApplicationSubmissionState(
     })) ?? [],
   );
   return {
+    applicant,
     application,
     business,
     configuration: fundingCall && workflowRows[0]
@@ -237,6 +287,7 @@ export async function validateApplicationSubmissionState(
     configurationFingerprint,
     context,
     documentFingerprint,
+    publicationRevision,
     readiness,
   };
 }

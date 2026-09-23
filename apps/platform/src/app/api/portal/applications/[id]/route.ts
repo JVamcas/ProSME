@@ -6,6 +6,7 @@ import {
   portalRouteError,
   portalRouteSuccess,
 } from "@/lib/api/PortalApiResponse";
+import { deleteOwnApplicationDraft } from "@/modules/applications/ServerApplicationDeletionService";
 import { saveApplicationDraftSchema } from "@/modules/applications/ApplicationSchemas";
 import {
   getOwnApplicationDraft,
@@ -47,6 +48,19 @@ export async function PATCH(request: Request, route: ApplicationRouteContext) {
         ...input,
         correlationId,
       }),
+      correlationId,
+    );
+  } catch (error) {
+    return portalRouteError(error, correlationId);
+  }
+}
+
+export async function DELETE(request: Request, route: ApplicationRouteContext) {
+  const correlationId = createCorrelationId();
+  try {
+    const resolved = await context(request, route);
+    return portalRouteSuccess(
+      await deleteOwnApplicationDraft(resolved.user, resolved.id, correlationId),
       correlationId,
     );
   } catch (error) {

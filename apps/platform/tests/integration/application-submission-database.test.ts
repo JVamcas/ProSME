@@ -1,8 +1,6 @@
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-
 vi.mock("server-only", () => ({}));
-
 import { preflightOwnedApplication } from "@/modules/applications/infrastructure/ApplicationPreflightRepository";
 import { submitOwnedApplication } from "@/modules/applications/infrastructure/ApplicationSubmissionRepository";
 import { readApplicantDashboard } from "@/db/repositories/ApplicantDashboardRepository";
@@ -11,7 +9,10 @@ import {
   eligibilityVersionId,
   installAuthoritativeEligibilityConfiguration,
 } from "../support/AuthoritativeEligibilityDatabaseFixture";
-import { readAtomicSubmissionCounts } from "../support/ApplicationSubmissionDatabaseAssertions";
+import {
+  expectAtomicSubmissionCounts,
+  expectImmutableSubmissionArtifacts,
+} from "../support/ApplicationSubmissionDatabaseAssertions";
 import * as workflowBindingFixture from "../support/WorkflowBindingDatabaseFixture";
 
 const { Pool } = pg;
@@ -59,8 +60,8 @@ beforeAll(async () => {
   );
   await query(
     `INSERT INTO app_workflow_definition_versions
-       (id, definition_id, version_number, status, created_by, published_by, published_at)
-     VALUES ($1, $2, 1, 'PUBLISHED', $3, $3, now())`,
+       (id, definition_id, version_number, status, created_by)
+     VALUES ($1, $2, 1, 'DRAFT', $3)`,
     [versionId, definitionId, ownerId],
   );
   await query(
@@ -74,11 +75,19 @@ beforeAll(async () => {
   await query(
     `INSERT INTO app_stage_task_definitions
        (id, stage_id, code, name, type, sequence, required,
-        assignment_user_id, config)
+        assignment_user_id, assignment_mode, permissions, config)
      VALUES ($1, $2, 'CHECK', 'Initial check', 'CHECKLIST', 1, true,
-       $3,
+       $3, 'NAMED_USER',
+       '{"view":"workflow.task.assigned.read","edit":"workflow.task.assigned.process","decide":"workflow.task.assigned.decide","visibility":"INTERNAL_ONLY"}'::jsonb,
        '{"items":[{"code":"received","label":"Application received","required":true}]}'::jsonb)`,
     [taskId, stageId, ownerId],
+  );
+  await query(
+    `UPDATE app_workflow_definition_versions
+     SET status = 'PUBLISHED', published_by = $2, published_at = now(),
+       row_version = row_version + 1
+     WHERE id = $1`,
+    [versionId, ownerId],
   );
   await workflowBindingFixture.insertSubmissionFundingCalls(
     query,
@@ -152,26 +161,23 @@ describeDatabase("P3.4 transactional application submission", () => {
     expect(first.result.reference).toBe(second.result.reference);
     expect(first.result.workflowInstanceId).toBe(second.result.workflowInstanceId);
     expect(first.result.workflowTemplateVersionId).toBe(versionId);
-
     await workflowBindingFixture.publishNewerWorkflowVersion(query, ownerId, definitionId);
 
-    const counts = await readAtomicSubmissionCounts(query, applicationIds[0]);
-    expect(counts).toEqual({
-      application_audits: 1,
-      audits: 1,
-      events: 5,
-      eligibility_outcomes: 1,
-      outbox: 2,
-      pinned_version: versionId,
-      runtime_initialized: true,
-      snapshots: 1,
-      stages: 1,
-      tasks: 1,
-      workflows: 1,
+    await expectAtomicSubmissionCounts(
+      query,
+      applicationIds[0],
+      versionId,
+    );
+    await expectImmutableSubmissionArtifacts(query, {
+      applicationId: applicationIds[0],
+      eligibilityVersionId,
+      ownerId,
+      reference: first.result.reference,
+      workflowVersionId: versionId,
     });
     await expect(
       query(`UPDATE app_stage_task_definitions SET name = 'Changed' WHERE id = $1`, [taskId]),
-    ).rejects.toThrow("workflow versions with runtime instances are immutable");
+    ).rejects.toThrow("only draft workflow versions are editable");
     await expect(
       query(
         `UPDATE app_workflow_instances
@@ -253,7 +259,7 @@ describeDatabase("P3.4 transactional application submission", () => {
       (activity) => activity.eventCode === "APPLICATION_SUBMITTED",
     )).toMatchObject({
         actorName: "Submission Owner",
-        applicationReference: expect.stringMatching(/^SMEF-\d{4}-\d{6}$/),
+        applicationReference: expect.stringMatching(/^SUBMISSION-FUND-\d{4}-\d{6}$/),
         eventCode: "APPLICATION_SUBMITTED",
     });
     const assigned = await readAdminDashboard({
@@ -283,7 +289,7 @@ describeDatabase("P3.4 transactional application submission", () => {
       expect.arrayContaining([
         expect.objectContaining({
           applicationId: applicationIds[0],
-          applicationReference: expect.stringMatching(/^SMEF-\d{4}-\d{6}$/),
+          applicationReference: expect.stringMatching(/^SUBMISSION-FUND-\d{4}-\d{6}$/),
           eventCode: "APPLICATION_SUBMITTED",
           fundingOpportunityTitle: "Submission test application",
         }),

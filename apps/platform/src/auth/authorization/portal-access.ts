@@ -18,6 +18,7 @@ export const applicantScopePermissions = [
   permissionCodes.fundingApplicationCreate,
   permissionCodes.fundingApplicationOwnRead,
   permissionCodes.fundingApplicationOwnUpdate,
+  permissionCodes.fundingApplicationDraftOwnDelete,
   permissionCodes.fundingApplicationSubmit,
   permissionCodes.fundingApplicationDocumentOwnRead,
   permissionCodes.fundingApplicationDocumentOwnUpload,

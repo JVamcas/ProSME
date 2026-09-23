@@ -1,6 +1,9 @@
 import type { FormRuntimeSchema } from "@/modules/forms/FormTypes";
 import { resolveFormVisibility } from "@/modules/forms/engine/FormVisibility";
-import type { ApplicationDocumentRequirement } from "../api/ApplicationDocumentSchemas";
+import type {
+  ApplicationDocumentRegister,
+  ApplicationDocumentRequirement,
+} from "../api/ApplicationDocumentSchemas";
 
 export const applicationDocumentMaximumBytes = 10 * 1024 * 1024;
 export const applicationDocumentAllowedFiles = {
@@ -73,4 +76,19 @@ export function applicationResponseValues(
   return Object.fromEntries(
     Object.entries(values).filter(([key]) => allowed.has(key)),
   );
+}
+
+export function applicationDocumentCompletion(
+  register: ApplicationDocumentRegister,
+) {
+  const required = register.requirements.filter((item) => item.required);
+  const documents = new Map(
+    register.documents.map((document) => [document.requirementKey, document]),
+  );
+  const completedCount = required.filter((requirement) => {
+    const document = documents.get(requirement.key);
+    return document?.storageStatus === "finalized"
+      && document.scanStatus === "clean";
+  }).length;
+  return { completedCount, requiredCount: required.length };
 }

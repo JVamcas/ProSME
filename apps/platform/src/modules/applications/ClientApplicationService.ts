@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  deleteData,
   patchData,
   requestData,
   requestJson,
@@ -92,6 +93,10 @@ function saveApplicationDraft(id: string, input: SaveApplicationDraftInput) {
   );
 }
 
+function deleteApplicationDraft(id: string) {
+  return deleteData<{ id: string }>(`/api/portal/applications/${id}`);
+}
+
 function submitApplication(
   id: string,
   input: ApplicationSubmissionCommandInput,
@@ -111,6 +116,7 @@ function submitApplication(
 
 export const clientApplicationService = {
   createApplication,
+  deleteApplicationDraft,
   getOwnApplication,
   getAll,
   listAdminApplications,

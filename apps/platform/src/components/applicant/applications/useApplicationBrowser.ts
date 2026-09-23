@@ -44,6 +44,7 @@ export function useApplicationBrowser() {
   return {
     filter,
     nextPage,
+    onDeletedLastItem: () => setPageIndex((current) => Math.max(0, current - 1)),
     pageIndex,
     previousPage: () => setPageIndex((current) => Math.max(0, current - 1)),
     query,

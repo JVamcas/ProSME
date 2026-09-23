@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { formatLocalDateTime24 } from "@/lib/dateUtils";
 import {
   applicationDocumentUploadSchema,
+  type ApplicationDocumentRegister,
   type ApplicationDocumentRequirement,
   type ApplicationDocumentView,
 } from "../api/ApplicationDocumentSchemas";
@@ -112,12 +113,15 @@ function RequirementRow({
   );
 }
 
-export function ApplicationDocumentsPanel({
+export function ApplicationDocumentRegisterPanel({
   applicationId,
+  readOnly = false,
+  register,
 }: {
   applicationId: string;
+  readOnly?: boolean;
+  register: ApplicationDocumentRegister;
 }) {
-  const register = useApplicationDocuments(applicationId);
   const upload = useUploadApplicationDocument(applicationId);
   const form = useForm<UploadValues>({
     resolver: zodResolver(applicationDocumentUploadSchema),
@@ -128,21 +132,7 @@ export function ApplicationDocumentsPanel({
     form.setValue("file", file);
     void form.handleSubmit((input) => upload.mutateAsync(input))();
   };
-  if (register.isPending) {
-    return (
-      <p className="text-sm text-brand-navy/65">
-        Loading document requirements…
-      </p>
-    );
-  }
-  if (register.isError || !register.data) {
-    return (
-      <p className="text-sm text-red-700" role="alert">
-        {register.error?.message}
-      </p>
-    );
-  }
-  if (register.data.requirements.length === 0) return null;
+  if (register.requirements.length === 0) return null;
   return (
     <FormProvider {...form}>
       <section
@@ -166,11 +156,11 @@ export function ApplicationDocumentsPanel({
           noValidate
           onSubmit={form.handleSubmit((input) => upload.mutateAsync(input))}
         >
-          {register.data.requirements.map((requirement) => (
+          {register.requirements.map((requirement) => (
             <RequirementRow
               applicationId={applicationId}
-              disabled={upload.isPending}
-              document={register.data.documents.find(
+              disabled={readOnly || upload.isPending}
+              document={register.documents.find(
                 (item) => item.requirementKey === requirement.key,
               )}
               key={requirement.key}
@@ -190,5 +180,33 @@ export function ApplicationDocumentsPanel({
         ) : null}
       </section>
     </FormProvider>
+  );
+}
+
+export function ApplicationDocumentsPanel({
+  applicationId,
+}: {
+  applicationId: string;
+}) {
+  const register = useApplicationDocuments(applicationId);
+  if (register.isPending) {
+    return (
+      <p className="text-sm text-brand-navy/65">
+        Loading document requirements…
+      </p>
+    );
+  }
+  if (register.isError || !register.data) {
+    return (
+      <p className="text-sm text-red-700" role="alert">
+        {register.error?.message}
+      </p>
+    );
+  }
+  return (
+    <ApplicationDocumentRegisterPanel
+      applicationId={applicationId}
+      register={register.data}
+    />
   );
 }

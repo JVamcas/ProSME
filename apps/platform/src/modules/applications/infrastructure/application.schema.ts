@@ -18,6 +18,7 @@ import type {
   ApplicationSectionCompletion,
 } from "@/modules/applications/ApplicationSchemas";
 import type { ApplicationDeclarationsSection } from "@/modules/applications/ApplicationDeclarationSchemas";
+import type { ApplicationSubmissionSnapshotContent } from "@/modules/applications/domain/ApplicationSubmissionSnapshot";
 import type {
   ApplicationDuplicatePolicy,
   ApplicationLifecycleStatus,
@@ -60,6 +61,7 @@ export const applications = pgTable("app_applications", {
   submissionSnapshotId: uuid("submission_snapshot_id"),
   submittedAt: timestamp("submitted_at", { withTimezone: true }),
   withdrawnAt: timestamp("withdrawn_at", { withTimezone: true }),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
   currentSection: text("current_section")
     .$type<
       "business" | "project" | "financial" | "documents" | "declarations"
@@ -107,13 +109,13 @@ export const applications = pgTable("app_applications", {
 }, (table) => [
   uniqueIndex("app_applications_business_opportunity_unique")
     .on(table.businessId, table.fundingOpportunityId)
-    .where(sql`${table.duplicatePolicy} = 'one_per_business' AND ${table.businessId} IS NOT NULL`),
+    .where(sql`${table.deletedAt} IS NULL AND ${table.duplicatePolicy} = 'one_per_business' AND ${table.businessId} IS NOT NULL`),
   uniqueIndex("app_applications_applicant_opportunity_unique")
     .on(table.ownerUserId, table.fundingOpportunityId)
-    .where(sql`${table.duplicatePolicy} = 'one_per_applicant'`),
+    .where(sql`${table.deletedAt} IS NULL AND ${table.duplicatePolicy} = 'one_per_applicant'`),
   uniqueIndex("app_applications_unassigned_draft_unique")
     .on(table.ownerUserId, table.fundingOpportunityId)
-    .where(sql`${table.duplicatePolicy} = 'one_per_business' AND ${table.businessId} IS NULL AND ${table.status} = 'draft'`),
+    .where(sql`${table.deletedAt} IS NULL AND ${table.duplicatePolicy} = 'one_per_business' AND ${table.businessId} IS NULL AND ${table.status} = 'draft'`),
   uniqueIndex("app_applications_reference_unique").on(table.reference),
   index("app_applications_owner_updated_idx").on(
     table.ownerUserId,
@@ -135,6 +137,10 @@ export const applications = pgTable("app_applications", {
   check(
     "app_applications_duplicate_policy_check",
     sql`${table.duplicatePolicy} in ('one_per_applicant', 'one_per_business', 'none')`,
+  ),
+  check(
+    "app_applications_deleted_draft_check",
+    sql`${table.deletedAt} IS NULL OR ${table.status} = 'draft'`,
   ),
   check(
     "app_applications_row_version_check",
@@ -245,6 +251,12 @@ export const applicationSubmissionSnapshots = pgTable(
         onDelete: "restrict",
       }),
     workflowTemplateVersionId: uuid("workflow_template_version_id").notNull(),
+    schemaVersion: integer("schema_version").notNull(),
+    snapshotContent: jsonb("snapshot_content")
+      .$type<ApplicationSubmissionSnapshotContent>()
+      .notNull(),
+    canonicalContent: text("canonical_content").notNull(),
+    integrityHash: text("integrity_hash").notNull(),
     applicationData: jsonb("application_data")
       .$type<Record<string, unknown>>()
       .notNull(),
@@ -272,6 +284,14 @@ export const applicationSubmissionSnapshots = pgTable(
     check(
       "app_submission_snapshots_versions_check",
       sql`${table.applicationRowVersion} > 0 and ${table.responseRowVersion} > 0`,
+    ),
+    check(
+      "app_submission_snapshots_schema_version_check",
+      sql`${table.schemaVersion} > 0`,
+    ),
+    check(
+      "app_submission_snapshots_integrity_hash_check",
+      sql`${table.integrityHash} ~ '^[0-9a-f]{64}$'`,
     ),
   ],
 );
@@ -325,7 +345,9 @@ export const applicationAuditEntries = pgTable(
       .$type<
         | "APPLICATION_DRAFT_CREATED"
         | "APPLICATION_DRAFT_SAVED"
+        | "APPLICATION_DRAFT_DELETED"
         | "APPLICATION_SUBMITTED"
+        | "SUBMISSION_SNAPSHOT_ACCESSED"
       >()
       .notNull(),
     metadata: jsonb("metadata")
@@ -348,7 +370,9 @@ export const applicationAuditEntries = pgTable(
       sql`${table.action} in (
         'APPLICATION_DRAFT_CREATED',
         'APPLICATION_DRAFT_SAVED',
-        'APPLICATION_SUBMITTED'
+        'APPLICATION_DRAFT_DELETED',
+        'APPLICATION_SUBMITTED',
+        'SUBMISSION_SNAPSHOT_ACCESSED'
       )`,
     ),
   ],

@@ -76,6 +76,7 @@ const application = {
   businessId,
   businessSection: {},
   createdAt: new Date("2026-09-23T08:00:00.000Z"),
+  deletedAt: null,
   currentSection: "business" as const,
   declarationAcceptance: null,
   declarationsSection: {},

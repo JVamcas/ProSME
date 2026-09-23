@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, desc, eq, or } from "drizzle-orm";
+import { and, desc, eq, isNull, or } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
 import { businessProfiles } from "@/db/schema/profiles";
@@ -118,7 +118,11 @@ async function hasDuplicate(
   const [duplicate] = await transaction
     .select({ id: applications.id })
     .from(applications)
-    .where(and(eq(applications.fundingOpportunityId, fundingCallId), scope))
+    .where(and(
+      eq(applications.fundingOpportunityId, fundingCallId),
+      isNull(applications.deletedAt),
+      scope,
+    ))
     .limit(1);
   return Boolean(duplicate);
 }

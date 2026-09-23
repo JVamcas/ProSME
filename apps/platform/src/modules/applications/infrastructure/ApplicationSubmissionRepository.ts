@@ -225,12 +225,14 @@ async function submitInTransaction(
   }
   return writeApplicationSubmission(transaction, {
     actorId: input.actorId,
+    applicant: state.applicant!,
     application: state.application,
     business: state.business,
     configuration: state.configuration,
     context: state.context,
     correlationId: input.correlationId,
     idempotencyKey: input.idempotencyKey,
+    publicationRevision: state.publicationRevision!,
     requestFingerprint,
   });
 }

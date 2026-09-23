@@ -34,7 +34,7 @@ function ApplicationStatusMetrics({
         id="application-status-heading"
         className="text-lg font-bold text-brand-navy"
       >
-        Application status
+        My Application
       </h2>
       <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <DashboardMetricCard

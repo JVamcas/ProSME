@@ -610,6 +610,20 @@
       "when": 1795219200000,
       "tag": "0086_submission_preflight_atomic_command",
       "breakpoints": true
+    },
+    {
+      "idx": 87,
+      "version": "7",
+      "when": 1795305600000,
+      "tag": "0087_immutable_submission_runtime",
+      "breakpoints": true
+    },
+    {
+      "idx": 88,
+      "version": "7",
+      "when": 1795392000000,
+      "tag": "0088_delete_owned_application_drafts",
+      "breakpoints": true
     }
   ]
 }

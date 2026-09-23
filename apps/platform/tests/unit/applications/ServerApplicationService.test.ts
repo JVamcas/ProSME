@@ -69,6 +69,7 @@ const application = {
   declarationsSection: {},
   duplicatePolicy: "one_per_business" as const,
   createdAt: new Date("2026-09-14T08:00:00.000Z"),
+  deletedAt: null,
   currentSection: "business" as const,
   financialSection: {},
   eligibilityRuleSetVersionId,

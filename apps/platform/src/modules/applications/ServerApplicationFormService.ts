@@ -1,7 +1,5 @@
 import "server-only";
 
-import { createHash } from "node:crypto";
-
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { requirePermission } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
@@ -24,6 +22,10 @@ import {
   applicationResponseForm,
   applicationResponseValues,
 } from "./domain/ApplicationDocumentPolicy";
+import {
+  canonicalJson,
+  hashCanonicalJson,
+} from "./domain/ApplicationSubmissionSnapshot";
 import type {
   CreateApplicationDraftInput,
   SaveApplicationDraftInput,
@@ -46,22 +48,8 @@ import {
   ApplicationOpportunityUnavailableError,
 } from "./ServerApplicationService";
 
-function canonicalJson(value: unknown): string {
-  if (Array.isArray(value)) {
-    return `[${value.map(canonicalJson).join(",")}]`;
-  }
-  if (value && typeof value === "object") {
-    const entries = Object.entries(value as Record<string, unknown>)
-      .sort(([left], [right]) => left.localeCompare(right));
-    return `{${entries.map(([key, child]) => (
-      `${JSON.stringify(key)}:${canonicalJson(child)}`
-    )).join(",")}}`;
-  }
-  return JSON.stringify(value);
-}
-
 function fingerprint(value: unknown) {
-  return createHash("sha256").update(canonicalJson(value)).digest("hex");
+  return hashCanonicalJson(canonicalJson(value));
 }
 
 async function loadDraft(

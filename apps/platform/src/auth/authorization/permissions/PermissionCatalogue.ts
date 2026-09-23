@@ -164,6 +164,11 @@ const staticPermissionCatalogue: readonly PermissionDefinition[] = [
     "Update funding applications owned by the signed-in user.",
   ),
   define(
+    permissionCodes.fundingApplicationDraftOwnDelete,
+    "Delete own application drafts",
+    "Delete an unsubmitted funding application draft owned by the signed-in user.",
+  ),
+  define(
     permissionCodes.fundingApplicationSubmit,
     "Submit applications",
     "Submit an owned funding application.",

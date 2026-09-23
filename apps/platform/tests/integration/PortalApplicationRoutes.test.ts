@@ -12,12 +12,16 @@ vi.mock("@/modules/applications/ServerApplicationFormService", () => ({
   getOwnApplicationDraft: vi.fn(),
   saveOwnApplicationDraft: vi.fn(),
 }));
+vi.mock("@/modules/applications/ServerApplicationDeletionService", () => ({
+  deleteOwnApplicationDraft: vi.fn(),
+}));
 
 import * as itemRoute from "@/app/api/portal/applications/[id]/route";
 import * as listRoute from "@/app/api/portal/applications/route";
 import { resolveUserFromHeaders } from "@/auth/authorization/current-user";
 import type { AuthenticatedUser } from "@/auth/types";
-import { ResourceConflictError } from "@/lib/resource-errors";
+import { ResourceConflictError, ResourceNotFoundError } from "@/lib/resource-errors";
+import { deleteOwnApplicationDraft } from "@/modules/applications/ServerApplicationDeletionService";
 import {
   listOwnApplications,
 } from "@/modules/applications/ServerApplicationService";
@@ -135,4 +139,29 @@ describe("portal application routes", () => {
       error: { code: "CONFLICT" },
     });
   });
+  it("deletes a draft through the protected service", async () => {
+    vi.mocked(deleteOwnApplicationDraft).mockResolvedValue({ id: applicationId });
+    const response = await itemRoute.DELETE(
+      request(`/api/portal/applications/${applicationId}`, "DELETE"),
+      { params: Promise.resolve({ id: applicationId }) },
+    );
+    expect(response.status).toBe(200);
+    expect(deleteOwnApplicationDraft).toHaveBeenCalledWith(
+      actor,
+      applicationId,
+      expect.any(String),
+    );
+  });
+
+  it("does not expose an unowned draft on deletion", async () => {
+    vi.mocked(deleteOwnApplicationDraft).mockRejectedValue(
+      new ResourceNotFoundError("application draft"),
+    );
+    const response = await itemRoute.DELETE(
+      request(`/api/portal/applications/${applicationId}`, "DELETE"),
+      { params: Promise.resolve({ id: applicationId }) },
+    );
+    expect(response.status).toBe(404);
+  });
+
 });

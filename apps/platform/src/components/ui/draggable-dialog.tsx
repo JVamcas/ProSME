@@ -107,21 +107,21 @@ function DraggableDialogPanel({
         style={{ transform: `translate(${offset.x}px, ${offset.y}px)` }}
       >
         <header
-          className="flex cursor-grab touch-none bg-brand-orange select-none items-center justify-between rounded-xl border-b border-t-2 border-slate-100 border-t-brand-orange px-5 py-4 active:cursor-grabbing sm:px-6"
+          className="flex cursor-grab touch-none select-none items-center justify-between rounded-xl border-b border-t-2 border-slate-100 border-t-brand-orange px-5 py-4 active:cursor-grabbing sm:px-6"
           onPointerCancel={stopDrag}
           onPointerDown={startDrag}
           onPointerMove={moveDialog}
           onPointerUp={stopDrag}
         >
           <h2
-            className="pointer-events-none text-xl font-bold text-brand-white"
+            className="pointer-events-none text-xl font-bold text-brand-navy"
             id={titleId}
           >
             {title}
           </h2>
           <button
             aria-label="Close dialog"
-            className="grid size-9 place-items-center rounded-full text-brand-white transition hover:bg-brand-cream hover:text-brand-navy"
+            className="grid size-9 place-items-center rounded-full text-brand-navy transition hover:bg-brand-cream hover:text-brand-navy"
             onClick={onClose}
             ref={closeRef}
             type="button"

@@ -19,7 +19,10 @@ import {
 import { calculateFormCompleteness } from "@/modules/forms/engine/FormCompleteness";
 import { activeFormDefinition } from "@/modules/forms/engine/FormVisibility";
 import { validateFormValues } from "@/modules/forms/FormValidation";
-import { FormCompletenessSummary } from "./FormCompletenessSummary";
+import {
+  FormCompletenessSummary,
+  type SupplementalCompletion,
+} from "./FormCompletenessSummary";
 import {
   formColumnCount,
   formGridClass,
@@ -136,18 +139,22 @@ export function FormRenderer({
   formData,
   onChange,
   onSubmit,
+  penultimateStep,
   readOnly = false,
   runtimeContext = {},
+  supplementalCompletion,
 }: {
   children?: ReactNode;
   definition: FormRuntimeSchema;
   formData: DynamicFormValues;
   onChange: (values: DynamicFormValues) => void;
   onSubmit: (values: DynamicFormValues) => void;
+  penultimateStep?: { content: ReactNode; id: string; title: string };
   readOnly?: boolean;
   runtimeContext?: FormRuntimeContext;
+  supplementalCompletion?: SupplementalCompletion;
 }) {
-  const [currentSectionId, setCurrentSectionId] = useState<string>();
+  const [currentStepId, setCurrentStepId] = useState<string>();
   const [validationAttempted, setValidationAttempted] = useState(false);
   const activeDefinition = useMemo(
     () => activeFormDefinition(definition, formData),
@@ -158,13 +165,22 @@ export function FormRenderer({
     [definition, formData],
   );
   const stepMode = definition.displayMode === "STEPS";
+  const steps = stepMode && penultimateStep
+    ? [
+        ...parsed.sections.slice(0, -1),
+        { id: penultimateStep.id, title: penultimateStep.title },
+        ...parsed.sections.slice(-1),
+      ]
+    : parsed.sections;
   const currentIndex = stepMode
-    ? Math.max(
-        0,
-        parsed.sections.findIndex((section) => section.id === currentSectionId),
-      )
+    ? Math.max(0, steps.findIndex((step) => step.id === currentStepId))
     : 0;
-  const currentSection = parsed.sections[currentIndex];
+  const documentStepActive = stepMode
+    && Boolean(penultimateStep)
+    && currentStepId === penultimateStep?.id;
+  const currentSection = documentStepActive
+    ? undefined
+    : parsed.sections.find((section) => section.id === steps[currentIndex]?.id);
   const currentFields = currentSection
     ? activeDefinition.fields.filter(
         (field) => field.sectionId === currentSection.id,
@@ -197,67 +213,79 @@ export function FormRenderer({
       {parsed.instructions ? (
         <p className="text-sm text-brand-navy/70">{parsed.instructions}</p>
       ) : null}
-      <FormCompletenessSummary completeness={completeness} />
+      <FormCompletenessSummary
+        completeness={completeness}
+        supplementalCompletion={supplementalCompletion}
+      />
       {stepMode ? (
-        <FormStepProgress
-          currentIndex={currentIndex}
-          sections={parsed.sections}
-        />
+        <FormStepProgress currentIndex={currentIndex} steps={steps} />
       ) : null}
-      <Form<DynamicFormValues, RJSFSchema, RendererContext>
-        disabled={readOnly}
-        formContext={context}
-        formData={formData}
-        extraErrors={extraErrors}
-        noHtml5Validate
-        omitExtraData
-        onChange={(event: IChangeEvent<DynamicFormValues>) => {
-          setValidationAttempted(false);
-          onChange(event.formData ?? {});
-        }}
-        onSubmit={(event: IChangeEvent<DynamicFormValues>) => {
-          onSubmit(event.formData ?? {});
-        }}
-        schema={parsed.schema}
-        showErrorList={false}
-        templates={{
-          BaseInputTemplate: FormBaseInputTemplate,
-          FieldTemplate: FormFieldTemplate,
-          ObjectFieldTemplate: FormObjectTemplate,
-        }}
-        uiSchema={parsed.uiSchema}
-        validator={validator}
-        widgets={{
-          currency: FormCurrencyWidget,
-          DateWidget: FormDateWidget,
-          percentage: FormPercentageWidget,
-          RadioWidget: FormRadioWidget,
-          SelectWidget: FormSelectWidget,
-          TextareaWidget: FormTextareaWidget,
-        }}
-      >
-        {stepMode ? (
+      {documentStepActive ? (
+        <>
+          {penultimateStep?.content}
           <FormStepActions
             currentIndex={currentIndex}
-            onBack={() => {
-              setValidationAttempted(false);
-              setCurrentSectionId(parsed.sections[currentIndex - 1]?.id);
-            }}
-            onNext={() => {
-              if (!readOnly && !validateFormValues(currentFields, formData, true)) {
-                setValidationAttempted(true);
-                return;
-              }
-              setValidationAttempted(false);
-              setCurrentSectionId(parsed.sections[currentIndex + 1]?.id);
-            }}
-            stepCount={parsed.sections.length}
+            onBack={() => setCurrentStepId(steps[currentIndex - 1]?.id)}
+            onNext={() => setCurrentStepId(steps[currentIndex + 1]?.id)}
+            stepCount={steps.length}
           />
-        ) : null}
-        {!stepMode || currentIndex === parsed.sections.length - 1
-          ? children
-          : null}
-      </Form>
+        </>
+      ) : (
+        <Form<DynamicFormValues, RJSFSchema, RendererContext>
+          disabled={readOnly}
+          formContext={context}
+          formData={formData}
+          extraErrors={extraErrors}
+          noHtml5Validate
+          omitExtraData
+          onChange={(event: IChangeEvent<DynamicFormValues>) => {
+            setValidationAttempted(false);
+            onChange(event.formData ?? {});
+          }}
+          onSubmit={(event: IChangeEvent<DynamicFormValues>) => {
+            onSubmit(event.formData ?? {});
+          }}
+          schema={parsed.schema}
+          showErrorList={false}
+          templates={{
+            BaseInputTemplate: FormBaseInputTemplate,
+            FieldTemplate: FormFieldTemplate,
+            ObjectFieldTemplate: FormObjectTemplate,
+          }}
+          uiSchema={parsed.uiSchema}
+          validator={validator}
+          widgets={{
+            currency: FormCurrencyWidget,
+            DateWidget: FormDateWidget,
+            percentage: FormPercentageWidget,
+            RadioWidget: FormRadioWidget,
+            SelectWidget: FormSelectWidget,
+            TextareaWidget: FormTextareaWidget,
+          }}
+        >
+          {stepMode ? (
+            <FormStepActions
+              currentIndex={currentIndex}
+              onBack={() => {
+                setValidationAttempted(false);
+                setCurrentStepId(steps[currentIndex - 1]?.id);
+              }}
+              onNext={() => {
+                if (!readOnly && !validateFormValues(currentFields, formData, true)) {
+                  setValidationAttempted(true);
+                  return;
+                }
+                setValidationAttempted(false);
+                setCurrentStepId(steps[currentIndex + 1]?.id);
+              }}
+              stepCount={steps.length}
+            />
+          ) : null}
+          {!stepMode || currentIndex === steps.length - 1
+            ? children
+            : null}
+        </Form>
+      )}
     </div>
   );
 }

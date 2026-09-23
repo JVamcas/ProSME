@@ -15,6 +15,14 @@ vi.mock("@/modules/businesses/BusinessHooks", () => ({
 vi.mock("@/modules/applications/ui/useApplicationDocuments", () => ({
   useApplicationDocuments,
 }));
+vi.mock("@/modules/applications/ApplicationHooks", () => ({
+  useDeleteApplicationDraft: () => ({
+    error: null,
+    isPending: false,
+    mutate: vi.fn(),
+    reset: vi.fn(),
+  }),
+}));
 
 import {
   applicationSteps,
@@ -257,6 +265,7 @@ describe("application creation UI", () => {
   it("hides the continue action for non-draft applications", () => {
     const markup = renderToStaticMarkup(
       <ApplicationListContent
+        canDeleteDraft={false}
         items={[
           {
             businessName: "JM Technologies",

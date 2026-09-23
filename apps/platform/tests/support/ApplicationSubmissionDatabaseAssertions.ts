@@ -1,3 +1,5 @@
+import { expect } from "vitest";
+
 type DatabaseQuery = (
   text: string,
   values?: unknown[],
@@ -45,4 +47,67 @@ export async function readAtomicSubmissionCounts(
     [applicationId],
   );
   return result.rows[0];
+}
+
+export async function expectImmutableSubmissionArtifacts(
+  query: DatabaseQuery,
+  input: {
+    applicationId: string;
+    eligibilityVersionId: string;
+    ownerId: string;
+    reference: string;
+    workflowVersionId: string;
+  },
+) {
+  const snapshotResult = await query(
+    `SELECT id, schema_version, snapshot_content, integrity_hash,
+      encode(digest(convert_to(canonical_content, 'UTF8'), 'sha256'), 'hex')
+        AS computed_hash
+     FROM app_application_submission_snapshots
+     WHERE application_id = $1`,
+    [input.applicationId],
+  );
+  const snapshot = snapshotResult.rows[0];
+  expect(snapshot.schema_version).toBe(1);
+  expect(snapshot.integrity_hash).toBe(snapshot.computed_hash);
+  expect(snapshot.snapshot_content).toMatchObject({
+    application: { ownerUserId: input.ownerId, status: "submitted" },
+    eligibilityRuleSetVersionId: input.eligibilityVersionId,
+    reference: input.reference,
+    workflowTemplateVersionId: input.workflowVersionId,
+  });
+  const eligibility = await query(
+    `SELECT context_reference FROM app_authoritative_eligibility_outcomes
+     WHERE application_id = $1 AND evaluation_number = 1`,
+    [input.applicationId],
+  );
+  expect(eligibility.rows[0].context_reference).toMatchObject({
+    submissionSnapshotId: snapshot.id,
+    submissionSnapshotIntegrityHash: snapshot.integrity_hash,
+  });
+  await expect(query(
+    `UPDATE app_application_submission_snapshots
+     SET snapshot_content = '{}'::jsonb WHERE id = $1`,
+    [snapshot.id],
+  )).rejects.toThrow("application submission snapshots are immutable");
+}
+
+export async function expectAtomicSubmissionCounts(
+  query: DatabaseQuery,
+  applicationId: string,
+  workflowVersionId: string,
+) {
+  expect(await readAtomicSubmissionCounts(query, applicationId)).toEqual({
+    application_audits: 1,
+    audits: 1,
+    events: 5,
+    eligibility_outcomes: 1,
+    outbox: 2,
+    pinned_version: workflowVersionId,
+    runtime_initialized: true,
+    snapshots: 1,
+    stages: 1,
+    tasks: 1,
+    workflows: 1,
+  });
 }

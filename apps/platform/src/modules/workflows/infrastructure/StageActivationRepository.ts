@@ -5,8 +5,8 @@ import { and, asc, eq, sql } from "drizzle-orm";
 import { getDatabase } from "@/db/client";
 import {
   applications,
+  applicationSubmissionSnapshots,
   authoritativeEligibilityOutcomes,
-  fundingCalls,
   stageInstances,
   stageTaskDefinitions,
   stageTaskFormBindings,
@@ -80,18 +80,7 @@ export async function lockStageActivationTarget(
 ): Promise<StageActivationTarget | null> {
   const [row] = await transaction
     .select({
-      application: {
-        business: applications.businessSection,
-        declarationAcceptance: applications.declarationAcceptance,
-        declarations: applications.declarationsSection,
-        financial: applications.financialSection,
-        fundingOpportunityId: applications.fundingOpportunityId,
-        id: applications.id,
-        project: applications.projectSection,
-        reference: applications.reference,
-        sectionCompletion: applications.sectionCompletion,
-        status: applications.status,
-      },
+      snapshotContent: applicationSubmissionSnapshots.snapshotContent,
       currentStageInstanceId: workflowInstances.currentStageInstanceId,
       eligibility: {
         eligible: authoritativeEligibilityOutcomes.eligible,
@@ -108,16 +97,6 @@ export async function lockStageActivationTarget(
         warningCount: sql<number>`jsonb_array_length(${authoritativeEligibilityOutcomes.warnings})`,
       },
       entryCondition: workflowStageDefinitions.entryCondition,
-      fundingCall: {
-        closesAt: fundingCalls.closesAt,
-        id: fundingCalls.id,
-        maximumAmount: fundingCalls.maximumGrantAmount,
-        minimumAmount: fundingCalls.minimumGrantAmount,
-        opensAt: fundingCalls.opensAt,
-        slug: fundingCalls.slug,
-        status: fundingCalls.status,
-        title: fundingCalls.title,
-      },
       repeatable: workflowStageDefinitions.repeatable,
       slaHours: workflowStageDefinitions.slaHours,
       stageDefinitionId: workflowStageDefinitions.id,
@@ -130,8 +109,11 @@ export async function lockStageActivationTarget(
       eq(applications.id, workflowInstances.applicationId),
     )
     .innerJoin(
-      fundingCalls,
-      eq(fundingCalls.id, applications.fundingOpportunityId),
+      applicationSubmissionSnapshots,
+      eq(
+        applicationSubmissionSnapshots.id,
+        applications.submissionSnapshotId,
+      ),
     )
     .leftJoin(
       authoritativeEligibilityOutcomes,
@@ -163,26 +145,32 @@ export async function lockStageActivationTarget(
     .limit(1);
 
   if (!row) return null;
-  const {
-    business,
-    declarations,
-    financial,
-    project,
-    ...application
-  } = row.application;
+  const content = row.snapshotContent;
+  const application = content.application;
+  const fundingCall = content.fundingCall;
+  const terms = fundingCall.terms as Record<string, unknown>;
+  const { snapshotContent: _snapshotContent, ...target } = row;
+  void _snapshotContent;
   return {
-    ...row,
+    ...target,
     application: {
       ...application,
-      ...business,
-      ...project,
-      ...financial,
-      ...declarations,
+      ...content.form.normalizedValues,
+      ...(application.businessSection as Record<string, unknown>),
+      ...(application.projectSection as Record<string, unknown>),
+      ...(application.financialSection as Record<string, unknown>),
+      ...(application.declarationsSection as Record<string, unknown>),
+      reference: content.reference,
+      submittedAt: content.submittedAt,
     },
     fundingCall: {
-      ...row.fundingCall,
-      maximumAmount: Number(row.fundingCall.maximumAmount),
-      minimumAmount: Number(row.fundingCall.minimumAmount),
+      ...terms,
+      id: fundingCall.id,
+      publicationRevisionId: fundingCall.publicationRevisionId,
+      publicationRevisionNumber: fundingCall.publicationRevisionNumber,
+      status: fundingCall.statusAtSubmission,
+      maximumAmount: Number(terms.maximumGrantAmount),
+      minimumAmount: Number(terms.minimumGrantAmount),
     },
   };
 }

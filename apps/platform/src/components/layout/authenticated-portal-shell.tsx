@@ -156,8 +156,11 @@ export function AuthenticatedPortalShell({
   return (
     <CapabilityProvider value={context}>
       <div
-        className="min-h-screen bg-brand-white lg:grid"
+        className="min-h-screen lg:grid"
         style={{
+          backgroundColor: space === "operations"
+            ? "var(--color-brand-navy)"
+            : "var(--color-brand-orange)",
           gridTemplateColumns: sidebarOpen
             ? `${sidebarWidth}px minmax(0, 1fr)`
             : "0 minmax(0, 1fr)",

@@ -9,9 +9,14 @@ import { ApplicationFormEditor } from "@/modules/applications/ui/ApplicationForm
 
 export const metadata: Metadata = { title: "Edit application draft" };
 
-export default async function EditApplicationPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function EditApplicationPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const user = await getCurrentUser();
-  if (!user || !can(user, permissionCodes.fundingApplicationOwnRead)) redirect("/unauthorized");
+  if (!user || !can(user, permissionCodes.fundingApplicationOwnRead))
+    redirect("/unauthorized");
   const { id } = await params;
   if (!z.uuid().safeParse(id).success) notFound();
   return <ApplicationFormEditor applicationId={id} />;

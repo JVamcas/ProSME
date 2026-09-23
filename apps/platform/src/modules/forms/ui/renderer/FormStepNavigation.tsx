@@ -1,22 +1,20 @@
 "use client";
 
 import { GeneralButton } from "@/components/ui/button";
-import type { RenderSection } from "@/modules/forms/engine/FormDefinitionParser";
-
 export function FormStepProgress({
   currentIndex,
-  sections,
+  steps,
 }: {
   currentIndex: number;
-  sections: RenderSection[];
+  steps: { id: string; title: string }[];
 }) {
   return (
     <nav aria-label="Form steps" className="space-y-2">
       <p className="text-sm font-semibold text-brand-navy">
-        Step {currentIndex + 1} of {sections.length}: {sections[currentIndex].title}
+        Step {currentIndex + 1} of {steps.length}: {steps[currentIndex].title}
       </p>
       <ol className="flex gap-2" role="list">
-        {sections.map((section, index) => (
+        {steps.map((section, index) => (
           <li className="flex-1" key={section.id}>
             <span
               aria-current={index === currentIndex ? "step" : undefined}

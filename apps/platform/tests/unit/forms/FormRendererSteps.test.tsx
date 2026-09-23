@@ -84,6 +84,60 @@ describe("step form rendering", () => {
     await act(async () => root.unmount());
   });
 
+  it("adds supporting documents immediately before the final form section", async () => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(
+        <FormRenderer
+          definition={steppedDefinition()}
+          formData={{ NAME: "Valid name" }}
+          onChange={vi.fn()}
+          onSubmit={vi.fn()}
+          penultimateStep={{
+            content: <section>Upload required evidence</section>,
+            id: "supporting-documents",
+            title: "Supporting documents",
+          }}
+          supplementalCompletion={{
+            completedCount: 0,
+            id: "supporting-documents",
+            requiredCount: 2,
+            title: "Supporting documents",
+            unit: "document",
+          }}
+        />,
+      );
+    });
+
+    expect(container.textContent).toContain("Step 1 of 3: Basic information");
+    expect(container.textContent).toContain(
+      "1 of 3 required fields and documents complete",
+    );
+    expect(container.textContent).toContain("2 required documents remaining");
+    await act(async () => {
+      Array.from(container.querySelectorAll("button"))
+        .find((button) => button.textContent === "Next")
+        ?.click();
+    });
+    expect(container.textContent).toContain("Step 2 of 3: Supporting documents");
+    expect(container.textContent).toContain("Upload required evidence");
+    expect(container.textContent).not.toContain("Additional details.");
+    expect(container.querySelectorAll("form")).toHaveLength(0);
+
+    await act(async () => {
+      Array.from(container.querySelectorAll("button"))
+        .find((button) => button.textContent === "Next")
+        ?.click();
+    });
+    expect(container.textContent).toContain("Step 3 of 3: Additional details");
+    expect(container.textContent).not.toContain("Upload required evidence");
+
+    await act(async () => root.unmount());
+  });
+
   it("does not advance until the current section is valid", async () => {
     const container = document.createElement("div");
     document.body.append(container);

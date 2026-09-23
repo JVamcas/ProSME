@@ -1,18 +1,17 @@
 import "server-only";
 
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 
 import {
   applicationAuditEntries,
   applicationLifecycleHistory,
   applications,
   applicationSubmissionCommands,
-  applicationSubmissionSnapshots,
   transactionalOutbox,
   workflowAuditEntries,
   workflowEvents,
 } from "@/db/schema";
-import { prepareAuthoritativeEligibilityOutcome } from "@/modules/eligibility/application/ServerAuthoritativeEligibilityService";
+import { prepareSubmissionAuthoritativeEligibilityOutcome } from "@/modules/eligibility/application/ServerSubmissionEligibilityService";
 import { createAuthoritativeEligibilityOutcomeRecord } from "@/modules/eligibility/infrastructure/AuthoritativeEligibilityRepository";
 import { activateStageInTransaction } from "@/modules/workflows/application/runtime/ServerStageActivationService";
 import { createWorkflowInstance } from "@/modules/workflows/infrastructure/WorkflowInstanceRepository";
@@ -23,19 +22,22 @@ import type {
   SubmitApplicationResult,
 } from "./ApplicationSubmissionRepository";
 import type { validateApplicationSubmissionState } from "./ApplicationSubmissionValidation";
+import { createSubmissionSnapshot } from "./ApplicationSubmissionSnapshotWriter";
 
 type ValidatedState = NonNullable<Awaited<ReturnType<
   typeof validateApplicationSubmissionState
 >>>;
 
-type WriteInput = {
+export type SubmissionWriteInput = {
   actorId: string;
+  applicant: NonNullable<ValidatedState["applicant"]>;
   application: ValidatedState["application"];
   business: NonNullable<ValidatedState["business"]>;
   configuration: NonNullable<ValidatedState["configuration"]>;
   context: NonNullable<ValidatedState["context"]>;
   correlationId: string;
   idempotencyKey: string;
+  publicationRevision: NonNullable<ValidatedState["publicationRevision"]>;
   requestFingerprint: string;
 };
 
@@ -51,7 +53,7 @@ export class InitialStageActivationError extends Error {
 
 async function allocateReference(
   transaction: SubmissionTransaction,
-  input: WriteInput,
+  input: SubmissionWriteInput,
   submittedAt: Date,
 ) {
   const allocation = await transaction.execute<{ value: string }>(sql`
@@ -64,61 +66,9 @@ async function allocateReference(
   });
 }
 
-async function createSubmissionSnapshot(
-  transaction: SubmissionTransaction,
-  input: WriteInput,
-  submittedAt: Date,
-) {
-  const [snapshot] = await transaction
-    .insert(applicationSubmissionSnapshots)
-    .values({
-      applicationData: {
-        businessSection: input.application.businessSection,
-        declarationsSection: input.application.declarationsSection,
-        financialSection: input.application.financialSection,
-        fundingOpportunityId: input.application.fundingOpportunityId,
-        fundingOpportunityTitle: input.application.fundingOpportunityTitle,
-        ownerUserId: input.application.ownerUserId,
-        projectSection: input.application.projectSection,
-      },
-      applicationId: input.application.id,
-      applicationRowVersion: input.application.rowVersion,
-      businessData: {
-        businessType: input.business.businessType,
-        employeeCount: input.business.employeeCount,
-        establishedYear: input.business.establishedYear,
-        legalName: input.business.legalName,
-        registrationNumber: input.business.registrationNumber,
-        sector: input.business.sector,
-        updatedAt: input.business.updatedAt.toISOString(),
-      },
-      declarationAcceptance: input.application.declarationAcceptance ?? {},
-      documentVersions: input.context.documents.map((document) => ({
-        checksumSha256: document.checksumSha256,
-        contentType: document.contentType,
-        id: document.id,
-        objectKey: document.objectKey,
-        originalName: document.originalName,
-        requirementKey: document.requirementKey,
-        sizeBytes: document.sizeBytes,
-        versionNumber: document.versionNumber,
-      })),
-      eligibilityRuleSetVersionId:
-        input.application.eligibilityRuleSetVersionId!,
-      formVersionId: input.application.formVersionId!,
-      normalizedFormValues: input.context.response.values,
-      responseRowVersion: input.context.response.rowVersion,
-      submittedAt,
-      workflowTemplateVersionId:
-        input.configuration.workflowTemplateVersionId,
-    })
-    .returning({ id: applicationSubmissionSnapshots.id });
-  return snapshot!.id;
-}
-
 async function markApplicationSubmitted(
   transaction: SubmissionTransaction,
-  input: WriteInput,
+  input: SubmissionWriteInput,
   reference: string,
   snapshotId: string,
   submittedAt: Date,
@@ -136,6 +86,7 @@ async function markApplicationSubmitted(
     .where(and(
       eq(applications.id, input.application.id),
       eq(applications.status, "draft"),
+      isNull(applications.deletedAt),
       eq(applications.rowVersion, input.application.rowVersion),
     ))
     .returning({ id: applications.id });
@@ -144,22 +95,23 @@ async function markApplicationSubmitted(
 
 async function createEligibilityOutcome(
   transaction: SubmissionTransaction,
-  input: WriteInput,
+  input: SubmissionWriteInput,
   submittedAt: Date,
+  snapshot: Awaited<ReturnType<typeof createSubmissionSnapshot>>,
 ) {
-  const outcome = await prepareAuthoritativeEligibilityOutcome(transaction, {
-    actorId: input.actorId,
-    application: {
-      ...input.application,
-      rowVersion: input.application.rowVersion + 1,
+  const outcome = await prepareSubmissionAuthoritativeEligibilityOutcome(
+    transaction,
+    {
+      actorId: input.actorId,
+      applicationId: input.application.id,
+      applicationRowVersion: input.application.rowVersion + 1,
+      correlationId: input.correlationId,
+      evaluatedAt: submittedAt,
+      evaluationNumber: 1,
+      snapshot,
+      workflowTaskId: null,
     },
-    business: input.business,
-    correlationId: input.correlationId,
-    evaluatedAt: submittedAt,
-    evaluationNumber: 1,
-    fundingCall: input.configuration,
-    workflowTaskId: null,
-  });
+  );
   return createAuthoritativeEligibilityOutcomeRecord(transaction, {
     ...outcome,
     commandKey: null,
@@ -168,7 +120,7 @@ async function createEligibilityOutcome(
 
 async function createInitialRuntime(
   transaction: SubmissionTransaction,
-  input: WriteInput,
+  input: SubmissionWriteInput,
   submittedAt: Date,
 ) {
   const workflow = await createWorkflowInstance(transaction, {
@@ -214,7 +166,7 @@ async function createInitialRuntime(
 
 async function appendSubmissionRecords(
   transaction: SubmissionTransaction,
-  input: WriteInput,
+  input: SubmissionWriteInput,
   result: SubmissionResult,
 ) {
   await transaction.insert(applicationLifecycleHistory).values({
@@ -290,24 +242,25 @@ async function appendSubmissionRecords(
 
 export async function writeApplicationSubmission(
   transaction: SubmissionTransaction,
-  input: WriteInput,
+  input: SubmissionWriteInput,
 ): Promise<SubmitApplicationResult> {
   const submittedAt = new Date();
   const reference = await allocateReference(transaction, input, submittedAt);
-  const snapshotId = await createSubmissionSnapshot(
+  const snapshot = await createSubmissionSnapshot(
     transaction,
     input,
+    reference,
     submittedAt,
   );
   const updated = await markApplicationSubmitted(
     transaction,
     input,
     reference,
-    snapshotId,
+    snapshot.id,
     submittedAt,
   );
   if (!updated) return { kind: "stale_preflight" };
-  await createEligibilityOutcome(transaction, input, submittedAt);
+  await createEligibilityOutcome(transaction, input, submittedAt, snapshot);
   const workflowInstanceId = await createInitialRuntime(
     transaction,
     input,

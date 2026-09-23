@@ -13,6 +13,8 @@ export type EligibilityContextReference = {
   businessProfileUpdatedAt: string;
   correlationId: string;
   fundingCallId: string;
+  submissionSnapshotId?: string;
+  submissionSnapshotIntegrityHash?: string;
 };
 
 export type AuthoritativeEligibilityOutcome = {

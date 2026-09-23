@@ -33,7 +33,7 @@ export async function insertCompleteSubmissionApplications(
          declaration_acceptance, section_completion,
          eligibility_rule_set_version_id, form_version_id)
        VALUES ($1, $2, $4, $3, 'Submission test application',
-         jsonb_build_object('businessId', $4::text),
+         jsonb_build_object('businessId', ($4::uuid)::text),
          '{"compliance":true,"falseInformation":true,"informationAccuracy":true,"privacyConsent":true,"terms":true}'::jsonb,
          '{"acceptedAt":"2026-09-15T08:00:00.000Z","declarationVersion":"sme-fund-applicant-declaration-v1","privacyVersion":"sme-fund-privacy-consent-v1"}'::jsonb,
          '{"business":true,"project":true,"financial":true,"documents":true,"declarations":true}'::jsonb,
@@ -55,7 +55,8 @@ export async function insertCompleteSubmissionApplications(
       [applicationId, submissionFormVersionId, input.ownerId],
     );
     await query(
-      `UPDATE app_applications SET latest_draft_response_id = $2 WHERE id = $1`,
+      `UPDATE app_applications SET latest_draft_response_id = $2,
+         row_version = row_version + 1, updated_at = now() WHERE id = $1`,
       [applicationId, response.rows[0].id],
     );
     await query(
@@ -64,7 +65,7 @@ export async function insertCompleteSubmissionApplications(
          object_key, original_name, content_type, extension, size_bytes,
          checksum_sha256, storage_status, scan_status, finalized_at, scanned_at)
        VALUES ($1, $2, 'REGISTRATION_DOCUMENT', 1,
-         $1::text || '/registration-document', 'registration.pdf',
+         ($1::uuid)::text || '/registration-document', 'registration.pdf',
          'application/pdf', '.pdf', 512, $3, 'finalized', 'clean', now(), now())`,
       [applicationId, input.ownerId, "a".repeat(64)],
     );
@@ -85,9 +86,8 @@ export async function insertSubmissionFundingCalls(
   );
   await query(
     `INSERT INTO app_form_versions
-      (id, form_definition_id, version_number, status, created_by,
-       published_by, published_at)
-     VALUES ($1, $2, 1, 'PUBLISHED', $3, $3, now())`,
+      (id, form_definition_id, version_number, status, created_by)
+     VALUES ($1, $2, 1, 'DRAFT', $3)`,
     [submissionFormVersionId, submissionFormDefinitionId, actorId],
   );
   await query(
@@ -110,7 +110,14 @@ export async function insertSubmissionFundingCalls(
       submissionFormSectionId,
     ],
   );
-  return query(
+  await query(
+    `UPDATE app_form_versions
+     SET status = 'PUBLISHED', published_by = $2, published_at = now(),
+       row_version = row_version + 1
+     WHERE id = $1`,
+    [submissionFormVersionId, actorId],
+  );
+  await query(
     `INSERT INTO app_funding_calls
        (id, reference, slug, title, description, total_budget_envelope,
         minimum_grant_amount, maximum_grant_amount, opens_at, closes_at,
@@ -135,6 +142,41 @@ export async function insertSubmissionFundingCalls(
       submissionFormVersionId,
     ],
   );
+  await query(
+    `WITH histories AS (
+      INSERT INTO app_funding_call_lifecycle_history
+        (funding_call_id, command, source_status, target_status, actor_id,
+         command_time, effective_time, row_version, correlation_id,
+         idempotency_key)
+      SELECT call.id, 'PUBLISH', 'DRAFT', 'LIVE', $1, now(), now(),
+        call.row_version + 1, gen_random_uuid()::text, 'submission-fixture-' || call.id
+      FROM app_funding_calls call
+      WHERE call.id = ANY($2::uuid[])
+      RETURNING id, funding_call_id
+    )
+    INSERT INTO app_funding_call_publication_revisions
+      (funding_call_id, revision_number, source_row_version, published_status,
+       snapshot, lifecycle_history_id, published_by, published_at, correlation_id)
+    SELECT call.id, 1, call.row_version, 'LIVE',
+      jsonb_build_object(
+        'applicationDuplicatePolicy', call.application_duplicate_policy,
+        'closesAt', call.closes_at, 'description', call.description,
+        'eligibilityRuleSetVersionId', call.eligibility_rule_set_version_id,
+        'eligibilitySummary', call.eligibility_summary,
+        'formVersionId', call.form_version_id,
+        'fundingInstrument', call.funding_instrument,
+        'maximumGrantAmount', call.maximum_grant_amount,
+        'minimumGrantAmount', call.minimum_grant_amount,
+        'opensAt', call.opens_at, 'publicDocuments', '[]'::jsonb,
+        'reference', call.reference, 'slug', call.slug,
+        'thematicArea', call.thematic_area, 'title', call.title,
+        'totalBudgetEnvelope', call.total_budget_envelope,
+        'workflowTemplateVersionId', call.workflow_template_version_id
+      ), histories.id, $1, now(), gen_random_uuid()
+    FROM histories
+    JOIN app_funding_calls call ON call.id = histories.funding_call_id`,
+    [actorId, submissionFundingCallIds],
+  );
 }
 
 export async function publishNewerWorkflowVersion(
@@ -144,9 +186,15 @@ export async function publishNewerWorkflowVersion(
 ) {
   await query(
     `INSERT INTO app_workflow_definition_versions
-       (id, definition_id, version_number, status, created_by,
-        published_by, published_at)
-     VALUES ($1, $2, 2, 'PUBLISHED', $3, $3, now())`,
+       (id, definition_id, version_number, status, created_by)
+     VALUES ($1, $2, 2, 'DRAFT', $3)`,
     ["62222222-2222-4222-8222-222222222223", definitionId, actorId],
+  );
+  await query(
+    `UPDATE app_workflow_definition_versions
+     SET status = 'PUBLISHED', published_by = $2, published_at = now(),
+       row_version = row_version + 1
+     WHERE id = $1`,
+    ["62222222-2222-4222-8222-222222222223", actorId],
   );
 }

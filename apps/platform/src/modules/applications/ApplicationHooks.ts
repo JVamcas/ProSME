@@ -87,3 +87,14 @@ export function useSubmitApplication(id: string) {
     },
   });
 }
+
+export function useDeleteApplicationDraft() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: clientApplicationService.deleteApplicationDraft,
+    onSuccess: ({ id }) => {
+      queryClient.removeQueries({ queryKey: applicationQueryKeys.detail(id) });
+      void queryClient.invalidateQueries({ queryKey: applicationQueryKeys.own });
+    },
+  });
+}

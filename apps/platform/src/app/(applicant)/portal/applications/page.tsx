@@ -18,7 +18,10 @@ export default async function ApplicationsPage() {
       eyebrow="Funding applications"
       title="My applications"
     >
-      <ApplicationsList canCreate={can(user, permissionCodes.fundingApplicationCreate)} />
+      <ApplicationsList
+        canCreate={can(user, permissionCodes.fundingApplicationCreate)}
+        canDeleteDraft={can(user, permissionCodes.fundingApplicationDraftOwnDelete)}
+      />
     </PageShell>
   );
 }
