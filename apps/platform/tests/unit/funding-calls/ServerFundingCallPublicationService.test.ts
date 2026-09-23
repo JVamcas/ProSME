@@ -5,7 +5,7 @@ vi.mock("@/modules/funding-calls/infrastructure/FundingCallRepository", () => ({
   readFundingCallById: vi.fn(),
 }));
 vi.mock("@/modules/funding-calls/infrastructure/FundingCallPublicationRepository", () => ({
-  publishApprovedFundingCall: vi.fn(),
+  publishDraftFundingCall: vi.fn(),
   readFundingCallPublicationReplay: vi.fn(),
 }));
 vi.mock("@/modules/funding-calls/application/ServerFundingCallReadinessService", () => ({
@@ -20,7 +20,7 @@ import {
 } from "@/modules/funding-calls/application/ServerFundingCallPublicationService";
 import { validateFundingCallReadiness } from "@/modules/funding-calls/application/ServerFundingCallReadinessService";
 import {
-  publishApprovedFundingCall,
+  publishDraftFundingCall,
   readFundingCallPublicationReplay,
 } from "@/modules/funding-calls/infrastructure/FundingCallPublicationRepository";
 import { readFundingCallById } from "@/modules/funding-calls/infrastructure/FundingCallRepository";
@@ -49,7 +49,7 @@ const call = {
   reference: "SME-2027-01",
   rowVersion: 1,
   slug: "sme-growth-fund-2027",
-  status: "APPROVED" as const,
+  status: "DRAFT" as const,
   suspendedFromStatus: null,
   thematicArea: "Business growth",
   title: "SME Growth Fund 2027",
@@ -98,11 +98,11 @@ describe("funding call publication", () => {
       "correlation-id",
     )).rejects.toBeInstanceOf(PermissionDeniedError);
 
-    expect(publishApprovedFundingCall).not.toHaveBeenCalled();
+    expect(publishDraftFundingCall).not.toHaveBeenCalled();
   });
 
   it("publishes only after rerunning readiness validation", async () => {
-    vi.mocked(publishApprovedFundingCall).mockResolvedValue({
+    vi.mocked(publishDraftFundingCall).mockResolvedValue({
       call: {
         ...call,
         rowVersion: 2,
@@ -123,7 +123,7 @@ describe("funding call publication", () => {
       call,
       expect.any(Date),
     );
-    expect(publishApprovedFundingCall).toHaveBeenCalledWith({
+    expect(publishDraftFundingCall).toHaveBeenCalledWith({
       actorId,
       correlationId: "correlation-id",
       expectedRowVersion: 1,
@@ -156,7 +156,7 @@ describe("funding call publication", () => {
       "correlation-id",
     )).rejects.toThrow("FORM_VERSION_NOT_PUBLISHED");
 
-    expect(publishApprovedFundingCall).not.toHaveBeenCalled();
+    expect(publishDraftFundingCall).not.toHaveBeenCalled();
   });
 
   it("replays an identical command without creating another revision or event", async () => {
@@ -177,6 +177,6 @@ describe("funding call publication", () => {
     expect(result.status).toBe("SCHEDULED");
     expect(readFundingCallById).not.toHaveBeenCalled();
     expect(validateFundingCallReadiness).not.toHaveBeenCalled();
-    expect(publishApprovedFundingCall).not.toHaveBeenCalled();
+    expect(publishDraftFundingCall).not.toHaveBeenCalled();
   });
 });

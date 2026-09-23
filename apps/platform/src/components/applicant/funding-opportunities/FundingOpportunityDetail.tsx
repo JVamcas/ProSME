@@ -1,13 +1,5 @@
-"use client";
-
-import { ChevronLeft } from "lucide-react";
-import Link from "next/link";
-
-import { PortalErrorState } from "@/components/layout/PortalErrorState";
-import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
 import { Tabs, type TabItem } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { useFundingOpportunity } from "@/modules/funding-calls/FundingOpportunityHooks";
 import type { PublicFundingCallDetail as Opportunity } from "@/modules/funding-calls/api/PublicFundingCallTransport";
 import { formatOpportunityDate } from "./FundingOpportunityFormat";
 import {
@@ -50,82 +42,41 @@ function detailTabs(opportunity: Opportunity): TabItem<DetailTab>[] {
   ];
 }
 
-export function FundingOpportunityDetail({
-  opportunityId,
-}: {
-  opportunityId: string;
-}) {
-  const query = useFundingOpportunity(opportunityId);
-
-  if (query.isPending) {
-    return (
-      <PortalLoadingState
-        description="The latest published information is being prepared."
-        title="Loading funding opportunity"
-      />
-    );
-  }
-
-  if (query.isError) {
-    return (
-      <PortalErrorState
-        description={query.error.message}
-        onAction={() => void query.refetch()}
-        title="Funding opportunity could not be loaded"
-      />
-    );
-  }
-
-  return <FundingOpportunityDetailView opportunity={query.data} />;
-}
-
-export function FundingOpportunityDetailView({
+export function FundingOpportunityStatus({
   opportunity,
 }: {
   opportunity: Opportunity;
 }) {
   const statusDateClassName = statusDateStyles[opportunity.status];
   return (
-    <section>
-      <Link
-        className="inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-brand-navy hover:underline"
-        href="/portal/funding-opportunities"
-      >
-        <ChevronLeft aria-hidden="true" className="size-4 text-brand-orange" />
-        Back to opportunities
-      </Link>
-      <header className="mt-2 pb-5">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h1 className="display text-3xl font-bold text-brand-navy sm:text-4xl">
-              {opportunity.title}
-            </h1>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-brand-navy/70 sm:text-base">
-              {opportunity.summary}
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <StatusBadge status={opportunity.status} />
-            <span className={`text-sm font-semibold ${statusDateClassName}`}>
-              {opportunity.status === "upcoming"
-                ? "Opens"
-                : opportunity.status === "closed"
-                  ? "Closed"
-                  : "Closes"}{" "}
-              {formatOpportunityDate(
-                opportunity.status === "upcoming"
-                  ? opportunity.opensAt
-                  : opportunity.closesAt,
-              )}
-            </span>
-          </div>
-        </div>
-      </header>
-      <Tabs
-        ariaLabel="Funding opportunity information"
-        defaultSelectedId="overview"
-        items={detailTabs(opportunity)}
-      />
-    </section>
+    <>
+      <StatusBadge status={opportunity.status} />
+      <span className={`text-sm font-semibold ${statusDateClassName}`}>
+        {opportunity.status === "upcoming"
+          ? "Opens"
+          : opportunity.status === "closed"
+            ? "Closed"
+            : "Closes"}{" "}
+        {formatOpportunityDate(
+          opportunity.status === "upcoming"
+            ? opportunity.opensAt
+            : opportunity.closesAt,
+        )}
+      </span>
+    </>
+  );
+}
+
+export function FundingOpportunityDetail({
+  opportunity,
+}: {
+  opportunity: Opportunity;
+}) {
+  return (
+    <Tabs
+      ariaLabel="Funding opportunity information"
+      defaultSelectedId="overview"
+      items={detailTabs(opportunity)}
+    />
   );
 }

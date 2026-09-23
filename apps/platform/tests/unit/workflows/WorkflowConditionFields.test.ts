@@ -96,6 +96,10 @@ describe("workflow condition fields", () => {
 
     expect(entryFields).toEqual(expect.arrayContaining([
       expect.objectContaining({
+        key: "eligibility.outcome",
+        type: "TEXT",
+      }),
+      expect.objectContaining({
         key: "application.client_defined_metric",
         type: "NUMBER",
       }),

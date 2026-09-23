@@ -1,10 +1,13 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { GeneralButton } from "@/components/ui/button";
+import { DraggableDialog } from "@/components/ui/draggable-dialog";
+import { FormTextarea } from "@/components/ui/form-fields";
 import type { FundingCallView } from "../api/FundingCallTransport";
 import { useChangeFundingCallGovernanceStatus } from "../FundingCallHooks";
 
@@ -26,6 +29,7 @@ export function FundingCallGovernanceActions({
   canWithdrawOwnRequest: boolean;
 }) {
   const governance = useChangeFundingCallGovernanceStatus(call.id);
+  const [returnDialogOpen, setReturnDialogOpen] = useState(false);
   const form = useForm<ReturnInput>({
     defaultValues: { reason: "" },
     resolver: zodResolver(returnSchema),
@@ -46,7 +50,13 @@ export function FundingCallGovernanceActions({
       reason,
     });
     form.reset();
+    setReturnDialogOpen(false);
   });
+  const closeReturnDialog = () => {
+    if (governance.isPending) return;
+    form.reset();
+    setReturnDialogOpen(false);
+  };
 
   if (
     call.status !== "APPROVAL_PENDING"
@@ -77,35 +87,59 @@ export function FundingCallGovernanceActions({
             Withdraw approval request
           </GeneralButton>
         ) : null}
+        {canReturn ? (
+          <GeneralButton
+            disabled={governance.isPending}
+            onClick={() => setReturnDialogOpen(true)}
+            type="button"
+            variant="outlineOrange"
+          >
+            Return for amendment
+          </GeneralButton>
+        ) : null}
       </div>
 
-      {canReturn ? (
+      <DraggableDialog
+        isOpen={returnDialogOpen}
+        onClose={closeReturnDialog}
+        size="md"
+        title="Return for amendment"
+      >
         <FormProvider {...form}>
-          <form className="space-y-2" onSubmit={returnForAmendment}>
-            <label className="block text-sm font-medium" htmlFor="return-reason">
-              Return reason
-            </label>
-            <textarea
-              className="min-h-24 w-full rounded-md border border-slate-300 p-2 text-sm"
+          <form className="space-y-5" onSubmit={returnForAmendment}>
+            <FormTextarea
               disabled={governance.isPending}
               id="return-reason"
-              {...form.register("reason")}
+              label="Return reason"
+              name="reason"
+              required
+              rows={5}
             />
-            {form.formState.errors.reason ? (
+            {governance.error ? (
               <p className="text-sm text-red-700" role="alert">
-                {form.formState.errors.reason.message}
+                {governance.error.message}
               </p>
             ) : null}
-            <GeneralButton
-              disabled={governance.isPending}
-              type="submit"
-              variant="outlineOrange"
-            >
-              Return for amendment
-            </GeneralButton>
+            <div className="flex justify-end gap-3">
+              <GeneralButton
+                disabled={governance.isPending}
+                onClick={closeReturnDialog}
+                type="button"
+                variant="outline"
+              >
+                Cancel
+              </GeneralButton>
+              <GeneralButton
+                disabled={governance.isPending}
+                type="submit"
+                variant="outlineOrange"
+              >
+                {governance.isPending ? "Returning…" : "Return for amendment"}
+              </GeneralButton>
+            </div>
           </form>
         </FormProvider>
-      ) : null}
+      </DraggableDialog>
 
       {governance.error ? (
         <p className="text-sm text-red-700" role="alert">

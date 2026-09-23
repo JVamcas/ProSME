@@ -38,15 +38,6 @@ function validateTaskIdentity(
       ),
     );
   }
-  if (!task.formBinding && task.type === "STRUCTURED_FORM") {
-    errors.push(
-      issue(
-        "MISSING_FORM_VERSION",
-        `${task.name} must reference a published form version.`,
-        `${taskPath}.formBinding`,
-      ),
-    );
-  }
   if (task.requiredCompletionCount > task.reviewerCount) {
     errors.push(
       issue(

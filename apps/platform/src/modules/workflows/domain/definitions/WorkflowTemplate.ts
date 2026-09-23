@@ -56,3 +56,17 @@ export const workflowTemplateTransitions = {
 } as const;
 
 export type WorkflowTemplateCommand = keyof typeof workflowTemplateTransitions;
+
+// Temporary internal-testing exception. Production governance still follows
+// Draft -> Pending Approval -> Approved -> Published.
+export const workflowTemplatePublishableStatuses: readonly WorkflowTemplateStatus[] = [
+  "DRAFT",
+  "APPROVED",
+];
+
+export function workflowTemplateCommandSourceStatuses(
+  command: WorkflowTemplateCommand,
+): readonly WorkflowTemplateStatus[] {
+  if (command === "PUBLISH") return workflowTemplatePublishableStatuses;
+  return [workflowTemplateTransitions[command].from];
+}

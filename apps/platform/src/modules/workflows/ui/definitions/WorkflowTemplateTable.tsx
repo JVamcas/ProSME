@@ -6,13 +6,18 @@ import {
   CloneButton,
   DeleteButton,
   EditButton,
+  PublishButton,
 } from "@/components/ui/action-buttons";
 import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatLocalDateTime24 } from "@/lib/dateUtils";
-import type { WorkflowTemplateListItem } from "../../domain/definitions/WorkflowTemplate";
+import {
+  workflowTemplatePublishableStatuses,
+  type WorkflowTemplateListItem,
+} from "../../domain/definitions/WorkflowTemplate";
 
 type Props = {
+  canPublish: boolean;
   canUpdate: boolean;
   cloningId?: string;
   deletingId?: string;
@@ -21,6 +26,8 @@ type Props = {
   onClone: (template: WorkflowTemplateListItem) => void;
   onDelete: (template: WorkflowTemplateListItem) => void;
   onEdit: (template: WorkflowTemplateListItem) => void;
+  onPublish: (template: WorkflowTemplateListItem) => void;
+  publishingId?: string;
 };
 
 function statusLabel(
@@ -49,6 +56,16 @@ function actionCell(template: WorkflowTemplateListItem, options: Props) {
         onClick={() => options.onClone(template)}
         title={`Clone ${template.name}`}
       />
+      {workflowTemplatePublishableStatuses.includes(
+        template.currentVersion.status,
+      ) ? (
+        <PublishButton
+          disabled={!options.canPublish || Boolean(options.publishingId)}
+          isLoading={options.publishingId === template.id}
+          onClick={() => options.onPublish(template)}
+          title={`Publish ${template.name}`}
+        />
+      ) : null}
       <DeleteButton
         disabled={
           !options.canUpdate || !canDelete || Boolean(options.deletingId)

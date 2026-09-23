@@ -27,7 +27,6 @@ export const fundingCallReadinessIssueCodes = [
   "WORKFLOW_CONFIGURATION_INVALID",
   "DECLARATIONS_NOT_CONFIGURED",
   "DOCUMENT_REQUIREMENTS_NOT_CONFIGURED",
-  "PUBLIC_GUIDANCE_NOT_CONFIGURED",
   "PUBLIC_DOCUMENT_NOT_FINALIZED",
   "PUBLIC_DOCUMENT_NOT_SECURITY_CLEARED",
   "PUBLIC_DOCUMENT_NOT_MARKED_FOR_PUBLICATION",
@@ -133,10 +132,6 @@ export function validateFundingCallDetails(
   if (call.closesAt <= now) issues.push(issue(
     call, "CLOSING_DATE_NOT_FUTURE", "closesAt",
     "Move the closing date into the future before publication.",
-  ));
-  if (missing(call.eligibilitySummary)) issues.push(issue(
-    call, "PUBLIC_GUIDANCE_NOT_CONFIGURED", "eligibilitySummary",
-    "Add applicant-facing eligibility guidance.",
   ));
   return issues;
 }

@@ -8,7 +8,6 @@ import {
   workflowTaskPreviewFormName,
   workflowTaskPreviewPanelClass,
 } from "@/modules/workflows/ui/definitions/WorkflowTaskPreviewDialog";
-import { runtimeDefinition } from "../../support/form-runtime";
 import {
   WorkflowChecklistPreview,
   WorkflowCommentsPreview,
@@ -56,11 +55,8 @@ describe("workflow task reviewer preview", () => {
     ]);
   });
 
-  it("preserves section width for the outer preview layout", () => {
-    expect(workflowTaskPreviewPanelClass(runtimeDefinition()))
-      .toContain("max-w-6xl");
-    expect(workflowTaskPreviewPanelClass(runtimeDefinition()))
-      .not.toContain("w-fit");
+  it("keeps a fixed outer width while preview content loads or changes", () => {
+    expect(workflowTaskPreviewPanelClass()).toBe("w-full max-w-6xl");
   });
 
   it("uses the bound form name in the preview", () => {

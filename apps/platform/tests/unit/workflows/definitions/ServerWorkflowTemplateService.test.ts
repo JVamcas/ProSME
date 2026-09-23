@@ -51,6 +51,7 @@ import {
 } from "@/modules/workflows/infrastructure/WorkflowLifecycleRepository";
 import { findWorkflowGraph } from "@/modules/workflows/infrastructure/WorkflowGraphRepository";
 import {
+  workflowTemplateCommandSourceStatuses,
   workflowTemplateTransitions,
   type WorkflowTemplateCommand,
 } from "@/modules/workflows/domain/definitions/WorkflowTemplate";
@@ -173,10 +174,10 @@ describe("workflow template storage service", () => {
   it.each(
     Object.keys(workflowTemplateTransitions) as WorkflowTemplateCommand[],
   )("allows only the configured source status for %s", async (command) => {
-    const transition = workflowTemplateTransitions[command];
+    const [sourceStatus] = workflowTemplateCommandSourceStatuses(command);
     vi.mocked(findWorkflowTemplateVersion).mockResolvedValue({
       template,
-      version: { ...version, status: transition.from },
+      version: { ...version, status: sourceStatus },
     });
     const commandInput = { ...input, command, reason: "Please revise" };
     await changeWorkflowTemplateStatus(actor, commandInput, correlationId);

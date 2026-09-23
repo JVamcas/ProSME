@@ -10,6 +10,7 @@ type Props = {
   message: string;
   onClose: () => void;
   onConfirm: () => void;
+  pendingLabel?: string;
   title: string;
 };
 
@@ -20,6 +21,7 @@ export function ConfirmationDialog({
   message,
   onClose,
   onConfirm,
+  pendingLabel = "Processing…",
   title,
 }: Props) {
   return (
@@ -45,7 +47,7 @@ export function ConfirmationDialog({
           onClick={onConfirm}
           variant="danger"
         >
-          {isPending ? "Deleting…" : confirmLabel}
+          {isPending ? pendingLabel : confirmLabel}
         </GeneralButton>
       </div>
     </DraggableDialog>

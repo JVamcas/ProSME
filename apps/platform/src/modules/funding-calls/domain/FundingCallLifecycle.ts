@@ -72,7 +72,7 @@ const fixedTransitions: Partial<
 };
 
 function publishTarget(source: LifecycleSource, now: Date) {
-  if (source.status !== "APPROVED" || now >= source.closesAt) return null;
+  if (source.status !== "DRAFT" || now >= source.closesAt) return null;
   return now < source.opensAt ? "SCHEDULED" : "LIVE";
 }
 

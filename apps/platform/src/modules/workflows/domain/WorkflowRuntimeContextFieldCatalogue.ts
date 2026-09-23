@@ -127,6 +127,5 @@ export const workflowRuntimeContextFields = [
   { key: "task.key", label: "Task key", type: "TEXT" },
   { key: "task.name", label: "Task name", type: "TEXT" },
   { key: "task.status", label: "Task status", type: "TEXT" },
-  { key: "task.type", label: "Task type", type: "TEXT" },
   { key: "task.row_version", label: "Task row version", type: "NUMBER" },
 ] as const satisfies readonly ConditionFieldDefinition[];

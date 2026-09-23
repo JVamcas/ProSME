@@ -10,6 +10,8 @@ import {
   publishWorkflowVersion,
   retireWorkflowVersion,
 } from "@/modules/workflows/infrastructure/WorkflowLifecycleRepository";
+import { workflowTemplatePublishableStatuses } from "@/modules/workflows/domain/definitions/WorkflowTemplate";
+import type { WorkflowValidationIssue } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import { findDraftByDefinition } from "@/modules/workflows/infrastructure/WorkflowRepository";
 import {
   loadWorkflowEditor,
@@ -54,6 +56,20 @@ async function lifecycleReplay(key: string, action: string, versionId: string) {
   return workflowEditorView(replay.targetId);
 }
 
+function publicationValidationMessage(errors: WorkflowValidationIssue[]) {
+  const shownErrors = errors
+    .slice(0, 3)
+    .map((error, index) =>
+      `${index + 1}. ${error.message}${error.path ? ` (${error.path})` : ""}`
+    )
+    .join(" ");
+  const remaining = errors.length - 3;
+  const remainingMessage = remaining > 0
+    ? ` ${remaining} more validation ${remaining === 1 ? "error" : "errors"} must also be resolved.`
+    : "";
+  return `Workflow cannot be published because it has ${errors.length} validation ${errors.length === 1 ? "error" : "errors"}: ${shownErrors}${remainingMessage} Open the workflow editor and resolve these issues before publishing.`;
+}
+
 export async function publishWorkflow(
   user: AuthenticatedUser | null,
   definitionId: string,
@@ -72,15 +88,15 @@ export async function publishWorkflow(
     versionId,
   );
   if (replay) return replay;
-  if (current.version.status !== "APPROVED") {
+  if (!workflowTemplatePublishableStatuses.includes(current.version.status)) {
     throw new WorkflowConflictError(
-      "Only approved workflow versions can be published.",
+      "Only draft or approved workflow versions can be published.",
     );
   }
   const editor = await workflowEditorView(versionId);
   if (!editor.validation.valid)
     throw new WorkflowConflictError(
-      "Resolve all workflow validation errors before publishing.",
+      publicationValidationMessage(editor.validation.errors),
     );
   const published = await publishWorkflowVersion({
     actorId: actor.id,

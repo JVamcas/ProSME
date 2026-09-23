@@ -67,16 +67,12 @@ describe("workflow task configuration", () => {
       ),
       name: "Review task",
       required: true,
-      type: "CHECKLIST",
     };
     expect(workflowTaskFormSchema.safeParse(values).success).toBe(true);
-    expect(
-      workflowTaskFormSchema.safeParse({
-        ...values,
-        formVersionId: "",
-        type: undefined,
-      }).success,
-    ).toBe(true);
+    expect(workflowTaskFormSchema.parse({
+      ...values,
+      type: "CHECKLIST",
+    })).not.toHaveProperty("type");
     expect(
       workflowTaskFormSchema.safeParse({ ...values, assignmentTarget: "" })
         .success,
@@ -91,5 +87,20 @@ describe("workflow task configuration", () => {
         requiredCompletionCount: 4,
       }).success,
     ).toBe(false);
+  });
+
+  it("allows a structured task to use its configuration without a form", () => {
+    const graph = structuredClone(referenceWorkflow);
+    const task = graph.stages[0].tasks[0];
+    task.roleId = "79e20de0-3558-4d63-90a4-8c9f5125df07";
+    task.type = "STRUCTURED_FORM";
+    task.config = defaultTaskConfiguration("STRUCTURED_FORM");
+    task.formBinding = null;
+
+    expect(validateWorkflowGraph(graph).errors).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: "MISSING_FORM_VERSION" }),
+      ]),
+    );
   });
 });

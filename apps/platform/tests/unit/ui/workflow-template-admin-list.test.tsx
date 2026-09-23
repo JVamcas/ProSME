@@ -9,7 +9,7 @@ import { workflowQueryKeys } from "@/modules/workflows/WorkflowHooks";
 import { WorkflowTemplateAdminWorkspace } from "@/modules/workflows/ui/definitions/WorkflowTemplateAdminWorkspace";
 
 function queryClient(
-  status: "DRAFT" | "PENDING_APPROVAL" = "PENDING_APPROVAL",
+  status: "APPROVED" | "DRAFT" | "PENDING_APPROVAL" = "PENDING_APPROVAL",
   versionNumber = 2,
 ) {
   const client = new QueryClient({
@@ -45,18 +45,24 @@ describe("workflow template admin list", () => {
     await act(async () => {
       root.render(
         <QueryClientProvider client={queryClient()}>
-          <WorkflowTemplateAdminWorkspace canCreate canUpdate />
+          <WorkflowTemplateAdminWorkspace canCreate canPublish canUpdate />
         </QueryClientProvider>,
       );
     });
 
     expect(container.textContent).toContain("Standard grant");
-    expect(container.textContent).toContain("Version 2");
+    expect(container.textContent).toContain("v2");
     expect(container.textContent).toContain("Pending Approval");
     expect(container.textContent).toContain("Actions");
-    expect(container.querySelector('[aria-label="Edit Standard grant"]')).not.toBeNull();
-    expect(container.querySelector('[aria-label="Clone Standard grant"]')).not.toBeNull();
-    expect(container.querySelector('[aria-label="Delete Standard grant"]')).not.toBeNull();
+    expect(
+      container.querySelector('[aria-label="Edit Standard grant"]'),
+    ).not.toBeNull();
+    expect(
+      container.querySelector('[aria-label="Clone Standard grant"]'),
+    ).not.toBeNull();
+    expect(
+      container.querySelector('[aria-label="Delete Standard grant"]'),
+    ).not.toBeNull();
     expect(
       container.querySelector<HTMLAnchorElement>(
         'a[href="/admin/workflows/41111111-1111-4111-8111-111111111111"]',
@@ -72,7 +78,7 @@ describe("workflow template admin list", () => {
     await act(async () => {
       root.render(
         <QueryClientProvider client={queryClient()}>
-          <WorkflowTemplateAdminWorkspace canCreate canUpdate />
+          <WorkflowTemplateAdminWorkspace canCreate canPublish canUpdate />
         </QueryClientProvider>,
       );
     });
@@ -85,8 +91,12 @@ describe("workflow template admin list", () => {
       'input[required]',
     );
     expect(requiredInputs).toHaveLength(2);
-    expect(requiredInputs[0]?.labels?.[0]?.textContent).toContain("Template code*");
-    expect(requiredInputs[1]?.labels?.[0]?.textContent).toContain("Template name*");
+    expect(requiredInputs[0]?.labels?.[0]?.textContent).toContain(
+      "Template code*",
+    );
+    expect(requiredInputs[1]?.labels?.[0]?.textContent).toContain(
+      "Template name*",
+    );
     await act(async () => root.unmount());
 
     const readOnlyContainer = document.createElement("div");
@@ -95,7 +105,11 @@ describe("workflow template admin list", () => {
     await act(async () => {
       readOnlyRoot.render(
         <QueryClientProvider client={queryClient()}>
-          <WorkflowTemplateAdminWorkspace canCreate={false} canUpdate={false} />
+          <WorkflowTemplateAdminWorkspace
+            canCreate={false}
+            canPublish={false}
+            canUpdate={false}
+          />
         </QueryClientProvider>,
       );
     });
@@ -110,7 +124,7 @@ describe("workflow template admin list", () => {
     await act(async () => {
       root.render(
         <QueryClientProvider client={queryClient("DRAFT")}>
-          <WorkflowTemplateAdminWorkspace canCreate canUpdate />
+          <WorkflowTemplateAdminWorkspace canCreate canPublish canUpdate />
         </QueryClientProvider>,
       );
     });
@@ -136,7 +150,7 @@ describe("workflow template admin list", () => {
     await act(async () => {
       root.render(
         <QueryClientProvider client={queryClient("DRAFT", 1)}>
-          <WorkflowTemplateAdminWorkspace canCreate canUpdate />
+          <WorkflowTemplateAdminWorkspace canCreate canPublish canUpdate />
         </QueryClientProvider>,
       );
     });
@@ -155,5 +169,49 @@ describe("workflow template admin list", () => {
     expect(dialog?.textContent).toContain("Cancel");
     expect(dialog?.textContent).toContain("Delete");
     await act(async () => root.unmount());
+  });
+
+  it("shows the publish action for draft and approved versions", async () => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient("APPROVED")}>
+          <WorkflowTemplateAdminWorkspace canCreate canPublish canUpdate />
+        </QueryClientProvider>,
+      );
+    });
+
+    expect(
+      container.querySelector('[aria-label="Publish Standard grant"]'),
+    ).not.toBeNull();
+    await act(async () => {
+      container
+        .querySelector<HTMLButtonElement>(
+          '[aria-label="Publish Standard grant"]',
+        )
+        ?.click();
+    });
+    const dialog = document.body.querySelector<HTMLElement>('[role="dialog"]');
+    expect(dialog?.textContent).toContain(
+      "Publish Standard grant version 2?",
+    );
+    await act(async () => root.unmount());
+
+    const draftContainer = document.createElement("div");
+    document.body.append(draftContainer);
+    const draftRoot = createRoot(draftContainer);
+    await act(async () => {
+      draftRoot.render(
+        <QueryClientProvider client={queryClient("DRAFT")}>
+          <WorkflowTemplateAdminWorkspace canCreate canPublish canUpdate />
+        </QueryClientProvider>,
+      );
+    });
+    expect(
+      draftContainer.querySelector('[aria-label="Publish Standard grant"]'),
+    ).not.toBeNull();
+    await act(async () => draftRoot.unmount());
   });
 });

@@ -190,10 +190,12 @@ describe("funding call publication readiness", () => {
 
     expect(result.issues.map((item) => item.code)).toEqual(expect.arrayContaining([
       "PUBLIC_CONTACT_REQUIRED",
-      "PUBLIC_GUIDANCE_NOT_CONFIGURED",
       "FORM_VERSION_NOT_PUBLISHED",
       "DOCUMENT_REQUIREMENTS_NOT_CONFIGURED",
     ]));
+    expect(result.issues.map((item) => item.code)).not.toContain(
+      "PUBLIC_GUIDANCE_NOT_CONFIGURED",
+    );
   });
 
   it("blocks publication when the bound workflow version is still draft", async () => {

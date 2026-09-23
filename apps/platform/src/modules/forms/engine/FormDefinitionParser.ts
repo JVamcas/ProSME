@@ -37,8 +37,12 @@ function assertUnique(values: readonly string[], label: string) {
   }
 }
 
+function sorted<T extends { order: number }>(items: readonly T[]) {
+  return [...items].sort((left, right) => left.order - right.order);
+}
+
 function ordered<T extends { order: number }>(items: readonly T[], label: string) {
-  const result = [...items].sort((left, right) => left.order - right.order);
+  const result = sorted(items);
   if (result.some((item, index) => item.order !== index + 1)) {
     invalid(`${label} order must be contiguous and start at one.`);
   }
@@ -160,15 +164,20 @@ function fieldUiSchema(field: FormField): UiSchema {
 function parseSections(
   definition: FormRuntimeSchema,
   fields: readonly FormField[],
+  validateContiguousOrder = true,
 ): RenderSection[] {
-  const sections = ordered(definition.sections, "Sections");
+  const sections = validateContiguousOrder
+    ? ordered(definition.sections, "Sections")
+    : sorted(definition.sections);
   assertUnique(sections.map((section) => section.key), "Section keys");
   return sections.map((section) => {
     if (!section.id) invalid(`Saved section ${section.key} has no identifier.`);
-    const sectionFields = ordered(
-      fields.filter((field) => field.sectionId === section.id),
-      `Fields in ${section.key}`,
+    const matchingFields = fields.filter(
+      (field) => field.sectionId === section.id,
     );
+    const sectionFields = validateContiguousOrder
+      ? ordered(matchingFields, `Fields in ${section.key}`)
+      : sorted(matchingFields);
     if (sectionFields.some((field) => field.columnSpan > section.columnSpan)) {
       invalid(`A field is wider than section ${section.key}.`);
     }
@@ -195,10 +204,17 @@ export function parseFormDefinition(
     invalid("The saved form must contain sections and fields.");
   }
   assertUnique(definition.fields.map((field) => field.key), "Field keys");
+  const savedSections = parseSections(definition, definition.fields);
+  assertUnique(savedSections.map((section) => section.id), "Section identifiers");
+  const savedSectionIds = new Set(savedSections.map((section) => section.id));
+  const savedOrphan = definition.fields.find(
+    (field) => !savedSectionIds.has(field.sectionId),
+  );
+  if (savedOrphan) invalid(`Field ${savedOrphan.key} has no section.`);
 
   const activeDefinition = activeFormDefinition(definition, values);
   const fields = [...activeDefinition.fields];
-  const sections = parseSections(activeDefinition, fields);
+  const sections = parseSections(activeDefinition, fields, false);
   assertUnique(sections.map((section) => section.id), "Section identifiers");
   const sectionIds = new Set(sections.map((section) => section.id));
   const orphan = fields.find((field) => !sectionIds.has(field.sectionId));

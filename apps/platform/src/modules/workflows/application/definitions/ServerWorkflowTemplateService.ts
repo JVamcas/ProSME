@@ -14,6 +14,7 @@ import {
   type CreateWorkflowTemplateInput,
 } from "../../api/WorkflowTemplateSchemas";
 import {
+  workflowTemplateCommandSourceStatuses,
   workflowTemplateTransitions,
   type WorkflowTemplateListItem,
 } from "../../domain/definitions/WorkflowTemplate";
@@ -207,6 +208,7 @@ export async function changeWorkflowTemplateStatus(
   const actor = requirePermission(user, commandPermissions[parsed.command]);
   const record = await requireVersion(parsed.templateId, parsed.versionId);
   const transition = workflowTemplateTransitions[parsed.command];
+  const sourceStatuses = workflowTemplateCommandSourceStatuses(parsed.command);
   const reason = parsed.command === "RETURN" ? parsed.reason : undefined;
   const replay = await findLifecycleReplay(parsed.idempotencyKey);
   if (replay) {
@@ -223,9 +225,9 @@ export async function changeWorkflowTemplateStatus(
     }
     return record;
   }
-  if (record.version.status !== transition.from) {
+  if (!sourceStatuses.includes(record.version.status)) {
     throw new WorkflowConflictError(
-      `Only ${transition.from} versions can perform ${parsed.command}.`,
+      `Only ${sourceStatuses.join(" or ")} versions can perform ${parsed.command}.`,
     );
   }
   if (parsed.command === "APPROVE" || parsed.command === "PUBLISH") {

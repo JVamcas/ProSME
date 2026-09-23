@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 
 import type { ConditionFieldDefinition } from "@/modules/conditions/domain/ConditionConfiguration";
 import { usePublishedForms } from "@/modules/forms/FormHooks";
+import type { PublishedFormOption } from "@/modules/forms/FormTypes";
 import { useSaveWorkflowGraph } from "@/modules/workflows/WorkflowHooks";
 import type {
   WorkflowEditorView,
@@ -20,6 +21,28 @@ import {
   workflowTaskFormSchema,
 } from "./WorkflowTaskFormSchema";
 import { useWorkflowConditionFields } from "./useWorkflowConditionFields";
+
+export function workflowTaskFormItems(
+  forms: readonly PublishedFormOption[],
+  selectedVersionId: string,
+  showUnavailable = true,
+) {
+  const items = forms.map((item) => ({
+    label: `${item.formName} · v${item.versionNumber}`,
+    value: item.versionId,
+  }));
+  if (
+    selectedVersionId
+    && showUnavailable
+    && !items.some((item) => item.value === selectedVersionId)
+  ) {
+    items.unshift({
+      label: "Unavailable form version — remove or replace",
+      value: selectedVersionId,
+    });
+  }
+  return items;
+}
 
 async function saveWorkflowTask({
   editor,
@@ -164,10 +187,11 @@ export function useWorkflowTaskDialogController(
   const assignmentItems = (
     assignmentMode === "ROLE" ? options.roles : options.users
   ).map((item) => ({ label: item.label, value: item.id }));
-  const formItems = (forms.data ?? []).map((item) => ({
-    label: `${item.formName} · v${item.versionNumber}`,
-    value: item.versionId,
-  }));
+  const formItems = workflowTaskFormItems(
+    forms.data ?? [],
+    formVersionId ?? "",
+    !forms.isPending,
+  );
   const actionItems = [...stage.actions]
     .sort((left, right) => left.displayOrder - right.displayOrder)
     .map((action) => ({

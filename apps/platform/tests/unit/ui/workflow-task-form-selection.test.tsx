@@ -6,6 +6,7 @@ import { FormProvider, useForm, useWatch } from "react-hook-form";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { WorkflowTaskDialogFields } from "@/modules/workflows/ui/definitions/WorkflowTaskDialogFields";
+import { workflowTaskFormItems } from "@/modules/workflows/ui/definitions/WorkflowTaskDialogController";
 import type { WorkflowTaskFormValues } from "@/modules/workflows/ui/definitions/WorkflowTaskFormSchema";
 import { defaultWorkflowElementPermissions } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
 
@@ -82,6 +83,13 @@ afterEach(() => {
 });
 
 describe("workflow task form selection", () => {
+  it("shows a stored unavailable binding instead of claiming no form is selected", () => {
+    expect(workflowTaskFormItems([], attachedVersionId)).toEqual([{
+      label: "Unavailable form version — remove or replace",
+      value: attachedVersionId,
+    }]);
+  });
+
   it("retains the attached form while published-form options load", async () => {
     const container = document.createElement("div");
     document.body.append(container);

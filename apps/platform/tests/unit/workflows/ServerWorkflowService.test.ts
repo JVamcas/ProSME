@@ -108,45 +108,53 @@ describe("workflow service authorization and lifecycle", () => {
     ).rejects.toBeInstanceOf(PermissionDeniedError);
   });
 
-  it("publishes an approved version with optimistic version and idempotency data", async () => {
-    vi.mocked(findWorkflowGraph).mockResolvedValue(record);
-    vi.mocked(publishWorkflowVersion).mockResolvedValue({
-      ...record.version,
-      status: "PUBLISHED",
-    });
-    const result = await publishWorkflow(
-      userWith(permissionCodes.workflowDefinitionPublish),
-      record.definition.id,
-      record.version.id,
-      1,
-      "publish-key",
-      "79e20de0-3558-4d63-90a4-8c9f5125df08",
-    );
-    expect(result.version.id).toBe(record.version.id);
-    expect(publishWorkflowVersion).toHaveBeenCalledWith(
-      expect.objectContaining({
-        expectedRowVersion: 1,
-        idempotencyKey: "publish-key",
-        versionId: record.version.id,
-      }),
-    );
-  });
-
-  it("does not publish an invalid graph", async () => {
-    vi.mocked(findWorkflowGraph).mockResolvedValue({
-      ...record,
-      graph: { stages: [referenceWorkflow.stages[0]], transitions: [] },
-    });
-    await expect(
-      publishWorkflow(
+  it.each(["DRAFT", "APPROVED"] as const)(
+    "publishes a %s version with optimistic version and idempotency data",
+    async (status) => {
+      vi.mocked(findWorkflowGraph).mockResolvedValue({
+        ...record,
+        version: { ...record.version, status },
+      });
+      vi.mocked(publishWorkflowVersion).mockResolvedValue({
+        ...record.version,
+        status: "PUBLISHED",
+      });
+      const result = await publishWorkflow(
         userWith(permissionCodes.workflowDefinitionPublish),
         record.definition.id,
         record.version.id,
         1,
         "publish-key",
         "79e20de0-3558-4d63-90a4-8c9f5125df08",
-      ),
-    ).rejects.toBeInstanceOf(WorkflowConflictError);
+      );
+      expect(result.version.id).toBe(record.version.id);
+      expect(publishWorkflowVersion).toHaveBeenCalledWith(
+        expect.objectContaining({
+          expectedRowVersion: 1,
+          idempotencyKey: "publish-key",
+          versionId: record.version.id,
+        }),
+      );
+    },
+  );
+
+  it("does not publish an invalid graph", async () => {
+    vi.mocked(findWorkflowGraph).mockResolvedValue({
+      ...record,
+      graph: { stages: [referenceWorkflow.stages[0]], transitions: [] },
+    });
+    const publication = publishWorkflow(
+        userWith(permissionCodes.workflowDefinitionPublish),
+        record.definition.id,
+        record.version.id,
+        1,
+        "publish-key",
+        "79e20de0-3558-4d63-90a4-8c9f5125df08",
+      );
+    await expect(publication).rejects.toBeInstanceOf(WorkflowConflictError);
+    await expect(publication).rejects.toThrow(
+      /Workflow cannot be published because it has \d+ validation errors?:/,
+    );
     expect(publishWorkflowVersion).not.toHaveBeenCalled();
   });
 

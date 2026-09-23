@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
 import {
@@ -9,6 +9,7 @@ import {
   workflowDefinitionVersions,
 } from "@/db/schema";
 import {
+  workflowTemplateCommandSourceStatuses,
   workflowTemplateTransitions,
   type WorkflowTemplateCommand,
 } from "../domain/definitions/WorkflowTemplate";
@@ -40,6 +41,7 @@ export async function changeWorkflowTemplateLifecycle(
   command: WorkflowTemplateCommand,
 ) {
   const transition = workflowTemplateTransitions[command];
+  const sourceStatuses = workflowTemplateCommandSourceStatuses(command);
   const reason = input.reason?.trim();
   if (command === "RETURN" && !reason) {
     throw new Error("A reason is required to return a workflow to Draft.");
@@ -51,7 +53,7 @@ export async function changeWorkflowTemplateLifecycle(
       .where(
         and(
           eq(workflowDefinitionVersions.id, input.versionId),
-          eq(workflowDefinitionVersions.status, transition.from),
+          inArray(workflowDefinitionVersions.status, sourceStatuses),
           eq(workflowDefinitionVersions.rowVersion, input.expectedRowVersion),
         ),
       )
@@ -97,7 +99,10 @@ export async function changeWorkflowTemplateLifecycle(
         rowVersion: version.rowVersion,
         status: transition.to,
       },
-      before: { rowVersion: input.expectedRowVersion, status: transition.from },
+      before: {
+        rowVersion: input.expectedRowVersion,
+        status: lockedVersion.status,
+      },
       correlationId: input.correlationId,
       idempotencyKey: input.idempotencyKey,
       targetId: version.id,

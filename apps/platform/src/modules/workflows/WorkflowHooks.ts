@@ -13,6 +13,7 @@ import type {
 import type { WorkflowEditorView } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import type { CreateWorkflowTemplateInput } from "@/modules/workflows/api/WorkflowTemplateSchemas";
 import type { WorkflowTemplateListItem } from "@/modules/workflows/domain/definitions/WorkflowTemplate";
+import { WorkflowPublicationValidationError } from "@/modules/workflows/WorkflowPublicationValidationFeedback";
 
 export const workflowQueryKeys = {
   all: ["admin", "workflows"] as const,
@@ -151,6 +152,12 @@ export function useWorkflowListLifecycle(action: "publish" | "retire") {
   return useMutation({
     mutationFn: async (definitionId: string) => {
       const editor = await clientWorkflowService.getEditor(definitionId);
+      if (action === "publish" && !editor.validation.valid) {
+        throw new WorkflowPublicationValidationError(
+          editor.validation.errors,
+          editor.graph,
+        );
+      }
       return clientWorkflowService.lifecycleCommand(
         definitionId,
         action,

@@ -58,7 +58,7 @@ export async function readFundingCallPublicationReplay(
   return row?.command === "PUBLISH" ? toFundingCall(row.call) : null;
 }
 
-export async function publishApprovedFundingCall(
+export async function publishDraftFundingCall(
   input: PublishFundingCallInput,
 ): Promise<PublishFundingCallResult> {
   return getDatabase().transaction(async (transaction) => {
@@ -87,7 +87,7 @@ export async function publishApprovedFundingCall(
         : { kind: "idempotency_conflict" };
     }
     if (
-      current.status !== "APPROVED"
+      current.status !== "DRAFT"
       || current.rowVersion !== input.expectedRowVersion
     ) {
       return { kind: "conflict" };
@@ -163,7 +163,7 @@ export async function publishApprovedFundingCall(
       .where(and(
         eq(fundingCalls.id, input.fundingCallId),
         eq(fundingCalls.rowVersion, input.expectedRowVersion),
-        eq(fundingCalls.status, "APPROVED"),
+        eq(fundingCalls.status, "DRAFT"),
       ))
       .returning();
     if (!updated) return { kind: "conflict" };

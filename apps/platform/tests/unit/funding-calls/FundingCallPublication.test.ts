@@ -23,7 +23,7 @@ describe("funding call publication snapshot", () => {
       reference: "SME-2027-01",
       rowVersion: 4,
       slug: "sme-growth-fund-2027",
-      status: "APPROVED" as const,
+      status: "DRAFT" as const,
       suspendedFromStatus: null,
       thematicArea: "Business growth",
       title: "SME Growth Fund 2027",
@@ -46,4 +46,3 @@ describe("funding call publication snapshot", () => {
     });
   });
 });
-

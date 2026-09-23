@@ -4,7 +4,16 @@ import type {
   WorkflowGraphInput,
   WorkflowStageInput,
 } from "@/modules/workflows/domain/definitions/WorkflowTypes";
+import { workflowRuntimeContextFields } from "@/modules/workflows/domain/WorkflowRuntimeContextFieldCatalogue";
 import { validateTaskConfiguration } from "@/modules/workflows/WorkflowTaskRegistry";
+
+const workflowConditionRuntimeFields = workflowRuntimeContextFields.filter(
+  (field) => (
+    field.key.startsWith("application.")
+    || field.key.startsWith("eligibility.")
+    || field.key.startsWith("fundingCall.")
+  ),
+);
 
 function formConditionType(
   field: Pick<FormField, "type">,
@@ -168,6 +177,7 @@ export function workflowConditionFields(
       && candidate.stableKey === stage.stableKey
   );
   return uniqueFields([
+    ...workflowConditionRuntimeFields,
     ...contextStages.flatMap(boundContextFields),
     ...valueStages.flatMap((candidate) =>
       [

@@ -30,7 +30,7 @@ export default async function FundingCallPage({
     <PageShell
       actions={(
         <FundingCallPageActions
-          canSubmit={can(user, permissionCodes.fundingCallSubmitAll)}
+          canPublish={can(user, permissionCodes.fundingCallPublish)}
           id={id.data}
         />
       )}
@@ -41,7 +41,6 @@ export default async function FundingCallPage({
     >
       <FundingCallEditor
         canApprove={can(user, permissionCodes.fundingCallApproveAll)}
-        canPublish={can(user, permissionCodes.fundingCallPublish)}
         canReturn={can(user, permissionCodes.fundingCallReturnAll)}
         canUpdate={can(user, permissionCodes.fundingCallUpdate)}
         canWithdrawOwnRequest={can(

@@ -4,6 +4,7 @@ import {
   InvalidFormDefinitionError,
   parseFormDefinition,
 } from "@/modules/forms/engine/FormDefinitionParser";
+import { basicOperators } from "@/modules/conditions/engine/BasicOperators";
 import { runtimeDefinition } from "../../support/form-runtime";
 
 describe("form definition parser", () => {
@@ -85,5 +86,39 @@ describe("form definition parser", () => {
     expect(() => parseFormDefinition(definition)).toThrow(
       InvalidFormDefinitionError,
     );
+  });
+
+  it("preserves saved order when a conditional field creates a visible gap", () => {
+    const definition = runtimeDefinition();
+    definition.fields[0] = {
+      ...definition.fields[0],
+      visibilityCondition: {
+        children: [{
+          id: crypto.randomUUID(),
+          kind: "CONDITION",
+          leftOperand: { key: "NAME", kind: "FIELD" },
+          operator: basicOperators.EQUALS,
+          rightOperand: { kind: "CONSTANT", value: "SHOW" },
+        }],
+        combinator: "AND",
+        id: crypto.randomUUID(),
+        kind: "GROUP",
+      },
+    };
+
+    const parsed = parseFormDefinition(definition);
+
+    expect(parsed.uiSchema["ui:order"]).toEqual([
+      "NAME",
+      "AMOUNT",
+      "START_DATE",
+      "APPROVED",
+      "REGION",
+      "SECTORS",
+      "BUDGET",
+      "SUCCESS_RATE",
+      "SUPPORTING_DOCUMENT",
+    ]);
+    expect(parsed.schema.properties).not.toHaveProperty("NOTES");
   });
 });

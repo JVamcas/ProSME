@@ -8,6 +8,7 @@ describe("PageShell", () => {
     const markup = renderToStaticMarkup(
       <PageShell
         actions={<button type="button">Create</button>}
+        backLink={<a href="/admin">Back to administration</a>}
         description="Manage the records in this workspace."
         eyebrow="Administration"
         icon={<span aria-hidden="true">$</span>}
@@ -22,6 +23,7 @@ describe("PageShell", () => {
     expect(markup).toContain("Administration");
     expect(markup).toContain("Manage the records in this workspace.");
     expect(markup).toContain("Page content");
+    expect(markup).toContain("Back to administration");
     expect(markup).toContain(">Create</button>");
   });
 

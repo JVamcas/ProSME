@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 
 export type PageHeaderProps = {
   title: string;
+  backLink?: ReactNode;
   description?: string;
   eyebrow?: string;
   icon?: ReactNode;
@@ -23,6 +24,7 @@ export type PageShellProps = Omit<PageHeaderProps, "className"> & {
 
 export function PageHeader({
   title,
+  backLink,
   description,
   eyebrow,
   icon,
@@ -37,10 +39,12 @@ export function PageHeader({
   return (
     <header
       className={cn(
-        "mb-5 w-full rounded-xl border-b border-t-2 border-slate-100 border-t-brand-orange bg-white px-5 py-5 ring-1 ring-inset ring-slate-200 sm:px-6 sm:py-6",
+        "mb-5 w-full border-b border-t-2 border-slate-50 border-t-brand-orange bg-white px-5 py-5 ring-1 ring-inset ring-slate-200 sm:px-6 sm:py-6",
+        variant === "contained" ? "rounded-2xl" : "rounded-t-xl",
         className,
       )}
     >
+      {backLink ? <div className="mb-2">{backLink}</div> : null}
       <div
         className={cn(
           "flex gap-4",

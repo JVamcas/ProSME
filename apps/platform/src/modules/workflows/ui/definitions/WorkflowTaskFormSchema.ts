@@ -1,7 +1,6 @@
 import { z } from "zod";
 
 import type { WorkflowTaskInput } from "@/modules/workflows/domain/definitions/WorkflowTypes";
-import { taskTypeCodes } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import { conditionFieldTypes } from "@/modules/conditions/domain/ConditionConfiguration";
 import { staticPermissionCodes } from "@/auth/authorization/permissions";
 import { workflowElementVisibilities } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
@@ -48,7 +47,6 @@ export const workflowTaskFormSchema = z.object({
   quorum: z.boolean(),
   coiRequired: z.boolean(),
   required: z.boolean(),
-  type: z.enum(taskTypeCodes).optional(),
   configJson: z.string().optional(),
   checklistItems: z.array(checklistItemSchema),
 }).superRefine((values, context) => {

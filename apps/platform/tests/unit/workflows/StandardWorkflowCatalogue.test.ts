@@ -6,6 +6,7 @@ import {
   standardWorkflowRoleCodes,
   type StandardWorkflowDependencies,
 } from "@/modules/workflows/domain/standard/StandardWorkflowTypes";
+import { validateWorkflowConditions } from "@/modules/workflows/engine/WorkflowConditionValidation";
 import { validateWorkflowGraph } from "@/modules/workflows/WorkflowValidation";
 
 function dependencies(): StandardWorkflowDependencies {
@@ -110,5 +111,11 @@ describe("standard workflow catalogue", () => {
     expect(screening.actions.find(
       (action) => action.stableKey === "MANUAL_ELIGIBILITY_ADVANCE",
     )).toMatchObject({ reasonCodeRequired: true });
+  });
+
+  it("validates eligibility conditions without requiring a task form", () => {
+    const graph = createStandardWorkflowDraft(dependencies()).graph;
+
+    expect(validateWorkflowConditions(graph, new Map())).toEqual([]);
   });
 });

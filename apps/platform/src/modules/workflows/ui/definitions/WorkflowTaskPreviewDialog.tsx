@@ -6,13 +6,8 @@ import {
   usePublishedForms,
 } from "@/modules/forms/FormHooks";
 import type {
-  FormRuntimeSchema,
   PublishedFormOption,
 } from "@/modules/forms/FormTypes";
-import {
-  formColumnCount,
-  previewPanelClass,
-} from "@/modules/forms/ui/renderer/FormLayout";
 import { FormRenderer } from "@/modules/forms/ui/renderer/FormRenderer";
 import type { WorkflowTaskAction } from "@/modules/work-queue/TaskTypes";
 import { WorkflowTaskActions } from "@/modules/work-queue/ui/WorkflowTaskActions";
@@ -100,7 +95,7 @@ export function WorkflowTaskPreviewDialog({
     <DraggableDialog
       isOpen
       onClose={onClose}
-      panelClassName={workflowTaskPreviewPanelClass(form.data)}
+      panelClassName={workflowTaskPreviewPanelClass()}
       size="2xl"
       title={`${task.name} - Reviewer's preview`}
     >
@@ -174,15 +169,8 @@ export function WorkflowTaskPreviewDialog({
   );
 }
 
-export function workflowTaskPreviewPanelClass(
-  definition?: Pick<FormRuntimeSchema, "sections">,
-) {
-  return definition
-    ? previewPanelClass(formColumnCount(definition.sections)).replace(
-        " sm:w-fit",
-        "",
-      )
-    : undefined;
+export function workflowTaskPreviewPanelClass() {
+  return "w-full max-w-6xl";
 }
 
 export function workflowTaskPreviewFormName(
