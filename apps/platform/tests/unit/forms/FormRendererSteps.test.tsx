@@ -196,4 +196,91 @@ describe("step form rendering", () => {
 
     await act(async () => root.unmount());
   });
+  it("restores the current step after the editor remounts", async () => {
+    const persistenceKey = "application:test:form:version:step";
+    sessionStorage.removeItem(persistenceKey);
+    const container = document.createElement("div");
+    document.body.append(container);
+    const definition = steppedDefinition();
+    let root = createRoot(container);
+
+    await act(async () => {
+      root.render(
+        <FormRenderer
+          definition={definition}
+          formData={{ NAME: "Valid name" }}
+          onChange={vi.fn()}
+          onSubmit={vi.fn()}
+          stepPersistenceKey={persistenceKey}
+        />,
+      );
+    });
+
+    await act(async () => {
+      Array.from(container.querySelectorAll("button"))
+        .find((button) => button.textContent === "Next")
+        ?.click();
+    });
+    expect(container.textContent).toContain("Step 2 of 2: Additional details");
+    expect(sessionStorage.getItem(persistenceKey)).toBe(definition.sections[1].id);
+
+    await act(async () => root.unmount());
+    root = createRoot(container);
+
+    await act(async () => {
+      root.render(
+        <FormRenderer
+          definition={definition}
+          formData={{ NAME: "Valid name" }}
+          onChange={vi.fn()}
+          onSubmit={vi.fn()}
+          stepPersistenceKey={persistenceKey}
+        />,
+      );
+    });
+    expect(container.textContent).toContain("Step 2 of 2: Additional details");
+
+    await act(async () => root.unmount());
+    sessionStorage.removeItem(persistenceKey);
+  });
+  it("shows an unselected single-choice field as incomplete", async () => {
+    const definition = runtimeDefinition();
+    const region = definition.fields.find((field) => field.key === "REGION")!;
+    definition.fields = [{
+      ...region,
+      options: [{ key: "CONFIRMED", label: "I confirm", order: 1 }],
+      order: 1,
+      required: true,
+    }];
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+    const onChange = vi.fn();
+
+    await act(async () => {
+      root.render(
+        <FormRenderer
+          definition={definition}
+          formData={{}}
+          onChange={onChange}
+          onSubmit={vi.fn()}
+        />,
+      );
+    });
+
+    const select = container.querySelector<HTMLSelectElement>("select");
+    expect(container.textContent).toContain("0 of 1 required fields complete");
+    expect(select?.value).toBe("");
+
+    await act(async () => {
+      if (!select) throw new Error("Select is missing.");
+      select.value = "0";
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ REGION: "CONFIRMED" }),
+    );
+
+    await act(async () => root.unmount());
+  });
 });

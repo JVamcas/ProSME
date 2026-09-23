@@ -5,15 +5,18 @@ import { useEffect, useState } from "react";
 
 import { PortalErrorState } from "@/components/layout/PortalErrorState";
 import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
+import { ApplicationSubmissionConfirmation } from "@/components/applicant/applications/ApplicationSubmissionConfirmation";
 import { GeneralButton } from "@/components/ui/button";
 import { FormRenderer } from "@/modules/forms/ui/renderer/FormRenderer";
 import { PageShell } from "@/shared/ui/PageShell";
 import { toast } from "@/shared/ui/Toast";
-import { useOwnApplication } from "../ApplicationHooks";
+import { useOwnApplication, useSubmitApplication } from "../ApplicationHooks";
+import type { ApplicationSubmission } from "../ApplicationTypes";
 import { applicationDocumentCompletion } from "../domain/ApplicationDocumentPolicy";
 import { attachedBusinessFieldKeys } from "../domain/AttachedApplicationForm";
 import { ApplicationDocumentRegisterPanel } from "./ApplicationDocumentsPanel";
 import { useApplicationDocuments } from "./useApplicationDocuments";
+import { useApplicationPreflight } from "./useApplicationReadiness";
 import {
   type DraftSaveStatus,
   useApplicationAutosave,
@@ -53,6 +56,37 @@ function LoadedApplicationDraft({
 }) {
   const autosave = useApplicationAutosave(applicationId, data);
   const documentRegister = useApplicationDocuments(applicationId);
+  const preflight = useApplicationPreflight(applicationId);
+  const submit = useSubmitApplication(applicationId);
+  const [submission, setSubmission] = useState<ApplicationSubmission | null>(null);
+
+  async function submitDraft() {
+    if (autosave.status !== "saved" || preflight.isPending || submit.isPending) {
+      return;
+    }
+
+    try {
+      const readiness = await preflight.mutateAsync();
+      if (!readiness.ready || !readiness.readinessToken) {
+        toast.error("Application is not ready to submit", {
+          description: readiness.blockers.map((blocker) => blocker.message).join(" ")
+            || "Complete the outstanding requirements and try again.",
+        });
+        return;
+      }
+
+      const result = await submit.mutateAsync({
+        expectedApplicationRowVersion: readiness.applicationRowVersion,
+        finalConfirmation: true,
+        readinessToken: readiness.readinessToken,
+      });
+      setSubmission(result);
+    } catch (error) {
+      toast.error("Application could not be submitted", {
+        description: error instanceof Error ? error.message : "Please try again.",
+      });
+    }
+  }
 
   useEffect(() => {
     if (autosave.error && autosave.status === "failed") {
@@ -78,6 +112,10 @@ function LoadedApplicationDraft({
         title="Application could not be loaded"
       />
     );
+  }
+
+  if (submission) {
+    return <ApplicationSubmissionConfirmation submission={submission} />;
   }
 
   const hasDocuments = documentRegister.data.requirements.length > 0;
@@ -120,7 +158,7 @@ function LoadedApplicationDraft({
           definition={data.form}
           formData={autosave.values}
           onChange={autosave.setValues}
-          onSubmit={() => undefined}
+          onSubmit={() => void submitDraft()}
           penultimateStep={
             data.form.displayMode === "STEPS" && documents
               ? {
@@ -132,6 +170,7 @@ function LoadedApplicationDraft({
           }
           readOnly={data.status !== "draft"}
           readOnlyFieldKeys={[...attachedBusinessFieldKeys]}
+          stepPersistenceKey={`application:${applicationId}:form:${data.form.versionId}:step`}
           supplementalCompletion={
             hasDocuments
               ? {
@@ -143,7 +182,20 @@ function LoadedApplicationDraft({
                 }
               : undefined
           }
-        />
+        >
+          {data.status === "draft" ? (
+            <div className="mt-5 flex flex-col items-end gap-3">
+              <GeneralButton
+                disabled={autosave.status !== "saved" || preflight.isPending || submit.isPending}
+                type="submit"
+              >
+                {preflight.isPending || submit.isPending
+                  ? "Submitting…"
+                  : "Submit application"}
+              </GeneralButton>
+            </div>
+          ) : null}
+        </FormRenderer>
         {data.form.displayMode !== "STEPS" ? documents : null}
       </div>
     </PageShell>

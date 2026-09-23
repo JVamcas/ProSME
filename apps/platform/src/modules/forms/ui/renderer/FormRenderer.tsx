@@ -152,6 +152,7 @@ export function FormRenderer({
   readOnly = false,
   readOnlyFieldKeys = [],
   runtimeContext = {},
+  stepPersistenceKey,
   supplementalCompletion,
 }: {
   children?: ReactNode;
@@ -163,9 +164,18 @@ export function FormRenderer({
   readOnly?: boolean;
   readOnlyFieldKeys?: readonly string[];
   runtimeContext?: FormRuntimeContext;
+  stepPersistenceKey?: string;
   supplementalCompletion?: SupplementalCompletion;
 }) {
-  const [currentStepId, setCurrentStepId] = useState<string>();
+  const [currentStepId, setCurrentStepId] = useState<string | undefined>(() => {
+    if (!stepPersistenceKey || typeof window === "undefined") return undefined;
+
+    try {
+      return sessionStorage.getItem(stepPersistenceKey) ?? undefined;
+    } catch {
+      return undefined;
+    }
+  });
   const [validationAttempted, setValidationAttempted] = useState(false);
   const activeDefinition = useMemo(
     () => activeFormDefinition(definition, formData),
@@ -183,6 +193,18 @@ export function FormRenderer({
         ...parsed.sections.slice(-1),
       ]
     : parsed.sections;
+  function navigateToStep(stepId: string | undefined) {
+    if (!stepId) return;
+    setCurrentStepId(stepId);
+    if (!stepPersistenceKey) return;
+
+    try {
+      sessionStorage.setItem(stepPersistenceKey, stepId);
+    } catch {
+      // Navigation still works if browser storage is unavailable.
+    }
+  }
+
   const currentIndex = stepMode
     ? Math.max(0, steps.findIndex((step) => step.id === currentStepId))
     : 0;
@@ -253,8 +275,8 @@ export function FormRenderer({
           {penultimateStep?.content}
           <FormStepActions
             currentIndex={currentIndex}
-            onBack={() => setCurrentStepId(steps[currentIndex - 1]?.id)}
-            onNext={() => setCurrentStepId(steps[currentIndex + 1]?.id)}
+            onBack={() => navigateToStep(steps[currentIndex - 1]?.id)}
+            onNext={() => navigateToStep(steps[currentIndex + 1]?.id)}
             stepCount={steps.length}
           />
         </>
@@ -296,7 +318,7 @@ export function FormRenderer({
               currentIndex={currentIndex}
               onBack={() => {
                 setValidationAttempted(false);
-                setCurrentStepId(steps[currentIndex - 1]?.id);
+                navigateToStep(steps[currentIndex - 1]?.id);
               }}
               onNext={() => {
                 if (!readOnly && !validateFormValues(
@@ -308,7 +330,7 @@ export function FormRenderer({
                   return;
                 }
                 setValidationAttempted(false);
-                setCurrentStepId(steps[currentIndex + 1]?.id);
+                navigateToStep(steps[currentIndex + 1]?.id);
               }}
               stepCount={steps.length}
             />

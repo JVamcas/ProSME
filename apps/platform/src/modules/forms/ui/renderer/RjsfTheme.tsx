@@ -287,7 +287,7 @@ export function FormSelectWidget(props: FormWidgetProps) {
         onBlur={(event) => props.onBlur(props.id, selectValue(props, event))}
         onChange={(event) => props.onChange(selectValue(props, event))}
         onFocus={(event) => props.onFocus(props.id, selectValue(props, event))}
-        placeholder={props.placeholder ?? "Select…"}
+        placeholder={props.placeholder || "Select…"}
         required={props.required}
         value={selectedValue(props)}
       />

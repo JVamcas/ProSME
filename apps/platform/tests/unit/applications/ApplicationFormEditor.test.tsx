@@ -11,13 +11,21 @@ import { runtimeDefinition } from "../../support/form-runtime";
 const mocks = vi.hoisted(() => ({
   draft: null as ApplicationDraftView | null,
   refetch: vi.fn(),
+  preflight: vi.fn(),
+  submit: vi.fn(),
+  toastError: vi.fn(),
 }));
 
 (
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
+vi.mock("@/shared/ui/Toast", () => ({
+  toast: { error: mocks.toastError },
+}));
+
 vi.mock("@/modules/applications/ApplicationHooks", () => ({
+  useSubmitApplication: () => ({ isPending: false, mutateAsync: mocks.submit }),
   useOwnApplication: () => ({
     data: mocks.draft,
     isError: false,
@@ -28,6 +36,13 @@ vi.mock("@/modules/applications/ApplicationHooks", () => ({
     error: null,
     isPending: false,
     mutate: vi.fn(),
+  }),
+}));
+
+vi.mock("@/modules/applications/ui/useApplicationReadiness", () => ({
+  useApplicationPreflight: () => ({
+    isPending: false,
+    mutateAsync: mocks.preflight,
   }),
 }));
 
@@ -98,6 +113,10 @@ function draft(rowVersion: number): ApplicationDraftView {
 afterEach(() => {
   mocks.draft = null;
   mocks.refetch.mockReset();
+  mocks.preflight.mockReset();
+  mocks.submit.mockReset();
+  mocks.toastError.mockReset();
+  sessionStorage.clear();
   document.body.replaceChildren();
 });
 
@@ -123,6 +142,87 @@ describe("application form editor", () => {
       root.render(<ApplicationFormEditor applicationId={applicationId} />);
     });
     expect(container.textContent).toContain("Step 2 of 2: Additional details");
+
+    await act(async () => root.unmount());
+  });
+
+  it("submits the saved draft from the final step", async () => {
+    mocks.draft = draft(4);
+    mocks.preflight.mockResolvedValue({
+      applicationRowVersion: 4,
+      blockers: [],
+      readinessToken: "ready-token",
+      ready: true,
+    });
+    mocks.submit.mockResolvedValue({
+      applicationId,
+      reference: "SME-001",
+      submittedAt: "2026-09-23T08:00:00.000Z",
+      workflowInstanceId: "workflow-1",
+      workflowTemplateVersionId: "template-1",
+    });
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<ApplicationFormEditor applicationId={applicationId} />);
+    });
+    await act(async () => {
+      Array.from(container.querySelectorAll("button"))
+        .find((button) => button.textContent === "Next")
+        ?.click();
+    });
+    const submitButton = Array.from(container.querySelectorAll("button"))
+      .find((button) => button.textContent === "Submit application");
+    expect(submitButton).toBeDefined();
+    expect(submitButton?.disabled).toBe(false);
+
+    await act(async () => {
+      submitButton?.click();
+    });
+    expect(mocks.preflight).toHaveBeenCalledOnce();
+    expect(mocks.submit).toHaveBeenCalledWith({
+      expectedApplicationRowVersion: 4,
+      finalConfirmation: true,
+      readinessToken: "ready-token",
+    });
+    expect(container.textContent).toContain("Application submitted");
+    expect(container.textContent).toContain("SME-001");
+
+    await act(async () => root.unmount());
+  });
+
+  it("shows preflight blockers without submitting", async () => {
+    mocks.draft = draft(4);
+    mocks.preflight.mockResolvedValue({
+      applicationRowVersion: 4,
+      blockers: [{ message: "A required document is missing." }],
+      readinessToken: null,
+      ready: false,
+    });
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<ApplicationFormEditor applicationId={applicationId} />);
+    });
+    await act(async () => {
+      Array.from(container.querySelectorAll("button"))
+        .find((button) => button.textContent === "Next")
+        ?.click();
+    });
+    await act(async () => {
+      Array.from(container.querySelectorAll("button"))
+        .find((button) => button.textContent === "Submit application")
+        ?.click();
+    });
+    expect(mocks.toastError).toHaveBeenCalledWith(
+      "Application is not ready to submit",
+      { description: "A required document is missing." },
+    );
+    expect(mocks.submit).not.toHaveBeenCalled();
 
     await act(async () => root.unmount());
   });
