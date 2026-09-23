@@ -47,14 +47,17 @@ describe("public eligibility self-check form", () => {
     );
 
     expect(markup).toContain("Business details");
-    expect(markup).toContain("Section 1 of 1");
-    expect(markup).toContain("Question 1 of 1");
+    expect(markup).toContain("Question 0 of 1");
+    expect(markup).toContain("0% complete");
     expect(markup).toContain("What is the registration status?");
-    expect(markup).toContain("Use the current registration record.");
-    expect(markup).toContain("Registration must be active.");
+    expect(markup).not.toContain("Use the current registration record.");
+    expect(markup).not.toContain("Registration must be active.");
     expect(markup).toContain("The registration is active.");
     expect(markup).toContain("<fieldset");
     expect(markup).toContain('type="radio"');
     expect(markup).toContain("(required)");
+    expect(markup).toContain("Check eligibility");
+    expect(markup).toContain("Previous");
+    expect(markup).toContain("Your answers stay on this device");
   });
 });

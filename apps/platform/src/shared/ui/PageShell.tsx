@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 export type PageHeaderProps = {
   title: string;
   backLink?: ReactNode;
-  description?: string;
+  description?: ReactNode;
   eyebrow?: string;
   icon?: ReactNode;
   actions?: ReactNode;
