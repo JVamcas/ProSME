@@ -1,7 +1,7 @@
 "use client";
 
 import { requestData } from "@/lib/client-http";
-import type { ApplicationReadiness } from "../domain/ApplicationReadiness";
+import type { ApplicationPreflight, ApplicationReadiness } from "../domain/ApplicationReadiness";
 
 function get(applicationId: string) {
   return requestData<ApplicationReadiness>(
@@ -10,4 +10,11 @@ function get(applicationId: string) {
   );
 }
 
-export const clientApplicationReadinessService = { get };
+function preflight(applicationId: string) {
+  return requestData<ApplicationPreflight>(
+    `/api/portal/applications/${applicationId}/preflight`,
+    { method: "POST" },
+  );
+}
+
+export const clientApplicationReadinessService = { get, preflight };

@@ -365,6 +365,7 @@ export const applicationSubmissionCommands = pgTable(
       .primaryKey()
       .references(() => applications.id, { onDelete: "restrict" }),
     idempotencyKey: text("idempotency_key").notNull(),
+    requestFingerprint: text("request_fingerprint").notNull(),
     reference: text("reference").notNull(),
     workflowInstanceId: uuid("workflow_instance_id")
       .notNull()

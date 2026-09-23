@@ -10,7 +10,18 @@ import { validateFormValues } from "@/modules/forms/FormValidation";
 import type { FormField, FormRuntimeSchema } from "@/modules/forms/FormTypes";
 
 export type ApplicationReadinessBlocker = {
-  category: "application" | "business" | "configuration" | "declaration" | "document" | "form" | "funding_call";
+  category:
+    | "application"
+    | "authority"
+    | "business"
+    | "configuration"
+    | "declaration"
+    | "document"
+    | "duplicate"
+    | "form"
+    | "funding_call"
+    | "service"
+    | "workflow";
   code: string;
   message: string;
   requirementKey?: string;
@@ -34,6 +45,10 @@ export type ApplicationReadiness = {
   ready: boolean;
   responseRowVersion: number;
   sections: ApplicationSectionProgress[];
+};
+
+export type ApplicationPreflight = ApplicationReadiness & {
+  readinessToken: string | null;
 };
 
 type ReadinessInput = {

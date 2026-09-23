@@ -118,7 +118,7 @@ export type ApplicationSubmission = {
   reference: string;
   submittedAt: string;
   workflowInstanceId: string;
-  workflowVersionId: string;
+  workflowTemplateVersionId: string;
 };
 
 export const adminApplicationStatuses = [

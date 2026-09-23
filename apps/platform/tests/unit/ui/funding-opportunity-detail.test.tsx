@@ -43,6 +43,8 @@ describe("funding opportunity detail", () => {
     expect(markup).toContain("<strong>growing</strong>");
     expect(markup).toContain("Ready to apply?");
     expect(markup).toContain("Application deadline");
+    expect(markup).toContain("/portal/applications/new");
+    expect(markup).toContain(">Apply</a>");
     expect(markup).toContain(
       'href="/portal/funding-opportunities/00000000-0000-4000-8000-000000000042/eligibility"',
     );

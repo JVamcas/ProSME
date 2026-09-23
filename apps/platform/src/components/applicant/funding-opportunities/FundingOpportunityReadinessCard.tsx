@@ -19,8 +19,17 @@ export function FundingOpportunityReadinessCard({
         Check whether you meet the eligibility criteria before starting an
         application.
       </p>
-      {canCheckEligibility ? (
+      {opportunity.applicationsOpen ? (
         <GeneralButton asChild className="mt-5 w-full">
+          <Link href="/portal/applications/new">Apply</Link>
+        </GeneralButton>
+      ) : (
+        <GeneralButton className="mt-5 w-full" disabled type="button">
+          Apply
+        </GeneralButton>
+      )}
+      {canCheckEligibility ? (
+        <GeneralButton asChild className="mt-3 w-full" variant="outline">
           <Link
             href={`/portal/funding-opportunities/${opportunity.id}/eligibility`}
           >
@@ -28,7 +37,12 @@ export function FundingOpportunityReadinessCard({
           </Link>
         </GeneralButton>
       ) : (
-        <GeneralButton className="mt-5 w-full" disabled type="button">
+        <GeneralButton
+          className="mt-3 w-full"
+          disabled
+          type="button"
+          variant="outline"
+        >
           Check eligibility
         </GeneralButton>
       )}

@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
+import { preflightOwnedApplication } from "@/modules/applications/infrastructure/ApplicationPreflightRepository";
 import { submitOwnedApplication } from "@/modules/applications/infrastructure/ApplicationSubmissionRepository";
 import { readApplicantDashboard } from "@/db/repositories/ApplicantDashboardRepository";
 import { readAdminDashboard } from "@/db/repositories/AdminDashboardRepository";
@@ -10,6 +11,7 @@ import {
   eligibilityVersionId,
   installAuthoritativeEligibilityConfiguration,
 } from "../support/AuthoritativeEligibilityDatabaseFixture";
+import { readAtomicSubmissionCounts } from "../support/ApplicationSubmissionDatabaseAssertions";
 import * as workflowBindingFixture from "../support/WorkflowBindingDatabaseFixture";
 
 const { Pool } = pg;
@@ -106,6 +108,7 @@ describeDatabase("P3.4 transactional application submission", () => {
       `SELECT
         to_regclass('app_workflow_instances') AS workflow_instances,
         to_regclass('app_application_submission_commands') AS commands,
+        to_regclass('app_application_submission_snapshots') AS snapshots,
         to_regclass('app_transactional_outbox') AS outbox,
         to_regclass('app_applications_reference_unique') AS reference_index`,
     );
@@ -113,20 +116,32 @@ describeDatabase("P3.4 transactional application submission", () => {
       commands: "app_application_submission_commands",
       outbox: "app_transactional_outbox",
       reference_index: "app_applications_reference_unique",
+      snapshots: "app_application_submission_snapshots",
       workflow_instances: "app_workflow_instances",
     });
   });
   it("pins one published version and creates the initial runtime atomically", async () => {
+    const preflight = await preflightOwnedApplication({
+      actorId: ownerId,
+      applicationId: applicationIds[0],
+    });
+    expect(preflight?.ready).toBe(true);
+    expect(preflight?.readinessToken).toBeTruthy();
+    const command = {
+      actorId: ownerId,
+      applicationId: applicationIds[0],
+      expectedApplicationRowVersion: preflight!.applicationRowVersion,
+      finalConfirmation: true as const,
+      readinessToken: preflight!.readinessToken!,
+    };
     const [first, second] = await Promise.all([
       submitOwnedApplication({
-        actorId: ownerId,
-        applicationId: applicationIds[0],
+        ...command,
         correlationId: "67777777-7777-4777-8777-777777777771",
         idempotencyKey: "concurrent-submission-one",
       }),
       submitOwnedApplication({
-        actorId: ownerId,
-        applicationId: applicationIds[0],
+        ...command,
         correlationId: "67777777-7777-4777-8777-777777777772",
         idempotencyKey: "concurrent-submission-two",
       }),
@@ -140,40 +155,16 @@ describeDatabase("P3.4 transactional application submission", () => {
 
     await workflowBindingFixture.publishNewerWorkflowVersion(query, ownerId, definitionId);
 
-    const counts = await query(
-      `SELECT
-        (SELECT count(*)::integer FROM app_workflow_instances WHERE application_id = $1) AS workflows,
-        (SELECT count(*)::integer FROM app_workflow_stage_instances stage
-          JOIN app_workflow_instances workflow ON workflow.id = stage.workflow_instance_id
-          WHERE workflow.application_id = $1) AS stages,
-        (SELECT count(*)::integer FROM app_workflow_tasks task
-          JOIN app_workflow_stage_instances stage ON stage.id = task.stage_instance_id
-          JOIN app_workflow_instances workflow ON workflow.id = stage.workflow_instance_id
-          WHERE workflow.application_id = $1) AS tasks,
-        (SELECT count(*)::integer FROM app_workflow_events event
-          JOIN app_workflow_instances workflow ON workflow.id = event.workflow_instance_id
-          WHERE workflow.application_id = $1) AS events,
-        (SELECT count(*)::integer FROM app_workflow_audit_entries
-          WHERE target_id = $1::text AND action = 'APPLICATION_SUBMITTED') AS audits,
-        (SELECT count(*)::integer FROM app_transactional_outbox
-          WHERE aggregate_id = $1) AS outbox,
-        (SELECT count(*)::integer
-          FROM app_authoritative_eligibility_outcomes
-          WHERE application_id = $1) AS eligibility_outcomes,
-        (SELECT workflow_template_version_id FROM app_workflow_instances
-          WHERE application_id = $1) AS pinned_version,
-        (SELECT created_at = started_at AND completed_at IS NULL
-          AND status = 'ACTIVE' FROM app_workflow_instances
-          WHERE application_id = $1) AS runtime_initialized`,
-      [applicationIds[0]],
-    );
-    expect(counts.rows[0]).toEqual({
+    const counts = await readAtomicSubmissionCounts(query, applicationIds[0]);
+    expect(counts).toEqual({
+      application_audits: 1,
       audits: 1,
       events: 5,
-      eligibility_outcomes: 0,
-      outbox: 1,
+      eligibility_outcomes: 1,
+      outbox: 2,
       pinned_version: versionId,
       runtime_initialized: true,
+      snapshots: 1,
       stages: 1,
       tasks: 1,
       workflows: 1,
@@ -191,13 +182,15 @@ describeDatabase("P3.4 transactional application submission", () => {
     ).rejects.toThrow("workflow instance version pin is immutable");
   });
   it("rejects a missing published assignment without partial writes", async () => {
-    const result = await submitOwnedApplication({
+    const result = await preflightOwnedApplication({
       actorId: ownerId,
       applicationId: applicationIds[1],
-      correlationId: "67777777-7777-4777-8777-777777777773",
-      idempotencyKey: "missing-workflow",
     });
-    expect(result).toEqual({ kind: "workflow_unavailable" });
+    expect(result?.ready).toBe(false);
+    expect(result?.readinessToken).toBeNull();
+    expect(result?.blockers).toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: "INITIAL_WORKFLOW_STAGE_UNAVAILABLE" }),
+    ]));
     const application = await query(
       `SELECT status, reference FROM app_applications WHERE id = $1`,
       [applicationIds[1]],
@@ -206,6 +199,11 @@ describeDatabase("P3.4 transactional application submission", () => {
   });
 
   it("rolls back the reference and runtime when a later write fails", async () => {
+    const preflight = await preflightOwnedApplication({
+      actorId: ownerId,
+      applicationId: applicationIds[2],
+    });
+    expect(preflight?.ready).toBe(true);
     await query(
       `INSERT INTO app_transactional_outbox
         (event_code, aggregate_id, schema_version, payload, correlation_id)
@@ -215,6 +213,9 @@ describeDatabase("P3.4 transactional application submission", () => {
     await expect(submitOwnedApplication({
       actorId: ownerId,
       applicationId: applicationIds[2],
+      expectedApplicationRowVersion: preflight!.applicationRowVersion,
+      finalConfirmation: true,
+      readinessToken: preflight!.readinessToken!,
       correlationId: "67777777-7777-4777-8777-777777777775",
       idempotencyKey: "forced-rollback",
     })).rejects.toThrow();

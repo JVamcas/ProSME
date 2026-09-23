@@ -9,6 +9,7 @@ import type {
   CreateApplicationDraftInput,
   SaveApplicationDraftInput,
 } from "./ApplicationSchemas";
+import type { ApplicationSubmissionCommandInput } from "./api/ApplicationSubmissionSchemas";
 import type {
   AdminApplication,
   AdminApplicationListInput,
@@ -91,11 +92,18 @@ function saveApplicationDraft(id: string, input: SaveApplicationDraftInput) {
   );
 }
 
-function submitApplication(id: string) {
+function submitApplication(
+  id: string,
+  input: ApplicationSubmissionCommandInput,
+) {
   return requestData<ApplicationSubmission>(
     `/api/portal/applications/${id}/submit`,
     {
-      headers: { "Idempotency-Key": crypto.randomUUID() },
+      body: JSON.stringify(input),
+      headers: {
+        "Content-Type": "application/json",
+        "Idempotency-Key": crypto.randomUUID(),
+      },
       method: "POST",
     },
   );

@@ -124,8 +124,12 @@ export async function readTransactionalApplicationReadiness(
   if (!response || !form) return null;
   const documentRows = await transaction
     .selectDistinctOn([applicationDocumentVersions.requirementKey], {
+      checksumSha256: applicationDocumentVersions.checksumSha256,
       contentType: applicationDocumentVersions.contentType,
       fileName: applicationDocumentVersions.originalName,
+      id: applicationDocumentVersions.id,
+      objectKey: applicationDocumentVersions.objectKey,
+      originalName: applicationDocumentVersions.originalName,
       requirementKey: applicationDocumentVersions.requirementKey,
       scanStatus: applicationDocumentVersions.scanStatus,
       sizeBytes: applicationDocumentVersions.sizeBytes,
@@ -143,7 +147,7 @@ export async function readTransactionalApplicationReadiness(
       applicationDocumentVersions.requirementKey,
       desc(applicationDocumentVersions.versionNumber),
     );
-  return evaluateApplicationReadiness({
+  const readiness = evaluateApplicationReadiness({
     application: {
       businessId: application.businessId,
       declarationAcceptance: application.declarationAcceptance,
@@ -162,4 +166,5 @@ export async function readTransactionalApplicationReadiness(
     form,
     response,
   });
+  return { documents: documentRows, form, readiness, response };
 }

@@ -1,8 +1,14 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 
 import { clientApplicationReadinessService } from "./ClientApplicationReadinessService";
+
+export function useApplicationPreflight(applicationId: string) {
+  return useMutation({
+    mutationFn: () => clientApplicationReadinessService.preflight(applicationId),
+  });
+}
 
 export function useApplicationReadiness(applicationId: string) {
   return useQuery({

@@ -227,6 +227,55 @@ export const applicationDraftResponses = pgTable(
   ],
 );
 
+export const applicationSubmissionSnapshots = pgTable(
+  "app_application_submission_snapshots",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    applicationId: uuid("application_id")
+      .notNull()
+      .references(() => applications.id, { onDelete: "restrict" }),
+    applicationRowVersion: integer("application_row_version").notNull(),
+    responseRowVersion: integer("response_row_version").notNull(),
+    formVersionId: uuid("form_version_id")
+      .notNull()
+      .references(() => formVersions.id, { onDelete: "restrict" }),
+    eligibilityRuleSetVersionId: uuid("eligibility_rule_set_version_id")
+      .notNull()
+      .references(() => eligibilityRuleSetVersions.id, {
+        onDelete: "restrict",
+      }),
+    workflowTemplateVersionId: uuid("workflow_template_version_id").notNull(),
+    applicationData: jsonb("application_data")
+      .$type<Record<string, unknown>>()
+      .notNull(),
+    businessData: jsonb("business_data")
+      .$type<Record<string, unknown>>()
+      .notNull(),
+    declarationAcceptance: jsonb("declaration_acceptance")
+      .$type<Record<string, unknown>>()
+      .notNull(),
+    documentVersions: jsonb("document_versions")
+      .$type<Record<string, unknown>[]>()
+      .notNull(),
+    normalizedFormValues: jsonb("normalized_form_values")
+      .$type<Record<string, unknown>>()
+      .notNull(),
+    submittedAt: timestamp("submitted_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("app_submission_snapshots_application_unique").on(
+      table.applicationId,
+    ),
+    check(
+      "app_submission_snapshots_versions_check",
+      sql`${table.applicationRowVersion} > 0 and ${table.responseRowVersion} > 0`,
+    ),
+  ],
+);
+
 export const applicationCommands = pgTable(
   "app_application_commands",
   {
@@ -273,7 +322,11 @@ export const applicationAuditEntries = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "restrict" }),
     action: text("action")
-      .$type<"APPLICATION_DRAFT_CREATED" | "APPLICATION_DRAFT_SAVED">()
+      .$type<
+        | "APPLICATION_DRAFT_CREATED"
+        | "APPLICATION_DRAFT_SAVED"
+        | "APPLICATION_SUBMITTED"
+      >()
       .notNull(),
     metadata: jsonb("metadata")
       .$type<Record<string, unknown>>()
@@ -292,7 +345,11 @@ export const applicationAuditEntries = pgTable(
     ),
     check(
       "app_application_audit_entries_action_check",
-      sql`${table.action} in ('APPLICATION_DRAFT_CREATED', 'APPLICATION_DRAFT_SAVED')`,
+      sql`${table.action} in (
+        'APPLICATION_DRAFT_CREATED',
+        'APPLICATION_DRAFT_SAVED',
+        'APPLICATION_SUBMITTED'
+      )`,
     ),
   ],
 );

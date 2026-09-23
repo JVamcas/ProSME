@@ -2,6 +2,8 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import type { ApplicationSubmissionCommandInput } from "./api/ApplicationSubmissionSchemas";
+
 import type { SaveApplicationDraftInput } from "./ApplicationSchemas";
 import type {
   AdminApplicationListInput,
@@ -77,7 +79,8 @@ export function useUpdateApplication(id: string) {
 export function useSubmitApplication(id: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: () => clientApplicationService.submitApplication(id),
+    mutationFn: (input: ApplicationSubmissionCommandInput) =>
+      clientApplicationService.submitApplication(id, input),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: applicationQueryKeys.own });
       void queryClient.invalidateQueries({ queryKey: applicationQueryKeys.detail(id) });

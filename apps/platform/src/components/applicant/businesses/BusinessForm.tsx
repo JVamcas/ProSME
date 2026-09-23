@@ -32,21 +32,35 @@ const defaults: BusinessProfileInput = {
   tradingName: "",
 };
 
-export function BusinessForm({ businessId }: { businessId?: string }) {
+type BusinessFormProps = {
+  businessId?: string;
+  initialValues?: BusinessProfileInput;
+  onSuccess?: () => void;
+  variant?: "card" | "dialog";
+};
+
+export function BusinessForm({
+  businessId,
+  initialValues,
+  onSuccess,
+  variant = "card",
+}: BusinessFormProps) {
   const router = useRouter();
   const business = useBusiness(businessId);
   const createBusiness = useCreateBusiness();
   const updateBusiness = useUpdateBusiness(businessId ?? "new");
   const form = useForm<BusinessProfileInput>({
-    defaultValues: defaults,
+    defaultValues: initialValues ?? defaults,
     resolver: zodResolver(businessProfileSchema),
   });
 
   useEffect(() => {
-    if (business.data) form.reset(business.data);
+    if (business.data) {
+      form.reset(business.data);
+    }
   }, [business.data, form]);
 
-  if (businessId && business.isPending)
+  if (businessId && !initialValues && business.isPending)
     return (
       <PortalLoadingState
         title="Loading business"
@@ -68,13 +82,19 @@ export function BusinessForm({ businessId }: { businessId?: string }) {
   const submit = form.handleSubmit(async (input) => {
     await mutation.mutateAsync(input);
     toast.success(businessId ? "Business updated" : "Business added");
-    router.push("/portal/businesses");
+    if (onSuccess) {
+      onSuccess();
+    } else {
+      router.push("/portal/businesses");
+    }
   });
 
   return (
     <FormProvider {...form}>
       <form
-        className="mt-6 rounded-2xl border border-brand-navy/15 bg-brand-white p-5 shadow-sm sm:p-7"
+        className={variant === "card"
+          ? "mt-6 rounded-2xl border border-brand-navy/15 bg-brand-white p-5 shadow-sm sm:p-7"
+          : undefined}
         noValidate
         onSubmit={submit}
       >

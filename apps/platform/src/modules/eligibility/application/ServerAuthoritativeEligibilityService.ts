@@ -73,7 +73,7 @@ type CreateAuthoritativeOutcomeInput = {
   evaluatedAt: Date;
   evaluationNumber: number;
   fundingCall: FundingCallEvaluationSource;
-  workflowTaskId: string;
+  workflowTaskId: string | null;
 };
 
 export class AuthoritativeEligibilityUnavailableError extends ResourceConflictError {
