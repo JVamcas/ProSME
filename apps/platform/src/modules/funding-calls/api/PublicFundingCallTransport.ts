@@ -31,6 +31,7 @@ export type PublicFundingCallSummary = {
   slug: string;
   status: PublicFundingCallStatus;
   summary: string;
+  summaryHtml?: string;
   thematicArea: string | null;
   title: string;
   totalFundingAmount: number;

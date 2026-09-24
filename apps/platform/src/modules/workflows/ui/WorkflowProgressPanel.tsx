@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { formatLocalDateTime24 } from "@/lib/dateUtils";
 import type { WorkflowProgressStage, WorkflowProgressView } from "../api/WorkflowProgressTypes";
+import { WorkflowStageTaskAssignments } from "./WorkflowStageTaskAssignments";
 
 const statusLabels: Record<WorkflowProgressStage["status"], string> = {
   ACTIVE: "In progress",
@@ -113,27 +114,7 @@ function StageFlow({ progress }: { progress: WorkflowProgressView }) {
             </dd>
           </div>
         </dl>
-        {selected.tasks.length > 0 ? (
-          <div className="mt-6 border-t border-brand-navy/10 pt-4">
-            <h4 className="text-sm font-semibold text-brand-navy">
-              Tasks Assignments ({selected.tasks.length})
-            </h4>
-            <ul className="mt-3 space-y-2">
-              {selected.tasks.map((task) => (
-                <li
-                  className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-brand-navy/5 px-3 py-2 text-sm"
-                  key={task.id}
-                >
-                  <span className="font-medium text-brand-navy">{task.name}</span>
-                  <span className="text-xs font-semibold text-brand-navy/65">
-                    {task.status.replaceAll("_", " ")}
-                    {task.dueAt ? ` · Due ${formatLocalDateTime24(task.dueAt)}` : ""}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
+        <WorkflowStageTaskAssignments tasks={selected.tasks} />
       </section>
     </div>
   );

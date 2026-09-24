@@ -3,7 +3,13 @@ import "server-only";
 import { and, asc, eq } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
-import type { WorkflowProgressView } from "../api/WorkflowProgressTypes";
+import { roles } from "@/db/schema/authorization";
+import { users } from "@/db/schema/identity";
+import type {
+  WorkflowProgressStage,
+  WorkflowProgressTask,
+  WorkflowProgressView,
+} from "../api/WorkflowProgressTypes";
 import {
   stageTaskDefinitions,
   workflowDefinitionVersions,
@@ -15,9 +21,23 @@ import {
   workflowTasks,
 } from "./workflow-runtime.schema";
 
+type ProgressTaskRecord = Omit<WorkflowProgressTask, "canOpen"> & {
+  assignedRoleCode: string | null;
+  assignedUserId: string | null;
+  viewPermission: string;
+};
+
+type ProgressStageRecord = Omit<WorkflowProgressStage, "tasks"> & {
+  tasks: ProgressTaskRecord[];
+};
+
+export type WorkflowProgressRecord = Omit<WorkflowProgressView, "stages"> & {
+  stages: ProgressStageRecord[];
+};
+
 export async function readWorkflowProgress(
   applicationId: string,
-): Promise<WorkflowProgressView | null> {
+): Promise<WorkflowProgressRecord | null> {
   const rows = await getDatabase()
     .select({
       activatedAt: stageInstances.activatedAt,
@@ -31,10 +51,18 @@ export async function readWorkflowProgress(
       stageName: workflowStageDefinitions.name,
       stageSequence: workflowStageDefinitions.sequence,
       stageStatus: stageInstances.status,
+      taskActionedAt: workflowTasks.completedAt,
+      taskAssignedRoleCode: roles.code,
+      taskAssignedRoleName: roles.name,
+      taskAssignedUserEmail: users.email,
+      taskAssignedUserId: workflowTasks.assignedUserId,
+      taskAssignedUserName: users.displayName,
       taskDueAt: workflowTasks.dueAt,
       taskId: workflowTasks.id,
       taskName: stageTaskDefinitions.name,
+      taskRequired: stageTaskDefinitions.required,
       taskStatus: workflowTasks.status,
+      taskViewPermission: stageTaskDefinitions.permissions,
       startedAt: workflowInstances.startedAt,
       terminalOutcome: workflowInstances.terminalOutcome,
       versionMetadata: workflowDefinitionVersions.metadata,
@@ -64,6 +92,8 @@ export async function readWorkflowProgress(
       stageTaskDefinitions,
       eq(stageTaskDefinitions.id, workflowTasks.workflowTaskDefinitionId),
     )
+    .leftJoin(users, eq(users.id, workflowTasks.assignedUserId))
+    .leftJoin(roles, eq(roles.id, workflowTasks.assignedRoleId))
     .where(eq(workflowInstances.applicationId, applicationId))
     .orderBy(
       asc(workflowStageDefinitions.sequence),
@@ -74,7 +104,7 @@ export async function readWorkflowProgress(
   const first = rows[0];
   if (!first) return null;
 
-  const stages = new Map<string, WorkflowProgressView["stages"][number]>();
+  const stages = new Map<string, ProgressStageRecord>();
   for (const row of rows) {
     const key = row.stageId ?? `planned-${row.stageSequence}`;
     let stage = stages.get(key);
@@ -92,12 +122,20 @@ export async function readWorkflowProgress(
       };
       stages.set(key, stage);
     }
-    if (row.taskId && row.taskName && row.taskStatus) {
+    if (row.taskId && row.taskName && row.taskStatus && row.taskViewPermission) {
       stage.tasks.push({
+        actionedAt: row.taskActionedAt?.toISOString() ?? null,
+        assignedRoleCode: row.taskAssignedRoleCode,
+        assignedRoleName: row.taskAssignedRoleName,
+        assignedUserEmail: row.taskAssignedUserEmail,
+        assignedUserId: row.taskAssignedUserId,
+        assignedUserName: row.taskAssignedUserName,
         dueAt: row.taskDueAt?.toISOString() ?? null,
         id: row.taskId,
         name: row.taskName,
+        required: row.taskRequired ?? false,
         status: row.taskStatus,
+        viewPermission: row.taskViewPermission.view,
       });
     }
   }

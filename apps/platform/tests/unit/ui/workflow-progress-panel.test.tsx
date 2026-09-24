@@ -33,9 +33,15 @@ const progress: WorkflowProgressView = {
       sequence: 2,
       status: "ACTIVE",
       tasks: [{
-        dueAt: null,
+        actionedAt: null,
+        assignedRoleName: "Sector Specialist",
+        assignedUserEmail: "reviewer@example.test",
+        assignedUserName: "Reviewer",
+        canOpen: true,
+        dueAt: "2026-09-29T08:09:00.000Z",
         id: "task-one",
         name: "Review proposal",
+        required: true,
         status: "IN_PROGRESS",
       }],
     },
@@ -59,6 +65,11 @@ describe("workflow progress panel", () => {
     const details = container.querySelector('[aria-label="Selected stage details"]');
     expect(details?.textContent).toContain("Technical Assessment");
     expect(details?.textContent).toContain("Review proposal");
+    expect(details?.textContent).toContain("Reviewer");
+    expect(details?.textContent).toContain("reviewer@example.test");
+    expect(details?.textContent).toContain("Sector Specialist");
+    expect(details?.textContent).toContain("Mandatory");
+    expect(details?.querySelector('a[href="/admin/tasks/task-one"]')).not.toBeNull();
 
     const eligibility = [...container.querySelectorAll("button")].find(
       (button) => button.textContent?.includes("Eligibility"),

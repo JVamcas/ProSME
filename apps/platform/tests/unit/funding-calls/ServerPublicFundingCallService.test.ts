@@ -71,6 +71,7 @@ describe("public funding-call read model", () => {
       slug: "growth-fund",
       status: "open",
       summary: "Support for growing Namibian businesses.",
+      summaryHtml: call.description,
       thematicArea: "Growth",
       title: "Growth Fund",
       totalFundingAmount: 1000000,
