@@ -45,4 +45,67 @@ describe("workflow progress authorization", () => {
     }, applicationId)).resolves.toBeNull();
     expect(readWorkflowProgress).toHaveBeenCalledWith(applicationId);
   });
+
+  it("links only tasks the actor can read in an active stage", async () => {
+    const task = {
+      actionedAt: null,
+      assignedRoleCode: "programme_officer",
+      assignedRoleName: "Programme Officer",
+      assignedUserEmail: "staff@example.test",
+      assignedUserId: actor.id,
+      assignedUserName: "Staff member",
+      dueAt: null,
+      id: "task-one",
+      name: "Review application",
+      required: true,
+      status: "PENDING",
+      viewPermission: permissionCodes.workflowTaskAssignedRead,
+    };
+    vi.mocked(readWorkflowProgress).mockResolvedValue({
+      completedAt: null,
+      id: "workflow-one",
+      name: "SME workflow",
+      stages: [{
+        activatedAt: "2026-09-20T08:00:00.000Z",
+        completedAt: null,
+        description: "Review",
+        id: "stage-one",
+        iterationNumber: 1,
+        name: "Review",
+        sequence: 1,
+        status: "ACTIVE",
+        tasks: [
+          task,
+          { ...task, assignedUserId: "another-user", id: "task-two" },
+          {
+            ...task,
+            assignedUserEmail: null,
+            assignedUserId: null,
+            assignedUserName: null,
+            id: "task-three",
+          },
+        ],
+      }],
+      startedAt: "2026-09-20T08:00:00.000Z",
+      status: "ACTIVE",
+      terminalOutcome: null,
+      versionNumber: 1,
+    });
+
+    const progress = await getWorkflowProgress({
+      ...actor,
+      capabilities: new Set([
+        permissionCodes.workflowInstanceAllRead,
+        permissionCodes.workflowTaskAssignedRead,
+      ]),
+    }, applicationId);
+
+    expect(progress?.stages[0].tasks.map((item) => item.canOpen)).toEqual([
+      true,
+      false,
+      true,
+    ]);
+    expect(progress?.stages[0].tasks[0]).not.toHaveProperty("assignedUserId");
+    expect(progress?.stages[0].tasks[0]).not.toHaveProperty("viewPermission");
+  });
 });

@@ -59,6 +59,7 @@ function summary(
     slug: call.slug,
     status,
     summary: richTextToPlainText(call.description),
+    summaryHtml: call.description,
     thematicArea: call.thematicArea,
     title: call.title,
     totalFundingAmount: Number(call.totalBudgetEnvelope),

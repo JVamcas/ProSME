@@ -1,7 +1,7 @@
 INSERT INTO app_capabilities (code, description)
 VALUES (
   'workflow.instance.all.read',
-  'Read internal stage and task progress for any submitted application'
+  'Read internal stage and task assignment progress for any submitted application'
 )
 ON CONFLICT (code) DO UPDATE SET description = EXCLUDED.description;
 --> statement-breakpoint

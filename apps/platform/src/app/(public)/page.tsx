@@ -1,6 +1,6 @@
 import { HomeHero } from "@/components/public/home-hero";
 import { HomeActions } from "@/components/public/home-actions";
-import { HomeFundingCall } from "@/components/public/home-funding-call";
+import { HomeFundingCall } from "@/modules/funding-calls/ui/public/HomeFundingCall";
 import { HomeProcess } from "@/components/public/home-process";
 import { HomeSupport } from "@/components/public/home-support";
 import { ContentBlocks } from "@/components/public/content-blocks";
