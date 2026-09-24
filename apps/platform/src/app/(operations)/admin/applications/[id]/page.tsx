@@ -5,8 +5,10 @@ import { z } from "zod";
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { getCurrentUser } from "@/auth/authorization/current-user";
 import { can } from "@/auth/authorization/policy";
-import { ApplicationReview } from "@/components/admin/applications/ApplicationReview";
-import { getAdminApplicationOverview } from "@/modules/applications/ServerAdminApplicationService";
+import { ApplicationProgressCard } from "@/components/admin/applications/ApplicationReviewSections";
+import { ResourceNotFoundError } from "@/lib/resource-errors";
+import { getAdminApplicationDetail } from "@/modules/applications/ServerAdminApplicationDetailService";
+import { ApplicationDetailView } from "@/modules/applications/ui/ApplicationDetailView";
 
 export const metadata: Metadata = { title: "Application overview" };
 
@@ -33,11 +35,19 @@ export default async function ApplicationPage({
   if (!z.uuid().safeParse(applicationId).success) {
     notFound();
   }
-  const application = await getAdminApplicationOverview(user, applicationId);
+  const detail = await getAdminApplicationDetail(
+    user,
+    applicationId,
+    crypto.randomUUID(),
+  ).catch((error: unknown) => {
+    if (error instanceof ResourceNotFoundError) notFound();
+    throw error;
+  });
 
-  if (!application) {
-    notFound();
-  }
-
-  return <ApplicationReview application={application} />;
+  return (
+    <ApplicationDetailView
+      history={<ApplicationProgressCard application={detail.overview} />}
+      model={detail.model}
+    />
+  );
 }

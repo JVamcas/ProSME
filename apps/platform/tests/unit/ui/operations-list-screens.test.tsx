@@ -81,6 +81,13 @@ describe("operations list screens", () => {
           businessType: "Close corporation",
           coFunding: 15000,
           currentStageName: "Completeness screening",
+          publicStatus: {
+            actionRequired: false,
+            description: "Your application is under review.",
+            label: "Under review",
+            status: "UNDER_REVIEW",
+          },
+          updatedAt: "2026-09-15T08:00:00.000Z",
           industry: "Technology",
           location: "Khomas",
           opportunityTitle: "Published opportunity",

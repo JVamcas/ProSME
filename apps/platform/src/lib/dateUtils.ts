@@ -219,6 +219,24 @@ export function formatLocalDateTime24(value?: string | null, fallback = "—"): 
   }).format(parsed);
 }
 
+export function formatLocalDateTimeSeconds24(
+  value?: string | null,
+  fallback = "—",
+): string {
+  const parsed = parseDateInput(value);
+  if (!parsed) return fallback;
+
+  return new Intl.DateTimeFormat(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).format(parsed);
+}
+
 export function toInputDate(value?: string): string {
   const parsed = parseDateInput(value);
   if (!parsed) {

@@ -194,3 +194,22 @@ export async function markApplicationDocumentVersionAbandoned(
       inArray(applicationDocumentVersions.storageStatus, ["pending", "failed"]),
     ));
 }
+
+export async function findDownloadableApplicationDocumentVersion(
+  applicationId: string,
+  versionId: string,
+) {
+  const [version] = await getDatabase()
+    .select({
+      objectKey: applicationDocumentVersions.objectKey,
+      originalName: applicationDocumentVersions.originalName,
+    })
+    .from(applicationDocumentVersions)
+    .where(and(
+      eq(applicationDocumentVersions.applicationId, applicationId),
+      eq(applicationDocumentVersions.id, versionId),
+      eq(applicationDocumentVersions.storageStatus, "finalized"),
+    ))
+    .limit(1);
+  return version ?? null;
+}

@@ -20,6 +20,7 @@ export type TabItem<T extends string = string> = {
 
 type TabsProps<T extends string> = {
   ariaLabel: string;
+  accent?: "blue" | "orange";
   className?: string;
   defaultSelectedId: T;
   items: readonly TabItem<T>[];
@@ -34,6 +35,7 @@ type TabsProps<T extends string> = {
 };
 
 function TabsList<T extends string>({
+  accent,
   ariaLabel,
   items,
   leadingContent,
@@ -42,6 +44,7 @@ function TabsList<T extends string>({
   vertical,
 }: Pick<
   TabsProps<T>,
+  | "accent"
   | "ariaLabel"
   | "items"
   | "leadingContent"
@@ -80,7 +83,9 @@ function TabsList<T extends string>({
                 isSelected &&
                   (vertical
                     ? "bg-brand-navy text-brand-white"
-                    : "border-brand-blue text-brand-navy"),
+                    : accent === "orange"
+                      ? "border-brand-orange text-brand-navy"
+                      : "border-brand-blue text-brand-navy"),
                 isFocusVisible && "ring-2 ring-brand-navy ring-offset-2",
               )
             }
@@ -97,6 +102,7 @@ function TabsList<T extends string>({
 }
 
 export function Tabs<T extends string>({
+  accent = "blue",
   ariaLabel,
   className,
   defaultSelectedId,
@@ -124,6 +130,7 @@ export function Tabs<T extends string>({
       selectedKey={selectedId}
     >
       <TabsList
+        accent={accent}
         ariaLabel={ariaLabel}
         items={items}
         leadingContent={leadingContent}

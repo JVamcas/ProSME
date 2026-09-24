@@ -21,12 +21,12 @@ type SnapshotRow = {
   integrityHash: string;
   schemaVersion: number;
   snapshotContent: ApplicationSubmissionSnapshotContent;
-  submittedAt: Date;
+  submittedAt: Date | string;
 };
 
 export async function readSubmissionSnapshotAndAudit(
   input: SnapshotAccessInput,
-): Promise<SnapshotRow | null> {
+): Promise<(Omit<SnapshotRow, "submittedAt"> & { submittedAt: Date }) | null> {
   return getDatabase().transaction(async (transaction) => {
     const result = await transaction.execute(sql`
       SELECT snapshot.application_id AS "applicationId",
@@ -76,6 +76,9 @@ export async function readSubmissionSnapshotAndAudit(
         schemaVersion: snapshot.schemaVersion,
       },
     });
-    return snapshot;
+    return {
+      ...snapshot,
+      submittedAt: new Date(snapshot.submittedAt),
+    };
   });
 }

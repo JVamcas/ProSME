@@ -39,6 +39,8 @@ export type AdminApplicationOverview = {
   businessType: string | null;
   coFunding: number | null;
   currentStageName: string | null;
+  publicStatus: import("./domain/ApplicantStatusProjection").ApplicantPublicStatus;
+  updatedAt: string;
   industry: string | null;
   location: string | null;
   opportunityTitle: string;
@@ -105,6 +107,20 @@ export type ApplicationView = ApplicationSummary & {
   projectSection: Partial<ApplicationProjectSection>;
   rowVersion: number;
   sectionCompletion: ApplicationSectionCompletion;
+};
+
+export type ApplicationReadView = {
+  summary: ApplicationSummary;
+  form: FormRuntimeSchema;
+  values: Record<string, unknown>;
+  documents: {
+    name: string;
+    requirementKey: string;
+    sizeBytes: number;
+    versionId: string | null;
+  }[];
+  applicantDetails: { label: string; value: string }[];
+  businessDetails: { label: string; value: string }[];
 };
 
 export type ApplicationDraftView = ApplicationView & {

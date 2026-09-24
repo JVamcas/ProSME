@@ -16,6 +16,31 @@ vi.mock("next/navigation", () => ({
 vi.mock("@/modules/applications/ApplicationHooks", () => ({
   useDeleteApplicationDraft: () => deleteDraft,
 }));
+vi.mock("@/shared/ui/ActionMenu", () => ({
+  ActionMenu: ({
+    items,
+  }: {
+    items: {
+      id: string;
+      label: string;
+      onAction: () => void;
+      disabled?: boolean;
+    }[];
+  }) => (
+    <div>
+      {items.map((item) => (
+        <button
+          disabled={item.disabled}
+          key={item.id}
+          onClick={item.onAction}
+          type="button"
+        >
+          {item.label}
+        </button>
+      ))}
+    </div>
+  ),
+}));
 
 import { ApplicationListContent } from "@/components/applicant/applications/ApplicationListContent";
 import type { ApplicationSummary } from "@/modules/applications/ApplicationTypes";
@@ -58,9 +83,9 @@ describe("draft deletion action", () => {
       root.render(<ApplicationListContent canDeleteDraft items={[draft]} />);
     });
 
-    const buttons = Array.from(document.querySelectorAll("button"));
     await act(async () => {
-      buttons.find((button) => button.title === "Delete draft application")
+      Array.from(document.querySelectorAll("button"))
+        .find((button) => button.textContent === "Delete application")
         ?.click();
     });
     expect(deleteDraft.mutate).not.toHaveBeenCalled();
@@ -92,8 +117,10 @@ describe("draft deletion action", () => {
         />,
       );
     });
-    expect(document.querySelector('[title="Delete draft application"]'))
-      .toBeNull();
+    expect(
+      Array.from(document.querySelectorAll("button"))
+        .some((button) => button.textContent === "Delete application"),
+    ).toBe(false);
     await act(async () => root.unmount());
   });
 });

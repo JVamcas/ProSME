@@ -3,16 +3,15 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { DeleteButton, EditButton } from "@/components/ui/action-buttons";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useDeleteApplicationDraft } from "@/modules/applications/ApplicationHooks";
 import type { ApplicationSummary } from "@/modules/applications/ApplicationTypes";
 import { ApplicationWithdrawalForm } from "@/modules/applications/ui/ApplicationWithdrawalForm";
 import { ApplicationStatusHistoryPanel } from "@/modules/applications/ui/ApplicationStatusHistoryPanel";
+import { ActionMenu, type ActionMenuItem } from "@/shared/ui/ActionMenu";
 import { toast } from "@/shared/ui/Toast";
 import { ApplicationCards, ApplicationsTable } from "./ApplicationTable";
-import { GeneralButton } from "@/components/ui/button";
 
 export function ApplicationListContent({
   canDeleteDraft,
@@ -39,40 +38,48 @@ export function ApplicationListContent({
 
   function renderAction(application: ApplicationSummary) {
     const isDraft = application.status === "draft";
+    const actions: ActionMenuItem[] = [
+      {
+        id: "edit",
+        label: "Edit",
+        disabled: !isDraft,
+        onAction: () => router.push(`/portal/applications/${application.id}/edit`),
+      },
+    ];
+
+    if (!isDraft) {
+      actions.push({
+        id: "history",
+        label: "Status history",
+        onAction: () => setHistoryCandidate(application),
+      });
+    }
+
+    if (canWithdraw && application.canWithdraw) {
+      actions.push({
+        id: "withdraw",
+        label: "Withdraw",
+        onAction: () => setWithdrawCandidate(application),
+      });
+    }
+
+    if (isDraft && canDeleteDraft) {
+      actions.push({
+        id: "delete",
+        label: "Delete application",
+        destructive: true,
+        onAction: () => {
+          deleteDraft.reset();
+          setDeleteCandidate(application);
+        },
+      });
+    }
+
     return (
-      <div className="flex items-center gap-2">
-        <EditButton
-          disabled={!isDraft}
-          onClick={() => router.push(`/portal/applications/${application.id}/edit`)}
-        />
-        {!isDraft ? (
-          <GeneralButton
-            className="rounded-full border px-3 py-1 text-sm"
-            onClick={() => setHistoryCandidate(application)}
-            type="button"
-          >
-            Status history
-          </GeneralButton>
-        ) : null}
-        {canWithdraw && application.canWithdraw ? (
-          <GeneralButton
-            onClick={() => setWithdrawCandidate(application)}
-            size="compact"
-            variant="outlineOrange"
-          >
-            Withdraw
-          </GeneralButton>
-        ) : null}
-        {isDraft && canDeleteDraft ? (
-          <DeleteButton
-            onClick={() => {
-              deleteDraft.reset();
-              setDeleteCandidate(application);
-            }}
-            title="Delete draft application"
-          />
-        ) : null}
-      </div>
+      <ActionMenu
+        items={actions}
+        label={`Actions for ${application.fundingOpportunityTitle}`}
+      />
     );
   }
 
@@ -80,7 +87,7 @@ export function ApplicationListContent({
     <>
       {items.length ? (
         <>
-          <ApplicationsTable items={items} renderAction={renderAction} />
+          <ApplicationsTable items={items} />
           <ApplicationCards items={items} renderAction={renderAction} />
         </>
       ) : (

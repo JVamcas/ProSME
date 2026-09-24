@@ -261,7 +261,6 @@ describe("application creation UI", () => {
             updatedAt: "2026-09-14T08:00:00.000Z",
           },
         ]}
-        renderAction={() => <a href="#resume">Continue</a>}
       />,
     );
 

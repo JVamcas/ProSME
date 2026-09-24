@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import Link from "next/link";
 
 import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -30,37 +31,30 @@ function ProgressBar({ value }: { value: number }) {
   );
 }
 
-function applicationColumns(
-  renderAction: Props["renderAction"],
-): DataTableColumn<ApplicationSummary>[] {
+function applicationColumns(): DataTableColumn<ApplicationSummary>[] {
   return [
     {
       accessorKey: "fundingOpportunityTitle",
       header: "Opportunity",
       cell: ({ row }) => (
-        <span className="font-semibold text-brand-navy">
+        <Link
+          className="font-semibold text-brand-orange hover:text-brand-gold hover:underline"
+          href={`/portal/applications/${row.original.id}`}
+        >
           {row.original.fundingOpportunityTitle}
-          {row.original.reference ? (
-            <small className="block font-normal">{row.original.reference}</small>
-          ) : null}
-        </span>
+        </Link>
       ),
     },
     {
       accessorKey: "businessName",
-      header: "Business",
-      cell: ({ row }) => row.original.businessName ?? "Not selected",
+      header: "Business Entity",
+      cell: ({ row }) => row.original.businessName ?? "--",
     },
     {
       accessorKey: "status",
       header: "Status",
       cell: ({ row }) => (
-        <span>
-          <StatusBadge status={row.original.publicStatus.label} />
-          <small className="mt-1 block text-brand-navy/70">
-            {row.original.publicStatus.description}
-          </small>
-        </span>
+        <StatusBadge status={row.original.publicStatus.label} />
       ),
     },
     {
@@ -69,27 +63,26 @@ function applicationColumns(
       cell: ({ row }) => <ProgressBar value={row.original.progressPercent} />,
     },
     {
+      accessorKey: "submittedAt",
+      header: "Submitted",
+      cell: ({ row }) => formatLocalDateTime24(row.original.submittedAt),
+    },
+    {
       accessorKey: "updatedAt",
       header: "Last updated",
       cell: ({ row }) => formatLocalDateTime24(row.original.updatedAt),
     },
-    {
-      id: "actions",
-      header: "Actions",
-      enableSorting: false,
-      cell: ({ row }) => renderAction(row.original),
-    },
   ];
 }
 
-export function ApplicationsTable({ items, renderAction }: Props) {
+export function ApplicationsTable({ items }: Pick<Props, "items">) {
   return (
     <div className="hidden overflow-hidden rounded-2xl border border-brand-navy/15 bg-brand-white shadow-sm md:block">
       <DataTable
-        columns={applicationColumns(renderAction)}
+        columns={applicationColumns()}
         data={items}
         emptyMessage="No applications found"
-        minWidth={900}
+        minWidth={760}
       />
     </div>
   );
@@ -105,7 +98,12 @@ export function ApplicationCards({ items, renderAction }: Props) {
         >
           <div className="flex items-start justify-between gap-3">
             <h2 className="font-bold text-brand-navy">
-              {application.fundingOpportunityTitle}
+              <Link
+                className="hover:text-brand-orange hover:underline"
+                href={`/portal/applications/${application.id}`}
+              >
+                {application.fundingOpportunityTitle}
+              </Link>
             </h2>
             <StatusBadge status={application.publicStatus.label} />
           </div>

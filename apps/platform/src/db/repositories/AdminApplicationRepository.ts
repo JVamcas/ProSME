@@ -4,6 +4,8 @@ import { sql } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
 import type { AdminApplicationCursor } from "@/modules/applications/AdminApplicationCursor";
+import { projectApplicantStatus } from "@/modules/applications/domain/ApplicantStatusProjection";
+import type { WorkflowPublicStatusMapping } from "@/modules/workflows/domain/definitions/WorkflowStageDefinition";
 import type {
   AdminApplicationOverview,
   AdminApplicationStage,
@@ -23,7 +25,7 @@ type DatabaseRow = Omit<
 
 type DetailDatabaseRow = Omit<
   AdminApplicationOverview,
-  "coFunding" | "requestedAmount" | "stages" | "submittedAt"
+  "coFunding" | "publicStatus" | "requestedAmount" | "stages" | "submittedAt" | "updatedAt"
 > & {
   coFunding: number | string | null;
   requestedAmount: number | string | null;
@@ -34,6 +36,10 @@ type DetailDatabaseRow = Omit<
     }
   >;
   submittedAt: Date | string;
+  updatedAt: Date | string;
+  workflowStatus: string | null;
+  terminalPublicStatus: WorkflowPublicStatusMapping | null;
+  activeStageStatuses: WorkflowPublicStatusMapping[];
 };
 
 function visibilityFilter(
@@ -199,6 +205,25 @@ function detailQuery(input: {
       NULLIF(application.financial_section ->> 'applicantContribution', '')::numeric
         AS "coFunding",
       application.submitted_at AS "submittedAt",
+      GREATEST(
+        application.updated_at,
+        COALESCE(stage.activated_at, application.updated_at),
+        COALESCE(workflow.completed_at, application.updated_at)
+      ) AS "updatedAt",
+      workflow.status AS "workflowStatus",
+      workflow.public_status AS "terminalPublicStatus",
+      COALESCE((
+        SELECT jsonb_agg(jsonb_build_object(
+          'status', active_definition.applicant_status,
+          'label', active_definition.applicant_label,
+          'description', active_definition.applicant_description
+        ) ORDER BY active_definition.sequence, active_definition.id)
+        FROM app_workflow_stage_instances active_stage
+        JOIN app_workflow_stage_definitions active_definition
+          ON active_definition.id = active_stage.workflow_stage_definition_id
+        WHERE active_stage.workflow_instance_id = workflow.id
+          AND active_stage.status = 'ACTIVE'
+      ), '[]'::jsonb) AS "activeStageStatuses",
       stage_definition.name AS "currentStageName",
       NULL::text AS priority,
       COALESCE(stage_timeline.stages, '[]'::jsonb) AS stages
@@ -254,11 +279,24 @@ export async function readAdminApplication(input: {
   const result = await getDatabase().execute(detailQuery(input));
   const row = result.rows[0] as unknown as DetailDatabaseRow | undefined;
   if (!row) return null;
+  const {
+    activeStageStatuses,
+    terminalPublicStatus,
+    workflowStatus,
+    ...detail
+  } = row;
   return {
-    ...row,
+    ...detail,
     coFunding: optionalNumber(row.coFunding),
     requestedAmount: optionalNumber(row.requestedAmount),
+    publicStatus: projectApplicantStatus({
+      lifecycleStatus: "submitted",
+      workflowStatus,
+      terminalPublicStatus,
+      activeStageStatuses,
+    }),
     stages: row.stages.map(toStage),
     submittedAt: new Date(row.submittedAt).toISOString(),
+    updatedAt: new Date(row.updatedAt).toISOString(),
   };
 }

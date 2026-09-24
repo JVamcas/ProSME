@@ -6,7 +6,7 @@ import { getDatabase } from "@/db/client";
 
 type StatusHistoryRow = {
   eventId: string;
-  occurredAt: Date;
+  occurredAt: Date | string;
   status: string;
   label: string;
   description: string;
@@ -20,12 +20,20 @@ export async function readOwnedApplicationStatusHistory(input: {
 }) {
   const result = await getDatabase().execute(sql<StatusHistoryRow>`
     WITH owned AS (
-      SELECT application.id, application.withdrawn_at
+      SELECT application.id, application.submitted_at
       FROM app_applications application
       WHERE application.id = ${input.applicationId}::uuid
         AND application.owner_user_id = ${input.ownerUserId}::uuid
         AND application.deleted_at IS NULL
     ), events AS (
+      SELECT owned.id AS "eventId",
+        owned.submitted_at AS "occurredAt",
+        'SUBMITTED' AS status,
+        'Submitted' AS label,
+        'Your application was submitted.' AS description
+      FROM owned
+      WHERE owned.submitted_at IS NOT NULL
+      UNION ALL
       SELECT stage.id AS "eventId",
         stage.activated_at AS "occurredAt",
         definition.applicant_status AS status,
@@ -38,6 +46,9 @@ export async function readOwnedApplicationStatusHistory(input: {
         ON stage.workflow_instance_id = workflow.id
       JOIN app_workflow_stage_definitions definition
         ON definition.id = stage.workflow_stage_definition_id
+      WHERE definition.applicant_status IS NOT NULL
+        AND definition.applicant_label IS NOT NULL
+        AND definition.applicant_description IS NOT NULL
       UNION ALL
       SELECT workflow.id AS "eventId",
         workflow.completed_at AS "occurredAt",
@@ -60,5 +71,9 @@ export async function readOwnedApplicationStatusHistory(input: {
     ORDER BY "occurredAt" DESC, "eventId" DESC
     LIMIT ${input.limit + 1}
   `);
-  return result.rows as StatusHistoryRow[];
+  const rows = result.rows as StatusHistoryRow[];
+  return rows.map((row) => ({
+    ...row,
+    occurredAt: new Date(row.occurredAt),
+  }));
 }

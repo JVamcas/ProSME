@@ -138,6 +138,9 @@ export function useWithdrawApplication() {
       void queryClient.invalidateQueries({
         queryKey: applicationQueryKeys.status(result.applicationId),
       });
+      void queryClient.invalidateQueries({
+        queryKey: applicationQueryKeys.statusHistory(result.applicationId),
+      });
     },
   });
 }
