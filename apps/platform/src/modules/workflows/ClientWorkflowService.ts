@@ -1,25 +1,63 @@
 "use client";
 
 import { requestData } from "@/lib/client-http";
-import type { FundingOpportunityPage } from "@/modules/funding-opportunities/FundingOpportunityTypes";
+import type { FundingOpportunityPage } from "@/modules/funding-calls/FundingOpportunityTypes";
 import type {
   CreateWorkflowInput,
   OpportunityAssignmentInput,
   UpdateWorkflowDraftInput,
   UpdateWorkflowDetailsInput,
-} from "./WorkflowTransportTypes";
+} from "@/modules/workflows/api/WorkflowTransportTypes";
 import type {
   PublishedWorkflowOption,
   WorkflowDefinitionSummary,
   WorkflowEditorView,
   WorkflowOpportunityAssignment,
   WorkflowValidation,
-} from "./WorkflowTypes";
+} from "@/modules/workflows/domain/definitions/WorkflowTypes";
+import type { CreateWorkflowTemplateInput } from "@/modules/workflows/api/WorkflowTemplateSchemas";
+import type { WorkflowTemplateListItem, WorkflowTemplatePage } from "@/modules/workflows/domain/definitions/WorkflowTemplate";
+import type { WorkflowActionAvailability } from "@/modules/workflows/domain/actions/WorkflowActionAvailability";
+
+export type WorkflowActionAvailabilityQuery = {
+  sourceStageInstanceId: string;
+  taskId?: string;
+  workflowInstanceId: string;
+};
 
 const jsonHeaders = { "Content-Type": "application/json" };
 
 function commandHeaders() {
   return { ...jsonHeaders, "Idempotency-Key": crypto.randomUUID() };
+}
+
+function listTemplates(page: number, pageSize: number) {
+  const query = new URLSearchParams({
+    page: String(page),
+    pageSize: String(pageSize),
+  });
+  return requestData<WorkflowTemplatePage>(`/api/workflows?${query}`, {
+    cache: "no-store",
+  });
+}
+
+function getActionAvailability(input: WorkflowActionAvailabilityQuery) {
+  const query = new URLSearchParams({
+    sourceStageInstanceId: input.sourceStageInstanceId,
+  });
+  if (input.taskId) query.set("taskId", input.taskId);
+  return requestData<WorkflowActionAvailability[]>(
+    `/api/workflows/${input.workflowInstanceId}/actions?${query}`,
+    { cache: "no-store" },
+  );
+}
+
+function createTemplate(input: CreateWorkflowTemplateInput) {
+  return requestData<WorkflowTemplateListItem>("/api/workflows", {
+    body: JSON.stringify(input),
+    headers: jsonHeaders,
+    method: "POST",
+  });
 }
 
 function listDefinitions() {
@@ -62,7 +100,10 @@ function updateDraft(definitionId: string, input: UpdateWorkflowDraftInput) {
   );
 }
 
-function updateDetails(definitionId: string, input: UpdateWorkflowDetailsInput) {
+function updateDetails(
+  definitionId: string,
+  input: UpdateWorkflowDetailsInput,
+) {
   return requestData<WorkflowEditorView>(
     `/api/admin/workflow-definitions/${definitionId}`,
     {
@@ -109,6 +150,21 @@ function cloneDefinition(definitionId: string, sourceVersionId: string) {
   );
 }
 
+function deleteDefinition(
+  definitionId: string,
+  versionId: string,
+  expectedRowVersion: number,
+) {
+  return requestData<{ id: string }>(
+    `/api/admin/workflow-definitions/${definitionId}`,
+    {
+      body: JSON.stringify({ expectedRowVersion, versionId }),
+      headers: jsonHeaders,
+      method: "DELETE",
+    },
+  );
+}
+
 function listAssignments() {
   return requestData<WorkflowOpportunityAssignment[]>(
     "/api/admin/workflow-assignments",
@@ -137,13 +193,17 @@ function assignOpportunity(input: OpportunityAssignmentInput) {
 export const clientWorkflowService = {
   assignOpportunity,
   cloneDefinition,
+  createTemplate,
   createDefinition,
+  deleteDefinition,
+  getActionAvailability,
   getEditor,
   lifecycleCommand,
   listAssignments,
   listDefinitions,
   listOpportunities,
   listPublished,
+  listTemplates,
   updateDraft,
   updateDetails,
   validateDefinition,

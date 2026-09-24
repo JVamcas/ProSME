@@ -25,6 +25,13 @@ const torRoleNameMigration = readFileSync(
   path.resolve(process.cwd(), "drizzle/0005_tor_cms_role_names.sql"),
   "utf8",
 );
+const canonicalPermissionMigration = readFileSync(
+  path.resolve(
+    process.cwd(),
+    "drizzle/0071_canonical_permission_catalogue.sql",
+  ),
+  "utf8",
+);
 const profileCompatibilityMigration = readFileSync(
   path.resolve(
     process.cwd(),
@@ -118,5 +125,26 @@ describe("P3.1 migration compatibility", () => {
     expect(applicantBusinessesMigration).toContain(
       '"app_business_profiles_user_idx"',
     );
+  });
+});
+
+describe("canonical permission migration", () => {
+  it("transfers legacy grants before deleting non-canonical permissions", () => {
+    expect(canonicalPermissionMigration).toContain(
+      "INSERT INTO app_role_capabilities",
+    );
+    expect(canonicalPermissionMigration).toContain(
+      "('application.read.own', 'funding.application.own.read')",
+    );
+    expect(canonicalPermissionMigration).toContain(
+      "DELETE FROM app_capabilities capability",
+    );
+    expect(canonicalPermissionMigration).toContain(
+      "WHERE NOT EXISTS",
+    );
+  });
+
+  it("does not retain the broad legacy administration permission", () => {
+    expect(canonicalPermissionMigration).not.toContain("('admin.access')");
   });
 });

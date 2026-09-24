@@ -4,7 +4,7 @@ import {
   portalRouteError,
   portalRouteSuccess,
 } from "@/lib/api/PortalApiResponse";
-import { getPublishedWorkflows } from "@/modules/workflows/ServerWorkflowService";
+import { getPublishedWorkflows } from "@/modules/workflows/application/definitions/ServerWorkflowService";
 
 export async function GET(request: Request) {
   const correlationId = createCorrelationId();

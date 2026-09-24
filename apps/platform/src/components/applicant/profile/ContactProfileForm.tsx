@@ -5,17 +5,18 @@ import { useEffect } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { toast } from "sonner";
 
-import {
-  applicantContactProfileSchema,
-  type ApplicantContactProfileInput,
-} from "@/modules/profiles/ProfileSchemas";
+import { PortalErrorState } from "@/components/layout/PortalErrorState";
 import {
   useApplicantProfile,
   useUpdateApplicantProfile,
 } from "@/modules/profiles/ProfileHooks";
+import {
+  applicantContactProfileSchema,
+  type ApplicantContactProfileInput,
+} from "@/modules/profiles/ProfileSchemas";
 import { ApplicantProfileFields } from "./ApplicantProfileFields";
 import { ProfileFormActions } from "./ProfileFormActions";
-import { ProfileFormError, ProfileFormLoading } from "./ProfileFormState";
+import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
 
 const defaults: ApplicantContactProfileInput = {
   phoneNumber: "",
@@ -37,11 +38,18 @@ export function ContactProfileForm({ readOnly }: { readOnly: boolean }) {
   }, [form, profile.data]);
 
   if (profile.isPending) {
-    return <ProfileFormLoading />;
+    return <PortalLoadingState title="Loading your contact" description="Just a moment..." />;
   }
 
   if (profile.isError || !profile.data) {
-    return <ProfileFormError onRetry={() => void profile.refetch()} />;
+    return (
+      <PortalErrorState
+        onAction={() => void profile.refetch()}
+        actionLabel="Retry"
+        title="Failed to load contact profile"
+        description="There was an error loading the contact profile. Please check your connection and try again."
+      />
+    );
   }
 
   const submit = form.handleSubmit(async (data) => {

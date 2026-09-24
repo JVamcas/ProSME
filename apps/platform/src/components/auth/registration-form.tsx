@@ -30,6 +30,7 @@ export function RegistrationForm() {
           label="First name"
           autoComplete="given-name"
           name="firstName"
+          required
           className={authFieldClassName}
           labelClassName={authLabelClassName}
         />
@@ -38,6 +39,7 @@ export function RegistrationForm() {
           label="Surname"
           autoComplete="family-name"
           name="surname"
+          required
           className={authFieldClassName}
           labelClassName={authLabelClassName}
         />
@@ -47,6 +49,7 @@ export function RegistrationForm() {
           type="email"
           autoComplete="email"
           name="email"
+          required
           className={authFieldClassName}
           labelClassName={authLabelClassName}
         />
@@ -56,6 +59,7 @@ export function RegistrationForm() {
           type="password"
           autoComplete="new-password"
           name="password"
+          required
           className={authFieldClassName}
           labelClassName={authLabelClassName}
         />
@@ -63,6 +67,7 @@ export function RegistrationForm() {
           id="confirm-password"
           label="Confirm password"
           type="password"
+          required
           autoComplete="new-password"
           name="confirmPassword"
           className={authFieldClassName}
@@ -71,7 +76,7 @@ export function RegistrationForm() {
         <AuthFeedback error={form.error} />
         <GeneralButton
           type="submit"
-          variant="brand"
+          variant="primary"
           className="w-full"
           disabled={form.busy}
         >

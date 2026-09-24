@@ -28,8 +28,8 @@ describe("P3.1 applicant dashboard", () => {
     );
 
     expect(markup).toContain("Welcome back, Anna Ndeitunga");
-    expect(markup).toContain("Application status");
-    expect(markup).toContain("Applications in progress");
+    expect(markup).toContain("My Application");
+    expect(markup).toContain("Draft Applications");
     expect(markup).toContain("1 active application");
     expect(markup).toContain("4 submitted applications");
     expect(markup).toContain("2 applications need attention");

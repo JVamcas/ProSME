@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-import { capabilities } from "@/auth/authorization/capabilities";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import { getCurrentUser } from "@/auth/authorization/current-user";
 import { can } from "@/auth/authorization/policy";
 import { ApplicationsTable } from "@/components/admin/applications/ApplicationsTable";
+import { PageShell } from "@/shared/ui/PageShell";
 
 export const metadata: Metadata = {
   title: "Applications",
@@ -13,22 +14,22 @@ export const metadata: Metadata = {
 export default async function ApplicationsPage() {
   const user = await getCurrentUser();
   const canRead =
-    can(user, capabilities.applicationReadAssigned) ||
-    can(user, capabilities.applicationReadAll);
+    can(user, permissionCodes.workflowTaskAssignedRead) ||
+    can(user, permissionCodes.fundingApplicationAllRead);
 
   if (!canRead) {
     redirect("/unauthorized");
   }
 
   return (
-    <div className="space-y-5">
-      <header>
-        <h1 className="text-3xl font-bold text-brand-navy">Applications</h1>
-        <p className="mt-1 text-sm text-brand-navy/60">
-          Manage and track submitted funding applications.
-        </p>
-      </header>
+    <PageShell
+      title="Applications"
+      description="Manage and track submitted funding applications."
+      variant="contained"
+      align="left"
+      headerClassName="px-5 py-5 sm:px-6 sm:py-6"
+    >
       <ApplicationsTable />
-    </div>
+    </PageShell>
   );
 }

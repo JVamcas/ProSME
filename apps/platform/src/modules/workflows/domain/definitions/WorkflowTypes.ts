@@ -1,0 +1,122 @@
+import { workflowTemplateStatuses } from "./WorkflowTemplate";
+import type { WorkflowActionDefinition } from "../actions/WorkflowActionDefinition";
+import type { WorkflowStageDefinition } from "./WorkflowStageDefinition";
+import type { WorkflowTaskDefinition } from "./WorkflowTaskDefinition";
+import type { WorkflowTaskFormBinding } from "./WorkflowTaskDefinition";
+import type { WorkflowTransitionDefinition } from "../transitions/WorkflowTransitionDefinition";
+
+export const workflowStatuses = workflowTemplateStatuses;
+
+export type WorkflowStatus = (typeof workflowStatuses)[number];
+
+export const workflowActionCodes = [
+  "CLAIM",
+  "ASSIGN",
+  "START",
+  "SAVE",
+  "COMPLETE",
+  "SKIP",
+  "REQUEST_INFORMATION",
+  "ACCEPT_INFORMATION",
+  "RECOMMEND_PROCEED",
+  "RECOMMEND_REJECT",
+  "APPROVE",
+  "DECLINE",
+  "RETURN",
+  "OVERRIDE",
+  "CANCEL",
+] as const;
+
+export type WorkflowActionCode = (typeof workflowActionCodes)[number];
+
+export type WorkflowTaskInput = WorkflowTaskDefinition & {
+  required: boolean;
+  config: unknown;
+  formBinding: WorkflowTaskFormBinding | null;
+};
+
+export type WorkflowStageInput = WorkflowStageDefinition & {
+  initial: boolean;
+  slaHours?: number | null;
+  actions: WorkflowActionDefinition[];
+  tasks: WorkflowTaskInput[];
+};
+
+export type WorkflowTransitionInput = WorkflowTransitionDefinition;
+
+export type WorkflowGraphInput = {
+  stages: WorkflowStageInput[];
+  transitions: WorkflowTransitionInput[];
+};
+
+export type WorkflowValidationIssue = {
+  code: string;
+  message: string;
+  path: string;
+};
+
+export type WorkflowValidation = {
+  valid: boolean;
+  errors: WorkflowValidationIssue[];
+  warnings: WorkflowValidationIssue[];
+};
+
+export type WorkflowDefinitionSummary = {
+  id: string;
+  code: string;
+  name: string;
+  description: string;
+  active: boolean;
+  latestVersion: number;
+  latestStatus: WorkflowStatus;
+  updatedAt: string;
+};
+
+export type WorkflowEditorView = {
+  assignmentOptions?: WorkflowAssignmentOptions;
+  definition: {
+    id: string;
+    code: string;
+    name: string;
+    description: string;
+  };
+  version: {
+    id: string;
+    number: number;
+    status: WorkflowStatus;
+    createdAt: string;
+    publishedAt: string | null;
+    retiredAt: string | null;
+    rowVersion: number;
+  };
+  graph: WorkflowGraphInput;
+  validation: WorkflowValidation;
+  allowedActions: string[];
+};
+
+export type WorkflowOpportunityAssignment = {
+  fundingOpportunityId: string;
+  fundingOpportunityTitle: string;
+  workflowVersionId: string;
+  workflowName: string;
+  versionNumber: number;
+  assignedAt: string;
+  rowVersion: number;
+};
+
+export type PublishedWorkflowOption = {
+  definitionId: string;
+  name: string;
+  versionId: string;
+  versionNumber: number;
+};
+
+export type WorkflowAssignmentOption = {
+  id: string;
+  label: string;
+};
+
+export type WorkflowAssignmentOptions = {
+  roles: WorkflowAssignmentOption[];
+  users: WorkflowAssignmentOption[];
+};

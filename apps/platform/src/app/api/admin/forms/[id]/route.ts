@@ -4,8 +4,11 @@ import {
   portalRouteError,
   portalRouteSuccess,
 } from "@/lib/api/PortalApiResponse";
-import { formEditorSchema } from "@/modules/forms/FormSchemas";
-import { getForm, updateFormDraft } from "@/modules/forms/ServerFormsService";
+import { formEditorSchema } from "@/modules/forms/api/FormSchemas";
+import {
+  getForm,
+  updateFormDraft,
+} from "@/modules/forms/application/ServerFormsService";
 
 export async function GET(
   request: Request,

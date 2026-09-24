@@ -4,11 +4,11 @@ import {
   portalRouteError,
   portalRouteSuccess,
 } from "@/lib/api/PortalApiResponse";
-import { updateWorkflowDraftSchema } from "@/modules/workflows/WorkflowSchemas";
+import { updateWorkflowDraftSchema } from "@/modules/workflows/api/WorkflowSchemas";
 import {
   getWorkflowEditor,
   updateWorkflowDraft,
-} from "@/modules/workflows/ServerWorkflowService";
+} from "@/modules/workflows/application/definitions/ServerWorkflowService";
 
 type RouteContext = { params: Promise<{ id: string }> };
 

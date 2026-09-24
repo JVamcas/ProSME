@@ -12,7 +12,7 @@ function listBusinesses() {
 
 function listApplicationBusinesses(
   applicationId: string,
-  fundingOpportunityId: number,
+  fundingOpportunityId: string,
 ) {
   const query = new URLSearchParams({
     applicationId,

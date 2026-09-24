@@ -4,6 +4,7 @@ import { useFormEditorController } from "./FormEditorController";
 import { FormEditorMutationError } from "./FormEditorLifecycleActions";
 import { FormEditorBody } from "./FormEditorBody";
 import { FormEditorTopSection } from "./FormEditorTopSection";
+import { FormPreviewDialog } from "@/modules/forms/ui/renderer/FormPreviewDialog";
 
 type FormEditorController = ReturnType<typeof useFormEditorController>;
 
@@ -16,7 +17,6 @@ function FormEditorTopContent({
   id,
   isDraft,
   isPublished,
-  pending,
 }: {
   canPublish: boolean;
   canRetire: boolean;
@@ -26,10 +26,8 @@ function FormEditorTopContent({
   id: string;
   isDraft: boolean;
   isPublished: boolean;
-  pending: boolean;
 }) {
-  const error = controller.update.error?.message
-    ?? controller.publish.error?.message
+  const error = controller.publish.error?.message
     ?? controller.retire.error?.message
     ?? controller.clone.error?.message;
   return (
@@ -38,11 +36,15 @@ function FormEditorTopContent({
         canPublish={canPublish}
         canRetire={canRetire}
         canUpdate={canUpdate}
+        clonePending={controller.clone.isPending}
         editor={editor}
         isDraft={isDraft}
         isPublished={isPublished}
-        onAddField={controller.openNewField}
-        onClone={() => controller.clone.mutate(editor.version.id)}
+        onClone={() => controller.clone.mutate({
+          definitionId: id,
+          sourceVersionId: editor.version.id,
+        })}
+        onPreview={() => controller.setPreviewOpen(true)}
         onPublish={() => controller.publish.mutate({
           definitionId: id,
           expectedRowVersion: editor.version.rowVersion,
@@ -53,7 +55,8 @@ function FormEditorTopContent({
           expectedRowVersion: editor.version.rowVersion,
           versionId: editor.version.id,
         })}
-        pending={pending}
+        publishPending={controller.publish.isPending}
+        retirePending={controller.retire.isPending}
       />
       <FormEditorMutationError message={error} />
     </>
@@ -78,10 +81,6 @@ function LoadedFormEditorWorkspace({
   const isDraft = editor.version.status === "DRAFT";
   const isPublished = editor.version.status === "PUBLISHED";
   const canEdit = canUpdate && isDraft;
-  const pending = controller.update.isPending
-    || controller.publish.isPending
-    || controller.retire.isPending
-    || controller.clone.isPending;
   return (
     <div className="space-y-6">
       <FormEditorTopContent
@@ -93,22 +92,42 @@ function LoadedFormEditorWorkspace({
         id={id}
         isDraft={isDraft}
         isPublished={isPublished}
-        pending={pending}
       />
       <FormEditorBody
         canEdit={canEdit}
         dialogOpen={controller.dialogOpen}
         field={controller.field}
+        fieldSectionId={controller.fieldSectionId}
         fieldToRemove={controller.fieldToRemove}
         fields={editor.fields}
+        displayMode={editor.version.displayMode}
         isPending={controller.update.isPending}
+        onAddField={controller.openNewField}
+        onAddSection={controller.openNewSection}
         onCancelDelete={() => controller.setFieldToRemove(undefined)}
         onCloseDialog={() => controller.setDialogOpen(false)}
         onConfirmDelete={controller.removeField}
         onDelete={controller.setFieldToRemove}
         onEdit={controller.openExistingField}
         onSave={controller.saveField}
-        versions={editor.versions}
+        onCancelSectionDelete={() => controller.setSectionToRemove(undefined)}
+        onCloseSectionDialog={() => controller.setSectionDialogOpen(false)}
+        onConfirmSectionDelete={controller.removeSection}
+        onDeleteSection={controller.setSectionToRemove}
+        onEditSection={controller.openExistingSection}
+        onDisplayModeChange={controller.updateDisplayMode}
+        onReorderSections={controller.reorderSections}
+        onReorderFields={controller.reorderFields}
+        onSaveSection={controller.saveSection}
+        section={controller.section}
+        sectionDialogOpen={controller.sectionDialogOpen}
+        sections={editor.sections}
+        sectionToRemove={controller.sectionToRemove}
+      />
+      <FormPreviewDialog
+        editor={editor}
+        isOpen={controller.previewOpen}
+        onClose={() => controller.setPreviewOpen(false)}
       />
     </div>
   );

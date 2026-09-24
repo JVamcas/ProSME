@@ -1,10 +1,12 @@
-import { hasWorkflowCycle, reachableStages } from "./WorkflowGraphTraversal";
+import { reachableStages, stagesInCycles } from "./WorkflowGraphTraversal";
 import { validateWorkflowStage } from "./WorkflowStageValidation";
+import { validateWorkflowActionTargets } from "./domain/actions/WorkflowActionValidation";
+import { validateWorkflowTransitions } from "./domain/transitions/WorkflowTransitionValidation";
 import type {
   WorkflowGraphInput,
   WorkflowValidation,
   WorkflowValidationIssue,
-} from "./WorkflowTypes";
+} from "@/modules/workflows/domain/definitions/WorkflowTypes";
 
 function issue(
   code: string,
@@ -18,25 +20,13 @@ function duplicates(values: (string | number)[]) {
   return values.filter((value, index) => values.indexOf(value) !== index);
 }
 
-function validateTransitions(graph: WorkflowGraphInput, initialCode?: string) {
+function validateTransitionTargets(graph: WorkflowGraphInput) {
   const errors: WorkflowValidationIssue[] = [];
-  const stageCodes = new Set(graph.stages.map((stage) => stage.code));
   graph.transitions.forEach((transition, index) => {
     const path = `transitions.${index}`;
     if (
-      !stageCodes.has(transition.fromStageCode) ||
-      (transition.toStageCode && !stageCodes.has(transition.toStageCode))
-    ) {
-      errors.push(
-        issue(
-          "INVALID_TRANSITION_STAGE",
-          "Transition stages must belong to this version.",
-          path,
-        ),
-      );
-    }
-    if (
-      Boolean(transition.toStageCode) === Boolean(transition.terminalOutcome)
+      Boolean(transition.targetStageKey) ===
+      Boolean(transition.terminalOutcome)
     ) {
       errors.push(
         issue(
@@ -46,41 +36,56 @@ function validateTransitions(graph: WorkflowGraphInput, initialCode?: string) {
         ),
       );
     }
-    if (initialCode && transition.toStageCode === initialCode) {
-      errors.push(
-        issue(
-          "INITIAL_STAGE_TARGET",
-          "Transitions cannot return to the initial stage.",
-          path,
-        ),
-      );
-    }
   });
   return errors;
 }
 
-function isSequentialFormGraph(graph: WorkflowGraphInput) {
-  return graph.stages.length > 0
-    && graph.stages.every((stage) =>
-      stage.tasks.length > 0
-      && stage.tasks.every((task) => Boolean(task.formVersionId))
-    );
-}
-
-function missingTransitionErrors(graph: WorkflowGraphInput) {
+function terminalDecisionErrors(graph: WorkflowGraphInput) {
   const errors: WorkflowValidationIssue[] = [];
   graph.stages.forEach((stage, index) => {
-    if (!graph.transitions.some((transition) => transition.fromStageCode === stage.code)) {
+    if (!graph.transitions.some(
+      (transition) => transition.sourceStageKey === stage.stableKey,
+    )) {
       errors.push(
         issue(
-          "MISSING_TRANSITION",
-          `${stage.name} needs an outgoing transition.`,
+          "TERMINAL_STAGE_WITHOUT_DECISION",
+          `${stage.name} is terminal but has no terminal decision.`,
           `stages.${index}`,
         ),
       );
     }
   });
   return errors;
+}
+
+function repeatableReferenceErrors(graph: WorkflowGraphInput) {
+  const stageActions = new Map(
+    graph.stages.flatMap((stage) => stage.actions.map((action) => [
+      `${stage.stableKey}:${action.stableKey}`,
+      action.actionType,
+    ])),
+  );
+  const repeatableGraph = {
+    ...graph,
+    transitions: graph.transitions.filter((transition) => {
+      const actionType = stageActions.get(
+        `${transition.sourceStageKey}:${transition.actionKey}`,
+      );
+      return actionType !== "RETURN" && actionType !== "REFER";
+    }),
+  };
+  const cyclicStageKeys = stagesInCycles(repeatableGraph);
+  return graph.stages.flatMap((stage, index) =>
+    cyclicStageKeys.has(stage.stableKey) && !stage.repeatable
+      ? [
+          issue(
+            "INVALID_REPEATABLE_REFERENCE",
+            `${stage.name} participates in a loop but is not repeatable.`,
+            `stages.${index}.repeatable`,
+          ),
+        ]
+      : [],
+  );
 }
 
 function unreachableErrors(
@@ -90,7 +95,7 @@ function unreachableErrors(
   if (!initialCode) return [];
   const reachable = reachableStages(graph, initialCode);
   return graph.stages.flatMap((stage, index) =>
-    reachable.has(stage.code)
+    reachable.has(stage.stableKey)
       ? []
       : [
           issue(
@@ -102,11 +107,11 @@ function unreachableErrors(
   );
 }
 
-function validateLegacyGraph(
+function validateDirectedGraph(
   graph: WorkflowGraphInput,
   initialCode: string | undefined,
 ) {
-  const errors = validateTransitions(graph, initialCode);
+  const errors = validateTransitionTargets(graph);
   if (!graph.transitions.some((transition) => transition.terminalOutcome)) {
     errors.push(
       issue(
@@ -116,17 +121,9 @@ function validateLegacyGraph(
       ),
     );
   }
-  if (hasWorkflowCycle(graph)) {
-    errors.push(
-      issue(
-        "WORKFLOW_CYCLE",
-        "Workflow stages cannot contain a cycle.",
-        "transitions",
-      ),
-    );
-  }
-  errors.push(...missingTransitionErrors(graph));
+  errors.push(...terminalDecisionErrors(graph));
   errors.push(...unreachableErrors(graph, initialCode));
+  errors.push(...repeatableReferenceErrors(graph));
   return errors;
 }
 
@@ -134,6 +131,18 @@ export function validateWorkflowGraph(
   graph: WorkflowGraphInput,
 ): WorkflowValidation {
   const errors = graph.stages.flatMap(validateWorkflowStage);
+  errors.push(...validateWorkflowActionTargets(graph));
+  errors.push(...validateWorkflowTransitions(graph));
+  if (graph.stages.length === 0) {
+    errors.push(
+      issue("MISSING_STAGE", "At least one enabled stage is required.", "stages"),
+    );
+  }
+  if (graph.stages.length > 0 && !graph.stages.some((stage) => stage.enabled)) {
+    errors.push(
+      issue("MISSING_ENABLED_STAGE", "At least one stage must be enabled.", "stages"),
+    );
+  }
   const initial = graph.stages.filter((stage) => stage.initial);
   if (initial.length !== 1)
     errors.push(
@@ -144,7 +153,7 @@ export function validateWorkflowGraph(
       ),
     );
   for (const code of new Set(
-    duplicates(graph.stages.map((stage) => stage.code)),
+    duplicates(graph.stages.map((stage) => stage.stableKey)),
   )) {
     errors.push(
       issue(
@@ -155,7 +164,7 @@ export function validateWorkflowGraph(
     );
   }
   for (const sequence of new Set(
-    duplicates(graph.stages.map((stage) => stage.sequence)),
+    duplicates(graph.stages.map((stage) => stage.displayOrder)),
   )) {
     errors.push(
       issue(
@@ -165,27 +174,6 @@ export function validateWorkflowGraph(
       ),
     );
   }
-  const sequentialFormGraph = isSequentialFormGraph(graph);
-  if (
-    sequentialFormGraph
-    && initial[0]
-    && graph.stages.some((stage) => stage.sequence < initial[0].sequence)
-  ) {
-    errors.push(
-      issue(
-        "INITIAL_STAGE_SEQUENCE",
-        "The initial stage must have the lowest sequence.",
-        "stages",
-      ),
-    );
-  }
-  if (sequentialFormGraph) {
-    return {
-      valid: errors.length === 0,
-      errors,
-      warnings: [],
-    };
-  }
-  errors.push(...validateLegacyGraph(graph, initial[0]?.code));
+  errors.push(...validateDirectedGraph(graph, initial[0]?.stableKey));
   return { valid: errors.length === 0, errors, warnings: [] };
 }

@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { Badge } from "@/shared/ui/Badge";
 
 export const statusStyles: Record<string, string> = {
   approved: "bg-brand-green/15 text-brand-navy",
@@ -18,6 +19,7 @@ export const statusStyles: Record<string, string> = {
   submitted: "bg-brand-blue/40 text-brand-navy",
   "technical assessment": "bg-brand-blue/40 text-brand-navy",
   upcoming: "bg-brand-yellow text-brand-navy",
+  live:"bg-brand-green/60 text-brand-white"
 };
 
 type StatusBadgeProps = {
@@ -27,9 +29,11 @@ type StatusBadgeProps = {
 };
 
 function defaultLabel(status: string) {
-  return status.length
-    ? `${status.charAt(0).toLocaleUpperCase()}${status.slice(1)}`
-    : status;
+  return status
+    .trim()
+    .toLocaleLowerCase()
+    .replaceAll(/[_-]+/g, " ")
+    .replaceAll(/\b\p{L}/gu, (letter) => letter.toLocaleUpperCase());
 }
 
 export function StatusBadge({ className, label, status }: StatusBadgeProps) {
@@ -38,14 +42,8 @@ export function StatusBadge({ className, label, status }: StatusBadgeProps) {
     "bg-brand-cream text-brand-navy";
 
   return (
-    <span
-      className={cn(
-        "inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-3 py-1 text-xs font-bold",
-        style,
-        className,
-      )}
-    >
+    <Badge className={cn(style, className)}>
       {label ?? defaultLabel(status)}
-    </span>
+    </Badge>
   );
 }

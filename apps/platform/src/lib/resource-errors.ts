@@ -9,12 +9,17 @@ export class ResourceNotFoundError extends Error {
 }
 
 export class ResourceConflictError extends Error {
+  readonly conflict?: Record<string, number | string>;
   readonly userMessage: string;
 
-  constructor(message: string) {
+  constructor(
+    message: string,
+    conflict?: Record<string, number | string>,
+  ) {
     super(message);
     this.name = "ResourceConflictError";
     this.userMessage = message;
+    this.conflict = conflict;
   }
 }
 

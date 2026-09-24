@@ -6,7 +6,7 @@ import {
   portalListRouteSuccess,
   portalRouteError,
 } from "@/lib/api/PortalApiResponse";
-import { listFundingOpportunities } from "@/modules/funding-opportunities/ServerFundingOpportunityService";
+import { listFundingOpportunities } from "@/modules/funding-calls/ServerFundingOpportunityService";
 
 const querySchema = z.object({
   after: z.string().max(500).optional(),
@@ -15,7 +15,7 @@ const querySchema = z.object({
   status: z.enum(["upcoming", "open", "closed"]).optional(),
 }).strict();
 
-export const dynamic = "force-dynamic";
+
 
 export async function GET(request: Request) {
   const correlationId = createCorrelationId();

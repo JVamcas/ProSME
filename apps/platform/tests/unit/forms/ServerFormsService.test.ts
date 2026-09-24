@@ -1,52 +1,58 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
-vi.mock("@/db/repositories/FormRepository", () => ({
+vi.mock("@/modules/forms/infrastructure/FormRepository", () => ({
   getFormEditor: vi.fn(),
   getFormRuntime: vi.fn(),
   getPublishedFormRuntime: vi.fn(),
-  getSubmission: vi.fn(),
   listForms: vi.fn(),
   listPublishedFormVersions: vi.fn(),
 }));
-vi.mock("@/db/repositories/FormSubmissionRepository", () => ({
-  saveSubmission: vi.fn(),
+vi.mock("@/modules/forms/infrastructure/FormResponseRepository", () => ({
+  readFormResponse: vi.fn(),
+  saveDraftFormResponse: vi.fn(),
 }));
-vi.mock("@/db/repositories/FormTaskCompletionRepository", () => ({
+vi.mock("@/modules/forms/infrastructure/FormTaskCompletionRepository", () => ({
   completeFormTask: vi.fn(),
   readFormTaskCompletion: vi.fn(),
 }));
-vi.mock("@/db/repositories/FormWriteRepository", () => ({
+vi.mock("@/modules/forms/infrastructure/FormWriteRepository", () => ({
   cloneFormVersion: vi.fn(),
   createForm: vi.fn(),
   publishFormVersion: vi.fn(),
   retireFormVersion: vi.fn(),
   saveFormDraft: vi.fn(),
 }));
-vi.mock("@/db/repositories/WorkflowTaskRepository", () => ({
+vi.mock("@/modules/workflows/infrastructure/WorkflowTaskRepository", () => ({
   readAssignedFormTask: vi.fn(),
-  readWorkflowTask: vi.fn(),
+}));
+vi.mock("@/modules/forms/application/FormTaskRuntimeContext", () => ({
+  exposeTaskFormRuntimeContext: vi.fn(),
 }));
 
-import { capabilities } from "@/auth/authorization/capabilities";
-import { PermissionDeniedError } from "@/auth/authorization/policy";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import {
   getFormEditor,
   getFormRuntime,
-  getSubmission,
-  listForms,
-} from "@/db/repositories/FormRepository";
-import { saveFormDraft } from "@/db/repositories/FormWriteRepository";
-import { saveSubmission } from "@/db/repositories/FormSubmissionRepository";
-import { readFormTaskCompletion } from "@/db/repositories/FormTaskCompletionRepository";
-import { readAssignedFormTask } from "@/db/repositories/WorkflowTaskRepository";
+} from "@/modules/forms/infrastructure/FormRepository";
+import { saveFormDraft } from "@/modules/forms/infrastructure/FormWriteRepository";
+import {
+  readFormResponse,
+  saveDraftFormResponse,
+} from "@/modules/forms/infrastructure/FormResponseRepository";
+import { readFormTaskCompletion } from "@/modules/forms/infrastructure/FormTaskCompletionRepository";
+import {
+  readAssignedFormTask,
+} from "@/modules/workflows/infrastructure/WorkflowTaskRepository";
 import {
   completeTaskForm,
-  getForms,
   saveTaskForm,
   updateFormDraft,
-} from "@/modules/forms/ServerFormsService";
+} from "@/modules/forms/application/ServerFormsService";
+import { RequestValidationError } from "@/lib/resource-errors";
+import { PermissionDeniedError } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
+import { defaultWorkflowElementPermissions } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
 
 const actorId = "79e20de0-3558-4d63-90a4-8c9f5125df07";
 const taskId = "c6ee71ce-0ed0-43b9-9381-e2c568634364";
@@ -71,6 +77,7 @@ function staff(granted: string[]): AuthenticatedUser {
 const runtime = {
   fields: [],
   instructions: null,
+  sections: [],
   submitLabel: "Submit",
   versionId,
   versionNumber: 1,
@@ -79,40 +86,133 @@ const runtime = {
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(getFormRuntime).mockResolvedValue(runtime);
-  vi.mocked(getSubmission).mockResolvedValue(null as never);
+  vi.mocked(readFormResponse).mockResolvedValue(null as never);
 });
 
 describe("ServerFormsService", () => {
-  it("checks capability before reading an assigned task", async () => {
-    await expect(getForms(staff([]))).rejects.toBeInstanceOf(
-      PermissionDeniedError,
-    );
-    expect(listForms).not.toHaveBeenCalled();
-  });
-
   it("derives the pinned version and actor scope for draft saves", async () => {
     vi.mocked(readAssignedFormTask).mockResolvedValue({
       formVersionId: versionId,
+      permissions: defaultWorkflowElementPermissions,
       rowVersion: 3,
       taskInstanceId: taskId,
       taskStatus: "IN_PROGRESS",
     });
-    vi.mocked(saveSubmission).mockResolvedValue({
+    vi.mocked(saveDraftFormResponse).mockResolvedValue({
       id: "submission",
       rowVersion: 2,
     } as never);
-    await saveTaskForm(staff([capabilities.workflowTaskComplete]), {
-      expectedSubmissionRowVersion: 1,
+    await saveTaskForm(staff([permissionCodes.workflowTaskAssignedProcess]), {
+      correlationId: versionId,
+      expectedResponseRowVersion: 1,
       expectedTaskRowVersion: 3,
       taskInstanceId: taskId,
       values: {},
     });
-    expect(saveSubmission).toHaveBeenCalledWith(expect.objectContaining({
+    expect(saveDraftFormResponse).toHaveBeenCalledWith(expect.objectContaining({
       actorId,
-      expectedSubmissionRowVersion: 1,
+      correlationId: versionId,
+      expectedResponseRowVersion: 1,
       formVersionId: versionId,
-      taskInstanceId: taskId,
+      workflowTaskId: taskId,
     }));
+  });
+
+  it("persists partial values without requiring incomplete fields", async () => {
+    vi.mocked(readAssignedFormTask).mockResolvedValue({
+      formVersionId: versionId,
+      permissions: defaultWorkflowElementPermissions,
+      rowVersion: 3,
+      taskInstanceId: taskId,
+      taskStatus: "IN_PROGRESS",
+    });
+    vi.mocked(getFormRuntime).mockResolvedValue({
+      ...runtime,
+      fields: [{
+        columnSpan: 1,
+        key: "NOTES",
+        label: "Notes",
+        order: 1,
+        required: true,
+        sectionId: "20000000-0000-4000-8000-000000000001",
+        type: "TEXTAREA",
+      }],
+    });
+    vi.mocked(saveDraftFormResponse).mockResolvedValue({
+      id: "submission",
+      rowVersion: 1,
+    } as never);
+    await saveTaskForm(
+      staff([permissionCodes.workflowTaskAssignedProcess]),
+      {
+        correlationId: versionId,
+        expectedTaskRowVersion: 3,
+        taskInstanceId: taskId,
+        values: {},
+      },
+    );
+    expect(saveDraftFormResponse).toHaveBeenCalledWith(
+      expect.objectContaining({ values: {} }),
+    );
+  });
+
+  it("enforces the edit permission configured on the task element", async () => {
+    vi.mocked(readAssignedFormTask).mockResolvedValue({
+      formVersionId: versionId,
+      permissions: {
+        ...defaultWorkflowElementPermissions,
+        edit: permissionCodes.auditRead,
+      },
+      rowVersion: 3,
+      taskInstanceId: taskId,
+      taskStatus: "IN_PROGRESS",
+    });
+    await expect(saveTaskForm(
+      staff([permissionCodes.workflowTaskAssignedProcess]),
+      {
+        correlationId: versionId,
+        expectedTaskRowVersion: 3,
+        taskInstanceId: taskId,
+        values: {},
+      },
+    )).rejects.toBeInstanceOf(PermissionDeniedError);
+    expect(saveDraftFormResponse).not.toHaveBeenCalled();
+  });
+
+  it("does not persist runtime context as captured response values", async () => {
+    vi.mocked(readAssignedFormTask).mockResolvedValue({
+      formVersionId: versionId,
+      permissions: defaultWorkflowElementPermissions,
+      rowVersion: 3,
+      taskInstanceId: taskId,
+      taskStatus: "IN_PROGRESS",
+    });
+    vi.mocked(getFormRuntime).mockResolvedValue({
+      ...runtime,
+      fields: [{
+        columnSpan: 1,
+        key: "RECOMMENDATION",
+        label: "Recommendation",
+        order: 1,
+        required: false,
+        sectionId: "20000000-0000-4000-8000-000000000001",
+        type: "TEXTAREA",
+      }],
+    });
+
+    await expect(saveTaskForm(
+      staff([permissionCodes.workflowTaskAssignedProcess]),
+      {
+        correlationId: versionId,
+        expectedTaskRowVersion: 3,
+        taskInstanceId: taskId,
+        values: {
+          "application.project_title": "Harbour expansion",
+          RECOMMENDATION: "Proceed",
+        },
+      },
+    )).rejects.toBeInstanceOf(RequestValidationError);
+    expect(saveDraftFormResponse).not.toHaveBeenCalled();
   });
 
   it("updates definition and version settings together", async () => {
@@ -128,6 +228,7 @@ describe("ServerFormsService", () => {
         updatedAt: new Date(),
       },
       fields: [],
+      sections: [],
       version: {
         createdAt: new Date(),
         formDefinitionId: taskId,
@@ -143,14 +244,15 @@ describe("ServerFormsService", () => {
       },
       versions: [],
     } as never);
-
-    await updateFormDraft(staff([capabilities.formUpdate]), taskId, {
+    await updateFormDraft(staff([permissionCodes.workflowFormUpdate]), taskId, {
       code: "UPDATED_FORM",
       description: "Updated description",
+      displayMode: "SINGLE_PAGE",
       expectedRowVersion: 1,
       fields: [],
       instructions: "Updated instructions",
       name: "Updated form",
+      sections: [],
       submitLabel: "Complete",
     });
 
@@ -162,9 +264,9 @@ describe("ServerFormsService", () => {
       submitLabel: "Complete",
     }));
   });
-
-  it("returns a completion replay before requiring the task to remain active", async () => {
+  it("returns a completion replay after enforcing the configured permission", async () => {
     const result = {
+      actionKey: "ADVANCE",
       nextStageName: "Finance",
       rowVersion: 4,
       taskInstanceId: taskId,
@@ -175,13 +277,23 @@ describe("ServerFormsService", () => {
       kind: "completed",
       result,
     });
-    await expect(completeTaskForm(staff([capabilities.workflowTaskComplete]), {
+    vi.mocked(readAssignedFormTask).mockResolvedValue({
+      formVersionId: versionId,
+      permissions: defaultWorkflowElementPermissions,
+      rowVersion: 3,
+      taskInstanceId: taskId,
+      taskStatus: "IN_PROGRESS",
+    });
+    await expect(completeTaskForm(
+      staff([permissionCodes.workflowTaskAssignedDecide]), {
+      actionKey: "ADVANCE",
       correlationId: versionId,
       expectedTaskRowVersion: 3,
       idempotencyKey: versionId,
       taskInstanceId: taskId,
       values: {},
-    })).resolves.toEqual(result);
-    expect(readAssignedFormTask).not.toHaveBeenCalled();
+      },
+    )).resolves.toEqual(result);
+    expect(readAssignedFormTask).toHaveBeenCalledWith(actorId, taskId);
   });
 });

@@ -8,6 +8,7 @@ describe("shared status badge", () => {
     ["open", "Open", "bg-brand-green/40"],
     ["upcoming", "Upcoming", "bg-brand-yellow"],
     ["closed", "Closed", "bg-brand-cream"],
+    ["PUBLISHED", "Published", "bg-brand-green/15"],
     ["Technical Assessment", "Technical Assessment", "bg-brand-blue/40"],
   ])("renders %s with its static status style", (status, label, style) => {
     const markup = renderToStaticMarkup(<StatusBadge status={status} />);

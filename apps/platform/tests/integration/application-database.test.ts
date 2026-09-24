@@ -9,22 +9,31 @@ import {
   findOwnedApplicationByOpportunity,
   listOwnedApplications,
   updateOwnedApplication,
-} from "@/db/repositories/ApplicationRepository";
+} from "@/modules/applications/infrastructure/ApplicationRepository";
 import {
-  hasRequiredApplicationDocuments,
-  listOwnedApplicationDocuments,
-  replaceOwnedApplicationDocument,
-} from "@/db/repositories/ApplicationDocumentRepository";
+  createPendingApplicationDocumentVersion,
+  finalizeApplicationDocumentVersion,
+  listLatestOwnedApplicationDocumentVersions,
+} from "@/modules/applications/infrastructure/ApplicationDocumentRepository";
+import {
+  businessOpportunityId,
+  eligibilityRuleSetVersionId,
+  firstBusinessId,
+  firstOwnerId,
+  formVersionId,
+  opportunityId,
+  secondBusinessId,
+  secondOwnerId,
+  seedApplicationDatabaseFixture,
+} from "../support/application-database-fixture";
+import {
+  assertApplicationDraftCreation,
+  assertApplicationResponseConcurrency,
+} from "../support/application-form-response-database-assertions";
 
 const { Pool } = pg;
 const enabled = process.env.RUN_P3_APPLICATION_DATABASE_TESTS === "true";
 const describeDatabase = enabled ? describe : describe.skip;
-const firstOwnerId = "31111111-1111-4111-8111-111111111111";
-const secondOwnerId = "32222222-2222-4222-8222-222222222222";
-const opportunityId = 4242;
-const businessOpportunityId = 4343;
-const firstBusinessId = "33333333-3333-4333-8333-333333333331";
-const secondBusinessId = "33333333-3333-4333-8333-333333333332";
 const pool = enabled
   ? new Pool({ connectionString: process.env.DATABASE_URL })
   : null;
@@ -37,22 +46,7 @@ async function query(text: string, values: unknown[] = []) {
 
 beforeAll(async () => {
   if (!enabled) return;
-  await query(
-    `INSERT INTO app_users
-      (id, email, display_name, user_type, status)
-     VALUES
-      ($1, 'application-owner@example.test', 'Application Owner', 'applicant', 'active'),
-      ($2, 'isolated-owner@example.test', 'Isolated Owner', 'applicant', 'active')`,
-    [firstOwnerId, secondOwnerId],
-  );
-  await query(
-    `INSERT INTO app_business_profiles
-      (id, user_id, legal_name, business_type, sector, region, physical_address)
-     VALUES
-      ($1, $3, 'First Business', 'cc', 'services', 'Khomas', 'Test'),
-      ($2, $3, 'Second Business', 'cc', 'services', 'Khomas', 'Test')`,
-    [firstBusinessId, secondBusinessId, firstOwnerId],
-  );
+  await seedApplicationDatabaseFixture(query);
 });
 
 afterAll(async () => {
@@ -68,7 +62,11 @@ describeDatabase("P3.2 PostgreSQL application persistence", () => {
         to_regclass('app_applications_unassigned_draft_unique') AS unassigned_unique_index,
         to_regclass('app_applications_owner_updated_idx') AS list_index,
         (SELECT count(*)::integer FROM app_capabilities
-          WHERE code IN ('application.create', 'application.read.own', 'application.update.own')) AS capability_count`,
+          WHERE code IN (
+            'funding.application.create',
+            'funding.application.own.read',
+            'funding.application.own.update'
+          )) AS capability_count`,
     );
     expect(result.rows[0]).toEqual({
       application_table: "app_applications",
@@ -79,8 +77,17 @@ describeDatabase("P3.2 PostgreSQL application persistence", () => {
     });
   });
 
+  it("creates one audited, version-bound response and replays the command", () =>
+    assertApplicationDraftCreation(query));
+
+  it("prevents stale autosave and replays a successful revision once", () =>
+    assertApplicationResponseConcurrency(query));
+
   it("allows different businesses but rejects the same business for one call", async () => {
     const firstId = await createOwnedApplication({
+      duplicatePolicy: "one_per_business",
+      eligibilityRuleSetVersionId,
+      formVersionId,
       fundingOpportunityId: businessOpportunityId,
       fundingOpportunityTitle: "Business-scoped Fund",
       ownerUserId: firstOwnerId,
@@ -104,6 +111,9 @@ describeDatabase("P3.2 PostgreSQL application persistence", () => {
       "project",
     );
     const secondId = await createOwnedApplication({
+      duplicatePolicy: "one_per_business",
+      eligibilityRuleSetVersionId,
+      formVersionId,
       fundingOpportunityId: businessOpportunityId,
       fundingOpportunityTitle: "Business-scoped Fund",
       ownerUserId: firstOwnerId,
@@ -152,16 +162,25 @@ describeDatabase("P3.2 PostgreSQL application persistence", () => {
 
   it("creates once, resumes by lookup, and isolates owners", async () => {
     const firstId = await createOwnedApplication({
+      duplicatePolicy: "one_per_business",
+      eligibilityRuleSetVersionId,
+      formVersionId,
       fundingOpportunityId: opportunityId,
       fundingOpportunityTitle: "Database Integration Fund",
       ownerUserId: firstOwnerId,
     });
     const duplicateId = await createOwnedApplication({
+      duplicatePolicy: "one_per_business",
+      eligibilityRuleSetVersionId,
+      formVersionId,
       fundingOpportunityId: opportunityId,
       fundingOpportunityTitle: "Database Integration Fund",
       ownerUserId: firstOwnerId,
     });
     const secondId = await createOwnedApplication({
+      duplicatePolicy: "one_per_business",
+      eligibilityRuleSetVersionId,
+      formVersionId,
       fundingOpportunityId: opportunityId,
       fundingOpportunityTitle: "Database Integration Fund",
       ownerUserId: secondOwnerId,
@@ -236,43 +255,43 @@ describeDatabase("P3.2 PostgreSQL application persistence", () => {
       opportunityId,
     );
     expect(application).not.toBeNull();
-    await replaceOwnedApplicationDocument({
+    const created = await createPendingApplicationDocumentVersion({
       applicationId: application!.id,
+      checksumSha256: "a".repeat(64),
       contentType: "application/pdf",
-      documentType: "business-registration",
+      extension: ".pdf",
       objectKey: `${firstOwnerId}/${application!.id}/registration.pdf`,
       originalName: "registration.pdf",
       ownerUserId: firstOwnerId,
+      requirementKey: "BUSINESS_REGISTRATION_DOCUMENT",
       sizeBytes: 512,
     });
+    await finalizeApplicationDocumentVersion(created!.id);
 
     await expect(
-      listOwnedApplicationDocuments(firstOwnerId, application!.id),
+      listLatestOwnedApplicationDocumentVersions(firstOwnerId, application!.id),
     ).resolves.toMatchObject([
       {
-        documentType: "business-registration",
         fileName: "registration.pdf",
-        scanStatus: "pending",
+        requirementKey: "BUSINESS_REGISTRATION_DOCUMENT",
+        storageStatus: "finalized",
       },
     ]);
     await expect(
-      listOwnedApplicationDocuments(secondOwnerId, application!.id),
+      listLatestOwnedApplicationDocumentVersions(secondOwnerId, application!.id),
     ).resolves.toEqual([]);
     await expect(
-      replaceOwnedApplicationDocument({
+      createPendingApplicationDocumentVersion({
         applicationId: application!.id,
+        checksumSha256: "b".repeat(64),
         contentType: "application/pdf",
-        documentType: "tax-clearance",
+        extension: ".pdf",
         objectKey: `${secondOwnerId}/${application!.id}/tax-clearance.pdf`,
         originalName: "tax-clearance.pdf",
         ownerUserId: secondOwnerId,
+        requirementKey: "TAX_CLEARANCE_DOCUMENT",
         sizeBytes: 512,
       }),
-    ).resolves.toBeUndefined();
-    await expect(
-      hasRequiredApplicationDocuments(firstOwnerId, application!.id, [
-        "business-registration",
-      ]),
-    ).resolves.toBe(true);
+    ).resolves.toBeNull();
   });
 });

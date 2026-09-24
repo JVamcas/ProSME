@@ -1,41 +1,45 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
-vi.mock("@/db/repositories/WorkflowRepository", () => ({
+vi.mock("@/modules/workflows/infrastructure/WorkflowRepository", () => ({
   findConfigurationReferences: vi.fn(),
   findDraftByDefinition: vi.fn(),
   findLatestWorkflowVersionId: vi.fn(),
   findWorkflowVersion: vi.fn(),
   listPublishedWorkflowVersions: vi.fn(),
-  listWorkflowAssignmentOptions: vi.fn().mockResolvedValue({ roles: [], users: [] }),
+  listWorkflowAssignmentOptions: vi
+    .fn()
+    .mockResolvedValue({ roles: [], users: [] }),
   listWorkflowDefinitions: vi.fn(),
 }));
-vi.mock("@/db/repositories/WorkflowGraphRepository", () => ({
+vi.mock("@/modules/workflows/infrastructure/WorkflowGraphRepository", () => ({
   findWorkflowGraph: vi.fn(),
 }));
-vi.mock("@/db/repositories/WorkflowDraftRepository", () => ({
-  cloneWorkflowVersion: vi.fn(),
-  createWorkflowDefinition: vi.fn(),
-  replaceWorkflowDraft: vi.fn(),
-}));
-vi.mock("@/db/repositories/WorkflowLifecycleRepository", () => ({
-  findLifecycleReplay: vi.fn(),
-  publishWorkflowVersion: vi.fn(),
-  retireWorkflowVersion: vi.fn(),
-}));
+vi.mock(
+  "@/modules/workflows/infrastructure/WorkflowTemplateWriteRepository",
+  () => ({
+    cloneWorkflowVersion: vi.fn(),
+    createWorkflowDefinition: vi.fn(),
+    replaceWorkflowDraft: vi.fn(),
+  }),
+);
+vi.mock(
+  "@/modules/workflows/infrastructure/WorkflowLifecycleRepository",
+  () => ({
+    findLifecycleReplay: vi.fn(),
+    publishWorkflowVersion: vi.fn(),
+    retireWorkflowVersion: vi.fn(),
+  }),
+);
 vi.mock("@/db/repositories/WorkflowAssignmentRepository", () => ({
   assignWorkflowToOpportunity: vi.fn(),
   listWorkflowAssignments: vi.fn(),
 }));
-vi.mock(
-  "@/modules/funding-opportunities/ServerFundingOpportunityIntegration",
-  () => ({
-    findPublishedFundingOpportunity: vi.fn(),
-    listPublishedFundingOpportunities: vi.fn(),
-  }),
-);
-import { capabilities } from "@/auth/authorization/capabilities";
+vi.mock("@/modules/funding-calls/ServerFundingOpportunityIntegration", () => ({
+  findPublishedFundingOpportunity: vi.fn(),
+  listPublishedFundingOpportunities: vi.fn(),
+}));
+import { permissionCodes } from "@/auth/authorization/permissions";
 import { PermissionDeniedError } from "@/auth/authorization/policy";
-import type { AuthenticatedUser } from "@/auth/types";
 import {
   assignWorkflowToOpportunity,
   listWorkflowAssignments,
@@ -43,77 +47,32 @@ import {
 import {
   findLifecycleReplay,
   publishWorkflowVersion,
-} from "@/db/repositories/WorkflowLifecycleRepository";
-import { findWorkflowGraph } from "@/db/repositories/WorkflowGraphRepository";
+} from "@/modules/workflows/infrastructure/WorkflowLifecycleRepository";
+import { findWorkflowGraph } from "@/modules/workflows/infrastructure/WorkflowGraphRepository";
 import {
   findConfigurationReferences,
   findWorkflowVersion,
-} from "@/db/repositories/WorkflowRepository";
-import { findPublishedFundingOpportunity } from "@/modules/funding-opportunities/ServerFundingOpportunityIntegration";
-import { referenceWorkflow } from "@/modules/workflows/ReferenceWorkflow";
+} from "@/modules/workflows/infrastructure/WorkflowRepository";
+import { findPublishedFundingOpportunity } from "@/modules/funding-calls/ServerFundingOpportunityIntegration";
+import { referenceWorkflow } from "../../support/ReferenceWorkflowFixture";
 import { assignOpportunityWorkflow } from "@/modules/workflows/ServerWorkflowAssignmentService";
 import {
   publishWorkflow,
   retireWorkflow,
-} from "@/modules/workflows/ServerWorkflowLifecycleService";
+} from "@/modules/workflows/application/definitions/ServerWorkflowLifecycleService";
 import {
   getWorkflowDefinitions,
   updateWorkflowDraft,
   WorkflowConflictError,
-} from "@/modules/workflows/ServerWorkflowService";
-const actor: AuthenticatedUser = {
-  id: "79e20de0-3558-4d63-90a4-8c9f5125df07",
-  capabilities: new Set(),
-  createdAt: new Date(),
-  displayName: "System Admin",
-  email: "admin@example.test",
-  identitySubject: "firebase-admin",
-  lastLoginAt: null,
-  roleCodes: new Set(["system_administrator"]),
-  status: "active",
-  updatedAt: new Date(),
-  userType: "staff",
-};
-const userWith = (...grants: string[]): AuthenticatedUser =>
-  ({ ...actor, capabilities: new Set(grants) });
+} from "@/modules/workflows/application/definitions/ServerWorkflowService";
+import { workflowEditorView } from "@/modules/workflows/application/definitions/ServerWorkflowSupport";
+import { actor, record, userWith } from "./WorkflowServiceFixtures";
 
-const assignedReferenceWorkflow = structuredClone(referenceWorkflow);
-for (const stage of assignedReferenceWorkflow.stages) {
-  for (const task of stage.tasks) {
-    task.assignmentUserId = actor.id;
-  }
-}
-const record = {
-  definition: {
-    id: "definition-id",
-    code: "REFERENCE",
-    name: "Reference",
-    description: "",
-    active: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  graph: assignedReferenceWorkflow,
-  version: {
-    id: "version-id",
-    definitionId: "definition-id",
-    versionNumber: 1,
-    status: "DRAFT" as const,
-    rowVersion: 1,
-    createdBy: actor.id,
-    publishedBy: null,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    publishedAt: null,
-    retiredAt: null,
-  },
-};
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(findConfigurationReferences).mockResolvedValue({
-    capabilities: new Set(
-      referenceWorkflow.transitions.map((item) => item.requiredCapability),
-    ),
+    formFields: new Map(),
+    forms: new Map(),
     roles: new Set(),
     users: new Map([[actor.id, "active"]]),
   });
@@ -139,7 +98,7 @@ describe("workflow service authorization and lifecycle", () => {
   it("rejects retirement without the explicit lifecycle capability", async () => {
     await expect(
       retireWorkflow(
-        userWith(capabilities.workflowDefinitionRead),
+        userWith(permissionCodes.workflowDefinitionRead),
         record.definition.id,
         record.version.id,
         2,
@@ -149,53 +108,90 @@ describe("workflow service authorization and lifecycle", () => {
     ).rejects.toBeInstanceOf(PermissionDeniedError);
   });
 
-  it("publishes a valid draft with optimistic version and idempotency data", async () => {
-    vi.mocked(findWorkflowGraph).mockResolvedValue(record);
-    vi.mocked(publishWorkflowVersion).mockResolvedValue({
-      ...record.version,
-      status: "PUBLISHED",
-    });
-    const result = await publishWorkflow(
-      userWith(capabilities.workflowDefinitionPublish),
-      record.definition.id,
-      record.version.id,
-      1,
-      "publish-key",
-      "79e20de0-3558-4d63-90a4-8c9f5125df08",
-    );
-    expect(result.version.id).toBe(record.version.id);
-    expect(publishWorkflowVersion).toHaveBeenCalledWith(
-      expect.objectContaining({
-        expectedRowVersion: 1,
-        idempotencyKey: "publish-key",
-        versionId: record.version.id,
-      }),
-    );
-  });
-
-  it("does not publish an invalid graph", async () => {
-    vi.mocked(findWorkflowGraph).mockResolvedValue({
-      ...record,
-      graph: { stages: [], transitions: [] },
-    });
-    await expect(
-      publishWorkflow(
-        userWith(capabilities.workflowDefinitionPublish),
+  it.each(["DRAFT", "APPROVED"] as const)(
+    "publishes a %s version with optimistic version and idempotency data",
+    async (status) => {
+      vi.mocked(findWorkflowGraph).mockResolvedValue({
+        ...record,
+        version: { ...record.version, status },
+      });
+      vi.mocked(publishWorkflowVersion).mockResolvedValue({
+        ...record.version,
+        status: "PUBLISHED",
+      });
+      const result = await publishWorkflow(
+        userWith(permissionCodes.workflowDefinitionPublish),
         record.definition.id,
         record.version.id,
         1,
         "publish-key",
         "79e20de0-3558-4d63-90a4-8c9f5125df08",
-      ),
-    ).rejects.toBeInstanceOf(WorkflowConflictError);
+      );
+      expect(result.version.id).toBe(record.version.id);
+      expect(publishWorkflowVersion).toHaveBeenCalledWith(
+        expect.objectContaining({
+          expectedRowVersion: 1,
+          idempotencyKey: "publish-key",
+          versionId: record.version.id,
+        }),
+      );
+    },
+  );
+
+  it("does not publish an invalid graph", async () => {
+    vi.mocked(findWorkflowGraph).mockResolvedValue({
+      ...record,
+      graph: { stages: [referenceWorkflow.stages[0]], transitions: [] },
+    });
+    const publication = publishWorkflow(
+        userWith(permissionCodes.workflowDefinitionPublish),
+        record.definition.id,
+        record.version.id,
+        1,
+        "publish-key",
+        "79e20de0-3558-4d63-90a4-8c9f5125df08",
+      );
+    await expect(publication).rejects.toBeInstanceOf(WorkflowConflictError);
+    await expect(publication).rejects.toThrow(
+      /Workflow cannot be published because it has \d+ validation errors?:/,
+    );
     expect(publishWorkflowVersion).not.toHaveBeenCalled();
+  });
+
+  it("rejects an escalation target that is not an active role", async () => {
+    const graph = structuredClone(record.graph);
+    graph.stages[0].actions = [
+      {
+        stableKey: "ESCALATE_REVIEW",
+        label: "Escalate review",
+        actionType: "ESCALATE",
+        enabled: true,
+        reasonCodeRequired: false,
+        displayOrder: 1,
+        configuration: {
+          targetType: "ROLE",
+          targetId: "79e20de0-3558-4d63-90a4-8c9f5125df09",
+          trigger: "SLA_BREACH",
+        },
+      },
+    ];
+    vi.mocked(findWorkflowGraph).mockResolvedValue({ ...record, graph });
+
+    const editor = await workflowEditorView(record.version.id);
+
+    expect(editor.validation.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: "UNKNOWN_ESCALATION_ROLE" }),
+      ]),
+    );
   });
 });
 
 describe("funding-opportunity workflow assignment", () => {
+  const fundingOpportunityId = "00000000-0000-4000-8000-000000000042";
   const input = {
     expectedRowVersion: 0,
-    fundingOpportunityId: 42,
+    fundingOpportunityId,
     fundingOpportunityTitle: "Client value is replaced",
     workflowVersionId: record.version.id,
   };
@@ -218,7 +214,7 @@ describe("funding-opportunity workflow assignment", () => {
     });
     await expect(
       assignOpportunityWorkflow(
-        userWith(capabilities.workflowDefinitionUpdate),
+        userWith(permissionCodes.workflowDefinitionUpdate),
         input,
         "assignment-key",
         "correlation-id",
@@ -233,12 +229,12 @@ describe("funding-opportunity workflow assignment", () => {
       status: "PUBLISHED",
     });
     vi.mocked(findPublishedFundingOpportunity).mockResolvedValue({
-      id: 42,
+      id: fundingOpportunityId,
       title: "Growth Fund",
     } as never);
     vi.mocked(assignWorkflowToOpportunity).mockResolvedValue({
       assignedAt: new Date().toISOString(),
-      fundingOpportunityId: 42,
+      fundingOpportunityId,
       fundingOpportunityTitle: "Growth Fund",
       rowVersion: 1,
       versionNumber: 1,
@@ -247,7 +243,7 @@ describe("funding-opportunity workflow assignment", () => {
     });
     await expect(
       assignOpportunityWorkflow(
-        userWith(capabilities.workflowDefinitionUpdate),
+        userWith(permissionCodes.workflowDefinitionUpdate),
         input,
         "assignment-key",
         "79e20de0-3558-4d63-90a4-8c9f5125df08",
@@ -264,7 +260,7 @@ describe("funding-opportunity workflow assignment", () => {
   it("replays the original assignment result after a later reassignment", async () => {
     const original = {
       assignedAt: "2026-09-14T08:00:00.000Z",
-      fundingOpportunityId: 42,
+      fundingOpportunityId,
       fundingOpportunityTitle: "Growth Fund",
       rowVersion: 1,
       versionNumber: 1,
@@ -274,7 +270,7 @@ describe("funding-opportunity workflow assignment", () => {
     vi.mocked(findLifecycleReplay).mockResolvedValue({
       action: "FUNDING_OPPORTUNITY_WORKFLOW_ASSIGNED",
       after: original,
-      targetId: "42",
+      targetId: fundingOpportunityId,
     });
     vi.mocked(listWorkflowAssignments).mockResolvedValue([
       {
@@ -287,7 +283,7 @@ describe("funding-opportunity workflow assignment", () => {
 
     await expect(
       assignOpportunityWorkflow(
-        userWith(capabilities.workflowDefinitionUpdate),
+        userWith(permissionCodes.workflowDefinitionUpdate),
         input,
         "assignment-key",
         "correlation-id",

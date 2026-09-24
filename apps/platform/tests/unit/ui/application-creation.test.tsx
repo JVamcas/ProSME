@@ -2,17 +2,26 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn() }),
+}));
 const useApplicationBusinesses = vi.hoisted(() => vi.fn());
 const useBusiness = vi.hoisted(() => vi.fn());
 const useApplicationDocuments = vi.hoisted(() => vi.fn());
-const useUploadApplicationDocument = vi.hoisted(() => vi.fn());
 vi.mock("@/modules/businesses/BusinessHooks", () => ({
   useBusiness,
   useApplicationBusinesses,
 }));
-vi.mock("@/modules/applications/ApplicationDocumentHooks", () => ({
+vi.mock("@/modules/applications/ui/useApplicationDocuments", () => ({
   useApplicationDocuments,
-  useUploadApplicationDocument,
+}));
+vi.mock("@/modules/applications/ApplicationHooks", () => ({
+  useDeleteApplicationDraft: () => ({
+    error: null,
+    isPending: false,
+    mutate: vi.fn(),
+    reset: vi.fn(),
+  }),
 }));
 
 import {
@@ -21,7 +30,6 @@ import {
 } from "@/components/applicant/applications/ApplicationStepConfig";
 import { ApplicationBusinessForm } from "@/components/applicant/applications/ApplicationBusinessForm";
 import { ApplicationDeclarationsForm } from "@/components/applicant/applications/ApplicationDeclarationsForm";
-import { ApplicationDocumentsForm } from "@/components/applicant/applications/ApplicationDocumentsForm";
 import { ApplicationProjectForm } from "@/components/applicant/applications/ApplicationProjectForm";
 import { ApplicationReview } from "@/components/applicant/applications/ApplicationReview";
 import { ApplicationsTable } from "@/components/applicant/applications/ApplicationTable";
@@ -29,7 +37,17 @@ import { ApplicationListContent } from "@/components/applicant/applications/Appl
 import { StepProgress } from "@/components/ui/step-progress";
 import type { ApplicationView } from "@/modules/applications/ApplicationTypes";
 
+const draftPublicStatus = {
+  status: "DRAFT",
+  label: "Draft",
+  description: "Complete and submit your application.",
+  actionRequired: false,
+} as const;
+
 const completedApplication: ApplicationView = {
+  reference: null,
+  submittedAt: null,
+  publicStatus: draftPublicStatus,
   businessName: "JM Technologies",
   businessSection: {
     businessId: "89e20de0-3558-4d63-90a4-8c9f5125df07",
@@ -44,7 +62,9 @@ const completedApplication: ApplicationView = {
     terms: true,
   },
   financialSection: { amountRequested: 500000 },
-  fundingOpportunityId: 42,
+  eligibilityRuleSetVersionId: "30000000-0000-4000-8000-000000000001",
+  formVersionId: "20000000-0000-4000-8000-000000000001",
+  fundingOpportunityId: "00000000-0000-4000-8000-000000000042",
   fundingOpportunityTitle: "Growth Fund",
   id: "99e20de0-3558-4d63-90a4-8c9f5125df07",
   progressPercent: 100,
@@ -63,16 +83,13 @@ const completedApplication: ApplicationView = {
 
 describe("application creation UI", () => {
   useApplicationDocuments.mockReturnValue({
-    data: [],
+    data: {
+      documents: [],
+      requirements: [],
+    },
     error: null,
     isError: false,
     isPending: false,
-  });
-  useUploadApplicationDocument.mockReturnValue({
-    error: null,
-    isError: false,
-    isPending: false,
-    mutateAsync: vi.fn(),
   });
 
   it("shows the three P3.2 sections and later disabled steps", () => {
@@ -183,21 +200,6 @@ describe("application creation UI", () => {
     expect(markup).toContain("Back");
   });
 
-  it("renders the Phase 3.4 document register", () => {
-    const markup = renderToStaticMarkup(
-      <ApplicationDocumentsForm
-        applicationId="99e20de0-3558-4d63-90a4-8c9f5125df07"
-        onContinue={() => Promise.resolve()}
-        pending={false}
-      />,
-    );
-    expect(markup).toContain("Business Registration Certificate");
-    expect(markup).toContain("Latest Financial Statements");
-    expect(markup).toContain("Project Proposal");
-    expect(markup).toContain("Save and continue");
-    expect(markup).toContain('type="button">Save and continue');
-  });
-
   it("renders all versioned declarations and consent actions", () => {
     const markup = renderToStaticMarkup(
       <ApplicationDeclarationsForm
@@ -218,7 +220,10 @@ describe("application creation UI", () => {
       data: { legalName: "JM Technologies (Pty) Ltd" },
     });
     useApplicationDocuments.mockReturnValue({
-      data: [{ id: "one" }, { id: "two" }, { id: "three" }, { id: "four" }],
+      data: {
+        documents: [{}, {}, {}, {}],
+        requirements: [],
+      },
     });
     const markup = renderToStaticMarkup(
       <ApplicationReview
@@ -244,10 +249,11 @@ describe("application creation UI", () => {
       <ApplicationsTable
         items={[
           {
+            ...completedApplication,
             businessName: "JM Technologies",
             createdAt: "2026-09-01T08:00:00.000Z",
             currentSection: "project",
-            fundingOpportunityId: 42,
+            fundingOpportunityId: "00000000-0000-4000-8000-000000000042",
             fundingOpportunityTitle: "Growth Fund",
             id: "99e20de0-3558-4d63-90a4-8c9f5125df07",
             progressPercent: 33,
@@ -255,7 +261,6 @@ describe("application creation UI", () => {
             updatedAt: "2026-09-14T08:00:00.000Z",
           },
         ]}
-        renderAction={() => <a href="#resume">Continue</a>}
       />,
     );
 
@@ -270,12 +275,14 @@ describe("application creation UI", () => {
   it("hides the continue action for non-draft applications", () => {
     const markup = renderToStaticMarkup(
       <ApplicationListContent
+        canDeleteDraft={false}
         items={[
           {
+            ...completedApplication,
             businessName: "JM Technologies",
             createdAt: "2026-09-01T08:00:00.000Z",
             currentSection: "declarations",
-            fundingOpportunityId: 42,
+            fundingOpportunityId: "00000000-0000-4000-8000-000000000042",
             fundingOpportunityTitle: "Growth Fund",
             id: "99e20de0-3558-4d63-90a4-8c9f5125df07",
             progressPercent: 100,

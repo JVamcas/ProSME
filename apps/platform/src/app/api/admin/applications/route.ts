@@ -7,7 +7,7 @@ import {
 import { adminApplicationListSchema } from "@/modules/applications/AdminApplicationSchemas";
 import { listAdminApplications } from "@/modules/applications/ServerAdminApplicationService";
 
-export const dynamic = "force-dynamic";
+
 
 export async function GET(request: Request) {
   const correlationId = createCorrelationId();

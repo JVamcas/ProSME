@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderToStaticMarkup } from "react-dom/server";
+import { FormProvider, useForm } from "react-hook-form";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("next/navigation", () => ({
@@ -11,11 +12,58 @@ import { WorkflowDefinitionCreateForm } from "@/components/admin/workflows/Workf
 import { WorkflowDefinitionDetailsCard } from "@/components/admin/workflows/WorkflowDefinitionDetailsCard";
 import { WorkflowDefinitionsWorkspace } from "@/components/admin/workflows/WorkflowDefinitionsWorkspace";
 import { WorkflowDefinitionsTable } from "@/components/admin/workflows/WorkflowDefinitionsTable";
-import { referenceWorkflow } from "@/modules/workflows/ReferenceWorkflow";
+import { referenceWorkflow } from "../../support/ReferenceWorkflowFixture";
 import { workflowQueryKeys } from "@/modules/workflows/WorkflowHooks";
+import { WorkflowActionConfigurationFields } from "@/modules/workflows/ui/definitions/WorkflowActionConfigurationFields";
+import {
+  type WorkflowActionFormValues,
+  workflowActionFormSchema,
+} from "@/modules/workflows/ui/definitions/WorkflowActionFormSchema";
+import { workflowActionFormDefaults } from "@/modules/workflows/ui/definitions/WorkflowActionFormMapping";
 
+function ApproveConfigurationForm() {
+  const form = useForm<WorkflowActionFormValues>({
+    defaultValues: workflowActionFormDefaults(undefined, 1),
+  });
+  return (
+    <FormProvider {...form}>
+      <WorkflowActionConfigurationFields
+        actionType="APPROVE_ADVANCE"
+        assignmentOptions={{ roles: [], users: [] }}
+        deferTargetType="DATE"
+        escalationTargetType="ROLE"
+        rejectionOutcomeType="TERMINAL"
+      />
+    </FormProvider>
+  );
+}
 describe("workflow configuration UI", () => {
+  it("keeps approve routing out of action-specific configuration", () => {
+    const markup = renderToStaticMarkup(<ApproveConfigurationForm />);
+    expect(markup).toBe("");
+    const values = {
+      ...workflowActionFormDefaults(undefined, 1),
+      stableKey: "ADVANCE",
+      label: "Advance",
+    };
+    expect(workflowActionFormSchema.parse(values).actionType).toBe(
+      "APPROVE_ADVANCE",
+    );
+  });
+
   it("previews ordered stages, registered tasks and applicant-safe labels", () => {
+    const graph = structuredClone(referenceWorkflow);
+    graph.stages[0].actions = [
+      {
+        stableKey: "ADVANCE_REVIEW",
+        label: "Advance review",
+        actionType: "APPROVE_ADVANCE",
+        enabled: true,
+        reasonCodeRequired: false,
+        displayOrder: 1,
+        configuration: {},
+      },
+    ];
     const markup = renderToStaticMarkup(
       <QueryClientProvider client={new QueryClient()}>
         <WorkflowStageFlow
@@ -28,7 +76,7 @@ describe("workflow configuration UI", () => {
               name: "Reference",
               description: "",
             },
-            graph: referenceWorkflow,
+            graph,
             validation: { valid: true, errors: [], warnings: [] },
             version: {
               id: "version",
@@ -49,11 +97,39 @@ describe("workflow configuration UI", () => {
     expect(markup).toContain("Build the approval flow");
     expect(markup).toContain("Visual flow");
     expect(markup).toContain("Stage details");
+    expect(markup).toContain(
+      'aria-label="Submission and pre-screening stage configuration"',
+    );
+    expect(markup.match(/role="tab"/g)).toHaveLength(7);
+    expect(markup).toContain("Checklists");
+    expect(markup).toContain("Documents");
+    expect(markup).toContain("Scoring");
+    expect(markup).toContain("Stable key");
+    expect(markup).toContain("PRE_SCREENING");
+    expect(markup).toContain("Single-run");
+    expect(markup).toContain("No COI gate");
     expect(markup).toContain("Tasks (1)");
+    expect(markup).toContain("Actions (1)");
+    expect(markup).toContain("Transitions (1)");
+    const tabDescriptions = [
+      "Define the work and assignment rules for this stage.",
+      "Define the checks reviewers must complete during this stage.",
+      "Specify the documents required to complete this stage.",
+      "Define the criteria and aggregation method used to score this stage.",
+      "Configure reviewer comments and recommendations for this stage.",
+      "Configure the decisions users can make during this stage.",
+      "Define how this stage routes to another stage or a terminal outcome.",
+    ];
+    tabDescriptions.forEach((description) => expect(markup).toContain(description));
+    expect(markup).toContain("Completeness screening");
+    expect(markup).toContain("Advance review");
+    expect(markup).toContain("Approve / Advance");
     expect(markup).toContain("Add Workflow stage");
     expect(markup).toContain("Assignee");
     expect(markup).toContain("Add task");
+    expect(markup).toContain("Add action");
     expect(markup).toContain("Edit Pre-screening checklist");
+    expect(markup).toContain("Preview Pre-screening checklist");
     expect(markup).toContain("Delete Pre-screening checklist");
     expect(markup).not.toContain("Approver");
     expect(markup).not.toContain("Conditional routes");
@@ -169,7 +245,7 @@ describe("workflow configuration UI", () => {
         assignments={[
           {
             assignedAt: "2026-09-14T08:00:00.000Z",
-            fundingOpportunityId: 42,
+            fundingOpportunityId: "00000000-0000-4000-8000-000000000042",
             fundingOpportunityTitle: "Growth Fund",
             rowVersion: 1,
             versionNumber: 1,
@@ -194,7 +270,7 @@ describe("workflow configuration UI", () => {
         opportunities={[
           {
             closesAt: "2026-12-31T00:00:00.000Z",
-            id: 42,
+            id: "00000000-0000-4000-8000-000000000042",
             opensAt: "2026-09-01T00:00:00.000Z",
             slug: "growth-fund",
             status: "open",
@@ -212,7 +288,6 @@ describe("workflow configuration UI", () => {
         ]}
       />,
     );
-
     expect(markup).toContain('aria-label="Edit Reference"');
     expect(markup).toContain('aria-label="Activate Reference"');
     expect(markup).toContain('aria-label="Deactivate Reference"');

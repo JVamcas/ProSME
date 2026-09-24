@@ -8,7 +8,6 @@ describe("frontend preview authorization", () => {
     ["/news/update", "news"],
     ["/resources/guide", "resources"],
     ["/events/briefing", "events"],
-    ["/funding/first-call", "funding-calls"],
     ["/eligibility", "eligibility"],
     ["/faq", "faqs"],
     ["/about", "pages"],

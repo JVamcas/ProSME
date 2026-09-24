@@ -7,7 +7,7 @@ import {
 import { workQueueListSchema } from "@/modules/work-queue/WorkQueueSchemas";
 import { getWorkQueue } from "@/modules/work-queue/ServerWorkQueueService";
 
-export const dynamic = "force-dynamic";
+
 
 export async function GET(request: Request) {
   const correlationId = createCorrelationId();

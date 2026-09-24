@@ -13,10 +13,10 @@ import {
   useWorkflowAssignments,
   useWorkflowOpportunities,
 } from "@/modules/workflows/WorkflowHooks";
-import type { WorkflowDefinitionSummary } from "@/modules/workflows/WorkflowTypes";
+import type { WorkflowDefinitionSummary } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 
 const assignmentSelectionSchema = z.object({
-  fundingOpportunityId: z.coerce.number().int().positive(),
+  fundingOpportunityId: z.uuid(),
 });
 
 type Props = {

@@ -1,38 +1,42 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-import { capabilities } from "@/auth/authorization/capabilities";
 import { getCurrentUser } from "@/auth/authorization/current-user";
-import { can, requireAnyCapability } from "@/auth/authorization/policy";
+import { permissionCodes } from "@/auth/authorization/permissions";
+import { can, requireAnyPermission } from "@/auth/authorization/policy";
 import { UserAccessWorkspace } from "@/components/admin/users/UserAccessWorkspace";
-import { ProfilePageHeader } from "@/components/applicant/profile/ProfilePageHeader";
+import { PageShell } from "@/shared/ui/PageShell";
 
-export const metadata: Metadata = { title: "Users & access" };
+export const metadata: Metadata = { title: "Users & roles" };
 
 export default async function UsersAccessPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/sign-in?next=/admin/users");
-  requireAnyCapability(user, [
-    capabilities.userRead,
-    capabilities.userManage,
-    capabilities.roleRead,
-    capabilities.roleManage,
+  requireAnyPermission(user, [
+    permissionCodes.userRead,
+    permissionCodes.userManage,
+    permissionCodes.roleRead,
+    permissionCodes.roleManage,
   ]);
 
   return (
-    <section>
-      <ProfilePageHeader
-        title="Users & access"
-        eyebrow="Administration"
-        description="Manage user access."
-      />
+    <PageShell
+      description="Manage people, roles, and permissions."
+      eyebrow="Administration"
+      title="Users & Roles"
+    >
       <UserAccessWorkspace
-        canManageRoles={can(user, capabilities.roleManage)}
-        canManageUsers={can(user, capabilities.userManage)}
+        canManageRoles={can(user, permissionCodes.roleManage)}
+        canManageUsers={can(user, permissionCodes.userManage)}
         canReadRoles={
-          can(user, capabilities.roleRead) || can(user, capabilities.roleManage)
+          can(user, permissionCodes.roleRead) ||
+          can(user, permissionCodes.roleManage)
+        }
+        canReadUsers={
+          can(user, permissionCodes.userRead) ||
+          can(user, permissionCodes.userManage)
         }
       />
-    </section>
+    </PageShell>
   );
 }

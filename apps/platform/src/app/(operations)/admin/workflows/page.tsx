@@ -1,31 +1,29 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-import { capabilities } from "@/auth/authorization/capabilities";
 import { getCurrentUser } from "@/auth/authorization/current-user";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import { can } from "@/auth/authorization/policy";
-import { WorkflowDefinitionsWorkspace } from "@/components/admin/workflows/WorkflowDefinitionsWorkspace";
-import { ProfilePageHeader } from "@/components/applicant/profile/ProfilePageHeader";
+import { WorkflowTemplateAdminWorkspace } from "@/modules/workflows/ui/definitions/WorkflowTemplateAdminWorkspace";
+import { PageShell } from "@/shared/ui/PageShell";
 
-export const metadata: Metadata = { title: "Workflow configuration" };
+export const metadata: Metadata = { title: "Workflow templates" };
 
 export default async function WorkflowsPage() {
   const user = await getCurrentUser();
-  if (!user || !can(user, capabilities.workflowDefinitionRead))
+  if (!user || !can(user, permissionCodes.workflowDefinitionRead))
     redirect("/unauthorized");
   return (
-    <section>
-      <ProfilePageHeader
-        description="Manage reusable workflow versions and configuration."
-        eyebrow="Administration"
-        title="Workflow Definitions"
+    <PageShell
+      description="Manage workflow templates."
+      eyebrow="Administration"
+      title="Workflow Templates"
+    >
+      <WorkflowTemplateAdminWorkspace
+        canCreate={can(user, permissionCodes.workflowDefinitionCreate)}
+        canPublish={can(user, permissionCodes.workflowDefinitionPublish)}
+        canUpdate={can(user, permissionCodes.workflowDefinitionUpdate)}
       />
-      <WorkflowDefinitionsWorkspace
-        canCreate={can(user, capabilities.workflowDefinitionCreate)}
-        canPublish={can(user, capabilities.workflowDefinitionPublish)}
-        canRetire={can(user, capabilities.workflowDefinitionRetire)}
-        canUpdate={can(user, capabilities.workflowDefinitionUpdate)}
-      />
-    </section>
+    </PageShell>
   );
 }

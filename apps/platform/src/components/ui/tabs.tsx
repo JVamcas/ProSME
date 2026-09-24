@@ -20,30 +20,44 @@ export type TabItem<T extends string = string> = {
 
 type TabsProps<T extends string> = {
   ariaLabel: string;
+  accent?: "blue" | "orange";
+  className?: string;
   defaultSelectedId: T;
   items: readonly TabItem<T>[];
   leadingContent?: ReactNode;
+  listClassName?: string;
   onSelectionChange?: (id: T) => void;
   orientation?: "horizontal" | "vertical";
+  panelClassName?: string;
   selectedContent?: ReactNode;
   selectedId?: T;
+  tabListClassName?: string;
 };
 
 function TabsList<T extends string>({
+  accent,
   ariaLabel,
   items,
   leadingContent,
+  listClassName,
+  tabListClassName,
   vertical,
-}: Pick<TabsProps<T>, "ariaLabel" | "items" | "leadingContent"> & {
+}: Pick<
+  TabsProps<T>,
+  | "accent"
+  | "ariaLabel"
+  | "items"
+  | "leadingContent"
+  | "listClassName"
+  | "tabListClassName"
+> & {
   vertical: boolean;
 }) {
   return (
     <div
       className={cn(
         "overflow-hidden bg-brand-white",
-        vertical
-          ? "self-start rounded-2xl border border-brand-navy/15 shadow-sm"
-          : "border-b border-brand-navy/15",
+        listClassName,
       )}
     >
       {leadingContent}
@@ -54,6 +68,7 @@ function TabsList<T extends string>({
           vertical
             ? "flex-col gap-1 p-2"
             : "gap-6 overflow-x-auto overflow-y-hidden px-1",
+          tabListClassName,
         )}
         items={items}
       >
@@ -68,7 +83,9 @@ function TabsList<T extends string>({
                 isSelected &&
                   (vertical
                     ? "bg-brand-navy text-brand-white"
-                    : "border-brand-blue text-brand-navy"),
+                    : accent === "orange"
+                      ? "border-brand-orange text-brand-navy"
+                      : "border-brand-blue text-brand-navy"),
                 isFocusVisible && "ring-2 ring-brand-navy ring-offset-2",
               )
             }
@@ -85,14 +102,19 @@ function TabsList<T extends string>({
 }
 
 export function Tabs<T extends string>({
+  accent = "blue",
   ariaLabel,
+  className,
   defaultSelectedId,
   items,
   leadingContent,
+  listClassName,
   onSelectionChange,
   orientation = "horizontal",
+  panelClassName,
   selectedContent,
   selectedId,
+  tabListClassName,
 }: TabsProps<T>) {
   const vertical = orientation === "vertical";
 
@@ -100,6 +122,7 @@ export function Tabs<T extends string>({
     <AriaTabs
       className={cn(
         vertical && "grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)]",
+        className,
       )}
       defaultSelectedKey={selectedId ? undefined : defaultSelectedId}
       onSelectionChange={(key) => onSelectionChange?.(String(key) as T)}
@@ -107,9 +130,12 @@ export function Tabs<T extends string>({
       selectedKey={selectedId}
     >
       <TabsList
+        accent={accent}
         ariaLabel={ariaLabel}
         items={items}
         leadingContent={leadingContent}
+        listClassName={listClassName}
+        tabListClassName={tabListClassName}
         vertical={vertical}
       />
       {items.map((item) => (
@@ -119,6 +145,7 @@ export function Tabs<T extends string>({
               "min-w-0 outline-none focus-visible:ring-2 focus-visible:ring-brand-navy",
               !vertical && "mt-6",
               isInert && "hidden",
+              panelClassName,
             )
           }
           id={item.id}

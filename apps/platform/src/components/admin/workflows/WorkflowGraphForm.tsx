@@ -7,11 +7,11 @@ import { z } from "zod";
 import { GeneralButton } from "@/components/ui/button";
 import { FormTextarea } from "@/components/ui/form-fields";
 import { useUpdateWorkflow } from "@/modules/workflows/WorkflowHooks";
-import { workflowGraphSchema } from "@/modules/workflows/WorkflowSchemas";
+import { workflowGraphSchema } from "@/modules/workflows/api/WorkflowSchemas";
 import type {
   WorkflowEditorView,
   WorkflowGraphInput,
-} from "@/modules/workflows/WorkflowTypes";
+} from "@/modules/workflows/domain/definitions/WorkflowTypes";
 
 function parseGraph(value: string): WorkflowGraphInput | null {
   try {

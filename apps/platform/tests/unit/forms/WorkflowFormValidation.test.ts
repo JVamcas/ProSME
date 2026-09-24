@@ -1,46 +1,111 @@
 import { describe, expect, it } from "vitest";
 
 import { validateWorkflowGraph } from "@/modules/workflows/WorkflowValidation";
+import { workflowGraphSchema } from "@/modules/workflows/api/WorkflowSchemas";
+import { defaultWorkflowElementPermissions } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
 
 const stage = (code: string, sequence: number, initial: boolean) => ({
-  applicantDescription: "Review in progress",
-  applicantLabel: "Review",
-  applicantStatus: "UNDER_REVIEW" as const,
-  code,
+  stableKey: code,
   initial,
   name: code,
-  sequence,
+  description: `${code} stage`,
+  enabled: true,
+  optional: false,
+  displayOrder: sequence,
+  publicStatusMapping: {
+    status: "UNDER_REVIEW" as const,
+    label: "Review",
+    description: "Review in progress",
+  },
+  repeatable: false,
+  coiGated: false,
+  entryCondition: null,
+  exitCondition: null,
+  actions: [{
+    stableKey: "ADVANCE",
+    label: "Advance",
+    actionType: "APPROVE_ADVANCE" as const,
+    configuration: {},
+    enabled: true,
+    reasonCodeRequired: false,
+    displayOrder: 1,
+  }],
+  checklistItems: [],
+  documentRequirements: [],
+  commentFields: [],
+  scoring: null,
   tasks: [{
-    assignmentRoleId: "00000000-0000-0000-0000-000000000001",
-    assignmentUserId: null,
-    code: `${code}_FORM`,
+    actionKeys: ["ADVANCE"],
+    permissions: defaultWorkflowElementPermissions,
+    assignmentMode: "ROLE" as const,
+    roleId: "00000000-0000-0000-0000-000000000001",
+    namedUserOverrideId: null,
+    stableKey: `${code}_FORM`,
+    description: "Complete the configured form.",
+    reviewerCount: 1,
+    requiredCompletionCount: 1,
+    quorum: false,
+    coiRequired: false,
     config: {},
-    formVersionId: "00000000-0000-0000-0000-000000000002",
+    formBinding: {
+      contextFields: [{
+        key: "application.requested_amount",
+        label: "Requested amount",
+        type: "NUMBER" as const,
+      }],
+      formVersionId: "00000000-0000-0000-0000-000000000002",
+    },
     name: "Complete form",
     required: true,
-    sequence: 1,
-    type: "STRUCTURED_FORM" as const,
+    displayOrder: 1,
   }],
 });
 
 describe("form-backed workflow validation", () => {
-  it("allows sequential form stages without transition definitions", () => {
+  it("rejects a task binding to an action from outside its stage", () => {
+    const first = stage("FIRST", 1, true);
+    first.tasks[0].actionKeys = ["UNCONFIGURED_ACTION"];
+
+    expect(workflowGraphSchema.safeParse({
+      stages: [first],
+      transitions: [],
+    }).success).toBe(false);
+  });
+
+  it("identifies a draft without transition definitions as structurally invalid", () => {
     const validation = validateWorkflowGraph({
       stages: [stage("FIRST", 1, true), stage("SECOND", 2, false)],
       transitions: [],
     });
-    expect(validation.valid).toBe(true);
+    expect(validation.valid).toBe(false);
+    expect(validation.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: "UNREACHABLE_STAGE" }),
+        expect.objectContaining({ code: "TERMINAL_STAGE_WITHOUT_DECISION" }),
+      ]),
+    );
   });
 
-  it("requires the initial stage to have the lowest sequence", () => {
+  it("does not infer workflow routing from stage display order", () => {
     const validation = validateWorkflowGraph({
       stages: [stage("FIRST", 2, true), stage("SECOND", 1, false)],
-      transitions: [],
+      transitions: [
+        {
+          sourceStageKey: "FIRST",
+          actionKey: "ADVANCE",
+          targetStageKey: "SECOND",
+          priority: 1,
+          condition: null,
+        },
+        {
+          sourceStageKey: "SECOND",
+          actionKey: "ADVANCE",
+          terminalOutcome: "COMPLETED",
+          priority: 1,
+          condition: null,
+        },
+      ],
     });
-    expect(
-      validation.errors.some(
-        (error) => error.code === "INITIAL_STAGE_SEQUENCE",
-      ),
-    ).toBe(true);
+    expect(validation.valid).toBe(true);
   });
 });

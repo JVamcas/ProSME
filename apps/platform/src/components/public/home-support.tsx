@@ -1,6 +1,6 @@
 import { BarChart3, Leaf, Users, Venus } from "lucide-react";
 
-import { ArrowLink } from "@/components/ui/arrow-link";
+import { ArrowLink } from "@/components/ui/links";
 import { defaultSupportGroups } from "@/modules/content/ContentDefaults";
 import type { EligibilityItem } from "@/modules/content/ContentTypes";
 

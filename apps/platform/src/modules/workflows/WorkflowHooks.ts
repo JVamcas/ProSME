@@ -3,21 +3,63 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { clientWorkflowService } from "./ClientWorkflowService";
+import type { WorkflowActionAvailabilityQuery } from "./ClientWorkflowService";
 import type {
   CreateWorkflowInput,
   OpportunityAssignmentInput,
   UpdateWorkflowDraftInput,
   UpdateWorkflowDetailsInput,
-} from "./WorkflowTransportTypes";
-import type { WorkflowEditorView } from "./WorkflowTypes";
+} from "@/modules/workflows/api/WorkflowTransportTypes";
+import type { WorkflowEditorView } from "@/modules/workflows/domain/definitions/WorkflowTypes";
+import type { CreateWorkflowTemplateInput } from "@/modules/workflows/api/WorkflowTemplateSchemas";
+import type { WorkflowTemplateListItem } from "@/modules/workflows/domain/definitions/WorkflowTemplate";
+import { WorkflowPublicationValidationError } from "@/modules/workflows/WorkflowPublicationValidationFeedback";
 
 export const workflowQueryKeys = {
   all: ["admin", "workflows"] as const,
   assignments: ["admin", "workflows", "assignments"] as const,
+  actionAvailability: (input: WorkflowActionAvailabilityQuery) => [
+    "workflows",
+    input.workflowInstanceId,
+    "actions",
+    input.sourceStageInstanceId,
+    input.taskId ?? null,
+  ] as const,
   detail: (id: string) => ["admin", "workflows", id] as const,
   opportunities: ["admin", "workflows", "opportunities"] as const,
   published: ["admin", "workflows", "published"] as const,
+  templates: ["admin", "workflow-templates"] as const,
 };
+
+export function useWorkflowActionAvailability(
+  input: WorkflowActionAvailabilityQuery,
+  enabled = true,
+) {
+  return useQuery({
+    enabled: enabled
+      && Boolean(input.workflowInstanceId)
+      && Boolean(input.sourceStageInstanceId),
+    queryFn: () => clientWorkflowService.getActionAvailability(input),
+    queryKey: workflowQueryKeys.actionAvailability(input),
+  });
+}
+
+export function useWorkflowTemplates(page: number, pageSize: number) {
+  return useQuery({
+    queryKey: [...workflowQueryKeys.templates, page, pageSize],
+    queryFn: () => clientWorkflowService.listTemplates(page, pageSize),
+  });
+}
+
+export function useCreateWorkflowTemplate() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreateWorkflowTemplateInput) =>
+      clientWorkflowService.createTemplate(input),
+    onSuccess: () =>
+      client.invalidateQueries({ queryKey: workflowQueryKeys.templates }),
+  });
+}
 
 export function useWorkflowDefinitions() {
   return useQuery({
@@ -41,6 +83,7 @@ function useRefreshWorkflow(id?: string) {
     void client.invalidateQueries({ queryKey: workflowQueryKeys.all });
     void client.invalidateQueries({ queryKey: workflowQueryKeys.assignments });
     void client.invalidateQueries({ queryKey: workflowQueryKeys.published });
+    void client.invalidateQueries({ queryKey: workflowQueryKeys.templates });
   };
 }
 
@@ -109,6 +152,12 @@ export function useWorkflowListLifecycle(action: "publish" | "retire") {
   return useMutation({
     mutationFn: async (definitionId: string) => {
       const editor = await clientWorkflowService.getEditor(definitionId);
+      if (action === "publish" && !editor.validation.valid) {
+        throw new WorkflowPublicationValidationError(
+          editor.validation.errors,
+          editor.graph,
+        );
+      }
       return clientWorkflowService.lifecycleCommand(
         definitionId,
         action,
@@ -125,6 +174,31 @@ export function useCloneWorkflow(id: string) {
     mutationFn: (sourceVersionId: string) =>
       clientWorkflowService.cloneDefinition(id, sourceVersionId),
     onSuccess: refresh,
+  });
+}
+
+export function useCloneWorkflowTemplate() {
+  const refresh = useRefreshWorkflow();
+  return useMutation({
+    mutationFn: (template: WorkflowTemplateListItem) =>
+      clientWorkflowService.cloneDefinition(
+        template.id,
+        template.currentVersion.id,
+      ),
+    onSuccess: refresh,
+  });
+}
+
+export function useDeleteWorkflowTemplate() {
+  const refresh = useRefreshWorkflow();
+  return useMutation({
+    mutationFn: (template: WorkflowTemplateListItem) =>
+      clientWorkflowService.deleteDefinition(
+        template.id,
+        template.currentVersion.id,
+        template.currentVersion.rowVersion,
+      ),
+    onSuccess: () => refresh(),
   });
 }
 

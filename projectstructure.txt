@@ -1,0 +1,1046 @@
+.
+├── .agents
+├── .codex
+├── .dockerignore
+├── .env
+├── .env.example
+├── .env.local
+├── .env.postgres
+├── .env.prod
+├── .env.runner
+├── .env.ssl
+├── .github
+│   └── workflows
+│       ├── ci.yml
+│       └── deploy-dev.yml
+├── .gitignore
+├── AGENTS.md
+├── IMPLEMENTATION_PLAN.md
+├── README.md
+├── apps
+│   └── platform
+│       ├── Dockerfile
+│       ├── config
+│       │   ├── load-environment.d.ts
+│       │   └── load-environment.js
+│       ├── drizzle
+│       │   ├── 0000_boring_stark_industries.sql
+│       │   ├── 0001_phase2_cms_authorization.sql
+│       │   ├── 0002_authorization_audit_schema.sql
+│       │   ├── 0003_tor_role_catalogue.sql
+│       │   ├── 0004_tor_reviewer_site_settings.sql
+│       │   ├── 0005_tor_cms_role_names.sql
+│       │   ├── 0006_phase3_identity_profiles.sql
+│       │   ├── 0007_profile_sections_application_scope.sql
+│       │   ├── 0008_applicant_businesses.sql
+│       │   ├── 0009_phase3_eligibility_assessments.sql
+│       │   ├── 0010_phase3_application_creation.sql
+│       │   ├── 0011_phase3_workflow_configuration.sql
+│       │   ├── 0012_editable_workflows_before_instances.sql
+│       │   ├── 0013_task_owned_assignment.sql
+│       │   ├── 0014_phase3_documents_declarations.sql
+│       │   ├── 0015_phase3_submission_workflow_runtime.sql
+│       │   ├── 0016_admin_dashboard_projection_indexes.sql
+│       │   ├── 0017_phase3_work_queue.sql
+│       │   ├── 0018_phase3_checklist_tasks.sql
+│       │   ├── 0019_task_claim_row_version_repair.sql
+│       │   ├── 0020_phase3_user_access_management.sql
+│       │   ├── 0021_application_business_funding_uniqueness.sql
+│       │   ├── 0022_dynamic_forms.sql
+│       │   └── meta
+│       │       ├── 0000_snapshot.json
+│       │       ├── 0002_snapshot.json
+│       │       ├── 0009_snapshot.json
+│       │       ├── 0010_snapshot.json
+│       │       ├── 0011_snapshot.json
+│       │       ├── 0012_snapshot.json
+│       │       ├── 0013_snapshot.json
+│       │       └── _journal.json
+│       ├── drizzle.config.ts
+│       ├── eslint.config.mjs
+│       ├── media
+│       │   ├── .gitkeep
+│       │   └── pic5.png
+│       ├── next-env.d.ts
+│       ├── next.config.mjs
+│       ├── package.json
+│       ├── playwright.config.ts
+│       ├── postcss.config.mjs
+│       ├── public
+│       │   ├── brand
+│       │   │   ├── ProSME-logo-with-tagline.svg
+│       │   │   ├── german-cooperation-namibia.jpg
+│       │   │   ├── giz-logo.svg
+│       │   │   ├── nipdb-logo.png
+│       │   │   ├── npc-logo.png
+│       │   │   ├── pic1.png
+│       │   │   ├── pic2.png
+│       │   │   ├── pic3.png
+│       │   │   ├── pic4.png
+│       │   │   ├── pic5.png
+│       │   │   ├── pic6.png
+│       │   │   ├── pic7.png
+│       │   │   ├── pic8.png
+│       │   │   ├── sme-fund-logo-navy.svg
+│       │   │   ├── sme-fund-logo-white.svg
+│       │   │   └── sme-fund-logo.svg
+│       │   ├── documents
+│       │   │   ├── .gitkeep
+│       │   │   └── sme-fund-first-call-funding-criteria.pdf
+│       │   ├── images
+│       │   │   └── .gitkeep
+│       │   └── mockups
+│       │       ├── .gitkeep
+│       │       ├── Entrepreneur First.png
+│       │       └── phase-3
+│       │           ├── README.md
+│       │           ├── admin-portal-all-screens-desktop-v1.png
+│       │           ├── admin-portal-all-screens-mobile-v1.png
+│       │           ├── applicant-portal-all-screens-desktop-v1.png
+│       │           └── applicant-portal-all-screens-mobile-v1.png
+│       ├── src
+│       │   ├── app
+│       │   │   ├── (auth)
+│       │   │   │   ├── forgot-password
+│       │   │   │   │   └── page.tsx
+│       │   │   │   ├── layout.tsx
+│       │   │   │   ├── register
+│       │   │   │   │   └── page.tsx
+│       │   │   │   ├── sign-in
+│       │   │   │   │   └── page.tsx
+│       │   │   │   ├── unauthorized
+│       │   │   │   │   └── page.tsx
+│       │   │   │   └── verify-email
+│       │   │   │       └── page.tsx
+│       │   │   ├── (frontend)
+│       │   │   │   ├── api
+│       │   │   │   │   ├── auth
+│       │   │   │   │   └── health
+│       │   │   │   ├── apply
+│       │   │   │   ├── dashboard
+│       │   │   │   └── fonts
+│       │   │   ├── (operations)
+│       │   │   │   ├── admin
+│       │   │   │   │   ├── applications
+│       │   │   │   │   │   ├── [id]
+│       │   │   │   │   │   │   └── page.tsx
+│       │   │   │   │   │   └── page.tsx
+│       │   │   │   │   ├── audit-log
+│       │   │   │   │   ├── communications
+│       │   │   │   │   ├── error.tsx
+│       │   │   │   │   ├── layout.tsx
+│       │   │   │   │   ├── loading.tsx
+│       │   │   │   │   ├── page.tsx
+│       │   │   │   │   ├── reports
+│       │   │   │   │   ├── settings
+│       │   │   │   │   │   ├── forms
+│       │   │   │   │   │   │   ├── [id]
+│       │   │   │   │   │   │   │   └── page.tsx
+│       │   │   │   │   │   │   └── page.tsx
+│       │   │   │   │   │   └── page.tsx
+│       │   │   │   │   ├── tasks
+│       │   │   │   │   │   └── [id]
+│       │   │   │   │   │       └── page.tsx
+│       │   │   │   │   ├── users
+│       │   │   │   │   │   └── page.tsx
+│       │   │   │   │   ├── work-queue
+│       │   │   │   │   │   └── page.tsx
+│       │   │   │   │   └── workflows
+│       │   │   │   │       ├── [id]
+│       │   │   │   │       │   └── page.tsx
+│       │   │   │   │       └── page.tsx
+│       │   │   │   ├── error.tsx
+│       │   │   │   └── loading.tsx
+│       │   │   ├── (payload)
+│       │   │   │   ├── api
+│       │   │   │   │   └── [...slug]
+│       │   │   │   │       └── route.ts
+│       │   │   │   ├── cms
+│       │   │   │   │   ├── [[...segments]]
+│       │   │   │   │   │   └── page.tsx
+│       │   │   │   │   ├── importMap.d.ts
+│       │   │   │   │   └── importMap.js
+│       │   │   │   ├── custom.scss
+│       │   │   │   └── layout.tsx
+│       │   │   ├── (portal)
+│       │   │   │   ├── error.tsx
+│       │   │   │   ├── loading.tsx
+│       │   │   │   └── portal
+│       │   │   │       ├── applications
+│       │   │   │       │   ├── [id]
+│       │   │   │       │   │   └── edit
+│       │   │   │       │   │       └── page.tsx
+│       │   │   │       │   ├── new
+│       │   │   │       │   │   ├── confirmation
+│       │   │   │       │   │   │   └── page.tsx
+│       │   │   │       │   │   └── page.tsx
+│       │   │   │       │   └── page.tsx
+│       │   │   │       ├── business
+│       │   │   │       │   └── page.tsx
+│       │   │   │       ├── businesses
+│       │   │   │       │   ├── [id]
+│       │   │   │       │   │   └── edit
+│       │   │   │       │   │       └── page.tsx
+│       │   │   │       │   ├── new
+│       │   │   │       │   │   └── page.tsx
+│       │   │   │       │   └── page.tsx
+│       │   │   │       ├── documents
+│       │   │   │       ├── error.tsx
+│       │   │   │       ├── funding-opportunities
+│       │   │   │       │   ├── [id]
+│       │   │   │       │   │   ├── eligibility
+│       │   │   │       │   │   │   └── page.tsx
+│       │   │   │       │   │   └── page.tsx
+│       │   │   │       │   ├── [slug]
+│       │   │   │       │   └── page.tsx
+│       │   │   │       ├── layout.tsx
+│       │   │   │       ├── loading.tsx
+│       │   │   │       ├── messages
+│       │   │   │       ├── notifications
+│       │   │   │       ├── page.tsx
+│       │   │   │       ├── profile
+│       │   │   │       │   └── page.tsx
+│       │   │   │       └── saved-resources
+│       │   │   ├── (public)
+│       │   │   │   ├── about
+│       │   │   │   │   └── page.tsx
+│       │   │   │   ├── contact
+│       │   │   │   │   └── page.tsx
+│       │   │   │   ├── eligibility
+│       │   │   │   │   └── page.tsx
+│       │   │   │   ├── events
+│       │   │   │   │   ├── [slug]
+│       │   │   │   │   │   └── page.tsx
+│       │   │   │   │   └── page.tsx
+│       │   │   │   ├── faq
+│       │   │   │   │   └── page.tsx
+│       │   │   │   ├── funding
+│       │   │   │   │   ├── [slug]
+│       │   │   │   │   │   └── page.tsx
+│       │   │   │   │   └── page.tsx
+│       │   │   │   ├── how-to-apply
+│       │   │   │   │   └── page.tsx
+│       │   │   │   ├── layout.tsx
+│       │   │   │   ├── news
+│       │   │   │   │   ├── [slug]
+│       │   │   │   │   │   └── page.tsx
+│       │   │   │   │   └── page.tsx
+│       │   │   │   ├── page.tsx
+│       │   │   │   ├── privacy
+│       │   │   │   │   └── page.tsx
+│       │   │   │   ├── resources
+│       │   │   │   │   ├── [slug]
+│       │   │   │   │   │   └── page.tsx
+│       │   │   │   │   └── page.tsx
+│       │   │   │   └── terms
+│       │   │   │       └── page.tsx
+│       │   │   ├── api
+│       │   │   │   ├── admin
+│       │   │   │   │   ├── applications
+│       │   │   │   │   │   └── route.ts
+│       │   │   │   │   ├── audit-log
+│       │   │   │   │   │   └── route.ts
+│       │   │   │   │   ├── forms
+│       │   │   │   │   │   ├── [id]
+│       │   │   │   │   │   │   ├── clone
+│       │   │   │   │   │   │   │   └── route.ts
+│       │   │   │   │   │   │   ├── publish
+│       │   │   │   │   │   │   │   └── route.ts
+│       │   │   │   │   │   │   ├── retire
+│       │   │   │   │   │   │   │   └── route.ts
+│       │   │   │   │   │   │   └── route.ts
+│       │   │   │   │   │   ├── published
+│       │   │   │   │   │   │   └── route.ts
+│       │   │   │   │   │   └── route.ts
+│       │   │   │   │   ├── roles
+│       │   │   │   │   │   ├── [id]
+│       │   │   │   │   │   │   └── route.ts
+│       │   │   │   │   │   └── route.ts
+│       │   │   │   │   ├── tasks
+│       │   │   │   │   │   └── [id]
+│       │   │   │   │   │       ├── claim
+│       │   │   │   │   │       │   └── route.ts
+│       │   │   │   │   │       ├── complete
+│       │   │   │   │   │       │   └── route.ts
+│       │   │   │   │   │       ├── form
+│       │   │   │   │   │       │   └── route.ts
+│       │   │   │   │   │       └── route.ts
+│       │   │   │   │   ├── users
+│       │   │   │   │   │   ├── [id]
+│       │   │   │   │   │   │   ├── promote
+│       │   │   │   │   │   │   │   └── route.ts
+│       │   │   │   │   │   │   └── route.ts
+│       │   │   │   │   │   └── route.ts
+│       │   │   │   │   ├── work-queue
+│       │   │   │   │   │   └── route.ts
+│       │   │   │   │   ├── workflow-assignments
+│       │   │   │   │   │   └── route.ts
+│       │   │   │   │   ├── workflow-definitions
+│       │   │   │   │   │   ├── [id]
+│       │   │   │   │   │   │   ├── clone
+│       │   │   │   │   │   │   │   └── route.ts
+│       │   │   │   │   │   │   ├── draft
+│       │   │   │   │   │   │   │   └── route.ts
+│       │   │   │   │   │   │   ├── publish
+│       │   │   │   │   │   │   │   └── route.ts
+│       │   │   │   │   │   │   ├── retire
+│       │   │   │   │   │   │   │   └── route.ts
+│       │   │   │   │   │   │   ├── route.ts
+│       │   │   │   │   │   │   └── validate
+│       │   │   │   │   │   │       └── route.ts
+│       │   │   │   │   │   ├── published
+│       │   │   │   │   │   │   └── route.ts
+│       │   │   │   │   │   └── route.ts
+│       │   │   │   │   └── workflow-opportunities
+│       │   │   │   │       └── route.ts
+│       │   │   │   ├── auth
+│       │   │   │   │   ├── csrf
+│       │   │   │   │   ├── logout
+│       │   │   │   │   │   └── route.ts
+│       │   │   │   │   ├── me
+│       │   │   │   │   │   └── route.ts
+│       │   │   │   │   └── session
+│       │   │   │   │       └── route.ts
+│       │   │   │   ├── config
+│       │   │   │   │   └── firebase
+│       │   │   │   │       └── route.ts
+│       │   │   │   ├── contact
+│       │   │   │   │   └── route.ts
+│       │   │   │   ├── health
+│       │   │   │   │   └── route.ts
+│       │   │   │   ├── newsletter
+│       │   │   │   │   └── route.ts
+│       │   │   │   ├── portal
+│       │   │   │   │   ├── applications
+│       │   │   │   │   │   ├── [id]
+│       │   │   │   │   │   │   ├── documents
+│       │   │   │   │   │   │   │   └── route.ts
+│       │   │   │   │   │   │   ├── route.ts
+│       │   │   │   │   │   │   └── submit
+│       │   │   │   │   │   │       └── route.ts
+│       │   │   │   │   │   └── route.ts
+│       │   │   │   │   ├── businesses
+│       │   │   │   │   │   ├── [id]
+│       │   │   │   │   │   │   └── route.ts
+│       │   │   │   │   │   └── route.ts
+│       │   │   │   │   ├── context
+│       │   │   │   │   │   └── route.ts
+│       │   │   │   │   ├── eligibility-assessments
+│       │   │   │   │   │   └── route.ts
+│       │   │   │   │   ├── funding-opportunities
+│       │   │   │   │   │   ├── [id]
+│       │   │   │   │   │   │   └── route.ts
+│       │   │   │   │   │   ├── [slug]
+│       │   │   │   │   │   └── route.ts
+│       │   │   │   │   └── profile
+│       │   │   │   │       └── route.ts
+│       │   │   │   └── preview
+│       │   │   │       ├── exit
+│       │   │   │       │   └── route.ts
+│       │   │   │       └── route.ts
+│       │   │   ├── fonts
+│       │   │   │   ├── bahnschrift.ttf
+│       │   │   │   └── blanquotey.ttf
+│       │   │   ├── globals.css
+│       │   │   ├── robots.ts
+│       │   │   └── sitemap.ts
+│       │   ├── auth
+│       │   │   ├── authorization
+│       │   │   │   ├── ServerUserProfileService.ts
+│       │   │   │   ├── capabilities.ts
+│       │   │   │   ├── cms-role-matrix.ts
+│       │   │   │   ├── current-user.ts
+│       │   │   │   ├── permissions
+│       │   │   │   │   ├── PermissionCatalogue.ts
+│       │   │   │   │   ├── PermissionCodes.ts
+│       │   │   │   │   ├── PermissionGroups.ts
+│       │   │   │   │   └── index.ts
+│       │   │   │   ├── policy.ts
+│       │   │   │   ├── portal-access.ts
+│       │   │   │   ├── preview-resource.ts
+│       │   │   │   ├── require-capability.ts
+│       │   │   │   └── require-user.ts
+│       │   │   ├── csrf
+│       │   │   │   ├── create-token.ts
+│       │   │   │   └── verify-token.ts
+│       │   │   ├── firebase
+│       │   │   │   ├── ClientAuthService.ts
+│       │   │   │   ├── ClientFirebaseConfigService.ts
+│       │   │   │   ├── ServerFirebaseConfigService.ts
+│       │   │   │   ├── ServerSessionService.ts
+│       │   │   │   ├── admin.ts
+│       │   │   │   ├── auth-form.schemas.ts
+│       │   │   │   ├── client.ts
+│       │   │   │   ├── cookies.ts
+│       │   │   │   ├── errors.ts
+│       │   │   │   └── session.ts
+│       │   │   └── types.ts
+│       │   ├── components
+│       │   │   ├── admin
+│       │   │   │   ├── applications
+│       │   │   │   │   ├── ApplicationReview.tsx
+│       │   │   │   │   ├── ApplicationReviewHeader.tsx
+│       │   │   │   │   ├── ApplicationReviewPrimitives.tsx
+│       │   │   │   │   ├── ApplicationReviewSections.tsx
+│       │   │   │   │   └── ApplicationsTable.tsx
+│       │   │   │   ├── dashboard
+│       │   │   │   │   ├── AdminDashboard.tsx
+│       │   │   │   │   ├── AdminDashboardCharts.tsx
+│       │   │   │   │   ├── AdminDashboardPanels.tsx
+│       │   │   │   │   └── DashboardPeriodFilter.tsx
+│       │   │   │   ├── forms
+│       │   │   │   │   ├── DynamicFormController.ts
+│       │   │   │   │   ├── DynamicFormField.tsx
+│       │   │   │   │   ├── DynamicFormSchema.ts
+│       │   │   │   │   ├── DynamicFormTask.tsx
+│       │   │   │   │   ├── FieldDialogForm.tsx
+│       │   │   │   │   ├── FormDefinitionDialogForm.tsx
+│       │   │   │   │   ├── FormEditorBody.tsx
+│       │   │   │   │   ├── FormEditorController.ts
+│       │   │   │   │   ├── FormEditorFieldSection.tsx
+│       │   │   │   │   ├── FormEditorLifecycleActions.tsx
+│       │   │   │   │   ├── FormEditorTopSection.tsx
+│       │   │   │   │   ├── FormEditorWorkspace.tsx
+│       │   │   │   │   ├── FormFieldDialog.tsx
+│       │   │   │   │   ├── FormFieldDialogBody.tsx
+│       │   │   │   │   ├── FormFieldDialogController.ts
+│       │   │   │   │   ├── FormFieldTable.tsx
+│       │   │   │   │   ├── FormVersionHistory.tsx
+│       │   │   │   │   ├── FormsTable.tsx
+│       │   │   │   │   └── FormsWorkspace.tsx
+│       │   │   │   ├── users
+│       │   │   │   │   ├── RoleCapabilitiesPanel.tsx
+│       │   │   │   │   ├── RolePermissionGroups.tsx
+│       │   │   │   │   ├── UserAccessWorkspace.tsx
+│       │   │   │   │   ├── UserInviteForm.tsx
+│       │   │   │   │   ├── UserListPrimitives.tsx
+│       │   │   │   │   ├── UserPromotionForm.tsx
+│       │   │   │   │   ├── UserRoleAssignmentPanel.tsx
+│       │   │   │   │   ├── UserRoleEditor.tsx
+│       │   │   │   │   └── UsersTabPanel.tsx
+│       │   │   │   ├── work-queue
+│       │   │   │   │   ├── ChecklistTaskForm.tsx
+│       │   │   │   │   ├── WorkQueueTable.tsx
+│       │   │   │   │   ├── WorkQueueWorkspace.tsx
+│       │   │   │   │   └── WorkflowTaskWorkspace.tsx
+│       │   │   │   └── workflows
+│       │   │   │       ├── WorkflowAssignedFundingLinks.tsx
+│       │   │   │       ├── WorkflowAssignmentDialog.tsx
+│       │   │   │       ├── WorkflowAssignmentPanel.tsx
+│       │   │   │       ├── WorkflowChecklistConfiguration.tsx
+│       │   │   │       ├── WorkflowDefinitionCreateForm.tsx
+│       │   │   │       ├── WorkflowDefinitionDetailsCard.tsx
+│       │   │   │       ├── WorkflowDefinitionsTable.tsx
+│       │   │   │       ├── WorkflowDefinitionsWorkspace.tsx
+│       │   │   │       ├── WorkflowEditorWorkspace.tsx
+│       │   │   │       ├── WorkflowGraphForm.tsx
+│       │   │   │       ├── WorkflowStageCreateDialog.tsx
+│       │   │   │       ├── WorkflowStageDetails.tsx
+│       │   │   │       ├── WorkflowStageFlow.tsx
+│       │   │   │       ├── WorkflowStageFlowParts.tsx
+│       │   │   │       ├── WorkflowStageTaskTable.tsx
+│       │   │   │       ├── WorkflowTaskDialog.tsx
+│       │   │   │       ├── WorkflowTaskDialogController.ts
+│       │   │   │       ├── WorkflowTaskDialogFields.tsx
+│       │   │   │       └── WorkflowTaskFormSchema.ts
+│       │   │   ├── applicant
+│       │   │   │   ├── applications
+│       │   │   │   │   ├── ApplicationBudgetBreakdown.tsx
+│       │   │   │   │   ├── ApplicationBusinessForm.tsx
+│       │   │   │   │   ├── ApplicationDeclarationsForm.tsx
+│       │   │   │   │   ├── ApplicationDocumentRow.tsx
+│       │   │   │   │   ├── ApplicationDocumentsForm.tsx
+│       │   │   │   │   ├── ApplicationEditor.tsx
+│       │   │   │   │   ├── ApplicationFeedback.tsx
+│       │   │   │   │   ├── ApplicationFinancialForm.tsx
+│       │   │   │   │   ├── ApplicationFormActions.tsx
+│       │   │   │   │   ├── ApplicationListContent.tsx
+│       │   │   │   │   ├── ApplicationOpportunitySearch.tsx
+│       │   │   │   │   ├── ApplicationProjectForm.tsx
+│       │   │   │   │   ├── ApplicationReview.tsx
+│       │   │   │   │   ├── ApplicationSectionForm.tsx
+│       │   │   │   │   ├── ApplicationStepConfig.ts
+│       │   │   │   │   ├── ApplicationSubmissionConfirmation.tsx
+│       │   │   │   │   ├── ApplicationTable.tsx
+│       │   │   │   │   ├── ApplicationWorkspace.tsx
+│       │   │   │   │   ├── ApplicationsList.tsx
+│       │   │   │   │   ├── NewApplicationChooser.tsx
+│       │   │   │   │   ├── useApplicationAutosave.ts
+│       │   │   │   │   ├── useApplicationBrowser.ts
+│       │   │   │   │   └── useApplicationOpportunityChooser.ts
+│       │   │   │   ├── businesses
+│       │   │   │   │   ├── BusinessForm.tsx
+│       │   │   │   │   ├── BusinessProfileFields.tsx
+│       │   │   │   │   └── BusinessesTable.tsx
+│       │   │   │   ├── dashboard
+│       │   │   │   │   ├── ApplicantDashboard.tsx
+│       │   │   │   │   ├── ApplicantRecentActivity.tsx
+│       │   │   │   │   ├── DashboardMetricCard.tsx
+│       │   │   │   │   ├── EmptyApplications.tsx
+│       │   │   │   │   └── PortalUpdates.tsx
+│       │   │   │   ├── eligibility
+│       │   │   │   │   ├── EligibilityAssessment.tsx
+│       │   │   │   │   ├── EligibilityAssessmentContent.tsx
+│       │   │   │   │   ├── EligibilityAssessmentForm.tsx
+│       │   │   │   │   └── EligibilityResult.tsx
+│       │   │   │   ├── funding-opportunities
+│       │   │   │   │   ├── FundingOpportunityBrowser.tsx
+│       │   │   │   │   ├── FundingOpportunityCard.tsx
+│       │   │   │   │   ├── FundingOpportunityDetail.tsx
+│       │   │   │   │   ├── FundingOpportunityDetailPanels.tsx
+│       │   │   │   │   ├── FundingOpportunityFormat.ts
+│       │   │   │   │   ├── FundingOpportunityReadinessCard.tsx
+│       │   │   │   │   ├── FundingOpportunitySearchForm.tsx
+│       │   │   │   │   └── useFundingOpportunityBrowser.ts
+│       │   │   │   └── profile
+│       │   │   │       ├── ApplicantProfileFields.tsx
+│       │   │   │       ├── ContactProfileForm.tsx
+│       │   │   │       ├── PersonalProfileForm.tsx
+│       │   │   │       ├── ProfileFormActions.tsx
+│       │   │   │       ├── ProfilePasswordPanel.tsx
+│       │   │   │       ├── ProfileTabContent.tsx
+│       │   │   │       └── ProfileWorkspace.tsx
+│       │   │   ├── auth
+│       │   │   │   ├── auth-card.tsx
+│       │   │   │   ├── auth-feedback.tsx
+│       │   │   │   ├── auth-password-field.tsx
+│       │   │   │   ├── auth-styles.ts
+│       │   │   │   ├── email-verification-panel.tsx
+│       │   │   │   ├── forgot-password-form.tsx
+│       │   │   │   ├── registration-form.tsx
+│       │   │   │   ├── sign-in-form.tsx
+│       │   │   │   ├── use-email-verification.ts
+│       │   │   │   ├── use-password-reset.ts
+│       │   │   │   ├── use-registration.ts
+│       │   │   │   └── use-sign-in.ts
+│       │   │   ├── brand
+│       │   │   │   └── logo.tsx
+│       │   │   ├── layout
+│       │   │   │   ├── LogoutButton.tsx
+│       │   │   │   ├── PortalErrorState.tsx
+│       │   │   │   ├── PortalLoadingState.tsx
+│       │   │   │   ├── PortalRouteLoading.tsx
+│       │   │   │   ├── active-navigation-link.tsx
+│       │   │   │   ├── app-shell.tsx
+│       │   │   │   ├── authenticated-portal-shell.tsx
+│       │   │   │   ├── capability-context.tsx
+│       │   │   │   ├── capability-gate.tsx
+│       │   │   │   ├── portal-mobile-header.tsx
+│       │   │   │   ├── portal-nav-list.tsx
+│       │   │   │   ├── portal-navigation.ts
+│       │   │   │   ├── portal-shell-support.tsx
+│       │   │   │   ├── portal-space-switcher.tsx
+│       │   │   │   ├── portal-topbar.tsx
+│       │   │   │   ├── portal-user-menu.tsx
+│       │   │   │   ├── primary-navigation.ts
+│       │   │   │   ├── query-provider.tsx
+│       │   │   │   ├── site-footer.tsx
+│       │   │   │   └── site-header.tsx
+│       │   │   ├── public
+│       │   │   │   ├── cms-image.tsx
+│       │   │   │   ├── contact-form.tsx
+│       │   │   │   ├── content-blocks.tsx
+│       │   │   │   ├── eligibility
+│       │   │   │   │   ├── EligibilityAnswerButton.tsx
+│       │   │   │   │   └── EligibilityChecker.tsx
+│       │   │   │   ├── focus-sectors.tsx
+│       │   │   │   ├── funding-page-sections.tsx
+│       │   │   │   ├── funding-page-view.tsx
+│       │   │   │   ├── home-actions.tsx
+│       │   │   │   ├── home-funding-call.tsx
+│       │   │   │   ├── home-funding.tsx
+│       │   │   │   ├── home-hero.tsx
+│       │   │   │   ├── home-impact.tsx
+│       │   │   │   ├── home-process.tsx
+│       │   │   │   ├── home-support.tsx
+│       │   │   │   ├── newsletter-form.tsx
+│       │   │   │   ├── public-page-header.tsx
+│       │   │   │   ├── section-heading.tsx
+│       │   │   │   └── statistics-block.tsx
+│       │   │   └── ui
+│       │   │       ├── PageHeader.tsx
+│       │   │       ├── action-buttons.tsx
+│       │   │       ├── arrow-link.tsx
+│       │   │       ├── button.tsx
+│       │   │       ├── cms-rich-text.tsx
+│       │   │       ├── confirmation-dialog.tsx
+│       │   │       ├── data-table-filter.tsx
+│       │   │       ├── data-table-toolbar.tsx
+│       │   │       ├── data-table.tsx
+│       │   │       ├── draggable-dialog.tsx
+│       │   │       ├── empty-state.tsx
+│       │   │       ├── form-binding.ts
+│       │   │       ├── form-controls.tsx
+│       │   │       ├── form-date-calendar.tsx
+│       │   │       ├── form-date-input.tsx
+│       │   │       ├── form-date-parts.tsx
+│       │   │       ├── form-field.tsx
+│       │   │       ├── form-fields.tsx
+│       │   │       ├── form-radio-card.tsx
+│       │   │       ├── money-field.tsx
+│       │   │       ├── pagination.tsx
+│       │   │       ├── status-badge.tsx
+│       │   │       ├── step-progress.tsx
+│       │   │       └── tabs.tsx
+│       │   ├── data
+│       │   │   ├── admin-applications.ts
+│       │   │   └── eligibility-rules.ts
+│       │   ├── db
+│       │   │   ├── client.ts
+│       │   │   ├── repositories
+│       │   │   │   ├── AdminApplicationRepository.ts
+│       │   │   │   ├── AdminDashboardRepository.ts
+│       │   │   │   ├── ApplicantDashboardRepository.ts
+│       │   │   │   ├── ApplicationDocumentRepository.ts
+│       │   │   │   ├── ApplicationRepository.ts
+│       │   │   │   ├── ApplicationSubmissionRepository.ts
+│       │   │   │   ├── ApplicationSubmissionWriter.ts
+│       │   │   │   ├── AuditRepository.ts
+│       │   │   │   ├── BusinessRepository.ts
+│       │   │   │   ├── EligibilityAssessmentRepository.ts
+│       │   │   │   ├── FormRepository.ts
+│       │   │   │   ├── FormSubmissionRepository.ts
+│       │   │   │   ├── FormTaskCompletionRepository.ts
+│       │   │   │   ├── FormWriteRepository.ts
+│       │   │   │   ├── ProfileRepository.ts
+│       │   │   │   ├── UserAccessRepository.ts
+│       │   │   │   ├── UserRepository.ts
+│       │   │   │   ├── WorkQueueRepository.ts
+│       │   │   │   ├── WorkflowAssignmentRepository.ts
+│       │   │   │   ├── WorkflowDetailsRepository.ts
+│       │   │   │   ├── WorkflowDraftRepository.ts
+│       │   │   │   ├── WorkflowGraphRepository.ts
+│       │   │   │   ├── WorkflowLifecycleRepository.ts
+│       │   │   │   ├── WorkflowRepository.ts
+│       │   │   │   ├── WorkflowTaskActionRepository.ts
+│       │   │   │   └── WorkflowTaskRepository.ts
+│       │   │   └── schema
+│       │   │       ├── application-documents.ts
+│       │   │       ├── applications.ts
+│       │   │       ├── audit.ts
+│       │   │       ├── authorization.ts
+│       │   │       ├── eligibility.ts
+│       │   │       ├── form-submissions.ts
+│       │   │       ├── forms.ts
+│       │   │       ├── identity.ts
+│       │   │       ├── index.ts
+│       │   │       ├── profiles.ts
+│       │   │       ├── workflow-audit.ts
+│       │   │       ├── workflow-runtime.ts
+│       │   │       └── workflow.ts
+│       │   ├── integrations
+│       │   │   ├── analytics
+│       │   │   │   └── analytics-consent.tsx
+│       │   │   ├── monitoring
+│       │   │   │   └── logger.ts
+│       │   │   └── storage
+│       │   │       ├── DocumentStorage.ts
+│       │   │       ├── GcsObjectPrefixes.ts
+│       │   │       └── GoogleCloudDocumentStorage.ts
+│       │   ├── jobs
+│       │   ├── lib
+│       │   │   ├── api
+│       │   │   │   └── PortalApiResponse.ts
+│       │   │   ├── client-http.ts
+│       │   │   ├── dateUtils.ts
+│       │   │   ├── env
+│       │   │   │   └── server.ts
+│       │   │   ├── query-client.ts
+│       │   │   ├── resource-errors.ts
+│       │   │   ├── user-initials.ts
+│       │   │   └── utils.ts
+│       │   ├── migrations
+│       │   ├── modules
+│       │   │   ├── applications
+│       │   │   │   ├── AdminApplicationCursor.ts
+│       │   │   │   ├── AdminApplicationSchemas.ts
+│       │   │   │   ├── ApplicationDeclarationSchemas.ts
+│       │   │   │   ├── ApplicationDeclarations.ts
+│       │   │   │   ├── ApplicationDocumentHooks.ts
+│       │   │   │   ├── ApplicationDocumentSchemas.ts
+│       │   │   │   ├── ApplicationHooks.ts
+│       │   │   │   ├── ApplicationRepresentation.ts
+│       │   │   │   ├── ApplicationSchemas.ts
+│       │   │   │   ├── ApplicationTypes.ts
+│       │   │   │   ├── ClientApplicationDocumentService.ts
+│       │   │   │   ├── ClientApplicationService.ts
+│       │   │   │   ├── ServerAdminApplicationService.ts
+│       │   │   │   ├── ServerApplicationDocumentService.ts
+│       │   │   │   ├── ServerApplicationService.ts
+│       │   │   │   └── ServerApplicationSubmissionService.ts
+│       │   │   ├── businesses
+│       │   │   │   ├── BusinessHooks.ts
+│       │   │   │   ├── BusinessSchemas.ts
+│       │   │   │   ├── BusinessTypes.ts
+│       │   │   │   ├── ClientBusinessService.ts
+│       │   │   │   └── ServerBusinessService.ts
+│       │   │   ├── content
+│       │   │   │   ├── ContentBuildFallbacks.ts
+│       │   │   │   ├── ContentDefaults.ts
+│       │   │   │   ├── ContentMetadata.ts
+│       │   │   │   ├── ContentTypes.ts
+│       │   │   │   ├── EligibilityPageContent.ts
+│       │   │   │   ├── FundingPageContent.ts
+│       │   │   │   ├── ServerContentPreviewService.ts
+│       │   │   │   └── ServerContentQueries.ts
+│       │   │   ├── dashboard
+│       │   │   │   ├── AdminDashboardTypes.ts
+│       │   │   │   ├── ApplicantDashboardTypes.ts
+│       │   │   │   ├── ServerAdminDashboardService.ts
+│       │   │   │   └── ServerApplicantDashboardService.ts
+│       │   │   ├── eligibility
+│       │   │   │   ├── ClientEligibilityService.ts
+│       │   │   │   ├── EligibilityHooks.ts
+│       │   │   │   ├── EligibilitySchemas.ts
+│       │   │   │   ├── EligibilityTypes.ts
+│       │   │   │   ├── ServerEligibilityIntegration.ts
+│       │   │   │   └── ServerEligibilityService.ts
+│       │   │   ├── engagement
+│       │   │   │   ├── ClientEngagementService.ts
+│       │   │   │   ├── EngagementHooks.ts
+│       │   │   │   ├── EngagementRepository.ts
+│       │   │   │   ├── EngagementSchemas.ts
+│       │   │   │   └── ServerEngagementService.ts
+│       │   │   ├── forms
+│       │   │   │   ├── ClientFormsService.ts
+│       │   │   │   ├── FormHooks.ts
+│       │   │   │   ├── FormSchemas.ts
+│       │   │   │   ├── FormTransportTypes.ts
+│       │   │   │   ├── FormTypes.ts
+│       │   │   │   ├── FormValidation.ts
+│       │   │   │   └── ServerFormsService.ts
+│       │   │   ├── funding-opportunities
+│       │   │   │   ├── ClientFundingOpportunityService.ts
+│       │   │   │   ├── FundingOpportunityHooks.ts
+│       │   │   │   ├── FundingOpportunitySchemas.ts
+│       │   │   │   ├── FundingOpportunityTypes.ts
+│       │   │   │   ├── ServerFundingOpportunityIntegration.ts
+│       │   │   │   └── ServerFundingOpportunityService.ts
+│       │   │   ├── profiles
+│       │   │   │   ├── ClientProfileService.ts
+│       │   │   │   ├── ProfileHooks.ts
+│       │   │   │   ├── ProfileOptions.ts
+│       │   │   │   ├── ProfileSchemas.ts
+│       │   │   │   ├── ProfileTypes.ts
+│       │   │   │   └── ServerProfileService.ts
+│       │   │   ├── users
+│       │   │   │   ├── ClientUserAccessService.ts
+│       │   │   │   ├── ServerUserAccessService.ts
+│       │   │   │   ├── UserAccessHooks.ts
+│       │   │   │   ├── UserAccessSchemas.ts
+│       │   │   │   ├── UserAccessTransportTypes.ts
+│       │   │   │   └── UserAccessTypes.ts
+│       │   │   ├── work-queue
+│       │   │   │   ├── ClientWorkQueueService.ts
+│       │   │   │   ├── ServerWorkQueueService.ts
+│       │   │   │   ├── ServerWorkflowTaskService.ts
+│       │   │   │   ├── TaskTypes.ts
+│       │   │   │   ├── WorkQueueCursor.ts
+│       │   │   │   ├── WorkQueueHooks.ts
+│       │   │   │   ├── WorkQueueSchemas.ts
+│       │   │   │   └── WorkQueueTypes.ts
+│       │   │   └── workflows
+│       │   │       ├── ClientWorkflowService.ts
+│       │   │       ├── ReferenceWorkflow.ts
+│       │   │       ├── ReferenceWorkflowTransitions.ts
+│       │   │       ├── ServerWorkflowAssignmentService.ts
+│       │   │       ├── ServerWorkflowLifecycleService.ts
+│       │   │       ├── ServerWorkflowService.ts
+│       │   │       ├── ServerWorkflowSupport.ts
+│       │   │       ├── WorkflowConditionRegistry.ts
+│       │   │       ├── WorkflowGraphTraversal.ts
+│       │   │       ├── WorkflowHooks.ts
+│       │   │       ├── WorkflowRepresentation.ts
+│       │   │       ├── WorkflowSchemas.ts
+│       │   │       ├── WorkflowStageValidation.ts
+│       │   │       ├── WorkflowTaskConfiguration.ts
+│       │   │       ├── WorkflowTaskContracts.ts
+│       │   │       ├── WorkflowTaskRegistry.ts
+│       │   │       ├── WorkflowTaskSchemas.ts
+│       │   │       ├── WorkflowTransportTypes.ts
+│       │   │       ├── WorkflowTypes.ts
+│       │   │       └── WorkflowValidation.ts
+│       │   ├── payload
+│       │   │   ├── access
+│       │   │   │   ├── can-access-cms.ts
+│       │   │   │   ├── can-publish-content.ts
+│       │   │   │   └── cms-resource-access.ts
+│       │   │   ├── admin
+│       │   │   │   └── preview-url.ts
+│       │   │   ├── auth
+│       │   │   │   └── firebase-session-strategy.ts
+│       │   │   ├── blocks
+│       │   │   │   └── public-content.ts
+│       │   │   ├── collections
+│       │   │   │   ├── content
+│       │   │   │   │   ├── ContactSubmissions.ts
+│       │   │   │   │   ├── Events.ts
+│       │   │   │   │   ├── FAQs.ts
+│       │   │   │   │   ├── Media.ts
+│       │   │   │   │   ├── News.ts
+│       │   │   │   │   ├── NewsletterSubscriptions.ts
+│       │   │   │   │   ├── Pages.ts
+│       │   │   │   │   └── Resources.ts
+│       │   │   │   ├── programme
+│       │   │   │   │   ├── EligibilityContent.ts
+│       │   │   │   │   ├── FundingCalls.ts
+│       │   │   │   │   └── ProgrammeStatistics.ts
+│       │   │   │   └── system
+│       │   │   │       ├── CmsPrincipals.ts
+│       │   │   │       └── ContentAuditEntries.ts
+│       │   │   ├── fields
+│       │   │   │   ├── publishing.ts
+│       │   │   │   └── seo.ts
+│       │   │   ├── globals
+│       │   │   │   ├── ContactDetails.ts
+│       │   │   │   ├── Footer.ts
+│       │   │   │   ├── Header.ts
+│       │   │   │   ├── Homepage.ts
+│       │   │   │   └── SiteSettings.ts
+│       │   │   ├── hooks
+│       │   │   │   ├── record-content-audit.ts
+│       │   │   │   └── revalidate-public-content.ts
+│       │   │   ├── migrations
+│       │   │   │   ├── 20260911_180817_phase1_payload_foundation.json
+│       │   │   │   ├── 20260911_180817_phase1_payload_foundation.ts
+│       │   │   │   ├── 20260911_200942_phase2_public_content.json
+│       │   │   │   ├── 20260911_200942_phase2_public_content.ts
+│       │   │   │   ├── 20260911_202515_phase2_global_publishing.json
+│       │   │   │   ├── 20260911_202515_phase2_global_publishing.ts
+│       │   │   │   ├── 20260912_083720_phase2_content_delivery_completion.json
+│       │   │   │   ├── 20260912_083720_phase2_content_delivery_completion.ts
+│       │   │   │   ├── 20260912_091053_phase2_homepage_blocks.json
+│       │   │   │   ├── 20260912_091053_phase2_homepage_blocks.ts
+│       │   │   │   ├── 20260912_114731_phase2_funding_page_sections.json
+│       │   │   │   ├── 20260912_114731_phase2_funding_page_sections.ts
+│       │   │   │   ├── 20260912_121549_phase2_eligibility_focus_section.json
+│       │   │   │   ├── 20260912_121549_phase2_eligibility_focus_section.ts
+│       │   │   │   ├── 20260912_124200_phase2_impact_summary.ts
+│       │   │   │   ├── 20260912_124500_phase2_page_impact_summary.ts
+│       │   │   │   ├── 20260912_130000_phase2_impact_background.ts
+│       │   │   │   ├── 20260912_181500_code_owned_primary_navigation.ts
+│       │   │   │   ├── 20260914_230000_gcs_media_prefix.ts
+│       │   │   │   └── index.ts
+│       │   │   ├── seed
+│       │   │   │   ├── public-pages.ts
+│       │   │   │   ├── seed-editorial.ts
+│       │   │   │   ├── seed-helpers.ts
+│       │   │   │   ├── seed-opportunities.ts
+│       │   │   │   ├── seed-programme.ts
+│       │   │   │   ├── seed-site-globals.ts
+│       │   │   │   └── seed.ts
+│       │   │   └── system
+│       │   │       └── sync-cms-principal.ts
+│       │   ├── payload-types.ts
+│       │   ├── payload.config.ts
+│       │   ├── scripts
+│       │   └── store
+│       ├── tests
+│       │   ├── access-control
+│       │   │   ├── authorization-migration.test.ts
+│       │   │   └── payload-content.test.ts
+│       │   ├── e2e
+│       │   │   ├── .gitkeep
+│       │   │   ├── application-responsive.spec.ts
+│       │   │   ├── public-responsive.spec.ts
+│       │   │   ├── public-site.spec.ts
+│       │   │   ├── support
+│       │   │   │   └── workflow-screen-session.ts
+│       │   │   └── workflow-responsive.spec.ts
+│       │   ├── integration
+│       │   │   ├── .gitkeep
+│       │   │   ├── PortalApplicationRoutes.test.ts
+│       │   │   ├── PortalBusinessRoutes.test.ts
+│       │   │   ├── PortalEligibilityRoutes.test.ts
+│       │   │   ├── PortalFundingOpportunityRoutes.test.ts
+│       │   │   ├── PortalProfileRoutes.test.ts
+│       │   │   ├── application-database.test.ts
+│       │   │   ├── application-status-counts-database.test.ts
+│       │   │   ├── application-submission-database.test.ts
+│       │   │   ├── profile-database.test.ts
+│       │   │   ├── work-queue-database.test.ts
+│       │   │   └── workflow-database.test.ts
+│       │   ├── scripts
+│       │   │   ├── run-application-database-tests.sh
+│       │   │   ├── run-profile-database-tests.sh
+│       │   │   ├── run-workflow-database-tests.sh
+│       │   │   └── run-workflow-screen-tests.sh
+│       │   ├── support
+│       │   │   ├── application-status-counts.ts
+│       │   │   └── manage-test-database.mjs
+│       │   └── unit
+│       │       ├── application-documents
+│       │       │   └── ServerApplicationDocumentService.test.ts
+│       │       ├── applications
+│       │       │   ├── ApplicationSchemas.test.ts
+│       │       │   ├── ServerAdminApplicationService.test.ts
+│       │       │   ├── ServerApplicationAuthorization.test.ts
+│       │       │   ├── ServerApplicationService.test.ts
+│       │       │   └── ServerApplicationSubmissionService.test.ts
+│       │       ├── architecture
+│       │       │   ├── client-data-access.test.ts
+│       │       │   └── structure-convention.test.ts
+│       │       ├── auth
+│       │       │   ├── auth-form-schemas.test.ts
+│       │       │   ├── csrf.test.ts
+│       │       │   ├── policy.test.ts
+│       │       │   ├── portal-access.test.ts
+│       │       │   ├── preview-resource.test.ts
+│       │       │   └── session-service.test.ts
+│       │       ├── businesses
+│       │       │   └── ServerBusinessService.test.ts
+│       │       ├── content
+│       │       │   ├── content-metadata.test.ts
+│       │       │   ├── eligibility-page-content.test.ts
+│       │       │   └── funding-page-content.test.ts
+│       │       ├── dashboard
+│       │       │   ├── ServerAdminDashboardService.test.ts
+│       │       │   └── ServerApplicantDashboardService.test.ts
+│       │       ├── eligibility
+│       │       │   ├── ServerEligibilityIntegration.test.ts
+│       │       │   └── ServerEligibilityService.test.ts
+│       │       ├── engagement
+│       │       │   └── EngagementSchemas.test.ts
+│       │       ├── forms
+│       │       │   ├── FormRoute.test.ts
+│       │       │   ├── FormValidation.test.ts
+│       │       │   ├── ServerFormsService.test.ts
+│       │       │   └── WorkflowFormValidation.test.ts
+│       │       ├── funding-opportunities
+│       │       │   ├── ServerFundingOpportunityIntegration.test.ts
+│       │       │   └── ServerFundingOpportunityService.test.ts
+│       │       ├── lib
+│       │       │   └── client-http.test.ts
+│       │       ├── profiles
+│       │       │   ├── ProfileSchemas.test.ts
+│       │       │   └── ServerProfileService.test.ts
+│       │       ├── ui
+│       │       │   ├── action-buttons.test.tsx
+│       │       │   ├── admin-dashboard.test.tsx
+│       │       │   ├── applicant-dashboard.test.tsx
+│       │       │   ├── application-creation.test.tsx
+│       │       │   ├── application-financial-form.test.tsx
+│       │       │   ├── application-status-tabs.test.tsx
+│       │       │   ├── application-workspace-navigation.test.tsx
+│       │       │   ├── auth-components.test.tsx
+│       │       │   ├── brand-palette.test.ts
+│       │       │   ├── businesses-table.test.tsx
+│       │       │   ├── cms-image.test.tsx
+│       │       │   ├── data-table-filter.test.tsx
+│       │       │   ├── data-table.test.tsx
+│       │       │   ├── form-components.test.tsx
+│       │       │   ├── form-date-input-interaction.test.tsx
+│       │       │   ├── form-definition-dialog.test.tsx
+│       │       │   ├── funding-opportunity-card.test.tsx
+│       │       │   ├── funding-opportunity-detail.test.tsx
+│       │       │   ├── money-field-interaction.test.tsx
+│       │       │   ├── operations-list-screens.test.tsx
+│       │       │   ├── pagination.test.tsx
+│       │       │   ├── portal-mobile-header.test.tsx
+│       │       │   ├── portal-navigation.test.ts
+│       │       │   ├── portal-shell.test.tsx
+│       │       │   ├── portal-user-menu.test.tsx
+│       │       │   ├── primary-navigation.test.ts
+│       │       │   ├── profile-tabs-interaction.test.tsx
+│       │       │   ├── profile-workspace.test.tsx
+│       │       │   ├── status-badge.test.tsx
+│       │       │   ├── tabs.test.tsx
+│       │       │   ├── workflow-assignment-dialog.test.tsx
+│       │       │   └── workflow-configuration.test.tsx
+│       │       ├── users
+│       │       │   └── ServerUserAccessService.test.ts
+│       │       ├── work-queue
+│       │       │   ├── ServerWorkQueueService.test.ts
+│       │       │   └── ServerWorkflowTaskService.test.ts
+│       │       └── workflows
+│       │           ├── ServerWorkflowDraftService.test.ts
+│       │           ├── ServerWorkflowService.test.ts
+│       │           ├── WorkflowTaskConfiguration.test.ts
+│       │           └── WorkflowValidation.test.ts
+│       ├── tsconfig.json
+│       ├── tsconfig.tsbuildinfo
+│       └── vitest.config.ts
+├── docs
+│   ├── IMPLEMENTATION_PLAN.md
+│   ├── architecture
+│   │   ├── CLIENT_DATA_ACCESS.md
+│   │   ├── CMS_CAPABILITY_MATRIX.md
+│   │   └── PROJECT_STRUCTURE.md
+│   ├── handover
+│   │   └── .gitkeep
+│   ├── phase-3
+│   │   ├── CAPABILITY_MATRIX.md
+│   │   ├── DATA_API_CONTRACT.md
+│   │   ├── DYNAMIC_FORMS_IMPLEMENTATION.md
+│   │   ├── PORTAL_UI_CONTRACT.md
+│   │   └── WORKFLOW_CONTRACT.md
+│   ├── source-material
+│   │   ├── ANNEXURE B_260826_103044.pdf
+│   │   ├── ProSME Website Development Feedback Document.docx
+│   │   ├── SME Fund Brand Identity (1).pdf
+│   │   ├── SME Fund Iniatiative Background (1).docx
+│   │   ├── SME Fund Logo - Vector File.ai
+│   │   ├── Terms of Reference -2.pdf
+│   │   └── Website Information Request_.docx
+│   ├── support
+│   │   └── .gitkeep
+│   ├── testing
+│   │   └── gates
+│   │       ├── G1-foundation.md
+│   │       ├── G2-public-website.md
+│   │       ├── G3-application-workflow.md
+│   │       ├── P3.0-design-contracts.md
+│   │       ├── P3.1-identity-profiles.md
+│   │       ├── P3.2-funding-eligibility-applications.md
+│   │       ├── P3.2.1-structure-boundaries.md
+│   │       ├── P3.3-workflow-configuration.md
+│   │       ├── P3.4-documents-submission.md
+│   │       ├── P3.5-work-queue-screening.md
+│   │       ├── P3.6-assessment-finance.md
+│   │       ├── P3.7-decision-communication.md
+│   │       └── P3.8-administration-reporting.md
+│   └── training
+│       └── .gitkeep
+├── infrastructure
+│   ├── gcp
+│   │   └── .gitkeep
+│   └── local
+│       └── compose.yaml
+├── package-lock.json
+├── package.json
+├── projectstructure.txt
+├── scripts
+│   ├── bootstrap-admin.sh
+│   ├── connect-to-vm.sh
+│   ├── container
+│   │   ├── build.sh
+│   │   ├── healthcheck.sh
+│   │   └── migrate.sh
+│   ├── db-tunnel.sh
+│   ├── deployment
+│   ├── development
+│   │   ├── architecture-conventions.mjs
+│   │   ├── check-architecture.mjs
+│   │   ├── check-file-limits.mjs
+│   │   ├── check-form-architecture.mjs
+│   │   ├── run-bootstrap-admin.mjs
+│   │   ├── verify-firebase-access.mjs
+│   │   ├── verify-firebase-g1.mjs
+│   │   ├── verify-p3-application-database.sh
+│   │   ├── verify-p3-profile-database.sh
+│   │   ├── verify-p3-workflow-database.sh
+│   │   └── verify-p3-workflow-screens.sh
+│   ├── docker-maintenance.sh
+│   ├── docker-up.sh
+│   ├── migrations
+│   ├── seed
+│   │   ├── bootstrap-admin.ts
+│   │   └── package.json
+│   ├── setup-github-runner.sh
+│   ├── setup-nginx.sh
+│   ├── setup-postgres.sh
+│   ├── setup-ssl.sh
+│   └── ssh-to-db.sh
+└── tsconfig.tsbuildinfo
+
+259 directories, 785 files

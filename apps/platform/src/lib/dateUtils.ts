@@ -152,13 +152,6 @@ export function isoToLocalDateString(iso: string | null | undefined): string {
   return `${parsed.getFullYear()}-${pad(parsed.getMonth() + 1)}-${pad(parsed.getDate())}`;
 }
 
-export function formatDate(year: number, month: number): string {
-  return new Date(year, month - 1, 1).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-  });
-}
-
 export function getTaxYearInfo(startDate: string, endDate: string) {
   const startYear = startDate ? new Date(startDate).getFullYear() : new Date().getFullYear();
   const endYear = endDate ? new Date(endDate).getFullYear() : startYear;
@@ -219,6 +212,24 @@ export function formatLocalDateTime24(value?: string | null, fallback = "—"): 
   }).format(parsed);
 }
 
+export function formatLocalDateTimeSeconds24(
+  value?: string | null,
+  fallback = "—",
+): string {
+  const parsed = parseDateInput(value);
+  if (!parsed) return fallback;
+
+  return new Intl.DateTimeFormat(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).format(parsed);
+}
+
 export function toInputDate(value?: string): string {
   const parsed = parseDateInput(value);
   if (!parsed) {
@@ -246,4 +257,11 @@ export function toDisplayDate(value?: string | null, fallback = "N/A"): string {
   }
 
   return `${pad(parsed.getDate())}-${pad(parsed.getMonth() + 1)}-${parsed.getFullYear()}`;
+}
+
+
+export function formatDate(value: string) {
+  return new Intl.DateTimeFormat("en-NA", { dateStyle: "long" }).format(
+    new Date(value),
+  );
 }

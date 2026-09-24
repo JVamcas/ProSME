@@ -1,6 +1,13 @@
-import type { CollectionBeforeChangeHook, GlobalBeforeChangeHook, PayloadRequest } from "payload";
+import type {
+  CollectionBeforeChangeHook,
+  GlobalBeforeChangeHook,
+  PayloadRequest,
+} from "payload";
 
-import { cmsCapability, type CmsResource } from "@/auth/authorization/capabilities";
+import {
+  cmsPermissionCode,
+  type CmsPermissionResource,
+} from "@/auth/authorization/permissions";
 import { hasCmsCapability, type CmsRequestUser } from "./can-access-cms";
 
 type WorkflowInput = {
@@ -9,10 +16,13 @@ type WorkflowInput = {
   req: PayloadRequest;
 };
 
-export function enforceCmsPublishing(resource: CmsResource, input: WorkflowInput) {
+export function enforceCmsPublishing(
+  resource: CmsPermissionResource,
+  input: WorkflowInput,
+) {
   const { data, originalDoc, req } = input;
   if (req.context?.skipPublishCapability === true) return data;
-  const permission = cmsCapability(resource, "publish");
+  const permission = cmsPermissionCode(resource, "publish");
   const canPublish = hasCmsCapability(req.user as CmsRequestUser, permission);
   if (data._status === "published" && !canPublish) {
     throw new Error(`Publishing requires the ${permission} capability`);
@@ -30,10 +40,14 @@ export function enforceCmsPublishing(resource: CmsResource, input: WorkflowInput
   return data;
 }
 
-export function collectionPublishGuard(resource: CmsResource): CollectionBeforeChangeHook {
-  return ({ data, originalDoc, req }) => enforceCmsPublishing(resource, { data, originalDoc, req });
+export function collectionPublishGuard(
+  resource: CmsPermissionResource,
+): CollectionBeforeChangeHook {
+  return ({ data, originalDoc, req }) =>
+    enforceCmsPublishing(resource, { data, originalDoc, req });
 }
 
 export function globalPublishGuard(): GlobalBeforeChangeHook {
-  return ({ data, originalDoc, req }) => enforceCmsPublishing("site-settings", { data, originalDoc, req });
+  return ({ data, originalDoc, req }) =>
+    enforceCmsPublishing("site-settings", { data, originalDoc, req });
 }

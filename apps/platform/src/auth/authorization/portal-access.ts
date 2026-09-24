@@ -1,5 +1,5 @@
 import type { AuthenticatedUser } from "../types";
-import { capabilities } from "./capabilities";
+import { permissionCodes } from "./permissions";
 import {
   AuthenticationRequiredError,
   can,
@@ -8,24 +8,54 @@ import {
 
 export type PortalSpace = "applicant" | "operations";
 
-export const applicantScopeCapabilities = [
-  capabilities.profileReadOwn,
-  capabilities.profileUpdateOwn,
-  capabilities.businessReadOwn,
-  capabilities.businessUpdateOwn,
-  capabilities.eligibilityCreate,
-  capabilities.eligibilityReadOwn,
-  capabilities.applicationCreate,
-  capabilities.applicationReadOwn,
-  capabilities.applicationUpdateOwn,
-  capabilities.applicationSubmit,
-  capabilities.documentReadOwn,
-  capabilities.documentUploadOwn,
-  capabilities.informationRequestReadOwn,
-  capabilities.informationRequestRespondOwn,
-  capabilities.messageReadOwn,
-  capabilities.notificationReadOwn,
-  capabilities.resourceSaveOwn,
+export const applicantScopePermissions = [
+  permissionCodes.userProfileOwnRead,
+  permissionCodes.userProfileOwnUpdate,
+  permissionCodes.businessOwnRead,
+  permissionCodes.businessOwnUpdate,
+  permissionCodes.fundingCallEligibilityCreate,
+  permissionCodes.fundingCallEligibilityOwnRead,
+  permissionCodes.fundingApplicationCreate,
+  permissionCodes.fundingApplicationOwnRead,
+  permissionCodes.fundingApplicationOwnUpdate,
+  permissionCodes.fundingApplicationDraftOwnDelete,
+  permissionCodes.fundingApplicationSubmit,
+  permissionCodes.fundingApplicationOwnWithdraw,
+  permissionCodes.fundingApplicationDocumentOwnRead,
+  permissionCodes.fundingApplicationDocumentOwnUpload,
+  permissionCodes.fundingApplicationInformationRequestOwnRead,
+  permissionCodes.fundingApplicationInformationRequestOwnRespond,
+  permissionCodes.userNotificationOwnRead,
+] as const;
+
+export const operationsScopePermissions = [
+  permissionCodes.userRead,
+  permissionCodes.userManage,
+  permissionCodes.fundingCallCreate,
+  permissionCodes.fundingCallUpdate,
+  permissionCodes.fundingCallSubmitAll,
+  permissionCodes.fundingCallApproveAll,
+  permissionCodes.fundingCallReturnAll,
+  permissionCodes.fundingCallPublish,
+  permissionCodes.fundingCallDelete,
+  permissionCodes.eligibilityRuleSetRead,
+  permissionCodes.fundingApplicationAllRead,
+  permissionCodes.fundingApplicationBulkUpdate,
+  permissionCodes.fundingApplicationExport,
+  permissionCodes.fundingApplicationInformationRequestCreate,
+  permissionCodes.workflowTaskAssignedRead,
+  permissionCodes.workflowTaskAssignedProcess,
+  permissionCodes.workflowTaskAssignedDecide,
+  permissionCodes.workflowTaskClaim,
+  permissionCodes.workflowTaskAssign,
+  permissionCodes.workflowTaskCancelAll,
+  permissionCodes.workflowTaskPoolRead,
+  permissionCodes.workflowDefinitionRead,
+  permissionCodes.workflowFormRead,
+  permissionCodes.roleRead,
+  permissionCodes.roleManage,
+  permissionCodes.auditRead,
+  permissionCodes.integrationErpEnqueue,
 ] as const;
 
 export function canAccessApplicantPortal(
@@ -35,15 +65,15 @@ export function canAccessApplicantPortal(
     return false;
   }
 
-  return applicantScopeCapabilities.some((capability) => {
-    return user.capabilities.has(capability);
+  return applicantScopePermissions.some((permission) => {
+    return user.capabilities.has(permission);
   });
 }
 
 export function canAccessOperationsPortal(
   user: AuthenticatedUser | null,
 ): boolean {
-  return can(user, capabilities.adminAccess);
+  return operationsScopePermissions.some((permission) => can(user, permission));
 }
 
 export function requireApplicantPortalAccess(
@@ -68,7 +98,7 @@ export function requireOperationsPortalAccess(
   }
 
   if (!canAccessOperationsPortal(user)) {
-    throw new PermissionDeniedError(capabilities.adminAccess);
+    throw new PermissionDeniedError("operations portal access");
   }
 
   return user;
@@ -117,7 +147,7 @@ export function getDefaultAuthenticatedPath(
     return "/portal";
   }
 
-  if (can(user, capabilities.cmsAccess)) {
+  if (can(user, permissionCodes.cmsAccess)) {
     return "/cms";
   }
 

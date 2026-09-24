@@ -1,6 +1,6 @@
 import type { Access, PayloadRequest } from "payload";
 
-import { capabilities } from "@/auth/authorization/capabilities";
+import { permissionCodes } from "@/auth/authorization/permissions";
 
 export type CmsRequestUser = {
   capabilities?: string[];
@@ -11,18 +11,21 @@ export function hasCmsCapability(user: CmsRequestUser, capability: string) {
 }
 
 export const canAccessCms: Access = ({ req }) =>
-  hasCmsCapability(req.user as CmsRequestUser, capabilities.cmsAccess);
+  hasCmsCapability(req.user as CmsRequestUser, permissionCodes.cmsAccess);
 
 export const canAccessCmsAdmin = ({ req }: { req: PayloadRequest }) =>
-  hasCmsCapability(req.user as CmsRequestUser, capabilities.cmsAccess);
+  hasCmsCapability(req.user as CmsRequestUser, permissionCodes.cmsAccess);
 
 export const canManageCmsPrincipals = ({ req }: { req: PayloadRequest }) =>
-  hasCmsCapability(req.user as CmsRequestUser, capabilities.cmsPrincipalsManage);
+  hasCmsCapability(
+    req.user as CmsRequestUser,
+    permissionCodes.cmsPrincipalsManage,
+  );
 
 export const canReadCmsAudit: Access = ({ req }) =>
-  hasCmsCapability(req.user as CmsRequestUser, capabilities.cmsAuditRead);
+  hasCmsCapability(req.user as CmsRequestUser, permissionCodes.cmsAuditRead);
 
 export const canReadCmsAuditAdmin = ({ req }: { req: PayloadRequest }) =>
-  hasCmsCapability(req.user as CmsRequestUser, capabilities.cmsAuditRead);
+  hasCmsCapability(req.user as CmsRequestUser, permissionCodes.cmsAuditRead);
 
 export const readPublicContent: Access = () => true;

@@ -36,7 +36,7 @@ export function ForgotPasswordForm() {
         <GeneralButton
           className="w-full"
           type="submit"
-          variant="brand"
+          variant="primary"
           disabled={form.busy}
         >
           {form.busy ? "Please wait…" : "Send reset instructions"}

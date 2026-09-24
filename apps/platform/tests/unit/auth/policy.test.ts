@@ -5,7 +5,7 @@ import {
   AuthenticationRequiredError,
   PermissionDeniedError,
   can,
-  requireCapability,
+  requirePermission,
 } from "@/auth/authorization/policy";
 
 function user(status: AuthenticatedUser["status"], granted: string[]): AuthenticatedUser {
@@ -38,7 +38,7 @@ describe("capability policy", () => {
   });
 
   it("distinguishes missing authentication from missing permission", () => {
-    expect(() => requireCapability(null, "cms.access")).toThrow(AuthenticationRequiredError);
-    expect(() => requireCapability(user("active", []), "cms.access")).toThrow(PermissionDeniedError);
+    expect(() => requirePermission(null, "cms.access")).toThrow(AuthenticationRequiredError);
+    expect(() => requirePermission(user("active", []), "cms.access")).toThrow(PermissionDeniedError);
   });
 });

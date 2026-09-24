@@ -6,9 +6,10 @@ import { canAccessOperationsPortal } from "@/auth/authorization/portal-access";
 import { AuthenticatedPortalShell } from "@/components/layout/authenticated-portal-shell";
 import { QueryProvider } from "@/components/layout/query-provider";
 import { createPortalContext } from "@/modules/profiles/ServerProfileService";
+import { Toast } from "@/shared/ui/Toast";
 import "../../globals.css";
 
-export const dynamic = "force-dynamic";
+
 
 export const metadata: Metadata = {
   title: {
@@ -41,6 +42,7 @@ export default async function AdminLayout({ children }: AdminLayoutProps) {
           >
             {children}
           </AuthenticatedPortalShell>
+          <Toast />
         </QueryProvider>
       </body>
     </html>

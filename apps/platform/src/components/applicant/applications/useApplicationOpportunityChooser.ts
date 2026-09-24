@@ -2,7 +2,7 @@
 
 import { useCallback, useDeferredValue, useState } from "react";
 
-import { useFundingOpportunities } from "@/modules/funding-opportunities/FundingOpportunityHooks";
+import { useFundingOpportunities } from "@/modules/funding-calls/FundingOpportunityHooks";
 
 export const opportunityChooserPageSize = 10;
 

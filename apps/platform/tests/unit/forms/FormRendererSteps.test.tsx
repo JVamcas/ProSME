@@ -1,0 +1,286 @@
+// @vitest-environment happy-dom
+
+import { act } from "react";
+import { createRoot } from "react-dom/client";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+import { FormRenderer } from "@/modules/forms/ui/renderer/FormRenderer";
+import { runtimeDefinition } from "../../support/form-runtime";
+
+(
+  globalThis as typeof globalThis & {
+    IS_REACT_ACT_ENVIRONMENT: boolean;
+  }
+).IS_REACT_ACT_ENVIRONMENT = true;
+
+function steppedDefinition() {
+  const definition = runtimeDefinition();
+  const firstSection = definition.sections[0];
+  const secondSectionId = "10000000-0000-4000-8000-000000000002";
+  definition.displayMode = "STEPS";
+  definition.sections = [
+    firstSection,
+    {
+      columnSpan: 3,
+      description: "Additional details.",
+      id: secondSectionId,
+      key: "ADDITIONAL_DETAILS",
+      order: 2,
+      showContainer: true,
+      title: "Additional details",
+    },
+  ];
+  definition.fields = definition.fields.map((field) => {
+    if (field.key === "NAME") return field;
+    const otherFields = definition.fields.filter(
+      (candidate) => candidate.key !== "NAME",
+    );
+    return {
+      ...field,
+      order: otherFields.findIndex((candidate) => candidate.key === field.key) + 1,
+      sectionId: secondSectionId,
+    };
+  });
+  return definition;
+}
+
+afterEach(() => {
+  document.body.replaceChildren();
+});
+
+describe("step form rendering", () => {
+  it("renders one section at a time and navigates between sections", async () => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(
+        <FormRenderer
+          definition={steppedDefinition()}
+          formData={{
+            NAME: "Valid name",
+            NOTES: "A saved value from the next step",
+          }}
+          onChange={vi.fn()}
+          onSubmit={vi.fn()}
+        >
+          <button type="submit">Submit form</button>
+        </FormRenderer>,
+      );
+    });
+
+    expect(container.textContent).toContain("Step 1 of 2: Basic information");
+    expect(container.textContent).not.toContain("Additional details.");
+    expect(container.textContent).not.toContain("Submit form");
+
+    await act(async () => {
+      Array.from(container.querySelectorAll("button"))
+        .find((button) => button.textContent === "Next")
+        ?.click();
+    });
+
+    expect(container.textContent).toContain("Step 2 of 2: Additional details");
+    expect(container.textContent).toContain("Additional details.");
+    expect(container.textContent).toContain("Submit form");
+
+    await act(async () => root.unmount());
+  });
+
+  it("disables copied business fields without disabling other form fields", async () => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(
+        <FormRenderer
+          definition={steppedDefinition()}
+          formData={{ NAME: "Selected business" }}
+          onChange={vi.fn()}
+          onSubmit={vi.fn()}
+          readOnlyFieldKeys={["NAME"]}
+        />,
+      );
+    });
+
+    const businessInput = container.querySelector<HTMLInputElement>(
+      'input[value="Selected business"]',
+    );
+    expect(businessInput?.disabled).toBe(true);
+    expect(businessInput?.value).toBe("Selected business");
+
+    await act(async () => root.unmount());
+  });
+
+  it("adds supporting documents immediately before the final form section", async () => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(
+        <FormRenderer
+          definition={steppedDefinition()}
+          formData={{ NAME: "Valid name" }}
+          onChange={vi.fn()}
+          onSubmit={vi.fn()}
+          penultimateStep={{
+            content: <section>Upload required evidence</section>,
+            id: "supporting-documents",
+            title: "Supporting documents",
+          }}
+          supplementalCompletion={{
+            completedCount: 0,
+            id: "supporting-documents",
+            requiredCount: 2,
+            title: "Supporting documents",
+            unit: "document",
+          }}
+        />,
+      );
+    });
+
+    expect(container.textContent).toContain("Step 1 of 3: Basic information");
+    expect(container.textContent).toContain(
+      "1 of 3 required fields and documents complete",
+    );
+    expect(container.textContent).toContain("2 required documents remaining");
+    await act(async () => {
+      Array.from(container.querySelectorAll("button"))
+        .find((button) => button.textContent === "Next")
+        ?.click();
+    });
+    expect(container.textContent).toContain("Step 2 of 3: Supporting documents");
+    expect(container.textContent).toContain("Upload required evidence");
+    expect(container.textContent).not.toContain("Additional details.");
+    expect(container.querySelectorAll("form")).toHaveLength(0);
+
+    await act(async () => {
+      Array.from(container.querySelectorAll("button"))
+        .find((button) => button.textContent === "Next")
+        ?.click();
+    });
+    expect(container.textContent).toContain("Step 3 of 3: Additional details");
+    expect(container.textContent).not.toContain("Upload required evidence");
+
+    await act(async () => root.unmount());
+  });
+
+  it("does not advance until the current section is valid", async () => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(
+        <FormRenderer
+          definition={steppedDefinition()}
+          formData={{}}
+          onChange={vi.fn()}
+          onSubmit={vi.fn()}
+        />,
+      );
+    });
+
+    await act(async () => {
+      Array.from(container.querySelectorAll("button"))
+        .find((button) => button.textContent === "Next")
+        ?.click();
+    });
+
+    expect(container.textContent).toContain("Step 1 of 2: Basic information");
+    expect(container.textContent).toContain(
+      "Complete or correct this field before continuing.",
+    );
+
+    await act(async () => root.unmount());
+  });
+  it("restores the current step after the editor remounts", async () => {
+    const persistenceKey = "application:test:form:version:step";
+    sessionStorage.removeItem(persistenceKey);
+    const container = document.createElement("div");
+    document.body.append(container);
+    const definition = steppedDefinition();
+    let root = createRoot(container);
+
+    await act(async () => {
+      root.render(
+        <FormRenderer
+          definition={definition}
+          formData={{ NAME: "Valid name" }}
+          onChange={vi.fn()}
+          onSubmit={vi.fn()}
+          stepPersistenceKey={persistenceKey}
+        />,
+      );
+    });
+
+    await act(async () => {
+      Array.from(container.querySelectorAll("button"))
+        .find((button) => button.textContent === "Next")
+        ?.click();
+    });
+    expect(container.textContent).toContain("Step 2 of 2: Additional details");
+    expect(sessionStorage.getItem(persistenceKey)).toBe(definition.sections[1].id);
+
+    await act(async () => root.unmount());
+    root = createRoot(container);
+
+    await act(async () => {
+      root.render(
+        <FormRenderer
+          definition={definition}
+          formData={{ NAME: "Valid name" }}
+          onChange={vi.fn()}
+          onSubmit={vi.fn()}
+          stepPersistenceKey={persistenceKey}
+        />,
+      );
+    });
+    expect(container.textContent).toContain("Step 2 of 2: Additional details");
+
+    await act(async () => root.unmount());
+    sessionStorage.removeItem(persistenceKey);
+  });
+  it("shows an unselected single-choice field as incomplete", async () => {
+    const definition = runtimeDefinition();
+    const region = definition.fields.find((field) => field.key === "REGION")!;
+    definition.fields = [{
+      ...region,
+      options: [{ key: "CONFIRMED", label: "I confirm", order: 1 }],
+      order: 1,
+      required: true,
+    }];
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+    const onChange = vi.fn();
+
+    await act(async () => {
+      root.render(
+        <FormRenderer
+          definition={definition}
+          formData={{}}
+          onChange={onChange}
+          onSubmit={vi.fn()}
+        />,
+      );
+    });
+
+    const select = container.querySelector<HTMLSelectElement>("select");
+    expect(container.textContent).toContain("0 of 1 required fields complete");
+    expect(select?.value).toBe("");
+
+    await act(async () => {
+      if (!select) throw new Error("Select is missing.");
+      select.value = "0";
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ REGION: "CONFIRMED" }),
+    );
+
+    await act(async () => root.unmount());
+  });
+});

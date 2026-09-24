@@ -48,13 +48,23 @@ import type { ApplicationView } from "@/modules/applications/ApplicationTypes";
 }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const application: ApplicationView = {
+  reference: null,
+  submittedAt: null,
+  publicStatus: {
+    status: "DRAFT",
+    label: "Draft",
+    description: "Complete and submit your application.",
+    actionRequired: false,
+  },
   businessName: null,
   businessSection: {},
   createdAt: "2026-09-14T08:00:00.000Z",
   currentSection: "business",
   declarationsSection: {},
   financialSection: {},
-  fundingOpportunityId: 42,
+  eligibilityRuleSetVersionId: "30000000-0000-4000-8000-000000000001",
+  formVersionId: "20000000-0000-4000-8000-000000000001",
+  fundingOpportunityId: "00000000-0000-4000-8000-000000000042",
   fundingOpportunityTitle: "Growth Fund",
   id: "99e20de0-3558-4d63-90a4-8c9f5125df07",
   progressPercent: 0,

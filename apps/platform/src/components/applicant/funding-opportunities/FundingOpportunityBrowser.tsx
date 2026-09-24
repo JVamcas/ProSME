@@ -1,12 +1,12 @@
 "use client";
 
-import { PortalErrorState } from "@/components/layout/portal-error-state";
-import { PortalLoadingState } from "@/components/layout/portal-loading-state";
+import { PortalErrorState } from "@/components/layout/PortalErrorState";
+import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Pagination } from "@/components/ui/pagination";
 import { Tabs, type TabItem } from "@/components/ui/tabs";
-import type { FundingOpportunitySummary } from "@/modules/funding-opportunities/FundingOpportunityTypes";
-import { FundingOpportunityCard } from "./FundingOpportunityCard";
+import type { PublicFundingCallSummary } from "@/modules/funding-calls/api/PublicFundingCallTransport";
+import { FundingOpportunityCard } from "@/modules/funding-calls/ui/applicant/FundingOpportunityCard";
 import { FundingOpportunitySearchForm } from "./FundingOpportunitySearchForm";
 import {
   fundingOpportunityPageSize,
@@ -26,7 +26,7 @@ function OpportunityList({
   opportunities,
 }: {
   hasActiveCriteria: boolean;
-  opportunities: FundingOpportunitySummary[];
+  opportunities: PublicFundingCallSummary[];
 }) {
   if (opportunities.length) {
     return (
@@ -70,8 +70,8 @@ export function FundingOpportunityBrowser({
   if (query.isPending) {
     return (
       <PortalLoadingState
-        description="Published funding calls are being prepared."
-        title="Loading funding opportunities"
+        description="Just a moment..."
+        title=""
       />
     );
   }

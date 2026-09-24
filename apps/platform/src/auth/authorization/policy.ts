@@ -21,22 +21,27 @@ export class PermissionDeniedError extends Error {
   }
 }
 
-export function requireCapability(
-  user: AuthenticatedUser | null,
-  capability: string,
-) {
+export function requireAuthenticatedUser(user: AuthenticatedUser | null) {
   if (!user) {
     throw new AuthenticationRequiredError();
   }
-
-  if (!can(user, capability)) {
-    throw new PermissionDeniedError(capability);
-  }
-
   return user;
 }
 
-export function requireAnyCapability(
+export function requirePermission(
+  user: AuthenticatedUser | null,
+  capability: string,
+) {
+  const actor = requireAuthenticatedUser(user);
+
+  if (!can(actor, capability)) {
+    throw new PermissionDeniedError(capability);
+  }
+
+  return actor;
+}
+
+export function requireAnyPermission(
   user: AuthenticatedUser | null,
   capabilityCodes: readonly string[],
 ) {

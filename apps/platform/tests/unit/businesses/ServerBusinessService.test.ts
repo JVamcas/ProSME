@@ -10,7 +10,7 @@ vi.mock("@/db/repositories/BusinessRepository", () => ({
   updateOwnedBusiness: vi.fn(),
 }));
 
-import { capabilities } from "@/auth/authorization/capabilities";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import { PermissionDeniedError } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import {
@@ -62,9 +62,11 @@ function user(granted: string[]): AuthenticatedUser {
 beforeEach(() => vi.clearAllMocks());
 
 describe("owned business service", () => {
+  const fundingOpportunityId = "00000000-0000-4000-8000-000000000042";
+
   it("scopes the business list to the authenticated owner", async () => {
     vi.mocked(listOwnedBusinesses).mockResolvedValue([]);
-    await listBusinesses(user([capabilities.businessReadOwn]));
+    await listBusinesses(user([permissionCodes.businessOwnRead]));
     expect(listOwnedBusinesses).toHaveBeenCalledWith(ownerId);
   });
 
@@ -81,21 +83,21 @@ describe("owned business service", () => {
       },
     ]);
     const result = await listApplicationBusinesses(
-      user([capabilities.businessReadOwn]),
-      { applicationId: ownerId, fundingOpportunityId: 42 },
+      user([permissionCodes.businessOwnRead]),
+      { applicationId: ownerId, fundingOpportunityId },
     );
 
     expect(result[0]).toMatchObject({ alreadyApplied: true, id: businessId });
     expect(listOwnedBusinessesForApplication).toHaveBeenCalledWith({
       applicationId: ownerId,
-      fundingOpportunityId: 42,
+      fundingOpportunityId,
       ownerUserId: ownerId,
     });
   });
 
   it("rejects updates without business update permission", async () => {
     await expect(
-      updateBusiness(user([capabilities.businessReadOwn]), businessId, input),
+      updateBusiness(user([permissionCodes.businessOwnRead]), businessId, input),
     ).rejects.toBeInstanceOf(PermissionDeniedError);
     expect(updateOwnedBusiness).not.toHaveBeenCalled();
   });
@@ -103,7 +105,7 @@ describe("owned business service", () => {
   it("does not reveal a business outside the ownership scope", async () => {
     vi.mocked(deleteOwnedBusiness).mockResolvedValue(false);
     await expect(
-      deleteBusiness(user([capabilities.businessUpdateOwn]), businessId),
+      deleteBusiness(user([permissionCodes.businessOwnUpdate]), businessId),
     ).rejects.toBeInstanceOf(BusinessNotFoundError);
     expect(deleteOwnedBusiness).toHaveBeenCalledWith(ownerId, businessId);
   });

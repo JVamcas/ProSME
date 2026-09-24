@@ -19,7 +19,7 @@ const requestSchema = z.object({
   csrfToken: z.string().min(1),
 });
 
-export const dynamic = "force-dynamic";
+
 
 export function GET() {
   const token = createCsrfToken();

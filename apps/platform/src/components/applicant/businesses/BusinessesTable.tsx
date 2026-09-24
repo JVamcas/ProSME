@@ -1,7 +1,7 @@
 "use client";
 
 import { Pencil, Plus, Trash2 } from "lucide-react";
-import Link from "next/link";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import { GeneralButton, IconButton } from "@/components/ui/button";
@@ -14,10 +14,17 @@ import {
   useDeleteBusiness,
 } from "@/modules/businesses/BusinessHooks";
 import type { BusinessView } from "@/modules/businesses/BusinessTypes";
+import { BusinessDialog } from "@/modules/businesses/ui/BusinessDialog";
+
+type BusinessDialogState =
+  | { mode: "create" }
+  | { business: BusinessView; mode: "edit" }
+  | null;
 
 function businessColumns(
   canUpdate: boolean,
   deleting: boolean,
+  editBusiness: (business: BusinessView) => void,
   deleteBusiness: (business: BusinessView) => void,
 ): DataTableColumn<BusinessView>[] {
   return [
@@ -51,13 +58,11 @@ function businessColumns(
         canUpdate ? (
           <div className="flex items-center gap-1">
             <IconButton
-              asChild
               label={`Edit ${row.original.legalName}`}
+              onClick={() => editBusiness(row.original)}
               variant="ghost"
             >
-              <Link href={`/portal/businesses/${row.original.id}/edit`}>
-                <Pencil aria-hidden="true" className="size-4" />
-              </Link>
+              <Pencil aria-hidden="true" className="size-4" />
             </IconButton>
             <IconButton
               disabled={deleting}
@@ -76,6 +81,7 @@ function businessColumns(
 export function BusinessesTable({ canUpdate }: { canUpdate: boolean }) {
   const businesses = useBusinesses();
   const deletion = useDeleteBusiness();
+  const [dialog, setDialog] = useState<BusinessDialogState>(null);
 
   function remove(business: BusinessView) {
     if (!window.confirm(`Delete ${business.legalName}? This cannot be undone.`)) {
@@ -86,7 +92,12 @@ export function BusinessesTable({ canUpdate }: { canUpdate: boolean }) {
     });
   }
 
-  const columns = businessColumns(canUpdate, deletion.isPending, remove);
+  const columns = businessColumns(
+    canUpdate,
+    deletion.isPending,
+    (business) => setDialog({ business, mode: "edit" }),
+    remove,
+  );
   const data = businesses.data ?? [];
   const emptyMessage = businesses.isPending
     ? "Loading businesses…"
@@ -95,34 +106,39 @@ export function BusinessesTable({ canUpdate }: { canUpdate: boolean }) {
       : "No businesses have been added yet";
 
   return (
-    <section className="mt-6 overflow-hidden rounded-2xl border border-brand-navy/15 bg-brand-white shadow-sm">
-      <div className="flex items-center justify-between gap-4 border-b border-brand-navy/10 p-5">
-        <div>
-          <h2 className="font-bold text-brand-navy">Businesses</h2>
-          <p className="mt-1 text-sm text-brand-navy/65">
-            Manage your enterprises..
-          </p>
-        </div>
-        {canUpdate ? (
-          <GeneralButton asChild>
-            <Link href="/portal/businesses/new">
+    <>
+      <section className="mt-6 overflow-hidden rounded-2xl border border-brand-navy/15 bg-brand-white shadow-sm">
+        <div className="flex items-center justify-between gap-4 border-b border-brand-navy/10 p-5">
+          <div>
+            <h2 className="font-bold text-brand-navy">Businesses</h2>
+            <p className="mt-1 text-sm text-brand-navy/65">
+              Manage your enterprises..
+            </p>
+          </div>
+          {canUpdate ? (
+            <GeneralButton onClick={() => setDialog({ mode: "create" })}>
               <Plus aria-hidden="true" className="size-4" />
               Add business
-            </Link>
-          </GeneralButton>
-        ) : null}
-      </div>
-      <DataTable
-        columns={columns}
-        data={data}
-        emptyMessage={emptyMessage}
-        minWidth={900}
-        footer={
-          <div className="border-t border-brand-navy/10 px-5 py-4 text-xs text-brand-navy/55">
-            {data.length} {data.length === 1 ? "business" : "businesses"}
-          </div>
-        }
+            </GeneralButton>
+          ) : null}
+        </div>
+        <DataTable
+          columns={columns}
+          data={data}
+          emptyMessage={emptyMessage}
+          minWidth={900}
+          footer={
+            <div className="border-t border-brand-navy/10 px-5 py-4 text-xs text-brand-navy/55">
+              {data.length} {data.length === 1 ? "business" : "businesses"}
+            </div>
+          }
+        />
+      </section>
+      <BusinessDialog
+        business={dialog?.mode === "edit" ? dialog.business : undefined}
+        isOpen={dialog !== null}
+        onClose={() => setDialog(null)}
       />
-    </section>
+    </>
   );
 }

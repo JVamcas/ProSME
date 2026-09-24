@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
-import { listOwnedApplications } from "@/db/repositories/ApplicationRepository";
+import { listOwnedApplications } from "@/modules/applications/infrastructure/ApplicationRepository";
 
 const { Pool } = pg;
 const enabled = process.env.RUN_P3_APPLICATION_DATABASE_TESTS === "true";
@@ -77,7 +77,7 @@ beforeAll(async () => {
   );
   await query(
     `INSERT INTO app_workflow_instances
-       (id, application_id, workflow_version_id, status)
+       (id, application_id, workflow_template_version_id, status)
      VALUES ($1, $3, $5, 'ACTIVE'), ($2, $4, $5, 'COMPLETED')`,
     [
       reviewWorkflowId,
@@ -89,7 +89,7 @@ beforeAll(async () => {
   );
   await query(
     `INSERT INTO app_workflow_stage_instances
-       (id, workflow_instance_id, stage_definition_id, status)
+       (id, workflow_instance_id, workflow_stage_definition_id, status)
      VALUES ($1, $3, $5, 'ACTIVE'), ($2, $4, $5, 'COMPLETED')`,
     [
       reviewStageId,

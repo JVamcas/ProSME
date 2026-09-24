@@ -9,7 +9,7 @@ import {
   workflowDefinitionVersions,
   workflowDefinitions,
 } from "@/db/schema";
-import type { WorkflowOpportunityAssignment } from "@/modules/workflows/WorkflowTypes";
+import type { WorkflowOpportunityAssignment } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 
 export async function listWorkflowAssignments() {
   return getDatabase()
@@ -44,7 +44,7 @@ export async function assignWorkflowToOpportunity(input: {
   actorId: string;
   correlationId: string;
   expectedRowVersion: number;
-  fundingOpportunityId: number;
+  fundingOpportunityId: string;
   fundingOpportunityTitle: string;
   idempotencyKey: string;
   workflowVersionId: string;

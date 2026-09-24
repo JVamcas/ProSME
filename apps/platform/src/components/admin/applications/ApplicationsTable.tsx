@@ -1,13 +1,12 @@
 "use client";
 
-import Link from "next/link";
 import { Search } from "lucide-react";
 import { useState } from "react";
 
-import { GeneralButton } from "@/components/ui/button";
 import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
 import { DataTableFilter } from "@/components/ui/data-table-filter";
 import { Input } from "@/components/ui/form-controls";
+import { Pagination } from "@/components/ui/pagination";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { cn } from "@/lib/utils";
 import { useAdminApplications } from "@/modules/applications/ApplicationHooks";
@@ -15,6 +14,9 @@ import type {
   AdminApplicationListRow,
   AdminApplicationStatusFilter,
 } from "@/modules/applications/ApplicationTypes";
+import { formatNAD } from "@/components/ui/money-field";
+import { formatLocalDateTime24 } from "@/lib/dateUtils";
+import { ArrowLink } from "@/components/ui/links";
 
 const statuses: Array<{
   label: string;
@@ -28,27 +30,14 @@ const statuses: Array<{
   { label: "Closed", value: "closed" },
 ];
 
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("en-NA", { dateStyle: "medium" }).format(
-    new Date(value),
-  );
-}
-
-function formatMoney(value: number | null) {
-  if (value === null) return "Not provided";
-  return new Intl.NumberFormat("en-NA", {
-    currency: "NAD",
-    maximumFractionDigits: 0,
-    style: "currency",
-  }).format(value);
-}
-
 const columns: DataTableColumn<AdminApplicationListRow>[] = [
   {
     accessorKey: "reference",
     header: "Application",
     cell: ({ row }) => (
-      <span className="font-bold text-brand-navy">{row.original.reference}</span>
+      <ArrowLink href={`/admin/applications/${row.original.applicationId}`}>
+        {row.original.reference}
+      </ArrowLink>
     ),
   },
   {
@@ -75,27 +64,11 @@ const columns: DataTableColumn<AdminApplicationListRow>[] = [
     cell: ({ row }) => <StatusBadge status={row.original.internalStatus} />,
   },
   {
-    accessorKey: "requestedAmount",
-    header: "Requested",
-    cell: ({ row }) => formatMoney(row.original.requestedAmount),
-  },
-  {
     accessorKey: "submittedAt",
     header: "Submitted",
-    cell: ({ row }) => formatDate(row.original.submittedAt),
+    cell: ({ row }) => formatLocalDateTime24(row.original.submittedAt),
   },
-  {
-    id: "action",
-    header: "Action",
-    enableSorting: false,
-    cell: ({ row }) => (
-      <GeneralButton asChild size="sm" variant="outline">
-        <Link href={`/admin/applications/${row.original.applicationId}`}>
-          View
-        </Link>
-      </GeneralButton>
-    ),
-  },
+
 ];
 
 function StatusTabs({
@@ -122,34 +95,6 @@ function StatusTabs({
           {item.label}
         </button>
       ))}
-    </div>
-  );
-}
-
-function ApplicationPagination({
-  nextCursor,
-  onNext,
-  onPrevious,
-  pageDepth,
-  total,
-}: {
-  nextCursor: string | null;
-  onNext: () => void;
-  onPrevious: () => void;
-  pageDepth: number;
-  total: number;
-}) {
-  return (
-    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-brand-navy/10 p-4 text-sm text-brand-navy/60">
-      <span>{total} submitted {total === 1 ? "application" : "applications"}</span>
-      <div className="flex gap-2">
-        <GeneralButton disabled={!pageDepth} onClick={onPrevious} size="sm" variant="outline">
-          Previous
-        </GeneralButton>
-        <GeneralButton disabled={!nextCursor} onClick={onNext} size="sm" variant="outline">
-          Next
-        </GeneralButton>
-      </div>
     </div>
   );
 }
@@ -191,9 +136,9 @@ export function ApplicationsTable() {
       : "No submitted applications match these filters.";
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-brand-navy/10 bg-white shadow-sm">
+    <section className="overflow-hidden rounded-2xl border border-brand-navy/10 bg-white shadow-sm p-4">
       <StatusTabs onChange={changeStatus} status={status} />
-      <div className="p-4">
+      <div className="py-4 px-1">
         <DataTableFilter
           defaultExpanded={false}
           description="Filter the safe application list projection."
@@ -227,8 +172,9 @@ export function ApplicationsTable() {
         emptyMessage={emptyMessage}
         minWidth={1120}
       />
-      <ApplicationPagination
-        nextCursor={applications.data?.nextCursor ?? null}
+      <Pagination
+        disabled={applications.isFetching}
+        hasNextPage={Boolean(applications.data?.nextCursor)}
         onNext={() => {
           if (applications.data?.nextCursor) {
             setCursors((current) => [
@@ -238,7 +184,8 @@ export function ApplicationsTable() {
           }
         }}
         onPrevious={() => setCursors((current) => current.slice(0, -1))}
-        pageDepth={cursors.length}
+        page={cursors.length + 1}
+        pageSize={25}
         total={applications.data?.total ?? 0}
       />
     </section>

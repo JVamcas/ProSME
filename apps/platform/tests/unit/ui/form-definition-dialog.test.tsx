@@ -25,12 +25,21 @@ function queryClient() {
     fieldCount: 0,
     id: definitionId,
     latestStatus: "DRAFT" as const,
-    latestVersion: 1,
+    latestVersion: 2,
+    latestVersionId: "89e20de0-3558-4d63-90a4-8c9f5125df07",
+    latestVersionRowVersion: 1,
     name: "Finance Review",
+    sectionCount: 0,
     updatedAt: "2026-09-14T08:00:00.000Z",
     usedByCount: 0,
   };
-  client.setQueryData(formQueryKeys.all, [definition]);
+  client.setQueryData(formQueryKeys.list({ page: 1, pageSize: 10 }), {
+    items: [definition],
+    page: 1,
+    pageSize: 10,
+    total: 1,
+    totalPages: 1,
+  });
   client.setQueryData(formQueryKeys.detail(definitionId), {
     allowedActions: ["UPDATE", "PUBLISH", "CLONE"],
     definition: {
@@ -43,6 +52,7 @@ function queryClient() {
       updatedAt: definition.updatedAt,
     },
     fields: [],
+    sections: [],
     version: {
       createdAt: definition.updatedAt,
       formDefinitionId: definitionId,
@@ -53,9 +63,34 @@ function queryClient() {
       rowVersion: 1,
       status: "DRAFT",
       submitLabel: "Complete review",
-      versionNumber: 1,
+      versionNumber: 2,
     },
-    versions: [],
+    versions: [
+      {
+        createdAt: definition.updatedAt,
+        formDefinitionId: definitionId,
+        id: "89e20de0-3558-4d63-90a4-8c9f5125df07",
+        instructions: "Complete every finance check.",
+        publishedAt: null,
+        retiredAt: null,
+        rowVersion: 1,
+        status: "DRAFT",
+        submitLabel: "Complete review",
+        versionNumber: 2,
+      },
+      {
+        createdAt: "2026-09-10T08:00:00.000Z",
+        formDefinitionId: definitionId,
+        id: "99e20de0-3558-4d63-90a4-8c9f5125df07",
+        instructions: "Complete every finance check.",
+        publishedAt: "2026-09-11T08:00:00.000Z",
+        retiredAt: "2026-09-13T08:00:00.000Z",
+        rowVersion: 3,
+        status: "RETIRED",
+        submitLabel: "Complete review",
+        versionNumber: 1,
+      },
+    ],
   });
   return client;
 }
@@ -65,17 +100,67 @@ afterEach(() => {
 });
 
 describe("form definition dialog", () => {
-  it("includes instructions and the submit label when creating a form", async () => {
+  it("expands a form row to show its versions table", async () => {
     const container = document.createElement("div");
     document.body.append(container);
     const root = createRoot(container);
     await act(async () => {
       root.render(
         <QueryClientProvider client={queryClient()}>
-          <FormsWorkspace canCreate canUpdate />
+          <FormsWorkspace canCreate canPublish canRetire canUpdate />
         </QueryClientProvider>,
       );
     });
+
+    expect(container.textContent).not.toContain("Version 2");
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>(
+        '[aria-label="Expand row"]',
+      )?.click();
+    });
+
+    expect(container.textContent).toContain("Version 2");
+    expect(container.textContent).toContain("Version 1");
+    expect(container.textContent).toContain("Retired");
+    expect(container.querySelector('[aria-label="Finance Review versions"]'))
+      .not.toBeNull();
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>(
+        '[aria-label="Collapse row"]',
+      )?.click();
+    });
+
+    expect(container.textContent).not.toContain("Version 2");
+
+    await act(async () => root.unmount());
+  });
+
+  it("shows only definition metadata when creating a form", async () => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient()}>
+          <FormsWorkspace canCreate canPublish canRetire canUpdate />
+        </QueryClientProvider>,
+      );
+    });
+
+    expect(container.querySelector(
+      '[aria-label="Preview Finance Review"]',
+    )).not.toBeNull();
+    expect(container.querySelector(
+      '[aria-label="Publish Finance Review"]',
+    )).not.toBeNull();
+    expect(container.querySelector<HTMLButtonElement>(
+      '[aria-label="Retire Finance Review"]',
+    )?.disabled).toBe(true);
+    expect(container.querySelector<HTMLButtonElement>(
+      '[aria-label="Create new draft for Finance Review"]',
+    )?.disabled).toBe(true);
 
     await act(async () => {
       Array.from(container.querySelectorAll("button"))
@@ -83,11 +168,14 @@ describe("form definition dialog", () => {
         ?.click();
     });
 
-    expect(document.body.textContent).toContain("Instructions");
-    expect(document.body.textContent).toContain("Submit button label");
+    expect(document.body.textContent).toContain("Form code");
+    expect(document.body.textContent).toContain("Form name");
+    expect(document.body.textContent).toContain("Description");
+    expect(document.body.textContent).not.toContain("Submit button label");
+    expect(document.body.textContent).not.toContain("Instructions");
     expect(
-      document.querySelector<HTMLInputElement>('[name="submitLabel"]')?.value,
-    ).toBe("Submit");
+      document.body.querySelectorAll('label span[aria-hidden="true"]'),
+    ).toHaveLength(2);
     await act(async () => root.unmount());
   });
 
@@ -98,27 +186,23 @@ describe("form definition dialog", () => {
     await act(async () => {
       root.render(
         <QueryClientProvider client={queryClient()}>
-          <FormsWorkspace canCreate canUpdate />
+          <FormsWorkspace canCreate canPublish canRetire canUpdate />
         </QueryClientProvider>,
       );
     });
 
     await act(async () => {
       container.querySelector<HTMLButtonElement>(
-        '[aria-label="Edit form"]',
+        '[aria-label="Edit Finance Review"]',
       )?.click();
     });
 
     expect(document.body.textContent).toContain("Edit form");
-    expect(document.body.textContent).toContain("Instructions");
-    expect(document.body.textContent).toContain("Submit button label");
-    expect(
-      document.querySelector<HTMLInputElement>('[name="submitLabel"]')?.value,
-    ).toBe("Complete review");
-    expect(
-      document.querySelector<HTMLTextAreaElement>('[name="instructions"]')
-        ?.value,
-    ).toBe("Complete every finance check.");
+    expect(document.body.textContent).toContain("Form code");
+    expect(document.body.textContent).toContain("Form name");
+    expect(document.body.textContent).toContain("Description");
+    expect(document.body.textContent).not.toContain("Submit button label");
+    expect(document.body.textContent).not.toContain("Instructions");
     await act(async () => root.unmount());
   });
 });

@@ -33,7 +33,7 @@ function queryClient() {
     items: [
       {
         closesAt: "2026-12-31T00:00:00.000Z",
-        id: 42,
+        id: "00000000-0000-4000-8000-000000000042",
         opensAt: "2026-09-01T00:00:00.000Z",
         slug: "growth-fund",
         status: "open",

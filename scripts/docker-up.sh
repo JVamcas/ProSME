@@ -4,7 +4,8 @@ set -Eeuo pipefail
 
 script_directory="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repository_root="$(cd "${script_directory}/.." && pwd)"
-compose_file="${repository_root}/infrastructure/local/compose.yaml"
+compose_file="${repository_root}/infrastructure/compose.yaml"
+local_compose_override="${repository_root}/infrastructure/local/compose.local.override.yml"
 environment_file="${repository_root}/.env"
 maintenance_script="${script_directory}/docker-maintenance.sh"
 application_service="app"
@@ -27,6 +28,9 @@ Options:
   -h, --help         Show this help message.
 
 Build cache older than seven days is pruned after a successful build.
+
+When ENVIRONMENT=local, the local Compose override is applied automatically.
+All other environments use only infrastructure/compose.yaml.
 EOF
 }
 
@@ -80,6 +84,19 @@ if [ ! -f "${environment_file}" ]; then
   exit 1
 fi
 
+environment_name="${ENVIRONMENT:-$(
+  sed -n \
+    's/^[[:space:]]*ENVIRONMENT[[:space:]]*=[[:space:]]*//p' \
+    "${environment_file}" \
+    | tail -n 1
+)}"
+environment_name="${environment_name%$'\r'}"
+environment_name="${environment_name#\"}"
+environment_name="${environment_name%\"}"
+environment_name="${environment_name#\'}"
+environment_name="${environment_name%\'}"
+environment_name="${environment_name:-local}"
+
 if [ ! -x "${maintenance_script}" ]; then
   echo "Missing executable maintenance script: ${maintenance_script}" >&2
   exit 1
@@ -91,6 +108,18 @@ compose=(
   -f "${compose_file}"
 )
 
+if [ "${environment_name}" = "local" ]; then
+  if [ ! -f "${local_compose_override}" ]; then
+    echo "Missing local Compose override: ${local_compose_override}" >&2
+    exit 1
+  fi
+
+  compose+=(
+    -f "${local_compose_override}"
+  )
+fi
+
+echo "Using Compose configuration for ENVIRONMENT=${environment_name}."
 echo "Validating Docker Compose configuration..."
 "${compose[@]}" config --quiet
 

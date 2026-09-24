@@ -2,18 +2,18 @@ import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
-
 import { assignWorkflowToOpportunity } from "@/db/repositories/WorkflowAssignmentRepository";
 import {
   cloneWorkflowVersion,
   createWorkflowDefinition,
-} from "@/db/repositories/WorkflowDraftRepository";
+} from "@/modules/workflows/infrastructure/WorkflowTemplateWriteRepository";
 import {
+  changeWorkflowTemplateLifecycle,
   publishWorkflowVersion,
   retireWorkflowVersion,
-} from "@/db/repositories/WorkflowLifecycleRepository";
-import { findWorkflowGraph } from "@/db/repositories/WorkflowGraphRepository";
-import { referenceWorkflow } from "@/modules/workflows/ReferenceWorkflow";
+} from "@/modules/workflows/infrastructure/WorkflowLifecycleRepository";
+import { findWorkflowGraph } from "@/modules/workflows/infrastructure/WorkflowGraphRepository";
+import { referenceWorkflow } from "../support/ReferenceWorkflowFixture";
 
 const { Pool } = pg;
 const enabled = process.env.RUN_P3_WORKFLOW_DATABASE_TESTS === "true";
@@ -25,7 +25,6 @@ const pool = enabled
   : null;
 let definitionId = "";
 let publishedVersionId = "";
-
 async function query(text: string, values: unknown[] = []) {
   if (!pool)
     throw new Error("The P3.3 PostgreSQL test pool is not configured.");
@@ -61,7 +60,7 @@ describeDatabase("P3.3 PostgreSQL workflow persistence", () => {
     );
     expect(result.rows[0]).toEqual({
       assignment_index: "app_funding_workflow_version_idx",
-      capability_count: 9,
+      capability_count: 12,
       definition_table: "app_workflow_definitions",
       draft_index: "app_workflow_versions_one_draft_unique",
       protection_count: 6,
@@ -80,11 +79,11 @@ describeDatabase("P3.3 PostgreSQL workflow persistence", () => {
     const editor = await findWorkflowGraph(publishedVersionId);
     expect(editor?.graph.stages).toHaveLength(6);
     expect(editor?.graph.transitions).toHaveLength(6);
-    expect(editor?.graph.stages[0].tasks[0].type).toBe("CHECKLIST");
+    expect(editor?.graph.stages[0].tasks[0].config).toHaveProperty("items");
     definitionId = editor!.definition.id;
   });
 
-  it("publishes atomically and permits child edits before an instance exists", async () => {
+  it("publishes approved versions atomically and prevents child edits", async () => {
     await expect(
       query(
         `UPDATE app_workflow_definition_versions
@@ -93,10 +92,30 @@ describeDatabase("P3.3 PostgreSQL workflow persistence", () => {
         [publishedVersionId],
       ),
     ).rejects.toThrow("invalid workflow version lifecycle transition");
+    await changeWorkflowTemplateLifecycle(
+      {
+        actorId,
+        correlationId,
+        expectedRowVersion: 1,
+        idempotencyKey: "database-submit",
+        versionId: publishedVersionId,
+      },
+      "SUBMIT",
+    );
+    await changeWorkflowTemplateLifecycle(
+      {
+        actorId,
+        correlationId,
+        expectedRowVersion: 2,
+        idempotencyKey: "database-approve",
+        versionId: publishedVersionId,
+      },
+      "APPROVE",
+    );
     const published = await publishWorkflowVersion({
       actorId,
       correlationId,
-      expectedRowVersion: 1,
+      expectedRowVersion: 3,
       idempotencyKey: "database-publish",
       versionId: publishedVersionId,
     });
@@ -107,15 +126,19 @@ describeDatabase("P3.3 PostgreSQL workflow persistence", () => {
        WHERE stage.version_id = $1 LIMIT 1`,
       [publishedVersionId],
     );
-    await query(
-      `UPDATE app_stage_task_definitions SET name = 'Updated task' WHERE id = $1`,
-      [task.rows[0].id],
-    );
-    const updatedTask = await query(
-      `SELECT name FROM app_stage_task_definitions WHERE id = $1`,
-      [task.rows[0].id],
-    );
-    expect(updatedTask.rows[0].name).toBe("Updated task");
+    await expect(
+      query(
+        `UPDATE app_stage_task_definitions SET name = 'Updated task' WHERE id = $1`,
+        [task.rows[0].id],
+      ),
+    ).rejects.toThrow("only draft workflow versions are editable");
+    await expect(
+      query(
+        `UPDATE app_workflow_transition_definitions
+         SET priority = priority + 1 WHERE version_id = $1`,
+        [publishedVersionId],
+      ),
+    ).rejects.toThrow("only draft workflow versions are editable");
     await expect(
       query(`DELETE FROM app_workflow_definition_versions WHERE id = $1`, [
         publishedVersionId,
@@ -130,6 +153,7 @@ describeDatabase("P3.3 PostgreSQL workflow persistence", () => {
       correlationId,
       definitionId,
       graph: source!.graph,
+      sourceVersionId: publishedVersionId,
     });
     await expect(
       cloneWorkflowVersion({
@@ -137,6 +161,7 @@ describeDatabase("P3.3 PostgreSQL workflow persistence", () => {
         correlationId,
         definitionId,
         graph: source!.graph,
+        sourceVersionId: publishedVersionId,
       }),
     ).rejects.toThrow();
     await query(
@@ -152,6 +177,10 @@ describeDatabase("P3.3 PostgreSQL workflow persistence", () => {
       [stages.rows.map((row) => row.id)],
     );
     await query(
+      `DELETE FROM app_workflow_action_definitions WHERE stage_id = ANY($1::uuid[])`,
+      [stages.rows.map((row) => row.id)],
+    );
+    await query(
       `DELETE FROM app_workflow_stage_definitions WHERE version_id = $1`,
       [draftId],
     );
@@ -159,13 +188,15 @@ describeDatabase("P3.3 PostgreSQL workflow persistence", () => {
       draftId,
     ]);
   });
+});
 
+describeDatabase("workflow binding compatibility", () => {
   it("assigns only a published version, audits it, and retires safely", async () => {
     const assignment = await assignWorkflowToOpportunity({
       actorId,
       correlationId,
       expectedRowVersion: 0,
-      fundingOpportunityId: 3301,
+      fundingOpportunityId: "00000000-0000-4000-8000-000000003301",
       fundingOpportunityTitle: "Integration Funding Call",
       idempotencyKey: "database-assignment",
       workflowVersionId: publishedVersionId,
@@ -191,7 +222,7 @@ describeDatabase("P3.3 PostgreSQL workflow persistence", () => {
     const retired = await retireWorkflowVersion({
       actorId,
       correlationId,
-      expectedRowVersion: 2,
+      expectedRowVersion: 4,
       idempotencyKey: "database-retire",
       versionId: publishedVersionId,
     });
@@ -219,15 +250,30 @@ describeDatabase("P3.3 PostgreSQL workflow persistence", () => {
          RETURNING id, code
        ), inserted_versions AS (
          INSERT INTO app_workflow_definition_versions
-           (definition_id, version_number, status, created_by, published_by, published_at)
-         SELECT id, 1, 'PUBLISHED', $1, $1, now()
+           (definition_id, version_number, created_by)
+         SELECT id, 1, $1
          FROM inserted_definitions
          RETURNING id
        )
-       INSERT INTO app_funding_opportunity_workflows
-         (funding_opportunity_id, funding_opportunity_title, workflow_version_id, assigned_by)
-       SELECT 5000 + row_number() OVER (), 'Plan funding call', id, $1
-       FROM inserted_versions`,
+       SELECT count(*) FROM inserted_versions`,
+      [actorId],
+    );
+    for (const status of ["PENDING_APPROVAL", "APPROVED", "PUBLISHED"]) {
+      await query(
+        `UPDATE app_workflow_definition_versions SET status = $1,
+          row_version = row_version + 1,
+          published_by = CASE WHEN $1 = 'PUBLISHED' THEN $2::uuid ELSE NULL END,
+          published_at = CASE WHEN $1 = 'PUBLISHED' THEN now() ELSE NULL END
+         WHERE definition_id IN (SELECT id FROM app_workflow_definitions WHERE code LIKE 'PLAN_%')`,
+        [status, actorId],
+      );
+    }
+    await query(
+      `INSERT INTO app_funding_opportunity_workflows
+        (funding_opportunity_id, funding_opportunity_title, workflow_version_id, assigned_by)
+       SELECT 5000 + row_number() OVER (), 'Plan funding call', version.id, $1
+       FROM app_workflow_definition_versions version JOIN app_workflow_definitions template
+         ON template.id = version.definition_id WHERE template.code LIKE 'PLAN_%'`,
       [actorId],
     );
     await query(`ANALYZE app_workflow_definition_versions`);

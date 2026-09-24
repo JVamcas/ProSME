@@ -1,4 +1,4 @@
-import type { WorkflowGraphInput } from "./WorkflowTypes";
+import type { WorkflowGraphInput } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 
 export function reachableStages(
   graph: WorkflowGraphInput,
@@ -13,29 +13,47 @@ export function reachableStages(
     graph.transitions
       .filter(
         (transition) =>
-          transition.fromStageCode === code && transition.toStageCode,
+          transition.sourceStageKey === code && transition.targetStageKey,
       )
-      .forEach((transition) => pending.push(transition.toStageCode!));
+      .forEach((transition) => pending.push(transition.targetStageKey!));
   }
   return visited;
 }
 
-export function hasWorkflowCycle(graph: WorkflowGraphInput) {
-  const active = new Set<string>();
-  const complete = new Set<string>();
-  function visit(code: string): boolean {
-    if (active.has(code)) return true;
-    if (complete.has(code)) return false;
-    active.add(code);
-    const cyclic = graph.transitions
-      .filter(
-        (transition) =>
-          transition.fromStageCode === code && transition.toStageCode,
-      )
-      .some((transition) => visit(transition.toStageCode!));
-    active.delete(code);
-    complete.add(code);
-    return cyclic;
+function canReachStage(
+  graph: WorkflowGraphInput,
+  sourceStageKey: string,
+  targetStageKey: string,
+) {
+  const visited = new Set<string>();
+  const pending = graph.transitions.flatMap((transition) =>
+    transition.sourceStageKey === sourceStageKey && transition.targetStageKey
+      ? [transition.targetStageKey]
+      : [],
+  );
+  while (pending.length) {
+    const stageKey = pending.shift()!;
+    if (stageKey === targetStageKey) return true;
+    if (visited.has(stageKey)) continue;
+    visited.add(stageKey);
+    graph.transitions.forEach((transition) => {
+      if (
+        transition.sourceStageKey === stageKey &&
+        transition.targetStageKey
+      ) {
+        pending.push(transition.targetStageKey);
+      }
+    });
   }
-  return graph.stages.some((stage) => visit(stage.code));
+  return false;
+}
+
+export function stagesInCycles(graph: WorkflowGraphInput) {
+  return new Set(
+    graph.stages.flatMap((stage) =>
+      canReachStage(graph, stage.stableKey, stage.stableKey)
+        ? [stage.stableKey]
+        : [],
+    ),
+  );
 }

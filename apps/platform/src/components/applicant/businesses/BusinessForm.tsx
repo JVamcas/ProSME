@@ -9,10 +9,6 @@ import { toast } from "sonner";
 import { BusinessProfileFields } from "@/components/applicant/businesses/BusinessProfileFields";
 import { ProfileFormActions } from "@/components/applicant/profile/ProfileFormActions";
 import {
-  ProfileFormError,
-  ProfileFormLoading,
-} from "@/components/applicant/profile/ProfileFormState";
-import {
   useBusiness,
   useCreateBusiness,
   useUpdateBusiness,
@@ -21,6 +17,8 @@ import {
   businessProfileSchema,
   type BusinessProfileInput,
 } from "@/modules/businesses/BusinessSchemas";
+import { PortalErrorState } from "@/components/layout/PortalErrorState";
+import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
 
 const defaults: BusinessProfileInput = {
   businessType: "",
@@ -34,36 +32,69 @@ const defaults: BusinessProfileInput = {
   tradingName: "",
 };
 
-export function BusinessForm({ businessId }: { businessId?: string }) {
+type BusinessFormProps = {
+  businessId?: string;
+  initialValues?: BusinessProfileInput;
+  onSuccess?: () => void;
+  variant?: "card" | "dialog";
+};
+
+export function BusinessForm({
+  businessId,
+  initialValues,
+  onSuccess,
+  variant = "card",
+}: BusinessFormProps) {
   const router = useRouter();
   const business = useBusiness(businessId);
   const createBusiness = useCreateBusiness();
   const updateBusiness = useUpdateBusiness(businessId ?? "new");
   const form = useForm<BusinessProfileInput>({
-    defaultValues: defaults,
+    defaultValues: initialValues ?? defaults,
     resolver: zodResolver(businessProfileSchema),
   });
 
   useEffect(() => {
-    if (business.data) form.reset(business.data);
+    if (business.data) {
+      form.reset(business.data);
+    }
   }, [business.data, form]);
 
-  if (businessId && business.isPending) return <ProfileFormLoading />;
+  if (businessId && !initialValues && business.isPending)
+    return (
+      <PortalLoadingState
+        title="Loading business"
+        description="Just a moment..."
+      />
+    );
   if (businessId && (business.isError || !business.data)) {
-    return <ProfileFormError onRetry={() => void business.refetch()} />;
+    return (
+      <PortalErrorState
+        onAction={() => void business.refetch()}
+        actionLabel="Retry"
+        title="Error"
+        description="There was an error loading the business. Please check your connection and try again."
+      />
+    );
   }
 
   const mutation = businessId ? updateBusiness : createBusiness;
   const submit = form.handleSubmit(async (input) => {
     await mutation.mutateAsync(input);
     toast.success(businessId ? "Business updated" : "Business added");
-    router.push("/portal/businesses");
+    if (onSuccess) {
+      onSuccess();
+    } else {
+      router.push("/portal/businesses");
+    }
   });
 
   return (
     <FormProvider {...form}>
       <form
-        className="mt-6 rounded-2xl border border-brand-navy/15 bg-brand-white p-5 shadow-sm sm:p-7"
+        className={variant === "card"
+          ? "mt-6 rounded-2xl border border-brand-navy/15 bg-brand-white p-5 shadow-sm sm:p-7"
+          : undefined}
         noValidate
         onSubmit={submit}
       >

@@ -5,7 +5,7 @@ vi.mock("@/db/repositories/AdminDashboardRepository", () => ({
   readAdminDashboard: vi.fn(),
 }));
 
-import { capabilities } from "@/auth/authorization/capabilities";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import { PermissionDeniedError } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import { readAdminDashboard } from "@/db/repositories/AdminDashboardRepository";
@@ -51,7 +51,7 @@ describe("admin dashboard service", () => {
   it("uses all-application visibility and the selected UTC period", async () => {
     const now = new Date("2026-09-15T10:00:00.000Z");
     const dashboard = await getAdminDashboard(
-      staff([capabilities.adminAccess, capabilities.applicationReadAll]),
+      staff([permissionCodes.fundingApplicationAllRead]),
       "30",
       now,
     );
@@ -66,8 +66,7 @@ describe("admin dashboard service", () => {
   it("limits assigned readers and does not invent request totals", async () => {
     const dashboard = await getAdminDashboard(
       staff([
-        capabilities.adminAccess,
-        capabilities.applicationReadAssigned,
+        permissionCodes.workflowTaskAssignedRead,
       ]),
       "all",
     );

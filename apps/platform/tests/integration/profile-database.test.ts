@@ -143,8 +143,8 @@ describeDatabase("P3.1 PostgreSQL persistence", () => {
       status: "active",
     });
     expect(user?.roleCodes).toContain("applicant");
-    expect(user?.capabilities).toContain("profile.read.own");
-    expect(user?.capabilities).toContain("application.read.own");
+    expect(user?.capabilities).toContain("user.profile.own.read");
+    expect(user?.capabilities).toContain("funding.application.own.read");
 
     const refreshed = await provisionApplicant({
       subject: firebaseSubject,

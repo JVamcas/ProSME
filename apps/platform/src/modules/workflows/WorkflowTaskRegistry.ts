@@ -1,181 +1,108 @@
 import { z } from "zod";
 
 import { fieldSchema, itemSchema, optionSchema } from "./WorkflowTaskSchemas";
-import {
-  type WorkflowTaskContract,
-  workflowTaskContracts,
-} from "./WorkflowTaskContracts";
-import type { TaskTypeCode } from "./WorkflowTypes";
 
-export type WorkflowTaskHandler = (result: unknown) => unknown;
+export const checklistConfigurationSchema = z.object({
+  items: z.array(itemSchema).min(1).max(30),
+});
 
-export type WorkflowTaskRegistryEntry = WorkflowTaskContract & {
-  config: z.ZodType;
-  handler: WorkflowTaskHandler;
-  result: z.ZodType;
-};
+export const checklistResultSchema = z.object({
+  items: z.array(z.object({
+    accepted: z.boolean(),
+    code: z.string().min(1).max(80),
+    comment: z.string().trim().max(1000).optional(),
+  })).min(1).max(30),
+});
 
-const registry = {
-  AUTOMATED_RULE_CHECK: {
-    config: z.object({
-      rulesetCode: z.string().min(1),
-      ruleVersion: z.number().int().positive(),
-      inputs: z.array(z.string()).min(1),
-      categories: z.array(optionSchema).min(1),
-    }),
-    result: z.object({
-      category: z.string().min(1),
-      score: z.number().optional(),
-      reasons: z.array(z.string()),
-      ruleVersion: z.number().int().positive(),
-    }),
-  },
-  CHECKLIST: {
-    config: z.object({ items: z.array(itemSchema).min(1).max(30) }),
-    result: z.object({
-      items: z.array(
-        z.object({
-          code: z.string().min(1).max(80),
-          accepted: z.boolean(),
-          comment: z.string().trim().max(1000).optional(),
-        }),
-      ).min(1).max(30),
-    }),
-  },
-  DOCUMENT_REVIEW: {
-    config: z.object({
-      categories: z.array(optionSchema).min(1),
-      outcomes: z.array(optionSchema).min(1),
-    }),
-    result: z.object({
-      decisions: z.array(
-        z.object({
-          category: z.string(),
-          outcome: z.string(),
-          comment: z.string().optional(),
-        }),
-      ),
-    }),
-  },
-  STRUCTURED_FORM: {
-    config: z.object({ fields: z.array(fieldSchema).min(1) }),
-    result: z.object({ values: z.record(z.string(), z.unknown()) }),
-  },
-  ASSESSMENT_FORM: {
-    config: z.object({
-      criteria: z
-        .array(
-          z.object({
-            code: z.string(),
-            label: z.string(),
-            maximumScore: z.number().positive(),
-            weight: z.number().positive(),
-            commentRequired: z.boolean().default(false),
-          }),
-        )
-        .min(1),
-    }),
-    result: z.object({
-      scores: z.record(z.string(), z.number()),
-      weightedTotal: z.number(),
-      comments: z.record(z.string(), z.string()),
-    }),
-  },
-  FINANCE_REVIEW: {
-    config: z.object({
-      fields: z.array(fieldSchema).min(1),
-      recommendations: z.array(optionSchema).min(1),
-    }),
-    result: z.object({
-      values: z.record(z.string(), z.unknown()),
-      recommendation: z.string(),
-    }),
-  },
-  INFORMATION_REQUEST: {
-    config: z.object({
-      categories: z.array(optionSchema).min(1),
-      responseRequired: z.boolean(),
-      templateReference: z.string().min(1),
-    }),
-    result: z.object({
-      requestId: z.string().uuid(),
-      outcome: z.string().min(1),
-    }),
-  },
-  RECOMMENDATION: {
-    config: z.object({
-      options: z.array(optionSchema).min(1),
-      rationaleRequired: z.boolean(),
-    }),
-    result: z.object({
-      recommendation: z.string().min(1),
-      rationale: z.string(),
-    }),
-  },
-  DECISION: {
-    config: z.object({
-      outcomes: z.array(optionSchema).min(1),
-      authorityCapability: z.string().min(1),
-      rationaleRequired: z.boolean(),
-    }),
-    result: z.object({
-      decision: z.string().min(1),
-      rationale: z.string(),
-      authoritySnapshot: z.string().min(1),
-    }),
-  },
-  COMMUNICATION: {
-    config: z.object({
-      template: z.string().min(1),
-      channel: z.enum(["EMAIL", "IN_APP"]),
-      audience: z.enum(["APPLICANT", "STAFF"]),
-      trigger: z.string().min(1),
-    }),
-    result: z.object({
-      outboxId: z.string().uuid(),
-      deliveryState: z.enum([
-        "PENDING",
-        "SENDING",
-        "DELIVERED",
-        "FAILED",
-        "CANCELLED",
-      ]),
-    }),
-  },
-} satisfies Record<
-  TaskTypeCode,
-  {
-    config: z.ZodType;
-    result: z.ZodType;
+export const eligibilityCommandSchema = z.object({
+  command: z.literal("AUTHORITATIVE_ELIGIBILITY"),
+  reevaluationPolicy: z.enum(["NEVER", "WHEN_EVIDENCE_CHANGED"]),
+});
+
+export const eligibilityResultSchema = z.object({
+  eligible: z.boolean(),
+  evaluationId: z.uuid(),
+  evaluationNumber: z.number().int().positive(),
+  hardFailureCount: z.number().int().nonnegative(),
+  manualScreeningRequired: z.boolean(),
+  outcome: z.enum(["ELIGIBLE", "INELIGIBLE"]).nullable(),
+  softFailureCount: z.number().int().nonnegative(),
+  warningCount: z.number().int().nonnegative(),
+});
+
+const criteriaSchema = z.array(z.object({
+  code: z.string(),
+  label: z.string(),
+  maximumScore: z.number().positive(),
+  weight: z.number().positive(),
+  commentRequired: z.boolean().default(false),
+})).min(1);
+
+const taskConfigurationSchema = z.object({
+  command: z.literal("AUTHORITATIVE_ELIGIBILITY").optional(),
+  reevaluationPolicy: z.enum(["NEVER", "WHEN_EVIDENCE_CHANGED"]).optional(),
+  items: checklistConfigurationSchema.shape.items.optional(),
+  categories: z.array(optionSchema).min(1).optional(),
+  outcomes: z.array(optionSchema).min(1).optional(),
+  fields: z.array(fieldSchema).min(1).optional(),
+  criteria: criteriaSchema.optional(),
+  recommendations: z.array(optionSchema).min(1).optional(),
+  options: z.array(optionSchema).min(1).optional(),
+  responseRequired: z.boolean().optional(),
+  templateReference: z.string().min(1).optional(),
+  rationaleRequired: z.boolean().optional(),
+  authorityCapability: z.string().min(1).optional(),
+  template: z.string().min(1).optional(),
+  channel: z.enum(["EMAIL", "IN_APP"]).optional(),
+  audience: z.enum(["APPLICANT", "STAFF"]).optional(),
+  trigger: z.string().min(1).optional(),
+}).passthrough().superRefine((config, context) => {
+  if (config.command && !config.reevaluationPolicy) {
+    context.addIssue({
+      code: "custom",
+      message: "Eligibility evaluation requires a reevaluation policy.",
+      path: ["reevaluationPolicy"],
+    });
   }
->;
+  if (config.reevaluationPolicy && !config.command) {
+    context.addIssue({
+      code: "custom",
+      message: "A reevaluation policy requires an eligibility command.",
+      path: ["command"],
+    });
+  }
+});
 
-export function getTaskRegistryEntry(
-  type: TaskTypeCode,
-): WorkflowTaskRegistryEntry {
-  const schemas = registry[type];
-  return {
-    ...schemas,
-    ...workflowTaskContracts[type],
-    handler: (result: unknown) => schemas.result.parse(result),
-  };
+export function validateTaskConfiguration(config: unknown) {
+  return taskConfigurationSchema.safeParse(config);
 }
 
-export function listTaskRegistryEntries() {
-  return Object.keys(registry).map((type) => ({
-    type: type as TaskTypeCode,
-    ...getTaskRegistryEntry(type as TaskTypeCode),
-  }));
+export function taskHasChecklist(config: unknown): boolean {
+  return checklistConfigurationSchema.safeParse(config).success;
 }
 
-export function validateTaskConfiguration(type: TaskTypeCode, config: unknown) {
-  return registry[type].config.safeParse(config);
+export function taskRunsAuthoritativeEligibility(config: unknown): boolean {
+  return eligibilityCommandSchema.safeParse(config).success;
 }
 
-export function validateTaskResult(type: TaskTypeCode, result: unknown) {
-  return registry[type].result.safeParse(result);
+export function validateChecklistResult(result: unknown) {
+  return checklistResultSchema.safeParse(result);
 }
 
-export function handleTaskResult(type: TaskTypeCode, result: unknown) {
-  return getTaskRegistryEntry(type).handler(result);
+export function validateEligibilityResult(result: unknown) {
+  return eligibilityResultSchema.safeParse(result);
+}
+
+export function taskWorkIsReady(input: {
+  config: unknown;
+  formCompleted: boolean;
+  formRequired: boolean;
+  result: unknown;
+}) {
+  if (input.formRequired && !input.formCompleted) return false;
+  if (taskHasChecklist(input.config)
+    && !validateChecklistResult(input.result).success) return false;
+  if (taskRunsAuthoritativeEligibility(input.config)
+    && !validateEligibilityResult(input.result).success) return false;
+  return true;
 }

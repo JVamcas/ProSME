@@ -4,7 +4,7 @@ import {
   portalRouteError,
   portalRouteSuccess,
 } from "@/lib/api/PortalApiResponse";
-import { getPublishedForms } from "@/modules/forms/ServerFormsService";
+import { getPublishedForms } from "@/modules/forms/application/ServerFormsService";
 
 export async function GET(request: Request) {
   const correlationId = createCorrelationId();

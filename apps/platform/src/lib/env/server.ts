@@ -16,6 +16,8 @@ const serverEnvironmentSchema = z.object({
   FIREBASE_CLIENT_EMAIL: z.email().optional(),
   FIREBASE_PRIVATE_KEY: z.string().optional(),
   FIREBASE_SERVICE_ACCOUNT_JSON: z.string().optional(),
+  GOOGLE_CLOUD_PROJECT: z.string().trim().min(1).optional(),
+  GOOGLE_CLOUD_SERVICE_ACCOUNT_JSON: z.string().optional(),
   GCS_DOCUMENTS_BUCKET: z
     .string()
     .trim()

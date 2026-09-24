@@ -1,20 +1,19 @@
 import { randomUUID } from "node:crypto";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-
 vi.mock("server-only", () => ({}));
-
 import {
   readAdminApplication,
   readAdminApplications,
-} from "@/db/repositories/AdminApplicationRepository";
+} from "@/modules/applications/infrastructure/AdminApplicationRepository";
 import {
   readWorkQueue,
   writeTaskClaim,
 } from "@/db/repositories/WorkQueueRepository";
-import { writeChecklistTaskCompletion } from "@/db/repositories/WorkflowTaskActionRepository";
-import { readWorkflowTask } from "@/db/repositories/WorkflowTaskRepository";
-
+import { writeChecklistTaskCompletion } from "@/modules/workflows/infrastructure/WorkflowTaskActionRepository";
+import { executeSequentialTransitionInTransaction } from "@/modules/workflows/application/runtime/ServerSequentialTransitionService";
+import { readWorkflowTask } from "@/modules/workflows/infrastructure/WorkflowTaskRepository";
+import { configureWorkflowAction } from "./support/workflow-action-fixture";
 const { Pool } = pg;
 const enabled = process.env.RUN_P3_APPLICATION_DATABASE_TESTS === "true";
 const describeDatabase = enabled ? describe : describe.skip;
@@ -38,12 +37,10 @@ let claimedBy = "";
 const pool = enabled
   ? new Pool({ connectionString: process.env.DATABASE_URL })
   : null;
-
 async function query(text: string, values: unknown[] = []) {
   if (!pool) throw new Error("The P3.5 PostgreSQL test pool is not configured.");
   return pool.query(text, values);
 }
-
 beforeAll(async () => {
   if (!enabled) return;
   await query(
@@ -91,8 +88,8 @@ beforeAll(async () => {
   );
   await query(
     `INSERT INTO app_stage_task_definitions
-      (id, stage_id, code, name, type, sequence, required, assignment_role_id, config)
-     SELECT $1, $2, 'CHECK_COMPLETENESS', 'Check completeness', 'CHECKLIST',
+      (id, stage_id, code, name, sequence, required, assignment_role_id, config)
+     SELECT $1, $2, 'CHECK_COMPLETENESS', 'Check completeness',
        1, true, role.id,
        '{"items":[{"code":"OWNERSHIP","label":"Ownership confirmed","required":true}]}'::jsonb
      FROM app_roles role WHERE role.code = 'programme_officer'`,
@@ -100,21 +97,19 @@ beforeAll(async () => {
   );
   await query(
     `INSERT INTO app_stage_task_definitions
-      (id, stage_id, code, name, type, sequence, required, assignment_role_id, config)
-     SELECT $1, $2, 'ASSESS_APPLICATION', 'Assess application', 'ASSESSMENT_FORM',
+      (id, stage_id, code, name, sequence, required, assignment_role_id, config)
+     SELECT $1, $2, 'ASSESS_APPLICATION', 'Assess application',
        1, true, role.id,
        '{"criteria":[{"code":"FIT","label":"Fit","maximumScore":10,"weight":1,"commentRequired":false}]}'::jsonb
      FROM app_roles role WHERE role.code = 'programme_officer'`,
     [nextTaskDefinitionId, nextStageDefinitionId],
   );
-  await query(
-    `INSERT INTO app_workflow_transition_definitions
-      (version_id, from_stage_id, action_code, to_stage_id,
-       required_capability, condition)
-     VALUES ($1, $2, 'COMPLETE', $3, 'workflow.task.complete',
-       '{"type":"ALL_REQUIRED_TASKS_COMPLETE"}'::jsonb)`,
-    [versionId, stageDefinitionId, nextStageDefinitionId],
-  );
+  await configureWorkflowAction(query, {
+    nextStageDefinitionId,
+    stageDefinitionId,
+    taskDefinitionId,
+    versionId,
+  });
   await query(
     `INSERT INTO app_applications
       (id, owner_user_id, funding_opportunity_id, funding_opportunity_title,
@@ -132,13 +127,13 @@ beforeAll(async () => {
   );
   await query(
     `INSERT INTO app_workflow_instances
-      (id, application_id, workflow_version_id, current_stage_instance_id)
+      (id, application_id, workflow_template_version_id, current_stage_instance_id)
      VALUES ($1, $2, $3, NULL)`,
     [workflowId, applicationId, versionId],
   );
   await query(
     `INSERT INTO app_workflow_stage_instances
-      (id, workflow_instance_id, stage_definition_id, status)
+      (id, workflow_instance_id, workflow_stage_definition_id, status)
      VALUES ($1, $2, $3, 'ACTIVE')`,
     [stageInstanceId, workflowId, stageDefinitionId],
   );
@@ -147,10 +142,10 @@ beforeAll(async () => {
     [stageInstanceId, workflowId],
   );
   await query(
-    `INSERT INTO app_stage_task_instances
-      (id, stage_instance_id, task_definition_id, type_snapshot, status,
-       assignment_role_id, due_at)
-     SELECT $1, $2, $3, 'CHECKLIST', 'READY', role.id, now() + interval '24 hours'
+    `INSERT INTO app_workflow_tasks
+      (id, stage_instance_id, workflow_task_definition_id,
+       status, assigned_role_id, due_at)
+     SELECT $1, $2, $3, 'PENDING', role.id, now() + interval '24 hours'
      FROM app_roles role WHERE role.code = 'programme_officer'`,
     [taskInstanceId, stageInstanceId, taskDefinitionId],
   );
@@ -195,7 +190,6 @@ describeDatabase("P3.5 work queue projections and claim", () => {
       currentStageName: "Completeness screening",
     });
   });
-
   it("allows exactly one reviewer to atomically claim a role task", async () => {
     const keys = [
       randomUUID(),
@@ -233,30 +227,29 @@ describeDatabase("P3.5 work queue projections and claim", () => {
     });
     expect(replay).toMatchObject({ kind: "claimed" });
     const persisted = await query(
-      `SELECT assignment_user_id, assignment_role_id, status, row_version,
+      `SELECT assigned_user_id, assigned_role_id, status, row_version,
         claimed_at IS NOT NULL AS claimed,
         (SELECT count(*)::integer FROM app_workflow_audit_entries
-          WHERE target_id = $1::text AND action = 'TASK_CLAIMED') AS audits
-       FROM app_stage_task_instances WHERE id = $1::uuid`,
+          WHERE target_id = $1::text AND action = 'TASK_ASSIGNED') AS audits
+       FROM app_workflow_tasks WHERE id = $1::uuid`,
       [taskInstanceId],
     );
     expect(persisted.rows[0]).toMatchObject({
-      assignment_role_id: null,
-      assignment_user_id: winnerId,
+      assigned_role_id: null,
+      assigned_user_id: winnerId,
       audits: 1,
       claimed: true,
       row_version: 2,
       status: "CLAIMED",
     });
   });
-
   it("completes the configured checklist and advances atomically", async () => {
     const task = await readWorkflowTask(claimedBy, taskInstanceId);
     expect(task).toMatchObject({
       fundingCallTitle: "Database funding call",
-      taskType: "CHECKLIST",
     });
     const command = {
+      actionKey: "ADVANCE",
       actorId: claimedBy,
       correlationId: randomUUID(),
       expectedRowVersion: 2,
@@ -264,28 +257,34 @@ describeDatabase("P3.5 work queue projections and claim", () => {
       items: [{ accepted: true, code: "OWNERSHIP", comment: "Verified" }],
       taskId: taskInstanceId,
     };
-    const completed = await writeChecklistTaskCompletion(command);
+    const completed = await writeChecklistTaskCompletion(
+      command,
+      executeSequentialTransitionInTransaction,
+    );
     expect(completed).toMatchObject({
       kind: "completed",
       result: { nextStageName: "Technical assessment" },
     });
-    expect(await writeChecklistTaskCompletion(command)).toEqual(completed);
+    expect(await writeChecklistTaskCompletion(
+      command,
+      executeSequentialTransitionInTransaction,
+    )).toEqual(completed);
     const persisted = await query(
       `SELECT task.status, task.result,
         workflow.status AS workflow_status,
         stage_definition.name AS current_stage,
-        (SELECT count(*)::integer FROM app_stage_task_instances next_task
+        (SELECT count(*)::integer FROM app_workflow_tasks next_task
           JOIN app_workflow_stage_instances next_stage
             ON next_stage.id = next_task.stage_instance_id
           WHERE next_stage.workflow_instance_id = workflow.id
             AND next_stage.status = 'ACTIVE') AS next_tasks
-       FROM app_stage_task_instances task
+       FROM app_workflow_tasks task
        JOIN app_workflow_stage_instances stage ON stage.id = task.stage_instance_id
        JOIN app_workflow_instances workflow ON workflow.id = stage.workflow_instance_id
        JOIN app_workflow_stage_instances current_stage
          ON current_stage.id = workflow.current_stage_instance_id
        JOIN app_workflow_stage_definitions stage_definition
-         ON stage_definition.id = current_stage.stage_definition_id
+         ON stage_definition.id = current_stage.workflow_stage_definition_id
        WHERE task.id = $1`,
       [taskInstanceId],
     );

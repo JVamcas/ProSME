@@ -1,20 +1,30 @@
 import "server-only";
 
-import { capabilities } from "@/auth/authorization/capabilities";
-import { requireCapability } from "@/auth/authorization/policy";
+import {
+  requireAuthenticatedUser,
+  requirePermission,
+} from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import {
   readChecklistTaskCompletion,
   writeChecklistTaskCompletion,
-} from "@/db/repositories/WorkflowTaskActionRepository";
-import { readWorkflowTask } from "@/db/repositories/WorkflowTaskRepository";
+} from "@/modules/workflows/infrastructure/WorkflowTaskActionRepository";
+import { readWorkflowTask } from "@/modules/workflows/infrastructure/WorkflowTaskRepository";
 import {
   IdempotencyConflictError,
   RequestValidationError,
   ResourceConflictError,
   ResourceNotFoundError,
 } from "@/lib/resource-errors";
-import { validateTaskConfiguration, validateTaskResult } from "@/modules/workflows/WorkflowTaskRegistry";
+import {
+  checklistConfigurationSchema,
+  taskHasChecklist,
+  taskRunsAuthoritativeEligibility,
+  validateChecklistResult,
+  validateEligibilityResult,
+} from "@/modules/workflows/WorkflowTaskRegistry";
+import { executeSequentialTransitionInTransaction } from "@/modules/workflows/application/runtime/ServerSequentialTransitionService";
+import { getWorkflowActionAvailability } from "@/modules/workflows/application/runtime/ServerWorkflowActionAvailabilityService";
 import type {
   ChecklistConfigurationItem,
   ChecklistResultItem,
@@ -22,7 +32,7 @@ import type {
 } from "./TaskTypes";
 
 function parseChecklistConfiguration(config: unknown) {
-  const parsed = validateTaskConfiguration("CHECKLIST", config);
+  const parsed = checklistConfigurationSchema.safeParse(config);
   if (!parsed.success) {
     throw new ResourceConflictError(
       "This task has an invalid published checklist configuration.",
@@ -33,10 +43,16 @@ function parseChecklistConfiguration(config: unknown) {
 
 function parseChecklistResult(result: unknown) {
   if (result === null) return [];
-  const parsed = validateTaskResult("CHECKLIST", result);
+  const parsed = validateChecklistResult(result);
   return parsed.success
     ? (parsed.data as { items: ChecklistResultItem[] }).items
     : [];
+}
+
+function parseEligibilityResult(result: unknown) {
+  if (result === null) return null;
+  const parsed = validateEligibilityResult(result);
+  return parsed.success ? parsed.data : null;
 }
 
 function validateChecklistItems(
@@ -70,23 +86,31 @@ export async function getWorkflowTask(
   user: AuthenticatedUser | null,
   taskId: string,
 ) {
-  const actor = requireCapability(user, capabilities.workflowTaskRead);
+  const actor = requireAuthenticatedUser(user);
   const task = await readWorkflowTask(actor.id, taskId);
   if (!task) throw new ResourceNotFoundError("workflow task");
-  const { config, result, ...view } = task;
-  if (task.taskType !== "CHECKLIST") {
-    return {
-      ...view,
-      checklistItems: [],
-      dueAt: task.dueAt ? new Date(task.dueAt).toISOString() : null,
-      resultItems: [],
-    };
-  }
+  const { config, permissions, result, ...view } = task;
+  requirePermission(actor, permissions.view);
+  const actions = await getWorkflowActionAvailability(actor, {
+    sourceStageInstanceId: task.stageInstanceId,
+    taskId: task.taskInstanceId,
+    workflowInstanceId: task.workflowInstanceId,
+  });
+  const hasChecklist = taskHasChecklist(config);
+  const canEvaluateEligibility = taskRunsAuthoritativeEligibility(config);
   return {
     ...view,
-    checklistItems: parseChecklistConfiguration(config),
+    actions,
+    canEvaluateEligibility,
+    checklistCompleted: hasChecklist && parseChecklistResult(result).length > 0,
+    checklistItems: hasChecklist ? parseChecklistConfiguration(config) : [],
     dueAt: task.dueAt ? new Date(task.dueAt).toISOString() : null,
-    resultItems: parseChecklistResult(result),
+    eligibilityEvaluation: canEvaluateEligibility
+      ? parseEligibilityResult(result)
+      : null,
+    hasChecklist,
+    formCompleted: task.formCompleted,
+    resultItems: hasChecklist ? parseChecklistResult(result) : [],
   };
 }
 
@@ -96,14 +120,20 @@ export async function completeChecklistTask(
   input: CompleteChecklistTaskInput,
   command: { correlationId: string; idempotencyKey: string },
 ) {
-  const actor = requireCapability(user, capabilities.workflowTaskComplete);
-  requireCapability(user, capabilities.applicationScreen);
+  const actor = requireAuthenticatedUser(user);
   const writeInput = {
     ...command,
     ...input,
+    actionKey: input.actionKey ?? null,
     actorId: actor.id,
     taskId,
   };
+  const task = await readWorkflowTask(actor.id, taskId);
+  if (!task) throw new ResourceNotFoundError("workflow task");
+  requirePermission(
+    actor,
+    input.actionKey ? task.permissions.decide : task.permissions.edit,
+  );
   const replay = await readChecklistTaskCompletion(writeInput);
   if (replay?.kind === "completed") return replay.result;
   if (replay?.kind === "idempotency_conflict") {
@@ -111,14 +141,15 @@ export async function completeChecklistTask(
       "That idempotency key was already used with different task data.",
     );
   }
-  const task = await readWorkflowTask(actor.id, taskId);
-  if (!task) throw new ResourceNotFoundError("workflow task");
-  if (task.taskType !== "CHECKLIST") {
+  if (!taskHasChecklist(task.config)) {
     throw new ResourceConflictError("This task is not a checklist task.");
   }
   const configured = parseChecklistConfiguration(task.config);
   validateChecklistItems(configured, input.items);
-  const outcome = await writeChecklistTaskCompletion(writeInput);
+  const outcome = await writeChecklistTaskCompletion(
+    writeInput,
+    executeSequentialTransitionInTransaction,
+  );
   if (outcome.kind === "idempotency_conflict") {
     throw new IdempotencyConflictError(
       "That idempotency key was already used for another task completion.",
@@ -131,7 +162,7 @@ export async function completeChecklistTask(
   }
   if (outcome.kind === "conflict") {
     throw new ResourceConflictError(
-      "The workflow cannot advance because its completion transition is missing.",
+      "The checklist cannot be completed in its current workflow configuration.",
     );
   }
   return outcome.result;

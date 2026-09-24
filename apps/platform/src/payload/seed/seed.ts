@@ -1,7 +1,7 @@
 import { getPayload, type SanitizedConfig } from "payload";
 
 import { seedFaqs, seedPages } from "./seed-editorial";
-import { seedResourceAndCall } from "./seed-opportunities";
+import { seedResources } from "./seed-resources";
 import { seedProgrammeContent } from "./seed-programme";
 import { seedSiteGlobals } from "./seed-site-globals";
 
@@ -22,7 +22,7 @@ async function seedDatabase(config: SanitizedConfig) {
     seedPages(payload),
     seedFaqs(payload),
     seedProgrammeContent(payload),
-    seedResourceAndCall(payload),
+    seedResources(payload),
   ]);
 
   payload.logger.info("Baseline application content seeded successfully");

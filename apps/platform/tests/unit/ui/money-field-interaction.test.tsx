@@ -24,6 +24,17 @@ function MoneyForm() {
   );
 }
 
+function PersistedMoneyForm({ amount }: { amount: string }) {
+  const form = useForm<{ amount: string }>({
+    defaultValues: { amount },
+  });
+  return (
+    <FormProvider {...form}>
+      <MoneyField label="Amount" name="amount" />
+    </FormProvider>
+  );
+}
+
 afterEach(() => {
   document.body.replaceChildren();
 });
@@ -37,6 +48,20 @@ describe("money field interaction", () => {
 
     expect(container.querySelector<HTMLInputElement>("input")?.value).toBe("");
     expect(container.querySelector("output")?.textContent).toBe("0");
+    await act(async () => root.unmount());
+  });
+
+  it("groups a persisted decimal value after the form mounts", async () => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(<PersistedMoneyForm amount="15000000.00" />);
+    });
+
+    expect(container.querySelector<HTMLInputElement>("input")?.value).toBe(
+      "15,000,000",
+    );
     await act(async () => root.unmount());
   });
 

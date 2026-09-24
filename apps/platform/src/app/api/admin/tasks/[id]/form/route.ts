@@ -7,13 +7,13 @@ import {
 import {
   taskFormCompletionSchema,
   taskFormSubmissionSchema,
-} from "@/modules/forms/FormSchemas";
+} from "@/modules/forms/api/FormSchemas";
 import { z } from "zod";
 import {
   completeTaskForm,
   getTaskForm,
   saveTaskForm,
-} from "@/modules/forms/ServerFormsService";
+} from "@/modules/forms/application/ServerFormsService";
 
 export async function GET(
   request: Request,
@@ -45,7 +45,7 @@ export async function PATCH(
     return portalRouteSuccess(
       await saveTaskForm(
         await resolveUserFromHeaders(request.headers),
-        { ...input, taskInstanceId: id },
+        { ...input, correlationId, taskInstanceId: id },
       ),
       correlationId,
     );

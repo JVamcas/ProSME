@@ -6,13 +6,11 @@ import {
   portalRouteError,
   portalRouteSuccess,
 } from "@/lib/api/PortalApiResponse";
-import { getFundingOpportunity } from "@/modules/funding-opportunities/ServerFundingOpportunityService";
+import { getFundingOpportunity } from "@/modules/funding-calls/ServerFundingOpportunityService";
 
 const paramsSchema = z.object({
-  id: z.coerce.number().int().positive(),
+  id: z.uuid(),
 });
-
-export const dynamic = "force-dynamic";
 
 export async function GET(
   request: Request,

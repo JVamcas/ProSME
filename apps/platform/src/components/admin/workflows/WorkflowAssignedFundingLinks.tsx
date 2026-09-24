@@ -1,11 +1,11 @@
 import Link from "next/link";
 
-import type { FundingOpportunitySummary } from "@/modules/funding-opportunities/FundingOpportunityTypes";
+import type { FundingOpportunitySummary } from "@/modules/funding-calls/FundingOpportunityTypes";
 import type {
   PublishedWorkflowOption,
   WorkflowDefinitionSummary,
   WorkflowOpportunityAssignment,
-} from "@/modules/workflows/WorkflowTypes";
+} from "@/modules/workflows/domain/definitions/WorkflowTypes";
 
 export function WorkflowAssignedFundingLinks({
   assignments,

@@ -3,8 +3,8 @@
 import { Plus } from "lucide-react";
 import Link from "next/link";
 
-import { PortalErrorState } from "@/components/layout/portal-error-state";
-import { PortalLoadingState } from "@/components/layout/portal-loading-state";
+import { PortalErrorState } from "@/components/layout/PortalErrorState";
+import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
 import { GeneralButton } from "@/components/ui/button";
 import { Pagination } from "@/components/ui/pagination";
 import { Tabs, type TabItem } from "@/components/ui/tabs";
@@ -28,7 +28,15 @@ export function applicationTabs(
   ];
 }
 
-export function ApplicationsList({ canCreate }: { canCreate: boolean }) {
+export function ApplicationsList({
+  canCreate,
+  canDeleteDraft,
+  canWithdraw,
+}: {
+  canCreate: boolean;
+  canDeleteDraft: boolean;
+  canWithdraw: boolean;
+}) {
   const browser = useApplicationBrowser();
   const { query } = browser;
   if (query.isPending) {
@@ -48,7 +56,12 @@ export function ApplicationsList({ canCreate }: { canCreate: boolean }) {
       />
     );
   }
-  const content = <ApplicationListContent items={query.data.items} />;
+  const content = <ApplicationListContent
+    canDeleteDraft={canDeleteDraft}
+    canWithdraw={canWithdraw}
+    items={query.data.items}
+    onDeletedLastItem={browser.onDeletedLastItem}
+  />;
   return (
     <section className="mt-6">
       <div className="mb-5 flex justify-end">

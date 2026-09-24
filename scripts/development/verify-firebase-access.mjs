@@ -15,7 +15,11 @@ export async function verifyAccess(options) {
 
   const applicantMe = await get("/api/auth/me", applicantCookie);
   assert.equal(applicantMe.status, 200);
-  assert((await applicantMe.json()).user.capabilities.includes("application.read.own"));
+  assert(
+    (await applicantMe.json()).user.capabilities.includes(
+      "funding.application.own.read",
+    ),
+  );
   assert.equal((await get("/portal", applicantCookie)).status, 200);
   assert.equal(
     (await get("/admin", applicantCookie)).headers.get("location"),

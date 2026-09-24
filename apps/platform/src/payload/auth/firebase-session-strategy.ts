@@ -1,6 +1,6 @@
 import type { AuthStrategy } from "payload";
 
-import { capabilities } from "@/auth/authorization/capabilities";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import { can } from "@/auth/authorization/policy";
 
 export const firebaseSessionStrategy: AuthStrategy = {
@@ -14,7 +14,7 @@ export const firebaseSessionStrategy: AuthStrategy = {
     if (!identity) return { user: null };
 
     const applicationUser = await findUserByFirebaseSubject(identity.uid);
-    if (!can(applicationUser, capabilities.cmsAccess)) return { user: null };
+    if (!can(applicationUser, permissionCodes.cmsAccess)) return { user: null };
 
     const principals = await payload.find({
       collection: "cms-principals",

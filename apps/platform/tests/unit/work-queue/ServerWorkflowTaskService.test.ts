@@ -1,22 +1,28 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
-vi.mock("@/db/repositories/WorkflowTaskRepository", () => ({
+vi.mock("@/modules/workflows/infrastructure/WorkflowTaskRepository", () => ({
   readWorkflowTask: vi.fn(),
 }));
-vi.mock("@/db/repositories/WorkflowTaskActionRepository", () => ({
+vi.mock(
+  "@/modules/workflows/application/runtime/ServerWorkflowActionAvailabilityService",
+  () => ({ getWorkflowActionAvailability: vi.fn() }),
+);
+vi.mock("@/modules/workflows/infrastructure/WorkflowTaskActionRepository", () => ({
   readChecklistTaskCompletion: vi.fn(),
   writeChecklistTaskCompletion: vi.fn(),
 }));
 
-import { capabilities } from "@/auth/authorization/capabilities";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import { PermissionDeniedError } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
+import { defaultWorkflowElementPermissions } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
+import { getWorkflowActionAvailability } from "@/modules/workflows/application/runtime/ServerWorkflowActionAvailabilityService";
 import {
   readChecklistTaskCompletion,
   writeChecklistTaskCompletion,
-} from "@/db/repositories/WorkflowTaskActionRepository";
-import { readWorkflowTask } from "@/db/repositories/WorkflowTaskRepository";
+} from "@/modules/workflows/infrastructure/WorkflowTaskActionRepository";
+import { readWorkflowTask } from "@/modules/workflows/infrastructure/WorkflowTaskRepository";
 import { RequestValidationError } from "@/lib/resource-errors";
 import {
   completeChecklistTask,
@@ -25,9 +31,9 @@ import {
 
 const actor: AuthenticatedUser = {
   capabilities: new Set([
-    capabilities.applicationScreen,
-    capabilities.workflowTaskComplete,
-    capabilities.workflowTaskRead,
+    permissionCodes.workflowTaskAssignedProcess,
+    permissionCodes.workflowTaskAssignedRead,
+    permissionCodes.workflowTaskAssignedDecide,
   ]),
   createdAt: new Date(),
   displayName: "Reviewer",
@@ -41,6 +47,26 @@ const actor: AuthenticatedUser = {
   userType: "staff",
 };
 
+const availableActions = [{
+    actionType: "APPROVE_ADVANCE" as const,
+    available: true,
+    key: "ADVANCE",
+    label: "Advance",
+    presentation: { displayOrder: 1, variant: "success" as const },
+    requiredInput: {
+      comment: { maxLength: 4_000, required: false },
+      confirmation: { message: null, required: false },
+      dueDate: { deadlineDays: null, required: false },
+      editableFieldKeys: [],
+      reasonCode: { options: [], required: false },
+      reasonOrCommentRequired: false,
+      reviewDate: { required: false },
+      target: { type: null, value: null },
+    },
+    runtimeVersion: 1,
+    unavailableReason: null,
+  }];
+
 const task = {
   applicantName: "Applicant",
   applicationId: "79e20de0-3558-4d63-90a4-8c9f5125df08",
@@ -50,14 +76,18 @@ const task = {
   },
   dueAt: new Date("2026-09-20T08:00:00Z"),
   fundingCallTitle: "Funding call",
+  formCompleted: false,
   reference: "SMEF-2026-000001",
   result: null,
+  permissions: defaultWorkflowElementPermissions,
   rowVersion: 2,
+  runtimeVersion: 1,
+  stageInstanceId: "79e20de0-3558-4d63-90a4-8c9f5125df12",
   stageName: "Pre-screening",
   taskInstanceId: "79e20de0-3558-4d63-90a4-8c9f5125df09",
   taskName: "Pre-screening checklist",
   taskStatus: "CLAIMED",
-  taskType: "CHECKLIST",
+  workflowInstanceId: "79e20de0-3558-4d63-90a4-8c9f5125df13",
 };
 
 const command = {
@@ -68,6 +98,7 @@ const command = {
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(readWorkflowTask).mockResolvedValue(task);
+  vi.mocked(getWorkflowActionAvailability).mockResolvedValue(availableActions);
   vi.mocked(readChecklistTaskCompletion).mockResolvedValue(null);
 });
 
@@ -76,10 +107,12 @@ describe("workflow checklist task service", () => {
     const result = await getWorkflowTask(actor, task.taskInstanceId);
     expect(result).toMatchObject({
       checklistItems: task.config.items,
+      actions: availableActions,
       dueAt: "2026-09-20T08:00:00.000Z",
       resultItems: [],
     });
     expect(result).not.toHaveProperty("config");
+    expect(result).not.toHaveProperty("permissions");
     expect(result).not.toHaveProperty("result");
   });
 
@@ -88,6 +121,7 @@ describe("workflow checklist task service", () => {
       actor,
       task.taskInstanceId,
       {
+        actionKey: "ADVANCE",
         expectedRowVersion: 2,
         items: [{ accepted: false, code: "OWNERSHIP" }],
       },
@@ -98,6 +132,7 @@ describe("workflow checklist task service", () => {
 
   it("completes valid decisions and returns idempotent results", async () => {
     const completion = {
+      actionKey: "ADVANCE",
       nextStageName: "Completeness screening",
       rowVersion: 3,
       taskInstanceId: task.taskInstanceId,
@@ -112,6 +147,7 @@ describe("workflow checklist task service", () => {
       actor,
       task.taskInstanceId,
       {
+        actionKey: "ADVANCE",
         expectedRowVersion: 2,
         items: [{ accepted: true, code: "OWNERSHIP" }],
       },
@@ -120,11 +156,43 @@ describe("workflow checklist task service", () => {
     expect(result).toEqual(completion);
   });
 
-  it("enforces both completion and screening capabilities", async () => {
+  it("completes a checklist with no bound action using process permission", async () => {
+    const completion = {
+      actionKey: null,
+      nextStageName: null,
+      rowVersion: 3,
+      taskInstanceId: task.taskInstanceId,
+      taskStatus: "COMPLETED" as const,
+      workflowStatus: "ACTIVE" as const,
+    };
+    vi.mocked(writeChecklistTaskCompletion).mockResolvedValue({
+      kind: "completed",
+      result: completion,
+    });
+
     await expect(completeChecklistTask(
-      { ...actor, capabilities: new Set([capabilities.workflowTaskComplete]) },
+      {
+        ...actor,
+        capabilities: new Set([permissionCodes.workflowTaskAssignedProcess]),
+      },
       task.taskInstanceId,
-      { expectedRowVersion: 2, items: [] },
+      {
+        expectedRowVersion: 2,
+        items: [{ accepted: true, code: "OWNERSHIP" }],
+      },
+      command,
+    )).resolves.toEqual(completion);
+    expect(writeChecklistTaskCompletion).toHaveBeenCalledWith(
+      expect.objectContaining({ actionKey: null }),
+      expect.any(Function),
+    );
+  });
+
+  it("requires the configured decide permission", async () => {
+    await expect(completeChecklistTask(
+      { ...actor, capabilities: new Set() },
+      task.taskInstanceId,
+      { actionKey: "ADVANCE", expectedRowVersion: 2, items: [] },
       command,
     )).rejects.toBeInstanceOf(PermissionDeniedError);
   });

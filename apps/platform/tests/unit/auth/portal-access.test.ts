@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { capabilities } from "@/auth/authorization/capabilities";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import {
   canAccessApplicantPortal,
   getAvailablePortalSpaces,
@@ -29,7 +29,7 @@ function user(
 
 describe("portal access policy", () => {
   it("rejects active staff without an applicant-scoped capability", () => {
-    const staff = user([capabilities.adminAccess]);
+    const staff = user([permissionCodes.fundingApplicationAllRead]);
 
     expect(canAccessApplicantPortal(staff)).toBe(false);
   });
@@ -38,7 +38,7 @@ describe("portal access policy", () => {
     "rejects a %s user even when an applicant capability is granted",
     (status) => {
       const inactiveUser = user(
-        [capabilities.profileReadOwn],
+        [permissionCodes.userProfileOwnRead],
         status,
       );
 
@@ -48,8 +48,8 @@ describe("portal access policy", () => {
 
   it("derives dual spaces and operations as the default", () => {
     const dualUser = user([
-      capabilities.profileReadOwn,
-      capabilities.adminAccess,
+      permissionCodes.userProfileOwnRead,
+      permissionCodes.fundingApplicationAllRead,
     ]);
 
     expect(getAvailablePortalSpaces(dualUser)).toEqual([
@@ -60,7 +60,7 @@ describe("portal access policy", () => {
   });
 
   it("routes a content-only user to Payload", () => {
-    const contentUser = user([capabilities.cmsAccess]);
+    const contentUser = user([permissionCodes.cmsAccess]);
 
     expect(getDefaultAuthenticatedPath(contentUser)).toBe("/cms");
   });

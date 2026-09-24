@@ -1,5 +1,9 @@
 import { z } from "zod";
 
+import {
+  permissionCatalogue,
+  type PermissionCode,
+} from "@/auth/authorization/permissions";
 import { userStatuses } from "./UserAccessTypes";
 
 const roleCodes = z.array(z.string().trim().min(1).max(120)).max(50);
@@ -30,7 +34,16 @@ export const promoteUserSchema = z.object({
 });
 
 export const updateRoleSchema = z.object({
-  capabilityCodes: z.array(z.string().trim().min(1).max(160)).max(250),
+  capabilityCodes: z
+    .array(
+      z.enum(
+        permissionCatalogue.map((permission) => permission.code) as [
+          PermissionCode,
+          ...PermissionCode[],
+        ],
+      ),
+    )
+    .max(250),
   description: z.string().trim().max(500).nullable(),
   name: z.string().trim().min(2).max(160),
 });

@@ -43,7 +43,7 @@ export function listOwnedBusinesses(ownerUserId: string) {
 
 export function listOwnedBusinessesForApplication(input: {
   applicationId: string;
-  fundingOpportunityId: number;
+  fundingOpportunityId: string;
   ownerUserId: string;
 }) {
   return getDatabase()

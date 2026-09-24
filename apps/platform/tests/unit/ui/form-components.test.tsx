@@ -7,6 +7,7 @@ import { FormDateInput } from "@/components/ui/form-date-input";
 import { CheckboxField } from "@/components/ui/form-field";
 import { FormInput, FormSelect } from "@/components/ui/form-fields";
 import { MoneyField } from "@/components/ui/money-field";
+import { FormRadioGroup } from "@/shared/ui/FormRadioGroup";
 
 function RegisteredInput() {
   const form = useForm<{ email: string }>({
@@ -76,6 +77,35 @@ describe("shared form components", () => {
     expect(markup).toContain('type="search"');
   });
 
+  it("renders a compact form input", () => {
+    const markup = renderToStaticMarkup(
+      <FormInput label="Value" name="value" size="compact" />,
+    );
+
+    expect(markup).toContain("h-8");
+    expect(markup).toContain("text-xs");
+    expect(markup).not.toContain('size="compact"');
+  });
+
+  it("renders compact select and money controls", () => {
+    const selectMarkup = renderToStaticMarkup(
+      <FormSelect
+        items={[{ label: "Open", value: "OPEN" }]}
+        label="Status"
+        name="status"
+        size="compact"
+      />,
+    );
+    const moneyMarkup = renderToStaticMarkup(
+      <MoneyField label="Amount" name="amount" size="compact" />,
+    );
+
+    expect(selectMarkup).toContain("h-8");
+    expect(selectMarkup).not.toContain('size="compact"');
+    expect(moneyMarkup).toContain("h-8");
+    expect(moneyMarkup).not.toContain('size="compact"');
+  });
+
   it("renders the shared money field with currency and decimal semantics", () => {
     const markup = renderToStaticMarkup(
       <MoneyField label="Amount" name="amount" />,
@@ -94,12 +124,19 @@ describe("shared form components", () => {
 
   it("keeps checkbox semantics inside the shared field", () => {
     const markup = renderToStaticMarkup(
-      <CheckboxField name="consent" label="I consent" required />,
+      <CheckboxField
+        description="Explains the choice."
+        name="consent"
+        label="I consent"
+        required
+      />,
     );
 
     expect(markup).toContain('type="checkbox"');
     expect(markup).toContain('name="consent"');
     expect(markup).toContain("I consent");
+    expect(markup).toContain("Explains the choice.");
+    expect(markup).toContain('aria-describedby="consent-description"');
   });
 
   it("renders select items from data instead of JSX children", () => {
@@ -118,6 +155,29 @@ describe("shared form components", () => {
     expect(markup).toContain("Select region");
     expect(markup).toContain("Khomas");
     expect(markup).toContain("Oshana");
+  });
+
+  it("renders a shared controlled radio group", () => {
+    const markup = renderToStaticMarkup(
+      <FormRadioGroup
+        helpText="Choose one answer."
+        id="approval"
+        label="Approved"
+        name="approval"
+        onValueChange={() => undefined}
+        options={[
+          { label: "Yes", value: true },
+          { label: "No", value: false },
+        ]}
+        required
+        value={false}
+      />,
+    );
+
+    expect(markup).toContain('role="radiogroup"');
+    expect(markup).toContain("Approved");
+    expect(markup).toContain("Choose one answer.");
+    expect(markup).toContain('checked=""');
   });
 
   it("renders an ISO-backed React Aria date field", () => {
@@ -139,7 +199,7 @@ describe("shared buttons", () => {
   it("applies variants and accessible icon labels", () => {
     const defaultButton = renderToStaticMarkup(<GeneralButton>Continue</GeneralButton>);
     const brandButton = renderToStaticMarkup(
-      <GeneralButton variant="brand">Submit</GeneralButton>,
+      <GeneralButton variant="primary">Submit</GeneralButton>,
     );
     const iconButton = renderToStaticMarkup(
       <IconButton label="Copy">C</IconButton>,

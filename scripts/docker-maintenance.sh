@@ -2,7 +2,7 @@
 
 set -Eeuo pipefail
 
-retention_hours="${BUILDKIT_CACHE_MAX_AGE_HOURS:-168}"
+retention_hours="${BUILDKIT_CACHE_MAX_AGE_HOURS:-12}"
 
 if ! [[ "${retention_hours}" =~ ^[0-9]+$ ]] || [ "${retention_hours}" -lt 1 ]; then
   echo "BUILDKIT_CACHE_MAX_AGE_HOURS must be a positive whole number." >&2

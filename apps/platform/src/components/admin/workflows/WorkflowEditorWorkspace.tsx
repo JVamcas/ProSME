@@ -1,16 +1,20 @@
 "use client";
 
-import Link from "next/link";
-import { ArrowLeft, Copy } from "lucide-react";
+import { Copy, Workflow } from "lucide-react";
 
+import { PortalErrorState } from "@/components/layout/PortalErrorState";
+import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
 import { GeneralButton } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
 import {
   useCloneWorkflow,
   useWorkflowEditor,
 } from "@/modules/workflows/WorkflowHooks";
+import { PageShell } from "@/shared/ui/PageShell";
 import { WorkflowDefinitionDetailsCard } from "./WorkflowDefinitionDetailsCard";
 import { WorkflowStageFlow } from "./WorkflowStageFlow";
+import { error } from "node:console";
+import { CloneButton } from "@/components/ui/action-buttons";
 
 type Props = {
   canPublish: boolean;
@@ -21,64 +25,43 @@ type Props = {
 export function WorkflowEditorWorkspace({ canUpdate, definitionId }: Props) {
   const query = useWorkflowEditor(definitionId);
   const clone = useCloneWorkflow(definitionId);
+
   if (query.isLoading)
     return (
-      <p className="rounded-2xl bg-brand-cream p-6 text-brand-navy">
-        Loading workflow editor…
-      </p>
+      <PortalLoadingState title="" description={"Loading workflow editor…"} />
     );
+
   if (query.error || !query.data)
     return (
-      <p
-        className="rounded-2xl bg-brand-cream p-6 text-brand-navy"
-        role="alert"
-      >
-        {query.error?.message ?? "Workflow could not be loaded."}
-      </p>
+      <PortalErrorState
+        title={query.error?.name}
+        description={query.error?.message ?? "Workflow could not be loaded."}
+      />
     );
+
   const editor = query.data;
   const busy = clone.isPending;
+
   return (
-    <div>
-      <Link
-        className="inline-flex items-center gap-2 text-sm font-semibold text-brand-navy hover:text-brand-orange"
-        href="/admin/workflows"
-      >
-        <ArrowLeft className="size-4" /> Workflow definitions
-      </Link>
-      <header className="mt-4 flex flex-col gap-4 border-b border-brand-navy/15 pb-5 xl:flex-row xl:items-start xl:justify-between">
-        <div>
-          <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-3xl font-bold text-brand-navy">
-              {editor.definition.name}
-            </h1>
-            <StatusBadge status={editor.version.status} />
-          </div>
-          <p className="mt-2 text-sm text-brand-navy/60">
-            {editor.definition.description ||
-              "Workflow definition for funding opportunities."}
-          </p>
-        </div>
+    <PageShell
+      eyebrow="Admin / Workflow Definitions"
+      title="Workflow definitions"
+      description={editor.definition.description}
+      icon={<Workflow size={18} className="text-brand-orange" />}
+      actions={
         <div className="flex flex-wrap gap-2">
-          {editor.version.status !== "DRAFT" && canUpdate ? (
-            <GeneralButton
-              variant="outline"
-              disabled={busy}
-              onClick={() => clone.mutate(editor.version.id)}
-            >
-              <Copy className="size-4" />
-              Clone
-            </GeneralButton>
-          ) : null}
+          <CloneButton
+            onClick={() => clone.mutate(editor.version.id)}
+            disabled={busy && !(editor.version.status !== "DRAFT" && canUpdate)}
+          />
+          <StatusBadge status={editor.version.status} />
         </div>
-      </header>
-      <WorkflowDefinitionDetailsCard editor={editor} />
-      <div className="mt-6 space-y-6">
-        <WorkflowStageFlow
-          canEdit={canUpdate}
-          editor={editor}
-        />
+      }
+    >
+      <div className="space-y-6">
+        <WorkflowDefinitionDetailsCard editor={editor} />
+        <WorkflowStageFlow canEdit={canUpdate} editor={editor} />
       </div>
-    </div>
+    </PageShell>
   );
 }

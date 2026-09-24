@@ -15,7 +15,7 @@ export default function UnauthorizedPage() {
       title="You cannot open this area"
       description="Your are not authorised to access this resource. Please contact your administrator if you believe this is an error."
     >
-      <GeneralButton asChild className="w-full" variant="brand">
+      <GeneralButton asChild className="w-full" variant="primary">
         <Link href="/portal">Return to the applicant portal</Link>
       </GeneralButton>
     </AuthCard>

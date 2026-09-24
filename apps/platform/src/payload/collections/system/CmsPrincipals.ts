@@ -6,7 +6,7 @@ import {
   hasCmsCapability,
   type CmsRequestUser,
 } from "@/payload/access/can-access-cms";
-import { capabilities } from "@/auth/authorization/capabilities";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import { firebaseSessionStrategy } from "@/payload/auth/firebase-session-strategy";
 
 export const CmsPrincipals: CollectionConfig = {
@@ -23,7 +23,7 @@ export const CmsPrincipals: CollectionConfig = {
     hidden: ({ user }) =>
       !hasCmsCapability(
         user as CmsRequestUser,
-        capabilities.cmsPrincipalsManage,
+        permissionCodes.cmsPrincipalsManage,
       ),
   },
   access: {

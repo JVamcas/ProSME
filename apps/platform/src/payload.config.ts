@@ -9,6 +9,7 @@ import sharp from "sharp";
 
 import { getServerEnvironment } from "@/lib/env/server";
 import { gcsObjectPrefixes } from "@/integrations/storage/GcsObjectPrefixes";
+import { getGoogleCloudStorageOptions } from "@/integrations/storage/GoogleCloudStorageOptions";
 import { Media } from "@/payload/collections/content/Media";
 import { ContactSubmissions } from "@/payload/collections/content/ContactSubmissions";
 import { Events } from "@/payload/collections/content/Events";
@@ -18,7 +19,6 @@ import { NewsletterSubscriptions } from "@/payload/collections/content/Newslette
 import { Pages } from "@/payload/collections/content/Pages";
 import { Resources } from "@/payload/collections/content/Resources";
 import { EligibilityContent } from "@/payload/collections/programme/EligibilityContent";
-import { FundingCalls } from "@/payload/collections/programme/FundingCalls";
 import { ProgrammeStatistics } from "@/payload/collections/programme/ProgrammeStatistics";
 import { CmsPrincipals } from "@/payload/collections/system/CmsPrincipals";
 import { ContentAuditEntries } from "@/payload/collections/system/ContentAuditEntries";
@@ -55,7 +55,6 @@ export default buildConfig({
     Resources,
     Events,
     FAQs,
-    FundingCalls,
     EligibilityContent,
     ProgrammeStatistics,
     ContactSubmissions,
@@ -77,7 +76,7 @@ export default buildConfig({
         media: { prefix: gcsObjectPrefixes.cms },
       },
       enabled: Boolean(environment.GCS_DOCUMENTS_BUCKET),
-      options: {},
+      options: getGoogleCloudStorageOptions(),
       useCompositePrefixes: true,
     }),
   ],

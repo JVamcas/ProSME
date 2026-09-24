@@ -1,21 +1,62 @@
+import type { ReactNode } from "react";
+
 import { DeleteButton, EditButton } from "@/components/ui/action-buttons";
+import { Tabs, type TabItem } from "@/components/ui/tabs";
+import type { WorkflowActionDefinition } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
 import type {
   WorkflowAssignmentOptions,
+  WorkflowEditorView,
   WorkflowStageInput,
   WorkflowTaskInput,
-} from "@/modules/workflows/WorkflowTypes";
-import { WorkflowStageTaskTable } from "./WorkflowStageTaskTable";
+} from "@/modules/workflows/domain/definitions/WorkflowTypes";
+import { WorkflowStageTaskTable } from "@/modules/workflows/ui/definitions/WorkflowStageTaskTable";
+import { WorkflowStageActionTable } from "@/modules/workflows/ui/definitions/WorkflowStageActionTable";
+import { WorkflowStageTransitionTable } from "@/modules/workflows/ui/definitions/WorkflowStageTransitionTable";
+import { WorkflowStageChecklistTable } from "@/modules/workflows/ui/definitions/WorkflowStageChecklistTable";
+import type { WorkflowStageChecklistDefinition } from "@/modules/workflows/domain/definitions/WorkflowStageChecklistDefinition";
+import { WorkflowStageDocumentRequirementTable } from "@/modules/workflows/ui/definitions/WorkflowStageDocumentRequirementTable";
+import type { WorkflowStageDocumentRequirement } from "@/modules/workflows/domain/definitions/WorkflowStageDocumentRequirement";
+import { WorkflowStageScoringTable } from "@/modules/workflows/ui/definitions/WorkflowStageScoringTable";
+import type { WorkflowStageScoringCriterion } from "@/modules/workflows/domain/definitions/WorkflowStageScoringDefinition";
+import type { WorkflowStageCommentField } from "@/modules/workflows/domain/definitions/WorkflowStageCommentField";
+import { WorkflowStageCommentFieldTable } from "@/modules/workflows/ui/definitions/WorkflowStageCommentFieldTable";
+import { Badge, type BadgeProps } from "@/shared/ui/Badge";
 
 type Props = {
   canEdit: boolean;
   canDelete: boolean;
   isDeleting: boolean;
   assignmentOptions?: WorkflowAssignmentOptions;
+  editor: WorkflowEditorView;
+  onAddAction: () => void;
   onAddTask: () => void;
+  onAddChecklistItem: () => void;
+  onAddDocumentRequirement: () => void;
+  onAddScoringCriterion: () => void;
+  onAddCommentField: () => void;
   onDelete: () => void;
+  onDeleteAction: (action: WorkflowActionDefinition) => void;
   onEdit: () => void;
+  onEditAction: (action: WorkflowActionDefinition) => void;
   onDeleteTask: (task: WorkflowTaskInput) => void;
   onEditTask: (task: WorkflowTaskInput) => void;
+  onDeleteChecklistItem: (item: WorkflowStageChecklistDefinition) => void;
+  onEditChecklistItem: (item: WorkflowStageChecklistDefinition) => void;
+  onDeleteDocumentRequirement: (
+    requirement: WorkflowStageDocumentRequirement,
+  ) => void;
+  onEditDocumentRequirement: (
+    requirement: WorkflowStageDocumentRequirement,
+  ) => void;
+  onDeleteScoringCriterion: (
+    criterion: WorkflowStageScoringCriterion,
+  ) => void;
+  onEditScoringCriterion: (
+    criterion: WorkflowStageScoringCriterion,
+  ) => void;
+  onDeleteCommentField: (field: WorkflowStageCommentField) => void;
+  onEditCommentField: (field: WorkflowStageCommentField) => void;
+  onPreviewTask: (task: WorkflowTaskInput) => void;
   stage?: WorkflowStageInput;
   stageIndex: number;
 };
@@ -25,11 +66,28 @@ export function WorkflowStageDetails({
   canDelete,
   isDeleting,
   assignmentOptions,
+  editor,
+  onAddAction,
   onAddTask,
+  onAddChecklistItem,
+  onAddDocumentRequirement,
+  onAddScoringCriterion,
+  onAddCommentField,
   onDelete,
+  onDeleteAction,
   onEdit,
+  onEditAction,
   onDeleteTask,
   onEditTask,
+  onDeleteChecklistItem,
+  onEditChecklistItem,
+  onDeleteDocumentRequirement,
+  onEditDocumentRequirement,
+  onDeleteScoringCriterion,
+  onEditScoringCriterion,
+  onDeleteCommentField,
+  onEditCommentField,
+  onPreviewTask,
   stage,
   stageIndex,
 }: Props) {
@@ -40,6 +98,123 @@ export function WorkflowStageDetails({
       </div>
     );
   }
+
+  const workTabs = [
+    {
+      id: "tasks",
+      label: "Tasks",
+      content: (
+        <StageTabContent>
+          <WorkflowStageTaskTable
+            assignmentOptions={assignmentOptions}
+            canEdit={canEdit}
+            onAdd={onAddTask}
+            onDelete={onDeleteTask}
+            onEdit={onEditTask}
+            onPreview={onPreviewTask}
+            stage={stage}
+          />
+        </StageTabContent>
+      ),
+    },
+    {
+      id: "checklists",
+      label: "Checklists",
+      content: (
+        <StageTabContent>
+          <WorkflowStageChecklistTable
+            canEdit={canEdit}
+            onAdd={onAddChecklistItem}
+            onDelete={onDeleteChecklistItem}
+            onEdit={onEditChecklistItem}
+            stage={stage}
+          />
+        </StageTabContent>
+      ),
+    },
+    {
+      id: "documents",
+      label: "Documents",
+      content: (
+        <StageTabContent>
+          <WorkflowStageDocumentRequirementTable
+            canEdit={canEdit}
+            onAdd={onAddDocumentRequirement}
+            onDelete={onDeleteDocumentRequirement}
+            onEdit={onEditDocumentRequirement}
+            stage={stage}
+          />
+        </StageTabContent>
+      ),
+    },
+    {
+      id: "scoring",
+      label: "Scoring",
+      content: (
+        <StageTabContent>
+          <WorkflowStageScoringTable
+            canEdit={canEdit}
+            editor={editor}
+            onAdd={onAddScoringCriterion}
+            onDelete={onDeleteScoringCriterion}
+            onEdit={onEditScoringCriterion}
+            stage={stage}
+          />
+        </StageTabContent>
+      ),
+    },
+    {
+      id: "actions",
+      label: "Actions",
+      content: (
+        <StageTabContent>
+          <WorkflowStageActionTable
+            canEdit={canEdit}
+            onAdd={onAddAction}
+            onDelete={onDeleteAction}
+            onEdit={onEditAction}
+            stage={stage}
+          />
+        </StageTabContent>
+      ),
+    },
+    {
+      id: "comments",
+      label: "Comments & Recommendations",
+      content: (
+        <StageTabContent>
+          <WorkflowStageCommentFieldTable
+            canEdit={canEdit}
+            onAdd={onAddCommentField}
+            onDelete={onDeleteCommentField}
+            onEdit={onEditCommentField}
+            stage={stage}
+          />
+        </StageTabContent>
+      ),
+    },
+    {
+      id: "transition",
+      label: "Transition",
+      content: (
+        <StageTabContent>
+          <WorkflowStageTransitionTable
+            canEdit={canEdit}
+            editor={editor}
+            stage={stage}
+          />
+        </StageTabContent>
+      ),
+    },
+  ] satisfies readonly TabItem<
+    | "tasks"
+    | "checklists"
+    | "documents"
+    | "scoring"
+    | "comments"
+    | "actions"
+    | "transition"
+  >[];
 
   return (
     <article className="rounded-2xl border border-brand-navy/15 bg-brand-white p-5">
@@ -52,16 +227,67 @@ export function WorkflowStageDetails({
         stage={stage}
         stageIndex={stageIndex}
       />
-      <ApprovalRule stage={stage} />
-      <WorkflowStageTaskTable
-        assignmentOptions={assignmentOptions}
-        canEdit={canEdit}
-        onAdd={onAddTask}
-        onDelete={onDeleteTask}
-        onEdit={onEditTask}
-        stage={stage}
-      />
+      <StageConfiguration stage={stage} />
+      <div className="mt-5">
+        <Tabs
+          ariaLabel={`${stage.name} stage configuration`}
+          defaultSelectedId="tasks"
+          items={workTabs}
+        />
+      </div>
     </article>
+  );
+}
+
+function StageTabContent({ children }: { children: ReactNode }) {
+  return <div className="[&>section]:mt-0">{children}</div>;
+}
+
+function StageConfiguration({ stage }: { stage: WorkflowStageInput }) {
+  const badges = [
+    {
+      label: stage.enabled ? "Enabled" : "Disabled",
+      variant: stage.enabled ? "success" : "outline",
+    },
+    {
+      label: stage.optional ? "Optional" : "Required",
+      variant: stage.optional ? "outlineOrange" : "red",
+    },
+    {
+      label: stage.repeatable ? "Repeatable" : "Single-run",
+      variant: stage.repeatable ? "yellow" : "outlineOrange",
+    },
+    {
+      label: stage.coiGated ? "COI-gated" : "No COI gate",
+      variant: stage.coiGated ? "primary" : "outlineOrange",
+    },
+  ] satisfies Array<{ label: string; variant: BadgeProps["variant"] }>;
+
+  return (
+    <dl className="mt-4 grid gap-3 rounded-xl border border-brand-navy/10 p-4 text-sm sm:grid-cols-2">
+      <div>
+        <dt className="text-xs font-semibold text-brand-navy/55">Stable key</dt>
+        <dd className="font-mono text-brand-navy">{stage.stableKey}</dd>
+      </div>
+      <div>
+        <dt className="text-xs font-semibold text-brand-navy/55">Display order</dt>
+        <dd className="text-brand-navy">{stage.displayOrder}</dd>
+      </div>
+      <div className="sm:col-span-2">
+        <dt className="text-xs font-semibold text-brand-navy/55">Description</dt>
+        <dd className="text-brand-navy">{stage.description || "No description"}</dd>
+      </div>
+      <div>
+        <dt className="text-xs font-semibold text-brand-navy/55">Configuration</dt>
+        <dd className="mt-1.5 flex flex-wrap gap-2">
+          {badges.map((badge) => (
+            <Badge key={badge.label} variant={badge.variant}>
+              {badge.label}
+            </Badge>
+          ))}
+        </dd>
+      </div>
+    </dl>
   );
 }
 
@@ -100,24 +326,5 @@ function StageDetailHeader({
         />
       </div>
     </header>
-  );
-}
-
-function ApprovalRule({ stage }: { stage: WorkflowStageInput }) {
-  const required = stage.tasks.filter((task) => task.required).length;
-  return (
-    <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-brand-blue/15 px-4 py-3">
-      <div>
-        <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-brand-navy/60">
-          Approval rule
-        </p>
-        <p className="mt-1 text-sm font-semibold text-brand-navy">
-          {required} of {stage.tasks.length} tasks required
-        </p>
-      </div>
-      <span className="rounded-full border border-brand-blue bg-white px-3 py-1 text-[10px] font-bold text-brand-navy">
-        {required} mandatory
-      </span>
-    </div>
   );
 }

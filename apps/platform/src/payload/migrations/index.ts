@@ -10,6 +10,7 @@ import * as migration_20260912_124500_phase2_page_impact_summary from './2026091
 import * as migration_20260912_130000_phase2_impact_background from './20260912_130000_phase2_impact_background';
 import * as migration_20260912_181500_code_owned_primary_navigation from './20260912_181500_code_owned_primary_navigation';
 import * as migration_20260914_230000_gcs_media_prefix from './20260914_230000_gcs_media_prefix';
+import * as migration_20260921_120000_remove_legacy_eligibility_checker from './20260921_120000_remove_legacy_eligibility_checker';
 
 export const migrations = [
   {
@@ -71,5 +72,10 @@ export const migrations = [
     up: migration_20260914_230000_gcs_media_prefix.up,
     down: migration_20260914_230000_gcs_media_prefix.down,
     name: '20260914_230000_gcs_media_prefix'
+  },
+  {
+    up: migration_20260921_120000_remove_legacy_eligibility_checker.up,
+    down: migration_20260921_120000_remove_legacy_eligibility_checker.down,
+    name: '20260921_120000_remove_legacy_eligibility_checker'
   },
 ];

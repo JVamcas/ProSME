@@ -16,7 +16,7 @@ import {
 } from "@/modules/workflows/WorkflowHooks";
 
 const formSchema = z.object({
-  fundingOpportunityId: z.coerce.number().int().positive(),
+  fundingOpportunityId: z.uuid(),
   workflowVersionId: z.string().uuid(),
 });
 export function WorkflowAssignmentPanel() {

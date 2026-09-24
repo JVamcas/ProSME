@@ -2,11 +2,11 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
-import { capabilities } from "@/auth/authorization/capabilities";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import { AuthenticatedPortalShell } from "@/components/layout/authenticated-portal-shell";
 import { CapabilityGate } from "@/components/layout/capability-gate";
-import { PortalErrorState } from "@/components/layout/portal-error-state";
-import { PortalLoadingState } from "@/components/layout/portal-loading-state";
+import { PortalErrorState } from "@/components/layout/PortalErrorState";
+import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
 import { createQueryClient } from "@/lib/query-client";
 import type { PortalContext } from "@/modules/profiles/ProfileTypes";
 
@@ -21,7 +21,7 @@ const context: PortalContext = {
   email: "owner@example.test",
   status: "active",
   roleCodes: ["applicant"],
-  capabilityCodes: [capabilities.profileReadOwn],
+  capabilityCodes: [permissionCodes.userProfileOwnRead],
   availableSpaces: ["applicant"],
   defaultSpace: "applicant",
 };
@@ -58,10 +58,10 @@ describe("P3.1 shared authenticated portal shell", () => {
   it("gates children against the projected capabilities", () => {
     const markup = renderShell(
       <>
-        <CapabilityGate capability={capabilities.profileReadOwn}>
+        <CapabilityGate capability={permissionCodes.userProfileOwnRead}>
           <span>Allowed profile</span>
         </CapabilityGate>
-        <CapabilityGate capability={capabilities.businessReadOwn}>
+        <CapabilityGate capability={permissionCodes.businessOwnRead}>
           <span>Blocked business</span>
         </CapabilityGate>
       </>,
@@ -75,14 +75,14 @@ describe("P3.1 shared authenticated portal shell", () => {
     const markup = renderShell(
       <>
         <CapabilityGate
-          capability={capabilities.businessReadOwn}
+          capability={permissionCodes.businessOwnRead}
           mode="fallback"
           fallback={<span>Fallback content</span>}
         >
           <span>Business content</span>
         </CapabilityGate>
         <CapabilityGate
-          capability={capabilities.businessReadOwn}
+          capability={permissionCodes.businessOwnRead}
           mode="forbidden"
         >
           <span>Restricted content</span>
@@ -98,8 +98,8 @@ describe("P3.1 shared authenticated portal shell", () => {
     const dualContext: PortalContext = {
       ...context,
       capabilityCodes: [
-        capabilities.profileReadOwn,
-        capabilities.adminAccess,
+        permissionCodes.userProfileOwnRead,
+        permissionCodes.fundingApplicationAllRead,
       ],
       availableSpaces: ["applicant", "operations"],
       defaultSpace: "operations",
@@ -119,13 +119,13 @@ describe("P3.1 shared authenticated portal shell", () => {
     expect(markup).toContain('href="/admin"');
   });
 
-  it("renders permitted nested operations routes", () => {
+  it("renders permitted nested operations routes closed by default", () => {
     const operationsContext: PortalContext = {
       ...context,
       roleCodes: ["system_administrator"],
       capabilityCodes: [
-        capabilities.adminAccess,
-        capabilities.formRead,
+        permissionCodes.fundingApplicationAllRead,
+        permissionCodes.workflowFormRead,
       ],
       availableSpaces: ["operations"],
       defaultSpace: "operations",
@@ -142,8 +142,10 @@ describe("P3.1 shared authenticated portal shell", () => {
     );
 
     expect(markup).toContain("Settings");
-    expect(markup).toContain("Forms");
-    expect(markup).toContain('href="/admin/settings/forms"');
+    expect(markup).toContain("Administration");
+    expect(markup).toContain('aria-expanded="false"');
+    expect(markup).not.toContain(">Forms<");
+    expect(markup).not.toContain('href="/admin/settings/forms"');
   });
 
   it("renders the CMS link only for permitted operations users", () => {
@@ -151,8 +153,8 @@ describe("P3.1 shared authenticated portal shell", () => {
       ...context,
       roleCodes: ["programme_administrator"],
       capabilityCodes: [
-        capabilities.adminAccess,
-        capabilities.cmsAccess,
+        permissionCodes.fundingApplicationAllRead,
+        permissionCodes.cmsAccess,
       ],
       availableSpaces: ["operations"],
       defaultSpace: "operations",

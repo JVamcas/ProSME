@@ -1,7 +1,7 @@
 import "server-only";
 
-import { capabilities } from "@/auth/authorization/capabilities";
-import { requireCapability } from "@/auth/authorization/policy";
+import { permissionCodes } from "@/auth/authorization/permissions";
+import { requirePermission } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import {
   createOwnedBusiness,
@@ -35,15 +35,15 @@ function view(
 }
 
 export async function listBusinesses(user: AuthenticatedUser | null) {
-  const actor = requireCapability(user, capabilities.businessReadOwn);
+  const actor = requirePermission(user, permissionCodes.businessOwnRead);
   return (await listOwnedBusinesses(actor.id)).map(view);
 }
 
 export async function listApplicationBusinesses(
   user: AuthenticatedUser | null,
-  input: { applicationId: string; fundingOpportunityId: number },
+  input: { applicationId: string; fundingOpportunityId: string },
 ) {
-  const actor = requireCapability(user, capabilities.businessReadOwn);
+  const actor = requirePermission(user, permissionCodes.businessOwnRead);
   const businesses = await listOwnedBusinessesForApplication({
     ...input,
     ownerUserId: actor.id,
@@ -61,7 +61,7 @@ async function loadOwnedBusiness(ownerUserId: string, id: string) {
 }
 
 export async function getBusiness(user: AuthenticatedUser | null, id: string) {
-  const actor = requireCapability(user, capabilities.businessReadOwn);
+  const actor = requirePermission(user, permissionCodes.businessOwnRead);
   return loadOwnedBusiness(actor.id, id);
 }
 
@@ -69,7 +69,7 @@ export async function createBusiness(
   user: AuthenticatedUser | null,
   input: BusinessProfileInput,
 ) {
-  const actor = requireCapability(user, capabilities.businessUpdateOwn);
+  const actor = requirePermission(user, permissionCodes.businessOwnUpdate);
   const id = await createOwnedBusiness(actor.id, input);
   return loadOwnedBusiness(actor.id, id);
 }
@@ -79,7 +79,7 @@ export async function updateBusiness(
   id: string,
   input: BusinessProfileInput,
 ) {
-  const actor = requireCapability(user, capabilities.businessUpdateOwn);
+  const actor = requirePermission(user, permissionCodes.businessOwnUpdate);
   const updatedId = await updateOwnedBusiness(actor.id, id, input);
   if (!updatedId) throw new BusinessNotFoundError();
   return loadOwnedBusiness(actor.id, updatedId);
@@ -89,7 +89,7 @@ export async function deleteBusiness(
   user: AuthenticatedUser | null,
   id: string,
 ) {
-  const actor = requireCapability(user, capabilities.businessUpdateOwn);
+  const actor = requirePermission(user, permissionCodes.businessOwnUpdate);
   if (!(await deleteOwnedBusiness(actor.id, id))) {
     throw new BusinessNotFoundError();
   }

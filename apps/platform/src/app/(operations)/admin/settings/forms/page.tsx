@@ -1,30 +1,33 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-import { capabilities } from "@/auth/authorization/capabilities";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import { getCurrentUser } from "@/auth/authorization/current-user";
 import { can } from "@/auth/authorization/policy";
 import { FormsWorkspace } from "@/components/admin/forms/FormsWorkspace";
-import { ProfilePageHeader } from "@/components/applicant/profile/ProfilePageHeader";
+import { Form } from "lucide-react";
+import { PageShell } from "@/shared/ui/PageShell";
 
 export const metadata: Metadata = { title: "Forms" };
 
 export default async function FormsPage() {
   const user = await getCurrentUser();
-  if (!user || !can(user, capabilities.formRead)) {
+  if (!user || !can(user, permissionCodes.workflowFormRead)) {
     redirect("/unauthorized");
   }
   return (
-    <section>
-      <ProfilePageHeader
-        description="Create reusable, versioned forms for operational tasks."
-        eyebrow="Settings"
-        title="Forms"
-      />
+    <PageShell
+      description="Create reusable, versioned forms for applications and workflow tasks."
+      eyebrow="Settings"
+      title="Forms"
+      icon={<Form />}
+    >
       <FormsWorkspace
-        canCreate={can(user, capabilities.formCreate)}
-        canUpdate={can(user, capabilities.formUpdate)}
+        canCreate={can(user, permissionCodes.workflowFormCreate)}
+        canPublish={can(user, permissionCodes.workflowFormPublish)}
+        canRetire={can(user, permissionCodes.workflowFormRetire)}
+        canUpdate={can(user, permissionCodes.workflowFormUpdate)}
       />
-    </section>
+    </PageShell>
   );
 }

@@ -7,7 +7,7 @@ import {
 import { getUserAccessView } from "@/modules/users/ServerUserAccessService";
 import { authorizationAuditListSchema, listUsersSchema } from "@/modules/users/UserAccessSchemas";
 
-export const dynamic = "force-dynamic";
+
 
 export async function GET(request: Request) {
   const correlationId = createCorrelationId();

@@ -1,0 +1,131 @@
+import type { ConditionFieldDefinition } from "@/modules/conditions/domain/ConditionConfiguration";
+
+export const workflowRuntimeContextFields = [
+  { key: "application.id", label: "Application ID", type: "TEXT" },
+  {
+    key: "application.funding_opportunity_id",
+    label: "Application funding opportunity ID",
+    type: "NUMBER",
+  },
+  {
+    key: "application.reference",
+    label: "Application reference",
+    type: "TEXT",
+  },
+  { key: "application.status", label: "Application status", type: "TEXT" },
+  { key: "fundingCall.id", label: "ID", type: "TEXT" },
+  { key: "fundingCall.title", label: "title", type: "TEXT" },
+  { key: "fundingCall.slug", label: "slug", type: "TEXT" },
+  { key: "fundingCall.status", label: "status", type: "TEXT" },
+  {
+    key: "fundingCall.minimum_amount",
+    label: "minimum amount",
+    type: "NUMBER",
+  },
+  {
+    key: "fundingCall.maximum_amount",
+    label: "maximum amount",
+    type: "NUMBER",
+  },
+  {
+    key: "fundingCall.total_funding_amount",
+    label: "total funding amount",
+    type: "NUMBER",
+  },
+  {
+    key: "fundingCall.funding_instrument",
+    label: "funding instrument",
+    type: "TEXT",
+  },
+  {
+    key: "fundingCall.thematic_area",
+    label: "thematic area",
+    type: "TEXT",
+  },
+  {
+    key: "fundingCall.opens_at",
+    label: "opening date",
+    type: "DATE",
+  },
+  {
+    key: "fundingCall.closes_at",
+    label: "closing date",
+    type: "DATE",
+  },
+  {
+    key: "eligibility.outcome",
+    label: "Authoritative eligibility outcome",
+    type: "TEXT",
+  },
+  {
+    key: "eligibility.eligible",
+    label: "Authoritative eligibility passed",
+    type: "BOOLEAN",
+  },
+  {
+    key: "eligibility.manual_screening_required",
+    label: "Manual eligibility screening required",
+    type: "BOOLEAN",
+  },
+  {
+    key: "eligibility.hard_failure_count",
+    label: "Eligibility hard failure count",
+    type: "NUMBER",
+  },
+  {
+    key: "eligibility.soft_failure_count",
+    label: "Eligibility soft failure count",
+    type: "NUMBER",
+  },
+  {
+    key: "eligibility.warning_count",
+    label: "Eligibility warning count",
+    type: "NUMBER",
+  },
+  {
+    key: "eligibility.evaluated_at",
+    label: "Eligibility evaluation date",
+    type: "DATE",
+  },
+  {
+    key: "eligibility.rule_set_version_id",
+    label: "Eligibility Ruleset Version ID",
+    type: "TEXT",
+  },
+  {
+    key: "eligibility.rule_set_version_number",
+    label: "Eligibility Ruleset version number",
+    type: "NUMBER",
+  },
+  { key: "workflow.id", label: "Workflow ID", type: "TEXT" },
+  { key: "workflow.code", label: "Workflow code", type: "TEXT" },
+  { key: "workflow.name", label: "Workflow name", type: "TEXT" },
+  { key: "workflow.status", label: "Workflow status", type: "TEXT" },
+  {
+    key: "workflow.version_id",
+    label: "Workflow version ID",
+    type: "TEXT",
+  },
+  {
+    key: "workflow.version_number",
+    label: "Workflow version number",
+    type: "NUMBER",
+  },
+  {
+    key: "workflow.started_at",
+    label: "Workflow start date",
+    type: "DATE",
+  },
+  { key: "stage.id", label: "Stage instance ID", type: "TEXT" },
+  { key: "stage.definition_id", label: "Stage definition ID", type: "TEXT" },
+  { key: "stage.key", label: "Stage key", type: "TEXT" },
+  { key: "stage.name", label: "Stage name", type: "TEXT" },
+  { key: "stage.status", label: "Stage status", type: "TEXT" },
+  { key: "stage.started_at", label: "Stage start date", type: "DATE" },
+  { key: "task.id", label: "Task instance ID", type: "TEXT" },
+  { key: "task.definition_id", label: "Task definition ID", type: "TEXT" },
+  { key: "task.key", label: "Task key", type: "TEXT" },
+  { key: "task.name", label: "Task name", type: "TEXT" },
+  { key: "task.status", label: "Task status", type: "TEXT" },
+  { key: "task.row_version", label: "Task row version", type: "NUMBER" },
+] as const satisfies readonly ConditionFieldDefinition[];

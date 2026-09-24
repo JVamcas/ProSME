@@ -28,4 +28,12 @@ DATABASE_URL="${test_database_url}" \
     vitest run \
     --configLoader runner \
     --fsModuleCachePath "${vitest_module_cache}" \
-    tests/integration/workflow-database.test.ts
+    tests/integration/workflow-database.test.ts \
+    tests/integration/additional-form-field-types-storage.test.ts \
+    tests/integration/form-validation-storage.test.ts \
+    tests/integration/form-list-pagination.test.ts \
+    tests/integration/workflow-template-storage.test.ts \
+    tests/integration/workflow-stage-definitions.test.ts \
+    tests/integration/workflow-task-definitions.test.ts \
+    tests/integration/workflow-action-definitions.test.ts \
+    tests/integration/workflow-transition-definitions.test.ts

@@ -132,7 +132,7 @@ function ContactActions({
     <div className="sm:col-span-2 flex flex-wrap items-center gap-4">
       <GeneralButton
         type="submit"
-        variant="brand"
+        variant="primary"
         size="lg"
         disabled={pending}
         className="min-h-12 shadow-[0_8px_20px_rgba(10,24,59,0.18)]"

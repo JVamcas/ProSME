@@ -1,5 +1,6 @@
 export class ClientRequestError extends Error {
   readonly code?: string;
+  readonly conflict?: Record<string, number | string>;
   readonly correlationId?: string;
   readonly fields?: Record<string, string[]>;
   readonly status: number;
@@ -9,6 +10,7 @@ export class ClientRequestError extends Error {
     status: number,
     details: {
       code?: string;
+      conflict?: Record<string, number | string>;
       correlationId?: string;
       fields?: Record<string, string[]>;
     } = {},
@@ -17,6 +19,7 @@ export class ClientRequestError extends Error {
     this.name = "ClientRequestError";
     this.status = status;
     this.code = details.code;
+    this.conflict = details.conflict;
     this.correlationId = details.correlationId;
     this.fields = details.fields;
   }
@@ -27,6 +30,7 @@ type ErrorPayload = {
     | string
     | {
         code?: string;
+        conflict?: Record<string, number | string>;
         fields?: Record<string, string[]>;
         message?: string;
       };
@@ -64,6 +68,7 @@ async function parseResponse<TResponse>(response: Response) {
       response.status,
       {
         code: structuredError?.code,
+        conflict: structuredError?.conflict,
         correlationId: error?.meta?.correlationId,
         fields: structuredError?.fields,
       },

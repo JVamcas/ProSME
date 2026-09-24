@@ -4,8 +4,8 @@ import {
   portalRouteError,
   portalRouteSuccess,
 } from "@/lib/api/PortalApiResponse";
-import { workflowCommandSchema } from "@/modules/workflows/WorkflowSchemas";
-import { retireWorkflow } from "@/modules/workflows/ServerWorkflowLifecycleService";
+import { workflowCommandSchema } from "@/modules/workflows/api/WorkflowSchemas";
+import { retireWorkflow } from "@/modules/workflows/application/definitions/ServerWorkflowLifecycleService";
 
 type RouteContext = { params: Promise<{ id: string }> };
 

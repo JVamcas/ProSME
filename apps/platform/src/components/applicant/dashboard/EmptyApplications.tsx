@@ -13,7 +13,7 @@ export function EmptyApplications() {
       <p className="mt-2 text-sm text-slate-500">
         Start an application to see its progress here.
       </p>
-      <GeneralButton asChild variant="brand" className="mt-6">
+      <GeneralButton asChild variant="primary" className="mt-6">
         <Link href="/portal/applications/new">Start application</Link>
       </GeneralButton>
     </div>

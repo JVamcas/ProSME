@@ -3,7 +3,7 @@ import type { MetadataRoute } from "next";
 import { getServerEnvironment } from "@/lib/env/server";
 import { getSiteSettings } from "@/modules/content/ServerContentQueries";
 
-export const dynamic = "force-dynamic";
+
 
 export default async function robots(): Promise<MetadataRoute.Robots> {
   const environment = getServerEnvironment();

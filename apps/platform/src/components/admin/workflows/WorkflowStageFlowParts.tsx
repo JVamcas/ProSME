@@ -1,6 +1,6 @@
 import { ArrowDown, ArrowUp, ChevronDown, GitBranch, Plus } from "lucide-react";
 
-import type { WorkflowStageInput } from "@/modules/workflows/WorkflowTypes";
+import type { WorkflowStageInput } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import { GeneralButton } from "@/components/ui/button";
 
 type StageSelectionProps = {
@@ -32,8 +32,9 @@ export function WorkflowStagesHeader({
       <GeneralButton
         disabled={disabled}
         onClick={onAddStage}
-        variant="brand"
+        variant="primary"
         type="button"
+        size={"compact"}
       >
         <Plus className="size-4 text-white" />
         Add Workflow stage
@@ -44,10 +45,12 @@ export function WorkflowStagesHeader({
 
 export function WorkflowFlowToolbar({
   isExpanded,
+  onAutoArrange,
   onToggle,
   stageCount,
 }: {
   isExpanded: boolean;
+  onAutoArrange: () => void;
   onToggle: () => void;
   stageCount: number;
 }) {
@@ -73,47 +76,18 @@ export function WorkflowFlowToolbar({
           />
           {isExpanded ? "Hide" : "Show"} visual flow
         </button>
-        <span className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-brand-blue px-3 text-xs font-semibold text-brand-navy">
+        <button
+          className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-brand-blue px-3 text-xs font-semibold text-brand-navy transition hover:bg-brand-blue/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue"
+          onClick={onAutoArrange}
+          type="button"
+        >
           <GitBranch className="size-3.5" />
           Auto arrange
-        </span>
+        </button>
+
         <span className="rounded-full border border-brand-navy/15 bg-brand-cream px-3 py-1.5 text-xs font-semibold text-brand-navy/60">
           {stageCount} stages
         </span>
-      </div>
-    </div>
-  );
-}
-
-export function WorkflowFlowPreview({
-  onSelect,
-  selectedCode,
-  stages,
-}: StageSelectionProps) {
-  return (
-    <div className="overflow-x-auto border-t border-brand-navy/10 bg-brand-cream/50 p-6">
-      <div className="flex min-w-max items-center gap-3">
-        {stages.map((stage, index) => (
-          <div className="flex items-center gap-3" key={stage.code}>
-            <button
-              className={`min-w-52 rounded-xl border bg-white px-4 py-3 text-left shadow-sm ${stage.code === selectedCode ? "border-brand-navy ring-2 ring-brand-blue/40" : "border-brand-navy/15"}`}
-              onClick={() => onSelect(stage.code)}
-              type="button"
-            >
-              <span className="text-[10px] font-bold uppercase tracking-wider text-brand-navy/50">
-                Stage {index + 1}
-              </span>
-              <span className="mt-1 block text-sm font-bold text-brand-navy">
-                {stage.name}
-              </span>
-            </button>
-            {index < stages.length - 1 ? (
-              <span aria-hidden className="text-xl text-brand-orange">
-                →
-              </span>
-            ) : null}
-          </div>
-        ))}
       </div>
     </div>
   );
@@ -141,8 +115,8 @@ export function WorkflowStageList({
         {stages.map((stage, index) => (
           <StageListItem
             index={index}
-            isSelected={stage.code === selectedCode}
-            key={stage.code}
+            isSelected={stage.stableKey === selectedCode}
+            key={stage.stableKey}
             onSelect={onSelect}
             stage={stage}
             stageCount={stages.length}
@@ -170,7 +144,7 @@ function StageListItem({
     <button
       aria-pressed={isSelected}
       className={`flex w-full items-center gap-2 rounded-xl px-2 py-2.5 text-left transition ${isSelected ? "bg-brand-blue/20 ring-1 ring-brand-blue" : "hover:bg-slate-50"}`}
-      onClick={() => onSelect(stage.code)}
+      onClick={() => onSelect(stage.stableKey)}
       type="button"
     >
       <span

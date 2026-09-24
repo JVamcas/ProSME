@@ -1,0 +1,76 @@
+name: smefund-${ENVIRONMENT:-local}
+
+services:
+  migrations:
+    container_name: smefund-${ENVIRONMENT:-local}-migrations
+    build:
+      context: ..
+      dockerfile: apps/platform/Dockerfile
+      target: migrations
+    restart: "no"
+    env_file:
+      - ../.env
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      GCS_DOCUMENTS_BUCKET: ${GCS_DOCUMENTS_BUCKET:-smepro}
+      GOOGLE_CLOUD_PROJECT: ${GOOGLE_CLOUD_PROJECT:-msmepro}
+      NODE_ENV: production
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - payload-media:/workspace/apps/platform/media
+    networks:
+      - platform
+
+  app:
+    container_name: smefund-${ENVIRONMENT:-local}-app
+    build:
+      context: ..
+      dockerfile: apps/platform/Dockerfile
+      target: runtime
+    restart: unless-stopped
+    init: true
+    env_file:
+      - ../.env
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      HOSTNAME: 0.0.0.0
+      NEXT_TELEMETRY_DISABLED: "1"
+      NODE_ENV: production
+      PORT: "3008"
+      GCS_DOCUMENTS_BUCKET: smepro
+      GOOGLE_CLOUD_PROJECT: msmepro
+    ports:
+      - "${APPLICATION_BIND_ADDRESS:-0.0.0.0}:${APPLICATION_PORT:-3008}:3008"
+    depends_on:
+      migrations:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD
+        - /workspace/scripts/container/healthcheck.sh
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    stop_grace_period: 30s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+    volumes:
+      - payload-media:/workspace/apps/platform/media
+    networks:
+      - platform
+
+volumes:
+  payload-media:
+
+networks:
+  platform:
+    driver: bridge

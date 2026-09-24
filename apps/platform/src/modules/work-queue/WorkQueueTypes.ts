@@ -20,7 +20,6 @@ export type WorkQueueRow = {
   taskInstanceId: string;
   taskName: string;
   taskStatus: string;
-  taskType: string;
 };
 
 export type WorkQueuePage = {

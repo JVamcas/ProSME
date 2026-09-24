@@ -6,7 +6,7 @@ import {
   portalRouteError,
   portalRouteSuccess,
 } from "@/lib/api/PortalApiResponse";
-import { cloneWorkflow } from "@/modules/workflows/ServerWorkflowLifecycleService";
+import { cloneWorkflow } from "@/modules/workflows/application/definitions/ServerWorkflowLifecycleService";
 
 const cloneSchema = z.object({ sourceVersionId: z.string().uuid() });
 type RouteContext = { params: Promise<{ id: string }> };

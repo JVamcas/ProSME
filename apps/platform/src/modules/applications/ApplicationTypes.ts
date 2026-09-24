@@ -39,6 +39,8 @@ export type AdminApplicationOverview = {
   businessType: string | null;
   coFunding: number | null;
   currentStageName: string | null;
+  publicStatus: import("./domain/ApplicantStatusProjection").ApplicantPublicStatus;
+  updatedAt: string;
   industry: string | null;
   location: string | null;
   opportunityTitle: string;
@@ -57,16 +59,21 @@ import type {
   ApplicationSectionCompletion,
 } from "./ApplicationSchemas";
 import type { ApplicationDeclarationsSection } from "./ApplicationDeclarationSchemas";
+import type { FormRuntimeSchema } from "@/modules/forms/FormTypes";
 
 export type ApplicationSummary = {
+  canWithdraw?: boolean;
+  reference: string | null;
+  submittedAt: string | null;
+  publicStatus: import("./domain/ApplicantStatusProjection").ApplicantPublicStatus;
   businessName: string | null;
   createdAt: string;
   currentSection: ApplicationSection;
-  fundingOpportunityId: number;
+  fundingOpportunityId: string;
   fundingOpportunityTitle: string;
   id: string;
   progressPercent: number;
-  status: "draft" | "submitted";
+  status: import("./domain/Application").ApplicationLifecycleStatus;
   updatedAt: string;
 };
 
@@ -95,9 +102,35 @@ export type ApplicationView = ApplicationSummary & {
   businessSection: Partial<ApplicationBusinessSection>;
   declarationsSection: Partial<ApplicationDeclarationsSection>;
   financialSection: Partial<ApplicationFinancialSection>;
+  eligibilityRuleSetVersionId: string;
+  formVersionId: string;
   projectSection: Partial<ApplicationProjectSection>;
   rowVersion: number;
   sectionCompletion: ApplicationSectionCompletion;
+};
+
+export type ApplicationReadView = {
+  summary: ApplicationSummary;
+  form: FormRuntimeSchema;
+  values: Record<string, unknown>;
+  documents: {
+    name: string;
+    requirementKey: string;
+    sizeBytes: number;
+    versionId: string | null;
+  }[];
+  applicantDetails: { label: string; value: string }[];
+  businessDetails: { label: string; value: string }[];
+};
+
+export type ApplicationDraftView = ApplicationView & {
+  draftResponse: {
+    id: string;
+    rowVersion: number;
+    updatedAt: string;
+    values: Record<string, unknown>;
+  };
+  form: FormRuntimeSchema;
 };
 
 export type ApplicationSubmission = {
@@ -105,7 +138,7 @@ export type ApplicationSubmission = {
   reference: string;
   submittedAt: string;
   workflowInstanceId: string;
-  workflowVersionId: string;
+  workflowTemplateVersionId: string;
 };
 
 export const adminApplicationStatuses = [

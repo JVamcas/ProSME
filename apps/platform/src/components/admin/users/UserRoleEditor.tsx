@@ -4,25 +4,37 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { FormProvider, useForm } from "react-hook-form";
 import type { z } from "zod";
 
+import { isPermissionCode } from "@/auth/authorization/permissions";
 import { GeneralButton } from "@/components/ui/button";
-import { FieldError, Input, Label, Textarea } from "@/components/ui/form-controls";
+import {
+  Checkbox,
+  FieldError,
+  Input,
+  Label,
+  Textarea,
+} from "@/components/ui/form-controls";
 import { useUpdateRole } from "@/modules/users/UserAccessHooks";
 import { updateRoleSchema } from "@/modules/users/UserAccessSchemas";
-import type { CapabilityRow, RoleAccessRow } from "@/modules/users/UserAccessTypes";
+import type {
+  CapabilityRow,
+  RoleAccessRow,
+} from "@/modules/users/UserAccessTypes";
 
-type FormInput = z.input<typeof updateRoleSchema>;
+type FormInput = z.infer<typeof updateRoleSchema>;
 
 export function UserRoleEditor({
   capabilities,
+  onDone,
   role,
 }: {
   capabilities: CapabilityRow[];
+  onDone?: () => void;
   role: RoleAccessRow;
 }) {
   const mutation = useUpdateRole();
   const form = useForm<FormInput>({
     defaultValues: {
-      capabilityCodes: role.capabilityCodes,
+      capabilityCodes: role.capabilityCodes.filter(isPermissionCode),
       description: role.description ?? "",
       name: role.name,
     },
@@ -30,6 +42,7 @@ export function UserRoleEditor({
   });
   const submit = form.handleSubmit(async (input) => {
     await mutation.mutateAsync({ input, roleId: role.id });
+    onDone?.();
   });
 
   return (
@@ -51,7 +64,7 @@ export function UserRoleEditor({
         </div>
         <fieldset>
           <legend className="mb-2 text-sm font-semibold text-brand-navy">
-            Capabilities
+            Permissions
           </legend>
           <div className="max-h-72 space-y-2 overflow-y-auto rounded-xl border border-brand-navy/10 p-3">
             {capabilities.map((capability) => (
@@ -59,9 +72,8 @@ export function UserRoleEditor({
                 className="flex gap-2 text-xs text-brand-navy"
                 key={capability.code}
               >
-                <input
-                  className="mt-0.5 accent-brand-orange"
-                  type="checkbox"
+                <Checkbox
+                  className="mt-0.5"
                   value={capability.code}
                   {...form.register("capabilityCodes")}
                 />
@@ -76,16 +88,17 @@ export function UserRoleEditor({
               </label>
             ))}
           </div>
-          <FieldError message={form.formState.errors.capabilityCodes?.message} />
+          <FieldError
+            message={form.formState.errors.capabilityCodes?.message}
+          />
         </fieldset>
-        <GeneralButton disabled={mutation.isPending} type="submit">
-          {mutation.isPending ? "Saving…" : "Save role grants"}
+        <GeneralButton
+          variant="primary"
+          disabled={mutation.isPending}
+          type="submit"
+        >
+          {mutation.isPending ? "Saving…" : "Save"}
         </GeneralButton>
-        {mutation.error ? (
-          <p className="text-sm text-red-700" role="alert">
-            {mutation.error.message}
-          </p>
-        ) : null}
       </form>
     </FormProvider>
   );

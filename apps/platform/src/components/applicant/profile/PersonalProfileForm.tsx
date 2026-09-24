@@ -15,7 +15,8 @@ import {
 } from "@/modules/profiles/ProfileHooks";
 import { ApplicantProfileFields } from "./ApplicantProfileFields";
 import { ProfileFormActions } from "./ProfileFormActions";
-import { ProfileFormError, ProfileFormLoading } from "./ProfileFormState";
+import { PortalErrorState } from "@/components/layout/PortalErrorState";
+import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
 
 const defaults: ApplicantPersonalProfileInput = {
   firstName: "",
@@ -41,11 +42,18 @@ export function PersonalProfileForm({ readOnly }: { readOnly: boolean }) {
   }, [form, profile.data]);
 
   if (profile.isPending) {
-    return <ProfileFormLoading />;
+    return <PortalLoadingState title="Loading your profile" description="Just a moment..." />;
   }
 
   if (profile.isError || !profile.data) {
-    return <ProfileFormError onRetry={() => void profile.refetch()} />;
+    return (
+      <PortalErrorState
+        onAction={() => void profile.refetch()}
+        actionLabel="Retry"
+        title="Error"
+        description="There was an error loading your profile. Please check your connection and try again."
+      />
+    );
   }
 
   const submit = form.handleSubmit(async (data) => {

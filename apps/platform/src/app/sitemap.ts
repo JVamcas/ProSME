@@ -3,13 +3,13 @@ import type { MetadataRoute } from "next";
 import { getServerEnvironment } from "@/lib/env/server";
 import {
   getEvents,
-  getFundingCalls,
   getNews,
   getResources,
   getSiteSettings,
 } from "@/modules/content/ServerContentQueries";
+import { listPublicFundingCalls } from "@/modules/funding-calls/application/ServerPublicFundingCallService";
 
-export const dynamic = "force-dynamic";
+
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const environment = getServerEnvironment();
@@ -31,7 +31,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     getNews(),
     getResources(),
     getEvents(),
-    getFundingCalls(),
+    listPublicFundingCalls({ limit: 100 }),
     getSiteSettings(),
   ]);
 
@@ -45,7 +45,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .filter((item) => !item.href && indexable(item))
       .map((item) => `/resources/${item.slug}`),
     ...events.filter(indexable).map((item) => `/events/${item.slug}`),
-    ...calls.filter(indexable).map((item) => `/funding/${item.slug}`),
+    ...calls.items.map((item) => `/funding/${item.slug}`),
   ];
 
   return [...routes, ...dynamicRoutes].map((route) => ({

@@ -16,9 +16,7 @@ export const EligibilityContent: CollectionConfig = {
   fields: [
     { name: "label", type: "text", required: true },
     { name: "description", type: "textarea", required: true },
-    { name: "kind", type: "select", options: ["criterion", "focusSector", "checkerQuestion"], required: true },
-    { name: "key", type: "text", admin: { condition: (_, siblingData) => siblingData.kind === "checkerQuestion" } },
-    { name: "hardStop", type: "checkbox", admin: { condition: (_, siblingData) => siblingData.kind === "checkerQuestion" } },
+    { name: "kind", type: "select", options: ["criterion", "focusSector"], required: true },
     { name: "order", type: "number", defaultValue: 0, required: true },
     ...publishingFields,
   ],

@@ -1,15 +1,16 @@
 import "server-only";
 
-import { capabilities } from "@/auth/authorization/capabilities";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import {
   can,
-  requireCapability,
-  requireAnyCapability,
+  requirePermission,
+  requireAnyPermission,
 } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import {
   createOwnedApplication,
   findOwnedApplication,
+  findOwnedApplicationStatus,
   findOwnedApplicationByOpportunity,
   findAllApplications,
   findApplicationsAssignedTo,
@@ -17,17 +18,17 @@ import {
   findApplicationById,
   listOwnedApplications,
   updateOwnedApplication,
-} from "@/db/repositories/ApplicationRepository";
-import { hasRequiredApplicationDocuments } from "@/db/repositories/ApplicationDocumentRepository";
+} from "@/modules/applications/infrastructure/ApplicationRepository";
 import { findOwnedBusiness } from "@/db/repositories/BusinessRepository";
 import {
   ResourceConflictError,
   ResourceNotFoundError,
   RequestValidationError,
 } from "@/lib/resource-errors";
-import { findPublishedFundingOpportunity } from "@/modules/funding-opportunities/ServerFundingOpportunityIntegration";
+import { resolvePublishedApplicationFormBinding } from "@/modules/funding-calls/ServerFundingOpportunityIntegration";
+import { getAttachedApplicationForm } from "./infrastructure/AttachedApplicationFormRepository";
 import { applicationDeclarationsSectionSchema } from "./ApplicationDeclarationSchemas";
-import { applicationDocumentRequirements } from "./ApplicationDocumentSchemas";
+import { applicationDocumentRequirements } from "./domain/ApplicationDocumentPolicy";
 import type {
   ApplicationSection,
   ApplicationSectionCompletion,
@@ -39,6 +40,8 @@ import {
   applicationProjectSectionSchema,
 } from "./ApplicationSchemas";
 import type { ApplicationListInput, ApplicationPage } from "./ApplicationTypes";
+import { listLatestOwnedApplicationDocumentVersions } from "./infrastructure/ApplicationDocumentRepository";
+import { readOwnedApplicationDraftResponse } from "./infrastructure/ApplicationResponseRepository";
 import {
   decodeApplicationCursor,
   encodeApplicationCursor,
@@ -112,15 +115,31 @@ function sectionIsComplete(input: ApplicationUpdateInput) {
   return false;
 }
 
-async function documentsAreComplete(ownerUserId: string, applicationId: string) {
-  const requiredTypes = applicationDocumentRequirements
-    .filter((requirement) => requirement.required)
-    .map((requirement) => requirement.id);
-  return hasRequiredApplicationDocuments(
-    ownerUserId,
-    applicationId,
-    requiredTypes,
+async function documentsAreComplete(
+  ownerUserId: string,
+  application: Awaited<ReturnType<typeof findOwnedApplication>> & {},
+) {
+  if (!application.formVersionId) return false;
+  const [documents, form, response] = await Promise.all([
+    listLatestOwnedApplicationDocumentVersions(ownerUserId, application.id),
+    getAttachedApplicationForm(
+      application.formVersionId,
+      application.fundingOpportunityId,
+    ),
+    readOwnedApplicationDraftResponse(ownerUserId, application.id),
+  ]);
+  if (!form || !response || response.formVersionId !== application.formVersionId) {
+    return false;
+  }
+  const current = new Map(
+    documents.map((document) => [document.requirementKey, document]),
   );
+  return applicationDocumentRequirements(form, response.values)
+    .filter((requirement) => requirement.required)
+    .every((requirement) => {
+      const document = current.get(requirement.key);
+      return document?.storageStatus === "finalized";
+    });
 }
 
 async function loadOwnedApplication(ownerUserId: string, id: string) {
@@ -142,7 +161,10 @@ export async function listOwnApplications(
   user: AuthenticatedUser | null,
   input: ApplicationListInput,
 ): Promise<ApplicationPage> {
-  const actor = requireCapability(user, capabilities.applicationReadOwn);
+  const actor = requirePermission(
+    user,
+    permissionCodes.fundingApplicationOwnRead,
+  );
   const result = await listOwnedApplications({
     after: input.after ? decodeApplicationCursor(input.after) : undefined,
     limit: input.limit,
@@ -159,22 +181,47 @@ export async function listOwnApplications(
   };
 }
 
+export async function getOwnApplicationStatus(
+  user: AuthenticatedUser | null,
+  id: string,
+) {
+  const actor = requirePermission(
+    user,
+    permissionCodes.fundingApplicationOwnRead,
+  );
+  const application = await findOwnedApplicationStatus(actor.id, id);
+  if (!application) throw new ApplicationNotFoundError();
+  return toApplicationSummary(application);
+}
+
 export async function getOwnApplication(
   user: AuthenticatedUser | null,
   id: string,
 ) {
-  const actor = requireCapability(user, capabilities.applicationReadOwn);
+  const actor = requirePermission(
+    user,
+    permissionCodes.fundingApplicationOwnRead,
+  );
   return toApplicationView(await loadOwnedApplication(actor.id, id));
 }
 
 export async function createApplication(
   user: AuthenticatedUser | null,
-  fundingOpportunityId: number,
+  fundingOpportunityId: string,
 ) {
-  const actor = requireCapability(user, capabilities.applicationCreate);
+  const actor = requirePermission(
+    user,
+    permissionCodes.fundingApplicationCreate,
+  );
   const opportunity =
-    await findPublishedFundingOpportunity(fundingOpportunityId);
+    await resolvePublishedApplicationFormBinding(fundingOpportunityId);
   if (!opportunity || opportunity.status !== "open") {
+    throw new ApplicationOpportunityUnavailableError();
+  }
+  if (!opportunity.formVersionId) {
+    throw new ApplicationOpportunityUnavailableError();
+  }
+  if (!opportunity.eligibilityRuleSetVersionId) {
     throw new ApplicationOpportunityUnavailableError();
   }
   const existing = await findOwnedApplicationByOpportunity(
@@ -183,6 +230,9 @@ export async function createApplication(
   );
   if (existing) return toApplicationView(existing);
   const id = await createOwnedApplication({
+    duplicatePolicy: opportunity.applicationDuplicatePolicy,
+    eligibilityRuleSetVersionId: opportunity.eligibilityRuleSetVersionId,
+    formVersionId: opportunity.formVersionId,
     fundingOpportunityId: opportunity.id,
     fundingOpportunityTitle: opportunity.title,
     ownerUserId: actor.id,
@@ -199,14 +249,17 @@ export async function updateOwnApplication(
   id: string,
   input: ApplicationUpdateInput,
 ) {
-  const actor = requireCapability(user, capabilities.applicationUpdateOwn);
+  const actor = requirePermission(
+    user,
+    permissionCodes.fundingApplicationOwnUpdate,
+  );
   const current = await loadOwnedApplication(actor.id, id);
   if (current.rowVersion !== input.expectedRowVersion) {
     throw new ApplicationConflictError();
   }
   await requireOwnedSelectedBusiness(actor.id, input);
   const sectionComplete = input.section === "documents"
-    ? await documentsAreComplete(actor.id, id)
+    ? await documentsAreComplete(actor.id, current)
     : sectionIsComplete(input);
   if (input.section === "documents" && !sectionComplete) {
     throw new RequestValidationError(
@@ -236,15 +289,15 @@ export async function updateOwnApplication(
 }
 
 function requireApplicationReader(user: AuthenticatedUser | null) {
-  return requireAnyCapability(user, [
-    capabilities.applicationReadAssigned,
-    capabilities.applicationReadAll,
+  return requireAnyPermission(user, [
+    permissionCodes.workflowTaskAssignedRead,
+    permissionCodes.fundingApplicationAllRead,
   ]);
 }
 
 export async function getApplications(user: AuthenticatedUser | null) {
   const actor = requireApplicationReader(user);
-  return can(actor, capabilities.applicationReadAll)
+  return can(actor, permissionCodes.fundingApplicationAllRead)
     ? findAllApplications()
     : findApplicationsAssignedTo(actor.id);
 }
@@ -254,7 +307,7 @@ export async function getApplication(
   id: string,
 ) {
   const actor = requireApplicationReader(user);
-  return can(actor, capabilities.applicationReadAll)
+  return can(actor, permissionCodes.fundingApplicationAllRead)
     ? findApplicationById(id)
     : findAssignedApplicationById(actor.id, id);
 }

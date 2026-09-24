@@ -1,16 +1,18 @@
 import "server-only";
 
-import { capabilities } from "@/auth/authorization/capabilities";
 import {
-  requireAnyCapability,
-  requireCapability,
+  permissionCatalogue,
+  permissionCodes,
+} from "@/auth/authorization/permissions";
+import {
+  requireAnyPermission,
+  requirePermission,
 } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import { listAccessAudit } from "@/db/repositories/AuditRepository";
 import {
   findAccessUser,
   inviteAccessUser,
-  listAccessCapabilities,
   listAccessRoles,
   listAccessUsers,
   promoteAccessUser,
@@ -31,16 +33,21 @@ export async function getUserAccessView(
   input: UserAccessListInput,
   auditInput: AuthorizationAuditListInput,
 ): Promise<UserAccessView> {
-  requireAnyCapability(user, [
-    capabilities.userRead,
-    capabilities.userManage,
-    capabilities.roleRead,
-    capabilities.roleManage,
+  requireAnyPermission(user, [
+    permissionCodes.userRead,
+    permissionCodes.userManage,
+    permissionCodes.roleRead,
+    permissionCodes.roleManage,
   ]);
   const [users, roles, capabilityRows, audit] = await Promise.all([
     canReadUsers(user) ? listAccessUsers(input) : [],
     canReadRoles(user) ? listAccessRoles() : [],
-    canReadRoles(user) ? listAccessCapabilities() : [],
+    canReadRoles(user)
+      ? permissionCatalogue.map(({ code, description }) => ({
+          code,
+          description,
+        }))
+      : [],
     canReadAudit(user) ? listAccessAudit(auditInput) : [],
   ]);
   return {
@@ -52,17 +59,17 @@ export async function getUserAccessView(
 }
 
 function canReadUsers(user: AuthenticatedUser | null) {
-  return Boolean(user?.capabilities.has(capabilities.userRead)) ||
-    Boolean(user?.capabilities.has(capabilities.userManage));
+  return Boolean(user?.capabilities.has(permissionCodes.userRead)) ||
+    Boolean(user?.capabilities.has(permissionCodes.userManage));
 }
 
 function canReadRoles(user: AuthenticatedUser | null) {
-  return Boolean(user?.capabilities.has(capabilities.roleRead)) ||
-    Boolean(user?.capabilities.has(capabilities.roleManage));
+  return Boolean(user?.capabilities.has(permissionCodes.roleRead)) ||
+    Boolean(user?.capabilities.has(permissionCodes.roleManage));
 }
 
 function canReadAudit(user: AuthenticatedUser | null) {
-  return Boolean(user?.capabilities.has(capabilities.auditRead));
+  return Boolean(user?.capabilities.has(permissionCodes.auditRead));
 }
 
 export async function updateUserAccess(
@@ -70,12 +77,12 @@ export async function updateUserAccess(
   userId: string,
   input: UserAccessUpdateInput,
 ) {
-  const actor = requireAnyCapability(user, [
-    capabilities.userManage,
-    capabilities.roleManage,
+  const actor = requireAnyPermission(user, [
+    permissionCodes.userManage,
+    permissionCodes.roleManage,
   ]);
-  if (input.status) requireCapability(actor, capabilities.userManage);
-  if (input.roleCodes) requireCapability(actor, capabilities.roleManage);
+  if (input.status) requirePermission(actor, permissionCodes.userManage);
+  if (input.roleCodes) requirePermission(actor, permissionCodes.roleManage);
   await updateAccessUser(actor.id, userId, input);
   return findAccessUser(userId);
 }
@@ -85,8 +92,8 @@ export async function promoteUser(
   userId: string,
   roleCodes: string[],
 ) {
-  const actor = requireCapability(user, capabilities.userManage);
-  requireCapability(actor, capabilities.roleManage);
+  const actor = requirePermission(user, permissionCodes.userManage);
+  requirePermission(actor, permissionCodes.roleManage);
   await promoteAccessUser(actor.id, userId, roleCodes);
   return findAccessUser(userId);
 }
@@ -95,8 +102,8 @@ export async function inviteUser(
   user: AuthenticatedUser | null,
   input: UserInviteInput,
 ) {
-  const actor = requireCapability(user, capabilities.userManage);
-  requireCapability(actor, capabilities.roleManage);
+  const actor = requirePermission(user, permissionCodes.userManage);
+  requirePermission(actor, permissionCodes.roleManage);
   const id = await inviteAccessUser(actor.id, input);
   return findAccessUser(id);
 }
@@ -106,7 +113,7 @@ export async function updateRole(
   roleId: string,
   input: RoleUpdateInput,
 ) {
-  const actor = requireCapability(user, capabilities.roleManage);
+  const actor = requirePermission(user, permissionCodes.roleManage);
   await updateAccessRole(actor.id, roleId, input);
   const roles = await listAccessRoles();
   return roles.find((role) => role.id === roleId) ?? null;
@@ -116,6 +123,6 @@ export async function getAuthorizationAudit(
   user: AuthenticatedUser | null,
   input: AuthorizationAuditListInput,
 ) {
-  requireCapability(user, capabilities.auditRead);
+  requirePermission(user, permissionCodes.auditRead);
   return listAccessAudit(input);
 }

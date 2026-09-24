@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeft, CheckCircle2 } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormProvider, useForm } from "react-hook-form";
@@ -44,13 +44,18 @@ export function ChecklistTaskForm({ task }: { task: TaskDetail }) {
   });
   const submit = form.handleSubmit((values) => {
     completion.mutate(
-      { expectedRowVersion: task.rowVersion, items: values.items },
+      {
+        expectedRowVersion: task.rowVersion,
+        items: values.items,
+      },
       {
         onSuccess: (result) => {
           toast.success(
             result.nextStageName
               ? `Task completed. Application advanced to ${result.nextStageName}.`
-              : "Task completed.",
+              : result.taskStatus === "COMPLETED"
+                ? "Task completed."
+                : "Checklist completed. Finish the remaining task work.",
           );
           router.push("/admin/work-queue");
         },
@@ -101,15 +106,17 @@ export function ChecklistTaskForm({ task }: { task: TaskDetail }) {
               <ArrowLeft aria-hidden="true" className="size-4" /> Back to queue
             </Link>
           </GeneralButton>
-          <GeneralButton
-            aria-busy={completion.isPending}
-            disabled={completion.isPending || task.taskStatus === "COMPLETED"}
-            type="submit"
-          >
-            <CheckCircle2 aria-hidden="true" className="size-4" />
-            {completion.isPending ? "Completing…" : "Complete pre-screening"}
-          </GeneralButton>
         </div>
+        {!task.checklistCompleted ? (
+          <div className="flex justify-end">
+            <GeneralButton
+              disabled={completion.isPending || task.taskStatus === "COMPLETED"}
+              type="submit"
+            >
+              {completion.isPending ? "Completing…" : "Complete checklist"}
+            </GeneralButton>
+          </div>
+        ) : null}
       </form>
     </FormProvider>
   );

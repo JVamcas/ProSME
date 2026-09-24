@@ -1,16 +1,16 @@
 import "server-only";
 
-import { capabilities } from "@/auth/authorization/capabilities";
-import { requireCapability } from "@/auth/authorization/policy";
+import { permissionCodes } from "@/auth/authorization/permissions";
+import { requirePermission } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
-import { submitOwnedApplication } from "@/db/repositories/ApplicationSubmissionRepository";
 import {
   IdempotencyConflictError,
   RequestValidationError,
   ResourceConflictError,
   ResourceNotFoundError,
 } from "@/lib/resource-errors";
-import { applicationDocumentRequirements } from "./ApplicationDocumentSchemas";
+import type { ApplicationSubmissionCommandInput } from "./api/ApplicationSubmissionSchemas";
+import { submitOwnedApplication } from "./infrastructure/ApplicationSubmissionRepository";
 
 export class ApplicationSubmissionConflictError extends ResourceConflictError {
   constructor(message: string) {
@@ -35,18 +35,20 @@ function requireIdempotencyKey(value: string | null) {
 export async function submitApplication(
   user: AuthenticatedUser | null,
   applicationId: string,
+  command: ApplicationSubmissionCommandInput,
   idempotencyKey: string | null,
   correlationId: string,
 ) {
-  const actor = requireCapability(user, capabilities.applicationSubmit);
+  const actor = requirePermission(
+    user,
+    permissionCodes.fundingApplicationSubmit,
+  );
   const result = await submitOwnedApplication({
     actorId: actor.id,
     applicationId,
     correlationId,
+    ...command,
     idempotencyKey: requireIdempotencyKey(idempotencyKey),
-    requiredDocumentTypes: applicationDocumentRequirements
-      .filter((requirement) => requirement.required)
-      .map((requirement) => requirement.id),
   });
   if (result.kind === "submitted") return result.result;
   if (result.kind === "not_found") {
@@ -54,25 +56,30 @@ export async function submitApplication(
   }
   if (result.kind === "idempotency_conflict") {
     throw new IdempotencyConflictError(
-      "The idempotency key was already used for another command.",
+      "The idempotency key was already used for a different command.",
     );
   }
-  if (result.kind === "draft_incomplete") {
-    throw new ApplicationSubmissionConflictError(
+  const messages = {
+    documents_invalid:
+      "All required documents must finish uploading before submission.",
+    draft_incomplete:
       "Complete every application section and accept the declarations before submitting.",
-    );
-  }
-  if (result.kind === "documents_invalid") {
-    throw new ApplicationSubmissionConflictError(
-      "All required documents must pass security scanning before submission.",
-    );
-  }
-  if (result.kind === "business_required") {
-    throw new ApplicationSubmissionConflictError(
-      "Select a business before submitting this application.",
-    );
-  }
-  throw new ApplicationSubmissionConflictError(
-    "This funding opportunity does not have an assigned published workflow.",
-  );
+    duplicate_submission:
+      "A submission already exists under this Funding Call's application limit.",
+    eligibility_unavailable:
+      "Eligibility validation is unavailable for this application.",
+    opportunity_unavailable:
+      "This funding call is not accepting submissions.",
+    reference_configuration_invalid:
+      "The Funding Call application reference configuration is invalid.",
+    representative_authority_required:
+      "You are not authorized to submit for the selected business.",
+    stage_entry_condition_failed:
+      "The workflow's initial stage entry conditions were not met.",
+    stale_preflight:
+      "Submission readiness changed or expired. Run preflight again.",
+    workflow_unavailable:
+      "This funding call does not have exactly one valid initial workflow stage.",
+  } as const;
+  throw new ApplicationSubmissionConflictError(messages[result.kind]);
 }

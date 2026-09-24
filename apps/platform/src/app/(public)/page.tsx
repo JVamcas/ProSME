@@ -6,15 +6,15 @@ import { HomeSupport } from "@/components/public/home-support";
 import { ContentBlocks } from "@/components/public/content-blocks";
 import {
   getEligibilityContent,
-  getFundingCalls,
   getHomepage,
 } from "@/modules/content/ServerContentQueries";
+import { listPublicFundingCalls } from "@/modules/funding-calls/application/ServerPublicFundingCallService";
 
 export default async function HomePage() {
 
   const [homepage, fundingCalls, eligibility] = await Promise.all([
     getHomepage(),
-    getFundingCalls(),
+    listPublicFundingCalls({ limit: 1 }),
     getEligibilityContent(),
   ]);
   const newsBlocks = homepage.blocks.filter(isResourceGrid);
@@ -25,7 +25,7 @@ export default async function HomePage() {
     <>
       <HomeHero content={homepage} />
       <HomeActions />
-      <HomeFundingCall call={fundingCalls[0]} />
+      <HomeFundingCall call={fundingCalls.items[0]} />
       <ContentBlocks blocks={newsBlocks} />
       <HomeProcess />
       <HomeSupport items={eligibility} />

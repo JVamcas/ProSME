@@ -1,0 +1,13 @@
+import type { FormDisplayMode, FormField, FormSection } from "../FormTypes";
+
+export type StandardFormSeed = {
+  code: string;
+  description: string;
+  displayMode?: FormDisplayMode;
+  fields: FormField[];
+  instructions: string;
+  name: string;
+  publishOnSeed?: boolean;
+  sections: FormSection[];
+  submitLabel: string;
+};

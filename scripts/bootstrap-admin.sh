@@ -4,7 +4,8 @@ set -Eeuo pipefail
 
 script_directory="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repository_root="$(cd "${script_directory}/.." && pwd)"
-compose_file="${repository_root}/infrastructure/local/compose.yaml"
+compose_file="${repository_root}/infrastructure/compose.yaml"
+local_compose_override="${repository_root}/infrastructure/local/compose.local.override.yml"
 environment_file="${repository_root}/.env"
 
 print_usage() {
@@ -12,6 +13,7 @@ print_usage() {
 Usage: ./scripts/bootstrap-admin.sh EMAIL
 
 Assigns the system_administrator role to an existing verified Firebase user.
+Uses the local Compose override only when ENVIRONMENT=local.
 
 Example:
   ./scripts/bootstrap-admin.sh administrator@example.com
@@ -52,22 +54,48 @@ if [ ! -f "${environment_file}" ]; then
   exit 1
 fi
 
+environment_name="${ENVIRONMENT:-$(
+  sed -n \
+    's/^[[:space:]]*ENVIRONMENT[[:space:]]*=[[:space:]]*//p' \
+    "${environment_file}" \
+    | tail -n 1
+)}"
+environment_name="${environment_name%$'\r'}"
+environment_name="${environment_name#\"}"
+environment_name="${environment_name%\"}"
+environment_name="${environment_name#\'}"
+environment_name="${environment_name%\'}"
+environment_name="${environment_name:-local}"
+
 compose=(
   docker compose
   --env-file "${environment_file}"
   -f "${compose_file}"
 )
 
-"${compose[@]}" config --quiet
+if [ "${environment_name}" = "local" ]; then
+  if [ ! -f "${local_compose_override}" ]; then
+    echo "Missing local Compose override: ${local_compose_override}" >&2
+    exit 1
+  fi
 
-database_container_id="$("${compose[@]}" ps --status running -q db)"
-if [ -z "${database_container_id}" ]; then
-  echo "The database container is not running." >&2
-  echo "Start the stack with ./scripts/docker-up.sh first." >&2
-  exit 1
+  compose+=(
+    -f "${local_compose_override}"
+  )
 fi
 
-echo "Bootstrapping ${email} as system_administrator..."
+"${compose[@]}" config --quiet
+
+if [ "${environment_name}" = "local" ]; then
+  database_container_id="$("${compose[@]}" ps --status running -q db)"
+  if [ -z "${database_container_id}" ]; then
+    echo "The local database container is not running." >&2
+    echo "Start the stack with ./scripts/docker-up.sh first." >&2
+    exit 1
+  fi
+fi
+
+echo "Bootstrapping ${email} as system_administrator in ${environment_name}..."
 "${compose[@]}" run \
   --rm \
   --no-deps \

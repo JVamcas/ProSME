@@ -4,7 +4,7 @@ import {
   portalRouteError,
   portalRouteSuccess,
 } from "@/lib/api/PortalApiResponse";
-import { opportunityAssignmentSchema } from "@/modules/workflows/WorkflowSchemas";
+import { opportunityAssignmentSchema } from "@/modules/workflows/api/WorkflowSchemas";
 import {
   assignOpportunityWorkflow,
   getWorkflowAssignments,

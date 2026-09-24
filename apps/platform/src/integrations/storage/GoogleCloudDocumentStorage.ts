@@ -3,6 +3,7 @@ import "server-only";
 import { Storage } from "@google-cloud/storage";
 
 import { getServerEnvironment } from "@/lib/env/server";
+import { getGoogleCloudStorageOptions } from "./GoogleCloudStorageOptions";
 import type {
   DocumentStorage,
   StoredDocument,
@@ -11,7 +12,7 @@ import type {
 let storage: Storage | undefined;
 
 function client() {
-  storage ??= new Storage();
+  storage ??= new Storage(getGoogleCloudStorageOptions());
   return storage;
 }
 
@@ -36,5 +37,23 @@ export class GoogleCloudDocumentStorage implements DocumentStorage {
   async delete(objectKey: string) {
     const bucket = client().bucket(bucketName());
     await bucket.file(objectKey).delete({ ignoreNotFound: true });
+  }
+
+  async createSignedDownloadUrl(input: {
+    expiresAt: Date;
+    fileName: string;
+    objectKey: string;
+  }) {
+    const safeName = input.fileName.replace(/["\\\r\n]/g, "_");
+    const [url] = await client()
+      .bucket(bucketName())
+      .file(input.objectKey)
+      .getSignedUrl({
+        action: "read",
+        expires: input.expiresAt,
+        responseDisposition: `attachment; filename="${safeName}"`,
+        version: "v4",
+      });
+    return url;
   }
 }

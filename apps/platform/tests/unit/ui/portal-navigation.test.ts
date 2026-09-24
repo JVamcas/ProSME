@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { capabilities } from "@/auth/authorization/capabilities";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import {
   applicantPortalRoutes,
   filterPortalRoutes,
@@ -15,7 +15,7 @@ describe("P3.1 capability-aware portal navigation", () => {
     const routes = filterPortalRoutes(
       portalRoutes,
       "applicant",
-      new Set([capabilities.profileReadOwn]),
+      new Set([permissionCodes.userProfileOwnRead]),
     );
 
     expect(routes.map((route) => route.href)).toEqual([
@@ -52,7 +52,7 @@ describe("P3.1 capability-aware portal navigation", () => {
     const routes = filterPortalRoutes(
       portalRoutes,
       "operations",
-      new Set([capabilities.profileReadOwn]),
+      new Set([permissionCodes.userProfileOwnRead]),
     );
 
     expect(routes).toEqual([]);
@@ -62,25 +62,25 @@ describe("P3.1 capability-aware portal navigation", () => {
     const broadAdmin = filterPortalRoutes(
       portalRoutes,
       "operations",
-      new Set([capabilities.adminAccess]),
+      new Set([permissionCodes.fundingApplicationAllRead]),
     );
     const assignedReader = filterPortalRoutes(
       portalRoutes,
       "operations",
-      new Set([
-        capabilities.adminAccess,
-        capabilities.applicationReadAssigned,
-      ]),
+      new Set([permissionCodes.workflowTaskAssignedRead]),
     );
 
     const applications = operationsPortalRoutes.find(
       (route) => route.id === "admin-applications",
     );
-    expect(applications?.requiredAnyCapabilities).toEqual([
-      capabilities.applicationReadAssigned,
-      capabilities.applicationReadAll,
+    expect(applications?.requiredAnyPermissions).toEqual([
+      permissionCodes.workflowTaskAssignedRead,
+      permissionCodes.fundingApplicationAllRead,
     ]);
-    expect(broadAdmin.map((route) => route.href)).toEqual(["/admin"]);
+    expect(broadAdmin.map((route) => route.href)).toEqual([
+      "/admin",
+      "/admin/applications",
+    ]);
     expect(assignedReader.map((route) => route.href)).toContain(
       "/admin/applications",
     );
@@ -90,7 +90,7 @@ describe("P3.1 capability-aware portal navigation", () => {
     const routes = filterPortalRoutes(
       portalRoutes,
       "operations",
-      new Set([capabilities.adminAccess, capabilities.workQueueRead]),
+      new Set([permissionCodes.workflowTaskPoolRead]),
     );
     expect(routes.map((route) => route.href)).toEqual([
       "/admin",
@@ -98,16 +98,44 @@ describe("P3.1 capability-aware portal navigation", () => {
     ]);
   });
 
+  it("exposes funding calls only with the canonical read permission", () => {
+    const withoutFundingCalls = filterPortalRoutes(
+      portalRoutes,
+      "operations",
+      new Set([permissionCodes.fundingApplicationAllRead]),
+    );
+    const withFundingCalls = filterPortalRoutes(
+      portalRoutes,
+      "operations",
+      new Set([permissionCodes.fundingCallRead]),
+    );
+
+    expect(withoutFundingCalls.map((route) => route.href)).not.toContain(
+      "/admin/funding-calls",
+    );
+    expect(withFundingCalls.map((route) => route.href)).toContain(
+      "/admin/funding-calls",
+    );
+    expect(
+      operationsPortalRoutes.find(
+        (route) => route.href === "/admin/funding-calls",
+      ),
+    ).toMatchObject({
+      label: "Funding calls",
+      requiredPermission: permissionCodes.fundingCallRead,
+    });
+  });
+
   it("exposes content management only with CMS access", () => {
     const withoutCmsAccess = filterPortalRoutes(
       portalRoutes,
       "operations",
-      new Set([capabilities.adminAccess]),
+      new Set([permissionCodes.fundingApplicationAllRead]),
     );
     const withCmsAccess = filterPortalRoutes(
       portalRoutes,
       "operations",
-      new Set([capabilities.adminAccess, capabilities.cmsAccess]),
+      new Set([permissionCodes.fundingApplicationAllRead, permissionCodes.cmsAccess]),
     );
 
     expect(withoutCmsAccess.map((route) => route.href)).not.toContain("/cms");
@@ -116,7 +144,7 @@ describe("P3.1 capability-aware portal navigation", () => {
       operationsPortalRoutes.find((route) => route.href === "/cms"),
     ).toMatchObject({
       label: "Content management",
-      requiredCapability: capabilities.cmsAccess,
+      requiredPermission: permissionCodes.cmsAccess,
     });
   });
 
@@ -136,13 +164,13 @@ describe("P3.1 capability-aware portal navigation", () => {
               label: "Child",
               icon: portalRoutes[0].icon,
               space: "applicant",
-              requiredCapability: capabilities.businessReadOwn,
+              requiredPermission: permissionCodes.businessOwnRead,
             },
           ],
         },
       ],
       "applicant",
-      new Set([capabilities.profileReadOwn]),
+      new Set([permissionCodes.userProfileOwnRead]),
     );
 
     expect(routes).toEqual([]);
@@ -157,19 +185,14 @@ describe("P3.1 capability-aware portal navigation", () => {
       "utf8",
     );
     const mobileHeader = readFileSync(
-      resolve(
-        process.cwd(),
-        "src/components/layout/portal-mobile-header.tsx",
-      ),
+      resolve(process.cwd(), "src/components/layout/portal-mobile-header.tsx"),
       "utf8",
     );
 
     expect(shell).toContain(
       '<aside className="sticky top-0 hidden h-screen overflow-hidden bg-brand-orange',
     );
-    expect(shell).toContain(
-      '<div className="min-h-screen bg-brand-white lg:grid',
-    );
+    expect(shell).toContain('className="min-h-screen bg-brand-white lg:grid"');
     expect(mobileHeader).toContain("bg-brand-orange");
     expect(mobileHeader).toContain("fixed inset-x-0 bottom-0 top-16");
     expect(mobileHeader).toContain("lg:hidden");

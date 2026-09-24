@@ -1,0 +1,242 @@
+"use client";
+
+import { ChevronDown, FileText } from "lucide-react";
+import type { ReactNode } from "react";
+
+import type { WorkflowStageInput } from "@/modules/workflows/domain/definitions/WorkflowTypes";
+
+export function WorkflowTaskPreviewSummary({
+  requiredCount,
+  sectionCount,
+}: {
+  requiredCount: number;
+  sectionCount: number;
+}) {
+  return (
+    <section className="rounded-2xl border border-brand-orange/20 bg-brand-cream p-5">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h2 className="font-bold text-brand-navy">Task completion</h2>
+          <p className="mt-1 text-sm text-brand-navy/65">
+            {requiredCount
+              ? `0 of ${requiredCount} required items complete`
+              : `${sectionCount} configured sections`}
+          </p>
+        </div>
+        <span className="text-sm font-semibold text-brand-navy">Not started</span>
+      </div>
+      <div
+        aria-label="Task completion: 0 percent"
+        className="mt-4 h-2 overflow-hidden rounded-full bg-brand-white"
+        role="progressbar"
+        aria-valuemax={Math.max(requiredCount, 1)}
+        aria-valuemin={0}
+        aria-valuenow={0}
+      >
+        <div className="h-full w-0 bg-brand-orange" />
+      </div>
+    </section>
+  );
+}
+
+export function WorkflowTaskPreviewSection({
+  children,
+  status,
+  title,
+}: {
+  children?: ReactNode;
+  status: string;
+  title: string;
+}) {
+  return (
+    <details
+      className="group overflow-hidden rounded-2xl border border-brand-navy/10 bg-brand-white"
+    >
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-5 text-brand-navy">
+        <span className="font-bold">{title}</span>
+        <span className="flex items-center gap-3 text-sm text-brand-navy/60">
+          {status}
+          <ChevronDown className="size-4 transition group-open:rotate-180" />
+        </span>
+      </summary>
+      <div className="border-t border-brand-navy/10 p-5">{children}</div>
+    </details>
+  );
+}
+
+function ChecklistResponse({
+  name,
+  responseType,
+}: {
+  name: string;
+  responseType: WorkflowStageInput["checklistItems"][number]["responseType"];
+}) {
+  if (responseType === "YES_NO") {
+    return (
+      <div className="flex gap-4 text-sm text-brand-navy/65">
+        <label><input disabled name={name} type="radio" /> Yes</label>
+        <label><input disabled name={name} type="radio" /> No</label>
+      </div>
+    );
+  }
+  return (
+    <input
+      className="h-10 w-full rounded-lg border border-brand-navy/20 bg-brand-white px-3"
+      disabled
+      type={responseType === "TEXT" ? "text" : responseType.toLowerCase()}
+    />
+  );
+}
+
+export function WorkflowChecklistPreview({ stage }: { stage: WorkflowStageInput }) {
+  return (
+    <div className="space-y-3">
+      {[...stage.checklistItems]
+        .sort((left, right) => left.displayOrder - right.displayOrder)
+        .map((item) => (
+          <div
+            className="space-y-3 rounded-xl border border-brand-navy/10 p-4"
+            key={item.key}
+          >
+            <div>
+              <p className="text-sm font-semibold text-brand-navy">
+                {item.text}
+                {item.mandatory ? (
+                  <span className="ml-1 text-brand-orange">*</span>
+                ) : null}
+              </p>
+              {item.notes ? (
+                <p className="mt-1 text-xs text-brand-navy/55">{item.notes}</p>
+              ) : null}
+            </div>
+            <ChecklistResponse
+              name={`checklist-${item.key}`}
+              responseType={item.responseType}
+            />
+            {item.evidenceRequirement !== "NONE" ? (
+              <p className="text-xs text-brand-navy/55">
+                Evidence: {item.evidenceRequirement.toLowerCase()}
+              </p>
+            ) : null}
+          </div>
+        ))}
+    </div>
+  );
+}
+
+export function WorkflowDocumentRequirementsPreview({
+  stage,
+}: {
+  stage: WorkflowStageInput;
+}) {
+  return (
+    <div className="space-y-3">
+      {stage.documentRequirements.map((requirement) => (
+        <div
+          className="flex items-start gap-3 rounded-xl border border-brand-navy/10 p-4"
+          key={requirement.name}
+        >
+          <FileText className="mt-0.5 size-5 shrink-0 text-brand-orange" />
+          <div>
+            <p className="text-sm font-semibold text-brand-navy">
+              {requirement.name}
+              {requirement.mandatory ? (
+                <span className="ml-1 text-brand-orange">*</span>
+              ) : null}
+            </p>
+            <p className="mt-1 text-xs text-brand-navy/55">
+              {requirement.acceptedFileTypes.join(", ")} · Maximum {requirement.maximumSizeMb} MB
+            </p>
+            <p className="mt-1 text-xs text-brand-navy/55">
+              Uploaded by {requirement.uploader.replaceAll("_", " ").toLowerCase()}; verified by {requirement.verifier.replaceAll("_", " ").toLowerCase()}.
+            </p>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function WorkflowScoringPreview({ stage }: { stage: WorkflowStageInput }) {
+  if (!stage.scoring) return null;
+  return (
+    <div className="space-y-3">
+      <p className="text-xs text-brand-navy/55">
+        Aggregation: {stage.scoring.aggregation.replaceAll("_", " ").toLowerCase()}
+      </p>
+      {stage.scoring.criteria.map((criterion) => (
+        <div
+          className="grid gap-4 rounded-xl border border-brand-navy/10 p-4 md:grid-cols-[1fr_10rem]"
+          key={criterion.criterion}
+        >
+          <div>
+            <p className="text-sm font-semibold text-brand-navy">
+              {criterion.criterion}
+            </p>
+            {criterion.description ? (
+              <p className="mt-1 text-xs text-brand-navy/55">
+                {criterion.description}
+              </p>
+            ) : null}
+            <p className="mt-2 text-xs text-brand-navy/55">
+              Weight {criterion.weight} · Threshold {criterion.threshold}
+            </p>
+          </div>
+          <label className="text-xs font-semibold text-brand-navy">
+            Score ({criterion.scaleMinimum}–{criterion.scaleMaximum})
+            <input
+              className="mt-1 h-10 w-full rounded-lg border border-brand-navy/20 px-3"
+              disabled
+              max={criterion.scaleMaximum}
+              min={criterion.scaleMinimum}
+              type="number"
+            />
+          </label>
+          {criterion.mandatoryComment ? (
+            <label className="text-xs font-semibold text-brand-navy md:col-span-2">
+              Comment <span className="text-brand-orange">*</span>
+              <textarea
+                className="mt-1 min-h-20 w-full rounded-lg border border-brand-navy/20 p-3"
+                disabled
+              />
+            </label>
+          ) : null}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function WorkflowCommentsPreview({ stage }: { stage: WorkflowStageInput }) {
+  return (
+    <div className="space-y-4">
+      {[...stage.commentFields]
+        .sort((left, right) => left.displayOrder - right.displayOrder)
+        .map((field) => (
+          <label
+            className="block text-sm font-semibold text-brand-navy"
+            key={field.key}
+          >
+            {field.label}
+            {field.mandatory ? (
+              <span className="ml-1 text-brand-orange">*</span>
+            ) : null}
+            <span className="ml-2 text-xs font-normal text-brand-navy/50">
+              {field.visibility === "APPLICANT_VISIBLE"
+                ? "Applicant visible"
+                : "Internal only"}
+            </span>
+            {field.helpText ? (
+              <span className="mt-1 block text-xs font-normal text-brand-navy/55">
+                {field.helpText}
+              </span>
+            ) : null}
+            <textarea
+              className="mt-2 min-h-24 w-full rounded-lg border border-brand-navy/20 p-3"
+              disabled
+            />
+          </label>
+        ))}
+    </div>
+  );
+}

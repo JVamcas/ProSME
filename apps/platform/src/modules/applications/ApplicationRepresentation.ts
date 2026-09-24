@@ -2,12 +2,14 @@ import "server-only";
 
 import { z } from "zod";
 
-import type { findOwnedApplication } from "@/db/repositories/ApplicationRepository";
+import type { findOwnedApplication } from "@/modules/applications/infrastructure/ApplicationRepository";
 import type {
   ApplicationSection,
   ApplicationSectionCompletion,
 } from "./ApplicationSchemas";
 import type { ApplicationSummary, ApplicationView } from "./ApplicationTypes";
+import { projectApplicantStatus, type ApplicantStatusSource } from "./domain/ApplicantStatusProjection";
+import type { ApplicationLifecycleStatus } from "./domain/Application";
 
 const cursorSchema = z.object({
   id: z.uuid(),
@@ -15,14 +17,20 @@ const cursorSchema = z.object({
 });
 
 export type ApplicationSummaryRecord = {
+  canWithdraw?: boolean;
+  reference?: string | null;
+  submittedAt?: Date | null;
+  workflowStatus?: string | null;
+  terminalPublicStatus?: ApplicantStatusSource["terminalPublicStatus"];
+  activeStageStatuses?: ApplicantStatusSource["activeStageStatuses"];
   businessName?: string | null;
   createdAt: Date;
   currentSection: ApplicationSection;
-  fundingOpportunityId: number;
+  fundingOpportunityId: string;
   fundingOpportunityTitle: string;
   id: string;
   sectionCompletion: ApplicationSectionCompletion;
-  status: "draft" | "submitted";
+  status: ApplicationLifecycleStatus;
   updatedAt: Date;
 };
 
@@ -41,6 +49,15 @@ export function toApplicationSummary(
     fundingOpportunityId: application.fundingOpportunityId,
     fundingOpportunityTitle: application.fundingOpportunityTitle,
     id: application.id,
+    canWithdraw: application.canWithdraw ?? false,
+    reference: application.reference ?? null,
+    submittedAt: application.submittedAt?.toISOString() ?? null,
+    publicStatus: projectApplicantStatus({
+      lifecycleStatus: application.status,
+      workflowStatus: application.workflowStatus ?? null,
+      terminalPublicStatus: application.terminalPublicStatus ?? null,
+      activeStageStatuses: application.activeStageStatuses ?? [],
+    }),
     progressPercent: progress(application.sectionCompletion),
     status: application.status,
     updatedAt: application.updatedAt.toISOString(),
@@ -77,11 +94,19 @@ export function encodeApplicationCursor(application: ApplicationSummaryRecord) {
 export function toApplicationView(
   application: NonNullable<Awaited<ReturnType<typeof findOwnedApplication>>>,
 ): ApplicationView {
+  if (!application.formVersionId) {
+    throw new Error("Application is missing its bound form version.");
+  }
+  if (!application.eligibilityRuleSetVersionId) {
+    throw new Error("Application is missing its bound eligibility version.");
+  }
   return {
     ...toApplicationSummary(application),
     businessSection: application.businessSection,
     declarationsSection: application.declarationsSection,
     financialSection: application.financialSection,
+    eligibilityRuleSetVersionId: application.eligibilityRuleSetVersionId,
+    formVersionId: application.formVersionId,
     projectSection: application.projectSection,
     rowVersion: application.rowVersion,
     sectionCompletion: application.sectionCompletion,

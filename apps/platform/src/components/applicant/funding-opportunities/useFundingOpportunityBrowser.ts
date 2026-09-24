@@ -4,14 +4,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useDeferredValue, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 
-import { useFundingOpportunities } from "@/modules/funding-opportunities/FundingOpportunityHooks";
+import { useFundingOpportunities } from "@/modules/funding-calls/FundingOpportunityHooks";
 import {
   fundingOpportunitySearchSchema,
   type FundingOpportunitySearchInput,
-} from "@/modules/funding-opportunities/FundingOpportunitySchemas";
-import type { FundingOpportunityStatus } from "@/modules/funding-opportunities/FundingOpportunityTypes";
+} from "@/modules/funding-calls/FundingOpportunitySchemas";
+import type { PublicFundingCallStatus } from "@/modules/funding-calls/api/PublicFundingCallTransport";
 
-export type FundingOpportunityFilter = "all" | FundingOpportunityStatus;
+export type FundingOpportunityFilter = "all" | PublicFundingCallStatus;
 export const fundingOpportunityPageSize = 10;
 
 export function useFundingOpportunityBrowser(

@@ -1,25 +1,45 @@
 "use client";
 
-import { requestData } from "@/lib/client-http";
+import { requestData, requestJson } from "@/lib/client-http";
 import type {
+  FormDefinitionPage,
   FormDefinitionSummary,
   FormEditorView,
   FormRuntimeSchema,
-  FormSubmission,
+  FormResponse,
   PublishedFormOption,
+  TaskFormData,
 } from "./FormTypes";
 import type {
   CreateFormInput,
+  FormListInput,
   TaskFormSubmissionInput,
   UpdateFormInput,
-} from "./FormTransportTypes";
+} from "./api/FormTransportTypes";
+
+type CompleteTaskFormInput = TaskFormSubmissionInput & {
+  actionKey: string | null;
+};
 
 const jsonHeaders = { "Content-Type": "application/json" };
 
-function list() {
-  return requestData<FormDefinitionSummary[]>("/api/admin/forms", {
-    cache: "no-store",
+type FormListEnvelope = {
+  data: FormDefinitionSummary[];
+  page: Omit<FormDefinitionPage, "items"> & { nextCursor: string | null };
+};
+
+async function list(input: FormListInput): Promise<FormDefinitionPage> {
+  const query = new URLSearchParams({
+    page: String(input.page),
+    pageSize: String(input.pageSize),
   });
+  const envelope = await requestJson<FormListEnvelope>(
+    `/api/admin/forms?${query.toString()}`,
+    {
+    cache: "no-store",
+    },
+  );
+  return { items: envelope.data, ...envelope.page };
 }
 
 function create(input: CreateFormInput) {
@@ -40,6 +60,13 @@ function listPublished() {
   return requestData<PublishedFormOption[]>("/api/admin/forms/published", {
     cache: "no-store",
   });
+}
+
+function getPublishedRuntime(versionId: string) {
+  return requestData<FormRuntimeSchema>(
+    `/api/admin/forms/published/${versionId}`,
+    { cache: "no-store" },
+  );
 }
 
 function update(id: string, input: UpdateFormInput) {
@@ -72,27 +99,26 @@ function lifecycle(
 }
 
 function getTaskForm(taskId: string) {
-  return requestData<{
-    schema: FormRuntimeSchema;
-    submission: FormSubmission | null;
-    taskRowVersion: number;
-  }>(`/api/admin/tasks/${taskId}/form`, { cache: "no-store" });
+  return requestData<TaskFormData>(`/api/admin/tasks/${taskId}/form`, {
+    cache: "no-store",
+  });
 }
 
 function saveTaskForm(taskId: string, input: TaskFormSubmissionInput) {
-  return requestData<FormSubmission>(`/api/admin/tasks/${taskId}/form`, {
+  return requestData<FormResponse>(`/api/admin/tasks/${taskId}/form`, {
     body: JSON.stringify(input),
     headers: jsonHeaders,
     method: "PATCH",
   });
 }
 
-function completeTaskForm(taskId: string, input: TaskFormSubmissionInput) {
+function completeTaskForm(taskId: string, input: CompleteTaskFormInput) {
   return requestData<{
+    actionKey: string | null;
     nextStageName: string | null;
     rowVersion: number;
     taskInstanceId: string;
-    taskStatus: "COMPLETED";
+    taskStatus: "IN_PROGRESS" | "COMPLETED";
     workflowStatus: "ACTIVE" | "COMPLETED";
   }>(`/api/admin/tasks/${taskId}/form`, {
     body: JSON.stringify(input),
@@ -110,6 +136,7 @@ export const clientFormsService = {
   completeTaskForm,
   get,
   getTaskForm,
+  getPublishedRuntime,
   lifecycle,
   list,
   listPublished,

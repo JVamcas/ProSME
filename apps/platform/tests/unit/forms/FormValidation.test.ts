@@ -1,43 +1,85 @@
 import { describe, expect, it } from "vitest";
 
-import { formFieldSchema } from "@/modules/forms/FormSchemas";
+import {
+  formEditorSchema,
+  formFieldSchema,
+  formSectionSchema,
+} from "@/modules/forms/api/FormSchemas";
 import {
   validateFormFields,
   validateFormValues,
 } from "@/modules/forms/FormValidation";
 import type { FormField } from "@/modules/forms/FormTypes";
-import { buildDynamicFormSchema } from "@/components/admin/forms/DynamicFormSchema";
 
+const sectionId = "10000000-0000-4000-8000-000000000001";
 const textField: FormField = {
-  code: "NOTES",
+  columnSpan: 1,
+  helpText: "Add relevant detail.",
+  key: "NOTES",
   label: "Notes",
-  inputType: "TEXTAREA",
-  dataType: "TEXT",
-  rowIndex: 1,
-  columnIndex: 1,
-  columnSpan: 2,
-  required: true,
   options: [],
+  order: 1,
+  required: true,
+  sectionId,
+  type: "TEXTAREA",
 };
 
-describe("dynamic form field validation", () => {
-  it("accepts supported combinations and rejects unsupported ones", () => {
-    expect(formFieldSchema.safeParse(textField).success).toBe(true);
-    expect(
-      formFieldSchema.safeParse({ ...textField, dataType: "INTEGER" }).success,
-    ).toBe(false);
+describe("basic form field validation", () => {
+  it("accepts all supported scalar field types", () => {
+    const types = [
+      "TEXT",
+      "TEXTAREA",
+      "NUMBER",
+      "CURRENCY",
+      "PERCENTAGE",
+      "DATE",
+      "YES_NO",
+      "DOCUMENT",
+    ] as const;
+    expect(types.every((type) => (
+      formFieldSchema.safeParse({ ...textField, type }).success
+    ))).toBe(true);
+    expect(formFieldSchema.safeParse({
+      ...textField,
+      options: [{ key: "FIRST", label: "First", order: 1 }],
+      type: "SINGLE_SELECT",
+    }).success).toBe(true);
+    expect(formFieldSchema.safeParse({
+      ...textField,
+      options: [{ key: "FIRST", label: "First", order: 1 }],
+      type: "MULTI_SELECT",
+    }).success).toBe(true);
+    expect(formFieldSchema.safeParse({ ...textField, type: "MONEY" }).success)
+      .toBe(false);
   });
 
-  it("rejects collisions and invalid spans", () => {
-    expect(
-      validateFormFields([
-        textField,
-        { ...textField, code: "OTHER", columnIndex: 2, columnSpan: 1 },
-      ]),
-    ).toBe(false);
-    expect(
-      formFieldSchema.safeParse({ ...textField, columnIndex: 2, columnSpan: 2 }).success,
-    ).toBe(false);
+  it("requires options for both select types and rejects them elsewhere", () => {
+    expect(formFieldSchema.safeParse({
+      ...textField,
+      options: [],
+      type: "SINGLE_SELECT",
+    }).success).toBe(false);
+    expect(formFieldSchema.safeParse({
+      ...textField,
+      options: [],
+      type: "MULTI_SELECT",
+    }).success).toBe(false);
+    expect(formFieldSchema.safeParse({
+      ...textField,
+      options: [{ key: "FIRST", label: "First", order: 1 }],
+      type: "TEXT",
+    }).success).toBe(false);
+  });
+
+  it("requires unique keys and contiguous order per section", () => {
+    expect(validateFormFields([
+      textField,
+      { ...textField, key: "OTHER", order: 3 },
+    ])).toBe(false);
+    expect(validateFormFields([
+      textField,
+      { ...textField, key: "NOTES", order: 2 },
+    ])).toBe(false);
   });
 
   it("allows incomplete drafts but enforces required values on completion", () => {
@@ -47,43 +89,178 @@ describe("dynamic form field validation", () => {
     expect(validateFormValues([textField], { UNKNOWN: "nope" }, false)).toBe(false);
   });
 
-  it("enforces bounded validation and real dates", () => {
-    const bounded = {
-      ...textField,
-      validation: { maxLength: 4, minLength: 2 },
-    };
-    expect(validateFormValues([bounded], { NOTES: "ok" }, true)).toBe(true);
-    expect(validateFormValues([bounded], { NOTES: "x" }, true)).toBe(false);
-    expect(
-      formFieldSchema.safeParse({
-        ...bounded,
-        validation: { maxLength: 1, minLength: 2 },
-      }).success,
-    ).toBe(false);
+  it("enforces configured length limits with AJV", () => {
+    const field = { ...textField, maxLength: 10, minLength: 3 };
+
+    expect(validateFormValues([field], { NOTES: "Okay" }, true)).toBe(true);
+    expect(validateFormValues([field], { NOTES: "No" }, true)).toBe(false);
+    expect(validateFormValues([field], { NOTES: "Far too long" }, true))
+      .toBe(false);
   });
 
+  it("enforces configured numeric limits with AJV", () => {
+    const field: FormField = {
+      ...textField,
+      maximum: 20,
+      minimum: 10,
+      type: "NUMBER",
+    };
+
+    expect(validateFormValues([field], { NOTES: 15 }, true)).toBe(true);
+    expect(validateFormValues([field], { NOTES: 9 }, true)).toBe(false);
+    expect(validateFormValues([field], { NOTES: 21 }, true)).toBe(false);
+  });
+
+  it("validates currency and percentage as bounded numbers", () => {
+    const currency: FormField = {
+      ...textField,
+      key: "BUDGET",
+      minimum: 0,
+      type: "CURRENCY",
+    };
+    const percentage: FormField = {
+      ...textField,
+      key: "RATE",
+      type: "PERCENTAGE",
+    };
+
+    expect(validateFormValues([currency], { BUDGET: 12.5 }, true)).toBe(true);
+    expect(validateFormValues([currency], { BUDGET: "12.5" }, true)).toBe(false);
+    expect(validateFormValues([percentage], { RATE: 75 }, true)).toBe(true);
+    expect(validateFormValues([percentage], { RATE: 101 }, true)).toBe(false);
+  });
+
+  it("validates single and multi select values against configured options", () => {
+    const options = [
+      { key: "FIRST", label: "First", order: 1 },
+      { key: "SECOND", label: "Second", order: 2 },
+    ];
+    const single: FormField = {
+      ...textField,
+      key: "REGION",
+      options,
+      type: "SINGLE_SELECT",
+    };
+    const multi: FormField = {
+      ...textField,
+      key: "SECTORS",
+      options,
+      type: "MULTI_SELECT",
+    };
+
+    expect(validateFormValues([single], { REGION: "FIRST" }, true)).toBe(true);
+    expect(validateFormValues([single], { REGION: "OTHER" }, true)).toBe(false);
+    expect(validateFormValues([multi], { SECTORS: ["FIRST", "SECOND"] }, true))
+      .toBe(true);
+    expect(validateFormValues([multi], { SECTORS: ["OTHER"] }, true)).toBe(false);
+    expect(validateFormValues([multi], { SECTORS: [] }, true)).toBe(false);
+  });
+
+  it("validates document values as data URLs", () => {
+    const field: FormField = {
+      ...textField,
+      key: "DOCUMENT",
+      type: "DOCUMENT",
+    };
+
+    expect(validateFormValues(
+      [field],
+      { DOCUMENT: "data:text/plain;name=note.txt;base64,SGVsbG8=" },
+      true,
+    )).toBe(true);
+    expect(validateFormValues([field], { DOCUMENT: "note.txt" }, true))
+      .toBe(false);
+  });
+
+  it("rejects invalid or inapplicable validation rules", () => {
+    expect(formFieldSchema.safeParse({
+      ...textField,
+      maximum: 5,
+    }).success).toBe(false);
+    expect(formFieldSchema.safeParse({
+      ...textField,
+      maxLength: 2,
+      minLength: 3,
+    }).success).toBe(false);
+    expect(formFieldSchema.safeParse({
+      ...textField,
+      maximum: 10,
+      minimum: 1,
+      type: "NUMBER",
+    }).success).toBe(true);
+    expect(formFieldSchema.safeParse({
+      ...textField,
+      maximum: 101,
+      type: "PERCENTAGE",
+    }).success).toBe(false);
+  });
+
+  it("allows empty draft values while validating entered draft values", () => {
+    const field = { ...textField, minLength: 3 };
+
+    expect(validateFormValues([field], { NOTES: "" }, false)).toBe(true);
+    expect(validateFormValues([field], { NOTES: "No" }, false)).toBe(false);
+  });
 });
 
-describe("dynamic form completion schema", () => {
-  it("coerces numeric values and rejects invalid dates on completion", () => {
-    const schema = buildDynamicFormSchema([
-      {
-        ...textField,
-        code: "AMOUNT",
-        dataType: "DECIMAL",
-        inputType: "NUMBER",
-        required: true,
-      },
-      {
-        ...textField,
-        code: "START_DATE",
-        columnSpan: 1,
-        dataType: "DATE",
-        inputType: "DATE",
-        required: true,
-      },
-    ], true);
-    expect(schema.safeParse({ AMOUNT: "12.50", START_DATE: "2026-09-15" }).success).toBe(true);
-    expect(schema.safeParse({ AMOUNT: "12.50", START_DATE: "2026-02-31" }).success).toBe(false);
+describe("basic generic form definition", () => {
+  const section = {
+    columnSpan: 3,
+    description: "Business identity and ownership.",
+    id: sectionId,
+    key: "BUSINESS_DETAILS",
+    order: 1,
+    showContainer: true,
+    title: "Business details",
+  };
+
+  it("accepts the section contract", () => {
+    expect(formSectionSchema.safeParse(section).success).toBe(true);
+  });
+
+  it("limits section width to the three-column grid", () => {
+    expect(formSectionSchema.safeParse({ ...section, columnSpan: 1 }).success)
+      .toBe(true);
+    expect(formSectionSchema.safeParse({ ...section, columnSpan: 2 }).success)
+      .toBe(true);
+    expect(formSectionSchema.safeParse({ ...section, columnSpan: 4 }).success)
+      .toBe(false);
+  });
+
+  it("supports hidden section chrome", () => {
+    expect(formSectionSchema.safeParse({
+      ...section,
+      showContainer: false,
+    }).success).toBe(true);
+  });
+
+  it("defines fields inside an ordered section", () => {
+    const result = formEditorSchema.safeParse({
+      expectedRowVersion: 1,
+      fields: [textField],
+      sections: [section],
+      submitLabel: "Submit",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects fields assigned outside the form version", () => {
+    const result = formEditorSchema.safeParse({
+      expectedRowVersion: 1,
+      fields: [{ ...textField, sectionId: crypto.randomUUID() }],
+      sections: [section],
+      submitLabel: "Submit",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("bounds field width by its parent section", () => {
+    const result = formEditorSchema.safeParse({
+      expectedRowVersion: 1,
+      fields: [{ ...textField, columnSpan: 2 }],
+      sections: [{ ...section, columnSpan: 1 }],
+      submitLabel: "Submit",
+    });
+    expect(result.success).toBe(false);
   });
 });

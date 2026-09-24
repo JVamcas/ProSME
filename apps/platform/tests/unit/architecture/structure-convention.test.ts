@@ -16,15 +16,25 @@ const servicePairs = [
   ["applications", "Application"],
   ["businesses", "Business"],
   ["engagement", "Engagement"],
-  ["funding-opportunities", "FundingOpportunity"],
+  ["funding-calls", "FundingOpportunity"],
   ["profiles", "Profile"],
   ["workflows", "Workflow"],
 ] as const;
 
-describe("P3.2.1 source ownership convention", () => {
+function serverServicePath(directory: string, name: string) {
+  const relative =
+    name === "Workflow"
+      ? "application/definitions/ServerWorkflowService.ts"
+      : `Server${name}Service.ts`;
+  return path.join(directory, relative);
+}
+
+describe("source ownership convention", () => {
   it("does not hide feature ownership in generic component folders", () => {
     for (const folder of forbiddenGenericComponentFolders) {
-      expect(existsSync(path.join(sourceRoot, "components", folder))).toBe(false);
+      expect(existsSync(path.join(sourceRoot, "components", folder))).toBe(
+        false,
+      );
     }
   });
 
@@ -41,25 +51,28 @@ describe("P3.2.1 source ownership convention", () => {
     );
 
     expect(files).not.toEqual(
-      expect.arrayContaining([
-        expect.stringMatching(/Draft|^Operations/),
-      ]),
+      expect.arrayContaining([expect.stringMatching(/Draft|^Operations/)]),
     );
   });
 
   it("names flattened client and server services explicitly", () => {
     for (const [domain, name] of servicePairs) {
       const directory = path.join(sourceRoot, "modules", domain);
-      expect(existsSync(path.join(directory, `Client${name}Service.ts`))).toBe(true);
-      expect(existsSync(path.join(directory, `Server${name}Service.ts`))).toBe(true);
+      expect(existsSync(path.join(directory, `Client${name}Service.ts`))).toBe(
+        true,
+      );
+      expect(existsSync(serverServicePath(directory, name))).toBe(true);
     }
   });
 
   it("keeps client services browser-only and server services server-only", () => {
     for (const [domain, name] of servicePairs) {
       const directory = path.join(sourceRoot, "modules", domain);
-      const client = readFileSync(path.join(directory, `Client${name}Service.ts`), "utf8");
-      const server = readFileSync(path.join(directory, `Server${name}Service.ts`), "utf8");
+      const client = readFileSync(
+        path.join(directory, `Client${name}Service.ts`),
+        "utf8",
+      );
+      const server = readFileSync(serverServicePath(directory, name), "utf8");
       expect(client.startsWith('"use client"')).toBe(true);
       expect(client).not.toMatch(/@\/db|server-only|firebase-admin/);
       expect(server).toContain('import "server-only"');
@@ -67,8 +80,14 @@ describe("P3.2.1 source ownership convention", () => {
   });
 
   it("uses explicit applicant and admin API namespaces", () => {
-    expect(existsSync(path.join(sourceRoot, "app/api/applications"))).toBe(false);
-    expect(existsSync(path.join(sourceRoot, "app/api/admin/applications/route.ts"))).toBe(true);
-    expect(existsSync(path.join(sourceRoot, "app/api/portal/businesses/route.ts"))).toBe(true);
+    expect(existsSync(path.join(sourceRoot, "app/api/applications"))).toBe(
+      false,
+    );
+    expect(
+      existsSync(path.join(sourceRoot, "app/api/admin/applications/route.ts")),
+    ).toBe(true);
+    expect(
+      existsSync(path.join(sourceRoot, "app/api/portal/businesses/route.ts")),
+    ).toBe(true);
   });
 });

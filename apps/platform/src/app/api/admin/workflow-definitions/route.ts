@@ -4,13 +4,13 @@ import {
   portalRouteError,
   portalRouteSuccess,
 } from "@/lib/api/PortalApiResponse";
-import { createWorkflowSchema } from "@/modules/workflows/WorkflowSchemas";
+import { createWorkflowSchema } from "@/modules/workflows/api/WorkflowSchemas";
 import {
   createWorkflow,
   getWorkflowDefinitions,
-} from "@/modules/workflows/ServerWorkflowService";
+} from "@/modules/workflows/application/definitions/ServerWorkflowService";
 
-export const dynamic = "force-dynamic";
+
 
 export async function GET(request: Request) {
   const correlationId = createCorrelationId();

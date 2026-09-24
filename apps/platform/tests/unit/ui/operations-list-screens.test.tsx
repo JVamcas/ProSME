@@ -34,7 +34,7 @@ import { ApplicationsTable } from "@/components/admin/applications/ApplicationsT
 import { ApplicationReview } from "@/components/admin/applications/ApplicationReview";
 import { WorkQueueTable } from "@/components/admin/work-queue/WorkQueueTable";
 import { CapabilityProvider } from "@/components/layout/capability-context";
-import { capabilities } from "@/auth/authorization/capabilities";
+import { permissionCodes } from "@/auth/authorization/permissions";
 
 const task = {
   applicantName: "Applicant from database",
@@ -53,8 +53,7 @@ const task = {
   taskDefinitionCode: "COMPLETENESS",
   taskInstanceId: "3695f976-2acd-44ff-b30b-39c9c5ff6c27",
   taskName: "Check completeness",
-  taskStatus: "READY",
-  taskType: "CHECKLIST",
+  taskStatus: "PENDING",
 } as const;
 
 function context(capabilityCodes: string[]) {
@@ -81,6 +80,13 @@ describe("operations list screens", () => {
           businessType: "Close corporation",
           coFunding: 15000,
           currentStageName: "Completeness screening",
+          publicStatus: {
+            actionRequired: false,
+            description: "Your application is under review.",
+            label: "Under review",
+            status: "UNDER_REVIEW",
+          },
+          updatedAt: "2026-09-15T08:00:00.000Z",
           industry: "Technology",
           location: "Khomas",
           opportunityTitle: "Published opportunity",
@@ -122,7 +128,7 @@ describe("operations list screens", () => {
 
   it("shows claim only when role assignment and capability allow it", () => {
     const markup = renderToStaticMarkup(
-      <CapabilityProvider value={context([capabilities.workflowTaskClaim])}>
+      <CapabilityProvider value={context([permissionCodes.workflowTaskClaim])}>
         <WorkQueueTable
           claimingId={null}
           emptyMessage="No tasks"

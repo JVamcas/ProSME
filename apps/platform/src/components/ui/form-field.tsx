@@ -2,6 +2,10 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 import {
+  InfoTooltip,
+  type InfoTooltipSide,
+} from "@/shared/ui/InfoTooltip";
+import {
   type FormBindingProps,
   useFormBinding,
 } from "./form-binding";
@@ -13,6 +17,8 @@ type FieldLayoutProps = {
   error?: string;
   errorId?: string;
   htmlFor?: string;
+  infoTooltip?: React.ReactNode;
+  infoTooltipSide?: InfoTooltipSide;
   label: React.ReactNode;
   labelAccessory?: React.ReactNode;
   labelClassName?: string;
@@ -25,22 +31,35 @@ export function FormField({
   error,
   errorId,
   htmlFor,
+  infoTooltip,
+  infoTooltipSide,
   label,
   labelAccessory,
   labelClassName,
   required = false,
 }: FieldLayoutProps) {
+  const labelNode = (
+    <Label className={labelClassName} htmlFor={htmlFor}>
+      {label}
+      {required ? (
+        <>
+          <span aria-hidden="true" className="ml-1 text-brand-orange">
+            *
+          </span>
+          <span className="sr-only">(required)</span>
+        </>
+      ) : null}
+    </Label>
+  );
+
   return (
     <div className={className}>
       <div className="flex items-center justify-between">
-        <Label className={labelClassName} htmlFor={htmlFor}>
-          {label}
-          {required ? (
-            <span aria-hidden="true" className="ml-1 text-brand-orange">
-              *
-            </span>
-          ) : null}
-        </Label>
+        {infoTooltip ? (
+          <InfoTooltip content={infoTooltip} side={infoTooltipSide}>
+            {labelNode}
+          </InfoTooltip>
+        ) : labelNode}
         {labelAccessory}
       </div>
       {children}
@@ -55,6 +74,7 @@ export type CheckboxFieldProps = Omit<
 > & {
   containerClassName?: string;
   controlClassName?: string;
+  description?: React.ReactNode;
   label: React.ReactNode;
 } & FormBindingProps;
 
@@ -62,6 +82,7 @@ export function CheckboxField({
   className,
   containerClassName,
   controlClassName,
+  description,
   error,
   id,
   label,
@@ -72,8 +93,9 @@ export function CheckboxField({
   const binding = useFormBinding({ error, name, registrationOptions });
   const generatedId = React.useId();
   const controlId = id ?? binding.name ?? generatedId;
+  const descriptionId = description ? `${controlId}-description` : undefined;
   const errorId = binding.error ? `${controlId}-error` : undefined;
-  const describedBy = [errorId, props["aria-describedby"]]
+  const describedBy = [descriptionId, errorId, props["aria-describedby"]]
     .filter(Boolean)
     .join(" ") || undefined;
 
@@ -96,6 +118,14 @@ export function CheckboxField({
         />
         <span>{label}</span>
       </label>
+      {description ? (
+        <p
+          className="ml-7 mt-1 text-xs font-normal leading-relaxed text-brand-navy/60"
+          id={descriptionId}
+        >
+          {description}
+        </p>
+      ) : null}
       <FieldError id={errorId} message={binding.error} />
     </div>
   );

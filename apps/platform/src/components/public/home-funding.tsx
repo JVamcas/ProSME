@@ -1,7 +1,7 @@
 import { CalendarDays, Download, Newspaper } from "lucide-react";
 
 import { getNews, getResources } from "@/modules/content/ServerContentQueries";
-import { ArrowLink } from "@/components/ui/arrow-link";
+import { ArrowLink } from "@/components/ui/links";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SectionHeading } from "./section-heading";
 import { CmsImage } from "./cms-image";

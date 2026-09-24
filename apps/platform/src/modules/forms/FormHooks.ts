@@ -1,24 +1,46 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 
 import { clientFormsService } from "./ClientFormsService";
+import { workQueueQueryKeys } from "@/modules/work-queue/WorkQueueHooks";
 import type {
   CreateFormInput,
+  FormListInput,
   TaskFormSubmissionInput,
   UpdateFormInput,
-} from "./FormTransportTypes";
+} from "./api/FormTransportTypes";
+import type { TaskFormData } from "./FormTypes";
+
+type CompleteTaskFormInput = TaskFormSubmissionInput & {
+  actionKey: string | null;
+};
 
 export const formQueryKeys = {
   all: ["admin", "forms"] as const,
+  list: (input: FormListInput) => [
+    "admin",
+    "forms",
+    "list",
+    input.page,
+    input.pageSize,
+  ] as const,
   detail: (id: string) => ["admin", "forms", id] as const,
   task: (id: string) => ["admin", "tasks", id, "form"] as const,
+  publishedRuntime: (versionId: string) =>
+    ["admin", "forms", "published", versionId] as const,
 };
 
-export function useForms() {
+export function useForms(input: FormListInput) {
   return useQuery({
-    queryKey: formQueryKeys.all,
-    queryFn: clientFormsService.list,
+    placeholderData: keepPreviousData,
+    queryKey: formQueryKeys.list(input),
+    queryFn: () => clientFormsService.list(input),
   });
 }
 
@@ -34,6 +56,14 @@ export function usePublishedForms() {
   return useQuery({
     queryKey: [...formQueryKeys.all, "published"],
     queryFn: clientFormsService.listPublished,
+  });
+}
+
+export function usePublishedFormRuntime(versionId: string | null) {
+  return useQuery({
+    enabled: Boolean(versionId),
+    queryKey: formQueryKeys.publishedRuntime(versionId ?? ""),
+    queryFn: () => clientFormsService.getPublishedRuntime(versionId!),
   });
 }
 
@@ -80,13 +110,21 @@ export function useFormLifecycle(action: "publish" | "retire") {
   });
 }
 
-export function useCloneForm(id: string) {
+export function useCloneForm() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (sourceVersionId: string) =>
-      clientFormsService.clone(id, sourceVersionId),
-    onSuccess: (view) => {
-      queryClient.setQueryData(formQueryKeys.detail(id), view);
+    mutationFn: (input: {
+      definitionId: string;
+      sourceVersionId: string;
+    }) => clientFormsService.clone(
+      input.definitionId,
+      input.sourceVersionId,
+    ),
+    onSuccess: (view, input) => {
+      queryClient.setQueryData(
+        formQueryKeys.detail(input.definitionId),
+        view,
+      );
       void queryClient.invalidateQueries({ queryKey: formQueryKeys.all });
     },
   });
@@ -105,8 +143,11 @@ export function useSaveTaskForm(taskId: string) {
   return useMutation({
     mutationFn: (input: TaskFormSubmissionInput) =>
       clientFormsService.saveTaskForm(taskId, input),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: formQueryKeys.task(taskId) });
+    onSuccess: (response) => {
+      queryClient.setQueryData<TaskFormData>(
+        formQueryKeys.task(taskId),
+        (current) => current ? { ...current, response } : current,
+      );
     },
   });
 }
@@ -114,10 +155,11 @@ export function useSaveTaskForm(taskId: string) {
 export function useCompleteTaskForm(taskId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: TaskFormSubmissionInput) =>
+    mutationFn: (input: CompleteTaskFormInput) =>
       clientFormsService.completeTaskForm(taskId, input),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: formQueryKeys.task(taskId) });
+      void queryClient.invalidateQueries({ queryKey: workQueueQueryKeys.all });
     },
   });
 }

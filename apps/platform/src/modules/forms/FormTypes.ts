@@ -1,117 +1,129 @@
-export const formStatuses = [
-  "DRAFT",
-  "PUBLISHED",
-  "RETIRED",
-] as const;
-export type FormStatus = (typeof formStatuses)[number];
+import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup";
+import type {
+  FormDefinitionSummary,
+  FormDisplayMode,
+  FormSection,
+  FormVersionSummary,
+} from "./domain/FormDefinition";
 
-export const formInputTypes = [
+export {
+  formDisplayModes,
+  formStatuses,
+  type FormDefinitionSummary,
+  type FormDisplayMode,
+  type FormSection,
+  type FormStatus,
+  type FormVersionSummary,
+} from "./domain/FormDefinition";
+export {
+  formContextUsages,
+  type FormBindingHost,
+  type FormBindingPrincipal,
+  type FormContextContract,
+  type FormContextUsage,
+  type FormRuntimeBinding,
+  type FormRuntimeBindingInput,
+} from "./domain/FormRuntimeBinding";
+
+export const formFieldTypes = [
   "TEXT",
   "TEXTAREA",
   "NUMBER",
-  "MONEY",
+  "CURRENCY",
+  "PERCENTAGE",
   "DATE",
-  "SELECT",
-  "RADIO",
-  "CHECKBOX",
+  "YES_NO",
+  "SINGLE_SELECT",
+  "MULTI_SELECT",
+  "DOCUMENT",
 ] as const;
-export type FormInputType = (typeof formInputTypes)[number];
-
-export const formDataTypes = [
-  "TEXT",
-  "INTEGER",
-  "DECIMAL",
-  "MONEY",
-  "DATE",
-  "BOOLEAN",
-] as const;
-export type FormDataType = (typeof formDataTypes)[number];
+export type FormFieldType = (typeof formFieldTypes)[number];
 
 export type FormOption = {
-  code: string;
+  key: string;
   label: string;
-  position: number;
-};
-export type FormValidation = {
-  max?: number;
-  maxLength?: number;
-  min?: number;
-  minLength?: number;
+  order: number;
 };
 export type FormField = {
   id?: string;
-  code: string;
+  sectionId: string;
+  columnSpan: 1 | 2 | 3;
+  key: string;
   label: string;
-  inputType: FormInputType;
-  dataType: FormDataType;
-  rowIndex: number;
-  columnIndex: 1 | 2;
-  columnSpan: 1 | 2;
+  type: FormFieldType;
   required: boolean;
-  placeholder?: string | null;
   helpText?: string | null;
-  validation?: FormValidation | null;
+  minimum?: number;
+  maximum?: number;
+  minLength?: number;
+  maxLength?: number;
+  order: number;
   options?: FormOption[];
-};
-
-export type FormVersionSummary = {
-  id: string;
-  formDefinitionId: string;
-  versionNumber: number;
-  status: FormStatus;
-  instructions: string | null;
-  submitLabel: string;
-  rowVersion: number;
-  createdAt: string;
-  publishedAt: string | null;
-  retiredAt: string | null;
-};
-
-export type FormDefinitionSummary = {
-  id: string;
-  code: string;
-  name: string;
-  description: string;
-  active: boolean;
-  latestVersion: number | null;
-  latestStatus: FormStatus | null;
-  fieldCount: number;
-  usedByCount: number;
-  updatedAt: string;
+  visibilityCondition?: ConditionGroup | null;
 };
 
 export type FormEditorView = {
   definition: Omit<
     FormDefinitionSummary,
-    "fieldCount" | "usedByCount" | "latestVersion" | "latestStatus"
+    | "fieldCount"
+    | "sectionCount"
+    | "usedByCount"
+    | "latestVersionId"
+    | "latestVersion"
+    | "latestVersionRowVersion"
+    | "latestStatus"
   >;
   version: FormVersionSummary;
+  sections: FormSection[];
   fields: FormField[];
   versions: FormVersionSummary[];
   allowedActions: string[];
 };
 
 export type FormRuntimeSchema = {
+  displayMode?: FormDisplayMode;
   versionId: string;
   versionNumber: number;
   instructions: string | null;
   submitLabel: string;
+  sections: FormSection[];
   fields: FormField[];
 };
 
 export type PublishedFormOption = {
   definitionId: string;
   formName: string;
+  status?: "DRAFT" | "PUBLISHED";
   versionId: string;
   versionNumber: number;
 };
 
-export type FormSubmission = {
+export type FormDefinitionPage = {
+  items: FormDefinitionSummary[];
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+};
+
+export type FormResponse = {
   id: string;
-  taskInstanceId: string;
+  workflowTaskId: string;
   formVersionId: string;
+  respondentUserId: string;
   status: "DRAFT" | "COMPLETED";
   values: Record<string, unknown>;
+  definitionSnapshot: FormRuntimeSchema | null;
   rowVersion: number;
   completedAt: string | null;
+};
+
+export type TaskFormData = {
+  context: Readonly<Record<
+    string,
+    import("./engine/FormRuntimeContext").FormContextValue
+  >>;
+  schema: FormRuntimeSchema;
+  response: FormResponse | null;
+  taskRowVersion: number;
 };

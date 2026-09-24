@@ -1,12 +1,12 @@
 import "server-only";
 
-import { capabilities } from "@/auth/authorization/capabilities";
-import { can, requireAnyCapability } from "@/auth/authorization/policy";
+import { permissionCodes } from "@/auth/authorization/permissions";
+import { can, requireAnyPermission } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import {
   readAdminApplication,
   readAdminApplications,
-} from "@/db/repositories/AdminApplicationRepository";
+} from "@/modules/applications/infrastructure/AdminApplicationRepository";
 import {
   decodeAdminApplicationCursor,
   encodeAdminApplicationCursor,
@@ -20,17 +20,15 @@ export async function listAdminApplications(
   user: AuthenticatedUser | null,
   input: AdminApplicationListInput,
 ): Promise<AdminApplicationPage> {
-  const actor = requireAnyCapability(user, [
-    capabilities.applicationReadAssigned,
-    capabilities.applicationReadAll,
+  const actor = requireAnyPermission(user, [
+    permissionCodes.workflowTaskAssignedRead,
+    permissionCodes.fundingApplicationAllRead,
   ]);
   const projection = await readAdminApplications({
     actorId: actor.id,
-    cursor: input.after
-      ? decodeAdminApplicationCursor(input.after)
-      : undefined,
+    cursor: input.after ? decodeAdminApplicationCursor(input.after) : undefined,
     filters: input,
-    visibility: can(actor, capabilities.applicationReadAll)
+    visibility: can(actor, permissionCodes.fundingApplicationAllRead)
       ? "all"
       : "assigned",
   });
@@ -49,14 +47,14 @@ export async function getAdminApplicationOverview(
   user: AuthenticatedUser | null,
   applicationId: string,
 ) {
-  const actor = requireAnyCapability(user, [
-    capabilities.applicationReadAssigned,
-    capabilities.applicationReadAll,
+  const actor = requireAnyPermission(user, [
+    permissionCodes.workflowTaskAssignedRead,
+    permissionCodes.fundingApplicationAllRead,
   ]);
   return readAdminApplication({
     actorId: actor.id,
     applicationId,
-    visibility: can(actor, capabilities.applicationReadAll)
+    visibility: can(actor, permissionCodes.fundingApplicationAllRead)
       ? "all"
       : "assigned",
   });

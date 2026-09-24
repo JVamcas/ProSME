@@ -7,7 +7,13 @@ import { useRouter } from "next/navigation";
 import { authClientService } from "@/auth/firebase/ClientAuthService";
 import { GeneralButton } from "@/components/ui/button";
 
-export function LogoutButton({ tone = "dark" }: { tone?: "brand" | "dark" }) {
+export function LogoutButton({
+  collapsed = false,
+  tone = "dark",
+}: {
+  collapsed?: boolean;
+  tone?: "brand" | "dark";
+}) {
   const router = useRouter();
   const logout = useMutation({
     mutationFn: authClientService.logout,
@@ -23,10 +29,11 @@ export function LogoutButton({ tone = "dark" }: { tone?: "brand" | "dark" }) {
       variant="ghost"
       disabled={logout.isPending}
       onClick={() => logout.mutate()}
+      title={collapsed ? "Logout" : undefined}
       className={
         tone === "brand"
-          ? "h-11 w-full justify-start rounded-xl px-3 text-brand-navy hover:bg-brand-navy/10"
-          : "h-auto justify-start rounded-none px-4 py-3 text-left text-white/55 hover:bg-transparent hover:text-white"
+          ? `h-11 w-full rounded-xl text-brand-navy hover:bg-brand-navy/10 ${collapsed ? "justify-center px-2" : "justify-start px-3"}`
+          : `h-auto py-3 text-left text-white/55 hover:bg-transparent hover:text-white ${collapsed ? "justify-center rounded-xl px-2" : "justify-start rounded-none px-4"}`
       }
     >
       <LogOutIcon
@@ -36,7 +43,9 @@ export function LogoutButton({ tone = "dark" }: { tone?: "brand" | "dark" }) {
             : "size-4 text-brand-orange"
         }
       />
-      {logout.isPending ? "Logging out…" : "Logout"}
+      <span className={collapsed ? "sr-only" : undefined}>
+        {logout.isPending ? "Logging out…" : "Logout"}
+      </span>
     </GeneralButton>
   );
 }

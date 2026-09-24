@@ -1,6 +1,5 @@
 import type { Payload } from "payload";
 
-import { eligibilityRules } from "../../data/eligibility-rules";
 import { defaultStatistics, defaultSupportGroups, focusSectors } from "../../modules/content/ContentDefaults";
 import { findId, seedContext } from "./seed-helpers";
 
@@ -8,7 +7,6 @@ export async function seedProgrammeContent(payload: Payload) {
   await seedStatistics(payload);
   await seedSupportGroups(payload);
   await seedFocusSectors(payload);
-  await seedEligibilityRules(payload);
 }
 
 async function seedStatistics(payload: Payload) {
@@ -39,18 +37,6 @@ async function seedFocusSectors(payload: Payload) {
   for (const [order, label] of focusSectors.entries()) {
     const current = await findId(payload, "eligibility-content", "label", label);
     const data = { description: "Priority area", kind: "focusSector" as const, label, order, reviewStatus: "approved" as const, _status: "published" as const };
-    if (current) {
-      await payload.update({ collection: "eligibility-content", id: current, data, context: seedContext, overrideAccess: true });
-    } else {
-      await payload.create({ collection: "eligibility-content", data, context: seedContext, overrideAccess: true });
-    }
-  }
-}
-
-async function seedEligibilityRules(payload: Payload) {
-  for (const [order, rule] of eligibilityRules.entries()) {
-    const current = await findId(payload, "eligibility-content", "key", rule.id);
-    const data = { description: rule.help, hardStop: rule.hardStop, key: rule.id, kind: "checkerQuestion" as const, label: rule.question, order: order + 100, reviewStatus: "approved" as const, _status: "published" as const };
     if (current) {
       await payload.update({ collection: "eligibility-content", id: current, data, context: seedContext, overrideAccess: true });
     } else {

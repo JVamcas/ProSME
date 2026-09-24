@@ -2,7 +2,7 @@ import { validateTaskConfiguration } from "./WorkflowTaskRegistry";
 import type {
   WorkflowGraphInput,
   WorkflowValidationIssue,
-} from "./WorkflowTypes";
+} from "@/modules/workflows/domain/definitions/WorkflowTypes";
 
 const sensitiveApplicantTerms =
   /score|recommendation|assignee|assignment|committee/i;
@@ -27,41 +27,62 @@ function validateTaskIdentity(
   const errors: WorkflowValidationIssue[] = [];
   const taskPath = `${base}.tasks.${taskIndex}`;
   if (
-    !task.formVersionId &&
-    !validateTaskConfiguration(task.type, task.config).success
+    !validateTaskConfiguration(task.config).success
   ) {
     errors.push(
       issue(
         "INVALID_TASK_CONFIG",
-        `${task.name} has invalid ${task.type} configuration.`,
+        `${task.name} has invalid task configuration.`,
         `${taskPath}.config`,
       ),
     );
   }
-  if (!task.formVersionId && task.type === "STRUCTURED_FORM") {
+  if (task.requiredCompletionCount > task.reviewerCount) {
     errors.push(
       issue(
-        "MISSING_FORM_VERSION",
-        `${task.name} must reference a published form version.`,
-        `${taskPath}.formVersionId`,
+        "INVALID_COMPLETION_COUNT",
+        `${task.name} cannot require more completions than reviewers.`,
+        `${taskPath}.requiredCompletionCount`,
       ),
     );
   }
-  if (task.assignmentRoleId && task.assignmentUserId) {
-    errors.push(
-      issue(
-        "AMBIGUOUS_ASSIGNMENT",
-        `${task.name} cannot assign both a role and a user.`,
-        taskPath,
-      ),
-    );
-  }
-  if (!task.assignmentRoleId && !task.assignmentUserId) {
+  if (task.assignmentMode === "ROLE" && !task.roleId) {
     errors.push(
       issue(
         "MISSING_ASSIGNMENT",
-        `${task.name} must be assigned to a role or user before publication.`,
-        taskPath,
+        `${task.name} must be assigned to a role before publication.`,
+        `${taskPath}.roleId`,
+      ),
+    );
+  }
+  if (task.assignmentMode === "NAMED_USER" && !task.namedUserOverrideId) {
+    errors.push(
+      issue(
+        "MISSING_ASSIGNMENT",
+        `${task.name} must select a named user before publication.`,
+        `${taskPath}.namedUserOverrideId`,
+      ),
+    );
+  }
+  if (task.assignmentMode === "NAMED_USER" && task.reviewerCount !== 1) {
+    errors.push(
+      issue(
+        "INVALID_NAMED_USER_REVIEWER_COUNT",
+        `${task.name} must have exactly one reviewer when assigned to a named user.`,
+        `${taskPath}.reviewerCount`,
+      ),
+    );
+  }
+  if (
+    task.quorum &&
+    (task.reviewerCount < 2 ||
+      task.requiredCompletionCount * 2 <= task.reviewerCount)
+  ) {
+    errors.push(
+      issue(
+        "INVALID_QUORUM",
+        `${task.name} must require a majority of at least two reviewers for quorum.`,
+        `${taskPath}.quorum`,
       ),
     );
   }
@@ -73,7 +94,9 @@ function validateTaskUniqueness(
   base: string,
 ) {
   const errors: WorkflowValidationIssue[] = [];
-  const duplicateCodes = new Set(duplicates(stage.tasks.map((task) => task.code)));
+  const duplicateCodes = new Set(
+    duplicates(stage.tasks.map((task) => task.stableKey)),
+  );
   for (const code of duplicateCodes) {
     errors.push(
       issue(
@@ -84,7 +107,7 @@ function validateTaskUniqueness(
     );
   }
   const duplicateSequences = new Set(
-    duplicates(stage.tasks.map((task) => task.sequence)),
+    duplicates(stage.tasks.map((task) => task.displayOrder)),
   );
   for (const sequence of duplicateSequences) {
     errors.push(
@@ -98,13 +121,45 @@ function validateTaskUniqueness(
   return errors;
 }
 
+function validateActionUniqueness(
+  stage: WorkflowGraphInput["stages"][number],
+  base: string,
+) {
+  const errors: WorkflowValidationIssue[] = [];
+  const duplicateKeys = new Set(
+    duplicates(stage.actions.map((action) => action.stableKey)),
+  );
+  for (const stableKey of duplicateKeys) {
+    errors.push(
+      issue(
+        "DUPLICATE_ACTION_KEY",
+        `Action key ${stableKey} is duplicated.`,
+        `${base}.actions`,
+      ),
+    );
+  }
+  const duplicateOrders = new Set(
+    duplicates(stage.actions.map((action) => action.displayOrder)),
+  );
+  for (const displayOrder of duplicateOrders) {
+    errors.push(
+      issue(
+        "DUPLICATE_ACTION_ORDER",
+        `Action display order ${displayOrder} is duplicated.`,
+        `${base}.actions`,
+      ),
+    );
+  }
+  return errors;
+}
+
 function validateApplicantLabels(
   stage: WorkflowGraphInput["stages"][number],
   base: string,
 ) {
   if (
     !sensitiveApplicantTerms.test(
-      `${stage.applicantLabel} ${stage.applicantDescription}`,
+      `${stage.publicStatusMapping.label} ${stage.publicStatusMapping.description}`,
     )
   ) {
     return [];
@@ -124,6 +179,16 @@ export function validateWorkflowStage(
 ) {
   const errors: WorkflowValidationIssue[] = [];
   const base = `stages.${index}`;
+  if (stage.tasks.length === 0) {
+    errors.push(
+      issue(
+        "MISSING_RESPONSIBILITY",
+        `${stage.name} needs at least one assigned task.`,
+        `${base}.tasks`,
+      ),
+    );
+  }
+  errors.push(...validateActionUniqueness(stage, base));
   errors.push(...validateTaskUniqueness(stage, base));
   stage.tasks.forEach((task, taskIndex) => {
     errors.push(...validateTaskIdentity(task, base, taskIndex));

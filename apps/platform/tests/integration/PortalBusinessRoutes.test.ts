@@ -14,7 +14,7 @@ vi.mock("@/db/repositories/BusinessRepository", () => ({
 
 import * as itemRoute from "@/app/api/portal/businesses/[id]/route";
 import * as listRoute from "@/app/api/portal/businesses/route";
-import { capabilities } from "@/auth/authorization/capabilities";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import { resolveUserFromHeaders } from "@/auth/authorization/current-user";
 import type { AuthenticatedUser } from "@/auth/types";
 import {
@@ -77,7 +77,7 @@ beforeEach(() => vi.clearAllMocks());
 describe("owned business routes", () => {
   it("lists only the authenticated user's businesses", async () => {
     vi.mocked(resolveUserFromHeaders).mockResolvedValue(
-      user([capabilities.businessReadOwn]),
+      user([permissionCodes.businessOwnRead]),
     );
     vi.mocked(listOwnedBusinesses).mockResolvedValue([row]);
 
@@ -92,8 +92,8 @@ describe("owned business routes", () => {
   it("creates a business for the authenticated owner", async () => {
     vi.mocked(resolveUserFromHeaders).mockResolvedValue(
       user([
-        capabilities.businessReadOwn,
-        capabilities.businessUpdateOwn,
+        permissionCodes.businessOwnRead,
+        permissionCodes.businessOwnUpdate,
       ]),
     );
     vi.mocked(createOwnedBusiness).mockResolvedValue(businessId);
@@ -108,7 +108,7 @@ describe("owned business routes", () => {
 
   it("returns not found without exposing another owner's business", async () => {
     vi.mocked(resolveUserFromHeaders).mockResolvedValue(
-      user([capabilities.businessUpdateOwn]),
+      user([permissionCodes.businessOwnUpdate]),
     );
     vi.mocked(deleteOwnedBusiness).mockResolvedValue(false);
 

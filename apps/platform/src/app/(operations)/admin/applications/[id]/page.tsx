@@ -2,11 +2,14 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { z } from "zod";
 
-import { capabilities } from "@/auth/authorization/capabilities";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import { getCurrentUser } from "@/auth/authorization/current-user";
 import { can } from "@/auth/authorization/policy";
-import { ApplicationReview } from "@/components/admin/applications/ApplicationReview";
-import { getAdminApplicationOverview } from "@/modules/applications/ServerAdminApplicationService";
+import { ResourceNotFoundError } from "@/lib/resource-errors";
+import { getAdminApplicationDetail } from "@/modules/applications/ServerAdminApplicationDetailService";
+import { ApplicationDetailView } from "@/modules/applications/ui/ApplicationDetailView";
+import { getWorkflowProgress } from "@/modules/workflows/application/runtime/ServerWorkflowProgressService";
+import { WorkflowProgressPanel } from "@/modules/workflows/ui/WorkflowProgressPanel";
 
 export const metadata: Metadata = { title: "Application overview" };
 
@@ -22,8 +25,8 @@ export default async function ApplicationPage({
   const { id } = await params;
   const user = await getCurrentUser();
   const canRead =
-    can(user, capabilities.applicationReadAssigned) ||
-    can(user, capabilities.applicationReadAll);
+    can(user, permissionCodes.workflowTaskAssignedRead) ||
+    can(user, permissionCodes.fundingApplicationAllRead);
 
   if (!canRead) {
     redirect("/unauthorized");
@@ -33,11 +36,25 @@ export default async function ApplicationPage({
   if (!z.uuid().safeParse(applicationId).success) {
     notFound();
   }
-  const application = await getAdminApplicationOverview(user, applicationId);
+  const detail = await getAdminApplicationDetail(
+    user,
+    applicationId,
+    crypto.randomUUID(),
+  ).catch((error: unknown) => {
+    if (error instanceof ResourceNotFoundError) notFound();
+    throw error;
+  });
 
-  if (!application) {
-    notFound();
-  }
+  const progress = can(user, permissionCodes.workflowInstanceAllRead)
+    ? await getWorkflowProgress(user, applicationId)
+    : undefined;
 
-  return <ApplicationReview application={application} />;
+  return (
+    <ApplicationDetailView
+      model={detail.model}
+      workflowProgress={progress === undefined
+        ? undefined
+        : <WorkflowProgressPanel progress={progress} />}
+    />
+  );
 }
