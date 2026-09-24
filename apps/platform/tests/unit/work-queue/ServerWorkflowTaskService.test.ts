@@ -76,6 +76,7 @@ const task = {
   },
   dueAt: new Date("2026-09-20T08:00:00Z"),
   fundingCallTitle: "Funding call",
+  formCompleted: false,
   reference: "SMEF-2026-000001",
   result: null,
   permissions: defaultWorkflowElementPermissions,
@@ -86,7 +87,6 @@ const task = {
   taskInstanceId: "79e20de0-3558-4d63-90a4-8c9f5125df09",
   taskName: "Pre-screening checklist",
   taskStatus: "CLAIMED",
-  taskType: "CHECKLIST",
   workflowInstanceId: "79e20de0-3558-4d63-90a4-8c9f5125df13",
 };
 

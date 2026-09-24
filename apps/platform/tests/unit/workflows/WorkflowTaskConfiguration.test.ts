@@ -5,27 +5,16 @@ import {
   workflowTaskFormSchema,
 } from "@/modules/workflows/ui/definitions/WorkflowTaskFormSchema";
 import { referenceWorkflow } from "../../support/ReferenceWorkflowFixture";
-import {
-  defaultTaskConfiguration,
-  formatTaskConfiguration,
-} from "@/modules/workflows/WorkflowTaskConfiguration";
-import {
-  listTaskRegistryEntries,
-  validateTaskConfiguration,
-} from "@/modules/workflows/WorkflowTaskRegistry";
+import { formatTaskConfiguration } from "@/modules/workflows/WorkflowTaskConfiguration";
+import { validateTaskConfiguration } from "@/modules/workflows/WorkflowTaskRegistry";
 import { validateWorkflowGraph } from "@/modules/workflows/WorkflowValidation";
 import { defaultWorkflowElementPermissions } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
 
 describe("workflow task configuration", () => {
-  it("provides a valid editable starting configuration for every task type", () => {
-    listTaskRegistryEntries().forEach((entry) => {
-      expect(
-        validateTaskConfiguration(
-          entry.type,
-          defaultTaskConfiguration(entry.type),
-        ).success,
-      ).toBe(true);
-    });
+  it("accepts a task with a form and checklist configuration", () => {
+    expect(validateTaskConfiguration({
+      items: [{ code: "ONE", label: "One", required: true }],
+    }).success).toBe(true);
   });
 
   it("rejects completion thresholds above the reviewer count", () => {
@@ -60,19 +49,15 @@ describe("workflow task configuration", () => {
       quorum: true,
       coiRequired: true,
       configJson: formatTaskConfiguration(
-        defaultTaskConfiguration("CHECKLIST"),
+        { items: [{ code: "ONE", label: "One", required: true }] },
       ),
       checklistItems: checklistItemDefaults(
-        defaultTaskConfiguration("CHECKLIST"),
+        { items: [{ code: "ONE", label: "One", required: true }] },
       ),
       name: "Review task",
       required: true,
     };
     expect(workflowTaskFormSchema.safeParse(values).success).toBe(true);
-    expect(workflowTaskFormSchema.parse({
-      ...values,
-      type: "CHECKLIST",
-    })).not.toHaveProperty("type");
     expect(
       workflowTaskFormSchema.safeParse({ ...values, assignmentTarget: "" })
         .success,
@@ -93,8 +78,7 @@ describe("workflow task configuration", () => {
     const graph = structuredClone(referenceWorkflow);
     const task = graph.stages[0].tasks[0];
     task.roleId = "79e20de0-3558-4d63-90a4-8c9f5125df07";
-    task.type = "STRUCTURED_FORM";
-    task.config = defaultTaskConfiguration("STRUCTURED_FORM");
+    task.config = { fields: [{ code: "NOTES", label: "Notes", type: "textarea" }] };
     task.formBinding = null;
 
     expect(validateWorkflowGraph(graph).errors).not.toEqual(

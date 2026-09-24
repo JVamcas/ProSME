@@ -29,23 +29,7 @@ export const workflowActionCodes = [
 
 export type WorkflowActionCode = (typeof workflowActionCodes)[number];
 
-export const taskTypeCodes = [
-  "AUTOMATED_RULE_CHECK",
-  "CHECKLIST",
-  "DOCUMENT_REVIEW",
-  "STRUCTURED_FORM",
-  "ASSESSMENT_FORM",
-  "FINANCE_REVIEW",
-  "INFORMATION_REQUEST",
-  "RECOMMENDATION",
-  "DECISION",
-  "COMMUNICATION",
-] as const;
-
-export type TaskTypeCode = (typeof taskTypeCodes)[number];
-
 export type WorkflowTaskInput = WorkflowTaskDefinition & {
-  type: TaskTypeCode;
   required: boolean;
   config: unknown;
   formBinding: WorkflowTaskFormBinding | null;

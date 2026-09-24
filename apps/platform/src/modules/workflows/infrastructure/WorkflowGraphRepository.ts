@@ -72,7 +72,6 @@ const graphSelection = {
     stableKey: stageTaskDefinitions.stableKey,
     name: stageTaskDefinitions.name,
     description: stageTaskDefinitions.description,
-    type: stageTaskDefinitions.type,
     displayOrder: stageTaskDefinitions.displayOrder,
     required: stageTaskDefinitions.required,
     roleId: stageTaskDefinitions.roleId,

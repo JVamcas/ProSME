@@ -28,6 +28,10 @@ export type AuthoritativeEligibilityTaskResult = {
 export type TaskDetail = {
   actions: WorkflowTaskAction[];
   eligibilityEvaluation: AuthoritativeEligibilityTaskResult | null;
+  canEvaluateEligibility: boolean;
+  hasChecklist: boolean;
+  formCompleted: boolean;
+  checklistCompleted: boolean;
   applicantName: string;
   applicationId: string;
   businessName: string | null;
@@ -43,7 +47,6 @@ export type TaskDetail = {
   taskInstanceId: string;
   taskName: string;
   taskStatus: string;
-  taskType: string;
   workflowInstanceId: string;
   formVersionId?: string | null;
 };
@@ -59,6 +62,6 @@ export type TaskCompletionResult = {
   nextStageName: string | null;
   rowVersion: number;
   taskInstanceId: string;
-  taskStatus: "COMPLETED";
+  taskStatus: "IN_PROGRESS" | "COMPLETED";
   workflowStatus: "ACTIVE" | "COMPLETED";
 };

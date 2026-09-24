@@ -1,6 +1,5 @@
 import "server-only";
 
-import type { TaskTypeCode } from "../domain/definitions/WorkflowTypes";
 import type { WorkflowTask } from "../domain/runtime/WorkflowTask";
 import type { WorkflowInstanceTransaction } from "./WorkflowInstanceRepository";
 import { workflowTasks } from "./workflow-runtime.schema";
@@ -8,7 +7,6 @@ import { workflowTasks } from "./workflow-runtime.schema";
 export type CreateWorkflowTaskInput = {
   stageInstanceId: string;
   workflowTaskDefinitionId: string;
-  typeSnapshot: TaskTypeCode;
   formVersionId?: string | null;
   assignedRoleId?: string | null;
   assignedUserId?: string | null;
@@ -29,7 +27,6 @@ const workflowTaskSelection = {
   stageInstanceId: workflowTasks.stageInstanceId,
   startedAt: workflowTasks.startedAt,
   status: workflowTasks.status,
-  typeSnapshot: workflowTasks.typeSnapshot,
   workflowTaskDefinitionId: workflowTasks.workflowTaskDefinitionId,
 };
 
@@ -50,7 +47,6 @@ export async function createWorkflowTasks(
       formVersionId: input.formVersionId ?? null,
       stageInstanceId: input.stageInstanceId,
       status: input.assignedUserId ? "CLAIMED" as const : "PENDING" as const,
-      typeSnapshot: input.typeSnapshot,
       workflowTaskDefinitionId: input.workflowTaskDefinitionId,
     })))
     .returning(workflowTaskSelection);

@@ -1,4 +1,3 @@
-import { defaultTaskConfiguration } from "@/modules/workflows/WorkflowTaskConfiguration";
 import { task } from "./StandardWorkflowBuilders";
 import type { StandardWorkflowDependencies } from "./StandardWorkflowTypes";
 
@@ -7,7 +6,7 @@ export function eligibilityVerificationTask(
 ) {
   return task(dependencies, {
     actionKeys: [],
-    config: defaultTaskConfiguration("STRUCTURED_FORM"),
+    config: {},
     description:
       "Record the verified eligibility facts used by authoritative Screening.",
     displayOrder: 2,
@@ -15,6 +14,5 @@ export function eligibilityVerificationTask(
     name: "Eligibility evidence verification",
     roleCode: "programme_officer",
     stableKey: "ELIGIBILITY_VERIFICATION",
-    type: "STRUCTURED_FORM",
   });
 }

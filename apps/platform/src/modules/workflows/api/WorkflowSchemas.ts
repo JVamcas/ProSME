@@ -1,7 +1,6 @@
 import { z } from "zod";
 
 import {
-  taskTypeCodes,
   workflowStatuses,
 } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import { workflowPublicStatuses } from "@/modules/workflows/domain/definitions/WorkflowStageDefinition";
@@ -141,7 +140,6 @@ export const workflowTaskSchema = z
     quorum: z.boolean(),
     coiRequired: z.boolean(),
     displayOrder: z.number().int().positive(),
-    type: z.enum(taskTypeCodes),
     required: z.boolean(),
     config: z.unknown(),
     formBinding: z.object({

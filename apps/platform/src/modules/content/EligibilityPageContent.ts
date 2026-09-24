@@ -8,8 +8,8 @@ export type EligibilityFocusSection = {
 export const defaultEligibilityFocusSection: EligibilityFocusSection = {
   eyebrow: "Focus sectors",
   heading: "Priority areas for consideration",
-  noticeHeading: "All sectors may apply.",
-  notice: "Focus sectors indicate priority areas; they are not an exclusion list.",
+  noticeHeading: "MSMEs in all sectors are encouraged to apply.",
+  notice: "The sectors above only indicate priority areas; this is not an exclusion list.",
 };
 
 export function eligibilityFocusSection(blocks: unknown[]): EligibilityFocusSection {

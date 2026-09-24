@@ -17,7 +17,6 @@ const task = {
   quorum: true,
   coiRequired: true,
   displayOrder: 1,
-  type: "ASSESSMENT_FORM" as const,
   required: true,
   config: {},
   formBinding: null,

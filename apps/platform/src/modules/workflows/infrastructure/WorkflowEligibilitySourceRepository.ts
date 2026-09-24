@@ -1,5 +1,7 @@
 import "server-only";
 
+import { taskHasChecklist, taskRunsAuthoritativeEligibility } from "@/modules/workflows/WorkflowTaskRegistry";
+
 import { and, eq, inArray } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
@@ -48,7 +50,8 @@ const checklistConditionTypes = {
 type Position = {
   stageSequence: number;
   taskOrder: number;
-  taskType?: string;
+  hasChecklist?: boolean;
+  hasDocumentReview?: boolean;
 };
 
 export type WorkflowEligibilitySource = {
@@ -88,7 +91,7 @@ async function readSourceRecords(versions: string[]) {
         stageId: workflowStageDefinitions.id,
         stageSequence: workflowStageDefinitions.sequence,
         taskOrder: stageTaskDefinitions.displayOrder,
-        type: stageTaskDefinitions.type,
+        config: stageTaskDefinitions.config,
         workflowVersionId: workflowStageDefinitions.versionId,
       })
       .from(stageTaskDefinitions)
@@ -178,7 +181,9 @@ export async function readWorkflowEligibilitySources(
     const position = {
       stageSequence: task.stageSequence,
       taskOrder: task.taskOrder,
-      taskType: task.type,
+      hasChecklist: taskHasChecklist(task.config),
+      hasDocumentReview: Boolean(task.config && typeof task.config === "object"
+        && "categories" in task.config && "outcomes" in task.config),
     };
     const positions = stageTaskPositions.get(
       positionKey(task.workflowVersionId, task.stageId),
@@ -188,7 +193,7 @@ export async function readWorkflowEligibilitySources(
       positionKey(task.workflowVersionId, task.stageId),
       positions,
     );
-    if (task.type !== "AUTOMATED_RULE_CHECK") continue;
+    if (!taskRunsAuthoritativeEligibility(task.config)) continue;
     const current = eligibilityPositions.get(task.workflowVersionId);
     if (!current || isBefore(position, current)) {
       eligibilityPositions.set(task.workflowVersionId, position);
@@ -215,7 +220,7 @@ export async function readWorkflowEligibilitySources(
   const checklistSources = checklists.flatMap((item) => {
     const positions = (stageTaskPositions.get(
       positionKey(item.workflowVersionId, item.stageId),
-    ) ?? []).filter((position) => position.taskType === "CHECKLIST");
+    ) ?? []).filter((position) => position.hasChecklist);
     const sourcePosition = positions.toSorted((left, right) =>
       left.taskOrder - right.taskOrder
     )[0];
@@ -248,8 +253,8 @@ export async function readWorkflowEligibilitySources(
     const positions = (stageTaskPositions.get(
       positionKey(document.workflowVersionId, document.stageId),
     ) ?? []).filter((position) =>
-      position.taskType === "CHECKLIST"
-      || position.taskType === "DOCUMENT_REVIEW"
+      position.hasChecklist
+      || position.hasDocumentReview
     );
     const sourcePosition = positions.toSorted((left, right) =>
       left.taskOrder - right.taskOrder
@@ -274,7 +279,7 @@ export async function readWorkflowEligibilitySources(
     }));
   });
   const manualSources = tasks
-    .filter((task) => task.type !== "AUTOMATED_RULE_CHECK")
+    .filter((task) => !taskRunsAuthoritativeEligibility(task.config))
     .map((task) => ({
       availableBeforeEligibility: isBefore(
         { stageSequence: task.stageSequence, taskOrder: task.taskOrder },

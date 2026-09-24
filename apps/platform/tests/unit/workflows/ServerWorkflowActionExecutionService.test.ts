@@ -137,8 +137,11 @@ beforeEach(() => {
   vi.mocked(completeActionTask).mockResolvedValue({ id: taskId });
   vi.mocked(configuredActionTargetsAreValid).mockResolvedValue(true);
   vi.mocked(executeSequentialTransitionInTransaction).mockResolvedValue({
-    completion: { kind: "requirements_not_met", requirements: [] },
-    kind: "source_stage_not_completed",
+    executionId: "f0000000-0000-4000-8000-000000000001",
+    kind: "transitioned",
+    targetStageInstanceId: "f0000000-0000-4000-8000-000000000002",
+    targetStageName: "Next stage",
+    workflowStatus: "ACTIVE",
   });
 });
 
@@ -149,7 +152,7 @@ describe("server workflow action execution", () => {
     expect(result).toMatchObject({
       actionKey: "ADVANCE",
       resultingRuntimeVersion: 3,
-      transition: { kind: "STAGE_ACTIVE" },
+      transition: { kind: "STAGE_ACTIVATED" },
     });
     expect(completeActionTask).toHaveBeenCalledOnce();
     expect(executeSequentialTransitionInTransaction).toHaveBeenCalledWith(
@@ -175,6 +178,19 @@ describe("server workflow action execution", () => {
         outcome: "APPROVED",
       }),
     );
+  });
+
+  it("rejects an advancing decision when required stage work remains", async () => {
+    vi.mocked(executeSequentialTransitionInTransaction).mockResolvedValue({
+      completion: { kind: "requirements_not_met", requirements: [] },
+      kind: "source_stage_not_completed",
+    });
+
+    await expect(executeWorkflowAction(user(), input)).rejects.toThrow(
+      "Complete the remaining required stage work",
+    );
+    expect(recordWorkflowActionExecution).not.toHaveBeenCalled();
+    expect(recordWorkflowDecision).not.toHaveBeenCalled();
   });
 
   it("returns an exact idempotent replay without entering a transaction", async () => {

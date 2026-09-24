@@ -58,7 +58,6 @@ const stage = (code: string, sequence: number, initial: boolean) => ({
     name: "Complete form",
     required: true,
     displayOrder: 1,
-    type: "STRUCTURED_FORM" as const,
   }],
 });
 

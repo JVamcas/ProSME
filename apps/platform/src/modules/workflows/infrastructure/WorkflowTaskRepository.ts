@@ -13,6 +13,9 @@ type TaskDetailRow = Omit<
   | "dueAt"
   | "eligibilityEvaluation"
   | "resultItems"
+  | "canEvaluateEligibility"
+  | "hasChecklist"
+  | "checklistCompleted"
 > & {
   config: unknown;
   dueAt: Date | string | null;
@@ -26,8 +29,13 @@ export async function readWorkflowTask(
 ): Promise<TaskDetailRow | null> {
   const result = await getDatabase().execute(sql`
     SELECT task.id AS "taskInstanceId", task.status AS "taskStatus",
-      task.type_snapshot AS "taskType", task.row_version AS "rowVersion",
+      task.row_version AS "rowVersion",
       task.form_version_id AS "formVersionId",
+      (task.form_version_id IS NOT NULL AND EXISTS (
+        SELECT 1 FROM app_form_responses response
+        WHERE response.workflow_task_id = task.id
+          AND response.status = 'COMPLETED'
+      )) AS "formCompleted",
       task.due_at AS "dueAt", task.result,
       definition.name AS "taskName", definition.config,
       definition.permissions,
@@ -69,6 +77,11 @@ export async function readAssignedFormTask(actorId: string, taskId: string) {
   const result = await getDatabase().execute(sql`
     SELECT task.id AS "taskInstanceId",
       task.form_version_id AS "formVersionId",
+      (task.form_version_id IS NOT NULL AND EXISTS (
+        SELECT 1 FROM app_form_responses response
+        WHERE response.workflow_task_id = task.id
+          AND response.status = 'COMPLETED'
+      )) AS "formCompleted",
       task.row_version AS "rowVersion",
       task.status AS "taskStatus",
       definition.permissions
@@ -80,7 +93,15 @@ export async function readAssignedFormTask(actorId: string, taskId: string) {
     JOIN app_workflow_instances workflow
       ON workflow.id = stage.workflow_instance_id
     WHERE task.id = ${taskId}::uuid
-      AND task.assigned_user_id = ${actorId}::uuid
+      AND (
+        task.assigned_user_id = ${actorId}::uuid
+        OR (
+          task.assigned_user_id IS NULL
+          AND task.assigned_role_id IN (
+            SELECT role_id FROM app_user_roles WHERE user_id = ${actorId}::uuid
+          )
+        )
+      )
       AND stage.status = 'ACTIVE'
       AND workflow.status = 'ACTIVE'
   `);

@@ -16,6 +16,7 @@ import type {
 import { workflowRuntimeContextFields } from "@/modules/workflows/domain/WorkflowRuntimeContextFieldCatalogue";
 import { defaultWorkflowElementPermissions } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
 import {
+  checklistItemDefaults,
   taskAssignmentDefaults,
   type WorkflowTaskFormValues,
   workflowTaskFormSchema,
@@ -70,6 +71,12 @@ async function saveWorkflowTask({
     });
     return false;
   }
+  const existingConfig = task?.config && typeof task.config === "object"
+    ? { ...task.config }
+    : {};
+  if (!values.checklistItems.length && "items" in existingConfig) {
+    delete existingConfig.items;
+  }
   const nextTask: WorkflowTaskInput = {
     ...(task?.id ? { id: task.id } : {}),
     actionKeys: values.actionKeys,
@@ -91,7 +98,12 @@ async function saveWorkflowTask({
     requiredCompletionCount: values.requiredCompletionCount,
     quorum: values.quorum,
     coiRequired: values.coiRequired,
-    config: task?.config ?? {},
+    config: {
+      ...existingConfig,
+      ...(values.checklistItems.length
+        ? { items: values.checklistItems }
+        : {}),
+    },
     formBinding: values.formVersionId
       ? {
           contextFields: values.contextFields,
@@ -100,7 +112,6 @@ async function saveWorkflowTask({
       : null,
     name: values.name,
     required: values.required,
-    type: task?.type ?? "STRUCTURED_FORM",
   };
   await mutateAsync({
     stages: editor.graph.stages.map((item) =>
@@ -144,7 +155,7 @@ export function useWorkflowTaskDialogController(
       visibility: task
         ? task.permissions.visibility
         : defaultWorkflowElementPermissions.visibility,
-      checklistItems: [],
+      checklistItems: checklistItemDefaults(task?.config),
       stableKey: task?.stableKey ?? "",
       description: task?.description ?? "",
       displayOrder: task?.displayOrder ?? stage.tasks.length + 1,

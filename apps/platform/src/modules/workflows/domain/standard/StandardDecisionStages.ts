@@ -63,7 +63,6 @@ function moderation(dependencies: StandardWorkflowDependencies) {
       name: "Moderation decision",
       roleCode: "panel_moderator",
       stableKey: "MODERATION_DECISION",
-      type: "RECOMMENDATION",
     })],
   });
 }
@@ -125,7 +124,6 @@ function committeeReview(dependencies: StandardWorkflowDependencies) {
       reviewerCount: 5,
       roleCode: "approval_panel_member",
       stableKey: "COMMITTEE_DECISION",
-      type: "DECISION",
     })],
   });
 }
@@ -185,7 +183,6 @@ function approval(dependencies: StandardWorkflowDependencies) {
       name: "Delegated approval",
       roleCode: "delegated_approver",
       stableKey: "DELEGATED_APPROVAL",
-      type: "DECISION",
     })],
   });
 }
@@ -244,7 +241,6 @@ function notificationAppeals(dependencies: StandardWorkflowDependencies) {
         name: "Issue outcome",
         roleCode: "programme_officer",
         stableKey: "ISSUE_OUTCOME",
-        type: "COMMUNICATION",
       }),
       task(dependencies, {
         actionKeys: actions.map((item) => item.stableKey),
@@ -259,7 +255,6 @@ function notificationAppeals(dependencies: StandardWorkflowDependencies) {
         name: "Resolve notification and appeal",
         roleCode: "programme_officer",
         stableKey: "APPEAL_DECISION",
-        type: "DECISION",
       }),
     ],
   });

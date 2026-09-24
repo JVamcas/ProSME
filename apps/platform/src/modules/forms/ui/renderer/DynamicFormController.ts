@@ -85,7 +85,9 @@ export function useDynamicFormController(taskId: string, data: TaskFormData) {
           toast.success(
             result.nextStageName
               ? `Task completed. Application advanced to ${result.nextStageName}.`
-              : "Task completed.",
+              : result.taskStatus === "COMPLETED"
+                ? "Task completed."
+                : "Form completed. Finish the remaining task work.",
           );
           router.push("/admin/work-queue");
         },

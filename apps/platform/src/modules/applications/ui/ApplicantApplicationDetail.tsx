@@ -5,7 +5,6 @@ import { applicantDetailProgressLabel } from "../domain/ApplicationDetailStatus"
 import { ApplicationDetailActions } from "./ApplicationDetailActions";
 import { ApplicationDetailView } from "./ApplicationDetailView";
 import type { ApplicationDetailModel } from "./ApplicationDetailTypes";
-import { ApplicationStatusHistoryCard } from "./ApplicationStatusHistoryCard";
 
 function applicantDetailModel(data: ApplicationReadView): ApplicationDetailModel {
   const { summary } = data;
@@ -87,9 +86,7 @@ export function ApplicantApplicationDetail({
           canWithdraw={canWithdraw}
         />
       }
-      history={<ApplicationStatusHistoryCard application={data.summary} />}
       model={applicantDetailModel(data)}
-      showSupport
     />
   );
 }

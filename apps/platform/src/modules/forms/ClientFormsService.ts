@@ -118,7 +118,7 @@ function completeTaskForm(taskId: string, input: CompleteTaskFormInput) {
     nextStageName: string | null;
     rowVersion: number;
     taskInstanceId: string;
-    taskStatus: "COMPLETED";
+    taskStatus: "IN_PROGRESS" | "COMPLETED";
     workflowStatus: "ACTIVE" | "COMPLETED";
   }>(`/api/admin/tasks/${taskId}/form`, {
     body: JSON.stringify(input),

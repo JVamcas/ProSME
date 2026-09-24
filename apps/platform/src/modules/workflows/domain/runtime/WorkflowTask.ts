@@ -1,5 +1,3 @@
-import type { TaskTypeCode } from "../definitions/WorkflowTypes";
-
 export const workflowTaskStatuses = [
   "PENDING",
   "CLAIMED",
@@ -14,7 +12,6 @@ export type WorkflowTask = {
   id: string;
   stageInstanceId: string;
   workflowTaskDefinitionId: string;
-  typeSnapshot: TaskTypeCode;
   formVersionId: string | null;
   assignedRoleId: string | null;
   assignedUserId: string | null;

@@ -124,7 +124,6 @@ function screening(dependencies: StandardWorkflowDependencies) {
         name: "Completeness and document screening",
         roleCode: "programme_officer",
         stableKey: "COMPLETENESS_SCREENING",
-        type: "CHECKLIST",
       }),
       eligibilityVerificationTask(dependencies),
       task(dependencies, {
@@ -138,7 +137,6 @@ function screening(dependencies: StandardWorkflowDependencies) {
         name: "Authoritative eligibility decision",
         roleCode: "programme_officer",
         stableKey: "AUTHORITATIVE_ELIGIBILITY",
-        type: "AUTOMATED_RULE_CHECK",
       }),
     ],
   });
@@ -230,7 +228,6 @@ function technicalAssessment(dependencies: StandardWorkflowDependencies) {
       reviewerCount: 3,
       roleCode: "sector_specialist",
       stableKey: "TECHNICAL_REVIEW",
-      type: "ASSESSMENT_FORM",
     })],
   });
 }
@@ -295,7 +292,6 @@ function financialReview(dependencies: StandardWorkflowDependencies) {
       name: "Financial review",
       roleCode: "financial_reviewer",
       stableKey: "FINANCIAL_REVIEW",
-      type: "FINANCE_REVIEW",
     })],
   });
 }
@@ -374,7 +370,6 @@ function dueDiligence(dependencies: StandardWorkflowDependencies) {
       name: "Due diligence review",
       roleCode: "due_diligence_officer",
       stableKey: "DUE_DILIGENCE_REVIEW",
-      type: "DOCUMENT_REVIEW",
     })],
   });
 }

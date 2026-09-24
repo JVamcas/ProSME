@@ -88,8 +88,8 @@ beforeAll(async () => {
   );
   await query(
     `INSERT INTO app_stage_task_definitions
-      (id, stage_id, code, name, type, sequence, required, assignment_role_id, config)
-     SELECT $1, $2, 'CHECK_COMPLETENESS', 'Check completeness', 'CHECKLIST',
+      (id, stage_id, code, name, sequence, required, assignment_role_id, config)
+     SELECT $1, $2, 'CHECK_COMPLETENESS', 'Check completeness',
        1, true, role.id,
        '{"items":[{"code":"OWNERSHIP","label":"Ownership confirmed","required":true}]}'::jsonb
      FROM app_roles role WHERE role.code = 'programme_officer'`,
@@ -97,8 +97,8 @@ beforeAll(async () => {
   );
   await query(
     `INSERT INTO app_stage_task_definitions
-      (id, stage_id, code, name, type, sequence, required, assignment_role_id, config)
-     SELECT $1, $2, 'ASSESS_APPLICATION', 'Assess application', 'ASSESSMENT_FORM',
+      (id, stage_id, code, name, sequence, required, assignment_role_id, config)
+     SELECT $1, $2, 'ASSESS_APPLICATION', 'Assess application',
        1, true, role.id,
        '{"criteria":[{"code":"FIT","label":"Fit","maximumScore":10,"weight":1,"commentRequired":false}]}'::jsonb
      FROM app_roles role WHERE role.code = 'programme_officer'`,
@@ -143,9 +143,9 @@ beforeAll(async () => {
   );
   await query(
     `INSERT INTO app_workflow_tasks
-      (id, stage_instance_id, workflow_task_definition_id, type_snapshot,
+      (id, stage_instance_id, workflow_task_definition_id,
        status, assigned_role_id, due_at)
-     SELECT $1, $2, $3, 'CHECKLIST', 'PENDING', role.id, now() + interval '24 hours'
+     SELECT $1, $2, $3, 'PENDING', role.id, now() + interval '24 hours'
      FROM app_roles role WHERE role.code = 'programme_officer'`,
     [taskInstanceId, stageInstanceId, taskDefinitionId],
   );
@@ -247,7 +247,6 @@ describeDatabase("P3.5 work queue projections and claim", () => {
     const task = await readWorkflowTask(claimedBy, taskInstanceId);
     expect(task).toMatchObject({
       fundingCallTitle: "Database funding call",
-      taskType: "CHECKLIST",
     });
     const command = {
       actionKey: "ADVANCE",

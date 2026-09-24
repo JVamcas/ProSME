@@ -194,7 +194,10 @@ function workflowIssues(
     ));
   });
   if (!workflow.graph.stages.some((stage) =>
-    stage.enabled && stage.tasks.some((task) => task.type === "COMMUNICATION")
+    stage.enabled && stage.tasks.some((task) =>
+      Boolean(task.config && typeof task.config === "object"
+        && "template" in task.config && "channel" in task.config)
+    )
   )) issues.push(issue(
     "NOTIFICATION_HOOK_MISSING",
     "Add an enabled workflow communication task for applicant notifications.",

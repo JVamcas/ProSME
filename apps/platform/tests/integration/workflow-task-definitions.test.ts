@@ -106,7 +106,6 @@ afterAll(async () => {
         quorum: true,
         coiRequired: true,
         displayOrder: 1,
-        type: "ASSESSMENT_FORM" as const,
         required: true,
         config: {},
         formBinding: {
@@ -135,7 +134,6 @@ afterAll(async () => {
         quorum: false,
         coiRequired: true,
         displayOrder: 2,
-        type: "DECISION" as const,
         required: true,
         config: {},
         formBinding: null,

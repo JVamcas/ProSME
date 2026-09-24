@@ -16,7 +16,13 @@ import {
   ResourceConflictError,
   ResourceNotFoundError,
 } from "@/lib/resource-errors";
-import { validateTaskConfiguration, validateTaskResult } from "@/modules/workflows/WorkflowTaskRegistry";
+import {
+  checklistConfigurationSchema,
+  taskHasChecklist,
+  taskRunsAuthoritativeEligibility,
+  validateChecklistResult,
+  validateEligibilityResult,
+} from "@/modules/workflows/WorkflowTaskRegistry";
 import { executeSequentialTransitionInTransaction } from "@/modules/workflows/application/runtime/ServerSequentialTransitionService";
 import { getWorkflowActionAvailability } from "@/modules/workflows/application/runtime/ServerWorkflowActionAvailabilityService";
 import type {
@@ -26,7 +32,7 @@ import type {
 } from "./TaskTypes";
 
 function parseChecklistConfiguration(config: unknown) {
-  const parsed = validateTaskConfiguration("CHECKLIST", config);
+  const parsed = checklistConfigurationSchema.safeParse(config);
   if (!parsed.success) {
     throw new ResourceConflictError(
       "This task has an invalid published checklist configuration.",
@@ -37,7 +43,7 @@ function parseChecklistConfiguration(config: unknown) {
 
 function parseChecklistResult(result: unknown) {
   if (result === null) return [];
-  const parsed = validateTaskResult("CHECKLIST", result);
+  const parsed = validateChecklistResult(result);
   return parsed.success
     ? (parsed.data as { items: ChecklistResultItem[] }).items
     : [];
@@ -45,7 +51,7 @@ function parseChecklistResult(result: unknown) {
 
 function parseEligibilityResult(result: unknown) {
   if (result === null) return null;
-  const parsed = validateTaskResult("AUTOMATED_RULE_CHECK", result);
+  const parsed = validateEligibilityResult(result);
   return parsed.success ? parsed.data : null;
 }
 
@@ -90,25 +96,21 @@ export async function getWorkflowTask(
     taskId: task.taskInstanceId,
     workflowInstanceId: task.workflowInstanceId,
   });
-  if (task.taskType !== "CHECKLIST") {
-    return {
-      ...view,
-      actions,
-      checklistItems: [],
-      dueAt: task.dueAt ? new Date(task.dueAt).toISOString() : null,
-      eligibilityEvaluation: task.taskType === "AUTOMATED_RULE_CHECK"
-        ? parseEligibilityResult(result)
-        : null,
-      resultItems: [],
-    };
-  }
+  const hasChecklist = taskHasChecklist(config);
+  const canEvaluateEligibility = taskRunsAuthoritativeEligibility(config);
   return {
     ...view,
     actions,
-    checklistItems: parseChecklistConfiguration(config),
+    canEvaluateEligibility,
+    checklistCompleted: hasChecklist && parseChecklistResult(result).length > 0,
+    checklistItems: hasChecklist ? parseChecklistConfiguration(config) : [],
     dueAt: task.dueAt ? new Date(task.dueAt).toISOString() : null,
-    eligibilityEvaluation: null,
-    resultItems: parseChecklistResult(result),
+    eligibilityEvaluation: canEvaluateEligibility
+      ? parseEligibilityResult(result)
+      : null,
+    hasChecklist,
+    formCompleted: task.formCompleted,
+    resultItems: hasChecklist ? parseChecklistResult(result) : [],
   };
 }
 
@@ -139,7 +141,7 @@ export async function completeChecklistTask(
       "That idempotency key was already used with different task data.",
     );
   }
-  if (task.taskType !== "CHECKLIST") {
+  if (!taskHasChecklist(task.config)) {
     throw new ResourceConflictError("This task is not a checklist task.");
   }
   const configured = parseChecklistConfiguration(task.config);

@@ -34,7 +34,6 @@ export const referenceWorkflow: WorkflowGraphInput = {
           name: "Pre-screening checklist",
           description: "Verify the initial eligibility and compliance checks.",
           ...referenceTaskDefaults(false),
-          type: "CHECKLIST",
           config: {
             items: [
               {
@@ -87,7 +86,6 @@ export const referenceWorkflow: WorkflowGraphInput = {
           name: "Completeness checklist",
           description: "Confirm that the submitted application is complete.",
           ...referenceTaskDefaults(false),
-          type: "CHECKLIST",
           config: {
             items: [
               {
@@ -130,7 +128,6 @@ export const referenceWorkflow: WorkflowGraphInput = {
           name: "Technical assessment form",
           description: "Score the application against the technical criteria.",
           ...referenceTaskDefaults(true),
-          type: "ASSESSMENT_FORM",
           config: {
             criteria: [
               {
@@ -177,7 +174,6 @@ export const referenceWorkflow: WorkflowGraphInput = {
           name: "Finance review",
           description: "Review the financial information and recommendation.",
           ...referenceTaskDefaults(true),
-          type: "FINANCE_REVIEW",
           config: {
             fields: [
               {
@@ -216,7 +212,6 @@ export const referenceWorkflow: WorkflowGraphInput = {
           name: "Record outcome",
           description: "Record the committee's funding decision.",
           ...referenceTaskDefaults(true),
-          type: "DECISION",
           config: {
             outcomes: [
               { code: "APPROVE", label: "Approve" },
@@ -253,7 +248,6 @@ export const referenceWorkflow: WorkflowGraphInput = {
           name: "Send outcome communication",
           description: "Send the recorded outcome to the applicant.",
           ...referenceTaskDefaults(false),
-          type: "COMMUNICATION",
           config: {
             template: "TOR_DRAFT_OUTCOME",
             channel: "EMAIL",

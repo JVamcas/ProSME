@@ -10,7 +10,6 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
-import type { TaskTypeCode } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import type { WorkflowInstanceStatus } from "@/modules/workflows/domain/runtime/WorkflowInstance";
 import type { WorkflowPublicStatusMapping } from "@/modules/workflows/domain/definitions/WorkflowStageDefinition";
 import type { StageInstanceStatus } from "@/modules/workflows/domain/runtime/StageInstance";
@@ -173,7 +172,6 @@ export const workflowTasks = pgTable(
     workflowTaskDefinitionId: uuid("workflow_task_definition_id")
       .notNull()
       .references(() => stageTaskDefinitions.id, { onDelete: "restrict" }),
-    typeSnapshot: text("type_snapshot").$type<TaskTypeCode>().notNull(),
     formVersionId: uuid("form_version_id").references(() => formVersions.id, {
       onDelete: "restrict",
     }),

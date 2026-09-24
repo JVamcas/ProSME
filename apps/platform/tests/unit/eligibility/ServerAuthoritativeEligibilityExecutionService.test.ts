@@ -103,7 +103,6 @@ function target() {
     status: "IN_PROGRESS",
     taskId,
     taskKey: "AUTHORITATIVE_ELIGIBILITY",
-    taskType: "AUTOMATED_RULE_CHECK",
     workflowInstanceId: "90000000-0000-4000-8000-000000000001",
   };
 }

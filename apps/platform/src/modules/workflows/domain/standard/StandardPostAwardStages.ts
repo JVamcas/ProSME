@@ -62,7 +62,6 @@ function contracting(dependencies: StandardWorkflowDependencies) {
       name: "Contract and conditions verification",
       roleCode: "contracts_officer",
       stableKey: "CONTRACTING_CHECKLIST",
-      type: "CHECKLIST",
     })],
   });
 }
@@ -121,7 +120,6 @@ function disbursement(dependencies: StandardWorkflowDependencies) {
       name: "Disbursement review",
       roleCode: "financial_reviewer",
       stableKey: "DISBURSEMENT_REVIEW",
-      type: "FINANCE_REVIEW",
     })],
   });
 }
@@ -191,7 +189,6 @@ function monitoring(dependencies: StandardWorkflowDependencies) {
       name: "Monitoring review",
       roleCode: "grant_me_officer",
       stableKey: "MONITORING_REVIEW",
-      type: "DOCUMENT_REVIEW",
     })],
   });
 }
@@ -274,7 +271,6 @@ function closeOut(dependencies: StandardWorkflowDependencies) {
       name: "Evaluation and close-out review",
       roleCode: "grant_me_officer",
       stableKey: "EVALUATION_CLOSE_OUT_REVIEW",
-      type: "ASSESSMENT_FORM",
     })],
   });
 }

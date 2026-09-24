@@ -75,9 +75,9 @@ beforeAll(async () => {
   );
   await query(
     `INSERT INTO app_stage_task_definitions
-       (id, stage_id, code, name, type, sequence, required,
+       (id, stage_id, code, name, sequence, required,
         assignment_user_id, assignment_mode, permissions, config)
-     VALUES ($1, $2, 'CHECK', 'Initial check', 'CHECKLIST', 1, true,
+     VALUES ($1, $2, 'CHECK', 'Initial check', 1, true,
        $3, 'NAMED_USER',
        '{"view":"workflow.task.assigned.read","edit":"workflow.task.assigned.process","decide":"workflow.task.assigned.decide","visibility":"INTERNAL_ONLY"}'::jsonb,
        '{"items":[{"code":"received","label":"Application received","required":true}]}'::jsonb)`,

@@ -105,15 +105,11 @@ function FactCard({ label, value }: ApplicationDetailModel["facts"][number]) {
 
 export function ApplicationDetailView({
   actions,
-  history,
   model,
-  showSupport = false,
   workflowProgress,
 }: {
   actions?: ReactNode;
-  history?: ReactNode;
   model: ApplicationDetailModel;
-  showSupport?: boolean;
   workflowProgress?: ReactNode;
 }) {
   return (

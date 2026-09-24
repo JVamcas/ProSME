@@ -1,5 +1,7 @@
 import "server-only";
 
+import { taskWorkIsReady } from "@/modules/workflows/WorkflowTaskRegistry";
+
 import { and, eq, sql } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
@@ -232,12 +234,34 @@ export async function completeActionTask(
     task: NonNullable<WorkflowActionExecutionTarget["task"]>;
   },
 ) {
+  const [work] = await transaction
+    .select({
+      config: stageTaskDefinitions.config,
+      formCompleted: sql<boolean>`(
+        ${workflowTasks.formVersionId} IS NOT NULL AND EXISTS (
+          SELECT 1 FROM app_form_responses response
+          WHERE response.workflow_task_id = ${workflowTasks.id}
+            AND response.status = 'COMPLETED'
+        )
+      )`,
+      formRequired: sql<boolean>`${workflowTasks.formVersionId} IS NOT NULL`,
+      result: workflowTasks.result,
+    })
+    .from(workflowTasks)
+    .innerJoin(
+      stageTaskDefinitions,
+      eq(stageTaskDefinitions.id, workflowTasks.workflowTaskDefinitionId),
+    )
+    .where(eq(workflowTasks.id, input.task.id))
+    .limit(1);
+  if (!work || !taskWorkIsReady(work)) return null;
   const completedAt = new Date();
   const [task] = await transaction
     .update(workflowTasks)
     .set({
       completedAt,
-      result: input.normalizedInput,
+      result: sql`COALESCE(${workflowTasks.result}, '{}'::jsonb)
+        || ${JSON.stringify({ action: input.normalizedInput })}::jsonb`,
       rowVersion: input.task.rowVersion + 1,
       startedAt: sql`COALESCE(${workflowTasks.startedAt}, ${completedAt})`,
       status: "COMPLETED",

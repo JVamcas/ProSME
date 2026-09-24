@@ -86,7 +86,6 @@ describe("standard workflow catalogue", () => {
       formBinding: {
         formVersionId: "00000000-0000-4000-9000-000000000001",
       },
-      type: "STRUCTURED_FORM",
     });
     expect(task.displayOrder).toBe(3);
     expect(task.config).toEqual({

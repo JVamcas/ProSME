@@ -53,7 +53,6 @@ beforeEach(() => {
     stageInstanceId: stageId,
     startedAt: null,
     status: "PENDING",
-    typeSnapshot: "CHECKLIST",
     workflowTaskDefinitionId: "66666666-6666-4666-8666-666666666666",
   }]);
 });
@@ -101,7 +100,6 @@ describe("stage activation repository", () => {
           namedUserOverrideId: null,
           roleId: "55555555-5555-4555-8555-555555555555",
           stableKey: "CHECKLIST",
-          type: "CHECKLIST",
         }],
       },
     );
@@ -201,7 +199,6 @@ describe("stage activation repository", () => {
           namedUserOverrideId: null,
           roleId: "55555555-5555-4555-8555-555555555555",
           stableKey: "ELIGIBILITY_VERIFICATION",
-          type: "STRUCTURED_FORM",
         }],
       },
     );

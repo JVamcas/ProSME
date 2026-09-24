@@ -24,7 +24,7 @@ import {
 } from "../infrastructure/AuthoritativeEligibilityRepository";
 import { findRuntimeEligibilityRuleSetForEvaluation } from "../infrastructure/EligibilityEvaluationRepository";
 import { resolveAuthoritativeEligibilityData } from "./ServerEligibilityDataResolver";
-import { validateTaskConfiguration } from "@/modules/workflows/WorkflowTaskRegistry";
+import { eligibilityCommandSchema } from "@/modules/workflows/WorkflowTaskRegistry";
 import {
   findAuthoritativeEligibilityExecutionByCommand,
   lockAuthoritativeEligibilityTask,
@@ -180,10 +180,7 @@ export async function executeAuthoritativeEligibility(
           "The eligibility task is not ready to run.",
         );
       }
-      if (
-        target.taskKey !== "AUTHORITATIVE_ELIGIBILITY"
-        || target.taskType !== "AUTOMATED_RULE_CHECK"
-      ) {
+      if (!eligibilityCommandSchema.safeParse(target.config).success) {
         throw new ResourceConflictError(
           "This task does not run authoritative eligibility.",
         );
@@ -193,10 +190,7 @@ export async function executeAuthoritativeEligibility(
           `Complete these Screening prerequisites first: ${target.prerequisiteNames.join(", ")}.`,
         );
       }
-      const parsedConfig = validateTaskConfiguration(
-        "AUTOMATED_RULE_CHECK",
-        target.config,
-      );
+      const parsedConfig = eligibilityCommandSchema.safeParse(target.config);
       if (!parsedConfig.success) {
         throw new ResourceConflictError(
           "The authoritative eligibility task configuration is invalid.",

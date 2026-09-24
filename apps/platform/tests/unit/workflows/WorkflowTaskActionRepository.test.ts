@@ -47,11 +47,15 @@ beforeEach(() => {
   transactionExecute
     .mockResolvedValueOnce({
       rows: [{
-        config: {},
+        config: {
+          items: [{ code: "DOCUMENTS_PRESENT", label: "Documents present", required: true }],
+        },
+        formCompleted: false,
+        formRequired: false,
+        hasActions: false,
         stageDefinitionId: "50000000-0000-4000-8000-000000000001",
         stageInstanceId: "60000000-0000-4000-8000-000000000001",
         taskStatus: "IN_PROGRESS",
-        taskType: "CHECKLIST",
         workflowInstanceId: "70000000-0000-4000-8000-000000000001",
         workflowVersionId: "80000000-0000-4000-8000-000000000001",
       }],

@@ -2,9 +2,12 @@ import "server-only";
 
 import { sql } from "drizzle-orm";
 
+import { taskWorkIsReady } from "@/modules/workflows/WorkflowTaskRegistry";
+
 import { getDatabase } from "@/db/client";
 import type { FormRuntimeSchema } from "@/modules/forms/FormTypes";
 import type { SequentialTransitionResult } from "@/modules/workflows/application/runtime/ServerSequentialTransitionService";
+import { readSequentialTransitionAdvancement } from "@/modules/workflows/infrastructure/RuntimeTransitionAdvancement";
 import { appendTaskCompletionAndActionAudit } from "@/modules/workflows/infrastructure/RuntimeAuditWriteRepository";
 import { appendTaskCompletionAudit } from "@/modules/workflows/infrastructure/RuntimeAuditWriteRepository";
 
@@ -50,16 +53,17 @@ type CompletionResult = {
   nextStageName: string | null;
   rowVersion: number;
   taskInstanceId: string;
-  taskStatus: "COMPLETED";
+  taskStatus: "IN_PROGRESS" | "COMPLETED";
   workflowStatus: "ACTIVE" | "COMPLETED";
 };
 
 type LockedTask = {
+  hasActions: boolean;
+  config: unknown;
+  result: unknown;
   rowVersion: number;
   stageInstanceId: string;
-  stageDefinitionId: string;
   workflowInstanceId: string;
-  workflowVersionId: string;
 };
 
 type CompletionWriteResult =
@@ -73,31 +77,6 @@ type Executor = Pick<ReturnType<typeof getDatabase>, "execute">;
 class CommandKeyConflict extends Error {}
 class WorkflowTransitionConflict extends Error {}
 
-function transitionAdvancement(result: SequentialTransitionResult) {
-  if (result.kind === "source_stage_not_completed"
-    || result.kind === "target_entry_condition_failed") {
-    return { nextStageName: null, workflowStatus: "ACTIVE" as const };
-  }
-  if (result.kind === "transitioned") {
-    return {
-      nextStageName: result.targetStageName,
-      workflowStatus: result.workflowStatus,
-    };
-  }
-  if (result.kind === "workflow_completed") {
-    return { nextStageName: null, workflowStatus: result.workflowStatus };
-  }
-  if (result.kind === "already_executed") {
-    return {
-      nextStageName: result.execution.targetStageName,
-      workflowStatus: result.execution.workflowStatus === "COMPLETED"
-        ? "COMPLETED" as const
-        : "ACTIVE" as const,
-    };
-  }
-  throw new WorkflowTransitionConflict();
-}
-
 async function findCommand(
   executor: Executor,
   input: ReplayInput,
@@ -105,8 +84,9 @@ async function findCommand(
   const result = await executor.execute(sql`
     SELECT actor_id AS "actorId", task_instance_id AS "taskInstanceId",
       row_version AS "rowVersion", next_stage_name AS "nextStageName",
+      COALESCE(result ->> 'taskStatus', 'COMPLETED') AS "taskStatus",
       workflow_status AS "workflowStatus",
-      result = ${JSON.stringify({
+      (result - 'taskStatus') = ${JSON.stringify({
         actionKey: input.actionKey,
         values: input.values,
       })}::jsonb AS "sameResult"
@@ -120,6 +100,7 @@ async function findCommand(
     nextStageName: string | null;
     workflowStatus: "ACTIVE" | "COMPLETED";
     sameResult: boolean;
+    taskStatus: "IN_PROGRESS" | "COMPLETED";
   } | undefined;
   if (!replay) return null;
   const sameCommand = replay.actorId === input.actorId
@@ -134,7 +115,7 @@ async function findCommand(
       nextStageName: replay.nextStageName,
       rowVersion: replay.rowVersion,
       taskInstanceId: replay.taskInstanceId,
-      taskStatus: "COMPLETED",
+      taskStatus: replay.taskStatus,
       workflowStatus: replay.workflowStatus,
     },
   };
@@ -149,11 +130,14 @@ async function lockTask(
   input: CompletionInput,
 ): Promise<LockedTask | null> {
   const result = await transaction.execute(sql`
-    SELECT task.row_version AS "rowVersion",
+    SELECT task.row_version AS "rowVersion", task.result,
+      definition.config,
+      EXISTS (
+        SELECT 1 FROM app_stage_task_action_bindings binding
+        WHERE binding.task_definition_id = definition.id
+      ) AS "hasActions",
       stage.id AS "stageInstanceId",
-      stage.workflow_stage_definition_id AS "stageDefinitionId",
-      workflow.id AS "workflowInstanceId",
-      workflow.workflow_template_version_id AS "workflowVersionId"
+      workflow.id AS "workflowInstanceId"
     FROM app_workflow_tasks task
     JOIN app_stage_task_definitions definition
       ON definition.id = task.workflow_task_definition_id
@@ -175,10 +159,7 @@ async function lockTask(
       AND task.status IN ('CLAIMED', 'IN_PROGRESS')
       AND stage.status = 'ACTIVE' AND workflow.status = 'ACTIVE'
       AND (
-        (${input.actionKey}::text IS NULL AND NOT EXISTS (
-          SELECT 1 FROM app_stage_task_action_bindings binding
-          WHERE binding.task_definition_id = definition.id
-        ))
+        (${input.actionKey}::text IS NULL)
         OR (${input.actionKey}::text IS NOT NULL AND EXISTS (
           SELECT 1
           FROM app_workflow_action_definitions action
@@ -235,12 +216,17 @@ async function completeTaskRow(
   transaction: Transaction,
   input: CompletionInput,
   completedAt: Date,
+  taskStatus: "IN_PROGRESS" | "COMPLETED",
 ) {
   await transaction.execute(sql`
     UPDATE app_workflow_tasks
-    SET status = 'COMPLETED',
-      result = ${JSON.stringify({ values: input.values })}::jsonb,
-      completed_at = ${completedAt},
+    SET status = ${taskStatus},
+      result = COALESCE(result, '{}'::jsonb)
+        || ${JSON.stringify({ values: input.values })}::jsonb,
+      completed_at = CASE
+        WHEN ${taskStatus} = 'COMPLETED' THEN ${completedAt}
+        ELSE NULL
+      END,
       started_at = COALESCE(started_at, ${completedAt}),
       row_version = row_version + 1
     WHERE id = ${input.taskInstanceId}::uuid
@@ -260,7 +246,7 @@ async function appendCompletionRecords(
        row_version, next_stage_name, workflow_status)
     VALUES (${input.idempotencyKey}, ${input.taskInstanceId}::uuid,
       ${input.actorId}::uuid,
-      ${JSON.stringify({ actionKey: input.actionKey, values: input.values })}::jsonb,
+      ${JSON.stringify({ actionKey: input.actionKey, values: input.values, taskStatus: result.taskStatus })}::jsonb,
       ${completedAt}, ${result.rowVersion}, ${result.nextStageName},
       ${result.workflowStatus})
     ON CONFLICT (idempotency_key) DO NOTHING
@@ -293,7 +279,7 @@ async function appendCompletionRecords(
   await transaction.execute(sql`
     INSERT INTO app_transactional_outbox
       (event_code, aggregate_id, schema_version, payload, correlation_id)
-    VALUES ('FORM_TASK_COMPLETED', ${input.taskInstanceId}::uuid, 1,
+    VALUES (${result.taskStatus === 'COMPLETED' ? 'FORM_TASK_COMPLETED' : 'FORM_RESPONSE_COMPLETED'}, ${input.taskInstanceId}::uuid, 1,
       ${JSON.stringify(result)}::jsonb, ${input.correlationId}::uuid)
   `);
 }
@@ -304,10 +290,25 @@ async function writeCompletion(
   task: LockedTask,
   executeTransition: ExecuteTransition,
 ): Promise<CompletionResult | null> {
+  if (input.actionKey && !taskWorkIsReady({
+    config: task.config,
+    formCompleted: true,
+    formRequired: true,
+    result: task.result,
+  })) return null;
   const completedAt = new Date();
   const response = await completeSubmission(transaction, input, completedAt);
   if (!response) return null;
-  await completeTaskRow(transaction, input, completedAt);
+  const taskStatus = (task.hasActions && !input.actionKey)
+    || !taskWorkIsReady({
+      config: task.config,
+      formCompleted: true,
+      formRequired: true,
+      result: task.result,
+    })
+    ? "IN_PROGRESS" as const
+    : "COMPLETED" as const;
+  await completeTaskRow(transaction, input, completedAt, taskStatus);
   const auditInput = {
     actorId: input.actorId,
     beforeRowVersion: input.expectedTaskRowVersion,
@@ -336,8 +337,10 @@ async function writeCompletion(
       correlationId: input.correlationId,
       sourceStageInstanceId: task.stageInstanceId,
     });
-    advancement = transitionAdvancement(transition);
-  } else {
+    const next = readSequentialTransitionAdvancement(transition);
+    if (!next) throw new WorkflowTransitionConflict();
+    advancement = next;
+  } else if (taskStatus === "COMPLETED") {
     await appendTaskCompletionAudit(transaction, auditInput);
   }
   const result: CompletionResult = {
@@ -345,7 +348,7 @@ async function writeCompletion(
     ...advancement,
     rowVersion: input.expectedTaskRowVersion + 1,
     taskInstanceId: input.taskInstanceId,
-    taskStatus: "COMPLETED",
+    taskStatus,
   };
   await appendCompletionRecords(
     transaction,

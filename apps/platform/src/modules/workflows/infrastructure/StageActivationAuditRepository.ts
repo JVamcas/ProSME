@@ -15,7 +15,6 @@ type ActivatedTask = {
   dueAt: Date | null;
   id: string;
   status: string;
-  typeSnapshot: string;
   workflowTaskDefinitionId: string;
 };
 
@@ -96,7 +95,6 @@ export async function appendStageActivationAudit(
         dueAt: task.dueAt?.toISOString() ?? null,
         status: task.status,
         taskDefinitionId: task.workflowTaskDefinitionId,
-        type: task.typeSnapshot,
       },
       before: null,
       correlationId: input.correlationId,

@@ -13,7 +13,6 @@ import { CheckboxField } from "@/components/ui/form-field";
 import { FormTextarea } from "@/components/ui/form-fields";
 import { useCompleteWorkflowTask } from "@/modules/work-queue/WorkQueueHooks";
 import type { TaskDetail } from "@/modules/work-queue/TaskTypes";
-import { WorkflowTaskActions } from "@/modules/work-queue/ui/WorkflowTaskActions";
 
 const checklistFormSchema = z.object({
   items: z.array(z.object({
@@ -43,15 +42,9 @@ export function ChecklistTaskForm({ task }: { task: TaskDetail }) {
     defaultValues: defaultValues(task),
     resolver: zodResolver(checklistFormSchema),
   });
-  const submit = form.handleSubmit((values, event) => {
-    const submitter = (event?.nativeEvent as SubmitEvent | undefined)
-      ?.submitter as HTMLButtonElement | null | undefined;
-    const actionKey = submitter?.name === "workflowAction"
-      ? submitter.value
-      : undefined;
+  const submit = form.handleSubmit((values) => {
     completion.mutate(
       {
-        ...(actionKey ? { actionKey } : {}),
         expectedRowVersion: task.rowVersion,
         items: values.items,
       },
@@ -60,7 +53,9 @@ export function ChecklistTaskForm({ task }: { task: TaskDetail }) {
           toast.success(
             result.nextStageName
               ? `Task completed. Application advanced to ${result.nextStageName}.`
-              : "Task completed.",
+              : result.taskStatus === "COMPLETED"
+                ? "Task completed."
+                : "Checklist completed. Finish the remaining task work.",
           );
           router.push("/admin/work-queue");
         },
@@ -112,13 +107,7 @@ export function ChecklistTaskForm({ task }: { task: TaskDetail }) {
             </Link>
           </GeneralButton>
         </div>
-        {task.actions.length ? (
-          <WorkflowTaskActions
-            actions={task.actions}
-            disabled={completion.isPending || task.taskStatus === "COMPLETED"}
-            onSelect={() => undefined}
-          />
-        ) : (
+        {!task.checklistCompleted ? (
           <div className="flex justify-end">
             <GeneralButton
               disabled={completion.isPending || task.taskStatus === "COMPLETED"}
@@ -127,7 +116,7 @@ export function ChecklistTaskForm({ task }: { task: TaskDetail }) {
               {completion.isPending ? "Completing…" : "Complete checklist"}
             </GeneralButton>
           </div>
-        )}
+        ) : null}
       </form>
     </FormProvider>
   );

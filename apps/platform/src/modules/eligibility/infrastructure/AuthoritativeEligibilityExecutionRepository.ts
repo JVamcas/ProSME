@@ -3,6 +3,8 @@ import "server-only";
 import { and, eq, sql } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
+import { taskWorkIsReady } from "@/modules/workflows/WorkflowTaskRegistry";
+import { appendTaskCompletionAudit } from "@/modules/workflows/infrastructure/RuntimeAuditWriteRepository";
 import {
   workflowAuditEntries,
   workflowEvents,
@@ -61,7 +63,6 @@ export type AuthoritativeEligibilityTaskTarget = {
   status: string;
   taskId: string;
   taskKey: string;
-  taskType: string;
   workflowInstanceId: string;
 };
 
@@ -80,7 +81,7 @@ export async function lockAuthoritativeEligibilityTask(
 ): Promise<AuthoritativeEligibilityTaskTarget | null> {
   const rows = await transaction.execute(sql`
     SELECT task.id AS "taskId", task.status, task.row_version AS "rowVersion",
-      task.type_snapshot AS "taskType", definition.code AS "taskKey",
+      definition.code AS "taskKey",
       definition.config, definition.permissions,
       stage.id AS "stageInstanceId", workflow.id AS "workflowInstanceId",
       application.id AS "applicationId",
@@ -243,7 +244,6 @@ export async function lockAuthoritativeEligibilityTask(
     status: String(row.status),
     taskId: String(row.taskId),
     taskKey: String(row.taskKey),
-    taskType: String(row.taskType),
     workflowInstanceId: String(row.workflowInstanceId),
   };
 }
@@ -286,13 +286,51 @@ export async function persistAuthoritativeEligibilityExecution(
     softFailureCount: created.softFailures.length,
     warningCount: created.warnings.length,
   };
+  const workRows = await transaction.execute(sql`
+    SELECT definition.config, task.result, task.status,
+      task.form_version_id IS NOT NULL AS "formRequired",
+      EXISTS (
+        SELECT 1 FROM app_form_responses response
+        WHERE response.workflow_task_id = task.id
+          AND response.status = 'COMPLETED'
+      ) AS "formCompleted",
+      EXISTS (
+        SELECT 1 FROM app_stage_task_action_bindings binding
+        WHERE binding.task_definition_id = definition.id
+      ) AS "hasActions"
+    FROM app_workflow_tasks task
+    JOIN app_stage_task_definitions definition
+      ON definition.id = task.workflow_task_definition_id
+    WHERE task.id = ${input.taskId}::uuid
+  `);
+  const work = workRows.rows[0] as {
+    config: unknown;
+    formCompleted: boolean;
+    formRequired: boolean;
+    hasActions: boolean;
+    result: unknown;
+    status: string;
+  } | undefined;
+  if (!work) throw new Error("Authoritative eligibility task no longer exists.");
+  const priorResult = work.result && typeof work.result === "object"
+    && !Array.isArray(work.result)
+    ? work.result as Record<string, unknown>
+    : {};
+  const completesTask = !work.hasActions && taskWorkIsReady({
+    config: work.config,
+    formCompleted: work.formCompleted,
+    formRequired: work.formRequired,
+    result: { ...priorResult, ...result },
+  });
+  const completedAt = completesTask ? new Date() : null;
   const [updated] = await transaction
     .update(workflowTasks)
     .set({
-      completedAt: null,
-      result,
+      completedAt,
+      result: sql`COALESCE(${workflowTasks.result}, '{}'::jsonb)
+        || ${JSON.stringify(result)}::jsonb`,
       rowVersion: input.expectedRowVersion + 1,
-      status: "IN_PROGRESS",
+      status: completesTask ? "COMPLETED" : "IN_PROGRESS",
     })
     .where(and(
       eq(workflowTasks.id, input.taskId),
@@ -300,6 +338,19 @@ export async function persistAuthoritativeEligibilityExecution(
     ))
     .returning({ rowVersion: workflowTasks.rowVersion });
   if (!updated) throw new Error("Authoritative eligibility task write conflict.");
+  if (completedAt && work.status !== "COMPLETED") {
+    await appendTaskCompletionAudit(transaction, {
+      actorId: created.evaluatedBy,
+      beforeRowVersion: input.expectedRowVersion,
+      beforeStatus: work.status,
+      completedAt,
+      correlationId: input.correlationId,
+      idempotencyKey: `${input.commandKey}:task`,
+      stageInstanceId: input.stageInstanceId,
+      taskId: input.taskId,
+      workflowInstanceId: input.workflowInstanceId,
+    });
+  }
   await Promise.all([
     transaction.insert(workflowEvents).values({
       actorId: created.evaluatedBy,

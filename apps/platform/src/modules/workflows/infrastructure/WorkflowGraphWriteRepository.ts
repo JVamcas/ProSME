@@ -166,7 +166,6 @@ async function insertActionsAndTasks(
       roleId: task.roleId ?? null,
       stableKey: task.stableKey,
       stageId: stageIds.get(stage.stableKey)!,
-      type: task.type,
     })),
   );
   const taskRows = tasks.length

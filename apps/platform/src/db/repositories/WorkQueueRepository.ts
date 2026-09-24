@@ -63,7 +63,6 @@ function queueQuery(input: WorkQueueListInput, actorId: string, cursor?: WorkQue
         task.id AS "taskInstanceId",
         task_definition.code AS "taskDefinitionCode",
         task_definition.name AS "taskName",
-        task.type_snapshot AS "taskType",
         application.id AS "applicationId",
         application.reference AS "reference",
         NULLIF(COALESCE(business.trading_name, business.legal_name), '') AS "businessName",

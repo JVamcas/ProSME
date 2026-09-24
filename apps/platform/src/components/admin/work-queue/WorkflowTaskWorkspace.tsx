@@ -8,6 +8,7 @@ import { PageShell } from "@/shared/ui/PageShell";
 import { ChecklistTaskForm } from "./ChecklistTaskForm";
 import { DynamicFormTask } from "@/modules/forms/ui/renderer/DynamicFormTask";
 import { AuthoritativeEligibilityTask } from "@/modules/eligibility/ui/screening/AuthoritativeEligibilityTask";
+import { WorkflowTaskDecisionActions } from "@/modules/work-queue/ui/WorkflowTaskDecisionActions";
 
 function formatDate(value: string | null) {
   if (!value) return "No due date";
@@ -94,20 +95,26 @@ export function WorkflowTaskWorkspace({ taskId }: { taskId: string }) {
         fundingCallTitle={task.fundingCallTitle}
         reference={task.reference}
       />
-        {task.taskType === "AUTOMATED_RULE_CHECK" ? (
+        {task.canEvaluateEligibility ? (
           <AuthoritativeEligibilityTask task={task} />
-        ) : task.formVersionId ? (
-          <DynamicFormTask
-            actions={task.actions}
-            taskId={task.taskInstanceId}
-          />
-        ) : task.taskType === "CHECKLIST" ? (
+        ) : null}
+        {task.formVersionId ? (
+          <DynamicFormTask taskId={task.taskInstanceId} />
+        ) : null}
+        {task.hasChecklist ? (
           <ChecklistTaskForm task={task} />
-        ) : (
+        ) : null}
+        {!task.canEvaluateEligibility && !task.formVersionId && !task.hasChecklist
+          && !task.actions.length ? (
           <p className="rounded-xl bg-brand-yellow/30 p-4 text-sm text-brand-navy">
-            This legacy task type does not yet have an interactive workspace.
+            No work controls are configured for this task.
           </p>
-        )}
+        ) : null}
+        {(!task.canEvaluateEligibility || task.eligibilityEvaluation)
+          && (!task.formVersionId || task.formCompleted)
+          && (!task.hasChecklist || task.checklistCompleted) ? (
+          <WorkflowTaskDecisionActions task={task} />
+        ) : null}
       </div>
     </PageShell>
   );

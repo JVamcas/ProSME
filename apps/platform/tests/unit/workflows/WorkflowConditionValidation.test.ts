@@ -61,7 +61,6 @@ function stage(
       requiredCompletionCount: 1,
       reviewerCount: 1,
       stableKey: `${stableKey}_FORM`,
-      type: "STRUCTURED_FORM",
     }],
   };
 }

@@ -46,7 +46,6 @@ type RuntimeContextRow = {
   taskName: string;
   taskRowVersion: number;
   taskStatus: string;
-  taskType: string;
   workflowCode: string;
   workflowInstanceId: string;
   workflowName: string;
@@ -102,7 +101,6 @@ function toRuntimeContextSource(row: RuntimeContextRow) {
       name: row.taskName,
       rowVersion: row.taskRowVersion,
       status: row.taskStatus,
-      type: row.taskType,
     },
     workflow: {
       code: row.workflowCode,
@@ -155,7 +153,6 @@ export async function readWorkflowTaskRuntimeContext(
       stage_definition.name AS "stageName",
       task.id AS "taskInstanceId",
       task.workflow_task_definition_id AS "taskDefinitionId",
-      task.type_snapshot AS "taskType",
       task.status AS "taskStatus",
       task.row_version AS "taskRowVersion",
       task_definition.code AS "taskKey",

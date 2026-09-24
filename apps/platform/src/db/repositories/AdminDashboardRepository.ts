@@ -123,7 +123,14 @@ const dashboardSelect = sql`
           AND stage.status IN ('ACTIVE', 'BLOCKED')
         JOIN app_workflow_tasks task
           ON task.stage_instance_id = stage.id
-          AND task.type_snapshot = 'DECISION'
+          AND EXISTS (
+            SELECT 1 FROM app_stage_task_action_bindings binding
+            JOIN app_workflow_action_definitions action
+              ON action.stage_id = binding.stage_id
+              AND action.stable_key = binding.action_key
+            WHERE binding.task_definition_id = task.workflow_task_definition_id
+              AND action.action_type IN ('APPROVE_ADVANCE', 'REJECT')
+          )
           AND task.status IN ('PENDING', 'CLAIMED', 'IN_PROGRESS'))
         AS "pendingDecision",
       COALESCE((SELECT json_agg(status_counts) FROM status_counts), '[]'::json)

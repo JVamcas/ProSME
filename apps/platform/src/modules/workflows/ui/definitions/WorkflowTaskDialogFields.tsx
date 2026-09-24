@@ -9,6 +9,7 @@ import {
   FormTextarea,
 } from "@/components/ui/form-fields";
 import { WorkflowContextFieldConfiguration } from "./WorkflowContextFieldConfiguration";
+import { WorkflowChecklistConfiguration } from "./WorkflowChecklistConfiguration";
 import { permissionCatalogue } from "@/auth/authorization/permissions";
 
 function TaskIdentityFields() {
@@ -95,6 +96,7 @@ export function WorkflowTaskDialogFields({
           value={actionKeys}
         />
       </div>
+      <WorkflowChecklistConfiguration />
       <WorkflowContextFieldConfiguration
         disabled={!formVersionId}
         fields={contextFieldItems}

@@ -83,7 +83,6 @@ export async function readScreeningChecklistItemFacts(
       FROM app_workflow_stage_checklist_definitions checklist
       JOIN app_stage_task_definitions task_definition
         ON task_definition.stage_id = checklist.stage_id
-        AND task_definition.type = 'CHECKLIST'
         AND EXISTS (
           SELECT 1
           FROM jsonb_array_elements(task_definition.config -> 'items') item

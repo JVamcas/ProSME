@@ -19,7 +19,6 @@ const record = {
   stageInstanceId: "54444444-4444-4444-8444-444444444444",
   startedAt: null,
   status: "CLAIMED" as const,
-  typeSnapshot: "CHECKLIST" as const,
   workflowTaskDefinitionId: "55555555-5555-4555-8555-555555555555",
 };
 
@@ -42,7 +41,6 @@ describe("workflow task write repository", () => {
         createdAt,
         dueAt,
         stageInstanceId: record.stageInstanceId,
-        typeSnapshot: record.typeSnapshot,
         workflowTaskDefinitionId: record.workflowTaskDefinitionId,
       }],
     );
@@ -56,7 +54,6 @@ describe("workflow task write repository", () => {
       formVersionId: null,
       stageInstanceId: record.stageInstanceId,
       status: "CLAIMED",
-      typeSnapshot: record.typeSnapshot,
       workflowTaskDefinitionId: record.workflowTaskDefinitionId,
     }]);
     expect(result).toEqual([record]);

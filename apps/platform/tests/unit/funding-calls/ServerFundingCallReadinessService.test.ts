@@ -94,7 +94,7 @@ const documentField = {
 };
 
 const communicationTask = {
-  type: "COMMUNICATION" as const,
+  config: { template: "OUTCOME", channel: "EMAIL" },
 };
 
 const workflowStage = {

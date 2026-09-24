@@ -43,7 +43,6 @@ export type StageActivationTaskDefinition = {
   namedUserOverrideId: string | null;
   roleId: string | null;
   stableKey: string;
-  type: typeof stageTaskDefinitions.$inferSelect.type;
 };
 
 export type PriorStageActivationContext = {
@@ -228,7 +227,6 @@ export async function loadStageActivationTasks(
       namedUserOverrideId: stageTaskDefinitions.namedUserOverrideId,
       roleId: stageTaskDefinitions.roleId,
       stableKey: stageTaskDefinitions.stableKey,
-      type: stageTaskDefinitions.type,
     })
     .from(stageTaskDefinitions)
     .leftJoin(
@@ -324,7 +322,6 @@ export async function persistStageActivation(
         ? eligibilityFormVersionId!
         : task.formVersionId,
       stageInstanceId: stage.id,
-      typeSnapshot: task.type,
       workflowTaskDefinitionId: task.id,
     })),
   );

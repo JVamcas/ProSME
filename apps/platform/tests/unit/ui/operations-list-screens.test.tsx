@@ -54,7 +54,6 @@ const task = {
   taskInstanceId: "3695f976-2acd-44ff-b30b-39c9c5ff6c27",
   taskName: "Check completeness",
   taskStatus: "PENDING",
-  taskType: "CHECKLIST",
 } as const;
 
 function context(capabilityCodes: string[]) {

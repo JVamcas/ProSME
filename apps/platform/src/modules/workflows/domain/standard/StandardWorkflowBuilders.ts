@@ -176,7 +176,6 @@ type TaskInput = {
   reviewerCount?: number;
   roleCode: StandardWorkflowRoleCode;
   stableKey: string;
-  type: WorkflowTaskInput["type"];
 };
 
 export function task(
@@ -205,7 +204,6 @@ export function task(
     reviewerCount: input.reviewerCount ?? 1,
     roleId: dependencies.roleIds[input.roleCode],
     stableKey: input.stableKey,
-    type: input.type,
   };
 }
 

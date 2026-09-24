@@ -79,64 +79,50 @@ function taskResultField(
 
 function boundTaskResultFields(stage: WorkflowStageInput) {
   return stage.tasks.flatMap((task) => {
-    const parsed = validateTaskConfiguration(task.type, task.config);
+    const parsed = validateTaskConfiguration(task.config);
     if (!parsed.success) return [];
-    if (task.type === "CHECKLIST") {
-      const config = parsed.data as {
-        items: { code: string; label: string }[];
-      };
-      return config.items.map((item) => taskResultField(
+    const fields: ReturnType<typeof taskResultField>[] = [];
+    if (parsed.data.items) {
+      fields.push(...parsed.data.items.map((item) => taskResultField(
         stage,
         item.code,
         `${stage.name} · ${task.name} · ${item.label}`,
         "BOOLEAN",
-      ));
+      )));
     }
-    if (task.type === "DOCUMENT_REVIEW") {
-      const config = parsed.data as {
-        categories: { code: string; label: string }[];
-      };
-      return config.categories.map((category) => taskResultField(
+    if (parsed.data.categories && parsed.data.outcomes) {
+      fields.push(...parsed.data.categories.map((category) => taskResultField(
         stage,
         category.code,
         `${stage.name} · ${task.name} · ${category.label}`,
         "TEXT",
+      )));
+    }
+    if (parsed.data.criteria) {
+      for (const criterion of parsed.data.criteria) {
+        fields.push(taskResultField(
+          stage,
+          criterion.code,
+          `${stage.name} · ${task.name} · ${criterion.label}`,
+          "NUMBER",
+        ));
+        if (criterion.commentRequired) {
+          fields.push(taskResultField(
+            stage,
+            `${criterion.code}_COMMENT`,
+            `${stage.name} · ${task.name} · ${criterion.label} comment`,
+            "TEXT",
+          ));
+        }
+      }
+      fields.push(taskResultField(
+        stage,
+        "WEIGHTED_TOTAL",
+        `${stage.name} · ${task.name} · Weighted total`,
+        "NUMBER",
       ));
     }
-    if (task.type === "ASSESSMENT_FORM") {
-      const config = parsed.data as {
-        criteria: {
-          code: string;
-          commentRequired: boolean;
-          label: string;
-        }[];
-      };
-      return [
-        ...config.criteria.flatMap((criterion) => [
-          taskResultField(
-            stage,
-            criterion.code,
-            `${stage.name} · ${task.name} · ${criterion.label}`,
-            "NUMBER",
-          ),
-          ...(criterion.commentRequired
-            ? [taskResultField(
-                stage,
-                `${criterion.code}_COMMENT`,
-                `${stage.name} · ${task.name} · ${criterion.label} comment`,
-                "TEXT",
-              )]
-            : []),
-        ]),
-        taskResultField(
-          stage,
-          "WEIGHTED_TOTAL",
-          `${stage.name} · ${task.name} · Weighted total`,
-          "NUMBER",
-        ),
-      ];
-    }
-    return [];
+    return fields;
   });
 }
 

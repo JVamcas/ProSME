@@ -652,6 +652,13 @@
       "when": 1795737600000,
       "tag": "0092_workflow_instance_progress_read",
       "breakpoints": true
+    },
+    {
+      "idx": 93,
+      "version": "7",
+      "when": 1795824000000,
+      "tag": "0093_remove_workflow_task_type",
+      "breakpoints": true
     }
   ]
 }

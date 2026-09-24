@@ -22,6 +22,7 @@ function actionFormSchema(action: WorkflowTaskAction) {
     instructions: z.string().trim().max(4_000),
     question: z.string().trim().max(4_000),
     reasonCode: z.string().trim().max(80),
+    reviewDate: z.union([z.iso.date(), z.literal("")]),
   }).superRefine((values, context) => {
     if (action.requiredInput.reasonCode.required && !values.reasonCode) {
       context.addIssue({ code: "custom", message: "Select a reason.", path: ["reasonCode"] });
@@ -54,6 +55,13 @@ function actionFormSchema(action: WorkflowTaskAction) {
     if (action.actionType === "REFER" && !values.question) {
       context.addIssue({ code: "custom", message: "Enter a question.", path: ["question"] });
     }
+    if (action.requiredInput.reviewDate.required && !values.reviewDate) {
+      context.addIssue({
+        code: "custom",
+        message: "Select a review date.",
+        path: ["reviewDate"],
+      });
+    }
   });
 }
 
@@ -78,6 +86,12 @@ function actionInput(
       };
     case "REFER":
       return { ...common, actionType: "REFER", question: values.question };
+    case "PUT_ON_HOLD":
+      return {
+        ...common,
+        actionType: "PUT_ON_HOLD",
+        ...(values.reviewDate ? { reviewDate: values.reviewDate } : {}),
+      };
     case "WITHDRAW":
       return { ...common, actionType: "WITHDRAW", confirmed: true };
     case "DEFER":
@@ -113,6 +127,7 @@ function DecisionForm({
       instructions: "",
       question: "",
       reasonCode: "",
+      reviewDate: "",
     },
     resolver: zodResolver(actionFormSchema(action)),
   });
@@ -160,6 +175,9 @@ function DecisionForm({
         {action.actionType === "REFER" ? (
           <FormTextarea label="Question for the reviewer" name="question" required />
         ) : null}
+        {action.requiredInput.reviewDate.required ? (
+          <FormInput label="Review date" name="reviewDate" required type="date" />
+        ) : null}
         {action.actionType === "REJECT"
           || action.requiredInput.comment.required
           || action.requiredInput.reasonOrCommentRequired ? (
@@ -191,9 +209,9 @@ function DecisionForm({
   );
 }
 
-export function EligibilityDecisionActions({ task }: { task: TaskDetail }) {
+export function WorkflowTaskDecisionActions({ task }: { task: TaskDetail }) {
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
-  if (!task.eligibilityEvaluation || task.taskStatus === "COMPLETED") return null;
+  if (task.taskStatus === "COMPLETED" || !task.actions.length) return null;
   const selected = task.actions.find((action) => action.key === selectedKey);
   return (
     <div className="space-y-4">

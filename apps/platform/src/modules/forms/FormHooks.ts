@@ -8,6 +8,7 @@ import {
 } from "@tanstack/react-query";
 
 import { clientFormsService } from "./ClientFormsService";
+import { workQueueQueryKeys } from "@/modules/work-queue/WorkQueueHooks";
 import type {
   CreateFormInput,
   FormListInput,
@@ -158,6 +159,7 @@ export function useCompleteTaskForm(taskId: string) {
       clientFormsService.completeTaskForm(taskId, input),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: formQueryKeys.task(taskId) });
+      void queryClient.invalidateQueries({ queryKey: workQueueQueryKeys.all });
     },
   });
 }

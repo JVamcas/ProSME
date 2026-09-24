@@ -5,9 +5,6 @@ import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
 import { GeneralButton } from "@/components/ui/button";
 import { useTaskForm } from "@/modules/forms/FormHooks";
 import type { TaskFormData } from "@/modules/forms/FormTypes";
-import type { WorkflowTaskAction } from "@/modules/work-queue/TaskTypes";
-import { WorkflowTaskActions } from "@/modules/work-queue/ui/WorkflowTaskActions";
-import { useState } from "react";
 import { useDynamicFormController } from "./DynamicFormController";
 import { FormRenderer } from "./FormRenderer";
 
@@ -69,31 +66,20 @@ function DraftPersistenceStatus({
 }
 
 function LoadedDynamicFormTask({
-  actions,
   data,
   taskId,
 }: {
-  actions: WorkflowTaskAction[];
   data: TaskFormData;
   taskId: string;
 }) {
   const controller = useDynamicFormController(taskId, data);
-  const [selectedActionKey, setSelectedActionKey] = useState<string | null>(
-    null,
-  );
   const readOnly = data.response?.status === "COMPLETED";
   return (
     <FormRenderer
       definition={data.schema}
       formData={controller.values}
       onChange={controller.setValues}
-      onSubmit={(values) => {
-        if (selectedActionKey) {
-          controller.completeFormValues(values, selectedActionKey);
-        } else if (!actions.length) {
-          controller.completeFormValues(values, null);
-        }
-      }}
+      onSubmit={(values) => controller.completeFormValues(values, null)}
       readOnly={readOnly}
       runtimeContext={data.context}
     >
@@ -114,22 +100,10 @@ function LoadedDynamicFormTask({
           readOnly={readOnly}
           savePending={controller.save.isPending}
         />
-        {actions.length ? (
-          <WorkflowTaskActions
-            actions={actions}
-            disabled={
-              readOnly
-              || controller.complete.isPending
-              || controller.save.isPending
-            }
-            onSelect={setSelectedActionKey}
-          />
-        ) : !readOnly ? (
+        {!readOnly ? (
           <div className="flex justify-end">
             <GeneralButton
-              disabled={
-                controller.complete.isPending || controller.save.isPending
-              }
+              disabled={controller.complete.isPending || controller.save.isPending}
               type="submit"
             >
               {controller.complete.isPending
@@ -144,10 +118,8 @@ function LoadedDynamicFormTask({
 }
 
 export function DynamicFormTask({
-  actions,
   taskId,
 }: {
-  actions: WorkflowTaskAction[];
   taskId: string;
 }) {
   const query = useTaskForm(taskId);
@@ -170,7 +142,6 @@ export function DynamicFormTask({
   }
   return (
     <LoadedDynamicFormTask
-      actions={actions}
       data={query.data}
       taskId={taskId}
     />

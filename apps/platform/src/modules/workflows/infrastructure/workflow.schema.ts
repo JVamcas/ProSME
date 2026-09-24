@@ -22,7 +22,6 @@ import type { ConditionFieldDefinition } from "@/modules/conditions/domain/Condi
 
 import type {
   WorkflowStatus,
-  TaskTypeCode,
 } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import { roles } from "@/db/schema/authorization";
 import { formVersions } from "@/modules/forms/infrastructure/form.schema";
@@ -138,7 +137,6 @@ export const stageTaskDefinitions = pgTable(
     stableKey: text("code").notNull(),
     name: text("name").notNull(),
     description: text("description").notNull().default(""),
-    type: text("type").$type<TaskTypeCode>().notNull(),
     displayOrder: integer("sequence").notNull(),
     required: boolean("required").notNull().default(true),
     roleId: uuid("assignment_role_id").references(() => roles.id, {

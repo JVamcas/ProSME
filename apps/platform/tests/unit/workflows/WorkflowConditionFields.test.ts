@@ -61,7 +61,6 @@ function stage(
       requiredCompletionCount: 1,
       reviewerCount: 1,
       stableKey: `${stableKey}_FORM`,
-      type: "STRUCTURED_FORM",
     }],
   };
 }
@@ -133,42 +132,25 @@ describe("workflow condition fields", () => {
     )).toBe(125_000);
   });
 
-  it("exposes configured checklist, document and scoring result paths", () => {
+  it("exposes every result path from a composed task", () => {
     const review = stage("TECHNICAL_REVIEW", 1, reviewFormVersionId);
     const taskTemplate = review.tasks[0];
-    review.tasks = [
-      {
-        ...taskTemplate,
-        config: {
-          items: [{ code: "DOCUMENTS_VALID", label: "Documents valid" }],
-        },
-        stableKey: "CHECK_DOCUMENTS",
-        type: "CHECKLIST",
+    review.tasks = [{
+      ...taskTemplate,
+      config: {
+        items: [{ code: "DOCUMENTS_VALID", label: "Documents valid" }],
+        categories: [{ code: "TAX_STATUS", label: "Tax status" }],
+        outcomes: [{ code: "VERIFIED", label: "Verified" }],
+        criteria: [{
+          code: "DELIVERY",
+          commentRequired: true,
+          label: "Delivery capacity",
+          maximumScore: 10,
+          weight: 100,
+        }],
       },
-      {
-        ...taskTemplate,
-        config: {
-          categories: [{ code: "TAX_STATUS", label: "Tax status" }],
-          outcomes: [{ code: "VERIFIED", label: "Verified" }],
-        },
-        stableKey: "DOCUMENT_REVIEW",
-        type: "DOCUMENT_REVIEW",
-      },
-      {
-        ...taskTemplate,
-        config: {
-          criteria: [{
-            code: "DELIVERY",
-            commentRequired: true,
-            label: "Delivery capacity",
-            maximumScore: 10,
-            weight: 100,
-          }],
-        },
-        stableKey: "SCORING",
-        type: "ASSESSMENT_FORM",
-      },
-    ];
+      stableKey: "COMPOSED_REVIEW",
+    }];
 
     const fields = workflowConditionFields(
       { stages: [review], transitions: [] },

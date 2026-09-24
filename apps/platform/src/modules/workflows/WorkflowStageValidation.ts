@@ -27,13 +27,12 @@ function validateTaskIdentity(
   const errors: WorkflowValidationIssue[] = [];
   const taskPath = `${base}.tasks.${taskIndex}`;
   if (
-    !task.formBinding &&
-    !validateTaskConfiguration(task.type, task.config).success
+    !validateTaskConfiguration(task.config).success
   ) {
     errors.push(
       issue(
         "INVALID_TASK_CONFIG",
-        `${task.name} has invalid ${task.type} configuration.`,
+        `${task.name} has invalid task configuration.`,
         `${taskPath}.config`,
       ),
     );

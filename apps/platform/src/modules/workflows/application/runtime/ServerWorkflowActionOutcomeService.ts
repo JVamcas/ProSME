@@ -39,12 +39,10 @@ function transitionResult(
 ): WorkflowActionExecutionResult["transition"] {
   switch (transition.kind) {
     case "source_stage_not_completed":
-      return {
-        kind: "STAGE_ACTIVE",
-        targetStageInstanceId: null,
-        targetStageName: null,
-        workflowStatus: "ACTIVE",
-      };
+      return fail(
+        "ACTION_UNAVAILABLE",
+        "Complete the remaining required stage work before this decision.",
+      );
     case "transitioned":
       return {
         kind: "STAGE_ACTIVATED",
