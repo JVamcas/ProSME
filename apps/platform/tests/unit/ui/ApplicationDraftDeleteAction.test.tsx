@@ -25,6 +25,14 @@ import type { ApplicationSummary } from "@/modules/applications/ApplicationTypes
 }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const draft: ApplicationSummary = {
+  reference: null,
+  submittedAt: null,
+  publicStatus: {
+    status: "DRAFT",
+    label: "Draft",
+    description: "Complete and submit your application.",
+    actionRequired: false,
+  },
   businessName: null,
   createdAt: "2026-09-23T00:00:00.000Z",
   currentSection: "business",

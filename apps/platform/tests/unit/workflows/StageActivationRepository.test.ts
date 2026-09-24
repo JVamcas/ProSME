@@ -18,6 +18,13 @@ import { createWorkflowTasks } from "@/modules/workflows/infrastructure/Workflow
 const activatedAt = new Date("2026-09-21T09:00:00.000Z");
 const stageId = "11111111-1111-4111-8111-111111111111";
 const taskId = "22222222-2222-4222-8222-222222222222";
+const select = vi.fn(() => ({
+  from: () => ({
+    where: () => ({
+      orderBy: () => ({ limit: async () => [] }),
+    }),
+  }),
+}));
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -65,7 +72,7 @@ describe("stage activation repository", () => {
     const update = vi.fn(() => ({ set }));
 
     const result = await persistStageActivation(
-      { insert, update } as never,
+      { insert, select, update } as never,
       {
         activatedAt,
         actorId: "77777777-7777-4777-8777-777777777777",
@@ -81,6 +88,11 @@ describe("stage activation repository", () => {
           slaHours: 24,
           stageDefinitionId: "44444444-4444-4444-8444-444444444444",
           stageKey: "SCREENING",
+          publicStatus: {
+            status: "UNDER_REVIEW",
+            label: "Under review",
+            description: "Your application is under review.",
+          },
           workflowInstanceId: "33333333-3333-4333-8333-333333333333",
         },
         tasks: [{
@@ -122,6 +134,15 @@ describe("stage activation repository", () => {
         }),
       },
     ]));
+    expect(inserted).toEqual(expect.arrayContaining([
+      {
+        table: workflowEvents,
+        value: expect.objectContaining({
+          eventCode: "PUBLIC_STATUS_CHANGED",
+          payload: expect.objectContaining({ status: "UNDER_REVIEW" }),
+        }),
+      },
+    ]));
     const runtimeTaskAudit = inserted.find(
       (entry) => entry.table === workflowAuditEntries
         && Array.isArray(entry.value),
@@ -151,7 +172,7 @@ describe("stage activation repository", () => {
       rows: [{ formVersionId: generatedFormVersionId }],
     });
     await persistStageActivation(
-      { execute, insert, update } as never,
+      { execute, insert, select, update } as never,
       {
         activatedAt,
         actorId: "77777777-7777-4777-8777-777777777777",
@@ -167,6 +188,11 @@ describe("stage activation repository", () => {
           slaHours: null,
           stageDefinitionId: "44444444-4444-4444-8444-444444444444",
           stageKey: "SCREENING",
+          publicStatus: {
+            status: "UNDER_REVIEW",
+            label: "Under review",
+            description: "Your application is under review.",
+          },
           workflowInstanceId: "33333333-3333-4333-8333-333333333333",
         },
         tasks: [{

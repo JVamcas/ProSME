@@ -37,7 +37,17 @@ import { ApplicationListContent } from "@/components/applicant/applications/Appl
 import { StepProgress } from "@/components/ui/step-progress";
 import type { ApplicationView } from "@/modules/applications/ApplicationTypes";
 
+const draftPublicStatus = {
+  status: "DRAFT",
+  label: "Draft",
+  description: "Complete and submit your application.",
+  actionRequired: false,
+} as const;
+
 const completedApplication: ApplicationView = {
+  reference: null,
+  submittedAt: null,
+  publicStatus: draftPublicStatus,
   businessName: "JM Technologies",
   businessSection: {
     businessId: "89e20de0-3558-4d63-90a4-8c9f5125df07",
@@ -239,6 +249,7 @@ describe("application creation UI", () => {
       <ApplicationsTable
         items={[
           {
+            ...completedApplication,
             businessName: "JM Technologies",
             createdAt: "2026-09-01T08:00:00.000Z",
             currentSection: "project",
@@ -268,6 +279,7 @@ describe("application creation UI", () => {
         canDeleteDraft={false}
         items={[
           {
+            ...completedApplication,
             businessName: "JM Technologies",
             createdAt: "2026-09-01T08:00:00.000Z",
             currentSection: "declarations",

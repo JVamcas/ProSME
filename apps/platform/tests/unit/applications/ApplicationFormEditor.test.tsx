@@ -77,6 +77,14 @@ function draft(rowVersion: number): ApplicationDraftView {
       : field);
 
   return {
+    reference: null,
+    submittedAt: null,
+    publicStatus: {
+      status: "DRAFT",
+      label: "Draft",
+      description: "Complete and submit your application.",
+      actionRequired: false,
+    },
     businessName: "Selected business",
     businessSection: {},
     createdAt: "2026-09-23T08:00:00.000Z",

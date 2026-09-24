@@ -141,6 +141,7 @@ async function appendSubmissionRecords(
   transaction: SubmissionTransaction,
   input: SubmissionWriteInput,
   result: SubmissionResult,
+  snapshot: { id: string; integrityHash: string },
 ) {
   await transaction.insert(applicationLifecycleHistory).values({
     actorUserId: input.actorId,
@@ -151,6 +152,35 @@ async function appendSubmissionRecords(
     sourceStatus: "draft",
     targetStatus: "submitted",
   });
+  await transaction.insert(applicationAuditEntries).values([
+    {
+      action: "APPLICATION_REFERENCE_ALLOCATED",
+      actorUserId: input.actorId,
+      applicationId: input.application.id,
+      correlationId: input.correlationId,
+      metadata: { reference: result.reference },
+    },
+    {
+      action: "APPLICATION_SNAPSHOT_CREATED",
+      actorUserId: input.actorId,
+      applicationId: input.application.id,
+      correlationId: input.correlationId,
+      metadata: {
+        integrityHash: snapshot.integrityHash,
+        snapshotId: snapshot.id,
+      },
+    },
+    {
+      action: "APPLICATION_WORKFLOW_BOOTSTRAPPED",
+      actorUserId: input.actorId,
+      applicationId: input.application.id,
+      correlationId: input.correlationId,
+      metadata: {
+        workflowInstanceId: result.workflowInstanceId,
+        workflowTemplateVersionId: result.workflowTemplateVersionId,
+      },
+    },
+  ]);
   await transaction.insert(applicationAuditEntries).values({
     action: "APPLICATION_SUBMITTED",
     actorUserId: input.actorId,
@@ -246,6 +276,6 @@ export async function writeApplicationSubmission(
     workflowTemplateVersionId:
       input.configuration.workflowTemplateVersionId,
   };
-  await appendSubmissionRecords(transaction, input, result);
+  await appendSubmissionRecords(transaction, input, result, snapshot);
   return { kind: "submitted", result };
 }

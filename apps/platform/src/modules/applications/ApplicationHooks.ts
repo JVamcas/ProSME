@@ -1,8 +1,9 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import type { ApplicationSubmissionCommandInput } from "./api/ApplicationSubmissionSchemas";
+import type { ApplicationWithdrawalInput } from "./api/ApplicationWithdrawalSchemas";
 
 import type { SaveApplicationDraftInput } from "./ApplicationSchemas";
 import type {
@@ -17,6 +18,8 @@ export const applicationQueryKeys = {
   list: (input: ApplicationListInput) =>
     ["portal", "applications", "list", input] as const,
   detail: (id: string) => ["portal", "applications", id] as const,
+  status: (id: string) => ["portal", "applications", id, "status"] as const,
+  statusHistory: (id: string) => ["portal", "applications", id, "status-history"] as const,
   admin: ["admin", "applications"] as const,
   adminList: (input: AdminApplicationListInput) =>
     ["admin", "applications", input] as const,
@@ -47,6 +50,25 @@ export function useOwnApplication(id: string) {
   return useQuery({
     queryFn: () => clientApplicationService.getOwnApplication(id),
     queryKey: applicationQueryKeys.detail(id),
+  });
+}
+
+export function useOwnApplicationStatus(id: string) {
+  return useQuery({
+    queryFn: () => clientApplicationService.getOwnApplicationStatus(id),
+    queryKey: applicationQueryKeys.status(id),
+  });
+}
+
+export function useOwnApplicationStatusHistory(id: string) {
+  return useInfiniteQuery({
+    queryKey: applicationQueryKeys.statusHistory(id),
+    queryFn: ({ pageParam }) => clientApplicationService.getOwnApplicationStatusHistory(
+      id,
+      pageParam ?? undefined,
+    ),
+    initialPageParam: null as string | null,
+    getNextPageParam: (page) => page.nextCursor ?? undefined,
   });
 }
 
@@ -95,6 +117,27 @@ export function useDeleteApplicationDraft() {
     onSuccess: ({ id }) => {
       queryClient.removeQueries({ queryKey: applicationQueryKeys.detail(id) });
       void queryClient.invalidateQueries({ queryKey: applicationQueryKeys.own });
+    },
+  });
+}
+
+export function useWithdrawApplication() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (command: {
+      id: string;
+      input: ApplicationWithdrawalInput;
+      idempotencyKey: string;
+    }) => clientApplicationService.withdrawApplication(
+      command.id,
+      command.input,
+      command.idempotencyKey,
+    ),
+    onSuccess: (result) => {
+      void queryClient.invalidateQueries({ queryKey: applicationQueryKeys.own });
+      void queryClient.invalidateQueries({
+        queryKey: applicationQueryKeys.status(result.applicationId),
+      });
     },
   });
 }

@@ -8,21 +8,32 @@ import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useDeleteApplicationDraft } from "@/modules/applications/ApplicationHooks";
 import type { ApplicationSummary } from "@/modules/applications/ApplicationTypes";
+import { ApplicationWithdrawalForm } from "@/modules/applications/ui/ApplicationWithdrawalForm";
+import { ApplicationStatusHistoryPanel } from "@/modules/applications/ui/ApplicationStatusHistoryPanel";
 import { toast } from "@/shared/ui/Toast";
 import { ApplicationCards, ApplicationsTable } from "./ApplicationTable";
+import { GeneralButton } from "@/components/ui/button";
 
 export function ApplicationListContent({
   canDeleteDraft,
+  canWithdraw = false,
   items,
   onDeletedLastItem,
 }: {
   canDeleteDraft: boolean;
+  canWithdraw?: boolean;
   items: ApplicationSummary[];
   onDeletedLastItem?: () => void;
 }) {
   const router = useRouter();
   const deleteDraft = useDeleteApplicationDraft();
   const [deleteCandidate, setDeleteCandidate] = useState<ApplicationSummary | null>(
+    null,
+  );
+  const [withdrawCandidate, setWithdrawCandidate] = useState<ApplicationSummary | null>(
+    null,
+  );
+  const [historyCandidate, setHistoryCandidate] = useState<ApplicationSummary | null>(
     null,
   );
 
@@ -34,6 +45,24 @@ export function ApplicationListContent({
           disabled={!isDraft}
           onClick={() => router.push(`/portal/applications/${application.id}/edit`)}
         />
+        {!isDraft ? (
+          <GeneralButton
+            className="rounded-full border px-3 py-1 text-sm"
+            onClick={() => setHistoryCandidate(application)}
+            type="button"
+          >
+            Status history
+          </GeneralButton>
+        ) : null}
+        {canWithdraw && application.canWithdraw ? (
+          <GeneralButton
+            onClick={() => setWithdrawCandidate(application)}
+            size="compact"
+            variant="outlineOrange"
+          >
+            Withdraw
+          </GeneralButton>
+        ) : null}
         {isDraft && canDeleteDraft ? (
           <DeleteButton
             onClick={() => {
@@ -60,6 +89,22 @@ export function ApplicationListContent({
           message="Choose an open funding opportunity to start an application."
         />
       )}
+      {historyCandidate ? (
+        <ApplicationStatusHistoryPanel
+          application={historyCandidate}
+          onClose={() => setHistoryCandidate(null)}
+        />
+      ) : null}
+      {withdrawCandidate ? (
+        <ApplicationWithdrawalForm
+          application={withdrawCandidate}
+          onCancel={() => setWithdrawCandidate(null)}
+          onWithdrawn={() => {
+            setWithdrawCandidate(null);
+            toast.success("Application withdrawn");
+          }}
+        />
+      ) : null}
       <ConfirmationDialog
         confirmText="Delete draft"
         errorMessage={deleteDraft.error?.message}

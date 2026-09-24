@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
+vi.mock("@/modules/applications/ServerApplicationWithdrawalService", () => ({
+  withdrawFromWorkflowAction: vi.fn(),
+}));
 vi.mock(
   "@/modules/workflows/infrastructure/WorkflowActionExecutionRepository",
   () => ({ recordWorkflowActionExecution: vi.fn() }),
@@ -18,6 +21,7 @@ vi.mock(
   () => ({ executeSequentialTransitionInTransaction: vi.fn() }),
 );
 
+import { withdrawFromWorkflowAction } from "@/modules/applications/ServerApplicationWithdrawalService";
 import { executeConfiguredWorkflowActionOutcome } from "@/modules/workflows/application/runtime/ServerWorkflowActionOutcomeService";
 import { executeTerminalRejectInTransaction } from "@/modules/workflows/application/runtime/ServerRejectWorkflowActionService";
 import { executeSequentialTransitionInTransaction } from "@/modules/workflows/application/runtime/ServerSequentialTransitionService";
@@ -145,5 +149,53 @@ describe("workflow action outcome service", () => {
     ).toBeLessThan(
       vi.mocked(executeTerminalRejectInTransaction).mock.invocationCallOrder[0],
     );
+  });
+  it("uses the shared withdrawal state operation for configured actions", async () => {
+    const withdrawalTarget = {
+      ...target,
+      action: {
+        ...target.action,
+        actionType: "WITHDRAW" as const,
+        configuration: {
+          allowedStageKeys: ["SCREENING"],
+          resubmissionRule: "NOT_ALLOWED" as const,
+        },
+        stableKey: "WITHDRAW",
+      },
+      stage: {
+        ...target.stage,
+        application: {
+          id: "b0000000-0000-4000-8000-000000000001",
+          reference: "SME-001",
+          rowVersion: 4,
+          status: "submitted",
+        },
+      },
+    };
+    const result = await executeConfiguredWorkflowActionOutcome({} as never, {
+      actorId: "a0000000-0000-4000-8000-000000000001",
+      command: {
+        ...command,
+        actionKey: "WITHDRAW",
+        input: { actionType: "WITHDRAW", confirmed: true },
+      },
+      conditions: {
+        actionEvaluation: { evaluation: null, passed: true, resolutionError: null },
+        available: true,
+        selectedTransitionId: null,
+        transitionEvaluations: [],
+      },
+      conditionContext: undefined,
+      configuredTransitions: { actionExists: true, transitions: [] },
+      resultingRuntimeVersion: 3,
+      target: withdrawalTarget,
+    });
+    expect(result.transition).toMatchObject({
+      kind: "WORKFLOW_WITHDRAWN",
+      workflowStatus: "CANCELLED",
+    });
+    expect(withdrawFromWorkflowAction).toHaveBeenCalledOnce();
+    expect(recordWorkflowActionExecution).toHaveBeenCalledOnce();
+    expect(executeSequentialTransitionInTransaction).not.toHaveBeenCalled();
   });
 });

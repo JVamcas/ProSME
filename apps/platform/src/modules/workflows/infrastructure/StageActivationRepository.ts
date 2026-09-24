@@ -14,6 +14,7 @@ import {
   workflowStageDefinitions,
 } from "@/db/schema";
 import type { StageInstanceStatus } from "../domain/runtime/StageInstance";
+import type { WorkflowPublicStatusMapping } from "../domain/definitions/WorkflowStageDefinition";
 import { createStageInstance } from "./StageInstanceRepository";
 import type { WorkflowInstanceTransaction } from "./WorkflowInstanceRepository";
 import { createWorkflowTasks } from "./WorkflowTaskWriteRepository";
@@ -29,6 +30,7 @@ export type StageActivationTarget = {
   entryCondition: typeof workflowStageDefinitions.$inferSelect.entryCondition;
   fundingCall: Record<string, unknown>;
   repeatable: boolean;
+  publicStatus: WorkflowPublicStatusMapping;
   slaHours: number | null;
   stageDefinitionId: string;
   stageKey: string;
@@ -97,6 +99,11 @@ export async function lockStageActivationTarget(
         warningCount: sql<number>`jsonb_array_length(${authoritativeEligibilityOutcomes.warnings})`,
       },
       entryCondition: workflowStageDefinitions.entryCondition,
+      publicStatus: {
+        status: workflowStageDefinitions.applicantStatus,
+        label: workflowStageDefinitions.applicantLabel,
+        description: workflowStageDefinitions.applicantDescription,
+      },
       repeatable: workflowStageDefinitions.repeatable,
       slaHours: workflowStageDefinitions.slaHours,
       stageDefinitionId: workflowStageDefinitions.id,
@@ -332,6 +339,7 @@ export async function persistStageActivation(
     stageDefinitionId: input.target.stageDefinitionId,
     stageId: stage.id,
     stageKey: input.target.stageKey,
+    publicStatus: input.target.publicStatus,
     tasks,
     workflowInstanceId: input.target.workflowInstanceId,
   });

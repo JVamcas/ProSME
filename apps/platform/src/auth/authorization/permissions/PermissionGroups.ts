@@ -70,6 +70,7 @@ export const permissionGroups: readonly PermissionGroup[] = [
       permissionCodes.fundingApplicationOwnUpdate,
       permissionCodes.fundingApplicationDraftOwnDelete,
       permissionCodes.fundingApplicationSubmit,
+      permissionCodes.fundingApplicationOwnWithdraw,
       permissionCodes.fundingApplicationAllRead,
       permissionCodes.fundingApplicationBulkUpdate,
       permissionCodes.fundingApplicationExport,

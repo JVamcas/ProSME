@@ -62,6 +62,10 @@ function staffUser(granted: string[]): AuthenticatedUser {
 }
 
 const application = {
+  canWithdraw: false,
+  workflowStatus: null,
+  terminalPublicStatus: null,
+  activeStageStatuses: [],
   businessId: null,
   businessName: null,
   businessSection: {},

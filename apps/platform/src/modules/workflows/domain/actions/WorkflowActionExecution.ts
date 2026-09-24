@@ -111,10 +111,11 @@ export type WorkflowActionExecutionResult = {
       | "STAGE_ACTIVE"
       | "STAGE_ACTIVATED"
       | "WORKFLOW_COMPLETED"
-      | "WORKFLOW_REJECTED";
+      | "WORKFLOW_REJECTED"
+      | "WORKFLOW_WITHDRAWN";
     targetStageInstanceId: string | null;
     targetStageName: string | null;
-    workflowStatus: "ACTIVE" | "COMPLETED" | "REJECTED";
+    workflowStatus: "ACTIVE" | "COMPLETED" | "REJECTED" | "CANCELLED";
   };
   workflowInstanceId: string;
 };

@@ -116,5 +116,22 @@ export async function rejectTerminalWorkflow(
     targetType: "WORKFLOW_INSTANCE",
     workflowInstanceId: input.workflowInstanceId,
   });
+  await transaction.insert(workflowAuditEntries).values({
+    action: "PUBLIC_STATUS_CHANGED",
+    actorId: input.actorId,
+    after: input.configuration.publicStatusMapping,
+    before: null,
+    correlationId: input.correlationId,
+    targetId: input.workflowInstanceId,
+    targetType: "WORKFLOW_INSTANCE",
+    workflowInstanceId: input.workflowInstanceId,
+  });
+  await transaction.insert(workflowEvents).values({
+    actorId: input.actorId,
+    correlationId: input.correlationId,
+    eventCode: "PUBLIC_STATUS_CHANGED",
+    payload: input.configuration.publicStatusMapping,
+    workflowInstanceId: input.workflowInstanceId,
+  });
   return result;
 }

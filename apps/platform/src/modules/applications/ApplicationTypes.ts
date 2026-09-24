@@ -60,6 +60,10 @@ import type { ApplicationDeclarationsSection } from "./ApplicationDeclarationSch
 import type { FormRuntimeSchema } from "@/modules/forms/FormTypes";
 
 export type ApplicationSummary = {
+  canWithdraw?: boolean;
+  reference: string | null;
+  submittedAt: string | null;
+  publicStatus: import("./domain/ApplicantStatusProjection").ApplicantPublicStatus;
   businessName: string | null;
   createdAt: string;
   currentSection: ApplicationSection;

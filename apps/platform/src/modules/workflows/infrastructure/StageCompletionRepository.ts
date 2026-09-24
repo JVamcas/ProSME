@@ -58,6 +58,7 @@ export async function lockStageCompletionTarget(
         id: applications.id,
         project: applications.projectSection,
         reference: applications.reference,
+        rowVersion: applications.rowVersion,
         sectionCompletion: applications.sectionCompletion,
         status: applications.status,
       },

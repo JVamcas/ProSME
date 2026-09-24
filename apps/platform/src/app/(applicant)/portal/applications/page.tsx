@@ -21,6 +21,7 @@ export default async function ApplicationsPage() {
       <ApplicationsList
         canCreate={can(user, permissionCodes.fundingApplicationCreate)}
         canDeleteDraft={can(user, permissionCodes.fundingApplicationDraftOwnDelete)}
+        canWithdraw={can(user, permissionCodes.fundingApplicationOwnWithdraw)}
       />
     </PageShell>
   );

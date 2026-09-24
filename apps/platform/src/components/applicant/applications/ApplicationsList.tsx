@@ -31,9 +31,11 @@ export function applicationTabs(
 export function ApplicationsList({
   canCreate,
   canDeleteDraft,
+  canWithdraw,
 }: {
   canCreate: boolean;
   canDeleteDraft: boolean;
+  canWithdraw: boolean;
 }) {
   const browser = useApplicationBrowser();
   const { query } = browser;
@@ -56,6 +58,7 @@ export function ApplicationsList({
   }
   const content = <ApplicationListContent
     canDeleteDraft={canDeleteDraft}
+    canWithdraw={canWithdraw}
     items={query.data.items}
     onDeletedLastItem={browser.onDeletedLastItem}
   />;

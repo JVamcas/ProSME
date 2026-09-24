@@ -14,6 +14,7 @@ import {
   expectImmutableSubmissionArtifacts,
 } from "../support/ApplicationSubmissionDatabaseAssertions";
 import * as workflowBindingFixture from "../support/WorkflowBindingDatabaseFixture";
+import { assertApplicationWithdrawal } from "../support/ApplicationWithdrawalDatabaseAssertions";
 
 const { Pool } = pg;
 const enabled = process.env.RUN_P3_APPLICATION_DATABASE_TESTS === "true";
@@ -234,7 +235,6 @@ describeDatabase("P3.4 transactional application submission", () => {
       workflows: 0,
     });
   });
-
   it("projects dashboard metrics from persisted, access-scoped records", async () => {
     const all = await readAdminDashboard({
       actorId: ownerId,
@@ -288,4 +288,12 @@ describeDatabase("P3.4 transactional application submission", () => {
       ]),
     );
   });
+  it("withdraws an owned submitted application once with complete history", () =>
+    assertApplicationWithdrawal({
+      applicationId: applicationIds[0],
+      ownerId,
+      otherOwnerId: businessId,
+      query,
+      stageDefinitionId: stageId,
+    }));
 });

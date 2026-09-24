@@ -40,6 +40,9 @@ function applicationColumns(
       cell: ({ row }) => (
         <span className="font-semibold text-brand-navy">
           {row.original.fundingOpportunityTitle}
+          {row.original.reference ? (
+            <small className="block font-normal">{row.original.reference}</small>
+          ) : null}
         </span>
       ),
     },
@@ -51,7 +54,14 @@ function applicationColumns(
     {
       accessorKey: "status",
       header: "Status",
-      cell: ({ row }) => <StatusBadge status={row.original.status} />,
+      cell: ({ row }) => (
+        <span>
+          <StatusBadge status={row.original.publicStatus.label} />
+          <small className="mt-1 block text-brand-navy/70">
+            {row.original.publicStatus.description}
+          </small>
+        </span>
+      ),
     },
     {
       accessorKey: "progressPercent",
@@ -97,8 +107,16 @@ export function ApplicationCards({ items, renderAction }: Props) {
             <h2 className="font-bold text-brand-navy">
               {application.fundingOpportunityTitle}
             </h2>
-            <StatusBadge status={application.status} />
+            <StatusBadge status={application.publicStatus.label} />
           </div>
+          <p className="mt-2 text-sm text-brand-navy/70">
+            {application.publicStatus.description}
+          </p>
+          {application.reference ? (
+            <p className="mt-1 text-xs text-brand-navy/60">
+              {application.reference}
+            </p>
+          ) : null}
           <p className="mt-2 text-xs text-brand-navy/60">
             {application.businessName ?? "Business not selected"}
           </p>

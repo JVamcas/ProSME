@@ -100,7 +100,7 @@ export async function expectAtomicSubmissionCounts(
   expect(await readAtomicSubmissionCounts(query, applicationId)).toEqual({
     application_audits: 1,
     audits: 1,
-    events: 5,
+    events: 6,
     eligibility_outcomes: 1,
     outbox: 2,
     pinned_version: workflowVersionId,
@@ -110,4 +110,20 @@ export async function expectAtomicSubmissionCounts(
     tasks: 1,
     workflows: 1,
   });
+  const audit = await query(
+    `SELECT action FROM app_application_audit_entries
+     WHERE application_id = $1
+       AND action IN (
+         'APPLICATION_REFERENCE_ALLOCATED',
+         'APPLICATION_SNAPSHOT_CREATED',
+         'APPLICATION_WORKFLOW_BOOTSTRAPPED'
+       )
+     ORDER BY action`,
+    [applicationId],
+  );
+  expect(audit.rows.map((row) => row.action)).toEqual([
+    "APPLICATION_REFERENCE_ALLOCATED",
+    "APPLICATION_SNAPSHOT_CREATED",
+    "APPLICATION_WORKFLOW_BOOTSTRAPPED",
+  ]);
 }

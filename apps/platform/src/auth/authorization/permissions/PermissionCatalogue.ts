@@ -174,6 +174,11 @@ const staticPermissionCatalogue: readonly PermissionDefinition[] = [
     "Submit an owned funding application.",
   ),
   define(
+    permissionCodes.fundingApplicationOwnWithdraw,
+    "Withdraw own submitted applications",
+    "Withdraw a submitted application owned by the signed-in user when its workflow permits withdrawal.",
+  ),
+  define(
     permissionCodes.fundingApplicationAllRead,
     "Read all applications",
     "Read all funding applications.",

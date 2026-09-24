@@ -48,6 +48,14 @@ import type { ApplicationView } from "@/modules/applications/ApplicationTypes";
 }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const application: ApplicationView = {
+  reference: null,
+  submittedAt: null,
+  publicStatus: {
+    status: "DRAFT",
+    label: "Draft",
+    description: "Complete and submit your application.",
+    actionRequired: false,
+  },
   businessName: null,
   businessSection: {},
   createdAt: "2026-09-14T08:00:00.000Z",

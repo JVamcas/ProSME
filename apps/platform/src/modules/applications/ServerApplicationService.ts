@@ -10,6 +10,7 @@ import type { AuthenticatedUser } from "@/auth/types";
 import {
   createOwnedApplication,
   findOwnedApplication,
+  findOwnedApplicationStatus,
   findOwnedApplicationByOpportunity,
   findAllApplications,
   findApplicationsAssignedTo,
@@ -178,6 +179,19 @@ export async function listOwnApplications(
     nextCursor: hasNextPage ? encodeApplicationCursor(items.at(-1)!) : null,
     total: result.total,
   };
+}
+
+export async function getOwnApplicationStatus(
+  user: AuthenticatedUser | null,
+  id: string,
+) {
+  const actor = requirePermission(
+    user,
+    permissionCodes.fundingApplicationOwnRead,
+  );
+  const application = await findOwnedApplicationStatus(actor.id, id);
+  if (!application) throw new ApplicationNotFoundError();
+  return toApplicationSummary(application);
 }
 
 export async function getOwnApplication(

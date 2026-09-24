@@ -11,6 +11,7 @@ import type {
   SaveApplicationDraftInput,
 } from "./ApplicationSchemas";
 import type { ApplicationSubmissionCommandInput } from "./api/ApplicationSubmissionSchemas";
+import type { ApplicationWithdrawalInput } from "./api/ApplicationWithdrawalSchemas";
 import type {
   AdminApplication,
   AdminApplicationListInput,
@@ -75,6 +76,30 @@ function getOwnApplication(id: string) {
   });
 }
 
+function getOwnApplicationStatusHistory(id: string, after?: string) {
+  const query = new URLSearchParams({ limit: "20" });
+  if (after) query.set("after", after);
+  return requestData<{
+    items: {
+      occurredAt: string;
+      publicStatus: {
+        status: string;
+        label: string;
+        description: string;
+      };
+    }[];
+    nextCursor: string | null;
+  }>(`/api/portal/applications/${id}/status/history?${query.toString()}`, {
+    cache: "no-store",
+  });
+}
+
+function getOwnApplicationStatus(id: string) {
+  return requestData<ApplicationSummary>(`/api/portal/applications/${id}/status`, {
+    cache: "no-store",
+  });
+}
+
 function createApplication(input: CreateApplicationDraftInput) {
   return requestData<ApplicationDraftView>("/api/portal/applications", {
     body: JSON.stringify(input),
@@ -114,13 +139,35 @@ function submitApplication(
   );
 }
 
+function withdrawApplication(
+  id: string,
+  input: ApplicationWithdrawalInput,
+  idempotencyKey: string,
+) {
+  return requestData<{
+    applicationId: string;
+    reference: string;
+    withdrawnAt: string;
+  }>(`/api/portal/applications/${id}/withdraw`, {
+    body: JSON.stringify(input),
+    headers: {
+      "Content-Type": "application/json",
+      "Idempotency-Key": idempotencyKey,
+    },
+    method: "POST",
+  });
+}
+
 export const clientApplicationService = {
   createApplication,
   deleteApplicationDraft,
   getOwnApplication,
+  getOwnApplicationStatus,
+  getOwnApplicationStatusHistory,
   getAll,
   listAdminApplications,
   listOwnApplications,
   submitApplication,
   saveApplicationDraft,
+  withdrawApplication,
 };

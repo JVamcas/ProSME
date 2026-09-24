@@ -1,5 +1,8 @@
 import "server-only";
 
+import { and, desc, eq } from "drizzle-orm";
+import type { WorkflowPublicStatusMapping } from "../domain/definitions/WorkflowStageDefinition";
+
 import {
   workflowAuditEntries,
   workflowEvents,
@@ -25,6 +28,7 @@ export async function appendStageActivationAudit(
     stageDefinitionId: string;
     stageId: string;
     stageKey: string;
+    publicStatus: WorkflowPublicStatusMapping;
     tasks: ActivatedTask[];
     workflowInstanceId: string;
   },
@@ -53,6 +57,35 @@ export async function appendStageActivationAudit(
     targetType: "WORKFLOW_STAGE_INSTANCE",
     workflowInstanceId: input.workflowInstanceId,
   });
+  const [previous] = await transaction
+    .select({ after: workflowAuditEntries.after })
+    .from(workflowAuditEntries)
+    .where(and(
+      eq(workflowAuditEntries.workflowInstanceId, input.workflowInstanceId),
+      eq(workflowAuditEntries.action, "PUBLIC_STATUS_CHANGED"),
+    ))
+    .orderBy(desc(workflowAuditEntries.runtimeSequence))
+    .limit(1);
+  if (JSON.stringify(previous?.after) !== JSON.stringify(input.publicStatus)) {
+    await transaction.insert(workflowAuditEntries).values({
+      action: "PUBLIC_STATUS_CHANGED",
+      actorId: input.actorId,
+      after: input.publicStatus,
+      before: previous?.after ?? null,
+      correlationId: input.correlationId,
+      stageInstanceId: input.stageId,
+      targetId: input.workflowInstanceId,
+      targetType: "WORKFLOW_INSTANCE",
+      workflowInstanceId: input.workflowInstanceId,
+    });
+    await transaction.insert(workflowEvents).values({
+      actorId: input.actorId,
+      correlationId: input.correlationId,
+      eventCode: "PUBLIC_STATUS_CHANGED",
+      payload: input.publicStatus,
+      workflowInstanceId: input.workflowInstanceId,
+    });
+  }
   const taskEvents = input.tasks.flatMap((task) => {
     const created = {
       action: "TASK_CREATED",

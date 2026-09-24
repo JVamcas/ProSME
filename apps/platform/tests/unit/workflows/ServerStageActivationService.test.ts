@@ -57,6 +57,11 @@ const target = {
   slaHours: 24,
   stageDefinitionId: input.stageDefinitionId,
   stageKey: "SCREENING",
+  publicStatus: {
+    status: "UNDER_REVIEW" as const,
+    label: "Under review",
+    description: "Your application is under review.",
+  },
   workflowInstanceId: input.workflowInstanceId,
 };
 

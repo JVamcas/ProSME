@@ -25,6 +25,14 @@ const applicationId = "20000000-0000-4000-8000-000000000001";
 
 function draft(): ApplicationDraftView {
   return {
+    reference: null,
+    submittedAt: null,
+    publicStatus: {
+      status: "DRAFT",
+      label: "Draft",
+      description: "Complete and submit your application.",
+      actionRequired: false,
+    },
     businessName: "Example SME",
     businessSection: {},
     createdAt: "2026-09-23T08:00:00.000Z",

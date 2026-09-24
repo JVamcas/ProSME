@@ -70,8 +70,8 @@ export function FundingOpportunityBrowser({
   if (query.isPending) {
     return (
       <PortalLoadingState
-        description="Published funding calls are being prepared."
-        title="Loading funding opportunities"
+        description="Just a moment..."
+        title=""
       />
     );
   }

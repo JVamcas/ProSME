@@ -1,5 +1,7 @@
 import "server-only";
 
+import { withdrawFromWorkflowAction } from "@/modules/applications/ServerApplicationWithdrawalService";
+
 import {
   WorkflowActionExecutionError,
   type WorkflowActionExecutionRequest,
@@ -237,6 +239,51 @@ export async function executeConfiguredWorkflowActionOutcome(
   const configuredTransition = input.configuredTransitions.transitions.find(
     (transition) => transition.id === input.conditions.selectedTransitionId,
   ) ?? null;
+  if (input.target.action.actionType === "WITHDRAW"
+    && input.command.input.actionType === "WITHDRAW") {
+    const application = input.target.stage.application;
+    if (typeof application.id !== "string"
+      || typeof application.reference !== "string"
+      || typeof application.rowVersion !== "number"
+      || application.status !== "submitted") {
+      fail("ACTION_UNAVAILABLE", "The application cannot be withdrawn.");
+    }
+    try {
+      await withdrawFromWorkflowAction(transaction, {
+        actorId: input.actorId,
+        application: {
+          id: application.id,
+          reference: application.reference,
+          rowVersion: application.rowVersion,
+        },
+        correlationId: input.command.correlationId,
+        reasonCode: input.command.input.reasonCode,
+        stageId: input.command.sourceStageInstanceId,
+        workflowId: input.target.stage.workflowInstanceId,
+        withdrawnAt: new Date(execution.executedAt),
+      });
+    } catch {
+      fail("ACTION_UNAVAILABLE", "The workflow changed before withdrawal completed.");
+    }
+    const result = buildExecutionResult({
+      ...execution,
+      resultingRuntimeVersion: input.resultingRuntimeVersion + 1,
+      target: input.target,
+      transition: {
+        kind: "WORKFLOW_WITHDRAWN",
+        targetStageInstanceId: null,
+        targetStageName: null,
+        workflowStatus: "CANCELLED",
+      },
+    });
+    await persistActionAndDecision(transaction, {
+      ...input,
+      ...execution,
+      result,
+      terminalOutcome: "WITHDRAWN",
+    });
+    return result;
+  }
   if (input.target.action.actionType === "REJECT"
     && input.target.action.configuration.outcome.type === "TERMINAL") {
     return executeTerminalReject(

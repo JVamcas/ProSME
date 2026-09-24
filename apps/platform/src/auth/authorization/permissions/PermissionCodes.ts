@@ -56,6 +56,7 @@ export const permissionCodes = {
   fundingApplicationOwnUpdate: "funding.application.own.update",
   fundingApplicationDraftOwnDelete: "funding.application.draft.own.delete",
   fundingApplicationSubmit: "funding.application.submit",
+  fundingApplicationOwnWithdraw: "funding.application.own.withdraw",
   fundingApplicationAllRead: "funding.application.all.read",
   fundingApplicationBulkUpdate: "funding.application.bulk-update",
   fundingApplicationExport: "funding.application.export",
