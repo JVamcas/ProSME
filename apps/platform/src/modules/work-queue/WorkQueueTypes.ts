@@ -4,7 +4,7 @@ export type WorkQueueScope = (typeof workQueueScopes)[number];
 
 export type WorkQueueRow = {
   applicantName: string;
-  applicationId: string;
+  applicationId: string | null;
   assignedRoleId: string | null;
   assignedRoleName: string | null;
   assignedUserId: string | null;
@@ -44,3 +44,17 @@ export type TaskClaimResult = Pick<
   | "taskInstanceId"
   | "taskStatus"
 >;
+
+export type SelfAssignmentPoolRow = {
+  dueAt: string | null;
+  rowVersion: number;
+  stageName: string;
+  taskInstanceId: string;
+  taskName: string;
+};
+
+export type SelfAssignmentPoolPage = {
+  items: SelfAssignmentPoolRow[];
+  nextCursor: string | null;
+  total: number;
+};

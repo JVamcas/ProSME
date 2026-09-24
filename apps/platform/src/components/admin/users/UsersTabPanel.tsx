@@ -17,6 +17,7 @@ import {
   UserRowActions,
   UserStatus,
 } from "./UserListPrimitives";
+import { StatusBadge } from "@/components/ui/status-badge";
 
 const PAGE_SIZE = 8;
 
@@ -37,7 +38,6 @@ function createColumns(
       header: "Name",
       cell: ({ row }) => <UserIdentity user={row.original} />,
     },
-    { accessorKey: "email", header: "Email" },
     {
       accessorKey: "roleCodes",
       header: "Roles",
@@ -47,7 +47,7 @@ function createColumns(
     {
       accessorKey: "status",
       header: "Status",
-      cell: ({ row }) => <UserStatus status={row.original.status} />,
+      cell: ({ row }) => <StatusBadge status={row.original.status} />,
     },
     {
       accessorKey: "lastLoginAt",

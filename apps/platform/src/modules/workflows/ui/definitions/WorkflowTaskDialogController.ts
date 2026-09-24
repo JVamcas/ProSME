@@ -16,7 +16,6 @@ import type {
 import { workflowRuntimeContextFields } from "@/modules/workflows/domain/WorkflowRuntimeContextFieldCatalogue";
 import { defaultWorkflowElementPermissions } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
 import {
-  checklistItemDefaults,
   taskAssignmentDefaults,
   type WorkflowTaskFormValues,
   workflowTaskFormSchema,
@@ -74,7 +73,7 @@ async function saveWorkflowTask({
   const existingConfig = task?.config && typeof task.config === "object"
     ? { ...task.config }
     : {};
-  if (!values.checklistItems.length && "items" in existingConfig) {
+  if ("items" in existingConfig) {
     delete existingConfig.items;
   }
   const nextTask: WorkflowTaskInput = {
@@ -96,6 +95,7 @@ async function saveWorkflowTask({
     displayOrder: values.displayOrder,
     reviewerCount: values.reviewerCount,
     reviewRelease: values.reviewRelease,
+    submittedReplacementPolicy: values.submittedReplacementPolicy,
     requiredCompletionCount: values.requiredCompletionCount,
     completionMode: values.completionMode,
     completionPercentage: values.completionMode === "PERCENT"
@@ -115,9 +115,6 @@ async function saveWorkflowTask({
     coiRequired: values.coiRequired,
     config: {
       ...existingConfig,
-      ...(values.checklistItems.length
-        ? { items: values.checklistItems }
-        : {}),
     },
     formBinding: values.formVersionId
       ? {
@@ -170,7 +167,6 @@ export function useWorkflowTaskDialogController(
       visibility: task
         ? task.permissions.visibility
         : defaultWorkflowElementPermissions.visibility,
-      checklistItems: checklistItemDefaults(task?.config),
       stableKey: task?.stableKey ?? "",
       description: task?.description ?? "",
       displayOrder: task?.displayOrder ?? stage.tasks.length + 1,
@@ -178,6 +174,7 @@ export function useWorkflowTaskDialogController(
       name: task?.name ?? "",
       reviewerCount: task?.reviewerCount ?? 1,
       reviewRelease: task?.reviewRelease ?? "STAGE_COMPLETED",
+      submittedReplacementPolicy: task?.submittedReplacementPolicy ?? "DENY",
       requiredCompletionCount: task?.requiredCompletionCount ?? 1,
       completionMode: task?.completionMode ?? "COUNT",
       completionPercentage: task?.completionPercentage ?? null,

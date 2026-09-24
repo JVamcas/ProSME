@@ -65,6 +65,7 @@ const input = {
 const task = {
   assignedUserId: null,
   claimableByActor: true,
+  coiCleared: true,
   formRequired: false,
   formCompleted: false,
   id: input.taskId,
@@ -123,6 +124,19 @@ describe("server workflow task lifecycle service", () => {
     await expect(startWorkflowTask(actor, input)).resolves.toMatchObject({
       status: "IN_PROGRESS",
     });
+  });
+
+  it("blocks starting a task while COI clearance is pending", async () => {
+    vi.mocked(lockWorkflowTaskForLifecycle).mockResolvedValue({
+      ...task,
+      assignedUserId: actor.id,
+      coiCleared: false,
+      status: "CLAIMED",
+    });
+
+    await expect(startWorkflowTask(actor, input)).rejects
+      .toBeInstanceOf(ResourceConflictError);
+    expect(persistWorkflowTaskTransition).not.toHaveBeenCalled();
   });
 
   it("completes an in-progress task and records completion time", async () => {

@@ -59,6 +59,7 @@ type CompletionResult = {
 
 type LockedTask = {
   hasActions: boolean;
+  hasChecklist: boolean;
   config: unknown;
   result: unknown;
   rowVersion: number;
@@ -136,6 +137,10 @@ async function lockTask(
         SELECT 1 FROM app_stage_task_action_bindings binding
         WHERE binding.task_definition_id = definition.id
       ) AS "hasActions",
+      EXISTS (
+        SELECT 1 FROM app_workflow_stage_checklist_definitions checklist
+        WHERE checklist.task_definition_id = definition.id
+      ) AS "hasChecklist",
       stage.id AS "stageInstanceId",
       workflow.id AS "workflowInstanceId"
     FROM app_workflow_tasks task
@@ -144,6 +149,7 @@ async function lockTask(
     JOIN app_workflow_stage_instances stage ON stage.id = task.stage_instance_id
     JOIN app_workflow_instances workflow ON workflow.id = stage.workflow_instance_id
     WHERE task.id = ${input.taskInstanceId}::uuid
+      AND app_workflow_task_coi_cleared(task.id, ${input.actorId}::uuid)
       AND (
         task.assigned_user_id = ${input.actorId}::uuid
         OR (
@@ -294,6 +300,7 @@ async function writeCompletion(
     config: task.config,
     formCompleted: true,
     formRequired: true,
+    hasChecklist: task.hasChecklist,
     result: task.result,
   })) return null;
   const completedAt = new Date();
@@ -304,6 +311,7 @@ async function writeCompletion(
       config: task.config,
       formCompleted: true,
       formRequired: true,
+      hasChecklist: task.hasChecklist,
       result: task.result,
     })
     ? "IN_PROGRESS" as const

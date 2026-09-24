@@ -171,6 +171,11 @@ export async function loadRequiredTaskCompletions(
       definition.reviewer_count AS "denominator",
       count(task.id) FILTER (
         WHERE task.status = 'COMPLETED'
+          AND app_workflow_task_coi_cleared(task.id, task.assigned_user_id)
+          AND NOT EXISTS (
+            SELECT 1 FROM app_workflow_tasks successor
+            WHERE successor.supersedes_task_id = task.id
+          )
           AND (task.form_version_id IS NULL OR EXISTS (
             SELECT 1 FROM app_form_responses response
             WHERE response.workflow_task_id = task.id
@@ -179,6 +184,11 @@ export async function loadRequiredTaskCompletions(
       )::integer AS "completedCount",
       COALESCE(array_agg(task.id ORDER BY task.reviewer_slot) FILTER (
         WHERE task.status = 'COMPLETED'
+          AND app_workflow_task_coi_cleared(task.id, task.assigned_user_id)
+          AND NOT EXISTS (
+            SELECT 1 FROM app_workflow_tasks successor
+            WHERE successor.supersedes_task_id = task.id
+          )
           AND (task.form_version_id IS NULL OR EXISTS (
             SELECT 1 FROM app_form_responses response
             WHERE response.workflow_task_id = task.id
@@ -213,6 +223,11 @@ export async function loadStageCompletionValues(
       AND response.status = 'COMPLETED'
     WHERE task.stage_instance_id = ${stageInstanceId}::uuid
       AND task.status = 'COMPLETED'
+      AND app_workflow_task_coi_cleared(task.id, task.assigned_user_id)
+      AND NOT EXISTS (
+        SELECT 1 FROM app_workflow_tasks successor
+        WHERE successor.supersedes_task_id = task.id
+      )
       AND (task.form_version_id IS NULL OR response.id IS NOT NULL)
     ORDER BY task.created_at, task.id, response.created_at, response.id
   `);

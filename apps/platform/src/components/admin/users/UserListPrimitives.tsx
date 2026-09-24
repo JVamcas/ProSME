@@ -1,6 +1,6 @@
 "use client";
 
-import { MoreVertical, UserRoundCheck } from "lucide-react";
+import { MoreVertical } from "lucide-react";
 import { useState } from "react";
 
 import { IconButton } from "@/components/ui/button";
@@ -91,6 +91,7 @@ export function UserIdentity({ user }: { user: UserAccessRow }) {
         {initials || "U"}
       </span>
       <span className="font-semibold text-brand-navy">{user.displayName}</span>
+      <span className="font-semibold text-brand-navy/50">{user.email}</span>
     </div>
   );
 }

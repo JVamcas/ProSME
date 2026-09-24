@@ -11,7 +11,6 @@ import {
   returnAction,
   stage,
   task,
-  yesNoChecklistConfig,
 } from "./StandardWorkflowBuilders";
 
 const option = (code: string, label: string) => ({ code, label });
@@ -56,7 +55,7 @@ function contracting(dependencies: StandardWorkflowDependencies) {
     stableKey: "CONTRACTING",
     tasks: [task(dependencies, {
       actionKeys: actions.map((item) => item.stableKey),
-      config: yesNoChecklistConfig(checklistItems),
+      config: {},
       description: "Finalize the agreement and verify every condition precedent.",
       displayOrder: 1,
       name: "Contract and conditions verification",
@@ -285,4 +284,3 @@ export function createStandardPostAwardStages(
     closeOut(dependencies),
   ];
 }
-

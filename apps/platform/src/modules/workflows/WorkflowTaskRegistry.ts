@@ -1,10 +1,6 @@
 import { z } from "zod";
 
-import { fieldSchema, itemSchema, optionSchema } from "./WorkflowTaskSchemas";
-
-export const checklistConfigurationSchema = z.object({
-  items: z.array(itemSchema).min(1).max(30),
-});
+import { fieldSchema, optionSchema } from "./WorkflowTaskSchemas";
 
 export const checklistResultSchema = z.object({
   items: z.array(z.object({
@@ -41,7 +37,6 @@ const criteriaSchema = z.array(z.object({
 const taskConfigurationSchema = z.object({
   command: z.literal("AUTHORITATIVE_ELIGIBILITY").optional(),
   reevaluationPolicy: z.enum(["NEVER", "WHEN_EVIDENCE_CHANGED"]).optional(),
-  items: checklistConfigurationSchema.shape.items.optional(),
   categories: z.array(optionSchema).min(1).optional(),
   outcomes: z.array(optionSchema).min(1).optional(),
   fields: z.array(fieldSchema).min(1).optional(),
@@ -57,6 +52,13 @@ const taskConfigurationSchema = z.object({
   audience: z.enum(["APPLICANT", "STAFF"]).optional(),
   trigger: z.string().min(1).optional(),
 }).passthrough().superRefine((config, context) => {
+  if ("items" in config) {
+    context.addIssue({
+      code: "custom",
+      message: "Assign checklist items from the checklist item form.",
+      path: ["items"],
+    });
+  }
   if (config.command && !config.reevaluationPolicy) {
     context.addIssue({
       code: "custom",
@@ -77,10 +79,6 @@ export function validateTaskConfiguration(config: unknown) {
   return taskConfigurationSchema.safeParse(config);
 }
 
-export function taskHasChecklist(config: unknown): boolean {
-  return checklistConfigurationSchema.safeParse(config).success;
-}
-
 export function taskRunsAuthoritativeEligibility(config: unknown): boolean {
   return eligibilityCommandSchema.safeParse(config).success;
 }
@@ -97,10 +95,11 @@ export function taskWorkIsReady(input: {
   config: unknown;
   formCompleted: boolean;
   formRequired: boolean;
+  hasChecklist: boolean;
   result: unknown;
 }) {
   if (input.formRequired && !input.formCompleted) return false;
-  if (taskHasChecklist(input.config)
+  if (input.hasChecklist
     && !validateChecklistResult(input.result).success) return false;
   if (taskRunsAuthoritativeEligibility(input.config)
     && !validateEligibilityResult(input.result).success) return false;

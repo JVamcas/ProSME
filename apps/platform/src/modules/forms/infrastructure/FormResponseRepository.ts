@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
 import { workflowAuditEntries } from "@/modules/workflows/infrastructure/workflow-audit.schema";
@@ -40,6 +40,7 @@ export async function readFormResponse(
       eq(formResponses.respondentUserId, actorId),
       eq(formResponses.workflowTaskId, workflowTaskId),
       eq(formResponses.formVersionId, formVersionId),
+      sql`app_workflow_task_coi_cleared(${workflowTaskId}::uuid, ${actorId}::uuid)`,
     ))
     .limit(1);
   return response ?? null;
@@ -57,7 +58,10 @@ async function lockTask(
       status: workflowTasks.status,
     })
     .from(workflowTasks)
-    .where(eq(workflowTasks.id, input.workflowTaskId))
+    .where(and(
+      eq(workflowTasks.id, input.workflowTaskId),
+      sql`app_workflow_task_coi_cleared(${workflowTasks.id}, ${input.actorId}::uuid)`,
+    ))
     .for("update")
     .limit(1);
   return task ?? null;

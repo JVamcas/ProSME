@@ -14,7 +14,6 @@ const participationSchema = z.object({
   responsibility: z.string().trim().min(1).max(120),
   isChair: z.boolean(),
   attendance: z.enum(["PRESENT", "ABSENT", "RECUSED"]),
-  coiCleared: z.boolean(),
   abstained: z.boolean(),
 }).strict();
 

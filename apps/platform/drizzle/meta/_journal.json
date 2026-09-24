@@ -666,6 +666,20 @@
       "when": 1795910400000,
       "tag": "0094_reviewer_slots_threshold_quorum",
       "breakpoints": true
+    },
+    {
+      "idx": 95,
+      "version": "7",
+      "when": 1795996800000,
+      "tag": "0095_workflow_coi_gate",
+      "breakpoints": true
+    },
+    {
+      "idx": 96,
+      "version": "7",
+      "when": 1796083200000,
+      "tag": "0096_assign_checklist_items_to_tasks",
+      "breakpoints": true
     }
   ]
 }

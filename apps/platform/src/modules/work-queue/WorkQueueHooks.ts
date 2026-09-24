@@ -10,6 +10,7 @@ export const workQueueQueryKeys = {
   all: ["admin", "work-queue"] as const,
   list: (input: WorkQueueListInput) =>
     ["admin", "work-queue", input] as const,
+  pool: (after?: string) => ["admin", "work-queue", "pool", after] as const,
   task: (taskId: string) => ["admin", "work-queue", "task", taskId] as const,
 };
 
@@ -20,8 +21,16 @@ export function useWorkQueue(input: WorkQueueListInput) {
   });
 }
 
-export function useWorkflowTask(taskId: string) {
+export function useSelfAssignmentPool(after?: string) {
   return useQuery({
+    queryFn: () => clientWorkQueueService.pool({ after, limit: 25 }),
+    queryKey: workQueueQueryKeys.pool(after),
+  });
+}
+
+export function useWorkflowTask(taskId: string, enabled = true) {
+  return useQuery({
+    enabled,
     queryFn: () => clientWorkQueueService.getTask(taskId),
     queryKey: workQueueQueryKeys.task(taskId),
   });

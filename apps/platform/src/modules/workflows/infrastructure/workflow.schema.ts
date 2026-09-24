@@ -154,6 +154,8 @@ export const stageTaskDefinitions = pgTable(
     reviewRelease: text("review_release")
       .$type<"STAGE_COMPLETED" | "THRESHOLD_MET" | "IMMEDIATE">()
       .notNull().default("STAGE_COMPLETED"),
+    submittedReplacementPolicy: text("submitted_replacement_policy")
+      .$type<"DENY" | "REOPEN_SLOT">().notNull().default("DENY"),
     requiredCompletionCount: integer("required_completion_count")
       .notNull()
       .default(1),

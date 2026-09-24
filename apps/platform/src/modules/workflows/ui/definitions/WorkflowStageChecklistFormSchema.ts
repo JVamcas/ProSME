@@ -19,6 +19,7 @@ export const checklistEvidenceRequirementItems = [
 ] as const;
 
 export const workflowStageChecklistFormSchema = z.object({
+  taskStableKey: z.string().min(1, "Select a workflow task."),
   key: z
     .string()
     .trim()

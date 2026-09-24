@@ -8,6 +8,7 @@ function stageWithChecklist() {
     ...structuredClone(referenceWorkflow.stages[0]),
     checklistItems: [
       {
+        taskStableKey: "PRE_SCREEN_CHECKLIST",
         key: "OWNERSHIP_CONFIRMED",
         text: "Confirm that the ownership requirement is met.",
         mandatory: true,
@@ -17,6 +18,7 @@ function stageWithChecklist() {
         displayOrder: 1,
       },
       {
+        taskStableKey: "PRE_SCREEN_CHECKLIST",
         key: "REVIEW_DATE",
         text: "Record the date of the review.",
         mandatory: false,

@@ -6,6 +6,7 @@ vi.mock("server-only", () => ({}));
 
 import { basicOperators } from "@/modules/conditions/engine/BasicOperators";
 import { cloneWorkflowGraph } from "@/modules/workflows/domain/definitions/WorkflowGraphCloning";
+import { defaultWorkflowElementPermissions } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
 import type { WorkflowGraphInput } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import { findWorkflowGraph } from "@/modules/workflows/infrastructure/WorkflowGraphRepository";
 import {
@@ -76,6 +77,7 @@ const graph: WorkflowGraphInput = {
   stages: [{
     actions: [],
     checklistItems: [{
+      taskStableKey: "REVIEW_TASK",
       key: "OWNERSHIP_CONFIRMED",
       text: "Confirm ownership.",
       mandatory: true,
@@ -130,7 +132,24 @@ const graph: WorkflowGraphInput = {
     },
     repeatable: false,
     stableKey: "REVIEW",
-    tasks: [],
+    tasks: [{
+      actionKeys: [],
+      assignmentMode: "NAMED_USER",
+      coiRequired: false,
+      config: {},
+      description: "Complete the review checklist.",
+      displayOrder: 1,
+      formBinding: null,
+      name: "Review checklist",
+      namedUserOverrideId: actorId,
+      permissions: defaultWorkflowElementPermissions,
+      quorum: false,
+      required: true,
+      requiredCompletionCount: 1,
+      reviewerCount: 1,
+      roleId: null,
+      stableKey: "REVIEW_TASK",
+    }],
   }],
   transitions: [{
     actionKey: "COMPLETE",

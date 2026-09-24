@@ -22,7 +22,6 @@ const input = {
   responsibility: "Panel member",
   isChair: false,
   attendance: "PRESENT" as const,
-  coiCleared: true,
   abstained: false,
 };
 const actor = {

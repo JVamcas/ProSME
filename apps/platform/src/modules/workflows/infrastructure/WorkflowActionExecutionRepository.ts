@@ -153,6 +153,7 @@ async function lockTask(
     .where(and(
       eq(workflowTasks.id, input.taskId),
       eq(workflowTasks.stageInstanceId, input.stageInstanceId),
+      sql`app_workflow_task_coi_cleared(${workflowTasks.id}, ${input.actorId}::uuid)`,
     ))
     .for("update", { of: workflowTasks })
     .limit(1);
@@ -173,6 +174,22 @@ export async function lockWorkflowActionExecutionTarget(
     input.sourceStageInstanceId,
   );
   if (!stage) return null;
+  const clearance = await transaction.execute(sql`
+    SELECT NOT stage_definition.coi_gated OR EXISTS (
+      SELECT 1 FROM app_workflow_tasks assignment
+      WHERE assignment.stage_instance_id = ${input.sourceStageInstanceId}::uuid
+        AND assignment.assigned_user_id = ${input.actorId}::uuid
+        AND assignment.status <> 'CANCELLED'
+        AND app_workflow_task_coi_cleared(assignment.id, ${input.actorId}::uuid)
+    ) AS cleared
+    FROM app_workflow_stage_instances stage
+    JOIN app_workflow_stage_definitions stage_definition
+      ON stage_definition.id = stage.workflow_stage_definition_id
+    WHERE stage.id = ${input.sourceStageInstanceId}::uuid
+  `);
+  if (!(clearance.rows[0] as { cleared: boolean } | undefined)?.cleared) {
+    return null;
+  }
   const [action] = await transaction
     .select()
     .from(workflowActionDefinitions)
@@ -245,6 +262,10 @@ export async function completeActionTask(
         )
       )`,
       formRequired: sql<boolean>`${workflowTasks.formVersionId} IS NOT NULL`,
+      hasChecklist: sql<boolean>`EXISTS (
+        SELECT 1 FROM app_workflow_stage_checklist_definitions checklist
+        WHERE checklist.task_definition_id = ${stageTaskDefinitions.id}
+      )`,
       result: workflowTasks.result,
     })
     .from(workflowTasks)

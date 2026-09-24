@@ -5,6 +5,7 @@ import { sql, type SQL } from "drizzle-orm";
 import { getDatabase } from "@/db/client";
 import type { TaskClaimResult, WorkQueueListInput, WorkQueueRow } from "@/modules/work-queue/WorkQueueTypes";
 import type { WorkQueueCursor } from "@/modules/work-queue/WorkQueueCursor";
+import { eligibleSelfAssignment } from "./WorkflowPoolEligibility";
 
 const actionableStatuses = sql`('PENDING', 'CLAIMED', 'IN_PROGRESS')`;
 
@@ -17,12 +18,7 @@ type QueueDatabaseRow = Omit<WorkQueueRow, "claimedAt" | "dueAt"> & {
 function actorScope(actorId: string) {
   return sql`(
     task.assigned_user_id = ${actorId}::uuid
-    OR (
-      task.assigned_user_id IS NULL
-      AND task.assigned_role_id IN (
-        SELECT role_id FROM app_user_roles WHERE user_id = ${actorId}::uuid
-      )
-    )
+    OR ${eligibleSelfAssignment(actorId)}
   )`;
 }
 
@@ -35,15 +31,19 @@ function scopeFilter(scope: WorkQueueListInput["scope"]) {
   return sql`TRUE`;
 }
 
-function searchFilter(search?: string) {
+function searchFilter(actorId: string, search?: string) {
   if (!search) return sql`TRUE`;
   const pattern = `%${search}%`;
   return sql`(
-    application.reference ILIKE ${pattern}
-    OR task_definition.name ILIKE ${pattern}
-    OR applicant.display_name ILIKE ${pattern}
-    OR business.legal_name ILIKE ${pattern}
-    OR business.trading_name ILIKE ${pattern}
+    definition.name ILIKE ${pattern}
+    OR (task.assigned_user_id = ${actorId}::uuid
+      AND app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
+      AND (
+        application.reference ILIKE ${pattern}
+        OR applicant.display_name ILIKE ${pattern}
+        OR business.legal_name ILIKE ${pattern}
+        OR business.trading_name ILIKE ${pattern}
+      ))
   )`;
 }
 
@@ -64,12 +64,21 @@ function queueQuery(input: WorkQueueListInput, actorId: string, cursor?: WorkQue
     WITH filtered AS (
       SELECT
         task.id AS "taskInstanceId",
-        task_definition.code AS "taskDefinitionCode",
-        task_definition.name AS "taskName",
-        application.id AS "applicationId",
-        application.reference AS "reference",
-        NULLIF(COALESCE(business.trading_name, business.legal_name), '') AS "businessName",
-        applicant.display_name AS "applicantName",
+        definition.code AS "taskDefinitionCode",
+        definition.name AS "taskName",
+        CASE WHEN task.assigned_user_id = ${actorId}::uuid
+          AND app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
+          THEN application.id ELSE NULL END AS "applicationId",
+        CASE WHEN task.assigned_user_id = ${actorId}::uuid
+          AND app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
+          THEN application.reference ELSE 'Claim or COI clearance required' END AS "reference",
+        CASE WHEN task.assigned_user_id = ${actorId}::uuid
+          AND app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
+          THEN NULLIF(COALESCE(business.trading_name, business.legal_name), '')
+          ELSE NULL END AS "businessName",
+        CASE WHEN task.assigned_user_id = ${actorId}::uuid
+          AND app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
+          THEN applicant.display_name ELSE 'Claim or COI clearance required' END AS "applicantName",
         stage_definition.name AS "stageName",
         NULL::text AS "priority",
         task.status AS "taskStatus",
@@ -81,7 +90,7 @@ function queueQuery(input: WorkQueueListInput, actorId: string, cursor?: WorkQue
         task.claimed_at AS "claimedAt",
         task.row_version AS "rowVersion"
       FROM app_workflow_tasks task
-      JOIN app_stage_task_definitions task_definition ON task_definition.id = task.workflow_task_definition_id
+      JOIN app_stage_task_definitions definition ON definition.id = task.workflow_task_definition_id
       JOIN app_workflow_stage_instances stage ON stage.id = task.stage_instance_id
       JOIN app_workflow_stage_definitions stage_definition ON stage_definition.id = stage.workflow_stage_definition_id
       JOIN app_workflow_instances workflow ON workflow.id = stage.workflow_instance_id
@@ -96,7 +105,7 @@ function queueQuery(input: WorkQueueListInput, actorId: string, cursor?: WorkQue
         AND task.status IN ${actionableStatuses}
         AND ${actorScope(actorId)}
         AND ${scopeFilter(input.scope)}
-        AND ${searchFilter(input.search)}
+        AND ${searchFilter(actorId, input.search)}
     )
     SELECT filtered.*, (SELECT count(*)::integer FROM filtered) AS "totalCount"
     FROM filtered
@@ -218,42 +227,34 @@ export async function writeTaskClaim(input: {
         WHERE task.id = ${input.taskId}::uuid
         FOR UPDATE OF stage
       `);
+      await transaction.execute(sql`
+        SELECT id FROM app_users
+        WHERE id = ${input.actorId}::uuid
+        FOR UPDATE
+      `);
       const updated = await transaction.execute(sql`
       WITH eligible AS (
         SELECT task.id, task.assigned_role_id AS "previousRoleId",
           task.stage_instance_id AS "stageInstanceId",
-          active_workflow.id AS "workflowInstanceId"
+          workflow.id AS "workflowInstanceId"
         FROM app_workflow_tasks task
-        JOIN app_workflow_stage_instances active_stage
-          ON active_stage.id = task.stage_instance_id
-        JOIN app_workflow_instances active_workflow
-          ON active_workflow.id = active_stage.workflow_instance_id
+        JOIN app_workflow_stage_instances stage
+          ON stage.id = task.stage_instance_id
+        JOIN app_workflow_instances workflow
+          ON workflow.id = stage.workflow_instance_id
+        JOIN app_stage_task_definitions definition
+          ON definition.id = task.workflow_task_definition_id
+        JOIN app_applications application
+          ON application.id = workflow.application_id
         WHERE task.id = ${input.taskId}::uuid
           AND task.row_version = ${input.expectedRowVersion}
-          AND task.assigned_user_id IS NULL
-          AND task.status = 'PENDING'
-          AND NOT EXISTS (
-            SELECT 1 FROM app_workflow_tasks sibling
-            WHERE sibling.stage_instance_id = task.stage_instance_id
-              AND sibling.workflow_task_definition_id =
-                task.workflow_task_definition_id
-              AND sibling.id <> task.id
-              AND sibling.assigned_user_id = ${input.actorId}::uuid
-              AND sibling.status <> 'CANCELLED'
-          )
-          AND task.assigned_role_id IN (
-            SELECT role_id FROM app_user_roles
-            WHERE user_id = ${input.actorId}::uuid
-          )
-          AND active_stage.status = 'ACTIVE'
-          AND active_workflow.status = 'ACTIVE'
+          AND ${eligibleSelfAssignment(input.actorId)}
         FOR UPDATE OF task
       )
       UPDATE app_workflow_tasks task
       SET assigned_user_id = ${input.actorId}::uuid, assigned_role_id = NULL,
         claimed_at = ${claimedAt}, status = 'CLAIMED',
-        row_version = row_version + 1,
-        started_at = COALESCE(started_at, ${claimedAt})
+        row_version = row_version + 1
       FROM eligible
       WHERE task.id = eligible.id
       RETURNING eligible."previousRoleId", eligible."stageInstanceId",
@@ -290,20 +291,6 @@ export async function writeTaskClaim(input: {
       )
       `);
       await transaction.execute(sql`
-      INSERT INTO app_workflow_audit_entries
-        (actor_id, action, target_type, target_id, correlation_id,
-         idempotency_key, workflow_instance_id, stage_instance_id, task_id,
-         reason, before, after)
-      VALUES (
-        ${input.actorId}::uuid, 'TASK_STARTED', 'WORKFLOW_TASK', ${input.taskId},
-        ${input.correlationId}::uuid, ${`${input.idempotencyKey}:started`},
-        ${auditContext.workflowInstanceId}::uuid,
-        ${auditContext.stageInstanceId}::uuid, ${input.taskId}::uuid,
-        'Task started on claim', NULL,
-        jsonb_build_object('startedAt', ${claimedAt}::timestamptz)
-      )
-      `);
-      await transaction.execute(sql`
       INSERT INTO app_workflow_events
         (workflow_instance_id, event_code, actor_id, correlation_id, payload)
       VALUES
@@ -311,7 +298,7 @@ export async function writeTaskClaim(input: {
           ${input.actorId}::uuid, ${input.correlationId}::uuid,
           jsonb_build_object('stageInstanceId', ${auditContext.stageInstanceId}::text,
             'taskId', ${input.taskId}::text)),
-        (${auditContext.workflowInstanceId}::uuid, 'TASK_STARTED',
+        (${auditContext.workflowInstanceId}::uuid, 'TASK_CLAIMED',
           ${input.actorId}::uuid, ${input.correlationId}::uuid,
           jsonb_build_object('stageInstanceId', ${auditContext.stageInstanceId}::text,
             'taskId', ${input.taskId}::text))

@@ -20,6 +20,7 @@ export type WorkflowTaskLifecycleTransaction = WorkflowInstanceTransaction;
 export type LockedWorkflowTask = {
   assignedUserId: string | null;
   claimableByActor: boolean;
+  coiCleared: boolean;
   formRequired: boolean;
   formCompleted: boolean;
   id: string;
@@ -61,6 +62,7 @@ export async function lockWorkflowTaskForLifecycle(
         WHERE actor_role.user_id = ${actorId}::uuid
           AND actor_role.role_id = ${workflowTasks.assignedRoleId}
       )`,
+      coiCleared: sql<boolean>`app_workflow_task_coi_cleared(${workflowTasks.id}, ${actorId}::uuid)`,
       id: workflowTasks.id,
       formRequired: sql<boolean>`${workflowTasks.formVersionId} IS NOT NULL`,
       formCompleted: sql<boolean>`EXISTS (

@@ -1,6 +1,6 @@
 import "server-only";
 
-import { taskHasChecklist, taskRunsAuthoritativeEligibility } from "@/modules/workflows/WorkflowTaskRegistry";
+import { taskRunsAuthoritativeEligibility } from "@/modules/workflows/WorkflowTaskRegistry";
 
 import { and, eq, inArray } from "drizzle-orm";
 
@@ -134,6 +134,7 @@ async function readSourceRecords(versions: string[]) {
     database
       .select({
         id: workflowStageChecklistDefinitions.id,
+        taskDefinitionId: workflowStageChecklistDefinitions.taskDefinitionId,
         key: workflowStageChecklistDefinitions.key,
         label: workflowStageChecklistDefinitions.text,
         responseType: workflowStageChecklistDefinitions.responseType,
@@ -177,11 +178,14 @@ export async function readWorkflowEligibilitySources(
 
   const eligibilityPositions = new Map<string, Position>();
   const stageTaskPositions = new Map<string, Position[]>();
+  const checklistTaskIds = new Set(
+    checklists.map((checklist) => checklist.taskDefinitionId),
+  );
   for (const task of tasks) {
     const position = {
       stageSequence: task.stageSequence,
       taskOrder: task.taskOrder,
-      hasChecklist: taskHasChecklist(task.config),
+      hasChecklist: checklistTaskIds.has(task.id),
       hasDocumentReview: Boolean(task.config && typeof task.config === "object"
         && "categories" in task.config && "outcomes" in task.config),
     };

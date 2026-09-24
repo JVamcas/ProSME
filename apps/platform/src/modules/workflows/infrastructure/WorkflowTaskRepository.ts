@@ -17,6 +17,7 @@ type TaskDetailRow = Omit<
   | "hasChecklist"
   | "checklistCompleted"
 > & {
+  checklistItems: TaskDetail["checklistItems"];
   config: unknown;
   dueAt: Date | string | null;
   result: unknown;
@@ -38,6 +39,17 @@ export async function readWorkflowTask(
       )) AS "formCompleted",
       task.due_at AS "dueAt", task.result,
       definition.name AS "taskName", definition.config,
+      COALESCE((
+        SELECT jsonb_agg(
+          jsonb_build_object(
+            'code', checklist.key,
+            'label', checklist.text,
+            'required', checklist.mandatory
+          ) ORDER BY checklist.display_order
+        )
+        FROM app_workflow_stage_checklist_definitions checklist
+        WHERE checklist.task_definition_id = definition.id
+      ), '[]'::jsonb) AS "checklistItems",
       definition.permissions,
       stage_definition.name AS "stageName",
       stage.id AS "stageInstanceId", stage.row_version AS "runtimeVersion",
@@ -61,17 +73,10 @@ export async function readWorkflowTask(
     LEFT JOIN app_business_profiles business
       ON business.id::text = application.business_section ->> 'businessId'
     WHERE task.id = ${taskId}::uuid
+      AND app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
       AND workflow.status = 'ACTIVE'
       AND stage.status = 'ACTIVE'
-      AND (
-        task.assigned_user_id = ${actorId}::uuid
-        OR (
-          task.assigned_user_id IS NULL
-          AND task.assigned_role_id IN (
-            SELECT role_id FROM app_user_roles WHERE user_id = ${actorId}::uuid
-          )
-        )
-      )
+      AND task.assigned_user_id = ${actorId}::uuid
   `);
   return (result.rows[0] as TaskDetailRow | undefined) ?? null;
 }
@@ -96,15 +101,8 @@ export async function readAssignedFormTask(actorId: string, taskId: string) {
     JOIN app_workflow_instances workflow
       ON workflow.id = stage.workflow_instance_id
     WHERE task.id = ${taskId}::uuid
-      AND (
-        task.assigned_user_id = ${actorId}::uuid
-        OR (
-          task.assigned_user_id IS NULL
-          AND task.assigned_role_id IN (
-            SELECT role_id FROM app_user_roles WHERE user_id = ${actorId}::uuid
-          )
-        )
-      )
+      AND app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
+      AND task.assigned_user_id = ${actorId}::uuid
       AND stage.status = 'ACTIVE'
       AND workflow.status = 'ACTIVE'
   `);

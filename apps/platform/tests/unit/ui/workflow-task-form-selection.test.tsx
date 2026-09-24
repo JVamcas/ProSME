@@ -30,7 +30,6 @@ function TaskFields({
       visibility: defaultWorkflowElementPermissions.visibility,
       assignmentMode: "ROLE",
       assignmentTarget: "reviewer",
-      checklistItems: [],
       coiRequired: false,
       contextFields: [{
         key: "application.requested_amount",

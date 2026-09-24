@@ -46,6 +46,7 @@ export type StoredWorkflowAction = {
 };
 
 async function readStage(
+  actorId: string,
   workflowInstanceId: string,
   sourceStageInstanceId: string,
 ) {
@@ -131,6 +132,13 @@ async function readStage(
     )
     .where(and(
       eq(stageInstances.id, sourceStageInstanceId),
+      sql`(NOT ${workflowStageDefinitions.coiGated} OR EXISTS (
+        SELECT 1 FROM app_workflow_tasks assignment
+        WHERE assignment.stage_instance_id = ${stageInstances.id}
+          AND assignment.assigned_user_id = ${actorId}::uuid
+          AND assignment.status <> 'CANCELLED'
+          AND app_workflow_task_coi_cleared(assignment.id, ${actorId}::uuid)
+      ))`,
       eq(workflowInstances.id, workflowInstanceId),
     ))
     .limit(1);
@@ -186,6 +194,7 @@ async function readTask(
     .where(and(
       eq(workflowTasks.id, taskId),
       eq(workflowTasks.stageInstanceId, stageInstanceId),
+      sql`app_workflow_task_coi_cleared(${workflowTasks.id}, ${actorId}::uuid)`,
     ))
     .limit(1);
   return task ?? null;
@@ -242,6 +251,7 @@ export async function readWorkflowActionAvailabilitySource(input: {
   workflowInstanceId: string;
 }): Promise<WorkflowActionAvailabilitySource | null> {
   const stage = await readStage(
+    input.actorId,
     input.workflowInstanceId,
     input.sourceStageInstanceId,
   );

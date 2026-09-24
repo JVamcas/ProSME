@@ -13,6 +13,7 @@ describe("workflow graph cloning", () => {
     source.stages[0].tasks[0].id =
       "43333333-3333-4333-8333-333333333333";
     source.stages[0].checklistItems = [{
+      taskStableKey: source.stages[0].tasks[0].stableKey,
       id: "47777777-7777-4777-8777-777777777777",
       key: "OWNERSHIP_CONFIRMED",
       text: "Confirm ownership.",

@@ -36,13 +36,17 @@ function queueColumns(
     {
       accessorKey: "reference",
       header: "Application",
-      cell: ({ row }) => (
+      cell: ({ row }) => row.original.applicationId ? (
         <Link
           className="font-bold text-brand-navy hover:underline"
           href={`/admin/applications/${row.original.applicationId}`}
         >
           {row.original.reference}
         </Link>
+      ) : (
+        <span className="font-bold text-brand-navy">
+          {row.original.reference}
+        </span>
       ),
     },
     {

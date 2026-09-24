@@ -2,6 +2,8 @@
 
 import { requestData, requestJson } from "@/lib/client-http";
 import type {
+  SelfAssignmentPoolPage,
+  SelfAssignmentPoolRow,
   TaskClaimResult,
   WorkQueueListInput,
   WorkQueuePage,
@@ -40,7 +42,20 @@ async function list(input: WorkQueueListInput): Promise<WorkQueuePage> {
   return { items: envelope.data, ...envelope.page };
 }
 
-function claim(task: WorkQueueRow) {
+async function pool(input: {
+  after?: string;
+  limit: number;
+}): Promise<SelfAssignmentPoolPage> {
+  const query = new URLSearchParams({ limit: String(input.limit) });
+  if (input.after) query.set("after", input.after);
+  const envelope = await requestJson<{
+    data: SelfAssignmentPoolRow[];
+    page: Omit<SelfAssignmentPoolPage, "items">;
+  }>(`/api/admin/task-pool?${query.toString()}`, { cache: "no-store" });
+  return { items: envelope.data, ...envelope.page };
+}
+
+function claim(task: Pick<WorkQueueRow, "taskInstanceId" | "rowVersion">) {
   return requestData<TaskClaimResult>(
     `/api/admin/tasks/${task.taskInstanceId}/claim`,
     {
@@ -116,4 +131,5 @@ export const clientWorkQueueService = {
   executeAction,
   getTask,
   list,
+  pool,
 };

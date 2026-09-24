@@ -10,6 +10,7 @@ import { createWorkflowTemplate } from "@/modules/workflows/application/definiti
 import { findWorkflowGraph } from "@/modules/workflows/infrastructure/WorkflowGraphRepository";
 import { replaceWorkflowDraft } from "@/modules/workflows/infrastructure/WorkflowTemplateWriteRepository";
 import { basicOperators } from "@/modules/conditions/engine/BasicOperators";
+import { defaultWorkflowElementPermissions } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
 
 const enabled = process.env.RUN_P3_WORKFLOW_DATABASE_TESTS === "true";
 const pool = enabled
@@ -114,6 +115,7 @@ afterAll(async () => {
           actions: [],
           checklistItems: [
             {
+              taskStableKey: "TECHNICAL_REVIEW_TASK",
               key: "OWNERSHIP_CONFIRMED",
               text: "Confirm that the ownership requirement is met.",
               mandatory: true,
@@ -123,6 +125,7 @@ afterAll(async () => {
               displayOrder: 1,
             },
             {
+              taskStableKey: "TECHNICAL_REVIEW_TASK",
               key: "REVIEW_DATE",
               text: "Record the date of the ownership review.",
               mandatory: false,
@@ -195,7 +198,24 @@ afterAll(async () => {
               },
             ],
           },
-          tasks: [],
+          tasks: [{
+            actionKeys: [],
+            assignmentMode: "NAMED_USER" as const,
+            coiRequired: false,
+            config: {},
+            description: "Complete the technical review checklist.",
+            displayOrder: 1,
+            formBinding: null,
+            name: "Technical review checklist",
+            namedUserOverrideId: actor.id,
+            permissions: defaultWorkflowElementPermissions,
+            quorum: false,
+            required: true,
+            requiredCompletionCount: 1,
+            reviewerCount: 1,
+            roleId: null,
+            stableKey: "TECHNICAL_REVIEW_TASK",
+          }],
         },
       ],
       transitions: [],

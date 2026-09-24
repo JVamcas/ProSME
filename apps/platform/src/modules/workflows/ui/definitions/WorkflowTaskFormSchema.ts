@@ -5,12 +5,6 @@ import { conditionFieldTypes } from "@/modules/conditions/domain/ConditionConfig
 import { staticPermissionCodes } from "@/auth/authorization/permissions";
 import { workflowElementVisibilities } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
 
-const checklistItemSchema = z.object({
-  code: z.string(),
-  label: z.string(),
-  required: z.boolean(),
-});
-
 const contextFieldSchema = z.object({
   key: z.string().regex(
     /^(application|fundingCall|workflow|stage|task)\.[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$/,
@@ -44,6 +38,7 @@ export const workflowTaskFormSchema = z.object({
   name: z.string().trim().min(2).max(160),
   reviewerCount: z.number().int().positive().max(100),
   reviewRelease: z.enum(["STAGE_COMPLETED", "THRESHOLD_MET", "IMMEDIATE"]),
+  submittedReplacementPolicy: z.enum(["DENY", "REOPEN_SLOT"]),
   requiredCompletionCount: z.number().int().positive().max(100),
   completionMode: z.enum(["ALL", "COUNT", "PERCENT"]),
   completionPercentage: z.number().int().min(1).max(100).nullable(),
@@ -58,7 +53,6 @@ export const workflowTaskFormSchema = z.object({
   coiRequired: z.boolean(),
   required: z.boolean(),
   configJson: z.string().optional(),
-  checklistItems: z.array(checklistItemSchema),
 }).superRefine((values, context) => {
   if (
     new Set(values.contextFields.map((field) => field.key)).size
@@ -103,11 +97,6 @@ export const workflowTaskFormSchema = z.object({
 });
 
 export type WorkflowTaskFormValues = z.infer<typeof workflowTaskFormSchema>;
-
-export function checklistItemDefaults(config: unknown) {
-  const parsed = z.object({ items: z.array(checklistItemSchema) }).safeParse(config);
-  return parsed.success ? parsed.data.items : [];
-}
 
 export function taskAssignmentDefaults(task?: WorkflowTaskInput) {
   if (task?.assignmentMode === "NAMED_USER") {

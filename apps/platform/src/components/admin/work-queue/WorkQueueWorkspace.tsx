@@ -1,6 +1,7 @@
 "use client";
 
 import { Search } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 
 import { GeneralButton } from "@/components/ui/button";
@@ -115,6 +116,11 @@ export function WorkQueueWorkspace() {
 
   return (
     <PageShell
+      actions={(
+        <GeneralButton asChild size="sm" variant="outline">
+          <Link href="/admin/task-pool">Available tasks</Link>
+        </GeneralButton>
+      )}
       description="Tasks assigned directly to you or available through one of your roles."
       title="My Work Queue"
     >

@@ -9,7 +9,6 @@ import {
   FormTextarea,
 } from "@/components/ui/form-fields";
 import { WorkflowContextFieldConfiguration } from "./WorkflowContextFieldConfiguration";
-import { WorkflowChecklistConfiguration } from "./WorkflowChecklistConfiguration";
 import { permissionCatalogue } from "@/auth/authorization/permissions";
 
 function TaskIdentityFields() {
@@ -96,7 +95,6 @@ export function WorkflowTaskDialogFields({
           value={actionKeys}
         />
       </div>
-      <WorkflowChecklistConfiguration />
       <WorkflowContextFieldConfiguration
         disabled={!formVersionId}
         fields={contextFieldItems}
@@ -194,6 +192,15 @@ export function WorkflowTaskDialogFields({
           ]}
           label="Release peer identities"
           name="reviewRelease"
+          required
+        />
+        <FormSelect
+          items={[
+            { label: "Keep completed review; deny replacement", value: "DENY" },
+            { label: "Keep completed review; reopen reviewer slot", value: "REOPEN_SLOT" },
+          ]}
+          label="Completed review replacement"
+          name="submittedReplacementPolicy"
           required
         />
         <FormInput

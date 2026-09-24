@@ -24,6 +24,7 @@ export type WorkflowTaskDefinition = {
   assignmentMode: WorkflowTaskAssignmentMode;
   reviewerCount: number;
   reviewRelease?: "STAGE_COMPLETED" | "THRESHOLD_MET" | "IMMEDIATE";
+  submittedReplacementPolicy?: "DENY" | "REOPEN_SLOT";
   requiredCompletionCount: number;
   completionMode?: "ALL" | "COUNT" | "PERCENT";
   completionPercentage?: number | null;

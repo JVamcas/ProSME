@@ -95,7 +95,7 @@ export function WorkflowTaskPreviewDialog({
     <DraggableDialog
       isOpen
       onClose={onClose}
-      panelClassName={workflowTaskPreviewPanelClass()}
+      panelClassName={""}
       size="2xl"
       title={`${task.name} - Reviewer's preview`}
     >

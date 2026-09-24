@@ -38,7 +38,12 @@ export const workflowTaskPermissionCatalogue: readonly PermissionDefinition[] = 
   define(
     permissionCodes.workflowQuorumAllRecord,
     "Record quorum participation",
-    "Record attendance, conflict clearance and chair status for any active workflow stage.",
+    "Record attendance and chair status for any active workflow stage.",
+  ),
+  define(
+    permissionCodes.workflowCoiAllReview,
+    "Review disclosed conflicts",
+    "Independently clear or confirm a disclosed conflict for an assigned workflow task.",
   ),
   define(
     permissionCodes.workflowTaskCancelAll,

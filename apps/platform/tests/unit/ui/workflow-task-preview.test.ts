@@ -74,6 +74,7 @@ describe("workflow task reviewer preview", () => {
   it("renders configured reviewer work as collapsible sections", () => {
     const stage = structuredClone(referenceWorkflow.stages[0]);
     stage.checklistItems = [{
+      taskStableKey: stage.tasks[0].stableKey,
       key: "VERIFY_AMOUNT",
       text: "Verify the requested amount",
       mandatory: true,

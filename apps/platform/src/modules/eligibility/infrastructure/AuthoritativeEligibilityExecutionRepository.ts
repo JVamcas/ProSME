@@ -109,7 +109,8 @@ export async function lockAuthoritativeEligibilityTask(
       funding_call.thematic_area AS "fundingCallThematicArea",
       funding_call.title AS "fundingCallTitle",
       funding_call.total_budget_envelope AS "fundingCallTotalBudget",
-      (
+      app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
+      AND (
         task.assigned_user_id = ${actorId}::uuid
         OR (
           task.assigned_user_id IS NULL
@@ -163,6 +164,7 @@ export async function lockAuthoritativeEligibilityTask(
       ORDER BY outcome.evaluation_number DESC LIMIT 1
     ) previous ON TRUE
     WHERE task.id = ${taskId}::uuid
+      AND app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
       AND stage.status = 'ACTIVE' AND workflow.status = 'ACTIVE'
     FOR UPDATE OF task
   `);
@@ -297,7 +299,11 @@ export async function persistAuthoritativeEligibilityExecution(
       EXISTS (
         SELECT 1 FROM app_stage_task_action_bindings binding
         WHERE binding.task_definition_id = definition.id
-      ) AS "hasActions"
+      ) AS "hasActions",
+      EXISTS (
+        SELECT 1 FROM app_workflow_stage_checklist_definitions checklist
+        WHERE checklist.task_definition_id = definition.id
+      ) AS "hasChecklist"
     FROM app_workflow_tasks task
     JOIN app_stage_task_definitions definition
       ON definition.id = task.workflow_task_definition_id
@@ -308,6 +314,7 @@ export async function persistAuthoritativeEligibilityExecution(
     formCompleted: boolean;
     formRequired: boolean;
     hasActions: boolean;
+    hasChecklist: boolean;
     result: unknown;
     status: string;
   } | undefined;
@@ -320,6 +327,7 @@ export async function persistAuthoritativeEligibilityExecution(
     config: work.config,
     formCompleted: work.formCompleted,
     formRequired: work.formRequired,
+    hasChecklist: work.hasChecklist,
     result: { ...priorResult, ...result },
   });
   const completedAt = completesTask ? new Date() : null;

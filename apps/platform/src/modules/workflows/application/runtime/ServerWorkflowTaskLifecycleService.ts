@@ -82,6 +82,9 @@ async function changeTaskState(
       throw new ResourceConflictError("This task changed. Refresh and try again.");
     }
     assertTaskContext(action, actor.id, task);
+    if ((action === "START" || action === "COMPLETE") && !task.coiCleared) {
+      throw new ResourceConflictError("Conflict-of-interest clearance is required.");
+    }
     if (action === "CLAIM" && await reviewerAlreadyOwnsSiblingSlot(
       transaction,
       task.id,

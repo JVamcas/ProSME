@@ -10,6 +10,7 @@ import {
   readWorkQueue,
   writeTaskClaim,
 } from "@/modules/workflows/infrastructure/WorkQueueRepository";
+import { readSelfAssignmentPool } from "@/modules/workflows/infrastructure/WorkflowSelfAssignmentPoolRepository";
 import { writeChecklistTaskCompletion } from "@/modules/workflows/infrastructure/WorkflowTaskActionRepository";
 import { executeSequentialTransitionInTransaction } from "@/modules/workflows/application/runtime/ServerSequentialTransitionService";
 import { readWorkflowTask } from "@/modules/workflows/infrastructure/WorkflowTaskRepository";
@@ -157,13 +158,14 @@ describeDatabase("P3.5 work queue projections and claim", () => {
   it("projects only bounded queue and application list fields", async () => {
     const queue = await readWorkQueue(reviewerOneId, {
       limit: 25,
-      search: reference,
+      search: "Check completeness",
       scope: "mine",
     });
     expect(queue.total).toBe(1);
     expect(queue.items[0]).toMatchObject({
-      applicantName: "Queue Applicant",
-      reference,
+      applicantName: "Claim or COI clearance required",
+      applicationId: null,
+      reference: "Claim or COI clearance required",
       stageName: "Completeness screening",
       taskName: "Check completeness",
     });
@@ -189,6 +191,32 @@ describeDatabase("P3.5 work queue projections and claim", () => {
       applicantName: "Queue Applicant",
       currentStageName: "Completeness screening",
     });
+  });
+  it("isolates and filters the pre-claim pool in SQL", async () => {
+    const poolPage = await readSelfAssignmentPool(reviewerOneId, {
+      limit: 1,
+      search: "Check completeness",
+    });
+    expect(poolPage.total).toBe(1);
+    expect(poolPage.items).toEqual([expect.objectContaining({
+      rowVersion: 1,
+      stageName: "Completeness screening",
+      taskInstanceId,
+      taskName: "Check completeness",
+    })]);
+    expect(poolPage.items[0]).not.toHaveProperty("applicationId");
+    expect(poolPage.items[0]).not.toHaveProperty("applicantName");
+    expect(poolPage.items[0]).not.toHaveProperty("assignedUserId");
+    expect((await readSelfAssignmentPool(reviewerOneId, {
+      limit: 1,
+      search: "Missing task",
+    })).items).toEqual([]);
+    expect((await readSelfAssignmentPool(applicantId, {
+      limit: 1,
+    })).items).toEqual([]);
+    expect((await readSelfAssignmentPool(reviewerOneId, {
+      limit: 1,
+    }, { dueAt: new Date("2100-01-01"), id: taskInstanceId })).items).toEqual([]);
   });
   it("allows exactly one reviewer to atomically claim a role task", async () => {
     const keys = [

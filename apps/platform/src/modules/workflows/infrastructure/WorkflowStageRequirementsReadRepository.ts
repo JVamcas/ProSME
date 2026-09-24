@@ -5,6 +5,7 @@ import { asc, eq } from "drizzle-orm";
 import { getDatabase } from "@/db/client";
 import {
   workflowStageChecklistDefinitions,
+  stageTaskDefinitions,
   workflowStageCommentFields,
   workflowStageDefinitions,
   workflowStageDocumentRequirements,
@@ -18,6 +19,7 @@ function loadChecklistRows(versionId: string) {
     .select({
       id: workflowStageChecklistDefinitions.id,
       stageId: workflowStageChecklistDefinitions.stageId,
+      taskStableKey: stageTaskDefinitions.stableKey,
       key: workflowStageChecklistDefinitions.key,
       text: workflowStageChecklistDefinitions.text,
       mandatory: workflowStageChecklistDefinitions.mandatory,
@@ -31,6 +33,13 @@ function loadChecklistRows(versionId: string) {
     .innerJoin(
       workflowStageDefinitions,
       eq(workflowStageDefinitions.id, workflowStageChecklistDefinitions.stageId),
+    )
+    .innerJoin(
+      stageTaskDefinitions,
+      eq(
+        stageTaskDefinitions.id,
+        workflowStageChecklistDefinitions.taskDefinitionId,
+      ),
     )
     .where(eq(workflowStageDefinitions.versionId, versionId))
     .orderBy(

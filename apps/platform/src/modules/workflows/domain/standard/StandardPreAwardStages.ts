@@ -14,7 +14,6 @@ import {
   requestInformation,
   stage,
   task,
-  yesNoChecklistConfig,
 } from "./StandardWorkflowBuilders";
 
 const internalOption = (code: string, label: string) => ({ code, label });
@@ -118,7 +117,7 @@ function screening(dependencies: StandardWorkflowDependencies) {
     tasks: [
       task(dependencies, {
         actionKeys: [],
-        config: yesNoChecklistConfig(checklistItems),
+        config: {},
         description: "Complete the configured screening and evidence checklist.",
         displayOrder: 1,
         name: "Completeness and document screening",

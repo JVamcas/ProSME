@@ -21,7 +21,10 @@ import type {
 } from "../domain/definitions/WorkflowStageDocumentRequirement";
 import type { WorkflowScoringAggregation } from "../domain/definitions/WorkflowStageScoringDefinition";
 import type { WorkflowCommentFieldVisibility } from "../domain/definitions/WorkflowStageCommentField";
-import { workflowStageDefinitions } from "./workflow.schema";
+import {
+  stageTaskDefinitions,
+  workflowStageDefinitions,
+} from "./workflow.schema";
 
 export const workflowStageChecklistDefinitions = pgTable(
   "app_workflow_stage_checklist_definitions",
@@ -30,6 +33,9 @@ export const workflowStageChecklistDefinitions = pgTable(
     stageId: uuid("stage_id")
       .notNull()
       .references(() => workflowStageDefinitions.id, { onDelete: "restrict" }),
+    taskDefinitionId: uuid("task_definition_id")
+      .notNull()
+      .references(() => stageTaskDefinitions.id, { onDelete: "restrict" }),
     key: text("key").notNull(),
     text: text("text").notNull(),
     mandatory: boolean("mandatory").notNull().default(false),
@@ -51,6 +57,7 @@ export const workflowStageChecklistDefinitions = pgTable(
       table.stageId,
       table.displayOrder,
     ),
+    index("app_stage_checklists_task_idx").on(table.taskDefinitionId),
   ],
 );
 

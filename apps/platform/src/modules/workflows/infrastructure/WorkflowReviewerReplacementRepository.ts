@@ -3,6 +3,7 @@ import "server-only";
 import { sql } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
+import { evaluateStageQuorum } from "./WorkflowQuorumRepository";
 import {
   loadRequiredTaskCompletions,
   recordReviewThresholdEvaluations,
@@ -10,6 +11,7 @@ import {
 
 export type ReplaceReviewerInput = {
   actorId: string;
+  coiDecision?: "RECUSE";
   correlationId: string;
   expectedRowVersion: number;
   idempotencyKey: string;
@@ -29,6 +31,8 @@ type LockedTask = {
   reviewerSlot: number;
   rowVersion: number;
   stageInstanceId: string;
+  stageDefinitionId: string;
+  submittedReplacementPolicy: "DENY" | "REOPEN_SLOT";
   status: string;
   workflowInstanceId: string;
   workflowTaskDefinitionId: string;
@@ -38,6 +42,12 @@ type Transaction = Parameters<
   Parameters<ReturnType<typeof getDatabase>["transaction"]>[0]
 >[0];
 
+function auditReason(input: ReplaceReviewerInput) {
+  return input.coiDecision === "RECUSE"
+    ? "Conflict of interest recusal"
+    : input.reason;
+}
+
 async function findReplacementReplay(
   transaction: Transaction,
   input: ReplaceReviewerInput,
@@ -46,6 +56,7 @@ async function findReplacementReplay(
     SELECT actor_id AS "actorId", task_id AS "taskId",
       after ->> 'replacementTaskId' AS "replacementTaskId",
       after ->> 'replacementUserId' AS "replacementUserId",
+      after ->> 'coiDecision' AS "coiDecision",
       after ->> 'reviewerSlot' AS "reviewerSlot",
       before ->> 'rowVersion' AS "rowVersion", reason
     FROM app_workflow_audit_entries
@@ -57,6 +68,7 @@ async function findReplacementReplay(
     taskId: string;
     replacementTaskId: string | null;
     replacementUserId: string | null;
+    coiDecision: string | null;
     reviewerSlot: string | null;
     rowVersion: string | null;
     reason: string | null;
@@ -64,8 +76,9 @@ async function findReplacementReplay(
   if (!prior) return null;
   if (prior.actorId !== input.actorId || prior.taskId !== input.taskId
     || prior.replacementUserId !== input.replacementUserId
+    || prior.coiDecision !== (input.coiDecision ?? null)
     || Number(prior.rowVersion) !== input.expectedRowVersion
-    || prior.reason !== input.reason || !prior.replacementTaskId) {
+    || prior.reason !== auditReason(input) || !prior.replacementTaskId) {
     return "CONFLICT";
   }
   return {
@@ -99,10 +112,15 @@ export async function replaceWorkflowReviewer(
         task.reviewer_slot AS "reviewerSlot",
         task.row_version AS "rowVersion",
         task.stage_instance_id AS "stageInstanceId",
-        task.status, workflow.id AS "workflowInstanceId",
+        stage.workflow_stage_definition_id AS "stageDefinitionId",
+        task.status,
+        definition.submitted_replacement_policy AS "submittedReplacementPolicy",
+        workflow.id AS "workflowInstanceId",
         task.workflow_task_definition_id AS "workflowTaskDefinitionId"
       FROM app_workflow_tasks task
       JOIN app_workflow_stage_instances stage ON stage.id = task.stage_instance_id
+      JOIN app_stage_task_definitions definition
+        ON definition.id = task.workflow_task_definition_id
       JOIN app_workflow_instances workflow ON workflow.id = stage.workflow_instance_id
       WHERE task.id = ${input.taskId}::uuid
         AND stage.status = 'ACTIVE' AND workflow.status = 'ACTIVE'
@@ -110,7 +128,12 @@ export async function replaceWorkflowReviewer(
     `);
     const task = locked.rows[0] as LockedTask | undefined;
     if (!task || task.rowVersion !== input.expectedRowVersion
-      || !["PENDING", "CLAIMED", "IN_PROGRESS"].includes(task.status)
+      || !(
+        ["PENDING", "CLAIMED", "IN_PROGRESS"].includes(task.status)
+        || (task.status === "COMPLETED"
+          && task.submittedReplacementPolicy === "REOPEN_SLOT"
+          && input.coiDecision !== "RECUSE")
+      )
       || task.assignedUserId === input.replacementUserId) {
       return null;
     }
@@ -143,6 +166,13 @@ export async function replaceWorkflowReviewer(
           )
         )
         AND NOT EXISTS (
+          SELECT 1 FROM app_workflow_task_coi clearance
+          JOIN app_workflow_tasks prior_task ON prior_task.id = clearance.task_id
+          WHERE prior_task.stage_instance_id = ${task.stageInstanceId}::uuid
+            AND clearance.user_id = candidate.id
+            AND clearance.state IN ('PENDING_REVIEW', 'RECUSED', 'REVOKED')
+        )
+        AND NOT EXISTS (
           SELECT 1 FROM app_workflow_tasks sibling
           WHERE sibling.stage_instance_id = ${task.stageInstanceId}::uuid
             AND sibling.workflow_task_definition_id = definition.id
@@ -154,10 +184,41 @@ export async function replaceWorkflowReviewer(
     `);
     if (!candidate.rowCount) return null;
 
+    if (input.coiDecision === "RECUSE") {
+      const clearance = await transaction.execute(sql`
+        SELECT state FROM app_workflow_task_coi
+        WHERE task_id = ${input.taskId}::uuid
+          AND user_id = ${task.assignedUserId}::uuid
+        FOR UPDATE
+      `);
+      if (task.assignedUserId === input.actorId
+        || (clearance.rows[0] as { state: string } | undefined)?.state
+          !== "PENDING_REVIEW") return null;
+      await transaction.execute(sql`
+        UPDATE app_workflow_task_coi
+        SET state = 'RECUSED', row_version = row_version + 1,
+          updated_at = now()
+        WHERE task_id = ${input.taskId}::uuid
+      `);
+      await transaction.execute(sql`
+        INSERT INTO app_workflow_task_coi_events (
+          task_id, subject_user_id, actor_id, from_state, to_state, reason
+        ) VALUES (
+          ${input.taskId}::uuid, ${task.assignedUserId}::uuid,
+          ${input.actorId}::uuid, 'PENDING_REVIEW', 'RECUSED',
+          ${input.reason}
+        )
+      `);
+    }
     const replacedAt = new Date();
     const cancelled = await transaction.execute(sql`
       UPDATE app_workflow_tasks
-      SET status = 'CANCELLED', completed_at = ${replacedAt},
+      SET status = CASE
+          WHEN status = 'COMPLETED' THEN status ELSE 'CANCELLED'
+        END,
+        completed_at = CASE
+          WHEN status = 'COMPLETED' THEN completed_at ELSE ${replacedAt}
+        END,
         row_version = row_version + 1
       WHERE id = ${input.taskId}::uuid
         AND row_version = ${input.expectedRowVersion}
@@ -191,11 +252,19 @@ export async function replaceWorkflowReviewer(
       stageInstanceId: task.stageInstanceId,
       triggerTaskId: replacementTaskId,
     });
+    if (input.coiDecision === "RECUSE") {
+      await evaluateStageQuorum(transaction, {
+        actorId: input.actorId,
+        stageDefinitionId: task.stageDefinitionId,
+        stageInstanceId: task.stageInstanceId,
+      });
+    }
     const after = {
       replacementTaskId,
       reviewerSlot: task.reviewerSlot,
       replacementUserId: input.replacementUserId,
-      status: "CANCELLED",
+      coiDecision: input.coiDecision ?? null,
+      status: task.status === "COMPLETED" ? "COMPLETED" : "CANCELLED",
     };
     await transaction.execute(sql`
       INSERT INTO app_workflow_audit_entries (
@@ -207,7 +276,7 @@ export async function replaceWorkflowReviewer(
         ${input.taskId}, ${input.correlationId}::uuid,
         ${input.idempotencyKey}, ${task.workflowInstanceId}::uuid,
         ${task.stageInstanceId}::uuid, ${input.taskId}::uuid,
-        ${input.reason}, ${JSON.stringify({
+        ${auditReason(input)}, ${JSON.stringify({
           assignedUserId: task.assignedUserId,
           rowVersion: task.rowVersion,
           status: task.status,

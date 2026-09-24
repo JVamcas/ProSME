@@ -71,9 +71,10 @@ const task = {
   applicantName: "Applicant",
   applicationId: "79e20de0-3558-4d63-90a4-8c9f5125df08",
   businessName: "Business",
-  config: {
-    items: [{ code: "OWNERSHIP", label: "Ownership confirmed", required: true }],
-  },
+  checklistItems: [
+    { code: "OWNERSHIP", label: "Ownership confirmed", required: true },
+  ],
+  config: {},
   dueAt: new Date("2026-09-20T08:00:00Z"),
   fundingCallTitle: "Funding call",
   formCompleted: false,
@@ -106,7 +107,7 @@ describe("workflow checklist task service", () => {
   it("returns only the configured checklist projection", async () => {
     const result = await getWorkflowTask(actor, task.taskInstanceId);
     expect(result).toMatchObject({
-      checklistItems: task.config.items,
+      checklistItems: task.checklistItems,
       actions: availableActions,
       dueAt: "2026-09-20T08:00:00.000Z",
       resultItems: [],

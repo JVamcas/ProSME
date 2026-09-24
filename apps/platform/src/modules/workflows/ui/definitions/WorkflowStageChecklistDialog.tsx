@@ -49,6 +49,7 @@ export function WorkflowStageChecklistDialog({
       mandatory: checklistItem?.mandatory ?? true,
       notes: checklistItem?.notes ?? "",
       responseType: checklistItem?.responseType ?? "YES_NO",
+      taskStableKey: checklistItem?.taskStableKey ?? "",
       text: checklistItem?.text ?? "",
     },
     resolver: zodResolver(workflowStageChecklistFormSchema),
@@ -119,6 +120,18 @@ export function WorkflowStageChecklistDialog({
             registrationOptions={{ valueAsNumber: true }}
             required
             type="number"
+          />
+          <FormSelect
+            items={stage.tasks.map((task) => ({
+              label: task.name,
+              value: task.stableKey,
+            }))}
+            label="Workflow task"
+            name="taskStableKey"
+            placeholder={stage.tasks.length
+              ? "Select a task"
+              : "Add a task to this stage first"}
+            required
           />
           <FormSelect
             items={checklistResponseTypeItems}

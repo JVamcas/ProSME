@@ -1,6 +1,6 @@
 import "server-only";
 
-import { taskHasChecklist, taskWorkIsReady } from "@/modules/workflows/WorkflowTaskRegistry";
+import { taskWorkIsReady } from "@/modules/workflows/WorkflowTaskRegistry";
 import {
   loadRequiredTaskCompletions,
   recordReviewThresholdEvaluations,
@@ -42,6 +42,7 @@ type LockedTask = {
   formCompleted: boolean;
   formRequired: boolean;
   hasActions: boolean;
+  hasChecklist: boolean;
   config: unknown;
   result: unknown;
   stageDefinitionId: string;
@@ -130,6 +131,10 @@ async function lockTask(
         SELECT 1 FROM app_stage_task_action_bindings binding
         WHERE binding.task_definition_id = definition.id
       ) AS "hasActions",
+      EXISTS (
+        SELECT 1 FROM app_workflow_stage_checklist_definitions checklist
+        WHERE checklist.task_definition_id = definition.id
+      ) AS "hasChecklist",
       (
         SELECT action.action_type
         FROM app_workflow_action_definitions action
@@ -146,6 +151,7 @@ async function lockTask(
     JOIN app_workflow_stage_instances stage ON stage.id = task.stage_instance_id
     JOIN app_workflow_instances workflow ON workflow.id = stage.workflow_instance_id
     WHERE task.id = ${input.taskId}::uuid
+      AND app_workflow_task_coi_cleared(task.id, ${input.actorId}::uuid)
       AND (
         task.assigned_user_id = ${input.actorId}::uuid
         OR (
@@ -262,7 +268,7 @@ export async function writeChecklistTaskCompletion(
       if (!task) return { kind: "not_found" } as const;
       const insideReplay = await findCommand(transaction, input);
       if (insideReplay) return insideReplay;
-      if (!taskHasChecklist(task.config)) return { kind: "conflict" } as const;
+      if (!task.hasChecklist) return { kind: "conflict" } as const;
       const completedAt = new Date();
       if (task.actionType === "APPROVE_ADVANCE"
         || task.actionType === "REJECT") {
@@ -285,6 +291,7 @@ export async function writeChecklistTaskCompletion(
           config: task.config,
           formCompleted: task.formCompleted,
           formRequired: task.formRequired,
+          hasChecklist: task.hasChecklist,
           result: { ...priorResult, items: input.items },
         })
         ? "IN_PROGRESS" as const

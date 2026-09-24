@@ -15,6 +15,7 @@ describe("workflow stage checklist table", () => {
   it("renders the seven checklist configuration fields in the shared table", async () => {
     const stage = structuredClone(referenceWorkflow.stages[0]);
     stage.checklistItems = [{
+      taskStableKey: stage.tasks[0].stableKey,
       key: "OWNERSHIP_CONFIRMED",
       text: "Confirm ownership.",
       mandatory: true,
@@ -39,6 +40,7 @@ describe("workflow stage checklist table", () => {
 
     expect(container.textContent).toContain("OWNERSHIP_CONFIRMED");
     expect(container.textContent).toContain("Confirm ownership.");
+    expect(container.textContent).toContain(stage.tasks[0].name);
     expect(container.textContent).toContain("Yes / no");
     expect(container.textContent).toContain("Required evidence");
     expect(container.textContent).toContain("Review current records.");

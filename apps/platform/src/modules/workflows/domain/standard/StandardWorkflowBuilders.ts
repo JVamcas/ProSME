@@ -125,6 +125,7 @@ export function checklist(
     mandatory: true,
     notes: "",
     responseType: "YES_NO",
+    taskStableKey: "",
     text,
   };
 }
@@ -212,13 +213,14 @@ export function task(
 export function stage(
   input: Omit<WorkflowStageInput, "entryCondition" | "exitCondition">,
 ): WorkflowStageInput {
-  return { ...input, entryCondition: null, exitCondition: null };
+  const defaultTaskKey = input.tasks[0]?.stableKey ?? "";
+  return {
+    ...input,
+    checklistItems: input.checklistItems.map((item) => ({
+      ...item,
+      taskStableKey: item.taskStableKey || defaultTaskKey,
+    })),
+    entryCondition: null,
+    exitCondition: null,
+  };
 }
-
-export const yesNoChecklistConfig = (items: WorkflowStageChecklistDefinition[]) => ({
-  items: items.map((item) => ({
-    code: item.key,
-    label: item.text,
-    required: item.mandatory,
-  })),
-});

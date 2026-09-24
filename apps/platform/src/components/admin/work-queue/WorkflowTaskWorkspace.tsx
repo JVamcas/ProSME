@@ -4,6 +4,8 @@ import { CalendarDays, FileText } from "lucide-react";
 
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useWorkflowTask } from "@/modules/work-queue/WorkQueueHooks";
+import { useWorkflowCoi } from "@/modules/workflows/ui/runtime/useWorkflowCoi";
+import { WorkflowTaskCoiGate } from "@/modules/workflows/ui/runtime/WorkflowTaskCoiGate";
 import { PageShell } from "@/shared/ui/PageShell";
 import { ChecklistTaskForm } from "./ChecklistTaskForm";
 import { DynamicFormTask } from "@/modules/forms/ui/renderer/DynamicFormTask";
@@ -69,7 +71,17 @@ function TaskMetadata({
 }
 
 export function WorkflowTaskWorkspace({ taskId }: { taskId: string }) {
-  const query = useWorkflowTask(taskId);
+  const coi = useWorkflowCoi(taskId);
+  const query = useWorkflowTask(taskId, coi.data?.cleared ?? false);
+  if (coi.isPending) {
+    return <p className="text-sm text-brand-navy/60">Loading assignment…</p>;
+  }
+  if (coi.isError) {
+    return <p className="text-sm text-red-700" role="alert">{coi.error.message}</p>;
+  }
+  if (!coi.data.cleared) {
+    return <WorkflowTaskCoiGate gate={coi.data} />;
+  }
   if (query.isPending) {
     return <p className="text-sm text-brand-navy/60">Loading task…</p>;
   }
@@ -89,12 +101,12 @@ export function WorkflowTaskWorkspace({ taskId }: { taskId: string }) {
     >
       <div className="space-y-5">
         <TaskMetadata
-        applicantName={task.applicantName}
-        businessName={task.businessName}
-        dueAt={task.dueAt}
-        fundingCallTitle={task.fundingCallTitle}
-        reference={task.reference}
-      />
+          applicantName={task.applicantName}
+          businessName={task.businessName}
+          dueAt={task.dueAt}
+          fundingCallTitle={task.fundingCallTitle}
+          reference={task.reference}
+        />
         {task.canEvaluateEligibility ? (
           <AuthoritativeEligibilityTask task={task} />
         ) : null}

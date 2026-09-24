@@ -35,6 +35,7 @@ const codeSchema = z
 
 export const workflowStageChecklistSchema = z.object({
   id: z.string().uuid().optional(),
+  taskStableKey: codeSchema,
   key: codeSchema,
   text: z.string().trim().min(2).max(500),
   mandatory: z.boolean(),
@@ -137,6 +138,7 @@ export const workflowTaskSchema = z
     assignmentMode: z.enum(workflowTaskAssignmentModes),
     reviewerCount: z.number().int().positive().max(100),
     reviewRelease: z.enum(["STAGE_COMPLETED", "THRESHOLD_MET", "IMMEDIATE"]).optional(),
+    submittedReplacementPolicy: z.enum(["DENY", "REOPEN_SLOT"]).optional(),
     requiredCompletionCount: z.number().int().positive().max(100),
     completionMode: z.enum(["ALL", "COUNT", "PERCENT"]).optional(),
     completionPercentage: z.number().int().min(1).max(100).nullable().optional(),
@@ -267,6 +269,16 @@ export const workflowStageSchema = z.object({
       path: ["checklistItems"],
     });
   }
+  const taskKeys = new Set(stage.tasks.map((task) => task.stableKey));
+  stage.checklistItems.forEach((item, index) => {
+    if (!taskKeys.has(item.taskStableKey)) {
+      context.addIssue({
+        code: "custom",
+        message: "Checklist items must reference a task in the same stage.",
+        path: ["checklistItems", index, "taskStableKey"],
+      });
+    }
+  });
   const documentNames = stage.documentRequirements.map(
     (requirement) => requirement.name.toLowerCase(),
   );

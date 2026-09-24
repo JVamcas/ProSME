@@ -22,7 +22,6 @@ export type RecordQuorumParticipationInput = {
   responsibility: string;
   isChair: boolean;
   attendance: "PRESENT" | "ABSENT" | "RECUSED";
-  coiCleared: boolean;
   abstained: boolean;
   actorId: string;
 };
@@ -59,7 +58,7 @@ async function loadParticipants(
       SELECT candidate.id AS "userId",
         COALESCE(participant.is_chair, false) AS "isChair",
         COALESCE(participant.attendance, 'ABSENT') AS attendance,
-        COALESCE(participant.coi_cleared, false) AS "coiCleared",
+        app_workflow_stage_coi_cleared(${stageInstanceId}::uuid, candidate.id) AS "coiCleared",
         COALESCE(participant.abstained, false) AS abstained
       FROM (
         SELECT DISTINCT app_user.id
@@ -68,6 +67,10 @@ async function loadParticipants(
         WHERE task.stage_instance_id = ${stageInstanceId}::uuid
           AND task.workflow_task_definition_id = ${taskDefinitionId}::uuid
           AND task.status <> 'CANCELLED'
+          AND NOT EXISTS (
+            SELECT 1 FROM app_workflow_tasks successor
+            WHERE successor.supersedes_task_id = task.id
+          )
           AND app_user.status = 'active'
       ) candidate
       LEFT JOIN app_workflow_quorum_participants participant
@@ -77,7 +80,8 @@ async function loadParticipants(
     `
     : sql`
       SELECT app_user.id AS "userId", participant.is_chair AS "isChair",
-        participant.attendance, participant.coi_cleared AS "coiCleared",
+        participant.attendance,
+        app_workflow_stage_coi_cleared(${stageInstanceId}::uuid, app_user.id) AS "coiCleared",
         participant.abstained
       FROM app_workflow_quorum_participants participant
       JOIN app_users app_user ON app_user.id = participant.user_id
@@ -104,18 +108,6 @@ export async function evaluateStageQuorum(
   for (const definition of definitions) {
     if (!definition.quorumRule) return false;
     const rule = definition.quorumRule;
-    if (rule.freeze === "ON_FIRST_PASS") {
-      const [frozen] = await transaction
-        .select({ satisfied: workflowQuorumEvaluations.satisfied })
-        .from(workflowQuorumEvaluations)
-        .where(and(
-          eq(workflowQuorumEvaluations.stageInstanceId, input.stageInstanceId),
-          eq(workflowQuorumEvaluations.taskDefinitionId, definition.id),
-          eq(workflowQuorumEvaluations.satisfied, true),
-        ))
-        .limit(1);
-      if (frozen) continue;
-    }
     const participants = await loadParticipants(
       transaction,
       input.stageInstanceId,
@@ -185,6 +177,10 @@ export async function recordQuorumParticipation(
         WHERE stage_instance_id = ${stage.id}::uuid
           AND assigned_user_id = ${input.userId}::uuid
           AND status <> 'CANCELLED'
+          AND NOT EXISTS (
+            SELECT 1 FROM app_workflow_tasks successor
+            WHERE successor.supersedes_task_id = app_workflow_tasks.id
+          )
         LIMIT 1
       `);
       if (!result.rowCount) return false;
@@ -195,7 +191,6 @@ export async function recordQuorumParticipation(
       responsibility: input.responsibility,
       isChair: input.isChair,
       attendance: input.attendance,
-      coiCleared: input.coiCleared,
       abstained: input.abstained,
       updatedBy: input.actorId,
       updatedAt: new Date(),
@@ -208,8 +203,7 @@ export async function recordQuorumParticipation(
         responsibility: input.responsibility,
         isChair: input.isChair,
         attendance: input.attendance,
-        coiCleared: input.coiCleared,
-        abstained: input.abstained,
+          abstained: input.abstained,
         updatedBy: input.actorId,
         updatedAt: new Date(),
       },

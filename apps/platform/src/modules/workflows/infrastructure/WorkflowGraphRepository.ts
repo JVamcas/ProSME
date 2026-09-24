@@ -79,6 +79,7 @@ const graphSelection = {
     assignmentMode: stageTaskDefinitions.assignmentMode,
     reviewerCount: stageTaskDefinitions.reviewerCount,
     reviewRelease: stageTaskDefinitions.reviewRelease,
+    submittedReplacementPolicy: stageTaskDefinitions.submittedReplacementPolicy,
     requiredCompletionCount: stageTaskDefinitions.requiredCompletionCount,
     completionMode: stageTaskDefinitions.completionMode,
     completionPercentage: stageTaskDefinitions.completionPercentage,
