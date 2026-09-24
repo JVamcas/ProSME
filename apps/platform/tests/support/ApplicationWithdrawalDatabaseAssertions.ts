@@ -1,6 +1,7 @@
 import { expect } from "vitest";
 
 import { withdrawOwnedApplication } from "@/modules/applications/infrastructure/ApplicationWithdrawalRepository";
+import { readOwnedApplicationStatus } from "@/modules/applications/infrastructure/ApplicationListRepository";
 
 type Query = (text: string, values?: unknown[]) => Promise<{
   rows: Record<string, unknown>[];
@@ -11,22 +12,14 @@ export async function assertApplicationWithdrawal(input: {
   ownerId: string;
   otherOwnerId: string;
   query: Query;
-  stageDefinitionId: string;
 }) {
   await input.query(
     `INSERT INTO app_users (id, email, display_name, user_type, status)
      VALUES ($1, 'withdrawal-other@example.test', 'Other Applicant', 'applicant', 'active')`,
     [input.otherOwnerId],
   );
-  await input.query(
-    `INSERT INTO app_workflow_action_definitions
-      (stage_id, stable_key, label, action_type, enabled,
-       reason_code_required, display_order, configuration)
-     VALUES ($1, 'APPLICANT_WITHDRAW', 'Withdraw application',
-       'WITHDRAW', true, false, 1,
-       '{"allowedStageKeys":["INITIAL"],"resubmissionRule":"NOT_ALLOWED"}'::jsonb)`,
-    [input.stageDefinitionId],
-  );
+  const before = await readOwnedApplicationStatus(input.ownerId, input.applicationId);
+  expect(before?.canWithdraw).toBe(true);
   const command = {
     applicationId: input.applicationId,
     correlationId: crypto.randomUUID(),
@@ -72,6 +65,8 @@ export async function assertApplicationWithdrawal(input: {
      WHERE application.id = $1`,
     [input.applicationId],
   );
+  const after = await readOwnedApplicationStatus(input.ownerId, input.applicationId);
+  expect(after?.canWithdraw).toBe(false);
   expect(persisted.rows[0]).toMatchObject({
     application_status: "withdrawn",
     audit_count: 1,

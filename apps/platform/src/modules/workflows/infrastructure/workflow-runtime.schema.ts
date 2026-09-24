@@ -113,7 +113,6 @@ export const workflowActionExecutions = pgTable(
   {
     id: uuid("id").primaryKey(),
     actionDefinitionId: uuid("action_definition_id")
-      .notNull()
       .references(() => workflowActionDefinitions.id, { onDelete: "restrict" }),
     actionKey: text("action_key").notNull(),
     actionType: text("action_type").$type<WorkflowActionType>().notNull(),
@@ -126,7 +125,6 @@ export const workflowActionExecutions = pgTable(
       .notNull()
       .references(() => workflowInstances.id, { onDelete: "restrict" }),
     sourceStageInstanceId: uuid("source_stage_instance_id")
-      .notNull()
       .references(() => stageInstances.id, { onDelete: "restrict" }),
     taskId: uuid("task_id").references((): AnyPgColumn => workflowTasks.id, {
       onDelete: "restrict",
@@ -220,7 +218,6 @@ export const transitionExecutions = pgTable(
       .notNull()
       .references(() => workflowInstances.id, { onDelete: "restrict" }),
     sourceStageInstanceId: uuid("source_stage_instance_id")
-      .notNull()
       .references(() => stageInstances.id, { onDelete: "restrict" }),
     transitionDefinitionId: uuid("transition_definition_id")
       .notNull()

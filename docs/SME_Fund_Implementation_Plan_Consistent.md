@@ -4361,16 +4361,17 @@ access to internal processing details.
 
 ### Goal
 
-Allow an applicant to withdraw an owned Application only when published
-configuration and current processing state permit it.
+Allow an applicant to withdraw an owned submitted Application at any active
+Workflow stage. Applicant withdrawal does not depend on a Stage Action
+definition.
 
 ### Scope
 
 The applicant-facing command:
 1. requires the narrow own-withdraw permission;
 2. verifies Application ownership/representation;
-3. resolves the linked Workflow and current permitted withdrawal state;
-4. validates confirmation and configured reason/comment;
+3. verifies the linked Workflow is active, regardless of its current Stage;
+4. validates confirmation and optional reason/comment;
 5. invokes the Phase 8 Withdraw semantic operation;
 6. updates the Application lifecycle/public projection from that one domain
    result;
@@ -4390,7 +4391,7 @@ must not be represented as withdrawal of a submitted Application.
 2. Disallowed, already withdrawn or terminal states reject the command without
    partial mutation.
 3. Application and Workflow withdrawal state commit together.
-4. Open Tasks/Stages are handled by the configured Phase 8 semantics.
+4. Open Tasks/Stages are cancelled by the Phase 8 withdrawal semantics.
 5. Identical retries produce one withdrawal record and audit path.
 6. Lodged evidence and history remain immutable and accessible according to
    retention policy.

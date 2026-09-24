@@ -92,6 +92,7 @@ export const permissionCodes = {
   workflowTaskDelegate: "workflow.task.delegate",
   workflowTaskAllRead: "workflow.task.all.read",
   workflowTaskPoolRead: "workflow.task.pool.read",
+  workflowInstanceAllRead: "workflow.instance.all.read",
   roleRead: "role.read",
   roleManage: "role.manage",
   auditRead: "audit.read",

@@ -7,6 +7,8 @@ import {
   type StaticPermissionCode,
 } from "./PermissionCodes";
 import { integrationPermissionCatalogue } from "./IntegrationPermissionCatalogue";
+import { workflowTaskPermissionCatalogue } from "./WorkflowTaskPermissionCatalogue";
+import { workflowInstancePermissionCatalogue } from "./WorkflowInstancePermissionCatalogue";
 
 export type PermissionDefinition = {
   code: PermissionCode;
@@ -176,7 +178,7 @@ const staticPermissionCatalogue: readonly PermissionDefinition[] = [
   define(
     permissionCodes.fundingApplicationOwnWithdraw,
     "Withdraw own submitted applications",
-    "Withdraw a submitted application owned by the signed-in user when its workflow permits withdrawal.",
+    "Withdraw a submitted application owned by the signed-in user while processing is active.",
   ),
   define(
     permissionCodes.fundingApplicationAllRead,
@@ -218,36 +220,8 @@ const staticPermissionCatalogue: readonly PermissionDefinition[] = [
     "Respond to own information requests",
     "Respond to information requests for an owned application.",
   ),
-  define(
-    permissionCodes.workflowTaskAssignedRead,
-    "Read assigned tasks",
-    "Read workflow tasks assigned to the signed-in user.",
-  ),
-  define(
-    permissionCodes.workflowTaskAssignedProcess,
-    "Process assigned tasks",
-    "Process an assigned task using its configured actions.",
-  ),
-  define(
-    permissionCodes.workflowTaskAssignedDecide,
-    "Decide assigned tasks",
-    "Complete an assigned task using its configured decision actions.",
-  ),
-  define(
-    permissionCodes.workflowTaskClaim,
-    "Claim tasks",
-    "Claim an eligible workflow task.",
-  ),
-  define(
-    permissionCodes.workflowTaskAssign,
-    "Assign tasks",
-    "Assign or reassign workflow tasks.",
-  ),
-  define(
-    permissionCodes.workflowTaskCancelAll,
-    "Cancel all tasks",
-    "Cancel any active workflow task.",
-  ),
+  ...workflowTaskPermissionCatalogue,
+  ...workflowInstancePermissionCatalogue,
   define(
     permissionCodes.workflowDefinitionRead,
     "Read workflow definitions",

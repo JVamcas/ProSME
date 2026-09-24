@@ -638,6 +638,20 @@
       "when": 1795564800000,
       "tag": "0090_applicant_withdrawal",
       "breakpoints": true
+    },
+    {
+      "idx": 91,
+      "version": "7",
+      "when": 1795651200000,
+      "tag": "0091_applicant_withdrawal_without_stage_action",
+      "breakpoints": true
+    },
+    {
+      "idx": 92,
+      "version": "7",
+      "when": 1795737600000,
+      "tag": "0092_workflow_instance_progress_read",
+      "breakpoints": true
     }
   ]
 }

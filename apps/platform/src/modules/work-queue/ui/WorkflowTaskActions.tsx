@@ -9,9 +9,11 @@ export function WorkflowTaskActions({
   actions,
   disabled,
   onSelect,
+  buttonType = "submit",
 }: {
   actions: WorkflowTaskAction[];
   disabled: boolean;
+  buttonType?: "button" | "submit";
   onSelect: (actionKey: string) => void;
 }) {
   return (
@@ -34,7 +36,7 @@ export function WorkflowTaskActions({
               name="workflowAction"
               onClick={() => onSelect(action.key)}
               title={action.unavailableReason ?? undefined}
-              type="submit"
+              type={buttonType}
               value={action.key}
               variant={action.presentation.variant}
             >

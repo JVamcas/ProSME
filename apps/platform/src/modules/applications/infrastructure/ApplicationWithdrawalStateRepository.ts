@@ -28,7 +28,7 @@ export async function applyApplicationWithdrawalInTransaction(
     application: WithdrawalApplicationState;
     correlationId: string;
     reasonCode?: string;
-    stageId: string;
+    stageId?: string;
     workflowId: string;
     withdrawnAt: Date;
   },

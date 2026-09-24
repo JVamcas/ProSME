@@ -11,6 +11,7 @@ export type PermissionGroupId =
   | "eligibility-configuration"
   | "funding-applications"
   | "workflow-tasks"
+  | "workflow-instances"
   | "workflow-configuration"
   | "roles"
   | "audit"
@@ -105,7 +106,16 @@ export const permissionGroups: readonly PermissionGroup[] = [
       permissionCodes.workflowTaskClaim,
       permissionCodes.workflowTaskAssign,
       permissionCodes.workflowTaskCancelAll,
+      permissionCodes.workflowTaskReassign,
+      permissionCodes.workflowTaskDelegate,
+      permissionCodes.workflowTaskAllRead,
+      permissionCodes.workflowTaskPoolRead,
     ],
+  },
+  {
+    id: "workflow-instances",
+    label: "Workflow Instances",
+    permissionCodes: [permissionCodes.workflowInstanceAllRead],
   },
   {
     id: "workflow-configuration",

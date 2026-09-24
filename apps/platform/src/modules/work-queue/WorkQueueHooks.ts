@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { clientWorkQueueService } from "./ClientWorkQueueService";
+import type { WorkflowActionExecutionRequest } from "@/modules/workflows/domain/actions/WorkflowActionExecution";
 import type { WorkQueueListInput } from "./WorkQueueTypes";
 
 export const workQueueQueryKeys = {
@@ -47,6 +48,25 @@ export function useEvaluateAuthoritativeEligibility(taskId: string) {
       queryClient.invalidateQueries({
         queryKey: workQueueQueryKeys.task(taskId),
       }),
+    ]),
+  });
+}
+
+export function useExecuteWorkflowTaskAction(taskId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (command: {
+      actionKey: string;
+      input: WorkflowActionExecutionRequest;
+      workflowInstanceId: string;
+    }) => clientWorkQueueService.executeAction(
+      command.workflowInstanceId,
+      command.actionKey,
+      command.input,
+    ),
+    onSuccess: () => Promise.all([
+      queryClient.invalidateQueries({ queryKey: workQueueQueryKeys.all }),
+      queryClient.invalidateQueries({ queryKey: workQueueQueryKeys.task(taskId) }),
     ]),
   });
 }

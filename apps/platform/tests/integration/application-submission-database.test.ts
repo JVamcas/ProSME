@@ -294,6 +294,5 @@ describeDatabase("P3.4 transactional application submission", () => {
       ownerId,
       otherOwnerId: businessId,
       query,
-      stageDefinitionId: stageId,
     }));
 });

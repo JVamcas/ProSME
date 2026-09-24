@@ -5,10 +5,11 @@ import { z } from "zod";
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { getCurrentUser } from "@/auth/authorization/current-user";
 import { can } from "@/auth/authorization/policy";
-import { ApplicationProgressCard } from "@/components/admin/applications/ApplicationReviewSections";
 import { ResourceNotFoundError } from "@/lib/resource-errors";
 import { getAdminApplicationDetail } from "@/modules/applications/ServerAdminApplicationDetailService";
 import { ApplicationDetailView } from "@/modules/applications/ui/ApplicationDetailView";
+import { getWorkflowProgress } from "@/modules/workflows/application/runtime/ServerWorkflowProgressService";
+import { WorkflowProgressPanel } from "@/modules/workflows/ui/WorkflowProgressPanel";
 
 export const metadata: Metadata = { title: "Application overview" };
 
@@ -44,10 +45,16 @@ export default async function ApplicationPage({
     throw error;
   });
 
+  const progress = can(user, permissionCodes.workflowInstanceAllRead)
+    ? await getWorkflowProgress(user, applicationId)
+    : undefined;
+
   return (
     <ApplicationDetailView
-      history={<ApplicationProgressCard application={detail.overview} />}
       model={detail.model}
+      workflowProgress={progress === undefined
+        ? undefined
+        : <WorkflowProgressPanel progress={progress} />}
     />
   );
 }

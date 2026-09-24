@@ -34,19 +34,6 @@ const listColumns = {
   canWithdraw: sql<boolean>`
     ${applications.status} = 'submitted'
     AND ${workflowInstances.status} = 'ACTIVE'
-    AND EXISTS (
-      SELECT 1
-      FROM app_workflow_stage_instances active_stage
-      JOIN app_workflow_stage_definitions definition
-        ON definition.id = active_stage.workflow_stage_definition_id
-      JOIN app_workflow_action_definitions withdrawal
-        ON withdrawal.stage_id = definition.id
-      WHERE active_stage.workflow_instance_id = ${workflowInstances.id}
-        AND active_stage.status = 'ACTIVE'
-        AND withdrawal.action_type = 'WITHDRAW'
-        AND withdrawal.enabled = true
-        AND withdrawal.configuration->'allowedStageKeys' ? definition.code
-    )
   `,
   reference: applications.reference,
   submittedAt: applications.submittedAt,

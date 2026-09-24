@@ -6,15 +6,9 @@ import { getDatabase } from "@/db/client";
 import {
   applications,
   stageInstances,
-  workflowActionDefinitions,
   workflowActionExecutions,
   workflowInstances,
-  workflowStageDefinitions,
 } from "@/db/schema";
-import type { WithdrawConfiguration } from "@/modules/workflows/domain/actions/WorkflowActionConfiguration";
-import { evaluateStageCondition } from "@/modules/workflows/engine/StageCondition";
-import { lockStageCompletionTarget } from "@/modules/workflows/infrastructure/StageCompletionRepository";
-import { buildWorkflowActionConditionContext } from "@/modules/workflows/application/runtime/ServerWorkflowActionContextService";
 import { applyApplicationWithdrawalInTransaction } from "./ApplicationWithdrawalStateRepository";
 
 type WithdrawalInput = {
@@ -113,39 +107,17 @@ export async function withdrawOwnedApplication(
     if (!workflow || workflow.status !== "ACTIVE") {
       return { kind: "unavailable" };
     }
-    const active = await transaction
+    const [activeStage] = await transaction
       .select({
-        actionId: workflowActionDefinitions.id,
-        actionKey: workflowActionDefinitions.stableKey,
-        condition: workflowActionDefinitions.condition,
-        configuration: workflowActionDefinitions.configuration,
-        reasonCodeRequired: workflowActionDefinitions.reasonCodeRequired,
-        stageId: stageInstances.id,
-        stageKey: workflowStageDefinitions.code,
-        stageVersion: stageInstances.rowVersion,
+        id: stageInstances.id,
+        rowVersion: stageInstances.rowVersion,
       })
       .from(stageInstances)
-      .innerJoin(
-        workflowStageDefinitions,
-        eq(workflowStageDefinitions.id, stageInstances.workflowStageDefinitionId),
-      )
-      .innerJoin(
-        workflowActionDefinitions,
-        and(
-          eq(workflowActionDefinitions.stageId, workflowStageDefinitions.id),
-          eq(workflowActionDefinitions.actionType, "WITHDRAW"),
-          eq(workflowActionDefinitions.enabled, true),
-        ),
-      )
       .where(and(
         eq(stageInstances.workflowInstanceId, workflow.id),
         eq(stageInstances.status, "ACTIVE"),
       ))
-      .orderBy(
-        workflowStageDefinitions.sequence,
-        workflowActionDefinitions.displayOrder,
-      )
-      .for("update", { of: stageInstances });
+      .limit(1);
     const [lockedApplication] = await transaction
       .select({
         id: applications.id,
@@ -168,32 +140,6 @@ export async function withdrawOwnedApplication(
       || !lockedApplication.reference) {
       return { kind: "unavailable" };
     }
-    let action: (typeof active)[number] | undefined;
-    for (const candidate of active) {
-      const configuration = candidate.configuration as WithdrawConfiguration;
-      if (!configuration.allowedStageKeys.includes(candidate.stageKey)
-        || (candidate.reasonCodeRequired && !input.reasonCode)) {
-        continue;
-      }
-      if (candidate.condition) {
-        const target = await lockStageCompletionTarget(
-          transaction,
-          candidate.stageId,
-        );
-        if (!target) continue;
-        const context = await buildWorkflowActionConditionContext(
-          transaction,
-          target,
-        );
-        if (!evaluateStageCondition(candidate.condition, context).passed) {
-          continue;
-        }
-      }
-      action = candidate;
-      break;
-    }
-    if (!action) return { kind: "unavailable" };
-
     const result = await applyApplicationWithdrawalInTransaction(
       transaction,
       {
@@ -205,15 +151,15 @@ export async function withdrawOwnedApplication(
         },
         correlationId: input.correlationId,
         reasonCode: input.reasonCode,
-        stageId: action.stageId,
+        stageId: activeStage?.id,
         workflowId: workflow.id,
         withdrawnAt: new Date(),
       },
     );
     const withdrawnAt = new Date(result.withdrawnAt);
     await transaction.insert(workflowActionExecutions).values({
-      actionDefinitionId: action.actionId,
-      actionKey: action.actionKey,
+      actionDefinitionId: null,
+      actionKey: "APPLICANT_WITHDRAW",
       actionType: "WITHDRAW",
       actorId: input.actorId,
       actorIdentifier: input.actorId,
@@ -222,7 +168,7 @@ export async function withdrawOwnedApplication(
       conditionEvaluation: {},
       correlationId: input.correlationId,
       executedAt: withdrawnAt,
-      expectedRuntimeVersion: action.stageVersion,
+      expectedRuntimeVersion: activeStage?.rowVersion ?? 0,
       id: crypto.randomUUID(),
       idempotencyKey: input.idempotencyKey,
       normalizedInput: {
@@ -233,8 +179,10 @@ export async function withdrawOwnedApplication(
       reasonCode: input.reasonCode ?? null,
       resolvedTarget: { status: "WITHDRAWN" },
       result,
-      resultingRuntimeVersion: action.stageVersion + 1,
-      sourceStageInstanceId: action.stageId,
+      resultingRuntimeVersion: activeStage?.rowVersion != null
+        ? activeStage.rowVersion + 1
+        : 0,
+      sourceStageInstanceId: activeStage?.id ?? null,
       workflowInstanceId: workflow.id,
     });
     return { kind: "withdrawn", result };

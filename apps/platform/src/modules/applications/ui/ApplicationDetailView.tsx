@@ -108,11 +108,13 @@ export function ApplicationDetailView({
   history,
   model,
   showSupport = false,
+  workflowProgress,
 }: {
   actions?: ReactNode;
   history?: ReactNode;
   model: ApplicationDetailModel;
   showSupport?: boolean;
+  workflowProgress?: ReactNode;
 }) {
   return (
     <PageShell
@@ -151,6 +153,13 @@ export function ApplicationDetailView({
                 id: "documents",
                 label: `Documents (${model.documents.length})`,
               },
+              ...(workflowProgress
+                ? [{
+                    content: workflowProgress,
+                    id: "workflow-progress",
+                    label: "Workflow Progress",
+                  }]
+                : []),
             ]}
             leadingContent={
               <div className="p-4">

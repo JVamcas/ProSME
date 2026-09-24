@@ -8,6 +8,10 @@ import type {
   WorkQueueRow,
 } from "./WorkQueueTypes";
 import type {
+  WorkflowActionExecutionRequest,
+  WorkflowActionExecutionResult,
+} from "@/modules/workflows/domain/actions/WorkflowActionExecution";
+import type {
   AuthoritativeEligibilityTaskResult,
   CompleteChecklistTaskInput,
   TaskCompletionResult,
@@ -87,10 +91,29 @@ function evaluateEligibility(taskId: string, expectedRowVersion: number) {
   );
 }
 
+function executeAction(
+  workflowInstanceId: string,
+  actionKey: string,
+  input: WorkflowActionExecutionRequest,
+) {
+  return requestData<WorkflowActionExecutionResult>(
+    `/api/workflows/${workflowInstanceId}/actions/${actionKey}`,
+    {
+      body: JSON.stringify(input),
+      headers: {
+        "Content-Type": "application/json",
+        "Idempotency-Key": crypto.randomUUID(),
+      },
+      method: "POST",
+    },
+  );
+}
+
 export const clientWorkQueueService = {
   claim,
   completeTask,
   evaluateEligibility,
+  executeAction,
   getTask,
   list,
 };
