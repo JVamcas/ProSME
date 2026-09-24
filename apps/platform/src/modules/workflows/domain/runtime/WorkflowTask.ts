@@ -12,6 +12,8 @@ export type WorkflowTask = {
   id: string;
   stageInstanceId: string;
   workflowTaskDefinitionId: string;
+  reviewerSlot: number;
+  supersedesTaskId: string | null;
   formVersionId: string | null;
   assignedRoleId: string | null;
   assignedUserId: string | null;

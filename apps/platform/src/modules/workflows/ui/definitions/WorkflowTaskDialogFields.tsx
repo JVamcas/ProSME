@@ -176,6 +176,26 @@ export function WorkflowTaskDialogFields({
           required
           type="number"
         />
+        <FormSelect
+          items={[
+            { label: "All slots", value: "ALL" },
+            { label: "Fixed count", value: "COUNT" },
+            { label: "Percentage (round up)", value: "PERCENT" },
+          ]}
+          label="Completion threshold"
+          name="completionMode"
+          required
+        />
+        <FormSelect
+          items={[
+            { label: "After stage completion", value: "STAGE_COMPLETED" },
+            { label: "When completion threshold passes", value: "THRESHOLD_MET" },
+            { label: "Immediately", value: "IMMEDIATE" },
+          ]}
+          label="Release peer identities"
+          name="reviewRelease"
+          required
+        />
         <FormInput
           infoTooltip="How many assigned reviewers must finish their copy before this task is complete. This cannot exceed the reviewer count."
           label="Required completions"
@@ -184,6 +204,16 @@ export function WorkflowTaskDialogFields({
           name="requiredCompletionCount"
           registrationOptions={{ valueAsNumber: true }}
           required
+          type="number"
+        />
+        <FormInput
+          label="Completion percentage"
+          min={1}
+          max={100}
+          name="completionPercentage"
+          registrationOptions={{
+            setValueAs: (value: string) => value === "" ? null : Number(value),
+          }}
           type="number"
         />
         <FormInput
@@ -198,8 +228,8 @@ export function WorkflowTaskDialogFields({
       <div className="grid gap-3 sm:grid-cols-2">
         <CheckboxField
           containerClassName="text-sm font-semibold text-brand-navy"
-          description="The required completions must be more than half of the reviewer count—for example, 2 of 3 reviewers."
-          label="Require majority quorum."
+          description="Require an attendance and conflict-clearance check before a decision."
+          label="Require quorum"
           name="quorum"
         />
         <CheckboxField
@@ -208,6 +238,57 @@ export function WorkflowTaskDialogFields({
           name="coiRequired"
         />
       </div>
+      <fieldset className="grid gap-4 sm:grid-cols-3">
+        <legend className="text-sm font-semibold">Quorum rule</legend>
+        <FormSelect
+          items={[
+            { label: "Assigned task owners", value: "ASSIGNED_TASKS" },
+            { label: "Registered participants", value: "REGISTERED" },
+          ]}
+          label="Eligible population"
+          name="quorumPopulation"
+        />
+        <FormInput
+          label="Minimum present count"
+          min={1}
+          name="quorumMinimumCount"
+          registrationOptions={{
+            setValueAs: (value: string) => value === "" ? null : Number(value),
+          }}
+          type="number"
+        />
+        <FormInput
+          label="Minimum present percentage"
+          min={1}
+          max={100}
+          name="quorumMinimumPercentage"
+          registrationOptions={{
+            setValueAs: (value: string) => value === "" ? null : Number(value),
+          }}
+          type="number"
+        />
+        <FormSelect
+          items={[
+            { label: "Exclude recusals", value: "EXCLUDE" },
+            { label: "Include recusals", value: "INCLUDE" },
+          ]}
+          label="Recusal denominator"
+          name="quorumRecusalDenominator"
+        />
+        <FormSelect
+          items={[
+            { label: "Recheck at decision", value: "AT_DECISION" },
+            { label: "Freeze on first pass", value: "ON_FIRST_PASS" },
+          ]}
+          label="Quorum evaluation"
+          name="quorumFreeze"
+        />
+        <CheckboxField label="Chair must be present" name="quorumChairRequired" />
+        <CheckboxField
+          label="Abstentions count as present"
+          name="quorumAbstentionsCount"
+        />
+      </fieldset>
       <CheckboxField
         containerClassName="mt-8 text-sm font-semibold text-brand-navy"
         label="Required before the stage can complete"

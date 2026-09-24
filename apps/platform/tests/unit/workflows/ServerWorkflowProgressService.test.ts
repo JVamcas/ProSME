@@ -53,6 +53,10 @@ describe("workflow progress authorization", () => {
       assignedRoleName: "Programme Officer",
       assignedUserEmail: "staff@example.test",
       assignedUserId: actor.id,
+      taskDefinitionId: "definition-one",
+      reviewerCount: 3,
+      reviewRelease: "STAGE_COMPLETED" as const,
+      thresholdSatisfied: false,
       assignedUserName: "Staff member",
       dueAt: null,
       id: "task-one",
@@ -103,9 +107,16 @@ describe("workflow progress authorization", () => {
     expect(progress?.stages[0].tasks.map((item) => item.canOpen)).toEqual([
       true,
       false,
-      true,
+      false,
     ]);
     expect(progress?.stages[0].tasks[0]).not.toHaveProperty("assignedUserId");
     expect(progress?.stages[0].tasks[0]).not.toHaveProperty("viewPermission");
+    expect(progress?.stages[0].tasks[1]).toMatchObject({
+      assignedUserEmail: null,
+      assignedUserName: null,
+      canOpen: false,
+      status: "PENDING",
+    });
+    expect(progress?.stages[0].tasks[1].id).not.toBe("task-two");
   });
 });

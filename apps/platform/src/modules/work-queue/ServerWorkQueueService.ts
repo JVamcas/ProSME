@@ -6,7 +6,7 @@ import type { AuthenticatedUser } from "@/auth/types";
 import {
   readWorkQueue,
   writeTaskClaim,
-} from "@/db/repositories/WorkQueueRepository";
+} from "@/modules/workflows/infrastructure/WorkQueueRepository";
 import {
   IdempotencyConflictError,
   ResourceConflictError,

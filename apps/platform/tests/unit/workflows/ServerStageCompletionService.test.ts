@@ -6,6 +6,7 @@ vi.mock("@/modules/workflows/infrastructure/StageActivationRepository", () => ({
 }));
 vi.mock("@/modules/workflows/infrastructure/StageCompletionRepository", () => ({
   loadRequiredTaskCompletions: vi.fn(),
+  recordReviewThresholdEvaluations: vi.fn(),
   loadStageCompletionValues: vi.fn(),
   lockStageCompletionTarget: vi.fn(),
   persistStageCompletion: vi.fn(),
@@ -43,6 +44,10 @@ const target = {
 };
 const completedRequirement = {
   completedCount: 1,
+  completedTaskIds: ["task-one"],
+  denominator: 1,
+  completionMode: "COUNT" as const,
+  completionPercentage: null,
   requiredCompletionCount: 1,
   taskDefinitionId: "50000000-0000-4000-8000-000000000001",
   taskKey: "FINANCE_FORM",

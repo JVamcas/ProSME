@@ -43,8 +43,18 @@ export const workflowTaskFormSchema = z.object({
   displayOrder: z.number().int().positive(),
   name: z.string().trim().min(2).max(160),
   reviewerCount: z.number().int().positive().max(100),
+  reviewRelease: z.enum(["STAGE_COMPLETED", "THRESHOLD_MET", "IMMEDIATE"]),
   requiredCompletionCount: z.number().int().positive().max(100),
+  completionMode: z.enum(["ALL", "COUNT", "PERCENT"]),
+  completionPercentage: z.number().int().min(1).max(100).nullable(),
   quorum: z.boolean(),
+  quorumMinimumCount: z.number().int().min(1).max(100).nullable().optional(),
+  quorumMinimumPercentage: z.number().int().min(1).max(100).nullable().optional(),
+  quorumChairRequired: z.boolean().optional(),
+  quorumRecusalDenominator: z.enum(["EXCLUDE", "INCLUDE"]).optional(),
+  quorumFreeze: z.enum(["AT_DECISION", "ON_FIRST_PASS"]).optional(),
+  quorumPopulation: z.enum(["ASSIGNED_TASKS", "REGISTERED"]).optional(),
+  quorumAbstentionsCount: z.boolean().optional(),
   coiRequired: z.boolean(),
   required: z.boolean(),
   configJson: z.string().optional(),
@@ -58,6 +68,13 @@ export const workflowTaskFormSchema = z.object({
       code: "custom",
       message: "Runtime context fields must use unique paths.",
       path: ["contextFields"],
+    });
+  }
+  if (values.completionMode === "PERCENT" && !values.completionPercentage) {
+    context.addIssue({
+      code: "custom",
+      message: "Enter the required percentage.",
+      path: ["completionPercentage"],
     });
   }
   if (values.requiredCompletionCount > values.reviewerCount) {
@@ -74,15 +91,13 @@ export const workflowTaskFormSchema = z.object({
       path: ["reviewerCount"],
     });
   }
-  if (
-    values.quorum &&
-    (values.reviewerCount < 2 ||
-      values.requiredCompletionCount * 2 <= values.reviewerCount)
-  ) {
+  if (values.quorum
+    && !values.quorumMinimumCount
+    && !values.quorumMinimumPercentage) {
     context.addIssue({
       code: "custom",
-      message: "Quorum requires a majority of at least two reviewers.",
-      path: ["quorum"],
+      message: "Set a minimum quorum count or percentage.",
+      path: ["quorumMinimumCount"],
     });
   }
 });

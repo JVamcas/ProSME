@@ -17,8 +17,11 @@ type QueueDatabaseRow = Omit<WorkQueueRow, "claimedAt" | "dueAt"> & {
 function actorScope(actorId: string) {
   return sql`(
     task.assigned_user_id = ${actorId}::uuid
-    OR task.assigned_role_id IN (
-      SELECT role_id FROM app_user_roles WHERE user_id = ${actorId}::uuid
+    OR (
+      task.assigned_user_id IS NULL
+      AND task.assigned_role_id IN (
+        SELECT role_id FROM app_user_roles WHERE user_id = ${actorId}::uuid
+      )
     )
   )`;
 }
@@ -208,6 +211,13 @@ export async function writeTaskClaim(input: {
         if (prior) return prior;
         throw new ClaimWriteConflict();
       }
+      await transaction.execute(sql`
+        SELECT stage.id
+        FROM app_workflow_stage_instances stage
+        JOIN app_workflow_tasks task ON task.stage_instance_id = stage.id
+        WHERE task.id = ${input.taskId}::uuid
+        FOR UPDATE OF stage
+      `);
       const updated = await transaction.execute(sql`
       WITH eligible AS (
         SELECT task.id, task.assigned_role_id AS "previousRoleId",
@@ -222,6 +232,15 @@ export async function writeTaskClaim(input: {
           AND task.row_version = ${input.expectedRowVersion}
           AND task.assigned_user_id IS NULL
           AND task.status = 'PENDING'
+          AND NOT EXISTS (
+            SELECT 1 FROM app_workflow_tasks sibling
+            WHERE sibling.stage_instance_id = task.stage_instance_id
+              AND sibling.workflow_task_definition_id =
+                task.workflow_task_definition_id
+              AND sibling.id <> task.id
+              AND sibling.assigned_user_id = ${input.actorId}::uuid
+              AND sibling.status <> 'CANCELLED'
+          )
           AND task.assigned_role_id IN (
             SELECT role_id FROM app_user_roles
             WHERE user_id = ${input.actorId}::uuid

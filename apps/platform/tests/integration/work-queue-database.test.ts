@@ -9,7 +9,7 @@ import {
 import {
   readWorkQueue,
   writeTaskClaim,
-} from "@/db/repositories/WorkQueueRepository";
+} from "@/modules/workflows/infrastructure/WorkQueueRepository";
 import { writeChecklistTaskCompletion } from "@/modules/workflows/infrastructure/WorkflowTaskActionRepository";
 import { executeSequentialTransitionInTransaction } from "@/modules/workflows/application/runtime/ServerSequentialTransitionService";
 import { readWorkflowTask } from "@/modules/workflows/infrastructure/WorkflowTaskRepository";

@@ -20,6 +20,8 @@ export type WorkflowTaskLifecycleTransaction = WorkflowInstanceTransaction;
 export type LockedWorkflowTask = {
   assignedUserId: string | null;
   claimableByActor: boolean;
+  formRequired: boolean;
+  formCompleted: boolean;
   id: string;
   permissions: WorkflowElementPermissions;
   rowVersion: number;
@@ -60,6 +62,12 @@ export async function lockWorkflowTaskForLifecycle(
           AND actor_role.role_id = ${workflowTasks.assignedRoleId}
       )`,
       id: workflowTasks.id,
+      formRequired: sql<boolean>`${workflowTasks.formVersionId} IS NOT NULL`,
+      formCompleted: sql<boolean>`EXISTS (
+        SELECT 1 FROM app_form_responses response
+        WHERE response.workflow_task_id = ${workflowTasks.id}
+          AND response.status = 'COMPLETED'
+      )`,
       permissions: stageTaskDefinitions.permissions,
       rowVersion: workflowTasks.rowVersion,
       stageInstanceId: stageInstances.id,
@@ -171,4 +179,43 @@ export async function persistWorkflowTaskTransition(
     workflowInstanceId: input.workflowInstanceId,
   });
   return task;
+}
+
+
+export async function lockTaskStageForLifecycle(
+  transaction: WorkflowTaskLifecycleTransaction,
+  taskId: string,
+) {
+  const [stage] = await transaction
+    .select({ id: stageInstances.id })
+    .from(stageInstances)
+    .innerJoin(workflowTasks, eq(workflowTasks.stageInstanceId, stageInstances.id))
+    .where(and(
+      eq(workflowTasks.id, taskId),
+      eq(stageInstances.status, "ACTIVE"),
+    ))
+    .for("update", { of: stageInstances })
+    .limit(1);
+  return stage?.id ?? null;
+}
+
+export async function reviewerAlreadyOwnsSiblingSlot(
+  transaction: WorkflowTaskLifecycleTransaction,
+  taskId: string,
+  actorId: string,
+) {
+  const result = await transaction.execute(sql`
+    SELECT EXISTS (
+      SELECT 1 FROM app_workflow_tasks sibling
+      JOIN app_workflow_tasks target
+        ON target.stage_instance_id = sibling.stage_instance_id
+        AND target.workflow_task_definition_id =
+          sibling.workflow_task_definition_id
+      WHERE target.id = ${taskId}::uuid
+        AND sibling.id <> target.id
+        AND sibling.assigned_user_id = ${actorId}::uuid
+        AND sibling.status <> 'CANCELLED'
+    ) AS "alreadyAssigned"
+  `);
+  return Boolean((result.rows[0] as { alreadyAssigned: boolean }).alreadyAssigned);
 }

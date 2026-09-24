@@ -36,6 +36,11 @@ export const workflowTaskPermissionCatalogue: readonly PermissionDefinition[] = 
     "Assign or reassign workflow tasks.",
   ),
   define(
+    permissionCodes.workflowQuorumAllRecord,
+    "Record quorum participation",
+    "Record attendance, conflict clearance and chair status for any active workflow stage.",
+  ),
+  define(
     permissionCodes.workflowTaskCancelAll,
     "Cancel all tasks",
     "Cancel any active workflow task.",

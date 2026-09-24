@@ -41,6 +41,7 @@ export type StageActivationTaskDefinition = {
   formVersionId: string | null;
   id: string;
   namedUserOverrideId: string | null;
+  reviewerCount: number;
   roleId: string | null;
   stableKey: string;
 };
@@ -225,6 +226,7 @@ export async function loadStageActivationTasks(
       formVersionId: stageTaskFormBindings.formVersionId,
       id: stageTaskDefinitions.id,
       namedUserOverrideId: stageTaskDefinitions.namedUserOverrideId,
+      reviewerCount: stageTaskDefinitions.reviewerCount,
       roleId: stageTaskDefinitions.roleId,
       stableKey: stageTaskDefinitions.stableKey,
     })
@@ -266,6 +268,12 @@ export async function loadPriorStageContext(
     FROM latest_completed_stage latest
     LEFT JOIN app_workflow_tasks task
       ON task.stage_instance_id = latest.id
+      AND task.status = 'COMPLETED'
+      AND (task.form_version_id IS NULL OR EXISTS (
+        SELECT 1 FROM app_form_responses submitted
+        WHERE submitted.workflow_task_id = task.id
+          AND submitted.status = 'COMPLETED'
+      ))
     LEFT JOIN app_form_responses response
       ON response.workflow_task_id = task.id
       AND response.status = 'COMPLETED'
@@ -313,7 +321,9 @@ export async function persistStageActivation(
   }
   const tasks = await createWorkflowTasks(
     transaction,
-    input.tasks.map((task) => ({
+    input.tasks.flatMap((task) => Array.from(
+      { length: task.reviewerCount },
+      (_, index) => ({
       assignedRoleId: task.roleId,
       assignedUserId: task.namedUserOverrideId,
       createdAt: input.activatedAt,
@@ -323,7 +333,9 @@ export async function persistStageActivation(
         : task.formVersionId,
       stageInstanceId: stage.id,
       workflowTaskDefinitionId: task.id,
-    })),
+      reviewerSlot: index + 1,
+    }),
+    )),
   );
   await transaction
     .update(workflowInstances)

@@ -73,16 +73,25 @@ function validateTaskIdentity(
       ),
     );
   }
-  if (
-    task.quorum &&
-    (task.reviewerCount < 2 ||
-      task.requiredCompletionCount * 2 <= task.reviewerCount)
-  ) {
+  if (task.quorum && (!task.quorumRule
+    || (task.quorumRule.minimumCount === null
+      && task.quorumRule.minimumPercentage === null))) {
     errors.push(
       issue(
         "INVALID_QUORUM",
-        `${task.name} must require a majority of at least two reviewers for quorum.`,
-        `${taskPath}.quorum`,
+        `${task.name} must configure a participation quorum.`,
+        `${taskPath}.quorumRule`,
+      ),
+    );
+  }
+  if (task.quorum && task.quorumRule?.population === "ASSIGNED_TASKS"
+    && task.quorumRule.minimumCount !== null
+    && task.quorumRule.minimumCount > task.reviewerCount) {
+    errors.push(
+      issue(
+        "INVALID_QUORUM_COUNT",
+        `${task.name} cannot require more assigned participants than reviewer slots.`,
+        `${taskPath}.quorumRule.minimumCount`,
       ),
     );
   }

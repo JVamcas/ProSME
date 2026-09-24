@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
-vi.mock("@/db/repositories/WorkQueueRepository", () => ({
+vi.mock("@/modules/workflows/infrastructure/WorkQueueRepository", () => ({
   readWorkQueue: vi.fn(),
   writeTaskClaim: vi.fn(),
 }));
@@ -12,7 +12,7 @@ import type { AuthenticatedUser } from "@/auth/types";
 import {
   readWorkQueue,
   writeTaskClaim,
-} from "@/db/repositories/WorkQueueRepository";
+} from "@/modules/workflows/infrastructure/WorkQueueRepository";
 import { ResourceConflictError } from "@/lib/resource-errors";
 import {
   claimTask,

@@ -65,8 +65,11 @@ export async function readWorkflowTask(
       AND stage.status = 'ACTIVE'
       AND (
         task.assigned_user_id = ${actorId}::uuid
-        OR task.assigned_role_id IN (
-          SELECT role_id FROM app_user_roles WHERE user_id = ${actorId}::uuid
+        OR (
+          task.assigned_user_id IS NULL
+          AND task.assigned_role_id IN (
+            SELECT role_id FROM app_user_roles WHERE user_id = ${actorId}::uuid
+          )
         )
       )
   `);

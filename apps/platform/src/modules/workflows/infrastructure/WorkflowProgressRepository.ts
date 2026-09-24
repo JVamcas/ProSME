@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
 import { roles } from "@/db/schema/authorization";
@@ -24,6 +24,10 @@ import {
 type ProgressTaskRecord = Omit<WorkflowProgressTask, "canOpen"> & {
   assignedRoleCode: string | null;
   assignedUserId: string | null;
+  taskDefinitionId: string | null;
+  reviewerCount: number | null;
+  reviewRelease: "STAGE_COMPLETED" | "THRESHOLD_MET" | "IMMEDIATE" | null;
+  thresholdSatisfied: boolean;
   viewPermission: string;
 };
 
@@ -52,6 +56,15 @@ export async function readWorkflowProgress(
       stageSequence: workflowStageDefinitions.sequence,
       stageStatus: stageInstances.status,
       taskActionedAt: workflowTasks.completedAt,
+      taskDefinitionId: stageTaskDefinitions.id,
+      reviewerCount: stageTaskDefinitions.reviewerCount,
+      reviewRelease: stageTaskDefinitions.reviewRelease,
+      thresholdSatisfied: sql<boolean>`EXISTS (
+        SELECT 1 FROM app_workflow_review_threshold_evaluations evaluation
+        WHERE evaluation.stage_instance_id = ${stageInstances.id}
+          AND evaluation.task_definition_id = ${stageTaskDefinitions.id}
+          AND evaluation.first_satisfied = true
+      )`,
       taskAssignedRoleCode: roles.code,
       taskAssignedRoleName: roles.name,
       taskAssignedUserEmail: users.email,
@@ -86,7 +99,13 @@ export async function readWorkflowProgress(
     )
     .leftJoin(
       workflowTasks,
-      eq(workflowTasks.stageInstanceId, stageInstances.id),
+      and(
+        eq(workflowTasks.stageInstanceId, stageInstances.id),
+        sql`NOT EXISTS (
+          SELECT 1 FROM app_workflow_tasks successor
+          WHERE successor.supersedes_task_id = ${workflowTasks.id}
+        )`,
+      ),
     )
     .leftJoin(
       stageTaskDefinitions,
@@ -126,6 +145,10 @@ export async function readWorkflowProgress(
       stage.tasks.push({
         actionedAt: row.taskActionedAt?.toISOString() ?? null,
         assignedRoleCode: row.taskAssignedRoleCode,
+        taskDefinitionId: row.taskDefinitionId,
+        reviewerCount: row.reviewerCount,
+        reviewRelease: row.reviewRelease,
+        thresholdSatisfied: row.thresholdSatisfied,
         assignedRoleName: row.taskAssignedRoleName,
         assignedUserEmail: row.taskAssignedUserEmail,
         assignedUserId: row.taskAssignedUserId,

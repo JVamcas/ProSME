@@ -1,6 +1,11 @@
 import "server-only";
 
 import { taskHasChecklist, taskWorkIsReady } from "@/modules/workflows/WorkflowTaskRegistry";
+import {
+  loadRequiredTaskCompletions,
+  recordReviewThresholdEvaluations,
+} from "./StageCompletionRepository";
+import { evaluateStageQuorum } from "./WorkflowQuorumRepository";
 import { readSequentialTransitionAdvancement } from "./RuntimeTransitionAdvancement";
 
 import { sql } from "drizzle-orm";
@@ -33,6 +38,7 @@ type ExecuteTransition = (
 ) => Promise<SequentialTransitionResult>;
 
 type LockedTask = {
+  actionType: string | null;
   formCompleted: boolean;
   formRequired: boolean;
   hasActions: boolean;
@@ -124,6 +130,12 @@ async function lockTask(
         SELECT 1 FROM app_stage_task_action_bindings binding
         WHERE binding.task_definition_id = definition.id
       ) AS "hasActions",
+      (
+        SELECT action.action_type
+        FROM app_workflow_action_definitions action
+        WHERE action.stage_id = stage.workflow_stage_definition_id
+          AND action.stable_key = ${input.actionKey}
+      ) AS "actionType",
       definition.config, stage.id AS "stageInstanceId",
       stage.workflow_stage_definition_id AS "stageDefinitionId",
       workflow.id AS "workflowInstanceId",
@@ -239,12 +251,28 @@ export async function writeChecklistTaskCompletion(
   if (replay) return replay;
   try {
     return await database.transaction(async (transaction) => {
+      await transaction.execute(sql`
+        SELECT stage.id
+        FROM app_workflow_stage_instances stage
+        JOIN app_workflow_tasks task ON task.stage_instance_id = stage.id
+        WHERE task.id = ${input.taskId}::uuid
+        FOR UPDATE OF stage
+      `);
       const task = await lockTask(transaction, input);
       if (!task) return { kind: "not_found" } as const;
       const insideReplay = await findCommand(transaction, input);
       if (insideReplay) return insideReplay;
       if (!taskHasChecklist(task.config)) return { kind: "conflict" } as const;
       const completedAt = new Date();
+      if (task.actionType === "APPROVE_ADVANCE"
+        || task.actionType === "REJECT") {
+        const quorumSatisfied = await evaluateStageQuorum(transaction, {
+          actorId: input.actorId,
+          stageDefinitionId: task.stageDefinitionId,
+          stageInstanceId: task.stageInstanceId,
+        });
+        if (!quorumSatisfied) return { kind: "conflict" } as const;
+      }
       if (input.actionKey && task.formRequired && !task.formCompleted) {
         return { kind: "conflict" } as const;
       }
@@ -262,6 +290,18 @@ export async function writeChecklistTaskCompletion(
         ? "IN_PROGRESS" as const
         : "COMPLETED" as const;
       await completeTask(transaction, input, completedAt, taskStatus);
+      if (taskStatus === "COMPLETED") {
+        const requirements = await loadRequiredTaskCompletions(
+          transaction,
+          task.stageInstanceId,
+        );
+        await recordReviewThresholdEvaluations(transaction, {
+          actorId: input.actorId,
+          requirements,
+          stageInstanceId: task.stageInstanceId,
+          triggerTaskId: input.taskId,
+        });
+      }
       const auditInput = {
         actorId: input.actorId,
         beforeRowVersion: input.expectedRowVersion,

@@ -41,7 +41,8 @@ describe("workflow task write repository", () => {
         createdAt,
         dueAt,
         stageInstanceId: record.stageInstanceId,
-        workflowTaskDefinitionId: record.workflowTaskDefinitionId,
+        reviewerSlot: 1,
+    workflowTaskDefinitionId: record.workflowTaskDefinitionId,
       }],
     );
 
@@ -55,6 +56,7 @@ describe("workflow task write repository", () => {
       stageInstanceId: record.stageInstanceId,
       status: "CLAIMED",
       workflowTaskDefinitionId: record.workflowTaskDefinitionId,
+      reviewerSlot: 1,
     }]);
     expect(result).toEqual([record]);
   });

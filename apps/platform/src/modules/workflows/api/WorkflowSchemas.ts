@@ -136,8 +136,21 @@ export const workflowTaskSchema = z
     namedUserOverrideId: z.string().uuid().nullable().optional(),
     assignmentMode: z.enum(workflowTaskAssignmentModes),
     reviewerCount: z.number().int().positive().max(100),
+    reviewRelease: z.enum(["STAGE_COMPLETED", "THRESHOLD_MET", "IMMEDIATE"]).optional(),
     requiredCompletionCount: z.number().int().positive().max(100),
+    completionMode: z.enum(["ALL", "COUNT", "PERCENT"]).optional(),
+    completionPercentage: z.number().int().min(1).max(100).nullable().optional(),
     quorum: z.boolean(),
+    quorumRule: z.object({
+      population: z.enum(["ASSIGNED_TASKS", "REGISTERED"]),
+      minimumCount: z.number().int().positive().nullable(),
+      minimumPercentage: z.number().int().min(1).max(100).nullable(),
+      rounding: z.literal("CEIL"),
+      chairRequired: z.boolean(),
+      recusalDenominator: z.enum(["EXCLUDE", "INCLUDE"]),
+      freeze: z.enum(["AT_DECISION", "ON_FIRST_PASS"]),
+      abstentionsCountAsPresent: z.boolean(),
+    }).strict().nullable().optional(),
     coiRequired: z.boolean(),
     displayOrder: z.number().int().positive(),
     required: z.boolean(),
@@ -159,6 +172,39 @@ export const workflowTaskSchema = z
   })
   .strict()
   .superRefine((task, context) => {
+    if (task.completionMode === "PERCENT" && !task.completionPercentage) {
+      context.addIssue({
+        code: "custom",
+        message: "A percentage threshold requires a percentage.",
+        path: ["completionPercentage"],
+      });
+    }
+    if (task.completionMode !== "PERCENT" && task.completionPercentage) {
+      context.addIssue({
+        code: "custom",
+        message: "A percentage applies only to percentage thresholds.",
+        path: ["completionPercentage"],
+      });
+    }
+    if (task.quorum && (!task.quorumRule || (
+      task.quorumRule.minimumCount === null
+      && task.quorumRule.minimumPercentage === null
+    ))) {
+      context.addIssue({
+        code: "custom",
+        message: "Quorum requires an independent participation rule.",
+        path: ["quorumRule"],
+      });
+    }
+    if (task.quorum && task.quorumRule?.population === "ASSIGNED_TASKS"
+      && task.quorumRule.minimumCount !== null
+      && task.quorumRule.minimumCount > task.reviewerCount) {
+      context.addIssue({
+        code: "custom",
+        message: "Assigned-task quorum count cannot exceed the reviewer count.",
+        path: ["quorumRule", "minimumCount"],
+      });
+    }
     if (task.requiredCompletionCount > task.reviewerCount) {
       context.addIssue({
         code: "custom",
@@ -173,17 +219,7 @@ export const workflowTaskSchema = z
         path: ["reviewerCount"],
       });
     }
-    if (
-      task.quorum &&
-      (task.reviewerCount < 2 ||
-        task.requiredCompletionCount * 2 <= task.reviewerCount)
-    ) {
-      context.addIssue({
-        code: "custom",
-        message: "Quorum requires a majority of at least two reviewers.",
-        path: ["quorum"],
-      });
-    }
+
   });
 
 export const workflowStageSchema = z.object({

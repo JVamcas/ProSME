@@ -74,6 +74,7 @@ export const permissionCodes = {
   workflowTaskAssignedDecide: "workflow.task.assigned.decide",
   workflowTaskClaim: "workflow.task.claim",
   workflowTaskAssign: "workflow.task.assign",
+  workflowQuorumAllRecord: "workflow.quorum.all.record",
   workflowTaskCancelAll: "workflow.task.cancel.all",
   workflowDefinitionRead: "workflow.definition.read",
   workflowDefinitionCreate: "workflow.definition.create",

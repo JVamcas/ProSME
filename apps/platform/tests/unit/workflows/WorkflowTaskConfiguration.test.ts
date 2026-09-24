@@ -46,7 +46,12 @@ describe("workflow task configuration", () => {
       formVersionId: "",
       reviewerCount: 3,
       requiredCompletionCount: 2,
+      completionMode: "COUNT",
+      reviewRelease: "STAGE_COMPLETED",
+      completionPercentage: null,
       quorum: true,
+      quorumMinimumCount: 2,
+      quorumMinimumPercentage: null,
       coiRequired: true,
       configJson: formatTaskConfiguration(
         { items: [{ code: "ONE", label: "One", required: true }] },

@@ -50,6 +50,8 @@ beforeEach(() => {
     formVersionId: null,
     id: taskId,
     rowVersion: 1,
+    reviewerSlot: 1,
+    supersedesTaskId: null,
     stageInstanceId: stageId,
     startedAt: null,
     status: "PENDING",
@@ -100,6 +102,7 @@ describe("stage activation repository", () => {
           namedUserOverrideId: null,
           roleId: "55555555-5555-4555-8555-555555555555",
           stableKey: "CHECKLIST",
+          reviewerCount: 3,
         }],
       },
     );
@@ -107,10 +110,11 @@ describe("stage activation repository", () => {
     expect(result.stage.id).toBe(stageId);
     expect(createWorkflowTasks).toHaveBeenCalledWith(
       expect.anything(),
-      [expect.objectContaining({
+      [1, 2, 3].map((reviewerSlot) => expect.objectContaining({
         dueAt: new Date("2026-09-22T09:00:00.000Z"),
+        reviewerSlot,
         stageInstanceId: stageId,
-      })],
+      })),
     );
     expect(set).toHaveBeenCalledWith({ currentStageInstanceId: stageId });
     expect(inserted).toEqual(expect.arrayContaining([
@@ -199,6 +203,7 @@ describe("stage activation repository", () => {
           namedUserOverrideId: null,
           roleId: "55555555-5555-4555-8555-555555555555",
           stableKey: "ELIGIBILITY_VERIFICATION",
+          reviewerCount: 1,
         }],
       },
     );

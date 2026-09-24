@@ -659,6 +659,13 @@
       "when": 1795824000000,
       "tag": "0093_remove_workflow_task_type",
       "breakpoints": true
+    },
+    {
+      "idx": 94,
+      "version": "7",
+      "when": 1795910400000,
+      "tag": "0094_reviewer_slots_threshold_quorum",
+      "breakpoints": true
     }
   ]
 }

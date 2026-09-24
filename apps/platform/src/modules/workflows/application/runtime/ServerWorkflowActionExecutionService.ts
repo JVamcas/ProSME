@@ -17,6 +17,11 @@ import {
   workflowActionExecutionDatabase,
   type WorkflowActionExecutionTarget,
 } from "../../infrastructure/WorkflowActionExecutionRepository";
+import {
+  loadRequiredTaskCompletions,
+  recordReviewThresholdEvaluations,
+} from "../../infrastructure/StageCompletionRepository";
+import { evaluateStageQuorum } from "../../infrastructure/WorkflowQuorumRepository";
 import { configuredActionTargetsAreValid } from "../../infrastructure/WorkflowActionTargetRepository";
 import {
   validateActionInputAgainstConfiguration,
@@ -202,6 +207,17 @@ export async function executeWorkflowAction(
           targetsValid,
         }),
       );
+      if (target.action.actionType === "APPROVE_ADVANCE"
+        || target.action.actionType === "REJECT") {
+        const quorumSatisfied = await evaluateStageQuorum(transaction, {
+          actorId: actor.id,
+          stageDefinitionId: target.stage.stageDefinitionId,
+          stageInstanceId: target.stage.stageInstanceId,
+        });
+        if (!quorumSatisfied) {
+          fail("ACTION_UNAVAILABLE", "The required participation quorum is absent.");
+        }
+      }
       const resultingRuntimeVersion = await claimWorkflowActionRuntimeVersion(
         transaction,
         target.stage.stageInstanceId,
@@ -218,6 +234,16 @@ export async function executeWorkflowAction(
         if (!completed) {
           fail("ACTION_UNAVAILABLE", "The task changed before the action completed.");
         }
+        const requirements = await loadRequiredTaskCompletions(
+          transaction,
+          target.stage.stageInstanceId,
+        );
+        await recordReviewThresholdEvaluations(transaction, {
+          actorId: actor.id,
+          requirements,
+          stageInstanceId: target.stage.stageInstanceId,
+          triggerTaskId: target.task.id,
+        });
       }
       return executeConfiguredWorkflowActionOutcome(transaction, {
         actorId: actor.id,

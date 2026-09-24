@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
+vi.mock("@/modules/workflows/infrastructure/StageCompletionRepository", () => ({
+  loadRequiredTaskCompletions: vi.fn().mockResolvedValue([]),
+  recordReviewThresholdEvaluations: vi.fn(),
+}));
 vi.mock(
   "@/modules/workflows/application/runtime/ServerStageCompletionService",
   () => ({ completeStageInTransaction: vi.fn() }),
@@ -9,6 +13,8 @@ vi.mock(
   "@/modules/workflows/infrastructure/WorkflowTaskLifecycleRepository",
   () => ({
     lockWorkflowTaskForLifecycle: vi.fn(),
+    lockTaskStageForLifecycle: vi.fn(),
+    reviewerAlreadyOwnsSiblingSlot: vi.fn(),
     persistWorkflowTaskTransition: vi.fn(),
     withWorkflowTaskLifecycleTransaction: vi.fn(),
   }),
@@ -59,6 +65,8 @@ const input = {
 const task = {
   assignedUserId: null,
   claimableByActor: true,
+  formRequired: false,
+  formCompleted: false,
   id: input.taskId,
   permissions: defaultWorkflowElementPermissions,
   rowVersion: 1,

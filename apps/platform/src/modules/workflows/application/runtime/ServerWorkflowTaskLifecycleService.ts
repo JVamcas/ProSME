@@ -12,9 +12,15 @@ import {
 } from "@/lib/resource-errors";
 import { canTransitionWorkflowTask } from "../../domain/runtime/WorkflowTaskLifecycle";
 import type { WorkflowTaskStatus } from "../../domain/runtime/WorkflowTask";
+import {
+  loadRequiredTaskCompletions,
+  recordReviewThresholdEvaluations,
+} from "../../infrastructure/StageCompletionRepository";
 import { completeStageInTransaction } from "./ServerStageCompletionService";
 import {
   lockWorkflowTaskForLifecycle,
+  lockTaskStageForLifecycle,
+  reviewerAlreadyOwnsSiblingSlot,
   persistWorkflowTaskTransition,
   withWorkflowTaskLifecycleTransaction,
 } from "../../infrastructure/WorkflowTaskLifecycleRepository";
@@ -63,6 +69,7 @@ async function changeTaskState(
   }
 
   return withWorkflowTaskLifecycleTransaction(async (transaction) => {
+    await lockTaskStageForLifecycle(transaction, input.taskId);
     const task = await lockWorkflowTaskForLifecycle(
       transaction,
       input.taskId,
@@ -75,7 +82,21 @@ async function changeTaskState(
       throw new ResourceConflictError("This task changed. Refresh and try again.");
     }
     assertTaskContext(action, actor.id, task);
+    if (action === "CLAIM" && await reviewerAlreadyOwnsSiblingSlot(
+      transaction,
+      task.id,
+      actor.id,
+    )) {
+      throw new ResourceConflictError(
+        "You already own another independent reviewer slot.",
+      );
+    }
 
+    if (action === "COMPLETE" && task.formRequired && !task.formCompleted) {
+      throw new ResourceConflictError(
+        "Submit the required form before completing this task.",
+      );
+    }
     const targetStatus = targetStatusByAction[action];
     if (!canTransitionWorkflowTask(task.status, targetStatus)) {
       throw new ResourceConflictError(
@@ -96,11 +117,24 @@ async function changeTaskState(
     if (!updated) {
       throw new ResourceConflictError("This task changed. Refresh and try again.");
     }
+    if (action === "CANCEL") {
+      const requirements = await loadRequiredTaskCompletions(
+        transaction,
+        task.stageInstanceId,
+      );
+      await recordReviewThresholdEvaluations(transaction, {
+        actorId: actor.id,
+        requirements,
+        stageInstanceId: task.stageInstanceId,
+        triggerTaskId: task.id,
+      });
+    }
     if (action === "COMPLETE") {
       await completeStageInTransaction(transaction, {
         actorId: actor.id,
         correlationId: input.correlationId,
         stageInstanceId: task.stageInstanceId,
+        triggerTaskId: task.id,
       });
     }
     return updated;
