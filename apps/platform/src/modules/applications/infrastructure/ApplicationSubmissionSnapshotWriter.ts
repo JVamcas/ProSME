@@ -1,6 +1,7 @@
 import "server-only";
 
 import { applicationSubmissionSnapshots } from "@/db/schema";
+import { currentFormDeclarationValues } from "../domain/ApplicationReadiness";
 import {
   APPLICATION_SUBMISSION_SNAPSHOT_SCHEMA_VERSION,
   serializeSubmissionSnapshot,
@@ -31,6 +32,18 @@ export async function createSubmissionSnapshot(
       || left.id.localeCompare(right.id)
     ));
   const formValues = input.context.response.values;
+  const declarationValues = currentFormDeclarationValues(
+    input.context.form,
+    formValues,
+  );
+  if (!declarationValues) {
+    throw new Error("Current form declarations must be accepted before submission.");
+  }
+  const declarationAcceptance = {
+    acceptedAt: submittedAt.toISOString(),
+    formVersionId: input.context.form.versionId,
+    responseRowVersion: input.context.response.rowVersion,
+  };
   const copiedText = (key: string, fallback: string) => (
     typeof formValues[key] === "string" ? formValues[key] as string : fallback
   );
@@ -55,7 +68,7 @@ export async function createSubmissionSnapshot(
     application: {
       businessId: input.application.businessId,
       businessSection: input.application.businessSection,
-      declarationsSection: input.application.declarationsSection,
+      declarationsSection: declarationValues,
       financialSection: input.application.financialSection,
       fundingOpportunityId: input.application.fundingOpportunityId,
       ownerUserId: input.application.ownerUserId,
@@ -94,8 +107,8 @@ export async function createSubmissionSnapshot(
       updatedAt: input.business.updatedAt.toISOString(),
     },
     declarations: {
-      acceptance: input.application.declarationAcceptance ?? {},
-      values: input.application.declarationsSection,
+      acceptance: declarationAcceptance,
+      values: declarationValues,
     },
     documents: documentVersions,
     eligibilityRuleSetVersionId: input.application.eligibilityRuleSetVersionId!,
@@ -125,7 +138,7 @@ export async function createSubmissionSnapshot(
       ...serialized,
       applicationData: {
         businessSection: input.application.businessSection,
-        declarationsSection: input.application.declarationsSection,
+        declarationsSection: declarationValues,
         financialSection: input.application.financialSection,
         fundingOpportunityId: input.application.fundingOpportunityId,
         fundingOpportunityTitle: input.application.fundingOpportunityTitle,
@@ -135,7 +148,7 @@ export async function createSubmissionSnapshot(
       applicationId: input.application.id,
       applicationRowVersion: input.application.rowVersion,
       businessData: snapshotContent.business,
-      declarationAcceptance: input.application.declarationAcceptance ?? {},
+      declarationAcceptance,
       documentVersions,
       eligibilityRuleSetVersionId:
         input.application.eligibilityRuleSetVersionId!,

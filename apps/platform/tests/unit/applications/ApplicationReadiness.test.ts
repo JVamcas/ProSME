@@ -3,16 +3,19 @@ import { describe, expect, it } from "vitest";
 import {
   evaluateApplicationReadiness,
 } from "@/modules/applications/domain/ApplicationReadiness";
-import {
-  declarationVersion,
-  privacyNoticeVersion,
-} from "@/modules/applications/ApplicationDeclarations";
 import type { FormRuntimeSchema } from "@/modules/forms/FormTypes";
 import { operator } from "@/modules/conditions/domain/Operator";
 
 const formVersionId = "10000000-0000-4000-8000-000000000001";
 const detailsSectionId = "20000000-0000-4000-8000-000000000001";
 const documentsSectionId = "20000000-0000-4000-8000-000000000002";
+const declarationsSectionId = "20000000-0000-4000-8000-000000000003";
+const declarationOptions = [
+  { key: "DECLARATION_ACCURACY_CONFIRMATION", value: "CONFIRMED" },
+  { key: "DECLARATION_AUTHORITY_CONFIRMATION", value: "CONFIRMED" },
+  { key: "DATA_PROCESSING_CONSENT", value: "CONSENT_GRANTED" },
+  { key: "VERIFICATION_CONSENT", value: "CONSENT_GRANTED" },
+] as const;
 
 const form: FormRuntimeSchema = {
   fields: [
@@ -55,6 +58,34 @@ const form: FormRuntimeSchema = {
         kind: "GROUP",
       },
     },
+    ...declarationOptions.map(({ key, value }, index) => ({
+      columnSpan: 1 as const,
+      key,
+      label: key,
+      options: [{ key: value, label: value, order: 1 }],
+      order: index + 1,
+      required: true,
+      sectionId: declarationsSectionId,
+      type: "SINGLE_SELECT" as const,
+    })),
+    {
+      columnSpan: 1,
+      key: "DECLARANT_NAME",
+      label: "Declarant name",
+      order: 5,
+      required: true,
+      sectionId: declarationsSectionId,
+      type: "TEXT",
+    },
+    {
+      columnSpan: 1,
+      key: "DECLARATION_DATE",
+      label: "Declaration date",
+      order: 6,
+      required: true,
+      sectionId: declarationsSectionId,
+      type: "DATE",
+    },
     {
       columnSpan: 1,
       key: "REGISTRATION_DOCUMENT",
@@ -79,6 +110,15 @@ const form: FormRuntimeSchema = {
     {
       columnSpan: 1,
       description: "",
+      id: declarationsSectionId,
+      key: "DECLARATIONS_AND_CONSENT",
+      order: 3,
+      showContainer: true,
+      title: "Declarations and consent",
+    },
+    {
+      columnSpan: 1,
+      description: "",
       id: documentsSectionId,
       key: "DOCUMENTS",
       order: 2,
@@ -95,18 +135,6 @@ function input(): Parameters<typeof evaluateApplicationReadiness>[0] {
   return {
     application: {
       businessId: "40000000-0000-4000-8000-000000000001",
-      declarationAcceptance: {
-        acceptedAt: "2026-09-23T08:00:00.000Z",
-        declarationVersion,
-        privacyVersion: privacyNoticeVersion,
-      },
-      declarationsSection: {
-        compliance: true,
-        falseInformation: true,
-        informationAccuracy: true,
-        privacyConsent: true,
-        terms: true,
-      },
       formVersionId,
       rowVersion: 4,
       status: "draft",
@@ -128,7 +156,16 @@ function input(): Parameters<typeof evaluateApplicationReadiness>[0] {
     response: {
       formVersionId,
       rowVersion: 3,
-      values: { BUSINESS_NAME: "Example", HAS_REFERENCE: false },
+      values: {
+        BUSINESS_NAME: "Example",
+        HAS_REFERENCE: false,
+        DECLARATION_ACCURACY_CONFIRMATION: "CONFIRMED",
+        DECLARATION_AUTHORITY_CONFIRMATION: "CONFIRMED",
+        DATA_PROCESSING_CONSENT: "CONSENT_GRANTED",
+        VERIFICATION_CONSENT: "CONSENT_GRANTED",
+        DECLARANT_NAME: "Applicant",
+        DECLARATION_DATE: "2026-09-23",
+      },
     },
   };
 }
@@ -165,7 +202,11 @@ describe("application completeness and submission readiness", () => {
 
   it("returns safe blocker codes and messages without condition expressions", () => {
     const candidate = input();
-    candidate.response.values = { BUSINESS_NAME: "", HAS_REFERENCE: true };
+    candidate.response.values = {
+      ...candidate.response.values,
+      BUSINESS_NAME: "",
+      HAS_REFERENCE: true,
+    };
     candidate.documents = [];
     candidate.callOpen = false;
     candidate.configurationAvailable = false;
@@ -186,7 +227,7 @@ describe("application completeness and submission readiness", () => {
   it("requires current declarations and a selected business", () => {
     const candidate = input();
     candidate.application.businessId = null;
-    candidate.application.declarationAcceptance = null;
+    delete candidate.response.values.DECLARATION_ACCURACY_CONFIRMATION;
     const readiness = evaluateApplicationReadiness(candidate);
     expect(readiness.blockers).toEqual(expect.arrayContaining([
       expect.objectContaining({ code: "BUSINESS_REQUIRED" }),

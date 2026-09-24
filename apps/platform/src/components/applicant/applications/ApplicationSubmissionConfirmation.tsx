@@ -19,8 +19,7 @@ export function ApplicationSubmissionConfirmation({
         Application submitted
       </h2>
       <p className="mt-3 text-brand-navy/70">
-        Your application is now with the programme team. A confirmation has
-        been queued for delivery.
+        Your application has been successfully submitted and is now with the programme team for review.
       </p>
       <div className="mx-auto mt-6 rounded-xl bg-brand-navy/5 px-5 py-4">
         <span className="block text-sm text-brand-navy/60">

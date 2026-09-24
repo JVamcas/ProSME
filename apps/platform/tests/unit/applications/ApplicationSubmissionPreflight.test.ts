@@ -1,8 +1,29 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
+vi.mock("@/modules/applications/infrastructure/ApplicationSubmissionSnapshotWriter", () => ({
+  createSubmissionSnapshot: vi.fn(),
+}));
+vi.mock("@/modules/workflows/infrastructure/WorkflowInstanceRepository", () => ({
+  createWorkflowInstance: vi.fn(),
+}));
+vi.mock("@/modules/workflows/application/runtime/ServerStageActivationService", () => ({
+  activateStageInTransaction: vi.fn(),
+}));
+vi.mock("@/modules/eligibility/application/ServerSubmissionEligibilityService", () => ({
+  prepareSubmissionAuthoritativeEligibilityOutcome: vi.fn(),
+}));
+vi.mock("@/modules/eligibility/infrastructure/AuthoritativeEligibilityRepository", () => ({
+  createAuthoritativeEligibilityOutcomeRecord: vi.fn(),
+}));
 
 import { resetServerEnvironmentForTests } from "@/lib/env/server";
+import { writeApplicationSubmission } from "@/modules/applications/infrastructure/ApplicationSubmissionWriter";
+import { createSubmissionSnapshot } from "@/modules/applications/infrastructure/ApplicationSubmissionSnapshotWriter";
+import { prepareSubmissionAuthoritativeEligibilityOutcome } from "@/modules/eligibility/application/ServerSubmissionEligibilityService";
+import { createAuthoritativeEligibilityOutcomeRecord } from "@/modules/eligibility/infrastructure/AuthoritativeEligibilityRepository";
+import { activateStageInTransaction } from "@/modules/workflows/application/runtime/ServerStageActivationService";
+import { createWorkflowInstance } from "@/modules/workflows/infrastructure/WorkflowInstanceRepository";
 import {
   createApplicationPreflightToken,
   readApplicationPreflightToken,
@@ -87,5 +108,68 @@ describe("application reference formatter", () => {
       sequenceValue: BigInt(0),
       submittedAt: issuedAt,
     })).toThrow(ApplicationReferenceConfigurationError);
+  });
+});
+
+describe("submission workflow bootstrap", () => {
+  it("lodges the snapshot and opens screening without an early eligibility decision", async () => {
+    vi.clearAllMocks();
+    const applicationId = "10000000-0000-4000-8000-000000000001";
+    const events: string[] = [];
+    vi.mocked(createSubmissionSnapshot).mockImplementation(async () => {
+      events.push("snapshot");
+      return { id: "snapshot-id" } as never;
+    });
+    vi.mocked(createWorkflowInstance).mockImplementation(async () => {
+      events.push("workflow");
+      return { id: "workflow-id" } as never;
+    });
+    vi.mocked(activateStageInTransaction).mockImplementation(async () => {
+      events.push("initial-stage");
+      return { kind: "activated", stageInstanceId: "stage-id", taskIds: [] };
+    });
+    const transaction = {
+      execute: vi.fn().mockResolvedValue({ rows: [{ value: "1" }] }),
+      insert: vi.fn(() => ({ values: vi.fn().mockResolvedValue(undefined) })),
+      update: vi.fn(() => ({
+        set: () => ({
+          where: () => ({
+            returning: async () => {
+              events.push("application-submitted");
+              return [{ id: applicationId }];
+            },
+          }),
+        }),
+      })),
+    };
+
+    const result = await writeApplicationSubmission(transaction as never, {
+      actorId: "actor-id",
+      applicant: {},
+      application: { id: applicationId, rowVersion: 4 },
+      configuration: {
+        reference: "SME",
+        stageId: "initial-stage-id",
+        workflowTemplateVersionId: "workflow-version-id",
+      },
+      context: {},
+      correlationId: "correlation-id",
+      idempotencyKey: "submission-key",
+      publicationRevision: {},
+      requestFingerprint: "fingerprint",
+    } as never);
+
+    expect(result).toMatchObject({
+      kind: "submitted",
+      result: { applicationId, workflowInstanceId: "workflow-id" },
+    });
+    expect(events).toEqual([
+      "snapshot",
+      "application-submitted",
+      "workflow",
+      "initial-stage",
+    ]);
+    expect(prepareSubmissionAuthoritativeEligibilityOutcome).not.toHaveBeenCalled();
+    expect(createAuthoritativeEligibilityOutcomeRecord).not.toHaveBeenCalled();
   });
 });

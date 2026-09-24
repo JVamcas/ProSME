@@ -184,7 +184,7 @@ function LoadedApplicationDraft({
           }
         >
           {data.status === "draft" ? (
-            <div className="mt-5 flex flex-col items-end gap-3">
+            <div className="flex flex-col items-end gap-3">
               <GeneralButton
                 disabled={autosave.status !== "saved" || preflight.isPending || submit.isPending}
                 type="submit"

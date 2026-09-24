@@ -179,8 +179,6 @@ export async function readTransactionalApplicationReadiness(
   const readiness = evaluateApplicationReadiness({
     application: {
       businessId: application.businessId,
-      declarationAcceptance: application.declarationAcceptance,
-      declarationsSection: application.declarationsSection,
       formVersionId: application.formVersionId,
       rowVersion: application.rowVersion,
       status: application.status,

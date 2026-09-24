@@ -104,7 +104,7 @@ export function FundingOpportunityCard({
             </div>
           </header>
 
-          <p className="mt-4 line-clamp-4 text-sm leading-6 text-brand-navy/75 sm:text-base sm:leading-7">
+          <p className="mt-4 line-clamp-4 whitespace-pre-line text-sm leading-6 text-brand-navy/75 sm:text-base sm:leading-7">
             {opportunity.summary}
           </p>
 

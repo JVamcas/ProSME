@@ -11,8 +11,6 @@ import {
   workflowAuditEntries,
   workflowEvents,
 } from "@/db/schema";
-import { prepareSubmissionAuthoritativeEligibilityOutcome } from "@/modules/eligibility/application/ServerSubmissionEligibilityService";
-import { createAuthoritativeEligibilityOutcomeRecord } from "@/modules/eligibility/infrastructure/AuthoritativeEligibilityRepository";
 import { activateStageInTransaction } from "@/modules/workflows/application/runtime/ServerStageActivationService";
 import { createWorkflowInstance } from "@/modules/workflows/infrastructure/WorkflowInstanceRepository";
 import { formatApplicationReference } from "../domain/ApplicationReference";
@@ -91,31 +89,6 @@ async function markApplicationSubmitted(
     ))
     .returning({ id: applications.id });
   return Boolean(updated);
-}
-
-async function createEligibilityOutcome(
-  transaction: SubmissionTransaction,
-  input: SubmissionWriteInput,
-  submittedAt: Date,
-  snapshot: Awaited<ReturnType<typeof createSubmissionSnapshot>>,
-) {
-  const outcome = await prepareSubmissionAuthoritativeEligibilityOutcome(
-    transaction,
-    {
-      actorId: input.actorId,
-      applicationId: input.application.id,
-      applicationRowVersion: input.application.rowVersion + 1,
-      correlationId: input.correlationId,
-      evaluatedAt: submittedAt,
-      evaluationNumber: 1,
-      snapshot,
-      workflowTaskId: null,
-    },
-  );
-  return createAuthoritativeEligibilityOutcomeRecord(transaction, {
-    ...outcome,
-    commandKey: null,
-  });
 }
 
 async function createInitialRuntime(
@@ -260,7 +233,6 @@ export async function writeApplicationSubmission(
     submittedAt,
   );
   if (!updated) return { kind: "stale_preflight" };
-  await createEligibilityOutcome(transaction, input, submittedAt, snapshot);
   const workflowInstanceId = await createInitialRuntime(
     transaction,
     input,

@@ -17,6 +17,16 @@ describe("funding call rich text", () => {
       richTextToPlainText(
         "<p>Growth &amp; jobs</p><ul><li>Equipment</li><li>Training</li></ul>",
       ),
-    ).toBe("Growth & jobs Equipment Training");
+    ).toBe("Growth & jobs\nEquipment\nTraining");
+  });
+
+  it("keeps headings, paragraphs, and line breaks separate", () => {
+    expect(
+      richTextToPlainText(
+        "<h2>EMPOWERING NAMIBIAN ENTREPRENEURS</h2><p>The SME Fund invites applicants.</p><h3>WHAT TO EXPECT</h3><p>Grant funding<br>Pitch coaching</p>",
+      ),
+    ).toBe(
+      "EMPOWERING NAMIBIAN ENTREPRENEURS\nThe SME Fund invites applicants.\nWHAT TO EXPECT\nGrant funding\nPitch coaching",
+    );
   });
 });

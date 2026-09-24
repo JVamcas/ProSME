@@ -1,8 +1,3 @@
-import { applicationDeclarationsSectionSchema } from "../ApplicationDeclarationSchemas";
-import {
-  declarationVersion,
-  privacyNoticeVersion,
-} from "../ApplicationDeclarations";
 import type { ApplicationDocumentView } from "../api/ApplicationDocumentSchemas";
 import { applicationDocumentRequirements } from "./ApplicationDocumentPolicy";
 import { activeFormDefinition } from "@/modules/forms/engine/FormVisibility";
@@ -51,15 +46,39 @@ export type ApplicationPreflight = ApplicationReadiness & {
   readinessToken: string | null;
 };
 
+const formDeclarationAnswers = {
+  DECLARATION_ACCURACY_CONFIRMATION: "CONFIRMED",
+  DECLARATION_AUTHORITY_CONFIRMATION: "CONFIRMED",
+  DATA_PROCESSING_CONSENT: "CONSENT_GRANTED",
+  VERIFICATION_CONSENT: "CONSENT_GRANTED",
+} as const;
+
+export function currentFormDeclarationValues(
+  form: FormRuntimeSchema,
+  values: Readonly<Record<string, unknown>>,
+) {
+  const active = activeFormDefinition(form, values);
+  const section = active.sections.find(
+    (item) => item.key === "DECLARATIONS_AND_CONSENT",
+  );
+  if (!section) return null;
+  const fields = active.fields.filter((field) => field.sectionId === section.id);
+  const answered = Object.fromEntries(
+    fields.map((field) => [field.key, values[field.key]]),
+  );
+  const requiredConfirmations = Object.entries(formDeclarationAnswers);
+  const confirmed = requiredConfirmations.every(([key, expected]) => (
+    fields.some((field) => field.key === key && field.required)
+    && answered[key] === expected
+  ));
+  return confirmed && validateFormValues(fields, answered, true)
+    ? answered
+    : null;
+}
+
 type ReadinessInput = {
   application: {
     businessId: string | null;
-    declarationAcceptance: {
-      acceptedAt: string;
-      declarationVersion: string;
-      privacyVersion: string;
-    } | null;
-    declarationsSection: Record<string, unknown>;
     formVersionId: string;
     rowVersion: number;
     status: string;
@@ -170,16 +189,7 @@ function contextualBlockers(input: ReadinessInput) {
       message: "Select the business represented by this application.",
     });
   }
-  const acceptance = input.application.declarationAcceptance;
-  const declarationsValid = applicationDeclarationsSectionSchema.safeParse(
-    input.application.declarationsSection,
-  ).success;
-  if (
-    !acceptance
-    || !declarationsValid
-    || acceptance.declarationVersion !== declarationVersion
-    || acceptance.privacyVersion !== privacyNoticeVersion
-  ) {
+  if (!currentFormDeclarationValues(input.form, input.response.values)) {
     blockers.push({
       category: "declaration",
       code: "DECLARATIONS_REQUIRED",

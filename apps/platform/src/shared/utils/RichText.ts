@@ -25,11 +25,13 @@ function decodeEntity(entity: string) {
 export function richTextToPlainText(value: string) {
   return value
     .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/<\/(p|h[1-6]|li|blockquote)>/gi, " ")
+    .replace(/<\/(p|h[1-6]|li|blockquote|ul|ol|div)>/gi, "\n")
     .replace(/<[^>]*>/g, "")
     .replace(/&(#x[\da-f]+|#\d+|[a-z]+);/gi, (_, entity: string) =>
       decodeEntity(entity.toLowerCase()),
     )
-    .replace(/\s+/g, " ")
+    .replace(/[^\S\r\n]+/g, " ")
+    .replace(/ *\r?\n */g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
     .trim();
 }
