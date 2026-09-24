@@ -6,7 +6,7 @@ import type { AuthenticatedUser } from "@/auth/types";
 import {
   readAdminApplication,
   readAdminApplications,
-} from "@/db/repositories/AdminApplicationRepository";
+} from "@/modules/applications/infrastructure/AdminApplicationRepository";
 import {
   decodeAdminApplicationCursor,
   encodeAdminApplicationCursor,
@@ -26,9 +26,7 @@ export async function listAdminApplications(
   ]);
   const projection = await readAdminApplications({
     actorId: actor.id,
-    cursor: input.after
-      ? decodeAdminApplicationCursor(input.after)
-      : undefined,
+    cursor: input.after ? decodeAdminApplicationCursor(input.after) : undefined,
     filters: input,
     visibility: can(actor, permissionCodes.fundingApplicationAllRead)
       ? "all"

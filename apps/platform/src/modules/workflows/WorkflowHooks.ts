@@ -44,10 +44,10 @@ export function useWorkflowActionAvailability(
   });
 }
 
-export function useWorkflowTemplates() {
+export function useWorkflowTemplates(page: number, pageSize: number) {
   return useQuery({
-    queryKey: workflowQueryKeys.templates,
-    queryFn: clientWorkflowService.listTemplates,
+    queryKey: [...workflowQueryKeys.templates, page, pageSize],
+    queryFn: () => clientWorkflowService.listTemplates(page, pageSize),
   });
 }
 

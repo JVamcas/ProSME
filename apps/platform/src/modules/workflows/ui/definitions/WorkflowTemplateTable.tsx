@@ -9,6 +9,7 @@ import {
   PublishButton,
 } from "@/components/ui/action-buttons";
 import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
+import { DataTablePagination } from "@/shared/ui/DataTablePagination";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatLocalDateTime24 } from "@/lib/dateUtils";
 import {
@@ -23,6 +24,13 @@ type Props = {
   deletingId?: string;
   emptyMessage: string;
   items: WorkflowTemplateListItem[];
+  isFetching: boolean;
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (pageSize: number) => void;
   onClone: (template: WorkflowTemplateListItem) => void;
   onDelete: (template: WorkflowTemplateListItem) => void;
   onEdit: (template: WorkflowTemplateListItem) => void;
@@ -42,11 +50,12 @@ function statusLabel(
 
 function actionCell(template: WorkflowTemplateListItem, options: Props) {
   const isDraft = template.currentVersion.status === "DRAFT";
-  const canDelete = isDraft && template.currentVersion.number === 1;
+  const canDelete =
+    template.isLatest && isDraft && template.currentVersion.number === 1;
   return (
     <div className="flex items-center gap-1">
       <EditButton
-        disabled={!options.canUpdate}
+        disabled={!options.canUpdate || !template.isLatest || !isDraft}
         onClick={() => options.onEdit(template)}
         title={`Edit ${template.name}`}
       />
@@ -56,7 +65,8 @@ function actionCell(template: WorkflowTemplateListItem, options: Props) {
         onClick={() => options.onClone(template)}
         title={`Clone ${template.name}`}
       />
-      {workflowTemplatePublishableStatuses.includes(
+      {template.isLatest &&
+      workflowTemplatePublishableStatuses.includes(
         template.currentVersion.status,
       ) ? (
         <PublishButton
@@ -82,6 +92,7 @@ function columns(options: Props): DataTableColumn<WorkflowTemplateListItem>[] {
   return [
     {
       accessorKey: "name",
+      enableSorting: false,
       header: "Template",
       cell: ({ row }) => (
         <div>
@@ -99,12 +110,14 @@ function columns(options: Props): DataTableColumn<WorkflowTemplateListItem>[] {
     },
     {
       id: "currentVersion",
-      header: "Current version",
+      header: "Version",
+      enableSorting: false,
       cell: ({ row }) => `v${row.original.currentVersion.number}`,
     },
     {
       id: "status",
       header: "Status",
+      enableSorting: false,
       cell: ({ row }) => (
         <StatusBadge
           label={statusLabel(row.original.currentVersion.status)}
@@ -115,6 +128,7 @@ function columns(options: Props): DataTableColumn<WorkflowTemplateListItem>[] {
     {
       id: "updatedAt",
       header: "Updated",
+      enableSorting: false,
       cell: ({ row }) => formatLocalDateTime24(row.original.updatedAt),
     },
     {
@@ -133,7 +147,19 @@ export function WorkflowTemplateTable(props: Props) {
         columns={columns(props)}
         data={props.items}
         emptyMessage={props.emptyMessage}
+        footer={
+          <DataTablePagination
+            disabled={props.isFetching}
+            onPageChange={props.onPageChange}
+            onPageSizeChange={props.onPageSizeChange}
+            page={props.page}
+            pageSize={props.pageSize}
+            total={props.total}
+            totalPages={props.totalPages}
+          />
+        }
         minWidth={860}
+        rowKey={(item) => item.currentVersion.id}
       />
     </section>
   );

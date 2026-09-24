@@ -73,13 +73,15 @@ export function WorkflowTemplateAdminWorkspace({
   canUpdate,
 }: Props) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [selectedTemplate, setSelectedTemplate] =
     useState<WorkflowTemplateListItem>();
   const [deleteCandidate, setDeleteCandidate] =
     useState<WorkflowTemplateListItem>();
   const [publishCandidate, setPublishCandidate] =
     useState<WorkflowTemplateListItem>();
-  const templates = useWorkflowTemplates();
+  const templates = useWorkflowTemplates(page, pageSize);
   const cloneTemplate = useCloneWorkflowTemplate();
   const deleteTemplate = useDeleteWorkflowTemplate();
   const publishTemplate = useWorkflowListLifecycle("publish");
@@ -114,7 +116,17 @@ export function WorkflowTemplateAdminWorkspace({
           deleteTemplate.isPending ? deleteTemplate.variables?.id : undefined
         }
         emptyMessage={emptyMessage}
-        items={templates.data ?? []}
+        items={templates.data?.items ?? []}
+        isFetching={templates.isFetching}
+        page={templates.data?.page ?? page}
+        pageSize={templates.data?.pageSize ?? pageSize}
+        total={templates.data?.total ?? 0}
+        totalPages={templates.data?.totalPages ?? 0}
+        onPageChange={setPage}
+        onPageSizeChange={(value) => {
+          setPageSize(value);
+          setPage(1);
+        }}
         onClone={(template) => cloneTemplate.mutate(template)}
         onDelete={setDeleteCandidate}
         onEdit={(template) => {
@@ -173,7 +185,10 @@ export function WorkflowTemplateAdminWorkspace({
         onConfirm={() => {
           if (!deleteCandidate) return;
           deleteTemplate.mutate(deleteCandidate, {
-            onSuccess: () => setDeleteCandidate(undefined),
+            onSuccess: () => {
+              setDeleteCandidate(undefined);
+              setPage(1);
+            },
           });
         }}
         pendingLabel="Deleting…"

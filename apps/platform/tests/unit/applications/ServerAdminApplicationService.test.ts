@@ -1,10 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
-vi.mock("@/db/repositories/AdminApplicationRepository", () => ({
-  readAdminApplication: vi.fn(),
-  readAdminApplications: vi.fn(),
-}));
+vi.mock(
+  "@/modules/applications/infrastructure/AdminApplicationRepository",
+  () => ({
+    readAdminApplication: vi.fn(),
+    readAdminApplications: vi.fn(),
+  }),
+);
 
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { PermissionDeniedError } from "@/auth/authorization/policy";
@@ -12,7 +15,7 @@ import type { AuthenticatedUser } from "@/auth/types";
 import {
   readAdminApplication,
   readAdminApplications,
-} from "@/db/repositories/AdminApplicationRepository";
+} from "@/modules/applications/infrastructure/AdminApplicationRepository";
 import {
   getAdminApplicationOverview,
   listAdminApplications,
@@ -44,9 +47,9 @@ beforeEach(() => {
 
 describe("admin applications service", () => {
   it("rejects users without either application read capability", async () => {
-    await expect(listAdminApplications(staff([]), input)).rejects.toBeInstanceOf(
-      PermissionDeniedError,
-    );
+    await expect(
+      listAdminApplications(staff([]), input),
+    ).rejects.toBeInstanceOf(PermissionDeniedError);
     expect(readAdminApplications).not.toHaveBeenCalled();
   });
 
@@ -55,11 +58,13 @@ describe("admin applications service", () => {
       staff([permissionCodes.fundingApplicationAllRead]),
       input,
     );
-    expect(readAdminApplications).toHaveBeenCalledWith(expect.objectContaining({
-      actorId: "29e20de0-3558-4d63-90a4-8c9f5125df07",
-      filters: input,
-      visibility: "all",
-    }));
+    expect(readAdminApplications).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actorId: "29e20de0-3558-4d63-90a4-8c9f5125df07",
+        filters: input,
+        visibility: "all",
+      }),
+    );
   });
 
   it("uses task assignment scope for assigned readers", async () => {
@@ -67,9 +72,11 @@ describe("admin applications service", () => {
       staff([permissionCodes.workflowTaskAssignedRead]),
       input,
     );
-    expect(readAdminApplications).toHaveBeenCalledWith(expect.objectContaining({
-      visibility: "assigned",
-    }));
+    expect(readAdminApplications).toHaveBeenCalledWith(
+      expect.objectContaining({
+        visibility: "assigned",
+      }),
+    );
   });
 
   it("loads database application details using capability visibility", async () => {

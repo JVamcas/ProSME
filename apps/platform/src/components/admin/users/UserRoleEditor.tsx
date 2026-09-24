@@ -7,6 +7,7 @@ import type { z } from "zod";
 import { isPermissionCode } from "@/auth/authorization/permissions";
 import { GeneralButton } from "@/components/ui/button";
 import {
+  Checkbox,
   FieldError,
   Input,
   Label,
@@ -63,7 +64,7 @@ export function UserRoleEditor({
         </div>
         <fieldset>
           <legend className="mb-2 text-sm font-semibold text-brand-navy">
-            Capabilities
+            Permissions
           </legend>
           <div className="max-h-72 space-y-2 overflow-y-auto rounded-xl border border-brand-navy/10 p-3">
             {capabilities.map((capability) => (
@@ -71,9 +72,8 @@ export function UserRoleEditor({
                 className="flex gap-2 text-xs text-brand-navy"
                 key={capability.code}
               >
-                <input
-                  className="mt-0.5 accent-blue-600"
-                  type="checkbox"
+                <Checkbox
+                  className="mt-0.5"
                   value={capability.code}
                   {...form.register("capabilityCodes")}
                 />
@@ -93,17 +93,12 @@ export function UserRoleEditor({
           />
         </fieldset>
         <GeneralButton
-          className="rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+          variant="primary"
           disabled={mutation.isPending}
           type="submit"
         >
-          {mutation.isPending ? "Saving…" : "Save role grants"}
+          {mutation.isPending ? "Saving…" : "Save"}
         </GeneralButton>
-        {mutation.error ? (
-          <p className="text-sm text-red-700" role="alert">
-            {mutation.error.message}
-          </p>
-        ) : null}
       </form>
     </FormProvider>
   );

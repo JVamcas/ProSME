@@ -1,13 +1,12 @@
 "use client";
 
-import Link from "next/link";
 import { Search } from "lucide-react";
 import { useState } from "react";
 
-import { GeneralButton } from "@/components/ui/button";
 import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
 import { DataTableFilter } from "@/components/ui/data-table-filter";
 import { Input } from "@/components/ui/form-controls";
+import { Pagination } from "@/components/ui/pagination";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { cn } from "@/lib/utils";
 import { useAdminApplications } from "@/modules/applications/ApplicationHooks";
@@ -65,15 +64,11 @@ const columns: DataTableColumn<AdminApplicationListRow>[] = [
     cell: ({ row }) => <StatusBadge status={row.original.internalStatus} />,
   },
   {
-    accessorKey: "requestedAmount",
-    header: "Requested",
-    cell: ({ row }) => formatNAD(row.original.requestedAmount),
-  },
-  {
     accessorKey: "submittedAt",
     header: "Submitted",
     cell: ({ row }) => formatLocalDateTime24(row.original.submittedAt),
   },
+
 ];
 
 function StatusTabs({
@@ -100,46 +95,6 @@ function StatusTabs({
           {item.label}
         </button>
       ))}
-    </div>
-  );
-}
-
-function ApplicationPagination({
-  nextCursor,
-  onNext,
-  onPrevious,
-  pageDepth,
-  total,
-}: {
-  nextCursor: string | null;
-  onNext: () => void;
-  onPrevious: () => void;
-  pageDepth: number;
-  total: number;
-}) {
-  return (
-    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-brand-navy/10 p-4 text-sm text-brand-navy/60">
-      <span>
-        {total} submitted {total === 1 ? "application" : "applications"}
-      </span>
-      <div className="flex gap-2">
-        <GeneralButton
-          disabled={!pageDepth}
-          onClick={onPrevious}
-          size="sm"
-          variant="outline"
-        >
-          Previous
-        </GeneralButton>
-        <GeneralButton
-          disabled={!nextCursor}
-          onClick={onNext}
-          size="sm"
-          variant="outline"
-        >
-          Next
-        </GeneralButton>
-      </div>
     </div>
   );
 }
@@ -217,8 +172,9 @@ export function ApplicationsTable() {
         emptyMessage={emptyMessage}
         minWidth={1120}
       />
-      <ApplicationPagination
-        nextCursor={applications.data?.nextCursor ?? null}
+      <Pagination
+        disabled={applications.isFetching}
+        hasNextPage={Boolean(applications.data?.nextCursor)}
         onNext={() => {
           if (applications.data?.nextCursor) {
             setCursors((current) => [
@@ -228,7 +184,8 @@ export function ApplicationsTable() {
           }
         }}
         onPrevious={() => setCursors((current) => current.slice(0, -1))}
-        pageDepth={cursors.length}
+        page={cursors.length + 1}
+        pageSize={25}
         total={applications.data?.total ?? 0}
       />
     </section>

@@ -5,7 +5,7 @@ import type {
   WorkflowTemplateVersion,
 } from "../domain/definitions/WorkflowTemplate";
 
-import { and, asc, desc, eq, or } from "drizzle-orm";
+import { and, asc, count, desc, eq, or, sql } from "drizzle-orm";
 import { getDatabase } from "@/db/client";
 import {
   workflowDefinitions,
@@ -13,27 +13,43 @@ import {
 } from "./workflow.schema";
 import { workflowAuditEntries } from "./workflow-audit.schema";
 
-export async function listCurrentWorkflowTemplates() {
-  return getDatabase()
-    .selectDistinctOn([workflowDefinitions.id], {
-      currentVersionId: workflowDefinitionVersions.id,
-      currentVersionNumber: workflowDefinitionVersions.versionNumber,
-      currentVersionRowVersion: workflowDefinitionVersions.rowVersion,
-      currentVersionStatus: workflowDefinitionVersions.status,
-      id: workflowDefinitions.id,
-      metadata: workflowDefinitionVersions.metadata,
-      updatedAt: workflowDefinitionVersions.updatedAt,
-    })
-    .from(workflowDefinitions)
-    .innerJoin(
-      workflowDefinitionVersions,
-      eq(workflowDefinitionVersions.definitionId, workflowDefinitions.id),
-    )
-    .where(eq(workflowDefinitions.active, true))
-    .orderBy(
-      workflowDefinitions.id,
-      desc(workflowDefinitionVersions.versionNumber),
-    );
+export async function listWorkflowTemplatePage(page: number, pageSize: number) {
+  const database = getDatabase();
+  const [items, [summary]] = await Promise.all([
+    database
+      .select({
+        currentVersionId: workflowDefinitionVersions.id,
+        currentVersionNumber: workflowDefinitionVersions.versionNumber,
+        currentVersionRowVersion: workflowDefinitionVersions.rowVersion,
+        currentVersionStatus: workflowDefinitionVersions.status,
+        id: workflowDefinitions.id,
+        metadata: workflowDefinitionVersions.metadata,
+        updatedAt: workflowDefinitionVersions.updatedAt,
+        isLatest: sql<boolean>`${workflowDefinitionVersions.versionNumber} = max(${workflowDefinitionVersions.versionNumber}) over (partition by ${workflowDefinitions.id})`,
+      })
+      .from(workflowDefinitions)
+      .innerJoin(
+        workflowDefinitionVersions,
+        eq(workflowDefinitionVersions.definitionId, workflowDefinitions.id),
+      )
+      .where(eq(workflowDefinitions.active, true))
+      .orderBy(
+        sql`lower(${workflowDefinitionVersions.metadata}->>'name')`,
+        workflowDefinitions.id,
+        desc(workflowDefinitionVersions.versionNumber),
+      )
+      .limit(pageSize)
+      .offset((page - 1) * pageSize),
+    database
+      .select({ total: count() })
+      .from(workflowDefinitionVersions)
+      .innerJoin(
+        workflowDefinitions,
+        eq(workflowDefinitions.id, workflowDefinitionVersions.definitionId),
+      )
+      .where(eq(workflowDefinitions.active, true)),
+  ]);
+  return { items, total: summary.total };
 }
 
 export async function findWorkflowTemplateVersion(

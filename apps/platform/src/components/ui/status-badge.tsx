@@ -19,7 +19,7 @@ export const statusStyles: Record<string, string> = {
   submitted: "bg-brand-blue/40 text-brand-navy",
   "technical assessment": "bg-brand-blue/40 text-brand-navy",
   upcoming: "bg-brand-yellow text-brand-navy",
-  live:"bg-brand-green/40 text-brand-white"
+  live:"bg-brand-green/60 text-brand-white"
 };
 
 type StatusBadgeProps = {

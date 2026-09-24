@@ -116,7 +116,7 @@ function StageFlow({ progress }: { progress: WorkflowProgressView }) {
         {selected.tasks.length > 0 ? (
           <div className="mt-6 border-t border-brand-navy/10 pt-4">
             <h4 className="text-sm font-semibold text-brand-navy">
-              Stage tasks ({selected.tasks.length})
+              Tasks Assignments ({selected.tasks.length})
             </h4>
             <ul className="mt-3 space-y-2">
               {selected.tasks.map((task) => (

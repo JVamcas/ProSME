@@ -16,7 +16,7 @@ import type {
   WorkflowValidation,
 } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import type { CreateWorkflowTemplateInput } from "@/modules/workflows/api/WorkflowTemplateSchemas";
-import type { WorkflowTemplateListItem } from "@/modules/workflows/domain/definitions/WorkflowTemplate";
+import type { WorkflowTemplateListItem, WorkflowTemplatePage } from "@/modules/workflows/domain/definitions/WorkflowTemplate";
 import type { WorkflowActionAvailability } from "@/modules/workflows/domain/actions/WorkflowActionAvailability";
 
 export type WorkflowActionAvailabilityQuery = {
@@ -31,8 +31,12 @@ function commandHeaders() {
   return { ...jsonHeaders, "Idempotency-Key": crypto.randomUUID() };
 }
 
-function listTemplates() {
-  return requestData<WorkflowTemplateListItem[]>("/api/workflows", {
+function listTemplates(page: number, pageSize: number) {
+  const query = new URLSearchParams({
+    page: String(page),
+    pageSize: String(pageSize),
+  });
+  return requestData<WorkflowTemplatePage>(`/api/workflows?${query}`, {
     cache: "no-store",
   });
 }

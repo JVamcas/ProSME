@@ -4,7 +4,7 @@ import {
   portalRouteError,
   portalRouteSuccess,
 } from "@/lib/api/PortalApiResponse";
-import { workflowTemplateDetailsSchema } from "@/modules/workflows/api/WorkflowTemplateSchemas";
+import { workflowTemplateDetailsSchema, workflowTemplatePageSchema } from "@/modules/workflows/api/WorkflowTemplateSchemas";
 import {
   createWorkflowTemplate,
   getWorkflowTemplates,
@@ -14,7 +14,13 @@ export async function GET(request: Request) {
   const correlationId = createCorrelationId();
   try {
     const user = await resolveUserFromHeaders(request.headers);
-    return portalRouteSuccess(await getWorkflowTemplates(user), correlationId);
+    const { page, pageSize } = workflowTemplatePageSchema.parse(
+      Object.fromEntries(new URL(request.url).searchParams),
+    );
+    return portalRouteSuccess(
+      await getWorkflowTemplates(user, page, pageSize),
+      correlationId,
+    );
   } catch (error) {
     return portalRouteError(error, correlationId);
   }
@@ -31,6 +37,7 @@ export async function POST(request: Request) {
     return portalRouteSuccess(
       {
         id: created.template.id,
+        isLatest: true,
         ...created.version.metadata,
         currentVersion: {
           id: created.version.id,

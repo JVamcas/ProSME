@@ -38,6 +38,7 @@ export type WorkflowTemplateVersion = {
 
 export type WorkflowTemplateListItem = WorkflowTemplateDetails & {
   id: string;
+  isLatest: boolean;
   currentVersion: {
     id: string;
     number: number;
@@ -70,3 +71,11 @@ export function workflowTemplateCommandSourceStatuses(
   if (command === "PUBLISH") return workflowTemplatePublishableStatuses;
   return [workflowTemplateTransitions[command].from];
 }
+
+export type WorkflowTemplatePage = {
+  items: WorkflowTemplateListItem[];
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+};

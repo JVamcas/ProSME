@@ -15,21 +15,28 @@ function queryClient(
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false, staleTime: Infinity } },
   });
-  client.setQueryData(workflowQueryKeys.templates, [
-    {
-      code: "SME_STANDARD_GRANT",
-      currentVersion: {
-        id: "42222222-2222-4222-8222-222222222222",
-        number: versionNumber,
-        rowVersion: 1,
-        status,
+  client.setQueryData([...workflowQueryKeys.templates, 1, 10], {
+    items: [
+      {
+        code: "SME_STANDARD_GRANT",
+        currentVersion: {
+          id: "42222222-2222-4222-8222-222222222222",
+          number: versionNumber,
+          rowVersion: 1,
+          status,
+        },
+        description: "Standard grant workflow",
+        id: "41111111-1111-4111-8111-111111111111",
+        isLatest: true,
+        name: "Standard grant",
+        updatedAt: "2026-09-19T09:00:00.000Z",
       },
-      description: "Standard grant workflow",
-      id: "41111111-1111-4111-8111-111111111111",
-      name: "Standard grant",
-      updatedAt: "2026-09-19T09:00:00.000Z",
-    },
-  ]);
+    ],
+    page: 1,
+    pageSize: 10,
+    total: 1,
+    totalPages: 1,
+  });
   return client;
 }
 
@@ -87,9 +94,8 @@ describe("workflow template admin list", () => {
     });
 
     expect(document.body.textContent).toContain("Create workflow template");
-    const requiredInputs = document.body.querySelectorAll<HTMLInputElement>(
-      'input[required]',
-    );
+    const requiredInputs =
+      document.body.querySelectorAll<HTMLInputElement>("input[required]");
     expect(requiredInputs).toHaveLength(2);
     expect(requiredInputs[0]?.labels?.[0]?.textContent).toContain(
       "Template code*",
@@ -194,9 +200,7 @@ describe("workflow template admin list", () => {
         ?.click();
     });
     const dialog = document.body.querySelector<HTMLElement>('[role="dialog"]');
-    expect(dialog?.textContent).toContain(
-      "Publish Standard grant version 2?",
-    );
+    expect(dialog?.textContent).toContain("Publish Standard grant version 2?");
     await act(async () => root.unmount());
 
     const draftContainer = document.createElement("div");

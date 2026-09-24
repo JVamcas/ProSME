@@ -5,7 +5,7 @@ vi.mock("server-only", () => ({}));
 import {
   readAdminApplication,
   readAdminApplications,
-} from "@/db/repositories/AdminApplicationRepository";
+} from "@/modules/applications/infrastructure/AdminApplicationRepository";
 import {
   readWorkQueue,
   writeTaskClaim,

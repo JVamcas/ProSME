@@ -17,6 +17,7 @@ import {
   workflowTemplateCommandSourceStatuses,
   workflowTemplateTransitions,
   type WorkflowTemplateListItem,
+  type WorkflowTemplatePage,
 } from "../../domain/definitions/WorkflowTemplate";
 import { createWorkflowDefinition } from "../../infrastructure/WorkflowTemplateWriteRepository";
 import { updateWorkflowDefinitionDetails } from "../../infrastructure/WorkflowDetailsRepository";
@@ -29,7 +30,7 @@ import { findWorkflowGraph } from "../../infrastructure/WorkflowGraphRepository"
 import {
   findWorkflowTemplateByVersion,
   findWorkflowTemplateVersion,
-  listCurrentWorkflowTemplates,
+  listWorkflowTemplatePage,
   listWorkflowTemplateAudit,
   listWorkflowTemplateVersions,
 } from "../../infrastructure/WorkflowTemplateRepository";
@@ -97,11 +98,12 @@ export async function createWorkflowTemplate(
 }
 
 function toListItem(
-  record: Awaited<ReturnType<typeof listCurrentWorkflowTemplates>>[number],
+  record: Awaited<ReturnType<typeof listWorkflowTemplatePage>>["items"][number],
 ): WorkflowTemplateListItem {
   return {
     id: record.id,
     ...record.metadata,
+    isLatest: record.isLatest,
     currentVersion: {
       id: record.currentVersionId,
       number: record.currentVersionNumber,
@@ -114,12 +116,18 @@ function toListItem(
 
 export async function getWorkflowTemplates(
   user: AuthenticatedUser | null,
-): Promise<WorkflowTemplateListItem[]> {
+  page: number,
+  pageSize: number,
+): Promise<WorkflowTemplatePage> {
   requirePermission(user, permissionCodes.workflowDefinitionRead);
-  const records = await listCurrentWorkflowTemplates();
-  return records
-    .map(toListItem)
-    .sort((left, right) => left.name.localeCompare(right.name));
+  const result = await listWorkflowTemplatePage(page, pageSize);
+  return {
+    items: result.items.map(toListItem),
+    page,
+    pageSize,
+    total: result.total,
+    totalPages: Math.ceil(result.total / pageSize),
+  };
 }
 
 export async function getWorkflowTemplateVersion(
