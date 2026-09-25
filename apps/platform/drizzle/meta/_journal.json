@@ -680,6 +680,34 @@
       "when": 1796083200000,
       "tag": "0096_assign_checklist_items_to_tasks",
       "breakpoints": true
+    },
+    {
+      "idx": 97,
+      "version": "7",
+      "when": 1796169600000,
+      "tag": "0097_assign_scoring_to_tasks",
+      "breakpoints": true
+    },
+    {
+      "idx": 98,
+      "version": "7",
+      "when": 1796256000000,
+      "tag": "0098_assign_document_requirements_to_tasks",
+      "breakpoints": true
+    },
+    {
+      "idx": 99,
+      "version": "7",
+      "when": 1796342400000,
+      "tag": "0099_remove_workflow_stage_comment_fields",
+      "breakpoints": true
+    },
+    {
+      "idx": 100,
+      "version": "7",
+      "when": 1796428800000,
+      "tag": "0100_deprecate_scoring_criterion_threshold",
+      "breakpoints": true
     }
   ]
 }

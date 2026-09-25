@@ -7,7 +7,6 @@ import {
   action,
   approve,
   checklist,
-  comment,
   documentRequirement,
   refer,
   reject,
@@ -91,10 +90,6 @@ function screening(dependencies: StandardWorkflowDependencies) {
     actions,
     checklistItems,
     coiGated: false,
-    commentFields: [
-      comment("SCREENING_NOTES", "Screening notes", 1),
-      comment("APPLICANT_GUIDANCE", "Applicant guidance", 2, false, "APPLICANT_VISIBLE"),
-    ],
     description: "Verify completeness, documents and authoritative eligibility.",
     displayOrder: 1,
     documentRequirements: [
@@ -180,11 +175,6 @@ function technicalAssessment(dependencies: StandardWorkflowDependencies) {
     actions,
     checklistItems: [],
     coiGated: true,
-    commentFields: [
-      comment("STRENGTHS", "Strengths", 1, true),
-      comment("WEAKNESSES", "Weaknesses", 2, true),
-      comment("RECOMMENDED_CONDITIONS", "Recommended conditions", 3),
-    ],
     description: "Perform independent technical or scientific assessment.",
     displayOrder: 2,
     documentRequirements: [
@@ -203,13 +193,13 @@ function technicalAssessment(dependencies: StandardWorkflowDependencies) {
     repeatable: false,
     scoring: {
       aggregation: "WEIGHTED_AVERAGE",
+      taskStableKey: "TECHNICAL_REVIEW",
       criteria: criteria.map((criterion) => ({
         criterion: criterion.label,
         description: "Standard baseline; confirm for each Funding Call.",
         mandatoryComment: criterion.commentRequired,
         scaleMaximum: criterion.maximumScore,
         scaleMinimum: 0,
-        threshold: 5,
         weight: criterion.weight,
       })),
     },
@@ -246,7 +236,6 @@ function financialReview(dependencies: StandardWorkflowDependencies) {
       checklist("BUDGET_ARITHMETIC_VALID", "Adjusted budget arithmetic is valid", 3),
     ],
     coiGated: false,
-    commentFields: [comment("FINANCIAL_REVIEW_COMMENTS", "Financial review comments", 1)],
     description: "Assess the budget, cost eligibility and financial viability.",
     displayOrder: 3,
     documentRequirements: [
@@ -314,7 +303,6 @@ function dueDiligence(dependencies: StandardWorkflowDependencies) {
       checklist("PRIOR_PERFORMANCE_REVIEWED", "Prior grant performance has been reviewed", 3),
     ],
     coiGated: false,
-    commentFields: [comment("RISK_MITIGATION", "Risk mitigation measures", 1, true)],
     description: "Verify the entity and assess delivery, governance and fraud risk.",
     displayOrder: 4,
     documentRequirements: [
@@ -335,6 +323,7 @@ function dueDiligence(dependencies: StandardWorkflowDependencies) {
     repeatable: false,
     scoring: {
       aggregation: "AVERAGE",
+      taskStableKey: "DUE_DILIGENCE_REVIEW",
       criteria: ["Financial risk", "Delivery risk", "Governance risk", "Fraud risk"].map(
         (criterion) => ({
           criterion,
@@ -342,7 +331,6 @@ function dueDiligence(dependencies: StandardWorkflowDependencies) {
           mandatoryComment: true,
           scaleMaximum: 4,
           scaleMinimum: 1,
-          threshold: 3,
           weight: 25,
         }),
       ),

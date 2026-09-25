@@ -87,6 +87,7 @@ const graph: WorkflowGraphInput = {
       displayOrder: 1,
     }],
     documentRequirements: [{
+      taskStableKey: "REVIEW_TASK",
       name: "Review evidence",
       mandatory: true,
       acceptedFileTypes: ["PDF"],
@@ -96,23 +97,15 @@ const graph: WorkflowGraphInput = {
       verifier: "ASSIGNED_REVIEWER",
       templateReference: "REVIEW_EVIDENCE_TEMPLATE",
     }],
-    commentFields: [{
-      key: "REVIEW_RECOMMENDATION",
-      label: "Review recommendation",
-      helpText: "Summarise the recommendation.",
-      mandatory: true,
-      visibility: "INTERNAL_ONLY",
-      displayOrder: 1,
-    }],
     scoring: {
       aggregation: "WEIGHTED_AVERAGE",
+      taskStableKey: "REVIEW_TASK",
       criteria: [{
         criterion: "Business viability",
         description: "Assess viability.",
         weight: 100,
         scaleMinimum: 0,
         scaleMaximum: 10,
-        threshold: 6,
         mandatoryComment: true,
       }],
     },
@@ -227,12 +220,6 @@ afterAll(async () => {
       expect.objectContaining({
         name: "Review evidence",
         templateReference: "REVIEW_EVIDENCE_TEMPLATE",
-      }),
-    ]);
-    expect(clone?.graph.stages[0].commentFields).toEqual([
-      expect.objectContaining({
-        key: "REVIEW_RECOMMENDATION",
-        visibility: "INTERNAL_ONLY",
       }),
     ]);
     expect(clone?.graph.stages[0].scoring).toEqual({

@@ -260,7 +260,7 @@ Tasks:
 
 Scoring:
 
-- configurable criteria, weights, scale and thresholds;
+- configurable criteria, weights and scale;
 - mandatory comment per configured criterion;
 - weighted aggregation;
 - minimum completed-review threshold; and
@@ -270,14 +270,6 @@ Documents:
 
 - signed COI/confidentiality undertaking; and
 - individual review report.
-
-Comments and recommendations:
-
-- strengths — internal;
-- weaknesses — internal;
-- recommended amount — internal;
-- recommended conditions — internal; and
-- consolidated feedback released later through the notification stage.
 
 Actions and transitions:
 
@@ -430,7 +422,7 @@ Actions and transitions:
 Conditions:
 
 - required predecessor branches are complete;
-- minimum reviewer and scoring thresholds are satisfied;
+- minimum reviewer threshold is satisfied;
 - score adjustments require justification; and
 - shortlist allocations fit within the available envelope.
 
@@ -815,7 +807,7 @@ incremental tests without weakening this standard definition.
 2. Confirm delegated-authority value bands and the approver for each band.
 3. Confirm standard SLA durations, reminders and escalation targets.
 4. Confirm reason-code catalogues and applicant-facing messages per action.
-5. Confirm scoring criteria, weights, thresholds and rating scales per Funding
+5. Confirm scoring criteria, weights and rating scales per Funding
    Call or instrument.
 6. Confirm the appeal window and whether an appeal may reopen merit scoring.
 7. Confirm external reviewer account/portal arrangements.
@@ -837,7 +829,7 @@ Before the canonical template is published or assigned:
 - [ ] Repeatable stages are marked and iteration behavior is available.
 - [ ] Every action has a valid target/effect and required reason codes.
 - [ ] Entry, exit and transition conditions use resolvable typed operands.
-- [ ] Scoring weights and thresholds pass validation.
+- [ ] Scoring weights and rating scales pass validation.
 - [ ] Mandatory document requirements specify uploader, verifier and expiry.
 - [ ] COI-gated stages prevent content access before clearance.
 - [ ] Public status labels expose no internal scores, recommendations or names.

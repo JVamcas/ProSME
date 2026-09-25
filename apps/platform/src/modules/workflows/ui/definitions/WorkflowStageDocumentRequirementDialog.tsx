@@ -14,9 +14,7 @@ import type {
   WorkflowStageInput,
 } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import {
-  documentActorItems,
   documentFileTypeItems,
-  documentVerifierItems,
   workflowStageDocumentRequirementFormSchema,
   type WorkflowStageDocumentRequirementFormValues,
 } from "./WorkflowStageDocumentRequirementFormSchema";
@@ -42,9 +40,8 @@ export function WorkflowStageDocumentRequirementDialog({
       mandatory: requirement?.mandatory ?? true,
       maximumSizeMb: requirement?.maximumSizeMb ?? 10,
       name: requirement?.name ?? "",
+      taskStableKey: requirement?.taskStableKey ?? "",
       templateReference: requirement?.templateReference ?? "",
-      uploader: requirement?.uploader ?? "APPLICANT",
-      verifier: requirement?.verifier ?? "ASSIGNED_REVIEWER",
     },
     resolver: zodResolver(workflowStageDocumentRequirementFormSchema),
   });
@@ -68,6 +65,8 @@ export function WorkflowStageDocumentRequirementDialog({
     const nextRequirement = {
       ...(requirement?.id ? { id: requirement.id } : {}),
       ...values,
+      uploader: requirement?.uploader ?? "APPLICANT",
+      verifier: requirement?.verifier ?? "ASSIGNED_REVIEWER",
     };
     await mutation.mutateAsync({
       stages: editor.graph.stages.map((item) =>
@@ -105,6 +104,18 @@ export function WorkflowStageDocumentRequirementDialog({
             label="Document name"
             name="name"
             placeholder="Tax clearance certificate"
+            required
+          />
+          <FormSelect
+            items={stage.tasks.map((task) => ({
+              label: task.name,
+              value: task.stableKey,
+            }))}
+            label="Workflow task"
+            name="taskStableKey"
+            placeholder={stage.tasks.length
+              ? "Select a task"
+              : "Add a task to this stage first"}
             required
           />
           <FormSelect
@@ -148,18 +159,6 @@ export function WorkflowStageDocumentRequirementDialog({
             label="Template"
             name="templateReference"
             placeholder="TAX_CLEARANCE_TEMPLATE"
-          />
-          <FormSelect
-            items={documentActorItems}
-            label="Uploader"
-            name="uploader"
-            required
-          />
-          <FormSelect
-            items={documentVerifierItems}
-            label="Verifier"
-            name="verifier"
-            required
           />
           <CheckboxField
             containerClassName="sm:col-span-2"

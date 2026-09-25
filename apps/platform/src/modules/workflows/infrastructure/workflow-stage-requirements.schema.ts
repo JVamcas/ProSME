@@ -20,7 +20,6 @@ import type {
   WorkflowDocumentVerifierActor,
 } from "../domain/definitions/WorkflowStageDocumentRequirement";
 import type { WorkflowScoringAggregation } from "../domain/definitions/WorkflowStageScoringDefinition";
-import type { WorkflowCommentFieldVisibility } from "../domain/definitions/WorkflowStageCommentField";
 import {
   stageTaskDefinitions,
   workflowStageDefinitions,
@@ -69,6 +68,9 @@ export const workflowStageDocumentRequirements = pgTable(
       .notNull()
       .references(() => workflowStageDefinitions.id, { onDelete: "restrict" }),
     name: text("name").notNull(),
+    taskDefinitionId: uuid("task_definition_id")
+      .notNull()
+      .references(() => stageTaskDefinitions.id, { onDelete: "restrict" }),
     mandatory: boolean("mandatory").notNull().default(false),
     acceptedFileTypes: jsonb("accepted_file_types")
       .$type<WorkflowDocumentFileType[]>()
@@ -87,6 +89,7 @@ export const workflowStageDocumentRequirements = pgTable(
       table.name,
     ),
     index("app_stage_documents_stage_idx").on(table.stageId),
+    index("app_stage_documents_task_idx").on(table.taskDefinitionId),
   ],
 );
 
@@ -99,7 +102,13 @@ export const workflowStageScoringConfigurations = pgTable(
     aggregation: text("aggregation")
       .$type<WorkflowScoringAggregation>()
       .notNull(),
+    taskDefinitionId: uuid("task_definition_id")
+      .notNull()
+      .references(() => stageTaskDefinitions.id, { onDelete: "restrict" }),
   },
+  (table) => [
+    index("app_stage_scoring_task_idx").on(table.taskDefinitionId),
+  ],
 );
 
 export const workflowStageScoringCriteria = pgTable(
@@ -116,7 +125,8 @@ export const workflowStageScoringCriteria = pgTable(
     weight: doublePrecision("weight").notNull(),
     scaleMinimum: doublePrecision("scale_minimum").notNull(),
     scaleMaximum: doublePrecision("scale_maximum").notNull(),
-    threshold: doublePrecision("threshold").notNull(),
+    // Legacy values are retained but no longer used by scoring.
+    threshold: doublePrecision("threshold"),
     mandatoryComment: boolean("mandatory_comment").notNull().default(false),
   },
   (table) => [
@@ -125,33 +135,5 @@ export const workflowStageScoringCriteria = pgTable(
       table.criterion,
     ),
     index("app_stage_scoring_criteria_stage_idx").on(table.stageId),
-  ],
-);
-
-export const workflowStageCommentFields = pgTable(
-  "app_workflow_stage_comment_fields",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    stageId: uuid("stage_id")
-      .notNull()
-      .references(() => workflowStageDefinitions.id, { onDelete: "restrict" }),
-    key: text("key").notNull(),
-    label: text("label").notNull(),
-    helpText: text("help_text").notNull().default(""),
-    mandatory: boolean("mandatory").notNull().default(false),
-    visibility: text("visibility")
-      .$type<WorkflowCommentFieldVisibility>()
-      .notNull(),
-    displayOrder: integer("display_order").notNull(),
-  },
-  (table) => [
-    uniqueIndex("app_stage_comments_stage_key_unique").on(
-      table.stageId,
-      table.key,
-    ),
-    uniqueIndex("app_stage_comments_stage_order_unique").on(
-      table.stageId,
-      table.displayOrder,
-    ),
   ],
 );

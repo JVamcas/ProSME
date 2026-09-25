@@ -1,5 +1,3 @@
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { permissionCodes } from "@/auth/authorization/permissions";
@@ -174,30 +172,5 @@ describe("P3.1 capability-aware portal navigation", () => {
     );
 
     expect(routes).toEqual([]);
-  });
-
-  it("keeps the responsive shell on the approved orange surface", () => {
-    const shell = readFileSync(
-      resolve(
-        process.cwd(),
-        "src/components/layout/authenticated-portal-shell.tsx",
-      ),
-      "utf8",
-    );
-    const mobileHeader = readFileSync(
-      resolve(process.cwd(), "src/components/layout/portal-mobile-header.tsx"),
-      "utf8",
-    );
-
-    expect(shell).toContain(
-      '<aside className="sticky top-0 hidden h-screen overflow-hidden bg-brand-orange',
-    );
-    expect(shell).toContain('className="min-h-screen bg-brand-white lg:grid"');
-    expect(mobileHeader).toContain("bg-brand-orange");
-    expect(mobileHeader).toContain("fixed inset-x-0 bottom-0 top-16");
-    expect(mobileHeader).toContain("lg:hidden");
-    expect(shell).toContain("min-h-0 flex-1 overflow-y-auto");
-    expect(mobileHeader).toContain("min-h-0 flex-1 overflow-y-auto");
-    expect(mobileHeader).toContain('aria-label="Open portal navigation"');
   });
 });

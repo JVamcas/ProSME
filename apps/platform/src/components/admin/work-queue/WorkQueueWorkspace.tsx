@@ -1,12 +1,11 @@
 "use client";
 
 import { Search } from "lucide-react";
-import Link from "next/link";
 import { useState } from "react";
 
-import { GeneralButton } from "@/components/ui/button";
 import { DataTableFilter } from "@/components/ui/data-table-filter";
 import { Input } from "@/components/ui/form-controls";
+import { Pagination } from "@/components/ui/pagination";
 import { cn } from "@/lib/utils";
 import {
   useClaimTask,
@@ -17,6 +16,7 @@ import type {
   WorkQueueScope,
 } from "@/modules/work-queue/WorkQueueTypes";
 import { PageShell } from "@/shared/ui/PageShell";
+import { toast } from "@/shared/ui/Toast";
 import { WorkQueueTable } from "./WorkQueueTable";
 
 const scopes: Array<{ label: string; value: WorkQueueScope }> = [
@@ -53,39 +53,12 @@ function QueueTabs({
   );
 }
 
-function Pagination({
-  canNext,
-  canPrevious,
-  onNext,
-  onPrevious,
-  total,
-}: {
-  canNext: boolean;
-  canPrevious: boolean;
-  onNext: () => void;
-  onPrevious: () => void;
-  total: number;
-}) {
-  return (
-    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-brand-navy/10 p-4 text-sm text-brand-navy/60">
-      <span>{total} actionable {total === 1 ? "task" : "tasks"}</span>
-      <div className="flex gap-2">
-        <GeneralButton disabled={!canPrevious} onClick={onPrevious} size="sm" variant="outline">
-          Previous
-        </GeneralButton>
-        <GeneralButton disabled={!canNext} onClick={onNext} size="sm" variant="outline">
-          Next
-        </GeneralButton>
-      </div>
-    </div>
-  );
-}
-
 export function WorkQueueWorkspace() {
   const [scope, setScope] = useState<WorkQueueScope>("mine");
   const [draftSearch, setDraftSearch] = useState("");
   const [search, setSearch] = useState("");
   const [cursors, setCursors] = useState<string[]>([]);
+
   const queue = useWorkQueue({
     after: cursors.at(-1),
     limit: 25,
@@ -107,7 +80,13 @@ export function WorkQueueWorkspace() {
     setSearch("");
     setCursors([]);
   };
-  const claimTask = (task: WorkQueueRow) => claim.mutate(task);
+  
+  const claimTask = (task: WorkQueueRow) => {
+    claim.mutate(task, {
+      onError: (error) => toast.error(error.message),
+      onSuccess: () => toast.success("Task claimed."),
+    });
+  };
   const emptyMessage = queue.isPending
     ? "Loading your work queue…"
     : queue.isError
@@ -116,11 +95,7 @@ export function WorkQueueWorkspace() {
 
   return (
     <PageShell
-      actions={(
-        <GeneralButton asChild size="sm" variant="outline">
-          <Link href="/admin/task-pool">Available tasks</Link>
-        </GeneralButton>
-      )}
+      eyebrow="Work Queue"
       description="Tasks assigned directly to you or available through one of your roles."
       title="My Work Queue"
     >
@@ -129,7 +104,7 @@ export function WorkQueueWorkspace() {
         <div className="p-4">
           <DataTableFilter
             collapsible
-            defaultExpanded
+            defaultExpanded={false}
             description="Search the tasks assigned to you."
             onApply={applySearch}
             onClear={clearSearch}
@@ -147,11 +122,6 @@ export function WorkQueueWorkspace() {
             </div>
           </DataTableFilter>
         </div>
-        {claim.isError ? (
-          <p className="mx-4 mb-4 rounded-xl bg-brand-yellow/30 p-3 text-sm text-brand-navy" role="alert">
-            {claim.error.message}
-          </p>
-        ) : null}
         <WorkQueueTable
           claimingId={claim.isPending ? claim.variables.taskInstanceId : null}
           emptyMessage={emptyMessage}
@@ -159,14 +129,17 @@ export function WorkQueueWorkspace() {
           onClaim={claimTask}
         />
         <Pagination
-          canNext={Boolean(queue.data?.nextCursor)}
-          canPrevious={cursors.length > 0}
+          disabled={queue.isFetching}
+          hasNextPage={Boolean(queue.data?.nextCursor)}
           onNext={() => {
-            if (queue.data?.nextCursor) {
-              setCursors((current) => [...current, queue.data!.nextCursor!]);
+            const nextCursor = queue.data?.nextCursor;
+            if (nextCursor) {
+              setCursors((current) => [...current, nextCursor]);
             }
           }}
           onPrevious={() => setCursors((current) => current.slice(0, -1))}
+          page={cursors.length + 1}
+          pageSize={25}
           total={queue.data?.total ?? 0}
         />
       </section>

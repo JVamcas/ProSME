@@ -41,10 +41,15 @@ export function WorkflowActionDialog({
   stage,
 }: Props) {
   const mutation = useSaveWorkflowGraph(editor);
+  const assignedTaskKey = action
+    ? (stage.tasks.find((task) => task.actionKeys.includes(action.stableKey))
+        ?.stableKey ?? "")
+    : "";
   const form = useForm<WorkflowActionFormValues>({
     defaultValues: workflowActionFormDefaults(
       action,
       stage.actions.length + 1,
+      assignedTaskKey,
     ),
     resolver: zodResolver(workflowActionFormSchema),
   });
@@ -109,16 +114,19 @@ export function WorkflowActionDialog({
                       : current,
                   )
                 : [...item.actions, nextAction],
-              tasks: action && action.stableKey !== nextAction.stableKey
-                ? item.tasks.map((task) => ({
-                    ...task,
-                    actionKeys: task.actionKeys.map((actionKey) =>
-                      actionKey === action.stableKey
-                        ? nextAction.stableKey
-                        : actionKey,
-                    ),
-                  }))
-                : item.tasks,
+              tasks: item.tasks.map((task) => {
+                const previousKey = action?.stableKey;
+                const actionKeys = task.actionKeys.filter(
+                  (key) => key !== previousKey && key !== nextAction.stableKey,
+                );
+                return {
+                  ...task,
+                  actionKeys:
+                    task.stableKey === values.taskStableKey
+                      ? [...actionKeys, nextAction.stableKey]
+                      : actionKeys,
+                };
+              }),
             }
           : item,
       ),
@@ -171,16 +179,26 @@ export function WorkflowActionDialog({
             required
             type="number"
           />
+          <FormSelect
+            containerClassName="sm:col-span-2"
+            items={stage.tasks.map((task) => ({
+              label: task.name,
+              value: task.stableKey,
+            }))}
+            label="Workflow task"
+            name="taskStableKey"
+            placeholder={
+              stage.tasks.length
+                ? "Select a task"
+                : "Add a task to this stage first"
+            }
+            required
+          />
           <CheckboxField label="Enabled" name="enabled" />
           <CheckboxField
             label="Require a reason code"
             name="reasonCodeRequired"
           />
-          <div className="sm:col-span-2 border-t border-brand-navy/10 pt-4">
-            <h3 className="text-sm font-bold text-brand-navy">
-              Action-specific configuration
-            </h3>
-          </div>
           <WorkflowActionConfigurationFields
             actionType={actionType}
             assignmentOptions={

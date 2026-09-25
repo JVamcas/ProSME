@@ -29,6 +29,7 @@ function documentRequirementColumns(
   canEdit: boolean,
   onDelete: (requirement: WorkflowStageDocumentRequirement) => void,
   onEdit: (requirement: WorkflowStageDocumentRequirement) => void,
+  taskNames: ReadonlyMap<string, string>,
 ): DataTableColumn<WorkflowStageDocumentRequirement>[] {
   return [
     {
@@ -39,6 +40,12 @@ function documentRequirementColumns(
           {row.original.name}
         </span>
       ),
+    },
+    {
+      accessorKey: "taskStableKey",
+      header: "Task",
+      cell: ({ row }) => taskNames.get(row.original.taskStableKey)
+        ?? row.original.taskStableKey,
     },
     {
       accessorKey: "mandatory",
@@ -124,7 +131,12 @@ export function WorkflowStageDocumentRequirementTable({
         title="Document requirements"
       />
       <DataTable
-        columns={documentRequirementColumns(canEdit, onDelete, onEdit)}
+        columns={documentRequirementColumns(
+          canEdit,
+          onDelete,
+          onEdit,
+          new Map(stage.tasks.map((task) => [task.stableKey, task.name])),
+        )}
         data={stage.documentRequirements}
         emptyMessage="No document requirements have been added to this stage."
         minWidth={1160}

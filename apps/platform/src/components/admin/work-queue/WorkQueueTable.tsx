@@ -10,13 +10,6 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { permissionCodes } from "@/auth/authorization/permissions";
 import type { WorkQueueRow } from "@/modules/work-queue/WorkQueueTypes";
 
-function formatDate(value: string | null) {
-  if (!value) return "No due date";
-  return new Intl.DateTimeFormat("en-NA", { dateStyle: "medium" }).format(
-    new Date(value),
-  );
-}
-
 function assignmentLabel(task: WorkQueueRow) {
   return task.assignedUserName ?? task.assignedRoleName ?? "Unassigned";
 }
@@ -27,26 +20,15 @@ function queueColumns(
 ): DataTableColumn<WorkQueueRow>[] {
   return [
     {
-      accessorKey: "priority",
-      header: "Priority",
-      cell: ({ row }) => row.original.priority
-        ? <StatusBadge status={row.original.priority} />
-        : <span className="text-brand-navy/50">Not set</span>,
-    },
-    {
       accessorKey: "reference",
       header: "Application",
-      cell: ({ row }) => row.original.applicationId ? (
+      cell: ({ row }) => (
         <Link
           className="font-bold text-brand-navy hover:underline"
-          href={`/admin/applications/${row.original.applicationId}`}
+          href={`/admin/applications/${row.original}`}
         >
           {row.original.reference}
         </Link>
-      ) : (
-        <span className="font-bold text-brand-navy">
-          {row.original.reference}
-        </span>
       ),
     },
     {
@@ -73,11 +55,6 @@ function queueColumns(
       header: "Task",
     },
     {
-      accessorKey: "dueAt",
-      header: "Due date",
-      cell: ({ row }) => formatDate(row.original.dueAt),
-    },
-    {
       accessorKey: "assignedUserName",
       header: "Assigned to",
       cell: ({ row }) => (
@@ -91,25 +68,30 @@ function queueColumns(
       id: "action",
       header: "Action",
       enableSorting: false,
-      cell: ({ row }) => row.original.assignedUserId ? (
-        <GeneralButton asChild size="sm" variant="outline">
-          <Link href={`/admin/tasks/${row.original.taskInstanceId}`}>
-            View
-          </Link>
-        </GeneralButton>
-      ) : row.original.assignedRoleId ? (
-        <CapabilityGate capability={permissionCodes.workflowTaskClaim}>
-          <GeneralButton
-            aria-busy={claimingId === row.original.taskInstanceId}
-            disabled={claimingId !== null}
-            onClick={() => claim(row.original)}
-            size="sm"
-            type="button"
-          >
-            {claimingId === row.original.taskInstanceId ? "Claiming…" : "Claim"}
+      cell: ({ row }) =>
+        row.original.assignedUserId ? (
+          <GeneralButton asChild size="sm" variant="outline">
+            <Link href={`/admin/tasks/${row.original.taskInstanceId}`}>
+              View
+            </Link>
           </GeneralButton>
-        </CapabilityGate>
-      ) : <span className="text-brand-navy/50">Unassigned</span>,
+        ) : row.original.assignedRoleId ? (
+          <CapabilityGate capability={permissionCodes.workflowTaskClaim}>
+            <GeneralButton
+              aria-busy={claimingId === row.original.taskInstanceId}
+              disabled={claimingId !== null}
+              onClick={() => claim(row.original)}
+              size="sm"
+              type="button"
+            >
+              {claimingId === row.original.taskInstanceId
+                ? "Claiming…"
+                : "Claim"}
+            </GeneralButton>
+          </CapabilityGate>
+        ) : (
+          <span className="text-brand-navy/50">Unassigned</span>
+        ),
     },
   ];
 }

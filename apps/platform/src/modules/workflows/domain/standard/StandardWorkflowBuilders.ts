@@ -6,7 +6,6 @@ import type {
 } from "../definitions/WorkflowTypes";
 import type { WorkflowStageDocumentRequirement } from "../definitions/WorkflowStageDocumentRequirement";
 import type { WorkflowStageChecklistDefinition } from "../definitions/WorkflowStageChecklistDefinition";
-import type { WorkflowStageCommentField } from "../definitions/WorkflowStageCommentField";
 import type {
   StandardWorkflowDependencies,
   StandardWorkflowFormCode,
@@ -141,26 +140,10 @@ export function documentRequirement(
     mandatory,
     maximumSizeMb: 20,
     name,
+    taskStableKey: "",
     templateReference: "",
     uploader,
     verifier: "STAFF",
-  };
-}
-
-export function comment(
-  key: string,
-  label: string,
-  displayOrder: number,
-  mandatory = false,
-  visibility: WorkflowStageCommentField["visibility"] = "INTERNAL_ONLY",
-): WorkflowStageCommentField {
-  return {
-    displayOrder,
-    helpText: "",
-    key,
-    label,
-    mandatory,
-    visibility,
   };
 }
 
@@ -219,6 +202,10 @@ export function stage(
     checklistItems: input.checklistItems.map((item) => ({
       ...item,
       taskStableKey: item.taskStableKey || defaultTaskKey,
+    })),
+    documentRequirements: input.documentRequirements.map((requirement) => ({
+      ...requirement,
+      taskStableKey: requirement.taskStableKey || defaultTaskKey,
     })),
     entryCondition: null,
     exitCondition: null,

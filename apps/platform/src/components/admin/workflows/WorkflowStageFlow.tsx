@@ -19,7 +19,6 @@ import type { WorkflowStageChecklistDefinition } from "@/modules/workflows/domai
 import { WorkflowStageDocumentRequirementDialog } from "@/modules/workflows/ui/definitions/WorkflowStageDocumentRequirementDialog";
 import type { WorkflowStageDocumentRequirement } from "@/modules/workflows/domain/definitions/WorkflowStageDocumentRequirement";
 import { useWorkflowStageScoringOverlays } from "@/modules/workflows/ui/definitions/useWorkflowStageScoringOverlays";
-import { useWorkflowStageCommentFieldOverlays } from "@/modules/workflows/ui/definitions/useWorkflowStageCommentFieldOverlays";
 import {
   WorkflowFlowToolbar,
   WorkflowStageList,
@@ -87,10 +86,6 @@ export function WorkflowStageFlow({ canEdit, editor }: Props) {
     ? stages.findIndex((stage) => stage.stableKey === selectedStage.stableKey)
     : -1;
   const scoringOverlays = useWorkflowStageScoringOverlays(
-    editor,
-    selectedStage,
-  );
-  const commentFieldOverlays = useWorkflowStageCommentFieldOverlays(
     editor,
     selectedStage,
   );
@@ -231,21 +226,18 @@ export function WorkflowStageFlow({ canEdit, editor }: Props) {
             setDocumentRequirementDialog("create")
           }
           onAddScoringCriterion={scoringOverlays.onAdd}
-          onAddCommentField={commentFieldOverlays.onAdd}
           onAddTask={() => setTaskDialog("create")}
           onDelete={() => selectedStage && setStageToDelete(selectedStage)}
           onDeleteAction={setActionToDelete}
           onDeleteChecklistItem={setChecklistItemToDelete}
           onDeleteDocumentRequirement={setDocumentRequirementToDelete}
           onDeleteScoringCriterion={scoringOverlays.onDelete}
-          onDeleteCommentField={commentFieldOverlays.onDelete}
           onDeleteTask={setTaskToDelete}
           onEdit={() => selectedStage && setStageDialog(selectedStage)}
           onEditAction={setActionDialog}
           onEditChecklistItem={setChecklistDialog}
           onEditDocumentRequirement={setDocumentRequirementDialog}
           onEditScoringCriterion={scoringOverlays.onEdit}
-          onEditCommentField={commentFieldOverlays.onEdit}
           onEditTask={setTaskDialog}
           onPreviewTask={setTaskToPreview}
           stage={selectedStage}
@@ -300,7 +292,6 @@ export function WorkflowStageFlow({ canEdit, editor }: Props) {
         />
       ) : null}
       {scoringOverlays.overlays}
-      {commentFieldOverlays.overlays}
       <WorkflowActionOverlays
         actionDialog={actionDialog}
         actionToDelete={actionToDelete}

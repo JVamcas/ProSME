@@ -21,7 +21,6 @@ function stage(
     actions: [],
     checklistItems: [],
     documentRequirements: [],
-    commentFields: [],
     scoring: null,
     coiGated: false,
     description: "Review the application",

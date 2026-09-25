@@ -81,15 +81,20 @@ function boundTaskResultFields(stage: WorkflowStageInput) {
   return stage.tasks.flatMap((task) => {
     const parsed = validateTaskConfiguration(task.config);
     if (!parsed.success) return [];
-    const fields: ReturnType<typeof taskResultField>[] = [];
-    if (parsed.data.items) {
-      fields.push(...parsed.data.items.map((item) => taskResultField(
+    const fields: ReturnType<typeof taskResultField>[] = stage.checklistItems
+      .filter((item) => item.taskStableKey === task.stableKey)
+      .map((item) => taskResultField(
         stage,
-        item.code,
-        `${stage.name} · ${task.name} · ${item.label}`,
-        "BOOLEAN",
-      )));
-    }
+        item.key,
+        `${stage.name} · ${task.name} · ${item.text}`,
+        item.responseType === "YES_NO"
+          ? "BOOLEAN"
+          : item.responseType === "NUMBER"
+            ? "NUMBER"
+            : item.responseType === "DATE"
+              ? "DATE"
+              : "TEXT",
+      ));
     if (parsed.data.categories && parsed.data.outcomes) {
       fields.push(...parsed.data.categories.map((category) => taskResultField(
         stage,

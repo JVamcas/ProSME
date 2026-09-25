@@ -7,7 +7,6 @@ import {
   stageTaskFormBindings,
   workflowActionDefinitions,
   workflowStageChecklistDefinitions,
-  workflowStageCommentFields,
   workflowStageDefinitions,
   workflowStageDocumentRequirements,
   workflowStageScoringConfigurations,
@@ -94,23 +93,15 @@ async function insertStageRequirements(
       .insert(workflowStageChecklistDefinitions)
       .values(checklistItems);
   }
-  const commentFields = graph.stages.flatMap((stage) =>
-    stage.commentFields.map((field) => ({
-      ...field,
-      id: undefined,
-      stageId: stageIds.get(stage.stableKey)!,
-    })),
-  );
-  if (commentFields.length) {
-    await transaction.insert(workflowStageCommentFields).values(commentFields);
-  }
-  const documentRequirements = graph.stages.flatMap((stage) =>
-    stage.documentRequirements.map((requirement) => ({
+  const documentRequirements = graph.stages.flatMap((stage) => {
+    const stageId = stageIds.get(stage.stableKey)!;
+    return stage.documentRequirements.map(({ taskStableKey, ...requirement }) => ({
       ...requirement,
       id: undefined,
-      stageId: stageIds.get(stage.stableKey)!,
-    })),
-  );
+      stageId,
+      taskDefinitionId: taskIds.get(`${stageId}:${taskStableKey}`)!,
+    }));
+  });
   if (documentRequirements.length) {
     await transaction
       .insert(workflowStageDocumentRequirements)
@@ -118,10 +109,16 @@ async function insertStageRequirements(
   }
   const configurations = graph.stages.flatMap((stage) =>
     stage.scoring
-      ? [{
-          aggregation: stage.scoring.aggregation,
-          stageId: stageIds.get(stage.stableKey)!,
-        }]
+      ? (() => {
+          const stageId = stageIds.get(stage.stableKey)!;
+          return [{
+            aggregation: stage.scoring.aggregation,
+            stageId,
+            taskDefinitionId: taskIds.get(
+              `${stageId}:${stage.scoring.taskStableKey}`,
+            )!,
+          }];
+        })()
       : [],
   );
   if (configurations.length) {

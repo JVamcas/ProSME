@@ -171,7 +171,7 @@ describe("form preview dialog", () => {
 
     const dialog = document.querySelector('[role="dialog"]');
     expect(dialog?.textContent).toContain("Funding Application Form preview");
-    expect(dialog?.textContent).toContain("Entity details");
+    expect(dialog?.textContent).toContain("Registration and tax information");
     expect(dialog?.textContent).toContain("Declarations and consent");
     expect(dialog?.querySelector('[name="root_PROJECT_TITLE"]')).not.toBeNull();
     expect(dialog?.textContent).toContain("Submit application");

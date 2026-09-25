@@ -31,7 +31,7 @@ export const workflowTransitionFormSchema = z
         code: "custom",
         message: values.targetType === "STAGE"
           ? "Select a target stage."
-          : "Enter a terminal outcome.",
+          : "Select a terminal outcome.",
         path: [field],
       });
     } else if (!stableKeyPattern.test(value)) {

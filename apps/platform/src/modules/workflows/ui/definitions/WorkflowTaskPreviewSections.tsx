@@ -126,12 +126,16 @@ export function WorkflowChecklistPreview({ stage }: { stage: WorkflowStageInput 
 
 export function WorkflowDocumentRequirementsPreview({
   stage,
+  taskStableKey,
 }: {
   stage: WorkflowStageInput;
+  taskStableKey: string;
 }) {
   return (
     <div className="space-y-3">
-      {stage.documentRequirements.map((requirement) => (
+      {stage.documentRequirements
+        .filter((requirement) => requirement.taskStableKey === taskStableKey)
+        .map((requirement) => (
         <div
           className="flex items-start gap-3 rounded-xl border border-brand-navy/10 p-4"
           key={requirement.name}
@@ -179,7 +183,7 @@ export function WorkflowScoringPreview({ stage }: { stage: WorkflowStageInput })
               </p>
             ) : null}
             <p className="mt-2 text-xs text-brand-navy/55">
-              Weight {criterion.weight} · Threshold {criterion.threshold}
+              Weight {criterion.weight}
             </p>
           </div>
           <label className="text-xs font-semibold text-brand-navy">
@@ -203,40 +207,6 @@ export function WorkflowScoringPreview({ stage }: { stage: WorkflowStageInput })
           ) : null}
         </div>
       ))}
-    </div>
-  );
-}
-
-export function WorkflowCommentsPreview({ stage }: { stage: WorkflowStageInput }) {
-  return (
-    <div className="space-y-4">
-      {[...stage.commentFields]
-        .sort((left, right) => left.displayOrder - right.displayOrder)
-        .map((field) => (
-          <label
-            className="block text-sm font-semibold text-brand-navy"
-            key={field.key}
-          >
-            {field.label}
-            {field.mandatory ? (
-              <span className="ml-1 text-brand-orange">*</span>
-            ) : null}
-            <span className="ml-2 text-xs font-normal text-brand-navy/50">
-              {field.visibility === "APPLICANT_VISIBLE"
-                ? "Applicant visible"
-                : "Internal only"}
-            </span>
-            {field.helpText ? (
-              <span className="mt-1 block text-xs font-normal text-brand-navy/55">
-                {field.helpText}
-              </span>
-            ) : null}
-            <textarea
-              className="mt-2 min-h-24 w-full rounded-lg border border-brand-navy/20 p-3"
-              disabled
-            />
-          </label>
-        ))}
     </div>
   );
 }

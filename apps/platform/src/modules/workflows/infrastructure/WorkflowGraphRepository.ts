@@ -192,7 +192,6 @@ function assembleGraph(rows: Awaited<ReturnType<typeof loadGraphRows>>) {
         checklistItems: [],
         documentRequirements: [],
         scoring: null,
-        commentFields: [],
         initial: stage.initial,
         slaHours: stage.slaHours,
         actions: [],

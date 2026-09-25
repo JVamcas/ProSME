@@ -1,9 +1,7 @@
 import { z } from "zod";
 
 import {
-  workflowDocumentActors,
   workflowDocumentFileTypes,
-  workflowDocumentVerifierActors,
 } from "@/modules/workflows/domain/definitions/WorkflowStageDocumentRequirement";
 
 export const documentFileTypeItems = [
@@ -19,19 +17,14 @@ export const documentActorItems = [
   { label: "Staff", value: "STAFF" },
 ] as const;
 
-export const documentVerifierItems = documentActorItems.filter(
-  (item) => item.value !== "APPLICANT",
-);
-
 export const workflowStageDocumentRequirementFormSchema = z.object({
   name: z.string().trim().min(2).max(160),
+  taskStableKey: z.string().min(1, "Select a workflow task."),
   mandatory: z.boolean(),
   acceptedFileTypes: z.array(z.enum(workflowDocumentFileTypes))
     .min(1, "Select at least one accepted file type."),
   maximumSizeMb: z.number().int().min(1).max(100),
   expiryDays: z.number().int().min(1).max(3650).nullable(),
-  uploader: z.enum(workflowDocumentActors),
-  verifier: z.enum(workflowDocumentVerifierActors),
   templateReference: z.string().trim().max(500),
 });
 

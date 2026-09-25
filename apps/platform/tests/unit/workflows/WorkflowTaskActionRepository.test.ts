@@ -55,13 +55,12 @@ beforeEach(() => {
     .mockResolvedValueOnce({ rows: [] })
     .mockResolvedValueOnce({
       rows: [{
-        config: {
-          items: [{ code: "DOCUMENTS_PRESENT", label: "Documents present", required: true }],
-        },
+        config: {},
         actionType: null,
         formCompleted: false,
         formRequired: false,
         hasActions: false,
+        hasChecklist: true,
         stageDefinitionId: "50000000-0000-4000-8000-000000000001",
         stageInstanceId: "60000000-0000-4000-8000-000000000001",
         taskStatus: "IN_PROGRESS",

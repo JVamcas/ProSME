@@ -1,6 +1,7 @@
 "use client";
 
 import { FormProvider } from "react-hook-form";
+import { toast } from "sonner";
 
 import { DraggableDialog } from "@/components/ui/draggable-dialog";
 import type {
@@ -28,8 +29,16 @@ export function WorkflowTaskDialog({
 }: Props) {
   const controller = useWorkflowTaskDialogController(editor, stage, task);
   const submit = controller.form.handleSubmit(async (values) => {
-    const saved = await controller.save(values);
-    if (saved) onClose();
+    try {
+      const saved = await controller.save(values);
+      if (saved) onClose();
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Unable to save the workflow task.",
+      );
+    }
   });
   return (
     <DraggableDialog
@@ -41,20 +50,12 @@ export function WorkflowTaskDialog({
       <FormProvider {...controller.form}>
         <form className="flex flex-col gap-4" onSubmit={submit}>
           <WorkflowTaskDialogFields
-            actionItems={controller.actionItems}
-            actionKeys={controller.actionKeys}
             assignmentItems={controller.assignmentItems}
             assignmentMode={controller.assignmentMode}
-            contextFieldItems={controller.contextFieldItems}
-            contextFieldKeys={controller.contextFieldKeys}
-            contextFieldsPending={controller.contextFieldsPending}
             formItems={controller.formItems}
             formVersionId={controller.formVersionId}
             formsPending={controller.forms.isPending}
-            mutationError={controller.mutation.error}
             mutationPending={controller.mutation.isPending}
-            onActionKeysChange={controller.setActionKeys}
-            onContextFieldKeysChange={controller.setContextFieldKeys}
           />
         </form>
       </FormProvider>

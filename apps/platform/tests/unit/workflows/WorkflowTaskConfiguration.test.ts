@@ -62,12 +62,6 @@ describe("workflow task configuration", () => {
       workflowTaskFormSchema.safeParse({ ...values, assignmentMode: "INHERIT" })
         .success,
     ).toBe(false);
-    expect(
-      workflowTaskFormSchema.safeParse({
-        ...values,
-        requiredCompletionCount: 4,
-      }).success,
-    ).toBe(false);
   });
 
   it("allows a structured task to use its configuration without a form", () => {

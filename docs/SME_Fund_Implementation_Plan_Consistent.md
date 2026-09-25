@@ -1453,7 +1453,7 @@ re-verification are implemented as cross-cutting capabilities in Phase 16.
 
 ### Goal
 
-Configure: - criterion; - description; - weight; - scale; - threshold; - mandatory comment; - aggregation.
+Configure: - criterion; - description; - weight; - scale; - mandatory comment; - aggregation.
 
 ### Scope
 
@@ -1462,41 +1462,18 @@ Configure:
 - description;
 - weight;
 - scale;
-- threshold;
 - mandatory comment;
 - aggregation.
 
 ### Acceptance Criteria
 
-1. Configure: - criterion; - description; - weight; - scale; - threshold; - mandatory comment; - aggregation.
+1. Configure: - criterion; - description; - weight; - scale; - mandatory comment; - aggregation.
 
 ### Done When
 
-Configure: - criterion; - description; - weight; - scale; - threshold; - mandatory comment; - aggregation.
-## 4.11 Comments & Recommendations
+Configure: - criterion; - description; - weight; - scale; - mandatory comment; - aggregation.
 
-### Goal
-
-Configure: - key; - label; - help; - mandatory; - applicant-visible/internal-only; - order.
-
-### Scope
-
-Configure:
-- key;
-- label;
-- help;
-- mandatory;
-- applicant-visible/internal-only;
-- order.
-
-### Acceptance Criteria
-
-1. Configure: - key; - label; - help; - mandatory; - applicant-visible/internal-only; - order.
-
-### Done When
-
-Configure: - key; - label; - help; - mandatory; - applicant-visible/internal-only; - order.
-## 4.12 Element-Level Permissions
+## 4.11 Element-Level Permissions
 
 ### Goal
 

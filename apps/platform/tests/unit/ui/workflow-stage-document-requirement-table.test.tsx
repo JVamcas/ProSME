@@ -15,6 +15,7 @@ describe("workflow stage document requirement table", () => {
   it("renders all requirement fields in the shared table", async () => {
     const stage = structuredClone(referenceWorkflow.stages[0]);
     stage.documentRequirements = [{
+      taskStableKey: stage.tasks[0].stableKey,
       name: "Tax clearance certificate",
       mandatory: true,
       acceptedFileTypes: ["PDF", "JPG"],
@@ -38,6 +39,8 @@ describe("workflow stage document requirement table", () => {
       />,
     ));
 
+    expect(container.textContent).toContain("Task");
+    expect(container.textContent).toContain(stage.tasks[0].name);
     expect(container.textContent).toContain("Tax clearance certificate");
     expect(container.textContent).toContain("PDF, JPG");
     expect(container.textContent).toContain("10 MB");

@@ -23,6 +23,34 @@ import {
 import { WorkflowConditionEditor } from "./WorkflowConditionEditor";
 import { useWorkflowConditionFields } from "./useWorkflowConditionFields";
 
+const standardTerminalOutcomes = [
+  "APPROVED",
+  "AWARD_LAPSED",
+  "CLOSED",
+  "CLOSED_QUALIFIED",
+  "CLOSED_UNSUCCESSFUL",
+  "COMPLETED",
+  "DECLINED_COMMITTEE",
+  "DECLINED_RISK",
+  "DEFERRED",
+  "INELIGIBLE",
+  "RECOVERY",
+  "REFERRED_RECOVERY_INVESTIGATION",
+  "REJECTED",
+  "REJECTED_INCOMPLETE",
+  "RESERVE_LIST",
+  "RESERVE_REALLOCATION",
+  "RESTRICTED",
+  "TERMINATED_RECOVERY",
+  "UNSUCCESSFUL",
+  "WITHDRAWN",
+] as const;
+
+function terminalOutcomeLabel(code: string) {
+  const words = code.replaceAll("_", " ").toLowerCase();
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
 type Props = {
   editor: WorkflowEditorView;
   onClose: () => void;
@@ -55,6 +83,14 @@ export function WorkflowTransitionDialog({
   const sourceTransitions = editor.graph.transitions.filter(
     (item) => item.sourceStageKey === stage.stableKey,
   );
+  const terminalOutcomeItems = [
+    ...new Set([
+      ...standardTerminalOutcomes,
+      ...editor.graph.transitions
+        .map((item) => item.terminalOutcome)
+        .filter((outcome): outcome is string => Boolean(outcome)),
+    ]),
+  ].map((code) => ({ label: terminalOutcomeLabel(code), value: code }));
   const defaultActionKey = stage.actions[0]?.stableKey ?? "";
   const defaultPriority = Math.max(
     0,
@@ -153,10 +189,11 @@ export function WorkflowTransitionDialog({
               required
             />
           ) : (
-            <FormInput
+            <FormSelect
+              items={terminalOutcomeItems}
               label="Terminal outcome"
               name="terminalOutcome"
-              placeholder="REJECTED"
+              placeholder="Select an outcome"
               required
             />
           )}

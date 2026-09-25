@@ -1,7 +1,6 @@
 import { z } from "zod";
 
 import {
-  workflowChecklistEvidenceRequirements,
   workflowChecklistResponseTypes,
 } from "@/modules/workflows/domain/definitions/WorkflowStageChecklistDefinition";
 
@@ -32,7 +31,6 @@ export const workflowStageChecklistFormSchema = z.object({
   text: z.string().trim().min(2).max(500),
   mandatory: z.boolean(),
   responseType: z.enum(workflowChecklistResponseTypes),
-  evidenceRequirement: z.enum(workflowChecklistEvidenceRequirements),
   notes: z.string().trim().max(1000),
   displayOrder: z.number().int().positive(),
 });

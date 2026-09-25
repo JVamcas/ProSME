@@ -8,7 +8,6 @@ import { afterEach, describe, expect, it } from "vitest";
 import { WorkflowTaskDialogFields } from "@/modules/workflows/ui/definitions/WorkflowTaskDialogFields";
 import { workflowTaskFormItems } from "@/modules/workflows/ui/definitions/WorkflowTaskDialogController";
 import type { WorkflowTaskFormValues } from "@/modules/workflows/ui/definitions/WorkflowTaskFormSchema";
-import { defaultWorkflowElementPermissions } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
 
 const attachedVersionId = "68cecb68-3f4f-4862-a958-92942187cf04";
 
@@ -17,30 +16,22 @@ const attachedVersionId = "68cecb68-3f4f-4862-a958-92942187cf04";
 }).IS_REACT_ACT_ENVIRONMENT = true;
 
 function TaskFields({
+  completionMode = "COUNT",
   formItems,
 }: {
+  completionMode?: WorkflowTaskFormValues["completionMode"];
   formItems: { label: string; value: string }[];
 }) {
   const form = useForm<WorkflowTaskFormValues>({
     defaultValues: {
-      actionKeys: [],
-      viewPermission: defaultWorkflowElementPermissions.view,
-      editPermission: defaultWorkflowElementPermissions.edit,
-      decidePermission: defaultWorkflowElementPermissions.decide,
-      visibility: defaultWorkflowElementPermissions.visibility,
       assignmentMode: "ROLE",
       assignmentTarget: "reviewer",
-      coiRequired: false,
-      contextFields: [{
-        key: "application.requested_amount",
-        label: "Requested amount",
-        type: "NUMBER",
-      }],
+      completionMode,
+      completionPercentage: completionMode === "PERCENT" ? 75 : null,
       description: "",
       displayOrder: 1,
       formVersionId: attachedVersionId,
       name: "Finance Review",
-      quorum: false,
       required: true,
       requiredCompletionCount: 1,
       reviewerCount: 1,
@@ -55,23 +46,12 @@ function TaskFields({
   return (
     <FormProvider {...form}>
       <WorkflowTaskDialogFields
-        actionItems={[]}
-        actionKeys={[]}
         assignmentItems={[{ label: "Reviewer", value: "reviewer" }]}
         assignmentMode="ROLE"
-        contextFieldItems={[{
-          key: "application.requested_amount",
-          label: "Requested amount",
-          type: "NUMBER",
-        }]}
-        contextFieldKeys={["application.requested_amount"]}
-        contextFieldsPending={false}
         formItems={formItems}
         formVersionId={formVersionId ?? ""}
         formsPending={formItems.length === 0}
         mutationPending={false}
-        onActionKeysChange={() => undefined}
-        onContextFieldKeysChange={() => undefined}
       />
     </FormProvider>
   );
@@ -108,20 +88,34 @@ describe("workflow task form selection", () => {
       'select[name="formVersionId"]',
     );
     expect(formSelect?.value).toBe(attachedVersionId);
-    expect(container.querySelector<HTMLSelectElement>(
-      "#workflow-context-fields-values",
-    )?.value).toBe("application.requested_amount");
-    expect(container.textContent).toContain(
-      "Requested amount · application.requested_amount",
+    expect(container.textContent).not.toContain("Read-only runtime context");
+    expect(container.textContent).not.toContain("Element permissions");
+    expect(container.textContent).not.toContain("Require quorum");
+    expect(container.textContent).not.toContain(
+      "Require conflict-of-interest clearance",
     );
-    expect(container.textContent).toContain("Element permissions");
-    expect(container.textContent).toContain("View permission");
-    expect(container.textContent).toContain("Edit permission");
-    expect(container.textContent).toContain("Decide permission");
-    expect(container.querySelector<HTMLSelectElement>(
-      'select[name="visibility"]',
-    )?.value).toBe("INTERNAL_ONLY");
 
     await act(async () => root.unmount());
+  });
+
+  it("shows the value field required by the completion mode", async () => {
+    const countContainer = document.createElement("div");
+    const percentageContainer = document.createElement("div");
+    document.body.append(countContainer, percentageContainer);
+    const countRoot = createRoot(countContainer);
+    const percentageRoot = createRoot(percentageContainer);
+
+    await act(async () => countRoot.render(<TaskFields formItems={[]} />));
+    await act(async () => percentageRoot.render(
+      <TaskFields completionMode="PERCENT" formItems={[]} />,
+    ));
+
+    expect(countContainer.textContent).toContain("Required completions");
+    expect(countContainer.textContent).not.toContain("Completion percentage");
+    expect(percentageContainer.textContent).toContain("Completion percentage");
+    expect(percentageContainer.textContent).not.toContain("Required completions");
+
+    await act(async () => countRoot.unmount());
+    await act(async () => percentageRoot.unmount());
   });
 });

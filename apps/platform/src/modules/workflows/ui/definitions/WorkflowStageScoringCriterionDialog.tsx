@@ -40,7 +40,6 @@ export function WorkflowStageScoringCriterionDialog({
       mandatoryComment: criterion?.mandatoryComment ?? false,
       scaleMaximum: criterion?.scaleMaximum ?? 10,
       scaleMinimum: criterion?.scaleMinimum ?? 0,
-      threshold: criterion?.threshold ?? 5,
       weight: criterion?.weight ?? 1,
     },
     resolver: zodResolver(workflowStageScoringCriterionFormSchema),
@@ -76,6 +75,8 @@ export function WorkflowStageScoringCriterionDialog({
                         : current,
                     )
                   : [...criteria, nextCriterion],
+                taskStableKey:
+                  item.scoring?.taskStableKey ?? item.tasks[0]?.stableKey ?? "",
               },
             }
           : item,
@@ -109,19 +110,11 @@ export function WorkflowStageScoringCriterionDialog({
             rows={3}
           />
           <FormInput
+            containerClassName="sm:col-span-2"
             label="Weight"
             max={100}
             min={0.01}
             name="weight"
-            registrationOptions={{ valueAsNumber: true }}
-            required
-            step="any"
-            type="number"
-          />
-          <FormInput
-            label="Threshold"
-            min={0}
-            name="threshold"
             registrationOptions={{ valueAsNumber: true }}
             required
             step="any"

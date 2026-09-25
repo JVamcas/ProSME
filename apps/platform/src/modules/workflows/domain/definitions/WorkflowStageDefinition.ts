@@ -2,7 +2,6 @@ import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup"
 import type { WorkflowStageChecklistDefinition } from "./WorkflowStageChecklistDefinition";
 import type { WorkflowStageDocumentRequirement } from "./WorkflowStageDocumentRequirement";
 import type { WorkflowStageScoringDefinition } from "./WorkflowStageScoringDefinition";
-import type { WorkflowStageCommentField } from "./WorkflowStageCommentField";
 
 export const workflowPublicStatuses = [
   "SUBMITTED",
@@ -37,5 +36,4 @@ export type WorkflowStageDefinition = {
   checklistItems: WorkflowStageChecklistDefinition[];
   documentRequirements: WorkflowStageDocumentRequirement[];
   scoring: WorkflowStageScoringDefinition | null;
-  commentFields: WorkflowStageCommentField[];
 };

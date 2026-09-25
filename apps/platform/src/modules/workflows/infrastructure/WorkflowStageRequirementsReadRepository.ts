@@ -6,7 +6,6 @@ import { getDatabase } from "@/db/client";
 import {
   workflowStageChecklistDefinitions,
   stageTaskDefinitions,
-  workflowStageCommentFields,
   workflowStageDefinitions,
   workflowStageDocumentRequirements,
   workflowStageScoringConfigurations,
@@ -53,6 +52,7 @@ function loadDocumentRows(versionId: string) {
     .select({
       id: workflowStageDocumentRequirements.id,
       stageId: workflowStageDocumentRequirements.stageId,
+      taskStableKey: stageTaskDefinitions.stableKey,
       name: workflowStageDocumentRequirements.name,
       mandatory: workflowStageDocumentRequirements.mandatory,
       acceptedFileTypes: workflowStageDocumentRequirements.acceptedFileTypes,
@@ -67,6 +67,13 @@ function loadDocumentRows(versionId: string) {
       workflowStageDefinitions,
       eq(workflowStageDefinitions.id, workflowStageDocumentRequirements.stageId),
     )
+    .innerJoin(
+      stageTaskDefinitions,
+      eq(
+        stageTaskDefinitions.id,
+        workflowStageDocumentRequirements.taskDefinitionId,
+      ),
+    )
     .where(eq(workflowStageDefinitions.versionId, versionId))
     .orderBy(
       asc(workflowStageDocumentRequirements.stageId),
@@ -79,11 +86,19 @@ function loadScoringConfigurations(versionId: string) {
     .select({
       stageId: workflowStageScoringConfigurations.stageId,
       aggregation: workflowStageScoringConfigurations.aggregation,
+      taskStableKey: stageTaskDefinitions.stableKey,
     })
     .from(workflowStageScoringConfigurations)
     .innerJoin(
       workflowStageDefinitions,
       eq(workflowStageDefinitions.id, workflowStageScoringConfigurations.stageId),
+    )
+    .innerJoin(
+      stageTaskDefinitions,
+      eq(
+        stageTaskDefinitions.id,
+        workflowStageScoringConfigurations.taskDefinitionId,
+      ),
     )
     .where(eq(workflowStageDefinitions.versionId, versionId));
 }
@@ -98,7 +113,6 @@ function loadScoringCriteria(versionId: string) {
       weight: workflowStageScoringCriteria.weight,
       scaleMinimum: workflowStageScoringCriteria.scaleMinimum,
       scaleMaximum: workflowStageScoringCriteria.scaleMaximum,
-      threshold: workflowStageScoringCriteria.threshold,
       mandatoryComment: workflowStageScoringCriteria.mandatoryComment,
     })
     .from(workflowStageScoringCriteria)
@@ -113,40 +127,15 @@ function loadScoringCriteria(versionId: string) {
     );
 }
 
-function loadCommentFields(versionId: string) {
-  return getDatabase()
-    .select({
-      id: workflowStageCommentFields.id,
-      stageId: workflowStageCommentFields.stageId,
-      key: workflowStageCommentFields.key,
-      label: workflowStageCommentFields.label,
-      helpText: workflowStageCommentFields.helpText,
-      mandatory: workflowStageCommentFields.mandatory,
-      visibility: workflowStageCommentFields.visibility,
-      displayOrder: workflowStageCommentFields.displayOrder,
-    })
-    .from(workflowStageCommentFields)
-    .innerJoin(
-      workflowStageDefinitions,
-      eq(workflowStageDefinitions.id, workflowStageCommentFields.stageId),
-    )
-    .where(eq(workflowStageDefinitions.versionId, versionId))
-    .orderBy(
-      asc(workflowStageCommentFields.stageId),
-      asc(workflowStageCommentFields.displayOrder),
-    );
-}
-
 export async function loadWorkflowStageRequirements(versionId: string) {
-  const [checklists, documents, scoringConfigurations, scoringCriteria, comments]
+  const [checklists, documents, scoringConfigurations, scoringCriteria]
     = await Promise.all([
       loadChecklistRows(versionId),
       loadDocumentRows(versionId),
       loadScoringConfigurations(versionId),
       loadScoringCriteria(versionId),
-      loadCommentFields(versionId),
     ]);
-  return { checklists, comments, documents, scoringConfigurations, scoringCriteria };
+  return { checklists, documents, scoringConfigurations, scoringCriteria };
 }
 
 export function attachWorkflowStageRequirements(
@@ -160,12 +149,13 @@ export function attachWorkflowStageRequirements(
   requirements.documents.forEach(({ stageId, ...item }) => {
     byId.get(stageId)?.documentRequirements.push(item);
   });
-  requirements.comments.forEach(({ stageId, ...item }) => {
-    byId.get(stageId)?.commentFields.push(item);
-  });
-  requirements.scoringConfigurations.forEach(({ stageId, aggregation }) => {
+  requirements.scoringConfigurations.forEach(({
+    stageId,
+    aggregation,
+    taskStableKey,
+  }) => {
     const stage = byId.get(stageId);
-    if (stage) stage.scoring = { aggregation, criteria: [] };
+    if (stage) stage.scoring = { aggregation, criteria: [], taskStableKey };
   });
   requirements.scoringCriteria.forEach(({ stageId, ...item }) => {
     byId.get(stageId)?.scoring?.criteria.push(item);

@@ -137,6 +137,7 @@ afterAll(async () => {
           ],
           documentRequirements: [
             {
+              taskStableKey: "TECHNICAL_REVIEW_TASK",
               name: "Tax clearance certificate",
               mandatory: true,
               acceptedFileTypes: ["PDF", "JPG"] as Array<"PDF" | "JPG">,
@@ -147,6 +148,7 @@ afterAll(async () => {
               templateReference: "TAX_CLEARANCE_TEMPLATE",
             },
             {
+              taskStableKey: "TECHNICAL_REVIEW_TASK",
               name: "Review memorandum",
               mandatory: false,
               acceptedFileTypes: ["PDF"] as Array<"PDF">,
@@ -157,26 +159,9 @@ afterAll(async () => {
               templateReference: "",
             },
           ],
-          commentFields: [
-            {
-              key: "REVIEW_RECOMMENDATION",
-              label: "Review recommendation",
-              helpText: "Summarise the recommendation and supporting reasons.",
-              mandatory: true,
-              visibility: "INTERNAL_ONLY" as const,
-              displayOrder: 1,
-            },
-            {
-              key: "APPLICANT_FEEDBACK",
-              label: "Applicant feedback",
-              helpText: "Provide feedback suitable for the applicant.",
-              mandatory: false,
-              visibility: "APPLICANT_VISIBLE" as const,
-              displayOrder: 2,
-            },
-          ],
           scoring: {
             aggregation: "WEIGHTED_AVERAGE" as const,
+            taskStableKey: "REVIEW_TASK",
             criteria: [
               {
                 criterion: "Business viability",
@@ -184,7 +169,6 @@ afterAll(async () => {
                 weight: 60,
                 scaleMinimum: 0,
                 scaleMaximum: 10,
-                threshold: 6,
                 mandatoryComment: true,
               },
               {
@@ -193,7 +177,6 @@ afterAll(async () => {
                 weight: 40,
                 scaleMinimum: 0,
                 scaleMaximum: 10,
-                threshold: 5,
                 mandatoryComment: false,
               },
             ],

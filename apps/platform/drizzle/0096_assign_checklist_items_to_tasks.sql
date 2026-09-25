@@ -39,7 +39,3 @@ ALTER TABLE "app_workflow_stage_checklist_definitions"
 --> statement-breakpoint
 CREATE INDEX "app_stage_checklists_task_idx"
   ON "app_workflow_stage_checklist_definitions" USING btree ("task_definition_id");
---> statement-breakpoint
-UPDATE "app_stage_task_definitions"
-SET config = config - 'items'
-WHERE config ? 'items';
