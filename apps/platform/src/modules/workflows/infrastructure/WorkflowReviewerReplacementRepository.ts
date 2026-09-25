@@ -216,7 +216,8 @@ export async function replaceWorkflowReviewer(
           WHEN status = 'COMPLETED' THEN status ELSE 'CANCELLED'
         END,
         completed_at = CASE
-          WHEN status = 'COMPLETED' THEN completed_at ELSE ${replacedAt}
+          WHEN status = 'COMPLETED' THEN completed_at
+          ELSE ${replacedAt}::timestamptz
         END,
         row_version = row_version + 1
       WHERE id = ${input.taskId}::uuid

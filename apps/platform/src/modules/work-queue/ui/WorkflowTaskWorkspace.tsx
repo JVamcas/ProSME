@@ -1,133 +1,108 @@
 "use client";
 
-import { CalendarDays, FileText } from "lucide-react";
-
+import { PortalErrorState } from "@/components/layout/PortalErrorState";
+import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { useAdminApplicationDetail } from "@/modules/applications/ApplicationHooks";
+import { ApplicationDetailContent } from "@/modules/applications/ui/ApplicationDetailView";
 import { useWorkflowTask } from "@/modules/work-queue/WorkQueueHooks";
+import { WorkflowTaskReviewPanel } from "@/modules/work-queue/ui/WorkflowTaskReviewPanel";
 import { useWorkflowCoi } from "@/modules/workflows/ui/runtime/useWorkflowCoi";
 import { WorkflowTaskCoiGate } from "@/modules/workflows/ui/runtime/WorkflowTaskCoiGate";
 import { PageShell } from "@/shared/ui/PageShell";
-import { ChecklistTaskForm } from "./ChecklistTaskForm";
-import { DynamicFormTask } from "@/modules/forms/ui/renderer/DynamicFormTask";
-import { AuthoritativeEligibilityTask } from "@/modules/eligibility/ui/screening/AuthoritativeEligibilityTask";
-import { WorkflowTaskDecisionActions } from "@/modules/work-queue/ui/WorkflowTaskDecisionActions";
 
-function formatDate(value: string | null) {
-  if (!value) return "No due date";
-  return new Intl.DateTimeFormat("en-NA", { dateStyle: "medium" }).format(
-    new Date(value),
-  );
-}
+function ApplicationTaskPane({ applicationId }: { applicationId: string }) {
+  const query = useAdminApplicationDetail(applicationId);
 
-function TaskMetadata({
-  applicantName,
-  businessName,
-  dueAt,
-  fundingCallTitle,
-  reference,
-}: {
-  applicantName: string;
-  businessName: string | null;
-  dueAt: string | null;
-  fundingCallTitle: string;
-  reference: string;
-}) {
+  if (query.isPending) {
+    return (
+      <PortalLoadingState
+        className="min-h-48 px-0"
+        description="Preparing the submitted application."
+        title="Loading application details"
+      />
+    );
+  }
+
+  if (query.isError) {
+    return (
+      <PortalErrorState
+        className="mt-0 shadow-none"
+        description={query.error.message}
+        onAction={() => void query.refetch()}
+        title="Application details could not be loaded"
+      />
+    );
+  }
+
   return (
-    <section className="grid gap-4 rounded-2xl border border-brand-navy/10 bg-white p-5 shadow-sm md:grid-cols-2 lg:grid-cols-4">
-      <div>
-        <p className="text-xs font-bold uppercase tracking-wider text-brand-navy/45">
-          Application
-        </p>
-        <p className="mt-1 font-semibold text-brand-navy">{reference}</p>
-      </div>
-      <div>
-        <p className="text-xs font-bold uppercase tracking-wider text-brand-navy/45">
-          Applicant
-        </p>
-        <p className="mt-1 font-semibold text-brand-navy">
-          {businessName ?? applicantName}
-        </p>
-      </div>
-      <div>
-        <p className="text-xs font-bold uppercase tracking-wider text-brand-navy/45">
-          Funding call
-        </p>
-        <p className="mt-1 inline-flex items-center gap-2 font-semibold text-brand-navy">
-          <FileText className="size-4 text-brand-orange" />
-          {fundingCallTitle}
-        </p>
-      </div>
-      <div>
-        <p className="text-xs font-bold uppercase tracking-wider text-brand-navy/45">
-          Due date
-        </p>
-        <p className="mt-1 inline-flex items-center gap-2 font-semibold text-brand-navy">
-          <CalendarDays className="size-4 text-brand-orange" />
-          {formatDate(dueAt)}
-        </p>
-      </div>
-    </section>
+    <ApplicationDetailContent model={query.data} />
   );
 }
 
 export function WorkflowTaskWorkspace({ taskId }: { taskId: string }) {
   const coi = useWorkflowCoi(taskId);
   const query = useWorkflowTask(taskId, coi.data?.cleared ?? false);
+
   if (coi.isPending) {
-    return <p className="text-sm text-brand-navy/60">Loading assignment…</p>;
+    return (
+      <PortalLoadingState
+        description="Checking access to this task."
+        title="Loading assignment"
+      />
+    );
   }
   if (coi.isError) {
-    return <p className="text-sm text-red-700" role="alert">{coi.error.message}</p>;
+    return (
+      <PortalErrorState
+        description={coi.error.message}
+        onAction={() => void coi.refetch()}
+        title="Assignment could not be loaded"
+      />
+    );
   }
   if (!coi.data.cleared) {
     return <WorkflowTaskCoiGate gate={coi.data} />;
   }
   if (query.isPending) {
-    return <p className="text-sm text-brand-navy/60">Loading task…</p>;
+    return (
+      <PortalLoadingState
+        description="Preparing the assigned review."
+        title="Loading task"
+      />
+    );
   }
   if (query.isError) {
     return (
-      <p className="text-sm text-red-700" role="alert">
-        {query.error.message}
-      </p>
+      <PortalErrorState
+        description={query.error.message}
+        onAction={() => void query.refetch()}
+        title="Task could not be loaded"
+      />
     );
   }
+
   const task = query.data;
+
   return (
     <PageShell
       actions={<StatusBadge status={task.taskStatus} />}
-      description="Complete the assigned task using its published form or configured review controls."
+      description="Review the application and complete the assigned task."
       title={task.taskName}
     >
-      <div className="space-y-5">
-        <TaskMetadata
-          applicantName={task.applicantName}
-          businessName={task.businessName}
-          dueAt={task.dueAt}
-          fundingCallTitle={task.fundingCallTitle}
-          reference={task.reference}
-        />
-        {task.canEvaluateEligibility ? (
-          <AuthoritativeEligibilityTask task={task} />
-        ) : null}
-        {task.formVersionId ? (
-          <DynamicFormTask taskId={task.taskInstanceId} />
-        ) : null}
-        {task.hasChecklist || task.commentFields.length ? (
-          <ChecklistTaskForm task={task} />
-        ) : null}
-        {!task.canEvaluateEligibility && !task.formVersionId && !task.hasChecklist && !task.commentFields.length
-          && !task.actions.length ? (
-          <p className="rounded-xl bg-brand-yellow/30 p-4 text-sm text-brand-navy">
-            No work controls are configured for this task.
-          </p>
-        ) : null}
-        {(!task.canEvaluateEligibility || task.eligibilityEvaluation)
-          && (!task.formVersionId || task.formCompleted)
-          && (!task.hasChecklist || task.checklistCompleted)
-          && (!task.commentFields.length || task.commentCompleted) ? (
-          <WorkflowTaskDecisionActions task={task} />
-        ) : null}
+      <div className="grid min-w-0 items-start gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(24rem,1fr)] xl:gap-5">
+        <section
+          aria-label="Application details"
+          className="order-2 min-w-0 rounded-t-2xl border border-brand-navy/10 bg-white p-3 shadow-none sm:p-4 xl:order-1 [&_.shadow-sm]:shadow-none"
+        >
+          <ApplicationTaskPane applicationId={task.applicationId} />
+        </section>
+        <section
+          aria-label="Task review"
+          className="order-1 min-w-0 rounded-t-2xl border border-brand-navy/10 bg-white p-3 shadow-none sm:p-4 xl:order-2 [&_.shadow-sm]:shadow-none"
+        >
+          <WorkflowTaskReviewPanel task={task} />
+        </section>
       </div>
     </PageShell>
   );

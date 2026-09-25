@@ -21,6 +21,7 @@ export const applicationQueryKeys = {
   status: (id: string) => ["portal", "applications", id, "status"] as const,
   statusHistory: (id: string) => ["portal", "applications", id, "status-history"] as const,
   admin: ["admin", "applications"] as const,
+  adminDetail: (id: string) => ["admin", "applications", "detail", id] as const,
   adminList: (input: AdminApplicationListInput) =>
     ["admin", "applications", input] as const,
 };
@@ -36,6 +37,14 @@ export function useAdminApplications(input: AdminApplicationListInput) {
   return useQuery({
     queryFn: () => clientApplicationService.listAdminApplications(input),
     queryKey: applicationQueryKeys.adminList(input),
+  });
+}
+
+export function useAdminApplicationDetail(id: string) {
+  return useQuery({
+    enabled: Boolean(id),
+    queryFn: () => clientApplicationService.getAdminApplicationDetail(id),
+    queryKey: applicationQueryKeys.adminDetail(id),
   });
 }
 

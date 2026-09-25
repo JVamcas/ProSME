@@ -9,9 +9,9 @@ import type {
   ApplicantDashboardMetrics,
   ApplicantDashboardView,
 } from "@/modules/dashboard/ApplicantDashboardTypes";
+import { DashboardMetricCard } from "@/modules/dashboard/ui/DashboardMetricCard";
 import { PageShell } from "@/shared/ui/PageShell";
 import { ApplicantRecentActivity } from "./ApplicantRecentActivity";
-import { DashboardMetricCard } from "./DashboardMetricCard";
 
 function countDescription(
   count: number,
@@ -51,7 +51,7 @@ function ApplicationStatusMetrics({
           }
           value={String(metrics.submittedApplications)}
         />
-         <DashboardMetricCard
+        <DashboardMetricCard
           href="/portal/applications"
           icon={FileClock}
           label="Draft Applications"

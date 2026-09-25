@@ -13,6 +13,7 @@ import { CheckboxField } from "@/components/ui/form-field";
 import { FormTextarea } from "@/components/ui/form-fields";
 import { useCompleteWorkflowTask } from "@/modules/work-queue/WorkQueueHooks";
 import type { TaskDetail } from "@/modules/work-queue/TaskTypes";
+import { WorkflowTaskPreviewSection } from "@/modules/workflows/ui/definitions/WorkflowTaskPreviewSections";
 
 const checklistFormSchema = z.object({
   comments: z.array(z.object({
@@ -78,60 +79,74 @@ export function ChecklistTaskForm({ task }: { task: TaskDetail }) {
   return (
     <FormProvider {...form}>
       <form className="space-y-5" onSubmit={submit}>
-        <div className="space-y-4">
-          {task.checklistItems.map((item, index) => (
-            <section
-              className="rounded-xl border border-brand-navy/10 bg-white p-5"
-              key={item.code}
-            >
-              <input type="hidden" {...form.register(`items.${index}.code`)} />
-              <CheckboxField
-                containerClassName="font-semibold text-brand-navy"
-                label={(
-                  <span>
-                    {item.label}
-                    {item.required ? (
-                      <span className="ml-1 text-brand-orange">*</span>
-                    ) : null}
-                  </span>
-                )}
-                name={`items.${index}.accepted`}
-              />
-              <FormTextarea
-                className="min-h-20"
-                containerClassName="mt-4"
-                label="Reviewer note (optional)"
-                name={`items.${index}.comment`}
-                placeholder="Record evidence or a concise review note"
-              />
-            </section>
-          ))}
-        </div>
+        {task.hasChecklist ? (
+          <WorkflowTaskPreviewSection
+            defaultOpen
+            status={task.checklistCompleted ? "Completed" : "Required"}
+            title="Checklist"
+          >
+            <div className="space-y-4">
+              {task.checklistItems.map((item, index) => (
+                <section
+                  className="rounded-xl border border-brand-navy/10 bg-white p-5"
+                  key={item.code}
+                >
+                  <input
+                    type="hidden"
+                    {...form.register(`items.${index}.code`)}
+                  />
+                  <CheckboxField
+                    containerClassName="font-semibold text-brand-navy"
+                    label={(
+                      <span>
+                        {item.label}
+                        {item.required ? (
+                          <span className="ml-1 text-brand-orange">*</span>
+                        ) : null}
+                      </span>
+                    )}
+                    name={`items.${index}.accepted`}
+                  />
+                  <FormTextarea
+                    className="min-h-20"
+                    containerClassName="mt-4"
+                    label="Reviewer note (optional)"
+                    name={`items.${index}.comment`}
+                    placeholder="Record evidence or a concise review note"
+                  />
+                </section>
+              ))}
+            </div>
+          </WorkflowTaskPreviewSection>
+        ) : null}
         {task.commentFields.length ? (
-          <section className="space-y-4 rounded-xl border border-brand-navy/10 bg-white p-5">
-            <h2 className="font-semibold text-brand-navy">
-              Comments & Recommendations
-            </h2>
-            {task.commentFields.map((field, index) => (
-              <div key={field.key}>
-                <input
-                  type="hidden"
-                  {...form.register(`comments.${index}.key`)}
-                />
-                <FormTextarea
-                  className="min-h-24"
-                  label={field.label}
-                  name={`comments.${index}.value`}
-                  required={field.mandatory}
-                />
-                {field.helpText ? (
-                  <p className="mt-1 text-xs text-brand-navy/60">
-                    {field.helpText}
-                  </p>
-                ) : null}
-              </div>
-            ))}
-          </section>
+          <WorkflowTaskPreviewSection
+            defaultOpen
+            status={task.commentCompleted ? "Completed" : "Required"}
+            title="Comments & Recommendations"
+          >
+            <div className="space-y-4">
+              {task.commentFields.map((field, index) => (
+                <div key={field.key}>
+                  <input
+                    type="hidden"
+                    {...form.register(`comments.${index}.key`)}
+                  />
+                  <FormTextarea
+                    className="min-h-24"
+                    label={field.label}
+                    name={`comments.${index}.value`}
+                    required={field.mandatory}
+                  />
+                  {field.helpText ? (
+                    <p className="mt-1 text-xs text-brand-navy/60">
+                      {field.helpText}
+                    </p>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          </WorkflowTaskPreviewSection>
         ) : null}
         {completion.isError ? (
           <p className="rounded-xl bg-red-50 p-3 text-sm text-red-800" role="alert">
@@ -146,8 +161,8 @@ export function ChecklistTaskForm({ task }: { task: TaskDetail }) {
           </GeneralButton>
         </div>
         {task.taskStatus !== "COMPLETED"
-          && (!task.hasChecklist || !task.checklistCompleted)
-          && (!task.commentFields.length || !task.commentCompleted) ? (
+          && ((task.hasChecklist && !task.checklistCompleted)
+            || (task.commentFields.length > 0 && !task.commentCompleted)) ? (
           <div className="flex justify-end">
             <GeneralButton
               disabled={completion.isPending || task.taskStatus === "COMPLETED"}

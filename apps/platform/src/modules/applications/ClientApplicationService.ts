@@ -23,11 +23,19 @@ import type {
   ApplicationSubmission,
   ApplicationDraftView,
 } from "./ApplicationTypes";
+import type { ApplicationDetailModel } from "./ui/ApplicationDetailTypes";
 
 async function getAll() {
   return requestJson<AdminApplication[]>("/api/admin/applications", {
     cache: "no-store",
   });
+}
+
+function getAdminApplicationDetail(id: string) {
+  return requestData<ApplicationDetailModel>(
+    `/api/admin/applications/${encodeURIComponent(id)}/detail`,
+    { cache: "no-store" },
+  );
 }
 
 type AdminApplicationEnvelope = {
@@ -165,6 +173,7 @@ export const clientApplicationService = {
   getOwnApplicationStatus,
   getOwnApplicationStatusHistory,
   getAll,
+  getAdminApplicationDetail,
   listAdminApplications,
   listOwnApplications,
   submitApplication,

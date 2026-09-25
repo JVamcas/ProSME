@@ -200,10 +200,10 @@ async function completeTask(
       result = COALESCE(result, '{}'::jsonb)
         || ${JSON.stringify({ items: input.items, comments: input.comments ?? [] })}::jsonb,
       completed_at = CASE
-        WHEN ${taskStatus} = 'COMPLETED' THEN ${completedAt}
+        WHEN ${taskStatus} = 'COMPLETED' THEN ${completedAt}::timestamptz
         ELSE NULL
       END,
-      started_at = COALESCE(started_at, ${completedAt}),
+      started_at = COALESCE(started_at, ${completedAt}::timestamptz),
       row_version = row_version + 1
     WHERE id = ${input.taskId}::uuid
   `);

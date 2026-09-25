@@ -164,9 +164,6 @@ export async function readWorkflowTaskRuntimeContext(
     FROM app_workflow_tasks task
     JOIN app_stage_task_definitions task_definition
       ON task_definition.id = task.workflow_task_definition_id
-    JOIN app_stage_task_form_bindings binding
-      ON binding.task_definition_id = task.workflow_task_definition_id
-      AND binding.form_version_id = task.form_version_id
     JOIN app_workflow_stage_instances stage
       ON stage.id = task.stage_instance_id
     JOIN app_workflow_stage_definitions stage_definition
@@ -179,6 +176,8 @@ export async function readWorkflowTaskRuntimeContext(
       ON workflow_definition.id = workflow_version.definition_id
     JOIN app_applications application
       ON application.id = workflow.application_id
+    JOIN app_stage_task_form_bindings binding
+      ON binding.task_definition_id = task.workflow_task_definition_id
     LEFT JOIN LATERAL (
       SELECT outcome.*
       FROM app_authoritative_eligibility_outcomes outcome

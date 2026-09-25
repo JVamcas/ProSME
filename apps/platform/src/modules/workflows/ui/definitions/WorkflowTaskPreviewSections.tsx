@@ -4,6 +4,7 @@ import { ChevronDown, FileText } from "lucide-react";
 import type { ReactNode } from "react";
 
 import type { WorkflowStageInput } from "@/modules/workflows/domain/definitions/WorkflowTypes";
+import { WorkflowTaskReviewSummary } from "@/modules/workflows/ui/WorkflowTaskReviewLayout";
 
 export function WorkflowTaskPreviewSummary({
   requiredCount,
@@ -13,44 +14,32 @@ export function WorkflowTaskPreviewSummary({
   sectionCount: number;
 }) {
   return (
-    <section className="rounded-2xl border border-brand-orange/20 bg-brand-cream p-5">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h2 className="font-bold text-brand-navy">Task completion</h2>
-          <p className="mt-1 text-sm text-brand-navy/65">
-            {requiredCount
-              ? `0 of ${requiredCount} required items complete`
-              : `${sectionCount} configured sections`}
-          </p>
-        </div>
-        <span className="text-sm font-semibold text-brand-navy">Not started</span>
-      </div>
-      <div
-        aria-label="Task completion: 0 percent"
-        className="mt-4 h-2 overflow-hidden rounded-full bg-brand-white"
-        role="progressbar"
-        aria-valuemax={Math.max(requiredCount, 1)}
-        aria-valuemin={0}
-        aria-valuenow={0}
-      >
-        <div className="h-full w-0 bg-brand-orange" />
-      </div>
-    </section>
+    <WorkflowTaskReviewSummary
+      completedCount={0}
+      message={requiredCount
+        ? `0 of ${requiredCount} required items complete`
+        : `${sectionCount} configured sections`}
+      status="Not started"
+      totalCount={requiredCount}
+    />
   );
 }
 
 export function WorkflowTaskPreviewSection({
   children,
+  defaultOpen = false,
   status,
   title,
 }: {
   children?: ReactNode;
+  defaultOpen?: boolean;
   status: string;
   title: string;
 }) {
   return (
     <details
       className="group overflow-hidden rounded-2xl border border-brand-navy/10 bg-brand-white"
+      open={defaultOpen || undefined}
     >
       <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-5 text-brand-navy">
         <span className="font-bold">{title}</span>

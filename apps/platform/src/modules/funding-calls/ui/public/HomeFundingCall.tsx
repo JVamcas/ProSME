@@ -74,7 +74,7 @@ export function HomeFundingCall({ call }: { call?: PublicFundingCallSummary }) {
             </p>
           </div>
 
-          <aside className="relative overflow-hidden bg-brand-navy p-7 text-white sm:p-9 lg:p-10">
+          <aside className="relative overflow-hidden bg-brand-navy/10 p-7 text-brand-navy sm:p-9 lg:p-10">
             <div
               aria-hidden="true"
               className="pointer-events-none absolute -bottom-44 -right-20 size-80 rotate-45 border-[28px] border-white/5"
@@ -92,7 +92,7 @@ export function HomeFundingCall({ call }: { call?: PublicFundingCallSummary }) {
                   />
                 </span>
                 <div>
-                  <p className="text-sm text-white/65">{status.dateLabel}</p>
+                  <p className="text-sm text-brand-navy/65">{status.dateLabel}</p>
                   <p className="mt-1 text-lg font-bold sm:text-xl">
                     {formatDate(status.date)}
                   </p>

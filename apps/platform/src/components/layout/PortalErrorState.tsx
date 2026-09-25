@@ -3,8 +3,10 @@
 import { TriangleAlert } from "lucide-react";
 
 import { GeneralButton } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 type PortalErrorStateProps = {
+  className?: string;
   actionLabel?: string;
   description: React.ReactNode;
   onAction?: () => void;
@@ -12,6 +14,7 @@ type PortalErrorStateProps = {
 };
 
 export function PortalErrorState({
+  className,
   actionLabel = "Try again",
   description,
   onAction,
@@ -19,7 +22,10 @@ export function PortalErrorState({
 }: PortalErrorStateProps) {
   return (
     <div
-      className="mx-auto mt-16 max-w-lg rounded-2xl bg-brand-white p-6 shadow-sm"
+      className={cn(
+        "mx-auto mt-16 max-w-lg rounded-2xl bg-brand-white p-6 shadow-sm",
+        className,
+      )}
       role="alert"
     >
       <TriangleAlert
