@@ -1,6 +1,7 @@
 "use client";
 
 import { DraggableDialog } from "@/components/ui/draggable-dialog";
+import { FormTextarea } from "@/components/ui/form-fields";
 import {
   usePublishedFormRuntime,
   usePublishedForms,
@@ -11,6 +12,7 @@ import type {
 import { FormRenderer } from "@/modules/forms/ui/renderer/FormRenderer";
 import type { WorkflowTaskAction } from "@/modules/work-queue/TaskTypes";
 import { WorkflowTaskActions } from "@/modules/work-queue/ui/WorkflowTaskActions";
+import { WorkflowTaskReviewLayout } from "@/modules/workflows/ui/WorkflowTaskReviewLayout";
 import {
   workflowActionInputMetadata,
   workflowActionPresentation,
@@ -74,18 +76,23 @@ export function WorkflowTaskPreviewDialog({
   );
   const hasDocuments = taskDocuments.length > 0;
   const hasScoring = Boolean(stage.scoring?.criteria.length);
+  const commentFields = (stage.commentFields ?? [])
+    .filter((field) => field.taskStableKey === task.stableKey)
+    .sort((left, right) => left.displayOrder - right.displayOrder);
   const sectionCount = [
     hasForm,
     hasChecklist,
     hasDocuments,
     hasScoring,
+    commentFields.length > 0,
   ]
     .filter(Boolean).length;
   const requiredCount =
     (form.data?.fields.filter((field) => field.required).length ?? 0)
     + stage.checklistItems.filter((item) => item.mandatory).length
     + taskDocuments.filter((item) => item.mandatory).length
-    + (stage.scoring?.criteria.length ?? 0);
+    + (stage.scoring?.criteria.length ?? 0)
+    + commentFields.filter((field) => field.mandatory).length;
   const formName = workflowTaskPreviewFormName(
     publishedForms.data,
     task.formBinding?.formVersionId,
@@ -98,67 +105,84 @@ export function WorkflowTaskPreviewDialog({
       size="2xl"
       title={`${task.name} - Reviewer's preview`}
     >
-      <div className="space-y-5">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-wider text-brand-navy/50">
-            {stage.name}
-          </p>
-          {task.description ? (
-            <p className="mt-1 text-sm text-brand-navy/70">{task.description}</p>
-          ) : null}
-        </div>
-        <WorkflowTaskPreviewSummary
-          requiredCount={requiredCount}
-          sectionCount={sectionCount}
-        />
-        <div className="space-y-3">
-          {hasForm ? (
-            <WorkflowTaskPreviewSection
-              status={`${form.data?.fields.filter((field) => field.required).length ?? 0} required fields`}
-              title={formName}
-            >
-              <StructuredFormPreview form={form} />
-            </WorkflowTaskPreviewSection>
-          ) : null}
-          {hasChecklist ? (
-            <WorkflowTaskPreviewSection
-              status={`${stage.checklistItems.filter((item) => item.mandatory).length} required items`}
-              title="Checklist"
-            >
-              <WorkflowChecklistPreview stage={stage} />
-            </WorkflowTaskPreviewSection>
-          ) : null}
-          {hasDocuments ? (
-            <WorkflowTaskPreviewSection
-              status={`${taskDocuments.filter((item) => item.mandatory).length} required documents`}
-              title="Documents"
-            >
-              <WorkflowDocumentRequirementsPreview
-                stage={stage}
-                taskStableKey={task.stableKey}
-              />
-            </WorkflowTaskPreviewSection>
-          ) : null}
-          {hasScoring ? (
-            <WorkflowTaskPreviewSection
-              status={`${stage.scoring?.criteria.length ?? 0} criteria`}
-              title="Scoring"
-            >
-              <WorkflowScoringPreview stage={stage} />
-            </WorkflowTaskPreviewSection>
-          ) : null}
-          {!sectionCount ? (
-            <p className="rounded-xl bg-brand-cream p-4 text-sm text-brand-navy/70">
-              No reviewer work sections are configured for this task.
-            </p>
-          ) : null}
-        </div>
-        <WorkflowTaskActions
-          actions={actions}
-          disabled
-          onSelect={() => undefined}
-        />
-      </div>
+      <WorkflowTaskReviewLayout
+        actions={
+          <WorkflowTaskActions
+            actions={actions}
+            disabled
+            onSelect={() => undefined}
+          />
+        }
+        description={task.description}
+        sectionCount={sectionCount}
+        stageName={stage.name}
+        summary={
+          <WorkflowTaskPreviewSummary
+            requiredCount={requiredCount}
+            sectionCount={sectionCount}
+          />
+        }
+      >
+        {hasForm ? (
+          <WorkflowTaskPreviewSection
+            status={`${form.data?.fields.filter((field) => field.required).length ?? 0} required fields`}
+            title={formName}
+          >
+            <StructuredFormPreview form={form} />
+          </WorkflowTaskPreviewSection>
+        ) : null}
+        {hasChecklist ? (
+          <WorkflowTaskPreviewSection
+            status={`${stage.checklistItems.filter((item) => item.mandatory).length} required items`}
+            title="Checklist"
+          >
+            <WorkflowChecklistPreview stage={stage} />
+          </WorkflowTaskPreviewSection>
+        ) : null}
+        {hasDocuments ? (
+          <WorkflowTaskPreviewSection
+            status={`${taskDocuments.filter((item) => item.mandatory).length} required documents`}
+            title="Documents"
+          >
+            <WorkflowDocumentRequirementsPreview
+              stage={stage}
+              taskStableKey={task.stableKey}
+            />
+          </WorkflowTaskPreviewSection>
+        ) : null}
+        {hasScoring ? (
+          <WorkflowTaskPreviewSection
+            status={`${stage.scoring?.criteria.length ?? 0} criteria`}
+            title="Scoring"
+          >
+            <WorkflowScoringPreview stage={stage} />
+          </WorkflowTaskPreviewSection>
+        ) : null}
+        {commentFields.length ? (
+          <WorkflowTaskPreviewSection
+            status={`${commentFields.filter((field) => field.mandatory).length} required fields`}
+            title="Comments & Recommendations"
+          >
+            <div className="space-y-4">
+              {commentFields.map((field) => (
+                <div key={field.key}>
+                  <FormTextarea
+                    className="min-h-24"
+                    disabled
+                    label={field.label}
+                    required={field.mandatory}
+                  />
+                  {field.helpText ? (
+                    <p className="mt-1 text-xs text-brand-navy/60">
+                      {field.helpText}
+                    </p>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          </WorkflowTaskPreviewSection>
+        ) : null}
+      </WorkflowTaskReviewLayout>
     </DraggableDialog>
   );
 }

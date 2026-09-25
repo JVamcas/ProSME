@@ -6,12 +6,13 @@ import { FormProvider, useForm } from "react-hook-form";
 import { toast } from "sonner";
 
 import { GeneralButton } from "@/components/ui/button";
-import { FormInput, FormTextarea } from "@/components/ui/form-fields";
+import { FormInput, FormSelect, FormTextarea } from "@/components/ui/form-fields";
 import { formDefinitionDialogSchema } from "@/modules/forms/api/FormSchemas";
 import type {
   CreateFormInput,
   UpdateFormInput,
 } from "@/modules/forms/api/FormTransportTypes";
+import { formPurposeOptions } from "@/modules/forms/FormTypes";
 import type { FormEditorView } from "@/modules/forms/FormTypes";
 
 type CreateProps = {
@@ -38,6 +39,7 @@ function defaultValues(props: Props): CreateFormInput {
       displayMode: "SINGLE_PAGE",
       instructions: "",
       name: "",
+      purpose: "APPLICATION_REVIEW",
       submitLabel: "Submit",
     };
   }
@@ -47,6 +49,7 @@ function defaultValues(props: Props): CreateFormInput {
     displayMode: props.editor.version.displayMode,
     instructions: props.editor.version.instructions ?? "",
     name: props.editor.definition.name,
+    purpose: props.editor.definition.purpose,
     submitLabel: props.editor.version.submitLabel,
   };
 }
@@ -90,6 +93,14 @@ export function FormDefinitionDialogForm(props: Props) {
           label="Form name"
           name="name"
           placeholder="Finance Review"
+          required
+        />
+        <FormSelect
+          items={formPurposeOptions.map((item) => ({ ...item }))}
+          label="Purpose"
+          name="purpose"
+          disabled={props.mode === "edit"
+            && props.editor.versions.some((version) => version.status !== "DRAFT")}
           required
         />
         <FormTextarea label="Description" name="description" />

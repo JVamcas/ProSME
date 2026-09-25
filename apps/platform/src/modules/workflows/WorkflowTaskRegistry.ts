@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { formPurposes } from "@/modules/forms/domain/FormPurpose";
 
 import { fieldSchema, optionSchema } from "./WorkflowTaskSchemas";
 
@@ -34,10 +35,35 @@ const criteriaSchema = z.array(z.object({
   commentRequired: z.boolean().default(false),
 })).min(1);
 
+export const commentFieldSchema = z.object({
+  key: z.string().min(2).max(80),
+  label: z.string().min(2).max(160),
+  helpText: z.string().max(1000),
+  mandatory: z.boolean(),
+  visibility: z.enum(["APPLICANT_VISIBLE", "INTERNAL_ONLY"]),
+  displayOrder: z.number().int().positive(),
+});
+
+export const commentResultSchema = z.object({
+  comments: z.array(z.object({
+    key: z.string().min(2).max(80),
+    value: z.string().trim().max(4000),
+  })).max(100),
+});
+
+export function taskCommentFields(config: unknown) {
+  const parsed = z.object({
+    commentFields: z.array(commentFieldSchema).max(100).optional(),
+  formPurpose: z.enum(formPurposes).optional(),
+  }).safeParse(config);
+  return parsed.success ? parsed.data.commentFields ?? [] : [];
+}
+
 const taskConfigurationSchema = z.object({
   command: z.literal("AUTHORITATIVE_ELIGIBILITY").optional(),
   reevaluationPolicy: z.enum(["NEVER", "WHEN_EVIDENCE_CHANGED"]).optional(),
   categories: z.array(optionSchema).min(1).optional(),
+  commentFields: z.array(commentFieldSchema).max(100).optional(),
   outcomes: z.array(optionSchema).min(1).optional(),
   fields: z.array(fieldSchema).min(1).optional(),
   criteria: criteriaSchema.optional(),
@@ -101,6 +127,15 @@ export function taskWorkIsReady(input: {
   if (input.formRequired && !input.formCompleted) return false;
   if (input.hasChecklist
     && !validateChecklistResult(input.result).success) return false;
+  const fields = taskCommentFields(input.config);
+  if (fields.length) {
+    const parsed = commentResultSchema.safeParse(input.result);
+    if (!parsed.success) return false;
+    const answers = new Map(parsed.data.comments.map((item) => [item.key, item.value]));
+    if (answers.size !== fields.length) return false;
+    if (fields.some((field) => !answers.has(field.key)
+      || (field.mandatory && !answers.get(field.key)))) return false;
+  }
   if (taskRunsAuthoritativeEligibility(input.config)
     && !validateEligibilityResult(input.result).success) return false;
   return true;

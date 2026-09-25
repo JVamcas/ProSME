@@ -4,6 +4,7 @@ import { and, asc, desc, eq, inArray } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
 import {
+  formDefinitions,
   formFields as formFieldRecords,
   formVersions,
   roles,
@@ -11,6 +12,7 @@ import {
   workflowDefinitionVersions,
   workflowDefinitions,
 } from "@/db/schema";
+import type { FormPurpose } from "@/modules/forms/domain/FormPurpose";
 import type { WorkflowGraphInput } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import type { WorkflowConditionFormField } from "@/modules/workflows/engine/WorkflowConditionFields";
 
@@ -151,6 +153,7 @@ export async function findConfigurationReferences(
   roles: Set<string>;
   users: Map<string, string>;
   forms: Map<string, string>;
+  formPurposes: Map<string, FormPurpose>;
 }> {
   const references = collectConfigurationReferences(graph);
   const [foundUsers, foundRoles, foundForms, fieldsByVersion] =
@@ -169,8 +172,16 @@ export async function findConfigurationReferences(
         : [],
       references.formVersionIds.length
         ? getDatabase()
-            .select({ id: formVersions.id, status: formVersions.status })
+            .select({
+              id: formVersions.id,
+              status: formVersions.status,
+              purpose: formDefinitions.purpose,
+            })
             .from(formVersions)
+            .innerJoin(
+              formDefinitions,
+              eq(formDefinitions.id, formVersions.formDefinitionId),
+            )
             .where(inArray(formVersions.id, references.formVersionIds))
         : [],
       findWorkflowConditionFormFields(graph),
@@ -180,6 +191,7 @@ export async function findConfigurationReferences(
     roles: new Set(foundRoles.map((item) => item.id)),
     users: new Map(foundUsers.map((item) => [item.id, item.status])),
     forms: new Map(foundForms.map((item) => [item.id, item.status])),
+    formPurposes: new Map(foundForms.map((item) => [item.id, item.purpose])),
   };
 }
 

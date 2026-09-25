@@ -64,6 +64,7 @@ describe("publication readiness repository projections", () => {
     vi.mocked(getDatabase).mockReturnValue(formDatabase([
       {
         active: true,
+        purpose: "FUNDING_APPLICATION",
         fieldKey: "registrationDocument",
         fieldLabel: "Registration document",
         fieldRequired: true,
@@ -73,6 +74,7 @@ describe("publication readiness repository projections", () => {
       },
       {
         active: true,
+        purpose: "FUNDING_APPLICATION",
         fieldKey: "turnover",
         fieldLabel: "Annual turnover",
         fieldRequired: true,
@@ -86,6 +88,7 @@ describe("publication readiness repository projections", () => {
       "10000000-0000-4000-8000-000000000001",
     )).resolves.toEqual({
       active: true,
+      purpose: "FUNDING_APPLICATION",
       fields: [
         {
           key: "registrationDocument",

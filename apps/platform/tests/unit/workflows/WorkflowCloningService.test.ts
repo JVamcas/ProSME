@@ -45,6 +45,7 @@ beforeEach(() => {
   vi.mocked(findConfigurationReferences).mockResolvedValue({
     formFields: new Map(),
     forms: new Map(),
+    formPurposes: new Map(),
     roles: new Set(),
     users: new Map(),
   });

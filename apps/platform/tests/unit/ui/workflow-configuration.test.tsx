@@ -64,11 +64,11 @@ describe("workflow configuration UI", () => {
     expect(markup).toContain(
       'aria-label="Submission and pre-screening stage configuration"',
     );
-    expect(markup.match(/role="tab"/g)).toHaveLength(6);
+    expect(markup.match(/role="tab"/g)).toHaveLength(7);
     expect(markup).toContain("Checklists");
     expect(markup).toContain("Documents");
     expect(markup).toContain("Scoring");
-    expect(markup).not.toContain("Comments & Recommendations");
+    expect(markup).toContain("Comments &amp; Recommendations");
     expect(markup).toContain("Stable key");
     expect(markup).toContain("PRE_SCREENING");
     expect(markup).toContain("Single-run");
@@ -81,6 +81,7 @@ describe("workflow configuration UI", () => {
       "Define the checks reviewers must complete during this stage.",
       "Specify the documents required to complete this stage.",
       "Define the criteria and aggregation method used to score this stage.",
+      "Define comments and recommendations requested from assigned task reviewers.",
       "Configure the decisions users can make during this stage.",
       "Define how this stage routes to another stage or a terminal outcome.",
     ];

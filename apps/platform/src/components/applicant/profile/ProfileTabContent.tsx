@@ -1,6 +1,6 @@
 import { ContactProfileForm } from "./ContactProfileForm";
 import { PersonalProfileForm } from "./PersonalProfileForm";
-import { PageHeader } from "@/shared/ui/PageShell";
+import { PageHeader, PageShell } from "@/shared/ui/PageShell";
 import { ProfilePasswordPanel } from "./ProfilePasswordPanel";
 import type { ProfileTabId } from "./ProfileWorkspace";
 
@@ -31,13 +31,12 @@ export function ProfileTabContent({
   }
 
   return (
-    <>
-      <PageHeader
-        eyebrow="Personal information"
-        title="Personal information"
-        description="Maintain the personal details linked to your account."
-      />
+    <PageShell
+      eyebrow="Personal information"
+      title="Personal information"
+      description="Maintain the personal details linked to your account."
+    >
       <PersonalProfileForm readOnly={!canUpdateApplicant} />
-    </>
+    </PageShell>
   );
 }

@@ -1,3 +1,4 @@
+import type { FormPurpose } from "./FormPurpose";
 import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup";
 
 export const formStatuses = ["DRAFT", "PUBLISHED", "RETIRED"] as const;
@@ -36,6 +37,7 @@ export type FormDefinitionSummary = {
   code: string;
   name: string;
   description: string;
+  purpose: FormPurpose;
   active: boolean;
   latestVersionId: string | null;
   latestVersion: number | null;

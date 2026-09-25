@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  createUserWithEmailAndPassword,
   sendEmailVerification,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
@@ -14,6 +13,7 @@ import { postJson, requestJson } from "@/lib/client-http";
 import { getFirebaseClientAuth } from "./client";
 
 type RegisterAccountInput = {
+  confirmPassword: string;
   email: string;
   firstName: string;
   password: string;
@@ -71,17 +71,18 @@ async function getPendingVerificationUser() {
 }
 
 async function registerAccount(input: RegisterAccountInput) {
+  const csrfToken = await getCsrfToken();
+  await postJson("/api/auth/registration", {
+    csrfToken,
+    registration: input,
+  });
+
   const auth = await getFirebaseClientAuth();
-  const displayName = `${input.firstName.trim()} ${input.surname.trim()}`;
-  const credential = await createUserWithEmailAndPassword(
+  const credential = await signInWithEmailAndPassword(
     auth,
     input.email.trim(),
     input.password,
   );
-
-  await updateProfile(credential.user, {
-    displayName,
-  });
   await sendEmailVerification(credential.user, {
     url: `${window.location.origin}/verify-email`,
   });

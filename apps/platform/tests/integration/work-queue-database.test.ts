@@ -30,7 +30,6 @@ const stageInstanceId = randomUUID();
 const taskInstanceId = randomUUID();
 const fundingOpportunityId = Math.floor(Date.now() / 1000);
 const reference = `SMEF-TEST-${testToken}`;
-const claimedBy = reviewerOneId;
 const pool = enabled
   ? new Pool({ connectionString: process.env.DATABASE_URL })
   : null;
@@ -211,14 +210,48 @@ describeDatabase("work queue projections and server pagination", () => {
     expect(pastEnd.items).toEqual([]);
     expect(pastEnd.total).toBe(1);
   });
+  it("opens queued tasks when the stage is blocked and the legacy assignment is absent", async () => {
+    await query(
+      `UPDATE app_workflow_stage_instances SET status = 'BLOCKED' WHERE id = $1`,
+      [stageInstanceId],
+    );
+    await query(
+      `DELETE FROM app_funding_opportunity_workflows
+       WHERE funding_opportunity_id = $1`,
+      [fundingOpportunityId],
+    );
+    try {
+      const queue = await readWorkQueue(reviewerOneId, {
+        limit: 25,
+        scope: "mine",
+      });
+      expect(queue.items.map((item) => item.taskInstanceId)).toContain(taskInstanceId);
+      expect(await readWorkflowTask(reviewerOneId, taskInstanceId)).toMatchObject({
+        fundingCallTitle: "Database funding call",
+        taskInstanceId,
+      });
+      expect(await readWorkflowTask(reviewerTwoId, taskInstanceId)).toBeNull();
+    } finally {
+      await query(
+        `INSERT INTO app_funding_opportunity_workflows
+          (funding_opportunity_id, funding_opportunity_title, workflow_version_id, assigned_by)
+         VALUES ($1, 'Database funding call', $2, $3)`,
+        [fundingOpportunityId, versionId, reviewerOneId],
+      );
+      await query(
+        `UPDATE app_workflow_stage_instances SET status = 'ACTIVE' WHERE id = $1`,
+        [stageInstanceId],
+      );
+    }
+  });
   it("completes the configured checklist and advances atomically", async () => {
-    const task = await readWorkflowTask(claimedBy, taskInstanceId);
+    const task = await readWorkflowTask(reviewerOneId, taskInstanceId);
     expect(task).toMatchObject({
       fundingCallTitle: "Database funding call",
     });
     const command = {
       actionKey: "ADVANCE",
-      actorId: claimedBy,
+      actorId: reviewerOneId,
       correlationId: randomUUID(),
       expectedRowVersion: 1,
       idempotencyKey: randomUUID(),

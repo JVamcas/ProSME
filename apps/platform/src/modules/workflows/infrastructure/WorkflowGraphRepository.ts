@@ -190,6 +190,7 @@ function assembleGraph(rows: Awaited<ReturnType<typeof loadGraphRows>>) {
         entryCondition: stage.entryCondition,
         exitCondition: stage.exitCondition,
         checklistItems: [],
+    commentFields: [],
         documentRequirements: [],
         scoring: null,
         initial: stage.initial,

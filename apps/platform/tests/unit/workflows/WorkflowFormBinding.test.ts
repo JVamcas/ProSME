@@ -27,6 +27,7 @@ beforeEach(() => {
   vi.mocked(findConfigurationReferences).mockResolvedValue({
     formFields: new Map(),
     forms: new Map(),
+    formPurposes: new Map(),
     roles: new Set(),
     users: new Map([[actor.id, "active"]]),
   });
@@ -34,6 +35,7 @@ beforeEach(() => {
 
 function recordWithFormBinding() {
   const graph = structuredClone(record.graph);
+  graph.stages[0].tasks[0].config = { formPurpose: "APPLICATION_REVIEW" };
   graph.stages[0].tasks[0].formBinding = {
     contextFields: [{
       key: "application.requested_amount",
@@ -53,6 +55,7 @@ describe("workflow task form bindings", () => {
       roles: new Set(),
       users: new Map([[actor.id, "active"]]),
       forms: new Map([[formVersionId, "DRAFT"]]),
+      formPurposes: new Map([[formVersionId, "APPLICATION_REVIEW"]]),
     });
 
     const editor = await workflowEditorView(record.version.id);
@@ -67,6 +70,23 @@ describe("workflow task form bindings", () => {
     );
   });
 
+  it("rejects a published form with the wrong purpose", async () => {
+    vi.mocked(findWorkflowGraph).mockResolvedValue(recordWithFormBinding());
+    vi.mocked(findConfigurationReferences).mockResolvedValue({
+      formFields: new Map(),
+      roles: new Set(),
+      users: new Map([[actor.id, "active"]]),
+      forms: new Map([[formVersionId, "PUBLISHED"]]),
+      formPurposes: new Map([[formVersionId, "RFI"]]),
+    });
+
+    const editor = await workflowEditorView(record.version.id);
+
+    expect(editor.validation.errors).toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: "FORM_PURPOSE_MISMATCH" }),
+    ]));
+  });
+
   it("accepts a binding to the exact published form version", async () => {
     vi.mocked(findWorkflowGraph).mockResolvedValue(recordWithFormBinding());
     vi.mocked(findConfigurationReferences).mockResolvedValue({
@@ -74,6 +94,7 @@ describe("workflow task form bindings", () => {
       roles: new Set(),
       users: new Map([[actor.id, "active"]]),
       forms: new Map([[formVersionId, "PUBLISHED"]]),
+      formPurposes: new Map([[formVersionId, "APPLICATION_REVIEW"]]),
     });
 
     const editor = await workflowEditorView(record.version.id);

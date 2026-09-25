@@ -161,7 +161,10 @@ describe("ServerFundingCallService", () => {
       input,
     );
 
-    expect(formVersionIsBindable).toHaveBeenCalledWith(formVersionId);
+    expect(formVersionIsBindable).toHaveBeenCalledWith(
+      formVersionId,
+      "FUNDING_APPLICATION",
+    );
     expect(eligibilityRuleSetVersionIsBindable).toHaveBeenCalledWith(
       eligibilityRuleSetVersionId,
     );

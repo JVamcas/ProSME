@@ -33,6 +33,16 @@ describe("standard form catalogue", () => {
     expect(new Set(codes).size).toBe(codes.length);
   });
 
+  it("classifies the funding application separately from review tasks", () => {
+    const forms = createStandardForms();
+    expect(forms.find((form) => form.code === "FUNDING_APPLICATION")?.purpose)
+      .toBe("FUNDING_APPLICATION");
+    expect(forms.find((form) => form.code === "TECHNICAL_REVIEW")?.purpose)
+      .toBe("APPLICATION_REVIEW");
+    expect(forms.find((form) => form.code === "APPEAL_SUBMISSION")?.purpose)
+      .toBe("OTHER");
+  });
+
   it("passes the same schema and publication validation as admin forms", () => {
     for (const form of createStandardForms()) {
       expect(formDefinitionDialogSchema.safeParse(form).success).toBe(true);

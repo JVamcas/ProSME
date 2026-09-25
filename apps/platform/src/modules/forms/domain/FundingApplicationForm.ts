@@ -283,6 +283,7 @@ export function fundingApplicationForm(): StandardFormSeed {
   const definition = buildFundingApplicationDefinition(sections);
   return {
     code: "FUNDING_APPLICATION",
+    purpose: "FUNDING_APPLICATION",
     description: "Reusable applicant-facing SME Fund application form.",
     displayMode: "SINGLE_PAGE",
     fields: definition.fields,

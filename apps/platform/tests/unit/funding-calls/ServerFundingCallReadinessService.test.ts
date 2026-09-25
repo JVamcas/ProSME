@@ -132,6 +132,7 @@ beforeEach(() => {
   });
   vi.mocked(readFundingCallReadinessDocuments).mockResolvedValue([]);
   vi.mocked(readFormReadinessProjection).mockResolvedValue({
+    purpose: "FUNDING_APPLICATION",
     active: true,
     fields: [documentField],
     status: "PUBLISHED",
@@ -177,6 +178,7 @@ describe("funding call publication readiness", () => {
 
   it("reports incomplete call data and exact unpublished versions", async () => {
     vi.mocked(readFormReadinessProjection).mockResolvedValue({
+    purpose: "FUNDING_APPLICATION",
       active: true,
       fields: [],
       status: "RETIRED",

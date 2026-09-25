@@ -280,6 +280,14 @@ export async function validateFundingCallReadiness(
     eligibilityRegistry(call),
   ]);
   const issues = validateFundingCallDetails(call, now);
+  if (form && form.purpose !== "FUNDING_APPLICATION") {
+    issues.push(issue(
+      "FORM_PURPOSE_MISMATCH",
+      "Select a funding call application form.",
+      "formVersionId",
+      owner("FORM_VERSION", call.formVersionId!),
+    ));
+  }
   if (conflicts.reference) issues.push(issue(
     "REFERENCE_NOT_UNIQUE", "Use a unique stable reference.", "reference",
     owner("FUNDING_CALL", call.id),

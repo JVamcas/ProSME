@@ -7,6 +7,7 @@ import {
   formDisplayModes,
   formFieldTypes,
   formStatuses,
+  formPurposes,
 } from "@/modules/forms/FormTypes";
 
 const code = z
@@ -139,6 +140,7 @@ export const formFieldSchema = formFieldSchemaBase.superRefine((field, context) 
 
 export const formDefinitionSchema = z.object({
   code,
+  purpose: z.enum(formPurposes),
   name: z.string().trim().min(2).max(160),
   description: z.string().trim().max(1000),
 });

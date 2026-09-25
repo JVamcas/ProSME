@@ -32,6 +32,7 @@ function aggregateCodes(column: typeof roles.code | typeof capabilities.code) {
   `;
 }
 
+
 export async function listAccessRoles() {
   const rows = await getDatabase()
     .select({

@@ -82,6 +82,7 @@ function equals(key: string, value: string): ConditionGroup {
       actorId,
       code: `ADDITIONAL_${actorId.replaceAll("-", "").toUpperCase()}`,
       description: "Additional field types persistence test",
+      purpose: "OTHER",
       name: "Additional field types persistence test",
       submitLabel: "Submit",
     });

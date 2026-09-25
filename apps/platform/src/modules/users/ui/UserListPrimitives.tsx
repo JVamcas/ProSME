@@ -1,12 +1,13 @@
 "use client";
 
-import { MoreVertical } from "lucide-react";
-import { useState } from "react";
-
-import { IconButton } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useUpdateUserAccess } from "@/modules/users/UserAccessHooks";
+import {
+  useProvisionUser,
+  useUpdateUserAccess,
+} from "@/modules/users/UserAccessHooks";
 import type { UserAccessRow } from "@/modules/users/UserAccessTypes";
+import { ActionMenu, type ActionMenuItem } from "@/shared/ui/ActionMenu";
+import { toast } from "@/shared/ui/Toast";
 import type { UsersTabPanelProps } from "./UsersTabPanel";
 
 export function UserRowActions({
@@ -17,65 +18,59 @@ export function UserRowActions({
 }: Pick<UsersTabPanelProps, "canManageRoles" | "canManageUsers" | "onEditRoles"> & {
   user: UserAccessRow;
 }) {
-  const [open, setOpen] = useState(false);
   const update = useUpdateUserAccess();
+  const provision = useProvisionUser();
   const isProvisioned = user.status !== "unprovisioned";
   const canActivate = user.emailVerified || user.status === "active";
+  const actions: ActionMenuItem[] = [];
 
-  function changeStatus() {
-    update.mutate({
-      input: { status: user.status === "active" ? "suspended" : "active" },
-      userId: user.id,
+  if (canManageUsers && !isProvisioned) {
+    actions.push({
+      id: "provision",
+      label: "Provision user",
+      disabled: provision.isPending,
+      onAction: () => {
+        provision.mutate(user.id, {
+          onError: (error) => toast.error(error.message),
+          onSuccess: () => toast.success("User provisioned"),
+        });
+      },
     });
-    setOpen(false);
   }
 
-  return (
-    <div className="relative flex justify-end">
-      <IconButton
-        disabled={!isProvisioned}
-        className="size-8 rounded-lg"
-        label={`Actions for ${user.displayName}`}
-        onClick={() => setOpen((current) => !current)}
-        variant="ghost"
-      >
-        <MoreVertical className="size-4" />
-      </IconButton>
-      {open ? (
-        <div className="absolute right-0 top-9 z-20 w-44 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl">
-          {canManageUsers && isProvisioned && canActivate ? (
-            <MenuAction disabled={update.isPending} onClick={changeStatus}>
-              {user.status === "active" ? "Suspend user" : "Activate user"}
-            </MenuAction>
-          ) : null}
-          {canManageRoles && isProvisioned ? (
-            <MenuAction
-              onClick={() => {
-                onEditRoles(user);
-                setOpen(false);
-              }}
-            >
-              Edit roles
-            </MenuAction>
-          ) : null}
-        </div>
-      ) : null}
-    </div>
-  );
-}
+  if (canManageUsers && isProvisioned && canActivate) {
+    actions.push({
+      id: "status",
+      label: user.status === "active" ? "Suspend user" : "Activate user",
+      disabled: update.isPending,
+      onAction: () => {
+        update.mutate({
+          input: {
+            status: user.status === "active" ? "suspended" : "active",
+          },
+          userId: user.id,
+        });
+      },
+    });
+  }
 
-function MenuAction({
-  children,
-  ...props
-}: React.ButtonHTMLAttributes<HTMLButtonElement>) {
+  if (canManageRoles && isProvisioned) {
+    actions.push({
+      id: "roles",
+      label: "Edit roles",
+      onAction: () => onEditRoles(user),
+    });
+  }
+
+  if (!actions.length) return null;
+
   return (
-    <button
-      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-semibold text-brand-navy hover:bg-slate-50 disabled:opacity-50"
-      type="button"
-      {...props}
-    >
-      {children}
-    </button>
+    <div className="flex justify-end">
+      <ActionMenu
+        items={actions}
+        label={`Actions for ${user.displayName || user.email}`}
+      />
+    </div>
   );
 }
 

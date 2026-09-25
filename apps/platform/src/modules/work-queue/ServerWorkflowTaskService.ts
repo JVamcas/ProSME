@@ -17,6 +17,8 @@ import {
   ResourceNotFoundError,
 } from "@/lib/resource-errors";
 import {
+  commentResultSchema,
+  taskCommentFields,
   taskRunsAuthoritativeEligibility,
   validateChecklistResult,
   validateEligibilityResult,
@@ -41,6 +43,24 @@ function parseEligibilityResult(result: unknown) {
   if (result === null) return null;
   const parsed = validateEligibilityResult(result);
   return parsed.success ? parsed.data : null;
+}
+
+function validateCommentItems(
+  configured: ReturnType<typeof taskCommentFields>,
+  submitted: NonNullable<CompleteChecklistTaskInput["comments"]>,
+) {
+  const expected = new Set(configured.map((field) => field.key));
+  const received = new Set(submitted.map((item) => item.key));
+  if (received.size !== submitted.length || received.size !== expected.size
+    || submitted.some((item) => !expected.has(item.key))) {
+    throw new RequestValidationError(
+      "Submit one answer for every configured comment or recommendation field.",
+    );
+  }
+  const answers = new Map(submitted.map((item) => [item.key, item.value.trim()]));
+  if (configured.some((field) => field.mandatory && !answers.get(field.key))) {
+    throw new RequestValidationError("Complete all required comments and recommendations.");
+  }
 }
 
 function validateChecklistItems(
@@ -85,6 +105,9 @@ export async function getWorkflowTask(
     workflowInstanceId: task.workflowInstanceId,
   });
   const hasChecklist = task.checklistItems.length > 0;
+  const commentFields = taskCommentFields(config);
+  const parsedComments = commentResultSchema.safeParse(result);
+  const resultComments = parsedComments.success ? parsedComments.data.comments : [];
   const canEvaluateEligibility = taskRunsAuthoritativeEligibility(config);
   return {
     ...view,
@@ -92,6 +115,10 @@ export async function getWorkflowTask(
     canEvaluateEligibility,
     checklistCompleted: hasChecklist && parseChecklistResult(result).length > 0,
     checklistItems: task.checklistItems,
+    commentFields,
+    commentCompleted: commentFields.length > 0
+      && resultComments.length === commentFields.length,
+    resultComments,
     dueAt: task.dueAt ? new Date(task.dueAt).toISOString() : null,
     eligibilityEvaluation: canEvaluateEligibility
       ? parseEligibilityResult(result)
@@ -129,10 +156,12 @@ export async function completeChecklistTask(
       "That idempotency key was already used with different task data.",
     );
   }
-  if (!task.checklistItems.length) {
-    throw new ResourceConflictError("This task is not a checklist task.");
+  const commentFields = taskCommentFields(task.config);
+  if (!task.checklistItems.length && !commentFields.length) {
+    throw new ResourceConflictError("This task has no review fields.");
   }
   validateChecklistItems(task.checklistItems, input.items);
+  validateCommentItems(commentFields, input.comments ?? []);
   const outcome = await writeChecklistTaskCompletion(
     writeInput,
     executeSequentialTransitionInTransaction,

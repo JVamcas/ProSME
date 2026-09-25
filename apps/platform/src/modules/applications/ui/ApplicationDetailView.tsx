@@ -3,7 +3,6 @@
 import {
   Building2,
   CalendarDays,
-  CircleHelp,
   Clock3,
   Download,
   FileText,
@@ -15,7 +14,7 @@ import {
 import Link from "next/link";
 import type { ReactNode } from "react";
 
-import { GeneralButton, GeneralButtonLink } from "@/components/ui/button";
+import { GeneralButton } from "@/components/ui/button";
 import { Tabs } from "@/components/ui/tabs";
 import { Badge } from "@/shared/ui/Badge";
 import { formatLocalDateTimeSeconds24 } from "@/lib/dateUtils";
@@ -23,7 +22,6 @@ import { PageShell } from "@/shared/ui/PageShell";
 import {
   ApplicationDocumentsPanel,
   ApplicationSectionSummary,
-  ApplicationSubmittedDetails,
 } from "./ApplicationOverviewPanels";
 import type { ApplicationDetailModel } from "./ApplicationDetailTypes";
 
@@ -40,7 +38,7 @@ const factIcons = {
 
 function StatusBanner({ model }: { model: ApplicationDetailModel }) {
   return (
-    <section className="grid gap-4 rounded-lg border border-brand-orange/25 bg-gradient-to-r from-brand-cream via-white to-brand-cream px-4 py-3 sm:grid-cols-[minmax(0,1fr)_250px] sm:items-center">
+    <section className="grid gap-4 rounded-lg border border-brand-orange/25 bg-linear-to-r from-brand-cream via-white to-brand-cream px-4 py-3 sm:grid-cols-[minmax(0,1fr)_250px] sm:items-center">
       <div className="flex min-w-0 items-center gap-3">
         <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-brand-orange text-white">
           <Clock3 aria-hidden="true" className="size-5" />
@@ -95,9 +93,88 @@ function FactCard({ label, value }: ApplicationDetailModel["facts"][number]) {
       </span>
       <div className="min-w-0">
         <dt className="text-xs text-brand-navy/60">{label}</dt>
-        <dd className="break-words text-sm font-semibold text-brand-navy">
+        <dd className="wrap-break-word text-sm font-semibold text-brand-navy">
           {value}
         </dd>
+      </div>
+    </div>
+  );
+}
+
+export function ApplicationDetailContent({
+  actions,
+  model,
+  workflowProgress,
+}: {
+  actions?: ReactNode;
+  model: ApplicationDetailModel;
+  workflowProgress?: ReactNode;
+}) {
+  return (
+    <div className="space-y-4">
+      <StatusBanner model={model} />
+      <div className="grid items-start gap-4">
+        <Tabs
+          accent="orange"
+          ariaLabel="Application detail sections"
+          defaultSelectedId="overview"
+          items={[
+            {
+              content: (
+                <div className="space-y-4">
+                  <ApplicationSectionSummary sections={model.sections} />
+                </div>
+              ),
+              id: "overview",
+              label: "Overview",
+            },
+            {
+              content: (
+                <ApplicationDocumentsPanel documents={model.documents} />
+              ),
+              id: "documents",
+              label: `Documents (${model.documents.length})`,
+            },
+            ...(workflowProgress
+              ? [{
+                  content: workflowProgress,
+                  id: "workflow-progress",
+                  label: "Workflow Progress",
+                }]
+              : []),
+          ]}
+          leadingContent={
+            <div className="p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h2 className="text-lg font-bold text-brand-navy">
+                  Application overview
+                </h2>
+                <div className="flex flex-wrap items-center gap-2">
+                  {model.submittedAt ? (
+                    <GeneralButton
+                      disabled
+                      size="compact"
+                      title="The submitted application PDF is not available yet."
+                      variant="outline"
+                    >
+                      <Download aria-hidden="true" className="size-4" />
+                      Download PDF
+                    </GeneralButton>
+                  ) : null}
+                  {actions}
+                </div>
+              </div>
+              <dl className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                {model.facts.map((fact) => (
+                  <FactCard key={fact.label} {...fact} />
+                ))}
+              </dl>
+            </div>
+          }
+          listClassName="rounded-xl border border-brand-navy/10 shadow-sm"
+          panelClassName="mt-4"
+          tabListClassName="border-t border-brand-navy/10 px-4"
+        />
       </div>
     </div>
   );
@@ -125,72 +202,11 @@ export function ApplicationDetailView({
       description={`Reference: ${model.reference ?? "Assigned on submission"}`}
       title={model.title}
     >
-      <div className="space-y-4">
-        <StatusBanner model={model} />
-        <div className="grid items-start gap-4">
-          <Tabs
-            accent="orange"
-            ariaLabel="Application detail sections"
-            defaultSelectedId="overview"
-            items={[
-              {
-                content: (
-                  <div className="space-y-4">
-                    <ApplicationSectionSummary sections={model.sections} />
-                  </div>
-                ),
-                id: "overview",
-                label: "Overview",
-              },
-              {
-                content: (
-                  <ApplicationDocumentsPanel documents={model.documents} />
-                ),
-                id: "documents",
-                label: `Documents (${model.documents.length})`,
-              },
-              ...(workflowProgress
-                ? [{
-                    content: workflowProgress,
-                    id: "workflow-progress",
-                    label: "Workflow Progress",
-                  }]
-                : []),
-            ]}
-            leadingContent={
-              <div className="p-4">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <h2 className="text-lg font-bold text-brand-navy">
-                    Application overview
-                  </h2>
-                  <div className="flex flex-wrap items-center gap-2">
-                    {model.submittedAt ? (
-                      <GeneralButton
-                        disabled
-                        size="compact"
-                        title="The submitted application PDF is not available yet."
-                        variant="outline"
-                      >
-                        <Download aria-hidden="true" className="size-4" />
-                        Download PDF
-                      </GeneralButton>
-                    ) : null}
-                    {actions}
-                  </div>
-                </div>
-                <dl className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                  {model.facts.map((fact) => (
-                    <FactCard key={fact.label} {...fact} />
-                  ))}
-                </dl>
-              </div>
-            }
-            listClassName="rounded-xl border border-brand-navy/10 shadow-sm"
-            panelClassName="mt-4"
-            tabListClassName="border-t border-brand-navy/10 px-4"
-          />
-        </div>
-      </div>
+      <ApplicationDetailContent
+        actions={actions}
+        model={model}
+        workflowProgress={workflowProgress}
+      />
     </PageShell>
   );
 }

@@ -6,6 +6,20 @@ export type ChecklistConfigurationItem = {
   required: boolean;
 };
 
+export type CommentConfigurationItem = {
+  key: string;
+  label: string;
+  helpText: string;
+  mandatory: boolean;
+  visibility: "APPLICANT_VISIBLE" | "INTERNAL_ONLY";
+  displayOrder: number;
+};
+
+export type CommentResultItem = {
+  key: string;
+  value: string;
+};
+
 export type ChecklistResultItem = {
   accepted: boolean;
   code: string;
@@ -32,6 +46,9 @@ export type TaskDetail = {
   hasChecklist: boolean;
   formCompleted: boolean;
   checklistCompleted: boolean;
+  commentFields: CommentConfigurationItem[];
+  commentCompleted: boolean;
+  resultComments: CommentResultItem[];
   applicantName: string;
   applicationId: string;
   businessName: string | null;
@@ -55,6 +72,7 @@ export type CompleteChecklistTaskInput = {
   actionKey?: string;
   expectedRowVersion: number;
   items: ChecklistResultItem[];
+  comments?: CommentResultItem[];
 };
 
 export type TaskCompletionResult = {

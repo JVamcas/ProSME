@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { formPurposes } from "@/modules/forms/FormTypes";
 import type { WorkflowTaskInput } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 
 export const workflowTaskFormSchema = z.object({
@@ -15,6 +16,7 @@ export const workflowTaskFormSchema = z.object({
       "Use uppercase letters, numbers and underscores.",
     ),
   formVersionId: z.union([z.string().uuid(), z.literal("")]),
+  formPurpose: z.enum(formPurposes),
   description: z.string().trim().max(1000),
   displayOrder: z.number().int().positive(),
   name: z.string().trim().min(2).max(160),

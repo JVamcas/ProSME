@@ -49,6 +49,14 @@ export function useUpdateUserAccess() {
   });
 }
 
+export function useProvisionUser() {
+  const refresh = useRefreshAccess();
+  return useMutation({
+    mutationFn: clientUserAccessService.provisionUser,
+    onSuccess: refresh,
+  });
+}
+
 export function usePromoteUser() {
   const refresh = useRefreshAccess();
   return useMutation({

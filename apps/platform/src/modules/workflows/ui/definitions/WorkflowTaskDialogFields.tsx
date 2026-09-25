@@ -9,6 +9,7 @@ import {
   FormSelect,
   FormTextarea,
 } from "@/components/ui/form-fields";
+import { formPurposeOptions, type FormPurpose } from "@/modules/forms/FormTypes";
 import type { WorkflowTaskFormValues } from "./WorkflowTaskFormSchema";
 
 function TaskIdentityFields() {
@@ -92,6 +93,7 @@ type Props = {
   assignmentMode: "ROLE" | "NAMED_USER";
   formItems: { label: string; value: string }[];
   formVersionId: string;
+  formPurpose: FormPurpose;
   formsPending: boolean;
   mutationPending: boolean;
 };
@@ -101,18 +103,25 @@ export function WorkflowTaskDialogFields({
   assignmentMode,
   formItems,
   formVersionId,
+  formPurpose,
   formsPending,
   mutationPending,
 }: Props) {
   return (
     <>
       <TaskIdentityFields />
-      <div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <FormSelect
+          items={formPurposeOptions.map((item) => ({ ...item }))}
+          label="Form purpose"
+          name="formPurpose"
+          required
+        />
         <FormSelect
           items={formItems}
           label="Form version"
           name="formVersionId"
-          infoTooltip="The form used to capture details by the reviewer."
+          infoTooltip={`Choose a published ${formPurpose.toLowerCase().replaceAll("_", " ")} form.`}
           placeholder={formsPending ? "Loading forms…" : "No form selected"}
           value={formVersionId}
         />

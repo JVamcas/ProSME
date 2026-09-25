@@ -25,5 +25,9 @@ export const completeChecklistTaskSchema = z.object({
     accepted: z.boolean(),
     code: z.string().min(1).max(80),
     comment: z.string().trim().max(1000).optional(),
-  })).min(1).max(30),
+  })).max(30),
+  comments: z.array(z.object({
+    key: z.string().min(2).max(80),
+    value: z.string().trim().max(4000),
+  })).max(100).optional(),
 });

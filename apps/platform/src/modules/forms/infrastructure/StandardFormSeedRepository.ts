@@ -55,6 +55,7 @@ export async function insertMissingStandardForms(
         description: form.description,
         id: definitionId,
         name: form.name,
+        purpose: form.purpose,
       })),
     );
     await transaction.insert(formVersions).values(

@@ -16,6 +16,9 @@ type TaskDetailRow = Omit<
   | "canEvaluateEligibility"
   | "hasChecklist"
   | "checklistCompleted"
+  | "commentFields"
+  | "commentCompleted"
+  | "resultComments"
 > & {
   checklistItems: TaskDetail["checklistItems"];
   config: unknown;
@@ -57,7 +60,7 @@ export async function readWorkflowTask(
       application.id AS "applicationId", application.reference,
       applicant.display_name AS "applicantName",
       NULLIF(COALESCE(business.trading_name, business.legal_name), '') AS "businessName",
-      opportunity.funding_opportunity_title AS "fundingCallTitle"
+      application.funding_opportunity_title AS "fundingCallTitle"
     FROM app_workflow_tasks task
     JOIN app_stage_task_definitions definition
       ON definition.id = task.workflow_task_definition_id
@@ -67,15 +70,12 @@ export async function readWorkflowTask(
     JOIN app_workflow_instances workflow ON workflow.id = stage.workflow_instance_id
     JOIN app_applications application ON application.id = workflow.application_id
     JOIN app_users applicant ON applicant.id = application.owner_user_id
-    JOIN app_funding_opportunity_workflows opportunity
-      ON opportunity.funding_opportunity_id = application.funding_opportunity_id
-      AND opportunity.workflow_version_id = workflow.workflow_template_version_id
     LEFT JOIN app_business_profiles business
       ON business.id::text = application.business_section ->> 'businessId'
     WHERE task.id = ${taskId}::uuid
       AND app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
       AND workflow.status = 'ACTIVE'
-      AND stage.status = 'ACTIVE'
+      AND stage.status IN ('ACTIVE', 'BLOCKED')
       AND task.assigned_user_id = ${actorId}::uuid
   `);
   return (result.rows[0] as TaskDetailRow | undefined) ?? null;
