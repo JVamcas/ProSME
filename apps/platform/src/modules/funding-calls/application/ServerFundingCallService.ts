@@ -131,7 +131,7 @@ async function requireBindableBindings(
   const [formIsBindable, eligibilityIsBindable, workflowIsBindable] =
     await Promise.all([
       input.formVersionId
-        ? formVersionIsBindable(input.formVersionId)
+        ? formVersionIsBindable(input.formVersionId, "FUNDING_APPLICATION")
         : Promise.resolve(true),
       input.eligibilityRuleSetVersionId
         ? eligibilityRuleSetVersionIsBindable(
@@ -235,7 +235,7 @@ export async function listBindableApplicationFormVersions(
     permissionCodes.fundingCallCreate,
     permissionCodes.fundingCallUpdate,
   ]);
-  return listBindableFormVersions();
+  return listBindableFormVersions("FUNDING_APPLICATION");
 }
 
 export async function listBindableEligibilityRuleSetVersions(

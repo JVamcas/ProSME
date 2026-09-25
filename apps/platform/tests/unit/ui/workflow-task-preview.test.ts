@@ -63,6 +63,7 @@ describe("workflow task reviewer preview", () => {
       {
         definitionId: "10000000-0000-4000-8000-000000000001",
         formName: "Finance application",
+        purpose: "FUNDING_APPLICATION",
         versionId: "20000000-0000-4000-8000-000000000001",
         versionNumber: 2,
       },

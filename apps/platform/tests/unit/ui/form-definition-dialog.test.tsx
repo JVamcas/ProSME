@@ -29,6 +29,7 @@ function queryClient() {
     latestVersionId: "89e20de0-3558-4d63-90a4-8c9f5125df07",
     latestVersionRowVersion: 1,
     name: "Finance Review",
+    purpose: "APPLICATION_REVIEW" as const,
     sectionCount: 0,
     updatedAt: "2026-09-14T08:00:00.000Z",
     usedByCount: 0,
@@ -49,6 +50,7 @@ function queryClient() {
       description: definition.description,
       id: definition.id,
       name: definition.name,
+      purpose: definition.purpose,
       updatedAt: definition.updatedAt,
     },
     fields: [],
@@ -170,12 +172,13 @@ describe("form definition dialog", () => {
 
     expect(document.body.textContent).toContain("Form code");
     expect(document.body.textContent).toContain("Form name");
+    expect(document.body.textContent).toContain("Purpose");
     expect(document.body.textContent).toContain("Description");
     expect(document.body.textContent).not.toContain("Submit button label");
     expect(document.body.textContent).not.toContain("Instructions");
     expect(
       document.body.querySelectorAll('label span[aria-hidden="true"]'),
-    ).toHaveLength(2);
+    ).toHaveLength(3);
     await act(async () => root.unmount());
   });
 
@@ -200,6 +203,7 @@ describe("form definition dialog", () => {
     expect(document.body.textContent).toContain("Edit form");
     expect(document.body.textContent).toContain("Form code");
     expect(document.body.textContent).toContain("Form name");
+    expect(document.body.textContent).toContain("Purpose");
     expect(document.body.textContent).toContain("Description");
     expect(document.body.textContent).not.toContain("Submit button label");
     expect(document.body.textContent).not.toContain("Instructions");

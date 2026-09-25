@@ -1,4 +1,5 @@
 import { defaultWorkflowElementPermissions } from "../definitions/WorkflowElementPermissions";
+import { standardFormPurpose } from "@/modules/forms/domain/FormPurpose";
 import type { WorkflowActionDefinition } from "../actions/WorkflowActionDefinition";
 import type {
   WorkflowStageInput,
@@ -174,7 +175,14 @@ export function task(
     actionKeys: input.actionKeys,
     assignmentMode: "ROLE",
     coiRequired: input.coiRequired ?? false,
-    config: input.config,
+    config: input.formCode
+      ? {
+          ...(input.config && typeof input.config === "object"
+            ? input.config as Record<string, unknown>
+            : {}),
+          formPurpose: standardFormPurpose(input.formCode),
+        }
+      : input.config,
     description: input.description,
     displayOrder: input.displayOrder,
     formBinding: formVersionId

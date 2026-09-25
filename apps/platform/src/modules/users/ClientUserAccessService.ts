@@ -44,6 +44,13 @@ function updateUser(userId: string, input: UpdateUserInput) {
   });
 }
 
+function provisionUser(directoryId: string) {
+  return requestData<UserAccessRow | null>(
+    `/api/admin/users/${encodeURIComponent(directoryId)}/provision`,
+    { method: "POST" },
+  );
+}
+
 function promoteUser(userId: string, input: PromoteUserInput) {
   return requestData<UserAccessRow | null>(
     `/api/admin/users/${userId}/promote`,
@@ -83,6 +90,7 @@ export const clientUserAccessService = {
   listAccess,
   listAudit,
   promoteUser,
+  provisionUser,
   updateRole,
   updateUser,
 };

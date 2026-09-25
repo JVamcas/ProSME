@@ -16,6 +16,7 @@ function validateSeed(seed: StandardFormSeed): StandardFormSeed {
     displayMode: seed.displayMode ?? "SINGLE_PAGE",
     instructions: seed.instructions,
     name: seed.name,
+    purpose: seed.purpose,
     submitLabel: seed.submitLabel,
   });
   const editor = formEditorSchema.parse({

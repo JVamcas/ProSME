@@ -16,6 +16,7 @@ import { sql } from "drizzle-orm";
 
 import type {
   FormDisplayMode,
+  FormPurpose,
   FormFieldType,
   FormStatus,
 } from "@/modules/forms/FormTypes";
@@ -29,6 +30,7 @@ export const formDefinitions = pgTable(
     code: text("code").notNull(),
     name: text("name").notNull(),
     description: text("description").notNull().default(""),
+    purpose: text("purpose").$type<FormPurpose>().notNull().default("OTHER"),
     active: boolean("active").notNull().default(true),
     createdBy: uuid("created_by")
       .notNull()
@@ -42,6 +44,10 @@ export const formDefinitions = pgTable(
   },
   (table) => [
     uniqueIndex("app_form_definitions_code_unique").on(table.code),
+    check(
+      "app_form_definitions_purpose_check",
+      sql`${table.purpose} in ('FUNDING_APPLICATION', 'APPLICATION_REVIEW', 'COI', 'RFI', 'OTHER')`,
+    ),
   ],
 );
 

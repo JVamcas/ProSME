@@ -13,6 +13,7 @@ export async function readFormReadinessProjection(versionId: string) {
   const rows = await getDatabase()
     .select({
       active: formDefinitions.active,
+      purpose: formDefinitions.purpose,
       fieldKey: formFields.key,
       fieldLabel: formFields.label,
       fieldRequired: formFields.required,
@@ -31,6 +32,7 @@ export async function readFormReadinessProjection(versionId: string) {
   if (!version) return null;
   return {
     active: version.active,
+    purpose: version.purpose,
     fields: rows.flatMap((field) => field.fieldKey
       ? [{
           key: field.fieldKey,

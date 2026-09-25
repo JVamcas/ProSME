@@ -54,6 +54,7 @@ export function WorkflowTaskDialog({
             assignmentMode={controller.assignmentMode}
             formItems={controller.formItems}
             formVersionId={controller.formVersionId}
+            formPurpose={controller.formPurpose}
             formsPending={controller.forms.isPending}
             mutationPending={controller.mutation.isPending}
           />

@@ -130,6 +130,7 @@ async function editorView(definitionId: string) {
       description: editor.definition.description,
       id: editor.definition.id,
       name: editor.definition.name,
+      purpose: editor.definition.purpose,
       updatedAt: editor.definition.updatedAt.toISOString(),
     },
     fields: editor.fields,

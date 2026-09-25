@@ -40,6 +40,7 @@ afterAll(async () => {
       actorId,
       code: `VALIDATION_${actorId.replaceAll("-", "").toUpperCase()}`,
       description: "Validation persistence test",
+      purpose: "OTHER",
       name: "Validation persistence test",
       submitLabel: "Submit",
     });

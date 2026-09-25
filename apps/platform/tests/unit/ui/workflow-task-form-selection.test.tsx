@@ -31,6 +31,7 @@ function TaskFields({
       description: "",
       displayOrder: 1,
       formVersionId: attachedVersionId,
+      formPurpose: "APPLICATION_REVIEW",
       name: "Finance Review",
       required: true,
       requiredCompletionCount: 1,
@@ -50,6 +51,7 @@ function TaskFields({
         assignmentMode="ROLE"
         formItems={formItems}
         formVersionId={formVersionId ?? ""}
+        formPurpose="APPLICATION_REVIEW"
         formsPending={formItems.length === 0}
         mutationPending={false}
       />
@@ -66,6 +68,34 @@ describe("workflow task form selection", () => {
     expect(workflowTaskFormItems([], attachedVersionId)).toEqual([{
       label: "Unavailable form version — remove or replace",
       value: attachedVersionId,
+    }]);
+  });
+
+  it("only offers published forms with the selected purpose", () => {
+    const forms = [
+      {
+        definitionId: "10000000-0000-4000-8000-000000000001",
+        formName: "Application",
+        purpose: "FUNDING_APPLICATION" as const,
+        versionId: "20000000-0000-4000-8000-000000000001",
+        versionNumber: 1,
+      },
+      {
+        definitionId: "10000000-0000-4000-8000-000000000002",
+        formName: "Review",
+        purpose: "APPLICATION_REVIEW" as const,
+        versionId: "20000000-0000-4000-8000-000000000002",
+        versionNumber: 1,
+      },
+    ];
+    expect(workflowTaskFormItems(
+      forms,
+      "",
+      true,
+      "APPLICATION_REVIEW",
+    )).toEqual([{
+      label: "Review · v1",
+      value: forms[1].versionId,
     }]);
   });
 

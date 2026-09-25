@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { formPurposes } from "@/modules/forms/domain/FormPurpose";
 
 import { fieldSchema, optionSchema } from "./WorkflowTaskSchemas";
 
@@ -53,6 +54,7 @@ export const commentResultSchema = z.object({
 export function taskCommentFields(config: unknown) {
   const parsed = z.object({
     commentFields: z.array(commentFieldSchema).max(100).optional(),
+  formPurpose: z.enum(formPurposes).optional(),
   }).safeParse(config);
   return parsed.success ? parsed.data.commentFields ?? [] : [];
 }

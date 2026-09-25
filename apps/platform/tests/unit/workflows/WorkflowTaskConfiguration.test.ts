@@ -40,6 +40,7 @@ describe("workflow task configuration", () => {
       description: "Review the application.",
       displayOrder: 1,
       formVersionId: "",
+      formPurpose: "APPLICATION_REVIEW",
       reviewerCount: 3,
       requiredCompletionCount: 2,
       completionMode: "COUNT",

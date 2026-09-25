@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
 import { GeneralButton } from "@/components/ui/button";
+import { formPurposeOptions } from "@/modules/forms/FormTypes";
 import type { FormDefinitionSummary } from "@/modules/forms/FormTypes";
 import {
   CloneButton,
@@ -119,6 +120,13 @@ function formColumns(
           <span>{row.original.code}</span>
         </div>
       ),
+    },
+    {
+      accessorKey: "purpose",
+      header: "Purpose",
+      cell: ({ row }) => formPurposeOptions.find(
+        (item) => item.value === row.original.purpose,
+      )?.label ?? row.original.purpose,
     },
     { accessorKey: "latestVersion", header: "Latest version" },
     {

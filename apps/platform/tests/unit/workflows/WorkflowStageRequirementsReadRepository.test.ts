@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
+vi.mock("server-only", () => ({}));
 vi.mock("@/db/client", () => ({ getDatabase: vi.fn() }));
 
 import { attachWorkflowStageRequirements } from "@/modules/workflows/infrastructure/WorkflowStageRequirementsReadRepository";

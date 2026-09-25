@@ -5,7 +5,7 @@ import { useForm, useWatch, type UseFormSetError } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { usePublishedForms } from "@/modules/forms/FormHooks";
-import type { PublishedFormOption } from "@/modules/forms/FormTypes";
+import { formPurposes, type FormPurpose, type PublishedFormOption } from "@/modules/forms/FormTypes";
 import { useSaveWorkflowGraph } from "@/modules/workflows/WorkflowHooks";
 import type {
   WorkflowEditorView,
@@ -23,8 +23,11 @@ export function workflowTaskFormItems(
   forms: readonly PublishedFormOption[],
   selectedVersionId: string,
   showUnavailable = true,
+  purpose?: FormPurpose,
 ) {
-  const items = forms.map((item) => ({
+  const items = forms
+    .filter((item) => !purpose || item.purpose === purpose)
+    .map((item) => ({
     label: `${item.formName} · v${item.versionNumber}`,
     value: item.versionId,
   }));
@@ -102,6 +105,7 @@ async function saveWorkflowTask({
     coiRequired: task?.coiRequired ?? false,
     config: {
       ...existingConfig,
+      formPurpose: values.formPurpose,
     },
     formBinding: values.formVersionId
       ? {
@@ -144,6 +148,11 @@ export function useWorkflowTaskDialogController(
       description: task?.description ?? "",
       displayOrder: task?.displayOrder ?? stage.tasks.length + 1,
       formVersionId: task?.formBinding?.formVersionId ?? "",
+      formPurpose: task?.config && typeof task.config === "object"
+        && "formPurpose" in task.config
+        && formPurposes.includes(task.config.formPurpose as FormPurpose)
+          ? task.config.formPurpose as FormPurpose
+          : "APPLICATION_REVIEW",
       name: task?.name ?? "",
       reviewerCount: task?.reviewerCount ?? 1,
       completionMode: task?.completionMode ?? "COUNT",
@@ -157,17 +166,28 @@ export function useWorkflowTaskDialogController(
     control: form.control,
     name: "assignmentMode",
   });
+  const formPurpose = useWatch({
+    control: form.control,
+    name: "formPurpose",
+  });
   const formVersionId = useWatch({
     control: form.control,
     name: "formVersionId",
   });
   const previousAssignmentMode = useRef(assignmentMode);
+  const previousFormPurpose = useRef(formPurpose);
 
   useEffect(() => {
     if (previousAssignmentMode.current === assignmentMode) return;
     previousAssignmentMode.current = assignmentMode;
     form.setValue("assignmentTarget", "", { shouldValidate: true });
   }, [assignmentMode, form]);
+
+  useEffect(() => {
+    if (previousFormPurpose.current === formPurpose) return;
+    previousFormPurpose.current = formPurpose;
+    form.setValue("formVersionId", "", { shouldValidate: true });
+  }, [formPurpose, form]);
 
   const options = editor.assignmentOptions ?? { roles: [], users: [] };
   const assignmentItems = (
@@ -177,10 +197,20 @@ export function useWorkflowTaskDialogController(
     forms.data ?? [],
     formVersionId ?? "",
     !forms.isPending,
+    formPurpose,
   );
 
-  const save = (values: WorkflowTaskFormValues) =>
-    saveWorkflowTask({
+  const save = (values: WorkflowTaskFormValues) => {
+    if (values.formVersionId && !forms.data?.some((item) =>
+      item.versionId === values.formVersionId
+      && item.purpose === values.formPurpose
+    )) {
+      form.setError("formVersionId", {
+        message: "Select a published form with the chosen purpose.",
+      });
+      return Promise.resolve(false);
+    }
+    return saveWorkflowTask({
       editor,
       formSetError: form.setError,
       mutateAsync: mutation.mutateAsync,
@@ -188,6 +218,7 @@ export function useWorkflowTaskDialogController(
       task,
       values,
     });
+  };
 
   return {
     assignmentItems,
@@ -195,6 +226,7 @@ export function useWorkflowTaskDialogController(
     form,
     formItems,
     formVersionId: formVersionId ?? "",
+    formPurpose,
     forms,
     mutation,
     save,

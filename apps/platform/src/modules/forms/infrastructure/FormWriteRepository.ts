@@ -1,8 +1,9 @@
 import "server-only";
 
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, ne, sql } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
+import { ResourceConflictError } from "@/lib/resource-errors";
 import {
   formDefinitions,
   formSections,
@@ -10,6 +11,7 @@ import {
 } from "@/db/schema";
 import type {
   FormDisplayMode,
+  FormPurpose,
   FormField,
   FormSection,
 } from "@/modules/forms/FormTypes";
@@ -27,6 +29,7 @@ export async function createForm(input: {
   displayMode?: FormDisplayMode;
   instructions?: string | null;
   name: string;
+  purpose: FormPurpose;
   submitLabel: string;
 }) {
   return getDatabase().transaction(async (transaction) => {
@@ -37,6 +40,7 @@ export async function createForm(input: {
         createdBy: input.actorId,
         description: input.description,
         name: input.name,
+        purpose: input.purpose,
       })
       .returning();
     const [version] = await transaction
@@ -121,10 +125,34 @@ export async function saveFormDraft(input: {
   fields: FormField[];
   instructions?: string | null;
   name?: string;
+  purpose?: FormPurpose;
   sections: FormSection[];
   submitLabel: string;
 }) {
   return getDatabase().transaction(async (transaction) => {
+    if (input.purpose) {
+      const [definition] = await transaction
+        .select({ purpose: formDefinitions.purpose })
+        .from(formDefinitions)
+        .where(eq(formDefinitions.id, input.definitionId))
+        .for("update")
+        .limit(1);
+      if (definition && definition.purpose !== input.purpose) {
+        const [published] = await transaction
+          .select({ id: formVersions.id })
+          .from(formVersions)
+          .where(and(
+            eq(formVersions.formDefinitionId, input.definitionId),
+            ne(formVersions.status, "DRAFT"),
+          ))
+          .limit(1);
+        if (published) {
+          throw new ResourceConflictError(
+            "A form's purpose cannot change after a version is published.",
+          );
+        }
+      }
+    }
     const [version] = await transaction
       .update(formVersions)
       .set({
@@ -143,13 +171,14 @@ export async function saveFormDraft(input: {
       )
       .returning();
     if (!version) return null;
-    if (input.code || input.description !== undefined || input.name) {
+    if (input.code || input.description !== undefined || input.name || input.purpose) {
       await transaction
         .update(formDefinitions)
         .set({
           code: input.code,
           description: input.description,
           name: input.name,
+          purpose: input.purpose,
           updatedAt: new Date(),
         })
         .where(eq(formDefinitions.id, input.definitionId));

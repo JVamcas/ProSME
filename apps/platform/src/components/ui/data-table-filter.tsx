@@ -63,7 +63,7 @@ function FilterHeader({
   const Chevron = expanded ? ChevronUp : ChevronDown;
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4 px-5 py-4">
+    <div className="flex flex-wrap items-center justify-between gap-4 px-2">
       <div className="flex min-w-0 items-start gap-3">
         <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-brand-navy/[0.06] text-brand-navy">
           <SlidersHorizontal aria-hidden="true" className="size-5" />
@@ -250,7 +250,7 @@ export function DataTableFilter({
   return (
     <section
       className={cn(
-        "overflow-hidden rounded-2xl border border-brand-navy/10 bg-white shadow-sm",
+        "overflow-hidden rounded-t-2xl border border-brand-navy/10 bg-white",
         className,
       )}
     >

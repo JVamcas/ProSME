@@ -5,6 +5,7 @@ import type {
   FormOption,
   FormSection,
 } from "@/modules/forms/FormTypes";
+import { standardFormPurpose } from "./FormPurpose";
 import type { StandardFormSeed } from "./StandardFormDefinition";
 
 type FieldInput = {
@@ -75,6 +76,7 @@ export function defineStandardForm(input: {
     fields,
     instructions: input.instructions,
     name: input.name,
+    purpose: standardFormPurpose(input.code),
     sections,
     submitLabel: input.submitLabel ?? "Complete task",
   };

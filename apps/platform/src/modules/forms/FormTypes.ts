@@ -25,6 +25,8 @@ export {
   type FormRuntimeBindingInput,
 } from "./domain/FormRuntimeBinding";
 
+export { formPurposes, formPurposeOptions, type FormPurpose } from "./domain/FormPurpose";
+
 export const formFieldTypes = [
   "TEXT",
   "TEXTAREA",
@@ -93,6 +95,7 @@ export type FormRuntimeSchema = {
 export type PublishedFormOption = {
   definitionId: string;
   formName: string;
+  purpose: import("./domain/FormPurpose").FormPurpose;
   status?: "DRAFT" | "PUBLISHED";
   versionId: string;
   versionNumber: number;

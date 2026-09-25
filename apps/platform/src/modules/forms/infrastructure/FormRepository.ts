@@ -10,6 +10,7 @@ import {
   formSections,
   formVersions,
 } from "@/db/schema";
+import type { FormPurpose } from "@/modules/forms/FormTypes";
 import type {
   FormDefinitionPage,
   FormField,
@@ -28,6 +29,7 @@ export async function listForms(
       definition.code,
       definition.name,
       definition.description,
+      definition.purpose,
       definition.active,
       latest.id AS "latestVersionId",
       latest.version_number AS "latestVersion",
@@ -86,6 +88,7 @@ export async function listPublishedFormVersions() {
     .select({
       definitionId: formDefinitions.id,
       formName: formDefinitions.name,
+      purpose: formDefinitions.purpose,
       versionId: formVersions.id,
       versionNumber: formVersions.versionNumber,
     })
@@ -98,12 +101,13 @@ export async function listPublishedFormVersions() {
     .orderBy(asc(formDefinitions.name), desc(formVersions.versionNumber));
 }
 
-export async function listBindableFormVersions() {
+export async function listBindableFormVersions(purpose: FormPurpose) {
   return getDatabase()
     .select({
       definitionId: formDefinitions.id,
       formName: formDefinitions.name,
       status: formVersions.status,
+      purpose: formDefinitions.purpose,
       versionId: formVersions.id,
       versionNumber: formVersions.versionNumber,
     })
@@ -112,16 +116,24 @@ export async function listBindableFormVersions() {
       formDefinitions,
       eq(formDefinitions.id, formVersions.formDefinitionId),
     )
-    .where(inArray(formVersions.status, ["DRAFT", "PUBLISHED"]))
+    .where(and(
+      inArray(formVersions.status, ["DRAFT", "PUBLISHED"]),
+      eq(formDefinitions.purpose, purpose),
+    ))
     .orderBy(asc(formDefinitions.name), desc(formVersions.versionNumber));
 }
 
-export async function formVersionIsBindable(versionId: string) {
+export async function formVersionIsBindable(
+  versionId: string,
+  purpose: FormPurpose,
+) {
   const [version] = await getDatabase()
     .select({ id: formVersions.id })
     .from(formVersions)
+    .innerJoin(formDefinitions, eq(formDefinitions.id, formVersions.formDefinitionId))
     .where(and(
       eq(formVersions.id, versionId),
+      eq(formDefinitions.purpose, purpose),
       inArray(formVersions.status, ["DRAFT", "PUBLISHED"]),
     ))
     .limit(1);
