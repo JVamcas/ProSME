@@ -16,6 +16,9 @@ type TaskDetailRow = Omit<
   | "canEvaluateEligibility"
   | "hasChecklist"
   | "checklistCompleted"
+  | "commentFields"
+  | "commentCompleted"
+  | "resultComments"
 > & {
   checklistItems: TaskDetail["checklistItems"];
   config: unknown;

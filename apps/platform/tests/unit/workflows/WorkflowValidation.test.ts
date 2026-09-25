@@ -57,6 +57,36 @@ describe("workflow task configuration", () => {
     })).toBe(false);
   });
 
+  it("requires every assigned prompt and its mandatory answer", () => {
+    const config = {
+      commentFields: [
+        {
+          key: "RECOMMENDATION",
+          label: "Recommendation",
+          helpText: "Explain the decision.",
+          mandatory: true,
+          visibility: "INTERNAL_ONLY",
+          displayOrder: 1,
+        },
+      ],
+    };
+    const work = {
+      config,
+      formCompleted: false,
+      formRequired: false,
+      hasChecklist: false,
+    };
+    expect(taskWorkIsReady({ ...work, result: null })).toBe(false);
+    expect(taskWorkIsReady({
+      ...work,
+      result: { comments: [{ key: "RECOMMENDATION", value: "" }] },
+    })).toBe(false);
+    expect(taskWorkIsReady({
+      ...work,
+      result: { comments: [{ key: "RECOMMENDATION", value: "Approve" }] },
+    })).toBe(true);
+  });
+
   it("rejects invalid configured work and unbound transitions", () => {
     expect(validateTaskConfiguration({ criteria: [] }).success).toBe(false);
     expect(validateTaskConfiguration({ command: "AUTHORITATIVE_ELIGIBILITY" }).success).toBe(false);

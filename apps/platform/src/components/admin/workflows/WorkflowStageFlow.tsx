@@ -18,6 +18,7 @@ import { WorkflowStageChecklistDialog } from "@/modules/workflows/ui/definitions
 import type { WorkflowStageChecklistDefinition } from "@/modules/workflows/domain/definitions/WorkflowStageChecklistDefinition";
 import { WorkflowStageDocumentRequirementDialog } from "@/modules/workflows/ui/definitions/WorkflowStageDocumentRequirementDialog";
 import type { WorkflowStageDocumentRequirement } from "@/modules/workflows/domain/definitions/WorkflowStageDocumentRequirement";
+import { useWorkflowStageCommentFieldOverlays } from "@/modules/workflows/ui/definitions/useWorkflowStageCommentFieldOverlays";
 import { useWorkflowStageScoringOverlays } from "@/modules/workflows/ui/definitions/useWorkflowStageScoringOverlays";
 import {
   WorkflowFlowToolbar,
@@ -85,6 +86,7 @@ export function WorkflowStageFlow({ canEdit, editor }: Props) {
   const selectedIndex = selectedStage
     ? stages.findIndex((stage) => stage.stableKey === selectedStage.stableKey)
     : -1;
+  const commentOverlays = useWorkflowStageCommentFieldOverlays(editor, selectedStage);
   const scoringOverlays = useWorkflowStageScoringOverlays(
     editor,
     selectedStage,
@@ -226,18 +228,21 @@ export function WorkflowStageFlow({ canEdit, editor }: Props) {
             setDocumentRequirementDialog("create")
           }
           onAddScoringCriterion={scoringOverlays.onAdd}
+          onAddCommentField={commentOverlays.onAdd}
           onAddTask={() => setTaskDialog("create")}
           onDelete={() => selectedStage && setStageToDelete(selectedStage)}
           onDeleteAction={setActionToDelete}
           onDeleteChecklistItem={setChecklistItemToDelete}
           onDeleteDocumentRequirement={setDocumentRequirementToDelete}
           onDeleteScoringCriterion={scoringOverlays.onDelete}
+          onDeleteCommentField={commentOverlays.onDelete}
           onDeleteTask={setTaskToDelete}
           onEdit={() => selectedStage && setStageDialog(selectedStage)}
           onEditAction={setActionDialog}
           onEditChecklistItem={setChecklistDialog}
           onEditDocumentRequirement={setDocumentRequirementDialog}
           onEditScoringCriterion={scoringOverlays.onEdit}
+          onEditCommentField={commentOverlays.onEdit}
           onEditTask={setTaskDialog}
           onPreviewTask={setTaskToPreview}
           stage={selectedStage}
@@ -292,6 +297,7 @@ export function WorkflowStageFlow({ canEdit, editor }: Props) {
         />
       ) : null}
       {scoringOverlays.overlays}
+      {commentOverlays.overlays}
       <WorkflowActionOverlays
         actionDialog={actionDialog}
         actionToDelete={actionToDelete}

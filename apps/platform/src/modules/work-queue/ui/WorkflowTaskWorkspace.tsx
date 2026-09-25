@@ -113,10 +113,10 @@ export function WorkflowTaskWorkspace({ taskId }: { taskId: string }) {
         {task.formVersionId ? (
           <DynamicFormTask taskId={task.taskInstanceId} />
         ) : null}
-        {task.hasChecklist ? (
+        {task.hasChecklist || task.commentFields.length ? (
           <ChecklistTaskForm task={task} />
         ) : null}
-        {!task.canEvaluateEligibility && !task.formVersionId && !task.hasChecklist
+        {!task.canEvaluateEligibility && !task.formVersionId && !task.hasChecklist && !task.commentFields.length
           && !task.actions.length ? (
           <p className="rounded-xl bg-brand-yellow/30 p-4 text-sm text-brand-navy">
             No work controls are configured for this task.
@@ -124,7 +124,8 @@ export function WorkflowTaskWorkspace({ taskId }: { taskId: string }) {
         ) : null}
         {(!task.canEvaluateEligibility || task.eligibilityEvaluation)
           && (!task.formVersionId || task.formCompleted)
-          && (!task.hasChecklist || task.checklistCompleted) ? (
+          && (!task.hasChecklist || task.checklistCompleted)
+          && (!task.commentFields.length || task.commentCompleted) ? (
           <WorkflowTaskDecisionActions task={task} />
         ) : null}
       </div>

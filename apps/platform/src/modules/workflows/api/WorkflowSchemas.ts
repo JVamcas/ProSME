@@ -20,6 +20,7 @@ import {
   workflowDocumentVerifierActors,
 } from "@/modules/workflows/domain/definitions/WorkflowStageDocumentRequirement";
 import { workflowScoringAggregations } from "@/modules/workflows/domain/definitions/WorkflowStageScoringDefinition";
+import { workflowCommentFieldVisibilities } from "@/modules/workflows/domain/definitions/WorkflowStageCommentField";
 import { staticPermissionCodes } from "@/auth/authorization/permissions";
 import { workflowElementVisibilities } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
 
@@ -41,6 +42,17 @@ export const workflowStageChecklistSchema = z.object({
   responseType: z.enum(workflowChecklistResponseTypes),
   evidenceRequirement: z.enum(workflowChecklistEvidenceRequirements),
   notes: z.string().trim().max(1000),
+  displayOrder: z.number().int().positive(),
+}).strict();
+
+export const workflowStageCommentFieldSchema = z.object({
+  id: z.uuid().optional(),
+  taskStableKey: codeSchema,
+  key: codeSchema,
+  label: z.string().trim().min(2).max(160),
+  helpText: z.string().trim().max(1000),
+  mandatory: z.boolean(),
+  visibility: z.enum(workflowCommentFieldVisibilities),
   displayOrder: z.number().int().positive(),
 }).strict();
 
@@ -223,6 +235,7 @@ export const workflowStageSchema = z.object({
   entryCondition: conditionGroupSchema.nullable(),
   exitCondition: conditionGroupSchema.nullable(),
   checklistItems: z.array(workflowStageChecklistSchema).max(100),
+  commentFields: z.array(workflowStageCommentFieldSchema).max(100).optional(),
   documentRequirements: z.array(workflowStageDocumentRequirementSchema)
     .max(100),
   scoring: workflowStageScoringSchema.nullable(),
@@ -256,6 +269,25 @@ export const workflowStageSchema = z.object({
         code: "custom",
         message: "Checklist items must reference a task in the same stage.",
         path: ["checklistItems", index, "taskStableKey"],
+      });
+    }
+  });
+  for (const property of ["key", "displayOrder"] as const) {
+    const values = (stage.commentFields ?? []).map((field) => field[property]);
+    if (new Set(values).size !== values.length) {
+      context.addIssue({
+        code: "custom",
+        message: `Comment field ${property} must be unique within the stage.`,
+        path: ["commentFields"],
+      });
+    }
+  }
+  (stage.commentFields ?? []).forEach((field, index) => {
+    if (!taskKeys.has(field.taskStableKey)) {
+      context.addIssue({
+        code: "custom",
+        message: "Comment fields must reference a task in the same stage.",
+        path: ["commentFields", index, "taskStableKey"],
       });
     }
   });

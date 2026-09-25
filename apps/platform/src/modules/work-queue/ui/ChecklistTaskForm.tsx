@@ -15,6 +15,10 @@ import { useCompleteWorkflowTask } from "@/modules/work-queue/WorkQueueHooks";
 import type { TaskDetail } from "@/modules/work-queue/TaskTypes";
 
 const checklistFormSchema = z.object({
+  comments: z.array(z.object({
+    key: z.string(),
+    value: z.string().trim().max(4000),
+  })),
   items: z.array(z.object({
     accepted: z.boolean(),
     code: z.string(),
@@ -26,7 +30,14 @@ type ChecklistFormValues = z.infer<typeof checklistFormSchema>;
 
 function defaultValues(task: TaskDetail): ChecklistFormValues {
   const prior = new Map(task.resultItems.map((item) => [item.code, item]));
+  const priorComments = new Map(
+    task.resultComments.map((item) => [item.key, item.value]),
+  );
   return {
+    comments: task.commentFields.map((field) => ({
+      key: field.key,
+      value: priorComments.get(field.key) ?? "",
+    })),
     items: task.checklistItems.map((item) => ({
       accepted: prior.get(item.code)?.accepted ?? false,
       code: item.code,
@@ -47,6 +58,7 @@ export function ChecklistTaskForm({ task }: { task: TaskDetail }) {
       {
         expectedRowVersion: task.rowVersion,
         items: values.items,
+        comments: values.comments,
       },
       {
         onSuccess: (result) => {
@@ -55,7 +67,7 @@ export function ChecklistTaskForm({ task }: { task: TaskDetail }) {
               ? `Task completed. Application advanced to ${result.nextStageName}.`
               : result.taskStatus === "COMPLETED"
                 ? "Task completed."
-                : "Checklist completed. Finish the remaining task work.",
+                : "Review responses saved. Finish the remaining task work.",
           );
           router.push("/admin/work-queue");
         },
@@ -95,6 +107,32 @@ export function ChecklistTaskForm({ task }: { task: TaskDetail }) {
             </section>
           ))}
         </div>
+        {task.commentFields.length ? (
+          <section className="space-y-4 rounded-xl border border-brand-navy/10 bg-white p-5">
+            <h2 className="font-semibold text-brand-navy">
+              Comments & Recommendations
+            </h2>
+            {task.commentFields.map((field, index) => (
+              <div key={field.key}>
+                <input
+                  type="hidden"
+                  {...form.register(`comments.${index}.key`)}
+                />
+                <FormTextarea
+                  className="min-h-24"
+                  label={field.label}
+                  name={`comments.${index}.value`}
+                  required={field.mandatory}
+                />
+                {field.helpText ? (
+                  <p className="mt-1 text-xs text-brand-navy/60">
+                    {field.helpText}
+                  </p>
+                ) : null}
+              </div>
+            ))}
+          </section>
+        ) : null}
         {completion.isError ? (
           <p className="rounded-xl bg-red-50 p-3 text-sm text-red-800" role="alert">
             {completion.error.message}
@@ -107,13 +145,15 @@ export function ChecklistTaskForm({ task }: { task: TaskDetail }) {
             </Link>
           </GeneralButton>
         </div>
-        {!task.checklistCompleted ? (
+        {task.taskStatus !== "COMPLETED"
+          && (!task.hasChecklist || !task.checklistCompleted)
+          && (!task.commentFields.length || !task.commentCompleted) ? (
           <div className="flex justify-end">
             <GeneralButton
               disabled={completion.isPending || task.taskStatus === "COMPLETED"}
               type="submit"
             >
-              {completion.isPending ? "Completing…" : "Complete checklist"}
+              {completion.isPending ? "Completing…" : "Submit review"}
             </GeneralButton>
           </div>
         ) : null}

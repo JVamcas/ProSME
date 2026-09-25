@@ -1,5 +1,6 @@
 import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup";
 import type { WorkflowStageChecklistDefinition } from "./WorkflowStageChecklistDefinition";
+import type { WorkflowStageCommentField } from "./WorkflowStageCommentField";
 import type { WorkflowStageDocumentRequirement } from "./WorkflowStageDocumentRequirement";
 import type { WorkflowStageScoringDefinition } from "./WorkflowStageScoringDefinition";
 
@@ -34,6 +35,7 @@ export type WorkflowStageDefinition = {
   entryCondition: ConditionGroup | null;
   exitCondition: ConditionGroup | null;
   checklistItems: WorkflowStageChecklistDefinition[];
+  commentFields?: WorkflowStageCommentField[];
   documentRequirements: WorkflowStageDocumentRequirement[];
   scoring: WorkflowStageScoringDefinition | null;
 };

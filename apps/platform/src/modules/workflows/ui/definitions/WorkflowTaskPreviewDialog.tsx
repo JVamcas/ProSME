@@ -74,18 +74,23 @@ export function WorkflowTaskPreviewDialog({
   );
   const hasDocuments = taskDocuments.length > 0;
   const hasScoring = Boolean(stage.scoring?.criteria.length);
+  const commentFields = (stage.commentFields ?? [])
+    .filter((field) => field.taskStableKey === task.stableKey)
+    .sort((left, right) => left.displayOrder - right.displayOrder);
   const sectionCount = [
     hasForm,
     hasChecklist,
     hasDocuments,
     hasScoring,
+    commentFields.length > 0,
   ]
     .filter(Boolean).length;
   const requiredCount =
     (form.data?.fields.filter((field) => field.required).length ?? 0)
     + stage.checklistItems.filter((item) => item.mandatory).length
     + taskDocuments.filter((item) => item.mandatory).length
-    + (stage.scoring?.criteria.length ?? 0);
+    + (stage.scoring?.criteria.length ?? 0)
+    + commentFields.filter((field) => field.mandatory).length;
   const formName = workflowTaskPreviewFormName(
     publishedForms.data,
     task.formBinding?.formVersionId,
@@ -145,6 +150,30 @@ export function WorkflowTaskPreviewDialog({
               title="Scoring"
             >
               <WorkflowScoringPreview stage={stage} />
+            </WorkflowTaskPreviewSection>
+          ) : null}
+          {commentFields.length ? (
+            <WorkflowTaskPreviewSection
+              status={`${commentFields.filter((field) => field.mandatory).length} required fields`}
+              title="Comments & Recommendations"
+            >
+              <div className="space-y-4">
+                {commentFields.map((field) => (
+                  <label className="block text-sm font-semibold" key={field.key}>
+                    {field.label}
+                    {field.mandatory ? " *" : ""}
+                    {field.helpText ? (
+                      <span className="mt-1 block text-xs font-normal">
+                        {field.helpText}
+                      </span>
+                    ) : null}
+                    <textarea
+                      className="mt-2 min-h-24 w-full rounded-lg border p-3"
+                      disabled
+                    />
+                  </label>
+                ))}
+              </div>
             </WorkflowTaskPreviewSection>
           ) : null}
           {!sectionCount ? (

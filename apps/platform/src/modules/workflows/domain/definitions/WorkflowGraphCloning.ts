@@ -17,6 +17,10 @@ export function cloneWorkflowGraph(
         ...item,
         id: undefined,
       })),
+      commentFields: stage.commentFields?.map((field) => ({
+        ...field,
+        id: undefined,
+      })) ?? [],
       documentRequirements: stage.documentRequirements.map((requirement) => ({
         ...requirement,
         id: undefined,

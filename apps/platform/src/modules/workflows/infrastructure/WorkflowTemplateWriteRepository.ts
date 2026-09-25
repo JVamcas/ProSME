@@ -13,6 +13,7 @@ import {
   workflowActionDefinitions,
   workflowStageDefinitions,
   workflowStageChecklistDefinitions,
+  workflowStageCommentFields,
   workflowStageDocumentRequirements,
   workflowStageScoringConfigurations,
   workflowStageScoringCriteria,
@@ -134,6 +135,10 @@ export async function replaceWorkflowDraft(input: {
       await transaction
         .delete(stageTaskFormBindings)
         .where(inArray(stageTaskFormBindings.taskDefinitionId, taskIds));
+    if (stageIds.length)
+      await transaction
+        .delete(workflowStageCommentFields)
+        .where(inArray(workflowStageCommentFields.stageId, stageIds));
     if (stageIds.length)
       await transaction
         .delete(workflowStageScoringCriteria)

@@ -74,6 +74,7 @@ export function WorkflowStageCreateDialog({
   const conditionStage = stage ?? {
     actions: [],
     checklistItems: [],
+    commentFields: [],
     documentRequirements: [],
     scoring: null,
     coiGated: false,

@@ -1,6 +1,6 @@
 import "server-only";
 
-import { taskWorkIsReady } from "@/modules/workflows/WorkflowTaskRegistry";
+import { taskCommentFields, taskWorkIsReady } from "@/modules/workflows/WorkflowTaskRegistry";
 import {
   loadRequiredTaskCompletions,
   recordReviewThresholdEvaluations,
@@ -65,6 +65,7 @@ type WriteInput = {
   expectedRowVersion: number;
   idempotencyKey: string;
   items: ChecklistResultItem[];
+  comments?: { key: string; value: string }[];
   taskId: string;
 };
 
@@ -83,6 +84,7 @@ async function findCommand(
       (result - 'taskStatus') = ${JSON.stringify({
         actionKey: input.actionKey,
         items: input.items,
+        comments: input.comments ?? [],
       })}::jsonb AS "sameResult"
     FROM app_task_completion_commands
     WHERE idempotency_key = ${input.idempotencyKey}
@@ -196,7 +198,7 @@ async function completeTask(
     UPDATE app_workflow_tasks
     SET status = ${taskStatus},
       result = COALESCE(result, '{}'::jsonb)
-        || ${JSON.stringify({ items: input.items })}::jsonb,
+        || ${JSON.stringify({ items: input.items, comments: input.comments ?? [] })}::jsonb,
       completed_at = CASE
         WHEN ${taskStatus} = 'COMPLETED' THEN ${completedAt}
         ELSE NULL
@@ -224,7 +226,7 @@ async function appendCompletionRecords(
       (idempotency_key, task_instance_id, actor_id, result, completed_at,
        row_version, next_stage_name, workflow_status)
     VALUES (${input.idempotencyKey}, ${input.taskId}::uuid, ${input.actorId}::uuid,
-      ${JSON.stringify({ actionKey: input.actionKey, items: input.items, taskStatus: result.taskStatus })}::jsonb, ${completedAt},
+      ${JSON.stringify({ actionKey: input.actionKey, items: input.items, comments: input.comments ?? [], taskStatus: result.taskStatus })}::jsonb, ${completedAt},
       ${result.rowVersion}, ${result.nextStageName}, ${result.workflowStatus})
     ON CONFLICT (idempotency_key) DO NOTHING RETURNING idempotency_key
   `);
@@ -268,7 +270,9 @@ export async function writeChecklistTaskCompletion(
       if (!task) return { kind: "not_found" } as const;
       const insideReplay = await findCommand(transaction, input);
       if (insideReplay) return insideReplay;
-      if (!task.hasChecklist) return { kind: "conflict" } as const;
+      if (!task.hasChecklist && !taskCommentFields(task.config).length) {
+        return { kind: "conflict" } as const;
+      }
       const completedAt = new Date();
       if (task.actionType === "APPROVE_ADVANCE"
         || task.actionType === "REJECT") {
@@ -292,7 +296,11 @@ export async function writeChecklistTaskCompletion(
           formCompleted: task.formCompleted,
           formRequired: task.formRequired,
           hasChecklist: task.hasChecklist,
-          result: { ...priorResult, items: input.items },
+          result: {
+            ...priorResult,
+            items: input.items,
+            comments: input.comments ?? [],
+          },
         })
         ? "IN_PROGRESS" as const
         : "COMPLETED" as const;

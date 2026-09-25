@@ -7,6 +7,7 @@ import {
   stageTaskFormBindings,
   workflowActionDefinitions,
   workflowStageChecklistDefinitions,
+  workflowStageCommentFields,
   workflowStageDefinitions,
   workflowStageDocumentRequirements,
   workflowStageScoringConfigurations,
@@ -93,6 +94,18 @@ async function insertStageRequirements(
       .insert(workflowStageChecklistDefinitions)
       .values(checklistItems);
   }
+  const commentFields = graph.stages.flatMap((stage) => {
+    const stageId = stageIds.get(stage.stableKey)!;
+    return (stage.commentFields ?? []).map(({ taskStableKey, ...field }) => ({
+      ...field,
+      id: undefined,
+      stageId,
+      taskDefinitionId: taskIds.get(`${stageId}:${taskStableKey}`)!,
+    }));
+  });
+  if (commentFields.length) {
+    await transaction.insert(workflowStageCommentFields).values(commentFields);
+  }
   const documentRequirements = graph.stages.flatMap((stage) => {
     const stageId = stageIds.get(stage.stableKey)!;
     return stage.documentRequirements.map(({ taskStableKey, ...requirement }) => ({
@@ -160,6 +173,16 @@ async function insertActionsAndTasks(
         ? { ...task.config } as Record<string, unknown>
         : {};
       delete configuration.items;
+      configuration.commentFields = (stage.commentFields ?? [])
+        .filter((field) => field.taskStableKey === task.stableKey)
+        .map(({ key, label, helpText, mandatory, visibility, displayOrder }) => ({
+          key,
+          label,
+          helpText,
+          mandatory,
+          visibility,
+          displayOrder,
+        }));
       return {
       assignmentMode: task.assignmentMode,
       coiRequired: task.coiRequired,
