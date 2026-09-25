@@ -9,7 +9,7 @@ import {
   type FormBindingProps,
   useFormBinding,
 } from "./form-binding";
-import { Checkbox, FieldError, Input, Label } from "./form-controls";
+import { Checkbox, FieldError, Input, Label } from "@/shared/ui/FormPrimitives";
 
 type FieldLayoutProps = {
   children: React.ReactNode;

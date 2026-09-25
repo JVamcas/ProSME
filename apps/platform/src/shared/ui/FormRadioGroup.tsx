@@ -1,4 +1,4 @@
-import { Input } from "@/components/ui/form-controls";
+import { Input } from "@/shared/ui/FormPrimitives";
 import { FormField } from "@/components/ui/form-field";
 
 export type FormRadioOption<T extends string | number | boolean> = {

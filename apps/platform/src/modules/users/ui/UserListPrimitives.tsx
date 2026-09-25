@@ -14,11 +14,12 @@ export function UserRowActions({
   canManageUsers,
   onEditRoles,
   user,
-}: Omit<UsersTabPanelProps, "roles" | "users"> & {
+}: Pick<UsersTabPanelProps, "canManageRoles" | "canManageUsers" | "onEditRoles"> & {
   user: UserAccessRow;
 }) {
   const [open, setOpen] = useState(false);
   const update = useUpdateUserAccess();
+  const isProvisioned = user.status !== "unprovisioned";
   const canActivate = user.emailVerified || user.status === "active";
 
   function changeStatus() {
@@ -32,6 +33,7 @@ export function UserRowActions({
   return (
     <div className="relative flex justify-end">
       <IconButton
+        disabled={!isProvisioned}
         className="size-8 rounded-lg"
         label={`Actions for ${user.displayName}`}
         onClick={() => setOpen((current) => !current)}
@@ -41,12 +43,12 @@ export function UserRowActions({
       </IconButton>
       {open ? (
         <div className="absolute right-0 top-9 z-20 w-44 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl">
-          {canManageUsers && user.userType === "staff" && canActivate ? (
+          {canManageUsers && isProvisioned && canActivate ? (
             <MenuAction disabled={update.isPending} onClick={changeStatus}>
               {user.status === "active" ? "Suspend user" : "Activate user"}
             </MenuAction>
           ) : null}
-          {canManageRoles ? (
+          {canManageRoles && isProvisioned ? (
             <MenuAction
               onClick={() => {
                 onEditRoles(user);

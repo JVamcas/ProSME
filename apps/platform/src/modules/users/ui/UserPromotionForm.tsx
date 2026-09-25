@@ -5,7 +5,7 @@ import { FormProvider, useForm } from "react-hook-form";
 import type { z } from "zod";
 
 import { GeneralButton } from "@/components/ui/button";
-import { FieldError } from "@/components/ui/form-controls";
+import { FieldError } from "@/shared/ui/FormPrimitives";
 import { usePromoteUser } from "@/modules/users/UserAccessHooks";
 import { promoteUserSchema } from "@/modules/users/UserAccessSchemas";
 import type { RoleAccessRow, UserAccessRow } from "@/modules/users/UserAccessTypes";

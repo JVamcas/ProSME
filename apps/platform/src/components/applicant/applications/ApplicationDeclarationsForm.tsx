@@ -8,7 +8,7 @@ import {
   type UseFormRegister,
 } from "react-hook-form";
 
-import { Checkbox, FieldError } from "@/components/ui/form-controls";
+import { Checkbox, FieldError } from "@/shared/ui/FormPrimitives";
 import { applicationDeclarationItems } from "@/modules/applications/ApplicationDeclarations";
 import {
   applicationDeclarationsSectionSchema,

@@ -11,6 +11,8 @@ import { useState } from "react";
 
 import { EditButton } from "@/components/ui/action-buttons";
 import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
+import { Pagination, DEFAULT_PAGE_SIZE } from "@/components/ui/pagination";
+import { useUserAccess } from "@/modules/users/UserAccessHooks";
 import { DraggableDialog } from "@/components/ui/draggable-dialog";
 import { Tabs, type TabItem } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
@@ -29,14 +31,14 @@ type Props = {
   canManageRoles: boolean;
   capabilities: CapabilityRow[];
   roles: RoleAccessRow[];
-  users: UserAccessRow[];
+  canReadUsers: boolean;
 };
 
 export function RolePermissionsPanel({
   canManageRoles,
   capabilities,
   roles,
-  users,
+  canReadUsers,
 }: Props) {
   const [selectedId, setSelectedId] = useState(roles[0]?.id ?? "");
   const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
@@ -94,9 +96,7 @@ export function RolePermissionsPanel({
           capabilities={capabilities}
           onEdit={() => setEditing(true)}
           role={selectedRole}
-          users={users.filter((user) =>
-            user.roleCodes.includes(selectedRole.code),
-          )}
+          canReadUsers={canReadUsers}
         />
       </main>
       <DraggableDialog
@@ -165,13 +165,13 @@ function RoleDetail({
   capabilities,
   onEdit,
   role,
-  users,
+  canReadUsers,
 }: {
+  canReadUsers: boolean;
   canManageRoles: boolean;
   capabilities: CapabilityRow[];
   onEdit: () => void;
   role: RoleAccessRow;
-  users: UserAccessRow[];
 }) {
   const tabs: TabItem<RoleTab>[] = [
     {
@@ -180,7 +180,7 @@ function RoleDetail({
       label: "Permissions",
     },
     {
-      content: <AssignedUsers users={users} />,
+      content: <AssignedUsers canReadUsers={canReadUsers} roleCode={role.code} />,
       id: "users",
       label: `Users (${role.assignedUserCount})`,
     },
@@ -242,13 +242,50 @@ const assignedUserColumns: DataTableColumn<UserAccessRow>[] = [
   },
 ];
 
-function AssignedUsers({ users }: { users: UserAccessRow[] }) {
+function AssignedUsers({
+  canReadUsers,
+  roleCode,
+}: {
+  canReadUsers: boolean;
+  roleCode: string;
+}) {
+  const [page, setPage] = useState(1);
+  const query = useUserAccess({
+    limit: DEFAULT_PAGE_SIZE,
+    page,
+    role: roleCode,
+    sort: "name-asc",
+  }, canReadUsers);
+
+  if (!canReadUsers) {
+    return <p className="text-sm text-slate-500">User read permission is required.</p>;
+  }
+  if (query.isPending) {
+    return <p className="text-sm text-slate-500">Loading users…</p>;
+  }
+  if (query.isError) {
+    return <p className="text-sm text-red-600">Could not load role users.</p>;
+  }
+
+  const users = query.data.users;
+  const { total } = query.data.usersPage;
   return (
     <DataTable
       columns={assignedUserColumns}
       data={users}
       density="compact"
       emptyMessage="No users are assigned to this role."
+      footer={
+        <Pagination
+          disabled={query.isFetching}
+          hasNextPage={page * DEFAULT_PAGE_SIZE < total}
+          onNext={() => setPage(page + 1)}
+          onPrevious={() => setPage(page - 1)}
+          page={page}
+          pageSize={DEFAULT_PAGE_SIZE}
+          total={total}
+        />
+      }
       minWidth={560}
       rowKey={(user) => user.id}
     />

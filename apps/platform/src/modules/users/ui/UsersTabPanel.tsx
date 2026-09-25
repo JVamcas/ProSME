@@ -1,10 +1,9 @@
 "use client";
 
 import { Search } from "lucide-react";
-import { useMemo, useState } from "react";
 
 import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
-import { Input, Select } from "@/components/ui/form-controls";
+import { Input, Select } from "@/shared/ui/FormPrimitives";
 import { Pagination } from "@/components/ui/pagination";
 import type {
   RoleAccessRow,
@@ -19,12 +18,23 @@ import {
 } from "./UserListPrimitives";
 import { StatusBadge } from "@/components/ui/status-badge";
 
-const PAGE_SIZE = 8;
-
 export type UsersTabPanelProps = {
   canManageRoles: boolean;
   canManageUsers: boolean;
   onEditRoles: (user: UserAccessRow) => void;
+  onPageChange: (page: number) => void;
+  onRoleChange: (role: string) => void;
+  onSearchChange: (search: string) => void;
+  onSortChange: (sort: string) => void;
+  onStatusChange: (status: string) => void;
+  page: number;
+  pageSize: number;
+  role: string;
+  search: string;
+  sort: string;
+  status: string;
+  total: number;
+  isFetching: boolean;
   roles: RoleAccessRow[];
   users: UserAccessRow[];
 };
@@ -36,6 +46,7 @@ function createColumns(
     {
       accessorKey: "displayName",
       header: "Name",
+      enableSorting: false,
       cell: ({ row }) => <UserIdentity user={row.original} />,
     },
     {
@@ -47,11 +58,13 @@ function createColumns(
     {
       accessorKey: "status",
       header: "Status",
+      enableSorting: false,
       cell: ({ row }) => <StatusBadge status={row.original.status} />,
     },
     {
       accessorKey: "lastLoginAt",
       header: "Last active",
+      enableSorting: false,
       cell: ({ row }) => formatLastActive(row.original.lastLoginAt),
     },
     {
@@ -64,114 +77,76 @@ function createColumns(
 }
 
 export function UsersTabPanel(props: UsersTabPanelProps) {
-  const [search, setSearch] = useState("");
-  const [role, setRole] = useState("");
-  const [status, setStatus] = useState("");
-  const [page, setPage] = useState(1);
-  const filteredUsers = useMemo(
-    () => filterUsers(props.users, search, role, status),
-    [props.users, role, search, status],
-  );
-  const pageCount = Math.max(1, Math.ceil(filteredUsers.length / PAGE_SIZE));
-  const activePage = Math.min(page, pageCount);
-  const visibleUsers = filteredUsers.slice(
-    (activePage - 1) * PAGE_SIZE,
-    activePage * PAGE_SIZE,
-  );
   const columns = createColumns(props);
 
   return (
     <div className="p-4 sm:p-6">
       <UserFilters
-        onRoleChange={(value) => {
-          setRole(value);
-          setPage(1);
-        }}
-        onSearchChange={(value) => {
-          setSearch(value);
-          setPage(1);
-        }}
-        onStatusChange={(value) => {
-          setStatus(value);
-          setPage(1);
-        }}
-        role={role}
+        onRoleChange={props.onRoleChange}
+        onSearchChange={props.onSearchChange}
+        onSortChange={props.onSortChange}
+        onStatusChange={props.onStatusChange}
+        role={props.role}
         roles={props.roles}
-        search={search}
-        status={status}
+        search={props.search}
+        sort={props.sort}
+        status={props.status}
       />
       <div className="hidden md:block">
         <DataTable
           columns={columns}
-          data={visibleUsers}
+          data={props.users}
           emptyMessage="No users match your filters."
           footer={
             <Pagination
-              hasNextPage={activePage < pageCount}
-              onNext={() => setPage(activePage + 1)}
-              onPrevious={() => setPage(activePage - 1)}
-              page={activePage}
-              pageSize={PAGE_SIZE}
-              total={filteredUsers.length}
+              disabled={props.isFetching}
+              hasNextPage={props.page * props.pageSize < props.total}
+              onNext={() => props.onPageChange(props.page + 1)}
+              onPrevious={() => props.onPageChange(props.page - 1)}
+              page={props.page}
+              pageSize={props.pageSize}
+              total={props.total}
             />
           }
           minWidth={880}
         />
       </div>
       <div className="space-y-3 md:hidden">
-        {visibleUsers.map((user) => (
+        {props.users.map((user) => (
           <MobileUserCard key={user.id} props={props} user={user} />
         ))}
-        {!visibleUsers.length ? (
+        {!props.users.length ? (
           <p className="py-10 text-center text-sm text-slate-500">
             No users match your filters.
           </p>
         ) : null}
         <Pagination
-          hasNextPage={activePage < pageCount}
-          onNext={() => setPage(activePage + 1)}
-          onPrevious={() => setPage(activePage - 1)}
-          page={activePage}
-          pageSize={PAGE_SIZE}
-          total={filteredUsers.length}
+          disabled={props.isFetching}
+          hasNextPage={props.page * props.pageSize < props.total}
+          onNext={() => props.onPageChange(props.page + 1)}
+          onPrevious={() => props.onPageChange(props.page - 1)}
+          page={props.page}
+          pageSize={props.pageSize}
+          total={props.total}
         />
       </div>
     </div>
   );
 }
 
-function filterUsers(
-  users: UserAccessRow[],
-  search: string,
-  role: string,
-  status: string,
-) {
-  const term = search.trim().toLowerCase();
-  return users.filter((user) => {
-    const matchesSearch =
-      !term ||
-      `${user.displayName} ${user.email} ${user.roleCodes.join(" ")}`
-        .toLowerCase()
-        .includes(term);
-    return (
-      matchesSearch &&
-      (!role || user.roleCodes.includes(role)) &&
-      (!status || user.status === status)
-    );
-  });
-}
-
 function UserFilters(props: {
   onRoleChange: (value: string) => void;
   onSearchChange: (value: string) => void;
+  onSortChange: (value: string) => void;
   onStatusChange: (value: string) => void;
   role: string;
   roles: RoleAccessRow[];
   search: string;
+  sort: string;
   status: string;
 }) {
   return (
-    <div className="mb-4 grid gap-3 md:grid-cols-[minmax(16rem,1fr)_11rem_11rem]">
+    <div className="mb-4 grid gap-3 md:grid-cols-[minmax(16rem,1fr)_11rem_11rem_11rem]">
       <div className="relative">
         <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
         <Input
@@ -199,10 +174,24 @@ function UserFilters(props: {
         value={props.status}
       >
         <option value="">All statuses</option>
+        <option value="unprovisioned">Unprovisioned</option>
         <option value="active">Active</option>
         <option value="invited">Invited</option>
         <option value="suspended">Suspended</option>
         <option value="disabled">Disabled</option>
+      </Select>
+      <Select
+        aria-label="Sort users"
+        className="h-10 rounded-lg border-slate-200"
+        onChange={(event) => props.onSortChange(event.target.value)}
+        value={props.sort}
+      >
+        <option value="name-asc">Name A–Z</option>
+        <option value="name-desc">Name Z–A</option>
+        <option value="email-asc">Email A–Z</option>
+        <option value="email-desc">Email Z–A</option>
+        <option value="last-active-desc">Last active</option>
+        <option value="status-asc">Status</option>
       </Select>
     </div>
   );

@@ -4,7 +4,7 @@ import {
   permissionCatalogue,
   type PermissionCode,
 } from "@/auth/authorization/permissions";
-import { userStatuses } from "./UserAccessTypes";
+import { provisionedUserStatuses, userStatuses } from "./UserAccessTypes";
 
 const roleCodes = z.array(z.string().trim().min(1).max(120)).max(50);
 
@@ -27,7 +27,7 @@ export const listUsersSchema = z.object({
 export const updateUserSchema = z
   .object({
     roleCodes: roleCodes.optional(),
-    status: z.enum(userStatuses).optional(),
+    status: z.enum(provisionedUserStatuses).optional(),
   })
   .refine((input) => input.status || input.roleCodes, {
     message: "Provide a status or role assignment change.",

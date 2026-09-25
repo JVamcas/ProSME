@@ -5,7 +5,7 @@ import { FormProvider, useForm } from "react-hook-form";
 import type { z } from "zod";
 
 import { GeneralButton } from "@/components/ui/button";
-import { FieldError, Input, Label } from "@/components/ui/form-controls";
+import { FieldError, Input, Label } from "@/shared/ui/FormPrimitives";
 import { useInviteUser } from "@/modules/users/UserAccessHooks";
 import { inviteUserSchema } from "@/modules/users/UserAccessSchemas";
 import type { RoleAccessRow } from "@/modules/users/UserAccessTypes";

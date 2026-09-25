@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { DEFAULT_PAGE_SIZE } from "@/components/ui/pagination";
+import type { UserAccessListInput } from "@/modules/users/UserAccessTypes";
 
 import { DraggableDialog } from "@/components/ui/draggable-dialog";
 import { Tabs, type TabItem } from "@/components/ui/tabs";
@@ -25,7 +27,24 @@ export function UserAccessWorkspace(props: Props) {
   const initialTab = props.canReadUsers ? "users" : "roles";
   const [editingUser, setEditingUser] = useState<UserAccessRow | null>(null);
 
-  const query = useUserAccess({ limit: 100 });
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [role, setRole] = useState("");
+  const [status, setStatus] = useState("");
+  const [sort, setSort] = useState<UserAccessListInput["sort"]>("name-asc");
+  const query = useUserAccess({
+    limit: DEFAULT_PAGE_SIZE,
+    page,
+    role: role || undefined,
+    search: search || undefined,
+    sort,
+    status: status ? status as UserAccessListInput["status"] : undefined,
+  });
+
+  function changeFilter(setter: (value: string) => void, value: string) {
+    setter(value);
+    setPage(1);
+  }
 
   if (query.isPending) {
     return <PortalLoadingState title="" description="Just a moment..."/>
@@ -44,6 +63,22 @@ export function UserAccessWorkspace(props: Props) {
           canManageRoles={props.canManageRoles}
           canManageUsers={props.canManageUsers}
           onEditRoles={setEditingUser}
+          onPageChange={setPage}
+          onRoleChange={(value) => changeFilter(setRole, value)}
+          onSearchChange={(value) => changeFilter(setSearch, value)}
+          onSortChange={(value) => {
+            setSort(value as UserAccessListInput["sort"]);
+            setPage(1);
+          }}
+          onStatusChange={(value) => changeFilter(setStatus, value)}
+          page={view.usersPage.page}
+          pageSize={view.usersPage.limit}
+          role={role}
+          search={search}
+          sort={sort}
+          status={status}
+          total={view.usersPage.total}
+          isFetching={query.isFetching}
           roles={view.roles}
           users={view.users}
         />
@@ -59,7 +94,7 @@ export function UserAccessWorkspace(props: Props) {
           canManageRoles={props.canManageRoles}
           capabilities={view.capabilities}
           roles={view.roles}
-          users={view.users}
+          canReadUsers={props.canReadUsers}
         />
       ),
       id: "roles",

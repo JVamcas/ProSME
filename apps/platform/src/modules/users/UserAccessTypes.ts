@@ -8,11 +8,16 @@ import type {
   updateUserSchema,
 } from "./UserAccessSchemas";
 
-export const userStatuses = [
+export const provisionedUserStatuses = [
   "invited",
   "active",
   "suspended",
   "disabled",
+] as const;
+
+export const userStatuses = [
+  ...provisionedUserStatuses,
+  "unprovisioned",
 ] as const;
 
 export type UserStatus = (typeof userStatuses)[number];
@@ -33,7 +38,7 @@ export type UserAccessRow = {
   lastLoginAt: string | null;
   roleCodes: string[];
   status: UserStatus;
-  userType: "applicant" | "staff";
+  userType: "applicant" | "staff" | null;
 };
 
 export type RoleAccessRow = {

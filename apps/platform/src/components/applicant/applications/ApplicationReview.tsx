@@ -11,7 +11,7 @@ import {
 import { z } from "zod";
 
 import { GeneralButton } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/form-controls";
+import { Checkbox } from "@/shared/ui/FormPrimitives";
 import { formatMoneyValue } from "@/components/ui/money-field";
 import { useApplicationDocuments } from "@/modules/applications/ui/useApplicationDocuments";
 import { applicationDeclarationItems } from "@/modules/applications/ApplicationDeclarations";

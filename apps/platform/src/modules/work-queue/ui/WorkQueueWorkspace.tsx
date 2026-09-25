@@ -4,7 +4,7 @@ import { Search } from "lucide-react";
 import { useState } from "react";
 
 import { DataTableFilter } from "@/components/ui/data-table-filter";
-import { Input } from "@/components/ui/form-controls";
+import { Input } from "@/shared/ui/FormPrimitives";
 import { Pagination } from "@/components/ui/pagination";
 import { cn } from "@/lib/utils";
 import { useWorkQueue } from "@/modules/work-queue/WorkQueueHooks";

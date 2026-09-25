@@ -12,7 +12,7 @@ import {
   Input,
   Label,
   Textarea,
-} from "@/components/ui/form-controls";
+} from "@/shared/ui/FormPrimitives";
 import { useUpdateRole } from "@/modules/users/UserAccessHooks";
 import { updateRoleSchema } from "@/modules/users/UserAccessSchemas";
 import type {

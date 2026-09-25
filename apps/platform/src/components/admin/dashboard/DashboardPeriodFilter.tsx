@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 
-import { Select } from "@/components/ui/form-controls";
+import { Select } from "@/shared/ui/FormPrimitives";
 import type { AdminDashboardPeriod } from "@/modules/dashboard/AdminDashboardTypes";
 
 const periods: Array<{ label: string; value: AdminDashboardPeriod }> = [

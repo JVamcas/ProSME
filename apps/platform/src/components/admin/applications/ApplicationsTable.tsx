@@ -5,7 +5,7 @@ import { useState } from "react";
 
 import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
 import { DataTableFilter } from "@/components/ui/data-table-filter";
-import { Input } from "@/components/ui/form-controls";
+import { Input } from "@/shared/ui/FormPrimitives";
 import { Pagination } from "@/components/ui/pagination";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { cn } from "@/lib/utils";

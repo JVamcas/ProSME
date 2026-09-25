@@ -13,7 +13,6 @@ import type {
 } from "./UserAccessTransportTypes";
 import type {
   AuthorizationAuditRow,
-  CapabilityRow,
   RoleAccessRow,
   UserAccessRow,
   UserAccessView,
