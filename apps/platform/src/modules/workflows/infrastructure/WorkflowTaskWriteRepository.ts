@@ -7,6 +7,7 @@ import { workflowTasks } from "./workflow-runtime.schema";
 export type CreateWorkflowTaskInput = {
   stageInstanceId: string;
   workflowTaskDefinitionId: string;
+  reviewerSlot: number;
   formVersionId?: string | null;
   assignedRoleId?: string | null;
   assignedUserId?: string | null;
@@ -24,6 +25,8 @@ const workflowTaskSelection = {
   formVersionId: workflowTasks.formVersionId,
   id: workflowTasks.id,
   rowVersion: workflowTasks.rowVersion,
+  reviewerSlot: workflowTasks.reviewerSlot,
+  supersedesTaskId: workflowTasks.supersedesTaskId,
   stageInstanceId: workflowTasks.stageInstanceId,
   startedAt: workflowTasks.startedAt,
   status: workflowTasks.status,
@@ -45,6 +48,7 @@ export async function createWorkflowTasks(
       createdAt: input.createdAt,
       dueAt: input.dueAt ?? null,
       formVersionId: input.formVersionId ?? null,
+      reviewerSlot: input.reviewerSlot,
       stageInstanceId: input.stageInstanceId,
       status: input.assignedUserId ? "CLAIMED" as const : "PENDING" as const,
       workflowTaskDefinitionId: input.workflowTaskDefinitionId,

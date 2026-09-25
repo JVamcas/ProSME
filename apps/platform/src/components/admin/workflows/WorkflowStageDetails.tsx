@@ -18,8 +18,6 @@ import { WorkflowStageDocumentRequirementTable } from "@/modules/workflows/ui/de
 import type { WorkflowStageDocumentRequirement } from "@/modules/workflows/domain/definitions/WorkflowStageDocumentRequirement";
 import { WorkflowStageScoringTable } from "@/modules/workflows/ui/definitions/WorkflowStageScoringTable";
 import type { WorkflowStageScoringCriterion } from "@/modules/workflows/domain/definitions/WorkflowStageScoringDefinition";
-import type { WorkflowStageCommentField } from "@/modules/workflows/domain/definitions/WorkflowStageCommentField";
-import { WorkflowStageCommentFieldTable } from "@/modules/workflows/ui/definitions/WorkflowStageCommentFieldTable";
 import { Badge, type BadgeProps } from "@/shared/ui/Badge";
 
 type Props = {
@@ -33,7 +31,6 @@ type Props = {
   onAddChecklistItem: () => void;
   onAddDocumentRequirement: () => void;
   onAddScoringCriterion: () => void;
-  onAddCommentField: () => void;
   onDelete: () => void;
   onDeleteAction: (action: WorkflowActionDefinition) => void;
   onEdit: () => void;
@@ -54,8 +51,6 @@ type Props = {
   onEditScoringCriterion: (
     criterion: WorkflowStageScoringCriterion,
   ) => void;
-  onDeleteCommentField: (field: WorkflowStageCommentField) => void;
-  onEditCommentField: (field: WorkflowStageCommentField) => void;
   onPreviewTask: (task: WorkflowTaskInput) => void;
   stage?: WorkflowStageInput;
   stageIndex: number;
@@ -72,7 +67,6 @@ export function WorkflowStageDetails({
   onAddChecklistItem,
   onAddDocumentRequirement,
   onAddScoringCriterion,
-  onAddCommentField,
   onDelete,
   onDeleteAction,
   onEdit,
@@ -85,8 +79,6 @@ export function WorkflowStageDetails({
   onEditDocumentRequirement,
   onDeleteScoringCriterion,
   onEditScoringCriterion,
-  onDeleteCommentField,
-  onEditCommentField,
   onPreviewTask,
   stage,
   stageIndex,
@@ -179,21 +171,6 @@ export function WorkflowStageDetails({
       ),
     },
     {
-      id: "comments",
-      label: "Comments & Recommendations",
-      content: (
-        <StageTabContent>
-          <WorkflowStageCommentFieldTable
-            canEdit={canEdit}
-            onAdd={onAddCommentField}
-            onDelete={onDeleteCommentField}
-            onEdit={onEditCommentField}
-            stage={stage}
-          />
-        </StageTabContent>
-      ),
-    },
-    {
       id: "transition",
       label: "Transition",
       content: (
@@ -211,7 +188,6 @@ export function WorkflowStageDetails({
     | "checklists"
     | "documents"
     | "scoring"
-    | "comments"
     | "actions"
     | "transition"
   >[];

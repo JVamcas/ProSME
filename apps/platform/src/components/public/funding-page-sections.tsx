@@ -16,6 +16,7 @@ import type {
   FundingPrioritiesContent,
   FundingSupportContent,
 } from "@/modules/content/FundingPageContent";
+import { ArrowLink } from "../ui/links";
 
 const icons: Record<FundingIconKey, LucideIcon> = {
   grant: Banknote,
@@ -139,12 +140,9 @@ export function FundingCallToAction() {
             Check all mandatory requirements before applying.
           </p>
         </div>
-        <Link
-          className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-brand-orange px-7 text-base font-bold text-brand-navy shadow-[0_8px_20px_rgba(10,24,59,0.18)] transition-colors hover:bg-brand-yellow"
-          href="/eligibility"
-        >
-          Check eligibility <ArrowRight className="size-4" />
-        </Link>
+        <ArrowLink href="/eligibility">
+          Check eligibility
+        </ArrowLink>
       </div>
     </section>
   );

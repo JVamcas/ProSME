@@ -8,6 +8,7 @@ function stageWithScoring() {
     ...structuredClone(referenceWorkflow.stages[0]),
     scoring: {
       aggregation: "WEIGHTED_AVERAGE" as const,
+      taskStableKey: "PRE_SCREEN_CHECKLIST",
       criteria: [
         {
           criterion: "Business viability",
@@ -15,7 +16,6 @@ function stageWithScoring() {
           weight: 60,
           scaleMinimum: 0,
           scaleMaximum: 10,
-          threshold: 6,
           mandatoryComment: true,
         },
         {
@@ -24,7 +24,6 @@ function stageWithScoring() {
           weight: 40,
           scaleMinimum: 0,
           scaleMaximum: 10,
-          threshold: 5,
           mandatoryComment: false,
         },
       ],
@@ -52,11 +51,10 @@ describe("workflow stage scoring definition", () => {
     );
   });
 
-  it("requires a valid scale and a threshold within that scale", () => {
+  it("requires a valid scoring scale", () => {
     const stage = stageWithScoring();
     stage.scoring.criteria[0].scaleMinimum = 10;
     stage.scoring.criteria[0].scaleMaximum = 5;
-    stage.scoring.criteria[0].threshold = 8;
 
     const result = workflowStageSchema.safeParse(stage);
 
@@ -65,8 +63,20 @@ describe("workflow stage scoring definition", () => {
     expect(result.error.issues.map((issue) => issue.message)).toEqual(
       expect.arrayContaining([
         "Scale maximum must be greater than scale minimum.",
-        "Threshold must fall within the configured scale.",
       ]),
+    );
+  });
+
+  it("rejects scoring assigned to a task outside the stage", () => {
+    const stage = stageWithScoring();
+    stage.scoring.taskStableKey = "OTHER_STAGE_TASK";
+
+    const result = workflowStageSchema.safeParse(stage);
+
+    expect(result.success).toBe(false);
+    if (result.success) return;
+    expect(result.error.issues.map((issue) => issue.message)).toContain(
+      "Scoring must reference a task in the same stage.",
     );
   });
 });

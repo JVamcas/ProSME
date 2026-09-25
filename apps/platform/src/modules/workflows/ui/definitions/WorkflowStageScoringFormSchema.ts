@@ -11,6 +11,7 @@ export const scoringAggregationItems = [
 
 export const workflowStageAggregationFormSchema = z.object({
   aggregation: z.enum(workflowScoringAggregations),
+  taskStableKey: z.string().min(1, "Select a workflow task."),
 });
 
 export const workflowStageScoringCriterionFormSchema = z.object({
@@ -19,7 +20,6 @@ export const workflowStageScoringCriterionFormSchema = z.object({
   weight: z.number().positive().max(100),
   scaleMinimum: z.number().min(0).max(1000),
   scaleMaximum: z.number().positive().max(1000),
-  threshold: z.number().min(0).max(1000),
   mandatoryComment: z.boolean(),
 }).superRefine((criterion, context) => {
   if (criterion.scaleMaximum <= criterion.scaleMinimum) {
@@ -27,16 +27,6 @@ export const workflowStageScoringCriterionFormSchema = z.object({
       code: "custom",
       message: "Scale maximum must be greater than scale minimum.",
       path: ["scaleMaximum"],
-    });
-  }
-  if (
-    criterion.threshold < criterion.scaleMinimum
-    || criterion.threshold > criterion.scaleMaximum
-  ) {
-    context.addIssue({
-      code: "custom",
-      message: "Threshold must fall within the configured scale.",
-      path: ["threshold"],
     });
   }
 });

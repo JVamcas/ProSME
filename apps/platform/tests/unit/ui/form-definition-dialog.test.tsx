@@ -159,7 +159,7 @@ describe("form definition dialog", () => {
       '[aria-label="Retire Finance Review"]',
     )?.disabled).toBe(true);
     expect(container.querySelector<HTMLButtonElement>(
-      '[aria-label="Create new draft for Finance Review"]',
+      '[aria-label="Clone Finance Review"]',
     )?.disabled).toBe(true);
 
     await act(async () => {

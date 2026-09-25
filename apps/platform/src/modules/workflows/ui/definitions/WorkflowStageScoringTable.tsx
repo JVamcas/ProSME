@@ -65,10 +65,6 @@ function scoringColumns(
         `${row.original.scaleMinimum}–${row.original.scaleMaximum}`,
     },
     {
-      accessorKey: "threshold",
-      header: "Threshold",
-    },
-    {
       accessorKey: "mandatoryComment",
       header: "Mandatory comment",
       cell: ({ row }) => (row.original.mandatoryComment ? "Yes" : "No"),
@@ -107,6 +103,7 @@ export function WorkflowStageScoringTable({
   const form = useForm<WorkflowStageAggregationFormValues>({
     defaultValues: {
       aggregation: stage.scoring?.aggregation ?? "WEIGHTED_AVERAGE",
+      taskStableKey: stage.scoring?.taskStableKey ?? stage.tasks[0]?.stableKey ?? "",
     },
     resolver: zodResolver(workflowStageAggregationFormSchema),
   });
@@ -114,10 +111,20 @@ export function WorkflowStageScoringTable({
   useEffect(() => {
     form.reset({
       aggregation: stage.scoring?.aggregation ?? "WEIGHTED_AVERAGE",
+      taskStableKey: stage.scoring?.taskStableKey ?? stage.tasks[0]?.stableKey ?? "",
     });
-  }, [form, stage.scoring?.aggregation, stage.stableKey]);
+  }, [
+    form,
+    stage.scoring?.aggregation,
+    stage.scoring?.taskStableKey,
+    stage.stableKey,
+    stage.tasks,
+  ]);
 
-  const submitAggregation = form.handleSubmit(async ({ aggregation }) => {
+  const submitAggregation = form.handleSubmit(async ({
+    aggregation,
+    taskStableKey,
+  }) => {
     await mutation.mutateAsync({
       stages: editor.graph.stages.map((item) =>
         item.stableKey === stage.stableKey
@@ -126,6 +133,7 @@ export function WorkflowStageScoringTable({
               scoring: {
                 aggregation,
                 criteria: item.scoring?.criteria ?? [],
+                taskStableKey,
               },
             }
           : item,
@@ -164,6 +172,18 @@ export function WorkflowStageScoringTable({
             items={scoringAggregationItems}
             label="Score Aggregation Method"
             name="aggregation"
+            required
+          />
+          <FormSelect
+            containerClassName="min-w-60 flex-1"
+            disabled={!canEdit}
+            items={stage.tasks.map((task) => ({
+              label: task.name,
+              value: task.stableKey,
+            }))}
+            label="Workflow task"
+            name="taskStableKey"
+            placeholder="Select a workflow task"
             required
           />
           <GeneralButton

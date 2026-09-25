@@ -3,15 +3,11 @@ import { describe, expect, it } from "vitest";
 import { referenceWorkflow } from "../../support/ReferenceWorkflowFixture";
 import { workflowGraphSchema } from "@/modules/workflows/api/WorkflowSchemas";
 import {
-  taskHasChecklist,
   taskRunsAuthoritativeEligibility,
   taskWorkIsReady,
   validateTaskConfiguration,
 } from "@/modules/workflows/WorkflowTaskRegistry";
 
-const checklist = {
-  items: [{ code: "ONE", label: "One", required: true }],
-};
 const eligibility = {
   command: "AUTHORITATIVE_ELIGIBILITY",
   reevaluationPolicy: "WHEN_EVIDENCE_CHANGED",
@@ -19,15 +15,14 @@ const eligibility = {
 
 describe("workflow task configuration", () => {
   it("accepts independently configured work parts on one task", () => {
-    const config = { ...checklist, ...eligibility };
+    const config = eligibility;
     expect(validateTaskConfiguration(config).success).toBe(true);
-    expect(taskHasChecklist(config)).toBe(true);
     expect(taskRunsAuthoritativeEligibility(config)).toBe(true);
     expect(workflowGraphSchema.safeParse(referenceWorkflow).success).toBe(true);
   });
 
   it("requires each configured part before a decision completes the task", () => {
-    const config = { ...checklist, ...eligibility };
+    const config = eligibility;
     const result = {
       items: [{ code: "ONE", accepted: true }],
       eligible: true,
@@ -43,18 +38,21 @@ describe("workflow task configuration", () => {
       config,
       formCompleted: true,
       formRequired: true,
+      hasChecklist: true,
       result,
     })).toBe(true);
     expect(taskWorkIsReady({
       config,
       formCompleted: false,
       formRequired: true,
+      hasChecklist: true,
       result,
     })).toBe(false);
     expect(taskWorkIsReady({
       config,
       formCompleted: true,
       formRequired: true,
+      hasChecklist: true,
       result: { items: result.items },
     })).toBe(false);
   });

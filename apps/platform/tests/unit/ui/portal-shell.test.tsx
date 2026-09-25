@@ -37,6 +37,18 @@ function renderShell(children: React.ReactNode) {
 }
 
 describe("P3.1 shared authenticated portal shell", () => {
+  it("renders the applicant sidebar and mobile navigation on orange surfaces", () => {
+    const markup = renderShell(<h1>Profile</h1>);
+
+    expect(markup).toMatch(/<aside[^>]*class="[^"]*bg-brand-orange/);
+    expect(markup).toMatch(/<header[^>]*class="[^"]*bg-brand-orange/);
+    expect(markup).toContain("background-color:var(--color-brand-orange)");
+    expect(markup).toContain("min-w-0 bg-brand-white");
+    expect(markup).toContain("fixed inset-x-0 bottom-0 top-16");
+    expect(markup).toContain("min-h-0 flex-1 overflow-y-auto");
+    expect(markup).toContain('aria-label="Open portal navigation"');
+  });
+
   it("provides labelled navigation and current-route semantics", () => {
     const markup = renderShell(<h1>Profile</h1>);
 

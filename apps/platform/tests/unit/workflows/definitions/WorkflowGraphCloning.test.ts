@@ -13,6 +13,7 @@ describe("workflow graph cloning", () => {
     source.stages[0].tasks[0].id =
       "43333333-3333-4333-8333-333333333333";
     source.stages[0].checklistItems = [{
+      taskStableKey: source.stages[0].tasks[0].stableKey,
       id: "47777777-7777-4777-8777-777777777777",
       key: "OWNERSHIP_CONFIRMED",
       text: "Confirm ownership.",
@@ -23,6 +24,7 @@ describe("workflow graph cloning", () => {
       displayOrder: 1,
     }];
     source.stages[0].documentRequirements = [{
+      taskStableKey: source.stages[0].tasks[0].stableKey,
       id: "48888888-8888-4888-8888-888888888888",
       name: "Tax clearance certificate",
       mandatory: true,
@@ -33,17 +35,9 @@ describe("workflow graph cloning", () => {
       verifier: "ASSIGNED_REVIEWER",
       templateReference: "TAX_CLEARANCE_TEMPLATE",
     }];
-    source.stages[0].commentFields = [{
-      id: "4aaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-      key: "REVIEW_RECOMMENDATION",
-      label: "Review recommendation",
-      helpText: "Summarise the recommendation.",
-      mandatory: true,
-      visibility: "INTERNAL_ONLY",
-      displayOrder: 1,
-    }];
     source.stages[0].scoring = {
       aggregation: "WEIGHTED_AVERAGE",
+      taskStableKey: source.stages[0].tasks[0].stableKey,
       criteria: [{
         id: "49999999-9999-4999-8999-999999999999",
         criterion: "Business viability",
@@ -51,7 +45,6 @@ describe("workflow graph cloning", () => {
         weight: 100,
         scaleMinimum: 0,
         scaleMaximum: 10,
-        threshold: 6,
         mandatoryComment: true,
       }],
     };
@@ -148,12 +141,8 @@ describe("workflow graph cloning", () => {
       ...source.stages[0].documentRequirements[0],
       id: undefined,
     });
-    expect(clone.stages[0].commentFields[0]).toEqual({
-      ...source.stages[0].commentFields[0],
-      id: undefined,
-    });
     expect(clone.stages[0].scoring?.criteria[0]).toEqual({
-      ...source.stages[0].scoring.criteria[0],
+      ...source.stages[0].scoring!.criteria[0],
       id: undefined,
     });
     expect(clone.transitions[0]).toEqual({

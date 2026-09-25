@@ -35,6 +35,7 @@ function checklistColumns(
   canEdit: boolean,
   onDelete: (item: WorkflowStageChecklistDefinition) => void,
   onEdit: (item: WorkflowStageChecklistDefinition) => void,
+  taskNames: ReadonlyMap<string, string>,
 ): DataTableColumn<WorkflowStageChecklistDefinition>[] {
   return [
     {
@@ -56,6 +57,12 @@ function checklistColumns(
           {row.original.text}
         </span>
       ),
+    },
+    {
+      accessorKey: "taskStableKey",
+      header: "Task",
+      cell: ({ row }) => taskNames.get(row.original.taskStableKey)
+        ?? row.original.taskStableKey,
     },
     {
       accessorKey: "responseType",
@@ -115,6 +122,9 @@ export function WorkflowStageChecklistTable({
   const checklistItems = [...stage.checklistItems].sort(
     (left, right) => left.displayOrder - right.displayOrder,
   );
+  const taskNames = new Map(
+    stage.tasks.map((task) => [task.stableKey, task.name]),
+  );
   return (
     <section className="mt-5">
       <WorkflowStageTabHeader
@@ -134,7 +144,7 @@ export function WorkflowStageChecklistTable({
         title="Checklist items"
       />
       <DataTable
-        columns={checklistColumns(canEdit, onDelete, onEdit)}
+        columns={checklistColumns(canEdit, onDelete, onEdit, taskNames)}
         data={checklistItems}
         emptyMessage="No checklist items have been added to this stage."
         minWidth={1120}

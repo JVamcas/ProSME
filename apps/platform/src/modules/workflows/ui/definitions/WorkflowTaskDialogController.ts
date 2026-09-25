@@ -4,7 +4,6 @@ import { useEffect, useRef } from "react";
 import { useForm, useWatch, type UseFormSetError } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
-import type { ConditionFieldDefinition } from "@/modules/conditions/domain/ConditionConfiguration";
 import { usePublishedForms } from "@/modules/forms/FormHooks";
 import type { PublishedFormOption } from "@/modules/forms/FormTypes";
 import { useSaveWorkflowGraph } from "@/modules/workflows/WorkflowHooks";
@@ -13,15 +12,12 @@ import type {
   WorkflowStageInput,
   WorkflowTaskInput,
 } from "@/modules/workflows/domain/definitions/WorkflowTypes";
-import { workflowRuntimeContextFields } from "@/modules/workflows/domain/WorkflowRuntimeContextFieldCatalogue";
 import { defaultWorkflowElementPermissions } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
 import {
-  checklistItemDefaults,
   taskAssignmentDefaults,
   type WorkflowTaskFormValues,
   workflowTaskFormSchema,
 } from "./WorkflowTaskFormSchema";
-import { useWorkflowConditionFields } from "./useWorkflowConditionFields";
 
 export function workflowTaskFormItems(
   forms: readonly PublishedFormOption[],
@@ -74,18 +70,13 @@ async function saveWorkflowTask({
   const existingConfig = task?.config && typeof task.config === "object"
     ? { ...task.config }
     : {};
-  if (!values.checklistItems.length && "items" in existingConfig) {
+  if ("items" in existingConfig) {
     delete existingConfig.items;
   }
   const nextTask: WorkflowTaskInput = {
     ...(task?.id ? { id: task.id } : {}),
-    actionKeys: values.actionKeys,
-    permissions: {
-      view: values.viewPermission,
-      edit: values.editPermission,
-      decide: values.decidePermission,
-      visibility: values.visibility,
-    },
+    actionKeys: task?.actionKeys ?? [],
+    permissions: task?.permissions ?? defaultWorkflowElementPermissions,
     assignmentMode: values.assignmentMode,
     roleId:
       values.assignmentMode === "ROLE" ? values.assignmentTarget : null,
@@ -95,18 +86,26 @@ async function saveWorkflowTask({
     description: values.description,
     displayOrder: values.displayOrder,
     reviewerCount: values.reviewerCount,
-    requiredCompletionCount: values.requiredCompletionCount,
-    quorum: values.quorum,
-    coiRequired: values.coiRequired,
+    reviewRelease: task?.reviewRelease ?? "STAGE_COMPLETED",
+    submittedReplacementPolicy: task?.submittedReplacementPolicy ?? "DENY",
+    requiredCompletionCount: values.completionMode === "ALL"
+      ? values.reviewerCount
+      : values.completionMode === "COUNT"
+        ? values.requiredCompletionCount ?? 1
+        : 1,
+    completionMode: values.completionMode,
+    completionPercentage: values.completionMode === "PERCENT"
+      ? values.completionPercentage
+      : null,
+    quorum: task?.quorum ?? false,
+    quorumRule: task?.quorumRule ?? null,
+    coiRequired: task?.coiRequired ?? false,
     config: {
       ...existingConfig,
-      ...(values.checklistItems.length
-        ? { items: values.checklistItems }
-        : {}),
     },
     formBinding: values.formVersionId
       ? {
-          contextFields: values.contextFields,
+          contextFields: task?.formBinding?.contextFields ?? [],
           formVersionId: values.formVersionId,
         }
       : null,
@@ -138,34 +137,18 @@ export function useWorkflowTaskDialogController(
 ) {
   const mutation = useSaveWorkflowGraph(editor);
   const forms = usePublishedForms();
-  const contextFieldPool = useWorkflowConditionFields(editor, stage);
   const form = useForm<WorkflowTaskFormValues>({
     defaultValues: {
       ...taskAssignmentDefaults(task),
-      actionKeys: task?.actionKeys ?? [],
-      viewPermission: task
-        ? task.permissions.view
-        : defaultWorkflowElementPermissions.view,
-      editPermission: task
-        ? task.permissions.edit
-        : defaultWorkflowElementPermissions.edit,
-      decidePermission: task
-        ? task.permissions.decide
-        : defaultWorkflowElementPermissions.decide,
-      visibility: task
-        ? task.permissions.visibility
-        : defaultWorkflowElementPermissions.visibility,
-      checklistItems: checklistItemDefaults(task?.config),
       stableKey: task?.stableKey ?? "",
       description: task?.description ?? "",
       displayOrder: task?.displayOrder ?? stage.tasks.length + 1,
       formVersionId: task?.formBinding?.formVersionId ?? "",
       name: task?.name ?? "",
       reviewerCount: task?.reviewerCount ?? 1,
+      completionMode: task?.completionMode ?? "COUNT",
       requiredCompletionCount: task?.requiredCompletionCount ?? 1,
-      quorum: task?.quorum ?? false,
-      coiRequired: task?.coiRequired ?? false,
-      contextFields: task?.formBinding?.contextFields ?? [],
+      completionPercentage: task?.completionPercentage ?? null,
       required: task?.required ?? true,
     },
     resolver: zodResolver(workflowTaskFormSchema),
@@ -174,18 +157,10 @@ export function useWorkflowTaskDialogController(
     control: form.control,
     name: "assignmentMode",
   });
-  const actionKeys = useWatch({
-    control: form.control,
-    name: "actionKeys",
-  });
   const formVersionId = useWatch({
     control: form.control,
     name: "formVersionId",
   });
-  const selectedContextFields = useWatch({
-    control: form.control,
-    name: "contextFields",
-  }) ?? [];
   const previousAssignmentMode = useRef(assignmentMode);
 
   useEffect(() => {
@@ -203,22 +178,6 @@ export function useWorkflowTaskDialogController(
     formVersionId ?? "",
     !forms.isPending,
   );
-  const actionItems = [...stage.actions]
-    .sort((left, right) => left.displayOrder - right.displayOrder)
-    .map((action) => ({
-      disabled: !action.enabled,
-      label: action.enabled ? action.label : `${action.label} (disabled)`,
-      value: action.stableKey,
-    }));
-  const contextFieldsByKey = new Map<string, ConditionFieldDefinition>();
-  [
-    ...workflowRuntimeContextFields,
-    ...contextFieldPool.entryFields,
-    ...selectedContextFields,
-  ].forEach(
-    (field) => contextFieldsByKey.set(field.key, field),
-  );
-  const contextFields = [...contextFieldsByKey.values()];
 
   const save = (values: WorkflowTaskFormValues) =>
     saveWorkflowTask({
@@ -231,37 +190,13 @@ export function useWorkflowTaskDialogController(
     });
 
   return {
-    actionKeys,
-    actionItems,
     assignmentItems,
     assignmentMode,
-    contextFieldItems: contextFields,
-    contextFieldKeys: selectedContextFields.map((field) => field.key),
-    contextFieldsPending: contextFieldPool.isPending,
     form,
     formItems,
     formVersionId: formVersionId ?? "",
     forms,
     mutation,
-    setActionKeys: (values: string[]) => {
-      form.setValue("actionKeys", values, {
-        shouldDirty: true,
-        shouldValidate: true,
-      });
-    },
-    setContextFieldKeys: (keys: string[]) => {
-      form.setValue(
-        "contextFields",
-        keys.flatMap((key) => {
-          const field = contextFieldsByKey.get(key);
-          return field ? [field] : [];
-        }),
-        {
-          shouldDirty: true,
-          shouldValidate: true,
-        },
-      );
-    },
     save,
   };
 }

@@ -3,7 +3,6 @@ import type { StandardWorkflowDependencies } from "./StandardWorkflowTypes";
 import {
   approve,
   checklist,
-  comment,
   deferDate,
   documentRequirement,
   reject,
@@ -29,7 +28,6 @@ function moderation(dependencies: StandardWorkflowDependencies) {
       checklist("BUDGET_ENVELOPE_CHECKED", "Provisional allocations fit the budget envelope", 3),
     ],
     coiGated: true,
-    commentFields: [comment("MODERATION_COMMENTS", "Moderation comments", 1)],
     description: "Consolidate reviews, rank applications and prepare the shortlist.",
     displayOrder: 5,
     documentRequirements: [
@@ -82,10 +80,6 @@ function committeeReview(dependencies: StandardWorkflowDependencies) {
       checklist("BUDGET_AVAILABLE", "Budget availability is confirmed", 3),
     ],
     coiGated: true,
-    commentFields: [
-      comment("DISSENTING_VIEWS", "Dissenting views", 1),
-      comment("COMMITTEE_COMMENTS", "Committee comments", 2),
-    ],
     description: "Record committee deliberation and award recommendation.",
     displayOrder: 6,
     documentRequirements: [
@@ -120,6 +114,16 @@ function committeeReview(dependencies: StandardWorkflowDependencies) {
       formCode: "COMMITTEE_REVIEW",
       name: "Committee decision",
       quorum: true,
+      quorumRule: {
+        population: "ASSIGNED_TASKS",
+        minimumCount: 3,
+        minimumPercentage: null,
+        rounding: "CEIL",
+        chairRequired: false,
+        recusalDenominator: "EXCLUDE",
+        freeze: "AT_DECISION",
+        abstentionsCountAsPresent: true,
+      },
       requiredCompletionCount: 3,
       reviewerCount: 5,
       roleCode: "approval_panel_member",
@@ -149,7 +153,6 @@ function approval(dependencies: StandardWorkflowDependencies) {
       checklist("BUDGET_CONFIRMED", "Budget availability is confirmed", 2),
     ],
     coiGated: false,
-    commentFields: [comment("APPROVAL_COMMENTS", "Approval comments", 1)],
     description: "Record the delegated approval and award decision.",
     displayOrder: 7,
     documentRequirements: [
@@ -202,10 +205,6 @@ function notificationAppeals(dependencies: StandardWorkflowDependencies) {
       checklist("APPEAL_WINDOW_RESOLVED", "Appeal window has closed or the appeal is resolved", 3),
     ],
     coiGated: false,
-    commentFields: [
-      comment("APPLICANT_FEEDBACK", "Applicant feedback", 1, false, "APPLICANT_VISIBLE"),
-      comment("APPEAL_RATIONALE", "Appeal rationale", 2),
-    ],
     description: "Issue outcomes, release feedback and resolve appeals.",
     displayOrder: 8,
     documentRequirements: [

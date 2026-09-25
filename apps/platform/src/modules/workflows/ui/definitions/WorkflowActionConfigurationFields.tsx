@@ -149,7 +149,7 @@ function DeferFields({ targetType }: { targetType: "DATE" | "FUNDING_CALL" }) {
   );
 }
 
-export function WorkflowActionConfigurationFields({
+function ActionConfigurationFields({
   actionType,
   assignmentOptions,
   deferTargetType,
@@ -296,4 +296,23 @@ export function WorkflowActionConfigurationFields({
     case "DEFER":
       return <DeferFields targetType={deferTargetType} />;
   }
+}
+
+export function WorkflowActionConfigurationFields(props: Props) {
+  const fields = ActionConfigurationFields(props);
+
+  if (fields === null) {
+    return null;
+  }
+
+  return (
+    <>
+      <div className="sm:col-span-2 border-t border-brand-navy/10 pt-4">
+        <h3 className="text-sm font-bold text-brand-navy">
+          Action-specific configuration
+        </h3>
+      </div>
+      {fields}
+    </>
+  );
 }

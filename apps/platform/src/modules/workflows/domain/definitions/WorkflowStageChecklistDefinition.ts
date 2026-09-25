@@ -19,6 +19,7 @@ export type WorkflowChecklistEvidenceRequirement =
 
 export type WorkflowStageChecklistDefinition = {
   id?: string;
+  taskStableKey: string;
   key: string;
   text: string;
   mandatory: boolean;

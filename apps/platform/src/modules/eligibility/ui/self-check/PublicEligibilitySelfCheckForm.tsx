@@ -7,7 +7,7 @@ import { FormProvider, useForm, useFormContext } from "react-hook-form";
 import { z } from "zod";
 
 import { GeneralButton } from "@/components/ui/button";
-import { FieldError } from "@/components/ui/form-controls";
+import { FieldError } from "@/shared/ui/FormPrimitives";
 import { FormInput } from "@/components/ui/form-fields";
 import type {
   PublicEligibilityAnswer,

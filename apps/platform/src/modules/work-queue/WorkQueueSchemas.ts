@@ -9,10 +9,6 @@ export const workQueueListSchema = z.object({
   scope: z.enum(workQueueScopes).default("mine"),
 });
 
-export const claimTaskSchema = z.object({
-  expectedRowVersion: z.number().int().positive(),
-});
-
 export const idempotencyKeySchema = z.uuid();
 export const taskInstanceIdSchema = z.uuid();
 export const workflowActionKeySchema = z

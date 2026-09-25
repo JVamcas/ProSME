@@ -6,6 +6,7 @@ vi.mock("server-only", () => ({}));
 
 import { basicOperators } from "@/modules/conditions/engine/BasicOperators";
 import { cloneWorkflowGraph } from "@/modules/workflows/domain/definitions/WorkflowGraphCloning";
+import { defaultWorkflowElementPermissions } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
 import type { WorkflowGraphInput } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import { findWorkflowGraph } from "@/modules/workflows/infrastructure/WorkflowGraphRepository";
 import {
@@ -76,6 +77,7 @@ const graph: WorkflowGraphInput = {
   stages: [{
     actions: [],
     checklistItems: [{
+      taskStableKey: "REVIEW_TASK",
       key: "OWNERSHIP_CONFIRMED",
       text: "Confirm ownership.",
       mandatory: true,
@@ -85,6 +87,7 @@ const graph: WorkflowGraphInput = {
       displayOrder: 1,
     }],
     documentRequirements: [{
+      taskStableKey: "REVIEW_TASK",
       name: "Review evidence",
       mandatory: true,
       acceptedFileTypes: ["PDF"],
@@ -94,23 +97,15 @@ const graph: WorkflowGraphInput = {
       verifier: "ASSIGNED_REVIEWER",
       templateReference: "REVIEW_EVIDENCE_TEMPLATE",
     }],
-    commentFields: [{
-      key: "REVIEW_RECOMMENDATION",
-      label: "Review recommendation",
-      helpText: "Summarise the recommendation.",
-      mandatory: true,
-      visibility: "INTERNAL_ONLY",
-      displayOrder: 1,
-    }],
     scoring: {
       aggregation: "WEIGHTED_AVERAGE",
+      taskStableKey: "REVIEW_TASK",
       criteria: [{
         criterion: "Business viability",
         description: "Assess viability.",
         weight: 100,
         scaleMinimum: 0,
         scaleMaximum: 10,
-        threshold: 6,
         mandatoryComment: true,
       }],
     },
@@ -130,7 +125,24 @@ const graph: WorkflowGraphInput = {
     },
     repeatable: false,
     stableKey: "REVIEW",
-    tasks: [],
+    tasks: [{
+      actionKeys: [],
+      assignmentMode: "NAMED_USER",
+      coiRequired: false,
+      config: {},
+      description: "Complete the review checklist.",
+      displayOrder: 1,
+      formBinding: null,
+      name: "Review checklist",
+      namedUserOverrideId: actorId,
+      permissions: defaultWorkflowElementPermissions,
+      quorum: false,
+      required: true,
+      requiredCompletionCount: 1,
+      reviewerCount: 1,
+      roleId: null,
+      stableKey: "REVIEW_TASK",
+    }],
   }],
   transitions: [{
     actionKey: "COMPLETE",
@@ -208,12 +220,6 @@ afterAll(async () => {
       expect.objectContaining({
         name: "Review evidence",
         templateReference: "REVIEW_EVIDENCE_TEMPLATE",
-      }),
-    ]);
-    expect(clone?.graph.stages[0].commentFields).toEqual([
-      expect.objectContaining({
-        key: "REVIEW_RECOMMENDATION",
-        visibility: "INTERNAL_ONLY",
       }),
     ]);
     expect(clone?.graph.stages[0].scoring).toEqual({

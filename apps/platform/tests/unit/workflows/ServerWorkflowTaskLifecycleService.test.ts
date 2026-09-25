@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
+vi.mock("@/modules/workflows/infrastructure/StageCompletionRepository", () => ({
+  loadRequiredTaskCompletions: vi.fn().mockResolvedValue([]),
+  recordReviewThresholdEvaluations: vi.fn(),
+}));
 vi.mock(
   "@/modules/workflows/application/runtime/ServerStageCompletionService",
   () => ({ completeStageInTransaction: vi.fn() }),
@@ -9,6 +13,7 @@ vi.mock(
   "@/modules/workflows/infrastructure/WorkflowTaskLifecycleRepository",
   () => ({
     lockWorkflowTaskForLifecycle: vi.fn(),
+    lockTaskStageForLifecycle: vi.fn(),
     persistWorkflowTaskTransition: vi.fn(),
     withWorkflowTaskLifecycleTransaction: vi.fn(),
   }),
@@ -19,7 +24,6 @@ import type { AuthenticatedUser } from "@/auth/types";
 import { ResourceConflictError } from "@/lib/resource-errors";
 import {
   cancelWorkflowTask,
-  claimWorkflowTask,
   completeWorkflowTask,
   startWorkflowTask,
 } from "@/modules/workflows/application/runtime/ServerWorkflowTaskLifecycleService";
@@ -33,7 +37,6 @@ import {
 
 const actor: AuthenticatedUser = {
   capabilities: new Set([
-    permissionCodes.workflowTaskClaim,
     permissionCodes.workflowTaskAssignedProcess,
     permissionCodes.workflowTaskAssignedDecide,
     permissionCodes.workflowTaskCancelAll,
@@ -58,7 +61,9 @@ const input = {
 
 const task = {
   assignedUserId: null,
-  claimableByActor: true,
+  coiCleared: true,
+  formRequired: false,
+  formCompleted: false,
   id: input.taskId,
   permissions: defaultWorkflowElementPermissions,
   rowVersion: 1,
@@ -91,20 +96,6 @@ beforeEach(() => {
 });
 
 describe("server workflow task lifecycle service", () => {
-  it("claims an eligible pending role task", async () => {
-    const result = await claimWorkflowTask(actor, input);
-
-    expect(result.status).toBe("CLAIMED");
-    expect(persistWorkflowTaskTransition).toHaveBeenCalledWith(
-      expect.anything(),
-      expect.objectContaining({
-        actorId: actor.id,
-        currentStatus: "PENDING",
-        targetStatus: "CLAIMED",
-      }),
-    );
-  });
-
   it("starts a claimed task assigned to the actor", async () => {
     vi.mocked(lockWorkflowTaskForLifecycle).mockResolvedValue({
       ...task,
@@ -115,6 +106,19 @@ describe("server workflow task lifecycle service", () => {
     await expect(startWorkflowTask(actor, input)).resolves.toMatchObject({
       status: "IN_PROGRESS",
     });
+  });
+
+  it("blocks starting a task while COI clearance is pending", async () => {
+    vi.mocked(lockWorkflowTaskForLifecycle).mockResolvedValue({
+      ...task,
+      assignedUserId: actor.id,
+      coiCleared: false,
+      status: "CLAIMED",
+    });
+
+    await expect(startWorkflowTask(actor, input)).rejects
+      .toBeInstanceOf(ResourceConflictError);
+    expect(persistWorkflowTaskTransition).not.toHaveBeenCalled();
   });
 
   it("completes an in-progress task and records completion time", async () => {

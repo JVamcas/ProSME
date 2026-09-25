@@ -8,6 +8,7 @@ function stageWithDocumentRequirements() {
     ...structuredClone(referenceWorkflow.stages[0]),
     documentRequirements: [
       {
+        taskStableKey: referenceWorkflow.stages[0].tasks[0].stableKey,
         name: "Tax clearance certificate",
         mandatory: true,
         acceptedFileTypes: ["PDF", "JPG"] as const,
@@ -18,6 +19,7 @@ function stageWithDocumentRequirements() {
         templateReference: "TAX_CLEARANCE_TEMPLATE",
       },
       {
+        taskStableKey: referenceWorkflow.stages[0].tasks[0].stableKey,
         name: "Review memorandum",
         mandatory: false,
         acceptedFileTypes: ["PDF"] as const,
@@ -48,6 +50,22 @@ describe("workflow stage document requirements", () => {
     if (result.success) return;
     expect(result.error.issues.map((issue) => issue.message)).toContain(
       "Document requirement names must be unique within the stage.",
+    );
+  });
+
+  it("rejects a document assigned to a task in another stage", () => {
+    const stage = stageWithDocumentRequirements();
+    stage.documentRequirements[0].taskStableKey = "OTHER_STAGE_TASK";
+
+    const result = workflowStageSchema.safeParse(stage);
+
+    expect(result.success).toBe(false);
+    if (result.success) return;
+    expect(result.error.issues).toContainEqual(
+      expect.objectContaining({
+        message: "Document requirements must reference a task in the same stage.",
+        path: ["documentRequirements", 0, "taskStableKey"],
+      }),
     );
   });
 

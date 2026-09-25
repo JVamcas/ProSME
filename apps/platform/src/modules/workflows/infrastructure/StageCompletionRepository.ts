@@ -13,7 +13,9 @@ import {
   workflowInstances,
   workflowStageDefinitions,
   workflowTasks,
+  reviewThresholdEvaluations,
 } from "@/db/schema";
+import { requiredReviewCompletions } from "../domain/runtime/ReviewThreshold";
 import type { StageInstanceStatus } from "../domain/runtime/StageInstance";
 import type { RequiredTaskCompletion } from "../domain/runtime/StageCompletion";
 import type { WorkflowInstanceStatus } from "../domain/runtime/WorkflowInstance";
@@ -164,8 +166,35 @@ export async function loadRequiredTaskCompletions(
     SELECT definition.id AS "taskDefinitionId",
       definition.code AS "taskKey",
       definition.required_completion_count AS "requiredCompletionCount",
-      count(task.id) FILTER (WHERE task.status = 'COMPLETED')::integer
-        AS "completedCount"
+      definition.completion_mode AS "completionMode",
+      definition.completion_percentage AS "completionPercentage",
+      definition.reviewer_count AS "denominator",
+      count(task.id) FILTER (
+        WHERE task.status = 'COMPLETED'
+          AND app_workflow_task_coi_cleared(task.id, task.assigned_user_id)
+          AND NOT EXISTS (
+            SELECT 1 FROM app_workflow_tasks successor
+            WHERE successor.supersedes_task_id = task.id
+          )
+          AND (task.form_version_id IS NULL OR EXISTS (
+            SELECT 1 FROM app_form_responses response
+            WHERE response.workflow_task_id = task.id
+              AND response.status = 'COMPLETED'
+          ))
+      )::integer AS "completedCount",
+      COALESCE(array_agg(task.id ORDER BY task.reviewer_slot) FILTER (
+        WHERE task.status = 'COMPLETED'
+          AND app_workflow_task_coi_cleared(task.id, task.assigned_user_id)
+          AND NOT EXISTS (
+            SELECT 1 FROM app_workflow_tasks successor
+            WHERE successor.supersedes_task_id = task.id
+          )
+          AND (task.form_version_id IS NULL OR EXISTS (
+            SELECT 1 FROM app_form_responses response
+            WHERE response.workflow_task_id = task.id
+              AND response.status = 'COMPLETED'
+          ))
+      ), ARRAY[]::uuid[]) AS "completedTaskIds"
     FROM app_stage_task_definitions definition
     JOIN app_workflow_stage_instances stage
       ON stage.workflow_stage_definition_id = definition.stage_id
@@ -175,7 +204,8 @@ export async function loadRequiredTaskCompletions(
     WHERE stage.id = ${stageInstanceId}::uuid
       AND definition.required = TRUE
     GROUP BY definition.id, definition.code,
-      definition.required_completion_count
+      definition.required_completion_count, definition.completion_mode,
+      definition.completion_percentage, definition.reviewer_count
     ORDER BY definition.sequence, definition.id
   `);
   return result.rows as RequiredTaskCompletion[];
@@ -193,6 +223,12 @@ export async function loadStageCompletionValues(
       AND response.status = 'COMPLETED'
     WHERE task.stage_instance_id = ${stageInstanceId}::uuid
       AND task.status = 'COMPLETED'
+      AND app_workflow_task_coi_cleared(task.id, task.assigned_user_id)
+      AND NOT EXISTS (
+        SELECT 1 FROM app_workflow_tasks successor
+        WHERE successor.supersedes_task_id = task.id
+      )
+      AND (task.form_version_id IS NULL OR response.id IS NOT NULL)
     ORDER BY task.created_at, task.id, response.created_at, response.id
   `);
   return result.rows as StageCompletionValueRow[];
@@ -260,4 +296,53 @@ export async function persistStageCompletion(
     workflowInstanceId: input.target.workflowInstanceId,
   });
   return completed;
+}
+
+
+export async function recordReviewThresholdEvaluations(
+  transaction: StageCompletionTransaction,
+  input: {
+    actorId: string;
+    requirements: RequiredTaskCompletion[];
+    stageInstanceId: string;
+    triggerTaskId: string | null;
+  },
+) {
+  if (!input.requirements.length) return;
+  const prior = await transaction
+    .select({ taskDefinitionId: reviewThresholdEvaluations.taskDefinitionId })
+    .from(reviewThresholdEvaluations)
+    .where(and(
+      eq(reviewThresholdEvaluations.stageInstanceId, input.stageInstanceId),
+      eq(reviewThresholdEvaluations.firstSatisfied, true),
+    ));
+  const alreadySatisfied = new Set(
+    prior.map((row) => row.taskDefinitionId),
+  );
+  await transaction.insert(reviewThresholdEvaluations).values(
+    input.requirements.map((requirement) => {
+      const rule = {
+        mode: requirement.completionMode,
+        count: requirement.requiredCompletionCount,
+        percentage: requirement.completionPercentage,
+        rounding: "CEIL" as const,
+      };
+      const requiredCount = requiredReviewCompletions(
+        rule,
+        requirement.denominator,
+      );
+      return {
+        stageInstanceId: input.stageInstanceId,
+        taskDefinitionId: requirement.taskDefinitionId,
+        rule,
+        denominator: requirement.denominator,
+        requiredCount,
+        completedTaskIds: requirement.completedTaskIds,
+        satisfied: requirement.completedCount >= requiredCount,
+        firstSatisfied: requirement.completedCount >= requiredCount
+          && !alreadySatisfied.has(requirement.taskDefinitionId),
+        triggerTaskId: input.triggerTaskId,
+      };
+    }),
+  );
 }

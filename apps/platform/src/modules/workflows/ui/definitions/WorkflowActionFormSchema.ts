@@ -42,6 +42,7 @@ export const workflowActionFormSchema = z
         "Use uppercase letters, numbers and underscores.",
       ),
     label: z.string().trim().min(2).max(160),
+    taskStableKey: z.string().min(1, "Select a workflow task."),
     actionType: z.enum(workflowActionTypes),
     enabled: z.boolean(),
     reasonCodeRequired: z.boolean(),

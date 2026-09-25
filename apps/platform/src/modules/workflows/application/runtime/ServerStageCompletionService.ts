@@ -1,5 +1,6 @@
 import "server-only";
 
+import { requiredReviewCompletions } from "../../domain/runtime/ReviewThreshold";
 import type { StageCompletionResult } from "../../domain/runtime/StageCompletion";
 import {
   evaluateStageCondition,
@@ -12,6 +13,7 @@ import {
   loadStageCompletionValues,
   lockStageCompletionTarget,
   persistStageCompletion,
+  recordReviewThresholdEvaluations,
   type StageCompletionTransaction,
 } from "../../infrastructure/StageCompletionRepository";
 
@@ -19,6 +21,7 @@ export type CompleteStageInput = {
   actorId: string;
   correlationId: string;
   stageInstanceId: string;
+  triggerTaskId?: string;
 };
 
 function requirementsAreMet(
@@ -26,7 +29,12 @@ function requirementsAreMet(
 ) {
   return requirements.every(
     (requirement) =>
-      requirement.completedCount >= requirement.requiredCompletionCount,
+      requirement.completedCount >= requiredReviewCompletions({
+        mode: requirement.completionMode,
+        count: requirement.requiredCompletionCount,
+        percentage: requirement.completionPercentage,
+        rounding: "CEIL",
+      }, requirement.denominator),
   );
 }
 
@@ -57,6 +65,12 @@ export async function completeStageInTransaction(
     transaction,
     target.stageInstanceId,
   );
+  await recordReviewThresholdEvaluations(transaction, {
+    actorId: input.actorId,
+    requirements,
+    stageInstanceId: target.stageInstanceId,
+    triggerTaskId: input.triggerTaskId ?? null,
+  });
   const valueRows = await loadStageCompletionValues(
     transaction,
     target.stageInstanceId,

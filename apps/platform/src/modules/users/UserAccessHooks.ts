@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import type {
   AuthorizationAuditListInput,
@@ -23,8 +23,11 @@ export const userAccessQueryKeys = {
 
 export function useUserAccess(
   input: UserAccessListInput & AuthorizationAuditListInput,
+  enabled = true,
 ) {
   return useQuery({
+    enabled,
+    placeholderData: keepPreviousData,
     queryFn: () => clientUserAccessService.listAccess(input),
     queryKey: userAccessQueryKeys.view(input),
   });

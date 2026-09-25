@@ -1,16 +1,15 @@
 "use client";
 
+import { useFormContext, useWatch } from "react-hook-form";
+
 import { GeneralButton } from "@/components/ui/button";
 import { CheckboxField } from "@/components/ui/form-field";
-import type { ConditionFieldDefinition } from "@/modules/conditions/domain/ConditionConfiguration";
 import {
   FormInput,
   FormSelect,
   FormTextarea,
 } from "@/components/ui/form-fields";
-import { WorkflowContextFieldConfiguration } from "./WorkflowContextFieldConfiguration";
-import { WorkflowChecklistConfiguration } from "./WorkflowChecklistConfiguration";
-import { permissionCatalogue } from "@/auth/authorization/permissions";
+import type { WorkflowTaskFormValues } from "./WorkflowTaskFormSchema";
 
 function TaskIdentityFields() {
   return (
@@ -27,6 +26,15 @@ function TaskIdentityFields() {
         placeholder="Review finance"
         required
       />
+      <FormInput
+        containerClassName="sm:col-span-2"
+        label="Display order"
+        min={1}
+        name="displayOrder"
+        registrationOptions={{ valueAsNumber: true }}
+        required
+        type="number"
+      />
       <FormTextarea
         containerClassName="sm:col-span-2"
         label="Description"
@@ -38,41 +46,68 @@ function TaskIdentityFields() {
   );
 }
 
-export function WorkflowTaskDialogFields({
-  actionItems,
-  actionKeys,
-  assignmentItems,
-  assignmentMode,
-  contextFieldItems,
-  contextFieldKeys,
-  contextFieldsPending,
-  formItems,
-  formVersionId,
-  formsPending,
-  mutationError,
-  mutationPending,
-  onActionKeysChange,
-  onContextFieldKeysChange,
-}: {
-  actionItems: { disabled?: boolean; label: string; value: string }[];
-  actionKeys: string[];
+function CompletionThresholdValueField() {
+  const { control } = useFormContext<WorkflowTaskFormValues>();
+  const completionMode = useWatch({ control, name: "completionMode" });
+
+  if (completionMode === "COUNT") {
+    return (
+      <FormInput
+        infoTooltip="How many assigned reviewers must complete the task."
+        label="Required completions"
+        min={1}
+        max={100}
+        name="requiredCompletionCount"
+        registrationOptions={{
+          setValueAs: (value: string) => (value === "" ? null : Number(value)),
+        }}
+        required
+        type="number"
+      />
+    );
+  }
+
+  if (completionMode === "PERCENT") {
+    return (
+      <FormInput
+        infoTooltip="The percentage of assigned reviewers that must complete the task."
+        label="Completion percentage"
+        min={1}
+        max={100}
+        name="completionPercentage"
+        registrationOptions={{
+          setValueAs: (value: string) => (value === "" ? null : Number(value)),
+        }}
+        required
+        type="number"
+      />
+    );
+  }
+
+  return null;
+}
+
+type Props = {
   assignmentItems: { label: string; value: string }[];
   assignmentMode: "ROLE" | "NAMED_USER";
-  contextFieldItems: readonly ConditionFieldDefinition[];
-  contextFieldKeys: readonly string[];
-  contextFieldsPending: boolean;
   formItems: { label: string; value: string }[];
   formVersionId: string;
   formsPending: boolean;
-  mutationError?: Error | null;
   mutationPending: boolean;
-  onActionKeysChange: (values: string[]) => void;
-  onContextFieldKeysChange: (values: string[]) => void;
-}) {
+};
+
+export function WorkflowTaskDialogFields({
+  assignmentItems,
+  assignmentMode,
+  formItems,
+  formVersionId,
+  formsPending,
+  mutationPending,
+}: Props) {
   return (
     <>
       <TaskIdentityFields />
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div>
         <FormSelect
           items={formItems}
           label="Form version"
@@ -81,72 +116,7 @@ export function WorkflowTaskDialogFields({
           placeholder={formsPending ? "Loading forms…" : "No form selected"}
           value={formVersionId}
         />
-        <FormSelect
-          infoTooltip="Only these Stage Actions will be presented when a reviewer works on this task."
-          items={actionItems}
-          label="Workflow actions"
-          multiple
-          name="actionKeys"
-          onMultipleChange={onActionKeysChange}
-          placeholder={
-            actionItems.length
-              ? "Select actions for this task"
-              : "No stage actions"
-          }
-          value={actionKeys}
-        />
       </div>
-      <WorkflowChecklistConfiguration />
-      <WorkflowContextFieldConfiguration
-        disabled={!formVersionId}
-        fields={contextFieldItems}
-        isPending={contextFieldsPending}
-        onChange={onContextFieldKeysChange}
-        selectedKeys={contextFieldKeys}
-      />
-
-      <fieldset className="grid gap-4 rounded-lg border border-slate-200 p-4 sm:grid-cols-2">
-        <legend className="px-1 text-sm font-semibold text-brand-navy">
-          Element permissions
-        </legend>
-        <FormSelect
-          items={permissionCatalogue.map((permission) => ({
-            label: permission.label,
-            value: permission.code,
-          }))}
-          label="View permission"
-          name="viewPermission"
-          required
-        />
-        <FormSelect
-          items={permissionCatalogue.map((permission) => ({
-            label: permission.label,
-            value: permission.code,
-          }))}
-          label="Edit permission"
-          name="editPermission"
-          required
-        />
-        <FormSelect
-          items={permissionCatalogue.map((permission) => ({
-            label: permission.label,
-            value: permission.code,
-          }))}
-          label="Decide permission"
-          name="decidePermission"
-          required
-        />
-        <FormSelect
-          items={[
-            { label: "Applicant visible", value: "APPLICANT_VISIBLE" },
-            { label: "Internal only", value: "INTERNAL_ONLY" },
-          ]}
-          label="Visibility"
-          name="visibility"
-          required
-        />
-      </fieldset>
-
       <div className="grid gap-4 sm:grid-cols-2">
         <FormSelect
           items={[
@@ -164,9 +134,8 @@ export function WorkflowTaskDialogFields({
           placeholder="Select an assignee"
           required
         />
-      </div>
-      <div className="grid gap-4 sm:grid-cols-3">
         <FormInput
+          containerClassName="sm:col-span-2"
           infoTooltip="How many people from the selected role will receive an individual copy of this task when the workflow runs. Named-user assignments are limited to one reviewer."
           label="Reviewer count"
           min={1}
@@ -176,48 +145,23 @@ export function WorkflowTaskDialogFields({
           required
           type="number"
         />
-        <FormInput
-          infoTooltip="How many assigned reviewers must finish their copy before this task is complete. This cannot exceed the reviewer count."
-          label="Required completions"
-          min={1}
-          max={100}
-          name="requiredCompletionCount"
-          registrationOptions={{ valueAsNumber: true }}
+        <FormSelect
+          items={[
+            { label: "All", value: "ALL" },
+            { label: "Fixed count", value: "COUNT" },
+            { label: "Percentage", value: "PERCENT" },
+          ]}
+          label="Completion threshold"
+          name="completionMode"
           required
-          type="number"
         />
-        <FormInput
-          label="Display order"
-          min={1}
-          name="displayOrder"
-          registrationOptions={{ valueAsNumber: true }}
-          required
-          type="number"
-        />
-      </div>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <CheckboxField
-          containerClassName="text-sm font-semibold text-brand-navy"
-          description="The required completions must be more than half of the reviewer count—for example, 2 of 3 reviewers."
-          label="Require majority quorum."
-          name="quorum"
-        />
-        <CheckboxField
-          containerClassName="text-sm font-semibold text-brand-navy"
-          label="Require conflict-of-interest clearance"
-          name="coiRequired"
-        />
+        <CompletionThresholdValueField />
       </div>
       <CheckboxField
         containerClassName="mt-8 text-sm font-semibold text-brand-navy"
         label="Required before the stage can complete"
         name="required"
       />
-      {mutationError ? (
-        <p className="text-sm text-red-700" role="alert">
-          {mutationError.message}
-        </p>
-      ) : null}
       <div className="flex justify-end">
         <GeneralButton disabled={mutationPending} type="submit">
           {mutationPending ? "Saving…" : "Save task"}

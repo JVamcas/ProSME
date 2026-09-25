@@ -4,6 +4,8 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { GeneralButton } from "./button";
 
+export const DEFAULT_PAGE_SIZE = 10;
+
 type PaginationProps = {
   disabled?: boolean;
   hasNextPage: boolean;

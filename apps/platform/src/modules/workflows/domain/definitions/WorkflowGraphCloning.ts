@@ -21,10 +21,6 @@ export function cloneWorkflowGraph(
         ...requirement,
         id: undefined,
       })),
-      commentFields: stage.commentFields.map((field) => ({
-        ...field,
-        id: undefined,
-      })),
       scoring: stage.scoring
         ? {
             ...stage.scoring,

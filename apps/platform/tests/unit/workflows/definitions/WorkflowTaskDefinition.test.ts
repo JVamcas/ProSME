@@ -15,6 +15,16 @@ const task = {
   reviewerCount: 3,
   requiredCompletionCount: 2,
   quorum: true,
+  quorumRule: {
+    population: "ASSIGNED_TASKS" as const,
+    minimumCount: 2,
+    minimumPercentage: null,
+    rounding: "CEIL" as const,
+    chairRequired: false,
+    recusalDenominator: "EXCLUDE" as const,
+    freeze: "AT_DECISION" as const,
+    abstentionsCountAsPresent: true,
+  },
   coiRequired: true,
   displayOrder: 1,
   required: true,
@@ -143,6 +153,10 @@ describe("WorkflowTaskDefinition", () => {
       ...task,
       reviewerCount: 4,
       requiredCompletionCount: 2,
+    }).success).toBe(true);
+    expect(workflowTaskSchema.safeParse({
+      ...task,
+      quorumRule: null,
     }).success).toBe(false);
   });
 });

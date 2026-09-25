@@ -1,6 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
+vi.mock("@/modules/workflows/infrastructure/WorkflowQuorumRepository", () => ({
+  evaluateStageQuorum: vi.fn().mockResolvedValue(true),
+}));
+vi.mock("@/modules/workflows/infrastructure/StageCompletionRepository", () => ({
+  loadRequiredTaskCompletions: vi.fn().mockResolvedValue([]),
+  recordReviewThresholdEvaluations: vi.fn(),
+}));
 
 const databaseExecute = vi.fn();
 const transactionExecute = vi.fn();
@@ -45,14 +52,15 @@ beforeEach(() => {
   vi.clearAllMocks();
   databaseExecute.mockResolvedValue({ rows: [] });
   transactionExecute
+    .mockResolvedValueOnce({ rows: [] })
     .mockResolvedValueOnce({
       rows: [{
-        config: {
-          items: [{ code: "DOCUMENTS_PRESENT", label: "Documents present", required: true }],
-        },
+        config: {},
+        actionType: null,
         formCompleted: false,
         formRequired: false,
         hasActions: false,
+        hasChecklist: true,
         stageDefinitionId: "50000000-0000-4000-8000-000000000001",
         stageInstanceId: "60000000-0000-4000-8000-000000000001",
         taskStatus: "IN_PROGRESS",

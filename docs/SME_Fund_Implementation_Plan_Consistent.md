@@ -1453,7 +1453,7 @@ re-verification are implemented as cross-cutting capabilities in Phase 16.
 
 ### Goal
 
-Configure: - criterion; - description; - weight; - scale; - threshold; - mandatory comment; - aggregation.
+Configure: - criterion; - description; - weight; - scale; - mandatory comment; - aggregation.
 
 ### Scope
 
@@ -1462,41 +1462,18 @@ Configure:
 - description;
 - weight;
 - scale;
-- threshold;
 - mandatory comment;
 - aggregation.
 
 ### Acceptance Criteria
 
-1. Configure: - criterion; - description; - weight; - scale; - threshold; - mandatory comment; - aggregation.
+1. Configure: - criterion; - description; - weight; - scale; - mandatory comment; - aggregation.
 
 ### Done When
 
-Configure: - criterion; - description; - weight; - scale; - threshold; - mandatory comment; - aggregation.
-## 4.11 Comments & Recommendations
+Configure: - criterion; - description; - weight; - scale; - mandatory comment; - aggregation.
 
-### Goal
-
-Configure: - key; - label; - help; - mandatory; - applicant-visible/internal-only; - order.
-
-### Scope
-
-Configure:
-- key;
-- label;
-- help;
-- mandatory;
-- applicant-visible/internal-only;
-- order.
-
-### Acceptance Criteria
-
-1. Configure: - key; - label; - help; - mandatory; - applicant-visible/internal-only; - order.
-
-### Done When
-
-Configure: - key; - label; - help; - mandatory; - applicant-visible/internal-only; - order.
-## 4.12 Element-Level Permissions
+## 4.11 Element-Level Permissions
 
 ### Goal
 
@@ -2932,8 +2909,8 @@ At Task creation or allocation time:
 3. apply COI, segregation-of-duties, expertise, authority and availability
    filters required by the Task;
 4. apply the configured selection strategy;
-5. assign one or more eligible candidates or leave the Task visibly
-   Unassigned when no permitted fallback exists.
+5. assign an eligible candidate to every reviewer slot or fail Stage
+   activation atomically when too few eligible candidates exist.
 
 Role membership alone is insufficient. The actor must also hold the required
 canonical permission, and contextual scope must match the target resource.
@@ -2944,7 +2921,7 @@ it must not broaden the candidate set silently.
 
 1. Role resolution uses PostgreSQL application roles and permission grants.
 2. A matching role without the required permission or scope is excluded.
-3. Empty candidate results leave work safely unassigned and observable.
+3. Empty candidate results fail activation safely and observably.
 4. Fallback roles/users are used only when explicitly configured and validated.
 5. Role labels can change without breaking stable responsibility references.
 6. Task creation and later allocation use the same candidate semantics.
@@ -3261,7 +3238,7 @@ Maintain a rotation cursor per configured allocation pool/scope. Allocation:
 4. creates the Assignment and advances the cursor atomically.
 
 Skipping an ineligible/unavailable user does not make that user eligible, and
-an empty pool leaves the Task Unassigned. Reassignment does not alter rotation
+an empty pool blocks activation with an observable allocation failure. Reassignment does not alter rotation
 unless the published strategy explicitly says it should.
 
 ### Acceptance Criteria
@@ -3273,7 +3250,7 @@ unless the published strategy explicitly says it should.
 3. Ineligible users are skipped without corrupting the cursor.
 4. Tie-breaking is deterministic and testable.
 5. Strategy metadata explains the pool, prior cursor and selected candidate.
-6. An empty eligible pool produces an observable Unassigned result.
+6. An empty eligible pool produces an observable activation failure.
 
 ### Done When
 
@@ -3352,44 +3329,38 @@ commands cannot both consume the final capacity slot.
 Workload allocation chooses an eligible candidate consistently without
 oversubscribing configured capacity.
 
-## 9.13 Self-Assignment Pool
+## 9.13 Automatic Task Ownership
 
 ### Goal
 
-Allow an eligible user to claim available work from a controlled pool.
+Give every eligible reviewer slot a named owner when its Stage activates.
 
 ### Scope
 
-The pool read model returns only Tasks the current user is eligible to claim
-and only the minimum metadata they may see before assignment and COI clearance.
-It supports database-level filtering, stable ordering and bounded pagination.
+At Stage activation, create one independent Task per configured reviewer slot.
+Resolve active users through the Task's role and required permissions, exclude
+the Application owner, and assign different people to sibling reviewer slots.
+Use current workload and a deterministic tie-breaker to select among eligible
+staff. Record Task creation and assignment in the Stage transaction.
 
-Claim execution:
-1. identifies the Task and expected runtime version;
-2. revalidates user, permission, role, scope, capacity, segregation, authority
-   and pool eligibility;
-3. applies the COI pre-access policy;
-4. creates the Assignment and moves the Task to its configured claimed state in
-   one transaction;
-5. removes the Task from other users' pool results through committed state.
-
-Claiming does not by itself clear COI or reveal protected Application content.
-Release/unclaim is allowed only within configured rules and produces Assignment
-history rather than deleting the claim.
+If there are too few eligible people, fail activation with an observable error
+instead of leaving work in an unclaimed pool. A one-time audited backfill may
+repair Tasks created before this rule was introduced.
 
 ### Acceptance Criteria
 
-1. Users cannot list or claim out-of-scope pool Tasks.
-2. Two simultaneous claims yield one owner and one conflict response.
-3. Eligibility and capacity are revalidated at claim time.
-4. Pre-claim metadata does not leak protected Application or reviewer data.
-5. Claim, release and subsequent claim preserve complete Assignment history.
-6. Pool filtering, ordering and pagination occur in PostgreSQL.
-7. A direct API request cannot bypass COI or contextual authorization.
+1. Reviewer count produces the same number of independently owned Tasks.
+2. No user owns two sibling reviewer slots.
+3. Inactive, unauthorized and application-owner users are excluded.
+4. An insufficient candidate set leaves no partially activated Stage.
+5. My Work Queue lists only Tasks assigned to the current user, with server-side
+   filtering, ordering and pagination.
+6. Task creation and assignment timestamps are visible in My Work Queue.
 
 ### Done When
 
-Eligible users can claim work atomically without exposing or stealing Tasks.
+Eligible reviewers receive their Tasks automatically and can see them in My Work
+Queue without claiming them.
 
 ## 9.14 Assignment Audit, Read Models and Test Matrix
 
@@ -3402,8 +3373,7 @@ observable and verifiable.
 
 Provide audience-appropriate read models for:
 - My Tasks/current assignments;
-- unassigned Tasks requiring allocation;
-- self-assignment pools;
+- allocation failures requiring an eligible reviewer;
 - Stage reviewer-slot/completion progress;
 - restricted assignment history;
 - quorum status;
@@ -3459,7 +3429,7 @@ why a reviewer threshold, quorum or authority decision passed or failed.
 
 ## Phase 9 Done When
 
-Manual, role-based, round-robin, expertise, workload and self-service allocation
+Manual, role-based, round-robin, expertise and workload allocation
 all use the same contextual eligibility rules; reviewer Tasks and responses are
 isolated; thresholds and quorum are deterministic; COI blocks content and
 actions until clearance; reassignment preserves authorship and history; and an
@@ -4253,8 +4223,8 @@ display order or a hard-coded standard-template key.
 
 If initial Entry Conditions fail or configuration has zero/multiple invalid
 initial Stages, submission fails atomically with an operationally useful error.
-Automatic allocation may leave Tasks observably Unassigned when no candidate is
-eligible; it must not silently assign an unauthorized user.
+Automatic allocation fails activation atomically when no candidate is eligible;
+it must not silently assign an unauthorized user.
 
 ### Acceptance Criteria
 

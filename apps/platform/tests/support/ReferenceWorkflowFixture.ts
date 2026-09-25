@@ -7,6 +7,24 @@ import {
   routingAction,
 } from "./ReferenceWorkflowFixtureHelpers";
 
+function checklistItem(
+  taskStableKey: string,
+  key: string,
+  text: string,
+  displayOrder: number,
+) {
+  return {
+    displayOrder,
+    evidenceRequirement: "NONE" as const,
+    key,
+    mandatory: true,
+    notes: "",
+    responseType: "YES_NO" as const,
+    taskStableKey,
+    text,
+  };
+}
+
 export const referenceWorkflow: WorkflowGraphInput = {
   stages: [
     {
@@ -27,6 +45,32 @@ export const referenceWorkflow: WorkflowGraphInput = {
           "Your application has been received and is being prepared for review.",
       },
       actions: [routingAction("ADVANCE", "Advance")],
+      checklistItems: [
+        checklistItem(
+          "PRE_SCREEN_CHECKLIST",
+          "NAMIBIAN_OWNERSHIP",
+          "At least 51% Namibian-owned",
+          1,
+        ),
+        checklistItem(
+          "PRE_SCREEN_CHECKLIST",
+          "STATUTORY_COMPLIANCE",
+          "Compliant with relevant statutory institutions",
+          2,
+        ),
+        checklistItem(
+          "PRE_SCREEN_CHECKLIST",
+          "NIPDB_MSME_REGISTRATION",
+          "Registered on the NIPDB MSME database",
+          3,
+        ),
+        checklistItem(
+          "PRE_SCREEN_CHECKLIST",
+          "OPERATING_HISTORY",
+          "Operating for at least one year",
+          4,
+        ),
+      ],
       tasks: [
         {
           stableKey: "PRE_SCREEN_CHECKLIST",
@@ -34,30 +78,7 @@ export const referenceWorkflow: WorkflowGraphInput = {
           name: "Pre-screening checklist",
           description: "Verify the initial eligibility and compliance checks.",
           ...referenceTaskDefaults(false),
-          config: {
-            items: [
-              {
-                code: "NAMIBIAN_OWNERSHIP",
-                label: "At least 51% Namibian-owned",
-                required: true,
-              },
-              {
-                code: "STATUTORY_COMPLIANCE",
-                label: "Compliant with relevant statutory institutions",
-                required: true,
-              },
-              {
-                code: "NIPDB_MSME_REGISTRATION",
-                label: "Registered on the NIPDB MSME database",
-                required: true,
-              },
-              {
-                code: "OPERATING_HISTORY",
-                label: "Operating for at least one year",
-                required: true,
-              },
-            ],
-          },
+          config: {},
         },
       ],
     },
@@ -79,6 +100,20 @@ export const referenceWorkflow: WorkflowGraphInput = {
           "We are checking that the required application information is present.",
       },
       actions: [routingAction("ADVANCE", "Advance")],
+      checklistItems: [
+        checklistItem(
+          "COMPLETENESS_CHECK",
+          "FORM",
+          "Application form is complete",
+          1,
+        ),
+        checklistItem(
+          "COMPLETENESS_CHECK",
+          "EVIDENCE",
+          "Required evidence is present",
+          2,
+        ),
+      ],
       tasks: [
         {
           stableKey: "COMPLETENESS_CHECK",
@@ -86,20 +121,7 @@ export const referenceWorkflow: WorkflowGraphInput = {
           name: "Completeness checklist",
           description: "Confirm that the submitted application is complete.",
           ...referenceTaskDefaults(false),
-          config: {
-            items: [
-              {
-                code: "FORM",
-                label: "Application form is complete",
-                required: true,
-              },
-              {
-                code: "EVIDENCE",
-                label: "Required evidence is present",
-                required: true,
-              },
-            ],
-          },
+          config: {},
         },
       ],
     },

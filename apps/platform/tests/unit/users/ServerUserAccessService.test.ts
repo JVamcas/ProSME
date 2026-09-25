@@ -1,14 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
+vi.mock("@/modules/users/infrastructure/FirebaseUserDirectory", () => ({ listFirebaseDirectoryAccounts: vi.fn() }));
+vi.mock("@/modules/users/infrastructure/UserDirectoryRepository", () => ({ listUserDirectory: vi.fn() }));
 vi.mock("@/db/repositories/AuditRepository", () => ({
   listAccessAudit: vi.fn(),
 }));
-vi.mock("@/db/repositories/UserAccessRepository", () => ({
+vi.mock("@/modules/users/infrastructure/UserAccessRepository", () => ({
   findAccessUser: vi.fn(),
   inviteAccessUser: vi.fn(),
   listAccessRoles: vi.fn(),
-  listAccessUsers: vi.fn(),
   promoteAccessUser: vi.fn(),
   updateAccessRole: vi.fn(),
   updateAccessUser: vi.fn(),
@@ -17,16 +18,17 @@ vi.mock("@/db/repositories/UserAccessRepository", () => ({
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { PermissionDeniedError } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
+import { listFirebaseDirectoryAccounts } from "@/modules/users/infrastructure/FirebaseUserDirectory";
+import { listUserDirectory } from "@/modules/users/infrastructure/UserDirectoryRepository";
 import { listAccessAudit } from "@/db/repositories/AuditRepository";
 import {
   findAccessUser,
   inviteAccessUser,
   listAccessRoles,
-  listAccessUsers,
   promoteAccessUser,
   updateAccessRole,
   updateAccessUser,
-} from "@/db/repositories/UserAccessRepository";
+} from "@/modules/users/infrastructure/UserAccessRepository";
 import {
   getAuthorizationAudit,
   getUserAccessView,
@@ -57,8 +59,9 @@ const userWith = (...grants: string[]): AuthenticatedUser => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(listAccessUsers).mockResolvedValue([]);
   vi.mocked(listAccessRoles).mockResolvedValue([]);
+  vi.mocked(listFirebaseDirectoryAccounts).mockResolvedValue([]);
+  vi.mocked(listUserDirectory).mockResolvedValue({ items: [], total: 0 });
   vi.mocked(listAccessAudit).mockResolvedValue([]);
   vi.mocked(findAccessUser).mockResolvedValue({
     capabilityCodes: [],
@@ -76,24 +79,24 @@ beforeEach(() => {
 describe("user access service authorization", () => {
   it("requires an explicit user or role read capability", async () => {
     await expect(
-      getUserAccessView(userWith(), { limit: 100 }, { limit: 100 }),
+      getUserAccessView(userWith(), { limit: 100, page: 1, sort: "name-asc" }, { limit: 100 }),
     ).rejects.toBeInstanceOf(PermissionDeniedError);
   });
 
   it("allows user reads without exposing role records", async () => {
     await getUserAccessView(
       userWith(permissionCodes.userRead),
-      { limit: 100 },
+      { limit: 100, page: 1, sort: "name-asc" },
       { limit: 100 },
     );
-    expect(listAccessUsers).toHaveBeenCalled();
+    expect(listUserDirectory).toHaveBeenCalled();
     expect(listAccessRoles).not.toHaveBeenCalled();
   });
 
   it("serves only the canonical permission catalogue to role readers", async () => {
     const view = await getUserAccessView(
       userWith(permissionCodes.roleRead),
-      { limit: 100 },
+      { limit: 100, page: 1, sort: "name-asc" },
       { limit: 100 },
     );
 
@@ -101,7 +104,7 @@ describe("user access service authorization", () => {
       expect.objectContaining({ code: permissionCodes.fundingApplicationOwnRead }),
     );
     expect(view.capabilities).toContainEqual(
-      expect.objectContaining({ code: permissionCodes.workflowTaskPoolRead }),
+      expect.objectContaining({ code: permissionCodes.workflowTaskAssignedRead }),
     );
     expect(view.capabilities).toContainEqual(
       expect.objectContaining({ code: permissionCodes.workflowInstanceAllRead }),

@@ -7,7 +7,6 @@ import {
   stageTaskFormBindings,
   workflowActionDefinitions,
   workflowStageChecklistDefinitions,
-  workflowStageCommentFields,
   workflowStageDefinitions,
   workflowStageDocumentRequirements,
   workflowStageScoringConfigurations,
@@ -52,8 +51,12 @@ export async function insertWorkflowGraph(
       code: workflowStageDefinitions.code,
     });
   const stageIds = new Map(stageRows.map((stage) => [stage.code, stage.id]));
-  await insertStageRequirements(transaction, graph, stageIds);
-  await insertActionsAndTasks(transaction, graph, stageIds);
+  const taskIds = await insertActionsAndTasks(
+    transaction,
+    graph,
+    stageIds,
+  );
+  await insertStageRequirements(transaction, graph, stageIds, taskIds);
   const transitions = graph.transitions.map((transition) => ({
     actionKey: transition.actionKey,
     condition: transition.condition,
@@ -74,36 +77,31 @@ async function insertStageRequirements(
   transaction: Transaction,
   graph: WorkflowGraphInput,
   stageIds: Map<string, string>,
+  taskIds: Map<string, string>,
 ) {
-  const checklistItems = graph.stages.flatMap((stage) =>
-    stage.checklistItems.map((item) => ({
+  const checklistItems = graph.stages.flatMap((stage) => {
+    const stageId = stageIds.get(stage.stableKey)!;
+    return stage.checklistItems.map(({ taskStableKey, ...item }) => ({
       ...item,
       id: undefined,
-      stageId: stageIds.get(stage.stableKey)!,
-    })),
-  );
+      stageId,
+      taskDefinitionId: taskIds.get(`${stageId}:${taskStableKey}`)!,
+    }));
+  });
   if (checklistItems.length) {
     await transaction
       .insert(workflowStageChecklistDefinitions)
       .values(checklistItems);
   }
-  const commentFields = graph.stages.flatMap((stage) =>
-    stage.commentFields.map((field) => ({
-      ...field,
-      id: undefined,
-      stageId: stageIds.get(stage.stableKey)!,
-    })),
-  );
-  if (commentFields.length) {
-    await transaction.insert(workflowStageCommentFields).values(commentFields);
-  }
-  const documentRequirements = graph.stages.flatMap((stage) =>
-    stage.documentRequirements.map((requirement) => ({
+  const documentRequirements = graph.stages.flatMap((stage) => {
+    const stageId = stageIds.get(stage.stableKey)!;
+    return stage.documentRequirements.map(({ taskStableKey, ...requirement }) => ({
       ...requirement,
       id: undefined,
-      stageId: stageIds.get(stage.stableKey)!,
-    })),
-  );
+      stageId,
+      taskDefinitionId: taskIds.get(`${stageId}:${taskStableKey}`)!,
+    }));
+  });
   if (documentRequirements.length) {
     await transaction
       .insert(workflowStageDocumentRequirements)
@@ -111,10 +109,16 @@ async function insertStageRequirements(
   }
   const configurations = graph.stages.flatMap((stage) =>
     stage.scoring
-      ? [{
-          aggregation: stage.scoring.aggregation,
-          stageId: stageIds.get(stage.stableKey)!,
-        }]
+      ? (() => {
+          const stageId = stageIds.get(stage.stableKey)!;
+          return [{
+            aggregation: stage.scoring.aggregation,
+            stageId,
+            taskDefinitionId: taskIds.get(
+              `${stageId}:${stage.scoring.taskStableKey}`,
+            )!,
+          }];
+        })()
       : [],
   );
   if (configurations.length) {
@@ -150,23 +154,35 @@ async function insertActionsAndTasks(
     await transaction.insert(workflowActionDefinitions).values(actions);
   }
   const tasks = graph.stages.flatMap((stage) =>
-    stage.tasks.map((task) => ({
+    stage.tasks.map((task) => {
+      const configuration = task.config && typeof task.config === "object"
+        && !Array.isArray(task.config)
+        ? { ...task.config } as Record<string, unknown>
+        : {};
+      delete configuration.items;
+      return {
       assignmentMode: task.assignmentMode,
       coiRequired: task.coiRequired,
-      config: task.config,
+      config: configuration,
       description: task.description,
       displayOrder: task.displayOrder,
       name: task.name,
       permissions: task.permissions,
       namedUserOverrideId: task.namedUserOverrideId ?? null,
       quorum: task.quorum,
+      quorumRule: task.quorum ? task.quorumRule ?? null : null,
       required: task.required,
       requiredCompletionCount: task.requiredCompletionCount,
+      completionMode: task.completionMode ?? "COUNT",
+      completionPercentage: task.completionPercentage ?? null,
       reviewerCount: task.reviewerCount,
+      reviewRelease: task.reviewRelease ?? "STAGE_COMPLETED",
+      submittedReplacementPolicy: task.submittedReplacementPolicy ?? "DENY",
       roleId: task.roleId ?? null,
       stableKey: task.stableKey,
       stageId: stageIds.get(stage.stableKey)!,
-    })),
+      };
+    }),
   );
   const taskRows = tasks.length
     ? await transaction
@@ -209,4 +225,5 @@ async function insertActionsAndTasks(
   if (taskActions.length) {
     await transaction.insert(stageTaskActionBindings).values(taskActions);
   }
+  return taskIds;
 }

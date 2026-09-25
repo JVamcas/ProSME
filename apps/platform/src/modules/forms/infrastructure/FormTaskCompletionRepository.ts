@@ -5,38 +5,15 @@ import { sql } from "drizzle-orm";
 import { taskWorkIsReady } from "@/modules/workflows/WorkflowTaskRegistry";
 
 import { getDatabase } from "@/db/client";
-import type { FormRuntimeSchema } from "@/modules/forms/FormTypes";
-import type { SequentialTransitionResult } from "@/modules/workflows/application/runtime/ServerSequentialTransitionService";
 import { readSequentialTransitionAdvancement } from "@/modules/workflows/infrastructure/RuntimeTransitionAdvancement";
 import { appendTaskCompletionAndActionAudit } from "@/modules/workflows/infrastructure/RuntimeAuditWriteRepository";
 import { appendTaskCompletionAudit } from "@/modules/workflows/infrastructure/RuntimeAuditWriteRepository";
-
-type Transaction = Parameters<
-  Parameters<ReturnType<typeof getDatabase>["transaction"]>[0]
->[0];
-
-type ExecuteTransition = (
-  transaction: Transaction,
-  input: {
-    actionKey: string;
-    actorId: string;
-    correlationId: string;
-    sourceStageInstanceId: string;
-  },
-) => Promise<SequentialTransitionResult>;
-
-type CompletionInput = {
-  actionKey: string | null;
-  actorId: string;
-  correlationId: string;
-  expectedTaskRowVersion: number;
-  expectedResponseRowVersion?: number;
-  idempotencyKey: string;
-  taskInstanceId: string;
-  formVersionId: string;
-  definitionSnapshot: FormRuntimeSchema;
-  values: Record<string, unknown>;
-};
+import type {
+  ExecuteFormTaskTransition as ExecuteTransition,
+  FormTaskCompletionInput as CompletionInput,
+  FormTaskCompletionResult as CompletionResult,
+  FormTaskCompletionTransaction as Transaction,
+} from "./FormTaskCompletionTypes";
 
 type ReplayInput = Pick<
   CompletionInput,
@@ -48,17 +25,9 @@ type ReplayInput = Pick<
   | "values"
 >;
 
-type CompletionResult = {
-  actionKey: string | null;
-  nextStageName: string | null;
-  rowVersion: number;
-  taskInstanceId: string;
-  taskStatus: "IN_PROGRESS" | "COMPLETED";
-  workflowStatus: "ACTIVE" | "COMPLETED";
-};
-
 type LockedTask = {
   hasActions: boolean;
+  hasChecklist: boolean;
   config: unknown;
   result: unknown;
   rowVersion: number;
@@ -136,6 +105,10 @@ async function lockTask(
         SELECT 1 FROM app_stage_task_action_bindings binding
         WHERE binding.task_definition_id = definition.id
       ) AS "hasActions",
+      EXISTS (
+        SELECT 1 FROM app_workflow_stage_checklist_definitions checklist
+        WHERE checklist.task_definition_id = definition.id
+      ) AS "hasChecklist",
       stage.id AS "stageInstanceId",
       workflow.id AS "workflowInstanceId"
     FROM app_workflow_tasks task
@@ -144,6 +117,7 @@ async function lockTask(
     JOIN app_workflow_stage_instances stage ON stage.id = task.stage_instance_id
     JOIN app_workflow_instances workflow ON workflow.id = stage.workflow_instance_id
     WHERE task.id = ${input.taskInstanceId}::uuid
+      AND app_workflow_task_coi_cleared(task.id, ${input.actorId}::uuid)
       AND (
         task.assigned_user_id = ${input.actorId}::uuid
         OR (
@@ -294,6 +268,7 @@ async function writeCompletion(
     config: task.config,
     formCompleted: true,
     formRequired: true,
+    hasChecklist: task.hasChecklist,
     result: task.result,
   })) return null;
   const completedAt = new Date();
@@ -304,6 +279,7 @@ async function writeCompletion(
       config: task.config,
       formCompleted: true,
       formRequired: true,
+      hasChecklist: task.hasChecklist,
       result: task.result,
     })
     ? "IN_PROGRESS" as const

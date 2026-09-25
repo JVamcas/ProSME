@@ -30,6 +30,7 @@ function actionColumns(
   canEdit: boolean,
   onDelete: (action: WorkflowActionDefinition) => void,
   onEdit: (action: WorkflowActionDefinition) => void,
+  taskNamesByActionKey: ReadonlyMap<string, string[]>,
 ): DataTableColumn<WorkflowActionDefinition>[] {
   return [
     {
@@ -38,6 +39,16 @@ function actionColumns(
       cell: ({ row }) => (
         <span className="font-semibold text-brand-navy">
           {row.original.label}
+        </span>
+      ),
+    },
+    {
+      id: "task",
+      header: "Task",
+      cell: ({ row }) => (
+        <span className="block max-w-56 whitespace-normal">
+          {taskNamesByActionKey.get(row.original.stableKey)?.join(", ")
+            ?? "Unassigned"}
         </span>
       ),
     },
@@ -86,6 +97,15 @@ export function WorkflowStageActionTable({
   onEdit,
   stage,
 }: Props) {
+  const taskNamesByActionKey = new Map<string, string[]>();
+  for (const task of stage.tasks) {
+    for (const actionKey of task.actionKeys) {
+      const taskNames = taskNamesByActionKey.get(actionKey) ?? [];
+      taskNames.push(task.name);
+      taskNamesByActionKey.set(actionKey, taskNames);
+    }
+  }
+
   return (
     <section className="mt-5">
       <WorkflowStageTabHeader
@@ -105,10 +125,15 @@ export function WorkflowStageActionTable({
         title="Actions"
       />
       <DataTable
-        columns={actionColumns(canEdit, onDelete, onEdit)}
+        columns={actionColumns(
+          canEdit,
+          onDelete,
+          onEdit,
+          taskNamesByActionKey,
+        )}
         data={stage.actions}
         emptyMessage="No actions have been added to this stage."
-        minWidth={760}
+        minWidth={900}
       />
     </section>
   );

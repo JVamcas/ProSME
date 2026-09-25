@@ -4,13 +4,14 @@ export type WorkQueueScope = (typeof workQueueScopes)[number];
 
 export type WorkQueueRow = {
   applicantName: string;
-  applicationId: string;
+  applicationId: string | null;
   assignedRoleId: string | null;
   assignedRoleName: string | null;
   assignedUserId: string | null;
   assignedUserName: string | null;
   businessName: string | null;
   claimedAt: string | null;
+  createdAt: string;
   dueAt: string | null;
   priority: "HIGH" | "MEDIUM" | "LOW" | null;
   reference: string;
@@ -34,13 +35,3 @@ export type WorkQueueListInput = {
   search?: string;
   scope: WorkQueueScope;
 };
-
-export type TaskClaimResult = Pick<
-  WorkQueueRow,
-  | "assignedUserId"
-  | "assignedUserName"
-  | "claimedAt"
-  | "rowVersion"
-  | "taskInstanceId"
-  | "taskStatus"
->;

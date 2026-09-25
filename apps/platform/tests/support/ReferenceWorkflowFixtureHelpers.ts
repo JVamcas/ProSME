@@ -4,7 +4,6 @@ import { defaultWorkflowElementPermissions } from "@/modules/workflows/domain/de
 export const emptyStageConditions = {
   checklistItems: [],
   documentRequirements: [],
-  commentFields: [],
   scoring: null,
   entryCondition: null,
   exitCondition: null,

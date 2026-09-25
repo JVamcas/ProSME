@@ -26,14 +26,19 @@ export const workflowTaskPermissionCatalogue: readonly PermissionDefinition[] = 
     "Complete an assigned task using its configured decision actions.",
   ),
   define(
-    permissionCodes.workflowTaskClaim,
-    "Claim tasks",
-    "Claim an eligible workflow task.",
-  ),
-  define(
     permissionCodes.workflowTaskAssign,
     "Assign tasks",
     "Assign or reassign workflow tasks.",
+  ),
+  define(
+    permissionCodes.workflowQuorumAllRecord,
+    "Record quorum participation",
+    "Record attendance and chair status for any active workflow stage.",
+  ),
+  define(
+    permissionCodes.workflowCoiAllReview,
+    "Review disclosed conflicts",
+    "Independently clear or confirm a disclosed conflict for an assigned workflow task.",
   ),
   define(
     permissionCodes.workflowTaskCancelAll,
@@ -54,10 +59,5 @@ export const workflowTaskPermissionCatalogue: readonly PermissionDefinition[] = 
     permissionCodes.workflowTaskAllRead,
     "Read all workflow tasks",
     "Read workflow tasks across all applications.",
-  ),
-  define(
-    permissionCodes.workflowTaskPoolRead,
-    "Read eligible task pool",
-    "Read active tasks assigned to the user or one of their roles.",
   ),
 ];

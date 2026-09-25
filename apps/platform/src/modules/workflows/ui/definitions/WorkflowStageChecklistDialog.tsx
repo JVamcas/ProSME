@@ -18,7 +18,6 @@ import type {
   WorkflowStageInput,
 } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import {
-  checklistEvidenceRequirementItems,
   checklistResponseTypeItems,
   workflowStageChecklistFormSchema,
   type WorkflowStageChecklistFormValues,
@@ -41,14 +40,14 @@ export function WorkflowStageChecklistDialog({
   const checklistItems = stage.checklistItems;
   const form = useForm<WorkflowStageChecklistFormValues>({
     defaultValues: {
-      displayOrder: checklistItem?.displayOrder
-        ?? Math.max(0, ...checklistItems.map((item) => item.displayOrder)) + 1,
-      evidenceRequirement:
-        checklistItem?.evidenceRequirement ?? "NONE",
+      displayOrder:
+        checklistItem?.displayOrder ??
+        Math.max(0, ...checklistItems.map((item) => item.displayOrder)) + 1,
       key: checklistItem?.key ?? "",
       mandatory: checklistItem?.mandatory ?? true,
       notes: checklistItem?.notes ?? "",
       responseType: checklistItem?.responseType ?? "YES_NO",
+      taskStableKey: checklistItem?.taskStableKey ?? "",
       text: checklistItem?.text ?? "",
     },
     resolver: zodResolver(workflowStageChecklistFormSchema),
@@ -66,8 +65,8 @@ export function WorkflowStageChecklistDialog({
     }
     const duplicateOrder = checklistItems.some(
       (item) =>
-        item.displayOrder === values.displayOrder
-        && item.key !== checklistItem?.key,
+        item.displayOrder === values.displayOrder &&
+        item.key !== checklistItem?.key,
     );
     if (duplicateOrder) {
       form.setError("displayOrder", {
@@ -78,6 +77,7 @@ export function WorkflowStageChecklistDialog({
     const nextItem = {
       ...(checklistItem?.id ? { id: checklistItem.id } : {}),
       ...values,
+      evidenceRequirement: checklistItem?.evidenceRequirement ?? "NONE",
     };
     await mutation.mutateAsync({
       stages: editor.graph.stages.map((item) =>
@@ -120,16 +120,31 @@ export function WorkflowStageChecklistDialog({
             required
             type="number"
           />
+          <FormInput
+            containerClassName="sm:col-span-2"
+            label="Checklist Label"
+            name="text"
+            placeholder="Confirm that the ownership requirement is met."
+            required
+          />
+          <FormSelect
+            items={stage.tasks.map((task) => ({
+              label: task.name,
+              value: task.stableKey,
+            }))}
+            label="Workflow task"
+            name="taskStableKey"
+            placeholder={
+              stage.tasks.length
+                ? "Select a task"
+                : "Add a task to this stage first"
+            }
+            required
+          />
           <FormSelect
             items={checklistResponseTypeItems}
             label="Response type"
             name="responseType"
-            required
-          />
-          <FormSelect
-            items={checklistEvidenceRequirementItems}
-            label="Evidence requirement"
-            name="evidenceRequirement"
             required
           />
           <FormTextarea
@@ -139,15 +154,6 @@ export function WorkflowStageChecklistDialog({
             placeholder="Add guidance for the reviewer."
             rows={2}
           />
-          <FormTextarea
-            containerClassName="sm:col-span-2"
-            label="Checklist text"
-            name="text"
-            placeholder="Confirm that the ownership requirement is met."
-            required
-            rows={2}
-          />
-          
           <CheckboxField
             containerClassName="sm:col-span-2"
             label="Is Mandatory"

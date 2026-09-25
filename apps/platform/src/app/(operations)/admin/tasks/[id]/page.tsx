@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { getCurrentUser } from "@/auth/authorization/current-user";
 import { can } from "@/auth/authorization/policy";
-import { WorkflowTaskWorkspace } from "@/components/admin/work-queue/WorkflowTaskWorkspace";
+import { WorkflowTaskWorkspace } from "@/modules/work-queue/ui/WorkflowTaskWorkspace";
 
 export const metadata: Metadata = { title: "Workflow task" };
 

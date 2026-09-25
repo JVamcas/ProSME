@@ -1,6 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
+vi.mock("@/modules/workflows/infrastructure/WorkflowQuorumRepository", () => ({
+  evaluateStageQuorum: vi.fn().mockResolvedValue(true),
+}));
+vi.mock("@/modules/workflows/infrastructure/StageCompletionRepository", () => ({
+  loadRequiredTaskCompletions: vi.fn().mockResolvedValue([]),
+  recordReviewThresholdEvaluations: vi.fn(),
+}));
 vi.mock(
   "@/modules/workflows/application/runtime/ServerWorkflowActionContextService",
   () => ({ buildWorkflowActionConditionContext: vi.fn() }),
@@ -34,6 +41,7 @@ vi.mock(
   () => ({ executeSequentialTransitionInTransaction: vi.fn() }),
 );
 
+import { evaluateStageQuorum } from "@/modules/workflows/infrastructure/WorkflowQuorumRepository";
 import type { AuthenticatedUser } from "@/auth/types";
 import { PermissionDeniedError } from "@/auth/authorization/policy";
 import { WorkflowActionExecutionError } from "@/modules/workflows/domain/actions/WorkflowActionExecution";
@@ -190,6 +198,16 @@ describe("server workflow action execution", () => {
       "Complete the remaining required stage work",
     );
     expect(recordWorkflowActionExecution).not.toHaveBeenCalled();
+    expect(recordWorkflowDecision).not.toHaveBeenCalled();
+  });
+
+  it("denies a decision when participation quorum is absent", async () => {
+    vi.mocked(evaluateStageQuorum).mockResolvedValueOnce(false);
+
+    await expect(executeWorkflowAction(user(), input)).rejects.toThrow(
+      "required participation quorum is absent",
+    );
+    expect(claimWorkflowActionRuntimeVersion).not.toHaveBeenCalled();
     expect(recordWorkflowDecision).not.toHaveBeenCalled();
   });
 

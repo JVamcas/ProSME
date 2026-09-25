@@ -6,6 +6,8 @@ import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatLocalDateTime24 } from "@/lib/dateUtils";
 import type { WorkflowProgressTask } from "../api/WorkflowProgressTypes";
+import { EditButton, PreviewButton } from "@/components/ui/action-buttons";
+import { GeneralButton, GeneralButtonLink } from "@/components/ui/button";
 
 function Assignment({ task }: { task: WorkflowProgressTask }) {
   const name = task.assignedUserName ?? task.assignedRoleName ?? "Unassigned";
@@ -55,16 +57,7 @@ const columns: DataTableColumn<WorkflowProgressTask>[] = [
   {
     accessorKey: "status",
     header: "Status",
-    cell: ({ row }) => (
-      <div>
-        <StatusBadge status={row.original.status} />
-        {row.original.dueAt ? (
-          <p className="mt-1 text-xs text-brand-navy/55">
-            Due {formatLocalDateTime24(row.original.dueAt)}
-          </p>
-        ) : null}
-      </div>
-    ),
+    cell: ({ row }) => <StatusBadge status={row.original.status} />,
   },
   {
     id: "actionedAt",
@@ -80,12 +73,9 @@ const columns: DataTableColumn<WorkflowProgressTask>[] = [
     enableSorting: false,
     cell: ({ row }) =>
       row.original.canOpen ? (
-        <Link
-          className="font-semibold text-brand-orange hover:underline"
-          href={`/admin/tasks/${row.original.id}`}
-        >
-          View task
-        </Link>
+        <GeneralButtonLink href={`/admin/tasks/${row.original.id}`}>
+          View
+        </GeneralButtonLink>
       ) : (
         <span className="text-brand-navy/40">—</span>
       ),

@@ -2,7 +2,7 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 import { FormMultiSelect } from "@/shared/ui/FormMultiSelect";
-import { Input, Select, Textarea } from "./form-controls";
+import { Input, Select, Textarea } from "@/shared/ui/FormPrimitives";
 import { type FormBindingProps, useFormBinding } from "./form-binding";
 import { FormField } from "./form-field";
 import type { InfoTooltipSide } from "@/shared/ui/InfoTooltip";

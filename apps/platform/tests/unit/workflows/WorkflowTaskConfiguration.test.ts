@@ -1,20 +1,16 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  checklistItemDefaults,
-  workflowTaskFormSchema,
-} from "@/modules/workflows/ui/definitions/WorkflowTaskFormSchema";
+import { workflowTaskFormSchema } from "@/modules/workflows/ui/definitions/WorkflowTaskFormSchema";
 import { referenceWorkflow } from "../../support/ReferenceWorkflowFixture";
-import { formatTaskConfiguration } from "@/modules/workflows/WorkflowTaskConfiguration";
 import { validateTaskConfiguration } from "@/modules/workflows/WorkflowTaskRegistry";
 import { validateWorkflowGraph } from "@/modules/workflows/WorkflowValidation";
 import { defaultWorkflowElementPermissions } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
 
 describe("workflow task configuration", () => {
-  it("accepts a task with a form and checklist configuration", () => {
+  it("rejects legacy checklist configuration embedded in a task", () => {
     expect(validateTaskConfiguration({
       items: [{ code: "ONE", label: "One", required: true }],
-    }).success).toBe(true);
+    }).success).toBe(false);
   });
 
   it("rejects completion thresholds above the reviewer count", () => {
@@ -46,14 +42,14 @@ describe("workflow task configuration", () => {
       formVersionId: "",
       reviewerCount: 3,
       requiredCompletionCount: 2,
+      completionMode: "COUNT",
+      reviewRelease: "STAGE_COMPLETED",
+      submittedReplacementPolicy: "DENY",
+      completionPercentage: null,
       quorum: true,
+      quorumMinimumCount: 2,
+      quorumMinimumPercentage: null,
       coiRequired: true,
-      configJson: formatTaskConfiguration(
-        { items: [{ code: "ONE", label: "One", required: true }] },
-      ),
-      checklistItems: checklistItemDefaults(
-        { items: [{ code: "ONE", label: "One", required: true }] },
-      ),
       name: "Review task",
       required: true,
     };
@@ -65,12 +61,6 @@ describe("workflow task configuration", () => {
     expect(
       workflowTaskFormSchema.safeParse({ ...values, assignmentMode: "INHERIT" })
         .success,
-    ).toBe(false);
-    expect(
-      workflowTaskFormSchema.safeParse({
-        ...values,
-        requiredCompletionCount: 4,
-      }).success,
     ).toBe(false);
   });
 

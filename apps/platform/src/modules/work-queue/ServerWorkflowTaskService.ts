@@ -17,8 +17,6 @@ import {
   ResourceNotFoundError,
 } from "@/lib/resource-errors";
 import {
-  checklistConfigurationSchema,
-  taskHasChecklist,
   taskRunsAuthoritativeEligibility,
   validateChecklistResult,
   validateEligibilityResult,
@@ -30,16 +28,6 @@ import type {
   ChecklistResultItem,
   CompleteChecklistTaskInput,
 } from "./TaskTypes";
-
-function parseChecklistConfiguration(config: unknown) {
-  const parsed = checklistConfigurationSchema.safeParse(config);
-  if (!parsed.success) {
-    throw new ResourceConflictError(
-      "This task has an invalid published checklist configuration.",
-    );
-  }
-  return (parsed.data as { items: ChecklistConfigurationItem[] }).items;
-}
 
 function parseChecklistResult(result: unknown) {
   if (result === null) return [];
@@ -96,14 +84,14 @@ export async function getWorkflowTask(
     taskId: task.taskInstanceId,
     workflowInstanceId: task.workflowInstanceId,
   });
-  const hasChecklist = taskHasChecklist(config);
+  const hasChecklist = task.checklistItems.length > 0;
   const canEvaluateEligibility = taskRunsAuthoritativeEligibility(config);
   return {
     ...view,
     actions,
     canEvaluateEligibility,
     checklistCompleted: hasChecklist && parseChecklistResult(result).length > 0,
-    checklistItems: hasChecklist ? parseChecklistConfiguration(config) : [],
+    checklistItems: task.checklistItems,
     dueAt: task.dueAt ? new Date(task.dueAt).toISOString() : null,
     eligibilityEvaluation: canEvaluateEligibility
       ? parseEligibilityResult(result)
@@ -141,11 +129,10 @@ export async function completeChecklistTask(
       "That idempotency key was already used with different task data.",
     );
   }
-  if (!taskHasChecklist(task.config)) {
+  if (!task.checklistItems.length) {
     throw new ResourceConflictError("This task is not a checklist task.");
   }
-  const configured = parseChecklistConfiguration(task.config);
-  validateChecklistItems(configured, input.items);
+  validateChecklistItems(task.checklistItems, input.items);
   const outcome = await writeChecklistTaskCompletion(
     writeInput,
     executeSequentialTransitionInTransaction,

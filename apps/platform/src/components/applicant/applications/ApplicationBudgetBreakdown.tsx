@@ -4,7 +4,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { useFieldArray, useFormContext } from "react-hook-form";
 
 import { GeneralButton, IconButton } from "@/components/ui/button";
-import { FieldError } from "@/components/ui/form-controls";
+import { FieldError } from "@/shared/ui/FormPrimitives";
 import { FormInput } from "@/components/ui/form-fields";
 import { MoneyField } from "@/components/ui/money-field";
 import type { ApplicationFinancialSection } from "@/modules/applications/ApplicationSchemas";

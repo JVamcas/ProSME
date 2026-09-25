@@ -15,6 +15,7 @@ import type { WorkflowTemplateDetails } from "../domain/definitions/WorkflowTemp
 import type { WorkflowActionType } from "../domain/actions/WorkflowActionDefinition";
 import type { WorkflowActionConfiguration } from "../domain/actions/WorkflowActionConfiguration";
 import type { WorkflowPublicStatus } from "../domain/definitions/WorkflowStageDefinition";
+import type { QuorumRule } from "../domain/runtime/Quorum";
 import type { WorkflowTaskAssignmentMode } from "../domain/definitions/WorkflowTaskDefinition";
 import type { WorkflowElementPermissions } from "../domain/definitions/WorkflowElementPermissions";
 import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup";
@@ -150,10 +151,19 @@ export const stageTaskDefinitions = pgTable(
       .notNull()
       .default("ROLE"),
     reviewerCount: integer("reviewer_count").notNull().default(1),
+    reviewRelease: text("review_release")
+      .$type<"STAGE_COMPLETED" | "THRESHOLD_MET" | "IMMEDIATE">()
+      .notNull().default("STAGE_COMPLETED"),
+    submittedReplacementPolicy: text("submitted_replacement_policy")
+      .$type<"DENY" | "REOPEN_SLOT">().notNull().default("DENY"),
     requiredCompletionCount: integer("required_completion_count")
       .notNull()
       .default(1),
+    completionMode: text("completion_mode")
+      .$type<"ALL" | "COUNT" | "PERCENT">().notNull().default("COUNT"),
+    completionPercentage: integer("completion_percentage"),
     quorum: boolean("quorum").notNull().default(false),
+    quorumRule: jsonb("quorum_rule").$type<QuorumRule | null>(),
     coiRequired: boolean("coi_required").notNull().default(false),
     config: jsonb("config").notNull().default({}),
     permissions: jsonb("permissions")

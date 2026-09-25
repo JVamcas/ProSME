@@ -1,6 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderToStaticMarkup } from "react-dom/server";
-import { FormProvider, useForm } from "react-hook-form";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("next/navigation", () => ({
@@ -14,43 +13,8 @@ import { WorkflowDefinitionsWorkspace } from "@/components/admin/workflows/Workf
 import { WorkflowDefinitionsTable } from "@/components/admin/workflows/WorkflowDefinitionsTable";
 import { referenceWorkflow } from "../../support/ReferenceWorkflowFixture";
 import { workflowQueryKeys } from "@/modules/workflows/WorkflowHooks";
-import { WorkflowActionConfigurationFields } from "@/modules/workflows/ui/definitions/WorkflowActionConfigurationFields";
-import {
-  type WorkflowActionFormValues,
-  workflowActionFormSchema,
-} from "@/modules/workflows/ui/definitions/WorkflowActionFormSchema";
-import { workflowActionFormDefaults } from "@/modules/workflows/ui/definitions/WorkflowActionFormMapping";
 
-function ApproveConfigurationForm() {
-  const form = useForm<WorkflowActionFormValues>({
-    defaultValues: workflowActionFormDefaults(undefined, 1),
-  });
-  return (
-    <FormProvider {...form}>
-      <WorkflowActionConfigurationFields
-        actionType="APPROVE_ADVANCE"
-        assignmentOptions={{ roles: [], users: [] }}
-        deferTargetType="DATE"
-        escalationTargetType="ROLE"
-        rejectionOutcomeType="TERMINAL"
-      />
-    </FormProvider>
-  );
-}
 describe("workflow configuration UI", () => {
-  it("keeps approve routing out of action-specific configuration", () => {
-    const markup = renderToStaticMarkup(<ApproveConfigurationForm />);
-    expect(markup).toBe("");
-    const values = {
-      ...workflowActionFormDefaults(undefined, 1),
-      stableKey: "ADVANCE",
-      label: "Advance",
-    };
-    expect(workflowActionFormSchema.parse(values).actionType).toBe(
-      "APPROVE_ADVANCE",
-    );
-  });
-
   it("previews ordered stages, registered tasks and applicant-safe labels", () => {
     const graph = structuredClone(referenceWorkflow);
     graph.stages[0].actions = [
@@ -100,10 +64,11 @@ describe("workflow configuration UI", () => {
     expect(markup).toContain(
       'aria-label="Submission and pre-screening stage configuration"',
     );
-    expect(markup.match(/role="tab"/g)).toHaveLength(7);
+    expect(markup.match(/role="tab"/g)).toHaveLength(6);
     expect(markup).toContain("Checklists");
     expect(markup).toContain("Documents");
     expect(markup).toContain("Scoring");
+    expect(markup).not.toContain("Comments & Recommendations");
     expect(markup).toContain("Stable key");
     expect(markup).toContain("PRE_SCREENING");
     expect(markup).toContain("Single-run");
@@ -116,7 +81,6 @@ describe("workflow configuration UI", () => {
       "Define the checks reviewers must complete during this stage.",
       "Specify the documents required to complete this stage.",
       "Define the criteria and aggregation method used to score this stage.",
-      "Configure reviewer comments and recommendations for this stage.",
       "Configure the decisions users can make during this stage.",
       "Define how this stage routes to another stage or a terminal outcome.",
     ];

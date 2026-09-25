@@ -47,7 +47,7 @@ describe("client data-access boundaries", () => {
     const platformLayouts = [
       "app/(auth)/layout.tsx",
       "app/(operations)/admin/layout.tsx",
-      "app/(portal)/portal/layout.tsx",
+      "app/(applicant)/portal/layout.tsx",
       "app/(public)/layout.tsx",
     ];
 

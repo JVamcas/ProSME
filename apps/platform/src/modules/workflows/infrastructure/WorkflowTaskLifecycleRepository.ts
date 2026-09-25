@@ -19,7 +19,9 @@ export type WorkflowTaskLifecycleTransaction = WorkflowInstanceTransaction;
 
 export type LockedWorkflowTask = {
   assignedUserId: string | null;
-  claimableByActor: boolean;
+  coiCleared: boolean;
+  formRequired: boolean;
+  formCompleted: boolean;
   id: string;
   permissions: WorkflowElementPermissions;
   rowVersion: number;
@@ -54,12 +56,14 @@ export async function lockWorkflowTaskForLifecycle(
   const [task] = await transaction
     .select({
       assignedUserId: workflowTasks.assignedUserId,
-      claimableByActor: sql<boolean>`EXISTS (
-        SELECT 1 FROM app_user_roles actor_role
-        WHERE actor_role.user_id = ${actorId}::uuid
-          AND actor_role.role_id = ${workflowTasks.assignedRoleId}
-      )`,
+      coiCleared: sql<boolean>`app_workflow_task_coi_cleared(${workflowTasks.id}, ${actorId}::uuid)`,
       id: workflowTasks.id,
+      formRequired: sql<boolean>`${workflowTasks.formVersionId} IS NOT NULL`,
+      formCompleted: sql<boolean>`EXISTS (
+        SELECT 1 FROM app_form_responses response
+        WHERE response.workflow_task_id = ${workflowTasks.id}
+          AND response.status = 'COMPLETED'
+      )`,
       permissions: stageTaskDefinitions.permissions,
       rowVersion: workflowTasks.rowVersion,
       stageInstanceId: stageInstances.id,
@@ -171,4 +175,22 @@ export async function persistWorkflowTaskTransition(
     workflowInstanceId: input.workflowInstanceId,
   });
   return task;
+}
+
+
+export async function lockTaskStageForLifecycle(
+  transaction: WorkflowTaskLifecycleTransaction,
+  taskId: string,
+) {
+  const [stage] = await transaction
+    .select({ id: stageInstances.id })
+    .from(stageInstances)
+    .innerJoin(workflowTasks, eq(workflowTasks.stageInstanceId, stageInstances.id))
+    .where(and(
+      eq(workflowTasks.id, taskId),
+      eq(stageInstances.status, "ACTIVE"),
+    ))
+    .for("update", { of: stageInstances })
+    .limit(1);
+  return stage?.id ?? null;
 }

@@ -3,7 +3,6 @@ import type { StandardWorkflowDependencies } from "./StandardWorkflowTypes";
 import {
   approve,
   checklist,
-  comment,
   documentRequirement,
   hold,
   refer,
@@ -11,7 +10,6 @@ import {
   returnAction,
   stage,
   task,
-  yesNoChecklistConfig,
 } from "./StandardWorkflowBuilders";
 
 const option = (code: string, label: string) => ({ code, label });
@@ -32,7 +30,6 @@ function contracting(dependencies: StandardWorkflowDependencies) {
     actions,
     checklistItems,
     coiGated: false,
-    commentFields: [comment("CONTRACTING_NOTES", "Contracting notes", 1)],
     description: "Finalize the agreement and verify conditions precedent.",
     displayOrder: 9,
     documentRequirements: [
@@ -56,7 +53,7 @@ function contracting(dependencies: StandardWorkflowDependencies) {
     stableKey: "CONTRACTING",
     tasks: [task(dependencies, {
       actionKeys: actions.map((item) => item.stableKey),
-      config: yesNoChecklistConfig(checklistItems),
+      config: {},
       description: "Finalize the agreement and verify every condition precedent.",
       displayOrder: 1,
       name: "Contract and conditions verification",
@@ -83,7 +80,6 @@ function disbursement(dependencies: StandardWorkflowDependencies) {
       checklist("TAX_STATUS_VALID", "Tax status is valid", 4, "REQUIRED"),
     ],
     coiGated: false,
-    commentFields: [comment("PAYMENT_REVIEW_COMMENTS", "Payment review comments", 1)],
     description: "Review and process one disbursement tranche.",
     displayOrder: 10,
     documentRequirements: [
@@ -143,10 +139,6 @@ function monitoring(dependencies: StandardWorkflowDependencies) {
       checklist("CORRECTIVE_ACTIONS_RECORDED", "Required corrective actions are recorded", 4),
     ],
     coiGated: false,
-    commentFields: [
-      comment("MONITORING_FINDINGS", "Monitoring findings", 1, true),
-      comment("CORRECTIVE_ACTION", "Corrective action", 2),
-    ],
     description: "Review implementation performance for one reporting period.",
     displayOrder: 11,
     documentRequirements: [
@@ -225,10 +217,6 @@ function closeOut(dependencies: StandardWorkflowDependencies) {
       checklist("UNSPENT_FUNDS_RESOLVED", "Unspent funds are recovered or resolved", 4),
     ],
     coiGated: false,
-    commentFields: [
-      comment("MANAGEMENT_RESPONSE", "Management response", 1),
-      comment("LESSONS_LEARNED", "Lessons learned", 2, true),
-    ],
     description: "Evaluate results, complete acquittal and close the award.",
     displayOrder: 12,
     documentRequirements: [
@@ -250,13 +238,13 @@ function closeOut(dependencies: StandardWorkflowDependencies) {
     repeatable: false,
     scoring: {
       aggregation: "WEIGHTED_AVERAGE",
+      taskStableKey: "EVALUATION_CLOSE_OUT_REVIEW",
       criteria: criteria.map((criterion) => ({
         criterion: criterion.label,
         description: "Results-framework close-out assessment.",
         mandatoryComment: true,
         scaleMaximum: 5,
         scaleMinimum: 1,
-        threshold: 3,
         weight: criterion.weight,
       })),
     },
@@ -285,4 +273,3 @@ export function createStandardPostAwardStages(
     closeOut(dependencies),
   ];
 }
-

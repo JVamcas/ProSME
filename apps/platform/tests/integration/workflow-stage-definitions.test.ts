@@ -10,6 +10,7 @@ import { createWorkflowTemplate } from "@/modules/workflows/application/definiti
 import { findWorkflowGraph } from "@/modules/workflows/infrastructure/WorkflowGraphRepository";
 import { replaceWorkflowDraft } from "@/modules/workflows/infrastructure/WorkflowTemplateWriteRepository";
 import { basicOperators } from "@/modules/conditions/engine/BasicOperators";
+import { defaultWorkflowElementPermissions } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
 
 const enabled = process.env.RUN_P3_WORKFLOW_DATABASE_TESTS === "true";
 const pool = enabled
@@ -114,6 +115,7 @@ afterAll(async () => {
           actions: [],
           checklistItems: [
             {
+              taskStableKey: "TECHNICAL_REVIEW_TASK",
               key: "OWNERSHIP_CONFIRMED",
               text: "Confirm that the ownership requirement is met.",
               mandatory: true,
@@ -123,6 +125,7 @@ afterAll(async () => {
               displayOrder: 1,
             },
             {
+              taskStableKey: "TECHNICAL_REVIEW_TASK",
               key: "REVIEW_DATE",
               text: "Record the date of the ownership review.",
               mandatory: false,
@@ -134,6 +137,7 @@ afterAll(async () => {
           ],
           documentRequirements: [
             {
+              taskStableKey: "TECHNICAL_REVIEW_TASK",
               name: "Tax clearance certificate",
               mandatory: true,
               acceptedFileTypes: ["PDF", "JPG"] as Array<"PDF" | "JPG">,
@@ -144,6 +148,7 @@ afterAll(async () => {
               templateReference: "TAX_CLEARANCE_TEMPLATE",
             },
             {
+              taskStableKey: "TECHNICAL_REVIEW_TASK",
               name: "Review memorandum",
               mandatory: false,
               acceptedFileTypes: ["PDF"] as Array<"PDF">,
@@ -154,26 +159,9 @@ afterAll(async () => {
               templateReference: "",
             },
           ],
-          commentFields: [
-            {
-              key: "REVIEW_RECOMMENDATION",
-              label: "Review recommendation",
-              helpText: "Summarise the recommendation and supporting reasons.",
-              mandatory: true,
-              visibility: "INTERNAL_ONLY" as const,
-              displayOrder: 1,
-            },
-            {
-              key: "APPLICANT_FEEDBACK",
-              label: "Applicant feedback",
-              helpText: "Provide feedback suitable for the applicant.",
-              mandatory: false,
-              visibility: "APPLICANT_VISIBLE" as const,
-              displayOrder: 2,
-            },
-          ],
           scoring: {
             aggregation: "WEIGHTED_AVERAGE" as const,
+            taskStableKey: "REVIEW_TASK",
             criteria: [
               {
                 criterion: "Business viability",
@@ -181,7 +169,6 @@ afterAll(async () => {
                 weight: 60,
                 scaleMinimum: 0,
                 scaleMaximum: 10,
-                threshold: 6,
                 mandatoryComment: true,
               },
               {
@@ -190,12 +177,28 @@ afterAll(async () => {
                 weight: 40,
                 scaleMinimum: 0,
                 scaleMaximum: 10,
-                threshold: 5,
                 mandatoryComment: false,
               },
             ],
           },
-          tasks: [],
+          tasks: [{
+            actionKeys: [],
+            assignmentMode: "NAMED_USER" as const,
+            coiRequired: false,
+            config: {},
+            description: "Complete the technical review checklist.",
+            displayOrder: 1,
+            formBinding: null,
+            name: "Technical review checklist",
+            namedUserOverrideId: actor.id,
+            permissions: defaultWorkflowElementPermissions,
+            quorum: false,
+            required: true,
+            requiredCompletionCount: 1,
+            reviewerCount: 1,
+            roleId: null,
+            stableKey: "TECHNICAL_REVIEW_TASK",
+          }],
         },
       ],
       transitions: [],

@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/auth/authorization/current-user";
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { can, requireAnyPermission } from "@/auth/authorization/policy";
-import { UserAccessWorkspace } from "@/components/admin/users/UserAccessWorkspace";
+import { UserAccessWorkspace } from "@/modules/users/ui/UserAccessWorkspace";
 import { PageShell } from "@/shared/ui/PageShell";
 
 export const metadata: Metadata = { title: "Users & roles" };

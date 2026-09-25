@@ -20,7 +20,6 @@ import {
   workflowDocumentVerifierActors,
 } from "@/modules/workflows/domain/definitions/WorkflowStageDocumentRequirement";
 import { workflowScoringAggregations } from "@/modules/workflows/domain/definitions/WorkflowStageScoringDefinition";
-import { workflowCommentFieldVisibilities } from "@/modules/workflows/domain/definitions/WorkflowStageCommentField";
 import { staticPermissionCodes } from "@/auth/authorization/permissions";
 import { workflowElementVisibilities } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
 
@@ -35,6 +34,7 @@ const codeSchema = z
 
 export const workflowStageChecklistSchema = z.object({
   id: z.string().uuid().optional(),
+  taskStableKey: codeSchema,
   key: codeSchema,
   text: z.string().trim().min(2).max(500),
   mandatory: z.boolean(),
@@ -46,6 +46,7 @@ export const workflowStageChecklistSchema = z.object({
 
 export const workflowStageDocumentRequirementSchema = z.object({
   id: z.string().uuid().optional(),
+  taskStableKey: codeSchema,
   name: z.string().trim().min(2).max(160),
   mandatory: z.boolean(),
   acceptedFileTypes: z.array(z.enum(workflowDocumentFileTypes))
@@ -69,7 +70,6 @@ export const workflowStageScoringCriterionSchema = z.object({
   weight: z.number().positive().max(100),
   scaleMinimum: z.number().min(0).max(1000),
   scaleMaximum: z.number().positive().max(1000),
-  threshold: z.number().min(0).max(1000),
   mandatoryComment: z.boolean(),
 }).strict().superRefine((criterion, context) => {
   if (criterion.scaleMaximum <= criterion.scaleMinimum) {
@@ -79,21 +79,12 @@ export const workflowStageScoringCriterionSchema = z.object({
       path: ["scaleMaximum"],
     });
   }
-  if (
-    criterion.threshold < criterion.scaleMinimum
-    || criterion.threshold > criterion.scaleMaximum
-  ) {
-    context.addIssue({
-      code: "custom",
-      message: "Threshold must fall within the configured scale.",
-      path: ["threshold"],
-    });
-  }
 });
 
 export const workflowStageScoringSchema = z.object({
   aggregation: z.enum(workflowScoringAggregations),
   criteria: z.array(workflowStageScoringCriterionSchema).max(100),
+  taskStableKey: codeSchema,
 }).strict().superRefine((scoring, context) => {
   const criterionNames = scoring.criteria.map(
     (criterion) => criterion.criterion.toLowerCase(),
@@ -107,15 +98,6 @@ export const workflowStageScoringSchema = z.object({
   }
 });
 
-export const workflowStageCommentFieldSchema = z.object({
-  id: z.string().uuid().optional(),
-  key: codeSchema,
-  label: z.string().trim().min(2).max(160),
-  helpText: z.string().trim().max(1000),
-  mandatory: z.boolean(),
-  visibility: z.enum(workflowCommentFieldVisibilities),
-  displayOrder: z.number().int().positive(),
-}).strict();
 export const workflowTaskSchema = z
   .object({
     actionKeys: z.array(codeSchema).max(100).refine(
@@ -136,8 +118,22 @@ export const workflowTaskSchema = z
     namedUserOverrideId: z.string().uuid().nullable().optional(),
     assignmentMode: z.enum(workflowTaskAssignmentModes),
     reviewerCount: z.number().int().positive().max(100),
+    reviewRelease: z.enum(["STAGE_COMPLETED", "THRESHOLD_MET", "IMMEDIATE"]).optional(),
+    submittedReplacementPolicy: z.enum(["DENY", "REOPEN_SLOT"]).optional(),
     requiredCompletionCount: z.number().int().positive().max(100),
+    completionMode: z.enum(["ALL", "COUNT", "PERCENT"]).optional(),
+    completionPercentage: z.number().int().min(1).max(100).nullable().optional(),
     quorum: z.boolean(),
+    quorumRule: z.object({
+      population: z.enum(["ASSIGNED_TASKS", "REGISTERED"]),
+      minimumCount: z.number().int().positive().nullable(),
+      minimumPercentage: z.number().int().min(1).max(100).nullable(),
+      rounding: z.literal("CEIL"),
+      chairRequired: z.boolean(),
+      recusalDenominator: z.enum(["EXCLUDE", "INCLUDE"]),
+      freeze: z.enum(["AT_DECISION", "ON_FIRST_PASS"]),
+      abstentionsCountAsPresent: z.boolean(),
+    }).strict().nullable().optional(),
     coiRequired: z.boolean(),
     displayOrder: z.number().int().positive(),
     required: z.boolean(),
@@ -159,6 +155,39 @@ export const workflowTaskSchema = z
   })
   .strict()
   .superRefine((task, context) => {
+    if (task.completionMode === "PERCENT" && !task.completionPercentage) {
+      context.addIssue({
+        code: "custom",
+        message: "A percentage threshold requires a percentage.",
+        path: ["completionPercentage"],
+      });
+    }
+    if (task.completionMode !== "PERCENT" && task.completionPercentage) {
+      context.addIssue({
+        code: "custom",
+        message: "A percentage applies only to percentage thresholds.",
+        path: ["completionPercentage"],
+      });
+    }
+    if (task.quorum && (!task.quorumRule || (
+      task.quorumRule.minimumCount === null
+      && task.quorumRule.minimumPercentage === null
+    ))) {
+      context.addIssue({
+        code: "custom",
+        message: "Quorum requires an independent participation rule.",
+        path: ["quorumRule"],
+      });
+    }
+    if (task.quorum && task.quorumRule?.population === "ASSIGNED_TASKS"
+      && task.quorumRule.minimumCount !== null
+      && task.quorumRule.minimumCount > task.reviewerCount) {
+      context.addIssue({
+        code: "custom",
+        message: "Assigned-task quorum count cannot exceed the reviewer count.",
+        path: ["quorumRule", "minimumCount"],
+      });
+    }
     if (task.requiredCompletionCount > task.reviewerCount) {
       context.addIssue({
         code: "custom",
@@ -173,17 +202,7 @@ export const workflowTaskSchema = z
         path: ["reviewerCount"],
       });
     }
-    if (
-      task.quorum &&
-      (task.reviewerCount < 2 ||
-        task.requiredCompletionCount * 2 <= task.reviewerCount)
-    ) {
-      context.addIssue({
-        code: "custom",
-        message: "Quorum requires a majority of at least two reviewers.",
-        path: ["quorum"],
-      });
-    }
+
   });
 
 export const workflowStageSchema = z.object({
@@ -207,7 +226,6 @@ export const workflowStageSchema = z.object({
   documentRequirements: z.array(workflowStageDocumentRequirementSchema)
     .max(100),
   scoring: workflowStageScoringSchema.nullable(),
-  commentFields: z.array(workflowStageCommentFieldSchema).max(100),
   initial: z.boolean(),
   slaHours: z.number().int().positive().max(8760).nullable().optional(),
   actions: z.array(workflowActionDefinitionSchema),
@@ -231,6 +249,32 @@ export const workflowStageSchema = z.object({
       path: ["checklistItems"],
     });
   }
+  const taskKeys = new Set(stage.tasks.map((task) => task.stableKey));
+  stage.checklistItems.forEach((item, index) => {
+    if (!taskKeys.has(item.taskStableKey)) {
+      context.addIssue({
+        code: "custom",
+        message: "Checklist items must reference a task in the same stage.",
+        path: ["checklistItems", index, "taskStableKey"],
+      });
+    }
+  });
+  if (stage.scoring && !taskKeys.has(stage.scoring.taskStableKey)) {
+    context.addIssue({
+      code: "custom",
+      message: "Scoring must reference a task in the same stage.",
+      path: ["scoring", "taskStableKey"],
+    });
+  }
+  stage.documentRequirements.forEach((requirement, index) => {
+    if (!taskKeys.has(requirement.taskStableKey)) {
+      context.addIssue({
+        code: "custom",
+        message: "Document requirements must reference a task in the same stage.",
+        path: ["documentRequirements", index, "taskStableKey"],
+      });
+    }
+  });
   const documentNames = stage.documentRequirements.map(
     (requirement) => requirement.name.toLowerCase(),
   );
@@ -239,22 +283,6 @@ export const workflowStageSchema = z.object({
       code: "custom",
       message: "Document requirement names must be unique within the stage.",
       path: ["documentRequirements"],
-    });
-  }
-  const commentKeys = stage.commentFields.map((field) => field.key);
-  if (new Set(commentKeys).size !== commentKeys.length) {
-    context.addIssue({
-      code: "custom",
-      message: "Comment and recommendation keys must be unique within the stage.",
-      path: ["commentFields"],
-    });
-  }
-  const commentOrders = stage.commentFields.map((field) => field.displayOrder);
-  if (new Set(commentOrders).size !== commentOrders.length) {
-    context.addIssue({
-      code: "custom",
-      message: "Comment and recommendation display orders must be unique within the stage.",
-      path: ["commentFields"],
     });
   }
   const actionKeys = new Set(stage.actions.map((action) => action.stableKey));

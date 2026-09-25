@@ -14,11 +14,12 @@ import {
   findAccessUser,
   inviteAccessUser,
   listAccessRoles,
-  listAccessUsers,
   promoteAccessUser,
   updateAccessRole,
   updateAccessUser,
-} from "@/db/repositories/UserAccessRepository";
+} from "@/modules/users/infrastructure/UserAccessRepository";
+import { listFirebaseDirectoryAccounts } from "./infrastructure/FirebaseUserDirectory";
+import { listUserDirectory } from "./infrastructure/UserDirectoryRepository";
 import type {
   AuthorizationAuditListInput,
   RoleUpdateInput,
@@ -39,8 +40,10 @@ export async function getUserAccessView(
     permissionCodes.roleRead,
     permissionCodes.roleManage,
   ]);
-  const [users, roles, capabilityRows, audit] = await Promise.all([
-    canReadUsers(user) ? listAccessUsers(input) : [],
+  const [userPage, roles, capabilityRows, audit] = await Promise.all([
+    canReadUsers(user)
+      ? listFirebaseDirectoryAccounts().then((accounts) => listUserDirectory(input, accounts))
+      : { items: [], total: 0 },
     canReadRoles(user) ? listAccessRoles() : [],
     canReadRoles(user)
       ? permissionCatalogue.map(({ code, description }) => ({
@@ -54,7 +57,12 @@ export async function getUserAccessView(
     audit,
     capabilities: capabilityRows,
     roles,
-    users,
+    users: userPage.items,
+    usersPage: {
+      limit: input.limit,
+      page: input.page,
+      total: userPage.total,
+    },
   };
 }
 

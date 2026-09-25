@@ -2,6 +2,10 @@ import type { StageConditionEvaluation } from "../../engine/StageCondition";
 
 export type RequiredTaskCompletion = {
   completedCount: number;
+  completedTaskIds: string[];
+  denominator: number;
+  completionMode: "ALL" | "COUNT" | "PERCENT";
+  completionPercentage: number | null;
   requiredCompletionCount: number;
   taskDefinitionId: string;
   taskKey: string;

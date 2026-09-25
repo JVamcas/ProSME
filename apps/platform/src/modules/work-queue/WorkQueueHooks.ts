@@ -20,8 +20,9 @@ export function useWorkQueue(input: WorkQueueListInput) {
   });
 }
 
-export function useWorkflowTask(taskId: string) {
+export function useWorkflowTask(taskId: string, enabled = true) {
   return useQuery({
+    enabled,
     queryFn: () => clientWorkQueueService.getTask(taskId),
     queryKey: workQueueQueryKeys.task(taskId),
   });
@@ -68,15 +69,5 @@ export function useExecuteWorkflowTaskAction(taskId: string) {
       queryClient.invalidateQueries({ queryKey: workQueueQueryKeys.all }),
       queryClient.invalidateQueries({ queryKey: workQueueQueryKeys.task(taskId) }),
     ]),
-  });
-}
-
-export function useClaimTask() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: clientWorkQueueService.claim,
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: workQueueQueryKeys.all });
-    },
   });
 }

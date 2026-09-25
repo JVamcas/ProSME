@@ -9,7 +9,7 @@ import {
 } from "react-hook-form";
 
 import { cn } from "@/lib/utils";
-import { Input } from "./form-controls";
+import { Input } from "@/shared/ui/FormPrimitives";
 import { FormField } from "./form-field";
 import { FormInput, type FormInputProps } from "./form-fields";
 

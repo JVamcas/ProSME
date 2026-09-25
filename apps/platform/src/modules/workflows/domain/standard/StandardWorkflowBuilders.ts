@@ -6,7 +6,6 @@ import type {
 } from "../definitions/WorkflowTypes";
 import type { WorkflowStageDocumentRequirement } from "../definitions/WorkflowStageDocumentRequirement";
 import type { WorkflowStageChecklistDefinition } from "../definitions/WorkflowStageChecklistDefinition";
-import type { WorkflowStageCommentField } from "../definitions/WorkflowStageCommentField";
 import type {
   StandardWorkflowDependencies,
   StandardWorkflowFormCode,
@@ -125,6 +124,7 @@ export function checklist(
     mandatory: true,
     notes: "",
     responseType: "YES_NO",
+    taskStableKey: "",
     text,
   };
 }
@@ -140,26 +140,10 @@ export function documentRequirement(
     mandatory,
     maximumSizeMb: 20,
     name,
+    taskStableKey: "",
     templateReference: "",
     uploader,
     verifier: "STAFF",
-  };
-}
-
-export function comment(
-  key: string,
-  label: string,
-  displayOrder: number,
-  mandatory = false,
-  visibility: WorkflowStageCommentField["visibility"] = "INTERNAL_ONLY",
-): WorkflowStageCommentField {
-  return {
-    displayOrder,
-    helpText: "",
-    key,
-    label,
-    mandatory,
-    visibility,
   };
 }
 
@@ -172,6 +156,7 @@ type TaskInput = {
   formCode?: StandardWorkflowFormCode;
   name: string;
   quorum?: boolean;
+  quorumRule?: import("../runtime/Quorum").QuorumRule;
   requiredCompletionCount?: number;
   reviewerCount?: number;
   roleCode: StandardWorkflowRoleCode;
@@ -199,6 +184,7 @@ export function task(
     namedUserOverrideId: null,
     permissions: defaultWorkflowElementPermissions,
     quorum: input.quorum ?? false,
+    quorumRule: input.quorumRule ?? null,
     required: true,
     requiredCompletionCount: input.requiredCompletionCount ?? 1,
     reviewerCount: input.reviewerCount ?? 1,
@@ -210,13 +196,18 @@ export function task(
 export function stage(
   input: Omit<WorkflowStageInput, "entryCondition" | "exitCondition">,
 ): WorkflowStageInput {
-  return { ...input, entryCondition: null, exitCondition: null };
+  const defaultTaskKey = input.tasks[0]?.stableKey ?? "";
+  return {
+    ...input,
+    checklistItems: input.checklistItems.map((item) => ({
+      ...item,
+      taskStableKey: item.taskStableKey || defaultTaskKey,
+    })),
+    documentRequirements: input.documentRequirements.map((requirement) => ({
+      ...requirement,
+      taskStableKey: requirement.taskStableKey || defaultTaskKey,
+    })),
+    entryCondition: null,
+    exitCondition: null,
+  };
 }
-
-export const yesNoChecklistConfig = (items: WorkflowStageChecklistDefinition[]) => ({
-  items: items.map((item) => ({
-    code: item.key,
-    label: item.text,
-    required: item.mandatory,
-  })),
-});

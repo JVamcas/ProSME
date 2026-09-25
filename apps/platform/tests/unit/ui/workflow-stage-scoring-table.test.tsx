@@ -18,13 +18,13 @@ describe("workflow stage scoring table", () => {
     const stage = structuredClone(referenceWorkflow.stages[0]);
     stage.scoring = {
       aggregation: "WEIGHTED_AVERAGE",
+      taskStableKey: "PRE_SCREEN_CHECKLIST",
       criteria: [{
         criterion: "Business viability",
         description: "Assess viability.",
         weight: 60,
         scaleMinimum: 0,
         scaleMaximum: 10,
-        threshold: 6,
         mandatoryComment: true,
       }],
     };
@@ -67,10 +67,12 @@ describe("workflow stage scoring table", () => {
     ));
 
     expect(container.textContent).toContain("Weighted average");
+    expect(container.textContent).toContain("Workflow task");
+    expect(container.textContent).toContain("Pre-screening checklist");
     expect(container.textContent).toContain("Business viability");
     expect(container.textContent).toContain("Assess viability.");
     expect(container.textContent).toContain("0–10");
-    expect(container.textContent).toContain("Threshold");
+    expect(container.textContent).not.toContain("Threshold");
     expect(container.textContent).toContain("Mandatory comment");
 
     await act(async () => root.unmount());

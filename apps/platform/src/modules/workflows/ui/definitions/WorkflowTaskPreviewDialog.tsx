@@ -21,7 +21,6 @@ import type {
 } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import {
   WorkflowChecklistPreview,
-  WorkflowCommentsPreview,
   WorkflowDocumentRequirementsPreview,
   WorkflowScoringPreview,
   WorkflowTaskPreviewSection,
@@ -70,23 +69,23 @@ export function WorkflowTaskPreviewDialog({
   const actions = workflowTaskPreviewActions(stage, task);
   const hasForm = Boolean(task.formBinding);
   const hasChecklist = stage.checklistItems.length > 0;
-  const hasDocuments = stage.documentRequirements.length > 0;
+  const taskDocuments = stage.documentRequirements.filter(
+    (requirement) => requirement.taskStableKey === task.stableKey,
+  );
+  const hasDocuments = taskDocuments.length > 0;
   const hasScoring = Boolean(stage.scoring?.criteria.length);
-  const hasComments = stage.commentFields.length > 0;
   const sectionCount = [
     hasForm,
     hasChecklist,
     hasDocuments,
     hasScoring,
-    hasComments,
   ]
     .filter(Boolean).length;
   const requiredCount =
     (form.data?.fields.filter((field) => field.required).length ?? 0)
     + stage.checklistItems.filter((item) => item.mandatory).length
-    + stage.documentRequirements.filter((item) => item.mandatory).length
-    + (stage.scoring?.criteria.length ?? 0)
-    + stage.commentFields.filter((field) => field.mandatory).length;
+    + taskDocuments.filter((item) => item.mandatory).length
+    + (stage.scoring?.criteria.length ?? 0);
   const formName = workflowTaskPreviewFormName(
     publishedForms.data,
     task.formBinding?.formVersionId,
@@ -95,7 +94,7 @@ export function WorkflowTaskPreviewDialog({
     <DraggableDialog
       isOpen
       onClose={onClose}
-      panelClassName={workflowTaskPreviewPanelClass()}
+      panelClassName={""}
       size="2xl"
       title={`${task.name} - Reviewer's preview`}
     >
@@ -131,10 +130,13 @@ export function WorkflowTaskPreviewDialog({
           ) : null}
           {hasDocuments ? (
             <WorkflowTaskPreviewSection
-              status={`${stage.documentRequirements.filter((item) => item.mandatory).length} required documents`}
+              status={`${taskDocuments.filter((item) => item.mandatory).length} required documents`}
               title="Documents"
             >
-              <WorkflowDocumentRequirementsPreview stage={stage} />
+              <WorkflowDocumentRequirementsPreview
+                stage={stage}
+                taskStableKey={task.stableKey}
+              />
             </WorkflowTaskPreviewSection>
           ) : null}
           {hasScoring ? (
@@ -143,14 +145,6 @@ export function WorkflowTaskPreviewDialog({
               title="Scoring"
             >
               <WorkflowScoringPreview stage={stage} />
-            </WorkflowTaskPreviewSection>
-          ) : null}
-          {hasComments ? (
-            <WorkflowTaskPreviewSection
-              status={`${stage.commentFields.filter((field) => field.mandatory).length} required fields`}
-              title="Comments & recommendations"
-            >
-              <WorkflowCommentsPreview stage={stage} />
             </WorkflowTaskPreviewSection>
           ) : null}
           {!sectionCount ? (

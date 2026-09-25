@@ -1,3 +1,4 @@
+import type { QuorumRule } from "../runtime/Quorum";
 import type { ConditionFieldDefinition } from "@/modules/conditions/domain/ConditionConfiguration";
 import type { WorkflowElementPermissions } from "./WorkflowElementPermissions";
 
@@ -22,8 +23,13 @@ export type WorkflowTaskDefinition = {
   namedUserOverrideId?: string | null;
   assignmentMode: WorkflowTaskAssignmentMode;
   reviewerCount: number;
+  reviewRelease?: "STAGE_COMPLETED" | "THRESHOLD_MET" | "IMMEDIATE";
+  submittedReplacementPolicy?: "DENY" | "REOPEN_SLOT";
   requiredCompletionCount: number;
+  completionMode?: "ALL" | "COUNT" | "PERCENT";
+  completionPercentage?: number | null;
   quorum: boolean;
+  quorumRule?: QuorumRule | null;
   coiRequired: boolean;
   displayOrder: number;
 };

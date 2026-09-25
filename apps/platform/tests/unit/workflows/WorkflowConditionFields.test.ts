@@ -20,7 +20,6 @@ function stage(
     actions: [],
     checklistItems: [],
     documentRequirements: [],
-    commentFields: [],
     scoring: null,
     coiGated: false,
     description: `${stableKey} stage`,
@@ -138,7 +137,6 @@ describe("workflow condition fields", () => {
     review.tasks = [{
       ...taskTemplate,
       config: {
-        items: [{ code: "DOCUMENTS_VALID", label: "Documents valid" }],
         categories: [{ code: "TAX_STATUS", label: "Tax status" }],
         outcomes: [{ code: "VERIFIED", label: "Verified" }],
         criteria: [{
@@ -150,6 +148,16 @@ describe("workflow condition fields", () => {
         }],
       },
       stableKey: "COMPOSED_REVIEW",
+    }];
+    review.checklistItems = [{
+      displayOrder: 1,
+      evidenceRequirement: "NONE",
+      key: "DOCUMENTS_VALID",
+      mandatory: true,
+      notes: "",
+      responseType: "YES_NO",
+      taskStableKey: "COMPOSED_REVIEW",
+      text: "Documents valid",
     }];
 
     const fields = workflowConditionFields(

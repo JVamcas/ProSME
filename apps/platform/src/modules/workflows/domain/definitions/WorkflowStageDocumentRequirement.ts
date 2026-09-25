@@ -27,6 +27,7 @@ export type WorkflowDocumentVerifierActor =
 export type WorkflowStageDocumentRequirement = {
   id?: string;
   name: string;
+  taskStableKey: string;
   mandatory: boolean;
   acceptedFileTypes: WorkflowDocumentFileType[];
   maximumSizeMb: number;

@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import {
   type AnyPgColumn,
   index,
@@ -172,6 +173,11 @@ export const workflowTasks = pgTable(
     workflowTaskDefinitionId: uuid("workflow_task_definition_id")
       .notNull()
       .references(() => stageTaskDefinitions.id, { onDelete: "restrict" }),
+    reviewerSlot: integer("reviewer_slot").notNull().default(1),
+    supersedesTaskId: uuid("supersedes_task_id").references(
+      (): AnyPgColumn => workflowTasks.id,
+      { onDelete: "restrict" },
+    ),
     formVersionId: uuid("form_version_id").references(() => formVersions.id, {
       onDelete: "restrict",
     }),
@@ -196,10 +202,17 @@ export const workflowTasks = pgTable(
       .defaultNow(),
   },
   (table) => [
-    uniqueIndex("app_workflow_tasks_definition_unique").on(
+    uniqueIndex("app_workflow_tasks_slot_unique").on(
       table.stageInstanceId,
       table.workflowTaskDefinitionId,
-    ),
+      table.reviewerSlot,
+    ).where(sql`${table.status} NOT IN ('CANCELLED', 'COMPLETED')`),
+    uniqueIndex("app_workflow_tasks_distinct_reviewer_unique").on(
+      table.stageInstanceId,
+      table.workflowTaskDefinitionId,
+      table.assignedUserId,
+    ).where(sql`${table.assignedUserId} IS NOT NULL
+      AND ${table.status} <> 'CANCELLED'`),
     index("app_workflow_tasks_assignment_idx").on(
       table.status,
       table.assignedRoleId,

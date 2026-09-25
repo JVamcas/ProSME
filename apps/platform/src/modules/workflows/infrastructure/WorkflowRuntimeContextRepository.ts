@@ -204,8 +204,17 @@ export async function readWorkflowTaskRuntimeContext(
         AND prior_stage.id <> stage.id
         AND prior_stage.status = 'COMPLETED'
         AND prior_stage.completed_at <= stage.activated_at
+        AND prior_task.status = 'COMPLETED'
+        AND app_workflow_task_coi_cleared(
+          prior_task.id, prior_task.assigned_user_id
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM app_workflow_tasks successor
+          WHERE successor.supersedes_task_id = prior_task.id
+        )
     ) history ON TRUE
     WHERE task.id = ${taskInstanceId}::uuid
+      AND app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
       AND task.form_version_id IS NOT NULL
       AND workflow.status = 'ACTIVE'
       AND stage.status = 'ACTIVE'

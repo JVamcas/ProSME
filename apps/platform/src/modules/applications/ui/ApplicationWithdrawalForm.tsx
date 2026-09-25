@@ -6,7 +6,7 @@ import { FormProvider, useForm } from "react-hook-form";
 
 import { GeneralButton } from "@/components/ui/button";
 import { DraggableDialog } from "@/components/ui/draggable-dialog";
-import { Checkbox, FieldError } from "@/components/ui/form-controls";
+import { Checkbox, FieldError } from "@/shared/ui/FormPrimitives";
 import { FormInput, FormTextarea } from "@/components/ui/form-fields";
 
 import { useWithdrawApplication } from "../ApplicationHooks";

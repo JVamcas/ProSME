@@ -32,7 +32,6 @@ const stage = (code: string, sequence: number, initial: boolean) => ({
   }],
   checklistItems: [],
   documentRequirements: [],
-  commentFields: [],
   scoring: null,
   tasks: [{
     actionKeys: ["ADVANCE"],

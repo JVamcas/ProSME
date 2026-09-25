@@ -10,7 +10,6 @@ import {
 } from "@/modules/workflows/ui/definitions/WorkflowTaskPreviewDialog";
 import {
   WorkflowChecklistPreview,
-  WorkflowCommentsPreview,
   WorkflowDocumentRequirementsPreview,
   WorkflowScoringPreview,
   WorkflowTaskPreviewSection,
@@ -74,6 +73,7 @@ describe("workflow task reviewer preview", () => {
   it("renders configured reviewer work as collapsible sections", () => {
     const stage = structuredClone(referenceWorkflow.stages[0]);
     stage.checklistItems = [{
+      taskStableKey: stage.tasks[0].stableKey,
       key: "VERIFY_AMOUNT",
       text: "Verify the requested amount",
       mandatory: true,
@@ -83,6 +83,7 @@ describe("workflow task reviewer preview", () => {
       displayOrder: 1,
     }];
     stage.documentRequirements = [{
+      taskStableKey: stage.tasks[0].stableKey,
       name: "Financial statements",
       mandatory: true,
       acceptedFileTypes: ["PDF"],
@@ -94,29 +95,20 @@ describe("workflow task reviewer preview", () => {
     }];
     stage.scoring = {
       aggregation: "WEIGHTED_AVERAGE",
+      taskStableKey: stage.tasks[0].stableKey,
       criteria: [{
         criterion: "Business viability",
         description: "Assess the business case.",
         weight: 100,
         scaleMinimum: 0,
         scaleMaximum: 10,
-        threshold: 6,
         mandatoryComment: true,
       }],
     };
-    stage.commentFields = [{
-      key: "REVIEW_RECOMMENDATION",
-      label: "Review recommendation",
-      helpText: "Summarise the recommendation.",
-      mandatory: true,
-      visibility: "INTERNAL_ONLY",
-      displayOrder: 1,
-    }];
-
     const markup = [
       renderToStaticMarkup(createElement(WorkflowTaskPreviewSummary, {
-        requiredCount: 4,
-        sectionCount: 4,
+        requiredCount: 3,
+        sectionCount: 3,
       })),
       renderToStaticMarkup(createElement(
         WorkflowTaskPreviewSection,
@@ -129,18 +121,13 @@ describe("workflow task reviewer preview", () => {
       renderToStaticMarkup(createElement(
         WorkflowTaskPreviewSection,
         {
-          status: "1 required field",
-          title: "Comments & recommendations",
-        },
-        createElement(WorkflowCommentsPreview, { stage }),
-      )),
-      renderToStaticMarkup(createElement(
-        WorkflowTaskPreviewSection,
-        {
           status: "1 required document",
           title: "Documents",
         },
-        createElement(WorkflowDocumentRequirementsPreview, { stage }),
+        createElement(WorkflowDocumentRequirementsPreview, {
+          stage,
+          taskStableKey: stage.tasks[0].stableKey,
+        }),
       )),
       renderToStaticMarkup(createElement(
         WorkflowTaskPreviewSection,
@@ -152,13 +139,19 @@ describe("workflow task reviewer preview", () => {
       )),
     ].join("");
 
-    expect(markup).toContain("0 of 4 required items complete");
+    expect(markup).toContain("0 of 3 required items complete");
     expect(markup).toContain("Verify the requested amount");
     expect(markup).toContain("Financial statements");
     expect(markup).toContain("Business viability");
-    expect(markup).toContain("Review recommendation");
-    expect(markup).toContain("Internal only");
-    expect(markup.match(/<details/g)).toHaveLength(4);
+    expect(markup).not.toContain("Comments & recommendations");
+    expect(markup.match(/<details/g)).toHaveLength(3);
     expect(markup).not.toContain("<details open");
+    const otherTaskMarkup = renderToStaticMarkup(
+      createElement(WorkflowDocumentRequirementsPreview, {
+        stage,
+        taskStableKey: "OTHER_TASK",
+      }),
+    );
+    expect(otherTaskMarkup).not.toContain("Financial statements");
   });
 });

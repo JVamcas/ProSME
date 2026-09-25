@@ -15,11 +15,11 @@ export type WorkflowStageScoringCriterion = {
   weight: number;
   scaleMinimum: number;
   scaleMaximum: number;
-  threshold: number;
   mandatoryComment: boolean;
 };
 
 export type WorkflowStageScoringDefinition = {
   aggregation: WorkflowScoringAggregation;
   criteria: WorkflowStageScoringCriterion[];
+  taskStableKey: string;
 };
