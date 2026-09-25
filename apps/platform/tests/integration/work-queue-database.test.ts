@@ -6,11 +6,7 @@ import {
   readAdminApplication,
   readAdminApplications,
 } from "@/modules/applications/infrastructure/AdminApplicationRepository";
-import {
-  readWorkQueue,
-  writeTaskClaim,
-} from "@/modules/workflows/infrastructure/WorkQueueRepository";
-import { readSelfAssignmentPool } from "@/modules/workflows/infrastructure/WorkflowSelfAssignmentPoolRepository";
+import { readWorkQueue } from "@/modules/workflows/infrastructure/WorkQueueRepository";
 import { writeChecklistTaskCompletion } from "@/modules/workflows/infrastructure/WorkflowTaskActionRepository";
 import { executeSequentialTransitionInTransaction } from "@/modules/workflows/application/runtime/ServerSequentialTransitionService";
 import { readWorkflowTask } from "@/modules/workflows/infrastructure/WorkflowTaskRepository";
@@ -34,7 +30,7 @@ const stageInstanceId = randomUUID();
 const taskInstanceId = randomUUID();
 const fundingOpportunityId = Math.floor(Date.now() / 1000);
 const reference = `SMEF-TEST-${testToken}`;
-let claimedBy = "";
+const claimedBy = reviewerOneId;
 const pool = enabled
   ? new Pool({ connectionString: process.env.DATABASE_URL })
   : null;
@@ -145,16 +141,15 @@ beforeAll(async () => {
   await query(
     `INSERT INTO app_workflow_tasks
       (id, stage_instance_id, workflow_task_definition_id,
-       status, assigned_role_id, due_at)
-     SELECT $1, $2, $3, 'PENDING', role.id, now() + interval '24 hours'
-     FROM app_roles role WHERE role.code = 'programme_officer'`,
-    [taskInstanceId, stageInstanceId, taskDefinitionId],
+       status, assigned_user_id, claimed_at, due_at)
+     VALUES ($1, $2, $3, 'CLAIMED', $4, now(), now() + interval '24 hours')`,
+    [taskInstanceId, stageInstanceId, taskDefinitionId, reviewerOneId],
   );
 });
 
 afterAll(async () => pool?.end());
 
-describeDatabase("P3.5 work queue projections and claim", () => {
+describeDatabase("work queue projections and server pagination", () => {
   it("projects only bounded queue and application list fields", async () => {
     const queue = await readWorkQueue(reviewerOneId, {
       limit: 25,
@@ -163,9 +158,9 @@ describeDatabase("P3.5 work queue projections and claim", () => {
     });
     expect(queue.total).toBe(1);
     expect(queue.items[0]).toMatchObject({
-      applicantName: "Claim or COI clearance required",
-      applicationId: null,
-      reference: "Claim or COI clearance required",
+      applicantName: "Queue Applicant",
+      applicationId,
+      reference,
       stageName: "Completeness screening",
       taskName: "Check completeness",
     });
@@ -192,84 +187,29 @@ describeDatabase("P3.5 work queue projections and claim", () => {
       currentStageName: "Completeness screening",
     });
   });
-  it("isolates and filters the pre-claim pool in SQL", async () => {
-    const poolPage = await readSelfAssignmentPool(reviewerOneId, {
+  it("filters, scopes and paginates assigned tasks in SQL", async () => {
+    const first = await readWorkQueue(reviewerOneId, {
       limit: 1,
-      search: "Check completeness",
+      scope: "mine",
     });
-    expect(poolPage.total).toBe(1);
-    expect(poolPage.items).toEqual([expect.objectContaining({
-      rowVersion: 1,
-      stageName: "Completeness screening",
-      taskInstanceId,
-      taskName: "Check completeness",
-    })]);
-    expect(poolPage.items[0]).not.toHaveProperty("applicationId");
-    expect(poolPage.items[0]).not.toHaveProperty("applicantName");
-    expect(poolPage.items[0]).not.toHaveProperty("assignedUserId");
-    expect((await readSelfAssignmentPool(reviewerOneId, {
+    expect(first.total).toBe(1);
+    expect(first.items).toHaveLength(1);
+    expect(first.items[0].createdAt).toEqual(expect.any(String));
+    expect((await readWorkQueue(reviewerTwoId, {
       limit: 1,
+      scope: "mine",
+    })).items).toEqual([]);
+    expect((await readWorkQueue(reviewerOneId, {
+      limit: 1,
+      scope: "mine",
       search: "Missing task",
-    })).items).toEqual([]);
-    expect((await readSelfAssignmentPool(applicantId, {
+    })).total).toBe(0);
+    const pastEnd = await readWorkQueue(reviewerOneId, {
       limit: 1,
-    })).items).toEqual([]);
-    expect((await readSelfAssignmentPool(reviewerOneId, {
-      limit: 1,
-    }, { dueAt: new Date("2100-01-01"), id: taskInstanceId })).items).toEqual([]);
-  });
-  it("allows exactly one reviewer to atomically claim a role task", async () => {
-    const keys = [
-      randomUUID(),
-      randomUUID(),
-    ];
-    const results = await Promise.all([
-      writeTaskClaim({
-        actorId: reviewerOneId,
-        correlationId: randomUUID(),
-        expectedRowVersion: 1,
-        idempotencyKey: keys[0],
-        taskId: taskInstanceId,
-      }),
-      writeTaskClaim({
-        actorId: reviewerTwoId,
-        correlationId: randomUUID(),
-        expectedRowVersion: 1,
-        idempotencyKey: keys[1],
-        taskId: taskInstanceId,
-      }),
-    ]);
-    expect(results.map((result) => result.kind).sort()).toEqual([
-      "claimed",
-      "conflict",
-    ]);
-    const winner = results.findIndex((result) => result.kind === "claimed");
-    const winnerId = winner === 0 ? reviewerOneId : reviewerTwoId;
-    claimedBy = winnerId;
-    const replay = await writeTaskClaim({
-      actorId: winnerId,
-      correlationId: randomUUID(),
-      expectedRowVersion: 1,
-      idempotencyKey: keys[winner],
-      taskId: taskInstanceId,
-    });
-    expect(replay).toMatchObject({ kind: "claimed" });
-    const persisted = await query(
-      `SELECT assigned_user_id, assigned_role_id, status, row_version,
-        claimed_at IS NOT NULL AS claimed,
-        (SELECT count(*)::integer FROM app_workflow_audit_entries
-          WHERE target_id = $1::text AND action = 'TASK_ASSIGNED') AS audits
-       FROM app_workflow_tasks WHERE id = $1::uuid`,
-      [taskInstanceId],
-    );
-    expect(persisted.rows[0]).toMatchObject({
-      assigned_role_id: null,
-      assigned_user_id: winnerId,
-      audits: 1,
-      claimed: true,
-      row_version: 2,
-      status: "CLAIMED",
-    });
+      scope: "mine",
+    }, { dueAt: new Date("2100-01-01"), id: taskInstanceId });
+    expect(pastEnd.items).toEqual([]);
+    expect(pastEnd.total).toBe(1);
   });
   it("completes the configured checklist and advances atomically", async () => {
     const task = await readWorkflowTask(claimedBy, taskInstanceId);
@@ -280,7 +220,7 @@ describeDatabase("P3.5 work queue projections and claim", () => {
       actionKey: "ADVANCE",
       actorId: claimedBy,
       correlationId: randomUUID(),
-      expectedRowVersion: 2,
+      expectedRowVersion: 1,
       idempotencyKey: randomUUID(),
       items: [{ accepted: true, code: "OWNERSHIP", comment: "Verified" }],
       taskId: taskInstanceId,

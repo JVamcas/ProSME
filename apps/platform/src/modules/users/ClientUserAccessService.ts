@@ -16,6 +16,7 @@ import type {
   CapabilityRow,
   RoleAccessRow,
   UserAccessRow,
+  UserAccessView,
 } from "./UserAccessTypes";
 
 const jsonHeaders = { "Content-Type": "application/json" };
@@ -30,12 +31,10 @@ function queryString(input: Record<string, string | number | undefined>) {
 }
 
 function listAccess(input: UserAccessListInput & AuthorizationAuditListInput) {
-  return requestData<{
-    audit: AuthorizationAuditRow[];
-    capabilities: CapabilityRow[];
-    roles: RoleAccessRow[];
-    users: UserAccessRow[];
-  }>(`/api/admin/users${queryString(input)}`, { cache: "no-store" });
+  return requestData<UserAccessView>(
+    `/api/admin/users${queryString(input)}`,
+    { cache: "no-store" },
+  );
 }
 
 function updateUser(userId: string, input: UpdateUserInput) {

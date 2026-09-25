@@ -9,8 +9,18 @@ import { userStatuses } from "./UserAccessTypes";
 const roleCodes = z.array(z.string().trim().min(1).max(120)).max(50);
 
 export const listUsersSchema = z.object({
-  limit: z.coerce.number().int().min(1).max(100).default(100),
+  limit: z.coerce.number().int().min(1).max(100).default(8),
+  page: z.coerce.number().int().min(1).max(10000).default(1),
+  role: z.string().trim().min(1).max(120).optional(),
   search: z.string().trim().max(120).optional(),
+  sort: z.enum([
+    "name-asc",
+    "name-desc",
+    "email-asc",
+    "email-desc",
+    "last-active-desc",
+    "status-asc",
+  ]).default("name-asc"),
   status: z.enum(userStatuses).optional(),
 });
 

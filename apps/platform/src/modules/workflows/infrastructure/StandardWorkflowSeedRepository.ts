@@ -98,7 +98,6 @@ const taskPermissionCodes = [
   permissionCodes.workflowTaskAssignedRead,
   permissionCodes.workflowTaskAssignedProcess,
   permissionCodes.workflowTaskAssignedDecide,
-  permissionCodes.workflowTaskClaim,
 ] as const;
 
 export type StandardWorkflowSeedDependencies = StandardWorkflowDependencies & {

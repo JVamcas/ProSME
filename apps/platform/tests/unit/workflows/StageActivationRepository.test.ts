@@ -9,11 +9,16 @@ vi.mock(
   "@/modules/workflows/infrastructure/WorkflowTaskWriteRepository",
   () => ({ createWorkflowTasks: vi.fn() }),
 );
+vi.mock(
+  "@/modules/workflows/infrastructure/WorkflowTaskAutoAssignmentRepository",
+  () => ({ allocateStageReviewers: vi.fn() }),
+);
 
 import { workflowAuditEntries, workflowEvents } from "@/db/schema";
 import { createStageInstance } from "@/modules/workflows/infrastructure/StageInstanceRepository";
 import { persistStageActivation } from "@/modules/workflows/infrastructure/StageActivationRepository";
 import { createWorkflowTasks } from "@/modules/workflows/infrastructure/WorkflowTaskWriteRepository";
+import { allocateStageReviewers } from "@/modules/workflows/infrastructure/WorkflowTaskAutoAssignmentRepository";
 
 const activatedAt = new Date("2026-09-21T09:00:00.000Z");
 const stageId = "11111111-1111-4111-8111-111111111111";
@@ -28,6 +33,13 @@ const select = vi.fn(() => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(allocateStageReviewers).mockResolvedValue(new Map([
+    ["66666666-6666-4666-8666-666666666666", [
+      "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+      "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+    ]],
+  ]));
   vi.mocked(createStageInstance).mockResolvedValue({
     activatedAt,
     completedAt: null,
@@ -111,6 +123,11 @@ describe("stage activation repository", () => {
     expect(createWorkflowTasks).toHaveBeenCalledWith(
       expect.anything(),
       [1, 2, 3].map((reviewerSlot) => expect.objectContaining({
+        assignedUserId: [
+          "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+          "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+        ][reviewerSlot - 1],
         dueAt: new Date("2026-09-22T09:00:00.000Z"),
         reviewerSlot,
         stageInstanceId: stageId,

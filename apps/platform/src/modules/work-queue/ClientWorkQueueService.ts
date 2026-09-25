@@ -2,9 +2,6 @@
 
 import { requestData, requestJson } from "@/lib/client-http";
 import type {
-  SelfAssignmentPoolPage,
-  SelfAssignmentPoolRow,
-  TaskClaimResult,
   WorkQueueListInput,
   WorkQueuePage,
   WorkQueueRow,
@@ -40,33 +37,6 @@ async function list(input: WorkQueueListInput): Promise<WorkQueuePage> {
     { cache: "no-store" },
   );
   return { items: envelope.data, ...envelope.page };
-}
-
-async function pool(input: {
-  after?: string;
-  limit: number;
-}): Promise<SelfAssignmentPoolPage> {
-  const query = new URLSearchParams({ limit: String(input.limit) });
-  if (input.after) query.set("after", input.after);
-  const envelope = await requestJson<{
-    data: SelfAssignmentPoolRow[];
-    page: Omit<SelfAssignmentPoolPage, "items">;
-  }>(`/api/admin/task-pool?${query.toString()}`, { cache: "no-store" });
-  return { items: envelope.data, ...envelope.page };
-}
-
-function claim(task: Pick<WorkQueueRow, "taskInstanceId" | "rowVersion">) {
-  return requestData<TaskClaimResult>(
-    `/api/admin/tasks/${task.taskInstanceId}/claim`,
-    {
-      body: JSON.stringify({ expectedRowVersion: task.rowVersion }),
-      headers: {
-        "Content-Type": "application/json",
-        "Idempotency-Key": crypto.randomUUID(),
-      },
-      method: "POST",
-    },
-  );
 }
 
 function getTask(taskId: string) {
@@ -125,11 +95,9 @@ function executeAction(
 }
 
 export const clientWorkQueueService = {
-  claim,
   completeTask,
   evaluateEligibility,
   executeAction,
   getTask,
   list,
-  pool,
 };

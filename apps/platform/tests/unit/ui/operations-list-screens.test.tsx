@@ -32,19 +32,18 @@ vi.mock("@/modules/applications/ApplicationHooks", () => ({
 
 import { ApplicationsTable } from "@/components/admin/applications/ApplicationsTable";
 import { ApplicationReview } from "@/components/admin/applications/ApplicationReview";
-import { WorkQueueTable } from "@/components/admin/work-queue/WorkQueueTable";
-import { CapabilityProvider } from "@/components/layout/capability-context";
-import { permissionCodes } from "@/auth/authorization/permissions";
+import { WorkQueueTable } from "@/modules/work-queue/ui/WorkQueueTable";
 
 const task = {
   applicantName: "Applicant from database",
   applicationId: "1695f976-2acd-44ff-b30b-39c9c5ff6c27",
   assignedRoleId: "2695f976-2acd-44ff-b30b-39c9c5ff6c27",
   assignedRoleName: "Programme Officer",
-  assignedUserId: null,
-  assignedUserName: null,
+  assignedUserId: "4695f976-2acd-44ff-b30b-39c9c5ff6c27",
+  assignedUserName: "Operations User",
   businessName: "Database Business",
-  claimedAt: null,
+  claimedAt: "2026-09-15T08:00:00.000Z",
+  createdAt: "2026-09-15T08:00:00.000Z",
   dueAt: "2026-09-18T08:00:00.000Z",
   priority: null,
   reference: "SMEF-2026-000123",
@@ -55,19 +54,6 @@ const task = {
   taskName: "Check completeness",
   taskStatus: "PENDING",
 } as const;
-
-function context(capabilityCodes: string[]) {
-  return {
-    availableSpaces: ["operations" as const],
-    capabilityCodes,
-    defaultSpace: "operations" as const,
-    displayName: "Operations User",
-    email: "operations@example.test",
-    roleCodes: ["programme_officer"],
-    status: "active" as const,
-    userId: "4695f976-2acd-44ff-b30b-39c9c5ff6c27",
-  };
-}
 
 describe("operations list screens", () => {
   it("renders a database-backed application overview and workflow timeline", () => {
@@ -126,33 +112,14 @@ describe("operations list screens", () => {
     expect(markup).toContain("Application filters");
   });
 
-  it("shows claim only when role assignment and capability allow it", () => {
+  it("renders assigned task and assignment time without a claim action", () => {
     const markup = renderToStaticMarkup(
-      <CapabilityProvider value={context([permissionCodes.workflowTaskClaim])}>
-        <WorkQueueTable
-          claimingId={null}
-          emptyMessage="No tasks"
-          items={[task]}
-          onClaim={vi.fn()}
-        />
-      </CapabilityProvider>,
+      <WorkQueueTable emptyMessage="No tasks" items={[task]} />,
     );
     expect(markup).toContain("Check completeness");
-    expect(markup).toContain("Programme Officer");
-    expect(markup).toContain("Claim");
-  });
-
-  it("hides the claim action without server-matching capability", () => {
-    const markup = renderToStaticMarkup(
-      <CapabilityProvider value={context([])}>
-        <WorkQueueTable
-          claimingId={null}
-          emptyMessage="No tasks"
-          items={[task]}
-          onClaim={vi.fn()}
-        />
-      </CapabilityProvider>,
-    );
+    expect(markup).toContain("Operations User");
+    expect(markup).toContain("Task created");
+    expect(markup).toContain("Assigned");
     expect(markup).not.toContain(">Claim<");
   });
 });

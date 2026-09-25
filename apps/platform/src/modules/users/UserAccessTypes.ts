@@ -65,4 +65,9 @@ export type UserAccessView = {
   capabilities: CapabilityRow[];
   roles: RoleAccessRow[];
   users: UserAccessRow[];
+  usersPage: {
+    limit: number;
+    page: number;
+    total: number;
+  };
 };

@@ -147,8 +147,7 @@ export async function replaceWorkflowReviewer(
         AND definition.assignment_mode = 'ROLE'
         AND candidate.id = ${input.replacementUserId}::uuid
         AND candidate.status = 'active'
-        AND candidate.user_type = 'staff'
-        AND NOT EXISTS (
+          AND NOT EXISTS (
           SELECT 1
           FROM (VALUES
             (definition.permissions ->> 'view'),

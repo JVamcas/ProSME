@@ -26,11 +26,6 @@ export const workflowTaskPermissionCatalogue: readonly PermissionDefinition[] = 
     "Complete an assigned task using its configured decision actions.",
   ),
   define(
-    permissionCodes.workflowTaskClaim,
-    "Claim tasks",
-    "Claim an eligible workflow task.",
-  ),
-  define(
     permissionCodes.workflowTaskAssign,
     "Assign tasks",
     "Assign or reassign workflow tasks.",
@@ -64,10 +59,5 @@ export const workflowTaskPermissionCatalogue: readonly PermissionDefinition[] = 
     permissionCodes.workflowTaskAllRead,
     "Read all workflow tasks",
     "Read workflow tasks across all applications.",
-  ),
-  define(
-    permissionCodes.workflowTaskPoolRead,
-    "Read eligible task pool",
-    "Read active tasks assigned to the user or one of their roles.",
   ),
 ];

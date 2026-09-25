@@ -106,7 +106,7 @@ export const operationsPortalRoutes: readonly PortalRoute[] = [
     label: "My Work Queue",
     icon: ListTodo,
     space: "operations",
-    requiredPermission: permissionCodes.workflowTaskPoolRead,
+    requiredPermission: permissionCodes.workflowTaskAssignedRead,
   },
   {
     id: "admin-applications",

@@ -101,7 +101,7 @@ describe("user access service authorization", () => {
       expect.objectContaining({ code: permissionCodes.fundingApplicationOwnRead }),
     );
     expect(view.capabilities).toContainEqual(
-      expect.objectContaining({ code: permissionCodes.workflowTaskPoolRead }),
+      expect.objectContaining({ code: permissionCodes.workflowTaskAssignedRead }),
     );
     expect(view.capabilities).toContainEqual(
       expect.objectContaining({ code: permissionCodes.workflowInstanceAllRead }),

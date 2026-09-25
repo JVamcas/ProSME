@@ -20,6 +20,7 @@ import type { WorkflowInstanceTransaction } from "./WorkflowInstanceRepository";
 import { createWorkflowTasks } from "./WorkflowTaskWriteRepository";
 import { resolveEligibilityTaskFormVersion } from "./EligibilityTaskFormRepository";
 import { appendStageActivationAudit } from "./StageActivationAuditRepository";
+import { allocateStageReviewers } from "./WorkflowTaskAutoAssignmentRepository";
 
 export type StageActivationTransaction = WorkflowInstanceTransaction;
 
@@ -319,13 +320,18 @@ export async function persistStageActivation(
       "The application's published eligibility ruleset has no verification form.",
     );
   }
+  const assignments = await allocateStageReviewers(
+    transaction,
+    input.target.workflowInstanceId,
+    input.tasks,
+  );
   const tasks = await createWorkflowTasks(
     transaction,
     input.tasks.flatMap((task) => Array.from(
       { length: task.reviewerCount },
       (_, index) => ({
-      assignedRoleId: task.roleId,
-      assignedUserId: task.namedUserOverrideId,
+      assignedRoleId: null,
+      assignedUserId: assignments.get(task.id)?.[index] ?? null,
       createdAt: input.activatedAt,
       dueAt,
       formVersionId: task.stableKey === "ELIGIBILITY_VERIFICATION"

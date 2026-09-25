@@ -11,6 +11,7 @@ export type WorkQueueRow = {
   assignedUserName: string | null;
   businessName: string | null;
   claimedAt: string | null;
+  createdAt: string;
   dueAt: string | null;
   priority: "HIGH" | "MEDIUM" | "LOW" | null;
   reference: string;
@@ -33,28 +34,4 @@ export type WorkQueueListInput = {
   limit: number;
   search?: string;
   scope: WorkQueueScope;
-};
-
-export type TaskClaimResult = Pick<
-  WorkQueueRow,
-  | "assignedUserId"
-  | "assignedUserName"
-  | "claimedAt"
-  | "rowVersion"
-  | "taskInstanceId"
-  | "taskStatus"
->;
-
-export type SelfAssignmentPoolRow = {
-  dueAt: string | null;
-  rowVersion: number;
-  stageName: string;
-  taskInstanceId: string;
-  taskName: string;
-};
-
-export type SelfAssignmentPoolPage = {
-  items: SelfAssignmentPoolRow[];
-  nextCursor: string | null;
-  total: number;
 };

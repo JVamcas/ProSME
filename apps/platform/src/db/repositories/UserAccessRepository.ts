@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
 import {
@@ -36,41 +36,85 @@ function aggregateCodes(column: typeof roles.code | typeof capabilities.code) {
 export async function listAccessUsers(input: UserAccessListInput) {
   const filters = [];
   if (input.status) filters.push(eq(users.status, input.status));
+  if (input.role) {
+    filters.push(sql`EXISTS (
+      SELECT 1 FROM app_user_roles membership
+      JOIN app_roles assigned_role ON assigned_role.id = membership.role_id
+      WHERE membership.user_id = ${users.id}
+        AND assigned_role.code = ${input.role}
+    )`);
+  }
   if (input.search) {
     const term = `%${input.search}%`;
-    filters.push(sql`(${users.email} ILIKE ${term} OR ${users.displayName} ILIKE ${term})`);
+    filters.push(sql`(
+      ${users.email} ILIKE ${term}
+      OR ${users.displayName} ILIKE ${term}
+      OR EXISTS (
+        SELECT 1 FROM app_user_roles membership
+        JOIN app_roles assigned_role ON assigned_role.id = membership.role_id
+        WHERE membership.user_id = ${users.id}
+          AND assigned_role.code ILIKE ${term}
+      )
+    )`);
   }
+  const filter = filters.length ? and(...filters) : undefined;
+  const sort = (() => {
+    switch (input.sort) {
+      case "name-desc":
+        return [desc(users.displayName), desc(users.email), desc(users.id)];
+      case "email-asc":
+        return [asc(users.email), asc(users.id)];
+      case "email-desc":
+        return [desc(users.email), desc(users.id)];
+      case "last-active-desc":
+        return [desc(users.lastLoginAt), asc(users.id)];
+      case "status-asc":
+        return [asc(users.status), asc(users.displayName), asc(users.id)];
+      default:
+        return [asc(users.displayName), asc(users.email), asc(users.id)];
+    }
+  })();
+  const database = getDatabase();
+  const [rows, totalRows] = await Promise.all([
+    database
+      .select({
+        capabilityCodes: aggregateCodes(capabilities.code),
+        displayName: users.displayName,
+        email: users.email,
+        emailVerified: sql<boolean>`coalesce(bool_or(${userIdentities.emailVerified}), false)`,
+        id: users.id,
+        lastLoginAt: users.lastLoginAt,
+        roleCodes: aggregateCodes(roles.code),
+        status: users.status,
+        userType: users.userType,
+      })
+      .from(users)
+      .leftJoin(
+        userIdentities,
+        and(eq(userIdentities.userId, users.id), eq(userIdentities.provider, "firebase")),
+      )
+      .leftJoin(userRoles, eq(userRoles.userId, users.id))
+      .leftJoin(roles, eq(roles.id, userRoles.roleId))
+      .leftJoin(roleCapabilities, eq(roleCapabilities.roleId, roles.id))
+      .leftJoin(capabilities, eq(capabilities.id, roleCapabilities.capabilityId))
+      .where(filter)
+      .groupBy(users.id)
+      .orderBy(...sort)
+      .limit(input.limit)
+      .offset((input.page - 1) * input.limit),
+    database
+      .select({ total: sql<number>`count(*)::integer` })
+      .from(users)
+      .where(filter),
+  ]);
 
-  const rows = await getDatabase()
-    .select({
-      capabilityCodes: aggregateCodes(capabilities.code),
-      displayName: users.displayName,
-      email: users.email,
-      emailVerified: sql<boolean>`coalesce(bool_or(${userIdentities.emailVerified}), false)`,
-      id: users.id,
-      lastLoginAt: users.lastLoginAt,
-      roleCodes: aggregateCodes(roles.code),
-      status: users.status,
-      userType: users.userType,
-    })
-    .from(users)
-    .leftJoin(
-      userIdentities,
-      and(eq(userIdentities.userId, users.id), eq(userIdentities.provider, "firebase")),
-    )
-    .leftJoin(userRoles, eq(userRoles.userId, users.id))
-    .leftJoin(roles, eq(roles.id, userRoles.roleId))
-    .leftJoin(roleCapabilities, eq(roleCapabilities.roleId, roles.id))
-    .leftJoin(capabilities, eq(capabilities.id, roleCapabilities.capabilityId))
-    .where(filters.length ? and(...filters) : undefined)
-    .groupBy(users.id)
-    .orderBy(asc(users.displayName), asc(users.email))
-    .limit(input.limit);
-
-  return rows.map((row) => ({
-    ...row,
-    lastLoginAt: row.lastLoginAt?.toISOString() ?? null,
-  }));
+  return {
+    items: rows.map((row) => ({
+      ...row,
+      lastLoginAt: row.lastLoginAt?.toISOString() ?? null,
+    })),
+    total: totalRows[0]?.total ?? 0,
+  };
 }
 
 export async function listAccessRoles() {

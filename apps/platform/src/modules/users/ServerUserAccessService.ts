@@ -39,8 +39,10 @@ export async function getUserAccessView(
     permissionCodes.roleRead,
     permissionCodes.roleManage,
   ]);
-  const [users, roles, capabilityRows, audit] = await Promise.all([
-    canReadUsers(user) ? listAccessUsers(input) : [],
+  const [userPage, roles, capabilityRows, audit] = await Promise.all([
+    canReadUsers(user)
+      ? listAccessUsers(input)
+      : { items: [], total: 0 },
     canReadRoles(user) ? listAccessRoles() : [],
     canReadRoles(user)
       ? permissionCatalogue.map(({ code, description }) => ({
@@ -54,7 +56,12 @@ export async function getUserAccessView(
     audit,
     capabilities: capabilityRows,
     roles,
-    users,
+    users: userPage.items,
+    usersPage: {
+      limit: input.limit,
+      page: input.page,
+      total: userPage.total,
+    },
   };
 }
 

@@ -7,14 +7,17 @@ import { z } from "zod";
 import type { WorkflowTaskCoiGate as CoiGate } from "../../ClientWorkflowCoiService";
 import { useDeclareWorkflowCoi } from "./useWorkflowCoi";
 
-const declarationSchema = z.object({
-  decision: z.enum(["NO_CONFLICT", "DISCLOSE"]),
-  disclosureText: z.string().max(4000),
-}).refine(
-  (value) => value.decision === "NO_CONFLICT"
-    || value.disclosureText.trim().length > 0,
-  { path: ["disclosureText"], message: "Describe the potential conflict." },
-);
+const declarationSchema = z
+  .object({
+    decision: z.enum(["NO_CONFLICT", "DISCLOSE"]),
+    disclosureText: z.string().max(4000),
+  })
+  .refine(
+    (value) =>
+      value.decision === "NO_CONFLICT" ||
+      value.disclosureText.trim().length > 0,
+    { path: ["disclosureText"], message: "Describe the potential conflict." },
+  );
 
 type Declaration = z.infer<typeof declarationSchema>;
 
@@ -30,7 +33,9 @@ export function WorkflowTaskCoiGate({ gate }: { gate: CoiGate }) {
     return (
       <section role="status">
         <h2>Conflict disclosure pending review</h2>
-        <p>An independent reviewer must decide before you can access this task.</p>
+        <p>
+          An independent reviewer must decide before you can access this task.
+        </p>
       </section>
     );
   }
@@ -44,9 +49,10 @@ export function WorkflowTaskCoiGate({ gate }: { gate: CoiGate }) {
   async function submit(values: Declaration) {
     await mutation.mutateAsync({
       decision: values.decision,
-      disclosureText: values.decision === "DISCLOSE"
-        ? values.disclosureText.trim()
-        : undefined,
+      disclosureText:
+        values.decision === "DISCLOSE"
+          ? values.disclosureText.trim()
+          : undefined,
       expectedRowVersion: gate.rowVersion,
     });
   }
@@ -76,13 +82,20 @@ export function WorkflowTaskCoiGate({ gate }: { gate: CoiGate }) {
           {decision === "DISCLOSE" ? (
             <label className="block">
               Disclosure
-              <textarea className="block w-full border p-2" {...form.register("disclosureText")} />
+              <textarea
+                className="block w-full border p-2"
+                {...form.register("disclosureText")}
+              />
               {form.formState.errors.disclosureText ? (
-                <span role="alert">{form.formState.errors.disclosureText.message}</span>
+                <span role="alert">
+                  {form.formState.errors.disclosureText.message}
+                </span>
               ) : null}
             </label>
           ) : null}
-          {mutation.isError ? <p role="alert">{mutation.error.message}</p> : null}
+          {mutation.isError ? (
+            <p role="alert">{mutation.error.message}</p>
+          ) : null}
           <button type="submit" disabled={mutation.isPending}>
             Submit declaration
           </button>
@@ -91,4 +104,3 @@ export function WorkflowTaskCoiGate({ gate }: { gate: CoiGate }) {
     </section>
   );
 }
-

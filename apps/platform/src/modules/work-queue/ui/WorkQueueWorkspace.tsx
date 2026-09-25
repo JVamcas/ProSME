@@ -7,16 +7,11 @@ import { DataTableFilter } from "@/components/ui/data-table-filter";
 import { Input } from "@/components/ui/form-controls";
 import { Pagination } from "@/components/ui/pagination";
 import { cn } from "@/lib/utils";
-import {
-  useClaimTask,
-  useWorkQueue,
-} from "@/modules/work-queue/WorkQueueHooks";
+import { useWorkQueue } from "@/modules/work-queue/WorkQueueHooks";
 import type {
-  WorkQueueRow,
   WorkQueueScope,
 } from "@/modules/work-queue/WorkQueueTypes";
 import { PageShell } from "@/shared/ui/PageShell";
-import { toast } from "@/shared/ui/Toast";
 import { WorkQueueTable } from "./WorkQueueTable";
 
 const scopes: Array<{ label: string; value: WorkQueueScope }> = [
@@ -65,7 +60,6 @@ export function WorkQueueWorkspace() {
     search: search || undefined,
     scope,
   });
-  const claim = useClaimTask();
   const items = queue.data?.items ?? [];
   const changeScope = (next: WorkQueueScope) => {
     setScope(next);
@@ -81,12 +75,6 @@ export function WorkQueueWorkspace() {
     setCursors([]);
   };
   
-  const claimTask = (task: WorkQueueRow) => {
-    claim.mutate(task, {
-      onError: (error) => toast.error(error.message),
-      onSuccess: () => toast.success("Task claimed."),
-    });
-  };
   const emptyMessage = queue.isPending
     ? "Loading your work queue…"
     : queue.isError
@@ -96,7 +84,7 @@ export function WorkQueueWorkspace() {
   return (
     <PageShell
       eyebrow="Work Queue"
-      description="Tasks assigned directly to you or available through one of your roles."
+      description="Tasks assigned to you."
       title="My Work Queue"
     >
       <section className="overflow-hidden rounded-2xl border border-brand-navy/10 bg-white shadow-sm">
@@ -123,10 +111,8 @@ export function WorkQueueWorkspace() {
           </DataTableFilter>
         </div>
         <WorkQueueTable
-          claimingId={claim.isPending ? claim.variables.taskInstanceId : null}
           emptyMessage={emptyMessage}
           items={items}
-          onClaim={claimTask}
         />
         <Pagination
           disabled={queue.isFetching}

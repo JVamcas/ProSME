@@ -84,15 +84,16 @@ describe("P3.1 capability-aware portal navigation", () => {
     );
   });
 
-  it("exposes the work queue only with its dedicated capability", () => {
+  it("exposes the work queue with assigned-task read permission", () => {
     const routes = filterPortalRoutes(
       portalRoutes,
       "operations",
-      new Set([permissionCodes.workflowTaskPoolRead]),
+      new Set([permissionCodes.workflowTaskAssignedRead]),
     );
     expect(routes.map((route) => route.href)).toEqual([
       "/admin",
       "/admin/work-queue",
+      "/admin/applications",
     ]);
   });
 

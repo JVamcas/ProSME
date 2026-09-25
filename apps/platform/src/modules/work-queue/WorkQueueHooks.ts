@@ -10,7 +10,6 @@ export const workQueueQueryKeys = {
   all: ["admin", "work-queue"] as const,
   list: (input: WorkQueueListInput) =>
     ["admin", "work-queue", input] as const,
-  pool: (after?: string) => ["admin", "work-queue", "pool", after] as const,
   task: (taskId: string) => ["admin", "work-queue", "task", taskId] as const,
 };
 
@@ -18,13 +17,6 @@ export function useWorkQueue(input: WorkQueueListInput) {
   return useQuery({
     queryFn: () => clientWorkQueueService.list(input),
     queryKey: workQueueQueryKeys.list(input),
-  });
-}
-
-export function useSelfAssignmentPool(after?: string) {
-  return useQuery({
-    queryFn: () => clientWorkQueueService.pool({ after, limit: 25 }),
-    queryKey: workQueueQueryKeys.pool(after),
   });
 }
 
@@ -77,15 +69,5 @@ export function useExecuteWorkflowTaskAction(taskId: string) {
       queryClient.invalidateQueries({ queryKey: workQueueQueryKeys.all }),
       queryClient.invalidateQueries({ queryKey: workQueueQueryKeys.task(taskId) }),
     ]),
-  });
-}
-
-export function useClaimTask() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: clientWorkQueueService.claim,
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: workQueueQueryKeys.all });
-    },
   });
 }

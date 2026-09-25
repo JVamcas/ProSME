@@ -14,7 +14,6 @@ vi.mock(
   () => ({
     lockWorkflowTaskForLifecycle: vi.fn(),
     lockTaskStageForLifecycle: vi.fn(),
-    reviewerAlreadyOwnsSiblingSlot: vi.fn(),
     persistWorkflowTaskTransition: vi.fn(),
     withWorkflowTaskLifecycleTransaction: vi.fn(),
   }),
@@ -25,7 +24,6 @@ import type { AuthenticatedUser } from "@/auth/types";
 import { ResourceConflictError } from "@/lib/resource-errors";
 import {
   cancelWorkflowTask,
-  claimWorkflowTask,
   completeWorkflowTask,
   startWorkflowTask,
 } from "@/modules/workflows/application/runtime/ServerWorkflowTaskLifecycleService";
@@ -39,7 +37,6 @@ import {
 
 const actor: AuthenticatedUser = {
   capabilities: new Set([
-    permissionCodes.workflowTaskClaim,
     permissionCodes.workflowTaskAssignedProcess,
     permissionCodes.workflowTaskAssignedDecide,
     permissionCodes.workflowTaskCancelAll,
@@ -64,7 +61,6 @@ const input = {
 
 const task = {
   assignedUserId: null,
-  claimableByActor: true,
   coiCleared: true,
   formRequired: false,
   formCompleted: false,
@@ -100,20 +96,6 @@ beforeEach(() => {
 });
 
 describe("server workflow task lifecycle service", () => {
-  it("claims an eligible pending role task", async () => {
-    const result = await claimWorkflowTask(actor, input);
-
-    expect(result.status).toBe("CLAIMED");
-    expect(persistWorkflowTaskTransition).toHaveBeenCalledWith(
-      expect.anything(),
-      expect.objectContaining({
-        actorId: actor.id,
-        currentStatus: "PENDING",
-        targetStatus: "CLAIMED",
-      }),
-    );
-  });
-
   it("starts a claimed task assigned to the actor", async () => {
     vi.mocked(lockWorkflowTaskForLifecycle).mockResolvedValue({
       ...task,

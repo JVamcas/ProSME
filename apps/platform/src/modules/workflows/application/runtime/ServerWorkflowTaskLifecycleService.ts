@@ -20,7 +20,6 @@ import { completeStageInTransaction } from "./ServerStageCompletionService";
 import {
   lockWorkflowTaskForLifecycle,
   lockTaskStageForLifecycle,
-  reviewerAlreadyOwnsSiblingSlot,
   persistWorkflowTaskTransition,
   withWorkflowTaskLifecycleTransaction,
 } from "../../infrastructure/WorkflowTaskLifecycleRepository";
@@ -31,10 +30,9 @@ export type WorkflowTaskLifecycleInput = {
   taskId: string;
 };
 
-type LifecycleAction = "CLAIM" | "START" | "COMPLETE" | "CANCEL";
+type LifecycleAction = "START" | "COMPLETE" | "CANCEL";
 
 const targetStatusByAction: Record<LifecycleAction, WorkflowTaskStatus> = {
-  CLAIM: "CLAIMED",
   START: "IN_PROGRESS",
   COMPLETE: "COMPLETED",
   CANCEL: "CANCELLED",
@@ -45,12 +43,6 @@ function assertTaskContext(
   actorId: string,
   task: Awaited<ReturnType<typeof lockWorkflowTaskForLifecycle>> & {},
 ) {
-  if (action === "CLAIM") {
-    if (task.assignedUserId || !task.claimableByActor) {
-      throw new ResourceConflictError("This task is not available to claim.");
-    }
-    return;
-  }
   if (action !== "CANCEL" && task.assignedUserId !== actorId) {
     throw new ResourceConflictError("This task is not assigned to you.");
   }
@@ -62,9 +54,7 @@ async function changeTaskState(
   action: LifecycleAction,
 ) {
   const actor = requireAuthenticatedUser(user);
-  if (action === "CLAIM") {
-    requirePermission(actor, permissionCodes.workflowTaskClaim);
-  } else if (action === "CANCEL") {
+  if (action === "CANCEL") {
     requirePermission(actor, permissionCodes.workflowTaskCancelAll);
   }
 
@@ -85,16 +75,6 @@ async function changeTaskState(
     if ((action === "START" || action === "COMPLETE") && !task.coiCleared) {
       throw new ResourceConflictError("Conflict-of-interest clearance is required.");
     }
-    if (action === "CLAIM" && await reviewerAlreadyOwnsSiblingSlot(
-      transaction,
-      task.id,
-      actor.id,
-    )) {
-      throw new ResourceConflictError(
-        "You already own another independent reviewer slot.",
-      );
-    }
-
     if (action === "COMPLETE" && task.formRequired && !task.formCompleted) {
       throw new ResourceConflictError(
         "Submit the required form before completing this task.",
@@ -142,13 +122,6 @@ async function changeTaskState(
     }
     return updated;
   });
-}
-
-export function claimWorkflowTask(
-  user: AuthenticatedUser | null,
-  input: WorkflowTaskLifecycleInput,
-) {
-  return changeTaskState(user, input, "CLAIM");
 }
 
 export function startWorkflowTask(
