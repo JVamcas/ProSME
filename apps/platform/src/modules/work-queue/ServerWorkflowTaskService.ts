@@ -126,8 +126,8 @@ function validateDocumentItems(
     );
   }
   if (requireMandatory && configured.some((item) => item.mandatory
-    && !submitted.find((answer) => answer.category === item.name)?.outcome)) {
-    throw new RequestValidationError("Verify every required document.");
+    && !item.document)) {
+    throw new RequestValidationError("Upload every required document.");
   }
 }
 
@@ -202,12 +202,9 @@ export async function getWorkflowTask(
     resultComments,
     dueAt: task.dueAt ? new Date(task.dueAt).toISOString() : null,
     documentsCompleted: task.documentRequirements.length > 0
-      && task.documentRequirements.every((requirement) => {
-        const answer = resultDocuments.find(
-          (item) => item.category === requirement.name,
-        );
-        return Boolean(answer && (!requirement.mandatory || answer.outcome));
-      }),
+      && task.documentRequirements.every(
+        (requirement) => !requirement.mandatory || Boolean(requirement.document),
+      ),
     eligibilityEvaluation: canEvaluateEligibility
       ? parseEligibilityResult(result)
       : null,

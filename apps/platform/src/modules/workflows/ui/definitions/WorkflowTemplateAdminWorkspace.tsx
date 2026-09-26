@@ -5,7 +5,9 @@ import { useState } from "react";
 
 import { GeneralButton } from "@/components/ui/button";
 import { DraggableDialog } from "@/components/ui/draggable-dialog";
+import { getErrorMessage } from "@/lib/client-http";
 import { ConfirmationDialog } from "@/shared/ui/ConfirmationDialog";
+import { toast } from "@/shared/ui/Toast";
 import {
   useCloneWorkflowTemplate,
   useDeleteWorkflowTemplate,
@@ -65,8 +67,10 @@ export function WorkflowTemplateAdminWorkspace({
       <WorkflowTemplateTable
         canPublish={canPublish}
         canUpdate={canUpdate}
-        cloningId={
-          cloneTemplate.isPending ? cloneTemplate.variables?.id : undefined
+        cloningVersionId={
+          cloneTemplate.isPending
+            ? cloneTemplate.variables?.currentVersion.id
+            : undefined
         }
         deletingId={
           deleteTemplate.isPending ? deleteTemplate.variables?.id : undefined
@@ -83,7 +87,15 @@ export function WorkflowTemplateAdminWorkspace({
           setPageSize(value);
           setPage(1);
         }}
-        onClone={(template) => cloneTemplate.mutate(template)}
+        onClone={(template) => {
+          cloneTemplate.mutate(template, {
+            onError: (error) => {
+              toast.error(
+                getErrorMessage(error) ?? "Unable to clone the workflow.",
+              );
+            },
+          });
+        }}
         onDelete={setDeleteCandidate}
         onEdit={(template) => {
           setSelectedTemplate(template);
@@ -94,11 +106,6 @@ export function WorkflowTemplateAdminWorkspace({
           publishTemplate.isPending ? publishTemplate.variables : undefined
         }
       />
-      {cloneTemplate.error || deleteTemplate.error ? (
-        <p className="text-sm text-red-700" role="alert">
-          {(cloneTemplate.error ?? deleteTemplate.error)?.message}
-        </p>
-      ) : null}
       <DraggableDialog
         isOpen={isDialogOpen}
         onClose={() => setIsDialogOpen(false)}
@@ -141,6 +148,11 @@ export function WorkflowTemplateAdminWorkspace({
         onConfirm={() => {
           if (!deleteCandidate) return;
           deleteTemplate.mutate(deleteCandidate, {
+            onError: (error) => {
+              toast.error(
+                getErrorMessage(error) ?? "Unable to delete the workflow.",
+              );
+            },
             onSuccess: () => {
               setDeleteCandidate(undefined);
               setPage(1);

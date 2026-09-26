@@ -49,6 +49,8 @@ export function WorkflowTaskReviewPanel({ task }: { task: TaskDetail }) {
     || task.documentRequirements.length > 0
     || Boolean(task.scoring?.criteria.length);
   const hasTaskWork = Boolean(task.formVersionId) || hasReviewFields;
+  const showActionsInFinalStep = task.displayMode === "STEP_PROGRESS"
+    && hasTaskWork;
   const separateEligibilitySection = task.canEvaluateEligibility
     && !task.formVersionId;
   const sectionCount = [
@@ -120,7 +122,7 @@ export function WorkflowTaskReviewPanel({ task }: { task: TaskDetail }) {
     });
   }
 
-  const actions = (
+  const taskActions = (
     <div className="space-y-4">
       {canDecide ? <WorkflowTaskDecisionActions task={actionTask} /> : null}
       {completion.isError ? (
@@ -128,11 +130,8 @@ export function WorkflowTaskReviewPanel({ task }: { task: TaskDetail }) {
           {completion.error.message}
         </p>
       ) : null}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <GeneralButtonLink variant="outline" href="/admin/work-queue">
-          Back to queue
-        </GeneralButtonLink>
-        {!task.actions.length ? (
+      {!task.actions.length ? (
+        <div className="flex justify-end">
           <GeneralButton
             disabled={!canComplete}
             onClick={formSubmitNeeded
@@ -143,14 +142,14 @@ export function WorkflowTaskReviewPanel({ task }: { task: TaskDetail }) {
             {completion.isPending ? "Completing…" : task.taskStatus === "COMPLETED"
               ? "Completed" : "Complete Task"}
           </GeneralButton>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
     </div>
   );
 
   return (
     <WorkflowTaskReviewLayout
-      actions={actions}
+      actions={<></>}
       sectionCount={sectionCount}
       stageName={task.stageName}
       summary={
@@ -175,6 +174,7 @@ export function WorkflowTaskReviewPanel({ task }: { task: TaskDetail }) {
       ) : null}
       {hasTaskWork ? (
         <ChecklistTaskForm
+          finalActions={showActionsInFinalStep ? taskActions : undefined}
           formContent={task.formVersionId ? (
             <DynamicFormTask
               eligibilityEvaluation={task.eligibilityEvaluation}

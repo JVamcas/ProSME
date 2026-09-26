@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
+import { ResourceConflictError } from "@/lib/resource-errors";
 import { allocateStageReviewers } from "@/modules/workflows/infrastructure/WorkflowTaskAutoAssignmentRepository";
 import type { WorkflowInstanceTransaction } from "@/modules/workflows/infrastructure/WorkflowInstanceRepository";
 
@@ -45,7 +46,7 @@ describe("automatic reviewer allocation", () => {
   });
 
   it("rejects an ineligible named reviewer", async () => {
-    await expect(allocateStageReviewers(
+    const allocation = allocateStageReviewers(
       transaction([]),
       workflowId,
       [{
@@ -54,20 +55,32 @@ describe("automatic reviewer allocation", () => {
         reviewerCount: 1,
         roleId: null,
       }],
-    )).rejects.toThrow("named reviewer is ineligible");
+    );
+    await expect(allocation).rejects.toBeInstanceOf(ResourceConflictError);
+    await expect(allocation).rejects.toThrow("configured reviewer");
   });
 
-  it("blocks activation when fewer eligible people exist than slots", async () => {
+  it("reports an actionable conflict when fewer eligible people exist than slots", async () => {
     const rows = reviewers.slice(0, 2).map((userId) => ({
       roleId,
       taskDefinitionId: definitionId,
       userId,
       workload: 0,
     }));
-    await expect(allocateStageReviewers(
+    const allocation = allocateStageReviewers(
       transaction(rows),
       workflowId,
       [task],
-    )).rejects.toThrow("3 eligible reviewers are required");
+    );
+    await expect(allocation).rejects.toMatchObject({
+      conflict: {
+        eligibleReviewers: 2,
+        requiredReviewers: 3,
+      },
+      name: "ResourceConflictError",
+    });
+    await expect(allocation).rejects.toThrow(
+      "requires 3 eligible reviewers, but only 2 are available",
+    );
   });
 });

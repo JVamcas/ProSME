@@ -298,6 +298,24 @@ export async function getPublishedFormRuntime(versionId: string) {
   return runtime;
 }
 
+export async function getLatestPublishedFormRuntimeByCode(code: string) {
+  const [version] = await getDatabase()
+    .select({ id: formVersions.id })
+    .from(formVersions)
+    .innerJoin(
+      formDefinitions,
+      eq(formDefinitions.id, formVersions.formDefinitionId),
+    )
+    .where(and(
+      eq(formDefinitions.code, code),
+      eq(formVersions.status, "PUBLISHED"),
+    ))
+    .orderBy(desc(formVersions.versionNumber))
+    .limit(1);
+
+  return version ? getFormRuntime(version.id) : null;
+}
+
 export async function getFormVersionForWrite(versionId: string) {
   const database = getDatabase();
   const [version] = await database

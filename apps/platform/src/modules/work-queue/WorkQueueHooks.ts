@@ -50,6 +50,22 @@ export function useSaveTaskReviewDraft(taskId: string) {
   });
 }
 
+export function useUploadWorkflowTaskDocument(taskId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { file: File; requirementId: string }) =>
+      clientWorkQueueService.uploadTaskDocument(
+        taskId,
+        input.requirementId,
+        input.file,
+      ),
+    onSuccess: (task) => {
+      queryClient.setQueryData(workQueueQueryKeys.task(taskId), task);
+      void queryClient.invalidateQueries({ queryKey: workQueueQueryKeys.all });
+    },
+  });
+}
+
 export function useEvaluateAuthoritativeEligibility(taskId: string) {
   const queryClient = useQueryClient();
   return useMutation({

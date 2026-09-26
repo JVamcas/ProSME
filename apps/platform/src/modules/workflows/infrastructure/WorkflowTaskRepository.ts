@@ -64,13 +64,29 @@ export async function readWorkflowTask(
       COALESCE((
         SELECT jsonb_agg(jsonb_build_object(
           'acceptedFileTypes', document.accepted_file_types,
+          'id', document.id,
           'expiryDays', document.expiry_days,
           'mandatory', document.mandatory,
           'maximumSizeMb', document.maximum_size_mb,
           'name', document.name,
           'templateReference', document.template_reference,
           'uploader', document.uploader,
-          'verifier', document.verifier
+          'verifier', document.verifier,
+          'document', (
+            SELECT jsonb_build_object(
+              'contentType', evidence.content_type,
+              'fileName', evidence.original_name,
+              'sizeBytes', evidence.size_bytes,
+              'uploadedAt', evidence.uploaded_at,
+              'versionId', evidence.id,
+              'versionNumber', evidence.version_number
+            )
+            FROM app_workflow_document_evidence_versions evidence
+            WHERE evidence.application_id = application.id
+              AND evidence.requirement_id = document.id
+            ORDER BY evidence.version_number DESC
+            LIMIT 1
+          )
         ) ORDER BY document.name)
         FROM app_workflow_stage_document_requirements document
         WHERE document.task_definition_id = definition.id

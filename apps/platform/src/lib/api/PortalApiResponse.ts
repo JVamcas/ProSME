@@ -68,6 +68,19 @@ function validationFields(error: z.ZodError) {
   }, {});
 }
 
+function validationMessage(error: z.ZodError) {
+  const messages = [...new Set(error.issues.map((issue) => issue.message))];
+  const visible = messages.slice(0, 3);
+  const remaining = messages.length - visible.length;
+
+  return [
+    visible.join(" "),
+    remaining > 0
+      ? `${remaining} more validation ${remaining === 1 ? "issue requires" : "issues require"} attention.`
+      : "",
+  ].filter(Boolean).join(" ");
+}
+
 export function createCorrelationId() {
   return crypto.randomUUID();
 }
@@ -138,7 +151,7 @@ export function portalRouteError(
       correlationId,
       400,
       "VALIDATION_ERROR",
-      "Review the highlighted request fields.",
+      validationMessage(error),
       validationFields(error),
     );
   }

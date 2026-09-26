@@ -108,10 +108,10 @@ describe("workflow task configuration", () => {
     })).toBe(true);
   });
 
-  it("requires configured document decisions and scores", () => {
+  it("requires uploaded document evidence and configured scores", () => {
     const work = {
       config: {},
-      documentRequirements: [{ mandatory: true, name: "TAX_STATUS" }],
+      documentRequirements: [{ evidenceUploaded: false, mandatory: true, name: "TAX_STATUS" }],
       formCompleted: false,
       formRequired: false,
       hasChecklist: false,
@@ -133,8 +133,8 @@ describe("workflow task configuration", () => {
     })).toBe(false);
     expect(taskWorkIsReady({
       ...work,
+      documentRequirements: [{ ...work.documentRequirements[0], evidenceUploaded: true }],
       result: {
-        documents: [{ category: "TAX_STATUS", outcome: "VERIFIED" }],
         scores: [{
           comment: "Evidence supports the score.",
           criterion: "VIABILITY",
@@ -144,8 +144,8 @@ describe("workflow task configuration", () => {
     })).toBe(false);
     expect(taskWorkIsReady({
       ...work,
+      documentRequirements: [{ ...work.documentRequirements[0], evidenceUploaded: true }],
       result: {
-        documents: [{ category: "TAX_STATUS", outcome: "VERIFIED" }],
         scores: [{
           comment: "Evidence supports the score.",
           criterion: "VIABILITY",

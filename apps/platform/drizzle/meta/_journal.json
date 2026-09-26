@@ -757,6 +757,27 @@
       "when": 1797033600000,
       "tag": "0107_merge_claimed_task_status",
       "breakpoints": true
+    },
+    {
+      "idx": 108,
+      "version": "7",
+      "when": 1797120000000,
+      "tag": "0108_remove_legacy_reject_action_fields",
+      "breakpoints": true
+    },
+    {
+      "idx": 109,
+      "version": "7",
+      "when": 1797206400000,
+      "tag": "0109_normalize_reject_reason_requirement",
+      "breakpoints": true
+    },
+    {
+      "idx": 110,
+      "version": "7",
+      "when": 1797292800000,
+      "tag": "0110_remove_legacy_task_quorum",
+      "breakpoints": true
     }
   ]
 }

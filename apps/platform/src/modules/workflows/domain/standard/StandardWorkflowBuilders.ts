@@ -164,8 +164,6 @@ type TaskInput = {
   displayOrder: number;
   formCode?: StandardWorkflowFormCode;
   name: string;
-  quorum?: boolean;
-  quorumRule?: import("../runtime/Quorum").QuorumRule;
   requiredCompletionCount?: number;
   reviewerCount?: number;
   roleCode: StandardWorkflowRoleCode;
@@ -197,8 +195,8 @@ export function task(
     name: input.name,
     namedUserOverrideId: null,
     permissions: defaultWorkflowElementPermissions,
-    quorum: input.quorum ?? false,
-    quorumRule: input.quorumRule ?? null,
+    quorum: false,
+    quorumRule: null,
     required: true,
     requiredCompletionCount: input.requiredCompletionCount ?? 1,
     reviewerCount: input.reviewerCount ?? 1,

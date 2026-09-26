@@ -148,6 +148,7 @@ export function validateEligibilityResult(result: unknown) {
 
 export function taskWorkIsReady(input: {
   documentRequirements?: {
+    evidenceUploaded?: boolean;
     mandatory: boolean;
     name: string;
   }[];
@@ -189,16 +190,10 @@ export function taskWorkIsReady(input: {
       || (field.mandatory && !answers.get(field.key)))) return false;
   }
   if (input.documentRequirements?.length) {
-    const parsed = documentResultSchema.safeParse(input.result);
-    if (!parsed.success) return false;
-    const decisions = new Map(
-      parsed.data.documents.map((item) => [item.category, item.outcome]),
-    );
-    if (decisions.size !== input.documentRequirements.length
-      || input.documentRequirements.some((requirement) => (
-        !decisions.has(requirement.name)
-        || (requirement.mandatory && !decisions.get(requirement.name))
-      ))) return false;
+    if (input.documentRequirements.some(
+      (requirement) => requirement.mandatory
+        && !requirement.evidenceUploaded,
+    )) return false;
   }
   if (input.scoring?.criteria.length) {
     const parsed = scoreResultSchema.safeParse(input.result);

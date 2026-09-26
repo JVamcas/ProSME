@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   ClientRequestError,
+  getErrorMessage,
   patchData,
   postJson,
   requestData,
@@ -100,9 +101,25 @@ describe("client HTTP service", () => {
       fields: {
         firstName: ["First name is required"],
       },
-      message: "Review the fields.",
+      message: "First name is required",
       status: 400,
     } satisfies Partial<ClientRequestError>);
+  });
+
+  it("formats structured validation details as an actionable message", () => {
+    const error = new ClientRequestError("Review the fields.", 400, {
+      fields: {
+        "graph.stages.5.tasks.0.quorumRule.minimumCount": [
+          "Assigned-task quorum count cannot exceed the reviewer count.",
+        ],
+      },
+    });
+
+    expect(getErrorMessage(error)).toBe(
+      "Assigned-task quorum count cannot exceed the reviewer count.",
+    );
+    expect(getErrorMessage("Try again later.")).toBe("Try again later.");
+    expect(getErrorMessage({})).toBeUndefined();
   });
 
   it("serializes JSON mutations in the client service layer", async () => {

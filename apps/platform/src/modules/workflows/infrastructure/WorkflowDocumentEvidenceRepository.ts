@@ -2,7 +2,7 @@ import "server-only";
 
 import { sql } from "drizzle-orm";
 
-import type { DatabaseTransaction } from "@/db/client";
+import { getDatabase, type DatabaseTransaction } from "@/db/client";
 
 export type AppendDocumentEvidenceVersionInput = {
   applicationId: string;
@@ -54,6 +54,33 @@ export async function appendDocumentEvidenceVersion(
     WHERE requirement.id = ${input.requirementId}::uuid
     GROUP BY requirement.id
     RETURNING id, version_number AS "versionNumber"
+  `);
+  return result.rows[0] ?? null;
+}
+
+export async function createDocumentEvidenceVersion(
+  input: AppendDocumentEvidenceVersionInput,
+) {
+  return getDatabase().transaction(
+    (transaction) => appendDocumentEvidenceVersion(transaction, input),
+  );
+}
+
+export async function findDocumentEvidenceVersion(
+  applicationId: string,
+  versionId: string,
+) {
+  const result = await getDatabase().execute<{
+    objectKey: string;
+    originalName: string;
+    requirementId: string;
+  }>(sql`
+    SELECT object_key AS "objectKey", original_name AS "originalName",
+      requirement_id AS "requirementId"
+    FROM app_workflow_document_evidence_versions
+    WHERE application_id = ${applicationId}::uuid
+      AND id = ${versionId}::uuid
+    LIMIT 1
   `);
   return result.rows[0] ?? null;
 }

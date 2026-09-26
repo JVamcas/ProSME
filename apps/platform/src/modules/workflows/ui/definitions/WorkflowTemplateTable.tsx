@@ -20,7 +20,7 @@ import {
 type Props = {
   canPublish: boolean;
   canUpdate: boolean;
-  cloningId?: string;
+  cloningVersionId?: string;
   deletingId?: string;
   emptyMessage: string;
   items: WorkflowTemplateListItem[];
@@ -60,8 +60,10 @@ function actionCell(template: WorkflowTemplateListItem, options: Props) {
         title={`Edit ${template.name}`}
       />
       <CloneButton
-        disabled={!options.canUpdate || Boolean(options.cloningId)}
-        isLoading={options.cloningId === template.id}
+        disabled={!options.canUpdate || Boolean(options.cloningVersionId)}
+        isLoading={
+          options.cloningVersionId === template.currentVersion.id
+        }
         onClick={() => options.onClone(template)}
         title={`Clone ${template.name}`}
       />

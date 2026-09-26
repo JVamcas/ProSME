@@ -81,6 +81,7 @@ export function WorkflowTaskPreviewDialog({
   const commentFields = (stage.commentFields ?? [])
     .filter((field) => field.taskStableKey === task.stableKey)
     .sort((left, right) => left.displayOrder - right.displayOrder);
+  const displayMode = taskDisplayMode(task.config);
   const sectionCount = [
     hasForm,
     hasChecklist,
@@ -89,6 +90,8 @@ export function WorkflowTaskPreviewDialog({
     commentFields.length > 0,
   ]
     .filter(Boolean).length;
+  const showActionsInFinalStep = displayMode === "STEP_PROGRESS"
+    && sectionCount > 0;
   const requiredCount =
     (form.data?.fields.filter((field) => field.required).length ?? 0)
     + requiredChecklistCount
@@ -99,6 +102,14 @@ export function WorkflowTaskPreviewDialog({
     publishedForms.data,
     task.formBinding?.formVersionId,
   );
+  const previewActions = (
+    <WorkflowTaskActions
+      actions={actions}
+      disabled
+      onSelect={() => undefined}
+    />
+  );
+
   return (
     <DraggableDialog
       isOpen
@@ -108,13 +119,7 @@ export function WorkflowTaskPreviewDialog({
       title={`${task.name} - Reviewer's preview`}
     >
       <WorkflowTaskReviewLayout
-        actions={
-          <WorkflowTaskActions
-            actions={actions}
-            disabled
-            onSelect={() => undefined}
-          />
-        }
+        actions={showActionsInFinalStep ? undefined : previewActions}
         description={task.description}
         sectionCount={sectionCount}
         stageName={stage.name}
@@ -133,8 +138,9 @@ export function WorkflowTaskPreviewDialog({
           }))}
           commentFields={commentFields}
           disabled
-          displayMode={taskDisplayMode(task.config)}
+          displayMode={displayMode}
           documentRequirements={taskDocuments}
+          finalActions={showActionsInFinalStep ? previewActions : undefined}
           form={hasForm ? {
             content: <StructuredFormPreview form={form} />,
             title: formName,

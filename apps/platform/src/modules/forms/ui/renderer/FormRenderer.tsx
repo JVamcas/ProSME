@@ -152,6 +152,7 @@ export function FormRenderer({
   readOnly = false,
   readOnlyFieldKeys = [],
   runtimeContext = {},
+  showCompleteness = true,
   stepPersistenceKey,
   supplementalCompletion,
 }: {
@@ -164,6 +165,7 @@ export function FormRenderer({
   readOnly?: boolean;
   readOnlyFieldKeys?: readonly string[];
   runtimeContext?: FormRuntimeContext;
+  showCompleteness?: boolean;
   stepPersistenceKey?: string;
   supplementalCompletion?: SupplementalCompletion;
 }) {
@@ -263,10 +265,12 @@ export function FormRenderer({
       {parsed.instructions ? (
         <p className="text-sm text-brand-navy/70">{parsed.instructions}</p>
       ) : null}
-      <FormCompletenessSummary
-        completeness={completeness}
-        supplementalCompletion={supplementalCompletion}
-      />
+      {showCompleteness ? (
+        <FormCompletenessSummary
+          completeness={completeness}
+          supplementalCompletion={supplementalCompletion}
+        />
+      ) : null}
       {stepMode ? (
         <FormStepProgress currentIndex={currentIndex} steps={steps} />
       ) : null}

@@ -9,7 +9,10 @@ import { z } from "zod";
 import { GeneralButton } from "@/components/ui/button";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { usePendingNavigationGuard } from "@/shared/ui/usePendingNavigationGuard";
-import { useSaveTaskReviewDraft } from "@/modules/work-queue/WorkQueueHooks";
+import {
+  useSaveTaskReviewDraft,
+  useUploadWorkflowTaskDocument,
+} from "@/modules/work-queue/WorkQueueHooks";
 import type { TaskDetail } from "@/modules/work-queue/TaskTypes";
 import { WorkflowTaskWorkSections } from "@/modules/workflows/ui/WorkflowTaskWorkSections";
 
@@ -86,12 +89,9 @@ function reviewIsReady(task: TaskDetail, values: ChecklistFormValues) {
   return task.checklistItems.every((item) => {
     const answer = values.items.find((value) => value.code === item.code);
     return Boolean(answer && (!item.required || answer.accepted));
-  }) && task.documentRequirements.every((requirement) => {
-    const answer = values.documents.find(
-      (value) => value.category === requirement.name,
-    );
-    return Boolean(answer && (!requirement.mandatory || answer.outcome));
-  }) && (task.scoring?.criteria ?? []).every((criterion) => {
+  }) && task.documentRequirements.every(
+    (requirement) => !requirement.mandatory || Boolean(requirement.document),
+  ) && (task.scoring?.criteria ?? []).every((criterion) => {
     const answer = values.scores.find(
       (value) => value.criterion === criterion.criterion,
     );
@@ -106,15 +106,18 @@ function reviewIsReady(task: TaskDetail, values: ChecklistFormValues) {
 }
 
 export function ChecklistTaskForm({
+  finalActions,
   formContent,
   onStateChange,
   task,
 }: {
+  finalActions?: ReactNode;
   formContent?: ReactNode;
   onStateChange: (state: ReviewDraftState) => void;
   task: TaskDetail;
 }) {
   const save = useSaveTaskReviewDraft(task.taskInstanceId);
+  const upload = useUploadWorkflowTaskDocument(task.taskInstanceId);
   const form = useForm<ChecklistFormValues>({
     defaultValues: defaultValues(task),
     resolver: zodResolver(checklistFormSchema),
@@ -182,8 +185,19 @@ export function ChecklistTaskForm({
           checklistItems={task.checklistItems}
           commentFields={task.commentFields}
           disabled={task.taskStatus === "COMPLETED"}
+          documentUpload={{
+            error: upload.isError ? upload.error.message : undefined,
+            onFile: (requirementId, file) => {
+              upload.mutate({ file, requirementId });
+            },
+            pendingRequirementId: upload.isPending
+              ? upload.variables?.requirementId
+              : undefined,
+            taskId: task.taskInstanceId,
+          }}
           displayMode={task.displayMode}
           documentRequirements={task.documentRequirements}
+          finalActions={finalActions}
           form={formContent ? {
             content: formContent,
             title: task.formName ?? "Form",

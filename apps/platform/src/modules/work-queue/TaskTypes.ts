@@ -10,12 +10,24 @@ export type ChecklistConfigurationItem = {
 export type DocumentRequirementItem = {
   acceptedFileTypes: ("PDF" | "JPG" | "PNG" | "DOCX")[];
   expiryDays: number | null;
+  evidenceUploaded?: boolean;
+  id?: string;
   mandatory: boolean;
   maximumSizeMb: number;
   name: string;
   templateReference: string;
   uploader: "APPLICANT" | "ASSIGNED_REVIEWER" | "STAFF";
   verifier: "ASSIGNED_REVIEWER" | "STAFF";
+  document?: WorkflowTaskDocumentView | null;
+};
+
+export type WorkflowTaskDocumentView = {
+  contentType: string;
+  fileName: string;
+  sizeBytes: number;
+  uploadedAt: string;
+  versionId: string;
+  versionNumber: number;
 };
 
 export type DocumentResultItem = {

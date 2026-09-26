@@ -260,6 +260,7 @@ async function appendCompletionRecords(
       (event_code, aggregate_id, schema_version, payload, correlation_id)
     VALUES (${result.taskStatus === 'COMPLETED' ? 'TASK_COMPLETED' : 'CHECKLIST_COMPLETED'}, ${input.taskId}::uuid, 1,
       ${JSON.stringify(result)}::jsonb, ${input.correlationId}::uuid)
+    ON CONFLICT (event_code, aggregate_id) DO NOTHING
   `);
 }
 

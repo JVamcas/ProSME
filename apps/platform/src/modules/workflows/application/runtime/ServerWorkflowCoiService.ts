@@ -4,6 +4,8 @@ import { permissionCodes } from "@/auth/authorization/permissions";
 import { requirePermission } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import { ResourceConflictError, ResourceNotFoundError } from "@/lib/resource-errors";
+import { getPublishedSystemFormRuntime } from "@/modules/forms/application/ServerSystemFormService";
+import { coiDeclarationFormCode } from "@/modules/forms/domain/CoiDeclarationForm";
 import {
   changeTaskCoi,
   readTaskCoiGate,
@@ -20,7 +22,9 @@ export async function getWorkflowTaskCoi(
   const actor = requirePermission(user, permissionCodes.workflowTaskAssignedRead);
   const gate = await readTaskCoiGate(actor.id, taskId);
   if (!gate) throw new ResourceNotFoundError("workflow task");
+  const form = await getPublishedSystemFormRuntime(coiDeclarationFormCode);
   return {
+    form,
     taskId: gate.taskId,
     taskName: gate.taskName,
     taskStatus: gate.status,

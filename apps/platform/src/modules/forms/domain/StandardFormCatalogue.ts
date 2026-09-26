@@ -1,5 +1,6 @@
 import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup";
 import { operator } from "@/modules/conditions/domain/Operator";
+import { coiDeclarationForm } from "./CoiDeclarationForm";
 import { fundingApplicationForm } from "./FundingApplicationForm";
 import { eligibilityVerificationForm } from "./EligibilityVerificationForm";
 import { defineStandardForm } from "./StandardFormBuilder";
@@ -278,6 +279,7 @@ export function createStandardForms(): StandardFormSeed[] {
   return [
     fundingApplicationForm(),
     eligibilityVerificationForm(),
+    coiDeclarationForm(),
     technicalReview(),
     dueDiligenceReview(),
     moderationReview(),

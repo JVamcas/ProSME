@@ -21,6 +21,7 @@ export const formPurposeOptions = [
 export function standardFormPurpose(code: string): FormPurpose {
   if (code === "FUNDING_APPLICATION") return "FUNDING_APPLICATION";
   if (code === "ELIGIBILITY_VERIFICATION") return "ELIGIBILITY_VERIFICATION";
+  if (code === "COI_DECLARATION") return "COI";
   if (code === "APPEAL_SUBMISSION" || code === "TRANCHE_CLAIM") return "OTHER";
   return "APPLICATION_REVIEW";
 }

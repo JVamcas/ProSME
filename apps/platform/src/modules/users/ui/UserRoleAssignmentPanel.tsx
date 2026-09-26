@@ -65,7 +65,7 @@ export function UserRoleAssignmentPanel({
         ))}
       </div>
       <GeneralButton
-        className="mt-5 w-full rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+        variant="primary"
         disabled={update.isPending}
         onClick={saveRoles}
         type="button"

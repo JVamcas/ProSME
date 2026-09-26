@@ -6,7 +6,13 @@ export const workflowTaskCompletionRequirementsProjection = sql`
   COALESCE((
     SELECT jsonb_agg(jsonb_build_object(
       'mandatory', document.mandatory,
-      'name', document.name
+      'name', document.name,
+      'evidenceUploaded', EXISTS (
+        SELECT 1
+        FROM app_workflow_document_evidence_versions evidence
+        WHERE evidence.application_id = workflow.application_id
+          AND evidence.requirement_id = document.id
+      )
     ))
     FROM app_workflow_stage_document_requirements document
     WHERE document.task_definition_id = definition.id

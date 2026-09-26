@@ -13,7 +13,9 @@ type FieldInput = {
   helpText?: string;
   key: string;
   label: string;
+  maxLength?: number;
   maximum?: number;
+  minLength?: number;
   minimum?: number;
   options?: readonly string[];
   required?: boolean;
@@ -25,6 +27,7 @@ type SectionInput = {
   description?: string;
   fields: FieldInput[];
   key: string;
+  showContainer?: boolean;
   title: string;
 };
 
@@ -50,7 +53,7 @@ export function defineStandardForm(input: {
     id: crypto.randomUUID(),
     key: section.key,
     order: index + 1,
-    showContainer: true,
+    showContainer: section.showContainer ?? true,
     title: section.title,
   }));
   const fields = input.sections.flatMap((section, sectionIndex) =>
@@ -59,7 +62,9 @@ export function defineStandardForm(input: {
       helpText: field.helpText,
       key: field.key,
       label: field.label,
+      maxLength: field.maxLength,
       maximum: field.maximum,
+      minLength: field.minLength,
       minimum: field.minimum,
       options: field.options ? formOptions(field.options) : undefined,
       order: fieldIndex + 1,

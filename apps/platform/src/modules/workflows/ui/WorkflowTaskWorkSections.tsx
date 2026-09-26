@@ -1,10 +1,11 @@
 "use client";
 
-import { FileText } from "lucide-react";
+import { CheckCircle2, Download, FileText } from "lucide-react";
 import { useState, type ReactNode } from "react";
 
-import { GeneralButton } from "@/components/ui/button";
+import { GeneralButton, GeneralButtonLink } from "@/components/ui/button";
 import { CheckboxField } from "@/components/ui/form-field";
+import { FileUploadButton } from "@/shared/ui/FileUploadButton";
 import {
   FormInput,
   FormTextarea,
@@ -17,6 +18,7 @@ import type {
 } from "@/modules/work-queue/TaskTypes";
 import type { WorkflowTaskDisplayMode } from "@/modules/workflows/domain/definitions/WorkflowTaskDefinition";
 import { WorkflowTaskPreviewSection } from "./definitions/WorkflowTaskPreviewSections";
+import { formatLocalDateTime24 } from "@/lib/dateUtils";
 
 type TaskWorkSectionId =
   | "form"
@@ -49,8 +51,15 @@ export type WorkflowTaskWorkSectionsProps = {
     mandatory: boolean;
   }[];
   disabled: boolean;
+  documentUpload?: {
+    error?: string;
+    onFile: (requirementId: string, file: File) => void;
+    pendingRequirementId?: string;
+    taskId: string;
+  };
   displayMode: WorkflowTaskDisplayMode;
   documentRequirements: DocumentRequirementItem[];
+  finalActions?: ReactNode;
   form?: { content: ReactNode; title: string };
   scoring: ScoringConfiguration | null;
   status: WorkflowTaskWorkStatus;
@@ -100,39 +109,88 @@ function ChecklistContent({
   );
 }
 
+const acceptedExtensions = {
+  DOCX: [".docx"],
+  JPG: [".jpg", ".jpeg"],
+  PDF: [".pdf"],
+  PNG: [".png"],
+} as const;
+
 function DocumentsContent({
+  disabled,
   requirements,
+  upload,
 }: {
+  disabled: boolean;
   requirements: DocumentRequirementItem[];
+  upload?: WorkflowTaskWorkSectionsProps["documentUpload"];
 }) {
   return (
     <div className="space-y-4">
-      {requirements.map((requirement) => (
-        <section
-          className="rounded-xl border border-brand-navy/10 p-4"
-          key={requirement.name}
-        >
-          <div className="flex items-start gap-3">
-            <FileText className="mt-0.5 size-5 shrink-0 text-brand-orange" />
-            <div>
-              <p className="text-sm font-semibold text-brand-navy">
-                {requirement.name}
-                <RequiredMark required={requirement.mandatory} />
-              </p>
-              <p className="mt-1 text-xs text-brand-navy/55">
-                {requirement.acceptedFileTypes.join(", ")} · Maximum{" "}
-                {requirement.maximumSizeMb} MB
-              </p>
-              <p className="mt-1 text-xs text-brand-navy/55">
-                Uploaded by{" "}
-                {requirement.uploader.replaceAll("_", " ").toLowerCase()};{" "}
-                verified by{" "}
-                {requirement.verifier.replaceAll("_", " ").toLowerCase()}.
-              </p>
+      {requirements.map((requirement) => {
+        const document = requirement.document;
+        const canUpload = requirement.uploader !== "APPLICANT"
+          && Boolean(requirement.id && upload);
+        const StateIcon = document ? CheckCircle2 : FileText;
+        const accept = requirement.acceptedFileTypes.flatMap(
+          (type) => acceptedExtensions[type],
+        ).join(",");
+        return (
+          <section
+            className="flex flex-col gap-3 rounded-xl border border-brand-navy/10 p-4 sm:flex-row sm:items-center sm:justify-between"
+            key={requirement.name}
+          >
+            <div className="flex items-start gap-3">
+              <StateIcon
+                className={document
+                  ? "mt-0.5 size-5 shrink-0 text-brand-green"
+                  : "mt-0.5 size-5 shrink-0 text-brand-orange"}
+              />
+              <div>
+                <p className="text-sm font-semibold text-brand-navy">
+                  {requirement.name}
+                  <RequiredMark required={requirement.mandatory} />
+                </p>
+                <p className="mt-1 text-xs text-brand-navy/55">
+                  {requirement.acceptedFileTypes.join(", ")} · Maximum{" "}
+                  {requirement.maximumSizeMb} MB
+                </p>
+                {document ? (
+                  <p className="mt-1 text-xs font-medium text-brand-navy/75">
+                    {document.fileName} - {formatLocalDateTime24(document.uploadedAt)}
+                  </p>
+                ) : null}
+              </div>
             </div>
-          </div>
-        </section>
-      ))}
+            <div className="flex flex-wrap items-center gap-2">
+              {document && upload ? (
+                <GeneralButtonLink
+                  href={"/api/admin/tasks/" + upload.taskId
+                    + "/documents/" + document.versionId + "/download"}
+                  size="sm"
+                  variant="ghost"
+                >
+                  <Download aria-hidden="true" className="size-4" />
+                  Download
+                </GeneralButtonLink>
+              ) : null}
+              {canUpload && requirement.id ? (
+                <FileUploadButton
+                  accept={accept}
+                  disabled={disabled || Boolean(upload?.pendingRequirementId)}
+                  label={document ? "Upload new version" : "Upload file"}
+                  onFile={(file) => upload?.onFile(requirement.id!, file)}
+                  uploading={upload?.pendingRequirementId === requirement.id}
+                  variant="compact"
+                />
+              ) : null}
+            </div>
+          </section>
+        );
+      })}
+      {upload?.error ? (
+        <p className="text-sm text-red-700" role="alert">{upload.error}</p>
+      ) : null}
     </div>
   );
 }
@@ -255,9 +313,11 @@ function SectionsLayout({
 
 function StepLayout({
   disabled,
+  finalActions,
   sections,
 }: {
   disabled: boolean;
+  finalActions?: ReactNode;
   sections: TaskWorkSection[];
 }) {
   const firstIncomplete = sections.find((section) => section.status !== "Completed");
@@ -312,6 +372,7 @@ function StepLayout({
           ) : null}
         </div>
       ) : null}
+      {currentIndex === sections.length - 1 ? finalActions : null}
     </div>
   );
 }
@@ -320,8 +381,10 @@ export function WorkflowTaskWorkSections({
   checklistItems,
   commentFields,
   disabled,
+  documentUpload,
   displayMode,
   documentRequirements,
+  finalActions,
   form,
   scoring,
   status,
@@ -342,7 +405,9 @@ export function WorkflowTaskWorkSections({
     ...(documentRequirements.length ? [{
       content: (
         <DocumentsContent
+          disabled={disabled}
           requirements={documentRequirements}
+          upload={documentUpload}
         />
       ),
       id: "documents" as const,
@@ -366,5 +431,9 @@ export function WorkflowTaskWorkSections({
   if (!sections.length) return null;
   return displayMode === "SECTIONS"
     ? <SectionsLayout disabled={disabled} sections={sections} />
-    : <StepLayout disabled={disabled} sections={sections} />;
+    : <StepLayout
+      disabled={disabled}
+      finalActions={finalActions}
+      sections={sections}
+    />;
 }

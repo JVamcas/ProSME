@@ -15,6 +15,14 @@ const statusLabels: Record<WorkflowProgressStage["status"], string> = {
   NOT_STARTED: "Waiting",
 };
 
+const statusTextColors: Record<WorkflowProgressStage["status"], string> = {
+  ACTIVE: "text-brand-blue",
+  BLOCKED: "text-brand-navy/60",
+  CANCELLED: "text-brand-navy/60",
+  COMPLETED: "text-brand-green",
+  NOT_STARTED: "text-brand-orange",
+};
+
 function stageKey(stage: WorkflowProgressStage) {
   return stage.id ?? `planned-${stage.sequence}`;
 }
@@ -65,7 +73,7 @@ function StageFlow({ progress }: { progress: WorkflowProgressView }) {
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block text-sm font-semibold">{stage.name}</span>
-                    <span className="block text-xs text-brand-navy/60">
+                    <span className={`block text-xs ${statusTextColors[stage.status]}`}>
                       {statusLabels[stage.status]}
                       {stage.iterationNumber && stage.iterationNumber > 1
                         ? ` · Run ${stage.iterationNumber}`
@@ -89,7 +97,9 @@ function StageFlow({ progress }: { progress: WorkflowProgressView }) {
             </p>
             <h3 className="mt-1 text-xl font-bold text-brand-navy">{selected.name}</h3>
           </div>
-          <span className="rounded-full bg-brand-orange/10 px-3 py-1 text-xs font-semibold text-brand-navy">
+          <span
+            className={`rounded-full bg-brand-orange/10 px-3 py-1 text-xs font-semibold ${statusTextColors[selected.status]}`}
+          >
             {statusLabels[selected.status]}
           </span>
         </div>

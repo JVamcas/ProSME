@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
+vi.mock("@/modules/forms/application/ServerSystemFormService", () => ({
+  getPublishedSystemFormRuntime: vi.fn(),
+}));
 vi.mock("@/modules/workflows/infrastructure/WorkflowCoiRepository", () => ({
   changeTaskCoi: vi.fn(),
   readTaskCoiGate: vi.fn(),
@@ -13,6 +16,7 @@ vi.mock(
 
 import { permissionCodes } from "@/auth/authorization/permissions";
 import type { AuthenticatedUser } from "@/auth/types";
+import { getPublishedSystemFormRuntime } from "@/modules/forms/application/ServerSystemFormService";
 import {
   declareWorkflowTaskCoi,
   getWorkflowTaskCoi,
@@ -46,6 +50,15 @@ const actor: AuthenticatedUser = {
   userType: "staff",
 };
 const taskId = "22222222-2222-4222-8222-222222222222";
+const form = {
+  displayMode: "SINGLE_PAGE" as const,
+  fields: [],
+  instructions: "Select the statement that applies.",
+  sections: [],
+  submitLabel: "Submit declaration",
+  versionId: "88888888-8888-4888-8888-888888888888",
+  versionNumber: 1,
+};
 const review = {
   taskId,
   expectedRowVersion: 2,
@@ -58,6 +71,7 @@ const review = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(getPublishedSystemFormRuntime).mockResolvedValue(form);
 });
 
 describe("workflow COI service", () => {
@@ -73,6 +87,7 @@ describe("workflow COI service", () => {
       taskName: "Independent review",
     });
     await expect(getWorkflowTaskCoi(actor, taskId)).resolves.toEqual({
+      form,
       taskId,
       taskName: "Independent review",
       taskStatus: "PENDING",
@@ -81,6 +96,9 @@ describe("workflow COI service", () => {
       state: "PENDING_REVIEW",
       cleared: false,
     });
+    expect(getPublishedSystemFormRuntime).toHaveBeenCalledWith(
+      "COI_DECLARATION",
+    );
   });
 
   it("permits a no-conflict declaration on an assigned task", async () => {
@@ -164,4 +182,3 @@ describe("workflow COI service", () => {
     })).rejects.toThrow("COI state or task changed");
   });
 });
-

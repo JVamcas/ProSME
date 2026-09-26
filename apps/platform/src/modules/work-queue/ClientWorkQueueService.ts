@@ -46,6 +46,20 @@ function getTask(taskId: string) {
   });
 }
 
+function uploadTaskDocument(
+  taskId: string,
+  requirementId: string,
+  file: File,
+) {
+  const body = new FormData();
+  body.set("requirementId", requirementId);
+  body.set("file", file);
+  return requestData<TaskDetail>(
+    `/api/admin/tasks/${taskId}/documents`,
+    { body, method: "POST" },
+  );
+}
+
 function completeTask(
   taskId: string,
   input: CompleteChecklistTaskInput,
@@ -117,4 +131,5 @@ export const clientWorkQueueService = {
   executeAction,
   getTask,
   list,
+  uploadTaskDocument,
 };
