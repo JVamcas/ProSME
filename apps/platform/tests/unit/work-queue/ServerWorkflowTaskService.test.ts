@@ -78,6 +78,7 @@ const task = {
   dueAt: new Date("2026-09-20T08:00:00Z"),
   fundingCallTitle: "Funding call",
   formCompleted: false,
+  formName: null,
   reference: "SMEF-2026-000001",
   result: null,
   permissions: defaultWorkflowElementPermissions,

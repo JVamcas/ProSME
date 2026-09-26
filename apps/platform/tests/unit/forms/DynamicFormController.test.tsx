@@ -67,11 +67,17 @@ function Harness({ data }: { data: TaskFormData }) {
   return (
     <div>
       <output>{JSON.stringify(controller.values)}</output>
+      <output data-testid="pending-navigation">
+        {controller.pendingNavigationHref}
+      </output>
       <button
         onClick={() => controller.setValues({ NOTES: "Changed note" })}
         type="button"
       >
         Change
+      </button>
+      <button onClick={controller.confirmNavigation} type="button">
+        Confirm navigation
       </button>
     </div>
   );
@@ -108,6 +114,39 @@ describe("dynamic Form draft persistence", () => {
       JSON.stringify({ NOTES: "Saved note" }),
     );
     expect(mocks.saveMutate).not.toHaveBeenCalled();
+  });
+
+  it("warns before leaving while changes are awaiting autosave", async () => {
+    const container = document.createElement("div");
+    const link = document.createElement("a");
+    link.href = "/admin/work-queue";
+    document.body.append(container, link);
+    root = createRoot(container);
+    await act(async () => root?.render(<Harness data={taskFormData()} />));
+
+    await act(async () => {
+      container.querySelector("button")?.click();
+    });
+
+    const navigation = new MouseEvent("click", {
+      bubbles: true,
+      cancelable: true,
+    });
+    await act(async () => {
+      link.dispatchEvent(navigation);
+    });
+    expect(navigation.defaultPrevented).toBe(true);
+    expect(container.querySelector('[data-testid="pending-navigation"]')?.textContent)
+      .toBe(link.href);
+
+    const unload = new Event("beforeunload", { cancelable: true });
+    window.dispatchEvent(unload);
+    expect(unload.defaultPrevented).toBe(true);
+
+    await act(async () => {
+      container.querySelectorAll("button")[1]?.click();
+    });
+    expect(mocks.push).toHaveBeenCalledWith("/admin/work-queue");
   });
 
   it("autosaves changed partial values after the debounce interval", async () => {

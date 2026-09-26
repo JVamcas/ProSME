@@ -51,7 +51,7 @@ export function WorkflowGraphForm({ editor }: { editor: WorkflowEditorView }) {
     <FormProvider {...form}>
       <form className="grid gap-4" onSubmit={submit}>
         <FormTextarea
-          className="min-h-[460px] font-mono text-xs"
+          className="min-h-115 font-mono text-xs"
           label="Workflow graph configuration"
           name="graphJson"
           spellCheck={false}

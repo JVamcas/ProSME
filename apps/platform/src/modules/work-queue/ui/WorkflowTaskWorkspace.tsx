@@ -3,6 +3,7 @@
 import { PortalErrorState } from "@/components/layout/PortalErrorState";
 import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { Tabs } from "@/components/ui/tabs";
 import { useAdminApplicationDetail } from "@/modules/applications/ApplicationHooks";
 import { ApplicationDetailContent } from "@/modules/applications/ui/ApplicationDetailView";
 import { useWorkflowTask } from "@/modules/work-queue/WorkQueueHooks";
@@ -90,20 +91,24 @@ export function WorkflowTaskWorkspace({ taskId }: { taskId: string }) {
       description="Review the application and complete the assigned task."
       title={task.taskName}
     >
-      <div className="grid min-w-0 items-start gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(24rem,1fr)] xl:gap-5">
-        <section
-          aria-label="Application details"
-          className="order-2 min-w-0 rounded-t-2xl border border-brand-navy/10 bg-white p-3 shadow-none sm:p-4 xl:order-1 [&_.shadow-sm]:shadow-none"
-        >
-          <ApplicationTaskPane applicationId={task.applicationId} />
-        </section>
-        <section
-          aria-label="Task review"
-          className="order-1 min-w-0 rounded-t-2xl border border-brand-navy/10 bg-white p-3 shadow-none sm:p-4 xl:order-2 [&_.shadow-sm]:shadow-none"
-        >
-          <WorkflowTaskReviewPanel task={task} />
-        </section>
-      </div>
+      <Tabs
+        accent="orange"
+        ariaLabel="Workflow task sections"
+        defaultSelectedId="assigned-task"
+        items={[
+          {
+            content: <ApplicationTaskPane applicationId={task.applicationId} />,
+            id: "application-details",
+            label: "Application Details",
+          },
+          {
+            content: <WorkflowTaskReviewPanel task={task} />,
+            id: "assigned-task",
+            label: "Assigned Task",
+          },
+        ]}
+        tabListClassName="border-b border-brand-navy/10 px-4"
+      />
     </PageShell>
   );
 }

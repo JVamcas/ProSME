@@ -60,7 +60,7 @@ export function WorkflowTaskReviewPanel({ task }: { task: TaskDetail }) {
         <WorkflowTaskPreviewSection
           defaultOpen
           status={task.formCompleted ? "Completed" : "Required"}
-          title="Form"
+          title={task.formName ?? "Form"}
         >
           <DynamicFormTask taskId={task.taskInstanceId} />
         </WorkflowTaskPreviewSection>

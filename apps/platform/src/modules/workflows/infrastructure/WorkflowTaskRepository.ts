@@ -35,6 +35,7 @@ export async function readWorkflowTask(
     SELECT task.id AS "taskInstanceId", task.status AS "taskStatus",
       task.row_version AS "rowVersion",
       task.form_version_id AS "formVersionId",
+      form_definition.name AS "formName",
       (task.form_version_id IS NOT NULL AND EXISTS (
         SELECT 1 FROM app_form_responses response
         WHERE response.workflow_task_id = task.id
@@ -64,6 +65,10 @@ export async function readWorkflowTask(
     FROM app_workflow_tasks task
     JOIN app_stage_task_definitions definition
       ON definition.id = task.workflow_task_definition_id
+    LEFT JOIN app_form_versions form_version
+      ON form_version.id = task.form_version_id
+    LEFT JOIN app_form_definitions form_definition
+      ON form_definition.id = form_version.form_definition_id
     JOIN app_workflow_stage_instances stage ON stage.id = task.stage_instance_id
     JOIN app_workflow_stage_definitions stage_definition
       ON stage_definition.id = stage.workflow_stage_definition_id

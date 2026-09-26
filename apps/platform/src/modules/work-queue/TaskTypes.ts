@@ -45,6 +45,7 @@ export type TaskDetail = {
   canEvaluateEligibility: boolean;
   hasChecklist: boolean;
   formCompleted: boolean;
+  formName: string | null;
   checklistCompleted: boolean;
   commentFields: CommentConfigurationItem[];
   commentCompleted: boolean;

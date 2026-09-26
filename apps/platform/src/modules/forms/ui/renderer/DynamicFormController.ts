@@ -21,6 +21,8 @@ export function useDynamicFormController(taskId: string, data: TaskFormData) {
     data.response?.values ?? {},
   );
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [pendingNavigationHref, setPendingNavigationHref] = useState<string | null>(null);
+  const allowExternalNavigation = useRef(false);
   const revision = useRef(0);
   const lastAutosaveRevision = useRef(0);
 
@@ -69,6 +71,57 @@ export function useDynamicFormController(taskId: string, data: TaskFormData) {
     return () => window.clearTimeout(timer);
   }, [complete.isPending, hasUnsavedChanges, save.isPending, saveDraftValues]);
 
+  useEffect(() => {
+    if (!hasUnsavedChanges && !save.isPending) return;
+
+    function warnBeforeUnload(event: BeforeUnloadEvent) {
+      if (allowExternalNavigation.current) return;
+      event.preventDefault();
+      event.returnValue = "";
+    }
+
+    function warnBeforeNavigation(event: MouseEvent) {
+      if (
+        event.defaultPrevented
+        || event.button !== 0
+        || event.metaKey
+        || event.ctrlKey
+        || event.shiftKey
+        || event.altKey
+      ) {
+        return;
+      }
+      if (!(event.target instanceof Element)) return;
+      const link = event.target.closest<HTMLAnchorElement>("a[href]");
+      if (!link || link.hasAttribute("download")
+        || (link.target && link.target !== "_self")) {
+        return;
+      }
+      if (link.href === window.location.href) return;
+      event.preventDefault();
+      setPendingNavigationHref(link.href);
+    }
+
+    window.addEventListener("beforeunload", warnBeforeUnload);
+    document.addEventListener("click", warnBeforeNavigation, true);
+    return () => {
+      window.removeEventListener("beforeunload", warnBeforeUnload);
+      document.removeEventListener("click", warnBeforeNavigation, true);
+    };
+  }, [hasUnsavedChanges, save.isPending]);
+
+  function confirmNavigation() {
+    if (!pendingNavigationHref) return;
+    const destination = new URL(pendingNavigationHref);
+    setPendingNavigationHref(null);
+    if (destination.origin === window.location.origin) {
+      router.push(`${destination.pathname}${destination.search}${destination.hash}`);
+      return;
+    }
+    allowExternalNavigation.current = true;
+    window.location.assign(destination.href);
+  }
+
   const completeFormValues = (
     completedValues: DynamicFormValues,
     actionKey: string | null,
@@ -96,9 +149,12 @@ export function useDynamicFormController(taskId: string, data: TaskFormData) {
   };
 
   return {
+    cancelNavigation: () => setPendingNavigationHref(null),
     complete,
     completeFormValues,
+    confirmNavigation,
     hasUnsavedChanges,
+    pendingNavigationHref,
     save,
     saveDraftValues,
     setValues: changeValues,
