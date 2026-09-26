@@ -77,10 +77,14 @@ function ChecklistResponse({
   );
 }
 
-export function WorkflowChecklistPreview({ stage }: { stage: WorkflowStageInput }) {
+export function WorkflowChecklistPreview({
+  items,
+}: {
+  items: WorkflowStageInput["checklistItems"];
+}) {
   return (
     <div className="space-y-3">
-      {[...stage.checklistItems]
+      {[...items]
         .sort((left, right) => left.displayOrder - right.displayOrder)
         .map((item) => (
           <div

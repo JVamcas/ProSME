@@ -40,7 +40,6 @@ export const commentFieldSchema = z.object({
   label: z.string().min(2).max(160),
   helpText: z.string().max(1000),
   mandatory: z.boolean(),
-  visibility: z.enum(["APPLICANT_VISIBLE", "INTERNAL_ONLY"]),
   displayOrder: z.number().int().positive(),
 });
 

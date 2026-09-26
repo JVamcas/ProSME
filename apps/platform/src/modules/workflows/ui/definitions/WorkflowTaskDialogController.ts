@@ -5,7 +5,7 @@ import { useForm, useWatch, type UseFormSetError } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { usePublishedForms } from "@/modules/forms/FormHooks";
-import { formPurposes, type FormPurpose, type PublishedFormOption } from "@/modules/forms/FormTypes";
+import type { FormPurpose, PublishedFormOption } from "@/modules/forms/FormTypes";
 import { useSaveWorkflowGraph } from "@/modules/workflows/WorkflowHooks";
 import type {
   WorkflowEditorView,
@@ -160,8 +160,8 @@ export function useWorkflowTaskDialogController(
       formVersionId: task?.formBinding?.formVersionId ?? "",
       formPurpose: task?.config && typeof task.config === "object"
         && "formPurpose" in task.config
-        && formPurposes.includes(task.config.formPurpose as FormPurpose)
-          ? task.config.formPurpose as FormPurpose
+        && task.config.formPurpose === "ELIGIBILITY_VERIFICATION"
+          ? "ELIGIBILITY_VERIFICATION"
           : "APPLICATION_REVIEW",
       name: task?.name ?? "",
       reviewerCount: task?.reviewerCount ?? 1,

@@ -20,7 +20,6 @@ import {
   workflowDocumentVerifierActors,
 } from "@/modules/workflows/domain/definitions/WorkflowStageDocumentRequirement";
 import { workflowScoringAggregations } from "@/modules/workflows/domain/definitions/WorkflowStageScoringDefinition";
-import { workflowCommentFieldVisibilities } from "@/modules/workflows/domain/definitions/WorkflowStageCommentField";
 import { staticPermissionCodes } from "@/auth/authorization/permissions";
 import { workflowElementVisibilities } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
 
@@ -52,7 +51,6 @@ export const workflowStageCommentFieldSchema = z.object({
   label: z.string().trim().min(2).max(160),
   helpText: z.string().trim().max(1000),
   mandatory: z.boolean(),
-  visibility: z.enum(workflowCommentFieldVisibilities),
   displayOrder: z.number().int().positive(),
 }).strict();
 

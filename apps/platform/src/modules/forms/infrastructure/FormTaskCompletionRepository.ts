@@ -244,7 +244,7 @@ async function appendCompletionRecords(
       jsonb_build_object(
         'formVersionId', ${input.formVersionId}::text,
         'respondentUserId', ${input.actorId}::text,
-        'rowVersion', ${response.rowVersion},
+        'rowVersion', ${response.rowVersion}::integer,
         'status', 'COMPLETED',
         'values', ${JSON.stringify(input.values)}::jsonb,
         'workflowTaskId', ${input.taskInstanceId}::text

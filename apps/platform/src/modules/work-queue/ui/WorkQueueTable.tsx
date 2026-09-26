@@ -38,6 +38,11 @@ const columns: DataTableColumn<WorkQueueRow>[] = [
     cell: ({ row }) => <StatusBadge status={row.original.stageName} />,
   },
   {
+    accessorKey: "taskStatus",
+    header: "Task status",
+    cell: ({ row }) => <StatusBadge status={row.original.taskStatus} />,
+  },
+  {
     accessorKey: "assignedUserName",
     header: "Assigned to",
     cell: ({ row }) => (

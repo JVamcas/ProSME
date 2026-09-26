@@ -101,6 +101,7 @@ async function insertStageRequirements(
       id: undefined,
       stageId,
       taskDefinitionId: taskIds.get(`${stageId}:${taskStableKey}`)!,
+      visibility: "INTERNAL_ONLY",
     }));
   });
   if (commentFields.length) {
@@ -175,12 +176,11 @@ async function insertActionsAndTasks(
       delete configuration.items;
       configuration.commentFields = (stage.commentFields ?? [])
         .filter((field) => field.taskStableKey === task.stableKey)
-        .map(({ key, label, helpText, mandatory, visibility, displayOrder }) => ({
+        .map(({ key, label, helpText, mandatory, displayOrder }) => ({
           key,
           label,
           helpText,
           mandatory,
-          visibility,
           displayOrder,
         }));
       return {

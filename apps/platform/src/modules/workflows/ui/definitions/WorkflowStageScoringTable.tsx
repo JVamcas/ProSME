@@ -182,6 +182,7 @@ export function WorkflowStageScoringTable({
               value: task.stableKey,
             }))}
             label="Workflow task"
+            infoTooltip="Workflow task in which this action is displayed."
             name="taskStableKey"
             placeholder="Select a workflow task"
             required

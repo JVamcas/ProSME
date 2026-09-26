@@ -24,7 +24,7 @@ export async function assertApplicationWithdrawal(input: {
     applicationId: input.applicationId,
     correlationId: crypto.randomUUID(),
     idempotencyKey: "withdraw-submission-test",
-    reasonCode: "OTHER",
+    reason: "Business is closing.",
   };
   await expect(withdrawOwnedApplication({
     ...command,
@@ -51,6 +51,10 @@ export async function assertApplicationWithdrawal(input: {
        (SELECT count(*)::integer FROM app_application_lifecycle_history history
          WHERE history.application_id = application.id
            AND history.target_status = 'withdrawn') AS withdrawal_count,
+       (SELECT history.reason FROM app_application_lifecycle_history history
+         WHERE history.application_id = application.id
+           AND history.target_status = 'withdrawn'
+         LIMIT 1) AS withdrawal_reason,
        (SELECT count(*)::integer FROM app_application_audit_entries audit
          WHERE audit.application_id = application.id
            AND audit.action = 'APPLICATION_WITHDRAWN') AS audit_count,
@@ -72,6 +76,7 @@ export async function assertApplicationWithdrawal(input: {
     audit_count: 1,
     open_tasks: 0,
     withdrawal_count: 1,
+    withdrawal_reason: "Business is closing.",
     workflow_status: "CANCELLED",
   });
 }

@@ -70,7 +70,11 @@ export function WorkflowTaskPreviewDialog({
   const publishedForms = usePublishedForms();
   const actions = workflowTaskPreviewActions(stage, task);
   const hasForm = Boolean(task.formBinding);
-  const hasChecklist = stage.checklistItems.length > 0;
+  const taskChecklistItems = workflowTaskChecklistItems(stage, task);
+  const requiredChecklistCount = taskChecklistItems.filter(
+    (item) => item.mandatory,
+  ).length;
+  const hasChecklist = taskChecklistItems.length > 0;
   const taskDocuments = stage.documentRequirements.filter(
     (requirement) => requirement.taskStableKey === task.stableKey,
   );
@@ -89,7 +93,7 @@ export function WorkflowTaskPreviewDialog({
     .filter(Boolean).length;
   const requiredCount =
     (form.data?.fields.filter((field) => field.required).length ?? 0)
-    + stage.checklistItems.filter((item) => item.mandatory).length
+    + requiredChecklistCount
     + taskDocuments.filter((item) => item.mandatory).length
     + (stage.scoring?.criteria.length ?? 0)
     + commentFields.filter((field) => field.mandatory).length;
@@ -133,10 +137,10 @@ export function WorkflowTaskPreviewDialog({
         ) : null}
         {hasChecklist ? (
           <WorkflowTaskPreviewSection
-            status={`${stage.checklistItems.filter((item) => item.mandatory).length} required items`}
+            status={`${requiredChecklistCount} required items`}
             title="Checklist"
           >
-            <WorkflowChecklistPreview stage={stage} />
+            <WorkflowChecklistPreview items={taskChecklistItems} />
           </WorkflowTaskPreviewSection>
         ) : null}
         {hasDocuments ? (
@@ -184,6 +188,15 @@ export function WorkflowTaskPreviewDialog({
         ) : null}
       </WorkflowTaskReviewLayout>
     </DraggableDialog>
+  );
+}
+
+export function workflowTaskChecklistItems(
+  stage: WorkflowStageInput,
+  task: WorkflowTaskInput,
+) {
+  return stage.checklistItems.filter(
+    (item) => item.taskStableKey === task.stableKey,
   );
 }
 

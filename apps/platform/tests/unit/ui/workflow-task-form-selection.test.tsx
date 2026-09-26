@@ -18,9 +18,11 @@ const attachedVersionId = "68cecb68-3f4f-4862-a958-92942187cf04";
 function TaskFields({
   completionMode = "COUNT",
   formItems,
+  formPurpose = "APPLICATION_REVIEW",
 }: {
   completionMode?: WorkflowTaskFormValues["completionMode"];
   formItems: { label: string; value: string }[];
+  formPurpose?: WorkflowTaskFormValues["formPurpose"];
 }) {
   const form = useForm<WorkflowTaskFormValues>({
     defaultValues: {
@@ -31,7 +33,7 @@ function TaskFields({
       description: "",
       displayOrder: 1,
       formVersionId: attachedVersionId,
-      formPurpose: "APPLICATION_REVIEW",
+      formPurpose,
       name: "Finance Review",
       required: true,
       requiredCompletionCount: 1,
@@ -51,7 +53,7 @@ function TaskFields({
         assignmentMode="ROLE"
         formItems={formItems}
         formVersionId={formVersionId ?? ""}
-        formPurpose="APPLICATION_REVIEW"
+        formPurpose={formPurpose}
         formsPending={formItems.length === 0}
         mutationPending={false}
       />
@@ -97,6 +99,47 @@ describe("workflow task form selection", () => {
       label: "Review · v1",
       value: forms[1].versionId,
     }]);
+  });
+
+  it("offers only the two task form purposes and leaves the form optional", async () => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+
+    await act(async () => root.render(<TaskFields formItems={[]} />));
+
+    const purpose = container.querySelector<HTMLSelectElement>(
+      'select[name="formPurpose"]',
+    );
+    expect(Array.from(purpose?.options ?? [], (option) => option.value)).toEqual([
+      "APPLICATION_REVIEW",
+      "ELIGIBILITY_VERIFICATION",
+    ]);
+    expect(container.querySelector<HTMLSelectElement>(
+      'select[name="formVersionId"]',
+    )?.required).toBe(false);
+
+    await act(async () => root.unmount());
+  });
+
+  it("uses the funding call form for eligibility tasks without offering another version", async () => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+
+    await act(async () => root.render(
+      <TaskFields
+        formItems={[{ label: "Other eligibility form · v1", value: attachedVersionId }]}
+        formPurpose="ELIGIBILITY_VERIFICATION"
+      />,
+    ));
+
+    expect(container.querySelector('select[name="formVersionId"]')).toBeNull();
+    expect(container.textContent).toContain(
+      "The eligibility form attached to the funding call is used when this task runs.",
+    );
+
+    await act(async () => root.unmount());
   });
 
   it("retains the attached form while published-form options load", async () => {

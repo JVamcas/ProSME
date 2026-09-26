@@ -14,7 +14,7 @@ import { withdrawOwnedApplication } from "@/modules/applications/infrastructure/
 
 const applicationId = "99e20de0-3558-4d63-90a4-8c9f5125df07";
 const correlationId = "89e20de0-3558-4d63-90a4-8c9f5125df07";
-const command = { confirmed: true as const, reasonCode: "OTHER" };
+const command = { confirmed: true as const, reason: "Business is closing." };
 
 function applicant(granted: string[]): AuthenticatedUser {
   return {
@@ -67,6 +67,7 @@ describe("applicant withdrawal service", () => {
       actorId: "79e20de0-3558-4d63-90a4-8c9f5125df07",
       applicationId,
       idempotencyKey: "retry-key",
+      reason: "Business is closing.",
     }));
   });
 

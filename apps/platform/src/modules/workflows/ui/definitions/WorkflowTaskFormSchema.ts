@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-import { formPurposes } from "@/modules/forms/FormTypes";
 import type { WorkflowTaskInput } from "@/modules/workflows/domain/definitions/WorkflowTypes";
+import { workflowTaskFormPurposes } from "@/modules/workflows/domain/definitions/WorkflowTaskDefinition";
 
 export const workflowTaskFormSchema = z.object({
   assignmentMode: z.enum(["ROLE", "NAMED_USER"]),
@@ -16,7 +16,7 @@ export const workflowTaskFormSchema = z.object({
       "Use uppercase letters, numbers and underscores.",
     ),
   formVersionId: z.union([z.string().uuid(), z.literal("")]),
-  formPurpose: z.enum(formPurposes),
+  formPurpose: z.enum(workflowTaskFormPurposes),
   runAuthoritativeEligibility: z.boolean(),
   description: z.string().trim().max(1000),
   displayOrder: z.number().int().positive(),

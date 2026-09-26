@@ -4,6 +4,11 @@ import type { WorkflowElementPermissions } from "./WorkflowElementPermissions";
 
 export const workflowTaskAssignmentModes = ["ROLE", "NAMED_USER"] as const;
 
+export const workflowTaskFormPurposes = [
+  "APPLICATION_REVIEW",
+  "ELIGIBILITY_VERIFICATION",
+] as const;
+
 export type WorkflowTaskAssignmentMode =
   (typeof workflowTaskAssignmentModes)[number];
 

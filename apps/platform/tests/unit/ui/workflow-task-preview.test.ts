@@ -4,6 +4,7 @@ import { createElement } from "react";
 
 import { referenceWorkflow } from "../../support/ReferenceWorkflowFixture";
 import {
+  workflowTaskChecklistItems,
   workflowTaskPreviewActions,
   workflowTaskPreviewFormName,
   workflowTaskPreviewPanelClass,
@@ -52,6 +53,41 @@ describe("workflow task reviewer preview", () => {
         label: "Reject",
       },
     ]);
+  });
+
+  it("selects only checklist items assigned to the previewed task", () => {
+    const stage = structuredClone(referenceWorkflow.stages[0]);
+    const task = stage.tasks[0];
+    stage.checklistItems = [
+      {
+        taskStableKey: task.stableKey,
+        key: "THIS_TASK",
+        text: "This task",
+        mandatory: true,
+        responseType: "YES_NO",
+        evidenceRequirement: "NONE",
+        notes: "",
+        displayOrder: 1,
+      },
+      {
+        taskStableKey: "OTHER_TASK",
+        key: "OTHER_TASK",
+        text: "Other task",
+        mandatory: true,
+        responseType: "YES_NO",
+        evidenceRequirement: "NONE",
+        notes: "",
+        displayOrder: 2,
+      },
+    ];
+
+    const items = workflowTaskChecklistItems(stage, task);
+    expect(items.map((item) => item.key)).toEqual(["THIS_TASK"]);
+    const markup = renderToStaticMarkup(
+      createElement(WorkflowChecklistPreview, { items }),
+    );
+    expect(markup).toContain("This task");
+    expect(markup).not.toContain("Other task");
   });
 
   it("keeps a fixed outer width while preview content loads or changes", () => {
@@ -117,7 +153,7 @@ describe("workflow task reviewer preview", () => {
           status: "1 required item",
           title: "Checklist",
         },
-        createElement(WorkflowChecklistPreview, { stage }),
+        createElement(WorkflowChecklistPreview, { items: stage.checklistItems }),
       )),
       renderToStaticMarkup(createElement(
         WorkflowTaskPreviewSection,
@@ -142,6 +178,10 @@ describe("workflow task reviewer preview", () => {
 
     expect(markup).toContain("0 of 3 required items complete");
     expect(markup).toContain("Verify the requested amount");
+    const otherTaskChecklist = renderToStaticMarkup(
+      createElement(WorkflowChecklistPreview, { items: [] }),
+    );
+    expect(otherTaskChecklist).not.toContain("Verify the requested amount");
     expect(markup).toContain("Financial statements");
     expect(markup).toContain("Business viability");
     expect(markup).not.toContain("Comments & recommendations");

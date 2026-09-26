@@ -58,7 +58,6 @@ function loadCommentRows(versionId: string) {
       label: workflowStageCommentFields.label,
       helpText: workflowStageCommentFields.helpText,
       mandatory: workflowStageCommentFields.mandatory,
-      visibility: workflowStageCommentFields.visibility,
       displayOrder: workflowStageCommentFields.displayOrder,
     })
     .from(workflowStageCommentFields)

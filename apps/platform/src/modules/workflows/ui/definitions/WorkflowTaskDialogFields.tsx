@@ -10,6 +10,7 @@ import {
   FormTextarea,
 } from "@/components/ui/form-fields";
 import { formPurposeOptions, type FormPurpose } from "@/modules/forms/FormTypes";
+import { workflowTaskFormPurposes } from "@/modules/workflows/domain/definitions/WorkflowTaskDefinition";
 import type { WorkflowTaskFormValues } from "./WorkflowTaskFormSchema";
 
 function TaskIdentityFields() {
@@ -112,24 +113,27 @@ export function WorkflowTaskDialogFields({
       <TaskIdentityFields />
       <div className="grid gap-4 sm:grid-cols-2">
         <FormSelect
-          items={formPurposeOptions.map((item) => ({ ...item }))}
+          items={formPurposeOptions.filter((item) =>
+            workflowTaskFormPurposes.some((purpose) => purpose === item.value),
+          )}
           label="Form purpose"
           name="formPurpose"
           required
         />
-        {formPurpose !== "ELIGIBILITY_VERIFICATION" ? (
+        {formPurpose === "ELIGIBILITY_VERIFICATION" ? (
+          <div className="self-end text-sm text-slate-600">
+            The eligibility form attached to the funding call is used when this
+            task runs.
+          </div>
+        ) : (
           <FormSelect
             items={formItems}
             label="Form version"
             name="formVersionId"
-            infoTooltip={`Choose a published ${formPurpose.toLowerCase().replaceAll("_", " ")} form.`}
+            infoTooltip="Choose a published application review form."
             placeholder={formsPending ? "Loading forms…" : "No form selected"}
             value={formVersionId}
           />
-        ) : (
-          <p className="self-center text-sm text-brand-navy/65">
-            The verification form is bound to the funding call eligibility ruleset.
-          </p>
         )}
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
@@ -172,13 +176,6 @@ export function WorkflowTaskDialogFields({
         />
         <CompletionThresholdValueField />
       </div>
-      {formPurpose === "ELIGIBILITY_VERIFICATION" ? (
-        <CheckboxField
-          containerClassName="mt-6 text-sm font-semibold text-brand-navy"
-          label="Run authoritative eligibility in this task"
-          name="runAuthoritativeEligibility"
-        />
-      ) : null}
       <CheckboxField
         containerClassName="mt-8 text-sm font-semibold text-brand-navy"
         label="Required before the stage can complete"

@@ -15,6 +15,7 @@ import type {
   WorkflowValidation,
 } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import { formPurposes, type FormPurpose } from "@/modules/forms/domain/FormPurpose";
+import { workflowTaskFormPurposes } from "@/modules/workflows/domain/definitions/WorkflowTaskDefinition";
 import { validateWorkflowGraph } from "@/modules/workflows/WorkflowValidation";
 import { validateWorkflowConditions } from "@/modules/workflows/engine/WorkflowConditionValidation";
 
@@ -85,9 +86,18 @@ async function validateReferences(
           path: `stages.${index}.tasks.${taskIndex}.roleId`,
         });
       }
+      const configuredPurpose = task.config
+        && typeof task.config === "object"
+        && "formPurpose" in task.config
+        && formPurposes.includes(task.config.formPurpose as FormPurpose)
+          ? task.config.formPurpose as FormPurpose
+          : null;
+      const configuredFormBinding = configuredPurpose === "ELIGIBILITY_VERIFICATION"
+        ? null
+        : task.formBinding;
       if (
-        task.formBinding &&
-        references.forms.get(task.formBinding.formVersionId) !== "PUBLISHED"
+        configuredFormBinding
+        && references.forms.get(configuredFormBinding.formVersionId) !== "PUBLISHED"
       ) {
         validation.errors.push({
           code: "INVALID_FORM_VERSION",
@@ -96,22 +106,28 @@ async function validateReferences(
           path: `stages.${index}.tasks.${taskIndex}.formBinding.formVersionId`,
         });
       }
-      const configuredPurpose = task.config
-        && typeof task.config === "object"
-        && "formPurpose" in task.config
-        && formPurposes.includes(task.config.formPurpose as FormPurpose)
-          ? task.config.formPurpose as FormPurpose
-          : null;
-      if (task.formBinding && !configuredPurpose) {
+      if (configuredPurpose && !workflowTaskFormPurposes.some(
+        (purpose) => purpose === configuredPurpose,
+      )) {
+        validation.errors.push({
+          code: "UNSUPPORTED_TASK_FORM_PURPOSE",
+          message: "Task forms must be for application review or eligibility verification.",
+          path: `stages.${index}.tasks.${taskIndex}.config.formPurpose`,
+        });
+      }
+      if (configuredFormBinding && !configuredPurpose) {
         validation.errors.push({
           code: "FORM_PURPOSE_REQUIRED",
           message: "Select a purpose for the bound task form.",
           path: `stages.${index}.tasks.${taskIndex}.config.formPurpose`,
         });
       }
-      if (task.formBinding && configuredPurpose
-        && references.formPurposes.get(task.formBinding.formVersionId)
-          !== configuredPurpose) {
+      if (
+        configuredFormBinding
+        && configuredPurpose
+        && references.formPurposes.get(configuredFormBinding.formVersionId)
+          !== configuredPurpose
+      ) {
         validation.errors.push({
           code: "FORM_PURPOSE_MISMATCH",
           message: "The selected form purpose does not match this task.",

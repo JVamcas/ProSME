@@ -1,20 +1,23 @@
 "use client";
 
-import { Copy, Workflow } from "lucide-react";
+import { Workflow } from "lucide-react";
+import { useState } from "react";
 
 import { PortalErrorState } from "@/components/layout/PortalErrorState";
 import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
-import { GeneralButton } from "@/components/ui/button";
+import { CloneButton, PublishButton } from "@/components/ui/action-buttons";
 import { StatusBadge } from "@/components/ui/status-badge";
 import {
   useCloneWorkflow,
   useWorkflowEditor,
+  useWorkflowListLifecycle,
 } from "@/modules/workflows/WorkflowHooks";
+import { workflowTemplatePublishableStatuses } from "@/modules/workflows/domain/definitions/WorkflowTemplate";
 import { PageShell } from "@/shared/ui/PageShell";
+import { ConfirmationDialog } from "@/shared/ui/ConfirmationDialog";
+import { showWorkflowPublicationError } from "@/modules/workflows/ui/definitions/WorkflowPublicationErrorToast";
 import { WorkflowDefinitionDetailsCard } from "./WorkflowDefinitionDetailsCard";
 import { WorkflowStageFlow } from "./WorkflowStageFlow";
-import { error } from "node:console";
-import { CloneButton } from "@/components/ui/action-buttons";
 
 type Props = {
   canPublish: boolean;
@@ -22,9 +25,15 @@ type Props = {
   canUpdate: boolean;
   definitionId: string;
 };
-export function WorkflowEditorWorkspace({ canUpdate, definitionId }: Props) {
+export function WorkflowEditorWorkspace({
+  canPublish,
+  canUpdate,
+  definitionId,
+}: Props) {
   const query = useWorkflowEditor(definitionId);
   const clone = useCloneWorkflow(definitionId);
+  const publish = useWorkflowListLifecycle("publish", definitionId);
+  const [showPublishConfirmation, setShowPublishConfirmation] = useState(false);
 
   if (query.isLoading)
     return (
@@ -40,28 +49,59 @@ export function WorkflowEditorWorkspace({ canUpdate, definitionId }: Props) {
     );
 
   const editor = query.data;
-  const busy = clone.isPending;
+  const busy = clone.isPending || publish.isPending;
+  const canPublishVersion = canPublish
+    && workflowTemplatePublishableStatuses.includes(editor.version.status);
 
   return (
-    <PageShell
-      eyebrow="Admin / Workflow Definitions"
-      title="Workflow definitions"
-      description={editor.definition.description}
-      icon={<Workflow size={18} className="text-brand-orange" />}
-      actions={
-        <div className="flex flex-wrap gap-2">
-          <CloneButton
-            onClick={() => clone.mutate(editor.version.id)}
-            disabled={busy && !(editor.version.status !== "DRAFT" && canUpdate)}
+    <>
+      <PageShell
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <CloneButton
+              title={`Clone ${editor.definition.name} to a new version.`}
+              disabled={busy || !canUpdate}
+              onClick={() => clone.mutate(editor.version.id)}
+            />
+            {canPublishVersion ? (
+              <PublishButton
+                disabled={busy}
+                onClick={() => {
+                  publish.reset();
+                  setShowPublishConfirmation(true);
+                }}
+                title={`Publish ${editor.definition.name}`}
+              />
+            ) : null}
+            <StatusBadge status={editor.version.status} />
+          </div>
+        }
+        description={editor.definition.description}
+        eyebrow="Admin / Workflow Definitions"
+        icon={<Workflow size={18} className="text-brand-orange" />}
+        title="Workflow definitions"
+      >
+        <div className="space-y-6">
+          <WorkflowDefinitionDetailsCard editor={editor} />
+          <WorkflowStageFlow
+            canEdit={canUpdate && editor.version.status === "DRAFT"}
+            editor={editor}
           />
-          <StatusBadge status={editor.version.status} />
         </div>
-      }
-    >
-      <div className="space-y-6">
-        <WorkflowDefinitionDetailsCard editor={editor} />
-        <WorkflowStageFlow canEdit={canUpdate} editor={editor} />
-      </div>
-    </PageShell>
+      </PageShell>
+      <ConfirmationDialog
+        confirmLabel="Publish"
+        isOpen={showPublishConfirmation}
+        isPending={publish.isPending}
+        message={`Publish ${editor.definition.name} version ${editor.version.number}? Published workflow versions cannot be edited.`}
+        onClose={() => setShowPublishConfirmation(false)}
+        onConfirm={() => publish.mutate(definitionId, {
+          onError: showWorkflowPublicationError,
+          onSuccess: () => setShowPublishConfirmation(false),
+        })}
+        pendingLabel="Publishing…"
+        title="Publish workflow template"
+      />
+    </>
   );
 }

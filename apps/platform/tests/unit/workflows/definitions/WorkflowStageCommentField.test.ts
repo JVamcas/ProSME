@@ -9,7 +9,6 @@ const field = {
   label: "Recommendation",
   helpText: "Explain your recommendation.",
   mandatory: true,
-  visibility: "INTERNAL_ONLY" as const,
   displayOrder: 1,
 };
 

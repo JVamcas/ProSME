@@ -133,6 +133,7 @@ export function WorkflowStageChecklistDialog({
               value: task.stableKey,
             }))}
             label="Workflow task"
+            infoTooltip="Workflow task in which this action is displayed."
             name="taskStableKey"
             placeholder={
               stage.tasks.length

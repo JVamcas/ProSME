@@ -7,7 +7,7 @@ import { FormProvider, useForm } from "react-hook-form";
 import { GeneralButton } from "@/components/ui/button";
 import { DraggableDialog } from "@/components/ui/draggable-dialog";
 import { Checkbox, FieldError } from "@/shared/ui/FormPrimitives";
-import { FormInput, FormTextarea } from "@/components/ui/form-fields";
+import { FormTextarea } from "@/components/ui/form-fields";
 
 import { useWithdrawApplication } from "../ApplicationHooks";
 import type { ApplicationSummary } from "../ApplicationTypes";
@@ -21,12 +21,6 @@ type Props = {
   onCancel: () => void;
   onWithdrawn: () => void;
 };
-
-function emptyToUndefined(value: unknown) {
-  return typeof value === "string" && value.trim() === ""
-    ? undefined
-    : value;
-}
 
 export function ApplicationWithdrawalForm({
   application,
@@ -67,15 +61,10 @@ export function ApplicationWithdrawalForm({
             {application.reference} will remain in your records. This action
             cannot be undone from the portal.
           </p>
-          <FormInput
-            label="Reason code (if applicable)"
-            name="reasonCode"
-            registrationOptions={{ setValueAs: emptyToUndefined }}
-          />
           <FormTextarea
-            label="Comment (optional)"
-            name="comment"
-            registrationOptions={{ setValueAs: emptyToUndefined }}
+            label="Reason"
+            name="reason"
+            required
           />
           <div>
             <label className="flex items-start gap-2 text-sm text-brand-navy">

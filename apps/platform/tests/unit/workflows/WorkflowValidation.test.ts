@@ -65,7 +65,6 @@ describe("workflow task configuration", () => {
           label: "Recommendation",
           helpText: "Explain the decision.",
           mandatory: true,
-          visibility: "INTERNAL_ONLY",
           displayOrder: 1,
         },
       ],

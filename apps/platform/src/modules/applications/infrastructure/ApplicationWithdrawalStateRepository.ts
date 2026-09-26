@@ -27,7 +27,7 @@ export async function applyApplicationWithdrawalInTransaction(
     actorId: string;
     application: WithdrawalApplicationState;
     correlationId: string;
-    reasonCode?: string;
+    reason?: string;
     stageId?: string;
     workflowId: string;
     withdrawnAt: Date;
@@ -102,7 +102,7 @@ export async function applyApplicationWithdrawalInTransaction(
     actorUserId: input.actorId,
     applicationId: input.application.id,
     occurredAt: withdrawnAt,
-    reason: input.reasonCode ?? null,
+    reason: input.reason ?? null,
     resultingRowVersion: input.application.rowVersion + 1,
     sourceRowVersion: input.application.rowVersion,
     sourceStatus: "submitted",

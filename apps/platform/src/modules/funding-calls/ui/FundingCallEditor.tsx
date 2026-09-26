@@ -1,11 +1,13 @@
 "use client";
 
+import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
 import {
   useFundingCall,
   useUpdateFundingCall,
 } from "../FundingCallHooks";
 import { FundingCallForm } from "./FundingCallForm";
 import { FundingCallGovernanceActions } from "./FundingCallGovernanceActions";
+import { PortalErrorState } from "@/components/layout/PortalErrorState";
 
 export function FundingCallEditor({
   canApprove,
@@ -23,9 +25,10 @@ export function FundingCallEditor({
   const query = useFundingCall(id);
   const update = useUpdateFundingCall(id);
 
-  if (query.isPending) return <p>Loading funding call…</p>;
+  if (query.isPending) return
+  <PortalLoadingState title="" description="Just a moment..." />
   if (query.error || !query.data) {
-    return <p>{query.error?.message ?? "Funding call not found."}</p>;
+    return <PortalErrorState title={query.error.name} description={query.error.message} />
   }
 
   const call = query.data;

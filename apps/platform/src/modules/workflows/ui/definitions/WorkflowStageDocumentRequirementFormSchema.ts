@@ -17,6 +17,10 @@ export const documentActorItems = [
   { label: "Staff", value: "STAFF" },
 ] as const;
 
+export function parseOptionalExpiryDays(value: string | number | null | undefined) {
+  return value == null || value === "" ? null : Number(value);
+}
+
 export const workflowStageDocumentRequirementFormSchema = z.object({
   name: z.string().trim().min(2).max(160),
   taskStableKey: z.string().min(1, "Select a workflow task."),

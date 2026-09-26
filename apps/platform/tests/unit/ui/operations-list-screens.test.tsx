@@ -119,6 +119,8 @@ describe("operations list screens", () => {
     expect(markup).toContain("Check completeness");
     expect(markup).toContain("Operations User");
     expect(markup).toContain("Task created");
+    expect(markup).toContain("Task status");
+    expect(markup).toContain("Pending");
     expect(markup).toContain("Assigned");
     expect(markup).not.toContain(">Claim<");
   });

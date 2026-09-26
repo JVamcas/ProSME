@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import { workflowStageSchema } from "@/modules/workflows/api/WorkflowSchemas";
+import {
+  parseOptionalExpiryDays,
+  workflowStageDocumentRequirementFormSchema,
+} from "@/modules/workflows/ui/definitions/WorkflowStageDocumentRequirementFormSchema";
 import { referenceWorkflow } from "../../../support/ReferenceWorkflowFixture";
 
 function stageWithDocumentRequirements() {
@@ -34,6 +38,24 @@ function stageWithDocumentRequirements() {
 }
 
 describe("workflow stage document requirements", () => {
+  it("keeps an empty optional expiry blank and validates entered days", () => {
+    const requirement = stageWithDocumentRequirements().documentRequirements[1];
+
+    for (const value of [null, undefined, ""]) {
+      expect(parseOptionalExpiryDays(value)).toBeNull();
+      expect(workflowStageDocumentRequirementFormSchema.safeParse({
+        ...requirement,
+        expiryDays: parseOptionalExpiryDays(value),
+      }).success).toBe(true);
+    }
+
+    expect(parseOptionalExpiryDays("180")).toBe(180);
+    expect(workflowStageDocumentRequirementFormSchema.safeParse({
+      ...requirement,
+      expiryDays: parseOptionalExpiryDays("0"),
+    }).success).toBe(false);
+  });
+
   it("accepts every configured document requirement field", () => {
     expect(
       workflowStageSchema.safeParse(stageWithDocumentRequirements()).success,

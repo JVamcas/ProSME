@@ -15,6 +15,7 @@ import type {
 } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import {
   documentFileTypeItems,
+  parseOptionalExpiryDays,
   workflowStageDocumentRequirementFormSchema,
   type WorkflowStageDocumentRequirementFormValues,
 } from "./WorkflowStageDocumentRequirementFormSchema";
@@ -112,6 +113,7 @@ export function WorkflowStageDocumentRequirementDialog({
               value: task.stableKey,
             }))}
             label="Workflow task"
+            infoTooltip="Workflow task in which this action is displayed."
             name="taskStableKey"
             placeholder={stage.tasks.length
               ? "Select a task"
@@ -149,9 +151,7 @@ export function WorkflowStageDocumentRequirementDialog({
             max={3650}
             min={1}
             name="expiryDays"
-            registrationOptions={{
-              setValueAs: (value) => value === "" ? null : Number(value),
-            }}
+            registrationOptions={{ setValueAs: parseOptionalExpiryDays }}
             type="number"
           />
           <FormInput
@@ -172,7 +172,7 @@ export function WorkflowStageDocumentRequirementDialog({
           ) : null}
           <div className="flex justify-end sm:col-span-2">
             <GeneralButton disabled={mutation.isPending} type="submit">
-              {mutation.isPending ? "Saving…" : "Save document requirement"}
+              {mutation.isPending ? "Saving…" : "Save"}
             </GeneralButton>
           </div>
         </form>

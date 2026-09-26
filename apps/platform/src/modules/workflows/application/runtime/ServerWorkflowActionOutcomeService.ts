@@ -255,7 +255,7 @@ export async function executeConfiguredWorkflowActionOutcome(
           rowVersion: application.rowVersion,
         },
         correlationId: input.command.correlationId,
-        reasonCode: input.command.input.reasonCode,
+        reason: input.command.input.reasonCode,
         stageId: input.command.sourceStageInstanceId,
         workflowId: input.target.stage.workflowInstanceId,
         withdrawnAt: new Date(execution.executedAt),

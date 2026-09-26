@@ -35,10 +35,9 @@ export async function withdrawApplication(
   const outcome = await withdrawOwnedApplication({
     actorId: actor.id,
     applicationId,
-    comment: input.comment,
     correlationId,
     idempotencyKey: key,
-    reasonCode: input.reasonCode,
+    reason: input.reason,
   });
   if (outcome.kind === "withdrawn") return outcome.result;
   if (outcome.kind === "not_found") {
@@ -60,7 +59,7 @@ export function withdrawFromWorkflowAction(
     actorId: string;
     application: WithdrawalApplicationState;
     correlationId: string;
-    reasonCode?: string;
+    reason?: string;
     stageId: string;
     workflowId: string;
     withdrawnAt: Date;
