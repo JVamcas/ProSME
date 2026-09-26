@@ -41,6 +41,7 @@ export type AuthoritativeEligibilityTaskTarget = {
     updatedAt: Date;
   };
   config: unknown;
+  formVersionId: string | null;
   fundingCall: {
     closesAt: Date;
     eligibilityRuleSetVersionId: string | null;
@@ -83,6 +84,7 @@ export async function lockAuthoritativeEligibilityTask(
     SELECT task.id AS "taskId", task.status, task.row_version AS "rowVersion",
       definition.code AS "taskKey",
       definition.config, definition.permissions,
+      task.form_version_id AS "taskFormVersionId",
       stage.id AS "stageInstanceId", workflow.id AS "workflowInstanceId",
       application.id AS "applicationId",
       application.business_section AS "applicationBusinessSection",
@@ -223,6 +225,7 @@ export async function lockAuthoritativeEligibilityTask(
       updatedAt: row.businessUpdatedAt as Date,
     },
     config: row.config,
+    formVersionId: row.taskFormVersionId as string | null,
     fundingCall: {
       closesAt: row.fundingCallClosesAt as Date,
       eligibilityRuleSetVersionId:
@@ -269,6 +272,7 @@ export async function persistAuthoritativeEligibilityExecution(
     correlationId: string;
     expectedRowVersion: number;
     outcome: AuthoritativeEligibilityOutcomeWrite;
+    evaluatedFormValues?: Record<string, unknown>;
     stageInstanceId: string;
     taskId: string;
     workflowInstanceId: string;
@@ -294,7 +298,8 @@ export async function persistAuthoritativeEligibilityExecution(
       EXISTS (
         SELECT 1 FROM app_form_responses response
         WHERE response.workflow_task_id = task.id
-          AND response.status = 'COMPLETED'
+          AND (response.status = 'COMPLETED'
+            OR response.values = ${JSON.stringify(input.evaluatedFormValues ?? {})}::jsonb)
       ) AS "formCompleted",
       EXISTS (
         SELECT 1 FROM app_stage_task_action_bindings binding
@@ -336,7 +341,12 @@ export async function persistAuthoritativeEligibilityExecution(
     .set({
       completedAt,
       result: sql`COALESCE(${workflowTasks.result}, '{}'::jsonb)
-        || ${JSON.stringify(result)}::jsonb`,
+        || ${JSON.stringify({
+          ...result,
+          ...(input.evaluatedFormValues
+            ? { evaluatedFormValues: input.evaluatedFormValues }
+            : {}),
+        })}::jsonb`,
       rowVersion: input.expectedRowVersion + 1,
       status: completesTask ? "COMPLETED" : "IN_PROGRESS",
     })

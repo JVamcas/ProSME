@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 import { AuthoritativeEligibilityTask } from "@/modules/eligibility/ui/screening/AuthoritativeEligibilityTask";
 import { DynamicFormTask } from "@/modules/forms/ui/renderer/DynamicFormTask";
 import type { TaskDetail } from "@/modules/work-queue/TaskTypes";
@@ -12,6 +14,7 @@ import {
 } from "@/modules/workflows/ui/WorkflowTaskReviewLayout";
 
 export function WorkflowTaskReviewPanel({ task }: { task: TaskDetail }) {
+  const [eligibilityPending, setEligibilityPending] = useState(false);
   const hasReviewFields = task.hasChecklist || task.commentFields.length > 0;
   const sectionCount = [
     task.canEvaluateEligibility,
@@ -26,14 +29,23 @@ export function WorkflowTaskReviewPanel({ task }: { task: TaskDetail }) {
     task.commentFields.length > 0 && task.commentCompleted,
   ].filter(Boolean).length;
   const canDecide =
-    (!task.canEvaluateEligibility || Boolean(task.eligibilityEvaluation))
-    && (!task.formVersionId || task.formCompleted)
+    (!task.formVersionId || task.canEvaluateEligibility || task.formCompleted)
     && (!task.hasChecklist || task.checklistCompleted)
     && (!task.commentFields.length || task.commentCompleted);
 
+  const actionTask = eligibilityPending
+    ? {
+        ...task,
+        actions: task.actions.map((action) => ({
+          ...action,
+          available: false,
+          unavailableReason: "Run eligibility using the current answers first.",
+        })),
+      }
+    : task;
   return (
     <WorkflowTaskReviewLayout
-      actions={canDecide ? <WorkflowTaskDecisionActions task={task} /> : null}
+      actions={canDecide ? <WorkflowTaskDecisionActions task={actionTask} /> : null}
       sectionCount={sectionCount}
       stageName={task.stageName}
       summary={
@@ -62,7 +74,13 @@ export function WorkflowTaskReviewPanel({ task }: { task: TaskDetail }) {
           status={task.formCompleted ? "Completed" : "Required"}
           title={task.formName ?? "Form"}
         >
-          <DynamicFormTask taskId={task.taskInstanceId} />
+          <DynamicFormTask
+            eligibilityTask={task.canEvaluateEligibility}
+            onPendingChange={task.canEvaluateEligibility
+              ? setEligibilityPending
+              : undefined}
+            taskId={task.taskInstanceId}
+          />
         </WorkflowTaskPreviewSection>
       ) : null}
       {hasReviewFields ? <ChecklistTaskForm task={task} /> : null}

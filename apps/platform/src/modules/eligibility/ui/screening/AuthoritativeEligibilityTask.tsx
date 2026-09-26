@@ -20,7 +20,7 @@ export function AuthoritativeEligibilityTask({ task }: { task: TaskDetail }) {
   const current = task.eligibilityEvaluation;
   async function run() {
     try {
-      await evaluation.mutateAsync(task.rowVersion);
+      await evaluation.mutateAsync({ expectedRowVersion: task.rowVersion });
       toast.success("Authoritative eligibility evaluation completed.");
     } catch (error) {
       toast.error(
@@ -74,18 +74,20 @@ export function AuthoritativeEligibilityTask({ task }: { task: TaskDetail }) {
           {evaluation.error.message}
         </p>
       ) : null}
-      <div className="mt-5 flex justify-end border-t border-brand-navy/10 pt-4">
-        <GeneralButton
-          disabled={evaluation.isPending}
-          onClick={() => void run()}
-          type="button"
-        >
-          {evaluation.isPending ? (
-            <LoaderCircle className="size-4 animate-spin" aria-hidden />
-          ) : null}
-          {current ? "Re-evaluate eligibility" : "Run eligibility evaluation"}
-        </GeneralButton>
-      </div>
+      {!task.formVersionId ? (
+        <div className="mt-5 flex justify-end border-t border-brand-navy/10 pt-4">
+          <GeneralButton
+            disabled={evaluation.isPending}
+            onClick={() => void run()}
+            type="button"
+          >
+            {evaluation.isPending ? (
+              <LoaderCircle className="size-4 animate-spin" aria-hidden />
+            ) : null}
+            {current ? "Re-evaluate eligibility" : "Run eligibility evaluation"}
+          </GeneralButton>
+        </div>
+      ) : null}
     </section>
   );
 }

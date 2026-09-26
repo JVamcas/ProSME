@@ -175,7 +175,7 @@ export function WorkflowStageCreateDialog({
             <CheckboxField label="Enabled" name="enabled" />
             <CheckboxField label="Optional" name="optional" />
             <CheckboxField label="Repeatable" name="repeatable" />
-            <CheckboxField label="COI-gated" name="coiGated" />
+            <CheckboxField label="COI-gated" name="coiGated" description="Require review to declare conflict of interest."/>
           </div>
           <div className="space-y-4 md:col-span-2">
             <Controller

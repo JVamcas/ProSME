@@ -2,6 +2,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 vi.mock(
+  "@/modules/eligibility/application/SaveEligibilityEvaluationForm",
+  () => ({ saveEligibilityEvaluationForm: vi.fn() }),
+);
+vi.mock(
   "@/modules/eligibility/infrastructure/AuthoritativeEligibilityExecutionRepository",
   () => ({
     findAuthoritativeEligibilityExecutionByCommand: vi.fn(),
@@ -27,6 +31,7 @@ import {
   executeAuthoritativeEligibility,
 } from "@/modules/eligibility/application/ServerAuthoritativeEligibilityService";
 import { resolveAuthoritativeEligibilityData } from "@/modules/eligibility/application/ServerEligibilityDataResolver";
+import { saveEligibilityEvaluationForm } from "@/modules/eligibility/application/SaveEligibilityEvaluationForm";
 import {
   findAuthoritativeEligibilityExecutionByCommand,
   lockAuthoritativeEligibilityTask,
@@ -81,6 +86,7 @@ function target() {
       command: "AUTHORITATIVE_ELIGIBILITY",
       reevaluationPolicy: "WHEN_EVIDENCE_CHANGED",
     },
+    formVersionId: null,
     fundingCall: {
       closesAt: new Date("2026-12-01T00:00:00.000Z"),
       eligibilityRuleSetVersionId: versionId,
@@ -182,6 +188,33 @@ describe("authoritative eligibility workflow execution", () => {
           workflowTaskId: taskId,
         }),
       }),
+    );
+  });
+
+  it("evaluates the exact submitted answer snapshot on a combined task", async () => {
+    const values = { ENTITY_REGISTERED: "YES" };
+    vi.mocked(lockAuthoritativeEligibilityTask).mockResolvedValue({
+      ...target(),
+      formVersionId: "90000000-0000-4000-8000-000000000001",
+    });
+    vi.mocked(saveEligibilityEvaluationForm).mockResolvedValue(values);
+
+    await executeAuthoritativeEligibility(actor, {
+      ...input,
+      expectedResponseRowVersion: 3,
+      values,
+    });
+
+    expect(saveEligibilityEvaluationForm).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        expectedResponseRowVersion: 3,
+        values,
+      }),
+    );
+    expect(persistAuthoritativeEligibilityExecution).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ evaluatedFormValues: values }),
     );
   });
 

@@ -39,6 +39,7 @@ export type StageActivationTarget = {
 };
 
 export type StageActivationTaskDefinition = {
+  config?: unknown;
   formVersionId: string | null;
   id: string;
   namedUserOverrideId: string | null;
@@ -224,6 +225,7 @@ export async function loadStageActivationTasks(
 ): Promise<StageActivationTaskDefinition[]> {
   return transaction
     .select({
+      config: stageTaskDefinitions.config,
       formVersionId: stageTaskFormBindings.formVersionId,
       id: stageTaskDefinitions.id,
       namedUserOverrideId: stageTaskDefinitions.namedUserOverrideId,
@@ -306,9 +308,12 @@ export async function persistStageActivation(
     : new Date(
       input.activatedAt.getTime() + input.target.slaHours * 3_600_000,
     );
-  const needsEligibilityForm = input.tasks.some(
-    (task) => task.stableKey === "ELIGIBILITY_VERIFICATION",
-  );
+  const usesEligibilityForm = (task: (typeof input.tasks)[number]) =>
+    task.stableKey === "ELIGIBILITY_VERIFICATION"
+    || (task.config && typeof task.config === "object"
+      && "formPurpose" in task.config
+      && task.config.formPurpose === "ELIGIBILITY_VERIFICATION");
+  const needsEligibilityForm = input.tasks.some(usesEligibilityForm);
   const eligibilityFormVersionId = needsEligibilityForm
     ? await resolveEligibilityTaskFormVersion(
         transaction,
@@ -334,7 +339,7 @@ export async function persistStageActivation(
       assignedUserId: assignments.get(task.id)?.[index] ?? null,
       createdAt: input.activatedAt,
       dueAt,
-      formVersionId: task.stableKey === "ELIGIBILITY_VERIFICATION"
+      formVersionId: usesEligibilityForm(task)
         ? eligibilityFormVersionId!
         : task.formVersionId,
       stageInstanceId: stage.id,

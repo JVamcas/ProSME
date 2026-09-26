@@ -42,12 +42,15 @@ export function useCompleteWorkflowTask(taskId: string) {
 export function useEvaluateAuthoritativeEligibility(taskId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (expectedRowVersion: number) =>
-      clientWorkQueueService.evaluateEligibility(taskId, expectedRowVersion),
+    mutationFn: (input: Parameters<typeof clientWorkQueueService.evaluateEligibility>[1]) =>
+      clientWorkQueueService.evaluateEligibility(taskId, input),
     onSuccess: () => Promise.all([
       queryClient.invalidateQueries({ queryKey: workQueueQueryKeys.all }),
       queryClient.invalidateQueries({
         queryKey: workQueueQueryKeys.task(taskId),
+      }),
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "tasks", taskId, "form"],
       }),
     ]),
   });

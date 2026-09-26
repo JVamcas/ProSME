@@ -22,6 +22,7 @@ import type {
 } from "../domain/actions/WorkflowActionExecution";
 import type { WorkflowElementPermissions } from "../domain/definitions/WorkflowElementPermissions";
 import type { StageCompletionTarget } from "./StageCompletionRepository";
+import { workflowEligibilityActionReady } from "./WorkflowEligibilityActionReadiness";
 import {
   lockStageCompletionTarget,
   type StageCompletionTransaction,
@@ -34,6 +35,7 @@ export type WorkflowActionExecutionTarget = {
   stage: StageCompletionTarget & { rowVersion: number };
   task: {
     assignedToActor: boolean;
+    eligibilityReady?: boolean;
     id: string;
     permissions: WorkflowElementPermissions;
     rowVersion: number;
@@ -55,12 +57,6 @@ export type ActionExecutionReplay = {
   matchesCommand: boolean;
   result: WorkflowActionExecutionResult;
 };
-
-export function withWorkflowActionExecutionTransaction<T>(
-  work: (transaction: WorkflowActionExecutionTransaction) => Promise<T>,
-) {
-  return getDatabase().transaction(work);
-}
 
 export async function findWorkflowActionExecution(
   executor: Pick<ReturnType<typeof getDatabase>, "execute">,
@@ -129,6 +125,7 @@ async function lockTask(
           )
         )
       )`,
+      eligibilityReady: workflowEligibilityActionReady,
       id: workflowTasks.id,
       permissions: stageTaskDefinitions.permissions,
       rowVersion: workflowTasks.rowVersion,
@@ -258,7 +255,11 @@ export async function completeActionTask(
         ${workflowTasks.formVersionId} IS NOT NULL AND EXISTS (
           SELECT 1 FROM app_form_responses response
           WHERE response.workflow_task_id = ${workflowTasks.id}
-            AND response.status = 'COMPLETED'
+            AND (response.status = 'COMPLETED'
+              OR (
+                ${stageTaskDefinitions.config} ->> 'command' = 'AUTHORITATIVE_ELIGIBILITY'
+                AND response.values = (${workflowTasks.result} -> 'evaluatedFormValues')
+              ))
         )
       )`,
       formRequired: sql<boolean>`${workflowTasks.formVersionId} IS NOT NULL`,
@@ -389,6 +390,3 @@ export async function recordWorkflowActionExecution(
   });
 }
 
-export function workflowActionExecutionDatabase() {
-  return getDatabase();
-}

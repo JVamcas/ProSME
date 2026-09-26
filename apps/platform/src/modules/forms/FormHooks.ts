@@ -148,6 +148,9 @@ export function useSaveTaskForm(taskId: string) {
         formQueryKeys.task(taskId),
         (current) => current ? { ...current, response } : current,
       );
+      void queryClient.invalidateQueries({
+        queryKey: workQueueQueryKeys.task(taskId),
+      });
     },
   });
 }

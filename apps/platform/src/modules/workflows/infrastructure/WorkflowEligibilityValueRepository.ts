@@ -61,12 +61,12 @@ export async function readEligibilityQuestionResponseRecords(
     JOIN app_workflow_stage_instances stage
       ON stage.workflow_instance_id = workflow.id
     JOIN app_workflow_tasks task ON task.stage_instance_id = stage.id
-    JOIN app_stage_task_definitions definition
-      ON definition.id = task.workflow_task_definition_id
-      AND definition.code = 'ELIGIBILITY_VERIFICATION'
+    JOIN app_eligibility_rule_set_verification_forms verification
+      ON verification.version_id = application.eligibility_rule_set_version_id
     JOIN app_form_responses response
       ON response.workflow_task_id = task.id
-      AND response.status = 'COMPLETED'
+      AND response.form_version_id = verification.form_version_id
+      AND response.status IN ('DRAFT', 'COMPLETED')
     WHERE application.id = ${first.applicationId}::uuid
       AND binding.question_id = ANY(${questionIds}::uuid[])
       AND response.values ? binding.code_snapshot

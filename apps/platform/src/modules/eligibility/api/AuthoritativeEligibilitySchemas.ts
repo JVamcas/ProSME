@@ -2,6 +2,8 @@ import { z } from "zod";
 
 export const authoritativeEligibilityExecutionSchema = z.object({
   expectedRowVersion: z.number().int().positive(),
+  expectedResponseRowVersion: z.number().int().positive().optional(),
+  values: z.record(z.string(), z.unknown()).optional(),
 }).strict();
 
 export const authoritativeEligibilityCommandKeySchema = z.uuid();

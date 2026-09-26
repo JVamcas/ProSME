@@ -46,7 +46,7 @@ export const formDefinitions = pgTable(
     uniqueIndex("app_form_definitions_code_unique").on(table.code),
     check(
       "app_form_definitions_purpose_check",
-      sql`${table.purpose} in ('FUNDING_APPLICATION', 'APPLICATION_REVIEW', 'COI', 'RFI', 'OTHER')`,
+      sql`${table.purpose} in ('FUNDING_APPLICATION', 'APPLICATION_REVIEW', 'ELIGIBILITY_VERIFICATION', 'COI', 'RFI', 'OTHER')`,
     ),
   ],
 );

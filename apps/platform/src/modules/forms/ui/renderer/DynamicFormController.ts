@@ -13,7 +13,11 @@ import type { DynamicFormValues } from "./FormRenderer";
 
 export const formDraftAutosaveDelayMs = 800;
 
-export function useDynamicFormController(taskId: string, data: TaskFormData) {
+export function useDynamicFormController(
+  taskId: string,
+  data: TaskFormData,
+  externalPending = false,
+) {
   const router = useRouter();
   const save = useSaveTaskForm(taskId);
   const complete = useCompleteTaskForm(taskId);
@@ -33,7 +37,7 @@ export function useDynamicFormController(taskId: string, data: TaskFormData) {
   }, []);
 
   const saveDraftValues = useCallback(() => {
-    if (save.isPending || complete.isPending) return;
+    if (save.isPending || complete.isPending || externalPending) return;
 
     const savingRevision = revision.current;
     save.mutate(
@@ -50,13 +54,14 @@ export function useDynamicFormController(taskId: string, data: TaskFormData) {
         },
       },
     );
-  }, [complete.isPending, data, save, values]);
+  }, [complete.isPending, data, externalPending, save, values]);
 
   useEffect(() => {
     if (
       !hasUnsavedChanges
       || save.isPending
       || complete.isPending
+      || externalPending
       || lastAutosaveRevision.current === revision.current
     ) {
       return;
@@ -69,7 +74,7 @@ export function useDynamicFormController(taskId: string, data: TaskFormData) {
     }, formDraftAutosaveDelayMs);
 
     return () => window.clearTimeout(timer);
-  }, [complete.isPending, hasUnsavedChanges, save.isPending, saveDraftValues]);
+  }, [complete.isPending, externalPending, hasUnsavedChanges, save.isPending, saveDraftValues]);
 
   useEffect(() => {
     if (!hasUnsavedChanges && !save.isPending) return;
@@ -157,6 +162,10 @@ export function useDynamicFormController(taskId: string, data: TaskFormData) {
     pendingNavigationHref,
     save,
     saveDraftValues,
+    currentRevision: () => revision.current,
+    markSaved: (savedRevision: number) => {
+      if (revision.current === savedRevision) setHasUnsavedChanges(false);
+    },
     setValues: changeValues,
     values,
   };

@@ -159,7 +159,7 @@ async function updateDraftResponse(
   return updated ?? null;
 }
 
-async function saveDraftInTransaction(
+export async function saveDraftInTransaction(
   transaction: DatabaseTransaction,
   input: SaveDraftFormResponseInput,
 ) {

@@ -117,14 +117,20 @@ export function WorkflowTaskDialogFields({
           name="formPurpose"
           required
         />
-        <FormSelect
-          items={formItems}
-          label="Form version"
-          name="formVersionId"
-          infoTooltip={`Choose a published ${formPurpose.toLowerCase().replaceAll("_", " ")} form.`}
-          placeholder={formsPending ? "Loading forms…" : "No form selected"}
-          value={formVersionId}
-        />
+        {formPurpose !== "ELIGIBILITY_VERIFICATION" ? (
+          <FormSelect
+            items={formItems}
+            label="Form version"
+            name="formVersionId"
+            infoTooltip={`Choose a published ${formPurpose.toLowerCase().replaceAll("_", " ")} form.`}
+            placeholder={formsPending ? "Loading forms…" : "No form selected"}
+            value={formVersionId}
+          />
+        ) : (
+          <p className="self-center text-sm text-brand-navy/65">
+            The verification form is bound to the funding call eligibility ruleset.
+          </p>
+        )}
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <FormSelect
@@ -166,6 +172,13 @@ export function WorkflowTaskDialogFields({
         />
         <CompletionThresholdValueField />
       </div>
+      {formPurpose === "ELIGIBILITY_VERIFICATION" ? (
+        <CheckboxField
+          containerClassName="mt-6 text-sm font-semibold text-brand-navy"
+          label="Run authoritative eligibility in this task"
+          name="runAuthoritativeEligibility"
+        />
+      ) : null}
       <CheckboxField
         containerClassName="mt-8 text-sm font-semibold text-brand-navy"
         label="Required before the stage can complete"

@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 
 import {
   capabilities,
@@ -306,7 +306,7 @@ export async function insertMissingStandardWorkflowDraft(
       .where(eq(workflowDefinitionVersions.definitionId, existing.id))
       .orderBy(desc(workflowDefinitionVersions.versionNumber));
     const draftVersion = versions.find((version) => version.status === "DRAFT");
-    const verificationTask = draftVersion
+    const eligibilityTask = draftVersion
       ? await getDatabase()
           .select({ id: stageTaskDefinitions.id })
           .from(stageTaskDefinitions)
@@ -316,11 +316,12 @@ export async function insertMissingStandardWorkflowDraft(
           )
           .where(and(
             eq(workflowStageDefinitions.versionId, draftVersion.id),
-            eq(stageTaskDefinitions.stableKey, "ELIGIBILITY_VERIFICATION"),
+            eq(stageTaskDefinitions.stableKey, "AUTHORITATIVE_ELIGIBILITY"),
+            sql`${stageTaskDefinitions.config} ->> 'formPurpose' = 'ELIGIBILITY_VERIFICATION'`,
           ))
           .limit(1)
       : [];
-    if (draftVersion && verificationTask.length) {
+    if (draftVersion && eligibilityTask.length) {
       return {
         created: false,
         definitionId: existing.id,

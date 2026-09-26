@@ -17,6 +17,7 @@ export const workflowTaskFormSchema = z.object({
     ),
   formVersionId: z.union([z.string().uuid(), z.literal("")]),
   formPurpose: z.enum(formPurposes),
+  runAuthoritativeEligibility: z.boolean(),
   description: z.string().trim().max(1000),
   displayOrder: z.number().int().positive(),
   name: z.string().trim().min(2).max(160),

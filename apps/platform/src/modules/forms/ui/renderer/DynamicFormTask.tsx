@@ -1,5 +1,9 @@
 "use client";
 
+import { useEffect } from "react";
+import { toast } from "sonner";
+import { useEvaluateAuthoritativeEligibility } from "@/modules/work-queue/WorkQueueHooks";
+
 import { PortalErrorState } from "@/components/layout/PortalErrorState";
 import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
 import { GeneralButton } from "@/components/ui/button";
@@ -56,11 +60,40 @@ function DraftPersistenceStatus({
 function LoadedDynamicFormTask({
   data,
   taskId,
+  eligibilityTask = false,
+  onPendingChange,
 }: {
   data: TaskFormData;
   taskId: string;
+  eligibilityTask?: boolean;
+  onPendingChange?: (pending: boolean) => void;
 }) {
-  const controller = useDynamicFormController(taskId, data);
+  const evaluation = useEvaluateAuthoritativeEligibility(taskId);
+  const controller = useDynamicFormController(
+    taskId,
+    data,
+    eligibilityTask && evaluation.isPending,
+  );
+  const pending = controller.hasUnsavedChanges
+    || controller.save.isPending
+    || evaluation.isPending;
+  useEffect(() => {
+    onPendingChange?.(pending);
+  }, [onPendingChange, pending]);
+  async function runEligibility() {
+    const revision = controller.currentRevision();
+    try {
+      await evaluation.mutateAsync({
+        expectedResponseRowVersion: data.response?.rowVersion,
+        expectedRowVersion: data.taskRowVersion,
+        values: controller.values,
+      });
+      controller.markSaved(revision);
+      toast.success("Eligibility evaluation completed.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Eligibility evaluation failed.");
+    }
+  }
   const readOnly = data.response?.status === "COMPLETED";
   return (
     <>
@@ -68,13 +101,15 @@ function LoadedDynamicFormTask({
         definition={data.schema}
         formData={controller.values}
         onChange={controller.setValues}
-        onSubmit={(values) => controller.completeFormValues(values, null)}
+        onSubmit={(values) => {
+          if (!eligibilityTask) controller.completeFormValues(values, null);
+        }}
         readOnly={readOnly}
         runtimeContext={data.context}
       >
         <div className="mt-6 space-y-4 border-t border-brand-navy/10 pt-5">
           <FormErrors
-            completeError={controller.complete.error}
+            completeError={evaluation.error ?? controller.complete.error}
             saveError={controller.save.error}
           />
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -98,14 +133,24 @@ function LoadedDynamicFormTask({
                     Retry save
                   </GeneralButton>
                 ) : null}
-                <GeneralButton
-                  disabled={controller.complete.isPending || controller.save.isPending}
-                  type="submit"
-                >
-                  {controller.complete.isPending
-                    ? "Completing…"
-                    : data.schema.submitLabel}
-                </GeneralButton>
+                {eligibilityTask ? (
+                  <GeneralButton
+                    disabled={controller.save.isPending || evaluation.isPending}
+                    onClick={() => void runEligibility()}
+                    type="button"
+                  >
+                    {evaluation.isPending ? "Running eligibility…" : "Run eligibility"}
+                  </GeneralButton>
+                ) : (
+                  <GeneralButton
+                    disabled={controller.complete.isPending || controller.save.isPending}
+                    type="submit"
+                  >
+                    {controller.complete.isPending
+                      ? "Completing…"
+                      : data.schema.submitLabel}
+                  </GeneralButton>
+                )}
               </div>
             ) : null}
           </div>
@@ -125,8 +170,12 @@ function LoadedDynamicFormTask({
 
 export function DynamicFormTask({
   taskId,
+  eligibilityTask = false,
+  onPendingChange,
 }: {
   taskId: string;
+  eligibilityTask?: boolean;
+  onPendingChange?: (pending: boolean) => void;
 }) {
   const query = useTaskForm(taskId);
   if (query.isPending) {
@@ -150,6 +199,8 @@ export function DynamicFormTask({
     <LoadedDynamicFormTask
       data={query.data}
       taskId={taskId}
+      eligibilityTask={eligibilityTask}
+      onPendingChange={onPendingChange}
     />
   );
 }

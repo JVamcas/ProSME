@@ -1,14 +1,10 @@
 import type { WorkflowStageInput } from "../definitions/WorkflowTypes";
-import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup";
-import { basicOperators } from "@/modules/conditions/engine/BasicOperators";
 import type { StandardWorkflowDependencies } from "./StandardWorkflowTypes";
-import { eligibilityVerificationTask } from "./StandardEligibilityScreeningTask";
 import {
   action,
   approve,
   checklist,
   documentRequirement,
-  refer,
   reject,
   requestInformation,
   stage,
@@ -16,25 +12,6 @@ import {
 } from "./StandardWorkflowBuilders";
 
 const internalOption = (code: string, label: string) => ({ code, label });
-
-function eligibilityCondition(
-  id: string,
-  path: "eligibility.manual_screening_required" | "eligibility.outcome",
-  value: boolean | string,
-): ConditionGroup {
-  return {
-    children: [{
-      id: `${id.slice(0, -1)}2`,
-      kind: "CONDITION",
-      leftOperand: { key: path, kind: "FIELD" },
-      operator: basicOperators.EQUALS,
-      rightOperand: { kind: "CONSTANT", value },
-    }],
-    combinator: "AND",
-    id,
-    kind: "GROUP",
-  };
-}
 
 function screening(dependencies: StandardWorkflowDependencies) {
   const checklistItems = [
@@ -45,46 +22,11 @@ function screening(dependencies: StandardWorkflowDependencies) {
     checklist("ELIGIBILITY_EVALUATED", "Authoritative eligibility evaluation is complete", 5),
   ];
   const actions = [
-    {
-      ...approve("ELIGIBLE_ADVANCE", "Eligible and advance", 1),
-      condition: eligibilityCondition(
-        "81000000-0000-4000-8000-000000000001",
-        "eligibility.outcome",
-        "ELIGIBLE",
-      ),
-    },
-    {
-      ...action(
-        "MANUAL_ELIGIBILITY_ADVANCE",
-        "Approve after manual eligibility review",
-        "APPROVE_ADVANCE",
-        2,
-        {},
-        true,
-      ),
-      condition: eligibilityCondition(
-        "81000000-0000-4000-8000-000000000003",
-        "eligibility.manual_screening_required",
-        true,
-      ),
-    },
-    {
-      ...reject("INELIGIBLE_REJECT", "Ineligible", 3, [
-        "ELIGIBILITY_FAILED",
-        "MANDATORY_EVIDENCE_MISSING",
-      ]),
-      condition: eligibilityCondition(
-        "81000000-0000-4000-8000-000000000005",
-        "eligibility.outcome",
-        "INELIGIBLE",
-      ),
-    },
-    requestInformation(
-      "REQUEST_ADDITIONAL_INFORMATION",
-      "Request additional information",
-      4,
-    ),
-    refer("REFER_INTERNAL_CLARIFICATION", "Refer for internal clarification", 5),
+    approve("ELIGIBLE_ADVANCE", "Approve and advance", 1),
+    reject("INELIGIBLE_REJECT", "Reject", 2, [
+      "ELIGIBILITY_FAILED",
+      "MANDATORY_EVIDENCE_MISSING",
+    ]),
   ];
   return stage({
     actions,
@@ -119,7 +61,6 @@ function screening(dependencies: StandardWorkflowDependencies) {
         roleCode: "programme_officer",
         stableKey: "COMPLETENESS_SCREENING",
       }),
-      eligibilityVerificationTask(dependencies),
       task(dependencies, {
         actionKeys: actions.map((item) => item.stableKey),
         config: {
@@ -127,7 +68,8 @@ function screening(dependencies: StandardWorkflowDependencies) {
           reevaluationPolicy: "WHEN_EVIDENCE_CHANGED",
         },
         description: "Record the authoritative eligibility outcome and route the application.",
-        displayOrder: 3,
+        displayOrder: 2,
+        formCode: "ELIGIBILITY_VERIFICATION",
         name: "Authoritative eligibility decision",
         roleCode: "programme_officer",
         stableKey: "AUTHORITATIVE_ELIGIBILITY",

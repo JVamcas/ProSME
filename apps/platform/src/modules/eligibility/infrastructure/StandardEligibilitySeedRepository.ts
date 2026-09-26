@@ -60,7 +60,7 @@ async function findWorkflowVersion(
     )
     .where(and(
       eq(workflowDefinitions.code, standardWorkflowCode),
-      eq(stageTaskDefinitions.stableKey, "ELIGIBILITY_VERIFICATION"),
+      eq(stageTaskDefinitions.stableKey, "AUTHORITATIVE_ELIGIBILITY"),
       inArray(workflowDefinitionVersions.status, ["DRAFT", "PUBLISHED"]),
     ))
     .orderBy(

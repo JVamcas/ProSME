@@ -13,10 +13,12 @@ import {
   completeActionTask,
   findWorkflowActionExecution,
   lockWorkflowActionExecutionTarget,
-  withWorkflowActionExecutionTransaction,
-  workflowActionExecutionDatabase,
   type WorkflowActionExecutionTarget,
 } from "../../infrastructure/WorkflowActionExecutionRepository";
+import {
+  withWorkflowActionExecutionTransaction,
+  workflowActionExecutionDatabase,
+} from "../../infrastructure/WorkflowActionExecutionConnection";
 import {
   loadRequiredTaskCompletions,
   recordReviewThresholdEvaluations,

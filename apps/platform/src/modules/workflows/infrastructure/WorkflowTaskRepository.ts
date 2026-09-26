@@ -39,7 +39,9 @@ export async function readWorkflowTask(
       (task.form_version_id IS NOT NULL AND EXISTS (
         SELECT 1 FROM app_form_responses response
         WHERE response.workflow_task_id = task.id
-          AND response.status = 'COMPLETED'
+          AND (response.status = 'COMPLETED'
+            OR (definition.config ->> 'command' = 'AUTHORITATIVE_ELIGIBILITY'
+              AND response.values = (task.result -> 'evaluatedFormValues')))
       )) AS "formCompleted",
       task.due_at AS "dueAt", task.result,
       definition.name AS "taskName", definition.config,

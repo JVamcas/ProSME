@@ -62,11 +62,15 @@ function completeTask(
   );
 }
 
-function evaluateEligibility(taskId: string, expectedRowVersion: number) {
+function evaluateEligibility(taskId: string, input: {
+  expectedRowVersion: number;
+  expectedResponseRowVersion?: number;
+  values?: Record<string, unknown>;
+}) {
   return requestData<AuthoritativeEligibilityExecutionResult>(
     `/api/admin/tasks/${taskId}/eligibility-evaluation`,
     {
-      body: JSON.stringify({ expectedRowVersion }),
+      body: JSON.stringify(input),
       headers: {
         "Content-Type": "application/json",
         "Idempotency-Key": crypto.randomUUID(),

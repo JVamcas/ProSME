@@ -24,6 +24,11 @@ vi.mock(
     findWorkflowActionExecution: vi.fn(),
     lockWorkflowActionExecutionTarget: vi.fn(),
     recordWorkflowActionExecution: vi.fn(),
+  }),
+);
+vi.mock(
+  "@/modules/workflows/infrastructure/WorkflowActionExecutionConnection",
+  () => ({
     withWorkflowActionExecutionTransaction: vi.fn(),
     workflowActionExecutionDatabase: vi.fn(),
   }),
@@ -54,9 +59,11 @@ import {
   findWorkflowActionExecution,
   lockWorkflowActionExecutionTarget,
   recordWorkflowActionExecution,
+} from "@/modules/workflows/infrastructure/WorkflowActionExecutionRepository";
+import {
   withWorkflowActionExecutionTransaction,
   workflowActionExecutionDatabase,
-} from "@/modules/workflows/infrastructure/WorkflowActionExecutionRepository";
+} from "@/modules/workflows/infrastructure/WorkflowActionExecutionConnection";
 import { configuredActionTargetsAreValid } from "@/modules/workflows/infrastructure/WorkflowActionTargetRepository";
 import { recordWorkflowDecision } from "@/modules/workflows/infrastructure/WorkflowDecisionRepository";
 import { executeSequentialTransitionInTransaction } from "@/modules/workflows/application/runtime/ServerSequentialTransitionService";

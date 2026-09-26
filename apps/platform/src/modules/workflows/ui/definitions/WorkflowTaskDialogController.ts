@@ -71,11 +71,13 @@ async function saveWorkflowTask({
     return false;
   }
   const existingConfig = task?.config && typeof task.config === "object"
-    ? { ...task.config }
+    ? { ...task.config } as Record<string, unknown>
     : {};
   if ("items" in existingConfig) {
     delete existingConfig.items;
   }
+  delete existingConfig.command;
+  delete existingConfig.reevaluationPolicy;
   const nextTask: WorkflowTaskInput = {
     ...(task?.id ? { id: task.id } : {}),
     actionKeys: task?.actionKeys ?? [],
@@ -106,8 +108,16 @@ async function saveWorkflowTask({
     config: {
       ...existingConfig,
       formPurpose: values.formPurpose,
+      ...(values.formPurpose === "ELIGIBILITY_VERIFICATION"
+        && values.runAuthoritativeEligibility
+        ? {
+            command: "AUTHORITATIVE_ELIGIBILITY",
+            reevaluationPolicy: "WHEN_EVIDENCE_CHANGED",
+          }
+        : {}),
     },
-    formBinding: values.formVersionId
+    formBinding: values.formPurpose !== "ELIGIBILITY_VERIFICATION"
+      && values.formVersionId
       ? {
           contextFields: task?.formBinding?.contextFields ?? [],
           formVersionId: values.formVersionId,
@@ -159,6 +169,10 @@ export function useWorkflowTaskDialogController(
       requiredCompletionCount: task?.requiredCompletionCount ?? 1,
       completionPercentage: task?.completionPercentage ?? null,
       required: task?.required ?? true,
+      runAuthoritativeEligibility: Boolean(task?.config
+        && typeof task.config === "object"
+        && "command" in task.config
+        && task.config.command === "AUTHORITATIVE_ELIGIBILITY"),
     },
     resolver: zodResolver(workflowTaskFormSchema),
   });
@@ -201,7 +215,9 @@ export function useWorkflowTaskDialogController(
   );
 
   const save = (values: WorkflowTaskFormValues) => {
-    if (values.formVersionId && !forms.data?.some((item) =>
+    if (values.formPurpose !== "ELIGIBILITY_VERIFICATION"
+      && values.formVersionId
+      && !forms.data?.some((item) =>
       item.versionId === values.formVersionId
       && item.purpose === values.formPurpose
     )) {
