@@ -15,36 +15,36 @@ const uniqueStableKeyListSchema = stableKeyListSchema.refine(
   "Values must be unique.",
 );
 
-const publicStatusMappingSchema = z.object({
-  description: z.string().trim().min(2).max(300),
-  label: z.string().trim().min(2).max(120),
-  status: z.enum([
-    "SUBMITTED",
-    "UNDER_REVIEW",
-    "ACTION_REQUIRED",
-    "OUTCOME_AVAILABLE",
-    "CLOSED",
-    "WITHDRAWN",
-  ]),
-}).strict();
-
-export const approveAdvanceConfigurationSchema = z
-  .object({})
+const publicStatusMappingSchema = z
+  .object({
+    description: z.string().trim().min(2).max(300),
+    label: z.string().trim().min(2).max(120),
+    status: z.enum([
+      "SUBMITTED",
+      "UNDER_REVIEW",
+      "ACTION_REQUIRED",
+      "OUTCOME_AVAILABLE",
+      "CLOSED",
+      "WITHDRAWN",
+    ]),
+  })
   .strict();
+
+export const approveAdvanceConfigurationSchema = z.object({}).strict();
 
 export const rejectConfigurationSchema = z
   .object({
-    commentRequired: z.boolean(),
     outcome: z.discriminatedUnion("type", [
-      z.object({
-        cancelOpenStageInstances: z.boolean(),
-        cancelOpenTasks: z.boolean(),
-        publicStatusMapping: publicStatusMappingSchema,
-        type: z.literal("TERMINAL"),
-      }).strict(),
+      z
+        .object({
+          cancelOpenStageInstances: z.boolean(),
+          cancelOpenTasks: z.boolean(),
+          publicStatusMapping: publicStatusMappingSchema,
+          type: z.literal("TERMINAL"),
+        })
+        .strict(),
       z.object({ type: z.literal("TRANSITION") }).strict(),
     ]),
-    reasonCodes: uniqueStableKeyListSchema,
     reversibleActionKey: stableKeySchema.nullable(),
   })
   .strict();
@@ -146,50 +146,69 @@ const commonShape = {
 export const workflowActionDefinitionSchema = z.discriminatedUnion(
   "actionType",
   [
-    z.object({
-      ...commonShape,
-      actionType: z.literal("APPROVE_ADVANCE"),
-      configuration: approveAdvanceConfigurationSchema,
-    }).strict(),
-    z.object({
-      ...commonShape,
-      actionType: z.literal("REJECT"),
-      configuration: rejectConfigurationSchema,
-    }).strict(),
-    z.object({
-      ...commonShape,
-      actionType: z.literal("REQUEST_INFORMATION"),
-      configuration: requestInformationConfigurationSchema,
-    }).strict(),
-    z.object({
-      ...commonShape,
-      actionType: z.literal("RETURN"),
-      configuration: returnConfigurationSchema,
-    }).strict(),
-    z.object({
-      ...commonShape,
-      actionType: z.literal("REFER"),
-      configuration: referConfigurationSchema,
-    }).strict(),
-    z.object({
-      ...commonShape,
-      actionType: z.literal("ESCALATE"),
-      configuration: escalateConfigurationSchema,
-    }).strict(),
-    z.object({
-      ...commonShape,
-      actionType: z.literal("PUT_ON_HOLD"),
-      configuration: putOnHoldConfigurationSchema,
-    }).strict(),
-    z.object({
-      ...commonShape,
-      actionType: z.literal("WITHDRAW"),
-      configuration: withdrawConfigurationSchema,
-    }).strict(),
-    z.object({
-      ...commonShape,
-      actionType: z.literal("DEFER"),
-      configuration: deferConfigurationSchema,
-    }).strict(),
+    z
+      .object({
+        ...commonShape,
+        actionType: z.literal("APPROVE_ADVANCE"),
+        configuration: approveAdvanceConfigurationSchema,
+      })
+      .strict(),
+    z
+      .object({
+        ...commonShape,
+        actionType: z.literal("REJECT"),
+        reasonCodeRequired: z.literal(false),
+        configuration: rejectConfigurationSchema,
+      })
+      .strict(),
+    z
+      .object({
+        ...commonShape,
+        actionType: z.literal("REQUEST_INFORMATION"),
+        configuration: requestInformationConfigurationSchema,
+      })
+      .strict(),
+    z
+      .object({
+        ...commonShape,
+        actionType: z.literal("RETURN"),
+        configuration: returnConfigurationSchema,
+      })
+      .strict(),
+    z
+      .object({
+        ...commonShape,
+        actionType: z.literal("REFER"),
+        configuration: referConfigurationSchema,
+      })
+      .strict(),
+    z
+      .object({
+        ...commonShape,
+        actionType: z.literal("ESCALATE"),
+        configuration: escalateConfigurationSchema,
+      })
+      .strict(),
+    z
+      .object({
+        ...commonShape,
+        actionType: z.literal("PUT_ON_HOLD"),
+        configuration: putOnHoldConfigurationSchema,
+      })
+      .strict(),
+    z
+      .object({
+        ...commonShape,
+        actionType: z.literal("WITHDRAW"),
+        configuration: withdrawConfigurationSchema,
+      })
+      .strict(),
+    z
+      .object({
+        ...commonShape,
+        actionType: z.literal("DEFER"),
+        configuration: deferConfigurationSchema,
+      })
+      .strict(),
   ],
 );

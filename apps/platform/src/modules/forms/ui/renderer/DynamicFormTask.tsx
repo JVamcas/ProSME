@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { activeFormDefinition } from "@/modules/forms/engine/FormVisibility";
+import { validateFormValues } from "@/modules/forms/FormValidation";
 import { toast } from "sonner";
 import { useEvaluateAuthoritativeEligibility } from "@/modules/work-queue/WorkQueueHooks";
 import type { AuthoritativeEligibilityTaskResult } from "@/modules/work-queue/TaskTypes";
@@ -64,15 +66,22 @@ function LoadedDynamicFormTask({
   taskId,
   eligibilityEvaluation,
   eligibilityTask = false,
+  hasTaskActions = false,
+  onCompleteTaskForm,
   onPendingChange,
+  onStateChange,
 }: {
   data: TaskFormData;
   taskId: string;
   eligibilityEvaluation?: AuthoritativeEligibilityTaskResult | null;
   eligibilityTask?: boolean;
+  hasTaskActions?: boolean;
+  onCompleteTaskForm?: (complete: (() => void) | null) => void;
   onPendingChange?: (pending: boolean) => void;
+  onStateChange?: (state: { pending: boolean; ready: boolean }) => void;
 }) {
   const evaluation = useEvaluateAuthoritativeEligibility(taskId);
+  const completionRef = useRef<() => void>(() => {});
   const controller = useDynamicFormController(
     taskId,
     data,
@@ -80,10 +89,26 @@ function LoadedDynamicFormTask({
   );
   const pending = controller.hasUnsavedChanges
     || controller.save.isPending
+    || controller.complete.isPending
     || evaluation.isPending;
   useEffect(() => {
+    completionRef.current = () => {
+      controller.completeFormValues(controller.values, null);
+    };
+  });
+  const ready = validateFormValues(
+    activeFormDefinition(data.schema, controller.values).fields,
+    controller.values,
+    true,
+  );
+  useEffect(() => {
     onPendingChange?.(pending);
-  }, [onPendingChange, pending]);
+    onStateChange?.({ pending, ready });
+  }, [onPendingChange, onStateChange, pending, ready]);
+  useEffect(() => {
+    onCompleteTaskForm?.(() => completionRef.current());
+    return () => onCompleteTaskForm?.(null);
+  }, [onCompleteTaskForm]);
   async function runEligibility() {
     const revision = controller.currentRevision();
     try {
@@ -106,7 +131,9 @@ function LoadedDynamicFormTask({
         formData={controller.values}
         onChange={controller.setValues}
         onSubmit={(values) => {
-          if (!eligibilityTask) controller.completeFormValues(values, null);
+          if (hasTaskActions && !eligibilityTask) {
+            controller.completeFormValues(values, null);
+          }
         }}
         readOnly={readOnly}
         runtimeContext={data.context}
@@ -145,7 +172,7 @@ function LoadedDynamicFormTask({
                   >
                     {evaluation.isPending ? "Running eligibility…" : "Run eligibility test"}
                   </GeneralButton>
-                ) : (
+                ) : hasTaskActions ? (
                   <GeneralButton
                     disabled={controller.complete.isPending || controller.save.isPending}
                     type="submit"
@@ -154,7 +181,7 @@ function LoadedDynamicFormTask({
                       ? "Completing…"
                       : data.schema.submitLabel}
                   </GeneralButton>
-                )}
+                ) : null}
               </div>
             ) : null}
           </div>
@@ -181,12 +208,18 @@ export function DynamicFormTask({
   taskId,
   eligibilityEvaluation,
   eligibilityTask = false,
+  hasTaskActions = false,
+  onCompleteTaskForm,
   onPendingChange,
+  onStateChange,
 }: {
   taskId: string;
   eligibilityEvaluation?: AuthoritativeEligibilityTaskResult | null;
   eligibilityTask?: boolean;
+  hasTaskActions?: boolean;
+  onCompleteTaskForm?: (complete: (() => void) | null) => void;
   onPendingChange?: (pending: boolean) => void;
+  onStateChange?: (state: { pending: boolean; ready: boolean }) => void;
 }) {
   const query = useTaskForm(taskId);
   if (query.isPending) {
@@ -212,7 +245,10 @@ export function DynamicFormTask({
       taskId={taskId}
       eligibilityEvaluation={eligibilityEvaluation}
       eligibilityTask={eligibilityTask}
+      hasTaskActions={hasTaskActions}
+      onCompleteTaskForm={onCompleteTaskForm}
       onPendingChange={onPendingChange}
+      onStateChange={onStateChange}
     />
   );
 }

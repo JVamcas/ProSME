@@ -39,6 +39,17 @@ export function useCompleteWorkflowTask(taskId: string) {
   });
 }
 
+export function useSaveTaskReviewDraft(taskId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof clientWorkQueueService.saveReviewDraft>[1]) =>
+      clientWorkQueueService.saveReviewDraft(taskId, input),
+    onSuccess: () => queryClient.invalidateQueries({
+      queryKey: workQueueQueryKeys.task(taskId),
+    }),
+  });
+}
+
 export function useEvaluateAuthoritativeEligibility(taskId: string) {
   const queryClient = useQueryClient();
   return useMutation({

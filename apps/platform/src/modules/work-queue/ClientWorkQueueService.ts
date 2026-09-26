@@ -13,6 +13,7 @@ import type {
 import type {
   AuthoritativeEligibilityTaskResult,
   CompleteChecklistTaskInput,
+  SaveTaskReviewDraftInput,
   TaskCompletionResult,
   TaskDetail,
 } from "./TaskTypes";
@@ -62,6 +63,17 @@ function completeTask(
   );
 }
 
+function saveReviewDraft(taskId: string, input: SaveTaskReviewDraftInput) {
+  return requestData<{ saved: true }>(
+    `/api/admin/tasks/${taskId}/review-draft`,
+    {
+      body: JSON.stringify(input),
+      headers: { "Content-Type": "application/json" },
+      method: "PUT",
+    },
+  );
+}
+
 function evaluateEligibility(taskId: string, input: {
   expectedRowVersion: number;
   expectedResponseRowVersion?: number;
@@ -100,6 +112,7 @@ function executeAction(
 
 export const clientWorkQueueService = {
   completeTask,
+  saveReviewDraft,
   evaluateEligibility,
   executeAction,
   getTask,

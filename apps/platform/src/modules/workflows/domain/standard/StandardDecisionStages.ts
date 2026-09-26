@@ -17,18 +17,27 @@ function moderation(dependencies: StandardWorkflowDependencies) {
   const actions = [
     approve("SHORTLIST_COMMITTEE", "Shortlist for committee", 1),
     deferDate("PLACE_RESERVE_LIST", "Place on reserve list", 2),
-    reject("UNSUCCESSFUL", "Unsuccessful", 3, ["BELOW_CUTOFF", "BUDGET_CONSTRAINT"]),
+    reject("UNSUCCESSFUL", "Unsuccessful", 3),
     returnAction("RETURN_REVIEW", "Return for re-review", 4),
   ];
   return stage({
     actions,
     checklistItems: [
-      checklist("PARALLEL_REVIEWS_COMPLETE", "Technical and Financial reviews are complete", 1),
+      checklist(
+        "PARALLEL_REVIEWS_COMPLETE",
+        "Technical and Financial reviews are complete",
+        1,
+      ),
       checklist("OUTLIERS_RESOLVED", "Scoring outliers are resolved", 2),
-      checklist("BUDGET_ENVELOPE_CHECKED", "Provisional allocations fit the budget envelope", 3),
+      checklist(
+        "BUDGET_ENVELOPE_CHECKED",
+        "Provisional allocations fit the budget envelope",
+        3,
+      ),
     ],
     coiGated: true,
-    description: "Consolidate reviews, rank applications and prepare the shortlist.",
+    description:
+      "Consolidate reviews, rank applications and prepare the shortlist.",
     displayOrder: 5,
     documentRequirements: [
       documentRequirement("Moderation report", "STAFF"),
@@ -49,19 +58,21 @@ function moderation(dependencies: StandardWorkflowDependencies) {
     scoring: null,
     slaHours: 120,
     stableKey: "MODERATION",
-    tasks: [task(dependencies, {
-      actionKeys: actions.map((item) => item.stableKey),
-      config: {
-        options: actions.map((item) => option(item.stableKey, item.label)),
-        rationaleRequired: true,
-      },
-      description: "Consolidate scores and record the moderation outcome.",
-      displayOrder: 1,
-      formCode: "MODERATION",
-      name: "Moderation decision",
-      roleCode: "panel_moderator",
-      stableKey: "MODERATION_DECISION",
-    })],
+    tasks: [
+      task(dependencies, {
+        actionKeys: actions.map((item) => item.stableKey),
+        config: {
+          options: actions.map((item) => option(item.stableKey, item.label)),
+          rationaleRequired: true,
+        },
+        description: "Consolidate scores and record the moderation outcome.",
+        displayOrder: 1,
+        formCode: "MODERATION",
+        name: "Moderation decision",
+        roleCode: "panel_moderator",
+        stableKey: "MODERATION_DECISION",
+      }),
+    ],
   });
 }
 
@@ -69,14 +80,18 @@ function committeeReview(dependencies: StandardWorkflowDependencies) {
   const actions = [
     approve("RECOMMEND_APPROVAL", "Recommend for approval", 1),
     deferDate("DEFER_PENDING_INFORMATION", "Defer pending information", 2),
-    reject("DECLINE", "Decline", 3, ["STRATEGIC_MISALIGNMENT", "BUDGET_UNAVAILABLE"]),
+    reject("DECLINE", "Decline", 3),
     deferDate("PLACE_RESERVE_LIST", "Place on reserve list", 4),
   ];
   return stage({
     actions,
     checklistItems: [
       checklist("QUORUM_CONFIRMED", "Committee quorum is confirmed", 1),
-      checklist("COI_DECLARATIONS_COMPLETE", "Member COI declarations are complete", 2),
+      checklist(
+        "COI_DECLARATIONS_COMPLETE",
+        "Member COI declarations are complete",
+        2,
+      ),
       checklist("BUDGET_AVAILABLE", "Budget availability is confirmed", 3),
     ],
     coiGated: true,
@@ -101,34 +116,36 @@ function committeeReview(dependencies: StandardWorkflowDependencies) {
     scoring: null,
     slaHours: 120,
     stableKey: "COMMITTEE_REVIEW",
-    tasks: [task(dependencies, {
-      actionKeys: actions.map((item) => item.stableKey),
-      coiRequired: true,
-      config: {
-        authorityCapability: "workflow.task.assigned.decide",
-        outcomes: actions.map((item) => option(item.stableKey, item.label)),
-        rationaleRequired: true,
-      },
-      description: "Record quorum, resolution and committee recommendation.",
-      displayOrder: 1,
-      formCode: "COMMITTEE_REVIEW",
-      name: "Committee decision",
-      quorum: true,
-      quorumRule: {
-        population: "ASSIGNED_TASKS",
-        minimumCount: 3,
-        minimumPercentage: null,
-        rounding: "CEIL",
-        chairRequired: false,
-        recusalDenominator: "EXCLUDE",
-        freeze: "AT_DECISION",
-        abstentionsCountAsPresent: true,
-      },
-      requiredCompletionCount: 3,
-      reviewerCount: 5,
-      roleCode: "approval_panel_member",
-      stableKey: "COMMITTEE_DECISION",
-    })],
+    tasks: [
+      task(dependencies, {
+        actionKeys: actions.map((item) => item.stableKey),
+        coiRequired: true,
+        config: {
+          authorityCapability: "workflow.task.assigned.decide",
+          outcomes: actions.map((item) => option(item.stableKey, item.label)),
+          rationaleRequired: true,
+        },
+        description: "Record quorum, resolution and committee recommendation.",
+        displayOrder: 1,
+        formCode: "COMMITTEE_REVIEW",
+        name: "Committee decision",
+        quorum: true,
+        quorumRule: {
+          population: "ASSIGNED_TASKS",
+          minimumCount: 3,
+          minimumPercentage: null,
+          rounding: "CEIL",
+          chairRequired: false,
+          recusalDenominator: "EXCLUDE",
+          freeze: "AT_DECISION",
+          abstentionsCountAsPresent: true,
+        },
+        requiredCompletionCount: 3,
+        reviewerCount: 5,
+        roleCode: "approval_panel_member",
+        stableKey: "COMMITTEE_DECISION",
+      }),
+    ],
   });
 }
 
@@ -137,19 +154,18 @@ function approval(dependencies: StandardWorkflowDependencies) {
     approve("APPROVE", "Approve", 1),
     approve("APPROVE_WITH_CONDITIONS", "Approve with conditions", 2),
     approve("PARTIAL_APPROVAL", "Partially approve at reduced amount", 3),
-    reject(
-      "DECLINE",
-      "Decline",
-      4,
-      ["AUTHORITY_DECLINED", "BUDGET_UNAVAILABLE"],
-      "TRANSITION",
-    ),
+    reject("DECLINE", "Decline", 4, "TRANSITION"),
     returnAction("REFER_COMMITTEE", "Refer back to committee", 5),
   ];
   return stage({
     actions,
     checklistItems: [
-      checklist("DELEGATION_VALID", "Approver authority covers the decision amount", 1, "REQUIRED"),
+      checklist(
+        "DELEGATION_VALID",
+        "Approver authority covers the decision amount",
+        1,
+        "REQUIRED",
+      ),
       checklist("BUDGET_CONFIRMED", "Budget availability is confirmed", 2),
     ],
     coiGated: false,
@@ -173,20 +189,23 @@ function approval(dependencies: StandardWorkflowDependencies) {
     scoring: null,
     slaHours: 120,
     stableKey: "APPROVAL_AWARD_DECISION",
-    tasks: [task(dependencies, {
-      actionKeys: actions.map((item) => item.stableKey),
-      config: {
-        authorityCapability: "workflow.task.assigned.decide",
-        outcomes: actions.map((item) => option(item.stableKey, item.label)),
-        rationaleRequired: true,
-      },
-      description: "Validate delegated authority and record the award decision.",
-      displayOrder: 1,
-      formCode: "APPROVAL",
-      name: "Delegated approval",
-      roleCode: "delegated_approver",
-      stableKey: "DELEGATED_APPROVAL",
-    })],
+    tasks: [
+      task(dependencies, {
+        actionKeys: actions.map((item) => item.stableKey),
+        config: {
+          authorityCapability: "workflow.task.assigned.decide",
+          outcomes: actions.map((item) => option(item.stableKey, item.label)),
+          rationaleRequired: true,
+        },
+        description:
+          "Validate delegated authority and record the award decision.",
+        displayOrder: 1,
+        formCode: "APPROVAL",
+        name: "Delegated approval",
+        roleCode: "delegated_approver",
+        stableKey: "DELEGATED_APPROVAL",
+      }),
+    ],
   });
 }
 
@@ -202,7 +221,11 @@ function notificationAppeals(dependencies: StandardWorkflowDependencies) {
     checklistItems: [
       checklist("OUTCOME_ISSUED", "Outcome notification has been issued", 1),
       checklist("FEEDBACK_RELEASED", "Approved feedback has been released", 2),
-      checklist("APPEAL_WINDOW_RESOLVED", "Appeal window has closed or the appeal is resolved", 3),
+      checklist(
+        "APPEAL_WINDOW_RESOLVED",
+        "Appeal window has closed or the appeal is resolved",
+        3,
+      ),
     ],
     coiGated: false,
     description: "Issue outcomes, release feedback and resolve appeals.",
@@ -235,7 +258,8 @@ function notificationAppeals(dependencies: StandardWorkflowDependencies) {
           template: "APPLICATION_OUTCOME",
           trigger: "DECISION_RECORDED",
         },
-        description: "Issue the outcome and approved feedback to the applicant.",
+        description:
+          "Issue the outcome and approved feedback to the applicant.",
         displayOrder: 1,
         name: "Issue outcome",
         roleCode: "programme_officer",

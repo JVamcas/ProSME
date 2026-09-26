@@ -19,6 +19,11 @@ type TaskDetailRow = Omit<
   | "commentFields"
   | "commentCompleted"
   | "resultComments"
+  | "displayMode"
+  | "documentsCompleted"
+  | "resultDocuments"
+  | "scoringCompleted"
+  | "resultScores"
 > & {
   checklistItems: TaskDetail["checklistItems"];
   config: unknown;
@@ -56,6 +61,39 @@ export async function readWorkflowTask(
         FROM app_workflow_stage_checklist_definitions checklist
         WHERE checklist.task_definition_id = definition.id
       ), '[]'::jsonb) AS "checklistItems",
+      COALESCE((
+        SELECT jsonb_agg(jsonb_build_object(
+          'acceptedFileTypes', document.accepted_file_types,
+          'expiryDays', document.expiry_days,
+          'mandatory', document.mandatory,
+          'maximumSizeMb', document.maximum_size_mb,
+          'name', document.name,
+          'templateReference', document.template_reference,
+          'uploader', document.uploader,
+          'verifier', document.verifier
+        ) ORDER BY document.name)
+        FROM app_workflow_stage_document_requirements document
+        WHERE document.task_definition_id = definition.id
+      ), '[]'::jsonb) AS "documentRequirements",
+      (
+        SELECT jsonb_build_object(
+          'aggregation', scoring.aggregation,
+          'criteria', COALESCE((
+            SELECT jsonb_agg(jsonb_build_object(
+              'criterion', criterion.criterion,
+              'description', criterion.description,
+              'mandatoryComment', criterion.mandatory_comment,
+              'scaleMaximum', criterion.scale_maximum,
+              'scaleMinimum', criterion.scale_minimum,
+              'weight', criterion.weight
+            ) ORDER BY criterion.criterion)
+            FROM app_workflow_stage_scoring_criteria criterion
+            WHERE criterion.stage_id = scoring.stage_id
+          ), '[]'::jsonb)
+        )
+        FROM app_workflow_stage_scoring_configurations scoring
+        WHERE scoring.task_definition_id = definition.id
+      ) AS scoring,
       definition.permissions,
       stage_definition.name AS "stageName",
       stage.id AS "stageInstanceId", stage.row_version AS "runtimeVersion",

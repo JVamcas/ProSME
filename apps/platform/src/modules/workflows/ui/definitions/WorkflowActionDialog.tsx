@@ -196,10 +196,12 @@ export function WorkflowActionDialog({
             required
           />
           <CheckboxField label="Enabled" name="enabled" />
-          <CheckboxField
-            label="Require a reason code"
-            name="reasonCodeRequired"
-          />
+          {actionType !== "REJECT" ? (
+            <CheckboxField
+              label="Require a reason code"
+              name="reasonCodeRequired"
+            />
+          ) : null}
           <WorkflowActionConfigurationFields
             actionType={actionType}
             assignmentOptions={

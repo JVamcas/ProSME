@@ -35,22 +35,22 @@ import { loadSequentialTransitions } from "@/modules/workflows/infrastructure/Tr
 const workflowInstanceId = "10000000-0000-4000-8000-000000000001";
 const stageInstanceId = "20000000-0000-4000-8000-000000000001";
 const source = {
-  actions: [{
-    actionType: "REJECT",
-    condition: null,
-    configuration: {
-      commentRequired: true,
-      outcome: { type: "TRANSITION" },
-      reasonCodes: ["INELIGIBLE", "INCOMPLETE"],
-      reversibleActionKey: null,
+  actions: [
+    {
+      actionType: "REJECT",
+      condition: null,
+      configuration: {
+        outcome: { type: "TRANSITION" },
+        reversibleActionKey: null,
+      },
+      displayOrder: 4,
+      enabled: true,
+      id: "30000000-0000-4000-8000-000000000001",
+      label: "Reject",
+      reasonCodeRequired: false,
+      stableKey: "REJECT",
     },
-    displayOrder: 4,
-    enabled: true,
-    id: "30000000-0000-4000-8000-000000000001",
-    label: "Reject",
-    reasonCodeRequired: true,
-    stableKey: "REJECT",
-  }],
+  ],
   stage: {
     application: {},
     completedAt: null,
@@ -107,26 +107,22 @@ describe("workflow action availability service", () => {
       input,
     );
 
-    expect(result).toEqual([expect.objectContaining({
-      actionType: "REJECT",
-      available: true,
-      key: "REJECT",
-      label: "Reject",
-      presentation: { displayOrder: 4, variant: "danger" },
-      requiredInput: expect.objectContaining({
-        comment: { maxLength: 4_000, required: true },
-        confirmation: {
-          message: "Confirm this rejection decision.",
-          required: true,
-        },
-        reasonCode: {
-          options: ["INELIGIBLE", "INCOMPLETE"],
-          required: true,
-        },
+    expect(result).toEqual([
+      expect.objectContaining({
+        actionType: "REJECT",
+        available: true,
+        key: "REJECT",
+        label: "Reject",
+        presentation: { displayOrder: 4, variant: "danger" },
+        requiredInput: expect.objectContaining({
+          comment: { maxLength: 4_000, required: true },
+          confirmation: { message: null, required: false },
+          reasonCode: { options: [], required: false },
+        }),
+        runtimeVersion: 7,
+        unavailableReason: null,
       }),
-      runtimeVersion: 7,
-      unavailableReason: null,
-    })]);
+    ]);
   });
 
   it("returns a safe actor-specific denial without evaluating conditions", async () => {
@@ -135,10 +131,12 @@ describe("workflow action availability service", () => {
       input,
     );
 
-    expect(result).toEqual([expect.objectContaining({
-      available: false,
-      unavailableReason: "This action is not available to you.",
-    })]);
+    expect(result).toEqual([
+      expect.objectContaining({
+        available: false,
+        unavailableReason: "This action is not available to you.",
+      }),
+    ]);
     expect(buildWorkflowActionConditionContext).not.toHaveBeenCalled();
     expect(loadSequentialTransitions).not.toHaveBeenCalled();
   });

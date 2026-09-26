@@ -21,13 +21,13 @@ type WorkflowActionDefinitionCommon = {
   stableKey: string;
   label: string;
   enabled: boolean;
-  reasonCodeRequired: boolean;
   displayOrder: number;
 };
 
 export type WorkflowActionDefinition = {
   [ActionType in WorkflowActionType]: WorkflowActionDefinitionCommon & {
     actionType: ActionType;
+    reasonCodeRequired: ActionType extends "REJECT" ? false : boolean;
     configuration: WorkflowActionConfigurationByType[ActionType];
   };
 }[WorkflowActionType];

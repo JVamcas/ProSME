@@ -1,13 +1,14 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CheckCircle2, Download, FileText, LoaderCircle, Upload } from "lucide-react";
+import { CheckCircle2, Download, FileText } from "lucide-react";
 import { FormProvider, useForm } from "react-hook-form";
 import { z } from "zod";
 
-import { GeneralButtonLink, buttonVariants } from "@/components/ui/button";
+import { GeneralButtonLink } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { formatLocalDateTime24 } from "@/lib/dateUtils";
+import { FileUploadButton } from "@/shared/ui/FileUploadButton";
 import {
   applicationDocumentUploadSchema,
   type ApplicationDocumentRegister,
@@ -70,7 +71,7 @@ function RequirementRow({
           </p>
         </div>
       </div>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         {finalized && document ? (
           <GeneralButtonLink
             href={`/api/portal/applications/${applicationId}/documents/${document.versionId}/download`}
@@ -81,30 +82,14 @@ function RequirementRow({
             Download
           </GeneralButtonLink>
         ) : null}
-        <label
-          className={cn(
-            buttonVariants({ size: "sm", variant: "outline" }),
-            disabled && "pointer-events-none opacity-50",
-            "cursor-pointer",
-          )}
-        >
-          {uploading ? (
-            <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
-          ) : (
-            <Upload aria-hidden="true" className="size-4" />
-          )}
-          {document ? "Upload new version" : "Upload"}
-          <input
-            accept={requirement.acceptedExtensions.join(",")}
-            className="sr-only"
-            disabled={disabled}
-            onChange={(event) => {
-              onFile(event.target.files?.[0]);
-              event.target.value = "";
-            }}
-            type="file"
-          />
-        </label>
+        <FileUploadButton
+          accept={requirement.acceptedExtensions.join(",")}
+          disabled={disabled}
+          label={document ? "Upload new version" : "Upload"}
+          onFile={onFile}
+          uploading={uploading}
+          variant="compact"
+        />
       </div>
     </div>
   );

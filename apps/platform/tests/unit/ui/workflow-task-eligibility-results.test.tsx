@@ -1,6 +1,21 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn() }),
+}));
+vi.mock("@/modules/work-queue/WorkQueueHooks", () => ({
+  useSaveTaskReviewDraft: () => ({
+    isError: false,
+    isPending: false,
+    mutate: vi.fn(),
+  }),
+  useCompleteWorkflowTask: () => ({
+    isError: false,
+    isPending: false,
+    mutate: vi.fn(),
+  }),
+}));
 vi.mock("@/modules/forms/ui/renderer/DynamicFormTask", () => ({
   DynamicFormTask: ({ eligibilityEvaluation }: {
     eligibilityEvaluation?: { outcome: string | null } | null;
@@ -44,6 +59,9 @@ const task: TaskDetail = {
   checklistItems: [],
   commentCompleted: false,
   commentFields: [],
+  displayMode: "STEP_PROGRESS",
+  documentRequirements: [],
+  documentsCompleted: false,
   dueAt: null,
   eligibilityEvaluation: evaluation,
   formCompleted: true,
@@ -53,11 +71,15 @@ const task: TaskDetail = {
   hasChecklist: false,
   reference: "TEST-001",
   resultComments: [],
+  resultDocuments: [],
   resultItems: [],
+  resultScores: [],
   rowVersion: 2,
   runtimeVersion: 1,
   stageInstanceId: "55555555-5555-4555-8555-555555555555",
   stageName: "Administrative screening",
+  scoring: null,
+  scoringCompleted: false,
   taskInstanceId: "33333333-3333-4333-8333-333333333333",
   taskName: "Eligibility decision",
   taskStatus: "PENDING",
@@ -71,6 +93,45 @@ describe("task eligibility results", () => {
     expect(markup).toContain("1 of 1 sections complete");
     expect(markup).toContain("Bound form result: ELIGIBLE");
     expect(markup).not.toContain("Standalone eligibility");
+  });
+
+  it("shows a disabled Complete Task button until eligibility is evaluated", () => {
+    const markup = renderToStaticMarkup(
+      <WorkflowTaskReviewPanel
+        task={{ ...task, eligibilityEvaluation: null, formCompleted: false }}
+      />,
+    );
+    expect(markup).toMatch(/<button[^>]*disabled=""[^>]*>Complete Task<\/button>/);
+  });
+
+  it("shows an enabled Complete Task button when required work is ready", () => {
+    const markup = renderToStaticMarkup(<WorkflowTaskReviewPanel task={task} />);
+    expect(markup).toContain("Complete Task</button>");
+    expect(markup).not.toMatch(/<button[^>]*disabled=""[^>]*>Complete Task<\/button>/);
+  });
+
+  it("keeps completion disabled until optional review fields have been saved", () => {
+    const markup = renderToStaticMarkup(
+      <WorkflowTaskReviewPanel
+        task={{
+          ...task,
+          canEvaluateEligibility: false,
+          commentFields: [{
+            displayOrder: 1,
+            helpText: "",
+            key: "recommendation",
+            label: "Recommendation",
+            mandatory: false,
+            visibility: "INTERNAL_ONLY",
+          }],
+          eligibilityEvaluation: null,
+          formCompleted: false,
+          formVersionId: null,
+        }}
+      />,
+    );
+    expect(markup).toContain("Autosave pending");
+    expect(markup).toMatch(/<button[^>]*disabled=""[^>]*>Complete Task<\/button>/);
   });
 
   it("shows the recorded outcome and failure counts inside the result view", () => {

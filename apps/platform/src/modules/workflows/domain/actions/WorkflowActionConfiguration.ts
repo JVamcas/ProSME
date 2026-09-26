@@ -3,7 +3,6 @@ import type { WorkflowPublicStatusMapping } from "../definitions/WorkflowStageDe
 export type ApproveAdvanceConfiguration = Record<string, never>;
 
 export type RejectConfiguration = {
-  commentRequired: boolean;
   outcome:
     | {
         cancelOpenStageInstances: boolean;
@@ -12,7 +11,6 @@ export type RejectConfiguration = {
         type: "TERMINAL";
       }
     | { type: "TRANSITION" };
-  reasonCodes: string[];
   reversibleActionKey: string | null;
 };
 

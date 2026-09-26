@@ -37,6 +37,17 @@ function TaskIdentityFields() {
         required
         type="number"
       />
+      <FormSelect
+        containerClassName="sm:col-span-2"
+        infoTooltip="Choose how the task work is presented in both preview and the live task page."
+        items={[
+          { label: "Step progress", value: "STEP_PROGRESS" },
+          { label: "Collapsible sections", value: "SECTIONS" },
+        ]}
+        label="Task layout"
+        name="displayMode"
+        required
+      />
       <FormTextarea
         containerClassName="sm:col-span-2"
         label="Description"

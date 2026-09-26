@@ -28,9 +28,7 @@ describe("WorkflowActionDefinition", () => {
     const configurations = {
       APPROVE_ADVANCE: {},
       REJECT: {
-        commentRequired: true,
         outcome: { type: "TRANSITION" },
-        reasonCodes: ["INELIGIBLE"],
         reversibleActionKey: null,
       },
       REQUEST_INFORMATION: {
@@ -70,9 +68,7 @@ describe("WorkflowActionDefinition", () => {
       expect(parsed.success).toBe(true);
       if (!parsed.success) continue;
       expect(
-        toWorkflowActionDefinition(
-          workflowActionFormDefaults(parsed.data, 1),
-        ),
+        toWorkflowActionDefinition(workflowActionFormDefaults(parsed.data, 1)),
       ).toEqual(parsed.data);
     }
   });
@@ -147,8 +143,6 @@ describe("WorkflowActionDefinition", () => {
       stableKey: "ADVANCE",
       label: "Advance",
     };
-    expect(
-      toWorkflowActionDefinition(values).configuration,
-    ).toEqual({});
+    expect(toWorkflowActionDefinition(values).configuration).toEqual({});
   });
 });

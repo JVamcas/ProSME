@@ -107,6 +107,7 @@ async function saveWorkflowTask({
     coiRequired: task?.coiRequired ?? false,
     config: {
       ...existingConfig,
+      displayMode: values.displayMode,
       formPurpose: values.formPurpose,
       ...(values.formPurpose === "ELIGIBILITY_VERIFICATION"
         && values.runAuthoritativeEligibility
@@ -156,6 +157,11 @@ export function useWorkflowTaskDialogController(
       ...taskAssignmentDefaults(task),
       stableKey: task?.stableKey ?? "",
       description: task?.description ?? "",
+      displayMode: task?.config && typeof task.config === "object"
+        && "displayMode" in task.config
+        && task.config.displayMode === "SECTIONS"
+          ? "SECTIONS"
+          : "STEP_PROGRESS",
       displayOrder: task?.displayOrder ?? stage.tasks.length + 1,
       formVersionId: task?.formBinding?.formVersionId ?? "",
       formPurpose: task?.config && typeof task.config === "object"

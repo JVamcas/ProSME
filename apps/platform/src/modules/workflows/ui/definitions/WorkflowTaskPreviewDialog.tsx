@@ -1,7 +1,6 @@
 "use client";
 
 import { DraggableDialog } from "@/components/ui/draggable-dialog";
-import { FormTextarea } from "@/components/ui/form-fields";
 import {
   usePublishedFormRuntime,
   usePublishedForms,
@@ -17,17 +16,15 @@ import {
   workflowActionInputMetadata,
   workflowActionPresentation,
 } from "@/modules/workflows/domain/actions/WorkflowActionAvailability";
+import { taskDisplayMode } from "@/modules/workflows/WorkflowTaskRegistry";
 import type {
   WorkflowStageInput,
   WorkflowTaskInput,
 } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import {
-  WorkflowChecklistPreview,
-  WorkflowDocumentRequirementsPreview,
-  WorkflowScoringPreview,
-  WorkflowTaskPreviewSection,
   WorkflowTaskPreviewSummary,
 } from "./WorkflowTaskPreviewSections";
+import { WorkflowTaskWorkSections } from "@/modules/workflows/ui/WorkflowTaskWorkSections";
 
 type PublishedFormQuery = ReturnType<typeof usePublishedFormRuntime>;
 
@@ -79,7 +76,8 @@ export function WorkflowTaskPreviewDialog({
     (requirement) => requirement.taskStableKey === task.stableKey,
   );
   const hasDocuments = taskDocuments.length > 0;
-  const hasScoring = Boolean(stage.scoring?.criteria.length);
+  const hasScoring = stage.scoring?.taskStableKey === task.stableKey
+    && Boolean(stage.scoring.criteria.length);
   const commentFields = (stage.commentFields ?? [])
     .filter((field) => field.taskStableKey === task.stableKey)
     .sort((left, right) => left.displayOrder - right.displayOrder);
@@ -95,7 +93,7 @@ export function WorkflowTaskPreviewDialog({
     (form.data?.fields.filter((field) => field.required).length ?? 0)
     + requiredChecklistCount
     + taskDocuments.filter((item) => item.mandatory).length
-    + (stage.scoring?.criteria.length ?? 0)
+    + (hasScoring ? stage.scoring?.criteria.length ?? 0 : 0)
     + commentFields.filter((field) => field.mandatory).length;
   const formName = workflowTaskPreviewFormName(
     publishedForms.data,
@@ -127,65 +125,31 @@ export function WorkflowTaskPreviewDialog({
           />
         }
       >
-        {hasForm ? (
-          <WorkflowTaskPreviewSection
-            status={`${form.data?.fields.filter((field) => field.required).length ?? 0} required fields`}
-            title={formName}
-          >
-            <StructuredFormPreview form={form} />
-          </WorkflowTaskPreviewSection>
-        ) : null}
-        {hasChecklist ? (
-          <WorkflowTaskPreviewSection
-            status={`${requiredChecklistCount} required items`}
-            title="Checklist"
-          >
-            <WorkflowChecklistPreview items={taskChecklistItems} />
-          </WorkflowTaskPreviewSection>
-        ) : null}
-        {hasDocuments ? (
-          <WorkflowTaskPreviewSection
-            status={`${taskDocuments.filter((item) => item.mandatory).length} required documents`}
-            title="Documents"
-          >
-            <WorkflowDocumentRequirementsPreview
-              stage={stage}
-              taskStableKey={task.stableKey}
-            />
-          </WorkflowTaskPreviewSection>
-        ) : null}
-        {hasScoring ? (
-          <WorkflowTaskPreviewSection
-            status={`${stage.scoring?.criteria.length ?? 0} criteria`}
-            title="Scoring"
-          >
-            <WorkflowScoringPreview stage={stage} />
-          </WorkflowTaskPreviewSection>
-        ) : null}
-        {commentFields.length ? (
-          <WorkflowTaskPreviewSection
-            status={`${commentFields.filter((field) => field.mandatory).length} required fields`}
-            title="Comments & Recommendations"
-          >
-            <div className="space-y-4">
-              {commentFields.map((field) => (
-                <div key={field.key}>
-                  <FormTextarea
-                    className="min-h-24"
-                    disabled
-                    label={field.label}
-                    required={field.mandatory}
-                  />
-                  {field.helpText ? (
-                    <p className="mt-1 text-xs text-brand-navy/60">
-                      {field.helpText}
-                    </p>
-                  ) : null}
-                </div>
-              ))}
-            </div>
-          </WorkflowTaskPreviewSection>
-        ) : null}
+        <WorkflowTaskWorkSections
+          checklistItems={taskChecklistItems.map((item) => ({
+            code: item.key,
+            label: item.text,
+            required: item.mandatory,
+          }))}
+          commentFields={commentFields}
+          disabled
+          displayMode={taskDisplayMode(task.config)}
+          documentRequirements={taskDocuments}
+          form={hasForm ? {
+            content: <StructuredFormPreview form={form} />,
+            title: formName,
+          } : undefined}
+          scoring={stage.scoring?.taskStableKey === task.stableKey
+            ? stage.scoring
+            : null}
+          status={{
+            checklist: `${requiredChecklistCount} required items`,
+            comments: `${commentFields.filter((field) => field.mandatory).length} required fields`,
+            documents: `${taskDocuments.filter((item) => item.mandatory).length} required documents`,
+            form: `${form.data?.fields.filter((field) => field.required).length ?? 0} required fields`,
+            scoring: `${hasScoring ? stage.scoring?.criteria.length ?? 0 : 0} criteria`,
+          }}
+        />
       </WorkflowTaskReviewLayout>
     </DraggableDialog>
   );

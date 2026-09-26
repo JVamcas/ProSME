@@ -5,9 +5,14 @@ import { sql } from "drizzle-orm";
 import { taskWorkIsReady } from "@/modules/workflows/WorkflowTaskRegistry";
 
 import { getDatabase } from "@/db/client";
+import type {
+  DocumentRequirementItem,
+  ScoringConfiguration,
+} from "@/modules/work-queue/TaskTypes";
 import { readSequentialTransitionAdvancement } from "@/modules/workflows/infrastructure/RuntimeTransitionAdvancement";
 import { appendTaskCompletionAndActionAudit } from "@/modules/workflows/infrastructure/RuntimeAuditWriteRepository";
 import { appendTaskCompletionAudit } from "@/modules/workflows/infrastructure/RuntimeAuditWriteRepository";
+import { workflowTaskCompletionRequirementsProjection } from "@/modules/workflows/infrastructure/WorkflowTaskCompletionRequirementsProjection";
 import type {
   ExecuteFormTaskTransition as ExecuteTransition,
   FormTaskCompletionInput as CompletionInput,
@@ -28,9 +33,12 @@ type ReplayInput = Pick<
 type LockedTask = {
   hasActions: boolean;
   hasChecklist: boolean;
+  checklistItems: { code: string; required: boolean }[];
   config: unknown;
+  documentRequirements: DocumentRequirementItem[];
   result: unknown;
   rowVersion: number;
+  scoring: ScoringConfiguration | null;
   stageInstanceId: string;
   workflowInstanceId: string;
 };
@@ -109,6 +117,15 @@ async function lockTask(
         SELECT 1 FROM app_workflow_stage_checklist_definitions checklist
         WHERE checklist.task_definition_id = definition.id
       ) AS "hasChecklist",
+      COALESCE((
+        SELECT jsonb_agg(jsonb_build_object(
+          'code', checklist.key,
+          'required', checklist.mandatory
+        ))
+        FROM app_workflow_stage_checklist_definitions checklist
+        WHERE checklist.task_definition_id = definition.id
+      ), '[]'::jsonb) AS "checklistItems",
+      ${workflowTaskCompletionRequirementsProjection},
       stage.id AS "stageInstanceId",
       workflow.id AS "workflowInstanceId"
     FROM app_workflow_tasks task
@@ -269,7 +286,10 @@ async function writeCompletion(
     formCompleted: true,
     formRequired: true,
     hasChecklist: task.hasChecklist,
+    checklistItems: task.checklistItems,
+    documentRequirements: task.documentRequirements,
     result: task.result,
+    scoring: task.scoring,
   })) return null;
   const completedAt = new Date();
   const response = await completeSubmission(transaction, input, completedAt);
@@ -280,7 +300,10 @@ async function writeCompletion(
       formCompleted: true,
       formRequired: true,
       hasChecklist: task.hasChecklist,
+      checklistItems: task.checklistItems,
+      documentRequirements: task.documentRequirements,
       result: task.result,
+      scoring: task.scoring,
     })
     ? "IN_PROGRESS" as const
     : "COMPLETED" as const;

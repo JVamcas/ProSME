@@ -9,9 +9,11 @@ function isStableKeyList(value: string) {
     .split(/[\n,]/)
     .map((item) => item.trim())
     .filter(Boolean);
-  return values.length > 0 &&
+  return (
+    values.length > 0 &&
     new Set(values).size === values.length &&
-    values.every((item) => stableKeyPattern.test(item));
+    values.every((item) => stableKeyPattern.test(item))
+  );
 }
 
 function reminderOffsets(value: string) {
@@ -48,7 +50,6 @@ export const workflowActionFormSchema = z
     reasonCodeRequired: z.boolean(),
     displayOrder: z.number().int().positive(),
     reasonCodes: z.string(),
-    rejectionCommentRequired: z.boolean(),
     rejectionOutcomeType: z.enum(["TERMINAL", "TRANSITION"]),
     cancelOpenStageInstances: z.boolean(),
     cancelOpenTasks: z.boolean(),
@@ -88,12 +89,6 @@ export const workflowActionFormSchema = z
   })
   .superRefine((values, context) => {
     if (values.actionType === "REJECT") {
-      requiredFor(
-        values.reasonCodes,
-        "Enter reason codes.",
-        "reasonCodes",
-        context,
-      );
       if (values.rejectionOutcomeType === "TERMINAL") {
         requiredFor(
           values.rejectionPublicLabel,
@@ -108,8 +103,10 @@ export const workflowActionFormSchema = z
           context,
         );
       }
-      if (values.reversibleActionKey
-        && !stableKeyPattern.test(values.reversibleActionKey)) {
+      if (
+        values.reversibleActionKey &&
+        !stableKeyPattern.test(values.reversibleActionKey)
+      ) {
         context.addIssue({
           code: "custom",
           message: "Use an uppercase stable action key.",
@@ -204,9 +201,7 @@ export const workflowActionFormSchema = z
     });
   });
 
-export type WorkflowActionFormValues = z.infer<
-  typeof workflowActionFormSchema
->;
+export type WorkflowActionFormValues = z.infer<typeof workflowActionFormSchema>;
 
 export const workflowActionTypeItems = [
   { label: "Approve / Advance", value: "APPROVE_ADVANCE" },

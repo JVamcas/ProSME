@@ -41,6 +41,26 @@ function assignDocumentDecisions(
   });
 }
 
+function assignScores(
+  target: Record<string, unknown>,
+  value: unknown,
+) {
+  if (isRecord(value)) {
+    Object.assign(target, value);
+    return;
+  }
+  if (!Array.isArray(value)) return;
+  value.forEach((score) => {
+    if (!isRecord(score) || typeof score.criterion !== "string") return;
+    if (typeof score.score === "number") {
+      target[score.criterion] = score.score;
+    }
+    if (typeof score.comment === "string") {
+      target[`${score.criterion}_COMMENT`] = score.comment;
+    }
+  });
+}
+
 function assignComments(
   target: Record<string, unknown>,
   value: unknown,
@@ -62,12 +82,16 @@ export function buildStageCompletionValues(
     assignRecord(values, responseValues);
     if (!taskResult) return;
     assignRecord(values, taskResult.values);
-    assignRecord(values, taskResult.scores);
+    assignScores(values, taskResult.scores);
     assignComments(values, taskResult.comments);
     assignChecklistItems(values, taskResult.items);
-    assignDocumentDecisions(values, taskResult.decisions);
+    assignDocumentDecisions(
+      values,
+      taskResult.documents ?? taskResult.decisions,
+    );
     Object.entries(taskResult).forEach(([key, value]) => {
-      if (!["comments", "decisions", "items", "scores", "values"].includes(key)) {
+      if (!["comments", "decisions", "documents", "items", "scores", "values"]
+        .includes(key)) {
         values[key] = value;
       }
     });

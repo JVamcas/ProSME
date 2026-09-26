@@ -40,33 +40,35 @@ describe("workflow decision repository", () => {
       workflowInstanceId: "80000000-0000-4000-8000-000000000001",
     });
 
-    expect(inserted).toEqual(expect.arrayContaining([
-      {
-        table: workflowDecisions,
-        value: expect.objectContaining({
-          actionDefinitionId: "10000000-0000-4000-8000-000000000001",
-          actionExecutionId: "20000000-0000-4000-8000-000000000001",
-          actorId: "30000000-0000-4000-8000-000000000001",
-          decidedAt,
-          input: {
-            actionType: "APPROVE_ADVANCE",
-            comment: "Required work verified.",
-          },
-          outcome: "APPROVED",
-        }),
-      },
-      {
-        table: workflowEvents,
-        value: expect.objectContaining({ eventCode: "DECISION_RECORDED" }),
-      },
-      {
-        table: workflowAuditEntries,
-        value: expect.objectContaining({
-          action: "DECISION_RECORDED",
-          targetType: "WORKFLOW_DECISION",
-        }),
-      },
-    ]));
+    expect(inserted).toEqual(
+      expect.arrayContaining([
+        {
+          table: workflowDecisions,
+          value: expect.objectContaining({
+            actionDefinitionId: "10000000-0000-4000-8000-000000000001",
+            actionExecutionId: "20000000-0000-4000-8000-000000000001",
+            actorId: "30000000-0000-4000-8000-000000000001",
+            decidedAt,
+            input: {
+              actionType: "APPROVE_ADVANCE",
+              comment: "Required work verified.",
+            },
+            outcome: "APPROVED",
+          }),
+        },
+        {
+          table: workflowEvents,
+          value: expect.objectContaining({ eventCode: "DECISION_RECORDED" }),
+        },
+        {
+          table: workflowAuditEntries,
+          value: expect.objectContaining({
+            action: "DECISION_RECORDED",
+            targetType: "WORKFLOW_DECISION",
+          }),
+        },
+      ]),
+    );
   });
 
   it("records a negative decision with its configured reason input", async () => {
@@ -91,7 +93,6 @@ describe("workflow decision repository", () => {
       normalizedInput: {
         actionType: "REJECT",
         comment: "Mandatory evidence was not supplied.",
-        reasonCode: "INSUFFICIENT_EVIDENCE",
       },
       outcome: "REJECTED",
       sourceStageInstanceId: "60000000-0000-4000-8000-000000000001",
@@ -99,16 +100,18 @@ describe("workflow decision repository", () => {
       workflowInstanceId: "80000000-0000-4000-8000-000000000001",
     });
 
-    expect(inserted).toEqual(expect.arrayContaining([
-      {
-        table: workflowDecisions,
-        value: expect.objectContaining({
-          input: expect.objectContaining({
-            reasonCode: "INSUFFICIENT_EVIDENCE",
+    expect(inserted).toEqual(
+      expect.arrayContaining([
+        {
+          table: workflowDecisions,
+          value: expect.objectContaining({
+            input: expect.objectContaining({
+              comment: "Mandatory evidence was not supplied.",
+            }),
+            outcome: "REJECTED",
           }),
-          outcome: "REJECTED",
-        }),
-      },
-    ]));
+        },
+      ]),
+    );
   });
 });

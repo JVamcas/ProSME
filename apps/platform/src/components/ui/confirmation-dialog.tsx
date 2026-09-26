@@ -2,12 +2,13 @@
 
 import type { ReactNode } from "react";
 
-import { GeneralButton } from "./button";
+import { GeneralButton, type ButtonProps } from "./button";
 import { DraggableDialog } from "./draggable-dialog";
 
 type Props = {
   cancelText?: string;
   confirmText?: string;
+  confirmVariant?: ButtonProps["variant"];
   errorMessage?: string;
   isDangerous?: boolean;
   isLoading?: boolean;
@@ -22,6 +23,7 @@ type Props = {
 export function ConfirmationDialog({
   cancelText = "Cancel",
   confirmText = "Confirm",
+  confirmVariant,
   errorMessage,
   isDangerous = false,
   isLoading = false,
@@ -37,7 +39,10 @@ export function ConfirmationDialog({
       <div className="space-y-6">
         <div className="text-sm leading-6 text-brand-navy/70">{message}</div>
         {errorMessage ? (
-          <p className="rounded-xl bg-red-50 p-3 text-sm text-red-700" role="alert">
+          <p
+            className="rounded-xl bg-red-50 p-3 text-sm text-red-700"
+            role="alert"
+          >
             {errorMessage}
           </p>
         ) : null}
@@ -54,7 +59,7 @@ export function ConfirmationDialog({
             disabled={isLoading}
             onClick={onConfirm}
             type="button"
-            variant={isDangerous ? "danger" : "primary"}
+            variant={confirmVariant ?? (isDangerous ? "danger" : "primary")}
           >
             {isLoading ? loadingText : confirmText}
           </GeneralButton>

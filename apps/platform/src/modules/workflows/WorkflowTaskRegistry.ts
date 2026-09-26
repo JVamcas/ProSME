@@ -1,5 +1,9 @@
 import { z } from "zod";
 import { formPurposes } from "@/modules/forms/domain/FormPurpose";
+import {
+  workflowTaskDisplayModes,
+  type WorkflowTaskDisplayMode,
+} from "@/modules/workflows/domain/definitions/WorkflowTaskDefinition";
 
 import { fieldSchema, optionSchema } from "./WorkflowTaskSchemas";
 
@@ -50,6 +54,22 @@ export const commentResultSchema = z.object({
   })).max(100),
 });
 
+export const documentResultSchema = z.object({
+  documents: z.array(z.object({
+    category: z.string().min(1).max(160),
+    comment: z.string().trim().max(1000).optional(),
+    outcome: z.enum(["VERIFIED", "REJECTED", ""]),
+  })).max(100),
+});
+
+export const scoreResultSchema = z.object({
+  scores: z.array(z.object({
+    comment: z.string().trim().max(1000).optional(),
+    criterion: z.string().min(1).max(160),
+    score: z.number().nullable(),
+  })).max(100),
+});
+
 export function taskCommentFields(config: unknown) {
   const parsed = z.object({
     commentFields: z.array(commentFieldSchema).max(100).optional(),
@@ -58,11 +78,21 @@ export function taskCommentFields(config: unknown) {
   return parsed.success ? parsed.data.commentFields ?? [] : [];
 }
 
+export function taskDisplayMode(config: unknown): WorkflowTaskDisplayMode {
+  const parsed = z.object({
+    displayMode: z.enum(workflowTaskDisplayModes).optional(),
+  }).safeParse(config);
+  return parsed.success
+    ? parsed.data.displayMode ?? "STEP_PROGRESS"
+    : "STEP_PROGRESS";
+}
+
 const taskConfigurationSchema = z.object({
   command: z.literal("AUTHORITATIVE_ELIGIBILITY").optional(),
   reevaluationPolicy: z.enum(["NEVER", "WHEN_EVIDENCE_CHANGED"]).optional(),
   categories: z.array(optionSchema).min(1).optional(),
   commentFields: z.array(commentFieldSchema).max(100).optional(),
+  displayMode: z.enum(workflowTaskDisplayModes).optional(),
   outcomes: z.array(optionSchema).min(1).optional(),
   fields: z.array(fieldSchema).min(1).optional(),
   criteria: criteriaSchema.optional(),
@@ -117,15 +147,38 @@ export function validateEligibilityResult(result: unknown) {
 }
 
 export function taskWorkIsReady(input: {
+  documentRequirements?: {
+    mandatory: boolean;
+    name: string;
+  }[];
   config: unknown;
   formCompleted: boolean;
   formRequired: boolean;
   hasChecklist: boolean;
+  checklistItems?: { code: string; required: boolean }[];
+  scoring?: {
+    criteria: {
+      criterion: string;
+      mandatoryComment: boolean;
+      scaleMaximum: number;
+      scaleMinimum: number;
+    }[];
+  } | null;
   result: unknown;
 }) {
   if (input.formRequired && !input.formCompleted) return false;
-  if (input.hasChecklist
-    && !validateChecklistResult(input.result).success) return false;
+  if (input.hasChecklist) {
+    const checklist = validateChecklistResult(input.result);
+    if (!checklist.success) return false;
+    if (input.checklistItems) {
+      const answers = new Map(
+        checklist.data.items.map((item) => [item.code, item.accepted]),
+      );
+      if (answers.size !== input.checklistItems.length
+        || input.checklistItems.some((item) => !answers.has(item.code)
+          || (item.required && !answers.get(item.code)))) return false;
+    }
+  }
   const fields = taskCommentFields(input.config);
   if (fields.length) {
     const parsed = commentResultSchema.safeParse(input.result);
@@ -134,6 +187,31 @@ export function taskWorkIsReady(input: {
     if (answers.size !== fields.length) return false;
     if (fields.some((field) => !answers.has(field.key)
       || (field.mandatory && !answers.get(field.key)))) return false;
+  }
+  if (input.documentRequirements?.length) {
+    const parsed = documentResultSchema.safeParse(input.result);
+    if (!parsed.success) return false;
+    const decisions = new Map(
+      parsed.data.documents.map((item) => [item.category, item.outcome]),
+    );
+    if (decisions.size !== input.documentRequirements.length
+      || input.documentRequirements.some((requirement) => (
+        !decisions.has(requirement.name)
+        || (requirement.mandatory && !decisions.get(requirement.name))
+      ))) return false;
+  }
+  if (input.scoring?.criteria.length) {
+    const parsed = scoreResultSchema.safeParse(input.result);
+    if (!parsed.success) return false;
+    const scores = new Map(parsed.data.scores.map((item) => [item.criterion, item]));
+    if (scores.size !== input.scoring.criteria.length
+      || input.scoring.criteria.some((criterion) => {
+        const score = scores.get(criterion.criterion);
+        return !score || score.score === null
+          || score.score < criterion.scaleMinimum
+          || score.score > criterion.scaleMaximum
+          || (criterion.mandatoryComment && !score.comment?.trim());
+      })) return false;
   }
   if (taskRunsAuthoritativeEligibility(input.config)
     && !validateEligibilityResult(input.result).success) return false;

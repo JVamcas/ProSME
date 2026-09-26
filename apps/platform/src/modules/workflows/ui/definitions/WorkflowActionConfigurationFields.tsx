@@ -84,9 +84,8 @@ function EscalationFields({
   assignmentOptions: WorkflowAssignmentOptions;
   targetType: "ROLE" | "USER";
 }) {
-  const targets = targetType === "ROLE"
-    ? assignmentOptions.roles
-    : assignmentOptions.users;
+  const targets =
+    targetType === "ROLE" ? assignmentOptions.roles : assignmentOptions.users;
   return (
     <>
       <FormSelect
@@ -162,15 +161,6 @@ function ActionConfigurationFields({
     case "REJECT":
       return (
         <>
-          <KeyListField
-            label="Reason codes"
-            name="reasonCodes"
-            placeholder="INELIGIBLE, INSUFFICIENT_EVIDENCE"
-          />
-          <CheckboxField
-            label="Require a rejection comment"
-            name="rejectionCommentRequired"
-          />
           <FormInput
             label="Reversal action key"
             name="reversibleActionKey"
@@ -285,7 +275,10 @@ function ActionConfigurationFields({
             items={[
               { label: "Resubmission not allowed", value: "NOT_ALLOWED" },
               { label: "Create a new application", value: "NEW_APPLICATION" },
-              { label: "Reopen withdrawn application", value: "REOPEN_WITHDRAWN" },
+              {
+                label: "Reopen withdrawn application",
+                value: "REOPEN_WITHDRAWN",
+              },
             ]}
             label="Resubmission rule"
             name="resubmissionRule"

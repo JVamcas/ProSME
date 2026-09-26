@@ -57,6 +57,28 @@ describe("workflow task configuration", () => {
     })).toBe(false);
   });
 
+  it("requires configured checklist answers before completing a form task", () => {
+    const work = {
+      checklistItems: [{ code: "OWNERSHIP", required: true }],
+      config: {},
+      formCompleted: true,
+      formRequired: true,
+      hasChecklist: true,
+    };
+    expect(taskWorkIsReady({
+      ...work,
+      result: { items: [{ code: "OWNERSHIP", accepted: false }] },
+    })).toBe(false);
+    expect(taskWorkIsReady({
+      ...work,
+      result: { items: [{ code: "OTHER", accepted: true }] },
+    })).toBe(false);
+    expect(taskWorkIsReady({
+      ...work,
+      result: { items: [{ code: "OWNERSHIP", accepted: true }] },
+    })).toBe(true);
+  });
+
   it("requires every assigned prompt and its mandatory answer", () => {
     const config = {
       commentFields: [
@@ -83,6 +105,53 @@ describe("workflow task configuration", () => {
     expect(taskWorkIsReady({
       ...work,
       result: { comments: [{ key: "RECOMMENDATION", value: "Approve" }] },
+    })).toBe(true);
+  });
+
+  it("requires configured document decisions and scores", () => {
+    const work = {
+      config: {},
+      documentRequirements: [{ mandatory: true, name: "TAX_STATUS" }],
+      formCompleted: false,
+      formRequired: false,
+      hasChecklist: false,
+      scoring: {
+        criteria: [{
+          criterion: "VIABILITY",
+          mandatoryComment: true,
+          scaleMaximum: 10,
+          scaleMinimum: 0,
+        }],
+      },
+    };
+    expect(taskWorkIsReady({
+      ...work,
+      result: {
+        documents: [{ category: "TAX_STATUS", outcome: "" }],
+        scores: [{ criterion: "VIABILITY", score: 8 }],
+      },
+    })).toBe(false);
+    expect(taskWorkIsReady({
+      ...work,
+      result: {
+        documents: [{ category: "TAX_STATUS", outcome: "VERIFIED" }],
+        scores: [{
+          comment: "Evidence supports the score.",
+          criterion: "VIABILITY",
+          score: 11,
+        }],
+      },
+    })).toBe(false);
+    expect(taskWorkIsReady({
+      ...work,
+      result: {
+        documents: [{ category: "TAX_STATUS", outcome: "VERIFIED" }],
+        scores: [{
+          comment: "Evidence supports the score.",
+          criterion: "VIABILITY",
+          score: 8,
+        }],
+      },
     })).toBe(true);
   });
 

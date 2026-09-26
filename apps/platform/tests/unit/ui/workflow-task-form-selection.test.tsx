@@ -31,6 +31,7 @@ function TaskFields({
       completionMode,
       completionPercentage: completionMode === "PERCENT" ? 75 : null,
       description: "",
+      displayMode: "STEP_PROGRESS",
       displayOrder: 1,
       formVersionId: attachedVersionId,
       formPurpose,
@@ -118,6 +119,14 @@ describe("workflow task form selection", () => {
     expect(container.querySelector<HTMLSelectElement>(
       'select[name="formVersionId"]',
     )?.required).toBe(false);
+    const layout = container.querySelector<HTMLSelectElement>(
+      'select[name="displayMode"]',
+    );
+    expect(layout?.value).toBe("STEP_PROGRESS");
+    expect(Array.from(layout?.options ?? [], (option) => option.value)).toEqual([
+      "STEP_PROGRESS",
+      "SECTIONS",
+    ]);
 
     await act(async () => root.unmount());
   });

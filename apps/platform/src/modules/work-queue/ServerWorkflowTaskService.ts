@@ -10,6 +10,7 @@ import {
   writeChecklistTaskCompletion,
 } from "@/modules/workflows/infrastructure/WorkflowTaskActionRepository";
 import { readWorkflowTask } from "@/modules/workflows/infrastructure/WorkflowTaskRepository";
+import { writeTaskReviewDraft } from "@/modules/workflows/infrastructure/WorkflowTaskReviewRepository";
 import {
   IdempotencyConflictError,
   RequestValidationError,
@@ -18,7 +19,10 @@ import {
 } from "@/lib/resource-errors";
 import {
   commentResultSchema,
+  documentResultSchema,
+  scoreResultSchema,
   taskCommentFields,
+  taskDisplayMode,
   taskRunsAuthoritativeEligibility,
   validateChecklistResult,
   validateEligibilityResult,
@@ -29,6 +33,11 @@ import type {
   ChecklistConfigurationItem,
   ChecklistResultItem,
   CompleteChecklistTaskInput,
+  DocumentRequirementItem,
+  DocumentResultItem,
+  SaveTaskReviewDraftInput,
+  ScoreResultItem,
+  ScoringConfiguration,
 } from "./TaskTypes";
 
 function parseChecklistResult(result: unknown) {
@@ -45,9 +54,20 @@ function parseEligibilityResult(result: unknown) {
   return parsed.success ? parsed.data : null;
 }
 
+function parseDocumentResult(result: unknown): DocumentResultItem[] {
+  const parsed = documentResultSchema.safeParse(result);
+  return parsed.success ? parsed.data.documents : [];
+}
+
+function parseScoreResult(result: unknown): ScoreResultItem[] {
+  const parsed = scoreResultSchema.safeParse(result);
+  return parsed.success ? parsed.data.scores : [];
+}
+
 function validateCommentItems(
   configured: ReturnType<typeof taskCommentFields>,
   submitted: NonNullable<CompleteChecklistTaskInput["comments"]>,
+  requireMandatory = true,
 ) {
   const expected = new Set(configured.map((field) => field.key));
   const received = new Set(submitted.map((item) => item.key));
@@ -58,7 +78,8 @@ function validateCommentItems(
     );
   }
   const answers = new Map(submitted.map((item) => [item.key, item.value.trim()]));
-  if (configured.some((field) => field.mandatory && !answers.get(field.key))) {
+  if (requireMandatory
+    && configured.some((field) => field.mandatory && !answers.get(field.key))) {
     throw new RequestValidationError("Complete all required comments and recommendations.");
   }
 }
@@ -66,6 +87,7 @@ function validateCommentItems(
 function validateChecklistItems(
   configured: ChecklistConfigurationItem[],
   submitted: ChecklistResultItem[],
+  requireAcceptance = true,
 ) {
   const expected = new Set(configured.map((item) => item.code));
   const received = new Set(submitted.map((item) => item.code));
@@ -83,9 +105,56 @@ function validateChecklistItems(
   const incomplete = configured.some(
     (item) => item.required && !decisions.get(item.code)?.accepted,
   );
-  if (incomplete) {
+  if (requireAcceptance && incomplete) {
     throw new RequestValidationError(
       "All required pre-screening items must be confirmed before completion.",
+    );
+  }
+}
+
+function validateDocumentItems(
+  configured: DocumentRequirementItem[],
+  submitted: DocumentResultItem[],
+  requireMandatory = true,
+) {
+  const expected = new Set(configured.map((item) => item.name));
+  const received = new Set(submitted.map((item) => item.category));
+  if (received.size !== submitted.length || received.size !== expected.size
+    || submitted.some((item) => !expected.has(item.category))) {
+    throw new RequestValidationError(
+      "Submit one verification for every configured document requirement.",
+    );
+  }
+  if (requireMandatory && configured.some((item) => item.mandatory
+    && !submitted.find((answer) => answer.category === item.name)?.outcome)) {
+    throw new RequestValidationError("Verify every required document.");
+  }
+}
+
+function validateScoreItems(
+  configured: ScoringConfiguration | null,
+  submitted: ScoreResultItem[],
+  requireComplete = true,
+) {
+  const criteria = configured?.criteria ?? [];
+  const expected = new Set(criteria.map((item) => item.criterion));
+  const received = new Set(submitted.map((item) => item.criterion));
+  if (received.size !== submitted.length || received.size !== expected.size
+    || submitted.some((item) => !expected.has(item.criterion))) {
+    throw new RequestValidationError(
+      "Submit one score for every configured scoring criterion.",
+    );
+  }
+  const invalid = criteria.some((criterion) => {
+    const answer = submitted.find((item) => item.criterion === criterion.criterion);
+    if (!answer || answer.score === null) return requireComplete;
+    return answer.score < criterion.scaleMinimum
+      || answer.score > criterion.scaleMaximum
+      || (requireComplete && criterion.mandatoryComment && !answer.comment?.trim());
+  });
+  if (invalid) {
+    throw new RequestValidationError(
+      "Complete every score within its configured range and add required comments.",
     );
   }
 }
@@ -108,25 +177,83 @@ export async function getWorkflowTask(
   const commentFields = taskCommentFields(config);
   const parsedComments = commentResultSchema.safeParse(result);
   const resultComments = parsedComments.success ? parsedComments.data.comments : [];
+  const resultDocuments = parseDocumentResult(result);
+  const resultScores = parseScoreResult(result);
   const canEvaluateEligibility = taskRunsAuthoritativeEligibility(config);
   return {
     ...view,
     actions,
     canEvaluateEligibility,
-    checklistCompleted: hasChecklist && parseChecklistResult(result).length > 0,
+    checklistCompleted: hasChecklist
+      && task.checklistItems.every((item) => {
+        const answer = parseChecklistResult(result).find(
+          (entry) => entry.code === item.code,
+        );
+        return Boolean(answer && (!item.required || answer.accepted));
+      }),
     checklistItems: task.checklistItems,
     commentFields,
+    displayMode: taskDisplayMode(config),
     commentCompleted: commentFields.length > 0
-      && resultComments.length === commentFields.length,
+      && commentFields.every((field) => {
+        const answer = resultComments.find((item) => item.key === field.key);
+        return Boolean(answer && (!field.mandatory || answer.value.trim()));
+      }),
     resultComments,
     dueAt: task.dueAt ? new Date(task.dueAt).toISOString() : null,
+    documentsCompleted: task.documentRequirements.length > 0
+      && task.documentRequirements.every((requirement) => {
+        const answer = resultDocuments.find(
+          (item) => item.category === requirement.name,
+        );
+        return Boolean(answer && (!requirement.mandatory || answer.outcome));
+      }),
     eligibilityEvaluation: canEvaluateEligibility
       ? parseEligibilityResult(result)
       : null,
     hasChecklist,
     formCompleted: task.formCompleted,
     resultItems: hasChecklist ? parseChecklistResult(result) : [],
+    resultDocuments,
+    resultScores,
+    scoringCompleted: Boolean(task.scoring?.criteria.length)
+      && task.scoring!.criteria.every((criterion) => {
+        const answer = resultScores.find(
+          (item) => item.criterion === criterion.criterion,
+        );
+        return Boolean(answer && answer.score !== null
+          && answer.score >= criterion.scaleMinimum
+          && answer.score <= criterion.scaleMaximum
+          && (!criterion.mandatoryComment || answer.comment?.trim()));
+      }),
   };
+}
+
+export async function saveTaskReviewDraft(
+  user: AuthenticatedUser | null,
+  taskId: string,
+  input: SaveTaskReviewDraftInput,
+  correlationId: string,
+) {
+  const actor = requireAuthenticatedUser(user);
+  const task = await readWorkflowTask(actor.id, taskId);
+  if (!task) throw new ResourceNotFoundError("workflow task");
+  requirePermission(actor, task.permissions.edit);
+  const commentFields = taskCommentFields(task.config);
+  validateChecklistItems(task.checklistItems, input.items, false);
+  validateCommentItems(commentFields, input.comments ?? [], false);
+  validateDocumentItems(task.documentRequirements, input.documents ?? [], false);
+  validateScoreItems(task.scoring, input.scores ?? [], false);
+  const saved = await writeTaskReviewDraft({
+    ...input,
+    actorId: actor.id,
+    correlationId,
+    taskId,
+  });
+  if (!saved) {
+    throw new ResourceConflictError("The task changed or is no longer assigned to you.");
+  }
+  return { saved: true };
 }
 
 export async function completeChecklistTask(
@@ -157,11 +284,10 @@ export async function completeChecklistTask(
     );
   }
   const commentFields = taskCommentFields(task.config);
-  if (!task.checklistItems.length && !commentFields.length) {
-    throw new ResourceConflictError("This task has no review fields.");
-  }
   validateChecklistItems(task.checklistItems, input.items);
   validateCommentItems(commentFields, input.comments ?? []);
+  validateDocumentItems(task.documentRequirements, input.documents ?? []);
+  validateScoreItems(task.scoring, input.scores ?? []);
   const outcome = await writeChecklistTaskCompletion(
     writeInput,
     executeSequentialTransitionInTransaction,

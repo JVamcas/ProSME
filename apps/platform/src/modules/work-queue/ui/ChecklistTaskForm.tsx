@@ -1,33 +1,48 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeft } from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { FormProvider, useForm } from "react-hook-form";
-import { toast } from "sonner";
+import { useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
+import { FormProvider, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 
-import { GeneralButton, GeneralButtonLink } from "@/components/ui/button";
-import { CheckboxField } from "@/components/ui/form-field";
-import { FormTextarea } from "@/components/ui/form-fields";
-import { useCompleteWorkflowTask } from "@/modules/work-queue/WorkQueueHooks";
+import { GeneralButton } from "@/components/ui/button";
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
+import { usePendingNavigationGuard } from "@/shared/ui/usePendingNavigationGuard";
+import { useSaveTaskReviewDraft } from "@/modules/work-queue/WorkQueueHooks";
 import type { TaskDetail } from "@/modules/work-queue/TaskTypes";
-import { WorkflowTaskPreviewSection } from "@/modules/workflows/ui/definitions/WorkflowTaskPreviewSections";
+import { WorkflowTaskWorkSections } from "@/modules/workflows/ui/WorkflowTaskWorkSections";
+
+const reviewAutosaveDelayMs = 800;
 
 const checklistFormSchema = z.object({
   comments: z.array(z.object({
     key: z.string(),
     value: z.string().trim().max(4000),
   })),
+  documents: z.array(z.object({
+    category: z.string(),
+    comment: z.string().trim().max(1000).optional(),
+    outcome: z.enum(["VERIFIED", "REJECTED", ""]),
+  })),
   items: z.array(z.object({
     accepted: z.boolean(),
     code: z.string(),
     comment: z.string().trim().max(1000).optional(),
   })),
+  scores: z.array(z.object({
+    comment: z.string().trim().max(1000).optional(),
+    criterion: z.string(),
+    score: z.number().nullable(),
+  })),
 });
 
 type ChecklistFormValues = z.infer<typeof checklistFormSchema>;
+
+export type ReviewDraftState = {
+  pending: boolean;
+  ready: boolean;
+};
 
 function defaultValues(task: TaskDetail): ChecklistFormValues {
   const prior = new Map(task.resultItems.map((item) => [item.code, item]));
@@ -39,138 +54,176 @@ function defaultValues(task: TaskDetail): ChecklistFormValues {
       key: field.key,
       value: priorComments.get(field.key) ?? "",
     })),
+    documents: task.documentRequirements.map((requirement) => {
+      const saved = task.resultDocuments.find(
+        (item) => item.category === requirement.name,
+      );
+      return {
+        category: requirement.name,
+        comment: saved?.comment ?? "",
+        outcome: saved?.outcome ?? "",
+      };
+    }),
     items: task.checklistItems.map((item) => ({
       accepted: prior.get(item.code)?.accepted ?? false,
       code: item.code,
       comment: prior.get(item.code)?.comment ?? "",
     })),
+    scores: (task.scoring?.criteria ?? []).map((criterion) => {
+      const saved = task.resultScores.find(
+        (item) => item.criterion === criterion.criterion,
+      );
+      return {
+        comment: saved?.comment ?? "",
+        criterion: criterion.criterion,
+        score: saved?.score ?? null,
+      };
+    }),
   };
 }
 
-export function ChecklistTaskForm({ task }: { task: TaskDetail }) {
-  const router = useRouter();
-  const completion = useCompleteWorkflowTask(task.taskInstanceId);
+function reviewIsReady(task: TaskDetail, values: ChecklistFormValues) {
+  return task.checklistItems.every((item) => {
+    const answer = values.items.find((value) => value.code === item.code);
+    return Boolean(answer && (!item.required || answer.accepted));
+  }) && task.documentRequirements.every((requirement) => {
+    const answer = values.documents.find(
+      (value) => value.category === requirement.name,
+    );
+    return Boolean(answer && (!requirement.mandatory || answer.outcome));
+  }) && (task.scoring?.criteria ?? []).every((criterion) => {
+    const answer = values.scores.find(
+      (value) => value.criterion === criterion.criterion,
+    );
+    return Boolean(answer && answer.score !== null
+      && answer.score >= criterion.scaleMinimum
+      && answer.score <= criterion.scaleMaximum
+      && (!criterion.mandatoryComment || answer.comment?.trim()));
+  }) && task.commentFields.every((field) => {
+    const answer = values.comments.find((value) => value.key === field.key);
+    return Boolean(answer && (!field.mandatory || answer.value.trim()));
+  });
+}
+
+export function ChecklistTaskForm({
+  formContent,
+  onStateChange,
+  task,
+}: {
+  formContent?: ReactNode;
+  onStateChange: (state: ReviewDraftState) => void;
+  task: TaskDetail;
+}) {
+  const save = useSaveTaskReviewDraft(task.taskInstanceId);
   const form = useForm<ChecklistFormValues>({
     defaultValues: defaultValues(task),
     resolver: zodResolver(checklistFormSchema),
   });
-  const submit = form.handleSubmit((values) => {
-    completion.mutate(
-      {
-        expectedRowVersion: task.rowVersion,
-        items: values.items,
-        comments: values.comments,
-      },
-      {
-        onSuccess: (result) => {
-          toast.success(
-            result.nextStageName
-              ? `Task completed. Application advanced to ${result.nextStageName}.`
-              : result.taskStatus === "COMPLETED"
-                ? "Task completed."
-                : "Review responses saved. Finish the remaining task work.",
-          );
-          router.push("/admin/work-queue");
-        },
-      },
-    );
+  const [revision, setRevision] = useState(() => {
+    const initial = defaultValues(task);
+    const missingSavedReview = (task.hasChecklist && !task.checklistCompleted)
+      || (task.commentFields.length > 0 && !task.commentCompleted)
+      || (task.documentRequirements.length > 0 && !task.documentsCompleted)
+      || (Boolean(task.scoring?.criteria.length) && !task.scoringCompleted);
+    return missingSavedReview && reviewIsReady(task, initial) ? 1 : 0;
   });
+  const [savedRevision, setSavedRevision] = useState(0);
+  const lastAttemptedRevision = useRef(0);
+  const values = useWatch({ control: form.control }) as ChecklistFormValues;
+  const serializedValues = JSON.stringify(values);
+  const previousValues = useRef(serializedValues);
+  const pending = revision !== savedRevision || save.isPending;
+  const navigation = usePendingNavigationGuard(pending);
+  const ready = reviewIsReady(task, values);
+  const invalid = !checklistFormSchema.safeParse(values).success;
+  const hasSavedReview = savedRevision > 0
+    || task.checklistCompleted || task.commentCompleted
+    || task.documentsCompleted || task.scoringCompleted;
+
+  useEffect(() => {
+    if (previousValues.current === serializedValues) return;
+    previousValues.current = serializedValues;
+    setRevision((current) => current + 1);
+  }, [serializedValues]);
+
+  useEffect(() => {
+    onStateChange({ pending, ready });
+  }, [onStateChange, pending, ready]);
+
+  useEffect(() => {
+    if (!revision || !pending || save.isPending
+      || lastAttemptedRevision.current === revision) return;
+    const timer = window.setTimeout(() => {
+      lastAttemptedRevision.current = revision;
+      const parsed = checklistFormSchema.safeParse(form.getValues());
+      if (!parsed.success) {
+        void form.trigger();
+        return;
+      }
+      save.mutate(parsed.data, {
+        onSuccess: () => setSavedRevision(revision),
+      });
+    }, reviewAutosaveDelayMs);
+    return () => window.clearTimeout(timer);
+  }, [form, pending, revision, save]);
+
+  function retrySave() {
+    const parsed = checklistFormSchema.safeParse(form.getValues());
+    if (!parsed.success) return;
+    save.mutate(parsed.data, {
+      onSuccess: () => setSavedRevision(revision),
+    });
+  }
 
   return (
     <FormProvider {...form}>
-      <form className="space-y-5" onSubmit={submit}>
-        {task.hasChecklist ? (
-          <WorkflowTaskPreviewSection
-            defaultOpen
-            status={task.checklistCompleted ? "Completed" : "Required"}
-            title="Checklist"
-          >
-            <div className="space-y-4">
-              {task.checklistItems.map((item, index) => (
-                <section
-                  className="rounded-xl border border-brand-navy/10 bg-white p-5"
-                  key={item.code}
-                >
-                  <input
-                    type="hidden"
-                    {...form.register(`items.${index}.code`)}
-                  />
-                  <CheckboxField
-                    containerClassName="font-semibold text-brand-navy"
-                    label={(
-                      <span>
-                        {item.label}
-                        {item.required ? (
-                          <span className="ml-1 text-brand-orange">*</span>
-                        ) : null}
-                      </span>
-                    )}
-                    name={`items.${index}.accepted`}
-                  />
-                  <FormTextarea
-                    className="min-h-20"
-                    containerClassName="mt-4"
-                    label="Reviewer note (optional)"
-                    name={`items.${index}.comment`}
-                    placeholder="Record evidence or a concise review note"
-                  />
-                </section>
-              ))}
-            </div>
-          </WorkflowTaskPreviewSection>
-        ) : null}
-        {task.commentFields.length ? (
-          <WorkflowTaskPreviewSection
-            defaultOpen
-            status={task.commentCompleted ? "Completed" : "Required"}
-            title="Comments & Recommendations"
-          >
-            <div className="space-y-4">
-              {task.commentFields.map((field, index) => (
-                <div key={field.key}>
-                  <input
-                    type="hidden"
-                    {...form.register(`comments.${index}.key`)}
-                  />
-                  <FormTextarea
-                    className="min-h-24"
-                    label={field.label}
-                    name={`comments.${index}.value`}
-                    required={field.mandatory}
-                  />
-                  {field.helpText ? (
-                    <p className="mt-1 text-xs text-brand-navy/60">
-                      {field.helpText}
-                    </p>
-                  ) : null}
-                </div>
-              ))}
-            </div>
-          </WorkflowTaskPreviewSection>
-        ) : null}
-        {completion.isError ? (
-          <p className="rounded-xl bg-red-50 p-3 text-sm text-red-800" role="alert">
-            {completion.error.message}
-          </p>
-        ) : null}
-        <div className="flex flex-wrap justify-between gap-3">
-          <GeneralButtonLink variant="outline" href="/admin/work-queue">
-            Back to queue
-          </GeneralButtonLink>
-        </div>
-        {task.taskStatus !== "COMPLETED"
-          && ((task.hasChecklist && !task.checklistCompleted)
-            || (task.commentFields.length > 0 && !task.commentCompleted)) ? (
-          <div className="flex justify-end">
-            <GeneralButton
-              disabled={completion.isPending || task.taskStatus === "COMPLETED"}
-              type="submit"
-            >
-              {completion.isPending ? "Completing…" : "Submit review"}
-            </GeneralButton>
+      <div className="space-y-5">
+        <WorkflowTaskWorkSections
+          checklistItems={task.checklistItems}
+          commentFields={task.commentFields}
+          disabled={task.taskStatus === "COMPLETED"}
+          displayMode={task.displayMode}
+          documentRequirements={task.documentRequirements}
+          form={formContent ? {
+            content: formContent,
+            title: task.formName ?? "Form",
+          } : undefined}
+          scoring={task.scoring}
+          status={{
+            checklist: task.checklistCompleted ? "Completed" : "Required",
+            comments: task.commentCompleted ? "Completed" : "Required",
+            documents: task.documentsCompleted ? "Completed" : "Required",
+            form: task.formCompleted ? "Completed" : "Required",
+            scoring: task.scoringCompleted ? "Completed" : "Required",
+          }}
+        />
+        {task.taskStatus !== "COMPLETED" ? (
+          <div className="flex items-center gap-3 text-sm text-brand-navy/65">
+            <span aria-live="polite">
+              {invalid ? "Correct review fields before saving"
+                : save.isError ? "Review save failed" : save.isPending
+                  ? "Saving review…" : pending ? "Autosave pending"
+                    : hasSavedReview ? "Review saved" : "No review changes yet"}
+            </span>
+            {save.isError ? (
+              <GeneralButton onClick={retrySave} type="button" variant="outline">
+                Retry save
+              </GeneralButton>
+            ) : null}
           </div>
         ) : null}
-      </form>
+        {save.isError ? (
+          <p className="text-sm text-red-700" role="alert">{save.error.message}</p>
+        ) : null}
+      </div>
+      <ConfirmationDialog
+        confirmText="Leave page"
+        isOpen={Boolean(navigation.pendingNavigationHref)}
+        message="Your latest review changes have not finished saving. Leave this page?"
+        onCancel={navigation.cancelNavigation}
+        onConfirm={navigation.confirmNavigation}
+        title="Leave with unsaved changes?"
+      />
     </FormProvider>
   );
 }

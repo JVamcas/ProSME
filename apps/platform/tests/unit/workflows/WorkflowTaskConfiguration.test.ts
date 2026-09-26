@@ -38,6 +38,7 @@ describe("workflow task configuration", () => {
       contextFields: [],
       stableKey: "REVIEW_TASK",
       description: "Review the application.",
+      displayMode: "STEP_PROGRESS",
       displayOrder: 1,
       formVersionId: "",
       formPurpose: "APPLICATION_REVIEW",

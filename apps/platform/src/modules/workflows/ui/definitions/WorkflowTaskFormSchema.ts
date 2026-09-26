@@ -1,7 +1,10 @@
 import { z } from "zod";
 
 import type { WorkflowTaskInput } from "@/modules/workflows/domain/definitions/WorkflowTypes";
-import { workflowTaskFormPurposes } from "@/modules/workflows/domain/definitions/WorkflowTaskDefinition";
+import {
+  workflowTaskDisplayModes,
+  workflowTaskFormPurposes,
+} from "@/modules/workflows/domain/definitions/WorkflowTaskDefinition";
 
 export const workflowTaskFormSchema = z.object({
   assignmentMode: z.enum(["ROLE", "NAMED_USER"]),
@@ -19,6 +22,7 @@ export const workflowTaskFormSchema = z.object({
   formPurpose: z.enum(workflowTaskFormPurposes),
   runAuthoritativeEligibility: z.boolean(),
   description: z.string().trim().max(1000),
+  displayMode: z.enum(workflowTaskDisplayModes),
   displayOrder: z.number().int().positive(),
   name: z.string().trim().min(2).max(160),
   reviewerCount: z.number().int().positive().max(100),

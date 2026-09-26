@@ -9,6 +9,14 @@ export const workflowTaskFormPurposes = [
   "ELIGIBILITY_VERIFICATION",
 ] as const;
 
+export const workflowTaskDisplayModes = [
+  "STEP_PROGRESS",
+  "SECTIONS",
+] as const;
+
+export type WorkflowTaskDisplayMode =
+  (typeof workflowTaskDisplayModes)[number];
+
 export type WorkflowTaskAssignmentMode =
   (typeof workflowTaskAssignmentModes)[number];
 
