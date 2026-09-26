@@ -8,7 +8,7 @@ import { FormProvider, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
-import { GeneralButton } from "@/components/ui/button";
+import { GeneralButton, GeneralButtonLink } from "@/components/ui/button";
 import { CheckboxField } from "@/components/ui/form-field";
 import { FormTextarea } from "@/components/ui/form-fields";
 import { useCompleteWorkflowTask } from "@/modules/work-queue/WorkQueueHooks";
@@ -154,11 +154,9 @@ export function ChecklistTaskForm({ task }: { task: TaskDetail }) {
           </p>
         ) : null}
         <div className="flex flex-wrap justify-between gap-3">
-          <GeneralButton asChild type="button" variant="outline">
-            <Link href="/admin/work-queue">
-              <ArrowLeft aria-hidden="true" className="size-4" /> Back to queue
-            </Link>
-          </GeneralButton>
+          <GeneralButtonLink variant="outline" href="/admin/work-queue">
+            Back to queue
+          </GeneralButtonLink>
         </div>
         {task.taskStatus !== "COMPLETED"
           && ((task.hasChecklist && !task.checklistCompleted)

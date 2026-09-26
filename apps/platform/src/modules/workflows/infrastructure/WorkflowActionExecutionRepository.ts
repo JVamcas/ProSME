@@ -291,7 +291,7 @@ export async function completeActionTask(
     .where(and(
       eq(workflowTasks.id, input.task.id),
       eq(workflowTasks.rowVersion, input.task.rowVersion),
-      sql`${workflowTasks.status} IN ('CLAIMED', 'IN_PROGRESS')`,
+      sql`${workflowTasks.status} IN ('PENDING', 'IN_PROGRESS')`,
     ))
     .returning({ id: workflowTasks.id });
   return task ?? null;

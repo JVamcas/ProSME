@@ -42,14 +42,7 @@ export async function readTaskCoiGate(actorId: string, taskId: string) {
       ON clearance.task_id = task.id AND clearance.user_id = ${actorId}::uuid
     WHERE task.id = ${taskId}::uuid
       AND stage.status = 'ACTIVE' AND workflow.status = 'ACTIVE'
-      AND (
-        task.assigned_user_id = ${actorId}::uuid
-        OR (task.assigned_user_id IS NULL AND EXISTS (
-          SELECT 1 FROM app_user_roles membership
-          WHERE membership.user_id = ${actorId}::uuid
-            AND membership.role_id = task.assigned_role_id
-        ))
-      )
+      AND task.assigned_user_id = ${actorId}::uuid
   `);
   return (result.rows[0] as GateRow | undefined) ?? null;
 }
@@ -94,7 +87,7 @@ export async function changeTaskCoi(input: {
       status: string;
     } | undefined;
     if (!row || !row.gated || row.rowVersion !== input.expectedRowVersion
-      || !["CLAIMED", "IN_PROGRESS"].includes(row.status)) return null;
+      || !["PENDING", "IN_PROGRESS"].includes(row.status)) return null;
 
     const self = row.assignedUserId === input.actorId;
     let next: CoiState;

@@ -68,14 +68,14 @@ describe("workflow COI service", () => {
       rowVersion: 2,
       stageInstanceId: "66666666-6666-4666-8666-666666666666",
       state: "PENDING_REVIEW",
-      status: "CLAIMED",
+      status: "PENDING",
       taskId,
       taskName: "Independent review",
     });
     await expect(getWorkflowTaskCoi(actor, taskId)).resolves.toEqual({
       taskId,
       taskName: "Independent review",
-      taskStatus: "CLAIMED",
+      taskStatus: "PENDING",
       rowVersion: 2,
       gated: true,
       state: "PENDING_REVIEW",

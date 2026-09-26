@@ -88,7 +88,7 @@ const task = {
   stageName: "Pre-screening",
   taskInstanceId: "79e20de0-3558-4d63-90a4-8c9f5125df09",
   taskName: "Pre-screening checklist",
-  taskStatus: "CLAIMED",
+  taskStatus: "PENDING",
   workflowInstanceId: "79e20de0-3558-4d63-90a4-8c9f5125df13",
 };
 

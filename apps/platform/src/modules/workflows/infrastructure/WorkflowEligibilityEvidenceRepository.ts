@@ -93,7 +93,7 @@ export async function readScreeningChecklistItemFacts(
         COALESCE(task.result -> 'items', '[]'::jsonb)
       ) result_item ON result_item ->> 'code' = checklist.key
       WHERE workflow.application_id = ${applicationId}::uuid
-        AND checklist.id = ANY(${itemDefinitionIds}::uuid[])
+        AND checklist.id IN (${sql.join(itemDefinitionIds.map((id) => sql`${id}::uuid`), sql`, `)})
   `);
   const rows = result.rows.map((row) => ({
     ...row,

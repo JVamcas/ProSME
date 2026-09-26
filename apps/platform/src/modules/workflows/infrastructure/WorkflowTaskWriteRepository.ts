@@ -50,7 +50,7 @@ export async function createWorkflowTasks(
       formVersionId: input.formVersionId ?? null,
       reviewerSlot: input.reviewerSlot,
       stageInstanceId: input.stageInstanceId,
-      status: input.assignedUserId ? "CLAIMED" as const : "PENDING" as const,
+      status: "PENDING" as const,
       workflowTaskDefinitionId: input.workflowTaskDefinitionId,
     })))
     .returning(workflowTaskSelection);

@@ -1,16 +1,11 @@
 import "server-only";
 
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 
 import {
   capabilities,
   roleCapabilities,
   roles,
-  stageTaskDefinitions,
-  stageTaskFormBindings,
-  workflowAuditEntries,
-  workflowDefinitionVersions,
-  workflowStageDefinitions,
 } from "@/db/schema";
 import { getDatabase } from "@/db/client";
 import { permissionCodes } from "@/auth/authorization/permissions/PermissionCodes";
@@ -18,6 +13,7 @@ import {
   formDefinitions,
   formVersions,
 } from "@/modules/forms/infrastructure/form.schema";
+import { standardFormPurpose } from "@/modules/forms/domain/FormPurpose";
 import type { StandardWorkflowDraft } from "@/modules/workflows/domain/standard/StandardWorkflowTypes";
 import {
   standardWorkflowCode,
@@ -30,11 +26,7 @@ import {
   ensureSystemSeedPrincipal,
   systemSeedUserId,
 } from "@/platform/database/SystemSeedPrincipal";
-import {
-  cloneWorkflowVersion,
-  createWorkflowDefinition,
-  replaceWorkflowDraft,
-} from "./WorkflowTemplateWriteRepository";
+import { createWorkflowDefinition } from "./WorkflowTemplateWriteRepository";
 import { workflowDefinitions } from "./workflow.schema";
 
 const standardRoles: Array<{
@@ -157,7 +149,7 @@ async function bindableFormVersions(
     .select({
       code: formDefinitions.code,
       id: formVersions.id,
-      status: formVersions.status,
+      purpose: formDefinitions.purpose,
       versionNumber: formVersions.versionNumber,
     })
     .from(formDefinitions)
@@ -167,35 +159,18 @@ async function bindableFormVersions(
     )
     .where(and(
       inArray(formDefinitions.code, [...standardWorkflowFormCodes]),
-      inArray(formVersions.status, ["DRAFT", "PUBLISHED"]),
+      eq(formVersions.status, "PUBLISHED"),
     ))
     .orderBy(desc(formVersions.versionNumber));
-  const draftVersionIds: Partial<Record<StandardWorkflowFormCode, string>> = {};
-  const publishedVersionIds: Partial<
-    Record<StandardWorkflowFormCode, string>
-  > = {};
+  const formVersionIds: Partial<Record<StandardWorkflowFormCode, string>> = {};
+  const formVersionStatuses: StandardWorkflowSeedDependencies["formVersionStatuses"] = {};
   for (const row of rows) {
     const code = row.code as StandardWorkflowFormCode;
     if (!standardWorkflowFormCodes.includes(code)) continue;
-    if (row.status === "PUBLISHED" && !publishedVersionIds[code]) {
-      publishedVersionIds[code] = row.id;
-    }
-    if (row.status === "DRAFT" && !draftVersionIds[code]) {
-      draftVersionIds[code] = row.id;
-    }
-  }
-  const formVersionIds: Partial<Record<StandardWorkflowFormCode, string>> = {};
-  const formVersionStatuses: StandardWorkflowSeedDependencies["formVersionStatuses"] = {};
-  for (const code of standardWorkflowFormCodes) {
-    const publishedId = publishedVersionIds[code];
-    const draftId = draftVersionIds[code];
-    if (publishedId) {
-      formVersionIds[code] = publishedId;
-      formVersionStatuses[code] = "PUBLISHED";
-    } else if (draftId) {
-      formVersionIds[code] = draftId;
-      formVersionStatuses[code] = "DRAFT";
-    }
+    if (row.purpose !== standardFormPurpose(code)) continue;
+    if (formVersionIds[code]) continue;
+    formVersionIds[code] = row.id;
+    formVersionStatuses[code] = "PUBLISHED";
   }
   return { formVersionIds, formVersionStatuses };
 }
@@ -220,73 +195,6 @@ export async function prepareStandardWorkflowSeedDependencies(): Promise<
   });
 }
 
-async function bindMissingDraftForms(
-  definitionId: string,
-  draft: StandardWorkflowDraft,
-) {
-  return getDatabase().transaction(async (transaction) => {
-    const [version] = await transaction
-      .select({ id: workflowDefinitionVersions.id })
-      .from(workflowDefinitionVersions)
-      .where(and(
-        eq(workflowDefinitionVersions.definitionId, definitionId),
-        eq(workflowDefinitionVersions.status, "DRAFT"),
-      ))
-      .orderBy(desc(workflowDefinitionVersions.versionNumber))
-      .limit(1);
-    if (!version) return { bindingsAdded: 0, versionId: undefined };
-    const tasks = await transaction
-      .select({
-        id: stageTaskDefinitions.id,
-        stageKey: workflowStageDefinitions.code,
-        taskKey: stageTaskDefinitions.stableKey,
-      })
-      .from(stageTaskDefinitions)
-      .innerJoin(
-        workflowStageDefinitions,
-        eq(stageTaskDefinitions.stageId, workflowStageDefinitions.id),
-      )
-      .where(eq(workflowStageDefinitions.versionId, version.id));
-    const taskIds = new Map(
-      tasks.map((task) => [`${task.stageKey}:${task.taskKey}`, task.id]),
-    );
-    const desiredBindings = draft.graph.stages.flatMap((stage) =>
-      stage.tasks.flatMap((task) => {
-        const taskDefinitionId = taskIds.get(
-          `${stage.stableKey}:${task.stableKey}`,
-        );
-        return task.formBinding && taskDefinitionId
-          ? [{
-              contextFields: task.formBinding.contextFields,
-              formVersionId: task.formBinding.formVersionId,
-              taskDefinitionId,
-            }]
-          : [];
-      }),
-    );
-    if (!desiredBindings.length) {
-      return { bindingsAdded: 0, versionId: version.id };
-    }
-    const inserted = await transaction
-      .insert(stageTaskFormBindings)
-      .values(desiredBindings)
-      .onConflictDoNothing()
-      .returning({ taskDefinitionId: stageTaskFormBindings.taskDefinitionId });
-    if (inserted.length) {
-      await transaction.insert(workflowAuditEntries).values({
-        action: "STANDARD_FORM_BINDINGS_ADDED",
-        actorId: systemSeedUserId,
-        after: { bindingsAdded: inserted.length },
-        before: null,
-        correlationId: crypto.randomUUID(),
-        targetId: version.id,
-        targetType: "WORKFLOW_VERSION",
-      });
-    }
-    return { bindingsAdded: inserted.length, versionId: version.id };
-  });
-}
-
 export async function insertMissingStandardWorkflowDraft(
   draft: StandardWorkflowDraft,
 ) {
@@ -296,67 +204,11 @@ export async function insertMissingStandardWorkflowDraft(
     .where(eq(workflowDefinitions.code, standardWorkflowCode))
     .limit(1);
   if (existing) {
-    const versions = await getDatabase()
-      .select({
-        id: workflowDefinitionVersions.id,
-        rowVersion: workflowDefinitionVersions.rowVersion,
-        status: workflowDefinitionVersions.status,
-      })
-      .from(workflowDefinitionVersions)
-      .where(eq(workflowDefinitionVersions.definitionId, existing.id))
-      .orderBy(desc(workflowDefinitionVersions.versionNumber));
-    const draftVersion = versions.find((version) => version.status === "DRAFT");
-    const eligibilityTask = draftVersion
-      ? await getDatabase()
-          .select({ id: stageTaskDefinitions.id })
-          .from(stageTaskDefinitions)
-          .innerJoin(
-            workflowStageDefinitions,
-            eq(stageTaskDefinitions.stageId, workflowStageDefinitions.id),
-          )
-          .where(and(
-            eq(workflowStageDefinitions.versionId, draftVersion.id),
-            eq(stageTaskDefinitions.stableKey, "AUTHORITATIVE_ELIGIBILITY"),
-            sql`${stageTaskDefinitions.config} ->> 'formPurpose' = 'ELIGIBILITY_VERIFICATION'`,
-          ))
-          .limit(1)
-      : [];
-    if (draftVersion && eligibilityTask.length) {
-      return {
-        created: false,
-        definitionId: existing.id,
-        ...await bindMissingDraftForms(existing.id, draft),
-      };
-    }
-    const correlationId = crypto.randomUUID();
-    const versionId = draftVersion
-      ? await replaceWorkflowDraft({
-          actorId: systemSeedUserId,
-          correlationId,
-          expectedRowVersion: draftVersion.rowVersion,
-          graph: draft.graph,
-          versionId: draftVersion.id,
-        })
-      : await cloneWorkflowVersion({
-          actorId: systemSeedUserId,
-          correlationId,
-          definitionId: existing.id,
-          graph: draft.graph,
-          sourceVersionId: versions[0]!.id,
-        });
-    if (!versionId) {
-      throw new Error("The standard workflow draft changed during reseeding.");
-    }
     return {
-      bindingsAdded: draft.graph.stages.reduce(
-        (total, stage) => total + stage.tasks.filter(
-          (task) => task.formBinding,
-        ).length,
-        0,
-      ),
+      bindingsAdded: 0,
       created: false,
       definitionId: existing.id,
-      versionId,
+      versionId: undefined,
     };
   }
   const versionId = await createWorkflowDefinition({

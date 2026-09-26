@@ -6,7 +6,7 @@ import { getDatabase } from "@/db/client";
 import type { WorkQueueListInput, WorkQueueRow } from "@/modules/work-queue/WorkQueueTypes";
 import type { WorkQueueCursor } from "@/modules/work-queue/WorkQueueCursor";
 
-const actionableStatuses = sql`('PENDING', 'CLAIMED', 'IN_PROGRESS')`;
+const actionableStatuses = sql`('PENDING', 'IN_PROGRESS')`;
 
 type QueueDatabaseRow = Omit<WorkQueueRow, "claimedAt" | "createdAt" | "dueAt"> & {
   claimedAt: Date | string | null;

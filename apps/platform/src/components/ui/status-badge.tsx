@@ -20,7 +20,12 @@ export const statusStyles: Record<string, string> = {
   submitted: "bg-brand-blue/40 text-brand-navy",
   "technical assessment": "bg-brand-blue/40 text-brand-navy",
   upcoming: "bg-brand-yellow text-brand-navy",
-  live:"bg-brand-green/60 text-brand-white"
+  live: "bg-brand-green/60 text-brand-white",
+  completed: "bg-brand-green/60 text-brand-white",
+  pending: "bg-brand-navy/20 text-brand-navy",
+  "in progress": "bg-brand-navy/60 text-brand-white",
+  waiting: "bg-brand-gold text-brand-white",
+
 };
 
 type StatusBadgeProps = {

@@ -129,7 +129,7 @@ export async function replaceWorkflowReviewer(
     const task = locked.rows[0] as LockedTask | undefined;
     if (!task || task.rowVersion !== input.expectedRowVersion
       || !(
-        ["PENDING", "CLAIMED", "IN_PROGRESS"].includes(task.status)
+        ["PENDING", "IN_PROGRESS"].includes(task.status)
         || (task.status === "COMPLETED"
           && task.submittedReplacementPolicy === "REOPEN_SLOT"
           && input.coiDecision !== "RECUSE")
@@ -233,7 +233,7 @@ export async function replaceWorkflowReviewer(
       )
       SELECT stage_instance_id, workflow_task_definition_id, reviewer_slot,
         id, form_version_id, ${input.replacementUserId}::uuid,
-        definition.assignment_role_id, 'CLAIMED', ${replacedAt}, due_at,
+        definition.assignment_role_id, 'PENDING', ${replacedAt}, due_at,
         ${replacedAt}
       FROM app_workflow_tasks old_task
       JOIN app_stage_task_definitions definition

@@ -42,10 +42,6 @@ export function WorkflowTaskCoiGate({ gate }: { gate: CoiGate }) {
   if (gate.state === "RECUSED" || gate.state === "REVOKED") {
     return <p role="status">This assignment is no longer available.</p>;
   }
-  if (gate.taskStatus === "PENDING") {
-    return <p role="status">Claim this task before making a declaration.</p>;
-  }
-
   async function submit(values: Declaration) {
     await mutation.mutateAsync({
       decision: values.decision,

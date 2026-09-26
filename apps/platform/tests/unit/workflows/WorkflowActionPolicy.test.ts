@@ -108,6 +108,25 @@ describe("workflow action policy", () => {
     ).available).toBe(true);
   });
 
+  it("permits an assigned pending task without a claim step", () => {
+    const pendingTask = {
+      ...target(),
+      task: { ...target().task, status: "PENDING" },
+    };
+    expect(evaluateWorkflowActionPolicy(
+      actor(permissionCodes.workflowTaskAssignedDecide),
+      pendingTask,
+      permittedInputs,
+    ).available).toBe(true);
+
+    pendingTask.task.assignedToActor = false;
+    expect(evaluateWorkflowActionPolicy(
+      actor(permissionCodes.workflowTaskAssignedDecide),
+      pendingTask,
+      permittedInputs,
+    ).reason).toBe("CONTEXT_MISMATCH");
+  });
+
   it("denies assignment mismatches without exposing policy details", () => {
     expect(evaluateWorkflowActionPolicy(
       actor(permissionCodes.workflowTaskAssignedDecide),

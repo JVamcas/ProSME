@@ -3,6 +3,8 @@
 import { useEffect } from "react";
 import { toast } from "sonner";
 import { useEvaluateAuthoritativeEligibility } from "@/modules/work-queue/WorkQueueHooks";
+import type { AuthoritativeEligibilityTaskResult } from "@/modules/work-queue/TaskTypes";
+import { AuthoritativeEligibilityResult } from "@/modules/eligibility/ui/screening/AuthoritativeEligibilityResult";
 
 import { PortalErrorState } from "@/components/layout/PortalErrorState";
 import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
@@ -60,11 +62,13 @@ function DraftPersistenceStatus({
 function LoadedDynamicFormTask({
   data,
   taskId,
+  eligibilityEvaluation,
   eligibilityTask = false,
   onPendingChange,
 }: {
   data: TaskFormData;
   taskId: string;
+  eligibilityEvaluation?: AuthoritativeEligibilityTaskResult | null;
   eligibilityTask?: boolean;
   onPendingChange?: (pending: boolean) => void;
 }) {
@@ -139,7 +143,7 @@ function LoadedDynamicFormTask({
                     onClick={() => void runEligibility()}
                     type="button"
                   >
-                    {evaluation.isPending ? "Running eligibility…" : "Run eligibility"}
+                    {evaluation.isPending ? "Running eligibility…" : "Run eligibility test"}
                   </GeneralButton>
                 ) : (
                   <GeneralButton
@@ -156,6 +160,11 @@ function LoadedDynamicFormTask({
           </div>
         </div>
       </FormRenderer>
+      {eligibilityTask && eligibilityEvaluation ? (
+        <div className="mt-5">
+          <AuthoritativeEligibilityResult evaluation={eligibilityEvaluation} />
+        </div>
+      ) : null}
       <ConfirmationDialog
         confirmText="Leave page"
         isOpen={Boolean(controller.pendingNavigationHref)}
@@ -170,10 +179,12 @@ function LoadedDynamicFormTask({
 
 export function DynamicFormTask({
   taskId,
+  eligibilityEvaluation,
   eligibilityTask = false,
   onPendingChange,
 }: {
   taskId: string;
+  eligibilityEvaluation?: AuthoritativeEligibilityTaskResult | null;
   eligibilityTask?: boolean;
   onPendingChange?: (pending: boolean) => void;
 }) {
@@ -199,6 +210,7 @@ export function DynamicFormTask({
     <LoadedDynamicFormTask
       data={query.data}
       taskId={taskId}
+      eligibilityEvaluation={eligibilityEvaluation}
       eligibilityTask={eligibilityTask}
       onPendingChange={onPendingChange}
     />

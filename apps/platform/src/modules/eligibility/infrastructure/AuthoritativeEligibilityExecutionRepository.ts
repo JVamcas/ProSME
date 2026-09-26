@@ -67,6 +67,14 @@ export type AuthoritativeEligibilityTaskTarget = {
   workflowInstanceId: string;
 };
 
+function readTimestamp(value: unknown, field: string): Date {
+  const timestamp = value instanceof Date ? value : new Date(String(value));
+  if (Number.isNaN(timestamp.getTime())) {
+    throw new Error(`Invalid ${field} timestamp in eligibility task context.`);
+  }
+  return timestamp;
+}
+
 export function withAuthoritativeEligibilityExecutionTransaction<T>(
   work: (
     transaction: AuthoritativeEligibilityExecutionTransaction,
@@ -177,7 +185,7 @@ export async function lockAuthoritativeEligibilityTask(
         applicationId: row.applicationId,
         contextReference: row.previousContextReference,
         eligible: row.previousEligible,
-        evaluatedAt: row.previousEvaluatedAt,
+        evaluatedAt: readTimestamp(row.previousEvaluatedAt, "previous evaluation"),
         evaluatedBy: row.previousEvaluatedBy,
         evaluatedValueProvenance: row.previousEvaluatedValueProvenance,
         evaluatedValues: row.previousEvaluatedValues,
@@ -222,19 +230,19 @@ export async function lockAuthoritativeEligibilityTask(
         ? null
         : Number(row.businessEstablishedYear),
       registrationNumber: String(row.businessRegistrationNumber),
-      updatedAt: row.businessUpdatedAt as Date,
+      updatedAt: readTimestamp(row.businessUpdatedAt, "business profile"),
     },
     config: row.config,
     formVersionId: row.taskFormVersionId as string | null,
     fundingCall: {
-      closesAt: row.fundingCallClosesAt as Date,
+      closesAt: readTimestamp(row.fundingCallClosesAt, "funding call close"),
       eligibilityRuleSetVersionId:
         row.fundingCallEligibilityVersionId as string | null,
       fundingInstrument: row.fundingCallInstrument as string | null,
       id: String(row.fundingCallId),
       maximumGrantAmount: String(row.fundingCallMaximumAmount),
       minimumGrantAmount: String(row.fundingCallMinimumAmount),
-      opensAt: row.fundingCallOpensAt as Date,
+      opensAt: readTimestamp(row.fundingCallOpensAt, "funding call open"),
       slug: String(row.fundingCallSlug),
       status: String(row.fundingCallStatus),
       thematicArea: row.fundingCallThematicArea as string | null,

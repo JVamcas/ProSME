@@ -162,7 +162,7 @@ export async function executeAuthoritativeEligibility(
       const canReevaluateCompletedTask = target.status === "COMPLETED"
         && target.previousOutcome !== null;
       if (!canReevaluateCompletedTask
-        && !["CLAIMED", "IN_PROGRESS"].includes(target.status)) {
+        && !["PENDING", "IN_PROGRESS"].includes(target.status)) {
         throw new ResourceConflictError(
           "The eligibility task is not ready to run.",
         );

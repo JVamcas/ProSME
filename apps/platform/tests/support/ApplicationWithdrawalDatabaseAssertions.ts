@@ -48,6 +48,8 @@ export async function assertApplicationWithdrawal(input: {
   const persisted = await input.query(
     `SELECT application.status AS application_status,
        workflow.status AS workflow_status,
+       workflow.terminal_outcome AS workflow_terminal_outcome,
+       workflow.public_status AS workflow_public_status,
        (SELECT count(*)::integer FROM app_application_lifecycle_history history
          WHERE history.application_id = application.id
            AND history.target_status = 'withdrawn') AS withdrawal_count,
@@ -77,6 +79,12 @@ export async function assertApplicationWithdrawal(input: {
     open_tasks: 0,
     withdrawal_count: 1,
     withdrawal_reason: "Business is closing.",
+    workflow_public_status: {
+      description: "This application has been withdrawn.",
+      label: "Withdrawn",
+      status: "WITHDRAWN",
+    },
     workflow_status: "CANCELLED",
+    workflow_terminal_outcome: "WITHDRAWN",
   });
 }

@@ -128,7 +128,7 @@ export function evaluateWorkflowActionPolicy(
   if (target.workflowStatus !== "ACTIVE"
     || target.stageStatus !== "ACTIVE"
     || (target.task
-      && !["CLAIMED", "IN_PROGRESS"].includes(target.task.status))) {
+      && !["PENDING", "IN_PROGRESS"].includes(target.task.status))) {
     return unavailable(
       "INVALID_STATE",
       "This action is not available in the current state.",

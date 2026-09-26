@@ -53,5 +53,25 @@ describe("eligibility question response projection", () => {
     expect(query.sql).toContain("WHERE application.id =");
     expect(query.params).toContain(applicationId);
     expect(query.params).toContain(questionId);
+    expect(query.sql).toContain("binding.question_id IN ($2::uuid)");
+  });
+
+  it("binds multiple question ids as UUID values rather than a SQL tuple", async () => {
+    const execute = vi.fn().mockResolvedValue({ rows: [] });
+    const anotherId = "20000000-0000-4000-8000-000000000002";
+
+    await readEligibilityQuestionResponseRecords(
+      [request, {
+        ...request,
+        binding: { ...request.binding, sourceDefinitionId: anotherId },
+      }],
+      { execute } as never,
+    );
+
+    const query = new PgDialect().sqlToQuery(execute.mock.calls[0]![0]);
+    expect(query.sql).toContain(
+      "binding.question_id IN ($2::uuid, $3::uuid)",
+    );
+    expect(query.params).toEqual([applicationId, questionId, anotherId]);
   });
 });

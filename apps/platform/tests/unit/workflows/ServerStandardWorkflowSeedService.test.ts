@@ -22,11 +22,9 @@ beforeEach(() => {
     formVersionIds: {
       ELIGIBILITY_VERIFICATION:
         "00000000-0000-4000-9000-000000000002",
-      TECHNICAL_REVIEW: "00000000-0000-4000-9000-000000000001",
     },
     formVersionStatuses: {
       ELIGIBILITY_VERIFICATION: "PUBLISHED",
-      TECHNICAL_REVIEW: "DRAFT",
     },
     roleIds: Object.fromEntries(
       standardWorkflowRoleCodes.map((code, index) => [
@@ -36,7 +34,7 @@ beforeEach(() => {
     ) as Awaited<ReturnType<
       typeof prepareStandardWorkflowSeedDependencies
     >>["roleIds"],
-    unresolvedFormCodes: ["FINANCE_REVIEW"],
+    unresolvedFormCodes: ["TECHNICAL_REVIEW", "FINANCE_REVIEW"],
   });
   vi.mocked(insertMissingStandardWorkflowDraft).mockResolvedValue({
     bindingsAdded: 1,
@@ -64,12 +62,14 @@ describe("standard workflow seed service", () => {
     );
     expect(result.boundFormCodes).toEqual([
       "ELIGIBILITY_VERIFICATION",
-      "TECHNICAL_REVIEW",
     ]);
-    expect(result.boundDraftFormCodes).toEqual(["TECHNICAL_REVIEW"]);
+    expect(result.boundDraftFormCodes).toEqual([]);
     expect(result.boundPublishedFormCodes).toEqual([
       "ELIGIBILITY_VERIFICATION",
     ]);
-    expect(result.unresolvedFormCodes).toEqual(["FINANCE_REVIEW"]);
+    expect(result.unresolvedFormCodes).toEqual([
+      "TECHNICAL_REVIEW",
+      "FINANCE_REVIEW",
+    ]);
   });
 });

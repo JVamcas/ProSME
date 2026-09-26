@@ -130,7 +130,7 @@ async function lockTask(
       )
       AND task.form_version_id = ${input.formVersionId}::uuid
       AND task.row_version = ${input.expectedTaskRowVersion}
-      AND task.status IN ('CLAIMED', 'IN_PROGRESS')
+      AND task.status IN ('PENDING', 'IN_PROGRESS')
       AND stage.status = 'ACTIVE' AND workflow.status = 'ACTIVE'
       AND (
         (${input.actionKey}::text IS NULL)

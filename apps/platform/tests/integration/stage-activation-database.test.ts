@@ -173,7 +173,7 @@ describeDatabase("stage activation persistence", () => {
   it("completes and audits the stage once its required task count passes", async () => {
     await query(
       `UPDATE app_workflow_tasks
-       SET status = 'CLAIMED', claimed_at = now(), row_version = 2
+       SET status = 'PENDING', claimed_at = now(), row_version = 2
        WHERE id = $1`,
       [runtimeTaskId],
     );

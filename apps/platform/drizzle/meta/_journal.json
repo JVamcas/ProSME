@@ -736,6 +736,27 @@
       "when": 1796774400000,
       "tag": "0104_correct_generated_eligibility_form_purpose",
       "breakpoints": true
+    },
+    {
+      "idx": 105,
+      "version": "7",
+      "when": 1796860800000,
+      "tag": "0105_repair_standard_review_form_bindings",
+      "breakpoints": true
+    },
+    {
+      "idx": 106,
+      "version": "7",
+      "when": 1796947200000,
+      "tag": "0106_allow_withdrawn_workflow_outcome",
+      "breakpoints": true
+    },
+    {
+      "idx": 107,
+      "version": "7",
+      "when": 1797033600000,
+      "tag": "0107_merge_claimed_task_status",
+      "breakpoints": true
     }
   ]
 }

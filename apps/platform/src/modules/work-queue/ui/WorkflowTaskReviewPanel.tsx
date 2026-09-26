@@ -16,14 +16,16 @@ import {
 export function WorkflowTaskReviewPanel({ task }: { task: TaskDetail }) {
   const [eligibilityPending, setEligibilityPending] = useState(false);
   const hasReviewFields = task.hasChecklist || task.commentFields.length > 0;
+  const separateEligibilitySection = task.canEvaluateEligibility
+    && !task.formVersionId;
   const sectionCount = [
-    task.canEvaluateEligibility,
+    separateEligibilitySection,
     Boolean(task.formVersionId),
     task.hasChecklist,
     task.commentFields.length > 0,
   ].filter(Boolean).length;
   const completedCount = [
-    task.canEvaluateEligibility && Boolean(task.eligibilityEvaluation),
+    separateEligibilitySection && Boolean(task.eligibilityEvaluation),
     Boolean(task.formVersionId) && task.formCompleted,
     task.hasChecklist && task.checklistCompleted,
     task.commentFields.length > 0 && task.commentCompleted,
@@ -59,7 +61,7 @@ export function WorkflowTaskReviewPanel({ task }: { task: TaskDetail }) {
         />
       }
     >
-      {task.canEvaluateEligibility ? (
+      {separateEligibilitySection ? (
         <WorkflowTaskPreviewSection
           defaultOpen
           status={task.eligibilityEvaluation ? "Evaluated" : "Pending"}
@@ -75,6 +77,7 @@ export function WorkflowTaskReviewPanel({ task }: { task: TaskDetail }) {
           title={task.formName ?? "Form"}
         >
           <DynamicFormTask
+            eligibilityEvaluation={task.eligibilityEvaluation}
             eligibilityTask={task.canEvaluateEligibility}
             onPendingChange={task.canEvaluateEligibility
               ? setEligibilityPending

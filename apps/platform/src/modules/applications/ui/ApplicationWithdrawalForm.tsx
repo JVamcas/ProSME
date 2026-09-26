@@ -58,8 +58,7 @@ export function ApplicationWithdrawalForm({
           })}
         >
           <p className="text-sm text-brand-navy/75">
-            {application.reference} will remain in your records. This action
-            cannot be undone from the portal.
+            Note that this action cannot be undone.
           </p>
           <FormTextarea
             label="Reason"

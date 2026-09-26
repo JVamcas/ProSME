@@ -22,3 +22,18 @@ describe("workflow task lifecycle migration", () => {
     expect(migration).toContain("'workflow.task.cancel.all'");
   });
 });
+
+const mergedStatusMigration = readFileSync(
+  path.resolve(process.cwd(), "drizzle/0107_merge_claimed_task_status.sql"),
+  "utf8",
+);
+
+describe("merged pending task status migration", () => {
+  it("moves assigned tasks to pending and removes the claimed state", () => {
+    expect(mergedStatusMigration).toContain("SET \"status\" = 'PENDING'");
+    expect(mergedStatusMigration).toContain("WHERE \"status\" = 'CLAIMED'");
+    expect(mergedStatusMigration).toContain(
+      "'PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'",
+    );
+  });
+});

@@ -50,7 +50,7 @@ export async function allocateStageReviewers(
       ON application.id = workflow.application_id
     LEFT JOIN app_workflow_tasks owned
       ON owned.assigned_user_id = candidate.id
-      AND owned.status IN ('CLAIMED', 'IN_PROGRESS')
+      AND owned.status IN ('PENDING', 'IN_PROGRESS')
     WHERE definition.id IN (${sql.join(
       definitions.map((item) => sql`${item.id}::uuid`),
       sql`, `,

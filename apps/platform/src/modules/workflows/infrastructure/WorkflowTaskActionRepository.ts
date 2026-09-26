@@ -154,18 +154,9 @@ async function lockTask(
     JOIN app_workflow_instances workflow ON workflow.id = stage.workflow_instance_id
     WHERE task.id = ${input.taskId}::uuid
       AND app_workflow_task_coi_cleared(task.id, ${input.actorId}::uuid)
-      AND (
-        task.assigned_user_id = ${input.actorId}::uuid
-        OR (
-          task.assigned_user_id IS NULL
-          AND task.assigned_role_id IN (
-            SELECT role_id FROM app_user_roles
-            WHERE user_id = ${input.actorId}::uuid
-          )
-        )
-      )
+      AND task.assigned_user_id = ${input.actorId}::uuid
       AND task.row_version = ${input.expectedRowVersion}
-      AND task.status IN ('CLAIMED', 'IN_PROGRESS')
+      AND task.status IN ('PENDING', 'IN_PROGRESS')
       AND stage.status = 'ACTIVE' AND workflow.status = 'ACTIVE'
       AND (
         (${input.actionKey}::text IS NULL)
