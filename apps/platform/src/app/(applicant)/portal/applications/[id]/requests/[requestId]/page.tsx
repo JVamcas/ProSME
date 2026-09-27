@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { z } from "zod";
 
 import { getCurrentUser } from "@/auth/authorization/current-user";
+import { permissionCodes } from "@/auth/authorization/permissions";
+import { can } from "@/auth/authorization/policy";
 import { ResourceNotFoundError } from "@/lib/resource-errors";
 import { getOwnedWorkflowRfi } from "@/modules/workflows/application/runtime/ServerWorkflowRfiReadService";
 import { ApplicantWorkflowRfiWorkspace } from "@/modules/workflows/ui/rfi/ApplicantWorkflowRfiWorkspace";
@@ -24,6 +26,13 @@ export default async function WorkflowRfiPage({
     params.then((value) => parametersSchema.safeParse(value)),
   ]);
   if (!parameters.success) notFound();
+  if (
+    !user ||
+    !can(user, permissionCodes.fundingApplicationInformationRequestOwnRead)
+  ) {
+    redirect("/unauthorized");
+  }
+
   const detail = await getOwnedWorkflowRfi(
     user,
     parameters.data.id,

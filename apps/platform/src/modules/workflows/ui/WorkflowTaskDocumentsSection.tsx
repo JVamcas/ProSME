@@ -62,9 +62,6 @@ export function WorkflowTaskDocumentsSection({
                   {requirement.acceptedFileTypes.join(", ")} · Maximum{" "}
                   {requirement.maximumSizeMb} MB
                 </p>
-                <p className="mt-1 text-xs font-medium text-brand-navy/70">
-                  {requirement.requestStatus.toLowerCase()}
-                </p>
                 {document ? (
                   <p className="mt-1 text-xs font-medium text-brand-navy/75">
                     {document.fileName} -{" "}

@@ -1,12 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
-vi.mock("@/modules/dashboard/infrastructure/ApplicantDashboardRepository", () => ({
-  readApplicantDashboard: vi.fn(),
-}));
-vi.mock("@/modules/workflows/application/runtime/ServerWorkflowRfiReadService", () => ({
-  listOwnedOpenRfiActions: vi.fn(),
-}));
+vi.mock(
+  "@/modules/dashboard/infrastructure/ApplicantDashboardRepository",
+  () => ({
+    readApplicantDashboard: vi.fn(),
+  }),
+);
+vi.mock(
+  "@/modules/workflows/application/runtime/ServerWorkflowRfiReadService",
+  () => ({
+    listOwnedOpenRfiActions: vi.fn(),
+  }),
+);
 
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { PermissionDeniedError } from "@/auth/authorization/policy";
@@ -76,5 +82,14 @@ describe("applicant dashboard service", () => {
       },
       urgentRequests: [],
     });
+  });
+  it("returns the dashboard without RFI actions when RFI access is absent", async () => {
+    const dashboard = await getApplicantDashboard(
+      applicant([permissionCodes.fundingApplicationOwnRead]),
+    );
+
+    expect(readApplicantDashboard).toHaveBeenCalledWith(ownerId);
+    expect(listOwnedOpenRfiActions).not.toHaveBeenCalled();
+    expect(dashboard.urgentRequests).toEqual([]);
   });
 });
