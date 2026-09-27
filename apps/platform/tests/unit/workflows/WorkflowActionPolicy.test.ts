@@ -81,6 +81,52 @@ describe("workflow action policy", () => {
     });
   });
 
+  it("requires a current eligibility evaluation only on its own task", () => {
+    const eligibleTask = {
+      ...target(),
+      task: { ...target().task, eligibilityReady: false },
+    };
+    expect(evaluateWorkflowActionPolicy(
+      actor(permissionCodes.workflowTaskAssignedDecide),
+      eligibleTask,
+      permittedInputs,
+    )).toMatchObject({
+      available: false,
+      reason: "INVALID_STATE",
+    });
+
+    eligibleTask.task.eligibilityReady = true;
+    expect(evaluateWorkflowActionPolicy(
+      actor(permissionCodes.workflowTaskAssignedDecide),
+      eligibleTask,
+      permittedInputs,
+    ).available).toBe(true);
+    expect(evaluateWorkflowActionPolicy(
+      actor(permissionCodes.workflowTaskAssignedDecide),
+      target(),
+      permittedInputs,
+    ).available).toBe(true);
+  });
+
+  it("permits an assigned pending task without a claim step", () => {
+    const pendingTask = {
+      ...target(),
+      task: { ...target().task, status: "PENDING" },
+    };
+    expect(evaluateWorkflowActionPolicy(
+      actor(permissionCodes.workflowTaskAssignedDecide),
+      pendingTask,
+      permittedInputs,
+    ).available).toBe(true);
+
+    pendingTask.task.assignedToActor = false;
+    expect(evaluateWorkflowActionPolicy(
+      actor(permissionCodes.workflowTaskAssignedDecide),
+      pendingTask,
+      permittedInputs,
+    ).reason).toBe("CONTEXT_MISMATCH");
+  });
+
   it("denies assignment mismatches without exposing policy details", () => {
     expect(evaluateWorkflowActionPolicy(
       actor(permissionCodes.workflowTaskAssignedDecide),

@@ -1,13 +1,11 @@
 "use client";
 
-import Link from "next/link";
 
 import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
+import { ArrowLink } from "@/components/ui/links";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatLocalDateTime24 } from "@/lib/dateUtils";
 import type { WorkflowProgressTask } from "../api/WorkflowProgressTypes";
-import { EditButton, PreviewButton } from "@/components/ui/action-buttons";
-import { GeneralButton, GeneralButtonLink } from "@/components/ui/button";
 
 function Assignment({ task }: { task: WorkflowProgressTask }) {
   const name = task.assignedUserName ?? task.assignedRoleName ?? "Unassigned";
@@ -41,7 +39,9 @@ const columns: DataTableColumn<WorkflowProgressTask>[] = [
     accessorKey: "name",
     header: "Action required",
     cell: ({ row }) => (
-      <span className="font-semibold text-brand-navy">{row.original.name}</span>
+      <ArrowLink href={`/admin/tasks/${row.original.id}`}>
+        {row.original.name}
+      </ArrowLink>
     ),
   },
   {
@@ -66,20 +66,7 @@ const columns: DataTableColumn<WorkflowProgressTask>[] = [
       row.original.actionedAt
         ? formatLocalDateTime24(row.original.actionedAt)
         : "—",
-  },
-  {
-    id: "actions",
-    header: "Actions",
-    enableSorting: false,
-    cell: ({ row }) =>
-      row.original.canOpen ? (
-        <GeneralButtonLink href={`/admin/tasks/${row.original.id}`}>
-          View
-        </GeneralButtonLink>
-      ) : (
-        <span className="text-brand-navy/40">—</span>
-      ),
-  },
+  }
 ];
 
 export function WorkflowStageTaskAssignments({

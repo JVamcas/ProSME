@@ -78,7 +78,8 @@ export async function createEligibilityVerificationForm(
     description:
       `Generated from ${input.ruleSetCode} v${input.versionNumber}.`,
     id: definitionId,
-    name: `${input.ruleSetName} v${input.versionNumber} verification`,
+    name: `${input.ruleSetName}`,
+    purpose: "ELIGIBILITY_VERIFICATION",
   });
   await transaction.insert(formVersions).values({
     createdBy: input.actorId,

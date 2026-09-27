@@ -38,34 +38,40 @@ function stage(
     repeatable: false,
     slaHours: null,
     stableKey,
-    tasks: [{
-      actionKeys: [],
-      permissions: defaultWorkflowElementPermissions,
-      assignmentMode: "ROLE",
-      coiRequired: false,
-      config: {},
-      description: "Complete the form",
-      displayOrder: 1,
-      formBinding: {
-        contextFields: [{
-          key: "application.client_defined_metric",
-          label: "Client-defined metric",
-          type: "NUMBER",
-        }],
-        formVersionId,
+    tasks: [
+      {
+        actionKeys: [],
+        taskType: "CONTRIBUTING",
+        permissions: defaultWorkflowElementPermissions,
+        assignmentMode: "ROLE",
+        coiRequired: false,
+        config: {},
+        description: "Complete the form",
+        displayOrder: 1,
+        formBinding: {
+          contextFields: [
+            {
+              key: "application.client_defined_metric",
+              label: "Client-defined metric",
+              type: "NUMBER",
+            },
+          ],
+          formVersionId,
+        },
+        name: `${stableKey} form`,
+        quorum: false,
+        required: true,
+        requiredCompletionCount: 1,
+        reviewerCount: 1,
+        stableKey: `${stableKey}_FORM`,
       },
-      name: `${stableKey} form`,
-      quorum: false,
-      required: true,
-      requiredCompletionCount: 1,
-      reviewerCount: 1,
-      stableKey: `${stableKey}_FORM`,
-    }],
+    ],
   };
 }
 
 function form(key: string) {
-  return [{
+  return [
+    {
       columnSpan: 1,
       key,
       label: key.replaceAll("_", " "),
@@ -73,7 +79,8 @@ function form(key: string) {
       required: true,
       sectionId: "20000000-0000-4000-8000-000000000001",
       type: "CURRENCY",
-    }] as const;
+    },
+  ] as const;
 }
 
 describe("workflow condition fields", () => {
@@ -90,75 +97,93 @@ describe("workflow condition fields", () => {
     ]);
 
     const entryFields = workflowConditionFields(graph, forms, review, false);
-    const completionFields = workflowConditionFields(graph, forms, review, true);
+    const completionFields = workflowConditionFields(
+      graph,
+      forms,
+      review,
+      true,
+    );
 
-    expect(entryFields).toEqual(expect.arrayContaining([
-      expect.objectContaining({
-        key: "eligibility.outcome",
-        type: "TEXT",
-      }),
-      expect.objectContaining({
-        key: "application.client_defined_metric",
-        type: "NUMBER",
-      }),
-      expect.objectContaining({
-        key: "stage.screening.custom_result",
-        type: "NUMBER",
-      }),
-    ]));
-    expect(entryFields).not.toEqual(expect.arrayContaining([
-      expect.objectContaining({
-        key: "stage.finance_review.recommended_amount",
-      }),
-    ]));
-    expect(completionFields).toEqual(expect.arrayContaining([
-      expect.objectContaining({
-        key: "stage.finance_review.recommended_amount",
-        type: "NUMBER",
-      }),
-    ]));
-    expect(resolveWorkflowDataPath(
-      "stage.finance_review.recommended_amount",
-      {
+    expect(entryFields).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          key: "eligibility.outcome",
+          type: "TEXT",
+        }),
+        expect.objectContaining({
+          key: "application.client_defined_metric",
+          type: "NUMBER",
+        }),
+        expect.objectContaining({
+          key: "stage.screening.custom_result",
+          type: "NUMBER",
+        }),
+      ]),
+    );
+    expect(entryFields).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          key: "stage.finance_review.recommended_amount",
+        }),
+      ]),
+    );
+    expect(completionFields).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          key: "stage.finance_review.recommended_amount",
+          type: "NUMBER",
+        }),
+      ]),
+    );
+    expect(
+      resolveWorkflowDataPath("stage.finance_review.recommended_amount", {
         application: {},
         eligibility: {},
         fundingCall: {},
-        stages: [{
-          stableKey: "FINANCE_REVIEW",
-          values: { recommended_amount: 125_000 },
-        }],
-      },
-    )).toBe(125_000);
+        stages: [
+          {
+            stableKey: "FINANCE_REVIEW",
+            values: { recommended_amount: 125_000 },
+          },
+        ],
+      }),
+    ).toBe(125_000);
   });
 
   it("exposes every result path from a composed task", () => {
     const review = stage("TECHNICAL_REVIEW", 1, reviewFormVersionId);
     const taskTemplate = review.tasks[0];
-    review.tasks = [{
-      ...taskTemplate,
-      config: {
-        categories: [{ code: "TAX_STATUS", label: "Tax status" }],
-        outcomes: [{ code: "VERIFIED", label: "Verified" }],
-        criteria: [{
-          code: "DELIVERY",
-          commentRequired: true,
-          label: "Delivery capacity",
-          maximumScore: 10,
-          weight: 100,
-        }],
+    review.tasks = [
+      {
+        ...taskTemplate,
+        config: {
+          categories: [{ code: "TAX_STATUS", label: "Tax status" }],
+          outcomes: [{ code: "VERIFIED", label: "Verified" }],
+          criteria: [
+            {
+              code: "DELIVERY",
+              commentRequired: true,
+              label: "Delivery capacity",
+              maximumScore: 10,
+              weight: 100,
+            },
+          ],
+        },
+        stableKey: "COMPOSED_REVIEW",
       },
-      stableKey: "COMPOSED_REVIEW",
-    }];
-    review.checklistItems = [{
-      displayOrder: 1,
-      evidenceRequirement: "NONE",
-      key: "DOCUMENTS_VALID",
-      mandatory: true,
-      notes: "",
-      responseType: "YES_NO",
-      taskStableKey: "COMPOSED_REVIEW",
-      text: "Documents valid",
-    }];
+    ];
+    review.checklistItems = [
+      {
+        displayOrder: 1,
+        evidenceRequirement: "NONE",
+        key: "DOCUMENTS_VALID",
+        mandatory: true,
+        notes: "",
+        responseType: "YES_NO",
+        taskStableKey: "COMPOSED_REVIEW",
+        text: "Documents valid",
+      },
+    ];
 
     const fields = workflowConditionFields(
       { stages: [review], transitions: [] },
@@ -167,12 +192,14 @@ describe("workflow condition fields", () => {
       true,
     );
 
-    expect(fields.map((field) => field.key)).toEqual(expect.arrayContaining([
-      "stage.technical_review.delivery",
-      "stage.technical_review.delivery_comment",
-      "stage.technical_review.documents_valid",
-      "stage.technical_review.tax_status",
-      "stage.technical_review.weighted_total",
-    ]));
+    expect(fields.map((field) => field.key)).toEqual(
+      expect.arrayContaining([
+        "stage.technical_review.delivery",
+        "stage.technical_review.delivery_comment",
+        "stage.technical_review.documents_valid",
+        "stage.technical_review.tax_status",
+        "stage.technical_review.weighted_total",
+      ]),
+    );
   });
 });

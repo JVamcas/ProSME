@@ -38,18 +38,12 @@ export async function readTaskCoiGate(actorId: string, taskId: string) {
     JOIN app_workflow_stage_definitions stage_definition
       ON stage_definition.id = stage.workflow_stage_definition_id
     JOIN app_workflow_instances workflow ON workflow.id = stage.workflow_instance_id
-    LEFT JOIN app_workflow_task_coi clearance
-      ON clearance.task_id = task.id AND clearance.user_id = ${actorId}::uuid
+    LEFT JOIN app_workflow_application_coi clearance
+      ON clearance.application_id = workflow.application_id
+      AND clearance.user_id = ${actorId}::uuid
     WHERE task.id = ${taskId}::uuid
       AND stage.status = 'ACTIVE' AND workflow.status = 'ACTIVE'
-      AND (
-        task.assigned_user_id = ${actorId}::uuid
-        OR (task.assigned_user_id IS NULL AND EXISTS (
-          SELECT 1 FROM app_user_roles membership
-          WHERE membership.user_id = ${actorId}::uuid
-            AND membership.role_id = task.assigned_role_id
-        ))
-      )
+      AND task.assigned_user_id = ${actorId}::uuid
   `);
   return (result.rows[0] as GateRow | undefined) ?? null;
 }
@@ -72,6 +66,7 @@ export async function changeTaskCoi(input: {
     `);
     const locked = await transaction.execute(sql`
       SELECT task.id, task.status, task.row_version AS "rowVersion",
+        workflow.application_id AS "applicationId",
         task.assigned_user_id AS "assignedUserId",
         (definition.coi_required OR stage_definition.coi_gated) AS gated,
         clearance.state, clearance.row_version AS "coiVersion"
@@ -81,11 +76,15 @@ export async function changeTaskCoi(input: {
       JOIN app_workflow_stage_instances stage ON stage.id = task.stage_instance_id
       JOIN app_workflow_stage_definitions stage_definition
         ON stage_definition.id = stage.workflow_stage_definition_id
-      LEFT JOIN app_workflow_task_coi clearance ON clearance.task_id = task.id
+      JOIN app_workflow_instances workflow ON workflow.id = stage.workflow_instance_id
+      LEFT JOIN app_workflow_application_coi clearance
+        ON clearance.application_id = workflow.application_id
+        AND clearance.user_id = task.assigned_user_id
       WHERE task.id = ${input.taskId}::uuid AND stage.status = 'ACTIVE'
-      FOR UPDATE OF task
+      FOR UPDATE OF task, workflow
     `);
     const row = locked.rows[0] as {
+      applicationId: string;
       assignedUserId: string | null;
       coiVersion: number | null;
       gated: boolean;
@@ -94,7 +93,7 @@ export async function changeTaskCoi(input: {
       status: string;
     } | undefined;
     if (!row || !row.gated || row.rowVersion !== input.expectedRowVersion
-      || !["CLAIMED", "IN_PROGRESS"].includes(row.status)) return null;
+      || !["PENDING", "IN_PROGRESS"].includes(row.status)) return null;
 
     const self = row.assignedUserId === input.actorId;
     let next: CoiState;
@@ -115,18 +114,24 @@ export async function changeTaskCoi(input: {
       next = "REVOKED";
     }
     await transaction.execute(sql`
-      INSERT INTO app_workflow_task_coi (task_id, user_id, state, row_version)
-      VALUES (${input.taskId}::uuid, ${row.assignedUserId}::uuid, ${next}, 1)
-      ON CONFLICT (task_id) DO UPDATE
-        SET state = EXCLUDED.state, row_version = app_workflow_task_coi.row_version + 1,
+      INSERT INTO app_workflow_application_coi (
+        application_id, user_id, task_id, state, row_version
+      ) VALUES (
+        ${row.applicationId}::uuid, ${row.assignedUserId}::uuid,
+        ${input.taskId}::uuid, ${next}, 1
+      )
+      ON CONFLICT (application_id, user_id) DO UPDATE
+        SET task_id = EXCLUDED.task_id, state = EXCLUDED.state,
+          row_version = app_workflow_application_coi.row_version + 1,
           updated_at = now()
     `);
     await transaction.execute(sql`
-      INSERT INTO app_workflow_task_coi_events (
-        task_id, subject_user_id, actor_id, from_state, to_state,
+      INSERT INTO app_workflow_application_coi_events (
+        application_id, task_id, subject_user_id, actor_id, from_state, to_state,
         disclosure_text, reason
       ) VALUES (
-        ${input.taskId}::uuid, ${row.assignedUserId}::uuid,
+        ${row.applicationId}::uuid, ${input.taskId}::uuid,
+        ${row.assignedUserId}::uuid,
         ${input.actorId}::uuid, ${row.state}, ${next},
         ${input.disclosureText ?? null}, ${input.reason ?? null}
       )
@@ -149,10 +154,10 @@ export async function readPendingTaskCoiDisclosure(
     JOIN app_stage_task_definitions definition
       ON definition.id = task.workflow_task_definition_id
     JOIN app_workflow_stage_instances stage ON stage.id = task.stage_instance_id
-    JOIN app_workflow_task_coi clearance ON clearance.task_id = task.id
+    JOIN app_workflow_application_coi clearance ON clearance.task_id = task.id
     JOIN LATERAL (
       SELECT event.disclosure_text
-      FROM app_workflow_task_coi_events event
+      FROM app_workflow_application_coi_events event
       WHERE event.task_id = task.id
         AND event.to_state = 'PENDING_REVIEW'
       ORDER BY event.occurred_at DESC, event.id DESC

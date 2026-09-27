@@ -65,6 +65,8 @@ export const permissionCodes = {
     "funding.application.document.own.upload",
   fundingApplicationInformationRequestCreate:
     "funding.application.information-request.create",
+  fundingApplicationInformationRequestAssignedClose:
+    "funding.application.information-request.assigned.close",
   fundingApplicationInformationRequestOwnRead:
     "funding.application.information-request.own.read",
   fundingApplicationInformationRequestOwnRespond:

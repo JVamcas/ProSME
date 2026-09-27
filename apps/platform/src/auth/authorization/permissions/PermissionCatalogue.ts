@@ -211,6 +211,11 @@ const staticPermissionCatalogue: readonly PermissionDefinition[] = [
     "Request information for a funding application.",
   ),
   define(
+    permissionCodes.fundingApplicationInformationRequestAssignedClose,
+    "Close assigned information requests",
+    "Close information requests for workflow tasks assigned to the signed-in user.",
+  ),
+  define(
     permissionCodes.fundingApplicationInformationRequestOwnRead,
     "Read own information requests",
     "Read information requests for an owned application.",

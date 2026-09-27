@@ -6,6 +6,7 @@ export function eligibilityVerificationTask(
 ) {
   return task(dependencies, {
     actionKeys: [],
+    taskType: "CONTRIBUTING",
     config: {},
     description:
       "Record the verified eligibility facts used by authoritative Screening.",

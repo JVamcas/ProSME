@@ -19,6 +19,11 @@ type TaskDetailRow = Omit<
   | "commentFields"
   | "commentCompleted"
   | "resultComments"
+  | "displayMode"
+  | "documentsCompleted"
+  | "resultDocuments"
+  | "scoringCompleted"
+  | "resultScores"
 > & {
   checklistItems: TaskDetail["checklistItems"];
   config: unknown;
@@ -35,13 +40,17 @@ export async function readWorkflowTask(
     SELECT task.id AS "taskInstanceId", task.status AS "taskStatus",
       task.row_version AS "rowVersion",
       task.form_version_id AS "formVersionId",
+      form_definition.name AS "formName",
       (task.form_version_id IS NOT NULL AND EXISTS (
         SELECT 1 FROM app_form_responses response
         WHERE response.workflow_task_id = task.id
-          AND response.status = 'COMPLETED'
+          AND (response.status = 'COMPLETED'
+            OR (definition.config ->> 'command' = 'AUTHORITATIVE_ELIGIBILITY'
+              AND response.values = (task.result -> 'evaluatedFormValues')))
       )) AS "formCompleted",
       task.due_at AS "dueAt", task.result,
       definition.name AS "taskName", definition.config,
+      definition.task_type AS "taskType",
       COALESCE((
         SELECT jsonb_agg(
           jsonb_build_object(
@@ -53,6 +62,78 @@ export async function readWorkflowTask(
         FROM app_workflow_stage_checklist_definitions checklist
         WHERE checklist.task_definition_id = definition.id
       ), '[]'::jsonb) AS "checklistItems",
+      COALESCE((
+        SELECT jsonb_agg(jsonb_build_object(
+          'acceptedFileTypes', document.accepted_file_types,
+          'id', document.id,
+          'expiryDays', document.expiry_days,
+          'mandatory', document.mandatory,
+          'maximumSizeMb', document.maximum_size_mb,
+          'name', document.name,
+          'requestStatus', CASE
+            WHEN EXISTS (
+              SELECT 1 FROM app_workflow_document_evidence_versions evidence
+              WHERE evidence.application_id = application.id
+                AND evidence.requirement_id = document.id
+                AND (evidence.valid_until IS NULL OR evidence.valid_until > now())
+            ) THEN 'SUPPLIED'
+            WHEN EXISTS (
+              SELECT 1 FROM app_workflow_rfi_document_requests request
+              JOIN app_workflow_rfis rfi ON rfi.id = request.rfi_id
+              WHERE request.requirement_id = document.id
+                AND rfi.application_id = application.id
+                AND rfi.status = 'OPEN'
+            ) THEN 'REQUESTED'
+            WHEN EXISTS (
+              SELECT 1 FROM app_workflow_rfi_document_requests request
+              JOIN app_workflow_rfis rfi ON rfi.id = request.rfi_id
+              WHERE request.requirement_id = document.id
+                AND rfi.application_id = application.id
+                AND rfi.status = 'EXPIRED'
+            ) THEN 'EXPIRED'
+            ELSE 'MISSING'
+          END,
+          'templateReference', document.template_reference,
+          'uploader', document.uploader,
+          'verifier', document.verifier,
+          'document', (
+            SELECT jsonb_build_object(
+              'contentType', evidence.content_type,
+              'fileName', evidence.original_name,
+              'sizeBytes', evidence.size_bytes,
+              'uploadedAt', evidence.uploaded_at,
+              'versionId', evidence.id,
+              'versionNumber', evidence.version_number
+            )
+            FROM app_workflow_document_evidence_versions evidence
+            WHERE evidence.application_id = application.id
+              AND evidence.requirement_id = document.id
+            ORDER BY evidence.version_number DESC
+            LIMIT 1
+          )
+        ) ORDER BY document.name)
+        FROM app_workflow_stage_document_requirements document
+        WHERE document.task_definition_id = definition.id
+      ), '[]'::jsonb) AS "documentRequirements",
+      (
+        SELECT jsonb_build_object(
+          'aggregation', scoring.aggregation,
+          'criteria', COALESCE((
+            SELECT jsonb_agg(jsonb_build_object(
+              'criterion', criterion.criterion,
+              'description', criterion.description,
+              'mandatoryComment', criterion.mandatory_comment,
+              'scaleMaximum', criterion.scale_maximum,
+              'scaleMinimum', criterion.scale_minimum,
+              'weight', criterion.weight
+            ) ORDER BY criterion.criterion)
+            FROM app_workflow_stage_scoring_criteria criterion
+            WHERE criterion.stage_id = scoring.stage_id
+          ), '[]'::jsonb)
+        )
+        FROM app_workflow_stage_scoring_configurations scoring
+        WHERE scoring.task_definition_id = definition.id
+      ) AS scoring,
       definition.permissions,
       stage_definition.name AS "stageName",
       stage.id AS "stageInstanceId", stage.row_version AS "runtimeVersion",
@@ -64,6 +145,10 @@ export async function readWorkflowTask(
     FROM app_workflow_tasks task
     JOIN app_stage_task_definitions definition
       ON definition.id = task.workflow_task_definition_id
+    LEFT JOIN app_form_versions form_version
+      ON form_version.id = task.form_version_id
+    LEFT JOIN app_form_definitions form_definition
+      ON form_definition.id = form_version.form_definition_id
     JOIN app_workflow_stage_instances stage ON stage.id = task.stage_instance_id
     JOIN app_workflow_stage_definitions stage_definition
       ON stage_definition.id = stage.workflow_stage_definition_id
@@ -106,11 +191,15 @@ export async function readAssignedFormTask(actorId: string, taskId: string) {
       AND stage.status = 'ACTIVE'
       AND workflow.status = 'ACTIVE'
   `);
-  return (result.rows[0] as {
-    formVersionId: string | null;
-    rowVersion: number;
-    taskInstanceId: string;
-    taskStatus: string;
-    permissions: WorkflowElementPermissions;
-  } | undefined) ?? null;
+  return (
+    (result.rows[0] as
+      | {
+          formVersionId: string | null;
+          rowVersion: number;
+          taskInstanceId: string;
+          taskStatus: string;
+          permissions: WorkflowElementPermissions;
+        }
+      | undefined) ?? null
+  );
 }

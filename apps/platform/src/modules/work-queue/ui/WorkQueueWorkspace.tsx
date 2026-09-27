@@ -8,9 +8,7 @@ import { Input } from "@/shared/ui/FormPrimitives";
 import { Pagination } from "@/components/ui/pagination";
 import { cn } from "@/lib/utils";
 import { useWorkQueue } from "@/modules/work-queue/WorkQueueHooks";
-import type {
-  WorkQueueScope,
-} from "@/modules/work-queue/WorkQueueTypes";
+import type { WorkQueueScope } from "@/modules/work-queue/WorkQueueTypes";
 import { PageShell } from "@/shared/ui/PageShell";
 import { WorkQueueTable } from "./WorkQueueTable";
 
@@ -74,7 +72,7 @@ export function WorkQueueWorkspace() {
     setSearch("");
     setCursors([]);
   };
-  
+
   const emptyMessage = queue.isPending
     ? "Loading your work queue…"
     : queue.isError
@@ -83,9 +81,9 @@ export function WorkQueueWorkspace() {
 
   return (
     <PageShell
-      eyebrow="Work Queue"
+      eyebrow="My work"
       description="Tasks assigned to you."
-      title="My Work Queue"
+      title="Assigned tasks"
     >
       <section className="overflow-hidden rounded-2xl border border-brand-navy/10 bg-white shadow-sm">
         <QueueTabs onChange={changeScope} scope={scope} />
@@ -110,10 +108,7 @@ export function WorkQueueWorkspace() {
             </div>
           </DataTableFilter>
         </div>
-        <WorkQueueTable
-          emptyMessage={emptyMessage}
-          items={items}
-        />
+        <WorkQueueTable emptyMessage={emptyMessage} items={items} />
         <Pagination
           disabled={queue.isFetching}
           hasNextPage={Boolean(queue.data?.nextCursor)}

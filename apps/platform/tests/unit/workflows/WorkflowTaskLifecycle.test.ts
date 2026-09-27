@@ -7,10 +7,8 @@ import {
 
 describe("workflow task lifecycle", () => {
   it.each([
-    ["PENDING", "CLAIMED"],
     ["PENDING", "CANCELLED"],
-    ["CLAIMED", "IN_PROGRESS"],
-    ["CLAIMED", "CANCELLED"],
+    ["PENDING", "IN_PROGRESS"],
     ["IN_PROGRESS", "COMPLETED"],
     ["IN_PROGRESS", "CANCELLED"],
   ] as const)("allows %s to move to %s", (current, target) => {
@@ -19,8 +17,6 @@ describe("workflow task lifecycle", () => {
 
   it.each([
     ["PENDING", "COMPLETED"],
-    ["CLAIMED", "COMPLETED"],
-    ["IN_PROGRESS", "CLAIMED"],
     ["COMPLETED", "CANCELLED"],
     ["CANCELLED", "PENDING"],
   ] as const)("rejects %s to %s", (current, target) => {

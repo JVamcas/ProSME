@@ -15,9 +15,12 @@ import type {
 } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import {
   documentFileTypeItems,
+  parseOptionalExpiryDays,
   workflowStageDocumentRequirementFormSchema,
   type WorkflowStageDocumentRequirementFormValues,
 } from "./WorkflowStageDocumentRequirementFormSchema";
+
+import { toast } from "@/shared/ui/Toast";
 
 type Props = {
   editor: WorkflowEditorView;
@@ -40,6 +43,8 @@ export function WorkflowStageDocumentRequirementDialog({
       mandatory: requirement?.mandatory ?? true,
       maximumSizeMb: requirement?.maximumSizeMb ?? 10,
       name: requirement?.name ?? "",
+      requestOnStageActivation:
+        requirement?.requestOnStageActivation ?? false,
       taskStableKey: requirement?.taskStableKey ?? "",
       templateReference: requirement?.templateReference ?? "",
     },
@@ -84,7 +89,7 @@ export function WorkflowStageDocumentRequirementDialog({
           : item,
       ),
       transitions: editor.graph.transitions,
-    });
+    },{onError: (error)=>toast.error(error.message)});
     onClose();
   });
 
@@ -112,6 +117,7 @@ export function WorkflowStageDocumentRequirementDialog({
               value: task.stableKey,
             }))}
             label="Workflow task"
+            infoTooltip="Workflow task in which this action is displayed."
             name="taskStableKey"
             placeholder={stage.tasks.length
               ? "Select a task"
@@ -149,9 +155,7 @@ export function WorkflowStageDocumentRequirementDialog({
             max={3650}
             min={1}
             name="expiryDays"
-            registrationOptions={{
-              setValueAs: (value) => value === "" ? null : Number(value),
-            }}
+            registrationOptions={{ setValueAs: parseOptionalExpiryDays }}
             type="number"
           />
           <FormInput
@@ -165,14 +169,14 @@ export function WorkflowStageDocumentRequirementDialog({
             label="Is Mandatory"
             name="mandatory"
           />
-          {mutation.error ? (
-            <p className="text-sm text-red-700 sm:col-span-2" role="alert">
-              {mutation.error.message}
-            </p>
-          ) : null}
+          <CheckboxField
+            containerClassName="sm:col-span-2"
+            label="Automatically send request to applicant when stage activates."
+            name="requestOnStageActivation"
+          />
           <div className="flex justify-end sm:col-span-2">
             <GeneralButton disabled={mutation.isPending} type="submit">
-              {mutation.isPending ? "Saving…" : "Save document requirement"}
+              {mutation.isPending ? "Saving…" : "Save"}
             </GeneralButton>
           </div>
         </form>

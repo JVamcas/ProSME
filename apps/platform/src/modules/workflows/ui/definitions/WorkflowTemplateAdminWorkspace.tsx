@@ -2,64 +2,22 @@
 
 import { Plus } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner";
 
 import { GeneralButton } from "@/components/ui/button";
 import { DraggableDialog } from "@/components/ui/draggable-dialog";
+import { getErrorMessage } from "@/lib/client-http";
 import { ConfirmationDialog } from "@/shared/ui/ConfirmationDialog";
+import { toast } from "@/shared/ui/Toast";
 import {
   useCloneWorkflowTemplate,
   useDeleteWorkflowTemplate,
   useWorkflowListLifecycle,
   useWorkflowTemplates,
 } from "../../WorkflowHooks";
-import {
-  WorkflowPublicationValidationError,
-  workflowValidationIssueLocation,
-  workflowValidationIssueMessage,
-} from "../../WorkflowPublicationValidationFeedback";
+import { showWorkflowPublicationError } from "./WorkflowPublicationErrorToast";
 import type { WorkflowTemplateListItem } from "../../domain/definitions/WorkflowTemplate";
 import { WorkflowTemplateCreateForm } from "./WorkflowTemplateCreateForm";
 import { WorkflowTemplateTable } from "./WorkflowTemplateTable";
-
-function showPublicationError(error: Error) {
-  if (!(error instanceof WorkflowPublicationValidationError)) {
-    toast.error("Workflow could not be published", {
-      description: error.message,
-      duration: 10_000,
-    });
-    return;
-  }
-
-  const visibleIssues = error.issues.slice(0, 3);
-  const remaining = error.issues.length - visibleIssues.length;
-  toast.error(
-    `Fix ${error.issues.length} workflow validation ${error.issues.length === 1 ? "issue" : "issues"}`,
-    {
-      description: (
-        <div className="space-y-2">
-          <ul className="list-disc space-y-1 pl-4">
-            {visibleIssues.map((issue, index) => (
-              <li key={`${issue.code}-${issue.path}-${index}`}>
-                <span className="font-semibold">
-                  {workflowValidationIssueLocation(issue, error.graph)}:
-                </span>{" "}
-                {workflowValidationIssueMessage(issue)}
-              </li>
-            ))}
-          </ul>
-          <p>
-            {remaining > 0
-              ? `${remaining} more ${remaining === 1 ? "issue requires" : "issues require"} attention. `
-              : ""}
-            Open the workflow editor to correct the configuration.
-          </p>
-        </div>
-      ),
-      duration: 12_000,
-    },
-  );
-}
 
 type Props = {
   canCreate: boolean;
@@ -109,8 +67,10 @@ export function WorkflowTemplateAdminWorkspace({
       <WorkflowTemplateTable
         canPublish={canPublish}
         canUpdate={canUpdate}
-        cloningId={
-          cloneTemplate.isPending ? cloneTemplate.variables?.id : undefined
+        cloningVersionId={
+          cloneTemplate.isPending
+            ? cloneTemplate.variables?.currentVersion.id
+            : undefined
         }
         deletingId={
           deleteTemplate.isPending ? deleteTemplate.variables?.id : undefined
@@ -127,7 +87,15 @@ export function WorkflowTemplateAdminWorkspace({
           setPageSize(value);
           setPage(1);
         }}
-        onClone={(template) => cloneTemplate.mutate(template)}
+        onClone={(template) => {
+          cloneTemplate.mutate(template, {
+            onError: (error) => {
+              toast.error(
+                getErrorMessage(error) ?? "Unable to clone the workflow.",
+              );
+            },
+          });
+        }}
         onDelete={setDeleteCandidate}
         onEdit={(template) => {
           setSelectedTemplate(template);
@@ -138,11 +106,6 @@ export function WorkflowTemplateAdminWorkspace({
           publishTemplate.isPending ? publishTemplate.variables : undefined
         }
       />
-      {cloneTemplate.error || deleteTemplate.error ? (
-        <p className="text-sm text-red-700" role="alert">
-          {(cloneTemplate.error ?? deleteTemplate.error)?.message}
-        </p>
-      ) : null}
       <DraggableDialog
         isOpen={isDialogOpen}
         onClose={() => setIsDialogOpen(false)}
@@ -167,7 +130,7 @@ export function WorkflowTemplateAdminWorkspace({
         onConfirm={() => {
           if (!publishCandidate) return;
           publishTemplate.mutate(publishCandidate.id, {
-            onError: showPublicationError,
+            onError: showWorkflowPublicationError,
             onSuccess: () => setPublishCandidate(undefined),
           });
         }}
@@ -185,6 +148,11 @@ export function WorkflowTemplateAdminWorkspace({
         onConfirm={() => {
           if (!deleteCandidate) return;
           deleteTemplate.mutate(deleteCandidate, {
+            onError: (error) => {
+              toast.error(
+                getErrorMessage(error) ?? "Unable to delete the workflow.",
+              );
+            },
             onSuccess: () => {
               setDeleteCandidate(undefined);
               setPage(1);

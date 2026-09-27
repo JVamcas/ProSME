@@ -6,7 +6,7 @@ import { FormProvider, useForm } from "react-hook-form";
 import { GeneralButton } from "@/components/ui/button";
 import { DraggableDialog } from "@/components/ui/draggable-dialog";
 import { CheckboxField } from "@/components/ui/form-field";
-import { FormInput, FormSelect, FormTextarea } from "@/components/ui/form-fields";
+import { FormInput, FormSelect } from "@/components/ui/form-fields";
 import { useSaveWorkflowGraph } from "@/modules/workflows/WorkflowHooks";
 import type { WorkflowStageCommentField } from "@/modules/workflows/domain/definitions/WorkflowStageCommentField";
 import type {
@@ -14,7 +14,6 @@ import type {
   WorkflowStageInput,
 } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import {
-  commentFieldVisibilityItems,
   workflowStageCommentFieldFormSchema,
   type WorkflowStageCommentFieldFormValues,
 } from "./WorkflowStageCommentFieldFormSchema";
@@ -42,7 +41,6 @@ export function WorkflowStageCommentFieldDialog({
       label: field?.label ?? "",
       taskStableKey: field?.taskStableKey ?? stage.tasks[0]?.stableKey ?? "",
       mandatory: field?.mandatory ?? false,
-      visibility: field?.visibility ?? "INTERNAL_ONLY",
     },
     resolver: zodResolver(workflowStageCommentFieldFormSchema),
   });
@@ -98,17 +96,6 @@ export function WorkflowStageCommentFieldDialog({
     >
       <FormProvider {...form}>
         <form className="grid gap-4 sm:grid-cols-2" onSubmit={submit}>
-          <FormSelect
-            containerClassName="sm:col-span-2"
-            items={stage.tasks.map((task) => ({
-              label: task.name,
-              value: task.stableKey,
-            }))}
-            label="Workflow task"
-            name="taskStableKey"
-            placeholder="Select a workflow task"
-            required
-          />
           <FormInput label="Key" name="key" placeholder="REVIEW_RECOMMENDATION" required />
           <FormInput
             label="Display order"
@@ -125,17 +112,22 @@ export function WorkflowStageCommentFieldDialog({
             placeholder="Review recommendation"
             required
           />
-          <FormTextarea
+          <FormInput
             containerClassName="sm:col-span-2"
             label="Help text"
             name="helpText"
             placeholder="Explain what the reviewer should provide."
-            rows={3}
           />
           <FormSelect
-            items={commentFieldVisibilityItems}
-            label="Visibility"
-            name="visibility"
+            containerClassName="sm:col-span-2"
+            items={stage.tasks.map((task) => ({
+              label: task.name,
+              value: task.stableKey,
+            }))}
+            label="Workflow task"
+            infoTooltip="Workflow task in which this action is displayed."
+            name="taskStableKey"
+            placeholder="Select a workflow task"
             required
           />
           <CheckboxField label="Mandatory" name="mandatory" />

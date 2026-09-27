@@ -179,7 +179,9 @@ export async function loadRequiredTaskCompletions(
           AND (task.form_version_id IS NULL OR EXISTS (
             SELECT 1 FROM app_form_responses response
             WHERE response.workflow_task_id = task.id
-              AND response.status = 'COMPLETED'
+              AND (response.status = 'COMPLETED'
+                OR (definition.config ->> 'command' = 'AUTHORITATIVE_ELIGIBILITY'
+                  AND response.values = (task.result -> 'evaluatedFormValues')))
           ))
       )::integer AS "completedCount",
       COALESCE(array_agg(task.id ORDER BY task.reviewer_slot) FILTER (
@@ -192,7 +194,9 @@ export async function loadRequiredTaskCompletions(
           AND (task.form_version_id IS NULL OR EXISTS (
             SELECT 1 FROM app_form_responses response
             WHERE response.workflow_task_id = task.id
-              AND response.status = 'COMPLETED'
+              AND (response.status = 'COMPLETED'
+                OR (definition.config ->> 'command' = 'AUTHORITATIVE_ELIGIBILITY'
+                  AND response.values = (task.result -> 'evaluatedFormValues')))
           ))
       ), ARRAY[]::uuid[]) AS "completedTaskIds"
     FROM app_stage_task_definitions definition
@@ -220,7 +224,8 @@ export async function loadStageCompletionValues(
     FROM app_workflow_tasks task
     LEFT JOIN app_form_responses response
       ON response.workflow_task_id = task.id
-      AND response.status = 'COMPLETED'
+      AND (response.status = 'COMPLETED'
+        OR response.values = (task.result -> 'evaluatedFormValues'))
     WHERE task.stage_instance_id = ${stageInstanceId}::uuid
       AND task.status = 'COMPLETED'
       AND app_workflow_task_coi_cleared(task.id, task.assigned_user_id)

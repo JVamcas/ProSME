@@ -6,7 +6,7 @@ import { getDatabase } from "@/db/client";
 import type { WorkQueueListInput, WorkQueueRow } from "@/modules/work-queue/WorkQueueTypes";
 import type { WorkQueueCursor } from "@/modules/work-queue/WorkQueueCursor";
 
-const actionableStatuses = sql`('PENDING', 'CLAIMED', 'IN_PROGRESS')`;
+const actionableStatuses = sql`('PENDING', 'IN_PROGRESS')`;
 
 type QueueDatabaseRow = Omit<WorkQueueRow, "claimedAt" | "createdAt" | "dueAt"> & {
   claimedAt: Date | string | null;
@@ -63,14 +63,14 @@ function queueQuery(input: WorkQueueListInput, actorId: string, cursor?: WorkQue
           THEN application.id ELSE NULL END AS "applicationId",
         CASE WHEN task.assigned_user_id = ${actorId}::uuid
           AND app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
-          THEN application.reference ELSE 'COI clearance required' END AS "reference",
+          THEN application.reference ELSE 'Hidden until COI reviewed' END AS "reference",
         CASE WHEN task.assigned_user_id = ${actorId}::uuid
           AND app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
           THEN NULLIF(COALESCE(business.trading_name, business.legal_name), '')
           ELSE NULL END AS "businessName",
         CASE WHEN task.assigned_user_id = ${actorId}::uuid
           AND app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
-          THEN applicant.display_name ELSE 'COI clearance required' END AS "applicantName",
+          THEN applicant.display_name ELSE 'Hidden until COI reviewed' END AS "applicantName",
         stage_definition.name AS "stageName",
         NULL::text AS "priority",
         task.status AS "taskStatus",

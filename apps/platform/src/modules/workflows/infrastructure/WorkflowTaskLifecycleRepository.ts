@@ -22,6 +22,7 @@ export type LockedWorkflowTask = {
   coiCleared: boolean;
   formRequired: boolean;
   formCompleted: boolean;
+  hasOpenRfi: boolean;
   id: string;
   permissions: WorkflowElementPermissions;
   rowVersion: number;
@@ -64,6 +65,11 @@ export async function lockWorkflowTaskForLifecycle(
         WHERE response.workflow_task_id = ${workflowTasks.id}
           AND response.status = 'COMPLETED'
       )`,
+      hasOpenRfi: sql<boolean>`EXISTS (
+        SELECT 1 FROM app_workflow_rfis rfi
+        WHERE rfi.task_id = ${workflowTasks.id}
+          AND rfi.status = 'OPEN'
+      )`,
       permissions: stageTaskDefinitions.permissions,
       rowVersion: workflowTasks.rowVersion,
       stageInstanceId: stageInstances.id,
@@ -100,12 +106,6 @@ export async function persistWorkflowTaskTransition(
   const [task] = await transaction
     .update(workflowTasks)
     .set({
-      assignedUserId: input.targetStatus === "CLAIMED"
-        ? input.actorId
-        : undefined,
-      claimedAt: input.targetStatus === "CLAIMED"
-        ? input.occurredAt
-        : undefined,
       completedAt: input.targetStatus === "COMPLETED"
         ? input.occurredAt
         : undefined,
@@ -137,11 +137,9 @@ export async function persistWorkflowTaskTransition(
     taskId: input.taskId,
     toStatus: input.targetStatus,
   };
-  const action = input.targetStatus === "CLAIMED"
-    ? "TASK_ASSIGNED"
-    : input.targetStatus === "IN_PROGRESS"
-      ? "TASK_STARTED"
-      : `TASK_${input.targetStatus}`;
+  const action = input.targetStatus === "IN_PROGRESS"
+    ? "TASK_STARTED"
+    : `TASK_${input.targetStatus}`;
   await transaction.insert(workflowEvents).values({
     actorId: input.actorId,
     correlationId: input.correlationId,
@@ -165,9 +163,7 @@ export async function persistWorkflowTaskTransition(
       status: input.currentStatus,
     },
     correlationId: input.correlationId,
-    reason: input.targetStatus === "CLAIMED"
-      ? "Task claimed by eligible user"
-      : null,
+    reason: null,
     stageInstanceId: input.stageInstanceId,
     targetId: input.taskId,
     targetType: "WORKFLOW_TASK",

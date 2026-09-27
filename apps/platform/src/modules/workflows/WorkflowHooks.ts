@@ -147,8 +147,11 @@ export function useWorkflowLifecycle(id: string, action: "publish" | "retire") {
   });
 }
 
-export function useWorkflowListLifecycle(action: "publish" | "retire") {
-  const refresh = useRefreshWorkflow();
+export function useWorkflowListLifecycle(
+  action: "publish" | "retire",
+  detailId?: string,
+) {
+  const refresh = useRefreshWorkflow(detailId);
   return useMutation({
     mutationFn: async (definitionId: string) => {
       const editor = await clientWorkflowService.getEditor(definitionId);

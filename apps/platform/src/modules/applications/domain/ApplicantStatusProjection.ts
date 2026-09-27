@@ -5,6 +5,7 @@ export type ApplicantStatusSource = {
   workflowStatus: string | null;
   terminalPublicStatus: WorkflowPublicStatusMapping | null;
   activeStageStatuses: WorkflowPublicStatusMapping[];
+  hasOpenRfi: boolean;
 };
 
 export type ApplicantPublicStatus = {
@@ -46,6 +47,12 @@ const priority = [
   "WITHDRAWN",
 ] as const;
 
+const rfiActionRequired = {
+  status: "ACTION_REQUIRED",
+  label: "Information requested",
+  description: "Please respond to the request for information by the deadline.",
+} satisfies WorkflowPublicStatusMapping;
+
 function approved(mapping: WorkflowPublicStatusMapping | null) {
   return mapping
     && priority.includes(mapping.status)
@@ -65,6 +72,8 @@ export function projectApplicantStatus(
     mapping = fallback.WITHDRAWN;
   } else if (source.workflowStatus && source.workflowStatus !== "ACTIVE") {
     mapping = approved(source.terminalPublicStatus) ?? fallback.CLOSED;
+  } else if (source.hasOpenRfi) {
+    mapping = rfiActionRequired;
   } else {
     const stages = source.activeStageStatuses
       .map(approved)

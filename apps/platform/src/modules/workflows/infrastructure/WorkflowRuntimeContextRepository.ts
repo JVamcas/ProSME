@@ -7,6 +7,7 @@ import type {
   PriorStageRuntimeValues,
   WorkflowTaskRuntimeContextSource,
 } from "@/modules/workflows/domain/WorkflowRuntimeContext";
+import { buildStageCompletionValues } from "@/modules/workflows/engine/StageCompletionContext";
 import type { ConditionFieldDefinition } from "@/modules/conditions/domain/ConditionConfiguration";
 import type { WorkflowElementPermissions } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
 
@@ -32,7 +33,7 @@ type RuntimeContextRow = {
   eligibilityRuleSetVersionNumber: number;
   eligibilitySoftFailureCount: number;
   eligibilityWarningCount: number;
-  priorStageValues: PriorStageRuntimeValues[];
+  priorStageValues: PriorStageRuntimeValueRow[];
   permissions: WorkflowElementPermissions;
   stageDefinitionId: string;
   stageInstanceId: string;
@@ -54,6 +55,28 @@ type RuntimeContextRow = {
   workflowVersionId: string;
   workflowVersionNumber: number;
 };
+
+type PriorStageRuntimeValueRow = {
+  responseValues: Record<string, unknown> | null;
+  stageKey: string;
+  taskResult: Record<string, unknown> | null;
+};
+
+function normalizePriorStageValues(
+  rows: readonly PriorStageRuntimeValueRow[],
+): PriorStageRuntimeValues[] {
+  const stages = new Map<string, PriorStageRuntimeValueRow[]>();
+  rows.forEach((row) => {
+    const values = stages.get(row.stageKey) ?? [];
+    values.push(row);
+    stages.set(row.stageKey, values);
+  });
+  return [...stages].map(([stageKey, values]) => ({
+    result: {},
+    stageKey,
+    values: buildStageCompletionValues(values),
+  }));
+}
 
 function toRuntimeContextSource(row: RuntimeContextRow) {
   return {
@@ -85,7 +108,7 @@ function toRuntimeContextSource(row: RuntimeContextRow) {
       warningCount: row.eligibilityWarningCount,
     },
     permissions: row.permissions,
-    priorStageValues: row.priorStageValues,
+    priorStageValues: normalizePriorStageValues(row.priorStageValues ?? []),
     stage: {
       definitionId: row.stageDefinitionId,
       id: row.stageInstanceId,
@@ -188,8 +211,8 @@ export async function readWorkflowTaskRuntimeContext(
     LEFT JOIN LATERAL (
       SELECT jsonb_agg(jsonb_build_object(
         'stageKey', prior_definition.code,
-        'values', COALESCE(response.values, '{}'::jsonb),
-        'result', COALESCE(prior_task.result, '{}'::jsonb)
+        'responseValues', response.values,
+        'taskResult', prior_task.result
       ) ORDER BY prior_stage.completed_at, prior_task.created_at) AS values
       FROM app_workflow_stage_instances prior_stage
       JOIN app_workflow_stage_definitions prior_definition
@@ -198,7 +221,8 @@ export async function readWorkflowTaskRuntimeContext(
         ON prior_task.stage_instance_id = prior_stage.id
       LEFT JOIN app_form_responses response
         ON response.workflow_task_id = prior_task.id
-        AND response.status = 'COMPLETED'
+        AND (response.status = 'COMPLETED'
+          OR response.values = (prior_task.result -> 'evaluatedFormValues'))
       WHERE prior_stage.workflow_instance_id = workflow.id
         AND prior_stage.id <> stage.id
         AND prior_stage.status = 'COMPLETED'

@@ -18,7 +18,7 @@ const record = {
   rowVersion: 1,
   stageInstanceId: "54444444-4444-4444-8444-444444444444",
   startedAt: null,
-  status: "CLAIMED" as const,
+  status: "PENDING" as const,
   workflowTaskDefinitionId: "55555555-5555-4555-8555-555555555555",
 };
 
@@ -54,7 +54,7 @@ describe("workflow task write repository", () => {
       dueAt,
       formVersionId: null,
       stageInstanceId: record.stageInstanceId,
-      status: "CLAIMED",
+      status: "PENDING",
       workflowTaskDefinitionId: record.workflowTaskDefinitionId,
       reviewerSlot: 1,
     }]);

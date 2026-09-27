@@ -59,7 +59,7 @@ export function RolePermissionsPanel({
   }
 
   return (
-    <div className="min-h-[560px] md:grid md:h-[calc(100dvh-8rem)] md:min-h-0 md:grid-cols-[280px_minmax(0,1fr)]">
+    <div className="min-h-140 md:grid md:h-[calc(100dvh-8rem)] md:min-h-0 md:grid-cols-[280px_minmax(0,1fr)]">
       <aside
         className={cn(
           "border-slate-200 md:h-full md:overflow-y-auto md:overscroll-contain md:border-r",
@@ -85,7 +85,7 @@ export function RolePermissionsPanel({
         )}
       >
         <button
-          className="m-4 inline-flex items-center gap-2 text-sm font-semibold text-blue-600 md:hidden"
+          className="m-4 inline-flex items-center gap-2 text-sm font-semibold text-brand-orange md:hidden"
           onClick={() => setMobileDetailOpen(false)}
           type="button"
         >
@@ -141,7 +141,7 @@ function RoleListItem({
       <span
         className={cn(
           "grid size-10 shrink-0 place-items-center rounded-xl",
-          active ? "bg-blue-100 text-blue-600" : "bg-slate-50 text-brand-navy",
+          active ? "bg-brand-navy/20 text-brand-orange" : "bg-slate-50 text-brand-navy",
         )}
       >
         <Icon className="size-5" />
@@ -196,7 +196,7 @@ function RoleDetail({
           <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 px-4 pb-4 md:p-5">
             <div>
               <div className="flex items-center gap-3">
-                <span className="grid size-11 place-items-center rounded-xl bg-blue-50 text-blue-600 md:hidden">
+                <span className="grid size-11 place-items-center rounded-xl bg-blue-50 text-brand-orange md:hidden">
                   <ShieldCheck className="size-6" />
                 </span>
                 <div>

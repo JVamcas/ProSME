@@ -5,7 +5,10 @@ import { useForm, useWatch, type UseFormSetError } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { usePublishedForms } from "@/modules/forms/FormHooks";
-import { formPurposes, type FormPurpose, type PublishedFormOption } from "@/modules/forms/FormTypes";
+import type {
+  FormPurpose,
+  PublishedFormOption,
+} from "@/modules/forms/FormTypes";
 import { useSaveWorkflowGraph } from "@/modules/workflows/WorkflowHooks";
 import type {
   WorkflowEditorView,
@@ -28,13 +31,13 @@ export function workflowTaskFormItems(
   const items = forms
     .filter((item) => !purpose || item.purpose === purpose)
     .map((item) => ({
-    label: `${item.formName} · v${item.versionNumber}`,
-    value: item.versionId,
-  }));
+      label: `${item.formName} · v${item.versionNumber}`,
+      value: item.versionId,
+    }));
   if (
-    selectedVersionId
-    && showUnavailable
-    && !items.some((item) => item.value === selectedVersionId)
+    selectedVersionId &&
+    showUnavailable &&
+    !items.some((item) => item.value === selectedVersionId)
   ) {
     items.unshift({
       label: "Unavailable form version — remove or replace",
@@ -61,8 +64,7 @@ async function saveWorkflowTask({
 }) {
   const duplicate = stage.tasks.some(
     (item) =>
-      item.stableKey === values.stableKey &&
-      item.stableKey !== task?.stableKey,
+      item.stableKey === values.stableKey && item.stableKey !== task?.stableKey,
   );
   if (duplicate) {
     formSetError("stableKey", {
@@ -70,19 +72,22 @@ async function saveWorkflowTask({
     });
     return false;
   }
-  const existingConfig = task?.config && typeof task.config === "object"
-    ? { ...task.config }
-    : {};
+  const existingConfig =
+    task?.config && typeof task.config === "object"
+      ? ({ ...task.config } as Record<string, unknown>)
+      : {};
   if ("items" in existingConfig) {
     delete existingConfig.items;
   }
+  delete existingConfig.command;
+  delete existingConfig.reevaluationPolicy;
   const nextTask: WorkflowTaskInput = {
     ...(task?.id ? { id: task.id } : {}),
     actionKeys: task?.actionKeys ?? [],
     permissions: task?.permissions ?? defaultWorkflowElementPermissions,
     assignmentMode: values.assignmentMode,
-    roleId:
-      values.assignmentMode === "ROLE" ? values.assignmentTarget : null,
+    taskType: values.taskType,
+    roleId: values.assignmentMode === "ROLE" ? values.assignmentTarget : null,
     namedUserOverrideId:
       values.assignmentMode === "NAMED_USER" ? values.assignmentTarget : null,
     stableKey: values.stableKey,
@@ -91,28 +96,37 @@ async function saveWorkflowTask({
     reviewerCount: values.reviewerCount,
     reviewRelease: task?.reviewRelease ?? "STAGE_COMPLETED",
     submittedReplacementPolicy: task?.submittedReplacementPolicy ?? "DENY",
-    requiredCompletionCount: values.completionMode === "ALL"
-      ? values.reviewerCount
-      : values.completionMode === "COUNT"
-        ? values.requiredCompletionCount ?? 1
-        : 1,
+    requiredCompletionCount:
+      values.completionMode === "ALL"
+        ? values.reviewerCount
+        : values.completionMode === "COUNT"
+          ? (values.requiredCompletionCount ?? 1)
+          : 1,
     completionMode: values.completionMode,
-    completionPercentage: values.completionMode === "PERCENT"
-      ? values.completionPercentage
-      : null,
-    quorum: task?.quorum ?? false,
-    quorumRule: task?.quorumRule ?? null,
+    completionPercentage:
+      values.completionMode === "PERCENT" ? values.completionPercentage : null,
+    quorum: false,
+    quorumRule: null,
     coiRequired: task?.coiRequired ?? false,
     config: {
       ...existingConfig,
+      displayMode: values.displayMode,
       formPurpose: values.formPurpose,
+      ...(values.formPurpose === "ELIGIBILITY_VERIFICATION" &&
+      values.runAuthoritativeEligibility
+        ? {
+            command: "AUTHORITATIVE_ELIGIBILITY",
+            reevaluationPolicy: "WHEN_EVIDENCE_CHANGED",
+          }
+        : {}),
     },
-    formBinding: values.formVersionId
-      ? {
-          contextFields: task?.formBinding?.contextFields ?? [],
-          formVersionId: values.formVersionId,
-        }
-      : null,
+    formBinding:
+      values.formPurpose !== "ELIGIBILITY_VERIFICATION" && values.formVersionId
+        ? {
+            contextFields: task?.formBinding?.contextFields ?? [],
+            formVersionId: values.formVersionId,
+          }
+        : null,
     name: values.name,
     required: values.required,
   };
@@ -144,14 +158,24 @@ export function useWorkflowTaskDialogController(
   const form = useForm<WorkflowTaskFormValues>({
     defaultValues: {
       ...taskAssignmentDefaults(task),
+      taskType: task?.taskType ?? "CONTRIBUTING",
       stableKey: task?.stableKey ?? "",
       description: task?.description ?? "",
+      displayMode:
+        task?.config &&
+        typeof task.config === "object" &&
+        "displayMode" in task.config &&
+        task.config.displayMode === "SECTIONS"
+          ? "SECTIONS"
+          : "STEP_PROGRESS",
       displayOrder: task?.displayOrder ?? stage.tasks.length + 1,
       formVersionId: task?.formBinding?.formVersionId ?? "",
-      formPurpose: task?.config && typeof task.config === "object"
-        && "formPurpose" in task.config
-        && formPurposes.includes(task.config.formPurpose as FormPurpose)
-          ? task.config.formPurpose as FormPurpose
+      formPurpose:
+        task?.config &&
+        typeof task.config === "object" &&
+        "formPurpose" in task.config &&
+        task.config.formPurpose === "ELIGIBILITY_VERIFICATION"
+          ? "ELIGIBILITY_VERIFICATION"
           : "APPLICATION_REVIEW",
       name: task?.name ?? "",
       reviewerCount: task?.reviewerCount ?? 1,
@@ -159,12 +183,22 @@ export function useWorkflowTaskDialogController(
       requiredCompletionCount: task?.requiredCompletionCount ?? 1,
       completionPercentage: task?.completionPercentage ?? null,
       required: task?.required ?? true,
+      runAuthoritativeEligibility: Boolean(
+        task?.config &&
+        typeof task.config === "object" &&
+        "command" in task.config &&
+        task.config.command === "AUTHORITATIVE_ELIGIBILITY",
+      ),
     },
     resolver: zodResolver(workflowTaskFormSchema),
   });
   const assignmentMode = useWatch({
     control: form.control,
     name: "assignmentMode",
+  });
+  const taskType = useWatch({
+    control: form.control,
+    name: "taskType",
   });
   const formPurpose = useWatch({
     control: form.control,
@@ -176,6 +210,14 @@ export function useWorkflowTaskDialogController(
   });
   const previousAssignmentMode = useRef(assignmentMode);
   const previousFormPurpose = useRef(formPurpose);
+
+  useEffect(() => {
+    if (taskType !== "STAGE_DECISION") return;
+    form.setValue("reviewerCount", 1, { shouldValidate: true });
+    form.setValue("completionMode", "ALL", { shouldValidate: true });
+    form.setValue("requiredCompletionCount", 1, { shouldValidate: true });
+    form.setValue("completionPercentage", null, { shouldValidate: true });
+  }, [form, taskType]);
 
   useEffect(() => {
     if (previousAssignmentMode.current === assignmentMode) return;
@@ -201,10 +243,15 @@ export function useWorkflowTaskDialogController(
   );
 
   const save = (values: WorkflowTaskFormValues) => {
-    if (values.formVersionId && !forms.data?.some((item) =>
-      item.versionId === values.formVersionId
-      && item.purpose === values.formPurpose
-    )) {
+    if (
+      values.formPurpose !== "ELIGIBILITY_VERIFICATION" &&
+      values.formVersionId &&
+      !forms.data?.some(
+        (item) =>
+          item.versionId === values.formVersionId &&
+          item.purpose === values.formPurpose,
+      )
+    ) {
       form.setError("formVersionId", {
         message: "Select a published form with the chosen purpose.",
       });

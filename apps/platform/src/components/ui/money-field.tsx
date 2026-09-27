@@ -8,6 +8,7 @@ import {
   type FieldValues,
 } from "react-hook-form";
 
+import { getErrorMessage } from "@/lib/client-http";
 import { cn } from "@/lib/utils";
 import { Input } from "@/shared/ui/FormPrimitives";
 import { FormField } from "./form-field";
@@ -83,23 +84,6 @@ export function parseMoneyInput(value: string) {
   );
 
   return Number.isFinite(numericValue) ? numericValue : undefined;
-}
-
-function getErrorMessage(error: unknown) {
-  if (typeof error === "string") {
-    return error;
-  }
-
-  if (
-    error &&
-    typeof error === "object" &&
-    "message" in error &&
-    typeof error.message === "string"
-  ) {
-    return error.message;
-  }
-
-  return undefined;
 }
 
 function CurrencyPrefix({

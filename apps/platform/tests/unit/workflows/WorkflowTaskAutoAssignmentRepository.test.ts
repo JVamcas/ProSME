@@ -1,7 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
+import type { SQL } from "drizzle-orm";
+import { PgDialect } from "drizzle-orm/pg-core";
 
 vi.mock("server-only", () => ({}));
 
+import { ResourceConflictError } from "@/lib/resource-errors";
 import { allocateStageReviewers } from "@/modules/workflows/infrastructure/WorkflowTaskAutoAssignmentRepository";
 import type { WorkflowInstanceTransaction } from "@/modules/workflows/infrastructure/WorkflowInstanceRepository";
 
@@ -45,7 +48,7 @@ describe("automatic reviewer allocation", () => {
   });
 
   it("rejects an ineligible named reviewer", async () => {
-    await expect(allocateStageReviewers(
+    const allocation = allocateStageReviewers(
       transaction([]),
       workflowId,
       [{
@@ -54,20 +57,49 @@ describe("automatic reviewer allocation", () => {
         reviewerCount: 1,
         roleId: null,
       }],
-    )).rejects.toThrow("named reviewer is ineligible");
+    );
+    await expect(allocation).rejects.toBeInstanceOf(ResourceConflictError);
+    await expect(allocation).rejects.toThrow("configured reviewer");
   });
 
-  it("blocks activation when fewer eligible people exist than slots", async () => {
+  it("reports an actionable conflict when fewer eligible people exist than slots", async () => {
     const rows = reviewers.slice(0, 2).map((userId) => ({
       roleId,
       taskDefinitionId: definitionId,
       userId,
       workload: 0,
     }));
-    await expect(allocateStageReviewers(
+    const allocation = allocateStageReviewers(
       transaction(rows),
       workflowId,
       [task],
-    )).rejects.toThrow("3 eligible reviewers are required");
+    );
+    await expect(allocation).rejects.toMatchObject({
+      conflict: {
+        eligibleReviewers: 2,
+        requiredReviewers: 3,
+      },
+      name: "ResourceConflictError",
+    });
+    await expect(allocation).rejects.toThrow(
+      "requires 3 eligible reviewers, but only 2 are available",
+    );
+  });
+
+  it("excludes reviewers with unresolved application COI", async () => {
+    const database = transaction([]);
+    await expect(allocateStageReviewers(
+      database,
+      workflowId,
+      [task],
+    )).rejects.toBeInstanceOf(ResourceConflictError);
+
+    const query = new PgDialect().sqlToQuery(
+      vi.mocked(database.execute).mock.calls[0]![0] as SQL,
+    );
+    expect(query.sql).toContain("app_workflow_application_coi");
+    expect(query.sql).toContain(
+      "clearance.application_id = workflow.application_id",
+    );
   });
 });

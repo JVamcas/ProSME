@@ -1,3 +1,19 @@
+function fieldErrorMessage(fields?: Record<string, string[]>) {
+  const messages = [...new Set(Object.values(fields ?? {}).flat())]
+    .filter((message) => message.trim().length > 0);
+  const visible = messages.slice(0, 3);
+  const remaining = messages.length - visible.length;
+
+  if (!visible.length) return undefined;
+
+  return [
+    visible.join(" "),
+    remaining > 0
+      ? `${remaining} more validation ${remaining === 1 ? "issue requires" : "issues require"} attention.`
+      : "",
+  ].filter(Boolean).join(" ");
+}
+
 export class ClientRequestError extends Error {
   readonly code?: string;
   readonly conflict?: Record<string, number | string>;
@@ -15,7 +31,7 @@ export class ClientRequestError extends Error {
       fields?: Record<string, string[]>;
     } = {},
   ) {
-    super(message);
+    super(fieldErrorMessage(details.fields) ?? message);
     this.name = "ClientRequestError";
     this.status = status;
     this.code = details.code;
@@ -23,6 +39,24 @@ export class ClientRequestError extends Error {
     this.correlationId = details.correlationId;
     this.fields = details.fields;
   }
+}
+
+export function getErrorMessage(error: unknown) {
+  if (typeof error === "string" && error.trim()) {
+    return error;
+  }
+
+  if (
+    error
+    && typeof error === "object"
+    && "message" in error
+    && typeof error.message === "string"
+    && error.message.trim()
+  ) {
+    return error.message;
+  }
+
+  return undefined;
 }
 
 type ErrorPayload = {

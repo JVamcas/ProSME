@@ -75,6 +75,7 @@ export const referenceWorkflow: WorkflowGraphInput = {
         {
           stableKey: "PRE_SCREEN_CHECKLIST",
           actionKeys: ["ADVANCE"],
+          taskType: "STAGE_DECISION",
           name: "Pre-screening checklist",
           description: "Verify the initial eligibility and compliance checks.",
           ...referenceTaskDefaults(false),
@@ -118,6 +119,7 @@ export const referenceWorkflow: WorkflowGraphInput = {
         {
           stableKey: "COMPLETENESS_CHECK",
           actionKeys: ["ADVANCE"],
+          taskType: "STAGE_DECISION",
           name: "Completeness checklist",
           description: "Confirm that the submitted application is complete.",
           ...referenceTaskDefaults(false),
@@ -147,6 +149,7 @@ export const referenceWorkflow: WorkflowGraphInput = {
         {
           stableKey: "TECHNICAL_SCORE",
           actionKeys: ["ADVANCE"],
+          taskType: "STAGE_DECISION",
           name: "Technical assessment form",
           description: "Score the application against the technical criteria.",
           ...referenceTaskDefaults(true),
@@ -193,6 +196,7 @@ export const referenceWorkflow: WorkflowGraphInput = {
         {
           stableKey: "FINANCE_CHECK",
           actionKeys: ["ADVANCE"],
+          taskType: "STAGE_DECISION",
           name: "Finance review",
           description: "Review the financial information and recommendation.",
           ...referenceTaskDefaults(true),
@@ -231,6 +235,7 @@ export const referenceWorkflow: WorkflowGraphInput = {
         {
           stableKey: "PANEL_DECISION",
           actionKeys: ["ADVANCE"],
+          taskType: "STAGE_DECISION",
           name: "Record outcome",
           description: "Record the committee's funding decision.",
           ...referenceTaskDefaults(true),
@@ -259,14 +264,14 @@ export const referenceWorkflow: WorkflowGraphInput = {
       publicStatusMapping: {
         status: "OUTCOME_AVAILABLE",
         label: "Outcome available",
-        description:
-          "An outcome is available in your application workspace.",
+        description: "An outcome is available in your application workspace.",
       },
       actions: [routingAction("COMPLETE", "Complete workflow")],
       tasks: [
         {
           stableKey: "SEND_OUTCOME",
           actionKeys: ["COMPLETE"],
+          taskType: "STAGE_DECISION",
           name: "Send outcome communication",
           description: "Send the recorded outcome to the applicant.",
           ...referenceTaskDefaults(false),

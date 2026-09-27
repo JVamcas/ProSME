@@ -13,6 +13,7 @@ import type {
 import type {
   AuthoritativeEligibilityTaskResult,
   CompleteChecklistTaskInput,
+  SaveTaskReviewDraftInput,
   TaskCompletionResult,
   TaskDetail,
 } from "./TaskTypes";
@@ -45,6 +46,20 @@ function getTask(taskId: string) {
   });
 }
 
+function uploadTaskDocument(
+  taskId: string,
+  requirementId: string,
+  file: File,
+) {
+  const body = new FormData();
+  body.set("requirementId", requirementId);
+  body.set("file", file);
+  return requestData<TaskDetail>(
+    `/api/admin/tasks/${taskId}/documents`,
+    { body, method: "POST" },
+  );
+}
+
 function completeTask(
   taskId: string,
   input: CompleteChecklistTaskInput,
@@ -62,11 +77,26 @@ function completeTask(
   );
 }
 
-function evaluateEligibility(taskId: string, expectedRowVersion: number) {
+function saveReviewDraft(taskId: string, input: SaveTaskReviewDraftInput) {
+  return requestData<{ saved: true }>(
+    `/api/admin/tasks/${taskId}/review-draft`,
+    {
+      body: JSON.stringify(input),
+      headers: { "Content-Type": "application/json" },
+      method: "PUT",
+    },
+  );
+}
+
+function evaluateEligibility(taskId: string, input: {
+  expectedRowVersion: number;
+  expectedResponseRowVersion?: number;
+  values?: Record<string, unknown>;
+}) {
   return requestData<AuthoritativeEligibilityExecutionResult>(
     `/api/admin/tasks/${taskId}/eligibility-evaluation`,
     {
-      body: JSON.stringify({ expectedRowVersion }),
+      body: JSON.stringify(input),
       headers: {
         "Content-Type": "application/json",
         "Idempotency-Key": crypto.randomUUID(),
@@ -96,8 +126,10 @@ function executeAction(
 
 export const clientWorkQueueService = {
   completeTask,
+  saveReviewDraft,
   evaluateEligibility,
   executeAction,
   getTask,
   list,
+  uploadTaskDocument,
 };

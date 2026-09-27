@@ -84,7 +84,7 @@ describe("P3.1 capability-aware portal navigation", () => {
     );
   });
 
-  it("exposes the work queue with assigned-task read permission", () => {
+  it("exposes assigned tasks beneath My work", () => {
     const routes = filterPortalRoutes(
       portalRoutes,
       "operations",
@@ -92,8 +92,23 @@ describe("P3.1 capability-aware portal navigation", () => {
     );
     expect(routes.map((route) => route.href)).toEqual([
       "/admin",
-      "/admin/work-queue",
+      "/admin/my-work",
       "/admin/applications",
+    ]);
+    expect(
+      routes.find((route) => route.id === "admin-my-work")?.children,
+    ).toMatchObject([{ href: "/admin/work-queue", label: "Assigned tasks" }]);
+  });
+
+  it("exposes only independent conflict reviews to a COI reviewer", () => {
+    const routes = filterPortalRoutes(
+      portalRoutes,
+      "operations",
+      new Set([permissionCodes.workflowCoiAllReview]),
+    );
+    const myWork = routes.find((route) => route.id === "admin-my-work");
+    expect(myWork?.children).toMatchObject([
+      { href: "/admin/conflict-reviews", label: "Conflict reviews" },
     ]);
   });
 
@@ -134,7 +149,10 @@ describe("P3.1 capability-aware portal navigation", () => {
     const withCmsAccess = filterPortalRoutes(
       portalRoutes,
       "operations",
-      new Set([permissionCodes.fundingApplicationAllRead, permissionCodes.cmsAccess]),
+      new Set([
+        permissionCodes.fundingApplicationAllRead,
+        permissionCodes.cmsAccess,
+      ]),
     );
 
     expect(withoutCmsAccess.map((route) => route.href)).not.toContain("/cms");

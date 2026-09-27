@@ -141,7 +141,7 @@ beforeAll(async () => {
     `INSERT INTO app_workflow_tasks
       (id, stage_instance_id, workflow_task_definition_id,
        status, assigned_user_id, claimed_at, due_at)
-     VALUES ($1, $2, $3, 'CLAIMED', $4, now(), now() + interval '24 hours')`,
+     VALUES ($1, $2, $3, 'PENDING', $4, now(), now() + interval '24 hours')`,
     [taskInstanceId, stageInstanceId, taskDefinitionId, reviewerOneId],
   );
 });

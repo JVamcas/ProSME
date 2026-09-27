@@ -28,16 +28,17 @@ describe("WorkflowActionDefinition", () => {
     const configurations = {
       APPROVE_ADVANCE: {},
       REJECT: {
-        commentRequired: true,
         outcome: { type: "TRANSITION" },
-        reasonCodes: ["INELIGIBLE"],
         reversibleActionKey: null,
       },
       REQUEST_INFORMATION: {
+        continuation: "RESUME_SOURCE_TASK",
         deadlineDays: 10,
-        editableFieldKeys: ["BUSINESS_PLAN"],
+        editableFieldPaths: ["BUSINESS_PLAN"],
         reminderDayOffsets: [3, 7],
         expiryAction: "ESCALATE",
+        participantScope: "APPLICATION_OWNER_AND_REQUESTER",
+        recipientScope: "APPLICATION_OWNER",
       },
       RETURN: {
         dataHandling: "RETAIN",
@@ -70,9 +71,7 @@ describe("WorkflowActionDefinition", () => {
       expect(parsed.success).toBe(true);
       if (!parsed.success) continue;
       expect(
-        toWorkflowActionDefinition(
-          workflowActionFormDefaults(parsed.data, 1),
-        ),
+        toWorkflowActionDefinition(workflowActionFormDefaults(parsed.data, 1)),
       ).toEqual(parsed.data);
     }
   });
@@ -110,10 +109,13 @@ describe("WorkflowActionDefinition", () => {
         ...action,
         actionType: "REQUEST_INFORMATION",
         configuration: {
+          continuation: "RESUME_SOURCE_TASK",
           deadlineDays: 5,
-          editableFieldKeys: ["BUSINESS_PLAN"],
+          editableFieldPaths: ["BUSINESS_PLAN"],
           reminderDayOffsets: [5],
           expiryAction: "RETURN",
+          participantScope: "APPLICATION_OWNER_AND_REQUESTER",
+          recipientScope: "APPLICATION_OWNER",
         },
       }).success,
     ).toBe(false);
@@ -147,8 +149,6 @@ describe("WorkflowActionDefinition", () => {
       stableKey: "ADVANCE",
       label: "Advance",
     };
-    expect(
-      toWorkflowActionDefinition(values).configuration,
-    ).toEqual({});
+    expect(toWorkflowActionDefinition(values).configuration).toEqual({});
   });
 });

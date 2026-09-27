@@ -11,6 +11,7 @@ const expectedCodes = [
   "APPEAL_REVIEW",
   "APPEAL_SUBMISSION",
   "APPROVAL",
+  "COI_DECLARATION",
   "COMMITTEE_REVIEW",
   "DISBURSEMENT_REVIEW",
   "DUE_DILIGENCE_RISK",
@@ -41,6 +42,32 @@ describe("standard form catalogue", () => {
       .toBe("APPLICATION_REVIEW");
     expect(forms.find((form) => form.code === "APPEAL_SUBMISSION")?.purpose)
       .toBe("OTHER");
+    expect(forms.find((form) => form.code === "COI_DECLARATION")?.purpose)
+      .toBe("COI");
+  });
+
+  it("publishes a conditional COI declaration for the workflow gate", () => {
+    const form = createStandardForms().find(
+      (item) => item.code === "COI_DECLARATION",
+    );
+
+    expect(form?.publishOnSeed).toBe(true);
+    expect(form?.submitLabel).toBe("Submit declaration");
+    expect(form?.fields).toEqual([
+      expect.objectContaining({
+        key: "HAS_CONFLICT",
+        required: true,
+        type: "YES_NO",
+      }),
+      expect.objectContaining({
+        key: "DISCLOSURE_TEXT",
+        maxLength: 4000,
+        minLength: 1,
+        required: true,
+        type: "TEXTAREA",
+        visibilityCondition: expect.any(Object),
+      }),
+    ]);
   });
 
   it("passes the same schema and publication validation as admin forms", () => {

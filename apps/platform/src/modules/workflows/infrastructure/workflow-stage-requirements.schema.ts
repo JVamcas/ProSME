@@ -19,7 +19,6 @@ import type {
   WorkflowDocumentFileType,
   WorkflowDocumentVerifierActor,
 } from "../domain/definitions/WorkflowStageDocumentRequirement";
-import type { WorkflowCommentFieldVisibility } from "../domain/definitions/WorkflowStageCommentField";
 import type { WorkflowScoringAggregation } from "../domain/definitions/WorkflowStageScoringDefinition";
 import {
   stageTaskDefinitions,
@@ -75,9 +74,7 @@ export const workflowStageCommentFields = pgTable(
     label: text("label").notNull(),
     helpText: text("help_text").notNull().default(""),
     mandatory: boolean("mandatory").notNull().default(false),
-    visibility: text("visibility")
-      .$type<WorkflowCommentFieldVisibility>()
-      .notNull(),
+    visibility: text("visibility").notNull(),
     displayOrder: integer("display_order").notNull(),
   },
   (table) => [
@@ -104,6 +101,9 @@ export const workflowStageDocumentRequirements = pgTable(
       .notNull(),
     maximumSizeMb: integer("maximum_size_mb").notNull(),
     expiryDays: integer("expiry_days"),
+    requestOnStageActivation: boolean("request_on_stage_activation")
+      .notNull()
+      .default(false),
     uploader: text("uploader").$type<WorkflowDocumentActor>().notNull(),
     verifier: text("verifier")
       .$type<WorkflowDocumentVerifierActor>()

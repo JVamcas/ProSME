@@ -64,6 +64,7 @@ const task = {
   coiCleared: true,
   formRequired: false,
   formCompleted: false,
+  hasOpenRfi: false,
   id: input.taskId,
   permissions: defaultWorkflowElementPermissions,
   rowVersion: 1,
@@ -85,7 +86,7 @@ beforeEach(() => {
   vi.mocked(persistWorkflowTaskTransition).mockImplementation(
     async (_transaction, transition) => ({
       assignedUserId: transition.actorId,
-      claimedAt: transition.targetStatus === "CLAIMED" ? new Date() : null,
+      claimedAt: new Date(),
       completedAt: transition.targetStatus === "COMPLETED" ? new Date() : null,
       id: transition.taskId,
       rowVersion: transition.rowVersion + 1,
@@ -96,11 +97,11 @@ beforeEach(() => {
 });
 
 describe("server workflow task lifecycle service", () => {
-  it("starts a claimed task assigned to the actor", async () => {
+  it("starts a pending task assigned to the actor", async () => {
     vi.mocked(lockWorkflowTaskForLifecycle).mockResolvedValue({
       ...task,
       assignedUserId: actor.id,
-      status: "CLAIMED",
+      status: "PENDING",
     });
 
     await expect(startWorkflowTask(actor, input)).resolves.toMatchObject({
@@ -113,7 +114,7 @@ describe("server workflow task lifecycle service", () => {
       ...task,
       assignedUserId: actor.id,
       coiCleared: false,
-      status: "CLAIMED",
+      status: "PENDING",
     });
 
     await expect(startWorkflowTask(actor, input)).rejects
@@ -158,7 +159,7 @@ describe("server workflow task lifecycle service", () => {
     vi.mocked(lockWorkflowTaskForLifecycle).mockResolvedValue({
       ...task,
       assignedUserId: "55555555-5555-4555-8555-555555555555",
-      status: "CLAIMED",
+      status: "PENDING",
     });
 
     await expect(startWorkflowTask(actor, input)).rejects

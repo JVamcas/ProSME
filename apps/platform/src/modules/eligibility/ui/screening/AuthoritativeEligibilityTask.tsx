@@ -6,21 +6,14 @@ import { toast } from "sonner";
 import { GeneralButton } from "@/components/ui/button";
 import type { TaskDetail } from "@/modules/work-queue/TaskTypes";
 import { useEvaluateAuthoritativeEligibility } from "@/modules/work-queue/WorkQueueHooks";
-
-function outcomeLabel(task: TaskDetail) {
-  const evaluation = task.eligibilityEvaluation;
-  if (!evaluation) return null;
-  if (evaluation.outcome === "INELIGIBLE") return "Ineligible";
-  if (evaluation.manualScreeningRequired) return "Manual decision required";
-  return "Eligible";
-}
+import { AuthoritativeEligibilityResult } from "./AuthoritativeEligibilityResult";
 
 export function AuthoritativeEligibilityTask({ task }: { task: TaskDetail }) {
   const evaluation = useEvaluateAuthoritativeEligibility(task.taskInstanceId);
   const current = task.eligibilityEvaluation;
   async function run() {
     try {
-      await evaluation.mutateAsync(task.rowVersion);
+      await evaluation.mutateAsync({ expectedRowVersion: task.rowVersion });
       toast.success("Authoritative eligibility evaluation completed.");
     } catch (error) {
       toast.error(
@@ -40,32 +33,9 @@ export function AuthoritativeEligibilityTask({ task }: { task: TaskDetail }) {
             Run the bound Ruleset Version against completed Screening evidence.
           </p>
           {current ? (
-            <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-4">
-              <div>
-                <dt className="text-brand-navy/55">Evaluation</dt>
-                <dd className="font-semibold text-brand-navy">
-                  #{current.evaluationNumber}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-brand-navy/55">Outcome</dt>
-                <dd className="font-semibold text-brand-navy">
-                  {outcomeLabel(task)}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-brand-navy/55">Hard failures</dt>
-                <dd className="font-semibold text-brand-navy">
-                  {current.hardFailureCount}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-brand-navy/55">Warnings</dt>
-                <dd className="font-semibold text-brand-navy">
-                  {current.warningCount}
-                </dd>
-              </div>
-            </dl>
+            <div className="mt-4">
+              <AuthoritativeEligibilityResult evaluation={current} />
+            </div>
           ) : null}
         </div>
       </div>
@@ -74,18 +44,20 @@ export function AuthoritativeEligibilityTask({ task }: { task: TaskDetail }) {
           {evaluation.error.message}
         </p>
       ) : null}
-      <div className="mt-5 flex justify-end border-t border-brand-navy/10 pt-4">
-        <GeneralButton
-          disabled={evaluation.isPending}
-          onClick={() => void run()}
-          type="button"
-        >
-          {evaluation.isPending ? (
-            <LoaderCircle className="size-4 animate-spin" aria-hidden />
-          ) : null}
-          {current ? "Re-evaluate eligibility" : "Run eligibility evaluation"}
-        </GeneralButton>
-      </div>
+      {!task.formVersionId ? (
+        <div className="mt-5 flex justify-end border-t border-brand-navy/10 pt-4">
+          <GeneralButton
+            disabled={evaluation.isPending}
+            onClick={() => void run()}
+            type="button"
+          >
+            {evaluation.isPending ? (
+              <LoaderCircle className="size-4 animate-spin" aria-hidden />
+            ) : null}
+            {current ? "Re-evaluate eligibility" : "Run eligibility evaluation"}
+          </GeneralButton>
+        </div>
+      ) : null}
     </section>
   );
 }

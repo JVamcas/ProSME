@@ -8,6 +8,7 @@ import { can } from "@/auth/authorization/policy";
 import { ResourceNotFoundError } from "@/lib/resource-errors";
 import { getOwnApplicationReadView } from "@/modules/applications/ServerApplicationReadViewService";
 import { ApplicantApplicationDetail } from "@/modules/applications/ui/ApplicantApplicationDetail";
+import { listOwnedApplicationRfis } from "@/modules/workflows/application/runtime/ServerWorkflowRfiReadService";
 
 export const metadata: Metadata = { title: "Application details" };
 
@@ -23,19 +24,29 @@ export default async function ApplicationDetailPage({
   const { id } = await params;
   if (!z.uuid().safeParse(id).success) notFound();
 
-  const data = await getOwnApplicationReadView(
+  const canReadInformationRequests = can(
     user,
-    id,
-    crypto.randomUUID(),
-  ).catch((error: unknown) => {
+    permissionCodes.fundingApplicationInformationRequestOwnRead,
+  );
+
+  const [data, requests] = await Promise.all([
+    getOwnApplicationReadView(user, id, crypto.randomUUID()),
+    canReadInformationRequests
+      ? listOwnedApplicationRfis(user, id)
+      : Promise.resolve([]),
+  ]).catch((error: unknown) => {
     if (error instanceof ResourceNotFoundError) notFound();
     throw error;
   });
   return (
     <ApplicantApplicationDetail
-      canDeleteDraft={can(user, permissionCodes.fundingApplicationDraftOwnDelete)}
+      canDeleteDraft={can(
+        user,
+        permissionCodes.fundingApplicationDraftOwnDelete,
+      )}
       canWithdraw={can(user, permissionCodes.fundingApplicationOwnWithdraw)}
       data={data}
+      requests={requests}
     />
   );
 }

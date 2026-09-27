@@ -47,7 +47,6 @@ const command = {
   input: {
     actionType: "REJECT" as const,
     comment: "Mandatory evidence was not supplied.",
-    reasonCode: "INSUFFICIENT_EVIDENCE",
   },
   sourceStageInstanceId: stageInstanceId,
   workflowInstanceId,
@@ -57,7 +56,6 @@ const target = {
     actionType: "REJECT" as const,
     condition: null,
     configuration: {
-      commentRequired: true,
       outcome: {
         cancelOpenStageInstances: true,
         cancelOpenTasks: true,
@@ -68,14 +66,13 @@ const target = {
         },
         type: "TERMINAL" as const,
       },
-      reasonCodes: ["INSUFFICIENT_EVIDENCE"],
       reversibleActionKey: null,
     },
     displayOrder: 1,
     enabled: true,
     id: "60000000-0000-4000-8000-000000000001",
     label: "Reject",
-    reasonCodeRequired: true,
+    reasonCodeRequired: false as const,
     stableKey: "REJECT",
   },
   stage: {
@@ -117,11 +114,13 @@ describe("workflow action outcome service", () => {
         },
         available: true,
         selectedTransitionId: transitionId,
-        transitionEvaluations: [{
-          evaluation: null,
-          passed: true,
-          resolutionError: null,
-        }],
+        transitionEvaluations: [
+          {
+            evaluation: null,
+            passed: true,
+            resolutionError: null,
+          },
+        ],
       },
       conditionContext: undefined,
       configuredTransitions: { actionExists: true, transitions: [transition] },
@@ -180,7 +179,11 @@ describe("workflow action outcome service", () => {
         input: { actionType: "WITHDRAW", confirmed: true },
       },
       conditions: {
-        actionEvaluation: { evaluation: null, passed: true, resolutionError: null },
+        actionEvaluation: {
+          evaluation: null,
+          passed: true,
+          resolutionError: null,
+        },
         available: true,
         selectedTransitionId: null,
         transitionEvaluations: [],

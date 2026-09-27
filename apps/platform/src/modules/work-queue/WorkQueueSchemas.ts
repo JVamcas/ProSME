@@ -18,9 +18,7 @@ export const workflowActionKeySchema = z
   .max(80)
   .regex(/^[A-Z][A-Z0-9_]*$/);
 
-export const completeChecklistTaskSchema = z.object({
-  actionKey: workflowActionKeySchema.optional(),
-  expectedRowVersion: z.number().int().positive(),
+export const saveTaskReviewDraftSchema = z.object({
   items: z.array(z.object({
     accepted: z.boolean(),
     code: z.string().min(1).max(80),
@@ -30,4 +28,19 @@ export const completeChecklistTaskSchema = z.object({
     key: z.string().min(2).max(80),
     value: z.string().trim().max(4000),
   })).max(100).optional(),
+  documents: z.array(z.object({
+    category: z.string().trim().min(1).max(160),
+    comment: z.string().trim().max(1000).optional(),
+    outcome: z.enum(["VERIFIED", "REJECTED", ""]),
+  })).max(100).optional(),
+  scores: z.array(z.object({
+    comment: z.string().trim().max(1000).optional(),
+    criterion: z.string().trim().min(1).max(160),
+    score: z.number().nullable(),
+  })).max(100).optional(),
+});
+
+export const completeChecklistTaskSchema = saveTaskReviewDraftSchema.extend({
+  actionKey: workflowActionKeySchema.optional(),
+  expectedRowVersion: z.number().int().positive(),
 });

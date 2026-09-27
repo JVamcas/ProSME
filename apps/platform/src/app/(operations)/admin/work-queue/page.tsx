@@ -6,10 +6,11 @@ import { getCurrentUser } from "@/auth/authorization/current-user";
 import { can } from "@/auth/authorization/policy";
 import { WorkQueueWorkspace } from "@/modules/work-queue/ui/WorkQueueWorkspace";
 
-export const metadata: Metadata = { title: "My Work Queue" };
+export const metadata: Metadata = { title: "Assigned tasks" };
 
 export default async function WorkQueuePage() {
   const user = await getCurrentUser();
-  if (!can(user, permissionCodes.workflowTaskAssignedRead)) redirect("/unauthorized");
+  if (!can(user, permissionCodes.workflowTaskAssignedRead))
+    redirect("/unauthorized");
   return <WorkQueueWorkspace />;
 }

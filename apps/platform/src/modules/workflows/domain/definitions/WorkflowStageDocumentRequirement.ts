@@ -32,6 +32,7 @@ export type WorkflowStageDocumentRequirement = {
   acceptedFileTypes: WorkflowDocumentFileType[];
   maximumSizeMb: number;
   expiryDays: number | null;
+  requestOnStageActivation: boolean;
   uploader: WorkflowDocumentActor;
   verifier: WorkflowDocumentVerifierActor;
   templateReference: string;

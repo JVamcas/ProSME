@@ -70,6 +70,18 @@ describe("workflow task form bindings", () => {
     );
   });
 
+  it("rejects form purposes outside the two supported task purposes", async () => {
+    const graph = structuredClone(record.graph);
+    graph.stages[0].tasks[0].config = { formPurpose: "RFI" };
+    vi.mocked(findWorkflowGraph).mockResolvedValue({ ...record, graph });
+
+    const editor = await workflowEditorView(record.version.id);
+
+    expect(editor.validation.errors).toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: "UNSUPPORTED_TASK_FORM_PURPOSE" }),
+    ]));
+  });
+
   it("rejects a published form with the wrong purpose", async () => {
     vi.mocked(findWorkflowGraph).mockResolvedValue(recordWithFormBinding());
     vi.mocked(findConfigurationReferences).mockResolvedValue({
@@ -85,6 +97,30 @@ describe("workflow task form bindings", () => {
     expect(editor.validation.errors).toEqual(expect.arrayContaining([
       expect.objectContaining({ code: "FORM_PURPOSE_MISMATCH" }),
     ]));
+  });
+
+  it("ignores an old template binding for an eligibility task", async () => {
+    const withBinding = recordWithFormBinding();
+    withBinding.graph.stages[0].tasks[0].config = {
+      formPurpose: "ELIGIBILITY_VERIFICATION",
+    };
+    vi.mocked(findWorkflowGraph).mockResolvedValue(withBinding);
+    vi.mocked(findConfigurationReferences).mockResolvedValue({
+      formFields: new Map(),
+      roles: new Set(),
+      users: new Map([[actor.id, "active"]]),
+      forms: new Map([[formVersionId, "DRAFT"]]),
+      formPurposes: new Map([[formVersionId, "APPLICATION_REVIEW"]]),
+    });
+
+    const editor = await workflowEditorView(record.version.id);
+
+    expect(editor.validation.errors.map((error) => error.code)).not.toContain(
+      "INVALID_FORM_VERSION",
+    );
+    expect(editor.validation.errors.map((error) => error.code)).not.toContain(
+      "FORM_PURPOSE_MISMATCH",
+    );
   });
 
   it("accepts a binding to the exact published form version", async () => {

@@ -61,14 +61,14 @@ export async function readEligibilityQuestionResponseRecords(
     JOIN app_workflow_stage_instances stage
       ON stage.workflow_instance_id = workflow.id
     JOIN app_workflow_tasks task ON task.stage_instance_id = stage.id
-    JOIN app_stage_task_definitions definition
-      ON definition.id = task.workflow_task_definition_id
-      AND definition.code = 'ELIGIBILITY_VERIFICATION'
+    JOIN app_eligibility_rule_set_verification_forms verification
+      ON verification.version_id = application.eligibility_rule_set_version_id
     JOIN app_form_responses response
       ON response.workflow_task_id = task.id
-      AND response.status = 'COMPLETED'
+      AND response.form_version_id = verification.form_version_id
+      AND response.status IN ('DRAFT', 'COMPLETED')
     WHERE application.id = ${first.applicationId}::uuid
-      AND binding.question_id = ANY(${questionIds}::uuid[])
+      AND binding.question_id IN (${sql.join(questionIds.map((id) => sql`${id}::uuid`), sql`, `)})
       AND response.values ? binding.code_snapshot
   `);
   return result.rows.map((row): WorkflowEligibilityValueRecord => ({
@@ -136,7 +136,7 @@ async function readWorkflowForms(
     JOIN app_workflow_instances workflow
       ON workflow.id = stage.workflow_instance_id
     WHERE workflow.application_id = ${applicationId}::uuid
-      AND field.id = ANY(${ids}::uuid[])
+      AND field.id IN (${sql.join(ids.map((id) => sql`${id}::uuid`), sql`, `)})
   `);
   return result.rows.map((row): WorkflowEligibilityValueRecord => ({
     sourceDefinitionId: row.fieldId,
@@ -166,7 +166,7 @@ async function readTasks(
     JOIN app_workflow_instances workflow
       ON workflow.id = stage.workflow_instance_id
     WHERE workflow.application_id = ${applicationId}::uuid
-      AND definition.id = ANY(${ids}::uuid[])
+      AND definition.id IN (${sql.join(ids.map((id) => sql`${id}::uuid`), sql`, `)})
   `);
   return result.rows.flatMap((row): WorkflowEligibilityValueRecord[] =>
     row.completedAt && row.result
@@ -211,7 +211,7 @@ async function readChecklists(
       COALESCE(task.result -> 'items', '[]'::jsonb)
     ) result_item ON result_item ->> 'code' = checklist.key
     WHERE workflow.application_id = ${applicationId}::uuid
-      AND checklist.id = ANY(${ids}::uuid[])
+      AND checklist.id IN (${sql.join(ids.map((id) => sql`${id}::uuid`), sql`, `)})
   `);
   return requests.flatMap((request): WorkflowEligibilityValueRecord[] => {
     const definitionId = request.binding.sourceDefinitionId;
@@ -267,7 +267,7 @@ async function readDocuments(
       AND document.application_id = workflow.application_id
     LEFT JOIN app_workflow_document_evidence_verifications verification
       ON verification.document_version_id = document.id
-    WHERE requirement.id = ANY(${ids}::uuid[])
+    WHERE requirement.id IN (${sql.join(ids.map((id) => sql`${id}::uuid`), sql`, `)})
   `);
   return requests.flatMap((request): WorkflowEligibilityValueRecord[] => {
     const definitionId = request.binding.sourceDefinitionId;

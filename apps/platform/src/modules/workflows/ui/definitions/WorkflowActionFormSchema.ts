@@ -3,15 +3,19 @@ import { z } from "zod";
 import { workflowActionTypes } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
 
 const stableKeyPattern = /^[A-Z][A-Z0-9_]*$/;
+const fieldPathPattern =
+  /^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z][A-Za-z0-9_]*)*$/;
 
 function isStableKeyList(value: string) {
   const values = value
     .split(/[\n,]/)
     .map((item) => item.trim())
     .filter(Boolean);
-  return values.length > 0 &&
+  return (
+    values.length > 0 &&
     new Set(values).size === values.length &&
-    values.every((item) => stableKeyPattern.test(item));
+    values.every((item) => stableKeyPattern.test(item))
+  );
 }
 
 function reminderOffsets(value: string) {
@@ -48,7 +52,6 @@ export const workflowActionFormSchema = z
     reasonCodeRequired: z.boolean(),
     displayOrder: z.number().int().positive(),
     reasonCodes: z.string(),
-    rejectionCommentRequired: z.boolean(),
     rejectionOutcomeType: z.enum(["TERMINAL", "TRANSITION"]),
     cancelOpenStageInstances: z.boolean(),
     cancelOpenTasks: z.boolean(),
@@ -64,7 +67,7 @@ export const workflowActionFormSchema = z
     rejectionPublicDescription: z.string().trim().max(300),
     reversibleActionKey: z.string(),
     deadlineDays: z.number().int().positive().max(365).optional(),
-    editableFieldKeys: z.string(),
+    editableFieldPaths: z.string(),
     reminderDayOffsets: z.string(),
     expiryAction: z.enum(["CLOSE_REQUEST", "ESCALATE", "RETURN"]),
     dataHandling: z.enum(["RETAIN", "CLEAR"]),
@@ -88,12 +91,6 @@ export const workflowActionFormSchema = z
   })
   .superRefine((values, context) => {
     if (values.actionType === "REJECT") {
-      requiredFor(
-        values.reasonCodes,
-        "Enter reason codes.",
-        "reasonCodes",
-        context,
-      );
       if (values.rejectionOutcomeType === "TERMINAL") {
         requiredFor(
           values.rejectionPublicLabel,
@@ -108,8 +105,10 @@ export const workflowActionFormSchema = z
           context,
         );
       }
-      if (values.reversibleActionKey
-        && !stableKeyPattern.test(values.reversibleActionKey)) {
+      if (
+        values.reversibleActionKey &&
+        !stableKeyPattern.test(values.reversibleActionKey)
+      ) {
         context.addIssue({
           code: "custom",
           message: "Use an uppercase stable action key.",
@@ -146,11 +145,25 @@ export const workflowActionFormSchema = z
         });
       }
       requiredFor(
-        values.editableFieldKeys,
-        "Enter editable field keys.",
-        "editableFieldKeys",
+        values.editableFieldPaths,
+        "Enter editable field paths.",
+        "editableFieldPaths",
         context,
       );
+      const fieldPaths = values.editableFieldPaths
+        .split(/[\n,]/)
+        .map((item) => item.trim())
+        .filter(Boolean);
+      if (
+        new Set(fieldPaths).size !== fieldPaths.length ||
+        fieldPaths.some((path) => !fieldPathPattern.test(path))
+      ) {
+        context.addIssue({
+          code: "custom",
+          message: "Use unique stable field paths separated by commas or new lines.",
+          path: ["editableFieldPaths"],
+        });
+      }
     }
     if (values.actionType === "ESCALATE") {
       requiredFor(
@@ -190,7 +203,6 @@ export const workflowActionFormSchema = z
     }
     const keyLists = [
       ["reasonCodes", values.reasonCodes],
-      ["editableFieldKeys", values.editableFieldKeys],
       ["allowedStageKeys", values.allowedStageKeys],
     ] as const;
     keyLists.forEach(([path, value]) => {
@@ -204,9 +216,7 @@ export const workflowActionFormSchema = z
     });
   });
 
-export type WorkflowActionFormValues = z.infer<
-  typeof workflowActionFormSchema
->;
+export type WorkflowActionFormValues = z.infer<typeof workflowActionFormSchema>;
 
 export const workflowActionTypeItems = [
   { label: "Approve / Advance", value: "APPROVE_ADVANCE" },

@@ -3,8 +3,7 @@ import type { WorkflowTaskStatus } from "./WorkflowTask";
 const taskTransitions: Readonly<
   Record<WorkflowTaskStatus, readonly WorkflowTaskStatus[]>
 > = {
-  PENDING: ["CLAIMED", "CANCELLED"],
-  CLAIMED: ["IN_PROGRESS", "CANCELLED"],
+  PENDING: ["IN_PROGRESS", "CANCELLED"],
   IN_PROGRESS: ["COMPLETED", "CANCELLED"],
   COMPLETED: [],
   CANCELLED: [],

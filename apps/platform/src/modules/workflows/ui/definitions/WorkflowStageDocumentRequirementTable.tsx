@@ -53,6 +53,12 @@ function documentRequirementColumns(
       cell: ({ row }) => (row.original.mandatory ? "Yes" : "No"),
     },
     {
+      accessorKey: "requestOnStageActivation",
+      header: "Auto request",
+      cell: ({ row }) =>
+        row.original.requestOnStageActivation ? "Yes" : "No",
+    },
+    {
       accessorKey: "acceptedFileTypes",
       header: "Accepted types",
       cell: ({ row }) => row.original.acceptedFileTypes.join(", "),

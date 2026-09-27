@@ -54,19 +54,22 @@ beforeEach(() => {
   transactionExecute
     .mockResolvedValueOnce({ rows: [] })
     .mockResolvedValueOnce({
-      rows: [{
-        config: {},
-        actionType: null,
-        formCompleted: false,
-        formRequired: false,
-        hasActions: false,
-        hasChecklist: true,
-        stageDefinitionId: "50000000-0000-4000-8000-000000000001",
-        stageInstanceId: "60000000-0000-4000-8000-000000000001",
-        taskStatus: "IN_PROGRESS",
-        workflowInstanceId: "70000000-0000-4000-8000-000000000001",
-        workflowVersionId: "80000000-0000-4000-8000-000000000001",
-      }],
+      rows: [
+        {
+          config: {},
+          actionType: null,
+          taskType: "CONTRIBUTING",
+          formCompleted: false,
+          formRequired: false,
+          hasActions: false,
+          hasChecklist: true,
+          stageDefinitionId: "50000000-0000-4000-8000-000000000001",
+          stageInstanceId: "60000000-0000-4000-8000-000000000001",
+          taskStatus: "IN_PROGRESS",
+          workflowInstanceId: "70000000-0000-4000-8000-000000000001",
+          workflowVersionId: "80000000-0000-4000-8000-000000000001",
+        },
+      ],
     })
     .mockResolvedValueOnce({ rows: [] })
     .mockResolvedValueOnce({ rowCount: 1, rows: [] })
@@ -78,10 +81,9 @@ describe("workflow checklist completion repository", () => {
   it("completes an actionless checklist without executing a transition", async () => {
     const executeTransition = vi.fn();
 
-    await expect(writeChecklistTaskCompletion(
-      command,
-      executeTransition,
-    )).resolves.toMatchObject({
+    await expect(
+      writeChecklistTaskCompletion(command, executeTransition),
+    ).resolves.toMatchObject({
       kind: "completed",
       result: {
         actionKey: null,

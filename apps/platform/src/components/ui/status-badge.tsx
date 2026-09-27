@@ -3,24 +3,29 @@ import { Badge } from "@/shared/ui/Badge";
 
 export const statusStyles: Record<string, string> = {
   approved: "bg-brand-green/15 text-brand-navy",
-  active: "bg-brand-green/15 text-brand-green",
-  closed: "border border-brand-navy bg-brand-cream text-brand-navy",
+  active: "bg-brand-green/70 text-brand-white",
+  closed: "bg-brand-cream text-brand-navy",
   "completeness check": "bg-brand-gold/40 text-brand-navy",
-  declined: "border border-brand-navy bg-brand-cream text-brand-navy",
+  declined: "bg-brand-cream text-brand-navy",
   draft: "bg-brand-cream text-brand-navy",
   "finance review": "bg-brand-blue/20 text-brand-navy",
   invited: "bg-brand-gold/30 text-brand-navy",
   unprovisioned: "bg-brand-blue/15 text-brand-navy",
   "more information": "bg-brand-gold/40 text-brand-navy",
-  open: "bg-brand-green/40 text-brand-navy",
-  published: "bg-brand-green/15 text-brand-navy",
-  retired: "border border-brand-navy bg-brand-cream text-brand-navy",
+  open: "bg-brand-green/70 text-brand-white",
+  published: "bg-brand-green/70 text-brand-white",
+  retired: "bg-brand-cream text-brand-navy",
   suspended: "bg-brand-gold/30 text-brand-navy",
   disabled: "bg-brand-navy/10 text-brand-navy/60",
   submitted: "bg-brand-blue/40 text-brand-navy",
   "technical assessment": "bg-brand-blue/40 text-brand-navy",
   upcoming: "bg-brand-yellow text-brand-navy",
-  live:"bg-brand-green/60 text-brand-white"
+  live: "bg-brand-green/70 text-brand-white",
+  completed: "bg-brand-green/70 text-brand-white",
+  pending: "bg-brand-navy/20 text-brand-orange",
+  "in progress": "bg-brand-navy/60 text-brand-white",
+  waiting: "bg-brand-gold text-brand-white",
+
 };
 
 type StatusBadgeProps = {

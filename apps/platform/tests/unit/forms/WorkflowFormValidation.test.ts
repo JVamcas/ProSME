@@ -21,43 +21,50 @@ const stage = (code: string, sequence: number, initial: boolean) => ({
   coiGated: false,
   entryCondition: null,
   exitCondition: null,
-  actions: [{
-    stableKey: "ADVANCE",
-    label: "Advance",
-    actionType: "APPROVE_ADVANCE" as const,
-    configuration: {},
-    enabled: true,
-    reasonCodeRequired: false,
-    displayOrder: 1,
-  }],
+  actions: [
+    {
+      stableKey: "ADVANCE",
+      label: "Advance",
+      actionType: "APPROVE_ADVANCE" as const,
+      configuration: {},
+      enabled: true,
+      reasonCodeRequired: false,
+      displayOrder: 1,
+    },
+  ],
   checklistItems: [],
   documentRequirements: [],
   scoring: null,
-  tasks: [{
-    actionKeys: ["ADVANCE"],
-    permissions: defaultWorkflowElementPermissions,
-    assignmentMode: "ROLE" as const,
-    roleId: "00000000-0000-0000-0000-000000000001",
-    namedUserOverrideId: null,
-    stableKey: `${code}_FORM`,
-    description: "Complete the configured form.",
-    reviewerCount: 1,
-    requiredCompletionCount: 1,
-    quorum: false,
-    coiRequired: false,
-    config: {},
-    formBinding: {
-      contextFields: [{
-        key: "application.requested_amount",
-        label: "Requested amount",
-        type: "NUMBER" as const,
-      }],
-      formVersionId: "00000000-0000-0000-0000-000000000002",
+  tasks: [
+    {
+      actionKeys: ["ADVANCE"],
+      taskType: "STAGE_DECISION" as const,
+      permissions: defaultWorkflowElementPermissions,
+      assignmentMode: "ROLE" as const,
+      roleId: "00000000-0000-0000-0000-000000000001",
+      namedUserOverrideId: null,
+      stableKey: `${code}_FORM`,
+      description: "Complete the configured form.",
+      reviewerCount: 1,
+      requiredCompletionCount: 1,
+      quorum: false,
+      coiRequired: false,
+      config: {},
+      formBinding: {
+        contextFields: [
+          {
+            key: "application.requested_amount",
+            label: "Requested amount",
+            type: "NUMBER" as const,
+          },
+        ],
+        formVersionId: "00000000-0000-0000-0000-000000000002",
+      },
+      name: "Complete form",
+      required: true,
+      displayOrder: 1,
     },
-    name: "Complete form",
-    required: true,
-    displayOrder: 1,
-  }],
+  ],
 });
 
 describe("form-backed workflow validation", () => {
@@ -65,10 +72,12 @@ describe("form-backed workflow validation", () => {
     const first = stage("FIRST", 1, true);
     first.tasks[0].actionKeys = ["UNCONFIGURED_ACTION"];
 
-    expect(workflowGraphSchema.safeParse({
-      stages: [first],
-      transitions: [],
-    }).success).toBe(false);
+    expect(
+      workflowGraphSchema.safeParse({
+        stages: [first],
+        transitions: [],
+      }).success,
+    ).toBe(false);
   });
 
   it("identifies a draft without transition definitions as structurally invalid", () => {

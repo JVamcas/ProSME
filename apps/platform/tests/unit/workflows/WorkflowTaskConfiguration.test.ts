@@ -8,15 +8,16 @@ import { defaultWorkflowElementPermissions } from "@/modules/workflows/domain/de
 
 describe("workflow task configuration", () => {
   it("rejects legacy checklist configuration embedded in a task", () => {
-    expect(validateTaskConfiguration({
-      items: [{ code: "ONE", label: "One", required: true }],
-    }).success).toBe(false);
+    expect(
+      validateTaskConfiguration({
+        items: [{ code: "ONE", label: "One", required: true }],
+      }).success,
+    ).toBe(false);
   });
 
   it("rejects completion thresholds above the reviewer count", () => {
     const graph = structuredClone(referenceWorkflow);
-    graph.stages[0].tasks[0].roleId =
-      "79e20de0-3558-4d63-90a4-8c9f5125df07";
+    graph.stages[0].tasks[0].roleId = "79e20de0-3558-4d63-90a4-8c9f5125df07";
     graph.stages[0].tasks[0].requiredCompletionCount = 2;
     const validation = validateWorkflowGraph(graph);
     expect(validation.errors).toEqual(
@@ -33,14 +34,17 @@ describe("workflow task configuration", () => {
       editPermission: defaultWorkflowElementPermissions.edit,
       decidePermission: defaultWorkflowElementPermissions.decide,
       visibility: defaultWorkflowElementPermissions.visibility,
+      taskType: "CONTRIBUTING",
       assignmentMode: "ROLE",
       assignmentTarget: "79e20de0-3558-4d63-90a4-8c9f5125df07",
       contextFields: [],
       stableKey: "REVIEW_TASK",
       description: "Review the application.",
+      displayMode: "STEP_PROGRESS",
       displayOrder: 1,
       formVersionId: "",
       formPurpose: "APPLICATION_REVIEW",
+      runAuthoritativeEligibility: false,
       reviewerCount: 3,
       requiredCompletionCount: 2,
       completionMode: "COUNT",
@@ -69,12 +73,67 @@ describe("workflow task configuration", () => {
     const graph = structuredClone(referenceWorkflow);
     const task = graph.stages[0].tasks[0];
     task.roleId = "79e20de0-3558-4d63-90a4-8c9f5125df07";
-    task.config = { fields: [{ code: "NOTES", label: "Notes", type: "textarea" }] };
+    task.config = {
+      fields: [{ code: "NOTES", label: "Notes", type: "textarea" }],
+    };
     task.formBinding = null;
 
     expect(validateWorkflowGraph(graph).errors).not.toEqual(
       expect.arrayContaining([
         expect.objectContaining({ code: "MISSING_FORM_VERSION" }),
+      ]),
+    );
+  });
+
+  it("allows at most one stage-decision task per stage", () => {
+    const graph = structuredClone(referenceWorkflow);
+    const existing = graph.stages[0].tasks[0];
+    graph.stages[0].tasks.push({
+      ...existing,
+      displayOrder: existing.displayOrder + 1,
+      stableKey: "SECOND_DECISION",
+    });
+
+    expect(validateWorkflowGraph(graph).errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: "MULTIPLE_STAGE_DECISION_TASKS" }),
+      ]),
+    );
+  });
+
+  it("requires a stage-decision task to have one assignee", () => {
+    const graph = structuredClone(referenceWorkflow);
+    graph.stages[0].tasks[0].reviewerCount = 2;
+
+    expect(validateWorkflowGraph(graph).errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "INVALID_STAGE_DECISION_REVIEWER_COUNT",
+        }),
+      ]),
+    );
+  });
+
+  it("rejects stage-decision actions on contributing tasks", () => {
+    const graph = structuredClone(referenceWorkflow);
+    graph.stages[0].tasks[0].taskType = "CONTRIBUTING";
+
+    expect(validateWorkflowGraph(graph).errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "DECISION_ACTION_ON_CONTRIBUTING_TASK",
+        }),
+      ]),
+    );
+  });
+
+  it("requires a decision action on a stage-decision task", () => {
+    const graph = structuredClone(referenceWorkflow);
+    graph.stages[0].tasks[0].actionKeys = [];
+
+    expect(validateWorkflowGraph(graph).errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: "STAGE_DECISION_ACTION_REQUIRED" }),
       ]),
     );
   });

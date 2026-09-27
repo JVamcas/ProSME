@@ -24,6 +24,8 @@ import {
 } from "../infrastructure/AuthoritativeEligibilityRepository";
 import { findRuntimeEligibilityRuleSetForEvaluation } from "../infrastructure/EligibilityEvaluationRepository";
 import { resolveAuthoritativeEligibilityData } from "./ServerEligibilityDataResolver";
+import { saveEligibilityEvaluationForm } from "./SaveEligibilityEvaluationForm";
+import { eligibilityExecutionResult } from "./EligibilityExecutionResult";
 import { eligibilityCommandSchema } from "@/modules/workflows/WorkflowTaskRegistry";
 import {
   findAuthoritativeEligibilityExecutionByCommand,
@@ -92,26 +94,11 @@ export class AuthoritativeEligibilityUnavailableError extends ResourceConflictEr
 export type ExecuteAuthoritativeEligibilityInput = {
   correlationId: string;
   expectedRowVersion: number;
+  expectedResponseRowVersion?: number;
+  values?: Record<string, unknown>;
   idempotencyKey: string;
   taskId: string;
 };
-
-function executionResult(
-  outcome: AuthoritativeEligibilityOutcomeWrite & { id: string },
-  rowVersion: number,
-) {
-  return {
-    eligible: outcome.eligible,
-    evaluationId: outcome.id,
-    evaluationNumber: outcome.evaluationNumber,
-    hardFailureCount: outcome.hardFailures.length,
-    manualScreeningRequired: outcome.manualScreeningRequired,
-    outcome: outcome.finalOutcome,
-    rowVersion,
-    softFailureCount: outcome.softFailures.length,
-    warningCount: outcome.warnings.length,
-  };
-}
 
 function evidenceFingerprint(
   outcome: Pick<
@@ -165,7 +152,7 @@ export async function executeAuthoritativeEligibility(
             "That idempotency key was already used for another evaluation.",
           );
         }
-        return executionResult(replay, target.rowVersion);
+        return eligibilityExecutionResult(replay, target.rowVersion);
       }
       if (target.rowVersion !== input.expectedRowVersion) {
         throw new ResourceConflictError(
@@ -175,7 +162,7 @@ export async function executeAuthoritativeEligibility(
       const canReevaluateCompletedTask = target.status === "COMPLETED"
         && target.previousOutcome !== null;
       if (!canReevaluateCompletedTask
-        && !["CLAIMED", "IN_PROGRESS"].includes(target.status)) {
+        && !["PENDING", "IN_PROGRESS"].includes(target.status)) {
         throw new ResourceConflictError(
           "The eligibility task is not ready to run.",
         );
@@ -205,6 +192,21 @@ export async function executeAuthoritativeEligibility(
           "This workflow does not permit eligibility re-evaluation.",
         );
       }
+      let evaluatedFormValues: Record<string, unknown> | undefined;
+      if (target.formVersionId) {
+        if (!input.values) {
+          throw new ResourceConflictError("Eligibility answers are required to run the evaluation.");
+        }
+        evaluatedFormValues = await saveEligibilityEvaluationForm(transaction, {
+          actorId: actor.id,
+          correlationId: input.correlationId,
+          expectedResponseRowVersion: input.expectedResponseRowVersion,
+          expectedTaskRowVersion: input.expectedRowVersion,
+          formVersionId: target.formVersionId,
+          taskId: target.taskId,
+          values: input.values,
+        });
+      }
       const outcome = await prepareAuthoritativeEligibilityOutcome(
         transaction,
         {
@@ -233,6 +235,7 @@ export async function executeAuthoritativeEligibility(
         correlationId: input.correlationId,
         expectedRowVersion: input.expectedRowVersion,
         outcome,
+        evaluatedFormValues,
         stageInstanceId: target.stageInstanceId,
         taskId: target.taskId,
         workflowInstanceId: target.workflowInstanceId,

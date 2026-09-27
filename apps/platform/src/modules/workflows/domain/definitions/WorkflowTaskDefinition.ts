@@ -4,6 +4,19 @@ import type { WorkflowElementPermissions } from "./WorkflowElementPermissions";
 
 export const workflowTaskAssignmentModes = ["ROLE", "NAMED_USER"] as const;
 
+export const workflowTaskTypes = ["CONTRIBUTING", "STAGE_DECISION"] as const;
+
+export type WorkflowTaskType = (typeof workflowTaskTypes)[number];
+
+export const workflowTaskFormPurposes = [
+  "APPLICATION_REVIEW",
+  "ELIGIBILITY_VERIFICATION",
+] as const;
+
+export const workflowTaskDisplayModes = ["STEP_PROGRESS", "SECTIONS"] as const;
+
+export type WorkflowTaskDisplayMode = (typeof workflowTaskDisplayModes)[number];
+
 export type WorkflowTaskAssignmentMode =
   (typeof workflowTaskAssignmentModes)[number];
 
@@ -25,6 +38,7 @@ export type WorkflowTaskDefinition = {
   reviewerCount: number;
   reviewRelease?: "STAGE_COMPLETED" | "THRESHOLD_MET" | "IMMEDIATE";
   submittedReplacementPolicy?: "DENY" | "REOPEN_SLOT";
+  taskType: WorkflowTaskType;
   requiredCompletionCount: number;
   completionMode?: "ALL" | "COUNT" | "PERCENT";
   completionPercentage?: number | null;

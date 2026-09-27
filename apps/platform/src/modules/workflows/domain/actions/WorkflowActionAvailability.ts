@@ -28,7 +28,7 @@ export type WorkflowActionInputMetadata = {
     deadlineDays: number | null;
     required: boolean;
   };
-  editableFieldKeys: readonly string[];
+  editableFieldPaths: readonly string[];
   reasonCode: {
     options: readonly string[];
     required: boolean;
@@ -61,7 +61,7 @@ export const emptyWorkflowActionInputMetadata: WorkflowActionInputMetadata = {
   comment: { maxLength: 4_000, required: false },
   confirmation: { message: null, required: false },
   dueDate: { deadlineDays: null, required: false },
-  editableFieldKeys: [],
+  editableFieldPaths: [],
   reasonCode: { options: [], required: false },
   reasonOrCommentRequired: false,
   reviewDate: { required: false },
@@ -84,8 +84,7 @@ const presentationByType: Record<
 };
 
 function reasonCodes(action: WorkflowActionDefinition) {
-  return action.actionType === "REJECT"
-      || action.actionType === "PUT_ON_HOLD"
+  return action.actionType === "PUT_ON_HOLD"
     ? action.configuration.reasonCodes
     : [];
 }
@@ -112,30 +111,25 @@ export function workflowActionInputMetadata(
 ): WorkflowActionInputMetadata {
   const isRequest = action.actionType === "REQUEST_INFORMATION";
   const isHold = action.actionType === "PUT_ON_HOLD";
-  const reasonOrCommentRequired = action.actionType === "RETURN"
-    && action.configuration.reasonRequired;
+  const reasonOrCommentRequired =
+    action.actionType === "RETURN" && action.configuration.reasonRequired;
   return {
     comment: {
       maxLength: 4_000,
-      required: action.actionType === "REJECT"
-        && action.configuration.commentRequired,
+      required: action.actionType === "REJECT",
     },
     confirmation: {
-      message: action.actionType === "WITHDRAW"
-        ? "Confirm that this application should be withdrawn."
-        : action.actionType === "REJECT"
-          ? "Confirm this rejection decision."
+      message:
+        action.actionType === "WITHDRAW"
+          ? "Confirm that this application should be withdrawn."
           : null,
-      required: action.actionType === "WITHDRAW"
-        || action.actionType === "REJECT",
+      required: action.actionType === "WITHDRAW",
     },
     dueDate: {
       deadlineDays: isRequest ? action.configuration.deadlineDays : null,
       required: isRequest,
     },
-    editableFieldKeys: isRequest
-      ? action.configuration.editableFieldKeys
-      : [],
+    editableFieldPaths: isRequest ? action.configuration.editableFieldPaths : [],
     reasonCode: {
       options: reasonCodes(action),
       required: action.reasonCodeRequired,
@@ -148,9 +142,7 @@ export function workflowActionInputMetadata(
   };
 }
 
-export function workflowActionPresentation(
-  action: WorkflowActionDefinition,
-) {
+export function workflowActionPresentation(action: WorkflowActionDefinition) {
   return {
     displayOrder: action.displayOrder,
     variant: presentationByType[action.actionType],

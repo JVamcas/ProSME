@@ -36,6 +36,7 @@ beforeEach(() => {
         submittedAt: new Date("2026-09-24T12:00:00.000Z"),
         updatedAt: new Date("2026-09-24T13:00:00.000Z"),
         workflowStatus: "ACTIVE",
+        hasOpenRfi: false,
         terminalPublicStatus: null,
         activeStageStatuses: [
           {
@@ -71,6 +72,7 @@ describe("admin application public status read model", () => {
     const query = new PgDialect().sqlToQuery(execute.mock.calls[0]![0]);
     expect(query.sql).toContain("active_definition.applicant_label");
     expect(query.sql).toContain("active_definition.applicant_description");
+    expect(query.sql).toContain("app_workflow_rfis open_rfi");
     expect(query.sql).toContain("visible_task.assigned_user_id");
     expect(query.sql).toContain("business.id = application.business_id");
     expect(query.sql).not.toContain("business_section ->> \businessId");

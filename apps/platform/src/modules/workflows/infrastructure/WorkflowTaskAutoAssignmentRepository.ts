@@ -2,6 +2,7 @@ import "server-only";
 
 import { sql } from "drizzle-orm";
 
+import { ResourceConflictError } from "@/lib/resource-errors";
 import type { WorkflowInstanceTransaction } from "./WorkflowInstanceRepository";
 
 type Candidate = {
@@ -50,13 +51,19 @@ export async function allocateStageReviewers(
       ON application.id = workflow.application_id
     LEFT JOIN app_workflow_tasks owned
       ON owned.assigned_user_id = candidate.id
-      AND owned.status IN ('CLAIMED', 'IN_PROGRESS')
+      AND owned.status IN ('PENDING', 'IN_PROGRESS')
     WHERE definition.id IN (${sql.join(
       definitions.map((item) => sql`${item.id}::uuid`),
       sql`, `,
     )})
       AND candidate.status = 'active'
       AND candidate.id <> application.owner_user_id
+      AND NOT EXISTS (
+        SELECT 1 FROM app_workflow_application_coi clearance
+        WHERE clearance.application_id = workflow.application_id
+          AND clearance.user_id = candidate.id
+          AND clearance.state IN ('PENDING_REVIEW', 'RECUSED', 'REVOKED')
+      )
       AND NOT EXISTS (
         SELECT 1 FROM (
           VALUES (definition.permissions ->> 'view'),
@@ -87,8 +94,8 @@ export async function allocateStageReviewers(
         && candidate.userId === definition.namedUserOverrideId,
       );
       if (!eligibleOverride || definition.reviewerCount !== 1) {
-        throw new Error(
-          `Cannot activate task ${definition.stableKey}: the named reviewer is ineligible.`,
+        throw new ResourceConflictError(
+          `Cannot advance the workflow because the configured reviewer for task ${definition.stableKey} is not eligible. Assign an active reviewer with the task's required permissions, then try again.`,
         );
       }
       assignments.set(definition.id, [definition.namedUserOverrideId]);
@@ -98,6 +105,15 @@ export async function allocateStageReviewers(
       candidate.taskDefinitionId === definition.id
       && candidate.roleId === definition.roleId,
     );
+    if (eligible.length < definition.reviewerCount) {
+      throw new ResourceConflictError(
+        `Cannot advance the workflow because task ${definition.stableKey} requires ${definition.reviewerCount} eligible reviewers, but only ${eligible.length} are available. Assign enough active users to the configured reviewer role and grant its required task permissions, then try again.`,
+        {
+          eligibleReviewers: eligible.length,
+          requiredReviewers: definition.reviewerCount,
+        },
+      );
+    }
     const selected: string[] = [];
     while (selected.length < definition.reviewerCount) {
       const next = eligible
@@ -108,8 +124,8 @@ export async function allocateStageReviewers(
           || left.userId.localeCompare(right.userId),
         )[0];
       if (!next) {
-        throw new Error(
-          `Cannot activate task ${definition.stableKey}: ${definition.reviewerCount} eligible reviewers are required.`,
+        throw new ResourceConflictError(
+          `Cannot advance the workflow because task ${definition.stableKey} could not be assigned to distinct eligible reviewers.`,
         );
       }
       selected.push(next.userId);

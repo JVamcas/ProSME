@@ -9,7 +9,11 @@ import {
   FormSelect,
   FormTextarea,
 } from "@/components/ui/form-fields";
-import { formPurposeOptions, type FormPurpose } from "@/modules/forms/FormTypes";
+import {
+  formPurposeOptions,
+  type FormPurpose,
+} from "@/modules/forms/FormTypes";
+import { workflowTaskFormPurposes } from "@/modules/workflows/domain/definitions/WorkflowTaskDefinition";
 import type { WorkflowTaskFormValues } from "./WorkflowTaskFormSchema";
 
 function TaskIdentityFields() {
@@ -27,6 +31,17 @@ function TaskIdentityFields() {
         placeholder="Review finance"
         required
       />
+      <FormSelect
+        containerClassName="sm:col-span-2"
+        infoTooltip="Contributing tasks are manually completed. A stage-decision task is completed only through a decision action."
+        items={[
+          { label: "Contributing work", value: "CONTRIBUTING" },
+          { label: "Stage decision", value: "STAGE_DECISION" },
+        ]}
+        label="Task type"
+        name="taskType"
+        required
+      />
       <FormInput
         containerClassName="sm:col-span-2"
         label="Display order"
@@ -35,6 +50,17 @@ function TaskIdentityFields() {
         registrationOptions={{ valueAsNumber: true }}
         required
         type="number"
+      />
+      <FormSelect
+        containerClassName="sm:col-span-2"
+        infoTooltip="Choose how the task work is presented in both preview and the live task page."
+        items={[
+          { label: "Step progress", value: "STEP_PROGRESS" },
+          { label: "Collapsible sections", value: "SECTIONS" },
+        ]}
+        label="Task layout"
+        name="displayMode"
+        required
       />
       <FormTextarea
         containerClassName="sm:col-span-2"
@@ -107,24 +133,35 @@ export function WorkflowTaskDialogFields({
   formsPending,
   mutationPending,
 }: Props) {
+  const { control } = useFormContext<WorkflowTaskFormValues>();
+  const taskType = useWatch({ control, name: "taskType" });
   return (
     <>
       <TaskIdentityFields />
       <div className="grid gap-4 sm:grid-cols-2">
         <FormSelect
-          items={formPurposeOptions.map((item) => ({ ...item }))}
+          items={formPurposeOptions.filter((item) =>
+            workflowTaskFormPurposes.some((purpose) => purpose === item.value),
+          )}
           label="Form purpose"
           name="formPurpose"
           required
         />
-        <FormSelect
-          items={formItems}
-          label="Form version"
-          name="formVersionId"
-          infoTooltip={`Choose a published ${formPurpose.toLowerCase().replaceAll("_", " ")} form.`}
-          placeholder={formsPending ? "Loading forms…" : "No form selected"}
-          value={formVersionId}
-        />
+        {formPurpose === "ELIGIBILITY_VERIFICATION" ? (
+          <div className="self-end text-sm text-slate-600">
+            The eligibility form attached to the funding call is used when this
+            task runs.
+          </div>
+        ) : (
+          <FormSelect
+            items={formItems}
+            label="Form version"
+            name="formVersionId"
+            infoTooltip="Choose a published application review form."
+            placeholder={formsPending ? "Loading forms…" : "No form selected"}
+            value={formVersionId}
+          />
+        )}
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <FormSelect
@@ -148,23 +185,27 @@ export function WorkflowTaskDialogFields({
           infoTooltip="How many people from the selected role will receive an individual copy of this task when the workflow runs. Named-user assignments are limited to one reviewer."
           label="Reviewer count"
           min={1}
-          max={100}
+          max={taskType === "STAGE_DECISION" ? 1 : 100}
           name="reviewerCount"
           registrationOptions={{ valueAsNumber: true }}
           required
           type="number"
         />
-        <FormSelect
-          items={[
-            { label: "All", value: "ALL" },
-            { label: "Fixed count", value: "COUNT" },
-            { label: "Percentage", value: "PERCENT" },
-          ]}
-          label="Completion threshold"
-          name="completionMode"
-          required
-        />
-        <CompletionThresholdValueField />
+        {taskType === "CONTRIBUTING" ? (
+          <>
+            <FormSelect
+              items={[
+                { label: "All", value: "ALL" },
+                { label: "Fixed count", value: "COUNT" },
+                { label: "Percentage", value: "PERCENT" },
+              ]}
+              label="Completion threshold"
+              name="completionMode"
+              required
+            />
+            <CompletionThresholdValueField />
+          </>
+        ) : null}
       </div>
       <CheckboxField
         containerClassName="mt-8 text-sm font-semibold text-brand-navy"

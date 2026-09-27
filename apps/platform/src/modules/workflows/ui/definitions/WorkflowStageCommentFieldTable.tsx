@@ -18,6 +18,7 @@ type Props = {
 };
 
 function columns(
+  taskNames: Map<string, string>,
   canEdit: boolean,
   onDelete: Props["onDelete"],
   onEdit: Props["onEdit"],
@@ -26,7 +27,8 @@ function columns(
     {
       id: "task",
       header: "Workflow task",
-      cell: ({ row }) => row.original.taskStableKey,
+      cell: ({ row }) => taskNames.get(row.original.taskStableKey)
+        ?? row.original.taskStableKey,
     },
     { accessorKey: "displayOrder", header: "Order" },
     {
@@ -44,13 +46,6 @@ function columns(
       accessorKey: "mandatory",
       header: "Mandatory",
       cell: ({ row }) => (row.original.mandatory ? "Yes" : "No"),
-    },
-    {
-      accessorKey: "visibility",
-      header: "Visibility",
-      cell: ({ row }) => row.original.visibility === "APPLICANT_VISIBLE"
-        ? "Applicant visible"
-        : "Internal only",
     },
     {
       id: "controls",
@@ -81,6 +76,9 @@ export function WorkflowStageCommentFieldTable({
   onEdit,
   stage,
 }: Props) {
+  const taskNames = new Map(
+    stage.tasks.map((task) => [task.stableKey, task.name]),
+  );
   const fields = [...(stage.commentFields ?? [])].sort(
     (left, right) => left.displayOrder - right.displayOrder,
   );
@@ -103,7 +101,7 @@ export function WorkflowStageCommentFieldTable({
         title="Comments and recommendations"
       />
       <DataTable
-        columns={columns(canEdit, onDelete, onEdit)}
+        columns={columns(taskNames, canEdit, onDelete, onEdit)}
         data={fields}
         emptyMessage="No comment or recommendation fields have been added."
         minWidth={980}

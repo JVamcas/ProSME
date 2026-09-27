@@ -66,6 +66,7 @@ const application = {
   workflowStatus: null,
   terminalPublicStatus: null,
   activeStageStatuses: [],
+  hasOpenRfi: false,
   businessId: null,
   businessName: null,
   businessSection: {},

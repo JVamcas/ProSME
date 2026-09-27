@@ -21,10 +21,12 @@ function KeyListField({
   label,
   name,
   placeholder,
+  required = true,
 }: {
   label: string;
   name: string;
   placeholder: string;
+  required?: boolean;
 }) {
   return (
     <FormTextarea
@@ -33,7 +35,7 @@ function KeyListField({
       label={label}
       name={name}
       placeholder={placeholder}
-      required
+      required={required}
       rows={2}
     />
   );
@@ -61,10 +63,14 @@ function RequestInformationFields() {
         name="expiryAction"
         required
       />
-      <KeyListField
-        label="Editable field keys"
-        name="editableFieldKeys"
-        placeholder="FINANCIALS, BUSINESS_PLAN"
+      <FormTextarea
+        containerClassName="sm:col-span-2"
+        infoTooltip="Use stable field paths separated by commas or new lines, for example application.financial.turnover."
+        label="Editable field paths"
+        name="editableFieldPaths"
+        placeholder="application.financial.turnover"
+        required
+        rows={2}
       />
       <FormInput
         containerClassName="sm:col-span-2"
@@ -84,9 +90,8 @@ function EscalationFields({
   assignmentOptions: WorkflowAssignmentOptions;
   targetType: "ROLE" | "USER";
 }) {
-  const targets = targetType === "ROLE"
-    ? assignmentOptions.roles
-    : assignmentOptions.users;
+  const targets =
+    targetType === "ROLE" ? assignmentOptions.roles : assignmentOptions.users;
   return (
     <>
       <FormSelect
@@ -162,15 +167,6 @@ function ActionConfigurationFields({
     case "REJECT":
       return (
         <>
-          <KeyListField
-            label="Reason codes"
-            name="reasonCodes"
-            placeholder="INELIGIBLE, INSUFFICIENT_EVIDENCE"
-          />
-          <CheckboxField
-            label="Require a rejection comment"
-            name="rejectionCommentRequired"
-          />
           <FormInput
             label="Reversal action key"
             name="reversibleActionKey"
@@ -285,7 +281,10 @@ function ActionConfigurationFields({
             items={[
               { label: "Resubmission not allowed", value: "NOT_ALLOWED" },
               { label: "Create a new application", value: "NEW_APPLICATION" },
-              { label: "Reopen withdrawn application", value: "REOPEN_WITHDRAWN" },
+              {
+                label: "Reopen withdrawn application",
+                value: "REOPEN_WITHDRAWN",
+              },
             ]}
             label="Resubmission rule"
             name="resubmissionRule"

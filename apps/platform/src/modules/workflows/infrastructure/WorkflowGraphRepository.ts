@@ -80,6 +80,7 @@ const graphSelection = {
     reviewerCount: stageTaskDefinitions.reviewerCount,
     reviewRelease: stageTaskDefinitions.reviewRelease,
     submittedReplacementPolicy: stageTaskDefinitions.submittedReplacementPolicy,
+    taskType: stageTaskDefinitions.taskType,
     requiredCompletionCount: stageTaskDefinitions.requiredCompletionCount,
     completionMode: stageTaskDefinitions.completionMode,
     completionPercentage: stageTaskDefinitions.completionPercentage,
@@ -163,85 +164,84 @@ function assembleGraph(rows: Awaited<ReturnType<typeof loadGraphRows>>) {
       row.stage?.id ? [[row.stage.id, row.stage.stableKey] as const] : [],
     ),
   );
-  rows.forEach(({
-    action,
-    formBinding,
-    stage,
-    task,
-    taskAction,
-    transition,
-  }) => {
-    if (stage?.id && !stages.has(stage.id))
-      stages.set(stage.id, {
-        id: stage.id,
-        stableKey: stage.stableKey,
-        name: stage.name,
-        description: stage.description,
-        enabled: stage.enabled,
-        optional: stage.optional,
-        displayOrder: stage.displayOrder,
-        publicStatusMapping: {
-          status: stage.publicStatus,
-          label: stage.publicLabel,
-          description: stage.publicDescription,
-        },
-        repeatable: stage.repeatable,
-        coiGated: stage.coiGated,
-        entryCondition: stage.entryCondition,
-        exitCondition: stage.exitCondition,
-        checklistItems: [],
-    commentFields: [],
-        documentRequirements: [],
-        scoring: null,
-        initial: stage.initial,
-        slaHours: stage.slaHours,
-        actions: [],
-        tasks: [],
-      });
-    const target = stage?.id ? stages.get(stage.id) : undefined;
-    if (
-      target &&
-      action?.id &&
-      !target.actions.some((item) => item.id === action.id)
-    ) {
-      target.actions.push(workflowActionDefinitionSchema.parse(action));
-    }
-    if (target && task?.id && !target.tasks.some((item) => item.id === task.id)) {
-      target.tasks.push({
-        ...task,
-        actionKeys: [],
-        formBinding: formBinding?.formVersionId
-          ? {
-              contextFields: formBinding.contextFields,
-              formVersionId: formBinding.formVersionId,
-            }
-          : null,
-      });
-    }
-    const targetTask = target?.tasks.find(
-      (item) => item.id === taskAction?.taskDefinitionId,
-    );
-    if (
-      targetTask
-      && taskAction?.actionKey
-      && !targetTask.actionKeys.includes(taskAction.actionKey)
-    ) {
-      targetTask.actionKeys.push(taskAction.actionKey);
-    }
-    if (transition?.id && !transitions.has(transition.id)) {
-      transitions.set(transition.id, {
-        id: transition.id,
-        actionKey: transition.actionKey,
-        sourceStageKey: codes.get(transition.fromStageId) ?? "",
-        priority: transition.priority,
-        terminalOutcome: transition.terminalOutcome,
-        condition: transition.condition,
-        targetStageKey: transition.toStageId
-          ? (codes.get(transition.toStageId) ?? "")
-          : null,
-      });
-    }
-  });
+  rows.forEach(
+    ({ action, formBinding, stage, task, taskAction, transition }) => {
+      if (stage?.id && !stages.has(stage.id))
+        stages.set(stage.id, {
+          id: stage.id,
+          stableKey: stage.stableKey,
+          name: stage.name,
+          description: stage.description,
+          enabled: stage.enabled,
+          optional: stage.optional,
+          displayOrder: stage.displayOrder,
+          publicStatusMapping: {
+            status: stage.publicStatus,
+            label: stage.publicLabel,
+            description: stage.publicDescription,
+          },
+          repeatable: stage.repeatable,
+          coiGated: stage.coiGated,
+          entryCondition: stage.entryCondition,
+          exitCondition: stage.exitCondition,
+          checklistItems: [],
+          commentFields: [],
+          documentRequirements: [],
+          scoring: null,
+          initial: stage.initial,
+          slaHours: stage.slaHours,
+          actions: [],
+          tasks: [],
+        });
+      const target = stage?.id ? stages.get(stage.id) : undefined;
+      if (
+        target &&
+        action?.id &&
+        !target.actions.some((item) => item.id === action.id)
+      ) {
+        target.actions.push(workflowActionDefinitionSchema.parse(action));
+      }
+      if (
+        target &&
+        task?.id &&
+        !target.tasks.some((item) => item.id === task.id)
+      ) {
+        target.tasks.push({
+          ...task,
+          actionKeys: [],
+          formBinding: formBinding?.formVersionId
+            ? {
+                contextFields: formBinding.contextFields,
+                formVersionId: formBinding.formVersionId,
+              }
+            : null,
+        });
+      }
+      const targetTask = target?.tasks.find(
+        (item) => item.id === taskAction?.taskDefinitionId,
+      );
+      if (
+        targetTask &&
+        taskAction?.actionKey &&
+        !targetTask.actionKeys.includes(taskAction.actionKey)
+      ) {
+        targetTask.actionKeys.push(taskAction.actionKey);
+      }
+      if (transition?.id && !transitions.has(transition.id)) {
+        transitions.set(transition.id, {
+          id: transition.id,
+          actionKey: transition.actionKey,
+          sourceStageKey: codes.get(transition.fromStageId) ?? "",
+          priority: transition.priority,
+          terminalOutcome: transition.terminalOutcome,
+          condition: transition.condition,
+          targetStageKey: transition.toStageId
+            ? (codes.get(transition.toStageId) ?? "")
+            : null,
+        });
+      }
+    },
+  );
   return {
     definition: { ...rows[0].definition, ...rows[0].version.metadata },
     graph: {

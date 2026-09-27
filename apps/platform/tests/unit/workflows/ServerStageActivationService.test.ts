@@ -1,22 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
-vi.mock(
-  "@/modules/workflows/infrastructure/StageActivationRepository",
-  () => ({
-    findStageInstanceStatus: vi.fn(),
-    findStageIteration: vi.fn(),
-    loadPriorStageContext: vi.fn(),
-    loadStageActivationTasks: vi.fn(),
-    lockStageActivationTarget: vi.fn(),
-    persistStageActivation: vi.fn(),
-    withStageActivationTransaction: vi.fn(),
-  }),
-);
+vi.mock("@/modules/workflows/infrastructure/StageActivationRepository", () => ({
+  findStageInstanceStatus: vi.fn(),
+  findStageIteration: vi.fn(),
+  loadPriorStageContext: vi.fn(),
+  loadStageActivationTasks: vi.fn(),
+  lockStageActivationTarget: vi.fn(),
+  persistStageActivation: vi.fn(),
+  withStageActivationTransaction: vi.fn(),
+}));
+vi.mock("@/modules/workflows/infrastructure/WorkflowRfiRepository", () => ({
+  createStageActivationWorkflowRfi: vi.fn(),
+}));
 
-import {
-  activateStageInTransaction,
-} from "@/modules/workflows/application/runtime/ServerStageActivationService";
+import { activateStageInTransaction } from "@/modules/workflows/application/runtime/ServerStageActivationService";
 import { basicOperators } from "@/modules/conditions/engine/BasicOperators";
 import {
   findStageInstanceStatus,
@@ -35,13 +33,21 @@ const input = {
 };
 
 const passingCondition = {
-  children: [{
-    id: "condition-1",
-    kind: "CONDITION" as const,
-    leftOperand: { key: "application.requested_amount", kind: "FIELD" as const },
-    operator: basicOperators.LESS_THAN_OR_EQUAL,
-    rightOperand: { key: "fundingCall.maximum_amount", kind: "FIELD" as const },
-  }],
+  children: [
+    {
+      id: "condition-1",
+      kind: "CONDITION" as const,
+      leftOperand: {
+        key: "application.requested_amount",
+        kind: "FIELD" as const,
+      },
+      operator: basicOperators.LESS_THAN_OR_EQUAL,
+      rightOperand: {
+        key: "fundingCall.maximum_amount",
+        kind: "FIELD" as const,
+      },
+    },
+  ],
   combinator: "AND" as const,
   id: "group-1",
   kind: "GROUP" as const,
@@ -72,6 +78,7 @@ const taskDefinition = {
   roleId: "66666666-6666-4666-8666-666666666666",
   stableKey: "CHECKLIST",
   reviewerCount: 1,
+  taskType: "CONTRIBUTING" as const,
 };
 
 beforeEach(() => {
@@ -89,12 +96,13 @@ beforeEach(() => {
 
 describe("server stage activation service", () => {
   it("creates one stage and its configured tasks after conditions pass", async () => {
-    await expect(activateStageInTransaction({} as never, input)).resolves
-      .toEqual({
-        kind: "activated",
-        stageInstanceId: "77777777-7777-4777-8777-777777777777",
-        taskIds: ["88888888-8888-4888-8888-888888888888"],
-      });
+    await expect(
+      activateStageInTransaction({} as never, input),
+    ).resolves.toEqual({
+      kind: "activated",
+      stageInstanceId: "77777777-7777-4777-8777-777777777777",
+      taskIds: ["88888888-8888-4888-8888-888888888888"],
+    });
     expect(persistStageActivation).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
@@ -126,11 +134,12 @@ describe("server stage activation service", () => {
       status: "ACTIVE",
     });
 
-    await expect(activateStageInTransaction({} as never, input)).resolves
-      .toEqual({
-        kind: "already_active",
-        stageInstanceId: "77777777-7777-4777-8777-777777777777",
-      });
+    await expect(
+      activateStageInTransaction({} as never, input),
+    ).resolves.toEqual({
+      kind: "already_active",
+      stageInstanceId: "77777777-7777-4777-8777-777777777777",
+    });
     expect(loadStageActivationTasks).not.toHaveBeenCalled();
     expect(persistStageActivation).not.toHaveBeenCalled();
   });
@@ -141,8 +150,9 @@ describe("server stage activation service", () => {
       currentStageInstanceId: "99999999-9999-4999-8999-999999999999",
     });
 
-    await expect(activateStageInTransaction({} as never, input)).resolves
-      .toEqual({ kind: "stage_conflict" });
+    await expect(
+      activateStageInTransaction({} as never, input),
+    ).resolves.toEqual({ kind: "stage_conflict" });
     expect(persistStageActivation).not.toHaveBeenCalled();
   });
 
@@ -153,8 +163,9 @@ describe("server stage activation service", () => {
     });
     vi.mocked(findStageInstanceStatus).mockResolvedValue("COMPLETED");
 
-    await expect(activateStageInTransaction({} as never, input)).resolves
-      .toMatchObject({ kind: "activated" });
+    await expect(
+      activateStageInTransaction({} as never, input),
+    ).resolves.toMatchObject({ kind: "activated" });
     expect(persistStageActivation).toHaveBeenCalledOnce();
   });
 });

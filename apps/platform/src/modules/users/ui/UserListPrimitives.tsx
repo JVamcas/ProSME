@@ -84,7 +84,7 @@ export function UserIdentity({ user }: { user: UserAccessRow }) {
 
   return (
     <div className="flex items-center gap-3">
-      <span className="grid size-9 shrink-0 place-items-center rounded-full bg-blue-50 text-xs font-bold text-blue-600">
+      <span className="grid size-9 shrink-0 place-items-center rounded-full bg-brand-navy/10 text-xs font-bold text-brand-orange">
         {initials || "U"}
       </span>
       <span className="font-semibold text-brand-navy">{user.displayName}</span>

@@ -58,7 +58,6 @@ function loadCommentRows(versionId: string) {
       label: workflowStageCommentFields.label,
       helpText: workflowStageCommentFields.helpText,
       mandatory: workflowStageCommentFields.mandatory,
-      visibility: workflowStageCommentFields.visibility,
       displayOrder: workflowStageCommentFields.displayOrder,
     })
     .from(workflowStageCommentFields)
@@ -88,6 +87,8 @@ function loadDocumentRows(versionId: string) {
       acceptedFileTypes: workflowStageDocumentRequirements.acceptedFileTypes,
       maximumSizeMb: workflowStageDocumentRequirements.maximumSizeMb,
       expiryDays: workflowStageDocumentRequirements.expiryDays,
+      requestOnStageActivation:
+        workflowStageDocumentRequirements.requestOnStageActivation,
       uploader: workflowStageDocumentRequirements.uploader,
       verifier: workflowStageDocumentRequirements.verifier,
       templateReference: workflowStageDocumentRequirements.templateReference,

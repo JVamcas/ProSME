@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import { workflowStageSchema } from "@/modules/workflows/api/WorkflowSchemas";
+import {
+  parseOptionalExpiryDays,
+  workflowStageDocumentRequirementFormSchema,
+} from "@/modules/workflows/ui/definitions/WorkflowStageDocumentRequirementFormSchema";
 import { referenceWorkflow } from "../../../support/ReferenceWorkflowFixture";
+import { validateWorkflowStage } from "@/modules/workflows/WorkflowStageValidation";
+import { requestInformation } from "@/modules/workflows/domain/standard/StandardWorkflowBuilders";
 
 function stageWithDocumentRequirements() {
   return {
@@ -14,6 +20,7 @@ function stageWithDocumentRequirements() {
         acceptedFileTypes: ["PDF", "JPG"] as const,
         maximumSizeMb: 10,
         expiryDays: 180,
+        requestOnStageActivation: false,
         uploader: "APPLICANT" as const,
         verifier: "ASSIGNED_REVIEWER" as const,
         templateReference: "TAX_CLEARANCE_TEMPLATE",
@@ -25,6 +32,7 @@ function stageWithDocumentRequirements() {
         acceptedFileTypes: ["PDF"] as const,
         maximumSizeMb: 5,
         expiryDays: null,
+        requestOnStageActivation: false,
         uploader: "STAFF" as const,
         verifier: "STAFF" as const,
         templateReference: "",
@@ -34,6 +42,55 @@ function stageWithDocumentRequirements() {
 }
 
 describe("workflow stage document requirements", () => {
+  it("requires one enabled task-bound RFI action for automatic requests", () => {
+    const stage = stageWithDocumentRequirements();
+    stage.documentRequirements[0].requestOnStageActivation = true;
+    expect(validateWorkflowStage(
+      workflowStageSchema.parse(stage),
+      0,
+    ).map((item) => item.code)).toContain(
+      "AUTO_RFI_ACTION_REQUIRED",
+    );
+
+    const action = requestInformation("REQUEST_DOCUMENTS", "Request documents", 1);
+    stage.actions.push(action);
+    stage.tasks[0].actionKeys.push(action.stableKey);
+    expect(validateWorkflowStage(
+      workflowStageSchema.parse(stage),
+      0,
+    ).map((item) => item.code)).not
+      .toContain("AUTO_RFI_ACTION_REQUIRED");
+  });
+
+  it("rejects automatic requests for staff-owned documents", () => {
+    const stage = stageWithDocumentRequirements();
+    stage.documentRequirements[1].requestOnStageActivation = true;
+    expect(validateWorkflowStage(
+      workflowStageSchema.parse(stage),
+      0,
+    ).map((item) => item.code)).toContain(
+      "AUTO_RFI_APPLICANT_OWNER_REQUIRED",
+    );
+  });
+
+  it("keeps an empty optional expiry blank and validates entered days", () => {
+    const requirement = stageWithDocumentRequirements().documentRequirements[1];
+
+    for (const value of [null, undefined, ""]) {
+      expect(parseOptionalExpiryDays(value)).toBeNull();
+      expect(workflowStageDocumentRequirementFormSchema.safeParse({
+        ...requirement,
+        expiryDays: parseOptionalExpiryDays(value),
+      }).success).toBe(true);
+    }
+
+    expect(parseOptionalExpiryDays("180")).toBe(180);
+    expect(workflowStageDocumentRequirementFormSchema.safeParse({
+      ...requirement,
+      expiryDays: parseOptionalExpiryDays("0"),
+    }).success).toBe(false);
+  });
+
   it("accepts every configured document requirement field", () => {
     expect(
       workflowStageSchema.safeParse(stageWithDocumentRequirements()).success,

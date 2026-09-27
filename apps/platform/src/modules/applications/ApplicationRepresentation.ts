@@ -23,6 +23,7 @@ export type ApplicationSummaryRecord = {
   workflowStatus?: string | null;
   terminalPublicStatus?: ApplicantStatusSource["terminalPublicStatus"];
   activeStageStatuses?: ApplicantStatusSource["activeStageStatuses"];
+  hasOpenRfi?: boolean;
   businessName?: string | null;
   createdAt: Date;
   currentSection: ApplicationSection;
@@ -57,6 +58,7 @@ export function toApplicationSummary(
       workflowStatus: application.workflowStatus ?? null,
       terminalPublicStatus: application.terminalPublicStatus ?? null,
       activeStageStatuses: application.activeStageStatuses ?? [],
+      hasOpenRfi: application.hasOpenRfi ?? false,
     }),
     progressPercent: progress(application.sectionCompletion),
     status: application.status,

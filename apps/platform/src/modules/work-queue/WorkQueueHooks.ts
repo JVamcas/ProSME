@@ -39,15 +39,45 @@ export function useCompleteWorkflowTask(taskId: string) {
   });
 }
 
+export function useSaveTaskReviewDraft(taskId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof clientWorkQueueService.saveReviewDraft>[1]) =>
+      clientWorkQueueService.saveReviewDraft(taskId, input),
+    onSuccess: () => queryClient.invalidateQueries({
+      queryKey: workQueueQueryKeys.task(taskId),
+    }),
+  });
+}
+
+export function useUploadWorkflowTaskDocument(taskId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { file: File; requirementId: string }) =>
+      clientWorkQueueService.uploadTaskDocument(
+        taskId,
+        input.requirementId,
+        input.file,
+      ),
+    onSuccess: (task) => {
+      queryClient.setQueryData(workQueueQueryKeys.task(taskId), task);
+      void queryClient.invalidateQueries({ queryKey: workQueueQueryKeys.all });
+    },
+  });
+}
+
 export function useEvaluateAuthoritativeEligibility(taskId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (expectedRowVersion: number) =>
-      clientWorkQueueService.evaluateEligibility(taskId, expectedRowVersion),
+    mutationFn: (input: Parameters<typeof clientWorkQueueService.evaluateEligibility>[1]) =>
+      clientWorkQueueService.evaluateEligibility(taskId, input),
     onSuccess: () => Promise.all([
       queryClient.invalidateQueries({ queryKey: workQueueQueryKeys.all }),
       queryClient.invalidateQueries({
         queryKey: workQueueQueryKeys.task(taskId),
+      }),
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "tasks", taskId, "form"],
       }),
     ]),
   });

@@ -32,7 +32,6 @@ export function workflowActionFormDefaults(
     reasonCodeRequired: action?.reasonCodeRequired ?? false,
     displayOrder: action?.displayOrder ?? displayOrder,
     reasonCodes: "",
-    rejectionCommentRequired: true,
     rejectionOutcomeType: "TERMINAL",
     cancelOpenStageInstances: true,
     cancelOpenTasks: true,
@@ -41,7 +40,7 @@ export function workflowActionFormDefaults(
     rejectionPublicDescription: "A decision is available for your application.",
     reversibleActionKey: "",
     deadlineDays: undefined,
-    editableFieldKeys: "",
+    editableFieldPaths: "",
     reminderDayOffsets: "",
     expiryAction: "CLOSE_REQUEST",
     dataHandling: "RETAIN",
@@ -64,34 +63,35 @@ export function workflowActionFormDefaults(
     case "REJECT":
       return {
         ...defaults,
-        cancelOpenStageInstances: action.configuration.outcome.type === "TERMINAL"
-          ? action.configuration.outcome.cancelOpenStageInstances
-          : true,
-        cancelOpenTasks: action.configuration.outcome.type === "TERMINAL"
-          ? action.configuration.outcome.cancelOpenTasks
-          : true,
-        rejectionCommentRequired: action.configuration.commentRequired,
+        cancelOpenStageInstances:
+          action.configuration.outcome.type === "TERMINAL"
+            ? action.configuration.outcome.cancelOpenStageInstances
+            : true,
+        cancelOpenTasks:
+          action.configuration.outcome.type === "TERMINAL"
+            ? action.configuration.outcome.cancelOpenTasks
+            : true,
         rejectionOutcomeType: action.configuration.outcome.type,
         rejectionPublicDescription:
           action.configuration.outcome.type === "TERMINAL"
             ? action.configuration.outcome.publicStatusMapping.description
             : defaults.rejectionPublicDescription,
-        rejectionPublicLabel: action.configuration.outcome.type === "TERMINAL"
-          ? action.configuration.outcome.publicStatusMapping.label
-          : defaults.rejectionPublicLabel,
-        rejectionPublicStatus: action.configuration.outcome.type === "TERMINAL"
-          ? action.configuration.outcome.publicStatusMapping.status
-          : defaults.rejectionPublicStatus,
-        reasonCodes: action.configuration.reasonCodes.join(", "),
+        rejectionPublicLabel:
+          action.configuration.outcome.type === "TERMINAL"
+            ? action.configuration.outcome.publicStatusMapping.label
+            : defaults.rejectionPublicLabel,
+        rejectionPublicStatus:
+          action.configuration.outcome.type === "TERMINAL"
+            ? action.configuration.outcome.publicStatusMapping.status
+            : defaults.rejectionPublicStatus,
         reversibleActionKey: action.configuration.reversibleActionKey ?? "",
       };
     case "REQUEST_INFORMATION":
       return {
         ...defaults,
         deadlineDays: action.configuration.deadlineDays,
-        editableFieldKeys: action.configuration.editableFieldKeys.join(", "),
-        reminderDayOffsets:
-          action.configuration.reminderDayOffsets.join(", "),
+        editableFieldPaths: action.configuration.editableFieldPaths.join(", "),
+        reminderDayOffsets: action.configuration.reminderDayOffsets.join(", "),
         expiryAction: action.configuration.expiryAction,
       };
     case "RETURN":
@@ -145,28 +145,30 @@ function configuration(values: WorkflowActionFormValues) {
       return {};
     case "REJECT":
       return {
-        commentRequired: values.rejectionCommentRequired,
-        outcome: values.rejectionOutcomeType === "TERMINAL"
-          ? {
-              cancelOpenStageInstances: values.cancelOpenStageInstances,
-              cancelOpenTasks: values.cancelOpenTasks,
-              publicStatusMapping: {
-                description: values.rejectionPublicDescription,
-                label: values.rejectionPublicLabel,
-                status: values.rejectionPublicStatus,
-              },
-              type: "TERMINAL" as const,
-            }
-          : { type: "TRANSITION" as const },
-        reasonCodes: keys(values.reasonCodes),
+        outcome:
+          values.rejectionOutcomeType === "TERMINAL"
+            ? {
+                cancelOpenStageInstances: values.cancelOpenStageInstances,
+                cancelOpenTasks: values.cancelOpenTasks,
+                publicStatusMapping: {
+                  description: values.rejectionPublicDescription,
+                  label: values.rejectionPublicLabel,
+                  status: values.rejectionPublicStatus,
+                },
+                type: "TERMINAL" as const,
+              }
+            : { type: "TRANSITION" as const },
         reversibleActionKey: values.reversibleActionKey || null,
       };
     case "REQUEST_INFORMATION":
       return {
+        continuation: "RESUME_SOURCE_TASK" as const,
         deadlineDays: values.deadlineDays,
-        editableFieldKeys: keys(values.editableFieldKeys),
+        editableFieldPaths: keys(values.editableFieldPaths),
         reminderDayOffsets: numbers(values.reminderDayOffsets),
         expiryAction: values.expiryAction,
+        participantScope: "APPLICATION_OWNER_AND_REQUESTER" as const,
+        recipientScope: "APPLICATION_OWNER" as const,
       };
     case "RETURN":
       return {
@@ -215,7 +217,8 @@ export function toWorkflowActionDefinition(
     label: values.label,
     actionType: values.actionType,
     enabled: values.enabled,
-    reasonCodeRequired: values.reasonCodeRequired,
+    reasonCodeRequired:
+      values.actionType === "REJECT" ? false : values.reasonCodeRequired,
     displayOrder: values.displayOrder,
     configuration: configuration(values),
   });

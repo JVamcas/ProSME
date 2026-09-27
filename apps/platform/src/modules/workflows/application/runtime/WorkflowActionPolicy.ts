@@ -19,6 +19,7 @@ const decisionActionTypes = new Set<WorkflowActionDefinition["actionType"]>([
 
 type ActionPolicyTask = {
   assignedToActor: boolean;
+  eligibilityReady?: boolean;
   permissions: WorkflowElementPermissions;
   status: string;
 } | null;
@@ -127,7 +128,7 @@ export function evaluateWorkflowActionPolicy(
   if (target.workflowStatus !== "ACTIVE"
     || target.stageStatus !== "ACTIVE"
     || (target.task
-      && !["CLAIMED", "IN_PROGRESS"].includes(target.task.status))) {
+      && !["PENDING", "IN_PROGRESS"].includes(target.task.status))) {
     return unavailable(
       "INVALID_STATE",
       "This action is not available in the current state.",
@@ -147,6 +148,12 @@ export function evaluateWorkflowActionPolicy(
     return unavailable(
       "CONTEXT_MISMATCH",
       "This action is not available to you.",
+    );
+  }
+  if (target.task?.eligibilityReady === false) {
+    return unavailable(
+      "INVALID_STATE",
+      "Run eligibility using the current answers before choosing an action.",
     );
   }
   if (!input.configurationValid || !input.targetsValid) {

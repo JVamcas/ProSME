@@ -1,4 +1,5 @@
 import { validateTaskConfiguration } from "./WorkflowTaskRegistry";
+import { isWorkflowStageDecisionAction } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
 import type {
   WorkflowGraphInput,
   WorkflowValidationIssue,
@@ -26,9 +27,7 @@ function validateTaskIdentity(
 ) {
   const errors: WorkflowValidationIssue[] = [];
   const taskPath = `${base}.tasks.${taskIndex}`;
-  if (
-    !validateTaskConfiguration(task.config).success
-  ) {
+  if (!validateTaskConfiguration(task.config).success) {
     errors.push(
       issue(
         "INVALID_TASK_CONFIG",
@@ -73,9 +72,21 @@ function validateTaskIdentity(
       ),
     );
   }
-  if (task.quorum && (!task.quorumRule
-    || (task.quorumRule.minimumCount === null
-      && task.quorumRule.minimumPercentage === null))) {
+  if (task.taskType === "STAGE_DECISION" && task.reviewerCount !== 1) {
+    errors.push(
+      issue(
+        "INVALID_STAGE_DECISION_REVIEWER_COUNT",
+        `${task.name} must have exactly one assignee because it determines the stage outcome.`,
+        `${taskPath}.reviewerCount`,
+      ),
+    );
+  }
+  if (
+    task.quorum &&
+    (!task.quorumRule ||
+      (task.quorumRule.minimumCount === null &&
+        task.quorumRule.minimumPercentage === null))
+  ) {
     errors.push(
       issue(
         "INVALID_QUORUM",
@@ -84,9 +95,12 @@ function validateTaskIdentity(
       ),
     );
   }
-  if (task.quorum && task.quorumRule?.population === "ASSIGNED_TASKS"
-    && task.quorumRule.minimumCount !== null
-    && task.quorumRule.minimumCount > task.reviewerCount) {
+  if (
+    task.quorum &&
+    task.quorumRule?.population === "ASSIGNED_TASKS" &&
+    task.quorumRule.minimumCount !== null &&
+    task.quorumRule.minimumCount > task.reviewerCount
+  ) {
     errors.push(
       issue(
         "INVALID_QUORUM_COUNT",
@@ -127,6 +141,53 @@ function validateTaskUniqueness(
       ),
     );
   }
+  return errors;
+}
+
+function validateTaskTypeActions(
+  stage: WorkflowGraphInput["stages"][number],
+  base: string,
+) {
+  const errors: WorkflowValidationIssue[] = [];
+  const decisionTasks = stage.tasks.filter(
+    (task) => task.taskType === "STAGE_DECISION",
+  );
+  if (decisionTasks.length > 1) {
+    errors.push(
+      issue(
+        "MULTIPLE_STAGE_DECISION_TASKS",
+        `${stage.name} can contain at most one stage-decision task.`,
+        `${base}.tasks`,
+      ),
+    );
+  }
+  const actionsByKey = new Map(
+    stage.actions.map((action) => [action.stableKey, action]),
+  );
+  stage.tasks.forEach((task, taskIndex) => {
+    const decisionActions = task.actionKeys.filter((actionKey) => {
+      const action = actionsByKey.get(actionKey);
+      return action ? isWorkflowStageDecisionAction(action.actionType) : false;
+    });
+    if (task.taskType === "CONTRIBUTING" && decisionActions.length) {
+      errors.push(
+        issue(
+          "DECISION_ACTION_ON_CONTRIBUTING_TASK",
+          `${task.name} cannot expose a stage-decision action because it is a contributing task.`,
+          `${base}.tasks.${taskIndex}.actionKeys`,
+        ),
+      );
+    }
+    if (task.taskType === "STAGE_DECISION" && !decisionActions.length) {
+      errors.push(
+        issue(
+          "STAGE_DECISION_ACTION_REQUIRED",
+          `${task.name} must expose at least one stage-decision action.`,
+          `${base}.tasks.${taskIndex}.actionKeys`,
+        ),
+      );
+    }
+  });
   return errors;
 }
 
@@ -182,6 +243,60 @@ function validateApplicantLabels(
   ];
 }
 
+function validateAutomaticDocumentRequests(
+  stage: WorkflowGraphInput["stages"][number],
+  base: string,
+) {
+  const errors: WorkflowValidationIssue[] = [];
+  const automatic = stage.documentRequirements.filter(
+    (requirement) => requirement.requestOnStageActivation,
+  );
+  const taskKeys = new Set(
+    automatic.map((requirement) => requirement.taskStableKey),
+  );
+  if (taskKeys.size > 1) {
+    errors.push(
+      issue(
+        "AUTO_RFI_MULTIPLE_TASKS",
+        `${stage.name} must attach automatically requested documents to one task so they can be consolidated.`,
+        `${base}.documentRequirements`,
+      ),
+    );
+  }
+  automatic.forEach((requirement) => {
+    const requirementIndex = stage.documentRequirements.indexOf(requirement);
+    const path = `${base}.documentRequirements.${requirementIndex}`;
+    if (requirement.uploader !== "APPLICANT") {
+      errors.push(
+        issue(
+          "AUTO_RFI_APPLICANT_OWNER_REQUIRED",
+          `${requirement.name} can be requested automatically only when the applicant is the uploader.`,
+          `${path}.uploader`,
+        ),
+      );
+    }
+    const task = stage.tasks.find(
+      (candidate) => candidate.stableKey === requirement.taskStableKey,
+    );
+    const actions = stage.actions.filter(
+      (action) =>
+        action.actionType === "REQUEST_INFORMATION" &&
+        action.enabled &&
+        task?.actionKeys.includes(action.stableKey),
+    );
+    if (actions.length !== 1) {
+      errors.push(
+        issue(
+          "AUTO_RFI_ACTION_REQUIRED",
+          `${requirement.name} must be attached to a task with exactly one enabled Request Information action.`,
+          path,
+        ),
+      );
+    }
+  });
+  return errors;
+}
+
 export function validateWorkflowStage(
   stage: WorkflowGraphInput["stages"][number],
   index: number,
@@ -199,9 +314,11 @@ export function validateWorkflowStage(
   }
   errors.push(...validateActionUniqueness(stage, base));
   errors.push(...validateTaskUniqueness(stage, base));
+  errors.push(...validateTaskTypeActions(stage, base));
   stage.tasks.forEach((task, taskIndex) => {
     errors.push(...validateTaskIdentity(task, base, taskIndex));
   });
   errors.push(...validateApplicantLabels(stage, base));
+  errors.push(...validateAutomaticDocumentRequests(stage, base));
   return errors;
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import { DraggableDialog } from "@/components/ui/draggable-dialog";
-import { FormTextarea } from "@/components/ui/form-fields";
 import {
   usePublishedFormRuntime,
   usePublishedForms,
@@ -17,17 +16,15 @@ import {
   workflowActionInputMetadata,
   workflowActionPresentation,
 } from "@/modules/workflows/domain/actions/WorkflowActionAvailability";
+import { taskDisplayMode } from "@/modules/workflows/WorkflowTaskRegistry";
 import type {
   WorkflowStageInput,
   WorkflowTaskInput,
 } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import {
-  WorkflowChecklistPreview,
-  WorkflowDocumentRequirementsPreview,
-  WorkflowScoringPreview,
-  WorkflowTaskPreviewSection,
   WorkflowTaskPreviewSummary,
 } from "./WorkflowTaskPreviewSections";
+import { WorkflowTaskWorkSections } from "@/modules/workflows/ui/WorkflowTaskWorkSections";
 
 type PublishedFormQuery = ReturnType<typeof usePublishedFormRuntime>;
 
@@ -70,15 +67,21 @@ export function WorkflowTaskPreviewDialog({
   const publishedForms = usePublishedForms();
   const actions = workflowTaskPreviewActions(stage, task);
   const hasForm = Boolean(task.formBinding);
-  const hasChecklist = stage.checklistItems.length > 0;
+  const taskChecklistItems = workflowTaskChecklistItems(stage, task);
+  const requiredChecklistCount = taskChecklistItems.filter(
+    (item) => item.mandatory,
+  ).length;
+  const hasChecklist = taskChecklistItems.length > 0;
   const taskDocuments = stage.documentRequirements.filter(
     (requirement) => requirement.taskStableKey === task.stableKey,
   );
   const hasDocuments = taskDocuments.length > 0;
-  const hasScoring = Boolean(stage.scoring?.criteria.length);
+  const hasScoring = stage.scoring?.taskStableKey === task.stableKey
+    && Boolean(stage.scoring.criteria.length);
   const commentFields = (stage.commentFields ?? [])
     .filter((field) => field.taskStableKey === task.stableKey)
     .sort((left, right) => left.displayOrder - right.displayOrder);
+  const displayMode = taskDisplayMode(task.config);
   const sectionCount = [
     hasForm,
     hasChecklist,
@@ -87,16 +90,26 @@ export function WorkflowTaskPreviewDialog({
     commentFields.length > 0,
   ]
     .filter(Boolean).length;
+  const showActionsInFinalStep = displayMode === "STEP_PROGRESS"
+    && sectionCount > 0;
   const requiredCount =
     (form.data?.fields.filter((field) => field.required).length ?? 0)
-    + stage.checklistItems.filter((item) => item.mandatory).length
+    + requiredChecklistCount
     + taskDocuments.filter((item) => item.mandatory).length
-    + (stage.scoring?.criteria.length ?? 0)
+    + (hasScoring ? stage.scoring?.criteria.length ?? 0 : 0)
     + commentFields.filter((field) => field.mandatory).length;
   const formName = workflowTaskPreviewFormName(
     publishedForms.data,
     task.formBinding?.formVersionId,
   );
+  const previewActions = (
+    <WorkflowTaskActions
+      actions={actions}
+      disabled
+      onSelect={() => undefined}
+    />
+  );
+
   return (
     <DraggableDialog
       isOpen
@@ -106,13 +119,7 @@ export function WorkflowTaskPreviewDialog({
       title={`${task.name} - Reviewer's preview`}
     >
       <WorkflowTaskReviewLayout
-        actions={
-          <WorkflowTaskActions
-            actions={actions}
-            disabled
-            onSelect={() => undefined}
-          />
-        }
+        actions={showActionsInFinalStep ? undefined : previewActions}
         description={task.description}
         sectionCount={sectionCount}
         stageName={stage.name}
@@ -123,67 +130,46 @@ export function WorkflowTaskPreviewDialog({
           />
         }
       >
-        {hasForm ? (
-          <WorkflowTaskPreviewSection
-            status={`${form.data?.fields.filter((field) => field.required).length ?? 0} required fields`}
-            title={formName}
-          >
-            <StructuredFormPreview form={form} />
-          </WorkflowTaskPreviewSection>
-        ) : null}
-        {hasChecklist ? (
-          <WorkflowTaskPreviewSection
-            status={`${stage.checklistItems.filter((item) => item.mandatory).length} required items`}
-            title="Checklist"
-          >
-            <WorkflowChecklistPreview stage={stage} />
-          </WorkflowTaskPreviewSection>
-        ) : null}
-        {hasDocuments ? (
-          <WorkflowTaskPreviewSection
-            status={`${taskDocuments.filter((item) => item.mandatory).length} required documents`}
-            title="Documents"
-          >
-            <WorkflowDocumentRequirementsPreview
-              stage={stage}
-              taskStableKey={task.stableKey}
-            />
-          </WorkflowTaskPreviewSection>
-        ) : null}
-        {hasScoring ? (
-          <WorkflowTaskPreviewSection
-            status={`${stage.scoring?.criteria.length ?? 0} criteria`}
-            title="Scoring"
-          >
-            <WorkflowScoringPreview stage={stage} />
-          </WorkflowTaskPreviewSection>
-        ) : null}
-        {commentFields.length ? (
-          <WorkflowTaskPreviewSection
-            status={`${commentFields.filter((field) => field.mandatory).length} required fields`}
-            title="Comments & Recommendations"
-          >
-            <div className="space-y-4">
-              {commentFields.map((field) => (
-                <div key={field.key}>
-                  <FormTextarea
-                    className="min-h-24"
-                    disabled
-                    label={field.label}
-                    required={field.mandatory}
-                  />
-                  {field.helpText ? (
-                    <p className="mt-1 text-xs text-brand-navy/60">
-                      {field.helpText}
-                    </p>
-                  ) : null}
-                </div>
-              ))}
-            </div>
-          </WorkflowTaskPreviewSection>
-        ) : null}
+        <WorkflowTaskWorkSections
+          checklistItems={taskChecklistItems.map((item) => ({
+            code: item.key,
+            label: item.text,
+            required: item.mandatory,
+          }))}
+          commentFields={commentFields}
+          disabled
+          displayMode={displayMode}
+          documentRequirements={taskDocuments.map((requirement) => ({
+            ...requirement,
+            requestStatus: "MISSING" as const,
+          }))}
+          finalActions={showActionsInFinalStep ? previewActions : undefined}
+          form={hasForm ? {
+            content: <StructuredFormPreview form={form} />,
+            title: formName,
+          } : undefined}
+          scoring={stage.scoring?.taskStableKey === task.stableKey
+            ? stage.scoring
+            : null}
+          status={{
+            checklist: `${requiredChecklistCount} required items`,
+            comments: `${commentFields.filter((field) => field.mandatory).length} required fields`,
+            documents: `${taskDocuments.filter((item) => item.mandatory).length} required documents`,
+            form: `${form.data?.fields.filter((field) => field.required).length ?? 0} required fields`,
+            scoring: `${hasScoring ? stage.scoring?.criteria.length ?? 0 : 0} criteria`,
+          }}
+        />
       </WorkflowTaskReviewLayout>
     </DraggableDialog>
+  );
+}
+
+export function workflowTaskChecklistItems(
+  stage: WorkflowStageInput,
+  task: WorkflowTaskInput,
+) {
+  return stage.checklistItems.filter(
+    (item) => item.taskStableKey === task.stableKey,
   );
 }
 

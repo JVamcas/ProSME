@@ -1,6 +1,5 @@
 export const workflowTaskStatuses = [
   "PENDING",
-  "CLAIMED",
   "IN_PROGRESS",
   "COMPLETED",
   "CANCELLED",

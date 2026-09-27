@@ -15,6 +15,7 @@ import {
   type StageActivationTransaction,
   withStageActivationTransaction,
 } from "../../infrastructure/StageActivationRepository";
+import { createStageActivationWorkflowRfi } from "../../infrastructure/WorkflowRfiRepository";
 
 export type ActivateStageInput = {
   actorId: string;
@@ -111,6 +112,13 @@ export async function activateStageInTransaction(
     returnContext: input.returnContext,
     target,
     tasks,
+  });
+  await createStageActivationWorkflowRfi(transaction, {
+    actorId: input.actorId,
+    correlationId: input.correlationId,
+    stageDefinitionId: input.stageDefinitionId,
+    stageInstanceId: activated.stage.id,
+    workflowInstanceId: input.workflowInstanceId,
   });
   return {
     kind: "activated",

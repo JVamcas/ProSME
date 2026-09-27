@@ -1,11 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
+vi.mock("@/modules/forms/application/ServerSystemFormService", () => ({
+  getPublishedSystemFormRuntime: vi.fn(),
+}));
 vi.mock("@/modules/workflows/infrastructure/WorkflowCoiRepository", () => ({
   changeTaskCoi: vi.fn(),
   readTaskCoiGate: vi.fn(),
   readPendingTaskCoiDisclosure: vi.fn(),
 }));
+vi.mock(
+  "@/modules/workflows/infrastructure/WorkflowCoiReviewRepository",
+  () => ({
+    readPendingWorkflowCoiReview: vi.fn(),
+  }),
+);
 vi.mock(
   "@/modules/workflows/infrastructure/WorkflowReviewerReplacementRepository",
   () => ({ replaceWorkflowReviewer: vi.fn() }),
@@ -13,6 +22,7 @@ vi.mock(
 
 import { permissionCodes } from "@/auth/authorization/permissions";
 import type { AuthenticatedUser } from "@/auth/types";
+import { getPublishedSystemFormRuntime } from "@/modules/forms/application/ServerSystemFormService";
 import {
   declareWorkflowTaskCoi,
   getWorkflowTaskCoi,
@@ -22,11 +32,9 @@ import {
 import {
   changeTaskCoi,
   readTaskCoiGate,
-  readPendingTaskCoiDisclosure,
 } from "@/modules/workflows/infrastructure/WorkflowCoiRepository";
-import {
-  replaceWorkflowReviewer,
-} from "@/modules/workflows/infrastructure/WorkflowReviewerReplacementRepository";
+import { readPendingWorkflowCoiReview } from "@/modules/workflows/infrastructure/WorkflowCoiReviewRepository";
+import { replaceWorkflowReviewer } from "@/modules/workflows/infrastructure/WorkflowReviewerReplacementRepository";
 
 const actor: AuthenticatedUser = {
   capabilities: new Set([
@@ -46,6 +54,15 @@ const actor: AuthenticatedUser = {
   userType: "staff",
 };
 const taskId = "22222222-2222-4222-8222-222222222222";
+const form = {
+  displayMode: "SINGLE_PAGE" as const,
+  fields: [],
+  instructions: "Select the statement that applies.",
+  sections: [],
+  submitLabel: "Submit declaration",
+  versionId: "88888888-8888-4888-8888-888888888888",
+  versionNumber: 1,
+};
 const review = {
   taskId,
   expectedRowVersion: 2,
@@ -58,6 +75,7 @@ const review = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(getPublishedSystemFormRuntime).mockResolvedValue(form);
 });
 
 describe("workflow COI service", () => {
@@ -68,64 +86,84 @@ describe("workflow COI service", () => {
       rowVersion: 2,
       stageInstanceId: "66666666-6666-4666-8666-666666666666",
       state: "PENDING_REVIEW",
-      status: "CLAIMED",
+      status: "PENDING",
       taskId,
       taskName: "Independent review",
     });
     await expect(getWorkflowTaskCoi(actor, taskId)).resolves.toEqual({
+      form,
       taskId,
       taskName: "Independent review",
-      taskStatus: "CLAIMED",
+      taskStatus: "PENDING",
       rowVersion: 2,
       gated: true,
       state: "PENDING_REVIEW",
       cleared: false,
     });
+    expect(getPublishedSystemFormRuntime).toHaveBeenCalledWith(
+      "COI_DECLARATION",
+    );
   });
 
   it("permits a no-conflict declaration on an assigned task", async () => {
     vi.mocked(changeTaskCoi).mockResolvedValue({
       state: "CLEARED_NO_CONFLICT",
     });
-    await expect(declareWorkflowTaskCoi(actor, {
-      taskId,
-      expectedRowVersion: 2,
-      decision: "NO_CONFLICT",
-    })).resolves.toEqual({ state: "CLEARED_NO_CONFLICT" });
-    expect(changeTaskCoi).toHaveBeenCalledWith(expect.objectContaining({
-      actorId: actor.id,
-      independentReview: false,
-    }));
+    await expect(
+      declareWorkflowTaskCoi(actor, {
+        taskId,
+        expectedRowVersion: 2,
+        decision: "NO_CONFLICT",
+      }),
+    ).resolves.toEqual({ state: "CLEARED_NO_CONFLICT" });
+    expect(changeTaskCoi).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actorId: actor.id,
+        independentReview: false,
+      }),
+    );
   });
 
   it("rejects disclosure without text", async () => {
-    await expect(declareWorkflowTaskCoi(actor, {
-      taskId,
-      expectedRowVersion: 2,
-      decision: "DISCLOSE",
-      disclosureText: " ",
-    })).rejects.toThrow("A disclosure is required.");
+    await expect(
+      declareWorkflowTaskCoi(actor, {
+        taskId,
+        expectedRowVersion: 2,
+        decision: "DISCLOSE",
+        disclosureText: " ",
+      }),
+    ).rejects.toThrow("A disclosure is required.");
     expect(changeTaskCoi).not.toHaveBeenCalled();
   });
 
   it("shows disclosure only to a permitted independent reviewer", async () => {
-    vi.mocked(readPendingTaskCoiDisclosure).mockResolvedValue({
+    vi.mocked(readPendingWorkflowCoiReview).mockResolvedValue({
+      applicantName: "Applicant",
+      applicationReference: "APP-001",
+      assignedRoleName: "Sector Specialist",
+      assignedUserName: "Assigned reviewer",
+      businessName: "Business",
+      disclosureText: "Potential relationship",
+      replacementCandidates: [],
+      rowVersion: 2,
+      stageName: "Technical assessment",
+      subjectUserId: "99999999-9999-4999-8999-999999999999",
+      submittedAt: "2026-09-27T08:00:00.000Z",
       taskId,
       taskName: "Independent review",
-      rowVersion: 2,
-      subjectUserId: "99999999-9999-4999-8999-999999999999",
+    });
+    await expect(
+      getPendingWorkflowTaskCoiDisclosure(actor, taskId),
+    ).resolves.toMatchObject({
       disclosureText: "Potential relationship",
     });
-    await expect(getPendingWorkflowTaskCoiDisclosure(actor, taskId))
-      .resolves.toMatchObject({
-        disclosureText: "Potential relationship",
-      });
     const limited = {
       ...actor,
       capabilities: new Set([permissionCodes.workflowTaskAssignedRead]),
     };
-    await expect(getPendingWorkflowTaskCoiDisclosure(limited, taskId))
-      .rejects.toThrow();
+    await expect(
+      getPendingWorkflowTaskCoiDisclosure(limited, taskId),
+    ).rejects.toThrow();
   });
 
   it("requires independent review permission", async () => {
@@ -158,10 +196,11 @@ describe("workflow COI service", () => {
 
   it("rejects a stale or self-reviewed disclosure", async () => {
     vi.mocked(changeTaskCoi).mockResolvedValue(null);
-    await expect(reviewWorkflowTaskCoi(actor, {
-      ...review,
-      decision: "CLEAR",
-    })).rejects.toThrow("COI state or task changed");
+    await expect(
+      reviewWorkflowTaskCoi(actor, {
+        ...review,
+        decision: "CLEAR",
+      }),
+    ).rejects.toThrow("COI state or task changed");
   });
 });
-

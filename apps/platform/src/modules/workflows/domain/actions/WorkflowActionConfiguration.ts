@@ -3,7 +3,6 @@ import type { WorkflowPublicStatusMapping } from "../definitions/WorkflowStageDe
 export type ApproveAdvanceConfiguration = Record<string, never>;
 
 export type RejectConfiguration = {
-  commentRequired: boolean;
   outcome:
     | {
         cancelOpenStageInstances: boolean;
@@ -12,15 +11,17 @@ export type RejectConfiguration = {
         type: "TERMINAL";
       }
     | { type: "TRANSITION" };
-  reasonCodes: string[];
   reversibleActionKey: string | null;
 };
 
 export type RequestInformationConfiguration = {
+  continuation: "RESUME_SOURCE_TASK";
   deadlineDays: number;
-  editableFieldKeys: string[];
+  editableFieldPaths: string[];
   reminderDayOffsets: number[];
   expiryAction: "CLOSE_REQUEST" | "ESCALATE" | "RETURN";
+  participantScope: "APPLICATION_OWNER_AND_REQUESTER";
+  recipientScope: "APPLICATION_OWNER";
 };
 
 export type ReturnConfiguration = {

@@ -1,8 +1,9 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { usePendingNavigationGuard } from "@/shared/ui/usePendingNavigationGuard";
 
 import {
   useCompleteTaskForm,
@@ -13,7 +14,11 @@ import type { DynamicFormValues } from "./FormRenderer";
 
 export const formDraftAutosaveDelayMs = 800;
 
-export function useDynamicFormController(taskId: string, data: TaskFormData) {
+export function useDynamicFormController(
+  taskId: string,
+  data: TaskFormData,
+  externalPending = false,
+) {
   const router = useRouter();
   const save = useSaveTaskForm(taskId);
   const complete = useCompleteTaskForm(taskId);
@@ -31,7 +36,7 @@ export function useDynamicFormController(taskId: string, data: TaskFormData) {
   }, []);
 
   const saveDraftValues = useCallback(() => {
-    if (save.isPending || complete.isPending) return;
+    if (save.isPending || complete.isPending || externalPending) return;
 
     const savingRevision = revision.current;
     save.mutate(
@@ -48,13 +53,14 @@ export function useDynamicFormController(taskId: string, data: TaskFormData) {
         },
       },
     );
-  }, [complete.isPending, data, save, values]);
+  }, [complete.isPending, data, externalPending, save, values]);
 
   useEffect(() => {
     if (
       !hasUnsavedChanges
       || save.isPending
       || complete.isPending
+      || externalPending
       || lastAutosaveRevision.current === revision.current
     ) {
       return;
@@ -67,7 +73,11 @@ export function useDynamicFormController(taskId: string, data: TaskFormData) {
     }, formDraftAutosaveDelayMs);
 
     return () => window.clearTimeout(timer);
-  }, [complete.isPending, hasUnsavedChanges, save.isPending, saveDraftValues]);
+  }, [complete.isPending, externalPending, hasUnsavedChanges, save.isPending, saveDraftValues]);
+
+  const navigation = usePendingNavigationGuard(
+    hasUnsavedChanges || save.isPending,
+  );
 
   const completeFormValues = (
     completedValues: DynamicFormValues,
@@ -96,11 +106,18 @@ export function useDynamicFormController(taskId: string, data: TaskFormData) {
   };
 
   return {
+    cancelNavigation: navigation.cancelNavigation,
     complete,
     completeFormValues,
+    confirmNavigation: navigation.confirmNavigation,
     hasUnsavedChanges,
+    pendingNavigationHref: navigation.pendingNavigationHref,
     save,
     saveDraftValues,
+    currentRevision: () => revision.current,
+    markSaved: (savedRevision: number) => {
+      if (revision.current === savedRevision) setHasUnsavedChanges(false);
+    },
     setValues: changeValues,
     values,
   };

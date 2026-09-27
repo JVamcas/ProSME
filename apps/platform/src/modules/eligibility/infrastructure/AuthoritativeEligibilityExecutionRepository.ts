@@ -1,21 +1,15 @@
 import "server-only";
 
-import { and, eq, sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
-import { taskWorkIsReady } from "@/modules/workflows/WorkflowTaskRegistry";
-import { appendTaskCompletionAudit } from "@/modules/workflows/infrastructure/RuntimeAuditWriteRepository";
-import {
-  workflowAuditEntries,
-  workflowEvents,
-  workflowTasks,
-} from "@/db/schema";
 import type { WorkflowElementPermissions } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
 import type { AuthoritativeEligibilityOutcome } from "../domain/AuthoritativeEligibilityOutcome";
 import {
   createAuthoritativeEligibilityOutcomeRecord,
   type AuthoritativeEligibilityOutcomeWrite,
 } from "./AuthoritativeEligibilityRepository";
+import { persistAuthoritativeEligibilityTaskCompletion } from "./AuthoritativeEligibilityTaskCompletionRepository";
 import { authoritativeEligibilityOutcomes } from "./eligibility-outcome.schema";
 
 export type AuthoritativeEligibilityExecutionTransaction = Parameters<
@@ -41,6 +35,7 @@ export type AuthoritativeEligibilityTaskTarget = {
     updatedAt: Date;
   };
   config: unknown;
+  formVersionId: string | null;
   fundingCall: {
     closesAt: Date;
     eligibilityRuleSetVersionId: string | null;
@@ -66,6 +61,14 @@ export type AuthoritativeEligibilityTaskTarget = {
   workflowInstanceId: string;
 };
 
+function readTimestamp(value: unknown, field: string): Date {
+  const timestamp = value instanceof Date ? value : new Date(String(value));
+  if (Number.isNaN(timestamp.getTime())) {
+    throw new Error(`Invalid ${field} timestamp in eligibility task context.`);
+  }
+  return timestamp;
+}
+
 export function withAuthoritativeEligibilityExecutionTransaction<T>(
   work: (
     transaction: AuthoritativeEligibilityExecutionTransaction,
@@ -83,6 +86,7 @@ export async function lockAuthoritativeEligibilityTask(
     SELECT task.id AS "taskId", task.status, task.row_version AS "rowVersion",
       definition.code AS "taskKey",
       definition.config, definition.permissions,
+      task.form_version_id AS "taskFormVersionId",
       stage.id AS "stageInstanceId", workflow.id AS "workflowInstanceId",
       application.id AS "applicationId",
       application.business_section AS "applicationBusinessSection",
@@ -171,11 +175,14 @@ export async function lockAuthoritativeEligibilityTask(
   const row = rows.rows[0] as Record<string, unknown> | undefined;
   if (!row) return null;
   const previousOutcome = row.previousId
-    ? {
+    ? ({
         applicationId: row.applicationId,
         contextReference: row.previousContextReference,
         eligible: row.previousEligible,
-        evaluatedAt: row.previousEvaluatedAt,
+        evaluatedAt: readTimestamp(
+          row.previousEvaluatedAt,
+          "previous evaluation",
+        ),
         evaluatedBy: row.previousEvaluatedBy,
         evaluatedValueProvenance: row.previousEvaluatedValueProvenance,
         evaluatedValues: row.previousEvaluatedValues,
@@ -190,19 +197,19 @@ export async function lockAuthoritativeEligibilityTask(
         softFailures: row.previousSoftFailures,
         warnings: row.previousWarnings,
         workflowTaskId: row.previousWorkflowTaskId,
-      } as AuthoritativeEligibilityOutcome
+      } as AuthoritativeEligibilityOutcome)
     : null;
   return {
     application: {
       businessSection: {
-        ...(row.applicationFormValues as Record<string, never> | null ?? {}),
+        ...((row.applicationFormValues as Record<string, never> | null) ?? {}),
         ...(row.applicationBusinessSection as Record<string, never>),
       },
       declarationsSection: row.applicationDeclarationsSection as {
         compliance?: boolean;
       },
-      eligibilityRuleSetVersionId:
-        row.applicationEligibilityVersionId as string | null,
+      eligibilityRuleSetVersionId: row.applicationEligibilityVersionId as
+        string | null,
       financialSection: row.applicationFinancialSection as {
         amountRequested?: number;
       },
@@ -213,25 +220,28 @@ export async function lockAuthoritativeEligibilityTask(
     },
     assignedToActor: Boolean(row.assignedToActor),
     business: {
-      employeeCount: row.businessEmployeeCount === null
-        ? null
-        : Number(row.businessEmployeeCount),
-      establishedYear: row.businessEstablishedYear === null
-        ? null
-        : Number(row.businessEstablishedYear),
+      employeeCount:
+        row.businessEmployeeCount === null
+          ? null
+          : Number(row.businessEmployeeCount),
+      establishedYear:
+        row.businessEstablishedYear === null
+          ? null
+          : Number(row.businessEstablishedYear),
       registrationNumber: String(row.businessRegistrationNumber),
-      updatedAt: row.businessUpdatedAt as Date,
+      updatedAt: readTimestamp(row.businessUpdatedAt, "business profile"),
     },
     config: row.config,
+    formVersionId: row.taskFormVersionId as string | null,
     fundingCall: {
-      closesAt: row.fundingCallClosesAt as Date,
-      eligibilityRuleSetVersionId:
-        row.fundingCallEligibilityVersionId as string | null,
+      closesAt: readTimestamp(row.fundingCallClosesAt, "funding call close"),
+      eligibilityRuleSetVersionId: row.fundingCallEligibilityVersionId as
+        string | null,
       fundingInstrument: row.fundingCallInstrument as string | null,
       id: String(row.fundingCallId),
       maximumGrantAmount: String(row.fundingCallMaximumAmount),
       minimumGrantAmount: String(row.fundingCallMinimumAmount),
-      opensAt: row.fundingCallOpensAt as Date,
+      opensAt: readTimestamp(row.fundingCallOpensAt, "funding call open"),
       slug: String(row.fundingCallSlug),
       status: String(row.fundingCallStatus),
       thematicArea: row.fundingCallThematicArea as string | null,
@@ -269,6 +279,7 @@ export async function persistAuthoritativeEligibilityExecution(
     correlationId: string;
     expectedRowVersion: number;
     outcome: AuthoritativeEligibilityOutcomeWrite;
+    evaluatedFormValues?: Record<string, unknown>;
     stageInstanceId: string;
     taskId: string;
     workflowInstanceId: string;
@@ -288,98 +299,11 @@ export async function persistAuthoritativeEligibilityExecution(
     softFailureCount: created.softFailures.length,
     warningCount: created.warnings.length,
   };
-  const workRows = await transaction.execute(sql`
-    SELECT definition.config, task.result, task.status,
-      task.form_version_id IS NOT NULL AS "formRequired",
-      EXISTS (
-        SELECT 1 FROM app_form_responses response
-        WHERE response.workflow_task_id = task.id
-          AND response.status = 'COMPLETED'
-      ) AS "formCompleted",
-      EXISTS (
-        SELECT 1 FROM app_stage_task_action_bindings binding
-        WHERE binding.task_definition_id = definition.id
-      ) AS "hasActions",
-      EXISTS (
-        SELECT 1 FROM app_workflow_stage_checklist_definitions checklist
-        WHERE checklist.task_definition_id = definition.id
-      ) AS "hasChecklist"
-    FROM app_workflow_tasks task
-    JOIN app_stage_task_definitions definition
-      ON definition.id = task.workflow_task_definition_id
-    WHERE task.id = ${input.taskId}::uuid
-  `);
-  const work = workRows.rows[0] as {
-    config: unknown;
-    formCompleted: boolean;
-    formRequired: boolean;
-    hasActions: boolean;
-    hasChecklist: boolean;
-    result: unknown;
-    status: string;
-  } | undefined;
-  if (!work) throw new Error("Authoritative eligibility task no longer exists.");
-  const priorResult = work.result && typeof work.result === "object"
-    && !Array.isArray(work.result)
-    ? work.result as Record<string, unknown>
-    : {};
-  const completesTask = !work.hasActions && taskWorkIsReady({
-    config: work.config,
-    formCompleted: work.formCompleted,
-    formRequired: work.formRequired,
-    hasChecklist: work.hasChecklist,
-    result: { ...priorResult, ...result },
-  });
-  const completedAt = completesTask ? new Date() : null;
-  const [updated] = await transaction
-    .update(workflowTasks)
-    .set({
-      completedAt,
-      result: sql`COALESCE(${workflowTasks.result}, '{}'::jsonb)
-        || ${JSON.stringify(result)}::jsonb`,
-      rowVersion: input.expectedRowVersion + 1,
-      status: completesTask ? "COMPLETED" : "IN_PROGRESS",
-    })
-    .where(and(
-      eq(workflowTasks.id, input.taskId),
-      eq(workflowTasks.rowVersion, input.expectedRowVersion),
-    ))
-    .returning({ rowVersion: workflowTasks.rowVersion });
-  if (!updated) throw new Error("Authoritative eligibility task write conflict.");
-  if (completedAt && work.status !== "COMPLETED") {
-    await appendTaskCompletionAudit(transaction, {
-      actorId: created.evaluatedBy,
-      beforeRowVersion: input.expectedRowVersion,
-      beforeStatus: work.status,
-      completedAt,
-      correlationId: input.correlationId,
-      idempotencyKey: `${input.commandKey}:task`,
-      stageInstanceId: input.stageInstanceId,
-      taskId: input.taskId,
-      workflowInstanceId: input.workflowInstanceId,
-    });
-  }
-  await Promise.all([
-    transaction.insert(workflowEvents).values({
-      actorId: created.evaluatedBy,
-      correlationId: input.correlationId,
-      eventCode: "AUTHORITATIVE_ELIGIBILITY_EVALUATED",
-      payload: result,
-      workflowInstanceId: input.workflowInstanceId,
-    }),
-    transaction.insert(workflowAuditEntries).values({
-      action: "AUTHORITATIVE_ELIGIBILITY_EVALUATED",
-      actorId: created.evaluatedBy,
-      after: result,
-      before: null,
-      correlationId: input.correlationId,
-      idempotencyKey: input.commandKey,
-      stageInstanceId: input.stageInstanceId,
-      targetId: created.id,
-      targetType: "ELIGIBILITY_EVALUATION",
-      taskId: input.taskId,
-      workflowInstanceId: input.workflowInstanceId,
-    }),
-  ]);
-  return { ...result, rowVersion: updated.rowVersion };
+  const rowVersion = await persistAuthoritativeEligibilityTaskCompletion(
+    transaction,
+    input,
+    result,
+    created.evaluatedBy,
+  );
+  return { ...result, rowVersion };
 }

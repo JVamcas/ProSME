@@ -40,7 +40,6 @@ export function reject(
   key: string,
   label: string,
   order: number,
-  reasonCodes: string[],
   outcomeType: "TERMINAL" | "TRANSITION" = "TERMINAL",
 ) {
   return action(
@@ -49,44 +48,49 @@ export function reject(
     "REJECT",
     order,
     {
-      commentRequired: true,
-      outcome: outcomeType === "TERMINAL"
-        ? {
-            cancelOpenStageInstances: true,
-            cancelOpenTasks: true,
-            publicStatusMapping: {
-              description: "A decision is available for your application.",
-              label: "Decision available",
-              status: "OUTCOME_AVAILABLE",
-            },
-            type: "TERMINAL" as const,
-          }
-        : { type: "TRANSITION" as const },
-      reasonCodes,
+      outcome:
+        outcomeType === "TERMINAL"
+          ? {
+              cancelOpenStageInstances: true,
+              cancelOpenTasks: true,
+              publicStatusMapping: {
+                description: "A decision is available for your application.",
+                label: "Decision available",
+                status: "OUTCOME_AVAILABLE",
+              },
+              type: "TERMINAL" as const,
+            }
+          : { type: "TRANSITION" as const },
       reversibleActionKey: null,
     },
-    true,
+    false,
   );
 }
 
-export function requestInformation(
-  key: string,
-  label: string,
-  order: number,
-) {
+export function requestInformation(key: string, label: string, order: number) {
   return action(key, label, "REQUEST_INFORMATION", order, {
+    continuation: "RESUME_SOURCE_TASK",
     deadlineDays: 10,
-    editableFieldKeys: ["CLARIFICATION_RESPONSE"],
+    editableFieldPaths: ["CLARIFICATION_RESPONSE"],
     expiryAction: "ESCALATE",
+    participantScope: "APPLICATION_OWNER_AND_REQUESTER",
+    recipientScope: "APPLICATION_OWNER",
     reminderDayOffsets: [3, 7],
   });
 }
 
 export function returnAction(key: string, label: string, order: number) {
-  return action(key, label, "RETURN", order, {
-    dataHandling: "RETAIN",
-    reasonRequired: true,
-  }, true);
+  return action(
+    key,
+    label,
+    "RETURN",
+    order,
+    {
+      dataHandling: "RETAIN",
+      reasonRequired: true,
+    },
+    true,
+  );
 }
 
 export function deferDate(key: string, label: string, order: number) {
@@ -102,10 +106,17 @@ export function hold(
   order: number,
   reasonCodes: string[],
 ) {
-  return action(key, label, "PUT_ON_HOLD", order, {
-    reasonCodes,
-    reviewDateRequired: true,
-  }, true);
+  return action(
+    key,
+    label,
+    "PUT_ON_HOLD",
+    order,
+    {
+      reasonCodes,
+      reviewDateRequired: true,
+    },
+    true,
+  );
 }
 
 export function refer(key: string, label: string, order: number) {
@@ -141,6 +152,7 @@ export function documentRequirement(
     mandatory,
     maximumSizeMb: 20,
     name,
+    requestOnStageActivation: false,
     taskStableKey: "",
     templateReference: "",
     uploader,
@@ -156,10 +168,9 @@ type TaskInput = {
   displayOrder: number;
   formCode?: StandardWorkflowFormCode;
   name: string;
-  quorum?: boolean;
-  quorumRule?: import("../runtime/Quorum").QuorumRule;
   requiredCompletionCount?: number;
   reviewerCount?: number;
+  taskType: "CONTRIBUTING" | "STAGE_DECISION";
   roleCode: StandardWorkflowRoleCode;
   stableKey: string;
 };
@@ -178,24 +189,23 @@ export function task(
     config: input.formCode
       ? {
           ...(input.config && typeof input.config === "object"
-            ? input.config as Record<string, unknown>
+            ? (input.config as Record<string, unknown>)
             : {}),
           formPurpose: standardFormPurpose(input.formCode),
         }
       : input.config,
     description: input.description,
     displayOrder: input.displayOrder,
-    formBinding: formVersionId
-      ? { contextFields: [], formVersionId }
-      : null,
+    formBinding: formVersionId ? { contextFields: [], formVersionId } : null,
     name: input.name,
     namedUserOverrideId: null,
     permissions: defaultWorkflowElementPermissions,
-    quorum: input.quorum ?? false,
-    quorumRule: input.quorumRule ?? null,
+    quorum: false,
+    quorumRule: null,
     required: true,
     requiredCompletionCount: input.requiredCompletionCount ?? 1,
     reviewerCount: input.reviewerCount ?? 1,
+    taskType: input.taskType,
     roleId: dependencies.roleIds[input.roleCode],
     stableKey: input.stableKey,
   };

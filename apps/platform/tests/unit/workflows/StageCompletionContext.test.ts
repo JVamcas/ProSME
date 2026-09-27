@@ -38,4 +38,27 @@ describe("stage completion context", () => {
       RISK_RATING: "LOW",
     });
   });
+
+  it("exposes persisted document and score arrays to stage conditions", () => {
+    expect(buildStageCompletionValues([{
+      responseValues: null,
+      taskResult: {
+        documents: [{
+          category: "FINANCIAL_STATEMENTS",
+          comment: "Current statements supplied.",
+          outcome: "VERIFIED",
+        }],
+        scores: [{
+          comment: "Strong forecast.",
+          criterion: "VIABILITY",
+          score: 9,
+        }],
+      },
+    }])).toEqual({
+      FINANCIAL_STATEMENTS: "VERIFIED",
+      FINANCIAL_STATEMENTS_COMMENT: "Current statements supplied.",
+      VIABILITY: 9,
+      VIABILITY_COMMENT: "Strong forecast.",
+    });
+  });
 });

@@ -99,6 +99,7 @@ function buildExecutionResult(input: {
       ? crypto.randomUUID()
       : null,
     executedAt: input.executedAt,
+    requestInformationId: null,
     resultingRuntimeVersion: input.resultingRuntimeVersion,
     sourceStageInstanceId: input.target.stage.stageInstanceId,
     taskId: input.target.task?.id ?? null,
@@ -138,6 +139,7 @@ async function persistActionAndDecision(
       terminalOutcome: input.terminalOutcome,
       targetStageInstanceId: input.result.transition.targetStageInstanceId,
       targetStageName: input.result.transition.targetStageName,
+      requestInformationId: input.result.requestInformationId,
     },
     result: input.result,
     resultingRuntimeVersion: input.result.resultingRuntimeVersion,
@@ -173,6 +175,7 @@ type OutcomeInput = {
   >[1]["conditionContext"];
   configuredTransitions: Awaited<ReturnType<typeof loadSequentialTransitions>>;
   resultingRuntimeVersion: number;
+  requestInformation?: { requestInformationId: string } | null;
   target: WorkflowActionExecutionTarget;
 };
 
@@ -237,6 +240,35 @@ export async function executeConfiguredWorkflowActionOutcome(
   const configuredTransition = input.configuredTransitions.transitions.find(
     (transition) => transition.id === input.conditions.selectedTransitionId,
   ) ?? null;
+  if (input.target.action.actionType === "REQUEST_INFORMATION") {
+    if (!input.requestInformation) {
+      fail(
+        "INVALID_RUNTIME_CONTEXT",
+        "The information request was not created for this action.",
+      );
+    }
+    const result = {
+      ...buildExecutionResult({
+        ...execution,
+        resultingRuntimeVersion: input.resultingRuntimeVersion,
+        target: input.target,
+        transition: {
+          kind: "STAGE_ACTIVE" as const,
+          targetStageInstanceId: null,
+          targetStageName: null,
+          workflowStatus: "ACTIVE" as const,
+        },
+      }),
+      requestInformationId: input.requestInformation.requestInformationId,
+    };
+    await persistActionAndDecision(transaction, {
+      ...input,
+      ...execution,
+      result,
+      terminalOutcome: null,
+    });
+    return result;
+  }
   if (input.target.action.actionType === "WITHDRAW"
     && input.command.input.actionType === "WITHDRAW") {
     const application = input.target.stage.application;
@@ -255,7 +287,7 @@ export async function executeConfiguredWorkflowActionOutcome(
           rowVersion: application.rowVersion,
         },
         correlationId: input.command.correlationId,
-        reasonCode: input.command.input.reasonCode,
+        reason: input.command.input.reasonCode,
         stageId: input.command.sourceStageInstanceId,
         workflowId: input.target.stage.workflowInstanceId,
         withdrawnAt: new Date(execution.executedAt),

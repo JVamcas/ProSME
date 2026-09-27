@@ -9,8 +9,8 @@ describe("workflow reject validation", () => {
     graph.stages[0].actions[0] = {
       ...graph.stages[0].actions[0],
       actionType: "REJECT",
+      reasonCodeRequired: false,
       configuration: {
-        commentRequired: true,
         outcome: {
           cancelOpenStageInstances: true,
           cancelOpenTasks: true,
@@ -21,7 +21,6 @@ describe("workflow reject validation", () => {
           },
           type: "TERMINAL",
         },
-        reasonCodes: ["INELIGIBLE"],
         reversibleActionKey: "UNKNOWN_REVERSAL",
       },
     };

@@ -1,6 +1,11 @@
 import "server-only";
 
-import { taskCommentFields, taskWorkIsReady } from "@/modules/workflows/WorkflowTaskRegistry";
+import { taskWorkIsReady } from "@/modules/workflows/WorkflowTaskRegistry";
+import type { WorkflowActionType } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
+import {
+  shouldCompleteWorkflowTask,
+  taskActionMatchesType,
+} from "@/modules/workflows/domain/runtime/WorkflowTaskCompletionPolicy";
 import {
   loadRequiredTaskCompletions,
   recordReviewThresholdEvaluations,
@@ -13,15 +18,22 @@ import { sql } from "drizzle-orm";
 import { getDatabase } from "@/db/client";
 import type {
   ChecklistResultItem,
+  DocumentRequirementItem,
+  DocumentResultItem,
+  ScoreResultItem,
+  ScoringConfiguration,
   TaskCompletionResult,
 } from "@/modules/work-queue/TaskTypes";
-import type {
-  SequentialTransitionResult,
-} from "@/modules/workflows/application/runtime/ServerSequentialTransitionService";
+import type { SequentialTransitionResult } from "@/modules/workflows/application/runtime/ServerSequentialTransitionService";
 import {
   appendTaskCompletionAndActionAudit,
   appendTaskCompletionAudit,
 } from "./RuntimeAuditWriteRepository";
+import { workflowTaskCompletionRequirementsProjection } from "./WorkflowTaskCompletionRequirementsProjection";
+import {
+  appendWorkflowTaskCompletionRecords,
+  WorkflowTaskCommandKeyConflict,
+} from "./WorkflowTaskCompletionRecordsRepository";
 
 type Transaction = Parameters<
   Parameters<ReturnType<typeof getDatabase>["transaction"]>[0]
@@ -38,13 +50,16 @@ type ExecuteTransition = (
 ) => Promise<SequentialTransitionResult>;
 
 type LockedTask = {
-  actionType: string | null;
+  actionType: WorkflowActionType | null;
+  taskType: "CONTRIBUTING" | "STAGE_DECISION";
   formCompleted: boolean;
   formRequired: boolean;
-  hasActions: boolean;
   hasChecklist: boolean;
+  checklistItems: { code: string; required: boolean }[];
   config: unknown;
+  documentRequirements: DocumentRequirementItem[];
   result: unknown;
+  scoring: ScoringConfiguration | null;
   stageDefinitionId: string;
   stageInstanceId: string;
   taskStatus: string;
@@ -66,10 +81,11 @@ type WriteInput = {
   idempotencyKey: string;
   items: ChecklistResultItem[];
   comments?: { key: string; value: string }[];
+  documents?: DocumentResultItem[];
+  scores?: ScoreResultItem[];
   taskId: string;
 };
 
-class CommandKeyConflict extends Error {}
 class WorkflowWriteConflict extends Error {}
 
 async function findCommand(
@@ -85,18 +101,21 @@ async function findCommand(
         actionKey: input.actionKey,
         items: input.items,
         comments: input.comments ?? [],
+        documents: input.documents ?? [],
+        scores: input.scores ?? [],
       })}::jsonb AS "sameResult"
     FROM app_task_completion_commands
     WHERE idempotency_key = ${input.idempotencyKey}
   `);
-  const row = found.rows[0] as (
-    TaskCompletionResult & { actorId: string; sameResult: boolean }
-  ) | undefined;
+  const row = found.rows[0] as
+    | (TaskCompletionResult & { actorId: string; sameResult: boolean })
+    | undefined;
   if (!row) return null;
-  const sameCommand = row.actorId === input.actorId
-    && row.taskInstanceId === input.taskId
-    && row.rowVersion === input.expectedRowVersion + 1
-    && row.sameResult;
+  const sameCommand =
+    row.actorId === input.actorId &&
+    row.taskInstanceId === input.taskId &&
+    row.rowVersion === input.expectedRowVersion + 1 &&
+    row.sameResult;
   if (!sameCommand) {
     return { kind: "idempotency_conflict" };
   }
@@ -123,6 +142,7 @@ async function lockTask(
 ): Promise<LockedTask | null> {
   const locked = await transaction.execute(sql`
     SELECT task.status AS "taskStatus", task.result,
+      definition.task_type AS "taskType",
       task.form_version_id IS NOT NULL AS "formRequired",
       (task.form_version_id IS NOT NULL AND EXISTS (
         SELECT 1 FROM app_form_responses response
@@ -130,13 +150,18 @@ async function lockTask(
           AND response.status = 'COMPLETED'
       )) AS "formCompleted",
       EXISTS (
-        SELECT 1 FROM app_stage_task_action_bindings binding
-        WHERE binding.task_definition_id = definition.id
-      ) AS "hasActions",
-      EXISTS (
         SELECT 1 FROM app_workflow_stage_checklist_definitions checklist
         WHERE checklist.task_definition_id = definition.id
       ) AS "hasChecklist",
+      COALESCE((
+        SELECT jsonb_agg(jsonb_build_object(
+          'code', checklist.key,
+          'required', checklist.mandatory
+        ))
+        FROM app_workflow_stage_checklist_definitions checklist
+        WHERE checklist.task_definition_id = definition.id
+      ), '[]'::jsonb) AS "checklistItems",
+      ${workflowTaskCompletionRequirementsProjection},
       (
         SELECT action.action_type
         FROM app_workflow_action_definitions action
@@ -154,18 +179,9 @@ async function lockTask(
     JOIN app_workflow_instances workflow ON workflow.id = stage.workflow_instance_id
     WHERE task.id = ${input.taskId}::uuid
       AND app_workflow_task_coi_cleared(task.id, ${input.actorId}::uuid)
-      AND (
-        task.assigned_user_id = ${input.actorId}::uuid
-        OR (
-          task.assigned_user_id IS NULL
-          AND task.assigned_role_id IN (
-            SELECT role_id FROM app_user_roles
-            WHERE user_id = ${input.actorId}::uuid
-          )
-        )
-      )
+      AND task.assigned_user_id = ${input.actorId}::uuid
       AND task.row_version = ${input.expectedRowVersion}
-      AND task.status IN ('CLAIMED', 'IN_PROGRESS')
+      AND task.status IN ('PENDING', 'IN_PROGRESS')
       AND stage.status = 'ACTIVE' AND workflow.status = 'ACTIVE'
       AND (
         (${input.actionKey}::text IS NULL)
@@ -198,7 +214,12 @@ async function completeTask(
     UPDATE app_workflow_tasks
     SET status = ${taskStatus},
       result = COALESCE(result, '{}'::jsonb)
-        || ${JSON.stringify({ items: input.items, comments: input.comments ?? [] })}::jsonb,
+        || ${JSON.stringify({
+          comments: input.comments ?? [],
+          documents: input.documents ?? [],
+          items: input.items,
+          scores: input.scores ?? [],
+        })}::jsonb,
       completed_at = CASE
         WHEN ${taskStatus} = 'COMPLETED' THEN ${completedAt}::timestamptz
         ELSE NULL
@@ -215,38 +236,14 @@ function transitionAdvancement(result: SequentialTransitionResult) {
   return advancement;
 }
 
-async function appendCompletionRecords(
-  transaction: Transaction,
-  input: WriteInput,
-  result: TaskCompletionResult,
-  completedAt: Date,
-) {
-  const command = await transaction.execute(sql`
-    INSERT INTO app_task_completion_commands
-      (idempotency_key, task_instance_id, actor_id, result, completed_at,
-       row_version, next_stage_name, workflow_status)
-    VALUES (${input.idempotencyKey}, ${input.taskId}::uuid, ${input.actorId}::uuid,
-      ${JSON.stringify({ actionKey: input.actionKey, items: input.items, comments: input.comments ?? [], taskStatus: result.taskStatus })}::jsonb, ${completedAt},
-      ${result.rowVersion}, ${result.nextStageName}, ${result.workflowStatus})
-    ON CONFLICT (idempotency_key) DO NOTHING RETURNING idempotency_key
-  `);
-  if (!command.rowCount) throw new CommandKeyConflict();
-  await transaction.execute(sql`
-    INSERT INTO app_transactional_outbox
-      (event_code, aggregate_id, schema_version, payload, correlation_id)
-    VALUES (${result.taskStatus === 'COMPLETED' ? 'TASK_COMPLETED' : 'CHECKLIST_COMPLETED'}, ${input.taskId}::uuid, 1,
-      ${JSON.stringify(result)}::jsonb, ${input.correlationId}::uuid)
-  `);
-}
-
 function isAuditKeyConflict(error: unknown) {
   return Boolean(
-    error
-    && typeof error === "object"
-    && "code" in error
-    && error.code === "23505"
-    && "constraint" in error
-    && error.constraint === "app_workflow_audit_idempotency_unique",
+    error &&
+    typeof error === "object" &&
+    "code" in error &&
+    error.code === "23505" &&
+    "constraint" in error &&
+    error.constraint === "app_workflow_audit_idempotency_unique",
   );
 }
 
@@ -270,12 +267,11 @@ export async function writeChecklistTaskCompletion(
       if (!task) return { kind: "not_found" } as const;
       const insideReplay = await findCommand(transaction, input);
       if (insideReplay) return insideReplay;
-      if (!task.hasChecklist && !taskCommentFields(task.config).length) {
-        return { kind: "conflict" } as const;
-      }
       const completedAt = new Date();
-      if (task.actionType === "APPROVE_ADVANCE"
-        || task.actionType === "REJECT") {
+      if (
+        task.actionType === "APPROVE_ADVANCE" ||
+        task.actionType === "REJECT"
+      ) {
         const quorumSatisfied = await evaluateStageQuorum(transaction, {
           actorId: input.actorId,
           stageDefinitionId: task.stageDefinitionId,
@@ -283,27 +279,46 @@ export async function writeChecklistTaskCompletion(
         });
         if (!quorumSatisfied) return { kind: "conflict" } as const;
       }
+      if (!input.actionKey && task.taskType === "STAGE_DECISION") {
+        return { kind: "conflict" } as const;
+      }
+      if (input.actionKey && !taskActionMatchesType(task)) {
+        return { kind: "conflict" } as const;
+      }
       if (input.actionKey && task.formRequired && !task.formCompleted) {
         return { kind: "conflict" } as const;
       }
-      const priorResult = task.result && typeof task.result === "object"
-        && !Array.isArray(task.result)
-        ? task.result as Record<string, unknown>
-        : {};
-      const taskStatus = (task.hasActions && !input.actionKey)
-        || !taskWorkIsReady({
-          config: task.config,
-          formCompleted: task.formCompleted,
-          formRequired: task.formRequired,
-          hasChecklist: task.hasChecklist,
-          result: {
-            ...priorResult,
-            items: input.items,
-            comments: input.comments ?? [],
-          },
-        })
-        ? "IN_PROGRESS" as const
-        : "COMPLETED" as const;
+      const priorResult =
+        task.result &&
+        typeof task.result === "object" &&
+        !Array.isArray(task.result)
+          ? (task.result as Record<string, unknown>)
+          : {};
+      const workReady = taskWorkIsReady({
+        config: task.config,
+        checklistItems: task.checklistItems,
+        documentRequirements: task.documentRequirements,
+        formCompleted: task.formCompleted,
+        formRequired: task.formRequired,
+        hasChecklist: task.hasChecklist,
+        result: {
+          ...priorResult,
+          items: input.items,
+          comments: input.comments ?? [],
+          documents: input.documents ?? [],
+          scores: input.scores ?? [],
+        },
+        scoring: task.scoring,
+      });
+      const completesTask = shouldCompleteWorkflowTask({
+        actionKey: input.actionKey,
+        actionType: task.actionType,
+        taskType: task.taskType,
+        workReady,
+      });
+      const taskStatus = completesTask
+        ? ("COMPLETED" as const)
+        : ("IN_PROGRESS" as const);
       await completeTask(transaction, input, completedAt, taskStatus);
       if (taskStatus === "COMPLETED") {
         const requirements = await loadRequiredTaskCompletions(
@@ -337,12 +352,14 @@ export async function writeChecklistTaskCompletion(
         await appendTaskCompletionAudit(transaction, auditInput);
       }
       const advancement = input.actionKey
-        ? transitionAdvancement(await executeTransition(transaction, {
-            actionKey: input.actionKey,
-            actorId: input.actorId,
-            correlationId: input.correlationId,
-            sourceStageInstanceId: task.stageInstanceId,
-          }))
+        ? transitionAdvancement(
+            await executeTransition(transaction, {
+              actionKey: input.actionKey,
+              actorId: input.actorId,
+              correlationId: input.correlationId,
+              sourceStageInstanceId: task.stageInstanceId,
+            }),
+          )
         : { nextStageName: null, workflowStatus: "ACTIVE" as const };
       const result: TaskCompletionResult = {
         actionKey: input.actionKey,
@@ -351,11 +368,16 @@ export async function writeChecklistTaskCompletion(
         taskInstanceId: input.taskId,
         taskStatus,
       };
-      await appendCompletionRecords(transaction, input, result, completedAt);
+      await appendWorkflowTaskCompletionRecords(
+        transaction,
+        input,
+        result,
+        completedAt,
+      );
       return { kind: "completed", result };
     });
   } catch (error) {
-    if (error instanceof CommandKeyConflict) {
+    if (error instanceof WorkflowTaskCommandKeyConflict) {
       return (await findCommand(database, input)) ?? { kind: "conflict" };
     }
     if (error instanceof WorkflowWriteConflict) return { kind: "conflict" };

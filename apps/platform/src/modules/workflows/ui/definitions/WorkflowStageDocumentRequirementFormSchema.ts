@@ -17,6 +17,10 @@ export const documentActorItems = [
   { label: "Staff", value: "STAFF" },
 ] as const;
 
+export function parseOptionalExpiryDays(value: string | number | null | undefined) {
+  return value == null || value === "" ? null : Number(value);
+}
+
 export const workflowStageDocumentRequirementFormSchema = z.object({
   name: z.string().trim().min(2).max(160),
   taskStableKey: z.string().min(1, "Select a workflow task."),
@@ -25,6 +29,7 @@ export const workflowStageDocumentRequirementFormSchema = z.object({
     .min(1, "Select at least one accepted file type."),
   maximumSizeMb: z.number().int().min(1).max(100),
   expiryDays: z.number().int().min(1).max(3650).nullable(),
+  requestOnStageActivation: z.boolean(),
   templateReference: z.string().trim().max(500),
 });
 

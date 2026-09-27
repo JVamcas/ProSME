@@ -23,7 +23,6 @@ describe("workflow stage requirement projection", () => {
         label: "Recommendation",
         helpText: "Explain your recommendation.",
         mandatory: true,
-        visibility: "INTERNAL_ONLY",
         displayOrder: 1,
       }],
       documents: [],
@@ -37,7 +36,6 @@ describe("workflow stage requirement projection", () => {
       label: "Recommendation",
       helpText: "Explain your recommendation.",
       mandatory: true,
-      visibility: "INTERNAL_ONLY",
       displayOrder: 1,
     }]);
   });

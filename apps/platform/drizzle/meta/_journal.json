@@ -722,6 +722,104 @@
       "when": 1796601600000,
       "tag": "0102_form_purpose",
       "breakpoints": true
+    },
+    {
+      "idx": 103,
+      "version": "7",
+      "when": 1796688000000,
+      "tag": "0103_eligibility_verification_form_purpose",
+      "breakpoints": true
+    },
+    {
+      "idx": 104,
+      "version": "7",
+      "when": 1796774400000,
+      "tag": "0104_correct_generated_eligibility_form_purpose",
+      "breakpoints": true
+    },
+    {
+      "idx": 105,
+      "version": "7",
+      "when": 1796860800000,
+      "tag": "0105_repair_standard_review_form_bindings",
+      "breakpoints": true
+    },
+    {
+      "idx": 106,
+      "version": "7",
+      "when": 1796947200000,
+      "tag": "0106_allow_withdrawn_workflow_outcome",
+      "breakpoints": true
+    },
+    {
+      "idx": 107,
+      "version": "7",
+      "when": 1797033600000,
+      "tag": "0107_merge_claimed_task_status",
+      "breakpoints": true
+    },
+    {
+      "idx": 108,
+      "version": "7",
+      "when": 1797120000000,
+      "tag": "0108_remove_legacy_reject_action_fields",
+      "breakpoints": true
+    },
+    {
+      "idx": 109,
+      "version": "7",
+      "when": 1797206400000,
+      "tag": "0109_normalize_reject_reason_requirement",
+      "breakpoints": true
+    },
+    {
+      "idx": 110,
+      "version": "7",
+      "when": 1797292800000,
+      "tag": "0110_remove_legacy_task_quorum",
+      "breakpoints": true
+    },
+    {
+      "idx": 111,
+      "version": "7",
+      "when": 1797379200000,
+      "tag": "0111_application_reviewer_coi",
+      "breakpoints": true
+    },
+    {
+      "idx": 112,
+      "version": "7",
+      "when": 1797465600000,
+      "tag": "0112_rfi_domain_lifecycle",
+      "breakpoints": true
+    },
+    {
+      "idx": 113,
+      "version": "7",
+      "when": 1797552000000,
+      "tag": "0113_rfi_experience",
+      "breakpoints": true
+    },
+    {
+      "idx": 114,
+      "version": "7",
+      "when": 1797638400000,
+      "tag": "0114_rfi_permission_grants",
+      "breakpoints": true
+    },
+    {
+      "idx": 115,
+      "version": "7",
+      "when": 1797724800000,
+      "tag": "0115_rfi_correspondence_events_audit",
+      "breakpoints": true
+    },
+    {
+      "idx": 116,
+      "version": "7",
+      "when": 1797811200000,
+      "tag": "0116_workflow_task_types",
+      "breakpoints": true
     }
   ]
 }

@@ -16,14 +16,29 @@ const option = (code: string, label: string) => ({ code, label });
 
 function contracting(dependencies: StandardWorkflowDependencies) {
   const checklistItems = [
-    checklist("AGREEMENT_FINALIZED", "Funding agreement and annexures are finalized", 1, "REQUIRED"),
-    checklist("CONDITIONS_PRECEDENT", "Conditions precedent are verified", 2, "REQUIRED"),
-    checklist("SIGNATURES_COMPLETE", "Required signatures are complete", 3, "REQUIRED"),
+    checklist(
+      "AGREEMENT_FINALIZED",
+      "Funding agreement and annexures are finalized",
+      1,
+      "REQUIRED",
+    ),
+    checklist(
+      "CONDITIONS_PRECEDENT",
+      "Conditions precedent are verified",
+      2,
+      "REQUIRED",
+    ),
+    checklist(
+      "SIGNATURES_COMPLETE",
+      "Required signatures are complete",
+      3,
+      "REQUIRED",
+    ),
   ];
   const actions = [
     approve("EXECUTE_AGREEMENT", "Execute", 1),
     returnAction("RETURN_NEGOTIATION", "Return for negotiation", 2),
-    reject("LAPSE_AWARD", "Lapse award on non-acceptance", 3, ["NON_ACCEPTANCE", "CONDITIONS_NOT_MET"]),
+    reject("LAPSE_AWARD", "Lapse award on non-acceptance", 3),
     refer("REALLOCATE_RESERVE", "Reallocate to reserve list", 4),
   ];
   return stage({
@@ -33,7 +48,10 @@ function contracting(dependencies: StandardWorkflowDependencies) {
     description: "Finalize the agreement and verify conditions precedent.",
     displayOrder: 9,
     documentRequirements: [
-      documentRequirement("Signed funding agreement and annexures", "APPLICANT"),
+      documentRequirement(
+        "Signed funding agreement and annexures",
+        "APPLICANT",
+      ),
       documentRequirement("Banking verification", "APPLICANT"),
       documentRequirement("Insurance evidence", "APPLICANT", false),
       documentRequirement("Ethics or regulatory approvals", "APPLICANT", false),
@@ -51,15 +69,19 @@ function contracting(dependencies: StandardWorkflowDependencies) {
     scoring: null,
     slaHours: 240,
     stableKey: "CONTRACTING",
-    tasks: [task(dependencies, {
-      actionKeys: actions.map((item) => item.stableKey),
-      config: {},
-      description: "Finalize the agreement and verify every condition precedent.",
-      displayOrder: 1,
-      name: "Contract and conditions verification",
-      roleCode: "contracts_officer",
-      stableKey: "CONTRACTING_CHECKLIST",
-    })],
+    tasks: [
+      task(dependencies, {
+        actionKeys: actions.map((item) => item.stableKey),
+        taskType: "STAGE_DECISION",
+        config: {},
+        description:
+          "Finalize the agreement and verify every condition precedent.",
+        displayOrder: 1,
+        name: "Contract and conditions verification",
+        roleCode: "contracts_officer",
+        stableKey: "CONTRACTING_CHECKLIST",
+      }),
+    ],
   });
 }
 
@@ -67,16 +89,33 @@ function disbursement(dependencies: StandardWorkflowDependencies) {
   const actions = [
     approve("APPROVE_PAYMENT", "Approve payment", 1),
     approve("PART_PAY", "Part-pay", 2),
-    hold("WITHHOLD_REPORTS", "Withhold pending outstanding reports", 3, ["OUTSTANDING_REPORTS"]),
+    hold("WITHHOLD_REPORTS", "Withhold pending outstanding reports", 3, [
+      "OUTSTANDING_REPORTS",
+    ]),
     refer("RECOVER_FUNDS", "Recover funds", 4),
     approve("NEXT_TRANCHE", "Create next tranche", 5),
   ];
   return stage({
     actions,
     checklistItems: [
-      checklist("MILESTONE_VALIDATED", "Claim milestone is validated", 1, "REQUIRED"),
-      checklist("PRIOR_REPORTS_ACQUITTED", "Prior reports are acquitted", 2, "REQUIRED"),
-      checklist("PAYMENT_CONDITIONS_MET", "Payment conditions are met", 3, "REQUIRED"),
+      checklist(
+        "MILESTONE_VALIDATED",
+        "Claim milestone is validated",
+        1,
+        "REQUIRED",
+      ),
+      checklist(
+        "PRIOR_REPORTS_ACQUITTED",
+        "Prior reports are acquitted",
+        2,
+        "REQUIRED",
+      ),
+      checklist(
+        "PAYMENT_CONDITIONS_MET",
+        "Payment conditions are met",
+        3,
+        "REQUIRED",
+      ),
       checklist("TAX_STATUS_VALID", "Tax status is valid", 4, "REQUIRED"),
     ],
     coiGated: false,
@@ -101,22 +140,38 @@ function disbursement(dependencies: StandardWorkflowDependencies) {
     scoring: null,
     slaHours: 120,
     stableKey: "DISBURSEMENT",
-    tasks: [task(dependencies, {
-      actionKeys: actions.map((item) => item.stableKey),
-      config: {
-        fields: [
-          { code: "CLAIM_AMOUNT", label: "Claim amount", required: true, type: "currency" },
-          { code: "PAYMENT_RECOMMENDATION", label: "Payment recommendation", required: true, type: "textarea" },
-        ],
-        recommendations: actions.slice(0, 4).map((item) => option(item.stableKey, item.label)),
-      },
-      description: "Verify the tranche claim and record the payment recommendation.",
-      displayOrder: 1,
-      formCode: "DISBURSEMENT_REVIEW",
-      name: "Disbursement review",
-      roleCode: "financial_reviewer",
-      stableKey: "DISBURSEMENT_REVIEW",
-    })],
+    tasks: [
+      task(dependencies, {
+        actionKeys: actions.map((item) => item.stableKey),
+        taskType: "STAGE_DECISION",
+        config: {
+          fields: [
+            {
+              code: "CLAIM_AMOUNT",
+              label: "Claim amount",
+              required: true,
+              type: "currency",
+            },
+            {
+              code: "PAYMENT_RECOMMENDATION",
+              label: "Payment recommendation",
+              required: true,
+              type: "textarea",
+            },
+          ],
+          recommendations: actions
+            .slice(0, 4)
+            .map((item) => option(item.stableKey, item.label)),
+        },
+        description:
+          "Verify the tranche claim and record the payment recommendation.",
+        displayOrder: 1,
+        formCode: "DISBURSEMENT_REVIEW",
+        name: "Disbursement review",
+        roleCode: "financial_reviewer",
+        stableKey: "DISBURSEMENT_REVIEW",
+      }),
+    ],
   });
 }
 
@@ -127,16 +182,35 @@ function monitoring(dependencies: StandardWorkflowDependencies) {
     approve("APPROVE_VARIATION", "Approve variation", 3),
     approve("APPROVE_EXTENSION", "Approve no-cost extension", 4),
     hold("SUSPEND", "Suspend", 5, ["PERFORMANCE_CONCERN", "COMPLIANCE_BREACH"]),
-    reject("TERMINATE_RECOVER", "Terminate and recover", 6, ["MATERIAL_BREACH", "FAILED_REMEDIATION"]),
+    reject("TERMINATE_RECOVER", "Terminate and recover", 6),
     approve("NEXT_REPORTING_PERIOD", "Create next reporting period", 7),
   ];
   return stage({
     actions,
     checklistItems: [
-      checklist("REPORT_COMPLETE", "Narrative and financial report is complete", 1, "REQUIRED"),
-      checklist("INDICATORS_VERIFIED", "Indicator results are verified", 2, "REQUIRED"),
-      checklist("EVIDENCE_VERIFIED", "Portfolio of evidence is verified", 3, "REQUIRED"),
-      checklist("CORRECTIVE_ACTIONS_RECORDED", "Required corrective actions are recorded", 4),
+      checklist(
+        "REPORT_COMPLETE",
+        "Narrative and financial report is complete",
+        1,
+        "REQUIRED",
+      ),
+      checklist(
+        "INDICATORS_VERIFIED",
+        "Indicator results are verified",
+        2,
+        "REQUIRED",
+      ),
+      checklist(
+        "EVIDENCE_VERIFIED",
+        "Portfolio of evidence is verified",
+        3,
+        "REQUIRED",
+      ),
+      checklist(
+        "CORRECTIVE_ACTIONS_RECORDED",
+        "Required corrective actions are recorded",
+        4,
+      ),
     ],
     coiGated: false,
     description: "Review implementation performance for one reporting period.",
@@ -161,27 +235,30 @@ function monitoring(dependencies: StandardWorkflowDependencies) {
     scoring: null,
     slaHours: 240,
     stableKey: "IMPLEMENTATION_MONITORING",
-    tasks: [task(dependencies, {
-      actionKeys: actions.map((item) => item.stableKey),
-      config: {
-        categories: [
-          option("PERFORMANCE", "Performance"),
-          option("DATA_QUALITY", "Data quality"),
-          option("COMPLIANCE", "Compliance"),
-        ],
-        outcomes: [
-          option("ON_TRACK", "On track"),
-          option("AT_RISK", "At risk"),
-          option("OFF_TRACK", "Off track"),
-        ],
-      },
-      description: "Assess performance, data quality and compliance.",
-      displayOrder: 1,
-      formCode: "MONITORING_REVIEW",
-      name: "Monitoring review",
-      roleCode: "grant_me_officer",
-      stableKey: "MONITORING_REVIEW",
-    })],
+    tasks: [
+      task(dependencies, {
+        actionKeys: actions.map((item) => item.stableKey),
+        taskType: "STAGE_DECISION",
+        config: {
+          categories: [
+            option("PERFORMANCE", "Performance"),
+            option("DATA_QUALITY", "Data quality"),
+            option("COMPLIANCE", "Compliance"),
+          ],
+          outcomes: [
+            option("ON_TRACK", "On track"),
+            option("AT_RISK", "At risk"),
+            option("OFF_TRACK", "Off track"),
+          ],
+        },
+        description: "Assess performance, data quality and compliance.",
+        displayOrder: 1,
+        formCode: "MONITORING_REVIEW",
+        name: "Monitoring review",
+        roleCode: "grant_me_officer",
+        stableKey: "MONITORING_REVIEW",
+      }),
+    ],
   });
 }
 
@@ -189,11 +266,12 @@ function closeOut(dependencies: StandardWorkflowDependencies) {
   const actions = [
     approve("CLOSE", "Close", 1),
     approve("CLOSE_QUALIFIED", "Close with qualification", 2),
-    refer("REFER_RECOVERY_INVESTIGATION", "Refer for recovery or investigation", 3),
-    reject("RESTRICT_FUTURE_FUNDING", "Restrict future funding", 4, [
-      "MATERIAL_NON_PERFORMANCE",
-      "UNRESOLVED_RECOVERY",
-    ]),
+    refer(
+      "REFER_RECOVERY_INVESTIGATION",
+      "Refer for recovery or investigation",
+      3,
+    ),
+    reject("RESTRICT_FUTURE_FUNDING", "Restrict future funding", 4),
   ];
   const criteria = [
     "Relevance",
@@ -211,10 +289,28 @@ function closeOut(dependencies: StandardWorkflowDependencies) {
   return stage({
     actions,
     checklistItems: [
-      checklist("FINAL_REPORTS_COMPLETE", "Final technical and financial reports are complete", 1, "REQUIRED"),
-      checklist("ACQUITTAL_COMPLETE", "Final acquittal and audit are complete", 2, "REQUIRED"),
-      checklist("ASSET_IP_RESOLVED", "Asset and intellectual-property disposition is resolved", 3),
-      checklist("UNSPENT_FUNDS_RESOLVED", "Unspent funds are recovered or resolved", 4),
+      checklist(
+        "FINAL_REPORTS_COMPLETE",
+        "Final technical and financial reports are complete",
+        1,
+        "REQUIRED",
+      ),
+      checklist(
+        "ACQUITTAL_COMPLETE",
+        "Final acquittal and audit are complete",
+        2,
+        "REQUIRED",
+      ),
+      checklist(
+        "ASSET_IP_RESOLVED",
+        "Asset and intellectual-property disposition is resolved",
+        3,
+      ),
+      checklist(
+        "UNSPENT_FUNDS_RESOLVED",
+        "Unspent funds are recovered or resolved",
+        4,
+      ),
     ],
     coiGated: false,
     description: "Evaluate results, complete acquittal and close the award.",
@@ -250,16 +346,19 @@ function closeOut(dependencies: StandardWorkflowDependencies) {
     },
     slaHours: 240,
     stableKey: "EVALUATION_CLOSE_OUT",
-    tasks: [task(dependencies, {
-      actionKeys: actions.map((item) => item.stableKey),
-      config: { criteria },
-      description: "Assess results and record the close-out recommendation.",
-      displayOrder: 1,
-      formCode: "EVALUATION_CLOSE_OUT_REVIEW",
-      name: "Evaluation and close-out review",
-      roleCode: "grant_me_officer",
-      stableKey: "EVALUATION_CLOSE_OUT_REVIEW",
-    })],
+    tasks: [
+      task(dependencies, {
+        actionKeys: actions.map((item) => item.stableKey),
+        taskType: "STAGE_DECISION",
+        config: { criteria },
+        description: "Assess results and record the close-out recommendation.",
+        displayOrder: 1,
+        formCode: "EVALUATION_CLOSE_OUT_REVIEW",
+        name: "Evaluation and close-out review",
+        roleCode: "grant_me_officer",
+        stableKey: "EVALUATION_CLOSE_OUT_REVIEW",
+      }),
+    ],
   });
 }
 

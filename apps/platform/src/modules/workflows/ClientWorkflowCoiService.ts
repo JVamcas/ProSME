@@ -1,8 +1,10 @@
 "use client";
 
 import { requestData } from "@/lib/client-http";
+import type { FormRuntimeSchema } from "@/modules/forms/FormTypes";
 
 export type WorkflowTaskCoiGate = {
+  form: FormRuntimeSchema;
   taskId: string;
   taskName: string;
   taskStatus: string;
@@ -37,4 +39,3 @@ export const clientWorkflowCoiService = {
     );
   },
 };
-

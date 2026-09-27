@@ -12,15 +12,13 @@ function action(
   return {
     actionType: "REJECT",
     configuration: {
-      commentRequired: true,
       outcome: { type: "TRANSITION" },
-      reasonCodes: ["INELIGIBLE"],
       reversibleActionKey: null,
     },
     displayOrder: 1,
     enabled: true,
     label: "Reject",
-    reasonCodeRequired: true,
+    reasonCodeRequired: false,
     stableKey: "REJECT",
     ...value,
   } as WorkflowActionDefinition;
@@ -28,64 +26,95 @@ function action(
 
 describe("workflow action execution contract", () => {
   it("requires a discriminated action payload and strict transport fields", () => {
-    expect(workflowActionExecutionRequestSchema.safeParse({
-      expectedRuntimeVersion: 3,
-      input: {
-        actionType: "WITHDRAW",
-        confirmed: true,
-      },
-      sourceStageInstanceId: "10000000-0000-4000-8000-000000000001",
-    }).success).toBe(true);
+    expect(
+      workflowActionExecutionRequestSchema.safeParse({
+        expectedRuntimeVersion: 3,
+        input: {
+          actionType: "WITHDRAW",
+          confirmed: true,
+        },
+        sourceStageInstanceId: "10000000-0000-4000-8000-000000000001",
+      }).success,
+    ).toBe(true);
 
-    expect(workflowActionExecutionRequestSchema.safeParse({
-      expectedRuntimeVersion: 3,
-      input: {
-        actionType: "WITHDRAW",
-        confirmed: false,
-      },
-      sourceStageInstanceId: "10000000-0000-4000-8000-000000000001",
-    }).success).toBe(false);
+    expect(
+      workflowActionExecutionRequestSchema.safeParse({
+        expectedRuntimeVersion: 3,
+        input: {
+          actionType: "WITHDRAW",
+          confirmed: false,
+        },
+        sourceStageInstanceId: "10000000-0000-4000-8000-000000000001",
+      }).success,
+    ).toBe(false);
   });
 
-  it("rejects payload types and reason codes outside published configuration", () => {
+  it("rejects mismatched payload types and requires a free-text rejection reason", () => {
     const configured = action({});
-    expect(validateActionInputAgainstConfiguration(
-      configured,
-      { actionType: "APPROVE_ADVANCE" },
-      "SCREENING",
-    )).toContain("does not match");
-    expect(validateActionInputAgainstConfiguration(
-      configured,
-      { actionType: "REJECT", reasonCode: "OTHER" },
-      "SCREENING",
-    )).toContain("not configured");
-    expect(validateActionInputAgainstConfiguration(
-      configured,
-      { actionType: "REJECT", reasonCode: "INELIGIBLE" },
-      "SCREENING",
-    )).toContain("comment is required");
+    expect(
+      validateActionInputAgainstConfiguration(
+        configured,
+        { actionType: "APPROVE_ADVANCE" },
+        "SCREENING",
+      ),
+    ).toContain("does not match");
+    expect(
+      workflowActionExecutionRequestSchema.safeParse({
+        expectedRuntimeVersion: 3,
+        input: { actionType: "REJECT" },
+        sourceStageInstanceId: "10000000-0000-4000-8000-000000000001",
+      }).success,
+    ).toBe(false);
+    expect(
+      validateActionInputAgainstConfiguration(
+        configured,
+        { actionType: "REJECT", comment: "The application is ineligible." },
+        "SCREENING",
+      ),
+    ).toBeNull();
   });
 
   it("prevents information requests from broadening editable fields", () => {
     const configured = action({
       actionType: "REQUEST_INFORMATION",
       configuration: {
+        continuation: "RESUME_SOURCE_TASK",
         deadlineDays: 10,
-        editableFieldKeys: ["application.turnover"],
+        editableFieldPaths: ["application.turnover"],
         expiryAction: "RETURN",
+        participantScope: "APPLICATION_OWNER_AND_REQUESTER",
+        recipientScope: "APPLICATION_OWNER",
         reminderDayOffsets: [3],
       },
       reasonCodeRequired: false,
     });
-    expect(validateActionInputAgainstConfiguration(
-      configured,
-      {
-        actionType: "REQUEST_INFORMATION",
-        editableFieldKeys: ["application.bank_account"],
-        instructions: "Clarify this value.",
-        requestedDocumentCategories: [],
-      },
-      "SCREENING",
-    )).toContain("not configured");
+    expect(
+      validateActionInputAgainstConfiguration(
+        configured,
+        {
+          actionType: "REQUEST_INFORMATION",
+          editableFieldPaths: ["application.bank_account"],
+          instructions: "Clarify this value.",
+          question: "What is the correct bank account?",
+          requestedDocumentRequirementIds: [],
+        },
+        "SCREENING",
+      ),
+    ).toContain("not configured");
+    expect(
+      validateActionInputAgainstConfiguration(
+        configured,
+        {
+          actionType: "REQUEST_INFORMATION",
+          editableFieldPaths: ["application.turnover"],
+          instructions: "Provide supporting evidence.",
+          question: "Can you support the turnover amount?",
+          requestedDocumentRequirementIds: [
+            "10000000-0000-4000-8000-000000000001",
+          ],
+        },
+        "SCREENING",
+      ),
+    ).toBeNull();
   });
 });

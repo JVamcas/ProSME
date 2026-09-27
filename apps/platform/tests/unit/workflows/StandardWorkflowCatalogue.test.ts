@@ -65,7 +65,7 @@ describe("standard workflow catalogue", () => {
     ))).toEqual(["DISBURSEMENT", "IMPLEMENTATION_MONITORING"]);
   });
 
-  it("gates Screening actions with authoritative eligibility outcomes", () => {
+  it("keeps screening decisions independent of the evaluation result", () => {
     const graph = createStandardWorkflowDraft(dependencies()).graph;
     const screening = graph.stages.find(
       (stage) => stage.stableKey === "ADMIN_ELIGIBILITY_SCREENING",
@@ -73,43 +73,21 @@ describe("standard workflow catalogue", () => {
     const task = screening.tasks.find(
       (item) => item.stableKey === "AUTHORITATIVE_ELIGIBILITY",
     )!;
-    const prerequisiteTask = screening.tasks.find(
-      (item) => item.stableKey === "COMPLETENESS_SCREENING",
-    )!;
-    const verificationTask = screening.tasks.find(
-      (item) => item.stableKey === "ELIGIBILITY_VERIFICATION",
-    )!;
 
-    expect(prerequisiteTask.actionKeys).toEqual([]);
-    expect(verificationTask).toMatchObject({
+    expect(screening.tasks).toHaveLength(2);
+    expect(task).toMatchObject({
+      actionKeys: ["ELIGIBLE_ADVANCE", "INELIGIBLE_REJECT"],
+      config: {
+        command: "AUTHORITATIVE_ELIGIBILITY",
+        formPurpose: "ELIGIBILITY_VERIFICATION",
+        reevaluationPolicy: "WHEN_EVIDENCE_CHANGED",
+      },
       displayOrder: 2,
       formBinding: {
         formVersionId: "00000000-0000-4000-9000-000000000001",
       },
     });
-    expect(task.displayOrder).toBe(3);
-    expect(task.config).toEqual({
-      command: "AUTHORITATIVE_ELIGIBILITY",
-      reevaluationPolicy: "WHEN_EVIDENCE_CHANGED",
-    });
-    expect(screening.actions.find(
-      (action) => action.stableKey === "ELIGIBLE_ADVANCE",
-    )?.condition).toMatchObject({
-      children: [expect.objectContaining({
-        leftOperand: { key: "eligibility.outcome", kind: "FIELD" },
-        rightOperand: { kind: "CONSTANT", value: "ELIGIBLE" },
-      })],
-    });
-    expect(screening.actions.find(
-      (action) => action.stableKey === "INELIGIBLE_REJECT",
-    )?.condition).toMatchObject({
-      children: [expect.objectContaining({
-        rightOperand: { kind: "CONSTANT", value: "INELIGIBLE" },
-      })],
-    });
-    expect(screening.actions.find(
-      (action) => action.stableKey === "MANUAL_ELIGIBILITY_ADVANCE",
-    )).toMatchObject({ reasonCodeRequired: true });
+    expect(screening.actions.every((action) => !action.condition)).toBe(true);
   });
 
   it("validates eligibility conditions without requiring a task form", () => {

@@ -5,6 +5,7 @@ import {
   requirePermission,
 } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import {
   IdempotencyConflictError,
 } from "@/lib/resource-errors";
@@ -13,10 +14,12 @@ import {
   completeActionTask,
   findWorkflowActionExecution,
   lockWorkflowActionExecutionTarget,
-  withWorkflowActionExecutionTransaction,
-  workflowActionExecutionDatabase,
   type WorkflowActionExecutionTarget,
 } from "../../infrastructure/WorkflowActionExecutionRepository";
+import {
+  withWorkflowActionExecutionTransaction,
+  workflowActionExecutionDatabase,
+} from "../../infrastructure/WorkflowActionExecutionConnection";
 import {
   loadRequiredTaskCompletions,
   recordReviewThresholdEvaluations,
@@ -41,6 +44,10 @@ import {
   requiredWorkflowActionPermission,
   type WorkflowActionPolicyResult,
 } from "./WorkflowActionPolicy";
+import {
+  buildRequestInformationCreationRequest,
+  createRequestInformation,
+} from "./WorkflowRequestInformationHook";
 
 function fail(
   code: ConstructorParameters<typeof WorkflowActionExecutionError>[0],
@@ -156,6 +163,12 @@ export async function executeWorkflowAction(
           "The action is not configured for this workflow stage and task.",
         );
       }
+      if (target.action.actionType === "REQUEST_INFORMATION") {
+        requirePermission(
+          actor,
+          permissionCodes.fundingApplicationInformationRequestCreate,
+        );
+      }
       assertRuntimeIdentityAndVersion(target, input);
       const parsedAction = workflowActionDefinitionSchema.safeParse(target.action);
       if (parsedAction.success) {
@@ -218,6 +231,18 @@ export async function executeWorkflowAction(
           fail("ACTION_UNAVAILABLE", "The required participation quorum is absent.");
         }
       }
+      const requestInformation =
+        target.action.actionType === "REQUEST_INFORMATION" &&
+        input.input.actionType === "REQUEST_INFORMATION"
+          ? await createRequestInformation(
+              transaction,
+              buildRequestInformationCreationRequest({
+                actorId: actor.id,
+                command: { ...input, input: input.input },
+                target: { ...target, action: target.action },
+              }),
+            )
+          : null;
       const resultingRuntimeVersion = await claimWorkflowActionRuntimeVersion(
         transaction,
         target.stage.stageInstanceId,
@@ -226,7 +251,7 @@ export async function executeWorkflowAction(
       if (!resultingRuntimeVersion) {
         fail("STALE_RUNTIME_VERSION", "The workflow changed. Refresh and try again.");
       }
-      if (target.task) {
+      if (target.task && !requestInformation) {
         const completed = await completeActionTask(transaction, {
           normalizedInput: input.input,
           task: target.task,
@@ -252,6 +277,7 @@ export async function executeWorkflowAction(
         conditionContext,
         configuredTransitions,
         resultingRuntimeVersion,
+        requestInformation,
         target,
       });
     });

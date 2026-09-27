@@ -8,6 +8,7 @@ import type {
   RoleAccessRow,
   UserAccessRow,
 } from "@/modules/users/UserAccessTypes";
+import { toast } from "@/shared/ui/Toast";
 
 export function UserRoleAssignmentPanel({
   onClose,
@@ -32,7 +33,10 @@ export function UserRoleAssignmentPanel({
   function saveRoles() {
     update.mutate(
       { input: { roleCodes: selectedRoles }, userId: user.id },
-      { onSuccess: onClose },
+      {
+        onError: (error) => toast.error(error.message),
+        onSuccess: onClose,
+      },
     );
   }
 
@@ -61,18 +65,13 @@ export function UserRoleAssignmentPanel({
         ))}
       </div>
       <GeneralButton
-        className="mt-5 w-full rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+        variant="primary"
         disabled={update.isPending}
         onClick={saveRoles}
         type="button"
       >
         {update.isPending ? "Saving…" : "Save user roles"}
       </GeneralButton>
-      {update.error ? (
-        <p className="mt-3 text-sm text-red-700" role="alert">
-          {update.error.message}
-        </p>
-      ) : null}
     </div>
   );
 }

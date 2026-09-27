@@ -14,10 +14,9 @@ import { applyApplicationWithdrawalInTransaction } from "./ApplicationWithdrawal
 type WithdrawalInput = {
   actorId: string;
   applicationId: string;
-  comment?: string;
   correlationId: string;
   idempotencyKey: string;
-  reasonCode?: string;
+  reason: string;
 };
 
 type WithdrawalResult = {
@@ -38,8 +37,7 @@ function isSameCommand(
   input: WithdrawalInput,
 ) {
   return row.actorId === input.actorId
-    && row.normalizedInput.comment === (input.comment ?? null)
-    && row.normalizedInput.reasonCode === (input.reasonCode ?? null);
+    && row.normalizedInput.reason === input.reason;
 }
 
 async function findWithdrawalReplay(
@@ -150,7 +148,7 @@ export async function withdrawOwnedApplication(
           rowVersion: lockedApplication.rowVersion,
         },
         correlationId: input.correlationId,
-        reasonCode: input.reasonCode,
+        reason: input.reason,
         stageId: activeStage?.id,
         workflowId: workflow.id,
         withdrawnAt: new Date(),
@@ -164,7 +162,7 @@ export async function withdrawOwnedApplication(
       actorId: input.actorId,
       actorIdentifier: input.actorId,
       actorType: "USER",
-      comment: input.comment ?? null,
+      comment: input.reason,
       conditionEvaluation: {},
       correlationId: input.correlationId,
       executedAt: withdrawnAt,
@@ -172,11 +170,10 @@ export async function withdrawOwnedApplication(
       id: crypto.randomUUID(),
       idempotencyKey: input.idempotencyKey,
       normalizedInput: {
-        comment: input.comment ?? null,
         confirmed: true,
-        reasonCode: input.reasonCode ?? null,
+        reason: input.reason,
       },
-      reasonCode: input.reasonCode ?? null,
+      reasonCode: null,
       resolvedTarget: { status: "WITHDRAWN" },
       result,
       resultingRuntimeVersion: activeStage?.rowVersion != null
