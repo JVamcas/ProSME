@@ -3,23 +3,27 @@ import "server-only";
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { requirePermission } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
-import { ResourceConflictError, ResourceNotFoundError } from "@/lib/resource-errors";
+import {
+  ResourceConflictError,
+  ResourceNotFoundError,
+} from "@/lib/resource-errors";
 import { getPublishedSystemFormRuntime } from "@/modules/forms/application/ServerSystemFormService";
 import { coiDeclarationFormCode } from "@/modules/forms/domain/CoiDeclarationForm";
 import {
   changeTaskCoi,
   readTaskCoiGate,
-  readPendingTaskCoiDisclosure,
 } from "../../infrastructure/WorkflowCoiRepository";
-import {
-  replaceWorkflowReviewer,
-} from "../../infrastructure/WorkflowReviewerReplacementRepository";
+import { readPendingWorkflowCoiReview } from "../../infrastructure/WorkflowCoiReviewRepository";
+import { replaceWorkflowReviewer } from "../../infrastructure/WorkflowReviewerReplacementRepository";
 
 export async function getWorkflowTaskCoi(
   user: AuthenticatedUser | null,
   taskId: string,
 ) {
-  const actor = requirePermission(user, permissionCodes.workflowTaskAssignedRead);
+  const actor = requirePermission(
+    user,
+    permissionCodes.workflowTaskAssignedRead,
+  );
   const gate = await readTaskCoiGate(actor.id, taskId);
   if (!gate) throw new ResourceNotFoundError("workflow task");
   const form = await getPublishedSystemFormRuntime(coiDeclarationFormCode);
@@ -31,10 +35,9 @@ export async function getWorkflowTaskCoi(
     rowVersion: gate.rowVersion,
     gated: gate.gated,
     state: gate.state,
-    cleared: !gate.gated || [
-      "CLEARED_NO_CONFLICT",
-      "CLEARED_AFTER_REVIEW",
-    ].includes(gate.state),
+    cleared:
+      !gate.gated ||
+      ["CLEARED_NO_CONFLICT", "CLEARED_AFTER_REVIEW"].includes(gate.state),
   };
 }
 
@@ -59,7 +62,8 @@ export async function declareWorkflowTaskCoi(
     actorId: actor.id,
     independentReview: false,
   });
-  if (!result) throw new ResourceConflictError("The COI state or task changed.");
+  if (!result)
+    throw new ResourceConflictError("The COI state or task changed.");
   return result;
 }
 
@@ -90,9 +94,10 @@ export async function reviewWorkflowTaskCoi(
       replacementUserId: input.replacementUserId,
       taskId: input.taskId,
     });
-    if (!result) throw new ResourceConflictError(
-      "The disclosure, task or replacement eligibility changed.",
-    );
+    if (!result)
+      throw new ResourceConflictError(
+        "The disclosure, task or replacement eligibility changed.",
+      );
     return { state: "RECUSED" as const, replacementTaskId: result.taskId };
   }
   const result = await changeTaskCoi({
@@ -103,17 +108,17 @@ export async function reviewWorkflowTaskCoi(
     reason: input.reason,
     independentReview: true,
   });
-  if (!result) throw new ResourceConflictError("The COI state or task changed.");
+  if (!result)
+    throw new ResourceConflictError("The COI state or task changed.");
   return result;
 }
-
 
 export async function getPendingWorkflowTaskCoiDisclosure(
   user: AuthenticatedUser | null,
   taskId: string,
 ) {
   const actor = requirePermission(user, permissionCodes.workflowCoiAllReview);
-  const disclosure = await readPendingTaskCoiDisclosure(actor.id, taskId);
+  const disclosure = await readPendingWorkflowCoiReview(actor.id, taskId);
   if (!disclosure) throw new ResourceNotFoundError("pending COI disclosure");
   return disclosure;
 }

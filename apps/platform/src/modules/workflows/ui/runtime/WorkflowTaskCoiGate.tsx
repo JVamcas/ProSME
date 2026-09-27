@@ -199,7 +199,7 @@ function DeclarationForm({ gate }: { gate: CoiGate }) {
             </p>
           </div>
 
-          <div className="mt-5 [&_[role=radiogroup]]:grid [&_[role=radiogroup]]:grid-cols-1 [&_[role=radiogroup]]:gap-3 [&_[role=radiogroup]>label]:min-h-14 [&_[role=radiogroup]>label]:rounded-xl [&_[role=radiogroup]>label]:border [&_[role=radiogroup]>label]:border-brand-navy/15 [&_[role=radiogroup]>label]:p-4">
+          <div className="mt-5 **:[[role=radiogroup]]:grid **:[[role=radiogroup]]:grid-cols-1 **:[[role=radiogroup]]:gap-3 [&_[role=radiogroup]>label]:min-h-14 [&_[role=radiogroup]>label]:rounded-xl [&_[role=radiogroup]>label]:border [&_[role=radiogroup]>label]:border-brand-navy/15 [&_[role=radiogroup]>label]:p-4">
             <FormRenderer
               definition={gate.form}
               formData={values}

@@ -4,13 +4,14 @@ import { redirect } from "next/navigation";
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { getCurrentUser } from "@/auth/authorization/current-user";
 import { can } from "@/auth/authorization/policy";
-import { WorkQueueWorkspace } from "@/modules/work-queue/ui/WorkQueueWorkspace";
+import { WorkflowCoiReviewWorkspace } from "@/modules/workflows/ui/runtime/WorkflowCoiReviewWorkspace";
 
-export const metadata: Metadata = { title: "Assigned tasks" };
+export const metadata: Metadata = { title: "Conflict reviews" };
 
-export default async function WorkQueuePage() {
+export default async function ConflictReviewsPage() {
   const user = await getCurrentUser();
-  if (!can(user, permissionCodes.workflowTaskAssignedRead))
+  if (!can(user, permissionCodes.workflowCoiAllReview)) {
     redirect("/unauthorized");
-  return <WorkQueueWorkspace />;
+  }
+  return <WorkflowCoiReviewWorkspace />;
 }

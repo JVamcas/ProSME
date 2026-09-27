@@ -66,10 +66,12 @@ function PortalRouteItem({
   route: PortalRoute;
 }) {
   const generatedId = useId();
-  const [expanded, setExpanded] = useState(false);
-  const active = isActive(pathname, route.href);
   const children = route.children ?? [];
   const hasChildren = children.length > 0;
+  const childActive = children.some((child) => isActive(pathname, child.href));
+  const [expanded, setExpanded] = useState(childActive);
+  const childrenVisible = expanded || childActive;
+  const active = isActive(pathname, route.href) || childActive;
   const Icon = route.icon;
   const childListId = `${route.id}-children-${generatedId}`;
   const itemClassName = cn(
@@ -102,10 +104,11 @@ function PortalRouteItem({
       {hasChildren ? (
         <button
           aria-controls={childListId}
-          aria-expanded={expanded}
+          aria-expanded={childrenVisible}
           className={itemClassName}
           onClick={() => {
             if (collapsed) {
+              setExpanded(true);
               onRequestExpand?.();
               return;
             }
@@ -121,7 +124,7 @@ function PortalRouteItem({
               aria-hidden="true"
               className={cn(
                 "size-4 shrink-0 transition-transform",
-                expanded && "rotate-180",
+                childrenVisible && "rotate-180",
               )}
             />
           ) : null}
@@ -141,7 +144,7 @@ function PortalRouteItem({
           ) : null}
         </Link>
       )}
-      {hasChildren && expanded && !collapsed ? (
+      {hasChildren && childrenVisible && !collapsed ? (
         <ul
           className="ml-5 grid gap-1 border-l border-white/15 pl-3"
           id={childListId}
