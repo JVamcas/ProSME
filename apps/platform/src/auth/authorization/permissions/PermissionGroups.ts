@@ -150,7 +150,15 @@ export const permissionGroups: readonly PermissionGroup[] = [
   {
     id: "notifications",
     label: "Notifications",
-    permissionCodes: [permissionCodes.userNotificationOwnRead],
+    permissionCodes: [
+      permissionCodes.userNotificationOwnRead,
+      permissionCodes.notificationConfigurationRead,
+      permissionCodes.notificationConfigurationUpdate,
+      permissionCodes.notificationTemplateImport,
+      permissionCodes.notificationTemplatePublish,
+      permissionCodes.notificationDeliveryRead,
+      permissionCodes.notificationDeliveryRetry,
+    ],
   },
   {
     id: "content-management",

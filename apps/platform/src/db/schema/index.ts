@@ -10,6 +10,7 @@ export * from "@/modules/eligibility/infrastructure/eligibility-integration.sche
 export * from "@/modules/forms/infrastructure/form.schema";
 export * from "@/modules/forms/infrastructure/form-response.schema";
 export * from "@/modules/funding-calls/infrastructure/funding-call.schema";
+export * from "@/modules/notifications/infrastructure/notification.schema";
 export * from "./identity";
 export * from "./profiles";
 export * from "@/modules/workflows/infrastructure/workflow.schema";
