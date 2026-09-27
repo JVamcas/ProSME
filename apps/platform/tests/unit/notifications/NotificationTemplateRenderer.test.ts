@@ -1,0 +1,96 @@
+import { describe, expect, it } from "vitest";
+
+import {
+  discoverNotificationPlaceholders,
+  renderNotificationTemplate,
+  validateNotificationPlaceholders,
+} from "@/modules/notifications/application/NotificationTemplateRenderer";
+import {
+  buildNotificationRenderValues,
+  notificationEventTemplateFields,
+} from "@/modules/notifications/domain/NotificationTemplateFields";
+
+const content = {
+  htmlTemplate: "<p>Hello {{recipientName}} — {{applicationReference}}</p>",
+  plainTextTemplate: "Hello {{recipientName}} — {{applicationReference}}",
+  subjectTemplate: "Application {{applicationReference}}",
+};
+
+describe("notification template renderer", () => {
+  it("discovers and renders supported placeholders deterministically", () => {
+    expect(discoverNotificationPlaceholders("{{recipientName}} {{ recipientName }} {{platformName}}"))
+      .toEqual(["platformName", "recipientName"]);
+    expect(renderNotificationTemplate(
+      content,
+      notificationEventTemplateFields["application.submitted"],
+      { applicationReference: "SME-7", recipientName: "Nela" },
+    )).toEqual({
+      html: "<p>Hello Nela — SME-7</p>",
+      plainText: "Hello Nela — SME-7",
+      subject: "Application SME-7",
+    });
+  });
+
+  it("rejects unsupported fields and malformed expressions", () => {
+    expect(() => validateNotificationPlaceholders(
+      { ...content, htmlTemplate: "{{recipient.password}}" },
+      ["recipientName", "applicationReference"],
+    )).toThrow("{{fieldName}} syntax");
+    expect(() => validateNotificationPlaceholders(
+      { ...content, htmlTemplate: "{{secretField}}" },
+      ["recipientName", "applicationReference"],
+    )).toThrow("Unsupported template fields: secretField");
+  });
+
+  it("escapes recipient values in HTML", () => {
+    const rendered = renderNotificationTemplate(
+      content,
+      notificationEventTemplateFields["application.submitted"],
+      {
+        applicationReference: "SME-7",
+        recipientName: '<img src=x onerror="alert(1)">',
+      },
+    );
+    expect(rendered.html).toContain("&lt;img src=x onerror=&quot;alert(1)&quot;&gt;");
+    expect(rendered.html).not.toContain("<img");
+  });
+
+  it("rejects subject injection and missing required values", () => {
+    expect(() => renderNotificationTemplate(
+      content,
+      notificationEventTemplateFields["application.submitted"],
+      { applicationReference: "SME-7\nBcc: attacker@example.com", recipientName: "Nela" },
+    )).toThrow("subjects cannot contain newlines");
+    expect(() => renderNotificationTemplate(
+      content,
+      notificationEventTemplateFields["application.submitted"],
+      { recipientName: "Nela" },
+    )).toThrow("Missing required notification value: applicationReference");
+  });
+
+  it("constructs trusted application URLs from the supplied server base", () => {
+    const values = buildNotificationRenderValues({
+      context: {
+        applicationId: "00000000-0000-4000-8000-000000000001",
+        applicationOwnerUserId: "00000000-0000-4000-8000-000000000002",
+        applicationReference: "SME-7",
+        correlationId: "correlation-1",
+        fundingOpportunityTitle: "Growth Fund",
+        ownerDisplayName: "Nela",
+        ownerEmail: "nela@example.com",
+        sourceIdempotencyKey: "submission-1",
+        submittedAt: "2026-09-27T10:00:00+02:00",
+        workflowInstanceId: "00000000-0000-4000-8000-000000000003",
+      },
+      eventKey: "application.submitted",
+      publicApplicationUrl: "https://fund.example/base/",
+      recipient: {
+        displayName: "Nela",
+        userId: "00000000-0000-4000-8000-000000000002",
+      },
+    });
+    expect(values.applicationUrl).toBe(
+      "https://fund.example/portal/applications/00000000-0000-4000-8000-000000000001",
+    );
+  });
+});

@@ -6,6 +6,13 @@ const migration = readFileSync(
   path.resolve(process.cwd(), "drizzle/0117_notification_foundation.sql"),
   "utf8",
 );
+const alignmentMigration = readFileSync(
+  path.resolve(
+    process.cwd(),
+    "drizzle/0119_align_notification_rule_aggregate.sql",
+  ),
+  "utf8",
+);
 
 describe("notification foundation migration", () => {
   it("creates the complete module-owned persistence foundation", () => {
@@ -57,6 +64,27 @@ describe("notification foundation migration", () => {
     );
     expect(migration).toContain(
       "app_notification_event_rule_channels_target_unique",
+    );
+  });
+
+  it("rebuilds only the empty notification module in its final shape", () => {
+    expect(alignmentMigration).toContain(
+      'DROP TABLE IF EXISTS "app_notification_deliveries" CASCADE',
+    );
+    expect(alignmentMigration).toContain(
+      'DROP TABLE IF EXISTS "app_notification_channels" CASCADE',
+    );
+    expect(alignmentMigration).toContain(
+      'CREATE TABLE "app_notification_channels"',
+    );
+    expect(alignmentMigration).toContain(
+      'CREATE TABLE "app_notification_event_rule_recipients"',
+    );
+    expect(alignmentMigration).toContain(
+      'CREATE TABLE "app_notification_event_rule_channels"',
+    );
+    expect(alignmentMigration).not.toContain(
+      'DROP TABLE IF EXISTS "app_users"',
     );
   });
 

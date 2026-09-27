@@ -13,7 +13,7 @@ import { createPortal } from "react-dom";
 
 import { cn } from "@/lib/utils";
 
-type DialogSize = "sm" | "md" | "lg" | "xl" | "2xl";
+export type DialogSize = "sm" | "md" | "lg" | "xl" | "2xl";
 
 type Props = {
   children: ReactNode;
@@ -166,7 +166,8 @@ function useDialogLifecycle(
       const first = focusable.item(0);
       const last = focusable.item(focusable.length - 1);
       if (event.shiftKey && document.activeElement === first) last?.focus();
-      else if (!event.shiftKey && document.activeElement === last) first?.focus();
+      else if (!event.shiftKey && document.activeElement === last)
+        first?.focus();
       else return;
       event.preventDefault();
     }

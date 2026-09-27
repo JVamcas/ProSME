@@ -37,10 +37,9 @@ vi.mock(
   "@/modules/workflows/infrastructure/WorkflowActionTargetRepository",
   () => ({ configuredActionTargetsAreValid: vi.fn() }),
 );
-vi.mock(
-  "@/modules/workflows/infrastructure/WorkflowRfiRepository",
-  () => ({ createWorkflowRfi: vi.fn() }),
-);
+vi.mock("@/modules/workflows/infrastructure/WorkflowRfiRepository", () => ({
+  createWorkflowRfi: vi.fn(),
+}));
 
 import type { AuthenticatedUser } from "@/auth/types";
 import { executeWorkflowAction } from "@/modules/workflows/application/runtime/ServerWorkflowActionExecutionService";
@@ -146,24 +145,25 @@ describe("request information action execution", () => {
       status: "active",
     } as unknown as AuthenticatedUser;
 
-    await expect(executeWorkflowAction(user, {
-      actionKey: "REQUEST_INFORMATION",
-      correlationId: "90000000-0000-4000-8000-000000000001",
-      expectedRuntimeVersion: 2,
-      idempotencyKey: "a0000000-0000-4000-8000-000000000001",
-      input: {
-        actionType: "REQUEST_INFORMATION",
-        editableFieldPaths: ["application.financial.turnover"],
-        instructions: "Please clarify the turnover amount.",
-        question: "What is the correct turnover amount?",
-        requestedDocumentRequirementIds: [
-          "b0000000-0000-4000-8000-000000000001",
-        ],
-      },
-      sourceStageInstanceId: stageInstanceId,
-      taskId,
-      workflowInstanceId,
-    })).rejects.toThrow("RFI persistence failed");
+    await expect(
+      executeWorkflowAction(user, {
+        actionKey: "REQUEST_INFORMATION",
+        correlationId: "90000000-0000-4000-8000-000000000001",
+        expectedRuntimeVersion: 2,
+        idempotencyKey: "a0000000-0000-4000-8000-000000000001",
+        input: {
+          actionType: "REQUEST_INFORMATION",
+          editableFieldPaths: ["application.financial.turnover"],
+          instructions: "Please clarify the turnover amount.",
+          requestedDocumentRequirementIds: [
+            "b0000000-0000-4000-8000-000000000001",
+          ],
+        },
+        sourceStageInstanceId: stageInstanceId,
+        taskId,
+        workflowInstanceId,
+      }),
+    ).rejects.toThrow("RFI persistence failed");
 
     expect(claimWorkflowActionRuntimeVersion).not.toHaveBeenCalled();
     expect(completeActionTask).not.toHaveBeenCalled();

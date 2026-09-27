@@ -834,6 +834,20 @@
       "when": 1797984000000,
       "tag": "0118_normalize_legacy_rfi_action_configuration",
       "breakpoints": true
+    },
+    {
+      "idx": 119,
+      "version": "7",
+      "when": 1798070400000,
+      "tag": "0119_align_notification_rule_aggregate",
+      "breakpoints": true
+    },
+    {
+      "idx": 120,
+      "version": "7",
+      "when": 1798156800000,
+      "tag": "0120_bind_common_actions_to_existing_tasks",
+      "breakpoints": true
     }
   ]
 }

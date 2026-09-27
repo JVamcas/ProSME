@@ -42,8 +42,14 @@ administration routes and UI, delivery retry execution, and production rollout.
 ## Migration and seed evidence
 
 - Applied all Drizzle migrations, including
-  `0117_notification_foundation.sql`, to a clean disposable PostgreSQL 16
-  database.
+  `0117_notification_foundation.sql` and
+  `0119_align_notification_rule_aggregate.sql`, to a clean disposable
+  PostgreSQL 16 database.
+- Verified that the local database's seven pre-foundation notification tables
+  contained zero rows. With explicit approval, migration
+  `0119_align_notification_rule_aggregate.sql` rebuilds only the notification
+  module in its final ten-table shape; no user, application, workflow, or other
+  application tables are dropped.
 - Ran the notification configuration seed twice in that database. The first
   run created one channel, two catalogs, two events, two rules, two rule
   recipients, two rule-channel bindings, and five template targets; the second

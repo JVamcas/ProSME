@@ -1,10 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
-vi.mock(
-  "@/modules/workflows/infrastructure/WorkflowRfiRepository",
-  () => ({ createWorkflowRfi: vi.fn() }),
-);
+vi.mock("@/modules/workflows/infrastructure/WorkflowRfiRepository", () => ({
+  createWorkflowRfi: vi.fn(),
+}));
 
 import {
   buildRequestInformationCreationRequest,
@@ -36,7 +35,6 @@ function request() {
         actionType: "REQUEST_INFORMATION",
         editableFieldPaths: ["application.financial.turnover"],
         instructions: "Please clarify the turnover amount.",
-        question: "What is the correct turnover amount?",
         requestedDocumentRequirementIds: [requirementId],
       },
       sourceStageInstanceId: stageInstanceId,
@@ -108,7 +106,7 @@ describe("workflow request information hook", () => {
       initiationType: "MANUAL",
       instructions: "Please clarify the turnover amount.",
       participantScope: "APPLICATION_OWNER_AND_REQUESTER",
-      question: "What is the correct turnover amount?",
+      question: "Please clarify the turnover amount.",
       recipientScope: "APPLICATION_OWNER",
       requestedDocumentRequirementIds: [requirementId],
       requesterId: actorId,
@@ -132,8 +130,9 @@ describe("workflow request information hook", () => {
       requestInformationId: "c0000000-0000-4000-8000-000000000001",
       status: "OPEN",
     });
-    await expect(createRequestInformation(transaction, request())).resolves
-      .toMatchObject({ status: "OPEN" });
+    await expect(
+      createRequestInformation(transaction, request()),
+    ).resolves.toMatchObject({ status: "OPEN" });
     expect(createWorkflowRfi).toHaveBeenCalledWith(transaction, request());
   });
 });

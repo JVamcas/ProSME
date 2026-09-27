@@ -171,6 +171,9 @@ export const operationsPortalRoutes: readonly PortalRoute[] = [
       permissionCodes.eligibilityRuleSetRead,
       permissionCodes.eligibilityRuleSetRetire,
       permissionCodes.eligibilityRuleSetUpdate,
+      permissionCodes.notificationConfigurationRead,
+      permissionCodes.notificationTemplateImport,
+      permissionCodes.notificationTemplatePublish,
     ],
     children: [
       {
@@ -199,6 +202,18 @@ export const operationsPortalRoutes: readonly PortalRoute[] = [
           permissionCodes.workflowDefinitionUpdate,
           permissionCodes.workflowDefinitionPublish,
           permissionCodes.workflowDefinitionRetire,
+        ],
+      },
+      {
+        id: "admin-notification-channels",
+        href: "/admin/notifications/channels",
+        label: "Notification channels",
+        icon: Bell,
+        space: "operations",
+        requiredAnyPermissions: [
+          permissionCodes.notificationConfigurationRead,
+          permissionCodes.notificationTemplateImport,
+          permissionCodes.notificationTemplatePublish,
         ],
       },
       {

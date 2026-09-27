@@ -8,14 +8,16 @@ import type {
   WorkflowActionExecutionTarget,
   WorkflowActionExecutionTransaction,
 } from "../../infrastructure/WorkflowActionExecutionRepository";
-import {
-  createWorkflowRfi,
-} from "../../infrastructure/WorkflowRfiRepository";
+import { createWorkflowRfi } from "../../infrastructure/WorkflowRfiRepository";
 import type {
   CreateWorkflowRfiRequest,
   CreateWorkflowRfiResult,
 } from "../../domain/runtime/WorkflowRfi";
 import type { ExecuteWorkflowActionInput } from "./ServerWorkflowActionOutcomeService";
+import {
+  sanitizeWorkflowRfiInstructions,
+  workflowRfiInstructionsSummary,
+} from "../../infrastructure/WorkflowRfiInstructions";
 
 type RequestInformationInput = Extract<
   WorkflowActionInput,
@@ -57,6 +59,16 @@ export function buildRequestInformationCreationRequest(input: {
       "A request for information must originate from a workflow task.",
     );
   }
+  const instructions = sanitizeWorkflowRfiInstructions(
+    input.command.input.instructions,
+  );
+  const question = workflowRfiInstructionsSummary(instructions);
+  if (!question) {
+    throw new WorkflowActionExecutionError(
+      "INVALID_ACTION_INPUT",
+      "Enter instructions for the applicant.",
+    );
+  }
   return {
     applicationId: requiredApplicationId(input.target),
     continuation: {
@@ -73,8 +85,8 @@ export function buildRequestInformationCreationRequest(input: {
     editableFieldPaths: input.command.input.editableFieldPaths,
     idempotencyKey: input.command.idempotencyKey,
     initiationType: "MANUAL",
-    instructions: input.command.input.instructions,
-    question: input.command.input.question,
+    instructions,
+    question,
     participantScope: configuration.participantScope,
     recipientScope: configuration.recipientScope,
     requestedDocumentRequirementIds:

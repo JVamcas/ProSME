@@ -11,6 +11,7 @@ import {
   ResourceNotFoundError,
   RequestValidationError,
 } from "@/lib/resource-errors";
+import { NotificationValidationError } from "@/modules/notifications/domain/NotificationErrors";
 import {
   WorkflowActionExecutionError,
   type WorkflowActionExecutionErrorCode,
@@ -153,6 +154,22 @@ export function portalRouteError(
       "VALIDATION_ERROR",
       validationMessage(error),
       validationFields(error),
+    );
+  }
+
+  if (error instanceof NotificationValidationError) {
+    return errorResponse(
+      correlationId,
+      400,
+      "VALIDATION_ERROR",
+      error.message,
+      error.issues.reduce<Record<string, string[]>>((fields, issue) => {
+        fields[issue.path || "request"] = [
+          ...(fields[issue.path || "request"] ?? []),
+          issue.message,
+        ];
+        return fields;
+      }, {}),
     );
   }
 
