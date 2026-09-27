@@ -164,6 +164,34 @@ function validateTaskTypeActions(
   const actionsByKey = new Map(
     stage.actions.map((action) => [action.stableKey, action]),
   );
+  const decisionActionKeys = stage.actions
+    .filter((action) => isWorkflowStageDecisionAction(action.actionType))
+    .map((action) => action.stableKey);
+  const decisionTask = decisionTasks[0];
+  if (decisionActionKeys.length && !decisionTask) {
+    errors.push(
+      issue(
+        "STAGE_DECISION_TASK_REQUIRED",
+        `${stage.name} needs a stage-decision task for its decision actions.`,
+        `${base}.tasks`,
+      ),
+    );
+  }
+  if (decisionTask) {
+    const missingDecisionActions = decisionActionKeys.filter(
+      (actionKey) => !decisionTask.actionKeys.includes(actionKey),
+    );
+    if (missingDecisionActions.length) {
+      const taskIndex = stage.tasks.indexOf(decisionTask);
+      errors.push(
+        issue(
+          "STAGE_DECISION_ACTION_BINDING_REQUIRED",
+          `${decisionTask.name} must expose every stage-decision action.`,
+          `${base}.tasks.${taskIndex}.actionKeys`,
+        ),
+      );
+    }
+  }
   stage.tasks.forEach((task, taskIndex) => {
     const decisionActions = task.actionKeys.filter((actionKey) => {
       const action = actionsByKey.get(actionKey);

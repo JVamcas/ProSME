@@ -4,7 +4,6 @@ import { workflowTaskSchema } from "./WorkflowTaskSchemas";
 
 import { workflowStatuses } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import { workflowPublicStatuses } from "@/modules/workflows/domain/definitions/WorkflowStageDefinition";
-import { isWorkflowStageDecisionAction } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
 import { workflowActionDefinitionSchema } from "@/modules/workflows/domain/actions/WorkflowActionSchemas";
 import { workflowTransitionSchema } from "@/modules/workflows/domain/transitions/WorkflowTransitionSchemas";
 import { validateWorkflowTransitions } from "@/modules/workflows/domain/transitions/WorkflowTransitionValidation";
@@ -250,27 +249,6 @@ export const workflowStageSchema = z
           });
         }
       });
-      const decisionActions = task.actionKeys.filter((actionKey) => {
-        const action = actionsByKey.get(actionKey);
-        return action
-          ? isWorkflowStageDecisionAction(action.actionType)
-          : false;
-      });
-      if (task.taskType === "CONTRIBUTING" && decisionActions.length) {
-        context.addIssue({
-          code: "custom",
-          message:
-            "Stage-decision actions cannot be attached to a contributing task.",
-          path: ["tasks", taskIndex, "actionKeys"],
-        });
-      }
-      if (task.taskType === "STAGE_DECISION" && !decisionActions.length) {
-        context.addIssue({
-          code: "custom",
-          message: "A stage-decision task requires a stage-decision action.",
-          path: ["tasks", taskIndex, "actionKeys"],
-        });
-      }
     });
   });
 

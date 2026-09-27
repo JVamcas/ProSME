@@ -200,7 +200,7 @@ function dueDiligence(dependencies: StandardWorkflowDependencies) {
     reject("DECLINE_RISK", "Decline on risk grounds", 3),
     requestInformation(
       "FURTHER_VERIFICATION",
-      "Further verification required",
+      "Request For Information",
       4,
     ),
   ];

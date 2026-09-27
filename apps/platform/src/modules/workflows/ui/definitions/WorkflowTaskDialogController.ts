@@ -15,6 +15,7 @@ import type {
   WorkflowStageInput,
   WorkflowTaskInput,
 } from "@/modules/workflows/domain/definitions/WorkflowTypes";
+import { reconcileWorkflowActionBindings } from "@/modules/workflows/domain/actions/WorkflowActionBindingPolicy";
 import { defaultWorkflowElementPermissions } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
 import {
   taskAssignmentDefaults,
@@ -69,6 +70,16 @@ async function saveWorkflowTask({
   if (duplicate) {
     formSetError("stableKey", {
       message: "Task code must be unique in this stage.",
+    });
+    return false;
+  }
+  const otherDecisionTask = stage.tasks.some(
+    (item) =>
+      item.taskType === "STAGE_DECISION" && item.stableKey !== task?.stableKey,
+  );
+  if (values.taskType === "STAGE_DECISION" && otherDecisionTask) {
+    formSetError("taskType", {
+      message: "A stage can contain only one stage-decision task.",
     });
     return false;
   }
@@ -130,7 +141,7 @@ async function saveWorkflowTask({
     name: values.name,
     required: values.required,
   };
-  await mutateAsync({
+  const nextGraph = {
     stages: editor.graph.stages.map((item) =>
       item.stableKey === stage.stableKey
         ? {
@@ -144,7 +155,8 @@ async function saveWorkflowTask({
         : item,
     ),
     transitions: editor.graph.transitions,
-  });
+  };
+  await mutateAsync(reconcileWorkflowActionBindings(editor.graph, nextGraph));
   return true;
 }
 

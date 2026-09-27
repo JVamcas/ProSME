@@ -9,6 +9,7 @@ import { DraggableDialog } from "@/components/ui/draggable-dialog";
 import { FormInput, FormTextarea } from "@/components/ui/form-fields";
 import { CheckboxField } from "@/components/ui/form-field";
 import { useSaveWorkflowGraph } from "@/modules/workflows/WorkflowHooks";
+import { createDefaultWorkflowCommonActions } from "@/modules/workflows/domain/actions/WorkflowActionBindingPolicy";
 import type {
   WorkflowEditorView,
   WorkflowStageInput,
@@ -24,7 +25,10 @@ const stageFormSchema = z.object({
     .trim()
     .min(2)
     .max(80)
-    .regex(/^[A-Z][A-Z0-9_]*$/, "Use uppercase letters, numbers and underscores."),
+    .regex(
+      /^[A-Z][A-Z0-9_]*$/,
+      "Use uppercase letters, numbers and underscores.",
+    ),
   name: z.string().trim().min(2).max(160),
   description: z.string().trim().max(1000),
   enabled: z.boolean(),
@@ -71,31 +75,36 @@ export function WorkflowStageCreateDialog({
     },
     resolver: zodResolver(stageFormSchema),
   });
-  const conditionStage = stage ?? {
-    actions: [],
-    checklistItems: [],
-    commentFields: [],
-    documentRequirements: [],
-    scoring: null,
-    coiGated: false,
-    description: "",
-    displayOrder: editor.graph.stages.length + 1,
-    enabled: true,
-    entryCondition: null,
-    exitCondition: null,
-    initial: editor.graph.stages.length === 0,
-    name: "New stage",
-    optional: false,
-    publicStatusMapping: {
-      description: "Application under review",
-      label: "Under review",
-      status: "UNDER_REVIEW" as const,
-    },
-    repeatable: false,
-    slaHours: null,
-    stableKey: "NEW_STAGE",
-    tasks: [],
-  } satisfies WorkflowStageInput;
+  const defaultCommonActions = createDefaultWorkflowCommonActions(
+    editor.assignmentOptions?.roles[0]?.id,
+  );
+  const conditionStage =
+    stage ??
+    ({
+      actions: defaultCommonActions,
+      checklistItems: [],
+      commentFields: [],
+      documentRequirements: [],
+      scoring: null,
+      coiGated: false,
+      description: "",
+      displayOrder: editor.graph.stages.length + 1,
+      enabled: true,
+      entryCondition: null,
+      exitCondition: null,
+      initial: editor.graph.stages.length === 0,
+      name: "New stage",
+      optional: false,
+      publicStatusMapping: {
+        description: "Application under review",
+        label: "Under review",
+        status: "UNDER_REVIEW" as const,
+      },
+      repeatable: false,
+      slaHours: null,
+      stableKey: "NEW_STAGE",
+      tasks: [],
+    } satisfies WorkflowStageInput);
   const conditionFields = useWorkflowConditionFields(editor, conditionStage);
   const submit = form.handleSubmit(async (values) => {
     const duplicate = editor.graph.stages.some(
@@ -128,7 +137,7 @@ export function WorkflowStageCreateDialog({
                 description: "Your application is being reviewed.",
               },
               slaHours: null,
-              actions: [],
+              actions: defaultCommonActions,
               tasks: [],
             },
           ],
@@ -164,7 +173,11 @@ export function WorkflowStageCreateDialog({
             name="stableKey"
             placeholder="FINANCE_REVIEW"
           />
-          <FormInput label="Stage name" name="name" placeholder="Finance review" />
+          <FormInput
+            label="Stage name"
+            name="name"
+            placeholder="Finance review"
+          />
           <FormTextarea
             containerClassName="md:col-span-2"
             label="Description"
@@ -175,7 +188,11 @@ export function WorkflowStageCreateDialog({
             <CheckboxField label="Enabled" name="enabled" />
             <CheckboxField label="Optional" name="optional" />
             <CheckboxField label="Repeatable" name="repeatable" />
-            <CheckboxField label="COI-gated" name="coiGated" description="Require review to declare conflict of interest."/>
+            <CheckboxField
+              label="COI-gated"
+              name="coiGated"
+              description="Require review to declare conflict of interest."
+            />
           </div>
           <div className="space-y-4 md:col-span-2">
             <Controller

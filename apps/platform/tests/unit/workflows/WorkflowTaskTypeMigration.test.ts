@@ -20,6 +20,8 @@ describe("workflow task type migration", () => {
     expect(migration).toContain("PARTITION BY task.stage_id");
     expect(migration).toContain("candidate.candidate_order = 1");
   });
+  expect(migration).toContain("DISABLE TRIGGER app_stage_tasks_immutable");
+  expect(migration).toContain("ENABLE TRIGGER app_stage_tasks_immutable");
 
   it("enforces one single-assignee decision task per stage", () => {
     expect(migration).toContain(

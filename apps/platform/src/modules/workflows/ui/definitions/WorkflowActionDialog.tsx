@@ -5,26 +5,29 @@ import { useEffect, useRef } from "react";
 import { FormProvider, useForm, useWatch } from "react-hook-form";
 
 import { GeneralButton } from "@/components/ui/button";
-import { isWorkflowStageDecisionAction } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
 import { DraggableDialog } from "@/components/ui/draggable-dialog";
 import { CheckboxField } from "@/components/ui/form-field";
 import { FormInput, FormSelect } from "@/components/ui/form-fields";
-import type { WorkflowActionDefinition } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
+import {
+  isWorkflowStageDecisionAction,
+  type WorkflowActionDefinition,
+} from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
+import { reconcileWorkflowActionBindings } from "@/modules/workflows/domain/actions/WorkflowActionBindingPolicy";
 import type {
   WorkflowEditorView,
   WorkflowStageInput,
 } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import { useSaveWorkflowGraph } from "@/modules/workflows/WorkflowHooks";
+import { WorkflowActionConfigurationFields } from "./WorkflowActionConfigurationFields";
+import {
+  toWorkflowActionDefinition,
+  workflowActionFormDefaults,
+} from "./WorkflowActionFormMapping";
 import {
   type WorkflowActionFormValues,
   workflowActionFormSchema,
   workflowActionTypeItems,
 } from "./WorkflowActionFormSchema";
-import {
-  toWorkflowActionDefinition,
-  workflowActionFormDefaults,
-} from "./WorkflowActionFormMapping";
-import { WorkflowActionConfigurationFields } from "./WorkflowActionConfigurationFields";
 
 type Props = {
   action?: WorkflowActionDefinition;
@@ -42,19 +45,24 @@ export function WorkflowActionDialog({
   stage,
 }: Props) {
   const mutation = useSaveWorkflowGraph(editor);
-  const assignedTaskKey = action
-    ? (stage.tasks.find((task) => task.actionKeys.includes(action.stableKey))
-        ?.stableKey ?? "")
-    : "";
+  const assignedTaskKeys = action
+    ? stage.tasks
+        .filter((task) => task.actionKeys.includes(action.stableKey))
+        .map((task) => task.stableKey)
+    : stage.tasks.map((task) => task.stableKey);
   const form = useForm<WorkflowActionFormValues>({
     defaultValues: workflowActionFormDefaults(
       action,
       stage.actions.length + 1,
-      assignedTaskKey,
+      assignedTaskKeys,
     ),
     resolver: zodResolver(workflowActionFormSchema),
   });
   const actionType = useWatch({ control: form.control, name: "actionType" });
+  const taskStableKeys = useWatch({
+    control: form.control,
+    name: "taskStableKeys",
+  });
   const deferTargetType = useWatch({
     control: form.control,
     name: "deferTargetType",
@@ -67,10 +75,26 @@ export function WorkflowActionDialog({
     control: form.control,
     name: "rejectionOutcomeType",
   });
+  const previousActionType = useRef(actionType);
   const previousEscalationTargetType = useRef(escalationTargetType);
-  const eligibleTasks = isWorkflowStageDecisionAction(actionType)
-    ? stage.tasks.filter((task) => task.taskType === "STAGE_DECISION")
-    : stage.tasks;
+  const decisionTask = stage.tasks.find(
+    (task) => task.taskType === "STAGE_DECISION",
+  );
+  const isDecisionAction = isWorkflowStageDecisionAction(actionType);
+
+  useEffect(() => {
+    if (previousActionType.current === actionType) return;
+    previousActionType.current = actionType;
+    form.setValue(
+      "taskStableKeys",
+      isDecisionAction
+        ? decisionTask
+          ? [decisionTask.stableKey]
+          : []
+        : stage.tasks.map((task) => task.stableKey),
+      { shouldDirty: true, shouldValidate: true },
+    );
+  }, [actionType, decisionTask, form, isDecisionAction, stage.tasks]);
 
   useEffect(() => {
     if (previousEscalationTargetType.current === escalationTargetType) return;
@@ -106,7 +130,8 @@ export function WorkflowActionDialog({
       action?.id,
       action?.condition,
     );
-    await mutation.mutateAsync({
+    const selectedTasks = new Set(values.taskStableKeys);
+    const nextGraph = {
       stages: editor.graph.stages.map((item) =>
         item.stableKey === stage.stableKey
           ? {
@@ -125,10 +150,9 @@ export function WorkflowActionDialog({
                 );
                 return {
                   ...task,
-                  actionKeys:
-                    task.stableKey === values.taskStableKey
-                      ? [...actionKeys, nextAction.stableKey]
-                      : actionKeys,
+                  actionKeys: selectedTasks.has(task.stableKey)
+                    ? [...actionKeys, nextAction.stableKey]
+                    : actionKeys,
                 };
               }),
             }
@@ -144,7 +168,10 @@ export function WorkflowActionDialog({
                 : transition.actionKey,
           }))
         : editor.graph.transitions,
-    });
+    };
+    await mutation.mutateAsync(
+      reconcileWorkflowActionBindings(editor.graph, nextGraph),
+    );
     onClose();
   });
 
@@ -183,22 +210,47 @@ export function WorkflowActionDialog({
             required
             type="number"
           />
-          <FormSelect
-            containerClassName="sm:col-span-2"
-            items={eligibleTasks.map((task) => ({
-              label: task.name,
-              value: task.stableKey,
-            }))}
-            label="Workflow task"
-            infoTooltip="Workflow task in which this action is displayed."
-            name="taskStableKey"
-            placeholder={
-              eligibleTasks.length
-                ? "Select a task"
-                : "Add a task to this stage first"
-            }
-            required
-          />
+          {isDecisionAction ? (
+            <div className="sm:col-span-2">
+              <p className="text-sm font-medium text-brand-navy">
+                Workflow task
+              </p>
+              <p className="mt-2 rounded-xl border border-brand-navy/10 bg-brand-navy/[0.03] px-4 py-3 text-sm text-brand-navy/70">
+                {decisionTask
+                  ? `Automatically assigned to ${decisionTask.name}.`
+                  : "Add the stage-decision task to assign this action automatically."}
+              </p>
+            </div>
+          ) : (
+            <FormSelect
+              containerClassName="sm:col-span-2"
+              disabled={!action}
+              infoTooltip={
+                action
+                  ? "Select every task in which this common action should appear."
+                  : "New common actions are assigned to all tasks when first saved. Edit the action afterward to remove it from individual tasks."
+              }
+              items={stage.tasks.map((task) => ({
+                label: task.name,
+                value: task.stableKey,
+              }))}
+              label="Available on tasks"
+              multiple
+              name="taskStableKeys"
+              onMultipleChange={(values) =>
+                form.setValue("taskStableKeys", values, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                })
+              }
+              placeholder={
+                stage.tasks.length
+                  ? "Select tasks"
+                  : "Common actions will be added when tasks are created"
+              }
+              value={taskStableKeys}
+            />
+          )}
           <CheckboxField label="Enabled" name="enabled" />
           {actionType !== "REJECT" ? (
             <CheckboxField

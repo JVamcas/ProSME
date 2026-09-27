@@ -3,8 +3,7 @@ import { z } from "zod";
 import { workflowActionTypes } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
 
 const stableKeyPattern = /^[A-Z][A-Z0-9_]*$/;
-const fieldPathPattern =
-  /^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z][A-Za-z0-9_]*)*$/;
+const fieldPathPattern = /^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z][A-Za-z0-9_]*)*$/;
 
 function isStableKeyList(value: string) {
   const values = value
@@ -46,7 +45,7 @@ export const workflowActionFormSchema = z
         "Use uppercase letters, numbers and underscores.",
       ),
     label: z.string().trim().min(2).max(160),
-    taskStableKey: z.string().min(1, "Select a workflow task."),
+    taskStableKeys: z.array(z.string().min(1)).max(100),
     actionType: z.enum(workflowActionTypes),
     enabled: z.boolean(),
     reasonCodeRequired: z.boolean(),
@@ -160,7 +159,8 @@ export const workflowActionFormSchema = z
       ) {
         context.addIssue({
           code: "custom",
-          message: "Use unique stable field paths separated by commas or new lines.",
+          message:
+            "Use unique stable field paths separated by commas or new lines.",
           path: ["editableFieldPaths"],
         });
       }

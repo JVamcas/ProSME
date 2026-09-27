@@ -127,6 +127,24 @@ describe("workflow task configuration", () => {
     );
   });
 
+  it("requires every stage decision action on the stage-decision task", () => {
+    const graph = structuredClone(referenceWorkflow);
+    graph.stages[0].actions.push({
+      ...graph.stages[0].actions[0],
+      displayOrder: 2,
+      label: "Reject",
+      stableKey: "REJECT",
+    });
+
+    expect(validateWorkflowGraph(graph).errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "STAGE_DECISION_ACTION_BINDING_REQUIRED",
+        }),
+      ]),
+    );
+  });
+
   it("requires a decision action on a stage-decision task", () => {
     const graph = structuredClone(referenceWorkflow);
     graph.stages[0].tasks[0].actionKeys = [];

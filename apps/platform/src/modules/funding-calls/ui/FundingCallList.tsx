@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { CloneButton, DeleteButton } from "@/components/ui/action-buttons";
 import { GeneralButton, GeneralButtonLink } from "@/components/ui/button";
@@ -119,6 +119,11 @@ export function FundingCallList({
       },
     });
   }
+
+  useEffect(() => {
+    if (query.error)
+      toast.error(query.error.message)
+  }, [query.error])
 
   return (
     <>

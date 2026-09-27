@@ -2244,6 +2244,24 @@ Approve/Advance and, where configured as a Stage disposition, Reject,
 Return/Rework, Withdraw and Defer. In particular, `APPROVE_ADVANCE` must
 never be bound to a `CONTRIBUTING` Task.
 
+Action binding lifecycle:
+
+- New Stages receive the common Action definitions once at Stage scope in a
+  disabled state so an administrator can configure and enable them deliberately.
+- A newly created common Action is initially bound to every existing compatible
+  Task, and a newly created Task inherits every common Action on its Stage.
+  Administrators may remove a common Action from individual Tasks through the
+  task multi-select on the Action editor.
+- Stage-decision Actions are never manually selectable for a `CONTRIBUTING`
+  Task. Every Stage-decision Action is automatically bound to the Stage's single
+  `STAGE_DECISION` Task when either the Action or Task is created.
+- Editing a Task type reconciles bindings atomically: changing to
+  `STAGE_DECISION` preserves common Actions and adds all Stage-decision Actions;
+  changing to `CONTRIBUTING` preserves common Actions and removes every
+  Stage-decision Action.
+- The server computes the final binding set on every draft save. Client-side
+  controls mirror these rules but are not their authority.
+
 The UI and server enforce the Task type directly:
 
 - a `CONTRIBUTING` Task retains **Complete task** even when common Actions are
