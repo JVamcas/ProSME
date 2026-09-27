@@ -4,6 +4,7 @@ export const notificationAuditActions = [
   "NOTIFICATION_CHANNEL_UPDATED",
   "NOTIFICATION_EVENT_UPDATED",
   "NOTIFICATION_EVENT_RULE_UPDATED",
+  "NOTIFICATION_TEMPLATE_TARGET_UPDATED",
   "NOTIFICATION_TEMPLATE_IMPORTED",
   "NOTIFICATION_TEMPLATE_PUBLISHED",
   "NOTIFICATION_DELIVERY_RETRY_REQUESTED",
@@ -18,11 +19,10 @@ export const notificationAuditMetadataSchema = z.object({
   deliveryId: z.uuid().optional(),
   eventKey: z.string().trim().min(1).max(200).optional(),
   recipientType: z.string().trim().min(1).max(100).optional(),
-  templateId: z.uuid().optional(),
+  templateTargetId: z.uuid().optional(),
   templateVersionId: z.uuid().optional(),
 }).strict();
 
 export type NotificationAuditMetadata = z.infer<
   typeof notificationAuditMetadataSchema
 >;
-

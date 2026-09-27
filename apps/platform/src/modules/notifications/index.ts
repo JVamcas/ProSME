@@ -4,3 +4,4 @@ export * from "./domain/NotificationErrors";
 export * from "./domain/NotificationEvent";
 export * from "./domain/NotificationRecipient";
 export * from "./domain/NotificationTemplate";
+export * from "./domain/NotificationTemplateTarget";

@@ -43,6 +43,8 @@ The following decisions are approved for the initial implementation:
 - An immutable event catalogue keyed by stable event keys.
 - Database-managed required recipient rules.
 - Database-managed, manually uploaded, versioned HTML templates.
+- Channel-first global, catalog, and event template targets with deterministic
+  event-to-catalog-to-global fallback.
 - Template validation and an explicit allow-list of merge fields.
 - Recipient resolution from immutable event context.
 - Recipient deduplication.
@@ -81,6 +83,7 @@ apps/platform/src/modules/notifications/
 │   ├── NotificationEvent.ts
 │   ├── NotificationRecipient.ts
 │   ├── NotificationTemplate.ts
+│   ├── NotificationTemplateTarget.ts
 │   └── NotificationDelivery.ts
 ├── application/
 │   ├── ServerNotificationEventService.ts
@@ -109,6 +112,32 @@ Route handlers remain thin and live below `src/app/api`. They validate input,
 authorize the actor or internal caller, invoke the appropriate notification
 service, and translate the result to HTTP.
 
+### 4.1 WorkflowHub implementation alignment contract
+
+WorkflowHub is the behavioral reference, not merely a visual reference. SME
+Fund adopts these implementation semantics:
+
+- channel mechanisms are registered in source code while channel records,
+  enabled state, and sort order are stored in PostgreSQL;
+- catalogs own immutable event membership and provide the middle template
+  fallback boundary;
+- each event owns at most one rule aggregate;
+- a rule owns one or more recipient entries, and each recipient entry owns its
+  selected delivery-channel bindings;
+- templates are channel-owned targets with global, catalog, or event scope;
+- published template resolution is event, then catalog, then global;
+- template versions are immutable after publication; and
+- Channels, Event Catalogs, and Event Rules are separate administration
+  concerns backed by the same notification domain.
+
+The implementation is intentionally adapted rather than copied. Phase 1 does
+not create WorkflowHub request-type template variants because SME Fund's two
+initial event keys already identify their business context and no independent
+request-type dimension exists. It also does not create audiences, profiles, or
+subscriptions because those capabilities are explicitly deferred. If a real
+SME Fund use case later requires either concept, it will be introduced as an
+explicit model change rather than through unused compatibility columns.
+
 ## 5. Runtime flow
 
 ```text
@@ -124,7 +153,7 @@ Notification outbox (PENDING)
     |
     | authenticated scheduled processor
     v
-Resolve rule + captured recipients + published template
+Resolve rule + captured recipients + event/catalog/global published template
     |
     v
 Render and sanitize email
@@ -148,6 +177,10 @@ failure must never undo an already committed business transition.
 Event keys are immutable API-level identifiers. Labels and descriptions may be
 edited, but a key must not be renamed after use.
 
+Events belong to immutable catalogs used for template fallback. The initial
+catalogs are `APPLICATIONS` and `WORKFLOW`. Catalog membership cannot be moved
+after an event is created.
+
 ### 6.1 `application.submitted`
 
 Meaning: an applicant successfully submitted an application and its workflow
@@ -155,9 +188,9 @@ instance was created.
 
 Initial required rule:
 
-| Channel | Recipient type | Required | Enabled |
-| --- | --- | ---: | ---: |
-| Email | `APPLICATION_OWNER` | Yes | Yes |
+| Channel | Recipient type      | Required | Enabled |
+| ------- | ------------------- | -------: | ------: |
+| Email   | `APPLICATION_OWNER` |      Yes |     Yes |
 
 The event context captures:
 
@@ -182,9 +215,9 @@ a funding opportunity.
 
 Initial required rule:
 
-| Channel | Recipient type | Required | Enabled |
-| --- | --- | ---: | ---: |
-| Email | `ASSIGNED_USER` | Yes | Yes |
+| Channel | Recipient type  | Required | Enabled |
+| ------- | --------------- | -------: | ------: |
+| Email   | `ASSIGNED_USER` |      Yes |     Yes |
 
 One occurrence may cover all tasks created by the same stage activation, but a
 separate recipient delivery is created for each distinct assigned user. If one
@@ -246,63 +279,111 @@ Required fields:
 - `code` text unique (`EMAIL` initially);
 - `display_name` text;
 - `channel_type` text with an email-only constraint initially;
+- `sort_order` integer;
 - `is_enabled` boolean;
 - `created_at` and `updated_at` timestamps.
 
 SMTP credentials are never stored in this table.
 
-### 8.2 `app_notification_events`
+### 8.2 `app_notification_catalogs`
+
+Stores stable event groupings used for administration and template fallback.
+
+Required fields:
+
+- `id` UUID primary key;
+- `catalog_key` text unique and immutable;
+- `display_name` text;
+- `description` text;
+- `sort_order` integer;
+- `is_enabled` boolean;
+- `created_at` and `updated_at` timestamps.
+
+### 8.3 `app_notification_events`
 
 Stores the event catalogue.
 
 Required fields:
 
 - `id` UUID primary key;
+- `catalog_id` foreign key with immutable membership;
 - `event_key` text unique and immutable;
 - `display_name` text;
 - `description` text;
 - `is_enabled` boolean;
 - `created_at` and `updated_at` timestamps.
 
-### 8.3 `app_notification_event_rules`
+### 8.4 `app_notification_event_rules`
 
-Maps an event to a required recipient type and channel.
+Stores the rule aggregate for an event. One event has at most one rule.
 
 Required fields:
 
 - `id` UUID primary key;
 - `event_id` foreign key;
-- `channel_id` foreign key;
+- `description` text;
+- `is_enabled` boolean;
+- `created_at` and `updated_at` timestamps.
+
+A unique constraint on `event_id` enforces one aggregate per event.
+
+### 8.4.1 `app_notification_event_rule_recipients`
+
+Stores the recipient entries owned by an event rule.
+
+Required fields:
+
+- `id` UUID primary key;
+- `rule_id` foreign key;
 - `recipient_type` text;
-- `is_required` boolean;
-- `is_enabled` boolean;
+- `is_required` boolean; and
 - `created_at` and `updated_at` timestamps.
 
-A uniqueness constraint prevents duplicate event, channel, and recipient-type
-rules.
+A uniqueness constraint on `rule_id` and `recipient_type` prevents duplicate
+recipient definitions within a rule.
 
-### 8.4 `app_notification_templates`
+### 8.4.2 `app_notification_event_rule_channels`
 
-Identifies the template target for an event and channel.
+Stores the channel selections owned by a rule recipient.
 
 Required fields:
 
 - `id` UUID primary key;
-- `event_id` foreign key;
+- `rule_recipient_id` foreign key;
+- `channel_id` foreign key; and
+- `created_at` timestamp.
+
+A uniqueness constraint on `rule_recipient_id` and `channel_id` prevents the
+same channel from being selected twice. Removing a rule cascades only through
+its owned recipient and channel rows; deleting a referenced channel remains
+restricted.
+
+### 8.5 `app_notification_template_targets`
+
+Identifies a global, catalog, or event template target for a channel.
+
+Required fields:
+
+- `id` UUID primary key;
 - `channel_id` foreign key;
+- `scope` with `GLOBAL`, `CATALOG`, and `EVENT` values;
+- `catalog_id` nullable foreign key, required only for `CATALOG`;
+- `event_id` nullable foreign key, required only for `EVENT`;
 - `is_enabled` boolean;
 - `created_at` and `updated_at` timestamps.
 
-There is one template target per event and channel.
+There is at most one global target per channel, one target per channel and
+catalog, and one target per channel and event. Scope and foreign-key shape are
+database-constrained. Channel, scope, catalog, and event identity are immutable.
 
-### 8.5 `app_notification_template_versions`
+### 8.6 `app_notification_template_versions`
 
 Stores every uploaded template version.
 
 Required fields:
 
 - `id` UUID primary key;
-- `template_id` foreign key;
+- `template_target_id` foreign key;
 - `version_number` positive integer;
 - `source_file_name` text;
 - `media_type` text constrained to `text/html` initially;
@@ -319,7 +400,16 @@ Only one published version may exist for a template target. Publishing a new
 version retires the previous published version in one transaction. Existing
 delivery records continue to reference the version actually used.
 
-### 8.6 `app_notification_outbox`
+Template selection checks enabled targets with published versions in this exact
+order: event, the event's catalog, then global. A disabled or unpublished
+specific target does not prevent fallback.
+
+Placeholder allow-lists follow the same ownership boundary. Global targets may
+use only global fields, catalog targets may use that catalog's fields, and event
+targets may use the event fields. This keeps fallback templates valid for every
+event they can serve.
+
+### 8.7 `app_notification_outbox`
 
 Stores durable business-event occurrences.
 
@@ -344,7 +434,7 @@ A unique constraint on `event_key` and `occurrence_key` prevents duplicate
 occurrences. The context must not contain secrets or unrestricted application
 form answers.
 
-### 8.7 `app_notification_deliveries`
+### 8.8 `app_notification_deliveries`
 
 Stores one delivery per resolved recipient.
 
@@ -525,6 +615,17 @@ Secrets and complete rendered email bodies are excluded from audit metadata.
 
 The initial administration surface should provide:
 
+- a channel list at `/admin/notifications/channels`;
+- a channel detail at `/admin/notifications/channels/[channelCode]` grouping
+  global, catalog, and event template targets;
+- template version management at
+  `/admin/notifications/channels/[channelCode]/templates/[targetId]`;
+- an Event Catalogs sidebar entry at
+  `/admin/notifications/event-catalogs` with detail at
+  `/admin/notifications/event-catalogs/[catalogKey]`;
+- an Event Rules sidebar entry at `/admin/notifications/event-rules`;
+- event rule detail at `/admin/notifications/event-rules/[eventKey]`, showing
+  channel bindings and required/enabled recipient rules grouped by catalog;
 - event list and enabled state;
 - required recipient rule list and enabled state;
 - template version history;
@@ -566,10 +667,14 @@ accepted configuration workflow.
 A repeatable migration or seed operation creates:
 
 - the `EMAIL` channel;
+- the `APPLICATIONS` and `WORKFLOW` catalogs;
 - the `application.submitted` event;
 - its required `APPLICATION_OWNER` email rule;
 - the `workflow.task.assigned` event; and
-- its required `ASSIGNED_USER` email rule.
+- its required `ASSIGNED_USER` email rule;
+- one global Email template target;
+- one Email target for each initial catalog; and
+- one Email target for each initial event.
 
 Seed operations use stable identifiers or conflict-safe keys and can be rerun
 without creating duplicates. Template versions remain explicit manual imports;

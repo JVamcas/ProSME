@@ -22,9 +22,14 @@ export const notificationChannels = pgTable(
     code: text("code").notNull(),
     displayName: text("display_name").notNull(),
     channelType: text("channel_type").$type<"EMAIL">().notNull(),
+    sortOrder: integer("sort_order").notNull().default(10),
     isEnabled: boolean("is_enabled").notNull().default(true),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (table) => [
     uniqueIndex("app_notification_channels_code_unique").on(table.code),
@@ -35,16 +40,44 @@ export const notificationChannels = pgTable(
   ],
 );
 
+export const notificationCatalogs = pgTable(
+  "app_notification_catalogs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    catalogKey: text("catalog_key").notNull(),
+    displayName: text("display_name").notNull(),
+    description: text("description").notNull(),
+    sortOrder: integer("sort_order").notNull().default(10),
+    isEnabled: boolean("is_enabled").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("app_notification_catalogs_key_unique").on(table.catalogKey),
+  ],
+);
+
 export const notificationEvents = pgTable(
   "app_notification_events",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    catalogId: uuid("catalog_id")
+      .notNull()
+      .references(() => notificationCatalogs.id, { onDelete: "restrict" }),
     eventKey: text("event_key").notNull(),
     displayName: text("display_name").notNull(),
     description: text("description").notNull(),
     isEnabled: boolean("is_enabled").notNull().default(true),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (table) => [
     uniqueIndex("app_notification_events_key_unique").on(table.eventKey),
@@ -58,46 +91,109 @@ export const notificationEventRules = pgTable(
     eventId: uuid("event_id")
       .notNull()
       .references(() => notificationEvents.id, { onDelete: "restrict" }),
-    channelId: uuid("channel_id")
-      .notNull()
-      .references(() => notificationChannels.id, { onDelete: "restrict" }),
-    recipientType: text("recipient_type").notNull(),
-    isRequired: boolean("is_required").notNull().default(true),
+    description: text("description").notNull(),
     isEnabled: boolean("is_enabled").notNull().default(true),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (table) => [
-    uniqueIndex("app_notification_event_rules_target_unique").on(
-      table.eventId,
-      table.channelId,
+    uniqueIndex("app_notification_event_rules_event_unique").on(table.eventId),
+  ],
+);
+
+export const notificationEventRuleRecipients = pgTable(
+  "app_notification_event_rule_recipients",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    ruleId: uuid("rule_id")
+      .notNull()
+      .references(() => notificationEventRules.id, { onDelete: "cascade" }),
+    recipientType: text("recipient_type").notNull(),
+    isRequired: boolean("is_required").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("app_notification_event_rule_recipients_target_unique").on(
+      table.ruleId,
       table.recipientType,
     ),
     check(
-      "app_notification_event_rules_recipient_check",
+      "app_notification_event_rule_recipients_type_check",
       sql`${table.recipientType} in ('APPLICATION_OWNER', 'ASSIGNED_USER')`,
     ),
   ],
 );
 
-export const notificationTemplates = pgTable(
-  "app_notification_templates",
+export const notificationEventRuleChannels = pgTable(
+  "app_notification_event_rule_channels",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    eventId: uuid("event_id")
+    ruleRecipientId: uuid("rule_recipient_id")
       .notNull()
-      .references(() => notificationEvents.id, { onDelete: "restrict" }),
+      .references(() => notificationEventRuleRecipients.id, {
+        onDelete: "cascade",
+      }),
     channelId: uuid("channel_id")
       .notNull()
       .references(() => notificationChannels.id, { onDelete: "restrict" }),
-    isEnabled: boolean("is_enabled").notNull().default(true),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (table) => [
-    uniqueIndex("app_notification_templates_target_unique").on(
-      table.eventId,
+    uniqueIndex("app_notification_event_rule_channels_target_unique").on(
+      table.ruleRecipientId,
       table.channelId,
+    ),
+  ],
+);
+
+export const notificationTemplateTargets = pgTable(
+  "app_notification_template_targets",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    channelId: uuid("channel_id")
+      .notNull()
+      .references(() => notificationChannels.id, { onDelete: "restrict" }),
+    scope: text("scope").$type<"GLOBAL" | "CATALOG" | "EVENT">().notNull(),
+    catalogId: uuid("catalog_id").references(() => notificationCatalogs.id, {
+      onDelete: "restrict",
+    }),
+    eventId: uuid("event_id").references(() => notificationEvents.id, {
+      onDelete: "restrict",
+    }),
+    isEnabled: boolean("is_enabled").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("app_notification_template_targets_global_unique")
+      .on(table.channelId)
+      .where(sql`${table.scope} = 'GLOBAL'`),
+    uniqueIndex("app_notification_template_targets_catalog_unique")
+      .on(table.channelId, table.catalogId)
+      .where(sql`${table.scope} = 'CATALOG'`),
+    uniqueIndex("app_notification_template_targets_event_unique")
+      .on(table.channelId, table.eventId)
+      .where(sql`${table.scope} = 'EVENT'`),
+    check(
+      "app_notification_template_targets_scope_check",
+      sql`(${table.scope} = 'GLOBAL' and ${table.catalogId} is null and ${table.eventId} is null)
+        or (${table.scope} = 'CATALOG' and ${table.catalogId} is not null and ${table.eventId} is null)
+        or (${table.scope} = 'EVENT' and ${table.catalogId} is null and ${table.eventId} is not null)`,
     ),
   ],
 );
@@ -106,9 +202,11 @@ export const notificationTemplateVersions = pgTable(
   "app_notification_template_versions",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    templateId: uuid("template_id")
+    templateTargetId: uuid("template_target_id")
       .notNull()
-      .references(() => notificationTemplates.id, { onDelete: "restrict" }),
+      .references(() => notificationTemplateTargets.id, {
+        onDelete: "restrict",
+      }),
     versionNumber: integer("version_number").notNull(),
     sourceFileName: text("source_file_name").notNull(),
     mediaType: text("media_type").notNull(),
@@ -126,16 +224,18 @@ export const notificationTemplateVersions = pgTable(
     publishedByUserId: uuid("published_by_user_id").references(() => users.id, {
       onDelete: "restrict",
     }),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
     publishedAt: timestamp("published_at", { withTimezone: true }),
   },
   (table) => [
     uniqueIndex("app_notification_template_versions_number_unique").on(
-      table.templateId,
+      table.templateTargetId,
       table.versionNumber,
     ),
     uniqueIndex("app_notification_template_versions_published_unique")
-      .on(table.templateId)
+      .on(table.templateTargetId)
       .where(sql`${table.status} = 'PUBLISHED'`),
     check(
       "app_notification_template_versions_number_check",
@@ -169,21 +269,29 @@ export const notificationOutbox = pgTable(
     occurrenceKey: text("occurrence_key").notNull(),
     correlationId: text("correlation_id").notNull(),
     context: jsonb("context")
-      .$type<NotificationEventContextByKey[keyof NotificationEventContextByKey]>()
+      .$type<
+        NotificationEventContextByKey[keyof NotificationEventContextByKey]
+      >()
       .notNull(),
     status: text("status")
       .$type<"PENDING" | "PROCESSING" | "PARTIALLY_SENT" | "SENT" | "FAILED">()
       .notNull()
       .default("PENDING"),
-    availableAt: timestamp("available_at", { withTimezone: true }).notNull().defaultNow(),
+    availableAt: timestamp("available_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
     attemptCount: integer("attempt_count").notNull().default(0),
     lastErrorCode: text("last_error_code"),
     lastErrorMessage: text("last_error_message"),
     lockedAt: timestamp("locked_at", { withTimezone: true }),
     lockedBy: text("locked_by"),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
     processedAt: timestamp("processed_at", { withTimezone: true }),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (table) => [
     uniqueIndex("app_notification_outbox_occurrence_unique").on(
@@ -240,10 +348,16 @@ export const notificationDeliveries = pgTable(
     providerMessageId: text("provider_message_id"),
     lastErrorCode: text("last_error_code"),
     lastErrorMessage: text("last_error_message"),
-    nextAttemptAt: timestamp("next_attempt_at", { withTimezone: true }).notNull().defaultNow(),
+    nextAttemptAt: timestamp("next_attempt_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
     sentAt: timestamp("sent_at", { withTimezone: true }),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (table) => [
     uniqueIndex("app_notification_deliveries_recipient_unique").on(
@@ -274,4 +388,3 @@ export const notificationDeliveries = pgTable(
     ),
   ],
 );
-

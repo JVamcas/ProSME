@@ -19,17 +19,19 @@ Every task must:
 
 ## 2. Fixed decisions
 
-| Area | Decision |
-| --- | --- |
-| Initial channel | Email only |
-| Provider | Gmail SMTP using a Google application password |
-| Runtime model | Transactional PostgreSQL outbox |
-| Sender deployment | Existing `apps/platform`; no separate application or Docker image |
-| Templates | Manually uploaded, validated, versioned, and published in PostgreSQL |
-| Template source folder | `apps/platform/src/modules/notifications/templates/email` |
-| Initial events | `application.submitted` and `workflow.task.assigned` |
-| Initial recipients | `APPLICATION_OWNER` and `ASSIGNED_USER` |
-| Subscriptions and other channels | Deferred |
+| Area                             | Decision                                                                 |
+| -------------------------------- | ------------------------------------------------------------------------ |
+| Initial channel                  | Email only                                                               |
+| Provider                         | Gmail SMTP using a Google application password                           |
+| Runtime model                    | Transactional PostgreSQL outbox                                          |
+| Sender deployment                | Existing `apps/platform`; no separate application or Docker image        |
+| Templates                        | Manually uploaded, validated, versioned, and published in PostgreSQL     |
+| Template resolution              | Event target, then catalog fallback, then global fallback                |
+| Event-rule model                 | One rule aggregate per event, with owned recipients and channel bindings |
+| Template source folder           | `apps/platform/src/modules/notifications/templates/email`                |
+| Initial events                   | `application.submitted` and `workflow.task.assigned`                     |
+| Initial recipients               | `APPLICATION_OWNER` and `ASSIGNED_USER`                                  |
+| Subscriptions and other channels | Deferred                                                                 |
 
 ## 3. Dependency chain
 
@@ -78,7 +80,9 @@ Implement:
 
 - the `EMAIL` channel type;
 - immutable event keys;
+- immutable event-catalog keys and membership;
 - the two initial recipient types;
+- global, catalog, and event template-target scopes;
 - template, outbox, and delivery states;
 - Zod context schemas for both initial events; and
 - shared notification error codes.
@@ -94,7 +98,7 @@ Implement:
 ### Acceptance Criteria
 
 1. Event keys have one authoritative catalogue.
-2. Each event has a typed context and allowed recipient types.
+2. Each event has a typed context, catalog, and allowed recipient types.
 3. Invalid contexts produce controlled validation errors.
 4. Domain code has no React, Next.js, database, or SMTP dependency.
 
@@ -119,9 +123,11 @@ Persist configuration, immutable occurrences, and delivery history.
 Add module-owned schema and a repeatable migration for:
 
 - channels;
+- event catalogs;
 - events;
 - event rules;
-- templates and template versions;
+- event-rule recipients and their channel bindings;
+- global, catalog, and event template targets and their versions;
 - outbox occurrences; and
 - recipient deliveries.
 
@@ -154,15 +160,18 @@ Create deterministic starting configuration without manual SQL.
 
 ### Scope
 
-Seed the email channel, both initial events, and their required recipient
-rules. Use stable identifiers or conflict-safe keys.
+Seed the email channel, Applications and Workflow catalogs, both initial
+events, their rule aggregates, required recipient entries and Email channel
+bindings, and global, catalog, and event template targets. Use stable
+identifiers or conflict-safe keys.
 
 ### Acceptance Criteria
 
 1. Seed execution is repeatable.
 2. Re-running it creates no duplicates.
 3. Event keys cannot be edited.
-4. SMTP credentials are absent from seed data and tables.
+4. Catalog keys, event membership, and target identity cannot be edited.
+5. SMTP credentials are absent from seed data and tables.
 
 ### Tests
 
@@ -209,13 +218,19 @@ and tests pass without implementing SMTP or business-event integration.
 
 ### Goal
 
-Render safe subjects, HTML, and plain text from approved fields.
+Resolve event, catalog, and global targets, then render safe subjects, HTML,
+and plain text from approved fields.
 
 ### Scope
 
 Implement per-event field allow-lists, placeholder discovery, HTML escaping,
-subject rendering, HTML rendering, plain-text rendering, and trusted URL
-construction.
+subject rendering, HTML rendering, plain-text rendering, trusted URL
+construction, and deterministic target resolution in event, catalog, global
+order.
+
+Global targets use the global field allow-list, catalog targets use that
+catalog's allow-list, and event targets use the event allow-list. A fallback
+template cannot reference fields outside its target scope.
 
 ### Out of Scope
 
@@ -226,11 +241,13 @@ construction.
 
 ### Acceptance Criteria
 
-1. Supported fields render deterministically.
-2. Unknown fields prevent import or publication.
-3. Recipient values cannot inject HTML.
-4. Subject newlines and missing required context are rejected.
-5. URLs derive from server configuration.
+1. The first enabled target with a published version resolves in event,
+   catalog, global order.
+2. Supported fields render deterministically.
+3. Unknown fields prevent import or publication.
+4. Recipient values cannot inject HTML.
+5. Subject newlines and missing required context are rejected.
+6. URLs derive from server configuration.
 
 ### Tests
 
@@ -279,7 +296,7 @@ Uploaded files can be treated as validated notification content.
 
 ### Goal
 
-Persist drafts and publish one immutable version per event and channel.
+Persist drafts and publish one immutable version per template target.
 
 ### Scope
 
@@ -317,6 +334,17 @@ Let authorized staff upload, inspect, and publish without database access.
 Add thin API routes and UI for target listing, version history, multipart HTML
 upload, subject/plain-text entry, validation feedback, and publication. Use
 React Hook Form, Zod, TanStack Query hooks, and a client service.
+
+The administration route is channel-first:
+
+```text
+/admin/notifications/channels
+/admin/notifications/channels/[channelCode]
+/admin/notifications/channels/[channelCode]/templates/[targetId]
+```
+
+The channel detail groups global, catalog, and event targets and manages each
+target's version history.
 
 ### Acceptance Criteria
 
@@ -633,7 +661,29 @@ Let authorized staff inspect and enable or disable initial events and rules.
 ### Scope
 
 Add list and optimistic-concurrency update operations. Event keys, channel
-types, and recipient types remain immutable.
+types, catalog keys, event catalog membership, template-target identity, and
+recipient types remain immutable.
+
+Expose the WorkflowHub-aligned administration entry and routes:
+
+```text
+Notifications
+├── Channels
+├── Event Catalogs
+└── Event Rules
+
+/admin/notifications/event-catalogs
+/admin/notifications/event-catalogs/[catalogKey]
+/admin/notifications/event-rules
+/admin/notifications/event-rules/[eventKey]
+```
+
+Event Catalogs owns catalog labels, descriptions, sort order, enabled state,
+and the read-only membership view for immutable event keys. The Event Rules
+list groups immutable events by catalog. Event detail edits one rule aggregate:
+its enabled state, recipient entries, required state, and channel bindings.
+Template versions remain owned by the Channels screens and are not duplicated
+here.
 
 ### Acceptance Criteria
 
@@ -641,6 +691,8 @@ types, and recipient types remain immutable.
 2. Enabled state can be changed safely.
 3. Immutable identifiers cannot be edited.
 4. Every mutation is authorized and audited.
+5. Event Rules is visible under the Notifications sidebar group.
+6. Rule, recipient, and channel-binding mutations are atomic.
 
 ### Tests
 

@@ -68,6 +68,8 @@ export const notificationEventKeys = [
 ] as const;
 
 export type NotificationEventKey = (typeof notificationEventKeys)[number];
+export const notificationCatalogKeys = ["APPLICATIONS", "WORKFLOW"] as const;
+export type NotificationCatalogKey = (typeof notificationCatalogKeys)[number];
 export type ApplicationSubmittedContext = z.infer<
   typeof applicationSubmittedContextSchema
 >;
@@ -82,6 +84,7 @@ export type NotificationEventContextByKey = {
 
 type NotificationEventDefinition<Key extends NotificationEventKey> = {
   allowedRecipientTypes: readonly NotificationRecipientType[];
+  catalogKey: NotificationCatalogKey;
   contextSchema: z.ZodType<NotificationEventContextByKey[Key]>;
   key: Key;
 };
@@ -89,11 +92,13 @@ type NotificationEventDefinition<Key extends NotificationEventKey> = {
 export const notificationEventCatalogue = {
   "application.submitted": {
     allowedRecipientTypes: ["APPLICATION_OWNER"],
+    catalogKey: "APPLICATIONS",
     contextSchema: applicationSubmittedContextSchema,
     key: "application.submitted",
   },
   "workflow.task.assigned": {
     allowedRecipientTypes: ["ASSIGNED_USER"],
+    catalogKey: "WORKFLOW",
     contextSchema: workflowTaskAssignedContextSchema,
     key: "workflow.task.assigned",
   },
@@ -154,4 +159,3 @@ export function assertRecipientCompatibility(
     );
   }
 }
-

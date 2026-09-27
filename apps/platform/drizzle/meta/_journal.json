@@ -827,6 +827,13 @@
       "when": 1797897600000,
       "tag": "0117_notification_foundation",
       "breakpoints": true
+    },
+    {
+      "idx": 118,
+      "version": "7",
+      "when": 1797984000000,
+      "tag": "0118_normalize_legacy_rfi_action_configuration",
+      "breakpoints": true
     }
   ]
 }

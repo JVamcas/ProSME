@@ -93,6 +93,10 @@ describe("notification event catalogue", () => {
   });
 
   it("enforces recipient compatibility from the authoritative catalogue", () => {
+    expect(notificationEventCatalogue["application.submitted"].catalogKey)
+      .toBe("APPLICATIONS");
+    expect(notificationEventCatalogue["workflow.task.assigned"].catalogKey)
+      .toBe("WORKFLOW");
     expect(notificationEventCatalogue["application.submitted"]
       .allowedRecipientTypes).toEqual(["APPLICATION_OWNER"]);
     expect(() => assertRecipientCompatibility(

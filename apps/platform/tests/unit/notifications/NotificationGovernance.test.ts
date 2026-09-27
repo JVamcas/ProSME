@@ -58,6 +58,7 @@ describe("notification governance", () => {
       "NOTIFICATION_CHANNEL_UPDATED",
       "NOTIFICATION_EVENT_UPDATED",
       "NOTIFICATION_EVENT_RULE_UPDATED",
+      "NOTIFICATION_TEMPLATE_TARGET_UPDATED",
       "NOTIFICATION_TEMPLATE_IMPORTED",
       "NOTIFICATION_TEMPLATE_PUBLISHED",
       "NOTIFICATION_DELIVERY_RETRY_REQUESTED",
@@ -80,4 +81,3 @@ describe("notification governance", () => {
     }).success).toBe(false);
   });
 });
-

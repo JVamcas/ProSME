@@ -11,9 +11,12 @@ describe("notification foundation migration", () => {
   it("creates the complete module-owned persistence foundation", () => {
     for (const table of [
       "app_notification_channels",
+      "app_notification_catalogs",
       "app_notification_events",
       "app_notification_event_rules",
-      "app_notification_templates",
+      "app_notification_event_rule_recipients",
+      "app_notification_event_rule_channels",
+      "app_notification_template_targets",
       "app_notification_template_versions",
       "app_notification_outbox",
       "app_notification_deliveries",
@@ -25,9 +28,36 @@ describe("notification foundation migration", () => {
   it("enforces unique event, occurrence, published version, and recipient keys", () => {
     expect(migration).toContain("app_notification_events_key_unique");
     expect(migration).toContain("app_notification_outbox_occurrence_unique");
-    expect(migration).toContain("app_notification_template_versions_published_unique");
+    expect(migration).toContain(
+      "app_notification_template_versions_published_unique",
+    );
     expect(migration).toContain("WHERE \"status\" = 'PUBLISHED'");
-    expect(migration).toContain("lower(\"recipient_email\")");
+    expect(migration).toContain('lower("recipient_email")');
+  });
+
+  it("enforces one global, catalog, and event target per channel", () => {
+    expect(migration).toContain(
+      "app_notification_template_targets_global_unique",
+    );
+    expect(migration).toContain(
+      "app_notification_template_targets_catalog_unique",
+    );
+    expect(migration).toContain(
+      "app_notification_template_targets_event_unique",
+    );
+    expect(migration).toContain(
+      "app_notification_template_targets_scope_check",
+    );
+  });
+
+  it("models event rules as rule, recipient, and channel aggregates", () => {
+    expect(migration).toContain("app_notification_event_rules_event_unique");
+    expect(migration).toContain(
+      "app_notification_event_rule_recipients_target_unique",
+    );
+    expect(migration).toContain(
+      "app_notification_event_rule_channels_target_unique",
+    );
   });
 
   it("adds due-work and delivery-history indexes", () => {
@@ -37,7 +67,11 @@ describe("notification foundation migration", () => {
   });
 
   it("makes event keys and occurrence context immutable", () => {
-    expect(migration).toContain("notification event keys are immutable");
+    expect(migration).toContain("notification event identity is immutable");
+    expect(migration).toContain("notification catalog keys are immutable");
+    expect(migration).toContain(
+      "notification template target identity is immutable",
+    );
     expect(migration).toContain(
       "notification occurrence identity and context are immutable",
     );
@@ -58,4 +92,3 @@ describe("notification foundation migration", () => {
     expect(migration).not.toContain("notifications.manage");
   });
 });
-
