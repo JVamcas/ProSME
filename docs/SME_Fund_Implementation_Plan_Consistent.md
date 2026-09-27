@@ -2043,7 +2043,10 @@ Every Task Definition declares exactly one Task type:
   through a configured stage-decision Action.
 
 Task type is immutable for the published Workflow Template Version. It is not
-derived from whether the Task has Action bindings.
+derived from whether the Task has Action bindings. A Stage may contain multiple
+`CONTRIBUTING` Task Definitions, including definitions with multiple reviewer
+slots, but it may contain at most one `STAGE_DECISION` Task Definition. The
+`STAGE_DECISION` Task creates exactly one runtime Task for one assignee.
 
 **States**
 
@@ -2065,7 +2068,11 @@ derived from whether the Task has Action bindings.
    are attached.
 7. A `STAGE_DECISION` Task cannot be completed through the manual completion
    command.
-8. Workflow publication rejects `APPROVE_ADVANCE` on a `CONTRIBUTING` Task.
+8. Workflow publication rejects every stage-decision Action on a
+   `CONTRIBUTING` Task.
+9. A Stage contains at most one `STAGE_DECISION` Task Definition.
+10. A `STAGE_DECISION` Task has exactly one reviewer slot and one assignee.
+11. Multi-reviewer work is represented by independent `CONTRIBUTING` Tasks.
 
 ### Done When
 
@@ -2220,6 +2227,12 @@ Workflow Tasks use exactly one of these types:
   stage-decision Action. It does not expose a separate **Complete task**
   control.
 
+A Stage may define multiple `CONTRIBUTING` Tasks but at most one
+`STAGE_DECISION` Task. A contributing definition may create multiple independent
+reviewer slots; the single stage-decision definition creates exactly one runtime
+Task assigned to one authorized decision-maker. Multi-person voting is not
+modeled as multiple stage-decision Tasks.
+
 Common task-scoped Actions may be bound to either Task type where their own
 configuration and scope permit them. They include Request Information and the
 planned Refer, Hold/Resume and Escalate semantics. These Actions may block,
@@ -2242,6 +2255,8 @@ The UI and server enforce the Task type directly:
 - Workflow publication rejects incompatible Task-type and Action bindings;
 - Stage completion and Transition execution remain subject to completion,
   quorum, Exit Condition and Action policies.
+- Workflow publication rejects more than one `STAGE_DECISION` Task in a Stage
+  and rejects a stage-decision reviewer count other than one.
 
 
 ## 8.1 Common Action Execution Contract

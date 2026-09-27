@@ -26,133 +26,152 @@ const actorId = randomUUID();
 const correlationId = randomUUID();
 
 const entryCondition = {
-  children: [{
-    id: "database-clone-entry-condition",
-    kind: "CONDITION" as const,
-    leftOperand: {
-      key: "application.user_defined_answer",
-      kind: "FIELD" as const,
+  children: [
+    {
+      id: "database-clone-entry-condition",
+      kind: "CONDITION" as const,
+      leftOperand: {
+        key: "application.user_defined_answer",
+        kind: "FIELD" as const,
+      },
+      operator: basicOperators.EQUALS,
+      rightOperand: { kind: "CONSTANT" as const, value: true },
     },
-    operator: basicOperators.EQUALS,
-    rightOperand: { kind: "CONSTANT" as const, value: true },
-  }],
+  ],
   combinator: "AND" as const,
   id: "database-clone-entry-group",
   kind: "GROUP" as const,
 };
 
 const exitCondition = {
-  children: [{
-    id: "database-clone-exit-condition",
-    kind: "CONDITION" as const,
-    leftOperand: {
-      key: "stage.review.USER_DEFINED_RESULT",
-      kind: "FIELD" as const,
+  children: [
+    {
+      id: "database-clone-exit-condition",
+      kind: "CONDITION" as const,
+      leftOperand: {
+        key: "stage.review.USER_DEFINED_RESULT",
+        kind: "FIELD" as const,
+      },
+      operator: basicOperators.EQUALS,
+      rightOperand: { kind: "CONSTANT" as const, value: "COMPLETE" },
     },
-    operator: basicOperators.EQUALS,
-    rightOperand: { kind: "CONSTANT" as const, value: "COMPLETE" },
-  }],
+  ],
   combinator: "AND" as const,
   id: "database-clone-exit-group",
   kind: "GROUP" as const,
 };
 
 const transitionCondition = {
-  children: [{
-    id: "database-clone-transition-condition",
-    kind: "CONDITION" as const,
-    leftOperand: {
-      key: "stage.review.USER_DEFINED_RESULT",
-      kind: "FIELD" as const,
+  children: [
+    {
+      id: "database-clone-transition-condition",
+      kind: "CONDITION" as const,
+      leftOperand: {
+        key: "stage.review.USER_DEFINED_RESULT",
+        kind: "FIELD" as const,
+      },
+      operator: basicOperators.NOT_EQUALS,
+      rightOperand: { kind: "CONSTANT" as const, value: "BLOCKED" },
     },
-    operator: basicOperators.NOT_EQUALS,
-    rightOperand: { kind: "CONSTANT" as const, value: "BLOCKED" },
-  }],
+  ],
   combinator: "AND" as const,
   id: "database-clone-transition-group",
   kind: "GROUP" as const,
 };
 
 const graph: WorkflowGraphInput = {
-  stages: [{
-    actions: [],
-    checklistItems: [{
-      taskStableKey: "REVIEW_TASK",
-      key: "OWNERSHIP_CONFIRMED",
-      text: "Confirm ownership.",
-      mandatory: true,
-      responseType: "YES_NO",
-      evidenceRequirement: "REQUIRED",
-      notes: "Review current records.",
+  stages: [
+    {
+      actions: [],
+      checklistItems: [
+        {
+          taskStableKey: "REVIEW_TASK",
+          key: "OWNERSHIP_CONFIRMED",
+          text: "Confirm ownership.",
+          mandatory: true,
+          responseType: "YES_NO",
+          evidenceRequirement: "REQUIRED",
+          notes: "Review current records.",
+          displayOrder: 1,
+        },
+      ],
+      documentRequirements: [
+        {
+          taskStableKey: "REVIEW_TASK",
+          name: "Review evidence",
+          mandatory: true,
+          acceptedFileTypes: ["PDF"],
+          maximumSizeMb: 10,
+          expiryDays: null,
+          requestOnStageActivation: false,
+          uploader: "APPLICANT",
+          verifier: "ASSIGNED_REVIEWER",
+          templateReference: "REVIEW_EVIDENCE_TEMPLATE",
+        },
+      ],
+      scoring: {
+        aggregation: "WEIGHTED_AVERAGE",
+        taskStableKey: "REVIEW_TASK",
+        criteria: [
+          {
+            criterion: "Business viability",
+            description: "Assess viability.",
+            weight: 100,
+            scaleMinimum: 0,
+            scaleMaximum: 10,
+            mandatoryComment: true,
+          },
+        ],
+      },
+      coiGated: false,
+      description: "Review the application",
       displayOrder: 1,
-    }],
-    documentRequirements: [{
-      taskStableKey: "REVIEW_TASK",
-      name: "Review evidence",
-      mandatory: true,
-      acceptedFileTypes: ["PDF"],
-      maximumSizeMb: 10,
-      expiryDays: null,
-      requestOnStageActivation: false,
-      uploader: "APPLICANT",
-      verifier: "ASSIGNED_REVIEWER",
-      templateReference: "REVIEW_EVIDENCE_TEMPLATE",
-    }],
-    scoring: {
-      aggregation: "WEIGHTED_AVERAGE",
-      taskStableKey: "REVIEW_TASK",
-      criteria: [{
-        criterion: "Business viability",
-        description: "Assess viability.",
-        weight: 100,
-        scaleMinimum: 0,
-        scaleMaximum: 10,
-        mandatoryComment: true,
-      }],
+      enabled: true,
+      entryCondition,
+      exitCondition,
+      initial: true,
+      name: "Review",
+      optional: false,
+      publicStatusMapping: {
+        description: "Application under review",
+        label: "Under review",
+        status: "UNDER_REVIEW",
+      },
+      repeatable: false,
+      stableKey: "REVIEW",
+      tasks: [
+        {
+          actionKeys: [],
+          taskType: "CONTRIBUTING",
+          assignmentMode: "NAMED_USER",
+          coiRequired: false,
+          config: {},
+          description: "Complete the review checklist.",
+          displayOrder: 1,
+          formBinding: null,
+          name: "Review checklist",
+          namedUserOverrideId: actorId,
+          permissions: defaultWorkflowElementPermissions,
+          quorum: false,
+          required: true,
+          requiredCompletionCount: 1,
+          reviewerCount: 1,
+          roleId: null,
+          stableKey: "REVIEW_TASK",
+        },
+      ],
     },
-    coiGated: false,
-    description: "Review the application",
-    displayOrder: 1,
-    enabled: true,
-    entryCondition,
-    exitCondition,
-    initial: true,
-    name: "Review",
-    optional: false,
-    publicStatusMapping: {
-      description: "Application under review",
-      label: "Under review",
-      status: "UNDER_REVIEW",
+  ],
+  transitions: [
+    {
+      actionKey: "COMPLETE",
+      condition: transitionCondition,
+      priority: 1,
+      sourceStageKey: "REVIEW",
+      targetStageKey: null,
+      terminalOutcome: "COMPLETED",
     },
-    repeatable: false,
-    stableKey: "REVIEW",
-    tasks: [{
-      actionKeys: [],
-      assignmentMode: "NAMED_USER",
-      coiRequired: false,
-      config: {},
-      description: "Complete the review checklist.",
-      displayOrder: 1,
-      formBinding: null,
-      name: "Review checklist",
-      namedUserOverrideId: actorId,
-      permissions: defaultWorkflowElementPermissions,
-      quorum: false,
-      required: true,
-      requiredCompletionCount: 1,
-      reviewerCount: 1,
-      roleId: null,
-      stableKey: "REVIEW_TASK",
-    }],
-  }],
-  transitions: [{
-    actionKey: "COMPLETE",
-    condition: transitionCondition,
-    priority: 1,
-    sourceStageKey: "REVIEW",
-    targetStageKey: null,
-    terminalOutcome: "COMPLETED",
-  }],
+  ],
 };
 
 beforeAll(async () => {
@@ -178,20 +197,26 @@ afterAll(async () => {
       graph,
       name: "Condition clone verification",
     });
-    await changeWorkflowTemplateLifecycle({
-      actorId,
-      correlationId,
-      expectedRowVersion: 1,
-      idempotencyKey: randomUUID(),
-      versionId: sourceVersionId,
-    }, "SUBMIT");
-    await changeWorkflowTemplateLifecycle({
-      actorId,
-      correlationId,
-      expectedRowVersion: 2,
-      idempotencyKey: randomUUID(),
-      versionId: sourceVersionId,
-    }, "APPROVE");
+    await changeWorkflowTemplateLifecycle(
+      {
+        actorId,
+        correlationId,
+        expectedRowVersion: 1,
+        idempotencyKey: randomUUID(),
+        versionId: sourceVersionId,
+      },
+      "SUBMIT",
+    );
+    await changeWorkflowTemplateLifecycle(
+      {
+        actorId,
+        correlationId,
+        expectedRowVersion: 2,
+        idempotencyKey: randomUUID(),
+        versionId: sourceVersionId,
+      },
+      "APPROVE",
+    );
     await publishWorkflowVersion({
       actorId,
       correlationId,
@@ -225,13 +250,13 @@ afterAll(async () => {
     ]);
     expect(clone?.graph.stages[0].scoring).toEqual({
       aggregation: "WEIGHTED_AVERAGE",
-      criteria: [expect.objectContaining({
-        criterion: "Business viability",
-        mandatoryComment: true,
-      })],
+      criteria: [
+        expect.objectContaining({
+          criterion: "Business viability",
+          mandatoryComment: true,
+        }),
+      ],
     });
-    expect(clone?.graph.transitions[0].condition).toEqual(
-      transitionCondition,
-    );
+    expect(clone?.graph.transitions[0].condition).toEqual(transitionCondition);
   });
 });

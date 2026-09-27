@@ -9,7 +9,10 @@ import {
   FormSelect,
   FormTextarea,
 } from "@/components/ui/form-fields";
-import { formPurposeOptions, type FormPurpose } from "@/modules/forms/FormTypes";
+import {
+  formPurposeOptions,
+  type FormPurpose,
+} from "@/modules/forms/FormTypes";
 import { workflowTaskFormPurposes } from "@/modules/workflows/domain/definitions/WorkflowTaskDefinition";
 import type { WorkflowTaskFormValues } from "./WorkflowTaskFormSchema";
 
@@ -26,6 +29,17 @@ function TaskIdentityFields() {
         label="Task name"
         name="name"
         placeholder="Review finance"
+        required
+      />
+      <FormSelect
+        containerClassName="sm:col-span-2"
+        infoTooltip="Contributing tasks are manually completed. A stage-decision task is completed only through a decision action."
+        items={[
+          { label: "Contributing work", value: "CONTRIBUTING" },
+          { label: "Stage decision", value: "STAGE_DECISION" },
+        ]}
+        label="Task type"
+        name="taskType"
         required
       />
       <FormInput
@@ -119,6 +133,8 @@ export function WorkflowTaskDialogFields({
   formsPending,
   mutationPending,
 }: Props) {
+  const { control } = useFormContext<WorkflowTaskFormValues>();
+  const taskType = useWatch({ control, name: "taskType" });
   return (
     <>
       <TaskIdentityFields />
@@ -169,23 +185,27 @@ export function WorkflowTaskDialogFields({
           infoTooltip="How many people from the selected role will receive an individual copy of this task when the workflow runs. Named-user assignments are limited to one reviewer."
           label="Reviewer count"
           min={1}
-          max={100}
+          max={taskType === "STAGE_DECISION" ? 1 : 100}
           name="reviewerCount"
           registrationOptions={{ valueAsNumber: true }}
           required
           type="number"
         />
-        <FormSelect
-          items={[
-            { label: "All", value: "ALL" },
-            { label: "Fixed count", value: "COUNT" },
-            { label: "Percentage", value: "PERCENT" },
-          ]}
-          label="Completion threshold"
-          name="completionMode"
-          required
-        />
-        <CompletionThresholdValueField />
+        {taskType === "CONTRIBUTING" ? (
+          <>
+            <FormSelect
+              items={[
+                { label: "All", value: "ALL" },
+                { label: "Fixed count", value: "COUNT" },
+                { label: "Percentage", value: "PERCENT" },
+              ]}
+              label="Completion threshold"
+              name="completionMode"
+              required
+            />
+            <CompletionThresholdValueField />
+          </>
+        ) : null}
       </div>
       <CheckboxField
         containerClassName="mt-8 text-sm font-semibold text-brand-navy"

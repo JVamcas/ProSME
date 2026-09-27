@@ -170,6 +170,7 @@ type TaskInput = {
   name: string;
   requiredCompletionCount?: number;
   reviewerCount?: number;
+  taskType: "CONTRIBUTING" | "STAGE_DECISION";
   roleCode: StandardWorkflowRoleCode;
   stableKey: string;
 };
@@ -204,6 +205,7 @@ export function task(
     required: true,
     requiredCompletionCount: input.requiredCompletionCount ?? 1,
     reviewerCount: input.reviewerCount ?? 1,
+    taskType: input.taskType,
     roleId: dependencies.roleIds[input.roleCode],
     stableKey: input.stableKey,
   };

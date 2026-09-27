@@ -8,10 +8,7 @@ import {
   PreviewButton,
 } from "@/components/ui/action-buttons";
 import { GeneralButton } from "@/components/ui/button";
-import {
-  DataTable,
-  type DataTableColumn,
-} from "@/components/ui/data-table";
+import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
 import type {
   WorkflowAssignmentOptions,
   WorkflowStageInput,
@@ -35,8 +32,8 @@ function assignmentLabel(
 ) {
   if (task.assignmentMode === "NAMED_USER" && task.namedUserOverrideId) {
     return (
-      options?.users.find((item) => item.id === task.namedUserOverrideId)?.label ??
-      "Specific user"
+      options?.users.find((item) => item.id === task.namedUserOverrideId)
+        ?.label ?? "Specific user"
     );
   }
   const roleId = task.roleId;
@@ -56,6 +53,14 @@ function taskColumns(
     {
       accessorKey: "name",
       header: "Task",
+    },
+    {
+      accessorKey: "taskType",
+      header: "Type",
+      cell: ({ row }) =>
+        row.original.taskType === "STAGE_DECISION"
+          ? "Stage decision"
+          : "Contributing",
     },
     {
       id: "assignee",

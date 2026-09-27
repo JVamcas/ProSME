@@ -3,6 +3,11 @@ import "server-only";
 import { sql } from "drizzle-orm";
 
 import { taskWorkIsReady } from "@/modules/workflows/WorkflowTaskRegistry";
+import type { WorkflowActionType } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
+import {
+  shouldCompleteWorkflowTask,
+  taskActionMatchesType,
+} from "@/modules/workflows/domain/runtime/WorkflowTaskCompletionPolicy";
 
 import { getDatabase } from "@/db/client";
 import type {
@@ -19,6 +24,10 @@ import type {
   FormTaskCompletionResult as CompletionResult,
   FormTaskCompletionTransaction as Transaction,
 } from "./FormTaskCompletionTypes";
+import {
+  appendFormTaskCompletionRecords,
+  FormTaskCommandKeyConflict,
+} from "./FormTaskCompletionRecordsRepository";
 
 type ReplayInput = Pick<
   CompletionInput,
@@ -31,7 +40,8 @@ type ReplayInput = Pick<
 >;
 
 type LockedTask = {
-  hasActions: boolean;
+  actionType: WorkflowActionType | null;
+  taskType: "CONTRIBUTING" | "STAGE_DECISION";
   hasChecklist: boolean;
   checklistItems: { code: string; required: boolean }[];
   config: unknown;
@@ -51,7 +61,6 @@ type CompletionWriteResult =
 
 type Executor = Pick<ReturnType<typeof getDatabase>, "execute">;
 
-class CommandKeyConflict extends Error {}
 class WorkflowTransitionConflict extends Error {}
 
 async function findCommand(
@@ -70,20 +79,23 @@ async function findCommand(
     FROM app_task_completion_commands
     WHERE idempotency_key = ${input.idempotencyKey}
   `);
-  const replay = result.rows[0] as {
-    actorId: string;
-    taskInstanceId: string;
-    rowVersion: number;
-    nextStageName: string | null;
-    workflowStatus: "ACTIVE" | "COMPLETED";
-    sameResult: boolean;
-    taskStatus: "IN_PROGRESS" | "COMPLETED";
-  } | undefined;
+  const replay = result.rows[0] as
+    | {
+        actorId: string;
+        taskInstanceId: string;
+        rowVersion: number;
+        nextStageName: string | null;
+        workflowStatus: "ACTIVE" | "COMPLETED";
+        sameResult: boolean;
+        taskStatus: "IN_PROGRESS" | "COMPLETED";
+      }
+    | undefined;
   if (!replay) return null;
-  const sameCommand = replay.actorId === input.actorId
-    && replay.taskInstanceId === input.taskInstanceId
-    && replay.rowVersion === input.expectedTaskRowVersion + 1
-    && replay.sameResult;
+  const sameCommand =
+    replay.actorId === input.actorId &&
+    replay.taskInstanceId === input.taskInstanceId &&
+    replay.rowVersion === input.expectedTaskRowVersion + 1 &&
+    replay.sameResult;
   if (!sameCommand) return { kind: "idempotency_conflict" };
   return {
     kind: "completed",
@@ -109,10 +121,13 @@ async function lockTask(
   const result = await transaction.execute(sql`
     SELECT task.row_version AS "rowVersion", task.result,
       definition.config,
-      EXISTS (
-        SELECT 1 FROM app_stage_task_action_bindings binding
-        WHERE binding.task_definition_id = definition.id
-      ) AS "hasActions",
+      definition.task_type AS "taskType",
+      (
+        SELECT action.action_type
+        FROM app_workflow_action_definitions action
+        WHERE action.stage_id = stage.workflow_stage_definition_id
+          AND action.stable_key = ${input.actionKey}
+      ) AS "actionType",
       EXISTS (
         SELECT 1 FROM app_workflow_stage_checklist_definitions checklist
         WHERE checklist.task_definition_id = definition.id
@@ -197,10 +212,14 @@ async function completeSubmission(
       AND app_form_responses.row_version = ${expectedVersion}
     RETURNING id, row_version AS "rowVersion"
   `);
-  return (result.rows[0] as {
-    id: string;
-    rowVersion: number;
-  } | undefined) ?? null;
+  return (
+    (result.rows[0] as
+      | {
+          id: string;
+          rowVersion: number;
+        }
+      | undefined) ?? null
+  );
 }
 
 async function completeTaskRow(
@@ -224,78 +243,16 @@ async function completeTaskRow(
   `);
 }
 
-async function appendCompletionRecords(
-  transaction: Transaction,
-  input: CompletionInput,
-  result: CompletionResult,
-  response: { id: string; rowVersion: number },
-  completedAt: Date,
-) {
-  const command = await transaction.execute(sql`
-    INSERT INTO app_task_completion_commands
-      (idempotency_key, task_instance_id, actor_id, result, completed_at,
-       row_version, next_stage_name, workflow_status)
-    VALUES (${input.idempotencyKey}, ${input.taskInstanceId}::uuid,
-      ${input.actorId}::uuid,
-      ${JSON.stringify({ actionKey: input.actionKey, values: input.values, taskStatus: result.taskStatus })}::jsonb,
-      ${completedAt}, ${result.rowVersion}, ${result.nextStageName},
-      ${result.workflowStatus})
-    ON CONFLICT (idempotency_key) DO NOTHING
-    RETURNING idempotency_key
-  `);
-  if (!command.rowCount) throw new CommandKeyConflict();
-  await transaction.execute(sql`
-    INSERT INTO app_workflow_audit_entries
-      (actor_id, action, target_type, target_id, correlation_id,
-       before, after)
-    VALUES (${input.actorId}::uuid, 'FORM_RESPONSE_COMPLETED', 'FORM_RESPONSE',
-      ${response.id}, ${input.correlationId}::uuid,
-      jsonb_build_object(
-        'rowVersion', ${input.expectedResponseRowVersion ?? null}::integer,
-        'status', CASE
-          WHEN ${input.expectedResponseRowVersion ?? null}::integer IS NULL
-            THEN NULL
-          ELSE 'DRAFT'
-        END
-      ),
-      jsonb_build_object(
-        'formVersionId', ${input.formVersionId}::text,
-        'respondentUserId', ${input.actorId}::text,
-        'rowVersion', ${response.rowVersion}::integer,
-        'status', 'COMPLETED',
-        'values', ${JSON.stringify(input.values)}::jsonb,
-        'workflowTaskId', ${input.taskInstanceId}::text
-      ))
-  `);
-  await transaction.execute(sql`
-    INSERT INTO app_transactional_outbox
-      (event_code, aggregate_id, schema_version, payload, correlation_id)
-    VALUES (${result.taskStatus === 'COMPLETED' ? 'FORM_TASK_COMPLETED' : 'FORM_RESPONSE_COMPLETED'}, ${input.taskInstanceId}::uuid, 1,
-      ${JSON.stringify(result)}::jsonb, ${input.correlationId}::uuid)
-  `);
-}
-
 async function writeCompletion(
   transaction: Transaction,
   input: CompletionInput,
   task: LockedTask,
   executeTransition: ExecuteTransition,
 ): Promise<CompletionResult | null> {
-  if (input.actionKey && !taskWorkIsReady({
-    config: task.config,
-    formCompleted: true,
-    formRequired: true,
-    hasChecklist: task.hasChecklist,
-    checklistItems: task.checklistItems,
-    documentRequirements: task.documentRequirements,
-    result: task.result,
-    scoring: task.scoring,
-  })) return null;
-  const completedAt = new Date();
-  const response = await completeSubmission(transaction, input, completedAt);
-  if (!response) return null;
-  const taskStatus = (task.hasActions && !input.actionKey)
-    || !taskWorkIsReady({
+  if (input.actionKey && !taskActionMatchesType(task)) return null;
+  if (
+    input.actionKey &&
+    !taskWorkIsReady({
       config: task.config,
       formCompleted: true,
       formRequired: true,
@@ -305,8 +262,30 @@ async function writeCompletion(
       result: task.result,
       scoring: task.scoring,
     })
-    ? "IN_PROGRESS" as const
-    : "COMPLETED" as const;
+  )
+    return null;
+  const completedAt = new Date();
+  const response = await completeSubmission(transaction, input, completedAt);
+  if (!response) return null;
+  const workReady = taskWorkIsReady({
+    config: task.config,
+    formCompleted: true,
+    formRequired: true,
+    hasChecklist: task.hasChecklist,
+    checklistItems: task.checklistItems,
+    documentRequirements: task.documentRequirements,
+    result: task.result,
+    scoring: task.scoring,
+  });
+  const completesTask = shouldCompleteWorkflowTask({
+    actionKey: input.actionKey,
+    actionType: task.actionType,
+    taskType: task.taskType,
+    workReady,
+  });
+  const taskStatus = completesTask
+    ? ("COMPLETED" as const)
+    : ("IN_PROGRESS" as const);
   await completeTaskRow(transaction, input, completedAt, taskStatus);
   const auditInput = {
     actorId: input.actorId,
@@ -349,7 +328,7 @@ async function writeCompletion(
     taskInstanceId: input.taskInstanceId,
     taskStatus,
   };
-  await appendCompletionRecords(
+  await appendFormTaskCompletionRecords(
     transaction,
     input,
     result,
@@ -386,7 +365,7 @@ export async function completeFormTask(
         : { kind: "conflict" as const };
     });
   } catch (error) {
-    if (error instanceof CommandKeyConflict) {
+    if (error instanceof FormTaskCommandKeyConflict) {
       return (await findCommand(database, input)) ?? { kind: "conflict" };
     }
     if (error instanceof WorkflowTransitionConflict) {

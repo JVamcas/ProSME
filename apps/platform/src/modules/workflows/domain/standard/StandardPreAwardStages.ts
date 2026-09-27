@@ -1,7 +1,7 @@
 import type { WorkflowStageInput } from "../definitions/WorkflowTypes";
 import type { StandardWorkflowDependencies } from "./StandardWorkflowTypes";
+import { createStandardTechnicalAssessmentStage } from "./StandardTechnicalAssessmentStage";
 import {
-  action,
   approve,
   checklist,
   documentRequirement,
@@ -72,6 +72,7 @@ function screening(dependencies: StandardWorkflowDependencies) {
     tasks: [
       task(dependencies, {
         actionKeys: [],
+        taskType: "CONTRIBUTING",
         config: {},
         description:
           "Complete the configured screening and evidence checklist.",
@@ -82,6 +83,7 @@ function screening(dependencies: StandardWorkflowDependencies) {
       }),
       task(dependencies, {
         actionKeys: actions.map((item) => item.stableKey),
+        taskType: "STAGE_DECISION",
         config: {
           command: "AUTHORITATIVE_ELIGIBILITY",
           reevaluationPolicy: "WHEN_EVIDENCE_CHANGED",
@@ -93,103 +95,6 @@ function screening(dependencies: StandardWorkflowDependencies) {
         name: "Authoritative eligibility decision",
         roleCode: "programme_officer",
         stableKey: "AUTHORITATIVE_ELIGIBILITY",
-      }),
-    ],
-  });
-}
-
-function technicalAssessment(dependencies: StandardWorkflowDependencies) {
-  const actions = [
-    approve("RECOMMEND", "Recommend", 1),
-    approve("RECOMMEND_WITH_CONDITIONS", "Recommend with conditions", 2),
-    approve("DO_NOT_RECOMMEND", "Do not recommend", 3),
-    requestInformation("REQUEST_CLARIFICATION", "Request clarification", 4),
-    action(
-      "ESCALATE_SCORING_DISCREPANCY",
-      "Escalate scoring discrepancy",
-      "ESCALATE",
-      5,
-      {
-        targetId: dependencies.roleIds.panel_moderator,
-        targetType: "ROLE",
-        trigger: "MANUAL",
-      },
-    ),
-  ];
-  const criteria = [
-    {
-      commentRequired: true,
-      code: "TECHNICAL_MERIT",
-      label: "Technical merit and feasibility",
-      maximumScore: 10,
-      weight: 40,
-    },
-    {
-      commentRequired: true,
-      code: "EXPECTED_IMPACT",
-      label: "Expected impact",
-      maximumScore: 10,
-      weight: 35,
-    },
-    {
-      commentRequired: true,
-      code: "DELIVERY_CAPACITY",
-      label: "Delivery capacity",
-      maximumScore: 10,
-      weight: 25,
-    },
-  ];
-  return stage({
-    actions,
-    checklistItems: [],
-    coiGated: true,
-    description: "Perform independent technical or scientific assessment.",
-    displayOrder: 2,
-    documentRequirements: [
-      documentRequirement(
-        "COI and confidentiality undertaking",
-        "ASSIGNED_REVIEWER",
-      ),
-      documentRequirement("Individual review report", "ASSIGNED_REVIEWER"),
-    ],
-    enabled: true,
-    initial: false,
-    name: "Technical or Scientific Assessment",
-    optional: false,
-    publicStatusMapping: {
-      description: "Your application is undergoing detailed assessment.",
-      label: "Detailed assessment",
-      status: "UNDER_REVIEW",
-    },
-    repeatable: false,
-    scoring: {
-      aggregation: "WEIGHTED_AVERAGE",
-      taskStableKey: "TECHNICAL_REVIEW",
-      criteria: criteria.map((criterion) => ({
-        criterion: criterion.label,
-        description: "Standard baseline; confirm for each Funding Call.",
-        mandatoryComment: criterion.commentRequired,
-        scaleMaximum: criterion.maximumScore,
-        scaleMinimum: 0,
-        weight: criterion.weight,
-      })),
-    },
-    slaHours: 240,
-    stableKey: "TECHNICAL_ASSESSMENT",
-    tasks: [
-      task(dependencies, {
-        actionKeys: actions.map((item) => item.stableKey),
-        coiRequired: true,
-        config: { criteria },
-        description:
-          "Score the application and record an independent recommendation.",
-        displayOrder: 1,
-        formCode: "TECHNICAL_REVIEW",
-        name: "Independent technical review",
-        requiredCompletionCount: 2,
-        reviewerCount: 3,
-        roleCode: "sector_specialist",
-        stableKey: "TECHNICAL_REVIEW",
       }),
     ],
   });
@@ -250,6 +155,7 @@ function financialReview(dependencies: StandardWorkflowDependencies) {
     tasks: [
       task(dependencies, {
         actionKeys: actions.map((item) => item.stableKey),
+        taskType: "STAGE_DECISION",
         config: {
           fields: [
             {
@@ -364,6 +270,7 @@ function dueDiligence(dependencies: StandardWorkflowDependencies) {
     tasks: [
       task(dependencies, {
         actionKeys: actions.map((item) => item.stableKey),
+        taskType: "STAGE_DECISION",
         config: {
           categories: [
             internalOption("ENTITY", "Entity and governance"),
@@ -392,7 +299,7 @@ export function createStandardAssessmentStages(
 ): WorkflowStageInput[] {
   return [
     screening(dependencies),
-    technicalAssessment(dependencies),
+    createStandardTechnicalAssessmentStage(dependencies),
     financialReview(dependencies),
     dueDiligence(dependencies),
   ];

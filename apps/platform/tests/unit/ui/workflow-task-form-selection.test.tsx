@@ -11,9 +11,11 @@ import type { WorkflowTaskFormValues } from "@/modules/workflows/ui/definitions/
 
 const attachedVersionId = "68cecb68-3f4f-4862-a958-92942187cf04";
 
-(globalThis as typeof globalThis & {
-  IS_REACT_ACT_ENVIRONMENT: boolean;
-}).IS_REACT_ACT_ENVIRONMENT = true;
+(
+  globalThis as typeof globalThis & {
+    IS_REACT_ACT_ENVIRONMENT: boolean;
+  }
+).IS_REACT_ACT_ENVIRONMENT = true;
 
 function TaskFields({
   completionMode = "COUNT",
@@ -40,6 +42,7 @@ function TaskFields({
       requiredCompletionCount: 1,
       reviewerCount: 1,
       stableKey: "FINANCE_REVIEW",
+      taskType: "CONTRIBUTING",
     },
   });
   const formVersionId = useWatch({
@@ -68,10 +71,12 @@ afterEach(() => {
 
 describe("workflow task form selection", () => {
   it("shows a stored unavailable binding instead of claiming no form is selected", () => {
-    expect(workflowTaskFormItems([], attachedVersionId)).toEqual([{
-      label: "Unavailable form version — remove or replace",
-      value: attachedVersionId,
-    }]);
+    expect(workflowTaskFormItems([], attachedVersionId)).toEqual([
+      {
+        label: "Unavailable form version — remove or replace",
+        value: attachedVersionId,
+      },
+    ]);
   });
 
   it("only offers published forms with the selected purpose", () => {
@@ -91,15 +96,14 @@ describe("workflow task form selection", () => {
         versionNumber: 1,
       },
     ];
-    expect(workflowTaskFormItems(
-      forms,
-      "",
-      true,
-      "APPLICATION_REVIEW",
-    )).toEqual([{
-      label: "Review · v1",
-      value: forms[1].versionId,
-    }]);
+    expect(
+      workflowTaskFormItems(forms, "", true, "APPLICATION_REVIEW"),
+    ).toEqual([
+      {
+        label: "Review · v1",
+        value: forms[1].versionId,
+      },
+    ]);
   });
 
   it("offers only the two task form purposes and leaves the form optional", async () => {
@@ -112,21 +116,20 @@ describe("workflow task form selection", () => {
     const purpose = container.querySelector<HTMLSelectElement>(
       'select[name="formPurpose"]',
     );
-    expect(Array.from(purpose?.options ?? [], (option) => option.value)).toEqual([
-      "APPLICATION_REVIEW",
-      "ELIGIBILITY_VERIFICATION",
-    ]);
-    expect(container.querySelector<HTMLSelectElement>(
-      'select[name="formVersionId"]',
-    )?.required).toBe(false);
+    expect(
+      Array.from(purpose?.options ?? [], (option) => option.value),
+    ).toEqual(["APPLICATION_REVIEW", "ELIGIBILITY_VERIFICATION"]);
+    expect(
+      container.querySelector<HTMLSelectElement>('select[name="formVersionId"]')
+        ?.required,
+    ).toBe(false);
     const layout = container.querySelector<HTMLSelectElement>(
       'select[name="displayMode"]',
     );
     expect(layout?.value).toBe("STEP_PROGRESS");
-    expect(Array.from(layout?.options ?? [], (option) => option.value)).toEqual([
-      "STEP_PROGRESS",
-      "SECTIONS",
-    ]);
+    expect(Array.from(layout?.options ?? [], (option) => option.value)).toEqual(
+      ["STEP_PROGRESS", "SECTIONS"],
+    );
 
     await act(async () => root.unmount());
   });
@@ -136,12 +139,16 @@ describe("workflow task form selection", () => {
     document.body.append(container);
     const root = createRoot(container);
 
-    await act(async () => root.render(
-      <TaskFields
-        formItems={[{ label: "Other eligibility form · v1", value: attachedVersionId }]}
-        formPurpose="ELIGIBILITY_VERIFICATION"
-      />,
-    ));
+    await act(async () =>
+      root.render(
+        <TaskFields
+          formItems={[
+            { label: "Other eligibility form · v1", value: attachedVersionId },
+          ]}
+          formPurpose="ELIGIBILITY_VERIFICATION"
+        />,
+      ),
+    );
 
     expect(container.querySelector('select[name="formVersionId"]')).toBeNull();
     expect(container.textContent).toContain(
@@ -157,14 +164,18 @@ describe("workflow task form selection", () => {
     const root = createRoot(container);
 
     await act(async () => root.render(<TaskFields formItems={[]} />));
-    await act(async () => root.render(
-      <TaskFields
-        formItems={[{
-          label: "Finance Assessment · v1",
-          value: attachedVersionId,
-        }]}
-      />,
-    ));
+    await act(async () =>
+      root.render(
+        <TaskFields
+          formItems={[
+            {
+              label: "Finance Assessment · v1",
+              value: attachedVersionId,
+            },
+          ]}
+        />,
+      ),
+    );
 
     const formSelect = container.querySelector<HTMLSelectElement>(
       'select[name="formVersionId"]',
@@ -188,14 +199,18 @@ describe("workflow task form selection", () => {
     const percentageRoot = createRoot(percentageContainer);
 
     await act(async () => countRoot.render(<TaskFields formItems={[]} />));
-    await act(async () => percentageRoot.render(
-      <TaskFields completionMode="PERCENT" formItems={[]} />,
-    ));
+    await act(async () =>
+      percentageRoot.render(
+        <TaskFields completionMode="PERCENT" formItems={[]} />,
+      ),
+    );
 
     expect(countContainer.textContent).toContain("Required completions");
     expect(countContainer.textContent).not.toContain("Completion percentage");
     expect(percentageContainer.textContent).toContain("Completion percentage");
-    expect(percentageContainer.textContent).not.toContain("Required completions");
+    expect(percentageContainer.textContent).not.toContain(
+      "Required completions",
+    );
 
     await act(async () => countRoot.unmount());
     await act(async () => percentageRoot.unmount());

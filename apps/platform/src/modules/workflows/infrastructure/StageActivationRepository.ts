@@ -44,6 +44,7 @@ export type StageActivationTaskDefinition = {
   id: string;
   namedUserOverrideId: string | null;
   reviewerCount: number;
+  taskType: "CONTRIBUTING" | "STAGE_DECISION";
   roleId: string | null;
   stableKey: string;
 };
@@ -93,8 +94,7 @@ export async function lockStageActivationTarget(
         hardFailureCount: sql<number>`jsonb_array_length(${authoritativeEligibilityOutcomes.hardFailures})`,
         manualScreeningRequired:
           authoritativeEligibilityOutcomes.manualScreeningRequired,
-        ruleSetVersionId:
-          authoritativeEligibilityOutcomes.ruleSetVersionId,
+        ruleSetVersionId: authoritativeEligibilityOutcomes.ruleSetVersionId,
         ruleSetVersionNumber:
           authoritativeEligibilityOutcomes.ruleSetVersionNumber,
         softFailureCount: sql<number>`jsonb_array_length(${authoritativeEligibilityOutcomes.softFailures})`,
@@ -119,10 +119,7 @@ export async function lockStageActivationTarget(
     )
     .innerJoin(
       applicationSubmissionSnapshots,
-      eq(
-        applicationSubmissionSnapshots.id,
-        applications.submissionSnapshotId,
-      ),
+      eq(applicationSubmissionSnapshots.id, applications.submissionSnapshotId),
     )
     .leftJoin(
       authoritativeEligibilityOutcomes,
@@ -146,10 +143,12 @@ export async function lockStageActivationTarget(
         eq(workflowStageDefinitions.enabled, true),
       ),
     )
-    .where(and(
-      eq(workflowInstances.id, workflowInstanceId),
-      eq(workflowInstances.status, "ACTIVE"),
-    ))
+    .where(
+      and(
+        eq(workflowInstances.id, workflowInstanceId),
+        eq(workflowInstances.status, "ACTIVE"),
+      ),
+    )
     .for("update", { of: workflowInstances })
     .limit(1);
 
@@ -198,11 +197,12 @@ export async function findStageIteration(
       status: true,
     },
     limit: 1,
-    where: (table, operators) => operators.and(
-      operators.eq(table.workflowInstanceId, workflowInstanceId),
-      operators.eq(table.workflowStageDefinitionId, stageDefinitionId),
-      operators.eq(table.iterationNumber, iterationNumber),
-    ),
+    where: (table, operators) =>
+      operators.and(
+        operators.eq(table.workflowInstanceId, workflowInstanceId),
+        operators.eq(table.workflowStageDefinitionId, stageDefinitionId),
+        operators.eq(table.iterationNumber, iterationNumber),
+      ),
   });
   return stage ?? null;
 }
@@ -230,6 +230,7 @@ export async function loadStageActivationTasks(
       id: stageTaskDefinitions.id,
       namedUserOverrideId: stageTaskDefinitions.namedUserOverrideId,
       reviewerCount: stageTaskDefinitions.reviewerCount,
+      taskType: stageTaskDefinitions.taskType,
       roleId: stageTaskDefinitions.roleId,
       stableKey: stageTaskDefinitions.stableKey,
     })
@@ -303,16 +304,18 @@ export async function persistStageActivation(
     workflowInstanceId: input.target.workflowInstanceId,
     workflowStageDefinitionId: input.target.stageDefinitionId,
   });
-  const dueAt = input.target.slaHours === null
-    ? null
-    : new Date(
-      input.activatedAt.getTime() + input.target.slaHours * 3_600_000,
-    );
+  const dueAt =
+    input.target.slaHours === null
+      ? null
+      : new Date(
+          input.activatedAt.getTime() + input.target.slaHours * 3_600_000,
+        );
   const usesEligibilityForm = (task: (typeof input.tasks)[number]) =>
-    task.stableKey === "ELIGIBILITY_VERIFICATION"
-    || (task.config && typeof task.config === "object"
-      && "formPurpose" in task.config
-      && task.config.formPurpose === "ELIGIBILITY_VERIFICATION");
+    task.stableKey === "ELIGIBILITY_VERIFICATION" ||
+    (task.config &&
+      typeof task.config === "object" &&
+      "formPurpose" in task.config &&
+      task.config.formPurpose === "ELIGIBILITY_VERIFICATION");
   const needsEligibilityForm = input.tasks.some(usesEligibilityForm);
   const eligibilityFormVersionId = needsEligibilityForm
     ? await resolveEligibilityTaskFormVersion(
@@ -332,21 +335,20 @@ export async function persistStageActivation(
   );
   const tasks = await createWorkflowTasks(
     transaction,
-    input.tasks.flatMap((task) => Array.from(
-      { length: task.reviewerCount },
-      (_, index) => ({
-      assignedRoleId: null,
-      assignedUserId: assignments.get(task.id)?.[index] ?? null,
-      createdAt: input.activatedAt,
-      dueAt,
-      formVersionId: usesEligibilityForm(task)
-        ? eligibilityFormVersionId!
-        : task.formVersionId,
-      stageInstanceId: stage.id,
-      workflowTaskDefinitionId: task.id,
-      reviewerSlot: index + 1,
-    }),
-    )),
+    input.tasks.flatMap((task) =>
+      Array.from({ length: task.reviewerCount }, (_, index) => ({
+        assignedRoleId: null,
+        assignedUserId: assignments.get(task.id)?.[index] ?? null,
+        createdAt: input.activatedAt,
+        dueAt,
+        formVersionId: usesEligibilityForm(task)
+          ? eligibilityFormVersionId!
+          : task.formVersionId,
+        stageInstanceId: stage.id,
+        workflowTaskDefinitionId: task.id,
+        reviewerSlot: index + 1,
+      })),
+    ),
   );
   await transaction
     .update(workflowInstances)

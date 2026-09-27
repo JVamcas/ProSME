@@ -15,6 +15,7 @@ import {
 } from "../../domain/actions/WorkflowActionAvailability";
 import { workflowActionDefinitionSchema } from "../../domain/actions/WorkflowActionSchemas";
 import type { WorkflowActionDefinition } from "../../domain/actions/WorkflowActionDefinition";
+import { taskActionMatchesType } from "../../domain/runtime/WorkflowTaskCompletionPolicy";
 import {
   readWorkflowActionAvailabilitySource,
   workflowActionAvailabilityDatabase,
@@ -107,7 +108,13 @@ export async function getWorkflowActionAvailability(
         policyTarget(source, action),
         {
           conditionsPass: true,
-          configurationValid: Boolean(definition),
+          configurationValid:
+            Boolean(definition) &&
+            (!source.task ||
+              taskActionMatchesType({
+                actionType: action.actionType,
+                taskType: source.task.taskType,
+              })),
           targetsValid: true,
         },
       ),
@@ -118,13 +125,15 @@ export async function getWorkflowActionAvailability(
       item.policy.available && item.definition !== null,
   );
   if (!candidates.length) {
-    return preliminary.map((item) => toAvailability(
-      source,
-      item.action,
-      item.definition,
-      false,
-      item.policy.unavailableReason,
-    ));
+    return preliminary.map((item) =>
+      toAvailability(
+        source,
+        item.action,
+        item.definition,
+        false,
+        item.policy.unavailableReason,
+      ),
+    );
   }
 
   const database = workflowActionAvailabilityDatabase();
@@ -134,50 +143,56 @@ export async function getWorkflowActionAvailability(
     true,
   );
   const evaluated = new Map<string, WorkflowActionAvailability>();
-  await Promise.all(candidates.map(async (item) => {
-    const action = { ...item.definition, id: item.action.id };
-    const [targetsValid, transitions] = await Promise.all([
-      configuredActionTargetsAreValid(database, {
+  await Promise.all(
+    candidates.map(async (item) => {
+      const action = { ...item.definition, id: item.action.id };
+      const [targetsValid, transitions] = await Promise.all([
+        configuredActionTargetsAreValid(database, {
+          action,
+          stage: source.stage,
+        }),
+        loadSequentialTransitions(database, {
+          actionKey: action.stableKey,
+          sourceStageDefinitionId: source.stage.stageDefinitionId,
+          workflowVersionId: source.stage.workflowVersionId,
+        }),
+      ]);
+      const conditions = evaluateWorkflowActionConditions(
         action,
-        stage: source.stage,
-      }),
-      loadSequentialTransitions(database, {
-        actionKey: action.stableKey,
-        sourceStageDefinitionId: source.stage.stageDefinitionId,
-        workflowVersionId: source.stage.workflowVersionId,
-      }),
-    ]);
-    const conditions = evaluateWorkflowActionConditions(
-      action,
-      transitions.transitions,
-      context,
-    );
-    const policy = evaluateWorkflowActionPolicy(
-      actor,
-      policyTarget(source, item.action),
-      {
-        conditionsPass: conditions.available,
-        configurationValid: true,
-        targetsValid,
-      },
-    );
-    evaluated.set(action.stableKey, toAvailability(
-      source,
-      item.action,
-      action,
-      policy.available,
-      policy.unavailableReason,
-    ));
-  }));
+        transitions.transitions,
+        context,
+      );
+      const policy = evaluateWorkflowActionPolicy(
+        actor,
+        policyTarget(source, item.action),
+        {
+          conditionsPass: conditions.available,
+          configurationValid: true,
+          targetsValid,
+        },
+      );
+      evaluated.set(
+        action.stableKey,
+        toAvailability(
+          source,
+          item.action,
+          action,
+          policy.available,
+          policy.unavailableReason,
+        ),
+      );
+    }),
+  );
 
-  return preliminary.map((item) =>
-    evaluated.get(item.action.stableKey)
-      ?? toAvailability(
+  return preliminary.map(
+    (item) =>
+      evaluated.get(item.action.stableKey) ??
+      toAvailability(
         source,
         item.action,
         item.definition,
         false,
         item.policy.unavailableReason,
-      )
+      ),
   );
 }

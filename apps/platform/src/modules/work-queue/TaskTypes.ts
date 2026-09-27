@@ -122,6 +122,7 @@ export type TaskDetail = {
   scoringCompleted: boolean;
   taskInstanceId: string;
   taskName: string;
+  taskType: "CONTRIBUTING" | "STAGE_DECISION";
   taskStatus: string;
   workflowInstanceId: string;
   formVersionId?: string | null;

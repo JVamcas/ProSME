@@ -71,16 +71,25 @@ function validateCommentItems(
 ) {
   const expected = new Set(configured.map((field) => field.key));
   const received = new Set(submitted.map((item) => item.key));
-  if (received.size !== submitted.length || received.size !== expected.size
-    || submitted.some((item) => !expected.has(item.key))) {
+  if (
+    received.size !== submitted.length ||
+    received.size !== expected.size ||
+    submitted.some((item) => !expected.has(item.key))
+  ) {
     throw new RequestValidationError(
       "Submit one answer for every configured comment or recommendation field.",
     );
   }
-  const answers = new Map(submitted.map((item) => [item.key, item.value.trim()]));
-  if (requireMandatory
-    && configured.some((field) => field.mandatory && !answers.get(field.key))) {
-    throw new RequestValidationError("Complete all required comments and recommendations.");
+  const answers = new Map(
+    submitted.map((item) => [item.key, item.value.trim()]),
+  );
+  if (
+    requireMandatory &&
+    configured.some((field) => field.mandatory && !answers.get(field.key))
+  ) {
+    throw new RequestValidationError(
+      "Complete all required comments and recommendations.",
+    );
   }
 }
 
@@ -119,14 +128,19 @@ function validateDocumentItems(
 ) {
   const expected = new Set(configured.map((item) => item.name));
   const received = new Set(submitted.map((item) => item.category));
-  if (received.size !== submitted.length || received.size !== expected.size
-    || submitted.some((item) => !expected.has(item.category))) {
+  if (
+    received.size !== submitted.length ||
+    received.size !== expected.size ||
+    submitted.some((item) => !expected.has(item.category))
+  ) {
     throw new RequestValidationError(
       "Submit one verification for every configured document requirement.",
     );
   }
-  if (requireMandatory && configured.some((item) => item.mandatory
-    && !item.document)) {
+  if (
+    requireMandatory &&
+    configured.some((item) => item.mandatory && !item.document)
+  ) {
     throw new RequestValidationError("Upload every required document.");
   }
 }
@@ -139,18 +153,25 @@ function validateScoreItems(
   const criteria = configured?.criteria ?? [];
   const expected = new Set(criteria.map((item) => item.criterion));
   const received = new Set(submitted.map((item) => item.criterion));
-  if (received.size !== submitted.length || received.size !== expected.size
-    || submitted.some((item) => !expected.has(item.criterion))) {
+  if (
+    received.size !== submitted.length ||
+    received.size !== expected.size ||
+    submitted.some((item) => !expected.has(item.criterion))
+  ) {
     throw new RequestValidationError(
       "Submit one score for every configured scoring criterion.",
     );
   }
   const invalid = criteria.some((criterion) => {
-    const answer = submitted.find((item) => item.criterion === criterion.criterion);
+    const answer = submitted.find(
+      (item) => item.criterion === criterion.criterion,
+    );
     if (!answer || answer.score === null) return requireComplete;
-    return answer.score < criterion.scaleMinimum
-      || answer.score > criterion.scaleMaximum
-      || (requireComplete && criterion.mandatoryComment && !answer.comment?.trim());
+    return (
+      answer.score < criterion.scaleMinimum ||
+      answer.score > criterion.scaleMaximum ||
+      (requireComplete && criterion.mandatoryComment && !answer.comment?.trim())
+    );
   });
   if (invalid) {
     throw new RequestValidationError(
@@ -176,7 +197,9 @@ export async function getWorkflowTask(
   const hasChecklist = task.checklistItems.length > 0;
   const commentFields = taskCommentFields(config);
   const parsedComments = commentResultSchema.safeParse(result);
-  const resultComments = parsedComments.success ? parsedComments.data.comments : [];
+  const resultComments = parsedComments.success
+    ? parsedComments.data.comments
+    : [];
   const resultDocuments = parseDocumentResult(result);
   const resultScores = parseScoreResult(result);
   const canEvaluateEligibility = taskRunsAuthoritativeEligibility(config);
@@ -184,8 +207,9 @@ export async function getWorkflowTask(
     ...view,
     actions,
     canEvaluateEligibility,
-    checklistCompleted: hasChecklist
-      && task.checklistItems.every((item) => {
+    checklistCompleted:
+      hasChecklist &&
+      task.checklistItems.every((item) => {
         const answer = parseChecklistResult(result).find(
           (entry) => entry.code === item.code,
         );
@@ -194,16 +218,19 @@ export async function getWorkflowTask(
     checklistItems: task.checklistItems,
     commentFields,
     displayMode: taskDisplayMode(config),
-    commentCompleted: commentFields.length > 0
-      && commentFields.every((field) => {
+    commentCompleted:
+      commentFields.length > 0 &&
+      commentFields.every((field) => {
         const answer = resultComments.find((item) => item.key === field.key);
         return Boolean(answer && (!field.mandatory || answer.value.trim()));
       }),
     resultComments,
     dueAt: task.dueAt ? new Date(task.dueAt).toISOString() : null,
-    documentsCompleted: task.documentRequirements.length > 0
-      && task.documentRequirements.every(
-        (requirement) => !requirement.mandatory || Boolean(requirement.document),
+    documentsCompleted:
+      task.documentRequirements.length > 0 &&
+      task.documentRequirements.every(
+        (requirement) =>
+          !requirement.mandatory || Boolean(requirement.document),
       ),
     eligibilityEvaluation: canEvaluateEligibility
       ? parseEligibilityResult(result)
@@ -213,15 +240,19 @@ export async function getWorkflowTask(
     resultItems: hasChecklist ? parseChecklistResult(result) : [],
     resultDocuments,
     resultScores,
-    scoringCompleted: Boolean(task.scoring?.criteria.length)
-      && task.scoring!.criteria.every((criterion) => {
+    scoringCompleted:
+      Boolean(task.scoring?.criteria.length) &&
+      task.scoring!.criteria.every((criterion) => {
         const answer = resultScores.find(
           (item) => item.criterion === criterion.criterion,
         );
-        return Boolean(answer && answer.score !== null
-          && answer.score >= criterion.scaleMinimum
-          && answer.score <= criterion.scaleMaximum
-          && (!criterion.mandatoryComment || answer.comment?.trim()));
+        return Boolean(
+          answer &&
+          answer.score !== null &&
+          answer.score >= criterion.scaleMinimum &&
+          answer.score <= criterion.scaleMaximum &&
+          (!criterion.mandatoryComment || answer.comment?.trim()),
+        );
       }),
   };
 }
@@ -239,7 +270,11 @@ export async function saveTaskReviewDraft(
   const commentFields = taskCommentFields(task.config);
   validateChecklistItems(task.checklistItems, input.items, false);
   validateCommentItems(commentFields, input.comments ?? [], false);
-  validateDocumentItems(task.documentRequirements, input.documents ?? [], false);
+  validateDocumentItems(
+    task.documentRequirements,
+    input.documents ?? [],
+    false,
+  );
   validateScoreItems(task.scoring, input.scores ?? [], false);
   const saved = await writeTaskReviewDraft({
     ...input,
@@ -248,7 +283,9 @@ export async function saveTaskReviewDraft(
     taskId,
   });
   if (!saved) {
-    throw new ResourceConflictError("The task changed or is no longer assigned to you.");
+    throw new ResourceConflictError(
+      "The task changed or is no longer assigned to you.",
+    );
   }
   return { saved: true };
 }
@@ -273,6 +310,15 @@ export async function completeChecklistTask(
     actor,
     input.actionKey ? task.permissions.decide : task.permissions.edit,
   );
+  if (
+    !input.actionKey &&
+    task.taskType === "STAGE_DECISION" &&
+    !task.formVersionId
+  ) {
+    throw new RequestValidationError(
+      "A stage-decision task must be completed through a decision action.",
+    );
+  }
   const replay = await readChecklistTaskCompletion(writeInput);
   if (replay?.kind === "completed") return replay.result;
   if (replay?.kind === "idempotency_conflict") {

@@ -1,10 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
-vi.mock(
-  "@/modules/workflows/infrastructure/StageInstanceRepository",
-  () => ({ createStageInstance: vi.fn() }),
-);
+vi.mock("@/modules/workflows/infrastructure/StageInstanceRepository", () => ({
+  createStageInstance: vi.fn(),
+}));
 vi.mock(
   "@/modules/workflows/infrastructure/WorkflowTaskWriteRepository",
   () => ({ createWorkflowTasks: vi.fn() }),
@@ -33,42 +32,49 @@ const select = vi.fn(() => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(allocateStageReviewers).mockResolvedValue(new Map([
-    ["66666666-6666-4666-8666-666666666666", [
-      "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-      "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
-      "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
-    ]],
-  ]));
+  vi.mocked(allocateStageReviewers).mockResolvedValue(
+    new Map([
+      [
+        "66666666-6666-4666-8666-666666666666",
+        [
+          "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+          "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+        ],
+      ],
+    ]),
+  );
   vi.mocked(createStageInstance).mockResolvedValue({
     activatedAt,
     completedAt: null,
     id: stageId,
-  iterationNumber: 1,
-  rowVersion: 1,
+    iterationNumber: 1,
+    rowVersion: 1,
     referralContext: null,
     returnContext: null,
     status: "ACTIVE",
     workflowInstanceId: "33333333-3333-4333-8333-333333333333",
     workflowStageDefinitionId: "44444444-4444-4444-8444-444444444444",
   });
-  vi.mocked(createWorkflowTasks).mockResolvedValue([{
-    assignedRoleId: "55555555-5555-4555-8555-555555555555",
-    assignedUserId: null,
-    claimedAt: null,
-    completedAt: null,
-    createdAt: activatedAt,
-    dueAt: new Date("2026-09-22T09:00:00.000Z"),
-    formVersionId: null,
-    id: taskId,
-    rowVersion: 1,
-    reviewerSlot: 1,
-    supersedesTaskId: null,
-    stageInstanceId: stageId,
-    startedAt: null,
-    status: "PENDING",
-    workflowTaskDefinitionId: "66666666-6666-4666-8666-666666666666",
-  }]);
+  vi.mocked(createWorkflowTasks).mockResolvedValue([
+    {
+      assignedRoleId: "55555555-5555-4555-8555-555555555555",
+      assignedUserId: null,
+      claimedAt: null,
+      completedAt: null,
+      createdAt: activatedAt,
+      dueAt: new Date("2026-09-22T09:00:00.000Z"),
+      formVersionId: null,
+      id: taskId,
+      rowVersion: 1,
+      reviewerSlot: 1,
+      supersedesTaskId: null,
+      stageInstanceId: stageId,
+      startedAt: null,
+      status: "PENDING",
+      workflowTaskDefinitionId: "66666666-6666-4666-8666-666666666666",
+    },
+  ]);
 });
 
 describe("stage activation repository", () => {
@@ -108,63 +114,72 @@ describe("stage activation repository", () => {
           },
           workflowInstanceId: "33333333-3333-4333-8333-333333333333",
         },
-        tasks: [{
-          formVersionId: null,
-          id: "66666666-6666-4666-8666-666666666666",
-          namedUserOverrideId: null,
-          roleId: "55555555-5555-4555-8555-555555555555",
-          stableKey: "CHECKLIST",
-          reviewerCount: 3,
-        }],
+        tasks: [
+          {
+            formVersionId: null,
+            id: "66666666-6666-4666-8666-666666666666",
+            namedUserOverrideId: null,
+            roleId: "55555555-5555-4555-8555-555555555555",
+            stableKey: "CHECKLIST",
+            reviewerCount: 3,
+            taskType: "CONTRIBUTING",
+          },
+        ],
       },
     );
 
     expect(result.stage.id).toBe(stageId);
     expect(createWorkflowTasks).toHaveBeenCalledWith(
       expect.anything(),
-      [1, 2, 3].map((reviewerSlot) => expect.objectContaining({
-        assignedUserId: [
-          "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-          "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
-          "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
-        ][reviewerSlot - 1],
-        dueAt: new Date("2026-09-22T09:00:00.000Z"),
-        reviewerSlot,
-        stageInstanceId: stageId,
-      })),
+      [1, 2, 3].map((reviewerSlot) =>
+        expect.objectContaining({
+          assignedUserId: [
+            "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+            "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+          ][reviewerSlot - 1],
+          dueAt: new Date("2026-09-22T09:00:00.000Z"),
+          reviewerSlot,
+          stageInstanceId: stageId,
+        }),
+      ),
     );
     expect(set).toHaveBeenCalledWith({ currentStageInstanceId: stageId });
-    expect(inserted).toEqual(expect.arrayContaining([
-      {
-        table: workflowEvents,
-        value: expect.objectContaining({
-          eventCode: "STAGE_ACTIVATED",
-          payload: expect.objectContaining({ taskIds: [taskId] }),
-        }),
-      },
-      {
-        table: workflowAuditEntries,
-        value: expect.objectContaining({
-          action: "STAGE_ACTIVATED",
-          stageInstanceId: stageId,
-          targetId: stageId,
-          targetType: "WORKFLOW_STAGE_INSTANCE",
-          workflowInstanceId: "33333333-3333-4333-8333-333333333333",
-        }),
-      },
-    ]));
-    expect(inserted).toEqual(expect.arrayContaining([
-      {
-        table: workflowEvents,
-        value: expect.objectContaining({
-          eventCode: "PUBLIC_STATUS_CHANGED",
-          payload: expect.objectContaining({ status: "UNDER_REVIEW" }),
-        }),
-      },
-    ]));
+    expect(inserted).toEqual(
+      expect.arrayContaining([
+        {
+          table: workflowEvents,
+          value: expect.objectContaining({
+            eventCode: "STAGE_ACTIVATED",
+            payload: expect.objectContaining({ taskIds: [taskId] }),
+          }),
+        },
+        {
+          table: workflowAuditEntries,
+          value: expect.objectContaining({
+            action: "STAGE_ACTIVATED",
+            stageInstanceId: stageId,
+            targetId: stageId,
+            targetType: "WORKFLOW_STAGE_INSTANCE",
+            workflowInstanceId: "33333333-3333-4333-8333-333333333333",
+          }),
+        },
+      ]),
+    );
+    expect(inserted).toEqual(
+      expect.arrayContaining([
+        {
+          table: workflowEvents,
+          value: expect.objectContaining({
+            eventCode: "PUBLIC_STATUS_CHANGED",
+            payload: expect.objectContaining({ status: "UNDER_REVIEW" }),
+          }),
+        },
+      ]),
+    );
     const runtimeTaskAudit = inserted.find(
-      (entry) => entry.table === workflowAuditEntries
-        && Array.isArray(entry.value),
+      (entry) =>
+        entry.table === workflowAuditEntries && Array.isArray(entry.value),
     );
     expect(runtimeTaskAudit?.value).toEqual([
       expect.objectContaining({
@@ -183,52 +198,53 @@ describe("stage activation repository", () => {
 
   it("uses the exact application ruleset's generated verification form", async () => {
     const generatedFormVersionId = "99999999-9999-4999-8999-999999999999";
-    const insert = vi.fn(() => ({ values: vi.fn().mockResolvedValue(undefined) }));
+    const insert = vi.fn(() => ({
+      values: vi.fn().mockResolvedValue(undefined),
+    }));
     const update = vi.fn(() => ({
       set: vi.fn(() => ({ where: vi.fn().mockResolvedValue(undefined) })),
     }));
     const execute = vi.fn().mockResolvedValue({
       rows: [{ formVersionId: generatedFormVersionId }],
     });
-    await persistStageActivation(
-      { execute, insert, select, update } as never,
-      {
-        activatedAt,
-        actorId: "77777777-7777-4777-8777-777777777777",
-        correlationId: "88888888-8888-4888-8888-888888888888",
-        iterationNumber: 1,
-        target: {
-          application: {},
-          currentStageInstanceId: null,
-          eligibility: null,
-          entryCondition: null,
-          fundingCall: {},
-          repeatable: false,
-          slaHours: null,
-          stageDefinitionId: "44444444-4444-4444-8444-444444444444",
-          stageKey: "SCREENING",
-          publicStatus: {
-            status: "UNDER_REVIEW",
-            label: "Under review",
-            description: "Your application is under review.",
-          },
-          workflowInstanceId: "33333333-3333-4333-8333-333333333333",
+    await persistStageActivation({ execute, insert, select, update } as never, {
+      activatedAt,
+      actorId: "77777777-7777-4777-8777-777777777777",
+      correlationId: "88888888-8888-4888-8888-888888888888",
+      iterationNumber: 1,
+      target: {
+        application: {},
+        currentStageInstanceId: null,
+        eligibility: null,
+        entryCondition: null,
+        fundingCall: {},
+        repeatable: false,
+        slaHours: null,
+        stageDefinitionId: "44444444-4444-4444-8444-444444444444",
+        stageKey: "SCREENING",
+        publicStatus: {
+          status: "UNDER_REVIEW",
+          label: "Under review",
+          description: "Your application is under review.",
         },
-        tasks: [{
+        workflowInstanceId: "33333333-3333-4333-8333-333333333333",
+      },
+      tasks: [
+        {
           formVersionId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
           id: "66666666-6666-4666-8666-666666666666",
           namedUserOverrideId: null,
           roleId: "55555555-5555-4555-8555-555555555555",
           stableKey: "ELIGIBILITY_VERIFICATION",
           reviewerCount: 1,
-        }],
-      },
-    );
+          taskType: "CONTRIBUTING",
+        },
+      ],
+    });
 
     expect(execute).toHaveBeenCalledOnce();
-    expect(createWorkflowTasks).toHaveBeenCalledWith(
-      expect.anything(),
-      [expect.objectContaining({ formVersionId: generatedFormVersionId })],
-    );
+    expect(createWorkflowTasks).toHaveBeenCalledWith(expect.anything(), [
+      expect.objectContaining({ formVersionId: generatedFormVersionId }),
+    ]);
   });
 });

@@ -38,41 +38,48 @@ function stage(
     },
     repeatable: false,
     stableKey,
-    tasks: [{
-      actionKeys: [],
-      permissions: defaultWorkflowElementPermissions,
-      assignmentMode: "ROLE",
-      coiRequired: false,
-      config: {},
-      description: "Complete the bound form",
-      displayOrder: 1,
-      formBinding: {
-        contextFields: [{
-          key: "application.client_metric",
-          label: "Client metric",
-          type: "NUMBER",
-        }],
-        formVersionId,
+    tasks: [
+      {
+        actionKeys: [],
+        taskType: "CONTRIBUTING",
+        permissions: defaultWorkflowElementPermissions,
+        assignmentMode: "ROLE",
+        coiRequired: false,
+        config: {},
+        description: "Complete the bound form",
+        displayOrder: 1,
+        formBinding: {
+          contextFields: [
+            {
+              key: "application.client_metric",
+              label: "Client metric",
+              type: "NUMBER",
+            },
+          ],
+          formVersionId,
+        },
+        name: "Bound form",
+        quorum: false,
+        required: true,
+        requiredCompletionCount: 1,
+        reviewerCount: 1,
+        stableKey: `${stableKey}_FORM`,
       },
-      name: "Bound form",
-      quorum: false,
-      required: true,
-      requiredCompletionCount: 1,
-      reviewerCount: 1,
-      stableKey: `${stableKey}_FORM`,
-    }],
+    ],
   };
 }
 
 function condition(fieldKey: string, value: number | string): ConditionGroup {
   return {
-    children: [{
-      id: `${fieldKey}-condition`,
-      kind: "CONDITION",
-      leftOperand: { key: fieldKey, kind: "FIELD" },
-      operator: basicOperators.GREATER_THAN,
-      rightOperand: { kind: "CONSTANT", value },
-    }],
+    children: [
+      {
+        id: `${fieldKey}-condition`,
+        kind: "CONDITION",
+        leftOperand: { key: fieldKey, kind: "FIELD" },
+        operator: basicOperators.GREATER_THAN,
+        rightOperand: { kind: "CONSTANT", value },
+      },
+    ],
     combinator: "AND",
     id: `${fieldKey}-group`,
     kind: "GROUP",
@@ -87,16 +94,26 @@ function fixture() {
     transitions: [],
   };
   const fields = new Map([
-    [firstFormVersionId, [{
-      key: "CUSTOM_RESULT",
-      label: "Custom result",
-      type: "NUMBER" as const,
-    }]],
-    [secondFormVersionId, [{
-      key: "RECOMMENDED_AMOUNT",
-      label: "Recommended amount",
-      type: "CURRENCY" as const,
-    }]],
+    [
+      firstFormVersionId,
+      [
+        {
+          key: "CUSTOM_RESULT",
+          label: "Custom result",
+          type: "NUMBER" as const,
+        },
+      ],
+    ],
+    [
+      secondFormVersionId,
+      [
+        {
+          key: "RECOMMENDED_AMOUNT",
+          label: "Recommended amount",
+          type: "CURRENCY" as const,
+        },
+      ],
+    ],
   ]);
   return { fields, first, graph, second };
 }

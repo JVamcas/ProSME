@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react";
 import { FormProvider, useForm, useWatch } from "react-hook-form";
 
 import { GeneralButton } from "@/components/ui/button";
+import { isWorkflowStageDecisionAction } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
 import { DraggableDialog } from "@/components/ui/draggable-dialog";
 import { CheckboxField } from "@/components/ui/form-field";
 import { FormInput, FormSelect } from "@/components/ui/form-fields";
@@ -67,6 +68,9 @@ export function WorkflowActionDialog({
     name: "rejectionOutcomeType",
   });
   const previousEscalationTargetType = useRef(escalationTargetType);
+  const eligibleTasks = isWorkflowStageDecisionAction(actionType)
+    ? stage.tasks.filter((task) => task.taskType === "STAGE_DECISION")
+    : stage.tasks;
 
   useEffect(() => {
     if (previousEscalationTargetType.current === escalationTargetType) return;
@@ -181,7 +185,7 @@ export function WorkflowActionDialog({
           />
           <FormSelect
             containerClassName="sm:col-span-2"
-            items={stage.tasks.map((task) => ({
+            items={eligibleTasks.map((task) => ({
               label: task.name,
               value: task.stableKey,
             }))}
@@ -189,7 +193,7 @@ export function WorkflowActionDialog({
             infoTooltip="Workflow task in which this action is displayed."
             name="taskStableKey"
             placeholder={
-              stage.tasks.length
+              eligibleTasks.length
                 ? "Select a task"
                 : "Add a task to this stage first"
             }

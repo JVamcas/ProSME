@@ -1,5 +1,6 @@
 import {
   boolean,
+  check,
   foreignKey,
   index,
   integer,
@@ -10,20 +11,22 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 import type { WorkflowTemplateDetails } from "../domain/definitions/WorkflowTemplate";
 import type { WorkflowActionType } from "../domain/actions/WorkflowActionDefinition";
 import type { WorkflowActionConfiguration } from "../domain/actions/WorkflowActionConfiguration";
 import type { WorkflowPublicStatus } from "../domain/definitions/WorkflowStageDefinition";
 import type { QuorumRule } from "../domain/runtime/Quorum";
-import type { WorkflowTaskAssignmentMode } from "../domain/definitions/WorkflowTaskDefinition";
+import type {
+  WorkflowTaskAssignmentMode,
+  WorkflowTaskType,
+} from "../domain/definitions/WorkflowTaskDefinition";
 import type { WorkflowElementPermissions } from "../domain/definitions/WorkflowElementPermissions";
 import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup";
 import type { ConditionFieldDefinition } from "@/modules/conditions/domain/ConditionConfiguration";
 
-import type {
-  WorkflowStatus,
-} from "@/modules/workflows/domain/definitions/WorkflowTypes";
+import type { WorkflowStatus } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import { roles } from "@/db/schema/authorization";
 import { formVersions } from "@/modules/forms/infrastructure/form.schema";
 import { users } from "@/db/schema/identity";
@@ -150,17 +153,26 @@ export const stageTaskDefinitions = pgTable(
       .$type<WorkflowTaskAssignmentMode>()
       .notNull()
       .default("ROLE"),
+    taskType: text("task_type")
+      .$type<WorkflowTaskType>()
+      .notNull()
+      .default("CONTRIBUTING"),
     reviewerCount: integer("reviewer_count").notNull().default(1),
     reviewRelease: text("review_release")
       .$type<"STAGE_COMPLETED" | "THRESHOLD_MET" | "IMMEDIATE">()
-      .notNull().default("STAGE_COMPLETED"),
+      .notNull()
+      .default("STAGE_COMPLETED"),
     submittedReplacementPolicy: text("submitted_replacement_policy")
-      .$type<"DENY" | "REOPEN_SLOT">().notNull().default("DENY"),
+      .$type<"DENY" | "REOPEN_SLOT">()
+      .notNull()
+      .default("DENY"),
     requiredCompletionCount: integer("required_completion_count")
       .notNull()
       .default(1),
     completionMode: text("completion_mode")
-      .$type<"ALL" | "COUNT" | "PERCENT">().notNull().default("COUNT"),
+      .$type<"ALL" | "COUNT" | "PERCENT">()
+      .notNull()
+      .default("COUNT"),
     completionPercentage: integer("completion_percentage"),
     quorum: boolean("quorum").notNull().default(false),
     quorumRule: jsonb("quorum_rule").$type<QuorumRule | null>(),
@@ -171,10 +183,7 @@ export const stageTaskDefinitions = pgTable(
       .notNull(),
   },
   (table) => [
-    uniqueIndex("app_stage_tasks_id_stage_unique").on(
-      table.id,
-      table.stageId,
-    ),
+    uniqueIndex("app_stage_tasks_id_stage_unique").on(table.id, table.stageId),
     uniqueIndex("app_stage_tasks_stage_code_unique").on(
       table.stageId,
       table.stableKey,
@@ -182,6 +191,13 @@ export const stageTaskDefinitions = pgTable(
     uniqueIndex("app_stage_tasks_stage_sequence_unique").on(
       table.stageId,
       table.displayOrder,
+    ),
+    uniqueIndex("app_stage_tasks_one_decision_per_stage_unique")
+      .on(table.stageId)
+      .where(sql`${table.taskType} = 'STAGE_DECISION'`),
+    check(
+      "app_stage_tasks_decision_single_reviewer_check",
+      sql`${table.taskType} <> 'STAGE_DECISION' OR ${table.reviewerCount} = 1`,
     ),
   ],
 );

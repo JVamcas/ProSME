@@ -61,6 +61,7 @@ function moderation(dependencies: StandardWorkflowDependencies) {
     tasks: [
       task(dependencies, {
         actionKeys: actions.map((item) => item.stableKey),
+        taskType: "STAGE_DECISION",
         config: {
           options: actions.map((item) => option(item.stableKey, item.label)),
           rationaleRequired: true,
@@ -118,20 +119,34 @@ function committeeReview(dependencies: StandardWorkflowDependencies) {
     stableKey: "COMMITTEE_REVIEW",
     tasks: [
       task(dependencies, {
+        actionKeys: [],
+        taskType: "CONTRIBUTING",
+        coiRequired: true,
+        config: {},
+        description:
+          "Record an independent committee assessment and recommendation.",
+        displayOrder: 1,
+        formCode: "COMMITTEE_REVIEW",
+        name: "Committee member review",
+        requiredCompletionCount: 3,
+        reviewerCount: 5,
+        roleCode: "approval_panel_member",
+        stableKey: "COMMITTEE_MEMBER_REVIEW",
+      }),
+      task(dependencies, {
         actionKeys: actions.map((item) => item.stableKey),
+        taskType: "STAGE_DECISION",
         coiRequired: true,
         config: {
           authorityCapability: "workflow.task.assigned.decide",
           outcomes: actions.map((item) => option(item.stableKey, item.label)),
           rationaleRequired: true,
         },
-        description: "Record the resolution and committee recommendation.",
-        displayOrder: 1,
-        formCode: "COMMITTEE_REVIEW",
-        name: "Committee decision",
-        requiredCompletionCount: 3,
-        reviewerCount: 5,
-        roleCode: "approval_panel_member",
+        description:
+          "Record the committee resolution after the required member reviews.",
+        displayOrder: 2,
+        name: "Committee resolution",
+        roleCode: "panel_moderator",
         stableKey: "COMMITTEE_DECISION",
       }),
     ],
@@ -181,6 +196,7 @@ function approval(dependencies: StandardWorkflowDependencies) {
     tasks: [
       task(dependencies, {
         actionKeys: actions.map((item) => item.stableKey),
+        taskType: "STAGE_DECISION",
         config: {
           authorityCapability: "workflow.task.assigned.decide",
           outcomes: actions.map((item) => option(item.stableKey, item.label)),
@@ -241,6 +257,7 @@ function notificationAppeals(dependencies: StandardWorkflowDependencies) {
     tasks: [
       task(dependencies, {
         actionKeys: [],
+        taskType: "CONTRIBUTING",
         config: {
           audience: "APPLICANT",
           channel: "EMAIL",
@@ -256,6 +273,7 @@ function notificationAppeals(dependencies: StandardWorkflowDependencies) {
       }),
       task(dependencies, {
         actionKeys: actions.map((item) => item.stableKey),
+        taskType: "STAGE_DECISION",
         config: {
           authorityCapability: "workflow.task.assigned.decide",
           outcomes: actions.map((item) => option(item.stableKey, item.label)),

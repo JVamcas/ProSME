@@ -15,9 +15,17 @@ vi.mock("@/modules/work-queue/WorkQueueHooks", () => ({
     isPending: false,
     mutate: vi.fn(),
   }),
+  useUploadWorkflowTaskDocument: () => ({
+    isError: false,
+    isPending: false,
+    mutate: vi.fn(),
+    variables: undefined,
+  }),
 }));
 vi.mock("@/modules/forms/ui/renderer/DynamicFormTask", () => ({
-  DynamicFormTask: ({ eligibilityEvaluation }: {
+  DynamicFormTask: ({
+    eligibilityEvaluation,
+  }: {
     eligibilityEvaluation?: { outcome: string | null } | null;
   }) => (
     <div data-testid="bound-form">
@@ -25,17 +33,31 @@ vi.mock("@/modules/forms/ui/renderer/DynamicFormTask", () => ({
     </div>
   ),
 }));
-vi.mock("@/modules/eligibility/ui/screening/AuthoritativeEligibilityTask", () => ({
-  AuthoritativeEligibilityTask: () => (
-    <div data-testid="standalone-eligibility">Standalone eligibility</div>
-  ),
-}));
+vi.mock(
+  "@/modules/eligibility/ui/screening/AuthoritativeEligibilityTask",
+  () => ({
+    AuthoritativeEligibilityTask: () => (
+      <div data-testid="standalone-eligibility">Standalone eligibility</div>
+    ),
+  }),
+);
 vi.mock("@/modules/work-queue/ui/WorkflowTaskDecisionActions", () => ({
-  WorkflowTaskDecisionActions: () => null,
+  WorkflowTaskDecisionActions: ({ task }: { task: TaskDetail }) => (
+    <div>
+      {task.actions.map((action) => (
+        <span key={action.key}>
+          {action.label}:{String(action.available)}
+        </span>
+      ))}
+    </div>
+  ),
 }));
 
 import { AuthoritativeEligibilityResult } from "@/modules/eligibility/ui/screening/AuthoritativeEligibilityResult";
-import type { TaskDetail } from "@/modules/work-queue/TaskTypes";
+import type {
+  TaskDetail,
+  WorkflowTaskAction,
+} from "@/modules/work-queue/TaskTypes";
 import { WorkflowTaskReviewPanel } from "@/modules/work-queue/ui/WorkflowTaskReviewPanel";
 
 const evaluation = {
@@ -83,12 +105,40 @@ const task: TaskDetail = {
   taskInstanceId: "33333333-3333-4333-8333-333333333333",
   taskName: "Eligibility decision",
   taskStatus: "PENDING",
+  taskType: "CONTRIBUTING",
   workflowInstanceId: "66666666-6666-4666-8666-666666666666",
 };
 
+function workflowAction(
+  actionType: "APPROVE_ADVANCE" | "REQUEST_INFORMATION",
+  label: string,
+): WorkflowTaskAction {
+  return {
+    actionType,
+    available: true,
+    key: actionType,
+    label,
+    presentation: { displayOrder: 1, variant: "primary" },
+    requiredInput: {
+      comment: { maxLength: 4_000, required: false },
+      confirmation: { message: null, required: false },
+      dueDate: { deadlineDays: null, required: false },
+      editableFieldPaths: [],
+      reasonCode: { options: [], required: false },
+      reasonOrCommentRequired: false,
+      reviewDate: { required: false },
+      target: { type: null, value: null },
+    },
+    runtimeVersion: 1,
+    unavailableReason: null,
+  };
+}
+
 describe("task eligibility results", () => {
   it("shows a bound form as one section without a separate eligibility card", () => {
-    const markup = renderToStaticMarkup(<WorkflowTaskReviewPanel task={task} />);
+    const markup = renderToStaticMarkup(
+      <WorkflowTaskReviewPanel task={task} />,
+    );
 
     expect(markup).toContain("1 of 1 sections complete");
     expect(markup).toContain("Bound form result: ELIGIBLE");
@@ -101,13 +151,19 @@ describe("task eligibility results", () => {
         task={{ ...task, eligibilityEvaluation: null, formCompleted: false }}
       />,
     );
-    expect(markup).toMatch(/<button[^>]*disabled=""[^>]*>Complete Task<\/button>/);
+    expect(markup).toMatch(
+      /<button[^>]*disabled=""[^>]*>Complete Task<\/button>/,
+    );
   });
 
   it("shows an enabled Complete Task button when required work is ready", () => {
-    const markup = renderToStaticMarkup(<WorkflowTaskReviewPanel task={task} />);
+    const markup = renderToStaticMarkup(
+      <WorkflowTaskReviewPanel task={task} />,
+    );
     expect(markup).toContain("Complete Task</button>");
-    expect(markup).not.toMatch(/<button[^>]*disabled=""[^>]*>Complete Task<\/button>/);
+    expect(markup).not.toMatch(
+      /<button[^>]*disabled=""[^>]*>Complete Task<\/button>/,
+    );
   });
 
   it("keeps completion disabled until optional review fields have been saved", () => {
@@ -116,14 +172,16 @@ describe("task eligibility results", () => {
         task={{
           ...task,
           canEvaluateEligibility: false,
-          commentFields: [{
-            displayOrder: 1,
-            helpText: "",
-            key: "recommendation",
-            label: "Recommendation",
-            mandatory: false,
-            visibility: "INTERNAL_ONLY",
-          }],
+          commentFields: [
+            {
+              displayOrder: 1,
+              helpText: "",
+              key: "recommendation",
+              label: "Recommendation",
+              mandatory: false,
+              visibility: "INTERNAL_ONLY",
+            },
+          ],
           eligibilityEvaluation: null,
           formCompleted: false,
           formVersionId: null,
@@ -131,7 +189,9 @@ describe("task eligibility results", () => {
       />,
     );
     expect(markup).toContain("Autosave pending");
-    expect(markup).toMatch(/<button[^>]*disabled=""[^>]*>Complete Task<\/button>/);
+    expect(markup).toMatch(
+      /<button[^>]*disabled=""[^>]*>Complete Task<\/button>/,
+    );
   });
 
   it("shows the recorded outcome and failure counts inside the result view", () => {
@@ -144,5 +204,37 @@ describe("task eligibility results", () => {
     expect(markup).toContain("Hard failures");
     expect(markup).toContain("Soft failures");
     expect(markup).toContain("Warnings");
+  });
+
+  it("keeps common actions available while decision actions wait for required work", () => {
+    const markup = renderToStaticMarkup(
+      <WorkflowTaskReviewPanel
+        task={{
+          ...task,
+          actions: [
+            workflowAction("REQUEST_INFORMATION", "Request information"),
+            workflowAction("APPROVE_ADVANCE", "Approve"),
+          ],
+          canEvaluateEligibility: false,
+          commentFields: [
+            {
+              displayOrder: 1,
+              helpText: "",
+              key: "recommendation",
+              label: "Recommendation",
+              mandatory: true,
+              visibility: "INTERNAL_ONLY",
+            },
+          ],
+          eligibilityEvaluation: null,
+          formCompleted: false,
+          formVersionId: null,
+        }}
+      />,
+    );
+
+    expect(markup).toContain("Request information:true");
+    expect(markup).toContain("Approve:false");
+    expect(markup).toContain("Complete Task");
   });
 });

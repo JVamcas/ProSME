@@ -15,6 +15,20 @@ export const workflowActionTypes = [
 
 export type WorkflowActionType = (typeof workflowActionTypes)[number];
 
+export const workflowStageDecisionActionTypes = [
+  "APPROVE_ADVANCE",
+  "REJECT",
+  "RETURN",
+  "WITHDRAW",
+  "DEFER",
+] as const satisfies readonly WorkflowActionType[];
+
+export function isWorkflowStageDecisionAction(
+  actionType: WorkflowActionType,
+): boolean {
+  return workflowStageDecisionActionTypes.some((type) => type === actionType);
+}
+
 type WorkflowActionDefinitionCommon = {
   condition?: ConditionGroup | null;
   id?: string;

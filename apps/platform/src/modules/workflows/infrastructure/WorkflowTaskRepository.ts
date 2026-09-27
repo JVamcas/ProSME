@@ -50,6 +50,7 @@ export async function readWorkflowTask(
       )) AS "formCompleted",
       task.due_at AS "dueAt", task.result,
       definition.name AS "taskName", definition.config,
+      definition.task_type AS "taskType",
       COALESCE((
         SELECT jsonb_agg(
           jsonb_build_object(
@@ -190,11 +191,15 @@ export async function readAssignedFormTask(actorId: string, taskId: string) {
       AND stage.status = 'ACTIVE'
       AND workflow.status = 'ACTIVE'
   `);
-  return (result.rows[0] as {
-    formVersionId: string | null;
-    rowVersion: number;
-    taskInstanceId: string;
-    taskStatus: string;
-    permissions: WorkflowElementPermissions;
-  } | undefined) ?? null;
+  return (
+    (result.rows[0] as
+      | {
+          formVersionId: string | null;
+          rowVersion: number;
+          taskInstanceId: string;
+          taskStatus: string;
+          permissions: WorkflowElementPermissions;
+        }
+      | undefined) ?? null
+  );
 }

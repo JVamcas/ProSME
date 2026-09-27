@@ -32,6 +32,7 @@ export type WorkflowActionAvailabilitySource = {
     permissions: WorkflowElementPermissions;
     rowVersion: number;
     status: string;
+    taskType: "CONTRIBUTING" | "STAGE_DECISION";
   } | null;
 };
 
@@ -108,10 +109,7 @@ async function readStage(
     )
     .innerJoin(
       workflowStageDefinitions,
-      eq(
-        workflowStageDefinitions.id,
-        stageInstances.workflowStageDefinitionId,
-      ),
+      eq(workflowStageDefinitions.id, stageInstances.workflowStageDefinitionId),
     )
     .innerJoin(
       applications,
@@ -132,17 +130,19 @@ async function readStage(
         )`,
       ),
     )
-    .where(and(
-      eq(stageInstances.id, sourceStageInstanceId),
-      sql`(NOT ${workflowStageDefinitions.coiGated} OR EXISTS (
+    .where(
+      and(
+        eq(stageInstances.id, sourceStageInstanceId),
+        sql`(NOT ${workflowStageDefinitions.coiGated} OR EXISTS (
         SELECT 1 FROM app_workflow_tasks assignment
         WHERE assignment.stage_instance_id = ${stageInstances.id}
           AND assignment.assigned_user_id = ${actorId}::uuid
           AND assignment.status <> 'CANCELLED'
           AND app_workflow_task_coi_cleared(assignment.id, ${actorId}::uuid)
       ))`,
-      eq(workflowInstances.id, workflowInstanceId),
-    ))
+        eq(workflowInstances.id, workflowInstanceId),
+      ),
+    )
     .limit(1);
   if (!row) return null;
   const { business, declarations, financial, project, ...application } =
@@ -188,25 +188,25 @@ async function readTask(
       permissions: stageTaskDefinitions.permissions,
       rowVersion: workflowTasks.rowVersion,
       status: workflowTasks.status,
+      taskType: stageTaskDefinitions.taskType,
     })
     .from(workflowTasks)
     .innerJoin(
       stageTaskDefinitions,
       eq(stageTaskDefinitions.id, workflowTasks.workflowTaskDefinitionId),
     )
-    .where(and(
-      eq(workflowTasks.id, taskId),
-      eq(workflowTasks.stageInstanceId, stageInstanceId),
-      sql`app_workflow_task_coi_cleared(${workflowTasks.id}, ${actorId}::uuid)`,
-    ))
+    .where(
+      and(
+        eq(workflowTasks.id, taskId),
+        eq(workflowTasks.stageInstanceId, stageInstanceId),
+        sql`app_workflow_task_coi_cleared(${workflowTasks.id}, ${actorId}::uuid)`,
+      ),
+    )
     .limit(1);
   return task ?? null;
 }
 
-function selectActions(
-  stageDefinitionId: string,
-  taskDefinitionId?: string,
-) {
+function selectActions(stageDefinitionId: string, taskDefinitionId?: string) {
   const database = getDatabase();
   const selection = {
     actionType: workflowActionDefinitions.actionType,
@@ -232,10 +232,7 @@ function selectActions(
     .innerJoin(
       stageTaskActionBindings,
       and(
-        eq(
-          stageTaskActionBindings.stageId,
-          workflowActionDefinitions.stageId,
-        ),
+        eq(stageTaskActionBindings.stageId, workflowActionDefinitions.stageId),
         eq(
           stageTaskActionBindings.actionKey,
           workflowActionDefinitions.stableKey,

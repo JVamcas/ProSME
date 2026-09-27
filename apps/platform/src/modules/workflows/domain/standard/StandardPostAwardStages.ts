@@ -72,6 +72,7 @@ function contracting(dependencies: StandardWorkflowDependencies) {
     tasks: [
       task(dependencies, {
         actionKeys: actions.map((item) => item.stableKey),
+        taskType: "STAGE_DECISION",
         config: {},
         description:
           "Finalize the agreement and verify every condition precedent.",
@@ -142,6 +143,7 @@ function disbursement(dependencies: StandardWorkflowDependencies) {
     tasks: [
       task(dependencies, {
         actionKeys: actions.map((item) => item.stableKey),
+        taskType: "STAGE_DECISION",
         config: {
           fields: [
             {
@@ -236,6 +238,7 @@ function monitoring(dependencies: StandardWorkflowDependencies) {
     tasks: [
       task(dependencies, {
         actionKeys: actions.map((item) => item.stableKey),
+        taskType: "STAGE_DECISION",
         config: {
           categories: [
             option("PERFORMANCE", "Performance"),
@@ -346,6 +349,7 @@ function closeOut(dependencies: StandardWorkflowDependencies) {
     tasks: [
       task(dependencies, {
         actionKeys: actions.map((item) => item.stableKey),
+        taskType: "STAGE_DECISION",
         config: { criteria },
         description: "Assess results and record the close-out recommendation.",
         displayOrder: 1,

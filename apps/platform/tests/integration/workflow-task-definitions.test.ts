@@ -11,6 +11,7 @@ import { findWorkflowGraph } from "@/modules/workflows/infrastructure/WorkflowGr
 import { findWorkflowConditionFormFields } from "@/modules/workflows/infrastructure/WorkflowRepository";
 import { replaceWorkflowDraft } from "@/modules/workflows/infrastructure/WorkflowTemplateWriteRepository";
 import { defaultWorkflowElementPermissions } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
+import type { WorkflowGraphInput } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 
 const enabled = process.env.RUN_P3_WORKFLOW_DATABASE_TESTS === "true";
 const pool = enabled
@@ -94,6 +95,7 @@ afterAll(async () => {
     const tasks = [
       {
         actionKeys: ["RECOMMEND"],
+        taskType: "CONTRIBUTING" as const,
         permissions: defaultWorkflowElementPermissions,
         stableKey: "TECHNICAL_REVIEW",
         name: "Technical review",
@@ -109,16 +111,19 @@ afterAll(async () => {
         required: true,
         config: {},
         formBinding: {
-          contextFields: [{
-            key: "application.requested_amount",
-            label: "Requested amount",
-            type: "NUMBER" as const,
-          }],
+          contextFields: [
+            {
+              key: "application.requested_amount",
+              label: "Requested amount",
+              type: "NUMBER" as const,
+            },
+          ],
           formVersionId,
         },
       },
       {
         actionKeys: ["DECIDE"],
+        taskType: "STAGE_DECISION" as const,
         permissions: {
           ...defaultWorkflowElementPermissions,
           visibility: "APPLICANT_VISIBLE" as const,
@@ -139,50 +144,60 @@ afterAll(async () => {
         formBinding: null,
       },
     ];
-    const graph = {
-      stages: [{
-        stableKey: "ASSESSMENT",
-        name: "Assessment",
-        description: "Assess the application.",
-        enabled: true,
-        optional: false,
-        displayOrder: 1,
-        publicStatusMapping: {
-          status: "UNDER_REVIEW" as const,
-          label: "Assessment",
-          description: "Your application is being assessed.",
+    const graph: WorkflowGraphInput = {
+      stages: [
+        {
+          stableKey: "ASSESSMENT",
+          name: "Assessment",
+          description: "Assess the application.",
+          enabled: true,
+          optional: false,
+          displayOrder: 1,
+          publicStatusMapping: {
+            status: "UNDER_REVIEW" as const,
+            label: "Assessment",
+            description: "Your application is being assessed.",
+          },
+          repeatable: false,
+          coiGated: true,
+          entryCondition: null,
+          exitCondition: null,
+          initial: true,
+          slaHours: null,
+          actions: [
+            {
+              actionType: "REQUEST_INFORMATION" as const,
+              configuration: {
+                continuation: "RESUME_SOURCE_TASK" as const,
+                deadlineDays: 5,
+                editableFieldPaths: [],
+                reminderDayOffsets: [],
+                expiryAction: "CLOSE_REQUEST" as const,
+                participantScope: "APPLICATION_OWNER_AND_REQUESTER" as const,
+                recipientScope: "APPLICATION_OWNER" as const,
+              },
+              displayOrder: 1,
+              enabled: true,
+              label: "Recommend",
+              reasonCodeRequired: false,
+              stableKey: "RECOMMEND",
+            },
+            {
+              actionType: "APPROVE_ADVANCE" as const,
+              configuration: {},
+              displayOrder: 2,
+              enabled: true,
+              label: "Decide",
+              reasonCodeRequired: false,
+              stableKey: "DECIDE",
+            },
+          ],
+          checklistItems: [],
+          documentRequirements: [],
+          scoring: null,
+          tasks,
         },
-        repeatable: false,
-        coiGated: true,
-        entryCondition: null,
-        exitCondition: null,
-        initial: true,
-        slaHours: null,
-        actions: [
-          {
-            actionType: "APPROVE_ADVANCE" as const,
-            configuration: {},
-            displayOrder: 1,
-            enabled: true,
-            label: "Recommend",
-            reasonCodeRequired: false,
-            stableKey: "RECOMMEND",
-          },
-          {
-            actionType: "APPROVE_ADVANCE" as const,
-            configuration: {},
-            displayOrder: 2,
-            enabled: true,
-            label: "Decide",
-            reasonCodeRequired: false,
-            stableKey: "DECIDE",
-          },
-        ],
-        checklistItems: [],
-        documentRequirements: [],
-        scoring: null,
-        tasks,
-      }],
+      ],
       transitions: [],
     };
     await replaceWorkflowDraft({
@@ -196,12 +211,19 @@ afterAll(async () => {
     expect(stored?.stages[0].tasks).toHaveLength(2);
     expect(stored?.stages[0].tasks[0]).toMatchObject(tasks[0]);
     expect(stored?.stages[0].tasks[1]).toMatchObject(tasks[1]);
-    expect(await findWorkflowConditionFormFields(graph)).toEqual(new Map([
-      [formVersionId, [{
-        key: "CUSTOM_SCORE",
-        label: "Custom score",
-        type: "NUMBER",
-      }]],
-    ]));
+    expect(await findWorkflowConditionFormFields(graph)).toEqual(
+      new Map([
+        [
+          formVersionId,
+          [
+            {
+              key: "CUSTOM_SCORE",
+              label: "Custom score",
+              type: "NUMBER",
+            },
+          ],
+        ],
+      ]),
+    );
   });
 });
