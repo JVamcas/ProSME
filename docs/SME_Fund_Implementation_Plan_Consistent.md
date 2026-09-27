@@ -2033,6 +2033,18 @@ Stage activation is deterministic and condition-gated.
 
 ### Scope
 
+**Task Types**
+
+Every Task Definition declares exactly one Task type:
+
+- `CONTRIBUTING` — captures work that contributes to Stage completion and is
+  completed explicitly by its assignee through **Complete task**.
+- `STAGE_DECISION` — captures the Stage disposition and is completed only
+  through a configured stage-decision Action.
+
+Task type is immutable for the published Workflow Template Version. It is not
+derived from whether the Task has Action bindings.
+
 **States**
 
 - Pending;
@@ -2047,6 +2059,13 @@ Stage activation is deterministic and condition-gated.
 2. Invalid state changes are rejected.
 3. Completion timestamp is stored.
 4. Task lifecycle is auditable.
+5. The configured Task type, rather than the presence of Actions, determines
+   the completion path.
+6. A `CONTRIBUTING` Task can be completed explicitly even when common Actions
+   are attached.
+7. A `STAGE_DECISION` Task cannot be completed through the manual completion
+   command.
+8. Workflow publication rejects `APPROVE_ADVANCE` on a `CONTRIBUTING` Task.
 
 ### Done When
 
@@ -2184,6 +2203,46 @@ An Action is always executed against a specific active Stage Instance and,
 where the Action is task-scoped, a specific Workflow Task. The runtime must
 never infer the source Stage from a single `currentStageId` or infer a target
 from display order.
+
+### Task Types and Action Placement
+
+Task type and Action binding are independent configuration concerns. The
+presence of one or more Actions must never be used to infer how a Task is
+completed.
+
+Workflow Tasks use exactly one of these types:
+
+- `CONTRIBUTING` — the assignee completes the Task explicitly with
+  **Complete task** after its required work is ready. It may also expose common
+  task-scoped Actions. Executing a common Action does not implicitly complete
+  the Task.
+- `STAGE_DECISION` — the assignee completes the Task through a configured
+  stage-decision Action. It does not expose a separate **Complete task**
+  control.
+
+Common task-scoped Actions may be bound to either Task type where their own
+configuration and scope permit them. They include Request Information and the
+planned Refer, Hold/Resume and Escalate semantics. These Actions may block,
+route or annotate work according to their own semantics, but they do not turn a
+`CONTRIBUTING` Task into a decision Task.
+
+Stage-decision Actions are restricted to `STAGE_DECISION` Tasks. They include
+Approve/Advance and, where configured as a Stage disposition, Reject,
+Return/Rework, Withdraw and Defer. In particular, `APPROVE_ADVANCE` must
+never be bound to a `CONTRIBUTING` Task.
+
+The UI and server enforce the Task type directly:
+
+- a `CONTRIBUTING` Task retains **Complete task** even when common Actions are
+  attached;
+- a `STAGE_DECISION` Task requires an eligible decision Action and does not
+  permit manual completion;
+- executing a common Action and completing a contributing Task are separate,
+  independently authorized commands;
+- Workflow publication rejects incompatible Task-type and Action bindings;
+- Stage completion and Transition execution remain subject to completion,
+  quorum, Exit Condition and Action policies.
+
 
 ## 8.1 Common Action Execution Contract
 
@@ -2383,6 +2442,8 @@ transition outcome.
 
 ## 8.5 Return / Rework
 
+**Implementation status:** Not implemented.
+
 ### Goal
 
 Send work to an explicitly configured earlier or corrective Stage without
@@ -2423,6 +2484,8 @@ history.
 
 ## 8.6 Refer
 
+**Implementation status:** Not implemented.
+
 ### Goal
 
 Route a bounded question or specialist review to a configured Stage or Task and
@@ -2457,6 +2520,8 @@ A configured specialist referral can leave and return to its exact origin with
 complete history.
 
 ## 8.7 Hold / Resume
+
+**Implementation status:** Not implemented.
 
 ### Goal
 
@@ -2541,6 +2606,8 @@ an authorization bypass.
 
 ## 8.9 Defer
 
+**Implementation status:** Not implemented.
+
 ### Goal
 
 Suspend a decision until a configured date, event or Funding Call destination.
@@ -2575,6 +2642,8 @@ Deferred work has a durable reason, destination/trigger and single auditable
 continuation path.
 
 ## 8.10 Escalate
+
+**Implementation status:** Not implemented.
 
 ### Goal
 
@@ -3678,13 +3747,27 @@ Document requirement configuration may declare
 ## 11.4 Applicant and Staff Experience
 
 The applicant portal provides:
+- a prominent dashboard action card for each open RFI, an
+  `Information requested` status on the Application list and a dedicated
+  RFI section on the Application detail;
+- a focused response workspace at
+  `/portal/applications/{applicationId}/requests/{rfiId}` with deadline and
+  overdue guidance, configured editable fields, requested documents,
+  correspondence, draft saving, review-and-submit and a timestamped receipt;
 - open and historical RFIs for Applications owned by the applicant;
+- a deterministic `ACTION_REQUIRED` public-status override while an owned
+  submitted Application has an `OPEN` RFI awaiting that applicant, without
+  mutating the Application lifecycle status;
 - instructions, deadline and correspondence;
 - controls limited to configured editable fields and requested documents;
 - draft saving where supported and one validated submission path;
 - confirmation that the response was received.
 
 The assigned reviewer and other specifically authorized staff can:
+- use the originating Task as the primary RFI workspace for creation,
+  monitoring, response review, follow-up and closure;
+- view a read-only RFI timeline from the contextual Application overview, with
+  links back to each originating Task;
 - view RFIs within their contextual Application or Task scope;
 - initiate a manual RFI where the Task permits the Action;
 - review the response and correspondence history;
@@ -3717,18 +3800,21 @@ notification capabilities are added.
    configured for automatic applicant request.
 3. Duplicate commands or activation events do not create duplicate RFIs.
 4. Applicants can see and respond only to RFIs for Applications they own.
-5. Staff access requires a canonical permission and valid resource context.
-6. Editable fields and requested documents cannot exceed configuration.
-7. Applicant uploads create immutable evidence versions against the requested
+5. An `OPEN` applicant RFI projects `ACTION_REQUIRED` ahead of the active
+   Stage's normal public status while the Application lifecycle remains
+   `submitted`; after response, normal configured projection resumes.
+6. Staff access requires a canonical permission and valid resource context.
+7. Editable fields and requested documents cannot exceed configuration.
+8. Applicant uploads create immutable evidence versions against the requested
    Workflow document requirements.
-8. An open RFI prevents Task completion without discarding saved work.
-9. A valid response makes the Task actionable and continues it exactly once.
-10. Expiry applies the published expiry behaviour exactly once.
-11. Correspondence and lifecycle history are ordered and immutable.
-12. Lifecycle events are transactional and carry source and correlation data.
-13. Reviewers cannot upload applicant-owned evidence for the applicant.
-14. Missing lifecycle support fails without partially changing Workflow state.
-15. SLA timing and notification delivery remain in Phases 12 and 16.
+9. An open RFI prevents Task completion without discarding saved work.
+10. A valid response makes the Task actionable and continues it exactly once.
+11. Expiry applies the published expiry behaviour exactly once.
+12. Correspondence and lifecycle history are ordered and immutable.
+13. Lifecycle events are transactional and carry source and correlation data.
+14. Reviewers cannot upload applicant-owned evidence for the applicant.
+15. Missing lifecycle support fails without partially changing Workflow state.
+16. SLA timing and notification delivery remain in Phases 12 and 16.
 
 ### Done When
 

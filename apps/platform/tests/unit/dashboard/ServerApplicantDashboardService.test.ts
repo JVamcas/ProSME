@@ -4,12 +4,16 @@ vi.mock("server-only", () => ({}));
 vi.mock("@/modules/dashboard/infrastructure/ApplicantDashboardRepository", () => ({
   readApplicantDashboard: vi.fn(),
 }));
+vi.mock("@/modules/workflows/application/runtime/ServerWorkflowRfiReadService", () => ({
+  listOwnedOpenRfiActions: vi.fn(),
+}));
 
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { PermissionDeniedError } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import { readApplicantDashboard } from "@/modules/dashboard/infrastructure/ApplicantDashboardRepository";
 import { getApplicantDashboard } from "@/modules/dashboard/ServerApplicantDashboardService";
+import { listOwnedOpenRfiActions } from "@/modules/workflows/application/runtime/ServerWorkflowRfiReadService";
 
 const ownerId = "79e20de0-3558-4d63-90a4-8c9f5125df07";
 
@@ -40,6 +44,7 @@ beforeEach(() => {
       submittedApplications: 4,
     },
   });
+  vi.mocked(listOwnedOpenRfiActions).mockResolvedValue([]);
 });
 
 describe("applicant dashboard service", () => {
@@ -52,7 +57,10 @@ describe("applicant dashboard service", () => {
 
   it("reads the authenticated applicant's metrics", async () => {
     const dashboard = await getApplicantDashboard(
-      applicant([permissionCodes.fundingApplicationOwnRead]),
+      applicant([
+        permissionCodes.fundingApplicationOwnRead,
+        permissionCodes.fundingApplicationInformationRequestOwnRead,
+      ]),
     );
 
     expect(readApplicantDashboard).toHaveBeenCalledOnce();
@@ -66,6 +74,7 @@ describe("applicant dashboard service", () => {
         openFundingOpportunities: 3,
         submittedApplications: 4,
       },
+      urgentRequests: [],
     });
   });
 });

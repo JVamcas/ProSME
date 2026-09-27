@@ -6,6 +6,13 @@ vi.mock(
   () => ({ withWorkflowActionExecutionTransaction: vi.fn() }),
 );
 vi.mock(
+  "@/modules/workflows/infrastructure/WorkflowRfiCorrespondenceRepository",
+  () => ({
+    addAssignedWorkflowRfiFollowUp: vi.fn(),
+    saveOwnedWorkflowRfiDraft: vi.fn(),
+  }),
+);
+vi.mock(
   "@/modules/workflows/infrastructure/WorkflowRfiLifecycleRepository",
   () => ({
     closeAssignedWorkflowRfi: vi.fn(),
@@ -15,10 +22,16 @@ vi.mock(
 
 import type { AuthenticatedUser } from "@/auth/types";
 import {
+  addWorkflowRfiFollowUp,
   closeWorkflowRfi,
   respondToWorkflowRfi,
+  saveWorkflowRfiDraft,
 } from "@/modules/workflows/application/runtime/ServerWorkflowRfiService";
 import { withWorkflowActionExecutionTransaction } from "@/modules/workflows/infrastructure/WorkflowActionExecutionConnection";
+import {
+  addAssignedWorkflowRfiFollowUp,
+  saveOwnedWorkflowRfiDraft,
+} from "@/modules/workflows/infrastructure/WorkflowRfiCorrespondenceRepository";
 import {
   closeAssignedWorkflowRfi,
   respondToOwnedWorkflowRfi,
@@ -94,5 +107,70 @@ describe("ServerWorkflowRfiService", () => {
         requestInformationId,
       },
     )).rejects.toThrow("assigned information request not found");
+  });
+
+  it("saves an applicant draft only with own-respond permission", async () => {
+    vi.mocked(saveOwnedWorkflowRfiDraft).mockResolvedValue({
+      rowVersion: 1,
+      updatedAt: "2026-09-27T10:00:00.000Z",
+    });
+    await saveWorkflowRfiDraft(
+      user("funding.application.information-request.own.respond"),
+      {
+        expectedRowVersion: 0,
+        fieldValues: { "application.turnover": 125_000 },
+        requestInformationId,
+      },
+    );
+    expect(saveOwnedWorkflowRfiDraft).toHaveBeenCalledWith(
+      {},
+      actorId,
+      expect.objectContaining({ requestInformationId }),
+    );
+  });
+
+  it("denies draft saving without own-respond permission", () => {
+    expect(() => saveWorkflowRfiDraft(user(), {
+      expectedRowVersion: 0,
+      fieldValues: {},
+      requestInformationId,
+    })).toThrow();
+    expect(saveOwnedWorkflowRfiDraft).not.toHaveBeenCalled();
+  });
+
+  it("adds a follow-up only with the canonical create permission", async () => {
+    vi.mocked(addAssignedWorkflowRfiFollowUp).mockResolvedValue({
+      correspondenceId: "50000000-0000-4000-8000-000000000001",
+    });
+    await addWorkflowRfiFollowUp(
+      user("funding.application.information-request.create"),
+      "60000000-0000-4000-8000-000000000001",
+      {
+        correlationId,
+        message: "Please upload the signed version.",
+        requestInformationId,
+      },
+    );
+    expect(addAssignedWorkflowRfiFollowUp).toHaveBeenCalledWith(
+      {},
+      actorId,
+      expect.objectContaining({
+        requestInformationId,
+        taskId: "60000000-0000-4000-8000-000000000001",
+      }),
+    );
+  });
+
+  it("denies a follow-up without the canonical create permission", () => {
+    expect(() => addWorkflowRfiFollowUp(
+      user(),
+      "60000000-0000-4000-8000-000000000001",
+      {
+        correlationId,
+        message: "Please upload the signed version.",
+        requestInformationId,
+      },
+    )).toThrow();
+    expect(addAssignedWorkflowRfiFollowUp).not.toHaveBeenCalled();
   });
 });

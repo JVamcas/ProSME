@@ -1,7 +1,6 @@
 import "server-only";
 
 import { randomUUID } from "node:crypto";
-import path from "node:path";
 
 import { requireAuthenticatedUser, requirePermission } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
@@ -10,46 +9,15 @@ import { gcsObjectPrefixes } from "@/integrations/storage/GcsObjectPrefixes";
 import { GoogleCloudDocumentStorage } from "@/integrations/storage/GoogleCloudDocumentStorage";
 import { RequestValidationError, ResourceNotFoundError } from "@/lib/resource-errors";
 import {
+  safeWorkflowEvidenceFileName,
+  validateWorkflowEvidenceFile,
+} from "@/modules/workflows/application/evidence/WorkflowEvidenceFilePolicy";
+import {
   createDocumentEvidenceVersion,
   findDocumentEvidenceVersion,
 } from "@/modules/workflows/infrastructure/WorkflowDocumentEvidenceRepository";
 import { readWorkflowTask } from "@/modules/workflows/infrastructure/WorkflowTaskRepository";
-import type { DocumentRequirementItem } from "./TaskTypes";
 import { getWorkflowTask } from "./ServerWorkflowTaskService";
-
-const allowedFiles = {
-  ".docx": {
-    contentType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    configuredType: "DOCX",
-  },
-  ".jpeg": { contentType: "image/jpeg", configuredType: "JPG" },
-  ".jpg": { contentType: "image/jpeg", configuredType: "JPG" },
-  ".pdf": { contentType: "application/pdf", configuredType: "PDF" },
-  ".png": { contentType: "image/png", configuredType: "PNG" },
-} as const;
-
-function safeFileName(name: string) {
-  return path.basename(name).replace(/[^a-zA-Z0-9._ -]/g, "_").slice(0, 255);
-}
-
-function validateFile(file: File, requirement: DocumentRequirementItem) {
-  if (file.size === 0 || file.size > requirement.maximumSizeMb * 1024 * 1024) {
-    throw new RequestValidationError(
-      `Choose a non-empty file no larger than ${requirement.maximumSizeMb} MB.`,
-    );
-  }
-  const extension = path.extname(file.name).toLowerCase() as keyof typeof allowedFiles;
-  const allowed = allowedFiles[extension];
-  if (!allowed || !requirement.acceptedFileTypes.includes(allowed.configuredType)) {
-    throw new RequestValidationError(
-      `Choose one of these file types: ${requirement.acceptedFileTypes.join(", ")}.`,
-    );
-  }
-  if (file.type && file.type !== allowed.contentType) {
-    throw new RequestValidationError("The file type does not match its extension.");
-  }
-  return { ...allowed, extension };
-}
 
 async function editableTask(user: AuthenticatedUser | null, taskId: string) {
   const actor = requireAuthenticatedUser(user);
@@ -85,7 +53,7 @@ export async function uploadWorkflowTaskDocument(
       "This document must be uploaded by the applicant.",
     );
   }
-  const validated = validateFile(file, requirement);
+  const validated = validateWorkflowEvidenceFile(file, requirement);
   const objectKey = [
     gcsObjectPrefixes.users,
     actor.id,
@@ -104,7 +72,7 @@ export async function uploadWorkflowTaskDocument(
       applicationId: task.applicationId,
       contentType: validated.contentType,
       objectKey,
-      originalName: safeFileName(file.name),
+      originalName: safeWorkflowEvidenceFileName(file.name),
       requirementId,
       sizeBytes: file.size,
       uploadedBy: actor.id,

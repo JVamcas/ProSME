@@ -20,7 +20,25 @@ export const closeWorkflowRfiSchema = z.object({
   requestInformationId: z.uuid(),
 }).strict();
 
+export const saveWorkflowRfiDraftSchema = z.object({
+  expectedRowVersion: z.number().int().nonnegative(),
+  fieldValues: z.record(z.string(), z.unknown()),
+  requestInformationId: z.uuid(),
+}).strict();
+
+export const addWorkflowRfiFollowUpSchema = z.object({
+  correlationId: z.uuid(),
+  message: z.string().trim().min(1).max(4_000),
+  requestInformationId: z.uuid(),
+}).strict();
+
 export type RespondToWorkflowRfiInput = z.infer<
   typeof respondToWorkflowRfiSchema
 >;
 export type CloseWorkflowRfiInput = z.infer<typeof closeWorkflowRfiSchema>;
+export type SaveWorkflowRfiDraftInput = z.infer<
+  typeof saveWorkflowRfiDraftSchema
+>;
+export type AddWorkflowRfiFollowUpInput = z.infer<
+  typeof addWorkflowRfiFollowUpSchema
+>;

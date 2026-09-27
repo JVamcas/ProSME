@@ -22,6 +22,14 @@ export type OwnedApplicationListInput = {
   status?: ApplicationListInput["status"];
 };
 
+const ownedApplicationOpenRfiExists = sql<boolean>`EXISTS (
+  SELECT 1
+  FROM app_workflow_rfis open_rfi
+  WHERE open_rfi.application_id = ${applications.id}
+    AND open_rfi.recipient_user_id = ${applications.ownerUserId}
+    AND open_rfi.status = 'OPEN'
+)`;
+
 const listColumns = {
   businessName: sql<string | null>`
     COALESCE(NULLIF(${businessProfiles.tradingName}, ''), ${businessProfiles.legalName})
@@ -53,6 +61,7 @@ const listColumns = {
         AND active_stage.status = 'ACTIVE'
     ), '[]'::jsonb)
   `,
+  hasOpenRfi: ownedApplicationOpenRfiExists,
   sectionCompletion: applications.sectionCompletion,
   status: applications.status,
   updatedAt: applications.updatedAt,
@@ -63,6 +72,7 @@ const effectiveApplicantStatus = sql`
     WHEN ${applications.status} = 'withdrawn' THEN 'WITHDRAWN'
     WHEN ${workflowInstances.status} IN ('COMPLETED', 'CANCELLED', 'REJECTED')
       THEN COALESCE(${workflowInstances.publicStatus}->>'status', 'CLOSED')
+    WHEN ${ownedApplicationOpenRfiExists} THEN 'ACTION_REQUIRED'
     ELSE COALESCE((
       SELECT definition.applicant_status
       FROM app_workflow_stage_instances active_stage
@@ -231,4 +241,3 @@ export async function readOwnedApplicationStatus(
     .limit(1);
   return item ?? null;
 }
-

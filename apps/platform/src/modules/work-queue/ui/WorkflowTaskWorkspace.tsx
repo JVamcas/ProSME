@@ -11,6 +11,7 @@ import { WorkflowTaskReviewPanel } from "@/modules/work-queue/ui/WorkflowTaskRev
 import { useWorkflowCoi } from "@/modules/workflows/ui/runtime/useWorkflowCoi";
 import { WorkflowTaskCoiGate } from "@/modules/workflows/ui/runtime/WorkflowTaskCoiGate";
 import { PageShell } from "@/shared/ui/PageShell";
+import { WorkflowTaskRfiPanel } from "@/modules/workflows/ui/rfi/WorkflowTaskRfiPanel";
 
 function ApplicationTaskPane({ applicationId }: { applicationId: string }) {
   const query = useAdminApplicationDetail(applicationId);
@@ -121,6 +122,11 @@ export function WorkflowTaskWorkspace({ taskId }: { taskId: string }) {
             content: <WorkflowTaskReviewPanel task={task} />,
             id: "assigned-task",
             label: "Assigned Task",
+          },
+          {
+            content: <WorkflowTaskRfiPanel taskId={task.taskInstanceId} />,
+            id: "information-requests",
+            label: "Requests for information",
           },
         ]}
         tabListClassName="border-b border-brand-navy/10 px-4"

@@ -10,6 +10,8 @@ import { getAdminApplicationDetail } from "@/modules/applications/ServerAdminApp
 import { ApplicationDetailView } from "@/modules/applications/ui/ApplicationDetailView";
 import { getWorkflowProgress } from "@/modules/workflows/application/runtime/ServerWorkflowProgressService";
 import { WorkflowProgressPanel } from "@/modules/workflows/ui/WorkflowProgressPanel";
+import { listContextualApplicationRfis } from "@/modules/workflows/application/runtime/ServerWorkflowRfiReadService";
+import { StaffApplicationRfiTimeline } from "@/modules/workflows/ui/rfi/WorkflowRfiPresentation";
 
 export const metadata: Metadata = { title: "Application overview" };
 
@@ -45,13 +47,17 @@ export default async function ApplicationPage({
     throw error;
   });
 
-  const progress = can(user, permissionCodes.workflowInstanceAllRead)
-    ? await getWorkflowProgress(user, applicationId)
-    : undefined;
+  const [progress, requests] = await Promise.all([
+    can(user, permissionCodes.workflowInstanceAllRead)
+      ? getWorkflowProgress(user, applicationId)
+      : undefined,
+    listContextualApplicationRfis(user, applicationId),
+  ]);
 
   return (
     <ApplicationDetailView
       model={detail.model}
+      requests={<StaffApplicationRfiTimeline requests={requests} />}
       workflowProgress={progress === undefined
         ? undefined
         : <WorkflowProgressPanel progress={progress} />}

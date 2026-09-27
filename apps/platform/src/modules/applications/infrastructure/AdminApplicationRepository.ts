@@ -45,7 +45,15 @@ type DetailDatabaseRow = Omit<
   workflowStatus: string | null;
   terminalPublicStatus: WorkflowPublicStatusMapping | null;
   activeStageStatuses: WorkflowPublicStatusMapping[];
+  hasOpenRfi: boolean;
 };
+
+const aliasedApplicationOpenRfiExists = sql<boolean>`EXISTS (
+  SELECT 1 FROM app_workflow_rfis open_rfi
+  WHERE open_rfi.application_id = application.id
+    AND open_rfi.recipient_user_id = application.owner_user_id
+    AND open_rfi.status = 'OPEN'
+)`;
 
 function visibilityFilter(actorId: string, visibility: "all" | "assigned") {
   if (visibility === "all") return sql`TRUE`;
@@ -69,11 +77,12 @@ function visibilityFilter(actorId: string, visibility: "all" | "assigned") {
 function statusFilter(status: AdminApplicationListInput["status"]) {
   if (status === "all") return sql`TRUE`;
   const code = status.replaceAll("-", "_").toUpperCase();
-  return sql`COALESCE(
-    workflow.public_status->>'status',
-    stage_definition.applicant_status,
-    'SUBMITTED'
-  ) = ${code}`;
+  return sql`CASE
+    WHEN workflow.status IN ('COMPLETED', 'CANCELLED', 'REJECTED')
+      THEN COALESCE(workflow.public_status->>'status', 'CLOSED')
+    WHEN ${aliasedApplicationOpenRfiExists} THEN 'ACTION_REQUIRED'
+    ELSE COALESCE(stage_definition.applicant_status, 'SUBMITTED')
+  END = ${code}`;
 }
 
 function applicationSearch(search?: string) {
@@ -119,11 +128,12 @@ function applicationQuery(input: {
         application.submitted_at AS "submittedAt",
         COALESCE(workflow.terminal_outcome, stage_definition.name, 'Submitted')
           AS "internalStatus",
-        COALESCE(
-          workflow.public_status->>'status',
-          stage_definition.applicant_status,
-          'SUBMITTED'
-        ) AS "applicantStatus",
+        CASE
+          WHEN workflow.status IN ('COMPLETED', 'CANCELLED', 'REJECTED')
+            THEN COALESCE(workflow.public_status->>'status', 'CLOSED')
+          WHEN ${aliasedApplicationOpenRfiExists} THEN 'ACTION_REQUIRED'
+          ELSE COALESCE(stage_definition.applicant_status, 'SUBMITTED')
+        END AS "applicantStatus",
         stage_definition.name AS "activeStageName",
         COALESCE(task_summary.active_count, 0)::integer AS "activeTaskCount",
         task_summary.role_names AS "assignedRoleName",
@@ -224,6 +234,7 @@ function detailQuery(input: {
         WHERE active_stage.workflow_instance_id = workflow.id
           AND active_stage.status = 'ACTIVE'
       ), '[]'::jsonb) AS "activeStageStatuses",
+      ${aliasedApplicationOpenRfiExists} AS "hasOpenRfi",
       stage_definition.name AS "currentStageName",
       NULL::text AS priority,
       COALESCE(stage_timeline.stages, '[]'::jsonb) AS stages
@@ -281,6 +292,7 @@ export async function readAdminApplication(input: {
   if (!row) return null;
   const {
     activeStageStatuses,
+    hasOpenRfi,
     terminalPublicStatus,
     workflowStatus,
     ...detail
@@ -294,6 +306,7 @@ export async function readAdminApplication(input: {
       workflowStatus,
       terminalPublicStatus,
       activeStageStatuses,
+      hasOpenRfi,
     }),
     stages: row.stages.map(toStage),
     submittedAt: new Date(row.submittedAt).toISOString(),

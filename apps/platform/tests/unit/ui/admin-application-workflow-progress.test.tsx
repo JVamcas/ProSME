@@ -12,6 +12,9 @@ vi.mock("@/modules/applications/ServerAdminApplicationDetailService", () => ({
 vi.mock("@/modules/workflows/application/runtime/ServerWorkflowProgressService", () => ({
   getWorkflowProgress: vi.fn(),
 }));
+vi.mock("@/modules/workflows/application/runtime/ServerWorkflowRfiReadService", () => ({
+  listContextualApplicationRfis: vi.fn(),
+}));
 vi.mock("@/modules/applications/ui/ApplicationDetailView", () => ({
   ApplicationDetailView: () => null,
 }));
@@ -25,6 +28,7 @@ import type { AuthenticatedUser } from "@/auth/types";
 import ApplicationPage from "@/app/(operations)/admin/applications/[id]/page";
 import { getAdminApplicationDetail } from "@/modules/applications/ServerAdminApplicationDetailService";
 import { getWorkflowProgress } from "@/modules/workflows/application/runtime/ServerWorkflowProgressService";
+import { listContextualApplicationRfis } from "@/modules/workflows/application/runtime/ServerWorkflowRfiReadService";
 
 const applicationId = "11111111-1111-4111-8111-111111111111";
 const actor: AuthenticatedUser = {
@@ -48,6 +52,7 @@ beforeEach(() => {
     overview: {},
   } as never);
   vi.mocked(getWorkflowProgress).mockResolvedValue(null);
+  vi.mocked(listContextualApplicationRfis).mockResolvedValue([]);
 });
 
 describe("staff application workflow progress tab", () => {

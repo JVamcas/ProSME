@@ -16,6 +16,7 @@ import type {
 import type { WorkflowActionExecutionTransaction } from "./WorkflowActionExecutionRepository";
 import {
   workflowRfiDocumentRequests,
+  workflowRfiCorrespondence,
   workflowRfiLifecycleEvents,
   workflowRfiParticipants,
   workflowRfis,
@@ -259,6 +260,13 @@ export async function createWorkflowRfi(
       })),
     );
   }
+  await transaction.insert(workflowRfiCorrespondence).values({
+    authorType: "STAFF",
+    authorUserId: request.requesterId,
+    entryType: "REQUEST",
+    message: request.question,
+    rfiId: rfi.id,
+  });
   const result: CreateWorkflowRfiResult = {
     deadlineAt,
     requestInformationId: rfi.id,

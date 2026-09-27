@@ -104,10 +104,12 @@ function FactCard({ label, value }: ApplicationDetailModel["facts"][number]) {
 export function ApplicationDetailContent({
   actions,
   model,
+  requests,
   workflowProgress,
 }: {
   actions?: ReactNode;
   model: ApplicationDetailModel;
+  requests?: ReactNode;
   workflowProgress?: ReactNode;
 }) {
   return (
@@ -135,6 +137,13 @@ export function ApplicationDetailContent({
               id: "documents",
               label: `Documents (${model.documents.length})`,
             },
+            ...(requests
+              ? [{
+                  content: requests,
+                  id: "information-requests",
+                  label: "Requests for information",
+                }]
+              : []),
             ...(workflowProgress
               ? [{
                   content: workflowProgress,
@@ -183,10 +192,12 @@ export function ApplicationDetailContent({
 export function ApplicationDetailView({
   actions,
   model,
+  requests,
   workflowProgress,
 }: {
   actions?: ReactNode;
   model: ApplicationDetailModel;
+  requests?: ReactNode;
   workflowProgress?: ReactNode;
 }) {
   return (
@@ -205,6 +216,7 @@ export function ApplicationDetailView({
       <ApplicationDetailContent
         actions={actions}
         model={model}
+        requests={requests}
         workflowProgress={workflowProgress}
       />
     </PageShell>

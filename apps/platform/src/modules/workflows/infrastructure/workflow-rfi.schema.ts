@@ -171,6 +171,67 @@ export const workflowRfiResponses = pgTable(
   ],
 );
 
+export const workflowRfiDrafts = pgTable(
+  "app_workflow_rfi_drafts",
+  {
+    rfiId: uuid("rfi_id").primaryKey()
+      .references(() => workflowRfis.id, { onDelete: "restrict" }),
+    respondentUserId: uuid("respondent_user_id").notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    fieldValues: jsonb("field_values")
+      .$type<Record<string, unknown>>().notNull().default({}),
+    rowVersion: integer("row_version").notNull().default(1),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull().defaultNow(),
+  },
+  (table) => [
+    check(
+      "app_workflow_rfi_drafts_values_check",
+      sql`jsonb_typeof(${table.fieldValues}) = 'object'`,
+    ),
+    check(
+      "app_workflow_rfi_drafts_row_version_check",
+      sql`${table.rowVersion} > 0`,
+    ),
+  ],
+);
+
+export const workflowRfiCorrespondence = pgTable(
+  "app_workflow_rfi_correspondence",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    rfiId: uuid("rfi_id").notNull()
+      .references(() => workflowRfis.id, { onDelete: "restrict" }),
+    authorUserId: uuid("author_user_id").notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    authorType: text("author_type").$type<"APPLICANT" | "STAFF">().notNull(),
+    entryType: text("entry_type")
+      .$type<"REQUEST" | "FOLLOW_UP" | "RESPONSE">().notNull(),
+    message: text("message").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull().defaultNow(),
+  },
+  (table) => [
+    index("app_workflow_rfi_correspondence_history_idx").on(
+      table.rfiId,
+      table.createdAt,
+      table.id,
+    ),
+    check(
+      "app_workflow_rfi_correspondence_author_check",
+      sql`${table.authorType} in ('APPLICANT', 'STAFF')`,
+    ),
+    check(
+      "app_workflow_rfi_correspondence_entry_check",
+      sql`${table.entryType} in ('REQUEST', 'FOLLOW_UP', 'RESPONSE')`,
+    ),
+    check(
+      "app_workflow_rfi_correspondence_message_check",
+      sql`length(trim(${table.message})) > 0`,
+    ),
+  ],
+);
+
 export const workflowRfiResponseDocuments = pgTable(
   "app_workflow_rfi_response_documents",
   {

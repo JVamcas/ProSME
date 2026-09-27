@@ -5,6 +5,8 @@ import { applicantDetailProgressLabel } from "../domain/ApplicationDetailStatus"
 import { ApplicationDetailActions } from "./ApplicationDetailActions";
 import { ApplicationDetailView } from "./ApplicationDetailView";
 import type { ApplicationDetailModel } from "./ApplicationDetailTypes";
+import type { WorkflowRfiSummary } from "@/modules/workflows/domain/runtime/WorkflowRfiView";
+import { WorkflowRfiSummaryList } from "@/modules/workflows/ui/rfi/WorkflowRfiPresentation";
 
 function applicantDetailModel(data: ApplicationReadView): ApplicationDetailModel {
   const { summary } = data;
@@ -72,10 +74,12 @@ export function ApplicantApplicationDetail({
   canDeleteDraft,
   canWithdraw,
   data,
+  requests,
 }: {
   canDeleteDraft: boolean;
   canWithdraw: boolean;
   data: ApplicationReadView;
+  requests: WorkflowRfiSummary[];
 }) {
   return (
     <ApplicationDetailView
@@ -87,6 +91,12 @@ export function ApplicantApplicationDetail({
         />
       }
       model={applicantDetailModel(data)}
+      requests={
+        <WorkflowRfiSummaryList
+          applicationId={data.summary.id}
+          requests={requests}
+        />
+      }
     />
   );
 }

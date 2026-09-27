@@ -24,6 +24,7 @@ describe("P3.1 applicant dashboard", () => {
           openFundingOpportunities: 3,
           submittedApplications: 4,
         }}
+        urgentRequests={[]}
       />,
     );
 

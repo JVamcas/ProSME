@@ -33,7 +33,13 @@ function dashboardCtes(ownerUserId: string) {
         application.status,
         application.updated_at,
         workflow.id AS workflow_id,
-        stage_definition.applicant_status
+        stage_definition.applicant_status,
+        EXISTS (
+          SELECT 1 FROM app_workflow_rfis open_rfi
+          WHERE open_rfi.application_id = application.id
+            AND open_rfi.recipient_user_id = application.owner_user_id
+            AND open_rfi.status = 'OPEN'
+        ) AS has_open_rfi
       FROM app_applications application
       LEFT JOIN app_workflow_instances workflow
         ON workflow.application_id = application.id
@@ -81,7 +87,7 @@ const dashboardSelect = sql`
         AS "submittedApplications",
       count(*) FILTER (
         WHERE status = 'submitted'
-          AND applicant_status = 'ACTION_REQUIRED'
+          AND (has_open_rfi OR applicant_status = 'ACTION_REQUIRED')
       )::integer AS "actionRequired",
       (
         SELECT count(*)::integer

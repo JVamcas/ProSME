@@ -5,15 +5,20 @@ import { requirePermission } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import type { ApplicantDashboardView } from "./ApplicantDashboardTypes";
 import { readApplicantDashboard } from "./infrastructure/ApplicantDashboardRepository";
+import { listOwnedOpenRfiActions } from "@/modules/workflows/application/runtime/ServerWorkflowRfiReadService";
 
 export async function getApplicantDashboard(
   user: AuthenticatedUser | null,
 ): Promise<ApplicantDashboardView> {
   const actor = requirePermission(user, permissionCodes.fundingApplicationOwnRead);
-  const projection = await readApplicantDashboard(actor.id);
+  const [projection, urgentRequests] = await Promise.all([
+    readApplicantDashboard(actor.id),
+    listOwnedOpenRfiActions(actor),
+  ]);
 
   return {
     ...projection,
     displayName: actor.displayName,
+    urgentRequests,
   };
 }

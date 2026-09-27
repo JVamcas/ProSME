@@ -3,11 +3,6 @@ import "server-only";
 import { and, eq, inArray, sql } from "drizzle-orm";
 
 import {
-  transactionalOutbox,
-  workflowAuditEntries,
-  workflowEvents,
-} from "@/db/schema";
-import {
   ResourceConflictError,
   ResourceNotFoundError,
 } from "@/lib/resource-errors";
@@ -17,9 +12,10 @@ import type {
 } from "../domain/runtime/WorkflowRfiSchemas";
 import type { WorkflowActionExecutionTransaction } from "./WorkflowActionExecutionRepository";
 import { workflowDocumentEvidenceVersions } from "./workflow-evidence.schema";
+import { appendWorkflowRfiLifecycleRecords } from "./WorkflowRfiLifecycleRecordsRepository";
 import {
+  workflowRfiCorrespondence,
   workflowRfiDocumentRequests,
-  workflowRfiLifecycleEvents,
   workflowRfiResponseDocuments,
   workflowRfiResponses,
   workflowRfis,
@@ -151,66 +147,6 @@ async function assertResponseDocuments(
   }
 }
 
-async function appendLifecycleRecords(
-  transaction: WorkflowActionExecutionTransaction,
-  input: {
-    actorId: string;
-    correlationId: string;
-    details?: Record<string, unknown>;
-    fromStatus: "OPEN" | "RESPONDED";
-    requestInformationId: string;
-    stageInstanceId: string;
-    taskId: string;
-    toStatus: "RESPONDED" | "CLOSED" | "EXPIRED";
-    workflowInstanceId: string;
-  },
-) {
-  const eventCode = `RFI_${input.toStatus}`;
-  const payload = {
-    ...input.details,
-    fromStatus: input.fromStatus,
-    requestInformationId: input.requestInformationId,
-    taskId: input.taskId,
-    toStatus: input.toStatus,
-  };
-  await transaction.insert(workflowRfiLifecycleEvents).values({
-    actorId: input.actorId,
-    actorType: "USER",
-    correlationId: input.correlationId,
-    details: payload,
-    fromStatus: input.fromStatus,
-    rfiId: input.requestInformationId,
-    toStatus: input.toStatus,
-  });
-  await transaction.insert(workflowEvents).values({
-    actorId: input.actorId,
-    correlationId: input.correlationId,
-    eventCode,
-    payload,
-    workflowInstanceId: input.workflowInstanceId,
-  });
-  await transaction.insert(workflowAuditEntries).values({
-    action: eventCode,
-    actorId: input.actorId,
-    after: { status: input.toStatus },
-    before: { status: input.fromStatus },
-    correlationId: input.correlationId,
-    reason: null,
-    stageInstanceId: input.stageInstanceId,
-    targetId: input.requestInformationId,
-    targetType: "WORKFLOW_RFI",
-    taskId: input.taskId,
-    workflowInstanceId: input.workflowInstanceId,
-  });
-  await transaction.insert(transactionalOutbox).values({
-    aggregateId: input.requestInformationId,
-    correlationId: input.correlationId,
-    eventCode,
-    payload,
-    schemaVersion: 1,
-  });
-}
-
 export async function respondToOwnedWorkflowRfi(
   transaction: WorkflowActionExecutionTransaction,
   actorId: string,
@@ -233,6 +169,13 @@ export async function respondToOwnedWorkflowRfi(
     rfiId: input.requestInformationId,
   }).returning({ id: workflowRfiResponses.id });
   if (!response) throw new ResourceConflictError("The response was not saved.");
+  await transaction.insert(workflowRfiCorrespondence).values({
+    authorType: "APPLICANT",
+    authorUserId: actorId,
+    entryType: "RESPONSE",
+    message: "Response submitted.",
+    rfiId: input.requestInformationId,
+  });
   if (input.evidenceVersionIds.length) {
     await transaction.insert(workflowRfiResponseDocuments).values(
       input.evidenceVersionIds.map((evidenceVersionId) => ({
@@ -262,7 +205,7 @@ export async function respondToOwnedWorkflowRfi(
   await transaction.update(workflowTasks).set({
     rowVersion: sql`${workflowTasks.rowVersion} + 1`,
   }).where(eq(workflowTasks.id, rfi.taskId));
-  await appendLifecycleRecords(transaction, {
+  await appendWorkflowRfiLifecycleRecords(transaction, {
     actorId,
     correlationId: input.correlationId,
     fromStatus: "OPEN",
@@ -295,7 +238,12 @@ export async function closeAssignedWorkflowRfi(
     workflowTasks,
     and(
       eq(workflowTasks.id, workflowRfis.taskId),
-      eq(workflowTasks.assignedUserId, actorId),
+      sql`(
+        ${workflowTasks.assignedUserId} = ${actorId}::uuid
+        OR ${workflowTasks.assignedRoleId} IN (
+          SELECT role_id FROM app_user_roles WHERE user_id = ${actorId}::uuid
+        )
+      )`,
     ),
   ).where(and(
     eq(workflowRfis.id, input.requestInformationId),
@@ -325,7 +273,7 @@ export async function closeAssignedWorkflowRfi(
     eq(workflowRfis.status, rfi.status),
   )).returning({ rowVersion: workflowRfis.rowVersion });
   if (!updated) throw new ResourceConflictError("The request changed.");
-  await appendLifecycleRecords(transaction, {
+  await appendWorkflowRfiLifecycleRecords(transaction, {
     actorId,
     correlationId: input.correlationId,
     fromStatus: rfi.status,
@@ -376,7 +324,7 @@ export async function expireDueWorkflowRfi(
   await transaction.update(workflowTasks).set({
     rowVersion: sql`${workflowTasks.rowVersion} + 1`,
   }).where(eq(workflowTasks.id, rfi.taskId));
-  await appendLifecycleRecords(transaction, {
+  await appendWorkflowRfiLifecycleRecords(transaction, {
     actorId: input.actorId,
     correlationId: input.correlationId,
     details: { expiryAction: rfi.expiryAction },

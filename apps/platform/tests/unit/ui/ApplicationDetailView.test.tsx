@@ -54,4 +54,16 @@ describe("shared application detail view", () => {
     expect(markup).toContain("Project summary");
     expect(markup).not.toContain("Answers by section");
   });
+
+  it("surfaces application-owned information requests in a dedicated tab", () => {
+    const markup = renderToStaticMarkup(
+      <ApplicationDetailView
+        model={model}
+        requests={<p>Response submitted—awaiting review</p>}
+      />,
+    );
+
+    expect(markup).toContain("Requests for information");
+    expect(markup).toContain("Response submitted—awaiting review");
+  });
 });

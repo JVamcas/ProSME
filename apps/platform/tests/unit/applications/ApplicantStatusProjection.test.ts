@@ -8,6 +8,7 @@ describe("applicant status projection", () => {
       lifecycleStatus: "submitted",
       workflowStatus: "ACTIVE",
       terminalPublicStatus: null,
+      hasOpenRfi: false,
       activeStageStatuses: [
         {
           status: "UNDER_REVIEW",
@@ -35,6 +36,7 @@ describe("applicant status projection", () => {
       lifecycleStatus: "submitted",
       workflowStatus: "REJECTED",
       terminalPublicStatus: null,
+      hasOpenRfi: false,
       activeStageStatuses: [{
         status: "UNDER_REVIEW",
         label: "Under review",
@@ -52,12 +54,52 @@ describe("applicant status projection", () => {
     const source = {
       workflowStatus: "ACTIVE",
       terminalPublicStatus: null,
+      hasOpenRfi: false,
       activeStageStatuses: [{
         status: "UNDER_REVIEW" as const,
         label: "Under review",
         description: "Review continues.",
       }],
     };
+    expect(projectApplicantStatus({
+      ...source,
+      lifecycleStatus: "draft",
+    }).status).toBe("DRAFT");
+    expect(projectApplicantStatus({
+      ...source,
+      lifecycleStatus: "withdrawn",
+    }).status).toBe("WITHDRAWN");
+  });
+
+  it("projects an open RFI as action required without changing lifecycle state", () => {
+    const projected = projectApplicantStatus({
+      lifecycleStatus: "submitted",
+      workflowStatus: "ACTIVE",
+      terminalPublicStatus: null,
+      hasOpenRfi: true,
+      activeStageStatuses: [{
+        status: "UNDER_REVIEW",
+        label: "Under review",
+        description: "Review continues.",
+      }],
+    });
+
+    expect(projected).toEqual({
+      actionRequired: true,
+      status: "ACTION_REQUIRED",
+      label: "Information requested",
+      description: "Please respond to the request for information by the deadline.",
+    });
+  });
+
+  it("does not let an open RFI override authoritative lifecycle states", () => {
+    const source = {
+      workflowStatus: "ACTIVE",
+      terminalPublicStatus: null,
+      hasOpenRfi: true,
+      activeStageStatuses: [],
+    };
+
     expect(projectApplicantStatus({
       ...source,
       lifecycleStatus: "draft",
