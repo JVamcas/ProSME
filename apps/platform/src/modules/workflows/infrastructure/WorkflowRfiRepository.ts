@@ -3,21 +3,16 @@ import "server-only";
 import { and, eq, inArray, sql } from "drizzle-orm";
 
 import { ResourceConflictError } from "@/lib/resource-errors";
-import {
-  applications,
-  transactionalOutbox,
-  workflowAuditEntries,
-  workflowEvents,
-} from "@/db/schema";
+import { applications } from "@/db/schema";
 import type {
   CreateWorkflowRfiRequest,
   CreateWorkflowRfiResult,
 } from "../domain/runtime/WorkflowRfi";
 import type { WorkflowActionExecutionTransaction } from "./WorkflowActionExecutionRepository";
+import { appendWorkflowRfiCreationRecords } from "./WorkflowRfiCreationRecordsRepository";
 import {
   workflowRfiDocumentRequests,
   workflowRfiCorrespondence,
-  workflowRfiLifecycleEvents,
   workflowRfiParticipants,
   workflowRfis,
 } from "./workflow-rfi.schema";
@@ -159,56 +154,6 @@ async function assertRequestedDocuments(
   }
 }
 
-async function appendCreationRecords(
-  transaction: WorkflowActionExecutionTransaction,
-  request: CreateWorkflowRfiRequest,
-  result: CreateWorkflowRfiResult,
-) {
-  const payload = {
-    deadlineAt: result.deadlineAt.toISOString(),
-    initiationType: request.initiationType,
-    requestInformationId: result.requestInformationId,
-    taskId: request.source.taskId,
-  };
-  await transaction.insert(workflowRfiLifecycleEvents).values({
-    actorId: request.requesterId,
-    actorType: "USER",
-    correlationId: request.correlationId,
-    details: payload,
-    fromStatus: null,
-    rfiId: result.requestInformationId,
-    toStatus: "OPEN",
-  });
-  await transaction.insert(workflowEvents).values({
-    actorId: request.requesterId,
-    correlationId: request.correlationId,
-    eventCode: "RFI_CREATED",
-    payload,
-    workflowInstanceId: request.source.workflowInstanceId,
-  });
-  await transaction.insert(workflowAuditEntries).values({
-    action: "RFI_CREATED",
-    actorId: request.requesterId,
-    after: { ...payload, status: "OPEN" },
-    before: null,
-    correlationId: request.correlationId,
-    idempotencyKey: `RFI_CREATED:${request.idempotencyKey}`,
-    reason: null,
-    stageInstanceId: request.source.stageInstanceId,
-    targetId: result.requestInformationId,
-    targetType: "WORKFLOW_RFI",
-    taskId: request.source.taskId,
-    workflowInstanceId: request.source.workflowInstanceId,
-  });
-  await transaction.insert(transactionalOutbox).values({
-    aggregateId: result.requestInformationId,
-    correlationId: request.correlationId,
-    eventCode: "RFI_CREATED",
-    payload,
-    schemaVersion: 1,
-  });
-}
-
 export async function createWorkflowRfi(
   transaction: WorkflowActionExecutionTransaction,
   request: CreateWorkflowRfiRequest,
@@ -217,14 +162,16 @@ export async function createWorkflowRfi(
   if (replay) return replay;
   const target = await lockCreationTarget(transaction, request);
   await assertRequestedDocuments(transaction, request, target.taskDefinitionId);
+  const occurredAt = new Date();
   const deadlineAt = new Date(
-    Date.now() + request.deadline.days * 24 * 60 * 60 * 1_000,
+    occurredAt.getTime() + request.deadline.days * 24 * 60 * 60 * 1_000,
   );
   const [rfi] = await transaction.insert(workflowRfis).values({
     actionDefinitionId: request.source.actionDefinitionId,
     applicationId: request.applicationId,
     continuationBehavior: request.continuation.behavior,
     correlationId: request.correlationId,
+    createdAt: occurredAt,
     deadlineAt,
     editableFieldPaths: [...request.editableFieldPaths],
     expiryAction: request.deadline.expiryAction,
@@ -237,6 +184,7 @@ export async function createWorkflowRfi(
     requesterId: request.requesterId,
     stageInstanceId: request.source.stageInstanceId,
     taskId: request.source.taskId,
+    updatedAt: occurredAt,
     workflowInstanceId: request.source.workflowInstanceId,
   }).returning({ id: workflowRfis.id });
   if (!rfi) throw new ResourceConflictError("The information request changed.");
@@ -266,13 +214,19 @@ export async function createWorkflowRfi(
     entryType: "REQUEST",
     message: request.question,
     rfiId: rfi.id,
+    createdAt: occurredAt,
   });
   const result: CreateWorkflowRfiResult = {
     deadlineAt,
     requestInformationId: rfi.id,
     status: "OPEN",
   };
-  await appendCreationRecords(transaction, request, result);
+  await appendWorkflowRfiCreationRecords(
+    transaction,
+    request,
+    result,
+    occurredAt,
+  );
   return result;
 }
 

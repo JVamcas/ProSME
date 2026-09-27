@@ -42,6 +42,7 @@ export type WorkflowRfiDocument = {
 export type WorkflowRfiCorrespondenceEntry = {
   authorName: string;
   authorType: "APPLICANT" | "STAFF";
+  conversationSequence: number;
   createdAt: string;
   entryType: "REQUEST" | "FOLLOW_UP" | "RESPONSE";
   id: string;

@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  bigint,
   check,
   index,
   integer,
@@ -208,14 +209,19 @@ export const workflowRfiCorrespondence = pgTable(
     entryType: text("entry_type")
       .$type<"REQUEST" | "FOLLOW_UP" | "RESPONSE">().notNull(),
     message: text("message").notNull(),
+    conversationSequence: bigint("conversation_sequence", { mode: "number" })
+      .generatedAlwaysAsIdentity(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull().defaultNow(),
   },
   (table) => [
     index("app_workflow_rfi_correspondence_history_idx").on(
       table.rfiId,
-      table.createdAt,
-      table.id,
+      table.conversationSequence,
+    ),
+    uniqueIndex("app_workflow_rfi_correspondence_sequence_unique").on(
+      table.rfiId,
+      table.conversationSequence,
     ),
     check(
       "app_workflow_rfi_correspondence_author_check",
@@ -251,6 +257,18 @@ export const workflowRfiLifecycleEvents = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     rfiId: uuid("rfi_id").notNull()
       .references(() => workflowRfis.id, { onDelete: "restrict" }),
+    applicationId: uuid("application_id").notNull()
+      .references(() => applications.id, { onDelete: "restrict" }),
+    workflowInstanceId: uuid("workflow_instance_id").notNull()
+      .references(() => workflowInstances.id, { onDelete: "restrict" }),
+    stageInstanceId: uuid("stage_instance_id").notNull()
+      .references(() => stageInstances.id, { onDelete: "restrict" }),
+    taskId: uuid("task_id").notNull()
+      .references(() => workflowTasks.id, { onDelete: "restrict" }),
+    actionDefinitionId: uuid("action_definition_id").notNull()
+      .references(() => workflowActionDefinitions.id, { onDelete: "restrict" }),
+    lifecycleSequence: bigint("lifecycle_sequence", { mode: "number" })
+      .generatedAlwaysAsIdentity(),
     fromStatus: text("from_status").$type<WorkflowRfiStatus | null>(),
     toStatus: text("to_status").$type<WorkflowRfiStatus>().notNull(),
     actorId: uuid("actor_id").references(() => users.id, {
@@ -265,13 +283,24 @@ export const workflowRfiLifecycleEvents = pgTable(
   (table) => [
     index("app_workflow_rfi_events_history_idx").on(
       table.rfiId,
-      table.occurredAt,
-      table.id,
+      table.lifecycleSequence,
+    ),
+    uniqueIndex("app_workflow_rfi_events_sequence_unique").on(
+      table.rfiId,
+      table.lifecycleSequence,
     ),
     check(
       "app_workflow_rfi_events_actor_check",
       sql`(${table.actorType} = 'USER' and ${table.actorId} is not null)
         or (${table.actorType} = 'SYSTEM' and ${table.actorId} is null)`,
+    ),
+    check(
+      "app_workflow_rfi_events_status_check",
+      sql`(${table.fromStatus} is null and ${table.toStatus} = 'OPEN')
+        or (${table.fromStatus} = 'OPEN'
+          and ${table.toStatus} in ('RESPONDED', 'CLOSED', 'EXPIRED'))
+        or (${table.fromStatus} = 'RESPONDED'
+          and ${table.toStatus} = 'CLOSED')`,
     ),
   ],
 );

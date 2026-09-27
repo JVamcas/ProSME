@@ -2,7 +2,7 @@ import "server-only";
 
 import { and, eq, sql } from "drizzle-orm";
 
-import { transactionalOutbox, workflowAuditEntries } from "@/db/schema";
+import { workflowAuditEntries } from "@/db/schema";
 import {
   ResourceConflictError,
   ResourceNotFoundError,
@@ -99,12 +99,14 @@ export async function addAssignedWorkflowRfiFollowUp(
     eq(workflowRfis.status, "OPEN"),
   )).for("update", { of: workflowRfis }).limit(1);
   if (!rfi) throw new ResourceNotFoundError("assigned open information request");
+  const occurredAt = new Date();
   const [entry] = await transaction.insert(workflowRfiCorrespondence).values({
     authorType: "STAFF",
     authorUserId: actorId,
     entryType: "FOLLOW_UP",
     message: input.message,
     rfiId: input.requestInformationId,
+    createdAt: occurredAt,
   }).returning({ id: workflowRfiCorrespondence.id });
   if (!entry) throw new ResourceConflictError("The follow-up was not saved.");
   const payload = {
@@ -118,19 +120,13 @@ export async function addAssignedWorkflowRfiFollowUp(
     after: payload,
     before: null,
     correlationId: input.correlationId,
+    createdAt: occurredAt,
     reason: null,
     stageInstanceId: rfi.stageInstanceId,
     targetId: input.requestInformationId,
     targetType: "WORKFLOW_RFI",
     taskId: input.taskId,
     workflowInstanceId: rfi.workflowInstanceId,
-  });
-  await transaction.insert(transactionalOutbox).values({
-    aggregateId: input.requestInformationId,
-    correlationId: input.correlationId,
-    eventCode: "RFI_FOLLOW_UP_ADDED",
-    payload,
-    schemaVersion: 1,
   });
   return { correspondenceId: entry.id };
 }

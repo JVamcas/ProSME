@@ -73,6 +73,7 @@ async function lockOwnedOpenRfi(
 ) {
   const [rfi] = await transaction
     .select({
+      actionDefinitionId: workflowRfis.actionDefinitionId,
       applicationId: workflowRfis.applicationId,
       editableFieldPaths: workflowRfis.editableFieldPaths,
       rowVersion: workflowRfis.rowVersion,
@@ -161,11 +162,13 @@ export async function respondToOwnedWorkflowRfi(
     rfi.applicationId,
     input,
   );
+  const respondedAt = new Date();
   const [response] = await transaction.insert(workflowRfiResponses).values({
     correlationId: input.correlationId,
     fieldValues: input.fieldValues,
     idempotencyKey: input.idempotencyKey,
     respondentUserId: actorId,
+    respondedAt,
     rfiId: input.requestInformationId,
   }).returning({ id: workflowRfiResponses.id });
   if (!response) throw new ResourceConflictError("The response was not saved.");
@@ -175,6 +178,7 @@ export async function respondToOwnedWorkflowRfi(
     entryType: "RESPONSE",
     message: "Response submitted.",
     rfiId: input.requestInformationId,
+    createdAt: respondedAt,
   });
   if (input.evidenceVersionIds.length) {
     await transaction.insert(workflowRfiResponseDocuments).values(
@@ -184,7 +188,6 @@ export async function respondToOwnedWorkflowRfi(
       })),
     );
   }
-  const respondedAt = new Date();
   const [updated] = await transaction.update(workflowRfis).set({
     continuationAppliedAt: respondedAt,
     respondedAt,
@@ -209,11 +212,18 @@ export async function respondToOwnedWorkflowRfi(
     actorId,
     correlationId: input.correlationId,
     fromStatus: "OPEN",
+    nextRowVersion: updated.rowVersion,
+    occurredAt: respondedAt,
+    previousRowVersion: rfi.rowVersion,
     requestInformationId: input.requestInformationId,
-    stageInstanceId: rfi.stageInstanceId,
-    taskId: rfi.taskId,
+    source: {
+      actionDefinitionId: rfi.actionDefinitionId,
+      applicationId: rfi.applicationId,
+      stageInstanceId: rfi.stageInstanceId,
+      taskId: rfi.taskId,
+      workflowInstanceId: rfi.workflowInstanceId,
+    },
     toStatus: "RESPONDED",
-    workflowInstanceId: rfi.workflowInstanceId,
   });
   return {
     requestInformationId: input.requestInformationId,
@@ -229,6 +239,8 @@ export async function closeAssignedWorkflowRfi(
   input: CloseWorkflowRfiInput,
 ) {
   const [rfi] = await transaction.select({
+    actionDefinitionId: workflowRfis.actionDefinitionId,
+    applicationId: workflowRfis.applicationId,
     rowVersion: workflowRfis.rowVersion,
     stageInstanceId: workflowRfis.stageInstanceId,
     status: workflowRfis.status,
@@ -277,11 +289,18 @@ export async function closeAssignedWorkflowRfi(
     actorId,
     correlationId: input.correlationId,
     fromStatus: rfi.status,
+    nextRowVersion: updated.rowVersion,
+    occurredAt: closedAt,
+    previousRowVersion: rfi.rowVersion,
     requestInformationId: input.requestInformationId,
-    stageInstanceId: rfi.stageInstanceId,
-    taskId: rfi.taskId,
+    source: {
+      actionDefinitionId: rfi.actionDefinitionId,
+      applicationId: rfi.applicationId,
+      stageInstanceId: rfi.stageInstanceId,
+      taskId: rfi.taskId,
+      workflowInstanceId: rfi.workflowInstanceId,
+    },
     toStatus: "CLOSED",
-    workflowInstanceId: rfi.workflowInstanceId,
   });
   return { rowVersion: updated.rowVersion, status: "CLOSED" as const };
 }
@@ -296,6 +315,8 @@ export async function expireDueWorkflowRfi(
   },
 ) {
   const [rfi] = await transaction.select({
+    actionDefinitionId: workflowRfis.actionDefinitionId,
+    applicationId: workflowRfis.applicationId,
     deadlineAt: workflowRfis.deadlineAt,
     expiryAction: workflowRfis.expiryAction,
     rowVersion: workflowRfis.rowVersion,
@@ -329,11 +350,18 @@ export async function expireDueWorkflowRfi(
     correlationId: input.correlationId,
     details: { expiryAction: rfi.expiryAction },
     fromStatus: "OPEN",
+    nextRowVersion: updated.rowVersion,
+    occurredAt: input.occurredAt,
+    previousRowVersion: rfi.rowVersion,
     requestInformationId: input.requestInformationId,
-    stageInstanceId: rfi.stageInstanceId,
-    taskId: rfi.taskId,
+    source: {
+      actionDefinitionId: rfi.actionDefinitionId,
+      applicationId: rfi.applicationId,
+      stageInstanceId: rfi.stageInstanceId,
+      taskId: rfi.taskId,
+      workflowInstanceId: rfi.workflowInstanceId,
+    },
     toStatus: "EXPIRED",
-    workflowInstanceId: rfi.workflowInstanceId,
   });
   return {
     expiryAction: rfi.expiryAction,

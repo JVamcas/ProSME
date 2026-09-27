@@ -806,6 +806,13 @@
       "when": 1797638400000,
       "tag": "0114_rfi_permission_grants",
       "breakpoints": true
+    },
+    {
+      "idx": 115,
+      "version": "7",
+      "when": 1797724800000,
+      "tag": "0115_rfi_correspondence_events_audit",
+      "breakpoints": true
     }
   ]
 }

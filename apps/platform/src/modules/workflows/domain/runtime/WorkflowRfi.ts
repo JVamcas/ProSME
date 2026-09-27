@@ -22,6 +22,24 @@ export type WorkflowRfiExpiryAction =
 
 export type WorkflowRfiContinuationBehavior = "RESUME_SOURCE_TASK";
 
+export const workflowRfiLifecycleEventCodes = [
+  "RFI_CREATED",
+  "RFI_RESPONDED",
+  "RFI_CLOSED",
+  "RFI_EXPIRED",
+] as const;
+
+export type WorkflowRfiLifecycleEventCode =
+  (typeof workflowRfiLifecycleEventCodes)[number];
+
+export type WorkflowRfiSourceReference = {
+  actionDefinitionId: string;
+  applicationId: string;
+  stageInstanceId: string;
+  taskId: string;
+  workflowInstanceId: string;
+};
+
 export type CreateWorkflowRfiRequest = {
   applicationId: string;
   continuation: {

@@ -202,12 +202,13 @@ function detailQuery(condition: SQL) {
     LEFT JOIN LATERAL (
       SELECT jsonb_agg(jsonb_build_object(
         'id', entry.id,
+        'conversationSequence', entry.conversation_sequence,
         'authorName', author.display_name,
         'authorType', entry.author_type,
         'entryType', entry.entry_type,
         'message', entry.message,
         'createdAt', entry.created_at
-      ) ORDER BY entry.created_at, entry.id) AS entries
+      ) ORDER BY entry.conversation_sequence) AS entries
       FROM app_workflow_rfi_correspondence entry
       JOIN app_users author ON author.id = entry.author_user_id
       WHERE entry.rfi_id = rfi.id
