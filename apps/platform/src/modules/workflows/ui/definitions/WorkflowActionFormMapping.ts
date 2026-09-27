@@ -40,7 +40,7 @@ export function workflowActionFormDefaults(
     rejectionPublicDescription: "A decision is available for your application.",
     reversibleActionKey: "",
     deadlineDays: undefined,
-    editableFieldKeys: "",
+    editableFieldPaths: "",
     reminderDayOffsets: "",
     expiryAction: "CLOSE_REQUEST",
     dataHandling: "RETAIN",
@@ -90,7 +90,7 @@ export function workflowActionFormDefaults(
       return {
         ...defaults,
         deadlineDays: action.configuration.deadlineDays,
-        editableFieldKeys: action.configuration.editableFieldKeys.join(", "),
+        editableFieldPaths: action.configuration.editableFieldPaths.join(", "),
         reminderDayOffsets: action.configuration.reminderDayOffsets.join(", "),
         expiryAction: action.configuration.expiryAction,
       };
@@ -162,10 +162,13 @@ function configuration(values: WorkflowActionFormValues) {
       };
     case "REQUEST_INFORMATION":
       return {
+        continuation: "RESUME_SOURCE_TASK" as const,
         deadlineDays: values.deadlineDays,
-        editableFieldKeys: keys(values.editableFieldKeys),
+        editableFieldPaths: keys(values.editableFieldPaths),
         reminderDayOffsets: numbers(values.reminderDayOffsets),
         expiryAction: values.expiryAction,
+        participantScope: "APPLICATION_OWNER_AND_REQUESTER" as const,
+        recipientScope: "APPLICATION_OWNER" as const,
       };
     case "RETURN":
       return {

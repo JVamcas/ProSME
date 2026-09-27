@@ -182,6 +182,52 @@ function validateApplicantLabels(
   ];
 }
 
+function validateAutomaticDocumentRequests(
+  stage: WorkflowGraphInput["stages"][number],
+  base: string,
+) {
+  const errors: WorkflowValidationIssue[] = [];
+  const automatic = stage.documentRequirements.filter(
+    (requirement) => requirement.requestOnStageActivation,
+  );
+  const taskKeys = new Set(automatic.map((requirement) => requirement.taskStableKey));
+  if (taskKeys.size > 1) {
+    errors.push(issue(
+      "AUTO_RFI_MULTIPLE_TASKS",
+      `${stage.name} must attach automatically requested documents to one task so they can be consolidated.`,
+      `${base}.documentRequirements`,
+    ));
+  }
+  automatic.forEach((requirement) => {
+    const requirementIndex = stage.documentRequirements.indexOf(requirement);
+    const path = `${base}.documentRequirements.${requirementIndex}`;
+    if (requirement.uploader !== "APPLICANT") {
+      errors.push(issue(
+        "AUTO_RFI_APPLICANT_OWNER_REQUIRED",
+        `${requirement.name} can be requested automatically only when the applicant is the uploader.`,
+        `${path}.uploader`,
+      ));
+    }
+    const task = stage.tasks.find(
+      (candidate) => candidate.stableKey === requirement.taskStableKey,
+    );
+    const actions = stage.actions.filter(
+      (action) =>
+        action.actionType === "REQUEST_INFORMATION"
+        && action.enabled
+        && task?.actionKeys.includes(action.stableKey),
+    );
+    if (actions.length !== 1) {
+      errors.push(issue(
+        "AUTO_RFI_ACTION_REQUIRED",
+        `${requirement.name} must be attached to a task with exactly one enabled Request Information action.`,
+        path,
+      ));
+    }
+  });
+  return errors;
+}
+
 export function validateWorkflowStage(
   stage: WorkflowGraphInput["stages"][number],
   index: number,
@@ -203,5 +249,6 @@ export function validateWorkflowStage(
     errors.push(...validateTaskIdentity(task, base, taskIndex));
   });
   errors.push(...validateApplicantLabels(stage, base));
+  errors.push(...validateAutomaticDocumentRequests(stage, base));
   return errors;
 }

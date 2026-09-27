@@ -3,6 +3,8 @@ import { z } from "zod";
 import { workflowActionTypes } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
 
 const stableKeyPattern = /^[A-Z][A-Z0-9_]*$/;
+const fieldPathPattern =
+  /^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z][A-Za-z0-9_]*)*$/;
 
 function isStableKeyList(value: string) {
   const values = value
@@ -65,7 +67,7 @@ export const workflowActionFormSchema = z
     rejectionPublicDescription: z.string().trim().max(300),
     reversibleActionKey: z.string(),
     deadlineDays: z.number().int().positive().max(365).optional(),
-    editableFieldKeys: z.string(),
+    editableFieldPaths: z.string(),
     reminderDayOffsets: z.string(),
     expiryAction: z.enum(["CLOSE_REQUEST", "ESCALATE", "RETURN"]),
     dataHandling: z.enum(["RETAIN", "CLEAR"]),
@@ -143,11 +145,25 @@ export const workflowActionFormSchema = z
         });
       }
       requiredFor(
-        values.editableFieldKeys,
-        "Enter editable field keys.",
-        "editableFieldKeys",
+        values.editableFieldPaths,
+        "Enter editable field paths.",
+        "editableFieldPaths",
         context,
       );
+      const fieldPaths = values.editableFieldPaths
+        .split(/[\n,]/)
+        .map((item) => item.trim())
+        .filter(Boolean);
+      if (
+        new Set(fieldPaths).size !== fieldPaths.length ||
+        fieldPaths.some((path) => !fieldPathPattern.test(path))
+      ) {
+        context.addIssue({
+          code: "custom",
+          message: "Use unique stable field paths separated by commas or new lines.",
+          path: ["editableFieldPaths"],
+        });
+      }
     }
     if (values.actionType === "ESCALATE") {
       requiredFor(
@@ -187,7 +203,6 @@ export const workflowActionFormSchema = z
     }
     const keyLists = [
       ["reasonCodes", values.reasonCodes],
-      ["editableFieldKeys", values.editableFieldKeys],
       ["allowedStageKeys", values.allowedStageKeys],
     ] as const;
     keyLists.forEach(([path, value]) => {

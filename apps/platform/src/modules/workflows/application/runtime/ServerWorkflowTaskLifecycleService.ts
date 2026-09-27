@@ -80,6 +80,11 @@ async function changeTaskState(
         "Submit the required form before completing this task.",
       );
     }
+    if (action === "COMPLETE" && task.hasOpenRfi) {
+      throw new ResourceConflictError(
+        "Respond to or resolve the open information request before completing this task.",
+      );
+    }
     const targetStatus = targetStatusByAction[action];
     if (!canTransitionWorkflowTask(task.status, targetStatus)) {
       throw new ResourceConflictError(

@@ -47,7 +47,7 @@ const task = {
         comment: { maxLength: 4_000, required: false },
         confirmation: { message: null, required: false },
         dueDate: { deadlineDays: null, required: false },
-        editableFieldKeys: [],
+        editableFieldPaths: [],
         reasonCode: { options: [], required: false },
         reasonOrCommentRequired: false,
         reviewDate: { required: false },

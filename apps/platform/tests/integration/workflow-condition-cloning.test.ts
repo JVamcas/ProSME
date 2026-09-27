@@ -93,6 +93,7 @@ const graph: WorkflowGraphInput = {
       acceptedFileTypes: ["PDF"],
       maximumSizeMb: 10,
       expiryDays: null,
+      requestOnStageActivation: false,
       uploader: "APPLICANT",
       verifier: "ASSIGNED_REVIEWER",
       templateReference: "REVIEW_EVIDENCE_TEMPLATE",

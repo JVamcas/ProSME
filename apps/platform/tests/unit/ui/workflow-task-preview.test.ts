@@ -168,6 +168,7 @@ describe("workflow task reviewer preview", () => {
         acceptedFileTypes: ["PDF"],
         maximumSizeMb: 10,
         expiryDays: null,
+        requestOnStageActivation: false,
         uploader: "APPLICANT",
         verifier: "ASSIGNED_REVIEWER",
         templateReference: "",
@@ -204,7 +205,12 @@ describe("workflow task reviewer preview", () => {
           commentFields: [],
           disabled: true,
           displayMode: "SECTIONS",
-          documentRequirements: stage.documentRequirements,
+          documentRequirements: stage.documentRequirements.map(
+            (requirement) => ({
+              ...requirement,
+              requestStatus: "MISSING" as const,
+            }),
+          ),
           scoring: stage.scoring,
           status: previewStatus,
         }),

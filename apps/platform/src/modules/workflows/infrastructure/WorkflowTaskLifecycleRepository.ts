@@ -22,6 +22,7 @@ export type LockedWorkflowTask = {
   coiCleared: boolean;
   formRequired: boolean;
   formCompleted: boolean;
+  hasOpenRfi: boolean;
   id: string;
   permissions: WorkflowElementPermissions;
   rowVersion: number;
@@ -63,6 +64,11 @@ export async function lockWorkflowTaskForLifecycle(
         SELECT 1 FROM app_form_responses response
         WHERE response.workflow_task_id = ${workflowTasks.id}
           AND response.status = 'COMPLETED'
+      )`,
+      hasOpenRfi: sql<boolean>`EXISTS (
+        SELECT 1 FROM app_workflow_rfis rfi
+        WHERE rfi.task_id = ${workflowTasks.id}
+          AND rfi.status = 'OPEN'
       )`,
       permissions: stageTaskDefinitions.permissions,
       rowVersion: workflowTasks.rowVersion,

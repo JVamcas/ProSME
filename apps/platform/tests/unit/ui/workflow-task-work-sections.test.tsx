@@ -9,6 +9,7 @@ const documentRequirements = [{
   mandatory: true,
   maximumSizeMb: 10,
   name: "Supporting document",
+  requestStatus: "MISSING" as const,
   templateReference: "",
   uploader: "APPLICANT" as const,
   verifier: "STAFF" as const,

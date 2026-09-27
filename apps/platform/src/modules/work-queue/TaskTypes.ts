@@ -15,6 +15,7 @@ export type DocumentRequirementItem = {
   mandatory: boolean;
   maximumSizeMb: number;
   name: string;
+  requestStatus: "MISSING" | "REQUESTED" | "SUPPLIED" | "EXPIRED";
   templateReference: string;
   uploader: "APPLICANT" | "ASSIGNED_REVIEWER" | "STAFF";
   verifier: "ASSIGNED_REVIEWER" | "STAFF";

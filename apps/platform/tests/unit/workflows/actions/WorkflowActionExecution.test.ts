@@ -78,9 +78,12 @@ describe("workflow action execution contract", () => {
     const configured = action({
       actionType: "REQUEST_INFORMATION",
       configuration: {
+        continuation: "RESUME_SOURCE_TASK",
         deadlineDays: 10,
-        editableFieldKeys: ["application.turnover"],
+        editableFieldPaths: ["application.turnover"],
         expiryAction: "RETURN",
+        participantScope: "APPLICATION_OWNER_AND_REQUESTER",
+        recipientScope: "APPLICATION_OWNER",
         reminderDayOffsets: [3],
       },
       reasonCodeRequired: false,
@@ -90,12 +93,28 @@ describe("workflow action execution contract", () => {
         configured,
         {
           actionType: "REQUEST_INFORMATION",
-          editableFieldKeys: ["application.bank_account"],
+          editableFieldPaths: ["application.bank_account"],
           instructions: "Clarify this value.",
-          requestedDocumentCategories: [],
+          question: "What is the correct bank account?",
+          requestedDocumentRequirementIds: [],
         },
         "SCREENING",
       ),
     ).toContain("not configured");
+    expect(
+      validateActionInputAgainstConfiguration(
+        configured,
+        {
+          actionType: "REQUEST_INFORMATION",
+          editableFieldPaths: ["application.turnover"],
+          instructions: "Provide supporting evidence.",
+          question: "Can you support the turnover amount?",
+          requestedDocumentRequirementIds: [
+            "10000000-0000-4000-8000-000000000001",
+          ],
+        },
+        "SCREENING",
+      ),
+    ).toBeNull();
   });
 });

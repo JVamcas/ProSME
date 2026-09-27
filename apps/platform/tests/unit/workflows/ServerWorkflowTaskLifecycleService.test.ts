@@ -64,6 +64,7 @@ const task = {
   coiCleared: true,
   formRequired: false,
   formCompleted: false,
+  hasOpenRfi: false,
   id: input.taskId,
   permissions: defaultWorkflowElementPermissions,
   rowVersion: 1,

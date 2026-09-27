@@ -292,6 +292,11 @@ export async function completeActionTask(
       eq(workflowTasks.id, input.task.id),
       eq(workflowTasks.rowVersion, input.task.rowVersion),
       sql`${workflowTasks.status} IN ('PENDING', 'IN_PROGRESS')`,
+      sql`NOT EXISTS (
+        SELECT 1 FROM app_workflow_rfis rfi
+        WHERE rfi.task_id = ${workflowTasks.id}
+          AND rfi.status = 'OPEN'
+      )`,
     ))
     .returning({ id: workflowTasks.id });
   return task ?? null;
@@ -389,4 +394,3 @@ export async function recordWorkflowActionExecution(
     workflowInstanceId: input.workflowInstanceId,
   });
 }
-

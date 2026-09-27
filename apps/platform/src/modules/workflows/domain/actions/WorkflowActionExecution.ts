@@ -39,9 +39,17 @@ export const workflowActionInputSchema = z.discriminatedUnion("actionType", [
     .object({
       ...commonInput,
       actionType: z.literal("REQUEST_INFORMATION"),
-      editableFieldKeys: z.array(fieldKeySchema).max(100),
+      editableFieldPaths: z.array(fieldKeySchema).max(100),
       instructions: z.string().trim().min(1).max(4_000),
-      requestedDocumentCategories: z.array(fieldKeySchema).max(100).default([]),
+      question: z.string().trim().min(1).max(4_000),
+      requestedDocumentRequirementIds: z
+        .array(z.uuid())
+        .max(100)
+        .refine(
+          (values) => new Set(values).size === values.length,
+          "Requested document requirements must be unique.",
+        )
+        .default([]),
     })
     .strict(),
   z
@@ -125,6 +133,7 @@ export type WorkflowActionExecutionResult = {
   decisionId: string | null;
   executedAt: string;
   resultingRuntimeVersion: number;
+  requestInformationId: string | null;
   sourceStageInstanceId: string;
   taskId: string | null;
   transition: {
@@ -182,12 +191,15 @@ export function validateActionInputAgainstConfiguration(
     case "REJECT":
       return input.comment ? null : "A reason is required for this rejection.";
     case "REQUEST_INFORMATION":
-      return input.actionType === "REQUEST_INFORMATION" &&
-        input.editableFieldKeys.some(
-          (key) => !action.configuration.editableFieldKeys.includes(key),
+      if (input.actionType !== "REQUEST_INFORMATION") return null;
+      if (
+        input.editableFieldPaths.some(
+          (path) => !action.configuration.editableFieldPaths.includes(path),
         )
-        ? "The request contains an editable field that is not configured."
-        : null;
+      ) {
+        return "The request contains an editable field that is not configured.";
+      }
+      return null;
     case "RETURN":
       return action.configuration.reasonRequired &&
         !input.reasonCode &&

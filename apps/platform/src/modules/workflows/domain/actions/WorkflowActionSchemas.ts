@@ -15,6 +15,21 @@ const uniqueStableKeyListSchema = stableKeyListSchema.refine(
   "Values must be unique.",
 );
 
+const fieldPathSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(200)
+  .regex(/^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z][A-Za-z0-9_]*)*$/);
+const uniqueFieldPathListSchema = z
+  .array(fieldPathSchema)
+  .min(1)
+  .max(100)
+  .refine(
+    (values) => new Set(values).size === values.length,
+    "Values must be unique.",
+  );
+
 const publicStatusMappingSchema = z
   .object({
     description: z.string().trim().min(2).max(300),
@@ -51,10 +66,13 @@ export const rejectConfigurationSchema = z
 
 export const requestInformationConfigurationSchema = z
   .object({
+    continuation: z.literal("RESUME_SOURCE_TASK"),
     deadlineDays: z.number().int().positive().max(365),
-    editableFieldKeys: uniqueStableKeyListSchema,
+    editableFieldPaths: uniqueFieldPathListSchema,
     reminderDayOffsets: z.array(z.number().int().positive().max(365)).max(20),
     expiryAction: z.enum(["CLOSE_REQUEST", "ESCALATE", "RETURN"]),
+    participantScope: z.literal("APPLICATION_OWNER_AND_REQUESTER"),
+    recipientScope: z.literal("APPLICATION_OWNER"),
   })
   .strict()
   .superRefine((configuration, context) => {

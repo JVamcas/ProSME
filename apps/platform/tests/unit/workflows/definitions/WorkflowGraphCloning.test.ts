@@ -32,6 +32,7 @@ describe("workflow graph cloning", () => {
         acceptedFileTypes: ["PDF"],
         maximumSizeMb: 10,
         expiryDays: 180,
+        requestOnStageActivation: false,
         uploader: "APPLICANT",
         verifier: "ASSIGNED_REVIEWER",
         templateReference: "TAX_CLEARANCE_TEMPLATE",

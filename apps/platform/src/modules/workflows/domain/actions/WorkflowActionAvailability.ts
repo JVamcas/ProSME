@@ -28,7 +28,7 @@ export type WorkflowActionInputMetadata = {
     deadlineDays: number | null;
     required: boolean;
   };
-  editableFieldKeys: readonly string[];
+  editableFieldPaths: readonly string[];
   reasonCode: {
     options: readonly string[];
     required: boolean;
@@ -61,7 +61,7 @@ export const emptyWorkflowActionInputMetadata: WorkflowActionInputMetadata = {
   comment: { maxLength: 4_000, required: false },
   confirmation: { message: null, required: false },
   dueDate: { deadlineDays: null, required: false },
-  editableFieldKeys: [],
+  editableFieldPaths: [],
   reasonCode: { options: [], required: false },
   reasonOrCommentRequired: false,
   reviewDate: { required: false },
@@ -129,7 +129,7 @@ export function workflowActionInputMetadata(
       deadlineDays: isRequest ? action.configuration.deadlineDays : null,
       required: isRequest,
     },
-    editableFieldKeys: isRequest ? action.configuration.editableFieldKeys : [],
+    editableFieldPaths: isRequest ? action.configuration.editableFieldPaths : [],
     reasonCode: {
       options: reasonCodes(action),
       required: action.reasonCodeRequired,

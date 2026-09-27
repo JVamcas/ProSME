@@ -29,6 +29,7 @@ export const workflowStageDocumentRequirementFormSchema = z.object({
     .min(1, "Select at least one accepted file type."),
   maximumSizeMb: z.number().int().min(1).max(100),
   expiryDays: z.number().int().min(1).max(3650).nullable(),
+  requestOnStageActivation: z.boolean(),
   templateReference: z.string().trim().max(500),
 });
 

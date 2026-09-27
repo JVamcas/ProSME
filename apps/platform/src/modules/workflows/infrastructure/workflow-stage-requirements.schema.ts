@@ -101,6 +101,9 @@ export const workflowStageDocumentRequirements = pgTable(
       .notNull(),
     maximumSizeMb: integer("maximum_size_mb").notNull(),
     expiryDays: integer("expiry_days"),
+    requestOnStageActivation: boolean("request_on_stage_activation")
+      .notNull()
+      .default(false),
     uploader: text("uploader").$type<WorkflowDocumentActor>().notNull(),
     verifier: text("verifier")
       .$type<WorkflowDocumentVerifierActor>()

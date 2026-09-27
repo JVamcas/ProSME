@@ -87,6 +87,8 @@ function loadDocumentRows(versionId: string) {
       acceptedFileTypes: workflowStageDocumentRequirements.acceptedFileTypes,
       maximumSizeMb: workflowStageDocumentRequirements.maximumSizeMb,
       expiryDays: workflowStageDocumentRequirements.expiryDays,
+      requestOnStageActivation:
+        workflowStageDocumentRequirements.requestOnStageActivation,
       uploader: workflowStageDocumentRequirements.uploader,
       verifier: workflowStageDocumentRequirements.verifier,
       templateReference: workflowStageDocumentRequirements.templateReference,

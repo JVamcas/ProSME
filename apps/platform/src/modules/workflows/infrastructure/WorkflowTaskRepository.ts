@@ -69,6 +69,29 @@ export async function readWorkflowTask(
           'mandatory', document.mandatory,
           'maximumSizeMb', document.maximum_size_mb,
           'name', document.name,
+          'requestStatus', CASE
+            WHEN EXISTS (
+              SELECT 1 FROM app_workflow_document_evidence_versions evidence
+              WHERE evidence.application_id = application.id
+                AND evidence.requirement_id = document.id
+                AND (evidence.valid_until IS NULL OR evidence.valid_until > now())
+            ) THEN 'SUPPLIED'
+            WHEN EXISTS (
+              SELECT 1 FROM app_workflow_rfi_document_requests request
+              JOIN app_workflow_rfis rfi ON rfi.id = request.rfi_id
+              WHERE request.requirement_id = document.id
+                AND rfi.application_id = application.id
+                AND rfi.status = 'OPEN'
+            ) THEN 'REQUESTED'
+            WHEN EXISTS (
+              SELECT 1 FROM app_workflow_rfi_document_requests request
+              JOIN app_workflow_rfis rfi ON rfi.id = request.rfi_id
+              WHERE request.requirement_id = document.id
+                AND rfi.application_id = application.id
+                AND rfi.status = 'EXPIRED'
+            ) THEN 'EXPIRED'
+            ELSE 'MISSING'
+          END,
           'templateReference', document.template_reference,
           'uploader', document.uploader,
           'verifier', document.verifier,

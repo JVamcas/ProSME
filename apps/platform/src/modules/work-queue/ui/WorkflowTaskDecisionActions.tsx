@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { FormProvider, useForm } from "react-hook-form";
+import { FormProvider, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -30,6 +30,7 @@ function actionFormSchema(action: WorkflowTaskAction) {
       instructions: z.string().trim().max(4_000),
       question: z.string().trim().max(4_000),
       reasonCode: z.string().trim().max(80),
+      requestedDocumentRequirementIds: z.array(z.uuid()).max(100),
       reviewDate: z.union([z.iso.date(), z.literal("")]),
     })
     .superRefine((values, context) => {
@@ -63,6 +64,13 @@ function actionFormSchema(action: WorkflowTaskAction) {
           code: "custom",
           message: "Confirm this decision.",
           path: ["confirmed"],
+        });
+      }
+      if (action.actionType === "REQUEST_INFORMATION" && !values.question) {
+        context.addIssue({
+          code: "custom",
+          message: "Enter a question for the applicant.",
+          path: ["question"],
         });
       }
       if (action.actionType === "REQUEST_INFORMATION" && !values.instructions) {
@@ -106,9 +114,11 @@ function actionInput(
       return {
         ...common,
         actionType: "REQUEST_INFORMATION",
-        editableFieldKeys: [...action.requiredInput.editableFieldKeys],
+        editableFieldPaths: [...action.requiredInput.editableFieldPaths],
         instructions: values.instructions,
-        requestedDocumentCategories: [],
+        question: values.question,
+        requestedDocumentRequirementIds:
+          values.requestedDocumentRequirementIds,
       };
     case "REFER":
       return { ...common, actionType: "REFER", question: values.question };
@@ -153,10 +163,23 @@ function DecisionForm({
       instructions: "",
       question: "",
       reasonCode: "",
+      requestedDocumentRequirementIds: [],
       reviewDate: "",
     },
     resolver: zodResolver(actionFormSchema(action)),
   });
+  const requestedDocumentRequirementIds = useWatch({
+    control: form.control,
+    name: "requestedDocumentRequirementIds",
+  });
+  const missingApplicantDocuments = action.actionType === "REQUEST_INFORMATION"
+    ? task.documentRequirements.filter(
+        (requirement) =>
+          requirement.id
+          && requirement.uploader === "APPLICANT"
+          && requirement.requestStatus === "MISSING",
+      )
+    : [];
   const submit = form.handleSubmit(async (values) => {
     try {
       const result = await execution.mutateAsync({
@@ -209,11 +232,37 @@ function DecisionForm({
               <FormInput label="Reason code" name="reasonCode" required />
             ) : null}
             {action.actionType === "REQUEST_INFORMATION" ? (
-              <FormTextarea
-                label="Applicant instructions"
-                name="instructions"
-                required
-              />
+              <>
+                <FormTextarea
+                  label="Question for the applicant"
+                  name="question"
+                  required
+                />
+                <FormTextarea
+                  label="Applicant instructions"
+                  name="instructions"
+                  required
+                />
+                {missingApplicantDocuments.length ? (
+                  <FormSelect
+                    items={missingApplicantDocuments.map((requirement) => ({
+                      label: requirement.name,
+                      value: requirement.id!,
+                    }))}
+                    label="Missing applicant documents"
+                    multiple
+                    name="requestedDocumentRequirementIds"
+                    onMultipleChange={(values) => {
+                      form.setValue(
+                        "requestedDocumentRequirementIds",
+                        values,
+                        { shouldDirty: true, shouldValidate: true },
+                      );
+                    }}
+                    value={requestedDocumentRequirementIds}
+                  />
+                ) : null}
+              </>
             ) : null}
             {action.actionType === "REFER" ? (
               <FormTextarea

@@ -21,10 +21,12 @@ function KeyListField({
   label,
   name,
   placeholder,
+  required = true,
 }: {
   label: string;
   name: string;
   placeholder: string;
+  required?: boolean;
 }) {
   return (
     <FormTextarea
@@ -33,7 +35,7 @@ function KeyListField({
       label={label}
       name={name}
       placeholder={placeholder}
-      required
+      required={required}
       rows={2}
     />
   );
@@ -61,10 +63,14 @@ function RequestInformationFields() {
         name="expiryAction"
         required
       />
-      <KeyListField
-        label="Editable field keys"
-        name="editableFieldKeys"
-        placeholder="FINANCIALS, BUSINESS_PLAN"
+      <FormTextarea
+        containerClassName="sm:col-span-2"
+        infoTooltip="Use stable field paths separated by commas or new lines, for example application.financial.turnover."
+        label="Editable field paths"
+        name="editableFieldPaths"
+        placeholder="application.financial.turnover"
+        required
+        rows={2}
       />
       <FormInput
         containerClassName="sm:col-span-2"

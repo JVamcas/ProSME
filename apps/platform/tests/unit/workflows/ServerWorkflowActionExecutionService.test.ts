@@ -226,6 +226,7 @@ describe("server workflow action execution", () => {
       decisionId: "b0000000-0000-4000-8000-000000000001",
       executedAt: "2026-09-22T08:00:00.000Z",
       resultingRuntimeVersion: 3,
+      requestInformationId: null,
       sourceStageInstanceId: stageInstanceId,
       taskId,
       transition: {

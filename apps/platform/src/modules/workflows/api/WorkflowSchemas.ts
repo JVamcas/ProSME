@@ -68,6 +68,7 @@ export const workflowStageDocumentRequirementSchema = z.object({
     ),
   maximumSizeMb: z.number().int().min(1).max(100),
   expiryDays: z.number().int().min(1).max(3650).nullable(),
+  requestOnStageActivation: z.boolean(),
   uploader: z.enum(workflowDocumentActors),
   verifier: z.enum(workflowDocumentVerifierActors),
   templateReference: z.string().trim().max(500),

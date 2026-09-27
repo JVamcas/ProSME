@@ -139,7 +139,10 @@ export function WorkflowTaskPreviewDialog({
           commentFields={commentFields}
           disabled
           displayMode={displayMode}
-          documentRequirements={taskDocuments}
+          documentRequirements={taskDocuments.map((requirement) => ({
+            ...requirement,
+            requestStatus: "MISSING" as const,
+          }))}
           finalActions={showActionsInFinalStep ? previewActions : undefined}
           form={hasForm ? {
             content: <StructuredFormPreview form={form} />,

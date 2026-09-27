@@ -15,10 +15,13 @@ export type RejectConfiguration = {
 };
 
 export type RequestInformationConfiguration = {
+  continuation: "RESUME_SOURCE_TASK";
   deadlineDays: number;
-  editableFieldKeys: string[];
+  editableFieldPaths: string[];
   reminderDayOffsets: number[];
   expiryAction: "CLOSE_REQUEST" | "ESCALATE" | "RETURN";
+  participantScope: "APPLICATION_OWNER_AND_REQUESTER";
+  recipientScope: "APPLICATION_OWNER";
 };
 
 export type ReturnConfiguration = {

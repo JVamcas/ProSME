@@ -3602,16 +3602,140 @@ A configured join activates its downstream Stage exactly once after all prerequi
 ---
 # Phase 11 — RFI
 
-Implement:
-- create RFI;
-- applicant response;
-- editable-field whitelist;
-- expiry behaviour;
-- correspondence history.
+This phase supplies the Request for Information lifecycle consumed by the
+Phase 8.11 Request Information Hook. An RFI is a first-class, auditable
+conversation tied to the exact Application, Workflow, Stage and Task that
+caused it. It supports both reviewer-initiated requests and requests created
+automatically when a Stage activates with missing applicant-owned documents.
+
+## 11.1 RFI Domain and Lifecycle
+
+### Goal
+
+Model one authoritative RFI lifecycle without encoding applicant
+correspondence inside Workflow Task results or notification records.
+
+### Scope
+
+An RFI records:
+- Application, Workflow Instance, Stage Instance and Task references;
+- originating Workflow Action and requester;
+- initiation type: `MANUAL` or `STAGE_ACTIVATION`;
+- applicant recipient and permitted participants;
+- question and instructions;
+- editable-field whitelist using stable field paths;
+- requested document requirement identifiers;
+- response deadline and configured expiry behaviour;
+- continuation behaviour after response or expiry;
+- idempotency key, correlation ID and audit timestamps.
+
+The lifecycle states are:
+- `OPEN` — awaiting an applicant response;
+- `RESPONDED` — the applicant submitted the requested information;
+- `CLOSED` — the response was accepted or the request was otherwise resolved;
+- `EXPIRED` — the deadline elapsed and configured expiry behaviour applied.
+
+State transitions are server-authorized, validated and auditable. A terminal
+RFI cannot be reopened by mutation; further information requires a new RFI.
+
+## 11.2 Creation and Workflow Integration
+
+### Scope
+
+- A permitted `REQUEST_INFORMATION` Action creates exactly one RFI through
+  the Phase 8.11 integration contract.
+- Creation and its Workflow state change commit in one transaction.
+- An open RFI prevents completion of its affected Task without discarding work
+  already saved on that Task.
+- A valid applicant response makes the affected Task actionable again and
+  applies the configured continuation behaviour exactly once.
+- Retrying the same command cannot create a duplicate active RFI.
+- Requested fields and documents cannot exceed published Action and Task
+  configuration.
+
+Task blocking and continuation belong to the RFI lifecycle. SLA clock pause
+duration, reminder scheduling and breach calculations remain in Phase 12.
+
+## 11.3 Applicant-Owned Document Requests
+
+### Scope
+
+Document requirement configuration may declare
+`requestOnStageActivation`, defaulting to `false`.
+
+- When `false`, the assigned reviewer may manually execute a configured
+  Request Information Action and select missing applicant-owned requirements.
+- When `true`, Stage activation creates one consolidated RFI for all missing
+  applicant-owned requirements through the configured Request Information
+  Action.
+- Automatic creation is idempotent and must not create one RFI per document.
+- Workflow publication fails when an automatically requested document is not
+  attached to a Task with a valid, enabled Request Information Action.
+- Reviewer screens show whether evidence is missing, requested, supplied or
+  expired.
+- Reviewers cannot upload applicant-owned evidence on the applicant's behalf.
+
+## 11.4 Applicant and Staff Experience
+
+The applicant portal provides:
+- open and historical RFIs for Applications owned by the applicant;
+- instructions, deadline and correspondence;
+- controls limited to configured editable fields and requested documents;
+- draft saving where supported and one validated submission path;
+- confirmation that the response was received.
+
+The assigned reviewer and other specifically authorized staff can:
+- view RFIs within their contextual Application or Task scope;
+- initiate a manual RFI where the Task permits the Action;
+- review the response and correspondence history;
+- accept, close or follow up according to configured continuation rules.
+
+Role names or broad staff membership do not establish access. Every operation
+requires a narrow canonical permission and the applicable ownership,
+assignment or all-records context check.
+
+## 11.5 Correspondence, Events and Audit
+
+- Questions, responses and authorized follow-ups are immutable correspondence
+  entries ordered within one conversation.
+- Every transition records actor, timestamp, correlation ID, before/after
+  state and stable source references.
+- Emit transactional `RFI_CREATED`, `RFI_RESPONDED`, `RFI_CLOSED` and
+  `RFI_EXPIRED` events.
+- Event consumers may later send notifications without becoming the source of
+  truth for RFI state.
+
+Configurable notification channels, templates and delivery logs remain in
+Phase 16. Phase 11 exposes an open RFI in the applicant portal before those
+notification capabilities are added.
+
+## 11.6 Acceptance Criteria
+
+1. Manual creation uses the Phase 8.11 hook and commits atomically with the
+   Workflow state change.
+2. Stage activation creates one consolidated RFI for missing requirements
+   configured for automatic applicant request.
+3. Duplicate commands or activation events do not create duplicate RFIs.
+4. Applicants can see and respond only to RFIs for Applications they own.
+5. Staff access requires a canonical permission and valid resource context.
+6. Editable fields and requested documents cannot exceed configuration.
+7. Applicant uploads create immutable evidence versions against the requested
+   Workflow document requirements.
+8. An open RFI prevents Task completion without discarding saved work.
+9. A valid response makes the Task actionable and continues it exactly once.
+10. Expiry applies the published expiry behaviour exactly once.
+11. Correspondence and lifecycle history are ordered and immutable.
+12. Lifecycle events are transactional and carry source and correlation data.
+13. Reviewers cannot upload applicant-owned evidence for the applicant.
+14. Missing lifecycle support fails without partially changing Workflow state.
+15. SLA timing and notification delivery remain in Phases 12 and 16.
 
 ### Done When
 
-RFI has one auditable lifecycle and can be initiated from permitted Stages.
+One auditable RFI lifecycle supports manual and Stage-activation requests,
+applicant field and document responses, Task blocking and continuation,
+expiry, correspondence, contextual authorization and idempotent audit events
+without duplicating SLA or notification responsibilities.
 
 ---
 

@@ -13,6 +13,10 @@ vi.mock(
     withStageActivationTransaction: vi.fn(),
   }),
 );
+vi.mock(
+  "@/modules/workflows/infrastructure/WorkflowRfiRepository",
+  () => ({ createStageActivationWorkflowRfi: vi.fn() }),
+);
 
 import {
   activateStageInTransaction,

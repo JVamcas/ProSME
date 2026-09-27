@@ -69,9 +69,12 @@ export function reject(
 
 export function requestInformation(key: string, label: string, order: number) {
   return action(key, label, "REQUEST_INFORMATION", order, {
+    continuation: "RESUME_SOURCE_TASK",
     deadlineDays: 10,
-    editableFieldKeys: ["CLARIFICATION_RESPONSE"],
+    editableFieldPaths: ["CLARIFICATION_RESPONSE"],
     expiryAction: "ESCALATE",
+    participantScope: "APPLICATION_OWNER_AND_REQUESTER",
+    recipientScope: "APPLICATION_OWNER",
     reminderDayOffsets: [3, 7],
   });
 }
@@ -149,6 +152,7 @@ export function documentRequirement(
     mandatory,
     maximumSizeMb: 20,
     name,
+    requestOnStageActivation: false,
     taskStableKey: "",
     templateReference: "",
     uploader,
