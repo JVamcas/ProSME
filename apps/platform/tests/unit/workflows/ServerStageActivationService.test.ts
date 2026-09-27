@@ -13,8 +13,12 @@ vi.mock("@/modules/workflows/infrastructure/StageActivationRepository", () => ({
 vi.mock("@/modules/workflows/infrastructure/WorkflowRfiRepository", () => ({
   createStageActivationWorkflowRfi: vi.fn(),
 }));
+vi.mock("@/modules/workflows/application/runtime/ServerWorkflowTaskAssignmentNotificationService", () => ({
+  captureWorkflowTaskAssignmentNotification: vi.fn(),
+}));
 
 import { activateStageInTransaction } from "@/modules/workflows/application/runtime/ServerStageActivationService";
+import { captureWorkflowTaskAssignmentNotification } from "@/modules/workflows/application/runtime/ServerWorkflowTaskAssignmentNotificationService";
 import { basicOperators } from "@/modules/conditions/engine/BasicOperators";
 import {
   findStageInstanceStatus,
@@ -55,14 +59,18 @@ const passingCondition = {
 
 const target = {
   application: { requestedAmount: 250_000 },
+  applicationId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+  applicationReference: "SME-2026-001",
   currentStageInstanceId: null,
   eligibility: { eligible: true, outcome: "ELIGIBLE" },
   entryCondition: passingCondition,
   fundingCall: { maximumAmount: 500_000 },
+  fundingOpportunityTitle: "Growth Fund",
   repeatable: false,
   slaHours: 24,
   stageDefinitionId: input.stageDefinitionId,
   stageKey: "SCREENING",
+  stageName: "Screening",
   publicStatus: {
     status: "UNDER_REVIEW" as const,
     label: "Under review",
@@ -74,6 +82,7 @@ const target = {
 const taskDefinition = {
   formVersionId: null,
   id: "55555555-5555-4555-8555-555555555555",
+  name: "Review application",
   namedUserOverrideId: null,
   roleId: "66666666-6666-4666-8666-666666666666",
   stableKey: "CHECKLIST",
@@ -90,7 +99,11 @@ beforeEach(() => {
   vi.mocked(loadStageActivationTasks).mockResolvedValue([taskDefinition]);
   vi.mocked(persistStageActivation).mockResolvedValue({
     stage: { id: "77777777-7777-4777-8777-777777777777" },
-    tasks: [{ id: "88888888-8888-4888-8888-888888888888" }],
+    tasks: [{
+      assignedUserId: "99999999-9999-4999-8999-999999999999",
+      id: "88888888-8888-4888-8888-888888888888",
+      workflowTaskDefinitionId: taskDefinition.id,
+    }],
   } as never);
 });
 
@@ -112,6 +125,17 @@ describe("server stage activation service", () => {
         tasks: [taskDefinition],
       }),
     );
+    expect(captureWorkflowTaskAssignmentNotification).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        stageInstanceId: "77777777-7777-4777-8777-777777777777",
+        tasks: [{
+          assignedUserId: "99999999-9999-4999-8999-999999999999",
+          id: "88888888-8888-4888-8888-888888888888",
+          name: "Review application",
+        }],
+      }),
+    );
   });
 
   it("does not write when the entry condition fails", async () => {
@@ -124,6 +148,7 @@ describe("server stage activation service", () => {
 
     expect(result.kind).toBe("entry_condition_failed");
     expect(persistStageActivation).not.toHaveBeenCalled();
+    expect(captureWorkflowTaskAssignmentNotification).not.toHaveBeenCalled();
   });
 
   it("returns the existing iteration without duplicating tasks or audit", async () => {

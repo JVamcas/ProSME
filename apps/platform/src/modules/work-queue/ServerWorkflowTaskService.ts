@@ -126,7 +126,7 @@ function validateDocumentItems(
   submitted: DocumentResultItem[],
   requireMandatory = true,
 ) {
-  const expected = new Set(configured.map((item) => item.name));
+  const expected = new Set(configured.map((item) => item.stableKey));
   const received = new Set(submitted.map((item) => item.category));
   if (
     received.size !== submitted.length ||
@@ -151,7 +151,7 @@ function validateScoreItems(
   requireComplete = true,
 ) {
   const criteria = configured?.criteria ?? [];
-  const expected = new Set(criteria.map((item) => item.criterion));
+  const expected = new Set(criteria.map((item) => item.stableKey));
   const received = new Set(submitted.map((item) => item.criterion));
   if (
     received.size !== submitted.length ||
@@ -164,7 +164,7 @@ function validateScoreItems(
   }
   const invalid = criteria.some((criterion) => {
     const answer = submitted.find(
-      (item) => item.criterion === criterion.criterion,
+      (item) => item.criterion === criterion.stableKey,
     );
     if (!answer || answer.score === null) return requireComplete;
     return (
@@ -244,7 +244,7 @@ export async function getWorkflowTask(
       Boolean(task.scoring?.criteria.length) &&
       task.scoring!.criteria.every((criterion) => {
         const answer = resultScores.find(
-          (item) => item.criterion === criterion.criterion,
+          (item) => item.criterion === criterion.stableKey,
         );
         return Boolean(
           answer &&

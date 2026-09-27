@@ -10,6 +10,9 @@ vi.mock("@/modules/workflows/infrastructure/WorkflowInstanceRepository", () => (
 vi.mock("@/modules/workflows/application/runtime/ServerStageActivationService", () => ({
   activateStageInTransaction: vi.fn(),
 }));
+vi.mock("@/modules/notifications/application/ServerNotificationOccurrenceService", () => ({
+  captureNotificationOccurrence: vi.fn(),
+}));
 vi.mock("@/modules/eligibility/application/ServerSubmissionEligibilityService", () => ({
   prepareSubmissionAuthoritativeEligibilityOutcome: vi.fn(),
 }));
@@ -18,6 +21,7 @@ vi.mock("@/modules/eligibility/infrastructure/AuthoritativeEligibilityRepository
 }));
 
 import { resetServerEnvironmentForTests } from "@/lib/env/server";
+import { captureNotificationOccurrence } from "@/modules/notifications/application/ServerNotificationOccurrenceService";
 import { writeApplicationSubmission } from "@/modules/applications/infrastructure/ApplicationSubmissionWriter";
 import { createSubmissionSnapshot } from "@/modules/applications/infrastructure/ApplicationSubmissionSnapshotWriter";
 import { prepareSubmissionAuthoritativeEligibilityOutcome } from "@/modules/eligibility/application/ServerSubmissionEligibilityService";
@@ -169,6 +173,16 @@ describe("submission workflow bootstrap", () => {
       "workflow",
       "initial-stage",
     ]);
+    expect(captureNotificationOccurrence).toHaveBeenCalledWith(
+      transaction,
+      expect.objectContaining({
+        aggregateId: applicationId,
+        eventKey: "application.submitted",
+        recipients: [expect.objectContaining({
+          recipientType: "APPLICATION_OWNER",
+        })],
+      }),
+    );
     expect(prepareSubmissionAuthoritativeEligibilityOutcome).not.toHaveBeenCalled();
     expect(createAuthoritativeEligibilityOutcomeRecord).not.toHaveBeenCalled();
   });

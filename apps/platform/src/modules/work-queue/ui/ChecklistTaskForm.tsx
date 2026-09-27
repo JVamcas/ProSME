@@ -59,10 +59,10 @@ function defaultValues(task: TaskDetail): ChecklistFormValues {
     })),
     documents: task.documentRequirements.map((requirement) => {
       const saved = task.resultDocuments.find(
-        (item) => item.category === requirement.name,
+        (item) => item.category === requirement.stableKey,
       );
       return {
-        category: requirement.name,
+        category: requirement.stableKey,
         comment: saved?.comment ?? "",
         outcome: saved?.outcome ?? "",
       };
@@ -74,11 +74,11 @@ function defaultValues(task: TaskDetail): ChecklistFormValues {
     })),
     scores: (task.scoring?.criteria ?? []).map((criterion) => {
       const saved = task.resultScores.find(
-        (item) => item.criterion === criterion.criterion,
+        (item) => item.criterion === criterion.stableKey,
       );
       return {
         comment: saved?.comment ?? "",
-        criterion: criterion.criterion,
+        criterion: criterion.stableKey,
         score: saved?.score ?? null,
       };
     }),
@@ -93,7 +93,7 @@ function reviewIsReady(task: TaskDetail, values: ChecklistFormValues) {
     (requirement) => !requirement.mandatory || Boolean(requirement.document),
   ) && (task.scoring?.criteria ?? []).every((criterion) => {
     const answer = values.scores.find(
-      (value) => value.criterion === criterion.criterion,
+      (value) => value.criterion === criterion.stableKey,
     );
     return Boolean(answer && answer.score !== null
       && answer.score >= criterion.scaleMinimum

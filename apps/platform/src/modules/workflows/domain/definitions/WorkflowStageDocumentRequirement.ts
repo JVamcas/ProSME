@@ -26,6 +26,7 @@ export type WorkflowDocumentVerifierActor =
 
 export type WorkflowStageDocumentRequirement = {
   id?: string;
+  stableKey: string;
   name: string;
   taskStableKey: string;
   mandatory: boolean;

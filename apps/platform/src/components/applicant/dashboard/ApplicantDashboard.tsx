@@ -12,7 +12,6 @@ import type {
 import { DashboardMetricCard } from "@/modules/dashboard/ui/DashboardMetricCard";
 import { PageShell } from "@/shared/ui/PageShell";
 import { ApplicantRecentActivity } from "./ApplicantRecentActivity";
-import { ApplicantRfiActionPanel } from "@/modules/workflows/ui/rfi/ApplicantRfiActionPanel";
 
 function countDescription(
   count: number,
@@ -110,7 +109,6 @@ export function ApplicantDashboard({
       title={`Welcome back, ${displayName}`}
       variant="contained"
     >
-      <ApplicantRfiActionPanel requests={urgentRequests} />
       <ApplicationStatusMetrics metrics={metrics} />
       <ApplicantRecentActivity activities={activities} />
     </PageShell>

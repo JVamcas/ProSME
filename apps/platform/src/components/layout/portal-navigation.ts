@@ -14,6 +14,7 @@ import {
   UserRound,
   Workflow,
   BadgeQuestionMark,
+  Pipette,
 } from "lucide-react";
 
 import { permissionCodes } from "@/auth/authorization/permissions";
@@ -206,8 +207,8 @@ export const operationsPortalRoutes: readonly PortalRoute[] = [
       },
       {
         id: "admin-notification-channels",
-        href: "/admin/notifications/channels",
-        label: "Notification channels",
+        href: "/admin/notifications",
+        label: "Notifications",
         icon: Bell,
         space: "operations",
         requiredAnyPermissions: [
@@ -215,6 +216,20 @@ export const operationsPortalRoutes: readonly PortalRoute[] = [
           permissionCodes.notificationTemplateImport,
           permissionCodes.notificationTemplatePublish,
         ],
+        children: [
+          {
+            id: "admin-notification-channels",
+            href: "/admin/notifications/channels",
+            label: "Channels",
+            icon: Pipette,
+            space: "operations",
+            requiredAnyPermissions: [
+              permissionCodes.notificationConfigurationRead,
+              permissionCodes.notificationTemplateImport,
+              permissionCodes.notificationTemplatePublish,
+            ]
+          }
+        ]
       },
       {
         id: "funding-call-eligibility",

@@ -115,7 +115,7 @@ describe("workflow condition fields", () => {
           type: "NUMBER",
         }),
         expect.objectContaining({
-          key: "stage.screening.custom_result",
+          key: "stage.screening.form.custom_result",
           type: "NUMBER",
         }),
       ]),
@@ -123,27 +123,27 @@ describe("workflow condition fields", () => {
     expect(entryFields).not.toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          key: "stage.finance_review.recommended_amount",
+          key: "stage.finance_review.form.recommended_amount",
         }),
       ]),
     );
     expect(completionFields).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          key: "stage.finance_review.recommended_amount",
+          key: "stage.finance_review.form.recommended_amount",
           type: "NUMBER",
         }),
       ]),
     );
     expect(
-      resolveWorkflowDataPath("stage.finance_review.recommended_amount", {
+      resolveWorkflowDataPath("stage.finance_review.form.recommended_amount", {
         application: {},
         eligibility: {},
         fundingCall: {},
         stages: [
           {
             stableKey: "FINANCE_REVIEW",
-            values: { recommended_amount: 125_000 },
+            values: { form: { recommended_amount: 125_000 } },
           },
         ],
       }),
@@ -194,11 +194,12 @@ describe("workflow condition fields", () => {
 
     expect(fields.map((field) => field.key)).toEqual(
       expect.arrayContaining([
-        "stage.technical_review.delivery",
-        "stage.technical_review.delivery_comment",
-        "stage.technical_review.documents_valid",
-        "stage.technical_review.tax_status",
-        "stage.technical_review.weighted_total",
+        "stage.technical_review.scoring.delivery.value",
+        "stage.technical_review.scoring.delivery.comment",
+        "stage.technical_review.checklist.documents_valid.accepted",
+        "stage.technical_review.checklist.documents_valid.comment",
+        "stage.technical_review.decision.tax_status.outcome",
+        "stage.technical_review.scoring.weighted_total.value",
       ]),
     );
   });

@@ -99,14 +99,18 @@ describe("stage activation repository", () => {
         iterationNumber: 1,
         target: {
           application: {},
+          applicationId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          applicationReference: "SME-2026-001",
           currentStageInstanceId: null,
           eligibility: { eligible: true, outcome: "ELIGIBLE" },
           entryCondition: null,
           fundingCall: {},
+          fundingOpportunityTitle: "Growth Fund",
           repeatable: false,
           slaHours: 24,
           stageDefinitionId: "44444444-4444-4444-8444-444444444444",
           stageKey: "SCREENING",
+          stageName: "Screening",
           publicStatus: {
             status: "UNDER_REVIEW",
             label: "Under review",
@@ -118,6 +122,7 @@ describe("stage activation repository", () => {
           {
             formVersionId: null,
             id: "66666666-6666-4666-8666-666666666666",
+            name: "Review application",
             namedUserOverrideId: null,
             roleId: "55555555-5555-4555-8555-555555555555",
             stableKey: "CHECKLIST",
@@ -214,14 +219,18 @@ describe("stage activation repository", () => {
       iterationNumber: 1,
       target: {
         application: {},
+        applicationId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        applicationReference: "SME-2026-001",
         currentStageInstanceId: null,
         eligibility: null,
         entryCondition: null,
         fundingCall: {},
+        fundingOpportunityTitle: "Growth Fund",
         repeatable: false,
         slaHours: null,
         stageDefinitionId: "44444444-4444-4444-8444-444444444444",
         stageKey: "SCREENING",
+        stageName: "Screening",
         publicStatus: {
           status: "UNDER_REVIEW",
           label: "Under review",
@@ -233,6 +242,7 @@ describe("stage activation repository", () => {
         {
           formVersionId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
           id: "66666666-6666-4666-8666-666666666666",
+          name: "Verify eligibility",
           namedUserOverrideId: null,
           roleId: "55555555-5555-4555-8555-555555555555",
           stableKey: "ELIGIBILITY_VERIFICATION",

@@ -177,7 +177,6 @@ function SubmissionReceipt({ detail }: { detail: WorkflowRfiDetail }) {
         {detail.respondedAt
           ? ` on ${formatLocalDateTime24(detail.respondedAt)}`
           : ""}
-        . Your application remains available while staff review it.
       </p>
     </section>
   );

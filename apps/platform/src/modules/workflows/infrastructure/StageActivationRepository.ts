@@ -26,15 +26,19 @@ export type StageActivationTransaction = WorkflowInstanceTransaction;
 
 export type StageActivationTarget = {
   application: Record<string, unknown>;
+  applicationId: string;
+  applicationReference: string;
   currentStageInstanceId: string | null;
   eligibility: Record<string, unknown> | null;
   entryCondition: typeof workflowStageDefinitions.$inferSelect.entryCondition;
   fundingCall: Record<string, unknown>;
+  fundingOpportunityTitle: string;
   repeatable: boolean;
   publicStatus: WorkflowPublicStatusMapping;
   slaHours: number | null;
   stageDefinitionId: string;
   stageKey: string;
+  stageName: string;
   workflowInstanceId: string;
 };
 
@@ -42,6 +46,7 @@ export type StageActivationTaskDefinition = {
   config?: unknown;
   formVersionId: string | null;
   id: string;
+  name: string;
   namedUserOverrideId: string | null;
   reviewerCount: number;
   taskType: "CONTRIBUTING" | "STAGE_DECISION";
@@ -85,6 +90,7 @@ export async function lockStageActivationTarget(
 ): Promise<StageActivationTarget | null> {
   const [row] = await transaction
     .select({
+      applicationId: applications.id,
       snapshotContent: applicationSubmissionSnapshots.snapshotContent,
       currentStageInstanceId: workflowInstances.currentStageInstanceId,
       eligibility: {
@@ -110,6 +116,7 @@ export async function lockStageActivationTarget(
       slaHours: workflowStageDefinitions.slaHours,
       stageDefinitionId: workflowStageDefinitions.id,
       stageKey: workflowStageDefinitions.code,
+      stageName: workflowStageDefinitions.name,
       workflowInstanceId: workflowInstances.id,
     })
     .from(workflowInstances)
@@ -161,6 +168,7 @@ export async function lockStageActivationTarget(
   void _snapshotContent;
   return {
     ...target,
+    applicationReference: content.reference,
     application: {
       ...application,
       ...content.form.normalizedValues,
@@ -180,6 +188,7 @@ export async function lockStageActivationTarget(
       maximumAmount: Number(terms.maximumGrantAmount),
       minimumAmount: Number(terms.minimumGrantAmount),
     },
+    fundingOpportunityTitle: String(terms.title),
   };
 }
 
@@ -228,6 +237,7 @@ export async function loadStageActivationTasks(
       config: stageTaskDefinitions.config,
       formVersionId: stageTaskFormBindings.formVersionId,
       id: stageTaskDefinitions.id,
+      name: stageTaskDefinitions.name,
       namedUserOverrideId: stageTaskDefinitions.namedUserOverrideId,
       reviewerCount: stageTaskDefinitions.reviewerCount,
       taskType: stageTaskDefinitions.taskType,

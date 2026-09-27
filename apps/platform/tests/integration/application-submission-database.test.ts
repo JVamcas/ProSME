@@ -5,6 +5,7 @@ import { preflightOwnedApplication } from "@/modules/applications/infrastructure
 import { submitOwnedApplication } from "@/modules/applications/infrastructure/ApplicationSubmissionRepository";
 import { readApplicantDashboard } from "@/modules/dashboard/infrastructure/ApplicantDashboardRepository";
 import { readAdminDashboard } from "@/db/repositories/AdminDashboardRepository";
+import { seedInitialNotificationConfiguration } from "@/modules/notifications/application/ServerNotificationConfigurationSeedService";
 import {
   eligibilityVersionId,
   installAuthoritativeEligibilityConfiguration,
@@ -12,6 +13,7 @@ import {
 import {
   expectAtomicSubmissionCounts,
   expectImmutableSubmissionArtifacts,
+  expectNoNotificationOccurrences,
 } from "../support/ApplicationSubmissionDatabaseAssertions";
 import * as workflowBindingFixture from "../support/WorkflowBindingDatabaseFixture";
 import { assertApplicationWithdrawal } from "../support/ApplicationWithdrawalDatabaseAssertions";
@@ -40,6 +42,7 @@ async function query(text: string, values: unknown[] = []) {
 }
 beforeAll(async () => {
   if (!enabled) return;
+  await seedInitialNotificationConfiguration();
   await query(
     `INSERT INTO app_users (id, email, display_name, user_type, status)
      VALUES ($1, 'submission-owner@example.test', 'Submission Owner', 'applicant', 'active')`,
@@ -155,7 +158,6 @@ describeDatabase("P3.4 transactional application submission", () => {
     expect(first.result.workflowInstanceId).toBe(second.result.workflowInstanceId);
     expect(first.result.workflowTemplateVersionId).toBe(versionId);
     await workflowBindingFixture.publishNewerWorkflowVersion(query, ownerId, definitionId);
-
     await expectAtomicSubmissionCounts(
       query,
       applicationIds[0],
@@ -195,8 +197,8 @@ describeDatabase("P3.4 transactional application submission", () => {
       [applicationIds[1]],
     );
     expect(application.rows[0]).toEqual({ reference: null, status: "draft" });
+    await expectNoNotificationOccurrences(query, applicationIds[1]);
   });
-
   it("rolls back the reference and runtime when a later write fails", async () => {
     const preflight = await preflightOwnedApplication({
       actorId: ownerId,
@@ -222,8 +224,7 @@ describeDatabase("P3.4 transactional application submission", () => {
       `SELECT status, reference,
         (SELECT count(*)::integer FROM app_workflow_instances
           WHERE application_id = $1) AS workflows,
-        (SELECT count(*)::integer
-          FROM app_authoritative_eligibility_outcomes
+        (SELECT count(*)::integer FROM app_authoritative_eligibility_outcomes
           WHERE application_id = $1) AS eligibility_outcomes
        FROM app_applications WHERE id = $1`,
       [applicationIds[2]],
@@ -234,6 +235,7 @@ describeDatabase("P3.4 transactional application submission", () => {
       status: "draft",
       workflows: 0,
     });
+    await expectNoNotificationOccurrences(query, applicationIds[2]);
   });
   it("projects dashboard metrics from persisted, access-scoped records", async () => {
     const all = await readAdminDashboard({
@@ -267,7 +269,6 @@ describeDatabase("P3.4 transactional application submission", () => {
     });
     expect(hidden.metrics.totalApplications).toBe(0);
   });
-
   it("calculates all applicant dashboard metrics in one projection", async () => {
     const dashboard = await readApplicantDashboard(ownerId);
 

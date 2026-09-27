@@ -1,5 +1,8 @@
+import { sql } from "drizzle-orm";
+
 import {
   boolean,
+  check,
   doublePrecision,
   index,
   integer,
@@ -48,6 +51,7 @@ export const workflowStageChecklistDefinitions = pgTable(
     displayOrder: integer("display_order").notNull(),
   },
   (table) => [
+    check("app_stage_checklists_key_nonempty_check", sql`${table.key} <> ''`),
     uniqueIndex("app_stage_checklists_stage_key_unique").on(
       table.stageId,
       table.key,
@@ -78,6 +82,7 @@ export const workflowStageCommentFields = pgTable(
     displayOrder: integer("display_order").notNull(),
   },
   (table) => [
+    check("app_stage_comments_key_nonempty_check", sql`${table.key} <> ''`),
     uniqueIndex("app_stage_comments_stage_key_unique").on(table.stageId, table.key),
     uniqueIndex("app_stage_comments_stage_order_unique").on(table.stageId, table.displayOrder),
     index("app_stage_comments_task_idx").on(table.taskDefinitionId),
@@ -91,6 +96,7 @@ export const workflowStageDocumentRequirements = pgTable(
     stageId: uuid("stage_id")
       .notNull()
       .references(() => workflowStageDefinitions.id, { onDelete: "restrict" }),
+    stableKey: text("stable_key").notNull(),
     name: text("name").notNull(),
     taskDefinitionId: uuid("task_definition_id")
       .notNull()
@@ -111,6 +117,14 @@ export const workflowStageDocumentRequirements = pgTable(
     templateReference: text("template_reference").notNull().default(""),
   },
   (table) => [
+    check(
+      "app_stage_documents_stable_key_check",
+      sql`${table.stableKey} ~ '^[A-Z][A-Z0-9_]{1,79}$'`,
+    ),
+    uniqueIndex("app_stage_documents_stage_key_unique").on(
+      table.stageId,
+      table.stableKey,
+    ),
     uniqueIndex("app_stage_documents_stage_name_unique").on(
       table.stageId,
       table.name,
@@ -147,6 +161,7 @@ export const workflowStageScoringCriteria = pgTable(
       .references(() => workflowStageScoringConfigurations.stageId, {
         onDelete: "restrict",
       }),
+    stableKey: text("stable_key").notNull(),
     criterion: text("criterion").notNull(),
     description: text("description").notNull().default(""),
     weight: doublePrecision("weight").notNull(),
@@ -157,6 +172,14 @@ export const workflowStageScoringCriteria = pgTable(
     mandatoryComment: boolean("mandatory_comment").notNull().default(false),
   },
   (table) => [
+    check(
+      "app_stage_scoring_criteria_stable_key_check",
+      sql`${table.stableKey} ~ '^[A-Z][A-Z0-9_]{1,79}$'`,
+    ),
+    uniqueIndex("app_stage_scoring_criteria_key_unique").on(
+      table.stageId,
+      table.stableKey,
+    ),
     uniqueIndex("app_stage_scoring_criteria_name_unique").on(
       table.stageId,
       table.criterion,

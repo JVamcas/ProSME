@@ -848,6 +848,13 @@
       "when": 1798156800000,
       "tag": "0120_bind_common_actions_to_existing_tasks",
       "breakpoints": true
+    },
+    {
+      "idx": 121,
+      "version": "7",
+      "when": 1798243200000,
+      "tag": "0121_workflow_runtime_stable_keys",
+      "breakpoints": true
     }
   ]
 }

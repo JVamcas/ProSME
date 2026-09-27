@@ -81,6 +81,7 @@ function loadDocumentRows(versionId: string) {
     .select({
       id: workflowStageDocumentRequirements.id,
       stageId: workflowStageDocumentRequirements.stageId,
+      stableKey: workflowStageDocumentRequirements.stableKey,
       taskStableKey: stageTaskDefinitions.stableKey,
       name: workflowStageDocumentRequirements.name,
       mandatory: workflowStageDocumentRequirements.mandatory,
@@ -139,6 +140,7 @@ function loadScoringCriteria(versionId: string) {
     .select({
       id: workflowStageScoringCriteria.id,
       stageId: workflowStageScoringCriteria.stageId,
+      stableKey: workflowStageScoringCriteria.stableKey,
       criterion: workflowStageScoringCriteria.criterion,
       description: workflowStageScoringCriteria.description,
       weight: workflowStageScoringCriteria.weight,

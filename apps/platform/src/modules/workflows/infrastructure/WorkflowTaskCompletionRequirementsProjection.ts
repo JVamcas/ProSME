@@ -7,6 +7,7 @@ export const workflowTaskCompletionRequirementsProjection = sql`
     SELECT jsonb_agg(jsonb_build_object(
       'mandatory', document.mandatory,
       'name', document.name,
+      'stableKey', document.stable_key,
       'evidenceUploaded', EXISTS (
         SELECT 1
         FROM app_workflow_document_evidence_versions evidence
@@ -22,6 +23,7 @@ export const workflowTaskCompletionRequirementsProjection = sql`
       'aggregation', scoring.aggregation,
       'criteria', COALESCE((
         SELECT jsonb_agg(jsonb_build_object(
+          'stableKey', criterion.stable_key,
           'criterion', criterion.criterion,
           'description', criterion.description,
           'mandatoryComment', criterion.mandatory_comment,

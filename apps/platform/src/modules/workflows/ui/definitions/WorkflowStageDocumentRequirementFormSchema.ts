@@ -22,6 +22,14 @@ export function parseOptionalExpiryDays(value: string | number | null | undefine
 }
 
 export const workflowStageDocumentRequirementFormSchema = z.object({
+  stableKey: z.string()
+    .trim()
+    .min(2, "Stable key is required.")
+    .max(80)
+    .regex(
+      /^[A-Z][A-Z0-9_]*$/,
+      "Use uppercase letters, numbers, and underscores, starting with a letter.",
+    ),
   name: z.string().trim().min(2).max(160),
   taskStableKey: z.string().min(1, "Select a workflow task."),
   mandatory: z.boolean(),

@@ -1,4 +1,5 @@
 import type { WorkflowStageInput } from "../definitions/WorkflowTypes";
+import { stableKeyFromLabel } from "../WorkflowStableKey";
 import type { StandardWorkflowDependencies } from "./StandardWorkflowTypes";
 import { createStandardTechnicalAssessmentStage } from "./StandardTechnicalAssessmentStage";
 import {
@@ -258,6 +259,7 @@ function dueDiligence(dependencies: StandardWorkflowDependencies) {
         "Fraud risk",
       ].map((criterion) => ({
         criterion,
+        stableKey: stableKeyFromLabel(criterion, "SCORE"),
         description: "Risk score from 1 (low) to 4 (critical).",
         mandatoryComment: true,
         scaleMaximum: 4,

@@ -32,6 +32,12 @@ export async function readAtomicSubmissionCounts(
           AND action = 'APPLICATION_SUBMITTED') AS audits,
       (SELECT count(*)::integer FROM app_transactional_outbox
         WHERE aggregate_id = $1) AS outbox,
+      (SELECT count(*)::integer FROM app_notification_outbox
+        WHERE aggregate_id = $1) AS notification_occurrences,
+      (SELECT count(*)::integer FROM app_notification_deliveries delivery
+        JOIN app_notification_outbox occurrence
+          ON occurrence.id = delivery.outbox_id
+        WHERE occurrence.aggregate_id = $1) AS notification_deliveries,
       (SELECT count(*)::integer FROM app_application_submission_snapshots
         WHERE application_id = $1) AS snapshots,
       (SELECT count(*)::integer FROM app_application_audit_entries
@@ -102,6 +108,8 @@ export async function expectAtomicSubmissionCounts(
     audits: 1,
     events: 6,
     eligibility_outcomes: 1,
+    notification_deliveries: 2,
+    notification_occurrences: 2,
     outbox: 2,
     pinned_version: workflowVersionId,
     runtime_initialized: true,
@@ -110,6 +118,35 @@ export async function expectAtomicSubmissionCounts(
     tasks: 1,
     workflows: 1,
   });
+  const notifications = await query(
+    `SELECT event_key, context, status
+     FROM app_notification_outbox
+     WHERE aggregate_id = $1
+     ORDER BY event_key`,
+    [applicationId],
+  );
+  expect(notifications.rows).toEqual([
+    expect.objectContaining({
+      event_key: "application.submitted",
+      context: expect.objectContaining({
+        applicationId,
+        applicationReference: expect.stringMatching(/^SUBMISSION-FUND-/),
+        ownerEmail: "submission-owner@example.test",
+      }),
+      status: "PENDING",
+    }),
+    expect.objectContaining({
+      event_key: "workflow.task.assigned",
+      context: expect.objectContaining({
+        applicationId,
+        assignees: [expect.objectContaining({
+          email: "submission-owner@example.test",
+        })],
+        tasks: [expect.objectContaining({ taskName: "Initial check" })],
+      }),
+      status: "PENDING",
+    }),
+  ]);
   const audit = await query(
     `SELECT action FROM app_application_audit_entries
      WHERE application_id = $1
@@ -126,4 +163,17 @@ export async function expectAtomicSubmissionCounts(
     "APPLICATION_SNAPSHOT_CREATED",
     "APPLICATION_WORKFLOW_BOOTSTRAPPED",
   ]);
+}
+
+export async function expectNoNotificationOccurrences(
+  query: DatabaseQuery,
+  applicationId: string,
+) {
+  const result = await query(
+    `SELECT count(*)::integer AS count
+     FROM app_notification_outbox
+     WHERE aggregate_id = $1`,
+    [applicationId],
+  );
+  expect(result.rows[0]).toEqual({ count: 0 });
 }

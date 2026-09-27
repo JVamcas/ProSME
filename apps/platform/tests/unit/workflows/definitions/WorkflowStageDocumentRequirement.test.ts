@@ -15,6 +15,7 @@ function stageWithDocumentRequirements() {
     documentRequirements: [
       {
         taskStableKey: referenceWorkflow.stages[0].tasks[0].stableKey,
+        stableKey: "TAX_CLEARANCE_CERTIFICATE",
         name: "Tax clearance certificate",
         mandatory: true,
         acceptedFileTypes: ["PDF", "JPG"] as const,
@@ -27,6 +28,7 @@ function stageWithDocumentRequirements() {
       },
       {
         taskStableKey: referenceWorkflow.stages[0].tasks[0].stableKey,
+        stableKey: "REVIEW_MEMORANDUM",
         name: "Review memorandum",
         mandatory: false,
         acceptedFileTypes: ["PDF"] as const,
@@ -95,6 +97,15 @@ describe("workflow stage document requirements", () => {
     expect(
       workflowStageSchema.safeParse(stageWithDocumentRequirements()).success,
     ).toBe(true);
+  });
+
+  it("rejects an empty document stable key", () => {
+    const stage = stageWithDocumentRequirements();
+    stage.documentRequirements[0].stableKey = "";
+
+    const result = workflowStageSchema.safeParse(stage);
+
+    expect(result.success).toBe(false);
   });
 
   it("rejects duplicate requirement names without case sensitivity", () => {

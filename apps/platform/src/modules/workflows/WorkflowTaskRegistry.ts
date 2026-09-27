@@ -56,7 +56,10 @@ export const commentResultSchema = z.object({
 
 export const documentResultSchema = z.object({
   documents: z.array(z.object({
-    category: z.string().min(1).max(160),
+    category: z.string().trim().min(2).max(80).regex(
+      /^[A-Z][A-Z0-9_]*$/,
+      "Document category must be a stable key.",
+    ),
     comment: z.string().trim().max(1000).optional(),
     outcome: z.enum(["VERIFIED", "REJECTED", ""]),
   })).max(100),
@@ -65,7 +68,10 @@ export const documentResultSchema = z.object({
 export const scoreResultSchema = z.object({
   scores: z.array(z.object({
     comment: z.string().trim().max(1000).optional(),
-    criterion: z.string().min(1).max(160),
+    criterion: z.string().trim().min(2).max(80).regex(
+      /^[A-Z][A-Z0-9_]*$/,
+      "Score criterion must be a stable key.",
+    ),
     score: z.number().nullable(),
   })).max(100),
 });
@@ -168,6 +174,7 @@ export function taskWorkIsReady(input: {
   result: unknown;
 }) {
   if (input.formRequired && !input.formCompleted) return false;
+      stableKey: string;
   if (input.hasChecklist) {
     const checklist = validateChecklistResult(input.result);
     if (!checklist.success) return false;
@@ -201,7 +208,7 @@ export function taskWorkIsReady(input: {
     const scores = new Map(parsed.data.scores.map((item) => [item.criterion, item]));
     if (scores.size !== input.scoring.criteria.length
       || input.scoring.criteria.some((criterion) => {
-        const score = scores.get(criterion.criterion);
+        const score = scores.get(criterion.stableKey);
         return !score || score.score === null
           || score.score < criterion.scaleMinimum
           || score.score > criterion.scaleMaximum

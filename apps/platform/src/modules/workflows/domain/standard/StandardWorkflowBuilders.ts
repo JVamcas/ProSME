@@ -7,6 +7,7 @@ import type {
 } from "../definitions/WorkflowTypes";
 import type { WorkflowStageDocumentRequirement } from "../definitions/WorkflowStageDocumentRequirement";
 import type { WorkflowStageChecklistDefinition } from "../definitions/WorkflowStageChecklistDefinition";
+import { stableKeyFromLabel } from "../WorkflowStableKey";
 import type {
   StandardWorkflowDependencies,
   StandardWorkflowFormCode,
@@ -153,6 +154,7 @@ export function documentRequirement(
     maximumSizeMb: 20,
     name,
     requestOnStageActivation: false,
+    stableKey: stableKeyFromLabel(name, "DOCUMENT"),
     taskStableKey: "",
     templateReference: "",
     uploader,

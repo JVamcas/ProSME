@@ -46,7 +46,9 @@ function addContextValue(
   target: Record<string, FormContextValue>,
   path: string,
   value: unknown,
+  selectedPaths: ReadonlySet<string>,
 ) {
+  if (!selectedPaths.has(path)) return;
   if (value === undefined) return;
   if (Object.hasOwn(target, path)) {
     throw new InvalidWorkflowRuntimeContextError(
@@ -60,6 +62,7 @@ function addRecord(
   target: Record<string, FormContextValue>,
   prefix: string,
   record: WorkflowRuntimeContextRecord,
+  selectedPaths: ReadonlySet<string>,
 ) {
   Object.entries(record).forEach(([key, value]) => {
     const path = `${prefix}.${contextSegment(key)}`;
@@ -70,10 +73,10 @@ function addRecord(
       && !(value instanceof Date)
       && Object.keys(value).length
     ) {
-      addRecord(target, path, value as WorkflowRuntimeContextRecord);
+      addRecord(target, path, value as WorkflowRuntimeContextRecord, selectedPaths);
       return;
     }
-    addContextValue(target, path, value);
+    addContextValue(target, path, value, selectedPaths);
   });
 }
 
@@ -82,7 +85,13 @@ export function buildWorkflowRuntimeContext(
   fundingCall: WorkflowRuntimeContextRecord,
 ) {
   const available: Record<string, FormContextValue> = {};
-  addRecord(available, "application", {
+  const selectedPaths = new Set(
+    source.binding.contextFields.map((field) => field.key),
+  );
+  const add = (prefix: string, record: WorkflowRuntimeContextRecord) => {
+    addRecord(available, prefix, record, selectedPaths);
+  };
+  add("application", {
     fundingOpportunityId: source.application.fundingOpportunityId,
     id: source.application.id,
     reference: source.application.reference,
@@ -93,21 +102,20 @@ export function buildWorkflowRuntimeContext(
     source.application.project,
     source.application.financial,
     source.application.declarations,
-  ].forEach((section) => addRecord(available, "application", section));
-  addRecord(
-    available,
+  ].forEach((section) => add("application", section));
+  add(
     "application.section_completion",
     source.application.sectionCompletion,
   );
-  addRecord(available, "fundingCall", fundingCall);
-  addRecord(available, "eligibility", source.eligibility);
-  addRecord(available, "workflow", source.workflow);
-  addRecord(available, "stage", source.stage);
-  addRecord(available, "task", source.task);
+  add("fundingCall", fundingCall);
+  add("eligibility", source.eligibility);
+  add("workflow", source.workflow);
+  add("stage", source.stage);
+  add("task", source.task);
   source.priorStageValues.forEach((prior) => {
     const stagePrefix = `stage.${contextSegment(prior.stageKey)}`;
-    addRecord(available, stagePrefix, prior.values);
-    addRecord(available, stagePrefix, prior.result);
+    add(stagePrefix, prior.values);
+    add(stagePrefix, prior.result);
   });
   return available;
 }

@@ -70,6 +70,7 @@ export async function readWorkflowTask(
           'mandatory', document.mandatory,
           'maximumSizeMb', document.maximum_size_mb,
           'name', document.name,
+          'stableKey', document.stable_key,
           'requestStatus', CASE
             WHEN EXISTS (
               SELECT 1 FROM app_workflow_document_evidence_versions evidence
@@ -120,6 +121,7 @@ export async function readWorkflowTask(
           'aggregation', scoring.aggregation,
           'criteria', COALESCE((
             SELECT jsonb_agg(jsonb_build_object(
+              'stableKey', criterion.stable_key,
               'criterion', criterion.criterion,
               'description', criterion.description,
               'mandatoryComment', criterion.mandatory_comment,
