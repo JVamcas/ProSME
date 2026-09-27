@@ -1,4 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
+import type { SQL } from "drizzle-orm";
+import { PgDialect } from "drizzle-orm/pg-core";
 
 vi.mock("server-only", () => ({}));
 
@@ -81,6 +83,23 @@ describe("automatic reviewer allocation", () => {
     });
     await expect(allocation).rejects.toThrow(
       "requires 3 eligible reviewers, but only 2 are available",
+    );
+  });
+
+  it("excludes reviewers with unresolved application COI", async () => {
+    const database = transaction([]);
+    await expect(allocateStageReviewers(
+      database,
+      workflowId,
+      [task],
+    )).rejects.toBeInstanceOf(ResourceConflictError);
+
+    const query = new PgDialect().sqlToQuery(
+      vi.mocked(database.execute).mock.calls[0]![0] as SQL,
+    );
+    expect(query.sql).toContain("app_workflow_application_coi");
+    expect(query.sql).toContain(
+      "clearance.application_id = workflow.application_id",
     );
   });
 });

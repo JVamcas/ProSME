@@ -7,6 +7,7 @@ import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatLocalDateTime24 } from "@/lib/dateUtils";
 import type { WorkflowCoiReviewRow } from "../../api/WorkflowCoiReviewTypes";
+import { PreviewButton } from "@/components/ui/action-buttons";
 
 export function WorkflowCoiReviewTable({
   emptyMessage,
@@ -19,15 +20,17 @@ export function WorkflowCoiReviewTable({
 }) {
   const columns: DataTableColumn<WorkflowCoiReviewRow>[] = [
     {
+      accessorKey: "stageName",
+      header: "Stage",
+      cell: ({ row }) => <StatusBadge status={row.original.stageName} />,
+    },
+    {
       accessorKey: "taskName",
-      header: "Review",
+      header: "Triggered by Task",
       cell: ({ row }) => (
         <div>
           <p className="font-semibold text-brand-navy">
             {row.original.taskName}
-          </p>
-          <p className="mt-1 text-xs text-brand-navy/55">
-            {row.original.applicationReference}
           </p>
         </div>
       ),
@@ -43,29 +46,19 @@ export function WorkflowCoiReviewTable({
       ),
     },
     {
-      accessorKey: "stageName",
-      header: "Stage",
-      cell: ({ row }) => <StatusBadge status={row.original.stageName} />,
-    },
-    {
       accessorKey: "submittedAt",
       header: "Submitted",
       cell: ({ row }) => formatLocalDateTime24(row.original.submittedAt),
     },
     {
       id: "actions",
-      header: "",
+      header: "Action",
       enableSorting: false,
       cell: ({ row }) => (
-        <GeneralButton
+        <PreviewButton
           onClick={() => onReview(row.original.taskId)}
-          size="compact"
-          type="button"
-          variant="ghost"
-        >
-          Review
-          <ArrowRight aria-hidden="true" className="size-4" />
-        </GeneralButton>
+          title="Review conflict of interest disclosure."
+        />
       ),
     },
   ];

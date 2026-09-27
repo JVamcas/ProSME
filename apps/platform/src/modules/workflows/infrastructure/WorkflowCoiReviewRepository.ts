@@ -50,10 +50,10 @@ export async function readPendingWorkflowCoiReviews(
       JOIN app_applications application ON application.id = workflow.application_id
       JOIN app_users assignee ON assignee.id = task.assigned_user_id
       LEFT JOIN app_roles assigned_role ON assigned_role.id = task.assigned_role_id
-      JOIN app_workflow_task_coi clearance ON clearance.task_id = task.id
+      JOIN app_workflow_application_coi clearance ON clearance.task_id = task.id
       JOIN LATERAL (
         SELECT event.occurred_at
-        FROM app_workflow_task_coi_events event
+        FROM app_workflow_application_coi_events event
         WHERE event.task_id = task.id AND event.to_state = 'PENDING_REVIEW'
         ORDER BY event.occurred_at DESC, event.id DESC
         LIMIT 1
@@ -87,12 +87,14 @@ type ReviewDetailDatabaseRow = Omit<
   WorkflowCoiReviewDetail,
   "replacementCandidates" | "submittedAt"
 > & {
+  applicationId: string;
   stageInstanceId: string;
   submittedAt: Date | string;
   workflowTaskDefinitionId: string;
 };
 
 async function readReplacementCandidates(input: {
+  applicationId: string;
   stageInstanceId: string;
   subjectUserId: string;
   taskId: string;
@@ -126,10 +128,8 @@ async function readReplacementCandidates(input: {
         )
       )
       AND NOT EXISTS (
-        SELECT 1 FROM app_workflow_task_coi prior_clearance
-        JOIN app_workflow_tasks prior_task
-          ON prior_task.id = prior_clearance.task_id
-        WHERE prior_task.stage_instance_id = ${input.stageInstanceId}::uuid
+        SELECT 1 FROM app_workflow_application_coi prior_clearance
+        WHERE prior_clearance.application_id = ${input.applicationId}::uuid
           AND prior_clearance.user_id = candidate.id
           AND prior_clearance.state IN ('PENDING_REVIEW', 'RECUSED', 'REVOKED')
       )
@@ -153,6 +153,7 @@ export async function readPendingWorkflowCoiReview(
   const result = await getDatabase().execute(sql`
     SELECT task.id AS "taskId", definition.name AS "taskName",
       task.row_version AS "rowVersion",
+      workflow.application_id AS "applicationId",
       task.stage_instance_id AS "stageInstanceId",
       task.workflow_task_definition_id AS "workflowTaskDefinitionId",
       stage_definition.name AS "stageName",
@@ -178,10 +179,10 @@ export async function readPendingWorkflowCoiReview(
     LEFT JOIN app_business_profiles business
       ON business.id::text = application.business_section ->> 'businessId'
     LEFT JOIN app_roles assigned_role ON assigned_role.id = task.assigned_role_id
-    JOIN app_workflow_task_coi clearance ON clearance.task_id = task.id
+    JOIN app_workflow_application_coi clearance ON clearance.task_id = task.id
     JOIN LATERAL (
       SELECT event.disclosure_text, event.occurred_at
-      FROM app_workflow_task_coi_events event
+      FROM app_workflow_application_coi_events event
       WHERE event.task_id = task.id AND event.to_state = 'PENDING_REVIEW'
       ORDER BY event.occurred_at DESC, event.id DESC
       LIMIT 1
@@ -196,10 +197,12 @@ export async function readPendingWorkflowCoiReview(
   if (!row) return null;
   const replacementCandidates = await readReplacementCandidates(row);
   const {
+    applicationId: _applicationId,
     stageInstanceId: _stageInstanceId,
     workflowTaskDefinitionId: _workflowTaskDefinitionId,
     ...detail
   } = row;
+  void _applicationId;
   void _stageInstanceId;
   void _workflowTaskDefinitionId;
   return {

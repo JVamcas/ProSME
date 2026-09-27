@@ -20,9 +20,10 @@ const selectedPaths = [
 const selectedFields = selectedPaths.map((key) => ({
   key,
   label: key,
-  type: key.endsWith("amount") || key.endsWith("metric")
-    ? "NUMBER" as const
-    : "TEXT" as const,
+  type:
+    key.endsWith("amount") || key.endsWith("metric")
+      ? ("NUMBER" as const)
+      : ("TEXT" as const),
 }));
 
 const source: WorkflowTaskRuntimeContextSource = {
@@ -47,11 +48,13 @@ const source: WorkflowTaskRuntimeContextSource = {
   eligibility: { eligible: true, outcome: "ELIGIBLE" },
   fundingCallTitle: "Growth Fund",
   permissions: defaultWorkflowElementPermissions,
-  priorStageValues: [{
-    result: {},
-    stageKey: "SCREENING",
-    values: { ELIGIBILITY_RESULT: "ELIGIBLE" },
-  }],
+  priorStageValues: [
+    {
+      result: {},
+      stageKey: "SCREENING",
+      values: { ELIGIBILITY_RESULT: "ELIGIBLE" },
+    },
+  ],
   stage: { name: "Finance review" },
   task: {
     definitionId: "30000000-0000-4000-8000-000000000001",
@@ -100,5 +103,28 @@ describe("workflow runtime context", () => {
     });
     expect(context).not.toHaveProperty("application.internal_note");
     expect(Object.isFrozen(context)).toBe(true);
+  });
+
+  it("still rejects genuinely ambiguous normalized stage fields", () => {
+    expect(() =>
+      buildWorkflowRuntimeContext(
+        {
+          ...source,
+          priorStageValues: [
+            {
+              result: {},
+              stageKey: "SCREENING",
+              values: { RESULT: "FIRST" },
+            },
+            {
+              result: {},
+              stageKey: "SCREENING",
+              values: { RESULT: "SECOND" },
+            },
+          ],
+        },
+        {},
+      ),
+    ).toThrow("Runtime context path stage.screening.result is ambiguous.");
   });
 });

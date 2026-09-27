@@ -59,6 +59,12 @@ export async function allocateStageReviewers(
       AND candidate.status = 'active'
       AND candidate.id <> application.owner_user_id
       AND NOT EXISTS (
+        SELECT 1 FROM app_workflow_application_coi clearance
+        WHERE clearance.application_id = workflow.application_id
+          AND clearance.user_id = candidate.id
+          AND clearance.state IN ('PENDING_REVIEW', 'RECUSED', 'REVOKED')
+      )
+      AND NOT EXISTS (
         SELECT 1 FROM (
           VALUES (definition.permissions ->> 'view'),
             (definition.permissions ->> 'edit'),

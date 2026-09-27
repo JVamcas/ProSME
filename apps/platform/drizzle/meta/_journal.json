@@ -778,6 +778,13 @@
       "when": 1797292800000,
       "tag": "0110_remove_legacy_task_quorum",
       "breakpoints": true
+    },
+    {
+      "idx": 111,
+      "version": "7",
+      "when": 1797379200000,
+      "tag": "0111_application_reviewer_coi",
+      "breakpoints": true
     }
   ]
 }

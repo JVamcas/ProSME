@@ -10,15 +10,6 @@ import type { WorkQueueRow } from "../WorkQueueTypes";
 
 const columns: DataTableColumn<WorkQueueRow>[] = [
   {
-    accessorKey: "taskName",
-    header: "Task",
-    cell: ({ row }) => (
-      <ArrowLink href={`/admin/tasks/${row.original.taskInstanceId}`}>
-        {row.original.taskName}
-      </ArrowLink>
-    ),
-  },
-  {
     accessorKey: "businessName",
     header: "Applicant",
     cell: ({ row }) => (
@@ -36,6 +27,15 @@ const columns: DataTableColumn<WorkQueueRow>[] = [
     accessorKey: "stageName",
     header: "Stage",
     cell: ({ row }) => <StatusBadge status={row.original.stageName} />,
+  },
+  {
+    accessorKey: "taskName",
+    header: "Task",
+    cell: ({ row }) => (
+      <ArrowLink href={`/admin/tasks/${row.original.taskInstanceId}`}>
+        {row.original.taskName}
+      </ArrowLink>
+    ),
   },
   {
     accessorKey: "taskStatus",

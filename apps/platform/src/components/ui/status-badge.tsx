@@ -22,7 +22,7 @@ export const statusStyles: Record<string, string> = {
   upcoming: "bg-brand-yellow text-brand-navy",
   live: "bg-brand-green/70 text-brand-white",
   completed: "bg-brand-green/70 text-brand-white",
-  pending: "bg-brand-navy/20 text-brand-white",
+  pending: "bg-brand-navy/20 text-brand-orange",
   "in progress": "bg-brand-navy/60 text-brand-white",
   waiting: "bg-brand-gold text-brand-white",
 

@@ -44,10 +44,10 @@ export function WorkflowCoiReviewWorkspace() {
 
   return (
     <PageShell
-      description="Independently assess disclosed conflicts before assigned reviewers can continue."
+      description="Independently assess disclosed conflicts of interest before reviewers can continue."
       eyebrow="My work"
       icon={<ShieldCheck aria-hidden="true" />}
-      title="Conflict reviews"
+      title="Conflict of Interest reviews"
     >
       <section className="overflow-hidden rounded-2xl border border-brand-navy/10 bg-white shadow-sm">
         <div className="p-4">

@@ -6,13 +6,9 @@ import { FormProvider, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 
 import { GeneralButton } from "@/components/ui/button";
+import { FormSelect, FormTextarea } from "@/components/ui/form-fields";
+import { FormRadioCard } from "@/components/ui/form-radio-card";
 import { formatLocalDateTime24 } from "@/lib/dateUtils";
-import {
-  FieldError,
-  Label,
-  Select,
-  Textarea,
-} from "@/shared/ui/FormPrimitives";
 import { RightDrawer } from "@/shared/ui/RightDrawer";
 import type { WorkflowCoiReviewDetail } from "../../api/WorkflowCoiReviewTypes";
 import { workflowCoiReviewDecisionSchema } from "../../api/WorkflowCoiReviewSchemas";
@@ -20,6 +16,7 @@ import {
   useDecideWorkflowCoiReview,
   useWorkflowCoiReview,
 } from "./useWorkflowCoiReviews";
+import { toast } from "@/shared/ui/Toast";
 
 type DecisionValues = z.input<typeof workflowCoiReviewDecisionSchema>;
 
@@ -94,7 +91,7 @@ function DecisionForm({
   });
 
   async function submit(values: DecisionValues) {
-    await mutation.mutateAsync(values);
+    await mutation.mutateAsync(values, { onError: (error) => toast.error(error.message) });
     onReviewed();
   }
 
@@ -110,58 +107,35 @@ function DecisionForm({
             Decision
           </legend>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            <label className="flex cursor-pointer gap-3 rounded-xl border border-brand-navy/15 p-4 has-[:checked]:border-brand-orange has-[:checked]:bg-brand-orange/5">
-              <input
-                className="mt-1 accent-brand-orange"
-                type="radio"
-                value="CLEAR"
-                {...form.register("decision")}
-              />
-              <span>
-                <span className="block text-sm font-semibold text-brand-navy">
-                  Clear conflict
-                </span>
-                <span className="mt-1 block text-xs leading-5 text-brand-navy/60">
-                  Allow the assigned reviewer to continue.
-                </span>
-              </span>
-            </label>
-            <label className="flex cursor-pointer gap-3 rounded-xl border border-brand-navy/15 p-4 has-[:checked]:border-brand-orange has-[:checked]:bg-brand-orange/5">
-              <input
-                className="mt-1 accent-brand-orange"
-                type="radio"
-                value="RECUSE"
-                {...form.register("decision")}
-              />
-              <span>
-                <span className="block text-sm font-semibold text-brand-navy">
-                  Recuse reviewer
-                </span>
-                <span className="mt-1 block text-xs leading-5 text-brand-navy/60">
-                  Remove the reviewer and assign an eligible replacement.
-                </span>
-              </span>
-            </label>
+            <FormRadioCard
+              checked={decision === "CLEAR"}
+              description="Allow the assigned reviewer to continue."
+              label="Clear conflict"
+              value="CLEAR"
+              {...form.register("decision")}
+            />
+            <FormRadioCard
+              checked={decision === "RECUSE"}
+              description="Remove the reviewer and assign an eligible replacement."
+              label="Recuse reviewer"
+              value="RECUSE"
+              {...form.register("decision")}
+            />
           </div>
         </fieldset>
 
         {decision === "RECUSE" ? (
           <div>
-            <Label htmlFor="replacement-reviewer">Replacement reviewer</Label>
-            <Select
-              aria-invalid={Boolean(form.formState.errors.replacementUserId)}
+            <FormSelect
               id="replacement-reviewer"
-              {...form.register("replacementUserId")}
-            >
-              <option value="">Select an eligible reviewer</option>
-              {review.replacementCandidates.map((candidate) => (
-                <option key={candidate.id} value={candidate.id}>
-                  {candidate.displayName}
-                </option>
-              ))}
-            </Select>
-            <FieldError
-              message={form.formState.errors.replacementUserId?.message}
+              items={review.replacementCandidates.map((candidate) => ({
+                label: candidate.displayName,
+                value: candidate.id,
+              }))}
+              label="Replacement reviewer"
+              name="replacementUserId"
+              placeholder="Select an eligible reviewer"
+              required
             />
             {!review.replacementCandidates.length ? (
               <p className="mt-2 flex gap-2 text-sm text-amber-700">
@@ -172,16 +146,13 @@ function DecisionForm({
           </div>
         ) : null}
 
-        <div>
-          <Label htmlFor="review-reason">Decision reason</Label>
-          <Textarea
-            aria-invalid={Boolean(form.formState.errors.reason)}
-            id="review-reason"
-            placeholder="Explain the basis for this decision"
-            {...form.register("reason")}
-          />
-          <FieldError message={form.formState.errors.reason?.message} />
-        </div>
+        <FormTextarea
+          id="review-reason"
+          label="Decision reason"
+          name="reason"
+          placeholder="Explain the basis for this decision"
+          required
+        />
 
         {mutation.isError ? (
           <p

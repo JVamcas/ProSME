@@ -27,6 +27,7 @@ type ReplacementResult = {
 };
 
 type LockedTask = {
+  applicationId: string;
   assignedUserId: string | null;
   reviewerSlot: number;
   rowVersion: number;
@@ -108,7 +109,8 @@ export async function replaceWorkflowReviewer(
     if (concurrentReplay === "CONFLICT") return null;
     if (concurrentReplay) return concurrentReplay;
     const locked = await transaction.execute(sql`
-      SELECT task.assigned_user_id AS "assignedUserId",
+      SELECT workflow.application_id AS "applicationId",
+        task.assigned_user_id AS "assignedUserId",
         task.reviewer_slot AS "reviewerSlot",
         task.row_version AS "rowVersion",
         task.stage_instance_id AS "stageInstanceId",
@@ -165,9 +167,8 @@ export async function replaceWorkflowReviewer(
           )
         )
         AND NOT EXISTS (
-          SELECT 1 FROM app_workflow_task_coi clearance
-          JOIN app_workflow_tasks prior_task ON prior_task.id = clearance.task_id
-          WHERE prior_task.stage_instance_id = ${task.stageInstanceId}::uuid
+          SELECT 1 FROM app_workflow_application_coi clearance
+          WHERE clearance.application_id = ${task.applicationId}::uuid
             AND clearance.user_id = candidate.id
             AND clearance.state IN ('PENDING_REVIEW', 'RECUSED', 'REVOKED')
         )
@@ -185,8 +186,8 @@ export async function replaceWorkflowReviewer(
 
     if (input.coiDecision === "RECUSE") {
       const clearance = await transaction.execute(sql`
-        SELECT state FROM app_workflow_task_coi
-        WHERE task_id = ${input.taskId}::uuid
+        SELECT state FROM app_workflow_application_coi
+        WHERE application_id = ${task.applicationId}::uuid
           AND user_id = ${task.assignedUserId}::uuid
         FOR UPDATE
       `);
@@ -194,16 +195,18 @@ export async function replaceWorkflowReviewer(
         || (clearance.rows[0] as { state: string } | undefined)?.state
           !== "PENDING_REVIEW") return null;
       await transaction.execute(sql`
-        UPDATE app_workflow_task_coi
-        SET state = 'RECUSED', row_version = row_version + 1,
-          updated_at = now()
-        WHERE task_id = ${input.taskId}::uuid
+        UPDATE app_workflow_application_coi
+        SET task_id = ${input.taskId}::uuid, state = 'RECUSED',
+          row_version = row_version + 1, updated_at = now()
+        WHERE application_id = ${task.applicationId}::uuid
+          AND user_id = ${task.assignedUserId}::uuid
       `);
       await transaction.execute(sql`
-        INSERT INTO app_workflow_task_coi_events (
-          task_id, subject_user_id, actor_id, from_state, to_state, reason
+        INSERT INTO app_workflow_application_coi_events (
+          application_id, task_id, subject_user_id, actor_id, from_state, to_state, reason
         ) VALUES (
-          ${input.taskId}::uuid, ${task.assignedUserId}::uuid,
+          ${task.applicationId}::uuid, ${input.taskId}::uuid,
+          ${task.assignedUserId}::uuid,
           ${input.actorId}::uuid, 'PENDING_REVIEW', 'RECUSED',
           ${input.reason}
         )

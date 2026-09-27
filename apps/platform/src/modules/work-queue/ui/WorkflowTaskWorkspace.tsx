@@ -88,8 +88,24 @@ export function WorkflowTaskWorkspace({ taskId }: { taskId: string }) {
   return (
     <PageShell
       actions={<StatusBadge status={task.taskStatus} />}
-      description="Review the application and complete the assigned task."
-      title={task.taskName}
+      description={
+        <div className="flex flex-wrap gap-2 text-sm">
+          <span className="text-brand-navy/60">
+            Stage{" "}
+            <span className="rounded-md bg-slate-100 px-2 py-0.5 font-semibold text-brand-navy">
+              {task.stageName}
+            </span>
+          </span>
+
+          <span className="text-brand-navy/60 text-sm">
+            Task{" "}
+            <span className="rounded-md bg-brand-orange/10 px-2 py-0.5 font-semibold text-brand-orange">
+              {task.taskName}
+            </span>
+          </span>
+        </div>
+      }
+      title={`Funding Application Review`}
     >
       <Tabs
         accent="orange"

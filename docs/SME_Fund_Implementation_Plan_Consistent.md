@@ -3073,8 +3073,11 @@ Application content until conflict-of-interest requirements are cleared.
 
 ### Scope
 
-Conflict of interest is a gate, not an ordinary Form field. Support states such
-as:
+Conflict of interest is a gate, not an ordinary Form field. A declaration and
+clearance are scoped to the reviewer or decision participant and Application, and
+are reused by every applicable COI-gated Task for that pairing. The originating
+Task remains attached to declarations and audit events so recusal and replacement
+actions retain precise assignment context. Support states such as:
 - declaration required;
 - no conflict declared and cleared;
 - potential conflict disclosed, pending independent review;
