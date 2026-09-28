@@ -51,7 +51,10 @@ COPY --from=builder --chown=nextjs:nodejs \
 COPY --from=builder --chown=nextjs:nodejs \
     /workspace/apps/platform/media ./apps/platform/media
 COPY --chown=nextjs:nodejs --chmod=755 \
-    scripts/container/healthcheck.sh scripts/container/healthcheck.sh
+    scripts/container/healthcheck.sh \
+    scripts/container/notification-scheduler-healthcheck.mjs \
+    scripts/container/notification-scheduler.mjs \
+    scripts/container/
 
 WORKDIR /workspace/apps/platform
 USER nextjs

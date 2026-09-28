@@ -251,7 +251,10 @@ export async function finalizeClaimedNotificationOccurrence(input: {
         ELSE 'FAILED'
       END,
       available_at = COALESCE(summary.next_attempt_at, occurrence.available_at),
-      processed_at = CASE WHEN summary.pending = 0 THEN ${input.now} ELSE NULL END,
+      processed_at = CASE
+        WHEN summary.pending = 0 THEN ${input.now}::timestamptz
+        ELSE NULL::timestamptz
+      END,
       last_error_code = last_failure.last_error_code,
       last_error_message = last_failure.last_error_message,
       locked_at = NULL,

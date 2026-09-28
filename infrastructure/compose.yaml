@@ -24,6 +24,7 @@ services:
 
   app:
     container_name: smefund-${ENVIRONMENT:-local}-app
+    image: smefund-${ENVIRONMENT:-local}-platform
     build:
       context: ..
       dockerfile: apps/platform/Dockerfile
@@ -65,6 +66,44 @@ services:
         max-file: "3"
     volumes:
       - payload-media:/workspace/apps/platform/media
+    networks:
+      - platform
+
+  notification-scheduler:
+    container_name: smefund-${ENVIRONMENT:-local}-notification-scheduler
+    image: smefund-${ENVIRONMENT:-local}-platform
+    command:
+      - node
+      - /workspace/scripts/container/notification-scheduler.mjs
+    restart: unless-stopped
+    init: true
+    environment:
+      NOTIFICATION_PROCESSOR_INTERVAL_MS: ${NOTIFICATION_PROCESSOR_INTERVAL_MS:-60000}
+      NOTIFICATION_PROCESSOR_SECRET: ${NOTIFICATION_PROCESSOR_SECRET}
+      NOTIFICATION_PROCESSOR_URL: http://app:3008/api/internal/notifications/process
+      NOTIFICATION_SCHEDULER_MAX_CONSECUTIVE_FAILURES: ${NOTIFICATION_SCHEDULER_MAX_CONSECUTIVE_FAILURES:-5}
+      NOTIFICATION_SCHEDULER_REQUEST_TIMEOUT_MS: ${NOTIFICATION_SCHEDULER_REQUEST_TIMEOUT_MS:-60000}
+    depends_on:
+      app:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - /workspace/scripts/container/notification-scheduler-healthcheck.mjs
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     networks:
       - platform
 

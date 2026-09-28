@@ -65,6 +65,30 @@ describe("standard workflow catalogue", () => {
     ))).toEqual(["DISBURSEMENT", "IMPLEMENTATION_MONITORING"]);
   });
 
+  it("includes disabled common actions on every stage and task", () => {
+    const graph = createStandardWorkflowDraft(dependencies()).graph;
+    const commonActionKeys = [
+      "REQUEST_INFORMATION",
+      "REFER",
+      "PUT_ON_HOLD",
+      "ESCALATE",
+    ];
+
+    for (const stage of graph.stages) {
+      const actionsByKey = new Map(
+        stage.actions.map((action) => [action.stableKey, action]),
+      );
+      for (const actionKey of commonActionKeys) {
+        expect(actionsByKey.get(actionKey)).toMatchObject({ enabled: false });
+      }
+      for (const task of stage.tasks) {
+        expect(task.actionKeys).toEqual(
+          expect.arrayContaining(commonActionKeys),
+        );
+      }
+    }
+  });
+
   it("keeps screening decisions independent of the evaluation result", () => {
     const graph = createStandardWorkflowDraft(dependencies()).graph;
     const screening = graph.stages.find(
@@ -76,7 +100,14 @@ describe("standard workflow catalogue", () => {
 
     expect(screening.tasks).toHaveLength(2);
     expect(task).toMatchObject({
-      actionKeys: ["ELIGIBLE_ADVANCE", "INELIGIBLE_REJECT"],
+      actionKeys: [
+        "ELIGIBLE_ADVANCE",
+        "INELIGIBLE_REJECT",
+        "REQUEST_INFORMATION",
+        "REFER",
+        "PUT_ON_HOLD",
+        "ESCALATE",
+      ],
       config: {
         command: "AUTHORITATIVE_ELIGIBILITY",
         formPurpose: "ELIGIBILITY_VERIFICATION",

@@ -48,9 +48,16 @@ After creating `.env`, build and start PostgreSQL and the application:
 The Bash wrapper validates Compose, builds the standalone image, starts
 PostgreSQL, runs the committed Drizzle and Payload migrations, and waits for the
 application health check. It also runs the single idempotent database seeder on
-every startup. PostgreSQL data and Payload media uploads are retained in named
-volumes. Environment-specific values are supplied by Compose at runtime; the
-image build does not read `.env` or receive deployment configuration.
+every startup. The notification scheduler starts after the application is
+healthy and invokes one authenticated delivery batch every 60 seconds by
+default. Configure `NOTIFICATION_PROCESSOR_INTERVAL_MS` to change that interval.
+The scheduler emits structured JSON logs with request IDs, timings, safe batch
+counts, and failure classifications. Docker rotates those logs and restarts the
+scheduler after its configured consecutive-failure limit. Its health check also
+detects a stalled scheduling loop.
+PostgreSQL data and Payload media uploads are retained in named volumes.
+Environment-specific values are supplied by Compose at runtime; the image build
+does not read `.env` or receive deployment configuration.
 
 When `.env` contains `ENVIRONMENT=local`, the wrapper combines
 `infrastructure/compose.yaml` with

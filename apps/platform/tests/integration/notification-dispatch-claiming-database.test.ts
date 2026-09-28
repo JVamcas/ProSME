@@ -4,7 +4,11 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 vi.mock("server-only", () => ({}));
 
 import { seedInitialNotificationConfiguration } from "@/modules/notifications/application/ServerNotificationConfigurationSeedService";
-import { claimDueNotificationOccurrences } from "@/modules/notifications/infrastructure/NotificationDispatchRepository";
+import {
+  claimDueNotificationOccurrences,
+  finalizeClaimedNotificationOccurrence,
+  recordNotificationDeliveryFailure,
+} from "@/modules/notifications/infrastructure/NotificationDispatchRepository";
 
 const { Pool } = pg;
 const enabled = process.env.RUN_NOTIFICATION_DATABASE_TESTS === "true";
@@ -176,5 +180,51 @@ describeDatabase("notification PostgreSQL concurrent claiming", () => {
       now,
       owner: "empty-claimer",
     })).resolves.toEqual([]);
+  });
+
+  it("finalizes a claimed occurrence after a terminal delivery failure", async () => {
+    const occurrenceId = "86000000-0000-4000-8000-000000000001";
+    const owner = "finalization-claimer";
+    await insertOccurrence({
+      id: occurrenceId,
+      occurrenceKey: "phase4:terminal-failure",
+    });
+    await claimDueNotificationOccurrences({
+      batchSize: 1,
+      lockTimeoutMs: 300_000,
+      now,
+      owner,
+    });
+    const delivery = await query(
+      "SELECT id FROM app_notification_deliveries WHERE outbox_id = $1",
+      [occurrenceId],
+    );
+    await recordNotificationDeliveryFailure({
+      code: "NOTIFICATION_TEMPLATE_UNAVAILABLE",
+      deliveryId: delivery.rows[0].id,
+      nextAttemptAt: now,
+      now,
+      owner,
+      retry: false,
+      templateVersionId: null,
+    });
+
+    await finalizeClaimedNotificationOccurrence({
+      now,
+      outboxId: occurrenceId,
+      owner,
+    });
+
+    const occurrence = await query(
+      `SELECT status, processed_at, locked_at, locked_by
+       FROM app_notification_outbox WHERE id = $1`,
+      [occurrenceId],
+    );
+    expect(occurrence.rows[0]).toMatchObject({
+      locked_at: null,
+      locked_by: null,
+      status: "FAILED",
+    });
+    expect(occurrence.rows[0].processed_at).toEqual(now);
   });
 });
