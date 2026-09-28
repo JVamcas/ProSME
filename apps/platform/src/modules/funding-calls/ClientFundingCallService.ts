@@ -4,6 +4,7 @@ import { requestData, requestJson } from "@/lib/client-http";
 import type {
   FundingCallCreateInput,
   FundingCallGovernanceCommandInput,
+  FundingCallLifecycleCommandInput,
   FundingCallListInput,
   FundingCallUpdateInput,
 } from "./api/FundingCallSchemas";
@@ -106,6 +107,23 @@ function changeGovernanceStatus(
   );
 }
 
+function changeLifecycleStatus(
+  id: string,
+  input: FundingCallLifecycleCommandInput,
+) {
+  return requestData<FundingCallView>(
+    `/api/admin/funding-calls/${id}/lifecycle`,
+    {
+      body: JSON.stringify(input),
+      headers: {
+        ...jsonHeaders,
+        "Idempotency-Key": crypto.randomUUID(),
+      },
+      method: "POST",
+    },
+  );
+}
+
 function previewReadiness(id: string) {
   return requestData<FundingCallReadinessResult>(
     `/api/admin/funding-calls/${id}/readiness`,
@@ -135,6 +153,7 @@ function listBindableWorkflowTemplateVersions() {
 }
 
 export const clientFundingCallService = {
+  changeLifecycleStatus,
   changeGovernanceStatus,
   clone,
   create,

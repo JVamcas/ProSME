@@ -1,8 +1,9 @@
 import "server-only";
 
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, gt, inArray, lte } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
+import { transactionalOutbox } from "@/db/schema";
 import type { FundingCall } from "../domain/FundingCall";
 import {
   resolveFundingCallTransition,
@@ -39,6 +40,60 @@ function toFundingCall(row: typeof fundingCalls.$inferSelect): FundingCall {
     ...row,
     description: sanitizeFundingCallDescription(row.description),
   };
+}
+
+export async function readFundingCallLifecycleReplay(
+  fundingCallId: string,
+  idempotencyKey: string,
+  command: FundingCallLifecycleCommand,
+) {
+  const [row] = await getDatabase()
+    .select({ call: fundingCalls, command: fundingCallLifecycleHistory.command })
+    .from(fundingCallLifecycleHistory)
+    .innerJoin(
+      fundingCalls,
+      eq(fundingCalls.id, fundingCallLifecycleHistory.fundingCallId),
+    )
+    .where(and(
+      eq(fundingCallLifecycleHistory.idempotencyKey, idempotencyKey),
+      eq(fundingCallLifecycleHistory.fundingCallId, fundingCallId),
+    ))
+    .limit(1);
+  return row?.command === command ? toFundingCall(row.call) : null;
+}
+
+export function listScheduledFundingCallsDueToOpen(now: Date, limit: number) {
+  return getDatabase()
+    .select({
+      closesAt: fundingCalls.closesAt,
+      id: fundingCalls.id,
+      opensAt: fundingCalls.opensAt,
+      rowVersion: fundingCalls.rowVersion,
+    })
+    .from(fundingCalls)
+    .where(and(
+      eq(fundingCalls.status, "SCHEDULED"),
+      lte(fundingCalls.opensAt, now),
+      gt(fundingCalls.closesAt, now),
+    ))
+    .orderBy(asc(fundingCalls.opensAt), asc(fundingCalls.id))
+    .limit(limit);
+}
+
+export function listPublishedFundingCallsDueToClose(now: Date, limit: number) {
+  return getDatabase()
+    .select({
+      closesAt: fundingCalls.closesAt,
+      id: fundingCalls.id,
+      rowVersion: fundingCalls.rowVersion,
+    })
+    .from(fundingCalls)
+    .where(and(
+      inArray(fundingCalls.status, ["SCHEDULED", "LIVE", "SUSPENDED"]),
+      lte(fundingCalls.closesAt, now),
+    ))
+    .orderBy(asc(fundingCalls.closesAt), asc(fundingCalls.id))
+    .limit(limit);
 }
 
 export async function transitionFundingCall(
@@ -94,20 +149,46 @@ export async function transitionFundingCall(
       .returning();
     if (!updated) return { kind: "conflict" };
 
-    await transaction.insert(fundingCallLifecycleHistory).values({
-      actorId: input.actorId,
+    const [history] = await transaction
+      .insert(fundingCallLifecycleHistory)
+      .values({
+        actorId: input.actorId,
+        command: input.command,
+        commandTime: input.now,
+        correlationId: input.correlationId,
+        effectiveTime: input.effectiveTime ?? input.now,
+        fundingCallId: input.fundingCallId,
+        idempotencyKey: input.idempotencyKey,
+        reason,
+        rowVersion: nextRowVersion,
+        sourceStatus: transition.sourceStatus,
+        systemActor: input.systemActor,
+        targetStatus: transition.targetStatus,
+      })
+      .returning({ id: fundingCallLifecycleHistory.id });
+    const eventPayload = {
       command: input.command,
-      commandTime: input.now,
-      correlationId: input.correlationId,
-      effectiveTime: input.effectiveTime ?? input.now,
       fundingCallId: input.fundingCallId,
-      idempotencyKey: input.idempotencyKey,
-      reason,
-      rowVersion: nextRowVersion,
+      occurredAt: input.now.toISOString(),
       sourceStatus: transition.sourceStatus,
-      systemActor: input.systemActor,
       targetStatus: transition.targetStatus,
-    });
+    };
+    await transaction.insert(transactionalOutbox).values([
+      {
+        aggregateId: history.id,
+        correlationId: input.correlationId,
+        eventCode: "FUNDING_CALL_LIFECYCLE_CHANGED",
+        payload: eventPayload,
+        schemaVersion: 1,
+      },
+      {
+        aggregateId: history.id,
+        correlationId: input.correlationId,
+        eventCode: "FUNDING_CALL_PUBLIC_CACHE_INVALIDATION_REQUESTED",
+        payload: eventPayload,
+        schemaVersion: 1,
+      },
+    ]);
     return { call: toFundingCall(updated), kind: "transitioned" };
   });
 }

@@ -13,7 +13,7 @@ import type { FundingCallPublishInput } from "../api/FundingCallSchemas";
 import type { FundingCallView } from "../api/FundingCallTransport";
 import type { FundingCall } from "../domain/FundingCall";
 import {
-  publishDraftFundingCall,
+  publishApprovedFundingCall,
   readFundingCallPublicationReplay,
 } from "../infrastructure/FundingCallPublicationRepository";
 import { readFundingCallById } from "../infrastructure/FundingCallRepository";
@@ -43,13 +43,13 @@ export async function publishFundingCall(
   const call = await readFundingCallById(id);
   if (!call) throw new ResourceNotFoundError("funding call");
   if (
-    call.status !== "DRAFT"
+    call.status !== "APPROVED"
     || call.rowVersion !== input.expectedRowVersion
   ) {
     throw new ResourceConflictError(
-      call.status === "DRAFT"
+      call.status === "APPROVED"
         ? "The funding call changed. Refresh it before publishing."
-        : "Only draft funding calls can be published.",
+        : "Only approved funding calls can be published.",
     );
   }
 
@@ -61,7 +61,7 @@ export async function publishFundingCall(
       `Publication readiness failed (${first.code}): ${first.message}`,
     );
   }
-  const result = await publishDraftFundingCall({
+  const result = await publishApprovedFundingCall({
     actorId: actor.id,
     correlationId,
     expectedRowVersion: input.expectedRowVersion,

@@ -11,6 +11,7 @@ import {
 import { users } from "@/db/schema/identity";
 import { applications } from "@/modules/applications/infrastructure/application.schema";
 import { workflowTasks } from "./workflow-runtime.schema";
+import { formVersions } from "@/modules/forms/infrastructure/form.schema";
 
 export const workflowApplicationCoi = pgTable(
   "app_workflow_application_coi",
@@ -45,6 +46,9 @@ export const workflowApplicationCoiEvents = pgTable(
       .references(() => users.id, { onDelete: "restrict" }),
     actorId: uuid("actor_id").notNull()
       .references(() => users.id, { onDelete: "restrict" }),
+    formVersionId: uuid("form_version_id").references(() => formVersions.id, {
+      onDelete: "restrict",
+    }),
     fromState: text("from_state"),
     toState: text("to_state").notNull(),
     disclosureText: text("disclosure_text"),
@@ -64,4 +68,3 @@ export const workflowApplicationCoiEvents = pgTable(
     ),
   ],
 );
-

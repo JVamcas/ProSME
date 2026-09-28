@@ -12,6 +12,7 @@ export function BusinessProfileFields({ disabled }: { disabled?: boolean }) {
         disabled={disabled}
         label="Legal business name"
         name="legalName"
+        required
       />
       <FormInput disabled={disabled} label="Trading name" name="tradingName" />
       <FormInput
@@ -25,14 +26,21 @@ export function BusinessProfileFields({ disabled }: { disabled?: boolean }) {
         name="businessType"
         items={selectItems(businessTypes)}
         placeholder="Select a business type"
+        required
       />
-      <FormInput disabled={disabled} label="Sector" name="sector" />
+      <FormInput
+        disabled={disabled}
+        label="Sector"
+        name="sector"
+        required
+      />
       <FormSelect
         disabled={disabled}
         label="Region"
         name="region"
         items={selectItems(namibianRegions)}
         placeholder="Select a region"
+        required
       />
       <FormInput
         disabled={disabled}
@@ -53,6 +61,7 @@ export function BusinessProfileFields({ disabled }: { disabled?: boolean }) {
         label="Physical address"
         name="physicalAddress"
         autoComplete="street-address"
+        required
       />
     </>
   );

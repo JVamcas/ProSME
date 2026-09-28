@@ -25,6 +25,7 @@ export async function seedStandardWorkflowDraft() {
       task.formBinding ? [task.formBinding.formVersionId] : []
     )),
   );
+  if (draft.coiFormVersionId) boundVersionIds.add(draft.coiFormVersionId);
   const boundFormCodes = standardWorkflowFormCodes.filter((code) => {
     const versionId = dependencies.formVersionIds[code];
     return versionId ? boundVersionIds.has(versionId) : false;

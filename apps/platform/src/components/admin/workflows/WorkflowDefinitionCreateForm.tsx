@@ -2,10 +2,16 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FormProvider, useForm } from "react-hook-form";
+import { useEffect } from "react";
 import type { z } from "zod";
 
 import { GeneralButton } from "@/components/ui/button";
-import { FormInput, FormTextarea } from "@/components/ui/form-fields";
+import {
+  FormInput,
+  FormSelect,
+  FormTextarea,
+} from "@/components/ui/form-fields";
+import { usePublishedForms } from "@/modules/forms/FormHooks";
 import {
   useCreateWorkflow,
   useUpdateWorkflowDetails,
@@ -23,6 +29,7 @@ function useWorkflowDetailsForm({ onCompleted, workflow }: Props) {
   const createMutation = useCreateWorkflow();
   const updateMutation = useUpdateWorkflowDetails(workflow?.id ?? "");
   const editorQuery = useWorkflowEditor(workflow?.id ?? "", Boolean(workflow));
+  const publishedForms = usePublishedForms();
   const form = useForm<
     z.input<typeof createWorkflowSchema>,
     unknown,
@@ -30,15 +37,24 @@ function useWorkflowDetailsForm({ onCompleted, workflow }: Props) {
   >({
     defaultValues: {
       code: workflow?.code ?? "",
+      coiFormVersionId: "",
       description: workflow?.description ?? "",
       name: workflow?.name ?? "",
     },
     resolver: zodResolver(createWorkflowSchema),
   });
+  useEffect(() => {
+    if (!editorQuery.data) return;
+    form.setValue(
+      "coiFormVersionId",
+      editorQuery.data.version.coiFormVersionId ?? "",
+    );
+  }, [editorQuery.data, form]);
   const submit = form.handleSubmit(async (input) => {
     if (workflow && editorQuery.data) {
       await updateMutation.mutateAsync({
         code: input.code,
+        coiFormVersionId: input.coiFormVersionId,
         description: input.description,
         expectedRowVersion: editorQuery.data.version.rowVersion,
         name: input.name,
@@ -54,6 +70,12 @@ function useWorkflowDetailsForm({ onCompleted, workflow }: Props) {
   return {
     error: createMutation.error ?? updateMutation.error ?? editorQuery.error,
     form,
+    coiFormOptions: (publishedForms.data ?? [])
+      .filter((option) => option.purpose === "COI")
+      .map((option) => ({
+        label: `${option.formName} — version ${option.versionNumber}`,
+        value: option.versionId,
+      })),
     isPending:
       createMutation.isPending ||
       updateMutation.isPending ||
@@ -63,10 +85,12 @@ function useWorkflowDetailsForm({ onCompleted, workflow }: Props) {
 }
 
 function WorkflowDetailsFields({
+  coiFormOptions,
   error,
   isEditing,
   isPending,
 }: {
+  coiFormOptions: Array<{ label: string; value: string }>;
   error: Error | null;
   isEditing: boolean;
   isPending: boolean;
@@ -79,6 +103,13 @@ function WorkflowDetailsFields({
         label="Workflow code"
         name="code"
         placeholder="SME_STANDARD_GRANT"
+      />
+      <FormSelect
+        containerClassName="md:col-span-2"
+        items={coiFormOptions}
+        label="Conflict of Interest form version"
+        name="coiFormVersionId"
+        placeholder="Select a published COI form version"
       />
       <FormInput
         label="Workflow name"
@@ -111,6 +142,7 @@ export function WorkflowDefinitionCreateForm(props: Props) {
     <FormProvider {...state.form}>
       <form className="grid gap-4 md:grid-cols-2" onSubmit={state.submit}>
         <WorkflowDetailsFields
+          coiFormOptions={state.coiFormOptions}
           error={state.error}
           isEditing={Boolean(props.workflow)}
           isPending={state.isPending}

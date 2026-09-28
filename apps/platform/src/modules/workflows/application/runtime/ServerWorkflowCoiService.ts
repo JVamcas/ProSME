@@ -7,8 +7,7 @@ import {
   ResourceConflictError,
   ResourceNotFoundError,
 } from "@/lib/resource-errors";
-import { getPublishedSystemFormRuntime } from "@/modules/forms/application/ServerSystemFormService";
-import { coiDeclarationFormCode } from "@/modules/forms/domain/CoiDeclarationForm";
+import { getPublishedSystemFormRuntimeVersion } from "@/modules/forms/application/ServerSystemFormService";
 import {
   changeTaskCoi,
   readTaskCoiGate,
@@ -26,7 +25,14 @@ export async function getWorkflowTaskCoi(
   );
   const gate = await readTaskCoiGate(actor.id, taskId);
   if (!gate) throw new ResourceNotFoundError("workflow task");
-  const form = await getPublishedSystemFormRuntime(coiDeclarationFormCode);
+  if (gate.gated && !gate.coiFormVersionId) {
+    throw new ResourceConflictError(
+      "The workflow has no bound Conflict of Interest form version.",
+    );
+  }
+  const form = gate.coiFormVersionId
+    ? await getPublishedSystemFormRuntimeVersion(gate.coiFormVersionId)
+    : null;
   return {
     form,
     taskId: gate.taskId,

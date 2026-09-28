@@ -123,6 +123,12 @@ export const fundingCallPublishSchema = z.object({
   expectedRowVersion: z.number().int().positive(),
 });
 
+export const fundingCallLifecycleCommandSchema = z.object({
+  command: z.enum(["SUSPEND", "RESUME", "WITHDRAW", "ARCHIVE"]),
+  expectedRowVersion: z.number().int().positive(),
+  reason: z.string().trim().min(1).max(1000),
+});
+
 export const fundingCallGovernanceCommandSchema = z.discriminatedUnion(
   "command",
   [
@@ -150,6 +156,9 @@ export type FundingCallCreateInput = z.infer<typeof fundingCallCreateSchema>;
 export type FundingCallUpdateInput = z.infer<typeof fundingCallUpdateSchema>;
 export type FundingCallListInput = z.infer<typeof fundingCallListSchema>;
 export type FundingCallPublishInput = z.infer<typeof fundingCallPublishSchema>;
+export type FundingCallLifecycleCommandInput = z.infer<
+  typeof fundingCallLifecycleCommandSchema
+>;
 export type FundingCallGovernanceCommandInput = z.infer<
   typeof fundingCallGovernanceCommandSchema
 >;

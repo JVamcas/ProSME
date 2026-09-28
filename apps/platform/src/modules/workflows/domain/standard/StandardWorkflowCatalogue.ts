@@ -127,6 +127,7 @@ export function createStandardWorkflowDraft(
   );
   return {
     code: standardWorkflowCode,
+    coiFormVersionId: dependencies.formVersionIds.COI_DECLARATION ?? null,
     description:
       "Standard client application workflow from administrative screening through evaluation and close-out.",
     graph: {

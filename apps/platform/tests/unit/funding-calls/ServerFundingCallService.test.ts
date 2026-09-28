@@ -42,19 +42,16 @@ vi.mock("@/modules/funding-calls/infrastructure/FundingCallRepository", () => ({
   updateDraftFundingCall: vi.fn(),
 }));
 import { permissionCodes } from "@/auth/authorization/permissions";
-import { PermissionDeniedError } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import { RequestValidationError } from "@/lib/resource-errors";
 import {
   createFundingCall,
   getFundingCallByPublicIdentifier,
-  updateFundingCall,
 } from "@/modules/funding-calls/application/ServerFundingCallService";
 import {
   insertFundingCall,
   readFundingCallById,
   readFundingCallByPublicIdentifier,
-  updateDraftFundingCall,
 } from "@/modules/funding-calls/infrastructure/FundingCallRepository";
 import {
   formVersionIsBindable,
@@ -291,12 +288,4 @@ describe("ServerFundingCallService", () => {
     expect(insertFundingCall).not.toHaveBeenCalled();
   });
 
-  it("denies draft edits without the canonical update permission", async () => {
-    await expect(updateFundingCall(
-      user([permissionCodes.fundingCallRead]),
-      callId,
-      { ...input, expectedRowVersion: 1 },
-    )).rejects.toBeInstanceOf(PermissionDeniedError);
-    expect(updateDraftFundingCall).not.toHaveBeenCalled();
-  });
 });

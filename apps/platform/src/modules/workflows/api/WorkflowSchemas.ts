@@ -294,6 +294,9 @@ export const workflowGraphSchema = z
 
 export const createWorkflowSchema = z.object({
   code: codeSchema,
+  coiFormVersionId: z.union([z.literal(""), z.uuid(), z.null()])
+    .transform((value) => value || null)
+    .optional(),
   name: z.string().trim().min(2).max(160),
   description: z.string().trim().max(1000).default(""),
 });

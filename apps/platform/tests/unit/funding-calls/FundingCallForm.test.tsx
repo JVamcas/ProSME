@@ -102,17 +102,80 @@ describe("FundingCallForm", () => {
     optionState.pending = false;
     await act(async () => root?.render(render()));
 
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>(
+        '[aria-label^="Workflow,"]',
+      )?.click();
+    });
+
     expect(container.querySelector<HTMLSelectElement>(
       '[name="workflowTemplateVersionId"]',
     )?.value).toBe(workflowVersionId);
     expect(container.textContent).toContain(
       "Standard workflow — version 1 · DRAFT",
     );
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>(
+        '[aria-label^="Application,"]',
+      )?.click();
+    });
     expect(container.querySelector<HTMLSelectElement>(
       '[name="formVersionId"]',
     )?.value).toBe(formVersionId);
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>(
+        '[aria-label^="Eligibility,"]',
+      )?.click();
+    });
     expect(container.querySelector<HTMLSelectElement>(
       '[name="eligibilityRuleSetVersionId"]',
     )?.value).toBe(eligibilityVersionId);
+  });
+
+  it("renders one focused step and keeps document requirements in the application form", async () => {
+    optionState.pending = false;
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+
+    await act(async () => {
+      root?.render(<FundingCallForm call={call} onSubmit={vi.fn()} />);
+    });
+
+    expect(container.textContent).toContain("Basic information");
+    expect(container.textContent).not.toContain("Funding details");
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>(
+        '[aria-label^="Application,"]',
+      )?.click();
+    });
+
+    expect(container.textContent).toContain(
+      "required document uploads are defined by this Application Form Version",
+    );
+    expect(container.querySelector('[name="requiredDocuments"]')).toBeNull();
+    expect(container.textContent).not.toContain("Basic information");
+  });
+
+  it("shows funding amounts in fixed Namibian dollars", async () => {
+    optionState.pending = false;
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+
+    await act(async () => {
+      root?.render(<FundingCallForm call={call} onSubmit={vi.fn()} />);
+    });
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>(
+        '[aria-label^="Funding,"]',
+      )?.click();
+    });
+
+    expect(container.textContent).toContain("All amounts are in Namibian dollars");
+    expect(container.textContent?.match(/N\$/g)).toHaveLength(3);
   });
 });

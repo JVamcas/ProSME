@@ -41,8 +41,16 @@ export default async function FundingCallPage({
     >
       <FundingCallEditor
         canApprove={can(user, permissionCodes.fundingCallApproveAll)}
-        canReturn={can(user, permissionCodes.fundingCallReturnAll)}
-        canUpdate={can(user, permissionCodes.fundingCallUpdate)}
+        canArchive={can(user, permissionCodes.fundingCallArchive)}
+        canReturn={can(user, permissionCodes.fundingCallApproveAll)}
+        canResume={can(user, permissionCodes.fundingCallResume)}
+        canSubmit={
+          can(user, permissionCodes.fundingCallCreate)
+          || can(user, permissionCodes.fundingCallEditDraft)
+        }
+        canSuspend={can(user, permissionCodes.fundingCallSuspend)}
+        canUpdate={can(user, permissionCodes.fundingCallEditDraft)}
+        canWithdraw={can(user, permissionCodes.fundingCallWithdraw)}
         canWithdrawOwnRequest={can(
           user,
           permissionCodes.fundingCallApprovalRequestOwnWithdraw,

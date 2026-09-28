@@ -64,27 +64,17 @@ const staticPermissionCatalogue: readonly PermissionDefinition[] = [
   define(
     permissionCodes.fundingCallCreate,
     "Create funding calls",
-    "Create funding calls.",
+    "Create draft funding calls and submit them for approval.",
   ),
   define(
-    permissionCodes.fundingCallUpdate,
-    "Update funding calls",
-    "Update funding calls.",
-  ),
-  define(
-    permissionCodes.fundingCallSubmitAll,
-    "Submit funding calls",
-    "Submit any draft funding call for governance approval.",
+    permissionCodes.fundingCallEditDraft,
+    "Edit draft funding calls",
+    "Edit draft funding calls and resubmit drafts returned for amendment.",
   ),
   define(
     permissionCodes.fundingCallApproveAll,
-    "Approve funding calls",
-    "Approve any pending funding call subject to maker-checker policy.",
-  ),
-  define(
-    permissionCodes.fundingCallReturnAll,
-    "Return funding calls",
-    "Return any pending funding call to draft with a reason.",
+    "Review funding calls",
+    "Approve or return pending funding calls subject to maker-checker policy.",
   ),
   define(
     permissionCodes.fundingCallApprovalRequestOwnWithdraw,
@@ -95,6 +85,26 @@ const staticPermissionCatalogue: readonly PermissionDefinition[] = [
     permissionCodes.fundingCallPublish,
     "Publish funding calls",
     "Publish funding calls.",
+  ),
+  define(
+    permissionCodes.fundingCallSuspend,
+    "Suspend funding calls",
+    "Suspend a Scheduled or Live funding call with a reason.",
+  ),
+  define(
+    permissionCodes.fundingCallResume,
+    "Resume funding calls",
+    "Resume a suspended funding call according to its effective dates.",
+  ),
+  define(
+    permissionCodes.fundingCallWithdraw,
+    "Withdraw funding calls",
+    "Permanently withdraw a published funding call with a reason.",
+  ),
+  define(
+    permissionCodes.fundingCallArchive,
+    "Archive funding calls",
+    "Archive a Closed or Withdrawn funding call.",
   ),
   define(
     permissionCodes.fundingCallDelete,

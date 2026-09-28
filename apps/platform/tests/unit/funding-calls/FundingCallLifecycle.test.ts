@@ -25,8 +25,7 @@ describe("funding call lifecycle", () => {
     ["APPROVAL_PENDING", "RETURN_FOR_AMENDMENT", "DRAFT"],
     ["APPROVAL_PENDING", "WITHDRAW_APPROVAL_REQUEST", "DRAFT"],
     ["APPROVAL_PENDING", "APPROVE", "APPROVED"],
-    ["DRAFT", "PUBLISH", "LIVE"],
-    ["APPROVED", "WITHDRAW", "WITHDRAWN"],
+    ["APPROVED", "PUBLISH", "LIVE"],
     ["SCHEDULED", "OPEN", "LIVE"],
     ["SCHEDULED", "SUSPEND", "SUSPENDED"],
     ["SCHEDULED", "WITHDRAW", "WITHDRAWN"],
@@ -53,8 +52,7 @@ describe("funding call lifecycle", () => {
       "APPROVAL_PENDING:RETURN_FOR_AMENDMENT",
       "APPROVAL_PENDING:WITHDRAW_APPROVAL_REQUEST",
       "APPROVAL_PENDING:APPROVE",
-      "DRAFT:PUBLISH",
-      "APPROVED:WITHDRAW",
+      "APPROVED:PUBLISH",
       "SCHEDULED:OPEN",
       "SCHEDULED:SUSPEND",
       "SCHEDULED:WITHDRAW",
@@ -80,14 +78,22 @@ describe("funding call lifecycle", () => {
 
   it("publishes to Scheduled before opening and denies expired publication", () => {
     expect(resolveFundingCallTransition(
-      source("DRAFT"),
+      source("APPROVED"),
       "PUBLISH",
       new Date("2026-09-30T23:59:59.000Z"),
     ).targetStatus).toBe("SCHEDULED");
     expect(() => resolveFundingCallTransition(
-      source("DRAFT"),
+      source("APPROVED"),
       "PUBLISH",
       closesAt,
+    )).toThrow(FundingCallTransitionDeniedError);
+  });
+
+  it("denies publishing a draft before governance approval", () => {
+    expect(() => resolveFundingCallTransition(
+      source("DRAFT"),
+      "PUBLISH",
+      insideWindow,
     )).toThrow(FundingCallTransitionDeniedError);
   });
 

@@ -21,11 +21,13 @@ export function FundingCallGovernanceActions({
   call,
   canApprove,
   canReturn,
+  canSubmit,
   canWithdrawOwnRequest,
 }: {
   call: FundingCallView;
   canApprove: boolean;
   canReturn: boolean;
+  canSubmit: boolean;
   canWithdrawOwnRequest: boolean;
 }) {
   const governance = useChangeFundingCallGovernanceStatus(call.id);
@@ -37,6 +39,10 @@ export function FundingCallGovernanceActions({
 
   const approve = () => governance.mutate({
     command: "APPROVE",
+    expectedRowVersion: call.rowVersion,
+  });
+  const submitForApproval = () => governance.mutate({
+    command: "SUBMIT_FOR_APPROVAL",
     expectedRowVersion: call.rowVersion,
   });
   const withdraw = () => governance.mutate({
@@ -58,17 +64,26 @@ export function FundingCallGovernanceActions({
     setReturnDialogOpen(false);
   };
 
-  if (
-    call.status !== "APPROVAL_PENDING"
-    || (!canApprove && !canReturn && !canWithdrawOwnRequest)
-  ) {
+  const canActOnDraft = call.status === "DRAFT" && canSubmit;
+  const canActOnPending = call.status === "APPROVAL_PENDING"
+    && (canApprove || canReturn || canWithdrawOwnRequest);
+  if (!canActOnDraft && !canActOnPending) {
     return null;
   }
 
   return (
     <section className="space-y-3 rounded-lg border border-slate-200 bg-white p-4">
       <div className="flex flex-wrap gap-3">
-        {canApprove ? (
+        {canActOnDraft ? (
+          <GeneralButton
+            disabled={governance.isPending}
+            onClick={submitForApproval}
+            type="button"
+          >
+            {governance.isPending ? "Submitting…" : "Submit for approval"}
+          </GeneralButton>
+        ) : null}
+        {call.status === "APPROVAL_PENDING" && canApprove ? (
           <GeneralButton
             disabled={governance.isPending}
             onClick={approve}
@@ -77,7 +92,7 @@ export function FundingCallGovernanceActions({
             {governance.isPending ? "Processing…" : "Approve"}
           </GeneralButton>
         ) : null}
-        {canWithdrawOwnRequest ? (
+        {call.status === "APPROVAL_PENDING" && canWithdrawOwnRequest ? (
           <GeneralButton
             disabled={governance.isPending}
             onClick={withdraw}
@@ -87,7 +102,7 @@ export function FundingCallGovernanceActions({
             Withdraw approval request
           </GeneralButton>
         ) : null}
-        {canReturn ? (
+        {call.status === "APPROVAL_PENDING" && canReturn ? (
           <GeneralButton
             disabled={governance.isPending}
             onClick={() => setReturnDialogOpen(true)}

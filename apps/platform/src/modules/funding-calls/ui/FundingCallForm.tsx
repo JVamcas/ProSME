@@ -1,16 +1,20 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { FormProvider, useForm, useWatch } from "react-hook-form";
+import { useState } from "react";
+import {
+  FormProvider,
+  useForm,
+  useWatch,
+  type FieldPath,
+  type FieldValues,
+} from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
-import { GeneralButton, GeneralButtonLink } from "@/components/ui/button";
-import { FormDateTimeInput } from "@/components/ui/form-date-time-input";
-import { FormInput, FormSelect } from "@/components/ui/form-fields";
-import { MoneyField } from "@/components/ui/money-field";
+import { GeneralButton } from "@/components/ui/button";
+import { StepProgress } from "@/components/ui/step-progress";
 import { toInputDateTimeLocal } from "@/lib/dateUtils";
-import { FormRichTextField } from "@/shared/ui/FormRichTextField";
 import {
   fundingCallCreateSchema,
   fundingCallDescriptionSchema,
@@ -22,11 +26,22 @@ import {
   useBindableEligibilityRuleSetVersions,
   useBindableWorkflowTemplateVersions,
 } from "../FundingCallHooks";
+import {
+  ApplicationStep,
+  BasicsStep,
+  EligibilityStep,
+  FundingStep,
+  fundingCallSteps,
+  type FundingCallStepId,
+  PublicContentStep,
+  ScheduleStep,
+  WorkflowStep,
+} from "./FundingCallFormSteps";
+import { FundingCallReviewStep } from "./FundingCallReviewStep";
 
 const localMoneySchema = z
   .union([z.number().nonnegative(), z.string().trim().min(1)])
   .transform(String);
-
 const localOptionalVersionId = z
   .union([z.literal(""), z.uuid()])
   .transform((value) => value || null);
@@ -57,6 +72,28 @@ const localFormSchema = z.object({
 
 type LocalFormInput = z.input<typeof localFormSchema>;
 type LocalFormOutput = z.output<typeof localFormSchema>;
+
+const stepFields: Record<
+  Exclude<FundingCallStepId, "review">,
+  FieldPath<LocalFormInput>[]
+> = {
+  application: ["formVersionId", "applicationDuplicatePolicy"],
+  basics: ["title", "description", "fundingInstrument", "thematicArea"],
+  eligibility: ["eligibilityRuleSetVersionId"],
+  funding: [
+    "totalBudgetEnvelope",
+    "minimumGrantAmount",
+    "maximumGrantAmount",
+  ],
+  publicContent: [
+    "eligibilitySummary",
+    "publicContactName",
+    "publicContactEmail",
+    "publicContactPhone",
+  ],
+  schedule: ["opensAt", "closesAt"],
+  workflow: ["workflowTemplateVersionId"],
+};
 
 function defaults(call?: FundingCallView): LocalFormInput {
   return {
@@ -90,11 +127,18 @@ function createPublicIdentifiers(title: string) {
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-|-$/g, "") || "funding-call";
   const uniqueSegment = crypto.randomUUID().slice(0, 8);
-
   return {
     reference: `${titleSegment.slice(0, 71).toUpperCase()}-${uniqueSegment.toUpperCase()}`,
     slug: `${titleSegment.slice(0, 111)}-${uniqueSegment}`,
   };
+}
+
+function firstInvalidStep(errors: FieldValues): FundingCallStepId {
+  const invalidField = Object.keys(errors)[0];
+  const entry = Object.entries(stepFields).find(([, fields]) =>
+    fields.includes(invalidField as FieldPath<LocalFormInput>),
+  );
+  return (entry?.[0] as FundingCallStepId | undefined) ?? "basics";
 }
 
 export function FundingCallForm({
@@ -106,6 +150,8 @@ export function FundingCallForm({
   disabled?: boolean;
   onSubmit: (input: FundingCallCreateInput) => Promise<void>;
 }) {
+  const [currentStep, setCurrentStep] = useState<FundingCallStepId>("basics");
+  const [completedSteps, setCompletedSteps] = useState<FundingCallStepId[]>([]);
   const eligibilityVersions = useBindableEligibilityRuleSetVersions();
   const formVersions = useBindableApplicationFormVersions();
   const workflowVersions = useBindableWorkflowTemplateVersions();
@@ -118,201 +164,183 @@ export function FundingCallForm({
     control: form.control,
     name: "eligibilityRuleSetVersionId",
   });
+  const formVersionId = useWatch({
+    control: form.control,
+    name: "formVersionId",
+  });
+  const workflowVersionId = useWatch({
+    control: form.control,
+    name: "workflowTemplateVersionId",
+  });
   const selectedEligibility = eligibilityVersions.data?.find(
     (version) => version.versionId === eligibilityVersionId,
   );
-  const submit = form.handleSubmit(async (values) => {
-    try {
-      const identifiers = call
-        ? { reference: call.reference, slug: call.slug }
-        : createPublicIdentifiers(values.title);
-      const input = fundingCallCreateSchema.parse({
-        ...values,
-        closesAt: new Date(values.closesAt).toISOString(),
-        ...identifiers,
-        opensAt: new Date(values.opensAt).toISOString(),
-      });
-      await onSubmit(input);
-    } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Unable to save the funding call.",
+  const selectedForm = formVersions.data?.find(
+    (version) => version.versionId === formVersionId,
+  );
+  const selectedWorkflow = workflowVersions.data?.find(
+    (version) => version.versionId === workflowVersionId,
+  );
+
+  const submit = form.handleSubmit(
+    async (values) => {
+      try {
+        const identifiers = call
+          ? { reference: call.reference, slug: call.slug }
+          : createPublicIdentifiers(values.title);
+        const input = fundingCallCreateSchema.parse({
+          ...values,
+          closesAt: new Date(values.closesAt).toISOString(),
+          ...identifiers,
+          opensAt: new Date(values.opensAt).toISOString(),
+        });
+        await onSubmit(input);
+      } catch (error) {
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Unable to save the funding call.",
+        );
+      }
+    },
+    (errors) => {
+      setCurrentStep(firstInvalidStep(errors));
+      toast.error("Review the highlighted fields before saving the Draft.");
+    },
+  );
+  const currentIndex = fundingCallSteps.findIndex(
+    (step) => step.id === currentStep,
+  );
+
+  async function continueToNextStep() {
+    if (currentStep === "review") return;
+    const valid = await form.trigger(stepFields[currentStep], {
+      shouldFocus: true,
+    });
+    if (!valid) return;
+    setCompletedSteps((current) =>
+      current.includes(currentStep) ? current : [...current, currentStep],
+    );
+    setCurrentStep(fundingCallSteps[currentIndex + 1].id);
+  }
+
+  function renderStep() {
+    if (currentStep === "basics") return <BasicsStep disabled={disabled} />;
+    if (currentStep === "funding") return <FundingStep />;
+    if (currentStep === "schedule") return <ScheduleStep opensAt={opensAt} />;
+    if (currentStep === "application") {
+      return (
+        <ApplicationStep
+          disabled={disabled}
+          loading={formVersions.isPending}
+          options={(formVersions.data ?? []).map((version) => ({
+            label: `${version.formName} — version ${version.versionNumber} · ${version.status ?? "PUBLISHED"}`,
+            value: version.versionId,
+          }))}
+        />
       );
     }
-  });
+    if (currentStep === "eligibility") {
+      return (
+        <EligibilityStep
+          configureHref={
+            call && selectedEligibility
+              && call.eligibilityRuleSetVersionId === selectedEligibility.versionId
+              ? `/admin/settings/eligibility-rulesets/${selectedEligibility.ruleSetId}`
+              : undefined
+          }
+          disabled={disabled}
+          loading={eligibilityVersions.isPending}
+          options={(eligibilityVersions.data ?? []).map((version) => ({
+            label: `${version.ruleSetName} — version ${version.versionNumber} · ${version.status}`,
+            value: version.versionId,
+          }))}
+        />
+      );
+    }
+    if (currentStep === "workflow") {
+      return (
+        <WorkflowStep
+          disabled={disabled}
+          loading={workflowVersions.isPending}
+          options={(workflowVersions.data ?? []).map((version) => ({
+            label: `${version.name} — version ${version.versionNumber} · ${version.status}`,
+            value: version.versionId,
+          }))}
+        />
+      );
+    }
+    if (currentStep === "publicContent") return <PublicContentStep />;
+    return (
+      <FundingCallReviewStep
+        eligibility={{
+          id: selectedEligibility?.versionId ?? null,
+          label: selectedEligibility
+            ? `${selectedEligibility.ruleSetName} — version ${selectedEligibility.versionNumber} · ${selectedEligibility.status}`
+            : "Not selected",
+        }}
+        formVersion={{
+          id: selectedForm?.versionId ?? null,
+          label: selectedForm
+            ? `${selectedForm.formName} — version ${selectedForm.versionNumber} · ${selectedForm.status ?? "PUBLISHED"}`
+            : "Not selected",
+        }}
+        workflow={{
+          id: selectedWorkflow?.versionId ?? null,
+          label: selectedWorkflow
+            ? `${selectedWorkflow.name} — version ${selectedWorkflow.versionNumber} · ${selectedWorkflow.status}`
+            : "Not selected",
+        }}
+      />
+    );
+  }
 
   return (
     <FormProvider {...form}>
-      <form className="w-full max-w-6xl space-y-6" onSubmit={submit}>
-        <fieldset className="grid gap-4 md:grid-cols-2" disabled={disabled}>
-          <FormInput
-            containerClassName="md:col-span-2"
-            label="Title"
-            name="title"
-            required
+      <form className="w-full max-w-6xl" onSubmit={submit}>
+        <div className="overflow-hidden rounded-2xl border border-brand-navy/15 bg-white shadow-sm">
+          <StepProgress
+            ariaLabel="Funding call sections"
+            className="border-b border-brand-navy/10 px-5 py-5"
+            completedStepIds={completedSteps}
+            currentStepId={currentStep}
+            disabled={form.formState.isSubmitting}
+            hideLabelsOnMobile
+            onStepChange={setCurrentStep}
+            steps={fundingCallSteps}
           />
-
-          <FormSelect
-            containerClassName="md:col-span-2"
-            infoTooltip="Controls whether this call accepts one application per applicant, one per represented business, or multiple applications."
-            items={[
-              { label: "One per represented business", value: "one_per_business" },
-              { label: "One per applicant", value: "one_per_applicant" },
-              { label: "Multiple applications allowed", value: "none" },
-            ]}
-            label="Application limit"
-            name="applicationDuplicatePolicy"
-          />
-
-          <FormRichTextField
-            className="md:col-span-2"
+          <fieldset
+            className="grid min-h-[24rem] gap-4 p-5 sm:p-8 md:grid-cols-2"
             disabled={disabled}
-            label="Description"
-            name="description"
-            required
-          />
-
-          <FormSelect
-            key={
-              workflowVersions.isPending ? "workflow-loading" : "workflow-ready"
-            }
-            containerClassName="md:col-span-2"
-            disabled={disabled || workflowVersions.isPending}
-            infoTooltip="Draft calls may bind draft or published workflows for configuration and testing. The workflow must be published before the funding call can be published."
-            items={(workflowVersions.data ?? []).map((version) => ({
-              label: `${version.name} — version ${version.versionNumber} · ${version.status}`,
-              value: version.versionId,
-            }))}
-            label="Workflow template version"
-            name="workflowTemplateVersionId"
-            placeholder={
-              workflowVersions.isPending
-                ? "Loading workflow versions…"
-                : "Select a workflow template version"
-            }
-          />
-
-          <FormSelect
-            key={formVersions.isPending ? "form-loading" : "form-ready"}
-            containerClassName="md:col-span-2"
-            disabled={disabled || formVersions.isPending}
-            infoTooltip="Draft calls may bind draft or published forms for configuration and testing. The form must be published before the funding call can be published."
-            items={(formVersions.data ?? []).map((version) => ({
-              label: `${version.formName} — version ${version.versionNumber} · ${version.status ?? "PUBLISHED"}`,
-              value: version.versionId,
-            }))}
-            label="Application form version"
-            name="formVersionId"
-            placeholder={
-              formVersions.isPending
-                ? "Loading form versions…"
-                : "Select a form version"
-            }
-          />
-
-          <FormSelect
-            key={
-              eligibilityVersions.isPending
-                ? "eligibility-loading"
-                : "eligibility-ready"
-            }
-            containerClassName="md:col-span-2"
-            disabled={disabled || eligibilityVersions.isPending}
-            infoTooltip="Draft calls may bind draft or published rulesets for configuration and testing. The ruleset must be published before the funding call can be published."
-            items={(eligibilityVersions.data ?? []).map((version) => ({
-              label: `${version.ruleSetName} — version ${version.versionNumber} · ${version.status}`,
-              value: version.versionId,
-            }))}
-            label="Eligibility ruleset"
-            name="eligibilityRuleSetVersionId"
-            placeholder={
-              eligibilityVersions.isPending
-                ? "Loading eligibility rulesets…"
-                : "Select an eligibility ruleset"
-            }
-          />
-
-          {call &&
-          selectedEligibility &&
-          call.eligibilityRuleSetVersionId === selectedEligibility.versionId ? (
-            <div className="md:col-span-2">
-              <GeneralButtonLink
-                size={"compact"}
-                href={`/admin/settings/eligibility-rulesets/${selectedEligibility.ruleSetId}`}
-                variant="outlineOrange"
-              >
-                Configure eligibility ruleset
-              </GeneralButtonLink>
-            </div>
-          ) : null}
-
-          <FormInput
-            infoTooltip="The type of financial support offered, such as a grant, loan, or guarantee."
-            label="Funding instrument"
-            name="fundingInstrument"
-          />
-
-          <FormInput
-            infoTooltip="The sector or priority area this funding call supports, such as agriculture, tourism, or digital innovation."
-            label="Thematic area"
-            name="thematicArea"
-          />
-
-          <MoneyField
-            containerClassName="md:col-span-2"
-            label="Total budget envelope"
-            name="totalBudgetEnvelope"
-            required
-          />
-
-          <MoneyField
-            label="Minimum grant amount"
-            name="minimumGrantAmount"
-            required
-          />
-
-          <MoneyField
-            label="Maximum grant amount"
-            name="maximumGrantAmount"
-            required
-          />
-
-          <FormDateTimeInput
-            label="Opening date and time"
-            name="opensAt"
-            required
-          />
-
-          <FormDateTimeInput
-            label="Closing date and time"
-            minValue={opensAt}
-            name="closesAt"
-            required
-          />
-
-          <FormInput label="Public contact name" name="publicContactName" />
-
-          <FormInput
-            label="Public contact email"
-            name="publicContactEmail"
-            type="email"
-          />
-
-          <FormInput
-            containerClassName="md:col-span-2"
-            label="Public contact phone"
-            name="publicContactPhone"
-          />
-        </fieldset>
-
-        <div className="flex justify-end">
-          <GeneralButton
-            disabled={disabled || form.formState.isSubmitting}
-            type="submit"
           >
-            {form.formState.isSubmitting ? "Saving…" : "Save"}
-          </GeneralButton>
+            {renderStep()}
+          </fieldset>
+          <div className="flex items-center justify-between border-t border-brand-navy/10 px-5 py-4 sm:px-8">
+            <GeneralButton
+              disabled={currentIndex === 0 || form.formState.isSubmitting}
+              onClick={() => setCurrentStep(fundingCallSteps[currentIndex - 1].id)}
+              type="button"
+              variant="outline"
+            >
+              Back
+            </GeneralButton>
+            {currentStep === "review" ? (
+              <GeneralButton
+                disabled={disabled || form.formState.isSubmitting}
+                type="submit"
+              >
+                {form.formState.isSubmitting ? "Saving…" : "Save Draft"}
+              </GeneralButton>
+            ) : (
+              <GeneralButton
+                disabled={form.formState.isSubmitting}
+                onClick={() => void continueToNextStep()}
+                type="button"
+              >
+                Continue
+              </GeneralButton>
+            )}
+          </div>
         </div>
       </form>
     </FormProvider>
