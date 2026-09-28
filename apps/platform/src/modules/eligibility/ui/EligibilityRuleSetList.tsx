@@ -14,9 +14,9 @@ import { GeneralButton } from "@/components/ui/button";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
 import { DraggableDialog } from "@/components/ui/draggable-dialog";
+import { Pagination } from "@/components/ui/pagination";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatLocalDateTime24 } from "@/lib/dateUtils";
-import { DataTablePagination } from "@/shared/ui/DataTablePagination";
 import type { EligibilityRuleSetSummary } from "../api/EligibilityRuleSetTransport";
 import {
   useCreateEligibilityRuleSet,
@@ -209,17 +209,20 @@ export function EligibilityRuleSetList({
             : (query.error?.message ?? "No eligibility rulesets configured.")
         }
         footer={
-          <DataTablePagination
+          <Pagination
             disabled={query.isFetching}
-            onPageChange={setPage}
+            hasNextPage={
+              (query.data?.page ?? page) < (query.data?.totalPages ?? 0)
+            }
+            onNext={() => setPage((query.data?.page ?? page) + 1)}
             onPageSizeChange={(value) => {
               setPageSize(value);
               setPage(1);
             }}
+            onPrevious={() => setPage((query.data?.page ?? page) - 1)}
             page={query.data?.page ?? page}
             pageSize={query.data?.pageSize ?? pageSize}
             total={query.data?.total ?? 0}
-            totalPages={query.data?.totalPages ?? 0}
           />
         }
         rowKey={(ruleset) => ruleset.versionId}

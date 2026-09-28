@@ -108,6 +108,31 @@ describe("workflow action policy", () => {
     ).available).toBe(true);
   });
 
+  it("blocks a stage decision until contributing tasks are complete", () => {
+    const waitingTask = {
+      ...target(),
+      task: { ...target().task, prerequisitesComplete: false },
+    };
+
+    expect(evaluateWorkflowActionPolicy(
+      actor(permissionCodes.workflowTaskAssignedDecide),
+      waitingTask,
+      permittedInputs,
+    )).toEqual({
+      available: false,
+      reason: "INVALID_STATE",
+      unavailableReason:
+        "Complete all contributing tasks before making the stage decision.",
+    });
+
+    waitingTask.task.prerequisitesComplete = true;
+    expect(evaluateWorkflowActionPolicy(
+      actor(permissionCodes.workflowTaskAssignedDecide),
+      waitingTask,
+      permittedInputs,
+    ).available).toBe(true);
+  });
+
   it("permits an assigned pending task without a claim step", () => {
     const pendingTask = {
       ...target(),

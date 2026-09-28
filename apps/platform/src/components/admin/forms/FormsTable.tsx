@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
 import { GeneralButton } from "@/components/ui/button";
+import { Pagination } from "@/components/ui/pagination";
 import { formPurposeOptions } from "@/modules/forms/FormTypes";
 import type { FormDefinitionSummary } from "@/modules/forms/FormTypes";
 import {
@@ -15,7 +16,6 @@ import {
 } from "@/components/ui/action-buttons";
 import { formatLocalDateTime24 } from "@/lib/dateUtils";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { DataTablePagination } from "@/shared/ui/DataTablePagination";
 import { FormVersionsTable } from "@/modules/forms/ui/FormVersionsTable";
 
 export type FormTablePendingAction = {
@@ -223,14 +223,15 @@ export function FormsTable({
               {errorMessage}
             </p>
           ) : null}
-          <DataTablePagination
+          <Pagination
             disabled={loading}
-            onPageChange={onPageChange}
+            hasNextPage={page < totalPages}
+            onNext={() => onPageChange(page + 1)}
             onPageSizeChange={onPageSizeChange}
+            onPrevious={() => onPageChange(page - 1)}
             page={page}
             pageSize={pageSize}
             total={total}
-            totalPages={totalPages}
           />
         </div>
       )}

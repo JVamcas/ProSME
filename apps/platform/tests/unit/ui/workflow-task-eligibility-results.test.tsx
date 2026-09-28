@@ -135,6 +135,15 @@ function workflowAction(
 }
 
 describe("task eligibility results", () => {
+  it("shows the persisted pending task status consistently", () => {
+    const markup = renderToStaticMarkup(
+      <WorkflowTaskReviewPanel task={task} />,
+    );
+
+    expect(markup).toContain("Pending");
+    expect(markup).not.toContain("In progress");
+  });
+
   it("shows a bound form as one section without a separate eligibility card", () => {
     const markup = renderToStaticMarkup(
       <WorkflowTaskReviewPanel task={task} />,

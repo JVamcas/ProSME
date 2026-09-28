@@ -15,6 +15,14 @@ export const workflowStageAggregationFormSchema = z.object({
 });
 
 export const workflowStageScoringCriterionFormSchema = z.object({
+  stableKey: z.string()
+    .trim()
+    .min(2, "Stable key is required.")
+    .max(80)
+    .regex(
+      /^[A-Z][A-Z0-9_]*$/,
+      "Use uppercase letters, numbers, and underscores, starting with a letter.",
+    ),
   criterion: z.string().trim().min(2).max(160),
   description: z.string().trim().max(1000),
   weight: z.number().positive().max(100),

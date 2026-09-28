@@ -4,7 +4,6 @@ import { workflowTaskSchema } from "./WorkflowTaskSchemas";
 
 import { workflowStatuses } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import { workflowPublicStatuses } from "@/modules/workflows/domain/definitions/WorkflowStageDefinition";
-import { isWorkflowStageDecisionAction } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
 import { workflowActionDefinitionSchema } from "@/modules/workflows/domain/actions/WorkflowActionSchemas";
 import { workflowTransitionSchema } from "@/modules/workflows/domain/transitions/WorkflowTransitionSchemas";
 import { validateWorkflowTransitions } from "@/modules/workflows/domain/transitions/WorkflowTransitionValidation";
@@ -59,6 +58,7 @@ export const workflowStageCommentFieldSchema = z
 export const workflowStageDocumentRequirementSchema = z
   .object({
     id: z.string().uuid().optional(),
+    stableKey: codeSchema,
     taskStableKey: codeSchema,
     name: z.string().trim().min(2).max(160),
     mandatory: z.boolean(),
@@ -82,6 +82,7 @@ export const workflowStageDocumentRequirementSchema = z
 export const workflowStageScoringCriterionSchema = z
   .object({
     id: z.string().uuid().optional(),
+    stableKey: codeSchema,
     criterion: z.string().trim().min(2).max(160),
     description: z.string().trim().max(1000),
     weight: z.number().positive().max(100),
@@ -108,6 +109,15 @@ export const workflowStageScoringSchema = z
   })
   .strict()
   .superRefine((scoring, context) => {
+    const stableKeys = scoring.criteria.map((criterion) => criterion.stableKey);
+    if (new Set(stableKeys).size !== stableKeys.length) {
+      context.addIssue({
+        code: "custom",
+        message:
+          "Scoring criterion stable keys must be unique within the stage.",
+        path: ["criteria"],
+      });
+    }
     const criterionNames = scoring.criteria.map((criterion) =>
       criterion.criterion.toLowerCase(),
     );
@@ -219,6 +229,17 @@ export const workflowStageSchema = z
     const documentNames = stage.documentRequirements.map((requirement) =>
       requirement.name.toLowerCase(),
     );
+    const documentKeys = stage.documentRequirements.map(
+      (requirement) => requirement.stableKey,
+    );
+    if (new Set(documentKeys).size !== documentKeys.length) {
+      context.addIssue({
+        code: "custom",
+        message:
+          "Document requirement stable keys must be unique within the stage.",
+        path: ["documentRequirements"],
+      });
+    }
     if (new Set(documentNames).size !== documentNames.length) {
       context.addIssue({
         code: "custom",
@@ -250,27 +271,6 @@ export const workflowStageSchema = z
           });
         }
       });
-      const decisionActions = task.actionKeys.filter((actionKey) => {
-        const action = actionsByKey.get(actionKey);
-        return action
-          ? isWorkflowStageDecisionAction(action.actionType)
-          : false;
-      });
-      if (task.taskType === "CONTRIBUTING" && decisionActions.length) {
-        context.addIssue({
-          code: "custom",
-          message:
-            "Stage-decision actions cannot be attached to a contributing task.",
-          path: ["tasks", taskIndex, "actionKeys"],
-        });
-      }
-      if (task.taskType === "STAGE_DECISION" && !decisionActions.length) {
-        context.addIssue({
-          code: "custom",
-          message: "A stage-decision task requires a stage-decision action.",
-          path: ["tasks", taskIndex, "actionKeys"],
-        });
-      }
     });
   });
 

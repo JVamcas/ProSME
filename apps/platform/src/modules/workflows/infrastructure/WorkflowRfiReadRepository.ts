@@ -7,6 +7,7 @@ import type {
   WorkflowRfiDetail,
   WorkflowRfiSummary,
 } from "../domain/runtime/WorkflowRfiView";
+import { sanitizeWorkflowRfiInstructions } from "./WorkflowRfiInstructions";
 
 type SummaryRow = Omit<
   WorkflowRfiSummary,
@@ -19,11 +20,7 @@ type SummaryRow = Omit<
 
 type DetailRow = Omit<
   WorkflowRfiDetail,
-  | "closedAt"
-  | "createdAt"
-  | "deadlineAt"
-  | "expiredAt"
-  | "respondedAt"
+  "closedAt" | "createdAt" | "deadlineAt" | "expiredAt" | "respondedAt"
 > & {
   closedAt: Date | string | null;
   createdAt: Date | string;
@@ -54,6 +51,7 @@ function mapSummary(row: SummaryRow): WorkflowRfiSummary {
     ...row,
     createdAt: new Date(row.createdAt).toISOString(),
     deadlineAt: new Date(row.deadlineAt).toISOString(),
+    instructions: sanitizeWorkflowRfiInstructions(row.instructions),
     respondedAt: row.respondedAt
       ? new Date(row.respondedAt).toISOString()
       : null,
@@ -261,11 +259,13 @@ export function readOwnedWorkflowRfi(input: {
   ownerUserId: string;
   requestInformationId: string;
 }) {
-  return readDetail(scopeCondition({
-    actorId: input.ownerUserId,
-    applicationId: input.applicationId,
-    requestInformationId: input.requestInformationId,
-  }));
+  return readDetail(
+    scopeCondition({
+      actorId: input.ownerUserId,
+      applicationId: input.applicationId,
+      requestInformationId: input.requestInformationId,
+    }),
+  );
 }
 
 export function readTaskWorkflowRfi(input: {

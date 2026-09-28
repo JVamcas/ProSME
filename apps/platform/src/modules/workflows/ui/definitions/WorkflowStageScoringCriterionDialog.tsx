@@ -35,6 +35,7 @@ export function WorkflowStageScoringCriterionDialog({
   const criteria = stage.scoring?.criteria ?? [];
   const form = useForm<WorkflowStageScoringCriterionFormValues>({
     defaultValues: {
+      stableKey: criterion?.stableKey ?? "",
       criterion: criterion?.criterion ?? "",
       description: criterion?.description ?? "",
       mandatoryComment: criterion?.mandatoryComment ?? false,
@@ -46,6 +47,16 @@ export function WorkflowStageScoringCriterionDialog({
   });
 
   const submit = form.handleSubmit(async (values) => {
+    const duplicateKey = criteria.some(
+      (item) => item.stableKey === values.stableKey
+        && item.stableKey !== criterion?.stableKey,
+    );
+    if (duplicateKey) {
+      form.setError("stableKey", {
+        message: "Stable key must be unique in this stage.",
+      });
+      return;
+    }
     const duplicateName = criteria.some(
       (item) =>
         item.criterion.toLowerCase() === values.criterion.toLowerCase()
@@ -95,6 +106,15 @@ export function WorkflowStageScoringCriterionDialog({
     >
       <FormProvider {...form}>
         <form className="grid gap-4 sm:grid-cols-2" onSubmit={submit}>
+          <FormInput
+            containerClassName="sm:col-span-2"
+            disabled={Boolean(criterion)}
+            infoTooltip="Immutable identifier used by conditions and runtime context."
+            label="Stable key"
+            name="stableKey"
+            placeholder="BUSINESS_VIABILITY"
+            required
+          />
           <FormInput
             containerClassName="sm:col-span-2"
             label="Criterion"

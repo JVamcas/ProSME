@@ -96,6 +96,7 @@ function versionView(version: {
   status: FormVersionSummary["status"];
   displayMode: FormVersionSummary["displayMode"];
   instructions: string | null;
+  submissionMode: FormVersionSummary["submissionMode"];
   submitLabel: string;
   rowVersion: number;
   createdAt: Date;
@@ -110,6 +111,7 @@ function versionView(version: {
     instructions: version.instructions,
     rowVersion: version.rowVersion,
     status: version.status,
+    submissionMode: version.submissionMode,
     submitLabel: version.submitLabel,
     versionNumber: version.versionNumber,
     createdAt: toRequiredIso(version.createdAt),

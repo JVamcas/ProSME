@@ -43,6 +43,7 @@ export function WorkflowStageDocumentRequirementDialog({
       mandatory: requirement?.mandatory ?? true,
       maximumSizeMb: requirement?.maximumSizeMb ?? 10,
       name: requirement?.name ?? "",
+      stableKey: requirement?.stableKey ?? "",
       requestOnStageActivation:
         requirement?.requestOnStageActivation ?? false,
       taskStableKey: requirement?.taskStableKey ?? "",
@@ -56,6 +57,16 @@ export function WorkflowStageDocumentRequirementDialog({
   });
 
   const submit = form.handleSubmit(async (values) => {
+    const duplicateKey = stage.documentRequirements.some(
+      (item) => item.stableKey === values.stableKey
+        && item.stableKey !== requirement?.stableKey,
+    );
+    if (duplicateKey) {
+      form.setError("stableKey", {
+        message: "Stable key must be unique in this stage.",
+      });
+      return;
+    }
     const duplicateName = stage.documentRequirements.some(
       (item) =>
         item.name.toLowerCase() === values.name.toLowerCase()
@@ -104,6 +115,15 @@ export function WorkflowStageDocumentRequirementDialog({
     >
       <FormProvider {...form}>
         <form className="grid gap-4 sm:grid-cols-2" onSubmit={submit}>
+          <FormInput
+            containerClassName="sm:col-span-2"
+            disabled={Boolean(requirement)}
+            infoTooltip="Immutable identifier used by conditions and runtime context."
+            label="Stable key"
+            name="stableKey"
+            placeholder="TAX_CLEARANCE_CERTIFICATE"
+            required
+          />
           <FormInput
             containerClassName="sm:col-span-2"
             label="Document name"

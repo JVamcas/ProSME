@@ -2,6 +2,9 @@ ALTER TABLE app_stage_task_definitions
   ADD COLUMN task_type text NOT NULL DEFAULT 'CONTRIBUTING'
   CHECK (task_type IN ('CONTRIBUTING', 'STAGE_DECISION'));
 --> statement-breakpoint
+ALTER TABLE app_stage_task_definitions
+  DISABLE TRIGGER app_stage_tasks_immutable;
+--> statement-breakpoint
 WITH decision_candidates AS (
   SELECT task.id,
     ROW_NUMBER() OVER (
@@ -31,6 +34,9 @@ SET task_type = 'STAGE_DECISION'
 FROM decision_candidates candidate
 WHERE candidate.id = task.id
   AND candidate.candidate_order = 1;
+--> statement-breakpoint
+ALTER TABLE app_stage_task_definitions
+  ENABLE TRIGGER app_stage_tasks_immutable;
 --> statement-breakpoint
 ALTER TABLE app_stage_task_definitions
   ADD CONSTRAINT app_stage_tasks_decision_single_reviewer_check

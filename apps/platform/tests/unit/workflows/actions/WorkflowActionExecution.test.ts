@@ -95,7 +95,6 @@ describe("workflow action execution contract", () => {
           actionType: "REQUEST_INFORMATION",
           editableFieldPaths: ["application.bank_account"],
           instructions: "Clarify this value.",
-          question: "What is the correct bank account?",
           requestedDocumentRequirementIds: [],
         },
         "SCREENING",
@@ -108,7 +107,6 @@ describe("workflow action execution contract", () => {
           actionType: "REQUEST_INFORMATION",
           editableFieldPaths: ["application.turnover"],
           instructions: "Provide supporting evidence.",
-          question: "Can you support the turnover amount?",
           requestedDocumentRequirementIds: [
             "10000000-0000-4000-8000-000000000001",
           ],

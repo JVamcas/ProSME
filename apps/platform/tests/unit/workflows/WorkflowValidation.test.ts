@@ -118,6 +118,7 @@ describe("workflow task configuration", () => {
       scoring: {
         criteria: [{
           criterion: "VIABILITY",
+          stableKey: "VIABILITY",
           mandatoryComment: true,
           scaleMaximum: 10,
           scaleMinimum: 0,

@@ -16,6 +16,7 @@ describe("workflow stage document requirement table", () => {
     const stage = structuredClone(referenceWorkflow.stages[0]);
     stage.documentRequirements = [{
       taskStableKey: stage.tasks[0].stableKey,
+      stableKey: "TAX_CLEARANCE_CERTIFICATE",
       name: "Tax clearance certificate",
       mandatory: true,
       acceptedFileTypes: ["PDF", "JPG"],

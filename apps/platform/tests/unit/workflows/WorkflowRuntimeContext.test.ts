@@ -15,7 +15,7 @@ const selectedPaths = [
   "workflow.version_number",
   "stage.name",
   "task.status",
-  "stage.screening.eligibility_result",
+  "stage.screening.form.eligibility_result",
 ];
 const selectedFields = selectedPaths.map((key) => ({
   key,
@@ -52,7 +52,7 @@ const source: WorkflowTaskRuntimeContextSource = {
     {
       result: {},
       stageKey: "SCREENING",
-      values: { ELIGIBILITY_RESULT: "ELIGIBLE" },
+      values: { form: { ELIGIBILITY_RESULT: "ELIGIBLE" } },
     },
   ],
   stage: { name: "Finance review" },
@@ -97,7 +97,7 @@ describe("workflow runtime context", () => {
       "eligibility.outcome": "ELIGIBLE",
       "fundingCall.maximum_amount": 1_000_000,
       "stage.name": "Finance review",
-      "stage.screening.eligibility_result": "ELIGIBLE",
+      "stage.screening.form.eligibility_result": "ELIGIBLE",
       "task.status": "IN_PROGRESS",
       "workflow.version_number": 3,
     });
@@ -110,6 +110,14 @@ describe("workflow runtime context", () => {
       buildWorkflowRuntimeContext(
         {
           ...source,
+          binding: {
+            ...source.binding,
+            contextFields: [{
+              key: "stage.screening.result",
+              label: "Result",
+              type: "TEXT",
+            }],
+          },
           priorStageValues: [
             {
               result: {},

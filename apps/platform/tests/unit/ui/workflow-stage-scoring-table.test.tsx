@@ -20,6 +20,7 @@ describe("workflow stage scoring table", () => {
       aggregation: "WEIGHTED_AVERAGE",
       taskStableKey: "PRE_SCREEN_CHECKLIST",
       criteria: [{
+        stableKey: "BUSINESS_VIABILITY",
         criterion: "Business viability",
         description: "Assess viability.",
         weight: 60,

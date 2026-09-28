@@ -28,6 +28,7 @@ COPY --chown=nextjs:nodejs \
     scripts/seed/seed-standard-forms.ts \
     scripts/seed/seed-standard-eligibility.ts \
     scripts/seed/seed-standard-workflow.ts \
+    scripts/seed/seed-notifications.ts \
     scripts/seed/
 COPY --chown=nextjs:nodejs --chmod=755 \
     scripts/container/migrate.sh scripts/container/migrate.sh
@@ -50,7 +51,10 @@ COPY --from=builder --chown=nextjs:nodejs \
 COPY --from=builder --chown=nextjs:nodejs \
     /workspace/apps/platform/media ./apps/platform/media
 COPY --chown=nextjs:nodejs --chmod=755 \
-    scripts/container/healthcheck.sh scripts/container/healthcheck.sh
+    scripts/container/healthcheck.sh \
+    scripts/container/notification-scheduler-healthcheck.mjs \
+    scripts/container/notification-scheduler.mjs \
+    scripts/container/
 
 WORKDIR /workspace/apps/platform
 USER nextjs

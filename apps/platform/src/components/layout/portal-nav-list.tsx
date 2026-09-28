@@ -1,8 +1,8 @@
 "use client";
 
+import { ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronDown } from "lucide-react";
 import { useId, useState } from "react";
 
 import { cn } from "@/lib/utils";
@@ -14,53 +14,28 @@ function isActive(pathname: string, href: string) {
     : pathname.startsWith(href);
 }
 
-function ChildRouteLink({
-  dark,
-  pathname,
-  route,
-}: {
-  dark: boolean;
-  pathname: string;
-  route: PortalRoute;
-}) {
-  const active = isActive(pathname, route.href);
-  const Icon = route.icon;
-
+function routeOrDescendantIsActive(pathname: string, route: PortalRoute): boolean {
   return (
-    <li>
-      <Link
-        aria-current={active ? "page" : undefined}
-        className={cn(
-          "flex min-h-10 items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-brand-navy/80 transition",
-          "hover:bg-brand-navy/10 hover:text-brand-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-navy",
-          dark &&
-            "text-white/70 hover:bg-white/10 hover:text-white focus-visible:ring-white",
-          active &&
-            !dark &&
-            "bg-brand-navy/50 text-brand-white hover:bg-brand-white",
-          dark && active && "bg-white/12 text-white hover:bg-white/15",
-        )}
-        href={route.href}
-      >
-        <Icon
-          aria-hidden="true"
-          className={cn("size-4 text-brand-navy", dark && "text-brand-orange")}
-        />
-        {route.label}
-      </Link>
-    </li>
+    isActive(pathname, route.href) ||
+    Boolean(
+      route.children?.some((child) =>
+        routeOrDescendantIsActive(pathname, child),
+      ),
+    )
   );
 }
 
 function PortalRouteItem({
   collapsed,
   dark,
+  depth,
   onRequestExpand,
   pathname,
   route,
 }: {
   collapsed: boolean;
   dark: boolean;
+  depth: number;
   onRequestExpand?: () => void;
   pathname: string;
   route: PortalRoute;
@@ -68,14 +43,18 @@ function PortalRouteItem({
   const generatedId = useId();
   const children = route.children ?? [];
   const hasChildren = children.length > 0;
-  const childActive = children.some((child) => isActive(pathname, child.href));
-  const [expanded, setExpanded] = useState(childActive);
-  const childrenVisible = expanded || childActive;
-  const active = isActive(pathname, route.href) || childActive;
+  const descendantActive = children.some((child) =>
+    routeOrDescendantIsActive(pathname, child),
+  );
+  const [expanded, setExpanded] = useState(descendantActive);
+  const childrenVisible = expanded || descendantActive;
+  const active = isActive(pathname, route.href) || descendantActive;
   const Icon = route.icon;
   const childListId = `${route.id}-children-${generatedId}`;
+  const isTopLevel = depth === 0;
   const itemClassName = cn(
-    "flex min-h-11 w-full items-center rounded-xl py-2 text-left text-sm font-semibold text-brand-navy transition",
+    "flex w-full items-center rounded-xl py-2 text-left text-brand-navy transition",
+    isTopLevel ? "min-h-11 text-sm font-semibold" : "min-h-10 text-sm font-medium",
     collapsed ? "justify-center px-2" : "gap-3 px-3",
     "hover:bg-brand-navy/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-navy",
     dark &&
@@ -90,7 +69,8 @@ function PortalRouteItem({
       <Icon
         aria-hidden="true"
         className={cn(
-          "size-5 text-brand-navy",
+          isTopLevel ? "size-5" : "size-4",
+          "text-brand-navy",
           dark && "text-brand-orange",
           active && "text-brand-orange",
         )}
@@ -150,8 +130,10 @@ function PortalRouteItem({
           id={childListId}
         >
           {children.map((child) => (
-            <ChildRouteLink
+            <PortalRouteItem
+              collapsed={false}
               dark={dark}
+              depth={depth + 1}
               key={child.id}
               pathname={pathname}
               route={child}
@@ -183,6 +165,7 @@ export function PortalNavList({
           <PortalRouteItem
             collapsed={collapsed}
             dark={dark}
+            depth={0}
             key={route.id}
             onRequestExpand={onRequestExpand}
             pathname={pathname}

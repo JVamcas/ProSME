@@ -232,7 +232,10 @@ async function completeTaskRow(
     UPDATE app_workflow_tasks
     SET status = ${taskStatus},
       result = COALESCE(result, '{}'::jsonb)
-        || ${JSON.stringify({ values: input.values })}::jsonb,
+        || ${JSON.stringify({
+          actionKey: input.actionKey,
+          values: input.values,
+        })}::jsonb,
       completed_at = CASE
         WHEN ${taskStatus} = 'COMPLETED' THEN ${completedAt}::timestamptz
         ELSE NULL

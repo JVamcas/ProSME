@@ -7,6 +7,7 @@ import {
   type StaticPermissionCode,
 } from "./PermissionCodes";
 import { integrationPermissionCatalogue } from "./IntegrationPermissionCatalogue";
+import { notificationPermissionCatalogue } from "./NotificationPermissionCatalogue";
 import { workflowTaskPermissionCatalogue } from "./WorkflowTaskPermissionCatalogue";
 import { workflowInstancePermissionCatalogue } from "./WorkflowInstancePermissionCatalogue";
 
@@ -312,6 +313,7 @@ const staticPermissionCatalogue: readonly PermissionDefinition[] = [
     "Read own notifications",
     "Read notifications belonging to the signed-in user.",
   ),
+  ...notificationPermissionCatalogue,
   define(
     permissionCodes.cmsAccess,
     "Access content management",

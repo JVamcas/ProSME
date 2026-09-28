@@ -10,6 +10,7 @@ export type WorkflowScoringAggregation =
 
 export type WorkflowStageScoringCriterion = {
   id?: string;
+  stableKey: string;
   criterion: string;
   description: string;
   weight: number;

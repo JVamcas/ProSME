@@ -25,6 +25,7 @@ const serverEnvironmentSchema = z.object({
     .optional(),
   SESSION_COOKIE_DAYS: z.coerce.number().int().min(1).max(14).default(5),
   PUBLIC_SITE_URL: z.url().default("http://localhost:3008"),
+  APP_PUBLIC_URL: z.url().default("http://localhost:3008"),
 });
 
 export type ServerEnvironment = z.infer<typeof serverEnvironmentSchema>;

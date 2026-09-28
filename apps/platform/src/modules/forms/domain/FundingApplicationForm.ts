@@ -292,6 +292,7 @@ export function fundingApplicationForm(): StandardFormSeed {
     name: "Funding Application Form",
     publishOnSeed: true,
     sections: definition.sections,
+    submissionMode: "EXPLICIT",
     submitLabel: "Submit application",
   };
 }

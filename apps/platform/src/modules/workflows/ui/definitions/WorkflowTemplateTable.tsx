@@ -9,7 +9,7 @@ import {
   PublishButton,
 } from "@/components/ui/action-buttons";
 import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
-import { DataTablePagination } from "@/shared/ui/DataTablePagination";
+import { Pagination } from "@/components/ui/pagination";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatLocalDateTime24 } from "@/lib/dateUtils";
 import {
@@ -150,14 +150,15 @@ export function WorkflowTemplateTable(props: Props) {
         data={props.items}
         emptyMessage={props.emptyMessage}
         footer={
-          <DataTablePagination
+          <Pagination
             disabled={props.isFetching}
-            onPageChange={props.onPageChange}
+            hasNextPage={props.page < props.totalPages}
+            onNext={() => props.onPageChange(props.page + 1)}
             onPageSizeChange={props.onPageSizeChange}
+            onPrevious={() => props.onPageChange(props.page - 1)}
             page={props.page}
             pageSize={props.pageSize}
             total={props.total}
-            totalPages={props.totalPages}
           />
         }
         minWidth={860}

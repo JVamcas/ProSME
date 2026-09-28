@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 
 import { GeneralButton, type ButtonProps } from "./button";
-import { DraggableDialog } from "./draggable-dialog";
+import { DraggableDialog, type DialogSize } from "./draggable-dialog";
 
 type Props = {
   cancelText?: string;
@@ -17,6 +17,7 @@ type Props = {
   message: ReactNode;
   onCancel: () => void;
   onConfirm: () => void;
+  size?: DialogSize;
   title: string;
 };
 
@@ -32,10 +33,16 @@ export function ConfirmationDialog({
   message,
   onCancel,
   onConfirm,
+  size = "sm",
   title,
 }: Props) {
   return (
-    <DraggableDialog isOpen={isOpen} onClose={onCancel} size="sm" title={title}>
+    <DraggableDialog
+      isOpen={isOpen}
+      onClose={onCancel}
+      size={size}
+      title={title}
+    >
       <div className="space-y-6">
         <div className="text-sm leading-6 text-brand-navy/70">{message}</div>
         {errorMessage ? (

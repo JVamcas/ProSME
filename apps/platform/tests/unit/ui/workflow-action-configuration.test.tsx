@@ -10,9 +10,13 @@ import {
 } from "@/modules/workflows/ui/definitions/WorkflowActionFormSchema";
 import { workflowActionFormDefaults } from "@/modules/workflows/ui/definitions/WorkflowActionFormMapping";
 
-function ActionConfigurationForm({ actionType }: { actionType: WorkflowActionType }) {
+function ActionConfigurationForm({
+  actionType,
+}: {
+  actionType: WorkflowActionType;
+}) {
   const form = useForm<WorkflowActionFormValues>({
-    defaultValues: workflowActionFormDefaults(undefined, 1, "REVIEW_TASK"),
+    defaultValues: workflowActionFormDefaults(undefined, 1, ["REVIEW_TASK"]),
   });
   return (
     <FormProvider {...form}>
@@ -34,7 +38,7 @@ describe("workflow action configuration UI", () => {
     );
     expect(markup).toBe("");
     const values = {
-      ...workflowActionFormDefaults(undefined, 1, "REVIEW_TASK"),
+      ...workflowActionFormDefaults(undefined, 1, ["REVIEW_TASK"]),
       stableKey: "ADVANCE",
       label: "Advance",
     };

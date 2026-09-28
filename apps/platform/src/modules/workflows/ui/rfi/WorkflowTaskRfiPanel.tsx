@@ -19,6 +19,7 @@ import {
   useTaskWorkflowRfi,
   useTaskWorkflowRfis,
 } from "./WorkflowRfiHooks";
+import { WorkflowRfiInstructions } from "./WorkflowRfiInstructions";
 import {
   WorkflowRfiCorrespondence,
   WorkflowRfiDeadline,
@@ -55,8 +56,9 @@ function StaffRfiResponse({
             <dt className="text-xs text-brand-navy/60">{field.label}</dt>
             <dd className="mt-1 text-sm font-medium text-brand-navy">
               {Array.isArray(detail.response!.fieldValues[field.path])
-                ? (detail.response!.fieldValues[field.path] as unknown[])
-                    .join(", ")
+                ? (detail.response!.fieldValues[field.path] as unknown[]).join(
+                    ", ",
+                  )
                 : String(detail.response!.fieldValues[field.path] ?? "—")}
             </dd>
           </div>
@@ -65,8 +67,14 @@ function StaffRfiResponse({
       {detail.requestedDocuments.length ? (
         <ul className="mt-4 space-y-2">
           {detail.requestedDocuments.map((document) => (
-            <li className="text-sm text-brand-navy" key={document.requirementId}>
-              <FileText aria-hidden="true" className="size-4 text-brand-orange" />
+            <li
+              className="text-sm text-brand-navy"
+              key={document.requirementId}
+            >
+              <FileText
+                aria-hidden="true"
+                className="size-4 text-brand-orange"
+              />
               <span className="ml-2">{document.name}: </span>
               {document.evidence ? (
                 <a
@@ -75,7 +83,9 @@ function StaffRfiResponse({
                 >
                   {document.evidence.fileName}
                 </a>
-              ) : "Not supplied"}
+              ) : (
+                "Not supplied"
+              )}
             </li>
           ))}
         </ul>
@@ -145,12 +155,10 @@ function StaffRfiDetail({
             status={detail.status}
           />
         </div>
-        <h2 className="mt-4 text-lg font-bold text-brand-navy">
-          {detail.question}
-        </h2>
-        <p className="mt-2 whitespace-pre-wrap text-sm text-brand-navy/70">
-          {detail.instructions}
-        </p>
+        <WorkflowRfiInstructions
+          instructions={detail.instructions}
+          question={detail.question}
+        />
       </section>
       <StaffRfiResponse detail={detail} taskId={taskId} />
       <WorkflowRfiCorrespondence entries={detail.correspondence} />
@@ -220,9 +228,11 @@ export function WorkflowTaskRfiPanel({ taskId }: { taskId: string }) {
       <nav aria-label="Task information requests" className="space-y-2">
         {list.data.map((request) => (
           <button
-            className={effectiveSelectedId === request.id
-              ? "w-full rounded-xl border border-brand-orange bg-brand-cream p-4 text-left"
-              : "w-full rounded-xl border border-brand-navy/10 bg-white p-4 text-left hover:border-brand-orange/40"}
+            className={
+              effectiveSelectedId === request.id
+                ? "w-full rounded-xl border border-brand-orange bg-brand-cream p-4 text-left"
+                : "w-full rounded-xl border border-brand-navy/10 bg-white p-4 text-left hover:border-brand-orange/40"
+            }
             key={request.id}
             onClick={() => setSelectedId(request.id)}
             type="button"

@@ -55,7 +55,7 @@ function boundFormFields(
       const type = formConditionType(field);
       return type
         ? [{
-            key: `stage.${stagePathKey(stage.stableKey)}.${stagePathKey(field.key)}`,
+            key: `stage.${stagePathKey(stage.stableKey)}.form.${stagePathKey(field.key)}`,
             label: `${stage.name} · ${task.name} · ${field.label}`,
             type,
           }]
@@ -83,22 +83,24 @@ function boundTaskResultFields(stage: WorkflowStageInput) {
     if (!parsed.success) return [];
     const fields: ReturnType<typeof taskResultField>[] = stage.checklistItems
       .filter((item) => item.taskStableKey === task.stableKey)
-      .map((item) => taskResultField(
-        stage,
-        item.key,
-        `${stage.name} · ${task.name} · ${item.text}`,
-        item.responseType === "YES_NO"
-          ? "BOOLEAN"
-          : item.responseType === "NUMBER"
-            ? "NUMBER"
-            : item.responseType === "DATE"
-              ? "DATE"
-              : "TEXT",
-      ));
+      .flatMap((item) => [
+        taskResultField(
+          stage,
+          `checklist.${item.key}.accepted`,
+          `${stage.name} · ${task.name} · ${item.text}`,
+          "BOOLEAN",
+        ),
+        taskResultField(
+          stage,
+          `checklist.${item.key}.comment`,
+          `${stage.name} · ${task.name} · ${item.text} comment`,
+          "TEXT",
+        ),
+      ]);
     if (parsed.data.categories && parsed.data.outcomes) {
       fields.push(...parsed.data.categories.map((category) => taskResultField(
         stage,
-        category.code,
+        `decision.${category.code}.outcome`,
         `${stage.name} · ${task.name} · ${category.label}`,
         "TEXT",
       )));
@@ -107,14 +109,14 @@ function boundTaskResultFields(stage: WorkflowStageInput) {
       for (const criterion of parsed.data.criteria) {
         fields.push(taskResultField(
           stage,
-          criterion.code,
+          `scoring.${criterion.code}.value`,
           `${stage.name} · ${task.name} · ${criterion.label}`,
           "NUMBER",
         ));
         if (criterion.commentRequired) {
           fields.push(taskResultField(
             stage,
-            `${criterion.code}_COMMENT`,
+            `scoring.${criterion.code}.comment`,
             `${stage.name} · ${task.name} · ${criterion.label} comment`,
             "TEXT",
           ));
@@ -122,11 +124,59 @@ function boundTaskResultFields(stage: WorkflowStageInput) {
       }
       fields.push(taskResultField(
         stage,
-        "WEIGHTED_TOTAL",
+        "scoring.WEIGHTED_TOTAL.value",
         `${stage.name} · ${task.name} · Weighted total`,
         "NUMBER",
       ));
     }
+    fields.push(...(stage.commentFields ?? [])
+      .filter((field) => field.taskStableKey === task.stableKey)
+      .map((field) => taskResultField(
+        stage,
+        `comment.${field.key}`,
+        `${stage.name} · ${task.name} · ${field.label}`,
+        "TEXT",
+      )));
+    fields.push(...stage.documentRequirements
+      .filter((requirement) => requirement.taskStableKey === task.stableKey)
+      .flatMap((requirement) => [
+        taskResultField(
+          stage,
+          `document.${requirement.stableKey}.outcome`,
+          `${stage.name} · ${task.name} · ${requirement.name} outcome`,
+          "TEXT",
+        ),
+        taskResultField(
+          stage,
+          `document.${requirement.stableKey}.comment`,
+          `${stage.name} · ${task.name} · ${requirement.name} comment`,
+          "TEXT",
+        ),
+      ]));
+    if (stage.scoring?.taskStableKey === task.stableKey) {
+      stage.scoring.criteria.forEach((criterion) => {
+        fields.push(taskResultField(
+          stage,
+          `scoring.${criterion.stableKey}.value`,
+          `${stage.name} · ${task.name} · ${criterion.criterion}`,
+          "NUMBER",
+        ));
+        fields.push(taskResultField(
+          stage,
+          `scoring.${criterion.stableKey}.comment`,
+          `${stage.name} · ${task.name} · ${criterion.criterion} comment`,
+          "TEXT",
+        ));
+      });
+    }
+    fields.push(...stage.actions
+      .filter((action) => task.actionKeys.includes(action.stableKey))
+      .map((action) => taskResultField(
+        stage,
+        `actions.${action.stableKey}.selected`,
+        `${stage.name} · ${task.name} · ${action.label}`,
+        "BOOLEAN",
+      )));
     return fields;
   });
 }

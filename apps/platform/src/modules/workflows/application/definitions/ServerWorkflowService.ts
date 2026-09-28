@@ -14,9 +14,11 @@ import {
   listPublishedWorkflowVersions,
   listWorkflowDefinitions,
 } from "@/modules/workflows/infrastructure/WorkflowRepository";
+import { reconcileWorkflowActionBindings } from "@/modules/workflows/domain/actions/WorkflowActionBindingPolicy";
 import {
   WorkflowConflictError,
   WorkflowNotFoundError,
+  loadWorkflowEditor,
   workflowEditorView,
 } from "@/modules/workflows/application/definitions/ServerWorkflowSupport";
 import { toWorkflowSummaries } from "@/modules/workflows/api/WorkflowRepresentation";
@@ -58,7 +60,10 @@ export async function createWorkflow(
   input: CreateWorkflowInput,
   correlationId: string,
 ) {
-  const actor = requirePermission(user, permissionCodes.workflowDefinitionCreate);
+  const actor = requirePermission(
+    user,
+    permissionCodes.workflowDefinitionCreate,
+  );
   const versionId = await createWorkflowDefinition({
     ...input,
     actorId: actor.id,
@@ -74,12 +79,18 @@ export async function updateWorkflowDraft(
   input: UpdateWorkflowDraftInput,
   correlationId: string,
 ) {
-  const actor = requirePermission(user, permissionCodes.workflowDefinitionUpdate);
+  const actor = requirePermission(
+    user,
+    permissionCodes.workflowDefinitionUpdate,
+  );
   const versionId = await findDraftByDefinition(definitionId);
   if (!versionId)
     throw new WorkflowConflictError("Only draft versions can be edited.");
+  const current = await loadWorkflowEditor(versionId);
+  const graph = reconcileWorkflowActionBindings(current.graph, input.graph);
   const updated = await replaceWorkflowDraft({
     ...input,
+    graph,
     actorId: actor.id,
     correlationId,
     versionId,
@@ -94,7 +105,10 @@ export async function updateWorkflowDetails(
   input: UpdateWorkflowDetailsInput,
   correlationId: string,
 ) {
-  const actor = requirePermission(user, permissionCodes.workflowDefinitionUpdate);
+  const actor = requirePermission(
+    user,
+    permissionCodes.workflowDefinitionUpdate,
+  );
   const versionId = await findDraftByDefinition(definitionId);
   if (!versionId)
     throw new WorkflowConflictError("Only draft versions can be edited.");

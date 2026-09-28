@@ -23,6 +23,8 @@ import {
   useUpdateEligibilityRuleSet,
 } from "../EligibilityRuleSetHooks";
 import { EligibilityRuleDialog } from "./EligibilityRuleDialog";
+import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
+import { PortalErrorState } from "@/components/layout/PortalErrorState";
 
 const failureLabels = {
   HARD_FAIL: "Hard Fail",
@@ -132,12 +134,10 @@ export function EligibilityRuleSetEditor({
   const update = useUpdateEligibilityRuleSet(id, versionId);
   const [deleting, setDeleting] = useState<EligibilityBuilderRule>();
   const [editing, setEditing] = useState<EligibilityBuilderRule | "new">();
-  if (query.isPending) return <p>Loading eligibility ruleset…</p>;
+  if (query.isPending) return <PortalLoadingState title="" description="Just a moment.." />
   if (query.isError || !editor) {
     return (
-      <p className="text-sm text-red-700" role="alert">
-        {query.error?.message ?? "Eligibility ruleset unavailable."}
-      </p>
+      <PortalErrorState title={query.error?.name} description={query.error?.message} />
     );
   }
   const currentEditor = editor;
@@ -228,8 +228,8 @@ export function EligibilityRuleSetEditor({
               editing === "new"
                 ? [...currentEditor.rules, rule]
                 : currentEditor.rules.map((item) =>
-                    item.id === rule.id ? rule : item,
-                  );
+                  item.id === rule.id ? rule : item,
+                );
             await saveRules(rules);
             setEditing(undefined);
           }}

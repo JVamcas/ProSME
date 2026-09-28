@@ -50,4 +50,34 @@ describe("review draft route", () => {
       expect.any(String),
     );
   });
+
+  it("accepts a patch containing only one document verification", async () => {
+    const body = {
+      documents: [{
+        category: "COMMITTEE_PACK",
+        comment: "Pack reviewed",
+        outcome: "VERIFIED",
+      }],
+    };
+    const response = await PUT(
+      request(body),
+      { params: Promise.resolve({ id: taskId }) },
+    );
+    expect(response.status).toBe(200);
+    expect(saveTaskReviewDraft).toHaveBeenCalledWith(
+      null,
+      taskId,
+      body,
+      expect.any(String),
+    );
+  });
+
+  it("rejects an empty patch", async () => {
+    const response = await PUT(
+      request({}),
+      { params: Promise.resolve({ id: taskId }) },
+    );
+    expect(response.status).toBe(400);
+    expect(saveTaskReviewDraft).not.toHaveBeenCalled();
+  });
 });

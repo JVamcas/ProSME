@@ -820,6 +820,69 @@
       "when": 1797811200000,
       "tag": "0116_workflow_task_types",
       "breakpoints": true
+    },
+    {
+      "idx": 117,
+      "version": "7",
+      "when": 1797897600000,
+      "tag": "0117_notification_foundation",
+      "breakpoints": true
+    },
+    {
+      "idx": 118,
+      "version": "7",
+      "when": 1797984000000,
+      "tag": "0118_normalize_legacy_rfi_action_configuration",
+      "breakpoints": true
+    },
+    {
+      "idx": 119,
+      "version": "7",
+      "when": 1798070400000,
+      "tag": "0119_align_notification_rule_aggregate",
+      "breakpoints": true
+    },
+    {
+      "idx": 120,
+      "version": "7",
+      "when": 1798156800000,
+      "tag": "0120_bind_common_actions_to_existing_tasks",
+      "breakpoints": true
+    },
+    {
+      "idx": 121,
+      "version": "7",
+      "when": 1798243200000,
+      "tag": "0121_workflow_runtime_stable_keys",
+      "breakpoints": true
+    },
+    {
+      "idx": 122,
+      "version": "7",
+      "when": 1798329600000,
+      "tag": "0122_notification_outbox_processing",
+      "breakpoints": true
+    },
+    {
+      "idx": 123,
+      "version": "7",
+      "when": 1798416000000,
+      "tag": "0123_notification_operations_indexes",
+      "breakpoints": true
+    },
+    {
+      "idx": 124,
+      "version": "7",
+      "when": 1798502400000,
+      "tag": "0124_form_submission_modes",
+      "breakpoints": true
+    },
+    {
+      "idx": 125,
+      "version": "7",
+      "when": 1798588800000,
+      "tag": "0125_backfill_default_common_workflow_actions",
+      "breakpoints": true
     }
   ]
 }

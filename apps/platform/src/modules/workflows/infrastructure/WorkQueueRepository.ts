@@ -72,8 +72,20 @@ function queueQuery(input: WorkQueueListInput, actorId: string, cursor?: WorkQue
           AND app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
           THEN applicant.display_name ELSE 'Hidden until COI reviewed' END AS "applicantName",
         stage_definition.name AS "stageName",
+        CASE WHEN definition.task_type = 'STAGE_DECISION' AND EXISTS (
+          SELECT 1
+          FROM app_workflow_tasks prerequisite
+          JOIN app_stage_task_definitions prerequisite_definition
+            ON prerequisite_definition.id = prerequisite.workflow_task_definition_id
+          WHERE prerequisite.stage_instance_id = task.stage_instance_id
+            AND prerequisite.id <> task.id
+            AND prerequisite_definition.task_type = 'CONTRIBUTING'
+            AND prerequisite.status NOT IN ('COMPLETED', 'CANCELLED')
+        ) THEN 'Available when all contributing tasks are complete.'
+          ELSE NULL END AS "taskBlockedReason",
         NULL::text AS "priority",
         task.status AS "taskStatus",
+        definition.task_type AS "taskType",
         task.assigned_role_id AS "assignedRoleId",
         role.name AS "assignedRoleName",
         task.assigned_user_id AS "assignedUserId",

@@ -215,6 +215,7 @@ async function completeTask(
     SET status = ${taskStatus},
       result = COALESCE(result, '{}'::jsonb)
         || ${JSON.stringify({
+          actionKey: input.actionKey,
           comments: input.comments ?? [],
           documents: input.documents ?? [],
           items: input.items,

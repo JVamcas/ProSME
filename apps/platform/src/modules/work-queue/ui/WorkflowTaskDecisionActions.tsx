@@ -14,12 +14,15 @@ import {
   FormSelect,
   FormTextarea,
 } from "@/components/ui/form-fields";
+import { FormRichTextField } from "@/shared/ui/FormRichTextField";
+import { richTextToPlainText } from "@/shared/utils/RichText";
 import type {
   TaskDetail,
   WorkflowTaskAction,
 } from "@/modules/work-queue/TaskTypes";
 import { useExecuteWorkflowTaskAction } from "@/modules/work-queue/WorkQueueHooks";
 import { WorkflowTaskActions } from "@/modules/work-queue/ui/WorkflowTaskActions";
+import { isWorkflowStageDecisionAction } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
 import type { WorkflowActionInput } from "@/modules/workflows/domain/actions/WorkflowActionExecution";
 
 function actionFormSchema(action: WorkflowTaskAction) {
@@ -27,7 +30,7 @@ function actionFormSchema(action: WorkflowTaskAction) {
     .object({
       comment: z.string().trim().max(4_000),
       confirmed: z.boolean(),
-      instructions: z.string().trim().max(4_000),
+      instructions: z.string().trim().max(12_000),
       question: z.string().trim().max(4_000),
       reasonCode: z.string().trim().max(80),
       requestedDocumentRequirementIds: z.array(z.uuid()).max(100),
@@ -66,14 +69,10 @@ function actionFormSchema(action: WorkflowTaskAction) {
           path: ["confirmed"],
         });
       }
-      if (action.actionType === "REQUEST_INFORMATION" && !values.question) {
-        context.addIssue({
-          code: "custom",
-          message: "Enter a question for the applicant.",
-          path: ["question"],
-        });
-      }
-      if (action.actionType === "REQUEST_INFORMATION" && !values.instructions) {
+      if (
+        action.actionType === "REQUEST_INFORMATION" &&
+        !richTextToPlainText(values.instructions)
+      ) {
         context.addIssue({
           code: "custom",
           message: "Enter instructions for the applicant.",
@@ -116,9 +115,7 @@ function actionInput(
         actionType: "REQUEST_INFORMATION",
         editableFieldPaths: [...action.requiredInput.editableFieldPaths],
         instructions: values.instructions,
-        question: values.question,
-        requestedDocumentRequirementIds:
-          values.requestedDocumentRequirementIds,
+        requestedDocumentRequirementIds: values.requestedDocumentRequirementIds,
       };
     case "REFER":
       return { ...common, actionType: "REFER", question: values.question };
@@ -147,15 +144,18 @@ function actionInput(
 
 function DecisionForm({
   action,
+  beforeAction,
   onCancel,
   task,
 }: {
   action: WorkflowTaskAction;
+  beforeAction?: () => Promise<void>;
   onCancel: () => void;
   task: TaskDetail;
 }) {
   const router = useRouter();
   const execution = useExecuteWorkflowTaskAction(task.taskInstanceId);
+  const [isFinalizingForm, setIsFinalizingForm] = useState(false);
   const form = useForm<ActionValues>({
     defaultValues: {
       comment: "",
@@ -172,16 +172,22 @@ function DecisionForm({
     control: form.control,
     name: "requestedDocumentRequirementIds",
   });
-  const missingApplicantDocuments = action.actionType === "REQUEST_INFORMATION"
-    ? task.documentRequirements.filter(
-        (requirement) =>
-          requirement.id
-          && requirement.uploader === "APPLICANT"
-          && requirement.requestStatus === "MISSING",
-      )
-    : [];
+  const missingApplicantDocuments =
+    action.actionType === "REQUEST_INFORMATION"
+      ? task.documentRequirements.filter(
+          (requirement) =>
+            requirement.id &&
+            requirement.uploader === "APPLICANT" &&
+            requirement.requestStatus === "MISSING",
+        )
+      : [];
   const submit = form.handleSubmit(async (values) => {
     try {
+      if (beforeAction) {
+        setIsFinalizingForm(true);
+        await beforeAction();
+        setIsFinalizingForm(false);
+      }
       const result = await execution.mutateAsync({
         actionKey: action.key,
         input: {
@@ -199,6 +205,7 @@ function DecisionForm({
       );
       router.push("/admin/work-queue");
     } catch (error) {
+      setIsFinalizingForm(false);
       toast.error(
         error instanceof Error
           ? error.message
@@ -209,9 +216,10 @@ function DecisionForm({
   return (
     <FormProvider {...form}>
       <ConfirmationDialog
-        confirmText={`Confirm ${action.label}`}
-        confirmVariant={action.presentation.variant}
-        isLoading={execution.isPending}
+        size="xl"
+        confirmText={`Submit`}
+        confirmVariant={"primary"}
+        isLoading={isFinalizingForm || execution.isPending}
         isOpen
         loadingText="Submitting…"
         message={
@@ -233,14 +241,10 @@ function DecisionForm({
             ) : null}
             {action.actionType === "REQUEST_INFORMATION" ? (
               <>
-                <FormTextarea
-                  label="Question for the applicant"
-                  name="question"
-                  required
-                />
-                <FormTextarea
-                  label="Applicant instructions"
+                <FormRichTextField
+                  label="Instructions for applicant"
                   name="instructions"
+                  placeholder="Explain what information or documents the applicant should provide."
                   required
                 />
                 {missingApplicantDocuments.length ? (
@@ -253,11 +257,10 @@ function DecisionForm({
                     multiple
                     name="requestedDocumentRequirementIds"
                     onMultipleChange={(values) => {
-                      form.setValue(
-                        "requestedDocumentRequirementIds",
-                        values,
-                        { shouldDirty: true, shouldValidate: true },
-                      );
+                      form.setValue("requestedDocumentRequirementIds", values, {
+                        shouldDirty: true,
+                        shouldValidate: true,
+                      });
                     }}
                     value={requestedDocumentRequirementIds}
                   />
@@ -310,10 +313,21 @@ function DecisionForm({
   );
 }
 
-export function WorkflowTaskDecisionActions({ task }: { task: TaskDetail }) {
+export function WorkflowTaskDecisionActions({
+  beforeAction,
+  task,
+}: {
+  beforeAction?: () => Promise<void>;
+  task: TaskDetail;
+}) {
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   if (task.taskStatus === "COMPLETED" || !task.actions.length) return null;
   const selected = task.actions.find((action) => action.key === selectedKey);
+  const actionFinalizer = selected && isWorkflowStageDecisionAction(
+    selected.actionType,
+  )
+    ? beforeAction
+    : undefined;
   return (
     <div className="space-y-4">
       <WorkflowTaskActions
@@ -325,6 +339,7 @@ export function WorkflowTaskDecisionActions({ task }: { task: TaskDetail }) {
       {selected?.available ? (
         <DecisionForm
           action={selected}
+          beforeAction={actionFinalizer}
           key={selected.key}
           onCancel={() => setSelectedKey(null)}
           task={task}

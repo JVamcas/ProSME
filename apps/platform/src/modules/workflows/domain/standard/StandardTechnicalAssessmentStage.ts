@@ -1,4 +1,5 @@
 import type { WorkflowStageInput } from "../definitions/WorkflowTypes";
+import { stableKeyFromLabel } from "../WorkflowStableKey";
 import {
   action,
   approve,
@@ -82,6 +83,7 @@ export function createStandardTechnicalAssessmentStage(
       taskStableKey: "TECHNICAL_REVIEW",
       criteria: criteria.map((criterion) => ({
         criterion: criterion.label,
+        stableKey: stableKeyFromLabel(criterion.label, "SCORE"),
         description: "Standard baseline; confirm for each Funding Call.",
         mandatoryComment: criterion.commentRequired,
         scaleMaximum: criterion.maximumScore,

@@ -23,7 +23,7 @@ export const saveTaskReviewDraftSchema = z.object({
     accepted: z.boolean(),
     code: z.string().min(1).max(80),
     comment: z.string().trim().max(1000).optional(),
-  })).max(30),
+  })).max(30).optional(),
   comments: z.array(z.object({
     key: z.string().min(2).max(80),
     value: z.string().trim().max(4000),
@@ -38,9 +38,16 @@ export const saveTaskReviewDraftSchema = z.object({
     criterion: z.string().trim().min(1).max(160),
     score: z.number().nullable(),
   })).max(100).optional(),
-});
+}).refine(
+  (input) => Object.values(input).some((items) => items && items.length > 0),
+  { message: "Submit at least one review draft change." },
+);
 
-export const completeChecklistTaskSchema = saveTaskReviewDraftSchema.extend({
+export const completeChecklistTaskSchema = z.object({
   actionKey: workflowActionKeySchema.optional(),
+  comments: saveTaskReviewDraftSchema.shape.comments,
+  documents: saveTaskReviewDraftSchema.shape.documents,
   expectedRowVersion: z.number().int().positive(),
+  items: saveTaskReviewDraftSchema.shape.items.unwrap(),
+  scores: saveTaskReviewDraftSchema.shape.scores,
 });

@@ -30,6 +30,7 @@ import {
   useSaveWorkflowRfiDraft,
 } from "./WorkflowRfiHooks";
 import { ApplicantWorkflowRfiDocuments } from "./ApplicantWorkflowRfiDocuments";
+import { WorkflowRfiInstructions } from "./WorkflowRfiInstructions";
 import {
   WorkflowRfiCorrespondence,
   WorkflowRfiDeadline,
@@ -37,14 +38,19 @@ import {
 
 const fieldValueSchema = z.union([z.string(), z.array(z.string())]);
 const responseFormSchema = z.object({
-  fields: z.array(z.object({
-    path: z.string().min(1),
-    value: fieldValueSchema,
-  })),
+  fields: z.array(
+    z.object({
+      path: z.string().min(1),
+      value: fieldValueSchema,
+    }),
+  ),
 });
 type ResponseFormValues = z.infer<typeof responseFormSchema>;
 
-function initialValue(field: WorkflowRfiEditableField, detail: WorkflowRfiDetail) {
+function initialValue(
+  field: WorkflowRfiEditableField,
+  detail: WorkflowRfiDetail,
+) {
   const value = Object.hasOwn(detail.draft?.fieldValues ?? {}, field.path)
     ? detail.draft!.fieldValues[field.path]
     : field.currentValue;
@@ -58,18 +64,20 @@ function submittedValues(
   fields: WorkflowRfiEditableField[],
 ) {
   const types = new Map(fields.map((field) => [field.path, field.type]));
-  return Object.fromEntries(values.fields.map((field) => {
-    const type = types.get(field.path);
-    if (type === "YES_NO") return [field.path, field.value === "true"];
-    if (
-      ["NUMBER", "CURRENCY", "PERCENTAGE"].includes(type ?? "")
-      && typeof field.value === "string"
-      && field.value !== ""
-    ) {
-      return [field.path, Number(field.value)];
-    }
-    return [field.path, field.value];
-  }));
+  return Object.fromEntries(
+    values.fields.map((field) => {
+      const type = types.get(field.path);
+      if (type === "YES_NO") return [field.path, field.value === "true"];
+      if (
+        ["NUMBER", "CURRENCY", "PERCENTAGE"].includes(type ?? "") &&
+        typeof field.value === "string" &&
+        field.value !== ""
+      ) {
+        return [field.path, Number(field.value)];
+      }
+      return [field.path, field.value];
+    }),
+  );
 }
 
 function EditableFieldControl({
@@ -116,9 +124,13 @@ function EditableFieldControl({
     <FormInput
       label={field.label}
       name={name}
-      type={["NUMBER", "CURRENCY", "PERCENTAGE"].includes(field.type)
-        ? "number"
-        : field.type === "DATE" ? "date" : "text"}
+      type={
+        ["NUMBER", "CURRENCY", "PERCENTAGE"].includes(field.type)
+          ? "number"
+          : field.type === "DATE"
+            ? "date"
+            : "text"
+      }
     />
   );
 }
@@ -142,10 +154,12 @@ function MultiSelectField({
       label={field.label}
       multiple
       name={name}
-      onMultipleChange={(next) => form.setValue(name, next, {
-        shouldDirty: true,
-        shouldValidate: true,
-      })}
+      onMultipleChange={(next) =>
+        form.setValue(name, next, {
+          shouldDirty: true,
+          shouldValidate: true,
+        })
+      }
       value={values ?? []}
     />
   );
@@ -162,7 +176,7 @@ function SubmissionReceipt({ detail }: { detail: WorkflowRfiDetail }) {
         We received your response
         {detail.respondedAt
           ? ` on ${formatLocalDateTime24(detail.respondedAt)}`
-          : ""}. Your application remains available while staff review it.
+          : ""}
       </p>
     </section>
   );
@@ -212,8 +226,8 @@ export function ApplicantWorkflowRfiWorkspace({
   async function submitResponse() {
     if (missingDocuments.length) return;
     await respond.mutateAsync({
-      evidenceVersionIds: detail.requestedDocuments.flatMap(
-        (document) => document.evidence ? [document.evidence.versionId] : [],
+      evidenceVersionIds: detail.requestedDocuments.flatMap((document) =>
+        document.evidence ? [document.evidence.versionId] : [],
       ),
       expectedRowVersion: detail.rowVersion,
       fieldValues,
@@ -254,17 +268,15 @@ export function ApplicantWorkflowRfiWorkspace({
                 status={detail.status}
               />
             </div>
-            <h2 className="mt-4 text-lg font-bold text-brand-navy">
-              {detail.question}
-            </h2>
-            <p className="mt-2 whitespace-pre-wrap text-sm text-brand-navy/75">
-              {detail.instructions}
-            </p>
+            <WorkflowRfiInstructions
+              instructions={detail.instructions}
+              question={detail.question}
+            />
           </section>
 
-          {detail.status === "RESPONDED" || detail.status === "CLOSED"
-            ? <SubmissionReceipt detail={detail} />
-            : null}
+          {detail.status === "RESPONDED" || detail.status === "CLOSED" ? (
+            <SubmissionReceipt detail={detail} />
+          ) : null}
 
           {detail.status === "OPEN" ? (
             <FormProvider {...form}>
@@ -316,12 +328,14 @@ export function ApplicantWorkflowRfiWorkspace({
                       ))}
                     </dl>
                     <p className="mt-4 text-sm text-brand-navy/70">
-                      {detail.requestedDocuments.length - missingDocuments.length}{" "}
-                      of {detail.requestedDocuments.length} requested documents supplied.
+                      {detail.requestedDocuments.length -
+                        missingDocuments.length}{" "}
+                      of {detail.requestedDocuments.length} requested documents
+                      supplied.
                     </p>
                   </section>
                 ) : null}
-                {(save.isError || respond.isError) ? (
+                {save.isError || respond.isError ? (
                   <p className="text-sm text-red-700" role="alert">
                     {save.error?.message ?? respond.error?.message}
                   </p>
@@ -345,7 +359,9 @@ export function ApplicantWorkflowRfiWorkspace({
                         Back
                       </GeneralButton>
                       <GeneralButton
-                        disabled={Boolean(missingDocuments.length) || respond.isPending}
+                        disabled={
+                          Boolean(missingDocuments.length) || respond.isPending
+                        }
                         type="submit"
                         variant="success"
                       >

@@ -379,7 +379,7 @@ Actions and transitions:
 | `PROCEED` | Proceed | `APPROVE_ADVANCE` | Moderation |
 | `PROCEED_WITH_CONDITIONS` | Proceed with conditions | `APPROVE_ADVANCE` | Moderation with mitigations |
 | `DECLINE_RISK` | Decline on risk grounds | `REJECT` | Negative outcome using controlled reason codes |
-| `FURTHER_VERIFICATION` | Further verification required | `REQUEST_INFORMATION` | Verification/RFI loop |
+| `FURTHER_VERIFICATION` | Request For Information | `REQUEST_INFORMATION` | Verification/RFI loop |
 
 The resulting risk rating must be available to Disbursement and Monitoring.
 Prior grantee performance from an earlier award must be available here.

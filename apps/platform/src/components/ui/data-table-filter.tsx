@@ -65,12 +65,12 @@ function FilterHeader({
   return (
     <div className="flex flex-wrap items-center justify-between gap-4 px-2">
       <div className="flex min-w-0 items-start gap-3">
-        <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-brand-navy/[0.06] text-brand-navy">
+        <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-brand-navy/6 text-brand-navy">
           <SlidersHorizontal aria-hidden="true" className="size-5" />
         </div>
 
         <div className="min-w-0">
-          <div className="inline-flex rounded-lg bg-brand-navy/[0.06] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-navy">
+          <div className="inline-flex rounded-lg bg-brand-navy/6 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-navy">
             {title}
           </div>
 
@@ -90,7 +90,7 @@ function FilterHeader({
             aria-expanded={expanded}
             aria-label={expanded ? `Collapse ${title}` : `Expand ${title}`}
             onClick={onToggle}
-            size="sm"
+            size="compact"
             type="button"
             variant="outline"
             className="gap-2"
@@ -104,7 +104,7 @@ function FilterHeader({
           <GeneralButton
             disabled={isClearDisabled || isApplying}
             onClick={onClear}
-            size="sm"
+            size="compact"
             type="button"
             variant="ghost"
           >
@@ -250,7 +250,7 @@ export function DataTableFilter({
   return (
     <section
       className={cn(
-        "overflow-hidden rounded-t-2xl border border-brand-navy/10 bg-white",
+        "overflow-hidden rounded-t-2xl border border-brand-navy/10 bg-white p-2",
         className,
       )}
     >

@@ -16,6 +16,7 @@ import {
   withStageActivationTransaction,
 } from "../../infrastructure/StageActivationRepository";
 import { createStageActivationWorkflowRfi } from "../../infrastructure/WorkflowRfiRepository";
+import { captureWorkflowTaskAssignmentNotification } from "./ServerWorkflowTaskAssignmentNotificationService";
 
 export type ActivateStageInput = {
   actorId: string;
@@ -103,8 +104,9 @@ export async function activateStageInTransaction(
     return { evaluation, kind: "entry_condition_failed" };
   }
 
+  const activatedAt = new Date();
   const activated = await persistStageActivation(transaction, {
-    activatedAt: new Date(),
+    activatedAt,
     actorId: input.actorId,
     correlationId: input.correlationId,
     iterationNumber,
@@ -119,6 +121,18 @@ export async function activateStageInTransaction(
     stageDefinitionId: input.stageDefinitionId,
     stageInstanceId: activated.stage.id,
     workflowInstanceId: input.workflowInstanceId,
+  });
+  const taskNames = new Map(tasks.map((task) => [task.id, task.name]));
+  await captureWorkflowTaskAssignmentNotification(transaction, {
+    assignedAt: activatedAt,
+    correlationId: input.correlationId,
+    stageInstanceId: activated.stage.id,
+    target,
+    tasks: activated.tasks.map((task) => ({
+      assignedUserId: task.assignedUserId,
+      id: task.id,
+      name: taskNames.get(task.workflowTaskDefinitionId)!,
+    })),
   });
   return {
     kind: "activated",

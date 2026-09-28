@@ -27,6 +27,7 @@ describe("workflow graph cloning", () => {
       {
         taskStableKey: source.stages[0].tasks[0].stableKey,
         id: "48888888-8888-4888-8888-888888888888",
+        stableKey: "TAX_CLEARANCE_CERTIFICATE",
         name: "Tax clearance certificate",
         mandatory: true,
         acceptedFileTypes: ["PDF"],
@@ -44,6 +45,7 @@ describe("workflow graph cloning", () => {
       criteria: [
         {
           id: "49999999-9999-4999-8999-999999999999",
+          stableKey: "BUSINESS_VIABILITY",
           criterion: "Business viability",
           description: "Assess viability.",
           weight: 100,

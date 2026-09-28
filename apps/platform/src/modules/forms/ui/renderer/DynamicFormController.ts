@@ -105,12 +105,21 @@ export function useDynamicFormController(
     );
   };
 
+  const finalizeFormValues = (completedValues: DynamicFormValues) =>
+    complete.mutateAsync({
+      actionKey: null,
+      expectedResponseRowVersion: data.response?.rowVersion,
+      expectedTaskRowVersion: data.taskRowVersion,
+      values: completedValues,
+    });
+
   return {
     cancelNavigation: navigation.cancelNavigation,
     complete,
     completeFormValues,
     confirmNavigation: navigation.confirmNavigation,
     hasUnsavedChanges,
+    finalizeFormValues,
     pendingNavigationHref: navigation.pendingNavigationHref,
     save,
     saveDraftValues,

@@ -62,6 +62,11 @@ export function WorkflowTaskDocumentsSection({
                   {requirement.acceptedFileTypes.join(", ")} · Maximum{" "}
                   {requirement.maximumSizeMb} MB
                 </p>
+                {requirement.uploader === "APPLICANT" && !document ? (
+                  <p className="mt-1 text-xs font-medium text-brand-navy/70">
+                    To be submitted by the applicant
+                  </p>
+                ) : null}
                 {document ? (
                   <p className="mt-1 text-xs font-medium text-brand-navy/75">
                     {document.fileName} -{" "}

@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { richTextToPlainText } from "@/shared/utils/RichText";
+
 import type { WorkflowActionDefinition } from "./WorkflowActionDefinition";
 
 const commentSchema = z.string().trim().min(1).max(4_000).optional();
@@ -40,8 +42,14 @@ export const workflowActionInputSchema = z.discriminatedUnion("actionType", [
       ...commonInput,
       actionType: z.literal("REQUEST_INFORMATION"),
       editableFieldPaths: z.array(fieldKeySchema).max(100),
-      instructions: z.string().trim().min(1).max(4_000),
-      question: z.string().trim().min(1).max(4_000),
+      instructions: z
+        .string()
+        .trim()
+        .min(1)
+        .max(12_000)
+        .refine((value) => richTextToPlainText(value).length > 0, {
+          message: "Enter instructions for the applicant.",
+        }),
       requestedDocumentRequirementIds: z
         .array(z.uuid())
         .max(100)

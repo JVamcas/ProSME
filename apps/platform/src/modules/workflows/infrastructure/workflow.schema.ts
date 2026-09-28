@@ -47,6 +47,7 @@ export const workflowDefinitions = pgTable(
       .defaultNow(),
   },
   (table) => [
+    check("app_workflow_definitions_code_nonempty_check", sql`${table.code} <> ''`),
     uniqueIndex("app_workflow_definitions_code_unique").on(table.code),
   ],
 );
@@ -120,6 +121,7 @@ export const workflowStageDefinitions = pgTable(
     exitCondition: jsonb("exit_condition").$type<ConditionGroup>(),
   },
   (table) => [
+    check("app_workflow_stages_code_nonempty_check", sql`${table.code} <> ''`),
     uniqueIndex("app_workflow_stages_version_code_unique").on(
       table.versionId,
       table.code,
@@ -183,6 +185,7 @@ export const stageTaskDefinitions = pgTable(
       .notNull(),
   },
   (table) => [
+    check("app_stage_tasks_code_nonempty_check", sql`${table.stableKey} <> ''`),
     uniqueIndex("app_stage_tasks_id_stage_unique").on(table.id, table.stageId),
     uniqueIndex("app_stage_tasks_stage_code_unique").on(
       table.stageId,
@@ -247,6 +250,10 @@ export const workflowActionDefinitions = pgTable(
       .notNull(),
   },
   (table) => [
+    check(
+      "app_workflow_actions_stable_key_nonempty_check",
+      sql`${table.stableKey} <> ''`,
+    ),
     uniqueIndex("app_workflow_actions_stage_key_unique").on(
       table.stageId,
       table.stableKey,

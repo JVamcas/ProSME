@@ -16,7 +16,9 @@ export function WorkflowRfiDeadline({
 }: Pick<WorkflowRfiSummary, "deadlineAt" | "isOverdue" | "status">) {
   const overdue = status === "OPEN" && isOverdue;
   return (
-    <p className={overdue ? "font-semibold text-red-700" : "text-brand-navy/65"}>
+    <p
+      className={overdue ? "font-semibold text-red-700" : "text-brand-navy/65"}
+    >
       <Clock3 aria-hidden="true" className="mr-1 inline size-4" />
       {overdue ? "Overdue since " : "Due "}
       {formatLocalDateTime24(deadlineAt)}
@@ -51,9 +53,6 @@ export function WorkflowRfiSummaryList({
               <h3 className="mt-3 font-bold text-brand-navy">
                 {request.question}
               </h3>
-              <p className="mt-2 text-sm text-brand-navy/70">
-                {request.instructions}
-              </p>
               <div className="mt-3 text-xs">
                 <WorkflowRfiDeadline
                   deadlineAt={request.deadlineAt}
@@ -84,7 +83,10 @@ export function WorkflowRfiCorrespondence({
   return (
     <section className="rounded-xl border border-brand-navy/10 bg-white p-5 shadow-sm">
       <h2 className="flex items-center gap-2 font-bold text-brand-navy">
-        <MessageSquareText aria-hidden="true" className="size-5 text-brand-orange" />
+        <MessageSquareText
+          aria-hidden="true"
+          className="size-5 text-brand-orange"
+        />
         Correspondence
       </h2>
       {entries.length ? (

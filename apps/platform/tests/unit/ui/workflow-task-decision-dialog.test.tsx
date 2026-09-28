@@ -85,7 +85,7 @@ describe("workflow task decision dialog", () => {
         ?.click();
     });
     expect(document.querySelector('[role="dialog"]')?.textContent).toContain(
-      "Confirm Approve and advance",
+      "Confirm approve and advance?",
     );
 
     await act(async () => {
@@ -122,7 +122,7 @@ describe("workflow task decision dialog", () => {
           '[role="dialog"] button',
         ),
       ]
-        .find((button) => button.textContent === "Confirm Approve and advance")
+        .find((button) => button.textContent === "Submit")
         ?.click();
     });
 
@@ -183,7 +183,7 @@ describe("workflow task decision dialog", () => {
     });
     await act(async () => {
       [...dialog.querySelectorAll<HTMLButtonElement>("button")]
-        .find((button) => button.textContent === "Confirm Reject")
+        .find((button) => button.textContent === "Submit")
         ?.click();
     });
 

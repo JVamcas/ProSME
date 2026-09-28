@@ -286,6 +286,7 @@ export async function getFormRuntime(
     fields,
     instructions: version.instructions,
     sections,
+    submissionMode: version.submissionMode,
     submitLabel: version.submitLabel,
     versionId: version.id,
     versionNumber: version.versionNumber,

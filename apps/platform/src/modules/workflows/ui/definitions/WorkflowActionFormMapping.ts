@@ -21,12 +21,12 @@ function numbers(value: string) {
 export function workflowActionFormDefaults(
   action: WorkflowActionDefinition | undefined,
   displayOrder: number,
-  taskStableKey = "",
+  taskStableKeys: string[] = [],
 ): WorkflowActionFormValues {
   const defaults: WorkflowActionFormValues = {
     stableKey: action?.stableKey ?? "",
     label: action?.label ?? "",
-    taskStableKey,
+    taskStableKeys,
     actionType: action?.actionType ?? "APPROVE_ADVANCE",
     enabled: action?.enabled ?? true,
     reasonCodeRequired: action?.reasonCodeRequired ?? false,

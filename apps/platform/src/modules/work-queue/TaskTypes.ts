@@ -15,6 +15,7 @@ export type DocumentRequirementItem = {
   mandatory: boolean;
   maximumSizeMb: number;
   name: string;
+  stableKey: string;
   requestStatus: "MISSING" | "REQUESTED" | "SUPPLIED" | "EXPIRED";
   templateReference: string;
   uploader: "APPLICANT" | "ASSIGNED_REVIEWER" | "STAFF";
@@ -40,6 +41,7 @@ export type DocumentResultItem = {
 export type ScoringCriterionItem = {
   criterion: string;
   description: string;
+  stableKey: string;
   mandatoryComment: boolean;
   scaleMaximum: number;
   scaleMinimum: number;
@@ -137,10 +139,12 @@ export type CompleteChecklistTaskInput = {
   scores?: ScoreResultItem[];
 };
 
-export type SaveTaskReviewDraftInput = Omit<
-  CompleteChecklistTaskInput,
-  "actionKey" | "expectedRowVersion"
->;
+export type SaveTaskReviewDraftInput = {
+  comments?: CommentResultItem[];
+  documents?: DocumentResultItem[];
+  items?: ChecklistResultItem[];
+  scores?: ScoreResultItem[];
+};
 
 export type TaskCompletionResult = {
   actionKey: string | null;

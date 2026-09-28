@@ -24,7 +24,12 @@ describe("stage completion context", () => {
       DELIVERY_COMMENT: "Strong evidence",
       ENTITY_VERIFIED: true,
       RECOMMENDED_AMOUNT: 400_000,
-      TAX_STATUS: "VERIFIED",
+      checklist: { ENTITY_VERIFIED: { accepted: true } },
+      comment: { DELIVERY: "Strong evidence" },
+      decision: { TAX_STATUS: { outcome: "VERIFIED" } },
+      form: { RECOMMENDED_AMOUNT: 400_000 },
+      result: { weightedTotal: 7.5 },
+      scoring: { DELIVERY: { value: 8 } },
       weightedTotal: 7.5,
     });
   });
@@ -36,6 +41,10 @@ describe("stage completion context", () => {
     }])).toEqual({
       DECISION: "APPROVE",
       RISK_RATING: "LOW",
+      form: {
+        DECISION: "APPROVE",
+        RISK_RATING: "LOW",
+      },
     });
   });
 
@@ -55,10 +64,20 @@ describe("stage completion context", () => {
         }],
       },
     }])).toEqual({
-      FINANCIAL_STATEMENTS: "VERIFIED",
-      FINANCIAL_STATEMENTS_COMMENT: "Current statements supplied.",
       VIABILITY: 9,
       VIABILITY_COMMENT: "Strong forecast.",
+      document: {
+        FINANCIAL_STATEMENTS: {
+          comment: "Current statements supplied.",
+          outcome: "VERIFIED",
+        },
+      },
+      scoring: {
+        VIABILITY: {
+          comment: "Strong forecast.",
+          value: 9,
+        },
+      },
     });
   });
 });

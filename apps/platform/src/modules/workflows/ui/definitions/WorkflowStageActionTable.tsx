@@ -4,10 +4,7 @@ import { Plus } from "lucide-react";
 
 import { DeleteButton, EditButton } from "@/components/ui/action-buttons";
 import { GeneralButton } from "@/components/ui/button";
-import {
-  DataTable,
-  type DataTableColumn,
-} from "@/components/ui/data-table";
+import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
 import type { WorkflowActionDefinition } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
 import { WorkflowStageTabHeader } from "./WorkflowStageTabHeader";
 import type { WorkflowStageInput } from "@/modules/workflows/domain/definitions/WorkflowTypes";
@@ -22,8 +19,10 @@ type Props = {
 };
 
 function actionTypeLabel(action: WorkflowActionDefinition) {
-  return workflowActionTypeItems.find((item) => item.value === action.actionType)
-    ?.label ?? action.actionType;
+  return (
+    workflowActionTypeItems.find((item) => item.value === action.actionType)
+      ?.label ?? action.actionType
+  );
 }
 
 function actionColumns(
@@ -44,11 +43,11 @@ function actionColumns(
     },
     {
       id: "task",
-      header: "Task",
+      header: "Tasks",
       cell: ({ row }) => (
         <span className="block max-w-56 whitespace-normal">
-          {taskNamesByActionKey.get(row.original.stableKey)?.join(", ")
-            ?? "Unassigned"}
+          {taskNamesByActionKey.get(row.original.stableKey)?.join(", ") ??
+            "Unassigned"}
         </span>
       ),
     },
@@ -125,12 +124,7 @@ export function WorkflowStageActionTable({
         title="Actions"
       />
       <DataTable
-        columns={actionColumns(
-          canEdit,
-          onDelete,
-          onEdit,
-          taskNamesByActionKey,
-        )}
+        columns={actionColumns(canEdit, onDelete, onEdit, taskNamesByActionKey)}
         data={stage.actions}
         emptyMessage="No actions have been added to this stage."
         minWidth={900}

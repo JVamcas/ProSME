@@ -14,6 +14,7 @@ function runtimeDefinition(editor: FormEditorView): FormRuntimeSchema {
     fields: editor.fields,
     instructions: editor.version.instructions,
     sections: editor.sections,
+    submissionMode: editor.version.submissionMode,
     submitLabel: editor.version.submitLabel,
     versionId: editor.version.id,
     versionNumber: editor.version.versionNumber,

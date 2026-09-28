@@ -11,6 +11,7 @@ import {
   workflowAuditEntries,
   workflowEvents,
 } from "@/db/schema";
+import { captureNotificationOccurrence } from "@/modules/notifications/application/ServerNotificationOccurrenceService";
 import { activateStageInTransaction } from "@/modules/workflows/application/runtime/ServerStageActivationService";
 import { createWorkflowInstance } from "@/modules/workflows/infrastructure/WorkflowInstanceRepository";
 import { formatApplicationReference } from "../domain/ApplicationReference";
@@ -277,5 +278,32 @@ export async function writeApplicationSubmission(
       input.configuration.workflowTemplateVersionId,
   };
   await appendSubmissionRecords(transaction, input, result, snapshot);
+  await captureNotificationOccurrence(transaction, {
+    aggregateId: input.application.id,
+    aggregateType: "APPLICATION",
+    context: {
+      applicationId: input.application.id,
+      applicationOwnerUserId: input.application.ownerUserId,
+      applicationReference: result.reference,
+      correlationId: input.correlationId,
+      fundingOpportunityTitle: input.application.fundingOpportunityTitle,
+      ownerDisplayName: input.applicant.displayName,
+      ownerEmail: input.applicant.email,
+      sourceIdempotencyKey: input.idempotencyKey,
+      submittedAt: result.submittedAt,
+      workflowInstanceId: result.workflowInstanceId,
+    },
+    correlationId: input.correlationId,
+    eventKey: "application.submitted",
+    occurrenceKey:
+      `application:${input.application.id}:submission:${input.idempotencyKey}`,
+    recipients: [{
+      displayName: input.applicant.displayName,
+      email: input.applicant.email,
+      recipientType: "APPLICATION_OWNER",
+      resolutionPath: "application.ownerUserId",
+      userId: input.application.ownerUserId,
+    }],
+  });
   return { kind: "submitted", result };
 }

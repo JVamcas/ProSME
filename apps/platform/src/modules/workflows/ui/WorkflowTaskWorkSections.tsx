@@ -122,12 +122,12 @@ function ScoringContent({
       {scoring.criteria.map((criterion, index) => (
         <section
           className="grid gap-4 rounded-xl border border-brand-navy/10 p-4 md:grid-cols-[1fr_10rem]"
-          key={criterion.criterion}
+          key={criterion.stableKey}
         >
           <input
             name={`scores.${index}.criterion`}
             type="hidden"
-            value={criterion.criterion}
+            value={criterion.stableKey}
           />
           <div>
             <p className="text-sm font-semibold text-brand-navy">

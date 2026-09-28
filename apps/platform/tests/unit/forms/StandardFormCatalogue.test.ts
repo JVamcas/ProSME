@@ -46,6 +46,16 @@ describe("standard form catalogue", () => {
       .toBe("COI");
   });
 
+  it("finalizes only the approval form with its workflow task action", () => {
+    const forms = createStandardForms();
+    const approval = forms.find((form) => form.code === "APPROVAL");
+    const otherForms = forms.filter((form) => form.code !== "APPROVAL");
+
+    expect(approval?.submissionMode).toBe("WITH_TASK_ACTION");
+    expect(otherForms.every((form) => form.submissionMode === "EXPLICIT"))
+      .toBe(true);
+  });
+
   it("publishes a conditional COI declaration for the workflow gate", () => {
     const form = createStandardForms().find(
       (item) => item.code === "COI_DECLARATION",

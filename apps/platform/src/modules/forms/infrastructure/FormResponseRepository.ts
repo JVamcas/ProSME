@@ -177,6 +177,13 @@ export async function saveDraftInTransaction(
     ? updateDraftResponse(transaction, input, current)
     : insertDraftResponse(transaction, input));
   if (!saved) return null;
+  await transaction
+    .update(workflowTasks)
+    .set({
+      startedAt: sql`COALESCE(${workflowTasks.startedAt}, NOW())`,
+      status: "IN_PROGRESS",
+    })
+    .where(eq(workflowTasks.id, input.workflowTaskId));
   await transaction.insert(workflowAuditEntries).values({
     action: current ? "FORM_RESPONSE_UPDATED" : "FORM_RESPONSE_CREATED",
     actorId: input.actorId,

@@ -22,6 +22,7 @@ vi.mock(
   () => ({
     WorkflowConflictError: class WorkflowConflictError extends Error {},
     WorkflowNotFoundError: class WorkflowNotFoundError extends Error {},
+    loadWorkflowEditor: vi.fn(),
     workflowEditorView: vi.fn(),
   }),
 );
@@ -43,7 +44,10 @@ import {
   updateWorkflowDraft,
   updateWorkflowDetails,
 } from "@/modules/workflows/application/definitions/ServerWorkflowService";
-import { workflowEditorView } from "@/modules/workflows/application/definitions/ServerWorkflowSupport";
+import {
+  loadWorkflowEditor,
+  workflowEditorView,
+} from "@/modules/workflows/application/definitions/ServerWorkflowSupport";
 
 const actor: AuthenticatedUser = {
   capabilities: new Set([permissionCodes.workflowDefinitionUpdate]),
@@ -96,6 +100,48 @@ describe("workflow draft updates", () => {
       ),
     ).rejects.toThrow("Only draft versions can be edited.");
     expect(replaceWorkflowDraft).not.toHaveBeenCalled();
+  });
+
+  it("reconciles action bindings before persisting a draft", async () => {
+    const nextGraph = structuredClone(referenceWorkflow);
+    nextGraph.stages[0].actions.push({
+      actionType: "REFER",
+      configuration: { returnToReferrer: false },
+      displayOrder: 2,
+      enabled: true,
+      label: "Refer",
+      reasonCodeRequired: true,
+      stableKey: "REFER",
+    });
+    vi.mocked(findDraftByDefinition).mockResolvedValue("draft-id");
+    vi.mocked(loadWorkflowEditor).mockResolvedValue({
+      graph: referenceWorkflow,
+    } as never);
+    vi.mocked(replaceWorkflowDraft).mockResolvedValue("draft-id");
+    vi.mocked(workflowEditorView).mockResolvedValue(undefined as never);
+
+    await updateWorkflowDraft(
+      actor,
+      "definition-id",
+      { expectedRowVersion: 2, graph: nextGraph },
+      "correlation-id",
+    );
+
+    expect(replaceWorkflowDraft).toHaveBeenCalledWith(
+      expect.objectContaining({
+        graph: expect.objectContaining({
+          stages: expect.arrayContaining([
+            expect.objectContaining({
+              tasks: [
+                expect.objectContaining({
+                  actionKeys: expect.arrayContaining(["REFER"]),
+                }),
+              ],
+            }),
+          ]),
+        }),
+      }),
+    );
   });
 
   it("updates workflow details with optimistic version data", async () => {

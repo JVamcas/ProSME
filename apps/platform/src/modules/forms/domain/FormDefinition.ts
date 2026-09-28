@@ -3,9 +3,11 @@ import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup"
 
 export const formStatuses = ["DRAFT", "PUBLISHED", "RETIRED"] as const;
 export const formDisplayModes = ["SINGLE_PAGE", "STEPS"] as const;
+export const formSubmissionModes = ["EXPLICIT", "WITH_TASK_ACTION"] as const;
 
 export type FormStatus = (typeof formStatuses)[number];
 export type FormDisplayMode = (typeof formDisplayModes)[number];
+export type FormSubmissionMode = (typeof formSubmissionModes)[number];
 
 export type FormSection = {
   id?: string;
@@ -25,6 +27,7 @@ export type FormVersionSummary = {
   status: FormStatus;
   instructions: string | null;
   displayMode: FormDisplayMode;
+  submissionMode: FormSubmissionMode;
   submitLabel: string;
   rowVersion: number;
   createdAt: string;

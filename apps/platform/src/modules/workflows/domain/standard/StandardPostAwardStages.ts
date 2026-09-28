@@ -1,4 +1,5 @@
 import type { WorkflowStageInput } from "../definitions/WorkflowTypes";
+import { stableKeyFromLabel } from "../WorkflowStableKey";
 import type { StandardWorkflowDependencies } from "./StandardWorkflowTypes";
 import {
   approve,
@@ -337,6 +338,7 @@ function closeOut(dependencies: StandardWorkflowDependencies) {
       taskStableKey: "EVALUATION_CLOSE_OUT_REVIEW",
       criteria: criteria.map((criterion) => ({
         criterion: criterion.label,
+        stableKey: stableKeyFromLabel(criterion.label, "SCORE"),
         description: "Results-framework close-out assessment.",
         mandatoryComment: true,
         scaleMaximum: 5,

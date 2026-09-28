@@ -1,12 +1,14 @@
 import { defaultWorkflowElementPermissions } from "../definitions/WorkflowElementPermissions";
 import { standardFormPurpose } from "@/modules/forms/domain/FormPurpose";
 import type { WorkflowActionDefinition } from "../actions/WorkflowActionDefinition";
+import { createDefaultWorkflowCommonActions } from "../actions/WorkflowActionBindingPolicy";
 import type {
   WorkflowStageInput,
   WorkflowTaskInput,
 } from "../definitions/WorkflowTypes";
 import type { WorkflowStageDocumentRequirement } from "../definitions/WorkflowStageDocumentRequirement";
 import type { WorkflowStageChecklistDefinition } from "../definitions/WorkflowStageChecklistDefinition";
+import { stableKeyFromLabel } from "../WorkflowStableKey";
 import type {
   StandardWorkflowDependencies,
   StandardWorkflowFormCode,
@@ -153,6 +155,7 @@ export function documentRequirement(
     maximumSizeMb: 20,
     name,
     requestOnStageActivation: false,
+    stableKey: stableKeyFromLabel(name, "DOCUMENT"),
     taskStableKey: "",
     templateReference: "",
     uploader,
@@ -215,8 +218,20 @@ export function stage(
   input: Omit<WorkflowStageInput, "entryCondition" | "exitCondition">,
 ): WorkflowStageInput {
   const defaultTaskKey = input.tasks[0]?.stableKey ?? "";
+  const maximumActionOrder = Math.max(
+    0,
+    ...input.actions.map((action) => action.displayOrder),
+  );
+  const commonActions = createDefaultWorkflowCommonActions(
+    input.tasks[0]?.roleId ?? undefined,
+  ).map((action, index) => ({
+    ...action,
+    displayOrder: maximumActionOrder + index + 1,
+  }));
+  const commonActionKeys = commonActions.map((action) => action.stableKey);
   return {
     ...input,
+    actions: [...input.actions, ...commonActions],
     checklistItems: input.checklistItems.map((item) => ({
       ...item,
       taskStableKey: item.taskStableKey || defaultTaskKey,
@@ -227,5 +242,9 @@ export function stage(
     })),
     entryCondition: null,
     exitCondition: null,
+    tasks: input.tasks.map((task) => ({
+      ...task,
+      actionKeys: [...new Set([...task.actionKeys, ...commonActionKeys])],
+    })),
   };
 }

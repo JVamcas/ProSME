@@ -1,6 +1,6 @@
 "use client";
 
-import { UserRound } from "lucide-react";
+import { LockKeyhole, UserRound } from "lucide-react";
 
 import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
 import { ArrowLink } from "@/components/ui/links";
@@ -31,10 +31,44 @@ const columns: DataTableColumn<WorkQueueRow>[] = [
   {
     accessorKey: "taskName",
     header: "Task",
+    cell: ({ row }) => {
+      const blockedReason = row.original.taskBlockedReason;
+      if (!blockedReason) {
+        return (
+          <ArrowLink href={`/admin/tasks/${row.original.taskInstanceId}`}>
+            {row.original.taskName}
+          </ArrowLink>
+        );
+      }
+      return (
+        <div className="max-w-72">
+          <span
+            aria-disabled="true"
+            className="inline-flex items-center gap-2 text-sm font-bold text-brand-navy/45"
+          >
+            <LockKeyhole aria-hidden="true" className="size-4 shrink-0" />
+            {row.original.taskName}
+          </span>
+          <p className="mt-1 text-xs leading-4 text-brand-navy/55">
+            {blockedReason}
+          </p>
+        </div>
+      );
+    },
+  },
+  {
+    accessorKey: "taskType",
+    header: "Task type",
     cell: ({ row }) => (
-      <ArrowLink href={`/admin/tasks/${row.original.taskInstanceId}`}>
-        {row.original.taskName}
-      </ArrowLink>
+      <StatusBadge
+        className={row.original.taskType === "STAGE_DECISION"
+          ? "bg-brand-blue/20"
+          : "bg-brand-gold/30"}
+        label={row.original.taskType === "STAGE_DECISION"
+          ? "Stage decision"
+          : "Contributing"}
+        status={row.original.taskType}
+      />
     ),
   },
   {
@@ -71,7 +105,7 @@ export function WorkQueueTable({
       columns={columns}
       data={items}
       emptyMessage={emptyMessage}
-      minWidth={1120}
+      minWidth={1280}
     />
   );
 }

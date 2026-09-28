@@ -20,6 +20,7 @@ import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup"
 import type { WorkflowElementPermissions } from "../domain/definitions/WorkflowElementPermissions";
 import type { StageCompletionTarget } from "./StageCompletionRepository";
 import { workflowEligibilityActionReady } from "./WorkflowEligibilityActionReadiness";
+import { workflowTaskPrerequisitesComplete } from "./WorkflowTaskPrerequisiteReadiness";
 
 export type WorkflowActionAvailabilitySource = {
   actions: StoredWorkflowAction[];
@@ -30,6 +31,7 @@ export type WorkflowActionAvailabilitySource = {
     eligibilityReady: boolean;
     id: string;
     permissions: WorkflowElementPermissions;
+    prerequisitesComplete: boolean;
     rowVersion: number;
     status: string;
     taskType: "CONTRIBUTING" | "STAGE_DECISION";
@@ -186,6 +188,7 @@ async function readTask(
       eligibilityReady: workflowEligibilityActionReady,
       id: workflowTasks.id,
       permissions: stageTaskDefinitions.permissions,
+      prerequisitesComplete: workflowTaskPrerequisitesComplete,
       rowVersion: workflowTasks.rowVersion,
       status: workflowTasks.status,
       taskType: stageTaskDefinitions.taskType,
