@@ -16,6 +16,7 @@ import {
   recordReviewThresholdEvaluations,
   type StageCompletionTransaction,
 } from "../../infrastructure/StageCompletionRepository";
+import { completeWorkflowReferralForStage } from "../../infrastructure/WorkflowControlRepository";
 
 export type CompleteStageInput = {
   actorId: string;
@@ -108,6 +109,13 @@ export async function completeStageInTransaction(
     requirements,
     target,
   });
+  if (completed) {
+    await completeWorkflowReferralForStage(transaction, {
+      actorId: input.actorId,
+      correlationId: input.correlationId,
+      referredStageInstanceId: target.stageInstanceId,
+    });
+  }
   return completed
     ? { completedAt, kind: "completed", stageInstanceId: target.stageInstanceId }
     : { kind: "stage_not_active" };

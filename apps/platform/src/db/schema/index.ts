@@ -17,6 +17,8 @@ export * from "@/modules/workflows/infrastructure/workflow.schema";
 export * from "@/modules/workflows/infrastructure/workflow-stage-requirements.schema";
 export * from "@/modules/workflows/infrastructure/workflow-audit.schema";
 export * from "@/modules/workflows/infrastructure/workflow-runtime.schema";
+export * from "@/modules/workflows/infrastructure/workflow-parallel.schema";
+export * from "@/modules/workflows/infrastructure/workflow-control.schema";
 export * from "@/modules/workflows/infrastructure/workflow-review.schema";
 export * from "@/modules/workflows/infrastructure/workflow-coi.schema";
 export * from "@/modules/workflows/infrastructure/workflow-decision.schema";

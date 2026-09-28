@@ -198,9 +198,13 @@ function DecisionForm({
         },
         workflowInstanceId: task.workflowInstanceId,
       });
+      const targetStageNames = result.transition.targets
+        .filter((target) => target.targetStageInstanceId)
+        .map((target) => target.targetStageName)
+        .join(", ");
       toast.success(
-        result.transition.targetStageName
-          ? `Application advanced to ${result.transition.targetStageName}.`
+        targetStageNames
+          ? `Application advanced to ${targetStageNames}.`
           : `${action.label} recorded.`,
       );
       router.push("/admin/work-queue");

@@ -11,7 +11,9 @@ import {
   workflowDefinitions,
   workflowDefinitionVersions,
   workflowStageDefinitions,
+  workflowStageJoinPredecessors,
   workflowTransitionDefinitions,
+  workflowTransitionTargets,
 } from "@/db/schema";
 import type { UpdateWorkflowDetailsInput } from "@/modules/workflows/api/WorkflowTransportTypes";
 
@@ -128,6 +130,12 @@ export async function deleteWorkflowDefinition(input: {
       await transaction
         .delete(stageTaskActionBindings)
         .where(inArray(stageTaskActionBindings.stageId, stageIds));
+      await transaction
+        .delete(workflowTransitionTargets)
+        .where(inArray(workflowTransitionTargets.targetStageId, stageIds));
+      await transaction
+        .delete(workflowStageJoinPredecessors)
+        .where(inArray(workflowStageJoinPredecessors.stageId, stageIds));
     }
     await transaction
       .delete(workflowTransitionDefinitions)

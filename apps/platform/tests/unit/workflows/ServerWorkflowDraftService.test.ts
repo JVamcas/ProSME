@@ -106,7 +106,10 @@ describe("workflow draft updates", () => {
     const nextGraph = structuredClone(referenceWorkflow);
     nextGraph.stages[0].actions.push({
       actionType: "REFER",
-      configuration: { returnToReferrer: false },
+      configuration: {
+        returnToReferrer: false,
+        sourceTaskBehavior: "OPEN",
+      },
       displayOrder: 2,
       enabled: true,
       label: "Refer",

@@ -26,6 +26,8 @@ export type WorkflowActionAvailabilitySource = {
   actions: StoredWorkflowAction[];
   stage: StageCompletionTarget & { rowVersion: number };
   task: {
+    activeHold?: boolean;
+    activeReferral?: boolean;
     assignedToActor: boolean;
     definitionId: string;
     eligibilityReady: boolean;
@@ -58,6 +60,17 @@ async function readStage(
   const database = getDatabase();
   const [row] = await database
     .select({
+      activeHold: sql<boolean>`EXISTS (
+        SELECT 1 FROM app_workflow_holds hold
+        WHERE hold.stage_instance_id = ${workflowTasks.stageInstanceId}
+          AND hold.status = 'ACTIVE'
+      )`,
+      activeReferral: sql<boolean>`EXISTS (
+        SELECT 1 FROM app_workflow_referrals referral
+        WHERE referral.source_task_id = ${workflowTasks.id}
+          AND referral.status = 'ACTIVE'
+          AND referral.source_task_behavior = 'BLOCKED'
+      )`,
       application: {
         business: applications.businessSection,
         declarationAcceptance: applications.declarationAcceptance,

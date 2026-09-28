@@ -19,6 +19,14 @@ const definitionBackfill = readFileSync(
   "utf8",
 );
 
+const enablementMigration = readFileSync(
+  path.resolve(
+    process.cwd(),
+    "drizzle/0127_enable_default_common_workflow_actions.sql",
+  ),
+  "utf8",
+);
+
 describe("existing workflow common-action binding migration", () => {
   it("binds every common action type to every task in its stage", () => {
     expect(migration).toContain("JOIN app_stage_task_definitions task");
@@ -63,6 +71,25 @@ describe("default common-action definition backfill", () => {
     );
     expect(definitionBackfill).toContain(
       "ON CONFLICT (task_definition_id, action_key) DO NOTHING",
+    );
+  });
+});
+
+describe("default common-action enablement migration", () => {
+  it("enables each canonical common action for existing workflows", () => {
+    expect(enablementMigration).toContain("SET enabled = true");
+    expect(enablementMigration).toContain("'REQUEST_INFORMATION'");
+    expect(enablementMigration).toContain("'REFER'");
+    expect(enablementMigration).toContain("'PUT_ON_HOLD'");
+    expect(enablementMigration).toContain("'ESCALATE'");
+  });
+
+  it("preserves published-version immutability after the update", () => {
+    expect(enablementMigration).toContain(
+      "DISABLE TRIGGER app_workflow_actions_immutable",
+    );
+    expect(enablementMigration).toContain(
+      "ENABLE TRIGGER app_workflow_actions_immutable",
     );
   });
 });

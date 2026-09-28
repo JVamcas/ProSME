@@ -4,6 +4,8 @@ import { Badge } from "@/shared/ui/Badge";
 export const statusStyles: Record<string, string> = {
   approved: "bg-brand-green/15 text-brand-navy",
   active: "bg-brand-green/70 text-brand-white",
+  sent: "bg-brand-green/70 text-brand-white",
+  failed: "bg-brand-red/70 text-brand-white",
   closed: "bg-brand-cream text-brand-navy",
   "completeness check": "bg-brand-gold/40 text-brand-navy",
   declined: "bg-brand-cream text-brand-navy",

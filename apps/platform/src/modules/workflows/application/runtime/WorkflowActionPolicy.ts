@@ -18,6 +18,8 @@ const decisionActionTypes = new Set<WorkflowActionDefinition["actionType"]>([
 ]);
 
 type ActionPolicyTask = {
+  activeHold?: boolean;
+  activeReferral?: boolean;
   assignedToActor: boolean;
   eligibilityReady?: boolean;
   prerequisitesComplete?: boolean;
@@ -126,13 +128,33 @@ export function evaluateWorkflowActionPolicy(
       "This action is not currently enabled.",
     );
   }
+  const resuming = target.action.actionType === "RESUME";
   if (target.workflowStatus !== "ACTIVE"
-    || target.stageStatus !== "ACTIVE"
+    || (resuming
+      ? target.stageStatus !== "BLOCKED"
+      : target.stageStatus !== "ACTIVE")
     || (target.task
       && !["PENDING", "IN_PROGRESS"].includes(target.task.status))) {
     return unavailable(
       "INVALID_STATE",
       "This action is not available in the current state.",
+    );
+  }
+  if (Boolean(target.task?.activeHold) !== resuming) {
+    return unavailable(
+      "INVALID_STATE",
+      resuming
+        ? "This work does not have an active hold."
+        : "This work is currently on hold.",
+    );
+  }
+  if (
+    target.task?.activeReferral
+    && target.action.actionType !== "WITHDRAW"
+  ) {
+    return unavailable(
+      "INVALID_STATE",
+      "This work is blocked until its referral is completed.",
     );
   }
   const permission = requiredWorkflowActionPermission(

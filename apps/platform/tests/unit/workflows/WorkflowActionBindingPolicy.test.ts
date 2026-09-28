@@ -90,7 +90,7 @@ describe("workflow action binding policy", () => {
     ]);
   });
 
-  it("creates disabled, valid common-action templates for a new stage", () => {
+  it("creates enabled, valid common-action templates for a new stage", () => {
     const actions = createDefaultWorkflowCommonActions(
       "79e20de0-3558-4d63-90a4-8c9f5125df07",
     );
@@ -98,9 +98,10 @@ describe("workflow action binding policy", () => {
       "REQUEST_INFORMATION",
       "REFER",
       "PUT_ON_HOLD",
+      "RESUME",
       "ESCALATE",
     ]);
-    expect(actions.every((action) => !action.enabled)).toBe(true);
+    expect(actions.every((action) => action.enabled)).toBe(true);
     actions.forEach((action) => {
       expect(workflowActionDefinitionSchema.safeParse(action).success).toBe(
         true,

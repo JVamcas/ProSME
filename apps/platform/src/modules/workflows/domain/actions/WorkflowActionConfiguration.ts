@@ -31,6 +31,7 @@ export type ReturnConfiguration = {
 
 export type ReferConfiguration = {
   returnToReferrer: boolean;
+  sourceTaskBehavior: "BLOCKED" | "OPEN";
 };
 
 export type EscalateConfiguration = {
@@ -42,6 +43,11 @@ export type EscalateConfiguration = {
 export type PutOnHoldConfiguration = {
   reasonCodes: string[];
   reviewDateRequired: boolean;
+  scope: "STAGE";
+};
+
+export type ResumeConfiguration = {
+  scope: "STAGE";
 };
 
 export type WithdrawConfiguration = {
@@ -67,6 +73,7 @@ export type WorkflowActionConfigurationByType = {
   REFER: ReferConfiguration;
   ESCALATE: EscalateConfiguration;
   PUT_ON_HOLD: PutOnHoldConfiguration;
+  RESUME: ResumeConfiguration;
   WITHDRAW: WithdrawConfiguration;
   DEFER: DeferConfiguration;
 };

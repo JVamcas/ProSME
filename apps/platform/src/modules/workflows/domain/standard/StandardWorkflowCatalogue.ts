@@ -11,15 +11,14 @@ import {
 function target(
   sourceStageKey: string,
   actionKey: string,
-  targetStageKey: string,
-  priority = 1,
+  ...targetStageKeys: string[]
 ): WorkflowTransitionInput {
   return {
     actionKey,
     condition: null,
-    priority,
+    priority: 1,
     sourceStageKey,
-    targetStageKey,
+    targetStageKeys,
   };
 }
 
@@ -35,13 +34,18 @@ function terminal(
     priority,
     sourceStageKey,
     terminalOutcome,
+    targetStageKeys: [],
   };
 }
 
 function standardTransitions(): WorkflowTransitionInput[] {
   return [
-    target("ADMIN_ELIGIBILITY_SCREENING", "ELIGIBLE_ADVANCE", "TECHNICAL_ASSESSMENT", 1),
-    target("ADMIN_ELIGIBILITY_SCREENING", "ELIGIBLE_ADVANCE", "FINANCIAL_REVIEW", 2),
+    target(
+      "ADMIN_ELIGIBILITY_SCREENING",
+      "ELIGIBLE_ADVANCE",
+      "TECHNICAL_ASSESSMENT",
+      "FINANCIAL_REVIEW",
+    ),
     terminal("ADMIN_ELIGIBILITY_SCREENING", "INELIGIBLE_REJECT", "INELIGIBLE"),
 
     target("TECHNICAL_ASSESSMENT", "RECOMMEND", "DUE_DILIGENCE_RISK"),
@@ -106,16 +110,27 @@ function standardTransitions(): WorkflowTransitionInput[] {
 export function createStandardWorkflowDraft(
   dependencies: StandardWorkflowDependencies,
 ): StandardWorkflowDraft {
+  const stages = [
+    ...createStandardAssessmentStages(dependencies),
+    ...createStandardDecisionStages(dependencies),
+    ...createStandardPostAwardStages(dependencies),
+  ].map((stage) =>
+    stage.stableKey === "DUE_DILIGENCE_RISK"
+      ? {
+          ...stage,
+          joinPredecessorStageKeys: [
+            "TECHNICAL_ASSESSMENT",
+            "FINANCIAL_REVIEW",
+          ],
+        }
+      : stage,
+  );
   return {
     code: standardWorkflowCode,
     description:
       "Standard client application workflow from administrative screening through evaluation and close-out.",
     graph: {
-      stages: [
-        ...createStandardAssessmentStages(dependencies),
-        ...createStandardDecisionStages(dependencies),
-        ...createStandardPostAwardStages(dependencies),
-      ],
+      stages,
       transitions: standardTransitions(),
     },
     name: "SME Fund Standard Application Workflow",

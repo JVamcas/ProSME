@@ -72,7 +72,11 @@ function queueQuery(input: WorkQueueListInput, actorId: string, cursor?: WorkQue
           AND app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
           THEN applicant.display_name ELSE 'Hidden until COI reviewed' END AS "applicantName",
         stage_definition.name AS "stageName",
-        CASE WHEN definition.task_type = 'STAGE_DECISION' AND EXISTS (
+        CASE WHEN stage.status = 'BLOCKED' AND EXISTS (
+          SELECT 1 FROM app_workflow_holds hold
+          WHERE hold.stage_instance_id = stage.id AND hold.status = 'ACTIVE'
+        ) THEN 'On hold. Open the task to review or resume it.'
+          WHEN definition.task_type = 'STAGE_DECISION' AND EXISTS (
           SELECT 1
           FROM app_workflow_tasks prerequisite
           JOIN app_stage_task_definitions prerequisite_definition

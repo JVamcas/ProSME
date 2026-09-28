@@ -34,18 +34,16 @@ export function arrangeWorkflowStages(
     let changed = false;
 
     for (const transition of transitions) {
-      if (!transition.targetStageKey) continue;
       const source = stageByKey.get(transition.sourceStageKey);
-      const target = stageByKey.get(transition.targetStageKey);
-
-      if (!source || !target || target.displayOrder <= source.displayOrder) {
-        continue;
-      }
-
-      const nextDepth = (depthByKey.get(source.stableKey) ?? 0) + 1;
-      if (nextDepth > (depthByKey.get(target.stableKey) ?? 0)) {
-        depthByKey.set(target.stableKey, nextDepth);
-        changed = true;
+      if (!source) continue;
+      for (const targetStageKey of transition.targetStageKeys) {
+        const target = stageByKey.get(targetStageKey);
+        if (!target || target.displayOrder <= source.displayOrder) continue;
+        const nextDepth = (depthByKey.get(source.stableKey) ?? 0) + 1;
+        if (nextDepth > (depthByKey.get(target.stableKey) ?? 0)) {
+          depthByKey.set(target.stableKey, nextDepth);
+          changed = true;
+        }
       }
     }
 

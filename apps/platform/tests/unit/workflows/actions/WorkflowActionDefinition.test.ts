@@ -46,6 +46,7 @@ describe("WorkflowActionDefinition", () => {
       },
       REFER: {
         returnToReferrer: true,
+        sourceTaskBehavior: "BLOCKED",
       },
       ESCALATE: {
         targetType: "ROLE",
@@ -55,7 +56,9 @@ describe("WorkflowActionDefinition", () => {
       PUT_ON_HOLD: {
         reasonCodes: ["EXTERNAL_REVIEW"],
         reviewDateRequired: true,
+        scope: "STAGE",
       },
+      RESUME: { scope: "STAGE" },
       WITHDRAW: {
         allowedStageKeys: ["PRE_SCREENING"],
         resubmissionRule: "NEW_APPLICATION",
@@ -98,6 +101,7 @@ describe("WorkflowActionDefinition", () => {
         actionType: "REJECT",
         configuration: {
           returnToReferrer: true,
+          sourceTaskBehavior: "BLOCKED",
         },
       }).success,
     ).toBe(false);

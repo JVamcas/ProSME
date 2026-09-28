@@ -34,6 +34,6 @@ function route(sourceStageKey: string, targetStageKey: string) {
     condition: null,
     priority: 1,
     sourceStageKey,
-    targetStageKey,
+    targetStageKeys: [targetStageKey],
   };
 }

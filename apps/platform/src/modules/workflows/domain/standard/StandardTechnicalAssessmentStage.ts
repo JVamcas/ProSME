@@ -77,7 +77,7 @@ export function createStandardTechnicalAssessmentStage(
       label: "Detailed assessment",
       status: "UNDER_REVIEW",
     },
-    repeatable: false,
+    repeatable: true,
     scoring: {
       aggregation: "WEIGHTED_AVERAGE",
       taskStableKey: "TECHNICAL_REVIEW",

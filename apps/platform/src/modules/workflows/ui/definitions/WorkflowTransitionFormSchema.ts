@@ -9,14 +9,14 @@ export const workflowTransitionFormSchema = z
   .object({
     actionKey: z.string(),
     targetType: z.enum(["STAGE", "TERMINAL"]),
-    targetStageKey: z.string(),
+    targetStageKeys: z.array(z.string()),
     terminalOutcome: z.string(),
     priority: z.number().int().positive(),
     condition: conditionGroupSchema.nullable(),
   })
   .superRefine((values, context) => {
     const field = values.targetType === "STAGE"
-      ? "targetStageKey"
+      ? "targetStageKeys"
       : "terminalOutcome";
     const value = values[field];
     if (!values.actionKey) {
@@ -26,7 +26,7 @@ export const workflowTransitionFormSchema = z
         path: ["actionKey"],
       });
     }
-    if (!value) {
+    if (!value || (Array.isArray(value) && value.length === 0)) {
       context.addIssue({
         code: "custom",
         message: values.targetType === "STAGE"
@@ -34,7 +34,11 @@ export const workflowTransitionFormSchema = z
           : "Select a terminal outcome.",
         path: [field],
       });
-    } else if (!stableKeyPattern.test(value)) {
+    } else if (
+      (Array.isArray(value) ? value : [value]).some(
+        (item) => !stableKeyPattern.test(item),
+      )
+    ) {
       context.addIssue({
         code: "custom",
         message: "Use uppercase letters, numbers and underscores.",
@@ -56,7 +60,7 @@ export function workflowTransitionFormDefaults(
   return {
     actionKey: transition?.actionKey ?? actionKey,
     targetType: transition?.terminalOutcome ? "TERMINAL" : "STAGE",
-    targetStageKey: transition?.targetStageKey ?? targetStageKey,
+    targetStageKeys: transition?.targetStageKeys ?? [targetStageKey],
     terminalOutcome: transition?.terminalOutcome ?? "",
     priority: transition?.priority ?? priority,
     condition: transition?.condition ?? null,
@@ -72,8 +76,8 @@ export function toWorkflowTransition(
     ...(id ? { id } : {}),
     sourceStageKey,
     actionKey: values.actionKey,
-    targetStageKey:
-      values.targetType === "STAGE" ? values.targetStageKey : null,
+    targetStageKeys:
+      values.targetType === "STAGE" ? values.targetStageKeys : [],
     terminalOutcome:
       values.targetType === "TERMINAL" ? values.terminalOutcome : null,
     priority: values.priority,

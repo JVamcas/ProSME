@@ -152,6 +152,44 @@ describe("workflow action policy", () => {
     ).reason).toBe("CONTEXT_MISMATCH");
   });
 
+  it("blocks held work except for the configured Resume action", () => {
+    const held = {
+      ...target(),
+      stageStatus: "BLOCKED",
+      task: { ...target().task, activeHold: true },
+    };
+    expect(evaluateWorkflowActionPolicy(
+      actor(permissionCodes.workflowTaskAssignedDecide),
+      held,
+      permittedInputs,
+    )).toMatchObject({ available: false, reason: "INVALID_STATE" });
+
+    const resume = {
+      ...held,
+      action: {
+        actionType: "RESUME" as const,
+        enabled: true,
+      },
+    };
+    expect(evaluateWorkflowActionPolicy(
+      actor(permissionCodes.workflowTaskAssignedProcess),
+      resume,
+      permittedInputs,
+    )).toMatchObject({ available: true, reason: null });
+  });
+
+  it("blocks source work while a blocking referral is active", () => {
+    const referred = {
+      ...target(),
+      task: { ...target().task, activeReferral: true },
+    };
+    expect(evaluateWorkflowActionPolicy(
+      actor(permissionCodes.workflowTaskAssignedDecide),
+      referred,
+      permittedInputs,
+    )).toMatchObject({ available: false, reason: "INVALID_STATE" });
+  });
+
   it("denies assignment mismatches without exposing policy details", () => {
     expect(evaluateWorkflowActionPolicy(
       actor(permissionCodes.workflowTaskAssignedDecide),

@@ -107,6 +107,7 @@ export const returnConfigurationSchema = z
 export const referConfigurationSchema = z
   .object({
     returnToReferrer: z.boolean(),
+    sourceTaskBehavior: z.enum(["BLOCKED", "OPEN"]),
   })
   .strict();
 
@@ -122,7 +123,12 @@ export const putOnHoldConfigurationSchema = z
   .object({
     reasonCodes: uniqueStableKeyListSchema,
     reviewDateRequired: z.boolean(),
+    scope: z.literal("STAGE"),
   })
+  .strict();
+
+export const resumeConfigurationSchema = z
+  .object({ scope: z.literal("STAGE") })
   .strict();
 
 export const withdrawConfigurationSchema = z
@@ -212,6 +218,13 @@ export const workflowActionDefinitionSchema = z.discriminatedUnion(
         ...commonShape,
         actionType: z.literal("PUT_ON_HOLD"),
         configuration: putOnHoldConfigurationSchema,
+      })
+      .strict(),
+    z
+      .object({
+        ...commonShape,
+        actionType: z.literal("RESUME"),
+        configuration: resumeConfigurationSchema,
       })
       .strict(),
     z

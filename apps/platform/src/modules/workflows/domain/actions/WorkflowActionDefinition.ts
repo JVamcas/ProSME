@@ -9,6 +9,7 @@ export const workflowActionTypes = [
   "REFER",
   "ESCALATE",
   "PUT_ON_HOLD",
+  "RESUME",
   "WITHDRAW",
   "DEFER",
 ] as const;

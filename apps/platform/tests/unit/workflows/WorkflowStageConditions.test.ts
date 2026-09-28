@@ -25,6 +25,7 @@ function stage(
     repeatable: false,
     coiGated: false,
     entryCondition: null,
+    joinPredecessorStageKeys: [],
     exitCondition: null,
     initial: displayOrder === 1,
     actions: [],

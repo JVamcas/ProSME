@@ -2,7 +2,7 @@ import "server-only";
 
 import { taskWorkIsReady } from "@/modules/workflows/WorkflowTaskRegistry";
 
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
 import {
@@ -10,9 +10,6 @@ import {
   stageTaskActionBindings,
   stageTaskDefinitions,
   workflowActionDefinitions,
-  workflowActionExecutions,
-  workflowAuditEntries,
-  workflowEvents,
   workflowTasks,
 } from "@/db/schema";
 import type { WorkflowActionDefinition } from "../domain/actions/WorkflowActionDefinition";
@@ -35,6 +32,8 @@ export type WorkflowActionExecutionTarget = {
   action: WorkflowActionDefinition & { id: string };
   stage: StageCompletionTarget & { rowVersion: number };
   task: {
+    activeHold?: boolean;
+    activeReferral?: boolean;
     assignedToActor: boolean;
     eligibilityReady?: boolean;
     id: string;
@@ -116,6 +115,17 @@ async function lockTask(
 ) {
   const [task] = await transaction
     .select({
+      activeHold: sql<boolean>`EXISTS (
+        SELECT 1 FROM app_workflow_holds hold
+        WHERE hold.stage_instance_id = ${workflowTasks.stageInstanceId}
+          AND hold.status = 'ACTIVE'
+      )`,
+      activeReferral: sql<boolean>`EXISTS (
+        SELECT 1 FROM app_workflow_referrals referral
+        WHERE referral.source_task_id = ${workflowTasks.id}
+          AND referral.status = 'ACTIVE'
+          AND referral.source_task_behavior = 'BLOCKED'
+      )`,
       assignedToActor: sql<boolean>`(
         ${workflowTasks.assignedUserId} = ${input.actorId}::uuid
         OR (
@@ -172,6 +182,7 @@ export async function lockWorkflowActionExecutionTarget(
   const stage = await lockStageCompletionTarget(
     transaction,
     input.sourceStageInstanceId,
+    ["ACTIVE", "BLOCKED"],
   );
   if (!stage) return null;
   const clearance = await transaction.execute(sql`
@@ -231,6 +242,7 @@ export async function claimWorkflowActionRuntimeVersion(
   transaction: WorkflowActionExecutionTransaction,
   stageInstanceId: string,
   expectedRuntimeVersion: number,
+  allowedStatuses: Array<"ACTIVE" | "BLOCKED"> = ["ACTIVE"],
 ) {
   const [stage] = await transaction
     .update(stageInstances)
@@ -238,7 +250,7 @@ export async function claimWorkflowActionRuntimeVersion(
     .where(and(
       eq(stageInstances.id, stageInstanceId),
       eq(stageInstances.rowVersion, expectedRuntimeVersion),
-      eq(stageInstances.status, "ACTIVE"),
+      inArray(stageInstances.status, allowedStatuses),
     ))
     .returning({ rowVersion: stageInstances.rowVersion });
   return stage?.rowVersion ?? null;
@@ -305,95 +317,4 @@ export async function completeActionTask(
   return task ?? null;
 }
 
-export async function recordWorkflowActionExecution(
-  transaction: WorkflowActionExecutionTransaction,
-  input: {
-    action: WorkflowActionExecutionTarget["action"];
-    actorId: string;
-    conditionEvaluation: Record<string, unknown>;
-    correlationId: string;
-    expectedRuntimeVersion: number;
-    id: string;
-    idempotencyKey: string;
-    normalizedInput: WorkflowActionInput;
-    resolvedTarget: Record<string, unknown> | null;
-    result: WorkflowActionExecutionResult;
-    resultingRuntimeVersion: number;
-    sourceStageInstanceId: string;
-    taskBefore: WorkflowActionExecutionTarget["task"];
-    taskId: string | null;
-    workflowInstanceId: string;
-  },
-) {
-  await transaction.insert(workflowActionExecutions).values({
-    actionDefinitionId: input.action.id,
-    actionKey: input.action.stableKey,
-    actionType: input.action.actionType,
-    actorId: input.actorId,
-    actorIdentifier: input.actorId,
-    actorType: "USER",
-    comment: input.normalizedInput.comment ?? null,
-    conditionEvaluation: input.conditionEvaluation,
-    correlationId: input.correlationId,
-    expectedRuntimeVersion: input.expectedRuntimeVersion,
-    id: input.id,
-    idempotencyKey: input.idempotencyKey,
-    normalizedInput: input.normalizedInput,
-    reasonCode: input.normalizedInput.reasonCode ?? null,
-    resolvedTarget: input.resolvedTarget,
-    result: input.result,
-    resultingRuntimeVersion: input.resultingRuntimeVersion,
-    sourceStageInstanceId: input.sourceStageInstanceId,
-    taskId: input.taskId,
-    workflowInstanceId: input.workflowInstanceId,
-  });
-  await transaction.insert(workflowEvents).values({
-    actorId: input.actorId,
-    correlationId: input.correlationId,
-    eventCode: "ACTION_EXECUTED",
-    payload: {
-      actionExecutionId: input.id,
-      actionKey: input.action.stableKey,
-      actionType: input.action.actionType,
-      resultingRuntimeVersion: input.resultingRuntimeVersion,
-      sourceStageInstanceId: input.sourceStageInstanceId,
-      taskId: input.taskId,
-    },
-    workflowInstanceId: input.workflowInstanceId,
-  });
-  await transaction.insert(workflowAuditEntries).values({
-    action: "ACTION_EXECUTED",
-    actorId: input.actorId,
-    after: {
-      actionKey: input.action.stableKey,
-      actionType: input.action.actionType,
-      resultingRuntimeVersion: input.resultingRuntimeVersion,
-      resolvedTarget: input.resolvedTarget,
-      task: input.taskBefore
-        ? {
-            id: input.taskBefore.id,
-            rowVersion: input.taskBefore.rowVersion + 1,
-            status: "COMPLETED",
-          }
-        : null,
-    },
-    before: {
-      runtimeVersion: input.expectedRuntimeVersion,
-      task: input.taskBefore
-        ? {
-            id: input.taskBefore.id,
-            rowVersion: input.taskBefore.rowVersion,
-            status: input.taskBefore.status,
-          }
-        : null,
-    },
-    correlationId: input.correlationId,
-    idempotencyKey: input.idempotencyKey,
-    reason: input.normalizedInput.reasonCode ?? input.normalizedInput.comment,
-    stageInstanceId: input.sourceStageInstanceId,
-    targetId: input.id,
-    targetType: "WORKFLOW_ACTION_EXECUTION",
-    taskId: input.taskId,
-    workflowInstanceId: input.workflowInstanceId,
-  });
-}
+export { recordWorkflowActionExecution } from "./WorkflowActionExecutionRecordsRepository";

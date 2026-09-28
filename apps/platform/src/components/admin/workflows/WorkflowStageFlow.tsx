@@ -97,23 +97,41 @@ export function WorkflowStageFlow({ canEdit, editor }: Props) {
     const successor = stages[selectedIndex + 1]?.stableKey;
     const remaining = stages
       .filter((item) => item.stableKey !== stage.stableKey)
-      .map((item, index) => ({
-        ...item,
-        initial: index === 0,
-        displayOrder: index + 1,
-      }));
+      .map((item, index) => {
+        const joinPredecessorStageKeys = item.joinPredecessorStageKeys.filter(
+          (predecessorKey) => predecessorKey !== stage.stableKey,
+        );
+        return {
+          ...item,
+          initial: index === 0,
+          joinPredecessorStageKeys:
+            joinPredecessorStageKeys.length >= 2
+              ? joinPredecessorStageKeys
+              : [],
+          displayOrder: index + 1,
+        };
+      });
     await deleteMutation.mutateAsync({
       stages: remaining,
       transitions: editor.graph.transitions
         .filter(
           (transition) => transition.sourceStageKey !== stage.stableKey,
         )
-        .flatMap((transition) =>
-          transition.targetStageKey !== stage.stableKey
-            ? [transition]
-            : successor
-              ? [{ ...transition, targetStageKey: successor }]
-              : [],
+        .map((transition) => ({
+          ...transition,
+          targetStageKeys: [...new Set(
+            transition.targetStageKeys.flatMap((targetStageKey) =>
+              targetStageKey !== stage.stableKey
+                ? [targetStageKey]
+                : successor
+                  ? [successor]
+                  : [],
+            ),
+          )],
+        }))
+        .filter(
+          (transition) =>
+            transition.targetStageKeys.length > 0 || transition.terminalOutcome,
         ),
     });
     setSelectedCode(

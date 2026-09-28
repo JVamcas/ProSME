@@ -236,10 +236,6 @@ export const transitionExecutions = pgTable(
         onDelete: "restrict",
       }),
     actionKey: text("action_key").notNull(),
-    targetStageDefinitionId: uuid("target_stage_definition_id")
-      .references(() => workflowStageDefinitions.id, { onDelete: "restrict" }),
-    targetStageInstanceId: uuid("target_stage_instance_id")
-      .references(() => stageInstances.id, { onDelete: "restrict" }),
     outcome: text("outcome")
       .$type<TransitionExecutionOutcome>()
       .notNull()

@@ -6,9 +6,10 @@ import {
   normalizeStageConditionRecord,
 } from "../../engine/StageCondition";
 import {
-  findStageInstanceStatus,
   findStageIteration,
+  loadIncompleteJoinPredecessors,
   loadPriorStageContext,
+  nextStageIterationNumber,
   loadStageActivationTasks,
   lockStageActivationTarget,
   persistStageActivation,
@@ -22,6 +23,7 @@ export type ActivateStageInput = {
   actorId: string;
   correlationId: string;
   iterationNumber?: number;
+  iterationStrategy?: "FIRST" | "NEXT";
   referralContext?: Record<string, unknown> | null;
   returnContext?: Record<string, unknown> | null;
   stageDefinitionId: string;
@@ -43,7 +45,11 @@ export type StageActivationResult =
       evaluation: StageConditionEvaluation;
     }
   | {
-      kind: "invalid_iteration" | "stage_conflict" | "stage_not_found";
+      kind: "join_pending";
+      incompletePredecessorStageKeys: string[];
+    }
+  | {
+      kind: "invalid_iteration" | "stage_not_found";
     };
 
 function validIteration(iterationNumber: number) {
@@ -54,15 +60,20 @@ export async function activateStageInTransaction(
   transaction: StageActivationTransaction,
   input: ActivateStageInput,
 ): Promise<StageActivationResult> {
-  const iterationNumber = input.iterationNumber ?? 1;
-  if (!validIteration(iterationNumber)) return { kind: "invalid_iteration" };
-
   const target = await lockStageActivationTarget(
     transaction,
     input.workflowInstanceId,
     input.stageDefinitionId,
   );
   if (!target) return { kind: "stage_not_found" };
+  const iterationNumber = input.iterationStrategy === "NEXT"
+    ? await nextStageIterationNumber(
+        transaction,
+        input.workflowInstanceId,
+        input.stageDefinitionId,
+      )
+    : input.iterationNumber ?? 1;
+  if (!validIteration(iterationNumber)) return { kind: "invalid_iteration" };
   if (!target.repeatable && iterationNumber !== 1) {
     return { kind: "invalid_iteration" };
   }
@@ -76,15 +87,15 @@ export async function activateStageInTransaction(
   if (existing) {
     return { kind: "already_active", stageInstanceId: existing.id };
   }
-  if (target.currentStageInstanceId) {
-    const currentStatus = await findStageInstanceStatus(
-      transaction,
-      target.currentStageInstanceId,
-    );
-    if (currentStatus && currentStatus !== "COMPLETED"
-      && currentStatus !== "CANCELLED") {
-      return { kind: "stage_conflict" };
-    }
+  const incompletePredecessorStageKeys = target.joinPredecessorStageKeys.length
+    ? await loadIncompleteJoinPredecessors(
+        transaction,
+        input.workflowInstanceId,
+        input.stageDefinitionId,
+      )
+    : [];
+  if (incompletePredecessorStageKeys.length) {
+    return { kind: "join_pending", incompletePredecessorStageKeys };
   }
 
   const [priorStages, tasks] = await Promise.all([

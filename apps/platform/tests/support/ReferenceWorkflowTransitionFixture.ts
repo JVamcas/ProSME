@@ -13,7 +13,7 @@ export const referenceWorkflowTransitionsFixture: WorkflowTransitionInput[] = [
     ([sourceStageKey, targetStageKey]) => ({
       sourceStageKey,
       actionKey: "ADVANCE",
-      targetStageKey,
+      targetStageKeys: [targetStageKey],
       priority: 1,
       condition: null,
     }),
@@ -22,6 +22,7 @@ export const referenceWorkflowTransitionsFixture: WorkflowTransitionInput[] = [
     sourceStageKey: "OUTCOME_COMMUNICATION",
     actionKey: "COMPLETE",
     terminalOutcome: "CLOSED",
+    targetStageKeys: [],
     priority: 1,
     condition: null,
   },

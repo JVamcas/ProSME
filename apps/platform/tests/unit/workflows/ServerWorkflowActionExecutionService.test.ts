@@ -155,8 +155,12 @@ beforeEach(() => {
   vi.mocked(executeSequentialTransitionInTransaction).mockResolvedValue({
     executionId: "f0000000-0000-4000-8000-000000000001",
     kind: "transitioned",
-    targetStageInstanceId: "f0000000-0000-4000-8000-000000000002",
-    targetStageName: "Next stage",
+    targets: [{
+      outcome: "ACTIVATED",
+      targetStageDefinitionId: "f0000000-0000-4000-8000-000000000003",
+      targetStageInstanceId: "f0000000-0000-4000-8000-000000000002",
+      targetStageName: "Next stage",
+    }],
     workflowStatus: "ACTIVE",
   });
 });
@@ -232,8 +236,7 @@ describe("server workflow action execution", () => {
       taskId,
       transition: {
         kind: "STAGE_ACTIVE" as const,
-        targetStageInstanceId: null,
-        targetStageName: null,
+        targets: [],
         workflowStatus: "ACTIVE" as const,
       },
       workflowInstanceId,

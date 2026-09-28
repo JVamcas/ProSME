@@ -183,6 +183,11 @@ async function lockTask(
       AND task.row_version = ${input.expectedRowVersion}
       AND task.status IN ('PENDING', 'IN_PROGRESS')
       AND stage.status = 'ACTIVE' AND workflow.status = 'ACTIVE'
+      AND NOT EXISTS (
+        SELECT 1 FROM app_workflow_holds active_hold
+        WHERE active_hold.stage_instance_id = stage.id
+          AND active_hold.status = 'ACTIVE'
+      )
       AND (
         (${input.actionKey}::text IS NULL)
         OR (${input.actionKey}::text IS NOT NULL AND EXISTS (

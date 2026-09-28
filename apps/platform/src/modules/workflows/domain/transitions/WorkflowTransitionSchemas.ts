@@ -14,7 +14,7 @@ export const workflowTransitionSchema = z
     id: z.string().uuid().optional(),
     sourceStageKey: stableKeySchema,
     actionKey: stableKeySchema,
-    targetStageKey: stableKeySchema.nullable().optional(),
+    targetStageKeys: z.array(stableKeySchema).max(50),
     terminalOutcome: stableKeySchema.nullable().optional(),
     priority: z.number().int().positive(),
     condition: conditionGroupSchema.nullable(),
@@ -22,13 +22,20 @@ export const workflowTransitionSchema = z
   .strict()
   .superRefine((transition, context) => {
     if (
-      Boolean(transition.targetStageKey) ===
+      Boolean(transition.targetStageKeys.length) ===
       Boolean(transition.terminalOutcome)
     ) {
       context.addIssue({
         code: "custom",
-        message: "Select one target stage or terminal outcome.",
-        path: ["targetStageKey"],
+        message: "Select one or more target stages or a terminal outcome.",
+        path: ["targetStageKeys"],
+      });
+    }
+    if (new Set(transition.targetStageKeys).size !== transition.targetStageKeys.length) {
+      context.addIssue({
+        code: "custom",
+        message: "Transition targets must be unique.",
+        path: ["targetStageKeys"],
       });
     }
   });

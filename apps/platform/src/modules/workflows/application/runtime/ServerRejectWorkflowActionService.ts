@@ -63,7 +63,7 @@ export async function executeTerminalRejectInTransaction(
     executionId: execution.id,
     outcome: "WORKFLOW_REJECTED",
     sourceStageInstanceId: input.sourceStageInstanceId,
-    targetStageInstanceId: null,
+    targets: [],
     transition: input.transition,
     workflowInstanceId: input.workflowInstanceId,
   });

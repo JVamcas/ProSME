@@ -18,6 +18,7 @@ import type {
 import { useNotificationDeliveries, useRetryNotificationDelivery } from "./useNotificationAdministration";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatLocalDateTime24 } from "@/lib/dateUtils";
+import { RightDrawer } from "@/shared/ui/RightDrawer";
 
 const filterSchema = z.object({
   applicationReference: z.string().max(100),
@@ -277,38 +278,42 @@ export function NotificationDeliveryHistory({
         minWidth={960}
         rowKey={(item) => item.deliveryId}
       />
-      {retryId ? (
+      <RightDrawer
+        description="Review the disclosure independently before the assigned reviewer can continue."
+        footer={
+          <div className="mt-4 flex gap-3">
+            <GeneralButton
+              onClick={() => setRetryId(null)}
+              type="button"
+              variant="outline"
+            >
+              Cancel
+            </GeneralButton>
+            <GeneralButton disabled={retry.isPending} type="submit">
+              {retry.isPending ? "Scheduling…" : "Schedule retry"}
+            </GeneralButton>
+          </div>
+        }
+        onClose={() => setRetryId(null)}
+        open={Boolean(retryId)}
+        size="xl"
+        title="Conflict review"
+      >
         <FormProvider {...retryForm}>
           <form
             className="rounded-2xl border border-brand-orange/30 bg-orange-50 p-5"
             onSubmit={submitRetry}
           >
             <h2 className="font-bold text-brand-navy">Schedule delivery retry</h2>
-            <p className="mt-1 text-sm text-brand-navy/65">
-              The retry is queued for the processor and will not send
-              synchronously.
-            </p>
             <FormTextarea
               containerClassName="mt-4"
               label="Reason"
               name="reason"
               required
             />
-            <div className="mt-4 flex gap-3">
-              <GeneralButton disabled={retry.isPending} type="submit">
-                {retry.isPending ? "Scheduling…" : "Schedule retry"}
-              </GeneralButton>
-              <GeneralButton
-                onClick={() => setRetryId(null)}
-                type="button"
-                variant="outline"
-              >
-                Cancel
-              </GeneralButton>
-            </div>
           </form>
         </FormProvider>
-      ) : null}
+      </RightDrawer>
     </div>
   );
 }

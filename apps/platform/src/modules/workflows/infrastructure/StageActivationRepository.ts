@@ -7,7 +7,6 @@ import {
   applications,
   applicationSubmissionSnapshots,
   authoritativeEligibilityOutcomes,
-  stageInstances,
   stageTaskDefinitions,
   stageTaskFormBindings,
   workflowInstances,
@@ -28,11 +27,11 @@ export type StageActivationTarget = {
   application: Record<string, unknown>;
   applicationId: string;
   applicationReference: string;
-  currentStageInstanceId: string | null;
   eligibility: Record<string, unknown> | null;
   entryCondition: typeof workflowStageDefinitions.$inferSelect.entryCondition;
   fundingCall: Record<string, unknown>;
   fundingOpportunityTitle: string;
+  joinPredecessorStageKeys: string[];
   repeatable: boolean;
   publicStatus: WorkflowPublicStatusMapping;
   slaHours: number | null;
@@ -92,7 +91,6 @@ export async function lockStageActivationTarget(
     .select({
       applicationId: applications.id,
       snapshotContent: applicationSubmissionSnapshots.snapshotContent,
-      currentStageInstanceId: workflowInstances.currentStageInstanceId,
       eligibility: {
         eligible: authoritativeEligibilityOutcomes.eligible,
         evaluatedAt: authoritativeEligibilityOutcomes.evaluatedAt,
@@ -107,6 +105,14 @@ export async function lockStageActivationTarget(
         warningCount: sql<number>`jsonb_array_length(${authoritativeEligibilityOutcomes.warnings})`,
       },
       entryCondition: workflowStageDefinitions.entryCondition,
+      joinPredecessorStageKeys: sql<string[]>`ARRAY(
+        SELECT predecessor.code
+        FROM app_workflow_stage_join_predecessors dependency
+        JOIN app_workflow_stage_definitions predecessor
+          ON predecessor.id = dependency.predecessor_stage_id
+        WHERE dependency.stage_id = ${workflowStageDefinitions.id}
+        ORDER BY predecessor.code
+      )`,
       publicStatus: {
         status: workflowStageDefinitions.applicantStatus,
         label: workflowStageDefinitions.applicantLabel,
@@ -216,16 +222,41 @@ export async function findStageIteration(
   return stage ?? null;
 }
 
-export async function findStageInstanceStatus(
-  transaction: StageActivationTransaction,
-  stageInstanceId: string,
-): Promise<StageInstanceStatus | null> {
-  const [stage] = await transaction
-    .select({ status: stageInstances.status })
-    .from(stageInstances)
-    .where(eq(stageInstances.id, stageInstanceId))
-    .limit(1);
-  return stage?.status ?? null;
+export async function nextStageIterationNumber(
+  transaction: Pick<StageActivationTransaction, "execute">,
+  workflowInstanceId: string,
+  stageDefinitionId: string,
+) {
+  const result = await transaction.execute(sql`
+    SELECT coalesce(max(iteration_number), 0)::integer + 1 AS "iterationNumber"
+    FROM app_workflow_stage_instances
+    WHERE workflow_instance_id = ${workflowInstanceId}::uuid
+      AND workflow_stage_definition_id = ${stageDefinitionId}::uuid
+  `);
+  return (result.rows[0] as { iterationNumber: number }).iterationNumber;
+}
+
+export async function loadIncompleteJoinPredecessors(
+  transaction: Pick<StageActivationTransaction, "execute">,
+  workflowInstanceId: string,
+  stageDefinitionId: string,
+): Promise<string[]> {
+  const result = await transaction.execute(sql`
+    SELECT predecessor.code AS "stageKey"
+    FROM app_workflow_stage_join_predecessors dependency
+    JOIN app_workflow_stage_definitions predecessor
+      ON predecessor.id = dependency.predecessor_stage_id
+    WHERE dependency.stage_id = ${stageDefinitionId}::uuid
+      AND NOT EXISTS (
+        SELECT 1
+        FROM app_workflow_stage_instances completed
+        WHERE completed.workflow_instance_id = ${workflowInstanceId}::uuid
+          AND completed.workflow_stage_definition_id = dependency.predecessor_stage_id
+          AND completed.status = 'COMPLETED'
+      )
+    ORDER BY predecessor.code
+  `);
+  return (result.rows as Array<{ stageKey: string }>).map((row) => row.stageKey);
 }
 
 export async function loadStageActivationTasks(
@@ -253,54 +284,7 @@ export async function loadStageActivationTasks(
     .orderBy(asc(stageTaskDefinitions.displayOrder));
 }
 
-type PriorStageRow = {
-  result: Record<string, unknown> | null;
-  stageKey: string;
-  values: Record<string, unknown> | null;
-};
-
-export async function loadPriorStageContext(
-  transaction: Pick<StageActivationTransaction, "execute">,
-  workflowInstanceId: string,
-): Promise<PriorStageActivationContext[]> {
-  const result = await transaction.execute(sql`
-    WITH latest_completed_stage AS (
-      SELECT DISTINCT ON (definition.code)
-        stage.id,
-        definition.code
-      FROM app_workflow_stage_instances stage
-      JOIN app_workflow_stage_definitions definition
-        ON definition.id = stage.workflow_stage_definition_id
-      WHERE stage.workflow_instance_id = ${workflowInstanceId}::uuid
-        AND stage.status = 'COMPLETED'
-      ORDER BY definition.code, stage.iteration_number DESC,
-        stage.completed_at DESC, stage.id DESC
-    )
-    SELECT latest.code AS "stageKey",
-      response.values,
-      task.result
-    FROM latest_completed_stage latest
-    LEFT JOIN app_workflow_tasks task
-      ON task.stage_instance_id = latest.id
-      AND task.status = 'COMPLETED'
-      AND (task.form_version_id IS NULL OR EXISTS (
-        SELECT 1 FROM app_form_responses submitted
-        WHERE submitted.workflow_task_id = task.id
-          AND submitted.status = 'COMPLETED'
-      ))
-    LEFT JOIN app_form_responses response
-      ON response.workflow_task_id = task.id
-      AND response.status = 'COMPLETED'
-    ORDER BY latest.code, task.created_at, task.id
-  `);
-  const stages = new Map<string, Record<string, unknown>>();
-  for (const row of result.rows as PriorStageRow[]) {
-    const values = stages.get(row.stageKey) ?? {};
-    Object.assign(values, row.values ?? {}, row.result ?? {});
-    stages.set(row.stageKey, values);
-  }
-  return [...stages].map(([stableKey, values]) => ({ stableKey, values }));
-}
+export { loadPriorStageContext } from "./StageActivationContextRepository";
 
 export async function persistStageActivation(
   transaction: StageActivationTransaction,
@@ -374,6 +358,7 @@ export async function persistStageActivation(
     publicStatus: input.target.publicStatus,
     tasks,
     workflowInstanceId: input.target.workflowInstanceId,
+    joinDriven: input.target.joinPredecessorStageKeys.length > 0,
   });
   return { stage, tasks };
 }

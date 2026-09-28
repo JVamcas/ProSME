@@ -112,6 +112,10 @@ export function WorkflowTransitionDialog({
     resolver: zodResolver(workflowTransitionFormSchema),
   });
   const targetType = useWatch({ control: form.control, name: "targetType" });
+  const targetStageKeys = useWatch({
+    control: form.control,
+    name: "targetStageKeys",
+  });
 
   const submit = form.handleSubmit(async (values) => {
     const duplicatePriority = sourceTransitions.some(
@@ -183,10 +187,18 @@ export function WorkflowTransitionDialog({
                 label: item.name,
                 value: item.stableKey,
               }))}
-              label="Target stage"
-              name="targetStageKey"
-              placeholder="Select a stage"
+              label="Target stages"
+              multiple
+              name="targetStageKeys"
+              onMultipleChange={(values) =>
+                form.setValue("targetStageKeys", values, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                })
+              }
+              placeholder="Select one or more stages"
               required
+              value={targetStageKeys}
             />
           ) : (
             <FormSelect

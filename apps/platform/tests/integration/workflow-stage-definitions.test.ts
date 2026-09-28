@@ -73,6 +73,7 @@ afterAll(async () => {
             repeatable: true,
             coiGated: true,
             initial: true,
+            joinPredecessorStageKeys: [],
             slaHours: null,
             entryCondition: {
               id: randomUUID(),

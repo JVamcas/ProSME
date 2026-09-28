@@ -6,7 +6,6 @@ import {
   checklist,
   documentRequirement,
   hold,
-  refer,
   reject,
   returnAction,
   stage,
@@ -40,7 +39,7 @@ function contracting(dependencies: StandardWorkflowDependencies) {
     approve("EXECUTE_AGREEMENT", "Execute", 1),
     returnAction("RETURN_NEGOTIATION", "Return for negotiation", 2),
     reject("LAPSE_AWARD", "Lapse award on non-acceptance", 3),
-    refer("REALLOCATE_RESERVE", "Reallocate to reserve list", 4),
+    approve("REALLOCATE_RESERVE", "Reallocate to reserve list", 4),
   ];
   return stage({
     actions,
@@ -93,7 +92,7 @@ function disbursement(dependencies: StandardWorkflowDependencies) {
     hold("WITHHOLD_REPORTS", "Withhold pending outstanding reports", 3, [
       "OUTSTANDING_REPORTS",
     ]),
-    refer("RECOVER_FUNDS", "Recover funds", 4),
+    approve("RECOVER_FUNDS", "Recover funds", 4),
     approve("NEXT_TRANCHE", "Create next tranche", 5),
   ];
   return stage({
@@ -267,7 +266,7 @@ function closeOut(dependencies: StandardWorkflowDependencies) {
   const actions = [
     approve("CLOSE", "Close", 1),
     approve("CLOSE_QUALIFIED", "Close with qualification", 2),
-    refer(
+    approve(
       "REFER_RECOVERY_INVESTIGATION",
       "Refer for recovery or investigation",
       3,

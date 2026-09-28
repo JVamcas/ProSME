@@ -9,10 +9,12 @@ import {
   workflowStageChecklistDefinitions,
   workflowStageCommentFields,
   workflowStageDefinitions,
+  workflowStageJoinPredecessors,
   workflowStageDocumentRequirements,
   workflowStageScoringConfigurations,
   workflowStageScoringCriteria,
   workflowTransitionDefinitions,
+  workflowTransitionTargets,
 } from "@/db/schema";
 import type { WorkflowGraphInput } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 
@@ -54,19 +56,39 @@ export async function insertWorkflowGraph(
   const stageIds = new Map(stageRows.map((stage) => [stage.code, stage.id]));
   const taskIds = await insertActionsAndTasks(transaction, graph, stageIds);
   await insertStageRequirements(transaction, graph, stageIds, taskIds);
+  const joinPredecessors = graph.stages.flatMap((stage) =>
+    stage.joinPredecessorStageKeys.map((predecessorStageKey) => ({
+      predecessorStageId: stageIds.get(predecessorStageKey)!,
+      stageId: stageIds.get(stage.stableKey)!,
+    })),
+  );
+  if (joinPredecessors.length) {
+    await transaction
+      .insert(workflowStageJoinPredecessors)
+      .values(joinPredecessors);
+  }
   const transitions = graph.transitions.map((transition) => ({
     actionKey: transition.actionKey,
     condition: transition.condition,
     fromStageId: stageIds.get(transition.sourceStageKey)!,
     priority: transition.priority,
     terminalOutcome: transition.terminalOutcome ?? null,
-    toStageId: transition.targetStageKey
-      ? stageIds.get(transition.targetStageKey)!
-      : null,
     versionId,
   }));
   if (transitions.length) {
-    await transaction.insert(workflowTransitionDefinitions).values(transitions);
+    const transitionRows = await transaction
+      .insert(workflowTransitionDefinitions)
+      .values(transitions)
+      .returning({ id: workflowTransitionDefinitions.id });
+    const targets = transitionRows.flatMap((row, index) =>
+      graph.transitions[index].targetStageKeys.map((targetStageKey) => ({
+        targetStageId: stageIds.get(targetStageKey)!,
+        transitionId: row.id,
+      })),
+    );
+    if (targets.length) {
+      await transaction.insert(workflowTransitionTargets).values(targets);
+    }
   }
 }
 

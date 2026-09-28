@@ -116,13 +116,17 @@ export function hold(
     {
       reasonCodes,
       reviewDateRequired: true,
+      scope: "STAGE",
     },
     true,
   );
 }
 
 export function refer(key: string, label: string, order: number) {
-  return action(key, label, "REFER", order, { returnToReferrer: false }, true);
+  return action(key, label, "REFER", order, {
+    returnToReferrer: true,
+    sourceTaskBehavior: "BLOCKED",
+  }, true);
 }
 
 export function checklist(
@@ -215,7 +219,10 @@ export function task(
 }
 
 export function stage(
-  input: Omit<WorkflowStageInput, "entryCondition" | "exitCondition">,
+  input: Omit<
+    WorkflowStageInput,
+    "entryCondition" | "exitCondition" | "joinPredecessorStageKeys"
+  >,
 ): WorkflowStageInput {
   const defaultTaskKey = input.tasks[0]?.stableKey ?? "";
   const maximumActionOrder = Math.max(
@@ -242,6 +249,7 @@ export function stage(
     })),
     entryCondition: null,
     exitCondition: null,
+    joinPredecessorStageKeys: [],
     tasks: input.tasks.map((task) => ({
       ...task,
       actionKeys: [...new Set([...task.actionKeys, ...commonActionKeys])],

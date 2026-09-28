@@ -132,29 +132,35 @@ export function WorkflowVisualGraph({
                 <path d="M0,0 L8,4 L0,8 Z" fill="var(--color-brand-orange)" />
               </marker>
             </defs>
-            {transitions.map((transition, index) => {
+            {transitions.flatMap((transition, index) => {
               const source = positions[transition.sourceStageKey];
-              const isTerminalRoute = !transition.targetStageKey;
-              const target = transition.targetStageKey
-                ? positions[transition.targetStageKey]
-                : transition.terminalOutcome
-                  ? terminalPositions[transition.terminalOutcome]
-                  : undefined;
-              if (!source || !target) return null;
-
-              return (
+              const destinations = transition.terminalOutcome
+                ? [{
+                    key: transition.terminalOutcome,
+                    position: terminalPositions[transition.terminalOutcome],
+                    terminal: true,
+                  }]
+                : transition.targetStageKeys.map((targetStageKey) => ({
+                    key: targetStageKey,
+                    position: positions[targetStageKey],
+                    terminal: false,
+                  }));
+              if (!source) return [];
+              return destinations.flatMap((destination, targetIndex) =>
+                destination.position ? [(
                 <path
                   className="fill-none stroke-brand-orange/75"
                   d={workflowRoutePath(
                     source,
-                    target,
-                    index,
-                    isTerminalRoute,
+                    destination.position,
+                    index + targetIndex,
+                    destination.terminal,
                   )}
-                  key={transition.id ?? `${transition.sourceStageKey}-${transition.actionKey}-${transition.priority}`}
+                  key={`${transition.id ?? `${transition.sourceStageKey}-${transition.actionKey}-${transition.priority}`}-${destination.key}`}
                   markerEnd="url(#workflow-arrow)"
                   strokeWidth="2"
                 />
+                )] : [],
               );
             })}
           </svg>
@@ -282,8 +288,10 @@ function SelectedStageRoutes({
             const action = stage.actions.find(
               (candidate) => candidate.stableKey === route.actionKey,
             );
-            const destination = route.targetStageKey
-              ? stageByKey.get(route.targetStageKey)?.name ?? route.targetStageKey
+            const destination = route.targetStageKeys.length
+              ? route.targetStageKeys.map((targetStageKey) =>
+                  stageByKey.get(targetStageKey)?.name ?? targetStageKey
+                ).join(", ")
               : humanizeCode(route.terminalOutcome ?? "Terminal outcome");
 
             return (

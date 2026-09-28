@@ -7,9 +7,7 @@ import {
   type StageConditionEvaluation,
 } from "../../engine/StageCondition";
 import { buildStageCompletionValues } from "../../engine/StageCompletionContext";
-import {
-  loadPriorStageContext,
-} from "../../infrastructure/StageActivationRepository";
+import { loadPriorStageContext } from "../../infrastructure/StageActivationRepository";
 import {
   loadStageCompletionValues,
   lockStageCompletionTarget,
@@ -23,6 +21,7 @@ import {
   recordTransitionExecution,
   type ExistingTransitionExecution,
   type SequentialTransition,
+  type TransitionTargetOutcome,
   withTransitionExecutionTransaction,
 } from "../../infrastructure/TransitionExecutionRepository";
 import { activateStageInTransaction } from "./ServerStageActivationService";
@@ -38,26 +37,22 @@ export type ExecuteSequentialTransitionInput = {
   conditionContext?: Parameters<typeof evaluateStageCondition>[1];
   correlationId: string;
   sourceStageInstanceId: string;
+  targetActivation?: {
+    iterationStrategy: "FIRST" | "NEXT";
+    referralContext?: Record<string, unknown> | null;
+    returnContext?: Record<string, unknown> | null;
+  };
 };
 
 export type SequentialTransitionResult =
   | { kind: "action_not_found" | "source_stage_not_found" | "transition_not_found" }
   | { kind: "already_executed"; execution: ExistingTransitionExecution }
-  | {
-      evaluations: StageConditionEvaluation[];
-      kind: "transition_condition_failed";
-    }
+  | { evaluations: StageConditionEvaluation[]; kind: "transition_condition_failed" }
   | { completion: StageCompletionResult; kind: "source_stage_not_completed" }
   | {
       executionId: string;
-      kind: "target_entry_condition_failed";
-      targetStageName: string | null;
-    }
-  | {
-      executionId: string;
       kind: "transitioned";
-      targetStageInstanceId: string;
-      targetStageName: string | null;
+      targets: TransitionTargetOutcome[];
       workflowStatus: "ACTIVE";
     }
   | {
@@ -68,10 +63,7 @@ export type SequentialTransitionResult =
   | { kind: "target_activation_failed" };
 
 type TransitionSelection =
-  | {
-      evaluation: StageConditionEvaluation;
-      transition: SequentialTransition;
-    }
+  | { evaluation: StageConditionEvaluation; transition: SequentialTransition }
   | { evaluations: StageConditionEvaluation[] };
 
 function selectTransition(
@@ -89,9 +81,7 @@ function selectTransition(
 
 function selectEvaluatedTransition(
   transitions: SequentialTransition[],
-  selection: NonNullable<
-    ExecuteSequentialTransitionInput["conditionSelection"]
-  >,
+  selection: NonNullable<ExecuteSequentialTransitionInput["conditionSelection"]>,
 ): TransitionSelection {
   if (!selection.selectedTransitionId) {
     return { evaluations: selection.transitionEvaluations };
@@ -107,18 +97,73 @@ function selectEvaluatedTransition(
 }
 
 function completedStage(completion: StageCompletionResult) {
-  return completion.kind === "completed"
-    || completion.kind === "already_completed";
+  return completion.kind === "completed" || completion.kind === "already_completed";
+}
+
+async function activateTransitionTargets(
+  transaction: StageCompletionTransaction,
+  input: ExecuteSequentialTransitionInput,
+  transition: SequentialTransition,
+  workflowInstanceId: string,
+): Promise<TransitionTargetOutcome[] | null> {
+  const targets: TransitionTargetOutcome[] = [];
+  for (const target of transition.targetStages) {
+    const activation = await activateStageInTransaction(transaction, {
+      actorId: input.actorId,
+      correlationId: input.correlationId,
+      iterationStrategy: input.targetActivation?.iterationStrategy,
+      referralContext: input.targetActivation?.referralContext,
+      returnContext: input.targetActivation?.returnContext,
+      stageDefinitionId: target.id,
+      workflowInstanceId,
+    });
+    if (activation.kind === "entry_condition_failed") {
+      targets.push({
+        outcome: "ENTRY_CONDITION_FAILED",
+        targetStageDefinitionId: target.id,
+        targetStageInstanceId: null,
+        targetStageName: target.name,
+      });
+      continue;
+    }
+    if (activation.kind === "join_pending") {
+      targets.push({
+        incompletePredecessorStageKeys: activation.incompletePredecessorStageKeys,
+        outcome: "JOIN_PENDING",
+        targetStageDefinitionId: target.id,
+        targetStageInstanceId: null,
+        targetStageName: target.name,
+      });
+      continue;
+    }
+    if (activation.kind !== "activated" && activation.kind !== "already_active") {
+      return null;
+    }
+    targets.push({
+      outcome: activation.kind === "activated" ? "ACTIVATED" : "ALREADY_ACTIVE",
+      targetStageDefinitionId: target.id,
+      targetStageInstanceId: activation.stageInstanceId,
+      targetStageName: target.name,
+    });
+  }
+  return targets;
+}
+
+function targetExecutionOutcome(targets: TransitionTargetOutcome[]) {
+  if (targets.some(
+    (target) => target.outcome === "ACTIVATED" || target.outcome === "ALREADY_ACTIVE",
+  )) return "TARGET_ACTIVATED" as const;
+  if (targets.some((target) => target.outcome === "JOIN_PENDING")) {
+    return "TARGET_JOIN_PENDING" as const;
+  }
+  return "TARGET_ENTRY_CONDITION_FAILED" as const;
 }
 
 export async function executeSequentialTransitionInTransaction(
   transaction: StageCompletionTransaction,
   input: ExecuteSequentialTransitionInput,
 ): Promise<SequentialTransitionResult> {
-  const replay = await findTransitionExecution(
-    transaction,
-    input.sourceStageInstanceId,
-  );
+  const replay = await findTransitionExecution(transaction, input.sourceStageInstanceId);
   if (replay) return { execution: replay, kind: "already_executed" };
 
   const source = await lockStageCompletionTarget(
@@ -142,8 +187,6 @@ export async function executeSequentialTransitionInTransaction(
   if (!configured.actionExists) return { kind: "action_not_found" };
   if (!configured.transitions.length) return { kind: "transition_not_found" };
 
-  // A PostgreSQL transaction uses one connection, so dependent context reads
-  // are deliberately sequenced here.
   let conditionContext = input.conditionContext;
   if (!conditionContext) {
     const priorStages = await loadPriorStageContext(
@@ -167,9 +210,7 @@ export async function executeSequentialTransitionInTransaction(
           })),
         {
           stableKey: source.stageKey,
-          values: normalizeStageConditionRecord(
-            buildStageCompletionValues(valueRows),
-          ),
+          values: normalizeStageConditionRecord(buildStageCompletionValues(valueRows)),
         },
       ],
     };
@@ -178,10 +219,7 @@ export async function executeSequentialTransitionInTransaction(
     ? selectEvaluatedTransition(configured.transitions, input.conditionSelection)
     : selectTransition(configured.transitions, conditionContext);
   if (!("transition" in selected)) {
-    return {
-      evaluations: selected.evaluations,
-      kind: "transition_condition_failed",
-    };
+    return { evaluations: selected.evaluations, kind: "transition_condition_failed" };
   }
 
   const completion = await completeStageInTransaction(transaction, {
@@ -202,12 +240,13 @@ export async function executeSequentialTransitionInTransaction(
     workflowInstanceId: source.workflowInstanceId,
   });
 
-  if (!selected.transition.targetStageDefinitionId) {
-    await completeTerminalWorkflow(
+  if (selected.transition.terminalOutcome) {
+    const completed = await completeTerminalWorkflow(
       transaction,
       source.workflowInstanceId,
       new Date(),
     );
+    if (!completed) return { kind: "target_activation_failed" };
     await finalizeTransitionExecution(transaction, {
       actionKey: input.actionKey,
       actorId: input.actorId,
@@ -215,7 +254,7 @@ export async function executeSequentialTransitionInTransaction(
       executionId: execution.id,
       outcome: "WORKFLOW_COMPLETED",
       sourceStageInstanceId: source.stageInstanceId,
-      targetStageInstanceId: null,
+      targets: [],
       transition: selected.transition,
       workflowInstanceId: source.workflowInstanceId,
     });
@@ -226,56 +265,33 @@ export async function executeSequentialTransitionInTransaction(
     };
   }
 
-  const activation = await activateStageInTransaction(transaction, {
-    actorId: input.actorId,
-    correlationId: input.correlationId,
-    stageDefinitionId: selected.transition.targetStageDefinitionId,
-    workflowInstanceId: source.workflowInstanceId,
-  });
-  if (activation.kind === "entry_condition_failed") {
-    await finalizeTransitionExecution(transaction, {
-      actionKey: input.actionKey,
-      actorId: input.actorId,
-      correlationId: input.correlationId,
-      executionId: execution.id,
-      outcome: "TARGET_ENTRY_CONDITION_FAILED",
-      sourceStageInstanceId: source.stageInstanceId,
-      targetStageInstanceId: null,
-      transition: selected.transition,
-      workflowInstanceId: source.workflowInstanceId,
-    });
-    return {
-      executionId: execution.id,
-      kind: "target_entry_condition_failed",
-      targetStageName: selected.transition.targetStageName,
-    };
-  }
-  if (activation.kind !== "activated" && activation.kind !== "already_active") {
-    return { kind: "target_activation_failed" };
-  }
+  const targets = await activateTransitionTargets(
+    transaction,
+    input,
+    selected.transition,
+    source.workflowInstanceId,
+  );
+  if (!targets) return { kind: "target_activation_failed" };
   await finalizeTransitionExecution(transaction, {
     actionKey: input.actionKey,
     actorId: input.actorId,
     correlationId: input.correlationId,
     executionId: execution.id,
-    outcome: "TARGET_ACTIVATED",
+    outcome: targetExecutionOutcome(targets),
     sourceStageInstanceId: source.stageInstanceId,
-    targetStageInstanceId: activation.stageInstanceId,
+    targets,
     transition: selected.transition,
     workflowInstanceId: source.workflowInstanceId,
   });
   return {
     executionId: execution.id,
     kind: "transitioned",
-    targetStageInstanceId: activation.stageInstanceId,
-    targetStageName: selected.transition.targetStageName,
+    targets,
     workflowStatus: "ACTIVE",
   };
 }
 
-export function executeSequentialTransition(
-  input: ExecuteSequentialTransitionInput,
-) {
+export function executeSequentialTransition(input: ExecuteSequentialTransitionInput) {
   return withTransitionExecutionTransaction((transaction) =>
     executeSequentialTransitionInTransaction(transaction, input)
   );

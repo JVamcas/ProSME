@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
 import {
@@ -48,6 +48,7 @@ export type StageCompletionValueRow = {
 export async function lockStageCompletionTarget(
   transaction: StageCompletionTransaction,
   stageInstanceId: string,
+  allowedStatuses: StageInstanceStatus[] = ["ACTIVE"],
 ): Promise<StageCompletionTarget | null> {
   const [row] = await transaction
     .select({
@@ -133,7 +134,7 @@ export async function lockStageCompletionTarget(
     .where(and(
       eq(stageInstances.id, stageInstanceId),
       eq(workflowInstances.status, "ACTIVE"),
-      eq(stageInstances.status, "ACTIVE"),
+      inArray(stageInstances.status, allowedStatuses),
     ))
     .for("update", { of: stageInstances })
     .limit(1);

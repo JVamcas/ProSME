@@ -11,7 +11,9 @@ import {
   workflowDefinitionVersions,
   workflowDefinitions,
   workflowStageDefinitions,
+  workflowStageJoinPredecessors,
   workflowTransitionDefinitions,
+  workflowTransitionTargets,
 } from "@/db/schema";
 import type { WorkflowGraphInput } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import { workflowActionDefinitionSchema } from "@/modules/workflows/domain/actions/WorkflowActionSchemas";
@@ -102,10 +104,15 @@ const graphSelection = {
     id: workflowTransitionDefinitions.id,
     fromStageId: workflowTransitionDefinitions.fromStageId,
     actionKey: workflowTransitionDefinitions.actionKey,
-    toStageId: workflowTransitionDefinitions.toStageId,
     terminalOutcome: workflowTransitionDefinitions.terminalOutcome,
     priority: workflowTransitionDefinitions.priority,
     condition: workflowTransitionDefinitions.condition,
+  },
+  transitionTarget: {
+    targetStageId: workflowTransitionTargets.targetStageId,
+  },
+  joinPredecessor: {
+    predecessorStageId: workflowStageJoinPredecessors.predecessorStageId,
   },
 };
 
@@ -144,6 +151,17 @@ function loadGraphRows(versionId: string) {
         workflowDefinitionVersions.id,
       ),
     )
+    .leftJoin(
+      workflowTransitionTargets,
+      eq(
+        workflowTransitionTargets.transitionId,
+        workflowTransitionDefinitions.id,
+      ),
+    )
+    .leftJoin(
+      workflowStageJoinPredecessors,
+      eq(workflowStageJoinPredecessors.stageId, workflowStageDefinitions.id),
+    )
     .where(eq(workflowDefinitionVersions.id, versionId))
     .orderBy(
       asc(workflowStageDefinitions.sequence),
@@ -165,7 +183,16 @@ function assembleGraph(rows: Awaited<ReturnType<typeof loadGraphRows>>) {
     ),
   );
   rows.forEach(
-    ({ action, formBinding, stage, task, taskAction, transition }) => {
+    ({
+      action,
+      formBinding,
+      joinPredecessor,
+      stage,
+      task,
+      taskAction,
+      transition,
+      transitionTarget,
+    }) => {
       if (stage?.id && !stages.has(stage.id))
         stages.set(stage.id, {
           id: stage.id,
@@ -184,6 +211,7 @@ function assembleGraph(rows: Awaited<ReturnType<typeof loadGraphRows>>) {
           coiGated: stage.coiGated,
           entryCondition: stage.entryCondition,
           exitCondition: stage.exitCondition,
+          joinPredecessorStageKeys: [],
           checklistItems: [],
           commentFields: [],
           documentRequirements: [],
@@ -200,6 +228,12 @@ function assembleGraph(rows: Awaited<ReturnType<typeof loadGraphRows>>) {
         !target.actions.some((item) => item.id === action.id)
       ) {
         target.actions.push(workflowActionDefinitionSchema.parse(action));
+      }
+      if (target && joinPredecessor?.predecessorStageId) {
+        const predecessorKey = codes.get(joinPredecessor.predecessorStageId);
+        if (predecessorKey && !target.joinPredecessorStageKeys.includes(predecessorKey)) {
+          target.joinPredecessorStageKeys.push(predecessorKey);
+        }
       }
       if (
         target &&
@@ -235,10 +269,16 @@ function assembleGraph(rows: Awaited<ReturnType<typeof loadGraphRows>>) {
           priority: transition.priority,
           terminalOutcome: transition.terminalOutcome,
           condition: transition.condition,
-          targetStageKey: transition.toStageId
-            ? (codes.get(transition.toStageId) ?? "")
-            : null,
+          targetStageKeys: [],
         });
+      }
+      if (transition?.id && transitionTarget?.targetStageId) {
+        const targetStageKey = codes.get(transitionTarget.targetStageId);
+        const assembledTransition = transitions.get(transition.id);
+        if (targetStageKey && assembledTransition
+          && !assembledTransition.targetStageKeys.includes(targetStageKey)) {
+          assembledTransition.targetStageKeys.push(targetStageKey);
+        }
       }
     },
   );

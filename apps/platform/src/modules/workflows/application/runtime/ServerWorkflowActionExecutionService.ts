@@ -247,11 +247,15 @@ export async function executeWorkflowAction(
         transaction,
         target.stage.stageInstanceId,
         input.expectedRuntimeVersion,
+        target.action.actionType === "RESUME" ? ["BLOCKED"] : ["ACTIVE"],
       );
       if (!resultingRuntimeVersion) {
         fail("STALE_RUNTIME_VERSION", "The workflow changed. Refresh and try again.");
       }
-      if (target.task && !requestInformation) {
+      const preservesTask = ["PUT_ON_HOLD", "REFER", "RESUME"].includes(
+        target.action.actionType,
+      );
+      if (target.task && !requestInformation && !preservesTask) {
         const completed = await completeActionTask(transaction, {
           normalizedInput: input.input,
           task: target.task,

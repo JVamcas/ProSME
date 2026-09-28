@@ -46,6 +46,7 @@ export function workflowActionFormDefaults(
     dataHandling: "RETAIN",
     reasonRequired: true,
     returnToReferrer: true,
+    sourceTaskBehavior: "BLOCKED",
     escalationTargetType: "ROLE",
     escalationTargetId: "",
     escalationTrigger: "MANUAL",
@@ -104,6 +105,7 @@ export function workflowActionFormDefaults(
       return {
         ...defaults,
         returnToReferrer: action.configuration.returnToReferrer,
+        sourceTaskBehavior: action.configuration.sourceTaskBehavior,
       };
     case "ESCALATE":
       return {
@@ -118,6 +120,8 @@ export function workflowActionFormDefaults(
         reasonCodes: action.configuration.reasonCodes.join(", "),
         reviewDateRequired: action.configuration.reviewDateRequired,
       };
+    case "RESUME":
+      return defaults;
     case "WITHDRAW":
       return {
         ...defaults,
@@ -178,6 +182,7 @@ function configuration(values: WorkflowActionFormValues) {
     case "REFER":
       return {
         returnToReferrer: values.returnToReferrer,
+        sourceTaskBehavior: values.sourceTaskBehavior,
       };
     case "ESCALATE":
       return {
@@ -189,7 +194,10 @@ function configuration(values: WorkflowActionFormValues) {
       return {
         reasonCodes: keys(values.reasonCodes),
         reviewDateRequired: values.reviewDateRequired,
+        scope: "STAGE" as const,
       };
+    case "RESUME":
+      return { scope: "STAGE" as const };
     case "WITHDRAW":
       return {
         allowedStageKeys: keys(values.allowedStageKeys),
