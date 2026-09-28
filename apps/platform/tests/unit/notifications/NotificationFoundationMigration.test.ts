@@ -13,6 +13,20 @@ const alignmentMigration = readFileSync(
   ),
   "utf8",
 );
+const defaultSubjectMigration = readFileSync(
+  path.resolve(
+    process.cwd(),
+    "drizzle/0131_notification_target_default_subjects.sql",
+  ),
+  "utf8",
+);
+const specificRecipientMigration = readFileSync(
+  path.resolve(
+    process.cwd(),
+    "drizzle/0132_notification_specific_recipients.sql",
+  ),
+  "utf8",
+);
 
 describe("notification foundation migration", () => {
   it("creates the complete module-owned persistence foundation", () => {
@@ -102,6 +116,30 @@ describe("notification foundation migration", () => {
     );
     expect(migration).toContain(
       "notification occurrence identity and context are immutable",
+    );
+  });
+
+  it("persists and backfills default subjects for template targets", () => {
+    expect(defaultSubjectMigration).toContain("default_subject_template");
+    expect(defaultSubjectMigration).toContain("application.submitted");
+    expect(defaultSubjectMigration).toContain("workflow.task.assigned");
+    expect(defaultSubjectMigration).toContain("{{applicationReference}}");
+    expect(defaultSubjectMigration).toContain(
+      "app_notification_template_targets_subject_check",
+    );
+  });
+
+  it("stores validated specific-user and specific-role recipient targets", () => {
+    expect(specificRecipientMigration).toContain("recipient_user_id");
+    expect(specificRecipientMigration).toContain("recipient_role_id");
+    expect(specificRecipientMigration).toContain(
+      "app_notification_event_rule_recipients_target_check",
+    );
+    expect(specificRecipientMigration).toContain(
+      "app_notification_event_rule_recipients_user_unique",
+    );
+    expect(specificRecipientMigration).toContain(
+      "app_notification_event_rule_recipients_role_unique",
     );
   });
 

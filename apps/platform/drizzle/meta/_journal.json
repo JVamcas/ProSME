@@ -918,6 +918,20 @@
       "when": 1799020800000,
       "tag": "0130_remove_standard_closeout_scoring",
       "breakpoints": true
+    },
+    {
+      "idx": 131,
+      "version": "7",
+      "when": 1799107200000,
+      "tag": "0131_notification_target_default_subjects",
+      "breakpoints": true
+    },
+    {
+      "idx": 132,
+      "version": "7",
+      "when": 1799193600000,
+      "tag": "0132_notification_specific_recipients",
+      "breakpoints": true
     }
   ]
 }

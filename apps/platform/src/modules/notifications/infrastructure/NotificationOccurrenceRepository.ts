@@ -1,17 +1,9 @@
 import "server-only";
 
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
-import {
-  notificationChannels,
-  notificationDeliveries,
-  notificationEventRuleChannels,
-  notificationEventRuleRecipients,
-  notificationEventRules,
-  notificationEvents,
-  notificationOutbox,
-} from "@/db/schema";
+import { notificationDeliveries, notificationOutbox } from "@/db/schema";
 import type {
   NotificationEventContextByKey,
   NotificationEventKey,
@@ -31,7 +23,9 @@ export type NotificationOccurrenceTransaction = Parameters<
   Parameters<ReturnType<typeof getDatabase>["transaction"]>[0]
 >[0];
 
-export type InsertNotificationOccurrenceInput<Key extends NotificationEventKey> = {
+export type InsertNotificationOccurrenceInput<
+  Key extends NotificationEventKey,
+> = {
   aggregateId: string;
   aggregateType: string;
   context: NotificationEventContextByKey[Key];
@@ -56,56 +50,60 @@ type EventConfigurationRow = {
   recipientRequired: boolean | null;
   recipientType: string | null;
   ruleEnabled: boolean | null;
+  targetEmail: string | null;
+  targetName: string | null;
+  targetUserId: string | null;
 };
 
 async function loadEventConfiguration(
   transaction: NotificationOccurrenceTransaction,
   eventKey: NotificationEventKey,
 ): Promise<EventConfigurationRow[]> {
-  return transaction
-    .select({
-      channelEnabled: notificationChannels.isEnabled,
-      channelId: notificationChannels.id,
-      eventEnabled: notificationEvents.isEnabled,
-      eventId: notificationEvents.id,
-      recipientRequired: notificationEventRuleRecipients.isRequired,
-      recipientType: notificationEventRuleRecipients.recipientType,
-      ruleEnabled: notificationEventRules.isEnabled,
-    })
-    .from(notificationEvents)
-    .leftJoin(
-      notificationEventRules,
-      eq(notificationEventRules.eventId, notificationEvents.id),
-    )
-    .leftJoin(
-      notificationEventRuleRecipients,
-      eq(
-        notificationEventRuleRecipients.ruleId,
-        notificationEventRules.id,
-      ),
-    )
-    .leftJoin(
-      notificationEventRuleChannels,
-      eq(
-        notificationEventRuleChannels.ruleRecipientId,
-        notificationEventRuleRecipients.id,
-      ),
-    )
-    .leftJoin(
-      notificationChannels,
-      eq(notificationChannels.id, notificationEventRuleChannels.channelId),
-    )
-    .where(eq(notificationEvents.eventKey, eventKey));
+  const result = await transaction.execute<EventConfigurationRow>(sql`
+    SELECT channel.is_enabled AS "channelEnabled",
+      channel.id AS "channelId",
+      event.is_enabled AS "eventEnabled",
+      event.id AS "eventId",
+      recipient.is_required AS "recipientRequired",
+      recipient.recipient_type AS "recipientType",
+      rule.is_enabled AS "ruleEnabled",
+      COALESCE(target_user.email, role_user.email) AS "targetEmail",
+      COALESCE(target_user.display_name, role_user.display_name) AS "targetName",
+      COALESCE(target_user.id, role_user.id) AS "targetUserId"
+    FROM app_notification_events event
+    LEFT JOIN app_notification_event_rules rule ON rule.event_id = event.id
+    LEFT JOIN app_notification_event_rule_recipients recipient
+      ON recipient.rule_id = rule.id
+    LEFT JOIN app_notification_event_rule_channels binding
+      ON binding.rule_recipient_id = recipient.id
+    LEFT JOIN app_notification_channels channel ON channel.id = binding.channel_id
+    LEFT JOIN app_users target_user
+      ON target_user.id = recipient.recipient_user_id
+      AND target_user.status = 'active'
+    LEFT JOIN app_user_roles targeted_user_role
+      ON targeted_user_role.role_id = recipient.recipient_role_id
+      AND EXISTS (
+        SELECT 1 FROM app_users eligible_role_user
+        WHERE eligible_role_user.id = targeted_user_role.user_id
+          AND eligible_role_user.status = 'active'
+      )
+    LEFT JOIN app_users role_user
+      ON role_user.id = targeted_user_role.user_id
+      AND role_user.status = 'active'
+    WHERE event.event_key = ${eventKey}
+  `);
+  return result.rows;
 }
 
 function enabledBindings(rows: readonly EventConfigurationRow[]) {
   if (!rows[0]?.eventEnabled) return [];
-  return rows.filter((row) => (
-    row.ruleEnabled
-    && row.channelEnabled
-    && row.channelId
-    && row.recipientType
-  ));
+  return rows.filter(
+    (row) =>
+      row.ruleEnabled &&
+      row.channelEnabled &&
+      row.channelId &&
+      row.recipientType,
+  );
 }
 
 function assertRequiredRecipients(
@@ -114,11 +112,8 @@ function assertRequiredRecipients(
 ) {
   for (const binding of bindings) {
     if (
-      binding.recipientRequired
-      && recipientsOfType(
-        recipients,
-        binding.recipientType as NotificationRecipientType,
-      ).length === 0
+      binding.recipientRequired &&
+      resolveBindingRecipients(binding, recipients).length === 0
     ) {
       throw new NotificationValidationError(
         notificationErrorCodes.invalidRecipient,
@@ -128,18 +123,54 @@ function assertRequiredRecipients(
   }
 }
 
-export async function insertNotificationOccurrence<Key extends NotificationEventKey>(
+function resolveBindingRecipients(
+  binding: EventConfigurationRow,
+  recipients: readonly NormalizedNotificationRecipient[],
+) {
+  if (
+    binding.recipientType === "APPLICATION_OWNER" ||
+    binding.recipientType === "ASSIGNED_USER"
+  ) {
+    return recipientsOfType(
+      recipients,
+      binding.recipientType as NotificationRecipientType,
+    );
+  }
+  if (!binding.targetEmail || !binding.targetName || !binding.targetUserId)
+    return [];
+  return [
+    {
+      displayName: binding.targetName,
+      email: binding.targetEmail,
+      normalizedEmail: binding.targetEmail.trim().toLowerCase(),
+      recipientType: binding.recipientType as NotificationRecipientType,
+      resolutionPath:
+        binding.recipientType === "SPECIFIC_ROLE"
+          ? "notification-rule:specific-role"
+          : "notification-rule:specific-user",
+      userId: binding.targetUserId,
+    },
+  ];
+}
+
+export async function insertNotificationOccurrence<
+  Key extends NotificationEventKey,
+>(
   transaction: NotificationOccurrenceTransaction,
   input: InsertNotificationOccurrenceInput<Key>,
 ): Promise<NotificationOccurrenceWriteResult> {
-  const configuration = await loadEventConfiguration(transaction, input.eventKey);
+  const configuration = await loadEventConfiguration(
+    transaction,
+    input.eventKey,
+  );
   if (configuration.length === 0) {
     throw new Error(`Notification event is not configured: ${input.eventKey}`);
   }
 
   const bindings = enabledBindings(configuration);
   assertRequiredRecipients(bindings, input.recipients);
-  const status = bindings.length === 0 ? "SENT" as const : "PENDING" as const;
+  const status =
+    bindings.length === 0 ? ("SENT" as const) : ("PENDING" as const);
   const [inserted] = await transaction
     .insert(notificationOutbox)
     .values({
@@ -162,10 +193,12 @@ export async function insertNotificationOccurrence<Key extends NotificationEvent
     const [existing] = await transaction
       .select({ id: notificationOutbox.id, status: notificationOutbox.status })
       .from(notificationOutbox)
-      .where(and(
-        eq(notificationOutbox.eventKey, input.eventKey),
-        eq(notificationOutbox.occurrenceKey, input.occurrenceKey),
-      ))
+      .where(
+        and(
+          eq(notificationOutbox.eventKey, input.eventKey),
+          eq(notificationOutbox.occurrenceKey, input.occurrenceKey),
+        ),
+      )
       .limit(1);
     if (!existing) {
       throw new Error("Notification occurrence replay could not be loaded.");
@@ -178,20 +211,29 @@ export async function insertNotificationOccurrence<Key extends NotificationEvent
     };
   }
 
-  const deliveries = bindings.flatMap((binding) =>
-    recipientsOfType(
+  const deliveryMap = new Map<
+    string,
+    typeof notificationDeliveries.$inferInsert
+  >();
+  for (const binding of bindings) {
+    for (const recipient of resolveBindingRecipients(
+      binding,
       input.recipients,
-      binding.recipientType as NotificationRecipientType,
-    ).map((recipient) => ({
-      channelId: binding.channelId!,
-      outboxId: inserted.id,
-      recipientEmail: recipient.email,
-      recipientName: recipient.displayName,
-      recipientType: recipient.recipientType,
-      recipientUserId: recipient.userId,
-      resolutionPath: recipient.resolutionPath,
-    })),
-  );
+    )) {
+      const deliveryKey = `${binding.channelId}:${recipient.normalizedEmail}`;
+      if (deliveryMap.has(deliveryKey)) continue;
+      deliveryMap.set(deliveryKey, {
+        channelId: binding.channelId!,
+        outboxId: inserted.id,
+        recipientEmail: recipient.email,
+        recipientName: recipient.displayName,
+        recipientType: recipient.recipientType,
+        recipientUserId: recipient.userId,
+        resolutionPath: recipient.resolutionPath,
+      });
+    }
+  }
+  const deliveries = [...deliveryMap.values()];
   if (deliveries.length > 0) {
     await transaction.insert(notificationDeliveries).values(deliveries);
   }

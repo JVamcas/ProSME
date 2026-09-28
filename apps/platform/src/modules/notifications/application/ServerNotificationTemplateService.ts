@@ -4,10 +4,13 @@ import type { AuthenticatedUser } from "@/auth/types";
 import { ResourceConflictError, ResourceNotFoundError } from "@/lib/resource-errors";
 import type {
   NotificationChannelDetail,
+  NotificationChannelSummary,
+  NotificationChannelUpdate,
   NotificationTemplateTargetDetail,
   NotificationTemplateTargetSummary,
   NotificationTemplateVersionSummary,
 } from "../api/NotificationTemplateSchemas";
+import { notificationChannelUpdateSchema } from "../api/NotificationTemplateSchemas";
 import { notificationAuditMetadataSchema } from "../domain/NotificationAudit";
 import {
   isNotificationEventKey,
@@ -30,6 +33,7 @@ import {
   publishNotificationTemplateVersion,
   resolvePublishedNotificationTemplate,
 } from "../infrastructure/NotificationTemplateRepository";
+import { updateNotificationChannelRecord } from "../infrastructure/NotificationAdministrationRepository";
 import { authorizeNotificationOperation } from "./NotificationAuthorization";
 import {
   validateNotificationHtmlImport,
@@ -39,6 +43,23 @@ import {
 
 function isoDate(value: Date | null): string | null {
   return value?.toISOString() ?? null;
+}
+
+function channelSummary(channel: {
+  channelType: "EMAIL";
+  code: string;
+  displayName: string;
+  isEnabled: boolean;
+  sortOrder: number;
+  targetCount: number;
+  updatedAt: Date | string;
+}): NotificationChannelSummary {
+  return {
+    ...channel,
+    updatedAt: channel.updatedAt instanceof Date
+      ? channel.updatedAt.toISOString()
+      : channel.updatedAt,
+  };
 }
 
 function versionSummary(version: {
@@ -75,33 +96,66 @@ function fieldTarget(target: {
 
 function targetLabel(target: {
   catalogKey: string | null;
+  catalogName: string | null;
+  displayName: string | null;
   eventKey: string | null;
   scope: "GLOBAL" | "CATALOG" | "EVENT";
 }): string {
-  if (target.scope === "EVENT") return target.eventKey ?? "Event";
-  if (target.scope === "CATALOG") return target.catalogKey ?? "Catalog";
-  return "Global fallback";
+  if (target.scope === "EVENT") return target.displayName ?? target.eventKey ?? "Event";
+  if (target.scope === "CATALOG") {
+    return target.catalogName
+      ? `${target.catalogName} Catalog Template`
+      : target.catalogKey ?? "Catalog";
+  }
+  return "Global Fallback";
 }
 
 function targetSummary(target: {
   catalogKey: string | null;
+  catalogName: string | null;
+  defaultSubjectTemplate: string;
+  description: string | null;
+  displayName: string | null;
   eventKey: string | null;
   id: string;
   isEnabled: boolean;
+  lastVersionCreatedAt: Date | null;
   publishedVersionNumber: number | null;
   scope: "GLOBAL" | "CATALOG" | "EVENT";
+  targetUpdatedAt: Date;
   versionCount: number;
 }): NotificationTemplateTargetSummary {
+  const lastUpdatedAt = target.lastVersionCreatedAt
+    && target.lastVersionCreatedAt > target.targetUpdatedAt
+    ? target.lastVersionCreatedAt
+    : target.targetUpdatedAt;
   return {
-    ...target,
     allowedFields: fieldsForNotificationTarget(fieldTarget(target)),
+    catalogKey: target.catalogKey,
+    catalogName: target.catalogName,
+    defaultSubjectTemplate: target.defaultSubjectTemplate,
+    description: target.description ?? (
+      target.scope === "GLOBAL"
+        ? "Fallback template used when no catalog or event-specific published version is available."
+        : ""
+    ),
+    eventKey: target.eventKey,
+    id: target.id,
+    isEnabled: target.isEnabled,
     label: targetLabel(target),
+    lastUpdatedAt: lastUpdatedAt.toISOString(),
+    publishedVersionNumber: target.publishedVersionNumber,
+    scope: target.scope,
+    versionCount: target.versionCount,
   };
 }
 
-export async function getNotificationChannels(user: AuthenticatedUser | null) {
+export async function getNotificationChannels(
+  user: AuthenticatedUser | null,
+): Promise<NotificationChannelSummary[]> {
   authorizeNotificationOperation(user, "READ_CONFIGURATION");
-  return listNotificationChannels();
+  const channels = await listNotificationChannels();
+  return channels.map(channelSummary);
 }
 
 export async function getNotificationChannel(
@@ -112,7 +166,34 @@ export async function getNotificationChannel(
   const channel = await findNotificationChannel(channelCode);
   if (!channel) throw new ResourceNotFoundError("notification channel");
   const targets = await listNotificationTemplateTargets(channelCode);
-  return { channel, targets: targets.map(targetSummary) };
+  return { channel: channelSummary(channel), targets: targets.map(targetSummary) };
+}
+
+export async function updateNotificationChannel(
+  user: AuthenticatedUser | null,
+  channelCode: string,
+  input: NotificationChannelUpdate,
+  correlationId: string,
+) {
+  const actor = authorizeNotificationOperation(user, "UPDATE_CONFIGURATION");
+  const update = notificationChannelUpdateSchema.parse(input);
+  notificationAuditMetadataSchema.parse({ channelCode, correlationId });
+  const result = await updateNotificationChannelRecord({
+    actorId: actor.id,
+    channelCode,
+    correlationId,
+    update,
+  });
+  if (!result) {
+    const existing = await findNotificationChannel(channelCode);
+    if (!existing) throw new ResourceNotFoundError("notification channel");
+    throw new ResourceConflictError(
+      "The notification channel changed while you were editing it. Refresh and try again.",
+    );
+  }
+  const channel = await findNotificationChannel(channelCode);
+  if (!channel) throw new ResourceNotFoundError("notification channel");
+  return channelSummary(channel);
 }
 
 export async function getNotificationTemplateTarget(
@@ -130,6 +211,7 @@ export async function getNotificationTemplateTarget(
     channelCode,
     target: targetSummary({
       ...target,
+      lastVersionCreatedAt: versions[0]?.createdAt ?? null,
       publishedVersionNumber: published?.versionNumber ?? null,
       versionCount: versions.length,
     }),

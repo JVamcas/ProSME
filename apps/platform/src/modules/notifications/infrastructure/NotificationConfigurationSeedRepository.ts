@@ -1,17 +1,19 @@
 import "server-only";
 
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
 import {
   notificationCatalogs,
   notificationChannels,
-  notificationEventRuleChannels,
-  notificationEventRuleRecipients,
-  notificationEventRules,
   notificationEvents,
   notificationTemplateTargets,
 } from "./notification.schema";
+import {
+  notificationEventRuleChannels,
+  notificationEventRuleRecipients,
+  notificationEventRules,
+} from "./notification-rule.schema";
 import {
   emailNotificationChannelSeed,
   notificationCatalogSeeds,
@@ -73,6 +75,7 @@ function buildTemplateTargetSeedValues(
       ? resolveRequiredId(catalogIds, target.catalogKey, target.catalogKey)
       : null,
     channelId,
+    defaultSubjectTemplate: target.defaultSubjectTemplate,
     eventId: target.eventKey
       ? resolveRequiredId(eventIds, target.eventKey, target.eventKey)
       : null,
@@ -211,6 +214,7 @@ export async function seedNotificationConfiguration(): Promise<NotificationConfi
           notificationEventRuleRecipients.ruleId,
           notificationEventRuleRecipients.recipientType,
         ],
+        where: sql`${notificationEventRuleRecipients.recipientType} in ('APPLICATION_OWNER', 'ASSIGNED_USER')`,
       })
       .returning({ id: notificationEventRuleRecipients.id });
     const recipients = await transaction

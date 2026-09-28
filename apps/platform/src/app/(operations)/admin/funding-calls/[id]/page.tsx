@@ -34,10 +34,10 @@ export default async function FundingCallPage({
           id={id.data}
         />
       )}
-      description="Manage funding call"
+      description=""
       eyebrow="Funding calls"
       icon={<CircleDollarSign />}
-      title="Edit funding call"
+      title="Manage funding calls"
     >
       <FundingCallEditor
         canApprove={can(user, permissionCodes.fundingCallApproveAll)}

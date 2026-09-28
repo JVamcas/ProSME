@@ -15,21 +15,37 @@ export const notificationTemplateImportFieldsSchema = z.object({
   subjectTemplate: z.string().trim().min(1).max(500),
 }).strict();
 
+export const notificationChannelUpdateSchema = z.object({
+  expectedUpdatedAt: z.iso.datetime({ offset: true }),
+  isEnabled: z.boolean(),
+  sortOrder: z.number().int().min(0).max(10_000),
+}).strict();
+
+export type NotificationChannelUpdate = z.infer<
+  typeof notificationChannelUpdateSchema
+>;
+
 export type NotificationChannelSummary = {
   channelType: "EMAIL";
   code: string;
   displayName: string;
   isEnabled: boolean;
+  sortOrder: number;
   targetCount: number;
+  updatedAt: string;
 };
 
 export type NotificationTemplateTargetSummary = {
   allowedFields: readonly string[];
   catalogKey: string | null;
+  catalogName: string | null;
+  defaultSubjectTemplate: string;
+  description: string;
   eventKey: string | null;
   id: string;
   isEnabled: boolean;
   label: string;
+  lastUpdatedAt: string;
   publishedVersionNumber: number | null;
   scope: NotificationTemplateScope;
   versionCount: number;

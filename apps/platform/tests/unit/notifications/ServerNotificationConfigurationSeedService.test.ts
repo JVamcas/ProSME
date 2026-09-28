@@ -9,7 +9,10 @@ vi.mock(
 );
 
 import { seedInitialNotificationConfiguration } from "@/modules/notifications/application/ServerNotificationConfigurationSeedService";
-import { notificationEventSeeds } from "@/modules/notifications/domain/NotificationSeedConfiguration";
+import {
+  notificationEventSeeds,
+  notificationTemplateTargetSeeds,
+} from "@/modules/notifications/domain/NotificationSeedConfiguration";
 import { seedNotificationConfiguration } from "@/modules/notifications/infrastructure/NotificationConfigurationSeedRepository";
 
 beforeEach(() => {
@@ -64,6 +67,21 @@ describe("ServerNotificationConfigurationSeedService", () => {
         }),
       ]),
     );
+    expect(notificationTemplateTargetSeeds).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          defaultSubjectTemplate: "Application {{applicationReference}} submitted",
+          eventKey: "application.submitted",
+        }),
+        expect.objectContaining({
+          defaultSubjectTemplate: "New task assigned for application {{applicationReference}}",
+          eventKey: "workflow.task.assigned",
+        }),
+      ]),
+    );
+    expect(notificationTemplateTargetSeeds.every(
+      (target) => target.defaultSubjectTemplate.trim().length > 0,
+    )).toBe(true);
     expect(seedNotificationConfiguration).toHaveBeenCalledOnce();
   });
 });

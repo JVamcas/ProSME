@@ -7,12 +7,14 @@ import { seedInitialNotificationConfiguration } from "@/modules/notifications/ap
 import {
   findNotificationCatalogRecord,
   findNotificationEventRuleRecord,
-  getNotificationOperationalSummaryRecord,
-  listNotificationDeliveryRecords,
-  retryNotificationDeliveryRecord,
   updateNotificationCatalogRecord,
   updateNotificationEventRuleRecord,
 } from "@/modules/notifications/infrastructure/NotificationAdministrationRepository";
+import {
+  getNotificationOperationalSummaryRecord,
+  listNotificationDeliveryRecords,
+  retryNotificationDeliveryRecord,
+} from "@/modules/notifications/infrastructure/NotificationDeliveryAdministrationRepository";
 
 const { Pool } = pg;
 const enabled = process.env.RUN_NOTIFICATION_DATABASE_TESTS === "true";

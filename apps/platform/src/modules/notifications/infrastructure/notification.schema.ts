@@ -84,79 +84,6 @@ export const notificationEvents = pgTable(
   ],
 );
 
-export const notificationEventRules = pgTable(
-  "app_notification_event_rules",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    eventId: uuid("event_id")
-      .notNull()
-      .references(() => notificationEvents.id, { onDelete: "restrict" }),
-    description: text("description").notNull(),
-    isEnabled: boolean("is_enabled").notNull().default(true),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-  },
-  (table) => [
-    uniqueIndex("app_notification_event_rules_event_unique").on(table.eventId),
-  ],
-);
-
-export const notificationEventRuleRecipients = pgTable(
-  "app_notification_event_rule_recipients",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    ruleId: uuid("rule_id")
-      .notNull()
-      .references(() => notificationEventRules.id, { onDelete: "cascade" }),
-    recipientType: text("recipient_type").notNull(),
-    isRequired: boolean("is_required").notNull().default(true),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-  },
-  (table) => [
-    uniqueIndex("app_notification_event_rule_recipients_target_unique").on(
-      table.ruleId,
-      table.recipientType,
-    ),
-    check(
-      "app_notification_event_rule_recipients_type_check",
-      sql`${table.recipientType} in ('APPLICATION_OWNER', 'ASSIGNED_USER')`,
-    ),
-  ],
-);
-
-export const notificationEventRuleChannels = pgTable(
-  "app_notification_event_rule_channels",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    ruleRecipientId: uuid("rule_recipient_id")
-      .notNull()
-      .references(() => notificationEventRuleRecipients.id, {
-        onDelete: "cascade",
-      }),
-    channelId: uuid("channel_id")
-      .notNull()
-      .references(() => notificationChannels.id, { onDelete: "restrict" }),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-  },
-  (table) => [
-    uniqueIndex("app_notification_event_rule_channels_target_unique").on(
-      table.ruleRecipientId,
-      table.channelId,
-    ),
-  ],
-);
-
 export const notificationTemplateTargets = pgTable(
   "app_notification_template_targets",
   {
@@ -171,6 +98,9 @@ export const notificationTemplateTargets = pgTable(
     eventId: uuid("event_id").references(() => notificationEvents.id, {
       onDelete: "restrict",
     }),
+    defaultSubjectTemplate: text("default_subject_template")
+      .notNull()
+      .default("Notification from {{platformName}}"),
     isEnabled: boolean("is_enabled").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -189,6 +119,11 @@ export const notificationTemplateTargets = pgTable(
     uniqueIndex("app_notification_template_targets_event_unique")
       .on(table.channelId, table.eventId)
       .where(sql`${table.scope} = 'EVENT'`),
+    check(
+      "app_notification_template_targets_subject_check",
+      sql`char_length(trim(${table.defaultSubjectTemplate})) between 1 and 500
+        and ${table.defaultSubjectTemplate} !~ E'[\\r\\n]'`,
+    ),
     check(
       "app_notification_template_targets_scope_check",
       sql`(${table.scope} = 'GLOBAL' and ${table.catalogId} is null and ${table.eventId} is null)
@@ -379,13 +314,17 @@ export const notificationDeliveries = pgTable(
       table.createdAt,
       table.id,
     ),
-    index("app_notification_deliveries_status_history_idx")
-      .on(table.status, table.createdAt, table.id),
-    index("app_notification_deliveries_recipient_email_idx")
-      .on(sql`lower(${table.recipientEmail})`),
+    index("app_notification_deliveries_status_history_idx").on(
+      table.status,
+      table.createdAt,
+      table.id,
+    ),
+    index("app_notification_deliveries_recipient_email_idx").on(
+      sql`lower(${table.recipientEmail})`,
+    ),
     check(
       "app_notification_deliveries_recipient_check",
-      sql`${table.recipientType} in ('APPLICATION_OWNER', 'ASSIGNED_USER')`,
+      sql`${table.recipientType} in ('APPLICATION_OWNER', 'ASSIGNED_USER', 'SPECIFIC_USER', 'SPECIFIC_ROLE')`,
     ),
     check(
       "app_notification_deliveries_status_check",

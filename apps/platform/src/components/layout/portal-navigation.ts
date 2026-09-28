@@ -238,14 +238,6 @@ export const operationsPortalRoutes: readonly PortalRoute[] = [
             ],
           },
           {
-            id: "admin-notification-event-catalogs",
-            href: "/admin/notifications/event-catalogs",
-            label: "Event Catalogs",
-            icon: BookOpenText,
-            space: "operations",
-            requiredPermission: permissionCodes.notificationConfigurationRead,
-          },
-          {
             id: "admin-notification-event-rules",
             href: "/admin/notifications/event-rules",
             label: "Event Rules",

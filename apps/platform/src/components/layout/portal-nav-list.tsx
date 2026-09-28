@@ -25,6 +25,11 @@ function routeOrDescendantIsActive(pathname: string, route: PortalRoute): boolea
   );
 }
 
+type ExpansionOverride = {
+  expanded: boolean;
+  pathname: string;
+};
+
 function PortalRouteItem({
   collapsed,
   dark,
@@ -46,8 +51,12 @@ function PortalRouteItem({
   const descendantActive = children.some((child) =>
     routeOrDescendantIsActive(pathname, child),
   );
-  const [expanded, setExpanded] = useState(descendantActive);
-  const childrenVisible = expanded || descendantActive;
+  const [expansionOverride, setExpansionOverride] =
+    useState<ExpansionOverride | null>(null);
+  const childrenVisible =
+    expansionOverride?.pathname === pathname
+      ? expansionOverride.expanded
+      : descendantActive;
   const active = isActive(pathname, route.href) || descendantActive;
   const Icon = route.icon;
   const childListId = `${route.id}-children-${generatedId}`;
@@ -88,12 +97,15 @@ function PortalRouteItem({
           className={itemClassName}
           onClick={() => {
             if (collapsed) {
-              setExpanded(true);
+              setExpansionOverride({ expanded: true, pathname });
               onRequestExpand?.();
               return;
             }
 
-            setExpanded((current) => !current);
+            setExpansionOverride({
+              expanded: !childrenVisible,
+              pathname,
+            });
           }}
           title={collapsed ? route.label : undefined}
           type="button"

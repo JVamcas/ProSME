@@ -6,6 +6,11 @@ import {
   clientNotificationTemplateService,
   type NotificationTemplateImportValues,
 } from "./ClientNotificationTemplateService";
+import type {
+  NotificationChannelSummary,
+  NotificationTemplateTargetDetail,
+  NotificationChannelUpdate,
+} from "../api/NotificationTemplateSchemas";
 
 export const notificationTemplateQueryKeys = {
   all: ["admin", "notifications"] as const,
@@ -33,12 +38,33 @@ export function useNotificationChannel(channelCode: string) {
   });
 }
 
+export function useUpdateNotificationChannel(channelCode: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: NotificationChannelUpdate) =>
+      clientNotificationTemplateService.updateChannel(channelCode, input),
+    onSuccess: (channel) => {
+      queryClient.setQueryData(
+        notificationTemplateQueryKeys.channels,
+        (current: NotificationChannelSummary[] | undefined) => current?.map((item) =>
+          item.code === channel.code ? channel : item,
+        ),
+      );
+      void queryClient.invalidateQueries({
+        queryKey: notificationTemplateQueryKeys.channel(channelCode),
+      });
+    },
+  });
+}
+
 export function useNotificationTemplateTarget(
   channelCode: string,
   targetId: string,
+  initialData?: NotificationTemplateTargetDetail,
 ) {
   return useQuery({
     enabled: Boolean(channelCode && targetId),
+    initialData,
     queryFn: () => clientNotificationTemplateService.getTarget(
       channelCode,
       targetId,

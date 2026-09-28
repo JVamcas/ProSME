@@ -1,4 +1,3 @@
-import { Bell } from "lucide-react";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
@@ -17,12 +16,13 @@ export default async function NotificationEventRulesPage() {
   }
   return (
     <PageShell
-      description="Configure recipients and delivery channels for immutable notification events."
-      eyebrow="Notifications"
-      icon={<Bell />}
+      description="Event rules define the mandatory notifications generated when an application or workflow event occurs. Each rule determines who must be notified and through which enabled channels."
+      eyebrow="System notification"
       title="Event Rules"
     >
-      <NotificationRuleList />
+      <NotificationRuleList
+        canUpdate={can(user, permissionCodes.notificationConfigurationUpdate)}
+      />
     </PageShell>
   );
 }

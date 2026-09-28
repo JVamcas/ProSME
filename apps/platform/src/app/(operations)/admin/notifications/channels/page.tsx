@@ -22,7 +22,9 @@ export default async function NotificationChannelsPage() {
       icon={<Bell />}
       title="Channels"
     >
-      <NotificationChannelsWorkspace />
+      <NotificationChannelsWorkspace
+        canUpdate={can(user, permissionCodes.notificationConfigurationUpdate)}
+      />
     </PageShell>
   );
 }

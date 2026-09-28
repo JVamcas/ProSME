@@ -17,7 +17,7 @@ export default async function NotificationEventCatalogsPage() {
   }
   return (
     <PageShell
-      description="Control catalog presentation and availability. Event membership remains fixed."
+      description="Event catalog groups together related events."
       eyebrow="Notifications"
       icon={<Bell />}
       title="Event Catalogs"

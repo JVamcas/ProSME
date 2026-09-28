@@ -91,6 +91,24 @@ describe("portal navigation list", () => {
       "/admin/notifications/channels",
     );
 
+    const notificationsToggle = expandedToggles.find((toggle) =>
+      toggle.textContent?.includes("Notifications"),
+    );
+
+    await act(async () => {
+      notificationsToggle?.click();
+    });
+
+    expect(notificationsToggle?.getAttribute("aria-expanded")).toBe("false");
+    expect(container.textContent).not.toContain("Channels");
+
+    await act(async () => {
+      notificationsToggle?.click();
+    });
+
+    expect(notificationsToggle?.getAttribute("aria-expanded")).toBe("true");
+    expect(container.textContent).toContain("Channels");
+
     await act(async () => root.unmount());
   });
 });

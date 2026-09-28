@@ -120,6 +120,7 @@ export const notificationCatalogSeeds: readonly NotificationCatalogSeed[] = [
 
 export type NotificationTemplateTargetSeed = {
   catalogKey?: NotificationCatalogKey;
+  defaultSubjectTemplate: string;
   eventKey?: NotificationEventKey;
   id: string;
   scope: NotificationTemplateScope;
@@ -128,45 +129,54 @@ export type NotificationTemplateTargetSeed = {
 export const notificationTemplateTargetSeeds: readonly NotificationTemplateTargetSeed[] =
   [
     {
+      defaultSubjectTemplate: "Notification from {{platformName}}",
       id: "00000000-0000-4000-8000-000000000501",
       scope: "GLOBAL",
     },
     {
       catalogKey: "APPLICATIONS",
+      defaultSubjectTemplate: "Application {{applicationReference}} update",
       id: "00000000-0000-4000-8000-000000000502",
       scope: "CATALOG",
     },
     {
       catalogKey: "WORKFLOW",
+      defaultSubjectTemplate: "Workflow update for application {{applicationReference}}",
       id: "00000000-0000-4000-8000-000000000503",
       scope: "CATALOG",
     },
     {
+      defaultSubjectTemplate: "Application {{applicationReference}} submitted",
       eventKey: "application.submitted",
       id: "00000000-0000-4000-8000-000000000504",
       scope: "EVENT",
     },
     {
+      defaultSubjectTemplate: "New task assigned for application {{applicationReference}}",
       eventKey: "workflow.task.assigned",
       id: "00000000-0000-4000-8000-000000000505",
       scope: "EVENT",
     },
     {
+      defaultSubjectTemplate: "Information requested for application {{applicationReference}}",
       eventKey: "workflow.information-request.created",
       id: "00000000-0000-4000-8000-000000000506",
       scope: "EVENT",
     },
     {
+      defaultSubjectTemplate: "Applicant responded for application {{applicationReference}}",
       eventKey: "workflow.information-request.responded",
       id: "00000000-0000-4000-8000-000000000507",
       scope: "EVENT",
     },
     {
+      defaultSubjectTemplate: "Information request closed for application {{applicationReference}}",
       eventKey: "workflow.information-request.closed",
       id: "00000000-0000-4000-8000-000000000508",
       scope: "EVENT",
     },
     {
+      defaultSubjectTemplate: "Information request expired for application {{applicationReference}}",
       eventKey: "workflow.information-request.expired",
       id: "00000000-0000-4000-8000-000000000509",
       scope: "EVENT",
