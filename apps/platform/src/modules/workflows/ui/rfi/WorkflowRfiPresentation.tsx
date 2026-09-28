@@ -1,5 +1,4 @@
 import { Clock3, MessageSquareText } from "lucide-react";
-import Link from "next/link";
 
 import { GeneralButtonLink } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -9,6 +8,7 @@ import type {
   WorkflowRfiSummary,
 } from "../../domain/runtime/WorkflowRfiView";
 import { ArrowLink } from "@/components/ui/links";
+import { WorkflowRfiSummaryContent } from "./WorkflowRfiSummaryContent";
 
 export function WorkflowRfiDeadline({
   deadlineAt,
@@ -51,9 +51,10 @@ export function WorkflowRfiSummaryList({
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <StatusBadge status={request.status} />
-              <h3 className="mt-3 font-bold text-brand-navy">
-                {request.question}
-              </h3>
+              <WorkflowRfiSummaryContent
+                className="mt-3 leading-6 text-brand-navy"
+                request={request}
+              />
               <div className="mt-3 text-xs">
                 <WorkflowRfiDeadline
                   deadlineAt={request.deadlineAt}
@@ -149,9 +150,10 @@ export function StaffApplicationRfiTimeline({
             >
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
-                  <p className="font-semibold leading-6 text-brand-navy">
-                    {request.question}
-                  </p>
+                  <WorkflowRfiSummaryContent
+                    className="leading-6 text-brand-navy"
+                    request={request}
+                  />
 
                   <p className="mt-1 text-xs text-brand-navy/55">
                     Created {formatLocalDateTime24(request.createdAt)}

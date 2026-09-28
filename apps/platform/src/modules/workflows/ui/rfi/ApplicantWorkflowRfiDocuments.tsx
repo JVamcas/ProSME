@@ -1,9 +1,20 @@
 "use client";
 
-import { FileText, Upload } from "lucide-react";
+import { CheckCircle2, Download, FileText } from "lucide-react";
+import { useEffect } from "react";
 
+import { GeneralButtonAnchor } from "@/components/ui/button";
+import { FileUploadButton } from "@/shared/ui/FileUploadButton";
+import { toast } from "@/shared/ui/Toast";
 import type { WorkflowRfiDetail } from "../../domain/runtime/WorkflowRfiView";
 import { useUploadWorkflowRfiDocument } from "./WorkflowRfiHooks";
+
+const acceptedExtensions = {
+  DOCX: [".docx"],
+  JPG: [".jpg", ".jpeg"],
+  PDF: [".pdf"],
+  PNG: [".png"],
+} as const;
 
 export function ApplicantWorkflowRfiDocuments({
   applicationId,
@@ -13,69 +24,92 @@ export function ApplicantWorkflowRfiDocuments({
   detail: WorkflowRfiDetail;
 }) {
   const upload = useUploadWorkflowRfiDocument(applicationId, detail.id);
+
+  useEffect(() => {
+    if (upload.error) toast.error(upload.error.message);
+  }, [upload.error]);
+
   return (
     <section className="rounded-xl border border-brand-navy/10 bg-white p-5 shadow-sm">
       <h2 className="font-bold text-brand-navy">Requested documents</h2>
       <div className="mt-4 space-y-3">
-        {detail.requestedDocuments.map((document) => (
-          <div
-            className="rounded-lg border border-brand-navy/10 p-4"
-            key={document.requirementId}
-          >
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="font-semibold text-brand-navy">{document.name}</p>
-                <p className="mt-1 text-xs text-brand-navy/60">
-                  {document.acceptedFileTypes.join(", ")} · maximum{" "}
-                  {document.maximumSizeMb} MB
-                </p>
-                {document.evidence ? (
-                  <a
-                    className="mt-2 inline-flex items-center text-sm font-semibold text-brand-green underline-offset-2 hover:underline"
-                    href={`/api/portal/applications/${applicationId}/requests/${detail.id}/documents/${document.evidence.versionId}/download`}
-                  >
-                    <FileText aria-hidden="true" className="mr-1 inline size-4" />
-                    {document.evidence.fileName}
-                  </a>
-                ) : (
-                  <p className="mt-2 text-sm font-semibold text-red-700">
-                    A document is required.
+        {detail.requestedDocuments.map((document) => {
+          const StateIcon = document.evidence ? CheckCircle2 : FileText;
+          const accept = document.acceptedFileTypes
+            .flatMap((type) => acceptedExtensions[type])
+            .join(",");
+          const uploading =
+            upload.isPending &&
+            upload.variables?.requirementId === document.requirementId;
+
+          return (
+            <div
+              className="flex flex-col gap-3 rounded-lg border border-brand-navy/10 p-4 sm:flex-row sm:items-center sm:justify-between"
+              key={document.requirementId}
+            >
+              <div className="flex min-w-0 items-start gap-3">
+                <StateIcon
+                  aria-hidden="true"
+                  className={
+                    document.evidence
+                      ? "mt-0.5 size-5 shrink-0 text-brand-green"
+                      : "mt-0.5 size-5 shrink-0 text-brand-orange"
+                  }
+                />
+                <div className="min-w-0">
+                  <p className="font-semibold text-brand-navy">
+                    {document.name}
                   </p>
-                )}
+                  <p className="mt-1 text-xs text-brand-navy/60">
+                    {document.acceptedFileTypes.join(", ")} · maximum{" "}
+                    {document.maximumSizeMb} MB
+                  </p>
+                  <p
+                    className={
+                      document.evidence
+                        ? "mt-1 truncate text-xs font-medium text-brand-navy/75"
+                        : "mt-1 text-xs font-semibold text-red-700"
+                    }
+                  >
+                    {document.evidence
+                      ? document.evidence.fileName
+                      : "A document is required."}
+                  </p>
+                </div>
               </div>
-              {detail.status === "OPEN" ? (
-                <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-brand-orange px-4 py-2 text-sm font-semibold text-brand-orange hover:bg-brand-orange/10">
-                  <Upload aria-hidden="true" className="size-4" />
-                  {document.evidence ? "Replace" : "Upload"}
-                  <input
-                    accept={document.acceptedFileTypes.map((type) =>
-                      type === "JPG" ? ".jpg,.jpeg" : `.${type.toLowerCase()}`
-                    ).join(",")}
-                    className="sr-only"
+
+              <div className="flex flex-wrap items-center gap-2">
+                {document.evidence ? (
+                  <GeneralButtonAnchor
+                    download
+                    href={`/api/portal/applications/${applicationId}/requests/${detail.id}/documents/${document.evidence.versionId}/download`}
+                    size="sm"
+                    variant="ghost"
+                  >
+                    <Download aria-hidden="true" className="size-4" />
+                    Download
+                  </GeneralButtonAnchor>
+                ) : null}
+                {detail.status === "OPEN" ? (
+                  <FileUploadButton
+                    accept={accept}
                     disabled={upload.isPending}
-                    onChange={(event) => {
-                      const file = event.target.files?.[0];
-                      if (file) {
-                        upload.mutate({
-                          file,
-                          requirementId: document.requirementId,
-                        });
-                      }
-                      event.target.value = "";
-                    }}
-                    type="file"
+                    label={document.evidence ? "Upload new version" : "Upload"}
+                    onFile={(file) =>
+                      upload.mutate({
+                        file,
+                        requirementId: document.requirementId,
+                      })
+                    }
+                    uploading={uploading}
+                    variant="compact"
                   />
-                </label>
-              ) : null}
+                ) : null}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
-      {upload.isError ? (
-        <p className="mt-3 text-sm text-red-700" role="alert">
-          {upload.error.message}
-        </p>
-      ) : null}
     </section>
   );
 }

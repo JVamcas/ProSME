@@ -25,6 +25,12 @@ describe("workflow rework, referral and hold migration", () => {
     const migration = await readFile(migrationPath, "utf8");
 
     expect(migration).toContain("'RESUME', 'Resume', 'RESUME'");
+    expect(migration).toContain(
+      'DROP CONSTRAINT "app_workflow_actions_type_check"',
+    );
+    expect(migration.indexOf("'RESUME'\n    )")).toBeLessThan(
+      migration.indexOf("'RESUME', 'Resume', 'RESUME'"),
+    );
     expect(migration).toContain('"sourceTaskBehavior":"BLOCKED"');
     expect(migration).toContain('"scope":"STAGE"');
     expect(migration).toContain("SET repeatable = true");

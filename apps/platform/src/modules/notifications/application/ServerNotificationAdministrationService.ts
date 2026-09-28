@@ -98,15 +98,9 @@ export async function updateNotificationEventRule(
   const current = await findNotificationEventRuleRecord(eventKey) as
     | {
         channels: Array<{ code: string; isEnabled: boolean }>;
-        recipients: Array<{ recipientType: string }>;
       }
     | undefined;
   if (!current) throw new ResourceNotFoundError("notification event rule");
-  const existingTypes = current.recipients.map((item) => item.recipientType).sort();
-  const submittedTypes = update.recipients.map((item) => item.recipientType).sort();
-  if (JSON.stringify(existingTypes) !== JSON.stringify(submittedTypes)) {
-    throw new ResourceConflictError("Notification recipient identities cannot be changed.");
-  }
   const enabledChannels = new Set(
     current.channels
       .filter((channel) => channel.isEnabled)

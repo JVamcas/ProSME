@@ -31,6 +31,7 @@ function actionFormSchema(action: WorkflowTaskAction) {
       comment: z.string().trim().max(4_000),
       confirmed: z.boolean(),
       instructions: z.string().trim().max(12_000),
+      requestDetailedInformation: z.boolean(),
       question: z.string().trim().max(4_000),
       reasonCode: z.string().trim().max(80),
       requestedDocumentRequirementIds: z.array(z.uuid()).max(100),
@@ -79,6 +80,20 @@ function actionFormSchema(action: WorkflowTaskAction) {
           path: ["instructions"],
         });
       }
+      if (
+        action.actionType === "REQUEST_INFORMATION" &&
+        !(
+          values.requestDetailedInformation &&
+          action.requiredInput.editableFieldPaths.length > 0
+        ) &&
+        values.requestedDocumentRequirementIds.length === 0
+      ) {
+        context.addIssue({
+          code: "custom",
+          message: "Request detailed information, at least one document, or both.",
+          path: ["requestDetailedInformation"],
+        });
+      }
       if (action.actionType === "REFER" && !values.question) {
         context.addIssue({
           code: "custom",
@@ -113,7 +128,9 @@ function actionInput(
       return {
         ...common,
         actionType: "REQUEST_INFORMATION",
-        editableFieldPaths: [...action.requiredInput.editableFieldPaths],
+        editableFieldPaths: values.requestDetailedInformation
+          ? [...action.requiredInput.editableFieldPaths]
+          : [],
         instructions: values.instructions,
         requestedDocumentRequirementIds: values.requestedDocumentRequirementIds,
       };
@@ -161,6 +178,7 @@ function DecisionForm({
       comment: "",
       confirmed: false,
       instructions: "",
+      requestDetailedInformation: false,
       question: "",
       reasonCode: "",
       requestedDocumentRequirementIds: [],
@@ -251,6 +269,13 @@ function DecisionForm({
                   placeholder="Explain what information or documents the applicant should provide."
                   required
                 />
+                {action.requiredInput.editableFieldPaths.length ? (
+                  <CheckboxField
+                    description="The applicant will see a rich-text field for a detailed written response."
+                    label="Request detailed information"
+                    name="requestDetailedInformation"
+                  />
+                ) : null}
                 {missingApplicantDocuments.length ? (
                   <FormSelect
                     items={missingApplicantDocuments.map((requirement) => ({

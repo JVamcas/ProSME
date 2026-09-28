@@ -12,7 +12,10 @@ vi.mock("@/db/client", () => ({
   getDatabase: () => ({ transaction: database.transaction }),
 }));
 
-import { retryNotificationDeliveryRecord } from "@/modules/notifications/infrastructure/NotificationAdministrationRepository";
+import {
+  retryNotificationDeliveryRecord,
+  updateNotificationEventRuleRecord,
+} from "@/modules/notifications/infrastructure/NotificationAdministrationRepository";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -24,6 +27,38 @@ beforeEach(() => {
 });
 
 describe("notification administration repository", () => {
+  it("replaces recipient types and channel bindings in one transaction", async () => {
+    database.execute
+      .mockResolvedValueOnce({ rows: [{
+        id: "83000000-0000-4000-8000-000000000001",
+      }] })
+      .mockResolvedValue({ rows: [] });
+
+    await expect(updateNotificationEventRuleRecord({
+      actorId: "80000000-0000-4000-8000-000000000001",
+      correlationId: "correlation-rule-update",
+      eventKey: "workflow.information-request.created",
+      update: {
+        eventEnabled: true,
+        expectedUpdatedAt: "2026-09-28T10:00:00.000Z",
+        isEnabled: true,
+        recipients: [{
+          channelCodes: ["EMAIL"],
+          isRequired: true,
+          recipientType: "ASSIGNED_USER",
+        }],
+      },
+    })).resolves.toEqual({
+      eventKey: "workflow.information-request.created",
+    });
+
+    expect(database.transaction).toHaveBeenCalledTimes(1);
+    expect(database.execute).toHaveBeenCalledTimes(4);
+    expect(database.values).toHaveBeenCalledWith(expect.objectContaining({
+      action: "NOTIFICATION_EVENT_RULE_UPDATED",
+    }));
+  });
+
   it("atomically schedules an eligible failed delivery and writes its audit record", async () => {
     database.execute
       .mockResolvedValueOnce({ rows: [{

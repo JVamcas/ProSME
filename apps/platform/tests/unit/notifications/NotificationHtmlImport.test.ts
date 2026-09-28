@@ -62,9 +62,41 @@ describe("notification HTML import", () => {
   });
 
   it.each([
-    ["application-submitted.html", "application.submitted"],
-    ["workflow-task-assigned.html", "workflow.task.assigned"],
-  ] as const)("validates initial source template %s", async (fileName, eventKey) => {
+    [
+      "application-submitted.html",
+      "application.submitted",
+      "Application {{applicationReference}} received",
+    ],
+    [
+      "workflow-task-assigned.html",
+      "workflow.task.assigned",
+      "Tasks assigned for {{applicationReference}}",
+    ],
+    [
+      "information-request-created.html",
+      "workflow.information-request.created",
+      "Information requested for {{applicationReference}}",
+    ],
+    [
+      "information-request-responded.html",
+      "workflow.information-request.responded",
+      "Response received for {{applicationReference}}",
+    ],
+    [
+      "information-request-closed.html",
+      "workflow.information-request.closed",
+      "Information request closed for {{applicationReference}}",
+    ],
+    [
+      "information-request-expired.html",
+      "workflow.information-request.expired",
+      "Information request expired for {{applicationReference}}",
+    ],
+  ] as const)("validates source template %s", async (
+    fileName,
+    eventKey,
+    subjectTemplate,
+  ) => {
     const bytes = await readFile(path.join(
       process.cwd(),
       "src/modules/notifications/templates/email",
@@ -74,9 +106,7 @@ describe("notification HTML import", () => {
       bytes,
       fileName,
       mediaType: "text/html",
-      subjectTemplate: eventKey === "application.submitted"
-        ? "Application {{applicationReference}} received"
-        : "Tasks assigned for {{applicationReference}}",
+      subjectTemplate,
     }, notificationEventTemplateFields[eventKey]);
     expect(validated.htmlTemplate).not.toMatch(/<script|<form|\son[a-z]+=/i);
     expect(validated.plainTextTemplate.length).toBeGreaterThan(30);

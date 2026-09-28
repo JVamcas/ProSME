@@ -5,7 +5,7 @@ import { CheckCircle2, Download, FileText } from "lucide-react";
 import { FormProvider, useForm } from "react-hook-form";
 import { z } from "zod";
 
-import { GeneralButtonLink } from "@/components/ui/button";
+import { GeneralButtonAnchor } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { formatLocalDateTime24 } from "@/lib/dateUtils";
 import { FileUploadButton } from "@/shared/ui/FileUploadButton";
@@ -73,14 +73,15 @@ function RequirementRow({
       </div>
       <div className="flex flex-wrap items-center gap-2">
         {finalized && document ? (
-          <GeneralButtonLink
+          <GeneralButtonAnchor
+            download
             href={`/api/portal/applications/${applicationId}/documents/${document.versionId}/download`}
             size="sm"
             variant="ghost"
           >
             <Download aria-hidden="true" className="size-4" />
             Download
-          </GeneralButtonLink>
+          </GeneralButtonAnchor>
         ) : null}
         <FileUploadButton
           accept={requirement.acceptedExtensions.join(",")}

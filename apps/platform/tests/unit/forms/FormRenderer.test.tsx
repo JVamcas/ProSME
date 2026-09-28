@@ -34,6 +34,7 @@ describe("RJSF form renderer", () => {
     expect(markup).toContain('type="number"');
     expect(markup).toContain('min="100"');
     expect(markup).toContain('max="1000"');
+    expect(markup).toContain("AMOUNT help");
     expect(markup).toContain('aria-label="Open calendar"');
     expect(markup).toContain("Yes");
     expect(markup).toContain("No");
@@ -45,6 +46,23 @@ describe("RJSF form renderer", () => {
     expect(markup).toContain('type="file"');
     expect(markup).toContain("rounded-xl");
     expect(markup).toContain("focus:border-brand-orange");
+  });
+
+  it("shows a precise error for a populated number outside its range", () => {
+    const definition = runtimeDefinition();
+    const amount = definition.fields.find((field) => field.key === "AMOUNT")!;
+    amount.helpText = null;
+    const markup = renderToStaticMarkup(
+      <FormRenderer
+        definition={definition}
+        formData={{ AMOUNT: 1_001 }}
+        onChange={vi.fn()}
+        onSubmit={vi.fn()}
+      />,
+    );
+
+    expect(markup).toContain("Enter a value from 100 to 1000.");
+    expect(markup).toContain("Enter a value no greater than 1000.");
   });
 
   it("keeps the section grid when its fields use fewer columns", () => {

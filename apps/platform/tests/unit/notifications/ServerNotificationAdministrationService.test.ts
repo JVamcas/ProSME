@@ -129,11 +129,19 @@ describe("notification administration service", () => {
     );
   });
 
-  it("keeps immutable recipient identities during an atomic rule update", async () => {
-    vi.mocked(findNotificationEventRuleRecord).mockResolvedValue({
-      channels: [{ code: "EMAIL", isEnabled: true }],
-      recipients: [{ recipientType: "APPLICATION_OWNER" }],
+  it("allows recipient identities to be configured by the event rule", async () => {
+    vi.mocked(updateNotificationEventRuleRecord).mockResolvedValue({
+      eventKey: "application.submitted",
     });
+    vi.mocked(findNotificationEventRuleRecord)
+      .mockResolvedValueOnce({
+        channels: [{ code: "EMAIL", isEnabled: true }],
+        recipients: [{ recipientType: "APPLICATION_OWNER" }],
+      })
+      .mockResolvedValueOnce({
+        eventKey: "application.submitted",
+        recipients: [{ recipientType: "ASSIGNED_USER" }],
+      });
     await expect(updateNotificationEventRule(
       user([permissionCodes.notificationConfigurationUpdate]),
       "application.submitted",
@@ -148,8 +156,16 @@ describe("notification administration service", () => {
         }],
       },
       "correlation-2",
-    )).rejects.toBeInstanceOf(ResourceConflictError);
-    expect(updateNotificationEventRuleRecord).not.toHaveBeenCalled();
+    )).resolves.toMatchObject({ eventKey: "application.submitted" });
+    expect(updateNotificationEventRuleRecord).toHaveBeenCalledWith(
+      expect.objectContaining({
+        update: expect.objectContaining({
+          recipients: [expect.objectContaining({
+            recipientType: "ASSIGNED_USER",
+          })],
+        }),
+      }),
+    );
   });
 
   it("authorizes and schedules retry without invoking delivery transport", async () => {

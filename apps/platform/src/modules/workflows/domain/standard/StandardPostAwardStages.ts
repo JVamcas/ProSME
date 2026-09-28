@@ -1,5 +1,4 @@
 import type { WorkflowStageInput } from "../definitions/WorkflowTypes";
-import { stableKeyFromLabel } from "../WorkflowStableKey";
 import type { StandardWorkflowDependencies } from "./StandardWorkflowTypes";
 import {
   approve,
@@ -273,19 +272,6 @@ function closeOut(dependencies: StandardWorkflowDependencies) {
     ),
     reject("RESTRICT_FUTURE_FUNDING", "Restrict future funding", 4),
   ];
-  const criteria = [
-    "Relevance",
-    "Effectiveness",
-    "Efficiency",
-    "Impact",
-    "Sustainability",
-  ].map((label) => ({
-    code: label.toUpperCase(),
-    commentRequired: true,
-    label,
-    maximumScore: 5,
-    weight: 20,
-  }));
   return stage({
     actions,
     checklistItems: [
@@ -332,26 +318,14 @@ function closeOut(dependencies: StandardWorkflowDependencies) {
       status: "CLOSED",
     },
     repeatable: false,
-    scoring: {
-      aggregation: "WEIGHTED_AVERAGE",
-      taskStableKey: "EVALUATION_CLOSE_OUT_REVIEW",
-      criteria: criteria.map((criterion) => ({
-        criterion: criterion.label,
-        stableKey: stableKeyFromLabel(criterion.label, "SCORE"),
-        description: "Results-framework close-out assessment.",
-        mandatoryComment: true,
-        scaleMaximum: 5,
-        scaleMinimum: 1,
-        weight: criterion.weight,
-      })),
-    },
+    scoring: null,
     slaHours: 240,
     stableKey: "EVALUATION_CLOSE_OUT",
     tasks: [
       task(dependencies, {
         actionKeys: actions.map((item) => item.stableKey),
         taskType: "STAGE_DECISION",
-        config: { criteria },
+        config: {},
         description: "Assess results and record the close-out recommendation.",
         displayOrder: 1,
         formCode: "EVALUATION_CLOSE_OUT_REVIEW",

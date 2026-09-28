@@ -2,7 +2,6 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CheckCircle2 } from "lucide-react";
-import { useState } from "react";
 import {
   FormProvider,
   useForm,
@@ -20,14 +19,16 @@ import {
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatLocalDateTime24 } from "@/lib/dateUtils";
 import { PageShell } from "@/shared/ui/PageShell";
+import { FormRichTextField } from "@/shared/ui/FormRichTextField";
+import { richTextToPlainText } from "@/shared/utils/RichText";
 import type {
   WorkflowRfiDetail,
   WorkflowRfiEditableField,
 } from "../../domain/runtime/WorkflowRfiView";
+import { workflowRfiDetailedResponseFieldPath } from "../../domain/runtime/WorkflowRfi";
 import {
   useOwnedWorkflowRfi,
   useRespondToWorkflowRfi,
-  useSaveWorkflowRfiDraft,
 } from "./WorkflowRfiHooks";
 import { ApplicantWorkflowRfiDocuments } from "./ApplicantWorkflowRfiDocuments";
 import { WorkflowRfiInstructions } from "./WorkflowRfiInstructions";
@@ -44,6 +45,19 @@ const responseFormSchema = z.object({
       value: fieldValueSchema,
     }),
   ),
+}).superRefine((values, context) => {
+  values.fields.forEach((field, index) => {
+    if (
+      field.path === workflowRfiDetailedResponseFieldPath &&
+      (typeof field.value !== "string" || !richTextToPlainText(field.value))
+    ) {
+      context.addIssue({
+        code: "custom",
+        message: "Enter the requested detailed response.",
+        path: ["fields", index, "value"],
+      });
+    }
+  });
 });
 type ResponseFormValues = z.infer<typeof responseFormSchema>;
 
@@ -88,6 +102,16 @@ function EditableFieldControl({
   index: number;
 }) {
   const name = `fields.${index}.value` as const;
+  if (field.type === "RICH_TEXT") {
+    return (
+      <FormRichTextField
+        label={field.label}
+        name={name}
+        placeholder="Provide the requested detailed information."
+        required
+      />
+    );
+  }
   if (field.type === "TEXTAREA") {
     return <FormTextarea label={field.label} name={name} rows={4} />;
   }
@@ -194,9 +218,7 @@ export function ApplicantWorkflowRfiWorkspace({
     initialDetail,
   );
   const detail = query.data ?? initialDetail;
-  const save = useSaveWorkflowRfiDraft(applicationId, detail.id);
   const respond = useRespondToWorkflowRfi(applicationId, detail.id);
-  const [reviewing, setReviewing] = useState(false);
   const form = useForm<ResponseFormValues>({
     defaultValues: {
       fields: detail.editableFields.map((field) => ({
@@ -206,42 +228,22 @@ export function ApplicantWorkflowRfiWorkspace({
     },
     resolver: zodResolver(responseFormSchema),
   });
-  const values = useWatch({ control: form.control });
-  const parsedValues = responseFormSchema.safeParse(values);
-  const fieldValues = submittedValues(
-    parsedValues.success ? parsedValues.data : form.getValues(),
-    detail.editableFields,
-  );
   const missingDocuments = detail.requestedDocuments.filter(
     (document) => !document.evidence,
   );
 
-  async function saveDraft() {
-    await save.mutateAsync({
-      expectedRowVersion: detail.draft?.rowVersion ?? 0,
-      fieldValues,
-    });
-  }
-
-  async function submitResponse() {
+  async function submitResponse(values: ResponseFormValues) {
     if (missingDocuments.length) return;
     await respond.mutateAsync({
       evidenceVersionIds: detail.requestedDocuments.flatMap((document) =>
         document.evidence ? [document.evidence.versionId] : [],
       ),
       expectedRowVersion: detail.rowVersion,
-      fieldValues,
+      fieldValues: submittedValues(values, detail.editableFields),
     });
-    setReviewing(false);
   }
 
-  const submit = form.handleSubmit(async () => {
-    if (reviewing) {
-      await submitResponse();
-      return;
-    }
-    setReviewing(true);
-  });
+  const submit = form.handleSubmit(submitResponse);
 
   return (
     <PageShell
@@ -308,74 +310,21 @@ export function ApplicantWorkflowRfiWorkspace({
                     detail={detail}
                   />
                 ) : null}
-                {reviewing ? (
-                  <section className="rounded-xl border border-brand-orange/30 bg-white p-5 shadow-sm">
-                    <h2 className="font-bold text-brand-navy">
-                      Review your response
-                    </h2>
-                    <dl className="mt-4 space-y-3">
-                      {detail.editableFields.map((field) => (
-                        <div key={field.path}>
-                          <dt className="text-xs text-brand-navy/60">
-                            {field.label}
-                          </dt>
-                          <dd className="text-sm font-medium text-brand-navy">
-                            {Array.isArray(fieldValues[field.path])
-                              ? (fieldValues[field.path] as string[]).join(", ")
-                              : String(fieldValues[field.path] ?? "—")}
-                          </dd>
-                        </div>
-                      ))}
-                    </dl>
-                    <p className="mt-4 text-sm text-brand-navy/70">
-                      {detail.requestedDocuments.length -
-                        missingDocuments.length}{" "}
-                      of {detail.requestedDocuments.length} requested documents
-                      supplied.
-                    </p>
-                  </section>
-                ) : null}
-                {save.isError || respond.isError ? (
+                {respond.isError ? (
                   <p className="text-sm text-red-700" role="alert">
-                    {save.error?.message ?? respond.error?.message}
+                    {respond.error.message}
                   </p>
                 ) : null}
                 <div className="flex flex-wrap justify-end gap-3">
                   <GeneralButton
-                    disabled={save.isPending}
-                    onClick={() => void form.handleSubmit(saveDraft)()}
-                    type="button"
-                    variant="outline"
+                    disabled={
+                      Boolean(missingDocuments.length) || respond.isPending
+                    }
+                    type="submit"
+                    variant="success"
                   >
-                    {save.isPending ? "Saving…" : "Save draft"}
+                    {respond.isPending ? "Submitting…" : "Submit response"}
                   </GeneralButton>
-                  {reviewing ? (
-                    <>
-                      <GeneralButton
-                        onClick={() => setReviewing(false)}
-                        type="button"
-                        variant="ghost"
-                      >
-                        Back
-                      </GeneralButton>
-                      <GeneralButton
-                        disabled={
-                          Boolean(missingDocuments.length) || respond.isPending
-                        }
-                        type="submit"
-                        variant="success"
-                      >
-                        {respond.isPending ? "Submitting…" : "Submit response"}
-                      </GeneralButton>
-                    </>
-                  ) : (
-                    <GeneralButton
-                      disabled={Boolean(missingDocuments.length)}
-                      type="submit"
-                    >
-                      Review response
-                    </GeneralButton>
-                  )}
                 </div>
               </form>
             </FormProvider>

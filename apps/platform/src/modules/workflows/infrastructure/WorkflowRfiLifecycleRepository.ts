@@ -10,6 +10,7 @@ import type {
   CloseWorkflowRfiInput,
   RespondToWorkflowRfiInput,
 } from "../domain/runtime/WorkflowRfiSchemas";
+import { workflowRfiDetailedResponseFieldPath } from "../domain/runtime/WorkflowRfi";
 import type { WorkflowActionExecutionTransaction } from "./WorkflowActionExecutionRepository";
 import { workflowDocumentEvidenceVersions } from "./workflow-evidence.schema";
 import { appendWorkflowRfiLifecycleRecords } from "./WorkflowRfiLifecycleRecordsRepository";
@@ -21,6 +22,10 @@ import {
   workflowRfis,
 } from "./workflow-rfi.schema";
 import { workflowTasks } from "./workflow-runtime.schema";
+import {
+  sanitizeWorkflowRfiRichText,
+  workflowRfiInstructionsSummary,
+} from "./WorkflowRfiInstructions";
 
 export type WorkflowRfiResponseResult = {
   requestInformationId: string;
@@ -101,6 +106,16 @@ async function lockOwnedOpenRfi(
       "The response contains a field that is not editable for this request.",
     );
   }
+  if (rfi.editableFieldPaths.includes(workflowRfiDetailedResponseFieldPath)) {
+    const detailedResponse =
+      input.fieldValues[workflowRfiDetailedResponseFieldPath];
+    if (
+      typeof detailedResponse !== "string" ||
+      !workflowRfiInstructionsSummary(detailedResponse)
+    ) {
+      throw new ResourceConflictError("Enter the requested detailed response.");
+    }
+  }
   return rfi;
 }
 
@@ -162,10 +177,21 @@ export async function respondToOwnedWorkflowRfi(
     rfi.applicationId,
     input,
   );
+  const detailedResponse =
+    input.fieldValues[workflowRfiDetailedResponseFieldPath];
+  const fieldValues = {
+    ...input.fieldValues,
+    ...(typeof detailedResponse === "string"
+      ? {
+          [workflowRfiDetailedResponseFieldPath]:
+            sanitizeWorkflowRfiRichText(detailedResponse),
+        }
+      : {}),
+  };
   const respondedAt = new Date();
   const [response] = await transaction.insert(workflowRfiResponses).values({
     correlationId: input.correlationId,
-    fieldValues: input.fieldValues,
+    fieldValues,
     idempotencyKey: input.idempotencyKey,
     respondentUserId: actorId,
     respondedAt,

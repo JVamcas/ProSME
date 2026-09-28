@@ -27,5 +27,11 @@ describe("workflow deferral and escalation migration", () => {
     expect(migration).toContain("'blockUntilResolved'");
     expect(migration).toContain("'responsibility'");
     expect(migration).toContain("'RESUME', 'Resume', 'RESUME'");
+    expect(migration).toContain(
+      'DROP CONSTRAINT "app_workflow_actions_type_check"',
+    );
+    expect(migration.indexOf("'RESUME'\n    )")).toBeLessThan(
+      migration.indexOf("'RESUME', 'Resume', 'RESUME'"),
+    );
   });
 });

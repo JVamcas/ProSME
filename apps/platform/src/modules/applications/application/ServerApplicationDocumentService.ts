@@ -214,11 +214,11 @@ export async function createOwnApplicationDocumentDownload(
     versionId,
   );
   if (!version) throw new ResourceNotFoundError("application document");
-  return storage.createSignedDownloadUrl({
-    expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+  return {
+    body: await storage.read(version.objectKey),
+    contentType: version.contentType,
     fileName: version.originalName,
-    objectKey: version.objectKey,
-  });
+  };
 }
 
 export async function cleanupAbandonedApplicationDocumentUploads(

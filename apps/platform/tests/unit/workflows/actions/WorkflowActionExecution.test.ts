@@ -115,4 +115,40 @@ describe("workflow action execution contract", () => {
       ),
     ).toBeNull();
   });
+
+  it("requires an information request to ask for details, documents, or both", () => {
+    const request = {
+      expectedRuntimeVersion: 3,
+      input: {
+        actionType: "REQUEST_INFORMATION" as const,
+        editableFieldPaths: [],
+        instructions: "Please provide the missing information.",
+        requestedDocumentRequirementIds: [],
+      },
+      sourceStageInstanceId: "10000000-0000-4000-8000-000000000001",
+    };
+
+    expect(workflowActionExecutionRequestSchema.safeParse(request).success)
+      .toBe(false);
+    expect(
+      workflowActionExecutionRequestSchema.safeParse({
+        ...request,
+        input: {
+          ...request.input,
+          editableFieldPaths: ["CLARIFICATION_RESPONSE"],
+        },
+      }).success,
+    ).toBe(true);
+    expect(
+      workflowActionExecutionRequestSchema.safeParse({
+        ...request,
+        input: {
+          ...request.input,
+          requestedDocumentRequirementIds: [
+            "20000000-0000-4000-8000-000000000001",
+          ],
+        },
+      }).success,
+    ).toBe(true);
+  });
 });

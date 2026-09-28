@@ -15,8 +15,8 @@ import { createAdminApplicationDocumentDownload } from "@/modules/applications/S
 import { findDownloadableApplicationDocumentVersion } from "@/modules/applications/infrastructure/ApplicationDocumentRepository";
 
 const user = { id: "staff-user" } as never;
-const createSignedDownloadUrl = vi.fn().mockResolvedValue("https://example.test/file");
-const storage = { createSignedDownloadUrl } as unknown as DocumentStorage;
+const read = vi.fn().mockResolvedValue(Buffer.from("document"));
+const storage = { read } as unknown as DocumentStorage;
 const applicationId = "10000000-0000-4000-8000-000000000001";
 const versionId = "30000000-0000-4000-8000-000000000003";
 
@@ -37,9 +37,10 @@ describe("admin application document download", () => {
     expect(findDownloadableApplicationDocumentVersion).not.toHaveBeenCalled();
   });
 
-  it("signs only a finalized document linked to the authorized application", async () => {
+  it("reads only a finalized document linked to the authorized application", async () => {
     vi.mocked(getAdminApplicationOverview).mockResolvedValue({} as never);
     vi.mocked(findDownloadableApplicationDocumentVersion).mockResolvedValue({
+      contentType: "application/pdf",
       objectKey: "applications/file.pdf",
       originalName: "file.pdf",
     });
@@ -49,16 +50,15 @@ describe("admin application document download", () => {
       applicationId,
       versionId,
       storage,
-    )).resolves.toBe("https://example.test/file");
+    )).resolves.toEqual({
+      body: Buffer.from("document"),
+      contentType: "application/pdf",
+      fileName: "file.pdf",
+    });
     expect(findDownloadableApplicationDocumentVersion).toHaveBeenCalledWith(
       applicationId,
       versionId,
     );
-    expect(createSignedDownloadUrl).toHaveBeenCalledWith(
-      expect.objectContaining({
-        fileName: "file.pdf",
-        objectKey: "applications/file.pdf",
-      }),
-    );
+    expect(read).toHaveBeenCalledWith("applications/file.pdf");
   });
 });

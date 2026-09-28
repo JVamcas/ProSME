@@ -2,6 +2,7 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/shared/ui/Badge";
 
 export const statusStyles: Record<string, string> = {
+  "action required": "bg-brand-gold/40 text-brand-navy",
   approved: "bg-brand-green/15 text-brand-navy",
   active: "bg-brand-green/70 text-brand-white",
   sent: "bg-brand-green/70 text-brand-white",
@@ -26,8 +27,9 @@ export const statusStyles: Record<string, string> = {
   completed: "bg-brand-green/70 text-brand-white",
   pending: "bg-brand-navy/20 text-brand-orange",
   "in progress": "bg-brand-navy/60 text-brand-white",
+  "outcome available": "bg-brand-green/15 text-brand-navy",
+  "under review": "bg-brand-blue/40 text-brand-navy",
   waiting: "bg-brand-gold text-brand-white",
-
 };
 
 type StatusBadgeProps = {
@@ -37,16 +39,20 @@ type StatusBadgeProps = {
 };
 
 function defaultLabel(status: string) {
+  return normalizedStatus(status)
+    .replaceAll(/\b\p{L}/gu, (letter) => letter.toLocaleUpperCase());
+}
+
+function normalizedStatus(status: string) {
   return status
     .trim()
     .toLocaleLowerCase()
-    .replaceAll(/[_-]+/g, " ")
-    .replaceAll(/\b\p{L}/gu, (letter) => letter.toLocaleUpperCase());
+    .replaceAll(/[_-]+/g, " ");
 }
 
 export function StatusBadge({ className, label, status }: StatusBadgeProps) {
   const style =
-    statusStyles[status.toLocaleLowerCase()] ??
+    statusStyles[normalizedStatus(status)] ??
     "bg-brand-cream text-brand-navy";
 
   return (

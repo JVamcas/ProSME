@@ -39,21 +39,11 @@ export class GoogleCloudDocumentStorage implements DocumentStorage {
     await bucket.file(objectKey).delete({ ignoreNotFound: true });
   }
 
-  async createSignedDownloadUrl(input: {
-    expiresAt: Date;
-    fileName: string;
-    objectKey: string;
-  }) {
-    const safeName = input.fileName.replace(/["\\\r\n]/g, "_");
-    const [url] = await client()
+  async read(objectKey: string) {
+    const [body] = await client()
       .bucket(bucketName())
-      .file(input.objectKey)
-      .getSignedUrl({
-        action: "read",
-        expires: input.expiresAt,
-        responseDisposition: `attachment; filename="${safeName}"`,
-        version: "v4",
-      });
-    return url;
+      .file(objectKey)
+      .download();
+    return body;
   }
 }

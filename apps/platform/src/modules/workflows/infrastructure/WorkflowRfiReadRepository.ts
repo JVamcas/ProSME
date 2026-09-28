@@ -7,7 +7,11 @@ import type {
   WorkflowRfiDetail,
   WorkflowRfiSummary,
 } from "../domain/runtime/WorkflowRfiView";
-import { sanitizeWorkflowRfiInstructions } from "./WorkflowRfiInstructions";
+import { workflowRfiDetailedResponseFieldPath } from "../domain/runtime/WorkflowRfi";
+import {
+  sanitizeWorkflowRfiInstructions,
+  sanitizeWorkflowRfiRichText,
+} from "./WorkflowRfiInstructions";
 
 type SummaryRow = Omit<
   WorkflowRfiSummary,
@@ -148,7 +152,11 @@ function detailQuery(condition: SQL) {
       SELECT jsonb_agg(jsonb_build_object(
         'path', requested.path,
         'label', COALESCE(field.label, initcap(replace(requested.path, '_', ' '))),
-        'type', COALESCE(NULLIF(field.type, 'DOCUMENT'), 'TEXT'),
+        'type', CASE
+          WHEN requested.path = ${workflowRfiDetailedResponseFieldPath}
+            THEN 'RICH_TEXT'
+          ELSE COALESCE(NULLIF(field.type, 'DOCUMENT'), 'TEXT')
+        END,
         'options', COALESCE(field_options.items, '[]'::jsonb),
         'currentValue', application_response.values -> requested.path
       ) ORDER BY requested.ordinality) AS fields
@@ -217,6 +225,16 @@ function detailQuery(condition: SQL) {
 }
 
 function normaliseDetail(row: DetailRow): WorkflowRfiDetail {
+  const sanitizeFieldValues = (values: Record<string, unknown>) => ({
+    ...values,
+    ...(typeof values[workflowRfiDetailedResponseFieldPath] === "string"
+      ? {
+          [workflowRfiDetailedResponseFieldPath]: sanitizeWorkflowRfiRichText(
+            values[workflowRfiDetailedResponseFieldPath],
+          ),
+        }
+      : {}),
+  });
   return {
     ...mapSummary(row),
     closedAt: row.closedAt ? new Date(row.closedAt).toISOString() : null,
@@ -225,7 +243,11 @@ function normaliseDetail(row: DetailRow): WorkflowRfiDetail {
       createdAt: new Date(entry.createdAt).toISOString(),
     })),
     draft: row.draft
-      ? { ...row.draft, updatedAt: new Date(row.draft.updatedAt).toISOString() }
+      ? {
+          ...row.draft,
+          fieldValues: sanitizeFieldValues(row.draft.fieldValues),
+          updatedAt: new Date(row.draft.updatedAt).toISOString(),
+        }
       : null,
     editableFields: row.editableFields,
     expiredAt: row.expiredAt ? new Date(row.expiredAt).toISOString() : null,
@@ -241,6 +263,7 @@ function normaliseDetail(row: DetailRow): WorkflowRfiDetail {
     response: row.response
       ? {
           ...row.response,
+          fieldValues: sanitizeFieldValues(row.response.fieldValues),
           respondedAt: new Date(row.response.respondedAt).toISOString(),
         }
       : null,

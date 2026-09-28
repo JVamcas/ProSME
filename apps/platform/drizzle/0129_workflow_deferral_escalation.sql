@@ -96,6 +96,22 @@ CREATE UNIQUE INDEX "app_workflow_escalations_execution_unique" ON "app_workflow
 CREATE UNIQUE INDEX "app_workflow_escalations_active_task_unique" ON "app_workflow_escalations" ("task_id") WHERE "status" = 'ACTIVE';
 CREATE INDEX "app_workflow_escalations_runtime_idx" ON "app_workflow_escalations" ("workflow_instance_id", "status");
 --> statement-breakpoint
+ALTER TABLE "app_workflow_action_definitions"
+  DROP CONSTRAINT "app_workflow_actions_type_check",
+  ADD CONSTRAINT "app_workflow_actions_type_check"
+    CHECK (action_type IN (
+      'APPROVE_ADVANCE',
+      'REJECT',
+      'REQUEST_INFORMATION',
+      'RETURN',
+      'REFER',
+      'ESCALATE',
+      'PUT_ON_HOLD',
+      'WITHDRAW',
+      'DEFER',
+      'RESUME'
+    ));
+--> statement-breakpoint
 ALTER TABLE app_workflow_action_definitions DISABLE TRIGGER app_workflow_actions_immutable;
 --> statement-breakpoint
 UPDATE app_workflow_action_definitions

@@ -106,9 +106,9 @@ export async function createOwnedWorkflowRfiDocumentDownload(
   if (!version || version.requirementId !== requested.requirementId) {
     throw new ResourceNotFoundError("RFI document");
   }
-  return storage.createSignedDownloadUrl({
-    expiresAt: new Date(Date.now() + 5 * 60 * 1_000),
+  return {
+    body: await storage.read(version.objectKey),
+    contentType: version.contentType,
     fileName: version.originalName,
-    objectKey: version.objectKey,
-  });
+  };
 }

@@ -2,7 +2,7 @@
 
 import { CheckCircle2, Download, FileText } from "lucide-react";
 
-import { GeneralButtonLink } from "@/components/ui/button";
+import { GeneralButtonAnchor } from "@/components/ui/button";
 import { formatLocalDateTime24 } from "@/lib/dateUtils";
 import type { DocumentRequirementItem } from "@/modules/work-queue/TaskTypes";
 import { FileUploadButton } from "@/shared/ui/FileUploadButton";
@@ -77,7 +77,8 @@ export function WorkflowTaskDocumentsSection({
             </div>
             <div className="flex flex-wrap items-center gap-2">
               {document && upload ? (
-                <GeneralButtonLink
+                <GeneralButtonAnchor
+                  download
                   href={"/api/admin/tasks/" + upload.taskId
                     + "/documents/" + document.versionId + "/download"}
                   size="sm"
@@ -85,7 +86,7 @@ export function WorkflowTaskDocumentsSection({
                 >
                   <Download aria-hidden="true" className="size-4" />
                   Download
-                </GeneralButtonLink>
+                </GeneralButtonAnchor>
               ) : null}
               {canUpload && requirement.id ? (
                 <FileUploadButton

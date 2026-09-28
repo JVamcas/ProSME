@@ -56,6 +56,13 @@ describe("workflow task work sections", () => {
     expect(markup).toContain("Approve and advance");
   });
 
+  it("keeps earlier step content mounted on the final step", () => {
+    const markup = renderSections("STEP_PROGRESS", "Completed");
+
+    expect(markup).toContain('class="hidden"');
+    expect(markup).toContain("Form content");
+  });
+
   it("keeps workflow actions hidden until the final completed step", () => {
     const markup = renderToStaticMarkup(
       <WorkflowTaskWorkSections

@@ -85,7 +85,7 @@ export function WorkQueueWorkspace() {
       description="Tasks assigned to you."
       title="Assigned tasks"
     >
-      <section className="overflow-hidden rounded-2xl border border-brand-navy/10 bg-white shadow-sm">
+      <section className="overflow-hidden rounded-t-2xl border border-brand-navy/10 bg-white shadow-sm pb-2">
         <QueueTabs onChange={changeScope} scope={scope} />
         <div className="p-4">
           <DataTableFilter

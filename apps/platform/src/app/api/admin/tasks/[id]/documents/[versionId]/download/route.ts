@@ -5,6 +5,7 @@ import {
   createCorrelationId,
   portalRouteError,
 } from "@/lib/api/PortalApiResponse";
+import { documentDownloadResponse } from "@/lib/api/DocumentDownloadResponse";
 import { createWorkflowTaskDocumentDownload } from "@/modules/work-queue/ServerWorkflowTaskDocumentService";
 
 const parametersSchema = z.object({
@@ -22,12 +23,12 @@ export async function GET(
       resolveUserFromHeaders(request.headers),
       context.params.then((value) => parametersSchema.parse(value)),
     ]);
-    const url = await createWorkflowTaskDocumentDownload(
+    const download = await createWorkflowTaskDocumentDownload(
       user,
       parameters.id,
       parameters.versionId,
     );
-    return Response.redirect(url, 303);
+    return documentDownloadResponse(download);
   } catch (error) {
     return portalRouteError(error, correlationId);
   }

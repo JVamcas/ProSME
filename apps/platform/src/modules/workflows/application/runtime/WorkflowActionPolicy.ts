@@ -39,6 +39,7 @@ type PolicyAction = Pick<
 
 export type WorkflowActionPolicyTarget = {
   activeDeferral?: boolean;
+  activeDeferralReady?: boolean;
   activeHold?: boolean;
   action: PolicyAction;
   stageStatus: string;

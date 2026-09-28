@@ -34,17 +34,21 @@ function FormErrors({
 }
 
 function DraftPersistenceStatus({
+  draftIsValid,
   hasSavedDraft,
   hasUnsavedChanges,
   isSaving,
   saveError,
 }: {
+  draftIsValid: boolean;
   hasSavedDraft: boolean;
   hasUnsavedChanges: boolean;
   isSaving: boolean;
   saveError: Error | null;
 }) {
-  const message = saveError
+  const message = !draftIsValid
+    ? "Correct invalid fields to save"
+    : saveError
     ? "Save failed — retry available"
     : isSaving
       ? "Saving draft…"
@@ -146,6 +150,7 @@ function LoadedDynamicFormTask({
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             {!readOnly ? (
               <DraftPersistenceStatus
+                draftIsValid={controller.draftIsValid}
                 hasSavedDraft={Boolean(data.response)}
                 hasUnsavedChanges={controller.hasUnsavedChanges}
                 isSaving={controller.save.isPending}

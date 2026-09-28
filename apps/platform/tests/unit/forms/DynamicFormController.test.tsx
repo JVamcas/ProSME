@@ -40,7 +40,17 @@ function taskFormData(): TaskFormData {
   return {
     context: {},
     schema: {
-      fields: [],
+      fields: [{
+        columnSpan: 1,
+        helpText: null,
+        key: "NOTES",
+        label: "Notes",
+        options: [],
+        order: 1,
+        required: false,
+        sectionId: "10000000-0000-4000-8000-000000000001",
+        type: "TEXT",
+      }],
       instructions: null,
       sections: [],
       submitLabel: "Submit",
@@ -70,6 +80,7 @@ function Harness({ data }: { data: TaskFormData }) {
       <output data-testid="pending-navigation">
         {controller.pendingNavigationHref}
       </output>
+      <output data-testid="draft-valid">{String(controller.draftIsValid)}</output>
       <button
         onClick={() => controller.setValues({ NOTES: "Changed note" })}
         type="button"
@@ -174,5 +185,41 @@ describe("dynamic Form draft persistence", () => {
       },
       expect.objectContaining({ onSuccess: expect.any(Function) }),
     );
+  });
+
+  it("keeps an invalid bounded value local until it is corrected", async () => {
+    const data = taskFormData();
+    data.schema.fields[0] = {
+      ...data.schema.fields[0],
+      key: "RATING",
+      maximum: 5,
+      minimum: 1,
+      type: "NUMBER",
+    };
+    data.response!.values = {};
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+
+    function InvalidHarness() {
+      const controller = useDynamicFormController(taskId, data);
+      return (
+        <button
+          onClick={() => controller.setValues({ RATING: 6 })}
+          type="button"
+        >
+          {String(controller.draftIsValid)}
+        </button>
+      );
+    }
+
+    await act(async () => root?.render(<InvalidHarness />));
+    await act(async () => container.querySelector("button")?.click());
+    await act(async () => {
+      vi.advanceTimersByTime(formDraftAutosaveDelayMs);
+    });
+
+    expect(container.textContent).toBe("false");
+    expect(mocks.saveMutate).not.toHaveBeenCalled();
   });
 });

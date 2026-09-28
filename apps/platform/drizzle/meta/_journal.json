@@ -911,6 +911,13 @@
       "when": 1798934400000,
       "tag": "0129_workflow_deferral_escalation",
       "breakpoints": true
+    },
+    {
+      "idx": 130,
+      "version": "7",
+      "when": 1799020800000,
+      "tag": "0130_remove_standard_closeout_scoring",
+      "breakpoints": true
     }
   ]
 }

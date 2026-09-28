@@ -24,6 +24,19 @@ describe("notification template target resolution", () => {
       ]);
   });
 
+  it("resolves information-request templates through the workflow catalog", () => {
+    expect(notificationTemplateResolutionCandidates(
+      "workflow.information-request.created",
+    )).toEqual([
+      {
+        eventKey: "workflow.information-request.created",
+        scope: "EVENT",
+      },
+      { catalogKey: "WORKFLOW", scope: "CATALOG" },
+      { scope: "GLOBAL" },
+    ]);
+  });
+
   it("rejects unknown events before target lookup", () => {
     expect(() => notificationTemplateResolutionCandidates("unknown.event"))
       .toThrow(expect.objectContaining({
@@ -31,4 +44,3 @@ describe("notification template target resolution", () => {
       }));
   });
 });
-

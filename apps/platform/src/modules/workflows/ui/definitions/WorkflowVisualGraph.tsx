@@ -19,6 +19,7 @@ import type {
   WorkflowTransitionInput,
 } from "../../domain/definitions/WorkflowTypes";
 import {
+  aggregateWorkflowDisplayRoutes,
   arrangeWorkflowStages,
   workflowGraphMetrics,
   type WorkflowNodePosition,
@@ -70,6 +71,10 @@ export function WorkflowVisualGraph({
   const terminalPositions = terminalOutcomePositions(
     terminalOutcomes,
     graphBounds.stageRight,
+  );
+  const displayRoutes = useMemo(
+    () => aggregateWorkflowDisplayRoutes(transitions),
+    [transitions],
   );
 
   function startDragging(
@@ -132,35 +137,26 @@ export function WorkflowVisualGraph({
                 <path d="M0,0 L8,4 L0,8 Z" fill="var(--color-brand-orange)" />
               </marker>
             </defs>
-            {transitions.flatMap((transition, index) => {
-              const source = positions[transition.sourceStageKey];
-              const destinations = transition.terminalOutcome
-                ? [{
-                    key: transition.terminalOutcome,
-                    position: terminalPositions[transition.terminalOutcome],
-                    terminal: true,
-                  }]
-                : transition.targetStageKeys.map((targetStageKey) => ({
-                    key: targetStageKey,
-                    position: positions[targetStageKey],
-                    terminal: false,
-                  }));
-              if (!source) return [];
-              return destinations.flatMap((destination, targetIndex) =>
-                destination.position ? [(
+            {displayRoutes.map((route, index) => {
+              const source = positions[route.sourceStageKey];
+              const destination = route.isTerminal
+                ? terminalPositions[route.destinationKey]
+                : positions[route.destinationKey];
+              if (!source || !destination) return null;
+
+              return (
                 <path
                   className="fill-none stroke-brand-orange/75"
                   d={workflowRoutePath(
                     source,
-                    destination.position,
-                    index + targetIndex,
-                    destination.terminal,
+                    destination,
+                    index,
+                    route.isTerminal,
                   )}
-                  key={`${transition.id ?? `${transition.sourceStageKey}-${transition.actionKey}-${transition.priority}`}-${destination.key}`}
+                  key={route.key}
                   markerEnd="url(#workflow-arrow)"
                   strokeWidth="2"
                 />
-                )] : [],
               );
             })}
           </svg>

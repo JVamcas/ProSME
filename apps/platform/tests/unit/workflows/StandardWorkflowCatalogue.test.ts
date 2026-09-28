@@ -75,6 +75,20 @@ describe("standard workflow catalogue", () => {
     ]);
   });
 
+  it("configures close-out as a checklist without a scoring requirement", () => {
+    const graph = createStandardWorkflowDraft(dependencies()).graph;
+    const closeOut = graph.stages.find(
+      (stage) => stage.stableKey === "EVALUATION_CLOSE_OUT",
+    );
+    const review = closeOut?.tasks.find(
+      (task) => task.stableKey === "EVALUATION_CLOSE_OUT_REVIEW",
+    );
+
+    expect(closeOut?.checklistItems).toHaveLength(4);
+    expect(closeOut?.scoring).toBeNull();
+    expect(review?.config).not.toHaveProperty("criteria");
+  });
+
   it("includes enabled common actions on every stage and task", () => {
     const graph = createStandardWorkflowDraft(dependencies()).graph;
     const commonActionKeys = [

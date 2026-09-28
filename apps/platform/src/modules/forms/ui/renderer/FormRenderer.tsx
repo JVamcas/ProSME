@@ -56,6 +56,28 @@ function valuesForFields(
   );
 }
 
+function hasFormValue(value: unknown) {
+  return value !== undefined
+    && value !== null
+    && value !== ""
+    && (!Array.isArray(value) || value.length > 0);
+}
+
+function invalidFieldMessage(
+  field: FormRuntimeSchema["fields"][number],
+  value: unknown,
+) {
+  if (typeof value === "number") {
+    if (field.minimum != null && value < field.minimum) {
+      return `Enter a value of at least ${field.minimum}.`;
+    }
+    if (field.maximum != null && value > field.maximum) {
+      return `Enter a value no greater than ${field.maximum}.`;
+    }
+  }
+  return "Complete or correct this field before continuing.";
+}
+
 function sectionSpan(columnSpan: RenderSection["columnSpan"]) {
   if (columnSpan === 1) return "col-span-1";
   if (columnSpan === 2) return "col-span-1 md:col-span-2";
@@ -221,7 +243,7 @@ export function FormRenderer({
         (field) => field.sectionId === currentSection.id,
       )
     : [];
-  const invalidFields = validationAttempted
+  const invalidStepFields = validationAttempted
     ? currentFields.filter((field) => (
         !validateFormValues(
           [field],
@@ -230,10 +252,23 @@ export function FormRenderer({
         )
       ))
     : [];
+  const invalidPopulatedFields = activeDefinition.fields.filter((field) => (
+    hasFormValue(formData[field.key])
+    && !validateFormValues(
+      [field],
+      valuesForFields([field], formData),
+      false,
+    )
+  ));
+  const invalidFields = new Map(
+    [...invalidStepFields, ...invalidPopulatedFields].map((field) => (
+      [field.key, field]
+    )),
+  );
   const extraErrors = Object.fromEntries(
-    invalidFields.map((field) => [
+    [...invalidFields.values()].map((field) => [
       field.key,
-      { __errors: ["Complete or correct this field before continuing."] },
+      { __errors: [invalidFieldMessage(field, formData[field.key])] },
     ]),
   ) as ErrorSchema<DynamicFormValues>;
   const context = useMemo(

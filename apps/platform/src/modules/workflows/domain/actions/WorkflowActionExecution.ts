@@ -124,7 +124,19 @@ export const workflowActionInputSchema = z.discriminatedUnion("actionType", [
         });
       }
     }),
-]);
+]).superRefine((input, context) => {
+  if (
+    input.actionType === "REQUEST_INFORMATION" &&
+    input.editableFieldPaths.length === 0 &&
+    input.requestedDocumentRequirementIds.length === 0
+  ) {
+    context.addIssue({
+      code: "custom",
+      message: "Request detailed information, at least one document, or both.",
+      path: ["editableFieldPaths"],
+    });
+  }
+});
 
 export const workflowActionExecutionRequestSchema = z
   .object({

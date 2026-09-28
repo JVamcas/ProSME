@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Information request expired</title>
+  </head>
+  <body style="margin: 0; background: #f5f2ea; color: #15243a; font-family: Arial, sans-serif;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="width: 100%; background: #f5f2ea;">
+      <tbody>
+        <tr>
+          <td align="center" style="padding: 24px 12px;">
+            <table role="presentation" width="640" cellspacing="0" cellpadding="0" style="width: 100%; max-width: 640px; background: #ffffff; border-radius: 16px;">
+              <tbody>
+                <tr>
+                  <td style="padding: 32px; border-top: 6px solid #f58220;">
+                    <p style="margin: 0 0 8px; color: #f58220; font-size: 13px; font-weight: bold;">{{platformName}}</p>
+                    <h1 style="margin: 0 0 20px; font-size: 26px; line-height: 1.25;">Information request expired</h1>
+                    <p style="margin: 0 0 16px; line-height: 1.6;">Hello {{recipientName}},</p>
+                    <p style="margin: 0 0 16px; line-height: 1.6;">
+                      The response deadline passed for the information request on
+                      <strong>{{applicationReference}}</strong> under {{fundingOpportunityTitle}}.
+                    </p>
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="width: 100%; margin: 20px 0; background: #f5f2ea; border-radius: 12px;">
+                      <tbody>
+                        <tr>
+                          <td style="padding: 18px; line-height: 1.6;">
+                            <strong>Request:</strong> {{question}}<br>
+                            <strong>Deadline:</strong> {{deadlineAt}}<br>
+                            <strong>Expired:</strong> {{expiredAt}}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <p style="margin: 24px 0;">
+                      <a href="{{workQueueUrl}}" style="display: inline-block; border-radius: 999px; background: #f58220; color: #ffffff; padding: 12px 22px; text-decoration: none; font-weight: bold;">Open work queue</a>
+                    </p>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </body>
+</html>

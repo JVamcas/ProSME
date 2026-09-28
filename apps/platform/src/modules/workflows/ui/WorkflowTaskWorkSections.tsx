@@ -261,7 +261,14 @@ function StepLayout({
           <span className="text-sm text-brand-navy/60">{current.status}</span>
         </header>
         <fieldset className="p-5" disabled={disabled}>
-          {current.content}
+          {sections.map((section) => (
+            <div
+              className={section.id === current.id ? undefined : "hidden"}
+              key={section.id}
+            >
+              {section.content}
+            </div>
+          ))}
         </fieldset>
       </section>
       {sections.length > 1 ? (

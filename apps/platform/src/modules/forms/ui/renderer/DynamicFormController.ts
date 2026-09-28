@@ -10,6 +10,8 @@ import {
   useSaveTaskForm,
 } from "@/modules/forms/FormHooks";
 import type { TaskFormData } from "@/modules/forms/FormTypes";
+import { activeFormDefinition } from "@/modules/forms/engine/FormVisibility";
+import { validateFormValues } from "@/modules/forms/FormValidation";
 import type { DynamicFormValues } from "./FormRenderer";
 
 export const formDraftAutosaveDelayMs = 800;
@@ -28,6 +30,11 @@ export function useDynamicFormController(
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const revision = useRef(0);
   const lastAutosaveRevision = useRef(0);
+  const draftIsValid = validateFormValues(
+    activeFormDefinition(data.schema, values).fields,
+    values,
+    false,
+  );
 
   const changeValues = useCallback((nextValues: DynamicFormValues) => {
     revision.current += 1;
@@ -36,7 +43,12 @@ export function useDynamicFormController(
   }, []);
 
   const saveDraftValues = useCallback(() => {
-    if (save.isPending || complete.isPending || externalPending) return;
+    if (
+      !draftIsValid
+      || save.isPending
+      || complete.isPending
+      || externalPending
+    ) return;
 
     const savingRevision = revision.current;
     save.mutate(
@@ -53,7 +65,7 @@ export function useDynamicFormController(
         },
       },
     );
-  }, [complete.isPending, data, externalPending, save, values]);
+  }, [complete.isPending, data, draftIsValid, externalPending, save, values]);
 
   useEffect(() => {
     if (
@@ -119,6 +131,7 @@ export function useDynamicFormController(
     completeFormValues,
     confirmNavigation: navigation.confirmNavigation,
     hasUnsavedChanges,
+    draftIsValid,
     finalizeFormValues,
     pendingNavigationHref: navigation.pendingNavigationHref,
     save,

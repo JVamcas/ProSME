@@ -14,7 +14,6 @@ import type {
   AdminApplicationListRow,
   AdminApplicationStatusFilter,
 } from "@/modules/applications/ApplicationTypes";
-import { formatNAD } from "@/components/ui/money-field";
 import { formatLocalDateTime24 } from "@/lib/dateUtils";
 import { ArrowLink } from "@/components/ui/links";
 
@@ -56,19 +55,18 @@ const columns: DataTableColumn<AdminApplicationListRow>[] = [
   },
   {
     accessorKey: "fundingCallTitle",
-    header: "Opportunity",
+    header: "Funding Call",
   },
   {
-    accessorKey: "internalStatus",
+    accessorKey: "applicantStatus",
     header: "Status",
-    cell: ({ row }) => <StatusBadge status={row.original.internalStatus} />,
+    cell: ({ row }) => <StatusBadge status={row.original.applicantStatus} />,
   },
   {
     accessorKey: "submittedAt",
     header: "Submitted",
     cell: ({ row }) => formatLocalDateTime24(row.original.submittedAt),
-  },
-
+  }
 ];
 
 function StatusTabs({

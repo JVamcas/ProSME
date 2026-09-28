@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { resolveUserFromHeaders } from "@/auth/authorization/current-user";
+import { documentDownloadResponse } from "@/lib/api/DocumentDownloadResponse";
 import {
   createCorrelationId,
   portalRouteError,
@@ -25,13 +26,13 @@ export async function GET(
       resolveUserFromHeaders(request.headers),
       context.params.then((value) => parametersSchema.parse(value)),
     ]);
-    const url = await createOwnedWorkflowRfiDocumentDownload(
+    const download = await createOwnedWorkflowRfiDocumentDownload(
       user,
       parameters.id,
       parameters.requestId,
       parameters.versionId,
     );
-    return Response.redirect(url, 303);
+    return documentDownloadResponse(download);
   } catch (error) {
     return portalRouteError(error, correlationId);
   }

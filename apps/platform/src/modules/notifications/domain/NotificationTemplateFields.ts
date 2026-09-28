@@ -29,6 +29,32 @@ export const notificationEventTemplateFields = {
     "submittedAt",
     "applicationUrl",
   ],
+  "workflow.information-request.closed": [
+    ...notificationCatalogTemplateFields.WORKFLOW,
+    "question",
+    "closedAt",
+    "applicationUrl",
+  ],
+  "workflow.information-request.created": [
+    ...notificationCatalogTemplateFields.WORKFLOW,
+    "question",
+    "createdAt",
+    "deadlineAt",
+    "informationRequestUrl",
+  ],
+  "workflow.information-request.expired": [
+    ...notificationCatalogTemplateFields.WORKFLOW,
+    "question",
+    "deadlineAt",
+    "expiredAt",
+    "workQueueUrl",
+  ],
+  "workflow.information-request.responded": [
+    ...notificationCatalogTemplateFields.WORKFLOW,
+    "question",
+    "respondedAt",
+    "workQueueUrl",
+  ],
   "workflow.task.assigned": [
     ...notificationCatalogTemplateFields.WORKFLOW,
     "stageName",
@@ -102,6 +128,62 @@ export function buildNotificationRenderValues<Key extends NotificationEventKey>(
         `/portal/applications/${context.applicationId}`,
       ),
       submittedAt: formatTimestamp(context.submittedAt),
+    };
+  }
+
+  if (input.eventKey === "workflow.information-request.created") {
+    const context = input.context as NotificationEventContextByKey[
+      "workflow.information-request.created"
+    ];
+    return {
+      ...common,
+      createdAt: formatTimestamp(context.createdAt),
+      deadlineAt: formatTimestamp(context.deadlineAt),
+      informationRequestUrl: trustedUrl(
+        input.publicApplicationUrl,
+        `/portal/applications/${context.applicationId}/requests/${context.requestInformationId}`,
+      ),
+      question: context.question,
+    };
+  }
+
+  if (input.eventKey === "workflow.information-request.responded") {
+    const context = input.context as NotificationEventContextByKey[
+      "workflow.information-request.responded"
+    ];
+    return {
+      ...common,
+      question: context.question,
+      respondedAt: formatTimestamp(context.respondedAt),
+      workQueueUrl: trustedUrl(input.publicApplicationUrl, "/admin/work-queue"),
+    };
+  }
+
+  if (input.eventKey === "workflow.information-request.closed") {
+    const context = input.context as NotificationEventContextByKey[
+      "workflow.information-request.closed"
+    ];
+    return {
+      ...common,
+      applicationUrl: trustedUrl(
+        input.publicApplicationUrl,
+        `/portal/applications/${context.applicationId}`,
+      ),
+      closedAt: formatTimestamp(context.closedAt),
+      question: context.question,
+    };
+  }
+
+  if (input.eventKey === "workflow.information-request.expired") {
+    const context = input.context as NotificationEventContextByKey[
+      "workflow.information-request.expired"
+    ];
+    return {
+      ...common,
+      deadlineAt: formatTimestamp(context.deadlineAt),
+      expiredAt: formatTimestamp(context.expiredAt),
+      question: context.question,
+      workQueueUrl: trustedUrl(input.publicApplicationUrl, "/admin/work-queue"),
     };
   }
 

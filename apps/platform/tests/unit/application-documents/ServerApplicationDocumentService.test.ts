@@ -70,9 +70,9 @@ function pdf(name = "registration.pdf") {
 
 function storage(): DocumentStorage {
   return {
-    createSignedDownloadUrl: vi.fn().mockResolvedValue("https://signed.test"),
     delete: vi.fn().mockResolvedValue(undefined),
     put: vi.fn().mockResolvedValue(undefined),
+    read: vi.fn().mockResolvedValue(Buffer.from("document")),
   };
 }
 
@@ -210,10 +210,11 @@ describe("application document service", () => {
     );
   });
 
-  it("creates signed access only for an owner-scoped clean version", async () => {
+  it("reads content only for an owner-scoped clean version", async () => {
     const adapter = storage();
     vi.mocked(findOwnedDownloadableApplicationDocumentVersion)
       .mockResolvedValue({
+        contentType: "application/pdf",
         objectKey: "users/owner/application/version.pdf",
         originalName: "registration.pdf",
       });
@@ -222,17 +223,18 @@ describe("application document service", () => {
       applicationId,
       versionId,
       adapter,
-    )).resolves.toBe("https://signed.test");
+    )).resolves.toEqual({
+      body: Buffer.from("document"),
+      contentType: "application/pdf",
+      fileName: "registration.pdf",
+    });
     expect(findOwnedDownloadableApplicationDocumentVersion).toHaveBeenCalledWith(
       actor.id,
       applicationId,
       versionId,
     );
-    expect(adapter.createSignedDownloadUrl).toHaveBeenCalledWith(
-      expect.objectContaining({
-        fileName: "registration.pdf",
-        objectKey: "users/owner/application/version.pdf",
-      }),
+    expect(adapter.read).toHaveBeenCalledWith(
+      "users/owner/application/version.pdf",
     );
   });
 });
