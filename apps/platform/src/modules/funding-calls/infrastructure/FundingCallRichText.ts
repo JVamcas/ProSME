@@ -15,10 +15,16 @@ const allowedTags = [
   "ul",
 ];
 
-export function sanitizeFundingCallDescription(value: string) {
+export function sanitizeFundingCallRichText(value: string) {
   return sanitizeHtml(value, {
     allowedAttributes: {},
     allowedTags,
     disallowedTagsMode: "discard",
   });
+}
+
+export const sanitizeFundingCallDescription = sanitizeFundingCallRichText;
+
+export function sanitizeFundingCallEligibilitySummary(value: string | null) {
+  return value === null ? null : sanitizeFundingCallRichText(value);
 }

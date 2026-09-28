@@ -79,7 +79,7 @@ export function FundingCallExceptionalActions(props: Props) {
   if (!actions.length) return null;
 
   return (
-    <section className="space-y-3 rounded-lg border border-slate-200 bg-white p-4">
+    <>
       <div className="flex flex-wrap gap-3">
         {actions.map((action) => (
           <GeneralButton
@@ -133,6 +133,6 @@ export function FundingCallExceptionalActions(props: Props) {
           </form>
         </FormProvider>
       </DraggableDialog>
-    </section>
+    </>
   );
 }

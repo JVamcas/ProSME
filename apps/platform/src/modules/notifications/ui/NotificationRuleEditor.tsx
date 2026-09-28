@@ -178,7 +178,9 @@ export function NotificationRuleEditor({
               {notificationRecipientTypes
                 .filter(
                   (type) =>
-                    type === "APPLICATION_OWNER" || type === "ASSIGNED_USER",
+                    type === "APPLICATION_OWNER"
+                    || type === "ASSIGNED_USER"
+                    || type === "FUNDING_CALL_STAKEHOLDER",
                 )
                 .filter(
                   (type) =>

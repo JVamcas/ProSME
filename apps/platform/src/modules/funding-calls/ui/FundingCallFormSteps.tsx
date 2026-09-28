@@ -5,7 +5,6 @@ import { FormDateTimeInput } from "@/components/ui/form-date-time-input";
 import {
   FormInput,
   FormSelect,
-  FormTextarea,
 } from "@/components/ui/form-fields";
 import { MoneyField } from "@/components/ui/money-field";
 import { FormRichTextField } from "@/shared/ui/FormRichTextField";
@@ -258,12 +257,10 @@ export function PublicContentStep() {
       <StepIntroduction title="Public content">
         Provide the public eligibility summary and contact details for applicant enquiries.
       </StepIntroduction>
-      <FormTextarea
-        containerClassName="md:col-span-2"
+      <FormRichTextField
+        className="md:col-span-2"
         label="Public eligibility summary"
-        maxLength={2000}
         name="eligibilitySummary"
-        rows={5}
       />
       <FormInput label="Public contact name" name="publicContactName" />
       <FormInput

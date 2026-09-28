@@ -18,6 +18,7 @@ import { toInputDateTimeLocal } from "@/lib/dateUtils";
 import {
   fundingCallCreateSchema,
   fundingCallDescriptionSchema,
+  fundingCallEligibilitySummarySchema,
 } from "../api/FundingCallSchemas";
 import type { FundingCallCreateInput } from "../api/FundingCallSchemas";
 import type { FundingCallView } from "../api/FundingCallTransport";
@@ -54,7 +55,7 @@ const localFormSchema = z.object({
   ]),
   closesAt: z.string().min(1, "Closing date is required."),
   description: fundingCallDescriptionSchema,
-  eligibilitySummary: z.string().trim().max(2000),
+  eligibilitySummary: fundingCallEligibilitySummarySchema,
   eligibilityRuleSetVersionId: localOptionalVersionId,
   formVersionId: localOptionalVersionId,
   fundingInstrument: z.string().trim().max(160),
@@ -297,7 +298,7 @@ export function FundingCallForm({
 
   return (
     <FormProvider {...form}>
-      <form className="w-full max-w-6xl" onSubmit={submit}>
+      <form className="w-full" onSubmit={submit}>
         <div className="overflow-hidden rounded-2xl border border-brand-navy/15 bg-white shadow-sm">
           <StepProgress
             ariaLabel="Funding call sections"
@@ -310,7 +311,7 @@ export function FundingCallForm({
             steps={fundingCallSteps}
           />
           <fieldset
-            className="grid min-h-[24rem] gap-4 p-5 sm:p-8 md:grid-cols-2"
+            className="grid min-h-96 gap-4 p-5 sm:p-8 md:grid-cols-2"
             disabled={disabled}
           >
             {renderStep()}

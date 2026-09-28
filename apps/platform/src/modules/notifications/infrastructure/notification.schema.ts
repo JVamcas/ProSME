@@ -324,7 +324,7 @@ export const notificationDeliveries = pgTable(
     ),
     check(
       "app_notification_deliveries_recipient_check",
-      sql`${table.recipientType} in ('APPLICATION_OWNER', 'ASSIGNED_USER', 'SPECIFIC_USER', 'SPECIFIC_ROLE')`,
+      sql`${table.recipientType} in ('APPLICATION_OWNER', 'ASSIGNED_USER', 'FUNDING_CALL_STAKEHOLDER', 'SPECIFIC_USER', 'SPECIFIC_ROLE')`,
     ),
     check(
       "app_notification_deliveries_status_check",

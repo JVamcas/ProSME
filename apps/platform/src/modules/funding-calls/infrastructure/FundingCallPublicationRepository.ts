@@ -4,6 +4,7 @@ import { and, asc, eq } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
 import { transactionalOutbox } from "@/db/schema";
+import { captureFundingCallNotification } from "./FundingCallNotificationRepository";
 import type { FundingCall } from "../domain/FundingCall";
 import { resolveFundingCallTransition } from "../domain/FundingCallLifecycle";
 import { captureFundingCallPublication } from "../domain/FundingCallPublication";
@@ -13,7 +14,10 @@ import {
   fundingCallPublicDocuments,
   fundingCalls,
 } from "./funding-call.schema";
-import { sanitizeFundingCallDescription } from "./FundingCallRichText";
+import {
+  sanitizeFundingCallDescription,
+  sanitizeFundingCallEligibilitySummary,
+} from "./FundingCallRichText";
 
 export type PublishFundingCallInput = {
   actorId: string;
@@ -33,6 +37,9 @@ function toFundingCall(row: typeof fundingCalls.$inferSelect): FundingCall {
   return {
     ...row,
     description: sanitizeFundingCallDescription(row.description),
+    eligibilitySummary: sanitizeFundingCallEligibilitySummary(
+      row.eligibilitySummary,
+    ),
   };
 }
 
@@ -190,6 +197,19 @@ export async function publishApprovedFundingCall(
         schemaVersion: 1,
       },
     ]);
+    await captureFundingCallNotification(transaction, {
+      correlationId: input.correlationId,
+      eventKey: "funding-call.published",
+      fundingCallId: current.id,
+      fundingCallReference: current.reference,
+      fundingCallTitle: current.title,
+      occurredAt: input.now,
+      rowVersion: nextRowVersion,
+      sourceIdempotencyKey: input.idempotencyKey,
+      sourceStatus: transition.sourceStatus,
+      stakeholderUserIds: [current.createdBy],
+      targetStatus: transition.targetStatus,
+    });
     return { call: toFundingCall(updated), kind: "published" };
   });
 }

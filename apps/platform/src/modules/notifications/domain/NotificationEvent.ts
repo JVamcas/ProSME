@@ -102,8 +102,32 @@ export const informationRequestExpiredContextSchema = informationRequestContextS
   })
   .strict();
 
+export const fundingCallLifecycleContextSchema = z.object({
+  correlationId: identifierSchema,
+  excludedRecipientUserIds: z.array(uuidSchema),
+  fundingCallId: uuidSchema,
+  fundingCallReference: z.string().trim().min(1).max(100),
+  fundingCallTitle: z.string().trim().min(1).max(300),
+  occurredAt: timestampSchema,
+  reason: z.string().trim().min(1).max(1_000).nullable(),
+  sourceIdempotencyKey: identifierSchema,
+  sourceStatus: z.string().trim().min(1).max(50),
+  targetStatus: z.string().trim().min(1).max(50),
+}).strict();
+
 export const notificationEventKeys = [
   "application.submitted",
+  "funding-call.approval-request-withdrawn",
+  "funding-call.approval-requested",
+  "funding-call.approved",
+  "funding-call.archived",
+  "funding-call.closed",
+  "funding-call.opened",
+  "funding-call.published",
+  "funding-call.resumed",
+  "funding-call.returned-for-amendment",
+  "funding-call.suspended",
+  "funding-call.withdrawn",
   "workflow.information-request.created",
   "workflow.information-request.responded",
   "workflow.information-request.closed",
@@ -112,7 +136,11 @@ export const notificationEventKeys = [
 ] as const;
 
 export type NotificationEventKey = (typeof notificationEventKeys)[number];
-export const notificationCatalogKeys = ["APPLICATIONS", "WORKFLOW"] as const;
+export const notificationCatalogKeys = [
+  "APPLICATIONS",
+  "FUNDING_CALLS",
+  "WORKFLOW",
+] as const;
 export type NotificationCatalogKey = (typeof notificationCatalogKeys)[number];
 export type ApplicationSubmittedContext = z.infer<
   typeof applicationSubmittedContextSchema
@@ -132,9 +160,23 @@ export type InformationRequestClosedContext = z.infer<
 export type InformationRequestExpiredContext = z.infer<
   typeof informationRequestExpiredContextSchema
 >;
+export type FundingCallLifecycleContext = z.infer<
+  typeof fundingCallLifecycleContextSchema
+>;
 
 export type NotificationEventContextByKey = {
   "application.submitted": ApplicationSubmittedContext;
+  "funding-call.approval-request-withdrawn": FundingCallLifecycleContext;
+  "funding-call.approval-requested": FundingCallLifecycleContext;
+  "funding-call.approved": FundingCallLifecycleContext;
+  "funding-call.archived": FundingCallLifecycleContext;
+  "funding-call.closed": FundingCallLifecycleContext;
+  "funding-call.opened": FundingCallLifecycleContext;
+  "funding-call.published": FundingCallLifecycleContext;
+  "funding-call.resumed": FundingCallLifecycleContext;
+  "funding-call.returned-for-amendment": FundingCallLifecycleContext;
+  "funding-call.suspended": FundingCallLifecycleContext;
+  "funding-call.withdrawn": FundingCallLifecycleContext;
   "workflow.information-request.closed": InformationRequestClosedContext;
   "workflow.information-request.created": InformationRequestCreatedContext;
   "workflow.information-request.expired": InformationRequestExpiredContext;
@@ -153,6 +195,61 @@ export const notificationEventCatalogue = {
     catalogKey: "APPLICATIONS",
     contextSchema: applicationSubmittedContextSchema,
     key: "application.submitted",
+  },
+  "funding-call.approval-request-withdrawn": {
+    catalogKey: "FUNDING_CALLS",
+    contextSchema: fundingCallLifecycleContextSchema,
+    key: "funding-call.approval-request-withdrawn",
+  },
+  "funding-call.approval-requested": {
+    catalogKey: "FUNDING_CALLS",
+    contextSchema: fundingCallLifecycleContextSchema,
+    key: "funding-call.approval-requested",
+  },
+  "funding-call.approved": {
+    catalogKey: "FUNDING_CALLS",
+    contextSchema: fundingCallLifecycleContextSchema,
+    key: "funding-call.approved",
+  },
+  "funding-call.archived": {
+    catalogKey: "FUNDING_CALLS",
+    contextSchema: fundingCallLifecycleContextSchema,
+    key: "funding-call.archived",
+  },
+  "funding-call.closed": {
+    catalogKey: "FUNDING_CALLS",
+    contextSchema: fundingCallLifecycleContextSchema,
+    key: "funding-call.closed",
+  },
+  "funding-call.opened": {
+    catalogKey: "FUNDING_CALLS",
+    contextSchema: fundingCallLifecycleContextSchema,
+    key: "funding-call.opened",
+  },
+  "funding-call.published": {
+    catalogKey: "FUNDING_CALLS",
+    contextSchema: fundingCallLifecycleContextSchema,
+    key: "funding-call.published",
+  },
+  "funding-call.resumed": {
+    catalogKey: "FUNDING_CALLS",
+    contextSchema: fundingCallLifecycleContextSchema,
+    key: "funding-call.resumed",
+  },
+  "funding-call.returned-for-amendment": {
+    catalogKey: "FUNDING_CALLS",
+    contextSchema: fundingCallLifecycleContextSchema,
+    key: "funding-call.returned-for-amendment",
+  },
+  "funding-call.suspended": {
+    catalogKey: "FUNDING_CALLS",
+    contextSchema: fundingCallLifecycleContextSchema,
+    key: "funding-call.suspended",
+  },
+  "funding-call.withdrawn": {
+    catalogKey: "FUNDING_CALLS",
+    contextSchema: fundingCallLifecycleContextSchema,
+    key: "funding-call.withdrawn",
   },
   "workflow.information-request.closed": {
     catalogKey: "WORKFLOW",

@@ -33,7 +33,11 @@ export const notificationRuleRecipientUpdateSchema = z.discriminatedUnion(
   [
     notificationRuleRecipientBaseSchema
       .extend({
-        recipientType: z.enum(["APPLICATION_OWNER", "ASSIGNED_USER"]),
+        recipientType: z.enum([
+          "APPLICATION_OWNER",
+          "ASSIGNED_USER",
+          "FUNDING_CALL_STAKEHOLDER",
+        ]),
         targetId: z.null().optional(),
       })
       .strict(),
@@ -130,7 +134,10 @@ export type NotificationCatalogDetail = NotificationCatalogSummary & {
 
 type NotificationConfiguredRecipient = (
   | {
-      recipientType: "APPLICATION_OWNER" | "ASSIGNED_USER";
+      recipientType:
+        | "APPLICATION_OWNER"
+        | "ASSIGNED_USER"
+        | "FUNDING_CALL_STAKEHOLDER";
       targetId: null;
     }
   | {

@@ -31,6 +31,14 @@ export const fundingCallDescriptionSchema = z
     message: "Description is required.",
   });
 
+export const fundingCallEligibilitySummarySchema = z
+  .string()
+  .trim()
+  .max(5000)
+  .refine((value) => richTextToPlainText(value).length <= 2000, {
+    message: "Eligibility summary must contain at most 2000 characters.",
+  });
+
 const fundingCallFields = {
   applicationDuplicatePolicy: z.enum([
     "one_per_applicant",
@@ -39,7 +47,10 @@ const fundingCallFields = {
   ]).default("one_per_business"),
   closesAt: z.iso.datetime({ offset: true }),
   description: fundingCallDescriptionSchema,
-  eligibilitySummary: optionalText(2000).default(null),
+  eligibilitySummary: fundingCallEligibilitySummarySchema
+    .transform((value) => value || null)
+    .nullable()
+    .default(null),
   eligibilityRuleSetVersionId: optionalVersionId,
   formVersionId: optionalVersionId,
   fundingInstrument: optionalText(160),

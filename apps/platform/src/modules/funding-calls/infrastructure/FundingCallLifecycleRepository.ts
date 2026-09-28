@@ -4,6 +4,10 @@ import { and, asc, eq, gt, inArray, lte } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
 import { transactionalOutbox } from "@/db/schema";
+import {
+  captureFundingCallNotification,
+  type FundingCallNotificationEventKey,
+} from "./FundingCallNotificationRepository";
 import type { FundingCall } from "../domain/FundingCall";
 import {
   resolveFundingCallTransition,
@@ -13,11 +17,26 @@ import {
   fundingCallLifecycleHistory,
   fundingCalls,
 } from "./funding-call.schema";
-import { sanitizeFundingCallDescription } from "./FundingCallRichText";
+import {
+  sanitizeFundingCallDescription,
+  sanitizeFundingCallEligibilitySummary,
+} from "./FundingCallRichText";
 
 type LifecycleActor =
   | { actorId: string; systemActor?: never }
   | { actorId?: never; systemActor: string };
+
+const notificationEvents: Partial<Record<
+  FundingCallLifecycleCommand,
+  FundingCallNotificationEventKey
+>> = {
+  ARCHIVE: "funding-call.archived",
+  CLOSE: "funding-call.closed",
+  OPEN: "funding-call.opened",
+  RESUME: "funding-call.resumed",
+  SUSPEND: "funding-call.suspended",
+  WITHDRAW: "funding-call.withdrawn",
+};
 
 export type FundingCallLifecycleInput = LifecycleActor & {
   command: Exclude<FundingCallLifecycleCommand, "PUBLISH">;
@@ -39,6 +58,9 @@ function toFundingCall(row: typeof fundingCalls.$inferSelect): FundingCall {
   return {
     ...row,
     description: sanitizeFundingCallDescription(row.description),
+    eligibilitySummary: sanitizeFundingCallEligibilitySummary(
+      row.eligibilitySummary,
+    ),
   };
 }
 
@@ -189,6 +211,23 @@ export async function transitionFundingCall(
         schemaVersion: 1,
       },
     ]);
+    const notificationEvent = notificationEvents[input.command];
+    if (notificationEvent) {
+      await captureFundingCallNotification(transaction, {
+        correlationId: input.correlationId,
+        eventKey: notificationEvent,
+        fundingCallId: current.id,
+        fundingCallReference: current.reference,
+        fundingCallTitle: current.title,
+        occurredAt: input.now,
+        reason,
+        rowVersion: nextRowVersion,
+        sourceIdempotencyKey: input.idempotencyKey,
+        sourceStatus: transition.sourceStatus,
+        stakeholderUserIds: [current.createdBy, current.updatedBy],
+        targetStatus: transition.targetStatus,
+      });
+    }
     return { call: toFundingCall(updated), kind: "transitioned" };
   });
 }

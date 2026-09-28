@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Funding call approval requested</title>
+</head>
+
+<body style="margin:0;background:#f5f2ea;color:#15243a;font-family:Arial,sans-serif">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+        <tr>
+            <td align="center" style="padding:24px 12px">
+                <table role="presentation" width="640" style="max-width:640px;background:#fff;border-radius:16px">
+                    <tr>
+                        <td style="padding:32px;border-top:6px solid #f58220">
+                            <p style="color:#f58220;font-weight:bold">{{platformName}}</p>
+                            <h1>Funding call awaiting approval</h1>
+                            <p>Hello {{recipientName}},</p>
+                            <p><strong>{{fundingCallReference}} — {{fundingCallTitle}}</strong> was submitted for
+                                approval on {{occurredAt}}.</p>
+                            <p><a href="{{fundingCallUrl}}"
+                                    style="display:inline-block;border-radius:999px;background:#f58220;color:#fff;padding:12px 22px;text-decoration:none;font-weight:bold">Review
+                                    funding call</a></p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+
+</html>

@@ -23,7 +23,10 @@ import type { FundingCall } from "../domain/FundingCall";
 import type {
   FundingCallPublicationSnapshot,
 } from "../domain/FundingCallPublication";
-import { sanitizeFundingCallDescription } from "./FundingCallRichText";
+import {
+  sanitizeFundingCallDescription,
+  sanitizeFundingCallEligibilitySummary,
+} from "./FundingCallRichText";
 import {
   fundingCallPublicationRevisions,
   fundingCalls,
@@ -33,6 +36,9 @@ function toFundingCall(row: typeof fundingCalls.$inferSelect): FundingCall {
   return {
     ...row,
     description: sanitizeFundingCallDescription(row.description),
+    eligibilitySummary: sanitizeFundingCallEligibilitySummary(
+      row.eligibilitySummary,
+    ),
   };
 }
 
@@ -47,6 +53,9 @@ export async function insertFundingCall(
       closesAt: new Date(input.closesAt),
       createdBy: actorId,
       description: sanitizeFundingCallDescription(input.description),
+      eligibilitySummary: sanitizeFundingCallEligibilitySummary(
+        input.eligibilitySummary,
+      ),
       opensAt: new Date(input.opensAt),
       status: "DRAFT",
       updatedBy: actorId,
@@ -94,6 +103,9 @@ export async function updateDraftFundingCall(
       ...values,
       closesAt: new Date(values.closesAt),
       description: sanitizeFundingCallDescription(values.description),
+      eligibilitySummary: sanitizeFundingCallEligibilitySummary(
+        values.eligibilitySummary,
+      ),
       opensAt: new Date(values.opensAt),
       rowVersion: expectedRowVersion + 1,
       updatedAt: new Date(),
@@ -169,6 +181,9 @@ function toPublicFundingCallRecord(
     ...row.snapshot,
     closesAt: new Date(row.snapshot.closesAt),
     description: sanitizeFundingCallDescription(row.snapshot.description),
+    eligibilitySummary: sanitizeFundingCallEligibilitySummary(
+      row.snapshot.eligibilitySummary,
+    ),
     id: row.id,
     opensAt: new Date(row.snapshot.opensAt),
     status: row.status,

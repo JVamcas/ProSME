@@ -72,7 +72,7 @@ export function FundingCallGovernanceActions({
   }
 
   return (
-    <section className="space-y-3 rounded-lg border border-slate-200 bg-white p-4">
+    <>
       <div className="flex flex-wrap gap-3">
         {canActOnDraft ? (
           <GeneralButton
@@ -161,6 +161,6 @@ export function FundingCallGovernanceActions({
           {governance.error.message}
         </p>
       ) : null}
-    </section>
+    </>
   );
 }

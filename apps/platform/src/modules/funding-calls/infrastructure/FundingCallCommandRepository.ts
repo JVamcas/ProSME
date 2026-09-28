@@ -13,7 +13,10 @@ import {
   fundingCallPublicDocuments,
   fundingCalls,
 } from "./funding-call.schema";
-import { sanitizeFundingCallDescription } from "./FundingCallRichText";
+import {
+  sanitizeFundingCallDescription,
+  sanitizeFundingCallEligibilitySummary,
+} from "./FundingCallRichText";
 
 export type DeleteFundingCallResult = "deleted" | "has_applications" | "not_found";
 
@@ -21,6 +24,9 @@ function toFundingCall(row: typeof fundingCalls.$inferSelect): FundingCall {
   return {
     ...row,
     description: sanitizeFundingCallDescription(row.description),
+    eligibilitySummary: sanitizeFundingCallEligibilitySummary(
+      row.eligibilitySummary,
+    ),
   };
 }
 

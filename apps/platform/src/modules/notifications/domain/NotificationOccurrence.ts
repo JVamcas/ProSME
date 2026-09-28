@@ -9,7 +9,11 @@ import type { NotificationRecipientType } from "./NotificationRecipient";
 export const notificationCaptureRecipientSchema = z.object({
   displayName: z.string().trim().min(1).max(200),
   email: z.email().max(320),
-  recipientType: z.enum(["APPLICATION_OWNER", "ASSIGNED_USER"]),
+  recipientType: z.enum([
+    "APPLICATION_OWNER",
+    "ASSIGNED_USER",
+    "FUNDING_CALL_STAKEHOLDER",
+  ]),
   resolutionPath: z.string().trim().min(1).max(200),
   userId: z.uuid(),
 }).strict();

@@ -109,11 +109,16 @@ function enabledBindings(rows: readonly EventConfigurationRow[]) {
 function assertRequiredRecipients(
   bindings: readonly EventConfigurationRow[],
   recipients: readonly NormalizedNotificationRecipient[],
+  excludedRecipientUserIds: ReadonlySet<string>,
 ) {
   for (const binding of bindings) {
     if (
       binding.recipientRequired &&
-      resolveBindingRecipients(binding, recipients).length === 0
+      resolveBindingRecipients(
+        binding,
+        recipients,
+        excludedRecipientUserIds,
+      ).length === 0
     ) {
       throw new NotificationValidationError(
         notificationErrorCodes.invalidRecipient,
@@ -126,18 +131,21 @@ function assertRequiredRecipients(
 function resolveBindingRecipients(
   binding: EventConfigurationRow,
   recipients: readonly NormalizedNotificationRecipient[],
+  excludedRecipientUserIds: ReadonlySet<string>,
 ) {
   if (
     binding.recipientType === "APPLICATION_OWNER" ||
-    binding.recipientType === "ASSIGNED_USER"
+    binding.recipientType === "ASSIGNED_USER" ||
+    binding.recipientType === "FUNDING_CALL_STAKEHOLDER"
   ) {
     return recipientsOfType(
       recipients,
       binding.recipientType as NotificationRecipientType,
-    );
+    ).filter((recipient) => !excludedRecipientUserIds.has(recipient.userId));
   }
   if (!binding.targetEmail || !binding.targetName || !binding.targetUserId)
     return [];
+  if (excludedRecipientUserIds.has(binding.targetUserId)) return [];
   return [
     {
       displayName: binding.targetName,
@@ -168,7 +176,17 @@ export async function insertNotificationOccurrence<
   }
 
   const bindings = enabledBindings(configuration);
-  assertRequiredRecipients(bindings, input.recipients);
+  const excludedRecipientUserIds = new Set(
+    "excludedRecipientUserIds" in input.context
+    && Array.isArray(input.context.excludedRecipientUserIds)
+      ? input.context.excludedRecipientUserIds
+      : [],
+  );
+  assertRequiredRecipients(
+    bindings,
+    input.recipients,
+    excludedRecipientUserIds,
+  );
   const status =
     bindings.length === 0 ? ("SENT" as const) : ("PENDING" as const);
   const [inserted] = await transaction
@@ -219,6 +237,7 @@ export async function insertNotificationOccurrence<
     for (const recipient of resolveBindingRecipients(
       binding,
       input.recipients,
+      excludedRecipientUserIds,
     )) {
       const deliveryKey = `${binding.channelId}:${recipient.normalizedEmail}`;
       if (deliveryMap.has(deliveryKey)) continue;

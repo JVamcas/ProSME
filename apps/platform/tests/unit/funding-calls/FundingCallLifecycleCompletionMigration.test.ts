@@ -22,5 +22,8 @@ describe("remaining funding call lifecycle migrations", () => {
     expect(coi).toContain("coi_form_version_id");
     expect(coi).toContain("app_workflow_application_coi_events");
     expect(coi).toContain("app_workflow_versions_coi_form_version_fk");
+    expect(coi).toMatch(
+      /DISABLE TRIGGER app_workflow_versions_lifecycle[\s\S]+UPDATE app_workflow_definition_versions[\s\S]+ENABLE TRIGGER app_workflow_versions_lifecycle/,
+    );
   });
 });

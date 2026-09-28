@@ -56,9 +56,10 @@ export function FundingCallReadOnlyReview({ call }: { call: FundingCallView }) {
       {call.eligibilitySummary ? (
         <div>
           <h3 className="text-sm font-bold text-brand-navy">Eligibility summary</h3>
-          <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-brand-navy/70">
-            {call.eligibilitySummary}
-          </p>
+          <SanitizedRichTextContent
+            className="mt-2 text-sm leading-6 text-brand-navy/70"
+            sanitizedHtml={call.eligibilitySummary}
+          />
         </div>
       ) : null}
     </section>
