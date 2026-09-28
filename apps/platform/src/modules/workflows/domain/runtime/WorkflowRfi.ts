@@ -22,6 +22,9 @@ export type WorkflowRfiExpiryAction =
 
 export type WorkflowRfiContinuationBehavior = "RESUME_SOURCE_TASK";
 
+export const workflowRfiDetailedResponseFieldPath =
+  "CLARIFICATION_RESPONSE";
+
 export const workflowRfiLifecycleEventCodes = [
   "RFI_CREATED",
   "RFI_RESPONDED",

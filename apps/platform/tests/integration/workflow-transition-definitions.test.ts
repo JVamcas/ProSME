@@ -52,6 +52,7 @@ function stage(
     entryCondition: null,
     exitCondition: null,
     initial: displayOrder === 1,
+    joinPredecessorStageKeys: [],
     slaHours: null,
     actions: [
       {
@@ -105,7 +106,7 @@ afterAll(async () => {
         {
           sourceStageKey: "SCREENING",
           actionKey: "ADVANCE",
-          targetStageKey: "ASSESSMENT",
+          targetStageKeys: ["ASSESSMENT"],
           priority: 1,
           condition: {
             id: randomUUID(),
@@ -131,7 +132,7 @@ afterAll(async () => {
         {
           sourceStageKey: "SCREENING",
           actionKey: "ADVANCE",
-          targetStageKey: "COMMITTEE",
+          targetStageKeys: ["COMMITTEE"],
           priority: 2,
           condition: null,
         },

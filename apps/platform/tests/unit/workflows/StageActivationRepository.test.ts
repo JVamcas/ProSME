@@ -15,7 +15,10 @@ vi.mock(
 
 import { workflowAuditEntries, workflowEvents } from "@/db/schema";
 import { createStageInstance } from "@/modules/workflows/infrastructure/StageInstanceRepository";
-import { persistStageActivation } from "@/modules/workflows/infrastructure/StageActivationRepository";
+import {
+  loadIncompleteJoinPredecessors,
+  persistStageActivation,
+} from "@/modules/workflows/infrastructure/StageActivationRepository";
 import { createWorkflowTasks } from "@/modules/workflows/infrastructure/WorkflowTaskWriteRepository";
 import { allocateStageReviewers } from "@/modules/workflows/infrastructure/WorkflowTaskAutoAssignmentRepository";
 
@@ -78,6 +81,22 @@ beforeEach(() => {
 });
 
 describe("stage activation repository", () => {
+  it("returns only incomplete join predecessor projections", async () => {
+    const execute = vi.fn().mockResolvedValue({
+      rows: [
+        { stageKey: "FINANCIAL_REVIEW" },
+        { stageKey: "TECHNICAL_ASSESSMENT" },
+      ],
+    });
+
+    await expect(loadIncompleteJoinPredecessors(
+      { execute } as never,
+      "33333333-3333-4333-8333-333333333333",
+      "44444444-4444-4444-8444-444444444444",
+    )).resolves.toEqual(["FINANCIAL_REVIEW", "TECHNICAL_ASSESSMENT"]);
+    expect(execute).toHaveBeenCalledOnce();
+  });
+
   it("persists the stage, tasks, current pointer, event, and audit atomically", async () => {
     const inserted: Array<{ table: unknown; value: unknown }> = [];
     const insert = vi.fn((table: unknown) => ({
@@ -101,11 +120,14 @@ describe("stage activation repository", () => {
           application: {},
           applicationId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
           applicationReference: "SME-2026-001",
-          currentStageInstanceId: null,
           eligibility: { eligible: true, outcome: "ELIGIBLE" },
           entryCondition: null,
           fundingCall: {},
           fundingOpportunityTitle: "Growth Fund",
+          joinPredecessorStageKeys: [
+            "TECHNICAL_ASSESSMENT",
+            "FINANCIAL_REVIEW",
+          ],
           repeatable: false,
           slaHours: 24,
           stageDefinitionId: "44444444-4444-4444-8444-444444444444",
@@ -156,7 +178,10 @@ describe("stage activation repository", () => {
           table: workflowEvents,
           value: expect.objectContaining({
             eventCode: "STAGE_ACTIVATED",
-            payload: expect.objectContaining({ taskIds: [taskId] }),
+            payload: expect.objectContaining({
+              joinDriven: true,
+              taskIds: [taskId],
+            }),
           }),
         },
         {
@@ -221,11 +246,11 @@ describe("stage activation repository", () => {
         application: {},
         applicationId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
         applicationReference: "SME-2026-001",
-        currentStageInstanceId: null,
         eligibility: null,
         entryCondition: null,
         fundingCall: {},
         fundingOpportunityTitle: "Growth Fund",
+        joinPredecessorStageKeys: [],
         repeatable: false,
         slaHours: null,
         stageDefinitionId: "44444444-4444-4444-8444-444444444444",

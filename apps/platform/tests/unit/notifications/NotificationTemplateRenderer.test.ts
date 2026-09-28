@@ -93,4 +93,36 @@ describe("notification template renderer", () => {
       "https://fund.example/portal/applications/00000000-0000-4000-8000-000000000001",
     );
   });
+
+  it("constructs the applicant information-request URL", () => {
+    const values = buildNotificationRenderValues({
+      context: {
+        applicationId: "00000000-0000-4000-8000-000000000001",
+        applicationReference: "SME-8",
+        assignees: [],
+        correlationId: "rfi-correlation-1",
+        createdAt: "2026-09-27T10:00:00+02:00",
+        deadlineAt: "2026-10-04T10:00:00+02:00",
+        fundingOpportunityTitle: "Growth Fund",
+        owner: {
+          displayName: "Nela",
+          email: "nela@example.com",
+          userId: "00000000-0000-4000-8000-000000000002",
+        },
+        question: "Please provide updated accounts.",
+        requestInformationId: "00000000-0000-4000-8000-000000000004",
+        sourceIdempotencyKey: "rfi-created-1",
+        workflowInstanceId: "00000000-0000-4000-8000-000000000003",
+      },
+      eventKey: "workflow.information-request.created",
+      publicApplicationUrl: "https://fund.example/base/",
+      recipient: {
+        displayName: "Nela",
+        userId: "00000000-0000-4000-8000-000000000002",
+      },
+    });
+    expect(values.informationRequestUrl).toBe(
+      "https://fund.example/portal/applications/00000000-0000-4000-8000-000000000001/requests/00000000-0000-4000-8000-000000000004",
+    );
+  });
 });

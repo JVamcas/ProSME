@@ -71,12 +71,13 @@ export async function findDocumentEvidenceVersion(
   versionId: string,
 ) {
   const result = await getDatabase().execute<{
+    contentType: string;
     objectKey: string;
     originalName: string;
     requirementId: string;
   }>(sql`
-    SELECT object_key AS "objectKey", original_name AS "originalName",
-      requirement_id AS "requirementId"
+    SELECT content_type AS "contentType", object_key AS "objectKey",
+      original_name AS "originalName", requirement_id AS "requirementId"
     FROM app_workflow_document_evidence_versions
     WHERE application_id = ${applicationId}::uuid
       AND id = ${versionId}::uuid

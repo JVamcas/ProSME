@@ -69,10 +69,20 @@ function fieldSchema(
   };
   if (["NUMBER", "CURRENCY", "PERCENTAGE"].includes(field.type)) {
     const percentage = field.type === "PERCENTAGE";
+    const minimum = percentage ? field.minimum ?? 0 : field.minimum;
+    const maximum = percentage ? field.maximum ?? 100 : field.maximum;
+    const rangeDescription = minimum != null && maximum != null
+      ? `Enter a value from ${minimum} to ${maximum}.`
+      : minimum != null
+        ? `Enter a value of at least ${minimum}.`
+        : maximum != null
+          ? `Enter a value no greater than ${maximum}.`
+          : undefined;
     return {
       ...common,
-      maximum: percentage ? field.maximum ?? 100 : field.maximum ?? undefined,
-      minimum: percentage ? field.minimum ?? 0 : field.minimum ?? undefined,
+      description: field.helpText ?? rangeDescription,
+      maximum,
+      minimum,
       type: "number",
     };
   }

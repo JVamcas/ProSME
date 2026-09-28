@@ -168,27 +168,39 @@ export async function updateNotificationEventRuleRecord(input: {
       WHERE event_key = ${input.eventKey}
     `);
 
-    for (const recipient of input.update.recipients) {
-      const recipientResult = await transaction.execute<{ id: string }>(sql`
-        UPDATE app_notification_event_rule_recipients
-        SET is_required = ${recipient.isRequired}, updated_at = now()
-        WHERE rule_id = ${ruleId}::uuid
-          AND recipient_type = ${recipient.recipientType}
-        RETURNING id
-      `);
-      const recipientId = recipientResult.rows[0]?.id;
-      if (!recipientId) throw new Error("Notification rule recipient is invalid.");
-      await transaction.execute(sql`
-        DELETE FROM app_notification_event_rule_channels
-        WHERE rule_recipient_id = ${recipientId}::uuid
-      `);
-      await transaction.execute(sql`
-        INSERT INTO app_notification_event_rule_channels (rule_recipient_id, channel_id)
-        SELECT ${recipientId}::uuid, channel.id
-        FROM app_notification_channels channel
-        WHERE channel.code IN (${sql.join(recipient.channelCodes.map((code) => sql`${code}`), sql`, `)})
-      `);
-    }
+    await transaction.execute(sql`
+      DELETE FROM app_notification_event_rule_recipients
+      WHERE rule_id = ${ruleId}::uuid
+    `);
+    await transaction.execute(sql`
+      WITH recipient_input AS (
+        SELECT *
+        FROM jsonb_to_recordset(${JSON.stringify(input.update.recipients)}::jsonb)
+          AS item("recipientType" text, "isRequired" boolean, "channelCodes" jsonb)
+      ), inserted_recipients AS (
+        INSERT INTO app_notification_event_rule_recipients (
+          rule_id,
+          recipient_type,
+          is_required
+        )
+        SELECT ${ruleId}::uuid, input."recipientType", input."isRequired"
+        FROM recipient_input input
+        RETURNING id, recipient_type
+      )
+      INSERT INTO app_notification_event_rule_channels (
+        rule_recipient_id,
+        channel_id
+      )
+      SELECT recipient.id, channel.id
+      FROM inserted_recipients recipient
+      JOIN recipient_input input
+        ON input."recipientType" = recipient.recipient_type
+      CROSS JOIN LATERAL jsonb_array_elements_text(
+        input."channelCodes"
+      ) channel_code
+      JOIN app_notification_channels channel
+        ON channel.code = channel_code.value
+    `);
     await transaction.insert(authorizationAuditEntries).values({
       action: "NOTIFICATION_EVENT_RULE_UPDATED",
       actorId: input.actorId,

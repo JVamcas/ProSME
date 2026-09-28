@@ -269,6 +269,16 @@ function StageConfiguration({ stage }: { stage: WorkflowStageInput }) {
         <dt className="text-xs font-semibold text-brand-navy/55">Stable key</dt>
         <dd className="font-mono text-brand-navy">{stage.stableKey}</dd>
       </div>
+      {stage.joinPredecessorStageKeys.length ? (
+        <div className="sm:col-span-2">
+          <dt className="text-xs font-semibold text-brand-navy/55">
+            Join prerequisites
+          </dt>
+          <dd className="text-brand-navy">
+            {stage.joinPredecessorStageKeys.join(", ")}
+          </dd>
+        </div>
+      ) : null}
       <div>
         <dt className="text-xs font-semibold text-brand-navy/55">Display order</dt>
         <dd className="text-brand-navy">{stage.displayOrder}</dd>

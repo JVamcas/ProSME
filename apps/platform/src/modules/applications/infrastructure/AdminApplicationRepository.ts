@@ -121,7 +121,10 @@ function applicationQuery(input: {
       SELECT
         application.id AS "applicationId",
         application.reference AS "reference",
-        NULLIF(COALESCE(business.trading_name, business.legal_name), '') AS "businessName",
+        COALESCE(
+          NULLIF(business.trading_name, ''),
+          NULLIF(business.legal_name, '')
+        ) AS "businessName",
         applicant.display_name AS "applicantName",
         application.funding_opportunity_title AS "fundingCallTitle",
         NULLIF(application.financial_section ->> 'amountRequested', '')::numeric AS "requestedAmount",
@@ -205,7 +208,10 @@ function detailQuery(input: {
     SELECT application.id AS "applicationId",
       COALESCE(application.reference, application.id::text) AS reference,
       applicant.display_name AS "applicantName",
-      NULLIF(COALESCE(business.trading_name, business.legal_name), '') AS "businessName",
+      COALESCE(
+        NULLIF(business.trading_name, ''),
+        NULLIF(business.legal_name, '')
+      ) AS "businessName",
       business.business_type AS "businessType",
       business.sector AS industry,
       business.region AS location,

@@ -41,7 +41,7 @@ export function validateWorkflowActionTargets(
         (transition) => Boolean(transition.terminalOutcome),
       );
       const hasStageTarget = transitions.some(
-        (transition) => Boolean(transition.targetStageKey),
+        (transition) => transition.targetStageKeys.length > 0,
       );
       if (hasTerminalTarget === hasStageTarget
         || (action.configuration.outcome.type === "TERMINAL") !== hasTerminalTarget) {

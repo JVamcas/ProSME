@@ -12,6 +12,9 @@ vi.mock("@/modules/workflows/infrastructure/StageCompletionRepository", () => ({
   persistStageCompletion: vi.fn(),
   withStageCompletionTransaction: vi.fn(),
 }));
+vi.mock("@/modules/workflows/infrastructure/WorkflowControlRepository", () => ({
+  completeWorkflowReferralForStage: vi.fn(),
+}));
 
 import { basicOperators } from "@/modules/conditions/engine/BasicOperators";
 import { completeStageInTransaction } from "@/modules/workflows/application/runtime/ServerStageCompletionService";
@@ -22,6 +25,7 @@ import {
   lockStageCompletionTarget,
   persistStageCompletion,
 } from "@/modules/workflows/infrastructure/StageCompletionRepository";
+import { completeWorkflowReferralForStage } from "@/modules/workflows/infrastructure/WorkflowControlRepository";
 
 const stageInstanceId = "10000000-0000-4000-8000-000000000001";
 const input = {
@@ -117,6 +121,10 @@ describe("stage completion", () => {
         requirements: [completedRequirement],
         target,
       }),
+    );
+    expect(completeWorkflowReferralForStage).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ referredStageInstanceId: stageInstanceId }),
     );
   });
 

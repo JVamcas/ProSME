@@ -76,6 +76,7 @@ const presentationByType: Record<
   DEFER: "subtle",
   ESCALATE: "primary",
   PUT_ON_HOLD: "yellow",
+  RESUME: "success",
   REFER: "navy",
   REJECT: "danger",
   REQUEST_INFORMATION: "outlineOrange",
@@ -112,7 +113,10 @@ export function workflowActionInputMetadata(
   const isRequest = action.actionType === "REQUEST_INFORMATION";
   const isHold = action.actionType === "PUT_ON_HOLD";
   const reasonOrCommentRequired =
-    action.actionType === "RETURN" && action.configuration.reasonRequired;
+    (action.actionType === "RETURN" && action.configuration.reasonRequired)
+    || action.actionType === "PUT_ON_HOLD"
+    || action.actionType === "DEFER"
+    || action.actionType === "ESCALATE";
   return {
     comment: {
       maxLength: 4_000,

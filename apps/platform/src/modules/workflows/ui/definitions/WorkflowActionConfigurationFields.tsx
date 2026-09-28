@@ -124,6 +124,20 @@ function EscalationFields({
         name="escalationTrigger"
         required
       />
+      <FormSelect
+        items={[
+          { label: "Retain current responsibility", value: "RETAIN" },
+          { label: "Share responsibility", value: "SHARE" },
+          { label: "Transfer responsibility", value: "TRANSFER" },
+        ]}
+        label="Responsibility"
+        name="escalationResponsibility"
+        required
+      />
+      <CheckboxField
+        label="Block current assignees until resolved"
+        name="escalationBlocksWork"
+      />
     </>
   );
 }
@@ -240,11 +254,21 @@ function ActionConfigurationFields({
       );
     case "REFER":
       return (
-        <CheckboxField
-          containerClassName="sm:col-span-2"
-          label="Return to the referrer after completion"
-          name="returnToReferrer"
-        />
+        <>
+          <FormSelect
+            items={[
+              { label: "Block until referral completes", value: "BLOCKED" },
+              { label: "Keep open during referral", value: "OPEN" },
+            ]}
+            label="Referring task behavior"
+            name="sourceTaskBehavior"
+            required
+          />
+          <CheckboxField
+            label="Return to the referrer after completion"
+            name="returnToReferrer"
+          />
+        </>
       );
     case "ESCALATE":
       return (
@@ -268,6 +292,8 @@ function ActionConfigurationFields({
           />
         </>
       );
+    case "RESUME":
+      return null;
     case "WITHDRAW":
       return (
         <>

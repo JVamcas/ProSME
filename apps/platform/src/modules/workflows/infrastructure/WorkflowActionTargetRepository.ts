@@ -55,19 +55,60 @@ export async function configuredActionTargetsAreValid(
         END
         ELSE TRUE
       END
+      AND CASE
+        WHEN ${target.action.actionType}::text IN ('RETURN', 'REFER') THEN
+          EXISTS (
+            SELECT 1
+            FROM app_workflow_transition_definitions semantic_transition
+            WHERE semantic_transition.version_id = ${target.stage.workflowVersionId}::uuid
+              AND semantic_transition.from_stage_id = ${target.stage.stageDefinitionId}::uuid
+              AND semantic_transition.action_key = ${target.action.stableKey}
+          )
+          AND NOT EXISTS (
+            SELECT 1
+            FROM app_workflow_transition_definitions semantic_transition
+            WHERE semantic_transition.version_id = ${target.stage.workflowVersionId}::uuid
+              AND semantic_transition.from_stage_id = ${target.stage.stageDefinitionId}::uuid
+              AND semantic_transition.action_key = ${target.action.stableKey}
+              AND (
+                semantic_transition.terminal_outcome IS NOT NULL
+                OR 1 <> (
+                  SELECT count(*)
+                  FROM app_workflow_transition_targets semantic_target
+                  WHERE semantic_target.transition_id = semantic_transition.id
+                )
+                OR 1 <> (
+                  SELECT count(*)
+                  FROM app_workflow_transition_targets semantic_target
+                  JOIN app_workflow_stage_definitions semantic_stage
+                    ON semantic_stage.id = semantic_target.target_stage_id
+                  WHERE semantic_target.transition_id = semantic_transition.id
+                    AND semantic_stage.repeatable = TRUE
+                )
+              )
+          )
+        ELSE TRUE
+      END
       AND NOT EXISTS (
         SELECT 1 FROM app_workflow_transition_definitions transition
-        LEFT JOIN app_workflow_stage_definitions target_stage
-          ON target_stage.id = transition.to_stage_id
         WHERE transition.version_id = ${target.stage.workflowVersionId}::uuid
           AND transition.from_stage_id = ${target.stage.stageDefinitionId}::uuid
           AND transition.action_key = ${target.action.stableKey}
           AND (
-            (transition.to_stage_id IS NULL)
+            (
+              NOT EXISTS (
+                SELECT 1 FROM app_workflow_transition_targets transition_target
+                WHERE transition_target.transition_id = transition.id
+              )
+            )
               = (transition.terminal_outcome IS NULL)
-            OR (
-              transition.to_stage_id IS NOT NULL
-              AND target_stage.version_id IS DISTINCT FROM
+            OR EXISTS (
+              SELECT 1
+              FROM app_workflow_transition_targets transition_target
+              INNER JOIN app_workflow_stage_definitions target_stage
+                ON target_stage.id = transition_target.target_stage_id
+              WHERE transition_target.transition_id = transition.id
+                AND target_stage.version_id IS DISTINCT FROM
                 ${target.stage.workflowVersionId}::uuid
             )
           )

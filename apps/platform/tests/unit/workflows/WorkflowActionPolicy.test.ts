@@ -152,6 +152,91 @@ describe("workflow action policy", () => {
     ).reason).toBe("CONTEXT_MISMATCH");
   });
 
+  it("blocks held work except for the configured Resume action", () => {
+    const held = {
+      ...target(),
+      stageStatus: "BLOCKED",
+      task: { ...target().task, activeHold: true },
+    };
+    expect(evaluateWorkflowActionPolicy(
+      actor(permissionCodes.workflowTaskAssignedDecide),
+      held,
+      permittedInputs,
+    )).toMatchObject({ available: false, reason: "INVALID_STATE" });
+
+    const resume = {
+      ...held,
+      action: {
+        actionType: "RESUME" as const,
+        enabled: true,
+      },
+    };
+    expect(evaluateWorkflowActionPolicy(
+      actor(permissionCodes.workflowTaskAssignedProcess),
+      resume,
+      permittedInputs,
+    )).toMatchObject({ available: true, reason: null });
+  });
+
+  it("blocks source work while a blocking referral is active", () => {
+    const referred = {
+      ...target(),
+      task: { ...target().task, activeReferral: true },
+    };
+    expect(evaluateWorkflowActionPolicy(
+      actor(permissionCodes.workflowTaskAssignedDecide),
+      referred,
+      permittedInputs,
+    )).toMatchObject({ available: false, reason: "INVALID_STATE" });
+  });
+
+  it("blocks deferred work and permits only Resume from a blocked stage", () => {
+    const deferred = {
+      ...target(),
+      activeDeferral: true,
+      activeDeferralReady: true,
+      stageStatus: "BLOCKED",
+    };
+    expect(evaluateWorkflowActionPolicy(
+      actor(permissionCodes.workflowTaskAssignedDecide),
+      deferred,
+      permittedInputs,
+    )).toMatchObject({ available: false, reason: "INVALID_STATE" });
+
+    expect(evaluateWorkflowActionPolicy(
+      actor(permissionCodes.workflowTaskAssignedProcess),
+      {
+        ...deferred,
+        action: { actionType: "RESUME" as const, enabled: true },
+      },
+      permittedInputs,
+    )).toMatchObject({ available: true, reason: null });
+  });
+
+  it("routes blocking escalations only to the configured target", () => {
+    const escalated = {
+      ...target(),
+      task: {
+        ...target().task,
+        activeEscalation: true,
+        activeEscalationBlocks: true,
+        activeEscalationTargetActor: false,
+      },
+    };
+    expect(evaluateWorkflowActionPolicy(
+      actor(permissionCodes.workflowTaskAssignedDecide),
+      escalated,
+      permittedInputs,
+    )).toMatchObject({ available: false, reason: "CONTEXT_MISMATCH" });
+
+    escalated.task.activeEscalationTargetActor = true;
+    expect(evaluateWorkflowActionPolicy(
+      actor(permissionCodes.workflowTaskAssignedDecide),
+      escalated,
+      permittedInputs,
+    )).toMatchObject({ available: true, reason: null });
+  });
+
   it("denies assignment mismatches without exposing policy details", () => {
     expect(evaluateWorkflowActionPolicy(
       actor(permissionCodes.workflowTaskAssignedDecide),

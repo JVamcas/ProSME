@@ -39,20 +39,21 @@ describe("WorkflowTransitionDefinition", () => {
     expect(
       workflowTransitionSchema.safeParse({
         ...common,
-        targetStageKey: "ASSESSMENT",
+        targetStageKeys: ["ASSESSMENT"],
       }).success,
     ).toBe(true);
     expect(
       workflowTransitionSchema.safeParse({
         ...common,
         terminalOutcome: "REJECTED",
+        targetStageKeys: [],
       }).success,
     ).toBe(true);
     expect(workflowTransitionSchema.safeParse(common).success).toBe(false);
     expect(
       workflowTransitionSchema.safeParse({
         ...common,
-        targetStageKey: "ASSESSMENT",
+        targetStageKeys: ["ASSESSMENT"],
         terminalOutcome: "REJECTED",
       }).success,
     ).toBe(false);
@@ -68,7 +69,7 @@ describe("WorkflowTransitionDefinition", () => {
     expect(toWorkflowTransition(values, "SCREENING")).toEqual({
       sourceStageKey: "SCREENING",
       actionKey: "ADVANCE",
-      targetStageKey: "ASSESSMENT",
+      targetStageKeys: ["ASSESSMENT"],
       terminalOutcome: null,
       priority: 1,
       condition: null,
@@ -96,7 +97,7 @@ describe("WorkflowTransitionDefinition", () => {
     expect(workflowTransitionSchema.safeParse({
       sourceStageKey: "SCREENING",
       actionKey: "ADVANCE",
-      targetStageKey: "ASSESSMENT",
+      targetStageKeys: ["ASSESSMENT"],
       priority: 1,
       condition: { rules: [] },
     }).success).toBe(false);
@@ -114,10 +115,24 @@ describe("WorkflowTransitionDefinition", () => {
 
   it("rejects targets outside the workflow version", () => {
     const graph = structuredClone(referenceWorkflow);
-    graph.transitions[0].targetStageKey = "UNKNOWN_STAGE";
+    graph.transitions[0].targetStageKeys = ["UNKNOWN_STAGE"];
     expect(validateWorkflowGraph(graph).errors).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ code: "INVALID_TRANSITION_TARGET" }),
+      ]),
+    );
+  });
+
+  it("rejects invalid join predecessor references", () => {
+    const graph = structuredClone(referenceWorkflow);
+    graph.stages[2].joinPredecessorStageKeys = [
+      "PRE_SCREENING",
+      "UNKNOWN_STAGE",
+    ];
+
+    expect(validateWorkflowGraph(graph).errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: "INVALID_JOIN_PREDECESSOR" }),
       ]),
     );
   });

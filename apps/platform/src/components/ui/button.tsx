@@ -166,6 +166,25 @@ export function GeneralButtonLink({
   );
 }
 
+export interface GeneralButtonAnchorProps
+  extends
+    React.AnchorHTMLAttributes<HTMLAnchorElement>,
+    VariantProps<typeof buttonVariants> {}
+
+export function GeneralButtonAnchor({
+  className,
+  variant,
+  size,
+  ...props
+}: GeneralButtonAnchorProps) {
+  return (
+    <a
+      className={cn(buttonVariants({ variant, size }), className)}
+      {...props}
+    />
+  );
+}
+
 export interface IconButtonProps extends Omit<
   ButtonProps,
   "aria-label" | "children" | "size"

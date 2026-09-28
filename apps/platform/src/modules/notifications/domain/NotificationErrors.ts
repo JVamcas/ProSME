@@ -1,7 +1,6 @@
 export const notificationErrorCodes = {
   unknownEvent: "NOTIFICATION_UNKNOWN_EVENT",
   invalidContext: "NOTIFICATION_INVALID_CONTEXT",
-  incompatibleRecipient: "NOTIFICATION_INCOMPATIBLE_RECIPIENT",
   invalidRecipient: "NOTIFICATION_INVALID_RECIPIENT",
   templateUnavailable: "NOTIFICATION_TEMPLATE_UNAVAILABLE",
   templateInvalid: "NOTIFICATION_TEMPLATE_INVALID",

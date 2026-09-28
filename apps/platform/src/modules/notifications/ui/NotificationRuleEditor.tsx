@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
-import { FormProvider, useForm } from "react-hook-form";
+import { FormProvider, useFieldArray, useForm } from "react-hook-form";
 
 import { GeneralButton } from "@/components/ui/button";
 import { Checkbox } from "@/shared/ui/FormPrimitives";
@@ -10,6 +10,7 @@ import {
   notificationEventRuleUpdateSchema,
   type NotificationEventRuleUpdate,
 } from "../api/NotificationAdministrationSchemas";
+import { notificationRecipientTypes } from "../domain/NotificationRecipient";
 import { useNotificationRule, useUpdateNotificationRule } from "./useNotificationAdministration";
 
 function recipientLabel(type: string) {
@@ -27,6 +28,10 @@ export function NotificationRuleEditor({
   const mutation = useUpdateNotificationRule(eventKey);
   const form = useForm<NotificationEventRuleUpdate>({
     resolver: zodResolver(notificationEventRuleUpdateSchema),
+  });
+  const recipients = useFieldArray({
+    control: form.control,
+    name: "recipients",
   });
   useEffect(() => {
     if (query.data) {
@@ -58,8 +63,8 @@ export function NotificationRuleEditor({
             <Checkbox disabled={!canUpdate} {...form.register("isEnabled")} /> Rule enabled
           </label>
         </section>
-        {query.data.recipients.map((recipient, index) => (
-          <section className="rounded-2xl border border-brand-navy/10 bg-white p-6" key={recipient.recipientType}>
+        {recipients.fields.map((recipient, index) => (
+          <section className="rounded-2xl border border-brand-navy/10 bg-white p-6" key={recipient.id}>
             <input type="hidden" {...form.register(`recipients.${index}.recipientType`)} />
             <h2 className="font-bold text-brand-navy">{recipientLabel(recipient.recipientType)}</h2>
             <p className="font-mono text-xs text-brand-navy/55">{recipient.recipientType}</p>
@@ -86,8 +91,50 @@ export function NotificationRuleEditor({
                 </p>
               ) : null}
             </fieldset>
+            {canUpdate ? (
+              <GeneralButton
+                className="mt-5"
+                disabled={recipients.fields.length === 1}
+                onClick={() => recipients.remove(index)}
+                type="button"
+                variant="outline"
+              >
+                Remove recipient type
+              </GeneralButton>
+            ) : null}
           </section>
         ))}
+        {canUpdate ? (
+          <section className="rounded-2xl border border-brand-navy/10 bg-white p-6">
+            <h2 className="font-bold text-brand-navy">Add recipient type</h2>
+            <p className="mt-1 text-sm text-brand-navy/65">
+              Event rules determine who receives this notification.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-3">
+              {notificationRecipientTypes
+                .filter((type) => !recipients.fields.some(
+                  (recipient) => recipient.recipientType === type,
+                ))
+                .map((type) => (
+                  <GeneralButton
+                    key={type}
+                    onClick={() => recipients.append({
+                      channelCodes: query.data.channels
+                        .filter((channel) => channel.isEnabled)
+                        .slice(0, 1)
+                        .map((channel) => channel.code),
+                      isRequired: true,
+                      recipientType: type,
+                    })}
+                    type="button"
+                    variant="outline"
+                  >
+                    Add {recipientLabel(type).toLowerCase()}
+                  </GeneralButton>
+                ))}
+            </div>
+          </section>
+        ) : null}
         {mutation.error ? <p className="text-sm text-red-700" role="alert">{mutation.error.message}</p> : null}
         {canUpdate ? (
           <GeneralButton disabled={mutation.isPending} type="submit">

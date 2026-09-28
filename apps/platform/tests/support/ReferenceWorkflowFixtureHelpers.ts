@@ -7,6 +7,7 @@ export const emptyStageConditions = {
   scoring: null,
   entryCondition: null,
   exitCondition: null,
+  joinPredecessorStageKeys: [],
 };
 
 export const reviewOutcomes = [

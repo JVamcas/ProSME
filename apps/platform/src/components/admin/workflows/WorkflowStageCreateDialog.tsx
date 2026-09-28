@@ -1,12 +1,12 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Controller, FormProvider, useForm } from "react-hook-form";
+import { Controller, FormProvider, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 
 import { GeneralButton } from "@/components/ui/button";
 import { DraggableDialog } from "@/components/ui/draggable-dialog";
-import { FormInput, FormTextarea } from "@/components/ui/form-fields";
+import { FormInput, FormSelect, FormTextarea } from "@/components/ui/form-fields";
 import { CheckboxField } from "@/components/ui/form-field";
 import { useSaveWorkflowGraph } from "@/modules/workflows/WorkflowHooks";
 import { createDefaultWorkflowCommonActions } from "@/modules/workflows/domain/actions/WorkflowActionBindingPolicy";
@@ -37,6 +37,15 @@ const stageFormSchema = z.object({
   coiGated: z.boolean(),
   entryCondition: conditionGroupSchema.nullable(),
   exitCondition: conditionGroupSchema.nullable(),
+  joinPredecessorStageKeys: z.array(z.string()),
+}).superRefine((values, context) => {
+  if (values.joinPredecessorStageKeys.length === 1) {
+    context.addIssue({
+      code: "custom",
+      message: "Select at least two predecessor stages for a join.",
+      path: ["joinPredecessorStageKeys"],
+    });
+  }
 });
 
 type StageFormValues = z.output<typeof stageFormSchema>;
@@ -72,12 +81,17 @@ export function WorkflowStageCreateDialog({
       coiGated: stage?.coiGated ?? false,
       entryCondition: stage?.entryCondition ?? null,
       exitCondition: stage?.exitCondition ?? null,
+      joinPredecessorStageKeys: stage?.joinPredecessorStageKeys ?? [],
     },
     resolver: zodResolver(stageFormSchema),
   });
   const defaultCommonActions = createDefaultWorkflowCommonActions(
     editor.assignmentOptions?.roles[0]?.id,
   );
+  const joinPredecessorStageKeys = useWatch({
+    control: form.control,
+    name: "joinPredecessorStageKeys",
+  });
   const conditionStage =
     stage ??
     ({
@@ -93,6 +107,7 @@ export function WorkflowStageCreateDialog({
       entryCondition: null,
       exitCondition: null,
       initial: editor.graph.stages.length === 0,
+      joinPredecessorStageKeys: [],
       name: "New stage",
       optional: false,
       publicStatusMapping: {
@@ -120,7 +135,17 @@ export function WorkflowStageCreateDialog({
       ...editor.graph,
       stages: stage
         ? editor.graph.stages.map((item) =>
-            item.stableKey === stage.stableKey ? { ...item, ...values } : item,
+            item.stableKey === stage.stableKey
+              ? { ...item, ...values }
+              : {
+                  ...item,
+                  joinPredecessorStageKeys: item.joinPredecessorStageKeys.map(
+                    (predecessorKey) =>
+                      predecessorKey === stage.stableKey
+                        ? values.stableKey
+                        : predecessorKey,
+                  ),
+                },
           )
         : [
             ...editor.graph.stages,
@@ -148,10 +173,11 @@ export function WorkflowStageCreateDialog({
               transition.sourceStageKey === stage.stableKey
                 ? values.stableKey
                 : transition.sourceStageKey,
-            targetStageKey:
-              transition.targetStageKey === stage.stableKey
+            targetStageKeys: transition.targetStageKeys.map((targetStageKey) =>
+              targetStageKey === stage.stableKey
                 ? values.stableKey
-                : transition.targetStageKey,
+                : targetStageKey
+            ),
           }))
         : editor.graph.transitions,
     });
@@ -194,6 +220,24 @@ export function WorkflowStageCreateDialog({
               description="Require review to declare conflict of interest."
             />
           </div>
+          <FormSelect
+            containerClassName="md:col-span-2"
+            items={editor.graph.stages
+              .filter((item) => item.stableKey !== stage?.stableKey)
+              .map((item) => ({ label: item.name, value: item.stableKey }))}
+            label="Join predecessors"
+            infoTooltip="This stage activates only after all selected predecessor stages are complete."
+            multiple
+            name="joinPredecessorStageKeys"
+            onMultipleChange={(values) =>
+              form.setValue("joinPredecessorStageKeys", values, {
+                shouldDirty: true,
+                shouldValidate: true,
+              })
+            }
+            placeholder="No join prerequisites"
+            value={joinPredecessorStageKeys}
+          />
           <div className="space-y-4 md:col-span-2">
             <Controller
               control={form.control}

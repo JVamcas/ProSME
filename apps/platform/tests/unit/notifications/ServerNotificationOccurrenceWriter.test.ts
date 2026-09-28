@@ -83,16 +83,25 @@ describe("server notification occurrence writer", () => {
     expect(insertNotificationOccurrence).not.toHaveBeenCalled();
   });
 
-  it("rejects incompatible and unapproved recipient snapshots", async () => {
+  it("lets event rules select from any approved recipient snapshots", async () => {
     await expect(captureNotificationOccurrence({} as never, {
       ...input,
       recipients: [{
         ...input.recipients[0],
         recipientType: "ASSIGNED_USER",
       }],
-    })).rejects.toMatchObject({
-      code: "NOTIFICATION_INCOMPATIBLE_RECIPIENT",
-    });
+    })).resolves.toMatchObject({ created: true });
+    expect(insertNotificationOccurrence).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        recipients: [expect.objectContaining({
+          recipientType: "ASSIGNED_USER",
+        })],
+      }),
+    );
+  });
+
+  it("rejects unapproved recipient snapshot fields", async () => {
     await expect(captureNotificationOccurrence({} as never, {
       ...input,
       recipients: [{ ...input.recipients[0], secret: "not-approved" }],

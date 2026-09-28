@@ -18,12 +18,14 @@ const allowedTags = [
   "ul",
 ];
 
-export function sanitizeWorkflowRfiInstructions(value: string) {
+export function sanitizeWorkflowRfiRichText(value: string) {
   return sanitizeHtml(value, {
     allowedAttributes: {},
     allowedTags,
   });
 }
+
+export const sanitizeWorkflowRfiInstructions = sanitizeWorkflowRfiRichText;
 
 export function workflowRfiInstructionsSummary(value: string) {
   return richTextToPlainText(value);

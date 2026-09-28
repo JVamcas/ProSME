@@ -72,9 +72,12 @@ export const workflowActionFormSchema = z
     dataHandling: z.enum(["RETAIN", "CLEAR"]),
     reasonRequired: z.boolean(),
     returnToReferrer: z.boolean(),
+    sourceTaskBehavior: z.enum(["BLOCKED", "OPEN"]),
     escalationTargetType: z.enum(["ROLE", "USER"]),
     escalationTargetId: z.string(),
     escalationTrigger: z.enum(["MANUAL", "SLA_BREACH", "CONDITION"]),
+    escalationResponsibility: z.enum(["RETAIN", "SHARE", "TRANSFER"]),
+    escalationBlocksWork: z.boolean(),
     reviewDateRequired: z.boolean(),
     allowedStageKeys: z.string(),
     resubmissionRule: z.enum([
@@ -226,6 +229,7 @@ export const workflowActionTypeItems = [
   { label: "Refer", value: "REFER" },
   { label: "Escalate", value: "ESCALATE" },
   { label: "Put on Hold", value: "PUT_ON_HOLD" },
+  { label: "Resume", value: "RESUME" },
   { label: "Withdraw", value: "WITHDRAW" },
   { label: "Defer", value: "DEFER" },
 ] as const;

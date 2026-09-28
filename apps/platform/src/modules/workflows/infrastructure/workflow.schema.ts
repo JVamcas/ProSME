@@ -307,10 +307,6 @@ export const workflowTransitionDefinitions = pgTable(
       .notNull()
       .references(() => workflowStageDefinitions.id, { onDelete: "restrict" }),
     actionKey: text("action_key").notNull(),
-    toStageId: uuid("to_stage_id").references(
-      () => workflowStageDefinitions.id,
-      { onDelete: "restrict" },
-    ),
     terminalOutcome: text("terminal_outcome"),
     priority: integer("priority").notNull(),
     condition: jsonb("condition").$type<ConditionGroup>(),

@@ -29,6 +29,7 @@ function stage(
     entryCondition: null,
     exitCondition: null,
     initial: displayOrder === 1,
+    joinPredecessorStageKeys: [],
     name: stableKey,
     optional: false,
     publicStatusMapping: {
@@ -152,7 +153,7 @@ describe("workflow condition publication validation", () => {
       condition: condition("stage.finance_review.unknown_field", 100),
       priority: 1,
       sourceStageKey: second.stableKey,
-      targetStageKey: null,
+      targetStageKeys: [],
       terminalOutcome: "APPROVED",
     });
 

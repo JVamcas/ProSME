@@ -47,6 +47,50 @@ export const notificationEventSeeds: readonly NotificationEventSeed[] = [
     ruleId: "00000000-0000-4000-8000-000000000302",
     ruleRecipientId: "00000000-0000-4000-8000-000000000702",
   },
+  {
+    catalogKey: "WORKFLOW",
+    description: "An information request was issued to an applicant.",
+    displayName: "Information request created",
+    id: "00000000-0000-4000-8000-000000000203",
+    key: "workflow.information-request.created",
+    recipientType: "APPLICATION_OWNER",
+    ruleChannelId: "00000000-0000-4000-8000-000000000603",
+    ruleId: "00000000-0000-4000-8000-000000000303",
+    ruleRecipientId: "00000000-0000-4000-8000-000000000703",
+  },
+  {
+    catalogKey: "WORKFLOW",
+    description: "An applicant responded to an information request.",
+    displayName: "Information request responded",
+    id: "00000000-0000-4000-8000-000000000204",
+    key: "workflow.information-request.responded",
+    recipientType: "ASSIGNED_USER",
+    ruleChannelId: "00000000-0000-4000-8000-000000000604",
+    ruleId: "00000000-0000-4000-8000-000000000304",
+    ruleRecipientId: "00000000-0000-4000-8000-000000000704",
+  },
+  {
+    catalogKey: "WORKFLOW",
+    description: "An information request was closed.",
+    displayName: "Information request closed",
+    id: "00000000-0000-4000-8000-000000000205",
+    key: "workflow.information-request.closed",
+    recipientType: "APPLICATION_OWNER",
+    ruleChannelId: "00000000-0000-4000-8000-000000000605",
+    ruleId: "00000000-0000-4000-8000-000000000305",
+    ruleRecipientId: "00000000-0000-4000-8000-000000000705",
+  },
+  {
+    catalogKey: "WORKFLOW",
+    description: "An information request reached its response deadline.",
+    displayName: "Information request expired",
+    id: "00000000-0000-4000-8000-000000000206",
+    key: "workflow.information-request.expired",
+    recipientType: "ASSIGNED_USER",
+    ruleChannelId: "00000000-0000-4000-8000-000000000606",
+    ruleId: "00000000-0000-4000-8000-000000000306",
+    ruleRecipientId: "00000000-0000-4000-8000-000000000706",
+  },
 ];
 
 export type NotificationCatalogSeed = {
@@ -105,6 +149,26 @@ export const notificationTemplateTargetSeeds: readonly NotificationTemplateTarge
     {
       eventKey: "workflow.task.assigned",
       id: "00000000-0000-4000-8000-000000000505",
+      scope: "EVENT",
+    },
+    {
+      eventKey: "workflow.information-request.created",
+      id: "00000000-0000-4000-8000-000000000506",
+      scope: "EVENT",
+    },
+    {
+      eventKey: "workflow.information-request.responded",
+      id: "00000000-0000-4000-8000-000000000507",
+      scope: "EVENT",
+    },
+    {
+      eventKey: "workflow.information-request.closed",
+      id: "00000000-0000-4000-8000-000000000508",
+      scope: "EVENT",
+    },
+    {
+      eventKey: "workflow.information-request.expired",
+      id: "00000000-0000-4000-8000-000000000509",
       scope: "EVENT",
     },
   ];

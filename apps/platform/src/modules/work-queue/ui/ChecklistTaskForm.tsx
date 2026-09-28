@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { FormProvider, useForm, useWatch } from "react-hook-form";
+import { toast } from "sonner";
 import { z } from "zod";
 
 import { GeneralButton } from "@/components/ui/button";
@@ -232,11 +233,12 @@ export function ChecklistTaskForm({
       if (reviewDraftPatchIsEmpty(patch)) return;
       pendingPatch.current = {};
       save.mutate(patch, {
-        onError: () => {
+        onError: (error) => {
           pendingPatch.current = mergeReviewDraftPatches(
             patch,
             pendingPatch.current,
           );
+          toast.error(error.message);
         },
         onSuccess: () => setSavedRevision((current) =>
           Math.max(current, revision)),
@@ -253,11 +255,12 @@ export function ChecklistTaskForm({
     lastAttemptedRevision.current = revision;
     pendingPatch.current = {};
     save.mutate(patch, {
-      onError: () => {
+      onError: (error) => {
         pendingPatch.current = mergeReviewDraftPatches(
           patch,
           pendingPatch.current,
         );
+        toast.error(error.message);
       },
       onSuccess: () => setSavedRevision((current) =>
         Math.max(current, revision)),

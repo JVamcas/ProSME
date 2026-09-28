@@ -21,6 +21,7 @@ const stage = (code: string, sequence: number, initial: boolean) => ({
   coiGated: false,
   entryCondition: null,
   exitCondition: null,
+  joinPredecessorStageKeys: [],
   actions: [
     {
       stableKey: "ADVANCE",
@@ -101,7 +102,7 @@ describe("form-backed workflow validation", () => {
         {
           sourceStageKey: "FIRST",
           actionKey: "ADVANCE",
-          targetStageKey: "SECOND",
+          targetStageKeys: ["SECOND"],
           priority: 1,
           condition: null,
         },
@@ -109,6 +110,7 @@ describe("form-backed workflow validation", () => {
           sourceStageKey: "SECOND",
           actionKey: "ADVANCE",
           terminalOutcome: "COMPLETED",
+          targetStageKeys: [],
           priority: 1,
           condition: null,
         },

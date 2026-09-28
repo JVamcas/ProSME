@@ -56,16 +56,40 @@ describe("standard workflow catalogue", () => {
         transition.sourceStageKey === "ADMIN_ELIGIBILITY_SCREENING"
         && transition.actionKey === "ELIGIBLE_ADVANCE"
       ))
-      .map((transition) => transition.targetStageKey)
+      .flatMap((transition) => transition.targetStageKeys)
       .sort();
 
     expect(forkTargets).toEqual(["FINANCIAL_REVIEW", "TECHNICAL_ASSESSMENT"]);
+    expect(
+      graph.stages.find((stage) => stage.stableKey === "DUE_DILIGENCE_RISK")
+        ?.joinPredecessorStageKeys,
+    ).toEqual(["TECHNICAL_ASSESSMENT", "FINANCIAL_REVIEW"]);
     expect(graph.stages.filter((stage) => stage.repeatable).map((stage) => (
       stage.stableKey
-    ))).toEqual(["DISBURSEMENT", "IMPLEMENTATION_MONITORING"]);
+    ))).toEqual([
+      "TECHNICAL_ASSESSMENT",
+      "COMMITTEE_REVIEW",
+      "APPROVAL_AWARD_DECISION",
+      "DISBURSEMENT",
+      "IMPLEMENTATION_MONITORING",
+    ]);
   });
 
-  it("includes disabled common actions on every stage and task", () => {
+  it("configures close-out as a checklist without a scoring requirement", () => {
+    const graph = createStandardWorkflowDraft(dependencies()).graph;
+    const closeOut = graph.stages.find(
+      (stage) => stage.stableKey === "EVALUATION_CLOSE_OUT",
+    );
+    const review = closeOut?.tasks.find(
+      (task) => task.stableKey === "EVALUATION_CLOSE_OUT_REVIEW",
+    );
+
+    expect(closeOut?.checklistItems).toHaveLength(4);
+    expect(closeOut?.scoring).toBeNull();
+    expect(review?.config).not.toHaveProperty("criteria");
+  });
+
+  it("includes enabled common actions on every stage and task", () => {
     const graph = createStandardWorkflowDraft(dependencies()).graph;
     const commonActionKeys = [
       "REQUEST_INFORMATION",
@@ -79,7 +103,7 @@ describe("standard workflow catalogue", () => {
         stage.actions.map((action) => [action.stableKey, action]),
       );
       for (const actionKey of commonActionKeys) {
-        expect(actionsByKey.get(actionKey)).toMatchObject({ enabled: false });
+        expect(actionsByKey.get(actionKey)).toMatchObject({ enabled: true });
       }
       for (const task of stage.tasks) {
         expect(task.actionKeys).toEqual(
@@ -106,6 +130,7 @@ describe("standard workflow catalogue", () => {
         "REQUEST_INFORMATION",
         "REFER",
         "PUT_ON_HOLD",
+        "RESUME",
         "ESCALATE",
       ],
       config: {

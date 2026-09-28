@@ -148,6 +148,7 @@ export async function findOwnedDownloadableApplicationDocumentVersion(
 ) {
   const [version] = await getDatabase()
     .select({
+      contentType: applicationDocumentVersions.contentType,
       objectKey: applicationDocumentVersions.objectKey,
       originalName: applicationDocumentVersions.originalName,
     })
@@ -201,6 +202,7 @@ export async function findDownloadableApplicationDocumentVersion(
 ) {
   const [version] = await getDatabase()
     .select({
+      contentType: applicationDocumentVersions.contentType,
       objectKey: applicationDocumentVersions.objectKey,
       originalName: applicationDocumentVersions.originalName,
     })

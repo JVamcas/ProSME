@@ -19,6 +19,7 @@ import type {
   WorkflowTransitionInput,
 } from "../../domain/definitions/WorkflowTypes";
 import {
+  aggregateWorkflowDisplayRoutes,
   arrangeWorkflowStages,
   workflowGraphMetrics,
   type WorkflowNodePosition,
@@ -70,6 +71,10 @@ export function WorkflowVisualGraph({
   const terminalPositions = terminalOutcomePositions(
     terminalOutcomes,
     graphBounds.stageRight,
+  );
+  const displayRoutes = useMemo(
+    () => aggregateWorkflowDisplayRoutes(transitions),
+    [transitions],
   );
 
   function startDragging(
@@ -132,26 +137,23 @@ export function WorkflowVisualGraph({
                 <path d="M0,0 L8,4 L0,8 Z" fill="var(--color-brand-orange)" />
               </marker>
             </defs>
-            {transitions.map((transition, index) => {
-              const source = positions[transition.sourceStageKey];
-              const isTerminalRoute = !transition.targetStageKey;
-              const target = transition.targetStageKey
-                ? positions[transition.targetStageKey]
-                : transition.terminalOutcome
-                  ? terminalPositions[transition.terminalOutcome]
-                  : undefined;
-              if (!source || !target) return null;
+            {displayRoutes.map((route, index) => {
+              const source = positions[route.sourceStageKey];
+              const destination = route.isTerminal
+                ? terminalPositions[route.destinationKey]
+                : positions[route.destinationKey];
+              if (!source || !destination) return null;
 
               return (
                 <path
                   className="fill-none stroke-brand-orange/75"
                   d={workflowRoutePath(
                     source,
-                    target,
+                    destination,
                     index,
-                    isTerminalRoute,
+                    route.isTerminal,
                   )}
-                  key={transition.id ?? `${transition.sourceStageKey}-${transition.actionKey}-${transition.priority}`}
+                  key={route.key}
                   markerEnd="url(#workflow-arrow)"
                   strokeWidth="2"
                 />
@@ -282,8 +284,10 @@ function SelectedStageRoutes({
             const action = stage.actions.find(
               (candidate) => candidate.stableKey === route.actionKey,
             );
-            const destination = route.targetStageKey
-              ? stageByKey.get(route.targetStageKey)?.name ?? route.targetStageKey
+            const destination = route.targetStageKeys.length
+              ? route.targetStageKeys.map((targetStageKey) =>
+                  stageByKey.get(targetStageKey)?.name ?? targetStageKey
+                ).join(", ")
               : humanizeCode(route.terminalOutcome ?? "Terminal outcome");
 
             return (

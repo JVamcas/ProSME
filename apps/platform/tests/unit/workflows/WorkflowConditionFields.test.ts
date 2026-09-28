@@ -26,6 +26,7 @@ function stage(
     displayOrder,
     enabled: true,
     entryCondition: null,
+    joinPredecessorStageKeys: [],
     exitCondition: null,
     initial: displayOrder === 1,
     name: stableKey.replaceAll("_", " "),

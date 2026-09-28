@@ -22,7 +22,7 @@ export type WorkflowRfiEditableField = {
   label: string;
   options: FormOption[];
   path: string;
-  type: Exclude<FormFieldType, "DOCUMENT">;
+  type: Exclude<FormFieldType, "DOCUMENT"> | "RICH_TEXT";
 };
 
 export type WorkflowRfiDocument = {

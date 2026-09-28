@@ -31,9 +31,12 @@ export type ReturnConfiguration = {
 
 export type ReferConfiguration = {
   returnToReferrer: boolean;
+  sourceTaskBehavior: "BLOCKED" | "OPEN";
 };
 
 export type EscalateConfiguration = {
+  blockUntilResolved: boolean;
+  responsibility: "RETAIN" | "SHARE" | "TRANSFER";
   targetType: "ROLE" | "USER";
   targetId: string;
   trigger: "MANUAL" | "SLA_BREACH" | "CONDITION";
@@ -42,6 +45,11 @@ export type EscalateConfiguration = {
 export type PutOnHoldConfiguration = {
   reasonCodes: string[];
   reviewDateRequired: boolean;
+  scope: "STAGE";
+};
+
+export type ResumeConfiguration = {
+  scope: "STAGE";
 };
 
 export type WithdrawConfiguration = {
@@ -51,10 +59,12 @@ export type WithdrawConfiguration = {
 
 export type DeferConfiguration =
   | {
+      continuation: "RESUME_ON_DATE";
       targetType: "DATE";
       targetDate: string;
     }
   | {
+      continuation: "EXPLICIT_TRANSFER";
       targetType: "FUNDING_CALL";
       targetCallKey: string;
     };
@@ -67,6 +77,7 @@ export type WorkflowActionConfigurationByType = {
   REFER: ReferConfiguration;
   ESCALATE: EscalateConfiguration;
   PUT_ON_HOLD: PutOnHoldConfiguration;
+  RESUME: ResumeConfiguration;
   WITHDRAW: WithdrawConfiguration;
   DEFER: DeferConfiguration;
 };

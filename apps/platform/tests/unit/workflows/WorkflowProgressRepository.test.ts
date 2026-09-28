@@ -136,4 +136,31 @@ describe("workflow progress projection", () => {
     orderBy.mockResolvedValue([]);
     await expect(readWorkflowProgress("application-id")).resolves.toBeNull();
   });
+
+  it("reports multiple active parallel stages independently", async () => {
+    orderBy.mockResolvedValue([
+      {
+        ...rows[1],
+        iterationNumber: 1,
+        stageId: "technical-stage",
+        stageName: "Technical assessment",
+        stageSequence: 2,
+      },
+      {
+        ...rows[1],
+        iterationNumber: 1,
+        stageId: "financial-stage",
+        stageName: "Financial review",
+        stageSequence: 3,
+        taskId: "financial-task",
+      },
+    ]);
+
+    const progress = await readWorkflowProgress("application-id");
+
+    expect(progress?.stages.map((stage) => [stage.name, stage.status])).toEqual([
+      ["Technical assessment", "ACTIVE"],
+      ["Financial review", "ACTIVE"],
+    ]);
+  });
 });

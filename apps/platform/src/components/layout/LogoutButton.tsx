@@ -33,7 +33,7 @@ export function LogoutButton({
       className={
         tone === "brand"
           ? `h-11 w-full rounded-xl text-brand-navy hover:bg-brand-navy/10 ${collapsed ? "justify-center px-2" : "justify-start px-3"}`
-          : `h-auto py-3 text-left text-white/55 hover:bg-transparent hover:text-white ${collapsed ? "justify-center rounded-xl px-2" : "justify-start rounded-none px-4"}`
+          : `h-auto py-3 text-left hover:bg-transparent hover:text-white ${collapsed ? "justify-center rounded-xl px-2" : "justify-start rounded-none px-4"}`
       }
     >
       <LogOutIcon

@@ -30,6 +30,7 @@ import {
   appendTaskCompletionAudit,
 } from "./RuntimeAuditWriteRepository";
 import { workflowTaskCompletionRequirementsProjection } from "./WorkflowTaskCompletionRequirementsProjection";
+import { workflowTaskControlAllowsCompletion } from "./WorkflowTaskControlReadiness";
 import {
   appendWorkflowTaskCompletionRecords,
   WorkflowTaskCommandKeyConflict,
@@ -183,6 +184,7 @@ async function lockTask(
       AND task.row_version = ${input.expectedRowVersion}
       AND task.status IN ('PENDING', 'IN_PROGRESS')
       AND stage.status = 'ACTIVE' AND workflow.status = 'ACTIVE'
+      AND ${workflowTaskControlAllowsCompletion}
       AND (
         (${input.actionKey}::text IS NULL)
         OR (${input.actionKey}::text IS NOT NULL AND EXISTS (

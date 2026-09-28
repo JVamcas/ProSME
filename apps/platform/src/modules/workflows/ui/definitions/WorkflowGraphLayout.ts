@@ -8,6 +8,13 @@ export type WorkflowNodePosition = {
   y: number;
 };
 
+export type WorkflowDisplayRoute = {
+  destinationKey: string;
+  isTerminal: boolean;
+  key: string;
+  sourceStageKey: string;
+};
+
 export const workflowGraphMetrics = {
   canvasPadding: 36,
   columnGap: 112,
@@ -15,6 +22,40 @@ export const workflowGraphMetrics = {
   nodeWidth: 264,
   rowGap: 52,
 } as const;
+
+export function aggregateWorkflowDisplayRoutes(
+  transitions: WorkflowTransitionInput[],
+): WorkflowDisplayRoute[] {
+  const routes = new Map<string, WorkflowDisplayRoute>();
+
+  for (const transition of transitions) {
+    const destinations = transition.terminalOutcome
+      ? [{ key: transition.terminalOutcome, isTerminal: true }]
+      : transition.targetStageKeys.map((targetStageKey) => ({
+          key: targetStageKey,
+          isTerminal: false,
+        }));
+
+    for (const destination of destinations) {
+      const key = [
+        transition.sourceStageKey,
+        destination.isTerminal ? "terminal" : "stage",
+        destination.key,
+      ].join(":");
+
+      if (!routes.has(key)) {
+        routes.set(key, {
+          destinationKey: destination.key,
+          isTerminal: destination.isTerminal,
+          key,
+          sourceStageKey: transition.sourceStageKey,
+        });
+      }
+    }
+  }
+
+  return [...routes.values()];
+}
 
 export function arrangeWorkflowStages(
   stages: WorkflowStageInput[],
@@ -34,18 +75,16 @@ export function arrangeWorkflowStages(
     let changed = false;
 
     for (const transition of transitions) {
-      if (!transition.targetStageKey) continue;
       const source = stageByKey.get(transition.sourceStageKey);
-      const target = stageByKey.get(transition.targetStageKey);
-
-      if (!source || !target || target.displayOrder <= source.displayOrder) {
-        continue;
-      }
-
-      const nextDepth = (depthByKey.get(source.stableKey) ?? 0) + 1;
-      if (nextDepth > (depthByKey.get(target.stableKey) ?? 0)) {
-        depthByKey.set(target.stableKey, nextDepth);
-        changed = true;
+      if (!source) continue;
+      for (const targetStageKey of transition.targetStageKeys) {
+        const target = stageByKey.get(targetStageKey);
+        if (!target || target.displayOrder <= source.displayOrder) continue;
+        const nextDepth = (depthByKey.get(source.stableKey) ?? 0) + 1;
+        if (nextDepth > (depthByKey.get(target.stableKey) ?? 0)) {
+          depthByKey.set(target.stableKey, nextDepth);
+          changed = true;
+        }
       }
     }
 

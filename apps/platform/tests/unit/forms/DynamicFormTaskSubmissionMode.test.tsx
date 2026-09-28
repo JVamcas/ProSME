@@ -35,6 +35,7 @@ vi.mock("@/modules/forms/ui/renderer/DynamicFormController", () => ({
     confirmNavigation: vi.fn(),
     currentRevision: vi.fn(() => 0),
     finalizeFormValues: mocks.finalizeFormValues,
+    draftIsValid: true,
     hasUnsavedChanges: false,
     markSaved: vi.fn(),
     pendingNavigationHref: null,

@@ -1,7 +1,6 @@
 import "server-only";
 
 import {
-  assertRecipientCompatibility,
   parseNotificationContext,
   type NotificationEventContextByKey,
   type NotificationEventKey,
@@ -31,10 +30,6 @@ export async function captureNotificationOccurrence<
 ): Promise<NotificationOccurrenceWriteResult> {
   const context = parseNotificationContext(input.eventKey, input.context);
   const recipients = normalizeNotificationRecipients(input.recipients);
-
-  for (const recipient of recipients) {
-    assertRecipientCompatibility(input.eventKey, recipient.recipientType);
-  }
 
   return insertNotificationOccurrence(transaction, {
     ...input,

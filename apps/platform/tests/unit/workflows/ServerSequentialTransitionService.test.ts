@@ -68,8 +68,10 @@ const transition = {
   condition: null,
   id: "70000000-0000-4000-8000-000000000001",
   priority: 1,
-  targetStageDefinitionId: "80000000-0000-4000-8000-000000000001",
-  targetStageName: "Technical assessment",
+  targetStages: [{
+    id: "80000000-0000-4000-8000-000000000001",
+    name: "Technical assessment",
+  }],
   terminalOutcome: null,
 };
 
@@ -96,6 +98,7 @@ beforeEach(() => {
     stageInstanceId: "a0000000-0000-4000-8000-000000000001",
     taskIds: [],
   });
+  vi.mocked(completeTerminalWorkflow).mockResolvedValue(true);
 });
 
 describe("sequential transition execution", () => {
@@ -107,12 +110,12 @@ describe("sequential transition execution", () => {
 
     expect(result).toMatchObject({
       kind: "transitioned",
-      targetStageName: transition.targetStageName,
+      targets: [{ targetStageName: "Technical assessment" }],
     });
     expect(activateStageInTransaction).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
-        stageDefinitionId: transition.targetStageDefinitionId,
+        stageDefinitionId: transition.targetStages[0].id,
       }),
     );
     expect(recordTransitionExecution).toHaveBeenCalledOnce();
@@ -171,10 +174,16 @@ describe("sequential transition execution", () => {
     await expect(executeSequentialTransitionInTransaction(
       {} as never,
       input,
-    )).resolves.toMatchObject({ kind: "target_entry_condition_failed" });
+    )).resolves.toMatchObject({
+      kind: "transitioned",
+      targets: [{ outcome: "ENTRY_CONDITION_FAILED" }],
+    });
     expect(finalizeTransitionExecution).toHaveBeenCalledWith(
       expect.anything(),
-      expect.objectContaining({ outcome: "TARGET_ENTRY_CONDITION_FAILED" }),
+      expect.objectContaining({
+        outcome: "TARGET_ENTRY_CONDITION_FAILED",
+        targets: [expect.objectContaining({ outcome: "ENTRY_CONDITION_FAILED" })],
+      }),
     );
   });
 
@@ -183,8 +192,12 @@ describe("sequential transition execution", () => {
       actionKey: input.actionKey,
       executionId: "90000000-0000-4000-8000-000000000001",
       outcome: "TARGET_ACTIVATED",
-      targetStageInstanceId: "a0000000-0000-4000-8000-000000000001",
-      targetStageName: transition.targetStageName,
+      targets: [{
+        outcome: "ACTIVATED",
+        targetStageDefinitionId: transition.targetStages[0].id,
+        targetStageInstanceId: "a0000000-0000-4000-8000-000000000001",
+        targetStageName: "Technical assessment",
+      }],
       workflowStatus: "ACTIVE",
     });
 
@@ -201,8 +214,7 @@ describe("sequential transition execution", () => {
       actionExists: true,
       transitions: [{
         ...transition,
-        targetStageDefinitionId: null,
-        targetStageName: null,
+        targetStages: [],
         terminalOutcome: "APPROVED",
       }],
     });

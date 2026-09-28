@@ -148,6 +148,7 @@ export const workflowStageSchema = z
     coiGated: z.boolean(),
     entryCondition: conditionGroupSchema.nullable(),
     exitCondition: conditionGroupSchema.nullable(),
+    joinPredecessorStageKeys: z.array(codeSchema).max(50),
     checklistItems: z.array(workflowStageChecklistSchema).max(100),
     commentFields: z.array(workflowStageCommentFieldSchema).max(100).optional(),
     documentRequirements: z

@@ -25,13 +25,13 @@ function validateTransitionTargets(graph: WorkflowGraphInput) {
   graph.transitions.forEach((transition, index) => {
     const path = `transitions.${index}`;
     if (
-      Boolean(transition.targetStageKey) ===
+      Boolean(transition.targetStageKeys.length) ===
       Boolean(transition.terminalOutcome)
     ) {
       errors.push(
         issue(
           "INVALID_TRANSITION_TARGET",
-          "A transition needs one stage target or terminal outcome.",
+          "A transition needs one or more stage targets or a terminal outcome.",
           path,
         ),
       );

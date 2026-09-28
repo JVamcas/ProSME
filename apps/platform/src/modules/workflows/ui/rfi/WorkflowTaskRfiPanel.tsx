@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { FileText } from "lucide-react";
+import { FileText, MessageSquareText } from "lucide-react";
 import { useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { z } from "zod";
@@ -12,6 +12,7 @@ import { GeneralButton } from "@/components/ui/button";
 import { FormTextarea } from "@/components/ui/form-fields";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatLocalDateTime24 } from "@/lib/dateUtils";
+import { SanitizedRichTextContent } from "@/shared/ui/SanitizedRichTextContent";
 import type { WorkflowRfiDetail } from "../../domain/runtime/WorkflowRfiView";
 import {
   useCloseWorkflowRfi,
@@ -24,6 +25,7 @@ import {
   WorkflowRfiCorrespondence,
   WorkflowRfiDeadline,
 } from "./WorkflowRfiPresentation";
+import { WorkflowRfiRequestListItem } from "./WorkflowRfiRequestList";
 
 const followUpSchema = z.object({
   message: z.string().trim().min(1, "Enter a follow-up message.").max(4_000),
@@ -55,7 +57,13 @@ function StaffRfiResponse({
           <div key={field.path}>
             <dt className="text-xs text-brand-navy/60">{field.label}</dt>
             <dd className="mt-1 text-sm font-medium text-brand-navy">
-              {Array.isArray(detail.response!.fieldValues[field.path])
+              {field.type === "RICH_TEXT" ? (
+                <SanitizedRichTextContent
+                  sanitizedHtml={String(
+                    detail.response!.fieldValues[field.path] ?? "",
+                  )}
+                />
+              ) : Array.isArray(detail.response!.fieldValues[field.path])
                 ? (detail.response!.fieldValues[field.path] as unknown[]).join(
                     ", ",
                   )
@@ -79,6 +87,7 @@ function StaffRfiResponse({
               {document.evidence ? (
                 <a
                   className="font-semibold text-brand-green underline-offset-2 hover:underline"
+                  download
                   href={`/api/admin/tasks/${taskId}/documents/${document.evidence.versionId}/download`}
                 >
                   {document.evidence.fileName}
@@ -223,44 +232,65 @@ export function WorkflowTaskRfiPanel({ taskId }: { taskId: string }) {
       </section>
     );
   }
+
+  const pendingCount = list.data.filter(
+    (request) => request.status === "OPEN",
+  ).length;
+
   return (
-    <div className="grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
-      <nav aria-label="Task information requests" className="space-y-2">
-        {list.data.map((request) => (
-          <button
-            className={
-              effectiveSelectedId === request.id
-                ? "w-full rounded-xl border border-brand-orange bg-brand-cream p-4 text-left"
-                : "w-full rounded-xl border border-brand-navy/10 bg-white p-4 text-left hover:border-brand-orange/40"
-            }
-            key={request.id}
-            onClick={() => setSelectedId(request.id)}
-            type="button"
-          >
-            <StatusBadge status={request.status} />
-            <p className="mt-2 line-clamp-2 text-sm font-semibold text-brand-navy">
-              {request.question}
+    <section className="overflow-hidden rounded-2xl border border-brand-navy/10 bg-brand-white p-4 shadow-sm sm:p-6">
+      <header className="flex flex-col gap-4 border-b border-brand-navy/10 pb-5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-4">
+          <span className="grid size-14 shrink-0 place-items-center rounded-2xl bg-brand-orange/10 text-brand-orange">
+            <MessageSquareText aria-hidden="true" className="size-7" />
+          </span>
+          <div>
+            <h2 className="text-xl font-bold text-brand-navy">
+              Information Requests
+            </h2>
+            <p className="mt-1 text-sm text-brand-navy/60">
+              Questions sent to the applicant during this review.
             </p>
-            <p className="mt-2 text-xs text-brand-navy/60">
-              {formatLocalDateTime24(request.createdAt)}
-            </p>
-          </button>
-        ))}
-      </nav>
-      {detail.isPending ? (
-        <PortalLoadingState
-          description="Loading the selected request."
-          title="Preparing request"
-        />
-      ) : detail.isError ? (
-        <PortalErrorState
-          description={detail.error.message}
-          onAction={() => void detail.refetch()}
-          title="Request could not be loaded"
-        />
-      ) : detail.data ? (
-        <StaffRfiDetail detail={detail.data} taskId={taskId} />
-      ) : null}
-    </div>
+          </div>
+        </div>
+
+        <div className="inline-flex w-fit items-center gap-2 rounded-full bg-brand-navy/[0.04] py-1.5 pl-1.5 pr-4 text-sm font-semibold text-brand-navy/75">
+          <span className="grid size-8 place-items-center rounded-full bg-brand-blue/15 font-bold text-brand-navy">
+            {pendingCount}
+          </span>
+          Awaiting response
+        </div>
+      </header>
+
+      <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(360px,0.8fr)_minmax(0,1.4fr)]">
+        <nav aria-label="Task information requests" className="space-y-3">
+          {list.data.map((request) => (
+            <WorkflowRfiRequestListItem
+              isSelected={effectiveSelectedId === request.id}
+              key={request.id}
+              onSelect={() => setSelectedId(request.id)}
+              request={request}
+            />
+          ))}
+        </nav>
+
+        <div className="min-w-0">
+          {detail.isPending ? (
+            <PortalLoadingState
+              description="Loading the selected request."
+              title="Preparing request"
+            />
+          ) : detail.isError ? (
+            <PortalErrorState
+              description={detail.error.message}
+              onAction={() => void detail.refetch()}
+              title="Request could not be loaded"
+            />
+          ) : detail.data ? (
+            <StaffRfiDetail detail={detail.data} taskId={taskId} />
+          ) : null}
+        </div>
+      </div>
+    </section>
   );
 }

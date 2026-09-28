@@ -100,6 +100,7 @@ afterAll(async () => {
               repeatable: false,
               coiGated: false,
               entryCondition: null,
+              joinPredecessorStageKeys: [],
               exitCondition: null,
               initial: true,
               slaHours: null,

@@ -22,6 +22,7 @@ const stage = {
   entryCondition: null,
   exitCondition: null,
   initial: true,
+  joinPredecessorStageKeys: [],
   slaHours: null,
   actions: [],
   checklistItems: [],

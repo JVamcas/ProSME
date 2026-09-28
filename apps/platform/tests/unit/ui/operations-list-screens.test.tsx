@@ -112,6 +112,8 @@ describe("operations list screens", () => {
     expect(markup).toContain("Database Business");
     expect(markup).toContain("Published opportunity");
     expect(markup).toContain("Application filters");
+    expect(markup).toContain("Under Review");
+    expect(markup).not.toContain("Completeness Screening");
   });
 
   it("renders assigned task and assignment time without a claim action", () => {

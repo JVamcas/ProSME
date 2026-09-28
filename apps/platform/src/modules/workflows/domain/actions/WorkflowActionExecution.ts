@@ -89,6 +89,12 @@ export const workflowActionInputSchema = z.discriminatedUnion("actionType", [
   z
     .object({
       ...commonInput,
+      actionType: z.literal("RESUME"),
+    })
+    .strict(),
+  z
+    .object({
+      ...commonInput,
       actionType: z.literal("WITHDRAW"),
       confirmed: z.literal(true),
     })
@@ -118,7 +124,19 @@ export const workflowActionInputSchema = z.discriminatedUnion("actionType", [
         });
       }
     }),
-]);
+]).superRefine((input, context) => {
+  if (
+    input.actionType === "REQUEST_INFORMATION" &&
+    input.editableFieldPaths.length === 0 &&
+    input.requestedDocumentRequirementIds.length === 0
+  ) {
+    context.addIssue({
+      code: "custom",
+      message: "Request detailed information, at least one document, or both.",
+      path: ["editableFieldPaths"],
+    });
+  }
+});
 
 export const workflowActionExecutionRequestSchema = z
   .object({
@@ -148,12 +166,17 @@ export type WorkflowActionExecutionResult = {
     kind:
       | "NONE"
       | "STAGE_ACTIVE"
+      | "STAGE_BLOCKED"
       | "STAGE_ACTIVATED"
+      | "JOIN_PENDING"
       | "WORKFLOW_COMPLETED"
       | "WORKFLOW_REJECTED"
       | "WORKFLOW_WITHDRAWN";
-    targetStageInstanceId: string | null;
-    targetStageName: string | null;
+    targets: Array<{
+      outcome: "ACTIVATED" | "ALREADY_ACTIVE" | "ENTRY_CONDITION_FAILED" | "JOIN_PENDING";
+      targetStageInstanceId: string | null;
+      targetStageName: string;
+    }>;
     workflowStatus: "ACTIVE" | "COMPLETED" | "REJECTED" | "CANCELLED";
   };
   workflowInstanceId: string;
@@ -215,11 +238,17 @@ export function validateActionInputAgainstConfiguration(
         ? "A return reason or comment is required."
         : null;
     case "ESCALATE":
+      if (!input.reasonCode && !input.comment) {
+        return "An escalation reason or comment is required.";
+      }
       return action.configuration.trigger === "MANUAL" ||
         action.configuration.trigger === "CONDITION"
         ? null
         : "This escalation is not available for manual execution.";
     case "PUT_ON_HOLD":
+      if (!input.reasonCode && !input.comment) {
+        return "A hold reason or comment is required.";
+      }
       if (
         input.reasonCode &&
         !action.configuration.reasonCodes.includes(input.reasonCode)
@@ -231,11 +260,16 @@ export function validateActionInputAgainstConfiguration(
         !input.reviewDate
         ? "A review date is required for this hold."
         : null;
+    case "RESUME":
+      return null;
     case "WITHDRAW":
       return action.configuration.allowedStageKeys.includes(sourceStageKey)
         ? null
         : "Withdrawal is not configured for this stage.";
     case "DEFER":
+      if (!input.reasonCode && !input.comment) {
+        return "A deferral reason or comment is required.";
+      }
       if (
         input.actionType !== "DEFER" ||
         input.targetType !== action.configuration.targetType

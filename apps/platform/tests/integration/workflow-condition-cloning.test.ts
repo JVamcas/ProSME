@@ -132,6 +132,7 @@ const graph: WorkflowGraphInput = {
       entryCondition,
       exitCondition,
       initial: true,
+      joinPredecessorStageKeys: [],
       name: "Review",
       optional: false,
       publicStatusMapping: {
@@ -170,7 +171,7 @@ const graph: WorkflowGraphInput = {
       condition: transitionCondition,
       priority: 1,
       sourceStageKey: "REVIEW",
-      targetStageKey: null,
+      targetStageKeys: [],
       terminalOutcome: "COMPLETED",
     },
   ],

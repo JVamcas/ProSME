@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  assertRecipientCompatibility,
   notificationEventCatalogue,
   parseNotificationContext,
 } from "@/modules/notifications/domain/NotificationEvent";
@@ -45,12 +44,74 @@ const taskContext = {
   workflowInstanceId: "20000000-0000-4000-8000-000000000005",
 };
 
+const owner = {
+  displayName: "Applicant One",
+  email: "applicant@example.test",
+  userId: "30000000-0000-4000-8000-000000000004",
+};
+
+const assignees = [{
+  displayName: "Reviewer One",
+  email: "reviewer@example.test",
+  userId: "30000000-0000-4000-8000-000000000005",
+}];
+
+const informationRequestContext = {
+  applicationId: "30000000-0000-4000-8000-000000000001",
+  applicationReference: "SME-2026-003",
+  assignees,
+  correlationId: "rfi:30000000-0000-4000-8000-000000000002",
+  fundingOpportunityTitle: "SME Growth Fund",
+  owner,
+  question: "Please provide the latest management accounts.",
+  requestInformationId: "30000000-0000-4000-8000-000000000002",
+  sourceIdempotencyKey: "rfi-created:30000000-0000-4000-8000-000000000002",
+  workflowInstanceId: "30000000-0000-4000-8000-000000000003",
+};
+
 describe("notification event catalogue", () => {
-  it("validates both initial event contexts", () => {
+  it("validates the application and task event contexts", () => {
     expect(parseNotificationContext("application.submitted", applicationContext))
       .toEqual(applicationContext);
     expect(parseNotificationContext("workflow.task.assigned", taskContext))
       .toEqual(taskContext);
+  });
+
+  it("validates all information-request lifecycle contexts", () => {
+    expect(parseNotificationContext(
+      "workflow.information-request.created",
+      {
+        ...informationRequestContext,
+        createdAt: "2026-09-27T10:00:00.000Z",
+        deadlineAt: "2026-10-04T10:00:00.000Z",
+        owner,
+      },
+    )).toMatchObject(informationRequestContext);
+    expect(parseNotificationContext(
+      "workflow.information-request.responded",
+      {
+        ...informationRequestContext,
+        assignees,
+        respondedAt: "2026-09-29T10:00:00.000Z",
+      },
+    )).toMatchObject(informationRequestContext);
+    expect(parseNotificationContext(
+      "workflow.information-request.closed",
+      {
+        ...informationRequestContext,
+        closedAt: "2026-09-30T10:00:00.000Z",
+        owner,
+      },
+    )).toMatchObject(informationRequestContext);
+    expect(parseNotificationContext(
+      "workflow.information-request.expired",
+      {
+        ...informationRequestContext,
+        assignees,
+        deadlineAt: "2026-10-04T10:00:00.000Z",
+        expiredAt: "2026-10-04T10:00:00.000Z",
+      },
+    )).toMatchObject(informationRequestContext);
   });
 
   it("returns a controlled error for invalid context", () => {
@@ -92,22 +153,14 @@ describe("notification event catalogue", () => {
     );
   });
 
-  it("enforces recipient compatibility from the authoritative catalogue", () => {
+  it("keeps event identity separate from configurable recipient rules", () => {
     expect(notificationEventCatalogue["application.submitted"].catalogKey)
       .toBe("APPLICATIONS");
     expect(notificationEventCatalogue["workflow.task.assigned"].catalogKey)
       .toBe("WORKFLOW");
-    expect(notificationEventCatalogue["application.submitted"]
-      .allowedRecipientTypes).toEqual(["APPLICATION_OWNER"]);
-    expect(() => assertRecipientCompatibility(
-      "application.submitted",
-      "APPLICATION_OWNER",
-    )).not.toThrow();
-    expect(() => assertRecipientCompatibility(
-      "application.submitted",
-      "ASSIGNED_USER",
-    )).toThrow(expect.objectContaining({
-      code: notificationErrorCodes.incompatibleRecipient,
-    }));
+    expect(notificationEventCatalogue["application.submitted"])
+      .not.toHaveProperty("allowedRecipientTypes");
+    expect(notificationEventCatalogue["workflow.information-request.created"])
+      .not.toHaveProperty("allowedRecipientTypes");
   });
 });

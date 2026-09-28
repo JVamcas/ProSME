@@ -106,9 +106,9 @@ export async function createWorkflowTaskDocumentDownload(
   if (!version || version.requirementId !== requirement.id) {
     throw new ResourceNotFoundError("workflow document");
   }
-  return storage.createSignedDownloadUrl({
-    expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+  return {
+    body: await storage.read(version.objectKey),
+    contentType: version.contentType,
     fileName: version.originalName,
-    objectKey: version.objectKey,
-  });
+  };
 }

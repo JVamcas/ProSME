@@ -46,8 +46,11 @@ describe("WorkflowActionDefinition", () => {
       },
       REFER: {
         returnToReferrer: true,
+        sourceTaskBehavior: "BLOCKED",
       },
       ESCALATE: {
+        blockUntilResolved: true,
+        responsibility: "SHARE",
         targetType: "ROLE",
         targetId: "79e20de0-3558-4d63-90a4-8c9f5125df07",
         trigger: "SLA_BREACH",
@@ -55,12 +58,18 @@ describe("WorkflowActionDefinition", () => {
       PUT_ON_HOLD: {
         reasonCodes: ["EXTERNAL_REVIEW"],
         reviewDateRequired: true,
+        scope: "STAGE",
       },
+      RESUME: { scope: "STAGE" },
       WITHDRAW: {
         allowedStageKeys: ["PRE_SCREENING"],
         resubmissionRule: "NEW_APPLICATION",
       },
-      DEFER: { targetType: "DATE", targetDate: "2027-01-15" },
+      DEFER: {
+        continuation: "RESUME_ON_DATE",
+        targetType: "DATE",
+        targetDate: "2027-01-15",
+      },
     } as const;
     for (const actionType of workflowActionTypes) {
       const parsed = workflowActionDefinitionSchema.safeParse({
@@ -98,6 +107,7 @@ describe("WorkflowActionDefinition", () => {
         actionType: "REJECT",
         configuration: {
           returnToReferrer: true,
+          sourceTaskBehavior: "BLOCKED",
         },
       }).success,
     ).toBe(false);
@@ -124,6 +134,7 @@ describe("WorkflowActionDefinition", () => {
         ...action,
         actionType: "DEFER",
         configuration: {
+          continuation: "EXPLICIT_TRANSFER",
           targetType: "FUNDING_CALL",
           targetDate: "2027-01-15",
         },

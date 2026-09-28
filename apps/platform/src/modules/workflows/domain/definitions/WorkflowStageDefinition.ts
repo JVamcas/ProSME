@@ -34,6 +34,7 @@ export type WorkflowStageDefinition = {
   coiGated: boolean;
   entryCondition: ConditionGroup | null;
   exitCondition: ConditionGroup | null;
+  joinPredecessorStageKeys: string[];
   checklistItems: WorkflowStageChecklistDefinition[];
   commentFields?: WorkflowStageCommentField[];
   documentRequirements: WorkflowStageDocumentRequirement[];

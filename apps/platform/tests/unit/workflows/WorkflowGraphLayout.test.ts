@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { arrangeWorkflowStages } from "@/modules/workflows/ui/definitions/WorkflowGraphLayout";
+import {
+  aggregateWorkflowDisplayRoutes,
+  arrangeWorkflowStages,
+} from "@/modules/workflows/ui/definitions/WorkflowGraphLayout";
 import { referenceWorkflow } from "../../support/ReferenceWorkflowFixture";
 
 describe("workflow graph layout", () => {
@@ -26,14 +29,75 @@ describe("workflow graph layout", () => {
       positions[leftBranch.stableKey].x,
     );
   });
+
+  it("renders multiple transitions between the same stages as one path", () => {
+    const routes = aggregateWorkflowDisplayRoutes([
+      route("screening", "assessment", "APPROVE"),
+      route("screening", "assessment", "OVERRIDE"),
+      route("screening", "review", "RETURN"),
+      route("assessment", "review", "APPROVE"),
+    ]);
+
+    expect(routes).toEqual([
+      {
+        destinationKey: "assessment",
+        isTerminal: false,
+        key: "screening:stage:assessment",
+        sourceStageKey: "screening",
+      },
+      {
+        destinationKey: "review",
+        isTerminal: false,
+        key: "screening:stage:review",
+        sourceStageKey: "screening",
+      },
+      {
+        destinationKey: "review",
+        isTerminal: false,
+        key: "assessment:stage:review",
+        sourceStageKey: "assessment",
+      },
+    ]);
+  });
+
+  it("keeps stage and terminal destinations as distinct display paths", () => {
+    const routes = aggregateWorkflowDisplayRoutes([
+      route("decision", "APPROVED", "APPROVE"),
+      terminalRoute("decision", "APPROVED", "DECLINE"),
+    ]);
+
+    expect(routes.map((item) => item.key)).toEqual([
+      "decision:stage:APPROVED",
+      "decision:terminal:APPROVED",
+    ]);
+  });
 });
 
-function route(sourceStageKey: string, targetStageKey: string) {
+function route(
+  sourceStageKey: string,
+  targetStageKey: string,
+  actionKey = "ADVANCE",
+) {
   return {
-    actionKey: "ADVANCE",
+    actionKey,
     condition: null,
     priority: 1,
     sourceStageKey,
-    targetStageKey,
+    targetStageKeys: [targetStageKey],
+  };
+}
+
+function terminalRoute(
+  sourceStageKey: string,
+  terminalOutcome: string,
+  actionKey: string,
+) {
+  return {
+    actionKey,
+    condition: null,
+    priority: 1,
+    sourceStageKey,
+    targetStageKeys: [],
+    terminalOutcome,
   };
 }

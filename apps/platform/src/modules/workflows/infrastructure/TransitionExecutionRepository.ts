@@ -8,31 +8,45 @@ import type { StageConditionEvaluation } from "../engine/StageCondition";
 import type { TransitionExecutionOutcome } from "../domain/runtime/TransitionExecution";
 import {
   transitionExecutions,
+  transitionExecutionTargets,
   workflowAuditEntries,
   workflowEvents,
-  workflowInstances,
 } from "@/db/schema";
 import type { StageCompletionTransaction } from "./StageCompletionRepository";
+
+export type SequentialTransitionTarget = {
+  id: string;
+  name: string;
+};
 
 export type SequentialTransition = {
   condition: ConditionGroup | null;
   id: string;
   priority: number;
-  targetStageDefinitionId: string | null;
-  targetStageName: string | null;
+  targetStages: SequentialTransitionTarget[];
   terminalOutcome: string | null;
+};
+
+export type TransitionTargetOutcome = {
+  incompletePredecessorStageKeys?: string[];
+  outcome: "ACTIVATED" | "ALREADY_ACTIVE" | "ENTRY_CONDITION_FAILED" | "JOIN_PENDING";
+  targetStageDefinitionId: string;
+  targetStageInstanceId: string | null;
+  targetStageName: string;
 };
 
 export type ExistingTransitionExecution = {
   actionKey: string;
   executionId: string;
   outcome: TransitionExecutionOutcome;
-  targetStageInstanceId: string | null;
-  targetStageName: string | null;
+  targets: TransitionTargetOutcome[];
   workflowStatus: "ACTIVE" | "COMPLETED" | "CANCELLED";
 };
 
-type TransitionRow = SequentialTransition & { actionId: string };
+type TransitionRow = Omit<SequentialTransition, "targetStages"> & {
+  actionId: string;
+  targetStages: SequentialTransitionTarget[] | null;
+};
 
 export function withTransitionExecutionTransaction<T>(
   work: (transaction: StageCompletionTransaction) => Promise<T>,
@@ -48,14 +62,22 @@ export async function findTransitionExecution(
     SELECT execution.id AS "executionId",
       execution.action_key AS "actionKey",
       execution.outcome,
-      execution.target_stage_instance_id AS "targetStageInstanceId",
-      target.name AS "targetStageName",
-      workflow.status AS "workflowStatus"
+      workflow.status AS "workflowStatus",
+      COALESCE((
+        SELECT jsonb_agg(jsonb_build_object(
+          'outcome', target.outcome,
+          'targetStageDefinitionId', target.target_stage_definition_id,
+          'targetStageInstanceId', target.target_stage_instance_id,
+          'targetStageName', definition.name
+        ) ORDER BY definition.sequence, definition.id)
+        FROM app_workflow_transition_execution_targets target
+        JOIN app_workflow_stage_definitions definition
+          ON definition.id = target.target_stage_definition_id
+        WHERE target.execution_id = execution.id
+      ), '[]'::jsonb) AS targets
     FROM app_workflow_transition_executions execution
     JOIN app_workflow_instances workflow
       ON workflow.id = execution.workflow_instance_id
-    LEFT JOIN app_workflow_stage_definitions target
-      ON target.id = execution.target_stage_definition_id
     WHERE execution.source_stage_instance_id = ${sourceStageInstanceId}::uuid
     LIMIT 1
   `);
@@ -73,16 +95,22 @@ export async function loadSequentialTransitions(
   const result = await transaction.execute(sql`
     SELECT action.id AS "actionId", transition.id,
       transition.priority, transition.condition,
-      transition.to_stage_id AS "targetStageDefinitionId",
       transition.terminal_outcome AS "terminalOutcome",
-      target.name AS "targetStageName"
+      COALESCE((
+        SELECT jsonb_agg(jsonb_build_object(
+          'id', target.target_stage_id,
+          'name', stage.name
+        ) ORDER BY stage.sequence, stage.id)
+        FROM app_workflow_transition_targets target
+        JOIN app_workflow_stage_definitions stage
+          ON stage.id = target.target_stage_id
+        WHERE target.transition_id = transition.id
+      ), '[]'::jsonb) AS "targetStages"
     FROM app_workflow_action_definitions action
     LEFT JOIN app_workflow_transition_definitions transition
       ON transition.version_id = ${input.workflowVersionId}::uuid
       AND transition.from_stage_id = action.stage_id
       AND transition.action_key = action.stable_key
-    LEFT JOIN app_workflow_stage_definitions target
-      ON target.id = transition.to_stage_id
     WHERE action.stage_id = ${input.sourceStageDefinitionId}::uuid
       AND action.stable_key = ${input.actionKey}
     ORDER BY transition.priority ASC, transition.id ASC
@@ -96,8 +124,7 @@ export async function loadSequentialTransitions(
       condition: row.condition,
       id: row.id,
       priority: row.priority,
-      targetStageDefinitionId: row.targetStageDefinitionId,
-      targetStageName: row.targetStageName,
+      targetStages: row.targetStages ?? [],
       terminalOutcome: row.terminalOutcome,
     })),
   };
@@ -124,7 +151,6 @@ export async function recordTransitionExecution(
     >,
     correlationId: input.correlationId,
     sourceStageInstanceId: input.sourceStageInstanceId,
-    targetStageDefinitionId: input.transition.targetStageDefinitionId,
     transitionDefinitionId: input.transition.id,
     workflowInstanceId: input.workflowInstanceId,
   }).returning({ id: transitionExecutions.id });
@@ -136,10 +162,19 @@ export async function completeTerminalWorkflow(
   workflowInstanceId: string,
   completedAt: Date,
 ) {
-  await transaction.update(workflowInstances).set({
-    completedAt,
-    status: "COMPLETED",
-  }).where(eq(workflowInstances.id, workflowInstanceId));
+  const result = await transaction.execute(sql`
+    UPDATE app_workflow_instances workflow
+    SET completed_at = ${completedAt}, status = 'COMPLETED'
+    WHERE workflow.id = ${workflowInstanceId}::uuid
+      AND NOT EXISTS (
+        SELECT 1
+        FROM app_workflow_stage_instances stage
+        WHERE stage.workflow_instance_id = workflow.id
+          AND stage.status = 'ACTIVE'
+      )
+    RETURNING workflow.id
+  `);
+  return result.rows.length > 0;
 }
 
 export async function finalizeTransitionExecution(
@@ -151,21 +186,29 @@ export async function finalizeTransitionExecution(
     executionId: string;
     outcome: Exclude<TransitionExecutionOutcome, "RECORDED">;
     sourceStageInstanceId: string;
-    targetStageInstanceId: string | null;
+    targets: TransitionTargetOutcome[];
     transition: SequentialTransition;
     workflowInstanceId: string;
   },
 ) {
   await transaction.update(transitionExecutions).set({
     outcome: input.outcome,
-    targetStageInstanceId: input.targetStageInstanceId,
   }).where(eq(transitionExecutions.id, input.executionId));
+  if (input.targets.length) {
+    await transaction.insert(transitionExecutionTargets).values(
+      input.targets.map((target) => ({
+        executionId: input.executionId,
+        outcome: target.outcome,
+        targetStageDefinitionId: target.targetStageDefinitionId,
+        targetStageInstanceId: target.targetStageInstanceId,
+      })),
+    );
+  }
   const payload = {
     actionKey: input.actionKey,
     outcome: input.outcome,
     sourceStageInstanceId: input.sourceStageInstanceId,
-    targetStageDefinitionId: input.transition.targetStageDefinitionId,
-    targetStageInstanceId: input.targetStageInstanceId,
+    targets: input.targets,
     terminalOutcome: input.transition.terminalOutcome,
     transitionDefinitionId: input.transition.id,
   };

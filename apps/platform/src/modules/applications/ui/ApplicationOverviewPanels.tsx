@@ -1,6 +1,6 @@
 import { FileText } from "lucide-react";
 
-import { GeneralButtonLink } from "@/components/ui/button";
+import { GeneralButtonAnchor } from "@/components/ui/button";
 import type { ApplicationDetailModel } from "./ApplicationDetailTypes";
 
 export function ApplicationSectionSummary({
@@ -120,13 +120,14 @@ export function ApplicationDocumentsPanel({
                 </div>
               </div>
               {document.href ? (
-                <GeneralButtonLink
+                <GeneralButtonAnchor
+                  download
                   href={document.href}
                   size="compact"
                   variant="outline"
                 >
                   View file
-                </GeneralButtonLink>
+                </GeneralButtonAnchor>
               ) : (
                 <span className="text-xs text-brand-navy/60">
                   Processing

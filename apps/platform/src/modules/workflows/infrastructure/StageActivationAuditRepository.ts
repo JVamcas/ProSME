@@ -24,6 +24,7 @@ export async function appendStageActivationAudit(
     actorId: string;
     correlationId: string;
     iterationNumber: number;
+    joinDriven: boolean;
     stageDefinitionId: string;
     stageId: string;
     stageKey: string;
@@ -34,6 +35,7 @@ export async function appendStageActivationAudit(
 ) {
   const payload = {
     iterationNumber: input.iterationNumber,
+    joinDriven: input.joinDriven,
     stageDefinitionId: input.stageDefinitionId,
     stageKey: input.stageKey,
     taskIds: input.tasks.map((task) => task.id),

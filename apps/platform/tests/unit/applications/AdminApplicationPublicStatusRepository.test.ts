@@ -91,6 +91,9 @@ describe("admin application public status read model", () => {
 
     const query = new PgDialect().sqlToQuery(execute.mock.calls[0]![0]);
     expect(query.sql).toContain("business.id = application.business_id");
+    expect(query.sql).toMatch(
+      /COALESCE\(\s*NULLIF\(business\.trading_name, ''\),\s*NULLIF\(business\.legal_name, ''\)\s*\)/,
+    );
     expect(query.sql).not.toContain("business_section ->> \businessId");
   });
 });

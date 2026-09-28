@@ -26,6 +26,8 @@ export function createStandardTechnicalAssessmentStage(
       "ESCALATE",
       5,
       {
+        blockUntilResolved: true,
+        responsibility: "SHARE",
         targetId: dependencies.roleIds.panel_moderator,
         targetType: "ROLE",
         trigger: "MANUAL",
@@ -77,7 +79,7 @@ export function createStandardTechnicalAssessmentStage(
       label: "Detailed assessment",
       status: "UNDER_REVIEW",
     },
-    repeatable: false,
+    repeatable: true,
     scoring: {
       aggregation: "WEIGHTED_AVERAGE",
       taskStableKey: "TECHNICAL_REVIEW",

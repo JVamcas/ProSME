@@ -4,7 +4,7 @@ export type WorkflowTransitionDefinition = {
   id?: string;
   sourceStageKey: string;
   actionKey: string;
-  targetStageKey?: string | null;
+  targetStageKeys: string[];
   terminalOutcome?: string | null;
   priority: number;
   condition: ConditionGroup | null;

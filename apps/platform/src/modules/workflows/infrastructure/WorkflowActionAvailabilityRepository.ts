@@ -26,6 +26,12 @@ export type WorkflowActionAvailabilitySource = {
   actions: StoredWorkflowAction[];
   stage: StageCompletionTarget & { rowVersion: number };
   task: {
+    activeDeferral?: boolean;
+    activeEscalation?: boolean;
+    activeEscalationBlocks?: boolean;
+    activeEscalationTargetActor?: boolean;
+    activeHold?: boolean;
+    activeReferral?: boolean;
     assignedToActor: boolean;
     definitionId: string;
     eligibilityReady: boolean;
@@ -58,6 +64,23 @@ async function readStage(
   const database = getDatabase();
   const [row] = await database
     .select({
+      activeDeferral: sql<boolean>`EXISTS (
+        SELECT 1 FROM app_workflow_deferrals deferral
+        WHERE deferral.stage_instance_id = ${stageInstances.id}
+          AND deferral.status = 'ACTIVE'
+      )`,
+      activeDeferralReady: sql<boolean>`EXISTS (
+        SELECT 1 FROM app_workflow_deferrals deferral
+        WHERE deferral.stage_instance_id = ${stageInstances.id}
+          AND deferral.status = 'ACTIVE'
+          AND deferral.continuation = 'RESUME_ON_DATE'
+          AND deferral.resume_at <= CURRENT_TIMESTAMP
+      )`,
+      activeHold: sql<boolean>`EXISTS (
+        SELECT 1 FROM app_workflow_holds hold
+        WHERE hold.stage_instance_id = ${stageInstances.id}
+          AND hold.status = 'ACTIVE'
+      )`,
       application: {
         business: applications.businessSection,
         declarationAcceptance: applications.declarationAcceptance,
@@ -138,7 +161,22 @@ async function readStage(
         sql`(NOT ${workflowStageDefinitions.coiGated} OR EXISTS (
         SELECT 1 FROM app_workflow_tasks assignment
         WHERE assignment.stage_instance_id = ${stageInstances.id}
-          AND assignment.assigned_user_id = ${actorId}::uuid
+          AND (
+            assignment.assigned_user_id = ${actorId}::uuid
+            OR EXISTS (
+              SELECT 1 FROM app_workflow_escalations escalation
+              WHERE escalation.task_id = assignment.id
+                AND escalation.status = 'ACTIVE'
+                AND (
+                  escalation.target_user_id = ${actorId}::uuid
+                  OR EXISTS (
+                    SELECT 1 FROM app_user_roles escalation_role
+                    WHERE escalation_role.user_id = ${actorId}::uuid
+                      AND escalation_role.role_id = escalation.target_role_id
+                  )
+                )
+            )
+          )
           AND assignment.status <> 'CANCELLED'
           AND app_workflow_task_coi_cleared(assignment.id, ${actorId}::uuid)
       ))`,
@@ -173,6 +211,46 @@ async function readTask(
 ) {
   const [task] = await getDatabase()
     .select({
+      activeDeferral: sql<boolean>`EXISTS (
+        SELECT 1 FROM app_workflow_deferrals deferral
+        WHERE deferral.stage_instance_id = ${workflowTasks.stageInstanceId}
+          AND deferral.status = 'ACTIVE'
+      )`,
+      activeEscalation: sql<boolean>`EXISTS (
+        SELECT 1 FROM app_workflow_escalations escalation
+        WHERE escalation.task_id = ${workflowTasks.id}
+          AND escalation.status = 'ACTIVE'
+      )`,
+      activeEscalationBlocks: sql<boolean>`EXISTS (
+        SELECT 1 FROM app_workflow_escalations escalation
+        WHERE escalation.task_id = ${workflowTasks.id}
+          AND escalation.status = 'ACTIVE'
+          AND escalation.block_until_resolved
+      )`,
+      activeEscalationTargetActor: sql<boolean>`EXISTS (
+        SELECT 1 FROM app_workflow_escalations escalation
+        WHERE escalation.task_id = ${workflowTasks.id}
+          AND escalation.status = 'ACTIVE'
+          AND (
+            escalation.target_user_id = ${actorId}::uuid
+            OR EXISTS (
+              SELECT 1 FROM app_user_roles escalation_role
+              WHERE escalation_role.user_id = ${actorId}::uuid
+                AND escalation_role.role_id = escalation.target_role_id
+            )
+          )
+      )`,
+      activeHold: sql<boolean>`EXISTS (
+        SELECT 1 FROM app_workflow_holds hold
+        WHERE hold.stage_instance_id = ${workflowTasks.stageInstanceId}
+          AND hold.status = 'ACTIVE'
+      )`,
+      activeReferral: sql<boolean>`EXISTS (
+        SELECT 1 FROM app_workflow_referrals referral
+        WHERE referral.source_task_id = ${workflowTasks.id}
+          AND referral.status = 'ACTIVE'
+          AND referral.source_task_behavior = 'BLOCKED'
+      )`,
       assignedToActor: sql<boolean>`(
         ${workflowTasks.assignedUserId} = ${actorId}::uuid
         OR (
@@ -182,6 +260,18 @@ async function readTask(
             WHERE actor_role.user_id = ${actorId}::uuid
               AND actor_role.role_id = ${workflowTasks.assignedRoleId}
           )
+        ) OR EXISTS (
+          SELECT 1 FROM app_workflow_escalations escalation
+          WHERE escalation.task_id = ${workflowTasks.id}
+            AND escalation.status = 'ACTIVE'
+            AND (
+              escalation.target_user_id = ${actorId}::uuid
+              OR EXISTS (
+                SELECT 1 FROM app_user_roles escalation_role
+                WHERE escalation_role.user_id = ${actorId}::uuid
+                  AND escalation_role.role_id = escalation.target_role_id
+              )
+            )
         )
       )`,
       definitionId: workflowTasks.workflowTaskDefinitionId,

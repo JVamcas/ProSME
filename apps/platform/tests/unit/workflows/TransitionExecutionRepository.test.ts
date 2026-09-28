@@ -4,6 +4,7 @@ vi.mock("server-only", () => ({}));
 
 import {
   transitionExecutions,
+  transitionExecutionTargets,
   workflowAuditEntries,
   workflowEvents,
 } from "@/db/schema";
@@ -17,8 +18,10 @@ const transition = {
   condition: null,
   id: "10000000-0000-4000-8000-000000000001",
   priority: 1,
-  targetStageDefinitionId: "20000000-0000-4000-8000-000000000001",
-  targetStageName: "Technical assessment",
+  targetStages: [{
+    id: "20000000-0000-4000-8000-000000000001",
+    name: "Technical assessment",
+  }],
   terminalOutcome: null,
 };
 
@@ -77,14 +80,22 @@ describe("transition execution repository", () => {
       ...common,
       executionId: execution.id,
       outcome: "TARGET_ACTIVATED",
-      targetStageInstanceId: "90000000-0000-4000-8000-000000000001",
+      targets: [{
+        outcome: "ACTIVATED",
+        targetStageDefinitionId: transition.targetStages[0].id,
+        targetStageInstanceId: "90000000-0000-4000-8000-000000000001",
+        targetStageName: transition.targetStages[0].name,
+      }],
     });
 
     expect(set).toHaveBeenCalledWith({
       outcome: "TARGET_ACTIVATED",
-      targetStageInstanceId: "90000000-0000-4000-8000-000000000001",
     });
     expect(inserted).toEqual(expect.arrayContaining([
+      {
+        table: transitionExecutionTargets,
+        value: [expect.objectContaining({ outcome: "ACTIVATED" })],
+      },
       {
         table: workflowEvents,
         value: expect.objectContaining({ eventCode: "TRANSITION_EXECUTED" }),

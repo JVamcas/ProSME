@@ -12,12 +12,14 @@ import {
   workflowDefinitions,
   workflowActionDefinitions,
   workflowStageDefinitions,
+  workflowStageJoinPredecessors,
   workflowStageChecklistDefinitions,
   workflowStageCommentFields,
   workflowStageDocumentRequirements,
   workflowStageScoringConfigurations,
   workflowStageScoringCriteria,
   workflowTransitionDefinitions,
+  workflowTransitionTargets,
 } from "@/db/schema";
 import type { WorkflowGraphInput } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import { insertWorkflowGraph } from "./WorkflowGraphWriteRepository";
@@ -127,6 +129,12 @@ export async function replaceWorkflowDraft(input: {
       await transaction
         .delete(stageTaskActionBindings)
         .where(inArray(stageTaskActionBindings.stageId, stageIds));
+      await transaction
+        .delete(workflowTransitionTargets)
+        .where(inArray(workflowTransitionTargets.targetStageId, stageIds));
+      await transaction
+        .delete(workflowStageJoinPredecessors)
+        .where(inArray(workflowStageJoinPredecessors.stageId, stageIds));
     }
     await transaction
       .delete(workflowTransitionDefinitions)

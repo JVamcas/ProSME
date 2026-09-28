@@ -23,6 +23,9 @@ export function validateWorkflowTransitions(
   graph.transitions.forEach((transition, index) => {
     const path = `transitions.${index}`;
     const source = stages.get(transition.sourceStageKey);
+    const action = source?.actions.find(
+      (candidate) => candidate.stableKey === transition.actionKey,
+    );
     if (!source) {
       errors.push(
         issue(
@@ -42,15 +45,38 @@ export function validateWorkflowTransitions(
         ),
       );
     }
+    transition.targetStageKeys.forEach((targetStageKey, targetIndex) => {
+      const target = stages.get(targetStageKey);
+      if (!target) {
+        errors.push(
+          issue(
+            "INVALID_TRANSITION_TARGET",
+            "The transition target stage does not exist.",
+            `${path}.targetStageKeys.${targetIndex}`,
+          ),
+        );
+      } else if (
+        (action?.actionType === "RETURN" || action?.actionType === "REFER")
+        && !target.repeatable
+      ) {
+        errors.push(
+          issue(
+            "NON_REPEATABLE_SEMANTIC_TARGET",
+            "Return and referral targets must be repeatable stages.",
+            `${path}.targetStageKeys.${targetIndex}`,
+          ),
+        );
+      }
+    });
     if (
-      transition.targetStageKey &&
-      !stages.has(transition.targetStageKey)
+      (action?.actionType === "RETURN" || action?.actionType === "REFER")
+      && transition.targetStageKeys.length !== 1
     ) {
       errors.push(
         issue(
-          "INVALID_TRANSITION_TARGET",
-          "The transition target stage does not exist.",
-          `${path}.targetStageKey`,
+          "INVALID_SEMANTIC_TARGET_COUNT",
+          "Return and referral transitions require exactly one target stage.",
+          `${path}.targetStageKeys`,
         ),
       );
     }
@@ -69,6 +95,43 @@ export function validateWorkflowTransitions(
       );
     }
     priorities.add(priorityKey);
+  });
+  graph.stages.forEach((stage, stageIndex) => {
+    if (stage.joinPredecessorStageKeys.length === 1) {
+      errors.push(issue(
+        "INVALID_JOIN_PREDECESSOR_COUNT",
+        "A join requires at least two predecessor stages.",
+        `stages.${stageIndex}.joinPredecessorStageKeys`,
+      ));
+    }
+    stage.joinPredecessorStageKeys.forEach((predecessorKey, predecessorIndex) => {
+      if (!stages.has(predecessorKey) || predecessorKey === stage.stableKey) {
+        errors.push(issue(
+          "INVALID_JOIN_PREDECESSOR",
+          "Join predecessors must reference another stage in this workflow.",
+          `stages.${stageIndex}.joinPredecessorStageKeys.${predecessorIndex}`,
+        ));
+      }
+      const hasIncomingTransition = graph.transitions.some(
+        (transition) =>
+          transition.sourceStageKey === predecessorKey &&
+          transition.targetStageKeys.includes(stage.stableKey),
+      );
+      if (!hasIncomingTransition) {
+        errors.push(issue(
+          "MISSING_JOIN_TRANSITION",
+          "Every join predecessor must have a transition to the join stage.",
+          `stages.${stageIndex}.joinPredecessorStageKeys.${predecessorIndex}`,
+        ));
+      }
+    });
+    if (new Set(stage.joinPredecessorStageKeys).size !== stage.joinPredecessorStageKeys.length) {
+      errors.push(issue(
+        "DUPLICATE_JOIN_PREDECESSOR",
+        "Join predecessors must be unique.",
+        `stages.${stageIndex}.joinPredecessorStageKeys`,
+      ));
+    }
   });
   return errors;
 }

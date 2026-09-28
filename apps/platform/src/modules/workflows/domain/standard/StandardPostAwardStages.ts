@@ -1,12 +1,10 @@
 import type { WorkflowStageInput } from "../definitions/WorkflowTypes";
-import { stableKeyFromLabel } from "../WorkflowStableKey";
 import type { StandardWorkflowDependencies } from "./StandardWorkflowTypes";
 import {
   approve,
   checklist,
   documentRequirement,
   hold,
-  refer,
   reject,
   returnAction,
   stage,
@@ -40,7 +38,7 @@ function contracting(dependencies: StandardWorkflowDependencies) {
     approve("EXECUTE_AGREEMENT", "Execute", 1),
     returnAction("RETURN_NEGOTIATION", "Return for negotiation", 2),
     reject("LAPSE_AWARD", "Lapse award on non-acceptance", 3),
-    refer("REALLOCATE_RESERVE", "Reallocate to reserve list", 4),
+    approve("REALLOCATE_RESERVE", "Reallocate to reserve list", 4),
   ];
   return stage({
     actions,
@@ -93,7 +91,7 @@ function disbursement(dependencies: StandardWorkflowDependencies) {
     hold("WITHHOLD_REPORTS", "Withhold pending outstanding reports", 3, [
       "OUTSTANDING_REPORTS",
     ]),
-    refer("RECOVER_FUNDS", "Recover funds", 4),
+    approve("RECOVER_FUNDS", "Recover funds", 4),
     approve("NEXT_TRANCHE", "Create next tranche", 5),
   ];
   return stage({
@@ -267,26 +265,13 @@ function closeOut(dependencies: StandardWorkflowDependencies) {
   const actions = [
     approve("CLOSE", "Close", 1),
     approve("CLOSE_QUALIFIED", "Close with qualification", 2),
-    refer(
+    approve(
       "REFER_RECOVERY_INVESTIGATION",
       "Refer for recovery or investigation",
       3,
     ),
     reject("RESTRICT_FUTURE_FUNDING", "Restrict future funding", 4),
   ];
-  const criteria = [
-    "Relevance",
-    "Effectiveness",
-    "Efficiency",
-    "Impact",
-    "Sustainability",
-  ].map((label) => ({
-    code: label.toUpperCase(),
-    commentRequired: true,
-    label,
-    maximumScore: 5,
-    weight: 20,
-  }));
   return stage({
     actions,
     checklistItems: [
@@ -333,26 +318,14 @@ function closeOut(dependencies: StandardWorkflowDependencies) {
       status: "CLOSED",
     },
     repeatable: false,
-    scoring: {
-      aggregation: "WEIGHTED_AVERAGE",
-      taskStableKey: "EVALUATION_CLOSE_OUT_REVIEW",
-      criteria: criteria.map((criterion) => ({
-        criterion: criterion.label,
-        stableKey: stableKeyFromLabel(criterion.label, "SCORE"),
-        description: "Results-framework close-out assessment.",
-        mandatoryComment: true,
-        scaleMaximum: 5,
-        scaleMinimum: 1,
-        weight: criterion.weight,
-      })),
-    },
+    scoring: null,
     slaHours: 240,
     stableKey: "EVALUATION_CLOSE_OUT",
     tasks: [
       task(dependencies, {
         actionKeys: actions.map((item) => item.stableKey),
         taskType: "STAGE_DECISION",
-        config: { criteria },
+        config: {},
         description: "Assess results and record the close-out recommendation.",
         displayOrder: 1,
         formCode: "EVALUATION_CLOSE_OUT_REVIEW",

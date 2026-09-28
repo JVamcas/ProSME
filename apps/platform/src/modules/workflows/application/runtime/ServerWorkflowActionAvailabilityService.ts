@@ -55,6 +55,9 @@ function policyTarget(
   action: StoredWorkflowAction,
 ) {
   return {
+    activeDeferral: source.stage.activeDeferral,
+    activeDeferralReady: source.stage.activeDeferralReady,
+    activeHold: source.stage.activeHold,
     action,
     stageStatus: source.stage.status,
     task: source.task,

@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { resolveUserFromHeaders } from "@/auth/authorization/current-user";
+import { documentDownloadResponse } from "@/lib/api/DocumentDownloadResponse";
 import {
   createCorrelationId,
   portalRouteError,
@@ -23,12 +24,12 @@ export async function GET(request: Request, route: DownloadRouteContext) {
       resolveUserFromHeaders(request.headers),
       route.params.then((value) => routeParametersSchema.parse(value)),
     ]);
-    const url = await createOwnApplicationDocumentDownload(
+    const download = await createOwnApplicationDocumentDownload(
       user,
       parameters.id,
       parameters.versionId,
     );
-    return Response.redirect(url, 303);
+    return documentDownloadResponse(download);
   } catch (error) {
     return portalRouteError(error, correlationId);
   }

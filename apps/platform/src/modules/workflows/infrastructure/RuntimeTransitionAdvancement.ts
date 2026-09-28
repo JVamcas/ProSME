@@ -7,12 +7,12 @@ export function readSequentialTransitionAdvancement(
   workflowStatus: "ACTIVE" | "COMPLETED";
 } | null {
   if (result.kind === "source_stage_not_completed") return null;
-  if (result.kind === "target_entry_condition_failed") {
-    return { nextStageName: null, workflowStatus: "ACTIVE" };
-  }
   if (result.kind === "transitioned") {
     return {
-      nextStageName: result.targetStageName,
+      nextStageName: result.targets
+        .filter((target) => target.targetStageInstanceId)
+        .map((target) => target.targetStageName)
+        .join(", ") || null,
       workflowStatus: result.workflowStatus,
     };
   }
@@ -21,7 +21,10 @@ export function readSequentialTransitionAdvancement(
   }
   if (result.kind === "already_executed") {
     return {
-      nextStageName: result.execution.targetStageName,
+      nextStageName: result.execution.targets
+        .filter((target) => target.targetStageInstanceId)
+        .map((target) => target.targetStageName)
+        .join(", ") || null,
       workflowStatus: result.execution.workflowStatus === "COMPLETED"
         ? "COMPLETED"
         : "ACTIVE",

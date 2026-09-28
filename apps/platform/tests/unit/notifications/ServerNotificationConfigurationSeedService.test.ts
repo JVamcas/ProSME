@@ -26,7 +26,7 @@ beforeEach(() => {
 });
 
 describe("ServerNotificationConfigurationSeedService", () => {
-  it("uses the two compatible initial event rules", async () => {
+  it("seeds an editable default rule for every configured event", async () => {
     await expect(seedInitialNotificationConfiguration()).resolves.toEqual({
       createdCatalogKeys: [],
       createdChannel: false,
@@ -44,6 +44,22 @@ describe("ServerNotificationConfigurationSeedService", () => {
         }),
         expect.objectContaining({
           key: "workflow.task.assigned",
+          recipientType: "ASSIGNED_USER",
+        }),
+        expect.objectContaining({
+          key: "workflow.information-request.created",
+          recipientType: "APPLICATION_OWNER",
+        }),
+        expect.objectContaining({
+          key: "workflow.information-request.responded",
+          recipientType: "ASSIGNED_USER",
+        }),
+        expect.objectContaining({
+          key: "workflow.information-request.closed",
+          recipientType: "APPLICATION_OWNER",
+        }),
+        expect.objectContaining({
+          key: "workflow.information-request.expired",
           recipientType: "ASSIGNED_USER",
         }),
       ]),

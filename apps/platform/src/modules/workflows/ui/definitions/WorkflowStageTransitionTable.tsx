@@ -45,11 +45,13 @@ function transitionColumns(
         if (row.original.terminalOutcome) {
           return `Outcome: ${row.original.terminalOutcome}`;
         }
-        return (
-          editor.graph.stages.find(
-            (item) => item.stableKey === row.original.targetStageKey,
-          )?.name ?? row.original.targetStageKey
-        );
+        return row.original.targetStageKeys
+          .map((targetStageKey) =>
+            editor.graph.stages.find(
+              (item) => item.stableKey === targetStageKey,
+            )?.name ?? targetStageKey
+          )
+          .join(", ");
       },
     },
     { accessorKey: "priority", header: "Priority" },

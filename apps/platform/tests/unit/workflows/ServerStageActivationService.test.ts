@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 vi.mock("@/modules/workflows/infrastructure/StageActivationRepository", () => ({
-  findStageInstanceStatus: vi.fn(),
   findStageIteration: vi.fn(),
+  loadIncompleteJoinPredecessors: vi.fn(),
   loadPriorStageContext: vi.fn(),
   loadStageActivationTasks: vi.fn(),
   lockStageActivationTarget: vi.fn(),
@@ -21,8 +21,8 @@ import { activateStageInTransaction } from "@/modules/workflows/application/runt
 import { captureWorkflowTaskAssignmentNotification } from "@/modules/workflows/application/runtime/ServerWorkflowTaskAssignmentNotificationService";
 import { basicOperators } from "@/modules/conditions/engine/BasicOperators";
 import {
-  findStageInstanceStatus,
   findStageIteration,
+  loadIncompleteJoinPredecessors,
   loadPriorStageContext,
   loadStageActivationTasks,
   lockStageActivationTarget,
@@ -61,11 +61,11 @@ const target = {
   application: { requestedAmount: 250_000 },
   applicationId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
   applicationReference: "SME-2026-001",
-  currentStageInstanceId: null,
   eligibility: { eligible: true, outcome: "ELIGIBLE" },
   entryCondition: passingCondition,
   fundingCall: { maximumAmount: 500_000 },
   fundingOpportunityTitle: "Growth Fund",
+  joinPredecessorStageKeys: [],
   repeatable: false,
   slaHours: 24,
   stageDefinitionId: input.stageDefinitionId,
@@ -94,7 +94,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(lockStageActivationTarget).mockResolvedValue(target);
   vi.mocked(findStageIteration).mockResolvedValue(null);
-  vi.mocked(findStageInstanceStatus).mockResolvedValue("ACTIVE");
+  vi.mocked(loadIncompleteJoinPredecessors).mockResolvedValue([]);
   vi.mocked(loadPriorStageContext).mockResolvedValue([]);
   vi.mocked(loadStageActivationTasks).mockResolvedValue([taskDefinition]);
   vi.mocked(persistStageActivation).mockResolvedValue({
@@ -169,28 +169,31 @@ describe("server stage activation service", () => {
     expect(persistStageActivation).not.toHaveBeenCalled();
   });
 
-  it("rejects concurrent activation while another stage is current", async () => {
-    vi.mocked(lockStageActivationTarget).mockResolvedValue({
-      ...target,
-      currentStageInstanceId: "99999999-9999-4999-8999-999999999999",
-    });
-
-    await expect(
-      activateStageInTransaction({} as never, input),
-    ).resolves.toEqual({ kind: "stage_conflict" });
-    expect(persistStageActivation).not.toHaveBeenCalled();
-  });
-
-  it("activates after the previously current stage is completed", async () => {
-    vi.mocked(lockStageActivationTarget).mockResolvedValue({
-      ...target,
-      currentStageInstanceId: "99999999-9999-4999-8999-999999999999",
-    });
-    vi.mocked(findStageInstanceStatus).mockResolvedValue("COMPLETED");
-
+  it("allows activation while another branch remains active", async () => {
     await expect(
       activateStageInTransaction({} as never, input),
     ).resolves.toMatchObject({ kind: "activated" });
     expect(persistStageActivation).toHaveBeenCalledOnce();
+  });
+
+  it("keeps a join inactive while a predecessor is incomplete", async () => {
+    vi.mocked(lockStageActivationTarget).mockResolvedValue({
+      ...target,
+      joinPredecessorStageKeys: [
+        "TECHNICAL_ASSESSMENT",
+        "FINANCIAL_REVIEW",
+      ],
+    });
+    vi.mocked(loadIncompleteJoinPredecessors).mockResolvedValue([
+      "FINANCIAL_REVIEW",
+    ]);
+
+    await expect(
+      activateStageInTransaction({} as never, input),
+    ).resolves.toEqual({
+      incompletePredecessorStageKeys: ["FINANCIAL_REVIEW"],
+      kind: "join_pending",
+    });
+    expect(persistStageActivation).not.toHaveBeenCalled();
   });
 });
