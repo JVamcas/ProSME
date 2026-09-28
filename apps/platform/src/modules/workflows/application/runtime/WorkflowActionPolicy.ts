@@ -18,6 +18,11 @@ const decisionActionTypes = new Set<WorkflowActionDefinition["actionType"]>([
 ]);
 
 type ActionPolicyTask = {
+  activeDeferral?: boolean;
+  activeDeferralReady?: boolean;
+  activeEscalation?: boolean;
+  activeEscalationBlocks?: boolean;
+  activeEscalationTargetActor?: boolean;
   activeHold?: boolean;
   activeReferral?: boolean;
   assignedToActor: boolean;
@@ -33,6 +38,8 @@ type PolicyAction = Pick<
 >;
 
 export type WorkflowActionPolicyTarget = {
+  activeDeferral?: boolean;
+  activeHold?: boolean;
   action: PolicyAction;
   stageStatus: string;
   task: ActionPolicyTask;
@@ -140,12 +147,33 @@ export function evaluateWorkflowActionPolicy(
       "This action is not available in the current state.",
     );
   }
-  if (Boolean(target.task?.activeHold) !== resuming) {
+  const resumableControl = Boolean(
+    target.activeHold
+    || target.activeDeferral
+    || target.task?.activeHold
+    || target.task?.activeDeferral,
+  );
+  if (resumableControl !== resuming) {
     return unavailable(
       "INVALID_STATE",
       resuming
-        ? "This work does not have an active hold."
-        : "This work is currently on hold.",
+        ? "This work does not have an active hold or deferral."
+        : "This work is currently paused.",
+    );
+  }
+  if (resuming && target.activeDeferral && !target.activeDeferralReady) {
+    return unavailable(
+      "INVALID_STATE",
+      "This deferral is not yet eligible to resume.",
+    );
+  }
+  if (
+    (target.activeDeferral || target.task?.activeDeferral)
+    && !["RESUME", "WITHDRAW"].includes(target.action.actionType)
+  ) {
+    return unavailable(
+      "INVALID_STATE",
+      "This work is deferred until its configured continuation is available.",
     );
   }
   if (
@@ -155,6 +183,22 @@ export function evaluateWorkflowActionPolicy(
     return unavailable(
       "INVALID_STATE",
       "This work is blocked until its referral is completed.",
+    );
+  }
+  if (target.task?.activeEscalation && target.action.actionType === "ESCALATE") {
+    return unavailable(
+      "INVALID_STATE",
+      "This task already has an active escalation.",
+    );
+  }
+  if (
+    target.task?.activeEscalationBlocks
+    && !target.task.activeEscalationTargetActor
+    && target.action.actionType !== "WITHDRAW"
+  ) {
+    return unavailable(
+      "CONTEXT_MISMATCH",
+      "This task is blocked pending escalation resolution.",
     );
   }
   const permission = requiredWorkflowActionPermission(

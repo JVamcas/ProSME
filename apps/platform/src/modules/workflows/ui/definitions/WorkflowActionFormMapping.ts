@@ -50,6 +50,8 @@ export function workflowActionFormDefaults(
     escalationTargetType: "ROLE",
     escalationTargetId: "",
     escalationTrigger: "MANUAL",
+    escalationResponsibility: "SHARE",
+    escalationBlocksWork: true,
     reviewDateRequired: true,
     allowedStageKeys: "",
     resubmissionRule: "NOT_ALLOWED",
@@ -113,6 +115,8 @@ export function workflowActionFormDefaults(
         escalationTargetType: action.configuration.targetType,
         escalationTargetId: action.configuration.targetId,
         escalationTrigger: action.configuration.trigger,
+        escalationResponsibility: action.configuration.responsibility,
+        escalationBlocksWork: action.configuration.blockUntilResolved,
       };
     case "PUT_ON_HOLD":
       return {
@@ -186,6 +190,8 @@ function configuration(values: WorkflowActionFormValues) {
       };
     case "ESCALATE":
       return {
+        blockUntilResolved: values.escalationBlocksWork,
+        responsibility: values.escalationResponsibility,
         targetType: values.escalationTargetType,
         targetId: values.escalationTargetId,
         trigger: values.escalationTrigger,
@@ -205,8 +211,13 @@ function configuration(values: WorkflowActionFormValues) {
       };
     case "DEFER":
       return values.deferTargetType === "DATE"
-        ? { targetType: "DATE" as const, targetDate: values.targetDate }
+        ? {
+            continuation: "RESUME_ON_DATE" as const,
+            targetType: "DATE" as const,
+            targetDate: values.targetDate,
+          }
         : {
+            continuation: "EXPLICIT_TRANSFER" as const,
             targetType: "FUNDING_CALL" as const,
             targetCallKey: values.targetCallKey,
           };

@@ -14,7 +14,7 @@ import type { WorkflowActionExecutionTransaction } from "./WorkflowActionExecuti
 
 type ControlTransaction = WorkflowActionExecutionTransaction;
 
-async function appendControlRecords(
+export async function appendControlRecords(
   transaction: ControlTransaction,
   input: {
     action: string;

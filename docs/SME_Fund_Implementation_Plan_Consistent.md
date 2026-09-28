@@ -2639,7 +2639,7 @@ an authorization bypass.
 
 ## 8.9 Defer
 
-**Implementation status:** Not implemented.
+**Implementation status:** Implemented.
 
 ### Goal
 
@@ -2676,7 +2676,7 @@ continuation path.
 
 ## 8.10 Escalate
 
-**Implementation status:** Not implemented.
+**Implementation status:** Implemented.
 
 ### Goal
 

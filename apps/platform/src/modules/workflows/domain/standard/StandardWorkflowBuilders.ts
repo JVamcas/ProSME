@@ -97,6 +97,7 @@ export function returnAction(key: string, label: string, order: number) {
 
 export function deferDate(key: string, label: string, order: number) {
   return action(key, label, "DEFER", order, {
+    continuation: "RESUME_ON_DATE",
     targetDate: "2027-01-15",
     targetType: "DATE",
   });

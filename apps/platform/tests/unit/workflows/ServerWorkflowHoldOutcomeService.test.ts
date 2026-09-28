@@ -28,6 +28,7 @@ vi.mock("@/modules/workflows/infrastructure/WorkflowControlRepository", () => ({
 }));
 
 import { executeConfiguredWorkflowActionOutcome } from "@/modules/workflows/application/runtime/ServerWorkflowActionOutcomeService";
+import type { WorkflowActionExecutionTarget } from "@/modules/workflows/infrastructure/WorkflowActionExecutionRepository";
 import {
   resumeWorkflowHold,
   startWorkflowHold,
@@ -37,7 +38,9 @@ const stageId = "10000000-0000-4000-8000-000000000001";
 const workflowId = "20000000-0000-4000-8000-000000000001";
 const taskId = "30000000-0000-4000-8000-000000000001";
 
-function target(actionType: "PUT_ON_HOLD" | "RESUME") {
+function target(
+  actionType: "PUT_ON_HOLD" | "RESUME",
+): WorkflowActionExecutionTarget {
   return {
     action: {
       actionType,
@@ -83,7 +86,7 @@ function target(actionType: "PUT_ON_HOLD" | "RESUME") {
       rowVersion: 1,
       status: "IN_PROGRESS",
     },
-  };
+  } as WorkflowActionExecutionTarget;
 }
 
 function outcomeInput(actionType: "PUT_ON_HOLD" | "RESUME") {

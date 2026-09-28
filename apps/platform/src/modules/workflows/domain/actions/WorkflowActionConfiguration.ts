@@ -35,6 +35,8 @@ export type ReferConfiguration = {
 };
 
 export type EscalateConfiguration = {
+  blockUntilResolved: boolean;
+  responsibility: "RETAIN" | "SHARE" | "TRANSFER";
   targetType: "ROLE" | "USER";
   targetId: string;
   trigger: "MANUAL" | "SLA_BREACH" | "CONDITION";
@@ -57,10 +59,12 @@ export type WithdrawConfiguration = {
 
 export type DeferConfiguration =
   | {
+      continuation: "RESUME_ON_DATE";
       targetType: "DATE";
       targetDate: string;
     }
   | {
+      continuation: "EXPLICIT_TRANSFER";
       targetType: "FUNDING_CALL";
       targetCallKey: string;
     };

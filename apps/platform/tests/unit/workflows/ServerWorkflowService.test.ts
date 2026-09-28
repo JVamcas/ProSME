@@ -170,6 +170,8 @@ describe("workflow service authorization and lifecycle", () => {
         reasonCodeRequired: false,
         displayOrder: 1,
         configuration: {
+          blockUntilResolved: true,
+          responsibility: "SHARE",
           targetType: "ROLE",
           targetId: "79e20de0-3558-4d63-90a4-8c9f5125df09",
           trigger: "SLA_BREACH",

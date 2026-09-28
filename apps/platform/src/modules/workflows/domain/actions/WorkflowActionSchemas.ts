@@ -113,6 +113,8 @@ export const referConfigurationSchema = z
 
 export const escalateConfigurationSchema = z
   .object({
+    blockUntilResolved: z.boolean(),
+    responsibility: z.enum(["RETAIN", "SHARE", "TRANSFER"]),
     targetType: z.enum(["ROLE", "USER"]),
     targetId: z.string().uuid(),
     trigger: z.enum(["MANUAL", "SLA_BREACH", "CONDITION"]),
@@ -147,12 +149,14 @@ export const deferConfigurationSchema = z.discriminatedUnion("targetType", [
     .object({
       targetType: z.literal("DATE"),
       targetDate: z.iso.date(),
+      continuation: z.literal("RESUME_ON_DATE"),
     })
     .strict(),
   z
     .object({
       targetType: z.literal("FUNDING_CALL"),
       targetCallKey: stableKeySchema,
+      continuation: z.literal("EXPLICIT_TRANSFER"),
     })
     .strict(),
 ]);

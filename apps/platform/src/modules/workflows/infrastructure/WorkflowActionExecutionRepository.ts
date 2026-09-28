@@ -32,6 +32,10 @@ export type WorkflowActionExecutionTarget = {
   action: WorkflowActionDefinition & { id: string };
   stage: StageCompletionTarget & { rowVersion: number };
   task: {
+    activeDeferral?: boolean;
+    activeEscalation?: boolean;
+    activeEscalationBlocks?: boolean;
+    activeEscalationTargetActor?: boolean;
     activeHold?: boolean;
     activeReferral?: boolean;
     assignedToActor: boolean;
@@ -115,6 +119,35 @@ async function lockTask(
 ) {
   const [task] = await transaction
     .select({
+      activeDeferral: sql<boolean>`EXISTS (
+        SELECT 1 FROM app_workflow_deferrals deferral
+        WHERE deferral.stage_instance_id = ${workflowTasks.stageInstanceId}
+          AND deferral.status = 'ACTIVE'
+      )`,
+      activeEscalation: sql<boolean>`EXISTS (
+        SELECT 1 FROM app_workflow_escalations escalation
+        WHERE escalation.task_id = ${workflowTasks.id}
+          AND escalation.status = 'ACTIVE'
+      )`,
+      activeEscalationBlocks: sql<boolean>`EXISTS (
+        SELECT 1 FROM app_workflow_escalations escalation
+        WHERE escalation.task_id = ${workflowTasks.id}
+          AND escalation.status = 'ACTIVE'
+          AND escalation.block_until_resolved
+      )`,
+      activeEscalationTargetActor: sql<boolean>`EXISTS (
+        SELECT 1 FROM app_workflow_escalations escalation
+        WHERE escalation.task_id = ${workflowTasks.id}
+          AND escalation.status = 'ACTIVE'
+          AND (
+            escalation.target_user_id = ${input.actorId}::uuid
+            OR EXISTS (
+              SELECT 1 FROM app_user_roles escalation_role
+              WHERE escalation_role.user_id = ${input.actorId}::uuid
+                AND escalation_role.role_id = escalation.target_role_id
+            )
+          )
+      )`,
       activeHold: sql<boolean>`EXISTS (
         SELECT 1 FROM app_workflow_holds hold
         WHERE hold.stage_instance_id = ${workflowTasks.stageInstanceId}
@@ -135,6 +168,18 @@ async function lockTask(
             WHERE actor_role.user_id = ${input.actorId}::uuid
               AND actor_role.role_id = ${workflowTasks.assignedRoleId}
           )
+        ) OR EXISTS (
+          SELECT 1 FROM app_workflow_escalations escalation
+          WHERE escalation.task_id = ${workflowTasks.id}
+            AND escalation.status = 'ACTIVE'
+            AND (
+              escalation.target_user_id = ${input.actorId}::uuid
+              OR EXISTS (
+                SELECT 1 FROM app_user_roles escalation_role
+                WHERE escalation_role.user_id = ${input.actorId}::uuid
+                  AND escalation_role.role_id = escalation.target_role_id
+              )
+            )
         )
       )`,
       eligibilityReady: workflowEligibilityActionReady,
@@ -189,7 +234,22 @@ export async function lockWorkflowActionExecutionTarget(
     SELECT NOT stage_definition.coi_gated OR EXISTS (
       SELECT 1 FROM app_workflow_tasks assignment
       WHERE assignment.stage_instance_id = ${input.sourceStageInstanceId}::uuid
-        AND assignment.assigned_user_id = ${input.actorId}::uuid
+        AND (
+          assignment.assigned_user_id = ${input.actorId}::uuid
+          OR EXISTS (
+            SELECT 1 FROM app_workflow_escalations escalation
+            WHERE escalation.task_id = assignment.id
+              AND escalation.status = 'ACTIVE'
+              AND (
+                escalation.target_user_id = ${input.actorId}::uuid
+                OR EXISTS (
+                  SELECT 1 FROM app_user_roles escalation_role
+                  WHERE escalation_role.user_id = ${input.actorId}::uuid
+                    AND escalation_role.role_id = escalation.target_role_id
+                )
+              )
+          )
+        )
         AND assignment.status <> 'CANCELLED'
         AND app_workflow_task_coi_cleared(assignment.id, ${input.actorId}::uuid)
     ) AS cleared

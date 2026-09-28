@@ -226,6 +226,9 @@ export function validateActionInputAgainstConfiguration(
         ? "A return reason or comment is required."
         : null;
     case "ESCALATE":
+      if (!input.reasonCode && !input.comment) {
+        return "An escalation reason or comment is required.";
+      }
       return action.configuration.trigger === "MANUAL" ||
         action.configuration.trigger === "CONDITION"
         ? null
@@ -252,6 +255,9 @@ export function validateActionInputAgainstConfiguration(
         ? null
         : "Withdrawal is not configured for this stage.";
     case "DEFER":
+      if (!input.reasonCode && !input.comment) {
+        return "A deferral reason or comment is required.";
+      }
       if (
         input.actionType !== "DEFER" ||
         input.targetType !== action.configuration.targetType

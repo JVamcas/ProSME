@@ -8,6 +8,9 @@ import {
   resumeWorkflowHold,
   startWorkflowHold,
 } from "../../infrastructure/WorkflowControlRepository";
+import {
+  resumeDueWorkflowDeferral,
+} from "../../infrastructure/WorkflowDeferralRepository";
 import { activateStageInTransaction } from "./ServerStageActivationService";
 import { executeSequentialTransitionInTransaction } from "./ServerSequentialTransitionService";
 import {
@@ -18,6 +21,7 @@ import {
   type OutcomeInput,
   workflowTransitionResult,
 } from "./WorkflowActionOutcomeSupport";
+import { executeDeferredEscalationOutcome } from "./ServerWorkflowDeferredEscalationOutcomeService";
 
 async function executeReturnOutcome(
   transaction: WorkflowActionExecutionTransaction,
@@ -248,18 +252,30 @@ async function executeResumeOutcome(
     result,
     terminalOutcome: null,
   });
-  const hold = await resumeWorkflowHold(transaction, {
-    actorId: input.actorId,
-    comment: input.command.input.comment,
-    correlationId: input.command.correlationId,
-    stageInstanceId: input.command.sourceStageInstanceId,
-    taskId: input.target.task?.id ?? null,
-    workflowInstanceId: input.target.stage.workflowInstanceId,
-  });
-  if (!hold) {
+  const resumed = input.target.stage.activeDeferral
+    ? await resumeDueWorkflowDeferral(transaction, {
+        actionExecutionId: execution.executionId,
+        actorId: input.actorId,
+        correlationId: input.command.correlationId,
+        resumedAt: new Date(execution.executedAt),
+        stageInstanceId: input.command.sourceStageInstanceId,
+        taskId: input.target.task?.id ?? null,
+        workflowInstanceId: input.target.stage.workflowInstanceId,
+      })
+    : await resumeWorkflowHold(transaction, {
+        actorId: input.actorId,
+        comment: input.command.input.comment,
+        correlationId: input.command.correlationId,
+        stageInstanceId: input.command.sourceStageInstanceId,
+        taskId: input.target.task?.id ?? null,
+        workflowInstanceId: input.target.stage.workflowInstanceId,
+      });
+  if (!resumed) {
     failWorkflowAction(
       "ACTION_UNAVAILABLE",
-      "There is no active hold to resume.",
+      input.target.stage.activeDeferral
+        ? "This deferral is not yet eligible to resume."
+        : "There is no active hold to resume.",
     );
   }
   return result;
@@ -279,6 +295,9 @@ export function executeWorkflowControlOutcome(
       return executeHoldOutcome(transaction, input, execution);
     case "RESUME":
       return executeResumeOutcome(transaction, input, execution);
+    case "DEFER":
+    case "ESCALATE":
+      return executeDeferredEscalationOutcome(transaction, input, execution);
     default:
       return null;
   }

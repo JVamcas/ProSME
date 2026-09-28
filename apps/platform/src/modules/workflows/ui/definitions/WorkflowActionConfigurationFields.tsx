@@ -124,6 +124,20 @@ function EscalationFields({
         name="escalationTrigger"
         required
       />
+      <FormSelect
+        items={[
+          { label: "Retain current responsibility", value: "RETAIN" },
+          { label: "Share responsibility", value: "SHARE" },
+          { label: "Transfer responsibility", value: "TRANSFER" },
+        ]}
+        label="Responsibility"
+        name="escalationResponsibility"
+        required
+      />
+      <CheckboxField
+        label="Block current assignees until resolved"
+        name="escalationBlocksWork"
+      />
     </>
   );
 }

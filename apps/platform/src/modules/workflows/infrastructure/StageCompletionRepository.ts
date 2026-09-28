@@ -25,6 +25,9 @@ export type StageCompletionTransaction = Parameters<
 >[0];
 
 export type StageCompletionTarget = {
+  activeDeferral?: boolean;
+  activeDeferralReady?: boolean;
+  activeHold?: boolean;
   application: Record<string, unknown>;
   completedAt: Date | null;
   eligibility: Record<string, unknown> | null;
@@ -52,6 +55,23 @@ export async function lockStageCompletionTarget(
 ): Promise<StageCompletionTarget | null> {
   const [row] = await transaction
     .select({
+      activeDeferral: sql<boolean>`EXISTS (
+        SELECT 1 FROM app_workflow_deferrals deferral
+        WHERE deferral.stage_instance_id = ${stageInstances.id}
+          AND deferral.status = 'ACTIVE'
+      )`,
+      activeDeferralReady: sql<boolean>`EXISTS (
+        SELECT 1 FROM app_workflow_deferrals deferral
+        WHERE deferral.stage_instance_id = ${stageInstances.id}
+          AND deferral.status = 'ACTIVE'
+          AND deferral.continuation = 'RESUME_ON_DATE'
+          AND deferral.resume_at <= CURRENT_TIMESTAMP
+      )`,
+      activeHold: sql<boolean>`EXISTS (
+        SELECT 1 FROM app_workflow_holds hold
+        WHERE hold.stage_instance_id = ${stageInstances.id}
+          AND hold.status = 'ACTIVE'
+      )`,
       application: {
         business: applications.businessSection,
         declarationAcceptance: applications.declarationAcceptance,

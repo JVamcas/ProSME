@@ -11,6 +11,7 @@ import {
   type WorkflowActionExecutionTransaction,
 } from "../../infrastructure/WorkflowActionExecutionRepository";
 import { recordWorkflowDecision } from "../../infrastructure/WorkflowDecisionRepository";
+import { resolveActiveWorkflowEscalation } from "../../infrastructure/WorkflowEscalationRepository";
 import { loadSequentialTransitions } from "../../infrastructure/TransitionExecutionRepository";
 import { executeSequentialTransitionInTransaction } from "./ServerSequentialTransitionService";
 import type { WorkflowActionConditionResult } from "./WorkflowActionPolicy";
@@ -158,6 +159,20 @@ export async function persistActionAndDecision(
     taskId: input.target.task?.id ?? null,
     workflowInstanceId: input.target.stage.workflowInstanceId,
   });
+  if (
+    input.target.task
+    && input.target.action.actionType !== "ESCALATE"
+    && input.target.task.activeEscalation
+  ) {
+    await resolveActiveWorkflowEscalation(transaction, {
+      actorId: input.actorId,
+      correlationId: input.command.correlationId,
+      resolutionActionExecutionId: input.executionId,
+      stageInstanceId: input.target.stage.stageInstanceId,
+      taskId: input.target.task.id,
+      workflowInstanceId: input.target.stage.workflowInstanceId,
+    });
+  }
   const outcome = decisionOutcome(input.target.action.actionType);
   if (!input.result.decisionId || !outcome) return;
   await recordWorkflowDecision(transaction, {

@@ -95,6 +95,9 @@ function assertRuntimeIdentityAndVersion(
 
 function policyTarget(target: WorkflowActionExecutionTarget) {
   return {
+    activeDeferral: target.stage.activeDeferral,
+    activeDeferralReady: target.stage.activeDeferralReady,
+    activeHold: target.stage.activeHold,
     action: target.action,
     stageStatus: target.stage.status,
     task: target.task,
@@ -252,7 +255,13 @@ export async function executeWorkflowAction(
       if (!resultingRuntimeVersion) {
         fail("STALE_RUNTIME_VERSION", "The workflow changed. Refresh and try again.");
       }
-      const preservesTask = ["PUT_ON_HOLD", "REFER", "RESUME"].includes(
+      const preservesTask = [
+        "DEFER",
+        "ESCALATE",
+        "PUT_ON_HOLD",
+        "REFER",
+        "RESUME",
+      ].includes(
         target.action.actionType,
       );
       if (target.task && !requestInformation && !preservesTask) {

@@ -51,6 +51,29 @@ function cursorFilter(cursor?: WorkQueueCursor) {
   )`;
 }
 
+function escalationTarget(actorId: string) {
+  return sql`EXISTS (
+    SELECT 1 FROM app_workflow_escalations escalation
+    WHERE escalation.task_id = task.id
+      AND escalation.status = 'ACTIVE'
+      AND (
+        escalation.target_user_id = ${actorId}::uuid
+        OR EXISTS (
+          SELECT 1 FROM app_user_roles escalation_role
+          WHERE escalation_role.user_id = ${actorId}::uuid
+            AND escalation_role.role_id = escalation.target_role_id
+        )
+      )
+  )`;
+}
+
+function routedToActor(actorId: string) {
+  return sql`(
+    task.assigned_user_id = ${actorId}::uuid
+    OR ${escalationTarget(actorId)}
+  )`;
+}
+
 function queueQuery(input: WorkQueueListInput, actorId: string, cursor?: WorkQueueCursor) {
   return sql`
     WITH filtered AS (
@@ -58,17 +81,17 @@ function queueQuery(input: WorkQueueListInput, actorId: string, cursor?: WorkQue
         task.id AS "taskInstanceId",
         definition.code AS "taskDefinitionCode",
         definition.name AS "taskName",
-        CASE WHEN task.assigned_user_id = ${actorId}::uuid
+        CASE WHEN ${routedToActor(actorId)}
           AND app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
           THEN application.id ELSE NULL END AS "applicationId",
-        CASE WHEN task.assigned_user_id = ${actorId}::uuid
+        CASE WHEN ${routedToActor(actorId)}
           AND app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
           THEN application.reference ELSE 'Hidden until COI reviewed' END AS "reference",
-        CASE WHEN task.assigned_user_id = ${actorId}::uuid
+        CASE WHEN ${routedToActor(actorId)}
           AND app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
           THEN NULLIF(COALESCE(business.trading_name, business.legal_name), '')
           ELSE NULL END AS "businessName",
-        CASE WHEN task.assigned_user_id = ${actorId}::uuid
+        CASE WHEN ${routedToActor(actorId)}
           AND app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
           THEN applicant.display_name ELSE 'Hidden until COI reviewed' END AS "applicantName",
         stage_definition.name AS "stageName",
@@ -76,6 +99,18 @@ function queueQuery(input: WorkQueueListInput, actorId: string, cursor?: WorkQue
           SELECT 1 FROM app_workflow_holds hold
           WHERE hold.stage_instance_id = stage.id AND hold.status = 'ACTIVE'
         ) THEN 'On hold. Open the task to review or resume it.'
+          WHEN stage.status = 'BLOCKED' AND EXISTS (
+            SELECT 1 FROM app_workflow_deferrals deferral
+            WHERE deferral.stage_instance_id = stage.id
+              AND deferral.status = 'ACTIVE'
+          ) THEN 'Deferred. Open the task to review its continuation.'
+          WHEN EXISTS (
+            SELECT 1 FROM app_workflow_escalations escalation
+            WHERE escalation.task_id = task.id
+              AND escalation.status = 'ACTIVE'
+              AND escalation.block_until_resolved
+          ) AND NOT ${escalationTarget(actorId)}
+            THEN 'Blocked pending escalation resolution.'
           WHEN definition.task_type = 'STAGE_DECISION' AND EXISTS (
           SELECT 1
           FROM app_workflow_tasks prerequisite
@@ -112,7 +147,7 @@ function queueQuery(input: WorkQueueListInput, actorId: string, cursor?: WorkQue
       WHERE workflow.status = 'ACTIVE'
         AND stage.status IN ('ACTIVE', 'BLOCKED')
         AND task.status IN ${actionableStatuses}
-        AND task.assigned_user_id = ${actorId}::uuid
+        AND ${routedToActor(actorId)}
         AND ${scopeFilter(input.scope)}
         AND ${searchFilter(actorId, input.search)}
     )
