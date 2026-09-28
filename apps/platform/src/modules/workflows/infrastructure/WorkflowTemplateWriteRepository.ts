@@ -48,6 +48,7 @@ async function audit(
 export async function createWorkflowDefinition(input: {
   actorId: string;
   code: string;
+  coiFormVersionId?: string | null;
   correlationId: string;
   description: string;
   graph: WorkflowGraphInput;
@@ -65,6 +66,7 @@ export async function createWorkflowDefinition(input: {
     const [version] = await transaction
       .insert(workflowDefinitionVersions)
       .values({
+        coiFormVersionId: input.coiFormVersionId ?? null,
         createdBy: input.actorId,
         definitionId: definition.id,
         versionNumber: 1,
@@ -190,6 +192,7 @@ export async function replaceWorkflowDraft(input: {
 
 export async function cloneWorkflowVersion(input: {
   actorId: string;
+  coiFormVersionId?: string | null;
   correlationId: string;
   definitionId: string;
   graph: WorkflowGraphInput;
@@ -209,6 +212,7 @@ export async function cloneWorkflowVersion(input: {
     const [version] = await transaction
       .insert(workflowDefinitionVersions)
       .values({
+        coiFormVersionId: input.coiFormVersionId ?? null,
         createdBy: input.actorId,
         definitionId: input.definitionId,
         versionNumber: (latest?.value ?? 0) + 1,

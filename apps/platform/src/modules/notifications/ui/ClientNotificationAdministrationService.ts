@@ -8,6 +8,7 @@ import type {
   NotificationDeliveryPage,
   NotificationDeliveryQuery,
   NotificationEventRuleDetail,
+  NotificationEventRuleListQuery,
   NotificationEventRuleSummary,
   NotificationEventRuleUpdate,
   NotificationOperationalSummary,
@@ -32,8 +33,12 @@ function updateCatalog(key: string, input: NotificationCatalogUpdate) {
   );
 }
 
-function listRules() {
-  return requestData<NotificationEventRuleSummary[]>(`${root}/event-rules`);
+function listRules(query: NotificationEventRuleListQuery) {
+  const search = new URLSearchParams();
+  if (query.catalogKey) search.set("catalogKey", query.catalogKey);
+  if (query.search) search.set("search", query.search);
+  const suffix = search.size ? `?${search}` : "";
+  return requestData<NotificationEventRuleSummary[]>(`${root}/event-rules${suffix}`);
 }
 
 function getRule(key: string) {

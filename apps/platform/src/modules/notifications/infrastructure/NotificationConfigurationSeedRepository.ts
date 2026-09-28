@@ -1,17 +1,19 @@
 import "server-only";
 
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
 import {
   notificationCatalogs,
   notificationChannels,
-  notificationEventRuleChannels,
-  notificationEventRuleRecipients,
-  notificationEventRules,
   notificationEvents,
   notificationTemplateTargets,
 } from "./notification.schema";
+import {
+  notificationEventRuleChannels,
+  notificationEventRuleRecipients,
+  notificationEventRules,
+} from "./notification-rule.schema";
 import {
   emailNotificationChannelSeed,
   notificationCatalogSeeds,
@@ -47,7 +49,8 @@ function buildRuleChannelSeedValues(
   recipientIds: ReadonlyMap<string, string>,
   channelId: string,
 ) {
-  return notificationEventSeeds.map((event) => {
+  return notificationEventSeeds.flatMap((event) => {
+    if (!event.recipientType) return [];
     const eventId = resolveRequiredId(eventIds, event.key, event.key);
     const ruleId = resolveRequiredId(ruleIds, eventId, event.key);
     const ruleRecipientId = resolveRequiredId(
@@ -55,11 +58,11 @@ function buildRuleChannelSeedValues(
       ruleId,
       `${event.key} notification rule recipient`,
     );
-    return {
+    return [{
       channelId,
       id: event.ruleChannelId,
       ruleRecipientId,
-    };
+    }];
   });
 }
 
@@ -73,6 +76,7 @@ function buildTemplateTargetSeedValues(
       ? resolveRequiredId(catalogIds, target.catalogKey, target.catalogKey)
       : null,
     channelId,
+    defaultSubjectTemplate: target.defaultSubjectTemplate,
     eventId: target.eventKey
       ? resolveRequiredId(eventIds, target.eventKey, target.eventKey)
       : null,
@@ -189,19 +193,20 @@ export async function seedNotificationConfiguration(): Promise<NotificationConfi
       .from(notificationEventRules)
       .where(inArray(notificationEventRules.eventId, [...eventIds.values()]));
     const ruleIds = new Map(rules.map((rule) => [rule.eventId, rule.id]));
-    const recipientValues = notificationEventSeeds.map((event) => {
+    const recipientValues = notificationEventSeeds.flatMap((event) => {
+      if (!event.recipientType) return [];
       const eventId = resolveRequiredId(eventIds, event.key, event.key);
       const ruleId = resolveRequiredId(
         ruleIds,
         eventId,
         `${event.key} notification rule`,
       );
-      return {
+      return [{
         id: event.ruleRecipientId,
         isRequired: true,
         recipientType: event.recipientType,
         ruleId,
-      };
+      }];
     });
     const insertedRecipients = await transaction
       .insert(notificationEventRuleRecipients)
@@ -211,6 +216,7 @@ export async function seedNotificationConfiguration(): Promise<NotificationConfi
           notificationEventRuleRecipients.ruleId,
           notificationEventRuleRecipients.recipientType,
         ],
+        where: sql`${notificationEventRuleRecipients.recipientType} in ('APPLICATION_OWNER', 'ASSIGNED_USER', 'FUNDING_CALL_STAKEHOLDER')`,
       })
       .returning({ id: notificationEventRuleRecipients.id });
     const recipients = await transaction

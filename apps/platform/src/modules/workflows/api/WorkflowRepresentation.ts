@@ -33,6 +33,7 @@ export function toWorkflowEditor(
     graph: WorkflowGraphInput;
     version: {
       id: string;
+      coiFormVersionId?: string | null;
       versionNumber: number;
       status: WorkflowStatus;
       createdAt: Date;
@@ -48,6 +49,7 @@ export function toWorkflowEditor(
     definition: record.definition,
     version: {
       id: record.version.id,
+      coiFormVersionId: record.version.coiFormVersionId,
       number: record.version.versionNumber,
       status,
       createdAt: record.version.createdAt.toISOString(),

@@ -69,6 +69,20 @@ describe("fundingCallCreateSchema", () => {
 
     expect(result.success).toBe(false);
   });
+
+  it("measures the eligibility summary limit by readable content", () => {
+    const accepted = fundingCallCreateSchema.safeParse({
+      ...validInput,
+      eligibilitySummary: `<p>${"a".repeat(2000)}</p>`,
+    });
+    const rejected = fundingCallCreateSchema.safeParse({
+      ...validInput,
+      eligibilitySummary: `<p>${"a".repeat(2001)}</p>`,
+    });
+
+    expect(accepted.success).toBe(true);
+    expect(rejected.success).toBe(false);
+  });
 });
 
 describe("fundingCallGovernanceCommandSchema", () => {

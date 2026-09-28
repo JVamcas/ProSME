@@ -152,6 +152,26 @@ export async function formVersionIsPublished(versionId: string) {
   return Boolean(version);
 }
 
+export async function formVersionIsPublishedForPurpose(
+  versionId: string,
+  purpose: FormPurpose,
+) {
+  const [version] = await getDatabase()
+    .select({ id: formVersions.id })
+    .from(formVersions)
+    .innerJoin(
+      formDefinitions,
+      eq(formDefinitions.id, formVersions.formDefinitionId),
+    )
+    .where(and(
+      eq(formVersions.id, versionId),
+      eq(formVersions.status, "PUBLISHED"),
+      eq(formDefinitions.purpose, purpose),
+    ))
+    .limit(1);
+  return Boolean(version);
+}
+
 async function readFields(versionId: string) {
   const database = getDatabase();
   const [fields, options] = await Promise.all([

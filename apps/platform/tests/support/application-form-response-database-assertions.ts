@@ -7,6 +7,7 @@ import {
 } from "@/modules/applications/infrastructure/ApplicationResponseRepository";
 import {
   draftOpportunityId,
+  eligibilityRuleSetVersionId,
   firstBusinessId,
   firstOwnerId,
   formVersionId,
@@ -40,6 +41,23 @@ export async function assertApplicationDraftCreation(query: Query) {
     rowVersion: 1,
     values: {},
   });
+  const [bindings] = (await query(
+    `SELECT
+       form_version_id AS "formVersionId",
+       eligibility_rule_set_version_id AS "eligibilityRuleSetVersionId"
+     FROM app_applications
+     WHERE id = $1`,
+    [created.applicationId],
+  ) as {
+    rows: Array<{
+      eligibilityRuleSetVersionId: string;
+      formVersionId: string;
+    }>;
+  }).rows;
+  expect(bindings).toEqual({
+    eligibilityRuleSetVersionId,
+    formVersionId,
+  });
   const audit = await query(
     `SELECT action, metadata
      FROM app_application_audit_entries
@@ -48,7 +66,10 @@ export async function assertApplicationDraftCreation(query: Query) {
   ) as { rows: Array<{ action: string; metadata: Record<string, unknown> }> };
   expect(audit.rows).toEqual([expect.objectContaining({
     action: "APPLICATION_DRAFT_CREATED",
-    metadata: expect.objectContaining({ formVersionId }),
+    metadata: expect.objectContaining({
+      eligibilityRuleSetVersionId,
+      formVersionId,
+    }),
   })]);
   expect(audit.rows[0].metadata).not.toHaveProperty("values");
 }

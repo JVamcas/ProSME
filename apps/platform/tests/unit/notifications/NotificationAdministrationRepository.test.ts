@@ -9,13 +9,18 @@ const database = vi.hoisted(() => ({
 
 vi.mock("server-only", () => ({}));
 vi.mock("@/db/client", () => ({
-  getDatabase: () => ({ transaction: database.transaction }),
+  getDatabase: () => ({
+    execute: database.execute,
+    transaction: database.transaction,
+  }),
 }));
 
 import {
-  retryNotificationDeliveryRecord,
+  listNotificationEventRuleRecords,
+  updateNotificationChannelRecord,
   updateNotificationEventRuleRecord,
 } from "@/modules/notifications/infrastructure/NotificationAdministrationRepository";
+import { retryNotificationDeliveryRecord } from "@/modules/notifications/infrastructure/NotificationDeliveryAdministrationRepository";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -27,6 +32,51 @@ beforeEach(() => {
 });
 
 describe("notification administration repository", () => {
+  it("returns the projected event rule register rows", async () => {
+    const rows = [{
+      catalogKey: "WORKFLOW",
+      eventKey: "workflow.task.assigned",
+      recipients: [{
+        channels: [{ code: "EMAIL", displayName: "Email" }],
+        isRequired: true,
+        recipientType: "ASSIGNED_USER",
+      }],
+    }];
+    database.execute.mockResolvedValueOnce({ rows });
+
+    await expect(listNotificationEventRuleRecords({
+      catalogKey: "WORKFLOW",
+      search: "assigned",
+    })).resolves.toEqual(rows);
+
+    expect(database.execute).toHaveBeenCalledTimes(1);
+  });
+
+  it("updates a channel and its audit record in one transaction", async () => {
+    database.execute.mockResolvedValueOnce({ rows: [{ code: "EMAIL" }] });
+
+    await expect(updateNotificationChannelRecord({
+      actorId: "80000000-0000-4000-8000-000000000001",
+      channelCode: "EMAIL",
+      correlationId: "correlation-channel-update",
+      update: {
+        expectedUpdatedAt: "2026-09-28T10:00:00.000Z",
+        isEnabled: false,
+        sortOrder: 10,
+      },
+    })).resolves.toEqual({ code: "EMAIL" });
+
+    expect(database.transaction).toHaveBeenCalledTimes(1);
+    expect(database.execute).toHaveBeenCalledTimes(1);
+    expect(database.values).toHaveBeenCalledWith(expect.objectContaining({
+      action: "NOTIFICATION_CHANNEL_UPDATED",
+      changes: {
+        channelCode: "EMAIL",
+        correlationId: "correlation-channel-update",
+      },
+    }));
+  });
+
   it("replaces recipient types and channel bindings in one transaction", async () => {
     database.execute
       .mockResolvedValueOnce({ rows: [{

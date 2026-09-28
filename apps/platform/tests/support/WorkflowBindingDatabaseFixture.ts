@@ -148,7 +148,7 @@ export async function insertSubmissionFundingCalls(
         (funding_call_id, command, source_status, target_status, actor_id,
          command_time, effective_time, row_version, correlation_id,
          idempotency_key)
-      SELECT call.id, 'PUBLISH', 'DRAFT', 'LIVE', $1, now(), now(),
+      SELECT call.id, 'PUBLISH', 'APPROVED', 'LIVE', $1, now(), now(),
         call.row_version + 1, gen_random_uuid()::text, 'submission-fixture-' || call.id
       FROM app_funding_calls call
       WHERE call.id = ANY($2::uuid[])

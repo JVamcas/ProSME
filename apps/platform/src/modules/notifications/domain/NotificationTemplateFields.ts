@@ -16,6 +16,11 @@ export const notificationCatalogTemplateFields = {
     "applicationReference",
     "fundingOpportunityTitle",
   ],
+  FUNDING_CALLS: [
+    ...globalNotificationTemplateFields,
+    "fundingCallReference",
+    "fundingCallTitle",
+  ],
   WORKFLOW: [
     ...globalNotificationTemplateFields,
     "applicationReference",
@@ -28,6 +33,67 @@ export const notificationEventTemplateFields = {
     ...notificationCatalogTemplateFields.APPLICATIONS,
     "submittedAt",
     "applicationUrl",
+  ],
+  "funding-call.approval-request-withdrawn": [
+    ...notificationCatalogTemplateFields.FUNDING_CALLS,
+    "occurredAt",
+    "reason",
+    "fundingCallUrl",
+  ],
+  "funding-call.approval-requested": [
+    ...notificationCatalogTemplateFields.FUNDING_CALLS,
+    "occurredAt",
+    "fundingCallUrl",
+  ],
+  "funding-call.approved": [
+    ...notificationCatalogTemplateFields.FUNDING_CALLS,
+    "occurredAt",
+    "fundingCallUrl",
+  ],
+  "funding-call.archived": [
+    ...notificationCatalogTemplateFields.FUNDING_CALLS,
+    "occurredAt",
+    "reason",
+    "fundingCallUrl",
+  ],
+  "funding-call.closed": [
+    ...notificationCatalogTemplateFields.FUNDING_CALLS,
+    "occurredAt",
+    "fundingCallUrl",
+  ],
+  "funding-call.opened": [
+    ...notificationCatalogTemplateFields.FUNDING_CALLS,
+    "occurredAt",
+    "fundingCallUrl",
+  ],
+  "funding-call.published": [
+    ...notificationCatalogTemplateFields.FUNDING_CALLS,
+    "occurredAt",
+    "fundingCallUrl",
+  ],
+  "funding-call.resumed": [
+    ...notificationCatalogTemplateFields.FUNDING_CALLS,
+    "occurredAt",
+    "reason",
+    "fundingCallUrl",
+  ],
+  "funding-call.returned-for-amendment": [
+    ...notificationCatalogTemplateFields.FUNDING_CALLS,
+    "occurredAt",
+    "reason",
+    "fundingCallUrl",
+  ],
+  "funding-call.suspended": [
+    ...notificationCatalogTemplateFields.FUNDING_CALLS,
+    "occurredAt",
+    "reason",
+    "fundingCallUrl",
+  ],
+  "funding-call.withdrawn": [
+    ...notificationCatalogTemplateFields.FUNDING_CALLS,
+    "occurredAt",
+    "reason",
+    "fundingCallUrl",
   ],
   "workflow.information-request.closed": [
     ...notificationCatalogTemplateFields.WORKFLOW,
@@ -112,9 +178,29 @@ function trustedUrl(baseUrl: string, path: string): string {
 export function buildNotificationRenderValues<Key extends NotificationEventKey>(
   input: RenderValueInput<Key>,
 ): Record<string, string> {
+  if (input.eventKey.startsWith("funding-call.")) {
+    const context = input.context as NotificationEventContextByKey[
+      "funding-call.approval-requested"
+    ];
+    return {
+      fundingCallReference: context.fundingCallReference,
+      fundingCallTitle: context.fundingCallTitle,
+      fundingCallUrl: trustedUrl(
+        input.publicApplicationUrl,
+        `/admin/funding-calls/${context.fundingCallId}`,
+      ),
+      occurredAt: formatTimestamp(context.occurredAt),
+      platformName: "SME Fund Namibia",
+      reason: context.reason ?? "Not provided",
+      recipientName: input.recipient.displayName,
+    };
+  }
+  const applicationContext = input.context as NotificationEventContextByKey[
+    "application.submitted"
+  ];
   const common = {
-    applicationReference: input.context.applicationReference,
-    fundingOpportunityTitle: input.context.fundingOpportunityTitle,
+    applicationReference: applicationContext.applicationReference,
+    fundingOpportunityTitle: applicationContext.fundingOpportunityTitle,
     platformName: "SME Fund Namibia",
     recipientName: input.recipient.displayName,
   };

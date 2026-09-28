@@ -1,59 +1,112 @@
 "use client";
 
+import { CircleDollarSign } from "lucide-react";
+
 import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
+import { PortalErrorState } from "@/components/layout/PortalErrorState";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { PageShell } from "@/shared/ui/PageShell";
 import {
   useFundingCall,
   useUpdateFundingCall,
 } from "../FundingCallHooks";
 import { FundingCallForm } from "./FundingCallForm";
+import { FundingCallExceptionalActions } from "./FundingCallExceptionalActions";
 import { FundingCallGovernanceActions } from "./FundingCallGovernanceActions";
-import { PortalErrorState } from "@/components/layout/PortalErrorState";
+import { FundingCallPageActions } from "./FundingCallPageActions";
+import { FundingCallReadOnlyReview } from "./FundingCallReadOnlyReview";
 
 export function FundingCallEditor({
   canApprove,
+  canArchive,
+  canPublish,
   canReturn,
+  canResume,
+  canSubmit,
+  canSuspend,
   canUpdate,
+  canWithdraw,
   canWithdrawOwnRequest,
   id,
 }: {
   canApprove: boolean;
+  canArchive: boolean;
+  canPublish: boolean;
   canReturn: boolean;
+  canResume: boolean;
+  canSubmit: boolean;
+  canSuspend: boolean;
   canUpdate: boolean;
+  canWithdraw: boolean;
   canWithdrawOwnRequest: boolean;
   id: string;
 }) {
   const query = useFundingCall(id);
   const update = useUpdateFundingCall(id);
 
-  if (query.isPending) return
-  <PortalLoadingState title="" description="Just a moment..." />
-  if (query.error || !query.data) {
-    return <PortalErrorState title={query.error.name} description={query.error.message} />
-  }
-
   const call = query.data;
-  return (
-    <div className="space-y-5">
-      <FundingCallGovernanceActions
-        call={call}
-        canApprove={canApprove}
-        canReturn={canReturn}
-        canWithdrawOwnRequest={canWithdrawOwnRequest}
-      />
-      <FundingCallForm
-        call={call}
-        disabled={
-          !canUpdate
-          || call.status !== "DRAFT"
-          || update.isPending
-        }
-        onSubmit={async (input) => {
-          await update.mutateAsync({
-            ...input,
-            expectedRowVersion: call.rowVersion,
-          });
-        }}
-      />
+
+  const headerActions = call ? (
+    <div className="flex flex-col items-start gap-3 sm:items-end">
+      <div className="flex items-center gap-3">
+        <span className="text-sm font-medium text-brand-navy/70">
+          Lifecycle status
+        </span>
+        <StatusBadge status={call.status} />
+      </div>
+      <div className="flex flex-wrap gap-2 sm:justify-end">
+        <FundingCallPageActions canPublish={canPublish} id={id} />
+        <FundingCallGovernanceActions
+          call={call}
+          canApprove={canApprove}
+          canReturn={canReturn}
+          canSubmit={canSubmit}
+          canWithdrawOwnRequest={canWithdrawOwnRequest}
+        />
+        <FundingCallExceptionalActions
+          call={call}
+          canArchive={canArchive}
+          canResume={canResume}
+          canSuspend={canSuspend}
+          canWithdraw={canWithdraw}
+        />
+      </div>
     </div>
+  ) : undefined;
+
+  return (
+    <PageShell
+      actions={headerActions}
+      eyebrow="Funding calls"
+      icon={<CircleDollarSign />}
+      title="Manage funding calls"
+    >
+      {query.isPending ? (
+        <PortalLoadingState description="Just a moment..." title="" />
+      ) : query.error ? (
+        <PortalErrorState
+          description={query.error.message}
+          title={query.error.name}
+        />
+      ) : !call ? (
+        <PortalErrorState
+          description="The requested funding call could not be loaded."
+          title="Funding call unavailable"
+        />
+      ) : call.status === "DRAFT" ? (
+        <FundingCallForm
+          call={call}
+          disabled={!canUpdate || update.isPending}
+          onSubmit={async (input) => {
+            await update.mutateAsync({
+              ...input,
+              expectedRowVersion: call.rowVersion,
+            });
+          }}
+        />
+      ) : (
+        <FundingCallReadOnlyReview call={call} />
+      )}
+    </PageShell>
   );
 }

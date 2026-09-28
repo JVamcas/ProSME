@@ -75,6 +75,7 @@ describe("funding call governance actions", () => {
         call={call}
         canApprove={false}
         canReturn
+        canSubmit={false}
         canWithdrawOwnRequest={false}
       />,
     ));
@@ -95,5 +96,30 @@ describe("funding call governance actions", () => {
     await act(async () => cancelButton?.click());
 
     expect(document.querySelector('[role="dialog"]')).toBeNull();
+  });
+
+  it("uses preparation authority to submit a Draft for approval", async () => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+
+    await act(async () => root?.render(
+      <FundingCallGovernanceActions
+        call={{ ...call, status: "DRAFT" }}
+        canApprove={false}
+        canReturn={false}
+        canSubmit
+        canWithdrawOwnRequest={false}
+      />,
+    ));
+    const submitButton = [...container.querySelectorAll("button")].find(
+      (button) => button.textContent === "Submit for approval",
+    );
+    await act(async () => submitButton?.click());
+
+    expect(governance.mutate).toHaveBeenCalledWith({
+      command: "SUBMIT_FOR_APPROVAL",
+      expectedRowVersion: call.rowVersion,
+    });
   });
 });

@@ -3917,8 +3917,8 @@ Store at minimum:
 - Funding Call identifier;
 - exact Application Form Version identifier;
 - exact Eligibility Ruleset Version identifier resolved for the draft;
-- exact Workflow Template Version identifier captured through the linked
-  Workflow Instance when submission processing resolves it;
+- exact Workflow Template Version identifier inherited by the linked Workflow
+  Instance from the immutable Funding Call binding;
 - lifecycle status;
 - created, updated, submitted and withdrawn timestamps where applicable;
 - reference number after submission;
@@ -3979,18 +3979,19 @@ On creation:
 4. validate any configured applicant/business eligibility to start a draft;
 5. validate the represented business relationship where required;
 6. enforce configured duplicate limits;
-7. resolve and store the exact published Application Form and Eligibility
-   Ruleset Versions;
+7. store the exact published Application Form and Eligibility Ruleset Versions
+   already bound to the Funding Call;
 8. create the initial draft Form Response and audit event;
 9. return a safe applicant draft contract.
 
-The Form and Eligibility Ruleset Versions are fixed for the draft so an
-administrator publishing newer versions does not silently reshape existing
-work or change its rule context. If draft migration to newer bound versions is
-supported, it is an explicit, validated and audited operation with a preview of
-incompatible fields; it is never an incidental page-load effect. In accordance
-with Phase 6.5, the exact published Workflow Template Version is resolved and
-captured at submission because that is when the Workflow Instance is created.
+The Funding Call binds exact Form, Eligibility Ruleset and Workflow Template
+Versions. A Call cannot be published until each binding points to a published
+version, and publication locks those references. Application drafts therefore
+use the Call's exact Form and Eligibility Ruleset Versions. Every Workflow
+Instance uses the exact Workflow Template Version bound to its Funding Call;
+submission creates the instance from that binding and never resolves a newer
+live version. Publishing newer component versions does not alter the Call, its
+draft Applications or later Applicants under that Call.
 
 Creation accepts an idempotency key. Concurrent requests must not bypass an
 enabled one-Application rule or create duplicate drafts for the same command.
@@ -4862,9 +4863,13 @@ records the exact Funding Call row/configuration version reviewed and produces
 an Approved state; approval alone does not make the Call public.
 
 Where segregation of duties is configured, the creator or last material editor
-cannot approve their own Call. Permissions are fine-grained and contextual:
-submit, approve and return are distinct operations. Client-side button hiding
-does not establish authority.
+cannot approve their own Call. The canonical `funding.call.create` permission
+covers creating a Draft and submitting it for approval. The canonical
+`funding.call.edit-draft` permission covers editing and resubmitting a returned
+Draft. The canonical `funding.call.approve.all` permission covers approving or
+returning an Approval Pending Call. Publication remains a separate
+`funding.call.publish` operation. Client-side button hiding does not establish
+authority.
 
 ### Acceptance Criteria
 

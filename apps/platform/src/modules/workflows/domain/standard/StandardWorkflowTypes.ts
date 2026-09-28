@@ -19,6 +19,7 @@ export type StandardWorkflowRoleCode =
   (typeof standardWorkflowRoleCodes)[number];
 
 export const standardWorkflowFormCodes = [
+  "COI_DECLARATION",
   "ELIGIBILITY_VERIFICATION",
   "TECHNICAL_REVIEW",
   "FINANCE_REVIEW",
@@ -44,6 +45,7 @@ export type StandardWorkflowDependencies = {
 
 export type StandardWorkflowDraft = {
   code: typeof standardWorkflowCode;
+  coiFormVersionId: string | null;
   description: string;
   graph: WorkflowGraphInput;
   name: string;

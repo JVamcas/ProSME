@@ -36,6 +36,7 @@ import {
 import { record, userWith } from "./WorkflowServiceFixtures";
 
 const clonedVersionId = "79e20de0-3558-4d63-90a4-8c9f5125df09";
+const coiFormVersionId = "79e20de0-3558-4d63-90a4-8c9f5125df11";
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -96,7 +97,11 @@ describe("workflow cloning service", () => {
       id: "clone-transition-group",
       kind: "GROUP",
     };
-    vi.mocked(findWorkflowGraph).mockResolvedValue({ ...record, graph });
+    vi.mocked(findWorkflowGraph).mockResolvedValue({
+      ...record,
+      graph,
+      version: { ...record.version, coiFormVersionId },
+    });
 
     await cloneWorkflow(
       userWith(permissionCodes.workflowDefinitionUpdate),
@@ -108,6 +113,7 @@ describe("workflow cloning service", () => {
     expect(cloneWorkflowVersion).toHaveBeenCalledWith(
       expect.objectContaining({
         definitionId: record.definition.id,
+        coiFormVersionId,
         sourceVersionId: record.version.id,
         graph: expect.objectContaining({
           stages: expect.arrayContaining([

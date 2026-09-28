@@ -233,7 +233,7 @@ export async function listBindableApplicationFormVersions(
 ) {
   requireAnyPermission(user, [
     permissionCodes.fundingCallCreate,
-    permissionCodes.fundingCallUpdate,
+    permissionCodes.fundingCallEditDraft,
   ]);
   return listBindableFormVersions("FUNDING_APPLICATION");
 }
@@ -243,7 +243,7 @@ export async function listBindableEligibilityRuleSetVersions(
 ) {
   requireAnyPermission(user, [
     permissionCodes.fundingCallCreate,
-    permissionCodes.fundingCallUpdate,
+    permissionCodes.fundingCallEditDraft,
   ]);
   return listBindableRuleSetVersions();
 }
@@ -253,7 +253,7 @@ export async function listBindableWorkflowTemplateVersions(
 ) {
   requireAnyPermission(user, [
     permissionCodes.fundingCallCreate,
-    permissionCodes.fundingCallUpdate,
+    permissionCodes.fundingCallEditDraft,
   ]);
   return listBindableWorkflowVersions();
 }
@@ -263,7 +263,7 @@ export async function updateFundingCall(
   id: string,
   input: FundingCallUpdateInput,
 ): Promise<FundingCallView> {
-  const actor = requirePermission(user, permissionCodes.fundingCallUpdate);
+  const actor = requirePermission(user, permissionCodes.fundingCallEditDraft);
   await requireBindableBindings(input, id);
   const updated = await updateDraftFundingCall(actor.id, id, input);
   if (updated) return view(updated);

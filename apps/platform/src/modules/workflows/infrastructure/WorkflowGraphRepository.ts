@@ -32,6 +32,7 @@ const graphSelection = {
   },
   version: {
     id: workflowDefinitionVersions.id,
+    coiFormVersionId: workflowDefinitionVersions.coiFormVersionId,
     versionNumber: workflowDefinitionVersions.versionNumber,
     metadata: workflowDefinitionVersions.metadata,
     status: workflowDefinitionVersions.status,

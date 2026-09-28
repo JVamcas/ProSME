@@ -29,6 +29,9 @@ export async function updateWorkflowDefinitionDetails(input: DetailsUpdate) {
     const [updatedVersion] = await transaction
       .update(workflowDefinitionVersions)
       .set({
+        ...(input.coiFormVersionId !== undefined
+          ? { coiFormVersionId: input.coiFormVersionId }
+          : {}),
         metadata: {
           code: input.code,
           name: input.name,
@@ -58,6 +61,9 @@ export async function updateWorkflowDefinitionDetails(input: DetailsUpdate) {
     if (!before) return null;
     const after = {
       code: input.code,
+      ...(input.coiFormVersionId !== undefined
+        ? { coiFormVersionId: input.coiFormVersionId }
+        : {}),
       description: input.description,
       name: input.name,
     };

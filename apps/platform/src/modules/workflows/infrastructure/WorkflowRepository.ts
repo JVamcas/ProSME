@@ -148,6 +148,7 @@ export async function findDraftByDefinition(
 
 export async function findConfigurationReferences(
   graph: WorkflowGraphInput,
+  additionalFormVersionIds: string[] = [],
 ): Promise<{
   formFields: Map<string, WorkflowConditionFormField[]>;
   roles: Set<string>;
@@ -155,7 +156,10 @@ export async function findConfigurationReferences(
   forms: Map<string, string>;
   formPurposes: Map<string, FormPurpose>;
 }> {
-  const references = collectConfigurationReferences(graph);
+  const references = collectConfigurationReferences(
+    graph,
+    additionalFormVersionIds,
+  );
   const [foundUsers, foundRoles, foundForms, fieldsByVersion] =
     await Promise.all([
       references.userIds.length
@@ -220,7 +224,10 @@ export async function findWorkflowConditionFormFields(
   return fieldsByVersion;
 }
 
-function collectConfigurationReferences(graph: WorkflowGraphInput) {
+function collectConfigurationReferences(
+  graph: WorkflowGraphInput,
+  additionalFormVersionIds: string[] = [],
+) {
   const userIds = uniqueTaskValues(graph, "namedUserOverrideId");
   const roleIds = uniqueTaskValues(graph, "roleId");
   graph.stages.forEach((stage) => {
@@ -233,11 +240,14 @@ function collectConfigurationReferences(graph: WorkflowGraphInput) {
   });
   const formVersionIds = [
     ...new Set(
-      graph.stages.flatMap((stage) =>
-        stage.tasks.flatMap((task) =>
-          task.formBinding ? [task.formBinding.formVersionId] : [],
+      [
+        ...additionalFormVersionIds,
+        ...graph.stages.flatMap((stage) =>
+          stage.tasks.flatMap((task) =>
+            task.formBinding ? [task.formBinding.formVersionId] : [],
+          ),
         ),
-      ),
+      ],
     ),
   ];
   return {

@@ -92,7 +92,7 @@ export async function bindFundingCallEligibilityIntegration(
     user,
     permissionCodes.integrationEligibilityBind,
   );
-  requirePermission(user, permissionCodes.fundingCallUpdate);
+  requirePermission(user, permissionCodes.fundingCallCreate);
   const result = await bindEligibilityIntegration(actor.id, fundingCallId, input);
   if (result.kind === "NOT_FOUND") {
     throw new ResourceNotFoundError("Funding Call or integration version");

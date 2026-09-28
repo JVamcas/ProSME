@@ -14,6 +14,7 @@ export type CoiState =
 
 type GateRow = {
   assignedUserId: string | null;
+  coiFormVersionId?: string | null;
   gated: boolean;
   rowVersion: number;
   stageInstanceId: string;
@@ -28,6 +29,7 @@ export async function readTaskCoiGate(actorId: string, taskId: string) {
     SELECT task.id AS "taskId", definition.name AS "taskName",
       task.status, task.row_version AS "rowVersion",
       task.assigned_user_id AS "assignedUserId",
+      version.coi_form_version_id AS "coiFormVersionId",
       stage.id AS "stageInstanceId",
       (definition.coi_required OR stage_definition.coi_gated) AS gated,
       COALESCE(clearance.state, 'DECLARATION_REQUIRED') AS state
@@ -38,6 +40,8 @@ export async function readTaskCoiGate(actorId: string, taskId: string) {
     JOIN app_workflow_stage_definitions stage_definition
       ON stage_definition.id = stage.workflow_stage_definition_id
     JOIN app_workflow_instances workflow ON workflow.id = stage.workflow_instance_id
+    JOIN app_workflow_definition_versions version
+      ON version.id = workflow.workflow_template_version_id
     LEFT JOIN app_workflow_application_coi clearance
       ON clearance.application_id = workflow.application_id
       AND clearance.user_id = ${actorId}::uuid
@@ -67,6 +71,7 @@ export async function changeTaskCoi(input: {
     const locked = await transaction.execute(sql`
       SELECT task.id, task.status, task.row_version AS "rowVersion",
         workflow.application_id AS "applicationId",
+        version.coi_form_version_id AS "coiFormVersionId",
         task.assigned_user_id AS "assignedUserId",
         (definition.coi_required OR stage_definition.coi_gated) AS gated,
         clearance.state, clearance.row_version AS "coiVersion"
@@ -77,6 +82,8 @@ export async function changeTaskCoi(input: {
       JOIN app_workflow_stage_definitions stage_definition
         ON stage_definition.id = stage.workflow_stage_definition_id
       JOIN app_workflow_instances workflow ON workflow.id = stage.workflow_instance_id
+      JOIN app_workflow_definition_versions version
+        ON version.id = workflow.workflow_template_version_id
       LEFT JOIN app_workflow_application_coi clearance
         ON clearance.application_id = workflow.application_id
         AND clearance.user_id = task.assigned_user_id
@@ -86,13 +93,15 @@ export async function changeTaskCoi(input: {
     const row = locked.rows[0] as {
       applicationId: string;
       assignedUserId: string | null;
+      coiFormVersionId: string | null;
       coiVersion: number | null;
       gated: boolean;
       rowVersion: number;
       state: CoiState | null;
       status: string;
     } | undefined;
-    if (!row || !row.gated || row.rowVersion !== input.expectedRowVersion
+    if (!row || !row.gated || !row.coiFormVersionId
+      || row.rowVersion !== input.expectedRowVersion
       || !["PENDING", "IN_PROGRESS"].includes(row.status)) return null;
 
     const self = row.assignedUserId === input.actorId;
@@ -128,12 +137,13 @@ export async function changeTaskCoi(input: {
     await transaction.execute(sql`
       INSERT INTO app_workflow_application_coi_events (
         application_id, task_id, subject_user_id, actor_id, from_state, to_state,
-        disclosure_text, reason
+        disclosure_text, reason, form_version_id
       ) VALUES (
         ${row.applicationId}::uuid, ${input.taskId}::uuid,
         ${row.assignedUserId}::uuid,
         ${input.actorId}::uuid, ${row.state}, ${next},
-        ${input.disclosureText ?? null}, ${input.reason ?? null}
+        ${input.disclosureText ?? null}, ${input.reason ?? null},
+        ${row.coiFormVersionId}::uuid
       )
     `);
     return { state: next };
@@ -176,4 +186,3 @@ export async function readPendingTaskCoiDisclosure(
     disclosureText: string;
   } | undefined) ?? null;
 }
-

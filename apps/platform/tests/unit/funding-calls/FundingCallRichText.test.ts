@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { sanitizeFundingCallDescription } from "@/modules/funding-calls/infrastructure/FundingCallRichText";
+import {
+  sanitizeFundingCallDescription,
+  sanitizeFundingCallEligibilitySummary,
+} from "@/modules/funding-calls/infrastructure/FundingCallRichText";
 import { richTextToPlainText } from "@/shared/utils/RichText";
 
 describe("funding call rich text", () => {
@@ -10,6 +13,15 @@ describe("funding call rich text", () => {
     );
 
     expect(result).toBe("<h2>Growth</h2><p><strong>Eligible</strong></p>");
+  });
+
+  it("sanitizes an optional eligibility summary", () => {
+    expect(
+      sanitizeFundingCallEligibilitySummary(
+        '<ul><li data-id="1">Namibian owned</li></ul><img src="bad">',
+      ),
+    ).toBe("<ul><li>Namibian owned</li></ul>");
+    expect(sanitizeFundingCallEligibilitySummary(null)).toBeNull();
   });
 
   it("derives readable plain text for summaries", () => {

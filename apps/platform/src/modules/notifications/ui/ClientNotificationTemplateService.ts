@@ -4,6 +4,7 @@ import { requestData } from "@/lib/client-http";
 import type {
   NotificationChannelDetail,
   NotificationChannelSummary,
+  NotificationChannelUpdate,
   NotificationTemplateImportResult,
   NotificationTemplateTargetDetail,
   NotificationTemplateVersionSummary,
@@ -33,6 +34,17 @@ function listChannels() {
 function getChannel(channelCode: string) {
   return requestData<NotificationChannelDetail>(channelPath(channelCode), {
     cache: "no-store",
+  });
+}
+
+function updateChannel(
+  channelCode: string,
+  input: NotificationChannelUpdate,
+) {
+  return requestData<NotificationChannelSummary>(channelPath(channelCode), {
+    body: JSON.stringify(input),
+    headers: { "Content-Type": "application/json" },
+    method: "PATCH",
   });
 }
 
@@ -77,4 +89,5 @@ export const clientNotificationTemplateService = {
   importTemplate,
   listChannels,
   publishTemplate,
+  updateChannel,
 };

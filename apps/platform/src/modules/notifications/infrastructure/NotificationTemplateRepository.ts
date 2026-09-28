@@ -1,6 +1,7 @@
 import "server-only";
 
 import { and, asc, count, desc, eq, max, or, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 
 import { getDatabase } from "@/db/client";
 import { authorizationAuditEntries } from "@/db/schema";
@@ -16,11 +17,16 @@ import {
 
 export type NotificationTemplateTargetRecord = {
   catalogKey: string | null;
+  catalogName: string | null;
   channelCode: string;
+  defaultSubjectTemplate: string;
+  description: string | null;
+  displayName: string | null;
   eventKey: string | null;
   id: string;
   isEnabled: boolean;
   scope: NotificationTemplateScope;
+  targetUpdatedAt: Date;
 };
 
 export type NotificationTemplateDraftRecord = {
@@ -63,6 +69,8 @@ const versionProjection = {
   versionNumber: notificationTemplateVersions.versionNumber,
 };
 
+const eventCatalogs = alias(notificationCatalogs, "event_catalogs");
+
 export async function listNotificationChannels() {
   return getDatabase()
     .select({
@@ -70,7 +78,12 @@ export async function listNotificationChannels() {
       code: notificationChannels.code,
       displayName: notificationChannels.displayName,
       isEnabled: notificationChannels.isEnabled,
+      sortOrder: notificationChannels.sortOrder,
       targetCount: count(notificationTemplateTargets.id).mapWith(Number),
+      updatedAt: sql<string>`to_char(
+        ${notificationChannels.updatedAt} AT TIME ZONE 'UTC',
+        'YYYY-MM-DD"T"HH24:MI:SS.US'
+      ) || 'Z'`,
     })
     .from(notificationChannels)
     .leftJoin(
@@ -88,10 +101,15 @@ export async function findNotificationChannel(code: string) {
       code: notificationChannels.code,
       displayName: notificationChannels.displayName,
       isEnabled: notificationChannels.isEnabled,
+      sortOrder: notificationChannels.sortOrder,
       targetCount: sql<number>`(
         select count(*)::int from app_notification_template_targets target_count
         where target_count.channel_id = ${notificationChannels.id}
       )`,
+      updatedAt: sql<string>`to_char(
+        ${notificationChannels.updatedAt} AT TIME ZONE 'UTC',
+        'YYYY-MM-DD"T"HH24:MI:SS.US'
+      ) || 'Z'`,
     })
     .from(notificationChannels)
     .where(eq(notificationChannels.code, code))
@@ -102,14 +120,29 @@ export async function findNotificationChannel(code: string) {
 export async function listNotificationTemplateTargets(channelCode: string) {
   return getDatabase()
     .select({
-      catalogKey: notificationCatalogs.catalogKey,
+      catalogKey: sql<string | null>`coalesce(
+        ${notificationCatalogs.catalogKey},
+        ${eventCatalogs.catalogKey}
+      )`,
+      catalogName: sql<string | null>`coalesce(
+        ${notificationCatalogs.displayName},
+        ${eventCatalogs.displayName}
+      )`,
+      description: sql<string | null>`coalesce(
+        ${notificationEvents.description},
+        ${notificationCatalogs.description}
+      )`,
+      defaultSubjectTemplate: notificationTemplateTargets.defaultSubjectTemplate,
+      displayName: notificationEvents.displayName,
       eventKey: notificationEvents.eventKey,
       id: notificationTemplateTargets.id,
       isEnabled: notificationTemplateTargets.isEnabled,
+      lastVersionCreatedAt: max(notificationTemplateVersions.createdAt),
       publishedVersionNumber: sql<number | null>`max(case
         when ${notificationTemplateVersions.status} = 'PUBLISHED'
         then ${notificationTemplateVersions.versionNumber} end)`,
       scope: notificationTemplateTargets.scope,
+      targetUpdatedAt: notificationTemplateTargets.updatedAt,
       versionCount: count(notificationTemplateVersions.id).mapWith(Number),
     })
     .from(notificationTemplateTargets)
@@ -126,6 +159,10 @@ export async function listNotificationTemplateTargets(channelCode: string) {
       eq(notificationEvents.id, notificationTemplateTargets.eventId),
     )
     .leftJoin(
+      eventCatalogs,
+      eq(eventCatalogs.id, notificationEvents.catalogId),
+    )
+    .leftJoin(
       notificationTemplateVersions,
       eq(notificationTemplateVersions.templateTargetId, notificationTemplateTargets.id),
     )
@@ -133,12 +170,18 @@ export async function listNotificationTemplateTargets(channelCode: string) {
     .groupBy(
       notificationTemplateTargets.id,
       notificationCatalogs.catalogKey,
+      notificationCatalogs.displayName,
+      notificationCatalogs.description,
+      eventCatalogs.catalogKey,
+      eventCatalogs.displayName,
       notificationEvents.eventKey,
+      notificationEvents.displayName,
+      notificationEvents.description,
     )
     .orderBy(
       sql`case ${notificationTemplateTargets.scope}
         when 'GLOBAL' then 1 when 'CATALOG' then 2 else 3 end`,
-      asc(notificationCatalogs.catalogKey),
+      asc(sql`coalesce(${notificationCatalogs.catalogKey}, ${eventCatalogs.catalogKey})`),
       asc(notificationEvents.eventKey),
     );
 }
@@ -149,12 +192,26 @@ export async function findNotificationTemplateTarget(
 ): Promise<NotificationTemplateTargetRecord | undefined> {
   const [target] = await getDatabase()
     .select({
-      catalogKey: notificationCatalogs.catalogKey,
+      catalogKey: sql<string | null>`coalesce(
+        ${notificationCatalogs.catalogKey},
+        ${eventCatalogs.catalogKey}
+      )`,
+      catalogName: sql<string | null>`coalesce(
+        ${notificationCatalogs.displayName},
+        ${eventCatalogs.displayName}
+      )`,
       channelCode: notificationChannels.code,
+      description: sql<string | null>`coalesce(
+        ${notificationEvents.description},
+        ${notificationCatalogs.description}
+      )`,
+      defaultSubjectTemplate: notificationTemplateTargets.defaultSubjectTemplate,
+      displayName: notificationEvents.displayName,
       eventKey: notificationEvents.eventKey,
       id: notificationTemplateTargets.id,
       isEnabled: notificationTemplateTargets.isEnabled,
       scope: notificationTemplateTargets.scope,
+      targetUpdatedAt: notificationTemplateTargets.updatedAt,
     })
     .from(notificationTemplateTargets)
     .innerJoin(
@@ -168,6 +225,10 @@ export async function findNotificationTemplateTarget(
     .leftJoin(
       notificationEvents,
       eq(notificationEvents.id, notificationTemplateTargets.eventId),
+    )
+    .leftJoin(
+      eventCatalogs,
+      eq(eventCatalogs.id, notificationEvents.catalogId),
     )
     .where(and(
       eq(notificationChannels.code, channelCode),

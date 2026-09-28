@@ -38,7 +38,10 @@ export function HomeProcess() {
         {steps.map(({ icon: Icon, title, text }, index) => (
           <div key={title} className="relative text-center">
             {index < 3 ? (
-              <span className="absolute left-[72%] top-9 hidden w-[56%] border-t-2 border-dotted border-brand-yellow lg:block" />
+              <span
+                aria-hidden="true"
+                className="absolute left-[72%] top-9 hidden w-[calc(56%-2rem)] border-t-2 border-dotted border-brand-yellow lg:block"
+              />
             ) : null}
             <span
               className={`absolute left-3 top-3 z-10 grid size-8 place-items-center rounded-full text-sm font-bold ${index % 2 ? "bg-brand-yellow text-brand-navy" : "bg-brand-orange text-brand-navy"}`}

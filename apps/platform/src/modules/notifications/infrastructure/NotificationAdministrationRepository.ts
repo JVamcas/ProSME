@@ -6,10 +6,40 @@ import { getDatabase } from "@/db/client";
 import { authorizationAuditEntries } from "@/db/schema";
 import type {
   NotificationCatalogUpdate,
-  NotificationDeliveryQuery,
+  NotificationEventRuleListQuery,
   NotificationEventRuleUpdate,
 } from "../api/NotificationAdministrationSchemas";
+import type { NotificationChannelUpdate } from "../api/NotificationTemplateSchemas";
 import type { NotificationAuditMetadata } from "../domain/NotificationAudit";
+
+export async function updateNotificationChannelRecord(input: {
+  actorId: string;
+  channelCode: string;
+  correlationId: string;
+  update: NotificationChannelUpdate;
+}) {
+  return getDatabase().transaction(async (transaction) => {
+    const updated = await transaction.execute(sql`
+      UPDATE app_notification_channels
+      SET sort_order = ${input.update.sortOrder},
+        is_enabled = ${input.update.isEnabled},
+        updated_at = now()
+      WHERE code = ${input.channelCode}
+        AND updated_at = ${input.update.expectedUpdatedAt}::timestamptz
+      RETURNING code
+    `);
+    if (!updated.rows[0]) return undefined;
+    await transaction.insert(authorizationAuditEntries).values({
+      action: "NOTIFICATION_CHANNEL_UPDATED",
+      actorId: input.actorId,
+      changes: {
+        channelCode: input.channelCode,
+        correlationId: input.correlationId,
+      } satisfies NotificationAuditMetadata,
+    });
+    return updated.rows[0];
+  });
+}
 
 export async function listNotificationCatalogRecords() {
   const result = await getDatabase().execute(sql`
@@ -85,7 +115,11 @@ export async function updateNotificationCatalogRecord(input: {
   });
 }
 
-export async function listNotificationEventRuleRecords() {
+export async function listNotificationEventRuleRecords(
+  input: NotificationEventRuleListQuery,
+) {
+  const catalogKey = input.catalogKey || null;
+  const searchPattern = input.search ? `%${input.search}%` : null;
   const result = await getDatabase().execute(sql`
     SELECT catalog.catalog_key AS "catalogKey",
       catalog.display_name AS "catalogName",
@@ -96,12 +130,53 @@ export async function listNotificationEventRuleRecords() {
       rule.is_enabled AS "isEnabled",
       to_char(rule.updated_at AT TIME ZONE 'UTC',
         'YYYY-MM-DD"T"HH24:MI:SS.US') || 'Z' AS "updatedAt",
-      count(recipient.id)::integer AS "recipientCount"
+      (SELECT count(*)::integer
+        FROM app_notification_event_rule_recipients recipient
+        WHERE recipient.rule_id = rule.id) AS "recipientCount",
+      COALESCE((
+        SELECT json_agg(json_build_object(
+          'recipientType', recipient.recipient_type,
+          'isRequired', recipient.is_required,
+          'targetId', COALESCE(recipient.recipient_user_id, recipient.recipient_role_id),
+          'targetDisplayName', COALESCE(target_user.display_name, target_role.name),
+          'channels', COALESCE((
+            SELECT json_agg(json_build_object(
+              'code', channel.code,
+              'displayName', channel.display_name
+            ) ORDER BY channel.sort_order, channel.code)
+            FROM app_notification_event_rule_channels binding
+            JOIN app_notification_channels channel
+              ON channel.id = binding.channel_id
+            WHERE binding.rule_recipient_id = recipient.id
+          ), '[]'::json)
+        ) ORDER BY recipient.recipient_type)
+        FROM app_notification_event_rule_recipients recipient
+        LEFT JOIN app_users target_user ON target_user.id = recipient.recipient_user_id
+        LEFT JOIN app_roles target_role ON target_role.id = recipient.recipient_role_id
+        WHERE recipient.rule_id = rule.id
+      ), '[]'::json) AS recipients
     FROM app_notification_events event
     JOIN app_notification_catalogs catalog ON catalog.id = event.catalog_id
     JOIN app_notification_event_rules rule ON rule.event_id = event.id
-    LEFT JOIN app_notification_event_rule_recipients recipient ON recipient.rule_id = rule.id
-    GROUP BY catalog.id, event.id, rule.id
+    WHERE (${catalogKey}::text IS NULL OR catalog.catalog_key = ${catalogKey})
+      AND (${searchPattern}::text IS NULL
+        OR event.display_name ILIKE ${searchPattern}
+        OR event.event_key ILIKE ${searchPattern}
+        OR event.description ILIKE ${searchPattern}
+        OR catalog.display_name ILIKE ${searchPattern}
+        OR catalog.catalog_key ILIKE ${searchPattern}
+        OR EXISTS (
+          SELECT 1
+          FROM app_notification_event_rule_recipients recipient
+          LEFT JOIN app_notification_event_rule_channels binding
+            ON binding.rule_recipient_id = recipient.id
+          LEFT JOIN app_notification_channels channel
+            ON channel.id = binding.channel_id
+          WHERE recipient.rule_id = rule.id
+            AND (recipient.recipient_type ILIKE ${searchPattern}
+              OR channel.display_name ILIKE ${searchPattern}
+              OR channel.code ILIKE ${searchPattern})
+        ))
     ORDER BY catalog.sort_order, catalog.catalog_key, event.event_key
   `);
   return result.rows;
@@ -120,6 +195,8 @@ export async function findNotificationEventRuleRecord(eventKey: string) {
       COALESCE(json_agg(json_build_object(
         'recipientType', recipient.recipient_type,
         'isRequired', recipient.is_required,
+        'targetId', COALESCE(recipient.recipient_user_id, recipient.recipient_role_id),
+        'targetDisplayName', COALESCE(target_user.display_name, target_role.name),
         'channelCodes', COALESCE((
           SELECT json_agg(channel.code ORDER BY channel.sort_order, channel.code)
           FROM app_notification_event_rule_channels binding
@@ -132,11 +209,26 @@ export async function findNotificationEventRuleRecord(eventKey: string) {
         'displayName', channel.display_name,
         'isEnabled', channel.is_enabled
       ) ORDER BY channel.sort_order, channel.code), '[]')
-      FROM app_notification_channels channel) AS channels
+      FROM app_notification_channels channel) AS channels,
+      json_build_object(
+        'users', (SELECT COALESCE(json_agg(json_build_object(
+          'id', app_user.id,
+          'name', app_user.display_name,
+          'email', app_user.email
+        ) ORDER BY app_user.display_name, app_user.email), '[]')
+          FROM app_users app_user
+          WHERE app_user.status = 'active'),
+        'roles', (SELECT COALESCE(json_agg(json_build_object(
+          'id', role.id,
+          'name', role.name
+        ) ORDER BY role.name), '[]') FROM app_roles role)
+      ) AS "recipientOptions"
     FROM app_notification_events event
     JOIN app_notification_catalogs catalog ON catalog.id = event.catalog_id
     JOIN app_notification_event_rules rule ON rule.event_id = event.id
     LEFT JOIN app_notification_event_rule_recipients recipient ON recipient.rule_id = rule.id
+    LEFT JOIN app_users target_user ON target_user.id = recipient.recipient_user_id
+    LEFT JOIN app_roles target_role ON target_role.id = recipient.recipient_role_id
     WHERE event.event_key = ${eventKey}
     GROUP BY catalog.id, event.id, rule.id
   `);
@@ -176,16 +268,25 @@ export async function updateNotificationEventRuleRecord(input: {
       WITH recipient_input AS (
         SELECT *
         FROM jsonb_to_recordset(${JSON.stringify(input.update.recipients)}::jsonb)
-          AS item("recipientType" text, "isRequired" boolean, "channelCodes" jsonb)
+          AS item("recipientType" text, "targetId" uuid,
+            "isRequired" boolean, "channelCodes" jsonb)
       ), inserted_recipients AS (
         INSERT INTO app_notification_event_rule_recipients (
           rule_id,
           recipient_type,
+          recipient_user_id,
+          recipient_role_id,
           is_required
         )
-        SELECT ${ruleId}::uuid, input."recipientType", input."isRequired"
+        SELECT ${ruleId}::uuid,
+          input."recipientType",
+          CASE WHEN input."recipientType" = 'SPECIFIC_USER'
+            THEN input."targetId" END,
+          CASE WHEN input."recipientType" = 'SPECIFIC_ROLE'
+            THEN input."targetId" END,
+          input."isRequired"
         FROM recipient_input input
-        RETURNING id, recipient_type
+        RETURNING id, recipient_type, recipient_user_id, recipient_role_id
       )
       INSERT INTO app_notification_event_rule_channels (
         rule_recipient_id,
@@ -195,6 +296,10 @@ export async function updateNotificationEventRuleRecord(input: {
       FROM inserted_recipients recipient
       JOIN recipient_input input
         ON input."recipientType" = recipient.recipient_type
+        AND input."targetId" IS NOT DISTINCT FROM COALESCE(
+          recipient.recipient_user_id,
+          recipient.recipient_role_id
+        )
       CROSS JOIN LATERAL jsonb_array_elements_text(
         input."channelCodes"
       ) channel_code
@@ -211,114 +316,4 @@ export async function updateNotificationEventRuleRecord(input: {
     });
     return { eventKey: input.eventKey };
   });
-}
-
-function deliveryWhere(query: NotificationDeliveryQuery) {
-  return sql`WHERE (${query.eventKey ?? null}::text IS NULL OR occurrence.event_key = ${query.eventKey ?? null})
-    AND (${query.status ?? null}::text IS NULL OR delivery.status = ${query.status ?? null})
-    AND (${query.applicationReference ?? null}::text IS NULL OR occurrence.context->>'applicationReference' ILIKE ${query.applicationReference ? `%${query.applicationReference}%` : null})
-    AND (${query.recipient ?? null}::text IS NULL OR delivery.recipient_email ILIKE ${query.recipient ? `%${query.recipient}%` : null} OR delivery.recipient_name ILIKE ${query.recipient ? `%${query.recipient}%` : null})
-    AND (${query.dateFrom ? new Date(query.dateFrom) : null}::timestamptz IS NULL OR delivery.created_at >= ${query.dateFrom ? new Date(query.dateFrom) : null})
-    AND (${query.dateTo ? new Date(query.dateTo) : null}::timestamptz IS NULL OR delivery.created_at <= ${query.dateTo ? new Date(query.dateTo) : null})`;
-}
-
-export async function listNotificationDeliveryRecords(query: NotificationDeliveryQuery) {
-  const where = deliveryWhere(query);
-  const orderColumn = query.sortField === "status"
-    ? sql`delivery.status`
-    : query.sortField === "nextAttemptAt"
-      ? sql`delivery.next_attempt_at`
-      : sql`delivery.created_at`;
-  const direction = query.sortDirection === "asc" ? sql`ASC` : sql`DESC`;
-  const offset = (query.page - 1) * query.pageSize;
-  const [items, countResult] = await Promise.all([
-    getDatabase().execute(sql`
-      SELECT delivery.id AS "deliveryId",
-        occurrence.event_key AS "eventKey",
-        occurrence.context->>'applicationReference' AS "applicationReference",
-        channel.code AS "channelCode",
-        delivery.status,
-        delivery.attempt_count AS "attemptCount",
-        delivery.recipient_name AS "recipientName",
-        delivery.recipient_email AS "recipientEmail",
-        version.version_number AS "templateVersionNumber",
-        delivery.last_error_code AS "failureCode",
-        delivery.next_attempt_at AS "nextAttemptAt",
-        delivery.sent_at AS "sentAt",
-        delivery.created_at AS "createdAt",
-        delivery.updated_at AS "updatedAt"
-      FROM app_notification_deliveries delivery
-      JOIN app_notification_outbox occurrence ON occurrence.id = delivery.outbox_id
-      JOIN app_notification_channels channel ON channel.id = delivery.channel_id
-      LEFT JOIN app_notification_template_versions version ON version.id = delivery.template_version_id
-      ${where}
-      ORDER BY ${orderColumn} ${direction}, delivery.id ${direction}
-      LIMIT ${query.pageSize} OFFSET ${offset}
-    `),
-    getDatabase().execute<{ total: number }>(sql`
-      SELECT count(*)::integer AS total
-      FROM app_notification_deliveries delivery
-      JOIN app_notification_outbox occurrence ON occurrence.id = delivery.outbox_id
-      ${where}
-    `),
-  ]);
-  return { items: items.rows, total: countResult.rows[0]?.total ?? 0 };
-}
-
-export async function retryNotificationDeliveryRecord(input: {
-  actorId: string;
-  correlationId: string;
-  deliveryId: string;
-  reason: string;
-}) {
-  return getDatabase().transaction(async (transaction) => {
-    const current = await transaction.execute<{ outboxId: string; status: string }>(sql`
-      SELECT outbox_id AS "outboxId", status
-      FROM app_notification_deliveries
-      WHERE id = ${input.deliveryId}::uuid
-      FOR UPDATE
-    `);
-    const delivery = current.rows[0];
-    if (!delivery) return { outcome: "NOT_FOUND" as const };
-    if (delivery.status === "PENDING") return { outcome: "ALREADY_SCHEDULED" as const };
-    if (delivery.status !== "FAILED") return { outcome: "INELIGIBLE" as const };
-    await transaction.execute(sql`
-      UPDATE app_notification_deliveries
-      SET status = 'PENDING', next_attempt_at = now(), updated_at = now()
-      WHERE id = ${input.deliveryId}::uuid
-    `);
-    await transaction.execute(sql`
-      UPDATE app_notification_outbox
-      SET status = 'PENDING', available_at = now(), processed_at = NULL,
-        last_error_code = NULL, last_error_message = NULL, updated_at = now()
-      WHERE id = ${delivery.outboxId}::uuid
-    `);
-    await transaction.insert(authorizationAuditEntries).values({
-      action: "NOTIFICATION_DELIVERY_RETRY_REQUESTED",
-      actorId: input.actorId,
-      changes: {
-        correlationId: input.correlationId,
-        deliveryId: input.deliveryId,
-        reason: input.reason,
-      } satisfies NotificationAuditMetadata,
-    });
-    return { outcome: "SCHEDULED" as const };
-  });
-}
-
-export async function getNotificationOperationalSummaryRecord(staleBefore: Date) {
-  const result = await getDatabase().execute(sql`
-    SELECT count(*) FILTER (WHERE delivery.status = 'PENDING' AND delivery.attempt_count = 0)::integer AS pending,
-      count(*) FILTER (WHERE delivery.status = 'PENDING' AND delivery.attempt_count > 0)::integer AS retrying,
-      count(*) FILTER (WHERE delivery.status = 'PROCESSING')::integer AS processing,
-      count(*) FILTER (WHERE delivery.status = 'SENT')::integer AS sent,
-      count(*) FILTER (WHERE delivery.status = 'FAILED')::integer AS failed,
-      min(delivery.next_attempt_at) FILTER (WHERE delivery.status = 'PENDING') AS "oldestPendingAt",
-      EXISTS (
-        SELECT 1 FROM app_notification_outbox occurrence
-        WHERE occurrence.status = 'PROCESSING' AND occurrence.locked_at <= ${staleBefore}
-      ) AS "staleLock"
-    FROM app_notification_deliveries delivery
-  `);
-  return result.rows[0];
 }

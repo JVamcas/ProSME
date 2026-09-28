@@ -4,7 +4,7 @@ import { requestData } from "@/lib/client-http";
 import type { FormRuntimeSchema } from "@/modules/forms/FormTypes";
 
 export type WorkflowTaskCoiGate = {
-  form: FormRuntimeSchema;
+  form: FormRuntimeSchema | null;
   taskId: string;
   taskName: string;
   taskStatus: string;

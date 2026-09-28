@@ -1,34 +1,125 @@
 "use client";
 
+import { ArrowUpToLine } from "lucide-react";
 import { toast } from "sonner";
 
+import { PortalErrorState } from "@/components/layout/PortalErrorState";
+import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
 import { GeneralButton } from "@/components/ui/button";
+import { formatLocalDateTime24 } from "@/lib/dateUtils";
 import { Badge } from "@/shared/ui/Badge";
-import { NotificationTemplateImportForm } from "./NotificationTemplateImportForm";
+import type {
+  NotificationTemplateTargetDetail,
+  NotificationTemplateTargetSummary,
+  NotificationTemplateVersionSummary,
+} from "../api/NotificationTemplateSchemas";
 import {
   useNotificationTemplateTarget,
   usePublishNotificationTemplate,
 } from "./NotificationTemplateHooks";
-import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
-import { PortalErrorState } from "@/components/layout/PortalErrorState";
+
+function targetName(target: NotificationTemplateTargetSummary) {
+  if (target.scope === "GLOBAL") return "Global";
+  if (target.scope === "CATALOG") return target.catalogName ?? target.catalogKey ?? "Catalog";
+  return target.eventKey ?? "Event";
+}
+
+function SummaryField({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-brand-navy/55">
+        {label}
+      </p>
+      <p className="mt-1 text-sm font-semibold text-brand-navy">{value}</p>
+    </div>
+  );
+}
+
+function VersionBadge({ status }: { status: NotificationTemplateVersionSummary["status"] }) {
+  const variant = status === "PUBLISHED"
+    ? "success"
+    : status === "DRAFT"
+      ? "gold"
+      : "outline";
+  return <Badge variant={variant}>{status}</Badge>;
+}
+
+function VersionRow({
+  canPublish,
+  onPublish,
+  publishing,
+  version,
+}: {
+  canPublish: boolean;
+  onPublish: () => void;
+  publishing: boolean;
+  version: NotificationTemplateVersionSummary;
+}) {
+  return (
+    <tr className="border-t border-brand-navy/10">
+      <td className="whitespace-nowrap px-4 py-4 text-sm font-semibold text-brand-navy">
+        v{version.versionNumber}
+      </td>
+      <td className="whitespace-nowrap px-4 py-4">
+        <VersionBadge status={version.status} />
+      </td>
+      <td className="min-w-52 px-4 py-4 text-sm text-brand-navy/75">
+        {version.sourceFileName}
+      </td>
+      <td className="whitespace-nowrap px-4 py-4 text-sm text-brand-navy/65">
+        {formatLocalDateTime24(version.createdAt)}
+      </td>
+      <td className="whitespace-nowrap px-4 py-4 text-sm text-brand-navy/65">
+        {formatLocalDateTime24(version.publishedAt)}
+      </td>
+      <td className="px-4 py-4 text-right">
+        {version.status === "DRAFT" && canPublish ? (
+          <GeneralButton
+            aria-label={`Publish version ${version.versionNumber}`}
+            disabled={publishing}
+            onClick={onPublish}
+            size="icon-compact"
+            variant="outline"
+          >
+            <ArrowUpToLine aria-hidden="true" className="size-4" />
+          </GeneralButton>
+        ) : (
+          <span className="text-sm text-brand-navy/40">—</span>
+        )}
+      </td>
+    </tr>
+  );
+}
 
 export function NotificationTemplateWorkspace({
-  canImport,
   canPublish,
   channelCode,
+  initialData,
   targetId,
 }: {
-  canImport: boolean;
   canPublish: boolean;
   channelCode: string;
+  initialData: NotificationTemplateTargetDetail;
   targetId: string;
 }) {
-  const query = useNotificationTemplateTarget(channelCode, targetId);
+  const query = useNotificationTemplateTarget(channelCode, targetId, initialData);
   const publish = usePublishNotificationTemplate(channelCode, targetId);
-  if (query.isPending) return <PortalLoadingState title="" description="Just a moment..."/>
-  if (query.error) {
-    return <PortalErrorState title={query.error?.name} description={query.error?.message}/>
+
+  if (query.isPending) {
+    return <PortalLoadingState description="Just a moment..." title="" />;
   }
+  if (query.error || !query.data) {
+    return (
+      <PortalErrorState
+        description={query.error?.message ?? "Template target not found."}
+        title={query.error?.name ?? "Unable to load template"}
+      />
+    );
+  }
+
+  const { target, versions } = query.data;
+  const published = versions.find((version) => version.status === "PUBLISHED");
+
   async function publishVersion(versionId: string, versionNumber: number) {
     try {
       await publish.mutateAsync(versionId);
@@ -37,66 +128,88 @@ export function NotificationTemplateWorkspace({
       toast.error(error instanceof Error ? error.message : "Unable to publish template.");
     }
   }
+
   return (
-    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
-      <section className="space-y-4">
-        <div className="rounded-2xl bg-brand-cream/50 p-5">
-          <h2 className="font-bold text-brand-navy">Allowed fields</h2>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {query.data?.allowedFields.map((field) => (
-              <code className="rounded bg-white px-2 py-1 text-xs text-brand-navy" key={field}>
-                {`{{${field}}}`}
-              </code>
-            ))}
-          </div>
-        </div>
-        <div className="overflow-hidden rounded-2xl border border-brand-navy/10 bg-white">
-          <div className="border-b border-brand-navy/10 px-5 py-4">
-            <h2 className="text-lg font-bold text-brand-navy">Version history</h2>
-          </div>
-          <div className="divide-y divide-brand-navy/10">
-            {query.data?.versions.length ? query.data.versions.map((version) => (
-              <article className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between" key={version.id}>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-semibold text-brand-navy">Version {version.versionNumber}</h3>
-                    <Badge variant={version.status === "PUBLISHED" ? "success" : "outline"}>
-                      {version.status}
-                    </Badge>
-                  </div>
-                  <p className="mt-1 text-sm text-brand-navy/65">{version.subjectTemplate}</p>
-                  <p className="mt-1 text-xs text-brand-navy/50">
-                    {version.sourceFileName} · {new Date(version.createdAt).toLocaleString()}
-                  </p>
-                </div>
-                {version.status === "DRAFT" && canPublish ? (
-                  <GeneralButton
-                    disabled={publish.isPending}
-                    onClick={() => void publishVersion(version.id, version.versionNumber)}
-                    size="sm"
-                  >
-                    Publish
-                  </GeneralButton>
-                ) : null}
-              </article>
-            )) : (
-              <p className="p-5 text-sm text-brand-navy/60">No versions imported.</p>
-            )}
-          </div>
-        </div>
-      </section>
-      <aside>
-        {canImport ? (
-          <NotificationTemplateImportForm
-            channelCode={channelCode}
-            targetId={targetId}
+    <div className="space-y-6">
+      <section className="rounded-[1.75rem] border border-brand-navy/10 bg-brand-white p-6 shadow-sm">
+        <div className="grid gap-5 lg:grid-cols-3">
+          <SummaryField label="Template name" value={target.label} />
+          <SummaryField label="Target" value={targetName(target)} />
+          <SummaryField
+            label="Published version"
+            value={published ? `v${published.versionNumber}` : "No published version"}
           />
+        </div>
+        {target.description ? (
+          <p className="mt-5 max-w-4xl text-sm leading-6 text-brand-navy/65">
+            {target.description}
+          </p>
+        ) : null}
+      </section>
+
+      <section className="rounded-[1.75rem] border border-brand-navy/10 bg-brand-white p-5 shadow-sm sm:p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-brand-navy/10 pb-4">
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-lg font-bold text-brand-navy">Version history</h2>
+              <Badge variant="outline">
+                {versions.length} version{versions.length === 1 ? "" : "s"}
+              </Badge>
+            </div>
+            <p className="mt-1 text-sm text-brand-navy/60">
+              {published ? `Published v${published.versionNumber}` : "No published version"}
+            </p>
+          </div>
+        </div>
+        {versions.length ? (
+          <div className="mt-3 overflow-x-auto rounded-2xl border border-brand-navy/10">
+            <table className="w-full border-collapse text-left">
+              <thead className="bg-brand-cream/50">
+                <tr className="text-xs font-bold text-brand-navy/65">
+                  <th className="px-4 py-3">Version</th>
+                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3">Source file</th>
+                  <th className="px-4 py-3">Imported at</th>
+                  <th className="px-4 py-3">Published at</th>
+                  <th className="px-4 py-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {versions.map((version) => (
+                  <VersionRow
+                    canPublish={canPublish}
+                    key={version.id}
+                    onPublish={() => void publishVersion(
+                      version.id,
+                      version.versionNumber,
+                    )}
+                    publishing={publish.isPending}
+                    version={version}
+                  />
+                ))}
+              </tbody>
+            </table>
+          </div>
         ) : (
-          <p className="rounded-2xl bg-brand-cream/50 p-5 text-sm text-brand-navy/70">
-            You can inspect versions but do not have template import permission.
+          <p className="py-8 text-center text-sm text-brand-navy/60">
+            No versions have been imported yet.
           </p>
         )}
-      </aside>
+      </section>
+
+      <section className="rounded-2xl bg-brand-cream/50 p-5">
+        <h2 className="font-bold text-brand-navy">Available template fields</h2>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {query.data.allowedFields.map((field) => (
+            <code
+              className="rounded-lg bg-brand-white px-2.5 py-1.5 text-xs text-brand-navy"
+              key={field}
+            >
+              {`{{${field}}}`}
+            </code>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }

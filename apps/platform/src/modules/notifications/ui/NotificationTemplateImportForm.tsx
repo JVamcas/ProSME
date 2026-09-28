@@ -7,7 +7,7 @@ import { z } from "zod";
 
 import { GeneralButton } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
-import { FormInput, FormTextarea } from "@/components/ui/form-fields";
+import { FormInput } from "@/components/ui/form-fields";
 import { FileUploadButton } from "@/shared/ui/FileUploadButton";
 import { useImportNotificationTemplate } from "./NotificationTemplateHooks";
 
@@ -27,21 +27,32 @@ type ImportFormValues = z.infer<typeof importFormSchema>;
 
 export function NotificationTemplateImportForm({
   channelCode,
+  defaultSubjectTemplate,
+  onImported,
   targetId,
 }: {
   channelCode: string;
+  defaultSubjectTemplate: string;
+  onImported?: () => void;
   targetId: string;
 }) {
   const mutation = useImportNotificationTemplate(channelCode, targetId);
   const form = useForm<ImportFormValues>({
-    defaultValues: { plainTextTemplate: "", subjectTemplate: "" },
+    defaultValues: {
+      plainTextTemplate: "",
+      subjectTemplate: defaultSubjectTemplate,
+    },
     resolver: zodResolver(importFormSchema),
   });
   const submit = form.handleSubmit(async (values) => {
     try {
       const result = await mutation.mutateAsync(values);
       toast.success(`Draft version ${result.version.versionNumber} imported.`);
-      form.reset({ plainTextTemplate: "", subjectTemplate: "" });
+      form.reset({
+        plainTextTemplate: "",
+        subjectTemplate: defaultSubjectTemplate,
+      });
+      onImported?.();
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Unable to import template.",
@@ -55,7 +66,6 @@ export function NotificationTemplateImportForm({
         className="space-y-4 rounded-2xl border border-brand-navy/10 bg-white p-5"
         onSubmit={submit}
       >
-        <h2 className="text-lg font-bold text-brand-navy">Import a draft</h2>
         <Controller
           control={form.control}
           name="file"

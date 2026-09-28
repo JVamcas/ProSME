@@ -5,7 +5,10 @@ import { count, desc, eq } from "drizzle-orm";
 import { getDatabase } from "@/db/client";
 import type { FundingCallListInput } from "../api/FundingCallSchemas";
 import { fundingCalls } from "./funding-call.schema";
-import { sanitizeFundingCallDescription } from "./FundingCallRichText";
+import {
+  sanitizeFundingCallDescription,
+  sanitizeFundingCallEligibilitySummary,
+} from "./FundingCallRichText";
 
 export async function readFundingCalls(input: FundingCallListInput) {
   const database = getDatabase();
@@ -28,6 +31,9 @@ export async function readFundingCalls(input: FundingCallListInput) {
     items: rows.map((row) => ({
       ...row,
       description: sanitizeFundingCallDescription(row.description),
+      eligibilitySummary: sanitizeFundingCallEligibilitySummary(
+        row.eligibilitySummary,
+      ),
     })),
     page: input.page,
     pageSize: input.pageSize,

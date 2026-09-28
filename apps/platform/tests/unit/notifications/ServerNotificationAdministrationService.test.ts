@@ -1,23 +1,32 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
-vi.mock("@/modules/notifications/infrastructure/NotificationAdministrationRepository", () => ({
-  findNotificationCatalogRecord: vi.fn(),
-  findNotificationEventRuleRecord: vi.fn(),
-  getNotificationOperationalSummaryRecord: vi.fn(),
-  listNotificationCatalogRecords: vi.fn(),
-  listNotificationDeliveryRecords: vi.fn(),
-  listNotificationEventRuleRecords: vi.fn(),
-  retryNotificationDeliveryRecord: vi.fn(),
-  updateNotificationCatalogRecord: vi.fn(),
-  updateNotificationEventRuleRecord: vi.fn(),
-}));
+vi.mock(
+  "@/modules/notifications/infrastructure/NotificationAdministrationRepository",
+  () => ({
+    findNotificationCatalogRecord: vi.fn(),
+    findNotificationEventRuleRecord: vi.fn(),
+    listNotificationCatalogRecords: vi.fn(),
+    listNotificationEventRuleRecords: vi.fn(),
+    updateNotificationCatalogRecord: vi.fn(),
+    updateNotificationEventRuleRecord: vi.fn(),
+  }),
+);
+vi.mock(
+  "@/modules/notifications/infrastructure/NotificationDeliveryAdministrationRepository",
+  () => ({
+    getNotificationOperationalSummaryRecord: vi.fn(),
+    listNotificationDeliveryRecords: vi.fn(),
+    retryNotificationDeliveryRecord: vi.fn(),
+  }),
+);
 
 import { permissionCodes } from "@/auth/authorization/permissions";
 import type { AuthenticatedUser } from "@/auth/types";
 import { PermissionDeniedError } from "@/auth/authorization/policy";
 import { ResourceConflictError } from "@/lib/resource-errors";
 import {
+  getNotificationEventRules,
   getNotificationDeliveries,
   retryNotificationDelivery,
   updateNotificationCatalog,
@@ -26,11 +35,14 @@ import {
 import {
   findNotificationCatalogRecord,
   findNotificationEventRuleRecord,
-  listNotificationDeliveryRecords,
-  retryNotificationDeliveryRecord,
+  listNotificationEventRuleRecords,
   updateNotificationCatalogRecord,
   updateNotificationEventRuleRecord,
 } from "@/modules/notifications/infrastructure/NotificationAdministrationRepository";
+import {
+  listNotificationDeliveryRecords,
+  retryNotificationDeliveryRecord,
+} from "@/modules/notifications/infrastructure/NotificationDeliveryAdministrationRepository";
 
 function user(permissions: string[]): AuthenticatedUser {
   return {
@@ -53,23 +65,43 @@ beforeEach(() => {
 });
 
 describe("notification administration service", () => {
+  it("passes validated event-rule filters to the repository", async () => {
+    vi.mocked(listNotificationEventRuleRecords).mockResolvedValue([]);
+
+    await expect(
+      getNotificationEventRules(
+        user([permissionCodes.notificationConfigurationRead]),
+        { catalogKey: "WORKFLOW", search: "assigned" },
+      ),
+    ).resolves.toEqual([]);
+
+    expect(listNotificationEventRuleRecords).toHaveBeenCalledWith({
+      catalogKey: "WORKFLOW",
+      search: "assigned",
+    });
+  });
+
   it("denies delivery history without the delivery read permission", async () => {
-    await expect(getNotificationDeliveries(user([]), {
-      page: 1,
-      pageSize: 25,
-      sortDirection: "desc",
-      sortField: "createdAt",
-    })).rejects.toBeInstanceOf(PermissionDeniedError);
+    await expect(
+      getNotificationDeliveries(user([]), {
+        page: 1,
+        pageSize: 25,
+        sortDirection: "desc",
+        sortField: "createdAt",
+      }),
+    ).rejects.toBeInstanceOf(PermissionDeniedError);
     expect(listNotificationDeliveryRecords).not.toHaveBeenCalled();
   });
 
   it("returns the SQL repository page without recipient body content", async () => {
     vi.mocked(listNotificationDeliveryRecords).mockResolvedValue({
-      items: [{
-        applicationReference: "SME-1",
-        deliveryId: "81000000-0000-4000-8000-000000000001",
-        recipientEmail: "applicant@example.com",
-      }],
+      items: [
+        {
+          applicationReference: "SME-1",
+          deliveryId: "81000000-0000-4000-8000-000000000001",
+          recipientEmail: "applicant@example.com",
+        },
+      ],
       total: 1,
     });
     const result = await getNotificationDeliveries(
@@ -77,24 +109,30 @@ describe("notification administration service", () => {
       { page: 1, pageSize: 25, sortDirection: "desc", sortField: "createdAt" },
     );
     expect(result).toMatchObject({ page: 1, total: 1, totalPages: 1 });
-    expect(JSON.stringify(result)).not.toMatch(/htmlTemplate|plainTextTemplate|credentials/i);
+    expect(JSON.stringify(result)).not.toMatch(
+      /htmlTemplate|plainTextTemplate|credentials/i,
+    );
   });
 
   it("rejects a stale catalog update", async () => {
     vi.mocked(updateNotificationCatalogRecord).mockResolvedValue(undefined);
-    vi.mocked(findNotificationCatalogRecord).mockResolvedValue({ catalogKey: "APPLICATIONS" });
-    await expect(updateNotificationCatalog(
-      user([permissionCodes.notificationConfigurationUpdate]),
-      "APPLICATIONS",
-      {
-        description: "Application events",
-        displayName: "Applications",
-        expectedUpdatedAt: "2026-09-28T10:00:00.000Z",
-        isEnabled: true,
-        sortOrder: 10,
-      },
-      "correlation-1",
-    )).rejects.toBeInstanceOf(ResourceConflictError);
+    vi.mocked(findNotificationCatalogRecord).mockResolvedValue({
+      catalogKey: "APPLICATIONS",
+    });
+    await expect(
+      updateNotificationCatalog(
+        user([permissionCodes.notificationConfigurationUpdate]),
+        "APPLICATIONS",
+        {
+          description: "Application events",
+          displayName: "Applications",
+          expectedUpdatedAt: "2026-09-28T10:00:00.000Z",
+          isEnabled: true,
+          sortOrder: 10,
+        },
+        "correlation-1",
+      ),
+    ).rejects.toBeInstanceOf(ResourceConflictError);
   });
 
   it("allows a configuration administrator to update a catalog", async () => {
@@ -112,20 +150,24 @@ describe("notification administration service", () => {
       sortOrder: 10,
       updatedAt: new Date("2026-09-28T10:01:00.000Z"),
     });
-    await expect(updateNotificationCatalog(
-      user([permissionCodes.notificationConfigurationUpdate]),
-      "APPLICATIONS",
-      {
-        description: "Application events",
-        displayName: "Applications",
-        expectedUpdatedAt: "2026-09-28T10:00:00.000Z",
-        isEnabled: false,
-        sortOrder: 10,
-      },
-      "correlation-allowed",
-    )).resolves.toMatchObject({ catalogKey: "APPLICATIONS", isEnabled: false });
+    await expect(
+      updateNotificationCatalog(
+        user([permissionCodes.notificationConfigurationUpdate]),
+        "APPLICATIONS",
+        {
+          description: "Application events",
+          displayName: "Applications",
+          expectedUpdatedAt: "2026-09-28T10:00:00.000Z",
+          isEnabled: false,
+          sortOrder: 10,
+        },
+        "correlation-allowed",
+      ),
+    ).resolves.toMatchObject({ catalogKey: "APPLICATIONS", isEnabled: false });
     expect(updateNotificationCatalogRecord).toHaveBeenCalledWith(
-      expect.objectContaining({ actorId: "80000000-0000-4000-8000-000000000001" }),
+      expect.objectContaining({
+        actorId: "80000000-0000-4000-8000-000000000001",
+      }),
     );
   });
 
@@ -136,49 +178,105 @@ describe("notification administration service", () => {
     vi.mocked(findNotificationEventRuleRecord)
       .mockResolvedValueOnce({
         channels: [{ code: "EMAIL", isEnabled: true }],
+        recipientOptions: { roles: [], users: [] },
         recipients: [{ recipientType: "APPLICATION_OWNER" }],
       })
       .mockResolvedValueOnce({
         eventKey: "application.submitted",
         recipients: [{ recipientType: "ASSIGNED_USER" }],
       });
-    await expect(updateNotificationEventRule(
+    await expect(
+      updateNotificationEventRule(
+        user([permissionCodes.notificationConfigurationUpdate]),
+        "application.submitted",
+        {
+          eventEnabled: true,
+          expectedUpdatedAt: "2026-09-28T10:00:00.000Z",
+          isEnabled: true,
+          recipients: [
+            {
+              channelCodes: ["EMAIL"],
+              isRequired: true,
+              recipientType: "ASSIGNED_USER",
+            },
+          ],
+        },
+        "correlation-2",
+      ),
+    ).resolves.toMatchObject({ eventKey: "application.submitted" });
+    expect(updateNotificationEventRuleRecord).toHaveBeenCalledWith(
+      expect.objectContaining({
+        update: expect.objectContaining({
+          recipients: [
+            expect.objectContaining({
+              recipientType: "ASSIGNED_USER",
+            }),
+          ],
+        }),
+      }),
+    );
+  });
+
+  it("accepts an available specific user recipient target", async () => {
+    const targetId = "80000000-0000-4000-8000-000000000099";
+    vi.mocked(updateNotificationEventRuleRecord).mockResolvedValue({
+      eventKey: "application.submitted",
+    });
+    vi.mocked(findNotificationEventRuleRecord)
+      .mockResolvedValueOnce({
+        channels: [{ code: "EMAIL", isEnabled: true }],
+        recipientOptions: {
+          roles: [],
+          users: [{ id: targetId }],
+        },
+      })
+      .mockResolvedValueOnce({ eventKey: "application.submitted" });
+
+    await updateNotificationEventRule(
       user([permissionCodes.notificationConfigurationUpdate]),
       "application.submitted",
       {
         eventEnabled: true,
         expectedUpdatedAt: "2026-09-28T10:00:00.000Z",
         isEnabled: true,
-        recipients: [{
-          channelCodes: ["EMAIL"],
-          isRequired: true,
-          recipientType: "ASSIGNED_USER",
-        }],
+        recipients: [
+          {
+            channelCodes: ["EMAIL"],
+            isRequired: true,
+            recipientType: "SPECIFIC_USER",
+            targetId,
+          },
+        ],
       },
-      "correlation-2",
-    )).resolves.toMatchObject({ eventKey: "application.submitted" });
+      "correlation-specific-user",
+    );
+
     expect(updateNotificationEventRuleRecord).toHaveBeenCalledWith(
       expect.objectContaining({
         update: expect.objectContaining({
-          recipients: [expect.objectContaining({
-            recipientType: "ASSIGNED_USER",
-          })],
+          recipients: [expect.objectContaining({ targetId })],
         }),
       }),
     );
   });
 
   it("authorizes and schedules retry without invoking delivery transport", async () => {
-    vi.mocked(retryNotificationDeliveryRecord).mockResolvedValue({ outcome: "SCHEDULED" });
-    await expect(retryNotificationDelivery(
-      user([permissionCodes.notificationDeliveryRetry]),
-      "81000000-0000-4000-8000-000000000001",
-      { reason: "SMTP configuration has been corrected." },
-      "correlation-3",
-    )).resolves.toEqual({ outcome: "SCHEDULED" });
-    expect(retryNotificationDeliveryRecord).toHaveBeenCalledWith(expect.objectContaining({
-      actorId: "80000000-0000-4000-8000-000000000001",
-      reason: "SMTP configuration has been corrected.",
-    }));
+    vi.mocked(retryNotificationDeliveryRecord).mockResolvedValue({
+      outcome: "SCHEDULED",
+    });
+    await expect(
+      retryNotificationDelivery(
+        user([permissionCodes.notificationDeliveryRetry]),
+        "81000000-0000-4000-8000-000000000001",
+        { reason: "SMTP configuration has been corrected." },
+        "correlation-3",
+      ),
+    ).resolves.toEqual({ outcome: "SCHEDULED" });
+    expect(retryNotificationDeliveryRecord).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actorId: "80000000-0000-4000-8000-000000000001",
+        reason: "SMTP configuration has been corrected.",
+      }),
+    );
   });
 });

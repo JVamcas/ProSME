@@ -64,7 +64,6 @@ const fixedTransitions: Partial<
   WITHDRAW_APPROVAL_REQUEST: { APPROVAL_PENDING: "DRAFT" },
   SUSPEND: { LIVE: "SUSPENDED", SCHEDULED: "SUSPENDED" },
   WITHDRAW: {
-    APPROVED: "WITHDRAWN",
     LIVE: "WITHDRAWN",
     SCHEDULED: "WITHDRAWN",
     SUSPENDED: "WITHDRAWN",
@@ -72,7 +71,7 @@ const fixedTransitions: Partial<
 };
 
 function publishTarget(source: LifecycleSource, now: Date) {
-  if (source.status !== "DRAFT" || now >= source.closesAt) return null;
+  if (source.status !== "APPROVED" || now >= source.closesAt) return null;
   return now < source.opensAt ? "SCHEDULED" : "LIVE";
 }
 

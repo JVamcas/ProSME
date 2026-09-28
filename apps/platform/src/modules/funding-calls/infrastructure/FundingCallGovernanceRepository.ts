@@ -3,6 +3,10 @@ import "server-only";
 import { and, eq } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
+import {
+  captureFundingCallNotification,
+  type FundingCallNotificationEventKey,
+} from "./FundingCallNotificationRepository";
 import type { FundingCall } from "../domain/FundingCall";
 import { createFundingCallGovernanceSnapshot } from "../domain/FundingCallGovernance";
 import {
@@ -19,7 +23,10 @@ import {
   fundingCallLifecycleHistory,
   fundingCalls,
 } from "./funding-call.schema";
-import { sanitizeFundingCallDescription } from "./FundingCallRichText";
+import {
+  sanitizeFundingCallDescription,
+  sanitizeFundingCallEligibilitySummary,
+} from "./FundingCallRichText";
 
 type GovernanceCommand = Extract<
   FundingCallLifecycleCommand,
@@ -55,6 +62,9 @@ function toFundingCall(row: typeof fundingCalls.$inferSelect): FundingCall {
   return {
     ...row,
     description: sanitizeFundingCallDescription(row.description),
+    eligibilitySummary: sanitizeFundingCallEligibilitySummary(
+      row.eligibilitySummary,
+    ),
   };
 }
 
@@ -64,6 +74,16 @@ function outcome(command: GovernanceCommand) {
   if (command === "WITHDRAW_APPROVAL_REQUEST") return "WITHDRAWN" as const;
   return null;
 }
+
+const notificationEvents: Record<
+  GovernanceCommand,
+  FundingCallNotificationEventKey
+> = {
+  APPROVE: "funding-call.approved",
+  RETURN_FOR_AMENDMENT: "funding-call.returned-for-amendment",
+  SUBMIT_FOR_APPROVAL: "funding-call.approval-requested",
+  WITHDRAW_APPROVAL_REQUEST: "funding-call.approval-request-withdrawn",
+};
 
 export async function changeFundingCallGovernance(
   input: FundingCallGovernanceInput,
@@ -195,6 +215,30 @@ export async function changeFundingCallGovernance(
           eq(fundingCallGovernanceReviews.outcome, "PENDING"),
         ));
     }
+    await captureFundingCallNotification(transaction, {
+      correlationId: input.correlationId,
+      eventKey: notificationEvents[input.command],
+      excludedRecipientUserIds:
+        input.command === "SUBMIT_FOR_APPROVAL"
+          ? [input.actorId, current.createdBy, current.updatedBy]
+          : input.command === "WITHDRAW_APPROVAL_REQUEST"
+            ? [input.actorId]
+            : [],
+      fundingCallId: current.id,
+      fundingCallReference: current.reference,
+      fundingCallTitle: current.title,
+      occurredAt: input.now,
+      reason,
+      rowVersion: nextRowVersion,
+      sourceIdempotencyKey: input.idempotencyKey,
+      sourceStatus: transition.sourceStatus,
+      stakeholderUserIds:
+        input.command === "RETURN_FOR_AMENDMENT"
+        || input.command === "APPROVE"
+          ? [pendingReview!.submittedBy, current.createdBy]
+          : [],
+      targetStatus: transition.targetStatus,
+    });
     return { call: toFundingCall(updated), kind: "transitioned" };
   });
 }

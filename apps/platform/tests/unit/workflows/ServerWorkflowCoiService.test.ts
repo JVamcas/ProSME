@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 vi.mock("@/modules/forms/application/ServerSystemFormService", () => ({
-  getPublishedSystemFormRuntime: vi.fn(),
+  getPublishedSystemFormRuntimeVersion: vi.fn(),
 }));
 vi.mock("@/modules/workflows/infrastructure/WorkflowCoiRepository", () => ({
   changeTaskCoi: vi.fn(),
@@ -22,7 +22,7 @@ vi.mock(
 
 import { permissionCodes } from "@/auth/authorization/permissions";
 import type { AuthenticatedUser } from "@/auth/types";
-import { getPublishedSystemFormRuntime } from "@/modules/forms/application/ServerSystemFormService";
+import { getPublishedSystemFormRuntimeVersion } from "@/modules/forms/application/ServerSystemFormService";
 import {
   declareWorkflowTaskCoi,
   getWorkflowTaskCoi,
@@ -75,13 +75,14 @@ const review = {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(getPublishedSystemFormRuntime).mockResolvedValue(form);
+  vi.mocked(getPublishedSystemFormRuntimeVersion).mockResolvedValue(form);
 });
 
 describe("workflow COI service", () => {
   it("returns only assignment metadata before clearance", async () => {
     vi.mocked(readTaskCoiGate).mockResolvedValue({
       assignedUserId: actor.id,
+      coiFormVersionId: form.versionId,
       gated: true,
       rowVersion: 2,
       stageInstanceId: "66666666-6666-4666-8666-666666666666",
@@ -100,8 +101,8 @@ describe("workflow COI service", () => {
       state: "PENDING_REVIEW",
       cleared: false,
     });
-    expect(getPublishedSystemFormRuntime).toHaveBeenCalledWith(
-      "COI_DECLARATION",
+    expect(getPublishedSystemFormRuntimeVersion).toHaveBeenCalledWith(
+      form.versionId,
     );
   });
 

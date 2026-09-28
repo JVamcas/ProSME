@@ -1,4 +1,3 @@
-import { CircleDollarSign } from "lucide-react";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -7,8 +6,6 @@ import { getCurrentUser } from "@/auth/authorization/current-user";
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { can } from "@/auth/authorization/policy";
 import { FundingCallEditor } from "@/modules/funding-calls/ui/FundingCallEditor";
-import { FundingCallPageActions } from "@/modules/funding-calls/ui/FundingCallPageActions";
-import { PageShell } from "@/shared/ui/PageShell";
 
 export const metadata: Metadata = { title: "Edit funding call" };
 
@@ -27,28 +24,24 @@ export default async function FundingCallPage({
   }
 
   return (
-    <PageShell
-      actions={(
-        <FundingCallPageActions
-          canPublish={can(user, permissionCodes.fundingCallPublish)}
-          id={id.data}
-        />
+    <FundingCallEditor
+      canApprove={can(user, permissionCodes.fundingCallApproveAll)}
+      canArchive={can(user, permissionCodes.fundingCallArchive)}
+      canPublish={can(user, permissionCodes.fundingCallPublish)}
+      canReturn={can(user, permissionCodes.fundingCallApproveAll)}
+      canResume={can(user, permissionCodes.fundingCallResume)}
+      canSubmit={
+        can(user, permissionCodes.fundingCallCreate)
+        || can(user, permissionCodes.fundingCallEditDraft)
+      }
+      canSuspend={can(user, permissionCodes.fundingCallSuspend)}
+      canUpdate={can(user, permissionCodes.fundingCallEditDraft)}
+      canWithdraw={can(user, permissionCodes.fundingCallWithdraw)}
+      canWithdrawOwnRequest={can(
+        user,
+        permissionCodes.fundingCallApprovalRequestOwnWithdraw,
       )}
-      description="Manage funding call"
-      eyebrow="Funding calls"
-      icon={<CircleDollarSign />}
-      title="Edit funding call"
-    >
-      <FundingCallEditor
-        canApprove={can(user, permissionCodes.fundingCallApproveAll)}
-        canReturn={can(user, permissionCodes.fundingCallReturnAll)}
-        canUpdate={can(user, permissionCodes.fundingCallUpdate)}
-        canWithdrawOwnRequest={can(
-          user,
-          permissionCodes.fundingCallApprovalRequestOwnWithdraw,
-        )}
-        id={id.data}
-      />
-    </PageShell>
+      id={id.data}
+    />
   );
 }

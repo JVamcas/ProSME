@@ -37,6 +37,7 @@ export async function cloneWorkflow(
   }
   const versionId = await cloneWorkflowVersion({
     actorId: actor.id,
+    coiFormVersionId: source.version.coiFormVersionId,
     correlationId,
     definitionId: source.definition.id,
     graph: cloneWorkflowGraph(source.graph),

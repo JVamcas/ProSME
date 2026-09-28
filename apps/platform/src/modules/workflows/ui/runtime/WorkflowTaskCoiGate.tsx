@@ -22,6 +22,8 @@ import { PageShell } from "@/shared/ui/PageShell";
 
 import type { WorkflowTaskCoiGate as CoiGate } from "../../ClientWorkflowCoiService";
 import { useDeclareWorkflowCoi } from "./useWorkflowCoi";
+import { toast } from "@/shared/ui/Toast";
+
 
 function BackToWorkQueue() {
   return (
@@ -166,6 +168,8 @@ function DeclarationForm({ gate }: { gate: CoiGate }) {
   const mutation = useDeclareWorkflowCoi(gate.taskId);
   const [values, setValues] = useState<DynamicFormValues>({});
 
+  if (!gate.form) return <GateStatus gate={gate} />;
+
   function submit(formValues: DynamicFormValues) {
     const hasConflict = formValues.HAS_CONFLICT === true;
     const disclosure = formValues.DISCLOSURE_TEXT;
@@ -176,7 +180,7 @@ function DeclarationForm({ gate }: { gate: CoiGate }) {
           ? disclosure.trim()
           : undefined,
       expectedRowVersion: gate.rowVersion,
-    });
+    },{onError:(error)=>toast.error(error.message)});
   }
 
   return (
@@ -207,14 +211,6 @@ function DeclarationForm({ gate }: { gate: CoiGate }) {
               onSubmit={submit}
               showCompleteness={false}
             >
-              {mutation.isError ? (
-                <p
-                  className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700"
-                  role="alert"
-                >
-                  {mutation.error.message}
-                </p>
-              ) : null}
               <div className="mt-5 flex flex-col gap-4 border-t border-brand-navy/10 pt-5 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-xs leading-5 text-brand-navy/55 sm:max-w-xs">
                   You can&apos;t change this declaration after submission.

@@ -918,6 +918,48 @@
       "when": 1799020800000,
       "tag": "0130_remove_standard_closeout_scoring",
       "breakpoints": true
+    },
+    {
+      "idx": 131,
+      "version": "7",
+      "when": 1799107200000,
+      "tag": "0131_notification_target_default_subjects",
+      "breakpoints": true
+    },
+    {
+      "idx": 132,
+      "version": "7",
+      "when": 1799193600000,
+      "tag": "0132_notification_specific_recipients",
+      "breakpoints": true
+    },
+    {
+      "idx": 133,
+      "version": "7",
+      "when": 1799280000000,
+      "tag": "0133_align_funding_call_permissions",
+      "breakpoints": true
+    },
+    {
+      "idx": 134,
+      "version": "7",
+      "when": 1799366400000,
+      "tag": "0134_complete_funding_call_lifecycle",
+      "breakpoints": true
+    },
+    {
+      "idx": 135,
+      "version": "7",
+      "when": 1799452800000,
+      "tag": "0135_bind_workflow_coi_form",
+      "breakpoints": true
+    },
+    {
+      "idx": 136,
+      "version": "7",
+      "when": 1799539200000,
+      "tag": "0136_funding_call_notification_events",
+      "breakpoints": true
     }
   ]
 }

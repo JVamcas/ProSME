@@ -6,6 +6,7 @@ import type {
   NotificationCatalogUpdate,
   NotificationDeliveryQuery,
   NotificationEventRuleUpdate,
+  NotificationEventRuleListQuery,
 } from "../api/NotificationAdministrationSchemas";
 import { clientNotificationAdministrationService as service } from "./ClientNotificationAdministrationService";
 
@@ -13,6 +14,8 @@ const keys = {
   catalogs: ["admin", "notifications", "catalogs"] as const,
   catalog: (key: string) => ["admin", "notifications", "catalogs", key] as const,
   rules: ["admin", "notifications", "rules"] as const,
+  ruleList: (query: NotificationEventRuleListQuery) =>
+    ["admin", "notifications", "rules", query] as const,
   rule: (key: string) => ["admin", "notifications", "rules", key] as const,
   deliveries: (query: NotificationDeliveryQuery) => ["admin", "notifications", "deliveries", query] as const,
   summary: ["admin", "notifications", "summary"] as const,
@@ -37,12 +40,19 @@ export function useUpdateNotificationCatalog(key: string) {
   });
 }
 
-export function useNotificationRules() {
-  return useQuery({ queryFn: service.listRules, queryKey: keys.rules });
+export function useNotificationRules(query: NotificationEventRuleListQuery = {}) {
+  return useQuery({
+    queryFn: () => service.listRules(query),
+    queryKey: keys.ruleList(query),
+  });
 }
 
-export function useNotificationRule(key: string) {
-  return useQuery({ queryFn: () => service.getRule(key), queryKey: keys.rule(key) });
+export function useNotificationRule(key: string, enabled = true) {
+  return useQuery({
+    enabled,
+    queryFn: () => service.getRule(key),
+    queryKey: keys.rule(key),
+  });
 }
 
 export function useUpdateNotificationRule(key: string) {
@@ -51,6 +61,23 @@ export function useUpdateNotificationRule(key: string) {
     mutationFn: (input: NotificationEventRuleUpdate) => service.updateRule(key, input),
     onSuccess: (rule) => {
       client.setQueryData(keys.rule(key), rule);
+      void client.invalidateQueries({ queryKey: keys.rules });
+    },
+  });
+}
+
+export function useUpdateNotificationRuleFromList() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      eventKey,
+      input,
+    }: {
+      eventKey: string;
+      input: NotificationEventRuleUpdate;
+    }) => service.updateRule(eventKey, input),
+    onSuccess: (rule) => {
+      client.setQueryData(keys.rule(rule.eventKey), rule);
       void client.invalidateQueries({ queryKey: keys.rules });
     },
   });

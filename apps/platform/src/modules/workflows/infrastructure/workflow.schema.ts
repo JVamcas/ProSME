@@ -65,6 +65,10 @@ export const workflowDefinitionVersions = pgTable(
       .$type<WorkflowTemplateDetails>()
       .notNull()
       .default({ code: "", name: "", description: "" }),
+    coiFormVersionId: uuid("coi_form_version_id").references(
+      () => formVersions.id,
+      { onDelete: "restrict" },
+    ),
     rowVersion: integer("row_version").notNull().default(1),
     createdBy: uuid("created_by")
       .notNull()
@@ -89,6 +93,9 @@ export const workflowDefinitionVersions = pgTable(
     index("app_workflow_versions_definition_status_idx").on(
       table.definitionId,
       table.status,
+    ),
+    index("app_workflow_versions_coi_form_version_idx").on(
+      table.coiFormVersionId,
     ),
   ],
 );

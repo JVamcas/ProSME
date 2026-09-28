@@ -83,9 +83,9 @@ beforeEach(() => {
 });
 
 describe("funding call governance service", () => {
-  it("requires the distinct submit permission and current readiness", async () => {
+  it("requires the create permission to submit a draft", async () => {
     await expect(changeFundingCallGovernanceStatus(
-      user([permissionCodes.fundingCallUpdate]),
+      user([permissionCodes.fundingCallRead]),
       callId,
       { command: "SUBMIT_FOR_APPROVAL", expectedRowVersion: 4 },
       "submit-key",
@@ -103,7 +103,7 @@ describe("funding call governance service", () => {
     });
 
     const result = await changeFundingCallGovernanceStatus(
-      user([permissionCodes.fundingCallSubmitAll]),
+      user([permissionCodes.fundingCallCreate]),
       callId,
       { command: "SUBMIT_FOR_APPROVAL", expectedRowVersion: 4 },
       "submit-key",
@@ -159,7 +159,7 @@ describe("funding call governance service", () => {
     });
 
     await changeFundingCallGovernanceStatus(
-      user([permissionCodes.fundingCallReturnAll]),
+      user([permissionCodes.fundingCallApproveAll]),
       callId,
       {
         command: "RETURN_FOR_AMENDMENT",

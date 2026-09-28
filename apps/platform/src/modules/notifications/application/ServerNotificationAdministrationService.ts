@@ -1,28 +1,35 @@
 import "server-only";
 
 import type { AuthenticatedUser } from "@/auth/types";
-import { ResourceConflictError, ResourceNotFoundError } from "@/lib/resource-errors";
+import {
+  ResourceConflictError,
+  ResourceNotFoundError,
+} from "@/lib/resource-errors";
 import {
   notificationCatalogUpdateSchema,
   notificationDeliveryQuerySchema,
   notificationDeliveryRetrySchema,
   notificationEventRuleUpdateSchema,
+  notificationEventRuleListQuerySchema,
   type NotificationCatalogUpdate,
   type NotificationDeliveryQuery,
   type NotificationEventRuleUpdate,
+  type NotificationEventRuleListQuery,
 } from "../api/NotificationAdministrationSchemas";
 import { notificationAuditMetadataSchema } from "../domain/NotificationAudit";
 import {
   findNotificationCatalogRecord,
   findNotificationEventRuleRecord,
-  getNotificationOperationalSummaryRecord,
   listNotificationCatalogRecords,
-  listNotificationDeliveryRecords,
   listNotificationEventRuleRecords,
-  retryNotificationDeliveryRecord,
   updateNotificationCatalogRecord,
   updateNotificationEventRuleRecord,
 } from "../infrastructure/NotificationAdministrationRepository";
+import {
+  getNotificationOperationalSummaryRecord,
+  listNotificationDeliveryRecords,
+  retryNotificationDeliveryRecord,
+} from "../infrastructure/NotificationDeliveryAdministrationRepository";
 import { getNotificationProcessorConfiguration } from "./NotificationProcessorConfiguration";
 import { authorizeNotificationOperation } from "./NotificationAuthorization";
 
@@ -72,9 +79,13 @@ export async function updateNotificationCatalog(
   return serialize(catalog);
 }
 
-export async function getNotificationEventRules(user: AuthenticatedUser | null) {
+export async function getNotificationEventRules(
+  user: AuthenticatedUser | null,
+  input: NotificationEventRuleListQuery = {},
+) {
   authorizeNotificationOperation(user, "READ_CONFIGURATION");
-  return serialize(await listNotificationEventRuleRecords());
+  const query = notificationEventRuleListQuerySchema.parse(input);
+  return serialize(await listNotificationEventRuleRecords(query));
 }
 
 export async function getNotificationEventRule(
@@ -95,9 +106,13 @@ export async function updateNotificationEventRule(
 ) {
   const actor = authorizeNotificationOperation(user, "UPDATE_CONFIGURATION");
   const update = notificationEventRuleUpdateSchema.parse(input);
-  const current = await findNotificationEventRuleRecord(eventKey) as
+  const current = (await findNotificationEventRuleRecord(eventKey)) as
     | {
         channels: Array<{ code: string; isEnabled: boolean }>;
+        recipientOptions: {
+          roles: Array<{ id: string }>;
+          users: Array<{ id: string }>;
+        };
       }
     | undefined;
   if (!current) throw new ResourceNotFoundError("notification event rule");
@@ -106,10 +121,29 @@ export async function updateNotificationEventRule(
       .filter((channel) => channel.isEnabled)
       .map((channel) => channel.code),
   );
-  if (update.recipients.some((recipient) =>
-    recipient.channelCodes.some((code) => !enabledChannels.has(code))
-  )) {
-    throw new ResourceConflictError("Notification rules can only bind enabled channels.");
+  if (
+    update.recipients.some((recipient) =>
+      recipient.channelCodes.some((code) => !enabledChannels.has(code)),
+    )
+  ) {
+    throw new ResourceConflictError(
+      "Notification rules can only bind enabled channels.",
+    );
+  }
+  const userIds = new Set(current.recipientOptions.users.map(({ id }) => id));
+  const roleIds = new Set(current.recipientOptions.roles.map(({ id }) => id));
+  if (
+    update.recipients.some((recipient) =>
+      recipient.recipientType === "SPECIFIC_USER"
+        ? !userIds.has(recipient.targetId)
+        : recipient.recipientType === "SPECIFIC_ROLE"
+          ? !roleIds.has(recipient.targetId)
+          : false,
+    )
+  ) {
+    throw new ResourceConflictError(
+      "One or more selected notification recipients are no longer available.",
+    );
   }
   const result = await updateNotificationEventRuleRecord({
     actorId: actor.id,
@@ -162,7 +196,9 @@ export async function retryNotificationDelivery(
     throw new ResourceNotFoundError("notification delivery");
   }
   if (result.outcome === "INELIGIBLE") {
-    throw new ResourceConflictError("Only failed notification deliveries can be retried.");
+    throw new ResourceConflictError(
+      "Only failed notification deliveries can be retried.",
+    );
   }
   return result;
 }

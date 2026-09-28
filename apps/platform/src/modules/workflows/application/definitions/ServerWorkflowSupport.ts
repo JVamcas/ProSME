@@ -49,7 +49,31 @@ async function validateReferences(
   graph: WorkflowGraphInput,
   validation: WorkflowValidation,
   references: Awaited<ReturnType<typeof findConfigurationReferences>>,
+  coiFormVersionId: string | null,
 ) {
+  const coiRequired = graph.stages.some((stage) =>
+    stage.coiGated || stage.tasks.some((task) => task.coiRequired)
+  );
+  if (coiRequired && !coiFormVersionId) {
+    validation.errors.push({
+      code: "COI_FORM_VERSION_REQUIRED",
+      message: "Select an exact published Conflict of Interest form version.",
+      path: "version.coiFormVersionId",
+    });
+  }
+  if (
+    coiFormVersionId
+    && (
+      references.forms.get(coiFormVersionId) !== "PUBLISHED"
+      || references.formPurposes.get(coiFormVersionId) !== "COI"
+    )
+  ) {
+    validation.errors.push({
+      code: "INVALID_COI_FORM_VERSION",
+      message: "The selected COI form must be an exact published COI version.",
+      path: "version.coiFormVersionId",
+    });
+  }
   graph.stages.forEach((stage, index) => {
     stage.actions.forEach((action, actionIndex) => {
       if (action.actionType !== "ESCALATE") return;
@@ -154,18 +178,28 @@ async function validateReferences(
   return validation;
 }
 
-export async function validateWorkflowConfiguration(graph: WorkflowGraphInput) {
+export async function validateWorkflowConfiguration(
+  graph: WorkflowGraphInput,
+  coiFormVersionId: string | null = null,
+) {
   return validateReferences(
     graph,
     validateWorkflowGraph(graph),
-    await findConfigurationReferences(graph),
+    await findConfigurationReferences(
+      graph,
+      coiFormVersionId ? [coiFormVersionId] : [],
+    ),
+    coiFormVersionId,
   );
 }
 
 export async function workflowEditorView(versionId: string) {
   const record = await loadWorkflowEditor(versionId);
   const [validation, assignmentOptions] = await Promise.all([
-    validateWorkflowConfiguration(record.graph),
+    validateWorkflowConfiguration(
+      record.graph,
+      record.version.coiFormVersionId,
+    ),
     listWorkflowAssignmentOptions(),
   ]);
   return { ...toWorkflowEditor(record, validation), assignmentOptions };

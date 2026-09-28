@@ -67,7 +67,7 @@ async function seedFundingCalls(query: Query) {
          actor_id, command_time, effective_time, row_version, correlation_id,
          idempotency_key)
        VALUES
-        ($1, $2, 'PUBLISH', 'DRAFT', 'LIVE', $3, now(), now(), 2, $4, $5)`,
+        ($1, $2, 'PUBLISH', 'APPROVED', 'LIVE', $3, now(), now(), 2, $4, $5)`,
       [
         lifecycleId,
         id,

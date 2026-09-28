@@ -29,6 +29,7 @@ type ReplacementResult = {
 type LockedTask = {
   applicationId: string;
   assignedUserId: string | null;
+  coiFormVersionId: string | null;
   reviewerSlot: number;
   rowVersion: number;
   stageInstanceId: string;
@@ -111,6 +112,7 @@ export async function replaceWorkflowReviewer(
     const locked = await transaction.execute(sql`
       SELECT workflow.application_id AS "applicationId",
         task.assigned_user_id AS "assignedUserId",
+        version.coi_form_version_id AS "coiFormVersionId",
         task.reviewer_slot AS "reviewerSlot",
         task.row_version AS "rowVersion",
         task.stage_instance_id AS "stageInstanceId",
@@ -124,6 +126,8 @@ export async function replaceWorkflowReviewer(
       JOIN app_stage_task_definitions definition
         ON definition.id = task.workflow_task_definition_id
       JOIN app_workflow_instances workflow ON workflow.id = stage.workflow_instance_id
+      JOIN app_workflow_definition_versions version
+        ON version.id = workflow.workflow_template_version_id
       WHERE task.id = ${input.taskId}::uuid
         AND stage.status = 'ACTIVE' AND workflow.status = 'ACTIVE'
       FOR UPDATE OF task
@@ -203,12 +207,13 @@ export async function replaceWorkflowReviewer(
       `);
       await transaction.execute(sql`
         INSERT INTO app_workflow_application_coi_events (
-          application_id, task_id, subject_user_id, actor_id, from_state, to_state, reason
+          application_id, task_id, subject_user_id, actor_id, from_state,
+          to_state, reason, form_version_id
         ) VALUES (
           ${task.applicationId}::uuid, ${input.taskId}::uuid,
           ${task.assignedUserId}::uuid,
           ${input.actorId}::uuid, 'PENDING_REVIEW', 'RECUSED',
-          ${input.reason}
+          ${input.reason}, ${task.coiFormVersionId}::uuid
         )
       `);
     }

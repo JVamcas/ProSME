@@ -46,9 +46,10 @@ export default async function FundingCallPage({
                 <h2 className="text-xl font-bold text-brand-navy">
                   Eligibility summary
                 </h2>
-                <p className="mt-3 leading-7 text-slate-700">
-                  {call.eligibilitySummary}
-                </p>
+                <SanitizedRichTextContent
+                  className="mt-3 leading-7 text-slate-700"
+                  sanitizedHtml={call.eligibilitySummary}
+                />
               </div>
             ) : null}
           </article>

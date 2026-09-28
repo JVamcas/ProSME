@@ -35,7 +35,7 @@ export function FundingCallPageActions({
 
   return (
     <>
-      {call.status === "DRAFT" && canPublish ? (
+      {call.status === "APPROVED" && canPublish ? (
         <GeneralButton
           disabled={publish.isPending}
           onClick={publishFundingCall}
