@@ -106,6 +106,7 @@ export async function cloneFormVersion(input: {
         displayMode: source.displayMode,
         formDefinitionId: input.definitionId,
         instructions: source.instructions,
+        submissionMode: source.submissionMode,
         submitLabel: source.submitLabel,
         versionNumber: Number(latest.versionNumber) + 1,
       })

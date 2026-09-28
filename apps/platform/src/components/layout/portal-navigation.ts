@@ -15,6 +15,8 @@ import {
   Workflow,
   BadgeQuestionMark,
   Pipette,
+  BookOpenText,
+  RotateCcw,
 } from "lucide-react";
 
 import { permissionCodes } from "@/auth/authorization/permissions";
@@ -173,8 +175,11 @@ export const operationsPortalRoutes: readonly PortalRoute[] = [
       permissionCodes.eligibilityRuleSetRetire,
       permissionCodes.eligibilityRuleSetUpdate,
       permissionCodes.notificationConfigurationRead,
+      permissionCodes.notificationConfigurationUpdate,
       permissionCodes.notificationTemplateImport,
       permissionCodes.notificationTemplatePublish,
+      permissionCodes.notificationDeliveryRead,
+      permissionCodes.notificationDeliveryRetry,
     ],
     children: [
       {
@@ -213,8 +218,11 @@ export const operationsPortalRoutes: readonly PortalRoute[] = [
         space: "operations",
         requiredAnyPermissions: [
           permissionCodes.notificationConfigurationRead,
+          permissionCodes.notificationConfigurationUpdate,
           permissionCodes.notificationTemplateImport,
           permissionCodes.notificationTemplatePublish,
+          permissionCodes.notificationDeliveryRead,
+          permissionCodes.notificationDeliveryRetry,
         ],
         children: [
           {
@@ -227,9 +235,33 @@ export const operationsPortalRoutes: readonly PortalRoute[] = [
               permissionCodes.notificationConfigurationRead,
               permissionCodes.notificationTemplateImport,
               permissionCodes.notificationTemplatePublish,
-            ]
-          }
-        ]
+            ],
+          },
+          {
+            id: "admin-notification-event-catalogs",
+            href: "/admin/notifications/event-catalogs",
+            label: "Event Catalogs",
+            icon: BookOpenText,
+            space: "operations",
+            requiredPermission: permissionCodes.notificationConfigurationRead,
+          },
+          {
+            id: "admin-notification-event-rules",
+            href: "/admin/notifications/event-rules",
+            label: "Event Rules",
+            icon: Workflow,
+            space: "operations",
+            requiredPermission: permissionCodes.notificationConfigurationRead,
+          },
+          {
+            id: "admin-notification-deliveries",
+            href: "/admin/notifications/deliveries",
+            label: "Delivery Operations",
+            icon: RotateCcw,
+            space: "operations",
+            requiredPermission: permissionCodes.notificationDeliveryRead,
+          },
+        ],
       },
       {
         id: "funding-call-eligibility",

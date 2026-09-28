@@ -98,6 +98,7 @@ const graph: WorkflowGraphInput = {
       documentRequirements: [
         {
           taskStableKey: "REVIEW_TASK",
+          stableKey: "REVIEW_EVIDENCE",
           name: "Review evidence",
           mandatory: true,
           acceptedFileTypes: ["PDF"],
@@ -114,6 +115,7 @@ const graph: WorkflowGraphInput = {
         taskStableKey: "REVIEW_TASK",
         criteria: [
           {
+            stableKey: "BUSINESS_VIABILITY",
             criterion: "Business viability",
             description: "Assess viability.",
             weight: 100,

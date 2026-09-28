@@ -303,6 +303,11 @@ export const notificationOutbox = pgTable(
       table.availableAt,
       table.id,
     ),
+    index("app_notification_outbox_stale_lock_idx").on(
+      table.status,
+      table.lockedAt,
+      table.id,
+    ),
     index("app_notification_outbox_event_history_idx").on(
       table.eventId,
       table.createdAt,
@@ -374,6 +379,10 @@ export const notificationDeliveries = pgTable(
       table.createdAt,
       table.id,
     ),
+    index("app_notification_deliveries_status_history_idx")
+      .on(table.status, table.createdAt, table.id),
+    index("app_notification_deliveries_recipient_email_idx")
+      .on(sql`lower(${table.recipientEmail})`),
     check(
       "app_notification_deliveries_recipient_check",
       sql`${table.recipientType} in ('APPLICATION_OWNER', 'ASSIGNED_USER')`,

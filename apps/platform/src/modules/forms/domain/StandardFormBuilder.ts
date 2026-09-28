@@ -4,6 +4,7 @@ import type {
   FormFieldType,
   FormOption,
   FormSection,
+  FormSubmissionMode,
 } from "@/modules/forms/FormTypes";
 import { standardFormPurpose } from "./FormPurpose";
 import type { StandardFormSeed } from "./StandardFormDefinition";
@@ -45,6 +46,7 @@ export function defineStandardForm(input: {
   instructions: string;
   name: string;
   sections: SectionInput[];
+  submissionMode?: FormSubmissionMode;
   submitLabel?: string;
 }): StandardFormSeed {
   const sections = input.sections.map((section, index): FormSection => ({
@@ -83,6 +85,7 @@ export function defineStandardForm(input: {
     name: input.name,
     purpose: standardFormPurpose(input.code),
     sections,
-    submitLabel: input.submitLabel ?? "Complete task",
+    submissionMode: input.submissionMode ?? "EXPLICIT",
+    submitLabel: input.submitLabel ?? "Save",
   };
 }

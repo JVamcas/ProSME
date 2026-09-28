@@ -3,14 +3,16 @@
 import { Mail } from "lucide-react";
 import Link from "next/link";
 
+import { PortalErrorState } from "@/components/layout/PortalErrorState";
+import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
 import { Badge } from "@/shared/ui/Badge";
 import { useNotificationChannels } from "./NotificationTemplateHooks";
 
 export function NotificationChannelsWorkspace() {
   const query = useNotificationChannels();
-  if (query.isPending) return <p>Loading notification channels…</p>;
+  if (query.isPending) return <PortalLoadingState title="" description="Just a moment..." />
   if (query.error) {
-    return <p className="text-sm text-red-700" role="alert">{query.error.message}</p>;
+    return <PortalErrorState title={query.error.name} description={query.error.message} />
   }
   return (
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">

@@ -13,8 +13,16 @@ import {
   useSaveTaskReviewDraft,
   useUploadWorkflowTaskDocument,
 } from "@/modules/work-queue/WorkQueueHooks";
-import type { TaskDetail } from "@/modules/work-queue/TaskTypes";
+import type {
+  SaveTaskReviewDraftInput,
+  TaskDetail,
+} from "@/modules/work-queue/TaskTypes";
 import { WorkflowTaskWorkSections } from "@/modules/workflows/ui/WorkflowTaskWorkSections";
+import {
+  createReviewDraftPatch,
+  mergeReviewDraftPatches,
+  reviewDraftPatchIsEmpty,
+} from "./ReviewAutosavePatch";
 
 const reviewAutosaveDelayMs = 800;
 
@@ -105,33 +113,83 @@ function reviewIsReady(task: TaskDetail, values: ChecklistFormValues) {
   });
 }
 
+function initialAutosavePatch(
+  task: TaskDetail,
+  values: ChecklistFormValues,
+): SaveTaskReviewDraftInput {
+  const commentFields = new Map(
+    task.commentFields.map((field) => [field.key, field]),
+  );
+  const checklistItems = new Map(
+    task.checklistItems.map((item) => [item.code, item]),
+  );
+  const documentRequirements = new Map(
+    task.documentRequirements.map((item) => [item.stableKey, item]),
+  );
+  const savedComments = new Set(task.resultComments.map((item) => item.key));
+  const savedDocuments = new Set(
+    task.resultDocuments.map((item) => item.category),
+  );
+  const savedItems = new Set(task.resultItems.map((item) => item.code));
+  const savedScores = new Set(task.resultScores.map((item) => item.criterion));
+  const comments = values.comments.filter(
+    (item) => !savedComments.has(item.key)
+      && (!commentFields.get(item.key)?.mandatory || item.value.trim()),
+  );
+  const documents = values.documents.filter(
+    (item) => !savedDocuments.has(item.category)
+      && Boolean(documentRequirements.get(item.category)?.document),
+  );
+  const items = values.items.filter(
+    (item) => !savedItems.has(item.code)
+      && (!checklistItems.get(item.code)?.required
+        || item.accepted
+        || item.comment?.trim()),
+  );
+  const scores = values.scores.filter(
+    (item) => !savedScores.has(item.criterion)
+      && (item.score !== null || item.comment?.trim()),
+  );
+  return {
+    ...(comments.length ? { comments } : {}),
+    ...(documents.length ? { documents } : {}),
+    ...(items.length ? { items } : {}),
+    ...(scores.length ? { scores } : {}),
+  };
+}
+
 export function ChecklistTaskForm({
   finalActions,
   formContent,
+  formSectionComplete,
   onStateChange,
   task,
 }: {
   finalActions?: ReactNode;
   formContent?: ReactNode;
+  formSectionComplete: boolean;
   onStateChange: (state: ReviewDraftState) => void;
   task: TaskDetail;
 }) {
   const save = useSaveTaskReviewDraft(task.taskInstanceId);
   const upload = useUploadWorkflowTaskDocument(task.taskInstanceId);
+  const [{ initialPatch, initialValues }] = useState(() => {
+    const values = defaultValues(task);
+    return {
+      initialPatch: initialAutosavePatch(task, values),
+      initialValues: values,
+    };
+  });
   const form = useForm<ChecklistFormValues>({
-    defaultValues: defaultValues(task),
+    defaultValues: initialValues,
     resolver: zodResolver(checklistFormSchema),
   });
-  const [revision, setRevision] = useState(() => {
-    const initial = defaultValues(task);
-    const missingSavedReview = (task.hasChecklist && !task.checklistCompleted)
-      || (task.commentFields.length > 0 && !task.commentCompleted)
-      || (task.documentRequirements.length > 0 && !task.documentsCompleted)
-      || (Boolean(task.scoring?.criteria.length) && !task.scoringCompleted);
-    return missingSavedReview && reviewIsReady(task, initial) ? 1 : 0;
-  });
+  const [revision, setRevision] = useState(
+    reviewDraftPatchIsEmpty(initialPatch) ? 0 : 1,
+  );
   const [savedRevision, setSavedRevision] = useState(0);
   const lastAttemptedRevision = useRef(0);
+  const pendingPatch = useRef<SaveTaskReviewDraftInput>(initialPatch);
   const values = useWatch({ control: form.control }) as ChecklistFormValues;
   const serializedValues = JSON.stringify(values);
   const previousValues = useRef(serializedValues);
@@ -145,9 +203,16 @@ export function ChecklistTaskForm({
 
   useEffect(() => {
     if (previousValues.current === serializedValues) return;
+    const previous = JSON.parse(previousValues.current) as ChecklistFormValues;
     previousValues.current = serializedValues;
+    const patch = createReviewDraftPatch(previous, values);
+    if (reviewDraftPatchIsEmpty(patch)) return;
+    pendingPatch.current = mergeReviewDraftPatches(
+      pendingPatch.current,
+      patch,
+    );
     setRevision((current) => current + 1);
-  }, [serializedValues]);
+  }, [serializedValues, values]);
 
   useEffect(() => {
     onStateChange({ pending, ready });
@@ -163,8 +228,18 @@ export function ChecklistTaskForm({
         void form.trigger();
         return;
       }
-      save.mutate(parsed.data, {
-        onSuccess: () => setSavedRevision(revision),
+      const patch = pendingPatch.current;
+      if (reviewDraftPatchIsEmpty(patch)) return;
+      pendingPatch.current = {};
+      save.mutate(patch, {
+        onError: () => {
+          pendingPatch.current = mergeReviewDraftPatches(
+            patch,
+            pendingPatch.current,
+          );
+        },
+        onSuccess: () => setSavedRevision((current) =>
+          Math.max(current, revision)),
       });
     }, reviewAutosaveDelayMs);
     return () => window.clearTimeout(timer);
@@ -173,8 +248,19 @@ export function ChecklistTaskForm({
   function retrySave() {
     const parsed = checklistFormSchema.safeParse(form.getValues());
     if (!parsed.success) return;
-    save.mutate(parsed.data, {
-      onSuccess: () => setSavedRevision(revision),
+    const patch = pendingPatch.current;
+    if (reviewDraftPatchIsEmpty(patch)) return;
+    lastAttemptedRevision.current = revision;
+    pendingPatch.current = {};
+    save.mutate(patch, {
+      onError: () => {
+        pendingPatch.current = mergeReviewDraftPatches(
+          patch,
+          pendingPatch.current,
+        );
+      },
+      onSuccess: () => setSavedRevision((current) =>
+        Math.max(current, revision)),
     });
   }
 
@@ -188,7 +274,29 @@ export function ChecklistTaskForm({
           documentUpload={{
             error: upload.isError ? upload.error.message : undefined,
             onFile: (requirementId, file) => {
-              upload.mutate({ file, requirementId });
+              upload.mutate({ file, requirementId }, {
+                onSuccess: (updatedTask) => {
+                  const requirement = updatedTask.documentRequirements.find(
+                    (item) => item.id === requirementId,
+                  );
+                  if (!requirement) return;
+                  const existing = values.documents.find(
+                    (item) => item.category === requirement.stableKey,
+                  );
+                  const patch = {
+                    documents: [existing ?? {
+                      category: requirement.stableKey,
+                      comment: "",
+                      outcome: "" as const,
+                    }],
+                  };
+                  pendingPatch.current = mergeReviewDraftPatches(
+                    pendingPatch.current,
+                    patch,
+                  );
+                  setRevision((current) => current + 1);
+                },
+              });
             },
             pendingRequirementId: upload.isPending
               ? upload.variables?.requirementId
@@ -207,7 +315,7 @@ export function ChecklistTaskForm({
             checklist: task.checklistCompleted ? "Completed" : "Required",
             comments: task.commentCompleted ? "Completed" : "Required",
             documents: task.documentsCompleted ? "Completed" : "Required",
-            form: task.formCompleted ? "Completed" : "Required",
+            form: formSectionComplete ? "Completed" : "Required",
             scoring: task.scoringCompleted ? "Completed" : "Required",
           }}
         />

@@ -855,6 +855,27 @@
       "when": 1798243200000,
       "tag": "0121_workflow_runtime_stable_keys",
       "breakpoints": true
+    },
+    {
+      "idx": 122,
+      "version": "7",
+      "when": 1798329600000,
+      "tag": "0122_notification_outbox_processing",
+      "breakpoints": true
+    },
+    {
+      "idx": 123,
+      "version": "7",
+      "when": 1798416000000,
+      "tag": "0123_notification_operations_indexes",
+      "breakpoints": true
+    },
+    {
+      "idx": 124,
+      "version": "7",
+      "when": 1798502400000,
+      "tag": "0124_form_submission_modes",
+      "breakpoints": true
     }
   ]
 }

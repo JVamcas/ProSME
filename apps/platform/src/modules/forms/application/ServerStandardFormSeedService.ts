@@ -17,6 +17,7 @@ function validateSeed(seed: StandardFormSeed): StandardFormSeed {
     instructions: seed.instructions,
     name: seed.name,
     purpose: seed.purpose,
+    submissionMode: seed.submissionMode,
     submitLabel: seed.submitLabel,
   });
   const editor = formEditorSchema.parse({
@@ -24,6 +25,7 @@ function validateSeed(seed: StandardFormSeed): StandardFormSeed {
     displayMode: definition.displayMode,
     fields: seed.fields,
     sections: seed.sections,
+    submissionMode: seed.submissionMode,
     submitLabel: seed.submitLabel,
   });
   const errors = formPublicationErrors(
@@ -40,6 +42,7 @@ function validateSeed(seed: StandardFormSeed): StandardFormSeed {
     instructions: definition.instructions ?? "",
     publishOnSeed: seed.publishOnSeed,
     sections: editor.sections,
+    submissionMode: seed.submissionMode,
   };
 }
 

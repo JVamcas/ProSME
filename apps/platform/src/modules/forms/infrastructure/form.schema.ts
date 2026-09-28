@@ -19,6 +19,7 @@ import type {
   FormPurpose,
   FormFieldType,
   FormStatus,
+  FormSubmissionMode,
 } from "@/modules/forms/FormTypes";
 import { users } from "@/db/schema/identity";
 import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup";
@@ -65,6 +66,10 @@ export const formVersions = pgTable(
       .notNull()
       .default("SINGLE_PAGE"),
     instructions: text("instructions"),
+    submissionMode: text("submission_mode")
+      .$type<FormSubmissionMode>()
+      .notNull()
+      .default("EXPLICIT"),
     submitLabel: text("submit_label").notNull().default("Submit"),
     rowVersion: integer("row_version").notNull().default(1),
     createdBy: uuid("created_by")
@@ -101,6 +106,10 @@ export const formVersions = pgTable(
     check(
       "app_form_versions_display_mode_check",
       sql`${table.displayMode} in ('SINGLE_PAGE', 'STEPS')`,
+    ),
+    check(
+      "app_form_versions_submission_mode_check",
+      sql`${table.submissionMode} in ('EXPLICIT', 'WITH_TASK_ACTION')`,
     ),
     check("app_form_versions_positive_check", sql`${table.versionNumber} > 0`),
     check("app_form_versions_row_version_check", sql`${table.rowVersion} > 0`),

@@ -163,6 +163,7 @@ describe("workflow task reviewer preview", () => {
     stage.documentRequirements = [
       {
         taskStableKey: stage.tasks[0].stableKey,
+        stableKey: "FINANCIAL_STATEMENTS",
         name: "Financial statements",
         mandatory: true,
         acceptedFileTypes: ["PDF"],
@@ -179,6 +180,7 @@ describe("workflow task reviewer preview", () => {
       taskStableKey: stage.tasks[0].stableKey,
       criteria: [
         {
+          stableKey: "BUSINESS_VIABILITY",
           criterion: "Business viability",
           description: "Assess the business case.",
           weight: 100,

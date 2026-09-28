@@ -68,12 +68,13 @@ function validateCommentItems(
   configured: ReturnType<typeof taskCommentFields>,
   submitted: NonNullable<CompleteChecklistTaskInput["comments"]>,
   requireMandatory = true,
+  requireEveryConfigured = true,
 ) {
   const expected = new Set(configured.map((field) => field.key));
   const received = new Set(submitted.map((item) => item.key));
   if (
     received.size !== submitted.length ||
-    received.size !== expected.size ||
+    (requireEveryConfigured && received.size !== expected.size) ||
     submitted.some((item) => !expected.has(item.key))
   ) {
     throw new RequestValidationError(
@@ -97,10 +98,14 @@ function validateChecklistItems(
   configured: ChecklistConfigurationItem[],
   submitted: ChecklistResultItem[],
   requireAcceptance = true,
+  requireEveryConfigured = true,
 ) {
   const expected = new Set(configured.map((item) => item.code));
   const received = new Set(submitted.map((item) => item.code));
-  if (received.size !== submitted.length || received.size !== expected.size) {
+  if (
+    received.size !== submitted.length ||
+    (requireEveryConfigured && received.size !== expected.size)
+  ) {
     throw new RequestValidationError(
       "Submit one decision for every configured checklist item.",
     );
@@ -125,16 +130,27 @@ function validateDocumentItems(
   configured: DocumentRequirementItem[],
   submitted: DocumentResultItem[],
   requireMandatory = true,
+  requireEveryConfigured = true,
 ) {
-  const expected = new Set(configured.map((item) => item.stableKey));
+  const configuredByKey = new Map(
+    configured.map((item) => [item.stableKey, item]),
+  );
+  const expected = new Set(
+    configured
+      .filter((item) => Boolean(item.document))
+      .map((item) => item.stableKey),
+  );
   const received = new Set(submitted.map((item) => item.category));
   if (
     received.size !== submitted.length ||
-    received.size !== expected.size ||
-    submitted.some((item) => !expected.has(item.category))
+    (requireEveryConfigured && received.size !== expected.size) ||
+    submitted.some((item) => {
+      const requirement = configuredByKey.get(item.category);
+      return !requirement || (requireEveryConfigured && !requirement.document);
+    })
   ) {
     throw new RequestValidationError(
-      "Submit one verification for every configured document requirement.",
+      "Submit one verification for every document with uploaded evidence.",
     );
   }
   if (
@@ -149,13 +165,14 @@ function validateScoreItems(
   configured: ScoringConfiguration | null,
   submitted: ScoreResultItem[],
   requireComplete = true,
+  requireEveryConfigured = true,
 ) {
   const criteria = configured?.criteria ?? [];
   const expected = new Set(criteria.map((item) => item.stableKey));
   const received = new Set(submitted.map((item) => item.criterion));
   if (
     received.size !== submitted.length ||
-    received.size !== expected.size ||
+    (requireEveryConfigured && received.size !== expected.size) ||
     submitted.some((item) => !expected.has(item.criterion))
   ) {
     throw new RequestValidationError(
@@ -268,14 +285,23 @@ export async function saveTaskReviewDraft(
   if (!task) throw new ResourceNotFoundError("workflow task");
   requirePermission(actor, task.permissions.edit);
   const commentFields = taskCommentFields(task.config);
-  validateChecklistItems(task.checklistItems, input.items, false);
-  validateCommentItems(commentFields, input.comments ?? [], false);
-  validateDocumentItems(
-    task.documentRequirements,
-    input.documents ?? [],
-    false,
-  );
-  validateScoreItems(task.scoring, input.scores ?? [], false);
+  if (input.items) {
+    validateChecklistItems(task.checklistItems, input.items, false, false);
+  }
+  if (input.comments) {
+    validateCommentItems(commentFields, input.comments, false, false);
+  }
+  if (input.documents) {
+    validateDocumentItems(
+      task.documentRequirements,
+      input.documents,
+      false,
+      false,
+    );
+  }
+  if (input.scores) {
+    validateScoreItems(task.scoring, input.scores, false, false);
+  }
   const saved = await writeTaskReviewDraft({
     ...input,
     actorId: actor.id,

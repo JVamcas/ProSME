@@ -17,10 +17,12 @@ export type WorkQueueRow = {
   reference: string;
   rowVersion: number;
   stageName: string;
+  taskBlockedReason: string | null;
   taskDefinitionCode: string;
   taskInstanceId: string;
   taskName: string;
   taskStatus: string;
+  taskType: "CONTRIBUTING" | "STAGE_DECISION";
 };
 
 export type WorkQueuePage = {

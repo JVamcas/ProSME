@@ -9,6 +9,7 @@ const documentRequirements = [{
   mandatory: true,
   maximumSizeMb: 10,
   name: "Supporting document",
+  stableKey: "SUPPORTING_DOCUMENT",
   requestStatus: "MISSING" as const,
   templateReference: "",
   uploader: "APPLICANT" as const,
@@ -53,6 +54,37 @@ describe("workflow task work sections", () => {
 
     expect(markup).toContain("Supporting document");
     expect(markup).toContain("Approve and advance");
+  });
+
+  it("keeps workflow actions hidden until the final completed step", () => {
+    const markup = renderToStaticMarkup(
+      <WorkflowTaskWorkSections
+        checklistItems={[]}
+        commentFields={[]}
+        disabled={false}
+        displayMode="STEP_PROGRESS"
+        documentRequirements={documentRequirements}
+        finalActions={<button type="button">Approve and advance</button>}
+        form={{ content: <p>Form content</p>, title: "Form" }}
+        scoring={null}
+        status={{
+          checklist: "Required",
+          comments: "Required",
+          documents: "Completed",
+          form: "Completed",
+          scoring: "Required",
+        }}
+      />,
+    );
+
+    expect(markup).toContain("Form content");
+    expect(markup).not.toContain("Approve and advance");
+  });
+
+  it("identifies documents that must be submitted by the applicant", () => {
+    const markup = renderSections("STEP_PROGRESS", "Completed");
+
+    expect(markup).toContain("To be submitted by the applicant");
   });
 
   it("does not put final-step actions into section view", () => {

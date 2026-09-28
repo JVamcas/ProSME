@@ -139,10 +139,12 @@ export type CompleteChecklistTaskInput = {
   scores?: ScoreResultItem[];
 };
 
-export type SaveTaskReviewDraftInput = Omit<
-  CompleteChecklistTaskInput,
-  "actionKey" | "expectedRowVersion"
->;
+export type SaveTaskReviewDraftInput = {
+  comments?: CommentResultItem[];
+  documents?: DocumentResultItem[];
+  items?: ChecklistResultItem[];
+  scores?: ScoreResultItem[];
+};
 
 export type TaskCompletionResult = {
   actionKey: string | null;

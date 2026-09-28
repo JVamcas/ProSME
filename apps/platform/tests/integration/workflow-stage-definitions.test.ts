@@ -140,6 +140,7 @@ afterAll(async () => {
             documentRequirements: [
               {
                 taskStableKey: "TECHNICAL_REVIEW_TASK",
+                stableKey: "TAX_CLEARANCE_CERTIFICATE",
                 name: "Tax clearance certificate",
                 mandatory: true,
                 acceptedFileTypes: ["PDF", "JPG"] as Array<"PDF" | "JPG">,
@@ -152,6 +153,7 @@ afterAll(async () => {
               },
               {
                 taskStableKey: "TECHNICAL_REVIEW_TASK",
+                stableKey: "REVIEW_MEMORANDUM",
                 name: "Review memorandum",
                 mandatory: false,
                 acceptedFileTypes: ["PDF"] as Array<"PDF">,
@@ -168,6 +170,7 @@ afterAll(async () => {
               taskStableKey: "REVIEW_TASK",
               criteria: [
                 {
+                  stableKey: "BUSINESS_VIABILITY",
                   criterion: "Business viability",
                   description: "Assess the viability of the business.",
                   weight: 60,
@@ -176,6 +179,7 @@ afterAll(async () => {
                   mandatoryComment: true,
                 },
                 {
+                  stableKey: "ECONOMIC_IMPACT",
                   criterion: "Economic impact",
                   description: "Assess the expected economic impact.",
                   weight: 40,

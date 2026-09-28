@@ -6,7 +6,10 @@ vi.mock("@/db/client", () => ({
 }));
 
 import { getDatabase } from "@/db/client";
-import { writeTaskReviewDraft } from "@/modules/workflows/infrastructure/WorkflowTaskReviewRepository";
+import {
+  mergeTaskReviewDraft,
+  writeTaskReviewDraft,
+} from "@/modules/workflows/infrastructure/WorkflowTaskReviewRepository";
 
 const input = {
   actorId: "79e20de0-3558-4d63-90a4-8c9f5125df07",
@@ -27,6 +30,29 @@ beforeEach(() => {
 });
 
 describe("review draft repository", () => {
+  it("merges changed entries without replacing unrelated task results", () => {
+    const result = mergeTaskReviewDraft(
+      {
+        documents: [{ category: "COMMITTEE_PACK", outcome: "VERIFIED" }],
+        items: [
+          { accepted: false, code: "QUORUM" },
+          { accepted: true, code: "BUDGET" },
+        ],
+        values: { resolutionNumber: "RES-100" },
+      },
+      { items: [{ accepted: true, code: "QUORUM" }] },
+    );
+
+    expect(result).toEqual({
+      documents: [{ category: "COMMITTEE_PACK", outcome: "VERIFIED" }],
+      items: [
+        { accepted: true, code: "QUORUM" },
+        { accepted: true, code: "BUDGET" },
+      ],
+      values: { resolutionNumber: "RES-100" },
+    });
+  });
+
   it("does not write when the assigned active task cannot be locked", async () => {
     execute.mockResolvedValueOnce({ rows: [] });
     await expect(writeTaskReviewDraft(input)).resolves.toBe(false);

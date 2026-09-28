@@ -66,6 +66,7 @@ export async function insertMissingStandardForms(
         id: versionId,
         instructions: form.instructions,
         status: "DRAFT" as const,
+        submissionMode: form.submissionMode,
         submitLabel: form.submitLabel,
         versionNumber: 1,
       })),

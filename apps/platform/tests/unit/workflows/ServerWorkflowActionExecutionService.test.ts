@@ -117,6 +117,7 @@ const target = {
       view: "workflow.task.assigned.read" as const,
       visibility: "INTERNAL_ONLY" as const,
     },
+    prerequisitesComplete: true,
     rowVersion: 5,
     status: "IN_PROGRESS",
   },

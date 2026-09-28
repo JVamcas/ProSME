@@ -139,7 +139,7 @@ function LoadedApplicationDraft({
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-brand-navy/10 pb-4">
           <DraftPersistenceStatus status={autosave.status} />
           {autosave.status === "failed" ? (
-            <GeneralButton onClick={autosave.retry} size="sm" variant="outline">
+            <GeneralButton onClick={autosave.retry} size="sm" variant="danger">
               <RotateCw aria-hidden="true" className="size-4" />
               Retry save
             </GeneralButton>

@@ -20,6 +20,7 @@ const decisionActionTypes = new Set<WorkflowActionDefinition["actionType"]>([
 type ActionPolicyTask = {
   assignedToActor: boolean;
   eligibilityReady?: boolean;
+  prerequisitesComplete?: boolean;
   permissions: WorkflowElementPermissions;
   status: string;
 } | null;
@@ -154,6 +155,12 @@ export function evaluateWorkflowActionPolicy(
     return unavailable(
       "INVALID_STATE",
       "Run eligibility using the current answers before choosing an action.",
+    );
+  }
+  if (target.task?.prerequisitesComplete === false) {
+    return unavailable(
+      "INVALID_STATE",
+      "Complete all contributing tasks before making the stage decision.",
     );
   }
   if (!input.configurationValid || !input.targetsValid) {

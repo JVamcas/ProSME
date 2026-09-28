@@ -1,4 +1,9 @@
-import type { FormDisplayMode, FormField, FormSection } from "../FormTypes";
+import type {
+  FormDisplayMode,
+  FormField,
+  FormSection,
+  FormSubmissionMode,
+} from "../FormTypes";
 
 export type StandardFormSeed = {
   code: string;
@@ -10,5 +15,6 @@ export type StandardFormSeed = {
   purpose: import("./FormPurpose").FormPurpose;
   publishOnSeed?: boolean;
   sections: FormSection[];
+  submissionMode: FormSubmissionMode;
   submitLabel: string;
 };

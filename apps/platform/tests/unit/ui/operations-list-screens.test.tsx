@@ -49,10 +49,12 @@ const task = {
   reference: "SMEF-2026-000123",
   rowVersion: 1,
   stageName: "Completeness screening",
+  taskBlockedReason: null,
   taskDefinitionCode: "COMPLETENESS",
   taskInstanceId: "3695f976-2acd-44ff-b30b-39c9c5ff6c27",
   taskName: "Check completeness",
   taskStatus: "PENDING",
+  taskType: "CONTRIBUTING",
 } as const;
 
 describe("operations list screens", () => {
@@ -120,8 +122,30 @@ describe("operations list screens", () => {
     expect(markup).toContain("Operations User");
     expect(markup).toContain("Task created");
     expect(markup).toContain("Task status");
+    expect(markup).toContain("Task type");
+    expect(markup).toContain("Contributing");
     expect(markup).toContain("Pending");
     expect(markup).toContain("Assigned");
     expect(markup).not.toContain(">Claim<");
+  });
+
+  it("shows a prerequisite note instead of a link for a blocked decision task", () => {
+    const markup = renderToStaticMarkup(
+      <WorkQueueTable
+        emptyMessage="No tasks"
+        items={[{
+          ...task,
+          taskBlockedReason:
+            "Available when all contributing tasks are complete.",
+          taskType: "STAGE_DECISION",
+        }]}
+      />,
+    );
+
+    expect(markup).toContain("Stage decision");
+    expect(markup).toContain(
+      "Available when all contributing tasks are complete.",
+    );
+    expect(markup).not.toContain(`/admin/tasks/${task.taskInstanceId}`);
   });
 });

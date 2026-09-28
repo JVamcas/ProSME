@@ -2,6 +2,7 @@ import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup"
 import type {
   FormDefinitionSummary,
   FormDisplayMode,
+  FormSubmissionMode,
   FormSection,
   FormVersionSummary,
 } from "./domain/FormDefinition";
@@ -11,6 +12,8 @@ export {
   formStatuses,
   type FormDefinitionSummary,
   type FormDisplayMode,
+  formSubmissionModes,
+  type FormSubmissionMode,
   type FormSection,
   type FormStatus,
   type FormVersionSummary,
@@ -87,6 +90,7 @@ export type FormRuntimeSchema = {
   versionId: string;
   versionNumber: number;
   instructions: string | null;
+  submissionMode?: FormSubmissionMode;
   submitLabel: string;
   sections: FormSection[];
   fields: FormField[];

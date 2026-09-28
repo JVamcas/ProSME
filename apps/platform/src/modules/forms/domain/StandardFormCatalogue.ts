@@ -141,6 +141,7 @@ function approvalReview(): StandardFormSeed {
     name: "Approval Form",
     description: "Captures the approved award details and funding allocation.",
     instructions: "Confirm the amount and funding details before recording the workflow decision.",
+    submissionMode: "WITH_TASK_ACTION",
     sections: [{
       key: "AWARD_DETAILS",
       title: "Award details",

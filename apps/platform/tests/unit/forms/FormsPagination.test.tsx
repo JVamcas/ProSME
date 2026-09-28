@@ -1,8 +1,8 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
+import { Pagination } from "@/components/ui/pagination";
 import { formListSchema } from "@/modules/forms/api/FormSchemas";
-import { DataTablePagination } from "@/shared/ui/DataTablePagination";
 
 describe("forms pagination", () => {
   it("applies safe request defaults and limits", () => {
@@ -15,13 +15,14 @@ describe("forms pagination", () => {
 
   it("renders the range, page count and page-size selector", () => {
     const markup = renderToStaticMarkup(
-      <DataTablePagination
-        onPageChange={() => undefined}
+      <Pagination
+        hasNextPage
+        onNext={() => undefined}
         onPageSizeChange={() => undefined}
+        onPrevious={() => undefined}
         page={2}
         pageSize={10}
         total={27}
-        totalPages={3}
       />,
     );
 

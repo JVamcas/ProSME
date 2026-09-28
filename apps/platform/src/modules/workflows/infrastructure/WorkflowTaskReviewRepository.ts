@@ -5,6 +5,51 @@ import { sql } from "drizzle-orm";
 import { getDatabase } from "@/db/client";
 import type { SaveTaskReviewDraftInput } from "@/modules/work-queue/TaskTypes";
 
+type ReviewResult = Record<string, unknown>;
+
+function resultRecord(result: unknown): ReviewResult {
+  return result !== null && typeof result === "object" && !Array.isArray(result)
+    ? { ...result as ReviewResult }
+    : {};
+}
+
+function mergeItems<T extends Record<string, unknown>>(
+  current: unknown,
+  patch: T[],
+  key: keyof T,
+) {
+  const merged = new Map<unknown, T>();
+  if (Array.isArray(current)) {
+    current.forEach((item) => {
+      if (item !== null && typeof item === "object" && key in item) {
+        merged.set((item as T)[key], item as T);
+      }
+    });
+  }
+  patch.forEach((item) => merged.set(item[key], item));
+  return [...merged.values()];
+}
+
+export function mergeTaskReviewDraft(
+  result: unknown,
+  patch: SaveTaskReviewDraftInput,
+) {
+  const next = resultRecord(result);
+  if (patch.comments) {
+    next.comments = mergeItems(next.comments, patch.comments, "key");
+  }
+  if (patch.documents) {
+    next.documents = mergeItems(next.documents, patch.documents, "category");
+  }
+  if (patch.items) {
+    next.items = mergeItems(next.items, patch.items, "code");
+  }
+  if (patch.scores) {
+    next.scores = mergeItems(next.scores, patch.scores, "criterion");
+  }
+  return next;
+}
+
 export async function writeTaskReviewDraft(input: SaveTaskReviewDraftInput & {
   actorId: string;
   correlationId: string;
@@ -32,15 +77,16 @@ export async function writeTaskReviewDraft(input: SaveTaskReviewDraftInput & {
     } | undefined;
     if (!task) return false;
 
-    const review = {
-      comments: input.comments ?? [],
-      documents: input.documents ?? [],
-      items: input.items,
-      scores: input.scores ?? [],
+    const patch = {
+      ...(input.comments ? { comments: input.comments } : {}),
+      ...(input.documents ? { documents: input.documents } : {}),
+      ...(input.items ? { items: input.items } : {}),
+      ...(input.scores ? { scores: input.scores } : {}),
     };
+    const nextResult = mergeTaskReviewDraft(task.result, patch);
     await transaction.execute(sql`
       UPDATE app_workflow_tasks
-      SET result = COALESCE(result, '{}'::jsonb) || ${JSON.stringify(review)}::jsonb,
+      SET result = ${JSON.stringify(nextResult)}::jsonb,
         status = 'IN_PROGRESS',
         started_at = COALESCE(started_at, NOW())
       WHERE id = ${input.taskId}::uuid
@@ -53,7 +99,7 @@ export async function writeTaskReviewDraft(input: SaveTaskReviewDraftInput & {
         'WORKFLOW_TASK', ${input.taskId}, ${input.correlationId}::uuid,
         ${task.workflowInstanceId}::uuid, ${task.stageInstanceId}::uuid,
         ${input.taskId}::uuid, ${JSON.stringify(task.result)}::jsonb,
-        ${JSON.stringify(review)}::jsonb)
+        ${JSON.stringify(nextResult)}::jsonb)
     `);
     return true;
   });

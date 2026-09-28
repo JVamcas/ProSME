@@ -166,6 +166,7 @@ export function taskWorkIsReady(input: {
   scoring?: {
     criteria: {
       criterion: string;
+      stableKey: string;
       mandatoryComment: boolean;
       scaleMaximum: number;
       scaleMinimum: number;
@@ -174,7 +175,6 @@ export function taskWorkIsReady(input: {
   result: unknown;
 }) {
   if (input.formRequired && !input.formCompleted) return false;
-      stableKey: string;
   if (input.hasChecklist) {
     const checklist = validateChecklistResult(input.result);
     if (!checklist.success) return false;

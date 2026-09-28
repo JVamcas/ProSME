@@ -2,14 +2,20 @@
 
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { PortalNavList } from "@/components/layout/portal-nav-list";
 import { operationsPortalRoutes } from "@/components/layout/portal-navigation";
 
+const navigationMock = vi.hoisted(() => ({ pathname: "/admin" }));
+
 vi.mock("next/navigation", () => ({
-  usePathname: () => "/admin",
+  usePathname: () => navigationMock.pathname,
 }));
+
+beforeEach(() => {
+  navigationMock.pathname = "/admin";
+});
 
 afterEach(() => {
   document.body.replaceChildren();
@@ -50,6 +56,40 @@ describe("portal navigation list", () => {
 
     expect(toggle?.getAttribute("aria-expanded")).toBe("false");
     expect(document.getElementById(childListId!)).toBeNull();
+
+    await act(async () => root.unmount());
+  });
+
+  it("renders and expands routes recursively for an active third-level route", async () => {
+    navigationMock.pathname = "/admin/notifications/channels";
+    const administration = operationsPortalRoutes.find(
+      (route) => route.id === "admin-settings",
+    );
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<PortalNavList dark routes={[administration!]} />);
+    });
+
+    const expandedToggles = Array.from(
+      container.querySelectorAll<HTMLButtonElement>(
+        'button[aria-expanded="true"]',
+      ),
+    );
+    const activeLink = container.querySelector<HTMLAnchorElement>(
+      'a[aria-current="page"]',
+    );
+
+    expect(expandedToggles.map((toggle) => toggle.textContent)).toEqual([
+      "Administration",
+      "Notifications",
+    ]);
+    expect(activeLink?.textContent).toBe("Channels");
+    expect(activeLink?.getAttribute("href")).toBe(
+      "/admin/notifications/channels",
+    );
 
     await act(async () => root.unmount());
   });

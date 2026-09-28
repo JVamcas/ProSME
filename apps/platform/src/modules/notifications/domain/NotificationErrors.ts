@@ -6,7 +6,9 @@ export const notificationErrorCodes = {
   templateUnavailable: "NOTIFICATION_TEMPLATE_UNAVAILABLE",
   templateInvalid: "NOTIFICATION_TEMPLATE_INVALID",
   providerAuthenticationFailed: "NOTIFICATION_PROVIDER_AUTHENTICATION_FAILED",
+  providerInvalidAddress: "NOTIFICATION_PROVIDER_INVALID_ADDRESS",
   providerRejected: "NOTIFICATION_PROVIDER_REJECTED",
+  providerTimeout: "NOTIFICATION_PROVIDER_TIMEOUT",
   providerUnavailable: "NOTIFICATION_PROVIDER_UNAVAILABLE",
   retryExhausted: "NOTIFICATION_RETRY_EXHAUSTED",
 } as const;
@@ -34,4 +36,3 @@ export class NotificationValidationError extends Error {
     this.issues = issues;
   }
 }
-

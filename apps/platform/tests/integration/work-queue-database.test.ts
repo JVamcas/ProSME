@@ -145,7 +145,6 @@ beforeAll(async () => {
     [taskInstanceId, stageInstanceId, taskDefinitionId, reviewerOneId],
   );
 });
-
 afterAll(async () => pool?.end());
 
 describeDatabase("work queue projections and server pagination", () => {
@@ -162,6 +161,7 @@ describeDatabase("work queue projections and server pagination", () => {
       reference,
       stageName: "Completeness screening",
       taskName: "Check completeness",
+      taskType: "CONTRIBUTING",
     });
     expect(queue.items[0]).not.toHaveProperty("result");
 

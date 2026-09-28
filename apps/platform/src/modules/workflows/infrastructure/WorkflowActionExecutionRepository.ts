@@ -23,6 +23,7 @@ import type {
 import type { WorkflowElementPermissions } from "../domain/definitions/WorkflowElementPermissions";
 import type { StageCompletionTarget } from "./StageCompletionRepository";
 import { workflowEligibilityActionReady } from "./WorkflowEligibilityActionReadiness";
+import { workflowTaskPrerequisitesComplete } from "./WorkflowTaskPrerequisiteReadiness";
 import {
   lockStageCompletionTarget,
   type StageCompletionTransaction,
@@ -38,6 +39,7 @@ export type WorkflowActionExecutionTarget = {
     eligibilityReady?: boolean;
     id: string;
     permissions: WorkflowElementPermissions;
+    prerequisitesComplete: boolean;
     rowVersion: number;
     status: string;
   } | null;
@@ -128,6 +130,7 @@ async function lockTask(
       eligibilityReady: workflowEligibilityActionReady,
       id: workflowTasks.id,
       permissions: stageTaskDefinitions.permissions,
+      prerequisitesComplete: workflowTaskPrerequisitesComplete,
       rowVersion: workflowTasks.rowVersion,
       status: workflowTasks.status,
     })

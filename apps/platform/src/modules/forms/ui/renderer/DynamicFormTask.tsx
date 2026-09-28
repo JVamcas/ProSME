@@ -66,7 +66,6 @@ function LoadedDynamicFormTask({
   taskId,
   eligibilityEvaluation,
   eligibilityTask = false,
-  hasTaskActions = false,
   onCompleteTaskForm,
   onPendingChange,
   onStateChange,
@@ -75,13 +74,15 @@ function LoadedDynamicFormTask({
   taskId: string;
   eligibilityEvaluation?: AuthoritativeEligibilityTaskResult | null;
   eligibilityTask?: boolean;
-  hasTaskActions?: boolean;
-  onCompleteTaskForm?: (complete: (() => void) | null) => void;
+  onCompleteTaskForm?: (complete: (() => Promise<void>) | null) => void;
   onPendingChange?: (pending: boolean) => void;
-  onStateChange?: (state: { pending: boolean; ready: boolean }) => void;
+  onStateChange?: (state: {
+    pending: boolean;
+    ready: boolean;
+  }) => void;
 }) {
   const evaluation = useEvaluateAuthoritativeEligibility(taskId);
-  const completionRef = useRef<() => void>(() => {});
+  const completionRef = useRef<() => Promise<void>>(async () => undefined);
   const controller = useDynamicFormController(
     taskId,
     data,
@@ -92,8 +93,8 @@ function LoadedDynamicFormTask({
     || controller.complete.isPending
     || evaluation.isPending;
   useEffect(() => {
-    completionRef.current = () => {
-      controller.completeFormValues(controller.values, null);
+    completionRef.current = async () => {
+      await controller.finalizeFormValues(controller.values);
     };
   });
   const ready = validateFormValues(
@@ -103,7 +104,10 @@ function LoadedDynamicFormTask({
   );
   useEffect(() => {
     onPendingChange?.(pending);
-    onStateChange?.({ pending, ready });
+    onStateChange?.({
+      pending,
+      ready,
+    });
   }, [onPendingChange, onStateChange, pending, ready]);
   useEffect(() => {
     onCompleteTaskForm?.(() => completionRef.current());
@@ -130,11 +134,7 @@ function LoadedDynamicFormTask({
         definition={data.schema}
         formData={controller.values}
         onChange={controller.setValues}
-        onSubmit={(values) => {
-          if (hasTaskActions && !eligibilityTask) {
-            controller.completeFormValues(values, null);
-          }
-        }}
+        onSubmit={() => undefined}
         readOnly={readOnly}
         runtimeContext={data.context}
       >
@@ -172,15 +172,6 @@ function LoadedDynamicFormTask({
                   >
                     {evaluation.isPending ? "Running eligibility…" : "Run eligibility test"}
                   </GeneralButton>
-                ) : hasTaskActions ? (
-                  <GeneralButton
-                    disabled={controller.complete.isPending || controller.save.isPending}
-                    type="submit"
-                  >
-                    {controller.complete.isPending
-                      ? "Completing…"
-                      : data.schema.submitLabel}
-                  </GeneralButton>
                 ) : null}
               </div>
             ) : null}
@@ -208,7 +199,6 @@ export function DynamicFormTask({
   taskId,
   eligibilityEvaluation,
   eligibilityTask = false,
-  hasTaskActions = false,
   onCompleteTaskForm,
   onPendingChange,
   onStateChange,
@@ -216,10 +206,12 @@ export function DynamicFormTask({
   taskId: string;
   eligibilityEvaluation?: AuthoritativeEligibilityTaskResult | null;
   eligibilityTask?: boolean;
-  hasTaskActions?: boolean;
-  onCompleteTaskForm?: (complete: (() => void) | null) => void;
+  onCompleteTaskForm?: (complete: (() => Promise<void>) | null) => void;
   onPendingChange?: (pending: boolean) => void;
-  onStateChange?: (state: { pending: boolean; ready: boolean }) => void;
+  onStateChange?: (state: {
+    pending: boolean;
+    ready: boolean;
+  }) => void;
 }) {
   const query = useTaskForm(taskId);
   if (query.isPending) {
@@ -245,7 +237,6 @@ export function DynamicFormTask({
       taskId={taskId}
       eligibilityEvaluation={eligibilityEvaluation}
       eligibilityTask={eligibilityTask}
-      hasTaskActions={hasTaskActions}
       onCompleteTaskForm={onCompleteTaskForm}
       onPendingChange={onPendingChange}
       onStateChange={onStateChange}

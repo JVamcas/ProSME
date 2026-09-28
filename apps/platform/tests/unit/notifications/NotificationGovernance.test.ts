@@ -56,6 +56,7 @@ describe("notification governance", () => {
   it("defines an audit action for every planned configuration mutation", () => {
     expect(notificationAuditActions).toEqual(expect.arrayContaining([
       "NOTIFICATION_CHANNEL_UPDATED",
+      "NOTIFICATION_CATALOG_UPDATED",
       "NOTIFICATION_EVENT_UPDATED",
       "NOTIFICATION_EVENT_RULE_UPDATED",
       "NOTIFICATION_TEMPLATE_TARGET_UPDATED",
