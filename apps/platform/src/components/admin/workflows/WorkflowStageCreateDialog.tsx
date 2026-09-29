@@ -9,6 +9,7 @@ import { DraggableDialog } from "@/components/ui/draggable-dialog";
 import { FormInput, FormSelect, FormTextarea } from "@/components/ui/form-fields";
 import { CheckboxField } from "@/components/ui/form-field";
 import { getErrorMessages } from "@/lib/client-http";
+import { usePublishedForms } from "@/modules/forms/FormHooks";
 import { useSaveWorkflowGraph } from "@/modules/workflows/WorkflowHooks";
 import { createDefaultWorkflowCommonActions } from "@/modules/workflows/domain/actions/WorkflowActionBindingPolicy";
 import type {
@@ -36,10 +37,19 @@ const stageFormSchema = z.object({
   optional: z.boolean(),
   repeatable: z.boolean(),
   coiGated: z.boolean(),
+  coiFormVersionId: z.union([z.literal(""), z.string().uuid(), z.null()])
+    .transform((value) => value || null),
   entryCondition: conditionGroupSchema.nullable(),
   exitCondition: conditionGroupSchema.nullable(),
   joinPredecessorStageKeys: z.array(z.string()),
 }).superRefine((values, context) => {
+  if (values.coiGated && !values.coiFormVersionId) {
+    context.addIssue({
+      code: "custom",
+      message: "Select a published COI form version.",
+      path: ["coiFormVersionId"],
+    });
+  }
   if (values.joinPredecessorStageKeys.length === 1) {
     context.addIssue({
       code: "custom",
@@ -80,6 +90,7 @@ export function WorkflowStageCreateDialog({
       optional: stage?.optional ?? false,
       repeatable: stage?.repeatable ?? false,
       coiGated: stage?.coiGated ?? false,
+      coiFormVersionId: stage?.coiFormVersionId ?? null,
       entryCondition: stage?.entryCondition ?? null,
       exitCondition: stage?.exitCondition ?? null,
       joinPredecessorStageKeys: stage?.joinPredecessorStageKeys ?? [],
@@ -89,6 +100,11 @@ export function WorkflowStageCreateDialog({
   const defaultCommonActions = createDefaultWorkflowCommonActions(
     editor.assignmentOptions?.roles[0]?.id,
   );
+  const publishedForms = usePublishedForms();
+  const coiGated = useWatch({
+    control: form.control,
+    name: "coiGated",
+  });
   const joinPredecessorStageKeys = useWatch({
     control: form.control,
     name: "joinPredecessorStageKeys",
@@ -102,6 +118,7 @@ export function WorkflowStageCreateDialog({
       documentRequirements: [],
       scoring: null,
       coiGated: false,
+      coiFormVersionId: null,
       description: "",
       displayOrder: editor.graph.stages.length + 1,
       enabled: true,
@@ -138,7 +155,13 @@ export function WorkflowStageCreateDialog({
       stages: stage
         ? editor.graph.stages.map((item) =>
             item.stableKey === stage.stableKey
-              ? { ...item, ...values }
+              ? {
+                  ...item,
+                  ...values,
+                  coiFormVersionId: values.coiGated
+                    ? values.coiFormVersionId
+                    : null,
+                }
               : {
                   ...item,
                   joinPredecessorStageKeys: item.joinPredecessorStageKeys.map(
@@ -153,6 +176,9 @@ export function WorkflowStageCreateDialog({
             ...editor.graph.stages,
             {
               ...values,
+              coiFormVersionId: values.coiGated
+                ? values.coiFormVersionId
+                : null,
               checklistItems: [],
               documentRequirements: [],
               scoring: null,
@@ -222,6 +248,20 @@ export function WorkflowStageCreateDialog({
               description="Require review to declare conflict of interest."
             />
           </div>
+          {coiGated ? (
+            <FormSelect
+              containerClassName="md:col-span-2"
+              items={(publishedForms.data ?? [])
+                .filter((option) => option.purpose === "COI")
+                .map((option) => ({
+                  label: `${option.formName} — version ${option.versionNumber}`,
+                  value: option.versionId,
+                }))}
+              label="COI form version"
+              name="coiFormVersionId"
+              placeholder="Select a published COI form version"
+            />
+          ) : null}
           <FormSelect
             containerClassName="md:col-span-2"
             items={editor.graph.stages

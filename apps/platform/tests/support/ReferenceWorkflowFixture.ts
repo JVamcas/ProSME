@@ -36,6 +36,7 @@ export const referenceWorkflow: WorkflowGraphInput = {
       displayOrder: 1,
       repeatable: false,
       coiGated: false,
+      coiFormVersionId: null,
       ...emptyStageConditions,
       initial: true,
       publicStatusMapping: {
@@ -78,7 +79,7 @@ export const referenceWorkflow: WorkflowGraphInput = {
           taskType: "STAGE_DECISION",
           name: "Pre-screening checklist",
           description: "Verify the initial eligibility and compliance checks.",
-          ...referenceTaskDefaults(false),
+          ...referenceTaskDefaults(),
           config: {},
         },
       ],
@@ -92,6 +93,7 @@ export const referenceWorkflow: WorkflowGraphInput = {
       displayOrder: 2,
       repeatable: false,
       coiGated: false,
+      coiFormVersionId: null,
       ...emptyStageConditions,
       initial: false,
       publicStatusMapping: {
@@ -122,7 +124,7 @@ export const referenceWorkflow: WorkflowGraphInput = {
           taskType: "STAGE_DECISION",
           name: "Completeness checklist",
           description: "Confirm that the submitted application is complete.",
-          ...referenceTaskDefaults(false),
+          ...referenceTaskDefaults(),
           config: {},
         },
       ],
@@ -136,6 +138,7 @@ export const referenceWorkflow: WorkflowGraphInput = {
       displayOrder: 3,
       repeatable: false,
       coiGated: true,
+      coiFormVersionId: "79e20de0-3558-4d63-90a4-8c9f5125df11",
       ...emptyStageConditions,
       initial: false,
       publicStatusMapping: {
@@ -152,7 +155,7 @@ export const referenceWorkflow: WorkflowGraphInput = {
           taskType: "STAGE_DECISION",
           name: "Technical assessment form",
           description: "Score the application against the technical criteria.",
-          ...referenceTaskDefaults(true),
+          ...referenceTaskDefaults(),
           config: {
             criteria: [
               {
@@ -183,6 +186,7 @@ export const referenceWorkflow: WorkflowGraphInput = {
       displayOrder: 4,
       repeatable: false,
       coiGated: true,
+      coiFormVersionId: "79e20de0-3558-4d63-90a4-8c9f5125df11",
       ...emptyStageConditions,
       initial: false,
       publicStatusMapping: {
@@ -199,7 +203,7 @@ export const referenceWorkflow: WorkflowGraphInput = {
           taskType: "STAGE_DECISION",
           name: "Finance review",
           description: "Review the financial information and recommendation.",
-          ...referenceTaskDefaults(true),
+          ...referenceTaskDefaults(),
           config: {
             fields: [
               {
@@ -223,6 +227,7 @@ export const referenceWorkflow: WorkflowGraphInput = {
       displayOrder: 5,
       repeatable: false,
       coiGated: true,
+      coiFormVersionId: "79e20de0-3558-4d63-90a4-8c9f5125df11",
       ...emptyStageConditions,
       initial: false,
       publicStatusMapping: {
@@ -238,7 +243,7 @@ export const referenceWorkflow: WorkflowGraphInput = {
           taskType: "STAGE_DECISION",
           name: "Record outcome",
           description: "Record the committee's funding decision.",
-          ...referenceTaskDefaults(true),
+          ...referenceTaskDefaults(),
           config: {
             outcomes: [
               { code: "APPROVE", label: "Approve" },
@@ -259,6 +264,7 @@ export const referenceWorkflow: WorkflowGraphInput = {
       displayOrder: 6,
       repeatable: false,
       coiGated: false,
+      coiFormVersionId: null,
       ...emptyStageConditions,
       initial: false,
       publicStatusMapping: {
@@ -274,7 +280,7 @@ export const referenceWorkflow: WorkflowGraphInput = {
           taskType: "STAGE_DECISION",
           name: "Send outcome communication",
           description: "Send the recorded outcome to the applicant.",
-          ...referenceTaskDefaults(false),
+          ...referenceTaskDefaults(),
           config: {
             template: "TOR_DRAFT_OUTCOME",
             channel: "EMAIL",

@@ -19,6 +19,7 @@ const stage = {
   },
   repeatable: true,
   coiGated: true,
+  coiFormVersionId: "79e20de0-3558-4d63-90a4-8c9f5125df11",
   entryCondition: null,
   exitCondition: null,
   initial: true,

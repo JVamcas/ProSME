@@ -37,7 +37,7 @@ export default async function ResourcesPage() {
                   key={item.id}
                 >
                   <CmsImage
-                    className="aspect-video w-full object-cover"
+                    className="aspect-video w-full object-cover object-top"
                     image={item.image}
                   />
                   <div className="flex items-start gap-5 p-6">
@@ -56,12 +56,12 @@ export default async function ResourcesPage() {
                       </p>
                       <ArrowLink
                         href={item.href ?? `/resources/${item.slug}`}
-                        target={
-                          item.href?.startsWith("http") ? "_blank" : undefined
-                        }
                         className="mt-4 underline"
+                        rel="noopener noreferrer"
+                        target="_blank"
                       >
                         Open resource
+                        <span className="sr-only"> (opens in a new tab)</span>
                       </ArrowLink>
                     </div>
                   </div>

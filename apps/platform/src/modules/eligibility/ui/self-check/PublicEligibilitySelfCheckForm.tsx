@@ -1,207 +1,31 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeft, Check, ChevronRight, LoaderCircle, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, LoaderCircle } from "lucide-react";
 import { useState } from "react";
-import { FormProvider, useForm, useFormContext } from "react-hook-form";
-import { z } from "zod";
+import { FormProvider, useForm } from "react-hook-form";
 
-import { GeneralButton } from "@/components/ui/button";
-import { FieldError } from "@/shared/ui/FormPrimitives";
-import { FormInput } from "@/components/ui/form-fields";
+import { GeneralButton, GeneralButtonLink } from "@/components/ui/button";
 import type {
-  PublicEligibilityAnswer,
-  PublicEligibilityQuestion,
   PublicEligibilitySelfCheckInput,
   PublicEligibilitySelfCheckWorkspace,
 } from "../../api/PublicEligibilitySelfCheckTransport";
-
-type FormAnswer = string | string[];
-type FormValues = { answers: Record<string, FormAnswer> };
-
-function defaults(questions: PublicEligibilityQuestion[]): FormValues {
-  return {
-    answers: Object.fromEntries(
-      questions.map((question) => [
-        question.id,
-        question.type === "multi-select" ? [] : "",
-      ]),
-    ),
-  };
-}
-
-function formSchema(questions: PublicEligibilityQuestion[]) {
-  return z
-    .object({
-      answers: z.record(
-        z.string(),
-        z.union([z.string(), z.array(z.string())]),
-      ),
-    })
-    .superRefine((values, context) => {
-      questions.forEach((question) => {
-        const value = values.answers[question.id];
-        const empty = value === "" || (Array.isArray(value) && !value.length);
-        if (question.required && empty) {
-          context.addIssue({
-            code: "custom",
-            message: "Choose or enter an answer to continue.",
-            path: ["answers", question.id],
-          });
-        }
-      });
-    });
-}
-
-function answerValue(
-  question: PublicEligibilityQuestion,
-  value: FormAnswer,
-): PublicEligibilityAnswer {
-  if (question.type === "boolean") return value === "true";
-  if (question.type === "number" || question.type === "percentage") {
-    return Number(value);
-  }
-  return value;
-}
-
-function transportInput(
-  workspace: PublicEligibilitySelfCheckWorkspace,
-  values: FormValues,
-): PublicEligibilitySelfCheckInput {
-  const answers: Record<string, PublicEligibilityAnswer> = {};
-  workspace.questions.forEach((question) => {
-    const value = values.answers[question.id];
-    const empty = value === "" || (Array.isArray(value) && !value.length);
-    if (!question.required && empty) return;
-    answers[question.id] = answerValue(question, value);
-  });
-  return {
-    answers,
-    configurationToken: workspace.configurationToken,
-  };
-}
-
-function choiceOptions(question: PublicEligibilityQuestion) {
-  if (question.type === "boolean") {
-    return [
-      {
-        description: "This applies to my business",
-        label: "Yes",
-        value: "true",
-      },
-      {
-        description: "Not yet or not applicable",
-        label: "No",
-        value: "false",
-      },
-    ];
-  }
-  return question.options;
-}
-
-function ChoiceQuestion({ question }: { question: PublicEligibilityQuestion }) {
-  const { formState, getValues, register } = useFormContext<FormValues>();
-  const error = formState.errors.answers?.[question.id]?.message;
-  const errorId = error ? `${question.id}-error` : undefined;
-  const multiple = question.type === "multi-select";
-  const registration = register(`answers.${question.id}`);
-
-  return (
-    <fieldset
-      aria-describedby={errorId}
-      aria-invalid={error ? true : undefined}
-      className="min-w-0"
-    >
-      <legend className="sr-only">
-        {question.label}
-        {question.required ? " (required)" : ""}
-      </legend>
-      <div className="grid gap-4 sm:grid-cols-2">
-        {choiceOptions(question).map((option, index) => {
-          const selectedValue = getValues(`answers.${question.id}`);
-          const selected = Array.isArray(selectedValue)
-            ? selectedValue.includes(option.value)
-            : selectedValue === option.value;
-          const ChoiceIcon = index === 0 ? Check : X;
-          return (
-            <label
-              className="group flex min-h-28 cursor-pointer items-center gap-5 rounded-2xl border-2 border-brand-navy/10 bg-white px-6 py-5 transition hover:border-brand-orange/45 has-checked:border-brand-orange has-checked:bg-brand-orange/[0.035] focus-within:ring-2 focus-within:ring-brand-navy focus-within:ring-offset-2"
-              key={option.value}
-            >
-              <input
-                className="peer sr-only"
-                type={multiple ? "checkbox" : "radio"}
-                value={option.value}
-                {...registration}
-              />
-              <span
-                className={[
-                  "grid size-12 shrink-0 place-items-center rounded-full",
-                  index === 0
-                    ? "bg-emerald-100 text-emerald-700"
-                    : "bg-red-100 text-red-600",
-                  selected ? "ring-2 ring-current ring-offset-2" : "",
-                ].join(" ")}
-              >
-                <ChoiceIcon className="size-6" aria-hidden />
-              </span>
-              <span>
-                <span className="block text-lg font-bold text-brand-navy">
-                  {option.label}
-                </span>
-                {option.description ? (
-                  <span className="mt-1 block text-sm leading-5 text-brand-navy/65">
-                    {option.description}
-                  </span>
-                ) : null}
-              </span>
-            </label>
-          );
-        })}
-      </div>
-      <FieldError id={errorId} message={error} />
-    </fieldset>
-  );
-}
-
-function QuestionField({ question }: { question: PublicEligibilityQuestion }) {
-  if (
-    question.type === "boolean" ||
-    question.type === "yes-no-na" ||
-    question.type === "single-select" ||
-    question.type === "multi-select"
-  ) {
-    return <ChoiceQuestion question={question} />;
-  }
-  return (
-    <FormInput
-      className="h-14 rounded-xl border-brand-navy/20 px-4 text-base"
-      inputMode={
-        question.type === "number" || question.type === "percentage"
-          ? "decimal"
-          : undefined
-      }
-      label={<span className="sr-only">{question.label}</span>}
-      max={question.type === "percentage" ? 100 : undefined}
-      min={question.type === "percentage" ? 0 : undefined}
-      name={`answers.${question.id}`}
-      required={question.required}
-      step={
-        question.type === "number" || question.type === "percentage"
-          ? "any"
-          : undefined
-      }
-      type={question.type === "percentage" ? "number" : question.type}
-    />
-  );
-}
+import { PublicEligibilityQuestionField } from "./PublicEligibilityQuestionField";
+import {
+  defaults,
+  formSchema,
+  transportInput,
+  type FormValues,
+} from "./PublicEligibilitySelfCheckValues";
 
 export function PublicEligibilitySelfCheckForm({
+  backHref,
   error,
   onSubmit,
   pending,
   workspace,
 }: {
+  backHref?: string;
   error: Error | null;
   onSubmit: (input: PublicEligibilitySelfCheckInput) => Promise<void>;
   pending: boolean;
@@ -214,7 +38,7 @@ export function PublicEligibilitySelfCheckForm({
   });
   const question = workspace.questions[questionIndex];
   const total = workspace.questions.length;
-  const progress = Math.round((questionIndex / total) * 100);
+  const progress = Math.round(((questionIndex + 1) / total) * 100);
   const isLastQuestion = questionIndex === total - 1;
 
   const submit = form.handleSubmit(async (values) => {
@@ -222,92 +46,120 @@ export function PublicEligibilitySelfCheckForm({
   });
 
   async function continueFromCurrentQuestion() {
+    if (pending) return;
     const valid = await form.trigger(`answers.${question.id}`);
     if (!valid) return;
-    if (isLastQuestion) {
-      await submit();
+    if (!isLastQuestion) {
+      setQuestionIndex((current) => current + 1);
       return;
     }
-    setQuestionIndex((current) => current + 1);
+    try {
+      await submit();
+    } catch {
+      // Mutation errors are displayed below and leave the answers available to retry.
+    }
   }
 
   return (
     <FormProvider {...form}>
       <form
-        className="overflow-hidden rounded-3xl border border-brand-navy/10 bg-white shadow-[0_22px_55px_rgba(10,24,59,0.08)]"
-        onSubmit={submit}
+        className="rounded-xl border border-brand-blue/25 bg-white p-5 sm:p-8"
+        onSubmit={(event) => {
+          event.preventDefault();
+          void continueFromCurrentQuestion();
+        }}
       >
-        <header className="border-b border-brand-navy/10 px-6 py-6 sm:px-11">
-          <div className="flex items-center justify-between gap-4 text-sm font-bold text-brand-navy">
-            <p aria-live="polite">
-              Question {questionIndex} of {total}
-            </p>
-            <p className="text-brand-navy/45">{progress}% complete</p>
-          </div>
+        <div>
+          <p
+            aria-live="polite"
+            className="text-xs font-bold uppercase tracking-widest text-brand-orange"
+          >
+            Question {questionIndex + 1} of {total}
+          </p>
           <div
-            aria-label={`${progress}% complete`}
-            aria-valuemax={100}
+            aria-label="Eligibility questions"
+            aria-valuemax={total}
             aria-valuemin={0}
-            aria-valuenow={progress}
+            aria-valuenow={questionIndex + 1}
+            aria-valuetext={`Question ${questionIndex + 1} of ${total}`}
             className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100"
             role="progressbar"
           >
             <div
-              className="h-full rounded-full bg-brand-orange transition-[width] duration-300"
+              className="h-full rounded-full bg-brand-orange transition-[width] motion-reduce:transition-none"
               style={{ width: `${progress}%` }}
             />
           </div>
-        </header>
-
-        <section className="min-h-[455px] px-6 py-10 sm:px-12 sm:py-12">
-          <p className="text-sm font-bold uppercase tracking-[0.18em] text-brand-orange">
-            {question.section?.label ?? "Initial eligibility"}
-          </p>
-          <h2 className="display mt-5 max-w-4xl text-3xl font-bold leading-tight text-brand-navy sm:text-[2.5rem]">
+        </div>
+        <section
+          className="py-7 sm:py-8"
+          aria-labelledby="eligibility-question-heading"
+        >
+          {question.section ? (
+            <p className="mb-3 text-xs font-semibold text-brand-navy/60">
+              {question.section.label}
+            </p>
+          ) : null}
+          <h2
+            className="text-2xl font-bold leading-tight text-brand-navy sm:text-3xl"
+            id="eligibility-question-heading"
+          >
             {question.label}
-            {question.required ? <span className="sr-only"> (required)</span> : null}
+            {question.required ? (
+              <span className="sr-only"> (required)</span>
+            ) : null}
           </h2>
-          <div className="mt-10">
-            <QuestionField question={question} />
+          <p className="mt-3 text-sm text-brand-navy/65">
+            {question.helpText ||
+              "Choose the answer that applies to your business."}
+          </p>
+          {question.explanation ? (
+            <p className="mt-2 text-sm text-brand-navy/65">
+              {question.explanation}
+            </p>
+          ) : null}
+          <div className="mt-6">
+            <PublicEligibilityQuestionField question={question} />
           </div>
-
-          <div className="mt-7 flex justify-end">
-            <GeneralButton
-              disabled={pending}
-              onClick={() => void continueFromCurrentQuestion()}
-              type="button"
-            >
-              {pending ? (
-                <LoaderCircle className="size-4 animate-spin" aria-hidden />
-              ) : null}
-              {isLastQuestion ? "Check eligibility" : "Continue"}
-              {!pending ? <ChevronRight className="size-4" aria-hidden /> : null}
-            </GeneralButton>
-          </div>
-
           {error ? (
-            <p className="mt-6 text-sm font-semibold text-red-700" role="alert">
+            <p className="mt-5 text-sm font-semibold text-red-700" role="alert">
               {error.message}
             </p>
           ) : null}
         </section>
-
-        <footer className="flex min-h-20 items-center justify-between gap-4 border-t border-brand-navy/10 bg-slate-50/70 px-6 sm:px-12">
-          <button
-            className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-brand-navy/55 transition hover:text-brand-navy disabled:cursor-not-allowed disabled:opacity-45"
-            disabled={questionIndex === 0 || pending}
-            onClick={() =>
-              setQuestionIndex((current) => Math.max(0, current - 1))
-            }
-            type="button"
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-brand-blue/20 pt-5">
+          {questionIndex === 0 && backHref ? (
+            <GeneralButtonLink
+              className="min-h-11 rounded-lg"
+              href={backHref}
+              variant="outline"
+            >
+              <ArrowLeft aria-hidden className="size-4" /> Back
+            </GeneralButtonLink>
+          ) : (
+            <GeneralButton
+              className="min-h-11 rounded-lg"
+              disabled={questionIndex === 0 || pending}
+              onClick={() =>
+                setQuestionIndex((current) => Math.max(0, current - 1))
+              }
+              variant="outline"
+            >
+              <ArrowLeft aria-hidden className="size-4" /> Back
+            </GeneralButton>
+          )}
+          <GeneralButton
+            className="min-h-11 rounded-lg"
+            disabled={pending}
+            type="submit"
           >
-            <ArrowLeft className="size-4" aria-hidden />
-            Previous
-          </button>
-          <p className="text-right text-sm font-medium text-brand-navy/45">
-            Your answers stay on this device
-          </p>
-        </footer>
+            {pending ? (
+              <LoaderCircle aria-hidden className="size-4 animate-spin" />
+            ) : null}
+            {isLastQuestion ? "Check eligibility" : "Continue"}
+            {!pending ? <ArrowRight aria-hidden className="size-4" /> : null}
+          </GeneralButton>
+        </div>
       </form>
     </FormProvider>
   );

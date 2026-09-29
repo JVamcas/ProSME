@@ -146,6 +146,7 @@ export const workflowStageSchema = z
     }),
     repeatable: z.boolean(),
     coiGated: z.boolean(),
+    coiFormVersionId: z.string().uuid().nullable(),
     entryCondition: conditionGroupSchema.nullable(),
     exitCondition: conditionGroupSchema.nullable(),
     joinPredecessorStageKeys: z.array(codeSchema).max(50),
@@ -161,6 +162,20 @@ export const workflowStageSchema = z
     tasks: z.array(workflowTaskSchema),
   })
   .superRefine((stage, context) => {
+    if (stage.coiGated && !stage.coiFormVersionId) {
+      context.addIssue({
+        code: "custom",
+        message: "A COI-gated stage requires an exact COI form version.",
+        path: ["coiFormVersionId"],
+      });
+    }
+    if (!stage.coiGated && stage.coiFormVersionId) {
+      context.addIssue({
+        code: "custom",
+        message: "Only a COI-gated stage can bind a COI form version.",
+        path: ["coiFormVersionId"],
+      });
+    }
     const checklistKeys = stage.checklistItems.map((item) => item.key);
     if (new Set(checklistKeys).size !== checklistKeys.length) {
       context.addIssue({
@@ -294,9 +309,6 @@ export const workflowGraphSchema = z
 
 export const createWorkflowSchema = z.object({
   code: codeSchema,
-  coiFormVersionId: z.union([z.literal(""), z.uuid(), z.null()])
-    .transform((value) => value || null)
-    .optional(),
   name: z.string().trim().min(2).max(160),
   description: z.string().trim().max(1000).default(""),
 });

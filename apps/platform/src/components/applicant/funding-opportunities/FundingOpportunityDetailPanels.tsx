@@ -13,7 +13,7 @@ import { SanitizedRichTextContent } from "@/shared/ui/SanitizedRichTextContent";
 import {
   formatOpportunityAmount,
   formatOpportunityDate,
-} from "./FundingOpportunityFormat";
+} from "@/modules/funding-calls/ui/FundingOpportunityFormat";
 import { FundingOpportunityReadinessCard } from "./FundingOpportunityReadinessCard";
 
 const panelClass =

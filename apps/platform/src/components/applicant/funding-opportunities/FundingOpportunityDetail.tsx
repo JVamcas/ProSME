@@ -1,7 +1,7 @@
 import { Tabs, type TabItem } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/ui/status-badge";
 import type { PublicFundingCallDetail as Opportunity } from "@/modules/funding-calls/api/PublicFundingCallTransport";
-import { formatOpportunityDate } from "./FundingOpportunityFormat";
+import { formatOpportunityDate } from "@/modules/funding-calls/ui/FundingOpportunityFormat";
 import {
   ContactPanel,
   DocumentsPanel,

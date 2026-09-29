@@ -1,4 +1,16 @@
 import type { FundingCallStatus } from "../domain/FundingCall";
+import type {
+  FundingCallCreationProgressValues,
+  FundingCallCreationStep,
+} from "./FundingCallSchemas";
+
+export type FundingCallCreationProgressView = {
+  currentStep: FundingCallCreationStep;
+  id: string;
+  rowVersion: number;
+  updatedAt: string;
+  values: FundingCallCreationProgressValues;
+};
 
 export type FundingCallView = {
   applicationDuplicatePolicy: import(

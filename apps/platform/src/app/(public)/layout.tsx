@@ -5,10 +5,12 @@ import { QueryProvider } from "@/components/layout/query-provider";
 import { AnalyticsConsent } from "@/integrations/analytics/analytics-consent";
 import { getServerEnvironment } from "@/lib/env/server";
 import { getContactDetails, getSiteSettings } from "@/modules/content/ServerContentQueries";
+import { PublicContentRefresh } from "@/modules/content/ui/public/PublicContentRefresh";
 import { Toast } from "@/shared/ui/Toast";
 import "../globals.css";
 
-export const revalidate = 300;
+// Build-time CMS fallbacks must never become cached public pages.
+export const dynamic = "force-dynamic";
 
 const bahnschrift = localFont({
   src: "../fonts/bahnschrift.ttf",
@@ -82,6 +84,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
     >
       <body className="font-sans antialiased">
         <QueryProvider>
+          <PublicContentRefresh />
           <AppShell mainClassName="public-content">{children}</AppShell>
           <AnalyticsConsent
             measurementId={settings.analyticsMeasurementId}

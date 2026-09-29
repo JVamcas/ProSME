@@ -69,7 +69,6 @@ export const workflowTaskSchema = z
       .strict()
       .nullable()
       .optional(),
-    coiRequired: z.boolean(),
     displayOrder: z.number().int().positive(),
     required: z.boolean(),
     config: z.unknown(),

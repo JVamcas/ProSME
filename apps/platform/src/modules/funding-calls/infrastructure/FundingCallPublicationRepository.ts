@@ -11,9 +11,9 @@ import { captureFundingCallPublication } from "../domain/FundingCallPublication"
 import {
   fundingCallLifecycleHistory,
   fundingCallPublicationRevisions,
-  fundingCallPublicDocuments,
   fundingCalls,
 } from "./funding-call.schema";
+import { fundingCallPublicDocuments } from "./funding-call-public-document.schema";
 import {
   sanitizeFundingCallDescription,
   sanitizeFundingCallEligibilitySummary,

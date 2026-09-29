@@ -13,6 +13,7 @@ const governance = vi.hoisted(() => ({
   mutate: vi.fn(),
   mutateAsync: vi.fn(),
 }));
+const toast = vi.hoisted(() => ({ error: vi.fn() }));
 
 (globalThis as typeof globalThis & {
   IS_REACT_ACT_ENVIRONMENT: boolean;
@@ -21,6 +22,7 @@ const governance = vi.hoisted(() => ({
 vi.mock("@/modules/funding-calls/FundingCallHooks", () => ({
   useChangeFundingCallGovernanceStatus: () => governance,
 }));
+vi.mock("sonner", () => ({ toast }));
 
 const call: FundingCallView = {
   applicationDuplicatePolicy: "one_per_business",
@@ -56,6 +58,7 @@ beforeEach(() => {
   governance.isPending = false;
   governance.mutate.mockReset();
   governance.mutateAsync.mockReset().mockResolvedValue(undefined);
+  toast.error.mockReset();
 });
 
 afterEach(async () => {
@@ -117,9 +120,44 @@ describe("funding call governance actions", () => {
     );
     await act(async () => submitButton?.click());
 
-    expect(governance.mutate).toHaveBeenCalledWith({
-      command: "SUBMIT_FOR_APPROVAL",
-      expectedRowVersion: call.rowVersion,
+    expect(governance.mutate).toHaveBeenCalledWith(
+      {
+        command: "SUBMIT_FOR_APPROVAL",
+        expectedRowVersion: call.rowVersion,
+      },
+      expect.objectContaining({ onError: expect.any(Function) }),
+    );
+  });
+
+  it("shows governance failures as a toast instead of inline text", async () => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+
+    await act(async () => root?.render(
+      <FundingCallGovernanceActions
+        call={{ ...call, status: "DRAFT" }}
+        canApprove={false}
+        canReturn={false}
+        canSubmit
+        canWithdrawOwnRequest={false}
+      />,
+    ));
+    const submitButton = [...container.querySelectorAll("button")].find(
+      (button) => button.textContent === "Submit for approval",
+    );
+    await act(async () => submitButton?.click());
+    const options = governance.mutate.mock.calls[0]?.[1];
+
+    await act(async () => {
+      options.onError(new Error("The selected eligibility ruleset is not published."));
     });
+
+    expect(toast.error).toHaveBeenCalledWith(
+      "The selected eligibility ruleset is not published.",
+    );
+    expect(container.textContent).not.toContain(
+      "The selected eligibility ruleset is not published.",
+    );
   });
 });

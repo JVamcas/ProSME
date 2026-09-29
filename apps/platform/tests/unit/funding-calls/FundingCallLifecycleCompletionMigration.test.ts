@@ -7,7 +7,7 @@ const lifecycle = readFileSync(
   "utf8",
 );
 const coi = readFileSync(
-  path.resolve(process.cwd(), "drizzle/0135_bind_workflow_coi_form.sql"),
+  path.resolve(process.cwd(), "drizzle/0137_stage_bound_coi_forms.sql"),
   "utf8",
 );
 
@@ -20,10 +20,14 @@ describe("remaining funding call lifecycle migrations", () => {
 
   it("binds and audits the exact COI form version", () => {
     expect(coi).toContain("coi_form_version_id");
+    expect(coi).toContain("app_workflow_stage_definitions");
     expect(coi).toContain("app_workflow_application_coi_events");
-    expect(coi).toContain("app_workflow_versions_coi_form_version_fk");
+    expect(coi).toContain("app_workflow_stages_coi_form_version_fk");
+    expect(coi).toContain(
+      "PRIMARY KEY (application_id, user_id, form_version_id)",
+    );
     expect(coi).toMatch(
-      /DISABLE TRIGGER app_workflow_versions_lifecycle[\s\S]+UPDATE app_workflow_definition_versions[\s\S]+ENABLE TRIGGER app_workflow_versions_lifecycle/,
+      /DISABLE TRIGGER app_workflow_stages_immutable[\s\S]+UPDATE app_workflow_stage_definitions[\s\S]+ENABLE TRIGGER app_workflow_stages_immutable/,
     );
   });
 });

@@ -53,6 +53,7 @@ import {
   readFundingCallById,
   readFundingCallByPublicIdentifier,
 } from "@/modules/funding-calls/infrastructure/FundingCallRepository";
+import { resolveFundingCallEligibilityContext } from "@/modules/funding-calls/ServerFundingCallEligibilityContextIntegration";
 import {
   formVersionIsBindable,
   formVersionIsPublished,
@@ -145,6 +146,13 @@ describe("ServerFundingCallService", () => {
     );
 
     expect(insertFundingCall).toHaveBeenCalledWith(actorId, input);
+    expect(resolveFundingCallEligibilityContext).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: expect.stringMatching(
+          /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+        ),
+      }),
+    );
     expect(result.status).toBe("DRAFT");
   });
 

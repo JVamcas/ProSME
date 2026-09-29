@@ -26,7 +26,6 @@ const task = {
     freeze: "AT_DECISION" as const,
     abstentionsCountAsPresent: true,
   },
-  coiRequired: true,
   displayOrder: 1,
   required: true,
   config: {},

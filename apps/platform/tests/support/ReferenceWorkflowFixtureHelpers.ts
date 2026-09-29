@@ -15,10 +15,9 @@ export const reviewOutcomes = [
   { code: "RETURN", label: "Return for clarification" },
 ];
 
-export function referenceTaskDefaults(coiRequired: boolean) {
+export function referenceTaskDefaults() {
   return {
     assignmentMode: "ROLE" as const,
-    coiRequired,
     displayOrder: 1,
     formBinding: null,
     permissions: defaultWorkflowElementPermissions,

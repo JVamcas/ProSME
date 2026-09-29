@@ -26,7 +26,6 @@ export const actor: AuthenticatedUser = {
 };
 export const version = {
   id: versionId,
-  coiFormVersionId: null,
   definitionId: templateId,
   status: "DRAFT" as WorkflowTemplateStatus,
   versionNumber: 1,

@@ -33,6 +33,7 @@ export async function insertWorkflowGraph(
     applicantStatus: stage.publicStatusMapping.status,
     code: stage.stableKey,
     coiGated: stage.coiGated,
+    coiFormVersionId: stage.coiGated ? stage.coiFormVersionId : null,
     description: stage.description,
     enabled: stage.enabled,
     entryCondition: stage.entryCondition,
@@ -209,7 +210,6 @@ async function insertActionsAndTasks(
         }));
       return {
         assignmentMode: task.assignmentMode,
-        coiRequired: task.coiRequired,
         config: configuration,
         description: task.description,
         displayOrder: task.displayOrder,

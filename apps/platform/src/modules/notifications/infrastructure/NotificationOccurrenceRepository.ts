@@ -9,9 +9,9 @@ import type {
   NotificationEventKey,
 } from "../domain/NotificationEvent";
 import {
-  notificationErrorCodes,
-  NotificationValidationError,
-} from "../domain/NotificationErrors";
+  assertRequiredNotificationRecipients,
+  type NotificationRecipientRequirement,
+} from "../domain/NotificationRecipientRequirement";
 import type { NotificationOutboxState } from "../domain/NotificationDelivery";
 import {
   recipientsOfType,
@@ -45,9 +45,12 @@ export type NotificationOccurrenceWriteResult = {
 type EventConfigurationRow = {
   channelEnabled: boolean | null;
   channelId: string | null;
+  eventDisplayName: string;
   eventEnabled: boolean;
   eventId: string;
+  recipientId: string | null;
   recipientRequired: boolean | null;
+  recipientTargetLabel: string | null;
   recipientType: string | null;
   ruleEnabled: boolean | null;
   targetEmail: string | null;
@@ -62,9 +65,13 @@ async function loadEventConfiguration(
   const result = await transaction.execute<EventConfigurationRow>(sql`
     SELECT channel.is_enabled AS "channelEnabled",
       channel.id AS "channelId",
+      event.display_name AS "eventDisplayName",
       event.is_enabled AS "eventEnabled",
       event.id AS "eventId",
+      recipient.id AS "recipientId",
       recipient.is_required AS "recipientRequired",
+      COALESCE(recipient_role.name, target_user.display_name,
+        recipient.recipient_type) AS "recipientTargetLabel",
       recipient.recipient_type AS "recipientType",
       rule.is_enabled AS "ruleEnabled",
       COALESCE(target_user.email, role_user.email) AS "targetEmail",
@@ -80,6 +87,8 @@ async function loadEventConfiguration(
     LEFT JOIN app_users target_user
       ON target_user.id = recipient.recipient_user_id
       AND target_user.status = 'active'
+    LEFT JOIN app_roles recipient_role
+      ON recipient_role.id = recipient.recipient_role_id
     LEFT JOIN app_user_roles targeted_user_role
       ON targeted_user_role.role_id = recipient.recipient_role_id
       AND EXISTS (
@@ -106,26 +115,25 @@ function enabledBindings(rows: readonly EventConfigurationRow[]) {
   );
 }
 
-function assertRequiredRecipients(
+function toRecipientRequirements(
   bindings: readonly EventConfigurationRow[],
   recipients: readonly NormalizedNotificationRecipient[],
-  excludedRecipientUserIds: ReadonlySet<string>,
-) {
-  for (const binding of bindings) {
-    if (
-      binding.recipientRequired &&
-      resolveBindingRecipients(
-        binding,
-        recipients,
-        excludedRecipientUserIds,
-      ).length === 0
-    ) {
-      throw new NotificationValidationError(
-        notificationErrorCodes.invalidRecipient,
-        `Notification event requires recipient type ${binding.recipientType}.`,
-      );
-    }
-  }
+  eventKey: NotificationEventKey,
+): NotificationRecipientRequirement[] {
+  return bindings.map((binding) => ({
+    candidateUserIds: resolveBindingRecipients(
+      binding,
+      recipients,
+      new Set(),
+    ).map((recipient) => recipient.userId),
+    eventDisplayName: binding.eventDisplayName,
+    eventKey,
+    recipientId: binding.recipientId!,
+    recipientTargetLabel:
+      binding.recipientTargetLabel ?? binding.recipientType!,
+    recipientType: binding.recipientType!,
+    required: binding.recipientRequired ?? false,
+  }));
 }
 
 function resolveBindingRecipients(
@@ -182,9 +190,8 @@ export async function insertNotificationOccurrence<
       ? input.context.excludedRecipientUserIds
       : [],
   );
-  assertRequiredRecipients(
-    bindings,
-    input.recipients,
+  assertRequiredNotificationRecipients(
+    toRecipientRequirements(bindings, input.recipients, input.eventKey),
     excludedRecipientUserIds,
   );
   const status =

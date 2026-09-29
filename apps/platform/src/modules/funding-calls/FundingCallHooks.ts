@@ -9,6 +9,7 @@ import {
 
 import type {
   FundingCallCreateInput,
+  FundingCallCreationProgressSaveInput,
   FundingCallGovernanceCommandInput,
   FundingCallLifecycleCommandInput,
   FundingCallUpdateInput,
@@ -17,6 +18,7 @@ import { clientFundingCallService } from "./ClientFundingCallService";
 
 export const fundingCallQueryKeys = {
   all: ["admin", "funding-calls"] as const,
+  creationProgress: ["admin", "funding-calls", "creation-progress"] as const,
   bindableEligibilityRuleSetVersions: [
     "admin",
     "funding-calls",
@@ -38,6 +40,24 @@ export const fundingCallQueryKeys = {
     fundingCallId ?? "all",
   ] as const,
 };
+
+export function useFundingCallCreationProgress() {
+  return useQuery({
+    queryFn: clientFundingCallService.getCreationProgress,
+    queryKey: fundingCallQueryKeys.creationProgress,
+  });
+}
+
+export function useSaveFundingCallCreationProgress() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: FundingCallCreationProgressSaveInput) =>
+      clientFundingCallService.saveCreationProgress(input),
+    onSuccess: (draft) => {
+      queryClient.setQueryData(fundingCallQueryKeys.creationProgress, draft);
+    },
+  });
+}
 
 export function useBindableEligibilityRuleSetVersions() {
   return useQuery({
@@ -89,9 +109,12 @@ export function useCreateFundingCall() {
   return useMutation({
     mutationFn: (input: FundingCallCreateInput) =>
       clientFundingCallService.create(input),
-    onSuccess: () => queryClient.invalidateQueries({
-      queryKey: fundingCallQueryKeys.all,
-    }),
+    onSuccess: () => {
+      queryClient.setQueryData(fundingCallQueryKeys.creationProgress, null);
+      void queryClient.invalidateQueries({
+        queryKey: fundingCallQueryKeys.all,
+      });
+    },
   });
 }
 

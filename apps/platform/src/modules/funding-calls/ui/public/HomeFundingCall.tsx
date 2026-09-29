@@ -1,13 +1,38 @@
-import { ArrowRight, CalendarDays, Coins, Sprout } from "lucide-react";
-import Link from "next/link";
+import { CalendarDays, Coins, Sprout } from "lucide-react";
 
 import { formatDate } from "@/lib/dateUtils";
 import type { PublicFundingCallSummary } from "@/modules/funding-calls/api/PublicFundingCallTransport";
 import { SanitizedRichTextContent } from "@/shared/ui/SanitizedRichTextContent";
 import { GeneralButtonLink } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ArrowLink } from "@/components/ui/links";
+import { publicFundingCallHref } from "./PublicFundingCallLinks";
 
-export function HomeFundingCall({ call }: { call?: PublicFundingCallSummary }) {
-  if (!call) return null;
+type HomeFundingCallProps = {
+  call?: PublicFundingCallSummary;
+  showViewAll?: boolean;
+};
+
+export function HomeFundingCall({
+  call,
+  showViewAll = false,
+}: HomeFundingCallProps) {
+  if (!call) {
+    return (
+      <section
+        aria-label="Open funding opportunities"
+        className="bg-white py-12 sm:py-16"
+      >
+        <div className="container">
+          <EmptyState
+            action={<ArrowLink href="/funding">View all funding calls</ArrowLink>}
+            title="No funding calls are open right now"
+            message="New opportunities will appear here as soon as applications open. You can still browse upcoming and recently closed funding calls."
+          />
+        </div>
+      </section>
+    );
+  }
 
   const status = statusContent(call);
 
@@ -17,7 +42,7 @@ export function HomeFundingCall({ call }: { call?: PublicFundingCallSummary }) {
       className="bg-white py-12 sm:py-16"
     >
       <div className="container">
-        <article className="grid overflow-hidden rounded-[2rem] border border-brand-navy/10 bg-white shadow-[0_18px_60px_rgba(10,24,59,0.08)] lg:grid-cols-[minmax(0,1fr)_minmax(320px,36%)]">
+        <article className="grid overflow-hidden rounded-4xl border border-brand-navy/10 bg-white lg:grid-cols-[minmax(0,1fr)_minmax(320px,36%)]">
           <div className="relative p-7 sm:p-10 lg:px-12 lg:py-11">
             <div className="flex flex-wrap items-center gap-4">
               <span
@@ -47,7 +72,7 @@ export function HomeFundingCall({ call }: { call?: PublicFundingCallSummary }) {
 
             {call.summaryHtml ? (
               <SanitizedRichTextContent
-                className="mt-5 line-clamp-3 max-h-[5.25rem] max-w-2xl overflow-hidden text-base [&>*+*]:mt-1"
+                className="mt-5 line-clamp-3 max-h-21 max-w-2xl overflow-hidden text-base [&>*+*]:mt-1"
                 sanitizedHtml={call.summaryHtml}
               />
             ) : (
@@ -59,7 +84,7 @@ export function HomeFundingCall({ call }: { call?: PublicFundingCallSummary }) {
             <div className="mt-8 flex flex-wrap items-center gap-5">
               <GeneralButtonLink
                 variant="outlineOrange"
-                href={`/funding/${call.slug}`}
+                href={publicFundingCallHref(call.id)}
               >
                 View call details
               </GeneralButtonLink>
@@ -74,10 +99,10 @@ export function HomeFundingCall({ call }: { call?: PublicFundingCallSummary }) {
             </p>
           </div>
 
-          <aside className="relative overflow-hidden bg-brand-navy/10 p-7 text-brand-navy sm:p-9 lg:p-10">
+          <aside className="relative overflow-hidden bg-brand-blue/10 p-7 text-brand-navy sm:p-9 lg:p-10">
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute -bottom-44 -right-20 size-80 rotate-45 border-[28px] border-white/5"
+              className="pointer-events-none absolute -bottom-44 -right-20 size-80 rotate-45 border-28 border-white/5"
             />
             <div className="relative">
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-yellow">
@@ -92,7 +117,7 @@ export function HomeFundingCall({ call }: { call?: PublicFundingCallSummary }) {
                   />
                 </span>
                 <div>
-                  <p className="text-sm text-brand-navy/65">{status.dateLabel}</p>
+                  <p className="text-sm text-brand-orange">{status.dateLabel}</p>
                   <p className="mt-1 text-lg font-bold sm:text-xl">
                     {formatDate(status.date)}
                   </p>
@@ -109,7 +134,7 @@ export function HomeFundingCall({ call }: { call?: PublicFundingCallSummary }) {
                   />
                 </span>
                 <div>
-                  <p className="text-sm text-white/65">
+                  <p className="text-sm text-brand-orange">
                     Funding per application
                   </p>
                   <p className="mt-1 text-lg font-bold sm:text-xl">
@@ -125,7 +150,7 @@ export function HomeFundingCall({ call }: { call?: PublicFundingCallSummary }) {
                     aria-hidden="true"
                     className="size-7 shrink-0 text-brand-yellow"
                   />
-                  <p className="text-sm text-white/80">
+                  <p className="text-sm text-brand-orange">
                     {call.fundingInstrument}
                   </p>
                 </div>
@@ -133,6 +158,11 @@ export function HomeFundingCall({ call }: { call?: PublicFundingCallSummary }) {
             </div>
           </aside>
         </article>
+        {showViewAll ? (
+          <div className="mt-6 flex justify-end">
+            <ArrowLink href="/funding">View all funding calls</ArrowLink>
+          </div>
+        ) : null}
       </div>
     </section>
   );

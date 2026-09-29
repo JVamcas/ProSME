@@ -44,6 +44,7 @@ function contracting(dependencies: StandardWorkflowDependencies) {
     actions,
     checklistItems,
     coiGated: false,
+    coiFormVersionId: null,
     description: "Finalize the agreement and verify conditions precedent.",
     displayOrder: 9,
     documentRequirements: [
@@ -118,6 +119,7 @@ function disbursement(dependencies: StandardWorkflowDependencies) {
       checklist("TAX_STATUS_VALID", "Tax status is valid", 4, "REQUIRED"),
     ],
     coiGated: false,
+    coiFormVersionId: null,
     description: "Review and process one disbursement tranche.",
     displayOrder: 10,
     documentRequirements: [
@@ -212,6 +214,7 @@ function monitoring(dependencies: StandardWorkflowDependencies) {
       ),
     ],
     coiGated: false,
+    coiFormVersionId: null,
     description: "Review implementation performance for one reporting period.",
     displayOrder: 11,
     documentRequirements: [
@@ -299,6 +302,7 @@ function closeOut(dependencies: StandardWorkflowDependencies) {
       ),
     ],
     coiGated: false,
+    coiFormVersionId: null,
     description: "Evaluate results, complete acquittal and close the award.",
     displayOrder: 12,
     documentRequirements: [

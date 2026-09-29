@@ -49,6 +49,7 @@ function stage(
     },
     repeatable: false,
     coiGated: false,
+    coiFormVersionId: null,
     entryCondition: null,
     exitCondition: null,
     initial: displayOrder === 1,

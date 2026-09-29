@@ -4,10 +4,8 @@ import { and, asc, eq, or, sql } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
 import type { FundingCall } from "../domain/FundingCall";
-import {
-  fundingCallPublicDocuments,
-  fundingCalls,
-} from "./funding-call.schema";
+import { fundingCalls } from "./funding-call.schema";
+import { fundingCallPublicDocuments } from "./funding-call-public-document.schema";
 
 export type FundingCallReadinessDocument = {
   finalized: boolean;

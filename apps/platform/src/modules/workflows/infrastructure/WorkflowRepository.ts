@@ -148,7 +148,6 @@ export async function findDraftByDefinition(
 
 export async function findConfigurationReferences(
   graph: WorkflowGraphInput,
-  additionalFormVersionIds: string[] = [],
 ): Promise<{
   formFields: Map<string, WorkflowConditionFormField[]>;
   roles: Set<string>;
@@ -158,7 +157,6 @@ export async function findConfigurationReferences(
 }> {
   const references = collectConfigurationReferences(
     graph,
-    additionalFormVersionIds,
   );
   const [foundUsers, foundRoles, foundForms, fieldsByVersion] =
     await Promise.all([
@@ -202,7 +200,7 @@ export async function findConfigurationReferences(
 export async function findWorkflowConditionFormFields(
   graph: WorkflowGraphInput,
 ) {
-  const versionIds = collectConfigurationReferences(graph).formVersionIds;
+  const versionIds = collectTaskFormVersionIds(graph);
   if (!versionIds.length) {
     return new Map<string, WorkflowConditionFormField[]>();
   }
@@ -226,7 +224,6 @@ export async function findWorkflowConditionFormFields(
 
 function collectConfigurationReferences(
   graph: WorkflowGraphInput,
-  additionalFormVersionIds: string[] = [],
 ) {
   const userIds = uniqueTaskValues(graph, "namedUserOverrideId");
   const roleIds = uniqueTaskValues(graph, "roleId");
@@ -241,12 +238,10 @@ function collectConfigurationReferences(
   const formVersionIds = [
     ...new Set(
       [
-        ...additionalFormVersionIds,
         ...graph.stages.flatMap((stage) =>
-          stage.tasks.flatMap((task) =>
-            task.formBinding ? [task.formBinding.formVersionId] : [],
-          ),
+          stage.coiFormVersionId ? [stage.coiFormVersionId] : [],
         ),
+        ...collectTaskFormVersionIds(graph),
       ],
     ),
   ];
@@ -255,6 +250,16 @@ function collectConfigurationReferences(
     roleIds: [...new Set(roleIds)],
     userIds: [...new Set(userIds)],
   };
+}
+
+function collectTaskFormVersionIds(graph: WorkflowGraphInput) {
+  return [
+    ...new Set(graph.stages.flatMap((stage) =>
+      stage.tasks.flatMap((task) =>
+        task.formBinding ? [task.formBinding.formVersionId] : [],
+      )
+    )),
+  ];
 }
 
 function uniqueTaskValues(

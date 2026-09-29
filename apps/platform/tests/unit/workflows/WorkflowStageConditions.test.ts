@@ -24,6 +24,7 @@ function stage(
     },
     repeatable: false,
     coiGated: false,
+    coiFormVersionId: null,
     entryCondition: null,
     joinPredecessorStageKeys: [],
     exitCondition: null,

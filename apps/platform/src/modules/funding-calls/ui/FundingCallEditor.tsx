@@ -49,9 +49,6 @@ export function FundingCallEditor({
   const headerActions = call ? (
     <div className="flex flex-col items-start gap-3 sm:items-end">
       <div className="flex items-center gap-3">
-        <span className="text-sm font-medium text-brand-navy/70">
-          Lifecycle status
-        </span>
         <StatusBadge status={call.status} />
       </div>
       <div className="flex flex-wrap gap-2 sm:justify-end">

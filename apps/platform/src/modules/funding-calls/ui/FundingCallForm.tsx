@@ -21,7 +21,11 @@ import {
   fundingCallEligibilitySummarySchema,
 } from "../api/FundingCallSchemas";
 import type { FundingCallCreateInput } from "../api/FundingCallSchemas";
-import type { FundingCallView } from "../api/FundingCallTransport";
+import type { FundingCallCreationProgressValues } from "../api/FundingCallSchemas";
+import type {
+  FundingCallCreationProgressView,
+  FundingCallView,
+} from "../api/FundingCallTransport";
 import {
   useBindableApplicationFormVersions,
   useBindableEligibilityRuleSetVersions,
@@ -39,6 +43,8 @@ import {
   WorkflowStep,
 } from "./FundingCallFormSteps";
 import { FundingCallReviewStep } from "./FundingCallReviewStep";
+import { FundingCallSaveStatus } from "./FundingCallSaveStatus";
+import { useFundingCallCreationAutosave } from "./useFundingCallCreationAutosave";
 
 const localMoneySchema = z
   .union([z.number().nonnegative(), z.string().trim().min(1)])
@@ -96,7 +102,12 @@ const stepFields: Record<
   workflow: ["workflowTemplateVersionId"],
 };
 
-function defaults(call?: FundingCallView): LocalFormInput {
+function defaults(
+  call?: FundingCallView,
+  creationProgress?: FundingCallCreationProgressView,
+): LocalFormInput {
+  if (!call && creationProgress) return creationProgress.values;
+
   return {
     applicationDuplicatePolicy:
       call?.applicationDuplicatePolicy ?? "one_per_business",
@@ -116,6 +127,15 @@ function defaults(call?: FundingCallView): LocalFormInput {
     title: call?.title ?? "",
     totalBudgetEnvelope: call?.totalBudgetEnvelope ?? "",
     workflowTemplateVersionId: call?.workflowTemplateVersionId ?? "",
+  };
+}
+
+function draftValues(values: LocalFormInput): FundingCallCreationProgressValues {
+  return {
+    ...values,
+    maximumGrantAmount: String(values.maximumGrantAmount),
+    minimumGrantAmount: String(values.minimumGrantAmount),
+    totalBudgetEnvelope: String(values.totalBudgetEnvelope),
   };
 }
 
@@ -144,21 +164,33 @@ function firstInvalidStep(errors: FieldValues): FundingCallStepId {
 
 export function FundingCallForm({
   call,
+  creationProgress,
   disabled = false,
   onSubmit,
 }: {
   call?: FundingCallView;
+  creationProgress?: FundingCallCreationProgressView;
   disabled?: boolean;
   onSubmit: (input: FundingCallCreateInput) => Promise<void>;
 }) {
-  const [currentStep, setCurrentStep] = useState<FundingCallStepId>("basics");
+  const creationAutosaveEnabled = !call;
+  const [currentStep, setCurrentStep] = useState<FundingCallStepId>(
+    creationProgress?.currentStep ?? "basics",
+  );
   const [completedSteps, setCompletedSteps] = useState<FundingCallStepId[]>([]);
   const eligibilityVersions = useBindableEligibilityRuleSetVersions();
   const formVersions = useBindableApplicationFormVersions();
   const workflowVersions = useBindableWorkflowTemplateVersions();
   const form = useForm<LocalFormInput, unknown, LocalFormOutput>({
-    defaultValues: defaults(call),
+    defaultValues: defaults(call, creationProgress),
     resolver: zodResolver(localFormSchema),
+  });
+  const watchedValues = useWatch({ control: form.control }) as LocalFormInput;
+  const autosave = useFundingCallCreationAutosave({
+    currentStep,
+    enabled: creationAutosaveEnabled,
+    initialProgress: creationProgress,
+    values: draftValues(watchedValues),
   });
   const opensAt = useWatch({ control: form.control, name: "opensAt" });
   const eligibilityVersionId = useWatch({
@@ -185,6 +217,10 @@ export function FundingCallForm({
 
   const submit = form.handleSubmit(
     async (values) => {
+      if (creationAutosaveEnabled && autosave.status !== "saved") {
+        toast.error("Wait for the latest changes to finish saving.");
+        return;
+      }
       try {
         const identifiers = call
           ? { reference: call.reference, slug: call.slug }
@@ -299,7 +335,7 @@ export function FundingCallForm({
   return (
     <FormProvider {...form}>
       <form className="w-full" onSubmit={submit}>
-        <div className="overflow-hidden rounded-2xl border border-brand-navy/15 bg-white shadow-sm">
+        <div className="overflow-hidden rounded-t-2xl border border-brand-navy/15 bg-white shadow-sm">
           <StepProgress
             ariaLabel="Funding call sections"
             className="border-b border-brand-navy/10 px-5 py-5"
@@ -317,17 +353,29 @@ export function FundingCallForm({
             {renderStep()}
           </fieldset>
           <div className="flex items-center justify-between border-t border-brand-navy/10 px-5 py-4 sm:px-8">
-            <GeneralButton
-              disabled={currentIndex === 0 || form.formState.isSubmitting}
-              onClick={() => setCurrentStep(fundingCallSteps[currentIndex - 1].id)}
-              type="button"
-              variant="outline"
-            >
-              Back
-            </GeneralButton>
+            <div className="flex flex-wrap items-center gap-4">
+              <GeneralButton
+                disabled={currentIndex === 0 || form.formState.isSubmitting}
+                onClick={() => setCurrentStep(fundingCallSteps[currentIndex - 1].id)}
+                type="button"
+                variant="outline"
+              >
+                Back
+              </GeneralButton>
+              <FundingCallSaveStatus
+                enabled={creationAutosaveEnabled}
+                error={autosave.error}
+                onRetry={autosave.retry}
+                status={autosave.status}
+              />
+            </div>
             {currentStep === "review" ? (
               <GeneralButton
-                disabled={disabled || form.formState.isSubmitting}
+                disabled={
+                  disabled
+                  || form.formState.isSubmitting
+                  || (creationAutosaveEnabled && autosave.status !== "saved")
+                }
                 type="submit"
               >
                 {form.formState.isSubmitting ? "Saving…" : "Save Draft"}

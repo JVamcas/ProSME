@@ -31,6 +31,7 @@ import {
   fundingCallPublicationRevisions,
   fundingCalls,
 } from "./funding-call.schema";
+import { fundingCallCreationProgress } from "./funding-call-creation-progress.schema";
 
 function toFundingCall(row: typeof fundingCalls.$inferSelect): FundingCall {
   return {
@@ -46,22 +47,29 @@ export async function insertFundingCall(
   actorId: string,
   input: FundingCallCreateInput,
 ): Promise<FundingCall> {
-  const [created] = await getDatabase()
-    .insert(fundingCalls)
-    .values({
-      ...input,
-      closesAt: new Date(input.closesAt),
-      createdBy: actorId,
-      description: sanitizeFundingCallDescription(input.description),
-      eligibilitySummary: sanitizeFundingCallEligibilitySummary(
-        input.eligibilitySummary,
-      ),
-      opensAt: new Date(input.opensAt),
-      status: "DRAFT",
-      updatedBy: actorId,
-    })
-    .returning();
-  return toFundingCall(created);
+  return getDatabase().transaction(async (transaction) => {
+    const [created] = await transaction
+      .insert(fundingCalls)
+      .values({
+        ...input,
+        closesAt: new Date(input.closesAt),
+        createdBy: actorId,
+        description: sanitizeFundingCallDescription(input.description),
+        eligibilitySummary: sanitizeFundingCallEligibilitySummary(
+          input.eligibilitySummary,
+        ),
+        opensAt: new Date(input.opensAt),
+        status: "DRAFT",
+        updatedBy: actorId,
+      })
+      .returning();
+
+    await transaction
+      .delete(fundingCallCreationProgress)
+      .where(eq(fundingCallCreationProgress.ownerId, actorId));
+
+    return toFundingCall(created);
+  });
 }
 
 export async function readFundingCallById(

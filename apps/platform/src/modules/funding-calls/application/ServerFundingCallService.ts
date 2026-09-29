@@ -79,7 +79,7 @@ async function requireEligibilityCompatibility(
     resolveEligibilityRuleSetContexts(eligibilityVersionId),
     resolveFundingCallEligibilityContext({
       formVersionId: call.formVersionId,
-      id: call.id ?? "unpersisted-funding-call",
+      id: call.id ?? crypto.randomUUID(),
       title: call.title,
       workflowTemplateVersionId: call.workflowTemplateVersionId,
     }),

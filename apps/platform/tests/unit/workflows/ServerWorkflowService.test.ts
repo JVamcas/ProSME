@@ -47,8 +47,6 @@ import {
 import { workflowEditorView } from "@/modules/workflows/application/definitions/ServerWorkflowSupport";
 import { actor, record, userWith } from "./WorkflowServiceFixtures";
 
-const coiFormVersionId = "79e20de0-3558-4d63-90a4-8c9f5125df11";
-
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(findConfigurationReferences).mockResolvedValue({
@@ -95,14 +93,14 @@ describe("workflow service authorization and lifecycle", () => {
     async (status) => {
       vi.mocked(findConfigurationReferences).mockResolvedValue({
         formFields: new Map(),
-        forms: new Map([[coiFormVersionId, "PUBLISHED"]]),
-        formPurposes: new Map([[coiFormVersionId, "COI"]]),
+        forms: new Map([[referenceWorkflow.stages[2].coiFormVersionId!, "PUBLISHED"]]),
+        formPurposes: new Map([[referenceWorkflow.stages[2].coiFormVersionId!, "COI"]]),
         roles: new Set(),
         users: new Map([[actor.id, "active"]]),
       });
       vi.mocked(findWorkflowGraph).mockResolvedValue({
         ...record,
-        version: { ...record.version, coiFormVersionId, status },
+        version: { ...record.version, status },
       });
       vi.mocked(publishWorkflowVersion).mockResolvedValue({
         ...record.version,

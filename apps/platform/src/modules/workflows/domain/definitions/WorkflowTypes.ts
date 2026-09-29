@@ -82,7 +82,6 @@ export type WorkflowEditorView = {
   };
   version: {
     id: string;
-    coiFormVersionId?: string | null;
     number: number;
     status: WorkflowStatus;
     createdAt: string;

@@ -32,6 +32,7 @@ export type WorkflowStageDefinition = {
   publicStatusMapping: WorkflowPublicStatusMapping;
   repeatable: boolean;
   coiGated: boolean;
+  coiFormVersionId: string | null;
   entryCondition: ConditionGroup | null;
   exitCondition: ConditionGroup | null;
   joinPredecessorStageKeys: string[];

@@ -24,7 +24,6 @@ describe("standard workflow seed repository", () => {
 
     const result = await insertMissingStandardWorkflowDraft({
       code: "SME_FUND_STANDARD",
-      coiFormVersionId: null,
       description: "Existing standard workflow",
       graph: { stages: [], transitions: [] },
       name: "Standard workflow",

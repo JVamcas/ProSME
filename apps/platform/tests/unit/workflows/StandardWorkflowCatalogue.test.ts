@@ -12,6 +12,7 @@ import { validateWorkflowGraph } from "@/modules/workflows/WorkflowValidation";
 function dependencies(): StandardWorkflowDependencies {
   return {
     formVersionIds: {
+      COI_DECLARATION: "00000000-0000-4000-9000-000000000000",
       ELIGIBILITY_VERIFICATION:
         "00000000-0000-4000-9000-000000000001",
     },
@@ -72,6 +73,31 @@ describe("standard workflow catalogue", () => {
       "APPROVAL_AWARD_DECISION",
       "DISBURSEMENT",
       "IMPLEMENTATION_MONITORING",
+    ]);
+  });
+
+  it("reuses one COI form across every COI-gated stage", () => {
+    const draft = createStandardWorkflowDraft(dependencies());
+    const gatedStages = draft.graph.stages
+      .filter((stage) => stage.coiGated)
+      .map((stage) => ({
+        coiFormVersionId: stage.coiFormVersionId,
+        stableKey: stage.stableKey,
+      }));
+
+    expect(gatedStages).toEqual([
+      {
+        coiFormVersionId: "00000000-0000-4000-9000-000000000000",
+        stableKey: "TECHNICAL_ASSESSMENT",
+      },
+      {
+        coiFormVersionId: "00000000-0000-4000-9000-000000000000",
+        stableKey: "MODERATION",
+      },
+      {
+        coiFormVersionId: "00000000-0000-4000-9000-000000000000",
+        stableKey: "COMMITTEE_REVIEW",
+      },
     ]);
   });
 

@@ -7,7 +7,7 @@ import { useSyncExternalStore, type ReactNode } from "react";
 import { GeneralButton } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
 import type { PublicFundingCallSummary } from "@/modules/funding-calls/api/PublicFundingCallTransport";
-import { formatOpportunityDate, opportunityDateLabel } from "@/components/applicant/funding-opportunities/FundingOpportunityFormat";
+import { formatOpportunityDate, opportunityDateLabel } from "@/modules/funding-calls/ui/FundingOpportunityFormat";
 
 const savedStorageKey = "sme-fund-saved-opportunities";
 const savedChangeEvent = "sme-fund-saved-opportunities-changed";

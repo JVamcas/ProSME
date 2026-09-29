@@ -37,6 +37,7 @@ function moderation(dependencies: StandardWorkflowDependencies) {
       ),
     ],
     coiGated: true,
+    coiFormVersionId: dependencies.formVersionIds.COI_DECLARATION ?? null,
     description:
       "Consolidate reviews, rank applications and prepare the shortlist.",
     displayOrder: 5,
@@ -97,6 +98,7 @@ function committeeReview(dependencies: StandardWorkflowDependencies) {
       checklist("BUDGET_AVAILABLE", "Budget availability is confirmed", 3),
     ],
     coiGated: true,
+    coiFormVersionId: dependencies.formVersionIds.COI_DECLARATION ?? null,
     description: "Record committee deliberation and award recommendation.",
     displayOrder: 6,
     documentRequirements: [
@@ -122,7 +124,6 @@ function committeeReview(dependencies: StandardWorkflowDependencies) {
       task(dependencies, {
         actionKeys: [],
         taskType: "CONTRIBUTING",
-        coiRequired: true,
         config: {},
         description:
           "Record an independent committee assessment and recommendation.",
@@ -137,7 +138,6 @@ function committeeReview(dependencies: StandardWorkflowDependencies) {
       task(dependencies, {
         actionKeys: actions.map((item) => item.stableKey),
         taskType: "STAGE_DECISION",
-        coiRequired: true,
         config: {
           authorityCapability: "workflow.task.assigned.decide",
           outcomes: actions.map((item) => option(item.stableKey, item.label)),
@@ -174,6 +174,7 @@ function approval(dependencies: StandardWorkflowDependencies) {
       checklist("BUDGET_CONFIRMED", "Budget availability is confirmed", 2),
     ],
     coiGated: false,
+    coiFormVersionId: null,
     description: "Record the delegated approval and award decision.",
     displayOrder: 7,
     documentRequirements: [
@@ -234,6 +235,7 @@ function notificationAppeals(dependencies: StandardWorkflowDependencies) {
       ),
     ],
     coiGated: false,
+    coiFormVersionId: null,
     description: "Issue outcomes, release feedback and resolve appeals.",
     displayOrder: 8,
     documentRequirements: [

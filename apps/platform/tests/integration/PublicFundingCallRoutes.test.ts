@@ -2,14 +2,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 vi.mock("@/modules/funding-calls/application/ServerPublicFundingCallService", () => ({
-  getPublicFundingCallBySlug: vi.fn(),
+  getPublicFundingCallById: vi.fn(),
   listPublicFundingCalls: vi.fn(),
 }));
 
-import * as detailRoute from "@/app/api/public/funding-calls/[slug]/route";
+import * as detailRoute from "@/app/api/public/funding-calls/[fundingCallId]/route";
 import * as listRoute from "@/app/api/public/funding-calls/route";
 import {
-  getPublicFundingCallBySlug,
+  getPublicFundingCallById,
   listPublicFundingCalls,
 } from "@/modules/funding-calls/application/ServerPublicFundingCallService";
 
@@ -35,7 +35,7 @@ describe("public funding-call routes", () => {
   });
 
   it("resolves detail by the public slug", async () => {
-    vi.mocked(getPublicFundingCallBySlug).mockResolvedValue({
+    vi.mocked(getPublicFundingCallById).mockResolvedValue({
       applicationsOpen: false,
       closesAt: "2026-08-31T22:00:00.000Z",
       description: "<p>Archived call.</p>",
@@ -59,10 +59,10 @@ describe("public funding-call routes", () => {
 
     const response = await detailRoute.GET(
       new Request("http://localhost/api/public/funding-calls/growth-fund"),
-      { params: Promise.resolve({ slug: "growth-fund" }) },
+      { params: Promise.resolve({ fundingCallId: "00000000-0000-4000-8000-000000000042" }) },
     );
 
     expect(response.status).toBe(200);
-    expect(getPublicFundingCallBySlug).toHaveBeenCalledWith("growth-fund");
+    expect(getPublicFundingCallById).toHaveBeenCalledWith("00000000-0000-4000-8000-000000000042");
   });
 });

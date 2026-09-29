@@ -13,7 +13,6 @@ import type {
 } from "../api/PublicFundingCallTransport";
 import {
   readPublicFundingCallById,
-  readPublicFundingCallBySlug,
   readPublicFundingCalls,
   type PublicFundingCallRecord,
 } from "../infrastructure/FundingCallRepository";
@@ -134,20 +133,15 @@ export async function listPublicFundingCalls(
 export async function findPublicFundingCallById(
   id: string,
 ): Promise<PublicFundingCallDetail | null> {
+  if (process.env.SKIP_CMS_PRERENDER === "1" || !z.uuid().safeParse(id).success) {
+    return null;
+  }
   const call = await readPublicFundingCallById(id);
   return call ? detail(call, new Date()) : null;
 }
 
-export async function findPublicFundingCallBySlug(
-  slug: string,
-): Promise<PublicFundingCallDetail | null> {
-  if (process.env.SKIP_CMS_PRERENDER === "1") return null;
-  const call = await readPublicFundingCallBySlug(slug);
-  return call ? detail(call, new Date()) : null;
-}
-
-export async function getPublicFundingCallBySlug(slug: string) {
-  const call = await findPublicFundingCallBySlug(slug);
+export async function getPublicFundingCallById(id: string) {
+  const call = await findPublicFundingCallById(id);
   if (!call) throw new PublicFundingCallNotFoundError();
   return call;
 }

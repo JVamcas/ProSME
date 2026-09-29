@@ -67,7 +67,7 @@ const pageCopy: Record<string, Pick<PublicPageContent, "summary" | "title">> = {
   eligibility: {
     title: "Check your eligibility",
     summary:
-      "Answer the published screening questions before starting an application.",
+      "",
   },
   events: {
     title: "Events",

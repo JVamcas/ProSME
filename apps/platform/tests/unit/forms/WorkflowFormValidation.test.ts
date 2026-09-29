@@ -19,6 +19,7 @@ const stage = (code: string, sequence: number, initial: boolean) => ({
   },
   repeatable: false,
   coiGated: false,
+  coiFormVersionId: null,
   entryCondition: null,
   exitCondition: null,
   joinPredecessorStageKeys: [],
@@ -49,7 +50,6 @@ const stage = (code: string, sequence: number, initial: boolean) => ({
       reviewerCount: 1,
       requiredCompletionCount: 1,
       quorum: false,
-      coiRequired: false,
       config: {},
       formBinding: {
         contextFields: [

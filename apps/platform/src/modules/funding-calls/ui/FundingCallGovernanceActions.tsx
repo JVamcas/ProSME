@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { z } from "zod";
 
 import { GeneralButton } from "@/components/ui/button";
@@ -36,27 +37,34 @@ export function FundingCallGovernanceActions({
     defaultValues: { reason: "" },
     resolver: zodResolver(returnSchema),
   });
+  const mutationOptions = {
+    onError: (error: Error) => toast.error(error.message),
+  };
 
   const approve = () => governance.mutate({
     command: "APPROVE",
     expectedRowVersion: call.rowVersion,
-  });
+  }, mutationOptions);
   const submitForApproval = () => governance.mutate({
     command: "SUBMIT_FOR_APPROVAL",
     expectedRowVersion: call.rowVersion,
-  });
+  }, mutationOptions);
   const withdraw = () => governance.mutate({
     command: "WITHDRAW_APPROVAL_REQUEST",
     expectedRowVersion: call.rowVersion,
-  });
-  const returnForAmendment = form.handleSubmit(async ({ reason }) => {
-    await governance.mutateAsync({
+  }, mutationOptions);
+  const returnForAmendment = form.handleSubmit(({ reason }) => {
+    governance.mutate({
       command: "RETURN_FOR_AMENDMENT",
       expectedRowVersion: call.rowVersion,
       reason,
+    }, {
+      ...mutationOptions,
+      onSuccess: () => {
+        form.reset();
+        setReturnDialogOpen(false);
+      },
     });
-    form.reset();
-    setReturnDialogOpen(false);
   });
   const closeReturnDialog = () => {
     if (governance.isPending) return;
@@ -130,11 +138,6 @@ export function FundingCallGovernanceActions({
               required
               rows={5}
             />
-            {governance.error ? (
-              <p className="text-sm text-red-700" role="alert">
-                {governance.error.message}
-              </p>
-            ) : null}
             <div className="flex justify-end gap-3">
               <GeneralButton
                 disabled={governance.isPending}
@@ -155,12 +158,6 @@ export function FundingCallGovernanceActions({
           </form>
         </FormProvider>
       </DraggableDialog>
-
-      {governance.error ? (
-        <p className="text-sm text-red-700" role="alert">
-          {governance.error.message}
-        </p>
-      ) : null}
     </>
   );
 }

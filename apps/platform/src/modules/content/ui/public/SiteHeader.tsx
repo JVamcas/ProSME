@@ -2,11 +2,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Menu } from "lucide-react";
 
-import { ActiveNavigationLink } from "@/components/layout/active-navigation-link";
+import { ActiveNavigationLink } from "@/shared/ui/navigation/ActiveNavigationLink";
 import { primaryNavigation } from "@/components/layout/primary-navigation";
 import { getHeader } from "@/modules/content/ServerContentQueries";
 import type { HeaderContent } from "@/modules/content/ContentTypes";
-import { GeneralButtonLink } from "../ui/button";
+import { GeneralButtonLink } from "@/components/ui/button";
 
 export async function SiteHeader() {
   const content = await getHeader();
@@ -63,7 +63,7 @@ export async function SiteHeader() {
         >
           {primaryNavigation.map((link) => (
             <ActiveNavigationLink
-              className="flex min-h-12 shrink-0 items-center px-1 text-[13px] font-semibold text-brand-navy hover:text-brand-navy hover:underline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand-navy"
+              className="flex min-h-12 shrink-0 items-center px-1 text-[13px] font-semibold"
               key={link.href}
               {...link}
             />
