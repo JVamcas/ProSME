@@ -2,6 +2,7 @@ import { fileURLToPath } from "node:url";
 import type { Payload } from "payload";
 
 import { findId, seedContext } from "./seed-helpers";
+import { defaultHomeActionCards, defaultHomeProcess } from "@/modules/content/ContentDefaults";
 
 const impactImageAlt = "Namibian mountain landscape";
 
@@ -31,6 +32,16 @@ export async function seedSiteGlobals(payload: Payload) {
       context: seedContext,
       overrideAccess: true,
       data: {
+        actionCards: defaultHomeActionCards,
+        process: defaultHomeProcess,
+        fundingButtonLabel: "Funding Opportunities",
+        benefitFunding: "Access funding",
+        benefitCapacity: "Build your capacity",
+        benefitOpportunity: "Create opportunities",
+        supportHeading: "Who we support",
+        supportIntroduction: "The SME Fund is open to any Namibian MSME with high potential, inclusive impact and a commitment to growth. Our priority areas include:",
+        newsIntroduction: "Updates, stories and useful materials for Namibian entrepreneurs.",
+        fundingSlogan: "Brighter businesses. A stronger Namibia.",
         applyHref: "/portal/applications/new",
         applyLabel: "Apply Now",
         eligibilityLabel: "Check My Eligibility",
@@ -39,7 +50,13 @@ export async function seedSiteGlobals(payload: Payload) {
         heroPanelSummary: "Open to eligible MSMEs from all 14 regions and every sector.",
         layout: [
           { blockType: "resourceGrid", heading: "Latest News & Resources", limit: 4 },
-          { blockType: "statistics", backgroundImage: impactImageId, heading: "Real businesses, lasting impact.", summary: "Together, we’re building a more competitive Namibia that supports MSME growth." },
+          {
+            blockType: "statistics",
+            backgroundImage: impactImageId,
+            campaignMessage: "Small Businesses. A Brighter Namibia",
+            heading: "Real businesses, lasting impact.",
+            summary: "Together, we’re building a more competitive Namibia that supports MSME growth.",
+          },
         ],
         newsHeading: "Latest News & Resources",
         reviewStatus: "approved",

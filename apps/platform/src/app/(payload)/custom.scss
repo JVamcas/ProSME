@@ -279,3 +279,114 @@ body {
     transition: none;
   }
 }
+
+.cms-home-entry,
+.cms-home-section,
+.cms-home-guide__related {
+  border: 1px solid var(--theme-elevation-200);
+  border-radius: 16px;
+  background: var(--sme-brand-white);
+  box-shadow: 0 4px 16px rgb(10 24 59 / 5%);
+}
+
+.cms-home-entry {
+  max-width: 440px;
+  margin-block: 20px 32px;
+  padding: 24px;
+}
+
+.cms-home-entry__eyebrow,
+.cms-home-guide__eyebrow {
+  color: var(--sme-brand-orange);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+}
+
+.cms-home-entry__path {
+  font-weight: 700;
+}
+
+.cms-home-entry__actions,
+.cms-home-guide__actions,
+.cms-home-guide__related {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.cms-home-entry a,
+.cms-home-guide a {
+  color: var(--sme-brand-navy);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.cms-home-guide {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 32px 24px 72px;
+}
+
+.cms-home-guide__sections {
+  display: grid;
+  gap: 16px;
+  margin-block: 28px;
+}
+
+.cms-home-section {
+  padding: 20px;
+}
+
+.cms-home-section--with-image {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 24px;
+}
+
+.cms-home-section a {
+  display: inline-flex;
+  margin: 8px 16px 0 0;
+}
+
+.cms-home-section__image,
+.cms-home-section__image-placeholder {
+  width: 100%;
+  height: 120px;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.cms-home-section__image-placeholder {
+  display: grid;
+  place-items: center;
+  padding: 12px;
+  color: var(--sme-brand-navy);
+  background: var(--theme-elevation-100);
+  font-size: 13px;
+  text-align: center;
+}
+
+.cms-home-section__preview {
+  color: var(--sme-brand-navy);
+  font-weight: 700;
+}
+
+.cms-home-guide__related {
+  margin-top: 16px;
+  padding: 20px;
+}
+
+.cms-home-guide a:focus-visible,
+.cms-home-entry a:focus-visible {
+  outline: 2px solid var(--sme-brand-orange);
+  outline-offset: 3px;
+}
+
+@media (max-width: 600px) {
+  .cms-home-section--with-image {
+    grid-template-columns: 1fr;
+  }
+}

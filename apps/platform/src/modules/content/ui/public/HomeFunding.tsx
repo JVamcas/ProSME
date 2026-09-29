@@ -4,36 +4,34 @@ import { CmsImage } from "@/components/public/cms-image";
 import { SectionHeading } from "@/components/public/section-heading";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ArrowLink } from "@/components/ui/links";
-import { getNews, getResources } from "@/modules/content/ServerContentQueries";
+import { getHomeNewsAndResources } from "@/modules/content/ServerContentQueries";
 
 export async function HomeFunding({
   heading,
-  limit = 4,
+  introduction = "Updates, stories and useful materials for Namibian entrepreneurs.",
 }: {
   heading: string;
-  limit?: number;
+  introduction?: string;
 }) {
-  const [news, resources] = await Promise.all([getNews(), getResources()]);
-  const newsLimit = Math.min(2, limit);
-  const latestNews = news.slice(0, newsLimit);
+  const { news, resources } = await getHomeNewsAndResources();
   const items = [
-    ...latestNews.map((item) => ({
+    ...news.map((item) => ({
       ...item,
       type: "News",
       href: `/news/${item.slug}`,
     })),
-    ...resources.slice(0, limit - latestNews.length).map((item) => ({
+    ...resources.map((item) => ({
       ...item,
       type: item.category ?? "Resource",
       href: item.href ?? `/resources/${item.slug}`,
     })),
-  ].slice(0, limit);
+  ];
 
   return (
     <section className="container py-14">
       <SectionHeading
         title={heading}
-        text="Updates, stories and useful materials for Namibian entrepreneurs."
+        text={introduction}
         link="Browse resources"
         href="/resources"
       />
@@ -45,7 +43,7 @@ export async function HomeFunding({
           />
         </div>
       ) : null}
-      <div className="mt-6 grid gap-5 md:grid-cols-3">
+      <div className="mt-6 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
         {items.map((item) => {
           const isResource = item.type !== "News";
 

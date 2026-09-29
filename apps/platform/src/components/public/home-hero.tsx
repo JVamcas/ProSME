@@ -1,9 +1,8 @@
-import { ArrowRight, BarChart3, Leaf, Users } from "lucide-react";
-import Link from "next/link";
+import { BarChart3, Leaf, Users } from "lucide-react";
 
 import type { HomepageContent } from "@/modules/content/ContentTypes";
 import { CmsImage } from "./cms-image";
-import { GeneralButton, GeneralButtonLink } from "../ui/button";
+import { GeneralButtonLink } from "../ui/button";
 
 type HomeHeroProps = {
   content: HomepageContent;
@@ -32,17 +31,17 @@ export function HomeHero({ content }: HomeHeroProps) {
 
           <div className="mt-7 flex flex-wrap gap-3">
             <GeneralButtonLink variant={"primary"} href={"/portal/applications/new"}>
-              Apply Now
+              {content.applyLabel}
             </GeneralButtonLink>
             <GeneralButtonLink variant={"outlineOrange"} href={"/funding"}>
-              Funding Opportunities
+              {content.fundingButtonLabel}
             </GeneralButtonLink>
           </div>
 
           <div className="mt-8 flex flex-wrap gap-x-8 gap-y-3 text-xs font-medium text-brand-navy/80">
-            <HeroBenefit icon={<BarChart3 />} text="Access funding" />
-            <HeroBenefit icon={<Users />} text="Build your capacity" />
-            <HeroBenefit icon={<Leaf />} text="Create opportunities" />
+            <HeroBenefit icon={<BarChart3 />} text={content.benefitFunding} />
+            <HeroBenefit icon={<Users />} text={content.benefitCapacity} />
+            <HeroBenefit icon={<Leaf />} text={content.benefitOpportunity} />
           </div>
         </div>
 

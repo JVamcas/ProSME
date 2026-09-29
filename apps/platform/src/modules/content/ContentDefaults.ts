@@ -1,5 +1,25 @@
 import type { PublicPageContent, StatisticItem } from "./ContentTypes";
 
+export const defaultHomeActionCards = {
+  fundingTitle: "I want funding",
+  fundingDescription: "Explore current opportunities and find the right funding for your business.",
+  eligibilityTitle: "Am I eligible?",
+  eligibilityDescription: "Check if your business meets the key criteria before you apply.",
+  trackingTitle: "I already applied",
+  trackingDescription: "Track your application and stay updated on the next steps.",
+};
+
+export const defaultHomeProcess = {
+  heading: "How it works",
+  introduction: "A simple, transparent process to get you from application to support.",
+  steps: [
+    { title: "Check eligibility", description: "See if your business meets the key criteria." },
+    { title: "Prepare your business", description: "Get your documents ready and strengthen your application." },
+    { title: "Apply online", description: "Submit your application through our secure portal." },
+    { title: "Track your application", description: "Stay updated on your progress every step of the way." },
+  ],
+};
+
 export const defaultStatistics: StatisticItem[] = [
   { value: "7", label: "Funding Calls" },
   { value: "14", label: "Regions Covered" },

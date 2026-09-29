@@ -16,6 +16,9 @@ export default async function CmsNavigationLinks() {
       <Link className="cms-navigation-links__link" href="/cms">
         Content management
       </Link>
+      <Link className="cms-navigation-links__link" href="/cms/home">
+        Home page
+      </Link>
       {canAccessOperationsPortal(user) ? (
         <Link className="cms-navigation-links__link" href="/admin">
           Back to operations

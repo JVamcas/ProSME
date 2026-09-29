@@ -47,8 +47,17 @@ export default buildConfig({
       beforeNavLinks: [
         "./modules/content/ui/admin/CmsNavigationLinks.tsx",
       ],
+      beforeDashboard: [
+        "./modules/content/ui/admin/CmsHomeDashboardCard.tsx",
+      ],
       logout: {
         Button: "./modules/content/ui/admin/CmsLogoutButton.tsx",
+      },
+      views: {
+        home: {
+          Component: "./modules/content/ui/admin/CmsHomeGuide.tsx",
+          path: "/home",
+        },
       },
     },
     importMap: {

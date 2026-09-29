@@ -22,9 +22,11 @@ import { UnderlineFeatureClient as UnderlineFeatureClient_e70f5e05f09f93e00b997e
 import { BoldFeatureClient as BoldFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { ItalicFeatureClient as ItalicFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { default as default_336c162c05fce76a5c4f6f078350f16a } from '../../../modules/content/ui/admin/CmsLogoutButton.tsx'
+import { default as default_02b343fc02921c2541b0c5f7e1e69453 } from '../../../modules/content/ui/admin/CmsHomeDashboardCard.tsx'
 import { default as default_bb9a45278ee997c40cc3aace76fab693 } from '../../../modules/content/ui/admin/CmsNavBrand.tsx'
 import { default as default_7b33327aac930baae7e36e505073d925 } from '../../../modules/content/ui/admin/CmsNavigationLinks.tsx'
 import { GcsClientUploadHandler as GcsClientUploadHandler_06e62ca02c7c441053a9b643e5545934 } from '@payloadcms/storage-gcs/client'
+import { default as default_68f7852aafe54866f6c7ea558f5c806b } from '../../../modules/content/ui/admin/CmsHomeGuide.tsx'
 import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } from '@payloadcms/next/rsc'
 
 /** @type import('payload').ImportMap */
@@ -53,8 +55,10 @@ export const importMap = {
   "@payloadcms/richtext-lexical/client#BoldFeatureClient": BoldFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
   "@payloadcms/richtext-lexical/client#ItalicFeatureClient": ItalicFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
   "./modules/content/ui/admin/CmsLogoutButton.tsx#default": default_336c162c05fce76a5c4f6f078350f16a,
+  "./modules/content/ui/admin/CmsHomeDashboardCard.tsx#default": default_02b343fc02921c2541b0c5f7e1e69453,
   "./modules/content/ui/admin/CmsNavBrand.tsx#default": default_bb9a45278ee997c40cc3aace76fab693,
   "./modules/content/ui/admin/CmsNavigationLinks.tsx#default": default_7b33327aac930baae7e36e505073d925,
   "@payloadcms/storage-gcs/client#GcsClientUploadHandler": GcsClientUploadHandler_06e62ca02c7c441053a9b643e5545934,
+  "./modules/content/ui/admin/CmsHomeGuide.tsx#default": default_68f7852aafe54866f6c7ea558f5c806b,
   "@payloadcms/next/rsc#CollectionCards": CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1
 }

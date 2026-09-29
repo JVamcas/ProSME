@@ -2,20 +2,15 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { HomeFunding } from "@/modules/content/ui/public/HomeFunding";
-import {
-  getNews,
-  getResources,
-} from "@/modules/content/ServerContentQueries";
+import { getHomeNewsAndResources } from "@/modules/content/ServerContentQueries";
 
 vi.mock("@/modules/content/ServerContentQueries", () => ({
-  getNews: vi.fn(),
-  getResources: vi.fn(),
+  getHomeNewsAndResources: vi.fn(),
 }));
 
 describe("homepage news and resources", () => {
   beforeEach(() => {
-    vi.mocked(getNews).mockResolvedValue([]);
-    vi.mocked(getResources).mockResolvedValue([
+    vi.mocked(getHomeNewsAndResources).mockResolvedValue({ news: [], resources: [
       {
         category: "Application guide",
         href: "/documents/sme-fund-first-call-funding-criteria.pdf",
@@ -30,7 +25,7 @@ describe("homepage news and resources", () => {
         summary: "Approved application criteria.",
         title: "First Call funding criteria",
       },
-    ]);
+    ] });
   });
 
   it("shows the guide thumbnail and opens the resource in a new tab", async () => {

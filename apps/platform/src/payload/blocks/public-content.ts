@@ -31,6 +31,11 @@ export const statisticsBlock: Block = {
     { name: "heading", type: "text", required: true },
     { name: "summary", type: "textarea" },
     { name: "backgroundImage", type: "upload", relationTo: "media" },
+    {
+      name: "campaignMessage",
+      type: "textarea",
+      defaultValue: "Small Businesses. A Brighter Namibia",
+    },
     { name: "items", type: "array", fields: [{ name: "value", type: "text", required: true }, { name: "label", type: "text", required: true }], admin: { description: "Leave empty to use the published programme statistics." } },
   ],
 };
@@ -39,7 +44,7 @@ export const resourceGridBlock: Block = {
   slug: "resourceGrid",
   fields: [
     { name: "heading", type: "text", required: true },
-    { name: "limit", type: "number", defaultValue: 4, min: 1, max: 12 },
+    { name: "limit", type: "number", defaultValue: 4, min: 1, max: 12, admin: { hidden: true } },
   ],
 };
 

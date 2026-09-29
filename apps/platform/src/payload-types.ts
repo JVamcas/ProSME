@@ -176,7 +176,6 @@ export interface Media {
   id: number;
   alt: string;
   caption?: string | null;
-  prefix?: string | null;
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -257,6 +256,7 @@ export interface Page {
             heading: string;
             summary?: string | null;
             backgroundImage?: (number | null) | Media;
+            campaignMessage?: string | null;
             /**
              * Leave empty to use the published programme statistics.
              */
@@ -700,7 +700,6 @@ export interface CmsPrincipalsSelect<T extends boolean = true> {
 export interface MediaSelect<T extends boolean = true> {
   alt?: T;
   caption?: T;
-  prefix?: T;
   updatedAt?: T;
   createdAt?: T;
   url?: T;
@@ -758,6 +757,7 @@ export interface PagesSelect<T extends boolean = true> {
               heading?: T;
               summary?: T;
               backgroundImage?: T;
+              campaignMessage?: T;
               items?:
                 | T
                 | {
@@ -1088,7 +1088,34 @@ export interface Homepage {
   trackingLabel: string;
   heroPanelHeading?: string | null;
   heroPanelSummary?: string | null;
+  fundingButtonLabel?: string | null;
+  benefitFunding?: string | null;
+  benefitCapacity?: string | null;
+  benefitOpportunity?: string | null;
+  actionCards?: {
+    fundingTitle?: string | null;
+    fundingDescription?: string | null;
+    eligibilityTitle?: string | null;
+    eligibilityDescription?: string | null;
+    trackingTitle?: string | null;
+    trackingDescription?: string | null;
+  };
+  process?: {
+    heading?: string | null;
+    introduction?: string | null;
+    steps?:
+      | {
+          title: string;
+          description: string;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  supportHeading?: string | null;
+  supportIntroduction?: string | null;
+  fundingSlogan?: string | null;
   newsHeading?: string | null;
+  newsIntroduction?: string | null;
   layout?:
     | (
         | {
@@ -1133,6 +1160,7 @@ export interface Homepage {
             heading: string;
             summary?: string | null;
             backgroundImage?: (number | null) | Media;
+            campaignMessage?: string | null;
             /**
              * Leave empty to use the published programme statistics.
              */
@@ -1265,7 +1293,38 @@ export interface HomepageSelect<T extends boolean = true> {
   trackingLabel?: T;
   heroPanelHeading?: T;
   heroPanelSummary?: T;
+  fundingButtonLabel?: T;
+  benefitFunding?: T;
+  benefitCapacity?: T;
+  benefitOpportunity?: T;
+  actionCards?:
+    | T
+    | {
+        fundingTitle?: T;
+        fundingDescription?: T;
+        eligibilityTitle?: T;
+        eligibilityDescription?: T;
+        trackingTitle?: T;
+        trackingDescription?: T;
+      };
+  process?:
+    | T
+    | {
+        heading?: T;
+        introduction?: T;
+        steps?:
+          | T
+          | {
+              title?: T;
+              description?: T;
+              id?: T;
+            };
+      };
+  supportHeading?: T;
+  supportIntroduction?: T;
+  fundingSlogan?: T;
   newsHeading?: T;
+  newsIntroduction?: T;
   layout?:
     | T
     | {
@@ -1302,6 +1361,7 @@ export interface HomepageSelect<T extends boolean = true> {
               heading?: T;
               summary?: T;
               backgroundImage?: T;
+              campaignMessage?: T;
               items?:
                 | T
                 | {

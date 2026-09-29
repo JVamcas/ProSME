@@ -6,8 +6,10 @@ import type {
   PublicPageContent,
   SiteSettingsContent,
 } from "./ContentTypes";
+import { defaultHomeActionCards, defaultHomeProcess } from "./ContentDefaults";
 
 export const buildHomepage: HomepageContent = {
+  actionCards: defaultHomeActionCards,
   applyHref: "/portal/applications/new",
   applyLabel: "Apply Now",
   blocks: [],
@@ -16,7 +18,16 @@ export const buildHomepage: HomepageContent = {
   heroPanelHeading: "Bigger businesses. A brighter Namibia.",
   heroPanelSummary:
     "Open to eligible MSMEs from all 14 regions and every sector.",
+  fundingButtonLabel: "Funding Opportunities",
+  fundingSlogan: "Brighter businesses. A stronger Namibia.",
+  benefitFunding: "Access funding",
+  benefitCapacity: "Build your capacity",
+  benefitOpportunity: "Create opportunities",
+  process: defaultHomeProcess,
+  supportHeading: "Who we support",
+  supportIntroduction: "The SME Fund is open to any Namibian MSME with high potential, inclusive impact and a commitment to growth. Our priority areas include:",
   newsHeading: "Latest News & Resources",
+  newsIntroduction: "Updates, stories and useful materials for Namibian entrepreneurs.",
   summary:
     "Funding and business development support for Namibian MSMEs ready to grow.",
   title: "Your business has potential. We help you take the next step.",

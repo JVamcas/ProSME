@@ -11,11 +11,13 @@ import { publicFundingCallHref } from "./PublicFundingCallLinks";
 type HomeFundingCallProps = {
   call?: PublicFundingCallSummary;
   showViewAll?: boolean;
+  slogan?: string;
 };
 
 export function HomeFundingCall({
   call,
   showViewAll = false,
+  slogan = "Brighter businesses. A stronger Namibia.",
 }: HomeFundingCallProps) {
   if (!call) {
     return (
@@ -95,7 +97,7 @@ export function HomeFundingCall({
 
             <p className="mt-10 flex items-center gap-3 text-[11px] font-bold uppercase tracking-[0.16em] text-brand-navy/50">
               <span aria-hidden="true" className="h-0.5 w-8 bg-brand-yellow" />
-              Brighter businesses. A stronger Namibia.
+              {slogan}
             </p>
           </div>
 
