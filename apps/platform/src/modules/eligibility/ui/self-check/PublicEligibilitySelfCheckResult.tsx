@@ -29,9 +29,11 @@ const severityLabels = {
 };
 
 export function PublicEligibilitySelfCheckResult({
+  applicationHref,
   onRestart,
   result,
 }: {
+  applicationHref?: string;
   onRestart: () => void;
   result: Result;
 }) {
@@ -83,7 +85,7 @@ export function PublicEligibilitySelfCheckResult({
           </GeneralButton>
           {result.applicationsOpen && result.outcome !== "not-currently-eligible" ? (
             <GeneralButton asChild>
-              <Link href={`/portal/applications/new?fundingOpportunityId=${result.fundingCallId}`}>
+              <Link href={applicationHref ?? `/portal/applications/new?fundingOpportunityId=${result.fundingCallId}`}>
                 Start application
               </Link>
             </GeneralButton>

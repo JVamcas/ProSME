@@ -16,8 +16,12 @@ import {
 } from "./usePublicEligibilitySelfCheck";
 
 export function PublicEligibilitySelfCheck({
+  applicationHref,
+  backHref,
   fundingCallId,
 }: {
+  applicationHref?: string;
+  backHref?: string;
   fundingCallId: string;
 }) {
   const workspace = usePublicEligibilitySelfCheck(fundingCallId);
@@ -44,6 +48,15 @@ export function PublicEligibilitySelfCheck({
     );
   }
 
+  if (!workspace.data.questions.length) {
+    return (
+      <PortalErrorState
+        description="This call does not currently have any self-check questions."
+        title="Eligibility self-check unavailable"
+      />
+    );
+  }
+
   async function evaluate(input: PublicEligibilitySelfCheckInput) {
     setResult(await evaluation.mutateAsync(input));
   }
@@ -52,6 +65,7 @@ export function PublicEligibilitySelfCheck({
     <div>
       {result ? (
         <ResultView
+          applicationHref={applicationHref}
           onRestart={() => {
             evaluation.reset();
             setResult(null);
@@ -60,6 +74,7 @@ export function PublicEligibilitySelfCheck({
         />
       ) : (
         <PublicEligibilitySelfCheckForm
+          backHref={backHref}
           error={evaluation.error}
           key={workspace.data.configurationToken}
           onSubmit={evaluate}

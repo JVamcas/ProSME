@@ -18,6 +18,24 @@ const draftVersionId = "90000000-0000-4000-8000-000000000002";
 const publishedVersionId = "90000000-0000-4000-8000-000000000003";
 let root: Root | undefined;
 
+function rule(key: string, executionMode: "SELF_CHECK" | "SCREENING" | "BOTH") {
+  return {
+    condition: {
+      children: [{
+        id: `condition-${key}`,
+        kind: "CONDITION",
+        leftOperand: { key: `eligibility.${key}`, kind: "FIELD" },
+        operator: "EQUALS",
+        rightOperand: { kind: "CONSTANT", value: 0 },
+      }],
+      combinator: "AND",
+      id: `group-${key}`,
+      kind: "GROUP",
+    },
+    executionMode,
+  };
+}
+
 function queryClient() {
   const timestamp = "2026-09-20T08:00:00.000Z";
   const client = new QueryClient({
@@ -25,6 +43,11 @@ function queryClient() {
   });
   client.setQueryData(eligibilityRuleSetQueryKeys.detail(ruleSetId), {
     allowedActions: ["UPDATE", "PUBLISH"],
+    availableQuestions: [{
+      applicantLabel: "How many employees do you have?",
+      code: "employee_count",
+      reviewerLabel: "Employee count",
+    }],
     definition: {
       code: "SME_STANDARD",
       createdAt: timestamp,
@@ -34,8 +57,24 @@ function queryClient() {
       updatedAt: timestamp,
     },
     conditionFields: [{
+      availableIn: ["SELF_CHECK", "SCREENING"],
       key: "eligibility.employee_count",
       label: "Employee count",
+      type: "NUMBER",
+    }, {
+      availableIn: ["SELF_CHECK", "SCREENING"],
+      key: "eligibility.applicant_age",
+      label: "Applicant age",
+      type: "NUMBER",
+    }, {
+      availableIn: ["SELF_CHECK", "SCREENING"],
+      key: "eligibility.verified_age",
+      label: "Verified age",
+      type: "NUMBER",
+    }, {
+      availableIn: ["SELF_CHECK", "SCREENING"],
+      key: "eligibility.unused_input",
+      label: "Unused input",
       type: "NUMBER",
     }],
     context: {
@@ -44,7 +83,11 @@ function queryClient() {
         title: "Growth Fund",
       }],
     },
-    rules: [],
+    rules: [
+      rule("employee_count", "BOTH"),
+      rule("applicant_age", "SELF_CHECK"),
+      rule("verified_age", "SCREENING"),
+    ],
     version: {
       createdAt: timestamp,
       id: draftVersionId,
@@ -140,7 +183,7 @@ describe("EligibilityRuleSetTestScreen", () => {
     ));
 
     expect(container.textContent).toContain("Growth Fund");
-    expect(container.textContent).toContain("Employee count");
+    expect(container.textContent).toContain("How many employees do you have?");
     await act(async () => {
       container.querySelector("form")?.dispatchEvent(
         new Event("submit", { bubbles: true, cancelable: true }),
@@ -162,5 +205,63 @@ describe("EligibilityRuleSetTestScreen", () => {
     expect(container.textContent).toContain(
       "did not create an authoritative eligibility outcome",
     );
+
+    const mode = container.querySelector<HTMLSelectElement>('[name="mode"]');
+    await act(async () => {
+      mode!.value = "SCREENING";
+      mode!.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    expect(container.textContent).not.toContain("Test result");
+    expect(container.textContent).not.toContain("EMPLOYEE_REQUIRED");
+  });
+
+  it("refreshes questions, wording, and submitted values when switching modes", async () => {
+    const runTest = vi.spyOn(clientEligibilityRuleSetService, "test")
+      .mockRejectedValue(new Error("Sample test failure"));
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    await act(async () => root?.render(
+      <QueryClientProvider client={queryClient()}>
+        <EligibilityRuleSetTestScreen id={ruleSetId} />
+      </QueryClientProvider>,
+    ));
+
+    expect(container.textContent).toContain("How many employees do you have?");
+    expect(container.textContent).toContain("Applicant age");
+    expect(container.textContent).not.toContain("Verified age");
+    expect(container.textContent).not.toContain("Unused input");
+
+    const mode = container.querySelector<HTMLSelectElement>('[name="mode"]');
+    for (const selectedMode of ["SCREENING", "SELF_CHECK"]) {
+      await act(async () => {
+        mode!.value = selectedMode;
+        mode!.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+      const screening = selectedMode === "SCREENING";
+      expect(container.textContent).toContain(screening
+        ? "Employee count"
+        : "How many employees do you have?");
+      expect(container.textContent).toContain(screening
+        ? "Verified age"
+        : "Applicant age");
+      expect(container.textContent).not.toContain(screening
+        ? "Applicant age"
+        : "Verified age");
+      expect(container.textContent).not.toContain("Unused input");
+
+      await act(async () => container.querySelector("form")?.dispatchEvent(
+        new Event("submit", { bubbles: true, cancelable: true }),
+      ));
+      expect(runTest).toHaveBeenLastCalledWith(ruleSetId, expect.objectContaining({
+        mode: selectedMode,
+        values: {
+          eligibility: {
+            employee_count: 0,
+            [screening ? "verified_age" : "applicant_age"]: 0,
+          },
+        },
+      }));
+    }
   });
 });

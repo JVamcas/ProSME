@@ -29,7 +29,9 @@ describe("homepage funding call", () => {
 
     expect(markup).toContain("<strong>businesses</strong>");
     expect(markup).toContain("line-clamp-3");
-    expect(markup).toContain('href="/funding/msme-growth-grant"');
+    expect(markup).toContain(
+      'href="/how-to-apply/funding/00000000-0000-4000-8000-000000000042"',
+    );
     expect(markup).toContain("Application deadline");
     expect(markup).toContain("Growth grant");
   });

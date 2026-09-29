@@ -126,6 +126,9 @@ export function ConditionBuilder({
           }}
           disabled={disabled}
           fields={builderFields}
+          getDefaultValue={(_rule, { fieldData }) => (
+            fieldData.conditionType === "BOOLEAN" ? true : ""
+          )}
           idGenerator={createId}
           listsAsArrays
           onQueryChange={(nextQuery) => {

@@ -13,26 +13,31 @@ const workspace: PublicEligibilitySelfCheckWorkspace = {
     slug: "growth-fund",
     title: "Growth Fund",
   },
-  questions: [{
-    explanation: "Registration must be active.",
-    helpText: "Use the current registration record.",
-    id: "b".repeat(32),
-    label: "What is the registration status?",
-    options: [{
-      description: "The registration is active.",
-      label: "Registered",
-      value: "registered",
-    }, {
-      description: "The registration is inactive.",
-      label: "Not registered",
-      value: "not_registered",
-    }],
-    order: 2,
-    progress: { current: 1, total: 1 },
-    required: true,
-    section: { key: "business", label: "Business details" },
-    type: "single-select",
-  }],
+  questions: [
+    {
+      explanation: "Registration must be active.",
+      helpText: "Use the current registration record.",
+      id: "b".repeat(32),
+      label: "What is the registration status?",
+      options: [
+        {
+          description: "The registration is active.",
+          label: "Registered",
+          value: "registered",
+        },
+        {
+          description: "The registration is inactive.",
+          label: "Not registered",
+          value: "not_registered",
+        },
+      ],
+      order: 2,
+      progress: { current: 1, total: 1 },
+      required: true,
+      section: { key: "business", label: "Business details" },
+      type: "single-select",
+    },
+  ],
 };
 
 describe("public eligibility self-check form", () => {
@@ -47,17 +52,17 @@ describe("public eligibility self-check form", () => {
     );
 
     expect(markup).toContain("Business details");
-    expect(markup).toContain("Question 0 of 1");
-    expect(markup).toContain("0% complete");
+    expect(markup).toContain("Question 1 of 1");
+    expect(markup).toContain('aria-valuetext="Question 1 of 1"');
     expect(markup).toContain("What is the registration status?");
-    expect(markup).not.toContain("Use the current registration record.");
-    expect(markup).not.toContain("Registration must be active.");
+    expect(markup).toContain("Use the current registration record.");
+    expect(markup).toContain("Registration must be active.");
     expect(markup).toContain("The registration is active.");
     expect(markup).toContain("<fieldset");
     expect(markup).toContain('type="radio"');
     expect(markup).toContain("(required)");
     expect(markup).toContain("Check eligibility");
-    expect(markup).toContain("Previous");
-    expect(markup).toContain("Your answers stay on this device");
+    expect(markup).toContain("Back");
+    expect(markup).not.toContain("Your answers stay on this device");
   });
 });

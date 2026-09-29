@@ -226,7 +226,12 @@ export function EligibilityRuleDialog({
               </h3>
               <ConditionBuilder
                 fields={conditionFields}
-                onChange={field.onChange}
+                onChange={(condition) => {
+                  form.setValue("condition", condition, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  });
+                }}
                 value={field.value as ConditionGroup}
               />
               {fieldState.error ? (

@@ -6,6 +6,7 @@ import { SanitizedRichTextContent } from "@/shared/ui/SanitizedRichTextContent";
 import { GeneralButtonLink } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ArrowLink } from "@/components/ui/links";
+import { publicFundingCallHref } from "./PublicFundingCallLinks";
 
 type HomeFundingCallProps = {
   call?: PublicFundingCallSummary;
@@ -83,7 +84,7 @@ export function HomeFundingCall({
             <div className="mt-8 flex flex-wrap items-center gap-5">
               <GeneralButtonLink
                 variant="outlineOrange"
-                href={`/funding/${call.slug}`}
+                href={publicFundingCallHref(call.id)}
               >
                 View call details
               </GeneralButtonLink>

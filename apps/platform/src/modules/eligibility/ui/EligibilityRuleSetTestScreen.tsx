@@ -1,13 +1,14 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { FormProvider, useForm, type Resolver } from "react-hook-form";
+import { useEffect, useMemo } from "react";
+import { FormProvider, useForm, useWatch, type Resolver } from "react-hook-form";
 import { toast } from "sonner";
 
 import { GeneralButton } from "@/components/ui/button";
 import { FormInput, FormSelect } from "@/components/ui/form-fields";
 import type { ConditionFieldDefinition } from "@/modules/conditions/domain/ConditionConfiguration";
-import type { EligibilityRuleSetVersion } from "../domain/EligibilityRuleSet";
+import type { EligibilityRuleSetBuilderView } from "../api/EligibilityRuleSetTransport";
 import type { EligibilityEvaluationResult } from "../domain/EligibilityEvaluation";
 import {
   eligibilityTestSchema,
@@ -16,6 +17,7 @@ import {
   useEligibilityRuleSetBuilder,
   useEligibilityRuleSetTest,
 } from "../EligibilityRuleSetHooks";
+import { eligibilityTestFields } from "./EligibilityTestFields";
 
 const booleanItems = [
   { label: "Yes", value: "true" },
@@ -155,16 +157,13 @@ function TestResult({ result }: { result: EligibilityEvaluationResult }) {
 }
 
 function EligibilityTestForm({
-  fields,
-  fundingCalls,
+  builder,
   ruleSetId,
-  version,
 }: {
-  fields: ConditionFieldDefinition[];
-  fundingCalls: Array<{ id: string; title: string }>;
+  builder: EligibilityRuleSetBuilderView;
   ruleSetId: string;
-  version: EligibilityRuleSetVersion;
 }) {
+  const { context: { fundingCalls }, version } = builder;
   const test = useEligibilityRuleSetTest(ruleSetId);
   type TestFormValues = {
     fundingCallId: string;
@@ -178,16 +177,42 @@ function EligibilityTestForm({
       mode: "SELF_CHECK",
       values: {
         eligibility: Object.fromEntries(
-          fields.map((field) => [eligibilityKey(field), sampleValue(field)]),
+          eligibilityTestFields(builder, "SELF_CHECK").map((field) => [
+            eligibilityKey(field),
+            sampleValue(field),
+          ]),
         ),
       },
       versionId: version.id,
     },
     resolver: zodResolver(eligibilityTestSchema) as Resolver<TestFormValues>,
   });
+  const mode = useWatch({ control: form.control, name: "mode" });
+  const fundingCallId = useWatch({
+    control: form.control,
+    name: "fundingCallId",
+  });
+  const fields = useMemo(
+    () => eligibilityTestFields(builder, mode),
+    [builder, mode],
+  );
+  const { reset: resetTest } = test;
+  useEffect(() => {
+    form.reset({
+      ...form.getValues(),
+      values: {
+        eligibility: Object.fromEntries(fields.map((field) => [
+          eligibilityKey(field),
+          sampleValue(field),
+        ])),
+      },
+      versionId: version.id,
+    });
+    resetTest();
+  }, [fields, form, fundingCallId, resetTest, version.id]);
   const submit = form.handleSubmit(async (values) => {
     try {
-      await test.mutateAsync(eligibilityTestSchema.parse(values));
+      await test.mutateAsync(values);
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Unable to test the ruleset.",
@@ -232,6 +257,11 @@ function EligibilityTestForm({
                 <SampleField field={field} key={field.key} />
               ))}
             </div>
+            {!fields.length ? (
+              <p className="text-sm text-brand-navy/65">
+                No sample eligibility inputs are required for this execution mode.
+              </p>
+            ) : null}
           </fieldset>
 
           <div className="flex justify-end">
@@ -241,7 +271,12 @@ function EligibilityTestForm({
           </div>
         </form>
       </FormProvider>
-      {test.data ? <TestResult result={test.data} /> : null}
+      {test.data
+        && test.variables?.mode === mode
+        && test.variables.fundingCallId === fundingCallId
+        && test.variables.versionId === version.id ? (
+          <TestResult result={test.data} />
+        ) : null}
     </div>
   );
 }
@@ -262,9 +297,6 @@ export function EligibilityRuleSetTestScreen({
       </p>
     );
   }
-  const eligibilityFields = query.data.conditionFields.filter(
-    (field) => field.key.startsWith("eligibility."),
-  );
   if (!query.data.context.fundingCalls.length) {
     return (
       <p>
@@ -274,10 +306,9 @@ export function EligibilityRuleSetTestScreen({
   }
   return (
     <EligibilityTestForm
-      fields={eligibilityFields}
-      fundingCalls={query.data.context.fundingCalls}
+      builder={query.data}
+      key={query.data.version.id}
       ruleSetId={id}
-      version={query.data.version}
     />
   );
 }

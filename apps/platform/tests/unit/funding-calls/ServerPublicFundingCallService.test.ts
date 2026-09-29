@@ -8,11 +8,12 @@ vi.mock("@/modules/funding-calls/infrastructure/FundingCallRepository", () => ({
 }));
 
 import {
-  findPublicFundingCallBySlug,
+  findPublicFundingCallById,
   listPublicFundingCalls,
   publicFundingCallStatus,
 } from "@/modules/funding-calls/application/ServerPublicFundingCallService";
 import {
+  readPublicFundingCallById,
   readPublicFundingCallBySlug,
   readPublicFundingCalls,
   type PublicFundingCallRecord,
@@ -50,6 +51,19 @@ beforeEach(() => {
 });
 
 describe("public funding-call read model", () => {
+  it("resolves a published call by its UUID", async () => {
+    vi.mocked(readPublicFundingCallById).mockResolvedValue(call);
+    const result = await findPublicFundingCallById(call.id);
+    expect(readPublicFundingCallById).toHaveBeenCalledWith(call.id);
+    expect(result?.id).toBe(call.id);
+    expect(readPublicFundingCallBySlug).not.toHaveBeenCalled();
+  });
+
+  it("returns no call for a malformed UUID without querying PostgreSQL", async () => {
+    expect(await findPublicFundingCallById("growth-fund")).toBeNull();
+    expect(readPublicFundingCallById).not.toHaveBeenCalled();
+  });
+
   it("lists only the safe public summary projection", async () => {
     vi.mocked(readPublicFundingCalls).mockResolvedValue({
       items: [call],
@@ -86,9 +100,9 @@ describe("public funding-call read model", () => {
   });
 
   it("returns public detail fields and published documents", async () => {
-    vi.mocked(readPublicFundingCallBySlug).mockResolvedValue(call);
+    vi.mocked(readPublicFundingCallById).mockResolvedValue(call);
 
-    const result = await findPublicFundingCallBySlug("growth-fund");
+    const result = await findPublicFundingCallById(call.id);
 
     expect(result).toMatchObject({
       eligibilitySummary: call.eligibilitySummary,
