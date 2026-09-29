@@ -8,7 +8,7 @@ import {
   profileAuditEntries,
   users,
 } from "@/db/schema";
-import type { ApplicantProfileUpdateInput } from "@/modules/profiles/ProfileSchemas";
+import type { ApplicantProfileUpdateInput } from "../ProfileSchemas";
 
 const applicantColumns = {
   firstName: applicantProfiles.firstName,
@@ -67,6 +67,7 @@ export async function saveApplicantProfile(
       : input.data;
 
   return getDatabase().transaction(async (transaction) => {
+    const now = new Date();
     const [profile] = await transaction
       .insert(applicantProfiles)
       .values({
@@ -77,10 +78,20 @@ export async function saveApplicantProfile(
         target: applicantProfiles.userId,
         set: {
           ...values,
-          updatedAt: new Date(),
+          updatedAt: now,
         },
       })
       .returning({ id: applicantProfiles.id });
+
+    if (input.section === "personal") {
+      await transaction
+        .update(users)
+        .set({
+          displayName: `${input.data.firstName} ${input.data.surname}`,
+          updatedAt: now,
+        })
+        .where(eq(users.id, ownerUserId));
+    }
 
     await transaction.insert(profileAuditEntries).values({
       actorUserId: ownerUserId,

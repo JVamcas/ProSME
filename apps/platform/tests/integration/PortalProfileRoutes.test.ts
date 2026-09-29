@@ -4,7 +4,7 @@ vi.mock("server-only", () => ({}));
 vi.mock("@/auth/authorization/current-user", () => ({
   resolveUserFromHeaders: vi.fn(),
 }));
-vi.mock("@/db/repositories/ProfileRepository", () => ({
+vi.mock("@/modules/profiles/infrastructure/ApplicantProfileRepository", () => ({
   findApplicantProfile: vi.fn(),
   saveApplicantProfile: vi.fn(),
 }));
@@ -17,7 +17,7 @@ import * as profileRoute from "@/app/api/portal/profile/route";
 import {
   findApplicantProfile,
   saveApplicantProfile,
-} from "@/db/repositories/ProfileRepository";
+} from "@/modules/profiles/infrastructure/ApplicantProfileRepository";
 
 const applicantInput = {
   firstName: "Anna",

@@ -1,6 +1,10 @@
-function fieldErrorMessage(fields?: Record<string, string[]>) {
-  const messages = [...new Set(Object.values(fields ?? {}).flat())]
+function fieldErrorMessages(fields?: Record<string, string[]>) {
+  return [...new Set(Object.values(fields ?? {}).flat())]
     .filter((message) => message.trim().length > 0);
+}
+
+function fieldErrorMessage(fields?: Record<string, string[]>) {
+  const messages = fieldErrorMessages(fields);
   const visible = messages.slice(0, 3);
   const remaining = messages.length - visible.length;
 
@@ -39,6 +43,16 @@ export class ClientRequestError extends Error {
     this.correlationId = details.correlationId;
     this.fields = details.fields;
   }
+}
+
+export function getErrorMessages(error: unknown): string[] {
+  if (error instanceof ClientRequestError) {
+    const messages = fieldErrorMessages(error.fields);
+    if (messages.length > 0) return messages;
+  }
+
+  const message = getErrorMessage(error);
+  return message ? [message] : [];
 }
 
 export function getErrorMessage(error: unknown) {

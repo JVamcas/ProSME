@@ -159,7 +159,6 @@ async function touchIdentity(
       .update(users)
       .set({
         email: identity.email.toLowerCase(),
-        displayName: identity.displayName || identity.email,
         lastLoginAt: now,
         updatedAt: now,
       })

@@ -12,7 +12,7 @@ import type { AuthenticatedUser } from "@/auth/types";
 import {
   findApplicantProfile,
   saveApplicantProfile,
-} from "@/db/repositories/ProfileRepository";
+} from "./infrastructure/ApplicantProfileRepository";
 import type { ApplicantProfileUpdateInput } from "./ProfileSchemas";
 import type {
   ApplicantDashboardSummary,

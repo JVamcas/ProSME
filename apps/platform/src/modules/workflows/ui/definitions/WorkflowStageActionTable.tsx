@@ -57,12 +57,6 @@ function actionColumns(
       cell: ({ row }) => actionTypeLabel(row.original),
     },
     {
-      id: "reasonCode",
-      header: "Reason code",
-      cell: ({ row }) =>
-        row.original.reasonCodeRequired ? "Required" : "Not required",
-    },
-    {
       accessorKey: "enabled",
       header: "Status",
       cell: ({ row }) => (row.original.enabled ? "Enabled" : "Disabled"),

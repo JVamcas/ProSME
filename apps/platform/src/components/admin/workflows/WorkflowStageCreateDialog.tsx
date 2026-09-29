@@ -8,6 +8,7 @@ import { GeneralButton } from "@/components/ui/button";
 import { DraggableDialog } from "@/components/ui/draggable-dialog";
 import { FormInput, FormSelect, FormTextarea } from "@/components/ui/form-fields";
 import { CheckboxField } from "@/components/ui/form-field";
+import { getErrorMessages } from "@/lib/client-http";
 import { useSaveWorkflowGraph } from "@/modules/workflows/WorkflowHooks";
 import { createDefaultWorkflowCommonActions } from "@/modules/workflows/domain/actions/WorkflowActionBindingPolicy";
 import type {
@@ -121,6 +122,7 @@ export function WorkflowStageCreateDialog({
       tasks: [],
     } satisfies WorkflowStageInput);
   const conditionFields = useWorkflowConditionFields(editor, conditionStage);
+  const mutationErrors = getErrorMessages(mutation.error);
   const submit = form.handleSubmit(async (values) => {
     const duplicate = editor.graph.stages.some(
       (item) =>
@@ -266,10 +268,15 @@ export function WorkflowStageCreateDialog({
               )}
             />
           </div>
-          {mutation.error ? (
-            <p className="md:col-span-2 text-sm text-red-700" role="alert">
-              {mutation.error.message}
-            </p>
+          {mutationErrors.length > 0 ? (
+            <ul
+              className="list-disc space-y-1 pl-5 text-sm text-red-700 md:col-span-2"
+              role="alert"
+            >
+              {mutationErrors.map((message) => (
+                <li key={message}>{message}</li>
+              ))}
+            </ul>
           ) : null}
           <div className="flex justify-end md:col-span-2">
             <GeneralButton disabled={mutation.isPending} type="submit">
