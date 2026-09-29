@@ -1,16 +1,16 @@
+@import "../shared/ui/brand-tokens.css";
 @import "tailwindcss";
 
 @theme inline {
-  /* Canonical palette from SME Fund Brand Identity, page 11. */
-  --color-brand-white: #ffffff;
-  --color-brand-cream: #f6f4e2;
-  --color-brand-yellow: #ffca45;
-  --color-brand-blue: #6baed6;
-  --color-brand-navy: #0a183b;
-  --color-brand-gold: #c9a24d;
-  --color-brand-green: #16a34a;
-  --color-brand-green-soft: #a8dfbc;
-  --color-brand-orange: #ff6f00;
+  --color-brand-white: var(--sme-brand-white);
+  --color-brand-cream: var(--sme-brand-cream);
+  --color-brand-yellow: var(--sme-brand-yellow);
+  --color-brand-blue: var(--sme-brand-blue);
+  --color-brand-navy: var(--sme-brand-navy);
+  --color-brand-gold: var(--sme-brand-gold);
+  --color-brand-green: var(--sme-brand-green);
+  --color-brand-green-soft: var(--sme-brand-green-soft);
+  --color-brand-orange: var(--sme-brand-orange);
 }
 
 * {

@@ -6,6 +6,14 @@ const styles = readFileSync(
   resolve(process.cwd(), "src/app/globals.css"),
   "utf8",
 );
+const tokens = readFileSync(
+  resolve(process.cwd(), "src/shared/ui/brand-tokens.css"),
+  "utf8",
+);
+const cmsStyles = readFileSync(
+  resolve(process.cwd(), "src/app/(payload)/custom.scss"),
+  "utf8",
+);
 const publicLayout = readFileSync(
   resolve(process.cwd(), "src/app/(public)/layout.tsx"),
   "utf8",
@@ -13,14 +21,16 @@ const publicLayout = readFileSync(
 
 describe("SME Fund brand palette", () => {
   it("keeps the client-approved colour values", () => {
-    expect(styles).toContain("--color-brand-cream: #f6f4e2");
-    expect(styles).toContain("--color-brand-yellow: #ffca45");
-    expect(styles).toContain("--color-brand-blue: #6baed6");
-    expect(styles).toContain("--color-brand-navy: #0a183b");
-    expect(styles).toContain("--color-brand-gold: #c9a24d");
-    expect(styles).toContain("--color-brand-green: #16a34a");
-    expect(styles).toContain("--color-brand-orange: #ff6f00");
-    expect(styles).not.toContain("#ffd400");
+    expect(tokens).toContain("--sme-brand-cream: #f6f4e2");
+    expect(tokens).toContain("--sme-brand-yellow: #ffca45");
+    expect(tokens).toContain("--sme-brand-blue: #6baed6");
+    expect(tokens).toContain("--sme-brand-navy: #0a183b");
+    expect(tokens).toContain("--sme-brand-gold: #c9a24d");
+    expect(tokens).toContain("--sme-brand-green: #16a34a");
+    expect(tokens).toContain("--sme-brand-orange: #ff6f00");
+    expect(tokens).not.toContain("#ffd400");
+    expect(styles).toContain("--color-brand-navy: var(--sme-brand-navy)");
+    expect(cmsStyles).toContain("background: var(--sme-brand-navy)");
   });
 
   it("uses the complete Bahnschrift font with its full weight range", () => {

@@ -4,7 +4,7 @@ import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useRef, useState } from "react";
 
 import type { PortalSpace } from "@/auth/authorization/portal-access";
-import { Logo } from "@/components/brand/logo";
+import { Logo } from "@/shared/ui/Logo";
 import { LogoutButton } from "@/components/layout/LogoutButton";
 import { cn } from "@/lib/utils";
 import type { PortalContext } from "@/modules/profiles/ProfileTypes";

@@ -40,11 +40,23 @@ export default buildConfig({
     },
   ],
   admin: {
+    components: {
+      beforeNav: [
+        "./modules/content/ui/admin/CmsNavBrand.tsx",
+      ],
+      beforeNavLinks: [
+        "./modules/content/ui/admin/CmsNavigationLinks.tsx",
+      ],
+      logout: {
+        Button: "./modules/content/ui/admin/CmsLogoutButton.tsx",
+      },
+    },
     importMap: {
       baseDir: path.resolve(dirname),
       importMapFile: path.resolve(dirname, "app/(payload)/cms/importMap.js"),
     },
-    meta: { titleSuffix: " | ProSME CMS" },
+    meta: { titleSuffix: " | SME Fund Content" },
+    theme: "light",
     user: "cms-principals",
   },
   collections: [

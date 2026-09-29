@@ -1,0 +1,12 @@
+:root {
+  /* Canonical SME Fund palette from the brand identity. */
+  --sme-brand-white: #ffffff;
+  --sme-brand-cream: #f6f4e2;
+  --sme-brand-yellow: #ffca45;
+  --sme-brand-blue: #6baed6;
+  --sme-brand-navy: #0a183b;
+  --sme-brand-gold: #c9a24d;
+  --sme-brand-green: #16a34a;
+  --sme-brand-green-soft: #a8dfbc;
+  --sme-brand-orange: #ff6f00;
+}

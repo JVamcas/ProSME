@@ -9,6 +9,7 @@ import { permissionCodes } from "@/auth/authorization/permissions";
 import { getCurrentUser } from "@/auth/authorization/current-user";
 import { can } from "@/auth/authorization/policy";
 import { importMap } from "./cms/importMap";
+import "@/shared/ui/brand-tokens.css";
 import "./custom.scss";
 
 type Props = { children: React.ReactNode };
