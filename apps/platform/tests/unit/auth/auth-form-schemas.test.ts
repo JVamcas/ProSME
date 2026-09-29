@@ -2,9 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import {
   passwordResetSchema,
+  newPasswordSchema,
   registrationSchema,
   signInSchema,
-} from "@/auth/firebase/auth-form.schemas";
+} from "@/platform/auth/firebase/auth-form.schemas";
 
 describe("authentication form schemas", () => {
   it("requires matching registration passwords", () => {
@@ -51,5 +52,23 @@ describe("authentication form schemas", () => {
     expect(passwordResetSchema.safeParse({ email: "invalid" }).success).toBe(
       false,
     );
+  });
+  it("requires valid, matching new passwords", () => {
+    expect(
+      newPasswordSchema.safeParse({ password: "123", confirmPassword: "123" })
+        .success,
+    ).toBe(false);
+    expect(
+      newPasswordSchema.safeParse({
+        password: "secret123",
+        confirmPassword: "different",
+      }).success,
+    ).toBe(false);
+    expect(
+      newPasswordSchema.safeParse({
+        password: "secret123",
+        confirmPassword: "secret123",
+      }).success,
+    ).toBe(true);
   });
 });

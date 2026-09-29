@@ -4,7 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import { LogOutIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-import { authClientService } from "@/auth/firebase/ClientAuthService";
+import { authClientService } from "@/platform/auth/firebase/ClientAuthService";
 import { GeneralButton } from "@/components/ui/button";
 
 export function LogoutButton({

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
-import { AuthCard } from "@/components/auth/auth-card";
-import { ForgotPasswordForm } from "@/components/auth/forgot-password-form";
+import { AuthCard } from "@/modules/users/ui/auth/auth-card";
+import { ForgotPasswordForm } from "@/modules/users/ui/auth/forgot-password-form";
 
 export const metadata: Metadata = {
   title: "Reset password",

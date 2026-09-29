@@ -5,12 +5,12 @@ import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 
-import { authClientService } from "@/auth/firebase/ClientAuthService";
+import { authClientService } from "@/platform/auth/firebase/ClientAuthService";
 import {
   registrationSchema,
   type RegistrationValues,
-} from "@/auth/firebase/auth-form.schemas";
-import { getFirebaseErrorMessage } from "@/auth/firebase/errors";
+} from "@/platform/auth/firebase/auth-form.schemas";
+import { getFirebaseErrorMessage } from "@/platform/auth/firebase/errors";
 
 export function useRegistration() {
   const router = useRouter();

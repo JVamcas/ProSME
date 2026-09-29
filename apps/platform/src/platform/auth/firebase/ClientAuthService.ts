@@ -1,15 +1,17 @@
 "use client";
 
 import {
-  sendEmailVerification,
-  sendPasswordResetEmail,
+  applyActionCode,
+  checkActionCode,
+  confirmPasswordReset,
+  verifyPasswordResetCode,
   signInWithEmailAndPassword,
   signOut,
   reload,
 } from "firebase/auth";
 
 import { postJson, requestJson } from "@/lib/client-http";
-import { getFirebaseClientAuth } from "./client";
+import { getFirebaseClientAuth } from "@/auth/firebase/client";
 
 type RegisterAccountInput = {
   confirmPassword: string;
@@ -82,9 +84,7 @@ async function registerAccount(input: RegisterAccountInput) {
     input.email.trim(),
     input.password,
   );
-  await sendEmailVerification(credential.user, {
-    url: `${window.location.origin}/verify-email`,
-  });
+  await requestVerificationForUser(credential.user);
 }
 
 async function getEmailVerificationStatus(): Promise<EmailVerificationStatus> {
@@ -99,9 +99,7 @@ async function getEmailVerificationStatus(): Promise<EmailVerificationStatus> {
 
 async function resendVerificationEmail() {
   const user = await getPendingVerificationUser();
-  await sendEmailVerification(user, {
-    url: `${window.location.origin}/verify-email`,
-  });
+  await requestVerificationForUser(user);
 }
 
 async function completeEmailVerification() {
@@ -124,9 +122,7 @@ async function signIn(input: SignInInput) {
   );
 
   if (!credential.user.emailVerified) {
-    await sendEmailVerification(credential.user, {
-      url: `${window.location.origin}/verify-email`,
-    });
+    await requestVerificationForUser(credential.user);
     throw new Error("email-not-verified");
   }
 
@@ -144,13 +140,46 @@ async function logout() {
 }
 
 async function requestPasswordReset(input: PasswordResetInput) {
-  const auth = await getFirebaseClientAuth();
-  await sendPasswordResetEmail(auth, input.email.trim(), {
-    url: `${window.location.origin}/sign-in`,
+  await postJson("/api/auth/password-reset", {
+    csrfToken: await getCsrfToken(),
+    email: input.email.trim(),
   });
 }
 
+async function requestVerificationForUser(user: {
+  getIdToken: (forceRefresh?: boolean) => Promise<string>;
+}) {
+  await postJson("/api/auth/verification-email", {
+    csrfToken: await getCsrfToken(),
+    idToken: await user.getIdToken(true),
+  });
+}
+
+async function verifyEmailAction(code: string) {
+  const auth = await getFirebaseClientAuth();
+  const action = await checkActionCode(auth, code);
+  if (action.operation !== "VERIFY_EMAIL")
+    throw new Error("unsupported-action");
+  await applyActionCode(auth, code);
+  await auth.authStateReady();
+  if (auth.currentUser) {
+    await reload(auth.currentUser);
+    await auth.currentUser.getIdToken(true);
+  }
+}
+
+async function checkPasswordResetCode(code: string) {
+  return verifyPasswordResetCode(await getFirebaseClientAuth(), code);
+}
+
+async function resetPassword(code: string, password: string) {
+  await confirmPasswordReset(await getFirebaseClientAuth(), code, password);
+}
+
 export const authClientService = {
+  verifyEmailAction,
+  checkPasswordResetCode,
+  resetPassword,
   completeEmailVerification,
   getEmailVerificationStatus,
   logout,

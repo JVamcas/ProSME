@@ -17,6 +17,11 @@ const nextConfig = {
   },
   output: "standalone",
   outputFileTracingRoot: repositoryRoot,
+  outputFileTracingIncludes: {
+    "/api/internal/notifications/process": [
+      "./src/modules/notifications/templates/email/auth-*.html",
+    ],
+  },
   reactStrictMode: true,
 };
 

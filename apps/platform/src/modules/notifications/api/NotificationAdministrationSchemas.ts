@@ -118,6 +118,7 @@ export type NotificationCatalogSummary = {
   description: string;
   displayName: string;
   eventCount: number;
+  configurableEventCount: number;
   isEnabled: boolean;
   sortOrder: number;
   updatedAt: string;
@@ -128,6 +129,7 @@ export type NotificationCatalogDetail = NotificationCatalogSummary & {
     description: string;
     displayName: string;
     eventKey: string;
+    ruleEligibility: "CONFIGURABLE" | "SYSTEM_ONLY";
     isEnabled: boolean;
   }>;
 };
@@ -135,9 +137,7 @@ export type NotificationCatalogDetail = NotificationCatalogSummary & {
 type NotificationConfiguredRecipient = (
   | {
       recipientType:
-        | "APPLICATION_OWNER"
-        | "ASSIGNED_USER"
-        | "FUNDING_CALL_STAKEHOLDER";
+        "APPLICATION_OWNER" | "ASSIGNED_USER" | "FUNDING_CALL_STAKEHOLDER";
       targetId: null;
     }
   | {
@@ -154,6 +154,7 @@ export type NotificationEventRuleSummary = {
   catalogName: string;
   eventDescription: string;
   eventKey: string;
+  ruleEligibility: "CONFIGURABLE" | "SYSTEM_ONLY";
   eventName: string;
   eventEnabled: boolean;
   isEnabled: boolean;

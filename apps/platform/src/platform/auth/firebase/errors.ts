@@ -25,6 +25,13 @@ export function getFirebaseErrorMessage(error: unknown) {
     return "An account already exists for this email address.";
   }
 
+  if (
+    code.includes("invalid-action-code") ||
+    code.includes("expired-action-code")
+  ) {
+    return "This link is invalid or has expired. Request a new email and try again.";
+  }
+
   if (code.includes("weak-password")) {
     return "Use a stronger password with at least six characters.";
   }

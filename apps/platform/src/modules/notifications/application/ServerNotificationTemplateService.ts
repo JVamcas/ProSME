@@ -1,7 +1,10 @@
 import "server-only";
 
 import type { AuthenticatedUser } from "@/auth/types";
-import { ResourceConflictError, ResourceNotFoundError } from "@/lib/resource-errors";
+import {
+  ResourceConflictError,
+  ResourceNotFoundError,
+} from "@/lib/resource-errors";
 import type {
   NotificationChannelDetail,
   NotificationChannelSummary,
@@ -14,6 +17,7 @@ import { notificationChannelUpdateSchema } from "../api/NotificationTemplateSche
 import { notificationAuditMetadataSchema } from "../domain/NotificationAudit";
 import {
   isNotificationEventKey,
+  notificationEventCatalogue,
   notificationCatalogKeys,
   type NotificationCatalogKey,
   type NotificationEventKey,
@@ -41,6 +45,23 @@ import {
   type NotificationHtmlImportInput,
 } from "./NotificationHtmlImport";
 
+import { assertAuthenticationTemplate } from "../domain/AuthenticationNotificationTemplate";
+
+function validateRequiredAction(
+  target: { eventKey: string | null; catalogKey: string | null },
+  content: { htmlTemplate: string; plainTextTemplate: string },
+) {
+  if (
+    target.catalogKey === "AUTHENTICATION" ||
+    (target.eventKey &&
+      isNotificationEventKey(target.eventKey) &&
+      notificationEventCatalogue[target.eventKey].catalogKey ===
+        "AUTHENTICATION")
+  ) {
+    assertAuthenticationTemplate(content);
+  }
+}
+
 function isoDate(value: Date | null): string | null {
   return value?.toISOString() ?? null;
 }
@@ -56,9 +77,10 @@ function channelSummary(channel: {
 }): NotificationChannelSummary {
   return {
     ...channel,
-    updatedAt: channel.updatedAt instanceof Date
-      ? channel.updatedAt.toISOString()
-      : channel.updatedAt,
+    updatedAt:
+      channel.updatedAt instanceof Date
+        ? channel.updatedAt.toISOString()
+        : channel.updatedAt,
   };
 }
 
@@ -85,12 +107,15 @@ function fieldTarget(target: {
   eventKey: string | null;
   scope: "GLOBAL" | "CATALOG" | "EVENT";
 }): NotificationTemplateFieldTarget {
-  const catalogKey = notificationCatalogKeys.includes(target.catalogKey as NotificationCatalogKey)
-    ? target.catalogKey as NotificationCatalogKey
+  const catalogKey = notificationCatalogKeys.includes(
+    target.catalogKey as NotificationCatalogKey,
+  )
+    ? (target.catalogKey as NotificationCatalogKey)
     : null;
-  const eventKey = target.eventKey && isNotificationEventKey(target.eventKey)
-    ? target.eventKey
-    : null;
+  const eventKey =
+    target.eventKey && isNotificationEventKey(target.eventKey)
+      ? target.eventKey
+      : null;
   return { catalogKey, eventKey, scope: target.scope };
 }
 
@@ -101,11 +126,12 @@ function targetLabel(target: {
   eventKey: string | null;
   scope: "GLOBAL" | "CATALOG" | "EVENT";
 }): string {
-  if (target.scope === "EVENT") return target.displayName ?? target.eventKey ?? "Event";
+  if (target.scope === "EVENT")
+    return target.displayName ?? target.eventKey ?? "Event";
   if (target.scope === "CATALOG") {
     return target.catalogName
       ? `${target.catalogName} Catalog Template`
-      : target.catalogKey ?? "Catalog";
+      : (target.catalogKey ?? "Catalog");
   }
   return "Global Fallback";
 }
@@ -125,20 +151,21 @@ function targetSummary(target: {
   targetUpdatedAt: Date;
   versionCount: number;
 }): NotificationTemplateTargetSummary {
-  const lastUpdatedAt = target.lastVersionCreatedAt
-    && target.lastVersionCreatedAt > target.targetUpdatedAt
-    ? target.lastVersionCreatedAt
-    : target.targetUpdatedAt;
+  const lastUpdatedAt =
+    target.lastVersionCreatedAt &&
+    target.lastVersionCreatedAt > target.targetUpdatedAt
+      ? target.lastVersionCreatedAt
+      : target.targetUpdatedAt;
   return {
     allowedFields: fieldsForNotificationTarget(fieldTarget(target)),
     catalogKey: target.catalogKey,
     catalogName: target.catalogName,
     defaultSubjectTemplate: target.defaultSubjectTemplate,
-    description: target.description ?? (
-      target.scope === "GLOBAL"
+    description:
+      target.description ??
+      (target.scope === "GLOBAL"
         ? "Fallback template used when no catalog or event-specific published version is available."
-        : ""
-    ),
+        : ""),
     eventKey: target.eventKey,
     id: target.id,
     isEnabled: target.isEnabled,
@@ -166,7 +193,10 @@ export async function getNotificationChannel(
   const channel = await findNotificationChannel(channelCode);
   if (!channel) throw new ResourceNotFoundError("notification channel");
   const targets = await listNotificationTemplateTargets(channelCode);
-  return { channel: channelSummary(channel), targets: targets.map(targetSummary) };
+  return {
+    channel: channelSummary(channel),
+    targets: targets.map(targetSummary),
+  };
 }
 
 export async function updateNotificationChannel(
@@ -233,6 +263,7 @@ export async function importNotificationTemplate(
     input,
     fieldsForNotificationTarget(fieldTarget(target)),
   );
+  validateRequiredAction(target, validated);
   const auditMetadata = notificationAuditMetadataSchema.parse({
     channelCode,
     correlationId,
@@ -263,7 +294,9 @@ export async function publishNotificationTemplate(
   const target = await findNotificationTemplateTarget(channelCode, targetId);
   if (!target) throw new ResourceNotFoundError("notification template target");
   const version = await findNotificationTemplateVersion(targetId, versionId);
-  if (!version) throw new ResourceNotFoundError("notification template version");
+  if (!version)
+    throw new ResourceNotFoundError("notification template version");
+  validateRequiredAction(target, version);
   validateNotificationTemplateContent(
     version,
     fieldsForNotificationTarget(fieldTarget(target)),
@@ -285,7 +318,9 @@ export async function publishNotificationTemplate(
     throw new ResourceNotFoundError("notification template version");
   }
   if (published === null) {
-    throw new ResourceConflictError("Only draft template versions can be published.");
+    throw new ResourceConflictError(
+      "Only draft template versions can be published.",
+    );
   }
   return versionSummary(published);
 }

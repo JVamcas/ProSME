@@ -38,10 +38,7 @@ export function SignInForm({ nextPath }: SignInFormProps) {
           className={authFieldClassName}
           labelClassName={authLabelClassName}
         />
-        <AuthPasswordField
-          autoComplete="current-password"
-          showForgotPassword
-        />
+        <AuthPasswordField autoComplete="current-password" showForgotPassword />
         <AuthFeedback error={form.error} />
         <GeneralButton
           type="submit"
@@ -53,10 +50,7 @@ export function SignInForm({ nextPath }: SignInFormProps) {
         </GeneralButton>
         <p className={authSupportingTextClassName}>
           Don&apos;t have an account?{" "}
-          <Link
-            className={authLinkClassName}
-            href="/register"
-          >
+          <Link className={authLinkClassName} href="/register">
             Create an account
           </Link>
         </p>

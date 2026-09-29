@@ -80,7 +80,7 @@ function TargetHeader({
         <GeneralButtonLink
           href={`/admin/notifications/channels/${channelCode}/templates/${target.id}`}
           size="sm"
-          variant="navy"
+          variant="outlineOrange"
         >
           <FileStack aria-hidden="true" className="size-4" />
           Manage Versions

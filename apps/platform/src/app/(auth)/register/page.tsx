@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
-import { AuthCard } from "@/components/auth/auth-card";
-import { RegistrationForm } from "@/components/auth/registration-form";
+import { AuthCard } from "@/modules/users/ui/auth/auth-card";
+import { RegistrationForm } from "@/modules/users/ui/auth/registration-form";
 
 export const metadata: Metadata = {
   title: "Create account",
@@ -9,10 +9,7 @@ export const metadata: Metadata = {
 
 export default function RegisterPage() {
   return (
-    <AuthCard
-      title="Create your account"
-      description=""
-    >
+    <AuthCard title="Create your account" description="">
       <RegistrationForm />
     </AuthCard>
   );

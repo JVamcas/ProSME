@@ -33,6 +33,22 @@ import {
 import { getNotificationProcessorConfiguration } from "./NotificationProcessorConfiguration";
 import { authorizeNotificationOperation } from "./NotificationAuthorization";
 
+import {
+  isNotificationEventKey,
+  notificationEventCatalogue,
+} from "../domain/NotificationEvent";
+
+function assertConfigurableEvent(eventKey: string) {
+  if (
+    isNotificationEventKey(eventKey) &&
+    notificationEventCatalogue[eventKey].ruleEligibility === "SYSTEM_ONLY"
+  ) {
+    throw new ResourceConflictError(
+      "System-only events cannot have notification rules.",
+    );
+  }
+}
+
 function serialize<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
@@ -93,6 +109,7 @@ export async function getNotificationEventRule(
   eventKey: string,
 ) {
   authorizeNotificationOperation(user, "READ_CONFIGURATION");
+  assertConfigurableEvent(eventKey);
   const rule = await findNotificationEventRuleRecord(eventKey);
   if (!rule) throw new ResourceNotFoundError("notification event rule");
   return serialize(rule);
@@ -105,6 +122,7 @@ export async function updateNotificationEventRule(
   correlationId: string,
 ) {
   const actor = authorizeNotificationOperation(user, "UPDATE_CONFIGURATION");
+  assertConfigurableEvent(eventKey);
   const update = notificationEventRuleUpdateSchema.parse(input);
   const current = (await findNotificationEventRuleRecord(eventKey)) as
     | {
@@ -156,6 +174,7 @@ export async function updateNotificationEventRule(
       "The notification rule changed while you were editing it. Refresh and try again.",
     );
   }
+  assertConfigurableEvent(eventKey);
   const rule = await findNotificationEventRuleRecord(eventKey);
   if (!rule) throw new ResourceNotFoundError("notification event rule");
   return serialize(rule);

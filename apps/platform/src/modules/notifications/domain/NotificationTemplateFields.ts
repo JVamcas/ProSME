@@ -11,6 +11,7 @@ export const globalNotificationTemplateFields = [
 ] as const;
 
 export const notificationCatalogTemplateFields = {
+  AUTHENTICATION: [...globalNotificationTemplateFields, "actionUrl"],
   APPLICATIONS: [
     ...globalNotificationTemplateFields,
     "applicationReference",
@@ -29,6 +30,8 @@ export const notificationCatalogTemplateFields = {
 } as const satisfies Record<NotificationCatalogKey, readonly string[]>;
 
 export const notificationEventTemplateFields = {
+  "auth.email.verification": notificationCatalogTemplateFields.AUTHENTICATION,
+  "auth.password.reset": notificationCatalogTemplateFields.AUTHENTICATION,
   "application.submitted": [
     ...notificationCatalogTemplateFields.APPLICATIONS,
     "submittedAt",
@@ -179,9 +182,8 @@ export function buildNotificationRenderValues<Key extends NotificationEventKey>(
   input: RenderValueInput<Key>,
 ): Record<string, string> {
   if (input.eventKey.startsWith("funding-call.")) {
-    const context = input.context as NotificationEventContextByKey[
-      "funding-call.approval-requested"
-    ];
+    const context =
+      input.context as NotificationEventContextByKey["funding-call.approval-requested"];
     return {
       fundingCallReference: context.fundingCallReference,
       fundingCallTitle: context.fundingCallTitle,
@@ -195,9 +197,8 @@ export function buildNotificationRenderValues<Key extends NotificationEventKey>(
       recipientName: input.recipient.displayName,
     };
   }
-  const applicationContext = input.context as NotificationEventContextByKey[
-    "application.submitted"
-  ];
+  const applicationContext =
+    input.context as NotificationEventContextByKey["application.submitted"];
   const common = {
     applicationReference: applicationContext.applicationReference,
     fundingOpportunityTitle: applicationContext.fundingOpportunityTitle,
@@ -206,7 +207,8 @@ export function buildNotificationRenderValues<Key extends NotificationEventKey>(
   };
 
   if (input.eventKey === "application.submitted") {
-    const context = input.context as NotificationEventContextByKey["application.submitted"];
+    const context =
+      input.context as NotificationEventContextByKey["application.submitted"];
     return {
       ...common,
       applicationUrl: trustedUrl(
@@ -218,9 +220,8 @@ export function buildNotificationRenderValues<Key extends NotificationEventKey>(
   }
 
   if (input.eventKey === "workflow.information-request.created") {
-    const context = input.context as NotificationEventContextByKey[
-      "workflow.information-request.created"
-    ];
+    const context =
+      input.context as NotificationEventContextByKey["workflow.information-request.created"];
     return {
       ...common,
       createdAt: formatTimestamp(context.createdAt),
@@ -234,9 +235,8 @@ export function buildNotificationRenderValues<Key extends NotificationEventKey>(
   }
 
   if (input.eventKey === "workflow.information-request.responded") {
-    const context = input.context as NotificationEventContextByKey[
-      "workflow.information-request.responded"
-    ];
+    const context =
+      input.context as NotificationEventContextByKey["workflow.information-request.responded"];
     return {
       ...common,
       question: context.question,
@@ -246,9 +246,8 @@ export function buildNotificationRenderValues<Key extends NotificationEventKey>(
   }
 
   if (input.eventKey === "workflow.information-request.closed") {
-    const context = input.context as NotificationEventContextByKey[
-      "workflow.information-request.closed"
-    ];
+    const context =
+      input.context as NotificationEventContextByKey["workflow.information-request.closed"];
     return {
       ...common,
       applicationUrl: trustedUrl(
@@ -261,9 +260,8 @@ export function buildNotificationRenderValues<Key extends NotificationEventKey>(
   }
 
   if (input.eventKey === "workflow.information-request.expired") {
-    const context = input.context as NotificationEventContextByKey[
-      "workflow.information-request.expired"
-    ];
+    const context =
+      input.context as NotificationEventContextByKey["workflow.information-request.expired"];
     return {
       ...common,
       deadlineAt: formatTimestamp(context.deadlineAt),
@@ -273,7 +271,8 @@ export function buildNotificationRenderValues<Key extends NotificationEventKey>(
     };
   }
 
-  const context = input.context as NotificationEventContextByKey["workflow.task.assigned"];
+  const context =
+    input.context as NotificationEventContextByKey["workflow.task.assigned"];
   return {
     ...common,
     assignedAt: formatTimestamp(context.assignedAt),

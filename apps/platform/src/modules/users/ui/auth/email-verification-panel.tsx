@@ -4,15 +4,14 @@ import Link from "next/link";
 
 import { GeneralButton } from "@/components/ui/button";
 import { AuthFeedback } from "./auth-feedback";
-import {
-  authLinkClassName,
-  authSupportingTextClassName,
-} from "./auth-styles";
+import { authLinkClassName, authSupportingTextClassName } from "./auth-styles";
 import { useEmailVerification } from "./use-email-verification";
 
 export function EmailVerificationPanel() {
   const verification = useEmailVerification();
-  const canManage = Boolean(verification.status && !verification.status.verified);
+  const canManage = Boolean(
+    verification.status && !verification.status.verified,
+  );
 
   return (
     <div className="space-y-4">
@@ -30,10 +29,7 @@ export function EmailVerificationPanel() {
           .
         </p>
       ) : null}
-      <AuthFeedback
-        error={verification.error}
-        notice={verification.notice}
-      />
+      <AuthFeedback error={verification.error} notice={verification.notice} />
       <GeneralButton
         type="button"
         variant="primary"
@@ -45,7 +41,7 @@ export function EmailVerificationPanel() {
       </GeneralButton>
       <GeneralButton
         type="button"
-        variant="navy"
+        variant="outlineOrange"
         className="w-full"
         disabled={!verification.status || verification.busy}
         onClick={verification.checkVerification}
