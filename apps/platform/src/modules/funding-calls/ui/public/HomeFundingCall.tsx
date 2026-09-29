@@ -116,7 +116,7 @@ export function HomeFundingCall({
                   />
                 </span>
                 <div>
-                  <p className="text-sm text-brand-navy/65">{status.dateLabel}</p>
+                  <p className="text-sm text-brand-orange">{status.dateLabel}</p>
                   <p className="mt-1 text-lg font-bold sm:text-xl">
                     {formatDate(status.date)}
                   </p>
@@ -133,7 +133,7 @@ export function HomeFundingCall({
                   />
                 </span>
                 <div>
-                  <p className="text-sm text-brand-navy/50">
+                  <p className="text-sm text-brand-orange">
                     Funding per application
                   </p>
                   <p className="mt-1 text-lg font-bold sm:text-xl">
@@ -149,7 +149,7 @@ export function HomeFundingCall({
                     aria-hidden="true"
                     className="size-7 shrink-0 text-brand-yellow"
                   />
-                  <p className="text-sm text-brand-navy/50">
+                  <p className="text-sm text-brand-orange">
                     {call.fundingInstrument}
                   </p>
                 </div>

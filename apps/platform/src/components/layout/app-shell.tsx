@@ -1,4 +1,4 @@
-import { SiteHeader } from "@/components/layout/site-header";
+import { SiteHeader } from "@/modules/content/ui/public/SiteHeader";
 import { SiteFooter } from "@/components/layout/site-footer";
 
 export function AppShell({

@@ -33,9 +33,9 @@ export default async function EligibilityPage({
   const focus = eligibilityFocusSection(page?.blocks ?? []);
   return (
     <PageShell
-      className="container section min-h-[720px]"
+      className="container section min-h-180"
       description="Review the current requirements before starting an application."
-      eyebrow="Funding"
+      eyebrow="Eligibility"
       title="Eligibility checker"
     >
       <div className="grid gap-10 lg:grid-cols-[27rem_minmax(0,1fr)] lg:items-start xl:gap-12">

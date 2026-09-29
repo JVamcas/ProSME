@@ -138,7 +138,7 @@ function ChoiceQuestion({ question }: { question: PublicEligibilityQuestion }) {
                 className={[
                   "grid size-12 shrink-0 place-items-center rounded-full",
                   index === 0
-                    ? "bg-emerald-100 text-emerald-700"
+                    ? "bg-green-100 text-green-600"
                     : "bg-red-100 text-red-600",
                   selected ? "ring-2 ring-current ring-offset-2" : "",
                 ].join(" ")}
