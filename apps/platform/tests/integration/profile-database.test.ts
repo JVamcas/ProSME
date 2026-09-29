@@ -6,7 +6,7 @@ vi.mock("server-only", () => ({}));
 import {
   findApplicantProfile,
   saveApplicantProfile,
-} from "@/db/repositories/ProfileRepository";
+} from "@/modules/profiles/infrastructure/ApplicantProfileRepository";
 import {
   createOwnedBusiness,
   listOwnedBusinesses,
@@ -157,20 +157,41 @@ describeDatabase("P3.1 PostgreSQL persistence", () => {
   });
 
   it("enforces owner-scoped reads and creates an immutable audit entry", async () => {
+    const renamedApplicant = {
+      ...applicantInput,
+      firstName: "Maria",
+      surname: "Amutenya",
+    };
     await saveApplicantProfile(firstUserId, {
       section: "personal",
       data: {
-        firstName: applicantInput.firstName,
-        surname: applicantInput.surname,
-        position: applicantInput.position,
-        dateOfBirth: applicantInput.dateOfBirth,
-        nationality: applicantInput.nationality,
-        region: applicantInput.region,
+        firstName: renamedApplicant.firstName,
+        surname: renamedApplicant.surname,
+        position: renamedApplicant.position,
+        dateOfBirth: renamedApplicant.dateOfBirth,
+        nationality: renamedApplicant.nationality,
+        region: renamedApplicant.region,
       },
     });
     const personalOnly = await findApplicantProfile(firstUserId);
+    const renamedUser = await query(
+      `SELECT display_name
+       FROM app_users
+       WHERE id = $1`,
+      [firstUserId],
+    );
     expect(personalOnly?.phoneNumber).toBe("");
     expect(personalOnly?.region).toBe(applicantInput.region);
+    expect(renamedUser.rows[0].display_name).toBe("Maria Amutenya");
+
+    await provisionApplicant({
+      subject: firebaseSubject,
+      email: "anna@example.test",
+      displayName: "Outdated Firebase Name",
+      emailVerified: true,
+    });
+    const userAfterSignIn = await findUserByFirebaseSubject(firebaseSubject);
+    expect(userAfterSignIn?.displayName).toBe("Maria Amutenya");
 
     await saveApplicantProfile(firstUserId, {
       section: "contact",
@@ -191,7 +212,7 @@ describeDatabase("P3.1 PostgreSQL persistence", () => {
     );
 
     expect(ownedProfile).toMatchObject({
-      firstName: applicantInput.firstName,
+      firstName: renamedApplicant.firstName,
       email: "anna@example.test",
     });
     expect(otherProfile).toBeNull();

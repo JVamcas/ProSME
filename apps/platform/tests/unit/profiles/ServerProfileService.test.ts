@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
-vi.mock("@/db/repositories/ProfileRepository", () => ({
+vi.mock("@/modules/profiles/infrastructure/ApplicantProfileRepository", () => ({
   findApplicantProfile: vi.fn(),
   saveApplicantProfile: vi.fn(),
 }));
@@ -12,7 +12,7 @@ import type { AuthenticatedUser } from "@/auth/types";
 import {
   findApplicantProfile,
   saveApplicantProfile,
-} from "@/db/repositories/ProfileRepository";
+} from "@/modules/profiles/infrastructure/ApplicantProfileRepository";
 import {
   createApplicantDashboardSummary,
   createPortalContext,

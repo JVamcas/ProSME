@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   ClientRequestError,
   getErrorMessage,
+  getErrorMessages,
   patchData,
   postJson,
   requestData,
@@ -120,6 +121,27 @@ describe("client HTTP service", () => {
     );
     expect(getErrorMessage("Try again later.")).toBe("Try again later.");
     expect(getErrorMessage({})).toBeUndefined();
+  });
+
+  it("returns structured validation details as distinct messages", () => {
+    const error = new ClientRequestError("Review the fields.", 400, {
+      fields: {
+        "graph.transitions.0.targetStageKeys": [
+          "The Referral action on Evaluation has no target stage.",
+        ],
+        "graph.transitions.1.targetStageKeys": [
+          "The Referral action on Contracting has no target stage.",
+        ],
+        "graph.transitions.2.targetStageKeys": [
+          "The Referral action on Evaluation has no target stage.",
+        ],
+      },
+    });
+
+    expect(getErrorMessages(error)).toEqual([
+      "The Referral action on Evaluation has no target stage.",
+      "The Referral action on Contracting has no target stage.",
+    ]);
   });
 
   it("serializes JSON mutations in the client service layer", async () => {

@@ -51,7 +51,7 @@ function NewsletterFields({ pending }: { pending: boolean }) {
           type="email"
           autoComplete="email"
           placeholder="Your email address"
-          className="h-full min-w-0 border-0 bg-transparent px-4 text-sm text-brand-navy focus:ring-0"
+          className="h-10 min-w-0 border-0 bg-transparent px-4 text-sm text-brand-navy focus:ring-0"
         />
         <GeneralButton
           type="submit"

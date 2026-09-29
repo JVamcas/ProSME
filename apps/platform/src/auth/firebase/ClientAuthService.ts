@@ -6,7 +6,6 @@ import {
   signInWithEmailAndPassword,
   signOut,
   reload,
-  updateProfile,
 } from "firebase/auth";
 
 import { postJson, requestJson } from "@/lib/client-http";

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 
 import type { ApplicantProfileUpdateInput } from "./ProfileSchemas";
 import { clientProfileService } from "./ClientProfileService";
@@ -18,11 +19,15 @@ export function useApplicantProfile() {
 
 export function useUpdateApplicantProfile() {
   const queryClient = useQueryClient();
+  const router = useRouter();
   return useMutation({
     mutationFn: (input: ApplicantProfileUpdateInput) =>
       clientProfileService.updateApplicantProfile(input),
-    onSuccess: (profile) => {
+    onSuccess: (profile, input) => {
       queryClient.setQueryData(profileQueryKeys.applicant, profile);
+      if (input.section === "personal") {
+        router.refresh();
+      }
     },
   });
 }

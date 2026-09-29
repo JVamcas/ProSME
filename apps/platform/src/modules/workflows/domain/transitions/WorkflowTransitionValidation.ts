@@ -2,6 +2,10 @@ import type {
   WorkflowGraphInput,
   WorkflowValidationIssue,
 } from "../definitions/WorkflowTypes";
+import type {
+  WorkflowActionDefinition,
+  WorkflowActionType,
+} from "../actions/WorkflowActionDefinition";
 
 function issue(
   code: string,
@@ -9,6 +13,18 @@ function issue(
   path: string,
 ): WorkflowValidationIssue {
   return { code, message, path };
+}
+
+function semanticActionName(actionType: WorkflowActionType): string {
+  return actionType === "RETURN" ? "Return" : "Referral";
+}
+
+function semanticTransitionReference(
+  action: WorkflowActionDefinition,
+  source: WorkflowGraphInput["stages"][number],
+): string {
+  return `${semanticActionName(action.actionType)} action "${action.label}" `
+    + `on source stage "${source.name}" (${source.stableKey})`;
 }
 
 export function validateWorkflowTransitions(
@@ -57,12 +73,14 @@ export function validateWorkflowTransitions(
         );
       } else if (
         (action?.actionType === "RETURN" || action?.actionType === "REFER")
+        && source
         && !target.repeatable
       ) {
         errors.push(
           issue(
             "NON_REPEATABLE_SEMANTIC_TARGET",
-            "Return and referral targets must be repeatable stages.",
+            `The ${semanticTransitionReference(action, source)} targets `
+              + `"${target.name}" (${target.stableKey}), which must be marked Repeatable.`,
             `${path}.targetStageKeys.${targetIndex}`,
           ),
         );
@@ -70,12 +88,17 @@ export function validateWorkflowTransitions(
     });
     if (
       (action?.actionType === "RETURN" || action?.actionType === "REFER")
+      && source
       && transition.targetStageKeys.length !== 1
     ) {
       errors.push(
         issue(
           "INVALID_SEMANTIC_TARGET_COUNT",
-          "Return and referral transitions require exactly one target stage.",
+          `The ${semanticTransitionReference(action, source)} has ${
+            transition.targetStageKeys.length === 0
+              ? "no target stage"
+              : `${transition.targetStageKeys.length} target stages`
+          }. Select exactly one target stage.`,
           `${path}.targetStageKeys`,
         ),
       );

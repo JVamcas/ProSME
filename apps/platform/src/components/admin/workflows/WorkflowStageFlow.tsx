@@ -9,6 +9,7 @@ import type {
   WorkflowStageInput,
   WorkflowTaskInput,
 } from "@/modules/workflows/domain/definitions/WorkflowTypes";
+import { removeWorkflowStage } from "@/modules/workflows/domain/definitions/WorkflowStageDeletion";
 import { WorkflowStageCreateDialog } from "./WorkflowStageCreateDialog";
 import { WorkflowStageDetails } from "./WorkflowStageDetails";
 import { WorkflowTaskDialog } from "@/modules/workflows/ui/definitions/WorkflowTaskDialog";
@@ -92,50 +93,17 @@ export function WorkflowStageFlow({ canEdit, editor }: Props) {
     selectedStage,
   );
 
+  function openStageDelete(stage: WorkflowStageInput) {
+    deleteMutation.reset();
+    setStageToDelete(stage);
+  }
+
   async function deleteStage(stage: WorkflowStageInput) {
     if (stages.length <= 1) return;
-    const successor = stages[selectedIndex + 1]?.stableKey;
-    const remaining = stages
-      .filter((item) => item.stableKey !== stage.stableKey)
-      .map((item, index) => {
-        const joinPredecessorStageKeys = item.joinPredecessorStageKeys.filter(
-          (predecessorKey) => predecessorKey !== stage.stableKey,
-        );
-        return {
-          ...item,
-          initial: index === 0,
-          joinPredecessorStageKeys:
-            joinPredecessorStageKeys.length >= 2
-              ? joinPredecessorStageKeys
-              : [],
-          displayOrder: index + 1,
-        };
-      });
-    await deleteMutation.mutateAsync({
-      stages: remaining,
-      transitions: editor.graph.transitions
-        .filter(
-          (transition) => transition.sourceStageKey !== stage.stableKey,
-        )
-        .map((transition) => ({
-          ...transition,
-          targetStageKeys: [...new Set(
-            transition.targetStageKeys.flatMap((targetStageKey) =>
-              targetStageKey !== stage.stableKey
-                ? [targetStageKey]
-                : successor
-                  ? [successor]
-                  : [],
-            ),
-          )],
-        }))
-        .filter(
-          (transition) =>
-            transition.targetStageKeys.length > 0 || transition.terminalOutcome,
-        ),
-    });
+    const graph = removeWorkflowStage(editor.graph, stage.stableKey);
+    await deleteMutation.mutateAsync(graph);
     setSelectedCode(
-      remaining[Math.min(selectedIndex, remaining.length - 1)].stableKey,
+      graph.stages[Math.min(selectedIndex, graph.stages.length - 1)].stableKey,
     );
     setStageToDelete(null);
   }
@@ -248,7 +216,7 @@ export function WorkflowStageFlow({ canEdit, editor }: Props) {
           onAddScoringCriterion={scoringOverlays.onAdd}
           onAddCommentField={commentOverlays.onAdd}
           onAddTask={() => setTaskDialog("create")}
-          onDelete={() => selectedStage && setStageToDelete(selectedStage)}
+          onDelete={() => selectedStage && openStageDelete(selectedStage)}
           onDeleteAction={setActionToDelete}
           onDeleteChecklistItem={setChecklistItemToDelete}
           onDeleteDocumentRequirement={setDocumentRequirementToDelete}
