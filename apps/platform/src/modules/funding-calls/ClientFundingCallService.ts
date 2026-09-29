@@ -3,12 +3,17 @@
 import { requestData, requestJson } from "@/lib/client-http";
 import type {
   FundingCallCreateInput,
+  FundingCallCreationProgressSaveInput,
   FundingCallGovernanceCommandInput,
   FundingCallLifecycleCommandInput,
   FundingCallListInput,
   FundingCallUpdateInput,
 } from "./api/FundingCallSchemas";
-import type { FundingCallPage, FundingCallView } from "./api/FundingCallTransport";
+import type {
+  FundingCallCreationProgressView,
+  FundingCallPage,
+  FundingCallView,
+} from "./api/FundingCallTransport";
 import type { FundingCallReadinessResult } from "./domain/FundingCallReadiness";
 import type { PublishedFormOption } from "@/modules/forms/FormTypes";
 import type { PublishedEligibilityRuleSetOption } from "@/modules/eligibility/api/EligibilityRuleSetTransport";
@@ -47,6 +52,24 @@ function create(input: FundingCallCreateInput) {
     headers: jsonHeaders,
     method: "POST",
   });
+}
+
+function getCreationProgress() {
+  return requestData<FundingCallCreationProgressView | null>(
+    "/api/admin/funding-calls/creation-progress",
+    { cache: "no-store" },
+  );
+}
+
+function saveCreationProgress(input: FundingCallCreationProgressSaveInput) {
+  return requestData<FundingCallCreationProgressView>(
+    "/api/admin/funding-calls/creation-progress",
+    {
+      body: JSON.stringify(input),
+      headers: jsonHeaders,
+      method: "PUT",
+    },
+  );
 }
 
 function clone(id: string) {
@@ -159,11 +182,13 @@ export const clientFundingCallService = {
   create,
   delete: deleteFundingCall,
   get,
+  getCreationProgress,
   list,
   listBindableEligibilityRuleSetVersions,
   listBindableFormVersions,
   listBindableWorkflowTemplateVersions,
   publish,
   previewReadiness,
+  saveCreationProgress,
   update,
 };

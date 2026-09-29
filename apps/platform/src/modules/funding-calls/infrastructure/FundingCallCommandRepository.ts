@@ -10,9 +10,9 @@ import {
   fundingCallGovernanceReviews,
   fundingCallLifecycleHistory,
   fundingCallPublicationRevisions,
-  fundingCallPublicDocuments,
   fundingCalls,
 } from "./funding-call.schema";
+import { fundingCallPublicDocuments } from "./funding-call-public-document.schema";
 import {
   sanitizeFundingCallDescription,
   sanitizeFundingCallEligibilitySummary,

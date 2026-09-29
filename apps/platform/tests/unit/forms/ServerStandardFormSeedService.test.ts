@@ -26,8 +26,18 @@ describe("ServerStandardFormSeedService", () => {
           code: "FUNDING_APPLICATION",
           publishOnSeed: true,
         }),
-        expect.objectContaining({ code: "TECHNICAL_REVIEW" }),
-        expect.objectContaining({ code: "MONITORING_REVIEW" }),
+        expect.objectContaining({
+          code: "TECHNICAL_REVIEW",
+          publishOnSeed: true,
+        }),
+        expect.objectContaining({
+          code: "FINANCE_REVIEW",
+          publishOnSeed: true,
+        }),
+        expect.objectContaining({
+          code: "MONITORING_REVIEW",
+          publishOnSeed: true,
+        }),
       ]),
     );
   });

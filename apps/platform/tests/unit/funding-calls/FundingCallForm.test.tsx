@@ -47,6 +47,10 @@ vi.mock("@/modules/funding-calls/FundingCallHooks", () => ({
         }],
         isPending: false,
       },
+  useSaveFundingCallCreationProgress: () => ({
+    error: null,
+    mutateAsync: vi.fn(),
+  }),
 }));
 
 vi.mock("@/shared/ui/FormRichTextField", () => ({
@@ -90,6 +94,52 @@ afterEach(async () => {
 });
 
 describe("FundingCallForm", () => {
+  it("restores an incomplete creation draft at its saved step", async () => {
+    optionState.pending = false;
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+
+    await act(async () => {
+      root?.render(
+        <FundingCallForm
+          creationProgress={{
+            currentStep: "funding",
+            id: "50000000-0000-4000-8000-000000000001",
+            rowVersion: 3,
+            updatedAt: "2026-09-29T08:00:00.000Z",
+            values: {
+              applicationDuplicatePolicy: "one_per_business",
+              closesAt: "",
+              description: "",
+              eligibilityRuleSetVersionId: "",
+              eligibilitySummary: "",
+              formVersionId: "",
+              fundingInstrument: "",
+              maximumGrantAmount: "",
+              minimumGrantAmount: "",
+              opensAt: "",
+              publicContactEmail: "",
+              publicContactName: "",
+              publicContactPhone: "",
+              thematicArea: "",
+              title: "Partially completed call",
+              totalBudgetEnvelope: "250000",
+              workflowTemplateVersionId: "",
+            },
+          }}
+          onSubmit={vi.fn()}
+        />,
+      );
+    });
+
+    expect(container.textContent).toContain("Funding details");
+    expect(container.querySelector<HTMLInputElement>(
+      '[name="totalBudgetEnvelope"]',
+    )?.value).toBe("250,000");
+    expect(container.textContent).toContain("Changes saved");
+  });
+
   it("restores saved bindings after asynchronous options load", async () => {
     const container = document.createElement("div");
     document.body.append(container);

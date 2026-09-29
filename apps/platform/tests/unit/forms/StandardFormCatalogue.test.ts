@@ -6,6 +6,7 @@ import {
 } from "@/modules/forms/api/FormSchemas";
 import { createStandardForms } from "@/modules/forms/domain/StandardFormCatalogue";
 import { formPublicationErrors } from "@/modules/forms/FormDefinitionValidation";
+import { standardWorkflowFormCodes } from "@/modules/workflows/domain/standard/StandardWorkflowTypes";
 
 const expectedCodes = [
   "APPEAL_REVIEW",
@@ -17,6 +18,7 @@ const expectedCodes = [
   "DUE_DILIGENCE_RISK",
   "ELIGIBILITY_VERIFICATION",
   "EVALUATION_CLOSE_OUT_REVIEW",
+  "FINANCE_REVIEW",
   "FUNDING_APPLICATION",
   "MODERATION",
   "MONITORING_REVIEW",
@@ -44,6 +46,18 @@ describe("standard form catalogue", () => {
       .toBe("OTHER");
     expect(forms.find((form) => form.code === "COI_DECLARATION")?.purpose)
       .toBe("COI");
+  });
+
+  it("publishes every form required by the standard seed", () => {
+    const formsByCode = new Map(
+      createStandardForms().map((form) => [form.code, form]),
+    );
+
+    expect([...formsByCode.values()].every((form) => form.publishOnSeed))
+      .toBe(true);
+    for (const code of standardWorkflowFormCodes) {
+      expect(formsByCode.get(code)).toMatchObject({ publishOnSeed: true });
+    }
   });
 
   it("finalizes only the approval form with its workflow task action", () => {
@@ -164,6 +178,30 @@ describe("standard form catalogue", () => {
         "PRIMARY_INDICATOR_TARGET",
         "DECLARATION_ACCURACY_CONFIRMATION",
         "DATA_PROCESSING_CONSENT",
+      ]),
+    );
+  });
+
+  it("defines the financial review form required by the workflow", () => {
+    const form = createStandardForms().find(
+      (item) => item.code === "FINANCE_REVIEW",
+    );
+
+    expect(form).toMatchObject({
+      publishOnSeed: true,
+      purpose: "APPLICATION_REVIEW",
+    });
+    expect(form?.fields.map((field) => field.key)).toEqual(
+      expect.arrayContaining([
+        "VAT_STATUS",
+        "LIQUIDITY_ASSESSMENT",
+        "SOLVENCY_ASSESSMENT",
+        "FINANCIAL_HEALTH_RATING",
+        "BUDGET_LINE_ASSESSMENT",
+        "DISALLOWED_COST_ITEMS",
+        "ADJUSTED_BUDGET",
+        "RECOMMENDED_AMOUNT",
+        "PROPOSED_PAYMENT_SCHEDULE",
       ]),
     );
   });

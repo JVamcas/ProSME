@@ -76,6 +76,31 @@ describe("standard workflow catalogue", () => {
     ]);
   });
 
+  it("reuses one COI form across every COI-gated stage", () => {
+    const draft = createStandardWorkflowDraft(dependencies());
+    const gatedStages = draft.graph.stages
+      .filter((stage) => stage.coiGated)
+      .map((stage) => ({
+        coiFormVersionId: stage.coiFormVersionId,
+        stableKey: stage.stableKey,
+      }));
+
+    expect(gatedStages).toEqual([
+      {
+        coiFormVersionId: "00000000-0000-4000-9000-000000000000",
+        stableKey: "TECHNICAL_ASSESSMENT",
+      },
+      {
+        coiFormVersionId: "00000000-0000-4000-9000-000000000000",
+        stableKey: "MODERATION",
+      },
+      {
+        coiFormVersionId: "00000000-0000-4000-9000-000000000000",
+        stableKey: "COMMITTEE_REVIEW",
+      },
+    ]);
+  });
+
   it("configures close-out as a checklist without a scoring requirement", () => {
     const graph = createStandardWorkflowDraft(dependencies()).graph;
     const closeOut = graph.stages.find(

@@ -1,7 +1,7 @@
 import { HomeHero } from "@/components/public/home-hero";
 import { HomeActions } from "@/components/public/home-actions";
 import { HomeFundingCall } from "@/modules/funding-calls/ui/public/HomeFundingCall";
-import { HomeProcess } from "@/components/public/home-process";
+import { HomeProcess } from "@/modules/content/ui/public/HomeProcess";
 import { HomeSupport } from "@/components/public/home-support";
 import { ContentBlocks } from "@/components/public/content-blocks";
 import {
@@ -11,10 +11,9 @@ import {
 import { listPublicFundingCalls } from "@/modules/funding-calls/application/ServerPublicFundingCallService";
 
 export default async function HomePage() {
-
   const [homepage, fundingCalls, eligibility] = await Promise.all([
     getHomepage(),
-    listPublicFundingCalls({ limit: 1 }),
+    listPublicFundingCalls({ limit: 2, status: "open" }),
     getEligibilityContent(),
   ]);
   const newsBlocks = homepage.blocks.filter(isResourceGrid);
@@ -25,7 +24,10 @@ export default async function HomePage() {
     <>
       <HomeHero content={homepage} />
       <HomeActions />
-      <HomeFundingCall call={fundingCalls.items[0]} />
+      <HomeFundingCall
+        call={fundingCalls.items[0]}
+        showViewAll={fundingCalls.total > 1}
+      />
       <ContentBlocks blocks={newsBlocks} />
       <HomeProcess />
       <HomeSupport items={eligibility} />

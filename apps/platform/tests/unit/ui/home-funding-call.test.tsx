@@ -33,4 +33,27 @@ describe("homepage funding call", () => {
     expect(markup).toContain("Application deadline");
     expect(markup).toContain("Growth grant");
   });
+
+  it("shows a useful message when no funding call is open", () => {
+    const markup = renderToStaticMarkup(<HomeFundingCall />);
+
+    expect(markup).toContain("No funding calls are open right now");
+    expect(markup).toContain("upcoming and recently closed funding calls");
+    expect(markup).toContain('href="/funding"');
+  });
+
+  it("links to all funding calls when multiple calls are open", () => {
+    const markup = renderToStaticMarkup(
+      <HomeFundingCall call={call} showViewAll />,
+    );
+
+    expect(markup).toContain("View all funding calls");
+    expect(markup).toContain('href="/funding"');
+  });
+
+  it("does not show the view-all link for one open call", () => {
+    const markup = renderToStaticMarkup(<HomeFundingCall call={call} />);
+
+    expect(markup).not.toContain("View all funding calls");
+  });
 });

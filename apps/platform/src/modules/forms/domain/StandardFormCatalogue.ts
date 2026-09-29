@@ -52,6 +52,103 @@ function technicalReview(): StandardFormSeed {
   });
 }
 
+function financialReview(): StandardFormSeed {
+  return defineStandardForm({
+    code: "FINANCE_REVIEW",
+    name: "Financial and Budget Review Form",
+    description:
+      "Captures budget scrutiny, financial viability and the recommended award amount.",
+    instructions:
+      "Review the detailed budget and supporting financial evidence before recording a recommendation.",
+    sections: [
+      {
+        key: "FINANCIAL_POSITION",
+        title: "Financial position",
+        fields: [
+          {
+            key: "VAT_STATUS",
+            label: "VAT status",
+            type: "SINGLE_SELECT",
+            required: true,
+            options: ["Registered", "Not registered", "Not applicable"],
+          },
+          {
+            key: "LIQUIDITY_ASSESSMENT",
+            label: "Liquidity assessment",
+            type: "TEXTAREA",
+            required: true,
+          },
+          {
+            key: "SOLVENCY_ASSESSMENT",
+            label: "Solvency assessment",
+            type: "TEXTAREA",
+            required: true,
+          },
+          {
+            key: "FINANCIAL_HEALTH_RATING",
+            label: "Financial health rating",
+            type: "SINGLE_SELECT",
+            required: true,
+            options: riskOptions,
+          },
+        ],
+      },
+      {
+        key: "BUDGET_REVIEW",
+        title: "Budget review",
+        fields: [
+          {
+            key: "BUDGET_LINE_ASSESSMENT",
+            label: "Budget-line assessment",
+            type: "TEXTAREA",
+            required: true,
+            columnSpan: 2,
+          },
+          {
+            key: "DISALLOWED_COST_ITEMS",
+            label: "Disallowed cost items",
+            type: "TEXTAREA",
+            columnSpan: 2,
+          },
+          {
+            key: "ADJUSTED_BUDGET",
+            label: "Adjusted budget",
+            type: "CURRENCY",
+            required: true,
+            minimum: 0,
+          },
+          {
+            key: "RECOMMENDED_AMOUNT",
+            label: "Recommended amount",
+            type: "CURRENCY",
+            required: true,
+            minimum: 0,
+          },
+          {
+            key: "COFUNDING_CONFIRMED",
+            label: "Has co-funding been confirmed?",
+            type: "YES_NO",
+            required: true,
+          },
+          {
+            key: "PROPOSED_PAYMENT_SCHEDULE",
+            label: "Proposed payment schedule",
+            type: "TEXTAREA",
+            required: true,
+            columnSpan: 2,
+          },
+          {
+            key: "FINANCIAL_REVIEW_COMMENTS",
+            label: "Financial review comments",
+            type: "TEXTAREA",
+            columnSpan: 2,
+          },
+        ],
+      },
+    ],
+  });
+}
+
 function dueDiligenceReview(): StandardFormSeed {
   return defineStandardForm({
     code: "DUE_DILIGENCE_RISK",
@@ -282,6 +379,7 @@ export function createStandardForms(): StandardFormSeed[] {
     eligibilityVerificationForm(),
     coiDeclarationForm(),
     technicalReview(),
+    financialReview(),
     dueDiligenceReview(),
     moderationReview(),
     committeeReview(),
@@ -292,5 +390,5 @@ export function createStandardForms(): StandardFormSeed[] {
     disbursementReview(),
     monitoringReview(),
     evaluationCloseOutReview(),
-  ];
+  ].map((form) => ({ ...form, publishOnSeed: true }));
 }

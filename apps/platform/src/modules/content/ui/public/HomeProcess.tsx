@@ -37,10 +37,10 @@ export function HomeProcess() {
       <div className="mt-8 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
         {steps.map(({ icon: Icon, title, text }, index) => (
           <div key={title} className="relative text-center">
-            {index < 3 ? (
+            {index < steps.length - 1 ? (
               <span
                 aria-hidden="true"
-                className="absolute left-[72%] top-9 hidden w-[calc(56%-2rem)] border-t-2 border-dotted border-brand-yellow lg:block"
+                className="absolute -right-2 left-[72%] top-9 hidden border-t-2 border-dotted border-brand-yellow lg:block"
               />
             ) : null}
             <span
@@ -48,11 +48,11 @@ export function HomeProcess() {
             >
               {index + 1}
             </span>
-            <span className="mx-auto grid size-[84px] place-items-center rounded-full bg-brand-orange/10 text-brand-orange">
+            <span className="mx-auto grid size-21 place-items-center rounded-full bg-brand-orange/10 text-brand-orange">
               <Icon className="size-9" strokeWidth={1.8} />
             </span>
             <h3 className="mt-5 text-lg font-bold text-brand-navy">{title}</h3>
-            <p className="mx-auto mt-2 max-w-[220px] text-sm leading-5 text-brand-navy/70">
+            <p className="mx-auto mt-2 max-w-55 text-sm leading-5 text-brand-navy/70">
               {text}
             </p>
           </div>

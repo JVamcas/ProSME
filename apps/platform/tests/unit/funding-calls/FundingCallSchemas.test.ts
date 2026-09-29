@@ -2,8 +2,45 @@ import { describe, expect, it } from "vitest";
 
 import {
   fundingCallCreateSchema,
+  fundingCallCreationProgressSaveSchema,
   fundingCallGovernanceCommandSchema,
 } from "@/modules/funding-calls/api/FundingCallSchemas";
+
+const emptyDraftValues = {
+  applicationDuplicatePolicy: "one_per_business",
+  closesAt: "",
+  description: "",
+  eligibilityRuleSetVersionId: "",
+  eligibilitySummary: "",
+  formVersionId: "",
+  fundingInstrument: "",
+  maximumGrantAmount: "",
+  minimumGrantAmount: "",
+  opensAt: "",
+  publicContactEmail: "not-yet-complete",
+  publicContactName: "",
+  publicContactPhone: "",
+  thematicArea: "",
+  title: "A",
+  totalBudgetEnvelope: "",
+  workflowTemplateVersionId: "",
+};
+
+describe("fundingCallCreationProgressSaveSchema", () => {
+  it("accepts incomplete values without weakening the final schema", () => {
+    expect(fundingCallCreationProgressSaveSchema.safeParse({
+      currentStep: "basics",
+      expectedRowVersion: null,
+      values: emptyDraftValues,
+    }).success).toBe(true);
+
+    expect(fundingCallCreateSchema.safeParse({
+      ...emptyDraftValues,
+      reference: "DRAFT-1",
+      slug: "draft-1",
+    }).success).toBe(false);
+  });
+});
 
 const validInput = {
   closesAt: "2027-03-31T15:00:00.000Z",
