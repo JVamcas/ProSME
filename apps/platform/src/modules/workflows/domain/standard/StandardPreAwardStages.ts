@@ -49,6 +49,7 @@ function screening(dependencies: StandardWorkflowDependencies) {
     actions,
     checklistItems,
     coiGated: false,
+    coiFormVersionId: null,
     description:
       "Verify completeness, documents and authoritative eligibility.",
     displayOrder: 1,
@@ -129,6 +130,7 @@ function financialReview(dependencies: StandardWorkflowDependencies) {
       ),
     ],
     coiGated: false,
+    coiFormVersionId: null,
     description: "Assess the budget, cost eligibility and financial viability.",
     displayOrder: 3,
     documentRequirements: [
@@ -227,6 +229,7 @@ function dueDiligence(dependencies: StandardWorkflowDependencies) {
       ),
     ],
     coiGated: false,
+    coiFormVersionId: null,
     description:
       "Verify the entity and assess delivery, governance and fraud risk.",
     displayOrder: 4,

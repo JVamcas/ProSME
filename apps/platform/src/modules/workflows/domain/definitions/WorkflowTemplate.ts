@@ -24,7 +24,6 @@ export type WorkflowTemplate = WorkflowTemplateDetails & {
 export type WorkflowTemplateVersion = {
   id: string;
   definitionId: string;
-  coiFormVersionId?: string | null;
   versionNumber: number;
   status: WorkflowTemplateStatus;
   rowVersion: number;

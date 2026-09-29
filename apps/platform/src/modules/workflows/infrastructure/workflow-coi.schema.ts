@@ -20,6 +20,8 @@ export const workflowApplicationCoi = pgTable(
       .references(() => applications.id, { onDelete: "restrict" }),
     userId: uuid("user_id").notNull()
       .references(() => users.id, { onDelete: "restrict" }),
+    formVersionId: uuid("form_version_id").notNull()
+      .references(() => formVersions.id, { onDelete: "restrict" }),
     taskId: uuid("task_id").notNull()
       .references(() => workflowTasks.id, { onDelete: "restrict" }),
     state: text("state").$type<
@@ -31,7 +33,9 @@ export const workflowApplicationCoi = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (table) => [primaryKey({ columns: [table.applicationId, table.userId] })],
+  (table) => [primaryKey({
+    columns: [table.applicationId, table.userId, table.formVersionId],
+  })],
 );
 
 export const workflowApplicationCoiEvents = pgTable(
@@ -46,9 +50,8 @@ export const workflowApplicationCoiEvents = pgTable(
       .references(() => users.id, { onDelete: "restrict" }),
     actorId: uuid("actor_id").notNull()
       .references(() => users.id, { onDelete: "restrict" }),
-    formVersionId: uuid("form_version_id").references(() => formVersions.id, {
-      onDelete: "restrict",
-    }),
+    formVersionId: uuid("form_version_id").notNull()
+      .references(() => formVersions.id, { onDelete: "restrict" }),
     fromState: text("from_state"),
     toState: text("to_state").notNull(),
     disclosureText: text("disclosure_text"),

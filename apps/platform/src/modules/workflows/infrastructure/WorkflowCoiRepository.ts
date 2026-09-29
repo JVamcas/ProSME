@@ -14,7 +14,7 @@ export type CoiState =
 
 type GateRow = {
   assignedUserId: string | null;
-  coiFormVersionId?: string | null;
+  coiFormVersionId: string | null;
   gated: boolean;
   rowVersion: number;
   stageInstanceId: string;
@@ -29,9 +29,9 @@ export async function readTaskCoiGate(actorId: string, taskId: string) {
     SELECT task.id AS "taskId", definition.name AS "taskName",
       task.status, task.row_version AS "rowVersion",
       task.assigned_user_id AS "assignedUserId",
-      version.coi_form_version_id AS "coiFormVersionId",
+      stage_definition.coi_form_version_id AS "coiFormVersionId",
       stage.id AS "stageInstanceId",
-      (definition.coi_required OR stage_definition.coi_gated) AS gated,
+      stage_definition.coi_gated AS gated,
       COALESCE(clearance.state, 'DECLARATION_REQUIRED') AS state
     FROM app_workflow_tasks task
     JOIN app_stage_task_definitions definition
@@ -40,11 +40,10 @@ export async function readTaskCoiGate(actorId: string, taskId: string) {
     JOIN app_workflow_stage_definitions stage_definition
       ON stage_definition.id = stage.workflow_stage_definition_id
     JOIN app_workflow_instances workflow ON workflow.id = stage.workflow_instance_id
-    JOIN app_workflow_definition_versions version
-      ON version.id = workflow.workflow_template_version_id
     LEFT JOIN app_workflow_application_coi clearance
       ON clearance.application_id = workflow.application_id
       AND clearance.user_id = ${actorId}::uuid
+      AND clearance.form_version_id = stage_definition.coi_form_version_id
     WHERE task.id = ${taskId}::uuid
       AND stage.status = 'ACTIVE' AND workflow.status = 'ACTIVE'
       AND task.assigned_user_id = ${actorId}::uuid
@@ -71,9 +70,9 @@ export async function changeTaskCoi(input: {
     const locked = await transaction.execute(sql`
       SELECT task.id, task.status, task.row_version AS "rowVersion",
         workflow.application_id AS "applicationId",
-        version.coi_form_version_id AS "coiFormVersionId",
+        stage_definition.coi_form_version_id AS "coiFormVersionId",
         task.assigned_user_id AS "assignedUserId",
-        (definition.coi_required OR stage_definition.coi_gated) AS gated,
+        stage_definition.coi_gated AS gated,
         clearance.state, clearance.row_version AS "coiVersion"
       FROM app_workflow_tasks task
       JOIN app_stage_task_definitions definition
@@ -82,11 +81,10 @@ export async function changeTaskCoi(input: {
       JOIN app_workflow_stage_definitions stage_definition
         ON stage_definition.id = stage.workflow_stage_definition_id
       JOIN app_workflow_instances workflow ON workflow.id = stage.workflow_instance_id
-      JOIN app_workflow_definition_versions version
-        ON version.id = workflow.workflow_template_version_id
       LEFT JOIN app_workflow_application_coi clearance
         ON clearance.application_id = workflow.application_id
         AND clearance.user_id = task.assigned_user_id
+        AND clearance.form_version_id = stage_definition.coi_form_version_id
       WHERE task.id = ${input.taskId}::uuid AND stage.status = 'ACTIVE'
       FOR UPDATE OF task, workflow
     `);
@@ -124,12 +122,12 @@ export async function changeTaskCoi(input: {
     }
     await transaction.execute(sql`
       INSERT INTO app_workflow_application_coi (
-        application_id, user_id, task_id, state, row_version
+        application_id, user_id, form_version_id, task_id, state, row_version
       ) VALUES (
         ${row.applicationId}::uuid, ${row.assignedUserId}::uuid,
-        ${input.taskId}::uuid, ${next}, 1
+        ${row.coiFormVersionId}::uuid, ${input.taskId}::uuid, ${next}, 1
       )
-      ON CONFLICT (application_id, user_id) DO UPDATE
+      ON CONFLICT (application_id, user_id, form_version_id) DO UPDATE
         SET task_id = EXCLUDED.task_id, state = EXCLUDED.state,
           row_version = app_workflow_application_coi.row_version + 1,
           updated_at = now()

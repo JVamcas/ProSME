@@ -170,7 +170,6 @@ export function documentRequirement(
 
 type TaskInput = {
   actionKeys: string[];
-  coiRequired?: boolean;
   config: unknown;
   description: string;
   displayOrder: number;
@@ -193,7 +192,6 @@ export function task(
   return {
     actionKeys: input.actionKeys,
     assignmentMode: "ROLE",
-    coiRequired: input.coiRequired ?? false,
     config: input.formCode
       ? {
           ...(input.config && typeof input.config === "object"

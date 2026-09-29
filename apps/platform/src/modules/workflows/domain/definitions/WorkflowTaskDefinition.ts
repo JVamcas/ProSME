@@ -44,6 +44,5 @@ export type WorkflowTaskDefinition = {
   completionPercentage?: number | null;
   quorum: boolean;
   quorumRule?: QuorumRule | null;
-  coiRequired: boolean;
   displayOrder: number;
 };

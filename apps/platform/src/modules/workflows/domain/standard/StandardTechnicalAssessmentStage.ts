@@ -61,6 +61,7 @@ export function createStandardTechnicalAssessmentStage(
     actions,
     checklistItems: [],
     coiGated: true,
+    coiFormVersionId: dependencies.formVersionIds.COI_DECLARATION ?? null,
     description: "Perform independent technical or scientific assessment.",
     displayOrder: 2,
     documentRequirements: [
@@ -99,7 +100,6 @@ export function createStandardTechnicalAssessmentStage(
       task(dependencies, {
         actionKeys: ["REQUEST_CLARIFICATION", "ESCALATE_SCORING_DISCREPANCY"],
         taskType: "CONTRIBUTING",
-        coiRequired: true,
         config: { criteria },
         description:
           "Score the application and record an independent recommendation.",

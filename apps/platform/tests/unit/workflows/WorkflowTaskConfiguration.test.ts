@@ -54,7 +54,6 @@ describe("workflow task configuration", () => {
       quorum: true,
       quorumMinimumCount: 2,
       quorumMinimumPercentage: null,
-      coiRequired: true,
       name: "Review task",
       required: true,
     };

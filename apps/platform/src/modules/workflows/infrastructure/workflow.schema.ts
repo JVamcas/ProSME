@@ -65,10 +65,6 @@ export const workflowDefinitionVersions = pgTable(
       .$type<WorkflowTemplateDetails>()
       .notNull()
       .default({ code: "", name: "", description: "" }),
-    coiFormVersionId: uuid("coi_form_version_id").references(
-      () => formVersions.id,
-      { onDelete: "restrict" },
-    ),
     rowVersion: integer("row_version").notNull().default(1),
     createdBy: uuid("created_by")
       .notNull()
@@ -93,9 +89,6 @@ export const workflowDefinitionVersions = pgTable(
     index("app_workflow_versions_definition_status_idx").on(
       table.definitionId,
       table.status,
-    ),
-    index("app_workflow_versions_coi_form_version_idx").on(
-      table.coiFormVersionId,
     ),
   ],
 );
@@ -123,6 +116,10 @@ export const workflowStageDefinitions = pgTable(
     applicantDescription: text("applicant_description").notNull(),
     repeatable: boolean("repeatable").notNull().default(false),
     coiGated: boolean("coi_gated").notNull().default(false),
+    coiFormVersionId: uuid("coi_form_version_id").references(
+      () => formVersions.id,
+      { onDelete: "restrict" },
+    ),
     slaHours: integer("sla_hours"),
     entryCondition: jsonb("entry_condition").$type<ConditionGroup>(),
     exitCondition: jsonb("exit_condition").$type<ConditionGroup>(),
@@ -185,7 +182,6 @@ export const stageTaskDefinitions = pgTable(
     completionPercentage: integer("completion_percentage"),
     quorum: boolean("quorum").notNull().default(false),
     quorumRule: jsonb("quorum_rule").$type<QuorumRule | null>(),
-    coiRequired: boolean("coi_required").notNull().default(false),
     config: jsonb("config").notNull().default({}),
     permissions: jsonb("permissions")
       .$type<WorkflowElementPermissions>()

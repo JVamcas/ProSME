@@ -12,6 +12,7 @@ import { validateWorkflowGraph } from "@/modules/workflows/WorkflowValidation";
 function dependencies(): StandardWorkflowDependencies {
   return {
     formVersionIds: {
+      COI_DECLARATION: "00000000-0000-4000-9000-000000000000",
       ELIGIBILITY_VERIFICATION:
         "00000000-0000-4000-9000-000000000001",
     },

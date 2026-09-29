@@ -28,11 +28,17 @@ beforeEach(() => {
 
 describe("workflow COI form binding", () => {
   it("requires an exact COI form version when the graph contains a COI gate", async () => {
-    const validation = await validateWorkflowConfiguration(referenceWorkflow);
+    const graph = {
+      ...referenceWorkflow,
+      stages: referenceWorkflow.stages.map((stage, index) =>
+        index === 2 ? { ...stage, coiFormVersionId: null } : stage
+      ),
+    };
+    const validation = await validateWorkflowConfiguration(graph);
 
     expect(validation.errors).toContainEqual(expect.objectContaining({
       code: "COI_FORM_VERSION_REQUIRED",
-      path: "version.coiFormVersionId",
+      path: "stages.2.coiFormVersionId",
     }));
   });
 
@@ -45,10 +51,7 @@ describe("workflow COI form binding", () => {
       users: new Map(),
     });
 
-    const validation = await validateWorkflowConfiguration(
-      referenceWorkflow,
-      coiFormVersionId,
-    );
+    const validation = await validateWorkflowConfiguration(referenceWorkflow);
 
     expect(validation.errors).not.toContainEqual(expect.objectContaining({
       code: "COI_FORM_VERSION_REQUIRED",
@@ -56,10 +59,7 @@ describe("workflow COI form binding", () => {
     expect(validation.errors).not.toContainEqual(expect.objectContaining({
       code: "INVALID_COI_FORM_VERSION",
     }));
-    expect(findConfigurationReferences).toHaveBeenCalledWith(
-      referenceWorkflow,
-      [coiFormVersionId],
-    );
+    expect(findConfigurationReferences).toHaveBeenCalledWith(referenceWorkflow);
   });
 
   it("rejects a draft COI form version", async () => {
@@ -71,14 +71,11 @@ describe("workflow COI form binding", () => {
       users: new Map(),
     });
 
-    const validation = await validateWorkflowConfiguration(
-      referenceWorkflow,
-      coiFormVersionId,
-    );
+    const validation = await validateWorkflowConfiguration(referenceWorkflow);
 
     expect(validation.errors).toContainEqual(expect.objectContaining({
       code: "INVALID_COI_FORM_VERSION",
-      path: "version.coiFormVersionId",
+      path: "stages.2.coiFormVersionId",
     }));
   });
 });

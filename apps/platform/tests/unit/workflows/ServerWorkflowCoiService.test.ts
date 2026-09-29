@@ -79,6 +79,25 @@ beforeEach(() => {
 });
 
 describe("workflow COI service", () => {
+  it("accepts an existing clearance for the stage-bound form", async () => {
+    vi.mocked(readTaskCoiGate).mockResolvedValue({
+      assignedUserId: actor.id,
+      coiFormVersionId: form.versionId,
+      gated: true,
+      rowVersion: 2,
+      stageInstanceId: "66666666-6666-4666-8666-666666666666",
+      state: "CLEARED_NO_CONFLICT",
+      status: "PENDING",
+      taskId,
+      taskName: "Later review stage",
+    });
+
+    await expect(getWorkflowTaskCoi(actor, taskId)).resolves.toMatchObject({
+      cleared: true,
+      state: "CLEARED_NO_CONFLICT",
+    });
+  });
+
   it("returns only assignment metadata before clearance", async () => {
     vi.mocked(readTaskCoiGate).mockResolvedValue({
       assignedUserId: actor.id,

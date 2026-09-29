@@ -18,7 +18,7 @@ beforeEach(() => {
 });
 
 describe("workflow COI gate projection", () => {
-  it("loads clearance by application and reviewer", async () => {
+  it("reuses clearance only for the same application, reviewer and form", async () => {
     await expect(readTaskCoiGate(actorId, taskId)).resolves.toBeNull();
 
     const query = new PgDialect().sqlToQuery(execute.mock.calls[0]![0]);
@@ -27,6 +27,9 @@ describe("workflow COI gate projection", () => {
       "clearance.application_id = workflow.application_id",
     );
     expect(query.sql).toContain("clearance.user_id =");
+    expect(query.sql).toContain(
+      "clearance.form_version_id = stage_definition.coi_form_version_id",
+    );
     expect(query.params).toContain(actorId);
     expect(query.params).toContain(taskId);
   });

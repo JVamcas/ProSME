@@ -112,7 +112,7 @@ export async function replaceWorkflowReviewer(
     const locked = await transaction.execute(sql`
       SELECT workflow.application_id AS "applicationId",
         task.assigned_user_id AS "assignedUserId",
-        version.coi_form_version_id AS "coiFormVersionId",
+        stage_definition.coi_form_version_id AS "coiFormVersionId",
         task.reviewer_slot AS "reviewerSlot",
         task.row_version AS "rowVersion",
         task.stage_instance_id AS "stageInstanceId",
@@ -125,15 +125,16 @@ export async function replaceWorkflowReviewer(
       JOIN app_workflow_stage_instances stage ON stage.id = task.stage_instance_id
       JOIN app_stage_task_definitions definition
         ON definition.id = task.workflow_task_definition_id
+      JOIN app_workflow_stage_definitions stage_definition
+        ON stage_definition.id = stage.workflow_stage_definition_id
       JOIN app_workflow_instances workflow ON workflow.id = stage.workflow_instance_id
-      JOIN app_workflow_definition_versions version
-        ON version.id = workflow.workflow_template_version_id
       WHERE task.id = ${input.taskId}::uuid
         AND stage.status = 'ACTIVE' AND workflow.status = 'ACTIVE'
       FOR UPDATE OF task
     `);
     const task = locked.rows[0] as LockedTask | undefined;
     if (!task || task.rowVersion !== input.expectedRowVersion
+      || (input.coiDecision === "RECUSE" && !task.coiFormVersionId)
       || !(
         ["PENDING", "IN_PROGRESS"].includes(task.status)
         || (task.status === "COMPLETED"
@@ -193,6 +194,7 @@ export async function replaceWorkflowReviewer(
         SELECT state FROM app_workflow_application_coi
         WHERE application_id = ${task.applicationId}::uuid
           AND user_id = ${task.assignedUserId}::uuid
+          AND form_version_id = ${task.coiFormVersionId}::uuid
         FOR UPDATE
       `);
       if (task.assignedUserId === input.actorId
@@ -204,6 +206,7 @@ export async function replaceWorkflowReviewer(
           row_version = row_version + 1, updated_at = now()
         WHERE application_id = ${task.applicationId}::uuid
           AND user_id = ${task.assignedUserId}::uuid
+          AND form_version_id = ${task.coiFormVersionId}::uuid
       `);
       await transaction.execute(sql`
         INSERT INTO app_workflow_application_coi_events (

@@ -45,7 +45,6 @@ export type StandardWorkflowDependencies = {
 
 export type StandardWorkflowDraft = {
   code: typeof standardWorkflowCode;
-  coiFormVersionId: string | null;
   description: string;
   graph: WorkflowGraphInput;
   name: string;

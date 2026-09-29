@@ -118,7 +118,6 @@ async function saveWorkflowTask({
       values.completionMode === "PERCENT" ? values.completionPercentage : null,
     quorum: false,
     quorumRule: null,
-    coiRequired: task?.coiRequired ?? false,
     config: {
       ...existingConfig,
       displayMode: values.displayMode,

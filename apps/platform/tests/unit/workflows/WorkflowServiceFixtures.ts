@@ -39,7 +39,6 @@ export const record = {
   graph: assignedReferenceWorkflow,
   version: {
     id: "version-id",
-    coiFormVersionId: null,
     definitionId: "definition-id",
     versionNumber: 1,
     status: "APPROVED" as const,

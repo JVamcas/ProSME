@@ -27,7 +27,6 @@ import type {
   UpdateWorkflowDraftInput,
   UpdateWorkflowDetailsInput,
 } from "@/modules/workflows/api/WorkflowTransportTypes";
-import { formVersionIsPublishedForPurpose } from "@/modules/forms/infrastructure/FormRepository";
 
 export {
   WorkflowConflictError,
@@ -65,14 +64,6 @@ export async function createWorkflow(
     user,
     permissionCodes.workflowDefinitionCreate,
   );
-  if (
-    input.coiFormVersionId
-    && !await formVersionIsPublishedForPurpose(input.coiFormVersionId, "COI")
-  ) {
-    throw new WorkflowConflictError(
-      "Select an exact published Conflict of Interest form version.",
-    );
-  }
   const versionId = await createWorkflowDefinition({
     ...input,
     actorId: actor.id,
@@ -118,14 +109,6 @@ export async function updateWorkflowDetails(
     user,
     permissionCodes.workflowDefinitionUpdate,
   );
-  if (
-    input.coiFormVersionId
-    && !await formVersionIsPublishedForPurpose(input.coiFormVersionId, "COI")
-  ) {
-    throw new WorkflowConflictError(
-      "Select an exact published Conflict of Interest form version.",
-    );
-  }
   const versionId = await findDraftByDefinition(definitionId);
   if (!versionId)
     throw new WorkflowConflictError("Only draft versions can be edited.");

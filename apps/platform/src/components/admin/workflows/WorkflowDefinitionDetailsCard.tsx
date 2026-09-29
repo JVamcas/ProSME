@@ -13,10 +13,6 @@ export function WorkflowDefinitionDetailsCard({ editor }: Props) {
     { label: "Code", value: editor.definition.code },
     { label: "Version", value: `v${editor.version.number}` },
     { label: "Revision", value: editor.version.rowVersion },
-    {
-      label: "COI Form Version",
-      value: editor.version.coiFormVersionId ?? "Not configured",
-    },
   ];
 
   return (
@@ -25,7 +21,7 @@ export function WorkflowDefinitionDetailsCard({ editor }: Props) {
       className="mt-6 rounded-2xl border border-slate-50 p-2"
     >
       <div className="rounded-2xl border border-brand-navy/15 bg-brand-white px-5 py-6 shadow-sm sm:px-7 sm:py-7">
-        <dl className="grid gap-6 sm:grid-cols-2 xl:grid-cols-5">
+        <dl className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
           {details.map((detail) => (
             <div key={detail.label}>
               <dt className={detailLabelClass}>{detail.label}</dt>
