@@ -3,7 +3,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { KeyRound } from "lucide-react";
 
-import { authClientService } from "@/auth/firebase/ClientAuthService";
+import { authClientService } from "@/platform/auth/firebase/ClientAuthService";
 import { GeneralButton } from "@/components/ui/button";
 
 export function ProfilePasswordPanel({ email }: { email: string }) {

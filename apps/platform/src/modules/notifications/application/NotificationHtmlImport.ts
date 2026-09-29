@@ -6,7 +6,6 @@ import {
   NotificationValidationError,
 } from "../domain/NotificationErrors";
 import {
-  discoverNotificationPlaceholders,
   validateNotificationPlaceholders,
 } from "./NotificationTemplateRenderer";
 
@@ -73,9 +72,32 @@ export function sanitizeNotificationHtml(html: string): string {
     },
     allowedSchemes: ["http", "https", "mailto"],
     allowedTags: [
-      "a", "b", "blockquote", "br", "div", "em", "h1", "h2", "h3",
-      "h4", "hr", "img", "li", "ol", "p", "span", "strong", "table",
-      "tbody", "td", "tfoot", "th", "thead", "tr", "u", "ul",
+      "a",
+      "b",
+      "blockquote",
+      "br",
+      "div",
+      "em",
+      "h1",
+      "h2",
+      "h3",
+      "h4",
+      "hr",
+      "img",
+      "li",
+      "ol",
+      "p",
+      "span",
+      "strong",
+      "table",
+      "tbody",
+      "td",
+      "tfoot",
+      "th",
+      "thead",
+      "tr",
+      "u",
+      "ul",
     ],
     allowProtocolRelative: false,
     enforceHtmlBoundary: true,
@@ -86,7 +108,11 @@ export function sanitizeNotificationHtml(html: string): string {
 }
 
 export function generateNotificationPlainText(html: string): string {
-  return sanitizeHtml(html, {
+  const htmlWithLinks = html.replace(
+    /<a\b[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi,
+    (_match, href: string, label: string) => `${label} (${href})`,
+  );
+  return sanitizeHtml(htmlWithLinks, {
     allowedAttributes: {},
     allowedTags: [],
   })
@@ -124,14 +150,16 @@ export function validateNotificationHtmlImport(
   if (input.mediaType.toLowerCase() !== "text/html") {
     invalidTemplate("The template media type must be text/html.");
   }
-  if (input.bytes.byteLength === 0) invalidTemplate("The template file is empty.");
+  if (input.bytes.byteLength === 0)
+    invalidTemplate("The template file is empty.");
   if (input.bytes.byteLength > maximumNotificationTemplateBytes) {
     invalidTemplate("The template file cannot exceed 256 KiB.");
   }
 
   const htmlTemplate = sanitizeNotificationHtml(decodeUtf8(input.bytes));
-  const plainTextTemplate = input.plainTextTemplate?.trim()
-    || generateNotificationPlainText(htmlTemplate);
+  const plainTextTemplate =
+    input.plainTextTemplate?.trim() ||
+    generateNotificationPlainText(htmlTemplate);
   const subjectTemplate = input.subjectTemplate.trim();
   const detectedPlaceholders = validateNotificationTemplateContent(
     { htmlTemplate, plainTextTemplate, subjectTemplate },

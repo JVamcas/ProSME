@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { AuthCard } from "@/components/auth/auth-card";
+import { AuthCard } from "@/modules/users/ui/auth/auth-card";
 import { GeneralButton } from "@/components/ui/button";
 
 export const metadata: Metadata = {

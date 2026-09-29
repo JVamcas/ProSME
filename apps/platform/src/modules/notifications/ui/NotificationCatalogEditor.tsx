@@ -6,12 +6,16 @@ import { FormProvider, useForm } from "react-hook-form";
 
 import { GeneralButton } from "@/components/ui/button";
 import { FormInput, FormTextarea } from "@/components/ui/form-fields";
+import { Badge } from "@/shared/ui/Badge";
 import { Checkbox } from "@/shared/ui/FormPrimitives";
 import {
   notificationCatalogUpdateSchema,
   type NotificationCatalogUpdate,
 } from "../api/NotificationAdministrationSchemas";
-import { useNotificationCatalog, useUpdateNotificationCatalog } from "./useNotificationAdministration";
+import {
+  useNotificationCatalog,
+  useUpdateNotificationCatalog,
+} from "./useNotificationAdministration";
 
 export function NotificationCatalogEditor({
   canUpdate,
@@ -36,26 +40,66 @@ export function NotificationCatalogEditor({
       });
     }
   }, [form, query.data]);
+  const hasSystemEvents = query.data?.events.some(
+    (event) => event.ruleEligibility === "SYSTEM_ONLY",
+  );
+
   if (query.isPending) return <p>Loading event catalog…</p>;
-  if (query.error || !query.data) return <p className="text-sm text-red-700" role="alert">{query.error?.message ?? "Event catalog not found."}</p>;
+  if (query.error || !query.data)
+    return (
+      <p className="text-sm text-red-700" role="alert">
+        {query.error?.message ?? "Event catalog not found."}
+      </p>
+    );
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.7fr)]">
       <FormProvider {...form}>
         <form
           className="space-y-5 rounded-2xl border border-brand-navy/10 bg-white p-6"
-          onSubmit={form.handleSubmit((values) => mutation.mutateAsync(values).then(() => undefined))}
+          onSubmit={form.handleSubmit((values) =>
+            mutation.mutateAsync(values).then(() => undefined),
+          )}
         >
           <div>
-            <p className="text-xs font-bold uppercase text-brand-navy/50">Immutable catalog key</p>
+            <p className="text-xs font-bold uppercase text-brand-navy/50">
+              Immutable catalog key
+            </p>
             <p className="font-mono text-sm text-brand-navy">{catalogKey}</p>
           </div>
-          <FormInput disabled={!canUpdate} label="Display name" name="displayName" required />
-          <FormTextarea disabled={!canUpdate} label="Description" name="description" required />
-          <FormInput disabled={!canUpdate} label="Sort order" name="sortOrder" type="number" required />
+          <FormInput
+            disabled={!canUpdate}
+            label="Display name"
+            name="displayName"
+            required
+          />
+          <FormTextarea
+            disabled={!canUpdate}
+            label="Description"
+            name="description"
+            required
+          />
+          <FormInput
+            disabled={!canUpdate}
+            label="Sort order"
+            name="sortOrder"
+            type="number"
+            required
+          />
           <label className="flex items-center gap-3 text-sm font-semibold text-brand-navy">
-            <Checkbox disabled={!canUpdate} {...form.register("isEnabled")} /> Enabled
+            <Checkbox disabled={!canUpdate} {...form.register("isEnabled")} />{" "}
+            Enabled
           </label>
-          {mutation.error ? <p className="text-sm text-red-700" role="alert">{mutation.error.message}</p> : null}
+          {hasSystemEvents ? (
+            <p className="text-sm text-brand-navy/65">
+              System-only emails are always delivered to the account holder.
+              This setting applies to configurable events only.
+            </p>
+          ) : null}
+          {mutation.error ? (
+            <p className="text-sm text-red-700" role="alert">
+              {mutation.error.message}
+            </p>
+          ) : null}
           {canUpdate ? (
             <GeneralButton disabled={mutation.isPending} type="submit">
               {mutation.isPending ? "Saving…" : "Save catalog"}
@@ -65,13 +109,30 @@ export function NotificationCatalogEditor({
       </FormProvider>
       <section className="rounded-2xl border border-brand-navy/10 bg-white p-6">
         <h2 className="font-bold text-brand-navy">Catalog membership</h2>
-        <p className="mt-1 text-sm text-brand-navy/60">Event keys and membership are read-only.</p>
+        <p className="mt-1 text-sm text-brand-navy/60">
+          Event keys and membership are read-only.
+        </p>
         <ul className="mt-4 space-y-3">
           {query.data.events.map((event) => (
             <li className="rounded-xl bg-slate-50 p-3" key={event.eventKey}>
-              <p className="font-semibold text-brand-navy">{event.displayName}</p>
-              <p className="font-mono text-xs text-brand-navy/60">{event.eventKey}</p>
-              <p className="mt-1 text-xs text-brand-navy/65">{event.description}</p>
+              <p className="font-semibold text-brand-navy">
+                {event.displayName}
+              </p>
+              <p className="font-mono text-xs text-brand-navy/60">
+                {event.eventKey}
+              </p>
+              <Badge
+                variant={
+                  event.ruleEligibility === "SYSTEM_ONLY" ? "gold" : "outline"
+                }
+              >
+                {event.ruleEligibility === "SYSTEM_ONLY"
+                  ? "System only"
+                  : "Configurable rules"}
+              </Badge>
+              <p className="mt-1 text-xs text-brand-navy/65">
+                {event.description}
+              </p>
             </li>
           ))}
         </ul>

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { csrfTokensMatch } from "@/auth/csrf/verify-token";
-import { registrationSchema } from "@/auth/firebase/auth-form.schemas";
+import { registrationSchema } from "@/platform/auth/firebase/auth-form.schemas";
 import { csrfCookieName, readCookie } from "@/auth/firebase/cookies";
 import { createAccount } from "@/modules/users/ServerRegistrationService";
 

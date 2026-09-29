@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
-import { AuthCard } from "@/components/auth/auth-card";
-import { SignInForm } from "@/components/auth/sign-in-form";
+import { AuthCard } from "@/modules/users/ui/auth/auth-card";
+import { SignInForm } from "@/modules/users/ui/auth/sign-in-form";
 
 export const metadata: Metadata = {
   title: "Sign in",
@@ -23,9 +23,7 @@ type SignInPageProps = {
   }>;
 };
 
-export default async function SignInPage({
-  searchParams,
-}: SignInPageProps) {
+export default async function SignInPage({ searchParams }: SignInPageProps) {
   const query = await searchParams;
 
   return (

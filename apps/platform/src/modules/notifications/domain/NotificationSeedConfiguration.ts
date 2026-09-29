@@ -1,4 +1,7 @@
-import type { NotificationEventKey } from "./NotificationEvent";
+import {
+  notificationEventCatalogue,
+  type NotificationEventKey,
+} from "./NotificationEvent";
 import type { NotificationCatalogKey } from "./NotificationEvent";
 import type { NotificationRecipientType } from "./NotificationRecipient";
 import type { NotificationTemplateScope } from "./NotificationTemplate";
@@ -25,6 +28,26 @@ export type NotificationEventSeed = {
 };
 
 export const notificationEventSeeds: readonly NotificationEventSeed[] = [
+  {
+    catalogKey: "AUTHENTICATION",
+    description: "Confirm the email address belonging to an account.",
+    displayName: "Email verification",
+    id: "00000000-0000-4000-8000-000000000218",
+    key: "auth.email.verification",
+    ruleChannelId: "00000000-0000-4000-8000-000000000618",
+    ruleId: "00000000-0000-4000-8000-000000000318",
+    ruleRecipientId: "00000000-0000-4000-8000-000000000718",
+  },
+  {
+    catalogKey: "AUTHENTICATION",
+    description: "Send password recovery instructions to the account holder.",
+    displayName: "Password reset",
+    id: "00000000-0000-4000-8000-000000000219",
+    key: "auth.password.reset",
+    ruleChannelId: "00000000-0000-4000-8000-000000000619",
+    ruleId: "00000000-0000-4000-8000-000000000319",
+    ruleRecipientId: "00000000-0000-4000-8000-000000000719",
+  },
   {
     catalogKey: "APPLICATIONS",
     description: "An applicant submitted a funding application.",
@@ -212,6 +235,11 @@ export const notificationEventSeeds: readonly NotificationEventSeed[] = [
   },
 ];
 
+export const configurableNotificationEventSeeds = notificationEventSeeds.filter(
+  (event) =>
+    notificationEventCatalogue[event.key].ruleEligibility === "CONFIGURABLE",
+);
+
 export type NotificationCatalogSeed = {
   description: string;
   displayName: string;
@@ -221,6 +249,13 @@ export type NotificationCatalogSeed = {
 };
 
 export const notificationCatalogSeeds: readonly NotificationCatalogSeed[] = [
+  {
+    description: "Mandatory account verification and recovery emails.",
+    displayName: "Authentication",
+    id: "00000000-0000-4000-8000-000000000404",
+    key: "AUTHENTICATION",
+    sortOrder: 5,
+  },
   {
     description: "Funding application lifecycle notification events.",
     displayName: "Applications",
@@ -255,6 +290,24 @@ export type NotificationTemplateTargetSeed = {
 export const notificationTemplateTargetSeeds: readonly NotificationTemplateTargetSeed[] =
   [
     {
+      catalogKey: "AUTHENTICATION",
+      defaultSubjectTemplate: "Account action for {{platformName}}",
+      id: "00000000-0000-4000-8000-000000000524",
+      scope: "CATALOG",
+    },
+    {
+      defaultSubjectTemplate: "Verify your email for {{platformName}}",
+      eventKey: "auth.email.verification",
+      id: "00000000-0000-4000-8000-000000000522",
+      scope: "EVENT",
+    },
+    {
+      defaultSubjectTemplate: "Reset your password for {{platformName}}",
+      eventKey: "auth.password.reset",
+      id: "00000000-0000-4000-8000-000000000523",
+      scope: "EVENT",
+    },
+    {
       defaultSubjectTemplate: "Notification from {{platformName}}",
       id: "00000000-0000-4000-8000-000000000501",
       scope: "GLOBAL",
@@ -267,7 +320,8 @@ export const notificationTemplateTargetSeeds: readonly NotificationTemplateTarge
     },
     {
       catalogKey: "WORKFLOW",
-      defaultSubjectTemplate: "Workflow update for application {{applicationReference}}",
+      defaultSubjectTemplate:
+        "Workflow update for application {{applicationReference}}",
       id: "00000000-0000-4000-8000-000000000503",
       scope: "CATALOG",
     },
@@ -278,31 +332,36 @@ export const notificationTemplateTargetSeeds: readonly NotificationTemplateTarge
       scope: "EVENT",
     },
     {
-      defaultSubjectTemplate: "New task assigned for application {{applicationReference}}",
+      defaultSubjectTemplate:
+        "New task assigned for application {{applicationReference}}",
       eventKey: "workflow.task.assigned",
       id: "00000000-0000-4000-8000-000000000505",
       scope: "EVENT",
     },
     {
-      defaultSubjectTemplate: "Information requested for application {{applicationReference}}",
+      defaultSubjectTemplate:
+        "Information requested for application {{applicationReference}}",
       eventKey: "workflow.information-request.created",
       id: "00000000-0000-4000-8000-000000000506",
       scope: "EVENT",
     },
     {
-      defaultSubjectTemplate: "Applicant responded for application {{applicationReference}}",
+      defaultSubjectTemplate:
+        "Applicant responded for application {{applicationReference}}",
       eventKey: "workflow.information-request.responded",
       id: "00000000-0000-4000-8000-000000000507",
       scope: "EVENT",
     },
     {
-      defaultSubjectTemplate: "Information request closed for application {{applicationReference}}",
+      defaultSubjectTemplate:
+        "Information request closed for application {{applicationReference}}",
       eventKey: "workflow.information-request.closed",
       id: "00000000-0000-4000-8000-000000000508",
       scope: "EVENT",
     },
     {
-      defaultSubjectTemplate: "Information request expired for application {{applicationReference}}",
+      defaultSubjectTemplate:
+        "Information request expired for application {{applicationReference}}",
       eventKey: "workflow.information-request.expired",
       id: "00000000-0000-4000-8000-000000000509",
       scope: "EVENT",
@@ -316,8 +375,7 @@ export const notificationTemplateTargetSeeds: readonly NotificationTemplateTarge
     ...notificationEventSeeds
       .filter((event) => event.catalogKey === "FUNDING_CALLS")
       .map((event, index) => ({
-        defaultSubjectTemplate:
-          `{{fundingCallReference}}: ${event.displayName}`,
+        defaultSubjectTemplate: `{{fundingCallReference}}: ${event.displayName}`,
         eventKey: event.key,
         id: `00000000-0000-4000-8000-${String(511 + index).padStart(12, "0")}`,
         scope: "EVENT" as const,

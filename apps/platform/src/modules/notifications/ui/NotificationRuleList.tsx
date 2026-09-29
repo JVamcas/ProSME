@@ -275,10 +275,12 @@ export function NotificationRuleList({ canUpdate }: { canUpdate: boolean }) {
         <FormSelect
           id="notification-rule-catalog"
           items={
-            catalogs.data?.map((catalog) => ({
-              label: catalog.displayName,
-              value: catalog.catalogKey,
-            })) ?? []
+            catalogs.data
+              ?.filter((catalog) => catalog.configurableEventCount > 0)
+              .map((catalog) => ({
+                label: catalog.displayName,
+                value: catalog.catalogKey,
+              })) ?? []
           }
           label="Catalog"
           onChange={(event) => setCatalogKey(event.target.value)}
@@ -294,7 +296,11 @@ export function NotificationRuleList({ canUpdate }: { canUpdate: boolean }) {
       ) : null}
       <DataTable
         columns={columns}
-        data={query.data ?? []}
+        data={
+          query.data?.filter(
+            (rule) => rule.ruleEligibility === "CONFIGURABLE",
+          ) ?? []
+        }
         emptyMessage={
           query.isPending
             ? "Loading event rules…"

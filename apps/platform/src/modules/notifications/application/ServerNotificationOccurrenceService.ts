@@ -2,6 +2,7 @@ import "server-only";
 
 import {
   parseNotificationContext,
+  notificationEventCatalogue,
   type NotificationEventContextByKey,
   type NotificationEventKey,
 } from "../domain/NotificationEvent";
@@ -12,7 +13,9 @@ import {
   type NotificationOccurrenceWriteResult,
 } from "../infrastructure/NotificationOccurrenceRepository";
 
-export type CaptureNotificationOccurrenceInput<Key extends NotificationEventKey> = {
+export type CaptureNotificationOccurrenceInput<
+  Key extends NotificationEventKey,
+> = {
   aggregateId: string;
   aggregateType: string;
   context: NotificationEventContextByKey[Key];
@@ -28,6 +31,12 @@ export async function captureNotificationOccurrence<
   transaction: NotificationOccurrenceTransaction,
   input: CaptureNotificationOccurrenceInput<Key>,
 ): Promise<NotificationOccurrenceWriteResult> {
+  if (
+    notificationEventCatalogue[input.eventKey].ruleEligibility !==
+    "CONFIGURABLE"
+  ) {
+    throw new Error("System-only events require server-controlled delivery.");
+  }
   const context = parseNotificationContext(input.eventKey, input.context);
   const recipients = normalizeNotificationRecipients(input.recipients);
 

@@ -10,6 +10,7 @@ import {
 } from "../domain/NotificationErrors";
 import {
   isNotificationEventKey,
+  notificationEventCatalogue,
   parseNotificationContext,
 } from "../domain/NotificationEvent";
 import { notificationEventTemplateFields } from "../domain/NotificationTemplateFields";
@@ -25,7 +26,11 @@ import {
   type ClaimedNotificationDelivery,
 } from "../infrastructure/NotificationDispatchRepository";
 import { getGmailSmtpConfiguration } from "../infrastructure/NotificationSmtpConfiguration";
-import { NotificationEmailSendError, type NotificationEmailSender } from "./NotificationEmailSender";
+import { renderAuthenticationEmail } from "./ServerAuthenticationEmailContentService";
+import {
+  NotificationEmailSendError,
+  type NotificationEmailSender,
+} from "./NotificationEmailSender";
 import { getNotificationProcessorConfiguration } from "./NotificationProcessorConfiguration";
 import { renderNotificationTemplate } from "./NotificationTemplateRenderer";
 import { buildServerNotificationRenderValues } from "./ServerNotificationRenderValues";
@@ -79,11 +84,16 @@ async function dispatchDelivery(input: {
   if (!attemptNumber) return "failed";
 
   try {
+    const systemOnly =
+      isNotificationEventKey(input.delivery.eventKey) &&
+      notificationEventCatalogue[input.delivery.eventKey].ruleEligibility ===
+        "SYSTEM_ONLY";
     if (
-      !input.delivery.templateVersionId
-      || !input.delivery.subjectTemplate
-      || !input.delivery.htmlTemplate
-      || !input.delivery.plainTextTemplate
+      !systemOnly &&
+      (!input.delivery.templateVersionId ||
+        !input.delivery.subjectTemplate ||
+        !input.delivery.htmlTemplate ||
+        !input.delivery.plainTextTemplate)
     ) {
       throw new NotificationValidationError(
         notificationErrorCodes.templateUnavailable,
@@ -96,7 +106,7 @@ async function dispatchDelivery(input: {
         "The notification event is not supported.",
       );
     }
-    if (!input.delivery.recipientUserId) {
+    if (!systemOnly && !input.delivery.recipientUserId) {
       throw new NotificationValidationError(
         notificationErrorCodes.invalidRecipient,
         "The notification recipient is no longer available.",
@@ -106,22 +116,27 @@ async function dispatchDelivery(input: {
       input.delivery.eventKey,
       input.delivery.context,
     );
-    const rendered = renderNotificationTemplate(
-      {
-        htmlTemplate: input.delivery.htmlTemplate,
-        plainTextTemplate: input.delivery.plainTextTemplate,
-        subjectTemplate: input.delivery.subjectTemplate,
-      },
-      notificationEventTemplateFields[input.delivery.eventKey],
-      buildServerNotificationRenderValues({
-        context,
-        eventKey: input.delivery.eventKey,
-        recipient: {
-          displayName: input.delivery.recipientName,
-          userId: input.delivery.recipientUserId,
-        },
-      }),
-    );
+    const rendered = systemOnly
+      ? await renderAuthenticationEmail(
+          input.delivery,
+          context as { firebaseUid: string; recipientEmail: string },
+        )
+      : renderNotificationTemplate(
+          {
+            htmlTemplate: input.delivery.htmlTemplate!,
+            plainTextTemplate: input.delivery.plainTextTemplate!,
+            subjectTemplate: input.delivery.subjectTemplate!,
+          },
+          notificationEventTemplateFields[input.delivery.eventKey],
+          buildServerNotificationRenderValues({
+            context,
+            eventKey: input.delivery.eventKey,
+            recipient: {
+              displayName: input.delivery.recipientName,
+              userId: input.delivery.recipientUserId!,
+            },
+          }),
+        );
     const result = await input.emailSender.send({
       ...rendered,
       to: input.delivery.recipientEmail,
@@ -203,13 +218,15 @@ export async function processNotificationBatch(
     result.processed += 1;
   }
 
-  await Promise.all(occurrences.map((occurrence) =>
-    finalizeClaimedNotificationOccurrence({
-      now: now(),
-      outboxId: occurrence.id,
-      owner,
-    })
-  ));
+  await Promise.all(
+    occurrences.map((occurrence) =>
+      finalizeClaimedNotificationOccurrence({
+        now: now(),
+        outboxId: occurrence.id,
+        owner,
+      }),
+    ),
+  );
   logger.info("notification.batch.processed", result);
   return result;
 }

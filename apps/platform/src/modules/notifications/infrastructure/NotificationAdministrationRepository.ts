@@ -50,7 +50,9 @@ export async function listNotificationCatalogRecords() {
       catalog.is_enabled AS "isEnabled",
       to_char(catalog.updated_at AT TIME ZONE 'UTC',
         'YYYY-MM-DD"T"HH24:MI:SS.US') || 'Z' AS "updatedAt",
-      count(event.id)::integer AS "eventCount"
+      count(event.id)::integer AS "eventCount",
+      count(event.id) FILTER (WHERE event.rule_eligibility = 'CONFIGURABLE')::integer
+        AS "configurableEventCount"
     FROM app_notification_catalogs catalog
     LEFT JOIN app_notification_events event ON event.catalog_id = catalog.id
     GROUP BY catalog.id
@@ -70,6 +72,7 @@ export async function findNotificationCatalogRecord(catalogKey: string) {
         'YYYY-MM-DD"T"HH24:MI:SS.US') || 'Z' AS "updatedAt",
       COALESCE(json_agg(json_build_object(
         'eventKey', event.event_key,
+        'ruleEligibility', event.rule_eligibility,
         'displayName', event.display_name,
         'description', event.description,
         'isEnabled', event.is_enabled
@@ -124,6 +127,7 @@ export async function listNotificationEventRuleRecords(
     SELECT catalog.catalog_key AS "catalogKey",
       catalog.display_name AS "catalogName",
       event.event_key AS "eventKey",
+      event.rule_eligibility AS "ruleEligibility",
       event.display_name AS "eventName",
       event.description AS "eventDescription",
       event.is_enabled AS "eventEnabled",
@@ -158,7 +162,8 @@ export async function listNotificationEventRuleRecords(
     FROM app_notification_events event
     JOIN app_notification_catalogs catalog ON catalog.id = event.catalog_id
     JOIN app_notification_event_rules rule ON rule.event_id = event.id
-    WHERE (${catalogKey}::text IS NULL OR catalog.catalog_key = ${catalogKey})
+    WHERE event.rule_eligibility = 'CONFIGURABLE'
+      AND (${catalogKey}::text IS NULL OR catalog.catalog_key = ${catalogKey})
       AND (${searchPattern}::text IS NULL
         OR event.display_name ILIKE ${searchPattern}
         OR event.event_key ILIKE ${searchPattern}
@@ -186,6 +191,7 @@ export async function findNotificationEventRuleRecord(eventKey: string) {
   const result = await getDatabase().execute(sql`
     SELECT catalog.catalog_key AS "catalogKey",
       event.event_key AS "eventKey",
+      event.rule_eligibility AS "ruleEligibility",
       event.display_name AS "eventName",
       event.description AS "eventDescription",
       event.is_enabled AS "eventEnabled",
@@ -230,6 +236,7 @@ export async function findNotificationEventRuleRecord(eventKey: string) {
     LEFT JOIN app_users target_user ON target_user.id = recipient.recipient_user_id
     LEFT JOIN app_roles target_role ON target_role.id = recipient.recipient_role_id
     WHERE event.event_key = ${eventKey}
+      AND event.rule_eligibility = 'CONFIGURABLE'
     GROUP BY catalog.id, event.id, rule.id
   `);
   return result.rows[0];
@@ -248,6 +255,7 @@ export async function updateNotificationEventRuleRecord(input: {
       FROM app_notification_events event
       WHERE rule.event_id = event.id
         AND event.event_key = ${input.eventKey}
+        AND event.rule_eligibility = 'CONFIGURABLE'
         AND rule.updated_at = ${input.update.expectedUpdatedAt}
       RETURNING rule.id
     `);

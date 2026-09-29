@@ -974,6 +974,13 @@
       "when": 1799712000000,
       "tag": "0138_funding_call_creation_autosave",
       "breakpoints": true
+    },
+    {
+      "idx": 139,
+      "version": "7",
+      "when": 1799798400000,
+      "tag": "0139_authentication_notification_events",
+      "breakpoints": true
     }
   ]
 }

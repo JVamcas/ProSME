@@ -74,7 +74,7 @@ function checkClientBoundary(context) {
 
   const ownsFirebaseBrowserAccess =
     relativeFile === "auth/firebase/client.ts"
-      || relativeFile === "auth/firebase/ClientAuthService.ts";
+      || relativeFile === "platform/auth/firebase/ClientAuthService.ts";
   if (imports.includes("firebase/auth") && !ownsFirebaseBrowserAccess) {
     addFailure(failures, relativeFile, "Firebase browser calls belong in ClientAuthService.ts");
   }

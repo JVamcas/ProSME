@@ -1,7 +1,7 @@
 import "server-only";
 
 import { getFirebaseAdminAuth } from "@/auth/firebase/admin";
-import type { RegistrationValues } from "@/auth/firebase/auth-form.schemas";
+import type { RegistrationValues } from "@/platform/auth/firebase/auth-form.schemas";
 import { provisionApplicant } from "@/db/repositories/UserRepository";
 import { logger } from "@/integrations/monitoring/logger";
 
@@ -36,9 +36,8 @@ export async function createAccount(input: RegistrationValues) {
     } catch (rollbackError) {
       logger.error("registration.firebase_rollback_failed", {
         firebaseUid: firebaseUser.uid,
-        errorCode: rollbackError instanceof Error
-          ? rollbackError.name
-          : "unknown",
+        errorCode:
+          rollbackError instanceof Error ? rollbackError.name : "unknown",
       });
     }
 

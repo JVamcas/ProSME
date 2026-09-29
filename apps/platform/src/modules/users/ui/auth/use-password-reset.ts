@@ -5,12 +5,12 @@ import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 
-import { authClientService } from "@/auth/firebase/ClientAuthService";
+import { authClientService } from "@/platform/auth/firebase/ClientAuthService";
 import {
   passwordResetSchema,
   type PasswordResetValues,
-} from "@/auth/firebase/auth-form.schemas";
-import { getFirebaseErrorMessage } from "@/auth/firebase/errors";
+} from "@/platform/auth/firebase/auth-form.schemas";
+import { getFirebaseErrorMessage } from "@/platform/auth/firebase/errors";
 
 const resetNotice =
   "If an account exists for that email, reset instructions have been sent.";

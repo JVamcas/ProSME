@@ -14,7 +14,6 @@ import {
 } from "./auth-styles";
 import { useRegistration } from "./use-registration";
 
-
 export function RegistrationForm() {
   const form = useRegistration();
 

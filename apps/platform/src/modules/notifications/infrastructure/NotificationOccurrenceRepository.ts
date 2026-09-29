@@ -100,6 +100,7 @@ async function loadEventConfiguration(
       ON role_user.id = targeted_user_role.user_id
       AND role_user.status = 'active'
     WHERE event.event_key = ${eventKey}
+      AND event.rule_eligibility = 'CONFIGURABLE'
   `);
   return result.rows;
 }
@@ -185,8 +186,8 @@ export async function insertNotificationOccurrence<
 
   const bindings = enabledBindings(configuration);
   const excludedRecipientUserIds = new Set(
-    "excludedRecipientUserIds" in input.context
-    && Array.isArray(input.context.excludedRecipientUserIds)
+    "excludedRecipientUserIds" in input.context &&
+      Array.isArray(input.context.excludedRecipientUserIds)
       ? input.context.excludedRecipientUserIds
       : [],
   );

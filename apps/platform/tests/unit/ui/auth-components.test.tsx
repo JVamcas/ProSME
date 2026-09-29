@@ -2,9 +2,9 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
-import { AuthCard } from "@/components/auth/auth-card";
-import { EmailVerificationPanel } from "@/components/auth/email-verification-panel";
-import { RegistrationForm } from "@/components/auth/registration-form";
+import { AuthCard } from "@/modules/users/ui/auth/auth-card";
+import { EmailVerificationPanel } from "@/modules/users/ui/auth/email-verification-panel";
+import { RegistrationForm } from "@/modules/users/ui/auth/registration-form";
 import { createQueryClient } from "@/lib/query-client";
 
 vi.mock("next/navigation", () => ({

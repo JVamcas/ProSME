@@ -3,7 +3,10 @@ import "server-only";
 import { sql } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
-import type { NotificationEventContextByKey, NotificationEventKey } from "../domain/NotificationEvent";
+import type {
+  NotificationEventContextByKey,
+  NotificationEventKey,
+} from "../domain/NotificationEvent";
 import type { NotificationErrorCode } from "../domain/NotificationErrors";
 
 export type ClaimedNotificationOccurrence = {
@@ -49,7 +52,11 @@ export async function claimDueNotificationOccurrences(input: {
             JOIN app_notification_channels channel
               ON channel.id = delivery.channel_id
             WHERE delivery.outbox_id = occurrence.id
-              AND channel.is_enabled = true
+              AND (channel.is_enabled = true OR EXISTS (
+                SELECT 1 FROM app_notification_events protected_event
+                WHERE protected_event.id = occurrence.event_id
+                  AND protected_event.rule_eligibility = 'SYSTEM_ONLY'
+              ))
               AND delivery.status IN ('PENDING', 'PROCESSING')
               AND (
                 delivery.status = 'PROCESSING'
@@ -109,6 +116,7 @@ export async function loadClaimedNotificationDeliveries(input: {
       ON occurrence.id = delivery.outbox_id
     JOIN app_notification_channels channel
       ON channel.id = delivery.channel_id
+    JOIN app_notification_events occurrence_event ON occurrence_event.id = occurrence.event_id
     LEFT JOIN LATERAL (
       SELECT version.id, version.subject_template, version.html_template,
         version.plain_text_template
@@ -119,12 +127,13 @@ export async function loadClaimedNotificationDeliveries(input: {
       JOIN app_notification_events event
         ON event.id = occurrence.event_id
       WHERE target.channel_id = delivery.channel_id
-        AND target.is_enabled = true
+        AND (target.is_enabled = true OR occurrence_event.rule_eligibility = 'SYSTEM_ONLY')
         AND (
           (target.scope = 'EVENT' AND target.event_id = occurrence.event_id)
           OR (target.scope = 'CATALOG' AND target.catalog_id = event.catalog_id)
           OR target.scope = 'GLOBAL'
         )
+        AND (occurrence_event.rule_eligibility = 'CONFIGURABLE' OR target.scope IN ('EVENT', 'CATALOG'))
       ORDER BY CASE target.scope
         WHEN 'EVENT' THEN 1 WHEN 'CATALOG' THEN 2 ELSE 3 END
       LIMIT 1
@@ -132,7 +141,7 @@ export async function loadClaimedNotificationDeliveries(input: {
     WHERE occurrence.id IN (${identifiers})
       AND occurrence.status = 'PROCESSING'
       AND occurrence.locked_by = ${input.owner}
-      AND channel.is_enabled = true
+      AND (channel.is_enabled = true OR occurrence_event.rule_eligibility = 'SYSTEM_ONLY')
       AND delivery.status IN ('PENDING', 'PROCESSING')
       AND (
         delivery.status = 'PROCESSING'
@@ -170,7 +179,7 @@ export async function recordNotificationDeliverySuccess(input: {
   now: Date;
   owner: string;
   providerMessageId: string;
-  templateVersionId: string;
+  templateVersionId: string | null;
 }) {
   await getDatabase().execute(sql`
     UPDATE app_notification_deliveries delivery

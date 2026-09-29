@@ -3,8 +3,8 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 
-import { authClientService } from "@/auth/firebase/ClientAuthService";
-import { getFirebaseErrorMessage } from "@/auth/firebase/errors";
+import { authClientService } from "@/platform/auth/firebase/ClientAuthService";
+import { getFirebaseErrorMessage } from "@/platform/auth/firebase/errors";
 
 const verificationQueryKey = ["auth", "email-verification"] as const;
 

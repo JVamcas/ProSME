@@ -68,6 +68,10 @@ export const notificationEvents = pgTable(
     catalogId: uuid("catalog_id")
       .notNull()
       .references(() => notificationCatalogs.id, { onDelete: "restrict" }),
+    ruleEligibility: text("rule_eligibility")
+      .$type<"CONFIGURABLE" | "SYSTEM_ONLY">()
+      .notNull()
+      .default("CONFIGURABLE"),
     eventKey: text("event_key").notNull(),
     displayName: text("display_name").notNull(),
     description: text("description").notNull(),
@@ -81,6 +85,10 @@ export const notificationEvents = pgTable(
   },
   (table) => [
     uniqueIndex("app_notification_events_key_unique").on(table.eventKey),
+    check(
+      "app_notification_events_rule_eligibility_check",
+      sql`${table.ruleEligibility} in ('CONFIGURABLE', 'SYSTEM_ONLY')`,
+    ),
   ],
 );
 
@@ -324,7 +332,7 @@ export const notificationDeliveries = pgTable(
     ),
     check(
       "app_notification_deliveries_recipient_check",
-      sql`${table.recipientType} in ('APPLICATION_OWNER', 'ASSIGNED_USER', 'FUNDING_CALL_STAKEHOLDER', 'SPECIFIC_USER', 'SPECIFIC_ROLE')`,
+      sql`${table.recipientType} in ('APPLICATION_OWNER', 'ASSIGNED_USER', 'FUNDING_CALL_STAKEHOLDER', 'SPECIFIC_USER', 'SPECIFIC_ROLE', 'ACCOUNT_HOLDER')`,
     ),
     check(
       "app_notification_deliveries_status_check",
