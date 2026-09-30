@@ -44,7 +44,7 @@ export default buildConfig({
       baseDir: path.resolve(dirname),
       importMapFile: path.resolve(dirname, "app/(payload)/cms/importMap.js"),
     },
-    meta: { titleSuffix: " | ProSME CMS" },
+    meta: { titleSuffix: " | SME Fund CMS" },
     user: "cms-principals",
   },
   collections: [

@@ -73,7 +73,7 @@ const fundingCall = {
   slug: "sme-growth-fund-2027",
   status: "LIVE",
   thematicArea: "Business growth",
-  title: "SME Growth Fund 2027",
+  title: "SME Fund Growth Fund 2027",
   totalBudgetEnvelope: "10000000.00",
 };
 

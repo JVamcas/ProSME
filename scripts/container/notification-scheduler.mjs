@@ -131,7 +131,6 @@ async function processNotificationBatch() {
   activeRequest = new AbortController();
   const timeoutSignal = AbortSignal.timeout(configuration.requestTimeoutMs);
   const signal = AbortSignal.any([activeRequest.signal, timeoutSignal]);
-  log("info", "notification.scheduler.batch_started", { runId });
 
   try {
     const response = await fetch(configuration.endpoint, {
@@ -150,11 +149,6 @@ async function processNotificationBatch() {
       throw new Error("Notification processor returned an invalid response.");
     }
     consecutiveFailures = 0;
-    log("info", "notification.scheduler.batch_completed", {
-      durationMs: Date.now() - startedAt,
-      runId,
-      ...body.data,
-    });
   } catch (error) {
     if (stopping && activeRequest.signal.aborted) {
       log("info", "notification.scheduler.batch_interrupted", {

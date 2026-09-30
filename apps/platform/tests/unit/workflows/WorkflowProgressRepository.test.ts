@@ -38,7 +38,7 @@ const rows = [
     taskViewPermission: { view: "workflow.task.assigned.read" },
     startedAt: new Date("2026-09-20T08:00:00Z"),
     terminalOutcome: null,
-    versionMetadata: { code: "SME", name: "SME workflow", description: "" },
+    versionMetadata: { code: "SME Fund", name: "SME Fund workflow", description: "" },
     versionNumber: 2,
   },
   {
@@ -72,7 +72,7 @@ const rows = [
     taskViewPermission: { view: "workflow.task.assigned.read" },
     startedAt: new Date("2026-09-20T08:00:00Z"),
     terminalOutcome: null,
-    versionMetadata: { code: "SME", name: "SME workflow", description: "" },
+    versionMetadata: { code: "SME Fund", name: "SME Fund workflow", description: "" },
     versionNumber: 2,
   },
 ];
@@ -94,7 +94,7 @@ describe("workflow progress projection", () => {
   it("keeps repeated stage runs separate and ordered by stage then iteration", async () => {
     const progress = await readWorkflowProgress("application-id");
 
-    expect(progress?.name).toBe("SME workflow");
+    expect(progress?.name).toBe("SME Fund workflow");
     expect(progress?.versionNumber).toBe(2);
     expect(progress?.stages.map((stage) => [stage.id, stage.iterationNumber, stage.status]))
       .toEqual([

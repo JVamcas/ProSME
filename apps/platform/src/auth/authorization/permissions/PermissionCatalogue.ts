@@ -7,6 +7,7 @@ import {
   type StaticPermissionCode,
 } from "./PermissionCodes";
 import { integrationPermissionCatalogue } from "./IntegrationPermissionCatalogue";
+import { brandingPermissionCatalogue } from "./BrandingPermissionCatalogue";
 import { notificationPermissionCatalogue } from "./NotificationPermissionCatalogue";
 import { workflowTaskPermissionCatalogue } from "./WorkflowTaskPermissionCatalogue";
 import { workflowInstancePermissionCatalogue } from "./WorkflowInstancePermissionCatalogue";
@@ -26,6 +27,7 @@ function define(
 }
 
 const staticPermissionCatalogue: readonly PermissionDefinition[] = [
+  ...brandingPermissionCatalogue,
   define(
     permissionCodes.userRead,
     "Read users",

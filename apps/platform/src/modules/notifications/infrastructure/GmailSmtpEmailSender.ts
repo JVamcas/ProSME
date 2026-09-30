@@ -18,6 +18,7 @@ type SmtpFailure = {
 
 type EmailTransport = {
   sendMail(options: {
+    attachments?: NotificationEmailMessage["attachments"];
     from: { address: string; name: string };
     html: string;
     subject: string;
@@ -102,6 +103,7 @@ export function createGmailSmtpEmailSender(
     async send(message: NotificationEmailMessage) {
       try {
         const result = await transport.sendMail({
+          attachments: message.attachments,
           from: {
             address: configuration.SMTP_FROM_EMAIL,
             name: configuration.SMTP_FROM_NAME,

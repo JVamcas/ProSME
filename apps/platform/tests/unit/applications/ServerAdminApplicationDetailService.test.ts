@@ -26,7 +26,7 @@ beforeEach(() => {
   vi.mocked(getAdminApplicationOverview).mockResolvedValue({
     applicationId,
     applicantName: "Applicant",
-    businessName: "Example SME",
+    businessName: "Example SME Fund",
     businessType: null,
     coFunding: null,
     currentStageName: "Screening",
@@ -41,7 +41,7 @@ beforeEach(() => {
     location: null,
     opportunityTitle: "Growth Grant",
     priority: null,
-    reference: "SME-001",
+    reference: "SME Fund-001",
     requestedAmount: 250000,
     stages: [{
       endedAt: null,
@@ -54,7 +54,7 @@ beforeEach(() => {
   vi.mocked(getApplicationSubmissionSnapshot).mockResolvedValue({
     snapshot: {
       applicant: { displayName: "Lodged Applicant", userId: "private-id" },
-      business: { legalName: "Lodged SME" },
+      business: { legalName: "Lodged SME Fund" },
       documents: [{
         id: "30000000-0000-4000-8000-000000000003",
         originalName: "Business plan.pdf",

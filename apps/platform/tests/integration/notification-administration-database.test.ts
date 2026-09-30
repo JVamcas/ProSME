@@ -39,7 +39,7 @@ async function insertFailedDelivery() {
        correlation_id, context, status, available_at, processed_at)
      SELECT $1, event.id, event.event_key, 'APPLICATION', $1,
        'phase5:delivery', 'phase5-correlation',
-       '{"applicationReference":"SME-2026-005"}'::jsonb,
+       '{"applicationReference":"SME Fund-2026-005"}'::jsonb,
        'FAILED', now(), now()
      FROM app_notification_events event
      WHERE event.event_key = 'application.submitted'`,
@@ -52,7 +52,7 @@ async function insertFailedDelivery() {
        attempt_count, last_error_code, last_error_message, next_attempt_at)
      SELECT $1, $2, channel.id, $3, 'Applicant Five',
        'applicant5@example.test', 'APPLICATION_OWNER',
-       'application.ownerUserId', 'FAILED', 5,
+       'application.ownerUserId', 'DEAD_LETTER', 5,
        'NOTIFICATION_RETRY_EXHAUSTED', 'redacted failure', now()
      FROM app_notification_channels channel WHERE channel.code = 'EMAIL'`,
     [deliveryId, outboxId, userId],
@@ -182,19 +182,24 @@ describeDatabase("notification Phase 5 PostgreSQL administration", () => {
       recipient: "applicant5",
       sortDirection: "desc",
       sortField: "createdAt",
-      status: "FAILED",
+      status: "DEAD_LETTER",
     });
     expect(history.total).toBe(1);
     expect(history.items[0]).toMatchObject({
-      applicationReference: "SME-2026-005",
+      applicationReference: "SME Fund-2026-005",
       deliveryId,
       failureCode: "NOTIFICATION_RETRY_EXHAUSTED",
-      status: "FAILED",
+      status: "DEAD_LETTER",
     });
     expect(history.items[0]).not.toHaveProperty("lastErrorMessage");
     expect(history.items[0]).not.toHaveProperty("htmlTemplate");
     await expect(getNotificationOperationalSummaryRecord(new Date()))
-      .resolves.toMatchObject({ failed: 1, pending: 0, retrying: 0 });
+      .resolves.toMatchObject({
+        deadLetter: 1,
+        failed: 0,
+        pending: 0,
+        retrying: 0,
+      });
   });
 
   it("makes concurrent retries idempotent and audits the successful schedule once", async () => {
@@ -218,7 +223,9 @@ describeDatabase("notification Phase 5 PostgreSQL administration", () => {
       "SCHEDULED",
     ]);
     const state = await query(
-      `SELECT delivery.status, occurrence.status AS "outboxStatus",
+      `SELECT delivery.status, delivery.attempt_count AS "attemptCount",
+        delivery.last_error_code AS "lastErrorCode",
+        occurrence.status AS "outboxStatus",
         (SELECT count(*)::integer FROM app_authorization_audit_entries
          WHERE actor_id = $1 AND action = 'NOTIFICATION_DELIVERY_RETRY_REQUESTED') AS audits
        FROM app_notification_deliveries delivery
@@ -226,6 +233,12 @@ describeDatabase("notification Phase 5 PostgreSQL administration", () => {
        WHERE delivery.id = $2`,
       [actorId, deliveryId],
     );
-    expect(state.rows[0]).toEqual({ audits: 1, outboxStatus: "PENDING", status: "PENDING" });
+    expect(state.rows[0]).toEqual({
+      attemptCount: 0,
+      audits: 1,
+      lastErrorCode: null,
+      outboxStatus: "PENDING",
+      status: "PENDING",
+    });
   });
 });

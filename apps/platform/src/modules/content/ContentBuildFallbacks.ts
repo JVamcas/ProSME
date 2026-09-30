@@ -24,7 +24,7 @@ export const buildHomepage: HomepageContent = {
 };
 
 export const buildHeader: HeaderContent = {
-  announcement: "An initiative under the ProSME Project",
+  announcement: "An initiative under the SME Fund Project",
   applyHref: "/portal/applications/new",
   applyLabel: "Apply Now",
   signInLabel: "Sign in",

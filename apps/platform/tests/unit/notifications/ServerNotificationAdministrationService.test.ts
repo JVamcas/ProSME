@@ -97,7 +97,7 @@ describe("notification administration service", () => {
     vi.mocked(listNotificationDeliveryRecords).mockResolvedValue({
       items: [
         {
-          applicationReference: "SME-1",
+          applicationReference: "SME Fund-1",
           deliveryId: "81000000-0000-4000-8000-000000000001",
           recipientEmail: "applicant@example.com",
         },

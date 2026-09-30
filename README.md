@@ -1,6 +1,6 @@
 # SME Fund Platform
 
-The production foundation for the SME Fund platform under the ProSME Project. The approved Option B experience, backend route handlers, applicant portal, internal operations, and Payload CMS run as one Next.js application.
+The production foundation for the SME Fund platform under the SME Fund Project. The approved Option B experience, backend route handlers, applicant portal, internal operations, and Payload CMS run as one Next.js application.
 
 ## Architecture
 

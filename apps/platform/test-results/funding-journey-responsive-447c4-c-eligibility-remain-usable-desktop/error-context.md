@@ -27,11 +27,11 @@ Call log:
 
 ```yaml
 - banner:
-  - paragraph: An initiative under the ProSME Project|A partnership for a more competitive and inclusive Namibia
+  - paragraph: An initiative under the SME Fund Project|A partnership for a more competitive and inclusive Namibia
   - img "Republic of Namibia"
   - img "GIZ"
   - img "NIPDB"
-  - img "ProSME"
+  - img "SME Fund"
   - link "SME Fund home":
     - /url: /
     - img "SME Fund"

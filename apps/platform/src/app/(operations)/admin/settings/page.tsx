@@ -6,6 +6,9 @@ import { can } from "@/auth/authorization/policy";
 
 export default async function SettingsPage() {
   const user = await getCurrentUser();
+  if (user && can(user, permissionCodes.brandingRead)) {
+    redirect("/admin/settings/branding");
+  }
   if (user && can(user, permissionCodes.workflowFormRead)) {
     redirect("/admin/settings/forms");
   }

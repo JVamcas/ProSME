@@ -12,9 +12,9 @@ import {
 const applicationContext = {
   applicationId: "10000000-0000-4000-8000-000000000001",
   applicationOwnerUserId: "10000000-0000-4000-8000-000000000002",
-  applicationReference: "SME-2026-001",
-  correlationId: "submission:SME-2026-001",
-  fundingOpportunityTitle: "SME Growth Fund",
+  applicationReference: "SME Fund-2026-001",
+  correlationId: "submission:SME Fund-2026-001",
+  fundingOpportunityTitle: "SME Fund Growth Fund",
   ownerDisplayName: "Applicant One",
   ownerEmail: "applicant@example.test",
   sourceIdempotencyKey: "submission:10000000-0000-4000-8000-000000000001",
@@ -24,7 +24,7 @@ const applicationContext = {
 
 const taskContext = {
   applicationId: "20000000-0000-4000-8000-000000000001",
-  applicationReference: "SME-2026-002",
+  applicationReference: "SME Fund-2026-002",
   assignedAt: "2026-09-27T09:00:00.000Z",
   assignees: [{
     displayName: "Reviewer One",
@@ -32,7 +32,7 @@ const taskContext = {
     userId: "20000000-0000-4000-8000-000000000002",
   }],
   correlationId: "activation:20000000-0000-4000-8000-000000000003",
-  fundingOpportunityTitle: "SME Growth Fund",
+  fundingOpportunityTitle: "SME Fund Growth Fund",
   sourceIdempotencyKey: "activation:20000000-0000-4000-8000-000000000003",
   stageInstanceId: "20000000-0000-4000-8000-000000000003",
   stageName: "Technical review",
@@ -58,10 +58,10 @@ const assignees = [{
 
 const informationRequestContext = {
   applicationId: "30000000-0000-4000-8000-000000000001",
-  applicationReference: "SME-2026-003",
+  applicationReference: "SME Fund-2026-003",
   assignees,
   correlationId: "rfi:30000000-0000-4000-8000-000000000002",
-  fundingOpportunityTitle: "SME Growth Fund",
+  fundingOpportunityTitle: "SME Fund Growth Fund",
   owner,
   question: "Please provide the latest management accounts.",
   requestInformationId: "30000000-0000-4000-8000-000000000002",

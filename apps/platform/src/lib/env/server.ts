@@ -23,6 +23,7 @@ const serverEnvironmentSchema = z.object({
     .trim()
     .min(3, "GCS_DOCUMENTS_BUCKET is required")
     .optional(),
+  GCS_ROOT_PREFIX: z.enum(["dev", "prod"]),
   SESSION_COOKIE_DAYS: z.coerce.number().int().min(1).max(14).default(5),
   PUBLIC_SITE_URL: z.url().default("http://localhost:3008"),
   APP_PUBLIC_URL: z.url().default("http://localhost:3008"),

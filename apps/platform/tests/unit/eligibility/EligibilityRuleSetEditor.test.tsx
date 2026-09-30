@@ -41,9 +41,9 @@ function builder(status: "DRAFT" | "PUBLISHED") {
       code: "SME_STANDARD",
       createdAt: timestamp,
       createdBy: "70000000-0000-4000-8000-000000000009",
-      description: "Standard SME eligibility",
+      description: "Standard SME Fund eligibility",
       id: ruleSetId,
-      name: "SME Standard",
+      name: "SME Fund Standard",
       updatedAt: timestamp,
     },
     conditionFields: [{
@@ -255,7 +255,7 @@ describe("EligibilityRuleSetEditor", () => {
           canRetire={false}
           canUpdate
           id={ruleSetId}
-          initialName="SME Standard"
+          initialName="SME Fund Standard"
           initialStatus="DRAFT"
           initialVersionNumber={1}
         />
@@ -267,7 +267,7 @@ describe("EligibilityRuleSetEditor", () => {
     )?.click());
 
     expect(document.body.textContent).toContain("Publish eligibility ruleset");
-    expect(document.body.textContent).toContain("Publish SME Standard version 1?");
+    expect(document.body.textContent).toContain("Publish SME Fund Standard version 1?");
   });
 
   it("keeps the add-rule action visible while an unbound draft is empty", async () => {

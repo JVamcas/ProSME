@@ -1,13 +1,17 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useRef } from "react";
-import { FormProvider, useForm, useWatch } from "react-hook-form";
+import { useEffect, useRef, useState } from "react";
+import {
+  FormProvider,
+  type FieldPath,
+  useForm,
+  useWatch,
+} from "react-hook-form";
 
 import { GeneralButton } from "@/components/ui/button";
 import { DraggableDialog } from "@/components/ui/draggable-dialog";
-import { CheckboxField } from "@/components/ui/form-field";
-import { FormInput, FormSelect } from "@/components/ui/form-fields";
+import { StepProgress } from "@/components/ui/step-progress";
 import {
   isWorkflowStageDecisionAction,
   type WorkflowActionDefinition,
@@ -17,8 +21,14 @@ import type {
   WorkflowEditorView,
   WorkflowStageInput,
 } from "@/modules/workflows/domain/definitions/WorkflowTypes";
+import type { WorkflowTransitionDefinition } from "@/modules/workflows/domain/transitions/WorkflowTransitionDefinition";
 import { useSaveWorkflowGraph } from "@/modules/workflows/WorkflowHooks";
-import { WorkflowActionConfigurationFields } from "./WorkflowActionConfigurationFields";
+import { WorkflowActionBehaviourStep } from "./WorkflowActionBehaviourStep";
+import { WorkflowActionDetailsStep } from "./WorkflowActionDetailsStep";
+import {
+  replaceWorkflowActionRoutes,
+  workflowActionRoutes,
+} from "./WorkflowActionEditorRoutes";
 import {
   toWorkflowActionDefinition,
   workflowActionFormDefaults,
@@ -26,8 +36,9 @@ import {
 import {
   type WorkflowActionFormValues,
   workflowActionFormSchema,
-  workflowActionTypeItems,
 } from "./WorkflowActionFormSchema";
+import { WorkflowActionReviewStep } from "./WorkflowActionReviewStep";
+import { WorkflowActionRoutingStep } from "./WorkflowActionRoutingStep";
 
 type Props = {
   action?: WorkflowActionDefinition;
@@ -36,6 +47,23 @@ type Props = {
   onClose: () => void;
   stage: WorkflowStageInput;
 };
+
+const actionEditorSteps = [
+  { id: "details", label: "Action details" },
+  { id: "behaviour", label: "Behaviour" },
+  { id: "routing", label: "Routing" },
+  { id: "review", label: "Review" },
+] as const;
+
+type ActionEditorStep = (typeof actionEditorSteps)[number]["id"];
+
+const detailFields: FieldPath<WorkflowActionFormValues>[] = [
+  "stableKey",
+  "label",
+  "actionType",
+  "displayOrder",
+  "enabled",
+];
 
 export function WorkflowActionDialog({
   action,
@@ -58,11 +86,24 @@ export function WorkflowActionDialog({
     ),
     resolver: zodResolver(workflowActionFormSchema),
   });
+  const [currentStep, setCurrentStep] = useState<ActionEditorStep>("details");
+  const [completedSteps, setCompletedSteps] = useState<ActionEditorStep[]>([]);
+  const [routes, setRoutes] = useState<WorkflowTransitionDefinition[]>(() =>
+    action
+      ? workflowActionRoutes(
+          editor.graph.transitions,
+          stage.stableKey,
+          action.stableKey,
+        )
+      : [],
+  );
+  const [routeError, setRouteError] = useState<string | null>(null);
   const actionType = useWatch({ control: form.control, name: "actionType" });
   const taskStableKeys = useWatch({
     control: form.control,
     name: "taskStableKeys",
   });
+  const stableKey = useWatch({ control: form.control, name: "stableKey" });
   const deferTargetType = useWatch({
     control: form.control,
     name: "deferTargetType",
@@ -77,24 +118,26 @@ export function WorkflowActionDialog({
   });
   const previousActionType = useRef(actionType);
   const previousEscalationTargetType = useRef(escalationTargetType);
-  const decisionTask = stage.tasks.find(
-    (task) => task.taskType === "STAGE_DECISION",
+  const currentIndex = actionEditorSteps.findIndex(
+    (step) => step.id === currentStep,
   );
-  const isDecisionAction = isWorkflowStageDecisionAction(actionType);
 
   useEffect(() => {
     if (previousActionType.current === actionType) return;
     previousActionType.current = actionType;
+    const decisionTask = stage.tasks.find(
+      (task) => task.taskType === "STAGE_DECISION",
+    );
     form.setValue(
       "taskStableKeys",
-      isDecisionAction
+      isWorkflowStageDecisionAction(actionType)
         ? decisionTask
           ? [decisionTask.stableKey]
           : []
         : stage.tasks.map((task) => task.stableKey),
       { shouldDirty: true, shouldValidate: true },
     );
-  }, [actionType, decisionTask, form, isDecisionAction, stage.tasks]);
+  }, [actionType, form, stage.tasks]);
 
   useEffect(() => {
     if (previousEscalationTargetType.current === escalationTargetType) return;
@@ -102,29 +145,80 @@ export function WorkflowActionDialog({
     form.setValue("escalationTargetId", "", { shouldValidate: true });
   }, [escalationTargetType, form]);
 
-  const submit = form.handleSubmit(async (values) => {
+  useEffect(() => {
+    if (actionType !== "REJECT" || routes.length === 0) return;
+    form.setValue(
+      "rejectionOutcomeType",
+      routes[0].terminalOutcome ? "TERMINAL" : "TRANSITION",
+      { shouldValidate: true },
+    );
+  }, [actionType, form, routes]);
+
+  async function validateDetails() {
+    const valid = await form.trigger(detailFields, { shouldFocus: true });
+    const values = form.getValues();
     const duplicateKey = stage.actions.some(
       (item) =>
-        item.stableKey === values.stableKey &&
-        item.stableKey !== action?.stableKey,
+        item.stableKey === values.stableKey
+        && item.stableKey !== action?.stableKey,
+    );
+    const duplicateOrder = stage.actions.some(
+      (item) =>
+        item.displayOrder === values.displayOrder
+        && item.stableKey !== action?.stableKey,
     );
     if (duplicateKey) {
       form.setError("stableKey", {
         message: "Action key must be unique in this stage.",
       });
-      return;
     }
-    const duplicateOrder = stage.actions.some(
-      (item) =>
-        item.displayOrder === values.displayOrder &&
-        item.stableKey !== action?.stableKey,
-    );
     if (duplicateOrder) {
       form.setError("displayOrder", {
         message: "Display order must be unique in this stage.",
       });
+    }
+    return valid && !duplicateKey && !duplicateOrder;
+  }
+
+  async function validateCurrentStep() {
+    if (currentStep === "details") return validateDetails();
+    if (currentStep === "behaviour") {
+      return form.trigger(undefined, { shouldFocus: true });
+    }
+    return true;
+  }
+
+  async function continueToNextStep() {
+    const valid = await validateCurrentStep();
+    if (!valid || currentIndex === actionEditorSteps.length - 1) return;
+    setCompletedSteps((steps) =>
+      steps.includes(currentStep) ? steps : [...steps, currentStep],
+    );
+    setCurrentStep(actionEditorSteps[currentIndex + 1].id);
+  }
+
+  async function changeStep(step: ActionEditorStep, index: number) {
+    if (index <= currentIndex || completedSteps.includes(step)) {
+      setCurrentStep(step);
       return;
     }
+    if (index === currentIndex + 1) await continueToNextStep();
+  }
+
+  const submit = form.handleSubmit(async (values) => {
+    if (currentStep !== "review") return;
+    setRouteError(null);
+    if (actionType === "REJECT" && routes.length > 1) {
+      const targetTypes = new Set(
+        routes.map((route) => route.terminalOutcome ? "TERMINAL" : "STAGE"),
+      );
+      if (targetTypes.size > 1) {
+        setRouteError("Rejection routes must all use the same destination type.");
+        setCurrentStep("routing");
+        return;
+      }
+    }
+
     const nextAction = toWorkflowActionDefinition(
       values,
       action?.id,
@@ -144,9 +238,10 @@ export function WorkflowActionDialog({
                   )
                 : [...item.actions, nextAction],
               tasks: item.tasks.map((task) => {
-                const previousKey = action?.stableKey;
                 const actionKeys = task.actionKeys.filter(
-                  (key) => key !== previousKey && key !== nextAction.stableKey,
+                  (key) =>
+                    key !== action?.stableKey
+                    && key !== nextAction.stableKey,
                 );
                 return {
                   ...task,
@@ -158,16 +253,13 @@ export function WorkflowActionDialog({
             }
           : item,
       ),
-      transitions: action
-        ? editor.graph.transitions.map((transition) => ({
-            ...transition,
-            actionKey:
-              transition.sourceStageKey === stage.stableKey &&
-              transition.actionKey === action.stableKey
-                ? nextAction.stableKey
-                : transition.actionKey,
-          }))
-        : editor.graph.transitions,
+      transitions: replaceWorkflowActionRoutes(
+        editor.graph.transitions,
+        stage.stableKey,
+        action?.stableKey,
+        nextAction.stableKey,
+        routes,
+      ),
     };
     await mutation.mutateAsync(
       reconcileWorkflowActionBindings(editor.graph, nextGraph),
@@ -175,107 +267,115 @@ export function WorkflowActionDialog({
     onClose();
   });
 
+  const actionPreview = currentStep === "review"
+    ? toWorkflowActionDefinition(
+        form.getValues(),
+        action?.id,
+        action?.condition,
+      )
+    : null;
+
   return (
     <DraggableDialog
       isOpen={isOpen}
       onClose={onClose}
       size="2xl"
-      title={action ? "Edit workflow action" : "Add workflow action"}
+      title={action ? "Edit task action" : "Add task action"}
     >
       <FormProvider {...form}>
-        <form className="grid gap-4 sm:grid-cols-2" onSubmit={submit}>
-          <FormInput
-            label="Stable key"
-            name="stableKey"
-            placeholder="APPROVE_REVIEW"
-            required
+        <form onSubmit={submit}>
+          <StepProgress
+            ariaLabel="Task action configuration"
+            className="border-b border-brand-navy/10 pb-5"
+            completedStepIds={completedSteps}
+            currentStepId={currentStep}
+            disabled={mutation.isPending}
+            hideLabelsOnMobile
+            onStepChange={changeStep}
+            steps={actionEditorSteps.map((step, index) => ({
+              ...step,
+              disabled:
+                index > currentIndex + 1
+                && !completedSteps.includes(step.id),
+            }))}
           />
-          <FormInput
-            label="Button label"
-            name="label"
-            placeholder="Approve review"
-            required
-          />
-          <FormSelect
-            items={workflowActionTypeItems}
-            label="Action type"
-            name="actionType"
-            required
-          />
-          <FormInput
-            label="Display order"
-            min={1}
-            name="displayOrder"
-            registrationOptions={{ valueAsNumber: true }}
-            required
-            type="number"
-          />
-          {isDecisionAction ? (
-            <div className="sm:col-span-2">
-              <p className="text-sm font-medium text-brand-navy">
-                Workflow task
-              </p>
-              <p className="mt-2 rounded-xl border border-brand-navy/10 bg-brand-navy/[0.03] px-4 py-3 text-sm text-brand-navy/70">
-                {decisionTask
-                  ? `Automatically assigned to ${decisionTask.name}.`
-                  : "Add the stage-decision task to assign this action automatically."}
-              </p>
-            </div>
-          ) : (
-            <FormSelect
-              containerClassName="sm:col-span-2"
-              disabled={!action}
-              infoTooltip={
-                action
-                  ? "Select every task in which this common action should appear."
-                  : "New common actions are assigned to all tasks when first saved. Edit the action afterward to remove it from individual tasks."
-              }
-              items={stage.tasks.map((task) => ({
-                label: task.name,
-                value: task.stableKey,
-              }))}
-              label="Available on tasks"
-              multiple
-              name="taskStableKeys"
-              onMultipleChange={(values) =>
-                form.setValue("taskStableKeys", values, {
-                  shouldDirty: true,
-                  shouldValidate: true,
-                })
-              }
-              placeholder={
-                stage.tasks.length
-                  ? "Select tasks"
-                  : "Common actions will be added when tasks are created"
-              }
-              value={taskStableKeys}
-            />
-          )}
-          <CheckboxField label="Enabled" name="enabled" />
-          {actionType !== "REJECT" ? (
-            <CheckboxField
-              label="Require a reason code"
-              name="reasonCodeRequired"
-            />
-          ) : null}
-          <WorkflowActionConfigurationFields
-            actionType={actionType}
-            assignmentOptions={
-              editor.assignmentOptions ?? { roles: [], users: [] }
-            }
-            deferTargetType={deferTargetType}
-            escalationTargetType={escalationTargetType}
-            rejectionOutcomeType={rejectionOutcomeType}
-          />
-          {mutation.error ? (
-            <p className="sm:col-span-2 text-sm text-red-700" role="alert">
-              {mutation.error.message}
+          <div className="min-h-80 py-6">
+            {currentStep === "details" ? <WorkflowActionDetailsStep /> : null}
+            {currentStep === "behaviour" ? (
+              <WorkflowActionBehaviourStep
+                actionExists={Boolean(action)}
+                actionType={actionType}
+                assignmentOptions={
+                  editor.assignmentOptions ?? { roles: [], users: [] }
+                }
+                deferTargetType={deferTargetType}
+                escalationTargetType={escalationTargetType}
+                onTaskChange={(values) =>
+                  form.setValue("taskStableKeys", values, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  })
+                }
+                rejectionOutcomeType={rejectionOutcomeType}
+                stage={stage}
+                taskStableKeys={taskStableKeys}
+              />
+            ) : null}
+            {currentStep === "routing" ? (
+              <WorkflowActionRoutingStep
+                actionKey={stableKey}
+                actionType={actionType}
+                editor={editor}
+                onChange={setRoutes}
+                onRejectionOutcomeChange={(value) =>
+                  form.setValue("rejectionOutcomeType", value, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  })
+                }
+                routes={routes}
+                stage={stage}
+              />
+            ) : null}
+            {currentStep === "review" && actionPreview ? (
+              <WorkflowActionReviewStep
+                action={actionPreview}
+                editor={editor}
+                routes={routes}
+                stage={stage}
+                taskStableKeys={taskStableKeys}
+              />
+            ) : null}
+          </div>
+          {routeError || mutation.error ? (
+            <p className="mb-4 text-sm text-red-700" role="alert">
+              {routeError ?? mutation.error?.message}
             </p>
           ) : null}
-          <div className="flex justify-end sm:col-span-2">
-            <GeneralButton disabled={mutation.isPending} type="submit">
-              {mutation.isPending ? "Saving…" : "Save action"}
+          <div className="flex items-center justify-between border-t border-brand-navy/10 pt-4">
+            <GeneralButton
+              disabled={currentIndex === 0 || mutation.isPending}
+              onClick={() =>
+                setCurrentStep(actionEditorSteps[currentIndex - 1].id)
+              }
+              type="button"
+              variant="outline"
+            >
+              Back
             </GeneralButton>
+            {currentStep === "review" ? (
+              <GeneralButton disabled={mutation.isPending} type="submit">
+                {mutation.isPending ? "Saving…" : "Save action"}
+              </GeneralButton>
+            ) : (
+              <GeneralButton
+                disabled={mutation.isPending}
+                onClick={() => void continueToNextStep()}
+                type="button"
+              >
+                Continue
+              </GeneralButton>
+            )}
           </div>
         </form>
       </FormProvider>

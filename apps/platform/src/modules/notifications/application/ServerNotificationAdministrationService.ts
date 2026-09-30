@@ -216,7 +216,7 @@ export async function retryNotificationDelivery(
   }
   if (result.outcome === "INELIGIBLE") {
     throw new ResourceConflictError(
-      "Only failed notification deliveries can be retried.",
+      "Only failed or dead-letter notification deliveries can be retried.",
     );
   }
   return result;

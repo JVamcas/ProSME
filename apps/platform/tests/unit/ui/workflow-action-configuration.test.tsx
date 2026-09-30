@@ -52,6 +52,6 @@ describe("workflow action configuration UI", () => {
       <ActionConfigurationForm actionType="REJECT" />,
     );
     expect(markup).toContain("Action-specific configuration");
-    expect(markup).toContain("Reason codes");
+    expect(markup).toContain("Rejection outcome");
   });
 });

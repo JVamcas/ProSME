@@ -42,12 +42,21 @@ describe("Gmail SMTP notification sender", () => {
       { sendMail },
     );
     await expect(sender.send({
+      attachments: [{
+        cid: "sme-fund-branding-logo",
+        content: Buffer.from("logo"),
+        contentType: "image/png",
+        filename: "sme-fund-logo.png",
+      }],
       html: "<p>Hello</p>",
       plainText: "Hello",
       subject: "Status",
       to: "recipient@example.com",
     })).resolves.toEqual({ providerMessageId: "gmail-message-1" });
     expect(sendMail).toHaveBeenCalledWith(expect.objectContaining({
+      attachments: [expect.objectContaining({
+        cid: "sme-fund-branding-logo",
+      })],
       html: "<p>Hello</p>",
       text: "Hello",
       to: "recipient@example.com",

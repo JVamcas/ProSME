@@ -45,6 +45,7 @@ services:
   app:
     environment:
       GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/gcp-adc.json
+      GCS_ROOT_PREFIX: ${GCS_ROOT_PREFIX:?GCS_ROOT_PREFIX must be set to dev or prod}
     volumes:
       - ${HOME}/.config/gcloud/application_default_credentials.json:/run/secrets/gcp-adc.json:ro
 

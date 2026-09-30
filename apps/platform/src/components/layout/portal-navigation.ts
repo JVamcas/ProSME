@@ -17,6 +17,7 @@ import {
   Pipette,
   BookOpenText,
   RotateCcw,
+  ImageIcon,
 } from "lucide-react";
 
 import { permissionCodes } from "@/auth/authorization/permissions";
@@ -180,8 +181,21 @@ export const operationsPortalRoutes: readonly PortalRoute[] = [
       permissionCodes.notificationTemplatePublish,
       permissionCodes.notificationDeliveryRead,
       permissionCodes.notificationDeliveryRetry,
+      permissionCodes.brandingRead,
+      permissionCodes.brandingManage,
     ],
     children: [
+      {
+        id: "admin-settings-branding",
+        href: "/admin/settings/branding",
+        label: "Branding",
+        icon: ImageIcon,
+        space: "operations",
+        requiredAnyPermissions: [
+          permissionCodes.brandingRead,
+          permissionCodes.brandingManage,
+        ],
+      },
       {
         id: "admin-settings-forms",
         href: "/admin/settings/forms",

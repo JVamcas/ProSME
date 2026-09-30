@@ -201,6 +201,7 @@ describeDatabase("notification PostgreSQL concurrent claiming", () => {
     );
     await recordNotificationDeliveryFailure({
       code: "NOTIFICATION_TEMPLATE_UNAVAILABLE",
+      deadLetter: false,
       deliveryId: delivery.rows[0].id,
       nextAttemptAt: now,
       now,

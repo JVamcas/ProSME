@@ -2,6 +2,7 @@ export * from "./authorization";
 export * from "./audit";
 export * from "@/modules/applications/infrastructure/application.schema";
 export * from "@/modules/applications/infrastructure/application-document.schema";
+export * from "@/modules/branding/infrastructure/branding.schema";
 export * from "@/modules/conditions/infrastructure/condition.schema";
 export * from "@/modules/eligibility/infrastructure/eligibility-ruleset.schema";
 export * from "@/modules/eligibility/infrastructure/eligibility-question.schema";

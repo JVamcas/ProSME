@@ -11,11 +11,13 @@ RUN --mount=type=cache,id=prosme-npm,target=/root/.npm,sharing=locked \
 
 FROM dependencies AS builder
 
+ARG GCS_ROOT_PREFIX
+
 COPY apps/platform apps/platform
 COPY --chmod=755 scripts/container/build.sh scripts/container/build.sh
 
 RUN --mount=type=cache,id=prosme-next,target=/workspace/apps/platform/.next/cache,sharing=locked \
-    scripts/container/build.sh
+    GCS_ROOT_PREFIX="${GCS_ROOT_PREFIX}" scripts/container/build.sh
 
 FROM dependencies AS migrations
 

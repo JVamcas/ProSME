@@ -18,8 +18,8 @@ describe("basic condition operators", () => {
   });
 
   it("compares JSON structures independently of object key order", () => {
-    const left = { amount: 100, attributes: ["SME", true] };
-    const right = { attributes: ["SME", true], amount: 100 };
+    const left = { amount: 100, attributes: ["SME Fund", true] };
+    const right = { attributes: ["SME Fund", true], amount: 100 };
 
     expect(evaluateBasicOperator(basicOperators.EQUALS, left, right)).toBe(true);
     expect(

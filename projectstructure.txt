@@ -68,7 +68,7 @@
 │       ├── postcss.config.mjs
 │       ├── public
 │       │   ├── brand
-│       │   │   ├── ProSME-logo-with-tagline.svg
+│       │   │   ├── SME Fund-logo-with-tagline.svg
 │       │   │   ├── german-cooperation-namibia.jpg
 │       │   │   ├── giz-logo.svg
 │       │   │   ├── nipdb-logo.png
@@ -976,7 +976,7 @@
 │   │   └── WORKFLOW_CONTRACT.md
 │   ├── source-material
 │   │   ├── ANNEXURE B_260826_103044.pdf
-│   │   ├── ProSME Website Development Feedback Document.docx
+│   │   ├── SME Fund Website Development Feedback Document.docx
 │   │   ├── SME Fund Brand Identity (1).pdf
 │   │   ├── SME Fund Iniatiative Background (1).docx
 │   │   ├── SME Fund Logo - Vector File.ai

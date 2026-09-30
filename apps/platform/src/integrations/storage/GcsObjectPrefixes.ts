@@ -1,5 +1,5 @@
 export const gcsObjectPrefixes = {
   cms: "cms",
   users: "users",
-  utility: "utility",
+  utilities: "utilities",
 } as const;

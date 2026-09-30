@@ -8,7 +8,7 @@ import {
 import type { ApplicationSummary } from "@/modules/applications/ApplicationTypes";
 
 const application: ApplicationSummary = {
-  businessName: "Example SME",
+  businessName: "Example SME Fund",
   canWithdraw: false,
   createdAt: "2026-09-18T08:00:00.000Z",
   currentSection: "declarations",
@@ -22,7 +22,7 @@ const application: ApplicationSummary = {
     label: "Under review",
     status: "UNDER_REVIEW",
   },
-  reference: "SME-2026-00482",
+  reference: "SME Fund-2026-00482",
   status: "submitted",
   submittedAt: "2026-09-18T08:00:00.000Z",
   updatedAt: "2026-09-22T08:00:00.000Z",

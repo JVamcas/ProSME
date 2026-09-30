@@ -33,6 +33,7 @@ describe("workflow stage action table", () => {
       root.render(
         <WorkflowStageActionTable
           canEdit
+          graph={referenceWorkflow}
           onAdd={vi.fn()}
           onDelete={vi.fn()}
           onEdit={vi.fn()}
@@ -42,10 +43,13 @@ describe("workflow stage action table", () => {
     });
 
     expect(container.querySelector("thead")?.textContent).toContain("Task");
+    expect(container.querySelector("thead")?.textContent).toContain("Routing");
     const rows = container.querySelectorAll("tbody tr");
     expect(rows[0]?.textContent).toContain("Pre-screening checklist");
     expect(rows[0]?.textContent).toContain("Second review");
+    expect(rows[0]?.textContent).toContain("Completeness screening");
     expect(rows[1]?.textContent).toContain("Unassigned");
+    expect(rows[1]?.textContent).toContain("No stage change");
 
     await act(async () => root.unmount());
   });

@@ -14,6 +14,7 @@ type Props = {
   assignmentOptions: WorkflowAssignmentOptions;
   deferTargetType: "DATE" | "FUNDING_CALL";
   escalationTargetType: "ROLE" | "USER";
+  hideRejectionOutcomeSelector?: boolean;
   rejectionOutcomeType: "TERMINAL" | "TRANSITION";
 };
 
@@ -173,6 +174,7 @@ function ActionConfigurationFields({
   assignmentOptions,
   deferTargetType,
   escalationTargetType,
+  hideRejectionOutcomeSelector = false,
   rejectionOutcomeType,
 }: Props) {
   switch (actionType) {
@@ -186,16 +188,18 @@ function ActionConfigurationFields({
             name="reversibleActionKey"
             placeholder="REOPEN_REJECTION"
           />
-          <FormSelect
-            containerClassName="sm:col-span-2"
-            items={[
-              { label: "Terminal rejection", value: "TERMINAL" },
-              { label: "Follow configured transition", value: "TRANSITION" },
-            ]}
-            label="Rejection outcome"
-            name="rejectionOutcomeType"
-            required
-          />
+          {hideRejectionOutcomeSelector ? null : (
+            <FormSelect
+              containerClassName="sm:col-span-2"
+              items={[
+                { label: "Terminal rejection", value: "TERMINAL" },
+                { label: "Follow configured transition", value: "TRANSITION" },
+              ]}
+              label="Rejection outcome"
+              name="rejectionOutcomeType"
+              required
+            />
+          )}
           {rejectionOutcomeType === "TERMINAL" ? (
             <>
               <CheckboxField

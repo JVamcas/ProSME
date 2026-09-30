@@ -95,8 +95,8 @@ afterAll(async () => {
     });
     const created = await createNewEligibilityRuleSet(actor, {
       code: `RULES_${randomUUID().replaceAll("-", "").toUpperCase()}`,
-      description: "Reusable SME eligibility rules.",
-      name: "SME eligibility",
+      description: "Reusable SME Fund eligibility rules.",
+      name: "SME Fund eligibility",
     });
     expect(created.version).toMatchObject({
       status: "DRAFT",

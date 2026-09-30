@@ -4,6 +4,7 @@ export const notificationOutboxStates = [
   "PARTIALLY_SENT",
   "SENT",
   "FAILED",
+  "DEAD_LETTER",
 ] as const;
 
 export const notificationDeliveryStates = [
@@ -11,10 +12,10 @@ export const notificationDeliveryStates = [
   "PROCESSING",
   "SENT",
   "FAILED",
+  "DEAD_LETTER",
 ] as const;
 
 export type NotificationOutboxState =
   (typeof notificationOutboxStates)[number];
 export type NotificationDeliveryState =
   (typeof notificationDeliveryStates)[number];
-

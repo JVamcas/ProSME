@@ -164,7 +164,7 @@ describe("application form editor", () => {
     });
     mocks.submit.mockResolvedValue({
       applicationId,
-      reference: "SME-001",
+      reference: "SME Fund-001",
       submittedAt: "2026-09-23T08:00:00.000Z",
       workflowInstanceId: "workflow-1",
       workflowTemplateVersionId: "template-1",
@@ -196,7 +196,7 @@ describe("application form editor", () => {
       readinessToken: "ready-token",
     });
     expect(container.textContent).toContain("Application submitted");
-    expect(container.textContent).toContain("SME-001");
+    expect(container.textContent).toContain("SME Fund-001");
 
     await act(async () => root.unmount());
   });

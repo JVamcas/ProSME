@@ -68,7 +68,7 @@ describe("workflow progress authorization", () => {
     vi.mocked(readWorkflowProgress).mockResolvedValue({
       completedAt: null,
       id: "workflow-one",
-      name: "SME workflow",
+      name: "SME Fund workflow",
       stages: [{
         activatedAt: "2026-09-20T08:00:00.000Z",
         completedAt: null,

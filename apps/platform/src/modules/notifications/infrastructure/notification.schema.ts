@@ -217,7 +217,14 @@ export const notificationOutbox = pgTable(
       >()
       .notNull(),
     status: text("status")
-      .$type<"PENDING" | "PROCESSING" | "PARTIALLY_SENT" | "SENT" | "FAILED">()
+      .$type<
+        | "PENDING"
+        | "PROCESSING"
+        | "PARTIALLY_SENT"
+        | "SENT"
+        | "FAILED"
+        | "DEAD_LETTER"
+      >()
       .notNull()
       .default("PENDING"),
     availableAt: timestamp("available_at", { withTimezone: true })
@@ -258,7 +265,7 @@ export const notificationOutbox = pgTable(
     ),
     check(
       "app_notification_outbox_status_check",
-      sql`${table.status} in ('PENDING', 'PROCESSING', 'PARTIALLY_SENT', 'SENT', 'FAILED')`,
+      sql`${table.status} in ('PENDING', 'PROCESSING', 'PARTIALLY_SENT', 'SENT', 'FAILED', 'DEAD_LETTER')`,
     ),
     check(
       "app_notification_outbox_attempt_count_check",
@@ -289,7 +296,7 @@ export const notificationDeliveries = pgTable(
     recipientType: text("recipient_type").notNull(),
     resolutionPath: text("resolution_path").notNull(),
     status: text("status")
-      .$type<"PENDING" | "PROCESSING" | "SENT" | "FAILED">()
+      .$type<"PENDING" | "PROCESSING" | "SENT" | "FAILED" | "DEAD_LETTER">()
       .notNull()
       .default("PENDING"),
     attemptCount: integer("attempt_count").notNull().default(0),
@@ -336,7 +343,7 @@ export const notificationDeliveries = pgTable(
     ),
     check(
       "app_notification_deliveries_status_check",
-      sql`${table.status} in ('PENDING', 'PROCESSING', 'SENT', 'FAILED')`,
+      sql`${table.status} in ('PENDING', 'PROCESSING', 'SENT', 'FAILED', 'DEAD_LETTER')`,
     ),
     check(
       "app_notification_deliveries_attempt_count_check",

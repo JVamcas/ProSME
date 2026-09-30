@@ -29,7 +29,7 @@ export function ActionMenu({
         <MoreHorizontal aria-hidden="true" className="size-5" />
       </Button>
       <Popover
-        className="z-50 min-w-44 rounded-xl border border-brand-navy/15 bg-brand-white p-1 shadow-lg outline-none"
+        className="z-50 min-w-44 rounded-b-xl border border-brand-navy/15 bg-brand-white p-1 shadow-lg outline-none"
         offset={4}
         placement="bottom end"
       >

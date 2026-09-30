@@ -181,7 +181,7 @@ describe("workflow action outcome service", () => {
         ...target.stage,
         application: {
           id: "b0000000-0000-4000-8000-000000000001",
-          reference: "SME-001",
+          reference: "SME Fund-001",
           rowVersion: 4,
           status: "submitted",
         },

@@ -8459,7 +8459,7 @@
           "type": "varchar",
           "primaryKey": false,
           "notNull": false,
-          "default": "'An initiative under the ProSME Project'"
+          "default": "'An initiative under the SME Fund Project'"
         },
         "sign_in_label": {
           "name": "sign_in_label",
@@ -8665,7 +8665,7 @@
           "type": "varchar",
           "primaryKey": false,
           "notNull": false,
-          "default": "'An initiative under the ProSME Project'"
+          "default": "'An initiative under the SME Fund Project'"
         },
         "version_sign_in_label": {
           "name": "version_sign_in_label",

@@ -72,7 +72,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
     url: environment.PUBLIC_SITE_URL,
     parentOrganization: {
       "@type": "Organization",
-      name: "ProSME Project",
+      name: "SME Fund Project",
     },
   };
 

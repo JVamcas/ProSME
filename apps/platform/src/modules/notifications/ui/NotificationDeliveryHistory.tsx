@@ -10,7 +10,6 @@ import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
 import { DataTableFilter } from "@/components/ui/data-table-filter";
 import { FormInput, FormSelect, FormTextarea } from "@/components/ui/form-fields";
 import { Pagination } from "@/components/ui/pagination";
-import { Badge } from "@/shared/ui/Badge";
 import type {
   NotificationDeliveryHistoryItem,
   NotificationDeliveryQuery,
@@ -113,7 +112,9 @@ function deliveryColumns({
       id: "actions",
       header: "Actions",
       enableSorting: false,
-      cell: ({ row }) => canRetry && row.original.status === "FAILED" ? (
+      cell: ({ row }) => canRetry && ["FAILED", "DEAD_LETTER"].includes(
+        row.original.status,
+      ) ? (
         <GeneralButton
           onClick={() => onRetry(row.original.deliveryId)}
           size="compact"
@@ -279,7 +280,6 @@ export function NotificationDeliveryHistory({
         rowKey={(item) => item.deliveryId}
       />
       <RightDrawer
-        description="Review the disclosure independently before the assigned reviewer can continue."
         footer={
           <div className="mt-4 flex gap-3">
             <GeneralButton
@@ -297,15 +297,14 @@ export function NotificationDeliveryHistory({
         onClose={() => setRetryId(null)}
         open={Boolean(retryId)}
         size="xl"
-        title="Conflict review"
+        title="Notification Retry"
       >
         <FormProvider {...retryForm}>
           <form
             className="rounded-2xl border border-brand-orange/30 bg-orange-50 p-5"
             onSubmit={submitRetry}
           >
-            <h2 className="font-bold text-brand-navy">Schedule delivery retry</h2>
-            <FormTextarea
+          <FormTextarea
               containerClassName="mt-4"
               label="Reason"
               name="reason"

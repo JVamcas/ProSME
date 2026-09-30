@@ -45,7 +45,7 @@ describe("application submission service", () => {
   it("authorizes and passes the confirmed versioned command", async () => {
     const result = {
       applicationId,
-      reference: "SME-2027-01-2026-000001",
+      reference: "SME Fund-2027-01-2026-000001",
       submittedAt: "2026-09-15T08:00:00.000Z",
       workflowInstanceId: "69e20de0-3558-4d63-90a4-8c9f5125df07",
       workflowTemplateVersionId: "59e20de0-3558-4d63-90a4-8c9f5125df07",

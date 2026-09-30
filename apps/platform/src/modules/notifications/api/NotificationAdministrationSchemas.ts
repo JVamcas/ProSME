@@ -208,6 +208,7 @@ export type NotificationDeliveryHistoryItem = {
 };
 
 export type NotificationOperationalSummary = {
+  deadLetter: number;
   failed: number;
   oldestPendingAt: string | null;
   pending: number;

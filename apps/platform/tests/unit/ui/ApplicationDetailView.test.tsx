@@ -17,15 +17,15 @@ const model: ApplicationDetailModel = {
     type: "Business plan",
   }],
   facts: [
-    { label: "Business name", value: "Example SME" },
+    { label: "Business name", value: "Example SME Fund" },
     { label: "Funding opportunity", value: "Growth Grant" },
-    { label: "Application reference", value: "SME-001" },
+    { label: "Application reference", value: "SME Fund-001" },
     { label: "Form completion", value: "100%" },
     { label: "Amount requested", value: "N$ 250,000" },
     { label: "Project location", value: "Windhoek" },
     { label: "Submission date", value: "24 Sep 2026" },
   ],
-  reference: "SME-001",
+  reference: "SME Fund-001",
   sections: [{
     key: "project",
     title: "Project summary",

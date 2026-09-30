@@ -132,7 +132,7 @@ if [ "${should_build}" = true ]; then
     "${migration_service}"
 fi
 
-echo "Starting the ProSME stack..."
+echo "Starting the SME Fund stack..."
 "${compose[@]}" up -d "${up_arguments[@]}"
 
 echo "Seeding baseline application content..."
@@ -153,7 +153,7 @@ for attempt in $(seq 1 24); do
   )"
 
   if [ "${health_status}" = "healthy" ]; then
-    echo "The ProSME application is healthy."
+    echo "The SME Fund application is healthy."
 
     if [ "${should_build}" = true ]; then
       "${maintenance_script}" prune

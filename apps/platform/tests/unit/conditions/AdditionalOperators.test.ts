@@ -9,7 +9,7 @@ import {
 
 describe("additional condition operators", () => {
   it("evaluates IN and NOT_IN using strict JSON equality", () => {
-    const candidates = ["SME", 10, { region: "Erongo" }];
+    const candidates = ["SME Fund", 10, { region: "Erongo" }];
 
     expect(
       evaluateAdditionalOperator(additionalOperators.IN, 10, candidates),
@@ -104,7 +104,7 @@ describe("additional condition operators", () => {
 
   it("rejects invalid operand shapes and dates", () => {
     expect(() =>
-      evaluateAdditionalOperator(additionalOperators.IN, "SME", "SME"),
+      evaluateAdditionalOperator(additionalOperators.IN, "SME Fund", "SME Fund"),
     ).toThrow(InvalidAdditionalOperatorOperandsError);
     expect(() =>
       evaluateAdditionalOperator(additionalOperators.BETWEEN, 10, [0]),

@@ -119,7 +119,7 @@ describe("stage activation repository", () => {
         target: {
           application: {},
           applicationId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-          applicationReference: "SME-2026-001",
+          applicationReference: "SME Fund-2026-001",
           eligibility: { eligible: true, outcome: "ELIGIBLE" },
           entryCondition: null,
           fundingCall: {},
@@ -245,7 +245,7 @@ describe("stage activation repository", () => {
       target: {
         application: {},
         applicationId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-        applicationReference: "SME-2026-001",
+        applicationReference: "SME Fund-2026-001",
         eligibility: null,
         entryCondition: null,
         fundingCall: {},

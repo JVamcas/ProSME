@@ -43,6 +43,7 @@ beforeEach(() => {
   process.env.DATABASE_URL = "postgresql://test:test@localhost/test";
   process.env.PAYLOAD_SECRET = "a-secure-test-secret-with-at-least-32-characters";
   process.env.FIREBASE_PROJECT_ID = "test-project";
+  process.env.GCS_ROOT_PREFIX = "dev";
   process.env.PUBLIC_FIREBASE_API_KEY = "test-api-key";
   process.env.PUBLIC_FIREBASE_AUTH_DOMAIN = "test.firebaseapp.com";
   process.env.PUBLIC_FIREBASE_PROJECT_ID = "test-project";
@@ -90,10 +91,10 @@ describe("submission preflight token", () => {
 describe("application reference formatter", () => {
   it("uses Funding Call scope, UTC year and an atomic sequence value", () => {
     expect(formatApplicationReference({
-      fundingCallReference: "SME-2027-01",
+      fundingCallReference: "SME Fund-2027-01",
       sequenceValue: BigInt(1),
       submittedAt: new Date("2026-12-31T23:59:59.000Z"),
-    })).toBe("SME-2027-01-2026-000001");
+    })).toBe("SME Fund-2027-01-2026-000001");
     expect(formatApplicationReference({
       fundingCallReference: "YOUTH_FUND",
       sequenceValue: BigInt(1000000),
@@ -108,7 +109,7 @@ describe("application reference formatter", () => {
       submittedAt: issuedAt,
     })).toThrow(ApplicationReferenceConfigurationError);
     expect(() => formatApplicationReference({
-      fundingCallReference: "SME",
+      fundingCallReference: "SME Fund",
       sequenceValue: BigInt(0),
       submittedAt: issuedAt,
     })).toThrow(ApplicationReferenceConfigurationError);
@@ -152,7 +153,7 @@ describe("submission workflow bootstrap", () => {
       applicant: {},
       application: { id: applicationId, rowVersion: 4 },
       configuration: {
-        reference: "SME",
+        reference: "SME Fund",
         stageId: "initial-stage-id",
         workflowTemplateVersionId: "workflow-version-id",
       },

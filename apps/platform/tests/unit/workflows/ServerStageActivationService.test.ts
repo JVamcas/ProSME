@@ -60,7 +60,7 @@ const passingCondition = {
 const target = {
   application: { requestedAmount: 250_000 },
   applicationId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-  applicationReference: "SME-2026-001",
+  applicationReference: "SME Fund-2026-001",
   eligibility: { eligible: true, outcome: "ELIGIBLE" },
   entryCondition: passingCondition,
   fundingCall: { maximumAmount: 500_000 },
