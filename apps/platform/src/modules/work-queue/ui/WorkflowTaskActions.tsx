@@ -21,6 +21,9 @@ export function WorkflowTaskActions({
       aria-labelledby="workflow-task-actions-heading"
       className="rounded-t-2xl border border-brand-navy/10 bg-white p-1"
     >
+      <h2 className="sr-only" id="workflow-task-actions-heading">
+        Workflow actions
+      </h2>
       {actions.length ? (
         <div className="mt-4 flex flex-wrap gap-3">
           {actions.map((action) => (

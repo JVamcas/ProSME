@@ -145,10 +145,13 @@ describe("workflow task COI gate", () => {
       await Promise.resolve();
     });
 
-    expect(mocks.mutateAsync).toHaveBeenCalledWith({
-      decision: "DISCLOSE",
-      disclosureText: "A family relationship with the applicant",
-      expectedRowVersion: 3,
-    });
+    expect(mocks.mutateAsync).toHaveBeenCalledWith(
+      {
+        decision: "DISCLOSE",
+        disclosureText: "A family relationship with the applicant",
+        expectedRowVersion: 3,
+      },
+      expect.objectContaining({ onError: expect.any(Function) }),
+    );
   });
 });

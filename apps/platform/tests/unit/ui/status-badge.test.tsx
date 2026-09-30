@@ -5,17 +5,16 @@ import { StatusBadge } from "@/components/ui/status-badge";
 
 describe("shared status badge", () => {
   it.each([
-    ["open", "Open", "bg-brand-green/40"],
+    ["open", "Open", "bg-brand-green/70 text-brand-white"],
     ["upcoming", "Upcoming", "bg-brand-yellow"],
     ["closed", "Closed", "bg-brand-cream"],
-    ["PUBLISHED", "Published", "bg-brand-green/15"],
+    ["PUBLISHED", "Published", "bg-brand-green/70 text-brand-white"],
     ["Technical Assessment", "Technical Assessment", "bg-brand-blue/40"],
   ])("renders %s with its static status style", (status, label, style) => {
     const markup = renderToStaticMarkup(<StatusBadge status={status} />);
 
     expect(markup).toContain(label);
     expect(markup).toContain(style);
-    expect(markup).not.toContain("text-white");
     expect(markup).not.toContain("bg-red");
   });
 

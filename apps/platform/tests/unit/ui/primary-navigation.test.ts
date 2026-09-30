@@ -5,8 +5,8 @@ import { primaryNavigation } from "@/components/layout/primary-navigation";
 describe("primary navigation", () => {
   it("defines application routes in code", () => {
     expect(primaryNavigation).toContainEqual({
-      href: "/funding",
-      label: "Funding",
+      href: "/how-to-apply",
+      label: "How to Apply",
     });
     expect(primaryNavigation).toContainEqual({
       href: "/contact",

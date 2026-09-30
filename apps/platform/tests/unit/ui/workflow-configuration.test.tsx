@@ -75,7 +75,7 @@ describe("workflow configuration UI", () => {
     expect(markup).toContain("No COI gate");
     expect(markup).toContain("Tasks (1)");
     expect(markup).toContain("Actions (1)");
-    expect(markup).toContain("Routing");
+    expect(markup).toContain("Destination");
     const tabDescriptions = [
       "Define the work and assignment rules for this stage.",
       "Define the checks reviewers must complete during this stage.",

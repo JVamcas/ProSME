@@ -22,6 +22,10 @@ import {
   type WorkflowTaskFormValues,
   workflowTaskFormSchema,
 } from "./WorkflowTaskFormSchema";
+import {
+  type WorkflowTaskEditorStep,
+  workflowTaskEditorStepFields,
+} from "./WorkflowTaskEditorSteps";
 
 export function workflowTaskFormItems(
   forms: readonly PublishedFormOption[],
@@ -278,6 +282,38 @@ export function useWorkflowTaskDialogController(
     });
   };
 
+  const validateStep = async (step: WorkflowTaskEditorStep) => {
+    const valid = await form.trigger([...workflowTaskEditorStepFields[step]], {
+      shouldFocus: true,
+    });
+    if (step !== "details") return valid;
+
+    const values = form.getValues();
+    const duplicateKey = stage.tasks.some(
+      (item) =>
+        item.stableKey === values.stableKey
+        && item.stableKey !== task?.stableKey,
+    );
+    const otherDecisionTask = stage.tasks.some(
+      (item) =>
+        item.taskType === "STAGE_DECISION"
+        && item.stableKey !== task?.stableKey,
+    );
+    if (duplicateKey) {
+      form.setError("stableKey", {
+        message: "Task code must be unique in this stage.",
+      });
+    }
+    if (values.taskType === "STAGE_DECISION" && otherDecisionTask) {
+      form.setError("taskType", {
+        message: "A stage can contain only one stage-decision task.",
+      });
+    }
+    return valid
+      && !duplicateKey
+      && !(values.taskType === "STAGE_DECISION" && otherDecisionTask);
+  };
+
   return {
     assignmentItems,
     assignmentMode,
@@ -288,5 +324,6 @@ export function useWorkflowTaskDialogController(
     forms,
     mutation,
     save,
+    validateStep,
   };
 }

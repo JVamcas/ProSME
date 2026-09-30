@@ -11,6 +11,7 @@ function stageWithScoring() {
       taskStableKey: "PRE_SCREEN_CHECKLIST",
       criteria: [
         {
+          stableKey: "BUSINESS_VIABILITY",
           criterion: "Business viability",
           description: "Assess the viability of the business.",
           weight: 60,
@@ -19,6 +20,7 @@ function stageWithScoring() {
           mandatoryComment: true,
         },
         {
+          stableKey: "ECONOMIC_IMPACT",
           criterion: "Economic impact",
           description: "Assess the expected economic impact.",
           weight: 40,

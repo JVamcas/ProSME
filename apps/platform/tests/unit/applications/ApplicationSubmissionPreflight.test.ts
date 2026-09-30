@@ -91,10 +91,10 @@ describe("submission preflight token", () => {
 describe("application reference formatter", () => {
   it("uses Funding Call scope, UTC year and an atomic sequence value", () => {
     expect(formatApplicationReference({
-      fundingCallReference: "SME Fund-2027-01",
+      fundingCallReference: "SME-FUND-2027-01",
       sequenceValue: BigInt(1),
       submittedAt: new Date("2026-12-31T23:59:59.000Z"),
-    })).toBe("SME Fund-2027-01-2026-000001");
+    })).toBe("SME-FUND-2027-01-2026-000001");
     expect(formatApplicationReference({
       fundingCallReference: "YOUTH_FUND",
       sequenceValue: BigInt(1000000),
@@ -153,7 +153,7 @@ describe("submission workflow bootstrap", () => {
       applicant: {},
       application: { id: applicationId, rowVersion: 4 },
       configuration: {
-        reference: "SME Fund",
+        reference: "SME-FUND",
         stageId: "initial-stage-id",
         workflowTemplateVersionId: "workflow-version-id",
       },
