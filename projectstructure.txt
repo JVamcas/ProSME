@@ -635,7 +635,7 @@
 │       │   │   │   └── logger.ts
 │       │   │   └── storage
 │       │   │       ├── DocumentStorage.ts
-│       │   │       ├── GcsObjectPrefixes.ts
+│       │   │       ├── GcsObjectPath.ts
 │       │   │       └── GoogleCloudDocumentStorage.ts
 │       │   ├── jobs
 │       │   ├── lib

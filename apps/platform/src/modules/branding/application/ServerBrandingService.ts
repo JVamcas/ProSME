@@ -8,7 +8,10 @@ import type { AuthenticatedUser } from "@/auth/types";
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { requirePermission } from "@/auth/authorization/policy";
 import type { DocumentStorage } from "@/integrations/storage/DocumentStorage";
-import { gcsObjectPrefixes } from "@/integrations/storage/GcsObjectPrefixes";
+import {
+  gcsObjectPathSegments,
+  resolveGcsObjectPath,
+} from "@/integrations/storage/GcsObjectPath";
 import { GoogleCloudDocumentStorage } from "@/integrations/storage/GoogleCloudDocumentStorage";
 import { getServerEnvironment } from "@/lib/env/server";
 import type { BrandingSettingsView } from "../api/BrandingSchemas";
@@ -36,11 +39,7 @@ function toView(
     logoContentType: settings?.logoContentType ?? null,
     logoFileName: settings?.logoFileName ?? null,
     logoUrl: logoUrl(settings?.updatedAt),
-    storagePrefix: [
-      getServerEnvironment().GCS_ROOT_PREFIX,
-      gcsObjectPrefixes.utilities,
-      "brand",
-    ].join("/"),
+    storagePrefix: resolveGcsObjectPath(...gcsObjectPathSegments.utilities.brand),
     updatedAt: settings?.updatedAt.toISOString() ?? null,
   };
 }
@@ -58,12 +57,10 @@ export async function updateBrandingLogo(
   const actor = requirePermission(user, permissionCodes.brandingManage);
   const body = Buffer.from(await file.arrayBuffer());
   const validated = validateBrandingLogo(file, body);
-  const objectKey = [
-    getServerEnvironment().GCS_ROOT_PREFIX,
-    gcsObjectPrefixes.utilities,
-    "brand",
+  const objectKey = resolveGcsObjectPath(
+    ...gcsObjectPathSegments.utilities.brand,
     `${randomUUID()}${validated.extension}`,
-  ].join("/");
+  );
   const previous = await findBrandingSettingsRecord();
 
   await storage.put({ body, contentType: validated.contentType, objectKey });

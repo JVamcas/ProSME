@@ -8,7 +8,10 @@ import { buildConfig } from "payload";
 import sharp from "sharp";
 
 import { getServerEnvironment } from "@/lib/env/server";
-import { gcsObjectPrefixes } from "@/integrations/storage/GcsObjectPrefixes";
+import {
+  gcsObjectPathSegments,
+  resolveGcsObjectPath,
+} from "@/integrations/storage/GcsObjectPath";
 import { getGoogleCloudStorageOptions } from "@/integrations/storage/GoogleCloudStorageOptions";
 import { Media } from "@/payload/collections/content/Media";
 import { ContactSubmissions } from "@/payload/collections/content/ContactSubmissions";
@@ -73,7 +76,9 @@ export default buildConfig({
       alwaysInsertFields: true,
       bucket: environment.GCS_DOCUMENTS_BUCKET ?? "local-storage-disabled",
       collections: {
-        media: { prefix: gcsObjectPrefixes.cms },
+        media: {
+          prefix: resolveGcsObjectPath(...gcsObjectPathSegments.cms),
+        },
       },
       enabled: Boolean(environment.GCS_DOCUMENTS_BUCKET),
       options: getGoogleCloudStorageOptions(),

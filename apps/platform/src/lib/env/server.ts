@@ -1,6 +1,9 @@
 import { z } from "zod";
 
+export const deploymentEnvironmentSchema = z.enum(["local", "dev", "prod"]);
+
 const serverEnvironmentSchema = z.object({
+  ENVIRONMENT: deploymentEnvironmentSchema.default("local"),
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
   PAYLOAD_SECRET: z.string().min(32, "PAYLOAD_SECRET must be at least 32 characters"),
@@ -23,13 +26,16 @@ const serverEnvironmentSchema = z.object({
     .trim()
     .min(3, "GCS_DOCUMENTS_BUCKET is required")
     .optional(),
-  GCS_ROOT_PREFIX: z.enum(["dev", "prod"]),
   SESSION_COOKIE_DAYS: z.coerce.number().int().min(1).max(14).default(5),
   PUBLIC_SITE_URL: z.url().default("http://localhost:3008"),
   APP_PUBLIC_URL: z.url().default("http://localhost:3008"),
 });
 
 export type ServerEnvironment = z.infer<typeof serverEnvironmentSchema>;
+
+export function getDeploymentEnvironment() {
+  return deploymentEnvironmentSchema.parse(process.env.ENVIRONMENT ?? "local");
+}
 
 let cachedEnvironment: ServerEnvironment | undefined;
 

@@ -37,6 +37,22 @@ Copy `.env.example` to the repository-root `.env` and provide the real developme
 
 Never commit `.env`, service-account JSON, or real applicant data.
 
+Google Cloud Storage uses one shared bucket with environment-isolated object
+roots derived from `ENVIRONMENT`:
+
+```text
+<environment>/
+├── users/<user-id>/...
+├── utilities/
+│   ├── brand/...
+│   ├── funding-calls/<funding-call-id>/...
+│   └── templates/email/...
+└── cms/...
+```
+
+Supported environments are `local`, `dev`, and `prod`. Do not configure a
+separate storage-root variable.
+
 ## Start with Docker Compose
 
 After creating `.env`, build and start PostgreSQL and the application:
