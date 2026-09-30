@@ -10,7 +10,7 @@ import type {
   WorkflowTaskInput,
 } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import { removeWorkflowStage } from "@/modules/workflows/domain/definitions/WorkflowStageDeletion";
-import { WorkflowStageCreateDialog } from "./WorkflowStageCreateDialog";
+import { WorkflowStageDialog } from "@/modules/workflows/ui/definitions/WorkflowStageDialog";
 import { WorkflowStageDetails } from "./WorkflowStageDetails";
 import { WorkflowTaskDialog } from "@/modules/workflows/ui/definitions/WorkflowTaskDialog";
 import { WorkflowTaskPreviewDialog } from "@/modules/workflows/ui/definitions/WorkflowTaskPreviewDialog";
@@ -236,7 +236,7 @@ export function WorkflowStageFlow({ canEdit, editor }: Props) {
         />
       </div>
       {stageDialog ? (
-        <WorkflowStageCreateDialog
+        <WorkflowStageDialog
           editor={editor}
           isOpen
           onClose={() => setStageDialog(null)}
