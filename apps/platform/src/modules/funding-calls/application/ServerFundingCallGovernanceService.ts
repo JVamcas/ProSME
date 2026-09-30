@@ -17,6 +17,7 @@ import type { FundingCallView } from "../api/FundingCallTransport";
 import type { FundingCall } from "../domain/FundingCall";
 import { changeFundingCallGovernance } from "../infrastructure/FundingCallGovernanceRepository";
 import { readFundingCallById } from "../infrastructure/FundingCallRepository";
+import { toFundingCallView } from "./FundingCallViewMapper";
 import { validateFundingCallReadiness } from "./ServerFundingCallReadinessService";
 
 const commandPermissions = {
@@ -32,16 +33,6 @@ const sourceStatuses = {
   SUBMIT_FOR_APPROVAL: "DRAFT",
   WITHDRAW_APPROVAL_REQUEST: "APPROVAL_PENDING",
 } as const;
-
-function view(call: FundingCall): FundingCallView {
-  return {
-    ...call,
-    closesAt: call.closesAt.toISOString(),
-    createdAt: call.createdAt.toISOString(),
-    opensAt: call.opensAt.toISOString(),
-    updatedAt: call.updatedAt.toISOString(),
-  };
-}
 
 function conflictMessage(command: FundingCallGovernanceCommandInput["command"]) {
   if (command === "SUBMIT_FOR_APPROVAL") {
@@ -131,5 +122,5 @@ export async function changeFundingCallGovernanceStatus(
   if (!("call" in result)) {
     throw new ResourceConflictError(conflictMessage(input.command));
   }
-  return view(result.call);
+  return toFundingCallView(result.call);
 }

@@ -11,13 +11,8 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
-import type {
-  ApplicationBusinessSection,
-  ApplicationFinancialSection,
-  ApplicationProjectSection,
-  ApplicationSectionCompletion,
-} from "@/modules/applications/ApplicationSchemas";
-import type { ApplicationDeclarationsSection } from "@/modules/applications/ApplicationDeclarationSchemas";
+import type { ApplicationSectionCompletion } from "@/modules/applications/ApplicationTypes";
+import type { JsonValue } from "@/modules/conditions/domain/Operand";
 import type { ApplicationSubmissionSnapshotContent } from "@/modules/applications/domain/ApplicationSubmissionSnapshot";
 import type {
   ApplicationDuplicatePolicy,
@@ -69,19 +64,19 @@ export const applications = pgTable("app_applications", {
     .notNull()
     .default("business"),
   businessSection: jsonb("business_section")
-    .$type<Partial<ApplicationBusinessSection>>()
+    .$type<Record<string, JsonValue>>()
     .notNull()
     .default({}),
   projectSection: jsonb("project_section")
-    .$type<Partial<ApplicationProjectSection>>()
+    .$type<Record<string, JsonValue>>()
     .notNull()
     .default({}),
   financialSection: jsonb("financial_section")
-    .$type<Partial<ApplicationFinancialSection>>()
+    .$type<Record<string, JsonValue>>()
     .notNull()
     .default({}),
   declarationsSection: jsonb("declarations_section")
-    .$type<Partial<ApplicationDeclarationsSection>>()
+    .$type<Record<string, JsonValue>>()
     .notNull()
     .default({}),
   declarationAcceptance: jsonb("declaration_acceptance").$type<{

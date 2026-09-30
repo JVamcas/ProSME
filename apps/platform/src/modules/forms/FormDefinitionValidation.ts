@@ -1,4 +1,5 @@
 import { formVisibilityConfigurationErrors } from "./engine/FormVisibility";
+import { repeatableGroupConfigurationSchema } from "./api/RepeatableGroupSchemas";
 import type { FormField, FormSection } from "./FormTypes";
 
 export function validateFieldOptions(field: FormField) {
@@ -26,6 +27,14 @@ export function validateFieldOrder(fields: readonly FormField[]) {
 }
 
 export function validateFieldConstraints(field: FormField) {
+  if (field.type === "REPEATABLE_GROUP") {
+    return repeatableGroupConfigurationSchema.safeParse(field.repeatable).success
+      && field.minimum == null
+      && field.maximum == null
+      && field.minLength == null
+      && field.maxLength == null;
+  }
+  if (field.repeatable) return false;
   const hasNumberLimits = field.minimum != null || field.maximum != null;
   const hasLengthLimits = field.minLength != null || field.maxLength != null;
   if (

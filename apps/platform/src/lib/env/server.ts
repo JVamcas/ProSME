@@ -1,6 +1,9 @@
 import { z } from "zod";
 
+export const deploymentEnvironmentSchema = z.enum(["local", "dev", "prod"]);
+
 const serverEnvironmentSchema = z.object({
+  ENVIRONMENT: deploymentEnvironmentSchema.default("local"),
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
   PAYLOAD_SECRET: z.string().min(32, "PAYLOAD_SECRET must be at least 32 characters"),
@@ -29,6 +32,10 @@ const serverEnvironmentSchema = z.object({
 });
 
 export type ServerEnvironment = z.infer<typeof serverEnvironmentSchema>;
+
+export function getDeploymentEnvironment() {
+  return deploymentEnvironmentSchema.parse(process.env.ENVIRONMENT ?? "local");
+}
 
 let cachedEnvironment: ServerEnvironment | undefined;
 

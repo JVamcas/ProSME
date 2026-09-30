@@ -54,7 +54,7 @@ export async function seedSiteGlobals(payload: Payload) {
       context: seedContext,
       overrideAccess: true,
       data: {
-        announcement: "An initiative under the ProSME Project",
+        announcement: "An initiative under the SME Fund Project",
         applyHref: "/portal/applications/new",
         applyLabel: "Apply Now",
         reviewStatus: "approved",

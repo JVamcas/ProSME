@@ -10,7 +10,7 @@ import { WorkflowProgressPanel } from "@/modules/workflows/ui/WorkflowProgressPa
 const progress: WorkflowProgressView = {
   completedAt: null,
   id: "workflow-one",
-  name: "SME Funding Workflow",
+  name: "SME Fund Funding Workflow",
   stages: [
     {
       activatedAt: "2026-09-20T08:00:00.000Z",

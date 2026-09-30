@@ -51,9 +51,9 @@ function queryClient() {
     definition: {
       code: "SME_STANDARD",
       createdAt: timestamp,
-      description: "Standard SME eligibility",
+      description: "Standard SME Fund eligibility",
       id: ruleSetId,
-      name: "SME Standard",
+      name: "SME Fund Standard",
       updatedAt: timestamp,
     },
     conditionFields: [{

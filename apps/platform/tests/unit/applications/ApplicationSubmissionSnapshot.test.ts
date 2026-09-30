@@ -11,7 +11,7 @@ function content(): ApplicationSubmissionSnapshotContent {
   return {
     application: { id: "application-1", values: { z: 2, a: 1 } },
     applicant: { displayName: "Applicant" },
-    business: { legalName: "Example SME" },
+    business: { legalName: "Example SME Fund" },
     declarations: { acceptance: { accepted: true } },
     documents: [{ checksumSha256: "abc", id: "document-version-1" }],
     eligibilityRuleSetVersionId: "eligibility-version-1",
@@ -49,7 +49,7 @@ describe("application submission snapshot", () => {
       ...snapshot,
       snapshotContent: {
         ...snapshot.snapshotContent,
-        business: { legalName: "Changed SME" },
+        business: { legalName: "Changed SME Fund" },
       },
     };
 

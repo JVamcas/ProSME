@@ -82,10 +82,13 @@ export async function retryNotificationDeliveryRecord(input: {
     if (!delivery) return { outcome: "NOT_FOUND" as const };
     if (delivery.status === "PENDING")
       return { outcome: "ALREADY_SCHEDULED" as const };
-    if (delivery.status !== "FAILED") return { outcome: "INELIGIBLE" as const };
+    if (!["FAILED", "DEAD_LETTER"].includes(delivery.status)) {
+      return { outcome: "INELIGIBLE" as const };
+    }
     await transaction.execute(sql`
       UPDATE app_notification_deliveries
-      SET status = 'PENDING', next_attempt_at = now(), updated_at = now()
+      SET status = 'PENDING', attempt_count = 0, next_attempt_at = now(),
+        last_error_code = NULL, last_error_message = NULL, updated_at = now()
       WHERE id = ${input.deliveryId}::uuid
     `);
     await transaction.execute(sql`
@@ -116,6 +119,7 @@ export async function getNotificationOperationalSummaryRecord(
       count(*) FILTER (WHERE delivery.status = 'PROCESSING')::integer AS processing,
       count(*) FILTER (WHERE delivery.status = 'SENT')::integer AS sent,
       count(*) FILTER (WHERE delivery.status = 'FAILED')::integer AS failed,
+      count(*) FILTER (WHERE delivery.status = 'DEAD_LETTER')::integer AS "deadLetter",
       min(delivery.next_attempt_at) FILTER (WHERE delivery.status = 'PENDING') AS "oldestPendingAt",
       EXISTS (
         SELECT 1 FROM app_notification_outbox occurrence

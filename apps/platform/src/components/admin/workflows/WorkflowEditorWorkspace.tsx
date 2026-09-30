@@ -77,9 +77,9 @@ export function WorkflowEditorWorkspace({
           </div>
         }
         description={editor.definition.description}
-        eyebrow="Admin / Workflow Definitions"
+        eyebrow="Admin / Workflow Templates"
         icon={<Workflow size={18} className="text-brand-orange" />}
-        title="Workflow definitions"
+        title="Workflow Editor"
       >
         <div className="space-y-6">
           <WorkflowDefinitionDetailsCard editor={editor} />

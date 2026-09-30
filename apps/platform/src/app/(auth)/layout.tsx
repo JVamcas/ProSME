@@ -6,7 +6,7 @@ import { Toast } from "@/shared/ui/Toast";
 import "../globals.css";
 
 export const metadata: Metadata = {
-  title: { default: "Account", template: "%s | ProSME Namibia" },
+  title: { default: "Account", template: "%s | SME Fund Namibia" },
 };
 
 export default function AuthLayout({

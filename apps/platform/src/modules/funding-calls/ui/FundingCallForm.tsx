@@ -307,7 +307,9 @@ export function FundingCallForm({
         />
       );
     }
-    if (currentStep === "publicContent") return <PublicContentStep />;
+    if (currentStep === "publicContent") {
+      return <PublicContentStep call={call} disabled={disabled} />;
+    }
     return (
       <FundingCallReviewStep
         eligibility={{

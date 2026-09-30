@@ -1,5 +1,9 @@
+// @vitest-environment happy-dom
+
+import { act } from "react";
+import { createRoot } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   WorkflowTaskActions,
@@ -16,11 +20,40 @@ const requiredInput = {
   target: { type: null, value: null },
 } as const;
 
-describe("workflow task actions", () => {
-  it("presents the configured action labels in the supplied order", () => {
-    const markup = renderToStaticMarkup(
+(
+  globalThis as typeof globalThis & {
+    IS_REACT_ACT_ENVIRONMENT: boolean;
+  }
+).IS_REACT_ACT_ENVIRONMENT = true;
+
+afterEach(() => {
+  document.body.replaceChildren();
+});
+
+async function renderActions(
+  actions: Parameters<typeof WorkflowTaskActions>[0]["actions"],
+) {
+  const container = document.createElement("div");
+  document.body.append(container);
+  const root = createRoot(container);
+  await act(async () => {
+    root.render(
       <WorkflowTaskActions
-        actions={[
+        actions={actions}
+        disabled={false}
+        onSelect={vi.fn()}
+      />,
+    );
+  });
+  await act(async () => {
+    container.querySelector<HTMLButtonElement>("button")?.click();
+  });
+  return { container, root };
+}
+
+describe("workflow task actions", () => {
+  it("presents the configured action labels in one dropdown", async () => {
+    const { container, root } = await renderActions([
           {
             actionType: "APPROVE_ADVANCE",
             available: true,
@@ -41,17 +74,16 @@ describe("workflow task actions", () => {
             runtimeVersion: 4,
             unavailableReason: null,
           },
-        ]}
-        disabled={false}
-        onSelect={vi.fn()}
-      />,
-    );
+        ]);
 
-    expect(markup).toContain("Workflow actions");
-    expect(markup.indexOf("Recommend")).toBeLessThan(
-      markup.indexOf("Request clarification"),
+    expect(container.textContent).toContain("Actions");
+    expect(document.body.textContent?.indexOf("Recommend")).toBeLessThan(
+      document.body.textContent?.indexOf("Request clarification") ?? -1,
     );
-    expect(markup.match(/type="submit"/g)).toHaveLength(2);
+    expect(container.querySelectorAll('button[type="button"]')).toHaveLength(1);
+    expect(document.querySelectorAll('[role="menuitem"]')).toHaveLength(2);
+
+    await act(async () => root.unmount());
   });
 
   it("does not invent a fallback action", () => {
@@ -67,10 +99,8 @@ describe("workflow task actions", () => {
     expect(markup).not.toContain("type=\"submit\"");
   });
 
-  it("disables unavailable actions and presents the safe reason", () => {
-    const markup = renderToStaticMarkup(
-      <WorkflowTaskActions
-        actions={[{
+  it("disables unavailable actions and presents the safe reason", async () => {
+    const { root } = await renderActions([{
           actionType: "REJECT",
           available: false,
           key: "REJECT",
@@ -79,13 +109,12 @@ describe("workflow task actions", () => {
           requiredInput,
           runtimeVersion: 4,
           unavailableReason: "Requirements are not currently met.",
-        }]}
-        disabled={false}
-        onSelect={vi.fn()}
-      />,
-    );
+        }]);
 
-    expect(markup).toContain("disabled");
-    expect(markup).toContain("Requirements are not currently met.");
+    const item = document.querySelector<HTMLElement>('[role="menuitem"]');
+    expect(item?.getAttribute("aria-disabled")).toBe("true");
+    expect(item?.textContent).toContain("Requirements are not currently met.");
+
+    await act(async () => root.unmount());
   });
 });

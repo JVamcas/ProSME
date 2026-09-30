@@ -2,10 +2,15 @@ import { describe, expect, it } from "vitest";
 
 import {
   deliveryFailureOutcome,
+  notificationMaximumAttempts,
   notificationRetryDelayMs,
 } from "@/modules/notifications/domain/NotificationRetryPolicy";
 
 describe("notification retry policy", () => {
+  it("allows five automatic delivery attempts", () => {
+    expect(notificationMaximumAttempts).toBe(5);
+  });
+
   it("uses bounded exponential backoff with jitter", () => {
     expect(notificationRetryDelayMs(1, 0)).toBe(45_000);
     expect(notificationRetryDelayMs(2, 0.5)).toBe(120_000);

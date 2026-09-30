@@ -33,6 +33,7 @@ export { formPurposes, formPurposeOptions, type FormPurpose } from "./domain/For
 export const formFieldTypes = [
   "TEXT",
   "TEXTAREA",
+  "RICH_TEXT",
   "NUMBER",
   "CURRENCY",
   "PERCENTAGE",
@@ -41,14 +42,54 @@ export const formFieldTypes = [
   "SINGLE_SELECT",
   "MULTI_SELECT",
   "DOCUMENT",
+  "REPEATABLE_GROUP",
 ] as const;
 export type FormFieldType = (typeof formFieldTypes)[number];
+
+export const repeatableItemFieldTypes = [
+  "TEXT",
+  "TEXTAREA",
+  "RICH_TEXT",
+  "NUMBER",
+  "CURRENCY",
+  "PERCENTAGE",
+  "DATE",
+  "YES_NO",
+  "SINGLE_SELECT",
+  "MULTI_SELECT",
+] as const;
+export type RepeatableItemFieldType =
+  (typeof repeatableItemFieldTypes)[number];
 
 export type FormOption = {
   key: string;
   label: string;
   order: number;
 };
+
+export type RepeatableItemField = {
+  columnSpan: 1 | 2 | 3;
+  helpText?: string | null;
+  key: string;
+  label: string;
+  maximum?: number;
+  maxLength?: number;
+  minimum?: number;
+  minLength?: number;
+  options?: FormOption[];
+  order: number;
+  required: boolean;
+  type: RepeatableItemFieldType;
+};
+
+export type RepeatableGroupConfiguration = {
+  addLabel: string;
+  fields: RepeatableItemField[];
+  itemLabel: string;
+  maximumItems: number;
+  minimumItems: number;
+};
+
 export type FormField = {
   id?: string;
   sectionId: string;
@@ -64,6 +105,7 @@ export type FormField = {
   maxLength?: number;
   order: number;
   options?: FormOption[];
+  repeatable?: RepeatableGroupConfiguration | null;
   visibilityCondition?: ConditionGroup | null;
 };
 

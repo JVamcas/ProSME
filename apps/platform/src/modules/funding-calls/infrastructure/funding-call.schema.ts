@@ -73,6 +73,9 @@ export const fundingCalls = pgTable(
     publicContactName: text("public_contact_name"),
     publicContactEmail: text("public_contact_email"),
     publicContactPhone: text("public_contact_phone"),
+    thumbnailContentType: text("thumbnail_content_type"),
+    thumbnailFileName: text("thumbnail_file_name"),
+    thumbnailObjectKey: text("thumbnail_object_key"),
     rowVersion: integer("row_version").notNull().default(1),
     createdBy: uuid("created_by")
       .notNull()
@@ -137,6 +140,18 @@ export const fundingCalls = pgTable(
     check(
       "app_funding_calls_dates_check",
       sql`${table.closesAt} > ${table.opensAt}`,
+    ),
+    check(
+      "app_funding_calls_thumbnail_metadata_check",
+      sql`(
+          ${table.thumbnailContentType} is null
+          and ${table.thumbnailFileName} is null
+          and ${table.thumbnailObjectKey} is null
+        ) or (
+          ${table.thumbnailContentType} in ('image/jpeg', 'image/png', 'image/webp')
+          and length(trim(${table.thumbnailFileName})) > 0
+          and length(trim(${table.thumbnailObjectKey})) > 0
+        )`,
     ),
     check(
       "app_funding_calls_row_version_check",

@@ -78,8 +78,15 @@ async function renderAndSubmit(
   ));
   await act(async () => {
     container.querySelector<HTMLButtonElement>(
-      `button[value="${selectedTask.actions[0]?.key}"]`,
+      'button[aria-label="Workflow actions"]',
     )?.click();
+  });
+  await act(async () => {
+    [...document.querySelectorAll<HTMLElement>('[role="menuitem"]')]
+      .find((item) => item.textContent?.includes(
+        selectedTask.actions[0]?.label ?? "",
+      ))
+      ?.click();
   });
   await act(async () => {
     [...document.querySelectorAll<HTMLButtonElement>('[role="dialog"] button')]

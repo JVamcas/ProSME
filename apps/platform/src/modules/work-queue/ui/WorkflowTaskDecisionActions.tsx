@@ -361,7 +361,6 @@ export function WorkflowTaskDecisionActions({
     <div className="space-y-4">
       <WorkflowTaskActions
         actions={task.actions}
-        buttonType="button"
         disabled={false}
         onSelect={setSelectedKey}
       />

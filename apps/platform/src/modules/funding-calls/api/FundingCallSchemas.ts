@@ -2,6 +2,8 @@ import { z } from "zod";
 
 import { richTextToPlainText } from "@/shared/utils/RichText";
 
+export const fundingCallThumbnailMaximumBytes = 2 * 1024 * 1024;
+
 const moneySchema = z
   .string()
   .trim()

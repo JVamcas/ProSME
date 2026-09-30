@@ -114,7 +114,7 @@ service, and translate the result to HTTP.
 
 ### 4.1 WorkflowHub implementation alignment contract
 
-WorkflowHub is the behavioral reference, not merely a visual reference. SME
+WorkflowHub is the behavioral reference, not merely a visual reference. SME Fund
 Fund adopts these implementation semantics:
 
 - channel mechanisms are registered in source code while channel records,
@@ -165,7 +165,7 @@ Gmail SMTP
     |
     +--> retryable failure with backoff
     |
-    +--> terminal FAILED record after maximum attempts
+    +--> DEAD_LETTER record after five automatic attempts
 ```
 
 The business operation must not call SMTP. Application submission or workflow

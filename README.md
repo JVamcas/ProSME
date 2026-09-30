@@ -1,6 +1,6 @@
 # SME Fund Platform
 
-The production foundation for the SME Fund platform under the ProSME Project. The approved Option B experience, backend route handlers, applicant portal, internal operations, and Payload CMS run as one Next.js application.
+The production foundation for the SME Fund platform under the SME Fund Project. The approved Option B experience, backend route handlers, applicant portal, internal operations, and Payload CMS run as one Next.js application.
 
 ## Architecture
 
@@ -36,6 +36,22 @@ The Firebase Authentication Emulator is intentionally unsupported.
 Copy `.env.example` to the repository-root `.env` and provide the real development Firebase values. Use either `FIREBASE_SERVICE_ACCOUNT_JSON` or the split client-email/private-key fields for local Firebase Admin access. On GCP, workload identity and Application Default Credentials will replace local service-account material.
 
 Never commit `.env`, service-account JSON, or real applicant data.
+
+Google Cloud Storage uses one shared bucket with environment-isolated object
+roots derived from `ENVIRONMENT`:
+
+```text
+<environment>/
+├── users/<user-id>/...
+├── utilities/
+│   ├── brand/...
+│   ├── funding-calls/<funding-call-id>/...
+│   └── templates/email/...
+└── cms/...
+```
+
+Supported environments are `local`, `dev`, and `prod`. Do not configure a
+separate storage-root variable.
 
 ## Start with Docker Compose
 

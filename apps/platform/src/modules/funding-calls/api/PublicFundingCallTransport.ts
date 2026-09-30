@@ -33,6 +33,7 @@ export type PublicFundingCallSummary = {
   summary: string;
   summaryHtml?: string;
   thematicArea: string | null;
+  thumbnailUrl?: string | null;
   title: string;
   totalFundingAmount: number;
 };

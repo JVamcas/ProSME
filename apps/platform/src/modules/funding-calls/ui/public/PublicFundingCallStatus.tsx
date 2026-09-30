@@ -10,14 +10,17 @@ const labels = {
 
 export function PublicFundingCallStatus({
   call,
+  className,
 }: {
   call: Pick<PublicFundingCallSummary, "status">;
+  className?: string;
 }) {
   return (
     <StatusBadge
       className={cn(
         "gap-2 px-3 py-1.5 text-xs text-brand-navy before:size-2 before:rounded-full before:bg-current",
         call.status === "open" ? "bg-brand-green/15" : "bg-brand-cream",
+        className,
       )}
       label={labels[call.status]}
       status={call.status}

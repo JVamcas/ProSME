@@ -202,6 +202,7 @@ export async function recordNotificationDeliverySuccess(input: {
 
 export async function recordNotificationDeliveryFailure(input: {
   code: NotificationErrorCode;
+  deadLetter: boolean;
   deliveryId: string;
   nextAttemptAt: Date;
   now: Date;
@@ -211,7 +212,11 @@ export async function recordNotificationDeliveryFailure(input: {
 }) {
   await getDatabase().execute(sql`
     UPDATE app_notification_deliveries delivery
-    SET status = ${input.retry ? "PENDING" : "FAILED"},
+    SET status = ${input.retry
+      ? "PENDING"
+      : input.deadLetter
+        ? "DEAD_LETTER"
+        : "FAILED"},
       template_version_id = ${input.templateVersionId}::uuid,
       last_error_code = ${input.code},
       last_error_message = ${"Delivery failed; see the stable error code."},
@@ -237,6 +242,7 @@ export async function finalizeClaimedNotificationOccurrence(input: {
       SELECT count(*)::integer AS total,
         count(*) FILTER (WHERE status = 'SENT')::integer AS sent,
         count(*) FILTER (WHERE status = 'FAILED')::integer AS failed,
+        count(*) FILTER (WHERE status = 'DEAD_LETTER')::integer AS dead_letter,
         count(*) FILTER (WHERE status IN ('PENDING', 'PROCESSING'))::integer AS pending,
         min(next_attempt_at) FILTER (
           WHERE status IN ('PENDING', 'PROCESSING')
@@ -256,7 +262,9 @@ export async function finalizeClaimedNotificationOccurrence(input: {
         WHEN summary.pending > 0 AND summary.sent > 0 THEN 'PARTIALLY_SENT'
         WHEN summary.pending > 0 THEN 'PENDING'
         WHEN summary.sent = summary.total THEN 'SENT'
-        WHEN summary.sent > 0 AND summary.failed > 0 THEN 'PARTIALLY_SENT'
+        WHEN summary.sent > 0 AND (summary.failed > 0 OR summary.dead_letter > 0)
+          THEN 'PARTIALLY_SENT'
+        WHEN summary.dead_letter > 0 THEN 'DEAD_LETTER'
         ELSE 'FAILED'
       END,
       available_at = COALESCE(summary.next_attempt_at, occurrence.available_at),

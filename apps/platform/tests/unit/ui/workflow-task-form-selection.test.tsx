@@ -5,7 +5,8 @@ import { createRoot } from "react-dom/client";
 import { FormProvider, useForm, useWatch } from "react-hook-form";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { WorkflowTaskDialogFields } from "@/modules/workflows/ui/definitions/WorkflowTaskDialogFields";
+import { WorkflowTaskFormLayoutStep } from "@/modules/workflows/ui/definitions/WorkflowTaskFormLayoutStep";
+import { WorkflowTaskAssignmentStep } from "@/modules/workflows/ui/definitions/WorkflowTaskAssignmentStep";
 import { workflowTaskFormItems } from "@/modules/workflows/ui/definitions/WorkflowTaskDialogController";
 import type { WorkflowTaskFormValues } from "@/modules/workflows/ui/definitions/WorkflowTaskFormSchema";
 
@@ -21,10 +22,12 @@ function TaskFields({
   completionMode = "COUNT",
   formItems,
   formPurpose = "APPLICATION_REVIEW",
+  section = "form",
 }: {
   completionMode?: WorkflowTaskFormValues["completionMode"];
   formItems: { label: string; value: string }[];
   formPurpose?: WorkflowTaskFormValues["formPurpose"];
+  section?: "assignment" | "form";
 }) {
   const form = useForm<WorkflowTaskFormValues>({
     defaultValues: {
@@ -49,18 +52,21 @@ function TaskFields({
     control: form.control,
     name: "formVersionId",
   });
-
   return (
     <FormProvider {...form}>
-      <WorkflowTaskDialogFields
-        assignmentItems={[{ label: "Reviewer", value: "reviewer" }]}
-        assignmentMode="ROLE"
-        formItems={formItems}
-        formVersionId={formVersionId ?? ""}
-        formPurpose={formPurpose}
-        formsPending={formItems.length === 0}
-        mutationPending={false}
-      />
+      {section === "form" ? (
+        <WorkflowTaskFormLayoutStep
+          formItems={formItems}
+          formPurpose={formPurpose}
+          formVersionId={formVersionId ?? ""}
+          formsPending={formItems.length === 0}
+        />
+      ) : (
+        <WorkflowTaskAssignmentStep
+          assignmentItems={[{ label: "Reviewer", value: "reviewer" }]}
+          assignmentMode="ROLE"
+        />
+      )}
     </FormProvider>
   );
 }
@@ -198,10 +204,16 @@ describe("workflow task form selection", () => {
     const countRoot = createRoot(countContainer);
     const percentageRoot = createRoot(percentageContainer);
 
-    await act(async () => countRoot.render(<TaskFields formItems={[]} />));
+    await act(async () =>
+      countRoot.render(<TaskFields formItems={[]} section="assignment" />),
+    );
     await act(async () =>
       percentageRoot.render(
-        <TaskFields completionMode="PERCENT" formItems={[]} />,
+        <TaskFields
+          completionMode="PERCENT"
+          formItems={[]}
+          section="assignment"
+        />,
       ),
     );
 

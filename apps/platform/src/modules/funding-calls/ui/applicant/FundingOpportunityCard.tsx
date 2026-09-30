@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowRight, Banknote, Bookmark, CalendarDays, FileText, Sprout } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useSyncExternalStore, type ReactNode } from "react";
 
@@ -86,6 +87,18 @@ export function FundingOpportunityCard({
     <article className="rounded-2xl border border-brand-navy/15 bg-brand-white p-5 shadow-sm sm:p-7">
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem] lg:gap-8">
         <div className="min-w-0">
+          {opportunity.thumbnailUrl ? (
+            <div className="relative mb-5 aspect-video w-full max-w-xl overflow-hidden rounded-xl bg-brand-cream">
+              <Image
+                alt=""
+                className="object-cover"
+                fill
+                sizes="(min-width: 1024px) 576px, 100vw"
+                src={opportunity.thumbnailUrl}
+                unoptimized
+              />
+            </div>
+          ) : null}
           <header className="flex items-center gap-4">
             <span className={
               isAgriculture

@@ -6,6 +6,7 @@ import type {
 import type { NotificationTemplateScope } from "./NotificationTemplate";
 
 export const globalNotificationTemplateFields = [
+  "brandingLogoUrl",
   "platformName",
   "recipientName",
 ] as const;

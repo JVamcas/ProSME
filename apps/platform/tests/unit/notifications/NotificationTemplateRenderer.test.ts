@@ -23,11 +23,11 @@ describe("notification template renderer", () => {
     expect(renderNotificationTemplate(
       content,
       notificationEventTemplateFields["application.submitted"],
-      { applicationReference: "SME-7", recipientName: "Nela" },
+      { applicationReference: "SME Fund-7", recipientName: "Nela" },
     )).toEqual({
-      html: "<p>Hello Nela — SME-7</p>",
-      plainText: "Hello Nela — SME-7",
-      subject: "Application SME-7",
+      html: "<p>Hello Nela — SME Fund-7</p>",
+      plainText: "Hello Nela — SME Fund-7",
+      subject: "Application SME Fund-7",
     });
   });
 
@@ -47,7 +47,7 @@ describe("notification template renderer", () => {
       content,
       notificationEventTemplateFields["application.submitted"],
       {
-        applicationReference: "SME-7",
+        applicationReference: "SME Fund-7",
         recipientName: '<img src=x onerror="alert(1)">',
       },
     );
@@ -59,7 +59,7 @@ describe("notification template renderer", () => {
     expect(() => renderNotificationTemplate(
       content,
       notificationEventTemplateFields["application.submitted"],
-      { applicationReference: "SME-7\nBcc: attacker@example.com", recipientName: "Nela" },
+      { applicationReference: "SME Fund-7\nBcc: attacker@example.com", recipientName: "Nela" },
     )).toThrow("subjects cannot contain newlines");
     expect(() => renderNotificationTemplate(
       content,
@@ -73,7 +73,7 @@ describe("notification template renderer", () => {
       context: {
         applicationId: "00000000-0000-4000-8000-000000000001",
         applicationOwnerUserId: "00000000-0000-4000-8000-000000000002",
-        applicationReference: "SME-7",
+        applicationReference: "SME Fund-7",
         correlationId: "correlation-1",
         fundingOpportunityTitle: "Growth Fund",
         ownerDisplayName: "Nela",
@@ -98,7 +98,7 @@ describe("notification template renderer", () => {
     const values = buildNotificationRenderValues({
       context: {
         applicationId: "00000000-0000-4000-8000-000000000001",
-        applicationReference: "SME-8",
+        applicationReference: "SME Fund-8",
         assignees: [],
         correlationId: "rfi-correlation-1",
         createdAt: "2026-09-27T10:00:00+02:00",

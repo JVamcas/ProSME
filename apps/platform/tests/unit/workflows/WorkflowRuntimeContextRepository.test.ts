@@ -81,7 +81,13 @@ describe("workflow task runtime context query", () => {
         values: {
           DOCUMENTS_COMPLETE: true,
           ELIGIBILITY_CONFIRMED: true,
+          checklist: {
+            DOCUMENTS_COMPLETE: { accepted: true },
+            ELIGIBILITY_CONFIRMED: { accepted: true },
+          },
+          form: { reviewerNote: "Eligible" },
           outcome: "ELIGIBLE",
+          result: { outcome: "ELIGIBLE" },
           reviewerNote: "Eligible",
         },
       },

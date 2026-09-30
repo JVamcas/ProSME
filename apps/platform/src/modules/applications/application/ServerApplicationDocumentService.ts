@@ -7,7 +7,10 @@ import { permissionCodes } from "@/auth/authorization/permissions";
 import { requirePermission } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import type { DocumentStorage } from "@/integrations/storage/DocumentStorage";
-import { gcsObjectPrefixes } from "@/integrations/storage/GcsObjectPrefixes";
+import {
+  gcsObjectPathSegments,
+  resolveGcsObjectPath,
+} from "@/integrations/storage/GcsObjectPath";
 import { GoogleCloudDocumentStorage } from "@/integrations/storage/GoogleCloudDocumentStorage";
 import {
   RequestValidationError,
@@ -161,13 +164,13 @@ export async function uploadOwnApplicationDocument(
       "The file content does not match its selected type.",
     );
   }
-  const objectKey = [
-    gcsObjectPrefixes.users,
+  const objectKey = resolveGcsObjectPath(
+    ...gcsObjectPathSegments.users,
     actor.id,
     applicationId,
     requirementKey,
     `${randomUUID()}${validated.extension}`,
-  ].join("/");
+  );
   const version = await createPendingApplicationDocumentVersion({
     applicationId,
     checksumSha256: createHash("sha256").update(body).digest("hex"),

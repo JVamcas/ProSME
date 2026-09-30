@@ -27,7 +27,7 @@ accessibility, responsive behavior, data exposure, or branding.
 
 ## Hard visual rules
 
-- Use the SME Fund logo, not ProSME, as the portal identity.
+- Use the SME Fund logo, not SME Fund, as the portal identity.
 - Orange `#FF6F00` is the primary colour and action surface.
 - Standalone icons are orange. Icons on orange surfaces are navy for contrast.
 - Yellow is the client brand value `#FFCA45`.

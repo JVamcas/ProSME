@@ -155,6 +155,9 @@ export type PublicFundingCallRecord = {
   slug: string;
   status: "CLOSED" | "LIVE" | "SCHEDULED";
   thematicArea: string | null;
+  thumbnailContentType?: string | null;
+  thumbnailFileName?: string | null;
+  thumbnailObjectKey?: string | null;
   title: string;
   totalBudgetEnvelope: string;
   publicDocuments: { label: string; url: string }[];

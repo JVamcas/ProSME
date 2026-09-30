@@ -11,7 +11,6 @@ import type {
 } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import { WorkflowStageTaskTable } from "@/modules/workflows/ui/definitions/WorkflowStageTaskTable";
 import { WorkflowStageActionTable } from "@/modules/workflows/ui/definitions/WorkflowStageActionTable";
-import { WorkflowStageTransitionTable } from "@/modules/workflows/ui/definitions/WorkflowStageTransitionTable";
 import { WorkflowStageChecklistTable } from "@/modules/workflows/ui/definitions/WorkflowStageChecklistTable";
 import type { WorkflowStageChecklistDefinition } from "@/modules/workflows/domain/definitions/WorkflowStageChecklistDefinition";
 import { WorkflowStageDocumentRequirementTable } from "@/modules/workflows/ui/definitions/WorkflowStageDocumentRequirementTable";
@@ -185,22 +184,10 @@ export function WorkflowStageDetails({
         <StageTabContent>
           <WorkflowStageActionTable
             canEdit={canEdit}
+            graph={editor.graph}
             onAdd={onAddAction}
             onDelete={onDeleteAction}
             onEdit={onEditAction}
-            stage={stage}
-          />
-        </StageTabContent>
-      ),
-    },
-    {
-      id: "transition",
-      label: "Transition",
-      content: (
-        <StageTabContent>
-          <WorkflowStageTransitionTable
-            canEdit={canEdit}
-            editor={editor}
             stage={stage}
           />
         </StageTabContent>
@@ -213,7 +200,6 @@ export function WorkflowStageDetails({
     | "scoring"
     | "comments"
     | "actions"
-    | "transition"
   >[];
 
   return (

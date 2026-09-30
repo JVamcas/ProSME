@@ -5423,7 +5423,7 @@
           "type": "varchar",
           "primaryKey": false,
           "notNull": false,
-          "default": "'An initiative under the ProSME Project'"
+          "default": "'An initiative under the SME Fund Project'"
         },
         "updated_at": {
           "name": "updated_at",
@@ -5555,7 +5555,7 @@
           "type": "varchar",
           "primaryKey": false,
           "notNull": false,
-          "default": "'An initiative under the ProSME Project'"
+          "default": "'An initiative under the SME Fund Project'"
         },
         "version_updated_at": {
           "name": "version_updated_at",

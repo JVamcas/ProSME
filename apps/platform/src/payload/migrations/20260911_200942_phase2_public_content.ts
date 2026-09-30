@@ -208,7 +208,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   
   CREATE TABLE "cms_header" (
   	"id" serial PRIMARY KEY NOT NULL,
-  	"announcement" varchar DEFAULT 'An initiative under the ProSME Project',
+  	"announcement" varchar DEFAULT 'An initiative under the SME Fund Project',
   	"updated_at" timestamp(3) with time zone,
   	"created_at" timestamp(3) with time zone
   );
@@ -224,7 +224,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   
   CREATE TABLE "_cms_header_v" (
   	"id" serial PRIMARY KEY NOT NULL,
-  	"version_announcement" varchar DEFAULT 'An initiative under the ProSME Project',
+  	"version_announcement" varchar DEFAULT 'An initiative under the SME Fund Project',
   	"version_updated_at" timestamp(3) with time zone,
   	"version_created_at" timestamp(3) with time zone,
   	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL,

@@ -54,10 +54,10 @@ const validInput = {
   publicContactEmail: "funding@example.test",
   publicContactName: "SME Fund",
   publicContactPhone: "+264 61 000 0000",
-  reference: "SME-2027-01",
+  reference: "SME-FUND-2027-01",
   slug: "sme-growth-fund-2027",
   thematicArea: "Business growth",
-  title: "SME Growth Fund 2027",
+  title: "SME Fund Growth Fund 2027",
   totalBudgetEnvelope: "10000000.00",
   workflowTemplateVersionId: "40000000-0000-4000-8000-000000000001",
 };

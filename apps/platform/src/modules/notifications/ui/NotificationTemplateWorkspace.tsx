@@ -6,6 +6,10 @@ import { toast } from "sonner";
 import { PortalErrorState } from "@/components/layout/PortalErrorState";
 import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
 import { GeneralButton } from "@/components/ui/button";
+import {
+  DataTable,
+  type DataTableColumn,
+} from "@/components/ui/data-table";
 import { formatLocalDateTime24 } from "@/lib/dateUtils";
 import { Badge } from "@/shared/ui/Badge";
 import type {
@@ -44,51 +48,70 @@ function VersionBadge({ status }: { status: NotificationTemplateVersionSummary["
   return <Badge variant={variant}>{status}</Badge>;
 }
 
-function VersionRow({
+function versionColumns({
   canPublish,
   onPublish,
   publishing,
-  version,
 }: {
   canPublish: boolean;
-  onPublish: () => void;
+  onPublish: (versionId: string, versionNumber: number) => void;
   publishing: boolean;
-  version: NotificationTemplateVersionSummary;
-}) {
-  return (
-    <tr className="border-t border-brand-navy/10">
-      <td className="whitespace-nowrap px-4 py-4 text-sm font-semibold text-brand-navy">
-        v{version.versionNumber}
-      </td>
-      <td className="whitespace-nowrap px-4 py-4">
-        <VersionBadge status={version.status} />
-      </td>
-      <td className="min-w-52 px-4 py-4 text-sm text-brand-navy/75">
-        {version.sourceFileName}
-      </td>
-      <td className="whitespace-nowrap px-4 py-4 text-sm text-brand-navy/65">
-        {formatLocalDateTime24(version.createdAt)}
-      </td>
-      <td className="whitespace-nowrap px-4 py-4 text-sm text-brand-navy/65">
-        {formatLocalDateTime24(version.publishedAt)}
-      </td>
-      <td className="px-4 py-4 text-right">
-        {version.status === "DRAFT" && canPublish ? (
-          <GeneralButton
-            aria-label={`Publish version ${version.versionNumber}`}
-            disabled={publishing}
-            onClick={onPublish}
-            size="icon-compact"
-            variant="outline"
-          >
-            <ArrowUpToLine aria-hidden="true" className="size-4" />
-          </GeneralButton>
-        ) : (
-          <span className="text-sm text-brand-navy/40">—</span>
-        )}
-      </td>
-    </tr>
-  );
+}): DataTableColumn<NotificationTemplateVersionSummary>[] {
+  return [
+    {
+      accessorKey: "versionNumber",
+      header: "Version",
+      cell: ({ row }) => (
+        <span className="font-semibold text-brand-navy">
+          v{row.original.versionNumber}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => <VersionBadge status={row.original.status} />,
+    },
+    {
+      accessorKey: "sourceFileName",
+      header: "Source file",
+    },
+    {
+      accessorKey: "createdAt",
+      header: "Imported at",
+      cell: ({ row }) => formatLocalDateTime24(row.original.createdAt),
+    },
+    {
+      accessorKey: "publishedAt",
+      header: "Published at",
+      cell: ({ row }) => formatLocalDateTime24(row.original.publishedAt),
+    },
+    {
+      id: "actions",
+      enableSorting: false,
+      header: "Actions",
+      cell: ({ row }) => (
+        <div className="flex justify-start">
+          {row.original.status === "DRAFT" && canPublish ? (
+            <GeneralButton
+              aria-label={`Publish version ${row.original.versionNumber}`}
+              disabled={publishing}
+              onClick={() => onPublish(
+                row.original.id,
+                row.original.versionNumber,
+              )}
+              size="icon-compact"
+              variant="outline"
+            >
+              <ArrowUpToLine aria-hidden="true" className="size-4" />
+            </GeneralButton>
+          ) : (
+            <span className="text-sm text-brand-navy/40">—</span>
+          )}
+        </div>
+      ),
+    },
+  ];
 }
 
 export function NotificationTemplateWorkspace({
@@ -129,6 +152,14 @@ export function NotificationTemplateWorkspace({
     }
   }
 
+  const columns = versionColumns({
+    canPublish,
+    onPublish: (versionId, versionNumber) => {
+      void publishVersion(versionId, versionNumber);
+    },
+    publishing: publish.isPending,
+  });
+
   return (
     <div className="space-y-6">
       <section className="rounded-[1.75rem] border border-brand-navy/10 bg-brand-white p-6 shadow-sm">
@@ -161,40 +192,16 @@ export function NotificationTemplateWorkspace({
             </p>
           </div>
         </div>
-        {versions.length ? (
-          <div className="mt-3 overflow-x-auto rounded-2xl border border-brand-navy/10">
-            <table className="w-full border-collapse text-left">
-              <thead className="bg-brand-cream/50">
-                <tr className="text-xs font-bold text-brand-navy/65">
-                  <th className="px-4 py-3">Version</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Source file</th>
-                  <th className="px-4 py-3">Imported at</th>
-                  <th className="px-4 py-3">Published at</th>
-                  <th className="px-4 py-3 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {versions.map((version) => (
-                  <VersionRow
-                    canPublish={canPublish}
-                    key={version.id}
-                    onPublish={() => void publishVersion(
-                      version.id,
-                      version.versionNumber,
-                    )}
-                    publishing={publish.isPending}
-                    version={version}
-                  />
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <p className="py-8 text-center text-sm text-brand-navy/60">
-            No versions have been imported yet.
-          </p>
-        )}
+        <div className="mt-3">
+          <DataTable
+            columns={columns}
+            data={versions}
+            density="compact"
+            emptyMessage="No versions have been imported yet."
+            minWidth={840}
+            rowKey={(version) => version.id}
+          />
+        </div>
       </section>
 
       <section className="rounded-2xl bg-brand-cream/50 p-5">

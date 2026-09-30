@@ -29,7 +29,7 @@ vi.mock("@/modules/funding-calls/FundingCallHooks", () => ({
     : {
         data: [{
           ruleSetId: "30000000-0000-4000-8000-000000000002",
-          ruleSetName: "SME eligibility",
+          ruleSetName: "SME Fund eligibility",
           status: "DRAFT",
           versionId: eligibilityVersionId,
           versionNumber: 1,
@@ -73,12 +73,12 @@ const call: FundingCallView = {
   publicContactEmail: null,
   publicContactName: null,
   publicContactPhone: null,
-  reference: "SME-2027-01",
+  reference: "SME Fund-2027-01",
   rowVersion: 1,
   slug: "sme-growth-fund-2027",
   status: "DRAFT",
   thematicArea: "Business growth",
-  title: "SME Growth Fund 2027",
+  title: "SME Fund Growth Fund 2027",
   totalBudgetEnvelope: "10000000.00",
   updatedAt: "2026-09-20T08:00:00.000Z",
   workflowTemplateVersionId: workflowVersionId,

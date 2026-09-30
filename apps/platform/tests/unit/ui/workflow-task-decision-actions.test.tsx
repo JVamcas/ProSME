@@ -28,12 +28,13 @@ const task = {
 } as unknown as TaskDetail;
 
 describe("workflow task decision actions", () => {
-  it("shows a bound action on a task without an eligibility command", () => {
+  it("shows the shared action dropdown on an active task", () => {
     const markup = renderToStaticMarkup(
       <WorkflowTaskDecisionActions task={task} />,
     );
 
-    expect(markup).toContain("Advance application");
+    expect(markup).toContain("Actions");
+    expect(markup).toContain('aria-haspopup="true"');
     expect(markup).toContain('type="button"');
   });
 

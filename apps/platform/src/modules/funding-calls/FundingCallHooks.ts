@@ -150,6 +150,31 @@ export function useUpdateFundingCall(id: string) {
   });
 }
 
+export function useFundingCallThumbnail(id: string) {
+  const queryClient = useQueryClient();
+  function updateCachedCall(call: Awaited<ReturnType<
+    typeof clientFundingCallService.uploadThumbnail
+  >>) {
+    queryClient.setQueryData(fundingCallQueryKeys.detail(id), call);
+    void queryClient.invalidateQueries({ queryKey: fundingCallQueryKeys.all });
+  }
+  const upload = useMutation({
+    mutationFn: (input: { file: File; expectedRowVersion: number }) =>
+      clientFundingCallService.uploadThumbnail(
+        id,
+        input.file,
+        input.expectedRowVersion,
+      ),
+    onSuccess: updateCachedCall,
+  });
+  const remove = useMutation({
+    mutationFn: (expectedRowVersion: number) =>
+      clientFundingCallService.removeThumbnail(id, expectedRowVersion),
+    onSuccess: updateCachedCall,
+  });
+  return { remove, upload };
+}
+
 export function usePublishFundingCall(id: string) {
   const queryClient = useQueryClient();
   return useMutation({

@@ -4,6 +4,12 @@ set -Eeuo pipefail
 
 export DATABASE_URL="postgresql://build:build@127.0.0.1:5432/build"
 export FIREBASE_PROJECT_ID="container-build"
+: "${ENVIRONMENT:?ENVIRONMENT must be set to local, dev, or prod}"
+if [[ "${ENVIRONMENT}" != "local" && "${ENVIRONMENT}" != "dev" && "${ENVIRONMENT}" != "prod" ]]; then
+  echo "ENVIRONMENT must be set to local, dev, or prod" >&2
+  exit 1
+fi
+export ENVIRONMENT
 export NEXT_TELEMETRY_DISABLED=1
 export PAYLOAD_SECRET="container-build-placeholder-secret"
 export PUBLIC_FIREBASE_API_KEY="container-build"

@@ -15,6 +15,7 @@ export type PermissionGroupId =
   | "workflow-configuration"
   | "roles"
   | "audit"
+  | "branding"
   | "notifications"
   | "content-management"
   | "integrations";
@@ -148,6 +149,14 @@ export const permissionGroups: readonly PermissionGroup[] = [
     id: "audit",
     label: "Audit",
     permissionCodes: [permissionCodes.auditRead],
+  },
+  {
+    id: "branding",
+    label: "Branding",
+    permissionCodes: [
+      permissionCodes.brandingRead,
+      permissionCodes.brandingManage,
+    ],
   },
   {
     id: "notifications",

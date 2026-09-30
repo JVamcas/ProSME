@@ -11,11 +11,13 @@ RUN --mount=type=cache,id=prosme-npm,target=/root/.npm,sharing=locked \
 
 FROM dependencies AS builder
 
+ARG ENVIRONMENT=local
+
 COPY apps/platform apps/platform
 COPY --chmod=755 scripts/container/build.sh scripts/container/build.sh
 
 RUN --mount=type=cache,id=prosme-next,target=/workspace/apps/platform/.next/cache,sharing=locked \
-    scripts/container/build.sh
+    ENVIRONMENT="${ENVIRONMENT}" scripts/container/build.sh
 
 FROM dependencies AS migrations
 
@@ -29,6 +31,7 @@ COPY --chown=nextjs:nodejs \
     scripts/seed/seed-standard-eligibility.ts \
     scripts/seed/seed-standard-workflow.ts \
     scripts/seed/seed-notifications.ts \
+    scripts/seed/reset-platform-data.ts \
     scripts/seed/
 COPY --chown=nextjs:nodejs --chmod=755 \
     scripts/container/migrate.sh scripts/container/migrate.sh

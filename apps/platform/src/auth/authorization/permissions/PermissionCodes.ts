@@ -100,6 +100,8 @@ export const permissionCodes = {
   roleRead: "role.read",
   roleManage: "role.manage",
   auditRead: "audit.read",
+  brandingRead: "branding.read",
+  brandingManage: "branding.manage",
   userNotificationOwnRead: "user.notification.own.read",
   notificationConfigurationRead: "notifications.configuration.read",
   notificationConfigurationUpdate: "notifications.configuration.update",

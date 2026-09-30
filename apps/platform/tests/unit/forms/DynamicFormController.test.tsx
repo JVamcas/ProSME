@@ -10,6 +10,10 @@ import {
   useDynamicFormController,
 } from "@/modules/forms/ui/renderer/DynamicFormController";
 
+(globalThis as typeof globalThis & {
+  IS_REACT_ACT_ENVIRONMENT: boolean;
+}).IS_REACT_ACT_ENVIRONMENT = true;
+
 const mocks = vi.hoisted(() => ({
   completeMutate: vi.fn(),
   push: vi.fn(),
@@ -52,7 +56,15 @@ function taskFormData(): TaskFormData {
         type: "TEXT",
       }],
       instructions: null,
-      sections: [],
+      sections: [{
+        columnSpan: 1,
+        description: "",
+        id: "10000000-0000-4000-8000-000000000001",
+        key: "MAIN",
+        order: 1,
+        showContainer: true,
+        title: "Main",
+      }],
       submitLabel: "Submit",
       versionId,
       versionNumber: 4,

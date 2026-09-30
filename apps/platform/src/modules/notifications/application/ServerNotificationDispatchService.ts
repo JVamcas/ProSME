@@ -34,6 +34,7 @@ import {
 import { getNotificationProcessorConfiguration } from "./NotificationProcessorConfiguration";
 import { renderNotificationTemplate } from "./NotificationTemplateRenderer";
 import { buildServerNotificationRenderValues } from "./ServerNotificationRenderValues";
+import { loadNotificationBrandingLogoAttachment } from "./ServerNotificationEmailBranding";
 
 export type NotificationBatchResult = {
   claimed: number;
@@ -70,6 +71,7 @@ function controlledFailure(error: unknown): {
 }
 
 async function dispatchDelivery(input: {
+  brandingAttachment: ReturnType<typeof loadNotificationBrandingLogoAttachment>;
   delivery: ClaimedNotificationDelivery;
   emailSender: NotificationEmailSender;
   now: Date;
@@ -139,6 +141,7 @@ async function dispatchDelivery(input: {
         );
     const result = await input.emailSender.send({
       ...rendered,
+      attachments: [await input.brandingAttachment],
       to: input.delivery.recipientEmail,
     });
     await recordNotificationDeliverySuccess({
@@ -160,6 +163,7 @@ async function dispatchDelivery(input: {
     });
     await recordNotificationDeliveryFailure({
       code: outcome.code,
+      deadLetter: outcome.code === notificationErrorCodes.retryExhausted,
       deliveryId: input.delivery.deliveryId,
       nextAttemptAt: outcome.nextAttemptAt,
       now: input.now,
@@ -204,10 +208,14 @@ export async function processNotificationBatch(
     retrying: 0,
     sent: 0,
   };
+  const brandingAttachment = deliveries.length
+    ? loadNotificationBrandingLogoAttachment()
+    : undefined;
 
   for (const delivery of deliveries) {
     if (now().getTime() >= deadline) break;
     const outcome = await dispatchDelivery({
+      brandingAttachment: brandingAttachment!,
       delivery,
       emailSender: dependencies.emailSender,
       now: now(),
@@ -227,7 +235,6 @@ export async function processNotificationBatch(
       }),
     ),
   );
-  logger.info("notification.batch.processed", result);
   return result;
 }
 

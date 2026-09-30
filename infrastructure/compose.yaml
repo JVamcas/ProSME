@@ -12,6 +12,7 @@ services:
       - ../.env
     environment:
       DATABASE_URL: ${DATABASE_URL}
+      ENVIRONMENT: ${ENVIRONMENT:-local}
       GCS_DOCUMENTS_BUCKET: ${GCS_DOCUMENTS_BUCKET:-smepro}
       GOOGLE_CLOUD_PROJECT: ${GOOGLE_CLOUD_PROJECT:-msmepro}
       NODE_ENV: production
@@ -29,12 +30,15 @@ services:
       context: ..
       dockerfile: apps/platform/Dockerfile
       target: runtime
+      args:
+        ENVIRONMENT: ${ENVIRONMENT:-local}
     restart: unless-stopped
     init: true
     env_file:
       - ../.env
     environment:
       DATABASE_URL: ${DATABASE_URL}
+      ENVIRONMENT: ${ENVIRONMENT:-local}
       HOSTNAME: 0.0.0.0
       NEXT_TELEMETRY_DISABLED: "1"
       NODE_ENV: production

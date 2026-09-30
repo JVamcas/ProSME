@@ -51,15 +51,16 @@ export type AdminApplicationOverview = {
   submittedAt: string;
 };
 
-import type {
-  ApplicationBusinessSection,
-  ApplicationFinancialSection,
-  ApplicationProjectSection,
-  ApplicationSection,
-  ApplicationSectionCompletion,
-} from "./ApplicationSchemas";
-import type { ApplicationDeclarationsSection } from "./ApplicationDeclarationSchemas";
 import type { FormRuntimeSchema } from "@/modules/forms/FormTypes";
+
+export type ApplicationSection =
+  | "business"
+  | "project"
+  | "financial"
+  | "documents"
+  | "declarations";
+
+export type ApplicationSectionCompletion = Record<ApplicationSection, boolean>;
 
 export type ApplicationSummary = {
   canWithdraw?: boolean;
@@ -99,14 +100,9 @@ export type ApplicationPage = {
 };
 
 export type ApplicationView = ApplicationSummary & {
-  businessSection: Partial<ApplicationBusinessSection>;
-  declarationsSection: Partial<ApplicationDeclarationsSection>;
-  financialSection: Partial<ApplicationFinancialSection>;
   eligibilityRuleSetVersionId: string;
   formVersionId: string;
-  projectSection: Partial<ApplicationProjectSection>;
   rowVersion: number;
-  sectionCompletion: ApplicationSectionCompletion;
 };
 
 export type ApplicationReadView = {

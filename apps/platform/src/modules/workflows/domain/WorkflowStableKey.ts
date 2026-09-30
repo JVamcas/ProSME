@@ -16,3 +16,21 @@ export function stableKeyFromLabel(value: string, fallback: string) {
   const prefixed = /^[A-Z]/.test(key) ? key : `${fallback}_${key}`;
   return prefixed.slice(0, 80) || fallback;
 }
+
+export function uniqueStableKeyFromLabel(
+  value: string,
+  existingKeys: Iterable<string>,
+  fallback: string,
+) {
+  const existing = new Set(existingKeys);
+  const baseKey = stableKeyFromLabel(value, fallback);
+  if (!existing.has(baseKey)) return baseKey;
+
+  let suffixNumber = 2;
+  while (true) {
+    const suffix = `_${suffixNumber}`;
+    const candidate = `${baseKey.slice(0, 80 - suffix.length)}${suffix}`;
+    if (!existing.has(candidate)) return candidate;
+    suffixNumber += 1;
+  }
+}

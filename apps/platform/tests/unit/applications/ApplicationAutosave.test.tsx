@@ -33,11 +33,9 @@ function draft(): ApplicationDraftView {
       description: "Complete and submit your application.",
       actionRequired: false,
     },
-    businessName: "Example SME",
-    businessSection: {},
+    businessName: "Example SME Fund",
     createdAt: "2026-09-23T08:00:00.000Z",
     currentSection: "business",
-    declarationsSection: {},
     draftResponse: {
       id: "30000000-0000-4000-8000-000000000001",
       rowVersion: 4,
@@ -45,7 +43,6 @@ function draft(): ApplicationDraftView {
       values: { NAME: "Saved" },
     },
     eligibilityRuleSetVersionId: "40000000-0000-4000-8000-000000000001",
-    financialSection: {},
     form: {
       fields: [],
       instructions: null,
@@ -59,15 +56,7 @@ function draft(): ApplicationDraftView {
     fundingOpportunityTitle: "Growth Fund",
     id: applicationId,
     progressPercent: 0,
-    projectSection: {},
     rowVersion: 7,
-    sectionCompletion: {
-      business: false,
-      declarations: false,
-      documents: false,
-      financial: false,
-      project: false,
-    },
     status: "draft",
     updatedAt: "2026-09-23T08:00:00.000Z",
   };

@@ -60,12 +60,18 @@ export function NotificationOperationalSummary() {
       count: query.data.failed,
       icon: CircleX,
       label: "Failed",
-      supportingText: "Delivery attempts exhausted",
+      supportingText: "Terminal delivery failures",
+    },
+    {
+      count: query.data.deadLetter,
+      icon: CircleX,
+      label: "Dead letter",
+      supportingText: "Automatic attempts exhausted",
     },
   ] as const;
   return (
     <div className="space-y-4">
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
         {counts.map(({ count, icon, label, supportingText }) => (
           <DashboardMetricCard
             icon={icon}

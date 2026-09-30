@@ -39,6 +39,9 @@ const call: PublicFundingCallRecord = {
   slug: "growth-fund",
   status: "LIVE",
   thematicArea: "Growth",
+  thumbnailContentType: "image/webp",
+  thumbnailFileName: "growth.webp",
+  thumbnailObjectKey: "local/utilities/funding-calls/growth.webp",
   title: "Growth Fund",
   totalBudgetEnvelope: "1000000.00",
 };
@@ -87,6 +90,7 @@ describe("public funding-call read model", () => {
       summary: "Support for growing Namibian businesses.",
       summaryHtml: call.description,
       thematicArea: "Growth",
+      thumbnailUrl: `/api/public/funding-calls/${call.id}/thumbnail`,
       title: "Growth Fund",
       totalFundingAmount: 1000000,
     });

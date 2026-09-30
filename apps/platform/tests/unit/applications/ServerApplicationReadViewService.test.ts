@@ -72,7 +72,7 @@ describe("own application read view", () => {
     vi.mocked(getApplicationSubmissionSnapshot).mockResolvedValue({
       snapshot: {
         applicant: { displayName: "Applicant", userId: "internal-id" },
-        business: { legalName: "Example SME", id: "internal-business-id" },
+        business: { legalName: "Example SME Fund", id: "internal-business-id" },
         documents: [{
           id: "40000000-0000-4000-8000-000000000004",
           originalName: "Lodged plan.pdf",
@@ -90,7 +90,7 @@ describe("own application read view", () => {
     expect(view.values).toEqual({ GOAL: "Lodged answer" });
     expect(view.documents[0]?.name).toBe("Lodged plan.pdf");
     expect(view.applicantDetails).toEqual([{ label: "Name", value: "Applicant" }]);
-    expect(view.businessDetails).toEqual([{ label: "Legal name", value: "Example SME" }]);
+    expect(view.businessDetails).toEqual([{ label: "Legal name", value: "Example SME Fund" }]);
     expect(getOwnApplicationDocuments).not.toHaveBeenCalled();
   });
 

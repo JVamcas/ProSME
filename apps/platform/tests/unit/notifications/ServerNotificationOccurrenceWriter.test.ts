@@ -11,9 +11,9 @@ import { insertNotificationOccurrence } from "@/modules/notifications/infrastruc
 const context = {
   applicationId: "10000000-0000-4000-8000-000000000001",
   applicationOwnerUserId: "10000000-0000-4000-8000-000000000002",
-  applicationReference: "SME-2026-001",
-  correlationId: "submission:SME-2026-001",
-  fundingOpportunityTitle: "SME Growth Fund",
+  applicationReference: "SME Fund-2026-001",
+  correlationId: "submission:SME Fund-2026-001",
+  fundingOpportunityTitle: "SME Fund Growth Fund",
   ownerDisplayName: "Applicant One",
   ownerEmail: "Applicant@Example.test",
   sourceIdempotencyKey: "submission-1",

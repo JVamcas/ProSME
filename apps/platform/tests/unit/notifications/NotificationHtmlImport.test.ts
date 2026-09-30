@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -29,6 +29,30 @@ function validate(html: string, overrides: Partial<{
 }
 
 describe("notification HTML import", () => {
+  it("keeps every source template logo-enabled with a resilient CTA", async () => {
+    const directory = path.join(
+      process.cwd(),
+      "src/modules/notifications/templates/email",
+    );
+    const files = (await readdir(directory)).filter((file) =>
+      file.endsWith(".html")
+    );
+
+    expect(files.length).toBeGreaterThan(0);
+    for (const file of files) {
+      const html = await readFile(path.join(directory, file), "utf8");
+      expect(html, `${file} must use the shared branding logo`).toContain(
+        'src="{{brandingLogoUrl}}"',
+      );
+      expect(html, `${file} must preserve the CTA cell background`).toContain(
+        'bgcolor="#0A183B"',
+      );
+      expect(html, `${file} must style the CTA link background`).toContain(
+        "background-color:#0a183b",
+      );
+    }
+  });
+
   it("sanitizes branded HTML, generates text, and produces a stable digest", () => {
     const first = validate('<div class="email"><h1>Hello {{recipientName}}</h1></div>');
     const second = validate('<div class="email"><h1>Hello {{recipientName}}</h1></div>');
@@ -62,6 +86,16 @@ describe("notification HTML import", () => {
   });
 
   it.each([
+    [
+      "auth-email-verification.html",
+      "auth.email.verification",
+      "Verify your email for {{platformName}}",
+    ],
+    [
+      "auth-password-reset.html",
+      "auth.password.reset",
+      "Reset your password for {{platformName}}",
+    ],
     [
       "application-submitted.html",
       "application.submitted",
@@ -110,5 +144,7 @@ describe("notification HTML import", () => {
     }, notificationEventTemplateFields[eventKey]);
     expect(validated.htmlTemplate).not.toMatch(/<script|<form|\son[a-z]+=/i);
     expect(validated.plainTextTemplate.length).toBeGreaterThan(30);
+    expect(validated.htmlTemplate).toContain('bgcolor="#0A183B"');
+    expect(validated.htmlTemplate).toContain("background-color:#0a183b");
   });
 });

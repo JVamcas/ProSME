@@ -1,7 +1,93 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Funding call suspended</title></head>
-<body style="margin:0;background:#f5f2ea;color:#15243a;font-family:Arial,sans-serif"><table role="presentation" width="100%"><tr><td align="center" style="padding:24px 12px"><table role="presentation" width="640" style="max-width:640px;background:#fff;border-radius:16px"><tr><td style="padding:32px;border-top:6px solid #c2410c">
-<p style="color:#c2410c;font-weight:bold">{{platformName}}</p><h1>Funding call suspended</h1><p>Hello {{recipientName}},</p>
-<p><strong>{{fundingCallReference}} — {{fundingCallTitle}}</strong> was suspended on {{occurredAt}}.</p><p><strong>Reason:</strong> {{reason}}</p>
-<p><a href="{{fundingCallUrl}}" style="color:#f58220;font-weight:bold">View funding call</a></p>
-</td></tr></table></td></tr></table></body></html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="x-apple-disable-message-reformatting">
+  <meta name="format-detection" content="telephone=no,address=no,email=no,date=no,url=no">
+  <title>Funding call suspended | {{platformName}}</title>
+</head>
+<body style="margin:0;padding:0;background:#f4f6f8;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;mso-hide:all;">
+    A funding call has been suspended.
+  </div>
+
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;background:#f4f6f8;">
+    <tr>
+      <td align="center" style="padding:40px 16px;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:600px;background:#ffffff;border:1px solid #e4e8ee;border-radius:14px;overflow:hidden;">
+          <tr>
+            <td style="height:5px;background:#f28c28;font-size:0;line-height:0;">&nbsp;</td>
+          </tr>
+
+          <tr>
+            <td style="padding:28px 32px 22px;border-bottom:1px solid #edf0f3;">
+              <img
+                src="{{brandingLogoUrl}}"
+                width="156"
+                alt="{{platformName}}"
+                style="display:block;width:156px;max-width:100%;height:auto;border:0;outline:none;text-decoration:none;"
+              >
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding:38px 32px 12px;">
+              <p style="margin:0 0 10px;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:18px;font-weight:700;letter-spacing:1.1px;text-transform:uppercase;color:#f28c28;">
+                Funding call update
+              </p>
+              <h1 style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:28px;line-height:36px;font-weight:700;color:#0a183b;">
+                Funding call suspended
+              </h1>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding:12px 32px 6px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:24px;color:#39465a;">
+              <p style="margin:0 0 18px;">Hello {{recipientName}},</p>
+              <p style="margin:0 0 18px;"><strong>{{fundingCallReference}} — {{fundingCallTitle}}</strong> was suspended.</p>
+
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;margin:0 0 24px;background:#f8fafc;border:1px solid #e8edf2;border-radius:10px;">
+                <tr>
+                  <td style="padding:16px 18px;">
+                    <p style="margin:0 0 8px;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:20px;color:#596579;"><strong style="color:#0a183b;">Suspended:</strong> {{occurredAt}}</p>
+                    <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:20px;color:#596579;"><strong style="color:#0a183b;">Reason:</strong> {{reason}}</p>
+                  </td>
+                </tr>
+              </table>
+
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:0 0 24px;">
+                <tr>
+                  <td bgcolor="#0A183B" style="border-radius:8px;">
+                    <a href="{{fundingCallUrl}}" target="_blank" style="display:inline-block;background-color:#0a183b;padding:13px 22px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:20px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:8px;">
+                      View funding call
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin:0 0 8px;font-size:13px;line-height:20px;color:#687386;">
+                If the button does not work, copy and paste this link into your browser:
+              </p>
+              <p style="margin:0 0 24px;font-size:13px;line-height:20px;word-break:break-all;">
+                <a href="{{fundingCallUrl}}" target="_blank" style="color:#0a4f8f;text-decoration:underline;">{{fundingCallUrl}}</a>
+              </p>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding:22px 32px 28px;background:#0a183b;font-family:Arial,Helvetica,sans-serif;color:#dce3ec;">
+              <p style="margin:0 0 8px;font-size:13px;line-height:20px;font-weight:700;color:#ffffff;">{{platformName}}</p>
+              <p style="margin:0 0 12px;font-size:12px;line-height:19px;">Supporting Namibian SMEs through accessible funding and development opportunities.</p>
+              <p style="margin:0;font-size:11px;line-height:18px;color:#aeb9c9;">
+                This is an automated message. Please do not reply to this email.<br>
+                &copy; 2026 SME Fund. All rights reserved.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

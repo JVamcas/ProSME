@@ -46,7 +46,7 @@ function applicationMarkup() {
         <table class="w-full min-w-[760px] text-left text-sm">
           <thead><tr><th>Opportunity</th><th>Status</th><th>Progress</th><th>Actions</th></tr></thead>
           <tbody><tr>
-            <td>SME Growth and Equipment Fund</td>
+            <td>SME Fund Growth and Equipment Fund</td>
             <td><span class="bg-brand-yellow text-brand-navy">Draft</span></td>
             <td>${progressBar()}</td>
             <td><a href="#continue">Continue</a></td>
@@ -55,7 +55,7 @@ function applicationMarkup() {
       </div>
       <div class="grid gap-3 md:absolute md:invisible">
           <article class="rounded-2xl border border-brand-navy/15 bg-brand-white p-5">
-            <h2 class="font-bold text-brand-navy">SME Growth and Equipment Fund</h2>
+            <h2 class="font-bold text-brand-navy">SME Fund Growth and Equipment Fund</h2>
             <span class="bg-brand-yellow text-brand-navy">Draft</span>
             <div class="mt-4">${progressBar()}</div>
             <a href="#continue">Continue</a>

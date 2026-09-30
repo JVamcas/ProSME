@@ -30,7 +30,7 @@ beforeEach(() => {
 
 describe("admin application detail route", () => {
   it("returns the detail model for an authorized assigned reviewer", async () => {
-    const model = { title: "Growth Grant", reference: "SME-001" };
+    const model = { title: "Growth Grant", reference: "SME Fund-001" };
     vi.mocked(getAdminApplicationDetail).mockResolvedValue({
       model,
     } as never);

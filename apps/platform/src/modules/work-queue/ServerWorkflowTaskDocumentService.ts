@@ -5,7 +5,10 @@ import { randomUUID } from "node:crypto";
 import { requireAuthenticatedUser, requirePermission } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import type { DocumentStorage } from "@/integrations/storage/DocumentStorage";
-import { gcsObjectPrefixes } from "@/integrations/storage/GcsObjectPrefixes";
+import {
+  gcsObjectPathSegments,
+  resolveGcsObjectPath,
+} from "@/integrations/storage/GcsObjectPath";
 import { GoogleCloudDocumentStorage } from "@/integrations/storage/GoogleCloudDocumentStorage";
 import { RequestValidationError, ResourceNotFoundError } from "@/lib/resource-errors";
 import {
@@ -54,14 +57,14 @@ export async function uploadWorkflowTaskDocument(
     );
   }
   const validated = validateWorkflowEvidenceFile(file, requirement);
-  const objectKey = [
-    gcsObjectPrefixes.users,
+  const objectKey = resolveGcsObjectPath(
+    ...gcsObjectPathSegments.users,
     actor.id,
     "workflow-evidence",
     task.applicationId,
     requirementId,
     `${randomUUID()}${validated.extension}`,
-  ].join("/");
+  );
   await storage.put({
     body: Buffer.from(await file.arrayBuffer()),
     contentType: validated.contentType,
