@@ -136,8 +136,8 @@ describe("form definition dialog", () => {
       )?.click();
     });
 
-    expect(container.textContent).toContain("Version 2");
-    expect(container.textContent).toContain("Version 1");
+    expect(container.textContent).toContain("v2");
+    expect(container.textContent).toContain("v1");
     expect(container.textContent).toContain("Retired");
     expect(container.querySelector('[aria-label="Finance Review versions"]'))
       .not.toBeNull();

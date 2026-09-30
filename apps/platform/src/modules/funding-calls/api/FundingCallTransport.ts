@@ -36,6 +36,9 @@ export type FundingCallView = {
   publicContactName: string | null;
   publicContactEmail: string | null;
   publicContactPhone: string | null;
+  thumbnailContentType?: string | null;
+  thumbnailFileName?: string | null;
+  thumbnailUrl?: string | null;
   rowVersion: number;
   createdAt: string;
   updatedAt: string;

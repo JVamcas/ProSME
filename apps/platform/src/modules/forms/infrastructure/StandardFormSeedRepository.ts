@@ -105,6 +105,7 @@ export async function insertMissingStandardForms(
         maxLength: field.maxLength ?? null,
         minimum: field.minimum ?? null,
         minLength: field.minLength ?? null,
+        repeatableConfiguration: field.repeatable ?? null,
         order: field.order,
         required: field.required,
         sectionId: field.sectionId,

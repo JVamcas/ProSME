@@ -175,7 +175,7 @@ export function NotificationChannelWorkspace({
   return (
     <div className="space-y-5">
       {groupedTargets.globalTarget ? (
-        <article className="rounded-[1.75rem] border border-brand-navy/10 bg-brand-white p-5 shadow-sm sm:p-6">
+        <article className="rounded-t-[1.75rem] border border-brand-navy/10 bg-brand-white p-5 sm:p-6">
           <TargetHeader
             channelCode={channelCode}
             target={groupedTargets.globalTarget}

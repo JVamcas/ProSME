@@ -10,7 +10,6 @@ import {
 } from "@/lib/resource-errors";
 import type { FundingCallLifecycleCommandInput } from "../api/FundingCallSchemas";
 import type { FundingCallView } from "../api/FundingCallTransport";
-import type { FundingCall } from "../domain/FundingCall";
 import {
   FundingCallTransitionDeniedError,
   resolveFundingCallTransition,
@@ -22,6 +21,7 @@ import {
   transitionFundingCall,
 } from "../infrastructure/FundingCallLifecycleRepository";
 import { readFundingCallById } from "../infrastructure/FundingCallRepository";
+import { toFundingCallView } from "./FundingCallViewMapper";
 
 const commandPermissions = {
   ARCHIVE: permissionCodes.fundingCallArchive,
@@ -29,16 +29,6 @@ const commandPermissions = {
   SUSPEND: permissionCodes.fundingCallSuspend,
   WITHDRAW: permissionCodes.fundingCallWithdraw,
 } as const;
-
-function view(call: FundingCall): FundingCallView {
-  return {
-    ...call,
-    closesAt: call.closesAt.toISOString(),
-    createdAt: call.createdAt.toISOString(),
-    opensAt: call.opensAt.toISOString(),
-    updatedAt: call.updatedAt.toISOString(),
-  };
-}
 
 export async function changeFundingCallLifecycleStatus(
   user: AuthenticatedUser | null,
@@ -53,7 +43,7 @@ export async function changeFundingCallLifecycleStatus(
     idempotencyKey,
     input.command,
   );
-  if (replay) return view(replay);
+  if (replay) return toFundingCallView(replay);
   const call = await readFundingCallById(fundingCallId);
   if (!call) throw new ResourceNotFoundError("funding call");
   if (call.rowVersion !== input.expectedRowVersion) {
@@ -90,7 +80,7 @@ export async function changeFundingCallLifecycleStatus(
       "The funding call changed. Refresh it before continuing.",
     );
   }
-  return view(result.call);
+  return toFundingCallView(result.call);
 }
 
 type ReconciliationResult = {

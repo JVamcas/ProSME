@@ -1002,6 +1002,34 @@
       "when": 1800057600000,
       "tag": "0142_notification_email_cta_background",
       "breakpoints": true
+    },
+    {
+      "idx": 143,
+      "version": "7",
+      "when": 1800144000000,
+      "tag": "0143_repeatable_form_groups",
+      "breakpoints": true
+    },
+    {
+      "idx": 144,
+      "version": "7",
+      "when": 1800230400000,
+      "tag": "0144_funding_call_thumbnails",
+      "breakpoints": true
+    },
+    {
+      "idx": 145,
+      "version": "7",
+      "when": 1800316800000,
+      "tag": "0145_restore_funding_call_governance_policy",
+      "breakpoints": true
+    },
+    {
+      "idx": 146,
+      "version": "7",
+      "when": 1800403200000,
+      "tag": "0146_repair_application_submission_recipients",
+      "breakpoints": true
     }
   ]
 }

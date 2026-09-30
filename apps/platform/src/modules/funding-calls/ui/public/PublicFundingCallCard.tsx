@@ -1,6 +1,7 @@
 import { ArrowRight } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
 
-import { GeneralButtonLink } from "@/components/ui/button";
 import type { PublicFundingCallSummary } from "../../api/PublicFundingCallTransport";
 import { PublicFundingCallFacts } from "./PublicFundingCallFacts";
 import {
@@ -14,38 +15,64 @@ export function PublicFundingCallCard({
 }: {
   call: PublicFundingCallSummary;
 }) {
+  const detailHref = publicFundingCallHref(call.id);
+
   return (
-    <article className="rounded-xl border border-brand-blue/30 bg-white p-5 sm:p-7">
-      <PublicFundingCallStatus call={call} />
-      <div className="mt-4 grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-center">
+    <article className="group relative flex h-full flex-col overflow-hidden rounded-xl border border-brand-navy/15 bg-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-brand-orange/60 hover:shadow-md">
+      <div className="relative aspect-[3/2] overflow-hidden bg-brand-cream">
+        {call.thumbnailUrl ? (
+          <Image
+            alt=""
+            className="object-cover transition duration-300 group-hover:scale-[1.02]"
+            fill
+            sizes="(min-width: 768px) 50vw, 100vw"
+            src={call.thumbnailUrl}
+            unoptimized
+          />
+        ) : (
+          <div
+            aria-hidden
+            className="h-full bg-gradient-to-br from-brand-blue/20 via-brand-cream to-brand-orange/20"
+          />
+        )}
+        <PublicFundingCallStatus
+          call={call}
+          className="absolute left-4 top-4 rounded-md bg-brand-yellow px-3 py-2 font-bold uppercase shadow-sm before:hidden"
+        />
+      </div>
+
+      <div className="flex flex-1 flex-col p-5 sm:p-6">
         <div className="min-w-0">
-          <h3 className="text-xl font-bold text-brand-navy sm:text-2xl">
-            {call.title}
+          <h3 className="text-xl font-bold leading-tight text-brand-navy">
+            <Link
+              className="after:absolute after:inset-0 after:rounded-xl focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-brand-navy focus-visible:after:ring-offset-2"
+              href={detailHref}
+            >
+              {call.title}
+            </Link>
           </h3>
-          <p className="mt-2 line-clamp-3 text-sm leading-6 text-brand-navy/70">
+          <p className="mt-2 line-clamp-3 text-sm leading-6 text-brand-navy/70 sm:text-base">
             {call.summary}
           </p>
         </div>
-        <div className="border-t border-brand-blue/20 pt-5 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
-          <PublicFundingCallFacts call={call} />
+
+        <div className="mt-5 border-t border-brand-navy/10 pt-4">
+          <PublicFundingCallFacts call={call} compact />
         </div>
-      </div>
-      <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-        <GeneralButtonLink
-          className="min-h-11 rounded-lg"
-          href={publicFundingCallHref(call.id)}
-        >
-          View call &amp; requirements
-        </GeneralButtonLink>
-        {call.selfCheckAvailable && call.status !== "closed" ? (
-          <GeneralButtonLink
-            className="min-h-11 rounded-lg"
-            href={publicEligibilityHref(call.id)}
-            variant="outline"
-          >
-            Check eligibility <ArrowRight aria-hidden className="size-4" />
-          </GeneralButtonLink>
-        ) : null}
+
+        <div className="mt-auto flex items-center justify-between gap-3 pt-5 text-sm font-semibold">
+          <span className="inline-flex items-center gap-2 text-brand-navy transition group-hover:text-brand-orange">
+            View call <ArrowRight aria-hidden className="size-4" />
+          </span>
+          {call.selfCheckAvailable && call.status !== "closed" ? (
+            <Link
+              className="relative z-10 text-brand-orange underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-navy focus-visible:ring-offset-2"
+              href={publicEligibilityHref(call.id)}
+            >
+              Check eligibility
+            </Link>
+          ) : null}
+        </div>
       </div>
     </article>
   );

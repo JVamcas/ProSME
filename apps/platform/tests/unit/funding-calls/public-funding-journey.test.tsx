@@ -7,6 +7,7 @@ import {
   defaultFundingSupport,
 } from "@/modules/content/FundingPageContent";
 import { PublicFundingCallCard } from "@/modules/funding-calls/ui/public/PublicFundingCallCard";
+import { PublicFundingCallList } from "@/modules/funding-calls/ui/public/PublicFundingCallList";
 import { PublicFundingCallNextStep } from "@/modules/funding-calls/ui/public/PublicFundingCallNextStep";
 import { PublicFundingPage } from "@/modules/funding-calls/ui/public/PublicFundingPage";
 import { publicCall } from "./PublicFundingCallFixture";
@@ -23,6 +24,31 @@ describe("public funding journey", () => {
     expect(markup).toContain("200,000");
     expect(markup).toContain("31 Oct 2026");
     expect(markup).not.toContain('href="/eligibility"');
+  });
+
+  it("renders funding calls as compact cards in a horizontal rail", () => {
+    const call = publicCall({
+      thumbnailUrl: "/api/public/funding-calls/thumbnail",
+    });
+    const markup = renderToStaticMarkup(
+      <PublicFundingCallList
+        calls={{
+          items: [call, { ...call, id: `${call.id}-2` }],
+          nextCursor: null,
+          total: 2,
+        }}
+      />,
+    );
+
+    expect(markup).toContain("overflow-x-auto");
+    expect(markup).toContain("snap-x");
+    expect(markup).toContain("shrink-0");
+    expect(markup).toContain('aria-label="Previous funding calls"');
+    expect(markup).toContain('aria-label="Next funding calls"');
+    expect(markup).toContain("aspect-[3/2]");
+    expect(markup).toContain("/api/public/funding-calls/thumbnail");
+    expect(markup).toContain("Growth");
+    expect(markup).toContain("Check eligibility");
   });
 
   it.each([

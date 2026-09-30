@@ -16,6 +16,9 @@ type PublicationFields = Pick<
   | "reference"
   | "slug"
   | "thematicArea"
+  | "thumbnailContentType"
+  | "thumbnailFileName"
+  | "thumbnailObjectKey"
   | "title"
   | "totalBudgetEnvelope"
   | "workflowTemplateVersionId"
@@ -49,6 +52,9 @@ export function captureFundingCallPublication(
     reference: call.reference,
     slug: call.slug,
     thematicArea: call.thematicArea,
+    thumbnailContentType: call.thumbnailContentType,
+    thumbnailFileName: call.thumbnailFileName,
+    thumbnailObjectKey: call.thumbnailObjectKey,
     title: call.title,
     totalBudgetEnvelope: call.totalBudgetEnvelope,
     workflowTemplateVersionId: call.workflowTemplateVersionId,

@@ -8,6 +8,8 @@ import {
 } from "@/components/ui/form-fields";
 import { MoneyField } from "@/components/ui/money-field";
 import { FormRichTextField } from "@/shared/ui/FormRichTextField";
+import type { FundingCallView } from "../api/FundingCallTransport";
+import { FundingCallThumbnailField } from "./FundingCallThumbnailField";
 
 export type FundingCallStepId =
   | "basics"
@@ -251,7 +253,13 @@ export function WorkflowStep({
   );
 }
 
-export function PublicContentStep() {
+export function PublicContentStep({
+  call,
+  disabled,
+}: {
+  call?: FundingCallView;
+  disabled: boolean;
+}) {
   return (
     <>
       <StepIntroduction title="Public content">
@@ -262,6 +270,7 @@ export function PublicContentStep() {
         label="Public eligibility summary"
         name="eligibilitySummary"
       />
+      <FundingCallThumbnailField call={call} disabled={disabled} />
       <FormInput label="Public contact name" name="publicContactName" />
       <FormInput
         label="Public contact email"

@@ -1,11 +1,7 @@
 "use client";
 
 import Form, { type IChangeEvent } from "@rjsf/core";
-import type {
-  ErrorSchema,
-  ObjectFieldTemplateProps,
-  RJSFSchema,
-} from "@rjsf/utils";
+import type { ErrorSchema, ObjectFieldTemplateProps, RJSFSchema } from "@rjsf/utils";
 import validator from "@rjsf/validator-ajv8";
 import { useMemo, useState, type ReactNode } from "react";
 
@@ -33,11 +29,17 @@ import {
   FormDateWidget,
   FormFieldTemplate,
   FormRadioWidget,
+  FormRichTextWidget,
   FormPercentageWidget,
   FormSelectWidget,
   FormTextareaWidget,
 } from "./RjsfTheme";
 import { FormStepActions, FormStepProgress } from "./FormStepNavigation";
+import {
+  RepeatableArrayFieldItemTemplate,
+  RepeatableArrayFieldTemplate,
+} from "./RepeatableGroupTemplates";
+import { useFormStepProgress } from "./useFormStepProgress";
 
 export type DynamicFormValues = Record<string, unknown>;
 
@@ -103,6 +105,15 @@ function FormObjectTemplate(
     RendererContext
   >,
 ) {
+  if (props.fieldPathId.path.length > 0) {
+    return (
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {props.properties.map((property) => (
+          <div key={property.name}>{property.content}</div>
+        ))}
+      </div>
+    );
+  }
   const properties = new Map(
     props.properties.map((property) => [property.name, property.content]),
   );
@@ -191,15 +202,6 @@ export function FormRenderer({
   stepPersistenceKey?: string;
   supplementalCompletion?: SupplementalCompletion;
 }) {
-  const [currentStepId, setCurrentStepId] = useState<string | undefined>(() => {
-    if (!stepPersistenceKey || typeof window === "undefined") return undefined;
-
-    try {
-      return sessionStorage.getItem(stepPersistenceKey) ?? undefined;
-    } catch {
-      return undefined;
-    }
-  });
   const [validationAttempted, setValidationAttempted] = useState(false);
   const activeDefinition = useMemo(
     () => activeFormDefinition(definition, formData),
@@ -217,17 +219,15 @@ export function FormRenderer({
         ...parsed.sections.slice(-1),
       ]
     : parsed.sections;
-  function navigateToStep(stepId: string | undefined) {
-    if (!stepId) return;
-    setCurrentStepId(stepId);
-    if (!stepPersistenceKey) return;
-
-    try {
-      sessionStorage.setItem(stepPersistenceKey, stepId);
-    } catch {
-      // Navigation still works if browser storage is unavailable.
-    }
-  }
+  const {
+    completedStepIds,
+    currentStepId,
+    markStepComplete,
+    navigateToStep,
+  } = useFormStepProgress({
+    persistenceKey: stepPersistenceKey,
+    steps,
+  });
 
   const currentIndex = stepMode
     ? Math.max(0, steps.findIndex((step) => step.id === currentStepId))
@@ -307,7 +307,12 @@ export function FormRenderer({
         />
       ) : null}
       {stepMode ? (
-        <FormStepProgress currentIndex={currentIndex} steps={steps} />
+        <FormStepProgress
+          completedStepIds={completedStepIds}
+          currentIndex={currentIndex}
+          onStepChange={navigateToStep}
+          steps={steps}
+        />
       ) : null}
       {documentStepActive ? (
         <>
@@ -315,7 +320,10 @@ export function FormRenderer({
           <FormStepActions
             currentIndex={currentIndex}
             onBack={() => navigateToStep(steps[currentIndex - 1]?.id)}
-            onNext={() => navigateToStep(steps[currentIndex + 1]?.id)}
+            onNext={() => {
+              markStepComplete(steps[currentIndex]?.id);
+              navigateToStep(steps[currentIndex + 1]?.id);
+            }}
             stepCount={steps.length}
           />
         </>
@@ -337,6 +345,8 @@ export function FormRenderer({
           schema={parsed.schema}
           showErrorList={false}
           templates={{
+            ArrayFieldItemTemplate: RepeatableArrayFieldItemTemplate,
+            ArrayFieldTemplate: RepeatableArrayFieldTemplate,
             BaseInputTemplate: FormBaseInputTemplate,
             FieldTemplate: FormFieldTemplate,
             ObjectFieldTemplate: FormObjectTemplate,
@@ -347,6 +357,7 @@ export function FormRenderer({
             currency: FormCurrencyWidget,
             DateWidget: FormDateWidget,
             percentage: FormPercentageWidget,
+            richText: FormRichTextWidget,
             RadioWidget: FormRadioWidget,
             SelectWidget: FormSelectWidget,
             TextareaWidget: FormTextareaWidget,
@@ -369,6 +380,7 @@ export function FormRenderer({
                   return;
                 }
                 setValidationAttempted(false);
+                markStepComplete(steps[currentIndex]?.id);
                 navigateToStep(steps[currentIndex + 1]?.id);
               }}
               stepCount={steps.length}

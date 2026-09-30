@@ -31,6 +31,7 @@ COPY --chown=nextjs:nodejs \
     scripts/seed/seed-standard-eligibility.ts \
     scripts/seed/seed-standard-workflow.ts \
     scripts/seed/seed-notifications.ts \
+    scripts/seed/reset-platform-data.ts \
     scripts/seed/
 COPY --chown=nextjs:nodejs --chmod=755 \
     scripts/container/migrate.sh scripts/container/migrate.sh

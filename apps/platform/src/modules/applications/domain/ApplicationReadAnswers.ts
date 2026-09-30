@@ -1,4 +1,8 @@
-import type { FormField, FormRuntimeSchema } from "@/modules/forms/FormTypes";
+import type {
+  FormField,
+  FormRuntimeSchema,
+} from "@/modules/forms/FormTypes";
+import { formRichTextAsPlainText } from "@/modules/forms/engine/FormRichText";
 
 export type ApplicationReadAnswer = {
   key: string;
@@ -12,7 +16,10 @@ export type ApplicationReadSection = {
   answers: ApplicationReadAnswer[];
 };
 
-function displayAnswer(field: FormField, value: unknown): string {
+function displayScalar(
+  field: Pick<FormField, "options" | "type">,
+  value: unknown,
+) {
   const optionLabel = (item: unknown) => {
     const option = field.options?.find((entry) => entry.key === item);
     return option?.label ?? String(item);
@@ -27,8 +34,36 @@ function displayAnswer(field: FormField, value: unknown): string {
     if (field.type === "PERCENTAGE") return `${value}%`;
     return new Intl.NumberFormat("en-NA").format(value);
   }
-  if (typeof value === "string") return optionLabel(value);
+  if (typeof value === "string") {
+    return field.type === "RICH_TEXT"
+      ? formRichTextAsPlainText(value)
+      : optionLabel(value);
+  }
   return JSON.stringify(value) ?? String(value);
+}
+
+function displayRepeatableAnswer(field: FormField, value: unknown[]) {
+  const itemFields = [...(field.repeatable?.fields ?? [])]
+    .sort((left, right) => left.order - right.order);
+  return value.map((item, index) => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      return `${index + 1}. ${String(item)}`;
+    }
+    const row = item as Record<string, unknown>;
+    const values = itemFields.flatMap((itemField) => (
+      hasAnswer(row[itemField.key])
+        ? [`${itemField.label}: ${displayScalar(itemField, row[itemField.key])}`]
+        : []
+    ));
+    return `${index + 1}. ${values.join("; ")}`;
+  }).join("\n");
+}
+
+function displayAnswer(field: FormField, value: unknown): string {
+  if (field.type === "REPEATABLE_GROUP" && Array.isArray(value)) {
+    return displayRepeatableAnswer(field, value);
+  }
+  return displayScalar(field, value);
 }
 
 function hasAnswer(value: unknown) {

@@ -35,6 +35,7 @@ describe("funding opportunity card", () => {
           status: "open",
           summary: "Support for growing Namibian businesses.",
           thematicArea: "Growth",
+          thumbnailUrl: "/api/public/funding-calls/thumbnail",
           title: "Growth Fund",
           totalFundingAmount: 1000000,
         }}
@@ -48,6 +49,7 @@ describe("funding opportunity card", () => {
     expect(markup).toContain("Closing date");
     expect(markup).toContain("Save for later");
     expect(markup).toContain("Funding call categories");
+    expect(markup).toContain("/api/public/funding-calls/thumbnail");
     expect(markup).toContain('aria-label="Important date: Closes 31 Oct 2026"');
     expect(markup).toContain(
       `href="/portal/funding-opportunities/${fundingOpportunityId}"`,

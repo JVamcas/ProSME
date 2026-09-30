@@ -68,6 +68,19 @@ afterEach(() => {
   document.body.replaceChildren();
 });
 
+async function chooseAction(label: string) {
+  await act(async () => {
+    document.querySelector<HTMLButtonElement>(
+      'button[aria-label="Workflow actions"]',
+    )?.click();
+  });
+  await act(async () => {
+    [...document.querySelectorAll<HTMLElement>('[role="menuitem"]')]
+      .find((item) => item.textContent?.includes(label))
+      ?.click();
+  });
+}
+
 describe("workflow task decision dialog", () => {
   it("opens the confirmation dialog and cancels without submitting", async () => {
     const container = document.createElement("div");
@@ -79,11 +92,7 @@ describe("workflow task decision dialog", () => {
     );
     expect(document.querySelector('[role="dialog"]')).toBeNull();
 
-    await act(async () => {
-      document
-        .querySelector<HTMLButtonElement>('button[value="ADVANCE"]')
-        ?.click();
-    });
+    await chooseAction("Approve and advance");
     expect(document.querySelector('[role="dialog"]')?.textContent).toContain(
       "Confirm approve and advance?",
     );
@@ -111,11 +120,7 @@ describe("workflow task decision dialog", () => {
     await act(async () =>
       root.render(<WorkflowTaskDecisionActions task={task} />),
     );
-    await act(async () => {
-      document
-        .querySelector<HTMLButtonElement>('button[value="ADVANCE"]')
-        ?.click();
-    });
+    await chooseAction("Approve and advance");
     await act(async () => {
       [
         ...document.querySelectorAll<HTMLButtonElement>(
@@ -159,11 +164,7 @@ describe("workflow task decision dialog", () => {
     await act(async () => {
       root.render(<WorkflowTaskDecisionActions task={rejectTask} />);
     });
-    await act(async () => {
-      document
-        .querySelector<HTMLButtonElement>('button[value="REJECT"]')
-        ?.click();
-    });
+    await chooseAction("Reject");
 
     const dialog = document.querySelector('[role="dialog"]')!;
     expect(dialog.querySelectorAll("textarea")).toHaveLength(1);

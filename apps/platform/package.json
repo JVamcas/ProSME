@@ -24,6 +24,7 @@
     "db:seed:workflow": "NODE_OPTIONS=--conditions=react-server node --env-file-if-exists=../../.env ../../node_modules/payload/bin.js run ../../scripts/seed/seed-standard-workflow.ts",
     "db:seed:eligibility": "NODE_OPTIONS=--conditions=react-server node --env-file-if-exists=../../.env ../../node_modules/payload/bin.js run ../../scripts/seed/seed-standard-eligibility.ts",
     "db:seed:notifications": "NODE_OPTIONS=--conditions=react-server node --env-file-if-exists=../../.env ../../node_modules/payload/bin.js run ../../scripts/seed/seed-notifications.ts",
+    "db:reset:data": "NODE_OPTIONS=--conditions=react-server node --env-file-if-exists=../../.env ../../node_modules/payload/bin.js run ../../scripts/seed/reset-platform-data.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio"

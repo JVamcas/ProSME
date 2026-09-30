@@ -300,7 +300,7 @@ export function DataTable<TData extends RowData>({
   };
 
   return (
-    <div className="overflow-hidden rounded-md border border-slate-100 bg-white shadow-sm mx-1">
+    <div className="overflow-hidden rounded-md border border-slate-100 bg-white  mx-1">
       {toolbar ? (
         <div className="border-b border-slate-100 bg-white px-5 py-4">
           <DataTableToolbar {...toolbar} />

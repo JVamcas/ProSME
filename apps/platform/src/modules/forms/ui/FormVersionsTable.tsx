@@ -14,7 +14,7 @@ const columns: DataTableColumn<FormVersionSummary>[] = [
   {
     accessorKey: "versionNumber",
     header: "Version",
-    cell: ({ row }) => `Version ${row.original.versionNumber}`,
+    cell: ({ row }) => `v${row.original.versionNumber}`,
   },
   {
     accessorKey: "status",

@@ -11,23 +11,13 @@ import {
 } from "@/lib/resource-errors";
 import type { FundingCallPublishInput } from "../api/FundingCallSchemas";
 import type { FundingCallView } from "../api/FundingCallTransport";
-import type { FundingCall } from "../domain/FundingCall";
 import {
   publishApprovedFundingCall,
   readFundingCallPublicationReplay,
 } from "../infrastructure/FundingCallPublicationRepository";
 import { readFundingCallById } from "../infrastructure/FundingCallRepository";
 import { validateFundingCallReadiness } from "./ServerFundingCallReadinessService";
-
-function view(call: FundingCall): FundingCallView {
-  return {
-    ...call,
-    closesAt: call.closesAt.toISOString(),
-    createdAt: call.createdAt.toISOString(),
-    opensAt: call.opensAt.toISOString(),
-    updatedAt: call.updatedAt.toISOString(),
-  };
-}
+import { toFundingCallView } from "./FundingCallViewMapper";
 
 export async function publishFundingCall(
   user: AuthenticatedUser | null,
@@ -38,7 +28,7 @@ export async function publishFundingCall(
 ): Promise<FundingCallView> {
   const actor = requirePermission(user, permissionCodes.fundingCallPublish);
   const replay = await readFundingCallPublicationReplay(id, idempotencyKey);
-  if (replay) return view(replay);
+  if (replay) return toFundingCallView(replay);
 
   const call = await readFundingCallById(id);
   if (!call) throw new ResourceNotFoundError("funding call");
@@ -79,5 +69,5 @@ export async function publishFundingCall(
       "The funding call changed. Refresh it before publishing.",
     );
   }
-  return view(result.call);
+  return toFundingCallView(result.call);
 }

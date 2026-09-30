@@ -99,8 +99,10 @@ function ProgressStep<TId extends string>({
           className={cn(
             "grid size-11 place-items-center rounded-full border-2 text-xs font-bold transition-colors",
             markerClassName(state),
-            !inactive &&
+            !inactive && state !== "complete" &&
               "group-hover:border-brand-orange group-hover:text-brand-navy",
+            !inactive && state === "complete" &&
+              "group-hover:ring-2 group-hover:ring-brand-green/30",
           )}
         >
           {complete ? (

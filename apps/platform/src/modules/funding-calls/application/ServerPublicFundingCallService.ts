@@ -60,6 +60,9 @@ function summary(
     summary: richTextToPlainText(call.description),
     summaryHtml: call.description,
     thematicArea: call.thematicArea,
+    thumbnailUrl: call.thumbnailObjectKey
+      ? `/api/public/funding-calls/${call.id}/thumbnail`
+      : null,
     title: call.title,
     totalFundingAmount: Number(call.totalBudgetEnvelope),
   };

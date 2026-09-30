@@ -61,6 +61,7 @@ async function readBoundForm(
       maxLength: formFields.maxLength,
       minimum: formFields.minimum,
       minLength: formFields.minLength,
+      repeatable: formFields.repeatableConfiguration,
       order: formFields.order,
       required: formFields.required,
       sectionId: formFields.sectionId,
@@ -89,6 +90,7 @@ async function readBoundForm(
     maxLength: field.maxLength ?? undefined,
     minimum: field.minimum ?? undefined,
     minLength: field.minLength ?? undefined,
+    repeatable: field.repeatable ?? undefined,
     options: optionsByField.get(field.id)?.map((option) => ({
       key: option.key,
       label: option.label,

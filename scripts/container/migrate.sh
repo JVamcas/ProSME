@@ -25,6 +25,7 @@ echo "Applying application database migrations..."
 npm run db:migrate --workspace @prosme/platform
 
 echo "Applying Payload database migrations..."
-npm run payload --workspace @prosme/platform -- migrate
+NODE_OPTIONS=--conditions=react-server \
+  npm run payload --workspace @prosme/platform -- migrate
 
 echo "Database migrations completed."

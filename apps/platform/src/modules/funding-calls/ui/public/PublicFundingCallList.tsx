@@ -5,6 +5,7 @@ import type {
 } from "../../api/PublicFundingCallTransport";
 import { PublicFundingCallCard } from "./PublicFundingCallCard";
 import { publicFundingHref } from "./PublicFundingCallLinks";
+import { PublicFundingCallRail } from "./PublicFundingCallRail";
 
 const filters = [
   { label: "All calls", status: undefined },
@@ -54,11 +55,18 @@ export function PublicFundingCallList({
           ))}
         </nav>
       </div>
-      <div className="grid gap-4">
-        {calls.items.map((call) => (
-          <PublicFundingCallCard call={call} key={call.id} />
-        ))}
-      </div>
+      {calls.items.length ? (
+        <PublicFundingCallRail>
+          {calls.items.map((call) => (
+            <div
+              className="w-[min(86vw,24rem)] shrink-0 snap-start md:w-[22rem] lg:w-[24rem]"
+              key={call.id}
+            >
+              <PublicFundingCallCard call={call} />
+            </div>
+          ))}
+        </PublicFundingCallRail>
+      ) : null}
       {!calls.items.length ? (
         <p className="rounded-xl border border-brand-blue/25 bg-brand-blue/5 p-6 text-brand-navy/70">
           {status

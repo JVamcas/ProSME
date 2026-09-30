@@ -39,8 +39,9 @@ the platform package. The Draft workflow binds the latest applicable standard
 Form Version, preferring Published over Draft. A Draft binding becomes runtime
 eligible when that same Form Version is reviewed and published.
 
-Forms marked Deferred require repeatable structured inputs that the current
-Generic Form Engine does not yet support.
+Forms marked Deferred require domain-specific repeatable structures that have
+not yet been configured. The Generic Form Engine supports reusable repeatable
+groups with stable child keys, row limits and nested validation.
 
 The client specification describes 14 end-to-end business stages. The
 standard executable Application Workflow contains 12 stages, beginning with
@@ -225,19 +226,22 @@ Relevance, effectiveness, efficiency, impact and sustainability belong to
 scoring configuration. The proposed performance-rating scale remains subject
 to client review.
 
-## 4. Deferred forms
+## 4. Funding application and deferred forms
 
 ### 4.1 Funding Application Form
 
-Scalar content includes entity details, registration and tax information,
+Code: FUNDING_APPLICATION
+
+The standard form captures entity details, registration and tax information,
 project title and abstract, objectives, duration, requested amount, co-funding,
-declarations and consent.
+declarations and consent. It also captures these structured repeatable groups:
 
-Blocked repeatable structures:
+- `BUDGET_LINES`: category, amount and description;
+- `TEAM_MEMBERS`: name, role and experience; and
+- `PROJECT_INDICATORS`: indicator, unit, baseline, target and evidence source.
 
-- budget lines;
-- team members and CV associations; and
-- indicators, baselines and targets.
+Team CV evidence remains a secure application document requirement rather than
+being embedded in repeatable response JSON.
 
 ### 4.2 Financial Review Form
 

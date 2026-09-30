@@ -91,7 +91,7 @@ function versionColumns({
       enableSorting: false,
       header: "Actions",
       cell: ({ row }) => (
-        <div className="flex justify-end">
+        <div className="flex justify-start">
           {row.original.status === "DRAFT" && canPublish ? (
             <GeneralButton
               aria-label={`Publish version ${row.original.versionNumber}`}

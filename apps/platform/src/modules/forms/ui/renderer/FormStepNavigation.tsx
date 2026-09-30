@@ -1,34 +1,41 @@
 "use client";
 
 import { GeneralButton } from "@/components/ui/button";
+import { StepProgress } from "@/components/ui/step-progress";
+
 export function FormStepProgress({
+  completedStepIds,
   currentIndex,
+  onStepChange,
   steps,
 }: {
+  completedStepIds: readonly string[];
   currentIndex: number;
+  onStepChange: (stepId: string) => void;
   steps: { id: string; title: string }[];
 }) {
+  const currentStep = steps[currentIndex];
+  if (!currentStep) return null;
+
   return (
     <nav aria-label="Form steps" className="space-y-2">
       <p className="text-sm font-semibold text-brand-navy">
-        Step {currentIndex + 1} of {steps.length}: {steps[currentIndex].title}
+        Step {currentIndex + 1} of {steps.length}: {currentStep.title}
       </p>
-      <ol className="flex gap-2" role="list">
-        {steps.map((section, index) => (
-          <li className="flex-1" key={section.id}>
-            <span
-              aria-current={index === currentIndex ? "step" : undefined}
-              className={
-                index <= currentIndex
-                  ? "block h-2 rounded-full bg-brand-orange"
-                  : "block h-2 rounded-full bg-brand-navy/10"
-              }
-            >
-              <span className="sr-only">{section.title}</span>
-            </span>
-          </li>
-        ))}
-      </ol>
+      <StepProgress
+        ariaLabel="Application form steps"
+        completedStepIds={completedStepIds}
+        currentStepId={currentStep.id}
+        hideLabelsOnMobile
+        onStepChange={onStepChange}
+        steps={steps.map((step) => ({
+          disabled:
+            step.id !== currentStep.id
+            && !completedStepIds.includes(step.id),
+          id: step.id,
+          label: step.title,
+        }))}
+      />
     </nav>
   );
 }

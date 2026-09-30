@@ -9,6 +9,10 @@ import { permissionCodes } from "@/auth/authorization/permissions";
 import { PermissionDeniedError } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import { IdempotencyConflictError } from "@/lib/resource-errors";
+import {
+  notificationErrorCodes,
+  NotificationValidationError,
+} from "@/modules/notifications/domain/NotificationErrors";
 import { submitOwnedApplication } from "@/modules/applications/infrastructure/ApplicationSubmissionRepository";
 import {
   ApplicationSubmissionConflictError,
@@ -130,6 +134,26 @@ describe("application submission service", () => {
       "reused-key",
       correlationId,
     )).rejects.toBeInstanceOf(IdempotencyConflictError);
+  });
+
+  it("does not expose notification configuration details to applicants", async () => {
+    vi.mocked(submitOwnedApplication).mockRejectedValue(
+      new NotificationValidationError(
+        notificationErrorCodes.invalidRecipient,
+        "Notification application.submitted cannot be sent: ASSIGNED_USER is missing.",
+      ),
+    );
+
+    await expect(submitApplication(
+      applicant([permissionCodes.fundingApplicationSubmit]),
+      applicationId,
+      command,
+      "notification-configuration-error",
+      correlationId,
+    )).rejects.toMatchObject({
+      message: expect.stringContaining("still saved as a draft"),
+      name: "ApplicationSubmissionConflictError",
+    });
   });
 
   it("uses the submission conflict error family", () => {

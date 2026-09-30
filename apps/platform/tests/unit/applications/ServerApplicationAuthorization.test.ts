@@ -2,25 +2,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 vi.mock("@/modules/applications/infrastructure/ApplicationRepository", () => ({
-  createOwnedApplication: vi.fn(),
   findOwnedApplication: vi.fn(),
-  findOwnedApplicationByOpportunity: vi.fn(),
   findAllApplications: vi.fn(),
   findApplicationsAssignedTo: vi.fn(),
   findAssignedApplicationById: vi.fn(),
   findApplicationById: vi.fn(),
   listOwnedApplications: vi.fn(),
-  updateOwnedApplication: vi.fn(),
 }));
-vi.mock("@/db/repositories/BusinessRepository", () => ({
-  findOwnedBusiness: vi.fn(),
-}));
-vi.mock(
-  "@/modules/funding-calls/ServerFundingOpportunityIntegration",
-  () => ({
-    resolvePublishedApplicationFormBinding: vi.fn(),
-  }),
-);
 
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { PermissionDeniedError } from "@/auth/authorization/policy";
