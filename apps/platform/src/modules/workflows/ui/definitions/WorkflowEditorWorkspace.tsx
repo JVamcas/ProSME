@@ -17,41 +17,43 @@ import { PageShell } from "@/shared/ui/PageShell";
 import { ConfirmationDialog } from "@/shared/ui/ConfirmationDialog";
 import { showWorkflowPublicationError } from "@/modules/workflows/ui/definitions/WorkflowPublicationErrorToast";
 import { WorkflowDefinitionDetailsCard } from "./WorkflowDefinitionDetailsCard";
-import { WorkflowStageFlow } from "./WorkflowStageFlow";
+import { WorkflowStageFlow } from "@/modules/workflows/ui/definitions/WorkflowStageFlow";
 
 type Props = {
   canPublish: boolean;
   canRetire: boolean;
   canUpdate: boolean;
   definitionId: string;
+  versionId?: string;
 };
 export function WorkflowEditorWorkspace({
   canPublish,
   canUpdate,
   definitionId,
+  versionId,
 }: Props) {
-  const query = useWorkflowEditor(definitionId);
+  const query = useWorkflowEditor(definitionId, true, versionId);
   const clone = useCloneWorkflow(definitionId);
-  const publish = useWorkflowListLifecycle("publish", definitionId);
+  const publish = useWorkflowListLifecycle("publish", definitionId, versionId);
   const [showPublishConfirmation, setShowPublishConfirmation] = useState(false);
 
-  if (query.isLoading)
-    return (
-      <PortalLoadingState title="" description={"Loading workflow editor…"} />
-    );
+  if (query.isLoading) {
+    return <PortalLoadingState title="" description="Loading workflow editor…" />;
+  }
 
-  if (query.error || !query.data)
+  if (query.error || !query.data) {
     return (
       <PortalErrorState
         title={query.error?.name}
         description={query.error?.message ?? "Workflow could not be loaded."}
       />
     );
+  }
 
   const editor = query.data;
   const busy = clone.isPending || publish.isPending;
-  const canPublishVersion = canPublish
-    && workflowTemplatePublishableStatuses.includes(editor.version.status);
+  const canPublishVersion =
+    canPublish && workflowTemplatePublishableStatuses.includes(editor.version.status);
 
   return (
     <>
@@ -95,10 +97,12 @@ export function WorkflowEditorWorkspace({
         isPending={publish.isPending}
         message={`Publish ${editor.definition.name} version ${editor.version.number}? Published workflow versions cannot be edited.`}
         onClose={() => setShowPublishConfirmation(false)}
-        onConfirm={() => publish.mutate(definitionId, {
-          onError: showWorkflowPublicationError,
-          onSuccess: () => setShowPublishConfirmation(false),
-        })}
+        onConfirm={() => {
+          publish.mutate(definitionId, {
+            onError: showWorkflowPublicationError,
+            onSuccess: () => setShowPublishConfirmation(false),
+          });
+        }}
         pendingLabel="Publishing…"
         title="Publish workflow template"
       />

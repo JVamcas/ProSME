@@ -182,7 +182,8 @@ export async function readWorkflowTaskRuntimeContext(
       task_definition.name AS "taskName",
       task_definition.permissions,
       task.form_version_id AS "formVersionId",
-      binding.context_fields AS "contextFields",
+      CASE WHEN inherited_form.enabled THEN '[]'::jsonb
+        ELSE binding.context_fields END AS "contextFields",
       COALESCE(history.values, '[]'::jsonb) AS "priorStageValues"
     FROM app_workflow_tasks task
     JOIN app_stage_task_definitions task_definition
@@ -199,8 +200,21 @@ export async function readWorkflowTaskRuntimeContext(
       ON workflow_definition.id = workflow_version.definition_id
     JOIN app_applications application
       ON application.id = workflow.application_id
-    JOIN app_stage_task_form_bindings binding
+    CROSS JOIN LATERAL (
+      SELECT (
+        task_definition.code = 'ELIGIBILITY_VERIFICATION'
+        OR COALESCE(task_definition.config ->> 'formPurpose', '')
+          = 'ELIGIBILITY_VERIFICATION'
+        OR COALESCE(task_definition.config ->> 'command', '')
+          = 'AUTHORITATIVE_ELIGIBILITY'
+      ) AS enabled
+    ) inherited_form
+    LEFT JOIN app_stage_task_form_bindings binding
       ON binding.task_definition_id = task.workflow_task_definition_id
+    LEFT JOIN app_eligibility_rule_set_verification_forms verification
+      ON inherited_form.enabled
+      AND verification.version_id = application.eligibility_rule_set_version_id
+      AND verification.form_version_id = task.form_version_id
     LEFT JOIN LATERAL (
       SELECT outcome.*
       FROM app_authoritative_eligibility_outcomes outcome
@@ -239,6 +253,10 @@ export async function readWorkflowTaskRuntimeContext(
     WHERE task.id = ${taskInstanceId}::uuid
       AND app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
       AND task.form_version_id IS NOT NULL
+      AND (
+        (inherited_form.enabled AND verification.form_version_id IS NOT NULL)
+        OR (NOT inherited_form.enabled AND binding.task_definition_id IS NOT NULL)
+      )
       AND workflow.status = 'ACTIVE'
       AND stage.status = 'ACTIVE'
       AND (

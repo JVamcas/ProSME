@@ -2,12 +2,7 @@
 
 import Link from "next/link";
 
-import {
-  CloneButton,
-  DeleteButton,
-  EditButton,
-  PublishButton,
-} from "@/components/ui/action-buttons";
+import { ActionMenu, type ActionMenuItem } from "@/shared/ui/ActionMenu";
 import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
 import { Pagination } from "@/components/ui/pagination";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -52,41 +47,47 @@ function actionCell(template: WorkflowTemplateListItem, options: Props) {
   const isDraft = template.currentVersion.status === "DRAFT";
   const canDelete =
     template.isLatest && isDraft && template.currentVersion.number === 1;
+  const items: ActionMenuItem[] = [
+    {
+      id: "edit",
+      label: "Edit",
+      disabled: !options.canUpdate || !isDraft,
+      onAction: () => options.onEdit(template),
+    },
+    {
+      id: "clone",
+      label: options.cloningVersionId === template.currentVersion.id
+        ? "Cloning…"
+        : "Clone",
+      disabled: !options.canUpdate || Boolean(options.cloningVersionId),
+      onAction: () => options.onClone(template),
+    },
+  ];
+
+  if (
+    workflowTemplatePublishableStatuses.includes(template.currentVersion.status)
+  ) {
+    items.push({
+      id: "publish",
+      label: options.publishingId === template.id ? "Publishing…" : "Publish",
+      disabled: !options.canPublish || Boolean(options.publishingId),
+      onAction: () => options.onPublish(template),
+    });
+  }
+
+  items.push({
+    id: "delete",
+    label: options.deletingId === template.id ? "Deleting…" : "Delete",
+    disabled: !options.canUpdate || !canDelete || Boolean(options.deletingId),
+    destructive: true,
+    onAction: () => options.onDelete(template),
+  });
+
   return (
-    <div className="flex items-center gap-1">
-      <EditButton
-        disabled={!options.canUpdate || !template.isLatest || !isDraft}
-        onClick={() => options.onEdit(template)}
-        title={`Edit ${template.name}`}
-      />
-      <CloneButton
-        disabled={!options.canUpdate || Boolean(options.cloningVersionId)}
-        isLoading={
-          options.cloningVersionId === template.currentVersion.id
-        }
-        onClick={() => options.onClone(template)}
-        title={`Clone ${template.name}`}
-      />
-      {template.isLatest &&
-      workflowTemplatePublishableStatuses.includes(
-        template.currentVersion.status,
-      ) ? (
-        <PublishButton
-          disabled={!options.canPublish || Boolean(options.publishingId)}
-          isLoading={options.publishingId === template.id}
-          onClick={() => options.onPublish(template)}
-          title={`Publish ${template.name}`}
-        />
-      ) : null}
-      <DeleteButton
-        disabled={
-          !options.canUpdate || !canDelete || Boolean(options.deletingId)
-        }
-        isLoading={options.deletingId === template.id}
-        onClick={() => options.onDelete(template)}
-        title={`Delete ${template.name}`}
-      />
-    </div>
+    <ActionMenu
+      items={items}
+      label={`Actions for ${template.name} v${template.currentVersion.number}`}
+    />
   );
 }
 
@@ -100,7 +101,7 @@ function columns(options: Props): DataTableColumn<WorkflowTemplateListItem>[] {
         <div>
           <Link
             className="font-semibold text-brand-orange"
-            href={`/admin/workflows/${row.original.id}`}
+            href={`/admin/workflows/${row.original.id}?versionId=${row.original.currentVersion.id}`}
           >
             {row.original.name}
           </Link>

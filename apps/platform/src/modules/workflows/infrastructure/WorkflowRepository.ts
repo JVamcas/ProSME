@@ -142,6 +142,7 @@ export async function findDraftByDefinition(
         eq(workflowDefinitionVersions.status, "DRAFT"),
       ),
     )
+    .orderBy(desc(workflowDefinitionVersions.versionNumber))
     .limit(1);
   return draft?.id ?? null;
 }

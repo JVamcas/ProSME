@@ -229,7 +229,7 @@ import {
     });
 
     it("allocates unique version numbers and preserves published snapshots", async () => {
-      const drafts = await Promise.allSettled(
+      await Promise.all(
         [1, 2].map(() =>
           cloneWorkflowVersion({
             actorId: actor.id,
@@ -240,10 +240,10 @@ import {
           }),
         ),
       );
-      expect(
-        drafts.filter((result) => result.status === "fulfilled"),
-      ).toHaveLength(1);
-      const draft = (await getWorkflowTemplateVersions(actor, templateId)).find(
+      const versions = await getWorkflowTemplateVersions(actor, templateId);
+      expect(versions.filter((item) => item.status === "DRAFT")
+        .map((item) => item.versionNumber)).toEqual([2, 3]);
+      const draft = versions.find(
         (item) => item.status === "DRAFT",
       )!;
       expect(draft.versionNumber).toBe(2);

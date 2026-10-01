@@ -7,6 +7,19 @@ import {
 import { referenceWorkflow } from "../../support/ReferenceWorkflowFixture";
 
 describe("workflow graph layout", () => {
+  it("leaves room for paths inside taller cards in the same column", () => {
+    const [start, left, right] = referenceWorkflow.stages;
+    const positions = arrangeWorkflowStages(
+      [start, left, right],
+      [route(start.stableKey, left.stableKey), route(start.stableKey, right.stableKey)],
+      { [left.stableKey]: 444 },
+    );
+
+    expect(positions[right.stableKey].y).toBeGreaterThan(
+      positions[left.stableKey].y + 444,
+    );
+  });
+
   it("places parallel routes in one column and their join in the next", () => {
     const [start, leftBranch, rightBranch, join] = referenceWorkflow.stages;
     const positions = arrangeWorkflowStages(

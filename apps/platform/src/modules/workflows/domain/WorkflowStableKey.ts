@@ -13,6 +13,7 @@ export function stableKeyFromLabel(value: string, fallback: string) {
     .replace(/[^A-Za-z0-9]+/g, "_")
     .replace(/^_+|_+$/g, "")
     .toUpperCase();
+  if (key.length < 2) return key ? `${fallback}_${key}` : fallback;
   const prefixed = /^[A-Z]/.test(key) ? key : `${fallback}_${key}`;
   return prefixed.slice(0, 80) || fallback;
 }

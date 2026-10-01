@@ -13,7 +13,6 @@ export type WorkflowTaskEditorStep =
 
 export const workflowTaskEditorStepFields = {
   details: [
-    "stableKey",
     "name",
     "taskType",
     "displayOrder",

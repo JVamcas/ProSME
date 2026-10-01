@@ -16,6 +16,7 @@ import type {
   WorkflowTaskInput,
 } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import { reconcileWorkflowActionBindings } from "@/modules/workflows/domain/actions/WorkflowActionBindingPolicy";
+import { uniqueStableKeyFromLabel } from "@/modules/workflows/domain/WorkflowStableKey";
 import { defaultWorkflowElementPermissions } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
 import {
   taskAssignmentDefaults,
@@ -67,16 +68,6 @@ async function saveWorkflowTask({
   task?: WorkflowTaskInput;
   values: WorkflowTaskFormValues;
 }) {
-  const duplicate = stage.tasks.some(
-    (item) =>
-      item.stableKey === values.stableKey && item.stableKey !== task?.stableKey,
-  );
-  if (duplicate) {
-    formSetError("stableKey", {
-      message: "Task code must be unique in this stage.",
-    });
-    return false;
-  }
   const otherDecisionTask = stage.tasks.some(
     (item) =>
       item.taskType === "STAGE_DECISION" && item.stableKey !== task?.stableKey,
@@ -84,6 +75,15 @@ async function saveWorkflowTask({
   if (values.taskType === "STAGE_DECISION" && otherDecisionTask) {
     formSetError("taskType", {
       message: "A stage can contain only one stage-decision task.",
+    });
+    return false;
+  }
+  if (stage.tasks.some((item) =>
+    item.stableKey !== task?.stableKey
+    && item.displayOrder === values.displayOrder,
+  )) {
+    formSetError("displayOrder", {
+      message: "Choose a display order that is not used by another task in this stage.",
     });
     return false;
   }
@@ -105,7 +105,11 @@ async function saveWorkflowTask({
     roleId: values.assignmentMode === "ROLE" ? values.assignmentTarget : null,
     namedUserOverrideId:
       values.assignmentMode === "NAMED_USER" ? values.assignmentTarget : null,
-    stableKey: values.stableKey,
+    stableKey: task?.stableKey ?? uniqueStableKeyFromLabel(
+      values.name,
+      stage.tasks.map((item) => item.stableKey),
+      "TASK",
+    ),
     description: values.description,
     displayOrder: values.displayOrder,
     reviewerCount: values.reviewerCount,
@@ -174,7 +178,6 @@ export function useWorkflowTaskDialogController(
     defaultValues: {
       ...taskAssignmentDefaults(task),
       taskType: task?.taskType ?? "CONTRIBUTING",
-      stableKey: task?.stableKey ?? "",
       description: task?.description ?? "",
       displayMode:
         task?.config &&
@@ -183,7 +186,10 @@ export function useWorkflowTaskDialogController(
         task.config.displayMode === "SECTIONS"
           ? "SECTIONS"
           : "STEP_PROGRESS",
-      displayOrder: task?.displayOrder ?? stage.tasks.length + 1,
+      displayOrder: task?.displayOrder ?? Math.max(
+        0,
+        ...stage.tasks.map((item) => item.displayOrder),
+      ) + 1,
       formVersionId: task?.formBinding?.formVersionId ?? "",
       formPurpose:
         task?.config &&
@@ -289,28 +295,27 @@ export function useWorkflowTaskDialogController(
     if (step !== "details") return valid;
 
     const values = form.getValues();
-    const duplicateKey = stage.tasks.some(
-      (item) =>
-        item.stableKey === values.stableKey
-        && item.stableKey !== task?.stableKey,
-    );
     const otherDecisionTask = stage.tasks.some(
       (item) =>
         item.taskType === "STAGE_DECISION"
         && item.stableKey !== task?.stableKey,
     );
-    if (duplicateKey) {
-      form.setError("stableKey", {
-        message: "Task code must be unique in this stage.",
-      });
-    }
     if (values.taskType === "STAGE_DECISION" && otherDecisionTask) {
       form.setError("taskType", {
         message: "A stage can contain only one stage-decision task.",
       });
     }
+    const duplicateOrder = stage.tasks.some((item) =>
+      item.stableKey !== task?.stableKey
+      && item.displayOrder === values.displayOrder,
+    );
+    if (duplicateOrder) {
+      form.setError("displayOrder", {
+        message: "Choose a display order that is not used by another task in this stage.",
+      });
+    }
     return valid
-      && !duplicateKey
+      && !duplicateOrder
       && !(values.taskType === "STAGE_DECISION" && otherDecisionTask);
   };
 

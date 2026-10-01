@@ -10,12 +10,7 @@ export function WorkflowTaskDetailsStep() {
   return (
     <div className="grid gap-4 sm:grid-cols-2">
       <FormInput
-        label="Stable key"
-        name="stableKey"
-        placeholder="FINANCE_REVIEW"
-        required
-      />
-      <FormInput
+        containerClassName="sm:col-span-2"
         label="Task name"
         name="name"
         placeholder="Review finance"

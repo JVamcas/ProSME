@@ -7,6 +7,7 @@ import {
   createWorkflowDefinition,
   replaceWorkflowDraft,
 } from "@/modules/workflows/infrastructure/WorkflowTemplateWriteRepository";
+import { findWorkflowTemplateVersion } from "@/modules/workflows/infrastructure/WorkflowTemplateRepository";
 import { updateWorkflowDefinitionDetails } from "@/modules/workflows/infrastructure/WorkflowDetailsRepository";
 import {
   findDraftByDefinition,
@@ -46,8 +47,14 @@ export async function getPublishedWorkflows(user: AuthenticatedUser | null) {
 export async function getWorkflowEditor(
   user: AuthenticatedUser | null,
   definitionId: string,
+  selectedVersionId?: string,
 ) {
   requirePermission(user, permissionCodes.workflowDefinitionRead);
+  if (selectedVersionId) {
+    const record = await findWorkflowTemplateVersion(definitionId, selectedVersionId);
+    if (!record) throw new WorkflowNotFoundError();
+    return workflowEditorView(selectedVersionId);
+  }
   const versionId =
     (await findDraftByDefinition(definitionId)) ??
     (await findLatestWorkflowVersionId(definitionId));
@@ -73,6 +80,18 @@ export async function createWorkflow(
   return workflowEditorView(versionId);
 }
 
+async function resolveEditableVersion(definitionId: string, selectedVersionId?: string) {
+  if (selectedVersionId) {
+    const version = await findWorkflowTemplateVersion(definitionId, selectedVersionId);
+    if (!version) throw new WorkflowNotFoundError();
+    if (version.version.status !== "DRAFT") {
+      throw new WorkflowConflictError("Only draft versions can be edited.");
+    }
+    return version.version.id;
+  }
+  return findDraftByDefinition(definitionId);
+}
+
 export async function updateWorkflowDraft(
   user: AuthenticatedUser | null,
   definitionId: string,
@@ -83,7 +102,7 @@ export async function updateWorkflowDraft(
     user,
     permissionCodes.workflowDefinitionUpdate,
   );
-  const versionId = await findDraftByDefinition(definitionId);
+  const versionId = await resolveEditableVersion(definitionId, input.versionId);
   if (!versionId)
     throw new WorkflowConflictError("Only draft versions can be edited.");
   const current = await loadWorkflowEditor(versionId);
@@ -109,7 +128,7 @@ export async function updateWorkflowDetails(
     user,
     permissionCodes.workflowDefinitionUpdate,
   );
-  const versionId = await findDraftByDefinition(definitionId);
+  const versionId = await resolveEditableVersion(definitionId, input.versionId);
   if (!versionId)
     throw new WorkflowConflictError("Only draft versions can be edited.");
   const updated = await updateWorkflowDefinitionDetails({
@@ -126,9 +145,10 @@ export async function updateWorkflowDetails(
 export async function validateWorkflow(
   user: AuthenticatedUser | null,
   definitionId: string,
+  selectedVersionId?: string,
 ) {
   requirePermission(user, permissionCodes.workflowDefinitionUpdate);
-  const versionId = await findDraftByDefinition(definitionId);
+  const versionId = await resolveEditableVersion(definitionId, selectedVersionId);
   if (!versionId)
     throw new WorkflowConflictError("Only draft versions can be edited.");
   return (await workflowEditorView(versionId)).validation;

@@ -6,14 +6,14 @@ import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { toast } from "sonner";
 
-import { WorkflowEditorWorkspace } from "@/components/admin/workflows/WorkflowEditorWorkspace";
+import { WorkflowEditorWorkspace } from "@/modules/workflows/ui/definitions/WorkflowEditorWorkspace";
 import { clientWorkflowService } from "@/modules/workflows/ClientWorkflowService";
 import { workflowQueryKeys } from "@/modules/workflows/WorkflowHooks";
 import type { WorkflowEditorView } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 
 vi.mock("sonner", () => ({ toast: { error: vi.fn() } }));
 
-vi.mock("@/components/admin/workflows/WorkflowStageFlow", () => ({
+vi.mock("@/modules/workflows/ui/definitions/WorkflowStageFlow", () => ({
   WorkflowStageFlow: ({ canEdit }: { canEdit: boolean }) => (
     <div data-can-edit={String(canEdit)} />
   ),
@@ -90,6 +90,43 @@ describe("workflow editor publishing", () => {
       await act(async () => root.unmount());
       container.remove();
     }
+  });
+
+  it("keeps a historical version separate from the latest draft cache", async () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false, staleTime: Infinity } },
+    });
+    const historical = {
+      ...editor("PUBLISHED"),
+      version: { ...editor("PUBLISHED").version, number: 1 },
+    };
+    client.setQueryData(workflowQueryKeys.detail(definitionId), editor("DRAFT"));
+    client.setQueryData(
+      workflowQueryKeys.detail(definitionId, historical.version.id),
+      historical,
+    );
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={client}>
+          <WorkflowEditorWorkspace
+            canPublish
+            canRetire={false}
+            canUpdate
+            definitionId={definitionId}
+            versionId={historical.version.id}
+          />
+        </QueryClientProvider>,
+      );
+    });
+    expect(container.textContent).toContain("v1");
+    expect(container.textContent).not.toContain("v2");
+    expect(container.querySelector('[data-can-edit="false"]')).not.toBeNull();
+    expect(container.querySelector('[aria-label="Publish Standard workflow"]'))
+      .toBeNull();
+    await act(async () => root.unmount());
   });
 
   it("confirms publishing and updates the displayed status", async () => {

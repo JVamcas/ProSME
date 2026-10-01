@@ -6,9 +6,9 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn() }),
 }));
 
-import { WorkflowStageFlow } from "@/components/admin/workflows/WorkflowStageFlow";
+import { WorkflowStageFlow } from "@/modules/workflows/ui/definitions/WorkflowStageFlow";
 import { WorkflowDefinitionCreateForm } from "@/components/admin/workflows/WorkflowDefinitionCreateForm";
-import { WorkflowDefinitionDetailsCard } from "@/components/admin/workflows/WorkflowDefinitionDetailsCard";
+import { WorkflowDefinitionDetailsCard } from "@/modules/workflows/ui/definitions/WorkflowDefinitionDetailsCard";
 import { WorkflowDefinitionsWorkspace } from "@/components/admin/workflows/WorkflowDefinitionsWorkspace";
 import { WorkflowDefinitionsTable } from "@/components/admin/workflows/WorkflowDefinitionsTable";
 import { referenceWorkflow } from "../../support/ReferenceWorkflowFixture";

@@ -14,11 +14,45 @@ type Candidate = {
 
 export type AssignmentSlot = {
   id: string;
+  name: string;
   namedUserOverrideId: string | null;
   reviewerCount: number;
   roleId: string | null;
   stableKey: string;
 };
+
+/** Load assignment labels only after allocation fails, including ineligible users. */
+async function describeAssignee(
+  transaction: WorkflowInstanceTransaction,
+  definition: AssignmentSlot,
+): Promise<string> {
+  const result = await transaction.execute(sql`
+    SELECT assigned_role.name AS "roleName",
+      assigned_user.display_name AS "userName"
+    FROM app_stage_task_definitions definition
+    LEFT JOIN app_roles assigned_role
+      ON assigned_role.id = definition.assignment_role_id
+    LEFT JOIN app_users assigned_user
+      ON assigned_user.id = definition.assignment_user_id
+    WHERE definition.id = ${definition.id}::uuid
+  `);
+  const labels = result.rows[0] as {
+    roleName: string | null;
+    userName: string | null;
+  } | undefined;
+
+  if (definition.namedUserOverrideId) {
+    return labels?.userName
+      ? `reviewer "${labels.userName}"`
+      : "the configured reviewer (name unavailable)";
+  }
+  if (definition.roleId) {
+    return labels?.roleName
+      ? `role "${labels.roleName}"`
+      : "the configured role (name unavailable)";
+  }
+  return "no configured assignee";
+}
 
 /** Resolve all reviewer slots before inserting any tasks in the stage transaction. */
 export async function allocateStageReviewers(
@@ -94,8 +128,9 @@ export async function allocateStageReviewers(
         && candidate.userId === definition.namedUserOverrideId,
       );
       if (!eligibleOverride || definition.reviewerCount !== 1) {
+        const assignee = await describeAssignee(transaction, definition);
         throw new ResourceConflictError(
-          `Cannot advance the workflow because the configured reviewer for task ${definition.stableKey} is not eligible. Assign an active reviewer with the task's required permissions, then try again.`,
+          `Cannot advance the workflow because task "${definition.name}", assigned to ${assignee}, cannot be allocated to an eligible reviewer. Check that this reviewer is active, has the required task permissions, and is eligible for this application, then try again.`,
         );
       }
       assignments.set(definition.id, [definition.namedUserOverrideId]);
@@ -106,8 +141,9 @@ export async function allocateStageReviewers(
       && candidate.roleId === definition.roleId,
     );
     if (eligible.length < definition.reviewerCount) {
+      const assignee = await describeAssignee(transaction, definition);
       throw new ResourceConflictError(
-        `Cannot advance the workflow because task ${definition.stableKey} requires ${definition.reviewerCount} eligible reviewers, but only ${eligible.length} are available. Assign enough active users to the configured reviewer role and grant its required task permissions, then try again.`,
+        `Cannot advance the workflow because task "${definition.name}", assigned to ${assignee}, requires ${definition.reviewerCount} eligible reviewers, but only ${eligible.length} are available. Check the task's assignee configuration and ensure enough active reviewers have the required task permissions and are eligible for this application, then try again.`,
         {
           eligibleReviewers: eligible.length,
           requiredReviewers: definition.reviewerCount,
@@ -124,8 +160,9 @@ export async function allocateStageReviewers(
           || left.userId.localeCompare(right.userId),
         )[0];
       if (!next) {
+        const assignee = await describeAssignee(transaction, definition);
         throw new ResourceConflictError(
-          `Cannot advance the workflow because task ${definition.stableKey} could not be assigned to distinct eligible reviewers.`,
+          `Cannot advance the workflow because task "${definition.name}", assigned to ${assignee}, could not be assigned to distinct eligible reviewers.`,
         );
       }
       selected.push(next.userId);

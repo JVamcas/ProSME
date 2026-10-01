@@ -8,7 +8,7 @@ import {
 import type {
   PublishedFormOption,
 } from "@/modules/forms/FormTypes";
-import { FormRenderer } from "@/modules/forms/ui/renderer/FormRenderer";
+import { WorkflowTaskFormPreview } from "./WorkflowTaskFormPreview";
 import type { WorkflowTaskAction } from "@/modules/work-queue/TaskTypes";
 import { WorkflowTaskActions } from "@/modules/work-queue/ui/WorkflowTaskActions";
 import { WorkflowTaskReviewLayout } from "@/modules/workflows/ui/WorkflowTaskReviewLayout";
@@ -26,47 +26,32 @@ import {
 } from "./WorkflowTaskPreviewSections";
 import { WorkflowTaskWorkSections } from "@/modules/workflows/ui/WorkflowTaskWorkSections";
 
-type PublishedFormQuery = ReturnType<typeof usePublishedFormRuntime>;
-
-function StructuredFormPreview({
-  form,
-}: {
-  form: PublishedFormQuery;
-}) {
-  if (form.isPending) return <p className="text-sm">Loading form preview…</p>;
-  if (form.isError || !form.data) {
-    return (
-      <p className="text-sm text-red-700" role="alert">
-        {form.error?.message ?? "The bound form is unavailable."}
-      </p>
-    );
-  }
-  return (
-    <FormRenderer
-      definition={form.data}
-      formData={{}}
-      onChange={() => undefined}
-      onSubmit={() => undefined}
-      readOnly
-    >
-      <></>
-    </FormRenderer>
-  );
-}
+import {
+  workflowTaskInheritsEligibilityForm,
+  WorkflowTaskEligibilityPreview,
+} from "./WorkflowTaskEligibilityPreview";
 
 export function WorkflowTaskPreviewDialog({
+  definitionId,
   onClose,
   stage,
   task,
+  versionId,
 }: {
+  definitionId: string;
   onClose: () => void;
   stage: WorkflowStageInput;
   task: WorkflowTaskInput;
+  versionId: string;
 }) {
-  const form = usePublishedFormRuntime(task.formBinding?.formVersionId ?? null);
+  const inheritsEligibilityForm = workflowTaskInheritsEligibilityForm(task);
+  const formVersionId = inheritsEligibilityForm
+    ? null
+    : task.formBinding?.formVersionId ?? null;
+  const form = usePublishedFormRuntime(formVersionId);
   const publishedForms = usePublishedForms();
   const actions = workflowTaskPreviewActions(stage, task);
-  const hasForm = Boolean(task.formBinding);
+  const hasForm = inheritsEligibilityForm || Boolean(task.formBinding);
   const taskChecklistItems = workflowTaskChecklistItems(stage, task);
   const requiredChecklistCount = taskChecklistItems.filter(
     (item) => item.mandatory,
@@ -100,7 +85,7 @@ export function WorkflowTaskPreviewDialog({
     + commentFields.filter((field) => field.mandatory).length;
   const formName = workflowTaskPreviewFormName(
     publishedForms.data,
-    task.formBinding?.formVersionId,
+    formVersionId ?? undefined,
   );
   const previewActions = (
     <WorkflowTaskActions
@@ -144,18 +129,35 @@ export function WorkflowTaskPreviewDialog({
             requestStatus: "MISSING" as const,
           }))}
           finalActions={showActionsInFinalStep ? previewActions : undefined}
-          form={hasForm ? {
-            content: <StructuredFormPreview form={form} />,
-            title: formName,
-          } : undefined}
-          scoring={stage.scoring?.taskStableKey === task.stableKey
-            ? stage.scoring
-            : null}
+          form={
+            hasForm
+              ? {
+                  content: inheritsEligibilityForm ? (
+                    <WorkflowTaskEligibilityPreview
+                      definitionId={definitionId}
+                      versionId={versionId}
+                    />
+                  ) : (
+                    <WorkflowTaskFormPreview form={form} />
+                  ),
+                  title: inheritsEligibilityForm && !formVersionId
+                    ? "Eligibility verification"
+                    : formName,
+                }
+              : undefined
+          }
+          scoring={
+            stage.scoring?.taskStableKey === task.stableKey
+              ? stage.scoring
+              : null
+          }
           status={{
             checklist: `${requiredChecklistCount} required items`,
             comments: `${commentFields.filter((field) => field.mandatory).length} required fields`,
             documents: `${taskDocuments.filter((item) => item.mandatory).length} required documents`,
-            form: `${form.data?.fields.filter((field) => field.required).length ?? 0} required fields`,
+            form: inheritsEligibilityForm && !formVersionId
+              ? "From funding call"
+              : `${form.data?.fields.filter((field) => field.required).length ?? 0} required fields`,
             scoring: `${hasScoring ? stage.scoring?.criteria.length ?? 0 : 0} criteria`,
           }}
         />

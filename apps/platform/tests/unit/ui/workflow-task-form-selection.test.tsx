@@ -44,7 +44,6 @@ function TaskFields({
       required: true,
       requiredCompletionCount: 1,
       reviewerCount: 1,
-      stableKey: "FINANCE_REVIEW",
       taskType: "CONTRIBUTING",
     },
   });
