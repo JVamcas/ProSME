@@ -163,16 +163,17 @@ function DecisionForm({
   action,
   beforeAction,
   onCancel,
+  onSuccess,
   task,
 }: {
   action: WorkflowTaskAction;
   beforeAction?: () => Promise<void>;
   onCancel: () => void;
+  onSuccess: () => void;
   task: TaskDetail;
 }) {
   const router = useRouter();
   const execution = useExecuteWorkflowTaskAction(task.taskInstanceId);
-  const [isFinalizingForm, setIsFinalizingForm] = useState(false);
   const form = useForm<ActionValues>({
     defaultValues: {
       comment: "",
@@ -202,9 +203,7 @@ function DecisionForm({
   const submit = form.handleSubmit(async (values) => {
     try {
       if (beforeAction) {
-        setIsFinalizingForm(true);
         await beforeAction();
-        setIsFinalizingForm(false);
       }
       const result = await execution.mutateAsync({
         actionKey: action.key,
@@ -225,9 +224,9 @@ function DecisionForm({
           ? `Application advanced to ${targetStageNames}.`
           : `${action.label} recorded.`,
       );
+      onSuccess();
       router.push("/admin/work-queue");
     } catch (error) {
-      setIsFinalizingForm(false);
       toast.error(
         error instanceof Error
           ? error.message
@@ -241,7 +240,7 @@ function DecisionForm({
         size="xl"
         confirmText={`Submit`}
         confirmVariant={"primary"}
-        isLoading={isFinalizingForm || execution.isPending}
+        isLoading={form.formState.isSubmitting || execution.isPending}
         isOpen
         loadingText="Submitting…"
         message={
@@ -334,7 +333,9 @@ function DecisionForm({
             ) : null}
           </div>
         }
-        onCancel={onCancel}
+        onCancel={() => {
+          if (!form.formState.isSubmitting && !execution.isPending) onCancel();
+        }}
         onConfirm={() => void submit()}
         title={action.label}
       />
@@ -349,27 +350,35 @@ export function WorkflowTaskDecisionActions({
   beforeAction?: () => Promise<void>;
   task: TaskDetail;
 }) {
-  const [selectedKey, setSelectedKey] = useState<string | null>(null);
-  if (task.taskStatus === "COMPLETED" || !task.actions.length) return null;
-  const selected = task.actions.find((action) => action.key === selectedKey);
-  const actionFinalizer = selected && isWorkflowStageDecisionAction(
-    selected.actionType,
-  )
-    ? beforeAction
-    : undefined;
+  // Form finalization changes live action availability; retain this selection
+  // until cancellation or successful execution so the dialog stays mounted.
+  const [selected, setSelected] = useState<WorkflowTaskAction | null>(null);
+  const canChooseAction =
+    task.taskStatus !== "COMPLETED" && task.actions.length > 0;
+  const actionFinalizer =
+    selected && isWorkflowStageDecisionAction(selected.actionType)
+      ? beforeAction
+      : undefined;
+
   return (
     <div className="space-y-4">
-      <WorkflowTaskActions
-        actions={task.actions}
-        disabled={false}
-        onSelect={setSelectedKey}
-      />
-      {selected?.available ? (
+      {canChooseAction ? (
+        <WorkflowTaskActions
+          actions={task.actions}
+          disabled={Boolean(selected)}
+          onSelect={(key) => {
+            const action = task.actions.find((candidate) => candidate.key === key);
+            if (action?.available) setSelected(action);
+          }}
+        />
+      ) : null}
+      {selected ? (
         <DecisionForm
           action={selected}
           beforeAction={actionFinalizer}
           key={selected.key}
-          onCancel={() => setSelectedKey(null)}
+          onCancel={() => setSelected(null)}
+          onSuccess={() => setSelected(null)}
           task={task}
         />
       ) : null}

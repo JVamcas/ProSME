@@ -58,6 +58,7 @@ export function WorkflowVisualRoute({
       label: `${label}${transition.condition ? " (Conditional)" : ""}`,
       status,
       transition,
+      hasAction: Boolean(action),
     };
   });
   const hasLabelActions = Boolean(onToggleRoute || onEditRoute || onDeleteRoute);
@@ -104,7 +105,7 @@ export function WorkflowVisualRoute({
         y={geometry.labelY}
       >
         <div className="flex -translate-y-1/2 flex-col items-center gap-1">
-          {labels.map(({ label, status, transition }, index) => {
+          {labels.map(({ label, status, transition, hasAction }, index) => {
             const className = `max-w-full rounded-md border px-2 py-1 text-center text-[10px] font-semibold leading-4 shadow-sm [overflow-wrap:anywhere] ${
               status
                 ? workflowVisualChangeStyles[status].badge
@@ -137,24 +138,26 @@ export function WorkflowVisualRoute({
             }
             return (
               <span
-                className={`${className} group relative pointer-events-auto hover:z-10 focus-within:z-10`}
+                className={`${className} inline-flex items-center gap-1 pointer-events-auto`}
                 key={transition.id ?? index}
               >
-                {content}
+                <span className="min-w-0">{content}</span>
                 {onEditRoute || onDeleteRoute ? (
-                  <span className="absolute left-1/2 top-full z-20 flex -translate-x-1/2 rounded-md border border-brand-orange/25 bg-white shadow-md opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:group-focus-within:opacity-100">
+                  <span className="flex shrink-0 items-center">
                     {onEditRoute ? (
                       <EditButton
-                        disabled={disabled}
+                        className="size-6 rounded p-0 [&_svg]:size-3.5"
+                        disabled={disabled || !hasAction}
                         onClick={() => onEditRoute(transition)}
-                        title={`Edit path: ${label} from ${stage?.name ?? route.sourceStageKey} to ${destinationName ?? route.destinationKey}`}
+                        title={`Edit action: ${label} from ${stage?.name ?? route.sourceStageKey} to ${destinationName ?? route.destinationKey}`}
                       />
                     ) : null}
                     {onDeleteRoute ? (
                       <DeleteButton
-                        disabled={disabled}
+                        className="size-6 rounded p-0 [&_svg]:size-3.5"
+                        disabled={disabled || !hasAction}
                         onClick={() => onDeleteRoute(transition)}
-                        title={`Delete path: ${label} from ${stage?.name ?? route.sourceStageKey} to ${destinationName ?? route.destinationKey}`}
+                        title={`Delete action: ${label} from ${stage?.name ?? route.sourceStageKey} to ${destinationName ?? route.destinationKey}`}
                       />
                     ) : null}
                   </span>

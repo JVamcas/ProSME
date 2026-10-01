@@ -9,7 +9,7 @@ import { WorkflowStageList } from "@/modules/workflows/ui/definitions/WorkflowSt
 import { WorkflowVisualGraph } from "@/modules/workflows/ui/definitions/WorkflowVisualGraph";
 import { WorkflowValidationAlert } from "@/modules/workflows/ui/definitions/WorkflowValidationAlert";
 import { workflowStageAttention } from "./WorkflowStageAttention";
-import { useWorkflowPathOverlays } from "./useWorkflowPathOverlays";
+import type { WorkflowTransitionInput } from "../../domain/definitions/WorkflowTypes";
 import type { WorkflowStageFlowViewModel } from "./WorkflowStageFlow";
 
 export function WorkflowStageFlowView({
@@ -51,7 +51,25 @@ export function WorkflowStageFlowView({
     () => workflowStageAttention(editor.graph, editor.validation),
     [editor.graph, editor.validation],
   );
-  const pathOverlays = useWorkflowPathOverlays(editor, !isEditingLocked);
+  function openPathAction(
+    transition: WorkflowTransitionInput,
+    mode: "edit" | "delete",
+  ) {
+    if (isEditingLocked) return;
+    const stage = stages.find(
+      (item) => item.stableKey === transition.sourceStageKey,
+    );
+    const action = stage?.actions.find(
+      (item) => item.stableKey === transition.actionKey,
+    );
+    if (!stage || !action) return;
+    setSelectedCode(stage.stableKey);
+    if (mode === "edit") {
+      setActionDialog(action);
+    } else {
+      setActionToDelete(action);
+    }
+  }
 
   return (
     <section className="rounded-[28px] border border-brand-navy/15 bg-brand-white p-5 shadow-sm sm:p-6">
@@ -87,9 +105,9 @@ export function WorkflowStageFlowView({
             onSelect={setSelectedCode}
             onEdit={setStageDialog}
             onDelete={openStageDelete}
-            onEditRoute={pathOverlays.onEdit}
-            onDeleteRoute={pathOverlays.onDelete}
-            routesDisabled={isEditingLocked || pathOverlays.isPending}
+            onEditRoute={(transition) => openPathAction(transition, "edit")}
+            onDeleteRoute={(transition) => openPathAction(transition, "delete")}
+            routesDisabled={isEditingLocked}
           />
         ) : null}
       </div>
@@ -141,7 +159,6 @@ export function WorkflowStageFlowView({
         </ResizableSidebarLayout>
       </div>
       {children}
-      {pathOverlays.overlays}
     </section>
   );
 }

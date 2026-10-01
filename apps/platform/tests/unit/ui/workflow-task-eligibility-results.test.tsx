@@ -41,7 +41,7 @@ vi.mock(
     ),
   }),
 );
-vi.mock("@/modules/work-queue/ui/WorkflowTaskDecisionActions", () => ({
+vi.mock("@/modules/workflows/ui/tasks/WorkflowTaskDecisionActions", () => ({
   WorkflowTaskDecisionActions: ({ task }: { task: TaskDetail }) => (
     <div>
       {task.actions.map((action) => (

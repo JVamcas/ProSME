@@ -18,8 +18,13 @@ afterEach(() => vi.restoreAllMocks());
 
 async function mount(canEdit = true) {
   const graph = structuredClone(referenceWorkflow);
-  graph.transitions = graph.transitions.slice(0, 2);
-  graph.transitions[0].targetStageKeys.push(graph.stages[2].stableKey);
+  graph.transitions = graph.transitions.slice(1, 3);
+  graph.transitions[0].targetStageKeys.push(graph.stages[3].stableKey);
+  graph.transitions.push({
+    ...graph.transitions[0],
+    targetStageKeys: [graph.stages[4].stableKey],
+    priority: 2,
+  });
   const editor: WorkflowEditorView = {
     allowedActions: [],
     definition: {
@@ -76,37 +81,99 @@ async function clickDialogButton(label: string) {
 }
 
 describe("workflow path label actions", () => {
-  it("opens the existing route editor and saves only the clicked route", async () => {
+  it("opens the existing action form for the path's source stage", async () => {
     const view = await mount();
     try {
       const edit = view.container.querySelector<HTMLButtonElement>(
-        '[aria-label^="Edit path:"]',
+        '[aria-label^="Edit action:"]',
       )!;
       expect(edit.closest("svg")?.getAttribute("aria-hidden")).not.toBe("true");
-      expect(edit.parentElement?.className).toContain("group-hover:opacity-100");
-      expect(edit.parentElement?.className).toContain("group-focus-within:opacity-100");
+      const label = edit.parentElement?.parentElement;
+      expect(label?.textContent).toContain(
+        view.editor.graph.stages[1].actions[0].label,
+      );
+      expect(label?.className).toContain("inline-flex");
+      expect(edit.parentElement?.className).not.toContain("absolute");
       await act(async () => edit.click());
       expect(document.querySelector('[role="dialog"]')?.textContent)
-        .toContain("Edit workflow path");
-      expect(document.querySelector<HTMLInputElement>('input[name="priority"]')?.value)
-        .toBe(String(view.editor.graph.transitions[0].priority));
+        .toContain("Edit task action");
+      expect(document.querySelector<HTMLInputElement>('input[name="label"]')?.value)
+        .toBe(view.editor.graph.stages[1].actions[0].label);
+      expect(document.querySelector<HTMLInputElement>('input[name="stableKey"]')?.value)
+        .toBe(view.editor.graph.transitions[0].actionKey);
+      expect(view.update).not.toHaveBeenCalled();
       await act(async () => {
-        const priority = document.querySelector<HTMLInputElement>('input[name="priority"]')!;
-        const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!;
-        setter.call(priority, "2");
-        priority.dispatchEvent(new Event("input", { bubbles: true }));
-        priority.dispatchEvent(new Event("change", { bubbles: true }));
+        const input = document.querySelector<HTMLInputElement>('input[name="label"]')!;
+        const setter = Object.getOwnPropertyDescriptor(
+          HTMLInputElement.prototype,
+          "value",
+        )!.set!;
+        setter.call(input, "Updated path action");
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        input.dispatchEvent(new Event("change", { bubbles: true }));
       });
-      await clickDialogButton("Save route");
+      await clickDialogButton("Continue");
+      await clickDialogButton("Continue");
+      await clickDialogButton("Continue");
+      await clickDialogButton("Save action");
+      expect(view.update).toHaveBeenCalledTimes(1);
+      const savedGraph = view.update.mock.calls[0][1].graph;
+      expect(savedGraph.stages[1].actions[0].label).toBe("Updated path action");
+      expect(savedGraph.stages[0]).toEqual(view.editor.graph.stages[0]);
+      expect(savedGraph.transitions).toHaveLength(view.editor.graph.transitions.length);
+      expect(savedGraph.transitions).toEqual(
+        expect.arrayContaining(view.editor.graph.transitions),
+      );
+      expect(document.querySelector('[role="dialog"]')).toBeNull();
+    } finally {
+      await view.cleanup();
+    }
+  }, 15_000);
+
+  it("confirms action deletion and removes all its routes and task bindings", async () => {
+    const view = await mount();
+    const transition = view.editor.graph.transitions[0];
+    const stage = view.editor.graph.stages.find(
+      (item) => item.stableKey === transition.sourceStageKey,
+    )!;
+    const action = stage.actions.find(
+      (item) => item.stableKey === transition.actionKey,
+    )!;
+    try {
+      await act(async () => {
+        view.container.querySelector<HTMLButtonElement>('[aria-label^="Delete action:"]')!
+          .click();
+      });
+      const dialog = document.querySelector('[role="dialog"]')!;
+      expect(dialog.textContent).toContain("Delete workflow action");
+      expect(dialog.textContent).toContain(action.label);
+      expect(dialog.textContent).toContain("transitions and Task bindings");
+      expect(view.update).not.toHaveBeenCalled();
+      await clickDialogButton("Delete action");
       expect(view.update).toHaveBeenCalledExactlyOnceWith("definition", {
         expectedRowVersion: 3,
         versionId: "version",
         graph: {
-          stages: view.editor.graph.stages,
-          transitions: [
-            { ...view.editor.graph.transitions[0], priority: 2, terminalOutcome: null },
-            view.editor.graph.transitions[1],
-          ],
+          stages: view.editor.graph.stages.map((item) =>
+            item.stableKey === stage.stableKey
+              ? {
+                  ...item,
+                  actions: item.actions
+                    .filter((current) => current.stableKey !== action.stableKey)
+                    .map((current, index) => ({
+                      ...current,
+                      displayOrder: index + 1,
+                    })),
+                  tasks: item.tasks.map((task) => ({
+                    ...task,
+                    actionKeys: task.actionKeys.filter(
+                      (key) => key !== action.stableKey,
+                    ),
+                  })),
+                }
+              : item,
+          ),
+          transitions: [view.editor.graph.transitions[1]],
         },
       });
       expect(document.querySelector('[role="dialog"]')).toBeNull();
@@ -115,29 +182,16 @@ describe("workflow path label actions", () => {
     }
   }, 15_000);
 
-  it("confirms the complete parallel path and preserves actions and other routes", async () => {
+  it("cancels action deletion without saving", async () => {
     const view = await mount();
     try {
       await act(async () => {
-        view.container.querySelector<HTMLButtonElement>('[aria-label^="Delete path:"]')!
+        view.container.querySelector<HTMLButtonElement>('[aria-label^="Delete action:"]')!
           .click();
       });
-      const dialog = document.querySelector('[role="dialog"]')!;
-      for (const key of view.editor.graph.transitions[0].targetStageKeys) {
-        expect(dialog.textContent).toContain(
-          view.editor.graph.stages.find((stage) => stage.stableKey === key)!.name,
-        );
-      }
+      await clickDialogButton("Cancel");
+      expect(document.querySelector('[role="dialog"]')).toBeNull();
       expect(view.update).not.toHaveBeenCalled();
-      await clickDialogButton("Delete path");
-      expect(view.update).toHaveBeenCalledExactlyOnceWith("definition", {
-        expectedRowVersion: 3,
-        versionId: "version",
-        graph: {
-          stages: view.editor.graph.stages,
-          transitions: view.editor.graph.transitions.slice(1),
-        },
-      });
     } finally {
       await view.cleanup();
     }
@@ -148,10 +202,10 @@ describe("workflow path label actions", () => {
     view.update.mockRejectedValue(new Error("The workflow has changed. Refresh and retry."));
     try {
       await act(async () => {
-        view.container.querySelector<HTMLButtonElement>('[aria-label^="Delete path:"]')!
+        view.container.querySelector<HTMLButtonElement>('[aria-label^="Delete action:"]')!
           .click();
       });
-      await clickDialogButton("Delete path");
+      await clickDialogButton("Delete action");
       await act(async () => {
         await new Promise((resolve) => setTimeout(resolve, 10));
       });
@@ -166,7 +220,7 @@ describe("workflow path label actions", () => {
     const view = await mount(false);
     try {
       const buttons = view.container.querySelectorAll<HTMLButtonElement>(
-        '[aria-label^="Edit path:"], [aria-label^="Delete path:"]',
+        '[aria-label^="Edit action:"], [aria-label^="Delete action:"]',
       );
       expect(buttons.length).toBeGreaterThan(0);
       await act(async () => {

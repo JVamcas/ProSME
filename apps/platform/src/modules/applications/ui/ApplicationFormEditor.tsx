@@ -212,8 +212,8 @@ export function ApplicationFormEditor({
   if (application.isPending) {
     return (
       <PortalLoadingState
-        description="Your exact saved form and latest answers are being prepared."
-        title="Loading application"
+        description="Loading application..."
+        title=""
       />
     );
   }

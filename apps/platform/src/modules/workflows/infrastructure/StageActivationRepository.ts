@@ -18,6 +18,7 @@ import { createStageInstance } from "./StageInstanceRepository";
 import type { WorkflowInstanceTransaction } from "./WorkflowInstanceRepository";
 import { createWorkflowTasks } from "./WorkflowTaskWriteRepository";
 import { resolveEligibilityTaskFormVersion } from "./EligibilityTaskFormRepository";
+import { workflowTaskInheritsEligibilityForm } from "../domain/definitions/WorkflowEligibilityForm";
 import { appendStageActivationAudit } from "./StageActivationAuditRepository";
 import { allocateStageReviewers } from "./WorkflowTaskAutoAssignmentRepository";
 
@@ -304,13 +305,7 @@ export async function persistStageActivation(
       : new Date(
           input.activatedAt.getTime() + input.target.slaHours * 3_600_000,
         );
-  const usesEligibilityForm = (task: (typeof input.tasks)[number]) =>
-    task.stableKey === "ELIGIBILITY_VERIFICATION" ||
-    (task.config &&
-      typeof task.config === "object" &&
-      "formPurpose" in task.config &&
-      task.config.formPurpose === "ELIGIBILITY_VERIFICATION");
-  const needsEligibilityForm = input.tasks.some(usesEligibilityForm);
+  const needsEligibilityForm = input.tasks.some(workflowTaskInheritsEligibilityForm);
   const eligibilityFormVersionId = needsEligibilityForm
     ? await resolveEligibilityTaskFormVersion(
         transaction,
@@ -335,7 +330,7 @@ export async function persistStageActivation(
         assignedUserId: assignments.get(task.id)?.[index] ?? null,
         createdAt: input.activatedAt,
         dueAt,
-        formVersionId: usesEligibilityForm(task)
+        formVersionId: workflowTaskInheritsEligibilityForm(task)
           ? eligibilityFormVersionId!
           : task.formVersionId,
         stageInstanceId: stage.id,

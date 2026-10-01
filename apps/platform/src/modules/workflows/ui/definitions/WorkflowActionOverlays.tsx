@@ -30,33 +30,37 @@ export function WorkflowActionOverlays({
 
   async function deleteAction(action: WorkflowActionDefinition) {
     if (!stage) return;
-    await deleteMutation.mutateAsync({
-      stages: editor.graph.stages.map((item) =>
-        item.stableKey === stage.stableKey
-          ? {
-              ...item,
-              actions: item.actions
-                .filter((current) => current.stableKey !== action.stableKey)
-                .map((current, index) => ({
-                  ...current,
-                  displayOrder: index + 1,
+    try {
+      await deleteMutation.mutateAsync({
+        stages: editor.graph.stages.map((item) =>
+          item.stableKey === stage.stableKey
+            ? {
+                ...item,
+                actions: item.actions
+                  .filter((current) => current.stableKey !== action.stableKey)
+                  .map((current, index) => ({
+                    ...current,
+                    displayOrder: index + 1,
+                  })),
+                tasks: item.tasks.map((task) => ({
+                  ...task,
+                  actionKeys: task.actionKeys.filter(
+                    (actionKey) => actionKey !== action.stableKey,
+                  ),
                 })),
-              tasks: item.tasks.map((task) => ({
-                ...task,
-                actionKeys: task.actionKeys.filter(
-                  (actionKey) => actionKey !== action.stableKey,
-                ),
-              })),
-            }
-          : item,
-      ),
-      transitions: editor.graph.transitions.filter(
-        (transition) =>
-          transition.sourceStageKey !== stage.stableKey ||
-          transition.actionKey !== action.stableKey,
-      ),
-    });
-    onCloseDelete();
+              }
+            : item,
+        ),
+        transitions: editor.graph.transitions.filter(
+          (transition) =>
+            transition.sourceStageKey !== stage.stableKey ||
+            transition.actionKey !== action.stableKey,
+        ),
+      });
+      onCloseDelete();
+    } catch {
+      // Keep the confirmation open; the mutation displays the server error.
+    }
   }
 
   return (

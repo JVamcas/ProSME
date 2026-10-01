@@ -8,7 +8,7 @@ import {
 import type {
   PublishedFormOption,
 } from "@/modules/forms/FormTypes";
-import { FormRenderer } from "@/modules/forms/ui/renderer/FormRenderer";
+import { WorkflowTaskFormPreview } from "./WorkflowTaskFormPreview";
 import type { WorkflowTaskAction } from "@/modules/work-queue/TaskTypes";
 import { WorkflowTaskActions } from "@/modules/work-queue/ui/WorkflowTaskActions";
 import { WorkflowTaskReviewLayout } from "@/modules/workflows/ui/WorkflowTaskReviewLayout";
@@ -31,42 +31,18 @@ import {
   WorkflowTaskEligibilityPreview,
 } from "./WorkflowTaskEligibilityPreview";
 
-type PublishedFormQuery = ReturnType<typeof usePublishedFormRuntime>;
-
-function StructuredFormPreview({
-  form,
-}: {
-  form: PublishedFormQuery;
-}) {
-  if (form.isPending) return <p className="text-sm">Loading form preview…</p>;
-  if (form.isError || !form.data) {
-    return (
-      <p className="text-sm text-red-700" role="alert">
-        {form.error?.message ?? "The bound form is unavailable."}
-      </p>
-    );
-  }
-  return (
-    <FormRenderer
-      definition={form.data}
-      formData={{}}
-      onChange={() => undefined}
-      onSubmit={() => undefined}
-      readOnly
-    >
-      <></>
-    </FormRenderer>
-  );
-}
-
 export function WorkflowTaskPreviewDialog({
+  definitionId,
   onClose,
   stage,
   task,
+  versionId,
 }: {
+  definitionId: string;
   onClose: () => void;
   stage: WorkflowStageInput;
   task: WorkflowTaskInput;
+  versionId: string;
 }) {
   const inheritsEligibilityForm = workflowTaskInheritsEligibilityForm(task);
   const formVersionId = inheritsEligibilityForm
@@ -153,17 +129,28 @@ export function WorkflowTaskPreviewDialog({
             requestStatus: "MISSING" as const,
           }))}
           finalActions={showActionsInFinalStep ? previewActions : undefined}
-          form={hasForm ? {
-            content: inheritsEligibilityForm ? (
-              <WorkflowTaskEligibilityPreview />
-            ) : <StructuredFormPreview form={form} />,
-            title: inheritsEligibilityForm && !formVersionId
-              ? "Eligibility verification"
-              : formName,
-          } : undefined}
-          scoring={stage.scoring?.taskStableKey === task.stableKey
-            ? stage.scoring
-            : null}
+          form={
+            hasForm
+              ? {
+                  content: inheritsEligibilityForm ? (
+                    <WorkflowTaskEligibilityPreview
+                      definitionId={definitionId}
+                      versionId={versionId}
+                    />
+                  ) : (
+                    <WorkflowTaskFormPreview form={form} />
+                  ),
+                  title: inheritsEligibilityForm && !formVersionId
+                    ? "Eligibility verification"
+                    : formName,
+                }
+              : undefined
+          }
+          scoring={
+            stage.scoring?.taskStableKey === task.stableKey
+              ? stage.scoring
+              : null
+          }
           status={{
             checklist: `${requiredChecklistCount} required items`,
             comments: `${commentFields.filter((field) => field.mandatory).length} required fields`,

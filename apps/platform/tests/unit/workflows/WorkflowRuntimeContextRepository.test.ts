@@ -36,6 +36,11 @@ describe("workflow task runtime context query", () => {
       "binding.form_version_id = task.form_version_id",
     );
     expect(query.sql).toContain("task.form_version_id IS NOT NULL");
+    expect(query.sql).toContain("LEFT JOIN app_stage_task_form_bindings binding");
+    expect(query.sql).toContain("verification.version_id = application.eligibility_rule_set_version_id");
+    expect(query.sql).toContain("verification.form_version_id = task.form_version_id");
+    expect(query.sql).toContain("NOT inherited_form.enabled AND binding.task_definition_id IS NOT NULL");
+    expect(query.sql).toContain("CASE WHEN inherited_form.enabled THEN '[]'::jsonb");
     expect(query.sql).toContain("app_workflow_task_coi_cleared(task.id,");
     expect(query.sql).toContain("task.assigned_user_id =");
     expect(query.sql).toContain("prior_task.result -> 'evaluatedFormValues'");

@@ -1,6 +1,8 @@
 "use client";
 
 import { requestData } from "@/lib/client-http";
+import { z } from "zod";
+import { workflowEligibilityFormPreviewSchema } from "./api/WorkflowEligibilityFormPreview";
 import type { FundingOpportunityPage } from "@/modules/funding-calls/FundingOpportunityTypes";
 import type {
   CreateWorkflowInput,
@@ -174,6 +176,15 @@ function listAssignments() {
   );
 }
 
+async function getEligibilityFormPreviews(definitionId: string, versionId: string) {
+  const query = new URLSearchParams({ versionId });
+  const data = await requestData<unknown>(
+    `/api/workflows/${definitionId}/eligibility-forms?${query}`,
+    { cache: "no-store" },
+  );
+  return z.array(workflowEligibilityFormPreviewSchema).parse(data);
+}
+
 function listOpportunities() {
   return requestData<FundingOpportunityPage>(
     "/api/admin/workflow-opportunities",
@@ -199,6 +210,7 @@ export const clientWorkflowService = {
   createDefinition,
   deleteDefinition,
   getActionAvailability,
+  getEligibilityFormPreviews,
   getEditor,
   lifecycleCommand,
   listAssignments,

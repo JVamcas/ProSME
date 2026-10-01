@@ -72,9 +72,11 @@ export function WorkflowStageFlowDialogs({
       ) : null}
       {taskToPreview && selectedStage ? (
         <WorkflowTaskPreviewDialog
+          definitionId={editor.definition.id}
           onClose={() => setTaskToPreview(null)}
           stage={selectedStage}
           task={taskToPreview}
+          versionId={editor.version.id}
         />
       ) : null}
       {checklistDialog && selectedStage ? (
