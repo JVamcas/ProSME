@@ -13,7 +13,7 @@ import type { WorkflowEditorView } from "@/modules/workflows/domain/definitions/
 
 vi.mock("sonner", () => ({ toast: { error: vi.fn() } }));
 
-vi.mock("@/components/admin/workflows/WorkflowStageFlow", () => ({
+vi.mock("@/modules/workflows/ui/definitions/WorkflowStageFlow", () => ({
   WorkflowStageFlow: ({ canEdit }: { canEdit: boolean }) => (
     <div data-can-edit={String(canEdit)} />
   ),

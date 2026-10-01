@@ -17,7 +17,7 @@ import { PageShell } from "@/shared/ui/PageShell";
 import { ConfirmationDialog } from "@/shared/ui/ConfirmationDialog";
 import { showWorkflowPublicationError } from "@/modules/workflows/ui/definitions/WorkflowPublicationErrorToast";
 import { WorkflowDefinitionDetailsCard } from "./WorkflowDefinitionDetailsCard";
-import { WorkflowStageFlow } from "./WorkflowStageFlow";
+import { WorkflowStageFlow } from "@/modules/workflows/ui/definitions/WorkflowStageFlow";
 
 type Props = {
   canPublish: boolean;

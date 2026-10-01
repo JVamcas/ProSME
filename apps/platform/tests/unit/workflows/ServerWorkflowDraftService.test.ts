@@ -39,6 +39,7 @@ import {
   findLatestWorkflowVersionId,
 } from "@/modules/workflows/infrastructure/WorkflowRepository";
 import { referenceWorkflow } from "../../support/ReferenceWorkflowFixture";
+import { removeWorkflowStage } from "@/modules/workflows/domain/definitions/WorkflowStageDeletion";
 import {
   createWorkflow,
   updateWorkflowDraft,
@@ -88,14 +89,18 @@ describe("workflow draft updates", () => {
     );
   });
 
-  it("rejects edits when no draft exists", async () => {
+  it("prevents stage deletion when only a published version exists", async () => {
     vi.mocked(findDraftByDefinition).mockResolvedValue(null);
     vi.mocked(findLatestWorkflowVersionId).mockResolvedValue("published-id");
+    const graphAfterDeletion = removeWorkflowStage(
+      referenceWorkflow,
+      "COMPLETENESS",
+    );
     await expect(
       updateWorkflowDraft(
         actor,
         "definition-id",
-        { expectedRowVersion: 2, graph: referenceWorkflow },
+        { expectedRowVersion: 2, graph: graphAfterDeletion },
         "correlation-id",
       ),
     ).rejects.toThrow("Only draft versions can be edited.");
@@ -132,6 +137,7 @@ describe("workflow draft updates", () => {
 
     expect(replaceWorkflowDraft).toHaveBeenCalledWith(
       expect.objectContaining({
+        versionId: "draft-id",
         graph: expect.objectContaining({
           stages: expect.arrayContaining([
             expect.objectContaining({

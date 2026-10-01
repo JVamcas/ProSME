@@ -2,17 +2,19 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { FormProvider, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 
 import { FundingOpportunityCard } from "@/modules/funding-calls/ui/applicant/FundingOpportunityCard";
 import { PortalErrorState } from "@/components/layout/PortalErrorState";
 import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
-import { GeneralButton, GeneralButtonLink } from "@/components/ui/button";
+import { GeneralButton } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { FormSelect } from "@/components/ui/form-fields";
 import { Pagination } from "@/components/ui/pagination";
 import { useBusinesses } from "@/modules/businesses/BusinessHooks";
+import { BusinessDialog } from "@/modules/businesses/ui/BusinessDialog";
 import type { PublicFundingCallSummary } from "@/modules/funding-calls/api/PublicFundingCallTransport";
 import { useCreateApplication } from "../ApplicationHooks";
 import { ApplicationOpportunitySearch } from "./ApplicationOpportunitySearch";
@@ -76,6 +78,7 @@ function OpportunityResults({
 export function NewApplicationChooser() {
   const browser = useApplicationOpportunityChooser();
   const businesses = useBusinesses();
+  const [businessDialogOpen, setBusinessDialogOpen] = useState(false);
   const form = useForm<RepresentedBusinessInput>({
     defaultValues: { businessId: "" },
     resolver: zodResolver(representedBusinessSchema),
@@ -105,15 +108,24 @@ export function NewApplicationChooser() {
   }
   if (!businesses.data.length) {
     return (
-      <EmptyState
-        action={(
-          <GeneralButtonLink href="/portal/businesses/new">
-            Add a business
-          </GeneralButtonLink>
-        )}
-        message="Add the business you are authorised to represent before starting an application."
-        title="No business profile found"
-      />
+      <>
+        <EmptyState
+          action={(
+            <GeneralButton
+              onClick={() => setBusinessDialogOpen(true)}
+              type="button"
+            >
+              Add a business
+            </GeneralButton>
+          )}
+          message="Add the business you are authorised to represent before starting an application."
+          title="No business profile found"
+        />
+        <BusinessDialog
+          isOpen={businessDialogOpen}
+          onClose={() => setBusinessDialogOpen(false)}
+        />
+      </>
     );
   }
   const items = browser.query.data.items;

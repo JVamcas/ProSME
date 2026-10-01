@@ -17,7 +17,7 @@ export type WorkflowDisplayRoute = {
 
 export const workflowGraphMetrics = {
   canvasPadding: 36,
-  columnGap: 112,
+  columnGap: 200,
   nodeHeight: 132,
   nodeWidth: 264,
   rowGap: 52,
@@ -60,6 +60,7 @@ export function aggregateWorkflowDisplayRoutes(
 export function arrangeWorkflowStages(
   stages: WorkflowStageInput[],
   transitions: WorkflowTransitionInput[],
+  nodeHeights: Record<string, number> = {},
 ): Record<string, WorkflowNodePosition> {
   const orderedStages = [...stages].sort(
     (left, right) => left.displayOrder - right.displayOrder,
@@ -99,17 +100,18 @@ export function arrangeWorkflowStages(
 
   const positions: Record<string, WorkflowNodePosition> = {};
   for (const [depth, columnStages] of columns) {
-    columnStages.forEach((stage, row) => {
+    let nextY = workflowGraphMetrics.canvasPadding;
+    for (const stage of columnStages) {
       positions[stage.stableKey] = {
         x:
           workflowGraphMetrics.canvasPadding +
           depth *
             (workflowGraphMetrics.nodeWidth + workflowGraphMetrics.columnGap),
-        y:
-          workflowGraphMetrics.canvasPadding +
-          row * (workflowGraphMetrics.nodeHeight + workflowGraphMetrics.rowGap),
+        y: nextY,
       };
-    });
+      nextY += (nodeHeights[stage.stableKey] ?? workflowGraphMetrics.nodeHeight) +
+        workflowGraphMetrics.rowGap;
+    }
   }
 
   return positions;

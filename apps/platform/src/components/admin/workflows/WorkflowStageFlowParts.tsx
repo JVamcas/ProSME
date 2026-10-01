@@ -1,13 +1,6 @@
-import { ArrowDown, ArrowUp, ChevronDown, GitBranch, Plus } from "lucide-react";
+import { ChevronDown, GitBranch, Plus } from "lucide-react";
 
-import type { WorkflowStageInput } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import { GeneralButton } from "@/components/ui/button";
-
-type StageSelectionProps = {
-  selectedCode?: string;
-  stages: WorkflowStageInput[];
-  onSelect: (code: string) => void;
-};
 
 export function WorkflowStagesHeader({
   disabled,
@@ -90,82 +83,5 @@ export function WorkflowFlowToolbar({
         </span>
       </div>
     </div>
-  );
-}
-
-export function WorkflowStageList({
-  onSelect,
-  selectedCode,
-  stages,
-}: StageSelectionProps) {
-  return (
-    <aside className="flex min-h-[420px] flex-col rounded-2xl border border-brand-navy/15 bg-brand-white p-3">
-      <div className="flex items-start justify-between px-2 py-2">
-        <div>
-          <h3 className="font-bold text-brand-navy">Stage details</h3>
-          <p className="mt-1 text-xs text-brand-navy/55">
-            Select a stage to inspect it
-          </p>
-        </div>
-        <span className="text-xs font-bold text-brand-navy/35">
-          {stages.length}
-        </span>
-      </div>
-      <div className="mt-2 flex-1 space-y-1">
-        {stages.map((stage, index) => (
-          <StageListItem
-            index={index}
-            isSelected={stage.stableKey === selectedCode}
-            key={stage.stableKey}
-            onSelect={onSelect}
-            stage={stage}
-            stageCount={stages.length}
-          />
-        ))}
-      </div>
-    </aside>
-  );
-}
-
-function StageListItem({
-  index,
-  isSelected,
-  onSelect,
-  stage,
-  stageCount,
-}: {
-  index: number;
-  isSelected: boolean;
-  onSelect: (code: string) => void;
-  stage: WorkflowStageInput;
-  stageCount: number;
-}) {
-  return (
-    <button
-      aria-pressed={isSelected}
-      className={`flex w-full items-center gap-2 rounded-xl px-2 py-2.5 text-left transition ${isSelected ? "bg-brand-blue/20 ring-1 ring-brand-blue" : "hover:bg-slate-50"}`}
-      onClick={() => onSelect(stage.stableKey)}
-      type="button"
-    >
-      <span
-        className={`grid size-7 shrink-0 place-items-center rounded-full text-xs font-bold ${isSelected ? "bg-brand-navy text-white" : "bg-brand-cream text-brand-navy/55"}`}
-      >
-        {index + 1}
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block truncate text-xs font-bold text-brand-navy">
-          {stage.name}
-        </span>
-        <span className="mt-0.5 block truncate text-[10px] text-brand-navy/55">
-          {stage.tasks.length} task{stage.tasks.length === 1 ? "" : "s"}
-        </span>
-      </span>
-      <span className="flex text-brand-navy/25">
-        <ArrowUp className={`size-3 ${index === 0 ? "opacity-30" : ""}`} />
-        <ArrowDown
-          className={`size-3 ${index === stageCount - 1 ? "opacity-30" : ""}`}
-        />
-      </span>
-    </button>
   );
 }
