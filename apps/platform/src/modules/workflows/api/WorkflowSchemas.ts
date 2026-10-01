@@ -22,6 +22,8 @@ import { workflowScoringAggregations } from "@/modules/workflows/domain/definiti
 export { workflowActionDefinitionSchema } from "@/modules/workflows/domain/actions/WorkflowActionSchemas";
 export { workflowTaskSchema } from "./WorkflowTaskSchemas";
 
+export const workflowEditorVersionIdSchema = z.string().uuid().optional();
+
 const codeSchema = z
   .string()
   .trim()
@@ -194,6 +196,21 @@ export const workflowStageSchema = z
         path: ["checklistItems"],
       });
     }
+    for (const property of ["stableKey", "displayOrder"] as const) {
+      const seen = new Set<string | number>();
+      stage.tasks.forEach((task, index) => {
+        if (seen.has(task[property])) {
+          context.addIssue({
+            code: "custom",
+            message: property === "displayOrder"
+              ? "Task display orders must be unique within the stage."
+              : "Task keys must be unique within the stage.",
+            path: ["tasks", index, property],
+          });
+        }
+        seen.add(task[property]);
+      });
+    }
     const taskKeys = new Set(stage.tasks.map((task) => task.stableKey));
     stage.checklistItems.forEach((item, index) => {
       if (!taskKeys.has(item.taskStableKey)) {
@@ -314,10 +331,12 @@ export const createWorkflowSchema = z.object({
 });
 
 export const updateWorkflowDetailsSchema = createWorkflowSchema.extend({
+  versionId: workflowEditorVersionIdSchema,
   expectedRowVersion: z.number().int().positive(),
 });
 
 export const updateWorkflowDraftSchema = z.object({
+  versionId: workflowEditorVersionIdSchema,
   expectedRowVersion: z.number().int().positive(),
   graph: workflowGraphSchema,
 });

@@ -74,9 +74,10 @@ function listPublished() {
   );
 }
 
-function getEditor(definitionId: string) {
+function getEditor(definitionId: string, versionId?: string) {
+  const query = versionId ? `?versionId=${encodeURIComponent(versionId)}` : "";
   return requestData<WorkflowEditorView>(
-    `/api/admin/workflow-definitions/${definitionId}/draft`,
+    `/api/admin/workflow-definitions/${definitionId}/draft${query}`,
     { cache: "no-store" },
   );
 }
@@ -114,9 +115,10 @@ function updateDetails(
   );
 }
 
-function validateDefinition(definitionId: string) {
+function validateDefinition(definitionId: string, versionId?: string) {
+  const query = versionId ? `?versionId=${encodeURIComponent(versionId)}` : "";
   return requestData<WorkflowValidation>(
-    `/api/admin/workflow-definitions/${definitionId}/validate`,
+    `/api/admin/workflow-definitions/${definitionId}/validate${query}`,
     { method: "POST" },
   );
 }

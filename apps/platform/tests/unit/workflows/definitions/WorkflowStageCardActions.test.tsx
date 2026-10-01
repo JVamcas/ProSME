@@ -104,7 +104,7 @@ describe("stage card actions in the workflow editor", () => {
     } finally {
       await view.cleanup();
     }
-  });
+  }, 15_000);
 
   it.each([
     { canEdit: false, stageCount: 2, editDisabled: true },

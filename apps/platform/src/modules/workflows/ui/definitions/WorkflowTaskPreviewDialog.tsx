@@ -26,6 +26,11 @@ import {
 } from "./WorkflowTaskPreviewSections";
 import { WorkflowTaskWorkSections } from "@/modules/workflows/ui/WorkflowTaskWorkSections";
 
+import {
+  workflowTaskInheritsEligibilityForm,
+  WorkflowTaskEligibilityPreview,
+} from "./WorkflowTaskEligibilityPreview";
+
 type PublishedFormQuery = ReturnType<typeof usePublishedFormRuntime>;
 
 function StructuredFormPreview({
@@ -63,10 +68,14 @@ export function WorkflowTaskPreviewDialog({
   stage: WorkflowStageInput;
   task: WorkflowTaskInput;
 }) {
-  const form = usePublishedFormRuntime(task.formBinding?.formVersionId ?? null);
+  const inheritsEligibilityForm = workflowTaskInheritsEligibilityForm(task);
+  const formVersionId = inheritsEligibilityForm
+    ? null
+    : task.formBinding?.formVersionId ?? null;
+  const form = usePublishedFormRuntime(formVersionId);
   const publishedForms = usePublishedForms();
   const actions = workflowTaskPreviewActions(stage, task);
-  const hasForm = Boolean(task.formBinding);
+  const hasForm = inheritsEligibilityForm || Boolean(task.formBinding);
   const taskChecklistItems = workflowTaskChecklistItems(stage, task);
   const requiredChecklistCount = taskChecklistItems.filter(
     (item) => item.mandatory,
@@ -100,7 +109,7 @@ export function WorkflowTaskPreviewDialog({
     + commentFields.filter((field) => field.mandatory).length;
   const formName = workflowTaskPreviewFormName(
     publishedForms.data,
-    task.formBinding?.formVersionId,
+    formVersionId ?? undefined,
   );
   const previewActions = (
     <WorkflowTaskActions
@@ -145,8 +154,12 @@ export function WorkflowTaskPreviewDialog({
           }))}
           finalActions={showActionsInFinalStep ? previewActions : undefined}
           form={hasForm ? {
-            content: <StructuredFormPreview form={form} />,
-            title: formName,
+            content: inheritsEligibilityForm ? (
+              <WorkflowTaskEligibilityPreview />
+            ) : <StructuredFormPreview form={form} />,
+            title: inheritsEligibilityForm && !formVersionId
+              ? "Eligibility verification"
+              : formName,
           } : undefined}
           scoring={stage.scoring?.taskStableKey === task.stableKey
             ? stage.scoring
@@ -155,7 +168,9 @@ export function WorkflowTaskPreviewDialog({
             checklist: `${requiredChecklistCount} required items`,
             comments: `${commentFields.filter((field) => field.mandatory).length} required fields`,
             documents: `${taskDocuments.filter((item) => item.mandatory).length} required documents`,
-            form: `${form.data?.fields.filter((field) => field.required).length ?? 0} required fields`,
+            form: inheritsEligibilityForm && !formVersionId
+              ? "From funding call"
+              : `${form.data?.fields.filter((field) => field.required).length ?? 0} required fields`,
             scoring: `${hasScoring ? stage.scoring?.criteria.length ?? 0 : 0} criteria`,
           }}
         />

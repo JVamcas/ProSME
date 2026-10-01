@@ -36,6 +36,8 @@ type Props = {
   isDeleting?: boolean;
   onSelect: (code: string) => void;
   onToggleRoute?: (transition: WorkflowTransitionInput) => void;
+  onEditRoute?: (transition: WorkflowTransitionInput) => void;
+  onDeleteRoute?: (transition: WorkflowTransitionInput) => void;
   routesDisabled?: boolean;
   selectedCode?: string;
   stages: WorkflowStageInput[];
@@ -58,6 +60,8 @@ export function WorkflowVisualGraph({
   canDelete,
   isDeleting,
   onToggleRoute,
+  onEditRoute,
+  onDeleteRoute,
   routesDisabled,
   selectedCode,
   stages,
@@ -157,7 +161,7 @@ export function WorkflowVisualGraph({
         >
           <GraphPattern />
           <svg
-            aria-hidden={onToggleRoute ? undefined : true}
+            aria-hidden={onToggleRoute || onEditRoute || onDeleteRoute ? undefined : true}
             className="pointer-events-none absolute inset-0 size-full overflow-visible"
           >
             <defs>
@@ -178,6 +182,8 @@ export function WorkflowVisualGraph({
             {routeGeometries.map(({ route, geometry }) => (
               <WorkflowVisualRoute
                 onToggleRoute={onToggleRoute}
+                onEditRoute={onEditRoute}
+                onDeleteRoute={onDeleteRoute}
                 disabled={routesDisabled}
                 destinationName={stageByKey.get(route.destinationKey)?.name}
                 geometry={geometry}

@@ -40,6 +40,24 @@ function queryClient(
   return client;
 }
 
+async function openActions(container: HTMLElement) {
+  await act(async () => {
+    container.querySelector<HTMLButtonElement>(
+      '[aria-label^="Actions for Standard grant"]',
+    )?.click();
+  });
+}
+
+function menuItem(label: string) {
+  return Array.from(document.body.querySelectorAll<HTMLElement>('[role="menuitem"]'))
+    .find((item) => item.textContent === label);
+}
+
+async function chooseAction(container: HTMLElement, label: string) {
+  await openActions(container);
+  await act(async () => menuItem(label)?.click());
+}
+
 afterEach(() => {
   document.body.replaceChildren();
 });
@@ -61,20 +79,62 @@ describe("workflow template admin list", () => {
     expect(container.textContent).toContain("v2");
     expect(container.textContent).toContain("Pending Approval");
     expect(container.textContent).toContain("Actions");
-    expect(
-      container.querySelector('[aria-label="Edit Standard grant"]'),
-    ).not.toBeNull();
-    expect(
-      container.querySelector('[aria-label="Clone Standard grant"]'),
-    ).not.toBeNull();
-    expect(
-      container.querySelector('[aria-label="Delete Standard grant"]'),
-    ).not.toBeNull();
+    expect(container.querySelector('[aria-label="Actions for Standard grant v2"]'))
+      .not.toBeNull();
+    await openActions(container);
+    expect(menuItem("Edit")).toBeDefined();
+    expect(menuItem("Clone")).toBeDefined();
+    expect(menuItem("Delete")).toBeDefined();
     expect(
       container.querySelector<HTMLAnchorElement>(
-        'a[href="/admin/workflows/41111111-1111-4111-8111-111111111111"]',
+        'a[href="/admin/workflows/41111111-1111-4111-8111-111111111111?versionId=42222222-2222-4222-8222-222222222222"]',
       ),
     ).not.toBeNull();
+    await act(async () => root.unmount());
+  });
+
+  it("links each version of the same template to its own editor", async () => {
+    const client = queryClient("DRAFT");
+    const key = [...workflowQueryKeys.templates, 1, 10];
+    const data = client.getQueryData<{ items: Record<string, unknown>[] }>(key)!;
+    const latest = data.items[0];
+    client.setQueryData(key, {
+      ...data,
+      items: [latest, {
+        ...latest,
+        isLatest: false,
+        currentVersion: {
+          id: "43333333-3333-4333-8333-333333333333",
+          number: 1,
+          rowVersion: 1,
+          status: "PUBLISHED",
+        },
+      }],
+      total: 2,
+    });
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={client}>
+          <WorkflowTemplateAdminWorkspace canCreate canPublish canUpdate />
+        </QueryClientProvider>,
+      );
+    });
+    const links = Array.from(container.querySelectorAll<HTMLAnchorElement>("a"));
+    expect(links.map((link) => link.getAttribute("href"))).toEqual([
+      "/admin/workflows/41111111-1111-4111-8111-111111111111?versionId=42222222-2222-4222-8222-222222222222",
+      "/admin/workflows/41111111-1111-4111-8111-111111111111?versionId=43333333-3333-4333-8333-333333333333",
+    ]);
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>(
+        '[aria-label="Actions for Standard grant v1"]',
+      )?.click();
+    });
+    expect(menuItem("Edit")?.getAttribute("aria-disabled")).toBe("true");
+    expect(menuItem("Delete")?.getAttribute("aria-disabled")).toBe("true");
+    expect(menuItem("Publish")).toBeUndefined();
     await act(async () => root.unmount());
   });
 
@@ -134,11 +194,7 @@ describe("workflow template admin list", () => {
         </QueryClientProvider>,
       );
     });
-    await act(async () => {
-      container
-        .querySelector<HTMLButtonElement>('[aria-label="Edit Standard grant"]')
-        ?.click();
-    });
+    await chooseAction(container, "Edit");
 
     expect(document.body.textContent).toContain("Edit workflow template");
     expect(
@@ -160,13 +216,7 @@ describe("workflow template admin list", () => {
         </QueryClientProvider>,
       );
     });
-    await act(async () => {
-      container
-        .querySelector<HTMLButtonElement>(
-          '[aria-label="Delete Standard grant"]',
-        )
-        ?.click();
-    });
+    await chooseAction(container, "Delete");
 
     const dialog = document.body.querySelector<HTMLElement>('[role="dialog"]');
     expect(dialog?.textContent).toContain(
@@ -189,16 +239,9 @@ describe("workflow template admin list", () => {
       );
     });
 
-    expect(
-      container.querySelector('[aria-label="Publish Standard grant"]'),
-    ).not.toBeNull();
-    await act(async () => {
-      container
-        .querySelector<HTMLButtonElement>(
-          '[aria-label="Publish Standard grant"]',
-        )
-        ?.click();
-    });
+    await openActions(container);
+    expect(menuItem("Publish")).toBeDefined();
+    await act(async () => menuItem("Publish")?.click());
     const dialog = document.body.querySelector<HTMLElement>('[role="dialog"]');
     expect(dialog?.textContent).toContain("Publish Standard grant version 2?");
     await act(async () => root.unmount());
@@ -213,9 +256,8 @@ describe("workflow template admin list", () => {
         </QueryClientProvider>,
       );
     });
-    expect(
-      draftContainer.querySelector('[aria-label="Publish Standard grant"]'),
-    ).not.toBeNull();
+    await openActions(draftContainer);
+    expect(menuItem("Publish")).toBeDefined();
     await act(async () => draftRoot.unmount());
   });
 });

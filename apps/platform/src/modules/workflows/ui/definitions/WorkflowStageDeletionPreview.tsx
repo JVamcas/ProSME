@@ -80,6 +80,11 @@ export function WorkflowStageDeletionPreview({
         replacements={suggestions}
         selectedIds={selectedIds}
       />
+      {!suggestions.length ? (
+        <p className="text-sm text-brand-navy/65">
+          No eligible replacement paths are available.
+        </p>
+      ) : null}
     </section>
   );
 }

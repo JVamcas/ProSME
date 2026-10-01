@@ -12,7 +12,6 @@ import {
 } from "@/modules/workflows/infrastructure/WorkflowLifecycleRepository";
 import { workflowTemplatePublishableStatuses } from "@/modules/workflows/domain/definitions/WorkflowTemplate";
 import type { WorkflowValidationIssue } from "@/modules/workflows/domain/definitions/WorkflowTypes";
-import { findDraftByDefinition } from "@/modules/workflows/infrastructure/WorkflowRepository";
 import {
   loadWorkflowEditor,
   requireWorkflowIdempotencyKey,
@@ -30,11 +29,6 @@ export async function cloneWorkflow(
   const actor = requirePermission(user, permissionCodes.workflowDefinitionUpdate);
   const source = await loadWorkflowEditor(sourceVersionId);
   if (source.definition.id !== definitionId) throw new WorkflowNotFoundError();
-  if (await findDraftByDefinition(source.definition.id)) {
-    throw new WorkflowConflictError(
-      "This workflow already has a mutable draft.",
-    );
-  }
   const versionId = await cloneWorkflowVersion({
     actorId: actor.id,
     correlationId,

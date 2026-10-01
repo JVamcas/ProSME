@@ -9,6 +9,7 @@ import { WorkflowStageList } from "@/modules/workflows/ui/definitions/WorkflowSt
 import { WorkflowVisualGraph } from "@/modules/workflows/ui/definitions/WorkflowVisualGraph";
 import { WorkflowValidationAlert } from "@/modules/workflows/ui/definitions/WorkflowValidationAlert";
 import { workflowStageAttention } from "./WorkflowStageAttention";
+import { useWorkflowPathOverlays } from "./useWorkflowPathOverlays";
 import type { WorkflowStageFlowViewModel } from "./WorkflowStageFlow";
 
 export function WorkflowStageFlowView({
@@ -50,6 +51,7 @@ export function WorkflowStageFlowView({
     () => workflowStageAttention(editor.graph, editor.validation),
     [editor.graph, editor.validation],
   );
+  const pathOverlays = useWorkflowPathOverlays(editor, !isEditingLocked);
 
   return (
     <section className="rounded-[28px] border border-brand-navy/15 bg-brand-white p-5 shadow-sm sm:p-6">
@@ -85,6 +87,9 @@ export function WorkflowStageFlowView({
             onSelect={setSelectedCode}
             onEdit={setStageDialog}
             onDelete={openStageDelete}
+            onEditRoute={pathOverlays.onEdit}
+            onDeleteRoute={pathOverlays.onDelete}
+            routesDisabled={isEditingLocked || pathOverlays.isPending}
           />
         ) : null}
       </div>
@@ -136,6 +141,7 @@ export function WorkflowStageFlowView({
         </ResizableSidebarLayout>
       </div>
       {children}
+      {pathOverlays.overlays}
     </section>
   );
 }

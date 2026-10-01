@@ -42,7 +42,11 @@ export function WorkflowTemplateAdminWorkspace({
   const templates = useWorkflowTemplates(page, pageSize);
   const cloneTemplate = useCloneWorkflowTemplate();
   const deleteTemplate = useDeleteWorkflowTemplate();
-  const publishTemplate = useWorkflowListLifecycle("publish");
+  const publishTemplate = useWorkflowListLifecycle(
+    "publish",
+    undefined,
+    publishCandidate?.currentVersion.id,
+  );
   const emptyMessage = templates.isLoading
     ? "Loading workflow templates…"
     : (templates.error?.message ??

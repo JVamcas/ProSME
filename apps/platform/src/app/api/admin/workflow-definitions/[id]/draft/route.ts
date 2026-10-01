@@ -4,7 +4,10 @@ import {
   portalRouteError,
   portalRouteSuccess,
 } from "@/lib/api/PortalApiResponse";
-import { updateWorkflowDraftSchema } from "@/modules/workflows/api/WorkflowSchemas";
+import {
+  updateWorkflowDraftSchema,
+  workflowEditorVersionIdSchema,
+} from "@/modules/workflows/api/WorkflowSchemas";
 import {
   getWorkflowEditor,
   updateWorkflowDraft,
@@ -17,7 +20,13 @@ export async function GET(request: Request, context: RouteContext) {
   try {
     const user = await resolveUserFromHeaders(request.headers);
     const { id } = await context.params;
-    return portalRouteSuccess(await getWorkflowEditor(user, id), correlationId);
+    const versionId = workflowEditorVersionIdSchema.parse(
+      new URL(request.url).searchParams.get("versionId") ?? undefined,
+    );
+    return portalRouteSuccess(
+      await getWorkflowEditor(user, id, versionId),
+      correlationId,
+    );
   } catch (error) {
     return portalRouteError(error, correlationId);
   }

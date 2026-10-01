@@ -11,6 +11,11 @@ describe("workflow stable keys", () => {
       .toBe("ADMINISTRATIVE_ELIGIBILITY_SCREENING");
   });
 
+  it("generates valid keys for names with little or no ASCII text", () => {
+    expect(stableKeyFromLabel("A!", "TASK")).toBe("TASK_A");
+    expect(stableKeyFromLabel("审核", "TASK")).toBe("TASK");
+  });
+
   it("prefixes names that do not start with a letter", () => {
     expect(stableKeyFromLabel("2026 review", "STAGE"))
       .toBe("STAGE_2026_REVIEW");

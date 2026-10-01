@@ -1,3 +1,5 @@
+import { DeleteButton, EditButton } from "@/components/ui/action-buttons";
+
 import type {
   WorkflowStageInput,
   WorkflowTransitionInput,
@@ -14,6 +16,8 @@ import {
 
 export function WorkflowVisualRoute({
   onToggleRoute,
+  onEditRoute,
+  onDeleteRoute,
   disabled,
   destinationName,
   geometry,
@@ -24,6 +28,8 @@ export function WorkflowVisualRoute({
   routeStatus,
 }: {
   onToggleRoute?: (transition: WorkflowTransitionInput) => void;
+  onEditRoute?: (transition: WorkflowTransitionInput) => void;
+  onDeleteRoute?: (transition: WorkflowTransitionInput) => void;
   disabled?: boolean;
   destinationName?: string;
   geometry: ReturnType<typeof workflowRouteGeometry>;
@@ -54,11 +60,16 @@ export function WorkflowVisualRoute({
       transition,
     };
   });
-  const labels = onToggleRoute ? actionLabels : [...new Map(
-    actionLabels.map((entry) => [`${entry.label}:${entry.status}`, entry]),
-  ).values()];
+  const hasLabelActions = Boolean(onToggleRoute || onEditRoute || onDeleteRoute);
+  const labels = hasLabelActions
+    ? actionLabels
+    : [...new Map(
+        actionLabels.map((entry) => [`${entry.label}:${entry.status}`, entry]),
+      ).values()];
   const firstStatus = labels[0]?.status;
-  const color = firstStatus ? workflowVisualChangeStyles[firstStatus].color : undefined;
+  const color = firstStatus
+    ? workflowVisualChangeStyles[firstStatus].color
+    : undefined;
   const dashed = labels.every((entry) => entry.status === "suggested");
 
   const selectable = Boolean(onToggleRoute && firstStatus !== "deleted");
@@ -125,8 +136,29 @@ export function WorkflowVisualRoute({
               );
             }
             return (
-              <span className={className} key={`${label}:${status}`}>
+              <span
+                className={`${className} group relative pointer-events-auto hover:z-10 focus-within:z-10`}
+                key={transition.id ?? index}
+              >
                 {content}
+                {onEditRoute || onDeleteRoute ? (
+                  <span className="absolute left-1/2 top-full z-20 flex -translate-x-1/2 rounded-md border border-brand-orange/25 bg-white shadow-md opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:group-focus-within:opacity-100">
+                    {onEditRoute ? (
+                      <EditButton
+                        disabled={disabled}
+                        onClick={() => onEditRoute(transition)}
+                        title={`Edit path: ${label} from ${stage?.name ?? route.sourceStageKey} to ${destinationName ?? route.destinationKey}`}
+                      />
+                    ) : null}
+                    {onDeleteRoute ? (
+                      <DeleteButton
+                        disabled={disabled}
+                        onClick={() => onDeleteRoute(transition)}
+                        title={`Delete path: ${label} from ${stage?.name ?? route.sourceStageKey} to ${destinationName ?? route.destinationKey}`}
+                      />
+                    ) : null}
+                  </span>
+                ) : null}
               </span>
             );
           })}
