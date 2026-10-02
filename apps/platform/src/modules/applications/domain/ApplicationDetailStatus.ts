@@ -4,6 +4,12 @@ export function applicantDetailProgressLabel(
   status: ApplicationSummary["publicStatus"]["status"],
 ): string {
   switch (status) {
+    case "INELIGIBLE":
+      return "INELIGIBLE";
+    case "REJECTED":
+      return "REJECTED";
+    case "REJECTED_INCOMPLETE":
+      return "REJECTED INCOMPLETE";
     case "DRAFT":
       return "DRAFT";
     case "WITHDRAWN":

@@ -87,6 +87,11 @@ describe("notification HTML import", () => {
 
   it.each([
     [
+      "application-terminal-status-reached.html",
+      "application.terminal-status-reached",
+      "Application {{applicationReference}}: {{statusLabel}}",
+    ],
+    [
       "auth-email-verification.html",
       "auth.email.verification",
       "Verify your email for {{platformName}}",

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { eligibilityFailureStatusSchema } from "../../domain/definitions/WorkflowEligibilityFailureStatus";
 
 import type { WorkflowTaskInput } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import {
@@ -14,7 +15,7 @@ export const workflowTaskFormSchema = z
     assignmentTarget: z.string().min(1, "Select an assignee."),
     formVersionId: z.union([z.string().uuid(), z.literal("")]),
     formPurpose: z.enum(workflowTaskFormPurposes),
-    runAuthoritativeEligibility: z.boolean(),
+    hardFailureStatus: eligibilityFailureStatusSchema,
     description: z.string().trim().max(1000),
     displayMode: z.enum(workflowTaskDisplayModes),
     displayOrder: z.number().int().positive(),

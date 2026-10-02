@@ -44,7 +44,7 @@ describe("workflow task configuration", () => {
       displayOrder: 1,
       formVersionId: "",
       formPurpose: "APPLICATION_REVIEW",
-      runAuthoritativeEligibility: false,
+      hardFailureStatus: "INELIGIBLE",
       reviewerCount: 3,
       requiredCompletionCount: 2,
       completionMode: "COUNT",

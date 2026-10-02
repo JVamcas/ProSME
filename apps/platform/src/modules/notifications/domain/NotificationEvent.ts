@@ -1,23 +1,19 @@
 import { z } from "zod";
 
+import { applicationTerminalStatusContextSchema } from "./NotificationApplicationTerminalEvent";
+import {
+  applicationOwnerSnapshotSchema,
+  identifierSchema,
+  snapshotEmailSchema,
+  snapshotNameSchema,
+  timestampSchema,
+  uuidSchema,
+} from "./NotificationEventSchemaFields";
+
 import {
   notificationErrorCodes,
   NotificationValidationError,
 } from "./NotificationErrors";
-
-const uuidSchema = z.uuid();
-const snapshotNameSchema = z.string().trim().min(1).max(200);
-const snapshotEmailSchema = z.email().max(320);
-const identifierSchema = z.string().trim().min(1).max(500);
-const timestampSchema = z.iso.datetime({ offset: true });
-
-const applicationOwnerSnapshotSchema = z
-  .object({
-    displayName: snapshotNameSchema,
-    email: snapshotEmailSchema,
-    userId: uuidSchema,
-  })
-  .strict();
 
 export const applicationSubmittedContextSchema = z
   .object({
@@ -147,6 +143,7 @@ export const notificationEventKeys = [
   "auth.email.verification",
   "auth.password.reset",
   "application.submitted",
+  "application.terminal-status-reached",
   "funding-call.approval-request-withdrawn",
   "funding-call.approval-requested",
   "funding-call.approved",
@@ -199,6 +196,7 @@ export type NotificationEventContextByKey = {
   "auth.email.verification": z.infer<typeof authenticationEventContextSchema>;
   "auth.password.reset": z.infer<typeof authenticationEventContextSchema>;
   "application.submitted": ApplicationSubmittedContext;
+  "application.terminal-status-reached": z.infer<typeof applicationTerminalStatusContextSchema>;
   "funding-call.approval-request-withdrawn": FundingCallLifecycleContext;
   "funding-call.approval-requested": FundingCallLifecycleContext;
   "funding-call.approved": FundingCallLifecycleContext;
@@ -236,6 +234,12 @@ export const notificationEventCatalogue = {
     catalogKey: "AUTHENTICATION",
     contextSchema: authenticationEventContextSchema,
     key: "auth.password.reset",
+  },
+  "application.terminal-status-reached": {
+    ruleEligibility: "CONFIGURABLE",
+    catalogKey: "APPLICATIONS",
+    contextSchema: applicationTerminalStatusContextSchema,
+    key: "application.terminal-status-reached",
   },
   "application.submitted": {
     ruleEligibility: "CONFIGURABLE",

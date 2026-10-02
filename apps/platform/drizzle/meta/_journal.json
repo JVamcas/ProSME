@@ -1037,6 +1037,13 @@
       "when": 1800489600000,
       "tag": "0147_allow_multiple_workflow_drafts",
       "breakpoints": true
+    },
+    {
+      "idx": 148,
+      "version": "7",
+      "when": 1800576000000,
+      "tag": "0148_eligibility_terminal_status_event",
+      "breakpoints": true
     }
   ]
 }

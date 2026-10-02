@@ -1,5 +1,7 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+
 import { useEffect, useRef } from "react";
 import { activeFormDefinition } from "@/modules/forms/engine/FormVisibility";
 import { validateFormValues } from "@/modules/forms/FormValidation";
@@ -117,16 +119,21 @@ function LoadedDynamicFormTask({
     onCompleteTaskForm?.(() => completionRef.current());
     return () => onCompleteTaskForm?.(null);
   }, [onCompleteTaskForm]);
+  const router = useRouter();
+
   async function runEligibility() {
     const revision = controller.currentRevision();
     try {
-      await evaluation.mutateAsync({
+      const result = await evaluation.mutateAsync({
         expectedResponseRowVersion: data.response?.rowVersion,
         expectedRowVersion: data.taskRowVersion,
         values: controller.values,
       });
       controller.markSaved(revision);
-      toast.success("Eligibility evaluation completed.");
+      toast.success(result.terminalStatus
+        ? "Application terminated after a hard eligibility failure."
+        : "Eligibility evaluation completed.");
+      if (result.terminalStatus) router.push("/admin/work-queue");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Eligibility evaluation failed.");
     }

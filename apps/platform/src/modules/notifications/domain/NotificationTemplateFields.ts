@@ -33,6 +33,15 @@ export const notificationCatalogTemplateFields = {
 export const notificationEventTemplateFields = {
   "auth.email.verification": notificationCatalogTemplateFields.AUTHENTICATION,
   "auth.password.reset": notificationCatalogTemplateFields.AUTHENTICATION,
+  "application.terminal-status-reached": [
+    ...notificationCatalogTemplateFields.APPLICATIONS,
+    "newStatus",
+    "statusLabel",
+    "previousStatus",
+    "reasonCodes",
+    "occurredAt",
+    "applicationUrl",
+  ],
   "application.submitted": [
     ...notificationCatalogTemplateFields.APPLICATIONS,
     "submittedAt",
@@ -206,6 +215,19 @@ export function buildNotificationRenderValues<Key extends NotificationEventKey>(
     platformName: "SME Fund Namibia",
     recipientName: input.recipient.displayName,
   };
+
+  if (input.eventKey === "application.terminal-status-reached") {
+    const context = input.context as NotificationEventContextByKey["application.terminal-status-reached"];
+    return {
+      ...common,
+      applicationUrl: trustedUrl(input.publicApplicationUrl, `/portal/applications/${context.applicationId}`),
+      newStatus: context.newStatus,
+      statusLabel: context.statusLabel,
+      previousStatus: context.previousStatus,
+      reasonCodes: context.reasonCodes.join(", "),
+      occurredAt: formatTimestamp(context.occurredAt),
+    };
+  }
 
   if (input.eventKey === "application.submitted") {
     const context =

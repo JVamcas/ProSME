@@ -1,5 +1,10 @@
 "use client";
 
+import {
+  eligibilityFailureStatuses,
+  eligibilityFailureStatusLabels,
+} from "../../domain/definitions/WorkflowEligibilityFailureStatus";
+
 import { FormSelect } from "@/components/ui/form-fields";
 import {
   formPurposeOptions,
@@ -45,6 +50,18 @@ export function WorkflowTaskFormLayoutStep({
           value={formVersionId}
         />
       )}
+      {formPurpose === "ELIGIBILITY_VERIFICATION" ? (
+        <FormSelect
+          containerClassName="sm:col-span-2"
+          items={eligibilityFailureStatuses.map((status) => ({
+            label: eligibilityFailureStatusLabels[status],
+            value: status,
+          }))}
+          label="On hard eligibility failure — Status"
+          name="hardFailureStatus"
+          required
+        />
+      ) : null}
       <FormSelect
         containerClassName="sm:col-span-2"
         infoTooltip="Controls how this task is presented to reviewers."

@@ -1,4 +1,5 @@
 import "server-only";
+import { workflowApprovalEligibilityReady } from "@/modules/workflows/infrastructure/WorkflowApprovalEligibilityReadiness";
 
 import { taskWorkIsReady } from "@/modules/workflows/WorkflowTaskRegistry";
 import type { WorkflowActionType } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
@@ -51,6 +52,7 @@ type ExecuteTransition = (
 ) => Promise<SequentialTransitionResult>;
 
 type LockedTask = {
+  approvalEligibilityReady: boolean;
   actionType: WorkflowActionType | null;
   taskType: "CONTRIBUTING" | "STAGE_DECISION";
   formCompleted: boolean;
@@ -142,7 +144,8 @@ async function lockTask(
   input: WriteInput,
 ): Promise<LockedTask | null> {
   const locked = await transaction.execute(sql`
-    SELECT task.status AS "taskStatus", task.result,
+    SELECT ${workflowApprovalEligibilityReady(sql`stage.workflow_instance_id`)} AS "approvalEligibilityReady",
+      task.status AS "taskStatus", task.result,
       definition.task_type AS "taskType",
       task.form_version_id IS NOT NULL AS "formRequired",
       (task.form_version_id IS NOT NULL AND EXISTS (
@@ -283,6 +286,9 @@ export async function writeChecklistTaskCompletion(
         if (!quorumSatisfied) return { kind: "conflict" } as const;
       }
       if (!input.actionKey && task.taskType === "STAGE_DECISION") {
+        return { kind: "conflict" } as const;
+      }
+      if (task.actionType === "APPROVE_ADVANCE" && task.approvalEligibilityReady === false) {
         return { kind: "conflict" } as const;
       }
       if (input.actionKey && !taskActionMatchesType(task)) {

@@ -87,6 +87,7 @@ function screening(dependencies: StandardWorkflowDependencies) {
         actionKeys: actions.map((item) => item.stableKey),
         taskType: "STAGE_DECISION",
         config: {
+          hardFailureStatus: "INELIGIBLE",
           command: "AUTHORITATIVE_ELIGIBILITY",
           reevaluationPolicy: "WHEN_EVIDENCE_CHANGED",
         },

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { workflowPublicStatuses } from "@/modules/workflows/domain/definitions/WorkflowStageDefinition";
 
 import { workflowActionTypes } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
 
@@ -54,14 +55,7 @@ export const workflowActionFormSchema = z
     rejectionOutcomeType: z.enum(["TERMINAL", "TRANSITION"]),
     cancelOpenStageInstances: z.boolean(),
     cancelOpenTasks: z.boolean(),
-    rejectionPublicStatus: z.enum([
-      "SUBMITTED",
-      "UNDER_REVIEW",
-      "ACTION_REQUIRED",
-      "OUTCOME_AVAILABLE",
-      "CLOSED",
-      "WITHDRAWN",
-    ]),
+    rejectionPublicStatus: z.enum(workflowPublicStatuses),
     rejectionPublicLabel: z.string().trim().max(120),
     rejectionPublicDescription: z.string().trim().max(300),
     reversibleActionKey: z.string(),

@@ -1,4 +1,5 @@
 import "server-only";
+import { terminateWorkflowOnEligibilityFailure } from "@/modules/workflows/application/runtime/ServerWorkflowEligibilityFailureService";
 
 import { permissionCodes } from "@/auth/authorization/permissions";
 import {
@@ -8,6 +9,12 @@ import {
   requirePermission,
 } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
+import type {
+  ApplicationEvaluationSource,
+  BusinessEvaluationSource,
+  CreateAuthoritativeOutcomeInput,
+  FundingCallEvaluationSource,
+} from "../domain/AuthoritativeEligibilityEvaluationSource";
 import type { JsonValue } from "@/modules/conditions/domain/Operand";
 import {
   IdempotencyConflictError,
@@ -33,50 +40,6 @@ import {
   persistAuthoritativeEligibilityExecution,
   withAuthoritativeEligibilityExecutionTransaction,
 } from "../infrastructure/AuthoritativeEligibilityExecutionRepository";
-
-type FundingCallEvaluationSource = {
-  closesAt: Date;
-  eligibilityRuleSetVersionId: string | null;
-  fundingInstrument: string | null;
-  id: string;
-  maximumGrantAmount: string;
-  minimumGrantAmount: string;
-  opensAt: Date;
-  slug: string;
-  status: string;
-  thematicArea: string | null;
-  title: string;
-  totalBudgetEnvelope: string;
-};
-
-type ApplicationEvaluationSource = {
-  businessSection?: Record<string, JsonValue>;
-  declarationsSection: { compliance?: boolean };
-  eligibilityRuleSetVersionId: string | null;
-  financialSection: { amountRequested?: number };
-  formVersionId?: string | null;
-  id: string;
-  projectSection?: Record<string, JsonValue>;
-  rowVersion: number;
-};
-
-type BusinessEvaluationSource = {
-  employeeCount: number | null;
-  establishedYear: number | null;
-  registrationNumber: string;
-  updatedAt: Date;
-};
-
-type CreateAuthoritativeOutcomeInput = {
-  actorId: string;
-  application: ApplicationEvaluationSource;
-  business: BusinessEvaluationSource;
-  correlationId: string;
-  evaluatedAt: Date;
-  evaluationNumber: number;
-  fundingCall: FundingCallEvaluationSource;
-  workflowTaskId: string | null;
-};
 
 export class AuthoritativeEligibilityUnavailableError extends ResourceConflictError {
   readonly resolutionError: EligibilityInputResolutionError | null;
@@ -129,6 +92,22 @@ export async function executeAuthoritativeEligibility(
   const actor = requireAuthenticatedUser(user);
   return withAuthoritativeEligibilityExecutionTransaction(
     async (transaction) => {
+      const replay = await findAuthoritativeEligibilityExecutionByCommand(
+        transaction,
+        input.idempotencyKey,
+      );
+      if (replay) {
+        if (replay.workflowTaskId !== input.taskId || replay.evaluatedBy !== actor.id) {
+          throw new IdempotencyConflictError(
+            "That idempotency key was already used for another evaluation.",
+          );
+        }
+        requirePermission(actor, replay.permissions.edit);
+        if (replay.assignedUserId !== actor.id || !replay.coiCleared) {
+          throw new ResourceNotFoundError("eligibility workflow task");
+        }
+        return eligibilityExecutionResult(replay, replay.taskRowVersion);
+      }
       const target = await lockAuthoritativeEligibilityTask(
         transaction,
         input.taskId,
@@ -138,21 +117,6 @@ export async function executeAuthoritativeEligibility(
       requirePermission(actor, target.permissions.edit);
       if (!target.assignedToActor) {
         throw new ResourceNotFoundError("eligibility workflow task");
-      }
-      const replay = await findAuthoritativeEligibilityExecutionByCommand(
-        transaction,
-        input.idempotencyKey,
-      );
-      if (replay) {
-        if (
-          replay.workflowTaskId !== target.taskId
-          || replay.evaluatedBy !== actor.id
-        ) {
-          throw new IdempotencyConflictError(
-            "That idempotency key was already used for another evaluation.",
-          );
-        }
-        return eligibilityExecutionResult(replay, target.rowVersion);
       }
       if (target.rowVersion !== input.expectedRowVersion) {
         throw new ResourceConflictError(
@@ -230,7 +194,7 @@ export async function executeAuthoritativeEligibility(
           );
         }
       }
-      return persistAuthoritativeEligibilityExecution(transaction, {
+      const result = await persistAuthoritativeEligibilityExecution(transaction, {
         commandKey: input.idempotencyKey,
         correlationId: input.correlationId,
         expectedRowVersion: input.expectedRowVersion,
@@ -240,6 +204,24 @@ export async function executeAuthoritativeEligibility(
         taskId: target.taskId,
         workflowInstanceId: target.workflowInstanceId,
       });
+      const terminalStatus = await terminateWorkflowOnEligibilityFailure(transaction, {
+        actorId: actor.id,
+        config: target.config,
+        correlationId: input.correlationId,
+        evaluatedAt: outcome.evaluatedAt,
+        evaluationId: result.evaluationId,
+        hardFailures: outcome.hardFailures,
+        stageInstanceId: target.stageInstanceId,
+        taskId: target.taskId,
+        workflowInstanceId: target.workflowInstanceId,
+      });
+      if (!terminalStatus) return result;
+      const receipt = await findAuthoritativeEligibilityExecutionByCommand(
+        transaction,
+        input.idempotencyKey,
+      );
+      if (!receipt) throw new ResourceConflictError("The eligibility receipt is unavailable.");
+      return eligibilityExecutionResult(receipt, receipt.taskRowVersion);
     },
   );
 }

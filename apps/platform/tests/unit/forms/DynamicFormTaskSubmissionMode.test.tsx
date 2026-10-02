@@ -10,6 +10,8 @@ import type {
   TaskFormData,
 } from "@/modules/forms/FormTypes";
 
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
+
 const mocks = vi.hoisted(() => ({
   data: null as TaskFormData | null,
   finalizeFormValues: vi.fn(),

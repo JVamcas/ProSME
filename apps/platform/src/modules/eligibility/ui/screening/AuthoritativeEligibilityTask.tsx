@@ -1,5 +1,7 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+
 import { LoaderCircle, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
@@ -9,12 +11,16 @@ import { useEvaluateAuthoritativeEligibility } from "@/modules/work-queue/WorkQu
 import { AuthoritativeEligibilityResult } from "./AuthoritativeEligibilityResult";
 
 export function AuthoritativeEligibilityTask({ task }: { task: TaskDetail }) {
+  const router = useRouter();
   const evaluation = useEvaluateAuthoritativeEligibility(task.taskInstanceId);
   const current = task.eligibilityEvaluation;
   async function run() {
     try {
-      await evaluation.mutateAsync({ expectedRowVersion: task.rowVersion });
-      toast.success("Authoritative eligibility evaluation completed.");
+      const result = await evaluation.mutateAsync({ expectedRowVersion: task.rowVersion });
+      toast.success(result.terminalStatus
+        ? "Application terminated after a hard eligibility failure."
+        : "Authoritative eligibility evaluation completed.");
+      if (result.terminalStatus) router.push("/admin/work-queue");
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Eligibility evaluation failed.",
