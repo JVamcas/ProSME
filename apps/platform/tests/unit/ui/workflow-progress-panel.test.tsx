@@ -7,9 +7,15 @@ import { afterEach, describe, expect, it } from "vitest";
 import { workflowProgressFixture as progress } from "../../support/WorkflowProgressFixture";
 import { WorkflowProgressPanel } from "@/modules/workflows/ui/WorkflowProgressPanel";
 
-
-
 afterEach(() => document.body.replaceChildren());
+
+async function openVisualFlow(container: HTMLElement) {
+  const toggle = [...container.querySelectorAll("button")].find(
+    (button) => button.textContent?.trim() === "Show visual flow",
+  );
+  expect(toggle).toBeDefined();
+  await act(async () => toggle!.click());
+}
 
 describe("workflow progress panel", () => {
   it("selects the active stage and lets staff inspect another stage", async () => {
@@ -21,6 +27,7 @@ describe("workflow progress panel", () => {
       root.render(<WorkflowProgressPanel progress={progress} />),
     );
 
+    await openVisualFlow(container);
     const graph = container.querySelector(
       '[aria-label="Workflow instance visual flow"]',
     );
@@ -94,6 +101,7 @@ describe("workflow progress panel", () => {
         />,
       ),
     );
+    await openVisualFlow(container);
     const graph = container.querySelector(
       '[aria-label="Workflow instance visual flow"]',
     );
@@ -132,6 +140,7 @@ describe("workflow progress panel", () => {
         />,
       ),
     );
+    await openVisualFlow(container);
     const repeated = container.querySelector<HTMLButtonElement>(
       '[data-workflow-stage="eligibility"] button',
     );
@@ -179,6 +188,7 @@ describe("workflow progress panel", () => {
         />,
       ),
     );
+    await openVisualFlow(container);
     const paths = container.querySelectorAll("g[data-workflow-route]");
     expect(paths).toHaveLength(2);
     expect(

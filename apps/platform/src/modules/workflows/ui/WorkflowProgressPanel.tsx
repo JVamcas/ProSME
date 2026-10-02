@@ -8,6 +8,7 @@ import type {
   WorkflowProgressStage,
   WorkflowProgressView,
 } from "../api/WorkflowProgressTypes";
+import { WorkflowFlowToolbar } from "./WorkflowFlowToolbar";
 import { WorkflowVisualGraph } from "./definitions/WorkflowVisualGraph";
 import { WorkflowStageTaskAssignments } from "./WorkflowStageTaskAssignments";
 
@@ -50,6 +51,8 @@ function StageMarker({ status }: { status: WorkflowProgressStage["status"] }) {
 }
 
 function StageFlow({ progress }: { progress: WorkflowProgressView }) {
+  const [showVisualFlow, setShowVisualFlow] = useState(false);
+  const [layoutRevision, setLayoutRevision] = useState(0);
   const defaultStage =
     progress.stages.find(
       (stage) => stage.status === "ACTIVE" || stage.status === "BLOCKED",
@@ -109,33 +112,42 @@ function StageFlow({ progress }: { progress: WorkflowProgressView }) {
     <>
       {progress.graph ? (
         <div className="mt-5 min-w-0 max-w-full overflow-hidden rounded-xl border border-brand-navy/10">
-          <h3 className="px-5 py-3 text-sm font-semibold text-brand-navy">
-            Visual flow
-          </h3>
-          <WorkflowVisualGraph
-            onSelect={(key) => {
-              const run = latestRuns.get(key);
-              if (run) setSelectedKey(stageKey(run));
+          <WorkflowFlowToolbar
+            isExpanded={showVisualFlow}
+            onAutoArrange={() => {
+              setShowVisualFlow(true);
+              setLayoutRevision((revision) => revision + 1);
             }}
-            selectedCode={selected.stableKey}
-            stageAnnotations={annotations}
-            stageBorderClasses={borders}
-            routeTaken={(route, destinationKey) => {
-              if (!route.id) return false;
-              if (destinationKey) {
-                return takenPaths.has(`${route.id}:${destinationKey}`);
-              }
-              return route.targetStageKeys.length
-                ? route.targetStageKeys.some((key) =>
-                    takenPaths.has(`${route.id}:${key}`),
-                  )
-                : takenPaths.has(`${route.id}:terminal`);
-            }}
-            stages={graphStages}
-            transitions={progress.graph.transitions}
-            viewportClassName="max-h-[560px]"
-            viewportLabel="Workflow instance visual flow"
+            onToggle={() => setShowVisualFlow((value) => !value)}
+            stageCount={graphStages.length}
           />
+          {showVisualFlow ? (
+            <WorkflowVisualGraph
+              key={layoutRevision}
+              onSelect={(key) => {
+                const run = latestRuns.get(key);
+                if (run) setSelectedKey(stageKey(run));
+              }}
+              selectedCode={selected.stableKey}
+              stageAnnotations={annotations}
+              stageBorderClasses={borders}
+              routeTaken={(route, destinationKey) => {
+                if (!route.id) return false;
+                if (destinationKey) {
+                  return takenPaths.has(`${route.id}:${destinationKey}`);
+                }
+                return route.targetStageKeys.length
+                  ? route.targetStageKeys.some((key) =>
+                      takenPaths.has(`${route.id}:${key}`),
+                    )
+                  : takenPaths.has(`${route.id}:terminal`);
+              }}
+              stages={graphStages}
+              transitions={progress.graph.transitions}
+              viewportClassName="max-h-[560px]"
+              viewportLabel="Workflow instance visual flow"
+            />
+          ) : null}
         </div>
       ) : null}
       <div className="mt-5 grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-[300px_minmax(0,1fr)]">
