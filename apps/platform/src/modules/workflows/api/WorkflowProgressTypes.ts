@@ -1,5 +1,7 @@
+import type { WorkflowGraphInput } from "../domain/definitions/WorkflowTypes";
 import type { StageInstanceStatus } from "../domain/runtime/StageInstance";
 import type { WorkflowInstanceStatus } from "../domain/runtime/WorkflowInstance";
+import type { WorkflowTaskType } from "../domain/definitions/WorkflowTaskDefinition";
 
 export type WorkflowProgressTask = {
   actionedAt: string | null;
@@ -12,6 +14,7 @@ export type WorkflowProgressTask = {
   name: string;
   required: boolean;
   status: string;
+  taskType: WorkflowTaskType;
 };
 
 export type WorkflowProgressStage = {
@@ -22,17 +25,25 @@ export type WorkflowProgressStage = {
   iterationNumber: number | null;
   name: string;
   sequence: number;
+  stableKey: string;
   status: StageInstanceStatus;
   tasks: WorkflowProgressTask[];
 };
 
+export type WorkflowTakenPath = {
+  transitionId: string;
+  targetStageKey: string | null;
+};
+
 export type WorkflowProgressView = {
   completedAt: string | null;
+  graph: WorkflowGraphInput | null;
   id: string;
   name: string;
   stages: WorkflowProgressStage[];
   startedAt: string;
   status: WorkflowInstanceStatus;
   terminalOutcome: string | null;
+  takenPaths: WorkflowTakenPath[];
   versionNumber: number;
 };

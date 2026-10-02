@@ -1,9 +1,6 @@
 "use client";
 
-import {
-  useMemo,
-  useId,
-} from "react";
+import { useMemo, useId, type ReactNode } from "react";
 
 import type {
   WorkflowStageInput,
@@ -27,7 +24,15 @@ import { useWorkflowGraphDrag } from "./useWorkflowGraphDrag";
 
 import type { WorkflowStageAttention } from "./WorkflowStageAttention";
 
+export type WorkflowVisualRouteTakenResolver = (
+  transition: WorkflowTransitionInput,
+  destinationKey?: string,
+) => boolean;
+
 type Props = {
+  stageBorderClasses?: Map<string, string>;
+  routeTaken?: WorkflowVisualRouteTakenResolver;
+  stageAnnotations?: Map<string, ReactNode>;
   attentionByStage?: Map<string, WorkflowStageAttention>;
   onEdit?: (stage: WorkflowStageInput) => void;
   onDelete?: (stage: WorkflowStageInput) => void;
@@ -52,6 +57,9 @@ type Props = {
 const { canvasPadding, nodeHeight, nodeWidth } = workflowGraphMetrics;
 
 export function WorkflowVisualGraph({
+  stageAnnotations,
+  stageBorderClasses,
+  routeTaken,
   attentionByStage,
   onSelect,
   onEdit,
@@ -73,9 +81,10 @@ export function WorkflowVisualGraph({
   viewportLabel,
 }: Props) {
   const instanceId = useId();
-  const markerId = changeColor
-    ? `workflow-arrow-${instanceId}`
-    : "workflow-arrow";
+  const markerId =
+    changeColor || routeTaken
+      ? `workflow-arrow-${instanceId}`
+      : "workflow-arrow";
   const nodeHeights = useMemo(
     () =>
       workflowStageCardHeights(
@@ -86,11 +95,29 @@ export function WorkflowVisualGraph({
         Boolean(onEdit || onDelete),
         attentionByStage,
       ),
-    [stages, transitions, connectionRoles, routeStatus, onEdit, onDelete, attentionByStage],
+    [
+      stages,
+      transitions,
+      connectionRoles,
+      routeStatus,
+      onEdit,
+      onDelete,
+      attentionByStage,
+    ],
+  );
+  const annotatedNodeHeights = useMemo(
+    () =>
+      Object.fromEntries(
+        Object.entries(nodeHeights).map(([key, height]) => [
+          key,
+          height + (stageAnnotations?.has(key) ? 28 : 0),
+        ]),
+      ),
+    [nodeHeights, stageAnnotations],
   );
   const arrangedPositions = useMemo(
-    () => arrangeWorkflowStages(stages, transitions, nodeHeights),
-    [stages, transitions, nodeHeights],
+    () => arrangeWorkflowStages(stages, transitions, annotatedNodeHeights),
+    [stages, transitions, annotatedNodeHeights],
   );
   const { positions, startDragging, dragStage, stopDragging } =
     useWorkflowGraphDrag(arrangedPositions);
@@ -103,9 +130,10 @@ export function WorkflowVisualGraph({
     const groups = new Map<string, WorkflowTransitionInput[]>();
     for (const transition of transitions) {
       const status = routeStatus?.(transition) ?? "default";
-      const groupKey = onToggleRoute && status !== "deleted"
-        ? `${status}:${transition.id}`
-        : status;
+      const groupKey =
+        onToggleRoute && status !== "deleted"
+          ? `${status}:${transition.id}`
+          : status;
       groups.set(groupKey, [...(groups.get(groupKey) ?? []), transition]);
     }
     return [...groups].flatMap(([status, group]) =>
@@ -121,10 +149,10 @@ export function WorkflowVisualGraph({
   const routeGeometries = workflowRouteGeometries(
     displayRoutes,
     positions,
-    nodeHeights,
+    annotatedNodeHeights,
     routeStatus,
   );
-  const graphBounds = workflowGraphBounds(positions, nodeHeights);
+  const graphBounds = workflowGraphBounds(positions, annotatedNodeHeights);
   const outgoingBranchCounts = new Map<string, number>();
   for (const { route } of routeGeometries) {
     outgoingBranchCounts.set(
@@ -161,24 +189,12 @@ export function WorkflowVisualGraph({
         >
           <GraphPattern />
           <svg
-            aria-hidden={onToggleRoute || onEditRoute || onDeleteRoute ? undefined : true}
+            aria-hidden={
+              onToggleRoute || onEditRoute || onDeleteRoute ? undefined : true
+            }
             className="pointer-events-none absolute inset-0 size-full overflow-visible"
           >
-            <defs>
-              <marker
-                id={markerId}
-                markerHeight="8"
-                markerWidth="8"
-                orient="auto"
-                refX="7"
-                refY="4"
-              >
-                <path
-                  d="M0,0 L8,4 L0,8 Z"
-                  fill="context-stroke"
-                />
-              </marker>
-            </defs>
+            <GraphArrowMarker markerId={markerId} />
             {routeGeometries.map(({ route, geometry }) => (
               <WorkflowVisualRoute
                 onToggleRoute={onToggleRoute}
@@ -193,6 +209,7 @@ export function WorkflowVisualGraph({
                 stage={stageByKey.get(route.sourceStageKey)}
                 transitions={route.transitions}
                 routeStatus={routeStatus}
+                routeTaken={routeTaken}
               />
             ))}
           </svg>
@@ -202,6 +219,9 @@ export function WorkflowVisualGraph({
             if (!position) return null;
             return (
               <WorkflowVisualStageCard
+                routeTaken={routeTaken}
+                borderClassName={stageBorderClasses?.get(stage.stableKey)}
+                annotation={stageAnnotations?.get(stage.stableKey)}
                 attention={attentionByStage?.get(stage.stableKey)}
                 outgoingBranchCount={
                   outgoingBranchCounts.get(stage.stableKey) ?? 0
@@ -220,7 +240,7 @@ export function WorkflowVisualGraph({
                 onPointerMove={dragStage}
                 onPointerUp={stopDragging}
                 position={position}
-                height={nodeHeights[stage.stableKey]}
+                height={annotatedNodeHeights[stage.stableKey]}
                 selected={stage.stableKey === selectedCode}
                 stage={stage}
                 stageByKey={stageByKey}
@@ -232,6 +252,23 @@ export function WorkflowVisualGraph({
         </div>
       </div>
     </div>
+  );
+}
+
+function GraphArrowMarker({ markerId }: { markerId: string }) {
+  return (
+    <defs>
+      <marker
+        id={markerId}
+        markerHeight="8"
+        markerWidth="8"
+        orient="auto"
+        refX="7"
+        refY="4"
+      >
+        <path d="M0,0 L8,4 L0,8 Z" fill="context-stroke" />
+      </marker>
+    </defs>
   );
 }
 
@@ -299,7 +336,9 @@ function workflowStageCardHeights(
 }
 
 function workflowRouteGeometries(
-  displayRoutes: (WorkflowDisplayRoute & { transitions: WorkflowTransitionInput[] })[],
+  displayRoutes: (WorkflowDisplayRoute & {
+    transitions: WorkflowTransitionInput[];
+  })[],
   positions: Record<string, WorkflowNodePosition>,
   nodeHeights: Record<string, number>,
   routeStatus?: WorkflowVisualRouteStatusResolver,
@@ -318,15 +357,21 @@ function workflowRouteGeometries(
     );
     const offset = (lane - (sharedRoutes.length - 1) / 2) * 60;
     const status = routeStatus?.(route.transitions[0]);
-    const bypassedNodes = status && status !== "deleted"
-      ? Object.entries(positions).filter(
-          ([, position]) => position.x > source.x && position.x < destination.x,
-        )
-      : [];
+    const bypassedNodes =
+      status && status !== "deleted"
+        ? Object.entries(positions).filter(
+            ([, position]) =>
+              position.x > source.x && position.x < destination.x,
+          )
+        : [];
     const detourY = bypassedNodes.length
       ? Math.max(
-          ...bypassedNodes.map(([key, position]) => position.y + nodeHeights[key]),
-        ) + 44 + index * 16
+          ...bypassedNodes.map(
+            ([key, position]) => position.y + nodeHeights[key],
+          ),
+        ) +
+        44 +
+        index * 16
       : undefined;
 
     return [

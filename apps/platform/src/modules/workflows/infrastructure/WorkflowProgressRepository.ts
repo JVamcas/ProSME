@@ -1,11 +1,12 @@
 import "server-only";
 
-import { and, asc, eq, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, or, sql } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
 import { roles } from "@/db/schema/authorization";
 import { users } from "@/db/schema/identity";
 import type {
+  WorkflowTakenPath,
   WorkflowProgressStage,
   WorkflowProgressTask,
   WorkflowProgressView,
@@ -16,10 +17,13 @@ import {
   workflowStageDefinitions,
 } from "./workflow.schema";
 import {
+  transitionExecutions,
   stageInstances,
   workflowInstances,
   workflowTasks,
 } from "./workflow-runtime.schema";
+
+import { transitionExecutionTargets } from "./workflow-parallel.schema";
 
 type ProgressTaskRecord = Omit<WorkflowProgressTask, "canOpen"> & {
   assignedRoleCode: string | null;
@@ -35,8 +39,12 @@ type ProgressStageRecord = Omit<WorkflowProgressStage, "tasks"> & {
   tasks: ProgressTaskRecord[];
 };
 
-export type WorkflowProgressRecord = Omit<WorkflowProgressView, "stages"> & {
+export type WorkflowProgressRecord = Omit<
+  WorkflowProgressView,
+  "stages" | "graph" | "takenPaths"
+> & {
   stages: ProgressStageRecord[];
+  versionId: string;
 };
 
 export async function readWorkflowProgress(
@@ -54,6 +62,8 @@ export async function readWorkflowProgress(
       stageId: stageInstances.id,
       stageName: workflowStageDefinitions.name,
       stageSequence: workflowStageDefinitions.sequence,
+      stageStableKey: workflowStageDefinitions.code,
+      versionId: workflowDefinitionVersions.id,
       stageStatus: stageInstances.status,
       taskActionedAt: workflowTasks.completedAt,
       taskDefinitionId: stageTaskDefinitions.id,
@@ -75,6 +85,7 @@ export async function readWorkflowProgress(
       taskName: stageTaskDefinitions.name,
       taskRequired: stageTaskDefinitions.required,
       taskStatus: workflowTasks.status,
+      taskType: stageTaskDefinitions.taskType,
       taskViewPermission: stageTaskDefinitions.permissions,
       startedAt: workflowInstances.startedAt,
       terminalOutcome: workflowInstances.terminalOutcome,
@@ -84,7 +95,10 @@ export async function readWorkflowProgress(
     .from(workflowInstances)
     .innerJoin(
       workflowDefinitionVersions,
-      eq(workflowDefinitionVersions.id, workflowInstances.workflowTemplateVersionId),
+      eq(
+        workflowDefinitionVersions.id,
+        workflowInstances.workflowTemplateVersionId,
+      ),
     )
     .innerJoin(
       workflowStageDefinitions,
@@ -94,7 +108,10 @@ export async function readWorkflowProgress(
       stageInstances,
       and(
         eq(stageInstances.workflowInstanceId, workflowInstances.id),
-        eq(stageInstances.workflowStageDefinitionId, workflowStageDefinitions.id),
+        eq(
+          stageInstances.workflowStageDefinitionId,
+          workflowStageDefinitions.id,
+        ),
       ),
     )
     .leftJoin(
@@ -136,12 +153,19 @@ export async function readWorkflowProgress(
         iterationNumber: row.iterationNumber,
         name: row.stageName,
         sequence: row.stageSequence,
+        stableKey: row.stageStableKey,
         status: row.stageStatus ?? "NOT_STARTED",
         tasks: [],
       };
       stages.set(key, stage);
     }
-    if (row.taskId && row.taskName && row.taskStatus && row.taskViewPermission) {
+    if (
+      row.taskId &&
+      row.taskName &&
+      row.taskStatus &&
+      row.taskType &&
+      row.taskViewPermission
+    ) {
       stage.tasks.push({
         actionedAt: row.taskActionedAt?.toISOString() ?? null,
         assignedRoleCode: row.taskAssignedRoleCode,
@@ -158,6 +182,7 @@ export async function readWorkflowProgress(
         name: row.taskName,
         required: row.taskRequired ?? false,
         status: row.taskStatus,
+        taskType: row.taskType,
         viewPermission: row.taskViewPermission.view,
       });
     }
@@ -172,5 +197,44 @@ export async function readWorkflowProgress(
     status: first.instanceStatus,
     terminalOutcome: first.terminalOutcome,
     versionNumber: first.versionNumber,
+    versionId: first.versionId,
   };
+}
+
+export async function readWorkflowTakenPaths(
+  workflowInstanceId: string,
+): Promise<WorkflowTakenPath[]> {
+  return getDatabase()
+    .selectDistinct({
+      transitionId: transitionExecutions.transitionDefinitionId,
+      targetStageKey: workflowStageDefinitions.code,
+    })
+    .from(transitionExecutions)
+    .leftJoin(
+      transitionExecutionTargets,
+      eq(transitionExecutionTargets.executionId, transitionExecutions.id),
+    )
+    .leftJoin(
+      workflowStageDefinitions,
+      eq(
+        workflowStageDefinitions.id,
+        transitionExecutionTargets.targetStageDefinitionId,
+      ),
+    )
+    .where(
+      and(
+        eq(transitionExecutions.workflowInstanceId, workflowInstanceId),
+        or(
+          inArray(transitionExecutionTargets.outcome, [
+            "ACTIVATED",
+            "ALREADY_ACTIVE",
+            "JOIN_PENDING",
+          ]),
+          inArray(transitionExecutions.outcome, [
+            "WORKFLOW_COMPLETED",
+            "WORKFLOW_REJECTED",
+          ]),
+        ),
+      ),
+    );
 }

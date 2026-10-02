@@ -1,15 +1,27 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
-vi.mock("@/modules/workflows/infrastructure/WorkflowProgressRepository", () => ({
-  readWorkflowProgress: vi.fn(),
+vi.mock(
+  "@/modules/workflows/infrastructure/WorkflowProgressRepository",
+  () => ({
+    readWorkflowProgress: vi.fn(),
+    readWorkflowTakenPaths: vi.fn(),
+  }),
+);
+
+vi.mock("@/modules/workflows/infrastructure/WorkflowGraphRepository", () => ({
+  findWorkflowGraph: vi.fn(),
 }));
 
+import { findWorkflowGraph } from "@/modules/workflows/infrastructure/WorkflowGraphRepository";
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { PermissionDeniedError } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import { getWorkflowProgress } from "@/modules/workflows/application/runtime/ServerWorkflowProgressService";
-import { readWorkflowProgress } from "@/modules/workflows/infrastructure/WorkflowProgressRepository";
+import {
+  readWorkflowProgress,
+  readWorkflowTakenPaths,
+} from "@/modules/workflows/infrastructure/WorkflowProgressRepository";
 
 const applicationId = "11111111-1111-4111-8111-111111111111";
 const actor: AuthenticatedUser = {
@@ -26,23 +38,39 @@ const actor: AuthenticatedUser = {
   userType: "staff",
 };
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => {
+  vi.clearAllMocks();
+  vi.mocked(findWorkflowGraph).mockResolvedValue(null);
+  vi.mocked(readWorkflowTakenPaths).mockResolvedValue([]);
+});
 
 describe("workflow progress authorization", () => {
   it("rejects an application reader without workflow progress permission before querying", async () => {
-    await expect(getWorkflowProgress({
-      ...actor,
-      capabilities: new Set([permissionCodes.fundingApplicationAllRead]),
-    }, applicationId)).rejects.toBeInstanceOf(PermissionDeniedError);
+    await expect(
+      getWorkflowProgress(
+        {
+          ...actor,
+          capabilities: new Set([permissionCodes.fundingApplicationAllRead]),
+        },
+        applicationId,
+      ),
+    ).rejects.toBeInstanceOf(PermissionDeniedError);
     expect(readWorkflowProgress).not.toHaveBeenCalled();
+    expect(findWorkflowGraph).not.toHaveBeenCalled();
+    expect(readWorkflowTakenPaths).not.toHaveBeenCalled();
   });
 
   it("reads progress for a user with the dedicated permission", async () => {
     vi.mocked(readWorkflowProgress).mockResolvedValue(null);
-    await expect(getWorkflowProgress({
-      ...actor,
-      capabilities: new Set([permissionCodes.workflowInstanceAllRead]),
-    }, applicationId)).resolves.toBeNull();
+    await expect(
+      getWorkflowProgress(
+        {
+          ...actor,
+          capabilities: new Set([permissionCodes.workflowInstanceAllRead]),
+        },
+        applicationId,
+      ),
+    ).resolves.toBeNull();
     expect(readWorkflowProgress).toHaveBeenCalledWith(applicationId);
   });
 
@@ -63,51 +91,73 @@ describe("workflow progress authorization", () => {
       name: "Review application",
       required: true,
       status: "PENDING",
+      taskType: "CONTRIBUTING" as const,
       viewPermission: permissionCodes.workflowTaskAssignedRead,
     };
     vi.mocked(readWorkflowProgress).mockResolvedValue({
       completedAt: null,
       id: "workflow-one",
       name: "SME Fund workflow",
-      stages: [{
-        activatedAt: "2026-09-20T08:00:00.000Z",
-        completedAt: null,
-        description: "Review",
-        id: "stage-one",
-        iterationNumber: 1,
-        name: "Review",
-        sequence: 1,
-        status: "ACTIVE",
-        tasks: [
-          task,
-          { ...task, assignedUserId: "another-user", id: "task-two" },
-          {
-            ...task,
-            assignedUserEmail: null,
-            assignedUserId: null,
-            assignedUserName: null,
-            id: "task-three",
-          },
-        ],
-      }],
+      stages: [
+        {
+          activatedAt: "2026-09-20T08:00:00.000Z",
+          completedAt: null,
+          description: "Review",
+          id: "stage-one",
+          iterationNumber: 1,
+          name: "Review",
+          sequence: 1,
+          stableKey: "review",
+          status: "ACTIVE",
+          tasks: [
+            task,
+            { ...task, assignedUserId: "another-user", id: "task-two" },
+            {
+              ...task,
+              assignedUserEmail: null,
+              assignedUserId: null,
+              assignedUserName: null,
+              id: "task-three",
+            },
+          ],
+        },
+      ],
       startedAt: "2026-09-20T08:00:00.000Z",
       status: "ACTIVE",
       terminalOutcome: null,
       versionNumber: 1,
+      versionId: "bound-version",
     });
 
-    const progress = await getWorkflowProgress({
-      ...actor,
-      capabilities: new Set([
-        permissionCodes.workflowInstanceAllRead,
-        permissionCodes.workflowTaskAssignedRead,
-      ]),
-    }, applicationId);
+    const takenPaths = [
+      { transitionId: "executed-route", targetStageKey: "review" },
+    ];
+    vi.mocked(readWorkflowTakenPaths).mockResolvedValue(takenPaths);
+    const progress = await getWorkflowProgress(
+      {
+        ...actor,
+        capabilities: new Set([
+          permissionCodes.workflowInstanceAllRead,
+          permissionCodes.workflowTaskAssignedRead,
+        ]),
+      },
+      applicationId,
+    );
 
+    expect(findWorkflowGraph).toHaveBeenCalledWith("bound-version");
+    expect(progress).not.toHaveProperty("versionId");
+    expect(progress?.graph).toBeNull();
+    expect(readWorkflowTakenPaths).toHaveBeenCalledWith("workflow-one");
+    expect(progress?.takenPaths).toEqual(takenPaths);
     expect(progress?.stages[0].tasks.map((item) => item.canOpen)).toEqual([
       true,
       false,
       false,
+    ]);
+    expect(progress?.stages[0].tasks.map((item) => item.taskType)).toEqual([
+      "CONTRIBUTING",
+      "CONTRIBUTING",
+      "CONTRIBUTING",
     ]);
     expect(progress?.stages[0].tasks[0]).not.toHaveProperty("assignedUserId");
     expect(progress?.stages[0].tasks[0]).not.toHaveProperty("viewPermission");

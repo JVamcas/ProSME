@@ -15,6 +15,7 @@ import type {
   WorkflowTaskInput,
 } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import { WorkflowStageTabHeader } from "./WorkflowStageTabHeader";
+import { workflowTaskTypeLabels } from "../WorkflowTaskTypeLabels";
 
 type Props = {
   assignmentOptions?: WorkflowAssignmentOptions;
@@ -57,10 +58,7 @@ function taskColumns(
     {
       accessorKey: "taskType",
       header: "Type",
-      cell: ({ row }) =>
-        row.original.taskType === "STAGE_DECISION"
-          ? "Stage decision"
-          : "Contributing",
+      cell: ({ row }) => workflowTaskTypeLabels[row.original.taskType],
     },
     {
       id: "assignee",

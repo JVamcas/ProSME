@@ -115,7 +115,7 @@ export function ApplicationDetailContent({
   return (
     <div className="space-y-4">
       <StatusBanner model={model} />
-      <div className="grid items-start gap-4">
+      <div className="grid min-w-0 grid-cols-1 items-start gap-4">
         <Tabs
           accent="orange"
           ariaLabel="Application detail sections"
