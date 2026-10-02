@@ -2,6 +2,7 @@ import {
   applicationTerminalStatusEventSeed,
   applicationTerminalStatusTemplateSeed,
 } from "./ApplicationTerminalStatusNotificationSeed";
+import { workflowDeadlineEventSeeds } from "./WorkflowDeadlineNotificationSeed";
 import {
   notificationEventCatalogue,
   type NotificationEventKey,
@@ -32,6 +33,7 @@ export type NotificationEventSeed = {
 };
 
 export const notificationEventSeeds: readonly NotificationEventSeed[] = [
+  ...workflowDeadlineEventSeeds,
   applicationTerminalStatusEventSeed,
   {
     catalogKey: "AUTHENTICATION",

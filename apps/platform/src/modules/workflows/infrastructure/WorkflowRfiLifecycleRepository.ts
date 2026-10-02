@@ -335,6 +335,7 @@ export async function expireDueWorkflowRfi(
   transaction: WorkflowActionExecutionTransaction,
   input: {
     actorId: string;
+    actorType?: "USER" | "SYSTEM";
     correlationId: string;
     occurredAt: Date;
     requestInformationId: string;
@@ -375,6 +376,7 @@ export async function expireDueWorkflowRfi(
     actorId: input.actorId,
     correlationId: input.correlationId,
     details: { expiryAction: rfi.expiryAction },
+    actorType: input.actorType,
     fromStatus: "OPEN",
     nextRowVersion: updated.rowVersion,
     occurredAt: input.occurredAt,

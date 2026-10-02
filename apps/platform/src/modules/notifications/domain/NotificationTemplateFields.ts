@@ -4,6 +4,7 @@ import type {
   NotificationEventKey,
 } from "./NotificationEvent";
 import type { NotificationTemplateScope } from "./NotificationTemplate";
+import { workflowDeadlineNotificationFields } from "./NotificationWorkflowDeadlineEvent";
 
 export const globalNotificationTemplateFields = [
   "brandingLogoUrl",
@@ -31,6 +32,10 @@ export const notificationCatalogTemplateFields = {
 } as const satisfies Record<NotificationCatalogKey, readonly string[]>;
 
 export const notificationEventTemplateFields = {
+  "workflow.sla.breached": workflowDeadlineNotificationFields,
+  "workflow.information-request.reminder": workflowDeadlineNotificationFields,
+  "workflow.hold.review-due": workflowDeadlineNotificationFields,
+  "workflow.deferral.resumed": workflowDeadlineNotificationFields,
   "auth.email.verification": notificationCatalogTemplateFields.AUTHENTICATION,
   "auth.password.reset": notificationCatalogTemplateFields.AUTHENTICATION,
   "application.terminal-status-reached": [
@@ -191,6 +196,26 @@ function trustedUrl(baseUrl: string, path: string): string {
 export function buildNotificationRenderValues<Key extends NotificationEventKey>(
   input: RenderValueInput<Key>,
 ): Record<string, string> {
+  if ("kind" in input.context && "scheduledFor" in input.context) {
+    const context = input.context as NotificationEventContextByKey["workflow.sla.breached"];
+    return {
+      platformName: "SME Fund Namibia",
+      recipientName: input.recipient.displayName,
+      applicationReference: context.applicationReference,
+      fundingOpportunityTitle: context.fundingOpportunityTitle,
+      stageName: context.stageName,
+      scheduledFor: formatTimestamp(context.scheduledFor),
+      occurredAt: formatTimestamp(context.occurredAt),
+      kind: context.kind,
+      question: context.question ?? "",
+      deadlineAt: context.deadlineAt ? formatTimestamp(context.deadlineAt) : "",
+      workQueueUrl: trustedUrl(input.publicApplicationUrl, "/admin/work-queue"),
+      applicationUrl: trustedUrl(input.publicApplicationUrl, `/portal/applications/${context.applicationId}`),
+      informationRequestUrl: context.kind === "RFI_REMINDER"
+        ? trustedUrl(input.publicApplicationUrl, `/portal/applications/${context.applicationId}/requests/${context.sourceId}`)
+        : "",
+    };
+  }
   if (input.eventKey.startsWith("funding-call.")) {
     const context =
       input.context as NotificationEventContextByKey["funding-call.approval-requested"];

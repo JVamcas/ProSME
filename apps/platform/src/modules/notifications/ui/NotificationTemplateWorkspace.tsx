@@ -178,7 +178,7 @@ export function NotificationTemplateWorkspace({
         ) : null}
       </section>
 
-      <section className="rounded-[1.75rem] border border-brand-navy/10 bg-brand-white p-5 shadow-sm sm:p-6">
+      <section className="rounded-t-[1.75rem] border border-brand-navy/10 bg-brand-white p-5 shadow-sm sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-brand-navy/10 pb-4">
           <div>
             <div className="flex flex-wrap items-center gap-2">

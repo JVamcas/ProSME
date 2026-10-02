@@ -24,6 +24,7 @@ export async function startWorkflowEscalation(
     stageInstanceId: string;
     taskId: string;
     workflowInstanceId: string;
+    triggerOverride?: "RFI_EXPIRY";
   },
 ) {
   const [task] = await transaction.select({
@@ -49,7 +50,7 @@ export async function startWorkflowEscalation(
       ? input.configuration.targetId
       : null,
     taskId: input.taskId,
-    trigger: input.configuration.trigger,
+    trigger: input.triggerOverride ?? input.configuration.trigger,
     workflowInstanceId: input.workflowInstanceId,
   }).returning({ id: workflowEscalations.id });
   if (input.configuration.responsibility === "TRANSFER") {
@@ -94,7 +95,7 @@ export async function startWorkflowEscalation(
       responsibility: input.configuration.responsibility,
       targetId: input.configuration.targetId,
       targetType: input.configuration.targetType,
-      trigger: input.configuration.trigger,
+      trigger: input.triggerOverride ?? input.configuration.trigger,
     },
     before: {
       assignedRoleId: task.assignedRoleId,

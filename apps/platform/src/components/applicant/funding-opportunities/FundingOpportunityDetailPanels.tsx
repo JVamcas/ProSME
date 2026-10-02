@@ -37,9 +37,12 @@ export function OverviewPanel({
         {opportunity.eligibilitySummary ? (
           <div className="mt-6 border-t border-brand-navy/10 pt-5">
             <h3 className="font-bold text-brand-navy">Eligibility summary</h3>
-            <p className="mt-2 text-sm leading-6 text-brand-navy/70">
-              {opportunity.eligibilitySummary}
-            </p>
+            <div className="mt-2 text-sm leading-6 text-brand-navy/70">
+              <SanitizedRichTextContent
+                className="mt-3"
+                sanitizedHtml={opportunity.eligibilitySummary}
+              />
+            </div>
           </div>
         ) : null}
         <ul className="mt-6 grid gap-4 text-sm text-brand-navy">

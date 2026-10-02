@@ -57,6 +57,7 @@ COPY --chown=nextjs:nodejs --chmod=755 \
     scripts/container/healthcheck.sh \
     scripts/container/notification-scheduler-healthcheck.mjs \
     scripts/container/notification-scheduler.mjs \
+    scripts/container/scheduled-processor.mjs \
     scripts/container/
 
 WORKDIR /workspace/apps/platform

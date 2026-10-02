@@ -74,6 +74,7 @@ export const permissionCodes = {
   fundingApplicationInformationRequestOwnRespond:
     "funding.application.information-request.own.respond",
   workflowTaskAssignedRead: "workflow.task.assigned.read",
+  workflowDeadlineAllProcess: "workflow.deadline.all.process",
   workflowTaskAssignedProcess: "workflow.task.assigned.process",
   workflowTaskAssignedDecide: "workflow.task.assigned.decide",
   workflowTaskAssign: "workflow.task.assign",

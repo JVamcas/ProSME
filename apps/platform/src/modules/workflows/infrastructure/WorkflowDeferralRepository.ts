@@ -79,7 +79,7 @@ export async function startWorkflowDeferral(
 export async function resumeDueWorkflowDeferral(
   transaction: Transaction,
   input: {
-    actionExecutionId: string;
+    actionExecutionId: string | null;
     actorId: string;
     correlationId: string;
     resumedAt: Date;

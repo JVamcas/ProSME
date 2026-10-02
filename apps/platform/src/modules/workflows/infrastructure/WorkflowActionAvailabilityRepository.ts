@@ -242,7 +242,9 @@ async function readTask(
             )
           )
       )`,
-      approvalEligibilityReady: workflowApprovalEligibilityReady(sql`${stageInstances.workflowInstanceId}`),
+      approvalEligibilityReady: workflowApprovalEligibilityReady(
+        sql`${stageInstances.workflowInstanceId}`,
+      ),
       activeHold: sql<boolean>`EXISTS (
         SELECT 1 FROM app_workflow_holds hold
         WHERE hold.stage_instance_id = ${workflowTasks.stageInstanceId}
@@ -287,6 +289,10 @@ async function readTask(
       taskType: stageTaskDefinitions.taskType,
     })
     .from(workflowTasks)
+    .innerJoin(
+      stageInstances,
+      eq(stageInstances.id, workflowTasks.stageInstanceId),
+    )
     .innerJoin(
       stageTaskDefinitions,
       eq(stageTaskDefinitions.id, workflowTasks.workflowTaskDefinitionId),

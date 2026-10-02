@@ -119,7 +119,10 @@ export const permissionGroups: readonly PermissionGroup[] = [
   {
     id: "workflow-instances",
     label: "Workflow Instances",
-    permissionCodes: [permissionCodes.workflowInstanceAllRead],
+    permissionCodes: [
+      permissionCodes.workflowInstanceAllRead,
+      permissionCodes.workflowDeadlineAllProcess,
+    ],
   },
   {
     id: "workflow-configuration",

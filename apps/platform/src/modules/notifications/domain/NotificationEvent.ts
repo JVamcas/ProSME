@@ -2,6 +2,10 @@ import { z } from "zod";
 
 import { applicationTerminalStatusContextSchema } from "./NotificationApplicationTerminalEvent";
 import {
+  workflowDeadlineContextSchema,
+  workflowDeadlineEventCatalogue,
+} from "./NotificationWorkflowDeadlineEvent";
+import {
   applicationOwnerSnapshotSchema,
   identifierSchema,
   snapshotEmailSchema,
@@ -160,6 +164,10 @@ export const notificationEventKeys = [
   "workflow.information-request.closed",
   "workflow.information-request.expired",
   "workflow.task.assigned",
+  "workflow.sla.breached",
+  "workflow.information-request.reminder",
+  "workflow.hold.review-due",
+  "workflow.deferral.resumed",
 ] as const;
 
 export type NotificationEventKey = (typeof notificationEventKeys)[number];
@@ -213,6 +221,10 @@ export type NotificationEventContextByKey = {
   "workflow.information-request.expired": InformationRequestExpiredContext;
   "workflow.information-request.responded": InformationRequestRespondedContext;
   "workflow.task.assigned": WorkflowTaskAssignedContext;
+  "workflow.sla.breached": z.infer<typeof workflowDeadlineContextSchema>;
+  "workflow.information-request.reminder": z.infer<typeof workflowDeadlineContextSchema>;
+  "workflow.hold.review-due": z.infer<typeof workflowDeadlineContextSchema>;
+  "workflow.deferral.resumed": z.infer<typeof workflowDeadlineContextSchema>;
 };
 
 type NotificationEventDefinition<Key extends NotificationEventKey> = {
@@ -223,6 +235,7 @@ type NotificationEventDefinition<Key extends NotificationEventKey> = {
 };
 
 export const notificationEventCatalogue = {
+  ...workflowDeadlineEventCatalogue,
   "auth.email.verification": {
     ruleEligibility: "SYSTEM_ONLY",
     catalogKey: "AUTHENTICATION",

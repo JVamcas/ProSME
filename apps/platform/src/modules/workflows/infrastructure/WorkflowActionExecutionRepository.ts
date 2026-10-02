@@ -302,7 +302,7 @@ export async function claimWorkflowActionRuntimeVersion(
   transaction: WorkflowActionExecutionTransaction,
   stageInstanceId: string,
   expectedRuntimeVersion: number,
-  allowedStatuses: Array<"ACTIVE" | "BLOCKED"> = ["ACTIVE"],
+  allowedStatuses: Array<"ACTIVE" | "BLOCKED" | "CANCELLED"> = ["ACTIVE"],
 ) {
   const [stage] = await transaction
     .update(stageInstances)

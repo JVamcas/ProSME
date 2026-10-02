@@ -29,7 +29,10 @@ export const formContextIds = {
   unboundTask: crypto.randomUUID(),
 };
 
-export async function installWorkflowEligibilityFormContextFixture(pool: PoolClient) {
+export async function installWorkflowEligibilityFormContextFixture(
+  pool: PoolClient,
+  configureDraft?: (pool: PoolClient) => Promise<void>,
+) {
   const id = formContextIds;
   await pool.query(
     `INSERT INTO app_users (id, email, display_name, user_type, status)
@@ -122,6 +125,7 @@ export async function installWorkflowEligibilityFormContextFixture(pool: PoolCli
      VALUES ($1, $2, '[{"key":"application.reference","label":"Reference","type":"TEXT"}]')`,
     [id.boundDefinition, forms[0]],
   );
+  await configureDraft?.(pool);
   for (const status of ["PENDING_APPROVAL", "APPROVED", "PUBLISHED"]) {
     await pool.query(
       `UPDATE app_workflow_definition_versions SET status = $2,
