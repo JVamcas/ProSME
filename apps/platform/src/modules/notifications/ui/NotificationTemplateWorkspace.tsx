@@ -1,11 +1,13 @@
 "use client";
 
-import { ArrowUpToLine } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import { PortalErrorState } from "@/components/layout/PortalErrorState";
 import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
-import { GeneralButton } from "@/components/ui/button";
+import { DraggableDialog } from "@/components/ui/draggable-dialog";
+import { NotificationTemplateEditForm } from "./NotificationTemplateEditForm";
+import { ActionMenu, type ActionMenuItem } from "@/shared/ui/ActionMenu";
 import {
   DataTable,
   type DataTableColumn,
@@ -49,6 +51,8 @@ function VersionBadge({ status }: { status: NotificationTemplateVersionSummary["
 }
 
 function versionColumns({
+  canEdit,
+  onEdit,
   canPublish,
   onPublish,
   publishing,
@@ -56,6 +60,8 @@ function versionColumns({
   canPublish: boolean;
   onPublish: (versionId: string, versionNumber: number) => void;
   publishing: boolean;
+  canEdit: boolean;
+  onEdit: (version: NotificationTemplateVersionSummary) => void;
 }): DataTableColumn<NotificationTemplateVersionSummary>[] {
   return [
     {
@@ -71,6 +77,10 @@ function versionColumns({
       accessorKey: "status",
       header: "Status",
       cell: ({ row }) => <VersionBadge status={row.original.status} />,
+    },
+    {
+      accessorKey: "subjectTemplate",
+      header: "Email subject",
     },
     {
       accessorKey: "sourceFileName",
@@ -90,31 +100,44 @@ function versionColumns({
       id: "actions",
       enableSorting: false,
       header: "Actions",
-      cell: ({ row }) => (
-        <div className="flex justify-start">
-          {row.original.status === "DRAFT" && canPublish ? (
-            <GeneralButton
-              aria-label={`Publish version ${row.original.versionNumber}`}
-              disabled={publishing}
-              onClick={() => onPublish(
-                row.original.id,
-                row.original.versionNumber,
-              )}
-              size="icon-compact"
-              variant="outline"
-            >
-              <ArrowUpToLine aria-hidden="true" className="size-4" />
-            </GeneralButton>
-          ) : (
-            <span className="text-sm text-brand-navy/40">—</span>
-          )}
-        </div>
-      ),
+      cell: ({ row }) => {
+        const version = row.original;
+        const items: ActionMenuItem[] = [];
+
+        if (canEdit) {
+          items.push({
+            id: "edit",
+            label: "Edit email subject",
+            onAction: () => onEdit(version),
+          });
+        }
+
+        if (version.status === "DRAFT" && canPublish) {
+          items.push({
+            id: "publish",
+            label: "Publish version",
+            disabled: publishing,
+            onAction: () => onPublish(version.id, version.versionNumber),
+          });
+        }
+
+        if (items.length === 0) {
+          return <span className="text-sm text-brand-navy/40">—</span>;
+        }
+
+        return (
+          <ActionMenu
+            items={items}
+            label={`Actions for version ${version.versionNumber}`}
+          />
+        );
+      },
     },
   ];
 }
 
 export function NotificationTemplateWorkspace({
+  canEdit,
   canPublish,
   channelCode,
   initialData,
@@ -124,7 +147,9 @@ export function NotificationTemplateWorkspace({
   channelCode: string;
   initialData: NotificationTemplateTargetDetail;
   targetId: string;
+  canEdit: boolean;
 }) {
+  const [editing, setEditing] = useState<NotificationTemplateVersionSummary | null>(null);
   const query = useNotificationTemplateTarget(channelCode, targetId, initialData);
   const publish = usePublishNotificationTemplate(channelCode, targetId);
 
@@ -153,6 +178,8 @@ export function NotificationTemplateWorkspace({
   }
 
   const columns = versionColumns({
+    canEdit,
+    onEdit: setEditing,
     canPublish,
     onPublish: (versionId, versionNumber) => {
       void publishVersion(versionId, versionNumber);
@@ -162,6 +189,22 @@ export function NotificationTemplateWorkspace({
 
   return (
     <div className="space-y-6">
+      <DraggableDialog
+        isOpen={editing !== null}
+        onClose={() => setEditing(null)}
+        size="lg"
+        title={`Edit template${editing ? ` v${editing.versionNumber}` : ""}`}
+      >
+        {editing ? (
+          <NotificationTemplateEditForm
+            key={editing.id}
+            channelCode={channelCode}
+            targetId={targetId}
+            version={editing}
+            onSaved={() => setEditing(null)}
+          />
+        ) : null}
+      </DraggableDialog>
       <section className="rounded-[1.75rem] border border-brand-navy/10 bg-brand-white p-6 shadow-sm">
         <div className="grid gap-5 lg:grid-cols-3">
           <SummaryField label="Template name" value={target.label} />
@@ -178,7 +221,7 @@ export function NotificationTemplateWorkspace({
         ) : null}
       </section>
 
-      <section className="rounded-[1.75rem] border border-brand-navy/10 bg-brand-white p-5 shadow-sm sm:p-6">
+      <section className="rounded-t-[1.75rem] border border-brand-navy/10 bg-brand-white p-5 shadow-sm sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-brand-navy/10 pb-4">
           <div>
             <div className="flex flex-wrap items-center gap-2">

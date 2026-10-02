@@ -56,6 +56,20 @@ export function WorkflowStageReviewStep({ coiFormItems, stages }: Props) {
           />
         </div>
         <SummaryItem
+          label="Applicant status"
+          value={values.publicStatusMapping?.status?.replaceAll("_", " ") ?? ""}
+        />
+        <SummaryItem
+          label="Applicant status label"
+          value={values.publicStatusMapping?.label ?? ""}
+        />
+        <div className="sm:col-span-2">
+          <SummaryItem
+            label="Applicant status description"
+            value={values.publicStatusMapping?.description ?? ""}
+          />
+        </div>
+        <SummaryItem
           label="Optional"
           value={values.optional ? "Yes" : "No"}
         />

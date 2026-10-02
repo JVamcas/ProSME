@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { eligibilityHardFailureStatus } from "../../domain/definitions/WorkflowEligibilityFailureStatus";
 import { useForm, useWatch, type UseFormSetError } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -94,6 +95,7 @@ async function saveWorkflowTask({
   if ("items" in existingConfig) {
     delete existingConfig.items;
   }
+  delete existingConfig.hardFailureStatus;
   delete existingConfig.command;
   delete existingConfig.reevaluationPolicy;
   const nextTask: WorkflowTaskInput = {
@@ -130,9 +132,9 @@ async function saveWorkflowTask({
       ...existingConfig,
       displayMode: values.displayMode,
       formPurpose: values.formPurpose,
-      ...(values.formPurpose === "ELIGIBILITY_VERIFICATION" &&
-      values.runAuthoritativeEligibility
+      ...(values.formPurpose === "ELIGIBILITY_VERIFICATION"
         ? {
+            hardFailureStatus: values.hardFailureStatus,
             command: "AUTHORITATIVE_ELIGIBILITY",
             reevaluationPolicy: "WHEN_EVIDENCE_CHANGED",
           }
@@ -194,8 +196,9 @@ export function useWorkflowTaskDialogController(
       formPurpose:
         task?.config &&
         typeof task.config === "object" &&
-        "formPurpose" in task.config &&
-        task.config.formPurpose === "ELIGIBILITY_VERIFICATION"
+        ("formPurpose" in task.config || "command" in task.config) &&
+        (("formPurpose" in task.config && task.config.formPurpose === "ELIGIBILITY_VERIFICATION")
+          || ("command" in task.config && task.config.command === "AUTHORITATIVE_ELIGIBILITY"))
           ? "ELIGIBILITY_VERIFICATION"
           : "APPLICATION_REVIEW",
       name: task?.name ?? "",
@@ -204,12 +207,7 @@ export function useWorkflowTaskDialogController(
       requiredCompletionCount: task?.requiredCompletionCount ?? 1,
       completionPercentage: task?.completionPercentage ?? null,
       required: task?.required ?? true,
-      runAuthoritativeEligibility: Boolean(
-        task?.config &&
-        typeof task.config === "object" &&
-        "command" in task.config &&
-        task.config.command === "AUTHORITATIVE_ELIGIBILITY",
-      ),
+      hardFailureStatus: eligibilityHardFailureStatus(task?.config ?? {}),
     },
     resolver: zodResolver(workflowTaskFormSchema),
   });

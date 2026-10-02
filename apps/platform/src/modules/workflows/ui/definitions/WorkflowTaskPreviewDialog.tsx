@@ -10,7 +10,7 @@ import type {
 } from "@/modules/forms/FormTypes";
 import { WorkflowTaskFormPreview } from "./WorkflowTaskFormPreview";
 import type { WorkflowTaskAction } from "@/modules/work-queue/TaskTypes";
-import { WorkflowTaskActions } from "@/modules/work-queue/ui/WorkflowTaskActions";
+import { WorkflowTaskActions } from "@/modules/workflows/ui/tasks/WorkflowTaskActions";
 import { WorkflowTaskReviewLayout } from "@/modules/workflows/ui/WorkflowTaskReviewLayout";
 import {
   workflowActionInputMetadata,

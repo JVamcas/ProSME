@@ -1,4 +1,5 @@
 import "server-only";
+import { workflowApprovalEligibilityReady } from "./WorkflowApprovalEligibilityReadiness";
 
 import { and, eq, inArray, sql } from "drizzle-orm";
 
@@ -25,6 +26,7 @@ export type StageCompletionTransaction = Parameters<
 >[0];
 
 export type StageCompletionTarget = {
+  approvalEligibilityReady?: boolean;
   activeDeferral?: boolean;
   activeDeferralReady?: boolean;
   activeHold?: boolean;
@@ -67,6 +69,7 @@ export async function lockStageCompletionTarget(
           AND deferral.continuation = 'RESUME_ON_DATE'
           AND deferral.resume_at <= CURRENT_TIMESTAMP
       )`,
+      approvalEligibilityReady: workflowApprovalEligibilityReady(sql`${stageInstances.workflowInstanceId}`),
       activeHold: sql<boolean>`EXISTS (
         SELECT 1 FROM app_workflow_holds hold
         WHERE hold.stage_instance_id = ${stageInstances.id}

@@ -166,6 +166,18 @@ beforeEach(() => {
 });
 
 describe("server workflow action execution", () => {
+  it("rejects approval on the server when screening cannot support it", async () => {
+    vi.mocked(lockWorkflowActionExecutionTarget).mockResolvedValue({
+      ...target,
+      stage: { ...target.stage, approvalEligibilityReady: false },
+    });
+    await expect(executeWorkflowAction(user(), input)).rejects.toMatchObject({
+      code: "ACTION_UNAVAILABLE",
+    });
+    expect(claimWorkflowActionRuntimeVersion).not.toHaveBeenCalled();
+    expect(completeActionTask).not.toHaveBeenCalled();
+  });
+
   it("validates, mutates and records through one transaction boundary", async () => {
     const result = await executeWorkflowAction(user(), input);
 

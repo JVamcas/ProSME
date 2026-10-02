@@ -87,6 +87,31 @@ describe("notification HTML import", () => {
 
   it.each([
     [
+      "workflow-sla-breached.html",
+      "workflow.sla.breached",
+      "Review overdue for application {{applicationReference}}",
+    ],
+    [
+      "information-request-reminder.html",
+      "workflow.information-request.reminder",
+      "Reminder: information needed for application {{applicationReference}}",
+    ],
+    [
+      "workflow-hold-review-due.html",
+      "workflow.hold.review-due",
+      "Time to review application {{applicationReference}} on hold",
+    ],
+    [
+      "workflow-deferral-resumed.html",
+      "workflow.deferral.resumed",
+      "Review resumed for application {{applicationReference}}",
+    ],
+    [
+      "application-terminal-status-reached.html",
+      "application.terminal-status-reached",
+      "Application {{applicationReference}}: {{statusLabel}}",
+    ],
+    [
       "auth-email-verification.html",
       "auth.email.verification",
       "Verify your email for {{platformName}}",

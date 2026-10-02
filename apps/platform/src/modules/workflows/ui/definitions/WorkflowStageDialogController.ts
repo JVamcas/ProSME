@@ -87,6 +87,11 @@ export function useWorkflowStageDialogController(
     defaultValues: {
       name: stage?.name ?? "",
       description: stage?.description ?? "",
+      publicStatusMapping: stage?.publicStatusMapping ?? {
+        status: "UNDER_REVIEW",
+        label: "Under review",
+        description: "Application under review",
+      },
       enabled: stage?.enabled ?? true,
       optional: stage?.optional ?? false,
       repeatable: stage?.repeatable ?? false,

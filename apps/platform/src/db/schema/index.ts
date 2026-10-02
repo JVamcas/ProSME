@@ -28,5 +28,6 @@ export * from "@/modules/workflows/infrastructure/workflow-coi.schema";
 export * from "@/modules/workflows/infrastructure/workflow-decision.schema";
 export * from "@/modules/workflows/infrastructure/workflow-evidence.schema";
 export * from "@/modules/workflows/infrastructure/workflow-rfi.schema";
+export * from "@/modules/workflows/infrastructure/workflow-deadline.schema";
 
 export { authEmailRateLimits } from "@/modules/users/infrastructure/auth-email.schema";

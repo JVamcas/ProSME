@@ -1,4 +1,5 @@
 import "server-only";
+import { workflowApprovalEligibilityReady } from "./WorkflowApprovalEligibilityReadiness";
 
 import { and, asc, eq, sql } from "drizzle-orm";
 
@@ -76,6 +77,7 @@ async function readStage(
           AND deferral.continuation = 'RESUME_ON_DATE'
           AND deferral.resume_at <= CURRENT_TIMESTAMP
       )`,
+      approvalEligibilityReady: workflowApprovalEligibilityReady(sql`${stageInstances.workflowInstanceId}`),
       activeHold: sql<boolean>`EXISTS (
         SELECT 1 FROM app_workflow_holds hold
         WHERE hold.stage_instance_id = ${stageInstances.id}
@@ -240,6 +242,9 @@ async function readTask(
             )
           )
       )`,
+      approvalEligibilityReady: workflowApprovalEligibilityReady(
+        sql`${stageInstances.workflowInstanceId}`,
+      ),
       activeHold: sql<boolean>`EXISTS (
         SELECT 1 FROM app_workflow_holds hold
         WHERE hold.stage_instance_id = ${workflowTasks.stageInstanceId}
@@ -284,6 +289,10 @@ async function readTask(
       taskType: stageTaskDefinitions.taskType,
     })
     .from(workflowTasks)
+    .innerJoin(
+      stageInstances,
+      eq(stageInstances.id, workflowTasks.stageInstanceId),
+    )
     .innerJoin(
       stageTaskDefinitions,
       eq(stageTaskDefinitions.id, workflowTasks.workflowTaskDefinitionId),

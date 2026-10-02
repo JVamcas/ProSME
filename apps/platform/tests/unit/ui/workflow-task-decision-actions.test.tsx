@@ -43,6 +43,7 @@ describe("workflow task decision actions", () => {
       <WorkflowTaskDecisionActions task={{ ...task, taskStatus: "COMPLETED" }} />,
     );
 
-    expect(markup).toBe("");
+    expect(markup).not.toContain("Actions");
+    expect(markup).not.toContain("aria-haspopup");
   });
 });

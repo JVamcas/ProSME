@@ -101,6 +101,25 @@ describe("server notification occurrence writer", () => {
     );
   });
 
+  it("preserves both relationships when the same user is owner and assignee", async () => {
+    await captureNotificationOccurrence({} as never, {
+      ...input,
+      recipients: [
+        input.recipients[0],
+        { ...input.recipients[0], recipientType: "ASSIGNED_USER" },
+      ],
+    });
+    expect(insertNotificationOccurrence).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        recipients: [
+          expect.objectContaining({ recipientType: "APPLICATION_OWNER" }),
+          expect.objectContaining({ recipientType: "ASSIGNED_USER" }),
+        ],
+      }),
+    );
+  });
+
   it("rejects unapproved recipient snapshot fields", async () => {
     await expect(captureNotificationOccurrence({} as never, {
       ...input,

@@ -1,4 +1,12 @@
 import {
+  applicationTerminalStatusEventSeed,
+  applicationTerminalStatusTemplateSeed,
+} from "./ApplicationTerminalStatusNotificationSeed";
+import {
+  workflowDeadlineEventSeeds,
+  workflowDeadlineTemplateSeeds,
+} from "./WorkflowDeadlineNotificationSeed";
+import {
   notificationEventCatalogue,
   type NotificationEventKey,
 } from "./NotificationEvent";
@@ -28,6 +36,8 @@ export type NotificationEventSeed = {
 };
 
 export const notificationEventSeeds: readonly NotificationEventSeed[] = [
+  ...workflowDeadlineEventSeeds,
+  applicationTerminalStatusEventSeed,
   {
     catalogKey: "AUTHENTICATION",
     description: "Confirm the email address belonging to an account.",
@@ -325,6 +335,8 @@ export const notificationTemplateTargetSeeds: readonly NotificationTemplateTarge
       id: "00000000-0000-4000-8000-000000000503",
       scope: "CATALOG",
     },
+    applicationTerminalStatusTemplateSeed,
+    ...workflowDeadlineTemplateSeeds,
     {
       defaultSubjectTemplate: "Application {{applicationReference}} submitted",
       eventKey: "application.submitted",

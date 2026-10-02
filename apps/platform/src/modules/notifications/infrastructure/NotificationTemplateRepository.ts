@@ -289,7 +289,7 @@ export async function createNotificationTemplateDraft(
 export async function findNotificationTemplateVersion(
   targetId: string,
   versionId: string,
-) {
+): Promise<NotificationTemplateDraftRecord | undefined> {
   const [version] = await getDatabase()
     .select(versionProjection)
     .from(notificationTemplateVersions)

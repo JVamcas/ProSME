@@ -6,6 +6,7 @@ import {
   ResourceNotFoundError,
 } from "@/lib/resource-errors";
 import type {
+  NotificationTemplateEdit,
   NotificationChannelDetail,
   NotificationChannelSummary,
   NotificationChannelUpdate,
@@ -13,7 +14,10 @@ import type {
   NotificationTemplateTargetSummary,
   NotificationTemplateVersionSummary,
 } from "../api/NotificationTemplateSchemas";
-import { notificationChannelUpdateSchema } from "../api/NotificationTemplateSchemas";
+import {
+  notificationTemplateEditSchema,
+  notificationChannelUpdateSchema,
+} from "../api/NotificationTemplateSchemas";
 import { notificationAuditMetadataSchema } from "../domain/NotificationAudit";
 import {
   isNotificationEventKey,
@@ -330,4 +334,46 @@ export async function resolveNotificationTemplate(
   eventKey: NotificationEventKey,
 ) {
   return resolvePublishedNotificationTemplate(channelCode, eventKey);
+}
+
+export async function editNotificationTemplate(
+  user: AuthenticatedUser | null,
+  channelCode: string,
+  targetId: string,
+  versionId: string,
+  input: NotificationTemplateEdit,
+  correlationId: string,
+) {
+  const actor = authorizeNotificationOperation(user, "IMPORT_TEMPLATE");
+  const update = notificationTemplateEditSchema.parse(input);
+  const target = await findNotificationTemplateTarget(channelCode, targetId);
+  if (!target) throw new ResourceNotFoundError("notification template target");
+  const source = await findNotificationTemplateVersion(targetId, versionId);
+  if (!source) throw new ResourceNotFoundError("notification template version");
+  const content = { ...source, subjectTemplate: update.subjectTemplate };
+  validateRequiredAction(target, content);
+  validateNotificationTemplateContent(
+    content,
+    fieldsForNotificationTarget(fieldTarget(target)),
+  );
+  const version = await createNotificationTemplateDraft({
+    contentSha256: source.contentSha256,
+    htmlTemplate: source.htmlTemplate,
+    mediaType: "text/html",
+    plainTextTemplate: source.plainTextTemplate,
+    sourceFileName: source.sourceFileName,
+    subjectTemplate: update.subjectTemplate,
+    actorId: actor.id,
+    auditMetadata: notificationAuditMetadataSchema.parse({
+      channelCode,
+      correlationId,
+      eventKey: target.eventKey ?? undefined,
+      reason: "Subject edited from existing template version",
+      templateTargetId: targetId,
+      templateVersionId: versionId,
+    }),
+    targetId,
+  });
+  if (!version) throw new ResourceNotFoundError("notification template target");
+  return versionSummary(version);
 }

@@ -25,6 +25,11 @@ const columns: DataTableColumn<WorkQueueRow>[] = [
     ),
   },
   {
+    accessorKey: "fundingCallTitle",
+    header: "Funding call",
+    cell: ({ row }) => row.original.fundingCallTitle ?? "—",
+  },
+  {
     accessorKey: "stageName",
     header: "Stage",
     cell: ({ row }) => <StatusBadge status={row.original.stageName} />,

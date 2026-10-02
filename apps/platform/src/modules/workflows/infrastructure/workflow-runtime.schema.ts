@@ -218,6 +218,9 @@ export const workflowTasks = pgTable(
       table.assignedRoleId,
       table.assignedUserId,
     ),
+    index("app_workflow_tasks_deadline_idx")
+      .on(table.dueAt, table.stageInstanceId)
+      .where(sql`${table.status} IN ('PENDING', 'IN_PROGRESS')`),
   ],
 );
 

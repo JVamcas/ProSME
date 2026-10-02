@@ -1,6 +1,9 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+
 import { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { activeFormDefinition } from "@/modules/forms/engine/FormVisibility";
 import { validateFormValues } from "@/modules/forms/FormValidation";
 import { toast } from "sonner";
@@ -70,6 +73,7 @@ function LoadedDynamicFormTask({
   taskId,
   eligibilityEvaluation,
   eligibilityTask = false,
+  eligibilityActionContainer,
   onCompleteTaskForm,
   onPendingChange,
   onStateChange,
@@ -78,6 +82,7 @@ function LoadedDynamicFormTask({
   taskId: string;
   eligibilityEvaluation?: AuthoritativeEligibilityTaskResult | null;
   eligibilityTask?: boolean;
+  eligibilityActionContainer?: HTMLElement | null;
   onCompleteTaskForm?: (complete: (() => Promise<void>) | null) => void;
   onPendingChange?: (pending: boolean) => void;
   onStateChange?: (state: {
@@ -117,21 +122,51 @@ function LoadedDynamicFormTask({
     onCompleteTaskForm?.(() => completionRef.current());
     return () => onCompleteTaskForm?.(null);
   }, [onCompleteTaskForm]);
+  const router = useRouter();
+
   async function runEligibility() {
     const revision = controller.currentRevision();
     try {
-      await evaluation.mutateAsync({
+      const result = await evaluation.mutateAsync({
         expectedResponseRowVersion: data.response?.rowVersion,
         expectedRowVersion: data.taskRowVersion,
         values: controller.values,
       });
       controller.markSaved(revision);
-      toast.success("Eligibility evaluation completed.");
+      toast.success(
+        result.terminalStatus
+          ? "Application terminated after a hard eligibility failure."
+          : "Eligibility evaluation completed.",
+      );
+      if (result.terminalStatus) {
+        router.push("/admin/work-queue");
+      }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Eligibility evaluation failed.");
+      toast.error(
+        error instanceof Error ? error.message : "Eligibility evaluation failed.",
+      );
     }
   }
   const readOnly = data.response?.status === "COMPLETED";
+  const eligibilityAction = eligibilityTask ? (
+    <GeneralButton
+      disabled={
+        !ready ||
+        controller.save.isPending ||
+        controller.complete.isPending ||
+        evaluation.isPending
+      }
+      onClick={() => void runEligibility()}
+      type="button"
+    >
+      {evaluation.isPending
+        ? "Running eligibility…"
+        : eligibilityEvaluation
+          ? "Re-run eligibility ruleset"
+          : "Run eligibility ruleset"}
+    </GeneralButton>
+  ) : null;
+
   return (
     <>
       <FormRenderer
@@ -157,11 +192,13 @@ function LoadedDynamicFormTask({
                 saveError={controller.save.error}
               />
             ) : null}
-            {!readOnly ? (
+            {!readOnly || eligibilityTask ? (
               <div className="flex flex-wrap items-center gap-3 sm:ml-auto">
-                {controller.save.error ? (
+                {!readOnly && controller.save.error ? (
                   <GeneralButton
-                    disabled={controller.save.isPending || controller.complete.isPending}
+                    disabled={
+                      controller.save.isPending || controller.complete.isPending
+                    }
                     onClick={controller.saveDraftValues}
                     type="button"
                     variant="outline"
@@ -169,20 +206,17 @@ function LoadedDynamicFormTask({
                     Retry save
                   </GeneralButton>
                 ) : null}
-                {eligibilityTask ? (
-                  <GeneralButton
-                    disabled={controller.save.isPending || evaluation.isPending}
-                    onClick={() => void runEligibility()}
-                    type="button"
-                  >
-                    {evaluation.isPending ? "Running eligibility…" : "Run eligibility test"}
-                  </GeneralButton>
-                ) : null}
+                {eligibilityActionContainer === undefined
+                  ? eligibilityAction
+                  : null}
               </div>
             ) : null}
           </div>
         </div>
       </FormRenderer>
+      {eligibilityActionContainer
+        ? createPortal(eligibilityAction, eligibilityActionContainer)
+        : null}
       {eligibilityTask && eligibilityEvaluation ? (
         <div className="mt-5">
           <AuthoritativeEligibilityResult evaluation={eligibilityEvaluation} />
@@ -204,6 +238,7 @@ export function DynamicFormTask({
   taskId,
   eligibilityEvaluation,
   eligibilityTask = false,
+  eligibilityActionContainer,
   onCompleteTaskForm,
   onPendingChange,
   onStateChange,
@@ -211,6 +246,7 @@ export function DynamicFormTask({
   taskId: string;
   eligibilityEvaluation?: AuthoritativeEligibilityTaskResult | null;
   eligibilityTask?: boolean;
+  eligibilityActionContainer?: HTMLElement | null;
   onCompleteTaskForm?: (complete: (() => Promise<void>) | null) => void;
   onPendingChange?: (pending: boolean) => void;
   onStateChange?: (state: {
@@ -242,6 +278,7 @@ export function DynamicFormTask({
       taskId={taskId}
       eligibilityEvaluation={eligibilityEvaluation}
       eligibilityTask={eligibilityTask}
+      eligibilityActionContainer={eligibilityActionContainer}
       onCompleteTaskForm={onCompleteTaskForm}
       onPendingChange={onPendingChange}
       onStateChange={onStateChange}

@@ -55,6 +55,7 @@ function policyTarget(
   action: StoredWorkflowAction,
 ) {
   return {
+    approvalEligibilityReady: source.stage.approvalEligibilityReady,
     activeDeferral: source.stage.activeDeferral,
     activeDeferralReady: source.stage.activeDeferralReady,
     activeHold: source.stage.activeHold,

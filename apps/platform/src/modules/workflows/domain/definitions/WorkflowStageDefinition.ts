@@ -11,6 +11,9 @@ export const workflowPublicStatuses = [
   "OUTCOME_AVAILABLE",
   "CLOSED",
   "WITHDRAWN",
+  "INELIGIBLE",
+  "REJECTED",
+  "REJECTED_INCOMPLETE",
 ] as const;
 
 export type WorkflowPublicStatus = (typeof workflowPublicStatuses)[number];

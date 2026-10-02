@@ -1,11 +1,13 @@
 import { z } from "zod";
 
 import { conditionGroupSchema } from "@/modules/conditions/domain/ConditionSerialization";
+import { workflowStageSchema } from "@/modules/workflows/api/WorkflowSchemas";
 
 export const workflowStageFormSchema = z
   .object({
     name: z.string().trim().min(2).max(160),
     description: z.string().trim().max(1000),
+    publicStatusMapping: workflowStageSchema.shape.publicStatusMapping,
     enabled: z.boolean(),
     optional: z.boolean(),
     repeatable: z.boolean(),

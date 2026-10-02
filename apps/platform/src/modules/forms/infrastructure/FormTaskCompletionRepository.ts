@@ -1,4 +1,5 @@
 import "server-only";
+import { workflowApprovalEligibilityReady } from "@/modules/workflows/infrastructure/WorkflowApprovalEligibilityReadiness";
 
 import { sql } from "drizzle-orm";
 
@@ -40,6 +41,7 @@ type ReplayInput = Pick<
 >;
 
 type LockedTask = {
+  approvalEligibilityReady: boolean;
   actionType: WorkflowActionType | null;
   taskType: "CONTRIBUTING" | "STAGE_DECISION";
   hasChecklist: boolean;
@@ -119,7 +121,8 @@ async function lockTask(
   input: CompletionInput,
 ): Promise<LockedTask | null> {
   const result = await transaction.execute(sql`
-    SELECT task.row_version AS "rowVersion", task.result,
+    SELECT ${workflowApprovalEligibilityReady(sql`stage.workflow_instance_id`)} AS "approvalEligibilityReady",
+      task.row_version AS "rowVersion", task.result,
       definition.config,
       definition.task_type AS "taskType",
       (
@@ -252,6 +255,7 @@ async function writeCompletion(
   task: LockedTask,
   executeTransition: ExecuteTransition,
 ): Promise<CompletionResult | null> {
+  if (task.actionType === "APPROVE_ADVANCE" && task.approvalEligibilityReady === false) return null;
   if (input.actionKey && !taskActionMatchesType(task)) return null;
   if (
     input.actionKey &&

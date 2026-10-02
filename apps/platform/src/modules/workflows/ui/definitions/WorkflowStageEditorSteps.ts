@@ -1,3 +1,5 @@
+import type { FieldPath } from "react-hook-form";
+
 import type { WorkflowStageFormInput } from "./WorkflowStageFormSchema";
 
 export const workflowStageEditorSteps = [
@@ -12,7 +14,13 @@ export type WorkflowStageEditorStep =
   (typeof workflowStageEditorSteps)[number]["id"];
 
 export const workflowStageEditorStepFields = {
-  details: ["name", "description"],
+  details: [
+    "name",
+    "description",
+    "publicStatusMapping.status",
+    "publicStatusMapping.label",
+    "publicStatusMapping.description",
+  ],
   behaviour: [
     "enabled",
     "optional",
@@ -25,5 +33,5 @@ export const workflowStageEditorStepFields = {
   review: [],
 } satisfies Record<
   WorkflowStageEditorStep,
-  readonly (keyof WorkflowStageFormInput)[]
+  readonly FieldPath<WorkflowStageFormInput>[]
 >;

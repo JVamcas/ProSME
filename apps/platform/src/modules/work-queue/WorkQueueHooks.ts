@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { applicationQueryKeys } from "@/modules/applications/ApplicationHooks";
 import { clientWorkQueueService } from "./ClientWorkQueueService";
 import type { WorkflowActionExecutionRequest } from "@/modules/workflows/domain/actions/WorkflowActionExecution";
 import type { WorkQueueListInput } from "./WorkQueueTypes";
@@ -72,6 +73,8 @@ export function useEvaluateAuthoritativeEligibility(taskId: string) {
     mutationFn: (input: Parameters<typeof clientWorkQueueService.evaluateEligibility>[1]) =>
       clientWorkQueueService.evaluateEligibility(taskId, input),
     onSuccess: () => Promise.all([
+      queryClient.invalidateQueries({ queryKey: applicationQueryKeys.admin }),
+      queryClient.invalidateQueries({ queryKey: applicationQueryKeys.own }),
       queryClient.invalidateQueries({ queryKey: workQueueQueryKeys.all }),
       queryClient.invalidateQueries({
         queryKey: workQueueQueryKeys.task(taskId),

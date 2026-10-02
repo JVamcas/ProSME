@@ -38,6 +38,7 @@ type PolicyAction = Pick<
 >;
 
 export type WorkflowActionPolicyTarget = {
+  approvalEligibilityReady?: boolean;
   activeDeferral?: boolean;
   activeDeferralReady?: boolean;
   activeHold?: boolean;
@@ -216,6 +217,13 @@ export function evaluateWorkflowActionPolicy(
     return unavailable(
       "CONTEXT_MISMATCH",
       "This action is not available to you.",
+    );
+  }
+  if (target.action.actionType === "APPROVE_ADVANCE"
+    && target.approvalEligibilityReady === false) {
+    return unavailable(
+      "INVALID_STATE",
+      "A current eligibility evaluation without hard failures is required to advance.",
     );
   }
   if (target.task?.eligibilityReady === false) {

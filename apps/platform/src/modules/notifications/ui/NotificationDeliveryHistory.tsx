@@ -18,6 +18,10 @@ import { useNotificationDeliveries, useRetryNotificationDelivery } from "./useNo
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatLocalDateTime24 } from "@/lib/dateUtils";
 import { RightDrawer } from "@/shared/ui/RightDrawer";
+import {
+  notificationDeliveryFailureMessage,
+  notificationDeliveryStatusLabel,
+} from "../domain/NotificationDeliveryMessages";
 
 const filterSchema = z.object({
   applicationReference: z.string().max(100),
@@ -82,10 +86,13 @@ function deliveryColumns({
       header: "Outcome",
       cell: ({ row }) => (
         <div>
-          <StatusBadge status={row.original.status} label={row.original.status} />
+          <StatusBadge
+            status={row.original.status}
+            label={notificationDeliveryStatusLabel(row.original.status)}
+          />
           {row.original.failureCode ? (
             <p className="mt-1 text-xs text-red-700">
-              {row.original.failureCode}
+              {notificationDeliveryFailureMessage(row.original.failureCode)}
             </p>
           ) : null}
         </div>

@@ -2,11 +2,43 @@ import { describe, expect, it } from "vitest";
 
 import { workflowTaskFormSchema } from "@/modules/workflows/ui/definitions/WorkflowTaskFormSchema";
 import { referenceWorkflow } from "../../support/ReferenceWorkflowFixture";
-import { validateTaskConfiguration } from "@/modules/workflows/WorkflowTaskRegistry";
+import {
+  eligibilityCommandSchema,
+  taskRunsAuthoritativeEligibility,
+  validateTaskConfiguration,
+} from "@/modules/workflows/WorkflowTaskRegistry";
 import { validateWorkflowGraph } from "@/modules/workflows/WorkflowValidation";
 import { defaultWorkflowElementPermissions } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
 
 describe("workflow task configuration", () => {
+  it("resolves the command for older eligibility verification forms", () => {
+    const config = eligibilityCommandSchema.parse({
+      formPurpose: "ELIGIBILITY_VERIFICATION",
+    });
+    expect(config).toEqual({
+      command: "AUTHORITATIVE_ELIGIBILITY",
+      hardFailureStatus: "INELIGIBLE",
+      reevaluationPolicy: "WHEN_EVIDENCE_CHANGED",
+    });
+    expect(
+      taskRunsAuthoritativeEligibility({ formPurpose: "APPLICATION_REVIEW" }),
+    ).toBe(false);
+  });
+
+  it("preserves explicit eligibility policies and rejects invalid commands", () => {
+    const config = eligibilityCommandSchema.parse({
+      formPurpose: "ELIGIBILITY_VERIFICATION",
+      reevaluationPolicy: "NEVER",
+    });
+    expect(config.reevaluationPolicy).toBe("NEVER");
+    expect(
+      taskRunsAuthoritativeEligibility({
+        formPurpose: "ELIGIBILITY_VERIFICATION",
+        command: "UNSUPPORTED",
+      }),
+    ).toBe(false);
+  });
+
   it("rejects legacy checklist configuration embedded in a task", () => {
     expect(
       validateTaskConfiguration({
@@ -44,7 +76,7 @@ describe("workflow task configuration", () => {
       displayOrder: 1,
       formVersionId: "",
       formPurpose: "APPLICATION_REVIEW",
-      runAuthoritativeEligibility: false,
+      hardFailureStatus: "INELIGIBLE",
       reviewerCount: 3,
       requiredCompletionCount: 2,
       completionMode: "COUNT",

@@ -95,6 +95,7 @@ function assertRuntimeIdentityAndVersion(
 
 function policyTarget(target: WorkflowActionExecutionTarget) {
   return {
+    approvalEligibilityReady: target.stage.approvalEligibilityReady,
     activeDeferral: target.stage.activeDeferral,
     activeDeferralReady: target.stage.activeDeferralReady,
     activeHold: target.stage.activeHold,

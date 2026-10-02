@@ -5,6 +5,7 @@ import { sql } from "drizzle-orm";
 import { getDatabase } from "@/db/client";
 import type { WorkQueueListInput, WorkQueueRow } from "@/modules/work-queue/WorkQueueTypes";
 import type { WorkQueueCursor } from "@/modules/work-queue/WorkQueueCursor";
+import { workflowTaskEffectiveDeadline } from "./WorkflowSlaDeadline";
 
 const actionableStatuses = sql`('PENDING', 'IN_PROGRESS')`;
 
@@ -16,10 +17,15 @@ type QueueDatabaseRow = Omit<WorkQueueRow, "claimedAt" | "createdAt" | "dueAt"> 
 };
 
 function scopeFilter(scope: WorkQueueListInput["scope"]) {
-  if (scope === "overdue") return sql`task.due_at < CURRENT_TIMESTAMP`;
+  const running = sql`stage.status = 'ACTIVE' AND NOT EXISTS (
+    SELECT 1 FROM app_workflow_rfis rfi WHERE rfi.task_id = task.id AND rfi.status = 'OPEN'
+  )`;
+  if (scope === "overdue") {
+    return sql`${running} AND deadline.effective_due_at < CURRENT_TIMESTAMP`;
+  }
   if (scope === "due-soon") {
-    return sql`task.due_at >= CURRENT_TIMESTAMP
-      AND task.due_at <= CURRENT_TIMESTAMP + INTERVAL '48 hours'`;
+    return sql`${running} AND deadline.effective_due_at >= CURRENT_TIMESTAMP
+      AND deadline.effective_due_at <= CURRENT_TIMESTAMP + INTERVAL '48 hours'`;
   }
   return sql`TRUE`;
 }
@@ -94,6 +100,10 @@ function queueQuery(input: WorkQueueListInput, actorId: string, cursor?: WorkQue
         CASE WHEN ${routedToActor(actorId)}
           AND app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
           THEN applicant.display_name ELSE 'Hidden until COI reviewed' END AS "applicantName",
+        CASE WHEN ${routedToActor(actorId)}
+          AND app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
+          THEN application.funding_opportunity_title
+          ELSE NULL END AS "fundingCallTitle",
         stage_definition.name AS "stageName",
         CASE WHEN stage.status = 'BLOCKED' AND EXISTS (
           SELECT 1 FROM app_workflow_holds hold
@@ -129,7 +139,7 @@ function queueQuery(input: WorkQueueListInput, actorId: string, cursor?: WorkQue
         role.name AS "assignedRoleName",
         task.assigned_user_id AS "assignedUserId",
         assignee.display_name AS "assignedUserName",
-        task.due_at AS "dueAt",
+        deadline.effective_due_at AS "dueAt",
         task.claimed_at AS "claimedAt",
         task.created_at AS "createdAt",
         task.row_version AS "rowVersion"
@@ -144,6 +154,9 @@ function queueQuery(input: WorkQueueListInput, actorId: string, cursor?: WorkQue
         ON business.id::text = application.business_section ->> 'businessId'
       LEFT JOIN app_roles role ON role.id = task.assigned_role_id
       LEFT JOIN app_users assignee ON assignee.id = task.assigned_user_id
+      CROSS JOIN LATERAL (
+        SELECT date_trunc('milliseconds', ${workflowTaskEffectiveDeadline(sql`task`)}) AS effective_due_at
+      ) deadline
       WHERE workflow.status = 'ACTIVE'
         AND stage.status IN ('ACTIVE', 'BLOCKED')
         AND task.status IN ${actionableStatuses}

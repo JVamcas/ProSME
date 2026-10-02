@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { workflowPublicStatuses } from "@/modules/workflows/domain/definitions/WorkflowStageDefinition";
 
 import { conditionGroupSchema } from "@/modules/conditions/domain/ConditionSerialization";
 
@@ -34,14 +35,7 @@ const publicStatusMappingSchema = z
   .object({
     description: z.string().trim().min(2).max(300),
     label: z.string().trim().min(2).max(120),
-    status: z.enum([
-      "SUBMITTED",
-      "UNDER_REVIEW",
-      "ACTION_REQUIRED",
-      "OUTCOME_AVAILABLE",
-      "CLOSED",
-      "WITHDRAWN",
-    ]),
+    status: z.enum(workflowPublicStatuses),
   })
   .strict();
 

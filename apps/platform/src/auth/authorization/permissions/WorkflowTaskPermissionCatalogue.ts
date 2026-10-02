@@ -11,6 +11,11 @@ function define(
 
 export const workflowTaskPermissionCatalogue: readonly PermissionDefinition[] = [
   define(
+    permissionCodes.workflowDeadlineAllProcess,
+    "Process due workflow deadlines",
+    "Execute configured timed actions across active workflows through the authenticated system processor.",
+  ),
+  define(
     permissionCodes.workflowTaskAssignedRead,
     "Read assigned tasks",
     "Read workflow tasks assigned to the signed-in user.",

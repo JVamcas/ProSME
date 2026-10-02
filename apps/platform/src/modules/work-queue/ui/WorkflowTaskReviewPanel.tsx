@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import { useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
 
-import { GeneralButton } from "@/components/ui/button";
 import { AuthoritativeEligibilityTask } from "@/modules/eligibility/ui/screening/AuthoritativeEligibilityTask";
 import { DynamicFormTask } from "@/modules/forms/ui/renderer/DynamicFormTask";
 import type { TaskDetail } from "@/modules/work-queue/TaskTypes";
@@ -25,6 +24,8 @@ import { formSectionCountsAsComplete } from "./WorkflowTaskProgress";
 export function WorkflowTaskReviewPanel({ task }: { task: TaskDetail }) {
   const router = useRouter();
   const completion = useCompleteWorkflowTask(task.taskInstanceId);
+  const [eligibilityActionContainer, setEligibilityActionContainer] =
+    useState<HTMLDivElement | null>(null);
   const completeFormRef = useRef<(() => Promise<void>) | null>(null);
   const registerFormCompletion = useCallback(
     (complete: (() => Promise<void>) | null) => {
@@ -184,38 +185,47 @@ export function WorkflowTaskReviewPanel({ task }: { task: TaskDetail }) {
 
   const taskActions = (
     <div className="space-y-4">
-      {task.actions.length ? (
+      {task.actions.length ||
+      task.taskType === "CONTRIBUTING" ||
+      (task.canEvaluateEligibility && task.formVersionId) ? (
         <WorkflowTaskDecisionActions
-          beforeAction={submitsFormWithTaskAction
-            ? async () => {
-                const completeForm = completeFormRef.current;
-                if (!completeForm) {
-                  throw new Error("The task form is not ready to submit.");
+          eligibilityActionRef={
+            task.canEvaluateEligibility && task.formVersionId
+              ? setEligibilityActionContainer
+              : undefined
+          }
+          additionalItems={
+            task.taskType === "CONTRIBUTING"
+              ? [
+                  {
+                    id: "complete-task",
+                    label: completion.isPending ? "Completing…" : "Complete Task",
+                    disabled: !canComplete,
+                    description: !eligibilityReady
+                      ? "Run the eligibility ruleset before completing this task."
+                      : !canComplete
+                        ? "Complete the required task work and wait for changes to save."
+                        : undefined,
+                    onAction: formSubmitNeeded
+                      ? () => void completeFormRef.current?.()
+                      : completeTask,
+                  },
+                ]
+              : []
+          }
+          beforeAction={
+            submitsFormWithTaskAction
+              ? async () => {
+                  const completeForm = completeFormRef.current;
+                  if (!completeForm) {
+                    throw new Error("The task form is not ready to submit.");
+                  }
+                  await completeForm();
                 }
-                await completeForm();
-              }
-            : undefined}
+              : undefined
+          }
           task={actionTask}
         />
-      ) : null}
-      {task.taskType === "CONTRIBUTING" ? (
-        <div className="flex justify-end">
-          <GeneralButton
-            disabled={!canComplete}
-            onClick={
-              formSubmitNeeded
-                ? () => completeFormRef.current?.()
-                : completeTask
-            }
-            type="button"
-          >
-            {completion.isPending
-              ? "Completing…"
-              : task.taskStatus === "COMPLETED"
-                ? "Completed"
-                : "Complete Task"}
-          </GeneralButton>
-        </div>
       ) : null}
     </div>
   );
@@ -253,6 +263,7 @@ export function WorkflowTaskReviewPanel({ task }: { task: TaskDetail }) {
           formContent={
             task.formVersionId ? (
               <DynamicFormTask
+                eligibilityActionContainer={eligibilityActionContainer}
                 eligibilityEvaluation={task.eligibilityEvaluation}
                 eligibilityTask={task.canEvaluateEligibility}
                 onCompleteTaskForm={registerFormCompletion}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { FormProvider, type FieldErrors } from "react-hook-form";
+import { FormProvider, get, type FieldErrors } from "react-hook-form";
 
 import { GeneralButton } from "@/components/ui/button";
 import { DraggableDialog } from "@/components/ui/draggable-dialog";
@@ -69,7 +69,7 @@ export function WorkflowStageDialog({
   function showFirstErrorStep(errors?: FieldErrors<WorkflowStageFormInput>) {
     const step = workflowStageEditorSteps.find((item) =>
       workflowStageEditorStepFields[item.id].some(
-        (field) => errors?.[field] ?? controller.form.getFieldState(field).error,
+        (field) => get(errors, field) ?? controller.form.getFieldState(field).error,
       ),
     );
     if (step) setCurrentStep(step.id);

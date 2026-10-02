@@ -45,6 +45,7 @@ const task = {
   claimedAt: "2026-09-15T08:00:00.000Z",
   createdAt: "2026-09-15T08:00:00.000Z",
   dueAt: "2026-09-18T08:00:00.000Z",
+  fundingCallTitle: "Published opportunity",
   priority: null,
   reference: "SMEF-2026-000123",
   rowVersion: 1,
@@ -123,6 +124,8 @@ describe("operations list screens", () => {
     expect(markup).toContain("Check completeness");
     expect(markup).toContain("Operations User");
     expect(markup).toContain("Task created");
+    expect(markup).toContain("Funding call");
+    expect(markup).toContain("Published opportunity");
     expect(markup).toContain("Task status");
     expect(markup).toContain("Task type");
     expect(markup).toContain("Contributing");
@@ -149,5 +152,18 @@ describe("operations list screens", () => {
       "Available when all contributing tasks are complete.",
     );
     expect(markup).not.toContain(`/admin/tasks/${task.taskInstanceId}`);
+  });
+
+  it("renders a placeholder when the funding call is hidden", () => {
+    const markup = renderToStaticMarkup(
+      <WorkQueueTable
+        emptyMessage="No tasks"
+        items={[{ ...task, fundingCallTitle: null }]}
+      />,
+    );
+
+    expect(markup).toContain("Funding call");
+    expect(markup).not.toContain("Published opportunity");
+    expect(markup).toContain(">—</td>");
   });
 });

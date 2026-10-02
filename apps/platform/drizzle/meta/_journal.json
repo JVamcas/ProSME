@@ -1037,6 +1037,27 @@
       "when": 1800489600000,
       "tag": "0147_allow_multiple_workflow_drafts",
       "breakpoints": true
+    },
+    {
+      "idx": 148,
+      "version": "7",
+      "when": 1800576000000,
+      "tag": "0148_eligibility_terminal_status_event",
+      "breakpoints": true
+    },
+    {
+      "idx": 149,
+      "version": "7",
+      "when": 1800662400000,
+      "tag": "0149_workflow_deadline_processor",
+      "breakpoints": true
+    },
+    {
+      "idx": 150,
+      "version": "7",
+      "when": 1800748800000,
+      "tag": "0150_workflow_deadline_template_targets",
+      "breakpoints": true
     }
   ]
 }

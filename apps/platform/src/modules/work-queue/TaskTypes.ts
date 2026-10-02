@@ -1,3 +1,4 @@
+import type { EligibilityFailureStatus } from "@/modules/workflows/domain/definitions/WorkflowEligibilityFailureStatus";
 import type { WorkflowActionAvailability } from "@/modules/workflows/domain/actions/WorkflowActionAvailability";
 import type { WorkflowTaskDisplayMode } from "@/modules/workflows/domain/definitions/WorkflowTaskDefinition";
 
@@ -82,6 +83,7 @@ export type ChecklistResultItem = {
 export type WorkflowTaskAction = WorkflowActionAvailability;
 
 export type AuthoritativeEligibilityTaskResult = {
+  terminalStatus?: EligibilityFailureStatus;
   eligible: boolean;
   evaluationId: string;
   evaluationNumber: number;

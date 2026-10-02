@@ -34,9 +34,10 @@ export function DropdownButton({
     <MenuTrigger>
       <Button
         aria-label={accessibleLabel}
-        className={iconOnly
-          ? "flex size-9 items-center justify-center rounded-xl text-brand-navy hover:bg-brand-cream focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-navy"
-          : buttonVariants({ variant: "navy" })
+        className={
+          iconOnly
+            ? "flex size-9 items-center justify-center rounded-xl text-brand-navy hover:bg-brand-cream focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-navy"
+            : buttonVariants({ variant: "navy" })
         }
         isDisabled={disabled}
         type="button"
@@ -53,7 +54,6 @@ export function DropdownButton({
       <Popover
         className="z-50 max-h-[var(--available-height)] min-w-56 max-w-[calc(100vw-1.5rem)] overflow-y-auto rounded-xl border border-brand-navy/15 bg-brand-white p-1 shadow-lg outline-none"
         containerPadding={12}
-        isNonModal
         offset={4}
         placement="bottom end"
         shouldFlip

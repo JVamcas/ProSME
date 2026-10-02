@@ -191,6 +191,9 @@ export const workflowHolds = pgTable(
       table.workflowInstanceId,
       table.heldAt,
     ),
+    index("app_workflow_holds_review_idx")
+      .on(table.reviewAt)
+      .where(sql`${table.status} = 'ACTIVE'`),
     check("app_workflow_holds_scope_check", sql`${table.scope} = 'STAGE'`),
     check(
       "app_workflow_holds_status_check",
@@ -300,7 +303,7 @@ export const workflowEscalations = pgTable(
       .notNull()
       .references(() => workflowTasks.id, { onDelete: "restrict" }),
     trigger: text("trigger")
-      .$type<"MANUAL" | "SLA_BREACH" | "CONDITION">()
+      .$type<"MANUAL" | "SLA_BREACH" | "CONDITION" | "RFI_EXPIRY">()
       .notNull(),
     targetType: text("target_type").$type<"ROLE" | "USER">().notNull(),
     targetRoleId: uuid("target_role_id").references(() => roles.id, {
@@ -353,7 +356,7 @@ export const workflowEscalations = pgTable(
     ),
     check(
       "app_workflow_escalations_trigger_check",
-      sql`${table.trigger} in ('MANUAL', 'SLA_BREACH', 'CONDITION')`,
+      sql`${table.trigger} in ('MANUAL', 'SLA_BREACH', 'CONDITION', 'RFI_EXPIRY')`,
     ),
     check(
       "app_workflow_escalations_responsibility_check",

@@ -5,6 +5,7 @@ import { sql } from "drizzle-orm";
 import { getDatabase } from "@/db/client";
 import type { TaskDetail } from "@/modules/work-queue/TaskTypes";
 import type { WorkflowElementPermissions } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
+import { workflowTaskEffectiveDeadline } from "./WorkflowSlaDeadline";
 
 type TaskDetailRow = Omit<
   TaskDetail,
@@ -45,10 +46,11 @@ export async function readWorkflowTask(
         SELECT 1 FROM app_form_responses response
         WHERE response.workflow_task_id = task.id
           AND (response.status = 'COMPLETED'
-            OR (definition.config ->> 'command' = 'AUTHORITATIVE_ELIGIBILITY'
+            OR ((definition.config ->> 'command' = 'AUTHORITATIVE_ELIGIBILITY'
+              OR definition.config ->> 'formPurpose' = 'ELIGIBILITY_VERIFICATION')
               AND response.values = (task.result -> 'evaluatedFormValues')))
       )) AS "formCompleted",
-      task.due_at AS "dueAt", task.result,
+      ${workflowTaskEffectiveDeadline(sql`task`)} AS "dueAt", task.result,
       definition.name AS "taskName", definition.config,
       definition.task_type AS "taskType",
       COALESCE((

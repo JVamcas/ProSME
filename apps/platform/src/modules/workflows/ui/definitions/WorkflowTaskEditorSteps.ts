@@ -22,7 +22,7 @@ export const workflowTaskEditorStepFields = {
     "formPurpose",
     "formVersionId",
     "displayMode",
-    "runAuthoritativeEligibility",
+    "hardFailureStatus",
   ],
   assignment: [
     "assignmentMode",

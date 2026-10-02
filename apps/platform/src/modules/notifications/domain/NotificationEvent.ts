@@ -1,23 +1,23 @@
 import { z } from "zod";
 
+import { applicationTerminalStatusContextSchema } from "./NotificationApplicationTerminalEvent";
+import {
+  workflowDeadlineContextSchema,
+  workflowDeadlineEventCatalogue,
+} from "./NotificationWorkflowDeadlineEvent";
+import {
+  applicationOwnerSnapshotSchema,
+  identifierSchema,
+  snapshotEmailSchema,
+  snapshotNameSchema,
+  timestampSchema,
+  uuidSchema,
+} from "./NotificationEventSchemaFields";
+
 import {
   notificationErrorCodes,
   NotificationValidationError,
 } from "./NotificationErrors";
-
-const uuidSchema = z.uuid();
-const snapshotNameSchema = z.string().trim().min(1).max(200);
-const snapshotEmailSchema = z.email().max(320);
-const identifierSchema = z.string().trim().min(1).max(500);
-const timestampSchema = z.iso.datetime({ offset: true });
-
-const applicationOwnerSnapshotSchema = z
-  .object({
-    displayName: snapshotNameSchema,
-    email: snapshotEmailSchema,
-    userId: uuidSchema,
-  })
-  .strict();
 
 export const applicationSubmittedContextSchema = z
   .object({
@@ -147,6 +147,7 @@ export const notificationEventKeys = [
   "auth.email.verification",
   "auth.password.reset",
   "application.submitted",
+  "application.terminal-status-reached",
   "funding-call.approval-request-withdrawn",
   "funding-call.approval-requested",
   "funding-call.approved",
@@ -163,6 +164,10 @@ export const notificationEventKeys = [
   "workflow.information-request.closed",
   "workflow.information-request.expired",
   "workflow.task.assigned",
+  "workflow.sla.breached",
+  "workflow.information-request.reminder",
+  "workflow.hold.review-due",
+  "workflow.deferral.resumed",
 ] as const;
 
 export type NotificationEventKey = (typeof notificationEventKeys)[number];
@@ -199,6 +204,7 @@ export type NotificationEventContextByKey = {
   "auth.email.verification": z.infer<typeof authenticationEventContextSchema>;
   "auth.password.reset": z.infer<typeof authenticationEventContextSchema>;
   "application.submitted": ApplicationSubmittedContext;
+  "application.terminal-status-reached": z.infer<typeof applicationTerminalStatusContextSchema>;
   "funding-call.approval-request-withdrawn": FundingCallLifecycleContext;
   "funding-call.approval-requested": FundingCallLifecycleContext;
   "funding-call.approved": FundingCallLifecycleContext;
@@ -215,6 +221,10 @@ export type NotificationEventContextByKey = {
   "workflow.information-request.expired": InformationRequestExpiredContext;
   "workflow.information-request.responded": InformationRequestRespondedContext;
   "workflow.task.assigned": WorkflowTaskAssignedContext;
+  "workflow.sla.breached": z.infer<typeof workflowDeadlineContextSchema>;
+  "workflow.information-request.reminder": z.infer<typeof workflowDeadlineContextSchema>;
+  "workflow.hold.review-due": z.infer<typeof workflowDeadlineContextSchema>;
+  "workflow.deferral.resumed": z.infer<typeof workflowDeadlineContextSchema>;
 };
 
 type NotificationEventDefinition<Key extends NotificationEventKey> = {
@@ -225,6 +235,7 @@ type NotificationEventDefinition<Key extends NotificationEventKey> = {
 };
 
 export const notificationEventCatalogue = {
+  ...workflowDeadlineEventCatalogue,
   "auth.email.verification": {
     ruleEligibility: "SYSTEM_ONLY",
     catalogKey: "AUTHENTICATION",
@@ -236,6 +247,12 @@ export const notificationEventCatalogue = {
     catalogKey: "AUTHENTICATION",
     contextSchema: authenticationEventContextSchema,
     key: "auth.password.reset",
+  },
+  "application.terminal-status-reached": {
+    ruleEligibility: "CONFIGURABLE",
+    catalogKey: "APPLICATIONS",
+    contextSchema: applicationTerminalStatusContextSchema,
+    key: "application.terminal-status-reached",
   },
   "application.submitted": {
     ruleEligibility: "CONFIGURABLE",
