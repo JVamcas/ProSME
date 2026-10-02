@@ -6,7 +6,7 @@ import { FormProvider, useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { GeneralButton } from "@/components/ui/button";
-import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
+import { DataTable, type DataTableColumn } from "@/shared/ui/DataTable";
 import { DataTableFilter } from "@/components/ui/data-table-filter";
 import { FormInput, FormSelect, FormTextarea } from "@/components/ui/form-fields";
 import { Pagination } from "@/components/ui/pagination";

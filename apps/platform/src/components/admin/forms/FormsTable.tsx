@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
+import { DataTable, type DataTableColumn } from "@/shared/ui/DataTable";
 import { GeneralButton } from "@/components/ui/button";
 import { Pagination } from "@/components/ui/pagination";
 import { formPurposeOptions } from "@/modules/forms/FormTypes";

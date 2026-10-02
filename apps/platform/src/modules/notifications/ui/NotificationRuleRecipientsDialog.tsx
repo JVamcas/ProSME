@@ -11,7 +11,7 @@ import {
 
 import { DeleteButton } from "@/components/ui/action-buttons";
 import { GeneralButton } from "@/components/ui/button";
-import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
+import { DataTable, type DataTableColumn } from "@/shared/ui/DataTable";
 import { Checkbox } from "@/shared/ui/FormPrimitives";
 import { RightDrawer } from "@/shared/ui/RightDrawer";
 import {

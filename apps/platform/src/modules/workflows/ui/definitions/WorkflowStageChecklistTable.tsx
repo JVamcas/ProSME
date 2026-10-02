@@ -7,7 +7,7 @@ import { GeneralButton } from "@/components/ui/button";
 import {
   DataTable,
   type DataTableColumn,
-} from "@/components/ui/data-table";
+} from "@/shared/ui/DataTable";
 import type { WorkflowStageChecklistDefinition } from "@/modules/workflows/domain/definitions/WorkflowStageChecklistDefinition";
 import { WorkflowStageTabHeader } from "./WorkflowStageTabHeader";
 import type { WorkflowStageInput } from "@/modules/workflows/domain/definitions/WorkflowTypes";

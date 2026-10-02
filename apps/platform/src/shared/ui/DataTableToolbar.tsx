@@ -14,9 +14,7 @@ export function DataTableToolbar({
   return (
     <div className="flex flex-col justify-between gap-4 border-b border-slate-200 p-5 sm:flex-row sm:items-center">
       <div>
-        {title ? (
-          <h2 className="font-bold text-brand-navy">{title}</h2>
-        ) : null}
+        {title ? <h2 className="font-bold text-brand-navy">{title}</h2> : null}
         {description ? (
           <p className="mt-1 text-xs text-brand-navy/55">{description}</p>
         ) : null}

@@ -1,11 +1,11 @@
 "use client";
 
-
-import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
+import { DataTable, type DataTableColumn } from "@/shared/ui/DataTable";
 import { ArrowLink } from "@/components/ui/links";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatLocalDateTime24 } from "@/lib/dateUtils";
 import type { WorkflowProgressTask } from "../api/WorkflowProgressTypes";
+import { workflowTaskTypeLabels } from "./WorkflowTaskTypeLabels";
 
 function Assignment({ task }: { task: WorkflowProgressTask }) {
   const name = task.assignedUserName ?? task.assignedRoleName ?? "Unassigned";
@@ -45,6 +45,11 @@ const columns: DataTableColumn<WorkflowProgressTask>[] = [
     ),
   },
   {
+    accessorKey: "taskType",
+    header: "Task type",
+    cell: ({ row }) => workflowTaskTypeLabels[row.original.taskType],
+  },
+  {
     id: "assignedTo",
     header: "Assigned to",
     cell: ({ row }) => <Assignment task={row.original} />,
@@ -66,7 +71,7 @@ const columns: DataTableColumn<WorkflowProgressTask>[] = [
       row.original.actionedAt
         ? formatLocalDateTime24(row.original.actionedAt)
         : "—",
-  }
+  },
 ];
 
 export function WorkflowStageTaskAssignments({
@@ -84,7 +89,7 @@ export function WorkflowStageTaskAssignments({
         data={tasks}
         density="compact"
         emptyMessage="No task instances are assigned to this stage yet."
-        minWidth={820}
+        minWidth={960}
         rowKey={(task) => task.id}
       />
     </div>

@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 
-import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
+import { DataTable, type DataTableColumn } from "@/shared/ui/DataTable";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatLocalDateTime24 } from "@/lib/dateUtils";
 import type { ApplicationSummary } from "@/modules/applications/ApplicationTypes";

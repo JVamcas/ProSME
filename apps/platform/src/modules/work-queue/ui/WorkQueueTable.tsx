@@ -2,11 +2,12 @@
 
 import { LockKeyhole, UserRound } from "lucide-react";
 
-import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
+import { DataTable, type DataTableColumn } from "@/shared/ui/DataTable";
 import { ArrowLink } from "@/components/ui/links";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatLocalDateTime24 } from "@/lib/dateUtils";
 import type { WorkQueueRow } from "../WorkQueueTypes";
+import { workflowTaskTypeLabels } from "@/modules/workflows/ui/WorkflowTaskTypeLabels";
 
 const columns: DataTableColumn<WorkQueueRow>[] = [
   {
@@ -64,9 +65,7 @@ const columns: DataTableColumn<WorkQueueRow>[] = [
         className={row.original.taskType === "STAGE_DECISION"
           ? "bg-brand-blue/20"
           : "bg-brand-gold/30"}
-        label={row.original.taskType === "STAGE_DECISION"
-          ? "Stage decision"
-          : "Contributing"}
+        label={workflowTaskTypeLabels[row.original.taskType]}
         status={row.original.taskType}
       />
     ),

@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { CloneButton, DeleteButton } from "@/components/ui/action-buttons";
 import { GeneralButton, GeneralButtonLink } from "@/components/ui/button";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
-import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
+import { DataTable, type DataTableColumn } from "@/shared/ui/DataTable";
 import { Pagination } from "@/components/ui/pagination";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatLocalDateTime24 } from "@/lib/dateUtils";

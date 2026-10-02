@@ -9,7 +9,7 @@ import { GeneralButton } from "@/components/ui/button";
 import {
   DataTable,
   type DataTableColumn,
-} from "@/components/ui/data-table";
+} from "@/shared/ui/DataTable";
 import { formatLocalDateTime24 } from "@/lib/dateUtils";
 import { Badge } from "@/shared/ui/Badge";
 import type {
