@@ -2,6 +2,7 @@
 
 import { requestData } from "@/lib/client-http";
 import type {
+  NotificationTemplateEdit,
   NotificationChannelDetail,
   NotificationChannelSummary,
   NotificationChannelUpdate,
@@ -83,7 +84,24 @@ function publishTemplate(
   );
 }
 
+function editTemplate(
+  channelCode: string,
+  targetId: string,
+  versionId: string,
+  input: NotificationTemplateEdit,
+) {
+  return requestData<NotificationTemplateVersionSummary>(
+    `${targetPath(channelCode, targetId)}/versions/${encodeURIComponent(versionId)}`,
+    {
+      body: JSON.stringify(input),
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+    },
+  );
+}
+
 export const clientNotificationTemplateService = {
+  editTemplate,
   getChannel,
   getTarget,
   importTemplate,

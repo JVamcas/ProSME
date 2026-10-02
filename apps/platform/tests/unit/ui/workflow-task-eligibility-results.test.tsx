@@ -42,8 +42,16 @@ vi.mock(
   }),
 );
 vi.mock("@/modules/workflows/ui/tasks/WorkflowTaskDecisionActions", () => ({
-  WorkflowTaskDecisionActions: ({ task }: { task: TaskDetail }) => (
+  WorkflowTaskDecisionActions: ({ task, additionalItems = [] }: {
+    task: TaskDetail;
+    additionalItems?: import("@/shared/ui/DropdownButton").DropdownButtonItem[];
+  }) => (
     <div>
+      {additionalItems.map((item) => (
+        <button disabled={item.disabled} key={item.id} role="menuitem">
+          {item.label}
+        </button>
+      ))}
       {task.actions.map((action) => (
         <span key={action.key}>
           {action.label}:{String(action.available)}
@@ -154,7 +162,7 @@ describe("task eligibility results", () => {
     expect(markup).not.toContain("Standalone eligibility");
   });
 
-  it("shows a disabled Complete Task button until eligibility is evaluated", () => {
+  it("shows a disabled Complete Task menu item until eligibility is evaluated", () => {
     const markup = renderToStaticMarkup(
       <WorkflowTaskReviewPanel
         task={{ ...task, eligibilityEvaluation: null, formCompleted: false }}
@@ -165,7 +173,7 @@ describe("task eligibility results", () => {
     );
   });
 
-  it("shows an enabled Complete Task button when required work is ready", () => {
+  it("shows an enabled Complete Task menu item when required work is ready", () => {
     const markup = renderToStaticMarkup(
       <WorkflowTaskReviewPanel task={task} />,
     );

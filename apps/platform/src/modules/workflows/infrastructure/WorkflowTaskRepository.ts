@@ -46,7 +46,8 @@ export async function readWorkflowTask(
         SELECT 1 FROM app_form_responses response
         WHERE response.workflow_task_id = task.id
           AND (response.status = 'COMPLETED'
-            OR (definition.config ->> 'command' = 'AUTHORITATIVE_ELIGIBILITY'
+            OR ((definition.config ->> 'command' = 'AUTHORITATIVE_ELIGIBILITY'
+              OR definition.config ->> 'formPurpose' = 'ELIGIBILITY_VERIFICATION')
               AND response.values = (task.result -> 'evaluatedFormValues')))
       )) AS "formCompleted",
       ${workflowTaskEffectiveDeadline(sql`task`)} AS "dueAt", task.result,

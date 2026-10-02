@@ -13,6 +13,7 @@ export type WorkQueueRow = {
   claimedAt: string | null;
   createdAt: string;
   dueAt: string | null;
+  fundingCallTitle: string | null;
   priority: "HIGH" | "MEDIUM" | "LOW" | null;
   reference: string;
   rowVersion: number;

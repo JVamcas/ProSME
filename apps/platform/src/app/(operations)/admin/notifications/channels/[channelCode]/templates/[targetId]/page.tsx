@@ -48,6 +48,7 @@ export default async function NotificationTemplatePage({
       title={detail.target.label}
     >
       <NotificationTemplateWorkspace
+        canEdit={can(user, permissionCodes.notificationTemplateImport)}
         canPublish={can(user, permissionCodes.notificationTemplatePublish)}
         channelCode={channelCode}
         initialData={detail}

@@ -100,6 +100,10 @@ function queueQuery(input: WorkQueueListInput, actorId: string, cursor?: WorkQue
         CASE WHEN ${routedToActor(actorId)}
           AND app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
           THEN applicant.display_name ELSE 'Hidden until COI reviewed' END AS "applicantName",
+        CASE WHEN ${routedToActor(actorId)}
+          AND app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
+          THEN application.funding_opportunity_title
+          ELSE NULL END AS "fundingCallTitle",
         stage_definition.name AS "stageName",
         CASE WHEN stage.status = 'BLOCKED' AND EXISTS (
           SELECT 1 FROM app_workflow_holds hold

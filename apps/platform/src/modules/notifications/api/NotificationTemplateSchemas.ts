@@ -79,3 +79,14 @@ export type NotificationTemplateImportResult = {
   detectedPlaceholders: string[];
   version: NotificationTemplateVersionSummary;
 };
+
+export const notificationTemplateEditSchema = z.object({
+  subjectTemplate: z.string().trim().min(1).max(500).refine(
+    (value) => !/[\r\n]/.test(value),
+    "The subject cannot contain newlines.",
+  ),
+}).strict();
+
+export type NotificationTemplateEdit = z.infer<
+  typeof notificationTemplateEditSchema
+>;

@@ -1,4 +1,34 @@
-import type { NotificationEventSeed } from "./NotificationSeedConfiguration";
+import type {
+  NotificationEventSeed,
+  NotificationTemplateTargetSeed,
+} from "./NotificationSeedConfiguration";
+
+export const workflowDeadlineTemplateSeeds = [
+  {
+    defaultSubjectTemplate: "Review overdue for application {{applicationReference}}",
+    eventKey: "workflow.sla.breached",
+    id: "00000000-0000-4000-8000-000000000526",
+    scope: "EVENT",
+  },
+  {
+    defaultSubjectTemplate: "Reminder: information needed for application {{applicationReference}}",
+    eventKey: "workflow.information-request.reminder",
+    id: "00000000-0000-4000-8000-000000000527",
+    scope: "EVENT",
+  },
+  {
+    defaultSubjectTemplate: "Time to review application {{applicationReference}} on hold",
+    eventKey: "workflow.hold.review-due",
+    id: "00000000-0000-4000-8000-000000000528",
+    scope: "EVENT",
+  },
+  {
+    defaultSubjectTemplate: "Review resumed for application {{applicationReference}}",
+    eventKey: "workflow.deferral.resumed",
+    id: "00000000-0000-4000-8000-000000000529",
+    scope: "EVENT",
+  },
+] as const satisfies readonly NotificationTemplateTargetSeed[];
 
 export const workflowDeadlineEventSeeds: readonly NotificationEventSeed[] = [
   {

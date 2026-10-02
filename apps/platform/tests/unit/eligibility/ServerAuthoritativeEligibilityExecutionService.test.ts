@@ -77,6 +77,23 @@ beforeEach(() => {
 });
 
 describe("authoritative eligibility workflow execution", () => {
+  it("runs an inherited verification form without a legacy explicit command", async () => {
+    const values = { ENTITY_REGISTERED: "YES" };
+    vi.mocked(lockAuthoritativeEligibilityTask).mockResolvedValue({
+      ...target(),
+      config: { formPurpose: "ELIGIBILITY_VERIFICATION" },
+      formVersionId: "90000000-0000-4000-8000-000000000001",
+    });
+    vi.mocked(saveEligibilityEvaluationForm).mockResolvedValue(values);
+
+    await expect(executeAuthoritativeEligibility(actor, { ...input, values }))
+      .resolves.toMatchObject({ outcome: "ELIGIBLE" });
+    expect(persistAuthoritativeEligibilityExecution).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ evaluatedFormValues: values }),
+    );
+  });
+
   it("persists the verified outcome inside the workflow transaction", async () => {
     await expect(executeAuthoritativeEligibility(actor, input)).resolves
       .toMatchObject({ outcome: "ELIGIBLE", rowVersion: 3 });

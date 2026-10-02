@@ -2,7 +2,10 @@ import {
   applicationTerminalStatusEventSeed,
   applicationTerminalStatusTemplateSeed,
 } from "./ApplicationTerminalStatusNotificationSeed";
-import { workflowDeadlineEventSeeds } from "./WorkflowDeadlineNotificationSeed";
+import {
+  workflowDeadlineEventSeeds,
+  workflowDeadlineTemplateSeeds,
+} from "./WorkflowDeadlineNotificationSeed";
 import {
   notificationEventCatalogue,
   type NotificationEventKey,
@@ -333,6 +336,7 @@ export const notificationTemplateTargetSeeds: readonly NotificationTemplateTarge
       scope: "CATALOG",
     },
     applicationTerminalStatusTemplateSeed,
+    ...workflowDeadlineTemplateSeeds,
     {
       defaultSubjectTemplate: "Application {{applicationReference}} submitted",
       eventKey: "application.submitted",

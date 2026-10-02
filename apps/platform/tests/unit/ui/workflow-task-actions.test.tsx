@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   WorkflowTaskActions,
-} from "@/modules/work-queue/ui/WorkflowTaskActions";
+} from "@/modules/workflows/ui/tasks/WorkflowTaskActions";
 
 const requiredInput = {
   comment: { maxLength: 4_000, required: false },
@@ -32,6 +32,7 @@ afterEach(() => {
 
 async function renderActions(
   actions: Parameters<typeof WorkflowTaskActions>[0]["actions"],
+  additionalItems: Parameters<typeof WorkflowTaskActions>[0]["additionalItems"] = [],
 ) {
   const container = document.createElement("div");
   document.body.append(container);
@@ -40,6 +41,7 @@ async function renderActions(
     root.render(
       <WorkflowTaskActions
         actions={actions}
+        additionalItems={additionalItems}
         disabled={false}
         onSelect={vi.fn()}
       />,
@@ -52,6 +54,23 @@ async function renderActions(
 }
 
 describe("workflow task actions", () => {
+  it.each([false, true])("keeps Complete Task in Actions with disabled: %s", async (disabled) => {
+    const complete = vi.fn();
+    const { container, root } = await renderActions([], [{
+      id: "complete-task",
+      label: "Complete Task",
+      disabled,
+      onAction: complete,
+    }]);
+    expect(container.querySelectorAll("button")).toHaveLength(1);
+    const item = document.querySelector<HTMLElement>('[role="menuitem"]')!;
+    expect(item.textContent).toBe("Complete Task");
+    expect(item.getAttribute("aria-disabled") === "true").toBe(disabled);
+    await act(async () => item.click());
+    expect(complete).toHaveBeenCalledTimes(disabled ? 0 : 1);
+    await act(async () => root.unmount());
+  });
+
   it("presents the configured action labels in one dropdown", async () => {
     const { container, root } = await renderActions([
           {

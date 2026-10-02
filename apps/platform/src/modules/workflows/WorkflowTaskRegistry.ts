@@ -16,11 +16,31 @@ export const checklistResultSchema = z.object({
   })).min(1).max(30),
 });
 
-export const eligibilityCommandSchema = z.object({
-  hardFailureStatus: eligibilityFailureStatusSchema.default("INELIGIBLE"),
-  command: z.literal("AUTHORITATIVE_ELIGIBILITY"),
-  reevaluationPolicy: z.enum(["NEVER", "WHEN_EVIDENCE_CHANGED"]),
-});
+export const eligibilityCommandSchema = z.preprocess(
+  (value) => {
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+      return value;
+    }
+    const config = value as Record<string, unknown>;
+    if (
+      config.formPurpose !== "ELIGIBILITY_VERIFICATION" ||
+      config.command !== undefined
+    ) {
+      return value;
+    }
+    // Older inherited verification tasks predate the explicit command setting.
+    return {
+      ...config,
+      command: "AUTHORITATIVE_ELIGIBILITY",
+      reevaluationPolicy: config.reevaluationPolicy ?? "WHEN_EVIDENCE_CHANGED",
+    };
+  },
+  z.object({
+    hardFailureStatus: eligibilityFailureStatusSchema.default("INELIGIBLE"),
+    command: z.literal("AUTHORITATIVE_ELIGIBILITY"),
+    reevaluationPolicy: z.enum(["NEVER", "WHEN_EVIDENCE_CHANGED"]),
+  }),
+);
 
 export const eligibilityResultSchema = z.object({
   eligible: z.boolean(),

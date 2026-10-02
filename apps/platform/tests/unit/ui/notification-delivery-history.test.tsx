@@ -97,7 +97,9 @@ describe("notification delivery history states", () => {
 
     const { container, root } = await renderHistory(true);
 
-    expect(container.textContent).toContain("DEAD_LETTER");
+    expect(container.textContent).toContain("Needs attention");
+    expect(container.textContent).toContain("after several attempts");
+    expect(container.textContent).not.toContain("NOTIFICATION_RETRY_EXHAUSTED");
     expect(container.textContent).toContain("5 attempts");
     expect(
       [...container.querySelectorAll("button")]

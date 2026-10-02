@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, type Ref } from "react";
 import { FormProvider, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -14,6 +14,7 @@ import {
   FormSelect,
   FormTextarea,
 } from "@/components/ui/form-fields";
+import type { DropdownButtonItem } from "@/shared/ui/DropdownButton";
 import { FormRichTextField } from "@/shared/ui/FormRichTextField";
 import { richTextToPlainText } from "@/shared/utils/RichText";
 import type {
@@ -21,7 +22,7 @@ import type {
   WorkflowTaskAction,
 } from "@/modules/work-queue/TaskTypes";
 import { useExecuteWorkflowTaskAction } from "@/modules/work-queue/WorkQueueHooks";
-import { WorkflowTaskActions } from "@/modules/work-queue/ui/WorkflowTaskActions";
+import { WorkflowTaskActions } from "@/modules/workflows/ui/tasks/WorkflowTaskActions";
 import { isWorkflowStageDecisionAction } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
 import type { WorkflowActionInput } from "@/modules/workflows/domain/actions/WorkflowActionExecution";
 
@@ -344,9 +345,13 @@ function DecisionForm({
 }
 
 export function WorkflowTaskDecisionActions({
+  eligibilityActionRef,
+  additionalItems = [],
   beforeAction,
   task,
 }: {
+  eligibilityActionRef?: Ref<HTMLDivElement>;
+  additionalItems?: DropdownButtonItem[];
   beforeAction?: () => Promise<void>;
   task: TaskDetail;
 }) {
@@ -354,7 +359,10 @@ export function WorkflowTaskDecisionActions({
   // until cancellation or successful execution so the dialog stays mounted.
   const [selected, setSelected] = useState<WorkflowTaskAction | null>(null);
   const canChooseAction =
-    task.taskStatus !== "COMPLETED" && task.actions.length > 0;
+    task.taskStatus !== "COMPLETED" &&
+    (task.actions.length > 0 ||
+      additionalItems.length > 0 ||
+      Boolean(eligibilityActionRef));
   const actionFinalizer =
     selected && isWorkflowStageDecisionAction(selected.actionType)
       ? beforeAction
@@ -365,6 +373,8 @@ export function WorkflowTaskDecisionActions({
       {canChooseAction ? (
         <WorkflowTaskActions
           actions={task.actions}
+          eligibilityActionRef={eligibilityActionRef}
+          additionalItems={additionalItems}
           disabled={Boolean(selected)}
           onSelect={(key) => {
             const action = task.actions.find((candidate) => candidate.key === key);
