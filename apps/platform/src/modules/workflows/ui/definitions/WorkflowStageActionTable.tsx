@@ -3,7 +3,7 @@
 import { Plus } from "lucide-react";
 
 import { GeneralButton } from "@/components/ui/button";
-import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
+import { DataTable, type DataTableColumn } from "@/shared/ui/DataTable";
 import type { WorkflowActionDefinition } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
 import { ActionMenu } from "@/shared/ui/ActionMenu";
 import { WorkflowStageTabHeader } from "./WorkflowStageTabHeader";

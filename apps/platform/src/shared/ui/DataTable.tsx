@@ -19,11 +19,22 @@ import {
 import { Fragment, type ReactNode, useState } from "react";
 
 import { cn } from "@/lib/utils";
-import { GeneralButton } from "./button";
+import { GeneralButton } from "@/components/ui/button";
 import {
   DataTableToolbar,
   type DataTableToolbarConfig,
-} from "./data-table-toolbar";
+} from "./DataTableToolbar";
+
+import { DataTableEditableCell } from "./DataTableEditableCell";
+import type {
+  DataTableCellEdit,
+  DataTableCellEditor,
+} from "./DataTableEditing";
+
+export type {
+  DataTableCellEdit,
+  DataTableCellEditor,
+} from "./DataTableEditing";
 
 export const dataTableFeatures = tableFeatures({
   rowSortingFeature,
@@ -33,9 +44,11 @@ export const dataTableFeatures = tableFeatures({
 export type DataTableColumn<TData extends RowData> = ColumnDef<
   typeof dataTableFeatures,
   TData
->;
+> & {
+  editor?: DataTableCellEditor<TData>;
+};
 
-type DataTableProps<TData extends RowData> = {
+export type DataTableProps<TData extends RowData> = {
   columns: DataTableColumn<TData>[];
   data: TData[];
   density?: "default" | "compact";
@@ -46,18 +59,20 @@ type DataTableProps<TData extends RowData> = {
   rowKey?: (item: TData) => string;
   rowClassName?: (item: TData) => string | undefined;
   toolbar?: DataTableToolbarConfig;
-};
+} & (
+  | { onCellEdit?: undefined }
+  | {
+      onCellEdit: (edit: DataTableCellEdit<TData>) => Promise<void> | void;
+      rowKey: (item: TData) => string;
+    }
+);
 
 type DataTableInstance<TData extends RowData> = ReactTable<
   typeof dataTableFeatures,
   TData
 >;
 
-function SortIcon({
-  direction,
-}: {
-  direction: false | "asc" | "desc";
-}) {
+function SortIcon({ direction }: { direction: false | "asc" | "desc" }) {
   if (direction === "asc") {
     return <ArrowUp className="size-3.5 text-brand-navy" />;
   }
@@ -71,10 +86,7 @@ function SortIcon({
   );
 }
 
-function ariaSort(
-  direction: false | "asc" | "desc",
-  canSort: boolean,
-) {
+function ariaSort(direction: false | "asc" | "desc", canSort: boolean) {
   if (direction === "asc") {
     return "ascending" as const;
   }
@@ -100,9 +112,7 @@ function DataTableHeader<TData extends RowData>({
       {table.getHeaderGroups().map((group) => (
         <tr key={group.id}>
           {expandable ? (
-            <th
-              className={density === "compact" ? "w-12 px-4" : "w-14 px-5"}
-            >
+            <th className={density === "compact" ? "w-12 px-4" : "w-14 px-5"}>
               <span className="sr-only">Expand row</span>
             </th>
           ) : null}
@@ -135,7 +145,7 @@ function DataTableHeader<TData extends RowData>({
                       <table.FlexRender header={header} />
                     )}
 
-                    <SortIcon direction={direction}/>
+                    <SortIcon direction={direction} />
                   </GeneralButton>
                 ) : header.isPlaceholder ? null : (
                   <table.FlexRender header={header} />
@@ -151,6 +161,7 @@ function DataTableHeader<TData extends RowData>({
 
 function DataTableBody<TData extends RowData>({
   density,
+  onCellEdit,
   emptyMessage,
   expandedRows,
   renderExpandedRow,
@@ -160,6 +171,7 @@ function DataTableBody<TData extends RowData>({
   table,
 }: {
   density: "default" | "compact";
+  onCellEdit?: DataTableProps<TData>["onCellEdit"];
   emptyMessage: string;
   expandedRows: ReadonlySet<string>;
   renderExpandedRow?: (item: TData) => ReactNode;
@@ -172,8 +184,8 @@ function DataTableBody<TData extends RowData>({
 
   return (
     <tbody className="divide-y divide-slate-200 bg-white">
-      {rows.map((row, index) => {
-        const key = rowKey(row.original, index);
+      {rows.map((row) => {
+        const key = rowKey(row.original, row.index);
         const expanded = expandedRows.has(key);
 
         return (
@@ -209,13 +221,24 @@ function DataTableBody<TData extends RowData>({
                 <td
                   key={cell.id}
                   className={cn(
-                    "align-middle text-sm text-slate-700",
+                    "align-middle break-words text-sm text-slate-700",
                     density === "compact"
-                      ? "h-12 px-4 py-2"
+                      ? "h-10 px-3 py-1.5"
                       : "h-[68px] px-5 py-3.5",
                   )}
                 >
-                  <table.FlexRender cell={cell} />
+                  <DataTableEditableCell
+                    editor={
+                      (cell.column.columnDef as DataTableColumn<TData>).editor
+                    }
+                    row={row.original}
+                    rowId={key}
+                    columnId={cell.column.id}
+                    value={cell.getValue()}
+                    onCellEdit={onCellEdit}
+                  >
+                    <table.FlexRender cell={cell} />
+                  </DataTableEditableCell>
                 </td>
               ))}
             </tr>
@@ -267,7 +290,8 @@ function DataTableBody<TData extends RowData>({
 export function DataTable<TData extends RowData>({
   columns,
   data,
-  density = "default",
+  density = "compact",
+  onCellEdit,
   emptyMessage = "No records found",
   footer,
   minWidth,
@@ -281,6 +305,7 @@ export function DataTable<TData extends RowData>({
     features: dataTableFeatures,
     columns,
     data,
+    getRowId: rowKey,
   });
 
   const resolvedMinWidth =
@@ -300,14 +325,19 @@ export function DataTable<TData extends RowData>({
   };
 
   return (
-    <div className="overflow-hidden rounded-md border border-slate-100 bg-white  mx-1">
+    <div className="min-w-0 max-w-full overflow-hidden rounded-md border border-slate-100 bg-white mx-1">
       {toolbar ? (
         <div className="border-b border-slate-100 bg-white px-5 py-4">
           <DataTableToolbar {...toolbar} />
         </div>
       ) : null}
 
-      <div className="overflow-x-auto">
+      <div
+        className="max-w-full overflow-x-auto overscroll-x-contain"
+        role="region"
+        aria-label={toolbar?.title ?? "Data table"}
+        tabIndex={0}
+      >
         <table
           className="w-full text-left"
           style={{ minWidth: resolvedMinWidth }}
@@ -321,6 +351,7 @@ export function DataTable<TData extends RowData>({
           <DataTableBody
             density={density}
             table={table}
+            onCellEdit={onCellEdit}
             emptyMessage={emptyMessage}
             expandedRows={expandedRows}
             renderExpandedRow={renderExpandedRow}

@@ -8,7 +8,7 @@ import { GeneralButton, IconButton } from "@/components/ui/button";
 import {
   DataTable,
   type DataTableColumn,
-} from "@/components/ui/data-table";
+} from "@/shared/ui/DataTable";
 import {
   useBusinesses,
   useDeleteBusiness,

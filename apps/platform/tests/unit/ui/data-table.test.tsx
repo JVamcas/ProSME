@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import {
   DataTable,
   type DataTableColumn,
-} from "@/components/ui/data-table";
+} from "@/shared/ui/DataTable";
 
 type RecordRow = {
   id: string;

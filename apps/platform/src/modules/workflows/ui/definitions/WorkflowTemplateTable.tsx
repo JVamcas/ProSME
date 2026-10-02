@@ -3,7 +3,7 @@
 import Link from "next/link";
 
 import { ActionMenu, type ActionMenuItem } from "@/shared/ui/ActionMenu";
-import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
+import { DataTable, type DataTableColumn } from "@/shared/ui/DataTable";
 import { Pagination } from "@/components/ui/pagination";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatLocalDateTime24 } from "@/lib/dateUtils";

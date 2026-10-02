@@ -3,7 +3,7 @@
 import { Search } from "lucide-react";
 import { useState } from "react";
 
-import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
+import { DataTable, type DataTableColumn } from "@/shared/ui/DataTable";
 import { DataTableFilter } from "@/components/ui/data-table-filter";
 import { Input } from "@/shared/ui/FormPrimitives";
 import { Pagination } from "@/components/ui/pagination";

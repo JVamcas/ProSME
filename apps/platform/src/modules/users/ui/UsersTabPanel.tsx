@@ -2,7 +2,7 @@
 
 import { Search } from "lucide-react";
 
-import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
+import { DataTable, type DataTableColumn } from "@/shared/ui/DataTable";
 import { Input, Select } from "@/shared/ui/FormPrimitives";
 import { Pagination } from "@/components/ui/pagination";
 import type {

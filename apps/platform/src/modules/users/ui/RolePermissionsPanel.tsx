@@ -10,7 +10,7 @@ import {
 import { useState } from "react";
 
 import { EditButton } from "@/components/ui/action-buttons";
-import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
+import { DataTable, type DataTableColumn } from "@/shared/ui/DataTable";
 import { Pagination, DEFAULT_PAGE_SIZE } from "@/components/ui/pagination";
 import { useUserAccess } from "@/modules/users/UserAccessHooks";
 import { DraggableDialog } from "@/components/ui/draggable-dialog";

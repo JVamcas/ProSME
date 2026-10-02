@@ -10,7 +10,7 @@ import { GeneralButton } from "@/components/ui/button";
 import {
   DataTable,
   type DataTableColumn,
-} from "@/components/ui/data-table";
+} from "@/shared/ui/DataTable";
 import { FormSelect } from "@/components/ui/form-fields";
 import { useSaveWorkflowGraph } from "@/modules/workflows/WorkflowHooks";
 import { WorkflowStageTabHeader } from "./WorkflowStageTabHeader";
