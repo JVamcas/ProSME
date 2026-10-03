@@ -15,11 +15,21 @@ export type RequiredTaskCompletion = {
 export type StageCompletionResult =
   | {
       kind: "completed";
+      referralReturn?: {
+        targetStageDefinitionId: string;
+        targetStageInstanceId: string;
+        targetStageName: string;
+      } | null;
       completedAt: Date;
       stageInstanceId: string;
     }
   | {
       kind: "already_completed";
+      referralReturn?: {
+        targetStageDefinitionId: string;
+        targetStageInstanceId: string;
+        targetStageName: string;
+      } | null;
       completedAt: Date;
       stageInstanceId: string;
     }
@@ -38,12 +48,17 @@ export type StageCompletionResult =
 export function stageCompletionRequirementsAreMet(
   requirements: RequiredTaskCompletion[],
 ) {
-  return requirements.every((requirement) =>
-    requirement.completedCount >= requiredReviewCompletions({
-      mode: requirement.completionMode,
-      count: requirement.requiredCompletionCount,
-      percentage: requirement.completionPercentage,
-      rounding: "CEIL",
-    }, requirement.denominator),
+  return requirements.every(
+    (requirement) =>
+      requirement.completedCount >=
+      requiredReviewCompletions(
+        {
+          mode: requirement.completionMode,
+          count: requirement.requiredCompletionCount,
+          percentage: requirement.completionPercentage,
+          rounding: "CEIL",
+        },
+        requirement.denominator,
+      ),
   );
 }

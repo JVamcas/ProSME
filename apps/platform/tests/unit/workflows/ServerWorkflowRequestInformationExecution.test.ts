@@ -1,16 +1,24 @@
+vi.mock(
+  "@/modules/workflows/infrastructure/WorkflowReviewThresholdRepository",
+  () => ({
+    recordReviewThresholdEvaluations: vi.fn(),
+  }),
+);
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
-vi.mock("@/modules/workflows/application/runtime/ServerWorkflowRfiNotificationService", () => ({
-  captureWorkflowRfiCreatedNotification: vi.fn(),
-}));
+vi.mock(
+  "@/modules/workflows/application/runtime/ServerWorkflowRfiNotificationService",
+  () => ({
+    captureWorkflowRfiCreatedNotification: vi.fn(),
+  }),
+);
 
 vi.mock("@/modules/workflows/infrastructure/WorkflowQuorumRepository", () => ({
   evaluateStageQuorum: vi.fn(),
 }));
 vi.mock("@/modules/workflows/infrastructure/StageCompletionRepository", () => ({
   loadRequiredTaskCompletions: vi.fn(),
-  recordReviewThresholdEvaluations: vi.fn(),
 }));
 vi.mock(
   "@/modules/workflows/application/runtime/ServerWorkflowActionContextService",

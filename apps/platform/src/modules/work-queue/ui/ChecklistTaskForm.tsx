@@ -7,7 +7,7 @@ import { FormProvider, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
-import { GeneralButton } from "@/components/ui/button";
+import { WorkflowReviewSaveStatus } from "./WorkflowReviewSaveStatus";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { usePendingNavigationGuard } from "@/shared/ui/usePendingNavigationGuard";
 import {
@@ -28,25 +28,33 @@ import {
 const reviewAutosaveDelayMs = 800;
 
 const checklistFormSchema = z.object({
-  comments: z.array(z.object({
-    key: z.string(),
-    value: z.string().trim().max(4000),
-  })),
-  documents: z.array(z.object({
-    category: z.string(),
-    comment: z.string().trim().max(1000).optional(),
-    outcome: z.enum(["VERIFIED", "REJECTED", ""]),
-  })),
-  items: z.array(z.object({
-    accepted: z.boolean(),
-    code: z.string(),
-    comment: z.string().trim().max(1000).optional(),
-  })),
-  scores: z.array(z.object({
-    comment: z.string().trim().max(1000).optional(),
-    criterion: z.string(),
-    score: z.number().nullable(),
-  })),
+  comments: z.array(
+    z.object({
+      key: z.string(),
+      value: z.string().trim().max(4000),
+    }),
+  ),
+  documents: z.array(
+    z.object({
+      category: z.string(),
+      comment: z.string().trim().max(1000).optional(),
+      outcome: z.enum(["VERIFIED", "REJECTED", ""]),
+    }),
+  ),
+  items: z.array(
+    z.object({
+      accepted: z.boolean(),
+      code: z.string(),
+      comment: z.string().trim().max(1000).optional(),
+    }),
+  ),
+  scores: z.array(
+    z.object({
+      comment: z.string().trim().max(1000).optional(),
+      criterion: z.string(),
+      score: z.number().nullable(),
+    }),
+  ),
 });
 
 type ChecklistFormValues = z.infer<typeof checklistFormSchema>;
@@ -95,23 +103,31 @@ function defaultValues(task: TaskDetail): ChecklistFormValues {
 }
 
 function reviewIsReady(task: TaskDetail, values: ChecklistFormValues) {
-  return task.checklistItems.every((item) => {
-    const answer = values.items.find((value) => value.code === item.code);
-    return Boolean(answer && (!item.required || answer.accepted));
-  }) && task.documentRequirements.every(
-    (requirement) => !requirement.mandatory || Boolean(requirement.document),
-  ) && (task.scoring?.criteria ?? []).every((criterion) => {
-    const answer = values.scores.find(
-      (value) => value.criterion === criterion.stableKey,
-    );
-    return Boolean(answer && answer.score !== null
-      && answer.score >= criterion.scaleMinimum
-      && answer.score <= criterion.scaleMaximum
-      && (!criterion.mandatoryComment || answer.comment?.trim()));
-  }) && task.commentFields.every((field) => {
-    const answer = values.comments.find((value) => value.key === field.key);
-    return Boolean(answer && (!field.mandatory || answer.value.trim()));
-  });
+  return (
+    task.checklistItems.every((item) => {
+      const answer = values.items.find((value) => value.code === item.code);
+      return Boolean(answer && (!item.required || answer.accepted));
+    }) &&
+    task.documentRequirements.every(
+      (requirement) => !requirement.mandatory || Boolean(requirement.document),
+    ) &&
+    (task.scoring?.criteria ?? []).every((criterion) => {
+      const answer = values.scores.find(
+        (value) => value.criterion === criterion.stableKey,
+      );
+      return Boolean(
+        answer &&
+        answer.score !== null &&
+        answer.score >= criterion.scaleMinimum &&
+        answer.score <= criterion.scaleMaximum &&
+        (!criterion.mandatoryComment || answer.comment?.trim()),
+      );
+    }) &&
+    task.commentFields.every((field) => {
+      const answer = values.comments.find((value) => value.key === field.key);
+      return Boolean(answer && (!field.mandatory || answer.value.trim()));
+    })
+  );
 }
 
 function initialAutosavePatch(
@@ -134,22 +150,26 @@ function initialAutosavePatch(
   const savedItems = new Set(task.resultItems.map((item) => item.code));
   const savedScores = new Set(task.resultScores.map((item) => item.criterion));
   const comments = values.comments.filter(
-    (item) => !savedComments.has(item.key)
-      && (!commentFields.get(item.key)?.mandatory || item.value.trim()),
+    (item) =>
+      !savedComments.has(item.key) &&
+      (!commentFields.get(item.key)?.mandatory || item.value.trim()),
   );
   const documents = values.documents.filter(
-    (item) => !savedDocuments.has(item.category)
-      && Boolean(documentRequirements.get(item.category)?.document),
+    (item) =>
+      !savedDocuments.has(item.category) &&
+      Boolean(documentRequirements.get(item.category)?.document),
   );
   const items = values.items.filter(
-    (item) => !savedItems.has(item.code)
-      && (!checklistItems.get(item.code)?.required
-        || item.accepted
-        || item.comment?.trim()),
+    (item) =>
+      !savedItems.has(item.code) &&
+      (!checklistItems.get(item.code)?.required ||
+        item.accepted ||
+        item.comment?.trim()),
   );
   const scores = values.scores.filter(
-    (item) => !savedScores.has(item.criterion)
-      && (item.score !== null || item.comment?.trim()),
+    (item) =>
+      !savedScores.has(item.criterion) &&
+      (item.score !== null || item.comment?.trim()),
   );
   return {
     ...(comments.length ? { comments } : {}),
@@ -159,19 +179,23 @@ function initialAutosavePatch(
   };
 }
 
-export function ChecklistTaskForm({
-  finalActions,
-  formContent,
-  formSectionComplete,
-  onStateChange,
-  task,
-}: {
+type ChecklistTaskFormProps = {
   finalActions?: ReactNode;
+  onFinalStepChange?: (final: boolean) => void;
   formContent?: ReactNode;
   formSectionComplete: boolean;
   onStateChange: (state: ReviewDraftState) => void;
   task: TaskDetail;
-}) {
+};
+
+export function ChecklistTaskForm({
+  finalActions,
+  onFinalStepChange,
+  formContent,
+  formSectionComplete,
+  onStateChange,
+  task,
+}: ChecklistTaskFormProps) {
   const save = useSaveTaskReviewDraft(task.taskInstanceId);
   const upload = useUploadWorkflowTaskDocument(task.taskInstanceId);
   const [{ initialPatch, initialValues }] = useState(() => {
@@ -198,9 +222,12 @@ export function ChecklistTaskForm({
   const navigation = usePendingNavigationGuard(pending);
   const ready = reviewIsReady(task, values);
   const invalid = !checklistFormSchema.safeParse(values).success;
-  const hasSavedReview = savedRevision > 0
-    || task.checklistCompleted || task.commentCompleted
-    || task.documentsCompleted || task.scoringCompleted;
+  const hasSavedReview =
+    savedRevision > 0 ||
+    task.checklistCompleted ||
+    task.commentCompleted ||
+    task.documentsCompleted ||
+    task.scoringCompleted;
 
   useEffect(() => {
     if (previousValues.current === serializedValues) return;
@@ -208,10 +235,7 @@ export function ChecklistTaskForm({
     previousValues.current = serializedValues;
     const patch = createReviewDraftPatch(previous, values);
     if (reviewDraftPatchIsEmpty(patch)) return;
-    pendingPatch.current = mergeReviewDraftPatches(
-      pendingPatch.current,
-      patch,
-    );
+    pendingPatch.current = mergeReviewDraftPatches(pendingPatch.current, patch);
     setRevision((current) => current + 1);
   }, [serializedValues, values]);
 
@@ -220,8 +244,13 @@ export function ChecklistTaskForm({
   }, [onStateChange, pending, ready]);
 
   useEffect(() => {
-    if (!revision || !pending || save.isPending
-      || lastAttemptedRevision.current === revision) return;
+    if (
+      !revision ||
+      !pending ||
+      save.isPending ||
+      lastAttemptedRevision.current === revision
+    )
+      return;
     const timer = window.setTimeout(() => {
       lastAttemptedRevision.current = revision;
       const parsed = checklistFormSchema.safeParse(form.getValues());
@@ -240,8 +269,8 @@ export function ChecklistTaskForm({
           );
           toast.error(error.message);
         },
-        onSuccess: () => setSavedRevision((current) =>
-          Math.max(current, revision)),
+        onSuccess: () =>
+          setSavedRevision((current) => Math.max(current, revision)),
       });
     }, reviewAutosaveDelayMs);
     return () => window.clearTimeout(timer);
@@ -262,8 +291,8 @@ export function ChecklistTaskForm({
         );
         toast.error(error.message);
       },
-      onSuccess: () => setSavedRevision((current) =>
-        Math.max(current, revision)),
+      onSuccess: () =>
+        setSavedRevision((current) => Math.max(current, revision)),
     });
   }
 
@@ -277,29 +306,34 @@ export function ChecklistTaskForm({
           documentUpload={{
             error: upload.isError ? upload.error.message : undefined,
             onFile: (requirementId, file) => {
-              upload.mutate({ file, requirementId }, {
-                onSuccess: (updatedTask) => {
-                  const requirement = updatedTask.documentRequirements.find(
-                    (item) => item.id === requirementId,
-                  );
-                  if (!requirement) return;
-                  const existing = values.documents.find(
-                    (item) => item.category === requirement.stableKey,
-                  );
-                  const patch = {
-                    documents: [existing ?? {
-                      category: requirement.stableKey,
-                      comment: "",
-                      outcome: "" as const,
-                    }],
-                  };
-                  pendingPatch.current = mergeReviewDraftPatches(
-                    pendingPatch.current,
-                    patch,
-                  );
-                  setRevision((current) => current + 1);
+              upload.mutate(
+                { file, requirementId },
+                {
+                  onSuccess: (updatedTask) => {
+                    const requirement = updatedTask.documentRequirements.find(
+                      (item) => item.id === requirementId,
+                    );
+                    if (!requirement) return;
+                    const existing = values.documents.find(
+                      (item) => item.category === requirement.stableKey,
+                    );
+                    const patch = {
+                      documents: [
+                        existing ?? {
+                          category: requirement.stableKey,
+                          comment: "",
+                          outcome: "" as const,
+                        },
+                      ],
+                    };
+                    pendingPatch.current = mergeReviewDraftPatches(
+                      pendingPatch.current,
+                      patch,
+                    );
+                    setRevision((current) => current + 1);
+                  },
                 },
-              });
+              );
             },
             pendingRequirementId: upload.isPending
               ? upload.variables?.requirementId
@@ -309,10 +343,15 @@ export function ChecklistTaskForm({
           displayMode={task.displayMode}
           documentRequirements={task.documentRequirements}
           finalActions={finalActions}
-          form={formContent ? {
-            content: formContent,
-            title: task.formName ?? "Form",
-          } : undefined}
+          onFinalStepChange={onFinalStepChange}
+          form={
+            formContent
+              ? {
+                  content: formContent,
+                  title: task.formName ?? "Form",
+                }
+              : undefined
+          }
           scoring={task.scoring}
           status={{
             checklist: task.checklistCompleted ? "Completed" : "Required",
@@ -323,22 +362,14 @@ export function ChecklistTaskForm({
           }}
         />
         {task.taskStatus !== "COMPLETED" ? (
-          <div className="flex items-center gap-3 text-sm text-brand-navy/65">
-            <span aria-live="polite">
-              {invalid ? "Correct review fields before saving"
-                : save.isError ? "Review save failed" : save.isPending
-                  ? "Saving review…" : pending ? "Autosave pending"
-                    : hasSavedReview ? "Review saved" : "No review changes yet"}
-            </span>
-            {save.isError ? (
-              <GeneralButton onClick={retrySave} type="button" variant="outline">
-                Retry save
-              </GeneralButton>
-            ) : null}
-          </div>
-        ) : null}
-        {save.isError ? (
-          <p className="text-sm text-red-700" role="alert">{save.error.message}</p>
+          <WorkflowReviewSaveStatus
+            invalid={invalid}
+            error={save.isError ? save.error : null}
+            saving={save.isPending}
+            pending={pending}
+            hasSavedReview={hasSavedReview}
+            onRetry={retrySave}
+          />
         ) : null}
       </div>
       <ConfirmationDialog

@@ -209,7 +209,7 @@ describe("workflow action availability service", () => {
         available: reason === null,
         unavailableReason: reason,
       });
-      expect(readWorkflowActionTaskReadiness).toHaveBeenCalledWith({}, taskId);
+      expect(readWorkflowActionTaskReadiness).toHaveBeenCalledWith({}, taskId, true);
     },
   );
 

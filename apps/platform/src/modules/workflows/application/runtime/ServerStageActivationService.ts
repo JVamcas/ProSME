@@ -10,6 +10,7 @@ import {
   loadIncompleteJoinPredecessors,
   loadPriorStageContext,
   nextStageIterationNumber,
+  loadStageReworkIteration,
   loadStageActivationTasks,
   lockStageActivationTarget,
   persistStageActivation,
@@ -24,7 +25,7 @@ export type ActivateStageInput = {
   actorId: string;
   correlationId: string;
   iterationNumber?: number;
-  iterationStrategy?: "FIRST" | "NEXT";
+  iterationStrategy?: "FIRST" | "NEXT" | "REWORK";
   referralContext?: Record<string, unknown> | null;
   returnContext?: Record<string, unknown> | null;
   stageDefinitionId: string;
@@ -67,15 +68,36 @@ export async function activateStageInTransaction(
     input.stageDefinitionId,
   );
   if (!target) return { kind: "stage_not_found" };
-  const iterationNumber = input.iterationStrategy === "NEXT"
-    ? await nextStageIterationNumber(
-        transaction,
-        input.workflowInstanceId,
-        input.stageDefinitionId,
-      )
-    : input.iterationNumber ?? 1;
+  const rework =
+    input.iterationStrategy === "REWORK"
+      ? await loadStageReworkIteration(
+          transaction,
+          input.workflowInstanceId,
+          input.stageDefinitionId,
+        )
+      : null;
+  if (rework?.activeStageInstanceId) {
+    return {
+      kind: "already_active",
+      stageInstanceId: rework.activeStageInstanceId,
+    };
+  }
+  const iterationNumber = rework
+    ? rework.nextIterationNumber
+    : input.iterationStrategy === "NEXT"
+      ? await nextStageIterationNumber(
+          transaction,
+          input.workflowInstanceId,
+          input.stageDefinitionId,
+        )
+      : (input.iterationNumber ?? 1);
   if (!validIteration(iterationNumber)) return { kind: "invalid_iteration" };
-  if (!target.repeatable && iterationNumber !== 1) {
+  // Explicit rework/referral creates a new working iteration; repeatable
+  // governs ordinary graph traversal rather than these runtime handoffs.
+  const controlActivation = Boolean(
+    input.returnContext || input.referralContext,
+  );
+  if (!target.repeatable && iterationNumber !== 1 && !controlActivation) {
     return { kind: "invalid_iteration" };
   }
 
@@ -127,13 +149,16 @@ export async function activateStageInTransaction(
     target,
     tasks,
   });
-  const informationRequest = await createStageActivationWorkflowRfi(transaction, {
-    actorId: input.actorId,
-    correlationId: input.correlationId,
-    stageDefinitionId: input.stageDefinitionId,
-    stageInstanceId: activated.stage.id,
-    workflowInstanceId: input.workflowInstanceId,
-  });
+  const informationRequest = await createStageActivationWorkflowRfi(
+    transaction,
+    {
+      actorId: input.actorId,
+      correlationId: input.correlationId,
+      stageDefinitionId: input.stageDefinitionId,
+      stageInstanceId: activated.stage.id,
+      workflowInstanceId: input.workflowInstanceId,
+    },
+  );
   if (informationRequest) {
     await captureWorkflowRfiCreatedNotification(
       transaction,
@@ -161,6 +186,6 @@ export async function activateStageInTransaction(
 
 export function activateStage(input: ActivateStageInput) {
   return withStageActivationTransaction((transaction) =>
-    activateStageInTransaction(transaction, input)
+    activateStageInTransaction(transaction, input),
   );
 }

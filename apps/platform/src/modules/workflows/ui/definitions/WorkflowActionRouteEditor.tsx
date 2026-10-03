@@ -6,6 +6,8 @@ import { z } from "zod";
 import { useEffect, useRef } from "react";
 
 import { GeneralButton } from "@/components/ui/button";
+import type { WorkflowActionType } from "../../domain/actions/WorkflowActionDefinition";
+import { previousWorkflowStageKeys } from "../../domain/transitions/WorkflowStageAncestry";
 import {
   FormInput,
   FormSelect,
@@ -36,6 +38,7 @@ type TargetType = "STAGE" | "TERMINAL";
 
 type Props = {
   actionKey: string;
+  actionType: WorkflowActionType;
   editor: WorkflowEditorView;
   onCancel: () => void;
   onSave: (route: WorkflowTransitionDefinition) => void;
@@ -64,6 +67,7 @@ function nextEnabledStageKey(
 
 export function WorkflowActionRouteEditor({
   actionKey,
+  actionType,
   editor,
   onCancel,
   onSave,
@@ -74,10 +78,23 @@ export function WorkflowActionRouteEditor({
   targetTypeConstraint,
 }: Props) {
   const conditionFields = useWorkflowConditionFields(editor, stage);
+  const isReturn = actionType === "RETURN";
+  const previousKeys = isReturn
+    ? previousWorkflowStageKeys(editor.graph, stage.stableKey)
+    : null;
+  const targetStages = editor.graph.stages.filter(
+    (candidate) =>
+      !previousKeys ||
+      (candidate.enabled && previousKeys.has(candidate.stableKey)),
+  );
+  let defaultTarget = nextEnabledStageKey(editor.graph.stages, stage);
+  if (isReturn) {
+    defaultTarget = targetStages.length === 1 ? targetStages[0].stableKey : "";
+  }
   const defaults = workflowTransitionFormDefaults(
     route,
     actionKey,
-    nextEnabledStageKey(editor.graph.stages, stage),
+    defaultTarget,
     priority,
   );
   const form = useForm<
@@ -87,9 +104,11 @@ export function WorkflowActionRouteEditor({
   >({
     defaultValues: {
       ...defaults,
-      targetType: route?.terminalOutcome
-        ? "TERMINAL"
-        : (targetTypeConstraint ?? defaults.targetType),
+      targetType: isReturn
+        ? "STAGE"
+        : route?.terminalOutcome
+          ? "TERMINAL"
+          : (targetTypeConstraint ?? defaults.targetType),
     },
     resolver: zodResolver(workflowTransitionFormSchema),
   });
@@ -138,7 +157,9 @@ export function WorkflowActionRouteEditor({
     { label: "Workflow stage", value: "STAGE" },
     { label: "Terminal outcome", value: "TERMINAL" },
   ].filter(
-    (item) => !targetTypeConstraint || item.value === targetTypeConstraint,
+    (item) =>
+      (!isReturn || item.value === "STAGE") &&
+      (!targetTypeConstraint || item.value === targetTypeConstraint),
   );
 
   return (
@@ -165,22 +186,32 @@ export function WorkflowActionRouteEditor({
         {targetType === "STAGE" ? (
           <FormSelect
             containerClassName="sm:col-span-2"
-            items={editor.graph.stages.map((item) => ({
+            items={targetStages.map((item) => ({
               label: item.name,
               value: item.stableKey,
             }))}
-            label="Target stages"
-            multiple
+            label={isReturn ? "Previous stage" : "Target stages"}
+            multiple={!isReturn}
             name="targetStageKeys"
+            onChange={(event) => {
+              form.setValue("targetStageKeys", [event.target.value], {
+                shouldDirty: true,
+                shouldValidate: true,
+              });
+            }}
             onMultipleChange={(values) =>
               form.setValue("targetStageKeys", values, {
                 shouldDirty: true,
                 shouldValidate: true,
               })
             }
-            placeholder="Select one or more stages"
+            placeholder={
+              isReturn
+                ? "Select the previous stage"
+                : "Select one or more stages"
+            }
             required
-            value={targetStageKeys}
+            value={isReturn ? (targetStageKeys[0] ?? "") : targetStageKeys}
           />
         ) : (
           <FormSelect

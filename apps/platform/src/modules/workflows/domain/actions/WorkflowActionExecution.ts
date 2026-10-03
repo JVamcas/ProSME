@@ -64,12 +64,17 @@ export const workflowActionInputSchema = z
       .object({
         ...commonInput,
         actionType: z.literal("RETURN"),
+        targetStageDefinitionId: z.uuid().optional(),
+        dataHandling: z.enum(["RETAIN", "CLEAR"]).optional(),
       })
       .strict(),
     z
       .object({
         ...commonInput,
         actionType: z.literal("REFER"),
+        targetStageDefinitionId: z.uuid().optional(),
+        sourceTaskBehavior: z.enum(["BLOCKED", "OPEN"]).optional(),
+        returnToReferrer: z.boolean().optional(),
         question: z.string().trim().min(1).max(4_000),
       })
       .strict(),
@@ -126,6 +131,13 @@ export const workflowActionInputSchema = z
       }),
   ])
   .superRefine((input, context) => {
+    if (input.actionType === "REFER") {
+      context.addIssue({
+        code: "custom",
+        message: "Refer has been removed. Use Return for rework.",
+        path: ["actionType"],
+      });
+    }
     if (
       input.actionType === "REQUEST_INFORMATION" &&
       input.editableFieldPaths.length === 0 &&
@@ -218,6 +230,9 @@ export function validateActionInputAgainstConfiguration(
   input: WorkflowActionInput,
   sourceStageKey: string,
 ): string | null {
+  if (action.actionType === "REFER") {
+    return "Refer has been removed. Use Return for rework.";
+  }
   if (action.actionType !== input.actionType) {
     return "The action payload type does not match the configured action.";
   }

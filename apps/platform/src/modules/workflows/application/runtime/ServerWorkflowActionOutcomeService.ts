@@ -2,9 +2,7 @@ import "server-only";
 
 import { withdrawFromWorkflowAction } from "@/modules/applications/ServerApplicationWithdrawalService";
 
-import {
-  type WorkflowActionExecutionTransaction,
-} from "../../infrastructure/WorkflowActionExecutionRepository";
+import { type WorkflowActionExecutionTransaction } from "../../infrastructure/WorkflowActionExecutionRepository";
 import { executeTerminalRejectInTransaction } from "./ServerRejectWorkflowActionService";
 import { executeSequentialTransitionInTransaction } from "./ServerSequentialTransitionService";
 import {
@@ -21,13 +19,20 @@ export type { ExecuteWorkflowActionInput } from "./WorkflowActionOutcomeSupport"
 async function executeTerminalReject(
   transaction: WorkflowActionExecutionTransaction,
   input: OutcomeInput,
-  transition: NonNullable<OutcomeInput["configuredTransitions"]["transitions"][number]>,
+  transition: NonNullable<
+    OutcomeInput["configuredTransitions"]["transitions"][number]
+  >,
   execution: { executedAt: string; executionId: string },
 ) {
-  if (!transition.terminalOutcome
-    || input.target.action.actionType !== "REJECT"
-    || input.target.action.configuration.outcome.type !== "TERMINAL") {
-    fail("INVALID_RUNTIME_CONTEXT", "The terminal rejection is not configured correctly.");
+  if (
+    !transition.terminalOutcome ||
+    input.target.action.actionType !== "REJECT" ||
+    input.target.action.configuration.outcome.type !== "TERMINAL"
+  ) {
+    fail(
+      "INVALID_RUNTIME_CONTEXT",
+      "The terminal rejection is not configured correctly.",
+    );
   }
   const result = buildExecutionResult({
     ...execution,
@@ -51,7 +56,8 @@ async function executeTerminalReject(
   const rejection = await executeTerminalRejectInTransaction(transaction, {
     actionKey: input.command.actionKey,
     actorId: input.actorId,
-    conditionEvaluation: input.conditions.transitionEvaluations[evaluationIndex]!,
+    conditionEvaluation:
+      input.conditions.transitionEvaluations[evaluationIndex]!,
     configuration: input.target.action.configuration.outcome,
     correlationId: input.command.correlationId,
     rejectedAt: new Date(execution.executedAt),
@@ -60,7 +66,10 @@ async function executeTerminalReject(
     workflowInstanceId: input.target.stage.workflowInstanceId,
   });
   if (!rejection) {
-    fail("ACTION_UNAVAILABLE", "The workflow changed before it could be rejected.");
+    fail(
+      "ACTION_UNAVAILABLE",
+      "The workflow changed before it could be rejected.",
+    );
   }
   return result;
 }
@@ -73,9 +82,10 @@ export async function executeConfiguredWorkflowActionOutcome(
     executedAt: new Date().toISOString(),
     executionId: crypto.randomUUID(),
   };
-  const configuredTransition = input.configuredTransitions.transitions.find(
-    (transition) => transition.id === input.conditions.selectedTransitionId,
-  ) ?? null;
+  const configuredTransition =
+    input.configuredTransitions.transitions.find(
+      (transition) => transition.id === input.conditions.selectedTransitionId,
+    ) ?? null;
   const controlOutcome = await executeWorkflowControlOutcome(
     transaction,
     input,
@@ -110,13 +120,17 @@ export async function executeConfiguredWorkflowActionOutcome(
     });
     return result;
   }
-  if (input.target.action.actionType === "WITHDRAW"
-    && input.command.input.actionType === "WITHDRAW") {
+  if (
+    input.target.action.actionType === "WITHDRAW" &&
+    input.command.input.actionType === "WITHDRAW"
+  ) {
     const application = input.target.stage.application;
-    if (typeof application.id !== "string"
-      || typeof application.reference !== "string"
-      || typeof application.rowVersion !== "number"
-      || application.status !== "submitted") {
+    if (
+      typeof application.id !== "string" ||
+      typeof application.reference !== "string" ||
+      typeof application.rowVersion !== "number" ||
+      application.status !== "submitted"
+    ) {
       fail("ACTION_UNAVAILABLE", "The application cannot be withdrawn.");
     }
     try {
@@ -134,7 +148,10 @@ export async function executeConfiguredWorkflowActionOutcome(
         withdrawnAt: new Date(execution.executedAt),
       });
     } catch {
-      fail("ACTION_UNAVAILABLE", "The workflow changed before withdrawal completed.");
+      fail(
+        "ACTION_UNAVAILABLE",
+        "The workflow changed before withdrawal completed.",
+      );
     }
     const result = buildExecutionResult({
       ...execution,
@@ -154,8 +171,10 @@ export async function executeConfiguredWorkflowActionOutcome(
     });
     return result;
   }
-  if (input.target.action.actionType === "REJECT"
-    && input.target.action.configuration.outcome.type === "TERMINAL") {
+  if (
+    input.target.action.actionType === "REJECT" &&
+    input.target.action.configuration.outcome.type === "TERMINAL"
+  ) {
     return executeTerminalReject(
       transaction,
       input,
@@ -163,9 +182,14 @@ export async function executeConfiguredWorkflowActionOutcome(
       execution,
     );
   }
-  if (input.target.action.actionType === "REJECT"
-    && configuredTransition?.terminalOutcome) {
-    fail("INVALID_RUNTIME_CONTEXT", "The rejection outcome does not match its transition.");
+  if (
+    input.target.action.actionType === "REJECT" &&
+    configuredTransition?.terminalOutcome
+  ) {
+    fail(
+      "INVALID_RUNTIME_CONTEXT",
+      "The rejection outcome does not match its transition.",
+    );
   }
   const transition = transitionResult(
     await executeSequentialTransitionInTransaction(transaction, {
@@ -190,7 +214,10 @@ export async function executeConfiguredWorkflowActionOutcome(
     ...input,
     ...execution,
     result,
-    terminalOutcome: configuredTransition?.terminalOutcome ?? null,
+    terminalOutcome:
+      transition.workflowStatus === "ACTIVE"
+        ? null
+        : (configuredTransition?.terminalOutcome ?? null),
   });
   return result;
 }

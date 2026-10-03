@@ -24,16 +24,13 @@ vi.mock(
   "@/modules/workflows/application/runtime/ServerStageActivationService",
   () => ({ activateStageInTransaction: vi.fn() }),
 );
-vi.mock(
-  "@/modules/workflows/infrastructure/WorkflowControlRepository",
-  () => ({
-    hasActiveWorkflowReferral: vi.fn().mockResolvedValue(false),
-    recordWorkflowReferral: vi.fn(),
-    recordWorkflowRework: vi.fn(),
-    resumeWorkflowHold: vi.fn(),
-    startWorkflowHold: vi.fn(),
-  }),
-);
+vi.mock("@/modules/workflows/infrastructure/WorkflowControlRepository", () => ({
+  hasActiveWorkflowReferral: vi.fn().mockResolvedValue(false),
+  recordWorkflowReferral: vi.fn(),
+  recordWorkflowRework: vi.fn(),
+  resumeWorkflowHold: vi.fn(),
+  startWorkflowHold: vi.fn(),
+}));
 
 import { withdrawFromWorkflowAction } from "@/modules/applications/ServerApplicationWithdrawalService";
 import { executeConfiguredWorkflowActionOutcome } from "@/modules/workflows/application/runtime/ServerWorkflowActionOutcomeService";
@@ -41,9 +38,6 @@ import { executeTerminalRejectInTransaction } from "@/modules/workflows/applicat
 import { executeSequentialTransitionInTransaction } from "@/modules/workflows/application/runtime/ServerSequentialTransitionService";
 import { recordWorkflowActionExecution } from "@/modules/workflows/infrastructure/WorkflowActionExecutionRepository";
 import { recordWorkflowDecision } from "@/modules/workflows/infrastructure/WorkflowDecisionRepository";
-import {
-  recordWorkflowRework,
-} from "@/modules/workflows/infrastructure/WorkflowControlRepository";
 
 const stageInstanceId = "10000000-0000-4000-8000-000000000001";
 const workflowInstanceId = "20000000-0000-4000-8000-000000000001";
@@ -217,71 +211,4 @@ describe("workflow action outcome service", () => {
     expect(recordWorkflowActionExecution).toHaveBeenCalledOnce();
     expect(executeSequentialTransitionInTransaction).not.toHaveBeenCalled();
   });
-
-  it("creates a new target iteration and durable rework record for Return", async () => {
-    const targetStageInstanceId = "b0000000-0000-4000-8000-000000000001";
-    vi.mocked(executeSequentialTransitionInTransaction).mockResolvedValue({
-      executionId: "c0000000-0000-4000-8000-000000000001",
-      kind: "transitioned",
-      targets: [{
-        outcome: "ACTIVATED",
-        targetStageDefinitionId: "d0000000-0000-4000-8000-000000000001",
-        targetStageInstanceId,
-        targetStageName: "Technical assessment",
-      }],
-      workflowStatus: "ACTIVE",
-    });
-    const returnTarget = {
-      ...target,
-      action: {
-        ...target.action,
-        actionType: "RETURN" as const,
-        configuration: {
-          dataHandling: "RETAIN" as const,
-          reasonRequired: true,
-        },
-        stableKey: "RETURN_REVIEW",
-      },
-    };
-    const result = await executeConfiguredWorkflowActionOutcome({} as never, {
-      actorId: "a0000000-0000-4000-8000-000000000001",
-      command: {
-        ...command,
-        actionKey: "RETURN_REVIEW",
-        input: { actionType: "RETURN", comment: "Rework the assessment." },
-      },
-      conditions: {
-        actionEvaluation: { evaluation: null, passed: true, resolutionError: null },
-        available: true,
-        selectedTransitionId: transitionId,
-        transitionEvaluations: [],
-      },
-      conditionContext: undefined,
-      configuredTransitions: {
-        actionExists: true,
-        transitions: [{
-          ...transition,
-          targetStages: [{
-            id: "d0000000-0000-4000-8000-000000000001",
-            name: "Technical assessment",
-          }],
-          terminalOutcome: null,
-        }],
-      },
-      resultingRuntimeVersion: 3,
-      target: returnTarget,
-    });
-    expect(result.transition.kind).toBe("STAGE_ACTIVATED");
-    expect(executeSequentialTransitionInTransaction).toHaveBeenCalledWith(
-      expect.anything(),
-      expect.objectContaining({
-        targetActivation: expect.objectContaining({ iterationStrategy: "NEXT" }),
-      }),
-    );
-    expect(recordWorkflowRework).toHaveBeenCalledWith(
-      expect.anything(),
-      expect.objectContaining({ targetStageInstanceId }),
-    );
-  });
-
 });

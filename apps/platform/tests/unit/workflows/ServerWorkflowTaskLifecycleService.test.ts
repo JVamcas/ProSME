@@ -1,9 +1,14 @@
+vi.mock(
+  "@/modules/workflows/infrastructure/WorkflowReviewThresholdRepository",
+  () => ({
+    recordReviewThresholdEvaluations: vi.fn(),
+  }),
+);
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 vi.mock("@/modules/workflows/infrastructure/StageCompletionRepository", () => ({
   loadRequiredTaskCompletions: vi.fn().mockResolvedValue([]),
-  recordReviewThresholdEvaluations: vi.fn(),
 }));
 vi.mock(
   "@/modules/workflows/application/runtime/ServerStageCompletionService",
@@ -97,6 +102,31 @@ beforeEach(() => {
 });
 
 describe("server workflow task lifecycle service", () => {
+  it("prevents completion while a blocking referral is active", async () => {
+    vi.mocked(lockWorkflowTaskForLifecycle).mockResolvedValue({
+      ...task,
+      assignedUserId: actor.id,
+      status: "IN_PROGRESS",
+      hasBlockingReferral: true,
+    });
+    await expect(completeWorkflowTask(actor, input)).rejects.toThrow(
+      "blocked until its referral",
+    );
+    expect(persistWorkflowTaskTransition).not.toHaveBeenCalled();
+  });
+
+  it("allows completion while a nonblocking referral is active", async () => {
+    vi.mocked(lockWorkflowTaskForLifecycle).mockResolvedValue({
+      ...task,
+      assignedUserId: actor.id,
+      status: "IN_PROGRESS",
+      hasBlockingReferral: false,
+    });
+    await expect(completeWorkflowTask(actor, input)).resolves.toMatchObject({
+      status: "COMPLETED",
+    });
+  });
+
   it("starts a pending task assigned to the actor", async () => {
     vi.mocked(lockWorkflowTaskForLifecycle).mockResolvedValue({
       ...task,
@@ -117,8 +147,9 @@ describe("server workflow task lifecycle service", () => {
       status: "PENDING",
     });
 
-    await expect(startWorkflowTask(actor, input)).rejects
-      .toBeInstanceOf(ResourceConflictError);
+    await expect(startWorkflowTask(actor, input)).rejects.toBeInstanceOf(
+      ResourceConflictError,
+    );
     expect(persistWorkflowTaskTransition).not.toHaveBeenCalled();
   });
 
@@ -143,8 +174,9 @@ describe("server workflow task lifecycle service", () => {
   });
 
   it("rejects invalid direct completion from pending", async () => {
-    await expect(completeWorkflowTask(actor, input)).rejects
-      .toBeInstanceOf(ResourceConflictError);
+    await expect(completeWorkflowTask(actor, input)).rejects.toBeInstanceOf(
+      ResourceConflictError,
+    );
     expect(persistWorkflowTaskTransition).not.toHaveBeenCalled();
   });
 
@@ -162,8 +194,9 @@ describe("server workflow task lifecycle service", () => {
       status: "PENDING",
     });
 
-    await expect(startWorkflowTask(actor, input)).rejects
-      .toBeInstanceOf(ResourceConflictError);
+    await expect(startWorkflowTask(actor, input)).rejects.toBeInstanceOf(
+      ResourceConflictError,
+    );
     expect(persistWorkflowTaskTransition).not.toHaveBeenCalled();
   });
 });

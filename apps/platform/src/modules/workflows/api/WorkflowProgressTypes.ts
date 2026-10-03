@@ -9,12 +9,15 @@ export type WorkflowProgressTask = {
   assignedUserEmail: string | null;
   assignedUserName: string | null;
   canOpen: boolean;
+  blockedReason?: string | null;
   dueAt: string | null;
   id: string;
   name: string;
   required: boolean;
   status: string;
   taskType: WorkflowTaskType;
+  planned?: boolean;
+  configuredReviewerCount?: number;
 };
 
 export type WorkflowProgressStage = {
@@ -26,7 +29,8 @@ export type WorkflowProgressStage = {
   name: string;
   sequence: number;
   stableKey: string;
-  status: StageInstanceStatus;
+  returnedAt?: string | null;
+  status: StageInstanceStatus | "RETURNED";
   tasks: WorkflowProgressTask[];
 };
 

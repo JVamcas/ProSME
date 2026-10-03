@@ -85,6 +85,7 @@ describe("workflow progress authorization", () => {
       reviewerCount: 3,
       reviewRelease: "STAGE_COMPLETED" as const,
       thresholdSatisfied: false,
+      prerequisitesComplete: true,
       assignedUserName: "Staff member",
       dueAt: null,
       id: "task-one",
@@ -168,5 +169,58 @@ describe("workflow progress authorization", () => {
       status: "PENDING",
     });
     expect(progress?.stages[0].tasks[1].id).not.toBe("task-two");
+
+    const record = await readWorkflowProgress(applicationId);
+    for (const prerequisitesComplete of [false, true]) {
+      vi.mocked(readWorkflowProgress).mockResolvedValue({
+        ...record!,
+        stages: record!.stages.map((stage) => ({
+          ...stage,
+          tasks: [
+            {
+              ...task,
+              taskType: "STAGE_DECISION",
+              prerequisitesComplete,
+            },
+          ],
+        })),
+      });
+      const decisionProgress = await getWorkflowProgress(
+        {
+          ...actor,
+          capabilities: new Set([
+            permissionCodes.workflowInstanceAllRead,
+            permissionCodes.workflowTaskAssignedRead,
+          ]),
+        },
+        applicationId,
+      );
+      expect(decisionProgress?.stages[0].tasks[0]).toMatchObject({
+        canOpen: prerequisitesComplete,
+        blockedReason: prerequisitesComplete
+          ? null
+          : "Complete all contributing tasks before making the stage decision.",
+      });
+      expect(decisionProgress?.stages[0].tasks[0])
+        .not.toHaveProperty("prerequisitesComplete");
+    }
+    vi.mocked(readWorkflowProgress).mockResolvedValue({
+      ...record!,
+      stages: record!.stages.map((stage) => ({
+        ...stage,
+        status: "RETURNED",
+        returnedAt: "2026-09-20T10:00:00.000Z",
+      })),
+    });
+    const returned = await getWorkflowProgress({
+      ...actor,
+      capabilities: new Set([
+        permissionCodes.workflowInstanceAllRead,
+        permissionCodes.workflowTaskAssignedRead,
+      ]),
+    }, applicationId);
+    expect(returned?.stages[0].tasks.map((item) => item.canOpen))
+      .toEqual([false, false, false]);
+    expect(returned?.stages[0].tasks[1].id).toBe("task-two");
   });
 });

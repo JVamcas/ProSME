@@ -12,6 +12,11 @@ import {
 } from "@/db/schema";
 import type { WorkflowActionExecutionTransaction } from "./WorkflowActionExecutionRepository";
 
+import {
+  loadWorkflowReferralReturn,
+  routeWorkflowReferralReturn,
+} from "./WorkflowReferralRoutingRepository";
+
 type ControlTransaction = WorkflowActionExecutionTransaction;
 
 export async function appendControlRecords(
@@ -65,17 +70,20 @@ export async function recordWorkflowRework(
     workflowInstanceId: string;
   },
 ) {
-  const [rework] = await transaction.insert(workflowReworks).values({
-    actionExecutionId: input.actionExecutionId,
-    continuationStageInstanceId: input.continuationStageInstanceId,
-    createdBy: input.actorId,
-    dataHandling: input.dataHandling,
-    reason: input.reason,
-    sourceStageInstanceId: input.sourceStageInstanceId,
-    sourceTaskId: input.sourceTaskId,
-    targetStageInstanceId: input.targetStageInstanceId,
-    workflowInstanceId: input.workflowInstanceId,
-  }).returning({ id: workflowReworks.id });
+  const [rework] = await transaction
+    .insert(workflowReworks)
+    .values({
+      actionExecutionId: input.actionExecutionId,
+      continuationStageInstanceId: input.continuationStageInstanceId,
+      createdBy: input.actorId,
+      dataHandling: input.dataHandling,
+      reason: input.reason,
+      sourceStageInstanceId: input.sourceStageInstanceId,
+      sourceTaskId: input.sourceTaskId,
+      targetStageInstanceId: input.targetStageInstanceId,
+      workflowInstanceId: input.workflowInstanceId,
+    })
+    .returning({ id: workflowReworks.id });
   await appendControlRecords(transaction, {
     action: "WORKFLOW_REWORK_STARTED",
     actorId: input.actorId,
@@ -103,10 +111,12 @@ export async function hasActiveWorkflowReferral(
   const [referral] = await transaction
     .select({ id: workflowReferrals.id })
     .from(workflowReferrals)
-    .where(and(
-      eq(workflowReferrals.sourceTaskId, sourceTaskId),
-      eq(workflowReferrals.status, "ACTIVE"),
-    ))
+    .where(
+      and(
+        eq(workflowReferrals.sourceTaskId, sourceTaskId),
+        eq(workflowReferrals.status, "ACTIVE"),
+      ),
+    )
     .limit(1);
   return Boolean(referral);
 }
@@ -126,17 +136,20 @@ export async function recordWorkflowReferral(
     workflowInstanceId: string;
   },
 ) {
-  const [referral] = await transaction.insert(workflowReferrals).values({
-    actionExecutionId: input.actionExecutionId,
-    question: input.question,
-    referredBy: input.actorId,
-    referredStageInstanceId: input.referredStageInstanceId,
-    returnToReferrer: input.returnToReferrer ? "YES" : "NO",
-    sourceStageInstanceId: input.sourceStageInstanceId,
-    sourceTaskBehavior: input.sourceTaskBehavior,
-    sourceTaskId: input.sourceTaskId,
-    workflowInstanceId: input.workflowInstanceId,
-  }).returning({ id: workflowReferrals.id });
+  const [referral] = await transaction
+    .insert(workflowReferrals)
+    .values({
+      actionExecutionId: input.actionExecutionId,
+      question: input.question,
+      referredBy: input.actorId,
+      referredStageInstanceId: input.referredStageInstanceId,
+      returnToReferrer: input.returnToReferrer ? "YES" : "NO",
+      sourceStageInstanceId: input.sourceStageInstanceId,
+      sourceTaskBehavior: input.sourceTaskBehavior,
+      sourceTaskId: input.sourceTaskId,
+      workflowInstanceId: input.workflowInstanceId,
+    })
+    .returning({ id: workflowReferrals.id });
   await appendControlRecords(transaction, {
     action: "WORKFLOW_REFERRAL_STARTED",
     actorId: input.actorId,
@@ -166,26 +179,63 @@ export async function completeWorkflowReferralForStage(
   },
 ) {
   const resolvedAt = new Date();
-  const [referral] = await transaction.update(workflowReferrals).set({
-    resolvedAt,
-    resolvedBy: input.actorId,
-    status: "COMPLETED",
-  }).where(and(
-    eq(workflowReferrals.referredStageInstanceId, input.referredStageInstanceId),
-    eq(workflowReferrals.status, "ACTIVE"),
-  )).returning({
-    id: workflowReferrals.id,
-    sourceStageInstanceId: workflowReferrals.sourceStageInstanceId,
-    sourceTaskId: workflowReferrals.sourceTaskId,
-    workflowInstanceId: workflowReferrals.workflowInstanceId,
-  });
+  const [referral] = await transaction
+    .update(workflowReferrals)
+    .set({
+      resolvedAt,
+      resolvedBy: input.actorId,
+      status: "COMPLETED",
+    })
+    .where(
+      and(
+        eq(
+          workflowReferrals.referredStageInstanceId,
+          input.referredStageInstanceId,
+        ),
+        eq(workflowReferrals.status, "ACTIVE"),
+      ),
+    )
+    .returning({
+      id: workflowReferrals.id,
+      returnToReferrer: workflowReferrals.returnToReferrer,
+      sourceStageInstanceId: workflowReferrals.sourceStageInstanceId,
+      sourceTaskId: workflowReferrals.sourceTaskId,
+      workflowInstanceId: workflowReferrals.workflowInstanceId,
+    });
   if (!referral) return null;
+  const returnTarget =
+    referral.returnToReferrer === "YES"
+      ? await loadWorkflowReferralReturn(
+          transaction,
+          input.referredStageInstanceId,
+        )
+      : null;
+  if (returnTarget) {
+    await routeWorkflowReferralReturn(transaction, returnTarget);
+    await appendControlRecords(transaction, {
+      action: "WORKFLOW_REFERRAL_RETURNED",
+      actorId: input.actorId,
+      after: {
+        referredStageInstanceId: input.referredStageInstanceId,
+        sourceStageInstanceId: referral.sourceStageInstanceId,
+        sourceTaskId: referral.sourceTaskId,
+      },
+      correlationId: input.correlationId,
+      stageInstanceId: referral.sourceStageInstanceId,
+      targetId: referral.id,
+      targetType: "WORKFLOW_REFERRAL",
+      taskId: referral.sourceTaskId,
+      workflowInstanceId: referral.workflowInstanceId,
+    });
+  }
   await appendControlRecords(transaction, {
     action: "WORKFLOW_REFERRAL_COMPLETED",
     actorId: input.actorId,
     after: {
       referredStageInstanceId: input.referredStageInstanceId,
       resolvedAt: resolvedAt.toISOString(),
+      returnToReferrer: referral.returnToReferrer === "YES",
+      routing: returnTarget ? "RETURNED_TO_REFERRER" : "CONTINUE_WORKFLOW",
     },
     correlationId: input.correlationId,
     stageInstanceId: referral.sourceStageInstanceId,
@@ -194,7 +244,7 @@ export async function completeWorkflowReferralForStage(
     taskId: referral.sourceTaskId,
     workflowInstanceId: referral.workflowInstanceId,
   });
-  return referral;
+  return { ...referral, returnTarget };
 }
 
 export async function startWorkflowHold(
@@ -211,24 +261,33 @@ export async function startWorkflowHold(
     workflowInstanceId: string;
   },
 ) {
-  const [blocked] = await transaction.update(stageInstances).set({
-    status: "BLOCKED",
-  }).where(and(
-    eq(stageInstances.id, input.stageInstanceId),
-    eq(stageInstances.status, "ACTIVE"),
-  )).returning({ id: stageInstances.id });
+  const [blocked] = await transaction
+    .update(stageInstances)
+    .set({
+      status: "BLOCKED",
+    })
+    .where(
+      and(
+        eq(stageInstances.id, input.stageInstanceId),
+        eq(stageInstances.status, "ACTIVE"),
+      ),
+    )
+    .returning({ id: stageInstances.id });
   if (!blocked) return null;
-  const [hold] = await transaction.insert(workflowHolds).values({
-    actionExecutionId: input.actionExecutionId,
-    comment: input.comment,
-    heldBy: input.actorId,
-    previousStageStatus: "ACTIVE",
-    reason: input.reason,
-    reviewAt: input.reviewAt,
-    stageInstanceId: input.stageInstanceId,
-    taskId: input.taskId,
-    workflowInstanceId: input.workflowInstanceId,
-  }).returning({ id: workflowHolds.id, heldAt: workflowHolds.heldAt });
+  const [hold] = await transaction
+    .insert(workflowHolds)
+    .values({
+      actionExecutionId: input.actionExecutionId,
+      comment: input.comment,
+      heldBy: input.actorId,
+      previousStageStatus: "ACTIVE",
+      reason: input.reason,
+      reviewAt: input.reviewAt,
+      stageInstanceId: input.stageInstanceId,
+      taskId: input.taskId,
+      workflowInstanceId: input.workflowInstanceId,
+    })
+    .returning({ id: workflowHolds.id, heldAt: workflowHolds.heldAt });
   await appendControlRecords(transaction, {
     action: "WORKFLOW_HOLD_STARTED",
     actorId: input.actorId,
@@ -261,21 +320,33 @@ export async function resumeWorkflowHold(
   },
 ) {
   const resumedAt = new Date();
-  const [hold] = await transaction.update(workflowHolds).set({
-    resumedAt,
-    resumedBy: input.actorId,
-    status: "RESUMED",
-  }).where(and(
-    eq(workflowHolds.stageInstanceId, input.stageInstanceId),
-    eq(workflowHolds.status, "ACTIVE"),
-  )).returning({ id: workflowHolds.id, heldAt: workflowHolds.heldAt });
+  const [hold] = await transaction
+    .update(workflowHolds)
+    .set({
+      resumedAt,
+      resumedBy: input.actorId,
+      status: "RESUMED",
+    })
+    .where(
+      and(
+        eq(workflowHolds.stageInstanceId, input.stageInstanceId),
+        eq(workflowHolds.status, "ACTIVE"),
+      ),
+    )
+    .returning({ id: workflowHolds.id, heldAt: workflowHolds.heldAt });
   if (!hold) return null;
-  const [stage] = await transaction.update(stageInstances).set({
-    status: "ACTIVE",
-  }).where(and(
-    eq(stageInstances.id, input.stageInstanceId),
-    eq(stageInstances.status, "BLOCKED"),
-  )).returning({ id: stageInstances.id });
+  const [stage] = await transaction
+    .update(stageInstances)
+    .set({
+      status: "ACTIVE",
+    })
+    .where(
+      and(
+        eq(stageInstances.id, input.stageInstanceId),
+        eq(stageInstances.status, "BLOCKED"),
+      ),
+    )
+    .returning({ id: stageInstances.id });
   if (!stage) return null;
   await appendControlRecords(transaction, {
     action: "WORKFLOW_HOLD_ENDED",

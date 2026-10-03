@@ -9,12 +9,8 @@ import type { DatabaseTransaction } from "@/db/client";
 import type { JsonValue } from "@/modules/conditions/domain/Operand";
 import { readWorkflowEligibilityValueRecords } from "@/modules/workflows/infrastructure/WorkflowEligibilityValueRepository";
 import { readEligibilityQuestionResponseRecords } from "@/modules/workflows/infrastructure/WorkflowEligibilityValueRepository";
-import type {
-  EligibilityEvaluationRuleSet,
-} from "../domain/EligibilityEvaluation";
-import type {
-  EligibilityScreeningSourceKind,
-} from "../domain/EligibilityInputDefinition";
+import type { EligibilityEvaluationRuleSet } from "../domain/EligibilityEvaluation";
+import type { EligibilityScreeningSourceKind } from "../domain/EligibilityInputDefinition";
 import { listEligibilityInputs } from "../infrastructure/EligibilityInputRepository";
 import {
   eligibilityInputPathsForEvaluation,
@@ -38,6 +34,7 @@ type ScreeningResolutionInput = {
   fundingCallId: string;
   fundingCallValues: SourceObject;
   ruleSet: EligibilityEvaluationRuleSet;
+  workflowTaskId?: string | null;
 };
 
 function valueAtPath(
@@ -47,10 +44,10 @@ function valueAtPath(
   let current: JsonValue = values;
   for (const segment of path.split(".")) {
     if (
-      current === null
-      || Array.isArray(current)
-      || typeof current !== "object"
-      || !Object.hasOwn(current, segment)
+      current === null ||
+      Array.isArray(current) ||
+      typeof current !== "object" ||
+      !Object.hasOwn(current, segment)
     ) {
       return undefined;
     }
@@ -68,24 +65,28 @@ function objectReader(input: {
   return {
     async read(requests) {
       return requests.flatMap((request): EligibilitySourceRecord[] => {
-        const stableBusinessSource = input.allowStableBusinessFields
-          && request.binding.sourceVersionId === null
-          && request.binding.sourceDefinitionId
-            === attachedBusinessSourceDefinitionId
-          && attachedBusinessFieldKeys.has(request.binding.sourceKey);
+        const stableBusinessSource =
+          input.allowStableBusinessFields &&
+          request.binding.sourceVersionId === null &&
+          request.binding.sourceDefinitionId ===
+            attachedBusinessSourceDefinitionId &&
+          attachedBusinessFieldKeys.has(request.binding.sourceKey);
         if (
-          request.binding.sourceVersionId !== input.sourceVersionId
-          && !stableBusinessSource
-        ) return [];
+          request.binding.sourceVersionId !== input.sourceVersionId &&
+          !stableBusinessSource
+        )
+          return [];
         const value = valueAtPath(input.values, request.binding.sourceKey);
         if (value === undefined) return [];
-        return [{
-          sourceDefinitionId: request.binding.sourceDefinitionId,
-          sourceKey: request.binding.sourceKey,
-          sourceRecordId: input.recordId,
-          sourceVersionId: request.binding.sourceVersionId,
-          values: { value },
-        }];
+        return [
+          {
+            sourceDefinitionId: request.binding.sourceDefinitionId,
+            sourceKey: request.binding.sourceKey,
+            sourceRecordId: input.recordId,
+            sourceVersionId: request.binding.sourceVersionId,
+            values: { value },
+          },
+        ];
       });
     },
   };
@@ -137,19 +138,20 @@ export async function resolveAuthoritativeEligibilityData(
           values: input.fundingCallValues,
         }),
       ),
-      ...workflowKinds.map((sourceKind) => createEligibilitySourceAdapter(
-        sourceKind,
-        workflowReader(input.database, sourceKind),
-      )),
-      createEligibilitySourceAdapter(
-        "ELIGIBILITY_QUESTION_RESPONSE",
-        {
-          read: (requests) => readEligibilityQuestionResponseRecords(
+      ...workflowKinds.map((sourceKind) =>
+        createEligibilitySourceAdapter(
+          sourceKind,
+          workflowReader(input.database, sourceKind),
+        ),
+      ),
+      createEligibilitySourceAdapter("ELIGIBILITY_QUESTION_RESPONSE", {
+        read: (requests) =>
+          readEligibilityQuestionResponseRecords(
             requests,
             input.database,
+            input.workflowTaskId,
           ),
-        },
-      ),
+      }),
       createEligibilityIntegrationOutputAdapter(input.database),
     ],
     applicationId: input.applicationId,

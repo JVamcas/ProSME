@@ -6,6 +6,7 @@ import { getDatabase } from "@/db/client";
 import type { TaskDetail } from "@/modules/work-queue/TaskTypes";
 import type { WorkflowElementPermissions } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
 import { workflowTaskEffectiveDeadline } from "./WorkflowSlaDeadline";
+import { workflowDocumentEvidenceIsCurrent } from "./WorkflowDocumentEvidenceReadiness";
 
 type TaskDetailRow = Omit<
   TaskDetail,
@@ -78,6 +79,7 @@ export async function readWorkflowTask(
               SELECT 1 FROM app_workflow_document_evidence_versions evidence
               WHERE evidence.application_id = application.id
                 AND evidence.requirement_id = document.id
+                AND ${workflowDocumentEvidenceIsCurrent(sql`task.id`)}
                 AND (evidence.valid_until IS NULL OR evidence.valid_until > now())
             ) THEN 'SUPPLIED'
             WHEN EXISTS (
@@ -85,6 +87,7 @@ export async function readWorkflowTask(
               JOIN app_workflow_rfis rfi ON rfi.id = request.rfi_id
               WHERE request.requirement_id = document.id
                 AND rfi.application_id = application.id
+                AND rfi.task_id = task.id
                 AND rfi.status = 'OPEN'
             ) THEN 'REQUESTED'
             WHEN EXISTS (
@@ -92,6 +95,7 @@ export async function readWorkflowTask(
               JOIN app_workflow_rfis rfi ON rfi.id = request.rfi_id
               WHERE request.requirement_id = document.id
                 AND rfi.application_id = application.id
+                AND rfi.task_id = task.id
                 AND rfi.status = 'EXPIRED'
             ) THEN 'EXPIRED'
             ELSE 'MISSING'
@@ -111,6 +115,7 @@ export async function readWorkflowTask(
             FROM app_workflow_document_evidence_versions evidence
             WHERE evidence.application_id = application.id
               AND evidence.requirement_id = document.id
+              AND ${workflowDocumentEvidenceIsCurrent(sql`task.id`)}
             ORDER BY evidence.version_number DESC
             LIMIT 1
           )

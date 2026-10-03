@@ -267,8 +267,8 @@ function closeOut(dependencies: StandardWorkflowDependencies) {
     approve("CLOSE", "Close", 1),
     approve("CLOSE_QUALIFIED", "Close with qualification", 2),
     approve(
-      "REFER_RECOVERY_INVESTIGATION",
-      "Refer for recovery or investigation",
+      "SEND_RECOVERY_INVESTIGATION",
+      "Send to recovery or investigation",
       3,
     ),
     reject("RESTRICT_FUTURE_FUNDING", "Restrict future funding", 4),

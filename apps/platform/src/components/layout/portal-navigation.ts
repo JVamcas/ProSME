@@ -50,7 +50,7 @@ export const applicantPortalRoutes: readonly PortalRoute[] = [
   {
     id: "funding-opportunities",
     href: "/portal/funding-opportunities",
-    label: "Funding opportunities",
+    label: "Funding Calls",
     icon: BriefcaseBusiness,
     space: "applicant",
   },

@@ -3,6 +3,7 @@ import { can } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup";
 import type { WorkflowElementPermissions } from "../../domain/definitions/WorkflowElementPermissions";
+import { isWorkflowStageDecisionAction } from "../../domain/actions/WorkflowActionDefinition";
 import type { WorkflowActionDefinition } from "../../domain/actions/WorkflowActionDefinition";
 import {
   evaluateStageCondition,
@@ -32,10 +33,7 @@ type ActionPolicyTask = {
   status: string;
 } | null;
 
-type PolicyAction = Pick<
-  WorkflowActionDefinition,
-  "actionType" | "enabled"
->;
+type PolicyAction = Pick<WorkflowActionDefinition, "actionType" | "enabled">;
 
 export type WorkflowActionPolicyTarget = {
   approvalEligibilityReady?: boolean;
@@ -138,22 +136,23 @@ export function evaluateWorkflowActionPolicy(
     );
   }
   const resuming = target.action.actionType === "RESUME";
-  if (target.workflowStatus !== "ACTIVE"
-    || (resuming
+  if (
+    target.workflowStatus !== "ACTIVE" ||
+    (resuming
       ? target.stageStatus !== "BLOCKED"
-      : target.stageStatus !== "ACTIVE")
-    || (target.task
-      && !["PENDING", "IN_PROGRESS"].includes(target.task.status))) {
+      : target.stageStatus !== "ACTIVE") ||
+    (target.task && !["PENDING", "IN_PROGRESS"].includes(target.task.status))
+  ) {
     return unavailable(
       "INVALID_STATE",
       "This action is not available in the current state.",
     );
   }
   const resumableControl = Boolean(
-    target.activeHold
-    || target.activeDeferral
-    || target.task?.activeHold
-    || target.task?.activeDeferral,
+    target.activeHold ||
+    target.activeDeferral ||
+    target.task?.activeHold ||
+    target.task?.activeDeferral,
   );
   if (resumableControl !== resuming) {
     return unavailable(
@@ -170,33 +169,33 @@ export function evaluateWorkflowActionPolicy(
     );
   }
   if (
-    (target.activeDeferral || target.task?.activeDeferral)
-    && !["RESUME", "WITHDRAW"].includes(target.action.actionType)
+    (target.activeDeferral || target.task?.activeDeferral) &&
+    !["RESUME", "WITHDRAW"].includes(target.action.actionType)
   ) {
     return unavailable(
       "INVALID_STATE",
       "This work is deferred until its configured continuation is available.",
     );
   }
-  if (
-    target.task?.activeReferral
-    && target.action.actionType !== "WITHDRAW"
-  ) {
+  if (target.task?.activeReferral && target.action.actionType !== "WITHDRAW") {
     return unavailable(
       "INVALID_STATE",
       "This work is blocked until its referral is completed.",
     );
   }
-  if (target.task?.activeEscalation && target.action.actionType === "ESCALATE") {
+  if (
+    target.task?.activeEscalation &&
+    target.action.actionType === "ESCALATE"
+  ) {
     return unavailable(
       "INVALID_STATE",
       "This task already has an active escalation.",
     );
   }
   if (
-    target.task?.activeEscalationBlocks
-    && !target.task.activeEscalationTargetActor
-    && target.action.actionType !== "WITHDRAW"
+    target.task?.activeEscalationBlocks &&
+    !target.task.activeEscalationTargetActor &&
+    target.action.actionType !== "WITHDRAW"
   ) {
     return unavailable(
       "CONTEXT_MISMATCH",
@@ -219,20 +218,31 @@ export function evaluateWorkflowActionPolicy(
       "This action is not available to you.",
     );
   }
-  if (target.action.actionType === "APPROVE_ADVANCE"
-    && target.approvalEligibilityReady === false) {
+  if (target.action.actionType === "REFER") {
+    return unavailable("INVALID_CONFIGURATION", "Refer has been removed.");
+  }
+  if (
+    target.action.actionType === "APPROVE_ADVANCE" &&
+    target.approvalEligibilityReady === false
+  ) {
     return unavailable(
       "INVALID_STATE",
       "A current eligibility evaluation without hard failures is required to advance.",
     );
   }
-  if (target.task?.eligibilityReady === false) {
+  if (
+    isWorkflowStageDecisionAction(target.action.actionType) &&
+    target.task?.eligibilityReady === false
+  ) {
     return unavailable(
       "INVALID_STATE",
       "Run eligibility using the current answers before choosing an action.",
     );
   }
-  if (target.task?.prerequisitesComplete === false) {
+  if (
+    isWorkflowStageDecisionAction(target.action.actionType) &&
+    target.task?.prerequisitesComplete === false
+  ) {
     return unavailable(
       "INVALID_STATE",
       "Complete all contributing tasks before making the stage decision.",

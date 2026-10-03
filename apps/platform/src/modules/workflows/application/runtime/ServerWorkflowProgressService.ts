@@ -2,7 +2,10 @@ import "server-only";
 
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { can, requirePermission } from "@/auth/authorization/policy";
+import { PermissionDeniedError } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
+import type { WorkflowProgressView } from "../../api/WorkflowProgressTypes";
+import { readAssignedWorkflowProgressContext } from "../../infrastructure/WorkflowProgressAccessRepository";
 import { findWorkflowGraph } from "../../infrastructure/WorkflowGraphRepository";
 import {
   readWorkflowProgress,
@@ -12,13 +15,29 @@ import {
 export async function getWorkflowProgress(
   user: AuthenticatedUser | null,
   applicationId: string,
-) {
+  context?: { taskId: string },
+): Promise<WorkflowProgressView | null> {
   const actor = requirePermission(
     user,
-    permissionCodes.workflowInstanceAllRead,
+    context && !can(user, permissionCodes.workflowInstanceAllRead)
+      ? permissionCodes.workflowInstanceAssignedRead
+      : permissionCodes.workflowInstanceAllRead,
   );
+  let assignedInstanceId: string | undefined;
+  if (context) {
+    requirePermission(actor, permissionCodes.workflowTaskAssignedRead);
+    const task = await readAssignedWorkflowProgressContext(actor.id, context.taskId);
+    if (!task || task.applicationId !== applicationId) {
+      throw new PermissionDeniedError(permissionCodes.workflowInstanceAssignedRead);
+    }
+    requirePermission(actor, task.viewPermission);
+    assignedInstanceId = task.workflowInstanceId;
+  }
   const progress = await readWorkflowProgress(applicationId);
   if (!progress) return null;
+  if (assignedInstanceId && progress.id !== assignedInstanceId) {
+    throw new PermissionDeniedError(permissionCodes.workflowInstanceAssignedRead);
+  }
 
   // The instance determines which immutable template version supplies its flow.
   const { versionId, ...details } = progress;
@@ -45,7 +64,7 @@ export async function getWorkflowProgress(
             task.reviewRelease === "IMMEDIATE" ||
             (task.reviewRelease === "THRESHOLD_MET" &&
               task.thresholdSatisfied) ||
-            stage.status === "COMPLETED";
+            (stage.status === "COMPLETED" || stage.status === "RETURNED");
           const peerIsHidden =
             !released &&
             task.reviewerCount !== null &&
@@ -61,6 +80,7 @@ export async function getWorkflowProgress(
             reviewerCount: _reviewerCount,
             reviewRelease: _reviewRelease,
             thresholdSatisfied: _thresholdSatisfied,
+            prerequisitesComplete,
             ...details
           } = task;
           void _taskDefinitionId;
@@ -86,9 +106,19 @@ export async function getWorkflowProgress(
             ? assignedUserId === actor.id
             : assignedRoleCode !== null &&
               actor.roleCodes.has(assignedRoleCode);
+          const blockedReason =
+            progress.status === "ACTIVE" &&
+            stage.status === "ACTIVE" &&
+            task.taskType === "STAGE_DECISION" &&
+            ["PENDING", "IN_PROGRESS"].includes(task.status) &&
+            prerequisitesComplete === false
+              ? "Complete all contributing tasks before making the stage decision."
+              : null;
           return {
             ...details,
+            blockedReason,
             canOpen:
+              !blockedReason &&
               progress.status === "ACTIVE" &&
               stage.status === "ACTIVE" &&
               assigned &&

@@ -106,11 +106,13 @@ export function ApplicationDetailContent({
   model,
   requests,
   workflowProgress,
+  initialTab = "overview",
 }: {
   actions?: ReactNode;
   model: ApplicationDetailModel;
   requests?: ReactNode;
   workflowProgress?: ReactNode;
+  initialTab?: "overview" | "workflow-progress";
 }) {
   return (
     <div className="space-y-4">
@@ -119,7 +121,11 @@ export function ApplicationDetailContent({
         <Tabs
           accent="orange"
           ariaLabel="Application detail sections"
-          defaultSelectedId="overview"
+          defaultSelectedId={
+            initialTab === "workflow-progress" && workflowProgress
+              ? "workflow-progress"
+              : "overview"
+          }
           items={[
             {
               content: (
@@ -138,18 +144,22 @@ export function ApplicationDetailContent({
               label: `Documents (${model.documents.length})`,
             },
             ...(requests
-              ? [{
-                  content: requests,
-                  id: "information-requests",
-                  label: "Requests for information",
-                }]
+              ? [
+                  {
+                    content: requests,
+                    id: "information-requests",
+                    label: "Requests for information",
+                  },
+                ]
               : []),
             ...(workflowProgress
-              ? [{
-                  content: workflowProgress,
-                  id: "workflow-progress",
-                  label: "Workflow Progress",
-                }]
+              ? [
+                  {
+                    content: workflowProgress,
+                    id: "workflow-progress",
+                    label: "Workflow Progress",
+                  },
+                ]
               : []),
           ]}
           leadingContent={
@@ -194,11 +204,13 @@ export function ApplicationDetailView({
   model,
   requests,
   workflowProgress,
+  initialTab = "overview",
 }: {
   actions?: ReactNode;
   model: ApplicationDetailModel;
   requests?: ReactNode;
   workflowProgress?: ReactNode;
+  initialTab?: "overview" | "workflow-progress";
 }) {
   return (
     <PageShell
@@ -218,6 +230,7 @@ export function ApplicationDetailView({
         model={model}
         requests={requests}
         workflowProgress={workflowProgress}
+        initialTab={initialTab}
       />
     </PageShell>
   );

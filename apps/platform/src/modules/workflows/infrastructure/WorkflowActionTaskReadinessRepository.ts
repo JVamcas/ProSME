@@ -2,12 +2,17 @@ import "server-only";
 
 import { eq, sql } from "drizzle-orm";
 import { stageTaskDefinitions, workflowTasks } from "@/db/schema";
-import { taskWorkIsReady } from "../WorkflowTaskRegistry";
+import {
+  taskRunsAuthoritativeEligibility,
+  taskWorkIsReady,
+} from "../WorkflowTaskRegistry";
 import type { StageCompletionTransaction } from "./StageCompletionRepository";
+import { workflowTaskDocumentRequirements } from "./WorkflowDocumentEvidenceReadiness";
 
 export async function readWorkflowActionTaskReadiness(
   database: Pick<StageCompletionTransaction, "select">,
   taskId: string,
+  previewFormSubmission = false,
 ) {
   const [work] = await database
     .select({
@@ -17,13 +22,19 @@ export async function readWorkflowActionTaskReadiness(
           AND rfi.status = 'OPEN'
       )`,
       config: stageTaskDefinitions.config,
+      documentRequirements: workflowTaskDocumentRequirements(
+        sql`${workflowTasks.id}`,
+        sql`${stageTaskDefinitions.id}`,
+      ),
+      taskType: stageTaskDefinitions.taskType,
       formCompleted: sql<boolean>`(
         ${workflowTasks.formVersionId} IS NOT NULL AND EXISTS (
           SELECT 1 FROM app_form_responses response
           WHERE response.workflow_task_id = ${workflowTasks.id}
             AND (response.status = 'COMPLETED'
               OR (
-                ${stageTaskDefinitions.config} ->> 'command' = 'AUTHORITATIVE_ELIGIBILITY'
+                (${stageTaskDefinitions.config} ->> 'command' = 'AUTHORITATIVE_ELIGIBILITY'
+                  OR ${stageTaskDefinitions.config} ->> 'formPurpose' = 'ELIGIBILITY_VERIFICATION')
                 AND response.values = (${workflowTasks.result} -> 'evaluatedFormValues')
               ))
         )
@@ -42,8 +53,20 @@ export async function readWorkflowActionTaskReadiness(
     )
     .where(eq(workflowTasks.id, taskId))
     .limit(1);
+  // Decision selection precedes form finalization. Execution uses the default
+  // strict check after the form has been validated and submitted on the server.
+  const submitsFormWithDecision = Boolean(
+    previewFormSubmission &&
+    work?.taskType === "STAGE_DECISION" &&
+    !taskRunsAuthoritativeEligibility(work.config),
+  );
   return {
     hasOpenRfi: work?.hasOpenRfi ?? false,
-    workReady: Boolean(work && taskWorkIsReady(work)),
+    workReady: Boolean(
+      work && taskWorkIsReady({
+        ...work,
+        formCompleted: work.formCompleted || submitsFormWithDecision,
+      }),
+    ),
   };
 }

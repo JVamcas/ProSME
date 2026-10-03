@@ -13,8 +13,7 @@ function dependencies(): StandardWorkflowDependencies {
   return {
     formVersionIds: {
       COI_DECLARATION: "00000000-0000-4000-9000-000000000000",
-      ELIGIBILITY_VERIFICATION:
-        "00000000-0000-4000-9000-000000000001",
+      ELIGIBILITY_VERIFICATION: "00000000-0000-4000-9000-000000000001",
     },
     roleIds: Object.fromEntries(
       standardWorkflowRoleCodes.map((code, index) => [
@@ -31,18 +30,22 @@ describe("standard workflow catalogue", () => {
     const graph = workflowGraphSchema.parse(draft.graph);
 
     expect(graph.stages).toHaveLength(12);
-    expect(graph.stages.filter((stage) => stage.initial).map((stage) => (
-      stage.stableKey
-    ))).toEqual(["ADMIN_ELIGIBILITY_SCREENING"]);
+    expect(
+      graph.stages
+        .filter((stage) => stage.initial)
+        .map((stage) => stage.stableKey),
+    ).toEqual(["ADMIN_ELIGIBILITY_SCREENING"]);
     expect(graph.stages.map((stage) => stage.stableKey)).not.toContain(
       "APPLICATION_SUBMISSION",
     );
     expect(graph.stages.map((stage) => stage.stableKey)).not.toContain(
       "CALL_SETUP_PUBLICATION",
     );
-    expect(graph.stages.every((stage) => (
-      stage.tasks.length > 0 && stage.actions.length > 0
-    ))).toBe(true);
+    expect(
+      graph.stages.every(
+        (stage) => stage.tasks.length > 0 && stage.actions.length > 0,
+      ),
+    ).toBe(true);
     expect(validateWorkflowGraph(graph)).toEqual({
       errors: [],
       valid: true,
@@ -53,10 +56,11 @@ describe("standard workflow catalogue", () => {
   it("configures the parallel fork and repeatable post-award stages", () => {
     const graph = createStandardWorkflowDraft(dependencies()).graph;
     const forkTargets = graph.transitions
-      .filter((transition) => (
-        transition.sourceStageKey === "ADMIN_ELIGIBILITY_SCREENING"
-        && transition.actionKey === "ELIGIBLE_ADVANCE"
-      ))
+      .filter(
+        (transition) =>
+          transition.sourceStageKey === "ADMIN_ELIGIBILITY_SCREENING" &&
+          transition.actionKey === "ELIGIBLE_ADVANCE",
+      )
       .flatMap((transition) => transition.targetStageKeys)
       .sort();
 
@@ -65,9 +69,11 @@ describe("standard workflow catalogue", () => {
       graph.stages.find((stage) => stage.stableKey === "DUE_DILIGENCE_RISK")
         ?.joinPredecessorStageKeys,
     ).toEqual(["TECHNICAL_ASSESSMENT", "FINANCIAL_REVIEW"]);
-    expect(graph.stages.filter((stage) => stage.repeatable).map((stage) => (
-      stage.stableKey
-    ))).toEqual([
+    expect(
+      graph.stages
+        .filter((stage) => stage.repeatable)
+        .map((stage) => stage.stableKey),
+    ).toEqual([
       "TECHNICAL_ASSESSMENT",
       "COMMITTEE_REVIEW",
       "APPROVAL_AWARD_DECISION",
@@ -117,12 +123,7 @@ describe("standard workflow catalogue", () => {
 
   it("includes enabled common actions on every stage and task", () => {
     const graph = createStandardWorkflowDraft(dependencies()).graph;
-    const commonActionKeys = [
-      "REQUEST_INFORMATION",
-      "REFER",
-      "PUT_ON_HOLD",
-      "ESCALATE",
-    ];
+    const commonActionKeys = ["REQUEST_INFORMATION", "PUT_ON_HOLD", "ESCALATE"];
 
     for (const stage of graph.stages) {
       const actionsByKey = new Map(
@@ -131,7 +132,20 @@ describe("standard workflow catalogue", () => {
       for (const actionKey of commonActionKeys) {
         expect(actionsByKey.get(actionKey)).toMatchObject({ enabled: true });
       }
+      const returnActions = stage.actions.filter(
+        (action) => action.actionType === "RETURN",
+      );
+      expect(returnActions.length).toBeGreaterThanOrEqual(1);
+      if (returnActions.some((action) => action.stableKey !== "RETURN")) {
+        expect(
+          returnActions.some((action) => action.stableKey === "RETURN"),
+        ).toBe(false);
+      }
       for (const task of stage.tasks) {
+        expect(task.actionKeys).toContain(
+          stage.actions.find((action) => action.actionType === "RETURN")!
+            .stableKey,
+        );
         expect(task.actionKeys).toEqual(
           expect.arrayContaining(commonActionKeys),
         );
@@ -154,9 +168,9 @@ describe("standard workflow catalogue", () => {
         "ELIGIBLE_ADVANCE",
         "INELIGIBLE_REJECT",
         "REQUEST_INFORMATION",
-        "REFER",
         "PUT_ON_HOLD",
         "RESUME",
+        "RETURN",
         "ESCALATE",
       ],
       config: {

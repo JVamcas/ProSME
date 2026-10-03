@@ -42,11 +42,16 @@ type EligibilityQuestionResponseRow = {
 export async function readEligibilityQuestionResponseRecords(
   requests: readonly EligibilityScreeningSourceRequest[],
   database: ReturnType<typeof getDatabase> | DatabaseTransaction = getDatabase(),
+  workflowTaskId?: string | null,
 ) {
   const [first] = requests;
   if (!first) return [];
   const questionIds = requests.map((request) =>
-    request.binding.sourceDefinitionId
+    request.binding.sourceDefinitionId,
+  );
+  const questionIdParameters = sql.join(
+    questionIds.map((id) => sql`${id}::uuid`),
+    sql`, `,
   );
   const result = await database.execute<EligibilityQuestionResponseRow>(sql`
     SELECT binding.question_id AS "questionId",
@@ -68,7 +73,11 @@ export async function readEligibilityQuestionResponseRecords(
       AND response.form_version_id = verification.form_version_id
       AND response.status IN ('DRAFT', 'COMPLETED')
     WHERE application.id = ${first.applicationId}::uuid
-      AND binding.question_id IN (${sql.join(questionIds.map((id) => sql`${id}::uuid`), sql`, `)})
+      AND (
+        ${workflowTaskId ?? null}::uuid IS NULL
+        OR response.workflow_task_id = ${workflowTaskId ?? null}::uuid
+      )
+      AND binding.question_id IN (${questionIdParameters})
       AND response.values ? binding.code_snapshot
   `);
   return result.rows.map((row): WorkflowEligibilityValueRecord => ({

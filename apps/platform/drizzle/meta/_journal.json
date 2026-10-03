@@ -1072,6 +1072,27 @@
       "when": 1801612800000,
       "tag": "0152_workflow_terminal_applicant_status",
       "breakpoints": true
+    },
+    {
+      "idx": 153,
+      "version": "7",
+      "when": 1801699200000,
+      "tag": "0153_workflow_assigned_instance_progress",
+      "breakpoints": true
+    },
+    {
+      "idx": 154,
+      "version": "7",
+      "when": 1801785600000,
+      "tag": "0154_remove_refer_action",
+      "breakpoints": true
+    },
+    {
+      "idx": 155,
+      "version": "7",
+      "when": 1801785600001,
+      "tag": "0155_task_document_evidence",
+      "breakpoints": true
     }
   ]
 }

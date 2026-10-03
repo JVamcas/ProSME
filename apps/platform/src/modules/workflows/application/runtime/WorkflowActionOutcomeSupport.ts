@@ -32,6 +32,7 @@ export type OutcomeInput = {
   >[1]["conditionContext"];
   configuredTransitions: Awaited<ReturnType<typeof loadSequentialTransitions>>;
   resultingRuntimeVersion: number;
+  runtimeDestination?: { id: string; name: string } | null;
   requestInformation?: { requestInformationId: string } | null;
   target: WorkflowActionExecutionTarget;
 };

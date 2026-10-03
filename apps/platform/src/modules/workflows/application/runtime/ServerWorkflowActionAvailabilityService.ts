@@ -14,6 +14,11 @@ import {
   type WorkflowActionAvailability,
 } from "../../domain/actions/WorkflowActionAvailability";
 import { workflowActionDefinitionSchema } from "../../domain/actions/WorkflowActionSchemas";
+import {
+  isRuntimeWorkflowControlAction,
+  isSupportedWorkflowAction,
+} from "../../domain/actions/WorkflowActionDefinition";
+import { readWorkflowControlDestinations } from "../../infrastructure/WorkflowControlDestinationRepository";
 import type { WorkflowActionDefinition } from "../../domain/actions/WorkflowActionDefinition";
 import { taskActionMatchesType } from "../../domain/runtime/WorkflowTaskCompletionPolicy";
 import {
@@ -106,29 +111,31 @@ export async function getWorkflowActionAvailability(
   if (!source) throw new ResourceNotFoundError("workflow action source");
   assertReadAccess(actor, source);
 
-  const preliminary = source.actions.map((action) => {
-    const parsed = workflowActionDefinitionSchema.safeParse(action);
-    const definition = parsed.success ? parsed.data : null;
-    return {
-      action,
-      definition,
-      policy: evaluateWorkflowActionPolicy(
-        actor,
-        policyTarget(source, action),
-        {
-          conditionsPass: true,
-          configurationValid:
-            Boolean(definition) &&
-            (!source.task ||
-              taskActionMatchesType({
-                actionType: action.actionType,
-                taskType: source.task.taskType,
-              })),
-          targetsValid: true,
-        },
-      ),
-    };
-  });
+  const preliminary = source.actions
+    .filter((action) => isSupportedWorkflowAction(action.actionType))
+    .map((action) => {
+      const parsed = workflowActionDefinitionSchema.safeParse(action);
+      const definition = parsed.success ? parsed.data : null;
+      return {
+        action,
+        definition,
+        policy: evaluateWorkflowActionPolicy(
+          actor,
+          policyTarget(source, action),
+          {
+            conditionsPass: true,
+            configurationValid:
+              Boolean(definition) &&
+              (!source.task ||
+                taskActionMatchesType({
+                  actionType: action.actionType,
+                  taskType: source.task.taskType,
+                })),
+            targetsValid: true,
+          },
+        ),
+      };
+    });
   const candidates = preliminary.filter(
     (item): item is typeof item & { definition: WorkflowActionDefinition } =>
       item.policy.available && item.definition !== null,
@@ -152,6 +159,7 @@ export async function getWorkflowActionAvailability(
       actionTypes: candidates.map((item) => item.action.actionType),
       actorId: actor.id,
       recordQuorumEvaluation: false,
+      previewFormSubmission: source.task?.taskType === "STAGE_DECISION",
       stageDefinitionId: source.stage.stageDefinitionId,
       stageInstanceId: source.stage.stageInstanceId,
       taskId: source.task?.id,
@@ -169,22 +177,43 @@ export async function getWorkflowActionAvailability(
   await Promise.all(
     candidates.map(async (item) => {
       const action = { ...item.definition, id: item.action.id };
-      const [targetsValid, transitions] = await Promise.all([
-        configuredActionTargetsAreValid(database, {
-          action,
-          stage: source.stage,
-        }),
-        loadSequentialTransitions(database, {
-          actionKey: action.stableKey,
-          sourceStageDefinitionId: source.stage.stageDefinitionId,
-          workflowVersionId: source.stage.workflowVersionId,
-        }),
-      ]);
-      const conditions = evaluateWorkflowActionConditions(
+      const runtimeControl = isRuntimeWorkflowControlAction(action.actionType);
+      const [destinations, configuredTargetsValid, transitions] =
+        await Promise.all([
+          isRuntimeWorkflowControlAction(action.actionType)
+            ? readWorkflowControlDestinations(database, {
+                actionType: action.actionType,
+                sourceStageInstanceId: source.stage.stageInstanceId,
+                workflowInstanceId: source.stage.workflowInstanceId,
+              })
+            : Promise.resolve([]),
+          runtimeControl
+            ? Promise.resolve(true)
+            : configuredActionTargetsAreValid(database, {
+                action,
+                stage: source.stage,
+              }),
+          loadSequentialTransitions(database, {
+            actionKey: action.stableKey,
+            sourceStageDefinitionId: source.stage.stageDefinitionId,
+            workflowVersionId: source.stage.workflowVersionId,
+          }),
+        ]);
+      const configuredConditions = evaluateWorkflowActionConditions(
         action,
         transitions.transitions,
         context,
       );
+      const conditions = runtimeControl
+        ? evaluateWorkflowActionConditions(action, [], context)
+        : configuredConditions;
+      const targetsValid = runtimeControl
+        ? destinations.length > 0
+        : configuredTargetsValid;
+      const defaultDestination = transitions.transitions.find(
+        (transition) =>
+          transition.id === configuredConditions.selectedTransitionId,
+      )?.targetStages[0];
       const policy = evaluateWorkflowActionPolicy(
         actor,
         policyTarget(source, item.action),
@@ -208,6 +237,24 @@ export async function getWorkflowActionAvailability(
           policy.unavailableReason ?? readinessReason,
         ),
       );
+      if (runtimeControl) {
+        const availability = evaluated.get(action.stableKey)!;
+        availability.requiredInput = {
+          ...availability.requiredInput,
+          destinationStages: destinations,
+          defaultDestinationStageId: destinations.some(
+            (destination) => destination.id === defaultDestination?.id,
+          )
+            ? defaultDestination?.id
+            : undefined,
+        };
+        if (policy.unavailableReason && !targetsValid) {
+          availability.unavailableReason =
+            action.actionType === "RETURN"
+              ? "No completed previous stage is available to reopen."
+              : "No previous stage is available in this workflow.";
+        }
+      }
       if (action.actionType === "REQUEST_INFORMATION") {
         const availability = evaluated.get(action.stableKey)!;
         availability.requiredInput = {

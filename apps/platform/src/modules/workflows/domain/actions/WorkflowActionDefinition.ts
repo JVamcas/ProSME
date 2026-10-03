@@ -1,12 +1,11 @@
 import type { WorkflowActionConfigurationByType } from "./WorkflowActionConfiguration";
 import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup";
 
-export const workflowActionTypes = [
+export const supportedWorkflowActionTypes = [
   "APPROVE_ADVANCE",
   "REJECT",
   "REQUEST_INFORMATION",
   "RETURN",
-  "REFER",
   "ESCALATE",
   "PUT_ON_HOLD",
   "RESUME",
@@ -14,12 +13,23 @@ export const workflowActionTypes = [
   "DEFER",
 ] as const;
 
+// Refer remains readable for historical definitions and execution records.
+export const workflowActionTypes = [
+  ...supportedWorkflowActionTypes,
+  "REFER",
+] as const;
+
 export type WorkflowActionType = (typeof workflowActionTypes)[number];
+
+export function isSupportedWorkflowAction(
+  actionType: WorkflowActionType,
+): boolean {
+  return supportedWorkflowActionTypes.some((type) => type === actionType);
+}
 
 export const workflowStageDecisionActionTypes = [
   "APPROVE_ADVANCE",
   "REJECT",
-  "RETURN",
   "WITHDRAW",
   "DEFER",
 ] as const satisfies readonly WorkflowActionType[];
@@ -46,3 +56,9 @@ export type WorkflowActionDefinition = {
     configuration: WorkflowActionConfigurationByType[ActionType];
   };
 }[WorkflowActionType];
+
+export function isRuntimeWorkflowControlAction(
+  actionType: WorkflowActionType,
+): actionType is "RETURN" {
+  return actionType === "RETURN";
+}

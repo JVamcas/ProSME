@@ -107,11 +107,57 @@ describe("workflow action quorum reads", () => {
 
 describe("workflow action task readiness reads", () => {
   it.each([
+    ["STAGE_DECISION", {}, false, true, true],
+    ["STAGE_DECISION", {}, false, false, false],
+    ["CONTRIBUTING", {}, false, true, false],
+    ["STAGE_DECISION", {}, true, true, false],
+    ["STAGE_DECISION", {
+      command: "AUTHORITATIVE_ELIGIBILITY",
+      reevaluationPolicy: "WHEN_EVIDENCE_CHANGED",
+    }, false, true, false],
+    ["STAGE_DECISION", {
+      formPurpose: "ELIGIBILITY_VERIFICATION",
+    }, false, true, false],
+  ])(
+    "previews form submission only for decision work: %s %s %s %s",
+    async (taskType, config, hasChecklist, preview, expected) => {
+      const limit = vi.fn().mockResolvedValue([{
+        taskType,
+        config,
+        hasChecklist,
+        formRequired: true,
+        formCompleted: false,
+        result: {},
+      }]);
+      const database = {
+        select: vi.fn(() => ({
+          from: vi.fn(() => ({
+            innerJoin: vi.fn(() => ({
+              where: vi.fn(() => ({ limit })),
+            })),
+          })),
+        })),
+      };
+      expect(await readWorkflowActionTaskReadiness(
+        database as never,
+        "task",
+        preview,
+      )).toEqual({ hasOpenRfi: false, workReady: expected });
+    },
+  );
+
+  it.each([
     [[], { hasOpenRfi: false, workReady: false }],
     [[{ config: {}, formRequired: true, formCompleted: false, hasChecklist: false, result: {} }],
       { hasOpenRfi: false, workReady: false }],
     [[{ config: {}, formRequired: true, formCompleted: true, hasChecklist: false, result: {}, hasOpenRfi: true }],
       { hasOpenRfi: true, workReady: true }],
+    [[{ config: {}, formRequired: false, hasChecklist: false, result: {},
+      documentRequirements: [{ mandatory: true, evidenceUploaded: false }] }],
+      { hasOpenRfi: false, workReady: false }],
+    [[{ config: {}, formRequired: false, hasChecklist: false, result: {},
+      documentRequirements: [{ mandatory: true, evidenceUploaded: true }] }],
+      { hasOpenRfi: false, workReady: true }],
   ])("reports missing work and open requests: %s", async (rows, expected) => {
     const limit = vi.fn().mockResolvedValue(rows);
     const where = vi.fn(() => ({ limit }));
@@ -124,13 +170,29 @@ describe("workflow action task readiness reads", () => {
     const projection = database.select.mock.calls[0][0];
     const dialect = new PgDialect();
     expect(dialect.sqlToQuery(projection.hasOpenRfi).sql).toContain("rfi.status = 'OPEN'");
+    expect(dialect.sqlToQuery(projection.documentRequirements).sql)
+      .toContain("app_workflow_task_document_evidence");
     expect(dialect.sqlToQuery(projection.formCompleted).sql).toContain("evaluatedFormValues");
+    expect(dialect.sqlToQuery(projection.formCompleted).sql).toContain("'formPurpose' = 'ELIGIBILITY_VERIFICATION'");
     expect(limit).toHaveBeenCalledWith(1);
   });
 });
 
 
 describe("prospective stage completion projection", () => {
+  it("scopes form submission preview to the selected non-eligibility decision task", async () => {
+    const database = { execute: vi.fn().mockResolvedValue({ rows: [] }) };
+    await loadRequiredTaskCompletions(database as never, "stage", "decision-task", true);
+    const query = new PgDialect().sqlToQuery(database.execute.mock.calls[0][0]);
+    expect(query.params).toContain(true);
+    expect(query.params).toContain("decision-task");
+    expect(query.sql).toContain("definition.task_type = 'STAGE_DECISION'");
+    expect(query.sql).toContain("ELIGIBILITY_VERIFICATION");
+    expect(query.sql).toContain("response.status = 'COMPLETED'");
+    expect(query.sql).toContain("app_workflow_task_coi_cleared");
+    expect(query.sql).toContain("successor.supersedes_task_id = task.id");
+  });
+
   it("counts only completed work or the current pending task with clearance and form evidence", async () => {
     const database = { execute: vi.fn().mockResolvedValue({ rows: [] }) };
     await loadRequiredTaskCompletions(database as never, "stage", "current-task");
@@ -142,6 +204,7 @@ describe("prospective stage completion projection", () => {
     expect(query.sql).toContain("successor.supersedes_task_id = task.id");
     expect(query.sql).toContain("response.status = 'COMPLETED'");
     expect(query.sql).toContain('AS "completedCount"');
+    expect(query.sql).toContain("definition.config ->> 'formPurpose' = 'ELIGIBILITY_VERIFICATION'");
     expect(query.sql).toContain("definition.required = TRUE");
   });
 });

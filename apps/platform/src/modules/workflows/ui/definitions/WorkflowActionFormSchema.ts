@@ -82,6 +82,14 @@ export const workflowActionFormSchema = z
       .refine((value) => !value || stableKeyPattern.test(value)),
   })
   .superRefine((values, context) => {
+    if (values.actionType === "REFER") {
+      context.addIssue({
+        code: "custom",
+        message:
+          "Refer has been removed. Remove this action from the workflow.",
+        path: ["actionType"],
+      });
+    }
     if (values.actionType === "REJECT") {
       if (values.rejectionOutcomeType === "TERMINAL") {
         requiredFor(
@@ -199,7 +207,6 @@ export const workflowActionTypeItems = [
   { label: "Reject", value: "REJECT" },
   { label: "Request Information", value: "REQUEST_INFORMATION" },
   { label: "Return", value: "RETURN" },
-  { label: "Refer", value: "REFER" },
   { label: "Escalate", value: "ESCALATE" },
   { label: "Put on Hold", value: "PUT_ON_HOLD" },
   { label: "Resume", value: "RESUME" },

@@ -38,6 +38,7 @@ it("auto-populates changes, saves edits and preserves them on reopening", async 
     route: Parameters<typeof WorkflowActionRouteEditor>[0]["route"],
   ) => (
     <WorkflowActionRouteEditor
+      actionType="REJECT"
       actionKey="DECIDE"
       editor={editor}
       onCancel={vi.fn()}
@@ -115,6 +116,59 @@ it("auto-populates changes, saves edits and preserves them on reopening", async 
         '[name="terminalApplicantDescription"]',
       )!.value,
     ).toBe("Please review the recovery decision.");
+  } finally {
+    await act(async () => root.unmount());
+    container.remove();
+  }
+});
+
+it("offers only the immediate predecessor for Return and saves one stage", async () => {
+  const editor = {
+    graph: structuredClone(referenceWorkflow),
+  } as WorkflowEditorView;
+  const stage = editor.graph.stages.find(
+    (item) => item.stableKey === "COMMITTEE_DECISION",
+  )!;
+  const onSave = vi.fn();
+  const container = document.createElement("div");
+  document.body.append(container);
+  const root = createRoot(container);
+  try {
+    await act(async () =>
+      root.render(
+        <WorkflowActionRouteEditor
+          actionType="RETURN"
+          actionKey="RETURN_REVIEW"
+          editor={editor}
+          stage={stage}
+          onSave={onSave}
+          onCancel={vi.fn()}
+          priority={1}
+          priorityInUse={() => false}
+        />,
+      ),
+    );
+    const destinations = container.querySelector<HTMLSelectElement>(
+      '[name="targetStageKeys"]',
+    )!;
+    expect(
+      [...destinations.options].map((option) => option.value).filter(Boolean),
+    ).toEqual(["FINANCE_REVIEW"]);
+    expect(destinations.multiple).toBe(false);
+    expect(destinations.value).toBe("FINANCE_REVIEW");
+    const types = container.querySelector<HTMLSelectElement>(
+      '[name="targetType"]',
+    )!;
+    expect(
+      [...types.options].map((option) => option.value).filter(Boolean),
+    ).toEqual(["STAGE"]);
+    const save = [...container.querySelectorAll("button")].find(
+      (button) => button.textContent === "Save route",
+    )!;
+    await act(async () => save.click());
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({ targetStageKeys: ["FINANCE_REVIEW"] }),
+    );
   } finally {
     await act(async () => root.unmount());
     container.remove();

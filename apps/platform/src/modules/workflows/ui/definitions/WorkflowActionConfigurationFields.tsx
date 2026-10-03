@@ -175,30 +175,14 @@ function ActionConfigurationFields({
               { label: "Retain existing data", value: "RETAIN" },
               { label: "Clear existing data", value: "CLEAR" },
             ]}
-            label="Returned data"
+            label="Default returned data (chosen at runtime)"
             name="dataHandling"
             required
           />
         </>
       );
     case "REFER":
-      return (
-        <>
-          <FormSelect
-            items={[
-              { label: "Block until referral completes", value: "BLOCKED" },
-              { label: "Keep open during referral", value: "OPEN" },
-            ]}
-            label="Referring task behavior"
-            name="sourceTaskBehavior"
-            required
-          />
-          <CheckboxField
-            label="Return to the referrer after completion"
-            name="returnToReferrer"
-          />
-        </>
-      );
+      return null;
     case "ESCALATE":
       return (
         <EscalationFields

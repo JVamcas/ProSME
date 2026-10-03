@@ -1,4 +1,5 @@
 import "server-only";
+import { workflowDocumentEvidenceIsCurrent } from "./WorkflowDocumentEvidenceReadiness";
 
 import { and, eq, inArray, sql } from "drizzle-orm";
 
@@ -152,6 +153,7 @@ async function assertRequestedDocuments(
         SELECT 1 FROM app_workflow_document_evidence_versions evidence
         WHERE evidence.application_id = ${request.applicationId}::uuid
           AND evidence.requirement_id = ${workflowStageDocumentRequirements.id}
+          AND ${workflowDocumentEvidenceIsCurrent(sql`${request.source.taskId}::uuid`)}
           AND (evidence.valid_until IS NULL OR evidence.valid_until > now())
       )`,
       ),
@@ -317,6 +319,7 @@ export async function createStageActivationWorkflowRfi(
         SELECT 1 FROM app_workflow_document_evidence_versions evidence
         WHERE evidence.application_id = workflow.application_id
           AND evidence.requirement_id = requirement.id
+          AND ${workflowDocumentEvidenceIsCurrent(sql`task.id`)}
           AND (evidence.valid_until IS NULL OR evidence.valid_until > now())
       )
     ORDER BY requirement.name, requirement.id

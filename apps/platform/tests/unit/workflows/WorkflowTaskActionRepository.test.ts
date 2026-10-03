@@ -1,3 +1,9 @@
+vi.mock(
+  "@/modules/workflows/infrastructure/WorkflowReviewThresholdRepository",
+  () => ({
+    recordReviewThresholdEvaluations: vi.fn(),
+  }),
+);
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
@@ -6,7 +12,6 @@ vi.mock("@/modules/workflows/infrastructure/WorkflowQuorumRepository", () => ({
 }));
 vi.mock("@/modules/workflows/infrastructure/StageCompletionRepository", () => ({
   loadRequiredTaskCompletions: vi.fn().mockResolvedValue([]),
-  recordReviewThresholdEvaluations: vi.fn(),
 }));
 
 const databaseExecute = vi.fn();

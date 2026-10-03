@@ -8,6 +8,10 @@ export function actionFormSchema(action: WorkflowTaskAction) {
   return z
     .object({
       confirmed: z.boolean(),
+      targetStageDefinitionId: z.union([z.uuid(), z.literal("")]).optional(),
+      dataHandling: z.enum(["RETAIN", "CLEAR"]),
+      sourceTaskBehavior: z.enum(["BLOCKED", "OPEN"]),
+      returnToReferrer: z.boolean(),
       instructions: z.string().trim().max(12_000),
       requestDetailedInformation: z.boolean(),
       editableFieldPaths: z.array(z.string().min(1)).max(100),
@@ -17,6 +21,18 @@ export function actionFormSchema(action: WorkflowTaskAction) {
       reviewDate: z.union([z.iso.date(), z.literal("")]),
     })
     .superRefine((values, context) => {
+      if (
+        (action.actionType === "RETURN" || action.actionType === "REFER") &&
+        !action.requiredInput.destinationStages?.some(
+          (stage) => stage.id === values.targetStageDefinitionId,
+        )
+      ) {
+        context.addIssue({
+          code: "custom",
+          message: "Choose a destination stage.",
+          path: ["targetStageDefinitionId"],
+        });
+      }
       if (
         action.actionType !== "REQUEST_INFORMATION" &&
         action.requiredInput.reason.required &&
@@ -104,8 +120,22 @@ export function actionInput(
         instructions: values.instructions,
         requestedDocumentRequirementIds: values.requestedDocumentRequirementIds,
       };
+    case "RETURN":
+      return {
+        ...common,
+        actionType: "RETURN",
+        targetStageDefinitionId: values.targetStageDefinitionId!,
+        dataHandling: values.dataHandling,
+      };
     case "REFER":
-      return { ...common, actionType: "REFER", question: values.question };
+      return {
+        ...common,
+        actionType: "REFER",
+        targetStageDefinitionId: values.targetStageDefinitionId!,
+        question: values.question,
+        sourceTaskBehavior: values.sourceTaskBehavior,
+        returnToReferrer: values.returnToReferrer,
+      };
     case "PUT_ON_HOLD":
       return {
         ...common,

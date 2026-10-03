@@ -1,13 +1,11 @@
+import { recordReviewThresholdEvaluations } from "./WorkflowReviewThresholdRepository";
 import "server-only";
 
 import { sql } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
 import { evaluateStageQuorum } from "./WorkflowQuorumRepository";
-import {
-  loadRequiredTaskCompletions,
-  recordReviewThresholdEvaluations,
-} from "./StageCompletionRepository";
+import { loadRequiredTaskCompletions } from "./StageCompletionRepository";
 
 export type ReplaceReviewerInput = {
   actorId: string;
@@ -65,22 +63,28 @@ async function findReplacementReplay(
     WHERE idempotency_key = ${input.idempotencyKey}
     LIMIT 1
   `);
-  const prior = replay.rows[0] as {
-    actorId: string;
-    taskId: string;
-    replacementTaskId: string | null;
-    replacementUserId: string | null;
-    coiDecision: string | null;
-    reviewerSlot: string | null;
-    rowVersion: string | null;
-    reason: string | null;
-  } | undefined;
+  const prior = replay.rows[0] as
+    | {
+        actorId: string;
+        taskId: string;
+        replacementTaskId: string | null;
+        replacementUserId: string | null;
+        coiDecision: string | null;
+        reviewerSlot: string | null;
+        rowVersion: string | null;
+        reason: string | null;
+      }
+    | undefined;
   if (!prior) return null;
-  if (prior.actorId !== input.actorId || prior.taskId !== input.taskId
-    || prior.replacementUserId !== input.replacementUserId
-    || prior.coiDecision !== (input.coiDecision ?? null)
-    || Number(prior.rowVersion) !== input.expectedRowVersion
-    || prior.reason !== auditReason(input) || !prior.replacementTaskId) {
+  if (
+    prior.actorId !== input.actorId ||
+    prior.taskId !== input.taskId ||
+    prior.replacementUserId !== input.replacementUserId ||
+    prior.coiDecision !== (input.coiDecision ?? null) ||
+    Number(prior.rowVersion) !== input.expectedRowVersion ||
+    prior.reason !== auditReason(input) ||
+    !prior.replacementTaskId
+  ) {
     return "CONFLICT";
   }
   return {
@@ -133,15 +137,18 @@ export async function replaceWorkflowReviewer(
       FOR UPDATE OF task
     `);
     const task = locked.rows[0] as LockedTask | undefined;
-    if (!task || task.rowVersion !== input.expectedRowVersion
-      || (input.coiDecision === "RECUSE" && !task.coiFormVersionId)
-      || !(
-        ["PENDING", "IN_PROGRESS"].includes(task.status)
-        || (task.status === "COMPLETED"
-          && task.submittedReplacementPolicy === "REOPEN_SLOT"
-          && input.coiDecision !== "RECUSE")
-      )
-      || task.assignedUserId === input.replacementUserId) {
+    if (
+      !task ||
+      task.rowVersion !== input.expectedRowVersion ||
+      (input.coiDecision === "RECUSE" && !task.coiFormVersionId) ||
+      !(
+        ["PENDING", "IN_PROGRESS"].includes(task.status) ||
+        (task.status === "COMPLETED" &&
+          task.submittedReplacementPolicy === "REOPEN_SLOT" &&
+          input.coiDecision !== "RECUSE")
+      ) ||
+      task.assignedUserId === input.replacementUserId
+    ) {
       return null;
     }
     const candidate = await transaction.execute(sql`
@@ -197,9 +204,12 @@ export async function replaceWorkflowReviewer(
           AND form_version_id = ${task.coiFormVersionId}::uuid
         FOR UPDATE
       `);
-      if (task.assignedUserId === input.actorId
-        || (clearance.rows[0] as { state: string } | undefined)?.state
-          !== "PENDING_REVIEW") return null;
+      if (
+        task.assignedUserId === input.actorId ||
+        (clearance.rows[0] as { state: string } | undefined)?.state !==
+          "PENDING_REVIEW"
+      )
+        return null;
       await transaction.execute(sql`
         UPDATE app_workflow_application_coi
         SET task_id = ${input.taskId}::uuid, state = 'RECUSED',

@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, asc, eq, inArray, or, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
 import { roles } from "@/db/schema/authorization";
@@ -24,6 +24,7 @@ import {
 } from "./workflow-runtime.schema";
 
 import { transitionExecutionTargets } from "./workflow-parallel.schema";
+import { workflowTaskPrerequisitesComplete } from "./WorkflowTaskPrerequisiteReadiness";
 
 type ProgressTaskRecord = Omit<WorkflowProgressTask, "canOpen"> & {
   assignedRoleCode: string | null;
@@ -33,6 +34,7 @@ type ProgressTaskRecord = Omit<WorkflowProgressTask, "canOpen"> & {
   reviewRelease: "STAGE_COMPLETED" | "THRESHOLD_MET" | "IMMEDIATE" | null;
   thresholdSatisfied: boolean;
   viewPermission: string;
+  prerequisitesComplete: boolean;
 };
 
 type ProgressStageRecord = Omit<WorkflowProgressStage, "tasks"> & {
@@ -65,6 +67,11 @@ export async function readWorkflowProgress(
       stageStableKey: workflowStageDefinitions.code,
       versionId: workflowDefinitionVersions.id,
       stageStatus: stageInstances.status,
+      stageReturned: sql<boolean>`EXISTS (
+        SELECT 1 FROM app_workflow_reworks rework
+        WHERE rework.source_stage_instance_id = ${stageInstances.id}
+          AND rework.workflow_instance_id = ${workflowInstances.id}
+      )`,
       taskActionedAt: workflowTasks.completedAt,
       taskDefinitionId: stageTaskDefinitions.id,
       reviewerCount: stageTaskDefinitions.reviewerCount,
@@ -86,6 +93,7 @@ export async function readWorkflowProgress(
       taskRequired: stageTaskDefinitions.required,
       taskStatus: workflowTasks.status,
       taskType: stageTaskDefinitions.taskType,
+      prerequisitesComplete: workflowTaskPrerequisitesComplete,
       taskViewPermission: stageTaskDefinitions.permissions,
       startedAt: workflowInstances.startedAt,
       terminalOutcome: workflowInstances.terminalOutcome,
@@ -121,15 +129,33 @@ export async function readWorkflowProgress(
         sql`NOT EXISTS (
           SELECT 1 FROM app_workflow_tasks successor
           WHERE successor.supersedes_task_id = ${workflowTasks.id}
+            AND successor.stage_instance_id = ${workflowTasks.stageInstanceId}
         )`,
       ),
     )
     .leftJoin(
       stageTaskDefinitions,
-      eq(stageTaskDefinitions.id, workflowTasks.workflowTaskDefinitionId),
+      or(
+        eq(stageTaskDefinitions.id, workflowTasks.workflowTaskDefinitionId),
+        and(
+          isNull(stageInstances.id),
+          eq(stageTaskDefinitions.stageId, workflowStageDefinitions.id),
+        ),
+      ),
     )
-    .leftJoin(users, eq(users.id, workflowTasks.assignedUserId))
-    .leftJoin(roles, eq(roles.id, workflowTasks.assignedRoleId))
+    .leftJoin(
+      users,
+      eq(users.id, sql`CASE
+        WHEN ${stageInstances.id} IS NULL
+          THEN ${stageTaskDefinitions.namedUserOverrideId}
+        ELSE ${workflowTasks.assignedUserId} END`),
+    )
+    .leftJoin(
+      roles,
+      eq(roles.id, sql`CASE
+        WHEN ${stageInstances.id} IS NULL THEN ${stageTaskDefinitions.roleId}
+        ELSE ${workflowTasks.assignedRoleId} END`),
+    )
     .where(eq(workflowInstances.applicationId, applicationId))
     .orderBy(
       asc(workflowStageDefinitions.sequence),
@@ -147,22 +173,28 @@ export async function readWorkflowProgress(
     if (!stage) {
       stage = {
         activatedAt: row.activatedAt?.toISOString() ?? null,
-        completedAt: row.stageCompletedAt?.toISOString() ?? null,
+        completedAt: row.stageReturned
+          ? null
+          : row.stageCompletedAt?.toISOString() ?? null,
+        returnedAt: row.stageReturned
+          ? row.stageCompletedAt?.toISOString() ?? null
+          : null,
         description: row.stageDescription,
         id: row.stageId,
         iterationNumber: row.iterationNumber,
         name: row.stageName,
         sequence: row.stageSequence,
         stableKey: row.stageStableKey,
-        status: row.stageStatus ?? "NOT_STARTED",
+        status: row.stageReturned ? "RETURNED" : row.stageStatus ?? "NOT_STARTED",
         tasks: [],
       };
       stages.set(key, stage);
     }
+    const planned = !row.stageId && Boolean(row.taskDefinitionId);
     if (
-      row.taskId &&
+      (row.taskId || planned) &&
       row.taskName &&
-      row.taskStatus &&
+      (row.taskStatus || planned) &&
       row.taskType &&
       row.taskViewPermission
     ) {
@@ -178,11 +210,18 @@ export async function readWorkflowProgress(
         assignedUserId: row.taskAssignedUserId,
         assignedUserName: row.taskAssignedUserName,
         dueAt: row.taskDueAt?.toISOString() ?? null,
-        id: row.taskId,
+        id: row.taskId ?? `planned-${row.taskDefinitionId}`,
+        ...(planned
+          ? {
+              planned: true,
+              configuredReviewerCount: row.reviewerCount ?? 1,
+            }
+          : {}),
         name: row.taskName,
         required: row.taskRequired ?? false,
-        status: row.taskStatus,
+        status: row.taskStatus ?? "WAITING",
         taskType: row.taskType,
+        prerequisitesComplete: row.prerequisitesComplete,
         viewPermission: row.taskViewPermission.view,
       });
     }

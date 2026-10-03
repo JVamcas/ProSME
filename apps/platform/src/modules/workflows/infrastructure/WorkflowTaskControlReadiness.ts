@@ -9,6 +9,11 @@ export const workflowTaskControlAllowsCompletion = sql`NOT EXISTS (
   WHERE active_deferral.stage_instance_id = stage.id
     AND active_deferral.status = 'ACTIVE'
 ) AND NOT EXISTS (
+  SELECT 1 FROM app_workflow_referrals active_referral
+  WHERE active_referral.source_task_id = task.id
+    AND active_referral.status = 'ACTIVE'
+    AND active_referral.source_task_behavior = 'BLOCKED'
+) AND NOT EXISTS (
   SELECT 1 FROM app_workflow_escalations active_escalation
   WHERE active_escalation.task_id = task.id
     AND active_escalation.status = 'ACTIVE'

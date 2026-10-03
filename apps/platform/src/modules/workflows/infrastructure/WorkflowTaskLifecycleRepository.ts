@@ -23,6 +23,7 @@ export type LockedWorkflowTask = {
   formRequired: boolean;
   formCompleted: boolean;
   hasOpenRfi: boolean;
+  hasBlockingReferral?: boolean;
   id: string;
   permissions: WorkflowElementPermissions;
   rowVersion: number;
@@ -65,6 +66,12 @@ export async function lockWorkflowTaskForLifecycle(
         WHERE response.workflow_task_id = ${workflowTasks.id}
           AND response.status = 'COMPLETED'
       )`,
+      hasBlockingReferral: sql<boolean>`EXISTS (
+        SELECT 1 FROM app_workflow_referrals referral
+        WHERE referral.source_task_id = ${workflowTasks.id}
+          AND referral.status = 'ACTIVE'
+          AND referral.source_task_behavior = 'BLOCKED'
+      )`,
       hasOpenRfi: sql<boolean>`EXISTS (
         SELECT 1 FROM app_workflow_rfis rfi
         WHERE rfi.task_id = ${workflowTasks.id}
@@ -89,11 +96,13 @@ export async function lockWorkflowTaskForLifecycle(
       workflowInstances,
       eq(workflowInstances.id, stageInstances.workflowInstanceId),
     )
-    .where(and(
-      eq(workflowTasks.id, taskId),
-      eq(stageInstances.status, "ACTIVE"),
-      eq(workflowInstances.status, "ACTIVE"),
-    ))
+    .where(
+      and(
+        eq(workflowTasks.id, taskId),
+        eq(stageInstances.status, "ACTIVE"),
+        eq(workflowInstances.status, "ACTIVE"),
+      ),
+    )
     .for("update", { of: workflowTasks })
     .limit(1);
   return task ?? null;
@@ -106,20 +115,20 @@ export async function persistWorkflowTaskTransition(
   const [task] = await transaction
     .update(workflowTasks)
     .set({
-      completedAt: input.targetStatus === "COMPLETED"
-        ? input.occurredAt
-        : undefined,
+      completedAt:
+        input.targetStatus === "COMPLETED" ? input.occurredAt : undefined,
       rowVersion: input.rowVersion + 1,
-      startedAt: input.targetStatus === "IN_PROGRESS"
-        ? input.occurredAt
-        : undefined,
+      startedAt:
+        input.targetStatus === "IN_PROGRESS" ? input.occurredAt : undefined,
       status: input.targetStatus,
     })
-    .where(and(
-      eq(workflowTasks.id, input.taskId),
-      eq(workflowTasks.rowVersion, input.rowVersion),
-      eq(workflowTasks.status, input.currentStatus),
-    ))
+    .where(
+      and(
+        eq(workflowTasks.id, input.taskId),
+        eq(workflowTasks.rowVersion, input.rowVersion),
+        eq(workflowTasks.status, input.currentStatus),
+      ),
+    )
     .returning({
       assignedUserId: workflowTasks.assignedUserId,
       claimedAt: workflowTasks.claimedAt,
@@ -137,9 +146,10 @@ export async function persistWorkflowTaskTransition(
     taskId: input.taskId,
     toStatus: input.targetStatus,
   };
-  const action = input.targetStatus === "IN_PROGRESS"
-    ? "TASK_STARTED"
-    : `TASK_${input.targetStatus}`;
+  const action =
+    input.targetStatus === "IN_PROGRESS"
+      ? "TASK_STARTED"
+      : `TASK_${input.targetStatus}`;
   await transaction.insert(workflowEvents).values({
     actorId: input.actorId,
     correlationId: input.correlationId,
@@ -173,7 +183,6 @@ export async function persistWorkflowTaskTransition(
   return task;
 }
 
-
 export async function lockTaskStageForLifecycle(
   transaction: WorkflowTaskLifecycleTransaction,
   taskId: string,
@@ -181,11 +190,13 @@ export async function lockTaskStageForLifecycle(
   const [stage] = await transaction
     .select({ id: stageInstances.id })
     .from(stageInstances)
-    .innerJoin(workflowTasks, eq(workflowTasks.stageInstanceId, stageInstances.id))
-    .where(and(
-      eq(workflowTasks.id, taskId),
-      eq(stageInstances.status, "ACTIVE"),
-    ))
+    .innerJoin(
+      workflowTasks,
+      eq(workflowTasks.stageInstanceId, stageInstances.id),
+    )
+    .where(
+      and(eq(workflowTasks.id, taskId), eq(stageInstances.status, "ACTIVE")),
+    )
     .for("update", { of: stageInstances })
     .limit(1);
   return stage?.id ?? null;

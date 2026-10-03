@@ -3,12 +3,14 @@
 import { DataTable, type DataTableColumn } from "@/shared/ui/DataTable";
 import { ArrowLink } from "@/components/ui/links";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { LockKeyhole } from "lucide-react";
 import { formatLocalDateTime24 } from "@/lib/dateUtils";
 import type { WorkflowProgressTask } from "../api/WorkflowProgressTypes";
 import { workflowTaskTypeLabels } from "./WorkflowTaskTypeLabels";
 
 function Assignment({ task }: { task: WorkflowProgressTask }) {
   const name = task.assignedUserName ?? task.assignedRoleName ?? "Unassigned";
+  const reviewerCount = task.configuredReviewerCount ?? 1;
 
   const showRole =
     task.assignedUserName &&
@@ -25,6 +27,12 @@ function Assignment({ task }: { task: WorkflowProgressTask }) {
         </p>
       ) : null}
 
+      {task.planned ? (
+        <p className="mt-0.5 text-xs text-brand-navy/55">
+          {reviewerCount} {reviewerCount === 1 ? "reviewer" : "reviewers"} · Assigned on activation
+        </p>
+      ) : null}
+
       {showRole ? (
         <p className="mt-0.5 text-xs text-brand-navy/55">
           {task.assignedRoleName}
@@ -37,12 +45,33 @@ function Assignment({ task }: { task: WorkflowProgressTask }) {
 const columns: DataTableColumn<WorkflowProgressTask>[] = [
   {
     accessorKey: "name",
-    header: "Action required",
-    cell: ({ row }) => (
-      <ArrowLink href={`/admin/tasks/${row.original.id}`}>
-        {row.original.name}
-      </ArrowLink>
-    ),
+    header: "Task",
+    cell: ({ row }) => {
+      const task = row.original;
+      if (task.planned) return <span>{task.name}</span>;
+      if (task.blockedReason) {
+        return (
+          <div>
+            <span
+              aria-disabled="true"
+              className="inline-flex items-center gap-2 text-brand-navy/55"
+            >
+              <LockKeyhole aria-hidden="true" className="h-3.5 w-3.5" />
+              {task.name}
+            </span>
+            <p className="mt-1 text-xs text-brand-navy/55">
+              {task.blockedReason}
+            </p>
+          </div>
+        );
+      }
+
+      return (
+        <ArrowLink href={`/admin/tasks/${row.original.id}`}>
+          {row.original.name}
+        </ArrowLink>
+      );
+    },
   },
   {
     accessorKey: "taskType",
@@ -84,6 +113,12 @@ export function WorkflowStageTaskAssignments({
       <h4 className="mb-3 text-sm font-semibold text-brand-navy">
         Task assignments ({tasks.length})
       </h4>
+      {tasks.some((task) => task.planned) ? (
+        <p className="mb-3 text-sm text-brand-navy/65">
+          Configured tasks are shown below. Assignments become active when this
+          stage starts.
+        </p>
+      ) : null}
       <DataTable
         columns={columns}
         data={tasks}

@@ -1,3 +1,4 @@
+import { recordReviewThresholdEvaluations } from "../../infrastructure/WorkflowReviewThresholdRepository";
 import "server-only";
 
 import { permissionCodes } from "@/auth/authorization/permissions";
@@ -12,10 +13,7 @@ import {
 } from "@/lib/resource-errors";
 import { canTransitionWorkflowTask } from "../../domain/runtime/WorkflowTaskLifecycle";
 import type { WorkflowTaskStatus } from "../../domain/runtime/WorkflowTask";
-import {
-  loadRequiredTaskCompletions,
-  recordReviewThresholdEvaluations,
-} from "../../infrastructure/StageCompletionRepository";
+import { loadRequiredTaskCompletions } from "../../infrastructure/StageCompletionRepository";
 import { completeStageInTransaction } from "./ServerStageCompletionService";
 import {
   lockWorkflowTaskForLifecycle,
@@ -67,13 +65,18 @@ async function changeTaskState(
     );
     if (!task) throw new ResourceNotFoundError("workflow task");
     if (action === "START") requirePermission(actor, task.permissions.edit);
-    if (action === "COMPLETE") requirePermission(actor, task.permissions.decide);
+    if (action === "COMPLETE")
+      requirePermission(actor, task.permissions.decide);
     if (task.rowVersion !== input.expectedRowVersion) {
-      throw new ResourceConflictError("This task changed. Refresh and try again.");
+      throw new ResourceConflictError(
+        "This task changed. Refresh and try again.",
+      );
     }
     assertTaskContext(action, actor.id, task);
     if ((action === "START" || action === "COMPLETE") && !task.coiCleared) {
-      throw new ResourceConflictError("Conflict-of-interest clearance is required.");
+      throw new ResourceConflictError(
+        "Conflict-of-interest clearance is required.",
+      );
     }
     if (action === "COMPLETE" && task.formRequired && !task.formCompleted) {
       throw new ResourceConflictError(
@@ -83,6 +86,11 @@ async function changeTaskState(
     if (action === "COMPLETE" && task.hasOpenRfi) {
       throw new ResourceConflictError(
         "Respond to or resolve the open information request before completing this task.",
+      );
+    }
+    if (action !== "CANCEL" && task.hasBlockingReferral) {
+      throw new ResourceConflictError(
+        "This task is blocked until its referral is completed.",
       );
     }
     const targetStatus = targetStatusByAction[action];
@@ -103,7 +111,9 @@ async function changeTaskState(
       workflowInstanceId: task.workflowInstanceId,
     });
     if (!updated) {
-      throw new ResourceConflictError("This task changed. Refresh and try again.");
+      throw new ResourceConflictError(
+        "This task changed. Refresh and try again.",
+      );
     }
     if (action === "CANCEL") {
       const requirements = await loadRequiredTaskCompletions(

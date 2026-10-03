@@ -2,6 +2,7 @@ import "server-only";
 
 import { terminalOutcomeApplicantStatus } from "../../domain/transitions/WorkflowTerminalOutcome";
 import type { StageCompletionResult } from "../../domain/runtime/StageCompletion";
+import { workflowReworkContinuation } from "../../domain/runtime/WorkflowReworkContinuation";
 import {
   evaluateStageCondition,
   normalizeStageConditionRecord,
@@ -13,6 +14,7 @@ import {
   loadStageCompletionValues,
   lockStageCompletionTarget,
   type StageCompletionTransaction,
+  type StageCompletionTarget,
 } from "../../infrastructure/StageCompletionRepository";
 import {
   completeTerminalWorkflow,
@@ -39,7 +41,7 @@ export type ExecuteSequentialTransitionInput = {
   correlationId: string;
   sourceStageInstanceId: string;
   targetActivation?: {
-    iterationStrategy: "FIRST" | "NEXT";
+    iterationStrategy: "FIRST" | "NEXT" | "REWORK";
     referralContext?: Record<string, unknown> | null;
     returnContext?: Record<string, unknown> | null;
   };
@@ -116,15 +118,18 @@ async function activateTransitionTargets(
   input: ExecuteSequentialTransitionInput,
   transition: SequentialTransition,
   workflowInstanceId: string,
+  source: StageCompletionTarget,
 ): Promise<TransitionTargetOutcome[] | null> {
+  const targetActivation: ExecuteSequentialTransitionInput["targetActivation"] =
+    input.targetActivation ?? workflowReworkContinuation(source) ?? undefined;
   const targets: TransitionTargetOutcome[] = [];
   for (const target of transition.targetStages) {
     const activation = await activateStageInTransaction(transaction, {
       actorId: input.actorId,
       correlationId: input.correlationId,
-      iterationStrategy: input.targetActivation?.iterationStrategy,
-      referralContext: input.targetActivation?.referralContext,
-      returnContext: input.targetActivation?.returnContext,
+      iterationStrategy: targetActivation?.iterationStrategy,
+      referralContext: targetActivation?.referralContext,
+      returnContext: targetActivation?.returnContext,
       stageDefinitionId: target.id,
       workflowInstanceId,
     });
@@ -178,6 +183,47 @@ function targetExecutionOutcome(targets: TransitionTargetOutcome[]) {
   return "TARGET_ENTRY_CONDITION_FAILED" as const;
 }
 
+async function finalizeReferralTransition(
+  transaction: StageCompletionTransaction,
+  context: {
+    input: ExecuteSequentialTransitionInput;
+    executionId: string;
+    target: {
+      targetStageDefinitionId: string;
+      targetStageInstanceId: string;
+      targetStageName: string;
+    };
+    transition: SequentialTransition;
+    workflowInstanceId: string;
+  },
+): Promise<SequentialTransitionResult> {
+  const targets: TransitionTargetOutcome[] = [
+    {
+      outcome: "ALREADY_ACTIVE",
+      targetStageDefinitionId: context.target.targetStageDefinitionId,
+      targetStageInstanceId: context.target.targetStageInstanceId,
+      targetStageName: context.target.targetStageName,
+    },
+  ];
+  await finalizeTransitionExecution(transaction, {
+    actionKey: context.input.actionKey,
+    actorId: context.input.actorId,
+    correlationId: context.input.correlationId,
+    executionId: context.executionId,
+    outcome: "TARGET_ACTIVATED",
+    sourceStageInstanceId: context.input.sourceStageInstanceId,
+    targets,
+    transition: context.transition,
+    workflowInstanceId: context.workflowInstanceId,
+  });
+  return {
+    executionId: context.executionId,
+    kind: "transitioned",
+    targets,
+    workflowStatus: "ACTIVE",
+  };
+}
+
 export async function executeSequentialTransitionInTransaction(
   transaction: StageCompletionTransaction,
   input: ExecuteSequentialTransitionInput,
@@ -191,6 +237,7 @@ export async function executeSequentialTransitionInTransaction(
   const source = await lockStageCompletionTarget(
     transaction,
     input.sourceStageInstanceId,
+    ["ACTIVE", "COMPLETED"],
   );
   if (!source) {
     const concurrentReplay = await findTransitionExecution(
@@ -270,6 +317,18 @@ export async function executeSequentialTransitionInTransaction(
     workflowInstanceId: source.workflowInstanceId,
   });
 
+  // Referral completion already handed control back atomically. Suppress
+  // the referred stage's normal onward or terminal transition.
+  if ("referralReturn" in completion && completion.referralReturn) {
+    return finalizeReferralTransition(transaction, {
+      input,
+      executionId: execution.id,
+      target: completion.referralReturn,
+      transition: selected.transition,
+      workflowInstanceId: source.workflowInstanceId,
+    });
+  }
+
   if (selected.transition.terminalOutcome) {
     const completed = await completeTerminalWorkflow(
       transaction,
@@ -305,6 +364,7 @@ export async function executeSequentialTransitionInTransaction(
     input,
     selected.transition,
     source.workflowInstanceId,
+    source,
   );
   if (!targets) return { kind: "target_activation_failed" };
   await finalizeTransitionExecution(transaction, {

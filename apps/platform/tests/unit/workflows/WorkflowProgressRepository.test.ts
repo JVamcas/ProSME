@@ -1,3 +1,4 @@
+import type { SQL } from "drizzle-orm";
 import { PgDialect } from "drizzle-orm/pg-core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -7,7 +8,6 @@ vi.mock("@/db/client", () => ({ getDatabase: vi.fn() }));
 import { getDatabase } from "@/db/client";
 import {
   readWorkflowProgress,
-  readWorkflowTakenPaths,
 } from "@/modules/workflows/infrastructure/WorkflowProgressRepository";
 
 const rows = [
@@ -30,6 +30,7 @@ const rows = [
     reviewerCount: 1,
     reviewRelease: "STAGE_COMPLETED",
     thresholdSatisfied: false,
+    prerequisitesComplete: true,
     taskAssignedRoleCode: "programme_officer",
     taskAssignedRoleName: "Programme Officer",
     taskAssignedUserEmail: "reviewer@example.test",
@@ -71,6 +72,7 @@ const rows = [
     reviewerCount: 1,
     reviewRelease: "STAGE_COMPLETED",
     thresholdSatisfied: false,
+    prerequisitesComplete: false,
     taskAssignedRoleCode: "programme_officer",
     taskAssignedRoleName: "Programme Officer",
     taskAssignedUserEmail: null,
@@ -95,14 +97,6 @@ const rows = [
   },
 ];
 
-const pathWhere = vi.fn();
-const pathLeftJoin = vi.fn(() => ({
-  leftJoin: pathLeftJoin,
-  where: pathWhere,
-}));
-const pathFrom = vi.fn(() => ({ leftJoin: pathLeftJoin }));
-const selectDistinct = vi.fn(() => ({ from: pathFrom }));
-
 const orderBy = vi.fn();
 const where = vi.fn(() => ({ orderBy }));
 const leftJoin = vi.fn(() => ({ leftJoin, where }));
@@ -112,7 +106,7 @@ const select = vi.fn(() => ({ from }));
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(getDatabase).mockReturnValue({ select, selectDistinct } as never);
+  vi.mocked(getDatabase).mockReturnValue({ select } as never);
   orderBy.mockResolvedValue(rows);
 });
 
@@ -146,6 +140,7 @@ describe("workflow progress projection", () => {
         reviewerCount: 1,
         reviewRelease: "STAGE_COMPLETED",
         thresholdSatisfied: false,
+        prerequisitesComplete: true,
         assignedUserName: "Reviewer",
         dueAt: "2026-09-20T09:00:00.000Z",
         id: "task-one",
@@ -157,12 +152,14 @@ describe("workflow progress projection", () => {
       },
     ]);
     expect(progress?.stages[1].tasks[0].taskType).toBe("STAGE_DECISION");
+    expect(progress?.stages[1].tasks[0].prerequisitesComplete).toBe(false);
     expect(select).toHaveBeenCalledWith(
       expect.objectContaining({
         iterationNumber: expect.anything(),
         stageId: expect.anything(),
         stageStatus: expect.anything(),
         taskType: expect.anything(),
+        prerequisitesComplete: expect.anything(),
       }),
     );
     expect(orderBy).toHaveBeenCalledWith(
@@ -170,6 +167,70 @@ describe("workflow progress projection", () => {
       expect.anything(),
       expect.anything(),
     );
+  });
+
+  it("retains cross-run evidence while excluding replacements within the same run", async () => {
+    const progress = await readWorkflowProgress("application-id");
+    expect(progress?.stages[0].tasks[0].id).toBe("task-one");
+    const joins = leftJoin.mock.calls as unknown as [unknown, SQL][];
+    const taskJoin = joins.find((call) => {
+      const query = new PgDialect().sqlToQuery(call[1]);
+      return query.sql.includes("supersedes_task_id");
+    });
+    expect(taskJoin).toBeDefined();
+    const query = new PgDialect().sqlToQuery(taskJoin![1]);
+    expect(query.sql).toContain("successor.stage_instance_id =");
+    expect(query.sql).toContain('"app_workflow_tasks"."stage_instance_id"');
+  });
+
+  it("projects Return closure separately using persisted rework", async () => {
+    orderBy.mockResolvedValue([{ ...rows[0], stageReturned: true }]);
+    const progress = await readWorkflowProgress("application-id");
+    expect(progress?.stages[0]).toMatchObject({
+      status: "RETURNED",
+      completedAt: null,
+      returnedAt: "2026-09-20T10:00:00.000Z",
+    });
+    expect(progress?.stages[0].tasks).toHaveLength(1);
+    const selections = select.mock.calls as unknown as [Record<string, SQL>][];
+    const projection = selections[0][0];
+    const query = new PgDialect().sqlToQuery(projection.stageReturned);
+    expect(query.sql).toContain("rework.source_stage_instance_id =");
+    expect(query.sql).toContain("rework.workflow_instance_id =");
+  });
+
+  it("shows configured tasks and assignment targets for stages awaiting activation", async () => {
+    orderBy.mockResolvedValue([{
+      ...rows[0],
+      activatedAt: null,
+      iterationNumber: null,
+      stageId: null,
+      stageStatus: null,
+      stageCompletedAt: null,
+      taskId: null,
+      taskStatus: null,
+      taskActionedAt: null,
+      reviewerCount: 3,
+    }]);
+    const progress = await readWorkflowProgress("application-id");
+    expect(progress?.stages[0].status).toBe("NOT_STARTED");
+    expect(progress?.stages[0].tasks[0]).toMatchObject({
+      id: "planned-definition-one",
+      name: "Eligibility review",
+      assignedRoleName: "Programme Officer",
+      assignedUserName: "Reviewer",
+      planned: true,
+      configuredReviewerCount: 3,
+      status: "WAITING",
+    });
+    const joins = leftJoin.mock.calls as unknown as [unknown, SQL][];
+    const conditions = joins.map((call) => new PgDialect().sqlToQuery(call[1]).sql);
+    expect(conditions.some((condition) =>
+      condition.includes('"app_workflow_stage_instances"."id" is null') &&
+      condition.includes('"app_stage_task_definitions"."stage_id"'),
+    )).toBe(true);
+    expect(conditions.some((condition) => condition.includes('"assignment_user_id"'))).toBe(true);
+    expect(conditions.some((condition) => condition.includes('"assignment_role_id"'))).toBe(true);
   });
 
   it("returns no progress when the application has no workflow instance", async () => {
@@ -204,39 +265,5 @@ describe("workflow progress projection", () => {
         ["Financial review", "ACTIVE"],
       ],
     );
-  });
-});
-
-describe("workflow taken path projection", () => {
-  it("selects distinct executed branches in the instance scope and excludes unsuccessful targets", async () => {
-    const paths = [
-      { transitionId: "route-one", targetStageKey: "technical" },
-      { transitionId: "terminal-route", targetStageKey: null },
-    ];
-    pathWhere.mockResolvedValue(paths);
-    await expect(readWorkflowTakenPaths("instance-id")).resolves.toEqual(paths);
-    expect(selectDistinct).toHaveBeenCalledWith({
-      transitionId: expect.anything(),
-      targetStageKey: expect.anything(),
-    });
-    const query = new PgDialect().sqlToQuery(pathWhere.mock.calls[0][0]);
-    expect(query.sql).toContain(
-      '"app_workflow_transition_executions"."workflow_instance_id"',
-    );
-    expect(query.params).toEqual([
-      "instance-id",
-      "ACTIVATED",
-      "ALREADY_ACTIVE",
-      "JOIN_PENDING",
-      "WORKFLOW_COMPLETED",
-      "WORKFLOW_REJECTED",
-    ]);
-    expect(query.params).not.toContain("ENTRY_CONDITION_FAILED");
-    expect(query.params).not.toContain("RECORDED");
-  });
-
-  it("returns no highlighted paths before a transition has executed", async () => {
-    pathWhere.mockResolvedValue([]);
-    await expect(readWorkflowTakenPaths("instance-id")).resolves.toEqual([]);
   });
 });
