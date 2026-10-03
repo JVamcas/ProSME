@@ -73,6 +73,7 @@ export const permissionCodes = {
     "funding.application.information-request.own.read",
   fundingApplicationInformationRequestOwnRespond:
     "funding.application.information-request.own.respond",
+  workflowEscalationOwnCancel: "workflow.escalation.own.cancel",
   workflowTaskAssignedRead: "workflow.task.assigned.read",
   workflowDeadlineAllProcess: "workflow.deadline.all.process",
   workflowTaskAssignedProcess: "workflow.task.assigned.process",
@@ -98,6 +99,7 @@ export const permissionCodes = {
   workflowTaskDelegate: "workflow.task.delegate",
   workflowTaskAllRead: "workflow.task.all.read",
   workflowInstanceAllRead: "workflow.instance.all.read",
+  workflowInstanceAssignedRead: "workflow.instance.assigned.read",
   roleRead: "role.read",
   roleManage: "role.manage",
   auditRead: "audit.read",

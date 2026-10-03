@@ -104,6 +104,46 @@ beforeEach(() => {
 });
 
 describe("sequential transition execution", () => {
+  it.each(["completed", "already_completed"] as const)(
+    "returns to the original task from a %s referral without onward work",
+    async (kind) => {
+      const referralReturn = {
+        targetStageDefinitionId: "referrer-definition",
+        targetStageInstanceId: "referrer-stage",
+        targetStageName: "Assessment",
+      };
+      vi.mocked(completeStageInTransaction).mockResolvedValue({
+        kind,
+        completedAt: new Date(),
+        stageInstanceId: source.stageInstanceId,
+        referralReturn,
+      });
+      vi.mocked(loadSequentialTransitions).mockResolvedValue({
+        actionExists: true,
+        transitions: [
+          { ...transition, targetStages: [], terminalOutcome: "APPROVED" },
+        ],
+      });
+      const result = await executeSequentialTransitionInTransaction(
+        {} as never,
+        input,
+      );
+      expect(result).toMatchObject({
+        kind: "transitioned",
+        workflowStatus: "ACTIVE",
+        targets: [{ ...referralReturn, outcome: "ALREADY_ACTIVE" }],
+      });
+      expect(activateStageInTransaction).not.toHaveBeenCalled();
+      expect(completeTerminalWorkflow).not.toHaveBeenCalled();
+      expect(finalizeTransitionExecution).toHaveBeenCalledWith(
+        {},
+        expect.objectContaining({
+          targets: [{ ...referralReturn, outcome: "ALREADY_ACTIVE" }],
+        }),
+      );
+    },
+  );
+
   it("uses the configured target and records one execution before activation", async () => {
     const result = await executeSequentialTransitionInTransaction(
       {} as never,

@@ -42,7 +42,10 @@ vi.mock(
   }),
 );
 vi.mock("@/modules/workflows/ui/tasks/WorkflowTaskDecisionActions", () => ({
-  WorkflowTaskDecisionActions: ({ task, additionalItems = [] }: {
+  WorkflowTaskDecisionActions: ({
+    task,
+    additionalItems = [],
+  }: {
     task: TaskDetail;
     additionalItems?: import("@/shared/ui/DropdownButton").DropdownButtonItem[];
   }) => (
@@ -163,7 +166,12 @@ describe("task eligibility results", () => {
   it("shows a disabled Complete Task menu item until eligibility is evaluated", () => {
     const markup = renderToStaticMarkup(
       <WorkflowTaskReviewPanel
-        task={{ ...task, eligibilityEvaluation: null, formCompleted: false }}
+        task={{
+          ...task,
+          eligibilityEvaluation: null,
+          formCompleted: false,
+          formVersionId: null,
+        }}
       />,
     );
     expect(markup).toMatch(
@@ -173,7 +181,7 @@ describe("task eligibility results", () => {
 
   it("shows an enabled Complete Task menu item when required work is ready", () => {
     const markup = renderToStaticMarkup(
-      <WorkflowTaskReviewPanel task={task} />,
+      <WorkflowTaskReviewPanel task={{ ...task, formVersionId: null }} />,
     );
     expect(markup).toContain("Complete Task</button>");
     expect(markup).not.toMatch(

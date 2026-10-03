@@ -72,6 +72,7 @@ export async function uploadOwnedWorkflowRfiDocument(
   try {
     const version = await createDocumentEvidenceVersion({
       applicationId,
+      taskId: rfi.taskId,
       contentType: validated.contentType,
       objectKey,
       originalName: safeWorkflowEvidenceFileName(file.name),

@@ -2,6 +2,7 @@
 
 import { requestData } from "@/lib/client-http";
 import { z } from "zod";
+import type { WorkflowActionDeletionInput } from "./api/WorkflowActionDeletionSchema";
 import { workflowEligibilityFormPreviewSchema } from "./api/WorkflowEligibilityFormPreview";
 import type { FundingOpportunityPage } from "@/modules/funding-calls/FundingOpportunityTypes";
 import type {
@@ -99,6 +100,17 @@ function updateDraft(definitionId: string, input: UpdateWorkflowDraftInput) {
       body: JSON.stringify(input),
       headers: jsonHeaders,
       method: "PATCH",
+    },
+  );
+}
+
+function deleteAction(definitionId: string, input: WorkflowActionDeletionInput) {
+  return requestData<WorkflowEditorView>(
+    `/api/workflows/${definitionId}/definition-actions`,
+    {
+      body: JSON.stringify(input),
+      headers: jsonHeaders,
+      method: "DELETE",
     },
   );
 }
@@ -209,6 +221,7 @@ export const clientWorkflowService = {
   createTemplate,
   createDefinition,
   deleteDefinition,
+  deleteAction,
   getActionAvailability,
   getEligibilityFormPreviews,
   getEditor,

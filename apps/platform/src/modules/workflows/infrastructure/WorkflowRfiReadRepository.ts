@@ -1,4 +1,5 @@
 import "server-only";
+import { workflowDocumentEvidenceIsCurrent } from "./WorkflowDocumentEvidenceReadiness";
 
 import { sql, type SQL } from "drizzle-orm";
 
@@ -214,6 +215,7 @@ function detailQuery(condition: SQL) {
         FROM app_workflow_document_evidence_versions version
         WHERE version.application_id = rfi.application_id
           AND version.requirement_id = requirement.id
+          AND ${workflowDocumentEvidenceIsCurrent(sql`rfi.task_id`, sql`version.id`)}
           AND version.uploaded_by = rfi.recipient_user_id
           AND (version.valid_until IS NULL OR version.valid_until > now())
         ORDER BY version.version_number DESC

@@ -34,6 +34,8 @@ export type BusinessEvaluationSource = {
 };
 
 export type CreateAuthoritativeOutcomeInput = {
+  // Combined form/evaluation tasks read their own response, including on rework.
+  evidenceTaskId?: string;
   actorId: string;
   application: ApplicationEvaluationSource;
   business: BusinessEvaluationSource;
@@ -43,4 +45,3 @@ export type CreateAuthoritativeOutcomeInput = {
   fundingCall: FundingCallEvaluationSource;
   workflowTaskId: string | null;
 };
-

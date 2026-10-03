@@ -1,4 +1,9 @@
 import { z } from "zod";
+import {
+  workflowTaskAssignedContextSchema,
+  workflowTaskEscalatedContextSchema,
+} from "./NotificationWorkflowTaskEvent";
+export { workflowTaskAssignedContextSchema } from "./NotificationWorkflowTaskEvent";
 
 import { applicationTerminalStatusContextSchema } from "./NotificationApplicationTerminalEvent";
 import {
@@ -34,50 +39,11 @@ export const applicationSubmittedContextSchema = z
   })
   .strict();
 
-const assignedTaskSchema = z
-  .object({
-    assignedUserId: uuidSchema,
-    taskId: uuidSchema,
-    taskName: z.string().trim().min(1).max(300),
-  })
-  .strict();
-
-const assigneeSnapshotSchema = applicationOwnerSnapshotSchema;
-
-export const workflowTaskAssignedContextSchema = z
-  .object({
-    applicationId: uuidSchema,
-    applicationReference: z.string().trim().min(1).max(100),
-    assignedAt: timestampSchema,
-    assignees: z.array(assigneeSnapshotSchema).min(1),
-    correlationId: identifierSchema,
-    fundingOpportunityTitle: z.string().trim().min(1).max(300),
-    sourceIdempotencyKey: identifierSchema,
-    stageInstanceId: uuidSchema,
-    stageName: z.string().trim().min(1).max(300),
-    tasks: z.array(assignedTaskSchema).min(1),
-    workflowInstanceId: uuidSchema,
-  })
-  .strict()
-  .superRefine((context, issueContext) => {
-    const assigneeIds = new Set(
-      context.assignees.map((assignee) => assignee.userId),
-    );
-    for (const [index, task] of context.tasks.entries()) {
-      if (!assigneeIds.has(task.assignedUserId)) {
-        issueContext.addIssue({
-          code: "custom",
-          message: "Task assignee must have a matching assignee snapshot.",
-          path: ["tasks", index, "assignedUserId"],
-        });
-      }
-    }
-  });
 
 const informationRequestContextSchema = z.object({
   applicationId: uuidSchema,
   applicationReference: z.string().trim().min(1).max(100),
-  assignees: z.array(assigneeSnapshotSchema),
+  assignees: z.array(applicationOwnerSnapshotSchema),
   correlationId: identifierSchema,
   fundingOpportunityTitle: z.string().trim().min(1).max(300),
   owner: applicationOwnerSnapshotSchema,
@@ -164,6 +130,7 @@ export const notificationEventKeys = [
   "workflow.information-request.closed",
   "workflow.information-request.expired",
   "workflow.task.assigned",
+  "workflow.task.escalated",
   "workflow.sla.breached",
   "workflow.information-request.reminder",
   "workflow.hold.review-due",
@@ -221,6 +188,7 @@ export type NotificationEventContextByKey = {
   "workflow.information-request.expired": InformationRequestExpiredContext;
   "workflow.information-request.responded": InformationRequestRespondedContext;
   "workflow.task.assigned": WorkflowTaskAssignedContext;
+  "workflow.task.escalated": z.infer<typeof workflowTaskEscalatedContextSchema>;
   "workflow.sla.breached": z.infer<typeof workflowDeadlineContextSchema>;
   "workflow.information-request.reminder": z.infer<typeof workflowDeadlineContextSchema>;
   "workflow.hold.review-due": z.infer<typeof workflowDeadlineContextSchema>;
@@ -349,6 +317,12 @@ export const notificationEventCatalogue = {
     catalogKey: "WORKFLOW",
     contextSchema: informationRequestRespondedContextSchema,
     key: "workflow.information-request.responded",
+  },
+  "workflow.task.escalated": {
+    ruleEligibility: "CONFIGURABLE",
+    catalogKey: "WORKFLOW",
+    contextSchema: workflowTaskEscalatedContextSchema,
+    key: "workflow.task.escalated",
   },
   "workflow.task.assigned": {
     ruleEligibility: "CONFIGURABLE",

@@ -1,3 +1,4 @@
+import { recordReviewThresholdEvaluations } from "../../infrastructure/WorkflowReviewThresholdRepository";
 import "server-only";
 
 import { stageCompletionRequirementsAreMet } from "../../domain/runtime/StageCompletion";
@@ -13,10 +14,11 @@ import {
   loadStageCompletionValues,
   lockStageCompletionTarget,
   persistStageCompletion,
-  recordReviewThresholdEvaluations,
   type StageCompletionTransaction,
 } from "../../infrastructure/StageCompletionRepository";
 import { completeWorkflowReferralForStage } from "../../infrastructure/WorkflowControlRepository";
+
+import { loadWorkflowReferralReturn } from "../../infrastructure/WorkflowReferralRoutingRepository";
 
 export type CompleteStageInput = {
   actorId: string;
@@ -32,12 +34,17 @@ export async function completeStageInTransaction(
   const target = await lockStageCompletionTarget(
     transaction,
     input.stageInstanceId,
+    ["ACTIVE", "COMPLETED"],
   );
   if (!target) return { kind: "stage_not_found" };
   if (target.status === "COMPLETED" && target.completedAt) {
     return {
       completedAt: target.completedAt,
       kind: "already_completed",
+      referralReturn: await loadWorkflowReferralReturn(
+        transaction,
+        input.stageInstanceId,
+      ),
       stageInstanceId: target.stageInstanceId,
     };
   }
@@ -95,14 +102,19 @@ export async function completeStageInTransaction(
     requirements,
     target,
   });
-  if (completed) {
-    await completeWorkflowReferralForStage(transaction, {
-      actorId: input.actorId,
-      correlationId: input.correlationId,
-      referredStageInstanceId: target.stageInstanceId,
-    });
-  }
+  const referral = completed
+    ? await completeWorkflowReferralForStage(transaction, {
+        actorId: input.actorId,
+        correlationId: input.correlationId,
+        referredStageInstanceId: target.stageInstanceId,
+      })
+    : null;
   return completed
-    ? { completedAt, kind: "completed", stageInstanceId: target.stageInstanceId }
+    ? {
+        completedAt,
+        kind: "completed",
+        stageInstanceId: target.stageInstanceId,
+        referralReturn: referral?.returnTarget ?? null,
+      }
     : { kind: "stage_not_active" };
 }

@@ -77,6 +77,20 @@ describe("notification event catalogue", () => {
       .toEqual(taskContext);
   });
 
+  it("validates escalation context and rejects unmatched recipients", () => {
+    const context = {
+      ...taskContext,
+      escalationId: "20000000-0000-4000-8000-000000000006",
+      reason: "Needs intervention",
+      trigger: "MANUAL",
+    };
+    expect(parseNotificationContext("workflow.task.escalated", context)).toEqual(context);
+    expect(() => parseNotificationContext("workflow.task.escalated", {
+      ...context,
+      assignees: [{ ...context.assignees[0], userId: context.escalationId }],
+    })).toThrow("Invalid context");
+  });
+
   it("validates all information-request lifecycle contexts", () => {
     expect(parseNotificationContext(
       "workflow.information-request.created",

@@ -18,5 +18,13 @@ export default async function WorkflowTaskPage({
     redirect("/unauthorized");
   }
   const { id } = await params;
-  return <WorkflowTaskWorkspace taskId={id} />;
+  return (
+    <WorkflowTaskWorkspace
+      canReadWorkflowProgress={
+        can(user, permissionCodes.workflowInstanceAssignedRead) ||
+        can(user, permissionCodes.workflowInstanceAllRead)
+      }
+      taskId={id}
+    />
+  );
 }

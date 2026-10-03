@@ -10,7 +10,9 @@ import type {
 } from "../api/WorkflowProgressTypes";
 import { WorkflowFlowToolbar } from "./WorkflowFlowToolbar";
 import { WorkflowVisualGraph } from "./definitions/WorkflowVisualGraph";
+import { WorkflowStageCompletionRequirements } from "./runtime/WorkflowStageCompletionRequirements";
 import { WorkflowStageTaskAssignments } from "./WorkflowStageTaskAssignments";
+import { StatusBadge } from "@/components/ui/status-badge";
 
 const statusLabels: Record<WorkflowProgressStage["status"], string> = {
   ACTIVE: "In progress",
@@ -18,6 +20,7 @@ const statusLabels: Record<WorkflowProgressStage["status"], string> = {
   CANCELLED: "Cancelled",
   COMPLETED: "Completed",
   NOT_STARTED: "Waiting",
+  RETURNED: "Returned for correction",
 };
 
 const statusBorders: Record<WorkflowProgressStage["status"], string> = {
@@ -26,6 +29,7 @@ const statusBorders: Record<WorkflowProgressStage["status"], string> = {
   CANCELLED: "border-brand-navy/30",
   COMPLETED: "border-brand-green",
   NOT_STARTED: "border-slate-400",
+  RETURNED: "border-brand-orange",
 };
 
 const statusTextColors: Record<WorkflowProgressStage["status"], string> = {
@@ -34,6 +38,7 @@ const statusTextColors: Record<WorkflowProgressStage["status"], string> = {
   CANCELLED: "text-brand-navy/60",
   COMPLETED: "text-brand-green",
   NOT_STARTED: "text-slate-500",
+  RETURNED: "text-brand-orange",
 };
 
 function stageKey(stage: WorkflowProgressStage) {
@@ -50,13 +55,29 @@ function StageMarker({ status }: { status: WorkflowProgressStage["status"] }) {
   return <Circle aria-hidden="true" className="size-4" />;
 }
 
+function latestStageRuns(stages: WorkflowProgressStage[]) {
+  const latestRuns = new Map<string, WorkflowProgressStage>();
+  for (const stage of stages) {
+    const previous = latestRuns.get(stage.stableKey);
+    if (
+      !previous ||
+      (stage.iterationNumber ?? 0) > (previous.iterationNumber ?? 0)
+    ) {
+      latestRuns.set(stage.stableKey, stage);
+    }
+  }
+  return latestRuns;
+}
+
 function StageFlow({ progress }: { progress: WorkflowProgressView }) {
   const [showVisualFlow, setShowVisualFlow] = useState(false);
   const [layoutRevision, setLayoutRevision] = useState(0);
+  const latestRuns = latestStageRuns(progress.stages);
+  const currentStages = [...latestRuns.values()];
   const defaultStage =
-    progress.stages.find(
+    currentStages.find(
       (stage) => stage.status === "ACTIVE" || stage.status === "BLOCKED",
-    ) ?? progress.stages[0];
+    ) ?? currentStages[0];
   const [selectedKey, setSelectedKey] = useState(
     defaultStage ? stageKey(defaultStage) : "",
   );
@@ -66,16 +87,6 @@ function StageFlow({ progress }: { progress: WorkflowProgressView }) {
   if (!selected) return null;
 
   const graphStages = progress.graph?.stages ?? [];
-  const latestRuns = new Map<string, WorkflowProgressStage>();
-  for (const stage of progress.stages) {
-    const previous = latestRuns.get(stage.stableKey);
-    if (
-      !previous ||
-      (stage.iterationNumber ?? 0) > (previous.iterationNumber ?? 0)
-    ) {
-      latestRuns.set(stage.stableKey, stage);
-    }
-  }
   const annotations = new Map(
     graphStages.map((stage) => {
       const run = latestRuns.get(stage.stableKey);
@@ -159,8 +170,8 @@ function StageFlow({ progress }: { progress: WorkflowProgressView }) {
             Stages
           </p>
           <ol className="space-y-1">
-            {progress.stages.map((stage, index) => {
-              const isSelected = stageKey(stage) === stageKey(selected);
+            {currentStages.map((stage) => {
+              const isSelected = stage.stableKey === selected.stableKey;
               return (
                 <li key={stageKey(stage)}>
                   <button
@@ -177,7 +188,7 @@ function StageFlow({ progress }: { progress: WorkflowProgressView }) {
                       {stage.status === "COMPLETED" ? (
                         <StageMarker status={stage.status} />
                       ) : (
-                        index + 1
+                        stage.sequence
                       )}
                     </span>
                     <span className="min-w-0 flex-1">
@@ -199,7 +210,15 @@ function StageFlow({ progress }: { progress: WorkflowProgressView }) {
             })}
           </ol>
         </nav>
-        <SelectedStageDetails selected={selected} />
+        <div className="min-w-0">
+          <SelectedStageDetails
+            selected={selected}
+            isHistorical={
+              stageKey(selected) !==
+              stageKey(latestRuns.get(selected.stableKey)!)
+            }
+          />
+        </div>
       </div>
     </>
   );
@@ -207,9 +226,18 @@ function StageFlow({ progress }: { progress: WorkflowProgressView }) {
 
 function SelectedStageDetails({
   selected,
+  isHistorical,
 }: {
   selected: WorkflowProgressStage;
+  isHistorical: boolean;
 }) {
+  const isReturned = selected.status === "RETURNED";
+  const endedAt = isReturned ? selected.returnedAt : selected.completedAt;
+  const missingTime = isReturned
+    ? "Return time unavailable"
+    : "Not yet completed";
+  const endTime = endedAt ? formatLocalDateTime24(endedAt) : missingTime;
+
   return (
     <section
       aria-label="Selected stage details"
@@ -219,9 +247,11 @@ function SelectedStageDetails({
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-brand-navy/50">
             Stage {selected.sequence}
-            {selected.iterationNumber && selected.iterationNumber > 1
-              ? ` · Run ${selected.iterationNumber}`
-              : ""}
+            {isHistorical
+              ? ` · Historical run ${selected.iterationNumber}`
+              : selected.iterationNumber && selected.iterationNumber > 1
+                ? ` · Run ${selected.iterationNumber}`
+                : ""}
           </p>
           <h3 className="mt-1 text-xl font-bold text-brand-navy">
             {selected.name}
@@ -238,6 +268,14 @@ function SelectedStageDetails({
           {selected.description}
         </p>
       ) : null}
+      {selected.status === "RETURNED" ? (
+        <p className="mt-4 text-sm text-brand-navy/70">
+          Work was returned to the previous stage for correction.
+          {isHistorical
+            ? " This run is retained as history."
+            : " This stage awaits a new review after that work completes."}
+        </p>
+      ) : null}
       <dl className="mt-5 grid gap-3 border-t border-brand-navy/10 pt-4 text-sm sm:grid-cols-2">
         <div>
           <dt className="text-brand-navy/55">Activated</dt>
@@ -248,14 +286,16 @@ function SelectedStageDetails({
           </dd>
         </div>
         <div>
-          <dt className="text-brand-navy/55">Completed</dt>
-          <dd className="mt-1 font-semibold text-brand-navy">
-            {selected.completedAt
-              ? formatLocalDateTime24(selected.completedAt)
-              : "Not yet completed"}
-          </dd>
+          <dt className="text-brand-navy/55">
+            {selected.status === "RETURNED" ? "Returned at" : "Completed"}
+          </dt>
+          <dd className="mt-1 font-semibold text-brand-navy">{endTime}</dd>
         </div>
       </dl>
+      <WorkflowStageCompletionRequirements
+        key={stageKey(selected)}
+        stage={selected}
+      />
       <WorkflowStageTaskAssignments tasks={selected.tasks} />
     </section>
   );
@@ -277,10 +317,11 @@ export function WorkflowProgressPanel({
     );
   }
 
-  const completed = progress.stages.filter(
+  const currentStages = [...latestStageRuns(progress.stages).values()];
+  const completed = currentStages.filter(
     (stage) => stage.status === "COMPLETED",
   ).length;
-  const active = progress.stages.filter(
+  const active = currentStages.filter(
     (stage) => stage.status === "ACTIVE" || stage.status === "BLOCKED",
   ).length;
 
@@ -294,13 +335,14 @@ export function WorkflowProgressPanel({
             {formatLocalDateTime24(progress.startedAt)}
           </p>
         </div>
-        <span className="rounded-full bg-brand-orange/10 px-3 py-1 text-xs font-semibold text-brand-navy">
-          {progress.status.replaceAll("_", " ")}
-        </span>
+        <StatusBadge
+          status={progress.status.replaceAll("_", " ")}
+          label={progress.status.replaceAll("_", " ")}
+        />
       </div>
       <p className="mt-4 text-sm text-brand-navy/70">
-        {completed} completed · {active} active · {progress.stages.length}{" "}
-        stages shown
+        {completed} completed · {active} active · {currentStages.length} stages
+        shown
       </p>
       <StageFlow progress={progress} />
     </section>

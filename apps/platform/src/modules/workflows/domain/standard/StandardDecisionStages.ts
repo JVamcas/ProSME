@@ -5,7 +5,6 @@ import {
   checklist,
   deferDate,
   documentRequirement,
-  refer,
   reject,
   returnAction,
   stage,
@@ -160,7 +159,7 @@ function approval(dependencies: StandardWorkflowDependencies) {
     approve("APPROVE_WITH_CONDITIONS", "Approve with conditions", 2),
     approve("PARTIAL_APPROVAL", "Partially approve at reduced amount", 3),
     reject("DECLINE", "Decline", 4, "TRANSITION"),
-    refer("REFER_COMMITTEE", "Refer back to committee", 5),
+    returnAction("RETURN_COMMITTEE", "Return to committee", 5),
   ];
   return stage({
     actions,

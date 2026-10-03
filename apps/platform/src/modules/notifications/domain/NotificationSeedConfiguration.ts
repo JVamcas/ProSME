@@ -1,4 +1,9 @@
 import {
+  workflowTaskAssignedEventSeed,
+  workflowEscalationEventSeed,
+  workflowEscalationTemplateSeed,
+} from "./WorkflowTaskNotificationSeed";
+import {
   applicationTerminalStatusEventSeed,
   applicationTerminalStatusTemplateSeed,
 } from "./ApplicationTerminalStatusNotificationSeed";
@@ -36,6 +41,7 @@ export type NotificationEventSeed = {
 };
 
 export const notificationEventSeeds: readonly NotificationEventSeed[] = [
+  workflowEscalationEventSeed,
   ...workflowDeadlineEventSeeds,
   applicationTerminalStatusEventSeed,
   {
@@ -69,17 +75,7 @@ export const notificationEventSeeds: readonly NotificationEventSeed[] = [
     ruleId: "00000000-0000-4000-8000-000000000301",
     ruleRecipientId: "00000000-0000-4000-8000-000000000701",
   },
-  {
-    catalogKey: "WORKFLOW",
-    description: "Workflow tasks were assigned to one or more users.",
-    displayName: "Workflow task assigned",
-    id: "00000000-0000-4000-8000-000000000202",
-    key: "workflow.task.assigned",
-    recipientType: "ASSIGNED_USER",
-    ruleChannelId: "00000000-0000-4000-8000-000000000602",
-    ruleId: "00000000-0000-4000-8000-000000000302",
-    ruleRecipientId: "00000000-0000-4000-8000-000000000702",
-  },
+  workflowTaskAssignedEventSeed,
   {
     catalogKey: "WORKFLOW",
     description: "An information request was issued to an applicant.",
@@ -336,6 +332,7 @@ export const notificationTemplateTargetSeeds: readonly NotificationTemplateTarge
       scope: "CATALOG",
     },
     applicationTerminalStatusTemplateSeed,
+    workflowEscalationTemplateSeed,
     ...workflowDeadlineTemplateSeeds,
     {
       defaultSubjectTemplate: "Application {{applicationReference}} submitted",

@@ -32,6 +32,8 @@ describe("workflow task detail projection", () => {
     expect(query.sql).toContain("definition.config ->> 'formPurpose' = 'ELIGIBILITY_VERIFICATION'");
     expect(query.sql).toContain("response.values = (task.result -> 'evaluatedFormValues')");
     expect(query.sql).toContain("task.assigned_user_id =");
+    expect(query.sql).toContain("task_evidence.task_id = task.id");
+    expect(query.sql).toContain("task_evidence.document_version_id = evidence.id");
     expect(query.params).toContain(actorId);
     expect(query.params).toContain(taskId);
   });

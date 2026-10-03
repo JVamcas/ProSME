@@ -73,6 +73,7 @@ export async function uploadWorkflowTaskDocument(
   try {
     const version = await createDocumentEvidenceVersion({
       applicationId: task.applicationId,
+      taskId: task.taskInstanceId,
       contentType: validated.contentType,
       objectKey,
       originalName: safeWorkflowEvidenceFileName(file.name),

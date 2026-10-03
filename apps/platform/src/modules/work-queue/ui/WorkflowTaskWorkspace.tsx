@@ -1,52 +1,61 @@
 "use client";
 
-import { useState } from "react";
-import { WorkflowTaskRfiNotice } from "@/modules/workflows/ui/rfi/WorkflowTaskRfiNotice";
 import { PortalErrorState } from "@/components/layout/PortalErrorState";
 import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Tabs } from "@/components/ui/tabs";
-import { useAdminApplicationDetail } from "@/modules/applications/ApplicationHooks";
-import { ApplicationDetailContent } from "@/modules/applications/ui/ApplicationDetailView";
-import { useWorkflowTask } from "@/modules/work-queue/WorkQueueHooks";
 import { WorkflowTaskReviewPanel } from "@/modules/work-queue/ui/WorkflowTaskReviewPanel";
+import { WorkflowEscalationTrackingPanel } from "@/modules/workflows/ui/tasks/WorkflowEscalationTrackingPanel";
+import {
+  useWorkflowEscalationTracking,
+  useWorkflowTask,
+} from "@/modules/work-queue/WorkQueueHooks";
 import { useWorkflowCoi } from "@/modules/workflows/ui/runtime/useWorkflowCoi";
 import { WorkflowTaskCoiGate } from "@/modules/workflows/ui/runtime/WorkflowTaskCoiGate";
 import { PageShell } from "@/shared/ui/PageShell";
-import { WorkflowTaskRfiPanel } from "@/modules/workflows/ui/rfi/WorkflowTaskRfiPanel";
+import { useState } from "react";
 
-function ApplicationTaskPane({ applicationId }: { applicationId: string }) {
-  const query = useAdminApplicationDetail(applicationId);
+export function WorkflowTaskWorkspace({
+  taskId,
+}: {
+  canReadWorkflowProgress?: boolean;
+  taskId: string;
+}) {
+  const [section, setSection] = useState("assigned-task");
+  const tracking = useWorkflowEscalationTracking(taskId);
+  const coi = useWorkflowCoi(taskId, !tracking.isPending && !tracking.data);
+  const query = useWorkflowTask(
+    taskId,
+    !tracking.isPending && !tracking.data && (coi.data?.cleared ?? false),
+  );
 
-  if (query.isPending) {
+  if (tracking.isPending) {
     return (
       <PortalLoadingState
-        className="min-h-48 px-0"
-        description="Preparing the submitted application."
-        title="Loading application details"
+        title="Loading task"
+        description="Checking the current assignment."
       />
     );
   }
-
-  if (query.isError) {
+  if (tracking.isError) {
     return (
       <PortalErrorState
-        className="mt-0 shadow-none"
-        description={query.error.message}
-        onAction={() => void query.refetch()}
-        title="Application details could not be loaded"
+        title="Task could not be loaded"
+        description={tracking.error.message}
+        onAction={() => void tracking.refetch()}
       />
     );
   }
-
-  return <ApplicationDetailContent model={query.data} />;
-}
-
-export function WorkflowTaskWorkspace({ taskId }: { taskId: string }) {
-  const [section, setSection] = useState("assigned-task");
-  const coi = useWorkflowCoi(taskId);
-  const query = useWorkflowTask(taskId, coi.data?.cleared ?? false);
-
+  if (tracking.data) {
+    return (
+      <PageShell
+        title="Review Assigned Task"
+        actions={<StatusBadge status="ESCALATED" />}
+      >
+        <WorkflowEscalationTrackingPanel task={tracking.data} />
+      </PageShell>
+    );
+  }
   if (coi.isPending) {
     return (
       <PortalLoadingState
@@ -107,12 +116,8 @@ export function WorkflowTaskWorkspace({ taskId }: { taskId: string }) {
           </span>
         </div>
       }
-      title={`Funding Application Review`}
+      title={`Review Assigned Task`}
     >
-      <WorkflowTaskRfiNotice
-        taskId={task.taskInstanceId}
-        onViewRequests={() => setSection("information-requests")}
-      />
       <Tabs
         selectedId={section}
         onSelectionChange={setSection}
@@ -121,19 +126,9 @@ export function WorkflowTaskWorkspace({ taskId }: { taskId: string }) {
         defaultSelectedId="assigned-task"
         items={[
           {
-            content: <ApplicationTaskPane applicationId={task.applicationId} />,
-            id: "application-details",
-            label: "Application Details",
-          },
-          {
             content: <WorkflowTaskReviewPanel task={task} />,
             id: "assigned-task",
             label: "Assigned Task",
-          },
-          {
-            content: <WorkflowTaskRfiPanel taskId={task.taskInstanceId} />,
-            id: "information-requests",
-            label: "Requests for information",
           },
         ]}
         tabListClassName="border-b border-brand-navy/10 px-4"

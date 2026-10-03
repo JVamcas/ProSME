@@ -135,6 +135,7 @@ export function WorkflowActionRoutingStep({
       {editing !== null ? (
         <WorkflowActionRouteEditor
           actionKey={actionKey}
+          actionType={actionType}
           editor={editor}
           onCancel={() => setEditing(null)}
           onSave={saveRoute}

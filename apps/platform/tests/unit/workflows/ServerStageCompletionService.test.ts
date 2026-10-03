@@ -1,3 +1,9 @@
+vi.mock(
+  "@/modules/workflows/infrastructure/WorkflowReviewThresholdRepository",
+  () => ({
+    recordReviewThresholdEvaluations: vi.fn(),
+  }),
+);
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
@@ -6,7 +12,6 @@ vi.mock("@/modules/workflows/infrastructure/StageActivationRepository", () => ({
 }));
 vi.mock("@/modules/workflows/infrastructure/StageCompletionRepository", () => ({
   loadRequiredTaskCompletions: vi.fn(),
-  recordReviewThresholdEvaluations: vi.fn(),
   loadStageCompletionValues: vi.fn(),
   lockStageCompletionTarget: vi.fn(),
   persistStageCompletion: vi.fn(),
@@ -15,6 +20,13 @@ vi.mock("@/modules/workflows/infrastructure/StageCompletionRepository", () => ({
 vi.mock("@/modules/workflows/infrastructure/WorkflowControlRepository", () => ({
   completeWorkflowReferralForStage: vi.fn(),
 }));
+
+vi.mock(
+  "@/modules/workflows/infrastructure/WorkflowReferralRoutingRepository",
+  () => ({
+    loadWorkflowReferralReturn: vi.fn().mockResolvedValue(null),
+  }),
+);
 
 import { basicOperators } from "@/modules/conditions/engine/BasicOperators";
 import { completeStageInTransaction } from "@/modules/workflows/application/runtime/ServerStageCompletionService";
@@ -70,13 +82,16 @@ beforeEach(() => {
 
 describe("stage completion", () => {
   it("does not complete while a required task count is unmet", async () => {
-    vi.mocked(loadRequiredTaskCompletions).mockResolvedValue([{
-      ...completedRequirement,
-      completedCount: 0,
-    }]);
+    vi.mocked(loadRequiredTaskCompletions).mockResolvedValue([
+      {
+        ...completedRequirement,
+        completedCount: 0,
+      },
+    ]);
 
-    await expect(completeStageInTransaction({} as never, input)).resolves
-      .toMatchObject({ kind: "requirements_not_met" });
+    await expect(
+      completeStageInTransaction({} as never, input),
+    ).resolves.toMatchObject({ kind: "requirements_not_met" });
     expect(persistStageCompletion).not.toHaveBeenCalled();
   });
 
@@ -84,28 +99,33 @@ describe("stage completion", () => {
     vi.mocked(lockStageCompletionTarget).mockResolvedValue({
       ...target,
       exitCondition: {
-        children: [{
-          id: "condition",
-          kind: "CONDITION",
-          leftOperand: {
-            key: "stage.finance_review.approved",
-            kind: "FIELD",
+        children: [
+          {
+            id: "condition",
+            kind: "CONDITION",
+            leftOperand: {
+              key: "stage.finance_review.approved",
+              kind: "FIELD",
+            },
+            operator: basicOperators.EQUALS,
+            rightOperand: { kind: "CONSTANT", value: true },
           },
-          operator: basicOperators.EQUALS,
-          rightOperand: { kind: "CONSTANT", value: true },
-        }],
+        ],
         combinator: "AND",
         id: "exit",
         kind: "GROUP",
       },
     });
-    vi.mocked(loadStageCompletionValues).mockResolvedValue([{
-      responseValues: { APPROVED: false },
-      taskResult: null,
-    }]);
+    vi.mocked(loadStageCompletionValues).mockResolvedValue([
+      {
+        responseValues: { APPROVED: false },
+        taskResult: null,
+      },
+    ]);
 
-    await expect(completeStageInTransaction({} as never, input)).resolves
-      .toMatchObject({ kind: "exit_condition_failed" });
+    await expect(
+      completeStageInTransaction({} as never, input),
+    ).resolves.toMatchObject({ kind: "exit_condition_failed" });
     expect(persistStageCompletion).not.toHaveBeenCalled();
   });
 
@@ -136,8 +156,13 @@ describe("stage completion", () => {
       status: "COMPLETED",
     });
 
-    await expect(completeStageInTransaction({} as never, input)).resolves
-      .toEqual({ completedAt, kind: "already_completed", stageInstanceId });
+    await expect(
+      completeStageInTransaction({} as never, input),
+    ).resolves.toMatchObject({
+      completedAt,
+      kind: "already_completed",
+      stageInstanceId,
+    });
     expect(persistStageCompletion).not.toHaveBeenCalled();
   });
 });

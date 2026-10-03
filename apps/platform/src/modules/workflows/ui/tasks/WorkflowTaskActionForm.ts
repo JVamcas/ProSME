@@ -8,6 +8,12 @@ export function actionFormSchema(action: WorkflowTaskAction) {
   return z
     .object({
       confirmed: z.boolean(),
+      escalationTargetType: z.enum(["ROLE", "USER"]).optional(),
+      escalationTargetId: z.union([z.uuid(), z.literal("")]).optional(),
+      targetStageDefinitionId: z.union([z.uuid(), z.literal("")]).optional(),
+      dataHandling: z.enum(["RETAIN", "CLEAR"]),
+      sourceTaskBehavior: z.enum(["BLOCKED", "OPEN"]),
+      returnToReferrer: z.boolean(),
       instructions: z.string().trim().max(12_000),
       requestDetailedInformation: z.boolean(),
       editableFieldPaths: z.array(z.string().min(1)).max(100),
@@ -17,6 +23,32 @@ export function actionFormSchema(action: WorkflowTaskAction) {
       reviewDate: z.union([z.iso.date(), z.literal("")]),
     })
     .superRefine((values, context) => {
+      if (
+        (action.actionType === "RETURN" || action.actionType === "REFER") &&
+        !action.requiredInput.destinationStages?.some(
+          (stage) => stage.id === values.targetStageDefinitionId,
+        )
+      ) {
+        context.addIssue({
+          code: "custom",
+          message: "Choose a destination stage.",
+          path: ["targetStageDefinitionId"],
+        });
+      }
+      if (
+        action.actionType === "ESCALATE" &&
+        !action.requiredInput.escalationTargets?.some(
+          (target) =>
+            target.targetType === values.escalationTargetType &&
+            target.id === values.escalationTargetId,
+        )
+      ) {
+        context.addIssue({
+          code: "custom",
+          message: "Choose a destination user or role.",
+          path: ["escalationTargetId"],
+        });
+      }
       if (
         action.actionType !== "REQUEST_INFORMATION" &&
         action.requiredInput.reason.required &&
@@ -82,6 +114,35 @@ export function actionFormSchema(action: WorkflowTaskAction) {
 
 export type ActionValues = z.infer<ReturnType<typeof actionFormSchema>>;
 
+export function actionFormDefaults(action: WorkflowTaskAction): ActionValues {
+  const defaultTarget = action.requiredInput.escalationTargets?.find(
+    (target) =>
+      target.targetType === action.requiredInput.target.type &&
+      target.id === action.requiredInput.target.value,
+  );
+  return {
+    confirmed: false,
+    escalationTargetType:
+      action.requiredInput.target.type === "USER" ? "USER" : "ROLE",
+    escalationTargetId: defaultTarget?.id ?? "",
+    targetStageDefinitionId:
+      action.requiredInput.defaultDestinationStageId ?? "",
+    dataHandling:
+      action.requiredInput.controlDefaults?.dataHandling ?? "RETAIN",
+    sourceTaskBehavior:
+      action.requiredInput.controlDefaults?.sourceTaskBehavior ?? "BLOCKED",
+    returnToReferrer:
+      action.requiredInput.controlDefaults?.returnToReferrer ?? true,
+    instructions: "",
+    requestDetailedInformation: false,
+    editableFieldPaths: [],
+    question: "",
+    reason: "",
+    requestedDocumentRequirementIds: [],
+    reviewDate: "",
+  };
+}
+
 export function actionInput(
   action: WorkflowTaskAction,
   values: ActionValues,
@@ -104,8 +165,29 @@ export function actionInput(
         instructions: values.instructions,
         requestedDocumentRequirementIds: values.requestedDocumentRequirementIds,
       };
+    case "RETURN":
+      return {
+        ...common,
+        actionType: "RETURN",
+        targetStageDefinitionId: values.targetStageDefinitionId!,
+        dataHandling: values.dataHandling,
+      };
     case "REFER":
-      return { ...common, actionType: "REFER", question: values.question };
+      return {
+        ...common,
+        actionType: "REFER",
+        targetStageDefinitionId: values.targetStageDefinitionId!,
+        question: values.question,
+        sourceTaskBehavior: values.sourceTaskBehavior,
+        returnToReferrer: values.returnToReferrer,
+      };
+    case "ESCALATE":
+      return {
+        ...common,
+        actionType: "ESCALATE",
+        targetType: values.escalationTargetType!,
+        targetId: values.escalationTargetId!,
+      };
     case "PUT_ON_HOLD":
       return {
         ...common,

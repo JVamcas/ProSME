@@ -64,12 +64,17 @@ export const workflowActionInputSchema = z
       .object({
         ...commonInput,
         actionType: z.literal("RETURN"),
+        targetStageDefinitionId: z.uuid().optional(),
+        dataHandling: z.enum(["RETAIN", "CLEAR"]).optional(),
       })
       .strict(),
     z
       .object({
         ...commonInput,
         actionType: z.literal("REFER"),
+        targetStageDefinitionId: z.uuid().optional(),
+        sourceTaskBehavior: z.enum(["BLOCKED", "OPEN"]).optional(),
+        returnToReferrer: z.boolean().optional(),
         question: z.string().trim().min(1).max(4_000),
       })
       .strict(),
@@ -77,8 +82,20 @@ export const workflowActionInputSchema = z
       .object({
         ...commonInput,
         actionType: z.literal("ESCALATE"),
+        targetType: z.enum(["ROLE", "USER"]).optional(),
+        targetId: z.uuid().optional(),
       })
-      .strict(),
+      .strict()
+      .superRefine((input, context) => {
+        if (Boolean(input.targetType) !== Boolean(input.targetId)) {
+          context.addIssue({
+            code: "custom",
+            message:
+              "Choose both the destination type and destination user or role.",
+            path: [input.targetType ? "targetId" : "targetType"],
+          });
+        }
+      }),
     z
       .object({
         ...commonInput,
@@ -126,6 +143,13 @@ export const workflowActionInputSchema = z
       }),
   ])
   .superRefine((input, context) => {
+    if (input.actionType === "REFER") {
+      context.addIssue({
+        code: "custom",
+        message: "Refer has been removed. Use Return for rework.",
+        path: ["actionType"],
+      });
+    }
     if (
       input.actionType === "REQUEST_INFORMATION" &&
       input.editableFieldPaths.length === 0 &&
@@ -218,6 +242,9 @@ export function validateActionInputAgainstConfiguration(
   input: WorkflowActionInput,
   sourceStageKey: string,
 ): string | null {
+  if (action.actionType === "REFER") {
+    return "Refer has been removed. Use Return for rework.";
+  }
   if (action.actionType !== input.actionType) {
     return "The action payload type does not match the configured action.";
   }
@@ -234,10 +261,7 @@ export function validateActionInputAgainstConfiguration(
       // The repository validates selected fields against the application’s form.
       return null;
     case "ESCALATE":
-      return action.configuration.trigger === "MANUAL" ||
-        action.configuration.trigger === "CONDITION"
-        ? null
-        : "This escalation is not available for manual execution.";
+      return null;
     case "PUT_ON_HOLD":
       return action.configuration.reviewDateRequired &&
         input.actionType === "PUT_ON_HOLD" &&

@@ -131,24 +131,12 @@ export function createDefaultWorkflowCommonActions(
       stableKey: "REQUEST_INFORMATION",
     },
     {
-      actionType: "REFER",
-      configuration: {
-        returnToReferrer: true,
-        sourceTaskBehavior: "BLOCKED",
-      },
-      displayOrder: 2,
-      enabled: true,
-      label: "Refer",
-      reasonRequired: true,
-      stableKey: "REFER",
-    },
-    {
       actionType: "PUT_ON_HOLD",
       configuration: {
         reviewDateRequired: true,
         scope: "STAGE",
       },
-      displayOrder: 3,
+      displayOrder: 2,
       enabled: true,
       label: "Put on hold",
       reasonRequired: true,
@@ -157,19 +145,28 @@ export function createDefaultWorkflowCommonActions(
     {
       actionType: "RESUME",
       configuration: { scope: "STAGE" },
-      displayOrder: 4,
+      displayOrder: 3,
       enabled: true,
       label: "Resume",
       reasonRequired: false,
       stableKey: "RESUME",
     },
   ];
+  actions.push({
+    actionType: "RETURN",
+    configuration: { dataHandling: "RETAIN" },
+    displayOrder: 4,
+    enabled: true,
+    label: "Return for correction",
+    reasonRequired: false,
+    stableKey: "RETURN",
+  });
   if (escalationRoleId) {
     actions.push({
       actionType: "ESCALATE",
       configuration: {
         blockUntilResolved: true,
-        responsibility: "SHARE",
+        responsibility: "TRANSFER",
         targetId: escalationRoleId,
         targetType: "ROLE",
         trigger: "MANUAL",

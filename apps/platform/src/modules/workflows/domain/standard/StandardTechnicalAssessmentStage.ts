@@ -27,7 +27,7 @@ export function createStandardTechnicalAssessmentStage(
       5,
       {
         blockUntilResolved: true,
-        responsibility: "SHARE",
+        responsibility: "TRANSFER",
         targetId: dependencies.roleIds.panel_moderator,
         targetType: "ROLE",
         trigger: "MANUAL",

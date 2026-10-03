@@ -17,6 +17,22 @@ export type WorkflowActionPresentationVariant =
   (typeof workflowActionPresentationVariants)[number];
 
 export type WorkflowActionInputMetadata = {
+  escalationTargets?: readonly {
+    id: string;
+    label: string;
+    targetType: "ROLE" | "USER";
+  }[];
+  defaultDestinationStageId?: string;
+  destinationStages?: readonly {
+    id: string;
+    name: string;
+    stableKey: string;
+  }[];
+  controlDefaults?: {
+    dataHandling?: "RETAIN" | "CLEAR";
+    sourceTaskBehavior?: "BLOCKED" | "OPEN";
+    returnToReferrer?: boolean;
+  };
   confirmation: {
     message: string | null;
     required: boolean;
@@ -83,7 +99,10 @@ function targetMetadata(
   action: WorkflowActionDefinition,
 ): WorkflowActionInputMetadata["target"] {
   if (action.actionType === "ESCALATE") {
-    return { type: action.configuration.targetType, value: null };
+    return {
+      type: action.configuration.targetType,
+      value: action.configuration.targetId,
+    };
   }
   if (action.actionType === "DEFER") {
     return action.configuration.targetType === "DATE"
@@ -102,6 +121,10 @@ export function workflowActionInputMetadata(
   const isRequest = action.actionType === "REQUEST_INFORMATION";
   const isHold = action.actionType === "PUT_ON_HOLD";
   return {
+    controlDefaults:
+      action.actionType === "RETURN" || action.actionType === "REFER"
+        ? action.configuration
+        : undefined,
     confirmation: {
       message:
         action.actionType === "WITHDRAW"

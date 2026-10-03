@@ -123,20 +123,6 @@ export function hold(key: string, label: string, order: number) {
   );
 }
 
-export function refer(key: string, label: string, order: number) {
-  return action(
-    key,
-    label,
-    "REFER",
-    order,
-    {
-      returnToReferrer: true,
-      sourceTaskBehavior: "BLOCKED",
-    },
-    true,
-  );
-}
-
 export function checklist(
   key: string,
   text: string,
@@ -237,11 +223,20 @@ export function stage(
   );
   const commonActions = createDefaultWorkflowCommonActions(
     input.tasks[0]?.roleId ?? undefined,
-  ).map((action, index) => ({
-    ...action,
-    displayOrder: maximumActionOrder + index + 1,
-  }));
-  const commonActionKeys = commonActions.map((action) => action.stableKey);
+  )
+    .filter(
+      (action) =>
+        action.actionType !== "RETURN" ||
+        !input.actions.some((existing) => existing.actionType === "RETURN"),
+    )
+    .map((action, index) => ({
+      ...action,
+      displayOrder: maximumActionOrder + index + 1,
+    }));
+  const commonActionKeys = [
+    ...commonActions,
+    ...input.actions.filter((action) => action.actionType === "RETURN"),
+  ].map((action) => action.stableKey);
   return {
     ...input,
     actions: [...input.actions, ...commonActions],

@@ -101,6 +101,9 @@ describe("authoritative eligibility workflow execution", () => {
     await expect(
       executeAuthoritativeEligibility(actor, { ...input, values }),
     ).resolves.toMatchObject({ outcome: "ELIGIBLE" });
+    expect(resolveAuthoritativeEligibilityData).toHaveBeenCalledWith(
+      expect.objectContaining({ workflowTaskId: taskId }),
+    );
     expect(persistAuthoritativeEligibilityExecution).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ evaluatedFormValues: values }),
@@ -111,6 +114,9 @@ describe("authoritative eligibility workflow execution", () => {
     await expect(
       executeAuthoritativeEligibility(actor, input),
     ).resolves.toMatchObject({ outcome: "ELIGIBLE", rowVersion: 3 });
+    expect(resolveAuthoritativeEligibilityData).toHaveBeenCalledWith(
+      expect.objectContaining({ workflowTaskId: undefined }),
+    );
     expect(persistAuthoritativeEligibilityExecution).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({

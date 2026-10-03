@@ -77,6 +77,7 @@ function LoadedDynamicFormTask({
   onCompleteTaskForm,
   onPendingChange,
   onStateChange,
+  onFinalStepChange,
 }: {
   data: TaskFormData;
   taskId: string;
@@ -86,6 +87,7 @@ function LoadedDynamicFormTask({
   onCompleteTaskForm?: (complete: (() => Promise<void>) | null) => void;
   onPendingChange?: (pending: boolean) => void;
   onStateChange?: (state: { pending: boolean; ready: boolean }) => void;
+  onFinalStepChange?: (final: boolean) => void;
 }) {
   const evaluation = useEligibilityTerminationConfirmation(taskId);
   const completionRef = useRef<() => Promise<void>>(async () => undefined);
@@ -173,6 +175,7 @@ function LoadedDynamicFormTask({
       {evaluation.confirmationDialog}
       <FormRenderer
         definition={data.schema}
+        onFinalStepChange={onFinalStepChange}
         formData={controller.values}
         onChange={controller.setValues}
         onSubmit={() => undefined}
@@ -244,6 +247,7 @@ export function DynamicFormTask({
   onCompleteTaskForm,
   onPendingChange,
   onStateChange,
+  onFinalStepChange,
 }: {
   taskId: string;
   eligibilityEvaluation?: AuthoritativeEligibilityTaskResult | null;
@@ -252,6 +256,7 @@ export function DynamicFormTask({
   onCompleteTaskForm?: (complete: (() => Promise<void>) | null) => void;
   onPendingChange?: (pending: boolean) => void;
   onStateChange?: (state: { pending: boolean; ready: boolean }) => void;
+  onFinalStepChange?: (final: boolean) => void;
 }) {
   const query = useTaskForm(taskId);
   if (query.isPending) {
@@ -281,6 +286,7 @@ export function DynamicFormTask({
       onCompleteTaskForm={onCompleteTaskForm}
       onPendingChange={onPendingChange}
       onStateChange={onStateChange}
+      onFinalStepChange={onFinalStepChange}
     />
   );
 }

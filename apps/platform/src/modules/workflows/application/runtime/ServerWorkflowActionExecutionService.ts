@@ -1,3 +1,4 @@
+import { recordReviewThresholdEvaluations } from "../../infrastructure/WorkflowReviewThresholdRepository";
 import "server-only";
 
 import {
@@ -6,9 +7,7 @@ import {
 } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import { permissionCodes } from "@/auth/authorization/permissions";
-import {
-  IdempotencyConflictError,
-} from "@/lib/resource-errors";
+import { IdempotencyConflictError } from "@/lib/resource-errors";
 import {
   claimWorkflowActionRuntimeVersion,
   completeActionTask,
@@ -20,30 +19,24 @@ import {
   withWorkflowActionExecutionTransaction,
   workflowActionExecutionDatabase,
 } from "../../infrastructure/WorkflowActionExecutionConnection";
-import {
-  loadRequiredTaskCompletions,
-  recordReviewThresholdEvaluations,
-} from "../../infrastructure/StageCompletionRepository";
+import { loadRequiredTaskCompletions } from "../../infrastructure/StageCompletionRepository";
 import {
   readWorkflowActionReadiness,
   workflowActionCompletesTask,
   workflowActionReadinessReason,
 } from "./ServerWorkflowActionReadinessService";
-import { configuredActionTargetsAreValid } from "../../infrastructure/WorkflowActionTargetRepository";
+import { prepareWorkflowActionRouting } from "./ServerWorkflowActionRoutingService";
 import {
   validateActionInputAgainstConfiguration,
   WorkflowActionExecutionError,
   type WorkflowActionExecutionResult,
 } from "../../domain/actions/WorkflowActionExecution";
 import { workflowActionDefinitionSchema } from "../../domain/actions/WorkflowActionSchemas";
-import { loadSequentialTransitions } from "../../infrastructure/TransitionExecutionRepository";
 import {
   executeConfiguredWorkflowActionOutcome,
   type ExecuteWorkflowActionInput,
 } from "./ServerWorkflowActionOutcomeService";
-import { buildWorkflowActionConditionContext } from "./ServerWorkflowActionContextService";
 import {
-  evaluateWorkflowActionConditions,
   evaluateWorkflowActionPolicy,
   requiredWorkflowActionPermission,
   type WorkflowActionPolicyResult,
@@ -90,10 +83,16 @@ function assertRuntimeIdentityAndVersion(
   input: ExecuteWorkflowActionInput,
 ) {
   if (target.stage.workflowInstanceId !== input.workflowInstanceId) {
-    fail("INVALID_RUNTIME_CONTEXT", "The stage does not belong to the workflow.");
+    fail(
+      "INVALID_RUNTIME_CONTEXT",
+      "The stage does not belong to the workflow.",
+    );
   }
   if (target.stage.rowVersion !== input.expectedRuntimeVersion) {
-    fail("STALE_RUNTIME_VERSION", "The workflow changed. Refresh and try again.");
+    fail(
+      "STALE_RUNTIME_VERSION",
+      "The workflow changed. Refresh and try again.",
+    );
   }
 }
 
@@ -112,10 +111,10 @@ function policyTarget(target: WorkflowActionExecutionTarget) {
 
 function isIdempotencyConstraint(error: unknown) {
   return Boolean(
-    error
-      && typeof error === "object"
-      && "code" in error
-      && error.code === "23505",
+    error &&
+    typeof error === "object" &&
+    "code" in error &&
+    error.code === "23505",
   );
 }
 
@@ -178,7 +177,9 @@ export async function executeWorkflowAction(
         );
       }
       assertRuntimeIdentityAndVersion(target, input);
-      const parsedAction = workflowActionDefinitionSchema.safeParse(target.action);
+      const parsedAction = workflowActionDefinitionSchema.safeParse(
+        target.action,
+      );
       if (parsedAction.success) {
         target.action = { ...parsedAction.data, id: target.action.id };
       }
@@ -197,28 +198,13 @@ export async function executeWorkflowAction(
         target.stage.stageKey,
       );
       if (inputError) fail("INVALID_ACTION_INPUT", inputError);
-      const targetsValid = await configuredActionTargetsAreValid(
-        transaction,
-        target,
-      );
-
-      const conditionContext = await buildWorkflowActionConditionContext(
-        transaction,
-        target.stage,
-      );
-      const configuredTransitions = await loadSequentialTransitions(
-        transaction,
-        {
-          actionKey: target.action.stableKey,
-          sourceStageDefinitionId: target.stage.stageDefinitionId,
-          workflowVersionId: target.stage.workflowVersionId,
-        },
-      );
-      const conditions = evaluateWorkflowActionConditions(
-        target.action,
-        configuredTransitions.transitions,
+      const {
+        targetsValid,
         conditionContext,
-      );
+        configuredTransitions,
+        conditions,
+        runtimeDestination,
+      } = await prepareWorkflowActionRouting(transaction, target, input.input);
       enforceWorkflowActionPolicy(
         actor,
         target,
@@ -260,15 +246,24 @@ export async function executeWorkflowAction(
         target.action.actionType === "RESUME" ? ["BLOCKED"] : ["ACTIVE"],
       );
       if (!resultingRuntimeVersion) {
-        fail("STALE_RUNTIME_VERSION", "The workflow changed. Refresh and try again.");
+        fail(
+          "STALE_RUNTIME_VERSION",
+          "The workflow changed. Refresh and try again.",
+        );
       }
-      if (target.task && workflowActionCompletesTask(target.action.actionType)) {
+      if (
+        target.task &&
+        workflowActionCompletesTask(target.action.actionType)
+      ) {
         const completed = await completeActionTask(transaction, {
           normalizedInput: input.input,
           task: target.task,
         });
         if (!completed) {
-          fail("ACTION_UNAVAILABLE", "The task changed before the action completed.");
+          fail(
+            "ACTION_UNAVAILABLE",
+            "The task changed before the action completed.",
+          );
         }
         const requirements = await loadRequiredTaskCompletions(
           transaction,
@@ -288,6 +283,7 @@ export async function executeWorkflowAction(
         conditionContext,
         configuredTransitions,
         resultingRuntimeVersion,
+        runtimeDestination,
         requestInformation,
         target,
       });

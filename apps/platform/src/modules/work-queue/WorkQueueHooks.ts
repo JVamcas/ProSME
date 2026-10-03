@@ -117,3 +117,29 @@ export function useExecuteWorkflowTaskAction(taskId: string) {
       ]),
   });
 }
+
+export function useCancelWorkflowEscalation(taskId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (
+      input: Parameters<typeof clientWorkQueueService.cancelEscalation>[1],
+    ) => clientWorkQueueService.cancelEscalation(taskId, input),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: workQueueQueryKeys.all }),
+        queryClient.invalidateQueries({
+          queryKey: ["admin", "workflow-progress"],
+        }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "tasks", taskId] }),
+      ]),
+    onError: () =>
+      queryClient.invalidateQueries({ queryKey: workQueueQueryKeys.all }),
+  });
+}
+
+export function useWorkflowEscalationTracking(taskId: string) {
+  return useQuery({
+    queryKey: [...workQueueQueryKeys.task(taskId), "escalation"],
+    queryFn: () => clientWorkQueueService.getEscalationTracking(taskId),
+  });
+}

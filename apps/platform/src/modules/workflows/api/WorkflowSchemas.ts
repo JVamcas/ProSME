@@ -5,6 +5,7 @@ import { workflowTaskSchema } from "./WorkflowTaskSchemas";
 import { workflowStatuses } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import { workflowPublicStatuses } from "@/modules/workflows/domain/definitions/WorkflowStageDefinition";
 import { workflowActionDefinitionSchema } from "@/modules/workflows/domain/actions/WorkflowActionSchemas";
+import { validateWorkflowActionTargets } from "@/modules/workflows/domain/actions/WorkflowActionValidation";
 import { workflowTransitionSchema } from "@/modules/workflows/domain/transitions/WorkflowTransitionSchemas";
 import { validateWorkflowTransitions } from "@/modules/workflows/domain/transitions/WorkflowTransitionValidation";
 import { conditionGroupSchema } from "@/modules/conditions/domain/ConditionSerialization";
@@ -202,9 +203,10 @@ export const workflowStageSchema = z
         if (seen.has(task[property])) {
           context.addIssue({
             code: "custom",
-            message: property === "displayOrder"
-              ? "Task display orders must be unique within the stage."
-              : "Task keys must be unique within the stage.",
+            message:
+              property === "displayOrder"
+                ? "Task display orders must be unique within the stage."
+                : "Task keys must be unique within the stage.",
             path: ["tasks", index, property],
           });
         }
@@ -315,6 +317,13 @@ export const workflowGraphSchema = z
     transitions: z.array(workflowTransitionSchema),
   })
   .superRefine((graph, context) => {
+    validateWorkflowActionTargets(graph).forEach((error) => {
+      context.addIssue({
+        code: "custom",
+        message: error.message,
+        path: error.path.split("."),
+      });
+    });
     validateWorkflowTransitions(graph).forEach((error) => {
       context.addIssue({
         code: "custom",

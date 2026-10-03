@@ -1,5 +1,6 @@
 import "server-only";
 import { workflowApprovalEligibilityReady } from "./WorkflowApprovalEligibilityReadiness";
+import { workflowReworkContinuationContext } from "./WorkflowReworkContinuationProjection";
 
 import { and, eq, inArray, sql } from "drizzle-orm";
 
@@ -14,10 +15,13 @@ import {
   workflowInstances,
   workflowStageDefinitions,
   workflowTasks,
-  reviewThresholdEvaluations,
 } from "@/db/schema";
-import { requiredReviewCompletions } from "../domain/runtime/ReviewThreshold";
 import type { StageInstanceStatus } from "../domain/runtime/StageInstance";
+export {
+  loadRequiredTaskCompletions,
+  loadStageCompletionValues,
+} from "./StageCompletionReadRepository";
+
 import type { RequiredTaskCompletion } from "../domain/runtime/StageCompletion";
 import type { WorkflowInstanceStatus } from "../domain/runtime/WorkflowInstance";
 
@@ -39,6 +43,7 @@ export type StageCompletionTarget = {
   stageDefinitionId: string;
   stageKey: string;
   rowVersion?: number;
+  returnContext?: Record<string, unknown> | null;
   status: StageInstanceStatus;
   workflowInstanceId: string;
   workflowStatus?: WorkflowInstanceStatus;
@@ -50,12 +55,14 @@ export type StageCompletionValueRow = {
   taskResult: Record<string, unknown> | null;
 };
 
-export async function lockStageCompletionTarget(
-  transaction: StageCompletionTransaction,
-  stageInstanceId: string,
-  allowedStatuses: StageInstanceStatus[] = ["ACTIVE"],
-): Promise<StageCompletionTarget | null> {
-  const [row] = await transaction
+async function readCompletionTargets(
+  transaction: Pick<StageCompletionTransaction, "select">,
+  stageInstanceIds: string[],
+  allowedStatuses: StageInstanceStatus[],
+  lock: boolean,
+): Promise<StageCompletionTarget[]> {
+  if (!stageInstanceIds.length) return [];
+  const query = transaction
     .select({
       activeDeferral: sql<boolean>`EXISTS (
         SELECT 1 FROM app_workflow_deferrals deferral
@@ -69,7 +76,9 @@ export async function lockStageCompletionTarget(
           AND deferral.continuation = 'RESUME_ON_DATE'
           AND deferral.resume_at <= CURRENT_TIMESTAMP
       )`,
-      approvalEligibilityReady: workflowApprovalEligibilityReady(sql`${stageInstances.workflowInstanceId}`),
+      approvalEligibilityReady: workflowApprovalEligibilityReady(
+        sql`${stageInstances.workflowInstanceId}`,
+      ),
       activeHold: sql<boolean>`EXISTS (
         SELECT 1 FROM app_workflow_holds hold
         WHERE hold.stage_instance_id = ${stageInstances.id}
@@ -96,8 +105,7 @@ export async function lockStageCompletionTarget(
         hardFailureCount: sql<number>`jsonb_array_length(${authoritativeEligibilityOutcomes.hardFailures})`,
         manualScreeningRequired:
           authoritativeEligibilityOutcomes.manualScreeningRequired,
-        ruleSetVersionId:
-          authoritativeEligibilityOutcomes.ruleSetVersionId,
+        ruleSetVersionId: authoritativeEligibilityOutcomes.ruleSetVersionId,
         ruleSetVersionNumber:
           authoritativeEligibilityOutcomes.ruleSetVersionNumber,
         softFailureCount: sql<number>`jsonb_array_length(${authoritativeEligibilityOutcomes.softFailures})`,
@@ -118,6 +126,11 @@ export async function lockStageCompletionTarget(
       stageDefinitionId: stageInstances.workflowStageDefinitionId,
       stageKey: workflowStageDefinitions.code,
       rowVersion: stageInstances.rowVersion,
+      returnContext: workflowReworkContinuationContext(
+        sql`${stageInstances.returnContext}`,
+        sql`${stageInstances.workflowInstanceId}`,
+        sql`${stageInstances.workflowStageDefinitionId}`,
+      ),
       status: stageInstances.status,
       workflowInstanceId: workflowInstances.id,
       workflowStatus: workflowInstances.status,
@@ -130,10 +143,7 @@ export async function lockStageCompletionTarget(
     )
     .innerJoin(
       workflowStageDefinitions,
-      eq(
-        workflowStageDefinitions.id,
-        stageInstances.workflowStageDefinitionId,
-      ),
+      eq(workflowStageDefinitions.id, stageInstances.workflowStageDefinitionId),
     )
     .innerJoin(
       applications,
@@ -154,118 +164,58 @@ export async function lockStageCompletionTarget(
         )`,
       ),
     )
-    .where(and(
-      eq(stageInstances.id, stageInstanceId),
-      eq(workflowInstances.status, "ACTIVE"),
-      inArray(stageInstances.status, allowedStatuses),
-    ))
-    .for("update", { of: stageInstances })
-    .limit(1);
-  if (!row) return null;
-
-  const { business, declarations, financial, project, ...application } =
-    row.application;
-  return {
-    ...row,
-    application: {
-      ...application,
-      ...business,
-      ...project,
-      ...financial,
-      ...declarations,
-    },
-    fundingCall: {
-      ...row.fundingCall,
-      maximumAmount: Number(row.fundingCall.maximumAmount),
-      minimumAmount: Number(row.fundingCall.minimumAmount),
-    },
-  };
+    .where(
+      and(
+        inArray(stageInstances.id, stageInstanceIds),
+        eq(workflowInstances.status, "ACTIVE"),
+        inArray(stageInstances.status, allowedStatuses),
+      ),
+    );
+  const rows = lock
+    ? await query.for("update", { of: stageInstances })
+    : await query;
+  return rows.map((row) => {
+    const { business, declarations, financial, project, ...application } =
+      row.application;
+    return {
+      ...row,
+      application: {
+        ...application,
+        ...business,
+        ...project,
+        ...financial,
+        ...declarations,
+      },
+      fundingCall: {
+        ...row.fundingCall,
+        maximumAmount: Number(row.fundingCall.maximumAmount),
+        minimumAmount: Number(row.fundingCall.minimumAmount),
+      },
+    };
+  });
 }
 
-export async function loadRequiredTaskCompletions(
-  transaction: Pick<StageCompletionTransaction, "execute">,
+export async function lockStageCompletionTarget(
+  transaction: StageCompletionTransaction,
   stageInstanceId: string,
-  completingTaskId?: string,
-): Promise<RequiredTaskCompletion[]> {
-  const result = await transaction.execute(sql`
-    SELECT definition.id AS "taskDefinitionId",
-      definition.code AS "taskKey",
-      definition.required_completion_count AS "requiredCompletionCount",
-      definition.completion_mode AS "completionMode",
-      definition.completion_percentage AS "completionPercentage",
-      definition.reviewer_count AS "denominator",
-      count(task.id) FILTER (
-        WHERE (task.status = 'COMPLETED'
-          OR (task.id = ${completingTaskId ?? null}::uuid
-            AND task.status IN ('PENDING', 'IN_PROGRESS')))
-          AND app_workflow_task_coi_cleared(task.id, task.assigned_user_id)
-          AND NOT EXISTS (
-            SELECT 1 FROM app_workflow_tasks successor
-            WHERE successor.supersedes_task_id = task.id
-          )
-          AND (task.form_version_id IS NULL OR EXISTS (
-            SELECT 1 FROM app_form_responses response
-            WHERE response.workflow_task_id = task.id
-              AND (response.status = 'COMPLETED'
-                OR (definition.config ->> 'command' = 'AUTHORITATIVE_ELIGIBILITY'
-                  AND response.values = (task.result -> 'evaluatedFormValues')))
-          ))
-      )::integer AS "completedCount",
-      COALESCE(array_agg(task.id ORDER BY task.reviewer_slot) FILTER (
-        WHERE (task.status = 'COMPLETED'
-          OR (task.id = ${completingTaskId ?? null}::uuid
-            AND task.status IN ('PENDING', 'IN_PROGRESS')))
-          AND app_workflow_task_coi_cleared(task.id, task.assigned_user_id)
-          AND NOT EXISTS (
-            SELECT 1 FROM app_workflow_tasks successor
-            WHERE successor.supersedes_task_id = task.id
-          )
-          AND (task.form_version_id IS NULL OR EXISTS (
-            SELECT 1 FROM app_form_responses response
-            WHERE response.workflow_task_id = task.id
-              AND (response.status = 'COMPLETED'
-                OR (definition.config ->> 'command' = 'AUTHORITATIVE_ELIGIBILITY'
-                  AND response.values = (task.result -> 'evaluatedFormValues')))
-          ))
-      ), ARRAY[]::uuid[]) AS "completedTaskIds"
-    FROM app_stage_task_definitions definition
-    JOIN app_workflow_stage_instances stage
-      ON stage.workflow_stage_definition_id = definition.stage_id
-    LEFT JOIN app_workflow_tasks task
-      ON task.stage_instance_id = stage.id
-      AND task.workflow_task_definition_id = definition.id
-    WHERE stage.id = ${stageInstanceId}::uuid
-      AND definition.required = TRUE
-    GROUP BY definition.id, definition.code,
-      definition.required_completion_count, definition.completion_mode,
-      definition.completion_percentage, definition.reviewer_count
-    ORDER BY definition.sequence, definition.id
-  `);
-  return result.rows as RequiredTaskCompletion[];
+  allowedStatuses: StageInstanceStatus[] = ["ACTIVE"],
+): Promise<StageCompletionTarget | null> {
+  const rows = await readCompletionTargets(
+    transaction,
+    [stageInstanceId],
+    allowedStatuses,
+    true,
+  );
+  return rows[0] ?? null;
 }
 
-export async function loadStageCompletionValues(
-  transaction: Pick<StageCompletionTransaction, "execute">,
-  stageInstanceId: string,
-): Promise<StageCompletionValueRow[]> {
-  const result = await transaction.execute(sql`
-    SELECT task.result AS "taskResult", response.values AS "responseValues"
-    FROM app_workflow_tasks task
-    LEFT JOIN app_form_responses response
-      ON response.workflow_task_id = task.id
-      AND (response.status = 'COMPLETED'
-        OR response.values = (task.result -> 'evaluatedFormValues'))
-    WHERE task.stage_instance_id = ${stageInstanceId}::uuid
-      AND task.status = 'COMPLETED'
-      AND app_workflow_task_coi_cleared(task.id, task.assigned_user_id)
-      AND NOT EXISTS (
-        SELECT 1 FROM app_workflow_tasks successor
-        WHERE successor.supersedes_task_id = task.id
-      )
-      AND (task.form_version_id IS NULL OR response.id IS NOT NULL)
-    ORDER BY task.created_at, task.id, response.created_at, response.id
-  `);
-  return result.rows as StageCompletionValueRow[];
+export function readStageCompletionTargets(stageInstanceIds: string[]) {
+  return readCompletionTargets(
+    getDatabase(),
+    stageInstanceIds,
+    ["ACTIVE", "BLOCKED"],
+    false,
+  );
 }
 
 export async function persistStageCompletion(
@@ -276,15 +226,18 @@ export async function persistStageCompletion(
     correlationId: string;
     requirements: RequiredTaskCompletion[];
     target: StageCompletionTarget;
+    closure?: "RETURN";
   },
 ) {
   const [completed] = await transaction
     .update(stageInstances)
     .set({ completedAt: input.completedAt, status: "COMPLETED" })
-    .where(and(
-      eq(stageInstances.id, input.target.stageInstanceId),
-      eq(stageInstances.status, "ACTIVE"),
-    ))
+    .where(
+      and(
+        eq(stageInstances.id, input.target.stageInstanceId),
+        eq(stageInstances.status, "ACTIVE"),
+      ),
+    )
     .returning({ id: stageInstances.id });
   if (!completed) return null;
 
@@ -295,17 +248,22 @@ export async function persistStageCompletion(
       rowVersion: sql`${workflowTasks.rowVersion} + 1`,
       status: "CANCELLED",
     })
-    .where(and(
-      eq(workflowTasks.stageInstanceId, input.target.stageInstanceId),
-      sql`${workflowTasks.status} NOT IN ('COMPLETED', 'CANCELLED')`,
-      sql`EXISTS (
-        SELECT 1 FROM app_stage_task_definitions definition
-        WHERE definition.id = ${workflowTasks.workflowTaskDefinitionId}
-          AND definition.required = FALSE
-      )`,
-    ))
+    .where(
+      and(
+        eq(workflowTasks.stageInstanceId, input.target.stageInstanceId),
+        sql`${workflowTasks.status} NOT IN ('COMPLETED', 'CANCELLED')`,
+        input.closure === "RETURN"
+          ? undefined
+          : sql`EXISTS (
+            SELECT 1 FROM app_stage_task_definitions definition
+            WHERE definition.id = ${workflowTasks.workflowTaskDefinitionId}
+              AND definition.required = FALSE
+          )`,
+      ),
+    )
     .returning({ id: workflowTasks.id });
   const payload = {
+    closure: input.closure ?? "REVIEW_COMPLETED",
     cancelledTaskIds: cancelledTasks.map((task) => task.id),
     completedAt: input.completedAt.toISOString(),
     requirements: input.requirements,
@@ -330,53 +288,4 @@ export async function persistStageCompletion(
     workflowInstanceId: input.target.workflowInstanceId,
   });
   return completed;
-}
-
-
-export async function recordReviewThresholdEvaluations(
-  transaction: StageCompletionTransaction,
-  input: {
-    actorId: string;
-    requirements: RequiredTaskCompletion[];
-    stageInstanceId: string;
-    triggerTaskId: string | null;
-  },
-) {
-  if (!input.requirements.length) return;
-  const prior = await transaction
-    .select({ taskDefinitionId: reviewThresholdEvaluations.taskDefinitionId })
-    .from(reviewThresholdEvaluations)
-    .where(and(
-      eq(reviewThresholdEvaluations.stageInstanceId, input.stageInstanceId),
-      eq(reviewThresholdEvaluations.firstSatisfied, true),
-    ));
-  const alreadySatisfied = new Set(
-    prior.map((row) => row.taskDefinitionId),
-  );
-  await transaction.insert(reviewThresholdEvaluations).values(
-    input.requirements.map((requirement) => {
-      const rule = {
-        mode: requirement.completionMode,
-        count: requirement.requiredCompletionCount,
-        percentage: requirement.completionPercentage,
-        rounding: "CEIL" as const,
-      };
-      const requiredCount = requiredReviewCompletions(
-        rule,
-        requirement.denominator,
-      );
-      return {
-        stageInstanceId: input.stageInstanceId,
-        taskDefinitionId: requirement.taskDefinitionId,
-        rule,
-        denominator: requirement.denominator,
-        requiredCount,
-        completedTaskIds: requirement.completedTaskIds,
-        satisfied: requirement.completedCount >= requiredCount,
-        firstSatisfied: requirement.completedCount >= requiredCount
-          && !alreadySatisfied.has(requirement.taskDefinitionId),
-        triggerTaskId: input.triggerTaskId,
-      };
-    }),
-  );
 }

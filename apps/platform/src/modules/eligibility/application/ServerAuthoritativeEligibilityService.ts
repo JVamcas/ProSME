@@ -169,6 +169,7 @@ export async function executeAuthoritativeEligibility(
           correlationId: input.correlationId,
           evaluatedAt: new Date(),
           evaluationNumber: (target.previousOutcome?.evaluationNumber ?? 0) + 1,
+          evidenceTaskId: target.formVersionId ? target.taskId : undefined,
           fundingCall: target.fundingCall,
           workflowTaskId: target.taskId,
         },
@@ -318,6 +319,7 @@ export async function prepareAuthoritativeEligibilityOutcome(
       fundingCallId: input.fundingCall.id,
       fundingCallValues: fundingCallSourceValues(input.fundingCall),
       ruleSet,
+      workflowTaskId: input.evidenceTaskId,
     });
   } catch (error) {
     if (error instanceof EligibilityInputResolutionError) {

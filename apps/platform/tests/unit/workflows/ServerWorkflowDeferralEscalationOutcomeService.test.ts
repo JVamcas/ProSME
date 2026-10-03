@@ -24,16 +24,13 @@ vi.mock(
   "@/modules/workflows/application/runtime/ServerStageActivationService",
   () => ({ activateStageInTransaction: vi.fn() }),
 );
-vi.mock(
-  "@/modules/workflows/infrastructure/WorkflowControlRepository",
-  () => ({
-    hasActiveWorkflowReferral: vi.fn(),
-    recordWorkflowReferral: vi.fn(),
-    recordWorkflowRework: vi.fn(),
-    resumeWorkflowHold: vi.fn(),
-    startWorkflowHold: vi.fn(),
-  }),
-);
+vi.mock("@/modules/workflows/infrastructure/WorkflowControlRepository", () => ({
+  hasActiveWorkflowReferral: vi.fn(),
+  recordWorkflowReferral: vi.fn(),
+  recordWorkflowRework: vi.fn(),
+  resumeWorkflowHold: vi.fn(),
+  startWorkflowHold: vi.fn(),
+}));
 vi.mock(
   "@/modules/workflows/infrastructure/WorkflowDeferralRepository",
   () => ({
@@ -45,14 +42,18 @@ vi.mock(
   "@/modules/workflows/infrastructure/WorkflowEscalationRepository",
   () => ({
     resolveActiveWorkflowEscalation: vi.fn(),
-    startWorkflowEscalation: vi.fn(),
   }),
+);
+
+vi.mock(
+  "@/modules/workflows/application/runtime/ServerWorkflowEscalationService",
+  () => ({ transferWorkflowEscalation: vi.fn() }),
 );
 
 import { executeConfiguredWorkflowActionOutcome } from "@/modules/workflows/application/runtime/ServerWorkflowActionOutcomeService";
 import type { OutcomeInput } from "@/modules/workflows/application/runtime/WorkflowActionOutcomeSupport";
 import { startWorkflowDeferral } from "@/modules/workflows/infrastructure/WorkflowDeferralRepository";
-import { startWorkflowEscalation } from "@/modules/workflows/infrastructure/WorkflowEscalationRepository";
+import { transferWorkflowEscalation } from "@/modules/workflows/application/runtime/ServerWorkflowEscalationService";
 
 const stageId = "10000000-0000-4000-8000-000000000001";
 const taskId = "20000000-0000-4000-8000-000000000001";
@@ -62,7 +63,11 @@ function baseInput(): Omit<OutcomeInput, "command" | "target"> {
   return {
     actorId: "40000000-0000-4000-8000-000000000001",
     conditions: {
-      actionEvaluation: { evaluation: null, passed: true, resolutionError: null },
+      actionEvaluation: {
+        evaluation: null,
+        passed: true,
+        resolutionError: null,
+      },
       available: true,
       selectedTransitionId: null,
       transitionEvaluations: [],
@@ -108,51 +113,48 @@ function runtimeTarget() {
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(startWorkflowDeferral).mockResolvedValue({ id: "deferral" });
-  vi.mocked(startWorkflowEscalation).mockResolvedValue({ id: "escalation" });
+  vi.mocked(transferWorkflowEscalation).mockResolvedValue({ id: "escalation" });
 });
 
 describe("workflow deferral and escalation outcomes", () => {
   it("blocks a date-based deferral without completing the task", async () => {
     const runtime = runtimeTarget();
-    const result = await executeConfiguredWorkflowActionOutcome(
-      {} as never,
-      {
-        ...baseInput(),
-        command: {
-          actionKey: "DEFER",
-          correlationId: "70000000-0000-4000-8000-000000000001",
-          expectedRuntimeVersion: 2,
-          idempotencyKey: "80000000-0000-4000-8000-000000000001",
-          input: {
-            actionType: "DEFER",
-            comment: "Await the next committee meeting.",
+    const result = await executeConfiguredWorkflowActionOutcome({} as never, {
+      ...baseInput(),
+      command: {
+        actionKey: "DEFER",
+        correlationId: "70000000-0000-4000-8000-000000000001",
+        expectedRuntimeVersion: 2,
+        idempotencyKey: "80000000-0000-4000-8000-000000000001",
+        input: {
+          actionType: "DEFER",
+          comment: "Await the next committee meeting.",
+          targetDate: "2027-01-15",
+          targetType: "DATE",
+        },
+        sourceStageInstanceId: stageId,
+        taskId,
+        workflowInstanceId: workflowId,
+      },
+      target: {
+        ...runtime,
+        action: {
+          actionType: "DEFER",
+          condition: null,
+          configuration: {
+            continuation: "RESUME_ON_DATE",
             targetDate: "2027-01-15",
             targetType: "DATE",
           },
-          sourceStageInstanceId: stageId,
-          taskId,
-          workflowInstanceId: workflowId,
-        },
-        target: {
-          ...runtime,
-          action: {
-            actionType: "DEFER",
-            condition: null,
-            configuration: {
-              continuation: "RESUME_ON_DATE",
-              targetDate: "2027-01-15",
-              targetType: "DATE",
-            },
-            displayOrder: 1,
-            enabled: true,
-            id: "90000000-0000-4000-8000-000000000001",
-            label: "Defer",
-            reasonRequired: false,
-            stableKey: "DEFER",
-          },
+          displayOrder: 1,
+          enabled: true,
+          id: "90000000-0000-4000-8000-000000000001",
+          label: "Defer",
+          reasonRequired: false,
+          stableKey: "DEFER",
         },
       },
-    );
+    });
 
     expect(result.transition.kind).toBe("STAGE_BLOCKED");
     expect(startWorkflowDeferral).toHaveBeenCalledWith(
@@ -165,12 +167,12 @@ describe("workflow deferral and escalation outcomes", () => {
     );
   });
 
-  it("records a configured escalation without completing the stage", async () => {
-    const runtime = runtimeTarget();
-    const targetId = "a0000000-0000-4000-8000-000000000001";
-    const result = await executeConfiguredWorkflowActionOutcome(
-      {} as never,
-      {
+  it.each([undefined, "ROLE", "USER"] as const)(
+    "transfers to the %s runtime destination without completing the stage",
+    async (targetType) => {
+      const runtime = runtimeTarget();
+      const targetId = "a0000000-0000-4000-8000-000000000001";
+      const result = await executeConfiguredWorkflowActionOutcome({} as never, {
         ...baseInput(),
         command: {
           actionKey: "ESCALATE",
@@ -180,6 +182,12 @@ describe("workflow deferral and escalation outcomes", () => {
           input: {
             actionType: "ESCALATE",
             comment: "Senior authority is required.",
+            ...(targetType
+              ? {
+                  targetType,
+                  targetId: "a0000000-0000-4000-8000-000000000002",
+                }
+              : {}),
           },
           sourceStageInstanceId: stageId,
           taskId,
@@ -192,7 +200,7 @@ describe("workflow deferral and escalation outcomes", () => {
             condition: null,
             configuration: {
               blockUntilResolved: true,
-              responsibility: "SHARE",
+              responsibility: "TRANSFER",
               targetId,
               targetType: "ROLE",
               trigger: "MANUAL",
@@ -205,16 +213,21 @@ describe("workflow deferral and escalation outcomes", () => {
             stableKey: "ESCALATE",
           },
         },
-      },
-    );
+      });
 
-    expect(result.transition.kind).toBe("STAGE_ACTIVE");
-    expect(startWorkflowEscalation).toHaveBeenCalledWith(
-      expect.anything(),
-      expect.objectContaining({
-        configuration: expect.objectContaining({ targetId }),
-        taskId,
-      }),
-    );
-  });
+      expect(result.transition.kind).toBe("STAGE_ACTIVE");
+      expect(transferWorkflowEscalation).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          configuration: expect.objectContaining({
+            targetId: targetType
+              ? "a0000000-0000-4000-8000-000000000002"
+              : targetId,
+            targetType: targetType ?? "ROLE",
+          }),
+          taskId,
+        }),
+      );
+    },
+  );
 });

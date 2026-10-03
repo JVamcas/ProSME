@@ -109,7 +109,7 @@ describe("automatic reviewer allocation", () => {
     );
     expect(query.sql).toContain("LEFT JOIN app_roles");
     expect(query.sql).toContain("LEFT JOIN app_users");
-    expect(query.params).toEqual([definitionId]);
+    expect(query.params).toEqual([roleId, null]);
   });
 
   it("reports a missing assignee configuration explicitly", async () => {
@@ -117,6 +117,29 @@ describe("automatic reviewer allocation", () => {
       ...task,
       roleId: null,
     }])).rejects.toThrow('task "Technical review", assigned to no configured assignee');
+  });
+
+  it("uses the destination role and excludes previous assignees during transfer", async () => {
+    const destinationRoleId = "77777777-7777-4777-8777-777777777777";
+    const database = transaction([{
+      roleId: destinationRoleId,
+      taskDefinitionId: definitionId,
+      userId: reviewers[1],
+      workload: 0,
+    }]);
+    await expect(allocateStageReviewers(database, workflowId, [{
+      ...task,
+      roleId: destinationRoleId,
+      reviewerCount: 1,
+      excludedUserIds: [reviewers[0]],
+    }])).resolves.toEqual(new Map([[definitionId, [reviewers[1]]]]));
+    const query = new PgDialect().sqlToQuery(
+      vi.mocked(database.execute).mock.calls[0]![0] as SQL,
+    );
+    expect(query.sql).toContain("membership.role_id = allocation.role_id");
+    expect(query.sql).toContain("NOT allocation.excluded_user_ids ? candidate.id::text");
+    expect(query.params).toContain(destinationRoleId);
+    expect(query.params).toContain(JSON.stringify([reviewers[0]]));
   });
 
   it("excludes reviewers with unresolved application COI", async () => {

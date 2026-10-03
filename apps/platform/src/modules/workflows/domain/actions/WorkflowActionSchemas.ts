@@ -106,10 +106,10 @@ export const referConfigurationSchema = z
 export const escalateConfigurationSchema = z
   .object({
     blockUntilResolved: z.boolean(),
-    responsibility: z.enum(["RETAIN", "SHARE", "TRANSFER"]),
+    responsibility: z.literal("TRANSFER"),
     targetType: z.enum(["ROLE", "USER"]),
     targetId: z.string().uuid(),
-    trigger: z.enum(["MANUAL", "SLA_BREACH", "CONDITION"]),
+    trigger: z.literal("MANUAL"),
   })
   .strict();
 

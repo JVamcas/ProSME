@@ -27,6 +27,9 @@ const action: WorkflowTaskAction = {
 };
 const values = {
   confirmed: false,
+  dataHandling: "RETAIN" as const,
+  sourceTaskBehavior: "BLOCKED" as const,
+  returnToReferrer: true,
   instructions: "Please correct the amount.",
   requestDetailedInformation: false,
   editableFieldPaths: ["AMOUNT"],

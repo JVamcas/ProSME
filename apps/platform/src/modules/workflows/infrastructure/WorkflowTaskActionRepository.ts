@@ -1,3 +1,4 @@
+import { recordReviewThresholdEvaluations } from "./WorkflowReviewThresholdRepository";
 import "server-only";
 import { workflowApprovalEligibilityReady } from "@/modules/workflows/infrastructure/WorkflowApprovalEligibilityReadiness";
 
@@ -7,10 +8,7 @@ import {
   shouldCompleteWorkflowTask,
   taskActionMatchesType,
 } from "@/modules/workflows/domain/runtime/WorkflowTaskCompletionPolicy";
-import {
-  loadRequiredTaskCompletions,
-  recordReviewThresholdEvaluations,
-} from "./StageCompletionRepository";
+import { loadRequiredTaskCompletions } from "./StageCompletionRepository";
 import { evaluateStageQuorum } from "./WorkflowQuorumRepository";
 import { readSequentialTransitionAdvancement } from "./RuntimeTransitionAdvancement";
 
@@ -288,7 +286,10 @@ export async function writeChecklistTaskCompletion(
       if (!input.actionKey && task.taskType === "STAGE_DECISION") {
         return { kind: "conflict" } as const;
       }
-      if (task.actionType === "APPROVE_ADVANCE" && task.approvalEligibilityReady === false) {
+      if (
+        task.actionType === "APPROVE_ADVANCE" &&
+        task.approvalEligibilityReady === false
+      ) {
         return { kind: "conflict" } as const;
       }
       if (input.actionKey && !taskActionMatchesType(task)) {

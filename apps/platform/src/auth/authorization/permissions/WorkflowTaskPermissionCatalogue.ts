@@ -9,60 +9,66 @@ function define(
   return { code, description, label };
 }
 
-export const workflowTaskPermissionCatalogue: readonly PermissionDefinition[] = [
-  define(
-    permissionCodes.workflowDeadlineAllProcess,
-    "Process due workflow deadlines",
-    "Execute configured timed actions across active workflows through the authenticated system processor.",
-  ),
-  define(
-    permissionCodes.workflowTaskAssignedRead,
-    "Read assigned tasks",
-    "Read workflow tasks assigned to the signed-in user.",
-  ),
-  define(
-    permissionCodes.workflowTaskAssignedProcess,
-    "Process assigned tasks",
-    "Process an assigned task using its configured actions.",
-  ),
-  define(
-    permissionCodes.workflowTaskAssignedDecide,
-    "Decide assigned tasks",
-    "Complete an assigned task using its configured decision actions.",
-  ),
-  define(
-    permissionCodes.workflowTaskAssign,
-    "Assign tasks",
-    "Assign or reassign workflow tasks.",
-  ),
-  define(
-    permissionCodes.workflowQuorumAllRecord,
-    "Record quorum participation",
-    "Record attendance and chair status for any active workflow stage.",
-  ),
-  define(
-    permissionCodes.workflowCoiAllReview,
-    "Review disclosed conflicts",
-    "Independently clear or confirm a disclosed conflict for an assigned workflow task.",
-  ),
-  define(
-    permissionCodes.workflowTaskCancelAll,
-    "Cancel all tasks",
-    "Cancel any active workflow task.",
-  ),
-  define(
-    permissionCodes.workflowTaskReassign,
-    "Reassign workflow tasks",
-    "Reassign workflow tasks when assignment policy permits.",
-  ),
-  define(
-    permissionCodes.workflowTaskDelegate,
-    "Delegate workflow tasks",
-    "Delegate workflow tasks when delegation policy permits.",
-  ),
-  define(
-    permissionCodes.workflowTaskAllRead,
-    "Read all workflow tasks",
-    "Read workflow tasks across all applications.",
-  ),
-];
+export const workflowTaskPermissionCatalogue: readonly PermissionDefinition[] =
+  [
+    define(
+      permissionCodes.workflowDeadlineAllProcess,
+      "Process due workflow deadlines",
+      "Execute configured timed actions across active workflows through the authenticated system processor.",
+    ),
+    define(
+      permissionCodes.workflowEscalationOwnCancel,
+      "Cancel own task escalations",
+      "Cancel an active manual escalation initiated by the signed-in original assignee and restore their unfinished task assignment.",
+    ),
+    define(
+      permissionCodes.workflowTaskAssignedRead,
+      "Read assigned tasks",
+      "Read workflow tasks assigned to the signed-in user and track their own active manual task escalations.",
+    ),
+    define(
+      permissionCodes.workflowTaskAssignedProcess,
+      "Process assigned tasks",
+      "Process an assigned task using its configured actions.",
+    ),
+    define(
+      permissionCodes.workflowTaskAssignedDecide,
+      "Decide assigned tasks",
+      "Complete an assigned task using its configured decision actions.",
+    ),
+    define(
+      permissionCodes.workflowTaskAssign,
+      "Assign tasks",
+      "Assign or reassign workflow tasks.",
+    ),
+    define(
+      permissionCodes.workflowQuorumAllRecord,
+      "Record quorum participation",
+      "Record attendance and chair status for any active workflow stage.",
+    ),
+    define(
+      permissionCodes.workflowCoiAllReview,
+      "Review disclosed conflicts",
+      "Independently clear or confirm a disclosed conflict for an assigned workflow task.",
+    ),
+    define(
+      permissionCodes.workflowTaskCancelAll,
+      "Cancel all tasks",
+      "Cancel any active workflow task.",
+    ),
+    define(
+      permissionCodes.workflowTaskReassign,
+      "Reassign workflow tasks",
+      "Reassign workflow tasks when assignment policy permits.",
+    ),
+    define(
+      permissionCodes.workflowTaskDelegate,
+      "Delegate workflow tasks",
+      "Delegate workflow tasks when delegation policy permits.",
+    ),
+    define(
+      permissionCodes.workflowTaskAllRead,
+      "Read all workflow tasks",
+      "Read workflow tasks across all applications.",
+    ),
+  ];

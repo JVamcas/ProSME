@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  type AnyPgColumn,
   boolean,
   check,
   index,
@@ -39,12 +40,11 @@ export const workflowReworks = pgTable(
     targetStageInstanceId: uuid("target_stage_instance_id")
       .notNull()
       .references(() => stageInstances.id, { onDelete: "restrict" }),
-    continuationStageInstanceId: uuid("continuation_stage_instance_id")
-      .references(() => stageInstances.id, { onDelete: "restrict" }),
+    continuationStageInstanceId: uuid(
+      "continuation_stage_instance_id",
+    ).references(() => stageInstances.id, { onDelete: "restrict" }),
     reason: text("reason"),
-    dataHandling: text("data_handling")
-      .$type<"RETAIN" | "CLEAR">()
-      .notNull(),
+    dataHandling: text("data_handling").$type<"RETAIN" | "CLEAR">().notNull(),
     createdBy: uuid("created_by")
       .notNull()
       .references(() => users.id, { onDelete: "restrict" }),
@@ -168,9 +168,7 @@ export const workflowHolds = pgTable(
     heldBy: uuid("held_by")
       .notNull()
       .references(() => users.id, { onDelete: "restrict" }),
-    heldAt: timestamp("held_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    heldAt: timestamp("held_at", { withTimezone: true }).notNull().defaultNow(),
     resumedBy: uuid("resumed_by").references(() => users.id, {
       onDelete: "restrict",
     }),
@@ -278,6 +276,10 @@ export const workflowEscalations = pgTable(
   "app_workflow_escalations",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    parentEscalationId: uuid("parent_escalation_id").references(
+      (): AnyPgColumn => workflowEscalations.id,
+      { onDelete: "restrict" },
+    ),
     actionExecutionId: uuid("action_execution_id")
       .notNull()
       .references(() => workflowActionExecutions.id, { onDelete: "restrict" }),
@@ -328,16 +330,18 @@ export const workflowEscalations = pgTable(
       onDelete: "restrict",
     }),
     resolvedAt: timestamp("resolved_at", { withTimezone: true }),
-    resolutionActionExecutionId: uuid("resolution_action_execution_id")
-      .references(() => workflowActionExecutions.id, { onDelete: "restrict" }),
+    resolutionActionExecutionId: uuid(
+      "resolution_action_execution_id",
+    ).references(() => workflowActionExecutions.id, { onDelete: "restrict" }),
   },
   (table) => [
     uniqueIndex("app_workflow_escalations_execution_unique").on(
       table.actionExecutionId,
     ),
-    uniqueIndex("app_workflow_escalations_active_task_unique")
+    index("app_workflow_escalations_active_task_idx")
       .on(table.taskId)
       .where(sql`${table.status} = 'ACTIVE'`),
+    index("app_workflow_escalations_parent_idx").on(table.parentEscalationId),
     index("app_workflow_escalations_runtime_idx").on(
       table.workflowInstanceId,
       table.status,

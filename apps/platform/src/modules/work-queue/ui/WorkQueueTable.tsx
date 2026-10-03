@@ -31,24 +31,26 @@ const columns: DataTableColumn<WorkQueueRow>[] = [
     cell: ({ row }) => row.original.fundingCallTitle ?? "—",
   },
   {
-    accessorKey: "stageName",
-    header: "Stage",
-    cell: ({ row }) => <StatusBadge status={row.original.stageName} />,
-  },
-  {
     accessorKey: "taskName",
     header: "Task",
     cell: ({ row }) => {
       const blockedReason = row.original.taskBlockedReason;
       if (!blockedReason || row.original.informationRequest) {
         return (
-          <ArrowLink href={`/admin/tasks/${row.original.taskInstanceId}`}>
-            {row.original.taskName}
-          </ArrowLink>
+          <div className="flex flex-col gap-2">
+            <ArrowLink
+              href={`/admin/applications/${row.original.applicationId}?tab=workflow-progress&taskId=${row.original.taskInstanceId}`}
+            >
+              {row.original.taskName}
+            </ArrowLink>
+            <p className="text-xs text-brand-navy/50">
+              Stage: {row.original.stageName}
+            </p>
+          </div>
         );
       }
       return (
-        <div className="max-w-72">
+        <div className="max-w-72 flex flex-col gap-2">
           <span
             aria-disabled="true"
             className="inline-flex items-center gap-2 text-sm font-bold text-brand-navy/45"
@@ -56,6 +58,9 @@ const columns: DataTableColumn<WorkQueueRow>[] = [
             <LockKeyhole aria-hidden="true" className="size-4 shrink-0" />
             {row.original.taskName}
           </span>
+          <p className="text-xs text-brand-navy/50">
+            Stage: {row.original.stageName}
+          </p>
         </div>
       );
     },

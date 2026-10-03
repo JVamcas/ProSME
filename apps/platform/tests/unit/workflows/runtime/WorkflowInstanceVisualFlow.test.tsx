@@ -152,7 +152,7 @@ describe("workflow instance visual flow controls", () => {
     expect(container.textContent).toContain("2 stages");
     expect(
       container.querySelectorAll('[aria-label="Workflow stages"] li'),
-    ).toHaveLength(3);
+    ).toHaveLength(2);
     await act(async () => root.unmount());
   });
 

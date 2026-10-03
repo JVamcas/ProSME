@@ -1,9 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
-vi.mock("@/modules/workflows/infrastructure/WorkflowTemplateRepository", () => ({
-  findWorkflowTemplateVersion: vi.fn(),
-}));
+vi.mock(
+  "@/modules/workflows/infrastructure/WorkflowTemplateRepository",
+  () => ({
+    findWorkflowTemplateVersion: vi.fn(),
+  }),
+);
 vi.mock("@/modules/workflows/infrastructure/WorkflowRepository", () => ({
   findDraftByDefinition: vi.fn(),
   findLatestWorkflowVersionId: vi.fn(),
@@ -73,27 +76,46 @@ describe("workflow draft updates", () => {
     vi.mocked(findWorkflowTemplateVersion).mockResolvedValue({
       version: { id: "older-draft", status: "DRAFT" },
     } as never);
-    vi.mocked(loadWorkflowEditor).mockResolvedValue({ graph: referenceWorkflow } as never);
-    vi.mocked(replaceWorkflowDraft).mockResolvedValue("older-draft");
-    await updateWorkflowDraft(actor, "definition-id", {
-      versionId: "older-draft",
-      expectedRowVersion: 2,
+    vi.mocked(loadWorkflowEditor).mockResolvedValue({
       graph: referenceWorkflow,
-    }, "correlation-id");
-    expect(findWorkflowTemplateVersion).toHaveBeenCalledWith("definition-id", "older-draft");
-    expect(replaceWorkflowDraft).toHaveBeenLastCalledWith(expect.objectContaining({
-      versionId: "older-draft",
-    }));
+    } as never);
+    vi.mocked(replaceWorkflowDraft).mockResolvedValue("older-draft");
+    await updateWorkflowDraft(
+      actor,
+      "definition-id",
+      {
+        versionId: "older-draft",
+        expectedRowVersion: 2,
+        graph: referenceWorkflow,
+      },
+      "correlation-id",
+    );
+    expect(findWorkflowTemplateVersion).toHaveBeenCalledWith(
+      "definition-id",
+      "older-draft",
+    );
+    expect(replaceWorkflowDraft).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        versionId: "older-draft",
+      }),
+    );
     vi.mocked(replaceWorkflowDraft).mockClear();
   });
 
   it("rejects a draft from another template before writing", async () => {
     vi.mocked(findWorkflowTemplateVersion).mockResolvedValue(null);
-    await expect(updateWorkflowDraft(actor, "definition-id", {
-      versionId: "foreign-draft",
-      expectedRowVersion: 2,
-      graph: referenceWorkflow,
-    }, "correlation-id")).rejects.toThrow();
+    await expect(
+      updateWorkflowDraft(
+        actor,
+        "definition-id",
+        {
+          versionId: "foreign-draft",
+          expectedRowVersion: 2,
+          graph: referenceWorkflow,
+        },
+        "correlation-id",
+      ),
+    ).rejects.toThrow();
     expect(replaceWorkflowDraft).not.toHaveBeenCalled();
   });
 
@@ -101,11 +123,18 @@ describe("workflow draft updates", () => {
     vi.mocked(findWorkflowTemplateVersion).mockResolvedValue({
       version: { id: "published", status: "PUBLISHED" },
     } as never);
-    await expect(updateWorkflowDraft(actor, "definition-id", {
-      versionId: "published",
-      expectedRowVersion: 2,
-      graph: referenceWorkflow,
-    }, "correlation-id")).rejects.toThrow("Only draft versions can be edited.");
+    await expect(
+      updateWorkflowDraft(
+        actor,
+        "definition-id",
+        {
+          versionId: "published",
+          expectedRowVersion: 2,
+          graph: referenceWorkflow,
+        },
+        "correlation-id",
+      ),
+    ).rejects.toThrow("Only draft versions can be edited.");
     expect(replaceWorkflowDraft).not.toHaveBeenCalled();
   });
 
@@ -154,16 +183,16 @@ describe("workflow draft updates", () => {
   it("reconciles action bindings before persisting a draft", async () => {
     const nextGraph = structuredClone(referenceWorkflow);
     nextGraph.stages[0].actions.push({
-      actionType: "REFER",
+      actionType: "PUT_ON_HOLD",
       configuration: {
-        returnToReferrer: false,
-        sourceTaskBehavior: "OPEN",
+        reviewDateRequired: true,
+        scope: "STAGE",
       },
       displayOrder: 2,
       enabled: true,
-      label: "Refer",
+      label: "Put on hold",
       reasonRequired: true,
-      stableKey: "REFER",
+      stableKey: "PUT_ON_HOLD",
     });
     vi.mocked(findDraftByDefinition).mockResolvedValue("draft-id");
     vi.mocked(loadWorkflowEditor).mockResolvedValue({
@@ -187,7 +216,7 @@ describe("workflow draft updates", () => {
             expect.objectContaining({
               tasks: [
                 expect.objectContaining({
-                  actionKeys: expect.arrayContaining(["REFER"]),
+                  actionKeys: expect.arrayContaining(["PUT_ON_HOLD"]),
                 }),
               ],
             }),

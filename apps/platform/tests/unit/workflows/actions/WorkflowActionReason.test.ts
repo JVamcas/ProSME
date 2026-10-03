@@ -55,8 +55,8 @@ const actions = [
 ];
 
 describe("workflow action reason requirements", () => {
-  it("covers all ten action types", () => {
-    expect(actions).toHaveLength(10);
+  it("covers all nine supported action types", () => {
+    expect(actions).toHaveLength(9);
   });
 
   it.each(actions)(
@@ -69,9 +69,6 @@ describe("workflow action reason requirements", () => {
               editableFieldPaths: action.configuration.editableFieldPaths,
               instructions: "Please provide supporting evidence.",
             }
-          : {}),
-        ...(action.actionType === "REFER"
-          ? { question: "Please review this." }
           : {}),
         ...(action.actionType === "PUT_ON_HOLD"
           ? { reviewDate: "2027-01-15" }

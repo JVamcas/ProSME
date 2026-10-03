@@ -11,6 +11,7 @@ export type WorkQueueInformationRequest = {
 };
 
 export type WorkQueueRow = {
+  outgoingEscalation?: { id: string; canCancel: boolean } | null;
   applicantName: string;
   applicationId: string | null;
   assignedRoleId: string | null;

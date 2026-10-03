@@ -8,7 +8,11 @@ import { toast } from "sonner";
 
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { CheckboxField } from "@/components/ui/form-field";
-import { FormInput, FormTextarea } from "@/components/ui/form-fields";
+import {
+  FormInput,
+  FormSelect,
+  FormTextarea,
+} from "@/components/ui/form-fields";
 import type { DropdownButtonItem } from "@/shared/ui/DropdownButton";
 import type {
   TaskDetail,
@@ -18,10 +22,12 @@ import { useExecuteWorkflowTaskAction } from "@/modules/work-queue/WorkQueueHook
 import { WorkflowTaskActions } from "@/modules/workflows/ui/tasks/WorkflowTaskActions";
 import { isWorkflowStageDecisionAction } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
 import {
+  actionFormDefaults,
   actionFormSchema,
   actionInput,
   type ActionValues,
 } from "./WorkflowTaskActionForm";
+import { WorkflowTaskEscalationFields } from "./WorkflowTaskEscalationFields";
 import { WorkflowTaskInformationRequestFields } from "./WorkflowTaskInformationRequestFields";
 
 function DecisionForm({
@@ -40,16 +46,7 @@ function DecisionForm({
   const router = useRouter();
   const execution = useExecuteWorkflowTaskAction(task.taskInstanceId);
   const form = useForm<ActionValues>({
-    defaultValues: {
-      confirmed: false,
-      instructions: "",
-      requestDetailedInformation: false,
-      editableFieldPaths: [],
-      question: "",
-      reason: "",
-      requestedDocumentRequirementIds: [],
-      reviewDate: "",
-    },
+    defaultValues: actionFormDefaults(action),
     resolver: zodResolver(actionFormSchema(action)),
   });
   const submit = form.handleSubmit(async (values) => {
@@ -97,19 +94,68 @@ function DecisionForm({
         loadingText="Submitting…"
         message={
           <div className="space-y-4">
-            <p>Confirm {action.label.toLowerCase()}?</p>
             {action.actionType === "REQUEST_INFORMATION" ? (
               <WorkflowTaskInformationRequestFields
                 action={action}
                 task={task}
               />
             ) : null}
-            {action.actionType === "REFER" ? (
-              <FormTextarea
-                label="Question for the reviewer"
-                name="question"
+            {action.actionType === "ESCALATE" ? (
+              <WorkflowTaskEscalationFields action={action} />
+            ) : null}
+            {action.actionType === "RETURN" || action.actionType === "REFER" ? (
+              <FormSelect
+                label={
+                  action.actionType === "RETURN"
+                    ? "Stage to reopen"
+                    : "Refer to stage"
+                }
+                name="targetStageDefinitionId"
+                placeholder="Choose a stage"
+                items={(action.requiredInput.destinationStages ?? []).map(
+                  (stage) => ({
+                    label: stage.name,
+                    value: stage.id,
+                  }),
+                )}
                 required
               />
+            ) : null}
+            {action.actionType === "RETURN" ? (
+              <FormSelect
+                label="Responses in the reopened stage"
+                name="dataHandling"
+                items={[
+                  { label: "Retain previous responses", value: "RETAIN" },
+                  { label: "Start with empty responses", value: "CLEAR" },
+                ]}
+                required
+              />
+            ) : null}
+            {action.actionType === "REFER" ? (
+              <>
+                <FormSelect
+                  label="Current task during referral"
+                  name="sourceTaskBehavior"
+                  items={[
+                    {
+                      label: "Block until referral completes",
+                      value: "BLOCKED",
+                    },
+                    { label: "Keep open", value: "OPEN" },
+                  ]}
+                  required
+                />
+                <CheckboxField
+                  label="Return to this task after completion"
+                  name="returnToReferrer"
+                />
+                <FormTextarea
+                  label="Question for the reviewer"
+                  name="question"
+                  required
+                />
+              </>
             ) : null}
             {action.requiredInput.reviewDate.required ? (
               <FormInput
@@ -121,7 +167,7 @@ function DecisionForm({
             ) : null}
             {action.actionType !== "REQUEST_INFORMATION" ? (
               <FormTextarea
-                label="Reason"
+                label="Notes"
                 maxLength={action.requiredInput.reason.maxLength}
                 name="reason"
                 required={action.requiredInput.reason.required}
@@ -153,7 +199,9 @@ export function WorkflowTaskDecisionActions({
   additionalItems = [],
   beforeAction,
   task,
+  showDecisionActions = true,
 }: {
+  showDecisionActions?: boolean;
   eligibilityActionRef?: Ref<HTMLDivElement>;
   additionalItems?: DropdownButtonItem[];
   beforeAction?: () => Promise<void>;
@@ -162,9 +210,13 @@ export function WorkflowTaskDecisionActions({
   // Form finalization changes live action availability; retain this selection
   // until cancellation or successful execution so the dialog stays mounted.
   const [selected, setSelected] = useState<WorkflowTaskAction | null>(null);
+  const visibleActions = task.actions.filter(
+    (action) =>
+      showDecisionActions || !isWorkflowStageDecisionAction(action.actionType),
+  );
   const canChooseAction =
     task.taskStatus !== "COMPLETED" &&
-    (task.actions.length > 0 ||
+    (visibleActions.length > 0 ||
       additionalItems.length > 0 ||
       Boolean(eligibilityActionRef));
   const actionFinalizer =
@@ -176,12 +228,12 @@ export function WorkflowTaskDecisionActions({
     <div className="space-y-4">
       {canChooseAction ? (
         <WorkflowTaskActions
-          actions={task.actions}
+          actions={visibleActions}
           eligibilityActionRef={eligibilityActionRef}
           additionalItems={additionalItems}
           disabled={Boolean(selected)}
           onSelect={(key) => {
-            const action = task.actions.find(
+            const action = visibleActions.find(
               (candidate) => candidate.key === key,
             );
             if (action?.available) setSelected(action);

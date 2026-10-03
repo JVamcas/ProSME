@@ -11,11 +11,11 @@ import { evaluateStageQuorum } from "../../infrastructure/WorkflowQuorumReposito
 
 export function workflowActionCompletesTask(actionType: WorkflowActionType) {
   return ![
+    "RETURN",
     "REQUEST_INFORMATION",
     "DEFER",
     "ESCALATE",
     "PUT_ON_HOLD",
-    "REFER",
     "RESUME",
   ].includes(actionType);
 }
@@ -30,6 +30,7 @@ export async function readWorkflowActionReadiness(
     actionTypes: WorkflowActionType[];
     actorId: string;
     recordQuorumEvaluation: boolean;
+    previewFormSubmission?: boolean;
     stageDefinitionId: string;
     stageInstanceId: string;
     taskId?: string;
@@ -45,10 +46,19 @@ export async function readWorkflowActionReadiness(
         })
       : true,
     input.taskId && input.actionTypes.some(workflowActionCompletesTask)
-      ? readWorkflowActionTaskReadiness(database, input.taskId)
+      ? readWorkflowActionTaskReadiness(
+          database,
+          input.taskId,
+          input.previewFormSubmission ?? false,
+        )
       : null,
     input.actionTypes.includes("APPROVE_ADVANCE")
-      ? loadRequiredTaskCompletions(database, input.stageInstanceId, input.taskId)
+      ? loadRequiredTaskCompletions(
+          database,
+          input.stageInstanceId,
+          input.taskId,
+          input.previewFormSubmission ?? false,
+        )
       : [],
   ]);
   return {
