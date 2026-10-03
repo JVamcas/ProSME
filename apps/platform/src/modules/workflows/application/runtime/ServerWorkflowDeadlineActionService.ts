@@ -71,7 +71,7 @@ export async function executeWorkflowDeadlineAction(
       actionExecutionId: executionId,
       actorId: systemSeedUserId,
       comment: `Scheduled ${candidate.kind}`,
-      reasonCode: candidate.kind === "RFI_EXPIRED" ? "RFI_DEADLINE_EXPIRED" : "SLA_BREACH",
+      reason: `Scheduled ${candidate.kind}`,
       configuration: action.configuration,
       correlationId: input.correlationId,
       stageInstanceId: candidate.stageInstanceId,

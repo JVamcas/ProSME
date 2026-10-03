@@ -1,3 +1,4 @@
+import { formatConditionFieldLabel } from "../domain/ConditionFieldLabel";
 import type { Condition } from "../domain/Condition";
 import type {
   ConditionFieldDefinition,
@@ -34,7 +35,10 @@ function directOperandPreview(
   context: PreviewContext,
 ) {
   if (operand.kind === "CONSTANT") return formatValue(operand.value);
-  return context.fields.get(operand.key)?.label ?? `[Unknown field: ${operand.key}]`;
+  const field = context.fields.get(operand.key);
+  return field
+    ? formatConditionFieldLabel(field)
+    : `[Unknown field: ${operand.key}]`;
 }
 
 function operandPreview(operand: Operand, context: PreviewContext): string {

@@ -9,6 +9,7 @@ import {
 
 type DragState = {
   code: string;
+  scale: number;
   origin: WorkflowNodePosition;
   pointerX: number;
   pointerY: number;
@@ -30,10 +31,15 @@ export function useWorkflowGraphDrag(
 
   function startDragging(event: PointerEvent<HTMLButtonElement>, code: string) {
     const origin = positions[code];
-    if (!origin) return;
+    if (!origin || event.button !== 0) return;
+
+    const cardWidth =
+      event.currentTarget.parentElement?.getBoundingClientRect().width;
+    const scale = cardWidth ? cardWidth / workflowGraphMetrics.nodeWidth : 1;
 
     dragState.current = {
       code,
+      scale,
       origin,
       pointerX: event.clientX,
       pointerY: event.clientY,
@@ -50,11 +56,11 @@ export function useWorkflowGraphDrag(
       [drag.code]: {
         x: Math.max(
           workflowGraphMetrics.canvasPadding,
-          drag.origin.x + event.clientX - drag.pointerX,
+          drag.origin.x + (event.clientX - drag.pointerX) / drag.scale,
         ),
         y: Math.max(
           workflowGraphMetrics.canvasPadding,
-          drag.origin.y + event.clientY - drag.pointerY,
+          drag.origin.y + (event.clientY - drag.pointerY) / drag.scale,
         ),
       },
     }));

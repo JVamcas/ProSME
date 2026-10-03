@@ -73,8 +73,8 @@ const target = {
     condition: null,
     configuration: {
       outcome: {
-        cancelOpenStageInstances: true,
-        cancelOpenTasks: true,
+        cancelOpenStageInstances: true as const,
+        cancelOpenTasks: true as const,
         publicStatusMapping: {
           description: "A decision is available for your application.",
           label: "Decision available",
@@ -88,7 +88,7 @@ const target = {
     enabled: true,
     id: "60000000-0000-4000-8000-000000000001",
     label: "Reject",
-    reasonCodeRequired: false as const,
+    reasonRequired: false as const,
     stableKey: "REJECT",
   },
   stage: {

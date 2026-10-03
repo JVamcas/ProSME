@@ -2,6 +2,14 @@ export const workQueueScopes = ["mine", "overdue", "due-soon"] as const;
 
 export type WorkQueueScope = (typeof workQueueScopes)[number];
 
+export type WorkQueueInformationRequest = {
+  id: string;
+  status: "OPEN" | "RESPONDED" | "CLOSED" | "EXPIRED";
+  createdAt: string;
+  deadlineAt: string;
+  respondedAt: string | null;
+};
+
 export type WorkQueueRow = {
   applicantName: string;
   applicationId: string | null;
@@ -14,6 +22,7 @@ export type WorkQueueRow = {
   createdAt: string;
   dueAt: string | null;
   fundingCallTitle: string | null;
+  informationRequest?: WorkQueueInformationRequest | null;
   priority: "HIGH" | "MEDIUM" | "LOW" | null;
   reference: string;
   rowVersion: number;

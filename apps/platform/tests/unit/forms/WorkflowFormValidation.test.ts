@@ -30,7 +30,7 @@ const stage = (code: string, sequence: number, initial: boolean) => ({
       actionType: "APPROVE_ADVANCE" as const,
       configuration: {},
       enabled: true,
-      reasonCodeRequired: false,
+      reasonRequired: false,
       displayOrder: 1,
     },
   ],

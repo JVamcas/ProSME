@@ -1,3 +1,9 @@
+import type {
+  WorkflowEditorView,
+  WorkflowStageInput,
+} from "@/modules/workflows/domain/definitions/WorkflowTypes";
+import type { WorkflowTransitionDefinition } from "@/modules/workflows/domain/transitions/WorkflowTransitionDefinition";
+import { replaceWorkflowActionRoutes } from "./WorkflowActionEditorRoutes";
 import { workflowActionDefinitionSchema } from "@/modules/workflows/domain/actions/WorkflowActionSchemas";
 import type { WorkflowActionDefinition } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
 import type { WorkflowActionFormValues } from "./WorkflowActionFormSchema";
@@ -29,12 +35,9 @@ export function workflowActionFormDefaults(
     taskStableKeys,
     actionType: action?.actionType ?? "APPROVE_ADVANCE",
     enabled: action?.enabled ?? true,
-    reasonCodeRequired: action?.reasonCodeRequired ?? false,
+    reasonRequired: action?.reasonRequired ?? false,
     displayOrder: action?.displayOrder ?? displayOrder,
-    reasonCodes: "",
     rejectionOutcomeType: "TERMINAL",
-    cancelOpenStageInstances: true,
-    cancelOpenTasks: true,
     rejectionPublicStatus: "OUTCOME_AVAILABLE",
     rejectionPublicLabel: "Decision available",
     rejectionPublicDescription: "A decision is available for your application.",
@@ -44,7 +47,6 @@ export function workflowActionFormDefaults(
     reminderDayOffsets: "",
     expiryAction: "CLOSE_REQUEST",
     dataHandling: "RETAIN",
-    reasonRequired: true,
     returnToReferrer: true,
     sourceTaskBehavior: "BLOCKED",
     escalationTargetType: "ROLE",
@@ -66,14 +68,6 @@ export function workflowActionFormDefaults(
     case "REJECT":
       return {
         ...defaults,
-        cancelOpenStageInstances:
-          action.configuration.outcome.type === "TERMINAL"
-            ? action.configuration.outcome.cancelOpenStageInstances
-            : true,
-        cancelOpenTasks:
-          action.configuration.outcome.type === "TERMINAL"
-            ? action.configuration.outcome.cancelOpenTasks
-            : true,
         rejectionOutcomeType: action.configuration.outcome.type,
         rejectionPublicDescription:
           action.configuration.outcome.type === "TERMINAL"
@@ -95,13 +89,12 @@ export function workflowActionFormDefaults(
         deadlineDays: action.configuration.deadlineDays,
         editableFieldPaths: action.configuration.editableFieldPaths.join(", "),
         reminderDayOffsets: action.configuration.reminderDayOffsets.join(", "),
-        expiryAction: action.configuration.expiryAction,
+        expiryAction: "CLOSE_REQUEST",
       };
     case "RETURN":
       return {
         ...defaults,
         dataHandling: action.configuration.dataHandling,
-        reasonRequired: action.configuration.reasonRequired,
       };
     case "REFER":
       return {
@@ -121,7 +114,6 @@ export function workflowActionFormDefaults(
     case "PUT_ON_HOLD":
       return {
         ...defaults,
-        reasonCodes: action.configuration.reasonCodes.join(", "),
         reviewDateRequired: action.configuration.reviewDateRequired,
       };
     case "RESUME":
@@ -156,8 +148,8 @@ function configuration(values: WorkflowActionFormValues) {
         outcome:
           values.rejectionOutcomeType === "TERMINAL"
             ? {
-                cancelOpenStageInstances: values.cancelOpenStageInstances,
-                cancelOpenTasks: values.cancelOpenTasks,
+                cancelOpenStageInstances: true as const,
+                cancelOpenTasks: true as const,
                 publicStatusMapping: {
                   description: values.rejectionPublicDescription,
                   label: values.rejectionPublicLabel,
@@ -172,16 +164,15 @@ function configuration(values: WorkflowActionFormValues) {
       return {
         continuation: "RESUME_SOURCE_TASK" as const,
         deadlineDays: values.deadlineDays,
-        editableFieldPaths: keys(values.editableFieldPaths),
+        editableFieldPaths: [],
         reminderDayOffsets: numbers(values.reminderDayOffsets),
-        expiryAction: values.expiryAction,
+        expiryAction: "CLOSE_REQUEST" as const,
         participantScope: "APPLICATION_OWNER_AND_REQUESTER" as const,
         recipientScope: "APPLICATION_OWNER" as const,
       };
     case "RETURN":
       return {
         dataHandling: values.dataHandling,
-        reasonRequired: values.reasonRequired,
       };
     case "REFER":
       return {
@@ -198,7 +189,6 @@ function configuration(values: WorkflowActionFormValues) {
       };
     case "PUT_ON_HOLD":
       return {
-        reasonCodes: keys(values.reasonCodes),
         reviewDateRequired: values.reviewDateRequired,
         scope: "STAGE" as const,
       };
@@ -236,9 +226,55 @@ export function toWorkflowActionDefinition(
     label: values.label,
     actionType: values.actionType,
     enabled: values.enabled,
-    reasonCodeRequired:
-      values.actionType === "REJECT" ? false : values.reasonCodeRequired,
+    reasonRequired:
+      values.actionType === "REQUEST_INFORMATION"
+        ? false
+        : values.reasonRequired,
     displayOrder: values.displayOrder,
     configuration: configuration(values),
   });
+}
+
+export function workflowActionUpdatedGraph(
+  editor: WorkflowEditorView,
+  stage: WorkflowStageInput,
+  action: WorkflowActionDefinition | undefined,
+  nextAction: WorkflowActionDefinition,
+  taskStableKeys: readonly string[],
+  routes: WorkflowTransitionDefinition[],
+) {
+  const selectedTasks = new Set(taskStableKeys);
+  return {
+    stages: editor.graph.stages.map((item) =>
+      item.stableKey === stage.stableKey
+        ? {
+            ...item,
+            actions: action
+              ? item.actions.map((current) =>
+                  current.stableKey === action.stableKey ? nextAction : current,
+                )
+              : [...item.actions, nextAction],
+            tasks: item.tasks.map((task) => {
+              const actionKeys = task.actionKeys.filter(
+                (key) =>
+                  key !== action?.stableKey && key !== nextAction.stableKey,
+              );
+              return {
+                ...task,
+                actionKeys: selectedTasks.has(task.stableKey)
+                  ? [...actionKeys, nextAction.stableKey]
+                  : actionKeys,
+              };
+            }),
+          }
+        : item,
+    ),
+    transitions: replaceWorkflowActionRoutes(
+      editor.graph.transitions,
+      stage.stableKey,
+      action?.stableKey,
+      nextAction.stableKey,
+      routes,
+    ),
+  };
 }

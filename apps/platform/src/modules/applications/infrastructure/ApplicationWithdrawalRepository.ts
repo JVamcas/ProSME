@@ -173,7 +173,7 @@ export async function withdrawOwnedApplication(
         confirmed: true,
         reason: input.reason,
       },
-      reasonCode: null,
+      reason: input.reason ?? null,
       resolvedTarget: { status: "WITHDRAWN" },
       result,
       resultingRuntimeVersion: activeStage?.rowVersion != null

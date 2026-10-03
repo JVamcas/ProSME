@@ -61,7 +61,9 @@ export function AdminDashboardCharts({
                   className="mt-1 size-2.5 shrink-0 rounded-full"
                   style={{ backgroundColor: colors[index % colors.length] }}
                 />
-                <span className="flex-1 text-brand-navy/70">{status.label}</span>
+                <span className="flex-1 text-brand-navy/70">
+                  {status.label}
+                </span>
                 <strong className="text-brand-navy">{status.count}</strong>
               </li>
             ))}

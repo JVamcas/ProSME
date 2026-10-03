@@ -23,12 +23,17 @@ import {
   type StoredWorkflowAction,
 } from "../../infrastructure/WorkflowActionAvailabilityRepository";
 import { configuredActionTargetsAreValid } from "../../infrastructure/WorkflowActionTargetRepository";
+import { readWorkflowRfiFieldOptions } from "../../infrastructure/WorkflowRfiFieldRepository";
 import { loadSequentialTransitions } from "../../infrastructure/TransitionExecutionRepository";
 import { buildWorkflowActionConditionContext } from "./ServerWorkflowActionContextService";
 import {
   evaluateWorkflowActionConditions,
   evaluateWorkflowActionPolicy,
 } from "./WorkflowActionPolicy";
+import {
+  readWorkflowActionReadiness,
+  workflowActionReadinessReason,
+} from "./ServerWorkflowActionReadinessService";
 
 export type GetWorkflowActionAvailabilityInput = {
   sourceStageInstanceId: string;
@@ -141,11 +146,25 @@ export async function getWorkflowActionAvailability(
   }
 
   const database = workflowActionAvailabilityDatabase();
-  const context = await buildWorkflowActionConditionContext(
-    database,
-    source.stage,
-    true,
-  );
+  const [context, readiness, editableFields] = await Promise.all([
+    buildWorkflowActionConditionContext(database, source.stage, true),
+    readWorkflowActionReadiness(database, {
+      actionTypes: candidates.map((item) => item.action.actionType),
+      actorId: actor.id,
+      recordQuorumEvaluation: false,
+      stageDefinitionId: source.stage.stageDefinitionId,
+      stageInstanceId: source.stage.stageInstanceId,
+      taskId: source.task?.id,
+    }),
+    candidates.some(
+      (item) => item.definition.actionType === "REQUEST_INFORMATION",
+    )
+      ? readWorkflowRfiFieldOptions(
+          database,
+          String(source.stage.application.id),
+        )
+      : Promise.resolve([]),
+  ]);
   const evaluated = new Map<string, WorkflowActionAvailability>();
   await Promise.all(
     candidates.map(async (item) => {
@@ -175,16 +194,28 @@ export async function getWorkflowActionAvailability(
           targetsValid,
         },
       );
+      const readinessReason = workflowActionReadinessReason(
+        action.actionType,
+        readiness,
+      );
       evaluated.set(
         action.stableKey,
         toAvailability(
           source,
           item.action,
           action,
-          policy.available,
-          policy.unavailableReason,
+          policy.available && readinessReason === null,
+          policy.unavailableReason ?? readinessReason,
         ),
       );
+      if (action.actionType === "REQUEST_INFORMATION") {
+        const availability = evaluated.get(action.stableKey)!;
+        availability.requiredInput = {
+          ...availability.requiredInput,
+          editableFieldPaths: editableFields.map((field) => field.path),
+          editableFields,
+        };
+      }
     }),
   );
 

@@ -195,7 +195,7 @@ describe("EligibilityRuleSetEditor", () => {
     expect(document.body.querySelector('[aria-label="Field"]')).not.toBeNull();
     expect(document.body.querySelector('[aria-label="Operator"]')).not.toBeNull();
     expect(document.body.textContent).toContain(
-      "Employee count [Applicant / Application]",
+      "[Applicant / Application].Employee count",
     );
   });
 

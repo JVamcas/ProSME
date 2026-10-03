@@ -6,14 +6,12 @@ import type { ServerFunctionClient } from "payload";
 import React from "react";
 
 import { permissionCodes } from "@/auth/authorization/permissions";
-import { getCurrentUser } from "@/auth/authorization/current-user";
+import { getAuthenticatedPageUser } from "@/platform/auth/ServerAuthNavigation";
 import { can } from "@/auth/authorization/policy";
 import { importMap } from "./cms/importMap";
 import "./custom.scss";
 
 type Props = { children: React.ReactNode };
-
-
 
 const serverFunction: ServerFunctionClient = async (args) => {
   "use server";
@@ -21,11 +19,7 @@ const serverFunction: ServerFunctionClient = async (args) => {
 };
 
 export default async function PayloadLayout({ children }: Props) {
-  const user = await getCurrentUser();
-
-  if (!user) {
-    redirect("/sign-in?next=/cms");
-  }
+  const user = await getAuthenticatedPageUser();
 
   if (!can(user, permissionCodes.cmsAccess)) {
     redirect("/unauthorized");

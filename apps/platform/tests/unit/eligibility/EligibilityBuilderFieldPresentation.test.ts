@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { formatConditionFieldLabel } from "@/modules/conditions/domain/ConditionFieldLabel";
+
 import {
   eligibilityBuilderFieldPresentations,
 } from "@/modules/eligibility/ui/EligibilityBuilderFieldPresentation";
@@ -53,8 +55,8 @@ describe("Eligibility Builder field presentation", () => {
     expect(presentation).toMatchObject({
       sourceLabel: "Applicant / Application",
     });
-    expect(presentation?.builderField.label).toBe(
-      "Employee count [Applicant / Application]",
+    expect(formatConditionFieldLabel(presentation.builderField)).toBe(
+      "[Applicant / Application].Employee count",
     );
     expect(JSON.stringify(presentation)).not.toContain(definitionId);
     expect(JSON.stringify(presentation)).not.toContain(versionId);

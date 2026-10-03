@@ -16,6 +16,7 @@ type DashboardDatabaseRow = {
     eventCode: string;
     occurredAt: string | Date;
   }>;
+  informationRequests: number;
   pendingDecision: number;
   statuses: AdminDashboardStatus[];
   totalApplications: number;
@@ -48,9 +49,7 @@ function applicationScope(input: {
 }
 
 function submittedPeriod(since: Date | null) {
-  return since
-    ? sql`application.submitted_at >= ${since}`
-    : sql`TRUE`;
+  return since ? sql`application.submitted_at >= ${since}` : sql`TRUE`;
 }
 
 function toActivities(
@@ -112,6 +111,11 @@ function dashboardCtes(input: DashboardInput) {
 
 const dashboardSelect = sql`
     SELECT
+      (SELECT count(*)::integer FROM app_workflow_rfis rfi
+        WHERE rfi.status = 'OPEN' AND EXISTS (
+          SELECT 1 FROM scoped_applications scoped
+          WHERE scoped.id = rfi.application_id
+        )) AS "informationRequests",
       (SELECT count(*)::integer FROM scoped_applications) AS "totalApplications",
       (SELECT count(*)::integer FROM scoped_applications
         WHERE workflow_status = 'ACTIVE'
@@ -147,6 +151,7 @@ export async function readAdminDashboard(input: DashboardInput) {
   return {
     activities: toActivities(row.activities),
     metrics: {
+      informationRequests: row.informationRequests,
       pendingDecision: row.pendingDecision,
       totalApplications: row.totalApplications,
       underReview: row.underReview,

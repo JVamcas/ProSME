@@ -1,3 +1,4 @@
+import { formatConditionFieldLabel } from "@/modules/conditions/domain/ConditionFieldLabel";
 import type { ConditionFieldDefinition } from "@/modules/conditions/domain/ConditionConfiguration";
 import type { FormField } from "@/modules/forms/FormTypes";
 import type {
@@ -29,6 +30,13 @@ function formConditionType(
   return null;
 }
 
+function taskFieldSource(stageName: string, taskName: string) {
+  return [
+    { label: "Stage", name: stageName },
+    { label: "Task", name: taskName },
+  ];
+}
+
 function stagePathKey(value: string) {
   return value.toLowerCase();
 }
@@ -56,7 +64,8 @@ function boundFormFields(
       return type
         ? [{
             key: `stage.${stagePathKey(stage.stableKey)}.form.${stagePathKey(field.key)}`,
-            label: `${stage.name} · ${task.name} · ${field.label}`,
+            label: field.label,
+            source: taskFieldSource(stage.name, task.name),
             type,
           }]
         : [];
@@ -66,6 +75,7 @@ function boundFormFields(
 
 function taskResultField(
   stage: WorkflowStageInput,
+  taskName: string,
   key: string,
   label: string,
   type: ConditionFieldDefinition["type"],
@@ -73,6 +83,7 @@ function taskResultField(
   return {
     key: `stage.${stagePathKey(stage.stableKey)}.${stagePathKey(key)}`,
     label,
+    source: taskFieldSource(stage.name, taskName),
     type,
   };
 }
@@ -86,22 +97,25 @@ function boundTaskResultFields(stage: WorkflowStageInput) {
       .flatMap((item) => [
         taskResultField(
           stage,
+          task.name,
           `checklist.${item.key}.accepted`,
-          `${stage.name} · ${task.name} · ${item.text}`,
+          item.text,
           "BOOLEAN",
         ),
         taskResultField(
           stage,
+          task.name,
           `checklist.${item.key}.comment`,
-          `${stage.name} · ${task.name} · ${item.text} comment`,
+          `${item.text} comment`,
           "TEXT",
         ),
       ]);
     if (parsed.data.categories && parsed.data.outcomes) {
       fields.push(...parsed.data.categories.map((category) => taskResultField(
         stage,
+        task.name,
         `decision.${category.code}.outcome`,
-        `${stage.name} · ${task.name} · ${category.label}`,
+        category.label,
         "TEXT",
       )));
     }
@@ -109,23 +123,26 @@ function boundTaskResultFields(stage: WorkflowStageInput) {
       for (const criterion of parsed.data.criteria) {
         fields.push(taskResultField(
           stage,
+          task.name,
           `scoring.${criterion.code}.value`,
-          `${stage.name} · ${task.name} · ${criterion.label}`,
+          criterion.label,
           "NUMBER",
         ));
         if (criterion.commentRequired) {
           fields.push(taskResultField(
             stage,
+            task.name,
             `scoring.${criterion.code}.comment`,
-            `${stage.name} · ${task.name} · ${criterion.label} comment`,
+            `${criterion.label} comment`,
             "TEXT",
           ));
         }
       }
       fields.push(taskResultField(
         stage,
+        task.name,
         "scoring.WEIGHTED_TOTAL.value",
-        `${stage.name} · ${task.name} · Weighted total`,
+        "Weighted total",
         "NUMBER",
       ));
     }
@@ -133,8 +150,9 @@ function boundTaskResultFields(stage: WorkflowStageInput) {
       .filter((field) => field.taskStableKey === task.stableKey)
       .map((field) => taskResultField(
         stage,
+        task.name,
         `comment.${field.key}`,
-        `${stage.name} · ${task.name} · ${field.label}`,
+        field.label,
         "TEXT",
       )));
     fields.push(...stage.documentRequirements
@@ -142,14 +160,16 @@ function boundTaskResultFields(stage: WorkflowStageInput) {
       .flatMap((requirement) => [
         taskResultField(
           stage,
+          task.name,
           `document.${requirement.stableKey}.outcome`,
-          `${stage.name} · ${task.name} · ${requirement.name} outcome`,
+          `${requirement.name} outcome`,
           "TEXT",
         ),
         taskResultField(
           stage,
+          task.name,
           `document.${requirement.stableKey}.comment`,
-          `${stage.name} · ${task.name} · ${requirement.name} comment`,
+          `${requirement.name} comment`,
           "TEXT",
         ),
       ]));
@@ -157,14 +177,16 @@ function boundTaskResultFields(stage: WorkflowStageInput) {
       stage.scoring.criteria.forEach((criterion) => {
         fields.push(taskResultField(
           stage,
+          task.name,
           `scoring.${criterion.stableKey}.value`,
-          `${stage.name} · ${task.name} · ${criterion.criterion}`,
+          criterion.criterion,
           "NUMBER",
         ));
         fields.push(taskResultField(
           stage,
+          task.name,
           `scoring.${criterion.stableKey}.comment`,
-          `${stage.name} · ${task.name} · ${criterion.criterion} comment`,
+          `${criterion.criterion} comment`,
           "TEXT",
         ));
       });
@@ -173,21 +195,39 @@ function boundTaskResultFields(stage: WorkflowStageInput) {
       .filter((action) => task.actionKeys.includes(action.stableKey))
       .map((action) => taskResultField(
         stage,
+        task.name,
         `actions.${action.stableKey}.selected`,
-        `${stage.name} · ${task.name} · ${action.label}`,
+        action.label,
         "BOOLEAN",
       )));
     return fields;
   });
 }
 
-function boundContextFields(stage: WorkflowStageInput) {
+function boundContextFields(
+  stage: WorkflowStageInput,
+  graph: WorkflowGraphInput,
+) {
   return stage.tasks.flatMap(
     (task) => (task.formBinding?.contextFields ?? []).filter((field) => {
       const segments = field.key.split(".");
       return segments[0] === "application"
         || segments[0] === "fundingCall"
         || segments[0] === "stage" && segments.length >= 3;
+    }).map((field) => {
+      const [root, stageKey] = field.key.split(".");
+      const runtimeField = workflowRuntimeContextFields.find(
+        (candidate) => candidate.key === field.key,
+      );
+      if (runtimeField) return runtimeField;
+      if (field.source?.length) return field;
+      const sourceStage = graph.stages.find(
+        (candidate) => stagePathKey(candidate.stableKey) === stageKey,
+      );
+      const source = root === "stage"
+        ? [{ label: "Stage", name: sourceStage?.name ?? stageKey }]
+        : [{ label: root === "application" ? "Application" : "Funding Call" }];
+      return { ...field, source };
     }),
   );
 }
@@ -199,7 +239,7 @@ function uniqueFields(fields: readonly ConditionFieldDefinition[]) {
     if (!current || current.type === field.type) byKey.set(field.key, field);
   });
   return [...byKey.values()].sort((left, right) =>
-    left.label.localeCompare(right.label)
+    formatConditionFieldLabel(left).localeCompare(formatConditionFieldLabel(right))
   );
 }
 
@@ -219,7 +259,7 @@ export function workflowConditionFields(
   );
   return uniqueFields([
     ...workflowConditionRuntimeFields,
-    ...contextStages.flatMap(boundContextFields),
+    ...contextStages.flatMap((candidate) => boundContextFields(candidate, graph)),
     ...valueStages.flatMap((candidate) =>
       [
         ...boundFormFields(candidate, forms),

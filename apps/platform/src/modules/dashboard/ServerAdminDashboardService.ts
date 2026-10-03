@@ -4,14 +4,15 @@ import { permissionCodes } from "@/auth/authorization/permissions";
 import { can } from "@/auth/authorization/policy";
 import { requireOperationsPortalAccess } from "@/auth/authorization/portal-access";
 import type { AuthenticatedUser } from "@/auth/types";
-import { readAdminDashboard } from "@/db/repositories/AdminDashboardRepository";
+import { readAdminDashboard } from "@/modules/dashboard/infrastructure/AdminDashboardRepository";
 import type {
   AdminDashboardPeriod,
   AdminDashboardView,
 } from "./AdminDashboardTypes";
 
 function visibilityFor(user: AuthenticatedUser) {
-  if (can(user, permissionCodes.fundingApplicationAllRead)) return "all" as const;
+  if (can(user, permissionCodes.fundingApplicationAllRead))
+    return "all" as const;
   if (can(user, permissionCodes.workflowTaskAssignedRead)) {
     return "assigned" as const;
   }
@@ -39,10 +40,6 @@ export async function getAdminDashboard(
   });
   return {
     ...projection,
-    metrics: {
-      ...projection.metrics,
-      informationRequests: null,
-    },
     period,
     visibility,
   };

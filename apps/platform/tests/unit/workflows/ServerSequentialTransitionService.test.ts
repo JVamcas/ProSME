@@ -68,10 +68,12 @@ const transition = {
   condition: null,
   id: "70000000-0000-4000-8000-000000000001",
   priority: 1,
-  targetStages: [{
-    id: "80000000-0000-4000-8000-000000000001",
-    name: "Technical assessment",
-  }],
+  targetStages: [
+    {
+      id: "80000000-0000-4000-8000-000000000001",
+      name: "Technical assessment",
+    },
+  ],
   terminalOutcome: null,
 };
 
@@ -123,39 +125,43 @@ describe("sequential transition execution", () => {
       expect.anything(),
       expect.objectContaining({ outcome: "TARGET_ACTIVATED" }),
     );
-    expect(vi.mocked(recordTransitionExecution).mock.invocationCallOrder[0])
-      .toBeLessThan(
-        vi.mocked(activateStageInTransaction).mock.invocationCallOrder[0],
-      );
+    expect(
+      vi.mocked(recordTransitionExecution).mock.invocationCallOrder[0],
+    ).toBeLessThan(
+      vi.mocked(activateStageInTransaction).mock.invocationCallOrder[0],
+    );
   });
 
   it("blocks movement when no configured transition condition passes", async () => {
     vi.mocked(loadSequentialTransitions).mockResolvedValue({
       actionExists: true,
-      transitions: [{
-        ...transition,
-        condition: {
-          children: [{
-            id: "condition",
-            kind: "CONDITION",
-            leftOperand: {
-              key: "application.requested_amount",
-              kind: "FIELD",
-            },
-            operator: basicOperators.GREATER_THAN,
-            rightOperand: { kind: "CONSTANT", value: 200 },
-          }],
-          combinator: "AND",
-          id: "group",
-          kind: "GROUP",
+      transitions: [
+        {
+          ...transition,
+          condition: {
+            children: [
+              {
+                id: "condition",
+                kind: "CONDITION",
+                leftOperand: {
+                  key: "application.requested_amount",
+                  kind: "FIELD",
+                },
+                operator: basicOperators.GREATER_THAN,
+                rightOperand: { kind: "CONSTANT", value: 200 },
+              },
+            ],
+            combinator: "AND",
+            id: "group",
+            kind: "GROUP",
+          },
         },
-      }],
+      ],
     });
 
-    await expect(executeSequentialTransitionInTransaction(
-      {} as never,
-      input,
-    )).resolves.toMatchObject({ kind: "transition_condition_failed" });
+    await expect(
+      executeSequentialTransitionInTransaction({} as never, input),
+    ).resolves.toMatchObject({ kind: "transition_condition_failed" });
     expect(completeStageInTransaction).not.toHaveBeenCalled();
     expect(recordTransitionExecution).not.toHaveBeenCalled();
     expect(activateStageInTransaction).not.toHaveBeenCalled();
@@ -171,10 +177,9 @@ describe("sequential transition execution", () => {
       kind: "entry_condition_failed",
     });
 
-    await expect(executeSequentialTransitionInTransaction(
-      {} as never,
-      input,
-    )).resolves.toMatchObject({
+    await expect(
+      executeSequentialTransitionInTransaction({} as never, input),
+    ).resolves.toMatchObject({
       kind: "transitioned",
       targets: [{ outcome: "ENTRY_CONDITION_FAILED" }],
     });
@@ -182,7 +187,9 @@ describe("sequential transition execution", () => {
       expect.anything(),
       expect.objectContaining({
         outcome: "TARGET_ENTRY_CONDITION_FAILED",
-        targets: [expect.objectContaining({ outcome: "ENTRY_CONDITION_FAILED" })],
+        targets: [
+          expect.objectContaining({ outcome: "ENTRY_CONDITION_FAILED" }),
+        ],
       }),
     );
   });
@@ -192,19 +199,20 @@ describe("sequential transition execution", () => {
       actionKey: input.actionKey,
       executionId: "90000000-0000-4000-8000-000000000001",
       outcome: "TARGET_ACTIVATED",
-      targets: [{
-        outcome: "ACTIVATED",
-        targetStageDefinitionId: transition.targetStages[0].id,
-        targetStageInstanceId: "a0000000-0000-4000-8000-000000000001",
-        targetStageName: "Technical assessment",
-      }],
+      targets: [
+        {
+          outcome: "ACTIVATED",
+          targetStageDefinitionId: transition.targetStages[0].id,
+          targetStageInstanceId: "a0000000-0000-4000-8000-000000000001",
+          targetStageName: "Technical assessment",
+        },
+      ],
       workflowStatus: "ACTIVE",
     });
 
-    await expect(executeSequentialTransitionInTransaction(
-      {} as never,
-      input,
-    )).resolves.toMatchObject({ kind: "already_executed" });
+    await expect(
+      executeSequentialTransitionInTransaction({} as never, input),
+    ).resolves.toMatchObject({ kind: "already_executed" });
     expect(lockStageCompletionTarget).not.toHaveBeenCalled();
     expect(activateStageInTransaction).not.toHaveBeenCalled();
   });
@@ -212,21 +220,27 @@ describe("sequential transition execution", () => {
   it("completes the workflow for a configured terminal transition", async () => {
     vi.mocked(loadSequentialTransitions).mockResolvedValue({
       actionExists: true,
-      transitions: [{
-        ...transition,
-        targetStages: [],
-        terminalOutcome: "APPROVED",
-      }],
+      transitions: [
+        {
+          ...transition,
+          targetStages: [],
+          terminalOutcome: "APPROVED",
+        },
+      ],
     });
 
-    await expect(executeSequentialTransitionInTransaction(
-      {} as never,
-      input,
-    )).resolves.toMatchObject({ kind: "workflow_completed" });
+    await expect(
+      executeSequentialTransitionInTransaction({} as never, input),
+    ).resolves.toMatchObject({ kind: "workflow_completed" });
     expect(completeTerminalWorkflow).toHaveBeenCalledWith(
       expect.anything(),
       source.workflowInstanceId,
       expect.any(Date),
+      "APPROVED",
+      expect.objectContaining({
+        label: "Approved",
+        status: "OUTCOME_AVAILABLE",
+      }),
     );
     expect(activateStageInTransaction).not.toHaveBeenCalled();
   });

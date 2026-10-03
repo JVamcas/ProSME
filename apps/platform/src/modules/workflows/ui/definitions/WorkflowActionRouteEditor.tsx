@@ -3,9 +3,14 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, FormProvider, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
+import { useEffect, useRef } from "react";
 
 import { GeneralButton } from "@/components/ui/button";
-import { FormInput, FormSelect } from "@/components/ui/form-fields";
+import {
+  FormInput,
+  FormSelect,
+  FormTextarea,
+} from "@/components/ui/form-fields";
 import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup";
 import type {
   WorkflowEditorView,
@@ -21,28 +26,11 @@ import {
 import { WorkflowConditionEditor } from "./WorkflowConditionEditor";
 import { useWorkflowConditionFields } from "./useWorkflowConditionFields";
 
-const standardTerminalOutcomes = [
-  "APPROVED",
-  "AWARD_LAPSED",
-  "CLOSED",
-  "CLOSED_QUALIFIED",
-  "CLOSED_UNSUCCESSFUL",
-  "COMPLETED",
-  "DECLINED_COMMITTEE",
-  "DECLINED_RISK",
-  "DEFERRED",
-  "INELIGIBLE",
-  "RECOVERY",
-  "REFERRED_RECOVERY_INVESTIGATION",
-  "REJECTED",
-  "REJECTED_INCOMPLETE",
-  "RESERVE_LIST",
-  "RESERVE_REALLOCATION",
-  "RESTRICTED",
-  "TERMINATED_RECOVERY",
-  "UNSUCCESSFUL",
-  "WITHDRAWN",
-] as const;
+import {
+  standardTerminalOutcomes,
+  terminalOutcomeLabel,
+  terminalOutcomeApplicantStatus,
+} from "../../domain/transitions/WorkflowTerminalOutcome";
 
 type TargetType = "STAGE" | "TERMINAL";
 
@@ -62,19 +50,16 @@ function nextEnabledStageKey(
   stages: WorkflowStageInput[],
   currentStage: WorkflowStageInput,
 ) {
-  return stages
-    .filter(
-      (candidate) =>
-        candidate.enabled
-        && candidate.displayOrder > currentStage.displayOrder,
-    )
-    .sort((left, right) => left.displayOrder - right.displayOrder)[0]
-    ?.stableKey ?? "";
-}
-
-function terminalOutcomeLabel(code: string) {
-  const words = code.replaceAll("_", " ").toLowerCase();
-  return words.charAt(0).toUpperCase() + words.slice(1);
+  return (
+    stages
+      .filter(
+        (candidate) =>
+          candidate.enabled &&
+          candidate.displayOrder > currentStage.displayOrder,
+      )
+      .sort((left, right) => left.displayOrder - right.displayOrder)[0]
+      ?.stableKey ?? ""
+  );
 }
 
 export function WorkflowActionRouteEditor({
@@ -104,10 +89,28 @@ export function WorkflowActionRouteEditor({
       ...defaults,
       targetType: route?.terminalOutcome
         ? "TERMINAL"
-        : targetTypeConstraint ?? defaults.targetType,
+        : (targetTypeConstraint ?? defaults.targetType),
     },
     resolver: zodResolver(workflowTransitionFormSchema),
   });
+  const terminalOutcome = useWatch({
+    control: form.control,
+    name: "terminalOutcome",
+  });
+  const previousOutcome = useRef(terminalOutcome);
+  useEffect(() => {
+    if (previousOutcome.current === terminalOutcome) return;
+    previousOutcome.current = terminalOutcome;
+    const mapping = terminalOutcomeApplicantStatus(terminalOutcome);
+    form.setValue("terminalApplicantLabel", mapping.label, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+    form.setValue("terminalApplicantDescription", mapping.description, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+  }, [form, terminalOutcome]);
   const targetType = useWatch({ control: form.control, name: "targetType" });
   const targetStageKeys = useWatch({
     control: form.control,
@@ -134,7 +137,9 @@ export function WorkflowActionRouteEditor({
   const destinationTypes = [
     { label: "Workflow stage", value: "STAGE" },
     { label: "Terminal outcome", value: "TERMINAL" },
-  ].filter((item) => !targetTypeConstraint || item.value === targetTypeConstraint);
+  ].filter(
+    (item) => !targetTypeConstraint || item.value === targetTypeConstraint,
+  );
 
   return (
     <FormProvider {...form}>
@@ -187,6 +192,23 @@ export function WorkflowActionRouteEditor({
             required
           />
         )}
+        {targetType === "TERMINAL" ? (
+          <>
+            <FormInput
+              containerClassName="sm:col-span-2"
+              label="Applicant status label"
+              name="terminalApplicantLabel"
+              required
+            />
+            <FormTextarea
+              containerClassName="sm:col-span-2"
+              label="Applicant status description"
+              name="terminalApplicantDescription"
+              required
+              rows={3}
+            />
+          </>
+        ) : null}
         <div className="sm:col-span-2">
           <Controller
             control={form.control}

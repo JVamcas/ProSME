@@ -53,7 +53,7 @@ export type StoredWorkflowAction = {
   enabled: boolean;
   id: string;
   label: string;
-  reasonCodeRequired: boolean;
+  reasonRequired: boolean;
   stableKey: string;
 };
 
@@ -318,7 +318,7 @@ function selectActions(stageDefinitionId: string, taskDefinitionId?: string) {
     enabled: workflowActionDefinitions.enabled,
     id: workflowActionDefinitions.id,
     label: workflowActionDefinitions.label,
-    reasonCodeRequired: workflowActionDefinitions.reasonCodeRequired,
+    reasonRequired: workflowActionDefinitions.reasonRequired,
     stableKey: workflowActionDefinitions.stableKey,
   };
   if (!taskDefinitionId) {

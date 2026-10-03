@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { permissionCodes } from "@/auth/authorization/permissions";
-import { getCurrentUser } from "@/auth/authorization/current-user";
+import { getAuthenticatedPageUser } from "@/platform/auth/ServerAuthNavigation";
 import { can } from "@/auth/authorization/policy";
 import { ProfileTabContent } from "@/components/applicant/profile/ProfileTabContent";
 import {
@@ -30,7 +30,7 @@ function parseProfileTab(value: string): ProfileTabId {
 }
 
 function availableProfileTabs(
-  user: NonNullable<Awaited<ReturnType<typeof getCurrentUser>>>,
+  user: NonNullable<Awaited<ReturnType<typeof getAuthenticatedPageUser>>>,
 ): ProfileTabId[] {
   const tabs: ProfileTabId[] = [];
 
@@ -44,7 +44,7 @@ function availableProfileTabs(
 export default async function ApplicantProfilePage({
   searchParams,
 }: ApplicantProfilePageProps) {
-  const user = await getCurrentUser();
+  const user = await getAuthenticatedPageUser();
   const requestedTab = (await searchParams).tab;
   const availableTabs = user ? availableProfileTabs(user) : [];
   const tab = requestedTab

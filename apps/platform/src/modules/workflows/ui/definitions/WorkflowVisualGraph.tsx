@@ -13,7 +13,7 @@ import {
   type WorkflowDisplayRoute,
   type WorkflowNodePosition,
 } from "./WorkflowGraphLayout";
-import { WorkflowVisualStageCard } from "./WorkflowVisualStageCard";
+import { WorkflowVisualGraphStages } from "./WorkflowVisualGraphStages";
 import {
   WorkflowVisualRoute,
   workflowRouteGeometry,
@@ -21,6 +21,7 @@ import {
 import type { WorkflowStageConnectionRole } from "./WorkflowStageConnectionColors";
 import type { WorkflowVisualRouteStatusResolver } from "./WorkflowVisualChangeStyles";
 import { useWorkflowGraphDrag } from "./useWorkflowGraphDrag";
+import { WorkflowGraphViewport } from "../WorkflowGraphViewport";
 
 import type { WorkflowStageAttention } from "./WorkflowStageAttention";
 
@@ -29,7 +30,7 @@ export type WorkflowVisualRouteTakenResolver = (
   destinationKey?: string,
 ) => boolean;
 
-type Props = {
+export type WorkflowVisualGraphProps = {
   stageBorderClasses?: Map<string, string>;
   routeTaken?: WorkflowVisualRouteTakenResolver;
   stageAnnotations?: Map<string, ReactNode>;
@@ -79,7 +80,7 @@ export function WorkflowVisualGraph({
   changeColor,
   viewportClassName,
   viewportLabel,
-}: Props) {
+}: WorkflowVisualGraphProps) {
   const instanceId = useId();
   const markerId =
     changeColor || routeTaken
@@ -172,86 +173,69 @@ export function WorkflowVisualGraph({
   }
 
   return (
-    <div className="min-w-0 max-w-full border-t border-brand-navy/10 bg-brand-cream/35">
-      <p className="px-3 pt-3 text-xs text-brand-navy/70 sm:px-5">
-        <span className="font-semibold text-violet-900">Violet highlights</span>
-        {" mark terminal actions that end the application's active workflow."}
-      </p>
+    <WorkflowGraphViewport
+      width={graphBounds.width}
+      height={graphBounds.height}
+      className={viewportClassName}
+      label={viewportLabel}
+    >
       <div
-        aria-label={viewportLabel}
-        className={`min-w-0 max-w-full overflow-auto overscroll-contain p-3 sm:p-5 ${viewportClassName ?? ""}`}
-        role={viewportLabel ? "region" : undefined}
-        tabIndex={viewportLabel ? 0 : undefined}
+        className="relative overflow-hidden rounded-xl border border-brand-navy/10 bg-white/70 shadow-inner"
+        style={{ height: graphBounds.height, width: graphBounds.width }}
       >
-        <div
-          className="relative overflow-hidden rounded-xl border border-brand-navy/10 bg-white/70 shadow-inner"
-          style={{ height: graphBounds.height, width: graphBounds.width }}
+        <GraphPattern />
+        <svg
+          aria-hidden={
+            onToggleRoute || onEditRoute || onDeleteRoute ? undefined : true
+          }
+          className="pointer-events-none absolute inset-0 size-full overflow-visible"
         >
-          <GraphPattern />
-          <svg
-            aria-hidden={
-              onToggleRoute || onEditRoute || onDeleteRoute ? undefined : true
-            }
-            className="pointer-events-none absolute inset-0 size-full overflow-visible"
-          >
-            <GraphArrowMarker markerId={markerId} />
-            {routeGeometries.map(({ route, geometry }) => (
-              <WorkflowVisualRoute
-                onToggleRoute={onToggleRoute}
-                onEditRoute={onEditRoute}
-                onDeleteRoute={onDeleteRoute}
-                disabled={routesDisabled}
-                destinationName={stageByKey.get(route.destinationKey)?.name}
-                geometry={geometry}
-                markerId={markerId}
-                key={route.key}
-                route={route}
-                stage={stageByKey.get(route.sourceStageKey)}
-                transitions={route.transitions}
-                routeStatus={routeStatus}
-                routeTaken={routeTaken}
-              />
-            ))}
-          </svg>
+          <GraphArrowMarker markerId={markerId} />
+          {routeGeometries.map(({ route, geometry }) => (
+            <WorkflowVisualRoute
+              onToggleRoute={onToggleRoute}
+              onEditRoute={onEditRoute}
+              onDeleteRoute={onDeleteRoute}
+              disabled={routesDisabled}
+              destinationName={stageByKey.get(route.destinationKey)?.name}
+              geometry={geometry}
+              markerId={markerId}
+              key={route.key}
+              route={route}
+              stage={stageByKey.get(route.sourceStageKey)}
+              transitions={route.transitions}
+              routeStatus={routeStatus}
+              routeTaken={routeTaken}
+            />
+          ))}
+        </svg>
 
-          {stages.map((stage, index) => {
-            const position = positions[stage.stableKey];
-            if (!position) return null;
-            return (
-              <WorkflowVisualStageCard
-                routeTaken={routeTaken}
-                borderClassName={stageBorderClasses?.get(stage.stableKey)}
-                annotation={stageAnnotations?.get(stage.stableKey)}
-                attention={attentionByStage?.get(stage.stableKey)}
-                outgoingBranchCount={
-                  outgoingBranchCounts.get(stage.stableKey) ?? 0
-                }
-                index={connectionRoles ? stage.displayOrder - 1 : index}
-                connectionRole={connectionRoles?.get(stage.stableKey)}
-                key={stage.stableKey}
-                onSelect={onSelect}
-                onEdit={onEdit}
-                onDelete={onDelete}
-                canEdit={canEdit}
-                canDelete={canDelete}
-                isDeleting={isDeleting}
-                onPointerCancel={stopDragging}
-                onPointerDown={(event) => startDragging(event, stage.stableKey)}
-                onPointerMove={dragStage}
-                onPointerUp={stopDragging}
-                position={position}
-                height={annotatedNodeHeights[stage.stableKey]}
-                selected={stage.stableKey === selectedCode}
-                stage={stage}
-                stageByKey={stageByKey}
-                transitions={transitions}
-                routeStatus={routeStatus}
-              />
-            );
-          })}
-        </div>
+        <WorkflowVisualGraphStages
+          stageProps={{
+            stages,
+            transitions,
+            stageAnnotations,
+            stageBorderClasses,
+            routeTaken,
+            attentionByStage,
+            onSelect,
+            onEdit,
+            onDelete,
+            canEdit,
+            canDelete,
+            isDeleting,
+            selectedCode,
+            connectionRoles,
+            routeStatus,
+          }}
+          positions={positions}
+          nodeHeights={annotatedNodeHeights}
+          stageByKey={stageByKey}
+          outgoingBranchCounts={outgoingBranchCounts}
+          drag={{ positions, startDragging, dragStage, stopDragging }}
+        />
       </div>
-    </div>
+    </WorkflowGraphViewport>
   );
 }
 

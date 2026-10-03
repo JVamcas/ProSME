@@ -14,7 +14,7 @@ import {
   formatOpportunityAmount,
   formatOpportunityDate,
 } from "@/modules/funding-calls/ui/FundingOpportunityFormat";
-import { FundingOpportunityReadinessCard } from "./FundingOpportunityReadinessCard";
+import { FundingOpportunityReadinessCard } from "@/modules/funding-calls/ui/applicant/FundingOpportunityReadinessCard";
 
 const panelClass =
   "rounded-2xl border border-brand-navy/15 bg-brand-white p-6 shadow-sm";
@@ -57,7 +57,6 @@ export function OverviewPanel({
       </article>
       <div className="grid content-start gap-4">
         <FundingOpportunityReadinessCard opportunity={opportunity} />
-        <DeadlineCard opportunity={opportunity} />
       </div>
     </div>
   );
@@ -75,24 +74,6 @@ function Highlight({ text }: { text: string }) {
   );
 }
 
-function DeadlineCard({
-  opportunity,
-}: {
-  opportunity: PublicFundingCallDetail;
-}) {
-  const upcoming = opportunity.status === "upcoming";
-  const label = upcoming ? "Applications open" : "Application deadline";
-  const date = upcoming ? opportunity.opensAt : opportunity.closesAt;
-
-  return (
-    <aside className="rounded-2xl border border-brand-blue/30 bg-brand-cream/50 p-5">
-      <p className="text-sm font-bold text-brand-navy">{label}</p>
-      <p className="mt-1 text-sm text-brand-navy/70">
-        {formatOpportunityDate(date)}
-      </p>
-    </aside>
-  );
-}
 
 export function KeyInformationPanel({
   opportunity,

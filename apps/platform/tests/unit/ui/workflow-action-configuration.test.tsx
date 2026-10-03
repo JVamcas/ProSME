@@ -25,7 +25,6 @@ function ActionConfigurationForm({
         assignmentOptions={{ roles: [], users: [] }}
         deferTargetType="DATE"
         escalationTargetType="ROLE"
-        rejectionOutcomeType="TERMINAL"
       />
     </FormProvider>
   );
@@ -49,9 +48,14 @@ describe("workflow action configuration UI", () => {
 
   it("shows the heading when an action has configuration fields", () => {
     const markup = renderToStaticMarkup(
-      <ActionConfigurationForm actionType="REJECT" />,
+      <ActionConfigurationForm actionType="RETURN" />,
     );
     expect(markup).toContain("Action-specific configuration");
-    expect(markup).toContain("Rejection outcome");
+    expect(markup).toContain("Returned data");
+  });
+  it("keeps rejection settings out of Behaviour", () => {
+    expect(renderToStaticMarkup(
+      <ActionConfigurationForm actionType="REJECT" />,
+    )).toBe("");
   });
 });

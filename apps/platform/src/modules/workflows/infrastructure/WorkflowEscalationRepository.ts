@@ -20,7 +20,7 @@ export async function startWorkflowEscalation(
     comment?: string;
     configuration: EscalateConfiguration;
     correlationId: string;
-    reasonCode?: string;
+    reason?: string;
     stageInstanceId: string;
     taskId: string;
     workflowInstanceId: string;
@@ -37,7 +37,7 @@ export async function startWorkflowEscalation(
     blockUntilResolved: input.configuration.blockUntilResolved,
     comment: input.comment,
     escalatedBy: input.actorId,
-    reasonCode: input.reasonCode,
+    reason: input.reason,
     responsibility: input.configuration.responsibility,
     sourceAssignedRoleId: task.assignedRoleId,
     sourceAssignedUserId: task.assignedUserId,

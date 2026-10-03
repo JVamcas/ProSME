@@ -5,8 +5,8 @@ export type ApproveAdvanceConfiguration = Record<string, never>;
 export type RejectConfiguration = {
   outcome:
     | {
-        cancelOpenStageInstances: boolean;
-        cancelOpenTasks: boolean;
+        cancelOpenStageInstances: true;
+        cancelOpenTasks: true;
         publicStatusMapping: WorkflowPublicStatusMapping;
         type: "TERMINAL";
       }
@@ -26,7 +26,6 @@ export type RequestInformationConfiguration = {
 
 export type ReturnConfiguration = {
   dataHandling: "RETAIN" | "CLEAR";
-  reasonRequired: boolean;
 };
 
 export type ReferConfiguration = {
@@ -43,7 +42,6 @@ export type EscalateConfiguration = {
 };
 
 export type PutOnHoldConfiguration = {
-  reasonCodes: string[];
   reviewDateRequired: boolean;
   scope: "STAGE";
 };

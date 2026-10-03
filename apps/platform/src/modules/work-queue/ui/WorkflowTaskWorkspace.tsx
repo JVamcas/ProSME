@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { WorkflowTaskRfiNotice } from "@/modules/workflows/ui/rfi/WorkflowTaskRfiNotice";
 import { PortalErrorState } from "@/components/layout/PortalErrorState";
 import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -37,12 +39,11 @@ function ApplicationTaskPane({ applicationId }: { applicationId: string }) {
     );
   }
 
-  return (
-    <ApplicationDetailContent model={query.data} />
-  );
+  return <ApplicationDetailContent model={query.data} />;
 }
 
 export function WorkflowTaskWorkspace({ taskId }: { taskId: string }) {
+  const [section, setSection] = useState("assigned-task");
   const coi = useWorkflowCoi(taskId);
   const query = useWorkflowTask(taskId, coi.data?.cleared ?? false);
 
@@ -108,7 +109,13 @@ export function WorkflowTaskWorkspace({ taskId }: { taskId: string }) {
       }
       title={`Funding Application Review`}
     >
+      <WorkflowTaskRfiNotice
+        taskId={task.taskInstanceId}
+        onViewRequests={() => setSection("information-requests")}
+      />
       <Tabs
+        selectedId={section}
+        onSelectionChange={setSection}
         accent="orange"
         ariaLabel="Workflow task sections"
         defaultSelectedId="assigned-task"

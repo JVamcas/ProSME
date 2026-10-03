@@ -1,6 +1,6 @@
 import "server-only";
 
-import { requiredReviewCompletions } from "../../domain/runtime/ReviewThreshold";
+import { stageCompletionRequirementsAreMet } from "../../domain/runtime/StageCompletion";
 import type { StageCompletionResult } from "../../domain/runtime/StageCompletion";
 import {
   evaluateStageCondition,
@@ -24,20 +24,6 @@ export type CompleteStageInput = {
   stageInstanceId: string;
   triggerTaskId?: string;
 };
-
-function requirementsAreMet(
-  requirements: Awaited<ReturnType<typeof loadRequiredTaskCompletions>>,
-) {
-  return requirements.every(
-    (requirement) =>
-      requirement.completedCount >= requiredReviewCompletions({
-        mode: requirement.completionMode,
-        count: requirement.requiredCompletionCount,
-        percentage: requirement.completionPercentage,
-        rounding: "CEIL",
-      }, requirement.denominator),
-  );
-}
 
 export async function completeStageInTransaction(
   transaction: StageCompletionTransaction,
@@ -97,7 +83,7 @@ export async function completeStageInTransaction(
   if (!evaluation.passed) {
     return { evaluation, kind: "exit_condition_failed" };
   }
-  if (!requirementsAreMet(requirements)) {
+  if (!stageCompletionRequirementsAreMet(requirements)) {
     return { kind: "requirements_not_met", requirements };
   }
 

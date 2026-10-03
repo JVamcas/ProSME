@@ -1,6 +1,5 @@
 "use client";
 
-import { CheckboxField } from "@/components/ui/form-field";
 import { FormSelect } from "@/components/ui/form-fields";
 import {
   isWorkflowStageDecisionAction,
@@ -18,7 +17,6 @@ type Props = {
   assignmentOptions: WorkflowAssignmentOptions;
   deferTargetType: "DATE" | "FUNDING_CALL";
   escalationTargetType: "ROLE" | "USER";
-  rejectionOutcomeType: "TERMINAL" | "TRANSITION";
   stage: WorkflowStageInput;
   taskStableKeys: string[];
   onTaskChange: (values: string[]) => void;
@@ -30,7 +28,6 @@ export function WorkflowActionBehaviourStep({
   assignmentOptions,
   deferTargetType,
   escalationTargetType,
-  rejectionOutcomeType,
   stage,
   taskStableKeys,
   onTaskChange,
@@ -46,9 +43,9 @@ export function WorkflowActionBehaviourStep({
       {decisionAction ? (
         <div className="sm:col-span-2">
           <p className="text-sm font-medium text-brand-navy">Workflow task</p>
-          <p className="mt-2 rounded-xl border border-brand-navy/10 bg-brand-navy/[0.03] px-4 py-3 text-sm text-brand-navy/70">
+          <p className="mt-2 rounded-xl border border-brand-navy/10 bg-brand-navy/3 px-4 py-3 text-sm text-brand-navy/70">
             {decisionTask
-              ? `Automatically assigned to ${decisionTask.name}.`
+              ? `Automatically assigned to stage-decision task: ${decisionTask.name}.`
               : "Add the stage-decision task to assign this action automatically."}
           </p>
         </div>
@@ -77,20 +74,11 @@ export function WorkflowActionBehaviourStep({
           value={taskStableKeys}
         />
       )}
-      {actionType !== "REJECT" ? (
-        <CheckboxField
-          containerClassName="sm:col-span-2"
-          label="Require a reason code"
-          name="reasonCodeRequired"
-        />
-      ) : null}
       <WorkflowActionConfigurationFields
         actionType={actionType}
         assignmentOptions={assignmentOptions}
         deferTargetType={deferTargetType}
         escalationTargetType={escalationTargetType}
-        hideRejectionOutcomeSelector
-        rejectionOutcomeType={rejectionOutcomeType}
       />
     </fieldset>
   );

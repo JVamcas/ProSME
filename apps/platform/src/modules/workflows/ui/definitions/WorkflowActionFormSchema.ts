@@ -49,12 +49,9 @@ export const workflowActionFormSchema = z
     taskStableKeys: z.array(z.string().min(1)).max(100),
     actionType: z.enum(workflowActionTypes),
     enabled: z.boolean(),
-    reasonCodeRequired: z.boolean(),
+    reasonRequired: z.boolean(),
     displayOrder: z.number().int().positive(),
-    reasonCodes: z.string(),
     rejectionOutcomeType: z.enum(["TERMINAL", "TRANSITION"]),
-    cancelOpenStageInstances: z.boolean(),
-    cancelOpenTasks: z.boolean(),
     rejectionPublicStatus: z.enum(workflowPublicStatuses),
     rejectionPublicLabel: z.string().trim().max(120),
     rejectionPublicDescription: z.string().trim().max(300),
@@ -64,7 +61,6 @@ export const workflowActionFormSchema = z
     reminderDayOffsets: z.string(),
     expiryAction: z.enum(["CLOSE_REQUEST", "ESCALATE", "RETURN"]),
     dataHandling: z.enum(["RETAIN", "CLEAR"]),
-    reasonRequired: z.boolean(),
     returnToReferrer: z.boolean(),
     sourceTaskBehavior: z.enum(["BLOCKED", "OPEN"]),
     escalationTargetType: z.enum(["ROLE", "USER"]),
@@ -140,12 +136,6 @@ export const workflowActionFormSchema = z
           path: ["reminderDayOffsets"],
         });
       }
-      requiredFor(
-        values.editableFieldPaths,
-        "Enter editable field paths.",
-        "editableFieldPaths",
-        context,
-      );
       const fieldPaths = values.editableFieldPaths
         .split(/[\n,]/)
         .map((item) => item.trim())
@@ -170,14 +160,6 @@ export const workflowActionFormSchema = z
         context,
       );
     }
-    if (values.actionType === "PUT_ON_HOLD") {
-      requiredFor(
-        values.reasonCodes,
-        "Enter reason codes.",
-        "reasonCodes",
-        context,
-      );
-    }
     if (values.actionType === "WITHDRAW") {
       requiredFor(
         values.allowedStageKeys,
@@ -198,10 +180,7 @@ export const workflowActionFormSchema = z
         context,
       );
     }
-    const keyLists = [
-      ["reasonCodes", values.reasonCodes],
-      ["allowedStageKeys", values.allowedStageKeys],
-    ] as const;
+    const keyLists = [["allowedStageKeys", values.allowedStageKeys]] as const;
     keyLists.forEach(([path, value]) => {
       if (value && !isStableKeyList(value)) {
         context.addIssue({

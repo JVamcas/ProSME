@@ -21,7 +21,7 @@ export function action(
   actionType: WorkflowActionDefinition["actionType"],
   displayOrder: number,
   configuration: WorkflowActionDefinition["configuration"],
-  reasonCodeRequired = false,
+  reasonRequired = false,
 ): WorkflowActionDefinition {
   return {
     actionType,
@@ -29,7 +29,7 @@ export function action(
     displayOrder,
     enabled: true,
     label,
-    reasonCodeRequired,
+    reasonRequired,
     stableKey,
   } as WorkflowActionDefinition;
 }
@@ -53,8 +53,8 @@ export function reject(
       outcome:
         outcomeType === "TERMINAL"
           ? {
-              cancelOpenStageInstances: true,
-              cancelOpenTasks: true,
+              cancelOpenStageInstances: true as const,
+              cancelOpenTasks: true as const,
               publicStatusMapping: {
                 description: "A decision is available for your application.",
                 label: "Decision available",
@@ -65,7 +65,7 @@ export function reject(
           : { type: "TRANSITION" as const },
       reversibleActionKey: null,
     },
-    false,
+    true,
   );
 }
 
@@ -74,7 +74,7 @@ export function requestInformation(key: string, label: string, order: number) {
     continuation: "RESUME_SOURCE_TASK",
     deadlineDays: 10,
     editableFieldPaths: ["CLARIFICATION_RESPONSE"],
-    expiryAction: "ESCALATE",
+    expiryAction: "CLOSE_REQUEST",
     participantScope: "APPLICATION_OWNER_AND_REQUESTER",
     recipientScope: "APPLICATION_OWNER",
     reminderDayOffsets: [3, 7],
@@ -89,33 +89,33 @@ export function returnAction(key: string, label: string, order: number) {
     order,
     {
       dataHandling: "RETAIN",
-      reasonRequired: true,
     },
     true,
   );
 }
 
 export function deferDate(key: string, label: string, order: number) {
-  return action(key, label, "DEFER", order, {
-    continuation: "RESUME_ON_DATE",
-    targetDate: "2027-01-15",
-    targetType: "DATE",
-  });
+  return action(
+    key,
+    label,
+    "DEFER",
+    order,
+    {
+      continuation: "RESUME_ON_DATE",
+      targetDate: "2027-01-15",
+      targetType: "DATE",
+    },
+    true,
+  );
 }
 
-export function hold(
-  key: string,
-  label: string,
-  order: number,
-  reasonCodes: string[],
-) {
+export function hold(key: string, label: string, order: number) {
   return action(
     key,
     label,
     "PUT_ON_HOLD",
     order,
     {
-      reasonCodes,
       reviewDateRequired: true,
       scope: "STAGE",
     },
@@ -124,10 +124,17 @@ export function hold(
 }
 
 export function refer(key: string, label: string, order: number) {
-  return action(key, label, "REFER", order, {
-    returnToReferrer: true,
-    sourceTaskBehavior: "BLOCKED",
-  }, true);
+  return action(
+    key,
+    label,
+    "REFER",
+    order,
+    {
+      returnToReferrer: true,
+      sourceTaskBehavior: "BLOCKED",
+    },
+    true,
+  );
 }
 
 export function checklist(

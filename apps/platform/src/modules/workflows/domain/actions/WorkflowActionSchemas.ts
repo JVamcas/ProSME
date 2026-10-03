@@ -24,7 +24,6 @@ const fieldPathSchema = z
   .regex(/^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z][A-Za-z0-9_]*)*$/);
 const uniqueFieldPathListSchema = z
   .array(fieldPathSchema)
-  .min(1)
   .max(100)
   .refine(
     (values) => new Set(values).size === values.length,
@@ -46,8 +45,8 @@ export const rejectConfigurationSchema = z
     outcome: z.discriminatedUnion("type", [
       z
         .object({
-          cancelOpenStageInstances: z.boolean(),
-          cancelOpenTasks: z.boolean(),
+          cancelOpenStageInstances: z.literal(true),
+          cancelOpenTasks: z.literal(true),
           publicStatusMapping: publicStatusMappingSchema,
           type: z.literal("TERMINAL"),
         })
@@ -94,7 +93,6 @@ export const requestInformationConfigurationSchema = z
 export const returnConfigurationSchema = z
   .object({
     dataHandling: z.enum(["RETAIN", "CLEAR"]),
-    reasonRequired: z.boolean(),
   })
   .strict();
 
@@ -117,7 +115,6 @@ export const escalateConfigurationSchema = z
 
 export const putOnHoldConfigurationSchema = z
   .object({
-    reasonCodes: uniqueStableKeyListSchema,
     reviewDateRequired: z.boolean(),
     scope: z.literal("STAGE"),
   })
@@ -161,7 +158,7 @@ const commonShape = {
   stableKey: stableKeySchema,
   label: z.string().trim().min(2).max(160),
   enabled: z.boolean(),
-  reasonCodeRequired: z.boolean(),
+  reasonRequired: z.boolean(),
   displayOrder: z.number().int().positive(),
 };
 
@@ -179,7 +176,6 @@ export const workflowActionDefinitionSchema = z.discriminatedUnion(
       .object({
         ...commonShape,
         actionType: z.literal("REJECT"),
-        reasonCodeRequired: z.literal(false),
         configuration: rejectConfigurationSchema,
       })
       .strict(),

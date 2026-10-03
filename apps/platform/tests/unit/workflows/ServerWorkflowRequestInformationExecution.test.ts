@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
+vi.mock("@/modules/workflows/application/runtime/ServerWorkflowRfiNotificationService", () => ({
+  captureWorkflowRfiCreatedNotification: vi.fn(),
+}));
+
 vi.mock("@/modules/workflows/infrastructure/WorkflowQuorumRepository", () => ({
   evaluateStageQuorum: vi.fn(),
 }));
@@ -88,7 +92,7 @@ beforeEach(() => {
       enabled: true,
       id: "50000000-0000-4000-8000-000000000001",
       label: "Request information",
-      reasonCodeRequired: false,
+      reasonRequired: false,
       stableKey: "REQUEST_INFORMATION",
     },
     stage: {

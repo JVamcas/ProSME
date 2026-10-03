@@ -1,15 +1,13 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-import { getCurrentUser } from "@/auth/authorization/current-user";
+import { getAuthenticatedPageUser } from "@/platform/auth/ServerAuthNavigation";
 import { canAccessApplicantPortal } from "@/auth/authorization/portal-access";
 import { AuthenticatedPortalShell } from "@/components/layout/authenticated-portal-shell";
 import { QueryProvider } from "@/components/layout/query-provider";
 import { createApplicantPortalContext } from "@/modules/profiles/ServerProfileService";
 import { Toast } from "@/shared/ui/Toast";
 import "../../globals.css";
-
-
 
 export const metadata: Metadata = {
   title: {
@@ -23,11 +21,7 @@ type PortalLayoutProps = Readonly<{
 }>;
 
 export default async function PortalLayout({ children }: PortalLayoutProps) {
-  const user = await getCurrentUser();
-
-  if (!user) {
-    redirect("/sign-in?next=/portal");
-  }
+  const user = await getAuthenticatedPageUser();
 
   if (!canAccessApplicantPortal(user)) {
     redirect("/unauthorized");

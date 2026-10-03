@@ -32,7 +32,7 @@ type QuorumDefinition = {
 };
 
 async function loadQuorumDefinitions(
-  transaction: StageCompletionTransaction,
+  transaction: Pick<StageCompletionTransaction, "select" | "execute" | "insert">,
   stageDefinitionId: string,
 ): Promise<QuorumDefinition[]> {
   return transaction
@@ -47,15 +47,14 @@ async function loadQuorumDefinitions(
     ));
 }
 
-async function loadParticipants(
-  transaction: StageCompletionTransaction,
+function participantQuery(
   stageInstanceId: string,
   taskDefinitionId: string,
   population: QuorumRule["population"],
-): Promise<QuorumParticipant[]> {
-  const result = await transaction.execute(population === "ASSIGNED_TASKS"
+) {
+  return population === "ASSIGNED_TASKS"
     ? sql`
-      SELECT candidate.id AS "userId",
+      SELECT ${taskDefinitionId}::text AS "taskDefinitionId", candidate.id AS "userId",
         COALESCE(participant.is_chair, false) AS "isChair",
         COALESCE(participant.attendance, 'ABSENT') AS attendance,
         app_workflow_stage_coi_cleared(${stageInstanceId}::uuid, candidate.id) AS "coiCleared",
@@ -76,10 +75,9 @@ async function loadParticipants(
       LEFT JOIN app_workflow_quorum_participants participant
         ON participant.stage_instance_id = ${stageInstanceId}::uuid
         AND participant.user_id = candidate.id
-      ORDER BY candidate.id
     `
     : sql`
-      SELECT app_user.id AS "userId", participant.is_chair AS "isChair",
+      SELECT ${taskDefinitionId}::text AS "taskDefinitionId", app_user.id AS "userId", participant.is_chair AS "isChair",
         participant.attendance,
         app_workflow_stage_coi_cleared(${stageInstanceId}::uuid, app_user.id) AS "coiCleared",
         participant.abstained
@@ -87,51 +85,74 @@ async function loadParticipants(
       JOIN app_users app_user ON app_user.id = participant.user_id
       WHERE participant.stage_instance_id = ${stageInstanceId}::uuid
         AND app_user.status = 'active'
-      ORDER BY app_user.id
-    `);
-  return result.rows as QuorumParticipant[];
+    `;
+}
+
+async function loadParticipants(
+  transaction: Pick<StageCompletionTransaction, "execute">,
+  stageInstanceId: string,
+  definitions: QuorumDefinition[],
+) {
+  const queries = definitions.flatMap((definition) =>
+    definition.quorumRule
+      ? [participantQuery(stageInstanceId, definition.id, definition.quorumRule.population)]
+      : [],
+  );
+  if (!queries.length) return new Map<string, QuorumParticipant[]>();
+  const result = await transaction.execute(sql.join(queries, sql` UNION ALL `));
+  const participantsByDefinition = new Map<string, QuorumParticipant[]>();
+  for (const row of result.rows as (QuorumParticipant & { taskDefinitionId: string })[]) {
+    const participants = participantsByDefinition.get(row.taskDefinitionId) ?? [];
+    participants.push(row);
+    participantsByDefinition.set(row.taskDefinitionId, participants);
+  }
+  return participantsByDefinition;
 }
 
 export async function evaluateStageQuorum(
-  transaction: StageCompletionTransaction,
+  transaction: Pick<StageCompletionTransaction, "select" | "execute" | "insert">,
   input: {
     stageDefinitionId: string;
     stageInstanceId: string;
     actorId: string;
+    recordEvaluation?: boolean;
   },
 ): Promise<boolean> {
   const definitions = await loadQuorumDefinitions(
     transaction,
     input.stageDefinitionId,
   );
+  // Definitions determine each population; load all populations in one query.
+  const participantsByDefinition = await loadParticipants(
+    transaction,
+    input.stageInstanceId,
+    definitions,
+  );
   let allSatisfied = true;
   for (const definition of definitions) {
     if (!definition.quorumRule) return false;
     const rule = definition.quorumRule;
-    const participants = await loadParticipants(
-      transaction,
-      input.stageInstanceId,
-      definition.id,
-      rule.population,
-    );
+    const participants = participantsByDefinition.get(definition.id) ?? [];
     const result = evaluateQuorum(rule, participants);
-    await transaction.insert(workflowQuorumEvaluations).values({
-      stageInstanceId: input.stageInstanceId,
-      taskDefinitionId: definition.id,
-      rule,
-      eligibleDenominator: result.denominator,
-      presentUserIds: result.present.map((item) => item.userId),
-      clearedUserIds: participants.filter((item) => item.coiCleared)
-        .map((item) => item.userId),
-      recusedUserIds: participants.filter(
-        (item) => item.attendance === "RECUSED",
-      ).map((item) => item.userId),
-      absentUserIds: participants.filter(
-        (item) => item.attendance === "ABSENT",
-      ).map((item) => item.userId),
-      satisfied: result.satisfied,
-      triggerActorId: input.actorId,
-    });
+    if (input.recordEvaluation !== false) {
+      await transaction.insert(workflowQuorumEvaluations).values({
+        stageInstanceId: input.stageInstanceId,
+        taskDefinitionId: definition.id,
+        rule,
+        eligibleDenominator: result.denominator,
+        presentUserIds: result.present.map((item) => item.userId),
+        clearedUserIds: participants.filter((item) => item.coiCleared)
+          .map((item) => item.userId),
+        recusedUserIds: participants.filter(
+          (item) => item.attendance === "RECUSED",
+        ).map((item) => item.userId),
+        absentUserIds: participants.filter(
+          (item) => item.attendance === "ABSENT",
+        ).map((item) => item.userId),
+        satisfied: result.satisfied,
+        triggerActorId: input.actorId,
+      });
+    }
     if (!result.satisfied) allSatisfied = false;
   }
   return allSatisfied;

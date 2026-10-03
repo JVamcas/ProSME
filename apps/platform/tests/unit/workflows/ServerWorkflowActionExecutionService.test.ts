@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
+vi.mock("@/modules/workflows/infrastructure/WorkflowActionTaskReadinessRepository", () => ({
+  readWorkflowActionTaskReadiness: vi.fn(),
+}));
 vi.mock("@/modules/workflows/infrastructure/WorkflowQuorumRepository", () => ({
   evaluateStageQuorum: vi.fn().mockResolvedValue(true),
 }));
@@ -46,8 +49,8 @@ vi.mock(
   () => ({ executeSequentialTransitionInTransaction: vi.fn() }),
 );
 
+import { readWorkflowActionTaskReadiness } from "@/modules/workflows/infrastructure/WorkflowActionTaskReadinessRepository";
 import { evaluateStageQuorum } from "@/modules/workflows/infrastructure/WorkflowQuorumRepository";
-import type { AuthenticatedUser } from "@/auth/types";
 import { PermissionDeniedError } from "@/auth/authorization/policy";
 import { WorkflowActionExecutionError } from "@/modules/workflows/domain/actions/WorkflowActionExecution";
 import { executeWorkflowAction } from "@/modules/workflows/application/runtime/ServerWorkflowActionExecutionService";
@@ -68,71 +71,23 @@ import { configuredActionTargetsAreValid } from "@/modules/workflows/infrastruct
 import { recordWorkflowDecision } from "@/modules/workflows/infrastructure/WorkflowDecisionRepository";
 import { executeSequentialTransitionInTransaction } from "@/modules/workflows/application/runtime/ServerSequentialTransitionService";
 
-const actorId = "10000000-0000-4000-8000-000000000001";
-const workflowInstanceId = "20000000-0000-4000-8000-000000000001";
-const stageInstanceId = "30000000-0000-4000-8000-000000000001";
-const taskId = "40000000-0000-4000-8000-000000000001";
-const input = {
-  actionKey: "ADVANCE",
-  correlationId: "50000000-0000-4000-8000-000000000001",
-  expectedRuntimeVersion: 2,
-  idempotencyKey: "60000000-0000-4000-8000-000000000001",
-  input: { actionType: "APPROVE_ADVANCE" as const },
-  sourceStageInstanceId: stageInstanceId,
+import {
+  actorId,
+  input,
+  stageInstanceId,
+  target,
   taskId,
+  user,
   workflowInstanceId,
-};
-const target = {
-  action: {
-    actionType: "APPROVE_ADVANCE" as const,
-    condition: null,
-    configuration: {},
-    displayOrder: 1,
-    enabled: true,
-    id: "70000000-0000-4000-8000-000000000001",
-    label: "Advance",
-    reasonCodeRequired: false,
-    stableKey: "ADVANCE",
-  },
-  stage: {
-    application: {},
-    completedAt: null,
-    eligibility: {},
-    exitCondition: null,
-    fundingCall: {},
-    rowVersion: 2,
-    stageDefinitionId: "80000000-0000-4000-8000-000000000001",
-    stageInstanceId,
-    stageKey: "SCREENING",
-    status: "ACTIVE" as const,
-    workflowInstanceId,
-    workflowVersionId: "90000000-0000-4000-8000-000000000001",
-  },
-  task: {
-    assignedToActor: true,
-    id: taskId,
-    permissions: {
-      decide: "workflow.task.assigned.decide" as const,
-      edit: "workflow.task.assigned.process" as const,
-      view: "workflow.task.assigned.read" as const,
-      visibility: "INTERNAL_ONLY" as const,
-    },
-    prerequisitesComplete: true,
-    rowVersion: 5,
-    status: "IN_PROGRESS",
-  },
-};
-
-function user(capabilities = ["workflow.task.assigned.decide"]) {
-  return {
-    capabilities: new Set(capabilities),
-    id: actorId,
-    status: "active",
-  } as unknown as AuthenticatedUser;
-}
+} from "./WorkflowActionExecutionFixtures";
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(evaluateStageQuorum).mockResolvedValue(true);
+  vi.mocked(readWorkflowActionTaskReadiness).mockResolvedValue({
+    hasOpenRfi: false,
+    workReady: true,
+  });
   vi.mocked(workflowActionExecutionDatabase).mockReturnValue({} as never);
   vi.mocked(findWorkflowActionExecution).mockResolvedValue(null);
   vi.mocked(withWorkflowActionExecutionTransaction).mockImplementation(
@@ -291,6 +246,25 @@ describe("server workflow action execution", () => {
       }),
     );
     expect(claimWorkflowActionRuntimeVersion).not.toHaveBeenCalled();
+  });
+
+
+  it.each([
+    [{ hasOpenRfi: true, workReady: true }, "Close the open information request"],
+    [{ hasOpenRfi: false, workReady: false }, "Complete the required task work"],
+  ])("rejects advance when task readiness changes: %s", async (readiness, reason) => {
+    vi.mocked(readWorkflowActionTaskReadiness).mockResolvedValue(readiness);
+    await expect(executeWorkflowAction(user(), input)).rejects.toThrow(reason);
+    expect(claimWorkflowActionRuntimeVersion).not.toHaveBeenCalled();
+    expect(completeActionTask).not.toHaveBeenCalled();
+  });
+
+  it("records quorum evidence when executing the decision", async () => {
+    await executeWorkflowAction(user(), input);
+    expect(evaluateStageQuorum).toHaveBeenCalledWith({}, expect.objectContaining({
+      recordEvaluation: true,
+      stageInstanceId,
+    }));
   });
 
 });

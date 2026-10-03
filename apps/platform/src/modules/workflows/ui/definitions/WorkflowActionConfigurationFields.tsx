@@ -14,8 +14,6 @@ type Props = {
   assignmentOptions: WorkflowAssignmentOptions;
   deferTargetType: "DATE" | "FUNDING_CALL";
   escalationTargetType: "ROLE" | "USER";
-  hideRejectionOutcomeSelector?: boolean;
-  rejectionOutcomeType: "TERMINAL" | "TRANSITION";
 };
 
 function KeyListField({
@@ -55,23 +53,10 @@ function RequestInformationFields() {
         type="number"
       />
       <FormSelect
-        items={[
-          { label: "Close request", value: "CLOSE_REQUEST" },
-          { label: "Escalate", value: "ESCALATE" },
-          { label: "Return", value: "RETURN" },
-        ]}
+        items={[{ label: "Close request", value: "CLOSE_REQUEST" }]}
         label="On expiry"
         name="expiryAction"
         required
-      />
-      <FormTextarea
-        containerClassName="sm:col-span-2"
-        infoTooltip="Use stable field paths separated by commas or new lines, for example application.financial.turnover."
-        label="Editable field paths"
-        name="editableFieldPaths"
-        placeholder="application.financial.turnover"
-        required
-        rows={2}
       />
       <FormInput
         containerClassName="sm:col-span-2"
@@ -174,67 +159,12 @@ function ActionConfigurationFields({
   assignmentOptions,
   deferTargetType,
   escalationTargetType,
-  hideRejectionOutcomeSelector = false,
-  rejectionOutcomeType,
 }: Props) {
   switch (actionType) {
     case "APPROVE_ADVANCE":
       return null;
     case "REJECT":
-      return (
-        <>
-          <FormInput
-            label="Reversal action key"
-            name="reversibleActionKey"
-            placeholder="REOPEN_REJECTION"
-          />
-          {hideRejectionOutcomeSelector ? null : (
-            <FormSelect
-              containerClassName="sm:col-span-2"
-              items={[
-                { label: "Terminal rejection", value: "TERMINAL" },
-                { label: "Follow configured transition", value: "TRANSITION" },
-              ]}
-              label="Rejection outcome"
-              name="rejectionOutcomeType"
-              required
-            />
-          )}
-          {rejectionOutcomeType === "TERMINAL" ? (
-            <>
-              <CheckboxField
-                label="Cancel all open tasks"
-                name="cancelOpenTasks"
-              />
-              <CheckboxField
-                label="Cancel all open stages"
-                name="cancelOpenStageInstances"
-              />
-              <FormSelect
-                items={[
-                  { label: "Outcome available", value: "OUTCOME_AVAILABLE" },
-                  { label: "Closed", value: "CLOSED" },
-                ]}
-                label="Applicant status"
-                name="rejectionPublicStatus"
-                required
-              />
-              <FormInput
-                label="Applicant status label"
-                name="rejectionPublicLabel"
-                required
-              />
-              <FormTextarea
-                containerClassName="sm:col-span-2"
-                label="Applicant status description"
-                name="rejectionPublicDescription"
-                required
-                rows={2}
-              />
-            </>
-          ) : null}
-        </>
-      );
+      return null;
     case "REQUEST_INFORMATION":
       return <RequestInformationFields />;
     case "RETURN":
@@ -248,11 +178,6 @@ function ActionConfigurationFields({
             label="Returned data"
             name="dataHandling"
             required
-          />
-          <CheckboxField
-            containerClassName="sm:col-span-2"
-            label="Require a return reason"
-            name="reasonRequired"
           />
         </>
       );
@@ -284,11 +209,6 @@ function ActionConfigurationFields({
     case "PUT_ON_HOLD":
       return (
         <>
-          <KeyListField
-            label="Hold reason codes"
-            name="reasonCodes"
-            placeholder="AWAITING_EXTERNAL_DECISION"
-          />
           <CheckboxField
             containerClassName="sm:col-span-2"
             label="Require a review date"

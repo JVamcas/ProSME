@@ -1,14 +1,37 @@
 "use client";
 
-import { FormInput, FormSelect, FormTextarea } from "@/components/ui/form-fields";
+import { useFormContext } from "react-hook-form";
+
+import {
+  FormInput,
+  FormSelect,
+  FormTextarea,
+} from "@/components/ui/form-fields";
 import { workflowPublicStatuses } from "@/modules/workflows/domain/definitions/WorkflowStageDefinition";
+import { workflowApplicantStatusDefaults } from "../../domain/definitions/WorkflowApplicantStatusDefaults";
+import type { WorkflowStageFormInput } from "./WorkflowStageFormSchema";
 
 const applicantStatusItems = workflowPublicStatuses.map((status) => ({
-  label: status.charAt(0) + status.slice(1).toLowerCase().replaceAll("_", " "),
+  label: workflowApplicantStatusDefaults[status].label,
   value: status,
 }));
 
 export function WorkflowStageDetailsStep() {
+  const form = useFormContext<WorkflowStageFormInput>();
+
+  function fillApplicantStatusDefaults() {
+    const status = form.getValues("publicStatusMapping.status");
+    const defaults = workflowApplicantStatusDefaults[status];
+    const options = { shouldDirty: true, shouldValidate: true };
+
+    form.setValue("publicStatusMapping.label", defaults.label, options);
+    form.setValue(
+      "publicStatusMapping.description",
+      defaults.description,
+      options,
+    );
+  }
+
   return (
     <section aria-label="Stage details" className="space-y-5">
       <div>
@@ -25,7 +48,7 @@ export function WorkflowStageDetailsStep() {
         required
       />
       <FormTextarea
-        label="Description"
+        label="Stage Description"
         name="description"
         placeholder="Describe what happens during this stage."
         rows={4}
@@ -37,12 +60,15 @@ export function WorkflowStageDetailsStep() {
           </h4>
           <p className="mt-1 text-sm text-brand-navy/60">
             Configure the status applicants see while this stage is active.
+            Selecting a status fills in a suggested label and description that
+            you can edit.
           </p>
         </div>
         <FormSelect
           items={applicantStatusItems}
           label="Applicant status"
           name="publicStatusMapping.status"
+          registrationOptions={{ onChange: fillApplicantStatusDefaults }}
           required
         />
         <FormInput

@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
+vi.mock("@/modules/workflows/application/runtime/ServerWorkflowRfiNotificationService", () => ({
+  captureWorkflowRfiCreatedNotification: vi.fn(),
+}));
+
 vi.mock("@/modules/workflows/infrastructure/StageActivationRepository", () => ({
   findStageIteration: vi.fn(),
   loadIncompleteJoinPredecessors: vi.fn(),
@@ -17,6 +21,9 @@ vi.mock("@/modules/workflows/application/runtime/ServerWorkflowTaskAssignmentNot
   captureWorkflowTaskAssignmentNotification: vi.fn(),
 }));
 
+import { captureWorkflowRfiCreatedNotification } from "@/modules/workflows/application/runtime/ServerWorkflowRfiNotificationService";
+
+import { createStageActivationWorkflowRfi } from "@/modules/workflows/infrastructure/WorkflowRfiRepository";
 import { activateStageInTransaction } from "@/modules/workflows/application/runtime/ServerStageActivationService";
 import { captureWorkflowTaskAssignmentNotification } from "@/modules/workflows/application/runtime/ServerWorkflowTaskAssignmentNotificationService";
 import { basicOperators } from "@/modules/conditions/engine/BasicOperators";
@@ -92,6 +99,7 @@ const taskDefinition = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(createStageActivationWorkflowRfi).mockResolvedValue(null);
   vi.mocked(lockStageActivationTarget).mockResolvedValue(target);
   vi.mocked(findStageIteration).mockResolvedValue(null);
   vi.mocked(loadIncompleteJoinPredecessors).mockResolvedValue([]);
@@ -196,4 +204,19 @@ describe("server stage activation service", () => {
     });
     expect(persistStageActivation).not.toHaveBeenCalled();
   });
+  it("captures notifications for automatically created information requests", async () => {
+    const transaction = {} as never;
+    const requestInformationId = "99999999-9999-4999-8999-999999999999";
+    vi.mocked(createStageActivationWorkflowRfi).mockResolvedValue({
+      deadlineAt: new Date("2026-10-13T09:00:00.000Z"),
+      requestInformationId,
+      status: "OPEN",
+    });
+    await activateStageInTransaction(transaction, input);
+    expect(captureWorkflowRfiCreatedNotification).toHaveBeenCalledWith(
+      transaction,
+      requestInformationId,
+    );
+  });
+
 });

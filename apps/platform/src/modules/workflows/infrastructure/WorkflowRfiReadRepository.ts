@@ -151,6 +151,22 @@ function detailQuery(condition: SQL) {
     LEFT JOIN LATERAL (
       SELECT jsonb_agg(jsonb_build_object(
         'path', requested.path,
+        'definition', CASE WHEN field.id IS NULL THEN NULL ELSE jsonb_build_object(
+          'key', field.key,
+          'label', field.label,
+          'type', field.type,
+          'required', field.required,
+          'helpText', field.help_text,
+          'minimum', field.minimum,
+          'maximum', field.maximum,
+          'minLength', field.min_length,
+          'maxLength', field.max_length,
+          'repeatable', field.repeatable_configuration,
+          'options', COALESCE(field_options.items, '[]'::jsonb),
+          'columnSpan', field.column_span,
+          'sectionId', field.section_id,
+          'order', field.display_order
+        ) END,
         'label', COALESCE(field.label, initcap(replace(requested.path, '_', ' '))),
         'type', CASE
           WHEN requested.path = ${workflowRfiDetailedResponseFieldPath}

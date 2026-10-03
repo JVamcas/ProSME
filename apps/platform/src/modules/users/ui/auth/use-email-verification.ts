@@ -3,6 +3,7 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 
+import { authNavigationHref } from "@/platform/auth/AuthNavigation";
 import { authClientService } from "@/platform/auth/firebase/ClientAuthService";
 import { getFirebaseErrorMessage } from "@/platform/auth/firebase/errors";
 
@@ -23,7 +24,7 @@ export function emailVerificationNotice(
   return "";
 }
 
-export function useEmailVerification() {
+export function useEmailVerification(returnTo?: string) {
   const router = useRouter();
   const status = useQuery({
     queryFn: authClientService.getEmailVerificationStatus,
@@ -37,7 +38,7 @@ export function useEmailVerification() {
     mutationFn: authClientService.completeEmailVerification,
     onSuccess(verified) {
       if (verified) {
-        router.replace("/sign-in");
+        router.replace(authNavigationHref("/sign-in", returnTo));
       }
     },
   });

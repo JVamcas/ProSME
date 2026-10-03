@@ -1,9 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
+vi.mock("@/modules/workflows/application/runtime/ServerWorkflowRfiNotificationService", () => ({
+  captureWorkflowRfiCreatedNotification: vi.fn(),
+}));
+
 vi.mock("@/modules/workflows/infrastructure/WorkflowRfiRepository", () => ({
   createWorkflowRfi: vi.fn(),
 }));
+
+import { captureWorkflowRfiCreatedNotification } from "@/modules/workflows/application/runtime/ServerWorkflowRfiNotificationService";
 
 import {
   buildRequestInformationCreationRequest,
@@ -58,7 +64,7 @@ function request() {
         enabled: true,
         id: actionDefinitionId,
         label: "Request information",
-        reasonCodeRequired: false,
+        reasonRequired: false,
         stableKey: "REQUEST_INFORMATION",
       },
       stage: {
@@ -134,5 +140,9 @@ describe("workflow request information hook", () => {
       createRequestInformation(transaction, request()),
     ).resolves.toMatchObject({ status: "OPEN" });
     expect(createWorkflowRfi).toHaveBeenCalledWith(transaction, request());
+    expect(captureWorkflowRfiCreatedNotification).toHaveBeenCalledWith(
+      transaction,
+      "c0000000-0000-4000-8000-000000000001",
+    );
   });
 });

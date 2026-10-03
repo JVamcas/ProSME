@@ -32,22 +32,38 @@ export const formContextIds = {
 export async function installWorkflowEligibilityFormContextFixture(
   pool: PoolClient,
   configureDraft?: (pool: PoolClient) => Promise<void>,
+  prepareApplication?: () => Promise<{
+    formVersionId: string;
+    values: Record<string, unknown>;
+  }>,
 ) {
   const id = formContextIds;
   await pool.query(
     `INSERT INTO app_users (id, email, display_name, user_type, status)
      VALUES ($1, $3, 'Form reviewer', 'staff', 'active'),
        ($2, $4, 'Other reviewer', 'staff', 'active')`,
-    [id.actor, id.otherActor, `${id.actor}@example.test`, `${id.otherActor}@example.test`],
+    [
+      id.actor,
+      id.otherActor,
+      `${id.actor}@example.test`,
+      `${id.otherActor}@example.test`,
+    ],
   );
   await pool.query(
     `INSERT INTO app_eligibility_rule_sets (id, code, name, created_by)
      VALUES ($1, $3, 'Eligibility baseline', $2)`,
-    [id.ruleset, id.actor, `FORM_CONTEXT_${id.ruleset.replaceAll("-", "_").toUpperCase()}`],
+    [
+      id.ruleset,
+      id.actor,
+      `FORM_CONTEXT_${id.ruleset.replaceAll("-", "_").toUpperCase()}`,
+    ],
   );
   const database = drizzle(pool);
   const forms = [];
-  for (const [index, versionId] of [id.rulesVersion, id.otherRulesVersion].entries()) {
+  for (const [index, versionId] of [
+    id.rulesVersion,
+    id.otherRulesVersion,
+  ].entries()) {
     // Only one draft is allowed; publish each version before creating the next.
     await pool.query(
       `INSERT INTO app_eligibility_rule_set_versions
@@ -55,16 +71,15 @@ export async function installWorkflowEligibilityFormContextFixture(
        VALUES ($1, $2, $3, $4)`,
       [versionId, id.ruleset, index + 1, id.actor],
     );
-    forms.push(await createEligibilityVerificationForm(
-      database as never,
-      {
+    forms.push(
+      await createEligibilityVerificationForm(database as never, {
         actorId: id.actor,
         ruleSetCode: "FORM_CONTEXT_RULES",
         ruleSetName: "Eligibility baseline",
         versionId,
         versionNumber: index + 1,
-      },
-    ));
+      }),
+    );
     await pool.query(
       `UPDATE app_eligibility_rule_set_versions SET status = 'PUBLISHED',
         published_by = $2, published_at = now(), row_version = row_version + 1
@@ -75,7 +90,11 @@ export async function installWorkflowEligibilityFormContextFixture(
   await pool.query(
     `INSERT INTO app_form_definitions (id, code, name, purpose, created_by)
      VALUES ($1, $3, 'COI declaration', 'COI', $2)`,
-    [id.coiDefinition, id.actor, `COI_${id.coiDefinition.replaceAll("-", "_").toUpperCase()}`],
+    [
+      id.coiDefinition,
+      id.actor,
+      `COI_${id.coiDefinition.replaceAll("-", "_").toUpperCase()}`,
+    ],
   );
   await pool.query(
     `INSERT INTO app_form_versions (id, form_definition_id, version_number, created_by)
@@ -90,7 +109,10 @@ export async function installWorkflowEligibilityFormContextFixture(
   await pool.query(
     `INSERT INTO app_workflow_definitions (id, code, name)
      VALUES ($1, $2, 'Form context workflow')`,
-    [id.definition, `FORM_CONTEXT_${id.definition.replaceAll("-", "_").toUpperCase()}`],
+    [
+      id.definition,
+      `FORM_CONTEXT_${id.definition.replaceAll("-", "_").toUpperCase()}`,
+    ],
   );
   await pool.query(
     `INSERT INTO app_workflow_definition_versions
@@ -116,8 +138,14 @@ export async function installWorkflowEligibilityFormContextFixture(
        '{"command":"AUTHORITATIVE_ELIGIBILITY"}', $6::jsonb),
       ($3, $5, 'BOUND', 'Bound review form', 3, '{}', $6::jsonb),
       ($4, $5, 'UNBOUND', 'Unbound review form', 4, '{}', $6::jsonb)`,
-    [id.inheritedDefinition, id.commandDefinition, id.boundDefinition, id.unboundDefinition,
-      id.stage, JSON.stringify(defaultWorkflowElementPermissions)],
+    [
+      id.inheritedDefinition,
+      id.commandDefinition,
+      id.boundDefinition,
+      id.unboundDefinition,
+      id.stage,
+      JSON.stringify(defaultWorkflowElementPermissions),
+    ],
   );
   await pool.query(
     `INSERT INTO app_stage_task_form_bindings
@@ -145,15 +173,51 @@ export async function installWorkflowEligibilityFormContextFixture(
        1000000, 10000, 100000, now(), now() + interval '1 day', $3, $4, $6, $6),
       ($2, 'FORM-CONTEXT-TWO', 'form-context-two', 'Second call', 'Test',
        1000000, 10000, 100000, now(), now() + interval '1 day', $3, $5, $6, $6)`,
-    [id.call, id.secondCall, id.version, id.rulesVersion, id.otherRulesVersion, id.actor],
+    [
+      id.call,
+      id.secondCall,
+      id.version,
+      id.rulesVersion,
+      id.otherRulesVersion,
+      id.actor,
+    ],
   );
+  const applicationForm = await prepareApplication?.();
   await pool.query(
     `INSERT INTO app_applications
       (id, owner_user_id, funding_opportunity_id, funding_opportunity_title,
-       eligibility_rule_set_version_id, status, submitted_at, reference)
-     VALUES ($1, $2, $3, 'First call', $4, 'submitted', now(), 'FORM-CONTEXT-001')`,
-    [id.application, id.actor, id.call, id.rulesVersion],
+       eligibility_rule_set_version_id, form_version_id, status, submitted_at, reference)
+     VALUES ($1, $2, $3, 'First call', $4, $5, $6,
+       CASE WHEN $6 = 'submitted' THEN now() ELSE NULL END,
+       CASE WHEN $6 = 'submitted' THEN 'FORM-CONTEXT-001' ELSE NULL END)`,
+    [
+      id.application,
+      id.actor,
+      id.call,
+      id.rulesVersion,
+      applicationForm?.formVersionId ?? null,
+      applicationForm ? "draft" : "submitted",
+    ],
   );
+  if (applicationForm) {
+    const response = await pool.query(
+      `INSERT INTO app_application_draft_responses
+        (application_id, form_version_id, respondent_user_id, values)
+       VALUES ($1, $2, $3, $4) RETURNING id`,
+      [
+        id.application,
+        applicationForm.formVersionId,
+        id.actor,
+        JSON.stringify(applicationForm.values),
+      ],
+    );
+    await pool.query(
+      `UPDATE app_applications SET latest_draft_response_id = $2,
+        status = 'submitted', submitted_at = now(), reference = 'FORM-CONTEXT-001',
+        row_version = row_version + 1 WHERE id = $1`,
+      [id.application, response.rows[0].id],
+    );
+  }
   await pool.query(
     `INSERT INTO app_workflow_instances (id, application_id, workflow_template_version_id)
      VALUES ($1, $2, $3)`,
@@ -170,9 +234,19 @@ export async function installWorkflowEligibilityFormContextFixture(
       (id, workflow_task_definition_id, stage_instance_id, assigned_user_id, form_version_id)
      VALUES ($1, $5, $9, $10, $11), ($2, $6, $9, $10, $11),
        ($3, $7, $9, $10, $11), ($4, $8, $9, $10, $11)`,
-    [id.inheritedTask, id.commandTask, id.boundTask, id.unboundTask,
-      id.inheritedDefinition, id.commandDefinition, id.boundDefinition, id.unboundDefinition,
-      id.stageInstance, id.actor, forms[0]],
+    [
+      id.inheritedTask,
+      id.commandTask,
+      id.boundTask,
+      id.unboundTask,
+      id.inheritedDefinition,
+      id.commandDefinition,
+      id.boundDefinition,
+      id.unboundDefinition,
+      id.stageInstance,
+      id.actor,
+      forms[0],
+    ],
   );
   await pool.query(
     `INSERT INTO app_workflow_application_coi

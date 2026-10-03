@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+
+import { authNavigationHref } from "@/platform/auth/AuthNavigation";
 import { FormProvider } from "react-hook-form";
 
 import { GeneralButton } from "@/components/ui/button";
@@ -14,8 +16,8 @@ import {
 } from "./auth-styles";
 import { useRegistration } from "./use-registration";
 
-export function RegistrationForm() {
-  const form = useRegistration();
+export function RegistrationForm({ returnTo }: { returnTo?: string }) {
+  const form = useRegistration(returnTo);
 
   return (
     <FormProvider {...form.form}>
@@ -83,7 +85,7 @@ export function RegistrationForm() {
         </GeneralButton>
         <p className={authSupportingTextClassName}>
           Already registered?{" "}
-          <Link className={authLinkClassName} href="/sign-in">
+          <Link className={authLinkClassName} href={authNavigationHref("/sign-in", returnTo)}>
             Sign in
           </Link>
         </p>

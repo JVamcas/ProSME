@@ -1,5 +1,7 @@
 "use client";
 
+import { formatConditionFieldLabel } from "@/modules/conditions/domain/ConditionFieldLabel";
+
 import { FormInput, FormSelect } from "@/components/ui/form-fields";
 import type {
   ConditionFieldDefinition,
@@ -73,7 +75,10 @@ function fieldItems(
 ) {
   return fields
     .filter((field) => !type || field.type === type)
-    .map((field) => ({ label: field.label, value: field.key }));
+    .map((field) => ({
+      label: formatConditionFieldLabel(field),
+      value: field.key,
+    }));
 }
 
 function ConstantEditor({

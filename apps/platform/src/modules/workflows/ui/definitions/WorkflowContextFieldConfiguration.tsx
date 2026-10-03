@@ -1,5 +1,7 @@
 "use client";
 
+import { formatConditionFieldLabel } from "@/modules/conditions/domain/ConditionFieldLabel";
+
 import { FormField } from "@/components/ui/form-field";
 import type { ConditionFieldDefinition } from "@/modules/conditions/domain/ConditionConfiguration";
 import { FormMultiSelect } from "@/shared/ui/FormMultiSelect";
@@ -20,7 +22,7 @@ export function WorkflowContextFieldConfiguration({
   selectedKeys,
 }: Props) {
   const items = fields.map((field) => ({
-    label: `${field.label} · ${field.key}`,
+    label: `${formatConditionFieldLabel(field)} · ${field.key}`,
     value: field.key,
   }));
   const placeholder = isPending

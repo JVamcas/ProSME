@@ -64,7 +64,11 @@ export async function appendWorkflowRfiLifecycleRecords(
   await transaction.insert(workflowAuditEntries).values({
     action: eventCode,
     actorId: input.actorId,
-    after: { rowVersion: input.nextRowVersion, status: input.toStatus },
+    after: {
+      ...input.details,
+      rowVersion: input.nextRowVersion,
+      status: input.toStatus,
+    },
     before: {
       rowVersion: input.previousRowVersion,
       status: input.fromStatus,

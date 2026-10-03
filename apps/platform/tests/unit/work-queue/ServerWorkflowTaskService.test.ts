@@ -66,12 +66,10 @@ const availableActions = [
     label: "Advance",
     presentation: { displayOrder: 1, variant: "success" as const },
     requiredInput: {
-      comment: { maxLength: 4_000, required: false },
       confirmation: { message: null, required: false },
       dueDate: { deadlineDays: null, required: false },
       editableFieldPaths: [],
-      reasonCode: { options: [], required: false },
-      reasonOrCommentRequired: false,
+      reason: { maxLength: 4_000, required: false },
       reviewDate: { required: false },
       target: { type: null, value: null },
     },

@@ -47,7 +47,6 @@ function target(
       condition: null,
       configuration: actionType === "PUT_ON_HOLD"
         ? {
-            reasonCodes: ["EXTERNAL_REVIEW"],
             reviewDateRequired: true,
             scope: "STAGE" as const,
           }
@@ -56,7 +55,7 @@ function target(
       enabled: true,
       id: "40000000-0000-4000-8000-000000000001",
       label: actionType === "PUT_ON_HOLD" ? "Put on hold" : "Resume",
-      reasonCodeRequired: actionType === "PUT_ON_HOLD",
+      reasonRequired: actionType === "PUT_ON_HOLD",
       stableKey: actionType,
     },
     stage: {
@@ -100,7 +99,7 @@ function outcomeInput(actionType: "PUT_ON_HOLD" | "RESUME") {
       input: actionType === "PUT_ON_HOLD"
         ? {
             actionType: "PUT_ON_HOLD" as const,
-            reasonCode: "EXTERNAL_REVIEW",
+            reason: "EXTERNAL_REVIEW",
             reviewDate: "2027-01-15",
           }
         : { actionType: "RESUME" as const, comment: "Review complete." },

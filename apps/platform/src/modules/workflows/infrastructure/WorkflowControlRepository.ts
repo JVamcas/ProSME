@@ -58,7 +58,7 @@ export async function recordWorkflowRework(
     continuationStageInstanceId: string;
     correlationId: string;
     dataHandling: "RETAIN" | "CLEAR";
-    reason: string;
+    reason?: string;
     sourceStageInstanceId: string;
     sourceTaskId: string | null;
     targetStageInstanceId: string;
@@ -204,7 +204,7 @@ export async function startWorkflowHold(
     actorId: string;
     comment?: string;
     correlationId: string;
-    reasonCode?: string;
+    reason?: string;
     reviewAt?: Date;
     stageInstanceId: string;
     taskId: string | null;
@@ -223,7 +223,7 @@ export async function startWorkflowHold(
     comment: input.comment,
     heldBy: input.actorId,
     previousStageStatus: "ACTIVE",
-    reasonCode: input.reasonCode,
+    reason: input.reason,
     reviewAt: input.reviewAt,
     stageInstanceId: input.stageInstanceId,
     taskId: input.taskId,

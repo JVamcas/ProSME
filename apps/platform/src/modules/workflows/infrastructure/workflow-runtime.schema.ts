@@ -129,7 +129,7 @@ export const workflowActionExecutions = pgTable(
     taskId: uuid("task_id").references((): AnyPgColumn => workflowTasks.id, {
       onDelete: "restrict",
     }),
-    reasonCode: text("reason_code"),
+    reason: text("reason"),
     comment: text("comment"),
     normalizedInput: jsonb("normalized_input")
       .$type<Record<string, unknown>>()

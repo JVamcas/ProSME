@@ -11,7 +11,9 @@ import type {
   WorkflowStageInput,
 } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import type { WorkflowTransitionDefinition } from "@/modules/workflows/domain/transitions/WorkflowTransitionDefinition";
+import { WorkflowTerminalApplicantStatus } from "./WorkflowTerminalApplicantStatus";
 import { workflowRouteDestination } from "./WorkflowActionEditorRoutes";
+import { WorkflowTerminalRejectionNotice } from "./WorkflowTerminalRejectionNotice";
 import { WorkflowActionRouteEditor } from "./WorkflowActionRouteEditor";
 
 type Props = {
@@ -20,6 +22,7 @@ type Props = {
   editor: WorkflowEditorView;
   onChange: (routes: WorkflowTransitionDefinition[]) => void;
   onRejectionOutcomeChange: (value: "TERMINAL" | "TRANSITION") => void;
+  rejectionOutcomeType: "TERMINAL" | "TRANSITION";
   routes: WorkflowTransitionDefinition[];
   stage: WorkflowStageInput;
 };
@@ -27,7 +30,7 @@ type Props = {
 type EditingRoute = "new" | number | null;
 
 function routeTargetType(route: WorkflowTransitionDefinition) {
-  return route.terminalOutcome ? "TERMINAL" as const : "STAGE" as const;
+  return route.terminalOutcome ? ("TERMINAL" as const) : ("STAGE" as const);
 }
 
 export function WorkflowActionRoutingStep({
@@ -36,6 +39,7 @@ export function WorkflowActionRoutingStep({
   editor,
   onChange,
   onRejectionOutcomeChange,
+  rejectionOutcomeType,
   routes,
   stage,
 }: Props) {
@@ -44,16 +48,21 @@ export function WorkflowActionRoutingStep({
     .map((route, index) => ({ index, route }))
     .sort((left, right) => left.route.priority - right.route.priority);
   const editingIndex = typeof editing === "number" ? editing : undefined;
-  const nextPriority = Math.max(0, ...routes.map((route) => route.priority)) + 1;
+  const nextPriority =
+    Math.max(0, ...routes.map((route) => route.priority)) + 1;
   const otherRoutes = routes.filter((_, index) => index !== editingIndex);
-  const rejectionConstraint = actionType === "REJECT" && otherRoutes.length
-    ? routeTargetType(otherRoutes[0])
-    : undefined;
+  const rejectionConstraint =
+    actionType === "REJECT" && otherRoutes.length
+      ? routeTargetType(otherRoutes[0])
+      : undefined;
 
   function saveRoute(route: WorkflowTransitionDefinition) {
-    const nextRoutes = editingIndex === undefined
-      ? [...routes, route]
-      : routes.map((current, index) => index === editingIndex ? route : current);
+    const nextRoutes =
+      editingIndex === undefined
+        ? [...routes, route]
+        : routes.map((current, index) =>
+            index === editingIndex ? route : current,
+          );
     onChange(nextRoutes);
     if (actionType === "REJECT") {
       onRejectionOutcomeChange(
@@ -91,11 +100,13 @@ export function WorkflowActionRoutingStep({
             >
               <div className="min-w-0 text-sm">
                 <p className="font-semibold text-brand-navy">
-                  Priority {route.priority}: {workflowRouteDestination(route, editor.graph)}
+                  Priority {route.priority}:{" "}
+                  {workflowRouteDestination(route, editor.graph)}
                 </p>
                 <p className="mt-1 text-brand-navy/60">
                   {route.condition ? "Conditional route" : "Default route"}
                 </p>
+                <WorkflowTerminalApplicantStatus route={route} />
               </div>
               <div className="flex shrink-0 gap-1">
                 <EditButton
@@ -105,7 +116,11 @@ export function WorkflowActionRoutingStep({
                 />
                 <DeleteButton
                   disabled={editing !== null}
-                  onClick={() => onChange(routes.filter((_, itemIndex) => itemIndex !== index))}
+                  onClick={() =>
+                    onChange(
+                      routes.filter((_, itemIndex) => itemIndex !== index),
+                    )
+                  }
                   title="Delete route"
                 />
               </div>
@@ -123,10 +138,15 @@ export function WorkflowActionRoutingStep({
           editor={editor}
           onCancel={() => setEditing(null)}
           onSave={saveRoute}
-          priority={editingIndex === undefined ? nextPriority : routes[editingIndex].priority}
+          priority={
+            editingIndex === undefined
+              ? nextPriority
+              : routes[editingIndex].priority
+          }
           priorityInUse={(priority) =>
             routes.some(
-              (route, index) => index !== editingIndex && route.priority === priority,
+              (route, index) =>
+                index !== editingIndex && route.priority === priority,
             )
           }
           route={editingIndex === undefined ? undefined : routes[editingIndex]}
@@ -134,6 +154,11 @@ export function WorkflowActionRoutingStep({
           targetTypeConstraint={rejectionConstraint}
         />
       ) : null}
+      {actionType === "REJECT" && editing === null
+        ? rejectionOutcomeType === "TERMINAL" && (
+            <WorkflowTerminalRejectionNotice />
+          )
+        : null}
     </section>
   );
 }

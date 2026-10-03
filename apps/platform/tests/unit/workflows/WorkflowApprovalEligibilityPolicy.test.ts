@@ -15,7 +15,7 @@ const target = {
     displayOrder: 1,
     enabled: true,
     label: "Advance",
-    reasonCodeRequired: false,
+    reasonRequired: false,
     stableKey: "ADVANCE",
   },
   stageStatus: "ACTIVE",

@@ -4,7 +4,7 @@ vi.mock("server-only", () => ({}));
 import { preflightOwnedApplication } from "@/modules/applications/infrastructure/ApplicationPreflightRepository";
 import { submitOwnedApplication } from "@/modules/applications/infrastructure/ApplicationSubmissionRepository";
 import { readApplicantDashboard } from "@/modules/dashboard/infrastructure/ApplicantDashboardRepository";
-import { readAdminDashboard } from "@/db/repositories/AdminDashboardRepository";
+import { readAdminDashboard } from "@/modules/dashboard/infrastructure/AdminDashboardRepository";
 import { seedInitialNotificationConfiguration } from "@/modules/notifications/application/ServerNotificationConfigurationSeedService";
 import {
   eligibilityVersionId,
@@ -37,7 +37,8 @@ const pool = enabled
   ? new Pool({ connectionString: process.env.DATABASE_URL })
   : null;
 async function query(text: string, values: unknown[] = []) {
-  if (!pool) throw new Error("The P3.4 PostgreSQL test pool is not configured.");
+  if (!pool)
+    throw new Error("The P3.4 PostgreSQL test pool is not configured.");
   return pool.query(text, values);
 }
 beforeAll(async () => {
@@ -155,14 +156,16 @@ describeDatabase("P3.4 transactional application submission", () => {
     expect(second.kind).toBe("submitted");
     if (first.kind !== "submitted" || second.kind !== "submitted") return;
     expect(first.result.reference).toBe(second.result.reference);
-    expect(first.result.workflowInstanceId).toBe(second.result.workflowInstanceId);
-    expect(first.result.workflowTemplateVersionId).toBe(versionId);
-    await workflowBindingFixture.publishNewerWorkflowVersion(query, ownerId, definitionId);
-    await expectAtomicSubmissionCounts(
-      query,
-      applicationIds[0],
-      versionId,
+    expect(first.result.workflowInstanceId).toBe(
+      second.result.workflowInstanceId,
     );
+    expect(first.result.workflowTemplateVersionId).toBe(versionId);
+    await workflowBindingFixture.publishNewerWorkflowVersion(
+      query,
+      ownerId,
+      definitionId,
+    );
+    await expectAtomicSubmissionCounts(query, applicationIds[0], versionId);
     await expectImmutableSubmissionArtifacts(query, {
       applicationId: applicationIds[0],
       eligibilityVersionId,
@@ -171,7 +174,10 @@ describeDatabase("P3.4 transactional application submission", () => {
       workflowVersionId: versionId,
     });
     await expect(
-      query(`UPDATE app_stage_task_definitions SET name = 'Changed' WHERE id = $1`, [taskId]),
+      query(
+        `UPDATE app_stage_task_definitions SET name = 'Changed' WHERE id = $1`,
+        [taskId],
+      ),
     ).rejects.toThrow("only draft workflow versions are editable");
     await expect(
       query(
@@ -189,9 +195,11 @@ describeDatabase("P3.4 transactional application submission", () => {
     });
     expect(result?.ready).toBe(false);
     expect(result?.readinessToken).toBeNull();
-    expect(result?.blockers).toEqual(expect.arrayContaining([
-      expect.objectContaining({ code: "INITIAL_WORKFLOW_STAGE_UNAVAILABLE" }),
-    ]));
+    expect(result?.blockers).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: "INITIAL_WORKFLOW_STAGE_UNAVAILABLE" }),
+      ]),
+    );
     const application = await query(
       `SELECT status, reference FROM app_applications WHERE id = $1`,
       [applicationIds[1]],
@@ -211,15 +219,17 @@ describeDatabase("P3.4 transactional application submission", () => {
        VALUES ('APPLICATION_SUBMISSION_CONFIRMATION_REQUESTED', $1, 1, '{}', $2)`,
       [applicationIds[2], "67777777-7777-4777-8777-777777777774"],
     );
-    await expect(submitOwnedApplication({
-      actorId: ownerId,
-      applicationId: applicationIds[2],
-      expectedApplicationRowVersion: preflight!.applicationRowVersion,
-      finalConfirmation: true,
-      readinessToken: preflight!.readinessToken!,
-      correlationId: "67777777-7777-4777-8777-777777777775",
-      idempotencyKey: "forced-rollback",
-    })).rejects.toThrow();
+    await expect(
+      submitOwnedApplication({
+        actorId: ownerId,
+        applicationId: applicationIds[2],
+        expectedApplicationRowVersion: preflight!.applicationRowVersion,
+        finalConfirmation: true,
+        readinessToken: preflight!.readinessToken!,
+        correlationId: "67777777-7777-4777-8777-777777777775",
+        idempotencyKey: "forced-rollback",
+      }),
+    ).rejects.toThrow();
     const state = await query(
       `SELECT status, reference,
         (SELECT count(*)::integer FROM app_workflow_instances
@@ -249,12 +259,16 @@ describeDatabase("P3.4 transactional application submission", () => {
       underReview: 0,
     });
     expect(all.statuses).toEqual([{ count: 1, label: "Initial review" }]);
-    expect(all.activities.find(
-      (activity) => activity.eventCode === "APPLICATION_SUBMITTED",
-    )).toMatchObject({
-        actorName: "Submission Owner",
-        applicationReference: expect.stringMatching(/^SUBMISSION-FUND-\d{4}-\d{6}$/),
-        eventCode: "APPLICATION_SUBMITTED",
+    expect(
+      all.activities.find(
+        (activity) => activity.eventCode === "APPLICATION_SUBMITTED",
+      ),
+    ).toMatchObject({
+      actorName: "Submission Owner",
+      applicationReference: expect.stringMatching(
+        /^SUBMISSION-FUND-\d{4}-\d{6}$/,
+      ),
+      eventCode: "APPLICATION_SUBMITTED",
     });
     const assigned = await readAdminDashboard({
       actorId: ownerId,
@@ -282,7 +296,9 @@ describeDatabase("P3.4 transactional application submission", () => {
       expect.arrayContaining([
         expect.objectContaining({
           applicationId: applicationIds[0],
-          applicationReference: expect.stringMatching(/^SUBMISSION-FUND-\d{4}-\d{6}$/),
+          applicationReference: expect.stringMatching(
+            /^SUBMISSION-FUND-\d{4}-\d{6}$/,
+          ),
           eventCode: "APPLICATION_SUBMITTED",
           fundingOpportunityTitle: "Submission test application",
         }),

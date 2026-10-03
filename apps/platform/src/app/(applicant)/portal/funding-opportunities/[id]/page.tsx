@@ -1,10 +1,10 @@
 import { ChevronLeft } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { z } from "zod";
 
-import { getCurrentUser } from "@/auth/authorization/current-user";
+import { getAuthenticatedPageUser } from "@/platform/auth/ServerAuthNavigation";
 import {
   FundingOpportunityDetail,
   FundingOpportunityStatus,
@@ -29,8 +29,7 @@ export default async function FundingOpportunityPage({
     notFound();
   }
 
-  const user = await getCurrentUser();
-  if (!user) redirect("/sign-in?next=/portal/funding-opportunities");
+  const user = await getAuthenticatedPageUser();
   let opportunity: Awaited<ReturnType<typeof getFundingOpportunity>>;
   try {
     opportunity = await getFundingOpportunity(user, opportunityId.data);

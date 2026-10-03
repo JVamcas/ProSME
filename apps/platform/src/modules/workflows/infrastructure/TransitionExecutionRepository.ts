@@ -3,6 +3,8 @@ import "server-only";
 import { eq, sql } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
+import type { TerminalApplicantStatus } from "../domain/transitions/WorkflowTerminalOutcome";
+import type { WorkflowPublicStatusMapping } from "../domain/definitions/WorkflowStageDefinition";
 import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup";
 import type { StageConditionEvaluation } from "../engine/StageCondition";
 import type { TransitionExecutionOutcome } from "../domain/runtime/TransitionExecution";
@@ -25,11 +27,13 @@ export type SequentialTransition = {
   priority: number;
   targetStages: SequentialTransitionTarget[];
   terminalOutcome: string | null;
+  terminalApplicantStatus?: TerminalApplicantStatus | null;
 };
 
 export type TransitionTargetOutcome = {
   incompletePredecessorStageKeys?: string[];
-  outcome: "ACTIVATED" | "ALREADY_ACTIVE" | "ENTRY_CONDITION_FAILED" | "JOIN_PENDING";
+  outcome:
+    "ACTIVATED" | "ALREADY_ACTIVE" | "ENTRY_CONDITION_FAILED" | "JOIN_PENDING";
   targetStageDefinitionId: string;
   targetStageInstanceId: string | null;
   targetStageName: string;
@@ -96,6 +100,7 @@ export async function loadSequentialTransitions(
     SELECT action.id AS "actionId", transition.id,
       transition.priority, transition.condition,
       transition.terminal_outcome AS "terminalOutcome",
+      transition.terminal_applicant_status AS "terminalApplicantStatus",
       COALESCE((
         SELECT jsonb_agg(jsonb_build_object(
           'id', target.target_stage_id,
@@ -118,15 +123,16 @@ export async function loadSequentialTransitions(
   const rows = result.rows as Array<TransitionRow & { id: string | null }>;
   return {
     actionExists: rows.length > 0,
-    transitions: rows.filter(
-      (row): row is TransitionRow => row.id !== null,
-    ).map((row) => ({
-      condition: row.condition,
-      id: row.id,
-      priority: row.priority,
-      targetStages: row.targetStages ?? [],
-      terminalOutcome: row.terminalOutcome,
-    })),
+    transitions: rows
+      .filter((row): row is TransitionRow => row.id !== null)
+      .map((row) => ({
+        condition: row.condition,
+        id: row.id,
+        priority: row.priority,
+        targetStages: row.targetStages ?? [],
+        terminalOutcome: row.terminalOutcome,
+        terminalApplicantStatus: row.terminalApplicantStatus,
+      })),
   };
 }
 
@@ -142,18 +148,21 @@ export async function recordTransitionExecution(
     workflowInstanceId: string;
   },
 ) {
-  const [execution] = await transaction.insert(transitionExecutions).values({
-    actionKey: input.actionKey,
-    actorId: input.actorId,
-    conditionEvaluation: input.conditionEvaluation as unknown as Record<
-      string,
-      unknown
-    >,
-    correlationId: input.correlationId,
-    sourceStageInstanceId: input.sourceStageInstanceId,
-    transitionDefinitionId: input.transition.id,
-    workflowInstanceId: input.workflowInstanceId,
-  }).returning({ id: transitionExecutions.id });
+  const [execution] = await transaction
+    .insert(transitionExecutions)
+    .values({
+      actionKey: input.actionKey,
+      actorId: input.actorId,
+      conditionEvaluation: input.conditionEvaluation as unknown as Record<
+        string,
+        unknown
+      >,
+      correlationId: input.correlationId,
+      sourceStageInstanceId: input.sourceStageInstanceId,
+      transitionDefinitionId: input.transition.id,
+      workflowInstanceId: input.workflowInstanceId,
+    })
+    .returning({ id: transitionExecutions.id });
   return execution;
 }
 
@@ -161,10 +170,14 @@ export async function completeTerminalWorkflow(
   transaction: StageCompletionTransaction,
   workflowInstanceId: string,
   completedAt: Date,
+  terminalOutcome: string,
+  publicStatus: WorkflowPublicStatusMapping,
 ) {
   const result = await transaction.execute(sql`
     UPDATE app_workflow_instances workflow
-    SET completed_at = ${completedAt}, status = 'COMPLETED'
+    SET completed_at = ${completedAt}, status = 'COMPLETED',
+      terminal_outcome = ${terminalOutcome},
+      public_status = ${JSON.stringify(publicStatus)}::jsonb
     WHERE workflow.id = ${workflowInstanceId}::uuid
       AND NOT EXISTS (
         SELECT 1
@@ -191,9 +204,12 @@ export async function finalizeTransitionExecution(
     workflowInstanceId: string;
   },
 ) {
-  await transaction.update(transitionExecutions).set({
-    outcome: input.outcome,
-  }).where(eq(transitionExecutions.id, input.executionId));
+  await transaction
+    .update(transitionExecutions)
+    .set({
+      outcome: input.outcome,
+    })
+    .where(eq(transitionExecutions.id, input.executionId));
   if (input.targets.length) {
     await transaction.insert(transitionExecutionTargets).values(
       input.targets.map((target) => ({
@@ -210,6 +226,7 @@ export async function finalizeTransitionExecution(
     sourceStageInstanceId: input.sourceStageInstanceId,
     targets: input.targets,
     terminalOutcome: input.transition.terminalOutcome,
+    terminalApplicantStatus: input.transition.terminalApplicantStatus ?? null,
     transitionDefinitionId: input.transition.id,
   };
   await transaction.insert(workflowEvents).values({

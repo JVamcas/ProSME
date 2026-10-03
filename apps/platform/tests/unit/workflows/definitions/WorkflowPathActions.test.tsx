@@ -99,8 +99,7 @@ describe("workflow path label actions", () => {
         .toContain("Edit task action");
       expect(document.querySelector<HTMLInputElement>('input[name="label"]')?.value)
         .toBe(view.editor.graph.stages[1].actions[0].label);
-      expect(document.querySelector<HTMLInputElement>('input[name="stableKey"]')?.value)
-        .toBe(view.editor.graph.transitions[0].actionKey);
+      expect(document.querySelector('input[name="stableKey"]')).toBeNull();
       expect(view.update).not.toHaveBeenCalled();
       await act(async () => {
         const input = document.querySelector<HTMLInputElement>('input[name="label"]')!;
@@ -115,10 +114,14 @@ describe("workflow path label actions", () => {
       await clickDialogButton("Continue");
       await clickDialogButton("Continue");
       await clickDialogButton("Continue");
+      expect(document.querySelector('[aria-label="Review action"]')).not.toBeNull();
+      expect(view.update).not.toHaveBeenCalled();
       await clickDialogButton("Save action");
       expect(view.update).toHaveBeenCalledTimes(1);
       const savedGraph = view.update.mock.calls[0][1].graph;
       expect(savedGraph.stages[1].actions[0].label).toBe("Updated path action");
+      expect(savedGraph.stages[1].actions[0].stableKey)
+        .toBe(view.editor.graph.stages[1].actions[0].stableKey);
       expect(savedGraph.stages[0]).toEqual(view.editor.graph.stages[0]);
       expect(savedGraph.transitions).toHaveLength(view.editor.graph.transitions.length);
       expect(savedGraph.transitions).toEqual(

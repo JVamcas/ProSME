@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { workQueueQueryKeys } from "@/modules/work-queue/WorkQueueHooks";
 import { clientWorkflowRfiService } from "./ClientWorkflowRfiService";
 
 export const workflowRfiQueryKeys = {
@@ -45,15 +46,21 @@ export function useSaveWorkflowRfiDraft(
     onSuccess: (draft, input) => {
       client.setQueryData(
         workflowRfiQueryKeys.ownedDetail(applicationId, requestId),
-        (detail: Awaited<ReturnType<typeof clientWorkflowRfiService.getOwned>> | undefined) =>
-          detail ? {
-            ...detail,
-            draft: {
-              fieldValues: input.fieldValues,
-              rowVersion: draft.rowVersion,
-              updatedAt: draft.updatedAt,
-            },
-          } : detail,
+        (
+          detail:
+            | Awaited<ReturnType<typeof clientWorkflowRfiService.getOwned>>
+            | undefined,
+        ) =>
+          detail
+            ? {
+                ...detail,
+                draft: {
+                  fieldValues: input.fieldValues,
+                  rowVersion: draft.rowVersion,
+                  updatedAt: draft.updatedAt,
+                },
+              }
+            : detail,
       );
     },
   });
@@ -72,10 +79,11 @@ export function useUploadWorkflowRfiDocument(
         input.requirementId,
         input.file,
       ),
-    onSuccess: (detail) => client.setQueryData(
-      workflowRfiQueryKeys.ownedDetail(applicationId, requestId),
-      detail,
-    ),
+    onSuccess: (detail) =>
+      client.setQueryData(
+        workflowRfiQueryKeys.ownedDetail(applicationId, requestId),
+        detail,
+      ),
   });
 }
 
@@ -88,15 +96,16 @@ export function useRespondToWorkflowRfi(
     mutationFn: (
       input: Parameters<typeof clientWorkflowRfiService.respond>[2],
     ) => clientWorkflowRfiService.respond(applicationId, requestId, input),
-    onSuccess: () => Promise.all([
-      client.invalidateQueries({
-        queryKey: workflowRfiQueryKeys.ownedDetail(applicationId, requestId),
-      }),
-      client.invalidateQueries({
-        queryKey: workflowRfiQueryKeys.application(applicationId),
-      }),
-      client.invalidateQueries({ queryKey: ["portal", "applications"] }),
-    ]),
+    onSuccess: () =>
+      Promise.all([
+        client.invalidateQueries({
+          queryKey: workflowRfiQueryKeys.ownedDetail(applicationId, requestId),
+        }),
+        client.invalidateQueries({
+          queryKey: workflowRfiQueryKeys.application(applicationId),
+        }),
+        client.invalidateQueries({ queryKey: ["portal", "applications"] }),
+      ]),
   });
 }
 
@@ -107,10 +116,7 @@ export function useTaskWorkflowRfis(taskId: string) {
   });
 }
 
-export function useTaskWorkflowRfi(
-  taskId: string,
-  requestId: string | null,
-) {
+export function useTaskWorkflowRfi(taskId: string, requestId: string | null) {
   return useQuery({
     enabled: Boolean(requestId),
     queryFn: () => clientWorkflowRfiService.getTask(taskId, requestId!),
@@ -123,9 +129,10 @@ export function useFollowUpWorkflowRfi(taskId: string, requestId: string) {
   return useMutation({
     mutationFn: (message: string) =>
       clientWorkflowRfiService.followUp(taskId, requestId, message),
-    onSuccess: () => client.invalidateQueries({
-      queryKey: workflowRfiQueryKeys.taskDetail(taskId, requestId),
-    }),
+    onSuccess: () =>
+      client.invalidateQueries({
+        queryKey: workflowRfiQueryKeys.taskDetail(taskId, requestId),
+      }),
   });
 }
 
@@ -134,11 +141,15 @@ export function useCloseWorkflowRfi(taskId: string, requestId: string) {
   return useMutation({
     mutationFn: (expectedRowVersion: number) =>
       clientWorkflowRfiService.close(taskId, requestId, expectedRowVersion),
-    onSuccess: () => Promise.all([
-      client.invalidateQueries({ queryKey: workflowRfiQueryKeys.task(taskId) }),
-      client.invalidateQueries({
-        queryKey: workflowRfiQueryKeys.taskDetail(taskId, requestId),
-      }),
-    ]),
+    onSuccess: () =>
+      Promise.all([
+        client.invalidateQueries({
+          queryKey: workflowRfiQueryKeys.task(taskId),
+        }),
+        client.invalidateQueries({ queryKey: workQueueQueryKeys.all }),
+        client.invalidateQueries({
+          queryKey: workflowRfiQueryKeys.taskDetail(taskId, requestId),
+        }),
+      ]),
   });
 }

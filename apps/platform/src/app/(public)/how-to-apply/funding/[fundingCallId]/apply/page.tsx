@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 
+import { authNavigationHref } from "@/platform/auth/AuthNavigation";
 import { getCurrentUser } from "@/auth/authorization/current-user";
 import { findPublicFundingCallById } from "@/modules/funding-calls/application/ServerPublicFundingCallService";
 
@@ -13,5 +14,5 @@ export default async function StartApplicationPage({ params }: {
   ]);
   if (!call) notFound();
   const destination = `/portal/applications/new?fundingOpportunityId=${encodeURIComponent(call.id)}`;
-  redirect(user ? destination : `/sign-in?next=${encodeURIComponent(destination)}`);
+  redirect(user ? destination : authNavigationHref("/sign-in", destination));
 }

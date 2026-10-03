@@ -1,5 +1,6 @@
 import type { WorkflowActionDefinition } from "./WorkflowActionDefinition";
 import type { WorkflowActionType } from "./WorkflowActionDefinition";
+import type { WorkflowRfiFieldOption } from "../runtime/WorkflowRfiFields";
 
 export const workflowActionPresentationVariants = [
   "danger",
@@ -16,10 +17,6 @@ export type WorkflowActionPresentationVariant =
   (typeof workflowActionPresentationVariants)[number];
 
 export type WorkflowActionInputMetadata = {
-  comment: {
-    maxLength: number;
-    required: boolean;
-  };
   confirmation: {
     message: string | null;
     required: boolean;
@@ -29,11 +26,11 @@ export type WorkflowActionInputMetadata = {
     required: boolean;
   };
   editableFieldPaths: readonly string[];
-  reasonCode: {
-    options: readonly string[];
+  editableFields?: readonly WorkflowRfiFieldOption[];
+  reason: {
+    maxLength: number;
     required: boolean;
   };
-  reasonOrCommentRequired: boolean;
   reviewDate: {
     required: boolean;
   };
@@ -58,12 +55,10 @@ export type WorkflowActionAvailability = {
 };
 
 export const emptyWorkflowActionInputMetadata: WorkflowActionInputMetadata = {
-  comment: { maxLength: 4_000, required: false },
   confirmation: { message: null, required: false },
   dueDate: { deadlineDays: null, required: false },
   editableFieldPaths: [],
-  reasonCode: { options: [], required: false },
-  reasonOrCommentRequired: false,
+  reason: { maxLength: 4_000, required: false },
   reviewDate: { required: false },
   target: { type: null, value: null },
 };
@@ -83,12 +78,6 @@ const presentationByType: Record<
   RETURN: "outline",
   WITHDRAW: "danger",
 };
-
-function reasonCodes(action: WorkflowActionDefinition) {
-  return action.actionType === "PUT_ON_HOLD"
-    ? action.configuration.reasonCodes
-    : [];
-}
 
 function targetMetadata(
   action: WorkflowActionDefinition,
@@ -112,16 +101,7 @@ export function workflowActionInputMetadata(
 ): WorkflowActionInputMetadata {
   const isRequest = action.actionType === "REQUEST_INFORMATION";
   const isHold = action.actionType === "PUT_ON_HOLD";
-  const reasonOrCommentRequired =
-    (action.actionType === "RETURN" && action.configuration.reasonRequired)
-    || action.actionType === "PUT_ON_HOLD"
-    || action.actionType === "DEFER"
-    || action.actionType === "ESCALATE";
   return {
-    comment: {
-      maxLength: 4_000,
-      required: action.actionType === "REJECT",
-    },
     confirmation: {
       message:
         action.actionType === "WITHDRAW"
@@ -133,12 +113,13 @@ export function workflowActionInputMetadata(
       deadlineDays: isRequest ? action.configuration.deadlineDays : null,
       required: isRequest,
     },
-    editableFieldPaths: isRequest ? action.configuration.editableFieldPaths : [],
-    reasonCode: {
-      options: reasonCodes(action),
-      required: action.reasonCodeRequired,
+    editableFieldPaths: isRequest
+      ? action.configuration.editableFieldPaths
+      : [],
+    reason: {
+      maxLength: 4_000,
+      required: !isRequest && action.reasonRequired,
     },
-    reasonOrCommentRequired,
     reviewDate: {
       required: isHold && action.configuration.reviewDateRequired,
     },

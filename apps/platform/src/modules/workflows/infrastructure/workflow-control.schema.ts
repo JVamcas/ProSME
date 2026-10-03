@@ -41,7 +41,7 @@ export const workflowReworks = pgTable(
       .references(() => stageInstances.id, { onDelete: "restrict" }),
     continuationStageInstanceId: uuid("continuation_stage_instance_id")
       .references(() => stageInstances.id, { onDelete: "restrict" }),
-    reason: text("reason").notNull(),
+    reason: text("reason"),
     dataHandling: text("data_handling")
       .$type<"RETAIN" | "CLEAR">()
       .notNull(),
@@ -59,10 +59,6 @@ export const workflowReworks = pgTable(
     index("app_workflow_reworks_runtime_idx").on(
       table.workflowInstanceId,
       table.createdAt,
-    ),
-    check(
-      "app_workflow_reworks_reason_check",
-      sql`length(btrim(${table.reason})) > 0`,
     ),
     check(
       "app_workflow_reworks_data_handling_check",
@@ -162,7 +158,7 @@ export const workflowHolds = pgTable(
     previousStageStatus: text("previous_stage_status")
       .$type<"ACTIVE">()
       .notNull(),
-    reasonCode: text("reason_code"),
+    reason: text("reason"),
     comment: text("comment"),
     reviewAt: timestamp("review_at", { withTimezone: true }),
     status: text("status")
@@ -199,10 +195,6 @@ export const workflowHolds = pgTable(
       "app_workflow_holds_status_check",
       sql`${table.status} in ('ACTIVE', 'RESUMED')`,
     ),
-    check(
-      "app_workflow_holds_reason_check",
-      sql`${table.reasonCode} is not null or length(btrim(coalesce(${table.comment}, ''))) > 0`,
-    ),
   ],
 );
 
@@ -226,7 +218,7 @@ export const workflowDeferrals = pgTable(
     continuation: text("continuation")
       .$type<"RESUME_ON_DATE" | "EXPLICIT_TRANSFER">()
       .notNull(),
-    reasonCode: text("reason_code"),
+    reason: text("reason"),
     comment: text("comment"),
     resumeAt: timestamp("resume_at", { withTimezone: true }),
     targetFundingCallId: uuid("target_funding_call_id").references(
@@ -270,10 +262,6 @@ export const workflowDeferrals = pgTable(
     check(
       "app_workflow_deferrals_status_check",
       sql`${table.status} in ('ACTIVE', 'RESUMED', 'TRANSFERRED')`,
-    ),
-    check(
-      "app_workflow_deferrals_reason_check",
-      sql`${table.reasonCode} is not null or length(btrim(coalesce(${table.comment}, ''))) > 0`,
     ),
     check(
       "app_workflow_deferrals_target_check",
@@ -324,7 +312,7 @@ export const workflowEscalations = pgTable(
       () => users.id,
       { onDelete: "restrict" },
     ),
-    reasonCode: text("reason_code"),
+    reason: text("reason"),
     comment: text("comment"),
     status: text("status")
       .$type<"ACTIVE" | "RESOLVED">()
@@ -372,10 +360,6 @@ export const workflowEscalations = pgTable(
           and ${table.targetUserId} is null)
         or (${table.targetType} = 'USER' and ${table.targetUserId} is not null
           and ${table.targetRoleId} is null)`,
-    ),
-    check(
-      "app_workflow_escalations_reason_check",
-      sql`${table.reasonCode} is not null or length(btrim(coalesce(${table.comment}, ''))) > 0`,
     ),
   ],
 );

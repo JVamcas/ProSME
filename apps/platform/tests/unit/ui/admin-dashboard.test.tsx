@@ -5,7 +5,7 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: vi.fn() }),
 }));
 
-import { AdminDashboard } from "@/components/admin/dashboard/AdminDashboard";
+import { AdminDashboard } from "@/modules/dashboard/ui/AdminDashboard";
 import type { AdminDashboardView } from "@/modules/dashboard/AdminDashboardTypes";
 
 const dashboard: AdminDashboardView = {
@@ -19,7 +19,7 @@ const dashboard: AdminDashboardView = {
     },
   ],
   metrics: {
-    informationRequests: null,
+    informationRequests: 1,
     pendingDecision: 2,
     totalApplications: 5,
     underReview: 3,
@@ -33,7 +33,7 @@ const dashboard: AdminDashboardView = {
 };
 
 describe("admin dashboard", () => {
-  it("renders database projection values and marks unavailable data", () => {
+  it("renders database projection values and the open information request count", () => {
     const markup = renderToStaticMarkup(
       <AdminDashboard dashboard={dashboard} />,
     );
@@ -42,7 +42,8 @@ describe("admin dashboard", () => {
     expect(markup).toContain("Pending decision");
     expect(markup).toContain("SMEF-2026-000001");
     expect(markup).toContain("Application submitted");
-    expect(markup).toContain("Request tracking is not available yet");
+    expect(markup).toContain("Awaiting applicant responses");
+    expect(markup).not.toContain("Request tracking is not available yet");
     expect(markup).toContain('id="period"');
     expect(markup).not.toContain("128");
   });

@@ -153,7 +153,7 @@ describe("workflow service authorization and lifecycle", () => {
         label: "Escalate review",
         actionType: "ESCALATE",
         enabled: true,
-        reasonCodeRequired: false,
+        reasonRequired: false,
         displayOrder: 1,
         configuration: {
           blockUntilResolved: true,

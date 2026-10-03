@@ -16,16 +16,19 @@ const fields = [
   {
     key: "application.requested_amount",
     label: "Requested amount",
+    source: [{ label: "Application" }],
     type: "NUMBER" as const,
   },
   {
     key: "application.annual_turnover",
     label: "Annual turnover",
+    source: [{ label: "Application" }],
     type: "NUMBER" as const,
   },
   {
     key: "fundingCall.maximum_amount",
     label: "Maximum amount",
+    source: [{ label: "Funding Call" }],
     type: "NUMBER" as const,
   },
 ];
@@ -97,8 +100,20 @@ describe("ConditionBuilder operands", () => {
     expect(container.querySelector<HTMLSelectElement>(
       '[aria-label="Value"]',
     )?.value).toBe("fundingCall.maximum_amount");
+    const firstOperand = container.querySelector<HTMLSelectElement>(
+      '[aria-label="First numeric operand"]',
+    );
+    expect(firstOperand?.selectedOptions[0].textContent).toBe(
+      "[Application].Requested amount",
+    );
+    const comparison = container.querySelector<HTMLSelectElement>(
+      '[aria-label="Value"]',
+    );
+    expect(comparison?.selectedOptions[0].textContent).toBe(
+      "[Funding Call].Maximum amount",
+    );
     expect(container.textContent).toContain(
-      "(Requested amount ÷ Annual turnover) Less than or equal Maximum amount",
+      "([Application].Requested amount ÷ [Application].Annual turnover) Less than or equal [Funding Call].Maximum amount",
     );
   });
 });
