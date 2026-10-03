@@ -9,8 +9,7 @@ import type { WorkQueueListInput } from "./WorkQueueTypes";
 
 export const workQueueQueryKeys = {
   all: ["admin", "work-queue"] as const,
-  list: (input: WorkQueueListInput) =>
-    ["admin", "work-queue", input] as const,
+  list: (input: WorkQueueListInput) => ["admin", "work-queue", input] as const,
   task: (taskId: string) => ["admin", "work-queue", "task", taskId] as const,
 };
 
@@ -32,8 +31,9 @@ export function useWorkflowTask(taskId: string, enabled = true) {
 export function useCompleteWorkflowTask(taskId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: Parameters<typeof clientWorkQueueService.completeTask>[1]) =>
-      clientWorkQueueService.completeTask(taskId, input),
+    mutationFn: (
+      input: Parameters<typeof clientWorkQueueService.completeTask>[1],
+    ) => clientWorkQueueService.completeTask(taskId, input),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: workQueueQueryKeys.all });
     },
@@ -43,11 +43,13 @@ export function useCompleteWorkflowTask(taskId: string) {
 export function useSaveTaskReviewDraft(taskId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: Parameters<typeof clientWorkQueueService.saveReviewDraft>[1]) =>
-      clientWorkQueueService.saveReviewDraft(taskId, input),
-    onSuccess: () => queryClient.invalidateQueries({
-      queryKey: workQueueQueryKeys.task(taskId),
-    }),
+    mutationFn: (
+      input: Parameters<typeof clientWorkQueueService.saveReviewDraft>[1],
+    ) => clientWorkQueueService.saveReviewDraft(taskId, input),
+    onSuccess: () =>
+      queryClient.invalidateQueries({
+        queryKey: workQueueQueryKeys.task(taskId),
+      }),
   });
 }
 
@@ -70,19 +72,23 @@ export function useUploadWorkflowTaskDocument(taskId: string) {
 export function useEvaluateAuthoritativeEligibility(taskId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: Parameters<typeof clientWorkQueueService.evaluateEligibility>[1]) =>
-      clientWorkQueueService.evaluateEligibility(taskId, input),
-    onSuccess: () => Promise.all([
-      queryClient.invalidateQueries({ queryKey: applicationQueryKeys.admin }),
-      queryClient.invalidateQueries({ queryKey: applicationQueryKeys.own }),
-      queryClient.invalidateQueries({ queryKey: workQueueQueryKeys.all }),
-      queryClient.invalidateQueries({
-        queryKey: workQueueQueryKeys.task(taskId),
-      }),
-      queryClient.invalidateQueries({
-        queryKey: ["admin", "tasks", taskId, "form"],
-      }),
-    ]),
+    mutationFn: (
+      input: Parameters<typeof clientWorkQueueService.evaluateEligibility>[1],
+    ) => clientWorkQueueService.evaluateEligibility(taskId, input),
+    onSuccess: (result) => {
+      if ("confirmationRequired" in result) return;
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: applicationQueryKeys.admin }),
+        queryClient.invalidateQueries({ queryKey: applicationQueryKeys.own }),
+        queryClient.invalidateQueries({ queryKey: workQueueQueryKeys.all }),
+        queryClient.invalidateQueries({
+          queryKey: workQueueQueryKeys.task(taskId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["admin", "tasks", taskId, "form"],
+        }),
+      ]);
+    },
   });
 }
 
@@ -93,14 +99,18 @@ export function useExecuteWorkflowTaskAction(taskId: string) {
       actionKey: string;
       input: WorkflowActionExecutionRequest;
       workflowInstanceId: string;
-    }) => clientWorkQueueService.executeAction(
-      command.workflowInstanceId,
-      command.actionKey,
-      command.input,
-    ),
-    onSuccess: () => Promise.all([
-      queryClient.invalidateQueries({ queryKey: workQueueQueryKeys.all }),
-      queryClient.invalidateQueries({ queryKey: workQueueQueryKeys.task(taskId) }),
-    ]),
+    }) =>
+      clientWorkQueueService.executeAction(
+        command.workflowInstanceId,
+        command.actionKey,
+        command.input,
+      ),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: workQueueQueryKeys.all }),
+        queryClient.invalidateQueries({
+          queryKey: workQueueQueryKeys.task(taskId),
+        }),
+      ]),
   });
 }

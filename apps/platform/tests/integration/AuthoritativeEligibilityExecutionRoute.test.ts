@@ -33,27 +33,34 @@ beforeEach(() => {
 });
 
 describe("authoritative eligibility execution route", () => {
-  it("runs a versioned Screening command for the assigned task", async () => {
-    const response = await route.POST(new Request(
-      `http://localhost/api/admin/tasks/${taskId}/eligibility-evaluation`,
-      {
-        body: JSON.stringify({ expectedRowVersion: 2 }),
-        headers: {
-          "Content-Type": "application/json",
-          "Idempotency-Key": commandKey,
-        },
-        method: "POST",
-      },
-    ), { params: Promise.resolve({ id: taskId }) });
+  it.each([undefined, false, true])(
+    "passes explicit termination confirmation to the protected service: %s",
+    async (confirmHardFailure) => {
+      const response = await route.POST(
+        new Request(
+          `http://localhost/api/admin/tasks/${taskId}/eligibility-evaluation`,
+          {
+            body: JSON.stringify({ expectedRowVersion: 2, confirmHardFailure }),
+            headers: {
+              "Content-Type": "application/json",
+              "Idempotency-Key": commandKey,
+            },
+            method: "POST",
+          },
+        ),
+        { params: Promise.resolve({ id: taskId }) },
+      );
 
-    expect(response.status).toBe(200);
-    expect(executeAuthoritativeEligibility).toHaveBeenCalledWith(
-      expect.anything(),
-      expect.objectContaining({
-        expectedRowVersion: 2,
-        idempotencyKey: commandKey,
-        taskId,
-      }),
-    );
-  });
+      expect(response.status).toBe(200);
+      expect(executeAuthoritativeEligibility).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          expectedRowVersion: 2,
+          idempotencyKey: commandKey,
+          taskId,
+          ...(confirmHardFailure === undefined ? {} : { confirmHardFailure }),
+        }),
+      );
+    },
+  );
 });

@@ -18,7 +18,7 @@ import type {
   TaskDetail,
 } from "./TaskTypes";
 
-type AuthoritativeEligibilityExecutionResult =
+export type AuthoritativeEligibilityExecutionResult =
   AuthoritativeEligibilityTaskResult & { rowVersion: number };
 
 type QueueEnvelope = {
@@ -46,24 +46,17 @@ function getTask(taskId: string) {
   });
 }
 
-function uploadTaskDocument(
-  taskId: string,
-  requirementId: string,
-  file: File,
-) {
+function uploadTaskDocument(taskId: string, requirementId: string, file: File) {
   const body = new FormData();
   body.set("requirementId", requirementId);
   body.set("file", file);
-  return requestData<TaskDetail>(
-    `/api/admin/tasks/${taskId}/documents`,
-    { body, method: "POST" },
-  );
+  return requestData<TaskDetail>(`/api/admin/tasks/${taskId}/documents`, {
+    body,
+    method: "POST",
+  });
 }
 
-function completeTask(
-  taskId: string,
-  input: CompleteChecklistTaskInput,
-) {
+function completeTask(taskId: string, input: CompleteChecklistTaskInput) {
   return requestData<TaskCompletionResult>(
     `/api/admin/tasks/${taskId}/complete`,
     {
@@ -88,22 +81,25 @@ function saveReviewDraft(taskId: string, input: SaveTaskReviewDraftInput) {
   );
 }
 
-function evaluateEligibility(taskId: string, input: {
-  expectedRowVersion: number;
-  expectedResponseRowVersion?: number;
-  values?: Record<string, unknown>;
-}) {
-  return requestData<AuthoritativeEligibilityExecutionResult>(
-    `/api/admin/tasks/${taskId}/eligibility-evaluation`,
-    {
-      body: JSON.stringify(input),
-      headers: {
-        "Content-Type": "application/json",
-        "Idempotency-Key": crypto.randomUUID(),
-      },
-      method: "POST",
+function evaluateEligibility(
+  taskId: string,
+  input: {
+    confirmHardFailure?: boolean;
+    expectedRowVersion: number;
+    expectedResponseRowVersion?: number;
+    values?: Record<string, unknown>;
+  },
+) {
+  return requestData<
+    AuthoritativeEligibilityExecutionResult | { confirmationRequired: true }
+  >(`/api/admin/tasks/${taskId}/eligibility-evaluation`, {
+    body: JSON.stringify(input),
+    headers: {
+      "Content-Type": "application/json",
+      "Idempotency-Key": crypto.randomUUID(),
     },
-  );
+    method: "POST",
+  });
 }
 
 function executeAction(

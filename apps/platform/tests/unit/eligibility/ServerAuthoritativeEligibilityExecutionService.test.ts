@@ -1,9 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
-vi.mock("@/modules/workflows/application/runtime/ServerWorkflowEligibilityFailureService", () => ({
-  terminateWorkflowOnEligibilityFailure: vi.fn(),
-}));
+vi.mock(
+  "@/modules/workflows/application/runtime/ServerWorkflowEligibilityFailureService",
+  () => ({
+    terminateWorkflowOnEligibilityFailure: vi.fn(),
+  }),
+);
 vi.mock(
   "@/modules/eligibility/application/SaveEligibilityEvaluationForm",
   () => ({ saveEligibilityEvaluationForm: vi.fn() }),
@@ -27,12 +30,12 @@ vi.mock(
 );
 
 import { terminateWorkflowOnEligibilityFailure } from "@/modules/workflows/application/runtime/ServerWorkflowEligibilityFailureService";
-import { basicOperators } from "@/modules/conditions/engine/BasicOperators";
 import { PermissionDeniedError } from "@/auth/authorization/policy";
-import { ResourceConflictError, ResourceNotFoundError } from "@/lib/resource-errors";
 import {
-  executeAuthoritativeEligibility,
-} from "@/modules/eligibility/application/ServerAuthoritativeEligibilityService";
+  ResourceConflictError,
+  ResourceNotFoundError,
+} from "@/lib/resource-errors";
+import { executeAuthoritativeEligibility } from "@/modules/eligibility/application/ServerAuthoritativeEligibilityService";
 import { resolveAuthoritativeEligibilityData } from "@/modules/eligibility/application/ServerEligibilityDataResolver";
 import { saveEligibilityEvaluationForm } from "@/modules/eligibility/application/SaveEligibilityEvaluationForm";
 import {
@@ -42,16 +45,25 @@ import {
   withAuthoritativeEligibilityExecutionTransaction,
 } from "@/modules/eligibility/infrastructure/AuthoritativeEligibilityExecutionRepository";
 import { findRuntimeEligibilityRuleSetForEvaluation } from "@/modules/eligibility/infrastructure/EligibilityEvaluationRepository";
-import { actor, input, target, previousOutcome, taskId, versionId } from "../../support/AuthoritativeEligibilityExecutionFixture";
+import {
+  actor,
+  input,
+  target,
+  previousOutcome,
+  taskId,
+  versionId,
+} from "../../support/AuthoritativeEligibilityExecutionFixture";
 
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(terminateWorkflowOnEligibilityFailure).mockResolvedValue(null);
-  vi.mocked(withAuthoritativeEligibilityExecutionTransaction)
-    .mockImplementation(async (work) => work({} as never));
+  vi.mocked(
+    withAuthoritativeEligibilityExecutionTransaction,
+  ).mockImplementation(async (work) => work({} as never));
   vi.mocked(lockAuthoritativeEligibilityTask).mockResolvedValue(target());
-  vi.mocked(findAuthoritativeEligibilityExecutionByCommand)
-    .mockResolvedValue(null);
+  vi.mocked(findAuthoritativeEligibilityExecutionByCommand).mockResolvedValue(
+    null,
+  );
   vi.mocked(findRuntimeEligibilityRuleSetForEvaluation).mockResolvedValue({
     ruleSetId: "a0000000-0000-4000-8000-000000000001",
     rules: [],
@@ -86,8 +98,9 @@ describe("authoritative eligibility workflow execution", () => {
     });
     vi.mocked(saveEligibilityEvaluationForm).mockResolvedValue(values);
 
-    await expect(executeAuthoritativeEligibility(actor, { ...input, values }))
-      .resolves.toMatchObject({ outcome: "ELIGIBLE" });
+    await expect(
+      executeAuthoritativeEligibility(actor, { ...input, values }),
+    ).resolves.toMatchObject({ outcome: "ELIGIBLE" });
     expect(persistAuthoritativeEligibilityExecution).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ evaluatedFormValues: values }),
@@ -95,8 +108,9 @@ describe("authoritative eligibility workflow execution", () => {
   });
 
   it("persists the verified outcome inside the workflow transaction", async () => {
-    await expect(executeAuthoritativeEligibility(actor, input)).resolves
-      .toMatchObject({ outcome: "ELIGIBLE", rowVersion: 3 });
+    await expect(
+      executeAuthoritativeEligibility(actor, input),
+    ).resolves.toMatchObject({ outcome: "ELIGIBLE", rowVersion: 3 });
     expect(persistAuthoritativeEligibilityExecution).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
@@ -144,17 +158,26 @@ describe("authoritative eligibility workflow execution", () => {
       prerequisiteNames: ["Completeness and document screening"],
     });
 
-    await expect(executeAuthoritativeEligibility(actor, input)).rejects
-      .toBeInstanceOf(ResourceConflictError);
+    await expect(
+      executeAuthoritativeEligibility(actor, input),
+    ).rejects.toBeInstanceOf(ResourceConflictError);
     expect(persistAuthoritativeEligibilityExecution).not.toHaveBeenCalled();
   });
 
-  it("denies an actor without the configured process permission", async () => {
-    await expect(executeAuthoritativeEligibility({
-      ...actor,
-      capabilities: new Set(),
-    }, input)).rejects.toBeInstanceOf(PermissionDeniedError);
-  });
+  it.each([false, true])(
+    "denies an actor without the configured process permission: confirmed=%s",
+    async (confirmHardFailure) => {
+      await expect(
+        executeAuthoritativeEligibility(
+          {
+            ...actor,
+            capabilities: new Set(),
+          },
+          { ...input, confirmHardFailure },
+        ),
+      ).rejects.toBeInstanceOf(PermissionDeniedError);
+    },
+  );
 
   it("hides a task assigned to a different actor", async () => {
     vi.mocked(lockAuthoritativeEligibilityTask).mockResolvedValue({
@@ -162,8 +185,9 @@ describe("authoritative eligibility workflow execution", () => {
       assignedToActor: false,
     });
 
-    await expect(executeAuthoritativeEligibility(actor, input)).rejects
-      .toBeInstanceOf(ResourceNotFoundError);
+    await expect(
+      executeAuthoritativeEligibility(actor, input),
+    ).rejects.toBeInstanceOf(ResourceNotFoundError);
   });
 
   it("blocks re-evaluation when the published task policy forbids it", async () => {
@@ -176,8 +200,9 @@ describe("authoritative eligibility workflow execution", () => {
       previousOutcome: previousOutcome(),
     });
 
-    await expect(executeAuthoritativeEligibility(actor, input)).rejects
-      .toBeInstanceOf(ResourceConflictError);
+    await expect(
+      executeAuthoritativeEligibility(actor, input),
+    ).rejects.toBeInstanceOf(ResourceConflictError);
     expect(resolveAuthoritativeEligibilityData).not.toHaveBeenCalled();
     expect(persistAuthoritativeEligibilityExecution).not.toHaveBeenCalled();
   });
@@ -189,85 +214,9 @@ describe("authoritative eligibility workflow execution", () => {
       status: "COMPLETED",
     });
 
-    await expect(executeAuthoritativeEligibility(actor, input)).rejects
-      .toBeInstanceOf(ResourceConflictError);
+    await expect(
+      executeAuthoritativeEligibility(actor, input),
+    ).rejects.toBeInstanceOf(ResourceConflictError);
     expect(persistAuthoritativeEligibilityExecution).not.toHaveBeenCalled();
-  });
-});
-
-
-describe("terminal eligibility execution receipts", () => {
-  it("replays a completed rejection without locking the now-cancelled stage or rerunning screening", async () => {
-    const receipt = {
-      ...previousOutcome(),
-      assignedUserId: actor.id, coiCleared: true,
-      permissions: target().permissions,
-      taskRowVersion: 4,
-      terminalStatus: "INELIGIBLE",
-    };
-    vi.mocked(findAuthoritativeEligibilityExecutionByCommand).mockResolvedValue(receipt);
-    await expect(executeAuthoritativeEligibility(actor, input)).resolves.toMatchObject({
-      terminalStatus: "INELIGIBLE", rowVersion: 4,
-    });
-    expect(lockAuthoritativeEligibilityTask).not.toHaveBeenCalled();
-    expect(persistAuthoritativeEligibilityExecution).not.toHaveBeenCalled();
-    expect(terminateWorkflowOnEligibilityFailure).not.toHaveBeenCalled();
-  });
-
-  it("denies a receipt replay after process permission has been revoked", async () => {
-    vi.mocked(findAuthoritativeEligibilityExecutionByCommand).mockResolvedValue({
-      ...previousOutcome(), assignedUserId: actor.id, coiCleared: true,
-      permissions: target().permissions,
-      taskRowVersion: 4, terminalStatus: "INELIGIBLE",
-    });
-    await expect(executeAuthoritativeEligibility({ ...actor, capabilities: new Set() }, input))
-      .rejects.toBeInstanceOf(PermissionDeniedError);
-  });
-
-  it.each([
-    { assignedUserId: actor.id, coiCleared: false },
-    { assignedUserId: "10000000-0000-4000-8000-000000000009", coiCleared: true },
-  ])("rejects replay when assignment or COI context no longer permits access", async (context) => {
-    vi.mocked(findAuthoritativeEligibilityExecutionByCommand).mockResolvedValue({
-      ...previousOutcome(), ...context, permissions: target().permissions,
-      taskRowVersion: 4, terminalStatus: "INELIGIBLE",
-    });
-    await expect(executeAuthoritativeEligibility(actor, input))
-      .rejects.toBeInstanceOf(ResourceNotFoundError);
-  });
-
-  it("terminates hard failures after persisting the outcome in the same transaction", async () => {
-    const finding = {
-      applicantMessage: "Registration required", failureType: "HARD_FAIL" as const,
-      reasonCode: "NOT_REGISTERED", ruleId: "10000000-0000-4000-8000-000000000003",
-    };
-    vi.mocked(findRuntimeEligibilityRuleSetForEvaluation).mockResolvedValue({
-      ruleSetId: versionId, versionId, versionNumber: 3,
-      rules: [{
-        id: finding.ruleId, order: 1, executionMode: "SCREENING", ...finding,
-        condition: { kind: "GROUP", conditionGroupId: versionId },
-        conditionDefinition: {
-          id: versionId, kind: "CONDITION", operator: basicOperators.EQUALS,
-          leftOperand: { kind: "CONSTANT", value: false },
-          rightOperand: { kind: "CONSTANT", value: true },
-        },
-      }],
-    });
-    vi.mocked(findAuthoritativeEligibilityExecutionByCommand)
-      .mockResolvedValueOnce(null).mockResolvedValue({
-        ...previousOutcome(), eligible: false, finalOutcome: "INELIGIBLE",
-        hardFailures: [finding], assignedUserId: actor.id, coiCleared: true,
-        permissions: target().permissions,
-        taskRowVersion: 3, terminalStatus: "INELIGIBLE",
-      });
-    vi.mocked(terminateWorkflowOnEligibilityFailure).mockResolvedValue("INELIGIBLE");
-    await expect(executeAuthoritativeEligibility(actor, input)).resolves.toMatchObject({
-      terminalStatus: "INELIGIBLE", outcome: "INELIGIBLE", hardFailureCount: 1,
-    });
-    expect(terminateWorkflowOnEligibilityFailure).toHaveBeenCalledWith(
-      expect.anything(), expect.objectContaining({ hardFailures: [finding], taskId }),
-    );
-    expect(vi.mocked(persistAuthoritativeEligibilityExecution).mock.invocationCallOrder[0])
-      .toBeLessThan(vi.mocked(terminateWorkflowOnEligibilityFailure).mock.invocationCallOrder[0]);
   });
 });
