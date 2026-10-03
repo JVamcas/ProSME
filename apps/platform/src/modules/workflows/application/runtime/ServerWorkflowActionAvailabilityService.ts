@@ -162,15 +162,6 @@ export async function getWorkflowActionAvailability(
       ? readWorkflowRfiFieldOptions(
           database,
           String(source.stage.application.id),
-          [
-            ...new Set(
-              candidates.flatMap((item) =>
-                item.definition.actionType === "REQUEST_INFORMATION"
-                  ? item.definition.configuration.editableFieldPaths
-                  : [],
-              ),
-            ),
-          ],
         )
       : Promise.resolve([]),
   ]);
@@ -219,13 +210,10 @@ export async function getWorkflowActionAvailability(
       );
       if (action.actionType === "REQUEST_INFORMATION") {
         const availability = evaluated.get(action.stableKey)!;
-        const allowedFields = editableFields.filter((field) =>
-          action.configuration.editableFieldPaths.includes(field.path),
-        );
         availability.requiredInput = {
           ...availability.requiredInput,
-          editableFieldPaths: allowedFields.map((field) => field.path),
-          editableFields: allowedFields,
+          editableFieldPaths: editableFields.map((field) => field.path),
+          editableFields,
         };
       }
     }),

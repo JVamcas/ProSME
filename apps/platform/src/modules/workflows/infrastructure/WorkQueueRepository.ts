@@ -3,13 +3,19 @@ import "server-only";
 import { sql } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
-import type { WorkQueueListInput, WorkQueueRow } from "@/modules/work-queue/WorkQueueTypes";
+import type {
+  WorkQueueListInput,
+  WorkQueueRow,
+} from "@/modules/work-queue/WorkQueueTypes";
 import type { WorkQueueCursor } from "@/modules/work-queue/WorkQueueCursor";
 import { workflowTaskEffectiveDeadline } from "./WorkflowSlaDeadline";
 
 const actionableStatuses = sql`('PENDING', 'IN_PROGRESS')`;
 
-type QueueDatabaseRow = Omit<WorkQueueRow, "claimedAt" | "createdAt" | "dueAt"> & {
+type QueueDatabaseRow = Omit<
+  WorkQueueRow,
+  "claimedAt" | "createdAt" | "dueAt"
+> & {
   claimedAt: Date | string | null;
   createdAt: Date | string | null;
   dueAt: Date | string | null;
@@ -80,7 +86,11 @@ function routedToActor(actorId: string) {
   )`;
 }
 
-function queueQuery(input: WorkQueueListInput, actorId: string, cursor?: WorkQueueCursor) {
+function queueQuery(
+  input: WorkQueueListInput,
+  actorId: string,
+  cursor?: WorkQueueCursor,
+) {
   return sql`
     WITH filtered AS (
       SELECT
@@ -105,6 +115,12 @@ function queueQuery(input: WorkQueueListInput, actorId: string, cursor?: WorkQue
           THEN application.funding_opportunity_title
           ELSE NULL END AS "fundingCallTitle",
         stage_definition.name AS "stageName",
+        CASE WHEN app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
+          AND request.id IS NOT NULL THEN jsonb_build_object(
+            'id', request.id, 'status', request.status,
+            'createdAt', request.created_at, 'deadlineAt', request.deadline_at,
+            'respondedAt', request.responded_at
+          ) ELSE NULL END AS "informationRequest",
         CASE WHEN stage.status = 'BLOCKED' AND EXISTS (
           SELECT 1 FROM app_workflow_holds hold
           WHERE hold.stage_instance_id = stage.id AND hold.status = 'ACTIVE'
@@ -154,6 +170,15 @@ function queueQuery(input: WorkQueueListInput, actorId: string, cursor?: WorkQue
         ON business.id::text = application.business_section ->> 'businessId'
       LEFT JOIN app_roles role ON role.id = task.assigned_role_id
       LEFT JOIN app_users assignee ON assignee.id = task.assigned_user_id
+      LEFT JOIN LATERAL (
+        SELECT rfi.id, rfi.status, rfi.created_at, rfi.deadline_at, rfi.responded_at
+        FROM app_workflow_rfis rfi
+        WHERE rfi.task_id = task.id
+        ORDER BY CASE WHEN rfi.status = 'OPEN' THEN 0
+          WHEN rfi.status = 'RESPONDED' THEN 1 ELSE 2 END,
+          rfi.created_at DESC, rfi.id DESC
+        LIMIT 1
+      ) request ON TRUE
       CROSS JOIN LATERAL (
         SELECT date_trunc('milliseconds', ${workflowTaskEffectiveDeadline(sql`task`)}) AS effective_due_at
       ) deadline
@@ -179,6 +204,16 @@ function queueQuery(input: WorkQueueListInput, actorId: string, cursor?: WorkQue
 function toQueueRow(row: QueueDatabaseRow): WorkQueueRow {
   return {
     ...row,
+    informationRequest: row.informationRequest
+      ? {
+          ...row.informationRequest,
+          createdAt: new Date(row.informationRequest.createdAt).toISOString(),
+          deadlineAt: new Date(row.informationRequest.deadlineAt).toISOString(),
+          respondedAt: row.informationRequest.respondedAt
+            ? new Date(row.informationRequest.respondedAt).toISOString()
+            : null,
+        }
+      : null,
     claimedAt: row.claimedAt ? new Date(row.claimedAt).toISOString() : null,
     createdAt: new Date(row.createdAt!).toISOString(),
     dueAt: row.dueAt ? new Date(row.dueAt).toISOString() : null,
@@ -190,7 +225,9 @@ export async function readWorkQueue(
   input: WorkQueueListInput,
   cursor?: WorkQueueCursor,
 ) {
-  const result = await getDatabase().execute(queueQuery(input, actorId, cursor));
+  const result = await getDatabase().execute(
+    queueQuery(input, actorId, cursor),
+  );
   const rows = result.rows as unknown as QueueDatabaseRow[];
   return {
     items: rows.filter((row) => row.taskInstanceId !== null).map(toQueueRow),

@@ -118,7 +118,7 @@ export function workflowActionInputMetadata(
       : [],
     reason: {
       maxLength: 4_000,
-      required: action.reasonRequired,
+      required: !isRequest && action.reasonRequired,
     },
     reviewDate: {
       required: isHold && action.configuration.reviewDateRequired,

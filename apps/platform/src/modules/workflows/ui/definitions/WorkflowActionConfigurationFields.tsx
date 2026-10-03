@@ -8,7 +8,6 @@ import {
 } from "@/components/ui/form-fields";
 import type { WorkflowActionType } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
 import type { WorkflowAssignmentOptions } from "@/modules/workflows/domain/definitions/WorkflowTypes";
-import { WorkflowRfiFieldSelector } from "./WorkflowRfiFieldSelector";
 
 type Props = {
   actionType: WorkflowActionType;
@@ -59,7 +58,6 @@ function RequestInformationFields() {
         name="expiryAction"
         required
       />
-      <WorkflowRfiFieldSelector />
       <FormInput
         containerClassName="sm:col-span-2"
         infoTooltip="Comma-separated days after the request. Every reminder must occur before the response deadline."

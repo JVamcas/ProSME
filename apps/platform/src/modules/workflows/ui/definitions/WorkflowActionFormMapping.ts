@@ -164,7 +164,7 @@ function configuration(values: WorkflowActionFormValues) {
       return {
         continuation: "RESUME_SOURCE_TASK" as const,
         deadlineDays: values.deadlineDays,
-        editableFieldPaths: keys(values.editableFieldPaths),
+        editableFieldPaths: [],
         reminderDayOffsets: numbers(values.reminderDayOffsets),
         expiryAction: "CLOSE_REQUEST" as const,
         participantScope: "APPLICATION_OWNER_AND_REQUESTER" as const,
@@ -226,7 +226,10 @@ export function toWorkflowActionDefinition(
     label: values.label,
     actionType: values.actionType,
     enabled: values.enabled,
-    reasonRequired: values.reasonRequired,
+    reasonRequired:
+      values.actionType === "REQUEST_INFORMATION"
+        ? false
+        : values.reasonRequired,
     displayOrder: values.displayOrder,
     configuration: configuration(values),
   });

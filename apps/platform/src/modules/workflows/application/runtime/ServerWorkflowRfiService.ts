@@ -21,6 +21,7 @@ import {
   closeAssignedWorkflowRfi,
   respondToOwnedWorkflowRfi,
 } from "../../infrastructure/WorkflowRfiLifecycleRepository";
+import { captureWorkflowRfiLifecycleNotification } from "./ServerWorkflowRfiNotificationService";
 
 export function respondToWorkflowRfi(
   user: AuthenticatedUser | null,
@@ -32,9 +33,16 @@ export function respondToWorkflowRfi(
     permissionCodes.fundingApplicationInformationRequestOwnRespond,
   );
   const command = respondToWorkflowRfiSchema.parse(input);
-  return withWorkflowActionExecutionTransaction((transaction) =>
-    respondToOwnedWorkflowRfi(transaction, actor.id, command)
-  );
+  return withWorkflowActionExecutionTransaction(async (transaction) => {
+    const result = await respondToOwnedWorkflowRfi(transaction, actor.id, command);
+    await captureWorkflowRfiLifecycleNotification(
+      transaction,
+      command.requestInformationId,
+      "responded",
+      command.correlationId,
+    );
+    return result;
+  });
 }
 
 export function closeWorkflowRfi(
@@ -47,9 +55,16 @@ export function closeWorkflowRfi(
     permissionCodes.fundingApplicationInformationRequestAssignedClose,
   );
   const command = closeWorkflowRfiSchema.parse(input);
-  return withWorkflowActionExecutionTransaction((transaction) =>
-    closeAssignedWorkflowRfi(transaction, actor.id, command)
-  );
+  return withWorkflowActionExecutionTransaction(async (transaction) => {
+    const result = await closeAssignedWorkflowRfi(transaction, actor.id, command);
+    await captureWorkflowRfiLifecycleNotification(
+      transaction,
+      command.requestInformationId,
+      "closed",
+      command.correlationId,
+    );
+    return result;
+  });
 }
 
 export function saveWorkflowRfiDraft(

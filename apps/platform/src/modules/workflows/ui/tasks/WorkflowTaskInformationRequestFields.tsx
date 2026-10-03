@@ -44,31 +44,40 @@ export function WorkflowTaskInformationRequestFields({
         placeholder="Explain what information or documents the applicant should provide."
         required
       />
-      {fields.length ? (
-        <FormSelect
-          infoTooltip="Only the fields you select will open for this applicant. Other application answers remain locked."
-          items={fields.map((field) => ({
-            label: field.label,
-            value: field.path,
-          }))}
-          label="Application fields to open"
-          multiple
-          name="editableFieldPaths"
-          onMultipleChange={(values) =>
-            form.setValue("editableFieldPaths", values, {
-              shouldDirty: true,
-              shouldValidate: true,
-            })
-          }
-          placeholder="Select fields for this request"
-          value={selectedFields}
-        />
+      <FormSelect
+        disabled={fields.length === 0}
+        infoTooltip="Only the fields you select will open for this applicant. Other application answers remain locked."
+        items={fields.map((field) => ({
+          label: field.label,
+          value: field.path,
+        }))}
+        label="Application fields to open"
+        multiple
+        name="editableFieldPaths"
+        onMultipleChange={(values) =>
+          form.setValue("editableFieldPaths", values, {
+            shouldDirty: true,
+            shouldValidate: true,
+          })
+        }
+        placeholder={
+          fields.length
+            ? "Select fields for this request"
+            : "No application fields available"
+        }
+        value={selectedFields}
+      />
+      {fields.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          This application has no editable answer fields. You can request a
+          written clarification or any available applicant documents.
+        </p>
       ) : null}
       {action.requiredInput.editableFieldPaths.includes(
         workflowRfiDetailedResponseFieldPath,
       ) ? (
         <CheckboxField
-          description="Ask for a separate written explanation. This does not open application fields."
+          description="Allow applicant to provide a written response to your request."
           label="Request written clarification"
           name="requestDetailedInformation"
         />

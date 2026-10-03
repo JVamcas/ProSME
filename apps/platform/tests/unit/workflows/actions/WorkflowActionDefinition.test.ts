@@ -35,7 +35,7 @@ describe("WorkflowActionDefinition", () => {
       REQUEST_INFORMATION: {
         continuation: "RESUME_SOURCE_TASK",
         deadlineDays: 10,
-        editableFieldPaths: ["BUSINESS_PLAN"],
+        editableFieldPaths: [],
         reminderDayOffsets: [3, 7],
         expiryAction: "CLOSE_REQUEST",
         participantScope: "APPLICATION_OWNER_AND_REQUESTER",

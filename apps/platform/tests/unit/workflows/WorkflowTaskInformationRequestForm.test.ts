@@ -64,7 +64,40 @@ describe("per-request application field selection", () => {
     ).toBe(true);
   });
 
-  it("rejects fields outside the configured server allowlist", () => {
+  it("uses applicant instructions without a separate reason, including legacy configurations", () => {
+    const legacyAction = {
+      ...action,
+      requiredInput: {
+        ...action.requiredInput,
+        reason: { maxLength: 4_000, required: true },
+      },
+    };
+    const parsed = actionFormSchema(legacyAction).parse(values);
+    expect(
+      actionInput(legacyAction, { ...parsed, reason: "Old hidden value" }),
+    ).not.toHaveProperty("reason");
+    const definition = requestInformation(
+      "REQUEST_INFO",
+      "Request information",
+      1,
+    );
+    definition.reasonRequired = true;
+    const input = actionInput(legacyAction, {
+      ...parsed,
+      editableFieldPaths: ["CLARIFICATION_RESPONSE"],
+    });
+    expect(
+      validateActionInputAgainstConfiguration(definition, input, "REVIEW"),
+    ).toBeNull();
+    expect(
+      toWorkflowActionDefinition({
+        ...workflowActionFormDefaults(definition, 1),
+        reasonRequired: true,
+      }).reasonRequired,
+    ).toBe(false);
+  });
+
+  it("does not restrict runtime selection to a legacy configured list", () => {
     const definition = requestInformation(
       "REQUEST_INFO",
       "Request information",
@@ -81,7 +114,7 @@ describe("per-request application field selection", () => {
         },
         "REVIEW",
       ),
-    ).toContain("not configured");
+    ).toBeNull();
   });
 
   it("saves close-request expiry and allows an empty field allowlist", () => {

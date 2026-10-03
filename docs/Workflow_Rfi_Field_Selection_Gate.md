@@ -4,15 +4,20 @@ Date: 2026-10-03
 
 ## Implemented behavior
 
-The workflow designer selects fields staff may unlock using labels from published
-funding application forms. Staff choose a subset when sending each information
-request. Runtime options are intersected with the applicant's pinned form version;
-unknown fields cannot be opened. Documents use their existing separate request
+Staff select the application answer fields to unlock when sending each information
+request. Choices come directly from the application's pinned form version; there
+is no stage-level field allowlist. Existing stored action field lists are ignored
+for runtime selection and cleared when an action is saved in the designer.
+Unknown fields cannot be opened. Documents use their existing separate request
 flow. Business profile fields remain owned by the business profile.
 
-Written clarification is an independent option. It no longer opens every configured
-application field. A document-only request may have an empty field allowlist.
+Written clarification is an independent option. Selecting it does not open any
+application answer fields. A document-only request may select no answer fields.
 Automatic stage document requests open no application answer fields.
+
+Applicant instructions replace the separate Reason control for information
+requests. Runtime validation ignores legacy reason-required flags for this action;
+other action types retain their configured reason requirements.
 
 Applicant responses reuse the existing form renderer, including repeatable groups,
 and the original field constraints. Server checks require the request recipient,
@@ -32,7 +37,7 @@ deadline; scheduler delay does not add applicant waiting time to the pause.
 Existing stored published actions and existing requests are not mass-migrated.
 Historical escalation and return expiry remain supported by the processor.
 
-## Verification and acceptance
+## Prior verification and acceptance
 
 Local technical acceptance covers the field-selection, response-validation,
 correction-persistence, and close-on-expiry behavior above. Repository-wide release
@@ -55,3 +60,25 @@ acceptance is withheld because unrelated checks are failing.
 Database checks use a disposable PostgreSQL 16 container with the complete migration
 chain. No application database migration, deployment, live email delivery, or
 browser acceptance is claimed.
+
+## Runtime selection correction verification
+
+The previous stage allowlist design has been replaced with runtime selection as
+specified above. Scope includes removal of the Reason control, legacy reason
+validation compatibility, runtime field projection and designer configuration.
+
+Local technical acceptance: accepted for the runtime selection correction.
+
+- Changed workflow policies, availability, form validation and dialog suites:
+  45 tests passed across six files.
+- PostgreSQL RFI suite: eight tests passed against a migrated disposable database,
+  including runtime field discovery and exclusion of business/document fields.
+- Changed-files ESLint, type checking, architecture/form boundaries, file-size
+  check and production build: passed.
+- Repository-wide lint: still fails on six pre-existing ref-access errors in
+  `WorkflowGraphViewport.tsx`; 17 warnings remain. Release acceptance stays withheld.
+
+The broader workflow run passed 575 tests but initially failed the old designer
+round-trip expectation for stage field lists. That expectation was updated for
+runtime selection and the affected suite passed in the final six-file run.
+No deployment, live database changes or browser acceptance is claimed.

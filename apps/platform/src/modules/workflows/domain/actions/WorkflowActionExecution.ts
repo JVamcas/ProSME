@@ -221,19 +221,17 @@ export function validateActionInputAgainstConfiguration(
   if (action.actionType !== input.actionType) {
     return "The action payload type does not match the configured action.";
   }
-  if (action.reasonRequired && !input.reason?.trim()) {
+  if (
+    action.actionType !== "REQUEST_INFORMATION" &&
+    action.reasonRequired &&
+    !input.reason?.trim()
+  ) {
     return "A reason is required for this action.";
   }
   switch (action.actionType) {
     case "REQUEST_INFORMATION":
       if (input.actionType !== "REQUEST_INFORMATION") return null;
-      if (
-        input.editableFieldPaths.some(
-          (path) => !action.configuration.editableFieldPaths.includes(path),
-        )
-      ) {
-        return "The request contains an editable field that is not configured.";
-      }
+      // The repository validates selected fields against the application’s form.
       return null;
     case "ESCALATE":
       return action.configuration.trigger === "MANUAL" ||

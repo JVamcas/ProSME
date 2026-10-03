@@ -60,7 +60,7 @@ export async function captureWorkflowDeadlineNotification(
         ...common,
         deadlineAt: expiredRfi.deadlineAt.toISOString(),
         expiredAt: occurredAt.toISOString(),
-        question: expiredRfi.question,
+        question: expiredRfi.question.slice(0, 2_000),
         requestInformationId: candidate.sourceId,
       },
     });
@@ -75,7 +75,7 @@ export async function captureWorkflowDeadlineNotification(
       occurredAt: occurredAt.toISOString(),
       scheduledFor: new Date(candidate.scheduledFor).toISOString(),
       sourceId: candidate.sourceId,
-      question: expiredRfi?.question ?? null,
+      question: expiredRfi?.question.slice(0, 2_000) ?? null,
       stageInstanceId: candidate.stageInstanceId,
       stageName: snapshot.stageName,
     },

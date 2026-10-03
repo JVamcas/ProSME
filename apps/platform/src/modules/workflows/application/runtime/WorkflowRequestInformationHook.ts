@@ -9,6 +9,7 @@ import type {
   WorkflowActionExecutionTransaction,
 } from "../../infrastructure/WorkflowActionExecutionRepository";
 import { createWorkflowRfi } from "../../infrastructure/WorkflowRfiRepository";
+import { captureWorkflowRfiCreatedNotification } from "./ServerWorkflowRfiNotificationService";
 import type {
   CreateWorkflowRfiRequest,
   CreateWorkflowRfiResult,
@@ -105,5 +106,14 @@ export function buildRequestInformationCreationRequest(input: {
   };
 }
 
-export const createRequestInformation: RequestInformationLifecycleHook =
-  createWorkflowRfi;
+export const createRequestInformation: RequestInformationLifecycleHook = async (
+  transaction,
+  request,
+) => {
+  const result = await createWorkflowRfi(transaction, request);
+  await captureWorkflowRfiCreatedNotification(
+    transaction,
+    result.requestInformationId,
+  );
+  return result;
+};

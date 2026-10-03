@@ -109,6 +109,9 @@ export function useExecuteWorkflowTaskAction(taskId: string) {
       Promise.all([
         queryClient.invalidateQueries({ queryKey: workQueueQueryKeys.all }),
         queryClient.invalidateQueries({
+          queryKey: ["admin", "tasks", taskId, "requests"],
+        }),
+        queryClient.invalidateQueries({
           queryKey: workQueueQueryKeys.task(taskId),
         }),
       ]),

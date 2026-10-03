@@ -17,7 +17,11 @@ export function actionFormSchema(action: WorkflowTaskAction) {
       reviewDate: z.union([z.iso.date(), z.literal("")]),
     })
     .superRefine((values, context) => {
-      if (action.requiredInput.reason.required && !values.reason) {
+      if (
+        action.actionType !== "REQUEST_INFORMATION" &&
+        action.requiredInput.reason.required &&
+        !values.reason
+      ) {
         context.addIssue({
           code: "custom",
           message: "Enter a reason.",
@@ -90,7 +94,6 @@ export function actionInput(
       return { ...common, actionType: "REJECT" };
     case "REQUEST_INFORMATION":
       return {
-        ...common,
         actionType: "REQUEST_INFORMATION",
         editableFieldPaths: [
           ...values.editableFieldPaths,

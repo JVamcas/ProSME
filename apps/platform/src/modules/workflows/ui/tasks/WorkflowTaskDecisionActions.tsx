@@ -119,12 +119,14 @@ function DecisionForm({
                 type="date"
               />
             ) : null}
-            <FormTextarea
-              label="Reason"
-              maxLength={action.requiredInput.reason.maxLength}
-              name="reason"
-              required={action.requiredInput.reason.required}
-            />
+            {action.actionType !== "REQUEST_INFORMATION" ? (
+              <FormTextarea
+                label="Reason"
+                maxLength={action.requiredInput.reason.maxLength}
+                name="reason"
+                required={action.requiredInput.reason.required}
+              />
+            ) : null}
             {action.requiredInput.confirmation.required ? (
               <CheckboxField
                 label={

@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
+vi.mock("@/modules/workflows/application/runtime/ServerWorkflowRfiNotificationService", () => ({
+  captureWorkflowRfiCreatedNotification: vi.fn(),
+}));
+
 vi.mock("@/modules/workflows/infrastructure/WorkflowQuorumRepository", () => ({
   evaluateStageQuorum: vi.fn(),
 }));

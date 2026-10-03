@@ -151,6 +151,17 @@ function respond(
         { label: "Requested amount", path: "AMOUNT" },
         { label: "Written clarification", path: "CLARIFICATION_RESPONSE" },
       ]);
+      const runtimeFields = await readWorkflowRfiFieldOptions(
+        getDatabase(),
+        id.application,
+      );
+      expect(runtimeFields.map((field) => field.path)).toContain("AMOUNT");
+      expect(runtimeFields.map((field) => field.path)).not.toContain(
+        "DOCUMENT",
+      );
+      expect(runtimeFields.map((field) => field.path)).not.toContain(
+        "BUSINESS_LEGAL_NAME",
+      );
       await expect(
         assertWorkflowRfiFieldSelection(
           getDatabase() as never,

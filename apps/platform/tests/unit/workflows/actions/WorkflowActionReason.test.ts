@@ -30,7 +30,7 @@ const graph = createStandardWorkflowDraft({
 }).graph;
 
 // Use real configurations for every supported action, including action-specific
-// required inputs, so this covers the universal rule alongside existing rules.
+// required inputs, including the instructions used by information requests.
 graph.stages[0].actions.push({
   actionType: "WITHDRAW",
   configuration: {
@@ -54,13 +54,13 @@ const actions = [
   ).values(),
 ];
 
-describe("universal workflow action reason", () => {
+describe("workflow action reason requirements", () => {
   it("covers all ten action types", () => {
     expect(actions).toHaveLength(10);
   });
 
   it.each(actions)(
-    "uses only the configurable flag for $action.actionType",
+    "applies the reason policy for $action.actionType",
     ({ action, stage }) => {
       const input = workflowActionInputSchema.parse({
         actionType: action.actionType,
@@ -97,9 +97,11 @@ describe("universal workflow action reason", () => {
                 }
               : {}),
           });
+        const reasonRequired =
+          required && action.actionType !== "REQUEST_INFORMATION";
         expect(workflowActionInputMetadata(configured).reason).toEqual({
           maxLength: 4_000,
-          required,
+          required: reasonRequired,
         });
         expect(
           validateActionInputAgainstConfiguration(
@@ -107,7 +109,7 @@ describe("universal workflow action reason", () => {
             input,
             stage.stableKey,
           ),
-        ).toBe(required ? "A reason is required for this action." : null);
+        ).toBe(reasonRequired ? "A reason is required for this action." : null);
         expect(
           validateActionInputAgainstConfiguration(
             configured,
@@ -118,7 +120,7 @@ describe("universal workflow action reason", () => {
             stage.stableKey,
           ),
         ).toBeNull();
-        if (required) {
+        if (reasonRequired) {
           expect(
             validateActionInputAgainstConfiguration(
               configured,

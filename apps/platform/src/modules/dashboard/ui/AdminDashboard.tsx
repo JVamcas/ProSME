@@ -26,14 +26,10 @@ function DashboardMetrics({ dashboard }: { dashboard: AdminDashboardView }) {
         value={dashboard.metrics.underReview.toLocaleString("en-NA")}
       />
       <DashboardMetricCard
-        supportingText="Request tracking is not available yet"
+        supportingText="Awaiting applicant responses for applications in this period"
         icon={FileQuestion}
         label="Information requests"
-        value={
-          dashboard.metrics.informationRequests === null
-            ? "—"
-            : dashboard.metrics.informationRequests.toLocaleString("en-NA")
-        }
+        value={dashboard.metrics.informationRequests.toLocaleString("en-NA")}
       />
       <DashboardMetricCard
         supportingText="Applications with an active decision task"
@@ -45,7 +41,11 @@ function DashboardMetrics({ dashboard }: { dashboard: AdminDashboardView }) {
   );
 }
 
-export function AdminDashboard({ dashboard }: { dashboard: AdminDashboardView }) {
+export function AdminDashboard({
+  dashboard,
+}: {
+  dashboard: AdminDashboardView;
+}) {
   const limitedVisibility = dashboard.visibility !== "all";
 
   return (

@@ -3,42 +3,43 @@ import "server-only";
 import { sql } from "drizzle-orm";
 import type { WorkflowActionExecutionTransaction } from "./WorkflowActionExecutionRepository";
 import { workflowRfiDetailedResponseFieldPath } from "../domain/runtime/WorkflowRfi";
-import {
-  isWorkflowRfiEditableField,
-  type WorkflowRfiFieldOption,
-} from "../domain/runtime/WorkflowRfiFields";
+import type { WorkflowRfiFieldOption } from "../domain/runtime/WorkflowRfiFields";
+import { attachedBusinessFieldKeys } from "@/modules/applications/domain/AttachedApplicationForm";
 import { ResourceConflictError } from "@/lib/resource-errors";
 
 export async function readWorkflowRfiFieldOptions(
   executor: Pick<WorkflowActionExecutionTransaction, "execute">,
   applicationId: string,
-  allowedPaths: readonly string[],
+  allowedPaths?: readonly string[],
 ): Promise<WorkflowRfiFieldOption[]> {
-  const paths = allowedPaths.filter(
+  const paths = allowedPaths?.filter(
     (path) => path !== workflowRfiDetailedResponseFieldPath,
   );
-  const result = paths.length
-    ? await executor.execute<{
-        key: string;
-        label: string;
-        type: "TEXT" | "DOCUMENT";
-      }>(sql`
-    SELECT field.key, field.label, field.type
+  const result =
+    paths === undefined || paths.length
+      ? await executor.execute<{
+          key: string;
+          label: string;
+        }>(sql`
+    SELECT field.key, field.label
     FROM app_applications application
     JOIN app_form_fields field ON field.form_version_id = application.form_version_id
     JOIN app_form_sections section ON section.id = field.section_id
     WHERE application.id = ${applicationId}::uuid
-      AND field.key IN (SELECT jsonb_array_elements_text(${JSON.stringify(paths)}::jsonb))
+      AND field.type <> 'DOCUMENT'
+      AND field.key NOT IN (SELECT jsonb_array_elements_text(${JSON.stringify([...attachedBusinessFieldKeys])}::jsonb))
+      ${paths === undefined ? sql`` : sql`AND field.key IN (SELECT jsonb_array_elements_text(${JSON.stringify(paths)}::jsonb))`}
     ORDER BY section.display_order, field.display_order, field.key
   `)
-    : { rows: [] };
-  const fields = result.rows
-    .filter(isWorkflowRfiEditableField)
-    .map((field) => ({
-      label: field.label,
-      path: field.key,
-    }));
-  if (allowedPaths.includes(workflowRfiDetailedResponseFieldPath)) {
+      : { rows: [] };
+  const fields = result.rows.map((field) => ({
+    label: field.label,
+    path: field.key,
+  }));
+  if (
+    allowedPaths === undefined ||
+    allowedPaths.includes(workflowRfiDetailedResponseFieldPath)
+  ) {
     fields.push({
       label: "Written clarification",
       path: workflowRfiDetailedResponseFieldPath,

@@ -1,10 +1,15 @@
 "use client";
 
+import { useFormContext, useWatch } from "react-hook-form";
+import type { WorkflowActionFormValues } from "./WorkflowActionFormSchema";
+
 import { CheckboxField } from "@/components/ui/form-field";
 import { FormInput, FormSelect } from "@/components/ui/form-fields";
 import { workflowActionTypeItems } from "@/modules/workflows/ui/definitions/WorkflowActionFormSchema";
 
 export function WorkflowActionDetailsStep() {
+  const { control } = useFormContext<WorkflowActionFormValues>();
+  const actionType = useWatch({ control, name: "actionType" });
   return (
     <fieldset className="grid gap-4 sm:grid-cols-1">
       <legend className="sr-only">Action details</legend>
@@ -28,7 +33,9 @@ export function WorkflowActionDetailsStep() {
         required
         type="number"
       />
-      <CheckboxField label="Require a reason" name="reasonRequired" />
+      {actionType !== "REQUEST_INFORMATION" ? (
+        <CheckboxField label="Require a reason" name="reasonRequired" />
+      ) : null}
       <CheckboxField label="Enabled" name="enabled" />
     </fieldset>
   );

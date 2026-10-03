@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { getAuthenticatedPageUser } from "@/platform/auth/ServerAuthNavigation";
-import { AdminDashboard } from "@/components/admin/dashboard/AdminDashboard";
+import { AdminDashboard } from "@/modules/dashboard/ui/AdminDashboard";
 import { adminDashboardPeriods } from "@/modules/dashboard/AdminDashboardTypes";
 import { getAdminDashboard } from "@/modules/dashboard/ServerAdminDashboardService";
 
