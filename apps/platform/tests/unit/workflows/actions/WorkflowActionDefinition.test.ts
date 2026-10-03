@@ -37,7 +37,7 @@ describe("WorkflowActionDefinition", () => {
         deadlineDays: 10,
         editableFieldPaths: ["BUSINESS_PLAN"],
         reminderDayOffsets: [3, 7],
-        expiryAction: "ESCALATE",
+        expiryAction: "CLOSE_REQUEST",
         participantScope: "APPLICATION_OWNER_AND_REQUESTER",
         recipientScope: "APPLICATION_OWNER",
       },

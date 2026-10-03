@@ -227,6 +227,31 @@ async function counts() {
     expect(await loadDueWorkflowDeadlines(new Date(), 100)).toHaveLength(0);
   });
 
+  it("ends the RFI SLA pause at its deadline even when expiry processing is late", async () => {
+    const rfiId = await insertDeadlineRfi(client);
+    await client.query(
+      `UPDATE app_workflow_tasks SET created_at = now() - interval '6 days',
+        due_at = now() + interval '1 day' WHERE id = $1`,
+      [id.unboundTask],
+    );
+    const before = await getDatabase().execute<{ pausedDays: number }>(sql`
+      SELECT extract(epoch FROM (${workflowTaskEffectiveDeadline(sql`task`)} - task.due_at)) / 86400 AS "pausedDays"
+      FROM app_workflow_tasks task WHERE task.id = ${id.unboundTask}::uuid
+    `);
+    expect(Number(before.rows[0].pausedDays)).toBeCloseTo(3, 6);
+    expect(await runBatch()).toMatchObject({ processed: 1, failed: 0 });
+    const rfi = await client.query(
+      "SELECT continuation_applied_at = deadline_at AS at_deadline FROM app_workflow_rfis WHERE id = $1",
+      [rfiId],
+    );
+    expect(rfi.rows[0].at_deadline).toBe(true);
+    const after = await getDatabase().execute<{ pausedDays: number }>(sql`
+      SELECT extract(epoch FROM (${workflowTaskEffectiveDeadline(sql`task`)} - task.due_at)) / 86400 AS "pausedDays"
+      FROM app_workflow_tasks task WHERE task.id = ${id.unboundTask}::uuid
+    `);
+    expect(Number(after.rows[0].pausedDays)).toBeCloseTo(3, 6);
+  });
+
   it("projects, orders and scopes effective deadlines in the work queue", async () => {
     await client.query(
       `UPDATE app_workflow_tasks SET due_at = now() + interval '1 hour' WHERE id = $1`, [id.unboundTask],

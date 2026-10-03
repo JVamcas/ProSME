@@ -89,7 +89,7 @@ export function workflowActionFormDefaults(
         deadlineDays: action.configuration.deadlineDays,
         editableFieldPaths: action.configuration.editableFieldPaths.join(", "),
         reminderDayOffsets: action.configuration.reminderDayOffsets.join(", "),
-        expiryAction: action.configuration.expiryAction,
+        expiryAction: "CLOSE_REQUEST",
       };
     case "RETURN":
       return {
@@ -166,7 +166,7 @@ function configuration(values: WorkflowActionFormValues) {
         deadlineDays: values.deadlineDays,
         editableFieldPaths: keys(values.editableFieldPaths),
         reminderDayOffsets: numbers(values.reminderDayOffsets),
-        expiryAction: values.expiryAction,
+        expiryAction: "CLOSE_REQUEST" as const,
         participantScope: "APPLICATION_OWNER_AND_REQUESTER" as const,
         recipientScope: "APPLICATION_OWNER" as const,
       };
@@ -248,16 +248,13 @@ export function workflowActionUpdatedGraph(
             ...item,
             actions: action
               ? item.actions.map((current) =>
-                  current.stableKey === action.stableKey
-                    ? nextAction
-                    : current,
+                  current.stableKey === action.stableKey ? nextAction : current,
                 )
               : [...item.actions, nextAction],
             tasks: item.tasks.map((task) => {
               const actionKeys = task.actionKeys.filter(
                 (key) =>
-                  key !== action?.stableKey
-                  && key !== nextAction.stableKey,
+                  key !== action?.stableKey && key !== nextAction.stableKey,
               );
               return {
                 ...task,

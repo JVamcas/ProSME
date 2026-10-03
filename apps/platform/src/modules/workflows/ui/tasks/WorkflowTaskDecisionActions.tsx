@@ -3,20 +3,13 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useState, type Ref } from "react";
-import { FormProvider, useForm, useWatch } from "react-hook-form";
+import { FormProvider, useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { z } from "zod";
 
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { CheckboxField } from "@/components/ui/form-field";
-import {
-  FormInput,
-  FormSelect,
-  FormTextarea,
-} from "@/components/ui/form-fields";
+import { FormInput, FormTextarea } from "@/components/ui/form-fields";
 import type { DropdownButtonItem } from "@/shared/ui/DropdownButton";
-import { FormRichTextField } from "@/shared/ui/FormRichTextField";
-import { richTextToPlainText } from "@/shared/utils/RichText";
 import type {
   TaskDetail,
   WorkflowTaskAction,
@@ -24,122 +17,12 @@ import type {
 import { useExecuteWorkflowTaskAction } from "@/modules/work-queue/WorkQueueHooks";
 import { WorkflowTaskActions } from "@/modules/workflows/ui/tasks/WorkflowTaskActions";
 import { isWorkflowStageDecisionAction } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
-import type { WorkflowActionInput } from "@/modules/workflows/domain/actions/WorkflowActionExecution";
-
-function actionFormSchema(action: WorkflowTaskAction) {
-  return z
-    .object({
-      confirmed: z.boolean(),
-      instructions: z.string().trim().max(12_000),
-      requestDetailedInformation: z.boolean(),
-      question: z.string().trim().max(4_000),
-      reason: z.string().trim().max(action.requiredInput.reason.maxLength),
-      requestedDocumentRequirementIds: z.array(z.uuid()).max(100),
-      reviewDate: z.union([z.iso.date(), z.literal("")]),
-    })
-    .superRefine((values, context) => {
-      if (action.requiredInput.reason.required && !values.reason) {
-        context.addIssue({
-          code: "custom",
-          message: "Enter a reason.",
-          path: ["reason"],
-        });
-      }
-      if (action.requiredInput.confirmation.required && !values.confirmed) {
-        context.addIssue({
-          code: "custom",
-          message: "Confirm this decision.",
-          path: ["confirmed"],
-        });
-      }
-      if (
-        action.actionType === "REQUEST_INFORMATION" &&
-        !richTextToPlainText(values.instructions)
-      ) {
-        context.addIssue({
-          code: "custom",
-          message: "Enter instructions for the applicant.",
-          path: ["instructions"],
-        });
-      }
-      if (
-        action.actionType === "REQUEST_INFORMATION" &&
-        !(
-          values.requestDetailedInformation &&
-          action.requiredInput.editableFieldPaths.length > 0
-        ) &&
-        values.requestedDocumentRequirementIds.length === 0
-      ) {
-        context.addIssue({
-          code: "custom",
-          message:
-            "Request detailed information, at least one document, or both.",
-          path: ["requestDetailedInformation"],
-        });
-      }
-      if (action.actionType === "REFER" && !values.question) {
-        context.addIssue({
-          code: "custom",
-          message: "Enter a question.",
-          path: ["question"],
-        });
-      }
-      if (action.requiredInput.reviewDate.required && !values.reviewDate) {
-        context.addIssue({
-          code: "custom",
-          message: "Select a review date.",
-          path: ["reviewDate"],
-        });
-      }
-    });
-}
-
-type ActionValues = z.infer<ReturnType<typeof actionFormSchema>>;
-
-function actionInput(
-  action: WorkflowTaskAction,
-  values: ActionValues,
-): WorkflowActionInput {
-  const common = {
-    ...(values.reason ? { reason: values.reason } : {}),
-  };
-  switch (action.actionType) {
-    case "REJECT":
-      return { ...common, actionType: "REJECT" };
-    case "REQUEST_INFORMATION":
-      return {
-        ...common,
-        actionType: "REQUEST_INFORMATION",
-        editableFieldPaths: values.requestDetailedInformation
-          ? [...action.requiredInput.editableFieldPaths]
-          : [],
-        instructions: values.instructions,
-        requestedDocumentRequirementIds: values.requestedDocumentRequirementIds,
-      };
-    case "REFER":
-      return { ...common, actionType: "REFER", question: values.question };
-    case "PUT_ON_HOLD":
-      return {
-        ...common,
-        actionType: "PUT_ON_HOLD",
-        ...(values.reviewDate ? { reviewDate: values.reviewDate } : {}),
-      };
-    case "WITHDRAW":
-      return { ...common, actionType: "WITHDRAW", confirmed: true };
-    case "DEFER":
-      return {
-        ...common,
-        actionType: "DEFER",
-        targetType:
-          action.requiredInput.target.type === "DATE" ? "DATE" : "FUNDING_CALL",
-        ...(action.requiredInput.target.type === "DATE"
-          ? { targetDate: action.requiredInput.target.value ?? undefined }
-          : { targetCallKey: action.requiredInput.target.value ?? undefined }),
-      };
-    default:
-      return { ...common, actionType: action.actionType };
-  }
-}
+import {
+  actionFormSchema,
+  actionInput,
+  type ActionValues,
+} from "./WorkflowTaskActionForm";
+import { WorkflowTaskInformationRequestFields } from "./WorkflowTaskInformationRequestFields";
 
 function DecisionForm({
   action,
@@ -161,6 +44,7 @@ function DecisionForm({
       confirmed: false,
       instructions: "",
       requestDetailedInformation: false,
+      editableFieldPaths: [],
       question: "",
       reason: "",
       requestedDocumentRequirementIds: [],
@@ -168,19 +52,6 @@ function DecisionForm({
     },
     resolver: zodResolver(actionFormSchema(action)),
   });
-  const requestedDocumentRequirementIds = useWatch({
-    control: form.control,
-    name: "requestedDocumentRequirementIds",
-  });
-  const missingApplicantDocuments =
-    action.actionType === "REQUEST_INFORMATION"
-      ? task.documentRequirements.filter(
-          (requirement) =>
-            requirement.id &&
-            requirement.uploader === "APPLICANT" &&
-            requirement.requestStatus === "MISSING",
-        )
-      : [];
   const submit = form.handleSubmit(async (values) => {
     try {
       if (beforeAction) {
@@ -228,39 +99,10 @@ function DecisionForm({
           <div className="space-y-4">
             <p>Confirm {action.label.toLowerCase()}?</p>
             {action.actionType === "REQUEST_INFORMATION" ? (
-              <>
-                <FormRichTextField
-                  label="Instructions for applicant"
-                  name="instructions"
-                  placeholder="Explain what information or documents the applicant should provide."
-                  required
-                />
-                {action.requiredInput.editableFieldPaths.length ? (
-                  <CheckboxField
-                    description="The applicant will see a rich-text field for a detailed written response."
-                    label="Request detailed information"
-                    name="requestDetailedInformation"
-                  />
-                ) : null}
-                {missingApplicantDocuments.length ? (
-                  <FormSelect
-                    items={missingApplicantDocuments.map((requirement) => ({
-                      label: requirement.name,
-                      value: requirement.id!,
-                    }))}
-                    label="Missing applicant documents"
-                    multiple
-                    name="requestedDocumentRequirementIds"
-                    onMultipleChange={(values) => {
-                      form.setValue("requestedDocumentRequirementIds", values, {
-                        shouldDirty: true,
-                        shouldValidate: true,
-                      });
-                    }}
-                    value={requestedDocumentRequirementIds}
-                  />
-                ) : null}
-              </>
+              <WorkflowTaskInformationRequestFields
+                action={action}
+                task={task}
+              />
             ) : null}
             {action.actionType === "REFER" ? (
               <FormTextarea

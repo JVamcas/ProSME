@@ -33,7 +33,10 @@ async function configureDraft(client: PoolClient) {
        ('workflow.task.assigned.read', 'workflow.task.assigned.process', 'workflow.task.assigned.decide')`,
     [extra.reviewerRole],
   );
-  await client.query("INSERT INTO app_user_roles (user_id, role_id) VALUES ($1, $2)", [id.otherActor, extra.reviewerRole]);
+  await client.query(
+    "INSERT INTO app_user_roles (user_id, role_id) VALUES ($1, $2)",
+    [id.otherActor, extra.reviewerRole],
+  );
   await client.query(
     `INSERT INTO app_workflow_action_definitions
       (id, stage_id, stable_key, label, action_type, display_order, configuration)
@@ -42,10 +45,20 @@ async function configureDraft(client: PoolClient) {
          "reminderDayOffsets":[1,3],"expiryAction":"CLOSE_REQUEST", "participantScope":"APPLICATION_OWNER_AND_REQUESTER",
          "recipientScope":"APPLICATION_OWNER"}'),
        ($2, $4, 'ESCALATE', 'Escalate', 'ESCALATE', 2, $5),
-       ($3, $4, 'RETURN', 'Return', 'RETURN', 3, '{"dataHandling":"CLEAR","reasonRequired":true}')`,
-    [extra.rfiAction, extra.escalationAction, extra.returnAction, id.stage,
-      JSON.stringify({ blockUntilResolved: true, responsibility: "TRANSFER",
-        targetType: "USER", targetId: id.otherActor, trigger: "SLA_BREACH" })],
+       ($3, $4, 'RETURN', 'Return', 'RETURN', 3, '{"dataHandling":"CLEAR"}')`,
+    [
+      extra.rfiAction,
+      extra.escalationAction,
+      extra.returnAction,
+      id.stage,
+      JSON.stringify({
+        blockUntilResolved: true,
+        responsibility: "TRANSFER",
+        targetType: "USER",
+        targetId: id.otherActor,
+        trigger: "SLA_BREACH",
+      }),
+    ],
   );
   await client.query(
     `INSERT INTO app_stage_task_action_bindings (task_definition_id, stage_id, action_key)
@@ -62,11 +75,17 @@ async function configureDraft(client: PoolClient) {
     `INSERT INTO app_stage_task_definitions
       (id, stage_id, code, name, sequence, assignment_user_id, assignment_mode, permissions)
      VALUES ($1, $2, 'REWORK_TASK', 'Rework task', 1, $3, 'NAMED_USER', $4)`,
-    [extra.reworkTask, extra.reworkStage, id.otherActor, JSON.stringify(defaultWorkflowElementPermissions)],
+    [
+      extra.reworkTask,
+      extra.reworkStage,
+      id.otherActor,
+      JSON.stringify(defaultWorkflowElementPermissions),
+    ],
   );
   const transition = await client.query(
     `INSERT INTO app_workflow_transition_definitions (version_id, from_stage_id, action_key, priority)
-     VALUES ($1, $2, 'RETURN', 1) RETURNING id`, [id.version, id.stage],
+     VALUES ($1, $2, 'RETURN', 1) RETURNING id`,
+    [id.version, id.stage],
   );
   await client.query(
     `INSERT INTO app_workflow_transition_targets (transition_id, target_stage_id) VALUES ($1, $2)`,
@@ -74,16 +93,46 @@ async function configureDraft(client: PoolClient) {
   );
 }
 
-export async function installWorkflowDeadlineFixture(client: PoolClient) {
-  const forms = await installWorkflowEligibilityFormContextFixture(client, configureDraft);
-  await client.query("UPDATE app_workflow_tasks SET form_version_id = NULL WHERE id = $1", [id.unboundTask]);
+export async function installWorkflowDeadlineFixture(
+  client: PoolClient,
+  prepareApplication?: () => Promise<{
+    formVersionId: string;
+    values: Record<string, unknown>;
+  }>,
+) {
+  const forms = await installWorkflowEligibilityFormContextFixture(
+    client,
+    configureDraft,
+    prepareApplication,
+  );
+  await client.query(
+    "UPDATE app_workflow_tasks SET form_version_id = NULL WHERE id = $1",
+    [id.unboundTask],
+  );
   const snapshot = serializeSubmissionSnapshot({
-    application: {}, applicant: {}, business: {}, declarations: {}, documents: [],
+    application: {},
+    applicant: {},
+    business: {},
+    declarations: {},
+    documents: [],
     eligibilityRuleSetVersionId: id.rulesVersion,
-    form: { normalizedValues: {}, responseRowVersion: 1, versionId: forms.formVersionId },
-    fundingCall: { id: id.call, terms: { title: "First call", maximumGrantAmount: 100000, minimumGrantAmount: 10000 } },
-    reference: "FORM-CONTEXT-001", schemaVersion: 1,
-    submittedAt: new Date().toISOString(), workflowTemplateVersionId: id.version,
+    form: {
+      normalizedValues: {},
+      responseRowVersion: 1,
+      versionId: forms.formVersionId,
+    },
+    fundingCall: {
+      id: id.call,
+      terms: {
+        title: "First call",
+        maximumGrantAmount: 100000,
+        minimumGrantAmount: 10000,
+      },
+    },
+    reference: "FORM-CONTEXT-001",
+    schemaVersion: 1,
+    submittedAt: new Date().toISOString(),
+    workflowTemplateVersionId: id.version,
   });
   const inserted = await client.query(
     `INSERT INTO app_application_submission_snapshots
@@ -92,8 +141,15 @@ export async function installWorkflowDeadlineFixture(client: PoolClient) {
        snapshot_content, canonical_content, integrity_hash, application_data, business_data,
        declaration_acceptance, document_versions, normalized_form_values, submitted_at)
      VALUES ($1, 1, 1, $2, $3, $4, 1, $5, $6, $7, '{}', '{}', '{}', '[]', '{}', now()) RETURNING id`,
-    [id.application, forms.formVersionId, id.rulesVersion, id.version,
-      JSON.stringify(snapshot.snapshotContent), snapshot.canonicalContent, snapshot.integrityHash],
+    [
+      id.application,
+      forms.formVersionId,
+      id.rulesVersion,
+      id.version,
+      JSON.stringify(snapshot.snapshotContent),
+      snapshot.canonicalContent,
+      snapshot.integrityHash,
+    ],
   );
   await client.query(
     "UPDATE app_applications SET submission_snapshot_id = $2, row_version = row_version + 1 WHERE id = $1",
@@ -106,7 +162,14 @@ export async function installWorkflowDeadlineFixture(client: PoolClient) {
        resulting_runtime_version, result, idempotency_key, correlation_id)
      VALUES ($1::uuid, 'TEST_CONTROL', 'PUT_ON_HOLD', 'USER', $2::uuid, $2::uuid::text, $3, $4, $5,
        '{}', '{}', 1, 2, '{}', $1::uuid::text, $6)`,
-    [deadlineFixtureIds.actionExecution, id.actor, id.workflow, id.stageInstance, id.unboundTask, crypto.randomUUID()],
+    [
+      deadlineFixtureIds.actionExecution,
+      id.actor,
+      id.workflow,
+      id.stageInstance,
+      id.unboundTask,
+      crypto.randomUUID(),
+    ],
   );
 }
 
@@ -123,8 +186,18 @@ export async function insertDeadlineRfi(
      VALUES ($1, $2, $3, $4, $5, $6, $6, 'MANUAL', 'Supply information', 'Supply information',
        now() + $7::integer * interval '1 day', $8, 'RESUME_SOURCE_TASK', $9, $10,
        now() - interval '4 days', '[1,3]') RETURNING id`,
-    [id.application, id.workflow, id.stageInstance, id.unboundTask, deadlineFixtureIds.rfiAction,
-      id.actor, expired ? -1 : 5, expiryAction, crypto.randomUUID(), crypto.randomUUID()],
+    [
+      id.application,
+      id.workflow,
+      id.stageInstance,
+      id.unboundTask,
+      deadlineFixtureIds.rfiAction,
+      id.actor,
+      expired ? -1 : 5,
+      expiryAction,
+      crypto.randomUUID(),
+      crypto.randomUUID(),
+    ],
   );
   return result.rows[0].id as string;
 }

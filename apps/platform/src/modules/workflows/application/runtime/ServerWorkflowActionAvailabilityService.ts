@@ -23,6 +23,7 @@ import {
   type StoredWorkflowAction,
 } from "../../infrastructure/WorkflowActionAvailabilityRepository";
 import { configuredActionTargetsAreValid } from "../../infrastructure/WorkflowActionTargetRepository";
+import { readWorkflowRfiFieldOptions } from "../../infrastructure/WorkflowRfiFieldRepository";
 import { loadSequentialTransitions } from "../../infrastructure/TransitionExecutionRepository";
 import { buildWorkflowActionConditionContext } from "./ServerWorkflowActionContextService";
 import {
@@ -145,7 +146,7 @@ export async function getWorkflowActionAvailability(
   }
 
   const database = workflowActionAvailabilityDatabase();
-  const [context, readiness] = await Promise.all([
+  const [context, readiness, editableFields] = await Promise.all([
     buildWorkflowActionConditionContext(database, source.stage, true),
     readWorkflowActionReadiness(database, {
       actionTypes: candidates.map((item) => item.action.actionType),
@@ -155,6 +156,23 @@ export async function getWorkflowActionAvailability(
       stageInstanceId: source.stage.stageInstanceId,
       taskId: source.task?.id,
     }),
+    candidates.some(
+      (item) => item.definition.actionType === "REQUEST_INFORMATION",
+    )
+      ? readWorkflowRfiFieldOptions(
+          database,
+          String(source.stage.application.id),
+          [
+            ...new Set(
+              candidates.flatMap((item) =>
+                item.definition.actionType === "REQUEST_INFORMATION"
+                  ? item.definition.configuration.editableFieldPaths
+                  : [],
+              ),
+            ),
+          ],
+        )
+      : Promise.resolve([]),
   ]);
   const evaluated = new Map<string, WorkflowActionAvailability>();
   await Promise.all(
@@ -199,6 +217,17 @@ export async function getWorkflowActionAvailability(
           policy.unavailableReason ?? readinessReason,
         ),
       );
+      if (action.actionType === "REQUEST_INFORMATION") {
+        const availability = evaluated.get(action.stableKey)!;
+        const allowedFields = editableFields.filter((field) =>
+          action.configuration.editableFieldPaths.includes(field.path),
+        );
+        availability.requiredInput = {
+          ...availability.requiredInput,
+          editableFieldPaths: allowedFields.map((field) => field.path),
+          editableFields: allowedFields,
+        };
+      }
     }),
   );
 

@@ -74,7 +74,7 @@ export function requestInformation(key: string, label: string, order: number) {
     continuation: "RESUME_SOURCE_TASK",
     deadlineDays: 10,
     editableFieldPaths: ["CLARIFICATION_RESPONSE"],
-    expiryAction: "ESCALATE",
+    expiryAction: "CLOSE_REQUEST",
     participantScope: "APPLICATION_OWNER_AND_REQUESTER",
     recipientScope: "APPLICATION_OWNER",
     reminderDayOffsets: [3, 7],
@@ -95,18 +95,21 @@ export function returnAction(key: string, label: string, order: number) {
 }
 
 export function deferDate(key: string, label: string, order: number) {
-  return action(key, label, "DEFER", order, {
-    continuation: "RESUME_ON_DATE",
-    targetDate: "2027-01-15",
-    targetType: "DATE",
-  }, true);
+  return action(
+    key,
+    label,
+    "DEFER",
+    order,
+    {
+      continuation: "RESUME_ON_DATE",
+      targetDate: "2027-01-15",
+      targetType: "DATE",
+    },
+    true,
+  );
 }
 
-export function hold(
-  key: string,
-  label: string,
-  order: number,
-) {
+export function hold(key: string, label: string, order: number) {
   return action(
     key,
     label,
@@ -121,10 +124,17 @@ export function hold(
 }
 
 export function refer(key: string, label: string, order: number) {
-  return action(key, label, "REFER", order, {
-    returnToReferrer: true,
-    sourceTaskBehavior: "BLOCKED",
-  }, true);
+  return action(
+    key,
+    label,
+    "REFER",
+    order,
+    {
+      returnToReferrer: true,
+      sourceTaskBehavior: "BLOCKED",
+    },
+    true,
+  );
 }
 
 export function checklist(

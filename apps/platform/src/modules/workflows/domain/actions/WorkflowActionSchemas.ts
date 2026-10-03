@@ -24,7 +24,6 @@ const fieldPathSchema = z
   .regex(/^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z][A-Za-z0-9_]*)*$/);
 const uniqueFieldPathListSchema = z
   .array(fieldPathSchema)
-  .min(1)
   .max(100)
   .refine(
     (values) => new Set(values).size === values.length,

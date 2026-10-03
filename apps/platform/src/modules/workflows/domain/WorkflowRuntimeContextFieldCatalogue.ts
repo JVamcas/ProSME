@@ -15,7 +15,6 @@ const runtimeFields = [
   { key: "application.status", label: "status", type: "TEXT" },
   { key: "fundingCall.id", label: "ID", type: "TEXT" },
   { key: "fundingCall.title", label: "title", type: "TEXT" },
-  { key: "fundingCall.slug", label: "slug", type: "TEXT" },
   { key: "fundingCall.status", label: "status", type: "TEXT" },
   {
     key: "fundingCall.minimum_amount",
@@ -54,17 +53,17 @@ const runtimeFields = [
   },
   {
     key: "eligibility.outcome",
-    label: "Authoritative eligibility outcome",
+    label: "Authoritative screening outcome",
     type: "TEXT",
   },
   {
     key: "eligibility.eligible",
-    label: "Authoritative eligibility passed",
+    label: "Authoritative screening passed",
     type: "BOOLEAN",
   },
   {
     key: "eligibility.manual_screening_required",
-    label: "Manual eligibility screening required",
+    label: "Manual screening required",
     type: "BOOLEAN",
   },
   {

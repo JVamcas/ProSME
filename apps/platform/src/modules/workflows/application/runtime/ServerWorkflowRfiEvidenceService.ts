@@ -11,7 +11,10 @@ import {
   resolveGcsObjectPath,
 } from "@/integrations/storage/GcsObjectPath";
 import { GoogleCloudDocumentStorage } from "@/integrations/storage/GoogleCloudDocumentStorage";
-import { RequestValidationError, ResourceNotFoundError } from "@/lib/resource-errors";
+import {
+  RequestValidationError,
+  ResourceNotFoundError,
+} from "@/lib/resource-errors";
 import {
   safeWorkflowEvidenceFileName,
   validateWorkflowEvidenceFile,
@@ -39,9 +42,9 @@ export async function uploadOwnedWorkflowRfiDocument(
     applicationId,
     requestInformationId,
   );
-  if (rfi.status !== "OPEN") {
+  if (rfi.status !== "OPEN" || new Date(rfi.deadlineAt) <= new Date()) {
     throw new RequestValidationError(
-      "Documents cannot be changed after the response is submitted.",
+      "Documents cannot be changed after submission or the response deadline.",
     );
   }
   const requirement = rfi.requestedDocuments.find(

@@ -136,12 +136,6 @@ export const workflowActionFormSchema = z
           path: ["reminderDayOffsets"],
         });
       }
-      requiredFor(
-        values.editableFieldPaths,
-        "Enter editable field paths.",
-        "editableFieldPaths",
-        context,
-      );
       const fieldPaths = values.editableFieldPaths
         .split(/[\n,]/)
         .map((item) => item.trim())
@@ -186,9 +180,7 @@ export const workflowActionFormSchema = z
         context,
       );
     }
-    const keyLists = [
-      ["allowedStageKeys", values.allowedStageKeys],
-    ] as const;
+    const keyLists = [["allowedStageKeys", values.allowedStageKeys]] as const;
     keyLists.forEach(([path, value]) => {
       if (value && !isStableKeyList(value)) {
         context.addIssue({

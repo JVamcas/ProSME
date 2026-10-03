@@ -2,7 +2,10 @@ import { sql, type SQL } from "drizzle-orm";
 
 // Merge overlapping holds, RFIs and deferrals before counting paused time.
 // The stored due_at remains the original deadline, preserving its audit value.
-export function workflowTaskEffectiveDeadline(task: SQL, now: SQL = sql`CURRENT_TIMESTAMP`) {
+export function workflowTaskEffectiveDeadline(
+  task: SQL,
+  now: SQL = sql`CURRENT_TIMESTAMP`,
+) {
   return sql`(${task}.due_at + COALESCE((
     SELECT sum(upper(paused.period) - lower(paused.period))
     FROM unnest((
@@ -16,7 +19,7 @@ export function workflowTaskEffectiveDeadline(task: SQL, now: SQL = sql`CURRENT_
         FROM app_workflow_holds hold
         WHERE hold.stage_instance_id = ${task}.stage_instance_id
         UNION ALL
-        SELECT rfi.created_at, coalesce(rfi.continuation_applied_at, ${now})
+        SELECT rfi.created_at, coalesce(rfi.continuation_applied_at, least(rfi.deadline_at, ${now}))
         FROM app_workflow_rfis rfi WHERE rfi.task_id = ${task}.id
         UNION ALL
         SELECT deferral.deferred_at, coalesce(deferral.resumed_at, ${now})

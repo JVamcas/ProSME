@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/form-fields";
 import type { WorkflowActionType } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
 import type { WorkflowAssignmentOptions } from "@/modules/workflows/domain/definitions/WorkflowTypes";
+import { WorkflowRfiFieldSelector } from "./WorkflowRfiFieldSelector";
 
 type Props = {
   actionType: WorkflowActionType;
@@ -53,24 +54,12 @@ function RequestInformationFields() {
         type="number"
       />
       <FormSelect
-        items={[
-          { label: "Close request", value: "CLOSE_REQUEST" },
-          { label: "Escalate", value: "ESCALATE" },
-          { label: "Return", value: "RETURN" },
-        ]}
+        items={[{ label: "Close request", value: "CLOSE_REQUEST" }]}
         label="On expiry"
         name="expiryAction"
         required
       />
-      <FormTextarea
-        containerClassName="sm:col-span-2"
-        infoTooltip="Use stable field paths separated by commas or new lines, for example application.financial.turnover."
-        label="Editable field paths"
-        name="editableFieldPaths"
-        placeholder="application.financial.turnover"
-        required
-        rows={2}
-      />
+      <WorkflowRfiFieldSelector />
       <FormInput
         containerClassName="sm:col-span-2"
         infoTooltip="Comma-separated days after the request. Every reminder must occur before the response deadline."

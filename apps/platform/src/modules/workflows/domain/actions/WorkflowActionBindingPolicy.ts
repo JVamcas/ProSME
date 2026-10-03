@@ -119,7 +119,7 @@ export function createDefaultWorkflowCommonActions(
         continuation: "RESUME_SOURCE_TASK",
         deadlineDays: 10,
         editableFieldPaths: ["CLARIFICATION_RESPONSE"],
-        expiryAction: "ESCALATE",
+        expiryAction: "CLOSE_REQUEST",
         participantScope: "APPLICATION_OWNER_AND_REQUESTER",
         recipientScope: "APPLICATION_OWNER",
         reminderDayOffsets: [3, 7],

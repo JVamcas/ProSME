@@ -1,5 +1,6 @@
 import type { WorkflowActionDefinition } from "./WorkflowActionDefinition";
 import type { WorkflowActionType } from "./WorkflowActionDefinition";
+import type { WorkflowRfiFieldOption } from "../runtime/WorkflowRfiFields";
 
 export const workflowActionPresentationVariants = [
   "danger",
@@ -25,6 +26,7 @@ export type WorkflowActionInputMetadata = {
     required: boolean;
   };
   editableFieldPaths: readonly string[];
+  editableFields?: readonly WorkflowRfiFieldOption[];
   reason: {
     maxLength: number;
     required: boolean;
@@ -111,7 +113,9 @@ export function workflowActionInputMetadata(
       deadlineDays: isRequest ? action.configuration.deadlineDays : null,
       required: isRequest,
     },
-    editableFieldPaths: isRequest ? action.configuration.editableFieldPaths : [],
+    editableFieldPaths: isRequest
+      ? action.configuration.editableFieldPaths
+      : [],
     reason: {
       maxLength: 4_000,
       required: action.reasonRequired,
