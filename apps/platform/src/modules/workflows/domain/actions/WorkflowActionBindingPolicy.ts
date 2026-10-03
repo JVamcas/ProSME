@@ -127,7 +127,7 @@ export function createDefaultWorkflowCommonActions(
       displayOrder: 1,
       enabled: true,
       label: "Request information",
-      reasonCodeRequired: false,
+      reasonRequired: false,
       stableKey: "REQUEST_INFORMATION",
     },
     {
@@ -139,20 +139,19 @@ export function createDefaultWorkflowCommonActions(
       displayOrder: 2,
       enabled: true,
       label: "Refer",
-      reasonCodeRequired: true,
+      reasonRequired: true,
       stableKey: "REFER",
     },
     {
       actionType: "PUT_ON_HOLD",
       configuration: {
-        reasonCodes: ["OTHER"],
         reviewDateRequired: true,
         scope: "STAGE",
       },
       displayOrder: 3,
       enabled: true,
       label: "Put on hold",
-      reasonCodeRequired: true,
+      reasonRequired: true,
       stableKey: "PUT_ON_HOLD",
     },
     {
@@ -161,7 +160,7 @@ export function createDefaultWorkflowCommonActions(
       displayOrder: 4,
       enabled: true,
       label: "Resume",
-      reasonCodeRequired: false,
+      reasonRequired: false,
       stableKey: "RESUME",
     },
   ];
@@ -178,7 +177,7 @@ export function createDefaultWorkflowCommonActions(
       displayOrder: 5,
       enabled: true,
       label: "Escalate",
-      reasonCodeRequired: false,
+      reasonRequired: true,
       stableKey: "ESCALATE",
     });
   }

@@ -31,9 +31,7 @@ async function executeTerminalReject(
   }
   const result = buildExecutionResult({
     ...execution,
-    resultingRuntimeVersion: input.resultingRuntimeVersion
-      + (input.target.action.configuration.outcome
-          .cancelOpenStageInstances ? 1 : 0),
+    resultingRuntimeVersion: input.resultingRuntimeVersion + 1,
     target: input.target,
     transition: {
       kind: "WORKFLOW_REJECTED",
@@ -130,7 +128,7 @@ export async function executeConfiguredWorkflowActionOutcome(
           rowVersion: application.rowVersion,
         },
         correlationId: input.command.correlationId,
-        reason: input.command.input.reasonCode,
+        reason: input.command.input.reason,
         stageId: input.command.sourceStageInstanceId,
         workflowId: input.target.stage.workflowInstanceId,
         withdrawnAt: new Date(execution.executedAt),

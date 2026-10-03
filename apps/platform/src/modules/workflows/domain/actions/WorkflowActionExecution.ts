@@ -5,13 +5,7 @@ import { richTextToPlainText } from "@/shared/utils/RichText";
 import type { WorkflowActionDefinition } from "./WorkflowActionDefinition";
 
 const commentSchema = z.string().trim().min(1).max(4_000).optional();
-const reasonCodeSchema = z
-  .string()
-  .trim()
-  .min(1)
-  .max(80)
-  .regex(/^[A-Z][A-Z0-9_]*$/)
-  .optional();
+const reasonSchema = z.string().trim().min(1).max(4_000).optional();
 const fieldKeySchema = z
   .string()
   .trim()
@@ -20,7 +14,7 @@ const fieldKeySchema = z
   .regex(/^[A-Za-z][A-Za-z0-9_.]*$/);
 const commonInput = {
   comment: commentSchema,
-  reasonCode: reasonCodeSchema,
+  reason: reasonSchema,
 };
 
 export const workflowActionInputSchema = z.discriminatedUnion("actionType", [
@@ -32,9 +26,8 @@ export const workflowActionInputSchema = z.discriminatedUnion("actionType", [
     .strict(),
   z
     .object({
+      ...commonInput,
       actionType: z.literal("REJECT"),
-      comment: z.string().trim().min(1).max(4_000),
-      reasonCode: z.never().optional(),
     })
     .strict(),
   z
@@ -215,12 +208,10 @@ export function validateActionInputAgainstConfiguration(
   if (action.actionType !== input.actionType) {
     return "The action payload type does not match the configured action.";
   }
-  if (action.reasonCodeRequired && !input.reasonCode) {
-    return "A reason code is required for this action.";
+  if (action.reasonRequired && !input.reason?.trim()) {
+    return "A reason is required for this action.";
   }
   switch (action.actionType) {
-    case "REJECT":
-      return input.comment ? null : "A reason is required for this rejection.";
     case "REQUEST_INFORMATION":
       if (input.actionType !== "REQUEST_INFORMATION") return null;
       if (
@@ -231,30 +222,12 @@ export function validateActionInputAgainstConfiguration(
         return "The request contains an editable field that is not configured.";
       }
       return null;
-    case "RETURN":
-      return action.configuration.reasonRequired &&
-        !input.reasonCode &&
-        !input.comment
-        ? "A return reason or comment is required."
-        : null;
     case "ESCALATE":
-      if (!input.reasonCode && !input.comment) {
-        return "An escalation reason or comment is required.";
-      }
       return action.configuration.trigger === "MANUAL" ||
         action.configuration.trigger === "CONDITION"
         ? null
         : "This escalation is not available for manual execution.";
     case "PUT_ON_HOLD":
-      if (!input.reasonCode && !input.comment) {
-        return "A hold reason or comment is required.";
-      }
-      if (
-        input.reasonCode &&
-        !action.configuration.reasonCodes.includes(input.reasonCode)
-      ) {
-        return "The hold reason is not configured for this action.";
-      }
       return action.configuration.reviewDateRequired &&
         input.actionType === "PUT_ON_HOLD" &&
         !input.reviewDate
@@ -267,9 +240,6 @@ export function validateActionInputAgainstConfiguration(
         ? null
         : "Withdrawal is not configured for this stage.";
     case "DEFER":
-      if (!input.reasonCode && !input.comment) {
-        return "A deferral reason or comment is required.";
-      }
       if (
         input.actionType !== "DEFER" ||
         input.targetType !== action.configuration.targetType

@@ -1,6 +1,5 @@
 "use client";
 
-import { CheckboxField } from "@/components/ui/form-field";
 import { FormSelect } from "@/components/ui/form-fields";
 import {
   isWorkflowStageDecisionAction,
@@ -18,7 +17,6 @@ type Props = {
   assignmentOptions: WorkflowAssignmentOptions;
   deferTargetType: "DATE" | "FUNDING_CALL";
   escalationTargetType: "ROLE" | "USER";
-  rejectionOutcomeType: "TERMINAL" | "TRANSITION";
   stage: WorkflowStageInput;
   taskStableKeys: string[];
   onTaskChange: (values: string[]) => void;
@@ -30,7 +28,6 @@ export function WorkflowActionBehaviourStep({
   assignmentOptions,
   deferTargetType,
   escalationTargetType,
-  rejectionOutcomeType,
   stage,
   taskStableKeys,
   onTaskChange,
@@ -77,20 +74,11 @@ export function WorkflowActionBehaviourStep({
           value={taskStableKeys}
         />
       )}
-      {actionType !== "REJECT" ? (
-        <CheckboxField
-          containerClassName="sm:col-span-2"
-          label="Require a reason code"
-          name="reasonCodeRequired"
-        />
-      ) : null}
       <WorkflowActionConfigurationFields
         actionType={actionType}
         assignmentOptions={assignmentOptions}
         deferTargetType={deferTargetType}
         escalationTargetType={escalationTargetType}
-        hideRejectionOutcomeSelector
-        rejectionOutcomeType={rejectionOutcomeType}
       />
     </fieldset>
   );

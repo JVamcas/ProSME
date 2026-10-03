@@ -8,12 +8,11 @@ const returnAction: WorkflowActionDefinition = {
   actionType: "RETURN",
   configuration: {
     dataHandling: "RETAIN",
-    reasonRequired: true,
   },
   displayOrder: 2,
   enabled: true,
   label: "Return for reassessment",
-  reasonCodeRequired: true,
+  reasonRequired: true,
   stableKey: "RETURN_FOR_REASSESSMENT",
 };
 

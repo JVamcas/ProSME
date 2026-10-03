@@ -34,7 +34,7 @@ describe("workflow task reviewer preview", () => {
       displayOrder: 2,
       enabled: true,
       label: "Reject",
-      reasonCodeRequired: false,
+      reasonRequired: false,
       stableKey: "REJECT",
     });
     task.actionKeys.push("REJECT");

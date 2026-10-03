@@ -23,7 +23,7 @@ describe("workflow configuration UI", () => {
         label: "Advance review",
         actionType: "APPROVE_ADVANCE",
         enabled: true,
-        reasonCodeRequired: false,
+        reasonRequired: false,
         displayOrder: 1,
         configuration: {},
       },

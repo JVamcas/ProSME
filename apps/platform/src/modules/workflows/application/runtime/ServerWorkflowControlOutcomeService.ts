@@ -51,7 +51,7 @@ async function executeReturnOutcome(
           actionExecutionId: execution.executionId,
           continuationStageInstanceId: input.command.sourceStageInstanceId,
           dataHandling: input.target.action.configuration.dataHandling,
-          reason: input.command.input.reasonCode
+          reason: input.command.input.reason
             ?? input.command.input.comment
             ?? null,
           sourceStageInstanceId: input.command.sourceStageInstanceId,
@@ -89,9 +89,9 @@ async function executeReturnOutcome(
     continuationStageInstanceId: input.command.sourceStageInstanceId,
     correlationId: input.command.correlationId,
     dataHandling: input.target.action.configuration.dataHandling,
-    reason: input.command.input.reasonCode
+    reason: input.command.input.reason
       ?? input.command.input.comment
-      ?? "No reason required by configuration.",
+      ?? undefined,
     sourceStageInstanceId: input.command.sourceStageInstanceId,
     sourceTaskId: input.target.task?.id ?? null,
     targetStageInstanceId,
@@ -214,7 +214,7 @@ async function executeHoldOutcome(
     actorId: input.actorId,
     comment: input.command.input.comment,
     correlationId: input.command.correlationId,
-    reasonCode: input.command.input.reasonCode,
+    reason: input.command.input.reason,
     reviewAt: input.command.input.reviewDate
       ? new Date(`${input.command.input.reviewDate}T00:00:00.000Z`)
       : undefined,

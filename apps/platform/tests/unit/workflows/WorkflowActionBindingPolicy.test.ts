@@ -24,7 +24,7 @@ function graph() {
     displayOrder: 2,
     enabled: true,
     label: "Request information",
-    reasonCodeRequired: false,
+    reasonRequired: false,
     stableKey: "REQUEST_INFORMATION",
   });
   return value;

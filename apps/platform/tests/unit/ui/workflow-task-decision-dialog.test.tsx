@@ -44,12 +44,10 @@ const task = {
       label: "Approve and advance",
       presentation: { displayOrder: 1, variant: "success" },
       requiredInput: {
-        comment: { maxLength: 4_000, required: false },
         confirmation: { message: null, required: false },
         dueDate: { deadlineDays: null, required: false },
         editableFieldPaths: [],
-        reasonCode: { options: [], required: false },
-        reasonOrCommentRequired: false,
+        reason: { maxLength: 4_000, required: false },
         reviewDate: { required: false },
         target: { type: null, value: null },
       },
@@ -70,9 +68,9 @@ afterEach(() => {
 
 async function chooseAction(label: string) {
   await act(async () => {
-    document.querySelector<HTMLButtonElement>(
-      'button[aria-label="Workflow actions"]',
-    )?.click();
+    document
+      .querySelector<HTMLButtonElement>('button[aria-label="Workflow actions"]')
+      ?.click();
   });
   await act(async () => {
     [...document.querySelectorAll<HTMLElement>('[role="menuitem"]')]
@@ -137,67 +135,113 @@ describe("workflow task decision dialog", () => {
     await act(async () => root.unmount());
   });
 
-  it("captures a rejection reason in one textarea", async () => {
-    mocks.mutateAsync.mockResolvedValueOnce({
-      transition: { targetStageName: null },
-    });
-    const rejectTask = {
-      ...task,
-      actions: [
-        {
-          ...task.actions[0],
-          actionType: "REJECT",
-          key: "REJECT",
-          label: "Reject",
-          presentation: { displayOrder: 1, variant: "danger" },
-          requiredInput: {
-            ...task.actions[0].requiredInput,
-            comment: { maxLength: 4_000, required: true },
+  it.each(["REJECT", "APPROVE_ADVANCE"] as const)(
+    "captures a required free-text reason for %s in one textarea",
+    async (actionType) => {
+      mocks.mutateAsync.mockResolvedValueOnce({
+        transition: { targetStageName: null },
+      });
+      const rejectTask = {
+        ...task,
+        actions: [
+          {
+            ...task.actions[0],
+            actionType,
+            key: "REJECT",
+            label: "Reject",
+            presentation: { displayOrder: 1, variant: "danger" },
+            requiredInput: {
+              ...task.actions[0].requiredInput,
+              reason: { maxLength: 4_000, required: true },
+            },
           },
-        },
-      ],
+        ],
+      } as TaskDetail;
+      const container = document.createElement("div");
+      document.body.append(container);
+      const root = createRoot(container);
+
+      await act(async () => {
+        root.render(<WorkflowTaskDecisionActions task={rejectTask} />);
+      });
+      await chooseAction("Reject");
+
+      const dialog = document.querySelector('[role="dialog"]')!;
+      expect(dialog.querySelectorAll("textarea")).toHaveLength(1);
+      expect(dialog.textContent).toContain("Reason");
+      expect(dialog.querySelector("select")).toBeNull();
+      expect(dialog.querySelector('input[type="checkbox"]')).toBeNull();
+
+      await act(async () => {
+        [...dialog.querySelectorAll<HTMLButtonElement>("button")]
+          .find((button) => button.textContent === "Submit")
+          ?.click();
+      });
+      expect(mocks.mutateAsync).not.toHaveBeenCalled();
+      expect(dialog.textContent).toContain("Enter a reason.");
+      const reason = dialog.querySelector<HTMLTextAreaElement>("textarea")!;
+      await act(async () => {
+        const valueSetter = Object.getOwnPropertyDescriptor(
+          HTMLTextAreaElement.prototype,
+          "value",
+        )?.set;
+        valueSetter?.call(reason, "Mandatory evidence was not supplied.");
+        reason.dispatchEvent(new Event("input", { bubbles: true }));
+        reason.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+      await act(async () => {
+        [...dialog.querySelectorAll<HTMLButtonElement>("button")]
+          .find((button) => button.textContent === "Submit")
+          ?.click();
+      });
+
+      expect(mocks.mutateAsync).toHaveBeenCalledWith(
+        expect.objectContaining({
+          input: expect.objectContaining({
+            input: {
+              actionType,
+              reason: "Mandatory evidence was not supplied.",
+            },
+          }),
+        }),
+      );
+      await act(async () => root.unmount());
+    },
+  );
+  it("allows rejection without a reason when its setting is disabled", async () => {
+    mocks.mutateAsync.mockResolvedValueOnce({ transition: {} });
+    const optionalRejectTask = {
+      ...task,
+      actions: [{ ...task.actions[0], actionType: "REJECT", label: "Reject" }],
     } as TaskDetail;
     const container = document.createElement("div");
     document.body.append(container);
     const root = createRoot(container);
-
-    await act(async () => {
-      root.render(<WorkflowTaskDecisionActions task={rejectTask} />);
-    });
-    await chooseAction("Reject");
-
-    const dialog = document.querySelector('[role="dialog"]')!;
-    expect(dialog.querySelectorAll("textarea")).toHaveLength(1);
-    expect(dialog.textContent).toContain("Reason");
-    expect(dialog.querySelector("select")).toBeNull();
-    expect(dialog.querySelector('input[type="checkbox"]')).toBeNull();
-
-    const reason = dialog.querySelector<HTMLTextAreaElement>("textarea")!;
-    await act(async () => {
-      const valueSetter = Object.getOwnPropertyDescriptor(
-        HTMLTextAreaElement.prototype,
-        "value",
-      )?.set;
-      valueSetter?.call(reason, "Mandatory evidence was not supplied.");
-      reason.dispatchEvent(new Event("input", { bubbles: true }));
-      reason.dispatchEvent(new Event("change", { bubbles: true }));
-    });
-    await act(async () => {
-      [...dialog.querySelectorAll<HTMLButtonElement>("button")]
-        .find((button) => button.textContent === "Submit")
-        ?.click();
-    });
-
-    expect(mocks.mutateAsync).toHaveBeenCalledWith(
-      expect.objectContaining({
-        input: expect.objectContaining({
-          input: {
-            actionType: "REJECT",
-            comment: "Mandatory evidence was not supplied.",
-          },
+    try {
+      await act(async () =>
+        root.render(<WorkflowTaskDecisionActions task={optionalRejectTask} />),
+      );
+      await chooseAction("Reject");
+      expect(
+        document.querySelector<HTMLTextAreaElement>('textarea[name="reason"]')!
+          .required,
+      ).toBe(false);
+      await act(async () => {
+        [
+          ...document.querySelectorAll<HTMLButtonElement>(
+            '[role="dialog"] button',
+          ),
+        ]
+          .find((button) => button.textContent === "Submit")
+          ?.click();
+      });
+      expect(mocks.mutateAsync).toHaveBeenCalledWith(
+        expect.objectContaining({
+          input: expect.objectContaining({ input: { actionType: "REJECT" } }),
         }),
-      }),
-    );
-    await act(async () => root.unmount());
+      );
+    } finally {
+      await act(async () => root.unmount());
+    }
   });
 });

@@ -29,39 +29,20 @@ import type { WorkflowActionInput } from "@/modules/workflows/domain/actions/Wor
 function actionFormSchema(action: WorkflowTaskAction) {
   return z
     .object({
-      comment: z.string().trim().max(4_000),
       confirmed: z.boolean(),
       instructions: z.string().trim().max(12_000),
       requestDetailedInformation: z.boolean(),
       question: z.string().trim().max(4_000),
-      reasonCode: z.string().trim().max(80),
+      reason: z.string().trim().max(action.requiredInput.reason.maxLength),
       requestedDocumentRequirementIds: z.array(z.uuid()).max(100),
       reviewDate: z.union([z.iso.date(), z.literal("")]),
     })
     .superRefine((values, context) => {
-      if (action.requiredInput.reasonCode.required && !values.reasonCode) {
+      if (action.requiredInput.reason.required && !values.reason) {
         context.addIssue({
           code: "custom",
-          message: "Select a reason.",
-          path: ["reasonCode"],
-        });
-      }
-      if (action.requiredInput.comment.required && !values.comment) {
-        context.addIssue({
-          code: "custom",
-          message: "Enter a comment.",
-          path: ["comment"],
-        });
-      }
-      if (
-        action.requiredInput.reasonOrCommentRequired &&
-        !values.reasonCode &&
-        !values.comment
-      ) {
-        context.addIssue({
-          code: "custom",
-          message: "Enter a reason or comment.",
-          path: ["comment"],
+          message: "Enter a reason.",
+          path: ["reason"],
         });
       }
       if (action.requiredInput.confirmation.required && !values.confirmed) {
@@ -91,7 +72,8 @@ function actionFormSchema(action: WorkflowTaskAction) {
       ) {
         context.addIssue({
           code: "custom",
-          message: "Request detailed information, at least one document, or both.",
+          message:
+            "Request detailed information, at least one document, or both.",
           path: ["requestDetailedInformation"],
         });
       }
@@ -119,12 +101,11 @@ function actionInput(
   values: ActionValues,
 ): WorkflowActionInput {
   const common = {
-    ...(values.comment ? { comment: values.comment } : {}),
-    ...(values.reasonCode ? { reasonCode: values.reasonCode } : {}),
+    ...(values.reason ? { reason: values.reason } : {}),
   };
   switch (action.actionType) {
     case "REJECT":
-      return { actionType: "REJECT", comment: values.comment };
+      return { ...common, actionType: "REJECT" };
     case "REQUEST_INFORMATION":
       return {
         ...common,
@@ -177,12 +158,11 @@ function DecisionForm({
   const execution = useExecuteWorkflowTaskAction(task.taskInstanceId);
   const form = useForm<ActionValues>({
     defaultValues: {
-      comment: "",
       confirmed: false,
       instructions: "",
       requestDetailedInformation: false,
       question: "",
-      reasonCode: "",
+      reason: "",
       requestedDocumentRequirementIds: [],
       reviewDate: "",
     },
@@ -247,20 +227,6 @@ function DecisionForm({
         message={
           <div className="space-y-4">
             <p>Confirm {action.label.toLowerCase()}?</p>
-            {action.requiredInput.reasonCode.options.length ? (
-              <FormSelect
-                items={action.requiredInput.reasonCode.options.map((code) => ({
-                  label: code.replaceAll("_", " "),
-                  value: code,
-                }))}
-                label="Reason"
-                name="reasonCode"
-                placeholder="Select a reason"
-                required={action.requiredInput.reasonCode.required}
-              />
-            ) : action.requiredInput.reasonCode.required ? (
-              <FormInput label="Reason code" name="reasonCode" required />
-            ) : null}
             {action.actionType === "REQUEST_INFORMATION" ? (
               <>
                 <FormRichTextField
@@ -311,18 +277,12 @@ function DecisionForm({
                 type="date"
               />
             ) : null}
-            {action.actionType === "REJECT" ||
-            action.requiredInput.comment.required ||
-            action.requiredInput.reasonOrCommentRequired ? (
-              <FormTextarea
-                label={action.actionType === "REJECT" ? "Reason" : "Comment"}
-                name="comment"
-                required={
-                  action.actionType === "REJECT" ||
-                  action.requiredInput.comment.required
-                }
-              />
-            ) : null}
+            <FormTextarea
+              label="Reason"
+              maxLength={action.requiredInput.reason.maxLength}
+              name="reason"
+              required={action.requiredInput.reason.required}
+            />
             {action.requiredInput.confirmation.required ? (
               <CheckboxField
                 label={
@@ -377,7 +337,9 @@ export function WorkflowTaskDecisionActions({
           additionalItems={additionalItems}
           disabled={Boolean(selected)}
           onSelect={(key) => {
-            const action = task.actions.find((candidate) => candidate.key === key);
+            const action = task.actions.find(
+              (candidate) => candidate.key === key,
+            );
             if (action?.available) setSelected(action);
           }}
         />

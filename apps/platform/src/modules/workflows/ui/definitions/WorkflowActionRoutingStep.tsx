@@ -12,6 +12,7 @@ import type {
 } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import type { WorkflowTransitionDefinition } from "@/modules/workflows/domain/transitions/WorkflowTransitionDefinition";
 import { workflowRouteDestination } from "./WorkflowActionEditorRoutes";
+import { WorkflowRejectionOutcomeFields } from "./WorkflowRejectionOutcomeFields";
 import { WorkflowActionRouteEditor } from "./WorkflowActionRouteEditor";
 
 type Props = {
@@ -20,6 +21,7 @@ type Props = {
   editor: WorkflowEditorView;
   onChange: (routes: WorkflowTransitionDefinition[]) => void;
   onRejectionOutcomeChange: (value: "TERMINAL" | "TRANSITION") => void;
+  rejectionOutcomeType: "TERMINAL" | "TRANSITION";
   routes: WorkflowTransitionDefinition[];
   stage: WorkflowStageInput;
 };
@@ -36,6 +38,7 @@ export function WorkflowActionRoutingStep({
   editor,
   onChange,
   onRejectionOutcomeChange,
+  rejectionOutcomeType,
   routes,
   stage,
 }: Props) {
@@ -133,6 +136,16 @@ export function WorkflowActionRoutingStep({
           stage={stage}
           targetTypeConstraint={rejectionConstraint}
         />
+      ) : null}
+      {actionType === "REJECT" && editing === null ? (
+        rejectionOutcomeType === "TERMINAL" ? (
+          <WorkflowRejectionOutcomeFields />
+        ) : (
+          <p className="text-sm text-brand-navy/70">
+            Rejection follows the configured stage routes. Terminal rejection
+            settings do not apply.
+          </p>
+        )
       ) : null}
     </section>
   );

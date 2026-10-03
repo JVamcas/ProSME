@@ -57,6 +57,7 @@ const detailFields: FieldPath<WorkflowActionFormValues>[] = [
   "actionType",
   "displayOrder",
   "enabled",
+  "reasonRequired",
 ];
 
 async function validateDetails(
@@ -189,9 +190,9 @@ export function useWorkflowActionDialog({
   async function continueToNextStep() {
     const valid = currentStep === "details"
       ? await validateDetails(form, stage, action)
-      : currentStep === "behaviour"
-        ? await form.trigger(undefined, { shouldFocus: true })
-        : true;
+      : currentStep === "behaviour" && actionType === "REJECT"
+        ? await form.trigger("taskStableKeys", { shouldFocus: true })
+        : await form.trigger(undefined, { shouldFocus: true });
     if (!valid || currentIndex === actionEditorSteps.length - 1) return;
     setCompletedSteps((steps) =>
       steps.includes(currentStep) ? steps : [...steps, currentStep],

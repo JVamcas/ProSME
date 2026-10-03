@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { workflowActionDefinitionSchema } from "@/modules/workflows/api/WorkflowSchemas";
+import { reject } from "@/modules/workflows/domain/standard/StandardWorkflowBuilders";
 import { workflowActionTypes } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
 import { referenceWorkflow } from "../../../support/ReferenceWorkflowFixture";
 import { validateWorkflowGraph } from "@/modules/workflows/WorkflowValidation";
@@ -14,7 +15,7 @@ const action = {
   label: "Approve review",
   actionType: "APPROVE_ADVANCE" as const,
   enabled: true,
-  reasonCodeRequired: false,
+  reasonRequired: false,
   displayOrder: 1,
   configuration: {},
 };
@@ -42,7 +43,6 @@ describe("WorkflowActionDefinition", () => {
       },
       RETURN: {
         dataHandling: "RETAIN",
-        reasonRequired: true,
       },
       REFER: {
         returnToReferrer: true,
@@ -56,7 +56,6 @@ describe("WorkflowActionDefinition", () => {
         trigger: "SLA_BREACH",
       },
       PUT_ON_HOLD: {
-        reasonCodes: ["EXTERNAL_REVIEW"],
         reviewDateRequired: true,
         scope: "STAGE",
       },
@@ -161,5 +160,28 @@ describe("WorkflowActionDefinition", () => {
       label: "Advance",
     };
     expect(toWorkflowActionDefinition(values).configuration).toEqual({});
+  });
+  it("requires terminal rejection to cancel all open tasks and stages", () => {
+    const terminal = reject("REJECT", "Reject", 1);
+    expect(workflowActionDefinitionSchema.safeParse(terminal).success).toBe(
+      true,
+    );
+    if (
+      terminal.actionType !== "REJECT" ||
+      terminal.configuration.outcome.type !== "TERMINAL"
+    ) {
+      throw new Error("Expected terminal rejection fixture.");
+    }
+    for (const field of ["cancelOpenTasks", "cancelOpenStageInstances"]) {
+      expect(
+        workflowActionDefinitionSchema.safeParse({
+          ...terminal,
+          configuration: {
+            ...terminal.configuration,
+            outcome: { ...terminal.configuration.outcome, [field]: false },
+          },
+        }).success,
+      ).toBe(false);
+    }
   });
 });

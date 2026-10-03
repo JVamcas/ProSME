@@ -106,7 +106,7 @@ describe("workflow referral outcome", () => {
           enabled: true,
           id: "b0000000-0000-4000-8000-000000000001",
           label: "Refer",
-          reasonCodeRequired: false,
+          reasonRequired: false,
           stableKey: "REFER_SPECIALIST",
         },
         stage: {

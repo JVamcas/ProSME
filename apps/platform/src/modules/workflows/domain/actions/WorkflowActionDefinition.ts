@@ -42,7 +42,7 @@ type WorkflowActionDefinitionCommon = {
 export type WorkflowActionDefinition = {
   [ActionType in WorkflowActionType]: WorkflowActionDefinitionCommon & {
     actionType: ActionType;
-    reasonCodeRequired: ActionType extends "REJECT" ? false : boolean;
+    reasonRequired: boolean;
     configuration: WorkflowActionConfigurationByType[ActionType];
   };
 }[WorkflowActionType];

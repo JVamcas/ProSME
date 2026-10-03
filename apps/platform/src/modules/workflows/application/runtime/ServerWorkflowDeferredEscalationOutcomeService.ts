@@ -40,7 +40,7 @@ async function executeDeferralOutcome(
     continuation: configuration.continuation,
     correlationId: input.command.correlationId,
     mode: configuration.targetType,
-    reasonCode: input.command.input.reasonCode,
+    reason: input.command.input.reason,
     resumeAt: configuration.targetType === "DATE"
       ? new Date(`${configuration.targetDate}T00:00:00.000Z`)
       : undefined,
@@ -93,7 +93,7 @@ async function executeEscalationOutcome(
     comment: input.command.input.comment,
     configuration: input.target.action.configuration,
     correlationId: input.command.correlationId,
-    reasonCode: input.command.input.reasonCode,
+    reason: input.command.input.reason,
     stageInstanceId: input.command.sourceStageInstanceId,
     taskId: input.target.task.id,
     workflowInstanceId: input.target.stage.workflowInstanceId,

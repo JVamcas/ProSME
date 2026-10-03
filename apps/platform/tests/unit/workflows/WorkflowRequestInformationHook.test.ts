@@ -58,7 +58,7 @@ function request() {
         enabled: true,
         id: actionDefinitionId,
         label: "Request information",
-        reasonCodeRequired: false,
+        reasonRequired: false,
         stableKey: "REQUEST_INFORMATION",
       },
       stage: {

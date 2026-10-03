@@ -18,7 +18,7 @@ function action(
     displayOrder: 1,
     enabled: true,
     label: "Reject",
-    reasonCodeRequired: false,
+    reasonRequired: false,
     stableKey: "REJECT",
     ...value,
   } as WorkflowActionDefinition;
@@ -49,7 +49,7 @@ describe("workflow action execution contract", () => {
     ).toBe(false);
   });
 
-  it("rejects mismatched payload types and requires a free-text rejection reason", () => {
+  it("rejects mismatched payload types and permits optional rejection reasons", () => {
     const configured = action({});
     expect(
       validateActionInputAgainstConfiguration(
@@ -64,11 +64,11 @@ describe("workflow action execution contract", () => {
         input: { actionType: "REJECT" },
         sourceStageInstanceId: "10000000-0000-4000-8000-000000000001",
       }).success,
-    ).toBe(false);
+    ).toBe(true);
     expect(
       validateActionInputAgainstConfiguration(
         configured,
-        { actionType: "REJECT", comment: "The application is ineligible." },
+        { actionType: "REJECT", reason: "The application is ineligible." },
         "SCREENING",
       ),
     ).toBeNull();
@@ -86,7 +86,7 @@ describe("workflow action execution contract", () => {
         recipientScope: "APPLICATION_OWNER",
         reminderDayOffsets: [3],
       },
-      reasonCodeRequired: false,
+      reasonRequired: false,
     });
     expect(
       validateActionInputAgainstConfiguration(

@@ -67,7 +67,7 @@ const graphSelection = {
     condition: workflowActionDefinitions.condition,
     configuration: workflowActionDefinitions.configuration,
     enabled: workflowActionDefinitions.enabled,
-    reasonCodeRequired: workflowActionDefinitions.reasonCodeRequired,
+    reasonRequired: workflowActionDefinitions.reasonRequired,
     displayOrder: workflowActionDefinitions.displayOrder,
   },
   task: {

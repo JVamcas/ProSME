@@ -290,7 +290,7 @@ export async function lockWorkflowActionExecutionTarget(
       enabled: action.enabled,
       id: action.id,
       label: action.label,
-      reasonCodeRequired: action.reasonCodeRequired,
+      reasonRequired: action.reasonRequired,
       stableKey: action.stableKey,
     } as WorkflowActionDefinition & { id: string },
     stage: stage as StageCompletionTarget & { rowVersion: number },

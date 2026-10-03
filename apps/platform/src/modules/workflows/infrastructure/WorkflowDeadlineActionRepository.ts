@@ -43,7 +43,7 @@ export async function loadBoundDeadlineActions(
   const result = await transaction.execute<WorkflowActionDefinition & { id: string }>(sql`
     SELECT action.id, action.stable_key AS "stableKey", action.label,
       action.action_type AS "actionType", action.enabled,
-      action.display_order AS "displayOrder", action.reason_code_required AS "reasonCodeRequired",
+      action.display_order AS "displayOrder", action.reason_required AS "reasonRequired",
       action.configuration, action.condition
     FROM app_workflow_action_definitions action
     JOIN app_workflow_stage_instances stage ON stage.workflow_stage_definition_id = action.stage_id
@@ -105,11 +105,11 @@ export async function recordScheduledWorkflowAction(
     sourceStageInstanceId: candidate.stageInstanceId,
     taskId: candidate.taskId,
     comment: `Scheduled ${candidate.kind}`,
-    reasonCode: candidate.kind === "RFI_EXPIRED" ? "RFI_DEADLINE_EXPIRED" : "SLA_BREACH",
+    reason: `Scheduled ${candidate.kind}`,
     normalizedInput: {
       actionType: input.action.actionType,
       comment: `Scheduled ${candidate.kind}`,
-      reasonCode: candidate.kind === "RFI_EXPIRED" ? "RFI_DEADLINE_EXPIRED" : "SLA_BREACH",
+      reason: `Scheduled ${candidate.kind}`,
     },
     resolvedTarget: { targetStageInstanceId: input.targetStageInstanceId ?? null },
     conditionEvaluation: input.conditionEvaluation,

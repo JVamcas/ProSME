@@ -69,7 +69,7 @@ describe("workflow graph cloning", () => {
     source.stages[0].actions[0] = {
       ...source.stages[0].actions[0],
       actionType: "REJECT",
-      reasonCodeRequired: false,
+      reasonRequired: false,
       configuration: {
         outcome: { type: "TRANSITION" },
         reversibleActionKey: null,

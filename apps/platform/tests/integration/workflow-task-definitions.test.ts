@@ -179,7 +179,7 @@ afterAll(async () => {
               displayOrder: 1,
               enabled: true,
               label: "Recommend",
-              reasonCodeRequired: false,
+              reasonRequired: false,
               stableKey: "RECOMMEND",
             },
             {
@@ -188,7 +188,7 @@ afterAll(async () => {
               displayOrder: 2,
               enabled: true,
               label: "Decide",
-              reasonCodeRequired: false,
+              reasonRequired: false,
               stableKey: "DECIDE",
             },
           ],

@@ -21,7 +21,7 @@ export async function startWorkflowDeferral(
     continuation: "RESUME_ON_DATE" | "EXPLICIT_TRANSFER";
     correlationId: string;
     mode: "DATE" | "FUNDING_CALL";
-    reasonCode?: string;
+    reason?: string;
     resumeAt?: Date;
     stageInstanceId: string;
     targetCallKey?: string;
@@ -50,7 +50,7 @@ export async function startWorkflowDeferral(
     deferredBy: input.actorId,
     mode: input.mode,
     previousStageStatus: "ACTIVE",
-    reasonCode: input.reasonCode,
+    reason: input.reason,
     resumeAt: input.resumeAt,
     stageInstanceId: input.stageInstanceId,
     targetFundingCallId: targetCall[0]?.id,

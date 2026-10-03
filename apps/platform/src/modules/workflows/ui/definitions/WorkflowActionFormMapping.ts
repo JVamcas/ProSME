@@ -35,12 +35,9 @@ export function workflowActionFormDefaults(
     taskStableKeys,
     actionType: action?.actionType ?? "APPROVE_ADVANCE",
     enabled: action?.enabled ?? true,
-    reasonCodeRequired: action?.reasonCodeRequired ?? false,
+    reasonRequired: action?.reasonRequired ?? false,
     displayOrder: action?.displayOrder ?? displayOrder,
-    reasonCodes: "",
     rejectionOutcomeType: "TERMINAL",
-    cancelOpenStageInstances: true,
-    cancelOpenTasks: true,
     rejectionPublicStatus: "OUTCOME_AVAILABLE",
     rejectionPublicLabel: "Decision available",
     rejectionPublicDescription: "A decision is available for your application.",
@@ -50,7 +47,6 @@ export function workflowActionFormDefaults(
     reminderDayOffsets: "",
     expiryAction: "CLOSE_REQUEST",
     dataHandling: "RETAIN",
-    reasonRequired: true,
     returnToReferrer: true,
     sourceTaskBehavior: "BLOCKED",
     escalationTargetType: "ROLE",
@@ -72,14 +68,6 @@ export function workflowActionFormDefaults(
     case "REJECT":
       return {
         ...defaults,
-        cancelOpenStageInstances:
-          action.configuration.outcome.type === "TERMINAL"
-            ? action.configuration.outcome.cancelOpenStageInstances
-            : true,
-        cancelOpenTasks:
-          action.configuration.outcome.type === "TERMINAL"
-            ? action.configuration.outcome.cancelOpenTasks
-            : true,
         rejectionOutcomeType: action.configuration.outcome.type,
         rejectionPublicDescription:
           action.configuration.outcome.type === "TERMINAL"
@@ -107,7 +95,6 @@ export function workflowActionFormDefaults(
       return {
         ...defaults,
         dataHandling: action.configuration.dataHandling,
-        reasonRequired: action.configuration.reasonRequired,
       };
     case "REFER":
       return {
@@ -127,7 +114,6 @@ export function workflowActionFormDefaults(
     case "PUT_ON_HOLD":
       return {
         ...defaults,
-        reasonCodes: action.configuration.reasonCodes.join(", "),
         reviewDateRequired: action.configuration.reviewDateRequired,
       };
     case "RESUME":
@@ -162,8 +148,8 @@ function configuration(values: WorkflowActionFormValues) {
         outcome:
           values.rejectionOutcomeType === "TERMINAL"
             ? {
-                cancelOpenStageInstances: values.cancelOpenStageInstances,
-                cancelOpenTasks: values.cancelOpenTasks,
+                cancelOpenStageInstances: true as const,
+                cancelOpenTasks: true as const,
                 publicStatusMapping: {
                   description: values.rejectionPublicDescription,
                   label: values.rejectionPublicLabel,
@@ -187,7 +173,6 @@ function configuration(values: WorkflowActionFormValues) {
     case "RETURN":
       return {
         dataHandling: values.dataHandling,
-        reasonRequired: values.reasonRequired,
       };
     case "REFER":
       return {
@@ -204,7 +189,6 @@ function configuration(values: WorkflowActionFormValues) {
       };
     case "PUT_ON_HOLD":
       return {
-        reasonCodes: keys(values.reasonCodes),
         reviewDateRequired: values.reviewDateRequired,
         scope: "STAGE" as const,
       };
@@ -242,8 +226,7 @@ export function toWorkflowActionDefinition(
     label: values.label,
     actionType: values.actionType,
     enabled: values.enabled,
-    reasonCodeRequired:
-      values.actionType === "REJECT" ? false : values.reasonCodeRequired,
+    reasonRequired: values.reasonRequired,
     displayOrder: values.displayOrder,
     configuration: configuration(values),
   });

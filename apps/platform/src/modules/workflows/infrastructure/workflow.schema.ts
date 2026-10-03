@@ -244,7 +244,7 @@ export const workflowActionDefinitions = pgTable(
     actionType: text("action_type").$type<WorkflowActionType>().notNull(),
     condition: jsonb("condition").$type<ConditionGroup>(),
     enabled: boolean("enabled").notNull().default(true),
-    reasonCodeRequired: boolean("reason_code_required")
+    reasonRequired: boolean("reason_required")
       .notNull()
       .default(false),
     displayOrder: integer("display_order").notNull(),

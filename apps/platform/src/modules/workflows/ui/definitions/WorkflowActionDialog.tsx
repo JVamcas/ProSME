@@ -85,7 +85,9 @@ export function WorkflowActionDialog(props: Props) {
             }))}
           />
           <div className="min-h-80 py-6">
-            {currentStep === "details" ? <WorkflowActionDetailsStep /> : null}
+            {currentStep === "details" ? (
+              <WorkflowActionDetailsStep />
+            ) : null}
             {currentStep === "behaviour" ? (
               <WorkflowActionBehaviourStep
                 actionExists={Boolean(action)}
@@ -101,7 +103,6 @@ export function WorkflowActionDialog(props: Props) {
                     shouldValidate: true,
                   })
                 }
-                rejectionOutcomeType={rejectionOutcomeType}
                 stage={stage}
                 taskStableKeys={taskStableKeys}
               />
@@ -118,6 +119,7 @@ export function WorkflowActionDialog(props: Props) {
                     shouldValidate: true,
                   })
                 }
+                rejectionOutcomeType={rejectionOutcomeType}
                 routes={routes}
                 stage={stage}
               />

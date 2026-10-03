@@ -162,7 +162,7 @@ describe("workflow draft updates", () => {
       displayOrder: 2,
       enabled: true,
       label: "Refer",
-      reasonCodeRequired: true,
+      reasonRequired: true,
       stableKey: "REFER",
     });
     vi.mocked(findDraftByDefinition).mockResolvedValue("draft-id");

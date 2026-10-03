@@ -174,7 +174,7 @@ describe("workflow condition publication validation", () => {
       displayOrder: 1,
       enabled: true,
       label: "Advance",
-      reasonCodeRequired: false,
+      reasonRequired: false,
       stableKey: "ADVANCE",
     });
 

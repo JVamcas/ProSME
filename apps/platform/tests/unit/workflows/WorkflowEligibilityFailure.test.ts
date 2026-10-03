@@ -66,8 +66,8 @@ describe("automatic authoritative eligibility termination", () => {
         expect.objectContaining({
           terminalOutcome: expectedStatus,
           configuration: expect.objectContaining({
-            cancelOpenStageInstances: true,
-            cancelOpenTasks: true,
+            cancelOpenStageInstances: true as const,
+            cancelOpenTasks: true as const,
             publicStatusMapping: expect.objectContaining({ status: expectedStatus }),
           }),
         }));

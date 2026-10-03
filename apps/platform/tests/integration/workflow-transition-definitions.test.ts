@@ -62,7 +62,7 @@ function stage(
         actionType: "APPROVE_ADVANCE",
         configuration: {},
         enabled: true,
-        reasonCodeRequired: false,
+        reasonRequired: false,
         displayOrder: 1,
       },
     ],

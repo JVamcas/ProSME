@@ -21,7 +21,7 @@ export function action(
   actionType: WorkflowActionDefinition["actionType"],
   displayOrder: number,
   configuration: WorkflowActionDefinition["configuration"],
-  reasonCodeRequired = false,
+  reasonRequired = false,
 ): WorkflowActionDefinition {
   return {
     actionType,
@@ -29,7 +29,7 @@ export function action(
     displayOrder,
     enabled: true,
     label,
-    reasonCodeRequired,
+    reasonRequired,
     stableKey,
   } as WorkflowActionDefinition;
 }
@@ -53,8 +53,8 @@ export function reject(
       outcome:
         outcomeType === "TERMINAL"
           ? {
-              cancelOpenStageInstances: true,
-              cancelOpenTasks: true,
+              cancelOpenStageInstances: true as const,
+              cancelOpenTasks: true as const,
               publicStatusMapping: {
                 description: "A decision is available for your application.",
                 label: "Decision available",
@@ -65,7 +65,7 @@ export function reject(
           : { type: "TRANSITION" as const },
       reversibleActionKey: null,
     },
-    false,
+    true,
   );
 }
 
@@ -89,7 +89,6 @@ export function returnAction(key: string, label: string, order: number) {
     order,
     {
       dataHandling: "RETAIN",
-      reasonRequired: true,
     },
     true,
   );
@@ -100,14 +99,13 @@ export function deferDate(key: string, label: string, order: number) {
     continuation: "RESUME_ON_DATE",
     targetDate: "2027-01-15",
     targetType: "DATE",
-  });
+  }, true);
 }
 
 export function hold(
   key: string,
   label: string,
   order: number,
-  reasonCodes: string[],
 ) {
   return action(
     key,
@@ -115,7 +113,6 @@ export function hold(
     "PUT_ON_HOLD",
     order,
     {
-      reasonCodes,
       reviewDateRequired: true,
       scope: "STAGE",
     },

@@ -9,11 +9,11 @@ describe("workflow reject validation", () => {
     graph.stages[0].actions[0] = {
       ...graph.stages[0].actions[0],
       actionType: "REJECT",
-      reasonCodeRequired: false,
+      reasonRequired: false,
       configuration: {
         outcome: {
-          cancelOpenStageInstances: true,
-          cancelOpenTasks: true,
+          cancelOpenStageInstances: true as const,
+          cancelOpenTasks: true as const,
           publicStatusMapping: {
             description: "A decision is available for your application.",
             label: "Decision available",
