@@ -1,5 +1,6 @@
 import "server-only";
 
+import { resolveEscalationConfiguration } from "../../domain/actions/WorkflowEscalationTarget";
 import { isRuntimeWorkflowControlAction } from "../../domain/actions/WorkflowActionDefinition";
 import type { WorkflowActionInput } from "../../domain/actions/WorkflowActionExecution";
 import { readWorkflowControlDestinations } from "../../infrastructure/WorkflowControlDestinationRepository";
@@ -61,9 +62,22 @@ export async function prepareWorkflowActionRouting(
       );
     }
   }
+  const routingTarget =
+    target.action.actionType === "ESCALATE" && input.actionType === "ESCALATE"
+      ? {
+          ...target,
+          action: {
+            ...target.action,
+            configuration: resolveEscalationConfiguration(
+              target.action.configuration,
+              input,
+            ),
+          },
+        }
+      : target;
   const targetsValid = runtimeControl
     ? Boolean(runtimeDestination)
-    : await configuredActionTargetsAreValid(transaction, target);
+    : await configuredActionTargetsAreValid(transaction, routingTarget);
   const conditions = runtimeControl
     ? evaluateWorkflowActionConditions(target.action, [], conditionContext)
     : configuredConditions;

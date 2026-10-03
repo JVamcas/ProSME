@@ -82,8 +82,20 @@ export const workflowActionInputSchema = z
       .object({
         ...commonInput,
         actionType: z.literal("ESCALATE"),
+        targetType: z.enum(["ROLE", "USER"]).optional(),
+        targetId: z.uuid().optional(),
       })
-      .strict(),
+      .strict()
+      .superRefine((input, context) => {
+        if (Boolean(input.targetType) !== Boolean(input.targetId)) {
+          context.addIssue({
+            code: "custom",
+            message:
+              "Choose both the destination type and destination user or role.",
+            path: [input.targetType ? "targetId" : "targetType"],
+          });
+        }
+      }),
     z
       .object({
         ...commonInput,
@@ -249,10 +261,7 @@ export function validateActionInputAgainstConfiguration(
       // The repository validates selected fields against the application’s form.
       return null;
     case "ESCALATE":
-      return action.configuration.trigger === "MANUAL" ||
-        action.configuration.trigger === "CONDITION"
-        ? null
-        : "This escalation is not available for manual execution.";
+      return null;
     case "PUT_ON_HOLD":
       return action.configuration.reviewDateRequired &&
         input.actionType === "PUT_ON_HOLD" &&

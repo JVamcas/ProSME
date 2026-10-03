@@ -18,6 +18,7 @@ import {
   isRuntimeWorkflowControlAction,
   isSupportedWorkflowAction,
 } from "../../domain/actions/WorkflowActionDefinition";
+import { readWorkflowEscalationTargets } from "../../infrastructure/WorkflowEscalationTargetRepository";
 import { readWorkflowControlDestinations } from "../../infrastructure/WorkflowControlDestinationRepository";
 import type { WorkflowActionDefinition } from "../../domain/actions/WorkflowActionDefinition";
 import { taskActionMatchesType } from "../../domain/runtime/WorkflowTaskCompletionPolicy";
@@ -153,26 +154,31 @@ export async function getWorkflowActionAvailability(
   }
 
   const database = workflowActionAvailabilityDatabase();
-  const [context, readiness, editableFields] = await Promise.all([
-    buildWorkflowActionConditionContext(database, source.stage, true),
-    readWorkflowActionReadiness(database, {
-      actionTypes: candidates.map((item) => item.action.actionType),
-      actorId: actor.id,
-      recordQuorumEvaluation: false,
-      previewFormSubmission: source.task?.taskType === "STAGE_DECISION",
-      stageDefinitionId: source.stage.stageDefinitionId,
-      stageInstanceId: source.stage.stageInstanceId,
-      taskId: source.task?.id,
-    }),
-    candidates.some(
-      (item) => item.definition.actionType === "REQUEST_INFORMATION",
-    )
-      ? readWorkflowRfiFieldOptions(
-          database,
-          String(source.stage.application.id),
-        )
-      : Promise.resolve([]),
-  ]);
+  const [context, readiness, editableFields, escalationTargets] =
+    await Promise.all([
+      buildWorkflowActionConditionContext(database, source.stage, true),
+      readWorkflowActionReadiness(database, {
+        actionTypes: candidates.map((item) => item.action.actionType),
+        actorId: actor.id,
+        recordQuorumEvaluation: false,
+        previewFormSubmission: source.task?.taskType === "STAGE_DECISION",
+        stageDefinitionId: source.stage.stageDefinitionId,
+        stageInstanceId: source.stage.stageInstanceId,
+        taskId: source.task?.id,
+      }),
+      candidates.some(
+        (item) => item.definition.actionType === "REQUEST_INFORMATION",
+      )
+        ? readWorkflowRfiFieldOptions(
+            database,
+            String(source.stage.application.id),
+          )
+        : Promise.resolve([]),
+      source.task &&
+      candidates.some((item) => item.action.actionType === "ESCALATE")
+        ? readWorkflowEscalationTargets(database, source.task.id)
+        : Promise.resolve([]),
+    ]);
   const evaluated = new Map<string, WorkflowActionAvailability>();
   await Promise.all(
     candidates.map(async (item) => {
@@ -187,7 +193,7 @@ export async function getWorkflowActionAvailability(
                 workflowInstanceId: source.stage.workflowInstanceId,
               })
             : Promise.resolve([]),
-          runtimeControl
+          runtimeControl || action.actionType === "ESCALATE"
             ? Promise.resolve(true)
             : configuredActionTargetsAreValid(database, {
                 action,
@@ -207,9 +213,12 @@ export async function getWorkflowActionAvailability(
       const conditions = runtimeControl
         ? evaluateWorkflowActionConditions(action, [], context)
         : configuredConditions;
-      const targetsValid = runtimeControl
-        ? destinations.length > 0
-        : configuredTargetsValid;
+      const targetsValid =
+        action.actionType === "ESCALATE"
+          ? escalationTargets.length > 0
+          : runtimeControl
+            ? destinations.length > 0
+            : configuredTargetsValid;
       const defaultDestination = transitions.transitions.find(
         (transition) =>
           transition.id === configuredConditions.selectedTransitionId,
@@ -253,6 +262,17 @@ export async function getWorkflowActionAvailability(
             action.actionType === "RETURN"
               ? "No completed previous stage is available to reopen."
               : "No previous stage is available in this workflow.";
+        }
+      }
+      if (action.actionType === "ESCALATE") {
+        const availability = evaluated.get(action.stableKey)!;
+        availability.requiredInput = {
+          ...availability.requiredInput,
+          escalationTargets,
+        };
+        if (!targetsValid) {
+          availability.unavailableReason =
+            "No eligible user or role is available for escalation.";
         }
       }
       if (action.actionType === "REQUEST_INFORMATION") {

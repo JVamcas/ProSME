@@ -2,6 +2,7 @@ import "server-only";
 
 import { sql } from "drizzle-orm";
 
+import { canCancelOwnEscalation } from "./WorkflowEscalationTrackingSql";
 import { getDatabase } from "@/db/client";
 import type {
   WorkQueueListInput,
@@ -63,27 +64,14 @@ function cursorFilter(cursor?: WorkQueueCursor) {
   )`;
 }
 
-function escalationTarget(actorId: string) {
-  return sql`EXISTS (
-    SELECT 1 FROM app_workflow_escalations escalation
-    WHERE escalation.task_id = task.id
-      AND escalation.status = 'ACTIVE'
-      AND (
-        escalation.target_user_id = ${actorId}::uuid
-        OR EXISTS (
-          SELECT 1 FROM app_user_roles escalation_role
-          WHERE escalation_role.user_id = ${actorId}::uuid
-            AND escalation_role.role_id = escalation.target_role_id
-        )
-      )
-  )`;
-}
-
 function routedToActor(actorId: string) {
   return sql`(
     task.assigned_user_id = ${actorId}::uuid
-    OR ${escalationTarget(actorId)}
   )`;
+}
+
+function visibleToActor(actorId: string) {
+  return sql`(${routedToActor(actorId)} OR outgoing.id IS NOT NULL)`;
 }
 
 function queueQuery(
@@ -97,20 +85,20 @@ function queueQuery(
         task.id AS "taskInstanceId",
         definition.code AS "taskDefinitionCode",
         definition.name AS "taskName",
-        CASE WHEN ${routedToActor(actorId)}
+        CASE WHEN ${visibleToActor(actorId)}
           AND app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
           THEN application.id ELSE NULL END AS "applicationId",
-        CASE WHEN ${routedToActor(actorId)}
+        CASE WHEN ${visibleToActor(actorId)}
           AND app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
           THEN application.reference ELSE 'Hidden until COI reviewed' END AS "reference",
-        CASE WHEN ${routedToActor(actorId)}
+        CASE WHEN ${visibleToActor(actorId)}
           AND app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
           THEN NULLIF(COALESCE(business.trading_name, business.legal_name), '')
           ELSE NULL END AS "businessName",
-        CASE WHEN ${routedToActor(actorId)}
+        CASE WHEN ${visibleToActor(actorId)}
           AND app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
           THEN applicant.display_name ELSE 'Hidden until COI reviewed' END AS "applicantName",
-        CASE WHEN ${routedToActor(actorId)}
+        CASE WHEN ${visibleToActor(actorId)}
           AND app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
           THEN application.funding_opportunity_title
           ELSE NULL END AS "fundingCallTitle",
@@ -130,13 +118,6 @@ function queueQuery(
             WHERE deferral.stage_instance_id = stage.id
               AND deferral.status = 'ACTIVE'
           ) THEN 'Deferred. Open the task to review its continuation.'
-          WHEN EXISTS (
-            SELECT 1 FROM app_workflow_escalations escalation
-            WHERE escalation.task_id = task.id
-              AND escalation.status = 'ACTIVE'
-              AND escalation.block_until_resolved
-          ) AND NOT ${escalationTarget(actorId)}
-            THEN 'Blocked pending escalation resolution.'
           WHEN definition.task_type = 'STAGE_DECISION' AND EXISTS (
           SELECT 1
           FROM app_workflow_tasks prerequisite
@@ -149,7 +130,12 @@ function queueQuery(
         ) THEN 'Available when all contributing tasks are complete.'
           ELSE NULL END AS "taskBlockedReason",
         NULL::text AS "priority",
-        task.status AS "taskStatus",
+        CASE WHEN outgoing.id IS NOT NULL THEN 'ESCALATED'
+          ELSE task.status END AS "taskStatus",
+        CASE WHEN outgoing.id IS NOT NULL THEN jsonb_build_object(
+          'id', outgoing.id,
+          'canCancel', ${canCancelOwnEscalation(actorId, sql`task`, sql`outgoing`)}
+        ) ELSE NULL END AS "outgoingEscalation",
         definition.task_type AS "taskType",
         task.assigned_role_id AS "assignedRoleId",
         role.name AS "assignedRoleName",
@@ -168,6 +154,16 @@ function queueQuery(
       JOIN app_users applicant ON applicant.id = application.owner_user_id
       LEFT JOIN app_business_profiles business
         ON business.id::text = application.business_section ->> 'businessId'
+      LEFT JOIN LATERAL (
+        SELECT escalation.id, escalation.escalated_at
+        FROM app_workflow_escalations escalation
+        WHERE escalation.task_id = task.id
+          AND escalation.status = 'ACTIVE' AND escalation.trigger = 'MANUAL'
+          AND escalation.source_assigned_user_id = ${actorId}::uuid
+          AND escalation.escalated_by = ${actorId}::uuid
+          AND task.assigned_user_id IS DISTINCT FROM ${actorId}::uuid
+        ORDER BY escalation.escalated_at DESC, escalation.id DESC LIMIT 1
+      ) outgoing ON TRUE
       LEFT JOIN app_roles role ON role.id = task.assigned_role_id
       LEFT JOIN app_users assignee ON assignee.id = task.assigned_user_id
       LEFT JOIN LATERAL (
@@ -185,7 +181,7 @@ function queueQuery(
       WHERE workflow.status = 'ACTIVE'
         AND stage.status IN ('ACTIVE', 'BLOCKED')
         AND task.status IN ${actionableStatuses}
-        AND ${routedToActor(actorId)}
+        AND ${visibleToActor(actorId)}
         AND ${scopeFilter(input.scope)}
         AND ${searchFilter(actorId, input.search)}
     )

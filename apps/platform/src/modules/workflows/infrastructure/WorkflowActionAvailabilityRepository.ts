@@ -265,18 +265,6 @@ async function readTask(
             WHERE actor_role.user_id = ${actorId}::uuid
               AND actor_role.role_id = ${workflowTasks.assignedRoleId}
           )
-        ) OR EXISTS (
-          SELECT 1 FROM app_workflow_escalations escalation
-          WHERE escalation.task_id = ${workflowTasks.id}
-            AND escalation.status = 'ACTIVE'
-            AND (
-              escalation.target_user_id = ${actorId}::uuid
-              OR EXISTS (
-                SELECT 1 FROM app_user_roles escalation_role
-                WHERE escalation_role.user_id = ${actorId}::uuid
-                  AND escalation_role.role_id = escalation.target_role_id
-              )
-            )
         )
       )`,
       definitionId: workflowTasks.workflowTaskDefinitionId,

@@ -127,6 +127,11 @@ describe("notification HTML import", () => {
       "Application {{applicationReference}} received",
     ],
     [
+      "workflow-task-escalated.html",
+      "workflow.task.escalated",
+      "Task escalated to you for {{applicationReference}}",
+    ],
+    [
       "workflow-task-assigned.html",
       "workflow.task.assigned",
       "Tasks assigned for {{applicationReference}}",

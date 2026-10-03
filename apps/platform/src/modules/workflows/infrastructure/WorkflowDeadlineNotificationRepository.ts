@@ -35,13 +35,7 @@ export async function loadWorkflowDeadlineNotificationSnapshot(
                 SELECT 1 FROM app_user_roles membership
                 WHERE membership.user_id = assignee.id AND membership.role_id = task.assigned_role_id
               )
-            ) OR EXISTS (
-              SELECT 1 FROM app_workflow_escalations escalation
-              WHERE escalation.task_id = task.id AND escalation.status = 'ACTIVE'
-                AND (escalation.target_user_id = assignee.id OR EXISTS (
-                  SELECT 1 FROM app_user_roles membership
-                  WHERE membership.user_id = assignee.id AND membership.role_id = escalation.target_role_id
-                ))
+            ))
             ))
         )
       ), '[]'::jsonb) AS assignees

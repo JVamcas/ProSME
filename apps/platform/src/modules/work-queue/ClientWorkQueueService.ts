@@ -1,5 +1,6 @@
 "use client";
 
+import type { WorkflowEscalationTracking } from "@/modules/workflows/domain/runtime/WorkflowEscalationTracking";
 import { requestData, requestJson } from "@/lib/client-http";
 import type {
   WorkQueueListInput,
@@ -120,7 +121,31 @@ function executeAction(
   );
 }
 
+function cancelEscalation(
+  taskId: string,
+  input: { escalationId: string; expectedRowVersion: number },
+) {
+  return requestData<{
+    taskId: string;
+    taskStatus: "PENDING";
+    rowVersion: number;
+  }>(`/api/admin/tasks/${taskId}/escalation/cancel`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+}
+
+function getEscalationTracking(taskId: string) {
+  return requestData<WorkflowEscalationTracking | null>(
+    `/api/admin/tasks/${taskId}/escalation`,
+    { cache: "no-store" },
+  );
+}
+
 export const clientWorkQueueService = {
+  getEscalationTracking,
+  cancelEscalation,
   completeTask,
   saveReviewDraft,
   evaluateEligibility,

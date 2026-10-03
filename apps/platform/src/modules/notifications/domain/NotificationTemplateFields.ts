@@ -139,6 +139,15 @@ export const notificationEventTemplateFields = {
     "respondedAt",
     "workQueueUrl",
   ],
+  "workflow.task.escalated": [
+    ...notificationCatalogTemplateFields.WORKFLOW,
+    "stageName",
+    "taskSummary",
+    "assignedAt",
+    "workQueueUrl",
+    "reason",
+    "trigger",
+  ],
   "workflow.task.assigned": [
     ...notificationCatalogTemplateFields.WORKFLOW,
     "stageName",
@@ -319,10 +328,17 @@ export function buildNotificationRenderValues<Key extends NotificationEventKey>(
     };
   }
 
+  const escalationFields: Record<string, string> = input.eventKey === "workflow.task.escalated"
+    ? {
+        reason: (input.context as NotificationEventContextByKey["workflow.task.escalated"]).reason ?? "",
+        trigger: (input.context as NotificationEventContextByKey["workflow.task.escalated"]).trigger.replaceAll("_", " "),
+      }
+    : {};
   const context =
     input.context as NotificationEventContextByKey["workflow.task.assigned"];
   return {
     ...common,
+    ...escalationFields,
     assignedAt: formatTimestamp(context.assignedAt),
     stageName: context.stageName,
     taskSummary: context.tasks

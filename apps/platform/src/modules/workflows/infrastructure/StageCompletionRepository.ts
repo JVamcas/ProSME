@@ -17,6 +17,11 @@ import {
   workflowTasks,
 } from "@/db/schema";
 import type { StageInstanceStatus } from "../domain/runtime/StageInstance";
+export {
+  loadRequiredTaskCompletions,
+  loadStageCompletionValues,
+} from "./StageCompletionReadRepository";
+
 import type { RequiredTaskCompletion } from "../domain/runtime/StageCompletion";
 import type { WorkflowInstanceStatus } from "../domain/runtime/WorkflowInstance";
 
@@ -50,12 +55,14 @@ export type StageCompletionValueRow = {
   taskResult: Record<string, unknown> | null;
 };
 
-export async function lockStageCompletionTarget(
-  transaction: StageCompletionTransaction,
-  stageInstanceId: string,
-  allowedStatuses: StageInstanceStatus[] = ["ACTIVE"],
-): Promise<StageCompletionTarget | null> {
-  const [row] = await transaction
+async function readCompletionTargets(
+  transaction: Pick<StageCompletionTransaction, "select">,
+  stageInstanceIds: string[],
+  allowedStatuses: StageInstanceStatus[],
+  lock: boolean,
+): Promise<StageCompletionTarget[]> {
+  if (!stageInstanceIds.length) return [];
+  const query = transaction
     .select({
       activeDeferral: sql<boolean>`EXISTS (
         SELECT 1 FROM app_workflow_deferrals deferral
@@ -159,129 +166,56 @@ export async function lockStageCompletionTarget(
     )
     .where(
       and(
-        eq(stageInstances.id, stageInstanceId),
+        inArray(stageInstances.id, stageInstanceIds),
         eq(workflowInstances.status, "ACTIVE"),
         inArray(stageInstances.status, allowedStatuses),
       ),
-    )
-    .for("update", { of: stageInstances })
-    .limit(1);
-  if (!row) return null;
-
-  const { business, declarations, financial, project, ...application } =
-    row.application;
-  return {
-    ...row,
-    application: {
-      ...application,
-      ...business,
-      ...project,
-      ...financial,
-      ...declarations,
-    },
-    fundingCall: {
-      ...row.fundingCall,
-      maximumAmount: Number(row.fundingCall.maximumAmount),
-      minimumAmount: Number(row.fundingCall.minimumAmount),
-    },
-  };
+    );
+  const rows = lock
+    ? await query.for("update", { of: stageInstances })
+    : await query;
+  return rows.map((row) => {
+    const { business, declarations, financial, project, ...application } =
+      row.application;
+    return {
+      ...row,
+      application: {
+        ...application,
+        ...business,
+        ...project,
+        ...financial,
+        ...declarations,
+      },
+      fundingCall: {
+        ...row.fundingCall,
+        maximumAmount: Number(row.fundingCall.maximumAmount),
+        minimumAmount: Number(row.fundingCall.minimumAmount),
+      },
+    };
+  });
 }
 
-export async function loadRequiredTaskCompletions(
-  transaction: Pick<StageCompletionTransaction, "execute">,
+export async function lockStageCompletionTarget(
+  transaction: StageCompletionTransaction,
   stageInstanceId: string,
-  completingTaskId?: string,
-  previewFormSubmission = false,
-): Promise<RequiredTaskCompletion[]> {
-  const formEvidenceReady = sql`(
-    task.form_version_id IS NULL
-    OR (
-      ${previewFormSubmission}
-      AND task.id = ${completingTaskId ?? null}::uuid
-      AND definition.task_type = 'STAGE_DECISION'
-      AND COALESCE(definition.config ->> 'command', '') <> 'AUTHORITATIVE_ELIGIBILITY'
-      AND COALESCE(definition.config ->> 'formPurpose', '') <> 'ELIGIBILITY_VERIFICATION'
-    )
-    OR EXISTS (
-      SELECT 1 FROM app_form_responses response
-      WHERE response.workflow_task_id = task.id
-        AND (
-          response.status = 'COMPLETED'
-          OR (
-            (definition.config ->> 'command' = 'AUTHORITATIVE_ELIGIBILITY'
-              OR definition.config ->> 'formPurpose' = 'ELIGIBILITY_VERIFICATION')
-            AND response.values = (task.result -> 'evaluatedFormValues')
-          )
-        )
-    )
-  )`;
-  const result = await transaction.execute(sql`
-    SELECT definition.id AS "taskDefinitionId",
-      definition.code AS "taskKey",
-      definition.required_completion_count AS "requiredCompletionCount",
-      definition.completion_mode AS "completionMode",
-      definition.completion_percentage AS "completionPercentage",
-      definition.reviewer_count AS "denominator",
-      count(task.id) FILTER (
-        WHERE (task.status = 'COMPLETED'
-          OR (task.id = ${completingTaskId ?? null}::uuid
-            AND task.status IN ('PENDING', 'IN_PROGRESS')))
-          AND app_workflow_task_coi_cleared(task.id, task.assigned_user_id)
-          AND NOT EXISTS (
-            SELECT 1 FROM app_workflow_tasks successor
-            WHERE successor.supersedes_task_id = task.id
-          )
-          AND ${formEvidenceReady}
-      )::integer AS "completedCount",
-      COALESCE(array_agg(task.id ORDER BY task.reviewer_slot) FILTER (
-        WHERE (task.status = 'COMPLETED'
-          OR (task.id = ${completingTaskId ?? null}::uuid
-            AND task.status IN ('PENDING', 'IN_PROGRESS')))
-          AND app_workflow_task_coi_cleared(task.id, task.assigned_user_id)
-          AND NOT EXISTS (
-            SELECT 1 FROM app_workflow_tasks successor
-            WHERE successor.supersedes_task_id = task.id
-          )
-          AND ${formEvidenceReady}
-      ), ARRAY[]::uuid[]) AS "completedTaskIds"
-    FROM app_stage_task_definitions definition
-    JOIN app_workflow_stage_instances stage
-      ON stage.workflow_stage_definition_id = definition.stage_id
-    LEFT JOIN app_workflow_tasks task
-      ON task.stage_instance_id = stage.id
-      AND task.workflow_task_definition_id = definition.id
-    WHERE stage.id = ${stageInstanceId}::uuid
-      AND definition.required = TRUE
-    GROUP BY definition.id, definition.code,
-      definition.required_completion_count, definition.completion_mode,
-      definition.completion_percentage, definition.reviewer_count
-    ORDER BY definition.sequence, definition.id
-  `);
-  return result.rows as RequiredTaskCompletion[];
+  allowedStatuses: StageInstanceStatus[] = ["ACTIVE"],
+): Promise<StageCompletionTarget | null> {
+  const rows = await readCompletionTargets(
+    transaction,
+    [stageInstanceId],
+    allowedStatuses,
+    true,
+  );
+  return rows[0] ?? null;
 }
 
-export async function loadStageCompletionValues(
-  transaction: Pick<StageCompletionTransaction, "execute">,
-  stageInstanceId: string,
-): Promise<StageCompletionValueRow[]> {
-  const result = await transaction.execute(sql`
-    SELECT task.result AS "taskResult", response.values AS "responseValues"
-    FROM app_workflow_tasks task
-    LEFT JOIN app_form_responses response
-      ON response.workflow_task_id = task.id
-      AND (response.status = 'COMPLETED'
-        OR response.values = (task.result -> 'evaluatedFormValues'))
-    WHERE task.stage_instance_id = ${stageInstanceId}::uuid
-      AND task.status = 'COMPLETED'
-      AND app_workflow_task_coi_cleared(task.id, task.assigned_user_id)
-      AND NOT EXISTS (
-        SELECT 1 FROM app_workflow_tasks successor
-        WHERE successor.supersedes_task_id = task.id
-      )
-      AND (task.form_version_id IS NULL OR response.id IS NOT NULL)
-    ORDER BY task.created_at, task.id, response.created_at, response.id
-  `);
-  return result.rows as StageCompletionValueRow[];
+export function readStageCompletionTargets(stageInstanceIds: string[]) {
+  return readCompletionTargets(
+    getDatabase(),
+    stageInstanceIds,
+    ["ACTIVE", "BLOCKED"],
+    false,
+  );
 }
 
 export async function persistStageCompletion(

@@ -4,27 +4,58 @@ import { PortalErrorState } from "@/components/layout/PortalErrorState";
 import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Tabs } from "@/components/ui/tabs";
-import { useAdminApplicationDetail } from "@/modules/applications/ApplicationHooks";
-import { ApplicationDetailContent } from "@/modules/applications/ui/ApplicationDetailView";
 import { WorkflowTaskReviewPanel } from "@/modules/work-queue/ui/WorkflowTaskReviewPanel";
-import { useWorkflowTask } from "@/modules/work-queue/WorkQueueHooks";
+import { WorkflowEscalationTrackingPanel } from "@/modules/workflows/ui/tasks/WorkflowEscalationTrackingPanel";
+import {
+  useWorkflowEscalationTracking,
+  useWorkflowTask,
+} from "@/modules/work-queue/WorkQueueHooks";
 import { useWorkflowCoi } from "@/modules/workflows/ui/runtime/useWorkflowCoi";
 import { WorkflowTaskCoiGate } from "@/modules/workflows/ui/runtime/WorkflowTaskCoiGate";
 import { PageShell } from "@/shared/ui/PageShell";
 import { useState } from "react";
 
-
 export function WorkflowTaskWorkspace({
-  canReadWorkflowProgress = false,
   taskId,
 }: {
   canReadWorkflowProgress?: boolean;
   taskId: string;
 }) {
   const [section, setSection] = useState("assigned-task");
-  const coi = useWorkflowCoi(taskId);
-  const query = useWorkflowTask(taskId, coi.data?.cleared ?? false);
+  const tracking = useWorkflowEscalationTracking(taskId);
+  const coi = useWorkflowCoi(taskId, !tracking.isPending && !tracking.data);
+  const query = useWorkflowTask(
+    taskId,
+    !tracking.isPending && !tracking.data && (coi.data?.cleared ?? false),
+  );
 
+  if (tracking.isPending) {
+    return (
+      <PortalLoadingState
+        title="Loading task"
+        description="Checking the current assignment."
+      />
+    );
+  }
+  if (tracking.isError) {
+    return (
+      <PortalErrorState
+        title="Task could not be loaded"
+        description={tracking.error.message}
+        onAction={() => void tracking.refetch()}
+      />
+    );
+  }
+  if (tracking.data) {
+    return (
+      <PageShell
+        title="Review Assigned Task"
+        actions={<StatusBadge status="ESCALATED" />}
+      >
+        <WorkflowEscalationTrackingPanel task={tracking.data} />
+      </PageShell>
+    );
+  }
   if (coi.isPending) {
     return (
       <PortalLoadingState

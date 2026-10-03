@@ -2,7 +2,8 @@ import "server-only";
 
 import type { WorkflowActionExecutionTransaction } from "../../infrastructure/WorkflowActionExecutionRepository";
 import { startWorkflowDeferral } from "../../infrastructure/WorkflowDeferralRepository";
-import { startWorkflowEscalation } from "../../infrastructure/WorkflowEscalationRepository";
+import { resolveEscalationConfiguration } from "../../domain/actions/WorkflowEscalationTarget";
+import { transferWorkflowEscalation } from "./ServerWorkflowEscalationService";
 import {
   buildExecutionResult,
   failWorkflowAction,
@@ -17,15 +18,20 @@ async function executeDeferralOutcome(
   execution: OutcomeExecution,
 ) {
   if (
-    input.target.action.actionType !== "DEFER"
-    || input.command.input.actionType !== "DEFER"
-  ) return null;
+    input.target.action.actionType !== "DEFER" ||
+    input.command.input.actionType !== "DEFER"
+  )
+    return null;
   const configuration = input.target.action.configuration;
   const result = buildExecutionResult({
     ...execution,
     resultingRuntimeVersion: input.resultingRuntimeVersion,
     target: input.target,
-    transition: { kind: "STAGE_BLOCKED", targets: [], workflowStatus: "ACTIVE" },
+    transition: {
+      kind: "STAGE_BLOCKED",
+      targets: [],
+      workflowStatus: "ACTIVE",
+    },
   });
   await persistActionAndDecision(transaction, {
     ...input,
@@ -41,13 +47,15 @@ async function executeDeferralOutcome(
     correlationId: input.command.correlationId,
     mode: configuration.targetType,
     reason: input.command.input.reason,
-    resumeAt: configuration.targetType === "DATE"
-      ? new Date(`${configuration.targetDate}T00:00:00.000Z`)
-      : undefined,
+    resumeAt:
+      configuration.targetType === "DATE"
+        ? new Date(`${configuration.targetDate}T00:00:00.000Z`)
+        : undefined,
     stageInstanceId: input.command.sourceStageInstanceId,
-    targetCallKey: configuration.targetType === "FUNDING_CALL"
-      ? configuration.targetCallKey
-      : undefined,
+    targetCallKey:
+      configuration.targetType === "FUNDING_CALL"
+        ? configuration.targetCallKey
+        : undefined,
     taskId: input.target.task?.id ?? null,
     workflowInstanceId: input.target.stage.workflowInstanceId,
   });
@@ -63,9 +71,9 @@ async function executeEscalationOutcome(
   execution: OutcomeExecution,
 ) {
   if (
-    input.target.action.actionType !== "ESCALATE"
-    || input.command.input.actionType !== "ESCALATE"
-    || !input.target.task
+    input.target.action.actionType !== "ESCALATE" ||
+    input.command.input.actionType !== "ESCALATE" ||
+    !input.target.task
   ) {
     if (input.target.action.actionType === "ESCALATE") {
       failWorkflowAction(
@@ -87,11 +95,14 @@ async function executeEscalationOutcome(
     result,
     terminalOutcome: null,
   });
-  const escalation = await startWorkflowEscalation(transaction, {
+  const escalation = await transferWorkflowEscalation(transaction, {
     actionExecutionId: execution.executionId,
     actorId: input.actorId,
     comment: input.command.input.comment,
-    configuration: input.target.action.configuration,
+    configuration: resolveEscalationConfiguration(
+      input.target.action.configuration,
+      input.command.input,
+    ),
     correlationId: input.command.correlationId,
     reason: input.command.input.reason,
     stageInstanceId: input.command.sourceStageInstanceId,

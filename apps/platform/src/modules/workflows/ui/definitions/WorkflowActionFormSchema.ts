@@ -65,9 +65,6 @@ export const workflowActionFormSchema = z
     sourceTaskBehavior: z.enum(["BLOCKED", "OPEN"]),
     escalationTargetType: z.enum(["ROLE", "USER"]),
     escalationTargetId: z.string(),
-    escalationTrigger: z.enum(["MANUAL", "SLA_BREACH", "CONDITION"]),
-    escalationResponsibility: z.enum(["RETAIN", "SHARE", "TRANSFER"]),
-    escalationBlocksWork: z.boolean(),
     reviewDateRequired: z.boolean(),
     allowedStageKeys: z.string(),
     resubmissionRule: z.enum([

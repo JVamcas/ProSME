@@ -166,7 +166,7 @@ export function createDefaultWorkflowCommonActions(
       actionType: "ESCALATE",
       configuration: {
         blockUntilResolved: true,
-        responsibility: "SHARE",
+        responsibility: "TRANSFER",
         targetId: escalationRoleId,
         targetType: "ROLE",
         trigger: "MANUAL",

@@ -237,10 +237,13 @@ describe("workflow action policy", () => {
     )).toMatchObject({ available: true, reason: null });
   });
 
-  it("denies assignment mismatches without exposing policy details", () => {
+  it.each([false, true])("denies assignment mismatches even with target-role membership (%s)", (targetRoleMember) => {
     expect(evaluateWorkflowActionPolicy(
       actor(permissionCodes.workflowTaskAssignedDecide),
-      target(false),
+      {
+        ...target(false),
+        task: { ...target(false).task, activeEscalationTargetActor: targetRoleMember },
+      },
       permittedInputs,
     )).toEqual({
       available: false,

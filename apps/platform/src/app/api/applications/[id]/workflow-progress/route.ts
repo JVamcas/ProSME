@@ -18,10 +18,17 @@ export async function GET(
     const user = await resolveUserFromHeaders(request.headers);
     const { id } = await context.params;
     const applicationId = z.uuid().parse(id);
-    const taskId = z.uuid().parse(new URL(request.url).searchParams.get("taskId"));
+    const taskId = z
+      .uuid()
+      .optional()
+      .parse(new URL(request.url).searchParams.get("taskId") ?? undefined);
 
     return portalRouteSuccess(
-      await getWorkflowProgress(user, applicationId, { taskId }),
+      await getWorkflowProgress(
+        user,
+        applicationId,
+        taskId ? { taskId } : undefined,
+      ),
       correlationId,
     );
   } catch (error) {

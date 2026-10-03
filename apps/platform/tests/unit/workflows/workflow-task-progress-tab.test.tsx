@@ -5,10 +5,16 @@ vi.mock("@/platform/auth/ServerAuthNavigation", () => ({
   getAuthenticatedPageUser: vi.fn(),
 }));
 vi.mock("next/navigation", () => ({
-  redirect: vi.fn(() => { throw new Error("redirected"); }),
+  redirect: vi.fn(() => {
+    throw new Error("redirected");
+  }),
 }));
 vi.mock("@/modules/work-queue/WorkQueueHooks", () => ({
   useWorkflowTask: vi.fn(),
+  useWorkflowEscalationTracking: vi.fn(() => ({
+    data: null,
+    isPending: false,
+  })),
 }));
 vi.mock("@/modules/workflows/ui/runtime/useWorkflowCoi", () => ({
   useWorkflowCoi: vi.fn(),
@@ -38,7 +44,9 @@ import { WorkflowTaskWorkspace } from "@/modules/work-queue/ui/WorkflowTaskWorks
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(useWorkflowCoi).mockReturnValue({ data: { cleared: true } } as never);
+  vi.mocked(useWorkflowCoi).mockReturnValue({
+    data: { cleared: true },
+  } as never);
   vi.mocked(useWorkflowTask).mockReturnValue({
     data: {
       applicationId: "application-id",
@@ -51,34 +59,45 @@ beforeEach(() => {
 });
 
 describe("task workspace workflow progress", () => {
-  it.each([false, true])("passes the workflow read grant (%s) from the page", async (allowed) => {
-    vi.mocked(getAuthenticatedPageUser).mockResolvedValue({
-      status: "active",
-      capabilities: new Set([
-        permissionCodes.workflowTaskAssignedRead,
-        ...(allowed ? [permissionCodes.workflowInstanceAssignedRead] : []),
-      ]),
-    } as never);
+  it.each([false, true])(
+    "passes the workflow read grant (%s) from the page",
+    async (allowed) => {
+      vi.mocked(getAuthenticatedPageUser).mockResolvedValue({
+        status: "active",
+        capabilities: new Set([
+          permissionCodes.workflowTaskAssignedRead,
+          ...(allowed ? [permissionCodes.workflowInstanceAssignedRead] : []),
+        ]),
+      } as never);
 
-    const page = await WorkflowTaskPage({
-      params: Promise.resolve({ id: "task-id" }),
-    });
+      const page = await WorkflowTaskPage({
+        params: Promise.resolve({ id: "task-id" }),
+      });
 
-    expect(page.props.canReadWorkflowProgress).toBe(allowed);
-  });
+      expect(page.props.canReadWorkflowProgress).toBe(allowed);
+    },
+  );
 
-  it.each([false, true])("shows the progress tab only with permission (%s)", (allowed) => {
-    const markup = renderToStaticMarkup(
-      <WorkflowTaskWorkspace canReadWorkflowProgress={allowed} taskId="task-id" />,
-    );
+  it.each([false, true])(
+    "shows the progress tab only with permission (%s)",
+    (allowed) => {
+      const markup = renderToStaticMarkup(
+        <WorkflowTaskWorkspace
+          canReadWorkflowProgress={allowed}
+          taskId="task-id"
+        />,
+      );
 
-    expect(markup.includes("Workflow Progress")).toBe(allowed);
-    expect(markup).toContain("Assigned Task");
-    expect(markup).toContain("Requests for information");
-  });
+      expect(markup.includes("Workflow Progress")).toBe(allowed);
+      expect(markup).toContain("Assigned Task");
+      expect(markup).toContain("Requests for information");
+    },
+  );
 
   it("keeps progress behind the conflict of interest gate", () => {
-    vi.mocked(useWorkflowCoi).mockReturnValue({ data: { cleared: false } } as never);
+    vi.mocked(useWorkflowCoi).mockReturnValue({
+      data: { cleared: false },
+    } as never);
 
     const markup = renderToStaticMarkup(
       <WorkflowTaskWorkspace canReadWorkflowProgress taskId="task-id" />,

@@ -14,7 +14,7 @@ import {
   cancelSourceForScheduledReturn,
   hasActiveDeadlineEscalation,
 } from "../../infrastructure/WorkflowDeadlineActionRepository";
-import { startWorkflowEscalation } from "../../infrastructure/WorkflowEscalationRepository";
+import { transferWorkflowEscalation } from "./ServerWorkflowEscalationService";
 import { buildWorkflowActionConditionContext } from "./ServerWorkflowActionContextService";
 import { evaluateWorkflowActionConditions } from "./WorkflowActionPolicy";
 import { activateStageInTransaction } from "./ServerStageActivationService";
@@ -30,9 +30,9 @@ export async function executeWorkflowDeadlineAction(
   },
 ) {
   const { candidate, stage } = input;
+  // SLA breaches notify staff; escalation is an explicit manual action.
+  if (candidate.kind === "SLA_BREACH") return;
   const actions = await loadBoundDeadlineActions(transaction, candidate, input.actionType);
-  // A breach without automatic escalation still emits an SLA notification.
-  if (!actions.length && candidate.kind === "SLA_BREACH") return;
   if (actions.length !== 1) {
     throw new Error("Exactly one enabled task-bound deadline action is required.");
   }
@@ -57,7 +57,6 @@ export async function executeWorkflowDeadlineAction(
   if (action.actionType === "ESCALATE") {
     if (!candidate.taskId) throw new Error("An escalation requires a task.");
     if (await hasActiveDeadlineEscalation(transaction, candidate.taskId)) {
-      if (candidate.kind === "SLA_BREACH") return;
       throw new Error("Resolve the existing escalation before applying RFI expiry escalation.");
     }
     await recordScheduledWorkflowAction(transaction, {
@@ -67,7 +66,7 @@ export async function executeWorkflowDeadlineAction(
       executionId,
       rowVersion: stage.rowVersion!,
     });
-    const escalated = await startWorkflowEscalation(transaction, {
+    const escalated = await transferWorkflowEscalation(transaction, {
       actionExecutionId: executionId,
       actorId: systemSeedUserId,
       comment: `Scheduled ${candidate.kind}`,

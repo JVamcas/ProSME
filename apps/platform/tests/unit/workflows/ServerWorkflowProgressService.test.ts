@@ -2,6 +2,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 vi.mock(
+  "@/modules/workflows/infrastructure/WorkflowCompletionProgressRepository",
+  () => ({
+    readWorkflowCompletionProgress: vi.fn().mockResolvedValue(null),
+  }),
+);
+vi.mock(
   "@/modules/workflows/infrastructure/WorkflowProgressRepository",
   () => ({
     readWorkflowProgress: vi.fn(),
@@ -14,6 +20,8 @@ vi.mock("@/modules/workflows/infrastructure/WorkflowGraphRepository", () => ({
 }));
 
 import { findWorkflowGraph } from "@/modules/workflows/infrastructure/WorkflowGraphRepository";
+import { readWorkflowCompletionProgress } from "@/modules/workflows/infrastructure/WorkflowCompletionProgressRepository";
+import { basicOperators } from "@/modules/conditions/engine/BasicOperators";
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { PermissionDeniedError } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
@@ -58,6 +66,7 @@ describe("workflow progress authorization", () => {
     expect(readWorkflowProgress).not.toHaveBeenCalled();
     expect(findWorkflowGraph).not.toHaveBeenCalled();
     expect(readWorkflowTakenPaths).not.toHaveBeenCalled();
+    expect(readWorkflowCompletionProgress).not.toHaveBeenCalled();
   });
 
   it("reads progress for a user with the dedicated permission", async () => {
@@ -130,6 +139,51 @@ describe("workflow progress authorization", () => {
       versionId: "bound-version",
     });
 
+    vi.mocked(readWorkflowCompletionProgress).mockResolvedValue({
+      targets: [
+        {
+          application: { score: 64 },
+          eligibility: {},
+          fundingCall: {},
+          completedAt: null,
+          stageInstanceId: "stage-one",
+          stageDefinitionId: "stage-definition",
+          stageKey: "review",
+          status: "ACTIVE",
+          workflowInstanceId: "workflow-one",
+          workflowVersionId: "bound-version",
+          exitCondition: {
+            id: "exit",
+            kind: "GROUP",
+            combinator: "AND",
+            children: [
+              {
+                id: "score",
+                kind: "CONDITION",
+                operator: basicOperators.EQUALS,
+                leftOperand: { kind: "FIELD", key: "application.score" },
+                rightOperand: { kind: "CONSTANT", value: 70 },
+              },
+            ],
+          },
+        },
+      ],
+      requirements: [
+        {
+          stageInstanceId: "stage-one",
+          taskDefinitionId: "definition-one",
+          taskKey: "review",
+          denominator: 3,
+          completedCount: 0,
+          completedTaskIds: [],
+          completionMode: "ALL",
+          completionPercentage: null,
+          requiredCompletionCount: 3,
+        },
+      ],
+      values: [],
+      priorStages: [],
+    });
     const takenPaths = [
       { transitionId: "executed-route", targetStageKey: "review" },
     ];
@@ -146,6 +200,16 @@ describe("workflow progress authorization", () => {
     );
 
     expect(findWorkflowGraph).toHaveBeenCalledWith("bound-version");
+    expect(readWorkflowCompletionProgress).toHaveBeenCalledWith(
+      "workflow-one",
+      ["stage-one"],
+    );
+    expect(
+      progress?.stages[0].completionRequirements?.requirements[0].detail,
+    ).toContain("0 of 3");
+    expect(
+      JSON.stringify(progress?.stages[0].completionRequirements),
+    ).not.toContain("64");
     expect(progress).not.toHaveProperty("versionId");
     expect(progress?.graph).toBeNull();
     expect(readWorkflowTakenPaths).toHaveBeenCalledWith("workflow-one");
@@ -201,8 +265,9 @@ describe("workflow progress authorization", () => {
           ? null
           : "Complete all contributing tasks before making the stage decision.",
       });
-      expect(decisionProgress?.stages[0].tasks[0])
-        .not.toHaveProperty("prerequisitesComplete");
+      expect(decisionProgress?.stages[0].tasks[0]).not.toHaveProperty(
+        "prerequisitesComplete",
+      );
     }
     vi.mocked(readWorkflowProgress).mockResolvedValue({
       ...record!,
@@ -212,15 +277,21 @@ describe("workflow progress authorization", () => {
         returnedAt: "2026-09-20T10:00:00.000Z",
       })),
     });
-    const returned = await getWorkflowProgress({
-      ...actor,
-      capabilities: new Set([
-        permissionCodes.workflowInstanceAllRead,
-        permissionCodes.workflowTaskAssignedRead,
-      ]),
-    }, applicationId);
-    expect(returned?.stages[0].tasks.map((item) => item.canOpen))
-      .toEqual([false, false, false]);
+    const returned = await getWorkflowProgress(
+      {
+        ...actor,
+        capabilities: new Set([
+          permissionCodes.workflowInstanceAllRead,
+          permissionCodes.workflowTaskAssignedRead,
+        ]),
+      },
+      applicationId,
+    );
+    expect(returned?.stages[0].tasks.map((item) => item.canOpen)).toEqual([
+      false,
+      false,
+      false,
+    ]);
     expect(returned?.stages[0].tasks[1].id).toBe("task-two");
   });
 });

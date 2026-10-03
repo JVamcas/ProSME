@@ -10,6 +10,7 @@ import type {
 } from "../api/WorkflowProgressTypes";
 import { WorkflowFlowToolbar } from "./WorkflowFlowToolbar";
 import { WorkflowVisualGraph } from "./definitions/WorkflowVisualGraph";
+import { WorkflowStageCompletionRequirements } from "./runtime/WorkflowStageCompletionRequirements";
 import { WorkflowStageTaskAssignments } from "./WorkflowStageTaskAssignments";
 import { StatusBadge } from "@/components/ui/status-badge";
 
@@ -67,7 +68,6 @@ function latestStageRuns(stages: WorkflowProgressStage[]) {
   }
   return latestRuns;
 }
-
 
 function StageFlow({ progress }: { progress: WorkflowProgressView }) {
   const [showVisualFlow, setShowVisualFlow] = useState(false);
@@ -214,7 +214,8 @@ function StageFlow({ progress }: { progress: WorkflowProgressView }) {
           <SelectedStageDetails
             selected={selected}
             isHistorical={
-              stageKey(selected) !== stageKey(latestRuns.get(selected.stableKey)!)
+              stageKey(selected) !==
+              stageKey(latestRuns.get(selected.stableKey)!)
             }
           />
         </div>
@@ -232,7 +233,9 @@ function SelectedStageDetails({
 }) {
   const isReturned = selected.status === "RETURNED";
   const endedAt = isReturned ? selected.returnedAt : selected.completedAt;
-  const missingTime = isReturned ? "Return time unavailable" : "Not yet completed";
+  const missingTime = isReturned
+    ? "Return time unavailable"
+    : "Not yet completed";
   const endTime = endedAt ? formatLocalDateTime24(endedAt) : missingTime;
 
   return (
@@ -286,11 +289,13 @@ function SelectedStageDetails({
           <dt className="text-brand-navy/55">
             {selected.status === "RETURNED" ? "Returned at" : "Completed"}
           </dt>
-          <dd className="mt-1 font-semibold text-brand-navy">
-            {endTime}
-          </dd>
+          <dd className="mt-1 font-semibold text-brand-navy">{endTime}</dd>
         </div>
       </dl>
+      <WorkflowStageCompletionRequirements
+        key={stageKey(selected)}
+        stage={selected}
+      />
       <WorkflowStageTaskAssignments tasks={selected.tasks} />
     </section>
   );
@@ -330,11 +335,14 @@ export function WorkflowProgressPanel({
             {formatLocalDateTime24(progress.startedAt)}
           </p>
         </div>
-        <StatusBadge status={progress.status.replaceAll("_", " ")} label={progress.status.replaceAll("_", " ")}/>
+        <StatusBadge
+          status={progress.status.replaceAll("_", " ")}
+          label={progress.status.replaceAll("_", " ")}
+        />
       </div>
       <p className="mt-4 text-sm text-brand-navy/70">
-        {completed} completed · {active} active · {currentStages.length}{" "}
-        stages shown
+        {completed} completed · {active} active · {currentStages.length} stages
+        shown
       </p>
       <StageFlow progress={progress} />
     </section>

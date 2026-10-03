@@ -3,6 +3,7 @@ export const runtimeAuditEventCodes = [
   "STAGE_ACTIVATED",
   "TASK_CREATED",
   "TASK_ASSIGNED",
+  "TASK_REASSIGNED",
   "TASK_STARTED",
   "TASK_COMPLETED",
   "ACTION_EXECUTED",

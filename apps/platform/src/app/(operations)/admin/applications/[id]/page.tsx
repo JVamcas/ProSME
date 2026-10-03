@@ -9,7 +9,7 @@ import { ResourceNotFoundError } from "@/lib/resource-errors";
 import { getAdminApplicationDetail } from "@/modules/applications/ServerAdminApplicationDetailService";
 import { ApplicationDetailView } from "@/modules/applications/ui/ApplicationDetailView";
 import { getWorkflowProgress } from "@/modules/workflows/application/runtime/ServerWorkflowProgressService";
-import { WorkflowProgressPanel } from "@/modules/workflows/ui/WorkflowProgressPanel";
+import { WorkflowProgressQueryPanel } from "@/modules/workflows/ui/runtime/WorkflowProgressQueryPanel";
 import { listContextualApplicationRfis } from "@/modules/workflows/application/runtime/ServerWorkflowRfiReadService";
 import { StaffApplicationRfiTimeline } from "@/modules/workflows/ui/rfi/WorkflowRfiPresentation";
 
@@ -74,7 +74,17 @@ export default async function ApplicationPage({
       requests={<StaffApplicationRfiTimeline requests={requests} />}
       workflowProgress={
         progress === undefined ? undefined : (
-          <WorkflowProgressPanel progress={progress} />
+          <WorkflowProgressQueryPanel
+            applicationId={applicationId}
+            taskId={
+              allWorkflowAccess
+                ? undefined
+                : taskId.success
+                  ? taskId.data
+                  : undefined
+            }
+            initialData={progress}
+          />
         )
       }
     />

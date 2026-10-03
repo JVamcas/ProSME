@@ -99,31 +99,6 @@ function EscalationFields({
         placeholder="Select a target"
         required
       />
-      <FormSelect
-        containerClassName="sm:col-span-2"
-        items={[
-          { label: "Manual", value: "MANUAL" },
-          { label: "SLA breach", value: "SLA_BREACH" },
-          { label: "Condition", value: "CONDITION" },
-        ]}
-        label="Escalation trigger"
-        name="escalationTrigger"
-        required
-      />
-      <FormSelect
-        items={[
-          { label: "Retain current responsibility", value: "RETAIN" },
-          { label: "Share responsibility", value: "SHARE" },
-          { label: "Transfer responsibility", value: "TRANSFER" },
-        ]}
-        label="Responsibility"
-        name="escalationResponsibility"
-        required
-      />
-      <CheckboxField
-        label="Block current assignees until resolved"
-        name="escalationBlocksWork"
-      />
     </>
   );
 }

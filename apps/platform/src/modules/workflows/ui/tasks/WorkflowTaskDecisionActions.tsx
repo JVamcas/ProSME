@@ -22,10 +22,12 @@ import { useExecuteWorkflowTaskAction } from "@/modules/work-queue/WorkQueueHook
 import { WorkflowTaskActions } from "@/modules/workflows/ui/tasks/WorkflowTaskActions";
 import { isWorkflowStageDecisionAction } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
 import {
+  actionFormDefaults,
   actionFormSchema,
   actionInput,
   type ActionValues,
 } from "./WorkflowTaskActionForm";
+import { WorkflowTaskEscalationFields } from "./WorkflowTaskEscalationFields";
 import { WorkflowTaskInformationRequestFields } from "./WorkflowTaskInformationRequestFields";
 
 function DecisionForm({
@@ -44,24 +46,7 @@ function DecisionForm({
   const router = useRouter();
   const execution = useExecuteWorkflowTaskAction(task.taskInstanceId);
   const form = useForm<ActionValues>({
-    defaultValues: {
-      confirmed: false,
-      targetStageDefinitionId:
-        action.requiredInput.defaultDestinationStageId ?? "",
-      dataHandling:
-        action.requiredInput.controlDefaults?.dataHandling ?? "RETAIN",
-      sourceTaskBehavior:
-        action.requiredInput.controlDefaults?.sourceTaskBehavior ?? "BLOCKED",
-      returnToReferrer:
-        action.requiredInput.controlDefaults?.returnToReferrer ?? true,
-      instructions: "",
-      requestDetailedInformation: false,
-      editableFieldPaths: [],
-      question: "",
-      reason: "",
-      requestedDocumentRequirementIds: [],
-      reviewDate: "",
-    },
+    defaultValues: actionFormDefaults(action),
     resolver: zodResolver(actionFormSchema(action)),
   });
   const submit = form.handleSubmit(async (values) => {
@@ -109,12 +94,14 @@ function DecisionForm({
         loadingText="Submitting…"
         message={
           <div className="space-y-4">
-            <p>Confirm {action.label.toLowerCase()}?</p>
             {action.actionType === "REQUEST_INFORMATION" ? (
               <WorkflowTaskInformationRequestFields
                 action={action}
                 task={task}
               />
+            ) : null}
+            {action.actionType === "ESCALATE" ? (
+              <WorkflowTaskEscalationFields action={action} />
             ) : null}
             {action.actionType === "RETURN" || action.actionType === "REFER" ? (
               <FormSelect
@@ -180,7 +167,7 @@ function DecisionForm({
             ) : null}
             {action.actionType !== "REQUEST_INFORMATION" ? (
               <FormTextarea
-                label="Reason"
+                label="Notes"
                 maxLength={action.requiredInput.reason.maxLength}
                 name="reason"
                 required={action.requiredInput.reason.required}

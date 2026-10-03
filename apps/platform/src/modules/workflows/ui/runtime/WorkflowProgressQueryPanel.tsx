@@ -2,6 +2,7 @@
 
 import { PortalErrorState } from "@/components/layout/PortalErrorState";
 import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
+import type { WorkflowProgressView } from "../../api/WorkflowProgressTypes";
 import { WorkflowProgressPanel } from "../WorkflowProgressPanel";
 import { useWorkflowProgress } from "./useWorkflowProgress";
 
@@ -9,12 +10,19 @@ export function WorkflowProgressQueryPanel({
   applicationId,
   enabled = true,
   taskId,
+  initialData,
 }: {
   applicationId: string;
   enabled?: boolean;
-  taskId: string;
+  taskId?: string;
+  initialData?: WorkflowProgressView | null;
 }) {
-  const query = useWorkflowProgress(applicationId, taskId, enabled);
+  const query = useWorkflowProgress(
+    applicationId,
+    taskId,
+    enabled,
+    initialData,
+  );
 
   if (query.isPending) {
     return (

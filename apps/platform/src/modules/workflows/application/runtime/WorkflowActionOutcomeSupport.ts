@@ -50,7 +50,9 @@ export function failWorkflowAction(
 }
 
 export function workflowTransitionResult(
-  transition: Awaited<ReturnType<typeof executeSequentialTransitionInTransaction>>,
+  transition: Awaited<
+    ReturnType<typeof executeSequentialTransitionInTransaction>
+  >,
 ): WorkflowActionExecutionResult["transition"] {
   switch (transition.kind) {
     case "source_stage_not_completed":
@@ -59,9 +61,11 @@ export function workflowTransitionResult(
         "Complete the remaining required stage work before this decision.",
       );
     case "transitioned":
-      if (transition.targets.every(
-        (target) => target.outcome === "ENTRY_CONDITION_FAILED",
-      )) {
+      if (
+        transition.targets.every(
+          (target) => target.outcome === "ENTRY_CONDITION_FAILED",
+        )
+      ) {
         return failWorkflowAction(
           "CONDITION_FAILED",
           "The configured target entry conditions did not pass.",
@@ -70,7 +74,9 @@ export function workflowTransitionResult(
       return {
         kind: transition.targets.every(
           (target) => target.outcome === "JOIN_PENDING",
-        ) ? "JOIN_PENDING" : "STAGE_ACTIVATED",
+        )
+          ? "JOIN_PENDING"
+          : "STAGE_ACTIVATED",
         targets: transition.targets.map((target) => ({
           outcome: target.outcome,
           targetStageInstanceId: target.targetStageInstanceId,
@@ -99,17 +105,21 @@ export function workflowTransitionResult(
   }
 }
 
-function decisionOutcome(actionType: WorkflowActionExecutionResult["actionType"]) {
+function decisionOutcome(
+  actionType: WorkflowActionExecutionResult["actionType"],
+) {
   if (actionType === "APPROVE_ADVANCE") return "APPROVED" as const;
   if (actionType === "REJECT") return "REJECTED" as const;
   return null;
 }
 
-export function buildExecutionResult(input: OutcomeExecution & {
-  resultingRuntimeVersion: number;
-  target: WorkflowActionExecutionTarget;
-  transition: WorkflowActionExecutionResult["transition"];
-}): WorkflowActionExecutionResult {
+export function buildExecutionResult(
+  input: OutcomeExecution & {
+    resultingRuntimeVersion: number;
+    target: WorkflowActionExecutionTarget;
+    transition: WorkflowActionExecutionResult["transition"];
+  },
+): WorkflowActionExecutionResult {
   return {
     actionExecutionId: input.executionId,
     actionKey: input.target.action.stableKey,
@@ -129,10 +139,11 @@ export function buildExecutionResult(input: OutcomeExecution & {
 
 export async function persistActionAndDecision(
   transaction: WorkflowActionExecutionTransaction,
-  input: OutcomeInput & OutcomeExecution & {
-    result: WorkflowActionExecutionResult;
-    terminalOutcome: string | null;
-  },
+  input: OutcomeInput &
+    OutcomeExecution & {
+      result: WorkflowActionExecutionResult;
+      terminalOutcome: string | null;
+    },
 ) {
   await recordWorkflowActionExecution(transaction, {
     action: input.target.action,
@@ -161,9 +172,11 @@ export async function persistActionAndDecision(
     workflowInstanceId: input.target.stage.workflowInstanceId,
   });
   if (
-    input.target.task
-    && input.target.action.actionType !== "ESCALATE"
-    && input.target.task.activeEscalation
+    input.target.task &&
+    input.target.action.actionType !== "ESCALATE" &&
+    input.target.task.activeEscalation &&
+    (input.result.decisionId !== null ||
+      input.result.transition.kind === "STAGE_ACTIVATED")
   ) {
     await resolveActiveWorkflowEscalation(transaction, {
       actorId: input.actorId,

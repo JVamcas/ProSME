@@ -46,10 +46,10 @@ describe("WorkflowActionDefinition", () => {
       },
       ESCALATE: {
         blockUntilResolved: true,
-        responsibility: "SHARE",
+        responsibility: "TRANSFER",
         targetType: "ROLE",
         targetId: "79e20de0-3558-4d63-90a4-8c9f5125df07",
-        trigger: "SLA_BREACH",
+        trigger: "MANUAL",
       },
       PUT_ON_HOLD: {
         reviewDateRequired: true,
@@ -78,6 +78,34 @@ describe("WorkflowActionDefinition", () => {
         toWorkflowActionDefinition(workflowActionFormDefaults(parsed.data, 1)),
       ).toEqual(parsed.data);
     }
+  });
+
+  it.each(["RETAIN", "SHARE"])("rejects escalation responsibility %s", (responsibility) => {
+    expect(workflowActionDefinitionSchema.safeParse({
+      ...action,
+      actionType: "ESCALATE",
+      configuration: {
+        blockUntilResolved: true,
+        responsibility,
+        targetType: "USER",
+        targetId: "79e20de0-3558-4d63-90a4-8c9f5125df07",
+        trigger: "MANUAL",
+      },
+    }).success).toBe(false);
+  });
+
+  it("rejects automatic SLA escalation configuration", () => {
+    expect(workflowActionDefinitionSchema.safeParse({
+      ...action,
+      actionType: "ESCALATE",
+      configuration: {
+        blockUntilResolved: true,
+        responsibility: "TRANSFER",
+        targetType: "USER",
+        targetId: "79e20de0-3558-4d63-90a4-8c9f5125df07",
+        trigger: "SLA_BREACH",
+      },
+    }).success).toBe(false);
   });
 
   it("keeps historical Refer definitions readable but rejects them from a workflow graph", () => {

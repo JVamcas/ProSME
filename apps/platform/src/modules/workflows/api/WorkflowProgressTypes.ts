@@ -1,3 +1,4 @@
+import type { WorkflowCompletionRequirements } from "./WorkflowCompletionRequirementsTypes";
 import type { WorkflowGraphInput } from "../domain/definitions/WorkflowTypes";
 import type { StageInstanceStatus } from "../domain/runtime/StageInstance";
 import type { WorkflowInstanceStatus } from "../domain/runtime/WorkflowInstance";
@@ -32,6 +33,7 @@ export type WorkflowProgressStage = {
   returnedAt?: string | null;
   status: StageInstanceStatus | "RETURNED";
   tasks: WorkflowProgressTask[];
+  completionRequirements?: WorkflowCompletionRequirements | null;
 };
 
 export type WorkflowTakenPath = {

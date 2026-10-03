@@ -7,6 +7,9 @@ vi.mock(
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
+vi.mock("@/modules/workflows/infrastructure/WorkflowEscalationRepository", () => ({
+  resolveCompletedTaskEscalation: vi.fn(),
+}));
 vi.mock("@/modules/workflows/infrastructure/StageCompletionRepository", () => ({
   loadRequiredTaskCompletions: vi.fn().mockResolvedValue([]),
 }));

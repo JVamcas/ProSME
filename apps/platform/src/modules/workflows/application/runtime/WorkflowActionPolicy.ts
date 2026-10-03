@@ -184,15 +184,6 @@ export function evaluateWorkflowActionPolicy(
     );
   }
   if (
-    target.task?.activeEscalation &&
-    target.action.actionType === "ESCALATE"
-  ) {
-    return unavailable(
-      "INVALID_STATE",
-      "This task already has an active escalation.",
-    );
-  }
-  if (
     target.task?.activeEscalationBlocks &&
     !target.task.activeEscalationTargetActor &&
     target.action.actionType !== "WITHDRAW"

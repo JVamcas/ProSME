@@ -1,5 +1,6 @@
 import { recordReviewThresholdEvaluations } from "../../infrastructure/WorkflowReviewThresholdRepository";
 import "server-only";
+import { resolveCompletedTaskEscalation } from "../../infrastructure/WorkflowEscalationRepository";
 
 import { permissionCodes } from "@/auth/authorization/permissions";
 import {
@@ -128,6 +129,11 @@ async function changeTaskState(
       });
     }
     if (action === "COMPLETE") {
+      await resolveCompletedTaskEscalation(transaction, {
+        actorId: actor.id,
+        correlationId: input.correlationId,
+        taskId: task.id,
+      });
       await completeStageInTransaction(transaction, {
         actorId: actor.id,
         correlationId: input.correlationId,

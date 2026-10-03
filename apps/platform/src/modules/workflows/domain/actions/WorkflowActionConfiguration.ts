@@ -35,10 +35,10 @@ export type ReferConfiguration = {
 
 export type EscalateConfiguration = {
   blockUntilResolved: boolean;
-  responsibility: "RETAIN" | "SHARE" | "TRANSFER";
+  responsibility: "TRANSFER";
   targetType: "ROLE" | "USER";
   targetId: string;
-  trigger: "MANUAL" | "SLA_BREACH" | "CONDITION";
+  trigger: "MANUAL";
 };
 
 export type PutOnHoldConfiguration = {

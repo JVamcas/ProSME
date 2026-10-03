@@ -4,9 +4,12 @@ vi.mock("server-only", () => ({}));
 vi.mock("@/auth/authorization/current-user", () => ({
   resolveUserFromHeaders: vi.fn(),
 }));
-vi.mock("@/modules/workflows/application/runtime/ServerWorkflowProgressService", () => ({
-  getWorkflowProgress: vi.fn(),
-}));
+vi.mock(
+  "@/modules/workflows/application/runtime/ServerWorkflowProgressService",
+  () => ({
+    getWorkflowProgress: vi.fn(),
+  }),
+);
 
 import { GET } from "@/app/api/applications/[id]/workflow-progress/route";
 import { resolveUserFromHeaders } from "@/auth/authorization/current-user";
@@ -29,6 +32,32 @@ beforeEach(() => {
 });
 
 describe("workflow progress route", () => {
+  it("reads all-scope progress without a task through the protected service", async () => {
+    const response = await GET(
+      new Request(
+        `https://example.test/api/applications/${applicationId}/workflow-progress`,
+      ),
+      context,
+    );
+    expect(response.status).toBe(200);
+    expect(getWorkflowProgress).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "actor" }),
+      applicationId,
+      undefined,
+    );
+  });
+
+  it("rejects invalid supplied task identifiers", async () => {
+    const response = await GET(
+      new Request(
+        `https://example.test/api/applications/${applicationId}/workflow-progress?taskId=invalid`,
+      ),
+      context,
+    );
+    expect(response.status).toBe(400);
+    expect(getWorkflowProgress).not.toHaveBeenCalled();
+  });
+
   it("returns progress through the authorized service without caching", async () => {
     const response = await GET(request, context);
 

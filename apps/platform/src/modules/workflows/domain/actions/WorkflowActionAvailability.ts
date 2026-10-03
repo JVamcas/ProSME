@@ -17,6 +17,11 @@ export type WorkflowActionPresentationVariant =
   (typeof workflowActionPresentationVariants)[number];
 
 export type WorkflowActionInputMetadata = {
+  escalationTargets?: readonly {
+    id: string;
+    label: string;
+    targetType: "ROLE" | "USER";
+  }[];
   defaultDestinationStageId?: string;
   destinationStages?: readonly {
     id: string;
@@ -94,7 +99,10 @@ function targetMetadata(
   action: WorkflowActionDefinition,
 ): WorkflowActionInputMetadata["target"] {
   if (action.actionType === "ESCALATE") {
-    return { type: action.configuration.targetType, value: null };
+    return {
+      type: action.configuration.targetType,
+      value: action.configuration.targetId,
+    };
   }
   if (action.actionType === "DEFER") {
     return action.configuration.targetType === "DATE"

@@ -51,9 +51,6 @@ export function workflowActionFormDefaults(
     sourceTaskBehavior: "BLOCKED",
     escalationTargetType: "ROLE",
     escalationTargetId: "",
-    escalationTrigger: "MANUAL",
-    escalationResponsibility: "SHARE",
-    escalationBlocksWork: true,
     reviewDateRequired: true,
     allowedStageKeys: "",
     resubmissionRule: "NOT_ALLOWED",
@@ -107,9 +104,6 @@ export function workflowActionFormDefaults(
         ...defaults,
         escalationTargetType: action.configuration.targetType,
         escalationTargetId: action.configuration.targetId,
-        escalationTrigger: action.configuration.trigger,
-        escalationResponsibility: action.configuration.responsibility,
-        escalationBlocksWork: action.configuration.blockUntilResolved,
       };
     case "PUT_ON_HOLD":
       return {
@@ -181,11 +175,11 @@ function configuration(values: WorkflowActionFormValues) {
       };
     case "ESCALATE":
       return {
-        blockUntilResolved: values.escalationBlocksWork,
-        responsibility: values.escalationResponsibility,
+        blockUntilResolved: true,
+        responsibility: "TRANSFER",
         targetType: values.escalationTargetType,
         targetId: values.escalationTargetId,
-        trigger: values.escalationTrigger,
+        trigger: "MANUAL",
       };
     case "PUT_ON_HOLD":
       return {
