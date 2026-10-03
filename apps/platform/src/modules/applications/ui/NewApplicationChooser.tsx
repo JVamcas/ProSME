@@ -1,20 +1,13 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { FormProvider, useForm, useWatch } from "react-hook-form";
-import { z } from "zod";
 
 import { FundingOpportunityCard } from "@/modules/funding-calls/ui/applicant/FundingOpportunityCard";
 import { PortalErrorState } from "@/components/layout/PortalErrorState";
 import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
 import { GeneralButton } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { FormSelect } from "@/components/ui/form-fields";
 import { Pagination } from "@/components/ui/pagination";
-import { useBusinesses } from "@/modules/businesses/BusinessHooks";
-import { BusinessDialog } from "@/modules/businesses/ui/BusinessDialog";
 import type { PublicFundingCallSummary } from "@/modules/funding-calls/api/PublicFundingCallTransport";
 import { useCreateApplication } from "../ApplicationHooks";
 import { ApplicationOpportunitySearch } from "./ApplicationOpportunitySearch";
@@ -23,10 +16,20 @@ import {
   useApplicationOpportunityChooser,
 } from "./useApplicationOpportunityChooser";
 
-const representedBusinessSchema = z.object({
-  businessId: z.uuid("Select a business to represent."),
-});
-type RepresentedBusinessInput = z.infer<typeof representedBusinessSchema>;
+import { ApplicationBusinessSelection } from "./ApplicationBusinessSelection";
+import { SelectedFundingCallApplication } from "./SelectedFundingCallApplication";
+
+export function NewApplicationChooser({
+  fundingOpportunityId,
+}: {
+  fundingOpportunityId?: string;
+}) {
+  return fundingOpportunityId ? (
+    <SelectedFundingCallApplication fundingOpportunityId={fundingOpportunityId} />
+  ) : (
+    <OpportunityChooser />
+  );
+}
 
 function OpportunityResults({
   businessId,
@@ -75,93 +78,52 @@ function OpportunityResults({
   );
 }
 
-export function NewApplicationChooser() {
+function OpportunityChooser() {
   const browser = useApplicationOpportunityChooser();
-  const businesses = useBusinesses();
-  const [businessDialogOpen, setBusinessDialogOpen] = useState(false);
-  const form = useForm<RepresentedBusinessInput>({
-    defaultValues: { businessId: "" },
-    resolver: zodResolver(representedBusinessSchema),
-  });
-  const businessId = useWatch({ control: form.control, name: "businessId" });
-  if (browser.query.isPending || businesses.isPending) {
+  if (browser.query.isPending) {
     return (
       <PortalLoadingState
-        description="Open funding calls and your businesses are being prepared."
+        description="Open funding calls are being prepared."
         title="Loading opportunities"
       />
     );
   }
-  if (browser.query.isError || businesses.isError) {
+  if (browser.query.isError) {
     return (
       <PortalErrorState
-        description={browser.query.error?.message
-          ?? businesses.error?.message
-          ?? "Application options are unavailable."}
-        onAction={() => {
-          void browser.query.refetch();
-          void businesses.refetch();
-        }}
+        description={browser.query.error.message}
+        onAction={() => void browser.query.refetch()}
         title="Opportunities could not be loaded"
       />
     );
   }
-  if (!businesses.data.length) {
-    return (
-      <>
-        <EmptyState
-          action={(
-            <GeneralButton
-              onClick={() => setBusinessDialogOpen(true)}
-              type="button"
-            >
-              Add a business
-            </GeneralButton>
-          )}
-          message="Add the business you are authorised to represent before starting an application."
-          title="No business profile found"
-        />
-        <BusinessDialog
-          isOpen={businessDialogOpen}
-          onClose={() => setBusinessDialogOpen(false)}
-        />
-      </>
-    );
-  }
-  const items = browser.query.data.items;
+  const result = browser.query.data;
+  const items = result.items;
   return (
     <section className="mt-6 space-y-5">
-      <FormProvider {...form}>
-        <form onSubmit={form.handleSubmit(() => undefined)}>
-          <FormSelect
-            items={businesses.data.map((business) => ({
-              label: business.tradingName || business.legalName,
-              value: business.id,
-            }))}
-            label="Business represented by this application"
-            name="businessId"
-            placeholder="Select a business"
-            required
-          />
-        </form>
-      </FormProvider>
-      <ApplicationOpportunitySearch onChange={browser.setSearch} />
-      {items.length ? (
-        <OpportunityResults businessId={businessId} items={items} />
-      ) : (
-        <EmptyState
-          message="Try a different search or return when another funding call opens."
-          title="No open opportunities found"
-        />
-      )}
-      <Pagination
-        hasNextPage={Boolean(browser.query.data.nextCursor)}
-        onNext={browser.nextPage}
-        onPrevious={browser.previousPage}
-        page={browser.pageIndex + 1}
-        pageSize={opportunityChooserPageSize}
-        total={browser.query.data.total}
-      />
+      <ApplicationBusinessSelection>
+        {(businessId) => (
+          <>
+            <ApplicationOpportunitySearch onChange={browser.setSearch} />
+            {items.length ? (
+              <OpportunityResults businessId={businessId} items={items} />
+            ) : (
+              <EmptyState
+                message="Try a different search or return when another funding call opens."
+                title="No open opportunities found"
+              />
+            )}
+            <Pagination
+              hasNextPage={Boolean(result.nextCursor)}
+              onNext={browser.nextPage}
+              onPrevious={browser.previousPage}
+              page={browser.pageIndex + 1}
+              pageSize={opportunityChooserPageSize}
+              total={result.total}
+            />
+          </>
+        )}
+      </ApplicationBusinessSelection>
     </section>
   );
 }

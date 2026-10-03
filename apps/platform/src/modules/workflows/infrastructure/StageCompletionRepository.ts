@@ -183,8 +183,9 @@ export async function lockStageCompletionTarget(
 }
 
 export async function loadRequiredTaskCompletions(
-  transaction: StageCompletionTransaction,
+  transaction: Pick<StageCompletionTransaction, "execute">,
   stageInstanceId: string,
+  completingTaskId?: string,
 ): Promise<RequiredTaskCompletion[]> {
   const result = await transaction.execute(sql`
     SELECT definition.id AS "taskDefinitionId",
@@ -194,7 +195,9 @@ export async function loadRequiredTaskCompletions(
       definition.completion_percentage AS "completionPercentage",
       definition.reviewer_count AS "denominator",
       count(task.id) FILTER (
-        WHERE task.status = 'COMPLETED'
+        WHERE (task.status = 'COMPLETED'
+          OR (task.id = ${completingTaskId ?? null}::uuid
+            AND task.status IN ('PENDING', 'IN_PROGRESS')))
           AND app_workflow_task_coi_cleared(task.id, task.assigned_user_id)
           AND NOT EXISTS (
             SELECT 1 FROM app_workflow_tasks successor
@@ -209,7 +212,9 @@ export async function loadRequiredTaskCompletions(
           ))
       )::integer AS "completedCount",
       COALESCE(array_agg(task.id ORDER BY task.reviewer_slot) FILTER (
-        WHERE task.status = 'COMPLETED'
+        WHERE (task.status = 'COMPLETED'
+          OR (task.id = ${completingTaskId ?? null}::uuid
+            AND task.status IN ('PENDING', 'IN_PROGRESS')))
           AND app_workflow_task_coi_cleared(task.id, task.assigned_user_id)
           AND NOT EXISTS (
             SELECT 1 FROM app_workflow_tasks successor

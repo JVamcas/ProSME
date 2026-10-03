@@ -11,13 +11,7 @@ export function WorkflowActionDetailsStep() {
     <fieldset className="grid gap-4 sm:grid-cols-2">
       <legend className="sr-only">Action details</legend>
       <FormInput
-        label="Stable key"
-        name="stableKey"
-        placeholder="APPROVE_REVIEW"
-        required
-      />
-      <FormInput
-        label="Button label"
+        label="Action Button label"
         name="label"
         placeholder="Approve review"
         required

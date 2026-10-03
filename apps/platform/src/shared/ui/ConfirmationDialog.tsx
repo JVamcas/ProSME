@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { GeneralButton } from "@/components/ui/button";
 import { DraggableDialog } from "@/components/ui/draggable-dialog";
 
@@ -7,7 +8,7 @@ type Props = {
   confirmLabel?: string;
   isOpen: boolean;
   isPending?: boolean;
-  message: string;
+  message: ReactNode;
   onClose: () => void;
   onConfirm: () => void;
   pendingLabel?: string;

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-import { getCurrentUser } from "@/auth/authorization/current-user";
+import { getAuthenticatedPageUser } from "@/platform/auth/ServerAuthNavigation";
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { can } from "@/auth/authorization/policy";
 import { NotificationRuleList } from "@/modules/notifications/ui/NotificationRuleList";
@@ -10,7 +10,7 @@ import { PageShell } from "@/shared/ui/PageShell";
 export const metadata: Metadata = { title: "Notification event rules" };
 
 export default async function NotificationEventRulesPage() {
-  const user = await getCurrentUser();
+  const user = await getAuthenticatedPageUser();
   if (!user || !can(user, permissionCodes.notificationConfigurationRead)) {
     redirect("/unauthorized");
   }

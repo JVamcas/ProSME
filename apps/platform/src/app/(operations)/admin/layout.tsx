@@ -1,15 +1,13 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-import { getCurrentUser } from "@/auth/authorization/current-user";
+import { getAuthenticatedPageUser } from "@/platform/auth/ServerAuthNavigation";
 import { canAccessOperationsPortal } from "@/auth/authorization/portal-access";
 import { AuthenticatedPortalShell } from "@/components/layout/authenticated-portal-shell";
 import { QueryProvider } from "@/components/layout/query-provider";
 import { createPortalContext } from "@/modules/profiles/ServerProfileService";
 import { Toast } from "@/shared/ui/Toast";
 import "../../globals.css";
-
-
 
 export const metadata: Metadata = {
   title: {
@@ -23,10 +21,7 @@ type AdminLayoutProps = {
 };
 
 export default async function AdminLayout({ children }: AdminLayoutProps) {
-  const user = await getCurrentUser();
-  if (!user) {
-    redirect("/sign-in?next=/admin");
-  }
+  const user = await getAuthenticatedPageUser();
 
   if (!canAccessOperationsPortal(user)) {
     redirect("/unauthorized");

@@ -1,6 +1,6 @@
 import "server-only";
 
-import { taskWorkIsReady } from "@/modules/workflows/WorkflowTaskRegistry";
+import { readWorkflowActionTaskReadiness } from "./WorkflowActionTaskReadinessRepository";
 
 import { and, eq, inArray, sql } from "drizzle-orm";
 
@@ -323,35 +323,11 @@ export async function completeActionTask(
     task: NonNullable<WorkflowActionExecutionTarget["task"]>;
   },
 ) {
-  const [work] = await transaction
-    .select({
-      config: stageTaskDefinitions.config,
-      formCompleted: sql<boolean>`(
-        ${workflowTasks.formVersionId} IS NOT NULL AND EXISTS (
-          SELECT 1 FROM app_form_responses response
-          WHERE response.workflow_task_id = ${workflowTasks.id}
-            AND (response.status = 'COMPLETED'
-              OR (
-                ${stageTaskDefinitions.config} ->> 'command' = 'AUTHORITATIVE_ELIGIBILITY'
-                AND response.values = (${workflowTasks.result} -> 'evaluatedFormValues')
-              ))
-        )
-      )`,
-      formRequired: sql<boolean>`${workflowTasks.formVersionId} IS NOT NULL`,
-      hasChecklist: sql<boolean>`EXISTS (
-        SELECT 1 FROM app_workflow_stage_checklist_definitions checklist
-        WHERE checklist.task_definition_id = ${stageTaskDefinitions.id}
-      )`,
-      result: workflowTasks.result,
-    })
-    .from(workflowTasks)
-    .innerJoin(
-      stageTaskDefinitions,
-      eq(stageTaskDefinitions.id, workflowTasks.workflowTaskDefinitionId),
-    )
-    .where(eq(workflowTasks.id, input.task.id))
-    .limit(1);
-  if (!work || !taskWorkIsReady(work)) return null;
+  const readiness = await readWorkflowActionTaskReadiness(
+    transaction,
+    input.task.id,
+  );
+  if (!readiness.workReady || readiness.hasOpenRfi) return null;
   const completedAt = new Date();
   const [task] = await transaction
     .update(workflowTasks)
@@ -363,16 +339,18 @@ export async function completeActionTask(
       startedAt: sql`COALESCE(${workflowTasks.startedAt}, ${completedAt})`,
       status: "COMPLETED",
     })
-    .where(and(
-      eq(workflowTasks.id, input.task.id),
-      eq(workflowTasks.rowVersion, input.task.rowVersion),
-      sql`${workflowTasks.status} IN ('PENDING', 'IN_PROGRESS')`,
-      sql`NOT EXISTS (
-        SELECT 1 FROM app_workflow_rfis rfi
-        WHERE rfi.task_id = ${workflowTasks.id}
-          AND rfi.status = 'OPEN'
-      )`,
-    ))
+    .where(
+      and(
+        eq(workflowTasks.id, input.task.id),
+        eq(workflowTasks.rowVersion, input.task.rowVersion),
+        sql`${workflowTasks.status} IN ('PENDING', 'IN_PROGRESS')`,
+        sql`NOT EXISTS (
+          SELECT 1 FROM app_workflow_rfis rfi
+          WHERE rfi.task_id = ${workflowTasks.id}
+            AND rfi.status = 'OPEN'
+        )`,
+      ),
+    )
     .returning({ id: workflowTasks.id });
   return task ?? null;
 }

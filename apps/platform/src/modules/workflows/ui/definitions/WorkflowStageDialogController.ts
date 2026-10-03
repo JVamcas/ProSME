@@ -15,6 +15,7 @@ import {
 } from "@/modules/workflows/domain/WorkflowStableKey";
 import { useSaveWorkflowGraph } from "@/modules/workflows/WorkflowHooks";
 import { useWorkflowConditionFields } from "./useWorkflowConditionFields";
+import { defaultWorkflowApplicantStatus } from "./WorkflowApplicantStatusDefaults";
 import {
   type WorkflowStageEditorStep,
   workflowStageEditorStepFields,
@@ -48,11 +49,7 @@ function newConditionStage(
     joinPredecessorStageKeys: [],
     name: name || "New stage",
     optional: false,
-    publicStatusMapping: {
-      description: "Application under review",
-      label: "Under review",
-      status: "UNDER_REVIEW",
-    },
+    publicStatusMapping: defaultWorkflowApplicantStatus("UNDER_REVIEW"),
     repeatable: false,
     slaHours: null,
     stableKey: stableKeyFromLabel(name, "STAGE"),
@@ -87,11 +84,8 @@ export function useWorkflowStageDialogController(
     defaultValues: {
       name: stage?.name ?? "",
       description: stage?.description ?? "",
-      publicStatusMapping: stage?.publicStatusMapping ?? {
-        status: "UNDER_REVIEW",
-        label: "Under review",
-        description: "Application under review",
-      },
+      publicStatusMapping: stage?.publicStatusMapping
+        ?? defaultWorkflowApplicantStatus("UNDER_REVIEW"),
       enabled: stage?.enabled ?? true,
       optional: stage?.optional ?? false,
       repeatable: stage?.repeatable ?? false,

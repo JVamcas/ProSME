@@ -21,7 +21,11 @@ export function FundingOpportunityReadinessCard({
       </p>
       {opportunity.applicationsOpen ? (
         <GeneralButton asChild className="mt-5 w-full">
-          <Link href="/portal/applications/new">Apply</Link>
+          <Link
+            href={`/portal/applications/new?fundingOpportunityId=${encodeURIComponent(opportunity.id)}`}
+          >
+            Apply
+          </Link>
         </GeneralButton>
       ) : (
         <GeneralButton className="mt-5 w-full" disabled type="button">

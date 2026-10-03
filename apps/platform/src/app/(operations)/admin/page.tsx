@@ -1,7 +1,6 @@
-import { redirect } from "next/navigation";
 import { z } from "zod";
 
-import { getCurrentUser } from "@/auth/authorization/current-user";
+import { getAuthenticatedPageUser } from "@/platform/auth/ServerAuthNavigation";
 import { AdminDashboard } from "@/components/admin/dashboard/AdminDashboard";
 import { adminDashboardPeriods } from "@/modules/dashboard/AdminDashboardTypes";
 import { getAdminDashboard } from "@/modules/dashboard/ServerAdminDashboardService";
@@ -13,8 +12,7 @@ export default async function AdminPage({
 }: {
   searchParams: Promise<{ period?: string }>;
 }) {
-  const user = await getCurrentUser();
-  if (!user) redirect("/sign-in?next=/admin");
+  const user = await getAuthenticatedPageUser();
   const period = periodSchema.parse((await searchParams).period);
   return <AdminDashboard dashboard={await getAdminDashboard(user, period)} />;
 }

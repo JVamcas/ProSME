@@ -24,7 +24,11 @@ import {
   loadRequiredTaskCompletions,
   recordReviewThresholdEvaluations,
 } from "../../infrastructure/StageCompletionRepository";
-import { evaluateStageQuorum } from "../../infrastructure/WorkflowQuorumRepository";
+import {
+  readWorkflowActionReadiness,
+  workflowActionCompletesTask,
+  workflowActionReadinessReason,
+} from "./ServerWorkflowActionReadinessService";
 import { configuredActionTargetsAreValid } from "../../infrastructure/WorkflowActionTargetRepository";
 import {
   validateActionInputAgainstConfiguration,
@@ -224,17 +228,19 @@ export async function executeWorkflowAction(
           targetsValid,
         }),
       );
-      if (target.action.actionType === "APPROVE_ADVANCE"
-        || target.action.actionType === "REJECT") {
-        const quorumSatisfied = await evaluateStageQuorum(transaction, {
-          actorId: actor.id,
-          stageDefinitionId: target.stage.stageDefinitionId,
-          stageInstanceId: target.stage.stageInstanceId,
-        });
-        if (!quorumSatisfied) {
-          fail("ACTION_UNAVAILABLE", "The required participation quorum is absent.");
-        }
-      }
+      const readiness = await readWorkflowActionReadiness(transaction, {
+        actionTypes: [target.action.actionType],
+        actorId: actor.id,
+        recordQuorumEvaluation: true,
+        stageDefinitionId: target.stage.stageDefinitionId,
+        stageInstanceId: target.stage.stageInstanceId,
+        taskId: target.task?.id,
+      });
+      const readinessReason = workflowActionReadinessReason(
+        target.action.actionType,
+        readiness,
+      );
+      if (readinessReason) fail("ACTION_UNAVAILABLE", readinessReason);
       const requestInformation =
         target.action.actionType === "REQUEST_INFORMATION" &&
         input.input.actionType === "REQUEST_INFORMATION"
@@ -256,16 +262,7 @@ export async function executeWorkflowAction(
       if (!resultingRuntimeVersion) {
         fail("STALE_RUNTIME_VERSION", "The workflow changed. Refresh and try again.");
       }
-      const preservesTask = [
-        "DEFER",
-        "ESCALATE",
-        "PUT_ON_HOLD",
-        "REFER",
-        "RESUME",
-      ].includes(
-        target.action.actionType,
-      );
-      if (target.task && !requestInformation && !preservesTask) {
+      if (target.task && workflowActionCompletesTask(target.action.actionType)) {
         const completed = await completeActionTask(transaction, {
           normalizedInput: input.input,
           task: target.task,

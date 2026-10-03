@@ -29,6 +29,10 @@ import {
   evaluateWorkflowActionConditions,
   evaluateWorkflowActionPolicy,
 } from "./WorkflowActionPolicy";
+import {
+  readWorkflowActionReadiness,
+  workflowActionReadinessReason,
+} from "./ServerWorkflowActionReadinessService";
 
 export type GetWorkflowActionAvailabilityInput = {
   sourceStageInstanceId: string;
@@ -141,11 +145,17 @@ export async function getWorkflowActionAvailability(
   }
 
   const database = workflowActionAvailabilityDatabase();
-  const context = await buildWorkflowActionConditionContext(
-    database,
-    source.stage,
-    true,
-  );
+  const [context, readiness] = await Promise.all([
+    buildWorkflowActionConditionContext(database, source.stage, true),
+    readWorkflowActionReadiness(database, {
+      actionTypes: candidates.map((item) => item.action.actionType),
+      actorId: actor.id,
+      recordQuorumEvaluation: false,
+      stageDefinitionId: source.stage.stageDefinitionId,
+      stageInstanceId: source.stage.stageInstanceId,
+      taskId: source.task?.id,
+    }),
+  ]);
   const evaluated = new Map<string, WorkflowActionAvailability>();
   await Promise.all(
     candidates.map(async (item) => {
@@ -175,14 +185,18 @@ export async function getWorkflowActionAvailability(
           targetsValid,
         },
       );
+      const readinessReason = workflowActionReadinessReason(
+        action.actionType,
+        readiness,
+      );
       evaluated.set(
         action.stableKey,
         toAvailability(
           source,
           item.action,
           action,
-          policy.available,
-          policy.unavailableReason,
+          policy.available && readinessReason === null,
+          policy.unavailableReason ?? readinessReason,
         ),
       );
     }),

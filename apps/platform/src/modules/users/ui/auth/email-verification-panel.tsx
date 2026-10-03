@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 
+import { authNavigationHref } from "@/platform/auth/AuthNavigation";
+
 import { GeneralButton } from "@/components/ui/button";
 import { AuthFeedback } from "./auth-feedback";
 import { authLinkClassName, authSupportingTextClassName } from "./auth-styles";
 import { useEmailVerification } from "./use-email-verification";
 
-export function EmailVerificationPanel() {
-  const verification = useEmailVerification();
+export function EmailVerificationPanel({ returnTo }: { returnTo?: string }) {
+  const verification = useEmailVerification(returnTo);
   const canManage = Boolean(
     verification.status && !verification.status.verified,
   );
@@ -50,7 +52,7 @@ export function EmailVerificationPanel() {
       </GeneralButton>
       <p className={authSupportingTextClassName}>
         Already verified or using another browser?{" "}
-        <Link className={authLinkClassName} href="/sign-in">
+        <Link className={authLinkClassName} href={authNavigationHref("/sign-in", returnTo)}>
           Continue to sign in
         </Link>
       </p>

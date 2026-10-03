@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { permissionCodes } from "@/auth/authorization/permissions";
-import { getCurrentUser } from "@/auth/authorization/current-user";
+import { getAuthenticatedPageUser } from "@/platform/auth/ServerAuthNavigation";
 import { can } from "@/auth/authorization/policy";
 import { ApplicationsList } from "@/components/applicant/applications/ApplicationsList";
 import { PageShell } from "@/shared/ui/PageShell";
@@ -10,8 +10,8 @@ import { PageShell } from "@/shared/ui/PageShell";
 export const metadata: Metadata = { title: "My applications" };
 
 export default async function ApplicationsPage() {
-  const user = await getCurrentUser();
-  if (!user || !can(user, permissionCodes.fundingApplicationOwnRead)) redirect("/unauthorized");
+  const user = await getAuthenticatedPageUser();
+  if (!can(user, permissionCodes.fundingApplicationOwnRead)) redirect("/unauthorized");
   return (
     <PageShell
       description="Create, save, and resume your funding application drafts."

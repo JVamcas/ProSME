@@ -2,7 +2,7 @@ import { FlaskConical } from "lucide-react";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-import { getCurrentUser } from "@/auth/authorization/current-user";
+import { getAuthenticatedPageUser } from "@/platform/auth/ServerAuthNavigation";
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { can } from "@/auth/authorization/policy";
 import { EligibilityRuleSetTestScreen } from "@/modules/eligibility/ui/EligibilityRuleSetTestScreen";
@@ -17,7 +17,7 @@ export default async function EligibilityRuleSetTestPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ versionId?: string }>;
 }) {
-  const user = await getCurrentUser();
+  const user = await getAuthenticatedPageUser();
   if (!user || !can(user, permissionCodes.eligibilityRuleSetRead)) {
     redirect("/unauthorized");
   }

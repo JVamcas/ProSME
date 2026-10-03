@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 
-import { getCurrentUser } from "@/auth/authorization/current-user";
+import { getAuthenticatedPageUser } from "@/platform/auth/ServerAuthNavigation";
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { can, requireAnyPermission } from "@/auth/authorization/policy";
 import { UserAccessWorkspace } from "@/modules/users/ui/UserAccessWorkspace";
@@ -10,8 +9,7 @@ import { PageShell } from "@/shared/ui/PageShell";
 export const metadata: Metadata = { title: "Users & roles" };
 
 export default async function UsersAccessPage() {
-  const user = await getCurrentUser();
-  if (!user) redirect("/sign-in?next=/admin/users");
+  const user = await getAuthenticatedPageUser();
   requireAnyPermission(user, [
     permissionCodes.userRead,
     permissionCodes.userManage,

@@ -29,7 +29,15 @@ export function EligibilityTerminationDialog({
     <ConfirmationDialog
       confirmLabel="Continue"
       isOpen
-      message={`The eligibility ruleset found a hard failure. The application will be terminated in ${remainingSeconds} seconds. Continue terminates it immediately. Cancel to correct your captured results and run eligibility again.`}
+      message={
+        <>
+          The eligibility ruleset found a hard failure. The application will be
+          terminated in{" "}
+          <span className="text-red-600">{remainingSeconds} seconds</span>.
+          Continue terminates it immediately. Cancel to correct your captured
+          results and run eligibility again.
+        </>
+      }
       onClose={onCancel}
       onConfirm={onConfirm}
       title="Confirm application termination"

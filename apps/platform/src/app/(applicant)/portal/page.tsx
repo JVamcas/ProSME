@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 
-import { getCurrentUser } from "@/auth/authorization/current-user";
+import { getAuthenticatedPageUser } from "@/platform/auth/ServerAuthNavigation";
 import { ApplicantDashboard } from "@/components/applicant/dashboard/ApplicantDashboard";
 import { getApplicantDashboard } from "@/modules/dashboard/ServerApplicantDashboardService";
 
 export const metadata: Metadata = { title: "Applicant dashboard" };
 
 export default async function PortalPage() {
-  const user = await getCurrentUser();
+  const user = await getAuthenticatedPageUser();
   const dashboard = await getApplicantDashboard(user);
 
   return (

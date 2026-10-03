@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { z } from "zod";
 
 import { permissionCodes } from "@/auth/authorization/permissions";
-import { getCurrentUser } from "@/auth/authorization/current-user";
+import { getAuthenticatedPageUser } from "@/platform/auth/ServerAuthNavigation";
 import { can } from "@/auth/authorization/policy";
 import { ResourceNotFoundError } from "@/lib/resource-errors";
 import { getOwnApplicationReadView } from "@/modules/applications/ServerApplicationReadViewService";
@@ -17,7 +17,7 @@ export default async function ApplicationDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const user = await getCurrentUser();
+  const user = await getAuthenticatedPageUser();
   if (!user || !can(user, permissionCodes.fundingApplicationOwnRead)) {
     redirect("/unauthorized");
   }

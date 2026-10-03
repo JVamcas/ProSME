@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { permissionCodes } from "@/auth/authorization/permissions";
-import { getCurrentUser } from "@/auth/authorization/current-user";
+import { getAuthenticatedPageUser } from "@/platform/auth/ServerAuthNavigation";
 import { can } from "@/auth/authorization/policy";
 import { WorkflowTaskWorkspace } from "@/modules/work-queue/ui/WorkflowTaskWorkspace";
 
@@ -13,7 +13,7 @@ export default async function WorkflowTaskPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const user = await getCurrentUser();
+  const user = await getAuthenticatedPageUser();
   if (!can(user, permissionCodes.workflowTaskAssignedRead)) {
     redirect("/unauthorized");
   }

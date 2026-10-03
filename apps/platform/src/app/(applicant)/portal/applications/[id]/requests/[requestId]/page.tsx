@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { z } from "zod";
 
-import { getCurrentUser } from "@/auth/authorization/current-user";
+import { getAuthenticatedPageUser } from "@/platform/auth/ServerAuthNavigation";
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { can } from "@/auth/authorization/policy";
 import { ResourceNotFoundError } from "@/lib/resource-errors";
@@ -22,7 +22,7 @@ export default async function WorkflowRfiPage({
   params: Promise<{ id: string; requestId: string }>;
 }) {
   const [user, parameters] = await Promise.all([
-    getCurrentUser(),
+    getAuthenticatedPageUser(),
     params.then((value) => parametersSchema.safeParse(value)),
   ]);
   if (!parameters.success) notFound();

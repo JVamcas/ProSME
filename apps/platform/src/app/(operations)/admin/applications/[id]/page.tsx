@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { z } from "zod";
 
 import { permissionCodes } from "@/auth/authorization/permissions";
-import { getCurrentUser } from "@/auth/authorization/current-user";
+import { getAuthenticatedPageUser } from "@/platform/auth/ServerAuthNavigation";
 import { can } from "@/auth/authorization/policy";
 import { ResourceNotFoundError } from "@/lib/resource-errors";
 import { getAdminApplicationDetail } from "@/modules/applications/ServerAdminApplicationDetailService";
@@ -25,7 +25,7 @@ export default async function ApplicationPage({
   params,
 }: ApplicationPageProps) {
   const { id } = await params;
-  const user = await getCurrentUser();
+  const user = await getAuthenticatedPageUser();
   const canRead =
     can(user, permissionCodes.workflowTaskAssignedRead) ||
     can(user, permissionCodes.fundingApplicationAllRead);

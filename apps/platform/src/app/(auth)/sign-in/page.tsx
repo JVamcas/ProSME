@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 
+import { authReturnTo, type AuthNavigationQuery } from "@/platform/auth/AuthNavigation";
+
 import { AuthCard } from "@/modules/users/ui/auth/auth-card";
 import { SignInForm } from "@/modules/users/ui/auth/sign-in-form";
 
@@ -7,20 +9,8 @@ export const metadata: Metadata = {
   title: "Sign in",
 };
 
-function safeNextPath(value: string | string[] | undefined) {
-  const path = Array.isArray(value) ? value[0] : value;
-
-  if (path?.startsWith("/") && !path.startsWith("//")) {
-    return path;
-  }
-
-  return undefined;
-}
-
 type SignInPageProps = {
-  searchParams: Promise<{
-    next?: string | string[];
-  }>;
+  searchParams: Promise<AuthNavigationQuery>;
 };
 
 export default async function SignInPage({ searchParams }: SignInPageProps) {
@@ -31,7 +21,7 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
       title="Welcome back"
       description="Sign in to access your account."
     >
-      <SignInForm nextPath={safeNextPath(query.next)} />
+      <SignInForm returnTo={authReturnTo(query)} />
     </AuthCard>
   );
 }

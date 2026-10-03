@@ -2,7 +2,7 @@ import { Bell } from "lucide-react";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-import { getCurrentUser } from "@/auth/authorization/current-user";
+import { getAuthenticatedPageUser } from "@/platform/auth/ServerAuthNavigation";
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { can } from "@/auth/authorization/policy";
 import { NotificationChannelsWorkspace } from "@/modules/notifications/ui/NotificationChannelsWorkspace";
@@ -11,7 +11,7 @@ import { PageShell } from "@/shared/ui/PageShell";
 export const metadata: Metadata = { title: "Notification channels" };
 
 export default async function NotificationChannelsPage() {
-  const user = await getCurrentUser();
+  const user = await getAuthenticatedPageUser();
   if (!user || !can(user, permissionCodes.notificationConfigurationRead)) {
     redirect("/unauthorized");
   }
