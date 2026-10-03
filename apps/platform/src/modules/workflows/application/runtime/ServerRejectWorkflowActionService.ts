@@ -1,5 +1,6 @@
 import "server-only";
 
+import { terminalOutcomeApplicantStatus } from "../../domain/transitions/WorkflowTerminalOutcome";
 import type { RejectConfiguration } from "../../domain/actions/WorkflowActionConfiguration";
 import type { StageConditionEvaluation } from "../../engine/StageCondition";
 import type { WorkflowActionExecutionTransaction } from "../../infrastructure/WorkflowActionExecutionRepository";
@@ -48,7 +49,16 @@ export async function executeTerminalRejectInTransaction(
   });
   const rejection = await rejectTerminalWorkflow(transaction, {
     actorId: input.actorId,
-    configuration: input.configuration,
+    configuration: {
+      ...input.configuration,
+      // Existing published routes retain their configured wording until edited.
+      publicStatusMapping: input.transition.terminalApplicantStatus
+        ? terminalOutcomeApplicantStatus(
+            input.transition.terminalOutcome,
+            input.transition.terminalApplicantStatus,
+          )
+        : input.configuration.publicStatusMapping,
+    },
     correlationId: input.correlationId,
     rejectedAt: input.rejectedAt,
     sourceStageInstanceId: input.sourceStageInstanceId,

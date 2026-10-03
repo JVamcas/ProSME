@@ -7,7 +7,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { workflowPublicStatuses } from "@/modules/workflows/domain/definitions/WorkflowStageDefinition";
 import type { WorkflowEditorView } from "@/modules/workflows/domain/definitions/WorkflowTypes";
-import { workflowApplicantStatusDefaults } from "@/modules/workflows/ui/definitions/WorkflowApplicantStatusDefaults";
+import { workflowApplicantStatusDefaults } from "@/modules/workflows/domain/definitions/WorkflowApplicantStatusDefaults";
+import { workflowStageFormSchema } from "@/modules/workflows/ui/definitions/WorkflowStageFormSchema";
 import { WorkflowStageDetailsStep } from "@/modules/workflows/ui/definitions/WorkflowStageDetailsStep";
 import { useWorkflowStageDialogController } from "@/modules/workflows/ui/definitions/WorkflowStageDialogController";
 import { referenceWorkflow } from "../../../support/ReferenceWorkflowFixture";
@@ -20,17 +21,22 @@ vi.mock("@/modules/forms/FormHooks", () => ({
 vi.mock("@/modules/workflows/WorkflowHooks", () => ({
   useSaveWorkflowGraph: () => ({ mutateAsync }),
 }));
-vi.mock("@/modules/workflows/ui/definitions/useWorkflowConditionFields", () => ({
-  useWorkflowConditionFields: () => ({
-    completionFields: [],
-    entryFields: [],
-    isPending: false,
+vi.mock(
+  "@/modules/workflows/ui/definitions/useWorkflowConditionFields",
+  () => ({
+    useWorkflowConditionFields: () => ({
+      completionFields: [],
+      entryFields: [],
+      isPending: false,
+    }),
   }),
-}));
+);
 
-(globalThis as typeof globalThis & {
-  IS_REACT_ACT_ENVIRONMENT: boolean;
-}).IS_REACT_ACT_ENVIRONMENT = true;
+(
+  globalThis as typeof globalThis & {
+    IS_REACT_ACT_ENVIRONMENT: boolean;
+  }
+).IS_REACT_ACT_ENVIRONMENT = true;
 
 afterEach(() => {
   vi.clearAllMocks();
@@ -101,25 +107,32 @@ describe("workflow applicant status suggestions", () => {
   it("fills valid editable suggestions for every status selection", async () => {
     const view = await mountStage();
     try {
-      await act(async () => view.controller.form.setValue("name", "Review stage"));
+      await act(async () =>
+        view.controller.form.setValue("name", "Review stage"),
+      );
       for (const status of workflowPublicStatuses) {
         await view.selectStatus(status);
         expect(view.controller.form.getValues("publicStatusMapping")).toEqual({
           status,
           ...workflowApplicantStatusDefaults[status],
         });
-        expect(view.container.querySelector<HTMLInputElement>(
-          '[name="publicStatusMapping.label"]',
-        )?.value).toBe(workflowApplicantStatusDefaults[status].label);
-        expect(view.container.querySelector<HTMLTextAreaElement>(
-          '[name="publicStatusMapping.description"]',
-        )?.value).toBe(workflowApplicantStatusDefaults[status].description);
+        expect(
+          view.container.querySelector<HTMLInputElement>(
+            '[name="publicStatusMapping.label"]',
+          )?.value,
+        ).toBe(workflowApplicantStatusDefaults[status].label);
+        expect(
+          view.container.querySelector<HTMLTextAreaElement>(
+            '[name="publicStatusMapping.description"]',
+          )?.value,
+        ).toBe(workflowApplicantStatusDefaults[status].description);
         await act(async () => {
           expect(await view.controller.validateStep("details")).toBe(true);
         });
       }
-      expect(view.controller.form.getFieldState("publicStatusMapping.label").isDirty)
-        .toBe(true);
+      expect(
+        view.controller.form.getFieldState("publicStatusMapping.label").isDirty,
+      ).toBe(true);
     } finally {
       await view.unmount();
     }
@@ -128,12 +141,14 @@ describe("workflow applicant status suggestions", () => {
   it("keeps existing custom wording when opening and revisiting details", async () => {
     const view = await mountStage(true);
     try {
-      expect(view.controller.form.getValues("publicStatusMapping"))
-        .toEqual(view.stage.publicStatusMapping);
+      expect(view.controller.form.getValues("publicStatusMapping")).toEqual(
+        view.stage.publicStatusMapping,
+      );
       await view.showDetails(false);
       await view.showDetails(true);
-      expect(view.controller.form.getValues("publicStatusMapping"))
-        .toEqual(view.stage.publicStatusMapping);
+      expect(view.controller.form.getValues("publicStatusMapping")).toEqual(
+        view.stage.publicStatusMapping,
+      );
       expect(mutateAsync).not.toHaveBeenCalled();
     } finally {
       await view.unmount();
@@ -158,28 +173,40 @@ describe("workflow applicant status suggestions", () => {
       expect(label.readOnly || label.disabled).toBe(false);
       expect(description.readOnly || description.disabled).toBe(false);
       await act(async () => {
-        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!
-          .set!.call(label, customMapping.label);
+        Object.getOwnPropertyDescriptor(
+          HTMLInputElement.prototype,
+          "value",
+        )!.set!.call(label, customMapping.label);
         label.dispatchEvent(new Event("input", { bubbles: true }));
-        Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")!
-          .set!.call(description, customMapping.description);
+        Object.getOwnPropertyDescriptor(
+          HTMLTextAreaElement.prototype,
+          "value",
+        )!.set!.call(description, customMapping.description);
         description.dispatchEvent(new Event("input", { bubbles: true }));
       });
-      expect(view.controller.form.getValues("publicStatusMapping"))
-        .toEqual(customMapping);
+      expect(view.controller.form.getValues("publicStatusMapping")).toEqual(
+        customMapping,
+      );
       await view.showDetails(false);
       await view.showDetails(true);
-      expect(view.controller.form.getValues("publicStatusMapping"))
-        .toEqual(customMapping);
+      expect(view.controller.form.getValues("publicStatusMapping")).toEqual(
+        customMapping,
+      );
       await act(async () => {
-        await view.controller.save(view.controller.form.getValues());
+        await view.controller.save(
+          workflowStageFormSchema.parse(view.controller.form.getValues()),
+        );
       });
-      expect(mutateAsync).toHaveBeenCalledWith(expect.objectContaining({
-        stages: expect.arrayContaining([expect.objectContaining({
-          stableKey: view.stage.stableKey,
-          publicStatusMapping: customMapping,
-        })]),
-      }));
+      expect(mutateAsync).toHaveBeenCalledWith(
+        expect.objectContaining({
+          stages: expect.arrayContaining([
+            expect.objectContaining({
+              stableKey: view.stage.stableKey,
+              publicStatusMapping: customMapping,
+            }),
+          ]),
+        }),
+      );
       await view.selectStatus("CLOSED");
       expect(view.controller.form.getValues("publicStatusMapping")).toEqual({
         status: "CLOSED",

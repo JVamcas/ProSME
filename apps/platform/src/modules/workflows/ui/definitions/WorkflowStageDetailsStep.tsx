@@ -2,9 +2,13 @@
 
 import { useFormContext } from "react-hook-form";
 
-import { FormInput, FormSelect, FormTextarea } from "@/components/ui/form-fields";
+import {
+  FormInput,
+  FormSelect,
+  FormTextarea,
+} from "@/components/ui/form-fields";
 import { workflowPublicStatuses } from "@/modules/workflows/domain/definitions/WorkflowStageDefinition";
-import { workflowApplicantStatusDefaults } from "./WorkflowApplicantStatusDefaults";
+import { workflowApplicantStatusDefaults } from "../../domain/definitions/WorkflowApplicantStatusDefaults";
 import type { WorkflowStageFormInput } from "./WorkflowStageFormSchema";
 
 const applicantStatusItems = workflowPublicStatuses.map((status) => ({
@@ -21,7 +25,11 @@ export function WorkflowStageDetailsStep() {
     const options = { shouldDirty: true, shouldValidate: true };
 
     form.setValue("publicStatusMapping.label", defaults.label, options);
-    form.setValue("publicStatusMapping.description", defaults.description, options);
+    form.setValue(
+      "publicStatusMapping.description",
+      defaults.description,
+      options,
+    );
   }
 
   return (

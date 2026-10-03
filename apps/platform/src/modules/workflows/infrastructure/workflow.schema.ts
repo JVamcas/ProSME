@@ -47,7 +47,10 @@ export const workflowDefinitions = pgTable(
       .defaultNow(),
   },
   (table) => [
-    check("app_workflow_definitions_code_nonempty_check", sql`${table.code} <> ''`),
+    check(
+      "app_workflow_definitions_code_nonempty_check",
+      sql`${table.code} <> ''`,
+    ),
     uniqueIndex("app_workflow_definitions_code_unique").on(table.code),
   ],
 );
@@ -244,9 +247,7 @@ export const workflowActionDefinitions = pgTable(
     actionType: text("action_type").$type<WorkflowActionType>().notNull(),
     condition: jsonb("condition").$type<ConditionGroup>(),
     enabled: boolean("enabled").notNull().default(true),
-    reasonRequired: boolean("reason_required")
-      .notNull()
-      .default(false),
+    reasonRequired: boolean("reason_required").notNull().default(false),
     displayOrder: integer("display_order").notNull(),
     configuration: jsonb("configuration")
       .$type<WorkflowActionConfiguration>()
@@ -311,6 +312,10 @@ export const workflowTransitionDefinitions = pgTable(
       .references(() => workflowStageDefinitions.id, { onDelete: "restrict" }),
     actionKey: text("action_key").notNull(),
     terminalOutcome: text("terminal_outcome"),
+    terminalApplicantStatus: jsonb("terminal_applicant_status").$type<{
+      label: string;
+      description: string;
+    }>(),
     priority: integer("priority").notNull(),
     condition: jsonb("condition").$type<ConditionGroup>(),
   },

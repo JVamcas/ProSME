@@ -74,6 +74,7 @@ export async function insertWorkflowGraph(
     fromStageId: stageIds.get(transition.sourceStageKey)!,
     priority: transition.priority,
     terminalOutcome: transition.terminalOutcome ?? null,
+    terminalApplicantStatus: transition.terminalApplicantStatus ?? null,
     versionId,
   }));
   if (transitions.length) {

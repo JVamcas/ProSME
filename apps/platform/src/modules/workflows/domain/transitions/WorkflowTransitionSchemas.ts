@@ -16,6 +16,14 @@ export const workflowTransitionSchema = z
     actionKey: stableKeySchema,
     targetStageKeys: z.array(stableKeySchema).max(50),
     terminalOutcome: stableKeySchema.nullable().optional(),
+    terminalApplicantStatus: z
+      .object({
+        label: z.string().trim().min(1).max(120),
+        description: z.string().trim().min(1).max(300),
+      })
+      .strict()
+      .nullable()
+      .optional(),
     priority: z.number().int().positive(),
     condition: conditionGroupSchema.nullable(),
   })
@@ -31,7 +39,17 @@ export const workflowTransitionSchema = z
         path: ["targetStageKeys"],
       });
     }
-    if (new Set(transition.targetStageKeys).size !== transition.targetStageKeys.length) {
+    if (transition.terminalApplicantStatus && !transition.terminalOutcome) {
+      context.addIssue({
+        code: "custom",
+        message: "Applicant outcome wording requires a terminal outcome.",
+        path: ["terminalApplicantStatus"],
+      });
+    }
+    if (
+      new Set(transition.targetStageKeys).size !==
+      transition.targetStageKeys.length
+    ) {
       context.addIssue({
         code: "custom",
         message: "Transition targets must be unique.",

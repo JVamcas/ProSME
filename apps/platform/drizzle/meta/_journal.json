@@ -1065,6 +1065,13 @@
       "when": 1801526400000,
       "tag": "0151_workflow_free_text_reason",
       "breakpoints": true
+    },
+    {
+      "idx": 152,
+      "version": "7",
+      "when": 1801612800000,
+      "tag": "0152_workflow_terminal_applicant_status",
+      "breakpoints": true
     }
   ]
 }

@@ -217,35 +217,17 @@ describe("workflow action dialog", () => {
         expect(
           document.querySelector('input[name="cancelOpenStageInstances"]'),
         ).toBeNull();
-        if (outcome === "TERMINAL") {
-          await act(async () => {
-            const input = document.querySelector<HTMLInputElement>(
-              'input[name="rejectionPublicLabel"]',
-            )!;
-            Object.getOwnPropertyDescriptor(
-              HTMLInputElement.prototype,
-              "value",
-            )!.set!.call(input, "");
-            input.dispatchEvent(new Event("input", { bubbles: true }));
-          });
-          await clickButton("Continue");
-          expect(
-            document.querySelector('[aria-label="Action routing"]'),
-          ).not.toBeNull();
-          expect(
-            document.querySelector('[role="dialog"]')?.textContent,
-          ).toContain("Enter a safe applicant-facing label.");
-        } else {
-          await clickButton("Continue");
-          await clickButton("Save action");
-          const saved =
-            view.update.mock.calls[0][1].graph.stages[0].actions.find(
-              (item) => item.stableKey === "REJECT",
-            );
-          expect(saved?.configuration).toMatchObject({
-            outcome: { type: outcome },
-          });
-        }
+        expect(
+          document.querySelector('select[name="rejectionPublicStatus"]'),
+        ).toBeNull();
+        await clickButton("Continue");
+        await clickButton("Save action");
+        const saved = view.update.mock.calls[0][1].graph.stages[0].actions.find(
+          (item) => item.stableKey === "REJECT",
+        );
+        expect(saved?.configuration).toMatchObject({
+          outcome: { type: outcome },
+        });
       } finally {
         await view.cleanup();
       }
@@ -282,7 +264,7 @@ describe("workflow action dialog", () => {
       ).toContain("Terminal rejection cancels all open stages and tasks.");
       expect(
         document.querySelector('input[name="rejectionPublicLabel"]'),
-      ).not.toBeNull();
+      ).toBeNull();
       await clickButton("Continue");
       await clickButton("Save action");
       const saved = view.update.mock.calls[0][1].graph.stages[0].actions.find(

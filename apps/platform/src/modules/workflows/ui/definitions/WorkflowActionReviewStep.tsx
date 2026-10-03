@@ -6,6 +6,7 @@ import type {
   WorkflowStageInput,
 } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import type { WorkflowTransitionDefinition } from "@/modules/workflows/domain/transitions/WorkflowTransitionDefinition";
+import { WorkflowTerminalApplicantStatus } from "./WorkflowTerminalApplicantStatus";
 import { workflowRouteDestination } from "./WorkflowActionEditorRoutes";
 import { workflowActionTypeItems } from "./WorkflowActionFormSchema";
 
@@ -38,9 +39,9 @@ export function WorkflowActionReviewStep({
   const taskNames = stage.tasks
     .filter((task) => taskStableKeys.includes(task.stableKey))
     .map((task) => task.name);
-  const actionType = workflowActionTypeItems.find(
-    (item) => item.value === action.actionType,
-  )?.label ?? action.actionType;
+  const actionType =
+    workflowActionTypeItems.find((item) => item.value === action.actionType)
+      ?.label ?? action.actionType;
 
   return (
     <section className="space-y-5" aria-label="Review action">
@@ -73,11 +74,13 @@ export function WorkflowActionReviewStep({
                   key={route.id ?? `${route.priority}-${index}`}
                 >
                   <p className="font-semibold text-brand-navy">
-                    Priority {route.priority}: {workflowRouteDestination(route, editor.graph)}
+                    Priority {route.priority}:{" "}
+                    {workflowRouteDestination(route, editor.graph)}
                   </p>
                   <p className="mt-1 text-brand-navy/60">
                     {route.condition ? "Conditional route" : "Default route"}
                   </p>
+                  <WorkflowTerminalApplicantStatus route={route} />
                 </li>
               ))}
           </ol>

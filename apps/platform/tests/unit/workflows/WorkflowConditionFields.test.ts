@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { formatConditionFieldLabel } from "@/modules/conditions/domain/ConditionFieldLabel";
+
 import { resolveWorkflowDataPath } from "@/modules/conditions/engine/WorkflowDataResolver";
 import type {
   WorkflowGraphInput,
@@ -117,6 +119,11 @@ describe("workflow condition fields", () => {
         }),
         expect.objectContaining({
           key: "stage.screening.form.custom_result",
+          label: "CUSTOM RESULT",
+          source: [
+            { label: "Stage", name: "SCREENING" },
+            { label: "Task", name: "SCREENING form" },
+          ],
           type: "NUMBER",
         }),
       ]),
@@ -149,6 +156,39 @@ describe("workflow condition fields", () => {
         ],
       }),
     ).toBe(125_000);
+  });
+
+  it("identifies the configured stage and task for an action result", () => {
+    const approval = stage("APPROVAL", 1, reviewFormVersionId);
+    approval.name = "Approval and Award Decision";
+    approval.tasks[0].name = "Delegated Approval";
+    approval.tasks[0].actionKeys = ["APPROVE"];
+    approval.actions = [{
+      actionType: "APPROVE_ADVANCE",
+      configuration: {},
+      displayOrder: 1,
+      enabled: true,
+      label: "Approve",
+      reasonRequired: false,
+      stableKey: "APPROVE",
+    }];
+    const fields = workflowConditionFields(
+      { stages: [approval], transitions: [] },
+      new Map(),
+      approval,
+      true,
+    );
+    const action = fields.find((field) =>
+      field.key === "stage.approval.actions.approve.selected"
+    );
+
+    expect(action).toBeDefined();
+    expect(formatConditionFieldLabel(action!)).toBe(
+      "[Stage → Approval and Award Decision].[Task → Delegated Approval].Approve",
+    );
+    expect(fields.find((field) =>
+      field.key === "application.client_defined_metric"
+    )?.source).toEqual([{ label: "Application" }]);
   });
 
   it("exposes every result path from a composed task", () => {
@@ -192,6 +232,16 @@ describe("workflow condition fields", () => {
       review,
       true,
     );
+
+    expect(fields.find((field) =>
+      field.key === "stage.technical_review.checklist.documents_valid.accepted"
+    )).toMatchObject({
+      label: "Documents valid",
+      source: [
+        { label: "Stage", name: "TECHNICAL REVIEW" },
+        { label: "Task", name: "TECHNICAL_REVIEW form" },
+      ],
+    });
 
     expect(fields.map((field) => field.key)).toEqual(
       expect.arrayContaining([

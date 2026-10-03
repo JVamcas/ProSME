@@ -37,8 +37,8 @@ from reviewer reasons.
 The migration was tested against an isolated PostgreSQL 16 container, including
 legacy values, optional records, preservation of history, mandatory cancellation,
 and repeat execution. The temporary container was removed after testing.
-The application database has not been migrated; apply the migration with the
-application update before using the new schema.
+The local application database was migrated successfully during the recovery
+described below. No migration or deployment to other environments is claimed.
 
 ## Verification evidence
 
@@ -64,5 +64,40 @@ application update before using the new schema.
   entry conditions to a function expecting parsed `ConditionGroup | null` values.
 
 Command evidence is available in the session's `/tmp/workflow-reason-*.log`
-files. No full-repository passing gate, browser acceptance, live migration,
-or deployment is claimed.
+files. No full-repository passing gate, browser acceptance, migration,
+or deployment to environments other than local is claimed.
+
+## Local migration recovery
+
+The initial local startup failed because migration 0151 attempted to update
+published workflow action definitions while `app_workflow_actions_immutable`
+was enabled. The initial isolated test omitted this trigger and did not detect
+the problem.
+
+The migration now disables only that action trigger for its backfill and enables
+it again before commit, following existing repository migration conventions.
+Drizzle's PostgreSQL migration runner wraps these statements in one transaction,
+so a failure also rolls back trigger changes.
+
+The PostgreSQL regression test now loads the real governance functions and action
+trigger from migrations 0023 and 0026. Both published and retired versions are
+covered: normal edits fail before and after migration, the schema backfill
+succeeds, the trigger is enabled after success and rollback, historical values
+are retained, and repeated migration preserves subsequent optional choices.
+Both regression cases passed in an isolated PostgreSQL 16 container.
+
+The migrations image was rebuilt and `./scripts/docker-up.sh` completed with
+exit code 0. Application and Payload migrations succeeded, baseline seeds
+completed, and the database, application, and scheduler reported healthy.
+Read-only verification in the local database confirmed the new `reason_required`
+column, migration ledger timestamp `1801526400000`, and the action trigger's
+enabled state (`tgenabled = 'O'`).
+
+Recovery verification also reran architecture and file-size gates, changed-test
+lint, standalone type checking, the full suite, and the production build. The
+boundary gates, changed-test lint, and production build passed. The full suite
+reported 1,817 passing tests and the same four failures in untouched UI tests;
+117 tests were skipped, with the two PostgreSQL migration regression cases
+executed separately. Repository lint and standalone type checking retain the
+unrelated failures listed above. Scoped recovery acceptance is complete for the
+local startup failure; full-repository gate acceptance remains withheld.

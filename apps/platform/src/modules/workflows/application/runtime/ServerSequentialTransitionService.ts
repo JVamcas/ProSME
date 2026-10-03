@@ -1,5 +1,6 @@
 import "server-only";
 
+import { terminalOutcomeApplicantStatus } from "../../domain/transitions/WorkflowTerminalOutcome";
 import type { StageCompletionResult } from "../../domain/runtime/StageCompletion";
 import {
   evaluateStageCondition,
@@ -45,9 +46,15 @@ export type ExecuteSequentialTransitionInput = {
 };
 
 export type SequentialTransitionResult =
-  | { kind: "action_not_found" | "source_stage_not_found" | "transition_not_found" }
+  | {
+      kind:
+        "action_not_found" | "source_stage_not_found" | "transition_not_found";
+    }
   | { kind: "already_executed"; execution: ExistingTransitionExecution }
-  | { evaluations: StageConditionEvaluation[]; kind: "transition_condition_failed" }
+  | {
+      evaluations: StageConditionEvaluation[];
+      kind: "transition_condition_failed";
+    }
   | { completion: StageCompletionResult; kind: "source_stage_not_completed" }
   | {
       executionId: string;
@@ -81,7 +88,9 @@ function selectTransition(
 
 function selectEvaluatedTransition(
   transitions: SequentialTransition[],
-  selection: NonNullable<ExecuteSequentialTransitionInput["conditionSelection"]>,
+  selection: NonNullable<
+    ExecuteSequentialTransitionInput["conditionSelection"]
+  >,
 ): TransitionSelection {
   if (!selection.selectedTransitionId) {
     return { evaluations: selection.transitionEvaluations };
@@ -97,7 +106,9 @@ function selectEvaluatedTransition(
 }
 
 function completedStage(completion: StageCompletionResult) {
-  return completion.kind === "completed" || completion.kind === "already_completed";
+  return (
+    completion.kind === "completed" || completion.kind === "already_completed"
+  );
 }
 
 async function activateTransitionTargets(
@@ -128,7 +139,8 @@ async function activateTransitionTargets(
     }
     if (activation.kind === "join_pending") {
       targets.push({
-        incompletePredecessorStageKeys: activation.incompletePredecessorStageKeys,
+        incompletePredecessorStageKeys:
+          activation.incompletePredecessorStageKeys,
         outcome: "JOIN_PENDING",
         targetStageDefinitionId: target.id,
         targetStageInstanceId: null,
@@ -136,7 +148,10 @@ async function activateTransitionTargets(
       });
       continue;
     }
-    if (activation.kind !== "activated" && activation.kind !== "already_active") {
+    if (
+      activation.kind !== "activated" &&
+      activation.kind !== "already_active"
+    ) {
       return null;
     }
     targets.push({
@@ -150,9 +165,13 @@ async function activateTransitionTargets(
 }
 
 function targetExecutionOutcome(targets: TransitionTargetOutcome[]) {
-  if (targets.some(
-    (target) => target.outcome === "ACTIVATED" || target.outcome === "ALREADY_ACTIVE",
-  )) return "TARGET_ACTIVATED" as const;
+  if (
+    targets.some(
+      (target) =>
+        target.outcome === "ACTIVATED" || target.outcome === "ALREADY_ACTIVE",
+    )
+  )
+    return "TARGET_ACTIVATED" as const;
   if (targets.some((target) => target.outcome === "JOIN_PENDING")) {
     return "TARGET_JOIN_PENDING" as const;
   }
@@ -163,7 +182,10 @@ export async function executeSequentialTransitionInTransaction(
   transaction: StageCompletionTransaction,
   input: ExecuteSequentialTransitionInput,
 ): Promise<SequentialTransitionResult> {
-  const replay = await findTransitionExecution(transaction, input.sourceStageInstanceId);
+  const replay = await findTransitionExecution(
+    transaction,
+    input.sourceStageInstanceId,
+  );
   if (replay) return { execution: replay, kind: "already_executed" };
 
   const source = await lockStageCompletionTarget(
@@ -210,16 +232,24 @@ export async function executeSequentialTransitionInTransaction(
           })),
         {
           stableKey: source.stageKey,
-          values: normalizeStageConditionRecord(buildStageCompletionValues(valueRows)),
+          values: normalizeStageConditionRecord(
+            buildStageCompletionValues(valueRows),
+          ),
         },
       ],
     };
   }
   const selected = input.conditionSelection
-    ? selectEvaluatedTransition(configured.transitions, input.conditionSelection)
+    ? selectEvaluatedTransition(
+        configured.transitions,
+        input.conditionSelection,
+      )
     : selectTransition(configured.transitions, conditionContext);
   if (!("transition" in selected)) {
-    return { evaluations: selected.evaluations, kind: "transition_condition_failed" };
+    return {
+      evaluations: selected.evaluations,
+      kind: "transition_condition_failed",
+    };
   }
 
   const completion = await completeStageInTransaction(transaction, {
@@ -245,6 +275,11 @@ export async function executeSequentialTransitionInTransaction(
       transaction,
       source.workflowInstanceId,
       new Date(),
+      selected.transition.terminalOutcome,
+      terminalOutcomeApplicantStatus(
+        selected.transition.terminalOutcome,
+        selected.transition.terminalApplicantStatus,
+      ),
     );
     if (!completed) return { kind: "target_activation_failed" };
     await finalizeTransitionExecution(transaction, {
@@ -291,8 +326,10 @@ export async function executeSequentialTransitionInTransaction(
   };
 }
 
-export function executeSequentialTransition(input: ExecuteSequentialTransitionInput) {
+export function executeSequentialTransition(
+  input: ExecuteSequentialTransitionInput,
+) {
   return withTransitionExecutionTransaction((transaction) =>
-    executeSequentialTransitionInTransaction(transaction, input)
+    executeSequentialTransitionInTransaction(transaction, input),
   );
 }

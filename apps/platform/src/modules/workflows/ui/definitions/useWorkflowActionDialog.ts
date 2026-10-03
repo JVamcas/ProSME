@@ -14,6 +14,7 @@ import {
   isWorkflowStageDecisionAction,
   type WorkflowActionDefinition,
 } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
+import { terminalOutcomeApplicantStatus } from "../../domain/transitions/WorkflowTerminalOutcome";
 import { reconcileWorkflowActionBindings } from "@/modules/workflows/domain/actions/WorkflowActionBindingPolicy";
 import type {
   WorkflowEditorView,
@@ -21,9 +22,7 @@ import type {
 } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import type { WorkflowTransitionDefinition } from "@/modules/workflows/domain/transitions/WorkflowTransitionDefinition";
 import { useSaveWorkflowGraph } from "@/modules/workflows/WorkflowHooks";
-import {
-  workflowActionRoutes,
-} from "./WorkflowActionEditorRoutes";
+import { workflowActionRoutesForEditor } from "./WorkflowActionEditorRoutes";
 import {
   toWorkflowActionDefinition,
   workflowActionFormDefaults,
@@ -69,13 +68,13 @@ async function validateDetails(
   const values = form.getValues();
   const duplicateKey = stage.actions.some(
     (item) =>
-      item.stableKey === values.stableKey
-      && item.stableKey !== action?.stableKey,
+      item.stableKey === values.stableKey &&
+      item.stableKey !== action?.stableKey,
   );
   const duplicateOrder = stage.actions.some(
     (item) =>
-      item.displayOrder === values.displayOrder
-      && item.stableKey !== action?.stableKey,
+      item.displayOrder === values.displayOrder &&
+      item.stableKey !== action?.stableKey,
   );
   if (duplicateKey) {
     form.setError("stableKey", {
@@ -114,10 +113,10 @@ export function useWorkflowActionDialog({
   const [completedSteps, setCompletedSteps] = useState<ActionEditorStep[]>([]);
   const [routes, setRoutes] = useState<WorkflowTransitionDefinition[]>(() =>
     action
-      ? workflowActionRoutes(
+      ? workflowActionRoutesForEditor(
           editor.graph.transitions,
           stage.stableKey,
-          action.stableKey,
+          action,
         )
       : [],
   );
@@ -128,11 +127,13 @@ export function useWorkflowActionDialog({
     name: "taskStableKeys",
   });
   const label = useWatch({ control: form.control, name: "label" });
-  const stableKey = action?.stableKey ?? uniqueStableKeyFromLabel(
-    label,
-    stage.actions.map((item) => item.stableKey),
-    "ACTION",
-  );
+  const stableKey =
+    action?.stableKey ??
+    uniqueStableKeyFromLabel(
+      label,
+      stage.actions.map((item) => item.stableKey),
+      "ACTION",
+    );
   const deferTargetType = useWatch({
     control: form.control,
     name: "deferTargetType",
@@ -180,6 +181,16 @@ export function useWorkflowActionDialog({
 
   useEffect(() => {
     if (actionType !== "REJECT" || routes.length === 0) return;
+    const route = routes.find((item) => item.terminalOutcome);
+    if (route?.terminalOutcome) {
+      const mapping = terminalOutcomeApplicantStatus(
+        route.terminalOutcome,
+        route.terminalApplicantStatus,
+      );
+      form.setValue("rejectionPublicStatus", mapping.status);
+      form.setValue("rejectionPublicLabel", mapping.label);
+      form.setValue("rejectionPublicDescription", mapping.description);
+    }
     form.setValue(
       "rejectionOutcomeType",
       routes[0].terminalOutcome ? "TERMINAL" : "TRANSITION",
@@ -188,11 +199,12 @@ export function useWorkflowActionDialog({
   }, [actionType, form, routes]);
 
   async function continueToNextStep() {
-    const valid = currentStep === "details"
-      ? await validateDetails(form, stage, action)
-      : currentStep === "behaviour" && actionType === "REJECT"
-        ? await form.trigger("taskStableKeys", { shouldFocus: true })
-        : await form.trigger(undefined, { shouldFocus: true });
+    const valid =
+      currentStep === "details"
+        ? await validateDetails(form, stage, action)
+        : currentStep === "behaviour" && actionType === "REJECT"
+          ? await form.trigger("taskStableKeys", { shouldFocus: true })
+          : await form.trigger(undefined, { shouldFocus: true });
     if (!valid || currentIndex === actionEditorSteps.length - 1) return;
     setCompletedSteps((steps) =>
       steps.includes(currentStep) ? steps : [...steps, currentStep],
@@ -213,10 +225,12 @@ export function useWorkflowActionDialog({
     setRouteError(null);
     if (actionType === "REJECT" && routes.length > 1) {
       const targetTypes = new Set(
-        routes.map((route) => route.terminalOutcome ? "TERMINAL" : "STAGE"),
+        routes.map((route) => (route.terminalOutcome ? "TERMINAL" : "STAGE")),
       );
       if (targetTypes.size > 1) {
-        setRouteError("Rejection routes must all use the same destination type.");
+        setRouteError(
+          "Rejection routes must all use the same destination type.",
+        );
         setCurrentStep("routing");
         return;
       }
@@ -241,13 +255,14 @@ export function useWorkflowActionDialog({
     onClose();
   };
 
-  const actionPreview = currentStep === "review"
-    ? toWorkflowActionDefinition(
-        form.getValues(),
-        action?.id,
-        action?.condition,
-      )
-    : null;
+  const actionPreview =
+    currentStep === "review"
+      ? toWorkflowActionDefinition(
+          form.getValues(),
+          action?.id,
+          action?.condition,
+        )
+      : null;
 
   return {
     actionPreview,

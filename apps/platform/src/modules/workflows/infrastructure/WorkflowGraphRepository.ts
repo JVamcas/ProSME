@@ -105,6 +105,8 @@ const graphSelection = {
     fromStageId: workflowTransitionDefinitions.fromStageId,
     actionKey: workflowTransitionDefinitions.actionKey,
     terminalOutcome: workflowTransitionDefinitions.terminalOutcome,
+    terminalApplicantStatus:
+      workflowTransitionDefinitions.terminalApplicantStatus,
     priority: workflowTransitionDefinitions.priority,
     condition: workflowTransitionDefinitions.condition,
   },
@@ -232,7 +234,10 @@ function assembleGraph(rows: Awaited<ReturnType<typeof loadGraphRows>>) {
       }
       if (target && joinPredecessor?.predecessorStageId) {
         const predecessorKey = codes.get(joinPredecessor.predecessorStageId);
-        if (predecessorKey && !target.joinPredecessorStageKeys.includes(predecessorKey)) {
+        if (
+          predecessorKey &&
+          !target.joinPredecessorStageKeys.includes(predecessorKey)
+        ) {
           target.joinPredecessorStageKeys.push(predecessorKey);
         }
       }
@@ -269,6 +274,7 @@ function assembleGraph(rows: Awaited<ReturnType<typeof loadGraphRows>>) {
           sourceStageKey: codes.get(transition.fromStageId) ?? "",
           priority: transition.priority,
           terminalOutcome: transition.terminalOutcome,
+          terminalApplicantStatus: transition.terminalApplicantStatus,
           condition: transition.condition,
           targetStageKeys: [],
         });
@@ -276,8 +282,11 @@ function assembleGraph(rows: Awaited<ReturnType<typeof loadGraphRows>>) {
       if (transition?.id && transitionTarget?.targetStageId) {
         const targetStageKey = codes.get(transitionTarget.targetStageId);
         const assembledTransition = transitions.get(transition.id);
-        if (targetStageKey && assembledTransition
-          && !assembledTransition.targetStageKeys.includes(targetStageKey)) {
+        if (
+          targetStageKey &&
+          assembledTransition &&
+          !assembledTransition.targetStageKeys.includes(targetStageKey)
+        ) {
           assembledTransition.targetStageKeys.push(targetStageKey);
         }
       }

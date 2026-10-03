@@ -14,7 +14,8 @@ export const workflowApplicantStatusDefaults = {
   },
   ACTION_REQUIRED: {
     label: "Action required",
-    description: "Please review your application and complete the requested actions.",
+    description:
+      "Please review your application and complete the requested actions.",
   },
   OUTCOME_AVAILABLE: {
     label: "Outcome available",
@@ -38,7 +39,8 @@ export const workflowApplicantStatusDefaults = {
   },
   REJECTED_INCOMPLETE: {
     label: "Rejected incomplete",
-    description: "Your application has been rejected because required information is incomplete.",
+    description:
+      "Your application has been rejected because required information is incomplete.",
   },
 } satisfies Record<
   WorkflowPublicStatus,
