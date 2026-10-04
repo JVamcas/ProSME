@@ -1,24 +1,30 @@
 import Link from "next/link";
 
-import { CmsImage } from "./cms-image";
-import { CmsRichText } from "@/components/ui/cms-rich-text";
+import { CmsImage } from "@/modules/content/ui/public/CmsImage";
+import { CmsRichText } from "@/modules/content/ui/public/CmsRichText";
 import { HomeFunding } from "@/modules/content/ui/public/HomeFunding";
 import { StatisticsBlock } from "./statistics-block";
 import { getFaqs } from "@/modules/content/ServerContentQueries";
 
 type Block = Record<string, unknown> & { blockType?: string };
 
-export async function ContentBlocks({ blocks }: { blocks: unknown[] }) {
+export async function ContentBlocks({
+  blocks,
+  resourceIntroduction,
+}: {
+  blocks: unknown[];
+  resourceIntroduction?: string;
+}) {
   return (
     <>
       {await Promise.all(
-        blocks.map((block, index) => renderBlock(block as Block, index)),
+        blocks.map((block, index) => renderBlock(block as Block, index, resourceIntroduction)),
       )}
     </>
   );
 }
 
-async function renderBlock(block: Block, index: number) {
+async function renderBlock(block: Block, index: number, resourceIntroduction?: string) {
   const key = `${block.blockType}-${index}`;
   if (isRemovedEligibilityBanner(block)) return null;
   if (block.blockType === "hero")
@@ -70,16 +76,16 @@ async function renderBlock(block: Block, index: number) {
   if (block.blockType === "statistics")
     return <StatisticsBlock block={block} key={key} />;
   if (block.blockType === "resourceGrid")
-    return <ResourceGrid block={block} key={key} />;
+    return <ResourceGrid block={block} introduction={resourceIntroduction} key={key} />;
   if (block.blockType === "faqList") return <FaqList block={block} key={key} />;
   return null;
 }
 
-async function ResourceGrid({ block }: { block: Block }) {
+async function ResourceGrid({ block, introduction }: { block: Block; introduction?: string }) {
   return (
     <HomeFunding
       heading={text(block.heading) || "Latest News & Resources"}
-      limit={number(block.limit, 4)}
+      introduction={introduction}
     />
   );
 }
@@ -117,9 +123,6 @@ async function FaqList({ block }: { block: Block }) {
 
 function text(value: unknown) {
   return typeof value === "string" ? value : "";
-}
-function number(value: unknown, fallback: number) {
-  return typeof value === "number" ? value : fallback;
 }
 function image(value: unknown) {
   return value && typeof value === "object" && "url" in value

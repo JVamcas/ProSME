@@ -33,7 +33,7 @@ export async function loadPriorStageContext(
         stage.completed_at DESC, stage.id DESC
     )
     SELECT latest.code AS "stageKey",
-      task.id AS "taskId", definition.stable_key AS "taskKey",
+      task.id AS "taskId", definition.code AS "taskKey",
       task.reviewer_slot AS "reviewerSlot",
       definition.reviewer_count AS "reviewerCount",
       task.assigned_user_id AS "reviewerId",

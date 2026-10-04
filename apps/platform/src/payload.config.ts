@@ -43,11 +43,33 @@ export default buildConfig({
     },
   ],
   admin: {
+    avatar: {
+      Component: "./modules/content/ui/admin/CmsHeaderAvatar.tsx",
+    },
+    components: {
+      graphics: {
+        Icon: "./modules/content/ui/admin/CmsHeaderLabel.tsx",
+      },
+      Nav: "./modules/content/ui/admin/CmsNavigation.tsx",
+      beforeDashboard: [
+        "./modules/content/ui/admin/CmsHomeDashboardCard.tsx",
+      ],
+      logout: {
+        Button: "./modules/content/ui/admin/CmsLogoutButton.tsx",
+      },
+      views: {
+        home: {
+          Component: "./modules/content/ui/admin/CmsHomeGuide.tsx",
+          path: "/home",
+        },
+      },
+    },
     importMap: {
       baseDir: path.resolve(dirname),
       importMapFile: path.resolve(dirname, "app/(payload)/cms/importMap.js"),
     },
-    meta: { titleSuffix: " | SME Fund CMS" },
+    meta: { titleSuffix: " | SME Fund Content" },
+    theme: "light",
     user: "cms-principals",
   },
   collections: [

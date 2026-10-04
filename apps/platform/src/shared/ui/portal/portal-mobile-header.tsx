@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef } from "react";
 
 import type { PortalSpace } from "@/auth/authorization/portal-access";
-import { Logo } from "@/components/brand/logo";
 import { LogoutButton } from "@/shared/ui/portal/LogoutButton";
 import type { PortalContext } from "@/modules/profiles/ProfileTypes";
 import { PortalNavList } from "./portal-nav-list";
@@ -16,6 +15,7 @@ import {
 } from "./portal-navigation";
 import { PortalHelpLink, PortalUserSummary } from "./portal-shell-support";
 import { PortalSpaceSwitcher } from "./portal-space-switcher";
+import { Logo } from "../Logo";
 
 function useDismissableMenu() {
   const menu = useRef<HTMLDetailsElement>(null);

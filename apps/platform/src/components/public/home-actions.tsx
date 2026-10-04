@@ -5,32 +5,32 @@ import {
   FileText,
 } from "lucide-react";
 import Link from "next/link";
+import type { HomepageContent } from "@/modules/content/ContentTypes";
 
-const actions = [
-  {
-    href: "/funding",
-    icon: CircleDollarSign,
-    title: "I want funding",
-    text: "Explore current opportunities and find the right funding for your business.",
-    background: "bg-brand-orange/10",
-  },
-  {
-    href: "/eligibility",
-    icon: FileText,
-    title: "Am I eligible?",
-    text: "Check if your business meets the key criteria before you apply.",
-    background: "bg-brand-cream",
-  },
-  {
-    href: "/portal",
-    icon: CalendarDays,
-    title: "I already applied",
-    text: "Track your application and stay updated on the next steps.",
-    background: "bg-brand-blue/10",
-  },
-];
-
-export function HomeActions() {
+export function HomeActions({ content }: { content: HomepageContent }) {
+  const actions = [
+    {
+      href: "/funding",
+      icon: CircleDollarSign,
+      title: content.actionCards.fundingTitle,
+      text: content.actionCards.fundingDescription,
+      background: "bg-brand-orange/10",
+    },
+    {
+      href: "/eligibility",
+      icon: FileText,
+      title: content.actionCards.eligibilityTitle,
+      text: content.actionCards.eligibilityDescription,
+      background: "bg-brand-cream",
+    },
+    {
+      href: "/portal",
+      icon: CalendarDays,
+      title: content.actionCards.trackingTitle,
+      text: content.actionCards.trackingDescription,
+      background: "bg-brand-blue/10",
+    },
+  ];
   return (
     <section className="container relative z-20 grid gap-3 py-5 md:grid-cols-3">
       {actions.map(({ href, icon: Icon, title, text, background }) => (
@@ -44,7 +44,7 @@ export function HomeActions() {
               <Icon className="size-6" />
             </span>
             <h2 className="mt-4 text-2xl font-bold text-navy">{title}</h2>
-            <p className="mt-2 max-w-[270px] text-sm leading-5 text-[#365b82]">
+            <p className="mt-2 max-w-[270px] text-sm leading-5 text-brand-navy/70">
               {text}
             </p>
           </div>

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 import { LogoutButton } from "@/shared/ui/portal/LogoutButton";
-import { userInitials } from "@/lib/user-initials";
+import { AppHeaderAvatar } from "@/shared/ui/navigation/AppHeader";
 import type { PortalContext } from "@/modules/profiles/ProfileTypes";
 
 export function PortalUserMenu({ context }: { context: PortalContext }) {
@@ -51,9 +51,7 @@ export function PortalUserMenu({ context }: { context: PortalContext }) {
         onClick={() => setOpen((current) => !current)}
         type="button"
       >
-        <span className="grid size-9 shrink-0 place-items-center rounded-full bg-brand-navy text-xs font-bold text-brand-white">
-          {userInitials(context.displayName) || "SF"}
-        </span>
+        <AppHeaderAvatar displayName={context.displayName} />
         <span className="max-w-44 truncate text-sm font-bold">
           {context.displayName}
         </span>

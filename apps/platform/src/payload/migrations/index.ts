@@ -11,6 +11,9 @@ import * as migration_20260912_130000_phase2_impact_background from './20260912_
 import * as migration_20260912_181500_code_owned_primary_navigation from './20260912_181500_code_owned_primary_navigation';
 import * as migration_20260914_230000_gcs_media_prefix from './20260914_230000_gcs_media_prefix';
 import * as migration_20260921_120000_remove_legacy_eligibility_checker from './20260921_120000_remove_legacy_eligibility_checker';
+import * as migration_20260929_210000_home_guide_content from './20260929_210000_home_guide_content';
+import * as migration_20260929_220000_home_process_version_table from './20260929_220000_home_process_version_table';
+import * as migration_20261004_230000_responsive_media_sizes from './20261004_230000_responsive_media_sizes';
 
 export const migrations = [
   {
@@ -77,5 +80,20 @@ export const migrations = [
     up: migration_20260921_120000_remove_legacy_eligibility_checker.up,
     down: migration_20260921_120000_remove_legacy_eligibility_checker.down,
     name: '20260921_120000_remove_legacy_eligibility_checker'
+  },
+  {
+    up: migration_20260929_210000_home_guide_content.up,
+    down: migration_20260929_210000_home_guide_content.down,
+    name: '20260929_210000_home_guide_content'
+  },
+  {
+    up: migration_20260929_220000_home_process_version_table.up,
+    down: migration_20260929_220000_home_process_version_table.down,
+    name: '20260929_220000_home_process_version_table'
+  },
+  {
+    up: migration_20261004_230000_responsive_media_sizes.up,
+    down: migration_20261004_230000_responsive_media_sizes.down,
+    name: '20261004_230000_responsive_media_sizes'
   },
 ];

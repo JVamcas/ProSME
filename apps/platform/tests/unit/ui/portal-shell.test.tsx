@@ -45,7 +45,7 @@ describe("P3.1 shared authenticated portal shell", () => {
     expect(markup).toContain("background-color:var(--color-brand-orange)");
     expect(markup).toContain("min-w-0 bg-brand-white");
     expect(markup).toContain("fixed inset-x-0 bottom-0 top-16");
-    expect(markup).toContain("min-h-0 flex-1 overflow-y-auto");
+    expect(markup).toContain('data-sidebar-slot="navigation"');
     expect(markup).toContain('aria-label="Open portal navigation"');
   });
 

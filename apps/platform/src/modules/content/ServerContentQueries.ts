@@ -1,8 +1,12 @@
 import "server-only";
 
+import { media, resourceHref } from "./infrastructure/ContentProjection";
+import { readHomeFeed } from "./infrastructure/PayloadHomeFeedRepository";
+
 import { draftMode } from "next/headers";
 import { getPayload, type Where } from "payload";
 import configPromise from "@payload-config";
+import { defaultHomeActionCards, defaultHomeProcess } from "./ContentDefaults";
 
 import {
   cmsPermissionCode,
@@ -33,6 +37,10 @@ import type {
   StatisticItem,
 } from "./ContentTypes";
 
+export async function getHomeNewsAndResources() {
+  return readHomeFeed();
+}
+
 async function payloadClient() {
   return getPayload({ config: configPromise });
 }
@@ -48,28 +56,6 @@ async function queryMode(resource: CmsPermissionResource) {
     : false;
   const where: Where = draft ? {} : { _status: { equals: "published" } };
   return { draft, where };
-}
-
-function media(value: unknown): CmsImage | undefined {
-  if (
-    !value ||
-    typeof value !== "object" ||
-    !("url" in value) ||
-    typeof value.url !== "string"
-  )
-    return undefined;
-  return {
-    alt: "alt" in value && typeof value.alt === "string" ? value.alt : "",
-    height:
-      "height" in value && typeof value.height === "number"
-        ? value.height
-        : undefined,
-    url: value.url,
-    width:
-      "width" in value && typeof value.width === "number"
-        ? value.width
-        : undefined,
-  };
 }
 
 function seo(item: SeoContent): SeoContent {
@@ -91,6 +77,14 @@ export async function getHomepage(): Promise<HomepageContent> {
     overrideAccess: true,
   });
   return {
+    actionCards: {
+      fundingTitle: page.actionCards?.fundingTitle ?? defaultHomeActionCards.fundingTitle,
+      fundingDescription: page.actionCards?.fundingDescription ?? defaultHomeActionCards.fundingDescription,
+      eligibilityTitle: page.actionCards?.eligibilityTitle ?? defaultHomeActionCards.eligibilityTitle,
+      eligibilityDescription: page.actionCards?.eligibilityDescription ?? defaultHomeActionCards.eligibilityDescription,
+      trackingTitle: page.actionCards?.trackingTitle ?? defaultHomeActionCards.trackingTitle,
+      trackingDescription: page.actionCards?.trackingDescription ?? defaultHomeActionCards.trackingDescription,
+    },
     applyHref: page.applyHref,
     applyLabel: page.applyLabel,
     eligibilityLabel: page.eligibilityLabel,
@@ -98,8 +92,23 @@ export async function getHomepage(): Promise<HomepageContent> {
     heroImage: media(page.heroImage),
     heroPanelHeading: page.heroPanelHeading ?? "",
     heroPanelSummary: page.heroPanelSummary ?? "",
+    fundingButtonLabel: page.fundingButtonLabel ?? "Funding Opportunities",
+    fundingSlogan: page.fundingSlogan ?? "Brighter businesses. A stronger Namibia.",
+    benefitFunding: page.benefitFunding ?? "Access funding",
+    benefitCapacity: page.benefitCapacity ?? "Build your capacity",
+    benefitOpportunity: page.benefitOpportunity ?? "Create opportunities",
+    process: {
+      heading: page.process?.heading ?? defaultHomeProcess.heading,
+      introduction: page.process?.introduction ?? defaultHomeProcess.introduction,
+      steps: page.process?.steps?.length === 4
+        ? page.process.steps.map((step) => ({ title: step.title, description: step.description }))
+        : defaultHomeProcess.steps,
+    },
+    supportHeading: page.supportHeading ?? "Who we support",
+    supportIntroduction: page.supportIntroduction ?? "The SME Fund is open to any Namibian MSME with high potential, inclusive impact and a commitment to growth. Our priority areas include:",
     blocks: page.layout ?? [],
     newsHeading: page.newsHeading ?? "",
+    newsIntroduction: page.newsIntroduction ?? "Updates, stories and useful materials for Namibian entrepreneurs.",
     summary: page.summary ?? "",
     title: page.title ?? "",
     trackingLabel: page.trackingLabel,
@@ -246,16 +255,6 @@ export async function getResources(): Promise<ListingItem[]> {
     title: item.title,
     ...seo(item),
   }));
-}
-
-function resourceHref(file: unknown, externalUrl?: string | null) {
-  if (externalUrl) return externalUrl;
-  return file &&
-    typeof file === "object" &&
-    "url" in file &&
-    typeof file.url === "string"
-    ? file.url
-    : undefined;
 }
 
 export async function getEvents(): Promise<ListingItem[]> {

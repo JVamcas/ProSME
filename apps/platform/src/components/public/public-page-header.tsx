@@ -1,5 +1,5 @@
 import type { CmsImage as CmsImageValue } from "@/modules/content/ContentTypes";
-import { CmsImage } from "./cms-image";
+import { CmsImage } from "@/modules/content/ui/public/CmsImage";
 
 export function PublicPageHeader({
   eyebrow,

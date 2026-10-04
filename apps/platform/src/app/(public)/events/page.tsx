@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ArrowRight, CalendarDays, MapPin } from "lucide-react";
 
 import { EmptyState } from "@/components/ui/empty-state";
-import { CmsImage } from "@/components/public/cms-image";
+import { CmsImage } from "@/modules/content/ui/public/CmsImage";
 import { PublicPageHeader } from "@/components/public/public-page-header";
 import { contentMetadata } from "@/modules/content/ContentMetadata";
 import { getEvents, getPage } from "@/modules/content/ServerContentQueries";

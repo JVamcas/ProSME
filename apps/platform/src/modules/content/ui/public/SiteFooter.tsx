@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import { NewsletterForm } from "@/components/public/newsletter-form";
+import { NewsletterForm } from "@/modules/engagement/ui/public/NewsletterForm";
 import {
   getContactDetails,
   getFooter,
@@ -31,7 +31,7 @@ export async function SiteFooter() {
   ]);
 
   return (
-    <footer className="bg-brand-orange text-brand-navy">
+    <footer className="bg-brand-orange text-white">
       <div className="container grid gap-9 py-12 md:grid-cols-[1.1fr_.7fr_.8fr_1.25fr]">
         <div>
           <Image

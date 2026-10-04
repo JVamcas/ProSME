@@ -1,26 +1,23 @@
 import { BarChart3, Leaf, Users, Venus } from "lucide-react";
 
 import { ArrowLink } from "@/components/ui/links";
-import { defaultSupportGroups } from "@/modules/content/ContentDefaults";
-import type { EligibilityItem } from "@/modules/content/ContentTypes";
+import type { EligibilityItem, HomepageContent } from "@/modules/content/ContentTypes";
 
 const icons = [Users, Venus, BarChart3, Leaf];
 
-export function HomeSupport({ items }: { items: EligibilityItem[] }) {
+export function HomeSupport({ items, content }: { items: EligibilityItem[]; content: HomepageContent }) {
   const published = items.filter((item) => item.kind === "criterion");
-  const groups = published.length ? published : defaultSupportGroups;
+  const groups = published;
   return (
     <section className="bg-brand-cream/30 py-12">
       <div className="container">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h2 className="text-3xl font-bold text-brand-navy">
-              Who we support
+              {content.supportHeading}
             </h2>
             <p className="mt-3 max-w-4xl text-base leading-7 text-brand-navy">
-              The SME Fund is open to any Namibian MSME with high potential,
-              inclusive impact and a commitment to growth. Our priority areas
-              include:
+              {content.supportIntroduction}
             </p>
           </div>
           <ArrowLink href="/eligibility">See eligibility details</ArrowLink>

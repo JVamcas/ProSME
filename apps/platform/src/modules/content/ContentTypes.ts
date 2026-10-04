@@ -1,10 +1,18 @@
 import type { SerializedEditorState } from "@payloadcms/richtext-lexical/lexical";
+import type { CmsImageSize } from "./ContentImageSizes";
+
+export type CmsImageVariant = {
+  height?: number | null;
+  url: string;
+  width?: number | null;
+};
 
 export type CmsImage = {
   alt: string;
   height?: number | null;
   url: string;
   width?: number | null;
+  sizes?: Partial<Record<CmsImageSize, CmsImageVariant | null>>;
 };
 export type SeoContent = {
   excludeFromSearch?: boolean | null;
@@ -47,6 +55,14 @@ export type EligibilityItem = {
 };
 
 export type HomepageContent = {
+  actionCards: {
+    fundingTitle: string;
+    fundingDescription: string;
+    eligibilityTitle: string;
+    eligibilityDescription: string;
+    trackingTitle: string;
+    trackingDescription: string;
+  };
   applyHref: string;
   applyLabel: string;
   eligibilityLabel: string;
@@ -54,8 +70,21 @@ export type HomepageContent = {
   heroImage?: CmsImage;
   heroPanelHeading: string;
   heroPanelSummary: string;
+  fundingButtonLabel: string;
+  fundingSlogan: string;
+  benefitFunding: string;
+  benefitCapacity: string;
+  benefitOpportunity: string;
+  process: {
+    heading: string;
+    introduction: string;
+    steps: { title: string; description: string }[];
+  };
+  supportHeading: string;
+  supportIntroduction: string;
   blocks: unknown[];
   newsHeading: string;
+  newsIntroduction: string;
   summary: string;
   title: string;
   trackingLabel: string;

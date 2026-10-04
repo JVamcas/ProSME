@@ -1,0 +1,54 @@
+.header,
+:global(.app-header):has(.label) {
+  height: 80px;
+  gap: 32px;
+  border-bottom: 1px solid rgb(10 24 59 / 10%);
+  background: var(--sme-brand-white);
+  color: var(--sme-brand-navy);
+  font-family: var(--font-sans, ui-sans-serif, system-ui, sans-serif);
+}
+
+.header {
+  align-items: center;
+  justify-content: space-between;
+  padding-inline: 32px;
+}
+
+.label {
+  color: var(--sme-brand-navy);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.avatar {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--sme-brand-navy);
+  color: var(--sme-brand-white);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+:global(.app-header):has(.label) :global(.app-header__content) {
+  padding-inline: 32px;
+}
+
+:global(.app-header):has(.label) :global(.step-nav__home) {
+  width: auto;
+  height: auto;
+}
+
+@media (max-width: 1024px) {
+  :global(.app-header):has(.label) {
+    height: 64px;
+  }
+
+  :global(.app-header):has(.label) :global(.app-header__content) {
+    padding-inline: 16px;
+  }
+}

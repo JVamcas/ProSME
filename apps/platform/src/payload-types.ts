@@ -188,6 +188,40 @@ export interface Media {
   height?: number | null;
   focalX?: number | null;
   focalY?: number | null;
+  sizes?: {
+    thumbnail?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    mobile?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    tablet?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    desktop?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+  };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -257,6 +291,7 @@ export interface Page {
             heading: string;
             summary?: string | null;
             backgroundImage?: (number | null) | Media;
+            campaignMessage?: string | null;
             /**
              * Leave empty to use the published programme statistics.
              */
@@ -712,6 +747,50 @@ export interface MediaSelect<T extends boolean = true> {
   height?: T;
   focalX?: T;
   focalY?: T;
+  sizes?:
+    | T
+    | {
+        thumbnail?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        mobile?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        tablet?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        desktop?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+      };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -758,6 +837,7 @@ export interface PagesSelect<T extends boolean = true> {
               heading?: T;
               summary?: T;
               backgroundImage?: T;
+              campaignMessage?: T;
               items?:
                 | T
                 | {
@@ -1078,17 +1158,68 @@ export interface Footer {
  */
 export interface Homepage {
   id: number;
+  /**
+   * The small line above the main headline.
+   */
   eyebrow?: string | null;
+  /**
+   * The large heading at the top of Home.
+   */
   title?: string | null;
+  /**
+   * The paragraph beneath the headline.
+   */
   summary?: string | null;
+  /**
+   * Choose or upload an image. Edit its Alt field in the media record to describe it for visitors using screen readers.
+   */
   heroImage?: (number | null) | Media;
+  /**
+   * The script-style message over the image on desktop and mobile.
+   */
+  heroPanelHeading?: string | null;
+  /**
+   * The message in the white quote card on desktop. The attribution is SME Fund Namibia.
+   */
+  heroPanelSummary?: string | null;
+  /**
+   * Opens the application journey. Its destination is fixed.
+   */
   applyLabel: string;
+  /**
+   * Opens Funding Opportunities. Its destination is fixed.
+   */
+  fundingButtonLabel?: string | null;
+  benefitFunding?: string | null;
+  benefitCapacity?: string | null;
+  benefitOpportunity?: string | null;
   applyHref: string;
   eligibilityLabel: string;
   trackingLabel: string;
-  heroPanelHeading?: string | null;
-  heroPanelSummary?: string | null;
+  actionCards?: {
+    fundingTitle?: string | null;
+    fundingDescription?: string | null;
+    eligibilityTitle?: string | null;
+    eligibilityDescription?: string | null;
+    trackingTitle?: string | null;
+    trackingDescription?: string | null;
+  };
+  process?: {
+    heading?: string | null;
+    introduction?: string | null;
+    steps?:
+      | {
+          title: string;
+          description: string;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  supportHeading?: string | null;
+  supportIntroduction?: string | null;
+  fundingSlogan?: string | null;
   newsHeading?: string | null;
+  newsIntroduction?: string | null;
   layout?:
     | (
         | {
@@ -1133,6 +1264,7 @@ export interface Homepage {
             heading: string;
             summary?: string | null;
             backgroundImage?: (number | null) | Media;
+            campaignMessage?: string | null;
             /**
              * Leave empty to use the published programme statistics.
              */
@@ -1259,13 +1391,44 @@ export interface HomepageSelect<T extends boolean = true> {
   title?: T;
   summary?: T;
   heroImage?: T;
+  heroPanelHeading?: T;
+  heroPanelSummary?: T;
   applyLabel?: T;
+  fundingButtonLabel?: T;
+  benefitFunding?: T;
+  benefitCapacity?: T;
+  benefitOpportunity?: T;
   applyHref?: T;
   eligibilityLabel?: T;
   trackingLabel?: T;
-  heroPanelHeading?: T;
-  heroPanelSummary?: T;
+  actionCards?:
+    | T
+    | {
+        fundingTitle?: T;
+        fundingDescription?: T;
+        eligibilityTitle?: T;
+        eligibilityDescription?: T;
+        trackingTitle?: T;
+        trackingDescription?: T;
+      };
+  process?:
+    | T
+    | {
+        heading?: T;
+        introduction?: T;
+        steps?:
+          | T
+          | {
+              title?: T;
+              description?: T;
+              id?: T;
+            };
+      };
+  supportHeading?: T;
+  supportIntroduction?: T;
+  fundingSlogan?: T;
   newsHeading?: T;
+  newsIntroduction?: T;
   layout?:
     | T
     | {
@@ -1302,6 +1465,7 @@ export interface HomepageSelect<T extends boolean = true> {
               heading?: T;
               summary?: T;
               backgroundImage?: T;
+              campaignMessage?: T;
               items?:
                 | T
                 | {

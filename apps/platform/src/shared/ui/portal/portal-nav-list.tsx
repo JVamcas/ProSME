@@ -7,6 +7,12 @@ import { useId, useState } from "react";
 
 import { useNavigationData } from "./useNavigationData";
 import { cn } from "@/lib/utils";
+import {
+  sidebarItemClassName,
+  sidebarIconClassName,
+  sidebarLabelClassName,
+  sidebarHiddenLabelClassName,
+} from "../navigation/SidebarItemStyles";
 import { NavigationPendingIndicator } from "./NavigationPendingIndicator";
 import type { PortalRoute } from "./portal-navigation";
 
@@ -67,32 +73,22 @@ function PortalRouteItem({
   const Icon = route.icon;
   const childListId = `${route.id}-children-${generatedId}`;
   const isTopLevel = depth === 0;
-  const itemClassName = cn(
-    "flex w-full items-center rounded-xl py-2 text-left text-brand-navy transition",
-    isTopLevel
-      ? "min-h-11 text-sm font-semibold"
-      : "min-h-10 text-sm font-medium",
-    collapsed ? "justify-center px-2" : "gap-3 px-3",
-    "hover:bg-brand-navy/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-navy",
-    dark &&
-      "text-white/80 hover:bg-white/10 hover:text-white focus-visible:ring-white",
-    active &&
-      !dark &&
-      "bg-brand-navy text-brand-orange shadow-sm hover:bg-brand-navy",
-    dark && active && "bg-white/12 text-white hover:bg-white/15",
-  );
+  const itemClassName = sidebarItemClassName({
+    active,
+    collapsed,
+    dark,
+    nested: !isTopLevel,
+  });
   const content = (
     <>
-      <Icon
-        aria-hidden="true"
-        className={cn(
-          isTopLevel ? "size-5" : "size-4",
-          "text-brand-navy",
-          dark && "text-brand-orange",
-          active && "text-brand-orange",
-        )}
-      />
-      <span className={collapsed ? "sr-only" : "flex-1"}>{route.label}</span>
+      <Icon aria-hidden="true" className={sidebarIconClassName} />
+      <span
+        className={
+          collapsed ? sidebarHiddenLabelClassName : sidebarLabelClassName
+        }
+      >
+        {route.label}
+      </span>
     </>
   );
 
