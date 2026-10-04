@@ -1,4 +1,6 @@
 import "server-only";
+import { lockWorkflowRuntimeForTask } from "./WorkflowRuntimeLock";
+import { workflowTaskHasActiveHold } from "./WorkflowHoldQueries";
 
 import { sql } from "drizzle-orm";
 
@@ -27,6 +29,7 @@ export async function appendDocumentEvidenceVersion(
   transaction: DatabaseTransaction,
   input: AppendDocumentEvidenceVersionInput,
 ) {
+  await lockWorkflowRuntimeForTask(transaction, input.taskId);
   const lockIdentity = `${input.applicationId}:${input.requirementId}`;
   await transaction.execute(sql`
     SELECT pg_advisory_xact_lock(hashtextextended(${lockIdentity}, 0))
@@ -58,6 +61,9 @@ export async function appendDocumentEvidenceVersion(
       ON evidence.application_id = workflow.application_id
       AND evidence.requirement_id = requirement.id
     WHERE requirement.id = ${input.requirementId}::uuid
+      AND NOT ${workflowTaskHasActiveHold(sql`task`)}
+      AND task.status IN ('PENDING', 'IN_PROGRESS')
+      AND task_stage.status = 'ACTIVE' AND workflow.status = 'ACTIVE'
     GROUP BY requirement.id
     RETURNING id, version_number AS "versionNumber"
   `);

@@ -9,7 +9,7 @@ vi.mock("next/navigation", () => ({
     throw new Error("redirected");
   }),
 }));
-vi.mock("@/modules/work-queue/WorkQueueHooks", () => ({
+vi.mock("@/modules/work-queue/ui/useWorkQueue", () => ({
   useWorkflowTask: vi.fn(),
   useWorkflowEscalationTracking: vi.fn(() => ({
     data: null,
@@ -19,7 +19,7 @@ vi.mock("@/modules/work-queue/WorkQueueHooks", () => ({
 vi.mock("@/modules/workflows/ui/runtime/useWorkflowCoi", () => ({
   useWorkflowCoi: vi.fn(),
 }));
-vi.mock("@/modules/applications/ApplicationHooks", () => ({
+vi.mock("@/modules/applications/ui/useApplications", () => ({
   useAdminApplicationDetail: vi.fn(() => ({ isPending: true })),
 }));
 vi.mock("@/modules/work-queue/ui/WorkflowTaskReviewPanel", () => ({
@@ -38,7 +38,7 @@ vi.mock("@/modules/workflows/ui/runtime/WorkflowTaskCoiGate", () => ({
 import WorkflowTaskPage from "@/app/(operations)/admin/tasks/[id]/page";
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { getAuthenticatedPageUser } from "@/platform/auth/ServerAuthNavigation";
-import { useWorkflowTask } from "@/modules/work-queue/WorkQueueHooks";
+import { useWorkflowTask } from "@/modules/work-queue/ui/useWorkQueue";
 import { useWorkflowCoi } from "@/modules/workflows/ui/runtime/useWorkflowCoi";
 import { WorkflowTaskWorkspace } from "@/modules/work-queue/ui/WorkflowTaskWorkspace";
 
@@ -79,7 +79,7 @@ describe("task workspace workflow progress", () => {
   );
 
   it.each([false, true])(
-    "shows the progress tab only with permission (%s)",
+    "keeps workflow progress in the application workspace (%s)",
     (allowed) => {
       const markup = renderToStaticMarkup(
         <WorkflowTaskWorkspace
@@ -88,9 +88,9 @@ describe("task workspace workflow progress", () => {
         />,
       );
 
-      expect(markup.includes("Workflow Progress")).toBe(allowed);
+      expect(markup).not.toContain("Workflow Progress");
       expect(markup).toContain("Assigned Task");
-      expect(markup).toContain("Requests for information");
+      expect(markup).not.toContain("Requests for information");
     },
   );
 

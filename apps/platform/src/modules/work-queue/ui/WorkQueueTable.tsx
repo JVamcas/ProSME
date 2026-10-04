@@ -1,5 +1,6 @@
 "use client";
 
+import { WorkflowTaskHoldStatus } from "@/modules/workflows/ui/tasks/WorkflowTaskHoldStatus";
 import { WorkflowRfiTaskStatus } from "@/modules/workflows/ui/rfi/WorkflowRfiTaskStatus";
 import { LockKeyhole, UserRound } from "lucide-react";
 
@@ -35,7 +36,7 @@ const columns: DataTableColumn<WorkQueueRow>[] = [
     header: "Task",
     cell: ({ row }) => {
       const blockedReason = row.original.taskBlockedReason;
-      if (!blockedReason || row.original.informationRequest) {
+      if (!blockedReason || row.original.informationRequest || row.original.processingStatus === "ON_HOLD") {
         return (
           <div className="flex flex-col gap-2">
             <ArrowLink
@@ -85,12 +86,13 @@ const columns: DataTableColumn<WorkQueueRow>[] = [
     header: "Task status",
     cell: ({ row }) => (
       <div className="max-w-72 space-y-2">
-        <StatusBadge status={row.original.taskStatus} />
+        <StatusBadge status={row.original.processingStatus ?? row.original.taskStatus} />
         {row.original.taskBlockedReason ? (
           <p className="text-xs leading-4 text-brand-navy/65">
             {row.original.taskBlockedReason}
           </p>
         ) : null}
+        {row.original.holds?.length ? <WorkflowTaskHoldStatus holds={row.original.holds} /> : null}
         {row.original.informationRequest ? (
           <WorkflowRfiTaskStatus request={row.original.informationRequest} />
         ) : null}

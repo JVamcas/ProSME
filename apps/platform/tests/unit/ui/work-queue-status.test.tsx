@@ -6,7 +6,7 @@ import { WorkQueueTable } from "@/modules/work-queue/ui/WorkQueueTable";
 
 const task: WorkQueueRow = {
   applicantName: "Applicant",
-  applicationId: null,
+  applicationId: "application-1",
   assignedRoleId: null,
   assignedRoleName: null,
   assignedUserId: null,
@@ -41,7 +41,7 @@ function renderStatus(overrides: Partial<WorkQueueRow> = {}) {
     <WorkQueueTable emptyMessage="No tasks" items={[{ ...task, ...overrides }]} />,
   );
   const cells = [...markup.matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/g)];
-  return { markup, status: cells[5]?.[1] ?? "" };
+  return { markup, status: cells[4]?.[1] ?? "" };
 }
 
 afterEach(() => {
@@ -114,7 +114,7 @@ describe("work queue status context", () => {
 
     expect(status).toContain("In Progress");
     expect(status).toContain(reason);
-    expect(markup).not.toContain("/admin/tasks/task-1");
+    expect(markup).not.toContain("/admin/applications/application-1?tab=workflow-progress&amp;taskId=task-1");
   });
 
   it("keeps information-request tasks accessible while displaying hold context", () => {
@@ -125,7 +125,7 @@ describe("work queue status context", () => {
 
     expect(status).toContain("On hold.");
     expect(status).toContain("Information requested");
-    expect(markup).toContain("/admin/tasks/task-1");
+    expect(markup).toContain("/admin/applications/application-1?tab=workflow-progress&amp;taskId=task-1");
   });
 
   it("shows only the lifecycle when there is no request or blocking context", () => {

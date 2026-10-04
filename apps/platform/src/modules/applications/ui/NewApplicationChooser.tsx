@@ -3,13 +3,13 @@
 import { useRouter } from "next/navigation";
 
 import { FundingOpportunityCard } from "@/modules/funding-calls/ui/applicant/FundingOpportunityCard";
-import { PortalErrorState } from "@/components/layout/PortalErrorState";
-import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
+import { PortalErrorState } from "@/shared/ui/portal/PortalErrorState";
+import { PortalLoadingState } from "@/shared/ui/portal/PortalLoadingState";
 import { GeneralButton } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Pagination } from "@/components/ui/pagination";
 import type { PublicFundingCallSummary } from "@/modules/funding-calls/api/PublicFundingCallTransport";
-import { useCreateApplication } from "../ApplicationHooks";
+import { useCreateApplication } from "./useApplications";
 import { ApplicationOpportunitySearch } from "./ApplicationOpportunitySearch";
 import {
   opportunityChooserPageSize,

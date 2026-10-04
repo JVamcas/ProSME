@@ -5,13 +5,7 @@ import { z } from "zod";
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { getAuthenticatedPageUser } from "@/platform/auth/ServerAuthNavigation";
 import { can } from "@/auth/authorization/policy";
-import { ResourceNotFoundError } from "@/lib/resource-errors";
-import { getAdminApplicationDetail } from "@/modules/applications/ServerAdminApplicationDetailService";
-import { ApplicationDetailView } from "@/modules/applications/ui/ApplicationDetailView";
-import { getWorkflowProgress } from "@/modules/workflows/application/runtime/ServerWorkflowProgressService";
-import { WorkflowProgressQueryPanel } from "@/modules/workflows/ui/runtime/WorkflowProgressQueryPanel";
-import { listContextualApplicationRfis } from "@/modules/workflows/application/runtime/ServerWorkflowRfiReadService";
-import { StaffApplicationRfiTimeline } from "@/modules/workflows/ui/rfi/WorkflowRfiPresentation";
+import { StaffApplicationDetailWorkspace } from "@/modules/applications/ui/StaffApplicationDetailWorkspace";
 
 export const metadata: Metadata = { title: "Application overview" };
 
@@ -40,52 +34,21 @@ export default async function ApplicationPage({
   if (!z.uuid().safeParse(applicationId).success) {
     notFound();
   }
-  const detail = await getAdminApplicationDetail(
-    user,
-    applicationId,
-    crypto.randomUUID(),
-  ).catch((error: unknown) => {
-    if (error instanceof ResourceNotFoundError) notFound();
-    throw error;
-  });
-
   const allWorkflowAccess = can(user, permissionCodes.workflowInstanceAllRead);
   const taskId = z.uuid().safeParse(query?.taskId);
   const assignedWorkflowAccess =
     taskId.success &&
     can(user, permissionCodes.workflowTaskAssignedRead) &&
     can(user, permissionCodes.workflowInstanceAssignedRead);
-  const progressRead = allWorkflowAccess
-    ? getWorkflowProgress(user, applicationId)
-    : assignedWorkflowAccess
-      ? getWorkflowProgress(user, applicationId, { taskId: taskId.data })
-      : undefined;
-  const [progress, requests] = await Promise.all([
-    progressRead,
-    listContextualApplicationRfis(user, applicationId),
-  ]);
-
   return (
-    <ApplicationDetailView
-      model={detail.model}
+    <StaffApplicationDetailWorkspace
+      applicationId={applicationId}
+      canReadWorkflow={allWorkflowAccess || assignedWorkflowAccess}
       initialTab={
         query?.tab === "workflow-progress" ? "workflow-progress" : "overview"
       }
-      requests={<StaffApplicationRfiTimeline requests={requests} />}
-      workflowProgress={
-        progress === undefined ? undefined : (
-          <WorkflowProgressQueryPanel
-            applicationId={applicationId}
-            taskId={
-              allWorkflowAccess
-                ? undefined
-                : taskId.success
-                  ? taskId.data
-                  : undefined
-            }
-            initialData={progress}
-          />
-        )
+      taskId={
+        allWorkflowAccess ? undefined : taskId.success ? taskId.data : undefined
       }
     />
   );

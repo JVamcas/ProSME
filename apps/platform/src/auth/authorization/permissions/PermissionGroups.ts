@@ -104,6 +104,12 @@ export const permissionGroups: readonly PermissionGroup[] = [
     id: "workflow-tasks",
     label: "Workflow Tasks",
     permissionCodes: [
+      permissionCodes.workflowTaskAssignedHold,
+      permissionCodes.workflowTaskAssignedResume,
+      permissionCodes.workflowStageAllHold,
+      permissionCodes.workflowStageAllResume,
+      permissionCodes.workflowInstanceAllHold,
+      permissionCodes.workflowInstanceAllResume,
       permissionCodes.workflowTaskAssignedRead,
       permissionCodes.workflowTaskAssignedProcess,
       permissionCodes.workflowEscalationOwnCancel,

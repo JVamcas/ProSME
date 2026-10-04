@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -13,7 +14,7 @@ const deleteDraft = vi.hoisted(() => ({
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn() }),
 }));
-vi.mock("@/modules/applications/ApplicationHooks", () => ({
+vi.mock("@/modules/applications/ui/useApplications", () => ({
   useDeleteApplicationDraft: () => deleteDraft,
 }));
 vi.mock("@/shared/ui/ActionMenu", () => ({
@@ -42,12 +43,14 @@ vi.mock("@/shared/ui/ActionMenu", () => ({
   ),
 }));
 
-import { ApplicationListContent } from "@/components/applicant/applications/ApplicationListContent";
+import { ApplicationListContent } from "@/modules/applications/ui/applicant/ApplicationListContent";
 import type { ApplicationSummary } from "@/modules/applications/ApplicationTypes";
 
-(globalThis as typeof globalThis & {
-  IS_REACT_ACT_ENVIRONMENT: boolean;
-}).IS_REACT_ACT_ENVIRONMENT = true;
+(
+  globalThis as typeof globalThis & {
+    IS_REACT_ACT_ENVIRONMENT: boolean;
+  }
+).IS_REACT_ACT_ENVIRONMENT = true;
 
 const draft: ApplicationSummary = {
   reference: null,
@@ -80,7 +83,11 @@ describe("draft deletion action", () => {
     document.body.append(container);
     const root = createRoot(container);
     await act(async () => {
-      root.render(<ApplicationListContent canDeleteDraft items={[draft]} />);
+      root.render(
+        <QueryClientProvider client={new QueryClient()}>
+          <ApplicationListContent canDeleteDraft items={[draft]} />
+        </QueryClientProvider>,
+      );
     });
 
     await act(async () => {
@@ -111,15 +118,18 @@ describe("draft deletion action", () => {
     const root = createRoot(container);
     await act(async () => {
       root.render(
-        <ApplicationListContent
-          canDeleteDraft
-          items={[{ ...draft, status: "submitted" }]}
-        />,
+        <QueryClientProvider client={new QueryClient()}>
+          <ApplicationListContent
+            canDeleteDraft
+            items={[{ ...draft, status: "submitted" }]}
+          />
+        </QueryClientProvider>,
       );
     });
     expect(
-      Array.from(document.querySelectorAll("button"))
-        .some((button) => button.textContent === "Delete application"),
+      Array.from(document.querySelectorAll("button")).some(
+        (button) => button.textContent === "Delete application",
+      ),
     ).toBe(false);
     await act(async () => root.unmount());
   });

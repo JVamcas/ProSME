@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { expect, it, vi } from "vitest";
 import type { WorkflowEscalationTracking } from "@/modules/workflows/domain/runtime/WorkflowEscalationTracking";
 import type { WorkflowTaskActions as ActionComponent } from "@/modules/workflows/ui/tasks/WorkflowTaskActions";
-vi.mock("@/modules/work-queue/WorkQueueHooks", () => ({
+vi.mock("@/modules/work-queue/ui/useWorkQueue", () => ({
   useCancelWorkflowEscalation: vi.fn(() => ({
     isPending: false,
     mutateAsync: vi.fn(),

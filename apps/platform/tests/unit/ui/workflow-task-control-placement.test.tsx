@@ -15,7 +15,7 @@ import { runtimeDefinition } from "../../support/form-runtime";
 const mocks = vi.hoisted(() => ({ execute: vi.fn(), finalize: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
-vi.mock("@/modules/work-queue/WorkQueueHooks", () => ({
+vi.mock("@/modules/work-queue/ui/useWorkQueue", () => ({
   useExecuteWorkflowTaskAction: () => ({
     isPending: false,
     mutateAsync: mocks.execute,

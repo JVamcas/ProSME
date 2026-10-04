@@ -1,4 +1,10 @@
 import "server-only";
+import {
+  workflowHasActiveApplicationHold,
+  workflowStageHasActiveHold,
+  workflowTaskHasActiveHold,
+} from "./WorkflowHoldQueries";
+import { workflowTaskEffectiveDeadline } from "./WorkflowSlaDeadline";
 
 import { and, asc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 
@@ -49,15 +55,18 @@ export type WorkflowProgressRecord = Omit<
   versionId: string;
 };
 
-export async function readWorkflowProgress(
-  applicationId: string,
-): Promise<WorkflowProgressRecord | null> {
-  const rows = await getDatabase()
+async function loadWorkflowProgressRows(applicationId: string) {
+  return getDatabase()
     .select({
       activatedAt: stageInstances.activatedAt,
       completedAt: workflowInstances.completedAt,
       instanceId: workflowInstances.id,
       instanceStatus: workflowInstances.status,
+      instanceHeld: workflowHasActiveApplicationHold(
+        sql`${workflowInstances.id}`,
+      ),
+      stageHeld: workflowStageHasActiveHold(sql`${stageInstances}`),
+      taskHeld: workflowTaskHasActiveHold(sql`${workflowTasks}`),
       iterationNumber: stageInstances.iterationNumber,
       stageCompletedAt: stageInstances.completedAt,
       stageDescription: workflowStageDefinitions.description,
@@ -87,7 +96,9 @@ export async function readWorkflowProgress(
       taskAssignedUserEmail: users.email,
       taskAssignedUserId: workflowTasks.assignedUserId,
       taskAssignedUserName: users.displayName,
-      taskDueAt: workflowTasks.dueAt,
+      taskDueAt: workflowTaskEffectiveDeadline(sql`${workflowTasks}`).mapWith(
+        workflowTasks.dueAt,
+      ),
       taskId: workflowTasks.id,
       taskName: stageTaskDefinitions.name,
       taskRequired: stageTaskDefinitions.required,
@@ -145,16 +156,22 @@ export async function readWorkflowProgress(
     )
     .leftJoin(
       users,
-      eq(users.id, sql`CASE
+      eq(
+        users.id,
+        sql`CASE
         WHEN ${stageInstances.id} IS NULL
           THEN ${stageTaskDefinitions.namedUserOverrideId}
-        ELSE ${workflowTasks.assignedUserId} END`),
+        ELSE ${workflowTasks.assignedUserId} END`,
+      ),
     )
     .leftJoin(
       roles,
-      eq(roles.id, sql`CASE
+      eq(
+        roles.id,
+        sql`CASE
         WHEN ${stageInstances.id} IS NULL THEN ${stageTaskDefinitions.roleId}
-        ELSE ${workflowTasks.assignedRoleId} END`),
+        ELSE ${workflowTasks.assignedRoleId} END`,
+      ),
     )
     .where(eq(workflowInstances.applicationId, applicationId))
     .orderBy(
@@ -162,7 +179,12 @@ export async function readWorkflowProgress(
       asc(stageInstances.iterationNumber),
       asc(stageTaskDefinitions.displayOrder),
     );
+}
 
+export async function readWorkflowProgress(
+  applicationId: string,
+): Promise<WorkflowProgressRecord | null> {
+  const rows = await loadWorkflowProgressRows(applicationId);
   const first = rows[0];
   if (!first) return null;
 
@@ -175,9 +197,9 @@ export async function readWorkflowProgress(
         activatedAt: row.activatedAt?.toISOString() ?? null,
         completedAt: row.stageReturned
           ? null
-          : row.stageCompletedAt?.toISOString() ?? null,
+          : (row.stageCompletedAt?.toISOString() ?? null),
         returnedAt: row.stageReturned
-          ? row.stageCompletedAt?.toISOString() ?? null
+          ? (row.stageCompletedAt?.toISOString() ?? null)
           : null,
         description: row.stageDescription,
         id: row.stageId,
@@ -185,7 +207,13 @@ export async function readWorkflowProgress(
         name: row.stageName,
         sequence: row.stageSequence,
         stableKey: row.stageStableKey,
-        status: row.stageReturned ? "RETURNED" : row.stageStatus ?? "NOT_STARTED",
+        processingStatus:
+          ["ACTIVE", "BLOCKED"].includes(row.stageStatus ?? "") && row.stageHeld
+            ? "ON_HOLD"
+            : null,
+        status: row.stageReturned
+          ? "RETURNED"
+          : (row.stageStatus ?? "NOT_STARTED"),
         tasks: [],
       };
       stages.set(key, stage);
@@ -219,6 +247,11 @@ export async function readWorkflowProgress(
           : {}),
         name: row.taskName,
         required: row.taskRequired ?? false,
+        processingStatus:
+          ["PENDING", "IN_PROGRESS"].includes(row.taskStatus ?? "") &&
+          row.taskHeld
+            ? "ON_HOLD"
+            : null,
         status: row.taskStatus ?? "WAITING",
         taskType: row.taskType,
         prerequisitesComplete: row.prerequisitesComplete,
@@ -233,6 +266,10 @@ export async function readWorkflowProgress(
     name: first.versionMetadata.name,
     stages: [...stages.values()],
     startedAt: first.startedAt.toISOString(),
+    processingStatus:
+      first.instanceStatus === "ACTIVE" && first.instanceHeld
+        ? "ON_HOLD"
+        : null,
     status: first.instanceStatus,
     terminalOutcome: first.terminalOutcome,
     versionNumber: first.versionNumber,

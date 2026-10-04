@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { getAuthenticatedPageUser } from "@/platform/auth/ServerAuthNavigation";
 import { can } from "@/auth/authorization/policy";
-import { ApplicationsTable } from "@/components/admin/applications/ApplicationsTable";
+import { ApplicationsTable } from "@/modules/applications/ui/staff/ApplicationsTable";
 import { PageShell } from "@/shared/ui/PageShell";
 
 export const metadata: Metadata = {

@@ -1,7 +1,7 @@
 "use client";
 
-import { PortalErrorState } from "@/components/layout/PortalErrorState";
-import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
+import { PortalErrorState } from "@/shared/ui/portal/PortalErrorState";
+import { ApplicationSectionSkeleton } from "@/modules/applications/ui/ApplicationDetailSkeleton";
 import type { WorkflowProgressView } from "../../api/WorkflowProgressTypes";
 import { WorkflowProgressPanel } from "../WorkflowProgressPanel";
 import { useWorkflowProgress } from "./useWorkflowProgress";
@@ -24,25 +24,20 @@ export function WorkflowProgressQueryPanel({
     initialData,
   );
 
-  if (query.isPending) {
-    return (
-      <PortalLoadingState
-        className="min-h-48 px-0"
-        description="Preparing the application's workflow."
-        title="Loading workflow progress"
-      />
-    );
-  }
-
   if (query.isError) {
     return (
       <PortalErrorState
+        headingLevel={2}
         className="mt-0 shadow-none"
         description={query.error.message}
         onAction={() => void query.refetch()}
         title="Workflow progress could not be loaded"
       />
     );
+  }
+
+  if (query.isPending) {
+    return <ApplicationSectionSkeleton title="workflow progress" />;
   }
 
   return <WorkflowProgressPanel progress={query.data} />;

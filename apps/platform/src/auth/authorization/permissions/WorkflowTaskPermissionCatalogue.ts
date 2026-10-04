@@ -12,6 +12,36 @@ function define(
 export const workflowTaskPermissionCatalogue: readonly PermissionDefinition[] =
   [
     define(
+      permissionCodes.workflowTaskAssignedHold,
+      "Put on Hold assigned tasks",
+      "Suspend only a workflow task assigned to the signed-in user.",
+    ),
+    define(
+      permissionCodes.workflowTaskAssignedResume,
+      "Resume assigned task on holds",
+      "End a task-scoped hold on a workflow task assigned to the signed-in user.",
+    ),
+    define(
+      permissionCodes.workflowStageAllHold,
+      "Put on Hold any workflow stage",
+      "Suspend all unfinished work in any active workflow stage.",
+    ),
+    define(
+      permissionCodes.workflowStageAllResume,
+      "Resume any stage on hold",
+      "End a stage-scoped hold in any active workflow.",
+    ),
+    define(
+      permissionCodes.workflowInstanceAllHold,
+      "Put on Hold any application workflow",
+      "Suspend processing across any active application workflow.",
+    ),
+    define(
+      permissionCodes.workflowInstanceAllResume,
+      "Resume any application on shold",
+      "End an application-scoped hold in any active workflow.",
+    ),
+    define(
       permissionCodes.workflowDeadlineAllProcess,
       "Process due workflow deadlines",
       "Execute configured timed actions across active workflows through the authenticated system processor.",

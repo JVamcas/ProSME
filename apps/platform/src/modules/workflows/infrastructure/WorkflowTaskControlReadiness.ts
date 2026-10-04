@@ -1,10 +1,7 @@
 import { sql } from "drizzle-orm";
+import { workflowTaskHasActiveHold } from "./WorkflowHoldQueries";
 
-export const workflowTaskControlAllowsCompletion = sql`NOT EXISTS (
-  SELECT 1 FROM app_workflow_holds active_hold
-  WHERE active_hold.stage_instance_id = stage.id
-    AND active_hold.status = 'ACTIVE'
-) AND NOT EXISTS (
+export const workflowTaskControlAllowsCompletion = sql`NOT ${workflowTaskHasActiveHold(sql`task`)} AND NOT EXISTS (
   SELECT 1 FROM app_workflow_deferrals active_deferral
   WHERE active_deferral.stage_instance_id = stage.id
     AND active_deferral.status = 'ACTIVE'

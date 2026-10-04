@@ -3,10 +3,8 @@ import "server-only";
 import { and, eq } from "drizzle-orm";
 
 import {
-  stageInstances,
   workflowAuditEntries,
   workflowEvents,
-  workflowHolds,
   workflowReferrals,
   workflowReworks,
 } from "@/db/schema";
@@ -245,124 +243,4 @@ export async function completeWorkflowReferralForStage(
     workflowInstanceId: referral.workflowInstanceId,
   });
   return { ...referral, returnTarget };
-}
-
-export async function startWorkflowHold(
-  transaction: ControlTransaction,
-  input: {
-    actionExecutionId: string;
-    actorId: string;
-    comment?: string;
-    correlationId: string;
-    reason?: string;
-    reviewAt?: Date;
-    stageInstanceId: string;
-    taskId: string | null;
-    workflowInstanceId: string;
-  },
-) {
-  const [blocked] = await transaction
-    .update(stageInstances)
-    .set({
-      status: "BLOCKED",
-    })
-    .where(
-      and(
-        eq(stageInstances.id, input.stageInstanceId),
-        eq(stageInstances.status, "ACTIVE"),
-      ),
-    )
-    .returning({ id: stageInstances.id });
-  if (!blocked) return null;
-  const [hold] = await transaction
-    .insert(workflowHolds)
-    .values({
-      actionExecutionId: input.actionExecutionId,
-      comment: input.comment,
-      heldBy: input.actorId,
-      previousStageStatus: "ACTIVE",
-      reason: input.reason,
-      reviewAt: input.reviewAt,
-      stageInstanceId: input.stageInstanceId,
-      taskId: input.taskId,
-      workflowInstanceId: input.workflowInstanceId,
-    })
-    .returning({ id: workflowHolds.id, heldAt: workflowHolds.heldAt });
-  await appendControlRecords(transaction, {
-    action: "WORKFLOW_HOLD_STARTED",
-    actorId: input.actorId,
-    after: {
-      heldAt: hold.heldAt.toISOString(),
-      reviewAt: input.reviewAt?.toISOString() ?? null,
-      scope: "STAGE",
-      status: "BLOCKED",
-    },
-    before: { status: "ACTIVE" },
-    correlationId: input.correlationId,
-    stageInstanceId: input.stageInstanceId,
-    targetId: hold.id,
-    targetType: "WORKFLOW_HOLD",
-    taskId: input.taskId,
-    workflowInstanceId: input.workflowInstanceId,
-  });
-  return hold;
-}
-
-export async function resumeWorkflowHold(
-  transaction: ControlTransaction,
-  input: {
-    actorId: string;
-    comment?: string;
-    correlationId: string;
-    stageInstanceId: string;
-    taskId: string | null;
-    workflowInstanceId: string;
-  },
-) {
-  const resumedAt = new Date();
-  const [hold] = await transaction
-    .update(workflowHolds)
-    .set({
-      resumedAt,
-      resumedBy: input.actorId,
-      status: "RESUMED",
-    })
-    .where(
-      and(
-        eq(workflowHolds.stageInstanceId, input.stageInstanceId),
-        eq(workflowHolds.status, "ACTIVE"),
-      ),
-    )
-    .returning({ id: workflowHolds.id, heldAt: workflowHolds.heldAt });
-  if (!hold) return null;
-  const [stage] = await transaction
-    .update(stageInstances)
-    .set({
-      status: "ACTIVE",
-    })
-    .where(
-      and(
-        eq(stageInstances.id, input.stageInstanceId),
-        eq(stageInstances.status, "BLOCKED"),
-      ),
-    )
-    .returning({ id: stageInstances.id });
-  if (!stage) return null;
-  await appendControlRecords(transaction, {
-    action: "WORKFLOW_HOLD_ENDED",
-    actorId: input.actorId,
-    after: {
-      durationMilliseconds: resumedAt.getTime() - hold.heldAt.getTime(),
-      resumedAt: resumedAt.toISOString(),
-      status: "ACTIVE",
-    },
-    before: { status: "BLOCKED" },
-    correlationId: input.correlationId,
-    stageInstanceId: input.stageInstanceId,
-    targetId: hold.id,
-    targetType: "WORKFLOW_HOLD",
-    taskId: input.taskId,
-    workflowInstanceId: input.workflowInstanceId,
-  });
-  return hold;
 }

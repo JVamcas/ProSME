@@ -33,6 +33,7 @@ export type AdminApplicationStage = {
 };
 
 export type AdminApplicationOverview = {
+  processingStatus?: "ON_HOLD" | null;
   applicantName: string;
   applicationId: string;
   businessName: string | null;
@@ -150,6 +151,7 @@ export type AdminApplicationStatusFilter =
   (typeof adminApplicationStatuses)[number];
 
 export type AdminApplicationListRow = {
+  processingStatus?: "ON_HOLD" | null;
   activeStageName: string | null;
   activeTaskCount: number;
   applicantName: string;

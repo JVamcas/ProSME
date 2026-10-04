@@ -3,8 +3,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 vi.mock("@/modules/workflows/infrastructure/WorkflowControlRepository", () => ({
   recordWorkflowRework: vi.fn(),
-  resumeWorkflowHold: vi.fn(),
-  startWorkflowHold: vi.fn(),
 }));
 vi.mock(
   "@/modules/workflows/application/runtime/ServerStageActivationService",

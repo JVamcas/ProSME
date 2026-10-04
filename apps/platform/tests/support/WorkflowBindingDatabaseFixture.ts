@@ -1,3 +1,5 @@
+import { insertSubmissionDeclarations } from "./SubmissionDeclarationsDatabaseFixture";
+
 type DatabaseQuery = (
   text: string,
   values?: unknown[],
@@ -50,7 +52,8 @@ export async function insertCompleteSubmissionApplications(
     const response = await query(
       `INSERT INTO app_application_draft_responses
         (application_id, form_version_id, respondent_user_id, values)
-       VALUES ($1, $2, $3, '{"BUSINESS_NAME":"Submission Business"}'::jsonb)
+       VALUES ($1, $2, $3,
+         '{"BUSINESS_NAME":"Submission Business", "DECLARATION_ACCURACY_CONFIRMATION":"CONFIRMED", "DECLARATION_AUTHORITY_CONFIRMATION":"CONFIRMED", "DATA_PROCESSING_CONSENT":"CONSENT_GRANTED", "VERIFICATION_CONSENT":"CONSENT_GRANTED"}'::jsonb)
        RETURNING id`,
       [applicationId, submissionFormVersionId, input.ownerId],
     );
@@ -110,6 +113,7 @@ export async function insertSubmissionFundingCalls(
       submissionFormSectionId,
     ],
   );
+  await insertSubmissionDeclarations(query, submissionFormVersionId);
   await query(
     `UPDATE app_form_versions
      SET status = 'PUBLISHED', published_by = $2, published_at = now(),

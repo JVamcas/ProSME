@@ -10,8 +10,8 @@ import {
 
 import { useState } from "react";
 
-import { PortalErrorState } from "@/components/layout/PortalErrorState";
-import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
+import { PortalErrorState } from "@/shared/ui/portal/PortalErrorState";
+import { PortalLoadingState } from "@/shared/ui/portal/PortalLoadingState";
 import { GeneralButton, GeneralButtonLink } from "@/components/ui/button";
 import { Badge } from "@/shared/ui/Badge";
 import type { NotificationChannelSummary } from "../api/NotificationTemplateSchemas";

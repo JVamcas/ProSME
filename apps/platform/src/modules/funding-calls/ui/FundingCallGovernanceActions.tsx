@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { GeneralButton } from "@/components/ui/button";
-import { DraggableDialog } from "@/components/ui/draggable-dialog";
+import { DraggableDialog } from "@/shared/ui/DraggableDialog";
 import { FormTextarea } from "@/components/ui/form-fields";
 import type { FundingCallView } from "../api/FundingCallTransport";
 import { useChangeFundingCallGovernanceStatus } from "../FundingCallHooks";

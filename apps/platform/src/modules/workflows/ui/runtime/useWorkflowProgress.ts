@@ -3,7 +3,7 @@
 import type { WorkflowProgressView } from "../../api/WorkflowProgressTypes";
 import { useQuery } from "@tanstack/react-query";
 
-import { workQueueQueryKeys } from "@/modules/work-queue/WorkQueueHooks";
+import { workQueueQueryKeys } from "@/modules/work-queue/ui/WorkQueueQueryKeys";
 import { clientWorkflowProgressService } from "../../ClientWorkflowProgressService";
 
 export function useWorkflowProgress(
@@ -24,6 +24,7 @@ export function useWorkflowProgress(
       applicationId,
       taskId,
     ],
-    queryFn: () => clientWorkflowProgressService.get(applicationId, taskId),
+    queryFn: ({ signal }) =>
+      clientWorkflowProgressService.get(applicationId, taskId, signal),
   });
 }

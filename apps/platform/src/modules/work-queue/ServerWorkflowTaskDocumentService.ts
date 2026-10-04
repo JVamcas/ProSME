@@ -27,6 +27,9 @@ async function editableTask(user: AuthenticatedUser | null, taskId: string) {
   const task = await readWorkflowTask(actor.id, taskId);
   if (!task) throw new ResourceNotFoundError("workflow task");
   requirePermission(actor, task.permissions.edit);
+  if (task.processingStatus === "ON_HOLD") {
+    throw new RequestValidationError("Resume the applicable holds before changing documents.");
+  }
   if (task.taskStatus === "COMPLETED") {
     throw new RequestValidationError(
       "Documents cannot be changed after the task is completed.",

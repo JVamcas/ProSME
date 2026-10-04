@@ -4,7 +4,7 @@ import { useState } from "react";
 import { FormProvider, get, type FieldErrors } from "react-hook-form";
 
 import { GeneralButton } from "@/components/ui/button";
-import { DraggableDialog } from "@/components/ui/draggable-dialog";
+import { DraggableDialog } from "@/shared/ui/DraggableDialog";
 import { StepProgress } from "@/components/ui/step-progress";
 import { getErrorMessages } from "@/lib/client-http";
 import type {

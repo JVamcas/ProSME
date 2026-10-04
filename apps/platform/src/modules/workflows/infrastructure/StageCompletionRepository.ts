@@ -1,4 +1,6 @@
 import "server-only";
+import { lockWorkflowRuntimeForStage } from "./WorkflowRuntimeLock";
+import { workflowStageHasActiveHold } from "./WorkflowHoldQueries";
 import { workflowApprovalEligibilityReady } from "./WorkflowApprovalEligibilityReadiness";
 import { workflowReworkContinuationContext } from "./WorkflowReworkContinuationProjection";
 
@@ -79,11 +81,7 @@ async function readCompletionTargets(
       approvalEligibilityReady: workflowApprovalEligibilityReady(
         sql`${stageInstances.workflowInstanceId}`,
       ),
-      activeHold: sql<boolean>`EXISTS (
-        SELECT 1 FROM app_workflow_holds hold
-        WHERE hold.stage_instance_id = ${stageInstances.id}
-          AND hold.status = 'ACTIVE'
-      )`,
+      activeHold: workflowStageHasActiveHold(sql`${stageInstances}`),
       application: {
         business: applications.businessSection,
         declarationAcceptance: applications.declarationAcceptance,
@@ -200,6 +198,7 @@ export async function lockStageCompletionTarget(
   stageInstanceId: string,
   allowedStatuses: StageInstanceStatus[] = ["ACTIVE"],
 ): Promise<StageCompletionTarget | null> {
+  await lockWorkflowRuntimeForStage(transaction, stageInstanceId);
   const rows = await readCompletionTargets(
     transaction,
     [stageInstanceId],
@@ -236,6 +235,7 @@ export async function persistStageCompletion(
       and(
         eq(stageInstances.id, input.target.stageInstanceId),
         eq(stageInstances.status, "ACTIVE"),
+        sql`NOT ${workflowStageHasActiveHold(sql`${stageInstances}`)}`,
       ),
     )
     .returning({ id: stageInstances.id });

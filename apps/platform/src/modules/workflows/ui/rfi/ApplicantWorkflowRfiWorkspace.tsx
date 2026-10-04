@@ -18,7 +18,7 @@ import {
 import {
   useOwnedWorkflowRfi,
   useRespondToWorkflowRfi,
-} from "./WorkflowRfiHooks";
+} from "./useWorkflowRfi";
 import { ApplicantWorkflowRfiDocuments } from "./ApplicantWorkflowRfiDocuments";
 import { WorkflowRfiInstructions } from "./WorkflowRfiInstructions";
 import {

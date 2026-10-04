@@ -1,5 +1,7 @@
 import { recordReviewThresholdEvaluations } from "../../infrastructure/WorkflowReviewThresholdRepository";
 import "server-only";
+import { readApplicableWorkflowHolds } from "../../infrastructure/WorkflowHoldRepository";
+import { assertWorkflowHoldAction } from "./WorkflowHoldPolicy";
 
 import {
   requireAuthenticatedUser,
@@ -14,6 +16,7 @@ import {
   findWorkflowActionExecution,
   lockWorkflowActionExecutionTarget,
   type WorkflowActionExecutionTarget,
+  type WorkflowActionExecutionTransaction,
 } from "../../infrastructure/WorkflowActionExecutionRepository";
 import {
   withWorkflowActionExecutionTransaction,
@@ -118,6 +121,29 @@ function isIdempotencyConstraint(error: unknown) {
   );
 }
 
+async function assertHoldScope(
+  transaction: WorkflowActionExecutionTransaction,
+  actor: AuthenticatedUser,
+  target: WorkflowActionExecutionTarget,
+  input: ExecuteWorkflowActionInput,
+) {
+  if (["PUT_ON_HOLD", "RESUME"].includes(target.action.actionType)) {
+    requirePermission(
+      actor,
+      requiredWorkflowActionPermission(target.action, target.task),
+    );
+    if (target.task && !target.task.assignedToActor) {
+      fail("INVALID_RUNTIME_CONTEXT", "This task is not assigned to you.");
+    }
+    const holds = await readApplicableWorkflowHolds(transaction, {
+      workflowInstanceId: input.workflowInstanceId,
+      stageInstanceId: input.sourceStageInstanceId,
+      taskId: target.task?.id,
+    });
+    assertWorkflowHoldAction(actor, target, input.input, holds);
+  }
+}
+
 export async function executeWorkflowAction(
   user: AuthenticatedUser | null,
   input: ExecuteWorkflowActionInput,
@@ -177,6 +203,7 @@ export async function executeWorkflowAction(
         );
       }
       assertRuntimeIdentityAndVersion(target, input);
+      await assertHoldScope(transaction, actor, target, input);
       const parsedAction = workflowActionDefinitionSchema.safeParse(
         target.action,
       );
@@ -243,7 +270,9 @@ export async function executeWorkflowAction(
         transaction,
         target.stage.stageInstanceId,
         input.expectedRuntimeVersion,
-        target.action.actionType === "RESUME" ? ["BLOCKED"] : ["ACTIVE"],
+        ["RESUME", "PUT_ON_HOLD"].includes(target.action.actionType)
+          ? ["ACTIVE", "BLOCKED"]
+          : ["ACTIVE"],
       );
       if (!resultingRuntimeVersion) {
         fail(

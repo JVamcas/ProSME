@@ -24,6 +24,9 @@ vi.mock("@/modules/workflows/ui/definitions/useWorkflowConditionFields", () => (
   useWorkflowConditionFields: () => ({}),
 }));
 
+(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean })
+  .IS_REACT_ACT_ENVIRONMENT = true;
+
 let controller: ReturnType<typeof useWorkflowStageDialogController>;
 const editor: WorkflowEditorView = {
   allowedActions: [],
@@ -102,7 +105,7 @@ describe("workflow stage applicant-facing status", () => {
     expect(controller.form.getValues("publicStatusMapping")).toEqual({
       status: "UNDER_REVIEW",
       label: "Under review",
-      description: "Application under review",
+      description: "Your application is being reviewed.",
     });
     await act(async () => {
       controller.form.setValue("name", "New screening stage");

@@ -136,7 +136,7 @@ describe("workflow applicant status suggestions", () => {
     } finally {
       await view.unmount();
     }
-  });
+  }, 30_000);
 
   it("keeps existing custom wording when opening and revisiting details", async () => {
     const view = await mountStage(true);

@@ -1,3 +1,6 @@
+import { workflowHoldResumedNotificationFields } from "./NotificationWorkflowHoldEvent";
+import { workflowHoldScopeLabels } from "@/modules/workflows/domain/runtime/WorkflowHold";
+
 import type {
   NotificationCatalogKey,
   NotificationEventContextByKey,
@@ -35,6 +38,7 @@ export const notificationEventTemplateFields = {
   "workflow.sla.breached": workflowDeadlineNotificationFields,
   "workflow.information-request.reminder": workflowDeadlineNotificationFields,
   "workflow.hold.review-due": workflowDeadlineNotificationFields,
+  "workflow.hold.resumed": workflowHoldResumedNotificationFields,
   "workflow.deferral.resumed": workflowDeadlineNotificationFields,
   "auth.email.verification": notificationCatalogTemplateFields.AUTHENTICATION,
   "auth.password.reset": notificationCatalogTemplateFields.AUTHENTICATION,
@@ -206,7 +210,9 @@ export function buildNotificationRenderValues<Key extends NotificationEventKey>(
   input: RenderValueInput<Key>,
 ): Record<string, string> {
   if ("kind" in input.context && "scheduledFor" in input.context) {
-    const context = input.context as NotificationEventContextByKey["workflow.sla.breached"];
+    const context = input.context as
+      | NotificationEventContextByKey["workflow.sla.breached"]
+      | NotificationEventContextByKey["workflow.hold.resumed"];
     return {
       platformName: "SME Fund Namibia",
       recipientName: input.recipient.displayName,
@@ -216,13 +222,28 @@ export function buildNotificationRenderValues<Key extends NotificationEventKey>(
       scheduledFor: formatTimestamp(context.scheduledFor),
       occurredAt: formatTimestamp(context.occurredAt),
       kind: context.kind,
+      ...("scope" in context
+        ? {
+            holdScope: workflowHoldScopeLabels[context.scope],
+            resumptionStatus: context.processingStillHeld
+              ? "This hold has ended. Other holds still apply to the affected work."
+              : "This hold has ended. Work can continue subject to its other requirements.",
+          }
+        : {}),
       question: context.question ?? "",
       deadlineAt: context.deadlineAt ? formatTimestamp(context.deadlineAt) : "",
       workQueueUrl: trustedUrl(input.publicApplicationUrl, "/admin/work-queue"),
-      applicationUrl: trustedUrl(input.publicApplicationUrl, `/portal/applications/${context.applicationId}`),
-      informationRequestUrl: context.kind === "RFI_REMINDER"
-        ? trustedUrl(input.publicApplicationUrl, `/portal/applications/${context.applicationId}/requests/${context.sourceId}`)
-        : "",
+      applicationUrl: trustedUrl(
+        input.publicApplicationUrl,
+        `/portal/applications/${context.applicationId}`,
+      ),
+      informationRequestUrl:
+        context.kind === "RFI_REMINDER"
+          ? trustedUrl(
+              input.publicApplicationUrl,
+              `/portal/applications/${context.applicationId}/requests/${context.sourceId}`,
+            )
+          : "",
     };
   }
   if (input.eventKey.startsWith("funding-call.")) {
@@ -251,10 +272,14 @@ export function buildNotificationRenderValues<Key extends NotificationEventKey>(
   };
 
   if (input.eventKey === "application.terminal-status-reached") {
-    const context = input.context as NotificationEventContextByKey["application.terminal-status-reached"];
+    const context =
+      input.context as NotificationEventContextByKey["application.terminal-status-reached"];
     return {
       ...common,
-      applicationUrl: trustedUrl(input.publicApplicationUrl, `/portal/applications/${context.applicationId}`),
+      applicationUrl: trustedUrl(
+        input.publicApplicationUrl,
+        `/portal/applications/${context.applicationId}`,
+      ),
       newStatus: context.newStatus,
       statusLabel: context.statusLabel,
       previousStatus: context.previousStatus,
@@ -328,12 +353,18 @@ export function buildNotificationRenderValues<Key extends NotificationEventKey>(
     };
   }
 
-  const escalationFields: Record<string, string> = input.eventKey === "workflow.task.escalated"
-    ? {
-        reason: (input.context as NotificationEventContextByKey["workflow.task.escalated"]).reason ?? "",
-        trigger: (input.context as NotificationEventContextByKey["workflow.task.escalated"]).trigger.replaceAll("_", " "),
-      }
-    : {};
+  const escalationFields: Record<string, string> =
+    input.eventKey === "workflow.task.escalated"
+      ? {
+          reason:
+            (
+              input.context as NotificationEventContextByKey["workflow.task.escalated"]
+            ).reason ?? "",
+          trigger: (
+            input.context as NotificationEventContextByKey["workflow.task.escalated"]
+          ).trigger.replaceAll("_", " "),
+        }
+      : {};
   const context =
     input.context as NotificationEventContextByKey["workflow.task.assigned"];
   return {

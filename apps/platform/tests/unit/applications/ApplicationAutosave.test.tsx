@@ -13,7 +13,7 @@ import {
 
 const mocks = vi.hoisted(() => ({ mutate: vi.fn() }));
 
-vi.mock("@/modules/applications/ApplicationHooks", () => ({
+vi.mock("@/modules/applications/ui/useApplications", () => ({
   useUpdateApplication: () => ({
     error: null,
     isPending: false,

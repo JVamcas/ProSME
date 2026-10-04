@@ -14,14 +14,10 @@ import { WorkflowStageCompletionRequirements } from "./runtime/WorkflowStageComp
 import { WorkflowStageTaskAssignments } from "./WorkflowStageTaskAssignments";
 import { StatusBadge } from "@/components/ui/status-badge";
 
-const statusLabels: Record<WorkflowProgressStage["status"], string> = {
-  ACTIVE: "In progress",
-  BLOCKED: "Blocked",
-  CANCELLED: "Cancelled",
-  COMPLETED: "Completed",
-  NOT_STARTED: "Waiting",
-  RETURNED: "Returned for correction",
-};
+import {
+  workflowProgressStatusLabels as statusLabels,
+  workflowProgressStageStatusLabel as stageStatusLabel,
+} from "./WorkflowProgressPresentation";
 
 const statusBorders: Record<WorkflowProgressStage["status"], string> = {
   ACTIVE: "border-brand-blue",
@@ -69,6 +65,37 @@ function latestStageRuns(stages: WorkflowProgressStage[]) {
   return latestRuns;
 }
 
+function PreviousStageRuns({
+  stages,
+  onSelect,
+}: {
+  stages: WorkflowProgressStage[];
+  onSelect: (key: string) => void;
+}) {
+  if (stages.length === 0) return null;
+  return (
+    <details className="mt-3 rounded-lg border border-brand-navy/10 p-3">
+      <summary className="cursor-pointer text-sm font-semibold text-brand-navy">
+        {stages.length} previous {stages.length === 1 ? "run" : "runs"}
+      </summary>
+      <ul className="mt-2 space-y-2">
+        {stages.map((stage) => (
+          <li key={stageKey(stage)}>
+            <button
+              className="text-sm text-brand-orange hover:underline"
+              onClick={() => onSelect(stageKey(stage))}
+              type="button"
+            >
+              {stage.name} · Run {stage.iterationNumber} ·{" "}
+              {stageStatusLabel(stage)}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </details>
+  );
+}
+
 function StageFlow({ progress }: { progress: WorkflowProgressView }) {
   const [showVisualFlow, setShowVisualFlow] = useState(false);
   const [layoutRevision, setLayoutRevision] = useState(0);
@@ -98,7 +125,7 @@ function StageFlow({ progress }: { progress: WorkflowProgressView }) {
           className={`inline-flex items-center gap-1.5 text-xs font-semibold ${statusTextColors[status]}`}
         >
           <StageMarker status={status} />
-          {statusLabels[status]}
+          {run ? stageStatusLabel(run) : statusLabels[status]}
           {run?.iterationNumber && run.iterationNumber > 1
             ? ` · Run ${run.iterationNumber}`
             : ""}
@@ -198,7 +225,7 @@ function StageFlow({ progress }: { progress: WorkflowProgressView }) {
                       <span
                         className={`block text-xs ${statusTextColors[stage.status]}`}
                       >
-                        {statusLabels[stage.status]}
+                        {stageStatusLabel(stage)}
                         {stage.iterationNumber && stage.iterationNumber > 1
                           ? ` · Run ${stage.iterationNumber}`
                           : ""}
@@ -211,6 +238,13 @@ function StageFlow({ progress }: { progress: WorkflowProgressView }) {
           </ol>
         </nav>
         <div className="min-w-0">
+          <PreviousStageRuns
+            stages={progress.stages.filter(
+              (stage) =>
+                stageKey(stage) !== stageKey(latestRuns.get(stage.stableKey)!),
+            )}
+            onSelect={setSelectedKey}
+          />
           <SelectedStageDetails
             selected={selected}
             isHistorical={
@@ -260,7 +294,7 @@ function SelectedStageDetails({
         <span
           className={`rounded-full bg-brand-orange/10 px-3 py-1 text-xs font-semibold ${statusTextColors[selected.status]}`}
         >
-          {statusLabels[selected.status]}
+          {stageStatusLabel(selected)}
         </span>
       </div>
       {selected.description ? (
@@ -336,8 +370,12 @@ export function WorkflowProgressPanel({
           </p>
         </div>
         <StatusBadge
-          status={progress.status.replaceAll("_", " ")}
-          label={progress.status.replaceAll("_", " ")}
+          status={progress.processingStatus ?? progress.status}
+          label={
+            progress.processingStatus === "ON_HOLD"
+              ? "Application on hold"
+              : progress.status.replaceAll("_", " ")
+          }
         />
       </div>
       <p className="mt-4 text-sm text-brand-navy/70">

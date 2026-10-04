@@ -1,5 +1,6 @@
 import { recordReviewThresholdEvaluations } from "./WorkflowReviewThresholdRepository";
 import "server-only";
+import { lockWorkflowRuntimeForTask } from "./WorkflowRuntimeLock";
 import { workflowApprovalEligibilityReady } from "@/modules/workflows/infrastructure/WorkflowApprovalEligibilityReadiness";
 
 import { taskWorkIsReady } from "@/modules/workflows/WorkflowTaskRegistry";
@@ -141,6 +142,7 @@ async function lockTask(
   transaction: Transaction,
   input: WriteInput,
 ): Promise<LockedTask | null> {
+  await lockWorkflowRuntimeForTask(transaction, input.taskId);
   const locked = await transaction.execute(sql`
     SELECT ${workflowApprovalEligibilityReady(sql`stage.workflow_instance_id`)} AS "approvalEligibilityReady",
       task.status AS "taskStatus", task.result,

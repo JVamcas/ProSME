@@ -14,7 +14,7 @@ export async function lockDeadlineTask(
   transaction: WorkflowActionExecutionTransaction,
   candidate: WorkflowDeadlineCandidate,
 ) {
-  if (!candidate.taskId) return true;
+  if (!candidate.taskId || candidate.kind === "HOLD_RESUMED") return true;
   const [task] = await transaction.select({ id: workflowTasks.id })
     .from(workflowTasks).where(and(
       eq(workflowTasks.id, candidate.taskId),

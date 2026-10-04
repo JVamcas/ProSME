@@ -87,15 +87,15 @@ export async function expectImmutableSubmissionArtifacts(
      WHERE application_id = $1 AND evaluation_number = 1`,
     [input.applicationId],
   );
-  expect(eligibility.rows[0].context_reference).toMatchObject({
-    submissionSnapshotId: snapshot.id,
-    submissionSnapshotIntegrityHash: snapshot.integrity_hash,
-  });
-  await expect(query(
-    `UPDATE app_application_submission_snapshots
+  // Submission pins eligibility configuration; a workflow task evaluates it later.
+  expect(eligibility.rows).toHaveLength(0);
+  await expect(
+    query(
+      `UPDATE app_application_submission_snapshots
      SET snapshot_content = '{}'::jsonb WHERE id = $1`,
-    [snapshot.id],
-  )).rejects.toThrow("application submission snapshots are immutable");
+      [snapshot.id],
+    ),
+  ).rejects.toThrow("application submission snapshots are immutable");
 }
 
 export async function expectAtomicSubmissionCounts(
@@ -107,7 +107,7 @@ export async function expectAtomicSubmissionCounts(
     application_audits: 1,
     audits: 1,
     events: 6,
-    eligibility_outcomes: 1,
+    eligibility_outcomes: 0,
     notification_deliveries: 2,
     notification_occurrences: 2,
     outbox: 2,
@@ -139,9 +139,11 @@ export async function expectAtomicSubmissionCounts(
       event_key: "workflow.task.assigned",
       context: expect.objectContaining({
         applicationId,
-        assignees: [expect.objectContaining({
-          email: "submission-owner@example.test",
-        })],
+        assignees: [
+          expect.objectContaining({
+            email: "submission-reviewer@example.test",
+          }),
+        ],
         tasks: [expect.objectContaining({ taskName: "Initial check" })],
       }),
       status: "PENDING",

@@ -1,6 +1,6 @@
 "use client";
 
-import { DraggableDialog } from "@/components/ui/draggable-dialog";
+import { DraggableDialog } from "@/shared/ui/DraggableDialog";
 import {
   usePublishedFormRuntime,
   usePublishedForms,

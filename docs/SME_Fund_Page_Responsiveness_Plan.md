@@ -1,6 +1,13 @@
 # SME Fund Page Responsiveness Phased Implementation Plan
 
-Status: Proposed implementation plan. Application changes are not implemented by this document.
+Status: Phases 0–4 implemented and engineering gates accepted on 4 October 2026
+for the bounded responsiveness candidate. G4 covers runtime 96d16df0 plus its
+recorded verification changes; concurrent unrelated changes are excluded.
+See [G0](Page_Responsiveness_Phase_0_Gate.md),
+[G1](Page_Responsiveness_Phase_1_Gate.md),
+[G2](Page_Responsiveness_Phase_2_Gate.md),
+[G3](Page_Responsiveness_Phase_3_Gate.md) and
+[G4](Page_Responsiveness_Phase_4_Gate.md) for acceptance and measured evidence.
 
 Date: 3 October 2026
 
@@ -15,7 +22,7 @@ The governing architecture remains the
 The product remains one Next.js application at `apps/platform`, with embedded
 Payload CMS, Firebase authentication, and PostgreSQL application authorization.
 
-## Current behavior
+## Baseline behavior before implementation
 
 - Protected layouts await authentication and portal access checks before
   returning the authenticated shell.
@@ -127,16 +134,16 @@ Written acceptance must identify the reviewer and supporting evidence.
 Implementation gate records belong in `docs/` using the proposed filenames
 below. Create them as work is performed, not as preapproved records. Each
 phase must leave the application working and have a focused rollback path.
-Only the plan is being documented now; no gate is accepted and no application
-implementation is claimed.
+The original plan began with no accepted gates. Current execution status is
+recorded below; acceptance evidence is held in each gate record.
 
 | Phase | Entry requirement | Gate record | Current status |
 | --- | --- | --- | --- |
-| 0 | This plan and governing contract reviewed | `Page_Responsiveness_Phase_0_Gate.md` | Not started |
-| 1 | G0 accepted | `Page_Responsiveness_Phase_1_Gate.md` | Not started |
-| 2 | G1 accepted | `Page_Responsiveness_Phase_2_Gate.md` | Not started |
-| 3 | G2 accepted | `Page_Responsiveness_Phase_3_Gate.md` | Not started |
-| 4 | G3 accepted | `Page_Responsiveness_Phase_4_Gate.md` | Not started |
+| 0 | This plan and governing contract reviewed | `Page_Responsiveness_Phase_0_Gate.md` | Accepted |
+| 1 | G0 accepted | `Page_Responsiveness_Phase_1_Gate.md` | Accepted |
+| 2 | G1 accepted | `Page_Responsiveness_Phase_2_Gate.md` | Accepted |
+| 3 | G2 accepted | `Page_Responsiveness_Phase_3_Gate.md` | Accepted |
+| 4 | G3 accepted | `Page_Responsiveness_Phase_4_Gate.md` | Accepted for scoped candidate |
 
 ## Phase 0 Baseline and implementation scope
 
@@ -347,4 +354,9 @@ two dashboards and selected application detail pages. G0 establishes the exact
 file list and effort estimate. Public CMS optimization and other slow screens
 require a separate scoped extension based on measurements.
 
-No implementation gate or performance acceptance is claimed by this plan.
+Phases 0–4 have written engineering acceptance in their linked gate records.
+The conversion covers two dashboards and selected application detail pages;
+list routes are regression controls. G4 records remaining delays, rollback
+and deployment prerequisites. Concurrent unrelated changes require integration
+and validation before release. Deployment requires separate authorization
+and has not been performed.

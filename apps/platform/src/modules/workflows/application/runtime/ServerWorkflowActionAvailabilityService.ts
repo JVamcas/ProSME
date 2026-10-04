@@ -6,6 +6,11 @@ import {
   requirePermission,
 } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
+import { readApplicableWorkflowHolds } from "../../infrastructure/WorkflowHoldRepository";
+import {
+  authorizedWorkflowHoldScopes,
+  authorizedWorkflowHoldResumptions,
+} from "./WorkflowHoldPolicy";
 import { ResourceNotFoundError } from "@/lib/resource-errors";
 import {
   emptyWorkflowActionInputMetadata,
@@ -66,6 +71,8 @@ function policyTarget(
   action: StoredWorkflowAction,
 ) {
   return {
+    canHold: (source.holdScopes?.length ?? 0) > 0,
+    canResumeHold: (source.resumableHolds?.length ?? 0) > 0,
     approvalEligibilityReady: source.stage.approvalEligibilityReady,
     activeDeferral: source.stage.activeDeferral,
     activeDeferralReady: source.stage.activeDeferralReady,
@@ -93,11 +100,47 @@ function toAvailability(
       ? workflowActionPresentation(definition)
       : { displayOrder: action.displayOrder, variant: "outline" },
     requiredInput: definition
-      ? workflowActionInputMetadata(definition)
+      ? {
+          ...workflowActionInputMetadata(definition),
+          ...(action.actionType === "PUT_ON_HOLD"
+            ? { holdScopes: source.holdScopes ?? [] }
+            : {}),
+          ...(action.actionType === "RESUME"
+            ? { resumableHolds: source.resumableHolds ?? [] }
+            : {}),
+        }
       : emptyWorkflowActionInputMetadata,
     runtimeVersion: source.stage.rowVersion,
     unavailableReason,
   };
+}
+
+async function loadHoldChoices(
+  actor: AuthenticatedUser,
+  source: WorkflowActionAvailabilitySource,
+) {
+  if (
+    source.actions.some((action) =>
+      ["PUT_ON_HOLD", "RESUME"].includes(action.actionType),
+    )
+  ) {
+    const holds = await readApplicableWorkflowHolds(
+      workflowActionAvailabilityDatabase(),
+      {
+        workflowInstanceId: source.stage.workflowInstanceId,
+        stageInstanceId: source.stage.stageInstanceId,
+        taskId: source.task?.id,
+      },
+    );
+    source.holdScopes = authorizedWorkflowHoldScopes(actor, source).filter(
+      (scope) => !holds.some((hold) => hold.scope === scope),
+    );
+    source.resumableHolds = authorizedWorkflowHoldResumptions(
+      actor,
+      source,
+      holds,
+    );
+  }
 }
 
 export async function getWorkflowActionAvailability(
@@ -111,6 +154,7 @@ export async function getWorkflowActionAvailability(
   });
   if (!source) throw new ResourceNotFoundError("workflow action source");
   assertReadAccess(actor, source);
+  await loadHoldChoices(actor, source);
 
   const preliminary = source.actions
     .filter((action) => isSupportedWorkflowAction(action.actionType))

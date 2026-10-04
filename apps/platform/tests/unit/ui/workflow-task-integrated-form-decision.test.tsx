@@ -21,7 +21,7 @@ vi.mock("sonner", () => ({
   toast: { error: mocks.toastError, success: vi.fn() },
 }));
 
-vi.mock("@/modules/work-queue/WorkQueueHooks", () => ({
+vi.mock("@/modules/work-queue/ui/useWorkQueue", () => ({
   useExecuteWorkflowTaskAction: () => ({
     isPending: false,
     mutateAsync: mocks.mutateAsync,
@@ -207,6 +207,7 @@ describe("integrated task-form decisions", () => {
         actionType: "PUT_ON_HOLD",
         key: "PUT_ON_HOLD",
         label: "Put on hold",
+        requiredInput: { ...task.actions[0].requiredInput, holdScopes: ["TASK"] },
       }],
     } as TaskDetail;
 

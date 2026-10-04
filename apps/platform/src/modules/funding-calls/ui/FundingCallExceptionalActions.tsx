@@ -6,7 +6,7 @@ import { FormProvider, useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { GeneralButton } from "@/components/ui/button";
-import { DraggableDialog } from "@/components/ui/draggable-dialog";
+import { DraggableDialog } from "@/shared/ui/DraggableDialog";
 import { FormTextarea } from "@/components/ui/form-fields";
 import type { FundingCallLifecycleCommandInput } from "../api/FundingCallSchemas";
 import type { FundingCallView } from "../api/FundingCallTransport";

@@ -11,6 +11,8 @@ export type WorkQueueInformationRequest = {
 };
 
 export type WorkQueueRow = {
+  processingStatus?: "ON_HOLD" | null;
+  holds?: import("@/modules/workflows/domain/runtime/WorkflowHold").WorkflowHoldSummary[];
   outgoingEscalation?: { id: string; canCancel: boolean } | null;
   applicantName: string;
   applicationId: string | null;

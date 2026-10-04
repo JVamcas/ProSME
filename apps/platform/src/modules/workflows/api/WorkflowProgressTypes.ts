@@ -5,6 +5,7 @@ import type { WorkflowInstanceStatus } from "../domain/runtime/WorkflowInstance"
 import type { WorkflowTaskType } from "../domain/definitions/WorkflowTaskDefinition";
 
 export type WorkflowProgressTask = {
+  processingStatus?: "ON_HOLD" | null;
   actionedAt: string | null;
   assignedRoleName: string | null;
   assignedUserEmail: string | null;
@@ -22,6 +23,7 @@ export type WorkflowProgressTask = {
 };
 
 export type WorkflowProgressStage = {
+  processingStatus?: "ON_HOLD" | null;
   activatedAt: string | null;
   completedAt: string | null;
   description: string;
@@ -42,6 +44,7 @@ export type WorkflowTakenPath = {
 };
 
 export type WorkflowProgressView = {
+  processingStatus?: "ON_HOLD" | null;
   completedAt: string | null;
   graph: WorkflowGraphInput | null;
   id: string;

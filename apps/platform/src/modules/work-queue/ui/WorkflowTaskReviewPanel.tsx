@@ -7,11 +7,12 @@ import { toast } from "sonner";
 import { AuthoritativeEligibilityTask } from "@/modules/eligibility/ui/screening/AuthoritativeEligibilityTask";
 import { DynamicFormTask } from "@/modules/forms/ui/renderer/DynamicFormTask";
 import type { TaskDetail } from "@/modules/work-queue/TaskTypes";
-import { useCompleteWorkflowTask } from "@/modules/work-queue/WorkQueueHooks";
+import { useCompleteWorkflowTask } from "@/modules/work-queue/ui/useWorkQueue";
 import {
   ChecklistTaskForm,
   type ReviewDraftState,
 } from "@/modules/work-queue/ui/ChecklistTaskForm";
+import { WorkflowTaskHoldStatus } from "@/modules/workflows/ui/tasks/WorkflowTaskHoldStatus";
 import { WorkflowTaskDecisionActions } from "@/modules/workflows/ui/tasks/WorkflowTaskDecisionActions";
 import { WorkflowTaskPreviewSection } from "@/modules/workflows/ui/definitions/WorkflowTaskPreviewSections";
 import {
@@ -113,6 +114,10 @@ export function WorkflowTaskReviewPanel({ task }: { task: TaskDetail }) {
     );
   }
 
+  if (task.processingStatus === "ON_HOLD") {
+    return <HeldTaskReview task={task} />;
+  }
+
   const taskActions = (
     <div className="space-y-4">
       {task.actions.length ||
@@ -212,5 +217,14 @@ export function WorkflowTaskReviewPanel({ task }: { task: TaskDetail }) {
         />
       ) : null}
     </WorkflowTaskReviewLayout>
+  );
+}
+
+function HeldTaskReview({ task }: { task: TaskDetail }) {
+  return (
+    <div className="space-y-4">
+      <WorkflowTaskHoldStatus holds={task.holds ?? []} />
+      <WorkflowTaskDecisionActions task={task} />
+    </div>
   );
 }

@@ -78,11 +78,11 @@ describe("staff application workflow progress tab", () => {
       params: Promise.resolve({ id: applicationId }),
     });
 
-    expect(page.props.workflowProgress).toBeUndefined();
+    expect(page.props.canReadWorkflow).toBe(false);
     expect(getWorkflowProgress).not.toHaveBeenCalled();
   });
 
-  it("passes progress to the tab for a workflow instance reader", async () => {
+  it("enables the client progress section without blocking the page on business reads", async () => {
     vi.mocked(getCurrentUser).mockResolvedValue({
       ...actor,
       capabilities: new Set([
@@ -95,11 +95,11 @@ describe("staff application workflow progress tab", () => {
       params: Promise.resolve({ id: applicationId }),
     });
 
-    expect(getWorkflowProgress).toHaveBeenCalledWith(
-      expect.anything(),
-      applicationId,
-    );
-    expect(page.props.workflowProgress).toBeDefined();
+    expect(getWorkflowProgress).not.toHaveBeenCalled();
+    expect(getAdminApplicationDetail).not.toHaveBeenCalled();
+    expect(listContextualApplicationRfis).not.toHaveBeenCalled();
+    expect(page.props.canReadWorkflow).toBe(true);
+    expect(page.props.taskId).toBeUndefined();
   });
   it("selects Workflow Progress from the application deep link", async () => {
     vi.mocked(getCurrentUser).mockResolvedValue({
@@ -129,12 +129,9 @@ describe("staff application workflow progress tab", () => {
       params: Promise.resolve({ id: applicationId }),
       searchParams: Promise.resolve({ tab: "workflow-progress", taskId }),
     });
-    expect(getWorkflowProgress).toHaveBeenCalledWith(
-      expect.objectContaining({ id: actor.id }),
-      applicationId,
-      { taskId },
-    );
-    expect(page.props.workflowProgress).toBeDefined();
+    expect(getWorkflowProgress).not.toHaveBeenCalled();
+    expect(page.props.canReadWorkflow).toBe(true);
+    expect(page.props.taskId).toBe(taskId);
   });
 
   it.each([undefined, "invalid", ["33333333-3333-4333-8333-333333333333"]])(
@@ -152,7 +149,7 @@ describe("staff application workflow progress tab", () => {
         searchParams: Promise.resolve({ tab: "workflow-progress", taskId }),
       });
       expect(getWorkflowProgress).not.toHaveBeenCalled();
-      expect(page.props.workflowProgress).toBeUndefined();
+      expect(page.props.canReadWorkflow).toBe(false);
     },
   );
 

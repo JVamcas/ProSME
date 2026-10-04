@@ -1,4 +1,5 @@
 import "server-only";
+import { workflowTaskHasActiveHold, workflowStageHasActiveHold } from "./WorkflowHoldQueries";
 
 import { sql } from "drizzle-orm";
 import { getDatabase } from "@/db/client";
@@ -42,6 +43,7 @@ export async function loadDueWorkflowDeadlines(
       FROM app_workflow_tasks task
       JOIN app_workflow_stage_instances stage ON stage.id = task.stage_instance_id
       WHERE task.status IN ('PENDING', 'IN_PROGRESS') AND stage.status = 'ACTIVE'
+        AND NOT ${workflowTaskHasActiveHold(sql`task`)}
         AND task.due_at <= ${now}
         AND ${effectiveDueAt} <= ${now}
         AND NOT EXISTS (SELECT 1 FROM app_workflow_rfis rfi
@@ -57,6 +59,7 @@ export async function loadDueWorkflowDeadlines(
       JOIN app_workflow_tasks task ON task.id = rfi.task_id
       WHERE rfi.status = 'OPEN' AND rfi.deadline_at <= ${now}
         AND stage.status = 'ACTIVE' AND task.status IN ('PENDING', 'IN_PROGRESS')
+        AND NOT ${workflowTaskHasActiveHold(sql`task`)}
       UNION ALL
       SELECT 'RFI_REMINDER', rfi.id, rfi.stage_instance_id, rfi.task_id,
         rfi.workflow_instance_id,
@@ -68,6 +71,7 @@ export async function loadDueWorkflowDeadlines(
       CROSS JOIN LATERAL jsonb_array_elements_text(rfi.reminder_day_offsets) offset_days(value)
       WHERE rfi.status = 'OPEN' AND rfi.deadline_at > ${now}
         AND stage.status = 'ACTIVE' AND task.status IN ('PENDING', 'IN_PROGRESS')
+        AND NOT ${workflowTaskHasActiveHold(sql`task`)}
         AND rfi.created_at + offset_days.value::integer * interval '1 day' <= ${now}
       UNION ALL
       SELECT 'DEFERRAL_RESUMED', deferral.id, deferral.stage_instance_id,
@@ -78,14 +82,13 @@ export async function loadDueWorkflowDeadlines(
       WHERE deferral.status = 'ACTIVE' AND deferral.continuation = 'RESUME_ON_DATE'
         AND deferral.mode = 'DATE' AND deferral.resume_at <= ${now}
         AND stage.status = 'BLOCKED'
-        AND NOT EXISTS (SELECT 1 FROM app_workflow_holds hold
-          WHERE hold.stage_instance_id = stage.id AND hold.status = 'ACTIVE')
+        AND NOT ${workflowStageHasActiveHold(sql`stage`)}
       UNION ALL
-      SELECT 'HOLD_REVIEW', hold.id, hold.stage_instance_id, hold.task_id,
-        hold.workflow_instance_id, hold.review_at, 'hold-review:' || hold.id::text
+      SELECT 'HOLD_RESUMED', hold.id, hold.stage_instance_id, hold.task_id,
+        hold.workflow_instance_id, hold.review_at, 'hold-resumed:' || hold.id::text
       FROM app_workflow_holds hold
       JOIN app_workflow_stage_instances stage ON stage.id = hold.stage_instance_id
-      WHERE hold.status = 'ACTIVE' AND hold.review_at <= ${now} AND stage.status = 'BLOCKED'
+      WHERE hold.status = 'ACTIVE' AND hold.review_at <= ${now} AND stage.status IN ('ACTIVE', 'BLOCKED')
     )
     SELECT due.kind, due.source_id AS "sourceId", due.stage_id AS "stageInstanceId",
       due.task_id AS "taskId", due.workflow_instance_id AS "workflowInstanceId",

@@ -1,0 +1,84 @@
+{
+  "mode": "production",
+  "viewport": [
+    1440,
+    1000
+  ],
+  "samples": 3,
+  "businessDelayMs": 1500,
+  "recordedAt": "2026-10-04T07:03:18.396Z",
+  "measurements": [
+    {
+      "route": "/admin",
+      "condition": "cold",
+      "sample": 0,
+      "ttfbMs": 1565.5,
+      "structureMs": 1994.3999999985099,
+      "dataMs": 2343.274483
+    },
+    {
+      "route": "/admin",
+      "condition": "cold",
+      "sample": 1,
+      "ttfbMs": 1745.2999999970198,
+      "structureMs": 1989.7999999970198,
+      "dataMs": 2327.732062
+    },
+    {
+      "route": "/admin",
+      "condition": "cold",
+      "sample": 2,
+      "ttfbMs": 1976.2000000029802,
+      "structureMs": 2391.10000000149,
+      "dataMs": 2635.073308
+    },
+    {
+      "route": "/admin",
+      "condition": "warm",
+      "sample": 0,
+      "feedbackMs": 125.09999999403954,
+      "structureMs": 2869.2999999970198,
+      "dataMs": 2869.2999999970198
+    },
+    {
+      "route": "/admin",
+      "condition": "warm",
+      "sample": 1,
+      "feedbackMs": 137.20000000298023,
+      "structureMs": 1266.8999999985099,
+      "dataMs": 1266.8999999985099
+    },
+    {
+      "route": "/admin",
+      "condition": "warm",
+      "sample": 2,
+      "feedbackMs": 96.5,
+      "structureMs": 804.6000000014901,
+      "dataMs": 804.6000000014901
+    },
+    {
+      "route": "/admin",
+      "condition": "delayed",
+      "sample": 0,
+      "feedbackMs": 103,
+      "structureMs": 1550.5999999940395,
+      "dataMs": 1550.5999999940395
+    },
+    {
+      "route": "/admin",
+      "condition": "delayed",
+      "sample": 1,
+      "feedbackMs": 104.5,
+      "structureMs": 1534,
+      "dataMs": 1534
+    },
+    {
+      "route": "/admin",
+      "condition": "delayed",
+      "sample": 2,
+      "feedbackMs": 110.10000000149012,
+      "structureMs": 1558.6000000014901,
+      "dataMs": 1558.6000000014901
+    }
+  ]
+}

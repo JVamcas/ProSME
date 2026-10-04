@@ -1,4 +1,5 @@
 import "server-only";
+import { workflowTaskHasActiveHold } from "./WorkflowHoldQueries";
 
 import { readWorkflowActionTaskReadiness } from "./WorkflowActionTaskReadinessRepository";
 
@@ -148,11 +149,7 @@ async function lockTask(
             )
           )
       )`,
-      activeHold: sql<boolean>`EXISTS (
-        SELECT 1 FROM app_workflow_holds hold
-        WHERE hold.stage_instance_id = ${workflowTasks.stageInstanceId}
-          AND hold.status = 'ACTIVE'
-      )`,
+      activeHold: workflowTaskHasActiveHold(sql`${workflowTasks}`),
       activeReferral: sql<boolean>`EXISTS (
         SELECT 1 FROM app_workflow_referrals referral
         WHERE referral.source_task_id = ${workflowTasks.id}

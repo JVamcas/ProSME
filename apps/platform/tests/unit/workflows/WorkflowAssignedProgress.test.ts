@@ -22,6 +22,14 @@ import { findWorkflowGraph } from "@/modules/workflows/infrastructure/WorkflowGr
 
 const actor = {
   id: "reviewer-id",
+  email: "reviewer@example.test",
+  displayName: "Reviewer",
+  userType: "staff",
+  createdAt: new Date("2026-10-04T00:00:00Z"),
+  updatedAt: new Date("2026-10-04T00:00:00Z"),
+  lastLoginAt: null,
+  identitySubject: "reviewer-subject",
+  roleCodes: new Set(),
   status: "active",
   capabilities: new Set([
     permissionCodes.workflowTaskAssignedRead,

@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn() }),
 }));
-vi.mock("@/modules/work-queue/WorkQueueHooks", () => ({
+vi.mock("@/modules/work-queue/ui/useWorkQueue", () => ({
   useSaveTaskReviewDraft: () => ({
     isError: false,
     isPending: false,

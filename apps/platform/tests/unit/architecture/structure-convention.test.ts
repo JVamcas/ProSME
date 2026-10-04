@@ -79,10 +79,10 @@ describe("source ownership convention", () => {
     }
   });
 
-  it("uses explicit applicant and admin API namespaces", () => {
-    expect(existsSync(path.join(sourceRoot, "app/api/applications"))).toBe(
-      false,
-    );
+  it("supports domain APIs and existing audience-specific contracts", () => {
+    expect(
+      existsSync(path.join(sourceRoot, "app/api/applications/[id]/workflow-progress/route.ts")),
+    ).toBe(true);
     expect(
       existsSync(path.join(sourceRoot, "app/api/admin/applications/route.ts")),
     ).toBe(true);

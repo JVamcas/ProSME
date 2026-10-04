@@ -172,6 +172,7 @@ export async function getWorkflowProgress(
           if (peerIsHidden) {
             return {
               ...details,
+              processingStatus: null,
               actionedAt: null,
               assignedRoleName: null,
               assignedUserEmail: null,
@@ -201,7 +202,7 @@ export async function getWorkflowProgress(
             canOpen:
               !blockedReason &&
               progress.status === "ACTIVE" &&
-              stage.status === "ACTIVE" &&
+              ["ACTIVE", "BLOCKED"].includes(stage.status) &&
               assigned &&
               can(actor, permissionCodes.workflowTaskAssignedRead) &&
               can(actor, viewPermission),

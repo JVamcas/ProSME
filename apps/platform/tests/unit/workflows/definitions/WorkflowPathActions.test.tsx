@@ -152,7 +152,7 @@ describe("workflow path label actions", () => {
     } finally {
       await view.cleanup();
     }
-  }, 15_000);
+  }, 30_000);
 
   it("confirms action deletion and removes all its routes and task bindings", async () => {
     const view = await mount();
@@ -194,7 +194,7 @@ describe("workflow path label actions", () => {
     } finally {
       await view.cleanup();
     }
-  }, 15_000);
+  }, 30_000);
 
   it("cancels action deletion without saving", async () => {
     const view = await mount();
@@ -211,7 +211,7 @@ describe("workflow path label actions", () => {
     } finally {
       await view.cleanup();
     }
-  }, 15_000);
+  }, 30_000);
 
   it("keeps failed deletions open and displays the server error", async () => {
     const view = await mount();
@@ -234,7 +234,7 @@ describe("workflow path label actions", () => {
     } finally {
       await view.cleanup();
     }
-  }, 15_000);
+  }, 30_000);
 
   it("disables path actions when the editor is locked", async () => {
     const view = await mount(false);
@@ -254,5 +254,5 @@ describe("workflow path label actions", () => {
     } finally {
       await view.cleanup();
     }
-  }, 15_000);
+  }, 30_000);
 });

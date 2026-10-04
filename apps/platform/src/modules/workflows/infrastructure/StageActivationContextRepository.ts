@@ -3,9 +3,13 @@ import "server-only";
 import { sql } from "drizzle-orm";
 
 import type {
-  PriorStageActivationContext,
   StageActivationTransaction,
 } from "./StageActivationRepository";
+
+export type PriorStageActivationContext = {
+  stableKey: string;
+  values: Record<string, unknown>;
+};
 
 type PriorStageRow = {
   result: Record<string, unknown> | null;

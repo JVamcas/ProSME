@@ -1,4 +1,5 @@
 import "server-only";
+import { workflowTaskHasActiveHold, workflowTaskHoldSummaries } from "./WorkflowHoldQueries";
 
 import { sql } from "drizzle-orm";
 
@@ -24,7 +25,7 @@ type QueueDatabaseRow = Omit<
 };
 
 function scopeFilter(scope: WorkQueueListInput["scope"]) {
-  const running = sql`stage.status = 'ACTIVE' AND NOT EXISTS (
+  const running = sql`stage.status = 'ACTIVE' AND NOT ${workflowTaskHasActiveHold(sql`task`)} AND NOT EXISTS (
     SELECT 1 FROM app_workflow_rfis rfi WHERE rfi.task_id = task.id AND rfi.status = 'OPEN'
   )`;
   if (scope === "overdue") {
@@ -109,10 +110,7 @@ function queueQuery(
             'createdAt', request.created_at, 'deadlineAt', request.deadline_at,
             'respondedAt', request.responded_at
           ) ELSE NULL END AS "informationRequest",
-        CASE WHEN stage.status = 'BLOCKED' AND EXISTS (
-          SELECT 1 FROM app_workflow_holds hold
-          WHERE hold.stage_instance_id = stage.id AND hold.status = 'ACTIVE'
-        ) THEN 'On hold. Open the task to review or resume it.'
+        CASE WHEN ${workflowTaskHasActiveHold(sql`task`)} THEN 'On hold. Open the task to review or resume it.'
           WHEN stage.status = 'BLOCKED' AND EXISTS (
             SELECT 1 FROM app_workflow_deferrals deferral
             WHERE deferral.stage_instance_id = stage.id
@@ -129,6 +127,9 @@ function queueQuery(
             AND prerequisite.status NOT IN ('COMPLETED', 'CANCELLED')
         ) THEN 'Available when all contributing tasks are complete.'
           ELSE NULL END AS "taskBlockedReason",
+        CASE WHEN ${workflowTaskHasActiveHold(sql`task`)} THEN 'ON_HOLD' ELSE NULL END AS "processingStatus",
+        CASE WHEN app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
+          THEN ${workflowTaskHoldSummaries(sql`task`)} ELSE '[]'::jsonb END AS holds,
         NULL::text AS "priority",
         CASE WHEN outgoing.id IS NOT NULL THEN 'ESCALATED'
           ELSE task.status END AS "taskStatus",

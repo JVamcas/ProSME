@@ -46,31 +46,40 @@ export function AdminDashboard({
 }: {
   dashboard: AdminDashboardView;
 }) {
-  const limitedVisibility = dashboard.visibility !== "all";
-
   return (
     <PageShell
       actions={<DashboardPeriodFilter period={dashboard.period} />}
       description="Overview of submitted applications and active workflow work."
       title="Dashboard"
     >
-      <div>
-        {limitedVisibility ? (
-          <p className="text-xs font-semibold text-brand-orange">
-            {dashboard.visibility === "assigned"
-              ? "Showing applications assigned to you or one of your roles."
-              : "You do not have permission to view application metrics."}
-          </p>
-        ) : null}
-        <DashboardMetrics dashboard={dashboard} />
-        <div className="mt-5 grid gap-5 xl:grid-cols-2">
-          <AdminDashboardCharts
-            statuses={dashboard.statuses}
-            total={dashboard.metrics.totalApplications}
-          />
-          <AdminDashboardPanels activities={dashboard.activities} />
-        </div>
-      </div>
+      <AdminDashboardContent dashboard={dashboard} />
     </PageShell>
+  );
+}
+
+export function AdminDashboardContent({
+  dashboard,
+}: {
+  dashboard: AdminDashboardView;
+}) {
+  const limitedVisibility = dashboard.visibility !== "all";
+  return (
+    <div>
+      {limitedVisibility ? (
+        <p className="text-xs font-semibold text-brand-orange">
+          {dashboard.visibility === "assigned"
+            ? "Showing applications assigned to you or one of your roles."
+            : "You do not have permission to view application metrics."}
+        </p>
+      ) : null}
+      <DashboardMetrics dashboard={dashboard} />
+      <div className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-2">
+        <AdminDashboardCharts
+          statuses={dashboard.statuses}
+          total={dashboard.metrics.totalApplications}
+        />
+        <AdminDashboardPanels activities={dashboard.activities} />
+      </div>
+    </div>
   );
 }

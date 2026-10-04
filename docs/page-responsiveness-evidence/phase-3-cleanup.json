@@ -1,0 +1,11 @@
+{
+  "firebaseSyntheticIdentitiesDeleted": 2,
+  "sdkBenchmarkIdentityDeleted": true,
+  "performanceContainersRemoved": [
+    "smefund-responsiveness-test",
+    "smefund-responsiveness-baseline"
+  ],
+  "isolatedDatabaseRemoved": "smefund_responsiveness_test",
+  "privateSessionsCredentialsAndTracesRemoved": true,
+  "originalRuntimePreserved": true
+}

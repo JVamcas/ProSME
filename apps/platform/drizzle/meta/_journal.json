@@ -1114,6 +1114,13 @@
       "when": 1801785600004,
       "tag": "0158_workflow_escalation_cancellation",
       "breakpoints": true
+    },
+    {
+      "idx": 159,
+      "version": "7",
+      "when": 1801785600005,
+      "tag": "0159_workflow_hold_scopes",
+      "breakpoints": true
     }
   ]
 }

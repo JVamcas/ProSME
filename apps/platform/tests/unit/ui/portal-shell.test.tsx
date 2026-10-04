@@ -3,11 +3,11 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 import { permissionCodes } from "@/auth/authorization/permissions";
-import { AuthenticatedPortalShell } from "@/components/layout/authenticated-portal-shell";
-import { CapabilityGate } from "@/components/layout/capability-gate";
-import { PortalErrorState } from "@/components/layout/PortalErrorState";
-import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
-import { createQueryClient } from "@/lib/query-client";
+import { AuthenticatedPortalShell } from "@/shared/ui/portal/authenticated-portal-shell";
+import { CapabilityGate } from "@/shared/ui/portal/capability-gate";
+import { PortalErrorState } from "@/shared/ui/portal/PortalErrorState";
+import { PortalLoadingState } from "@/shared/ui/portal/PortalLoadingState";
+import { createQueryClient } from "@/shared/utils/createQueryClient";
 import type { PortalContext } from "@/modules/profiles/ProfileTypes";
 
 vi.mock("next/navigation", () => ({

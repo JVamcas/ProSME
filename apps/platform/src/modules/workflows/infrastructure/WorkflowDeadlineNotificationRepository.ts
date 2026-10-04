@@ -36,7 +36,6 @@ export async function loadWorkflowDeadlineNotificationSnapshot(
                 WHERE membership.user_id = assignee.id AND membership.role_id = task.assigned_role_id
               )
             ))
-            ))
         )
       ), '[]'::jsonb) AS assignees
     FROM app_workflow_stage_instances stage

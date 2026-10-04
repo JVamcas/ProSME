@@ -14,13 +14,13 @@ import {
   inviteUser,
 } from "@/modules/users/ServerUserAccessService";
 
-
-
 export async function GET(request: Request) {
   const correlationId = createCorrelationId();
   try {
     const user = await resolveUserFromHeaders(request.headers);
-    const params = Object.fromEntries(new URL(request.url).searchParams.entries());
+    const params = Object.fromEntries(
+      new URL(request.url).searchParams.entries(),
+    );
     return portalRouteSuccess(
       await getUserAccessView(
         user,
@@ -37,7 +37,9 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const correlationId = createCorrelationId();
   try {
-    const user = await resolveUserFromHeaders(request.headers);
+    const user = await resolveUserFromHeaders(request.headers, {
+      checkRevoked: true,
+    });
     const input = inviteUserSchema.parse(
       await request.json().catch(() => undefined),
     );

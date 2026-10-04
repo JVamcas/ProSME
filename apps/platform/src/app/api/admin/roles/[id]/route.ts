@@ -12,15 +12,14 @@ type RouteContext = { params: Promise<{ id: string }> };
 export async function PATCH(request: Request, context: RouteContext) {
   const correlationId = createCorrelationId();
   try {
-    const user = await resolveUserFromHeaders(request.headers);
+    const user = await resolveUserFromHeaders(request.headers, {
+      checkRevoked: true,
+    });
     const { id } = await context.params;
     const input = updateRoleSchema.parse(
       await request.json().catch(() => undefined),
     );
-    return portalRouteSuccess(
-      await updateRole(user, id, input),
-      correlationId,
-    );
+    return portalRouteSuccess(await updateRole(user, id, input), correlationId);
   } catch (error) {
     return portalRouteError(error, correlationId);
   }

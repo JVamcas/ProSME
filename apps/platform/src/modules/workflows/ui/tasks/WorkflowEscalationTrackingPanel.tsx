@@ -4,7 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { WorkflowTaskActions } from "./WorkflowTaskActions";
 import { ConfirmationDialog } from "@/shared/ui/ConfirmationDialog";
-import { useCancelWorkflowEscalation } from "@/modules/work-queue/WorkQueueHooks";
+import { useCancelWorkflowEscalation } from "@/modules/work-queue/ui/useWorkQueue";
 import type { WorkflowEscalationTracking } from "../../domain/runtime/WorkflowEscalationTracking";
 
 export function WorkflowEscalationTrackingPanel({

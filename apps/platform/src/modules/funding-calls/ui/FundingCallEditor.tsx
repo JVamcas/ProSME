@@ -2,8 +2,8 @@
 
 import { CircleDollarSign } from "lucide-react";
 
-import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
-import { PortalErrorState } from "@/components/layout/PortalErrorState";
+import { PortalLoadingState } from "@/shared/ui/portal/PortalLoadingState";
+import { PortalErrorState } from "@/shared/ui/portal/PortalErrorState";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { PageShell } from "@/shared/ui/PageShell";
 import {

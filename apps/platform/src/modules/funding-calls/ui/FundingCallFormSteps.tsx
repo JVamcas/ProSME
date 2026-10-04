@@ -1,7 +1,7 @@
 "use client";
 
 import { GeneralButtonLink } from "@/components/ui/button";
-import { FormDateTimeInput } from "@/components/ui/form-date-time-input";
+import { FormDateTimeInput } from "@/shared/ui/FormDateTimeInput";
 import {
   FormInput,
   FormSelect,

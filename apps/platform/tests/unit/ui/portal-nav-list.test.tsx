@@ -4,8 +4,8 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { PortalNavList } from "@/components/layout/portal-nav-list";
-import { operationsPortalRoutes } from "@/components/layout/portal-navigation";
+import { PortalNavList } from "@/shared/ui/portal/portal-nav-list";
+import { operationsPortalRoutes } from "@/shared/ui/portal/portal-navigation";
 
 const navigationMock = vi.hoisted(() => ({ pathname: "/admin" }));
 

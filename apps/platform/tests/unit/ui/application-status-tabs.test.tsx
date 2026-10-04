@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { applicationTabs } from "@/components/applicant/applications/ApplicationsList";
+import { applicationTabs } from "@/modules/applications/ui/applicant/ApplicationsList";
 
 describe("application status tabs", () => {
   it("renders each aggregate returned by the applications API", () => {
