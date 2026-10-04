@@ -19,6 +19,7 @@ export type ApplicationDuplicatePolicy = import(
 ).ApplicationDuplicatePolicy;
 
 export type FundingCall = {
+  allowResubmissionAfterWithdrawal: boolean;
   applicationDuplicatePolicy: ApplicationDuplicatePolicy;
   id: string;
   reference: string;

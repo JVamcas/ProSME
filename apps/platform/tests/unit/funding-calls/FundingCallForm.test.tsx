@@ -58,6 +58,7 @@ vi.mock("@/shared/ui/FormRichTextField", () => ({
 }));
 
 const call: FundingCallView = {
+  allowResubmissionAfterWithdrawal: false,
   applicationDuplicatePolicy: "one_per_business",
   closesAt: "2027-03-31T15:00:00.000Z",
   createdAt: "2026-09-20T08:00:00.000Z",
@@ -109,6 +110,7 @@ describe("FundingCallForm", () => {
             rowVersion: 3,
             updatedAt: "2026-09-29T08:00:00.000Z",
             values: {
+              allowResubmissionAfterWithdrawal: false,
               applicationDuplicatePolicy: "one_per_business",
               closesAt: "",
               description: "",

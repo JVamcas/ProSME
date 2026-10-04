@@ -1,5 +1,6 @@
 "use client";
 
+import { CheckboxField } from "@/components/ui/form-field";
 import { GeneralButtonLink } from "@/components/ui/button";
 import { FormDateTimeInput } from "@/shared/ui/FormDateTimeInput";
 import {
@@ -176,6 +177,12 @@ export function ApplicationStep({
         ]}
         label="Application limit"
         name="applicationDuplicatePolicy"
+      />
+      <CheckboxField
+        containerClassName="md:col-span-2"
+        description="Withdrawn applications do not count towards the application limit. A new application must still meet the call’s submission requirements and closing date."
+        label="Allow a new application after withdrawal"
+        name="allowResubmissionAfterWithdrawal"
       />
     </>
   );

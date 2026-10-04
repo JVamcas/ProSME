@@ -45,6 +45,12 @@ export function WorkflowStageBehaviourStep({
           label="COI-gated"
           name="coiGated"
         />
+        <CheckboxField
+          description="Withdrawal ends the application and cancels outstanding work in every stage."
+          label="Allow applicant to withdraw application at this stage"
+          name="allowApplicantWithdrawal"
+          containerClassName="sm:col-span-2"
+        />
       </div>
       {coiGated ? (
         <FormSelect

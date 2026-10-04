@@ -40,6 +40,10 @@ export function FundingCallReadOnlyReview({ call }: { call: FundingCallView }) {
         <Detail label="Opens" value={new Date(call.opensAt).toLocaleString()} />
         <Detail label="Closes" value={new Date(call.closesAt).toLocaleString()} />
         <Detail label="Application limit" value={call.applicationDuplicatePolicy} />
+        <Detail
+          label="New application after withdrawal"
+          value={call.allowResubmissionAfterWithdrawal ? "Allowed" : "Not allowed"}
+        />
         <Detail label="Application Form Version" value={call.formVersionId} />
         <Detail
           label="Eligibility Ruleset Version"

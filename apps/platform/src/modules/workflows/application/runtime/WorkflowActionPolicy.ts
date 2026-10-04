@@ -253,6 +253,12 @@ export function evaluateWorkflowActionPolicy(
   if (target.action.actionType === "REFER") {
     return unavailable("INVALID_CONFIGURATION", "Refer has been removed.");
   }
+  if (target.action.actionType === "WITHDRAW") {
+    return unavailable(
+      "INVALID_CONFIGURATION",
+      "Withdrawal is initiated by the applicant through the applicant portal.",
+    );
+  }
   if (
     target.action.actionType === "APPROVE_ADVANCE" &&
     target.approvalEligibilityReady === false

@@ -43,6 +43,7 @@ function newConditionStage(
     description: "",
     displayOrder: editor.graph.stages.length + 1,
     enabled: true,
+    allowApplicantWithdrawal: true,
     entryCondition: null,
     exitCondition: null,
     initial: editor.graph.stages.length === 0,
@@ -88,6 +89,7 @@ export function useWorkflowStageDialogController(
         stage?.publicStatusMapping ??
         defaultWorkflowApplicantStatus("UNDER_REVIEW"),
       enabled: stage?.enabled ?? true,
+      allowApplicantWithdrawal: stage?.allowApplicantWithdrawal ?? true,
       optional: stage?.optional ?? false,
       repeatable: stage?.repeatable ?? false,
       coiGated: stage?.coiGated ?? false,

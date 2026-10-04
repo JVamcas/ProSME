@@ -1,9 +1,10 @@
 import type { WorkflowGraphInput } from "./WorkflowTypes";
+import { removeWorkflowWithdrawalActions } from "./WorkflowApplicantWithdrawal";
 
 export function cloneWorkflowGraph(
   source: WorkflowGraphInput,
 ): WorkflowGraphInput {
-  const graph = structuredClone(source);
+  const graph = removeWorkflowWithdrawalActions(structuredClone(source));
 
   return {
     stages: graph.stages.map((stage) => ({

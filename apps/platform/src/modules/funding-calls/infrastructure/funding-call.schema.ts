@@ -46,6 +46,9 @@ export const fundingCalls = pgTable(
       () => workflowDefinitionVersions.id,
       { onDelete: "restrict" },
     ),
+    allowResubmissionAfterWithdrawal: boolean("allow_resubmission_after_withdrawal")
+      .notNull()
+      .default(false),
     applicationDuplicatePolicy: text("application_duplicate_policy")
       .$type<ApplicationDuplicatePolicy>()
       .notNull()

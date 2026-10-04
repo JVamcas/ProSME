@@ -16,6 +16,7 @@ import { insertFundingCall } from "@/modules/funding-calls/infrastructure/Fundin
 
 const actorId = "10000000-0000-4000-8000-000000000001";
 const draftValues: FundingCallCreationProgressValues = {
+  allowResubmissionAfterWithdrawal: false,
   applicationDuplicatePolicy: "one_per_business",
   closesAt: "",
   description: "",
@@ -115,6 +116,7 @@ describe("funding-call creation draft repository", () => {
 
   it("atomically removes creation progress after creating the domain draft", async () => {
     const createdCall = {
+      allowResubmissionAfterWithdrawal: false,
       applicationDuplicatePolicy: "one_per_business" as const,
       closesAt: new Date("2027-03-31T15:00:00.000Z"),
       createdAt: new Date("2026-09-29T08:00:00.000Z"),
@@ -155,6 +157,7 @@ describe("funding-call creation draft repository", () => {
     databaseState.current = { transaction };
 
     const result = await insertFundingCall(actorId, {
+      allowResubmissionAfterWithdrawal: false,
       applicationDuplicatePolicy: "one_per_business",
       closesAt: "2027-03-31T15:00:00.000Z",
       description: "Growth funding.",

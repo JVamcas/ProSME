@@ -40,6 +40,7 @@ const progressVersionId = z.union([z.literal(""), z.uuid()]);
 
 export const fundingCallCreationProgressValuesSchema = z
   .object({
+    allowResubmissionAfterWithdrawal: z.boolean().default(false),
     applicationDuplicatePolicy: z.enum([
       "one_per_applicant",
       "one_per_business",
@@ -89,6 +90,7 @@ export const fundingCallEligibilitySummarySchema = z
   });
 
 const fundingCallFields = {
+  allowResubmissionAfterWithdrawal: z.boolean().default(false),
   applicationDuplicatePolicy: z.enum([
     "one_per_applicant",
     "one_per_business",

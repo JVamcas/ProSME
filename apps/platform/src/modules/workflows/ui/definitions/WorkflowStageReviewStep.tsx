@@ -77,6 +77,10 @@ export function WorkflowStageReviewStep({ coiFormItems, stages }: Props) {
           label="Repeatable"
           value={values.repeatable ? "Yes" : "No"}
         />
+        <SummaryItem
+          label="Applicant withdrawal"
+          value={values.allowApplicantWithdrawal ? "Allowed" : "Not allowed"}
+        />
         <div className="sm:col-span-2">
           <SummaryItem
             label="Conflict-of-interest review"

@@ -1121,6 +1121,13 @@
       "when": 1801785600005,
       "tag": "0159_workflow_hold_scopes",
       "breakpoints": true
+    },
+    {
+      "idx": 160,
+      "version": "7",
+      "when": 1801785600006,
+      "tag": "0160_applicant_withdrawal_policy",
+      "breakpoints": true
     }
   ]
 }

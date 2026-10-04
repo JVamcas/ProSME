@@ -30,6 +30,7 @@ export type WorkflowStageDefinition = {
   name: string;
   description: string;
   enabled: boolean;
+  allowApplicantWithdrawal?: boolean;
   optional: boolean;
   displayOrder: number;
   publicStatusMapping: WorkflowPublicStatusMapping;

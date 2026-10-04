@@ -119,6 +119,11 @@ export async function createApplicationDraft(
   if (result.kind === "unowned_business") {
     throw new ApplicationBusinessUnavailableError();
   }
+  if (result.kind === "resubmission_not_allowed") {
+    throw new ResourceConflictError(
+      "This funding call does not allow a new application after withdrawal.",
+    );
+  }
   if (result.kind === "duplicate") {
     throw new ApplicationBusinessConflictError();
   }

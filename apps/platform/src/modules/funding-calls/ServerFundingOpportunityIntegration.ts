@@ -104,6 +104,7 @@ export async function resolvePublishedApplicationFormBinding(id: string) {
   const call = await readPublishedFundingCall(id);
   if (!call) return null;
   return {
+    allowResubmissionAfterWithdrawal: call.allowResubmissionAfterWithdrawal,
     applicationDuplicatePolicy: call.applicationDuplicatePolicy,
     eligibilityRuleSetVersionId: call.eligibilityRuleSetVersionId,
     formVersionId: call.formVersionId,

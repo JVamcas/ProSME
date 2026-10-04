@@ -68,6 +68,7 @@ function screening(dependencies: StandardWorkflowDependencies) {
       status: "UNDER_REVIEW",
     },
     repeatable: false,
+    allowApplicantWithdrawal: true,
     scoring: null,
     slaHours: 120,
     stableKey: "ADMIN_ELIGIBILITY_SCREENING",
@@ -153,6 +154,7 @@ function financialReview(dependencies: StandardWorkflowDependencies) {
       status: "UNDER_REVIEW",
     },
     repeatable: false,
+    allowApplicantWithdrawal: true,
     scoring: null,
     slaHours: 240,
     stableKey: "FINANCIAL_REVIEW",
@@ -253,6 +255,7 @@ function dueDiligence(dependencies: StandardWorkflowDependencies) {
       status: "UNDER_REVIEW",
     },
     repeatable: false,
+    allowApplicantWithdrawal: true,
     scoring: {
       aggregation: "AVERAGE",
       taskStableKey: "DUE_DILIGENCE_REVIEW",

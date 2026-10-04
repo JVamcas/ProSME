@@ -23,6 +23,7 @@ import { updateFundingCallThumbnailRecord } from "@/modules/funding-calls/infras
 const actorId = "10000000-0000-4000-8000-000000000001";
 const callId = "20000000-0000-4000-8000-000000000001";
 const stored = {
+  allowResubmissionAfterWithdrawal: false,
   applicationDuplicatePolicy: "one_per_business" as const,
   closesAt: new Date("2027-03-01T00:00:00.000Z"),
   createdAt: new Date("2026-09-01T00:00:00.000Z"),

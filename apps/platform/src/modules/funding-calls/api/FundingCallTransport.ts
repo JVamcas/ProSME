@@ -13,6 +13,7 @@ export type FundingCallCreationProgressView = {
 };
 
 export type FundingCallView = {
+  allowResubmissionAfterWithdrawal: boolean;
   applicationDuplicatePolicy: import(
     "@/modules/applications/domain/Application"
   ).ApplicationDuplicatePolicy;

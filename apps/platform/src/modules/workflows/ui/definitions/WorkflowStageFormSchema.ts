@@ -11,6 +11,7 @@ export const workflowStageFormSchema = z
     enabled: z.boolean(),
     optional: z.boolean(),
     repeatable: z.boolean(),
+    allowApplicantWithdrawal: z.boolean().default(true),
     coiGated: z.boolean(),
     coiFormVersionId: z.union([
       z.literal(""),
