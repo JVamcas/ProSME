@@ -11,8 +11,8 @@ import type { UserAccessRow } from "@/modules/users/UserAccessTypes";
 import { UserRoleAssignmentPanel } from "./UserRoleAssignmentPanel";
 import { UsersTabPanel } from "./UsersTabPanel";
 import { RolePermissionsPanel } from "./RolePermissionsPanel";
-import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
-import { PortalErrorState } from "@/components/layout/PortalErrorState";
+import { PortalLoadingState } from "@/shared/ui/portal/PortalLoadingState";
+import { PortalErrorState } from "@/shared/ui/portal/PortalErrorState";
 
 type AccessTab = "users" | "roles";
 

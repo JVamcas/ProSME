@@ -140,7 +140,7 @@ describe("workflow task decision dialog", () => {
 
     await chooseAction("Approve and advance");
     expect(document.querySelector('[role="dialog"]')?.textContent).toContain(
-      "Confirm approve and advance?",
+      "Approve and advance",
     );
 
     await act(async () => {
@@ -216,7 +216,7 @@ describe("workflow task decision dialog", () => {
 
       const dialog = document.querySelector('[role="dialog"]')!;
       expect(dialog.querySelectorAll("textarea")).toHaveLength(1);
-      expect(dialog.textContent).toContain("Reason");
+      expect(dialog.textContent).toContain("Notes");
       expect(dialog.querySelector("select")).toBeNull();
       expect(dialog.querySelector('input[type="checkbox"]')).toBeNull();
 

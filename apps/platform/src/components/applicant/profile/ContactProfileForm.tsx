@@ -5,7 +5,7 @@ import { useEffect } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { toast } from "sonner";
 
-import { PortalErrorState } from "@/components/layout/PortalErrorState";
+import { PortalErrorState } from "@/shared/ui/portal/PortalErrorState";
 import {
   useApplicantProfile,
   useUpdateApplicantProfile,
@@ -16,7 +16,7 @@ import {
 } from "@/modules/profiles/ProfileSchemas";
 import { ApplicantProfileFields } from "./ApplicantProfileFields";
 import { ProfileFormActions } from "./ProfileFormActions";
-import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
+import { PortalLoadingState } from "@/shared/ui/portal/PortalLoadingState";
 
 const defaults: ApplicantContactProfileInput = {
   phoneNumber: "",

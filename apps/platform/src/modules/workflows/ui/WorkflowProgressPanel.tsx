@@ -69,6 +69,36 @@ function latestStageRuns(stages: WorkflowProgressStage[]) {
   return latestRuns;
 }
 
+function PreviousStageRuns({
+  stages,
+  onSelect,
+}: {
+  stages: WorkflowProgressStage[];
+  onSelect: (key: string) => void;
+}) {
+  if (stages.length === 0) return null;
+  return (
+    <details className="mt-3 rounded-lg border border-brand-navy/10 p-3">
+      <summary className="cursor-pointer text-sm font-semibold text-brand-navy">
+        {stages.length} previous {stages.length === 1 ? "run" : "runs"}
+      </summary>
+      <ul className="mt-2 space-y-2">
+        {stages.map((stage) => (
+          <li key={stageKey(stage)}>
+            <button
+              className="text-sm text-brand-orange hover:underline"
+              onClick={() => onSelect(stageKey(stage))}
+              type="button"
+            >
+              {stage.name} · Run {stage.iterationNumber} · {statusLabels[stage.status]}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </details>
+  );
+}
+
 function StageFlow({ progress }: { progress: WorkflowProgressView }) {
   const [showVisualFlow, setShowVisualFlow] = useState(false);
   const [layoutRevision, setLayoutRevision] = useState(0);
@@ -211,6 +241,14 @@ function StageFlow({ progress }: { progress: WorkflowProgressView }) {
           </ol>
         </nav>
         <div className="min-w-0">
+          <PreviousStageRuns
+            stages={progress.stages.filter(
+              (stage) =>
+                stageKey(stage) !==
+                stageKey(latestRuns.get(stage.stableKey)!),
+            )}
+            onSelect={setSelectedKey}
+          />
           <SelectedStageDetails
             selected={selected}
             isHistorical={

@@ -47,12 +47,12 @@ describe("client data-access boundaries", () => {
     const platformLayouts = [
       "app/(auth)/layout.tsx",
       "app/(operations)/admin/layout.tsx",
-      "app/(applicant)/portal/layout.tsx",
+      "app/(portal)/portal/layout.tsx",
       "app/(public)/layout.tsx",
     ];
 
     for (const layout of platformLayouts) {
-      expect(read(layout), layout).toContain("<QueryProvider>");
+      expect(read(layout), layout).toMatch(/<QueryProvider(?:\s|>)/);
     }
 
     expect(read("app/(payload)/layout.tsx")).not.toContain("QueryProvider");

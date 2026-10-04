@@ -6,8 +6,8 @@ import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { permissionCodes } from "@/auth/authorization/permissions";
-import { PortalMobileHeader } from "@/components/layout/portal-mobile-header";
-import { createQueryClient } from "@/lib/query-client";
+import { PortalMobileHeader } from "@/shared/ui/portal/portal-mobile-header";
+import { createQueryClient } from "@/shared/utils/createQueryClient";
 import type { PortalContext } from "@/modules/profiles/ProfileTypes";
 
 vi.mock("next/navigation", () => ({

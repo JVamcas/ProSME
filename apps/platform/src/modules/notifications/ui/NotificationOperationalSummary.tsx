@@ -8,8 +8,8 @@ import {
   RefreshCcw,
 } from "lucide-react";
 
-import { PortalErrorState } from "@/components/layout/PortalErrorState";
-import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
+import { PortalErrorState } from "@/shared/ui/portal/PortalErrorState";
+import { PortalLoadingState } from "@/shared/ui/portal/PortalLoadingState";
 import { DashboardMetricCard } from "@/modules/dashboard/ui/DashboardMetricCard";
 import { useNotificationSummary } from "./useNotificationAdministration";
 

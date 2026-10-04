@@ -5,8 +5,8 @@ import { FileImage } from "lucide-react";
 import Image from "next/image";
 import { useForm } from "react-hook-form";
 
-import { PortalErrorState } from "@/components/layout/PortalErrorState";
-import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
+import { PortalErrorState } from "@/shared/ui/portal/PortalErrorState";
+import { PortalLoadingState } from "@/shared/ui/portal/PortalLoadingState";
 import { formatLocalDateTime24 } from "@/lib/dateUtils";
 import { FileUploadButton } from "@/shared/ui/FileUploadButton";
 import { toast } from "@/shared/ui/Toast";

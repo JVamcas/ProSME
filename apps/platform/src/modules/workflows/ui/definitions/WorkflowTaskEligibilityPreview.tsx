@@ -4,8 +4,8 @@ import { usePublishedFormRuntime } from "@/modules/forms/FormHooks";
 import type { WorkflowEligibilityFormPreview } from "../../api/WorkflowEligibilityFormPreview";
 import { useWorkflowEligibilityForms } from "./useWorkflowEligibilityForms";
 import { WorkflowTaskFormPreview } from "./WorkflowTaskFormPreview";
-import { PortalErrorState } from "@/components/layout/PortalErrorState";
-import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
+import { PortalErrorState } from "@/shared/ui/portal/PortalErrorState";
+import { PortalLoadingState } from "@/shared/ui/portal/PortalLoadingState";
 
 export { workflowTaskInheritsEligibilityForm } from "../../domain/definitions/WorkflowEligibilityForm";
 

@@ -14,7 +14,7 @@ vi.mock("@/modules/applications/ui/NewApplicationChooser", () => ({
   ),
 }));
 
-import ApplyPage from "@/app/(applicant)/portal/applications/new/page";
+import ApplyPage from "@/app/(portal)/portal/applications/new/page";
 
 describe("new application page context", () => {
   it("passes the call from the Apply link and asks only for the business", async () => {

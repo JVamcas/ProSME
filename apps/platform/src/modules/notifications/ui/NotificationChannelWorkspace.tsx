@@ -3,8 +3,8 @@
 import { ChevronDown, ChevronRight, FileStack } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import { PortalErrorState } from "@/components/layout/PortalErrorState";
-import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
+import { PortalErrorState } from "@/shared/ui/portal/PortalErrorState";
+import { PortalLoadingState } from "@/shared/ui/portal/PortalLoadingState";
 import { GeneralButton, GeneralButtonLink } from "@/components/ui/button";
 import { formatLocalDateTime24 } from "@/lib/dateUtils";
 import { Badge } from "@/shared/ui/Badge";

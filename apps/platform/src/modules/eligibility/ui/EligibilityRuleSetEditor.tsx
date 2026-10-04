@@ -23,8 +23,8 @@ import {
   useUpdateEligibilityRuleSet,
 } from "../EligibilityRuleSetHooks";
 import { EligibilityRuleDialog } from "./EligibilityRuleDialog";
-import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
-import { PortalErrorState } from "@/components/layout/PortalErrorState";
+import { PortalLoadingState } from "@/shared/ui/portal/PortalLoadingState";
+import { PortalErrorState } from "@/shared/ui/portal/PortalErrorState";
 
 const failureLabels = {
   HARD_FAIL: "Hard Fail",

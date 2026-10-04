@@ -20,8 +20,18 @@ export function WorkflowGraphViewport({
   label?: string;
 }) {
   const helpId = useId();
-  const viewport = useWorkflowGraphViewport(width, height);
-  const { view } = viewport;
+  const {
+    view,
+    viewportRef,
+    isPanning,
+    handlers,
+    zoomIn,
+    zoomOut,
+    canZoomIn,
+    canZoomOut,
+    fit,
+    reset,
+  } = useWorkflowGraphViewport(width, height);
 
   return (
     <div className="min-w-0 max-w-full border-t border-brand-navy/10 bg-brand-cream/35">
@@ -30,11 +40,11 @@ export function WorkflowGraphViewport({
         {" mark terminal actions that end the application's active workflow."}
       </p>
       <div
-        {...viewport.handlers}
+        {...handlers}
         aria-describedby={helpId}
         aria-label={label}
-        className={`min-w-0 max-w-full touch-none overflow-auto overscroll-contain ${viewport.isPanning ? "cursor-grabbing select-none" : "cursor-grab"} ${className ?? "max-h-[560px]"}`}
-        ref={viewport.viewportRef}
+        className={`min-w-0 max-w-full touch-none overflow-auto overscroll-contain ${isPanning ? "cursor-grabbing select-none" : "cursor-grab"} ${className ?? "max-h-[560px]"}`}
+        ref={viewportRef}
         style={{ height: Math.min(height, 560) }}
         role="region"
         tabIndex={0}
@@ -71,8 +81,8 @@ export function WorkflowGraphViewport({
             variant="outline"
             label="Zoom out"
             title="Zoom out"
-            onClick={viewport.zoomOut}
-            disabled={!viewport.canZoomOut}
+            onClick={zoomOut}
+            disabled={!canZoomOut}
           >
             <ZoomOut aria-hidden="true" className="size-4" />
           </IconButton>
@@ -87,8 +97,8 @@ export function WorkflowGraphViewport({
             variant="outline"
             label="Zoom in"
             title="Zoom in"
-            onClick={viewport.zoomIn}
-            disabled={!viewport.canZoomIn}
+            onClick={zoomIn}
+            disabled={!canZoomIn}
           >
             <ZoomIn aria-hidden="true" className="size-4" />
           </IconButton>
@@ -97,7 +107,7 @@ export function WorkflowGraphViewport({
             variant="outline"
             label="Fit flow to view"
             title="Fit flow to view"
-            onClick={viewport.fit}
+            onClick={fit}
           >
             <Maximize aria-hidden="true" className="size-4" />
           </IconButton>
@@ -106,7 +116,7 @@ export function WorkflowGraphViewport({
             variant="outline"
             label="Reset flow view"
             title="Reset flow view"
-            onClick={viewport.reset}
+            onClick={reset}
           >
             <RotateCcw aria-hidden="true" className="size-4" />
           </IconButton>

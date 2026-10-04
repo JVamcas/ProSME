@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { AppShell } from "@/components/layout/app-shell";
-import { QueryProvider } from "@/components/layout/query-provider";
+import { QueryProvider } from "@/shared/ui/portal/query-provider";
 import { AnalyticsConsent } from "@/integrations/analytics/analytics-consent";
 import { getServerEnvironment } from "@/lib/env/server";
 import { getContactDetails, getSiteSettings } from "@/modules/content/ServerContentQueries";

@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { PortalErrorState } from "@/components/layout/PortalErrorState";
-import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
+import { PortalErrorState } from "@/shared/ui/portal/PortalErrorState";
+import { PortalLoadingState } from "@/shared/ui/portal/PortalLoadingState";
 import { DraggableDialog } from "@/components/ui/draggable-dialog";
 import { NotificationTemplateEditForm } from "./NotificationTemplateEditForm";
 import { ActionMenu, type ActionMenuItem } from "@/shared/ui/ActionMenu";

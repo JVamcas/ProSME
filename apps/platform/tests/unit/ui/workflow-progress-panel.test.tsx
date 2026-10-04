@@ -59,7 +59,7 @@ describe("workflow progress panel", () => {
     expect(details?.textContent).toContain("Mandatory");
     const headers = [...(details?.querySelectorAll("th") ?? [])];
     expect(headers.map((header) => header.textContent)).toEqual([
-      "Action required",
+      "Task",
       "Task type",
       "Assigned to",
       "Requirement",

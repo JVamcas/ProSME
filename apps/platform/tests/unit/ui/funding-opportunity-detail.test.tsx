@@ -42,7 +42,7 @@ describe("funding opportunity detail", () => {
     expect(markup).toContain("About this opportunity");
     expect(markup).toContain("<strong>growing</strong>");
     expect(markup).toContain("Ready to apply?");
-    expect(markup).toContain("Application deadline");
+    expect(markup).toContain("Applications close 31 Oct 2026");
     expect(markup).toContain(
       'href="/portal/applications/new?fundingOpportunityId=00000000-0000-4000-8000-000000000042"',
     );

@@ -79,7 +79,7 @@ describe("task workspace workflow progress", () => {
   );
 
   it.each([false, true])(
-    "shows the progress tab only with permission (%s)",
+    "keeps workflow progress in the application workspace (%s)",
     (allowed) => {
       const markup = renderToStaticMarkup(
         <WorkflowTaskWorkspace
@@ -88,9 +88,9 @@ describe("task workspace workflow progress", () => {
         />,
       );
 
-      expect(markup.includes("Workflow Progress")).toBe(allowed);
+      expect(markup).not.toContain("Workflow Progress");
       expect(markup).toContain("Assigned Task");
-      expect(markup).toContain("Requests for information");
+      expect(markup).not.toContain("Requests for information");
     },
   );
 

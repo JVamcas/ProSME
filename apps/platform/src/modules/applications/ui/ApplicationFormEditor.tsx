@@ -3,8 +3,8 @@
 import { RefreshCw, RotateCw } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import { PortalErrorState } from "@/components/layout/PortalErrorState";
-import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
+import { PortalErrorState } from "@/shared/ui/portal/PortalErrorState";
+import { PortalLoadingState } from "@/shared/ui/portal/PortalLoadingState";
 import { ApplicationSubmissionConfirmation } from "@/components/applicant/applications/ApplicationSubmissionConfirmation";
 import { GeneralButton } from "@/components/ui/button";
 import { FormRenderer } from "@/modules/forms/ui/renderer/FormRenderer";

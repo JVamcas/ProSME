@@ -11,8 +11,8 @@ import { useEligibilityTerminationConfirmation } from "@/modules/eligibility/ui/
 import type { AuthoritativeEligibilityTaskResult } from "@/modules/work-queue/TaskTypes";
 import { AuthoritativeEligibilityResult } from "@/modules/eligibility/ui/screening/AuthoritativeEligibilityResult";
 
-import { PortalErrorState } from "@/components/layout/PortalErrorState";
-import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
+import { PortalErrorState } from "@/shared/ui/portal/PortalErrorState";
+import { PortalLoadingState } from "@/shared/ui/portal/PortalLoadingState";
 import { GeneralButton } from "@/components/ui/button";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { useTaskForm } from "@/modules/forms/FormHooks";

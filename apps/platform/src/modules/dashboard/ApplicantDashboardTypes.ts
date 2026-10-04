@@ -17,6 +17,5 @@ export type ApplicantDashboardView = {
   activities: ApplicantDashboardActivity[];
   displayName: string;
   metrics: ApplicantDashboardMetrics;
-  urgentRequests: import("@/modules/workflows/domain/runtime/WorkflowRfiView")
-    .WorkflowRfiSummary[];
+  urgentRequests: import("@/modules/workflows/domain/runtime/WorkflowRfiView").WorkflowRfiSummary[];
 };

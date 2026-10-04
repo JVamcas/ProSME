@@ -1,7 +1,7 @@
 "use client";
 
-import { PortalErrorState } from "@/components/layout/PortalErrorState";
-import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
+import { PortalErrorState } from "@/shared/ui/portal/PortalErrorState";
+import { PortalLoadingState } from "@/shared/ui/portal/PortalLoadingState";
 import type { WorkflowProgressView } from "../../api/WorkflowProgressTypes";
 import { WorkflowProgressPanel } from "../WorkflowProgressPanel";
 import { useWorkflowProgress } from "./useWorkflowProgress";

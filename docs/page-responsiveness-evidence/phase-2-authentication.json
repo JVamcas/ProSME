@@ -1,0 +1,117 @@
+{
+  "measurement": "Matched applicant warm request time and Firebase revocation verification; only synthetic routes; nine confirmation samples per build.",
+  "samples": {
+    "current": [
+      {
+        "sample": 9,
+        "requestMs": 554.771,
+        "authMs": 525.857938000001,
+        "applicationMs": 28.913061999998945
+      },
+      {
+        "sample": 10,
+        "requestMs": 556.251,
+        "authMs": 532.4876949999962,
+        "applicationMs": 23.76330500000381
+      },
+      {
+        "sample": 11,
+        "requestMs": 662.278,
+        "authMs": 640.0512739999976,
+        "applicationMs": 22.226726000002373
+      },
+      {
+        "sample": 12,
+        "requestMs": 524.161,
+        "authMs": 501.36578399999416,
+        "applicationMs": 22.79521600000578
+      },
+      {
+        "sample": 13,
+        "requestMs": 549.612,
+        "authMs": 532.5222480000011,
+        "applicationMs": 17.08975199999884
+      },
+      {
+        "sample": 14,
+        "requestMs": 594.718,
+        "authMs": 579.3456070000029,
+        "applicationMs": 15.372392999997032
+      },
+      {
+        "sample": 15,
+        "requestMs": 679.614,
+        "authMs": 662.5537049999984,
+        "applicationMs": 17.060295000001588
+      },
+      {
+        "sample": 16,
+        "requestMs": 572.02,
+        "authMs": 552.1634909999993,
+        "applicationMs": 19.856509000000642
+      },
+      {
+        "sample": 17,
+        "requestMs": 995.842,
+        "authMs": 973.8563129999966,
+        "applicationMs": 21.985687000003395
+      }
+    ],
+    "reference": [
+      {
+        "sample": 9,
+        "requestMs": 981.394,
+        "authMs": 884.7261160000016,
+        "applicationMs": 96.66788399999837
+      },
+      {
+        "sample": 10,
+        "requestMs": 526.513,
+        "authMs": 501.4196400000001,
+        "applicationMs": 25.09335999999996
+      },
+      {
+        "sample": 11,
+        "requestMs": 536.533,
+        "authMs": 511.98373999999603,
+        "applicationMs": 24.549260000003983
+      },
+      {
+        "sample": 12,
+        "requestMs": 570.38,
+        "authMs": 544.3993229999978,
+        "applicationMs": 25.980677000002174
+      },
+      {
+        "sample": 13,
+        "requestMs": 454.789,
+        "authMs": 428.9766509999972,
+        "applicationMs": 25.81234900000277
+      },
+      {
+        "sample": 14,
+        "requestMs": 460.338,
+        "authMs": 435.5037579999989,
+        "applicationMs": 24.834242000001097
+      },
+      {
+        "sample": 15,
+        "requestMs": 545.564,
+        "authMs": 523.4585179999995,
+        "applicationMs": 22.105482000000507
+      },
+      {
+        "sample": 16,
+        "requestMs": 595.796,
+        "authMs": 566.5890519999957,
+        "applicationMs": 29.20694800000433
+      },
+      {
+        "sample": 17,
+        "requestMs": 506.015,
+        "authMs": 469.6062590000074,
+        "applicationMs": 36.408740999992574
+      }
+    ]
+  }
+}

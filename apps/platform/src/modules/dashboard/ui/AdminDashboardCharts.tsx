@@ -1,10 +1,19 @@
 "use client";
 
-import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
+import dynamic from "next/dynamic";
+import { Skeleton } from "@/shared/ui/Skeleton";
+
+const DashboardStatusChart = dynamic(
+  () =>
+    import("./DashboardStatusChart").then(
+      (module) => module.DashboardStatusChart,
+    ),
+  { loading: () => <Skeleton className="h-56 w-full" /> },
+);
 
 import type { AdminDashboardStatus } from "@/modules/dashboard/AdminDashboardTypes";
 
-const colors = [
+export const colors = [
   "#0066cc",
   "#3b82f6",
   "#c9a24d",
@@ -28,26 +37,7 @@ export function AdminDashboardCharts({
       {statuses.length ? (
         <div className="mt-5 grid items-center gap-6 sm:grid-cols-[minmax(190px,.8fr)_1fr]">
           <div className="relative h-56">
-            <ResponsiveContainer height="100%" width="100%">
-              <PieChart>
-                <Pie
-                  data={statuses}
-                  dataKey="count"
-                  innerRadius={62}
-                  nameKey="label"
-                  outerRadius={91}
-                  paddingAngle={2}
-                >
-                  {statuses.map((status, index) => (
-                    <Cell
-                      fill={colors[index % colors.length]}
-                      key={status.label}
-                    />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
+            <DashboardStatusChart statuses={statuses} />
             <div className="pointer-events-none absolute inset-0 grid place-content-center text-center">
               <strong className="text-2xl text-brand-navy">{total}</strong>
               <span className="text-xs text-brand-navy/55">Total</span>
