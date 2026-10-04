@@ -1,4 +1,5 @@
 import "server-only";
+import { workflowStageHasActiveHold, workflowTaskHasActiveHold } from "./WorkflowHoldQueries";
 import { workflowApprovalEligibilityReady } from "./WorkflowApprovalEligibilityReadiness";
 
 import { and, asc, eq, sql } from "drizzle-orm";
@@ -24,6 +25,8 @@ import { workflowEligibilityActionReady } from "./WorkflowEligibilityActionReadi
 import { workflowTaskPrerequisitesComplete } from "./WorkflowTaskPrerequisiteReadiness";
 
 export type WorkflowActionAvailabilitySource = {
+  holdScopes?: import("../domain/runtime/WorkflowHold").WorkflowHoldScope[];
+  resumableHolds?: import("./WorkflowHoldRepository").ActiveWorkflowHold[];
   actions: StoredWorkflowAction[];
   stage: StageCompletionTarget & { rowVersion: number };
   task: {
@@ -78,11 +81,7 @@ async function readStage(
           AND deferral.resume_at <= CURRENT_TIMESTAMP
       )`,
       approvalEligibilityReady: workflowApprovalEligibilityReady(sql`${stageInstances.workflowInstanceId}`),
-      activeHold: sql<boolean>`EXISTS (
-        SELECT 1 FROM app_workflow_holds hold
-        WHERE hold.stage_instance_id = ${stageInstances.id}
-          AND hold.status = 'ACTIVE'
-      )`,
+      activeHold: workflowStageHasActiveHold(sql`${stageInstances}`),
       application: {
         business: applications.businessSection,
         declarationAcceptance: applications.declarationAcceptance,
@@ -245,11 +244,7 @@ async function readTask(
       approvalEligibilityReady: workflowApprovalEligibilityReady(
         sql`${stageInstances.workflowInstanceId}`,
       ),
-      activeHold: sql<boolean>`EXISTS (
-        SELECT 1 FROM app_workflow_holds hold
-        WHERE hold.stage_instance_id = ${workflowTasks.stageInstanceId}
-          AND hold.status = 'ACTIVE'
-      )`,
+      activeHold: workflowTaskHasActiveHold(sql`${workflowTasks}`),
       activeReferral: sql<boolean>`EXISTS (
         SELECT 1 FROM app_workflow_referrals referral
         WHERE referral.source_task_id = ${workflowTasks.id}

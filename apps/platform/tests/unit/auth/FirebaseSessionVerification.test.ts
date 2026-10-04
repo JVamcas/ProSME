@@ -79,20 +79,27 @@ describe("Firebase verification policy", () => {
     );
   });
 
-  it.each([
-    "invalid signature",
-    "expired session",
-    "wrong issuer",
-    "revoked session",
-  ])("denies a failed SDK verification: %s", async (message) => {
-    auth.verifySessionCookie.mockRejectedValueOnce(new Error(message));
-    const headers = new Headers({
-      cookie: `${getSessionCookieName()}=bad-session`,
-    });
-    await expect(
-      verifyFirebaseSessionFromHeaders(headers, { checkRevoked: true }),
-    ).resolves.toBeNull();
-  });
+  it.each(
+    [false, true].flatMap((checkRevoked) =>
+      [
+        "invalid signature",
+        "expired session",
+        "wrong issuer",
+        "revoked session",
+      ].map((message) => [checkRevoked, message] as const),
+    ),
+  )(
+    "denies failed SDK verification with checkRevoked=%s: %s",
+    async (checkRevoked, message) => {
+      auth.verifySessionCookie.mockRejectedValueOnce(new Error(message));
+      const headers = new Headers({
+        cookie: `${getSessionCookieName()}=bad-session`,
+      });
+      await expect(
+        verifyFirebaseSessionFromHeaders(headers, { checkRevoked }),
+      ).resolves.toBeNull();
+    },
+  );
 
   it("returns no identity for a missing cookie without invoking Firebase", async () => {
     await expect(

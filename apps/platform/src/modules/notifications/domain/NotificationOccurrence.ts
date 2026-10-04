@@ -13,6 +13,7 @@ export const notificationCaptureRecipientSchema = z.object({
     "APPLICATION_OWNER",
     "ASSIGNED_USER",
     "FUNDING_CALL_STAKEHOLDER",
+    "ACTION_ACTOR",
   ]),
   resolutionPath: z.string().trim().min(1).max(200),
   userId: z.uuid(),

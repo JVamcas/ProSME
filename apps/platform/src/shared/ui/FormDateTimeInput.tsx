@@ -1,6 +1,10 @@
 "use client";
 
-import { parseDate, type DateValue } from "@internationalized/date";
+import {
+  parseDateTime,
+  type CalendarDateTime,
+  type DateValue,
+} from "@internationalized/date";
 import { useState, type ChangeEvent, type ReactNode } from "react";
 import { DatePicker, I18nProvider } from "react-aria-components";
 import {
@@ -11,16 +15,16 @@ import {
   useWatch,
 } from "react-hook-form";
 
-import { type FormBindingProps, useFormBinding } from "./form-binding";
-import { DateCalendarPopover } from "./form-date-calendar";
+import { type FormBindingProps, useFormBinding } from "@/components/ui/form-binding";
+import { DateCalendarPopover } from "@/shared/ui/FormDateCalendar";
 import {
   DateControl,
   DateFeedback,
   DateLabel,
   DateRegistrationInput,
-} from "./form-date-parts";
+} from "./FormDateParts";
 
-export type FormDateInputProps = FormBindingProps & {
+export type FormDateTimeInputProps = FormBindingProps & {
   className?: string;
   containerClassName?: string;
   defaultValue?: string;
@@ -30,38 +34,33 @@ export type FormDateInputProps = FormBindingProps & {
   labelClassName?: string;
   maxValue?: string;
   minValue?: string;
-  onBlurValue?: (value: string) => void;
   onChangeValue?: (value: string) => void;
-  onFocusValue?: (value: string) => void;
   readOnly?: boolean;
   required?: boolean;
   value?: string;
 };
 
-function parseDateValue(value?: string) {
+function parseDateTimeValue(value?: string): CalendarDateTime | null {
   if (!value) {
     return null;
   }
+
   try {
-    return parseDate(value);
+    return parseDateTime(value);
   } catch {
     return null;
   }
 }
 
-function createFieldEvent(
-  name: string | undefined,
-  value: string,
-  type: "blur" | "change",
-) {
+function createFieldEvent(name: string | undefined, value: string) {
   return {
-    target: { name, type: "date", value },
-    currentTarget: { name, type: "date", value },
-    type,
+    target: { name, type: "datetime-local", value },
+    currentTarget: { name, type: "datetime-local", value },
+    type: "change",
   } as unknown as ChangeEvent<HTMLInputElement>;
 }
 
-function DateInputField({
+function DateTimeInputField({
   className,
   containerClassName,
   defaultValue,
@@ -73,17 +72,17 @@ function DateInputField({
   maxValue,
   minValue,
   name,
-  onBlurValue,
   onChangeValue,
-  onFocusValue,
   readOnly,
   registrationOptions,
   required,
   value,
-}: FormDateInputProps) {
+}: FormDateTimeInputProps) {
   const binding = useFormBinding({ error, name, registrationOptions });
   const [internalValue, setInternalValue] = useState(defaultValue ?? "");
   const currentValue = value ?? internalValue;
+  const parsedMinValue = parseDateTimeValue(minValue) ?? undefined;
+  const parsedMaxValue = parseDateTimeValue(maxValue) ?? undefined;
 
   function change(nextValue: DateValue | null) {
     const next = nextValue?.toString() ?? "";
@@ -91,32 +90,28 @@ function DateInputField({
       setInternalValue(next);
     }
 
-    const event = createFieldEvent(binding.name, next, "change");
-    void binding.registration?.onChange(event);
+    void binding.registration?.onChange(
+      createFieldEvent(binding.name, next),
+    );
     onChangeValue?.(next);
   }
-
-  const parsedMinValue = parseDateValue(minValue) ?? undefined;
-  const parsedMaxValue = parseDateValue(maxValue) ?? undefined;
 
   return (
     <I18nProvider locale="en-GB">
       <DatePicker
-        value={parseDateValue(currentValue)}
-        minValue={parsedMinValue}
-        maxValue={parsedMaxValue}
+        className={containerClassName}
+        granularity="minute"
+        hideTimeZone
+        hourCycle={24}
         isDisabled={disabled}
+        isInvalid={Boolean(binding.error)}
         isReadOnly={readOnly}
         isRequired={required}
-        isInvalid={Boolean(binding.error)}
-        onBlur={() => {
-          const event = createFieldEvent(binding.name, currentValue, "blur");
-          void binding.registration?.onBlur(event);
-          onBlurValue?.(currentValue);
-        }}
-        onFocus={() => onFocusValue?.(currentValue)}
+        maxValue={parsedMaxValue}
+        minValue={parsedMinValue}
+        onBlur={binding.registration?.onBlur}
         onChange={change}
-        className={containerClassName}
+        value={parseDateTimeValue(currentValue)}
       >
         <DateLabel className={labelClassName}>
           {label}
@@ -142,11 +137,11 @@ function DateInputField({
   );
 }
 
-function ControlledDateInput({
+function ControlledDateTimeInput({
   control,
   setValue,
   ...props
-}: FormDateInputProps & {
+}: FormDateTimeInputProps & {
   control: Control<FieldValues>;
   name: string;
   setValue: UseFormSetValue<FieldValues>;
@@ -155,8 +150,9 @@ function ControlledDateInput({
   const value = props.value ?? (
     typeof formValue === "string" ? formValue : ""
   );
+
   return (
-    <DateInputField
+    <DateTimeInputField
       {...props}
       onChangeValue={(nextValue) => {
         setValue(props.name, nextValue, {
@@ -171,11 +167,11 @@ function ControlledDateInput({
   );
 }
 
-export function FormDateInput(props: FormDateInputProps) {
+export function FormDateTimeInput(props: FormDateTimeInputProps) {
   const form = useFormContext<FieldValues>();
   if (form && props.name) {
     return (
-      <ControlledDateInput
+      <ControlledDateTimeInput
         {...props}
         control={form.control}
         name={props.name}
@@ -183,5 +179,6 @@ export function FormDateInput(props: FormDateInputProps) {
       />
     );
   }
-  return <DateInputField {...props} />;
+
+  return <DateTimeInputField {...props} />;
 }

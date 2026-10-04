@@ -5,6 +5,7 @@ import { sql } from "drizzle-orm";
 import { getDatabase } from "@/db/client";
 import type { TaskDetail } from "@/modules/work-queue/TaskTypes";
 import type { WorkflowElementPermissions } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
+import { workflowTaskHasActiveHold, workflowTaskHoldSummaries } from "./WorkflowHoldQueries";
 import { workflowTaskEffectiveDeadline } from "./WorkflowSlaDeadline";
 import { workflowDocumentEvidenceIsCurrent } from "./WorkflowDocumentEvidenceReadiness";
 
@@ -40,6 +41,9 @@ export async function readWorkflowTask(
 ): Promise<TaskDetailRow | null> {
   const result = await getDatabase().execute(sql`
     SELECT task.id AS "taskInstanceId", task.status AS "taskStatus",
+      CASE WHEN task.status IN ('PENDING', 'IN_PROGRESS') AND ${workflowTaskHasActiveHold(sql`task`)}
+        THEN 'ON_HOLD' ELSE NULL END AS "processingStatus",
+      ${workflowTaskHoldSummaries(sql`task`)} AS holds,
       task.row_version AS "rowVersion",
       task.form_version_id AS "formVersionId",
       form_definition.name AS "formName",

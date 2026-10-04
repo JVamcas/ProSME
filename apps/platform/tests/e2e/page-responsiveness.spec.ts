@@ -1,7 +1,10 @@
-import { readFile } from "node:fs/promises";
 import { expect, test, type Page } from "playwright/test";
 
-const sessionFile = process.env.RESPONSIVENESS_SESSION;
+import {
+  installResponsivenessSession,
+  responsivenessSessionFile as sessionFile,
+} from "./helpers/ResponsivenessSession";
+
 test.skip(!sessionFile, "Requires the isolated synthetic performance session.");
 
 async function dashboardLink(page: Page) {
@@ -24,21 +27,7 @@ async function delayDashboardNavigation(page: Page) {
 }
 
 test.beforeEach(async ({ context }) => {
-  const { cookie } = JSON.parse(await readFile(sessionFile!, "utf8")) as {
-    cookie: string;
-  };
-  const baseURL =
-    process.env.RESPONSIVENESS_BASE_URL ?? "http://localhost:3018";
-  await context.addCookies([
-    {
-      name: "__Host-smefund_session",
-      value: cookie,
-      url: baseURL.replace("http:", "https:"),
-      secure: true,
-      httpOnly: true,
-      sameSite: "Lax",
-    },
-  ]);
+  await installResponsivenessSession(context);
 });
 
 test("keyboard navigation announces pending and keeps shell controls usable", async ({

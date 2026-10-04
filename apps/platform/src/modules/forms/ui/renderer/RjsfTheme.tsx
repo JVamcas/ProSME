@@ -17,7 +17,7 @@ import {
   type FocusEvent,
 } from "react";
 
-import { FormDateInput } from "@/components/ui/form-date-input";
+import { FormDateInput } from "@/shared/ui/FormDateInput";
 import {
   FormInput,
   FormSelect,

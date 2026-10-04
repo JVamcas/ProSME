@@ -15,6 +15,11 @@ import {
   notificationEventCatalogue,
   type NotificationEventKey,
 } from "./NotificationEvent";
+import {
+  workflowHoldResumedEventSeed,
+  workflowHoldResumedTemplateSeed,
+} from "./NotificationWorkflowHoldEvent";
+
 import type { NotificationCatalogKey } from "./NotificationEvent";
 import type { NotificationRecipientType } from "./NotificationRecipient";
 import type { NotificationTemplateScope } from "./NotificationTemplate";
@@ -42,6 +47,7 @@ export type NotificationEventSeed = {
 
 export const notificationEventSeeds: readonly NotificationEventSeed[] = [
   workflowEscalationEventSeed,
+  workflowHoldResumedEventSeed,
   ...workflowDeadlineEventSeeds,
   applicationTerminalStatusEventSeed,
   {
@@ -333,6 +339,7 @@ export const notificationTemplateTargetSeeds: readonly NotificationTemplateTarge
     },
     applicationTerminalStatusTemplateSeed,
     workflowEscalationTemplateSeed,
+    workflowHoldResumedTemplateSeed,
     ...workflowDeadlineTemplateSeeds,
     {
       defaultSubjectTemplate: "Application {{applicationReference}} submitted",

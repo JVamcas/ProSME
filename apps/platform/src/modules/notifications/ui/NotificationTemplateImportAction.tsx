@@ -4,7 +4,7 @@ import { FileUp } from "lucide-react";
 import { useState } from "react";
 
 import { GeneralButton } from "@/components/ui/button";
-import { DraggableDialog } from "@/components/ui/draggable-dialog";
+import { DraggableDialog } from "@/shared/ui/DraggableDialog";
 import { NotificationTemplateImportForm } from "./NotificationTemplateImportForm";
 
 export function NotificationTemplateImportAction({

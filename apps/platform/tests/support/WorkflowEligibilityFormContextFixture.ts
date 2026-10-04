@@ -35,6 +35,7 @@ export async function installWorkflowEligibilityFormContextFixture(
   prepareApplication?: () => Promise<{
     formVersionId: string;
     values: Record<string, unknown>;
+    businessId?: string;
   }>,
 ) {
   const id = formContextIds;
@@ -186,10 +187,10 @@ export async function installWorkflowEligibilityFormContextFixture(
   await pool.query(
     `INSERT INTO app_applications
       (id, owner_user_id, funding_opportunity_id, funding_opportunity_title,
-       eligibility_rule_set_version_id, form_version_id, status, submitted_at, reference)
+       eligibility_rule_set_version_id, form_version_id, status, submitted_at, reference, business_id)
      VALUES ($1, $2, $3, 'First call', $4, $5, $6,
        CASE WHEN $6 = 'submitted' THEN now() ELSE NULL END,
-       CASE WHEN $6 = 'submitted' THEN 'FORM-CONTEXT-001' ELSE NULL END)`,
+       CASE WHEN $6 = 'submitted' THEN 'FORM-CONTEXT-001' ELSE NULL END, $7)`,
     [
       id.application,
       id.actor,
@@ -197,6 +198,7 @@ export async function installWorkflowEligibilityFormContextFixture(
       id.rulesVersion,
       applicationForm?.formVersionId ?? null,
       applicationForm ? "draft" : "submitted",
+      applicationForm?.businessId ?? null,
     ],
   );
   if (applicationForm) {

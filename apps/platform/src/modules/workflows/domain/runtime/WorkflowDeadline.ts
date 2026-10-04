@@ -4,6 +4,7 @@ export const workflowDeadlineKinds = [
   "RFI_EXPIRED",
   "DEFERRAL_RESUMED",
   "HOLD_REVIEW",
+  "HOLD_RESUMED",
 ] as const;
 
 export type WorkflowDeadlineKind = (typeof workflowDeadlineKinds)[number];

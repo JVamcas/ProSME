@@ -39,95 +39,17 @@ vi.mock("@/modules/work-queue/ui/useWorkQueue", () => ({
   }
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
-const task = {
-  actions: [
-    {
-      actionType: "APPROVE_ADVANCE",
-      available: true,
-      key: "ADVANCE",
-      label: "Approve and advance",
-      presentation: { displayOrder: 1, variant: "success" },
-      requiredInput: {
-        confirmation: { message: null, required: false },
-        dueDate: { deadlineDays: null, required: false },
-        editableFieldPaths: [],
-        reason: { maxLength: 4_000, required: false },
-        reviewDate: { required: false },
-        target: { type: null, value: null },
-      },
-      runtimeVersion: 1,
-      unavailableReason: null,
-    },
-  ],
-  stageInstanceId: "stage-id",
-  taskInstanceId: "task-id",
-  taskStatus: "IN_PROGRESS",
-  workflowInstanceId: "workflow-id",
-} as unknown as TaskDetail;
-
 afterEach(() => {
   vi.clearAllMocks();
   document.body.replaceChildren();
 });
 
-async function chooseAction(label: string) {
-  await act(async () => {
-    document
-      .querySelector<HTMLButtonElement>('button[aria-label="Workflow actions"]')
-      ?.click();
-  });
-  await act(async () => {
-    [...document.querySelectorAll<HTMLElement>('[role="menuitem"]')]
-      .find((item) => item.textContent?.includes(label))
-      ?.click();
-  });
-}
+import {
+  task,
+  chooseAction,
+} from "../../support/WorkflowTaskDecisionDialogFixture";
 
 describe("workflow task decision dialog", () => {
-  it.each([
-    { editableFields: [] },
-    { editableFields: [{ label: "Amount requested", path: "AMOUNT" }] },
-  ])(
-    "shows the runtime field selector without a separate reason for %j",
-    async ({ editableFields }) => {
-      const requestTask = {
-        ...task,
-        documentRequirements: [],
-        actions: [
-          {
-            ...task.actions[0],
-            actionType: "REQUEST_INFORMATION",
-            label: "Request information",
-            requiredInput: {
-              ...task.actions[0].requiredInput,
-              editableFields,
-              editableFieldPaths: ["CLARIFICATION_RESPONSE", "AMOUNT"],
-            },
-          },
-        ],
-      } as TaskDetail;
-      const container = document.createElement("div");
-      document.body.append(container);
-      const root = createRoot(container);
-      try {
-        await act(async () =>
-          root.render(<WorkflowTaskDecisionActions task={requestTask} />),
-        );
-        await chooseAction("Request information");
-        const dialog = document.querySelector('[role="dialog"]')!;
-        expect(dialog.textContent).toContain("Application fields to open");
-        expect(dialog.querySelector('textarea[name="reason"]')).toBeNull();
-        expect(
-          dialog.textContent?.includes(
-            "This application has no editable answer fields",
-          ),
-        ).toBe(editableFields.length === 0);
-      } finally {
-        await act(async () => root.unmount());
-      }
-    },
-  );
-
   it("opens the confirmation dialog and cancels without submitting", async () => {
     const container = document.createElement("div");
     document.body.append(container);

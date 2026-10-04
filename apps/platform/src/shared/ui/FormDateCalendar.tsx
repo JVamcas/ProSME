@@ -65,7 +65,7 @@ function CalendarActions({
         className="rounded-lg px-3 py-2 text-sm font-semibold text-brand-navy hover:bg-brand-cream disabled:cursor-not-allowed disabled:opacity-40"
         disabled={todayUnavailable}
         onClick={() => {
-          state?.setValue(currentDate);
+          state?.setDateValue(currentDate);
           state?.close();
         }}
         type="button"

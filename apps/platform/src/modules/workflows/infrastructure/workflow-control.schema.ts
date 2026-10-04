@@ -154,7 +154,7 @@ export const workflowHolds = pgTable(
     taskId: uuid("task_id").references(() => workflowTasks.id, {
       onDelete: "restrict",
     }),
-    scope: text("scope").$type<"STAGE">().notNull().default("STAGE"),
+    scope: text("scope").$type<"TASK" | "STAGE" | "APPLICATION">().notNull().default("STAGE"),
     previousStageStatus: text("previous_stage_status")
       .$type<"ACTIVE">()
       .notNull(),
@@ -180,7 +180,13 @@ export const workflowHolds = pgTable(
     ),
     uniqueIndex("app_workflow_holds_active_stage_unique")
       .on(table.stageInstanceId)
-      .where(sql`${table.status} = 'ACTIVE'`),
+      .where(sql`${table.status} = 'ACTIVE' AND ${table.scope} = 'STAGE'`),
+    uniqueIndex("app_workflow_holds_active_task_unique")
+      .on(table.taskId)
+      .where(sql`${table.status} = 'ACTIVE' AND ${table.scope} = 'TASK'`),
+    uniqueIndex("app_workflow_holds_active_application_unique")
+      .on(table.workflowInstanceId)
+      .where(sql`${table.status} = 'ACTIVE' AND ${table.scope} = 'APPLICATION'`),
     index("app_workflow_holds_runtime_idx").on(
       table.workflowInstanceId,
       table.heldAt,
@@ -188,7 +194,8 @@ export const workflowHolds = pgTable(
     index("app_workflow_holds_review_idx")
       .on(table.reviewAt)
       .where(sql`${table.status} = 'ACTIVE'`),
-    check("app_workflow_holds_scope_check", sql`${table.scope} = 'STAGE'`),
+    check("app_workflow_holds_task_scope_check", sql`${table.scope} <> 'TASK' OR ${table.taskId} IS NOT NULL`),
+    check("app_workflow_holds_scope_check", sql`${table.scope} IN ('TASK', 'STAGE', 'APPLICATION')`),
     check(
       "app_workflow_holds_status_check",
       sql`${table.status} in ('ACTIVE', 'RESUMED')`,

@@ -39,7 +39,7 @@ function columns(input: {
           >
             {row.original.title}
           </Link>
-          <span>{row.original.reference}</span>
+          <span className="text-xs">{row.original.id}</span>
         </div>
       ),
     },

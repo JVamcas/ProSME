@@ -1,4 +1,6 @@
 import "server-only";
+import { lockWorkflowRuntimeForTask } from "@/modules/workflows/infrastructure/WorkflowRuntimeLock";
+import { workflowTaskHasActiveHold } from "@/modules/workflows/infrastructure/WorkflowHoldQueries";
 
 import { eq, sql, getTableColumns } from "drizzle-orm";
 
@@ -83,11 +85,13 @@ export async function lockAuthoritativeEligibilityTask(
   taskId: string,
   actorId: string,
 ): Promise<AuthoritativeEligibilityTaskTarget | null> {
-  // Match manual action locking order: stage, then task.
+  // Match manual action locking order: workflow, stage, then task.
+  await lockWorkflowRuntimeForTask(transaction, taskId);
   await transaction.execute(sql`
     SELECT stage.id FROM app_workflow_stage_instances stage
     JOIN app_workflow_tasks task ON task.stage_instance_id = stage.id
     WHERE task.id = ${taskId}::uuid
+      AND NOT ${workflowTaskHasActiveHold(sql`task`)}
       AND app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
     FOR UPDATE OF stage
   `);
@@ -177,6 +181,7 @@ export async function lockAuthoritativeEligibilityTask(
       ORDER BY outcome.evaluation_number DESC LIMIT 1
     ) previous ON TRUE
     WHERE task.id = ${taskId}::uuid
+      AND NOT ${workflowTaskHasActiveHold(sql`task`)}
       AND app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
       AND stage.status = 'ACTIVE' AND workflow.status = 'ACTIVE'
     FOR UPDATE OF task

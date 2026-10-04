@@ -37,8 +37,9 @@ export function DateControl({ className, error }: DateControlProps) {
           <DateSegment
             segment={segment}
             className={cn(
-              "rounded px-0.5 outline-none data-[placeholder]:text-slate-400",
-              "focus:bg-orange-pale focus:text-brand-navy",
+              "rounded px-0.5 outline-none data-placeholder:text-slate-400",
+              "data-focused:bg-brand-navy data-focused:text-brand-white",
+              "data-focused:ring-2 data-focused:ring-brand-orange data-focused:ring-offset-1",
             )}
           />
         )}

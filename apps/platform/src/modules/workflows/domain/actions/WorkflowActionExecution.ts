@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { workflowHoldScopes } from "../runtime/WorkflowHold";
 
 import { richTextToPlainText } from "@/shared/utils/RichText";
 
@@ -100,13 +101,17 @@ export const workflowActionInputSchema = z
       .object({
         ...commonInput,
         actionType: z.literal("PUT_ON_HOLD"),
-        reviewDate: z.iso.date().optional(),
+        scope: z.enum(workflowHoldScopes),
+        reviewDate: z
+          .union([z.iso.date(), z.iso.datetime({ offset: true })])
+          .optional(),
       })
       .strict(),
     z
       .object({
         ...commonInput,
         actionType: z.literal("RESUME"),
+        holdId: z.uuid().optional(),
       })
       .strict(),
     z
@@ -193,6 +198,9 @@ export type WorkflowActionExecutionResult = {
       | "NONE"
       | "STAGE_ACTIVE"
       | "STAGE_BLOCKED"
+      | "TASK_HELD"
+      | "WORKFLOW_HELD"
+      | "HOLD_ENDED"
       | "STAGE_ACTIVATED"
       | "JOIN_PENDING"
       | "WORKFLOW_COMPLETED"

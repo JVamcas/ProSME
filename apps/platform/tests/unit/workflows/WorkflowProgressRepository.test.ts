@@ -141,6 +141,7 @@ describe("workflow progress projection", () => {
         reviewRelease: "STAGE_COMPLETED",
         thresholdSatisfied: false,
         prerequisitesComplete: true,
+        processingStatus: null,
         assignedUserName: "Reviewer",
         dueAt: "2026-09-20T09:00:00.000Z",
         id: "task-one",

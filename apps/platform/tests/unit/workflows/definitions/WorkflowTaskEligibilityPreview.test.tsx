@@ -14,7 +14,7 @@ vi.mock("@/modules/forms/FormHooks", () => ({
   usePublishedFormRuntime: vi.fn(() => ({ isPending: false })),
   usePublishedForms: () => ({ data: [] }),
 }));
-vi.mock("@/components/ui/draggable-dialog", () => ({
+vi.mock("@/shared/ui/DraggableDialog", () => ({
   DraggableDialog: ({ children }: { children: React.ReactNode }) => children,
 }));
 vi.mock("@/modules/forms/ui/renderer/FormRenderer", () => ({

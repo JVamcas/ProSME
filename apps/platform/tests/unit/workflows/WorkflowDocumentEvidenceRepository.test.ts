@@ -1,6 +1,10 @@
 import { PgDialect } from "drizzle-orm/pg-core";
 import { describe, expect, it, vi } from "vitest";
 
+vi.mock("@/modules/workflows/infrastructure/WorkflowRuntimeLock", () => ({
+  lockWorkflowRuntimeForTask: vi.fn(),
+  lockWorkflowRuntimeForStage: vi.fn(),
+}));
 vi.mock("server-only", () => ({}));
 vi.mock("@/db/client", () => ({ getDatabase: vi.fn() }));
 

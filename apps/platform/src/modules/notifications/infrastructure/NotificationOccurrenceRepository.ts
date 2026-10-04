@@ -145,6 +145,7 @@ function resolveBindingRecipients(
   if (
     binding.recipientType === "APPLICATION_OWNER" ||
     binding.recipientType === "ASSIGNED_USER" ||
+    binding.recipientType === "ACTION_ACTOR" ||
     binding.recipientType === "FUNDING_CALL_STAKEHOLDER"
   ) {
     return recipientsOfType(

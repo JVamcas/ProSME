@@ -37,6 +37,7 @@ export const notificationRuleRecipientUpdateSchema = z.discriminatedUnion(
           "APPLICATION_OWNER",
           "ASSIGNED_USER",
           "FUNDING_CALL_STAKEHOLDER",
+    "ACTION_ACTOR",
         ]),
         targetId: z.null().optional(),
       })
@@ -137,7 +138,7 @@ export type NotificationCatalogDetail = NotificationCatalogSummary & {
 type NotificationConfiguredRecipient = (
   | {
       recipientType:
-        "APPLICATION_OWNER" | "ASSIGNED_USER" | "FUNDING_CALL_STAKEHOLDER";
+        "APPLICATION_OWNER" | "ASSIGNED_USER" | "FUNDING_CALL_STAKEHOLDER" | "ACTION_ACTOR";
       targetId: null;
     }
   | {

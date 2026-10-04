@@ -1,0 +1,311 @@
+{
+  "observations": [
+    {
+      "audience": "admin",
+      "sample": 0,
+      "elapsedMs": 100.78601500000013,
+      "primaryReads": 1,
+      "returnReads": 0,
+      "synthetic": true,
+      "scenario": "cached-admin"
+    },
+    {
+      "audience": "admin",
+      "sample": 1,
+      "elapsedMs": 98.69670700000006,
+      "primaryReads": 1,
+      "returnReads": 0,
+      "synthetic": true,
+      "scenario": "cached-admin"
+    },
+    {
+      "audience": "admin",
+      "sample": 2,
+      "elapsedMs": 83.28713099999982,
+      "primaryReads": 1,
+      "returnReads": 0,
+      "synthetic": true,
+      "scenario": "cached-admin"
+    },
+    {
+      "audience": "admin",
+      "sample": 3,
+      "elapsedMs": 106.54267500000014,
+      "primaryReads": 1,
+      "returnReads": 0,
+      "synthetic": true,
+      "scenario": "cached-admin"
+    },
+    {
+      "audience": "admin",
+      "sample": 4,
+      "elapsedMs": 94.77956300000005,
+      "primaryReads": 1,
+      "returnReads": 0,
+      "synthetic": true,
+      "scenario": "cached-admin"
+    },
+    {
+      "audience": "portal",
+      "sample": 0,
+      "elapsedMs": 118.9112110000001,
+      "primaryReads": 1,
+      "returnReads": 0,
+      "synthetic": true,
+      "scenario": "cached-portal"
+    },
+    {
+      "audience": "portal",
+      "sample": 1,
+      "elapsedMs": 66.02810199999976,
+      "primaryReads": 1,
+      "returnReads": 0,
+      "synthetic": true,
+      "scenario": "cached-portal"
+    },
+    {
+      "audience": "portal",
+      "sample": 2,
+      "elapsedMs": 70.475097,
+      "primaryReads": 1,
+      "returnReads": 0,
+      "synthetic": true,
+      "scenario": "cached-portal"
+    },
+    {
+      "audience": "portal",
+      "sample": 3,
+      "elapsedMs": 93.18686000000025,
+      "primaryReads": 1,
+      "returnReads": 0,
+      "synthetic": true,
+      "scenario": "cached-portal"
+    },
+    {
+      "audience": "portal",
+      "sample": 4,
+      "elapsedMs": 89.52318400000013,
+      "primaryReads": 1,
+      "returnReads": 0,
+      "synthetic": true,
+      "scenario": "cached-portal"
+    },
+    {
+      "source": "portal",
+      "sample": 0,
+      "destination": "admin",
+      "documents": [
+        "/admin"
+      ],
+      "elapsedMs": 337.506985,
+      "synthetic": true,
+      "scenario": "root-admin"
+    },
+    {
+      "source": "portal",
+      "sample": 1,
+      "destination": "admin",
+      "documents": [
+        "/admin"
+      ],
+      "elapsedMs": 319.616841,
+      "synthetic": true,
+      "scenario": "root-admin"
+    },
+    {
+      "source": "portal",
+      "sample": 2,
+      "destination": "admin",
+      "documents": [
+        "/admin"
+      ],
+      "elapsedMs": 334.90609200000017,
+      "synthetic": true,
+      "scenario": "root-admin"
+    },
+    {
+      "source": "portal",
+      "sample": 3,
+      "destination": "admin",
+      "documents": [
+        "/admin"
+      ],
+      "elapsedMs": 342.86136499999975,
+      "synthetic": true,
+      "scenario": "root-admin"
+    },
+    {
+      "source": "portal",
+      "sample": 4,
+      "destination": "admin",
+      "documents": [
+        "/admin"
+      ],
+      "elapsedMs": 246.09420599999976,
+      "synthetic": true,
+      "scenario": "root-admin"
+    },
+    {
+      "source": "admin",
+      "sample": 0,
+      "destination": "portal",
+      "documents": [
+        "/portal"
+      ],
+      "elapsedMs": 352.4410680000001,
+      "synthetic": true,
+      "scenario": "root-portal"
+    },
+    {
+      "source": "admin",
+      "sample": 1,
+      "destination": "portal",
+      "documents": [
+        "/portal"
+      ],
+      "elapsedMs": 286.7007189999995,
+      "synthetic": true,
+      "scenario": "root-portal"
+    },
+    {
+      "source": "admin",
+      "sample": 2,
+      "destination": "portal",
+      "documents": [
+        "/portal"
+      ],
+      "elapsedMs": 325.58977400000003,
+      "synthetic": true,
+      "scenario": "root-portal"
+    },
+    {
+      "source": "admin",
+      "sample": 3,
+      "destination": "portal",
+      "documents": [
+        "/portal"
+      ],
+      "elapsedMs": 266.24481900000046,
+      "synthetic": true,
+      "scenario": "root-portal"
+    },
+    {
+      "source": "admin",
+      "sample": 4,
+      "destination": "portal",
+      "documents": [
+        "/portal"
+      ],
+      "elapsedMs": 1487.2733890000009,
+      "synthetic": true,
+      "scenario": "root-portal"
+    },
+    {
+      "sample": 0,
+      "publicElapsedMs": 331.308626,
+      "returnElapsedMs": 402.71267699999953,
+      "documents": [
+        "/contact",
+        "/portal/applications"
+      ],
+      "synthetic": true,
+      "scenario": "root-public"
+    },
+    {
+      "sample": 1,
+      "publicElapsedMs": 282.4751299999998,
+      "returnElapsedMs": 634.7546149999989,
+      "documents": [
+        "/contact",
+        "/portal/applications"
+      ],
+      "synthetic": true,
+      "scenario": "root-public"
+    },
+    {
+      "sample": 2,
+      "publicElapsedMs": 293.686283,
+      "returnElapsedMs": 2148.971667999999,
+      "documents": [
+        "/contact",
+        "/portal/applications"
+      ],
+      "synthetic": true,
+      "scenario": "root-public"
+    },
+    {
+      "sample": 3,
+      "publicElapsedMs": 265.3926300000003,
+      "returnElapsedMs": 2009.1478179999995,
+      "documents": [
+        "/contact",
+        "/portal/applications"
+      ],
+      "synthetic": true,
+      "scenario": "root-public"
+    },
+    {
+      "sample": 4,
+      "publicElapsedMs": 314.6325089999991,
+      "returnElapsedMs": 362.2442740000006,
+      "documents": [
+        "/contact",
+        "/portal/applications"
+      ],
+      "synthetic": true,
+      "scenario": "root-public"
+    }
+  ],
+  "summary": [
+    {
+      "scenario": "cached-admin",
+      "samples": 5,
+      "medianMs": 98.69670700000006,
+      "minMs": 83.28713099999982,
+      "maxMs": 106.54267500000014,
+      "primaryReturnReads": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "scenario": "cached-portal",
+      "samples": 5,
+      "medianMs": 89.52318400000013,
+      "minMs": 66.02810199999976,
+      "maxMs": 118.9112110000001,
+      "primaryReturnReads": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "scenario": "root-admin",
+      "samples": 5,
+      "medianMs": 334.90609200000017,
+      "minMs": 246.09420599999976,
+      "maxMs": 342.86136499999975
+    },
+    {
+      "scenario": "root-portal",
+      "samples": 5,
+      "medianMs": 325.58977400000003,
+      "minMs": 266.24481900000046,
+      "maxMs": 1487.2733890000009
+    },
+    {
+      "scenario": "root-public",
+      "samples": 5,
+      "medianMs": 293.686283,
+      "minMs": 265.3926300000003,
+      "maxMs": 331.308626,
+      "medianReturnMs": 634.7546149999989
+    }
+  ]
+}

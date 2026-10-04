@@ -84,3 +84,49 @@ describe("cache identity", () => {
     await act(async () => root.unmount());
   });
 });
+
+it("cancels in-flight reads and ignores their late payloads after an account change", async () => {
+  const container = document.createElement("div");
+  const root = createRoot(container);
+  const clients: ReturnType<typeof createQueryClient>[] = [];
+  function InspectCache() {
+    const client = useQueryClient();
+    clients.push(client);
+    return <p>{String(client.getQueryData(["record"]) ?? "empty")}</p>;
+  }
+  await act(async () =>
+    root.render(
+      <QueryProvider identity="account-a">
+        <InspectCache />
+      </QueryProvider>,
+    ),
+  );
+  const oldClient = clients[0];
+  let finish!: (value: string) => void;
+  let requestSignal!: AbortSignal;
+  const pending = oldClient
+    .fetchQuery({
+      queryKey: ["record"],
+      queryFn: ({ signal }) => {
+        requestSignal = signal;
+        return new Promise<string>((resolve) => {
+          finish = resolve;
+        });
+      },
+    })
+    .catch(() => undefined);
+  await act(async () =>
+    root.render(
+      <QueryProvider identity="account-b">
+        <InspectCache />
+      </QueryProvider>,
+    ),
+  );
+  expect(requestSignal.aborted).toBe(true);
+  finish("account-a-private-record");
+  await pending;
+  expect(oldClient.getQueryCache().getAll()).toHaveLength(0);
+  expect(clients.at(-1)?.getQueryData(["record"])).toBeUndefined();
+  expect(container.textContent).toBe("empty");
+  await act(async () => root.unmount());
+});

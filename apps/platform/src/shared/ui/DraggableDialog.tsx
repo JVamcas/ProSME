@@ -5,6 +5,7 @@ import {
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
   useEffect,
+  useEffectEvent,
   useId,
   useRef,
   useState,
@@ -151,6 +152,8 @@ function useDialogLifecycle(
   closeRef: React.RefObject<HTMLButtonElement | null>,
   panelRef: React.RefObject<HTMLDivElement | null>,
 ) {
+  const handleClose = useEffectEvent(onClose);
+
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
     const previousFocus = document.activeElement;
@@ -158,7 +161,7 @@ function useDialogLifecycle(
     closeRef.current?.focus();
 
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
+      if (event.key === "Escape") handleClose();
       if (event.key !== "Tab" || !panelRef.current) return;
       const focusable = panelRef.current.querySelectorAll<HTMLElement>(
         'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), [href], [tabindex]:not([tabindex="-1"])',
@@ -178,5 +181,5 @@ function useDialogLifecycle(
       document.body.style.overflow = previousOverflow;
       if (previousFocus instanceof HTMLElement) previousFocus.focus();
     };
-  }, [closeRef, onClose, panelRef]);
+  }, [closeRef, panelRef]);
 }

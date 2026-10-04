@@ -1,6 +1,7 @@
 import type { ApplicationReadSection } from "../domain/ApplicationReadAnswers";
 
 export type ApplicationDetailModel = {
+  processingStatus?: "ON_HOLD" | null;
   title: string;
   backHref: string;
   backLabel: string;

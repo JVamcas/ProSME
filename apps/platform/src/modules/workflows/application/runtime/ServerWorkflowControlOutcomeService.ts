@@ -3,9 +3,8 @@ import "server-only";
 import type { WorkflowActionExecutionTransaction } from "../../infrastructure/WorkflowActionExecutionRepository";
 import {
   recordWorkflowRework,
-  resumeWorkflowHold,
-  startWorkflowHold,
 } from "../../infrastructure/WorkflowControlRepository";
+import { resumeWorkflowHold, startWorkflowHold } from "../../infrastructure/WorkflowHoldRepository";
 import { resumeDueWorkflowDeferral } from "../../infrastructure/WorkflowDeferralRepository";
 import { activateStageInTransaction } from "./ServerStageActivationService";
 import { persistStageCompletion } from "../../infrastructure/StageCompletionRepository";
@@ -125,14 +124,23 @@ async function executeHoldOutcome(
   if (
     input.target.action.actionType !== "PUT_ON_HOLD" ||
     input.command.input.actionType !== "PUT_ON_HOLD"
-  )
+  ) {
     return null;
+  }
+  const scope = input.command.input.scope;
+  let transitionKind: "TASK_HELD" | "WORKFLOW_HELD" | "STAGE_BLOCKED" =
+    "STAGE_BLOCKED";
+  if (scope === "TASK") {
+    transitionKind = "TASK_HELD";
+  } else if (scope === "APPLICATION") {
+    transitionKind = "WORKFLOW_HELD";
+  }
   const result = buildExecutionResult({
     ...execution,
     resultingRuntimeVersion: input.resultingRuntimeVersion,
     target: input.target,
     transition: {
-      kind: "STAGE_BLOCKED",
+      kind: transitionKind,
       targets: [],
       workflowStatus: "ACTIVE",
     },
@@ -149,8 +157,9 @@ async function executeHoldOutcome(
     comment: input.command.input.comment,
     correlationId: input.command.correlationId,
     reason: input.command.input.reason,
+    scope: input.command.input.scope,
     reviewAt: input.command.input.reviewDate
-      ? new Date(`${input.command.input.reviewDate}T00:00:00.000Z`)
+      ? new Date(input.command.input.reviewDate)
       : undefined,
     stageInstanceId: input.command.sourceStageInstanceId,
     taskId: input.target.task?.id ?? null,
@@ -179,7 +188,7 @@ async function executeResumeOutcome(
     ...execution,
     resultingRuntimeVersion: input.resultingRuntimeVersion,
     target: input.target,
-    transition: { kind: "STAGE_ACTIVE", targets: [], workflowStatus: "ACTIVE" },
+    transition: { kind: "HOLD_ENDED", targets: [], workflowStatus: "ACTIVE" },
   });
   await persistActionAndDecision(transaction, {
     ...input,
@@ -187,7 +196,7 @@ async function executeResumeOutcome(
     result,
     terminalOutcome: null,
   });
-  const resumed = input.target.stage.activeDeferral
+  const resumed = !input.command.input.holdId && input.target.stage.activeDeferral
     ? await resumeDueWorkflowDeferral(transaction, {
         actionExecutionId: execution.executionId,
         actorId: input.actorId,
@@ -199,10 +208,9 @@ async function executeResumeOutcome(
       })
     : await resumeWorkflowHold(transaction, {
         actorId: input.actorId,
-        comment: input.command.input.comment,
         correlationId: input.command.correlationId,
-        stageInstanceId: input.command.sourceStageInstanceId,
-        taskId: input.target.task?.id ?? null,
+        holdId: input.command.input.holdId!,
+        resumedAt: new Date(execution.executedAt),
         workflowInstanceId: input.target.stage.workflowInstanceId,
       });
   if (!resumed) {

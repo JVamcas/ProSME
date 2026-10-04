@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 
 import { GeneralButton, type ButtonProps } from "./button";
-import { DraggableDialog, type DialogSize } from "./draggable-dialog";
+import { DraggableDialog, type DialogSize } from "@/shared/ui/DraggableDialog";
 
 type Props = {
   cancelText?: string;

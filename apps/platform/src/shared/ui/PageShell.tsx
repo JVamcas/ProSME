@@ -91,7 +91,7 @@ export function PageHeader({
             {description ? (
               <p
                 className={cn(
-                  "mt-2 max-w-3xl text-sm leading-6 text-brand-navy/65 sm:text-base",
+                  "mt-2 max-w-full text-sm leading-6 text-brand-navy/65 sm:text-base",
                   centered && "mx-auto",
                 )}
               >

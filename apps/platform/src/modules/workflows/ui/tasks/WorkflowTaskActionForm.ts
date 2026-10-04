@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { workflowHoldScopes } from "../../domain/runtime/WorkflowHold";
 import type { WorkflowTaskAction } from "@/modules/work-queue/TaskTypes";
 import type { WorkflowActionInput } from "../../domain/actions/WorkflowActionExecution";
 import { workflowRfiDetailedResponseFieldPath } from "../../domain/runtime/WorkflowRfi";
@@ -8,6 +9,10 @@ export function actionFormSchema(action: WorkflowTaskAction) {
   return z
     .object({
       confirmed: z.boolean(),
+      holdScope: z
+        .union([z.enum(workflowHoldScopes), z.literal("")])
+        .optional(),
+      holdId: z.union([z.uuid(), z.literal("")]).optional(),
       escalationTargetType: z.enum(["ROLE", "USER"]).optional(),
       escalationTargetId: z.union([z.uuid(), z.literal("")]).optional(),
       targetStageDefinitionId: z.union([z.uuid(), z.literal("")]).optional(),
@@ -20,9 +25,34 @@ export function actionFormSchema(action: WorkflowTaskAction) {
       question: z.string().trim().max(4_000),
       reason: z.string().trim().max(action.requiredInput.reason.maxLength),
       requestedDocumentRequirementIds: z.array(z.uuid()).max(100),
-      reviewDate: z.union([z.iso.date(), z.literal("")]),
+      reviewDate: z.union([z.iso.datetime({ local: true }), z.literal("")]),
     })
     .superRefine((values, context) => {
+      if (
+        action.actionType === "PUT_ON_HOLD" &&
+        !action.requiredInput.holdScopes?.some(
+          (scope) => scope === values.holdScope,
+        )
+      ) {
+        context.addIssue({
+          code: "custom",
+          message: "Choose an authorized hold scope.",
+          path: ["holdScope"],
+        });
+      }
+      if (
+        action.actionType === "RESUME" &&
+        action.requiredInput.resumableHolds?.length &&
+        !action.requiredInput.resumableHolds.some(
+          (hold) => hold.id === values.holdId,
+        )
+      ) {
+        context.addIssue({
+          code: "custom",
+          message: "Choose a hold to resume.",
+          path: ["holdId"],
+        });
+      }
       if (
         (action.actionType === "RETURN" || action.actionType === "REFER") &&
         !action.requiredInput.destinationStages?.some(
@@ -105,7 +135,7 @@ export function actionFormSchema(action: WorkflowTaskAction) {
       if (action.requiredInput.reviewDate.required && !values.reviewDate) {
         context.addIssue({
           code: "custom",
-          message: "Select a review date.",
+          message: "Select a review date and time.",
           path: ["reviewDate"],
         });
       }
@@ -122,6 +152,13 @@ export function actionFormDefaults(action: WorkflowTaskAction): ActionValues {
   );
   return {
     confirmed: false,
+    holdScope: action.requiredInput.holdScopes?.includes("TASK")
+      ? "TASK"
+      : (action.requiredInput.holdScopes?.[0] ?? ""),
+    holdId:
+      action.requiredInput.resumableHolds?.length === 1
+        ? action.requiredInput.resumableHolds[0].id
+        : "",
     escalationTargetType:
       action.requiredInput.target.type === "USER" ? "USER" : "ROLE",
     escalationTargetId: defaultTarget?.id ?? "",
@@ -192,7 +229,16 @@ export function actionInput(
       return {
         ...common,
         actionType: "PUT_ON_HOLD",
-        ...(values.reviewDate ? { reviewDate: values.reviewDate } : {}),
+        scope: values.holdScope as (typeof workflowHoldScopes)[number],
+        ...(values.reviewDate
+          ? { reviewDate: new Date(values.reviewDate).toISOString() }
+          : {}),
+      };
+    case "RESUME":
+      return {
+        ...common,
+        actionType: "RESUME",
+        ...(values.holdId ? { holdId: values.holdId } : {}),
       };
     case "WITHDRAW":
       return { ...common, actionType: "WITHDRAW", confirmed: true };

@@ -1,4 +1,6 @@
 import "server-only";
+import { resumeWorkflowHold } from "../../infrastructure/WorkflowHoldRepository";
+import { captureWorkflowHoldResumedNotification } from "./ServerWorkflowHoldNotificationService";
 
 import { AuthenticationRequiredError, PermissionDeniedError } from "@/auth/authorization/policy";
 import { permissionCodes } from "@/auth/authorization/permissions";
@@ -72,6 +74,15 @@ async function processDeadline(
         });
       }
     }
+    if (candidate.kind === "HOLD_RESUMED") {
+      const hold = await resumeWorkflowHold(transaction, {
+        actorId: systemSeedUserId, actorType: "SYSTEM", correlationId,
+        holdId: candidate.sourceId, resumedAt: now,
+        workflowInstanceId: candidate.workflowInstanceId,
+      });
+      if (!hold) throw new Error("The due hold could not be resumed.");
+      await captureWorkflowHoldResumedNotification(transaction, current, correlationId, now);
+    }
     if (candidate.kind === "DEFERRAL_RESUMED") {
       const resumed = await resumeDueWorkflowDeferral(transaction, {
         actorId: systemSeedUserId,
@@ -89,7 +100,9 @@ async function processDeadline(
     );
     if (!version) throw new Error("The workflow changed during deadline processing.");
     await appendWorkflowDeadlineAudit(transaction, current, correlationId, now);
-    await captureWorkflowDeadlineNotification(transaction, current, correlationId, now, rfi, sourceSnapshot);
+    if (candidate.kind !== "HOLD_RESUMED") {
+      await captureWorkflowDeadlineNotification(transaction, current, correlationId, now, rfi, sourceSnapshot);
+    }
     if (Date.now() >= stopAt) throw new Error("Workflow processor execution budget exhausted.");
     await recordWorkflowDeadlineResult(transaction, current, now);
     return true;

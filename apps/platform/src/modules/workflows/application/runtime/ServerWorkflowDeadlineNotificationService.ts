@@ -24,6 +24,9 @@ export async function captureWorkflowDeadlineNotification(
   expiredRfi?: { deadlineAt: Date; question: string },
   sourceSnapshot?: DeadlineNotificationSnapshot,
 ) {
+  if (candidate.kind === "HOLD_RESUMED") {
+    throw new Error("Hold resumptions require the hold initiator notification context.");
+  }
   const snapshot = sourceSnapshot
     ?? await loadWorkflowDeadlineNotificationSnapshot(transaction, candidate.stageInstanceId);
   const recipients = [

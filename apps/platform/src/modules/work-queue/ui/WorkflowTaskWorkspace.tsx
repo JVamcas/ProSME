@@ -98,7 +98,7 @@ export function WorkflowTaskWorkspace({
 
   return (
     <PageShell
-      actions={<StatusBadge status={task.taskStatus} />}
+      actions={<StatusBadge status={task.processingStatus ?? task.taskStatus} />}
       description={
         <div className="flex flex-wrap gap-2 text-sm">
           <span className="text-brand-navy/60">

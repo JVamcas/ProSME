@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { workflowHoldResumedContextSchema } from "./NotificationWorkflowHoldEvent";
 import {
   workflowTaskAssignedContextSchema,
   workflowTaskEscalatedContextSchema,
@@ -134,6 +135,7 @@ export const notificationEventKeys = [
   "workflow.sla.breached",
   "workflow.information-request.reminder",
   "workflow.hold.review-due",
+  "workflow.hold.resumed",
   "workflow.deferral.resumed",
 ] as const;
 
@@ -192,6 +194,7 @@ export type NotificationEventContextByKey = {
   "workflow.sla.breached": z.infer<typeof workflowDeadlineContextSchema>;
   "workflow.information-request.reminder": z.infer<typeof workflowDeadlineContextSchema>;
   "workflow.hold.review-due": z.infer<typeof workflowDeadlineContextSchema>;
+  "workflow.hold.resumed": z.infer<typeof workflowHoldResumedContextSchema>;
   "workflow.deferral.resumed": z.infer<typeof workflowDeadlineContextSchema>;
 };
 
@@ -203,6 +206,10 @@ type NotificationEventDefinition<Key extends NotificationEventKey> = {
 };
 
 export const notificationEventCatalogue = {
+  "workflow.hold.resumed": {
+    catalogKey: "WORKFLOW", ruleEligibility: "CONFIGURABLE",
+    key: "workflow.hold.resumed", contextSchema: workflowHoldResumedContextSchema,
+  },
   ...workflowDeadlineEventCatalogue,
   "auth.email.verification": {
     ruleEligibility: "SYSTEM_ONLY",

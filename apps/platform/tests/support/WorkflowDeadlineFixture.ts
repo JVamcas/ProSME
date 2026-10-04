@@ -56,7 +56,7 @@ async function configureDraft(client: PoolClient) {
         responsibility: "TRANSFER",
         targetType: "USER",
         targetId: id.otherActor,
-        trigger: "SLA_BREACH",
+        trigger: "MANUAL",
       }),
     ],
   );
@@ -98,6 +98,7 @@ export async function installWorkflowDeadlineFixture(
   prepareApplication?: () => Promise<{
     formVersionId: string;
     values: Record<string, unknown>;
+    businessId?: string;
   }>,
 ) {
   const forms = await installWorkflowEligibilityFormContextFixture(

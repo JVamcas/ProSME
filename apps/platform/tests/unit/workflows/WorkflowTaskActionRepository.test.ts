@@ -6,6 +6,10 @@ vi.mock(
 );
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("@/modules/workflows/infrastructure/WorkflowRuntimeLock", () => ({
+  lockWorkflowRuntimeForTask: vi.fn(),
+  lockWorkflowRuntimeForStage: vi.fn(),
+}));
 vi.mock("server-only", () => ({}));
 vi.mock("@/modules/workflows/infrastructure/WorkflowQuorumRepository", () => ({
   evaluateStageQuorum: vi.fn().mockResolvedValue(true),

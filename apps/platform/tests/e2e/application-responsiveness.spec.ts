@@ -1,23 +1,14 @@
-import { readFile } from "node:fs/promises";
 import { expect, test } from "playwright/test";
 
-const sessionFile = process.env.RESPONSIVENESS_SESSION;
+import {
+  installResponsivenessSession,
+  responsivenessSessionFile as sessionFile,
+} from "./helpers/ResponsivenessSession";
+
 const id = "66666666-6666-4666-8666-666666666661";
 test.skip(!sessionFile, "Requires the isolated synthetic performance session.");
 test.beforeEach(async ({ context }) => {
-  const { cookie } = JSON.parse(await readFile(sessionFile!, "utf8"));
-  await context.addCookies([
-    {
-      name: "__Host-smefund_session",
-      value: cookie,
-      url: (
-        process.env.RESPONSIVENESS_BASE_URL ?? "http://localhost:3018"
-      ).replace("http:", "https:"),
-      secure: true,
-      httpOnly: true,
-      sameSite: "Lax",
-    },
-  ]);
+  await installResponsivenessSession(context);
 });
 
 for (const audience of ["admin", "portal"]) {

@@ -207,6 +207,7 @@ describe("integrated task-form decisions", () => {
         actionType: "PUT_ON_HOLD",
         key: "PUT_ON_HOLD",
         label: "Put on hold",
+        requiredInput: { ...task.actions[0].requiredInput, holdScopes: ["TASK"] },
       }],
     } as TaskDetail;
 

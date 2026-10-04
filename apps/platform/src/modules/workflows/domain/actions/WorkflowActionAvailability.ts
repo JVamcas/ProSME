@@ -17,6 +17,8 @@ export type WorkflowActionPresentationVariant =
   (typeof workflowActionPresentationVariants)[number];
 
 export type WorkflowActionInputMetadata = {
+  holdScopes?: readonly import("../runtime/WorkflowHold").WorkflowHoldScope[];
+  resumableHolds?: readonly import("../runtime/WorkflowHold").WorkflowHoldSummary[];
   escalationTargets?: readonly {
     id: string;
     label: string;

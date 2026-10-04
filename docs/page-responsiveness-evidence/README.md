@@ -130,3 +130,38 @@ forbidden despite its signed Firebase session. The allowed actor reads the
 primary staff/own projections and progress. Reviewed screenshots contain only
 synthetic identities and applications. phase-3-files.json lists the focused
 change's files, including architectural migrations and their import consumers.
+
+
+## Phase 4 regression and release readiness
+
+See ../Page_Responsiveness_Phase_4_Gate.md for acceptance. phase-4-candidate.json
+records runtime 96d16df0 and 18 verification hashes; phase-4-manifest.json records
+only the combined responsiveness scope. Frozen source avoids concurrent edits.
+
+phase-4-final.json contains 180 observations: six routes, two builds, three
+conditions and five samples each. Original da025565 uses the same private
+environment, a compile-only actor fixture repair and duration-only SDK timing
+preserving verification arguments. Set RESPONSIVENESS_COMPARISON_URL to the
+original runtime, use cold,warm,delayed conditions and five samples in the
+existing measurement harness; summarize-page-responsiveness.mjs produces the
+paired and historical G0 threshold comparisons and fails on missing/failing groups.
+
+Set private RESPONSIVENESS_SESSION and RESPONSIVENESS_SCOPE_SESSION paths, then
+run npm run test:public --workspace @prosme/platform -- --config
+playwright.responsiveness.config.ts. Cached/root repeats use --grep 'cached detail
+return|root layout transition|help crosses' --repeat-each 5. Real mutations require
+RESPONSIVENESS_MUTATIONS=true and freshly seeded isolated synthetic fixtures.
+Run mutations after performance sampling; deletion/withdrawal consumes fixtures.
+The tests assert initial fixture state. Never use real applicant records.
+
+phase-4-authentication.json retains all SDK timing cohorts, including tails;
+cohorts differ in size. firebase-authentication.json retains the earlier paired
+SDK experiment. The guarded real Firebase regression script requires localhost,
+a test database and a synthetic scope identity. It verifies real signature,
+expiry, revocation and strict API rejection.
+
+phase-4-validation.json records commands/results and unsuccessful attempts;
+phase-4-function-review.json records AST limits; phase-4-cleanup.json records
+actual cleanup. Evidence includes synthetic projections, statuses, timings
+and source metadata. Credentials, cookies, private environments and browser
+traces are excluded.

@@ -34,6 +34,7 @@ beforeAll(async () => {
   fixtureTransaction = drizzle(client, { schema: databaseSchema }).transaction(async (transaction) => {
     vi.mocked(getDatabase).mockReturnValue(transaction as never);
     await client.query(readFileSync("drizzle/0149_workflow_deadline_processor.sql", "utf8"));
+    await client.query(readFileSync("drizzle/0159_workflow_hold_scopes.sql", "utf8"));
     await seedNotificationConfiguration();
     await installWorkflowDeadlineFixture(client);
     ready.resolve();
@@ -89,13 +90,13 @@ async function counts() {
     expect(await counts()).toEqual({ executions: 0, notifications: 0 });
   });
 
-  it("escalates an overdue task, transfers responsibility, audits and never duplicates", async () => {
+  it("notifies for an overdue task without transferring responsibility and never duplicates", async () => {
     await client.query("UPDATE app_workflow_tasks SET due_at = now() - interval '1 hour' WHERE id = $1", [id.unboundTask]);
     expect(await runBatch()).toMatchObject({ processed: 1, failed: 0 });
     const task = await client.query("SELECT assigned_user_id FROM app_workflow_tasks WHERE id = $1", [id.unboundTask]);
-    expect(task.rows[0].assigned_user_id).toBe(id.otherActor);
+    expect(task.rows[0].assigned_user_id).toBe(id.actor);
     const execution = await client.query("SELECT actor_type, actor_id FROM app_workflow_action_executions WHERE task_id = $1 AND actor_type = 'SYSTEM'", [id.unboundTask]);
-    expect(execution.rows).toEqual([{ actor_type: "SYSTEM", actor_id: null }]);
+    expect(execution.rows).toEqual([]);
     await runBatch();
     expect(await counts()).toEqual({ executions: 1, notifications: 1 });
   });
@@ -177,7 +178,7 @@ async function counts() {
     expect(await counts()).toEqual({ executions: 1, notifications: 1 });
   });
 
-  it("sends a hold review reminder without automatically releasing the hold", async () => {
+  it("automatically resumes a due legacy stage hold and notifies its initiator", async () => {
     await client.query("UPDATE app_workflow_stage_instances SET status = 'BLOCKED' WHERE id = $1", [id.stageInstance]);
     await client.query(
       `INSERT INTO app_workflow_holds
@@ -188,7 +189,7 @@ async function counts() {
     );
     expect(await runBatch()).toMatchObject({ processed: 1 });
     const stage = await client.query("SELECT status FROM app_workflow_stage_instances WHERE id = $1", [id.stageInstance]);
-    expect(stage.rows[0].status).toBe("BLOCKED");
+    expect(stage.rows[0].status).toBe("ACTIVE");
     await runBatch();
     expect(await counts()).toEqual({ executions: 1, notifications: 1 });
   });
@@ -272,6 +273,7 @@ async function counts() {
   it("preserves edited notification recipients when migration and seed setup rerun", async () => {
     await client.query("DELETE FROM app_notification_event_rule_channels WHERE id = '00000000-0000-4000-8000-000000000621'");
     await client.query(readFileSync("drizzle/0149_workflow_deadline_processor.sql", "utf8"));
+    await client.query(readFileSync("drizzle/0159_workflow_hold_scopes.sql", "utf8"));
     await seedNotificationConfiguration();
     const result = await client.query("SELECT id FROM app_notification_event_rule_channels WHERE id = '00000000-0000-4000-8000-000000000621'");
     expect(result.rows).toHaveLength(0);

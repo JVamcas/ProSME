@@ -1,4 +1,5 @@
 import "server-only";
+import { workflowHasActiveApplicationHold } from "./WorkflowHoldQueries";
 
 import { and, asc, eq, sql } from "drizzle-orm";
 
@@ -53,11 +54,6 @@ export type StageActivationTaskDefinition = {
   taskType: "CONTRIBUTING" | "STAGE_DECISION";
   roleId: string | null;
   stableKey: string;
-};
-
-export type PriorStageActivationContext = {
-  stableKey: string;
-  values: Record<string, unknown>;
 };
 
 export type ExistingStageIteration = {
@@ -168,6 +164,10 @@ export async function lockStageActivationTarget(
     .limit(1);
 
   if (!row) return null;
+  const paused = await transaction.execute<{ paused: boolean }>(sql`
+    SELECT ${workflowHasActiveApplicationHold(sql`${workflowInstanceId}::uuid`)} AS paused
+  `);
+  if (paused.rows[0]?.paused) return null;
   const content = row.snapshotContent;
   const application = content.application;
   const fundingCall = content.fundingCall;

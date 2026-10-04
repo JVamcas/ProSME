@@ -95,6 +95,8 @@ export type AuthoritativeEligibilityTaskResult = {
 };
 
 export type TaskDetail = {
+  processingStatus?: "ON_HOLD" | null;
+  holds?: import("@/modules/workflows/domain/runtime/WorkflowHold").WorkflowHoldSummary[];
   actions: WorkflowTaskAction[];
   eligibilityEvaluation: AuthoritativeEligibilityTaskResult | null;
   canEvaluateEligibility: boolean;

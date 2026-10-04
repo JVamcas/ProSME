@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { GeneralButton } from "@/components/ui/button";
-import { DraggableDialog } from "@/components/ui/draggable-dialog";
+import { DraggableDialog } from "@/shared/ui/DraggableDialog";
 import type { FormEditorView, FormRuntimeSchema } from "@/modules/forms/FormTypes";
 import { formColumnCount, previewPanelClass } from "./FormLayout";
 import { FormRenderer, type DynamicFormValues } from "./FormRenderer";

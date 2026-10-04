@@ -2,6 +2,7 @@ export const notificationRecipientTypes = [
   "APPLICATION_OWNER",
   "ASSIGNED_USER",
   "FUNDING_CALL_STAKEHOLDER",
+  "ACTION_ACTOR",
   "SPECIFIC_USER",
   "SPECIFIC_ROLE",
 ] as const;
@@ -11,13 +12,17 @@ export type NotificationRecipientType =
 
 export type RelationshipNotificationRecipientType = Extract<
   NotificationRecipientType,
-  "APPLICATION_OWNER" | "ASSIGNED_USER" | "FUNDING_CALL_STAKEHOLDER"
+  | "APPLICATION_OWNER"
+  | "ASSIGNED_USER"
+  | "FUNDING_CALL_STAKEHOLDER"
+  | "ACTION_ACTOR"
 >;
 
 const relationshipRecipientTypes = [
   "APPLICATION_OWNER",
   "ASSIGNED_USER",
   "FUNDING_CALL_STAKEHOLDER",
+  "ACTION_ACTOR",
 ] as const satisfies readonly RelationshipNotificationRecipientType[];
 
 export function isRelationshipNotificationRecipientType(
@@ -32,5 +37,6 @@ export function relationshipRecipientTypesForEvent(
   if (eventKey === "application.submitted") {
     return ["APPLICATION_OWNER"];
   }
-  return relationshipRecipientTypes;
+  if (eventKey === "workflow.hold.resumed") return ["ACTION_ACTOR"];
+  return relationshipRecipientTypes.filter((type) => type !== "ACTION_ACTOR");
 }

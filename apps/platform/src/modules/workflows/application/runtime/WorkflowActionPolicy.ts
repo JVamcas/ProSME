@@ -36,6 +36,8 @@ type ActionPolicyTask = {
 type PolicyAction = Pick<WorkflowActionDefinition, "actionType" | "enabled">;
 
 export type WorkflowActionPolicyTarget = {
+  canHold?: boolean;
+  canResumeHold?: boolean;
   approvalEligibilityReady?: boolean;
   activeDeferral?: boolean;
   activeDeferralReady?: boolean;
@@ -136,10 +138,11 @@ export function evaluateWorkflowActionPolicy(
     );
   }
   const resuming = target.action.actionType === "RESUME";
+  const holding = target.action.actionType === "PUT_ON_HOLD";
   if (
     target.workflowStatus !== "ACTIVE" ||
-    (resuming
-      ? target.stageStatus !== "BLOCKED"
+    (resuming || holding
+      ? !["ACTIVE", "BLOCKED"].includes(target.stageStatus)
       : target.stageStatus !== "ACTIVE") ||
     (target.task && !["PENDING", "IN_PROGRESS"].includes(target.task.status))
   ) {
@@ -154,7 +157,16 @@ export function evaluateWorkflowActionPolicy(
     target.task?.activeHold ||
     target.task?.activeDeferral,
   );
-  if (resumableControl !== resuming) {
+  if (holding && (target.activeHold || target.task?.activeHold)) {
+    return unavailable(
+      "INVALID_STATE",
+      "This work is already on hold. Resume the applicable holds first.",
+    );
+  }
+  if (
+    (resuming && !resumableControl) ||
+    (resumableControl && !resuming && !holding)
+  ) {
     return unavailable(
       "INVALID_STATE",
       resuming
@@ -162,7 +174,29 @@ export function evaluateWorkflowActionPolicy(
         : "This work is currently paused.",
     );
   }
-  if (resuming && target.activeDeferral && !target.activeDeferralReady) {
+  if (holding && target.canHold === false) {
+    return unavailable(
+      "PERMISSION_DENIED",
+      "You cannot place this work on hold.",
+    );
+  }
+  if (
+    resuming &&
+    (target.activeHold || target.task?.activeHold) &&
+    target.canResumeHold === false
+  ) {
+    return unavailable(
+      "PERMISSION_DENIED",
+      "You cannot resume the active holds on this work.",
+    );
+  }
+  if (
+    resuming &&
+    !target.activeHold &&
+    !target.task?.activeHold &&
+    target.activeDeferral &&
+    !target.activeDeferralReady
+  ) {
     return unavailable(
       "INVALID_STATE",
       "This deferral is not yet eligible to resume.",
@@ -170,14 +204,19 @@ export function evaluateWorkflowActionPolicy(
   }
   if (
     (target.activeDeferral || target.task?.activeDeferral) &&
-    !["RESUME", "WITHDRAW"].includes(target.action.actionType)
+    !["RESUME", "WITHDRAW", "PUT_ON_HOLD"].includes(target.action.actionType)
   ) {
     return unavailable(
       "INVALID_STATE",
       "This work is deferred until its configured continuation is available.",
     );
   }
-  if (target.task?.activeReferral && target.action.actionType !== "WITHDRAW") {
+  if (
+    target.task?.activeReferral &&
+    !holding &&
+    !resuming &&
+    target.action.actionType !== "WITHDRAW"
+  ) {
     return unavailable(
       "INVALID_STATE",
       "This work is blocked until its referral is completed.",
@@ -185,6 +224,8 @@ export function evaluateWorkflowActionPolicy(
   }
   if (
     target.task?.activeEscalationBlocks &&
+    !holding &&
+    !resuming &&
     !target.task.activeEscalationTargetActor &&
     target.action.actionType !== "WITHDRAW"
   ) {

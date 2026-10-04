@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { DraggableDialog } from "@/components/ui/draggable-dialog";
+import { DraggableDialog } from "@/shared/ui/DraggableDialog";
 import {
   useCloneForm,
   useCreateForm,

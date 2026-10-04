@@ -42,14 +42,14 @@ const statuses: Array<{
 const columns: DataTableColumn<AdminApplicationListRow>[] = [
   {
     accessorKey: "reference",
-    header: "Application",
+    header: "Application ID",
     cell: ({ row }) => (
       <ApplicationNavigationLink
         applicationId={row.original.applicationId}
         audience="staff"
         arrow
       >
-        {row.original.reference}
+        {row.original.applicationId}
       </ApplicationNavigationLink>
     ),
   },
@@ -74,7 +74,7 @@ const columns: DataTableColumn<AdminApplicationListRow>[] = [
   {
     accessorKey: "applicantStatus",
     header: "Status",
-    cell: ({ row }) => <StatusBadge status={row.original.applicantStatus} />,
+    cell: ({ row }) => <StatusBadge status={row.original.processingStatus ?? row.original.applicantStatus} />,
   },
   {
     accessorKey: "submittedAt",

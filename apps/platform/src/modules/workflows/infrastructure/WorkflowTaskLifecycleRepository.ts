@@ -1,5 +1,7 @@
 import "server-only";
+import { lockWorkflowRuntimeForTask } from "./WorkflowRuntimeLock";
 
+import { workflowTaskHasActiveHold } from "./WorkflowHoldQueries";
 import { and, eq, sql } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
@@ -55,6 +57,7 @@ export async function lockWorkflowTaskForLifecycle(
   taskId: string,
   actorId: string,
 ): Promise<LockedWorkflowTask | null> {
+  await lockWorkflowRuntimeForTask(transaction, taskId);
   const [task] = await transaction
     .select({
       assignedUserId: workflowTasks.assignedUserId,
@@ -99,6 +102,7 @@ export async function lockWorkflowTaskForLifecycle(
     .where(
       and(
         eq(workflowTasks.id, taskId),
+        sql`NOT ${workflowTaskHasActiveHold(sql`${workflowTasks}`)}`,
         eq(stageInstances.status, "ACTIVE"),
         eq(workflowInstances.status, "ACTIVE"),
       ),
@@ -187,6 +191,7 @@ export async function lockTaskStageForLifecycle(
   transaction: WorkflowTaskLifecycleTransaction,
   taskId: string,
 ) {
+  await lockWorkflowRuntimeForTask(transaction, taskId);
   const [stage] = await transaction
     .select({ id: stageInstances.id })
     .from(stageInstances)

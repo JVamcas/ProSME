@@ -5,6 +5,9 @@ export default defineConfig({
   testMatch: [
     "page-responsiveness.spec.ts",
     "application-responsiveness.spec.ts",
+    "release-readiness.spec.ts",
+    "root-layout-readiness.spec.ts",
+    "application-mutation-readiness.spec.ts",
   ],
   timeout: 45_000,
   workers: 1,

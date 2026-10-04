@@ -16,6 +16,7 @@ import type { ReactNode } from "react";
 
 import { GeneralButton } from "@/components/ui/button";
 import { Tabs } from "@/components/ui/tabs";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { Badge } from "@/shared/ui/Badge";
 import { formatLocalDateTimeSeconds24 } from "@/lib/dateUtils";
 import { PageShell } from "@/shared/ui/PageShell";
@@ -48,6 +49,7 @@ function StatusBanner({ model }: { model: ApplicationDetailModel }) {
             <h2 className="text-base font-bold leading-tight text-brand-navy">
               {model.statusLabel}
             </h2>
+            {model.processingStatus === "ON_HOLD" ? <StatusBadge status="ON_HOLD" /> : null}
             <Badge
               className="rounded px-2 py-0.5 text-[10px] tracking-wide"
               size="sm"

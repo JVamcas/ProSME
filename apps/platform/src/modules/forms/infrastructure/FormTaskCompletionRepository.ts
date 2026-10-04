@@ -1,4 +1,6 @@
 import "server-only";
+import { lockWorkflowRuntimeForTask } from "@/modules/workflows/infrastructure/WorkflowRuntimeLock";
+import { workflowTaskControlAllowsCompletion } from "@/modules/workflows/infrastructure/WorkflowTaskControlReadiness";
 import { workflowApprovalEligibilityReady } from "@/modules/workflows/infrastructure/WorkflowApprovalEligibilityReadiness";
 
 import { sql } from "drizzle-orm";
@@ -120,6 +122,7 @@ async function lockTask(
   transaction: Transaction,
   input: CompletionInput,
 ): Promise<LockedTask | null> {
+  await lockWorkflowRuntimeForTask(transaction, input.taskInstanceId);
   const result = await transaction.execute(sql`
     SELECT ${workflowApprovalEligibilityReady(sql`stage.workflow_instance_id`)} AS "approvalEligibilityReady",
       task.row_version AS "rowVersion", task.result,
@@ -167,6 +170,7 @@ async function lockTask(
       AND task.row_version = ${input.expectedTaskRowVersion}
       AND task.status IN ('PENDING', 'IN_PROGRESS')
       AND stage.status = 'ACTIVE' AND workflow.status = 'ACTIVE'
+      AND ${workflowTaskControlAllowsCompletion}
       AND (
         (${input.actionKey}::text IS NULL)
         OR (${input.actionKey}::text IS NOT NULL AND EXISTS (

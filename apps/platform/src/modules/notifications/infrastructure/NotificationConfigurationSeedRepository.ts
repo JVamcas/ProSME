@@ -227,7 +227,7 @@ export async function seedNotificationConfiguration(): Promise<NotificationConfi
           notificationEventRuleRecipients.ruleId,
           notificationEventRuleRecipients.recipientType,
         ],
-        where: sql`${notificationEventRuleRecipients.recipientType} in ('APPLICATION_OWNER', 'ASSIGNED_USER', 'FUNDING_CALL_STAKEHOLDER')`,
+        where: sql`${notificationEventRuleRecipients.recipientType} in ('APPLICATION_OWNER', 'ASSIGNED_USER', 'FUNDING_CALL_STAKEHOLDER', 'ACTION_ACTOR')`,
       })
       .returning({ id: notificationEventRuleRecipients.id });
     const recipients = await transaction

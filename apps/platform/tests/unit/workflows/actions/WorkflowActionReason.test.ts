@@ -71,7 +71,7 @@ describe("workflow action reason requirements", () => {
             }
           : {}),
         ...(action.actionType === "PUT_ON_HOLD"
-          ? { reviewDate: "2027-01-15" }
+          ? { reviewDate: "2027-01-15", scope: "TASK" }
           : {}),
         ...(action.actionType === "WITHDRAW" ? { confirmed: true } : {}),
         ...(action.actionType === "DEFER"

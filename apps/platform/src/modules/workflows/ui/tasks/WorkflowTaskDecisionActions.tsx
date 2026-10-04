@@ -9,7 +9,6 @@ import { toast } from "sonner";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { CheckboxField } from "@/components/ui/form-field";
 import {
-  FormInput,
   FormSelect,
   FormTextarea,
 } from "@/components/ui/form-fields";
@@ -27,6 +26,7 @@ import {
   actionInput,
   type ActionValues,
 } from "./WorkflowTaskActionForm";
+import { WorkflowTaskHoldFields } from "./WorkflowTaskHoldFields";
 import { WorkflowTaskEscalationFields } from "./WorkflowTaskEscalationFields";
 import { WorkflowTaskInformationRequestFields } from "./WorkflowTaskInformationRequestFields";
 
@@ -157,14 +157,7 @@ function DecisionForm({
                 />
               </>
             ) : null}
-            {action.requiredInput.reviewDate.required ? (
-              <FormInput
-                label="Review date"
-                name="reviewDate"
-                required
-                type="date"
-              />
-            ) : null}
+            <WorkflowTaskHoldFields action={action} />
             {action.actionType !== "REQUEST_INFORMATION" ? (
               <FormTextarea
                 label="Notes"
