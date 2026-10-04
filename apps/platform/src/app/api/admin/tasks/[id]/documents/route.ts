@@ -7,7 +7,7 @@ import {
   portalRouteSuccess,
 } from "@/lib/api/PortalApiResponse";
 import { RequestValidationError } from "@/lib/resource-errors";
-import { uploadWorkflowTaskDocument } from "@/modules/work-queue/ServerWorkflowTaskDocumentService";
+import { uploadWorkflowTaskDocument } from "@/modules/work-queue/application/ServerWorkflowTaskDocumentService";
 import { taskInstanceIdSchema } from "@/modules/work-queue/WorkQueueSchemas";
 
 const requirementIdSchema = z.uuid();

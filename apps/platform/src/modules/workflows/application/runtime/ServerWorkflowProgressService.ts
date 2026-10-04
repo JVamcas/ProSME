@@ -1,5 +1,7 @@
 import "server-only";
 
+import { workflowProgressTaskView } from "./WorkflowProgressTaskView";
+
 import { readWorkflowCompletionProgress } from "../../infrastructure/WorkflowCompletionProgressRepository";
 import { buildWorkflowCompletionProgress } from "../../engine/WorkflowCompletionProgress";
 import { buildStageCompletionValues } from "../../engine/StageCompletionContext";
@@ -139,75 +141,12 @@ export async function getWorkflowProgress(
       return {
         ...stage,
         completionRequirements,
-        tasks: stage.tasks.map((task, index) => {
-          const released =
-            task.reviewRelease === "IMMEDIATE" ||
-            (task.reviewRelease === "THRESHOLD_MET" &&
-              task.thresholdSatisfied) ||
-            stage.status === "COMPLETED" ||
-            stage.status === "RETURNED";
-          const peerIsHidden =
-            !released &&
-            task.reviewerCount !== null &&
-            task.reviewerCount > 1 &&
-            reviewingDefinitions.has(task.taskDefinitionId) &&
-            task.assignedUserId !== actor.id;
-
-          const {
-            assignedRoleCode,
-            assignedUserId,
-            viewPermission,
-            taskDefinitionId: _taskDefinitionId,
-            reviewerCount: _reviewerCount,
-            reviewRelease: _reviewRelease,
-            thresholdSatisfied: _thresholdSatisfied,
-            prerequisitesComplete,
-            ...details
-          } = task;
-          void _taskDefinitionId;
-          void _reviewerCount;
-          void _reviewRelease;
-          void _thresholdSatisfied;
-
-          if (peerIsHidden) {
-            return {
-              ...details,
-              processingStatus: null,
-              actionedAt: null,
-              assignedRoleName: null,
-              assignedUserEmail: null,
-              assignedUserName: null,
-              dueAt: null,
-              id: "peer-slot-" + String(index + 1),
-              status: task.status === "COMPLETED" ? "COMPLETED" : "PENDING",
-              canOpen: false,
-            };
-          }
-
-          const assigned = assignedUserId
-            ? assignedUserId === actor.id
-            : assignedRoleCode !== null &&
-              actor.roleCodes.has(assignedRoleCode);
-          const blockedReason =
-            progress.status === "ACTIVE" &&
-            stage.status === "ACTIVE" &&
-            task.taskType === "STAGE_DECISION" &&
-            ["PENDING", "IN_PROGRESS"].includes(task.status) &&
-            prerequisitesComplete === false
-              ? "Complete all contributing tasks before making the stage decision."
-              : null;
-          return {
-            ...details,
-            blockedReason,
-            canOpen:
-              !blockedReason &&
-              progress.status === "ACTIVE" &&
-              ["ACTIVE", "BLOCKED"].includes(stage.status) &&
-              assigned &&
-              can(actor, permissionCodes.workflowTaskAssignedRead) &&
-              can(actor, viewPermission),
-          };
-        }),
+        tasks: stage.tasks.map((task, index) => workflowProgressTaskView(actor, task, {
+          index,
+          reviewingDefinitions,
+          stageStatus: stage.status,
+          workflowStatus: progress.status,
+        })),
       };
     }),
   };

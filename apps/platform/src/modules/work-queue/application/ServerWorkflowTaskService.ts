@@ -9,6 +9,7 @@ import {
   readChecklistTaskCompletion,
   writeChecklistTaskCompletion,
 } from "@/modules/workflows/infrastructure/WorkflowTaskActionRepository";
+import { getReadableWorkflowTask } from "@/modules/workflows/application/runtime/ServerWorkflowTaskReadService";
 import { readWorkflowTask } from "@/modules/workflows/infrastructure/WorkflowTaskRepository";
 import { writeTaskReviewDraft } from "@/modules/workflows/infrastructure/WorkflowTaskReviewRepository";
 import {
@@ -38,7 +39,7 @@ import type {
   SaveTaskReviewDraftInput,
   ScoreResultItem,
   ScoringConfiguration,
-} from "./TaskTypes";
+} from "../TaskTypes";
 
 function parseChecklistResult(result: unknown) {
   if (result === null) return [];
@@ -201,16 +202,29 @@ export async function getWorkflowTask(
   user: AuthenticatedUser | null,
   taskId: string,
 ) {
-  const actor = requireAuthenticatedUser(user);
-  const task = await readWorkflowTask(actor.id, taskId);
-  if (!task) throw new ResourceNotFoundError("workflow task");
-  const { config, permissions, result, ...view } = task;
-  requirePermission(actor, permissions.view);
-  const actions = await getWorkflowActionAvailability(actor, {
-    sourceStageInstanceId: task.stageInstanceId,
-    taskId: task.taskInstanceId,
-    workflowInstanceId: task.workflowInstanceId,
-  });
+  const { actor, task, readOnly } = await getReadableWorkflowTask(user, taskId);
+  const {
+    config,
+    permissions: _permissions,
+    result,
+    assignedToActor: _assignedToActor,
+    coiCleared: _coiCleared,
+    stageStatus: _stageStatus,
+    workflowStatus: _workflowStatus,
+    ...view
+  } = task;
+  void _permissions;
+  void _assignedToActor;
+  void _coiCleared;
+  void _stageStatus;
+  void _workflowStatus;
+  const actions = readOnly
+    ? []
+    : await getWorkflowActionAvailability(actor, {
+        sourceStageInstanceId: task.stageInstanceId,
+        taskId: task.taskInstanceId,
+        workflowInstanceId: task.workflowInstanceId,
+      });
   const hasChecklist = task.checklistItems.length > 0;
   const commentFields = taskCommentFields(config);
   const parsedComments = commentResultSchema.safeParse(result);
@@ -222,6 +236,7 @@ export async function getWorkflowTask(
   const canEvaluateEligibility = taskRunsAuthoritativeEligibility(config);
   return {
     ...view,
+    readOnly,
     actions,
     canEvaluateEligibility,
     checklistCompleted:

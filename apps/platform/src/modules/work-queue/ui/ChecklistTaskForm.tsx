@@ -186,6 +186,7 @@ type ChecklistTaskFormProps = {
   formSectionComplete: boolean;
   onStateChange: (state: ReviewDraftState) => void;
   task: TaskDetail;
+  readOnly?: boolean;
 };
 
 export function ChecklistTaskForm({
@@ -195,13 +196,14 @@ export function ChecklistTaskForm({
   formSectionComplete,
   onStateChange,
   task,
+  readOnly = false,
 }: ChecklistTaskFormProps) {
   const save = useSaveTaskReviewDraft(task.taskInstanceId);
   const upload = useUploadWorkflowTaskDocument(task.taskInstanceId);
   const [{ initialPatch, initialValues }] = useState(() => {
     const values = defaultValues(task);
     return {
-      initialPatch: initialAutosavePatch(task, values),
+      initialPatch: readOnly ? {} : initialAutosavePatch(task, values),
       initialValues: values,
     };
   });
@@ -230,14 +232,14 @@ export function ChecklistTaskForm({
     task.scoringCompleted;
 
   useEffect(() => {
-    if (previousValues.current === serializedValues) return;
+    if (readOnly || previousValues.current === serializedValues) return;
     const previous = JSON.parse(previousValues.current) as ChecklistFormValues;
     previousValues.current = serializedValues;
     const patch = createReviewDraftPatch(previous, values);
     if (reviewDraftPatchIsEmpty(patch)) return;
     pendingPatch.current = mergeReviewDraftPatches(pendingPatch.current, patch);
     setRevision((current) => current + 1);
-  }, [serializedValues, values]);
+  }, [readOnly, serializedValues, values]);
 
   useEffect(() => {
     onStateChange({ pending, ready });
@@ -245,6 +247,7 @@ export function ChecklistTaskForm({
 
   useEffect(() => {
     if (
+      readOnly ||
       !revision ||
       !pending ||
       save.isPending ||
@@ -274,9 +277,10 @@ export function ChecklistTaskForm({
       });
     }, reviewAutosaveDelayMs);
     return () => window.clearTimeout(timer);
-  }, [form, pending, revision, save]);
+  }, [form, pending, readOnly, revision, save]);
 
   function retrySave() {
+    if (readOnly) return;
     const parsed = checklistFormSchema.safeParse(form.getValues());
     if (!parsed.success) return;
     const patch = pendingPatch.current;
@@ -302,8 +306,10 @@ export function ChecklistTaskForm({
         <WorkflowTaskWorkSections
           checklistItems={task.checklistItems}
           commentFields={task.commentFields}
-          disabled={task.taskStatus === "COMPLETED"}
-          documentUpload={{
+          disabled={!readOnly && task.taskStatus === "COMPLETED"}
+          readOnly={readOnly}
+          taskId={task.taskInstanceId}
+          documentUpload={readOnly ? undefined : {
             error: upload.isError ? upload.error.message : undefined,
             onFile: (requirementId, file) => {
               upload.mutate(
@@ -361,7 +367,7 @@ export function ChecklistTaskForm({
             scoring: task.scoringCompleted ? "Completed" : "Required",
           }}
         />
-        {task.taskStatus !== "COMPLETED" ? (
+        {!readOnly && task.taskStatus !== "COMPLETED" ? (
           <WorkflowReviewSaveStatus
             invalid={invalid}
             error={save.isError ? save.error : null}

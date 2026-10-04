@@ -9,7 +9,7 @@ import {
   idempotencyKeySchema,
   taskInstanceIdSchema,
 } from "@/modules/work-queue/WorkQueueSchemas";
-import { completeChecklistTask } from "@/modules/work-queue/ServerWorkflowTaskService";
+import { completeChecklistTask } from "@/modules/work-queue/application/ServerWorkflowTaskService";
 
 export async function POST(
   request: Request,

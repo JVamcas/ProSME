@@ -5,7 +5,7 @@ import {
   portalRouteSuccess,
 } from "@/lib/api/PortalApiResponse";
 import { taskInstanceIdSchema } from "@/modules/work-queue/WorkQueueSchemas";
-import { getWorkflowTask } from "@/modules/work-queue/ServerWorkflowTaskService";
+import { getWorkflowTask } from "@/modules/work-queue/application/ServerWorkflowTaskService";
 
 export async function GET(
   request: Request,

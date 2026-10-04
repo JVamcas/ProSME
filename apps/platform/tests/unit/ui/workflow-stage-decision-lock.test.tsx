@@ -36,7 +36,13 @@ describe("workflow stage decision lock", () => {
     expect(container.querySelector('a[href="/admin/tasks/task-one"]')).not.toBeNull();
 
     await act(async () => root.render(
-      <WorkflowProgressPanel progress={progress} />,
+      <WorkflowProgressPanel progress={{
+        ...progress,
+        stages: progress.stages.map((stage) => ({
+          ...stage,
+          tasks: stage.tasks.map((task) => ({ ...task, canOpen: true })),
+        })),
+      }} />,
     ));
     expect(container.querySelector('a[href="/admin/tasks/task-two"]')).not.toBeNull();
     expect(container.textContent).not.toContain(blockedReason);

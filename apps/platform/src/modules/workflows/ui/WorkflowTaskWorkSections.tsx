@@ -42,6 +42,8 @@ export type WorkflowTaskWorkSectionsProps = {
     mandatory: boolean;
   }[];
   disabled: boolean;
+  readOnly?: boolean;
+  taskId?: string;
   documentUpload?: {
     error?: string;
     onFile: (requirementId: string, file: File) => void;
@@ -301,6 +303,8 @@ export function WorkflowTaskWorkSections({
   checklistItems,
   commentFields,
   disabled,
+  readOnly = false,
+  taskId,
   documentUpload,
   displayMode,
   documentRequirements,
@@ -325,7 +329,7 @@ export function WorkflowTaskWorkSections({
       ? [
           {
             content: (
-              <ChecklistContent disabled={disabled} items={checklistItems} />
+              <ChecklistContent disabled={disabled || readOnly} items={checklistItems} />
             ),
             id: "checklist" as const,
             status: status.checklist,
@@ -338,7 +342,8 @@ export function WorkflowTaskWorkSections({
           {
             content: (
               <WorkflowTaskDocumentsSection
-                disabled={disabled}
+                disabled={disabled || readOnly}
+                taskId={taskId}
                 requirements={documentRequirements}
                 upload={documentUpload}
               />
@@ -352,7 +357,7 @@ export function WorkflowTaskWorkSections({
     ...(scoring?.criteria.length
       ? [
           {
-            content: <ScoringContent disabled={disabled} scoring={scoring} />,
+            content: <ScoringContent disabled={disabled || readOnly} scoring={scoring} />,
             id: "scoring" as const,
             status: status.scoring,
             title: "Scoring",
@@ -363,7 +368,7 @@ export function WorkflowTaskWorkSections({
       ? [
           {
             content: (
-              <CommentsContent disabled={disabled} fields={commentFields} />
+              <CommentsContent disabled={disabled || readOnly} fields={commentFields} />
             ),
             id: "comments" as const,
             status: status.comments,

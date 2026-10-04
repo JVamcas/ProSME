@@ -17,19 +17,28 @@ import { useState } from "react";
 
 export function WorkflowTaskWorkspace({
   taskId,
+  canReadAssignedTasks = true,
+  canReadAllTasks = false,
 }: {
+  canReadAssignedTasks?: boolean;
+  canReadAllTasks?: boolean;
   canReadWorkflowProgress?: boolean;
   taskId: string;
 }) {
   const [section, setSection] = useState("assigned-task");
-  const tracking = useWorkflowEscalationTracking(taskId);
-  const coi = useWorkflowCoi(taskId, !tracking.isPending && !tracking.data);
+  const tracking = useWorkflowEscalationTracking(taskId, canReadAssignedTasks);
+  const trackingPending = canReadAssignedTasks && tracking.isPending;
+  const trackingData = canReadAssignedTasks ? tracking.data : null;
+  const trackingOnly = Boolean(trackingData && !canReadAllTasks);
+  const coi = useWorkflowCoi(taskId, !trackingPending && !trackingOnly);
   const query = useWorkflowTask(
     taskId,
-    !tracking.isPending && !tracking.data && (coi.data?.cleared ?? false),
+    !trackingPending &&
+      !trackingOnly &&
+      Boolean(coi.data?.readOnly || coi.data?.cleared),
   );
 
-  if (tracking.isPending) {
+  if (trackingPending) {
     return (
       <PortalLoadingState
         title="Loading task"
@@ -37,7 +46,7 @@ export function WorkflowTaskWorkspace({
       />
     );
   }
-  if (tracking.isError) {
+  if (canReadAssignedTasks && !canReadAllTasks && tracking.isError) {
     return (
       <PortalErrorState
         title="Task could not be loaded"
@@ -46,13 +55,13 @@ export function WorkflowTaskWorkspace({
       />
     );
   }
-  if (tracking.data) {
+  if (trackingData && trackingOnly) {
     return (
       <PageShell
         title="Review Assigned Task"
         actions={<StatusBadge status="ESCALATED" />}
       >
-        <WorkflowEscalationTrackingPanel task={tracking.data} />
+        <WorkflowEscalationTrackingPanel task={trackingData} />
       </PageShell>
     );
   }
@@ -73,7 +82,7 @@ export function WorkflowTaskWorkspace({
       />
     );
   }
-  if (!coi.data.cleared) {
+  if (!coi.data.readOnly && !coi.data.cleared) {
     return <WorkflowTaskCoiGate gate={coi.data} />;
   }
   if (query.isPending) {
@@ -116,8 +125,9 @@ export function WorkflowTaskWorkspace({
           </span>
         </div>
       }
-      title={`Review Assigned Task`}
+      title={task.readOnly ? "View Workflow Task" : "Review Assigned Task"}
     >
+      {trackingData ? <WorkflowEscalationTrackingPanel task={trackingData} /> : null}
       <Tabs
         selectedId={section}
         onSelectionChange={setSection}
@@ -128,7 +138,7 @@ export function WorkflowTaskWorkspace({
           {
             content: <WorkflowTaskReviewPanel task={task} />,
             id: "assigned-task",
-            label: "Assigned Task",
+            label: task.readOnly ? "Task Details" : "Assigned Task",
           },
         ]}
         tabListClassName="border-b border-brand-navy/10 px-4"

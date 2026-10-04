@@ -121,8 +121,9 @@ export function useCancelWorkflowEscalation(taskId: string) {
   });
 }
 
-export function useWorkflowEscalationTracking(taskId: string) {
+export function useWorkflowEscalationTracking(taskId: string, enabled = true) {
   return useQuery({
+    enabled,
     queryKey: [...workQueueQueryKeys.task(taskId), "escalation"],
     queryFn: () => clientWorkQueueService.getEscalationTracking(taskId),
   });
