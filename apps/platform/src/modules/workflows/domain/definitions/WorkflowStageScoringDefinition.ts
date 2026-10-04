@@ -24,3 +24,7 @@ export type WorkflowStageScoringDefinition = {
   criteria: WorkflowStageScoringCriterion[];
   taskStableKey: string;
 };
+
+export type WorkflowTaskScoringCriterion = WorkflowStageScoringCriterion & {
+  taskStableKey: string;
+};

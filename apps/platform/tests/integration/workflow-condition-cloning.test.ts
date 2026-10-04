@@ -4,6 +4,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
+import { routingAction } from "../support/ReferenceWorkflowFixtureHelpers";
 import { basicOperators } from "@/modules/conditions/engine/BasicOperators";
 import { cloneWorkflowGraph } from "@/modules/workflows/domain/definitions/WorkflowGraphCloning";
 import { defaultWorkflowElementPermissions } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
@@ -82,7 +83,7 @@ const transitionCondition = {
 const graph: WorkflowGraphInput = {
   stages: [
     {
-      actions: [],
+      actions: [routingAction("COMPLETE", "Complete review")],
       checklistItems: [
         {
           taskStableKey: "REVIEW_TASK",
@@ -110,21 +111,23 @@ const graph: WorkflowGraphInput = {
           templateReference: "REVIEW_EVIDENCE_TEMPLATE",
         },
       ],
-      scoring: {
-        aggregation: "WEIGHTED_AVERAGE",
-        taskStableKey: "REVIEW_TASK",
-        criteria: [
-          {
-            stableKey: "BUSINESS_VIABILITY",
-            criterion: "Business viability",
-            description: "Assess viability.",
-            weight: 100,
-            scaleMinimum: 0,
-            scaleMaximum: 10,
-            mandatoryComment: true,
-          },
-        ],
-      },
+      scoring: [
+        {
+          aggregation: "WEIGHTED_AVERAGE",
+          taskStableKey: "REVIEW_TASK",
+          criteria: [
+            {
+              stableKey: "BUSINESS_VIABILITY",
+              criterion: "Business viability",
+              description: "Assess viability.",
+              weight: 100,
+              scaleMinimum: 0,
+              scaleMaximum: 10,
+              mandatoryComment: true,
+            },
+          ],
+        },
+      ],
       coiGated: false,
       coiFormVersionId: null,
       description: "Review the application",
@@ -145,8 +148,8 @@ const graph: WorkflowGraphInput = {
       stableKey: "REVIEW",
       tasks: [
         {
-          actionKeys: [],
-          taskType: "CONTRIBUTING",
+          actionKeys: ["COMPLETE"],
+          taskType: "STAGE_DECISION",
           assignmentMode: "NAMED_USER",
           config: {},
           description: "Complete the review checklist.",
@@ -251,15 +254,18 @@ afterAll(async () => {
         templateReference: "REVIEW_EVIDENCE_TEMPLATE",
       }),
     ]);
-    expect(clone?.graph.stages[0].scoring).toEqual({
-      aggregation: "WEIGHTED_AVERAGE",
-      criteria: [
-        expect.objectContaining({
-          criterion: "Business viability",
-          mandatoryComment: true,
-        }),
-      ],
-    });
+    expect(clone?.graph.stages[0].scoring).toEqual([
+      {
+        aggregation: "WEIGHTED_AVERAGE",
+        taskStableKey: "REVIEW_TASK",
+        criteria: [
+          expect.objectContaining({
+            criterion: "Business viability",
+            mandatoryComment: true,
+          }),
+        ],
+      },
+    ]);
     expect(clone?.graph.transitions[0].condition).toEqual(transitionCondition);
   });
 });

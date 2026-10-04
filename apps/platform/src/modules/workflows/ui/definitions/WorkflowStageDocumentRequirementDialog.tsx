@@ -1,5 +1,7 @@
 "use client";
 
+import { isSameWorkflowTaskRequirement } from "../../domain/definitions/WorkflowTaskRequirementIdentity";
+
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FormProvider, useForm, useWatch } from "react-hook-form";
 
@@ -44,8 +46,7 @@ export function WorkflowStageDocumentRequirementDialog({
       maximumSizeMb: requirement?.maximumSizeMb ?? 10,
       name: requirement?.name ?? "",
       stableKey: requirement?.stableKey ?? "",
-      requestOnStageActivation:
-        requirement?.requestOnStageActivation ?? false,
+      requestOnStageActivation: requirement?.requestOnStageActivation ?? false,
       taskStableKey: requirement?.taskStableKey ?? "",
       templateReference: requirement?.templateReference ?? "",
     },
@@ -58,23 +59,26 @@ export function WorkflowStageDocumentRequirementDialog({
 
   const submit = form.handleSubmit(async (values) => {
     const duplicateKey = stage.documentRequirements.some(
-      (item) => item.stableKey === values.stableKey
-        && item.stableKey !== requirement?.stableKey,
+      (item) =>
+        item.taskStableKey === values.taskStableKey &&
+        item.stableKey === values.stableKey &&
+        !isSameWorkflowTaskRequirement(item, requirement),
     );
     if (duplicateKey) {
       form.setError("stableKey", {
-        message: "Stable key must be unique in this stage.",
+        message: "Stable key must be unique in this task.",
       });
       return;
     }
     const duplicateName = stage.documentRequirements.some(
       (item) =>
-        item.name.toLowerCase() === values.name.toLowerCase()
-        && item.name !== requirement?.name,
+        item.taskStableKey === values.taskStableKey &&
+        item.name.toLowerCase() === values.name.toLowerCase() &&
+        !isSameWorkflowTaskRequirement(item, requirement),
     );
     if (duplicateName) {
       form.setError("name", {
-        message: "Document requirement name must be unique in this stage.",
+        message: "Document requirement name must be unique in this task.",
       });
       return;
     }
@@ -84,23 +88,28 @@ export function WorkflowStageDocumentRequirementDialog({
       uploader: requirement?.uploader ?? "APPLICANT",
       verifier: requirement?.verifier ?? "ASSIGNED_REVIEWER",
     };
-    await mutation.mutateAsync({
-      stages: editor.graph.stages.map((item) =>
-        item.stableKey === stage.stableKey
-          ? {
-              ...item,
-              documentRequirements: requirement
-                ? item.documentRequirements.map((current) =>
-                    current.name === requirement.name
-                      ? nextRequirement
-                      : current,
-                  )
-                : [...item.documentRequirements, nextRequirement],
-            }
-          : item,
-      ),
-      transitions: editor.graph.transitions,
-    },{onError: (error)=>toast.error(error.message)});
+    await mutation.mutateAsync(
+      {
+        stages: editor.graph.stages.map((item) =>
+          item.stableKey === stage.stableKey
+            ? {
+                ...item,
+                documentRequirements: requirement
+                  ? item.documentRequirements.map((current) =>
+                      isSameWorkflowTaskRequirement(current, requirement)
+                        ? nextRequirement
+                        : current,
+                    )
+                  : [...item.documentRequirements, nextRequirement],
+              }
+            : item,
+        ),
+        transitions: editor.graph.transitions,
+      },
+      {
+        onError: (error) => toast.error(error.message),
+      },
+    );
     onClose();
   });
 
@@ -139,9 +148,11 @@ export function WorkflowStageDocumentRequirementDialog({
             label="Workflow task"
             infoTooltip="Workflow task in which this action is displayed."
             name="taskStableKey"
-            placeholder={stage.tasks.length
-              ? "Select a task"
-              : "Add a task to this stage first"}
+            placeholder={
+              stage.tasks.length
+                ? "Select a task"
+                : "Add a task to this stage first"
+            }
             required
           />
           <FormSelect
@@ -152,9 +163,7 @@ export function WorkflowStageDocumentRequirementDialog({
             onMultipleChange={(values) => {
               form.setValue(
                 "acceptedFileTypes",
-                values as WorkflowStageDocumentRequirementFormValues[
-                  "acceptedFileTypes"
-                ],
+                values as WorkflowStageDocumentRequirementFormValues["acceptedFileTypes"],
                 { shouldDirty: true, shouldValidate: true },
               );
             }}

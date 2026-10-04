@@ -36,14 +36,32 @@ describe("workflow task runtime context query", () => {
       "binding.form_version_id = task.form_version_id",
     );
     expect(query.sql).toContain("task.form_version_id IS NOT NULL");
-    expect(query.sql).toContain("LEFT JOIN app_stage_task_form_bindings binding");
-    expect(query.sql).toContain("verification.version_id = application.eligibility_rule_set_version_id");
-    expect(query.sql).toContain("verification.form_version_id = task.form_version_id");
-    expect(query.sql).toContain("NOT inherited_form.enabled AND binding.task_definition_id IS NOT NULL");
-    expect(query.sql).toContain("CASE WHEN inherited_form.enabled THEN '[]'::jsonb");
+    expect(query.sql).toContain(
+      "LEFT JOIN app_stage_task_form_bindings binding",
+    );
+    expect(query.sql).toContain(
+      "verification.version_id = application.eligibility_rule_set_version_id",
+    );
+    expect(query.sql).toContain(
+      "verification.form_version_id = task.form_version_id",
+    );
+    expect(query.sql).toContain(
+      "NOT inherited_form.enabled AND binding.task_definition_id IS NOT NULL",
+    );
+    expect(query.sql).toContain(
+      "CASE WHEN inherited_form.enabled THEN '[]'::jsonb",
+    );
     expect(query.sql).toContain("app_workflow_task_coi_cleared(task.id,");
     expect(query.sql).toContain("task.assigned_user_id =");
     expect(query.sql).toContain("prior_task.result -> 'evaluatedFormValues'");
+    expect(query.sql).toContain("'reviewerSlot', prior_task.reviewer_slot");
+    expect(query.sql).toContain("'reviewerId', prior_task.assigned_user_id");
+    expect(query.sql).toContain(
+      "newer_stage.iteration_number > prior_stage.iteration_number",
+    );
+    expect(query.sql).toContain(
+      "ORDER BY submitted.updated_at DESC, submitted.id DESC",
+    );
     expect(query.params).toContain(actorId);
     expect(query.params).toContain(taskId);
   });
@@ -100,16 +118,22 @@ describe("workflow task runtime context query", () => {
   });
 });
 
-
-it.each([false, true])("keeps form read scope explicit and task-local (%s)", async (allowAll) => {
-  const execute = vi.fn().mockResolvedValue({ rows: [] });
-  vi.mocked(getDatabase).mockReturnValue({ execute } as never);
-  await readWorkflowTaskRuntimeContext(actorId, taskId, allowAll, ["workflow.task.assigned.read"]);
-  const query = new PgDialect().sqlToQuery(execute.mock.calls[0]![0]);
-  expect(query.params).toContain(allowAll);
-  expect(query.sql).toContain("task.assigned_user_id =");
-  expect(query.sql).not.toContain("app_user_roles");
-  expect(query.sql).toContain("task_definition.permissions ->> 'view' IN (");
-  expect(query.sql).toContain("own_review.workflow_task_definition_id = task_definition.id");
-  expect(query.params).toContain(taskId);
-});
+it.each([false, true])(
+  "keeps form read scope explicit and task-local (%s)",
+  async (allowAll) => {
+    const execute = vi.fn().mockResolvedValue({ rows: [] });
+    vi.mocked(getDatabase).mockReturnValue({ execute } as never);
+    await readWorkflowTaskRuntimeContext(actorId, taskId, allowAll, [
+      "workflow.task.assigned.read",
+    ]);
+    const query = new PgDialect().sqlToQuery(execute.mock.calls[0]![0]);
+    expect(query.params).toContain(allowAll);
+    expect(query.sql).toContain("task.assigned_user_id =");
+    expect(query.sql).not.toContain("app_user_roles");
+    expect(query.sql).toContain("task_definition.permissions ->> 'view' IN (");
+    expect(query.sql).toContain(
+      "own_review.workflow_task_definition_id = task_definition.id",
+    );
+    expect(query.params).toContain(taskId);
+  },
+);

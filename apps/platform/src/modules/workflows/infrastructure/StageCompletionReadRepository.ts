@@ -123,12 +123,24 @@ export async function loadStageCompletionValuesForStages(
 ): Promise<(StageCompletionValueRow & { stageInstanceId: string })[]> {
   if (!stageInstanceIds.length) return [];
   const result = await transaction.execute(sql`
-    SELECT task.stage_instance_id AS "stageInstanceId", task.result AS "taskResult", response.values AS "responseValues"
+    SELECT task.stage_instance_id AS "stageInstanceId",
+      task.id AS "taskId", definition.stable_key AS "taskKey",
+      task.reviewer_slot AS "reviewerSlot",
+      definition.reviewer_count AS "reviewerCount",
+      task.assigned_user_id AS "reviewerId",
+      task.result AS "taskResult", response.values AS "responseValues"
     FROM app_workflow_tasks task
-    LEFT JOIN app_form_responses response
-      ON response.workflow_task_id = task.id
-      AND (response.status = 'COMPLETED'
-        OR response.values = (task.result -> 'evaluatedFormValues'))
+    JOIN app_stage_task_definitions definition
+      ON definition.id = task.workflow_task_definition_id
+    LEFT JOIN LATERAL (
+      SELECT submitted.id, submitted.values, submitted.created_at
+      FROM app_form_responses submitted
+      WHERE submitted.workflow_task_id = task.id
+        AND (submitted.status = 'COMPLETED'
+          OR submitted.values = (task.result -> 'evaluatedFormValues'))
+      ORDER BY submitted.updated_at DESC, submitted.id DESC
+      LIMIT 1
+    ) response ON TRUE
     WHERE task.stage_instance_id IN (${sql.join(
       stageInstanceIds.map((id) => sql`${id}::uuid`),
       sql`, `,

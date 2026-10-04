@@ -39,22 +39,24 @@ describe("workflow graph cloning", () => {
         templateReference: "TAX_CLEARANCE_TEMPLATE",
       },
     ];
-    source.stages[0].scoring = {
-      aggregation: "WEIGHTED_AVERAGE",
-      taskStableKey: source.stages[0].tasks[0].stableKey,
-      criteria: [
-        {
-          id: "49999999-9999-4999-8999-999999999999",
-          stableKey: "BUSINESS_VIABILITY",
-          criterion: "Business viability",
-          description: "Assess viability.",
-          weight: 100,
-          scaleMinimum: 0,
-          scaleMaximum: 10,
-          mandatoryComment: true,
-        },
-      ],
-    };
+    source.stages[0].scoring = [
+      {
+        aggregation: "WEIGHTED_AVERAGE",
+        taskStableKey: source.stages[0].tasks[0].stableKey,
+        criteria: [
+          {
+            id: "49999999-9999-4999-8999-999999999999",
+            stableKey: "BUSINESS_VIABILITY",
+            criterion: "Business viability",
+            description: "Assess viability.",
+            weight: 100,
+            scaleMinimum: 0,
+            scaleMaximum: 10,
+            mandatoryComment: true,
+          },
+        ],
+      },
+    ];
     source.stages[0].tasks[0].roleId = "44444444-4444-4444-8444-444444444444";
     source.stages[0].tasks[0].formBinding = {
       contextFields: [
@@ -154,8 +156,8 @@ describe("workflow graph cloning", () => {
       ...source.stages[0].documentRequirements[0],
       id: undefined,
     });
-    expect(clone.stages[0].scoring?.criteria[0]).toEqual({
-      ...source.stages[0].scoring!.criteria[0],
+    expect(clone.stages[0].scoring?.[0]?.criteria[0]).toEqual({
+      ...source.stages[0].scoring![0].criteria[0],
       id: undefined,
     });
     expect(clone.transitions[0]).toEqual({

@@ -167,30 +167,32 @@ afterAll(async () => {
                 templateReference: "",
               },
             ],
-            scoring: {
-              aggregation: "WEIGHTED_AVERAGE" as const,
-              taskStableKey: "REVIEW_TASK",
-              criteria: [
-                {
-                  stableKey: "BUSINESS_VIABILITY",
-                  criterion: "Business viability",
-                  description: "Assess the viability of the business.",
-                  weight: 60,
-                  scaleMinimum: 0,
-                  scaleMaximum: 10,
-                  mandatoryComment: true,
-                },
-                {
-                  stableKey: "ECONOMIC_IMPACT",
-                  criterion: "Economic impact",
-                  description: "Assess the expected economic impact.",
-                  weight: 40,
-                  scaleMinimum: 0,
-                  scaleMaximum: 10,
-                  mandatoryComment: false,
-                },
-              ],
-            },
+            scoring: [
+              {
+                aggregation: "WEIGHTED_AVERAGE" as const,
+                taskStableKey: "TECHNICAL_REVIEW_TASK",
+                criteria: [
+                  {
+                    stableKey: "BUSINESS_VIABILITY",
+                    criterion: "Business viability",
+                    description: "Assess the viability of the business.",
+                    weight: 60,
+                    scaleMinimum: 0,
+                    scaleMaximum: 10,
+                    mandatoryComment: true,
+                  },
+                  {
+                    stableKey: "ECONOMIC_IMPACT",
+                    criterion: "Economic impact",
+                    description: "Assess the expected economic impact.",
+                    weight: 40,
+                    scaleMinimum: 0,
+                    scaleMaximum: 10,
+                    mandatoryComment: false,
+                  },
+                ],
+              },
+            ],
             tasks: [
               {
                 actionKeys: [],
@@ -215,6 +217,21 @@ afterAll(async () => {
         ],
         transitions: [],
       };
+      const stage = graph.stages[0];
+      stage.tasks.push({
+        ...stage.tasks[0],
+        stableKey: "FINANCIAL_REVIEW_TASK",
+        name: "Financial review",
+        displayOrder: 2,
+      });
+      stage.scoring.push({
+        ...stage.scoring[0],
+        taskStableKey: "FINANCIAL_REVIEW_TASK",
+        criteria: stage.scoring[0].criteria.map((criterion) => ({
+          ...criterion,
+          description: "Independent financial review criteria.",
+        })),
+      });
       await replaceWorkflowDraft({
         actorId: actor.id,
         correlationId: randomUUID(),
@@ -225,7 +242,18 @@ afterAll(async () => {
       const stored = (await findWorkflowGraph(created.version.id))?.graph;
       expect(stored?.transitions).toEqual([]);
       expect(stored?.stages).toHaveLength(1);
-      expect(stored?.stages[0]).toMatchObject(graph.stages[0]);
+      const { documentRequirements, ...expectedStage } = graph.stages[0];
+      expect(stored?.stages[0]).toMatchObject(expectedStage);
+      expect(stored?.stages[0].documentRequirements).toHaveLength(
+        documentRequirements.length,
+      );
+      expect(stored?.stages[0].documentRequirements).toEqual(
+        expect.arrayContaining(
+          documentRequirements.map((requirement) =>
+            expect.objectContaining(requirement),
+          ),
+        ),
+      );
       expect(stored?.stages[0].id).toEqual(expect.any(String));
     });
   },

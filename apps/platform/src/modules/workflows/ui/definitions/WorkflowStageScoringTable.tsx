@@ -3,18 +3,15 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus } from "lucide-react";
 import { useEffect } from "react";
-import { FormProvider, useForm } from "react-hook-form";
+import { FormProvider, useForm, useWatch } from "react-hook-form";
 
 import { DeleteButton, EditButton } from "@/components/ui/action-buttons";
 import { GeneralButton } from "@/components/ui/button";
-import {
-  DataTable,
-  type DataTableColumn,
-} from "@/shared/ui/DataTable";
+import { DataTable, type DataTableColumn } from "@/shared/ui/DataTable";
 import { FormSelect } from "@/components/ui/form-fields";
 import { useSaveWorkflowGraph } from "@/modules/workflows/WorkflowHooks";
 import { WorkflowStageTabHeader } from "./WorkflowStageTabHeader";
-import type { WorkflowStageScoringCriterion } from "@/modules/workflows/domain/definitions/WorkflowStageScoringDefinition";
+import type { WorkflowTaskScoringCriterion } from "@/modules/workflows/domain/definitions/WorkflowStageScoringDefinition";
 import type {
   WorkflowEditorView,
   WorkflowStageInput,
@@ -28,17 +25,17 @@ import {
 type Props = {
   canEdit: boolean;
   editor: WorkflowEditorView;
-  onAdd: () => void;
-  onDelete: (criterion: WorkflowStageScoringCriterion) => void;
-  onEdit: (criterion: WorkflowStageScoringCriterion) => void;
+  onAdd: (taskStableKey: string) => void;
+  onDelete: (criterion: WorkflowTaskScoringCriterion) => void;
+  onEdit: (criterion: WorkflowTaskScoringCriterion) => void;
   stage: WorkflowStageInput;
 };
 
 function scoringColumns(
   canEdit: boolean,
-  onDelete: (criterion: WorkflowStageScoringCriterion) => void,
-  onEdit: (criterion: WorkflowStageScoringCriterion) => void,
-): DataTableColumn<WorkflowStageScoringCriterion>[] {
+  onDelete: (criterion: WorkflowTaskScoringCriterion) => void,
+  onEdit: (criterion: WorkflowTaskScoringCriterion) => void,
+): DataTableColumn<WorkflowTaskScoringCriterion>[] {
   return [
     {
       accessorKey: "criterion",
@@ -102,54 +99,66 @@ export function WorkflowStageScoringTable({
   const mutation = useSaveWorkflowGraph(editor);
   const form = useForm<WorkflowStageAggregationFormValues>({
     defaultValues: {
-      aggregation: stage.scoring?.aggregation ?? "WEIGHTED_AVERAGE",
-      taskStableKey: stage.scoring?.taskStableKey ?? stage.tasks[0]?.stableKey ?? "",
+      aggregation: stage.scoring?.[0]?.aggregation ?? "WEIGHTED_AVERAGE",
+      taskStableKey:
+        stage.scoring?.[0]?.taskStableKey ?? stage.tasks[0]?.stableKey ?? "",
     },
     resolver: zodResolver(workflowStageAggregationFormSchema),
   });
+  const taskStableKey = useWatch({
+    control: form.control,
+    name: "taskStableKey",
+  });
+  const selectedScoring = stage.scoring?.find(
+    (scoring) => scoring.taskStableKey === taskStableKey,
+  );
 
   useEffect(() => {
-    form.reset({
-      aggregation: stage.scoring?.aggregation ?? "WEIGHTED_AVERAGE",
-      taskStableKey: stage.scoring?.taskStableKey ?? stage.tasks[0]?.stableKey ?? "",
-    });
-  }, [
-    form,
-    stage.scoring?.aggregation,
-    stage.scoring?.taskStableKey,
-    stage.stableKey,
-    stage.tasks,
-  ]);
+    form.setValue(
+      "aggregation",
+      selectedScoring?.aggregation ?? "WEIGHTED_AVERAGE",
+    );
+  }, [form, selectedScoring?.aggregation, taskStableKey]);
 
-  const submitAggregation = form.handleSubmit(async ({
-    aggregation,
+  const submitAggregation = form.handleSubmit(
+    async ({ aggregation, taskStableKey }) => {
+      await mutation.mutateAsync({
+        stages: editor.graph.stages.map((item) => {
+          if (item.stableKey !== stage.stableKey) return item;
+          const configurations = item.scoring ?? [];
+          const existing = configurations.find(
+            (scoring) => scoring.taskStableKey === taskStableKey,
+          );
+          const updated = {
+            aggregation,
+            criteria: existing?.criteria ?? [],
+            taskStableKey,
+          };
+          return {
+            ...item,
+            scoring: existing
+              ? configurations.map((scoring) =>
+                  scoring.taskStableKey === taskStableKey ? updated : scoring,
+                )
+              : [...configurations, updated],
+          };
+        }),
+        transitions: editor.graph.transitions,
+      });
+    },
+  );
+  const criteria = (selectedScoring?.criteria ?? []).map((criterion) => ({
+    ...criterion,
     taskStableKey,
-  }) => {
-    await mutation.mutateAsync({
-      stages: editor.graph.stages.map((item) =>
-        item.stableKey === stage.stableKey
-          ? {
-              ...item,
-              scoring: {
-                aggregation,
-                criteria: item.scoring?.criteria ?? [],
-                taskStableKey,
-              },
-            }
-          : item,
-      ),
-      transitions: editor.graph.transitions,
-    });
-  });
-  const criteria = stage.scoring?.criteria ?? [];
+  }));
 
   return (
     <section className="mt-5">
       <WorkflowStageTabHeader
         action={
           <GeneralButton
-            disabled={!canEdit}
-            onClick={onAdd}
+            disabled={!canEdit || !taskStableKey}
+            onClick={() => onAdd(taskStableKey)}
             size="compact"
             type="button"
             variant="primary"
@@ -158,7 +167,7 @@ export function WorkflowStageScoringTable({
           </GeneralButton>
         }
         count={criteria.length}
-        description="Define the criteria and aggregation method used to score this stage."
+        description="Configure scoring separately for each workflow task."
         title="Scoring criteria"
       />
       <FormProvider {...form}>
@@ -182,7 +191,7 @@ export function WorkflowStageScoringTable({
               value: task.stableKey,
             }))}
             label="Workflow task"
-            infoTooltip="Workflow task in which this action is displayed."
+            infoTooltip="Select the task whose scoring configuration you want to edit."
             name="taskStableKey"
             placeholder="Select a workflow task"
             required
@@ -199,7 +208,7 @@ export function WorkflowStageScoringTable({
       <DataTable
         columns={scoringColumns(canEdit, onDelete, onEdit)}
         data={criteria}
-        emptyMessage="No scoring criteria have been added to this stage."
+        emptyMessage="No scoring criteria have been added to this task."
         minWidth={980}
       />
       {mutation.error ? (

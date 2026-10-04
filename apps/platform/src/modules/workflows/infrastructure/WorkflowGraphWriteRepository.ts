@@ -144,34 +144,30 @@ async function insertStageRequirements(
       .insert(workflowStageDocumentRequirements)
       .values(documentRequirements);
   }
-  const configurations = graph.stages.flatMap((stage) =>
-    stage.scoring
-      ? (() => {
-          const stageId = stageIds.get(stage.stableKey)!;
-          return [
-            {
-              aggregation: stage.scoring.aggregation,
-              stageId,
-              taskDefinitionId: taskIds.get(
-                `${stageId}:${stage.scoring.taskStableKey}`,
-              )!,
-            },
-          ];
-        })()
-      : [],
-  );
+  const configurations = graph.stages.flatMap((stage) => {
+    const stageId = stageIds.get(stage.stableKey)!;
+    return (stage.scoring ?? []).map((scoring) => ({
+      aggregation: scoring.aggregation,
+      stageId,
+      taskDefinitionId: taskIds.get(`${stageId}:${scoring.taskStableKey}`)!,
+    }));
+  });
   if (configurations.length) {
     await transaction
       .insert(workflowStageScoringConfigurations)
       .values(configurations);
   }
-  const criteria = graph.stages.flatMap((stage) =>
-    (stage.scoring?.criteria ?? []).map((criterion) => ({
-      ...criterion,
-      id: undefined,
-      stageId: stageIds.get(stage.stableKey)!,
-    })),
-  );
+  const criteria = graph.stages.flatMap((stage) => {
+    const stageId = stageIds.get(stage.stableKey)!;
+    return (stage.scoring ?? []).flatMap((scoring) =>
+      scoring.criteria.map((criterion) => ({
+        ...criterion,
+        id: undefined,
+        stageId,
+        taskDefinitionId: taskIds.get(`${stageId}:${scoring.taskStableKey}`)!,
+      })),
+    );
+  });
   if (criteria.length) {
     await transaction.insert(workflowStageScoringCriteria).values(criteria);
   }

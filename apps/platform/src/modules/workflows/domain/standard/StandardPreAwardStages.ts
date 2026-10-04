@@ -204,11 +204,7 @@ function dueDiligence(dependencies: StandardWorkflowDependencies) {
     approve("PROCEED", "Proceed", 1),
     approve("PROCEED_WITH_CONDITIONS", "Proceed with conditions", 2),
     reject("DECLINE_RISK", "Decline on risk grounds", 3),
-    requestInformation(
-      "FURTHER_VERIFICATION",
-      "Request For Information",
-      4,
-    ),
+    requestInformation("FURTHER_VERIFICATION", "Request For Information", 4),
   ];
   return stage({
     actions,
@@ -256,24 +252,26 @@ function dueDiligence(dependencies: StandardWorkflowDependencies) {
     },
     repeatable: false,
     allowApplicantWithdrawal: true,
-    scoring: {
-      aggregation: "AVERAGE",
-      taskStableKey: "DUE_DILIGENCE_REVIEW",
-      criteria: [
-        "Financial risk",
-        "Delivery risk",
-        "Governance risk",
-        "Fraud risk",
-      ].map((criterion) => ({
-        criterion,
-        stableKey: stableKeyFromLabel(criterion, "SCORE"),
-        description: "Risk score from 1 (low) to 4 (critical).",
-        mandatoryComment: true,
-        scaleMaximum: 4,
-        scaleMinimum: 1,
-        weight: 25,
-      })),
-    },
+    scoring: [
+      {
+        aggregation: "AVERAGE",
+        taskStableKey: "DUE_DILIGENCE_REVIEW",
+        criteria: [
+          "Financial risk",
+          "Delivery risk",
+          "Governance risk",
+          "Fraud risk",
+        ].map((criterion) => ({
+          criterion,
+          stableKey: stableKeyFromLabel(criterion, "SCORE"),
+          description: "Risk score from 1 (low) to 4 (critical).",
+          mandatoryComment: true,
+          scaleMaximum: 4,
+          scaleMinimum: 1,
+          weight: 25,
+        })),
+      },
+    ],
     slaHours: 240,
     stableKey: "DUE_DILIGENCE_RISK",
     tasks: [

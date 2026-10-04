@@ -9,7 +9,10 @@ import type {
 } from "@/modules/workflows/domain/WorkflowRuntimeContext";
 import { workflowTaskPeerReadAllowed } from "./WorkflowTaskPeerReadSql";
 import { workflowTaskViewPermissionMatches } from "./WorkflowTaskViewPermissionSql";
-import { buildStageCompletionValues } from "@/modules/workflows/engine/StageCompletionContext";
+import {
+  buildStageCompletionValues,
+  type StageCompletionSubmission,
+} from "@/modules/workflows/engine/StageCompletionContext";
 import type { ConditionFieldDefinition } from "@/modules/conditions/domain/ConditionConfiguration";
 import type { WorkflowElementPermissions } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
 
@@ -60,7 +63,7 @@ type RuntimeContextRow = {
   workflowVersionNumber: number;
 };
 
-type PriorStageRuntimeValueRow = {
+type PriorStageRuntimeValueRow = StageCompletionSubmission & {
   responseValues: Record<string, unknown> | null;
   stageKey: string;
   taskResult: Record<string, unknown> | null;
@@ -235,6 +238,11 @@ export async function readWorkflowTaskRuntimeContext(
     LEFT JOIN LATERAL (
       SELECT jsonb_agg(jsonb_build_object(
         'stageKey', prior_definition.code,
+        'taskId', prior_task.id,
+        'taskKey', prior_task_definition.stable_key,
+        'reviewerSlot', prior_task.reviewer_slot,
+        'reviewerCount', prior_task_definition.reviewer_count,
+        'reviewerId', prior_task.assigned_user_id,
         'responseValues', response.values,
         'taskResult', prior_task.result
       ) ORDER BY prior_stage.completed_at, prior_task.created_at) AS values
@@ -243,14 +251,29 @@ export async function readWorkflowTaskRuntimeContext(
         ON prior_definition.id = prior_stage.workflow_stage_definition_id
       JOIN app_workflow_tasks prior_task
         ON prior_task.stage_instance_id = prior_stage.id
-      LEFT JOIN app_form_responses response
-        ON response.workflow_task_id = prior_task.id
-        AND (response.status = 'COMPLETED'
-          OR response.values = (prior_task.result -> 'evaluatedFormValues'))
+      JOIN app_stage_task_definitions prior_task_definition
+        ON prior_task_definition.id = prior_task.workflow_task_definition_id
+      LEFT JOIN LATERAL (
+        SELECT submitted.values
+        FROM app_form_responses submitted
+        WHERE submitted.workflow_task_id = prior_task.id
+          AND (submitted.status = 'COMPLETED'
+            OR submitted.values = (prior_task.result -> 'evaluatedFormValues'))
+        ORDER BY submitted.updated_at DESC, submitted.id DESC
+        LIMIT 1
+      ) response ON TRUE
       WHERE prior_stage.workflow_instance_id = workflow.id
         AND prior_stage.id <> stage.id
         AND prior_stage.status = 'COMPLETED'
         AND prior_stage.completed_at <= stage.activated_at
+        AND NOT EXISTS (
+          SELECT 1 FROM app_workflow_stage_instances newer_stage
+          WHERE newer_stage.workflow_instance_id = workflow.id
+            AND newer_stage.workflow_stage_definition_id = prior_stage.workflow_stage_definition_id
+            AND newer_stage.status = 'COMPLETED'
+            AND newer_stage.completed_at <= stage.activated_at
+            AND newer_stage.iteration_number > prior_stage.iteration_number
+        )
         AND prior_task.status = 'COMPLETED'
         AND app_workflow_task_coi_cleared(
           prior_task.id, prior_task.assigned_user_id
