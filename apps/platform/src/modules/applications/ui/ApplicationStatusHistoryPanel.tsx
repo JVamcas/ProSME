@@ -1,7 +1,7 @@
 "use client";
 
 import { GeneralButton } from "@/components/ui/button";
-import { useOwnApplicationStatusHistory } from "../ApplicationHooks";
+import { useOwnApplicationStatusHistory } from "./useApplications";
 import type { ApplicationSummary } from "../ApplicationTypes";
 
 export function ApplicationStatusHistoryPanel({

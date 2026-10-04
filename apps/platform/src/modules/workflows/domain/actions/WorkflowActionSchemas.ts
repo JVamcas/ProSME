@@ -1,4 +1,10 @@
 import { z } from "zod";
+import {
+  workflowRfiDeadlineFields,
+  workflowRfiRuntimeOverridesSchema,
+  validateWorkflowRfiReminderDeadline,
+} from "./WorkflowRequestInformationDeadline";
+import { workflowPublicStatuses } from "@/modules/workflows/domain/definitions/WorkflowStageDefinition";
 
 import { conditionGroupSchema } from "@/modules/conditions/domain/ConditionSerialization";
 
@@ -23,7 +29,6 @@ const fieldPathSchema = z
   .regex(/^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z][A-Za-z0-9_]*)*$/);
 const uniqueFieldPathListSchema = z
   .array(fieldPathSchema)
-  .min(1)
   .max(100)
   .refine(
     (values) => new Set(values).size === values.length,
@@ -34,14 +39,7 @@ const publicStatusMappingSchema = z
   .object({
     description: z.string().trim().min(2).max(300),
     label: z.string().trim().min(2).max(120),
-    status: z.enum([
-      "SUBMITTED",
-      "UNDER_REVIEW",
-      "ACTION_REQUIRED",
-      "OUTCOME_AVAILABLE",
-      "CLOSED",
-      "WITHDRAWN",
-    ]),
+    status: z.enum(workflowPublicStatuses),
   })
   .strict();
 
@@ -52,8 +50,8 @@ export const rejectConfigurationSchema = z
     outcome: z.discriminatedUnion("type", [
       z
         .object({
-          cancelOpenStageInstances: z.boolean(),
-          cancelOpenTasks: z.boolean(),
+          cancelOpenStageInstances: z.literal(true),
+          cancelOpenTasks: z.literal(true),
           publicStatusMapping: publicStatusMappingSchema,
           type: z.literal("TERMINAL"),
         })
@@ -67,40 +65,18 @@ export const rejectConfigurationSchema = z
 export const requestInformationConfigurationSchema = z
   .object({
     continuation: z.literal("RESUME_SOURCE_TASK"),
-    deadlineDays: z.number().int().positive().max(365),
+    ...workflowRfiDeadlineFields,
+    runtimeOverrides: workflowRfiRuntimeOverridesSchema.optional(),
     editableFieldPaths: uniqueFieldPathListSchema,
-    reminderDayOffsets: z.array(z.number().int().positive().max(365)).max(20),
-    expiryAction: z.enum(["CLOSE_REQUEST", "ESCALATE", "RETURN"]),
     participantScope: z.literal("APPLICATION_OWNER_AND_REQUESTER"),
     recipientScope: z.literal("APPLICATION_OWNER"),
   })
   .strict()
-  .superRefine((configuration, context) => {
-    const uniqueOffsets = new Set(configuration.reminderDayOffsets);
-    if (uniqueOffsets.size !== configuration.reminderDayOffsets.length) {
-      context.addIssue({
-        code: "custom",
-        message: "Reminder day offsets must be unique.",
-        path: ["reminderDayOffsets"],
-      });
-    }
-    if (
-      configuration.reminderDayOffsets.some(
-        (offset) => offset >= configuration.deadlineDays,
-      )
-    ) {
-      context.addIssue({
-        code: "custom",
-        message: "Reminder days must fall before the deadline.",
-        path: ["reminderDayOffsets"],
-      });
-    }
-  });
+  .superRefine(validateWorkflowRfiReminderDeadline);
 
 export const returnConfigurationSchema = z
   .object({
     dataHandling: z.enum(["RETAIN", "CLEAR"]),
-    reasonRequired: z.boolean(),
   })
   .strict();
 
@@ -114,16 +90,15 @@ export const referConfigurationSchema = z
 export const escalateConfigurationSchema = z
   .object({
     blockUntilResolved: z.boolean(),
-    responsibility: z.enum(["RETAIN", "SHARE", "TRANSFER"]),
+    responsibility: z.literal("TRANSFER"),
     targetType: z.enum(["ROLE", "USER"]),
     targetId: z.string().uuid(),
-    trigger: z.enum(["MANUAL", "SLA_BREACH", "CONDITION"]),
+    trigger: z.literal("MANUAL"),
   })
   .strict();
 
 export const putOnHoldConfigurationSchema = z
   .object({
-    reasonCodes: uniqueStableKeyListSchema,
     reviewDateRequired: z.boolean(),
     scope: z.literal("STAGE"),
   })
@@ -167,7 +142,7 @@ const commonShape = {
   stableKey: stableKeySchema,
   label: z.string().trim().min(2).max(160),
   enabled: z.boolean(),
-  reasonCodeRequired: z.boolean(),
+  reasonRequired: z.boolean(),
   displayOrder: z.number().int().positive(),
 };
 
@@ -185,7 +160,6 @@ export const workflowActionDefinitionSchema = z.discriminatedUnion(
       .object({
         ...commonShape,
         actionType: z.literal("REJECT"),
-        reasonCodeRequired: z.literal(false),
         configuration: rejectConfigurationSchema,
       })
       .strict(),

@@ -98,8 +98,8 @@ function PartnerLogos({ hidden = false }: { hidden?: boolean }) {
         className="h-5 w-auto object-contain"
       />
       <Image
-        src="/brand/ProSME-logo-with-tagline.svg"
-        alt={hidden ? "" : "ProSME"}
+        src="/brand/SME Fund-logo-with-tagline.svg"
+        alt={hidden ? "" : "SME Fund"}
         width={92}
         height={34}
         className="h-8 w-auto"

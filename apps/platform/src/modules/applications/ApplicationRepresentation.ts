@@ -6,8 +6,9 @@ import type { findOwnedApplication } from "@/modules/applications/infrastructure
 import type {
   ApplicationSection,
   ApplicationSectionCompletion,
-} from "./ApplicationSchemas";
-import type { ApplicationSummary, ApplicationView } from "./ApplicationTypes";
+  ApplicationSummary,
+  ApplicationView,
+} from "./ApplicationTypes";
 import { projectApplicantStatus, type ApplicantStatusSource } from "./domain/ApplicantStatusProjection";
 import type { ApplicationLifecycleStatus } from "./domain/Application";
 
@@ -104,13 +105,8 @@ export function toApplicationView(
   }
   return {
     ...toApplicationSummary(application),
-    businessSection: application.businessSection,
-    declarationsSection: application.declarationsSection,
-    financialSection: application.financialSection,
     eligibilityRuleSetVersionId: application.eligibilityRuleSetVersionId,
     formVersionId: application.formVersionId,
-    projectSection: application.projectSection,
     rowVersion: application.rowVersion,
-    sectionCompletion: application.sectionCompletion,
   };
 }

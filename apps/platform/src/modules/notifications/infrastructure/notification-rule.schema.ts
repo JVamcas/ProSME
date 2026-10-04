@@ -63,7 +63,7 @@ export const notificationEventRuleRecipients = pgTable(
     uniqueIndex("app_notification_event_rule_recipients_dynamic_unique")
       .on(table.ruleId, table.recipientType)
       .where(
-        sql`${table.recipientType} in ('APPLICATION_OWNER', 'ASSIGNED_USER', 'FUNDING_CALL_STAKEHOLDER')`,
+        sql`${table.recipientType} in ('APPLICATION_OWNER', 'ASSIGNED_USER', 'FUNDING_CALL_STAKEHOLDER', 'ACTION_ACTOR')`,
       ),
     uniqueIndex("app_notification_event_rule_recipients_user_unique")
       .on(table.ruleId, table.recipientType, table.recipientUserId)
@@ -73,7 +73,7 @@ export const notificationEventRuleRecipients = pgTable(
       .where(sql`${table.recipientType} = 'SPECIFIC_ROLE'`),
     check(
       "app_notification_event_rule_recipients_target_check",
-      sql`(${table.recipientType} in ('APPLICATION_OWNER', 'ASSIGNED_USER', 'FUNDING_CALL_STAKEHOLDER')
+      sql`(${table.recipientType} in ('APPLICATION_OWNER', 'ASSIGNED_USER', 'FUNDING_CALL_STAKEHOLDER', 'ACTION_ACTOR')
           and ${table.recipientUserId} is null and ${table.recipientRoleId} is null)
         or (${table.recipientType} = 'SPECIFIC_USER'
           and ${table.recipientUserId} is not null and ${table.recipientRoleId} is null)
@@ -82,7 +82,7 @@ export const notificationEventRuleRecipients = pgTable(
     ),
     check(
       "app_notification_event_rule_recipients_type_check",
-      sql`${table.recipientType} in ('APPLICATION_OWNER', 'ASSIGNED_USER', 'FUNDING_CALL_STAKEHOLDER', 'SPECIFIC_USER', 'SPECIFIC_ROLE')`,
+      sql`${table.recipientType} in ('APPLICATION_OWNER', 'ASSIGNED_USER', 'FUNDING_CALL_STAKEHOLDER', 'ACTION_ACTOR', 'SPECIFIC_USER', 'SPECIFIC_ROLE')`,
     ),
   ],
 );

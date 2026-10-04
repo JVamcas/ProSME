@@ -29,6 +29,7 @@ const actorId = "10000000-0000-4000-8000-000000000001";
 const callId = "00000000-0000-4000-8000-000000000042";
 const clonedId = "00000000-0000-4000-8000-000000000043";
 const cloned = {
+  allowResubmissionAfterWithdrawal: false,
   applicationDuplicatePolicy: "one_per_business" as const,
   closesAt: new Date("2027-03-31T15:00:00.000Z"),
   createdAt: new Date("2026-09-23T08:00:00.000Z"),
@@ -45,13 +46,13 @@ const cloned = {
   publicContactEmail: null,
   publicContactName: null,
   publicContactPhone: null,
-  reference: "SME-2027-01-COPY-12345678",
+  reference: "SME Fund-2027-01-COPY-12345678",
   rowVersion: 1,
   slug: "sme-growth-fund-2027-copy-12345678",
   status: "DRAFT" as const,
   suspendedFromStatus: null,
   thematicArea: "Business growth",
-  title: "Copy of SME Growth Fund 2027",
+  title: "Copy of SME Fund Growth Fund 2027",
   totalBudgetEnvelope: "10000000.00",
   updatedAt: new Date("2026-09-23T08:00:00.000Z"),
   updatedBy: actorId,

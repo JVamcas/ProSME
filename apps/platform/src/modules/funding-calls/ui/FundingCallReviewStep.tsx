@@ -5,6 +5,7 @@ import { useFormContext, useWatch } from "react-hook-form";
 import { formatMoneyValue } from "@/components/ui/money-field";
 
 type ReviewValues = {
+  allowResubmissionAfterWithdrawal: boolean;
   applicationDuplicatePolicy: string;
   closesAt: string;
   eligibilityRuleSetVersionId: string | null;
@@ -131,6 +132,10 @@ export function FundingCallReviewStep({
           <ReviewItem label="Email" value={values.publicContactEmail} />
         </ReviewGroup>
         <ReviewGroup title="Application policy">
+          <ReviewItem
+            label="New application after withdrawal"
+            value={values.allowResubmissionAfterWithdrawal ? "Allowed" : "Not allowed"}
+          />
           <ReviewItem
             label="Application limit"
             value={values.applicationDuplicatePolicy?.replaceAll("_", " ")}

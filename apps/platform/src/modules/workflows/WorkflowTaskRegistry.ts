@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { eligibilityFailureStatusSchema } from "./domain/definitions/WorkflowEligibilityFailureStatus";
 import { formPurposes } from "@/modules/forms/domain/FormPurpose";
 import {
   workflowTaskDisplayModes,
@@ -15,10 +16,31 @@ export const checklistResultSchema = z.object({
   })).min(1).max(30),
 });
 
-export const eligibilityCommandSchema = z.object({
-  command: z.literal("AUTHORITATIVE_ELIGIBILITY"),
-  reevaluationPolicy: z.enum(["NEVER", "WHEN_EVIDENCE_CHANGED"]),
-});
+export const eligibilityCommandSchema = z.preprocess(
+  (value) => {
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+      return value;
+    }
+    const config = value as Record<string, unknown>;
+    if (
+      config.formPurpose !== "ELIGIBILITY_VERIFICATION" ||
+      config.command !== undefined
+    ) {
+      return value;
+    }
+    // Older inherited verification tasks predate the explicit command setting.
+    return {
+      ...config,
+      command: "AUTHORITATIVE_ELIGIBILITY",
+      reevaluationPolicy: config.reevaluationPolicy ?? "WHEN_EVIDENCE_CHANGED",
+    };
+  },
+  z.object({
+    hardFailureStatus: eligibilityFailureStatusSchema.default("INELIGIBLE"),
+    command: z.literal("AUTHORITATIVE_ELIGIBILITY"),
+    reevaluationPolicy: z.enum(["NEVER", "WHEN_EVIDENCE_CHANGED"]),
+  }),
+);
 
 export const eligibilityResultSchema = z.object({
   eligible: z.boolean(),
@@ -79,7 +101,6 @@ export const scoreResultSchema = z.object({
 export function taskCommentFields(config: unknown) {
   const parsed = z.object({
     commentFields: z.array(commentFieldSchema).max(100).optional(),
-  formPurpose: z.enum(formPurposes).optional(),
   }).safeParse(config);
   return parsed.success ? parsed.data.commentFields ?? [] : [];
 }
@@ -94,6 +115,8 @@ export function taskDisplayMode(config: unknown): WorkflowTaskDisplayMode {
 }
 
 const taskConfigurationSchema = z.object({
+  formPurpose: z.enum(formPurposes).optional(),
+  hardFailureStatus: eligibilityFailureStatusSchema.optional(),
   command: z.literal("AUTHORITATIVE_ELIGIBILITY").optional(),
   reevaluationPolicy: z.enum(["NEVER", "WHEN_EVIDENCE_CHANGED"]).optional(),
   categories: z.array(optionSchema).min(1).optional(),

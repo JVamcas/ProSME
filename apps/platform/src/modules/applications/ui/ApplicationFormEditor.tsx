@@ -3,14 +3,14 @@
 import { RefreshCw, RotateCw } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import { PortalErrorState } from "@/components/layout/PortalErrorState";
-import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
+import { PortalErrorState } from "@/shared/ui/portal/PortalErrorState";
+import { PortalLoadingState } from "@/shared/ui/portal/PortalLoadingState";
 import { ApplicationSubmissionConfirmation } from "@/components/applicant/applications/ApplicationSubmissionConfirmation";
 import { GeneralButton } from "@/components/ui/button";
 import { FormRenderer } from "@/modules/forms/ui/renderer/FormRenderer";
 import { PageShell } from "@/shared/ui/PageShell";
 import { toast } from "@/shared/ui/Toast";
-import { useOwnApplication, useSubmitApplication } from "../ApplicationHooks";
+import { useOwnApplication, useSubmitApplication } from "./useApplications";
 import type { ApplicationSubmission } from "../ApplicationTypes";
 import { applicationDocumentCompletion } from "../domain/ApplicationDocumentPolicy";
 import { attachedBusinessFieldKeys } from "../domain/AttachedApplicationForm";
@@ -212,8 +212,8 @@ export function ApplicationFormEditor({
   if (application.isPending) {
     return (
       <PortalLoadingState
-        description="Your exact saved form and latest answers are being prepared."
-        title="Loading application"
+        description="Loading application..."
+        title=""
       />
     );
   }

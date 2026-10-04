@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { permissionCodes } from "@/auth/authorization/permissions";
-import { getCurrentUser } from "@/auth/authorization/current-user";
+import { getAuthenticatedPageUser } from "@/platform/auth/ServerAuthNavigation";
 import { can } from "@/auth/authorization/policy";
-import { ApplicationsTable } from "@/components/admin/applications/ApplicationsTable";
+import { ApplicationsTable } from "@/modules/applications/ui/staff/ApplicationsTable";
 import { PageShell } from "@/shared/ui/PageShell";
 
 export const metadata: Metadata = {
@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 };
 
 export default async function ApplicationsPage() {
-  const user = await getCurrentUser();
+  const user = await getAuthenticatedPageUser();
   const canRead =
     can(user, permissionCodes.workflowTaskAssignedRead) ||
     can(user, permissionCodes.fundingApplicationAllRead);

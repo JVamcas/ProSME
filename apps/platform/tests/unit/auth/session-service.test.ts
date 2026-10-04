@@ -1,18 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
-vi.mock("@/auth/firebase/session", () => ({
+vi.mock("@/platform/auth/firebase/ServerFirebaseSession", () => ({
   createFirebaseSession: vi.fn(),
 }));
 vi.mock("@/db/repositories/UserRepository", () => ({
   provisionApplicant: vi.fn(),
 }));
 
-import { createFirebaseSession } from "@/auth/firebase/session";
+import { createFirebaseSession } from "@/platform/auth/firebase/ServerFirebaseSession";
 import {
   establishApplicationSession,
   RecentAuthenticationRequiredError,
-} from "@/auth/firebase/ServerSessionService";
+} from "@/platform/auth/ServerSessionService";
 import { provisionApplicant } from "@/db/repositories/UserRepository";
 
 const currentTime = Date.UTC(2026, 8, 12, 12, 0, 0);

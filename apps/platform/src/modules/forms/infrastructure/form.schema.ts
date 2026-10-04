@@ -18,6 +18,7 @@ import type {
   FormDisplayMode,
   FormPurpose,
   FormFieldType,
+  RepeatableGroupConfiguration,
   FormStatus,
   FormSubmissionMode,
 } from "@/modules/forms/FormTypes";
@@ -179,6 +180,8 @@ export const formFields = pgTable(
     maximum: doublePrecision("maximum"),
     minLength: integer("min_length"),
     maxLength: integer("max_length"),
+    repeatableConfiguration: jsonb("repeatable_configuration")
+      .$type<RepeatableGroupConfiguration>(),
     order: integer("display_order").notNull(),
     visibilityCondition: jsonb("visibility_condition")
       .$type<ConditionGroup>(),
@@ -203,7 +206,7 @@ export const formFields = pgTable(
     }).onDelete("restrict"),
     check(
       "app_form_fields_type_check",
-      sql`${table.type} in ('TEXT', 'TEXTAREA', 'NUMBER', 'CURRENCY', 'PERCENTAGE', 'DATE', 'YES_NO', 'SINGLE_SELECT', 'MULTI_SELECT', 'DOCUMENT')`,
+      sql`${table.type} in ('TEXT', 'TEXTAREA', 'RICH_TEXT', 'NUMBER', 'CURRENCY', 'PERCENTAGE', 'DATE', 'YES_NO', 'SINGLE_SELECT', 'MULTI_SELECT', 'DOCUMENT', 'REPEATABLE_GROUP')`,
     ),
     check("app_form_fields_order_check", sql`${table.order} > 0`),
     check(
@@ -225,6 +228,15 @@ export const formFields = pgTable(
     check(
       "app_form_fields_length_limits_check",
       sql`(${table.minLength} is null and ${table.maxLength} is null) or (${table.type} in ('TEXT', 'TEXTAREA') and coalesce(${table.minLength}, 0) >= 0 and coalesce(${table.maxLength}, 0) >= 0 and (${table.minLength} is null or ${table.maxLength} is null or ${table.minLength} <= ${table.maxLength}))`,
+    ),
+    check(
+      "app_form_fields_repeatable_configuration_check",
+      sql`(${table.type} = 'REPEATABLE_GROUP'
+        and ${table.repeatableConfiguration} is not null
+        and jsonb_typeof(${table.repeatableConfiguration}) = 'object'
+        and jsonb_typeof(${table.repeatableConfiguration}->'fields') = 'array')
+        or (${table.type} <> 'REPEATABLE_GROUP'
+          and ${table.repeatableConfiguration} is null)`,
     ),
   ],
 );

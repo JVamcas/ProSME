@@ -99,6 +99,27 @@ function update(id: string, input: FundingCallUpdateInput) {
   });
 }
 
+function uploadThumbnail(id: string, file: File, expectedRowVersion: number) {
+  const body = new FormData();
+  body.set("expectedRowVersion", String(expectedRowVersion));
+  body.set("thumbnail", file);
+  return requestData<FundingCallView>(
+    `/api/admin/funding-calls/${id}/thumbnail`,
+    { body, method: "PUT" },
+  );
+}
+
+function removeThumbnail(id: string, expectedRowVersion: number) {
+  return requestData<FundingCallView>(
+    `/api/admin/funding-calls/${id}/thumbnail`,
+    {
+      body: JSON.stringify({ expectedRowVersion }),
+      headers: jsonHeaders,
+      method: "DELETE",
+    },
+  );
+}
+
 function publish(id: string, expectedRowVersion: number) {
   return requestData<FundingCallView>(
     `/api/admin/funding-calls/${id}/publish`,
@@ -189,6 +210,8 @@ export const clientFundingCallService = {
   listBindableWorkflowTemplateVersions,
   publish,
   previewReadiness,
+  removeThumbnail,
   saveCreationProgress,
   update,
+  uploadThumbnail,
 };

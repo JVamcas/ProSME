@@ -48,13 +48,20 @@ jobs:
             exit 1
           fi
 
-          set -a
-          # shellcheck disable=SC1091
-          source .env
-          set +a
+          environment_name="$(
+            sed -n \
+              's/^[[:space:]]*ENVIRONMENT[[:space:]]*=[[:space:]]*//p' \
+              .env \
+              | tail -n 1
+          )"
+          environment_name="${environment_name%$'\r'}"
+          environment_name="${environment_name#\"}"
+          environment_name="${environment_name%\"}"
+          environment_name="${environment_name#\'}"
+          environment_name="${environment_name%\'}"
 
-          if [ "${ENVIRONMENT:-}" != "${EXPECTED_ENVIRONMENT}" ]; then
-            echo "Deployment environment mismatch: expected ${EXPECTED_ENVIRONMENT}, but .env specifies ${ENVIRONMENT:-<unset>}." >&2
+          if [ "${environment_name}" != "${EXPECTED_ENVIRONMENT}" ]; then
+            echo "Deployment environment mismatch: expected ${EXPECTED_ENVIRONMENT}, but .env specifies ${environment_name:-<unset>}." >&2
             exit 1
           fi
 

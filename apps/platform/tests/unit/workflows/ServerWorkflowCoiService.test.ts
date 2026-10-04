@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
+vi.mock("@/modules/workflows/infrastructure/WorkflowTaskAccessRepository", () => ({
+  readWorkflowTaskAccess: vi.fn(),
+}));
 vi.mock("@/modules/forms/application/ServerSystemFormService", () => ({
   getPublishedSystemFormRuntimeVersion: vi.fn(),
 }));
@@ -20,6 +23,7 @@ vi.mock(
   () => ({ replaceWorkflowReviewer: vi.fn() }),
 );
 
+import { readWorkflowTaskAccess } from "@/modules/workflows/infrastructure/WorkflowTaskAccessRepository";
 import { permissionCodes } from "@/auth/authorization/permissions";
 import type { AuthenticatedUser } from "@/auth/types";
 import { getPublishedSystemFormRuntimeVersion } from "@/modules/forms/application/ServerSystemFormService";
@@ -222,5 +226,34 @@ describe("workflow COI service", () => {
         decision: "CLEAR",
       }),
     ).rejects.toThrow("COI state or task changed");
+  });
+});
+
+
+describe("oversight task access and COI", () => {
+  it("opens another user's task in read-only mode without requesting a declaration", async () => {
+    vi.mocked(readTaskCoiGate).mockResolvedValue(null);
+    vi.mocked(readWorkflowTaskAccess).mockResolvedValue({
+      assignedToActor: false,
+      permissions: { view: permissionCodes.workflowTaskAssignedRead },
+      rowVersion: 2,
+      taskId,
+      taskName: "Review",
+      taskStatus: "PENDING",
+    } as never);
+    const result = await getWorkflowTaskCoi({
+      ...actor,
+      capabilities: new Set([permissionCodes.workflowTaskAllRead]),
+    }, taskId);
+    expect(result).toMatchObject({ readOnly: true, cleared: false, form: null, gated: false });
+    expect(result).not.toHaveProperty("permissions");
+    expect(readTaskCoiGate).not.toHaveBeenCalled();
+    expect(getPublishedSystemFormRuntimeVersion).not.toHaveBeenCalled();
+  });
+
+  it("does not expose assignment metadata to an unrelated assigned-only reader", async () => {
+    vi.mocked(readTaskCoiGate).mockResolvedValue(null);
+    await expect(getWorkflowTaskCoi(actor, taskId)).rejects.toThrow("workflow task not found");
+    expect(readWorkflowTaskAccess).not.toHaveBeenCalled();
   });
 });

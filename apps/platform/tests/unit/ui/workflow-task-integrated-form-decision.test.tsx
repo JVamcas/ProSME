@@ -5,7 +5,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { TaskDetail } from "@/modules/work-queue/TaskTypes";
-import { WorkflowTaskDecisionActions } from "@/modules/work-queue/ui/WorkflowTaskDecisionActions";
+import { WorkflowTaskDecisionActions } from "@/modules/workflows/ui/tasks/WorkflowTaskDecisionActions";
 
 const mocks = vi.hoisted(() => ({
   mutateAsync: vi.fn(),
@@ -21,7 +21,7 @@ vi.mock("sonner", () => ({
   toast: { error: mocks.toastError, success: vi.fn() },
 }));
 
-vi.mock("@/modules/work-queue/WorkQueueHooks", () => ({
+vi.mock("@/modules/work-queue/ui/useWorkQueue", () => ({
   useExecuteWorkflowTaskAction: () => ({
     isPending: false,
     mutateAsync: mocks.mutateAsync,
@@ -36,12 +36,10 @@ const task = {
     label: "Approve and advance",
     presentation: { displayOrder: 1, variant: "success" },
     requiredInput: {
-      comment: { maxLength: 4_000, required: false },
       confirmation: { message: null, required: false },
       dueDate: { deadlineDays: null, required: false },
       editableFieldPaths: [],
-      reasonCode: { options: [], required: false },
-      reasonOrCommentRequired: false,
+      reason: { maxLength: 4_000, required: false },
       reviewDate: { required: false },
       target: { type: null, value: null },
     },
@@ -78,8 +76,15 @@ async function renderAndSubmit(
   ));
   await act(async () => {
     container.querySelector<HTMLButtonElement>(
-      `button[value="${selectedTask.actions[0]?.key}"]`,
+      'button[aria-label="Workflow actions"]',
     )?.click();
+  });
+  await act(async () => {
+    [...document.querySelectorAll<HTMLElement>('[role="menuitem"]')]
+      .find((item) => item.textContent?.includes(
+        selectedTask.actions[0]?.label ?? "",
+      ))
+      ?.click();
   });
   await act(async () => {
     [...document.querySelectorAll<HTMLButtonElement>('[role="dialog"] button')]
@@ -96,13 +101,89 @@ describe("integrated task-form decisions", () => {
     });
     mocks.mutateAsync.mockImplementationOnce(async () => {
       calls.push("action");
-      return { transition: { targetStageName: null } };
+      return { transition: { targets: [] } };
     });
 
     await renderAndSubmit(task, beforeAction);
 
     expect(beforeAction).toHaveBeenCalledOnce();
     expect(calls).toEqual(["form", "action"]);
+  });
+
+  it("keeps one dialog through form saving, action refresh, and navigation", async () => {
+    let finishForm!: () => void;
+    let finishAction!: (result: { transition: { targets: [] } }) => void;
+    const beforeAction = vi.fn(() => new Promise<void>((resolve) => {
+      finishForm = resolve;
+    }));
+    mocks.mutateAsync.mockImplementationOnce(() => new Promise((resolve) => {
+      finishAction = resolve;
+    }));
+
+    await renderAndSubmit(task, beforeAction);
+    const dialog = document.querySelector('[role="dialog"]');
+    const submit = [...document.querySelectorAll<HTMLButtonElement>(
+      '[role="dialog"] button',
+    )].find((button) => button.textContent === "Submitting…");
+    expect(dialog).not.toBeNull();
+    expect(submit?.disabled).toBe(true);
+
+    await act(async () => {
+      root?.render(
+        <WorkflowTaskDecisionActions
+          beforeAction={beforeAction}
+          task={{
+            ...task,
+            actions: task.actions.map((action) => ({
+              ...action,
+              available: false,
+              unavailableReason: "Wait for the current task changes to save.",
+            })),
+          }}
+        />,
+      );
+    });
+    expect(document.querySelector('[role="dialog"]')).toBe(dialog);
+    expect(mocks.mutateAsync).not.toHaveBeenCalled();
+
+    await act(async () => {
+      document.querySelector<HTMLButtonElement>(
+        '[aria-label="Close dialog"]',
+      )?.click();
+      document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    });
+    expect(document.querySelector('[role="dialog"]')).toBe(dialog);
+
+    await act(async () => {
+      root?.render(
+        <WorkflowTaskDecisionActions beforeAction={beforeAction} task={task} />,
+      );
+      finishForm();
+    });
+    expect(document.querySelector('[role="dialog"]')).toBe(dialog);
+    expect(submit?.disabled).toBe(true);
+    expect(mocks.mutateAsync).toHaveBeenCalledOnce();
+
+    await act(async () => {
+      root?.render(
+        <WorkflowTaskDecisionActions
+          task={{ ...task, taskStatus: "COMPLETED", actions: [] }}
+        />,
+      );
+    });
+    expect(document.querySelector('[role="dialog"]')).toBe(dialog);
+
+    await act(async () => {
+      finishAction({ transition: { targets: [] } });
+    });
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(mocks.push).toHaveBeenCalledWith("/admin/work-queue");
+
+    await act(async () => {
+      root?.render(<WorkflowTaskDecisionActions task={task} />);
+    });
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(beforeAction).toHaveBeenCalledOnce();
   });
 
   it("does not execute a decision when form finalization fails", async () => {
@@ -117,7 +198,7 @@ describe("integrated task-form decisions", () => {
   it("does not finalize the form for a non-decision action", async () => {
     const beforeAction = vi.fn();
     mocks.mutateAsync.mockResolvedValueOnce({
-      transition: { targetStageName: null },
+      transition: { targets: [] },
     });
     const holdTask = {
       ...task,
@@ -126,6 +207,7 @@ describe("integrated task-form decisions", () => {
         actionType: "PUT_ON_HOLD",
         key: "PUT_ON_HOLD",
         label: "Put on hold",
+        requiredInput: { ...task.actions[0].requiredInput, holdScopes: ["TASK"] },
       }],
     } as TaskDetail;
 

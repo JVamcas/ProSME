@@ -16,6 +16,7 @@ export async function appendWorkflowRfiLifecycleRecords(
   transaction: WorkflowActionExecutionTransaction,
   input: {
     actorId: string;
+    actorType?: "USER" | "SYSTEM";
     correlationId: string;
     details?: Record<string, unknown>;
     fromStatus: "OPEN" | "RESPONDED";
@@ -39,8 +40,8 @@ export async function appendWorkflowRfiLifecycleRecords(
   };
   await transaction.insert(workflowRfiLifecycleEvents).values({
     actionDefinitionId: input.source.actionDefinitionId,
-    actorId: input.actorId,
-    actorType: "USER",
+    actorId: input.actorType === "SYSTEM" ? null : input.actorId,
+    actorType: input.actorType ?? "USER",
     applicationId: input.source.applicationId,
     correlationId: input.correlationId,
     details: payload,
@@ -63,7 +64,11 @@ export async function appendWorkflowRfiLifecycleRecords(
   await transaction.insert(workflowAuditEntries).values({
     action: eventCode,
     actorId: input.actorId,
-    after: { rowVersion: input.nextRowVersion, status: input.toStatus },
+    after: {
+      ...input.details,
+      rowVersion: input.nextRowVersion,
+      status: input.toStatus,
+    },
     before: {
       rowVersion: input.previousRowVersion,
       status: input.fromStatus,

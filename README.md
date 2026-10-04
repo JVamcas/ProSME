@@ -1,6 +1,6 @@
 # SME Fund Platform
 
-The production foundation for the SME Fund platform under the ProSME Project. The approved Option B experience, backend route handlers, applicant portal, internal operations, and Payload CMS run as one Next.js application.
+The production foundation for the SME Fund platform under the SME Fund Project. The approved Option B experience, backend route handlers, applicant portal, internal operations, and Payload CMS run as one Next.js application.
 
 ## Architecture
 
@@ -37,6 +37,22 @@ Copy `.env.example` to the repository-root `.env` and provide the real developme
 
 Never commit `.env`, service-account JSON, or real applicant data.
 
+Google Cloud Storage uses one shared bucket with environment-isolated object
+roots derived from `ENVIRONMENT`:
+
+```text
+<environment>/
+├── users/<user-id>/...
+├── utilities/
+│   ├── brand/...
+│   ├── funding-calls/<funding-call-id>/...
+│   └── templates/email/...
+└── cms/...
+```
+
+Supported environments are `local`, `dev`, and `prod`. Do not configure a
+separate storage-root variable.
+
 ## Start with Docker Compose
 
 After creating `.env`, build and start PostgreSQL and the application:
@@ -48,13 +64,31 @@ After creating `.env`, build and start PostgreSQL and the application:
 The Bash wrapper validates Compose, builds the standalone image, starts
 PostgreSQL, runs the committed Drizzle and Payload migrations, and waits for the
 application health check. It also runs the single idempotent database seeder on
-every startup. The notification scheduler starts after the application is
-healthy and invokes one authenticated delivery batch every 60 seconds by
-default. Configure `NOTIFICATION_PROCESSOR_INTERVAL_MS` to change that interval.
-The scheduler emits structured JSON logs with request IDs, timings, safe batch
-counts, and failure classifications. Docker rotates those logs and restarts the
-scheduler after its configured consecutive-failure limit. Its health check also
-detects a stalled scheduling loop.
+every startup. One scheduler service (`notification-scheduler`) starts after the
+application is healthy. It runs independent asynchronous notification and
+workflow loops (notification delivery every 30 seconds in Compose, workflow
+deadlines every 60 seconds by default). Each loop awaits its bounded
+batch before scheduling another; slow or failing workflow calls do not delay
+notification delivery. Configure `NOTIFICATION_PROCESSOR_INTERVAL_MS` and
+`WORKFLOW_PROCESSOR_INTERVAL_MS` independently.
+
+The workflow processor handles SLA breaches, configured RFI reminders and
+expiry actions, date-based deferral resumption, and hold review reminders.
+Escalation and return actions use published workflow configuration; holds remain
+held until an authorized user resumes them. SLA deadlines account for overlapping
+hold, deferral, and RFI pauses without counting overlapping periods twice.
+Migration `0149_workflow_deadline_processor.sql` installs durable occurrence
+receipts, the system processor permission, and editable notification defaults.
+The startup wrapper applies it before starting the scheduler.
+
+`WORKFLOW_PROCESSOR_SECRET` defaults to `NOTIFICATION_PROCESSOR_SECRET`, which
+must contain at least 32 characters. Workflow batches default to 25 items with
+a 45-second execution budget. See `.env.example` for independent batch, interval,
+and timeout settings. The scheduler emits structured JSON logs with request IDs,
+timings, safe batch counts, and failure classifications. Failed calls keep
+retrying independently. Its health check detects stalled loops and excessive
+consecutive failures; Docker restarts the service if its process exits. Docker
+rotates the logs.
 PostgreSQL data and Payload media uploads are retained in named volumes.
 Environment-specific values are supplied by Compose at runtime; the image build
 does not read `.env` or receive deployment configuration.

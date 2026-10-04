@@ -1,15 +1,18 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+
 import { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { activeFormDefinition } from "@/modules/forms/engine/FormVisibility";
 import { validateFormValues } from "@/modules/forms/FormValidation";
 import { toast } from "sonner";
-import { useEvaluateAuthoritativeEligibility } from "@/modules/work-queue/WorkQueueHooks";
+import { useEligibilityTerminationConfirmation } from "@/modules/eligibility/ui/screening/useEligibilityTerminationConfirmation";
 import type { AuthoritativeEligibilityTaskResult } from "@/modules/work-queue/TaskTypes";
 import { AuthoritativeEligibilityResult } from "@/modules/eligibility/ui/screening/AuthoritativeEligibilityResult";
 
-import { PortalErrorState } from "@/components/layout/PortalErrorState";
-import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
+import { PortalErrorState } from "@/shared/ui/portal/PortalErrorState";
+import { PortalLoadingState } from "@/shared/ui/portal/PortalLoadingState";
 import { GeneralButton } from "@/components/ui/button";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { useTaskForm } from "@/modules/forms/FormHooks";
@@ -49,14 +52,14 @@ function DraftPersistenceStatus({
   const message = !draftIsValid
     ? "Correct invalid fields to save"
     : saveError
-    ? "Save failed — retry available"
-    : isSaving
-      ? "Saving draft…"
-      : hasUnsavedChanges
-        ? "Autosave pending"
-        : hasSavedDraft
-          ? "Draft saved"
-          : "No changes yet";
+      ? "Save failed — retry available"
+      : isSaving
+        ? "Saving draft…"
+        : hasUnsavedChanges
+          ? "Autosave pending"
+          : hasSavedDraft
+            ? "Draft saved"
+            : "No changes yet";
 
   return (
     <p aria-live="polite" className="text-sm text-brand-navy/65">
@@ -70,32 +73,34 @@ function LoadedDynamicFormTask({
   taskId,
   eligibilityEvaluation,
   eligibilityTask = false,
+  eligibilityActionContainer,
   onCompleteTaskForm,
   onPendingChange,
   onStateChange,
+  onFinalStepChange,
 }: {
   data: TaskFormData;
   taskId: string;
   eligibilityEvaluation?: AuthoritativeEligibilityTaskResult | null;
   eligibilityTask?: boolean;
+  eligibilityActionContainer?: HTMLElement | null;
   onCompleteTaskForm?: (complete: (() => Promise<void>) | null) => void;
   onPendingChange?: (pending: boolean) => void;
-  onStateChange?: (state: {
-    pending: boolean;
-    ready: boolean;
-  }) => void;
+  onStateChange?: (state: { pending: boolean; ready: boolean }) => void;
+  onFinalStepChange?: (final: boolean) => void;
 }) {
-  const evaluation = useEvaluateAuthoritativeEligibility(taskId);
+  const evaluation = useEligibilityTerminationConfirmation(taskId);
   const completionRef = useRef<() => Promise<void>>(async () => undefined);
   const controller = useDynamicFormController(
     taskId,
     data,
     eligibilityTask && evaluation.isPending,
   );
-  const pending = controller.hasUnsavedChanges
-    || controller.save.isPending
-    || controller.complete.isPending
-    || evaluation.isPending;
+  const pending =
+    controller.hasUnsavedChanges ||
+    controller.save.isPending ||
+    controller.complete.isPending ||
+    evaluation.isPending;
   useEffect(() => {
     completionRef.current = async () => {
       await controller.finalizeFormValues(controller.values);
@@ -117,25 +122,60 @@ function LoadedDynamicFormTask({
     onCompleteTaskForm?.(() => completionRef.current());
     return () => onCompleteTaskForm?.(null);
   }, [onCompleteTaskForm]);
+  const router = useRouter();
+
   async function runEligibility() {
     const revision = controller.currentRevision();
     try {
-      await evaluation.mutateAsync({
+      const result = await evaluation.mutateAsync({
         expectedResponseRowVersion: data.response?.rowVersion,
         expectedRowVersion: data.taskRowVersion,
         values: controller.values,
       });
+      if (!result) return;
       controller.markSaved(revision);
-      toast.success("Eligibility evaluation completed.");
+      toast.success(
+        result.terminalStatus
+          ? "Application terminated after a hard eligibility failure."
+          : "Eligibility evaluation completed.",
+      );
+      if (result.terminalStatus) {
+        router.push("/admin/work-queue");
+      }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Eligibility evaluation failed.");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Eligibility evaluation failed.",
+      );
     }
   }
   const readOnly = data.response?.status === "COMPLETED";
+  const eligibilityAction = eligibilityTask ? (
+    <GeneralButton
+      disabled={
+        !ready ||
+        controller.save.isPending ||
+        controller.complete.isPending ||
+        evaluation.isPending
+      }
+      onClick={() => void runEligibility()}
+      type="button"
+    >
+      {evaluation.isPending
+        ? "Running eligibility…"
+        : eligibilityEvaluation
+          ? "Re-run eligibility ruleset"
+          : "Run eligibility ruleset"}
+    </GeneralButton>
+  ) : null;
+
   return (
     <>
+      {evaluation.confirmationDialog}
       <FormRenderer
         definition={data.schema}
+        onFinalStepChange={onFinalStepChange}
         formData={controller.values}
         onChange={controller.setValues}
         onSubmit={() => undefined}
@@ -157,11 +197,13 @@ function LoadedDynamicFormTask({
                 saveError={controller.save.error}
               />
             ) : null}
-            {!readOnly ? (
+            {!readOnly || eligibilityTask ? (
               <div className="flex flex-wrap items-center gap-3 sm:ml-auto">
-                {controller.save.error ? (
+                {!readOnly && controller.save.error ? (
                   <GeneralButton
-                    disabled={controller.save.isPending || controller.complete.isPending}
+                    disabled={
+                      controller.save.isPending || controller.complete.isPending
+                    }
                     onClick={controller.saveDraftValues}
                     type="button"
                     variant="outline"
@@ -169,20 +211,17 @@ function LoadedDynamicFormTask({
                     Retry save
                   </GeneralButton>
                 ) : null}
-                {eligibilityTask ? (
-                  <GeneralButton
-                    disabled={controller.save.isPending || evaluation.isPending}
-                    onClick={() => void runEligibility()}
-                    type="button"
-                  >
-                    {evaluation.isPending ? "Running eligibility…" : "Run eligibility test"}
-                  </GeneralButton>
-                ) : null}
+                {eligibilityActionContainer === undefined
+                  ? eligibilityAction
+                  : null}
               </div>
             ) : null}
           </div>
         </div>
       </FormRenderer>
+      {eligibilityActionContainer
+        ? createPortal(eligibilityAction, eligibilityActionContainer)
+        : null}
       {eligibilityTask && eligibilityEvaluation ? (
         <div className="mt-5">
           <AuthoritativeEligibilityResult evaluation={eligibilityEvaluation} />
@@ -202,21 +241,24 @@ function LoadedDynamicFormTask({
 
 export function DynamicFormTask({
   taskId,
+  readOnly = false,
   eligibilityEvaluation,
   eligibilityTask = false,
+  eligibilityActionContainer,
   onCompleteTaskForm,
   onPendingChange,
   onStateChange,
+  onFinalStepChange,
 }: {
   taskId: string;
+  readOnly?: boolean;
   eligibilityEvaluation?: AuthoritativeEligibilityTaskResult | null;
   eligibilityTask?: boolean;
+  eligibilityActionContainer?: HTMLElement | null;
   onCompleteTaskForm?: (complete: (() => Promise<void>) | null) => void;
   onPendingChange?: (pending: boolean) => void;
-  onStateChange?: (state: {
-    pending: boolean;
-    ready: boolean;
-  }) => void;
+  onStateChange?: (state: { pending: boolean; ready: boolean }) => void;
+  onFinalStepChange?: (final: boolean) => void;
 }) {
   const query = useTaskForm(taskId);
   if (query.isPending) {
@@ -236,15 +278,33 @@ export function DynamicFormTask({
       />
     );
   }
+  if (readOnly || query.data.readOnly) {
+    return (
+      <FormRenderer
+        definition={query.data.schema}
+        formData={query.data.response?.values ?? {}}
+        onChange={() => undefined}
+        onSubmit={() => undefined}
+        readOnly
+        runtimeContext={query.data.context}
+      >
+        <p className="mt-4 text-sm text-brand-navy/65">
+          Saved form responses · Read-only
+        </p>
+      </FormRenderer>
+    );
+  }
   return (
     <LoadedDynamicFormTask
       data={query.data}
       taskId={taskId}
       eligibilityEvaluation={eligibilityEvaluation}
       eligibilityTask={eligibilityTask}
+      eligibilityActionContainer={eligibilityActionContainer}
       onCompleteTaskForm={onCompleteTaskForm}
       onPendingChange={onPendingChange}
       onStateChange={onStateChange}
+      onFinalStepChange={onFinalStepChange}
     />
   );
 }

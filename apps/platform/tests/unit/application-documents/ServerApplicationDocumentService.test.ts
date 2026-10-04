@@ -185,7 +185,7 @@ describe("application document service", () => {
     );
     expect(adapter.put).toHaveBeenCalledWith(expect.objectContaining({
       objectKey: expect.stringMatching(
-        new RegExp(`^users/${actor.id}/${applicationId}/BUSINESS_REGISTRATION_DOCUMENT/`),
+        new RegExp(`^local/users/${actor.id}/${applicationId}/BUSINESS_REGISTRATION_DOCUMENT/`),
       ),
     }));
     expect(finalizeApplicationDocumentVersion).toHaveBeenCalledWith(versionId);

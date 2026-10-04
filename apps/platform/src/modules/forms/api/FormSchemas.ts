@@ -9,6 +9,11 @@ import {
   formStatuses,
   formPurposes,
 } from "@/modules/forms/FormTypes";
+import { repeatableGroupConfigurationSchema } from "./RepeatableGroupSchemas";
+
+export const formEditorVersionQuerySchema = z.object({
+  versionId: z.uuid().optional(),
+});
 
 const code = z
   .string()
@@ -49,6 +54,7 @@ const formFieldSchemaBase = z.object({
   maxLength: optionalLength,
   order: z.coerce.number().int().positive(),
   options: z.array(formOptionSchema).max(100).optional(),
+  repeatable: repeatableGroupConfigurationSchema.nullable().optional(),
   visibilityCondition: conditionGroupSchema.nullable().optional(),
 });
 
@@ -64,6 +70,20 @@ export const formFieldSchema = formFieldSchemaBase.superRefine((field, context) 
   }
   if (supportsOptions && !options.length) {
     context.addIssue({ code: "custom", message: "Add at least one option.", path: ["options"] });
+  }
+  if (field.type === "REPEATABLE_GROUP" && !field.repeatable) {
+    context.addIssue({
+      code: "custom",
+      message: "Configure the repeatable group fields and row limits.",
+      path: ["repeatable"],
+    });
+  }
+  if (field.type !== "REPEATABLE_GROUP" && field.repeatable) {
+    context.addIssue({
+      code: "custom",
+      message: "Only Repeatable Group fields may have repeatable configuration.",
+      path: ["repeatable"],
+    });
   }
   const keys = options.map((option) => option.key);
   if (new Set(keys).size !== keys.length) {

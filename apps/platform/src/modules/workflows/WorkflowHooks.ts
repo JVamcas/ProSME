@@ -25,7 +25,9 @@ export const workflowQueryKeys = {
     input.sourceStageInstanceId,
     input.taskId ?? null,
   ] as const,
-  detail: (id: string) => ["admin", "workflows", id] as const,
+  detail: (id: string, versionId?: string) => versionId
+    ? ["admin", "workflows", id, versionId] as const
+    : ["admin", "workflows", id] as const,
   opportunities: ["admin", "workflows", "opportunities"] as const,
   published: ["admin", "workflows", "published"] as const,
   templates: ["admin", "workflow-templates"] as const,
@@ -68,10 +70,10 @@ export function useWorkflowDefinitions() {
   });
 }
 
-export function useWorkflowEditor(id: string, enabled = true) {
+export function useWorkflowEditor(id: string, enabled = true, versionId?: string) {
   return useQuery({
-    queryKey: workflowQueryKeys.detail(id),
-    queryFn: () => clientWorkflowService.getEditor(id),
+    queryKey: workflowQueryKeys.detail(id, versionId),
+    queryFn: () => clientWorkflowService.getEditor(id, versionId),
     enabled: enabled && Boolean(id),
   });
 }
@@ -120,19 +122,20 @@ export function useSaveWorkflowGraph(editor: WorkflowEditorView) {
     mutationFn: (graph: WorkflowEditorView["graph"]) =>
       clientWorkflowService.updateDraft(editor.definition.id, {
         expectedRowVersion: editor.version.rowVersion,
+        versionId: editor.version.id,
         graph,
       }),
     onSuccess: refresh,
   });
 }
 
-export function useValidateWorkflow(id: string) {
+export function useValidateWorkflow(id: string, versionId?: string) {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: () => clientWorkflowService.validateDefinition(id),
+    mutationFn: () => clientWorkflowService.validateDefinition(id, versionId),
     onSuccess: (validation) =>
       client.setQueryData<WorkflowEditorView>(
-        workflowQueryKeys.detail(id),
+        workflowQueryKeys.detail(id, versionId),
         (current) => (current ? { ...current, validation } : current),
       ),
   });
@@ -150,11 +153,12 @@ export function useWorkflowLifecycle(id: string, action: "publish" | "retire") {
 export function useWorkflowListLifecycle(
   action: "publish" | "retire",
   detailId?: string,
+  versionId?: string,
 ) {
   const refresh = useRefreshWorkflow(detailId);
   return useMutation({
     mutationFn: async (definitionId: string) => {
-      const editor = await clientWorkflowService.getEditor(definitionId);
+      const editor = await clientWorkflowService.getEditor(definitionId, versionId);
       if (action === "publish" && !editor.validation.valid) {
         throw new WorkflowPublicationValidationError(
           editor.validation.errors,

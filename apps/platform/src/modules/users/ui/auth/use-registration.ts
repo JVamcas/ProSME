@@ -5,6 +5,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 
+import { authNavigationHref } from "@/platform/auth/AuthNavigation";
 import { authClientService } from "@/platform/auth/firebase/ClientAuthService";
 import {
   registrationSchema,
@@ -12,7 +13,7 @@ import {
 } from "@/platform/auth/firebase/auth-form.schemas";
 import { getFirebaseErrorMessage } from "@/platform/auth/firebase/errors";
 
-export function useRegistration() {
+export function useRegistration(returnTo?: string) {
   const router = useRouter();
   const form = useForm<RegistrationValues>({
     defaultValues: {
@@ -34,7 +35,7 @@ export function useRegistration() {
 
     try {
       await registration.mutateAsync(values);
-      router.replace("/verify-email");
+      router.replace(authNavigationHref("/verify-email", returnTo));
     } catch {
       // Mutation state supplies the message returned below.
     }

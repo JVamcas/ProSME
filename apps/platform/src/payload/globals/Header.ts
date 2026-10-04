@@ -20,7 +20,7 @@ export const Header: GlobalConfig = {
     {
       name: "announcement",
       type: "text",
-      defaultValue: "An initiative under the ProSME Project",
+      defaultValue: "An initiative under the SME Fund Project",
     },
     { name: "signInLabel", type: "text", defaultValue: "Sign in", required: true },
     { name: "applyLabel", type: "text", defaultValue: "Apply Now", required: true },

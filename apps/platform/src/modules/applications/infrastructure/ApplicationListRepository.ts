@@ -9,6 +9,7 @@ import type {
   ApplicationStatusCounts,
 } from "@/modules/applications/ApplicationTypes";
 import { applications } from "./application.schema";
+import { applicantWithdrawalAllowed } from "@/modules/workflows/infrastructure/WorkflowApplicantWithdrawalPolicy";
 
 export type ApplicationCursor = {
   id: string;
@@ -41,7 +42,7 @@ const listColumns = {
   id: applications.id,
   canWithdraw: sql<boolean>`
     ${applications.status} = 'submitted'
-    AND ${workflowInstances.status} = 'ACTIVE'
+    AND ${applicantWithdrawalAllowed(workflowInstances)}
   `,
   reference: applications.reference,
   submittedAt: applications.submittedAt,

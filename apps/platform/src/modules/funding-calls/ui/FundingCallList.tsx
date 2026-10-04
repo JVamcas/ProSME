@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { CloneButton, DeleteButton } from "@/components/ui/action-buttons";
 import { GeneralButton, GeneralButtonLink } from "@/components/ui/button";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
-import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
+import { DataTable, type DataTableColumn } from "@/shared/ui/DataTable";
 import { Pagination } from "@/components/ui/pagination";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatLocalDateTime24 } from "@/lib/dateUtils";
@@ -18,10 +18,12 @@ import {
   useDeleteFundingCall,
   useFundingCalls,
 } from "../FundingCallHooks";
+import { FundingCallExceptionalActions } from "./FundingCallExceptionalActions";
 
 function columns(input: {
   canClone: boolean;
   canDelete: boolean;
+  canWithdrawForAmendment: boolean;
   cloningId?: string;
   deletingId?: string;
   onClone: (call: FundingCallView) => void;
@@ -39,7 +41,7 @@ function columns(input: {
           >
             {row.original.title}
           </Link>
-          <span>{row.original.reference}</span>
+          <span className="text-xs">{row.original.id}</span>
         </div>
       ),
     },
@@ -64,6 +66,15 @@ function columns(input: {
       enableSorting: false,
       cell: ({ row }) => (
         <div className="flex items-center gap-1">
+          <FundingCallExceptionalActions
+            call={row.original}
+            canArchive={false}
+            canResume={false}
+            canSuspend={false}
+            canWithdraw={false}
+            canWithdrawForAmendment={input.canWithdrawForAmendment}
+            display="menu"
+          />
           <CloneButton
             disabled={!input.canClone}
             isLoading={input.cloningId === row.original.id}
@@ -85,10 +96,12 @@ function columns(input: {
 export function FundingCallList({
   canCreate,
   canDelete,
+  canWithdrawForAmendment = false,
   fundingCallId,
 }: {
   canCreate: boolean;
   canDelete: boolean;
+  canWithdrawForAmendment?: boolean;
   fundingCallId?: string;
 }) {
   const router = useRouter();
@@ -131,6 +144,7 @@ export function FundingCallList({
         columns={columns({
           canClone: canCreate,
           canDelete,
+          canWithdrawForAmendment,
           cloningId: cloneCall.isPending ? cloneCall.variables : undefined,
           deletingId: deleteCall.isPending ? deleteCall.variables : undefined,
           onClone: handleClone,

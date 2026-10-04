@@ -4,9 +4,17 @@ vi.mock("server-only", () => ({}));
 vi.mock("@/integrations/monitoring/logger", () => ({
   logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() },
 }));
+vi.mock("@/modules/notifications/application/ServerNotificationEmailBranding", () => ({
+  loadNotificationBrandingLogoAttachment: vi.fn().mockResolvedValue({
+    cid: "sme-fund-branding-logo",
+    content: Buffer.from("logo"),
+    contentType: "image/png",
+    filename: "sme-fund-logo.png",
+  }),
+}));
 vi.mock("@/modules/notifications/application/ServerNotificationRenderValues", () => ({
   buildServerNotificationRenderValues: vi.fn(({ recipient }) => ({
-    applicationReference: "SME-1",
+    applicationReference: "SME Fund-1",
     assignedAt: "27 Sep 2026",
     fundingOpportunityTitle: "Growth Fund",
     platformName: "SME Fund Namibia",
@@ -54,7 +62,7 @@ function applicationDelivery(
     context: {
       applicationId,
       applicationOwnerUserId: ownerId,
-      applicationReference: "SME-1",
+      applicationReference: "SME Fund-1",
       correlationId: "correlation-1",
       fundingOpportunityTitle: "Growth Fund",
       ownerDisplayName: "Applicant",
@@ -83,7 +91,7 @@ function workflowDelivery(): ClaimedNotificationDelivery {
   return applicationDelivery({
     context: {
       applicationId,
-      applicationReference: "SME-1",
+      applicationReference: "SME Fund-1",
       assignedAt: "2026-09-27T09:30:00.000Z",
       assignees: [{
         displayName: "Reviewer",
@@ -224,6 +232,7 @@ describe("notification dispatch service", () => {
     expect(recordNotificationDeliveryFailure).toHaveBeenLastCalledWith(
       expect.objectContaining({
         code: "NOTIFICATION_RETRY_EXHAUSTED",
+        deadLetter: true,
         retry: false,
       }),
     );

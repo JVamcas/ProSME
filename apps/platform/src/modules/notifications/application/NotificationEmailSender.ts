@@ -1,6 +1,12 @@
 import type { NotificationErrorCode } from "../domain/NotificationErrors";
 
 export type NotificationEmailMessage = {
+  attachments?: Array<{
+    cid: string;
+    content: Buffer;
+    contentType: string;
+    filename: string;
+  }>;
   html: string;
   plainText: string;
   subject: string;

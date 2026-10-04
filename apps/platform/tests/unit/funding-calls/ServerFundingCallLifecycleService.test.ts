@@ -33,6 +33,7 @@ const callId = "00000000-0000-4000-8000-000000000042";
 const opensAt = new Date("2027-02-01T06:00:00.000Z");
 const closesAt = new Date("2027-03-31T15:00:00.000Z");
 const call = {
+  allowResubmissionAfterWithdrawal: false,
   applicationDuplicatePolicy: "one_per_business" as const,
   closesAt,
   createdAt: new Date("2026-09-20T08:00:00.000Z"),
@@ -49,13 +50,13 @@ const call = {
   publicContactEmail: null,
   publicContactName: null,
   publicContactPhone: null,
-  reference: "SME-2027-01",
+  reference: "SME Fund-2027-01",
   rowVersion: 4,
   slug: "sme-growth-fund-2027",
   status: "LIVE" as const,
   suspendedFromStatus: null,
   thematicArea: "Growth",
-  title: "SME Growth Fund 2027",
+  title: "SME Fund Growth Fund 2027",
   totalBudgetEnvelope: "10000000.00",
   updatedAt: new Date("2026-09-20T08:00:00.000Z"),
   updatedBy: actorId,
@@ -87,6 +88,35 @@ beforeEach(() => {
 });
 
 describe("funding call exceptional lifecycle", () => {
+  it.each([
+    permissionCodes.fundingCallWithdraw,
+    permissionCodes.fundingCallEditDraft,
+    permissionCodes.fundingCallPublish,
+  ])("does not infer amendment authority from %s", async (grant) => {
+    await expect(changeFundingCallLifecycleStatus(
+      user([grant]), callId,
+      { command: "WITHDRAW_FOR_AMENDMENT", expectedRowVersion: 4, reason: "Amend" },
+      "amend-key", "correlation-id",
+    )).rejects.toBeInstanceOf(PermissionDeniedError);
+    expect(transitionFundingCall).not.toHaveBeenCalled();
+  });
+
+  it.each(["APPROVED", "SCHEDULED", "LIVE", "SUSPENDED"] as const)(
+    "returns %s to Draft using explicit amendment authority", async (status) => {
+      vi.mocked(readFundingCallById).mockResolvedValue({
+        ...call, status, suspendedFromStatus: status === "SUSPENDED" ? "LIVE" : null,
+      });
+      vi.mocked(transitionFundingCall).mockResolvedValue({
+        call: { ...call, status: "DRAFT", rowVersion: 5 }, kind: "transitioned",
+      });
+      await expect(changeFundingCallLifecycleStatus(
+        user([permissionCodes.fundingCallWithdrawForAmendmentAll]), callId,
+        { command: "WITHDRAW_FOR_AMENDMENT", expectedRowVersion: 4, reason: "Amend" },
+        "amend-key", "correlation-id",
+      )).resolves.toMatchObject({ status: "DRAFT", rowVersion: 5 });
+    },
+  );
+
   it("requires the command-specific permission", async () => {
     await expect(changeFundingCallLifecycleStatus(
       user([permissionCodes.fundingCallPublish]),

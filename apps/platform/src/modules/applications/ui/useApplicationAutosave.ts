@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { ClientRequestError } from "@/lib/client-http";
-import { useUpdateApplication } from "../ApplicationHooks";
+import { useUpdateApplication } from "./useApplications";
 import type { ApplicationDraftView } from "../ApplicationTypes";
 import type { DynamicFormValues } from "@/modules/forms/ui/renderer/FormRenderer";
 

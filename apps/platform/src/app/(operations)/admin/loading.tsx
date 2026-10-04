@@ -1,5 +1,5 @@
-import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
+import { DashboardLoadingPage } from "@/modules/dashboard/ui/DashboardLoadingPage";
 
 export default function Loading() {
-  return <PortalLoadingState description="Just a moment ..." title="" />;
+  return <DashboardLoadingPage />;
 }

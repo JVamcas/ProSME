@@ -1,51 +1,70 @@
 "use client";
 
-import { PortalErrorState } from "@/components/layout/PortalErrorState";
-import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
+import { PortalErrorState } from "@/shared/ui/portal/PortalErrorState";
+import { PortalLoadingState } from "@/shared/ui/portal/PortalLoadingState";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Tabs } from "@/components/ui/tabs";
-import { useAdminApplicationDetail } from "@/modules/applications/ApplicationHooks";
-import { ApplicationDetailContent } from "@/modules/applications/ui/ApplicationDetailView";
-import { useWorkflowTask } from "@/modules/work-queue/WorkQueueHooks";
 import { WorkflowTaskReviewPanel } from "@/modules/work-queue/ui/WorkflowTaskReviewPanel";
+import { WorkflowEscalationTrackingPanel } from "@/modules/workflows/ui/tasks/WorkflowEscalationTrackingPanel";
+import {
+  useWorkflowEscalationTracking,
+  useWorkflowTask,
+} from "@/modules/work-queue/ui/useWorkQueue";
 import { useWorkflowCoi } from "@/modules/workflows/ui/runtime/useWorkflowCoi";
 import { WorkflowTaskCoiGate } from "@/modules/workflows/ui/runtime/WorkflowTaskCoiGate";
 import { PageShell } from "@/shared/ui/PageShell";
-import { WorkflowTaskRfiPanel } from "@/modules/workflows/ui/rfi/WorkflowTaskRfiPanel";
+import { useState } from "react";
 
-function ApplicationTaskPane({ applicationId }: { applicationId: string }) {
-  const query = useAdminApplicationDetail(applicationId);
+export function WorkflowTaskWorkspace({
+  taskId,
+  canReadAssignedTasks = true,
+  canReadAllTasks = false,
+}: {
+  canReadAssignedTasks?: boolean;
+  canReadAllTasks?: boolean;
+  canReadWorkflowProgress?: boolean;
+  taskId: string;
+}) {
+  const [section, setSection] = useState("assigned-task");
+  const tracking = useWorkflowEscalationTracking(taskId, canReadAssignedTasks);
+  const trackingPending = canReadAssignedTasks && tracking.isPending;
+  const trackingData = canReadAssignedTasks ? tracking.data : null;
+  const trackingOnly = Boolean(trackingData && !canReadAllTasks);
+  const coi = useWorkflowCoi(taskId, !trackingPending && !trackingOnly);
+  const query = useWorkflowTask(
+    taskId,
+    !trackingPending &&
+      !trackingOnly &&
+      Boolean(coi.data?.readOnly || coi.data?.cleared),
+  );
 
-  if (query.isPending) {
+  if (trackingPending) {
     return (
       <PortalLoadingState
-        className="min-h-48 px-0"
-        description="Preparing the submitted application."
-        title="Loading application details"
+        title="Loading task"
+        description="Checking the current assignment."
       />
     );
   }
-
-  if (query.isError) {
+  if (canReadAssignedTasks && !canReadAllTasks && tracking.isError) {
     return (
       <PortalErrorState
-        className="mt-0 shadow-none"
-        description={query.error.message}
-        onAction={() => void query.refetch()}
-        title="Application details could not be loaded"
+        title="Task could not be loaded"
+        description={tracking.error.message}
+        onAction={() => void tracking.refetch()}
       />
     );
   }
-
-  return (
-    <ApplicationDetailContent model={query.data} />
-  );
-}
-
-export function WorkflowTaskWorkspace({ taskId }: { taskId: string }) {
-  const coi = useWorkflowCoi(taskId);
-  const query = useWorkflowTask(taskId, coi.data?.cleared ?? false);
-
+  if (trackingData && trackingOnly) {
+    return (
+      <PageShell
+        title="Review Assigned Task"
+        actions={<StatusBadge status="ESCALATED" />}
+      >
+        <WorkflowEscalationTrackingPanel task={trackingData} />
+      </PageShell>
+    );
+  }
   if (coi.isPending) {
     return (
       <PortalLoadingState
@@ -63,7 +82,7 @@ export function WorkflowTaskWorkspace({ taskId }: { taskId: string }) {
       />
     );
   }
-  if (!coi.data.cleared) {
+  if (!coi.data.readOnly && !coi.data.cleared) {
     return <WorkflowTaskCoiGate gate={coi.data} />;
   }
   if (query.isPending) {
@@ -88,7 +107,7 @@ export function WorkflowTaskWorkspace({ taskId }: { taskId: string }) {
 
   return (
     <PageShell
-      actions={<StatusBadge status={task.taskStatus} />}
+      actions={<StatusBadge status={task.processingStatus ?? task.taskStatus} />}
       description={
         <div className="flex flex-wrap gap-2 text-sm">
           <span className="text-brand-navy/60">
@@ -106,27 +125,20 @@ export function WorkflowTaskWorkspace({ taskId }: { taskId: string }) {
           </span>
         </div>
       }
-      title={`Funding Application Review`}
+      title={task.readOnly ? "View Workflow Task" : "Review Assigned Task"}
     >
+      {trackingData ? <WorkflowEscalationTrackingPanel task={trackingData} /> : null}
       <Tabs
+        selectedId={section}
+        onSelectionChange={setSection}
         accent="orange"
         ariaLabel="Workflow task sections"
         defaultSelectedId="assigned-task"
         items={[
           {
-            content: <ApplicationTaskPane applicationId={task.applicationId} />,
-            id: "application-details",
-            label: "Application Details",
-          },
-          {
             content: <WorkflowTaskReviewPanel task={task} />,
             id: "assigned-task",
-            label: "Assigned Task",
-          },
-          {
-            content: <WorkflowTaskRfiPanel taskId={task.taskInstanceId} />,
-            id: "information-requests",
-            label: "Requests for information",
+            label: task.readOnly ? "Task Details" : "Assigned Task",
           },
         ]}
         tabListClassName="border-b border-brand-navy/10 px-4"

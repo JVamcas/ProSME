@@ -16,6 +16,7 @@ import {
 } from "../domain/NotificationErrors";
 import type { ClaimedNotificationDelivery } from "../infrastructure/NotificationDispatchRepository";
 import { renderNotificationTemplate } from "./NotificationTemplateRenderer";
+import { notificationBrandingLogoUrl } from "./ServerNotificationEmailBranding";
 
 const sourceTemplates: Record<
   AuthenticationEventKey,
@@ -98,6 +99,7 @@ export async function renderAuthenticationEmail(
     notificationEventTemplateFields[eventKey],
     {
       actionUrl,
+      brandingLogoUrl: notificationBrandingLogoUrl,
       platformName: "SME Fund Namibia",
       recipientName: delivery.recipientName,
     },

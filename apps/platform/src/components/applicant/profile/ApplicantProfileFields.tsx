@@ -1,5 +1,5 @@
 import { FormInput, FormSelect, FormTextarea } from "@/components/ui/form-fields";
-import { FormDateInput } from "@/components/ui/form-date-input";
+import { FormDateInput } from "@/shared/ui/FormDateInput";
 import {
   namibianRegions,
   selectItems,

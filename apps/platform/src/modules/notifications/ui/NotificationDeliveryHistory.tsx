@@ -6,11 +6,10 @@ import { FormProvider, useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { GeneralButton } from "@/components/ui/button";
-import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
+import { DataTable, type DataTableColumn } from "@/shared/ui/DataTable";
 import { DataTableFilter } from "@/components/ui/data-table-filter";
 import { FormInput, FormSelect, FormTextarea } from "@/components/ui/form-fields";
 import { Pagination } from "@/components/ui/pagination";
-import { Badge } from "@/shared/ui/Badge";
 import type {
   NotificationDeliveryHistoryItem,
   NotificationDeliveryQuery,
@@ -19,6 +18,10 @@ import { useNotificationDeliveries, useRetryNotificationDelivery } from "./useNo
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatLocalDateTime24 } from "@/lib/dateUtils";
 import { RightDrawer } from "@/shared/ui/RightDrawer";
+import {
+  notificationDeliveryFailureMessage,
+  notificationDeliveryStatusLabel,
+} from "../domain/NotificationDeliveryMessages";
 
 const filterSchema = z.object({
   applicationReference: z.string().max(100),
@@ -83,10 +86,13 @@ function deliveryColumns({
       header: "Outcome",
       cell: ({ row }) => (
         <div>
-          <StatusBadge status={row.original.status} label={row.original.status} />
+          <StatusBadge
+            status={row.original.status}
+            label={notificationDeliveryStatusLabel(row.original.status)}
+          />
           {row.original.failureCode ? (
             <p className="mt-1 text-xs text-red-700">
-              {row.original.failureCode}
+              {notificationDeliveryFailureMessage(row.original.failureCode)}
             </p>
           ) : null}
         </div>
@@ -113,7 +119,9 @@ function deliveryColumns({
       id: "actions",
       header: "Actions",
       enableSorting: false,
-      cell: ({ row }) => canRetry && row.original.status === "FAILED" ? (
+      cell: ({ row }) => canRetry && ["FAILED", "DEAD_LETTER"].includes(
+        row.original.status,
+      ) ? (
         <GeneralButton
           onClick={() => onRetry(row.original.deliveryId)}
           size="compact"
@@ -279,7 +287,6 @@ export function NotificationDeliveryHistory({
         rowKey={(item) => item.deliveryId}
       />
       <RightDrawer
-        description="Review the disclosure independently before the assigned reviewer can continue."
         footer={
           <div className="mt-4 flex gap-3">
             <GeneralButton
@@ -297,15 +304,14 @@ export function NotificationDeliveryHistory({
         onClose={() => setRetryId(null)}
         open={Boolean(retryId)}
         size="xl"
-        title="Conflict review"
+        title="Notification Retry"
       >
         <FormProvider {...retryForm}>
           <form
             className="rounded-2xl border border-brand-orange/30 bg-orange-50 p-5"
             onSubmit={submitRetry}
           >
-            <h2 className="font-bold text-brand-navy">Schedule delivery retry</h2>
-            <FormTextarea
+          <FormTextarea
               containerClassName="mt-4"
               label="Reason"
               name="reason"

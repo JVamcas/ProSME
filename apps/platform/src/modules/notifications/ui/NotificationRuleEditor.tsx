@@ -10,7 +10,9 @@ import {
   notificationEventRuleUpdateSchema,
   type NotificationEventRuleUpdate,
 } from "../api/NotificationAdministrationSchemas";
-import { notificationRecipientTypes } from "../domain/NotificationRecipient";
+import {
+  relationshipRecipientTypesForEvent,
+} from "../domain/NotificationRecipient";
 import { notificationRecipientLabel } from "./NotificationRecipientPresentation";
 import {
   useNotificationRule,
@@ -175,13 +177,7 @@ export function NotificationRuleEditor({
               Event rules determine who receives this notification.
             </p>
             <div className="mt-4 flex flex-wrap gap-3">
-              {notificationRecipientTypes
-                .filter(
-                  (type) =>
-                    type === "APPLICATION_OWNER"
-                    || type === "ASSIGNED_USER"
-                    || type === "FUNDING_CALL_STAKEHOLDER",
-                )
+              {relationshipRecipientTypesForEvent(eventKey)
                 .filter(
                   (type) =>
                     !recipients.fields.some(

@@ -1,0 +1,3684 @@
+{
+  "mode": "production",
+  "viewport": [
+    1440,
+    1000
+  ],
+  "samples": 9,
+  "businessDelayMs": 1500,
+  "recordedAt": "2026-10-04T08:20:24.292Z",
+  "measurements": [
+    {
+      "route": "/admin",
+      "condition": "cold",
+      "sample": 0,
+      "variant": "current",
+      "requests": [
+        {
+          "path": "/admin",
+          "status": 307,
+          "startedAt": 1791101627712.5981,
+          "durationMs": 3980.5540000088513
+        },
+        {
+          "path": "/admin",
+          "status": 200,
+          "startedAt": 1791101631695.415,
+          "durationMs": 687.976
+        },
+        {
+          "path": "/api/dashboard/staff",
+          "status": 200,
+          "startedAt": 1791101632697.295,
+          "durationMs": 688.626
+        }
+      ],
+      "ttfbMs": 4665.5,
+      "structureMs": 4704,
+      "dataMs": 5743.7105169999995
+    },
+    {
+      "route": "/admin",
+      "condition": "cold",
+      "sample": 0,
+      "variant": "reference",
+      "requests": [
+        {
+          "path": "/admin",
+          "status": 307,
+          "startedAt": 1791101633486.715,
+          "durationMs": 3633.295999999973
+        },
+        {
+          "path": "/admin",
+          "status": 200,
+          "startedAt": 1791101637122.0232,
+          "durationMs": 543.228
+        }
+      ],
+      "ttfbMs": 4167.29999999702,
+      "structureMs": 4287.29999999702,
+      "dataMs": 4593.030218999999
+    },
+    {
+      "route": "/admin",
+      "condition": "cold",
+      "sample": 1,
+      "variant": "reference",
+      "requests": [
+        {
+          "path": "/admin",
+          "status": 307,
+          "startedAt": 1791101638114.6929,
+          "durationMs": 469.29400000954047
+        },
+        {
+          "path": "/admin",
+          "status": 200,
+          "startedAt": 1791101638585.612,
+          "durationMs": 617.61
+        }
+      ],
+      "ttfbMs": 1078.6000000014901,
+      "structureMs": 1112.2000000029802,
+      "dataMs": 1322.0255280000001
+    },
+    {
+      "route": "/admin",
+      "condition": "cold",
+      "sample": 1,
+      "variant": "current",
+      "requests": [
+        {
+          "path": "/admin",
+          "status": 307,
+          "startedAt": 1791101639471.468,
+          "durationMs": 1859.3160000018543
+        },
+        {
+          "path": "/admin",
+          "status": 200,
+          "startedAt": 1791101641332.716,
+          "durationMs": 677.186
+        },
+        {
+          "path": "/api/dashboard/staff",
+          "status": 200,
+          "startedAt": 1791101642451.677,
+          "durationMs": 1099.4
+        }
+      ],
+      "ttfbMs": 2533,
+      "structureMs": 2727.60000000149,
+      "dataMs": 4563.408581999998
+    },
+    {
+      "route": "/admin",
+      "condition": "cold",
+      "sample": 2,
+      "variant": "current",
+      "requests": [
+        {
+          "path": "/admin",
+          "status": 307,
+          "startedAt": 1791101644070.57,
+          "durationMs": 445.4210000112653
+        },
+        {
+          "path": "/admin",
+          "status": 200,
+          "startedAt": 1791101644517.16,
+          "durationMs": 628.232
+        },
+        {
+          "path": "/api/dashboard/staff",
+          "status": 200,
+          "startedAt": 1791101645474.073,
+          "durationMs": 455.99
+        }
+      ],
+      "ttfbMs": 1070.5999999940395,
+      "structureMs": 1109.3999999985099,
+      "dataMs": 2122.854483000003
+    },
+    {
+      "route": "/admin",
+      "condition": "cold",
+      "sample": 2,
+      "variant": "reference",
+      "requests": [
+        {
+          "path": "/admin",
+          "status": 307,
+          "startedAt": 1791101646242.788,
+          "durationMs": 1053.7989999866113
+        },
+        {
+          "path": "/admin",
+          "status": 200,
+          "startedAt": 1791101647298.004,
+          "durationMs": 479.564
+        }
+      ],
+      "ttfbMs": 1521.5,
+      "structureMs": 1653,
+      "dataMs": 1949.3839860000007
+    },
+    {
+      "route": "/admin",
+      "condition": "cold",
+      "sample": 3,
+      "variant": "reference",
+      "requests": [
+        {
+          "path": "/admin",
+          "status": 307,
+          "startedAt": 1791101648228.086,
+          "durationMs": 668.5259999940172
+        },
+        {
+          "path": "/admin",
+          "status": 200,
+          "startedAt": 1791101648897.909,
+          "durationMs": 918.685
+        }
+      ],
+      "ttfbMs": 1581,
+      "structureMs": 1614.2000000029802,
+      "dataMs": 1815.188689999999
+    },
+    {
+      "route": "/admin",
+      "condition": "cold",
+      "sample": 3,
+      "variant": "current",
+      "requests": [
+        {
+          "path": "/admin",
+          "status": 307,
+          "startedAt": 1791101650074.44,
+          "durationMs": 760.0629999942612
+        },
+        {
+          "path": "/admin",
+          "status": 200,
+          "startedAt": 1791101650835.5999,
+          "durationMs": 571.108
+        },
+        {
+          "path": "/api/dashboard/staff",
+          "status": 200,
+          "startedAt": 1791101651657.882,
+          "durationMs": 563.609
+        }
+      ],
+      "ttfbMs": 1325.9000000059605,
+      "structureMs": 1443.6000000014901,
+      "dataMs": 2356.284661999998
+    },
+    {
+      "route": "/admin",
+      "condition": "cold",
+      "sample": 4,
+      "variant": "current",
+      "requests": [
+        {
+          "path": "/admin",
+          "status": 307,
+          "startedAt": 1791101652464.0789,
+          "durationMs": 1815.0779999996303
+        },
+        {
+          "path": "/admin",
+          "status": 200,
+          "startedAt": 1791101654280.701,
+          "durationMs": 1105.597
+        },
+        {
+          "path": "/api/dashboard/staff",
+          "status": 200,
+          "startedAt": 1791101655649.214,
+          "durationMs": 1442.059
+        }
+      ],
+      "ttfbMs": 2919.10000000149,
+      "structureMs": 2950.10000000149,
+      "dataMs": 4937.760292000003
+    },
+    {
+      "route": "/admin",
+      "condition": "cold",
+      "sample": 4,
+      "variant": "reference",
+      "requests": [
+        {
+          "path": "/admin",
+          "status": 307,
+          "startedAt": 1791101656707.967,
+          "durationMs": 2288.983000005828
+        },
+        {
+          "path": "/admin",
+          "status": 200,
+          "startedAt": 1791101658138.2693,
+          "durationMs": 770.023
+        }
+      ],
+      "ttfbMs": 3053.5999999940395,
+      "structureMs": 3192.1999999955297,
+      "dataMs": 3516.673587999998
+    },
+    {
+      "route": "/admin",
+      "condition": "cold",
+      "sample": 5,
+      "variant": "reference",
+      "requests": [
+        {
+          "path": "/admin",
+          "status": 307,
+          "startedAt": 1791101659396.72,
+          "durationMs": 521.177999995416
+        },
+        {
+          "path": "/admin",
+          "status": 200,
+          "startedAt": 1791101659919.5608,
+          "durationMs": 1010.401
+        }
+      ],
+      "ttfbMs": 1524.2999999970198,
+      "structureMs": 1549.3999999985099,
+      "dataMs": 1738.5411800000002
+    },
+    {
+      "route": "/admin",
+      "condition": "cold",
+      "sample": 5,
+      "variant": "current",
+      "requests": [
+        {
+          "path": "/admin",
+          "status": 307,
+          "startedAt": 1791101661165.58,
+          "durationMs": 1968.9369999978226
+        },
+        {
+          "path": "/admin",
+          "status": 200,
+          "startedAt": 1791101663135.752,
+          "durationMs": 455.184
+        },
+        {
+          "path": "/api/dashboard/staff",
+          "status": 200,
+          "startedAt": 1791101663827.085,
+          "durationMs": 1058.237
+        }
+      ],
+      "ttfbMs": 2421.3000000044703,
+      "structureMs": 2453.3000000044703,
+      "dataMs": 3908.5155620000005
+    },
+    {
+      "route": "/admin",
+      "condition": "cold",
+      "sample": 6,
+      "variant": "current",
+      "requests": [
+        {
+          "path": "/admin",
+          "status": 307,
+          "startedAt": 1791101665109.5059,
+          "durationMs": 678.0259999941336
+        },
+        {
+          "path": "/admin",
+          "status": 200,
+          "startedAt": 1791101665789.064,
+          "durationMs": 493.13
+        },
+        {
+          "path": "/api/dashboard/staff",
+          "status": 200,
+          "startedAt": 1791101666510.6301,
+          "durationMs": 954.098
+        }
+      ],
+      "ttfbMs": 1169.4000000059605,
+      "structureMs": 1203.2000000029802,
+      "dataMs": 2671.043362000004
+    },
+    {
+      "route": "/admin",
+      "condition": "cold",
+      "sample": 6,
+      "variant": "reference",
+      "requests": [
+        {
+          "path": "/admin",
+          "status": 307,
+          "startedAt": 1791101667861.8828,
+          "durationMs": 1366.4980000030482
+        },
+        {
+          "path": "/admin",
+          "status": 200,
+          "startedAt": 1791101669232.482,
+          "durationMs": 808.191
+        }
+      ],
+      "ttfbMs": 2169.7999999970198,
+      "structureMs": 2197.89999999851,
+      "dataMs": 2401.8754250000056
+    },
+    {
+      "route": "/admin",
+      "condition": "cold",
+      "sample": 7,
+      "variant": "reference",
+      "requests": [
+        {
+          "path": "/admin",
+          "status": 307,
+          "startedAt": 1791101670304.91,
+          "durationMs": 1010.3780000063125
+        },
+        {
+          "path": "/admin",
+          "status": 200,
+          "startedAt": 1791101671317.122,
+          "durationMs": 637.321
+        }
+      ],
+      "ttfbMs": 1642.2999999970198,
+      "structureMs": 1667.6000000014901,
+      "dataMs": 1879.3598710000006
+    },
+    {
+      "route": "/admin",
+      "condition": "cold",
+      "sample": 7,
+      "variant": "current",
+      "requests": [
+        {
+          "path": "/admin",
+          "status": 307,
+          "startedAt": 1791101672223.368,
+          "durationMs": 497.9979999916395
+        },
+        {
+          "path": "/admin",
+          "status": 200,
+          "startedAt": 1791101672722.332,
+          "durationMs": 509.216
+        },
+        {
+          "path": "/api/dashboard/staff",
+          "status": 200,
+          "startedAt": 1791101673496.3882,
+          "durationMs": 628.279
+        }
+      ],
+      "ttfbMs": 1005.5999999940395,
+      "structureMs": 1034.7999999970198,
+      "dataMs": 2030.320811999998
+    },
+    {
+      "route": "/admin",
+      "condition": "cold",
+      "sample": 8,
+      "variant": "current",
+      "requests": [
+        {
+          "path": "/admin",
+          "status": 307,
+          "startedAt": 1791101674289.461,
+          "durationMs": 1080.8410000026925
+        },
+        {
+          "path": "/admin",
+          "status": 200,
+          "startedAt": 1791101675371.479,
+          "durationMs": 1271.533
+        },
+        {
+          "path": "/api/dashboard/staff",
+          "status": 200,
+          "startedAt": 1791101677008.694,
+          "durationMs": 656.841
+        }
+      ],
+      "ttfbMs": 2348.4000000059605,
+      "structureMs": 2408.9000000059605,
+      "dataMs": 3456.599052999998
+    },
+    {
+      "route": "/admin",
+      "condition": "cold",
+      "sample": 8,
+      "variant": "reference",
+      "requests": [
+        {
+          "path": "/admin",
+          "status": 307,
+          "startedAt": 1791101677781.141,
+          "durationMs": 1141.537999996217
+        },
+        {
+          "path": "/admin",
+          "status": 200,
+          "startedAt": 1791101678924.557,
+          "durationMs": 587.228
+        }
+      ],
+      "ttfbMs": 1717.8999999985099,
+      "structureMs": 1845.5,
+      "dataMs": 1990.4721119999958
+    },
+    {
+      "route": "/admin",
+      "condition": "warm",
+      "sample": 0,
+      "variant": "current",
+      "requests": [
+        {
+          "path": "/admin/applications",
+          "status": 307,
+          "startedAt": 1791101679805.829,
+          "durationMs": 599.2929999920307
+        },
+        {
+          "path": "/admin/applications",
+          "status": 200,
+          "startedAt": 1791101680406.499,
+          "durationMs": 632.543
+        },
+        {
+          "path": "/api/admin/applications",
+          "status": 200,
+          "startedAt": 1791101681297.491,
+          "durationMs": 665.613
+        },
+        {
+          "path": "/admin",
+          "status": 200,
+          "startedAt": 1791101682529.0498,
+          "durationMs": 18.806
+        },
+        {
+          "path": "/api/dashboard/staff",
+          "status": 200,
+          "startedAt": 1791101682528.599,
+          "durationMs": 573.641
+        }
+      ],
+      "feedbackMs": 63.600000001490116,
+      "structureMs": 63.600000001490116,
+      "dataMs": 604.7000000029802
+    },
+    {
+      "route": "/admin",
+      "condition": "warm",
+      "sample": 0,
+      "variant": "reference",
+      "requests": [
+        {
+          "path": "/admin/applications",
+          "status": 307,
+          "startedAt": 1791101683159.652,
+          "durationMs": 587.9940000013448
+        },
+        {
+          "path": "/admin/applications",
+          "status": 200,
+          "startedAt": 1791101683749.628,
+          "durationMs": 648.642
+        },
+        {
+          "path": "/api/admin/applications",
+          "status": 200,
+          "startedAt": 1791101684718.3708,
+          "durationMs": 655.369
+        },
+        {
+          "path": "/admin",
+          "status": 200,
+          "startedAt": 1791101684465.6172,
+          "durationMs": 505.392
+        }
+      ],
+      "feedbackMs": 48.69999999552965,
+      "structureMs": 531.1999999955297,
+      "dataMs": 531.1999999955297
+    },
+    {
+      "route": "/admin",
+      "condition": "warm",
+      "sample": 1,
+      "variant": "reference",
+      "requests": [
+        {
+          "path": "/admin/applications",
+          "status": 307,
+          "startedAt": 1791101685015.907,
+          "durationMs": 545.4549999994924
+        },
+        {
+          "path": "/admin/applications",
+          "status": 200,
+          "startedAt": 1791101685562.6301,
+          "durationMs": 465.11
+        },
+        {
+          "path": "/api/admin/applications",
+          "status": 200,
+          "startedAt": 1791101686390.062,
+          "durationMs": 558.3
+        },
+        {
+          "path": "/admin",
+          "status": 200,
+          "startedAt": 1791101687515.399,
+          "durationMs": 466.148
+        }
+      ],
+      "feedbackMs": 48.79999999701977,
+      "structureMs": 493.8999999985099,
+      "dataMs": 493.8999999985099
+    },
+    {
+      "route": "/admin",
+      "condition": "warm",
+      "sample": 1,
+      "variant": "current",
+      "requests": [
+        {
+          "path": "/admin/applications",
+          "status": 307,
+          "startedAt": 1791101688041.281,
+          "durationMs": 1947.9719999944791
+        },
+        {
+          "path": "/admin/applications",
+          "status": 200,
+          "startedAt": 1791101689990.4492,
+          "durationMs": 647.699
+        },
+        {
+          "path": "/api/admin/applications",
+          "status": 200,
+          "startedAt": 1791101690998.581,
+          "durationMs": 547.592
+        },
+        {
+          "path": "/admin",
+          "status": 200,
+          "startedAt": 1791101692099.507,
+          "durationMs": 17.201
+        },
+        {
+          "path": "/api/dashboard/staff",
+          "status": 200,
+          "startedAt": 1791101692099.128,
+          "durationMs": 665.13
+        }
+      ],
+      "feedbackMs": 49.5,
+      "structureMs": 49.5,
+      "dataMs": 688.8999999985099
+    },
+    {
+      "route": "/admin",
+      "condition": "warm",
+      "sample": 2,
+      "variant": "current",
+      "requests": [
+        {
+          "path": "/admin/applications",
+          "status": 307,
+          "startedAt": 1791101692825.771,
+          "durationMs": 966.9830000057118
+        },
+        {
+          "path": "/admin/applications",
+          "status": 200,
+          "startedAt": 1791101693798.707,
+          "durationMs": 616.402
+        },
+        {
+          "path": "/api/admin/applications",
+          "status": 200,
+          "startedAt": 1791101694716.93,
+          "durationMs": 600.81
+        },
+        {
+          "path": "/admin",
+          "status": 200,
+          "startedAt": 1791101695909.177,
+          "durationMs": 20.413
+        },
+        {
+          "path": "/api/dashboard/staff",
+          "status": 200,
+          "startedAt": 1791101695907.6829,
+          "durationMs": 642.506
+        }
+      ],
+      "feedbackMs": 86.20000000298023,
+      "structureMs": 86.20000000298023,
+      "dataMs": 687.9000000059605
+    },
+    {
+      "route": "/admin",
+      "condition": "warm",
+      "sample": 2,
+      "variant": "reference",
+      "requests": [
+        {
+          "path": "/admin/applications",
+          "status": 307,
+          "startedAt": 1791101696625.061,
+          "durationMs": 1278.344999998808
+        },
+        {
+          "path": "/admin/applications",
+          "status": 200,
+          "startedAt": 1791101697905.028,
+          "durationMs": 536.76
+        },
+        {
+          "path": "/api/admin/applications",
+          "status": 200,
+          "startedAt": 1791101698691.458,
+          "durationMs": 755.431
+        },
+        {
+          "path": "/admin",
+          "status": 200,
+          "startedAt": 1791101700030.681,
+          "durationMs": 576.482
+        }
+      ],
+      "feedbackMs": 40.20000000298023,
+      "structureMs": 595.8000000044703,
+      "dataMs": 595.8000000044703
+    },
+    {
+      "route": "/admin",
+      "condition": "warm",
+      "sample": 3,
+      "variant": "reference",
+      "requests": [
+        {
+          "path": "/admin/applications",
+          "status": 307,
+          "startedAt": 1791101700667.161,
+          "durationMs": 754.3500000028871
+        },
+        {
+          "path": "/admin/applications",
+          "status": 200,
+          "startedAt": 1791101701422.62,
+          "durationMs": 588.659
+        },
+        {
+          "path": "/api/admin/applications",
+          "status": 200,
+          "startedAt": 1791101702300.406,
+          "durationMs": 1678.009
+        },
+        {
+          "path": "/admin",
+          "status": 200,
+          "startedAt": 1791101704547.2651,
+          "durationMs": 1052.341
+        }
+      ],
+      "feedbackMs": 53.29999999701977,
+      "structureMs": 1086,
+      "dataMs": 1086
+    },
+    {
+      "route": "/admin",
+      "condition": "warm",
+      "sample": 3,
+      "variant": "current",
+      "requests": [
+        {
+          "path": "/admin/applications",
+          "status": 307,
+          "startedAt": 1791101705686.575,
+          "durationMs": 1239.1099999949802
+        },
+        {
+          "path": "/admin/applications",
+          "status": 200,
+          "startedAt": 1791101706926.699,
+          "durationMs": 489.342
+        },
+        {
+          "path": "/api/admin/applications",
+          "status": 200,
+          "startedAt": 1791101707664.269,
+          "durationMs": 466.952
+        },
+        {
+          "path": "/admin",
+          "status": 200,
+          "startedAt": 1791101708698.441,
+          "durationMs": 14.861
+        },
+        {
+          "path": "/api/dashboard/staff",
+          "status": 200,
+          "startedAt": 1791101708698.075,
+          "durationMs": 552.96
+        }
+      ],
+      "feedbackMs": 55.400000005960464,
+      "structureMs": 55.400000005960464,
+      "dataMs": 586
+    },
+    {
+      "route": "/admin",
+      "condition": "warm",
+      "sample": 4,
+      "variant": "current",
+      "requests": [
+        {
+          "path": "/admin/applications",
+          "status": 307,
+          "startedAt": 1791101709302.813,
+          "durationMs": 530.8409999997821
+        },
+        {
+          "path": "/admin/applications",
+          "status": 200,
+          "startedAt": 1791101709834.721,
+          "durationMs": 1191.394
+        },
+        {
+          "path": "/api/admin/applications",
+          "status": 200,
+          "startedAt": 1791101711329.292,
+          "durationMs": 1986.946
+        },
+        {
+          "path": "/admin",
+          "status": 200,
+          "startedAt": 1791101713885.1873,
+          "durationMs": 17.5
+        },
+        {
+          "path": "/api/dashboard/staff",
+          "status": 200,
+          "startedAt": 1791101713884.728,
+          "durationMs": 531.359
+        }
+      ],
+      "feedbackMs": 56.100000001490116,
+      "structureMs": 56.100000001490116,
+      "dataMs": 557.7000000029802
+    },
+    {
+      "route": "/admin",
+      "condition": "warm",
+      "sample": 4,
+      "variant": "reference",
+      "requests": [
+        {
+          "path": "/admin/applications",
+          "status": 307,
+          "startedAt": 1791101713053.763,
+          "durationMs": 1789.8710000008577
+        },
+        {
+          "path": "/admin/applications",
+          "status": 200,
+          "startedAt": 1791101714845.01,
+          "durationMs": 686.004
+        },
+        {
+          "path": "/api/admin/applications",
+          "status": 200,
+          "startedAt": 1791101715802.521,
+          "durationMs": 1941.298
+        },
+        {
+          "path": "/admin",
+          "status": 200,
+          "startedAt": 1791101718304.2559,
+          "durationMs": 609.956
+        }
+      ],
+      "feedbackMs": 41,
+      "structureMs": 627.6000000014901,
+      "dataMs": 627.6000000014901
+    },
+    {
+      "route": "/admin",
+      "condition": "warm",
+      "sample": 5,
+      "variant": "reference",
+      "requests": [
+        {
+          "path": "/admin/applications",
+          "status": 307,
+          "startedAt": 1791101718952.775,
+          "durationMs": 1050.9969999984605
+        },
+        {
+          "path": "/admin/applications",
+          "status": 200,
+          "startedAt": 1791101720005.443,
+          "durationMs": 629.185
+        },
+        {
+          "path": "/api/admin/applications",
+          "status": 200,
+          "startedAt": 1791101720901.236,
+          "durationMs": 465.171
+        },
+        {
+          "path": "/admin",
+          "status": 200,
+          "startedAt": 1791101721921.283,
+          "durationMs": 1076.537
+        }
+      ],
+      "feedbackMs": 39.29999999701977,
+      "structureMs": 1096.7999999970198,
+      "dataMs": 1096.7999999970198
+    },
+    {
+      "route": "/admin",
+      "condition": "warm",
+      "sample": 5,
+      "variant": "current",
+      "requests": [
+        {
+          "path": "/admin/applications",
+          "status": 307,
+          "startedAt": 1791101723059.865,
+          "durationMs": 1162.4819999997271
+        },
+        {
+          "path": "/admin/applications",
+          "status": 200,
+          "startedAt": 1791101724223.747,
+          "durationMs": 633.299
+        },
+        {
+          "path": "/api/admin/applications",
+          "status": 200,
+          "startedAt": 1791101725090.7222,
+          "durationMs": 710.031
+        },
+        {
+          "path": "/admin",
+          "status": 200,
+          "startedAt": 1791101726355.502,
+          "durationMs": 14.695
+        },
+        {
+          "path": "/api/dashboard/staff",
+          "status": 200,
+          "startedAt": 1791101726355.3892,
+          "durationMs": 623.732
+        }
+      ],
+      "feedbackMs": 46.29999999701977,
+      "structureMs": 46.29999999701977,
+      "dataMs": 643.6000000014901
+    },
+    {
+      "route": "/admin",
+      "condition": "warm",
+      "sample": 6,
+      "variant": "current",
+      "requests": [
+        {
+          "path": "/admin/applications",
+          "status": 307,
+          "startedAt": 1791101727037.476,
+          "durationMs": 592.2389999905135
+        },
+        {
+          "path": "/admin/applications",
+          "status": 200,
+          "startedAt": 1791101727630.8848,
+          "durationMs": 569.147
+        },
+        {
+          "path": "/api/admin/applications",
+          "status": 200,
+          "startedAt": 1791101728572.836,
+          "durationMs": 686.219
+        },
+        {
+          "path": "/admin",
+          "status": 200,
+          "startedAt": 1791101729822.1992,
+          "durationMs": 13.686
+        },
+        {
+          "path": "/api/dashboard/staff",
+          "status": 200,
+          "startedAt": 1791101729821.938,
+          "durationMs": 504.075
+        }
+      ],
+      "feedbackMs": 51.80000000447035,
+      "structureMs": 51.80000000447035,
+      "dataMs": 534.7000000029802
+    },
+    {
+      "route": "/admin",
+      "condition": "warm",
+      "sample": 6,
+      "variant": "reference",
+      "requests": [
+        {
+          "path": "/admin/applications",
+          "status": 307,
+          "startedAt": 1791101730402.989,
+          "durationMs": 1079.4820000010077
+        },
+        {
+          "path": "/admin/applications",
+          "status": 200,
+          "startedAt": 1791101731483.567,
+          "durationMs": 659.954
+        },
+        {
+          "path": "/api/admin/applications",
+          "status": 200,
+          "startedAt": 1791101732409.834,
+          "durationMs": 500.262
+        },
+        {
+          "path": "/admin",
+          "status": 200,
+          "startedAt": 1791101733471.594,
+          "durationMs": 502.807
+        }
+      ],
+      "feedbackMs": 44.399999998509884,
+      "structureMs": 524.7000000029802,
+      "dataMs": 524.7000000029802
+    },
+    {
+      "route": "/admin",
+      "condition": "warm",
+      "sample": 7,
+      "variant": "reference",
+      "requests": [
+        {
+          "path": "/admin/applications",
+          "status": 307,
+          "startedAt": 1791101734032.2449,
+          "durationMs": 513.53100000415
+        },
+        {
+          "path": "/admin/applications",
+          "status": 200,
+          "startedAt": 1791101734546.9001,
+          "durationMs": 605.63
+        },
+        {
+          "path": "/api/admin/applications",
+          "status": 200,
+          "startedAt": 1791101735577.41,
+          "durationMs": 652.505
+        },
+        {
+          "path": "/admin",
+          "status": 200,
+          "startedAt": 1791101736786.778,
+          "durationMs": 632.65
+        }
+      ],
+      "feedbackMs": 45.399999998509884,
+      "structureMs": 654.3999999985099,
+      "dataMs": 654.3999999985099
+    },
+    {
+      "route": "/admin",
+      "condition": "warm",
+      "sample": 7,
+      "variant": "current",
+      "requests": [
+        {
+          "path": "/admin/applications",
+          "status": 307,
+          "startedAt": 1791101737476.687,
+          "durationMs": 1011.8910000019241
+        },
+        {
+          "path": "/admin/applications",
+          "status": 200,
+          "startedAt": 1791101738489.88,
+          "durationMs": 660.767
+        },
+        {
+          "path": "/api/admin/applications",
+          "status": 200,
+          "startedAt": 1791101739380.447,
+          "durationMs": 717.34
+        },
+        {
+          "path": "/admin",
+          "status": 200,
+          "startedAt": 1791101740654.785,
+          "durationMs": 11.341
+        },
+        {
+          "path": "/api/dashboard/staff",
+          "status": 200,
+          "startedAt": 1791101740654.768,
+          "durationMs": 628.179
+        }
+      ],
+      "feedbackMs": 42.899999998509884,
+      "structureMs": 42.899999998509884,
+      "dataMs": 648.2000000029802
+    },
+    {
+      "route": "/admin",
+      "condition": "warm",
+      "sample": 8,
+      "variant": "current",
+      "requests": [
+        {
+          "path": "/admin/applications",
+          "status": 307,
+          "startedAt": 1791101741342.675,
+          "durationMs": 585.917000003974
+        },
+        {
+          "path": "/admin/applications",
+          "status": 200,
+          "startedAt": 1791101741929.562,
+          "durationMs": 592.961
+        },
+        {
+          "path": "/api/admin/applications",
+          "status": 200,
+          "startedAt": 1791101742244.874,
+          "durationMs": 509.348
+        },
+        {
+          "path": "/admin",
+          "status": 200,
+          "startedAt": 1791101742539.788,
+          "durationMs": 12.621
+        },
+        {
+          "path": "/api/dashboard/staff",
+          "status": 200,
+          "startedAt": 1791101742539.628,
+          "durationMs": 678.645
+        }
+      ],
+      "feedbackMs": 38.900000005960464,
+      "structureMs": 38.900000005960464,
+      "dataMs": 699.8000000044703
+    },
+    {
+      "route": "/admin",
+      "condition": "warm",
+      "sample": 8,
+      "variant": "reference",
+      "requests": [
+        {
+          "path": "/admin/applications",
+          "status": 307,
+          "startedAt": 1791101743277.018,
+          "durationMs": 1296.5149999945424
+        },
+        {
+          "path": "/admin/applications",
+          "status": 200,
+          "startedAt": 1791101744574.721,
+          "durationMs": 686.436
+        },
+        {
+          "path": "/api/admin/applications",
+          "status": 200,
+          "startedAt": 1791101745527.8772,
+          "durationMs": 597.84
+        },
+        {
+          "path": "/admin",
+          "status": 200,
+          "startedAt": 1791101746690.1748,
+          "durationMs": 520.367
+        }
+      ],
+      "feedbackMs": 52,
+      "structureMs": 550.6999999955297,
+      "dataMs": 550.6999999955297
+    },
+    {
+      "route": "/admin",
+      "condition": "delayed",
+      "sample": 0,
+      "variant": "current",
+      "requests": [
+        {
+          "path": "/admin/applications",
+          "status": 307,
+          "startedAt": 1791101747268.829,
+          "durationMs": 446.54399999126326
+        },
+        {
+          "path": "/admin/applications",
+          "status": 200,
+          "startedAt": 1791101747716.456,
+          "durationMs": 523.326
+        },
+        {
+          "path": "/api/admin/applications",
+          "status": 200,
+          "startedAt": 1791101748477.764,
+          "durationMs": 432.037
+        },
+        {
+          "path": "/admin",
+          "status": 200,
+          "startedAt": 1791101749662.111,
+          "durationMs": 15.174
+        },
+        {
+          "path": "/api/dashboard/staff",
+          "status": 200,
+          "startedAt": 1791101749661.589,
+          "durationMs": 1486.193
+        }
+      ],
+      "feedbackMs": 64.5,
+      "structureMs": 64.5,
+      "dataMs": 1525.8999999985099
+    },
+    {
+      "route": "/admin",
+      "condition": "delayed",
+      "sample": 0,
+      "variant": "reference",
+      "requests": [
+        {
+          "path": "/admin/applications",
+          "status": 307,
+          "startedAt": 1791101751220.769,
+          "durationMs": 574.0799999912269
+        },
+        {
+          "path": "/admin/applications",
+          "status": 200,
+          "startedAt": 1791101751796.613,
+          "durationMs": 603.126
+        },
+        {
+          "path": "/api/admin/applications",
+          "status": 200,
+          "startedAt": 1791101752648.913,
+          "durationMs": 508.285
+        },
+        {
+          "path": "/admin",
+          "status": 200,
+          "startedAt": 1791101753854.912,
+          "durationMs": 1495.629
+        }
+      ],
+      "feedbackMs": 39.400000005960464,
+      "structureMs": 1511,
+      "dataMs": 1511
+    },
+    {
+      "route": "/admin",
+      "condition": "delayed",
+      "sample": 1,
+      "variant": "reference",
+      "requests": [
+        {
+          "path": "/admin/applications",
+          "status": 307,
+          "startedAt": 1791101755425.055,
+          "durationMs": 619.8389999917708
+        },
+        {
+          "path": "/admin/applications",
+          "status": 200,
+          "startedAt": 1791101756049.769,
+          "durationMs": 680.703
+        },
+        {
+          "path": "/api/admin/applications",
+          "status": 200,
+          "startedAt": 1791101757187.6987,
+          "durationMs": 598.412
+        },
+        {
+          "path": "/admin",
+          "status": 200,
+          "startedAt": 1791101758709.5342,
+          "durationMs": 1487.086
+        }
+      ],
+      "feedbackMs": 52.20000000298023,
+      "structureMs": 1529.6000000014901,
+      "dataMs": 1529.6000000014901
+    },
+    {
+      "route": "/admin",
+      "condition": "delayed",
+      "sample": 1,
+      "variant": "current",
+      "requests": [
+        {
+          "path": "/admin/applications",
+          "status": 307,
+          "startedAt": 1791101760305.5579,
+          "durationMs": 1533.1330000044545
+        },
+        {
+          "path": "/admin/applications",
+          "status": 200,
+          "startedAt": 1791101761840.731,
+          "durationMs": 1229.606
+        },
+        {
+          "path": "/api/admin/applications",
+          "status": 200,
+          "startedAt": 1791101763338.223,
+          "durationMs": 1848.727
+        },
+        {
+          "path": "/admin",
+          "status": 200,
+          "startedAt": 1791101765982.921,
+          "durationMs": 18.798
+        },
+        {
+          "path": "/api/dashboard/staff",
+          "status": 200,
+          "startedAt": 1791101765982.9587,
+          "durationMs": 1529.334
+        }
+      ],
+      "feedbackMs": 79.80000000447035,
+      "structureMs": 79.80000000447035,
+      "dataMs": 1582.7000000029802
+    },
+    {
+      "route": "/admin",
+      "condition": "delayed",
+      "sample": 2,
+      "variant": "current",
+      "requests": [
+        {
+          "path": "/admin/applications",
+          "status": 307,
+          "startedAt": 1791101767579.9028,
+          "durationMs": 593.8869999954477
+        },
+        {
+          "path": "/admin/applications",
+          "status": 200,
+          "startedAt": 1791101768175.4082,
+          "durationMs": 536.829
+        },
+        {
+          "path": "/api/admin/applications",
+          "status": 200,
+          "startedAt": 1791101768993.8381,
+          "durationMs": 1827.848
+        },
+        {
+          "path": "/admin",
+          "status": 200,
+          "startedAt": 1791101770884.167,
+          "durationMs": 13.118
+        },
+        {
+          "path": "/api/dashboard/staff",
+          "status": 200,
+          "startedAt": 1791101770883.898,
+          "durationMs": 1494.674
+        }
+      ],
+      "feedbackMs": 50.899999998509884,
+      "structureMs": 50.899999998509884,
+      "dataMs": 1526.5
+    },
+    {
+      "route": "/admin",
+      "condition": "delayed",
+      "sample": 2,
+      "variant": "reference",
+      "requests": [
+        {
+          "path": "/admin/applications",
+          "status": 307,
+          "startedAt": 1791101772447.592,
+          "durationMs": 1361.4870000019437
+        },
+        {
+          "path": "/admin/applications",
+          "status": 200,
+          "startedAt": 1791101773810.402,
+          "durationMs": 876.562
+        },
+        {
+          "path": "/api/admin/applications",
+          "status": 200,
+          "startedAt": 1791101775073.51,
+          "durationMs": 714.965
+        },
+        {
+          "path": "/admin",
+          "status": 200,
+          "startedAt": 1791101776604.8237,
+          "durationMs": 1487.771
+        }
+      ],
+      "feedbackMs": 65.89999999850988,
+      "structureMs": 1516.3999999985099,
+      "dataMs": 1516.3999999985099
+    },
+    {
+      "route": "/admin",
+      "condition": "delayed",
+      "sample": 3,
+      "variant": "reference",
+      "requests": [
+        {
+          "path": "/admin/applications",
+          "status": 307,
+          "startedAt": 1791101778144.757,
+          "durationMs": 565.3349999920465
+        },
+        {
+          "path": "/admin/applications",
+          "status": 200,
+          "startedAt": 1791101778711.3992,
+          "durationMs": 656.005
+        },
+        {
+          "path": "/api/admin/applications",
+          "status": 200,
+          "startedAt": 1791101779649.557,
+          "durationMs": 452.24
+        },
+        {
+          "path": "/admin",
+          "status": 200,
+          "startedAt": 1791101780816.624,
+          "durationMs": 1566.632
+        }
+      ],
+      "feedbackMs": 46.70000000298023,
+      "structureMs": 1592.3000000044703,
+      "dataMs": 1592.3000000044703
+    },
+    {
+      "route": "/admin",
+      "condition": "delayed",
+      "sample": 3,
+      "variant": "current",
+      "requests": [
+        {
+          "path": "/admin/applications",
+          "status": 307,
+          "startedAt": 1791101782454.883,
+          "durationMs": 1260.402999992948
+        },
+        {
+          "path": "/admin/applications",
+          "status": 200,
+          "startedAt": 1791101783716.655,
+          "durationMs": 583.92
+        },
+        {
+          "path": "/api/admin/applications",
+          "status": 200,
+          "startedAt": 1791101784667.585,
+          "durationMs": 583.886
+        },
+        {
+          "path": "/admin",
+          "status": 200,
+          "startedAt": 1791101785983.8408,
+          "durationMs": 12.202
+        },
+        {
+          "path": "/api/dashboard/staff",
+          "status": 200,
+          "startedAt": 1791101785983.788,
+          "durationMs": 1482.211
+        }
+      ],
+      "feedbackMs": 56.600000001490116,
+      "structureMs": 56.600000001490116,
+      "dataMs": 1519.9000000059605
+    },
+    {
+      "route": "/admin",
+      "condition": "delayed",
+      "sample": 4,
+      "variant": "current",
+      "requests": [
+        {
+          "path": "/admin/applications",
+          "status": 307,
+          "startedAt": 1791101785996.811,
+          "durationMs": 590.3770000004442
+        },
+        {
+          "path": "/admin/applications",
+          "status": 200,
+          "startedAt": 1791101786588.293,
+          "durationMs": 387.965
+        },
+        {
+          "path": "/api/admin/applications",
+          "status": 200,
+          "startedAt": 1791101787230.816,
+          "durationMs": 603.815
+        },
+        {
+          "path": "/admin",
+          "status": 200,
+          "startedAt": 1791101788569.4731,
+          "durationMs": 14.812
+        },
+        {
+          "path": "/api/dashboard/staff",
+          "status": 200,
+          "startedAt": 1791101788568.5708,
+          "durationMs": 1480.381
+        }
+      ],
+      "feedbackMs": 54.79999999701977,
+      "structureMs": 54.79999999701977,
+      "dataMs": 1518
+    },
+    {
+      "route": "/admin",
+      "condition": "delayed",
+      "sample": 4,
+      "variant": "reference",
+      "requests": [
+        {
+          "path": "/admin/applications",
+          "status": 307,
+          "startedAt": 1791101790108.064,
+          "durationMs": 1440.3319999983069
+        },
+        {
+          "path": "/admin/applications",
+          "status": 200,
+          "startedAt": 1791101791549.46,
+          "durationMs": 653.886
+        },
+        {
+          "path": "/api/admin/applications",
+          "status": 200,
+          "startedAt": 1791101792474.106,
+          "durationMs": 575.6
+        },
+        {
+          "path": "/admin",
+          "status": 200,
+          "startedAt": 1791101793769.036,
+          "durationMs": 1488.313
+        }
+      ],
+      "feedbackMs": 47.5,
+      "structureMs": 1511.2000000029802,
+      "dataMs": 1511.2000000029802
+    },
+    {
+      "route": "/admin",
+      "condition": "delayed",
+      "sample": 5,
+      "variant": "reference",
+      "requests": [
+        {
+          "path": "/admin/applications",
+          "status": 307,
+          "startedAt": 1791101795319.395,
+          "durationMs": 644.5650000096066
+        },
+        {
+          "path": "/admin/applications",
+          "status": 200,
+          "startedAt": 1791101795965.438,
+          "durationMs": 584.377
+        },
+        {
+          "path": "/api/admin/applications",
+          "status": 200,
+          "startedAt": 1791101796831.1519,
+          "durationMs": 913.362
+        },
+        {
+          "path": "/admin",
+          "status": 200,
+          "startedAt": 1791101798466.124,
+          "durationMs": 1487.087
+        }
+      ],
+      "feedbackMs": 46.5,
+      "structureMs": 1511.3000000044703,
+      "dataMs": 1511.3000000044703
+    },
+    {
+      "route": "/admin",
+      "condition": "delayed",
+      "sample": 5,
+      "variant": "current",
+      "requests": [
+        {
+          "path": "/admin/applications",
+          "status": 307,
+          "startedAt": 1791101800138.395,
+          "durationMs": 2055.9789999970235
+        },
+        {
+          "path": "/admin/applications",
+          "status": 200,
+          "startedAt": 1791101800959.624,
+          "durationMs": 509.447
+        },
+        {
+          "path": "/api/admin/applications",
+          "status": 200,
+          "startedAt": 1791101801714.0708,
+          "durationMs": 979.952
+        },
+        {
+          "path": "/admin",
+          "status": 200,
+          "startedAt": 1791101803419.061,
+          "durationMs": 13.993
+        },
+        {
+          "path": "/api/dashboard/staff",
+          "status": 200,
+          "startedAt": 1791101803418.947,
+          "durationMs": 1516.763
+        }
+      ],
+      "feedbackMs": 52.399999998509884,
+      "structureMs": 52.399999998509884,
+      "dataMs": 1547.3999999985099
+    },
+    {
+      "route": "/admin",
+      "condition": "delayed",
+      "sample": 6,
+      "variant": "current",
+      "requests": [
+        {
+          "path": "/admin/applications",
+          "status": 307,
+          "startedAt": 1791101804986.406,
+          "durationMs": 946.6950000060024
+        },
+        {
+          "path": "/admin/applications",
+          "status": 200,
+          "startedAt": 1791101805934.6108,
+          "durationMs": 632.205
+        },
+        {
+          "path": "/api/admin/applications",
+          "status": 200,
+          "startedAt": 1791101806846.313,
+          "durationMs": 604.556
+        },
+        {
+          "path": "/admin",
+          "status": 200,
+          "startedAt": 1791101808169.322,
+          "durationMs": 13.095
+        },
+        {
+          "path": "/api/dashboard/staff",
+          "status": 200,
+          "startedAt": 1791101808168.7961,
+          "durationMs": 1483.865
+        }
+      ],
+      "feedbackMs": 54.20000000298023,
+      "structureMs": 54.20000000298023,
+      "dataMs": 1512.5
+    },
+    {
+      "route": "/admin",
+      "condition": "delayed",
+      "sample": 6,
+      "variant": "reference",
+      "requests": [
+        {
+          "path": "/admin/applications",
+          "status": 307,
+          "startedAt": 1791101809713.1482,
+          "durationMs": 1083.5170000063954
+        },
+        {
+          "path": "/admin/applications",
+          "status": 200,
+          "startedAt": 1791101810798.085,
+          "durationMs": 641.474
+        },
+        {
+          "path": "/api/admin/applications",
+          "status": 200,
+          "startedAt": 1791101811702.092,
+          "durationMs": 614.954
+        },
+        {
+          "path": "/admin",
+          "status": 200,
+          "startedAt": 1791101813050.515,
+          "durationMs": 1495.741
+        }
+      ],
+      "feedbackMs": 47.399999998509884,
+      "structureMs": 1523.5,
+      "dataMs": 1523.5
+    },
+    {
+      "route": "/admin",
+      "condition": "delayed",
+      "sample": 7,
+      "variant": "reference",
+      "requests": [
+        {
+          "path": "/admin/applications",
+          "status": 307,
+          "startedAt": 1791101814613.143,
+          "durationMs": 744.2120000050636
+        },
+        {
+          "path": "/admin/applications",
+          "status": 200,
+          "startedAt": 1791101815359.853,
+          "durationMs": 751.246
+        },
+        {
+          "path": "/api/admin/applications",
+          "status": 200,
+          "startedAt": 1791101816386.2368,
+          "durationMs": 503.989
+        },
+        {
+          "path": "/admin",
+          "status": 200,
+          "startedAt": 1791101817604.313,
+          "durationMs": 1806.401
+        }
+      ],
+      "feedbackMs": 53.899999998509884,
+      "structureMs": 1835.7999999970198,
+      "dataMs": 1835.7999999970198
+    },
+    {
+      "route": "/admin",
+      "condition": "delayed",
+      "sample": 7,
+      "variant": "current",
+      "requests": [
+        {
+          "path": "/admin/applications",
+          "status": 307,
+          "startedAt": 1791101819452.6218,
+          "durationMs": 1530.7400000019697
+        },
+        {
+          "path": "/admin/applications",
+          "status": 200,
+          "startedAt": 1791101820984.585,
+          "durationMs": 673.819
+        },
+        {
+          "path": "/api/admin/applications",
+          "status": 200,
+          "startedAt": 1791101821885.093,
+          "durationMs": 489.498
+        },
+        {
+          "path": "/admin",
+          "status": 200,
+          "startedAt": 1791101823083.7861,
+          "durationMs": 13.686
+        },
+        {
+          "path": "/api/dashboard/staff",
+          "status": 200,
+          "startedAt": 1791101823083.737,
+          "durationMs": 1490.002
+        }
+      ],
+      "feedbackMs": 47.399999998509884,
+      "structureMs": 47.399999998509884,
+      "dataMs": 1525.1000000014901
+    },
+    {
+      "route": "/admin",
+      "condition": "delayed",
+      "sample": 8,
+      "variant": "current",
+      "requests": [
+        {
+          "path": "/admin/applications",
+          "status": 307,
+          "startedAt": 1791101824643.3179,
+          "durationMs": 532.084999998915
+        },
+        {
+          "path": "/admin/applications",
+          "status": 200,
+          "startedAt": 1791101825176.4521,
+          "durationMs": 541.788
+        },
+        {
+          "path": "/api/admin/applications",
+          "status": 200,
+          "startedAt": 1791101826170.069,
+          "durationMs": 390.187
+        },
+        {
+          "path": "/admin",
+          "status": 200,
+          "startedAt": 1791101827318.3423,
+          "durationMs": 16.718
+        },
+        {
+          "path": "/api/dashboard/staff",
+          "status": 200,
+          "startedAt": 1791101827318.084,
+          "durationMs": 1489.295
+        }
+      ],
+      "feedbackMs": 53.399999998509884,
+      "structureMs": 53.399999998509884,
+      "dataMs": 1516
+    },
+    {
+      "route": "/admin",
+      "condition": "delayed",
+      "sample": 8,
+      "variant": "reference",
+      "requests": [
+        {
+          "path": "/admin/applications",
+          "status": 307,
+          "startedAt": 1791101827721.7551,
+          "durationMs": 1036.1680000060005
+        },
+        {
+          "path": "/admin/applications",
+          "status": 200,
+          "startedAt": 1791101828759.1099,
+          "durationMs": 424.574
+        },
+        {
+          "path": "/api/admin/applications",
+          "status": 200,
+          "startedAt": 1791101829644.282,
+          "durationMs": 768.108
+        },
+        {
+          "path": "/admin",
+          "status": 200,
+          "startedAt": 1791101831153.7412,
+          "durationMs": 1507.136
+        }
+      ],
+      "feedbackMs": 55.099999994039536,
+      "structureMs": 1542.7999999970198,
+      "dataMs": 1542.7999999970198
+    },
+    {
+      "route": "/portal",
+      "condition": "cold",
+      "sample": 0,
+      "variant": "current",
+      "requests": [
+        {
+          "path": "/portal",
+          "status": 307,
+          "startedAt": 1791101832710.072,
+          "durationMs": 1008.3789999916917
+        },
+        {
+          "path": "/portal",
+          "status": 200,
+          "startedAt": 1791101833719.538,
+          "durationMs": 535.766
+        },
+        {
+          "path": "/api/dashboard/applicant",
+          "status": 200,
+          "startedAt": 1791101834672.837,
+          "durationMs": 586.137
+        }
+      ],
+      "ttfbMs": 1542.8999999985099,
+      "structureMs": 1702.3999999985099,
+      "dataMs": 3034.8259360000084
+    },
+    {
+      "route": "/portal",
+      "condition": "cold",
+      "sample": 0,
+      "variant": "reference",
+      "requests": [
+        {
+          "path": "/portal",
+          "status": 307,
+          "startedAt": 1791101835782.073,
+          "durationMs": 734.5250000071246
+        },
+        {
+          "path": "/portal",
+          "status": 200,
+          "startedAt": 1791101836517.945,
+          "durationMs": 519.213
+        }
+      ],
+      "ttfbMs": 1239.6000000014901,
+      "structureMs": 1332,
+      "dataMs": 1487.3590059999842
+    },
+    {
+      "route": "/portal",
+      "condition": "cold",
+      "sample": 1,
+      "variant": "reference",
+      "requests": [
+        {
+          "path": "/portal",
+          "status": 307,
+          "startedAt": 1791101837308.819,
+          "durationMs": 586.9499999971595
+        },
+        {
+          "path": "/portal",
+          "status": 200,
+          "startedAt": 1791101837897.842,
+          "durationMs": 454.263
+        }
+      ],
+      "ttfbMs": 1033.6999999955297,
+      "structureMs": 1057.3999999985099,
+      "dataMs": 1243.9875239999965
+    },
+    {
+      "route": "/portal",
+      "condition": "cold",
+      "sample": 1,
+      "variant": "current",
+      "requests": [
+        {
+          "path": "/portal",
+          "status": 307,
+          "startedAt": 1791101838587.568,
+          "durationMs": 449.66400001430884
+        },
+        {
+          "path": "/portal",
+          "status": 200,
+          "startedAt": 1791101839038.369,
+          "durationMs": 706.345
+        },
+        {
+          "path": "/api/dashboard/applicant",
+          "status": 200,
+          "startedAt": 1791101839970.4722,
+          "durationMs": 415.431
+        }
+      ],
+      "ttfbMs": 1153,
+      "structureMs": 1187.8000000044703,
+      "dataMs": 2141.977205000003
+    },
+    {
+      "route": "/portal",
+      "condition": "cold",
+      "sample": 2,
+      "variant": "current",
+      "requests": [
+        {
+          "path": "/portal",
+          "status": 307,
+          "startedAt": 1791101840764.503,
+          "durationMs": 460.7899999973597
+        },
+        {
+          "path": "/portal",
+          "status": 200,
+          "startedAt": 1791101841226.398,
+          "durationMs": 572.102
+        },
+        {
+          "path": "/api/dashboard/applicant",
+          "status": 200,
+          "startedAt": 1791101842029.694,
+          "durationMs": 558.497
+        }
+      ],
+      "ttfbMs": 1031.7000000029802,
+      "structureMs": 1053.5,
+      "dataMs": 2018.5114420000173
+    },
+    {
+      "route": "/portal",
+      "condition": "cold",
+      "sample": 2,
+      "variant": "reference",
+      "requests": [
+        {
+          "path": "/portal",
+          "status": 307,
+          "startedAt": 1791101842817.496,
+          "durationMs": 639.4150000123773
+        },
+        {
+          "path": "/portal",
+          "status": 200,
+          "startedAt": 1791101843458.1008,
+          "durationMs": 570.457
+        }
+      ],
+      "ttfbMs": 1201.6000000014901,
+      "structureMs": 1321.3999999985099,
+      "dataMs": 1668.017624
+    },
+    {
+      "route": "/portal",
+      "condition": "cold",
+      "sample": 3,
+      "variant": "reference",
+      "requests": [
+        {
+          "path": "/portal",
+          "status": 307,
+          "startedAt": 1791101844514.6958,
+          "durationMs": 558.0750000081025
+        },
+        {
+          "path": "/portal",
+          "status": 200,
+          "startedAt": 1791101845074.1719,
+          "durationMs": 497.992
+        }
+      ],
+      "ttfbMs": 1047.3000000044703,
+      "structureMs": 1153.8999999985099,
+      "dataMs": 1283.6725260000094
+    },
+    {
+      "route": "/portal",
+      "condition": "cold",
+      "sample": 3,
+      "variant": "current",
+      "requests": [
+        {
+          "path": "/portal",
+          "status": 307,
+          "startedAt": 1791101845829.849,
+          "durationMs": 439.4999999931315
+        },
+        {
+          "path": "/portal",
+          "status": 200,
+          "startedAt": 1791101846271.111,
+          "durationMs": 493.849
+        },
+        {
+          "path": "/api/dashboard/applicant",
+          "status": 200,
+          "startedAt": 1791101846975.765,
+          "durationMs": 436.322
+        }
+      ],
+      "ttfbMs": 932,
+      "structureMs": 960.2000000029802,
+      "dataMs": 1912.4130149999983
+    },
+    {
+      "route": "/portal",
+      "condition": "cold",
+      "sample": 4,
+      "variant": "current",
+      "requests": [
+        {
+          "path": "/portal",
+          "status": 307,
+          "startedAt": 1791101847780.683,
+          "durationMs": 476.2570000020787
+        },
+        {
+          "path": "/portal",
+          "status": 200,
+          "startedAt": 1791101848258.126,
+          "durationMs": 811.052
+        },
+        {
+          "path": "/api/dashboard/applicant",
+          "status": 200,
+          "startedAt": 1791101849428.334,
+          "durationMs": 579.386
+        }
+      ],
+      "ttfbMs": 1284,
+      "structureMs": 1392.5,
+      "dataMs": 2278.424698000017
+    },
+    {
+      "route": "/portal",
+      "condition": "cold",
+      "sample": 4,
+      "variant": "reference",
+      "requests": [
+        {
+          "path": "/portal",
+          "status": 307,
+          "startedAt": 1791101850094.868,
+          "durationMs": 839.432000007946
+        },
+        {
+          "path": "/portal",
+          "status": 200,
+          "startedAt": 1791101850936.62,
+          "durationMs": 762.961
+        }
+      ],
+      "ttfbMs": 1596,
+      "structureMs": 1625.5,
+      "dataMs": 1777.4170320000267
+    },
+    {
+      "route": "/portal",
+      "condition": "cold",
+      "sample": 5,
+      "variant": "reference",
+      "requests": [
+        {
+          "path": "/portal",
+          "status": 307,
+          "startedAt": 1791101851904.284,
+          "durationMs": 1254.1820000042208
+        },
+        {
+          "path": "/portal",
+          "status": 200,
+          "startedAt": 1791101853159.647,
+          "durationMs": 803.289
+        }
+      ],
+      "ttfbMs": 2050.6999999955297,
+      "structureMs": 2146.7999999970198,
+      "dataMs": 2245.44365999999
+    },
+    {
+      "route": "/portal",
+      "condition": "cold",
+      "sample": 5,
+      "variant": "current",
+      "requests": [
+        {
+          "path": "/portal",
+          "status": 307,
+          "startedAt": 1791101854179.8289,
+          "durationMs": 647.6299999922048
+        },
+        {
+          "path": "/portal",
+          "status": 200,
+          "startedAt": 1791101854828.543,
+          "durationMs": 688.907
+        },
+        {
+          "path": "/api/dashboard/applicant",
+          "status": 200,
+          "startedAt": 1791101855855.66,
+          "durationMs": 617.509
+        }
+      ],
+      "ttfbMs": 1335.0999999940395,
+      "structureMs": 1443.3999999985099,
+      "dataMs": 2328.830572000006
+    },
+    {
+      "route": "/portal",
+      "condition": "cold",
+      "sample": 6,
+      "variant": "current",
+      "requests": [
+        {
+          "path": "/portal",
+          "status": 307,
+          "startedAt": 1791101856538.858,
+          "durationMs": 824.1069999930914
+        },
+        {
+          "path": "/portal",
+          "status": 200,
+          "startedAt": 1791101855757.751,
+          "durationMs": 518.405
+        },
+        {
+          "path": "/api/dashboard/applicant",
+          "status": 200,
+          "startedAt": 1791101856516.519,
+          "durationMs": 634.602
+        }
+      ],
+      "ttfbMs": 1341.3999999985099,
+      "structureMs": 1375.7999999970198,
+      "dataMs": 2349.9093669999857
+    },
+    {
+      "route": "/portal",
+      "condition": "cold",
+      "sample": 6,
+      "variant": "reference",
+      "requests": [
+        {
+          "path": "/portal",
+          "status": 307,
+          "startedAt": 1791101857316.195,
+          "durationMs": 760.7580000039889
+        },
+        {
+          "path": "/portal",
+          "status": 200,
+          "startedAt": 1791101858078.48,
+          "durationMs": 783.53
+        }
+      ],
+      "ttfbMs": 1534.8999999985099,
+      "structureMs": 1567.5,
+      "dataMs": 1716.7250409999979
+    },
+    {
+      "route": "/portal",
+      "condition": "cold",
+      "sample": 7,
+      "variant": "reference",
+      "requests": [
+        {
+          "path": "/portal",
+          "status": 307,
+          "startedAt": 1791101859066.895,
+          "durationMs": 507.53300001088064
+        },
+        {
+          "path": "/portal",
+          "status": 200,
+          "startedAt": 1791101859575.816,
+          "durationMs": 535.215
+        }
+      ],
+      "ttfbMs": 1037,
+      "structureMs": 1063.2000000029802,
+      "dataMs": 1208.3371330000227
+    },
+    {
+      "route": "/portal",
+      "condition": "cold",
+      "sample": 7,
+      "variant": "current",
+      "requests": [
+        {
+          "path": "/portal",
+          "status": 307,
+          "startedAt": 1791101860305.755,
+          "durationMs": 556.6189999954076
+        },
+        {
+          "path": "/portal",
+          "status": 200,
+          "startedAt": 1791101860863.401,
+          "durationMs": 640.394
+        },
+        {
+          "path": "/api/dashboard/applicant",
+          "status": 200,
+          "startedAt": 1791101861720.186,
+          "durationMs": 594.572
+        }
+      ],
+      "ttfbMs": 1195.2999999970198,
+      "structureMs": 1227.6000000014901,
+      "dataMs": 2175.076749
+    },
+    {
+      "route": "/portal",
+      "condition": "cold",
+      "sample": 8,
+      "variant": "current",
+      "requests": [
+        {
+          "path": "/portal",
+          "status": 307,
+          "startedAt": 1791101862512.103,
+          "durationMs": 620.1579999906244
+        },
+        {
+          "path": "/portal",
+          "status": 200,
+          "startedAt": 1791101863133.529,
+          "durationMs": 528.994
+        },
+        {
+          "path": "/api/dashboard/applicant",
+          "status": 200,
+          "startedAt": 1791101863882.256,
+          "durationMs": 500.256
+        }
+      ],
+      "ttfbMs": 1146.3999999985099,
+      "structureMs": 1249,
+      "dataMs": 2141.642357999983
+    },
+    {
+      "route": "/portal",
+      "condition": "cold",
+      "sample": 8,
+      "variant": "reference",
+      "requests": [
+        {
+          "path": "/portal",
+          "status": 307,
+          "startedAt": 1791101864684.3381,
+          "durationMs": 466.3609999988694
+        },
+        {
+          "path": "/portal",
+          "status": 200,
+          "startedAt": 1791101865152.852,
+          "durationMs": 537.97
+        }
+      ],
+      "ttfbMs": 995.2999999970198,
+      "structureMs": 1025.7999999970198,
+      "dataMs": 1274.6377359999751
+    },
+    {
+      "route": "/portal",
+      "condition": "warm",
+      "sample": 0,
+      "variant": "current",
+      "requests": [
+        {
+          "path": "/portal/applications",
+          "status": 307,
+          "startedAt": 1791101865996.841,
+          "durationMs": 554.1969999903813
+        },
+        {
+          "path": "/portal/applications",
+          "status": 200,
+          "startedAt": 1791101866552.113,
+          "durationMs": 481.163
+        },
+        {
+          "path": "/api/portal/applications",
+          "status": 200,
+          "startedAt": 1791101867463.367,
+          "durationMs": 482.306
+        },
+        {
+          "path": "/portal",
+          "status": 200,
+          "startedAt": 1791101868528.733,
+          "durationMs": 13.284
+        },
+        {
+          "path": "/api/dashboard/applicant",
+          "status": 200,
+          "startedAt": 1791101868528.786,
+          "durationMs": 591.854
+        }
+      ],
+      "feedbackMs": 52,
+      "structureMs": 52,
+      "dataMs": 616.3999999985099
+    },
+    {
+      "route": "/portal",
+      "condition": "warm",
+      "sample": 0,
+      "variant": "reference",
+      "requests": [
+        {
+          "path": "/portal/applications",
+          "status": 307,
+          "startedAt": 1791101869171.491,
+          "durationMs": 433.7329999980284
+        },
+        {
+          "path": "/portal/applications",
+          "status": 200,
+          "startedAt": 1791101869606.88,
+          "durationMs": 464.863
+        },
+        {
+          "path": "/api/portal/applications",
+          "status": 200,
+          "startedAt": 1791101870352.171,
+          "durationMs": 672.412
+        },
+        {
+          "path": "/portal",
+          "status": 200,
+          "startedAt": 1791101871611.726,
+          "durationMs": 570.795
+        }
+      ],
+      "feedbackMs": 45.29999999701977,
+      "structureMs": 591.2999999970198,
+      "dataMs": 591.2999999970198
+    },
+    {
+      "route": "/portal",
+      "condition": "warm",
+      "sample": 1,
+      "variant": "reference",
+      "requests": [
+        {
+          "path": "/portal/applications",
+          "status": 307,
+          "startedAt": 1791101872228.242,
+          "durationMs": 645.8540000021458
+        },
+        {
+          "path": "/portal/applications",
+          "status": 200,
+          "startedAt": 1791101872875.068,
+          "durationMs": 646.504
+        },
+        {
+          "path": "/api/portal/applications",
+          "status": 200,
+          "startedAt": 1791101873928.139,
+          "durationMs": 784.119
+        },
+        {
+          "path": "/portal",
+          "status": 200,
+          "startedAt": 1791101875294.666,
+          "durationMs": 687.386
+        }
+      ],
+      "feedbackMs": 44,
+      "structureMs": 708.3999999985099,
+      "dataMs": 708.3999999985099
+    },
+    {
+      "route": "/portal",
+      "condition": "warm",
+      "sample": 1,
+      "variant": "current",
+      "requests": [
+        {
+          "path": "/portal/applications",
+          "status": 307,
+          "startedAt": 1791101876033.129,
+          "durationMs": 1515.2069999894593
+        },
+        {
+          "path": "/portal/applications",
+          "status": 200,
+          "startedAt": 1791101877549.4448,
+          "durationMs": 842.978
+        },
+        {
+          "path": "/api/portal/applications",
+          "status": 200,
+          "startedAt": 1791101878731.081,
+          "durationMs": 848.236
+        },
+        {
+          "path": "/portal",
+          "status": 200,
+          "startedAt": 1791101880162.44,
+          "durationMs": 14.549
+        },
+        {
+          "path": "/api/dashboard/applicant",
+          "status": 200,
+          "startedAt": 1791101880162.2122,
+          "durationMs": 786.947
+        }
+      ],
+      "feedbackMs": 51.70000000298023,
+      "structureMs": 51.70000000298023,
+      "dataMs": 812.8000000044703
+    },
+    {
+      "route": "/portal",
+      "condition": "warm",
+      "sample": 2,
+      "variant": "current",
+      "requests": [
+        {
+          "path": "/portal/applications",
+          "status": 307,
+          "startedAt": 1791101880991.909,
+          "durationMs": 1032.5989999982994
+        },
+        {
+          "path": "/portal/applications",
+          "status": 200,
+          "startedAt": 1791101882026.0142,
+          "durationMs": 1333.731
+        },
+        {
+          "path": "/api/portal/applications",
+          "status": 200,
+          "startedAt": 1791101883637.4568,
+          "durationMs": 819.894
+        },
+        {
+          "path": "/portal",
+          "status": 200,
+          "startedAt": 1791101885045.081,
+          "durationMs": 14.118
+        },
+        {
+          "path": "/api/dashboard/applicant",
+          "status": 200,
+          "startedAt": 1791101885045.0298,
+          "durationMs": 909.192
+        }
+      ],
+      "feedbackMs": 50.099999994039536,
+      "structureMs": 50.099999994039536,
+      "dataMs": 937.8999999985099
+    },
+    {
+      "route": "/portal",
+      "condition": "warm",
+      "sample": 2,
+      "variant": "reference",
+      "requests": [
+        {
+          "path": "/portal/applications",
+          "status": 307,
+          "startedAt": 1791101884614.805,
+          "durationMs": 1397.1549999987474
+        },
+        {
+          "path": "/portal/applications",
+          "status": 200,
+          "startedAt": 1791101886013.1062,
+          "durationMs": 625.704
+        },
+        {
+          "path": "/api/portal/applications",
+          "status": 200,
+          "startedAt": 1791101886869.084,
+          "durationMs": 596.726
+        },
+        {
+          "path": "/portal",
+          "status": 200,
+          "startedAt": 1791101888056.1472,
+          "durationMs": 614.73
+        }
+      ],
+      "feedbackMs": 51.29999999701977,
+      "structureMs": 640,
+      "dataMs": 640
+    },
+    {
+      "route": "/portal",
+      "condition": "warm",
+      "sample": 3,
+      "variant": "reference",
+      "requests": [
+        {
+          "path": "/portal/applications",
+          "status": 307,
+          "startedAt": 1791101888719.657,
+          "durationMs": 876.66999999783
+        },
+        {
+          "path": "/portal/applications",
+          "status": 200,
+          "startedAt": 1791101889597.588,
+          "durationMs": 1413.025
+        },
+        {
+          "path": "/api/portal/applications",
+          "status": 200,
+          "startedAt": 1791101891264.69,
+          "durationMs": 565.261
+        },
+        {
+          "path": "/portal",
+          "status": 200,
+          "startedAt": 1791101892423.0007,
+          "durationMs": 1386.591
+        }
+      ],
+      "feedbackMs": 50.100000001490116,
+      "structureMs": 1417.6000000014901,
+      "dataMs": 1417.6000000014901
+    },
+    {
+      "route": "/portal",
+      "condition": "warm",
+      "sample": 3,
+      "variant": "current",
+      "requests": [
+        {
+          "path": "/portal/applications",
+          "status": 307,
+          "startedAt": 1791101893849.169,
+          "durationMs": 1687.1509999909904
+        },
+        {
+          "path": "/portal/applications",
+          "status": 200,
+          "startedAt": 1791101895537.4602,
+          "durationMs": 456.516
+        },
+        {
+          "path": "/api/portal/applications",
+          "status": 200,
+          "startedAt": 1791101896473.514,
+          "durationMs": 573.669
+        },
+        {
+          "path": "/portal",
+          "status": 200,
+          "startedAt": 1791101897641.886,
+          "durationMs": 13.477
+        },
+        {
+          "path": "/api/dashboard/applicant",
+          "status": 200,
+          "startedAt": 1791101897641.4631,
+          "durationMs": 615.439
+        }
+      ],
+      "feedbackMs": 57,
+      "structureMs": 57,
+      "dataMs": 649.5
+    },
+    {
+      "route": "/portal",
+      "condition": "warm",
+      "sample": 4,
+      "variant": "current",
+      "requests": [
+        {
+          "path": "/portal/applications",
+          "status": 307,
+          "startedAt": 1791101898303.468,
+          "durationMs": 476.1810000054538
+        },
+        {
+          "path": "/portal/applications",
+          "status": 200,
+          "startedAt": 1791101898781.118,
+          "durationMs": 842.657
+        },
+        {
+          "path": "/api/portal/applications",
+          "status": 200,
+          "startedAt": 1791101899874.2688,
+          "durationMs": 1590.448
+        },
+        {
+          "path": "/portal",
+          "status": 200,
+          "startedAt": 1791101902057.6602,
+          "durationMs": 12.417
+        },
+        {
+          "path": "/api/dashboard/applicant",
+          "status": 200,
+          "startedAt": 1791101902057.398,
+          "durationMs": 755.378
+        }
+      ],
+      "feedbackMs": 57.29999999701977,
+      "structureMs": 57.29999999701977,
+      "dataMs": 789
+    },
+    {
+      "route": "/portal",
+      "condition": "warm",
+      "sample": 4,
+      "variant": "reference",
+      "requests": [
+        {
+          "path": "/portal/applications",
+          "status": 307,
+          "startedAt": 1791101902868.4338,
+          "durationMs": 1123.3389999979408
+        },
+        {
+          "path": "/portal/applications",
+          "status": 200,
+          "startedAt": 1791101903992.962,
+          "durationMs": 1073.455
+        },
+        {
+          "path": "/api/portal/applications",
+          "status": 200,
+          "startedAt": 1791101905337.2312,
+          "durationMs": 746.242
+        },
+        {
+          "path": "/portal",
+          "status": 200,
+          "startedAt": 1791101906675.7368,
+          "durationMs": 509.486
+        }
+      ],
+      "feedbackMs": 52.100000001490116,
+      "structureMs": 533,
+      "dataMs": 533
+    },
+    {
+      "route": "/portal",
+      "condition": "warm",
+      "sample": 5,
+      "variant": "reference",
+      "requests": [
+        {
+          "path": "/portal/applications",
+          "status": 307,
+          "startedAt": 1791101907232.894,
+          "durationMs": 1266.1819999921136
+        },
+        {
+          "path": "/portal/applications",
+          "status": 200,
+          "startedAt": 1791101908500.148,
+          "durationMs": 499.651
+        },
+        {
+          "path": "/api/portal/applications",
+          "status": 200,
+          "startedAt": 1791101909233.2349,
+          "durationMs": 609.244
+        },
+        {
+          "path": "/portal",
+          "status": 200,
+          "startedAt": 1791101910420.8071,
+          "durationMs": 1030.188
+        }
+      ],
+      "feedbackMs": 37.899999998509884,
+      "structureMs": 1045,
+      "dataMs": 1045
+    },
+    {
+      "route": "/portal",
+      "condition": "warm",
+      "sample": 5,
+      "variant": "current",
+      "requests": [
+        {
+          "path": "/portal/applications",
+          "status": 307,
+          "startedAt": 1791101911499.283,
+          "durationMs": 1446.710999996867
+        },
+        {
+          "path": "/portal/applications",
+          "status": 200,
+          "startedAt": 1791101912946.8792,
+          "durationMs": 657.917
+        },
+        {
+          "path": "/api/portal/applications",
+          "status": 200,
+          "startedAt": 1791101913210.272,
+          "durationMs": 610.318
+        },
+        {
+          "path": "/portal",
+          "status": 200,
+          "startedAt": 1791101913582.192,
+          "durationMs": 12.75
+        },
+        {
+          "path": "/api/dashboard/applicant",
+          "status": 200,
+          "startedAt": 1791101913582.031,
+          "durationMs": 582.498
+        }
+      ],
+      "feedbackMs": 53.600000001490116,
+      "structureMs": 53.600000001490116,
+      "dataMs": 613.8000000044703
+    },
+    {
+      "route": "/portal",
+      "condition": "warm",
+      "sample": 6,
+      "variant": "current",
+      "requests": [
+        {
+          "path": "/portal/applications",
+          "status": 307,
+          "startedAt": 1791101914210.491,
+          "durationMs": 617.0160000037868
+        },
+        {
+          "path": "/portal/applications",
+          "status": 200,
+          "startedAt": 1791101914829.258,
+          "durationMs": 513.642
+        },
+        {
+          "path": "/api/portal/applications",
+          "status": 200,
+          "startedAt": 1791101915618.0361,
+          "durationMs": 495.922
+        },
+        {
+          "path": "/api/dashboard/applicant",
+          "status": 200,
+          "startedAt": 1791101916695.8142,
+          "durationMs": 582.553
+        },
+        {
+          "path": "/portal",
+          "status": 200,
+          "startedAt": 1791101916695.903,
+          "durationMs": 19.486
+        }
+      ],
+      "feedbackMs": 45.100000001490116,
+      "structureMs": 45.100000001490116,
+      "dataMs": 603
+    },
+    {
+      "route": "/portal",
+      "condition": "warm",
+      "sample": 6,
+      "variant": "reference",
+      "requests": [
+        {
+          "path": "/portal/applications",
+          "status": 307,
+          "startedAt": 1791101917323.081,
+          "durationMs": 1134.790999989491
+        },
+        {
+          "path": "/portal/applications",
+          "status": 200,
+          "startedAt": 1791101918458.863,
+          "durationMs": 541.598
+        },
+        {
+          "path": "/api/portal/applications",
+          "status": 200,
+          "startedAt": 1791101919249.852,
+          "durationMs": 607.195
+        },
+        {
+          "path": "/portal",
+          "status": 200,
+          "startedAt": 1791101920444.4258,
+          "durationMs": 490.516
+        }
+      ],
+      "feedbackMs": 46.70000000298023,
+      "structureMs": 513.5,
+      "dataMs": 513.5
+    },
+    {
+      "route": "/portal",
+      "condition": "warm",
+      "sample": 7,
+      "variant": "reference",
+      "requests": [
+        {
+          "path": "/portal/applications",
+          "status": 307,
+          "startedAt": 1791101921008.272,
+          "durationMs": 582.2009999974398
+        },
+        {
+          "path": "/portal/applications",
+          "status": 200,
+          "startedAt": 1791101921591.9648,
+          "durationMs": 629.95
+        },
+        {
+          "path": "/api/portal/applications",
+          "status": 200,
+          "startedAt": 1791101922484.511,
+          "durationMs": 684.966
+        },
+        {
+          "path": "/portal",
+          "status": 200,
+          "startedAt": 1791101923761.905,
+          "durationMs": 1050.132
+        }
+      ],
+      "feedbackMs": 55.599999994039536,
+      "structureMs": 1077.2999999970198,
+      "dataMs": 1077.2999999970198
+    },
+    {
+      "route": "/portal",
+      "condition": "warm",
+      "sample": 7,
+      "variant": "current",
+      "requests": [
+        {
+          "path": "/portal/applications",
+          "status": 307,
+          "startedAt": 1791101924858.382,
+          "durationMs": 1130.7680000027176
+        },
+        {
+          "path": "/portal/applications",
+          "status": 200,
+          "startedAt": 1791101925990.238,
+          "durationMs": 500.155
+        },
+        {
+          "path": "/api/portal/applications",
+          "status": 200,
+          "startedAt": 1791101926758.072,
+          "durationMs": 447.039
+        },
+        {
+          "path": "/api/dashboard/applicant",
+          "status": 200,
+          "startedAt": 1791101927821.22,
+          "durationMs": 493.478
+        },
+        {
+          "path": "/portal",
+          "status": 200,
+          "startedAt": 1791101927821.466,
+          "durationMs": 31.877
+        }
+      ],
+      "feedbackMs": 96.20000000298023,
+      "structureMs": 96.20000000298023,
+      "dataMs": 531.3000000044703
+    },
+    {
+      "route": "/portal",
+      "condition": "warm",
+      "sample": 8,
+      "variant": "current",
+      "requests": [
+        {
+          "path": "/portal/applications",
+          "status": 307,
+          "startedAt": 1791101928365.188,
+          "durationMs": 453.6179999995511
+        },
+        {
+          "path": "/portal/applications",
+          "status": 200,
+          "startedAt": 1791101928820.6638,
+          "durationMs": 506.273
+        },
+        {
+          "path": "/api/portal/applications",
+          "status": 200,
+          "startedAt": 1791101929598.296,
+          "durationMs": 585.638
+        },
+        {
+          "path": "/portal",
+          "status": 200,
+          "startedAt": 1791101930762.662,
+          "durationMs": 11.891
+        },
+        {
+          "path": "/api/dashboard/applicant",
+          "status": 200,
+          "startedAt": 1791101930762.3633,
+          "durationMs": 1064.024
+        }
+      ],
+      "feedbackMs": 46.599999994039536,
+      "structureMs": 46.599999994039536,
+      "dataMs": 1087
+    },
+    {
+      "route": "/portal",
+      "condition": "warm",
+      "sample": 8,
+      "variant": "reference",
+      "requests": [
+        {
+          "path": "/portal/applications",
+          "status": 307,
+          "startedAt": 1791101931872.19,
+          "durationMs": 1146.2849999952596
+        },
+        {
+          "path": "/portal/applications",
+          "status": 200,
+          "startedAt": 1791101933019.4167,
+          "durationMs": 639.222
+        },
+        {
+          "path": "/api/portal/applications",
+          "status": 200,
+          "startedAt": 1791101933897.462,
+          "durationMs": 834.613
+        },
+        {
+          "path": "/portal",
+          "status": 200,
+          "startedAt": 1791101935310.9993,
+          "durationMs": 614.751
+        }
+      ],
+      "feedbackMs": 40.8999999910593,
+      "structureMs": 635.7999999970198,
+      "dataMs": 635.7999999970198
+    },
+    {
+      "route": "/portal",
+      "condition": "delayed",
+      "sample": 0,
+      "variant": "current",
+      "requests": [
+        {
+          "path": "/portal/applications",
+          "status": 307,
+          "startedAt": 1791101935985.993,
+          "durationMs": 535.2979999879608
+        },
+        {
+          "path": "/portal/applications",
+          "status": 200,
+          "startedAt": 1791101936522.239,
+          "durationMs": 695.518
+        },
+        {
+          "path": "/api/portal/applications",
+          "status": 200,
+          "startedAt": 1791101937529.362,
+          "durationMs": 656.743
+        },
+        {
+          "path": "/portal",
+          "status": 200,
+          "startedAt": 1791101938932.351,
+          "durationMs": 18.737
+        },
+        {
+          "path": "/api/dashboard/applicant",
+          "status": 200,
+          "startedAt": 1791101938932.2368,
+          "durationMs": 1489.283
+        }
+      ],
+      "feedbackMs": 59.099999994039536,
+      "structureMs": 59.099999994039536,
+      "dataMs": 1515.2999999970198
+    },
+    {
+      "route": "/portal",
+      "condition": "delayed",
+      "sample": 0,
+      "variant": "reference",
+      "requests": [
+        {
+          "path": "/portal/applications",
+          "status": 307,
+          "startedAt": 1791101940477.269,
+          "durationMs": 555.2529999986291
+        },
+        {
+          "path": "/portal/applications",
+          "status": 200,
+          "startedAt": 1791101941033.8008,
+          "durationMs": 597.034
+        },
+        {
+          "path": "/api/portal/applications",
+          "status": 200,
+          "startedAt": 1791101941877.311,
+          "durationMs": 723.582
+        },
+        {
+          "path": "/portal",
+          "status": 200,
+          "startedAt": 1791101941824.11,
+          "durationMs": 1495.465
+        }
+      ],
+      "feedbackMs": 37.599999994039536,
+      "structureMs": 1511.2000000029802,
+      "dataMs": 1511.2000000029802
+    },
+    {
+      "route": "/portal",
+      "condition": "delayed",
+      "sample": 1,
+      "variant": "reference",
+      "requests": [
+        {
+          "path": "/portal/applications",
+          "status": 307,
+          "startedAt": 1791101943366.799,
+          "durationMs": 779.8949999996694
+        },
+        {
+          "path": "/portal/applications",
+          "status": 200,
+          "startedAt": 1791101944147.957,
+          "durationMs": 585.72
+        },
+        {
+          "path": "/api/portal/applications",
+          "status": 200,
+          "startedAt": 1791101945010.8052,
+          "durationMs": 434.408
+        },
+        {
+          "path": "/portal",
+          "status": 200,
+          "startedAt": 1791101946174.275,
+          "durationMs": 1500.169
+        }
+      ],
+      "feedbackMs": 37.19999998807907,
+      "structureMs": 1511.8999999910593,
+      "dataMs": 1511.8999999910593
+    },
+    {
+      "route": "/portal",
+      "condition": "delayed",
+      "sample": 1,
+      "variant": "current",
+      "requests": [
+        {
+          "path": "/portal/applications",
+          "status": 307,
+          "startedAt": 1791101947729.503,
+          "durationMs": 969.7140000062063
+        },
+        {
+          "path": "/portal/applications",
+          "status": 200,
+          "startedAt": 1791101948700.248,
+          "durationMs": 813.271
+        },
+        {
+          "path": "/api/portal/applications",
+          "status": 200,
+          "startedAt": 1791101949794.605,
+          "durationMs": 552.647
+        },
+        {
+          "path": "/portal",
+          "status": 200,
+          "startedAt": 1791101951075.3472,
+          "durationMs": 14.907
+        },
+        {
+          "path": "/api/dashboard/applicant",
+          "status": 200,
+          "startedAt": 1791101951075.285,
+          "durationMs": 1492.35
+        }
+      ],
+      "feedbackMs": 59.29999999701977,
+      "structureMs": 59.29999999701977,
+      "dataMs": 1526.7000000029802
+    },
+    {
+      "route": "/portal",
+      "condition": "delayed",
+      "sample": 2,
+      "variant": "current",
+      "requests": [
+        {
+          "path": "/portal/applications",
+          "status": 307,
+          "startedAt": 1791101952651.566,
+          "durationMs": 570.0970000034431
+        },
+        {
+          "path": "/portal/applications",
+          "status": 200,
+          "startedAt": 1791101953222.864,
+          "durationMs": 589.885
+        },
+        {
+          "path": "/api/portal/applications",
+          "status": 200,
+          "startedAt": 1791101954077.332,
+          "durationMs": 520.725
+        },
+        {
+          "path": "/portal",
+          "status": 200,
+          "startedAt": 1791101955363.406,
+          "durationMs": 15.585
+        },
+        {
+          "path": "/api/dashboard/applicant",
+          "status": 200,
+          "startedAt": 1791101955363.199,
+          "durationMs": 1479.371
+        }
+      ],
+      "feedbackMs": 67.09999999403954,
+      "structureMs": 67.09999999403954,
+      "dataMs": 1514.2000000029802
+    },
+    {
+      "route": "/portal",
+      "condition": "delayed",
+      "sample": 2,
+      "variant": "reference",
+      "requests": [
+        {
+          "path": "/portal/applications",
+          "status": 307,
+          "startedAt": 1791101956893.6218,
+          "durationMs": 2078.059999999823
+        },
+        {
+          "path": "/portal/applications",
+          "status": 200,
+          "startedAt": 1791101958972.667,
+          "durationMs": 684.309
+        },
+        {
+          "path": "/api/portal/applications",
+          "status": 200,
+          "startedAt": 1791101959991.7942,
+          "durationMs": 540.716
+        },
+        {
+          "path": "/portal",
+          "status": 200,
+          "startedAt": 1791101961274.283,
+          "durationMs": 1488.057
+        }
+      ],
+      "feedbackMs": 49.5,
+      "structureMs": 1514.5,
+      "dataMs": 1514.5
+    },
+    {
+      "route": "/portal",
+      "condition": "delayed",
+      "sample": 3,
+      "variant": "reference",
+      "requests": [
+        {
+          "path": "/portal/applications",
+          "status": 307,
+          "startedAt": 1791101962812.011,
+          "durationMs": 2392.8589999995893
+        },
+        {
+          "path": "/portal/applications",
+          "status": 200,
+          "startedAt": 1791101965205.93,
+          "durationMs": 1076.046
+        },
+        {
+          "path": "/api/portal/applications",
+          "status": 200,
+          "startedAt": 1791101966525.435,
+          "durationMs": 512.717
+        },
+        {
+          "path": "/portal",
+          "status": 200,
+          "startedAt": 1791101967825.013,
+          "durationMs": 1482.089
+        }
+      ],
+      "feedbackMs": 56.20000000298023,
+      "structureMs": 1513,
+      "dataMs": 1513
+    },
+    {
+      "route": "/portal",
+      "condition": "delayed",
+      "sample": 3,
+      "variant": "current",
+      "requests": [
+        {
+          "path": "/portal/applications",
+          "status": 307,
+          "startedAt": 1791101969366.82,
+          "durationMs": 1305.991000001086
+        },
+        {
+          "path": "/portal/applications",
+          "status": 200,
+          "startedAt": 1791101970673.997,
+          "durationMs": 499.301
+        },
+        {
+          "path": "/api/portal/applications",
+          "status": 200,
+          "startedAt": 1791101970000.7478,
+          "durationMs": 707.913
+        },
+        {
+          "path": "/portal",
+          "status": 200,
+          "startedAt": 1791101971468.806,
+          "durationMs": 13.435
+        },
+        {
+          "path": "/api/dashboard/applicant",
+          "status": 200,
+          "startedAt": 1791101971468.487,
+          "durationMs": 1478.851
+        }
+      ],
+      "feedbackMs": 62.5,
+      "structureMs": 62.5,
+      "dataMs": 1514.7999999970198
+    },
+    {
+      "route": "/portal",
+      "condition": "delayed",
+      "sample": 4,
+      "variant": "current",
+      "requests": [
+        {
+          "path": "/portal/applications",
+          "status": 307,
+          "startedAt": 1791101973004.709,
+          "durationMs": 438.60800001129974
+        },
+        {
+          "path": "/portal/applications",
+          "status": 200,
+          "startedAt": 1791101973444.3318,
+          "durationMs": 536.776
+        },
+        {
+          "path": "/api/portal/applications",
+          "status": 200,
+          "startedAt": 1791101974222.1199,
+          "durationMs": 3253.513
+        },
+        {
+          "path": "/portal",
+          "status": 200,
+          "startedAt": 1791101978217.6719,
+          "durationMs": 12.35
+        },
+        {
+          "path": "/api/dashboard/applicant",
+          "status": 200,
+          "startedAt": 1791101978217.5952,
+          "durationMs": 1513.07
+        }
+      ],
+      "feedbackMs": 58.599999994039536,
+      "structureMs": 58.599999994039536,
+      "dataMs": 1547.2999999970198
+    },
+    {
+      "route": "/portal",
+      "condition": "delayed",
+      "sample": 4,
+      "variant": "reference",
+      "requests": [
+        {
+          "path": "/portal/applications",
+          "status": 307,
+          "startedAt": 1791101979786.8691,
+          "durationMs": 2139.0899999969406
+        },
+        {
+          "path": "/portal/applications",
+          "status": 200,
+          "startedAt": 1791101981926.982,
+          "durationMs": 523.056
+        },
+        {
+          "path": "/api/portal/applications",
+          "status": 200,
+          "startedAt": 1791101982785.008,
+          "durationMs": 1187.927
+        },
+        {
+          "path": "/portal",
+          "status": 200,
+          "startedAt": 1791101984733.591,
+          "durationMs": 1476.656
+        }
+      ],
+      "feedbackMs": 55.79999999701977,
+      "structureMs": 1515.5,
+      "dataMs": 1515.5
+    },
+    {
+      "route": "/portal",
+      "condition": "delayed",
+      "sample": 5,
+      "variant": "reference",
+      "requests": [
+        {
+          "path": "/portal/applications",
+          "status": 307,
+          "startedAt": 1791101986268.843,
+          "durationMs": 804.2649999988498
+        },
+        {
+          "path": "/portal/applications",
+          "status": 200,
+          "startedAt": 1791101987074.706,
+          "durationMs": 914.011
+        },
+        {
+          "path": "/api/portal/applications",
+          "status": 200,
+          "startedAt": 1791101988262.838,
+          "durationMs": 907.623
+        },
+        {
+          "path": "/portal",
+          "status": 200,
+          "startedAt": 1791101989932.266,
+          "durationMs": 1487.655
+        }
+      ],
+      "feedbackMs": 51.29999999701977,
+      "structureMs": 1515.7999999970198,
+      "dataMs": 1515.7999999970198
+    },
+    {
+      "route": "/portal",
+      "condition": "delayed",
+      "sample": 5,
+      "variant": "current",
+      "requests": [
+        {
+          "path": "/portal/applications",
+          "status": 307,
+          "startedAt": 1791101991471.436,
+          "durationMs": 1514.5790000096895
+        },
+        {
+          "path": "/portal/applications",
+          "status": 200,
+          "startedAt": 1791101992986.9102,
+          "durationMs": 594.622
+        },
+        {
+          "path": "/api/portal/applications",
+          "status": 200,
+          "startedAt": 1791101993834.809,
+          "durationMs": 729.147
+        },
+        {
+          "path": "/portal",
+          "status": 200,
+          "startedAt": 1791101995334.385,
+          "durationMs": 14.903
+        },
+        {
+          "path": "/api/dashboard/applicant",
+          "status": 200,
+          "startedAt": 1791101995334.326,
+          "durationMs": 1492.014
+        }
+      ],
+      "feedbackMs": 48.5,
+      "structureMs": 48.5,
+      "dataMs": 1526.699999988079
+    },
+    {
+      "route": "/portal",
+      "condition": "delayed",
+      "sample": 6,
+      "variant": "current",
+      "requests": [
+        {
+          "path": "/portal/applications",
+          "status": 307,
+          "startedAt": 1791101996919.543,
+          "durationMs": 549.3510000087554
+        },
+        {
+          "path": "/portal/applications",
+          "status": 200,
+          "startedAt": 1791101997470.1829,
+          "durationMs": 445.931
+        },
+        {
+          "path": "/api/portal/applications",
+          "status": 200,
+          "startedAt": 1791101998173.872,
+          "durationMs": 1537.309
+        },
+        {
+          "path": "/portal",
+          "status": 200,
+          "startedAt": 1791101998883.471,
+          "durationMs": 12.354
+        },
+        {
+          "path": "/api/dashboard/applicant",
+          "status": 200,
+          "startedAt": 1791101998883.1711,
+          "durationMs": 1491.013
+        }
+      ],
+      "feedbackMs": 49.70000000298023,
+      "structureMs": 49.70000000298023,
+      "dataMs": 1517.6000000089407
+    },
+    {
+      "route": "/portal",
+      "condition": "delayed",
+      "sample": 6,
+      "variant": "reference",
+      "requests": [
+        {
+          "path": "/portal/applications",
+          "status": 307,
+          "startedAt": 1791102000430.969,
+          "durationMs": 1291.5180000127293
+        },
+        {
+          "path": "/portal/applications",
+          "status": 200,
+          "startedAt": 1791102001723.6938,
+          "durationMs": 549.826
+        },
+        {
+          "path": "/api/portal/applications",
+          "status": 200,
+          "startedAt": 1791102002532.804,
+          "durationMs": 546.948
+        },
+        {
+          "path": "/portal",
+          "status": 200,
+          "startedAt": 1791102003815.1528,
+          "durationMs": 1491.878
+        }
+      ],
+      "feedbackMs": 44.80000001192093,
+      "structureMs": 1518.300000011921,
+      "dataMs": 1518.300000011921
+    },
+    {
+      "route": "/portal",
+      "condition": "delayed",
+      "sample": 7,
+      "variant": "reference",
+      "requests": [
+        {
+          "path": "/portal/applications",
+          "status": 307,
+          "startedAt": 1791102005372.239,
+          "durationMs": 541.732999990927
+        },
+        {
+          "path": "/portal/applications",
+          "status": 200,
+          "startedAt": 1791102005918.185,
+          "durationMs": 533.913
+        },
+        {
+          "path": "/api/portal/applications",
+          "status": 200,
+          "startedAt": 1791102006851.1292,
+          "durationMs": 939.922
+        },
+        {
+          "path": "/portal",
+          "status": 200,
+          "startedAt": 1791102008600.119,
+          "durationMs": 1492.942
+        }
+      ],
+      "feedbackMs": 44,
+      "structureMs": 1518.7999999970198,
+      "dataMs": 1518.7999999970198
+    },
+    {
+      "route": "/portal",
+      "condition": "delayed",
+      "sample": 7,
+      "variant": "current",
+      "requests": [
+        {
+          "path": "/portal/applications",
+          "status": 307,
+          "startedAt": 1791102010158.315,
+          "durationMs": 1133.432000002358
+        },
+        {
+          "path": "/portal/applications",
+          "status": 200,
+          "startedAt": 1791102011293.0479,
+          "durationMs": 496.887
+        },
+        {
+          "path": "/api/portal/applications",
+          "status": 200,
+          "startedAt": 1791102012085.9048,
+          "durationMs": 509.451
+        },
+        {
+          "path": "/portal",
+          "status": 200,
+          "startedAt": 1791102013349.8281,
+          "durationMs": 13.68
+        },
+        {
+          "path": "/api/dashboard/applicant",
+          "status": 200,
+          "startedAt": 1791102013349.699,
+          "durationMs": 1487.269
+        }
+      ],
+      "feedbackMs": 51.8999999910593,
+      "structureMs": 51.8999999910593,
+      "dataMs": 1510.2999999970198
+    },
+    {
+      "route": "/portal",
+      "condition": "delayed",
+      "sample": 8,
+      "variant": "current",
+      "requests": [
+        {
+          "path": "/portal/applications",
+          "status": 307,
+          "startedAt": 1791102014886.843,
+          "durationMs": 502.3890000011306
+        },
+        {
+          "path": "/portal/applications",
+          "status": 200,
+          "startedAt": 1791102015390.847,
+          "durationMs": 471.292
+        },
+        {
+          "path": "/api/portal/applications",
+          "status": 200,
+          "startedAt": 1791102016303.607,
+          "durationMs": 509.438
+        },
+        {
+          "path": "/portal",
+          "status": 200,
+          "startedAt": 1791102017566.391,
+          "durationMs": 15.515
+        },
+        {
+          "path": "/api/dashboard/applicant",
+          "status": 200,
+          "startedAt": 1791102017566.3271,
+          "durationMs": 1486.919
+        }
+      ],
+      "feedbackMs": 68.09999999403954,
+      "structureMs": 68.09999999403954,
+      "dataMs": 1514.5999999940395
+    },
+    {
+      "route": "/portal",
+      "condition": "delayed",
+      "sample": 8,
+      "variant": "reference",
+      "requests": [
+        {
+          "path": "/portal/applications",
+          "status": 307,
+          "startedAt": 1791102019105.103,
+          "durationMs": 1103.45400001097
+        },
+        {
+          "path": "/portal/applications",
+          "status": 200,
+          "startedAt": 1791102020209.96,
+          "durationMs": 563.552
+        },
+        {
+          "path": "/api/portal/applications",
+          "status": 200,
+          "startedAt": 1791102021014.1047,
+          "durationMs": 964.705
+        },
+        {
+          "path": "/portal",
+          "status": 200,
+          "startedAt": 1791102022731.421,
+          "durationMs": 1498.525
+        }
+      ],
+      "feedbackMs": 47.79999999701977,
+      "structureMs": 1522.4000000059605,
+      "dataMs": 1522.4000000059605
+    }
+  ]
+}

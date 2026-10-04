@@ -17,7 +17,7 @@ import {
   type FocusEvent,
 } from "react";
 
-import { FormDateInput } from "@/components/ui/form-date-input";
+import { FormDateInput } from "@/shared/ui/FormDateInput";
 import {
   FormInput,
   FormSelect,
@@ -30,6 +30,7 @@ import {
   parseMoneyInput,
 } from "@/components/ui/money-field";
 import { FormRadioGroup } from "@/shared/ui/FormRadioGroup";
+import { RichTextEditor } from "@/shared/ui/RichTextEditor";
 
 type Values = Record<string, unknown>;
 type InputProps = BaseInputTemplateProps<Values, RJSFSchema>;
@@ -112,6 +113,28 @@ export function FormTextareaWidget(props: FormWidgetProps) {
         readOnly={props.readonly}
         required={props.required}
         value={props.value ?? ""}
+      />
+      <HelpText description={props.schema.description} id={props.id} />
+    </div>
+  );
+}
+
+export function FormRichTextWidget(props: FormWidgetProps) {
+  const value = typeof props.value === "string" ? props.value : "";
+  return (
+    <div>
+      <RichTextEditor
+        disabled={props.disabled || props.readonly}
+        error={errorMessage(props.rawErrors)}
+        id={props.id}
+        label={props.label}
+        onBlur={() => props.onBlur(props.id, value)}
+        onChange={(nextValue) => {
+          props.onChange(nextValue || props.options.emptyValue);
+        }}
+        placeholder={props.placeholder}
+        required={props.required}
+        value={value}
       />
       <HelpText description={props.schema.description} id={props.id} />
     </div>

@@ -2,6 +2,8 @@ import { z } from "zod";
 
 import { richTextToPlainText } from "@/shared/utils/RichText";
 
+export const fundingCallThumbnailMaximumBytes = 2 * 1024 * 1024;
+
 const moneySchema = z
   .string()
   .trim()
@@ -38,6 +40,7 @@ const progressVersionId = z.union([z.literal(""), z.uuid()]);
 
 export const fundingCallCreationProgressValuesSchema = z
   .object({
+    allowResubmissionAfterWithdrawal: z.boolean().default(false),
     applicationDuplicatePolicy: z.enum([
       "one_per_applicant",
       "one_per_business",
@@ -87,6 +90,7 @@ export const fundingCallEligibilitySummarySchema = z
   });
 
 const fundingCallFields = {
+  allowResubmissionAfterWithdrawal: z.boolean().default(false),
   applicationDuplicatePolicy: z.enum([
     "one_per_applicant",
     "one_per_business",
@@ -182,7 +186,13 @@ export const fundingCallPublishSchema = z.object({
 });
 
 export const fundingCallLifecycleCommandSchema = z.object({
-  command: z.enum(["SUSPEND", "RESUME", "WITHDRAW", "ARCHIVE"]),
+  command: z.enum([
+    "SUSPEND",
+    "RESUME",
+    "WITHDRAW",
+    "WITHDRAW_FOR_AMENDMENT",
+    "ARCHIVE",
+  ]),
   expectedRowVersion: z.number().int().positive(),
   reason: z.string().trim().min(1).max(1000),
 });

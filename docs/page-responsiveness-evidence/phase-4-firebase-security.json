@@ -1,0 +1,27 @@
+{
+  "synthetic": true,
+  "results": {
+    "signature": {
+      "passed": true,
+      "code": "auth/argument-error"
+    },
+    "expiration": {
+      "passed": true,
+      "code": "auth/session-cookie-expired"
+    },
+    "revocation": {
+      "passed": true,
+      "code": "auth/session-cookie-revoked"
+    },
+    "normalSignedSession": {
+      "passed": true,
+      "validUntilExpiry": true
+    },
+    "sensitiveRoute": {
+      "passed": true,
+      "status": 401,
+      "method": "PATCH",
+      "path": "/api/admin/roles/[id]"
+    }
+  }
+}

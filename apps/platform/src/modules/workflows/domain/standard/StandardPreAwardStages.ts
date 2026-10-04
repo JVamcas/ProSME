@@ -68,6 +68,7 @@ function screening(dependencies: StandardWorkflowDependencies) {
       status: "UNDER_REVIEW",
     },
     repeatable: false,
+    allowApplicantWithdrawal: true,
     scoring: null,
     slaHours: 120,
     stableKey: "ADMIN_ELIGIBILITY_SCREENING",
@@ -87,6 +88,7 @@ function screening(dependencies: StandardWorkflowDependencies) {
         actionKeys: actions.map((item) => item.stableKey),
         taskType: "STAGE_DECISION",
         config: {
+          hardFailureStatus: "INELIGIBLE",
           command: "AUTHORITATIVE_ELIGIBILITY",
           reevaluationPolicy: "WHEN_EVIDENCE_CHANGED",
         },
@@ -152,6 +154,7 @@ function financialReview(dependencies: StandardWorkflowDependencies) {
       status: "UNDER_REVIEW",
     },
     repeatable: false,
+    allowApplicantWithdrawal: true,
     scoring: null,
     slaHours: 240,
     stableKey: "FINANCIAL_REVIEW",
@@ -201,11 +204,7 @@ function dueDiligence(dependencies: StandardWorkflowDependencies) {
     approve("PROCEED", "Proceed", 1),
     approve("PROCEED_WITH_CONDITIONS", "Proceed with conditions", 2),
     reject("DECLINE_RISK", "Decline on risk grounds", 3),
-    requestInformation(
-      "FURTHER_VERIFICATION",
-      "Request For Information",
-      4,
-    ),
+    requestInformation("FURTHER_VERIFICATION", "Request For Information", 4),
   ];
   return stage({
     actions,
@@ -252,24 +251,27 @@ function dueDiligence(dependencies: StandardWorkflowDependencies) {
       status: "UNDER_REVIEW",
     },
     repeatable: false,
-    scoring: {
-      aggregation: "AVERAGE",
-      taskStableKey: "DUE_DILIGENCE_REVIEW",
-      criteria: [
-        "Financial risk",
-        "Delivery risk",
-        "Governance risk",
-        "Fraud risk",
-      ].map((criterion) => ({
-        criterion,
-        stableKey: stableKeyFromLabel(criterion, "SCORE"),
-        description: "Risk score from 1 (low) to 4 (critical).",
-        mandatoryComment: true,
-        scaleMaximum: 4,
-        scaleMinimum: 1,
-        weight: 25,
-      })),
-    },
+    allowApplicantWithdrawal: true,
+    scoring: [
+      {
+        aggregation: "AVERAGE",
+        taskStableKey: "DUE_DILIGENCE_REVIEW",
+        criteria: [
+          "Financial risk",
+          "Delivery risk",
+          "Governance risk",
+          "Fraud risk",
+        ].map((criterion) => ({
+          criterion,
+          stableKey: stableKeyFromLabel(criterion, "SCORE"),
+          description: "Risk score from 1 (low) to 4 (critical).",
+          mandatoryComment: true,
+          scaleMaximum: 4,
+          scaleMinimum: 1,
+          weight: 25,
+        })),
+      },
+    ],
     slaHours: 240,
     stableKey: "DUE_DILIGENCE_RISK",
     tasks: [

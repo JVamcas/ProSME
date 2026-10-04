@@ -68,6 +68,7 @@ export async function cloneFundingCallRecord(
     const [cloned] = await transaction
       .insert(fundingCalls)
       .values({
+        allowResubmissionAfterWithdrawal: source.allowResubmissionAfterWithdrawal,
         applicationDuplicatePolicy: source.applicationDuplicatePolicy,
         closesAt: source.closesAt,
         createdBy: actorId,

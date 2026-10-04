@@ -9,6 +9,7 @@ import {
   buildNotificationRenderValues,
   type NotificationRenderRecipient,
 } from "../domain/NotificationTemplateFields";
+import { notificationBrandingLogoUrl } from "./ServerNotificationEmailBranding";
 
 export function buildServerNotificationRenderValues<
   Key extends NotificationEventKey,
@@ -17,8 +18,11 @@ export function buildServerNotificationRenderValues<
   eventKey: Key;
   recipient: NotificationRenderRecipient;
 }) {
-  return buildNotificationRenderValues({
-    ...input,
-    publicApplicationUrl: getServerEnvironment().APP_PUBLIC_URL,
-  });
+  return {
+    ...buildNotificationRenderValues({
+      ...input,
+      publicApplicationUrl: getServerEnvironment().APP_PUBLIC_URL,
+    }),
+    brandingLogoUrl: notificationBrandingLogoUrl,
+  };
 }

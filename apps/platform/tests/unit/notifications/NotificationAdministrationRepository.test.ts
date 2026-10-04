@@ -137,6 +137,28 @@ describe("notification administration repository", () => {
     }));
   });
 
+  it("redrives a dead-letter delivery through a fresh attempt cycle", async () => {
+    database.execute
+      .mockResolvedValueOnce({ rows: [{
+        outboxId: "82000000-0000-4000-8000-000000000001",
+        status: "DEAD_LETTER",
+      }] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] });
+
+    await expect(retryNotificationDeliveryRecord({
+      actorId: "80000000-0000-4000-8000-000000000001",
+      correlationId: "correlation-dead-letter",
+      deliveryId: "81000000-0000-4000-8000-000000000001",
+      reason: "Provider configuration was corrected.",
+    })).resolves.toEqual({ outcome: "SCHEDULED" });
+
+    expect(database.execute).toHaveBeenCalledTimes(3);
+    expect(database.values).toHaveBeenCalledWith(expect.objectContaining({
+      action: "NOTIFICATION_DELIVERY_RETRY_REQUESTED",
+    }));
+  });
+
   it("treats a concurrent already-scheduled retry as an idempotent success", async () => {
     database.execute.mockResolvedValueOnce({ rows: [{
       outboxId: "82000000-0000-4000-8000-000000000001",

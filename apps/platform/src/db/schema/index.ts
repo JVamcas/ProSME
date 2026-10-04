@@ -2,6 +2,7 @@ export * from "./authorization";
 export * from "./audit";
 export * from "@/modules/applications/infrastructure/application.schema";
 export * from "@/modules/applications/infrastructure/application-document.schema";
+export * from "@/modules/branding/infrastructure/branding.schema";
 export * from "@/modules/conditions/infrastructure/condition.schema";
 export * from "@/modules/eligibility/infrastructure/eligibility-ruleset.schema";
 export * from "@/modules/eligibility/infrastructure/eligibility-question.schema";
@@ -27,5 +28,6 @@ export * from "@/modules/workflows/infrastructure/workflow-coi.schema";
 export * from "@/modules/workflows/infrastructure/workflow-decision.schema";
 export * from "@/modules/workflows/infrastructure/workflow-evidence.schema";
 export * from "@/modules/workflows/infrastructure/workflow-rfi.schema";
+export * from "@/modules/workflows/infrastructure/workflow-deadline.schema";
 
 export { authEmailRateLimits } from "@/modules/users/infrastructure/auth-email.schema";

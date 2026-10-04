@@ -1,6 +1,7 @@
 import "server-only";
+import { workflowTaskHasActiveHold } from "./WorkflowHoldQueries";
 
-import { taskWorkIsReady } from "@/modules/workflows/WorkflowTaskRegistry";
+import { readWorkflowActionTaskReadiness } from "./WorkflowActionTaskReadinessRepository";
 
 import { and, eq, inArray, sql } from "drizzle-orm";
 
@@ -148,11 +149,7 @@ async function lockTask(
             )
           )
       )`,
-      activeHold: sql<boolean>`EXISTS (
-        SELECT 1 FROM app_workflow_holds hold
-        WHERE hold.stage_instance_id = ${workflowTasks.stageInstanceId}
-          AND hold.status = 'ACTIVE'
-      )`,
+      activeHold: workflowTaskHasActiveHold(sql`${workflowTasks}`),
       activeReferral: sql<boolean>`EXISTS (
         SELECT 1 FROM app_workflow_referrals referral
         WHERE referral.source_task_id = ${workflowTasks.id}
@@ -168,18 +165,6 @@ async function lockTask(
             WHERE actor_role.user_id = ${input.actorId}::uuid
               AND actor_role.role_id = ${workflowTasks.assignedRoleId}
           )
-        ) OR EXISTS (
-          SELECT 1 FROM app_workflow_escalations escalation
-          WHERE escalation.task_id = ${workflowTasks.id}
-            AND escalation.status = 'ACTIVE'
-            AND (
-              escalation.target_user_id = ${input.actorId}::uuid
-              OR EXISTS (
-                SELECT 1 FROM app_user_roles escalation_role
-                WHERE escalation_role.user_id = ${input.actorId}::uuid
-                  AND escalation_role.role_id = escalation.target_role_id
-              )
-            )
         )
       )`,
       eligibilityReady: workflowEligibilityActionReady,
@@ -290,7 +275,7 @@ export async function lockWorkflowActionExecutionTarget(
       enabled: action.enabled,
       id: action.id,
       label: action.label,
-      reasonCodeRequired: action.reasonCodeRequired,
+      reasonRequired: action.reasonRequired,
       stableKey: action.stableKey,
     } as WorkflowActionDefinition & { id: string },
     stage: stage as StageCompletionTarget & { rowVersion: number },
@@ -302,7 +287,7 @@ export async function claimWorkflowActionRuntimeVersion(
   transaction: WorkflowActionExecutionTransaction,
   stageInstanceId: string,
   expectedRuntimeVersion: number,
-  allowedStatuses: Array<"ACTIVE" | "BLOCKED"> = ["ACTIVE"],
+  allowedStatuses: Array<"ACTIVE" | "BLOCKED" | "CANCELLED"> = ["ACTIVE"],
 ) {
   const [stage] = await transaction
     .update(stageInstances)
@@ -323,35 +308,11 @@ export async function completeActionTask(
     task: NonNullable<WorkflowActionExecutionTarget["task"]>;
   },
 ) {
-  const [work] = await transaction
-    .select({
-      config: stageTaskDefinitions.config,
-      formCompleted: sql<boolean>`(
-        ${workflowTasks.formVersionId} IS NOT NULL AND EXISTS (
-          SELECT 1 FROM app_form_responses response
-          WHERE response.workflow_task_id = ${workflowTasks.id}
-            AND (response.status = 'COMPLETED'
-              OR (
-                ${stageTaskDefinitions.config} ->> 'command' = 'AUTHORITATIVE_ELIGIBILITY'
-                AND response.values = (${workflowTasks.result} -> 'evaluatedFormValues')
-              ))
-        )
-      )`,
-      formRequired: sql<boolean>`${workflowTasks.formVersionId} IS NOT NULL`,
-      hasChecklist: sql<boolean>`EXISTS (
-        SELECT 1 FROM app_workflow_stage_checklist_definitions checklist
-        WHERE checklist.task_definition_id = ${stageTaskDefinitions.id}
-      )`,
-      result: workflowTasks.result,
-    })
-    .from(workflowTasks)
-    .innerJoin(
-      stageTaskDefinitions,
-      eq(stageTaskDefinitions.id, workflowTasks.workflowTaskDefinitionId),
-    )
-    .where(eq(workflowTasks.id, input.task.id))
-    .limit(1);
-  if (!work || !taskWorkIsReady(work)) return null;
+  const readiness = await readWorkflowActionTaskReadiness(
+    transaction,
+    input.task.id,
+  );
+  if (!readiness.workReady || readiness.hasOpenRfi) return null;
   const completedAt = new Date();
   const [task] = await transaction
     .update(workflowTasks)
@@ -363,16 +324,18 @@ export async function completeActionTask(
       startedAt: sql`COALESCE(${workflowTasks.startedAt}, ${completedAt})`,
       status: "COMPLETED",
     })
-    .where(and(
-      eq(workflowTasks.id, input.task.id),
-      eq(workflowTasks.rowVersion, input.task.rowVersion),
-      sql`${workflowTasks.status} IN ('PENDING', 'IN_PROGRESS')`,
-      sql`NOT EXISTS (
-        SELECT 1 FROM app_workflow_rfis rfi
-        WHERE rfi.task_id = ${workflowTasks.id}
-          AND rfi.status = 'OPEN'
-      )`,
-    ))
+    .where(
+      and(
+        eq(workflowTasks.id, input.task.id),
+        eq(workflowTasks.rowVersion, input.task.rowVersion),
+        sql`${workflowTasks.status} IN ('PENDING', 'IN_PROGRESS')`,
+        sql`NOT EXISTS (
+          SELECT 1 FROM app_workflow_rfis rfi
+          WHERE rfi.task_id = ${workflowTasks.id}
+            AND rfi.status = 'OPEN'
+        )`,
+      ),
+    )
     .returning({ id: workflowTasks.id });
   return task ?? null;
 }

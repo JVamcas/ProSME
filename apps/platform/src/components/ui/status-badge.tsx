@@ -7,6 +7,7 @@ export const statusStyles: Record<string, string> = {
   active: "bg-brand-green/70 text-brand-white",
   sent: "bg-brand-green/70 text-brand-white",
   failed: "bg-brand-red/70 text-brand-white",
+  "dead letter": "bg-brand-red text-brand-white",
   closed: "bg-brand-cream text-brand-navy",
   "completeness check": "bg-brand-gold/40 text-brand-navy",
   declined: "bg-brand-cream text-brand-navy",

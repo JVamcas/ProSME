@@ -5,6 +5,14 @@ import { sql } from "drizzle-orm";
 import { getDatabase } from "@/db/client";
 import type { TaskDetail } from "@/modules/work-queue/TaskTypes";
 import type { WorkflowElementPermissions } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
+import {
+  workflowTaskHasActiveHold,
+  workflowTaskHoldSummaries,
+} from "./WorkflowHoldQueries";
+import { workflowTaskPeerReadAllowed } from "./WorkflowTaskPeerReadSql";
+import { workflowTaskViewPermissionMatches } from "./WorkflowTaskViewPermissionSql";
+import { workflowTaskEffectiveDeadline } from "./WorkflowSlaDeadline";
+import { workflowDocumentEvidenceIsCurrent } from "./WorkflowDocumentEvidenceReadiness";
 
 type TaskDetailRow = Omit<
   TaskDetail,
@@ -30,14 +38,23 @@ type TaskDetailRow = Omit<
   dueAt: Date | string | null;
   result: unknown;
   permissions: WorkflowElementPermissions;
+  assignedToActor: boolean;
+  coiCleared: boolean;
+  stageStatus: string;
+  workflowStatus: string;
 };
 
 export async function readWorkflowTask(
   actorId: string,
   taskId: string,
+  allowAll = false,
+  viewPermissions?: readonly string[],
 ): Promise<TaskDetailRow | null> {
   const result = await getDatabase().execute(sql`
     SELECT task.id AS "taskInstanceId", task.status AS "taskStatus",
+      CASE WHEN task.status IN ('PENDING', 'IN_PROGRESS') AND ${workflowTaskHasActiveHold(sql`task`)}
+        THEN 'ON_HOLD' ELSE NULL END AS "processingStatus",
+      ${workflowTaskHoldSummaries(sql`task`)} AS holds,
       task.row_version AS "rowVersion",
       task.form_version_id AS "formVersionId",
       form_definition.name AS "formName",
@@ -45,10 +62,11 @@ export async function readWorkflowTask(
         SELECT 1 FROM app_form_responses response
         WHERE response.workflow_task_id = task.id
           AND (response.status = 'COMPLETED'
-            OR (definition.config ->> 'command' = 'AUTHORITATIVE_ELIGIBILITY'
+            OR ((definition.config ->> 'command' = 'AUTHORITATIVE_ELIGIBILITY'
+              OR definition.config ->> 'formPurpose' = 'ELIGIBILITY_VERIFICATION')
               AND response.values = (task.result -> 'evaluatedFormValues')))
       )) AS "formCompleted",
-      task.due_at AS "dueAt", task.result,
+      ${workflowTaskEffectiveDeadline(sql`task`)} AS "dueAt", task.result,
       definition.name AS "taskName", definition.config,
       definition.task_type AS "taskType",
       COALESCE((
@@ -76,6 +94,7 @@ export async function readWorkflowTask(
               SELECT 1 FROM app_workflow_document_evidence_versions evidence
               WHERE evidence.application_id = application.id
                 AND evidence.requirement_id = document.id
+                AND ${workflowDocumentEvidenceIsCurrent(sql`task.id`)}
                 AND (evidence.valid_until IS NULL OR evidence.valid_until > now())
             ) THEN 'SUPPLIED'
             WHEN EXISTS (
@@ -83,6 +102,7 @@ export async function readWorkflowTask(
               JOIN app_workflow_rfis rfi ON rfi.id = request.rfi_id
               WHERE request.requirement_id = document.id
                 AND rfi.application_id = application.id
+                AND rfi.task_id = task.id
                 AND rfi.status = 'OPEN'
             ) THEN 'REQUESTED'
             WHEN EXISTS (
@@ -90,6 +110,7 @@ export async function readWorkflowTask(
               JOIN app_workflow_rfis rfi ON rfi.id = request.rfi_id
               WHERE request.requirement_id = document.id
                 AND rfi.application_id = application.id
+                AND rfi.task_id = task.id
                 AND rfi.status = 'EXPIRED'
             ) THEN 'EXPIRED'
             ELSE 'MISSING'
@@ -109,6 +130,7 @@ export async function readWorkflowTask(
             FROM app_workflow_document_evidence_versions evidence
             WHERE evidence.application_id = application.id
               AND evidence.requirement_id = document.id
+              AND ${workflowDocumentEvidenceIsCurrent(sql`task.id`)}
             ORDER BY evidence.version_number DESC
             LIMIT 1
           )
@@ -130,13 +152,18 @@ export async function readWorkflowTask(
               'weight', criterion.weight
             ) ORDER BY criterion.criterion)
             FROM app_workflow_stage_scoring_criteria criterion
-            WHERE criterion.stage_id = scoring.stage_id
+            WHERE criterion.task_definition_id = scoring.task_definition_id
           ), '[]'::jsonb)
         )
         FROM app_workflow_stage_scoring_configurations scoring
         WHERE scoring.task_definition_id = definition.id
       ) AS scoring,
       definition.permissions,
+      task.assigned_user_id = ${actorId}::uuid AS "assignedToActor",
+      assignee.display_name AS "assignedUserName",
+      assigned_role.name AS "assignedRoleName",
+      app_workflow_task_coi_cleared(task.id, ${actorId}::uuid) AS "coiCleared",
+      stage.status AS "stageStatus", workflow.status AS "workflowStatus",
       stage_definition.name AS "stageName",
       stage.id AS "stageInstanceId", stage.row_version AS "runtimeVersion",
       workflow.id AS "workflowInstanceId",
@@ -157,13 +184,19 @@ export async function readWorkflowTask(
     JOIN app_workflow_instances workflow ON workflow.id = stage.workflow_instance_id
     JOIN app_applications application ON application.id = workflow.application_id
     JOIN app_users applicant ON applicant.id = application.owner_user_id
+    LEFT JOIN app_users assignee ON assignee.id = task.assigned_user_id
+    LEFT JOIN app_roles assigned_role ON assigned_role.id = task.assigned_role_id
     LEFT JOIN app_business_profiles business
       ON business.id::text = application.business_section ->> 'businessId'
     WHERE task.id = ${taskId}::uuid
-      AND app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
-      AND workflow.status = 'ACTIVE'
-      AND stage.status IN ('ACTIVE', 'BLOCKED')
-      AND task.assigned_user_id = ${actorId}::uuid
+      AND ${workflowTaskPeerReadAllowed(actorId, sql`task`, sql`definition`, sql`stage`)}
+      AND (${allowAll} OR ${workflowTaskViewPermissionMatches(sql`definition.permissions`, viewPermissions)})
+      AND (${allowAll} OR (
+        app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
+        AND workflow.status = 'ACTIVE'
+        AND stage.status IN ('ACTIVE', 'BLOCKED')
+        AND task.assigned_user_id = ${actorId}::uuid
+      ))
   `);
   return (result.rows[0] as TaskDetailRow | undefined) ?? null;
 }

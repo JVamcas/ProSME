@@ -2,19 +2,31 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 vi.mock("next/navigation", () => ({
-  notFound: vi.fn(() => { throw new Error("not found"); }),
-  redirect: vi.fn(() => { throw new Error("redirected"); }),
+  notFound: vi.fn(() => {
+    throw new Error("not found");
+  }),
+  redirect: vi.fn(() => {
+    throw new Error("redirected");
+  }),
 }));
-vi.mock("@/auth/authorization/current-user", () => ({ getCurrentUser: vi.fn() }));
+vi.mock("@/auth/authorization/current-user", () => ({
+  getCurrentUser: vi.fn(),
+}));
 vi.mock("@/modules/applications/ServerAdminApplicationDetailService", () => ({
   getAdminApplicationDetail: vi.fn(),
 }));
-vi.mock("@/modules/workflows/application/runtime/ServerWorkflowProgressService", () => ({
-  getWorkflowProgress: vi.fn(),
-}));
-vi.mock("@/modules/workflows/application/runtime/ServerWorkflowRfiReadService", () => ({
-  listContextualApplicationRfis: vi.fn(),
-}));
+vi.mock(
+  "@/modules/workflows/application/runtime/ServerWorkflowProgressService",
+  () => ({
+    getWorkflowProgress: vi.fn(),
+  }),
+);
+vi.mock(
+  "@/modules/workflows/application/runtime/ServerWorkflowRfiReadService",
+  () => ({
+    listContextualApplicationRfis: vi.fn(),
+  }),
+);
 vi.mock("@/modules/applications/ui/ApplicationDetailView", () => ({
   ApplicationDetailView: () => null,
 }));
@@ -62,13 +74,15 @@ describe("staff application workflow progress tab", () => {
       capabilities: new Set([permissionCodes.fundingApplicationAllRead]),
     });
 
-    const page = await ApplicationPage({ params: Promise.resolve({ id: applicationId }) });
+    const page = await ApplicationPage({
+      params: Promise.resolve({ id: applicationId }),
+    });
 
-    expect(page.props.workflowProgress).toBeUndefined();
+    expect(page.props.canReadWorkflow).toBe(false);
     expect(getWorkflowProgress).not.toHaveBeenCalled();
   });
 
-  it("passes progress to the tab for a workflow instance reader", async () => {
+  it("enables the client progress section without blocking the page on business reads", async () => {
     vi.mocked(getCurrentUser).mockResolvedValue({
       ...actor,
       capabilities: new Set([
@@ -77,12 +91,80 @@ describe("staff application workflow progress tab", () => {
       ]),
     });
 
-    const page = await ApplicationPage({ params: Promise.resolve({ id: applicationId }) });
+    const page = await ApplicationPage({
+      params: Promise.resolve({ id: applicationId }),
+    });
 
-    expect(getWorkflowProgress).toHaveBeenCalledWith(
-      expect.anything(),
-      applicationId,
-    );
-    expect(page.props.workflowProgress).toBeDefined();
+    expect(getWorkflowProgress).not.toHaveBeenCalled();
+    expect(getAdminApplicationDetail).not.toHaveBeenCalled();
+    expect(listContextualApplicationRfis).not.toHaveBeenCalled();
+    expect(page.props.canReadWorkflow).toBe(true);
+    expect(page.props.taskId).toBeUndefined();
+  });
+  it("selects Workflow Progress from the application deep link", async () => {
+    vi.mocked(getCurrentUser).mockResolvedValue({
+      ...actor,
+      capabilities: new Set([
+        permissionCodes.fundingApplicationAllRead,
+        permissionCodes.workflowInstanceAllRead,
+      ]),
+    });
+    const page = await ApplicationPage({
+      params: Promise.resolve({ id: applicationId }),
+      searchParams: Promise.resolve({ tab: "workflow-progress" }),
+    });
+    expect(page.props.initialTab).toBe("workflow-progress");
+  });
+
+  it("loads progress using a validated assigned task context", async () => {
+    const taskId = "33333333-3333-4333-8333-333333333333";
+    vi.mocked(getCurrentUser).mockResolvedValue({
+      ...actor,
+      capabilities: new Set([
+        permissionCodes.workflowTaskAssignedRead,
+        permissionCodes.workflowInstanceAssignedRead,
+      ]),
+    });
+    const page = await ApplicationPage({
+      params: Promise.resolve({ id: applicationId }),
+      searchParams: Promise.resolve({ tab: "workflow-progress", taskId }),
+    });
+    expect(getWorkflowProgress).not.toHaveBeenCalled();
+    expect(page.props.canReadWorkflow).toBe(true);
+    expect(page.props.taskId).toBe(taskId);
+  });
+
+  it.each([undefined, "invalid", ["33333333-3333-4333-8333-333333333333"]])(
+    "does not read assigned progress with an invalid task context: %s",
+    async (taskId) => {
+      vi.mocked(getCurrentUser).mockResolvedValue({
+        ...actor,
+        capabilities: new Set([
+          permissionCodes.workflowTaskAssignedRead,
+          permissionCodes.workflowInstanceAssignedRead,
+        ]),
+      });
+      const page = await ApplicationPage({
+        params: Promise.resolve({ id: applicationId }),
+        searchParams: Promise.resolve({ tab: "workflow-progress", taskId }),
+      });
+      expect(getWorkflowProgress).not.toHaveBeenCalled();
+      expect(page.props.canReadWorkflow).toBe(false);
+    },
+  );
+
+  it("does not grant assigned workflow access from the query parameters", async () => {
+    vi.mocked(getCurrentUser).mockResolvedValue({
+      ...actor,
+      capabilities: new Set([permissionCodes.workflowTaskAssignedRead]),
+    });
+    const page = await ApplicationPage({
+      params: Promise.resolve({ id: applicationId }),
+      searchParams: Promise.resolve({
+        taskId: "33333333-3333-4333-8333-333333333333",
+      }),
+    });
+    expect(getWorkflowProgress).not.toHaveBeenCalled();
+    expect(page.props.initialTab).toBe("overview");
   });
 });

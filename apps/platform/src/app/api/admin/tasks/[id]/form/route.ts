@@ -1,3 +1,5 @@
+import { taskInstanceIdSchema } from "@/modules/work-queue/WorkQueueSchemas";
+import { getTaskForm } from "@/modules/forms/application/ServerTaskFormReadService";
 import { resolveUserFromHeaders } from "@/auth/authorization/current-user";
 import {
   createCorrelationId,
@@ -11,7 +13,6 @@ import {
 import { z } from "zod";
 import {
   completeTaskForm,
-  getTaskForm,
   saveTaskForm,
 } from "@/modules/forms/application/ServerFormsService";
 
@@ -22,10 +23,11 @@ export async function GET(
   const correlationId = createCorrelationId();
   try {
     const { id } = await context.params;
+    const taskId = taskInstanceIdSchema.parse(id);
     return portalRouteSuccess(
       await getTaskForm(
         await resolveUserFromHeaders(request.headers),
-        id,
+        taskId,
       ),
       correlationId,
     );
@@ -41,11 +43,12 @@ export async function PATCH(
   const correlationId = createCorrelationId();
   try {
     const { id } = await context.params;
+    const taskId = taskInstanceIdSchema.parse(id);
     const input = taskFormSubmissionSchema.parse(await request.json());
     return portalRouteSuccess(
       await saveTaskForm(
         await resolveUserFromHeaders(request.headers),
-        { ...input, correlationId, taskInstanceId: id },
+        { ...input, correlationId, taskInstanceId: taskId },
       ),
       correlationId,
     );
@@ -61,12 +64,13 @@ export async function POST(
   const correlationId = createCorrelationId();
   try {
     const { id } = await context.params;
+    const taskId = taskInstanceIdSchema.parse(id);
     const input = taskFormCompletionSchema.parse(await request.json());
     const idempotencyKey = z.uuid().parse(request.headers.get("Idempotency-Key"));
     return portalRouteSuccess(
       await completeTaskForm(
         await resolveUserFromHeaders(request.headers),
-        { ...input, correlationId, idempotencyKey, taskInstanceId: id },
+        { ...input, correlationId, idempotencyKey, taskInstanceId: taskId },
       ),
       correlationId,
     );

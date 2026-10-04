@@ -46,6 +46,7 @@ export const operationsScopePermissions = [
   permissionCodes.fundingApplicationExport,
   permissionCodes.fundingApplicationInformationRequestCreate,
   permissionCodes.workflowTaskAssignedRead,
+  permissionCodes.workflowTaskAllRead,
   permissionCodes.workflowTaskAssignedProcess,
   permissionCodes.workflowTaskAssignedDecide,
   permissionCodes.workflowTaskAssign,

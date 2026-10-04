@@ -2,6 +2,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 vi.mock(
+  "@/modules/workflows/application/runtime/ServerWorkflowEligibilityFailureService",
+  () => ({
+    terminateWorkflowOnEligibilityFailure: vi.fn(),
+  }),
+);
+vi.mock(
   "@/modules/eligibility/application/SaveEligibilityEvaluationForm",
   () => ({ saveEligibilityEvaluationForm: vi.fn() }),
 );
@@ -23,13 +29,13 @@ vi.mock(
   () => ({ resolveAuthoritativeEligibilityData: vi.fn() }),
 );
 
-import { permissionCodes } from "@/auth/authorization/permissions";
+import { terminateWorkflowOnEligibilityFailure } from "@/modules/workflows/application/runtime/ServerWorkflowEligibilityFailureService";
 import { PermissionDeniedError } from "@/auth/authorization/policy";
-import type { AuthenticatedUser } from "@/auth/types";
-import { ResourceConflictError, ResourceNotFoundError } from "@/lib/resource-errors";
 import {
-  executeAuthoritativeEligibility,
-} from "@/modules/eligibility/application/ServerAuthoritativeEligibilityService";
+  ResourceConflictError,
+  ResourceNotFoundError,
+} from "@/lib/resource-errors";
+import { executeAuthoritativeEligibility } from "@/modules/eligibility/application/ServerAuthoritativeEligibilityService";
 import { resolveAuthoritativeEligibilityData } from "@/modules/eligibility/application/ServerEligibilityDataResolver";
 import { saveEligibilityEvaluationForm } from "@/modules/eligibility/application/SaveEligibilityEvaluationForm";
 import {
@@ -39,116 +45,25 @@ import {
   withAuthoritativeEligibilityExecutionTransaction,
 } from "@/modules/eligibility/infrastructure/AuthoritativeEligibilityExecutionRepository";
 import { findRuntimeEligibilityRuleSetForEvaluation } from "@/modules/eligibility/infrastructure/EligibilityEvaluationRepository";
-import { defaultWorkflowElementPermissions } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
-
-const actor: AuthenticatedUser = {
-  capabilities: new Set([permissionCodes.workflowTaskAssignedProcess]),
-  createdAt: new Date(),
-  displayName: "Screening officer",
-  email: "screening@example.test",
-  id: "10000000-0000-4000-8000-000000000001",
-  identitySubject: "screening-officer",
-  lastLoginAt: null,
-  roleCodes: new Set(["programme_officer"]),
-  status: "active",
-  updatedAt: new Date(),
-  userType: "staff",
-};
-const versionId = "20000000-0000-4000-8000-000000000001";
-const taskId = "30000000-0000-4000-8000-000000000001";
-const input = {
-  correlationId: "40000000-0000-4000-8000-000000000001",
-  expectedRowVersion: 2,
-  idempotencyKey: "50000000-0000-4000-8000-000000000001",
+import {
+  actor,
+  input,
+  target,
+  previousOutcome,
   taskId,
-};
-
-function target() {
-  return {
-    application: {
-      businessSection: {},
-      declarationsSection: {},
-      eligibilityRuleSetVersionId: versionId,
-      financialSection: {},
-      formVersionId: null,
-      id: "60000000-0000-4000-8000-000000000001",
-      projectSection: {},
-      rowVersion: 4,
-    },
-    assignedToActor: true,
-    business: {
-      employeeCount: 2,
-      establishedYear: 2024,
-      registrationNumber: "B-1",
-      updatedAt: new Date("2026-09-22T08:00:00.000Z"),
-    },
-    config: {
-      command: "AUTHORITATIVE_ELIGIBILITY",
-      reevaluationPolicy: "WHEN_EVIDENCE_CHANGED",
-    },
-    formVersionId: null,
-    fundingCall: {
-      closesAt: new Date("2026-12-01T00:00:00.000Z"),
-      eligibilityRuleSetVersionId: versionId,
-      fundingInstrument: "Grant",
-      id: "70000000-0000-4000-8000-000000000001",
-      maximumGrantAmount: "100000",
-      minimumGrantAmount: "1000",
-      opensAt: new Date("2026-09-01T00:00:00.000Z"),
-      slug: "growth",
-      status: "LIVE",
-      thematicArea: "Growth",
-      title: "Growth",
-      totalBudgetEnvelope: "1000000",
-    },
-    permissions: defaultWorkflowElementPermissions,
-    prerequisiteNames: [],
-    previousOutcome: null,
-    rowVersion: 2,
-    stageInstanceId: "80000000-0000-4000-8000-000000000001",
-    status: "IN_PROGRESS",
-    taskId,
-    taskKey: "AUTHORITATIVE_ELIGIBILITY",
-    workflowInstanceId: "90000000-0000-4000-8000-000000000001",
-  };
-}
-
-function previousOutcome() {
-  return {
-    applicationId: "60000000-0000-4000-8000-000000000001",
-    contextReference: {
-      applicationId: "60000000-0000-4000-8000-000000000001",
-      applicationRowVersion: 4,
-      businessProfileUpdatedAt: "2026-09-22T08:00:00.000Z",
-      correlationId: "40000000-0000-4000-8000-000000000000",
-      fundingCallId: "70000000-0000-4000-8000-000000000001",
-    },
-    eligible: true,
-    evaluatedAt: new Date("2026-09-22T08:30:00.000Z"),
-    evaluatedBy: actor.id,
-    evaluatedValueProvenance: {},
-    evaluatedValues: {},
-    evaluationNumber: 1,
-    finalOutcome: "ELIGIBLE" as const,
-    hardFailures: [],
-    id: "b0000000-0000-4000-8000-000000000000",
-    manualScreeningRequired: false,
-    ruleOutcomes: [],
-    ruleSetVersionId: versionId,
-    ruleSetVersionNumber: 3,
-    softFailures: [],
-    warnings: [],
-    workflowTaskId: taskId,
-  };
-}
+  versionId,
+} from "../../support/AuthoritativeEligibilityExecutionFixture";
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(withAuthoritativeEligibilityExecutionTransaction)
-    .mockImplementation(async (work) => work({} as never));
+  vi.mocked(terminateWorkflowOnEligibilityFailure).mockResolvedValue(null);
+  vi.mocked(
+    withAuthoritativeEligibilityExecutionTransaction,
+  ).mockImplementation(async (work) => work({} as never));
   vi.mocked(lockAuthoritativeEligibilityTask).mockResolvedValue(target());
-  vi.mocked(findAuthoritativeEligibilityExecutionByCommand)
-    .mockResolvedValue(null);
+  vi.mocked(findAuthoritativeEligibilityExecutionByCommand).mockResolvedValue(
+    null,
+  );
   vi.mocked(findRuntimeEligibilityRuleSetForEvaluation).mockResolvedValue({
     ruleSetId: "a0000000-0000-4000-8000-000000000001",
     rules: [],
@@ -174,9 +89,34 @@ beforeEach(() => {
 });
 
 describe("authoritative eligibility workflow execution", () => {
+  it("runs an inherited verification form without a legacy explicit command", async () => {
+    const values = { ENTITY_REGISTERED: "YES" };
+    vi.mocked(lockAuthoritativeEligibilityTask).mockResolvedValue({
+      ...target(),
+      config: { formPurpose: "ELIGIBILITY_VERIFICATION" },
+      formVersionId: "90000000-0000-4000-8000-000000000001",
+    });
+    vi.mocked(saveEligibilityEvaluationForm).mockResolvedValue(values);
+
+    await expect(
+      executeAuthoritativeEligibility(actor, { ...input, values }),
+    ).resolves.toMatchObject({ outcome: "ELIGIBLE" });
+    expect(resolveAuthoritativeEligibilityData).toHaveBeenCalledWith(
+      expect.objectContaining({ workflowTaskId: taskId }),
+    );
+    expect(persistAuthoritativeEligibilityExecution).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ evaluatedFormValues: values }),
+    );
+  });
+
   it("persists the verified outcome inside the workflow transaction", async () => {
-    await expect(executeAuthoritativeEligibility(actor, input)).resolves
-      .toMatchObject({ outcome: "ELIGIBLE", rowVersion: 3 });
+    await expect(
+      executeAuthoritativeEligibility(actor, input),
+    ).resolves.toMatchObject({ outcome: "ELIGIBLE", rowVersion: 3 });
+    expect(resolveAuthoritativeEligibilityData).toHaveBeenCalledWith(
+      expect.objectContaining({ workflowTaskId: undefined }),
+    );
     expect(persistAuthoritativeEligibilityExecution).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
@@ -224,17 +164,26 @@ describe("authoritative eligibility workflow execution", () => {
       prerequisiteNames: ["Completeness and document screening"],
     });
 
-    await expect(executeAuthoritativeEligibility(actor, input)).rejects
-      .toBeInstanceOf(ResourceConflictError);
+    await expect(
+      executeAuthoritativeEligibility(actor, input),
+    ).rejects.toBeInstanceOf(ResourceConflictError);
     expect(persistAuthoritativeEligibilityExecution).not.toHaveBeenCalled();
   });
 
-  it("denies an actor without the configured process permission", async () => {
-    await expect(executeAuthoritativeEligibility({
-      ...actor,
-      capabilities: new Set(),
-    }, input)).rejects.toBeInstanceOf(PermissionDeniedError);
-  });
+  it.each([false, true])(
+    "denies an actor without the configured process permission: confirmed=%s",
+    async (confirmHardFailure) => {
+      await expect(
+        executeAuthoritativeEligibility(
+          {
+            ...actor,
+            capabilities: new Set(),
+          },
+          { ...input, confirmHardFailure },
+        ),
+      ).rejects.toBeInstanceOf(PermissionDeniedError);
+    },
+  );
 
   it("hides a task assigned to a different actor", async () => {
     vi.mocked(lockAuthoritativeEligibilityTask).mockResolvedValue({
@@ -242,8 +191,9 @@ describe("authoritative eligibility workflow execution", () => {
       assignedToActor: false,
     });
 
-    await expect(executeAuthoritativeEligibility(actor, input)).rejects
-      .toBeInstanceOf(ResourceNotFoundError);
+    await expect(
+      executeAuthoritativeEligibility(actor, input),
+    ).rejects.toBeInstanceOf(ResourceNotFoundError);
   });
 
   it("blocks re-evaluation when the published task policy forbids it", async () => {
@@ -256,8 +206,9 @@ describe("authoritative eligibility workflow execution", () => {
       previousOutcome: previousOutcome(),
     });
 
-    await expect(executeAuthoritativeEligibility(actor, input)).rejects
-      .toBeInstanceOf(ResourceConflictError);
+    await expect(
+      executeAuthoritativeEligibility(actor, input),
+    ).rejects.toBeInstanceOf(ResourceConflictError);
     expect(resolveAuthoritativeEligibilityData).not.toHaveBeenCalled();
     expect(persistAuthoritativeEligibilityExecution).not.toHaveBeenCalled();
   });
@@ -269,8 +220,9 @@ describe("authoritative eligibility workflow execution", () => {
       status: "COMPLETED",
     });
 
-    await expect(executeAuthoritativeEligibility(actor, input)).rejects
-      .toBeInstanceOf(ResourceConflictError);
+    await expect(
+      executeAuthoritativeEligibility(actor, input),
+    ).rejects.toBeInstanceOf(ResourceConflictError);
     expect(persistAuthoritativeEligibilityExecution).not.toHaveBeenCalled();
   });
 });

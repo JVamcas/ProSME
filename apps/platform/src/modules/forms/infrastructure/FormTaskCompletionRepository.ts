@@ -1,4 +1,7 @@
 import "server-only";
+import { lockWorkflowRuntimeForTask } from "@/modules/workflows/infrastructure/WorkflowRuntimeLock";
+import { workflowTaskControlAllowsCompletion } from "@/modules/workflows/infrastructure/WorkflowTaskControlReadiness";
+import { workflowApprovalEligibilityReady } from "@/modules/workflows/infrastructure/WorkflowApprovalEligibilityReadiness";
 
 import { sql } from "drizzle-orm";
 
@@ -40,6 +43,7 @@ type ReplayInput = Pick<
 >;
 
 type LockedTask = {
+  approvalEligibilityReady: boolean;
   actionType: WorkflowActionType | null;
   taskType: "CONTRIBUTING" | "STAGE_DECISION";
   hasChecklist: boolean;
@@ -118,8 +122,10 @@ async function lockTask(
   transaction: Transaction,
   input: CompletionInput,
 ): Promise<LockedTask | null> {
+  await lockWorkflowRuntimeForTask(transaction, input.taskInstanceId);
   const result = await transaction.execute(sql`
-    SELECT task.row_version AS "rowVersion", task.result,
+    SELECT ${workflowApprovalEligibilityReady(sql`stage.workflow_instance_id`)} AS "approvalEligibilityReady",
+      task.row_version AS "rowVersion", task.result,
       definition.config,
       definition.task_type AS "taskType",
       (
@@ -164,6 +170,7 @@ async function lockTask(
       AND task.row_version = ${input.expectedTaskRowVersion}
       AND task.status IN ('PENDING', 'IN_PROGRESS')
       AND stage.status = 'ACTIVE' AND workflow.status = 'ACTIVE'
+      AND ${workflowTaskControlAllowsCompletion}
       AND (
         (${input.actionKey}::text IS NULL)
         OR (${input.actionKey}::text IS NOT NULL AND EXISTS (
@@ -252,6 +259,7 @@ async function writeCompletion(
   task: LockedTask,
   executeTransition: ExecuteTransition,
 ): Promise<CompletionResult | null> {
+  if (task.actionType === "APPROVE_ADVANCE" && task.approvalEligibilityReady === false) return null;
   if (input.actionKey && !taskActionMatchesType(task)) return null;
   if (
     input.actionKey &&

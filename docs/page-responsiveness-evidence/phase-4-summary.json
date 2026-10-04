@@ -1,0 +1,509 @@
+{
+  "comparison": "Paired current/reference observations",
+  "historicalBaseline": "Original G0 recorded observations",
+  "allTargetsMet": true,
+  "results": [
+    {
+      "route": "/admin",
+      "condition": "cold",
+      "converted": true,
+      "samples": {
+        "current": 5,
+        "reference": 5,
+        "g0": 3
+      },
+      "current": {
+        "feedbackMs": null,
+        "structureMs": 109.5,
+        "dataMs": 398.1870910000016
+      },
+      "reference": {
+        "feedbackMs": null,
+        "structureMs": 1819.199999988079,
+        "dataMs": 2082.003095
+      },
+      "g0": {
+        "feedbackMs": null,
+        "structureMs": 1675.3999999985099,
+        "dataMs": 2363.9769749999996
+      },
+      "complete": true,
+      "fullDataToleranceMet": true
+    },
+    {
+      "route": "/admin",
+      "condition": "warm",
+      "converted": true,
+      "samples": {
+        "current": 5,
+        "reference": 5,
+        "g0": 3
+      },
+      "current": {
+        "feedbackMs": 57.5,
+        "structureMs": 57.5,
+        "dataMs": 88.90000000596046
+      },
+      "reference": {
+        "feedbackMs": 49.20000000298023,
+        "structureMs": 967.1999999880791,
+        "dataMs": 967.1999999880791
+      },
+      "g0": {
+        "feedbackMs": 141.5,
+        "structureMs": 729.8999999985099,
+        "dataMs": 729.8999999985099
+      },
+      "complete": true,
+      "fullDataToleranceMet": true
+    },
+    {
+      "route": "/admin",
+      "condition": "delayed",
+      "converted": true,
+      "samples": {
+        "current": 5,
+        "reference": 5,
+        "g0": 3
+      },
+      "current": {
+        "feedbackMs": 63.5,
+        "structureMs": 63.5,
+        "dataMs": 1532.2999999970198
+      },
+      "reference": {
+        "feedbackMs": 59.099999994039536,
+        "structureMs": 1520.3999999910593,
+        "dataMs": 1520.3999999910593
+      },
+      "g0": {
+        "feedbackMs": 167.39999999850988,
+        "structureMs": 1559.8999999985099,
+        "dataMs": 1559.8999999985099
+      },
+      "complete": true,
+      "fullDataToleranceMet": true,
+      "structureLeadMs": 1481.7000000029802,
+      "structureImprovementPercent": 95.82346750852582,
+      "g0StructureImprovementPercent": 95.92922623244691,
+      "structureTargetsMet": true
+    },
+    {
+      "route": "/portal",
+      "condition": "cold",
+      "converted": true,
+      "samples": {
+        "current": 5,
+        "reference": 5,
+        "g0": 3
+      },
+      "current": {
+        "feedbackMs": null,
+        "structureMs": 54.599999994039536,
+        "dataMs": 410.3534389999986
+      },
+      "reference": {
+        "feedbackMs": null,
+        "structureMs": 1130,
+        "dataMs": 1390.1691430000064
+      },
+      "g0": {
+        "feedbackMs": null,
+        "structureMs": 1925.5,
+        "dataMs": 2239.3698719999957
+      },
+      "complete": true,
+      "fullDataToleranceMet": true
+    },
+    {
+      "route": "/portal",
+      "condition": "warm",
+      "converted": true,
+      "samples": {
+        "current": 5,
+        "reference": 5,
+        "g0": 3
+      },
+      "current": {
+        "feedbackMs": 65,
+        "structureMs": 65,
+        "dataMs": 83.19999998807907
+      },
+      "reference": {
+        "feedbackMs": 47.3999999910593,
+        "structureMs": 614.7999999970198,
+        "dataMs": 614.7999999970198
+      },
+      "g0": {
+        "feedbackMs": 197.80000000447035,
+        "structureMs": 716.1000000014901,
+        "dataMs": 716.1000000014901
+      },
+      "complete": true,
+      "fullDataToleranceMet": true
+    },
+    {
+      "route": "/portal",
+      "condition": "delayed",
+      "converted": true,
+      "samples": {
+        "current": 5,
+        "reference": 5,
+        "g0": 3
+      },
+      "current": {
+        "feedbackMs": 64.80000001192093,
+        "structureMs": 64.80000001192093,
+        "dataMs": 1517.6000000089407
+      },
+      "reference": {
+        "feedbackMs": 56,
+        "structureMs": 1515.4000000059605,
+        "dataMs": 1515.4000000059605
+      },
+      "g0": {
+        "feedbackMs": 172.10000000149012,
+        "structureMs": 1559.5,
+        "dataMs": 1559.5
+      },
+      "complete": true,
+      "fullDataToleranceMet": true,
+      "structureLeadMs": 1453.4000000059605,
+      "structureImprovementPercent": 95.72390127942022,
+      "g0StructureImprovementPercent": 95.84482205758763,
+      "structureTargetsMet": true
+    },
+    {
+      "route": "/admin/applications/66666666-6666-4666-8666-666666666661",
+      "condition": "cold",
+      "converted": true,
+      "samples": {
+        "current": 5,
+        "reference": 5,
+        "g0": 3
+      },
+      "current": {
+        "feedbackMs": null,
+        "structureMs": 46.6000000089407,
+        "dataMs": 452.0692529999942
+      },
+      "reference": {
+        "feedbackMs": null,
+        "structureMs": 1732.699999988079,
+        "dataMs": 2062.6352320000005
+      },
+      "g0": {
+        "feedbackMs": null,
+        "structureMs": 2183.7000000029802,
+        "dataMs": 2898.4050629999983
+      },
+      "complete": true,
+      "fullDataToleranceMet": true
+    },
+    {
+      "route": "/admin/applications/66666666-6666-4666-8666-666666666661",
+      "condition": "warm",
+      "converted": true,
+      "samples": {
+        "current": 5,
+        "reference": 5,
+        "g0": 3
+      },
+      "current": {
+        "feedbackMs": 34.29999999701977,
+        "structureMs": 175.8999999910593,
+        "dataMs": 175.8999999910593
+      },
+      "reference": {
+        "feedbackMs": null,
+        "structureMs": 744.9000000059605,
+        "dataMs": 744.9000000059605
+      },
+      "g0": {
+        "feedbackMs": null,
+        "structureMs": 1175.7999999970198,
+        "dataMs": 1175.7999999970198
+      },
+      "complete": true,
+      "fullDataToleranceMet": true
+    },
+    {
+      "route": "/admin/applications/66666666-6666-4666-8666-666666666661",
+      "condition": "delayed",
+      "converted": true,
+      "samples": {
+        "current": 5,
+        "reference": 5,
+        "g0": 3
+      },
+      "current": {
+        "feedbackMs": 27.700000002980232,
+        "structureMs": 113.8999999910593,
+        "dataMs": 1570
+      },
+      "reference": {
+        "feedbackMs": null,
+        "structureMs": 1661.2000000029802,
+        "dataMs": 1661.2000000029802
+      },
+      "g0": {
+        "feedbackMs": null,
+        "structureMs": 1934.2999999970198,
+        "dataMs": 1934.2999999970198
+      },
+      "complete": true,
+      "fullDataToleranceMet": true,
+      "structureLeadMs": 1458.2000000029802,
+      "structureImprovementPercent": 93.14351071569618,
+      "g0StructureImprovementPercent": 94.11156490765472,
+      "structureTargetsMet": true
+    },
+    {
+      "route": "/portal/applications/66666666-6666-4666-8666-666666666661",
+      "condition": "cold",
+      "converted": true,
+      "samples": {
+        "current": 5,
+        "reference": 5,
+        "g0": 3
+      },
+      "current": {
+        "feedbackMs": null,
+        "structureMs": 161.5,
+        "dataMs": 587.3990730000078
+      },
+      "reference": {
+        "feedbackMs": null,
+        "structureMs": 1292.0999999940395,
+        "dataMs": 1578.9145969999954
+      },
+      "g0": {
+        "feedbackMs": null,
+        "structureMs": 1853.6999999955297,
+        "dataMs": 2189.4623389999906
+      },
+      "complete": true,
+      "fullDataToleranceMet": true
+    },
+    {
+      "route": "/portal/applications/66666666-6666-4666-8666-666666666661",
+      "condition": "warm",
+      "converted": true,
+      "samples": {
+        "current": 5,
+        "reference": 5,
+        "g0": 3
+      },
+      "current": {
+        "feedbackMs": 25.69999998807907,
+        "structureMs": 172,
+        "dataMs": 192.69999998807907
+      },
+      "reference": {
+        "feedbackMs": null,
+        "structureMs": 625,
+        "dataMs": 625
+      },
+      "g0": {
+        "feedbackMs": null,
+        "structureMs": 905.2000000029802,
+        "dataMs": 905.2000000029802
+      },
+      "complete": true,
+      "fullDataToleranceMet": true
+    },
+    {
+      "route": "/portal/applications/66666666-6666-4666-8666-666666666661",
+      "condition": "delayed",
+      "converted": true,
+      "samples": {
+        "current": 5,
+        "reference": 5,
+        "g0": 3
+      },
+      "current": {
+        "feedbackMs": 31.799999997019768,
+        "structureMs": 113.29999999701977,
+        "dataMs": 1551.1000000089407
+      },
+      "reference": {
+        "feedbackMs": null,
+        "structureMs": 1632.5,
+        "dataMs": 1632.5
+      },
+      "g0": {
+        "feedbackMs": null,
+        "structureMs": 1815.8000000044703,
+        "dataMs": 1815.8000000044703
+      },
+      "complete": true,
+      "fullDataToleranceMet": true,
+      "structureLeadMs": 1439.2000000029802,
+      "structureImprovementPercent": 93.05972434934029,
+      "g0StructureImprovementPercent": 93.76032602727498,
+      "structureTargetsMet": true
+    },
+    {
+      "route": "/admin/applications",
+      "condition": "cold",
+      "converted": false,
+      "samples": {
+        "current": 5,
+        "reference": 5,
+        "g0": 3
+      },
+      "current": {
+        "feedbackMs": null,
+        "structureMs": 212.79999999701977,
+        "dataMs": 653.0665689999587
+      },
+      "reference": {
+        "feedbackMs": null,
+        "structureMs": 1560.2000000029802,
+        "dataMs": 3011.777098999999
+      },
+      "g0": {
+        "feedbackMs": null,
+        "structureMs": 1738.4000000059605,
+        "dataMs": 2936.410560999997
+      },
+      "complete": true,
+      "fullDataToleranceMet": true
+    },
+    {
+      "route": "/admin/applications",
+      "condition": "warm",
+      "converted": false,
+      "samples": {
+        "current": 5,
+        "reference": 5,
+        "g0": 3
+      },
+      "current": {
+        "feedbackMs": 46.400000005960464,
+        "structureMs": 404.80000001192093,
+        "dataMs": 428.5
+      },
+      "reference": {
+        "feedbackMs": 16.399999991059303,
+        "structureMs": 697.7999999970198,
+        "dataMs": 1758.5
+      },
+      "g0": {
+        "feedbackMs": 11.600000001490116,
+        "structureMs": 948.5,
+        "dataMs": 1710.2999999970198
+      },
+      "complete": true,
+      "fullDataToleranceMet": true
+    },
+    {
+      "route": "/admin/applications",
+      "condition": "delayed",
+      "converted": false,
+      "samples": {
+        "current": 5,
+        "reference": 5,
+        "g0": 3
+      },
+      "current": {
+        "feedbackMs": 31,
+        "structureMs": 396.1000000089407,
+        "dataMs": 1514.2999999970198
+      },
+      "reference": {
+        "feedbackMs": 6.799999997019768,
+        "structureMs": 632.2000000029802,
+        "dataMs": 1592.5999999940395
+      },
+      "g0": {
+        "feedbackMs": 12.100000001490116,
+        "structureMs": 976.1000000014901,
+        "dataMs": 1639.5
+      },
+      "complete": true,
+      "fullDataToleranceMet": true
+    },
+    {
+      "route": "/portal/applications",
+      "condition": "cold",
+      "converted": false,
+      "samples": {
+        "current": 5,
+        "reference": 5,
+        "g0": 3
+      },
+      "current": {
+        "feedbackMs": null,
+        "structureMs": 44.79999999701977,
+        "dataMs": 412.91773499996634
+      },
+      "reference": {
+        "feedbackMs": null,
+        "structureMs": 1433.2999999970198,
+        "dataMs": 3064.4797920000274
+      },
+      "g0": {
+        "feedbackMs": null,
+        "structureMs": 1805.7000000029802,
+        "dataMs": 3394.5122250000004
+      },
+      "complete": true,
+      "fullDataToleranceMet": true
+    },
+    {
+      "route": "/portal/applications",
+      "condition": "warm",
+      "converted": false,
+      "samples": {
+        "current": 5,
+        "reference": 5,
+        "g0": 3
+      },
+      "current": {
+        "feedbackMs": 27.80000001192093,
+        "structureMs": 357,
+        "dataMs": 406.3999999910593
+      },
+      "reference": {
+        "feedbackMs": 47.70000000298023,
+        "structureMs": 621.5999999940395,
+        "dataMs": 1206
+      },
+      "g0": {
+        "feedbackMs": 177.69999999552965,
+        "structureMs": 935.2999999970198,
+        "dataMs": 1798.0999999940395
+      },
+      "complete": true,
+      "fullDataToleranceMet": true
+    },
+    {
+      "route": "/portal/applications",
+      "condition": "delayed",
+      "converted": false,
+      "samples": {
+        "current": 5,
+        "reference": 5,
+        "g0": 3
+      },
+      "current": {
+        "feedbackMs": 31.400000005960464,
+        "structureMs": 364.3999999910593,
+        "dataMs": 1555.199999988079
+      },
+      "reference": {
+        "feedbackMs": 52.19999998807907,
+        "structureMs": 626.3000000119209,
+        "dataMs": 1547.9000000059605
+      },
+      "g0": {
+        "feedbackMs": 160,
+        "structureMs": 984.3000000044703,
+        "dataMs": 2259.4000000059605
+      },
+      "complete": true,
+      "fullDataToleranceMet": true
+    }
+  ]
+}

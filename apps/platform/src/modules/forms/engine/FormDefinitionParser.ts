@@ -4,6 +4,7 @@ import type {
   FormField,
   FormRuntimeSchema,
   FormSection,
+  RepeatableItemField,
 } from "@/modules/forms/FormTypes";
 import { activeFormDefinition } from "./FormVisibility";
 
@@ -49,7 +50,9 @@ function ordered<T extends { order: number }>(items: readonly T[], label: string
   return result;
 }
 
-function optionSchema(field: FormField) {
+type ValueField = FormField | RepeatableItemField;
+
+function optionSchema(field: ValueField) {
   const options = ordered(field.options ?? [], `Options for ${field.key}`);
   if (options.length === 0) invalid(`Select field ${field.key} has no options.`);
   assertUnique(options.map((option) => option.key), `Options for ${field.key}`);
@@ -60,13 +63,44 @@ function optionSchema(field: FormField) {
 }
 
 function fieldSchema(
-  field: FormField,
+  field: ValueField,
   requireCompletedFields: boolean,
 ): RJSFSchema {
   const common = {
     description: field.helpText ?? undefined,
     title: field.label,
   };
+  if (field.type === "REPEATABLE_GROUP") {
+    const configuration = field.repeatable;
+    if (!configuration) invalid(`Repeatable field ${field.key} has no configuration.`);
+    const fields = ordered(
+      configuration.fields,
+      `Fields in repeatable group ${field.key}`,
+    );
+    assertUnique(
+      fields.map((item) => item.key),
+      `Fields in repeatable group ${field.key}`,
+    );
+    return {
+      ...common,
+      items: {
+        additionalProperties: false,
+        properties: Object.fromEntries(fields.map((item) => [
+          item.key,
+          fieldSchema(item, requireCompletedFields),
+        ])),
+        required: requireCompletedFields
+          ? fields.filter((item) => item.required).map((item) => item.key)
+          : [],
+        type: "object",
+      },
+      maxItems: configuration.maximumItems,
+      minItems: requireCompletedFields
+        ? configuration.minimumItems
+        : 0,
+      type: "array",
+    };
+  }
   if (["NUMBER", "CURRENCY", "PERCENTAGE"].includes(field.type)) {
     const percentage = field.type === "PERCENTAGE";
     const minimum = percentage ? field.minimum ?? 0 : field.minimum;
@@ -150,8 +184,9 @@ export function buildFormValueSchema(
   };
 }
 
-function fieldUiSchema(field: FormField): UiSchema {
+function scalarFieldUiSchema(field: ValueField): UiSchema {
   if (field.type === "TEXTAREA") return { "ui:widget": "textarea" };
+  if (field.type === "RICH_TEXT") return { "ui:widget": "richText" };
   if (field.type === "YES_NO") {
     return {
       "ui:enumNames": ["Yes", "No"],
@@ -169,6 +204,26 @@ function fieldUiSchema(field: FormField): UiSchema {
   if (field.type === "PERCENTAGE") return { "ui:widget": "percentage" };
   if (field.type === "DOCUMENT") return { "ui:widget": "file" };
   return {};
+}
+
+function fieldUiSchema(field: FormField): UiSchema {
+  if (field.type !== "REPEATABLE_GROUP") return scalarFieldUiSchema(field);
+  if (!field.repeatable) invalid(`Repeatable field ${field.key} has no configuration.`);
+  return {
+    "ui:options": {
+      addLabel: field.repeatable.addLabel,
+      itemLabel: field.repeatable.itemLabel,
+    },
+    items: {
+      ...Object.fromEntries(field.repeatable.fields.map((item) => [
+        item.key,
+        scalarFieldUiSchema(item),
+      ])),
+      "ui:order": [...field.repeatable.fields]
+        .sort((left, right) => left.order - right.order)
+        .map((item) => item.key),
+    },
+  };
 }
 
 function parseSections(

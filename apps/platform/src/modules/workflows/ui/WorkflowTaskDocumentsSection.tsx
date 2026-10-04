@@ -16,6 +16,7 @@ const acceptedExtensions = {
 
 type Props = {
   disabled: boolean;
+  taskId?: string;
   requirements: DocumentRequirementItem[];
   upload?: {
     error?: string;
@@ -27,6 +28,7 @@ type Props = {
 
 export function WorkflowTaskDocumentsSection({
   disabled,
+  taskId,
   requirements,
   upload,
 }: Props) {
@@ -34,12 +36,14 @@ export function WorkflowTaskDocumentsSection({
     <div className="space-y-4">
       {requirements.map((requirement) => {
         const document = requirement.document;
-        const canUpload = requirement.uploader !== "APPLICANT"
-          && Boolean(requirement.id && upload);
+        const downloadTaskId = taskId ?? upload?.taskId;
+        const canUpload =
+          requirement.uploader !== "APPLICANT" &&
+          Boolean(requirement.id && upload);
         const StateIcon = document ? CheckCircle2 : FileText;
-        const accept = requirement.acceptedFileTypes.flatMap(
-          (type) => acceptedExtensions[type],
-        ).join(",");
+        const accept = requirement.acceptedFileTypes
+          .flatMap((type) => acceptedExtensions[type])
+          .join(",");
         return (
           <section
             className="flex flex-col gap-3 rounded-xl border border-brand-navy/10 p-4 sm:flex-row sm:items-center sm:justify-between"
@@ -47,9 +51,11 @@ export function WorkflowTaskDocumentsSection({
           >
             <div className="flex items-start gap-3">
               <StateIcon
-                className={document
-                  ? "mt-0.5 size-5 shrink-0 text-brand-green"
-                  : "mt-0.5 size-5 shrink-0 text-brand-orange"}
+                className={
+                  document
+                    ? "mt-0.5 size-5 shrink-0 text-brand-green"
+                    : "mt-0.5 size-5 shrink-0 text-brand-orange"
+                }
               />
               <div>
                 <p className="text-sm font-semibold text-brand-navy">
@@ -76,11 +82,12 @@ export function WorkflowTaskDocumentsSection({
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              {document && upload ? (
+              {document && downloadTaskId ? (
                 <GeneralButtonAnchor
                   download
-                  href={"/api/admin/tasks/" + upload.taskId
-                    + "/documents/" + document.versionId + "/download"}
+                  href={
+                    `/api/admin/tasks/${downloadTaskId}/documents/${document.versionId}/download`
+                  }
                   size="sm"
                   variant="ghost"
                 >
@@ -103,7 +110,9 @@ export function WorkflowTaskDocumentsSection({
         );
       })}
       {upload?.error ? (
-        <p className="text-sm text-red-700" role="alert">{upload.error}</p>
+        <p className="text-sm text-red-700" role="alert">
+          {upload.error}
+        </p>
       ) : null}
     </div>
   );

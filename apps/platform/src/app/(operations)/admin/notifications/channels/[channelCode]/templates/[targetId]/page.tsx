@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { getCurrentUser } from "@/auth/authorization/current-user";
+import { getAuthenticatedPageUser } from "@/platform/auth/ServerAuthNavigation";
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { can } from "@/auth/authorization/policy";
 import {
@@ -21,7 +21,7 @@ export default async function NotificationTemplatePage({
 }: {
   params: Promise<{ channelCode: string; targetId: string }>;
 }) {
-  const user = await getCurrentUser();
+  const user = await getAuthenticatedPageUser();
   if (!user || !can(user, permissionCodes.notificationConfigurationRead)) {
     redirect("/unauthorized");
   }
@@ -48,6 +48,7 @@ export default async function NotificationTemplatePage({
       title={detail.target.label}
     >
       <NotificationTemplateWorkspace
+        canEdit={can(user, permissionCodes.notificationTemplateImport)}
         canPublish={can(user, permissionCodes.notificationTemplatePublish)}
         channelCode={channelCode}
         initialData={detail}

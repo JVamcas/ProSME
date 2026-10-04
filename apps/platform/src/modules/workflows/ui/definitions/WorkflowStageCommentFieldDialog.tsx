@@ -1,10 +1,12 @@
 "use client";
 
+import { isSameWorkflowTaskRequirement } from "../../domain/definitions/WorkflowTaskRequirementIdentity";
+
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FormProvider, useForm } from "react-hook-form";
 
 import { GeneralButton } from "@/components/ui/button";
-import { DraggableDialog } from "@/components/ui/draggable-dialog";
+import { DraggableDialog } from "@/shared/ui/DraggableDialog";
 import { CheckboxField } from "@/components/ui/form-field";
 import { FormInput, FormSelect } from "@/components/ui/form-fields";
 import { useSaveWorkflowGraph } from "@/modules/workflows/WorkflowHooks";
@@ -34,8 +36,12 @@ export function WorkflowStageCommentFieldDialog({
   const mutation = useSaveWorkflowGraph(editor);
   const form = useForm<WorkflowStageCommentFieldFormValues>({
     defaultValues: {
-      displayOrder: field?.displayOrder
-        ?? Math.max(0, ...(stage.commentFields ?? []).map((item) => item.displayOrder)) + 1,
+      displayOrder:
+        field?.displayOrder ??
+        Math.max(
+          0,
+          ...(stage.commentFields ?? []).map((item) => item.displayOrder),
+        ) + 1,
       helpText: field?.helpText ?? "",
       key: field?.key ?? "",
       label: field?.label ?? "",
@@ -47,21 +53,26 @@ export function WorkflowStageCommentFieldDialog({
 
   const submit = form.handleSubmit(async (values) => {
     const duplicateKey = (stage.commentFields ?? []).some(
-      (item) => item.key === values.key && item.key !== field?.key,
+      (item) =>
+        item.taskStableKey === values.taskStableKey &&
+        item.key === values.key &&
+        !isSameWorkflowTaskRequirement(item, field),
     );
     if (duplicateKey) {
       form.setError("key", {
-        message: "Key must be unique in this stage.",
+        message: "Key must be unique in this task.",
       });
       return;
     }
     const duplicateOrder = (stage.commentFields ?? []).some(
       (item) =>
-        item.displayOrder === values.displayOrder && item.key !== field?.key,
+        item.taskStableKey === values.taskStableKey &&
+        item.displayOrder === values.displayOrder &&
+        !isSameWorkflowTaskRequirement(item, field),
     );
     if (duplicateOrder) {
       form.setError("displayOrder", {
-        message: "Display order must be unique in this stage.",
+        message: "Display order must be unique in this task.",
       });
       return;
     }
@@ -76,7 +87,9 @@ export function WorkflowStageCommentFieldDialog({
               ...item,
               commentFields: field
                 ? (item.commentFields ?? []).map((current) =>
-                    current.key === field.key ? nextField : current,
+                    isSameWorkflowTaskRequirement(current, field)
+                      ? nextField
+                      : current,
                   )
                 : [...(item.commentFields ?? []), nextField],
             }
@@ -92,11 +105,20 @@ export function WorkflowStageCommentFieldDialog({
       isOpen
       onClose={onClose}
       size="2xl"
-      title={field ? "Edit comment or recommendation" : "Add comment or recommendation"}
+      title={
+        field
+          ? "Edit comment or recommendation"
+          : "Add comment or recommendation"
+      }
     >
       <FormProvider {...form}>
         <form className="grid gap-4 sm:grid-cols-2" onSubmit={submit}>
-          <FormInput label="Key" name="key" placeholder="REVIEW_RECOMMENDATION" required />
+          <FormInput
+            label="Key"
+            name="key"
+            placeholder="REVIEW_RECOMMENDATION"
+            required
+          />
           <FormInput
             label="Display order"
             min={1}

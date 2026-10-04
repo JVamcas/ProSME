@@ -4,11 +4,20 @@ import { headers } from "next/headers";
 import { cache } from "react";
 
 import { findUserByFirebaseSubject } from "@/db/repositories/UserRepository";
-import { verifyFirebaseSessionFromHeaders } from "../firebase/session";
+import {
+  verifyFirebaseSessionFromHeaders,
+  type FirebaseSessionVerificationOptions,
+} from "@/platform/auth/firebase/ServerFirebaseSession";
 import type { AuthenticatedUser } from "../types";
 
-export async function resolveUserFromHeaders(requestHeaders: Headers): Promise<AuthenticatedUser | null> {
-  const identity = await verifyFirebaseSessionFromHeaders(requestHeaders);
+export async function resolveUserFromHeaders(
+  requestHeaders: Headers,
+  verification?: FirebaseSessionVerificationOptions,
+): Promise<AuthenticatedUser | null> {
+  const identity = await verifyFirebaseSessionFromHeaders(
+    requestHeaders,
+    verification,
+  );
   if (!identity) return null;
   return findUserByFirebaseSubject(identity.uid);
 }

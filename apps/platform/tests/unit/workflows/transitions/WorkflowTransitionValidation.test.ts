@@ -8,12 +8,11 @@ const returnAction: WorkflowActionDefinition = {
   actionType: "RETURN",
   configuration: {
     dataHandling: "RETAIN",
-    reasonRequired: true,
   },
   displayOrder: 2,
   enabled: true,
   label: "Return for reassessment",
-  reasonCodeRequired: true,
+  reasonRequired: true,
   stableKey: "RETURN_FOR_REASSESSMENT",
 };
 
@@ -25,7 +24,7 @@ function graphWithReturnTransition(targetStageKeys: string[]) {
   if (!source) {
     throw new Error("Reference workflow is missing the committee stage.");
   }
-  source.actions.push(returnAction);
+  source.actions.push(structuredClone(returnAction));
   graph.transitions.push({
     actionKey: returnAction.stableKey,
     condition: null,
@@ -37,29 +36,77 @@ function graphWithReturnTransition(targetStageKeys: string[]) {
 }
 
 describe("workflow transition validation feedback", () => {
-  it("identifies the source action and stage when a target is not repeatable", () => {
-    const errors = validateWorkflowTransitions(
-      graphWithReturnTransition(["TECHNICAL_ASSESSMENT"]),
+  it("rejects Return that skips the previous stage to reach an older ancestor", () => {
+    expect(
+      validateWorkflowTransitions(
+        graphWithReturnTransition(["TECHNICAL_ASSESSMENT"]),
+      ),
+    ).toContainEqual(
+      expect.objectContaining({
+        code: "INVALID_CONTROL_DESTINATION",
+        message: expect.stringContaining("the previous stage"),
+      }),
     );
+  });
+  it("rejects downstream and current-stage Return defaults", () => {
+    for (const destination of ["OUTCOME_COMMUNICATION", "COMMITTEE_DECISION"]) {
+      const graph = graphWithReturnTransition([destination]);
+      expect(validateWorkflowTransitions(graph)).toContainEqual(
+        expect.objectContaining({ code: "INVALID_CONTROL_DESTINATION" }),
+      );
+    }
+  });
 
-    expect(errors).toContainEqual(expect.objectContaining({
-      code: "NON_REPEATABLE_SEMANTIC_TARGET",
-      message:
-        "The Return action \"Return for reassessment\" on source stage "
-        + "\"Committee decision\" (COMMITTEE_DECISION) targets "
-        + "\"Technical assessment\" (TECHNICAL_ASSESSMENT), which must be marked Repeatable.",
-    }));
+  it("uses progression paths rather than display order for the previous stage", () => {
+    const graph = graphWithReturnTransition(["FINANCE_REVIEW"]);
+    const target = graph.stages.find(
+      (stage) => stage.stableKey === "FINANCE_REVIEW",
+    )!;
+    target.displayOrder = 100;
+    expect(validateWorkflowTransitions(graph)).toEqual([]);
+  });
+
+  it("rejects a stage reachable downstream even when a normal cycle leads back", () => {
+    const graph = graphWithReturnTransition(["OUTCOME_COMMUNICATION"]);
+    const downstream = graph.stages.find(
+      (stage) => stage.stableKey === "OUTCOME_COMMUNICATION",
+    )!;
+    downstream.actions.push({
+      ...returnAction,
+      actionType: "APPROVE_ADVANCE",
+      configuration: {},
+      stableKey: "LOOP",
+    });
+    graph.transitions.push({
+      actionKey: "LOOP",
+      condition: null,
+      priority: 1,
+      sourceStageKey: downstream.stableKey,
+      targetStageKeys: ["COMMITTEE_DECISION"],
+    });
+    expect(validateWorkflowTransitions(graph)).toContainEqual(
+      expect.objectContaining({ code: "INVALID_CONTROL_DESTINATION" }),
+    );
+  });
+
+  it("allows a nonrepeatable stage as the default for an explicit rework action", () => {
+    const errors = validateWorkflowTransitions(
+      graphWithReturnTransition(["FINANCE_REVIEW"]),
+    );
+    expect(errors).toEqual([]);
   });
 
   it("identifies the source action and stage when its target is missing", () => {
     const errors = validateWorkflowTransitions(graphWithReturnTransition([]));
 
-    expect(errors).toContainEqual(expect.objectContaining({
-      code: "INVALID_SEMANTIC_TARGET_COUNT",
-      message:
-        "The Return action \"Return for reassessment\" on source stage "
-        + "\"Committee decision\" (COMMITTEE_DECISION) has no target stage. "
-        + "Select exactly one target stage.",
-    }));
+    expect(errors).toContainEqual(
+      expect.objectContaining({
+        code: "INVALID_SEMANTIC_TARGET_COUNT",
+        message:
+          'The Return action "Return for reassessment" on source stage ' +
+          '"Committee decision" (COMMITTEE_DECISION) has no target stage. ' +
+          "Select exactly one target stage.",
+      }),
+    );
   });
 });

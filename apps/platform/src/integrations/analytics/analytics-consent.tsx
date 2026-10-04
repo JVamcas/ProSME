@@ -53,7 +53,7 @@ export function AnalyticsConsent({
       ) : null}
       {ready && consent === null ? (
         <aside
-          className="fixed inset-x-4 bottom-4 z-[70] mx-auto max-w-3xl rounded-2xl bg-navy p-5 text-white shadow-2xl"
+          className="fixed inset-x-4 bottom-4 z-70 mx-auto max-w-3xl rounded-2xl bg-brand-navy p-5 text-white shadow-2xl"
           aria-label="Analytics consent"
         >
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center">

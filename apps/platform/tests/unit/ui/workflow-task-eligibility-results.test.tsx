@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn() }),
 }));
-vi.mock("@/modules/work-queue/WorkQueueHooks", () => ({
+vi.mock("@/modules/work-queue/ui/useWorkQueue", () => ({
   useSaveTaskReviewDraft: () => ({
     isError: false,
     isPending: false,
@@ -41,9 +41,20 @@ vi.mock(
     ),
   }),
 );
-vi.mock("@/modules/work-queue/ui/WorkflowTaskDecisionActions", () => ({
-  WorkflowTaskDecisionActions: ({ task }: { task: TaskDetail }) => (
+vi.mock("@/modules/workflows/ui/tasks/WorkflowTaskDecisionActions", () => ({
+  WorkflowTaskDecisionActions: ({
+    task,
+    additionalItems = [],
+  }: {
+    task: TaskDetail;
+    additionalItems?: import("@/shared/ui/DropdownButton").DropdownButtonItem[];
+  }) => (
     <div>
+      {additionalItems.map((item) => (
+        <button disabled={item.disabled} key={item.id} role="menuitem">
+          {item.label}
+        </button>
+      ))}
       {task.actions.map((action) => (
         <span key={action.key}>
           {action.label}:{String(action.available)}
@@ -120,12 +131,10 @@ function workflowAction(
     label,
     presentation: { displayOrder: 1, variant: "primary" },
     requiredInput: {
-      comment: { maxLength: 4_000, required: false },
       confirmation: { message: null, required: false },
       dueDate: { deadlineDays: null, required: false },
       editableFieldPaths: [],
-      reasonCode: { options: [], required: false },
-      reasonOrCommentRequired: false,
+      reason: { maxLength: 4_000, required: false },
       reviewDate: { required: false },
       target: { type: null, value: null },
     },
@@ -154,10 +163,15 @@ describe("task eligibility results", () => {
     expect(markup).not.toContain("Standalone eligibility");
   });
 
-  it("shows a disabled Complete Task button until eligibility is evaluated", () => {
+  it("shows a disabled Complete Task menu item until eligibility is evaluated", () => {
     const markup = renderToStaticMarkup(
       <WorkflowTaskReviewPanel
-        task={{ ...task, eligibilityEvaluation: null, formCompleted: false }}
+        task={{
+          ...task,
+          eligibilityEvaluation: null,
+          formCompleted: false,
+          formVersionId: null,
+        }}
       />,
     );
     expect(markup).toMatch(
@@ -165,9 +179,9 @@ describe("task eligibility results", () => {
     );
   });
 
-  it("shows an enabled Complete Task button when required work is ready", () => {
+  it("shows an enabled Complete Task menu item when required work is ready", () => {
     const markup = renderToStaticMarkup(
-      <WorkflowTaskReviewPanel task={task} />,
+      <WorkflowTaskReviewPanel task={{ ...task, formVersionId: null }} />,
     );
     expect(markup).toContain("Complete Task</button>");
     expect(markup).not.toMatch(

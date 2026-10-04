@@ -53,7 +53,7 @@ export const defaultPages: Record<string, PublicPageContent> = {
   about: {
     blocks: [],
     title: "About the SME Fund",
-    summary: "An initiative under the ProSME Project strengthening Namibia’s MSME ecosystem through finance and practical business support.",
+    summary: "An initiative under the SME Fund Project strengthening Namibia’s MSME ecosystem through finance and practical business support.",
     content: null,
   },
   privacy: {

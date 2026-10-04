@@ -13,9 +13,9 @@ import { toast } from "sonner";
 import type { z } from "zod";
 
 import { GeneralButton } from "@/components/ui/button";
-import { DraggableDialog } from "@/components/ui/draggable-dialog";
+import { DraggableDialog } from "@/shared/ui/DraggableDialog";
 import { CheckboxField } from "@/components/ui/form-field";
-import { FormInput, FormSelect, FormTextarea } from "@/components/ui/form-fields";
+import { FormInput, FormSelect } from "@/components/ui/form-fields";
 import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup";
 import { formFieldSchema } from "@/modules/forms/api/FormSchemas";
 import {
@@ -25,6 +25,7 @@ import {
   type FormSection,
 } from "@/modules/forms/FormTypes";
 import { FormVisibilityConditionEditor } from "./FormVisibilityConditionEditor";
+import { RepeatableGroupConfigurationEditor } from "./RepeatableGroupConfigurationEditor";
 
 type FieldDialogValues = z.input<typeof formFieldSchema>;
 
@@ -39,6 +40,8 @@ const fieldTypeLabels: Record<FormFieldType, string> = {
   TEXT: "Text",
   TEXTAREA: "Textarea",
   YES_NO: "Yes/No",
+  REPEATABLE_GROUP: "Repeatable Group",
+  RICH_TEXT: "Rich Text",
 };
 
 function defaultField(sectionId: string, order: number): FieldDialogValues {
@@ -54,6 +57,7 @@ function defaultField(sectionId: string, order: number): FieldDialogValues {
     options: [],
     order,
     required: false,
+    repeatable: undefined,
     sectionId,
     type: "TEXT",
     visibilityCondition: null,
@@ -151,6 +155,26 @@ function FormFieldDialogContent({
     if (type !== "TEXT" && type !== "TEXTAREA") {
       form.setValue("minLength", undefined);
       form.setValue("maxLength", undefined);
+    }
+    if (type !== "REPEATABLE_GROUP") {
+      form.setValue("repeatable", undefined);
+    } else if (!form.getValues("repeatable")) {
+      form.setValue("repeatable", {
+        addLabel: "Add row",
+        fields: [{
+          columnSpan: 1,
+          helpText: "",
+          key: "FIELD_1",
+          label: "Field 1",
+          options: [],
+          order: 1,
+          required: true,
+          type: "TEXT",
+        }],
+        itemLabel: "Row",
+        maximumItems: 20,
+        minimumItems: 1,
+      });
     }
   }, [form, type]);
 
@@ -253,6 +277,9 @@ function FormFieldDialogContent({
                 );
               }}
             />
+          ) : null}
+          {type === "REPEATABLE_GROUP" ? (
+            <RepeatableGroupConfigurationEditor />
           ) : null}
           <div className="flex justify-end">
             <GeneralButton

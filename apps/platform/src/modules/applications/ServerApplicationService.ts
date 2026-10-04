@@ -3,50 +3,27 @@ import "server-only";
 import { permissionCodes } from "@/auth/authorization/permissions";
 import {
   can,
-  requirePermission,
   requireAnyPermission,
+  requirePermission,
 } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import {
-  createOwnedApplication,
-  findOwnedApplication,
-  findOwnedApplicationStatus,
-  findOwnedApplicationByOpportunity,
-  findAllApplications,
-  findApplicationsAssignedTo,
-  findAssignedApplicationById,
-  findApplicationById,
-  listOwnedApplications,
-  updateOwnedApplication,
-} from "@/modules/applications/infrastructure/ApplicationRepository";
-import { findOwnedBusiness } from "@/db/repositories/BusinessRepository";
-import {
   ResourceConflictError,
   ResourceNotFoundError,
-  RequestValidationError,
 } from "@/lib/resource-errors";
-import { resolvePublishedApplicationFormBinding } from "@/modules/funding-calls/ServerFundingOpportunityIntegration";
-import { getAttachedApplicationForm } from "./infrastructure/AttachedApplicationFormRepository";
-import { applicationDeclarationsSectionSchema } from "./ApplicationDeclarationSchemas";
-import { applicationDocumentRequirements } from "./domain/ApplicationDocumentPolicy";
-import type {
-  ApplicationSection,
-  ApplicationSectionCompletion,
-  ApplicationUpdateInput,
-} from "./ApplicationSchemas";
 import {
-  applicationBusinessSectionSchema,
-  applicationFinancialSectionSchema,
-  applicationProjectSectionSchema,
-} from "./ApplicationSchemas";
+  findAllApplications,
+  findApplicationById,
+  findApplicationsAssignedTo,
+  findAssignedApplicationById,
+  findOwnedApplicationStatus,
+  listOwnedApplications,
+} from "./infrastructure/ApplicationRepository";
 import type { ApplicationListInput, ApplicationPage } from "./ApplicationTypes";
-import { listLatestOwnedApplicationDocumentVersions } from "./infrastructure/ApplicationDocumentRepository";
-import { readOwnedApplicationDraftResponse } from "./infrastructure/ApplicationResponseRepository";
 import {
   decodeApplicationCursor,
   encodeApplicationCursor,
   toApplicationSummary,
-  toApplicationView,
 } from "./ApplicationRepresentation";
 
 export class ApplicationNotFoundError extends ResourceNotFoundError {
@@ -88,75 +65,6 @@ export class ApplicationBusinessConflictError extends ResourceConflictError {
   }
 }
 
-function nextSection(
-  section: ApplicationSection,
-  completion: ApplicationSectionCompletion,
-): ApplicationSection {
-  if (section === "business") return "project";
-  if (section === "project") return "financial";
-  if (section === "financial") return "documents";
-  if (section === "documents") return "declarations";
-  return completion.business ? "declarations" : "business";
-}
-
-function sectionIsComplete(input: ApplicationUpdateInput) {
-  if (input.section === "business") {
-    return applicationBusinessSectionSchema.safeParse(input.data).success;
-  }
-  if (input.section === "project") {
-    return applicationProjectSectionSchema.safeParse(input.data).success;
-  }
-  if (input.section === "financial") {
-    return applicationFinancialSectionSchema.safeParse(input.data).success;
-  }
-  if (input.section === "declarations") {
-    return applicationDeclarationsSectionSchema.safeParse(input.data).success;
-  }
-  return false;
-}
-
-async function documentsAreComplete(
-  ownerUserId: string,
-  application: Awaited<ReturnType<typeof findOwnedApplication>> & {},
-) {
-  if (!application.formVersionId) return false;
-  const [documents, form, response] = await Promise.all([
-    listLatestOwnedApplicationDocumentVersions(ownerUserId, application.id),
-    getAttachedApplicationForm(
-      application.formVersionId,
-      application.fundingOpportunityId,
-    ),
-    readOwnedApplicationDraftResponse(ownerUserId, application.id),
-  ]);
-  if (!form || !response || response.formVersionId !== application.formVersionId) {
-    return false;
-  }
-  const current = new Map(
-    documents.map((document) => [document.requirementKey, document]),
-  );
-  return applicationDocumentRequirements(form, response.values)
-    .filter((requirement) => requirement.required)
-    .every((requirement) => {
-      const document = current.get(requirement.key);
-      return document?.storageStatus === "finalized";
-    });
-}
-
-async function loadOwnedApplication(ownerUserId: string, id: string) {
-  const application = await findOwnedApplication(ownerUserId, id);
-  if (!application) throw new ApplicationNotFoundError();
-  return application;
-}
-
-async function requireOwnedSelectedBusiness(
-  ownerUserId: string,
-  input: ApplicationUpdateInput,
-) {
-  if (input.section !== "business" || !input.data.businessId) return;
-  const business = await findOwnedBusiness(ownerUserId, input.data.businessId);
-  if (!business) throw new ApplicationBusinessUnavailableError();
-}
-
 export async function listOwnApplications(
   user: AuthenticatedUser | null,
   input: ApplicationListInput,
@@ -192,100 +100,6 @@ export async function getOwnApplicationStatus(
   const application = await findOwnedApplicationStatus(actor.id, id);
   if (!application) throw new ApplicationNotFoundError();
   return toApplicationSummary(application);
-}
-
-export async function getOwnApplication(
-  user: AuthenticatedUser | null,
-  id: string,
-) {
-  const actor = requirePermission(
-    user,
-    permissionCodes.fundingApplicationOwnRead,
-  );
-  return toApplicationView(await loadOwnedApplication(actor.id, id));
-}
-
-export async function createApplication(
-  user: AuthenticatedUser | null,
-  fundingOpportunityId: string,
-) {
-  const actor = requirePermission(
-    user,
-    permissionCodes.fundingApplicationCreate,
-  );
-  const opportunity =
-    await resolvePublishedApplicationFormBinding(fundingOpportunityId);
-  if (!opportunity || opportunity.status !== "open") {
-    throw new ApplicationOpportunityUnavailableError();
-  }
-  if (!opportunity.formVersionId) {
-    throw new ApplicationOpportunityUnavailableError();
-  }
-  if (!opportunity.eligibilityRuleSetVersionId) {
-    throw new ApplicationOpportunityUnavailableError();
-  }
-  const existing = await findOwnedApplicationByOpportunity(
-    actor.id,
-    opportunity.id,
-  );
-  if (existing) return toApplicationView(existing);
-  const id = await createOwnedApplication({
-    duplicatePolicy: opportunity.applicationDuplicatePolicy,
-    eligibilityRuleSetVersionId: opportunity.eligibilityRuleSetVersionId,
-    formVersionId: opportunity.formVersionId,
-    fundingOpportunityId: opportunity.id,
-    fundingOpportunityTitle: opportunity.title,
-    ownerUserId: actor.id,
-  });
-  const application = id
-    ? await loadOwnedApplication(actor.id, id)
-    : await findOwnedApplicationByOpportunity(actor.id, opportunity.id);
-  if (!application) throw new ApplicationConflictError();
-  return toApplicationView(application);
-}
-
-export async function updateOwnApplication(
-  user: AuthenticatedUser | null,
-  id: string,
-  input: ApplicationUpdateInput,
-) {
-  const actor = requirePermission(
-    user,
-    permissionCodes.fundingApplicationOwnUpdate,
-  );
-  const current = await loadOwnedApplication(actor.id, id);
-  if (current.rowVersion !== input.expectedRowVersion) {
-    throw new ApplicationConflictError();
-  }
-  await requireOwnedSelectedBusiness(actor.id, input);
-  const sectionComplete = input.section === "documents"
-    ? await documentsAreComplete(actor.id, current)
-    : sectionIsComplete(input);
-  if (input.section === "documents" && !sectionComplete) {
-    throw new RequestValidationError(
-      "Upload all required supporting documents before continuing.",
-    );
-  }
-  const completion = {
-    ...current.sectionCompletion,
-    [input.section]: sectionComplete,
-  };
-  const currentSection =
-    input.intent === "continue"
-      ? nextSection(input.section, completion)
-      : current.currentSection;
-  const update = await updateOwnedApplication(
-    actor.id,
-    id,
-    input,
-    completion,
-    currentSection,
-  );
-  if (update.kind === "duplicate_business") {
-    throw new ApplicationBusinessConflictError();
-  }
-  if (update.kind === "conflict") throw new ApplicationConflictError();
-  return toApplicationView(await loadOwnedApplication(actor.id, update.id));
 }
 
 function requireApplicationReader(user: AuthenticatedUser | null) {

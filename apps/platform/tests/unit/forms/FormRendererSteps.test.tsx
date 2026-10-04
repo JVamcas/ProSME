@@ -223,6 +223,9 @@ describe("step form rendering", () => {
     });
     expect(container.textContent).toContain("Step 2 of 2: Additional details");
     expect(sessionStorage.getItem(persistenceKey)).toBe(definition.sections[1].id);
+    expect(sessionStorage.getItem(`${persistenceKey}:completed`)).toContain(
+      definition.sections[0].id,
+    );
 
     await act(async () => root.unmount());
     root = createRoot(container);
@@ -242,6 +245,7 @@ describe("step form rendering", () => {
 
     await act(async () => root.unmount());
     sessionStorage.removeItem(persistenceKey);
+    sessionStorage.removeItem(`${persistenceKey}:completed`);
   });
   it("shows an unselected single-choice field as incomplete", async () => {
     const definition = runtimeDefinition();

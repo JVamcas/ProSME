@@ -1,0 +1,104 @@
+{
+  "date": "2026-10-04",
+  "candidateBase": "96d16df0",
+  "scope": "Frozen committed phase 3 runtime plus the 18 verification files in phase-4-candidate.json; excludes concurrent unrelated changes",
+  "checks": [
+    {
+      "check": "architecture",
+      "command": "npm run check:architecture",
+      "exitCode": 0,
+      "result": "1367 source files; architecture and form boundaries passed"
+    },
+    {
+      "check": "files",
+      "command": "npm run check:files",
+      "exitCode": 0,
+      "result": "1979 handwritten files; final repeat passed"
+    },
+    {
+      "check": "lint",
+      "command": "npm run lint",
+      "exitCode": 0,
+      "result": "0 errors; 16 existing warnings"
+    },
+    {
+      "check": "build",
+      "command": "npm run build",
+      "exitCode": 0,
+      "result": "Production Next.js build completed; SKIP_CMS_PRERENDER=1"
+    },
+    {
+      "check": "types",
+      "command": "npm run typecheck",
+      "exitCode": 0,
+      "result": "Passed after build and after final E2E fixture edit"
+    },
+    {
+      "check": "tests",
+      "command": "npm run test --workspace @prosme/platform -- --maxWorkers=1",
+      "exitCode": 0,
+      "result": "521 files / 2138 tests passed; 44 files / 178 existing opt-in tests skipped"
+    },
+    {
+      "check": "browser",
+      "command": "npm run test:public --workspace @prosme/platform -- --config playwright.responsiveness.config.ts --grep-invert \"deleting a cached draft|withdrawing a loaded application\" --reporter=list",
+      "exitCode": 0,
+      "result": "24 passed"
+    },
+    {
+      "check": "browser-repeat",
+      "command": "npm run test:public --workspace @prosme/platform -- --config playwright.responsiveness.config.ts --grep \"cached detail return|root layout transition|help crosses\" --repeat-each 5 --reporter=list",
+      "exitCode": 0,
+      "result": "25 passed"
+    },
+    {
+      "check": "browser-mutations",
+      "command": "RESPONSIVENESS_MUTATIONS=true npm run test:public --workspace @prosme/platform -- --config playwright.responsiveness.config.ts --grep \"deleting a cached draft|withdrawing a loaded application\" --reporter=list",
+      "exitCode": 0,
+      "result": "2 real mutation flows passed against fresh isolated fixtures"
+    },
+    {
+      "check": "database",
+      "command": "vitest run tests/integration/application-submission-database.test.ts tests/integration/application-submission-schema-database.test.ts --maxWorkers=1",
+      "exitCode": 0,
+      "result": "7 isolated database integration tests passed"
+    },
+    {
+      "check": "security",
+      "command": "verify-firebase-session-regression.cjs and isolated contextual HTTP probes",
+      "exitCode": 0,
+      "result": "5 real Firebase checks and 9 contextual checks passed"
+    },
+    {
+      "check": "function-size",
+      "command": "TypeScript AST review of complete responsiveness change",
+      "exitCode": 0,
+      "result": "223 files; 1757 functions; maximum 195 lines; limit 200"
+    }
+  ],
+  "unsuccessfulAttempts": [
+    "Original archive build lacked the private environment; supplied the same local environment and rebuilt successfully.",
+    "Staff record-switch fixture originally targeted a draft excluded from staff lists; corrected the synthetic authorized projection and applicationId field.",
+    "Overlapping browser artifact jobs and a rebuilding runtime invalidated one browser run; repeated against a stable runtime with 24 passing checks.",
+    "Mutation tests initially observed the wrong API path and omitted the required reason label; corrected observers and asserted fresh fixture state before mutation.",
+    "Consumed fixtures, concurrent build memory pressure, and a read-only Vitest dependency cache blocked mutation setup; recreated only the disposable database, enabled the test cache, and repeated both real flows successfully."
+  ],
+  "unresolvedCandidateFailures": [],
+  "retainedLogs": [
+    "docs/page-responsiveness-evidence/phase-4-logs/candidate-architecture.log",
+    "docs/page-responsiveness-evidence/phase-4-logs/candidate-files-final.log",
+    "docs/page-responsiveness-evidence/phase-4-logs/candidate-lint.log",
+    "docs/page-responsiveness-evidence/phase-4-logs/candidate-types-final.log",
+    "docs/page-responsiveness-evidence/phase-4-logs/candidate-tests.log",
+    "docs/page-responsiveness-evidence/phase-4-logs/candidate-build.log",
+    "docs/page-responsiveness-evidence/phase-4-logs/browser-stable.log",
+    "docs/page-responsiveness-evidence/phase-4-logs/cached-root.log",
+    "docs/page-responsiveness-evidence/phase-4-logs/browser-mutations-accepted.log",
+    "docs/page-responsiveness-evidence/phase-4-logs/database-tests.log",
+    "docs/page-responsiveness-evidence/phase-4-logs/firebase-security-final.log"
+  ],
+  "focusedWhitespaceCheck": {
+    "exitCode": 0,
+    "scope": "18 phase4 source paths and touched existing documentation; unrelated working-tree paths excluded"
+  }
+}

@@ -1,22 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
+import { DataTable, type DataTableColumn } from "@/shared/ui/DataTable";
 import { GeneralButton } from "@/components/ui/button";
 import { Pagination } from "@/components/ui/pagination";
 import { formPurposeOptions } from "@/modules/forms/FormTypes";
 import type { FormDefinitionSummary } from "@/modules/forms/FormTypes";
-import {
-  CloneButton,
-  CreateDraftButton,
-  EditButton,
-  PreviewButton,
-  PublishButton,
-  RetireButton,
-} from "@/components/ui/action-buttons";
 import { formatLocalDateTime24 } from "@/lib/dateUtils";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { FormVersionsTable } from "@/modules/forms/ui/FormVersionsTable";
+import { ActionMenu, type ActionMenuItem } from "@/shared/ui/ActionMenu";
 
 export type FormTablePendingAction = {
   action: "clone" | "preview" | "publish" | "retire";
@@ -48,56 +41,59 @@ function FormTableActions({
   const hasVersion = Boolean(
     form.latestVersionId && form.latestVersionRowVersion !== null,
   );
+  const actionPending = Boolean(options.pendingAction);
+  const actions: ActionMenuItem[] = [
+    {
+      id: "edit",
+      label: "Edit",
+      disabled:
+        !options.canUpdate
+        || form.latestStatus !== "DRAFT"
+        || actionPending,
+      onAction: () => options.onEdit(form),
+    },
+    {
+      id: "preview",
+      label: pending === "preview" ? "Previewing…" : "Preview",
+      disabled: actionPending,
+      onAction: () => options.onPreview(form),
+    },
+    {
+      id: "publish",
+      label: pending === "publish" ? "Publishing…" : "Publish",
+      disabled:
+        !options.canPublish
+        || form.latestStatus !== "DRAFT"
+        || !hasVersion
+        || actionPending,
+      onAction: () => options.onPublish(form),
+    },
+    {
+      id: "retire",
+      label: pending === "retire" ? "Retiring…" : "Retire",
+      disabled:
+        !options.canRetire
+        || form.latestStatus !== "PUBLISHED"
+        || !hasVersion
+        || actionPending,
+      destructive: true,
+      onAction: () => options.onRetire(form),
+    },
+    {
+      id: "clone",
+      label: pending === "clone" ? "Cloning…" : "Clone",
+      disabled:
+        !options.canUpdate
+        || form.latestStatus === "DRAFT"
+        || !hasVersion
+        || actionPending,
+      onAction: () => options.onClone(form),
+    },
+  ];
+
   return (
-    <div className="flex items-center justify-start gap-1">
-      <EditButton
-        disabled={
-          !options.canUpdate
-          || form.latestStatus !== "DRAFT"
-          || Boolean(options.pendingAction)
-        }
-        onClick={() => options.onEdit(form)}
-        title={`Edit ${form.name}`}
-      />
-      <PreviewButton
-        disabled={Boolean(options.pendingAction) && pending !== "preview"}
-        isLoading={pending === "preview"}
-        onClick={() => options.onPreview(form)}
-        title={`Preview ${form.name}`}
-      />
-      <PublishButton
-        disabled={
-          !options.canPublish
-          || form.latestStatus !== "DRAFT"
-          || !hasVersion
-          || Boolean(options.pendingAction) && pending !== "publish"
-        }
-        isLoading={pending === "publish"}
-        onClick={() => options.onPublish(form)}
-        title={`Publish ${form.name}`}
-      />
-      <RetireButton
-        disabled={
-          !options.canRetire
-          || form.latestStatus !== "PUBLISHED"
-          || !hasVersion
-          || Boolean(options.pendingAction) && pending !== "retire"
-        }
-        isLoading={pending === "retire"}
-        onClick={() => options.onRetire(form)}
-        title={`Retire ${form.name}`}
-      />
-      <CloneButton
-        disabled={
-          !options.canUpdate
-          || form.latestStatus === "DRAFT"
-          || !hasVersion
-          || Boolean(options.pendingAction) && pending !== "clone"
-        }
-        isLoading={pending === "clone"}
-        onClick={() => options.onClone(form)}
-        title={`Clone ${form.name}`}
-      />
+    <div className="flex justify-start">
+      <ActionMenu items={actions} label={`Actions for ${form.name}`} />
     </div>
   );
 }
@@ -128,7 +124,11 @@ function formColumns(
         (item) => item.value === row.original.purpose,
       )?.label ?? row.original.purpose,
     },
-    { accessorKey: "latestVersion", header: "Latest version" },
+    {
+      accessorKey: "latestVersion",
+      header: "Latest version",
+      cell: ({ row }) => `v${row.original.latestVersion}`,
+    },
     {
       accessorKey: "latestStatus",
       header: "Status",

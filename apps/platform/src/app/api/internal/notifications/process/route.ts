@@ -38,11 +38,13 @@ export async function POST(request: Request) {
 
   try {
     const result = await processConfiguredNotificationBatch();
-    logger.info("notification.processor.completed", {
-      ...result,
-      durationMs: Date.now() - startedAt,
-      requestId,
-    });
+    if (result.claimed > 0) {
+      logger.info("notification.processor.completed", {
+        ...result,
+        durationMs: Date.now() - startedAt,
+        requestId,
+      });
+    }
     return NextResponse.json(
       { data: result },
       { headers: responseHeaders },

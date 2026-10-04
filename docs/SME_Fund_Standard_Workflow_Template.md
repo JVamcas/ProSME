@@ -714,6 +714,7 @@ applications by the same entity.
 
 | Form code | Intended stage |
 | --- | --- |
+| `FUNDING_APPLICATION` | Application Submission |
 | `TECHNICAL_REVIEW` | Technical Assessment |
 | `DUE_DILIGENCE_RISK` | Due Diligence and Risk |
 | `MODERATION` | Moderation |
@@ -733,7 +734,6 @@ Template can bind their exact Form Version identifiers.
 
 | Form code | Blocker |
 | --- | --- |
-| `FUNDING_APPLICATION` | Repeatable budget lines, team members and indicators |
 | `FINANCIAL_REVIEW` | Repeatable budget-line assessment and payment schedule |
 | `CONTRACTING` | Repeatable milestones, indicators, schedules and signatories |
 | `PROGRESS_REPORT` | Repeatable indicators, beneficiaries, expenditure, risks and variations |

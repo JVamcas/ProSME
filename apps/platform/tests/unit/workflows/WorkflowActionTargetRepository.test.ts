@@ -12,7 +12,7 @@ const target = {
     displayOrder: 1,
     enabled: true,
     label: "Execute agreement",
-    reasonCodeRequired: false,
+    reasonRequired: false,
     stableKey: "EXECUTE_AGREEMENT",
   },
   stage: {

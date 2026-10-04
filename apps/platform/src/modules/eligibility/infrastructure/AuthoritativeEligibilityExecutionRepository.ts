@@ -1,8 +1,11 @@
 import "server-only";
+import { lockWorkflowRuntimeForTask } from "@/modules/workflows/infrastructure/WorkflowRuntimeLock";
+import { workflowTaskHasActiveHold } from "@/modules/workflows/infrastructure/WorkflowHoldQueries";
 
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, getTableColumns } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
+import { stageTaskDefinitions, workflowTasks } from "@/db/schema";
 import type { WorkflowElementPermissions } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
 import type { AuthoritativeEligibilityOutcome } from "../domain/AuthoritativeEligibilityOutcome";
 import {
@@ -82,6 +85,16 @@ export async function lockAuthoritativeEligibilityTask(
   taskId: string,
   actorId: string,
 ): Promise<AuthoritativeEligibilityTaskTarget | null> {
+  // Match manual action locking order: workflow, stage, then task.
+  await lockWorkflowRuntimeForTask(transaction, taskId);
+  await transaction.execute(sql`
+    SELECT stage.id FROM app_workflow_stage_instances stage
+    JOIN app_workflow_tasks task ON task.stage_instance_id = stage.id
+    WHERE task.id = ${taskId}::uuid
+      AND NOT ${workflowTaskHasActiveHold(sql`task`)}
+      AND app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
+    FOR UPDATE OF stage
+  `);
   const rows = await transaction.execute(sql`
     SELECT task.id AS "taskId", task.status, task.row_version AS "rowVersion",
       definition.code AS "taskKey",
@@ -168,11 +181,17 @@ export async function lockAuthoritativeEligibilityTask(
       ORDER BY outcome.evaluation_number DESC LIMIT 1
     ) previous ON TRUE
     WHERE task.id = ${taskId}::uuid
+      AND NOT ${workflowTaskHasActiveHold(sql`task`)}
       AND app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
       AND stage.status = 'ACTIVE' AND workflow.status = 'ACTIVE'
     FOR UPDATE OF task
   `);
-  const row = rows.rows[0] as Record<string, unknown> | undefined;
+  return decodeEligibilityTaskTarget(rows.rows[0] as Record<string, unknown> | undefined);
+}
+
+function decodeEligibilityTaskTarget(
+  row: Record<string, unknown> | undefined,
+): AuthoritativeEligibilityTaskTarget | null {
   if (!row) return null;
   const previousOutcome = row.previousId
     ? ({
@@ -263,10 +282,32 @@ export async function lockAuthoritativeEligibilityTask(
 export async function findAuthoritativeEligibilityExecutionByCommand(
   transaction: AuthoritativeEligibilityExecutionTransaction,
   commandKey: string,
-): Promise<typeof authoritativeEligibilityOutcomes.$inferSelect | null> {
+): Promise<(AuthoritativeEligibilityOutcome & {
+  permissions: WorkflowElementPermissions;
+  assignedUserId: string | null;
+  coiCleared: boolean;
+  taskRowVersion: number;
+  terminalStatus: string | null;
+}) | null> {
   const [outcome] = await transaction
-    .select()
+    .select({
+      ...getTableColumns(authoritativeEligibilityOutcomes),
+      permissions: stageTaskDefinitions.permissions,
+      assignedUserId: workflowTasks.assignedUserId,
+      coiCleared: sql<boolean>`app_workflow_task_coi_cleared(
+        ${workflowTasks.id}, ${authoritativeEligibilityOutcomes.evaluatedBy}
+      )`,
+      taskRowVersion: workflowTasks.rowVersion,
+      terminalStatus: sql<string | null>`(
+        SELECT workflow.public_status ->> 'status'
+        FROM app_workflow_instances workflow
+        JOIN app_workflow_stage_instances stage ON stage.workflow_instance_id = workflow.id
+        WHERE stage.id = ${workflowTasks.stageInstanceId} AND workflow.status = 'REJECTED'
+      )`,
+    })
     .from(authoritativeEligibilityOutcomes)
+    .innerJoin(workflowTasks, eq(workflowTasks.id, authoritativeEligibilityOutcomes.workflowTaskId))
+    .innerJoin(stageTaskDefinitions, eq(stageTaskDefinitions.id, workflowTasks.workflowTaskDefinitionId))
     .where(eq(authoritativeEligibilityOutcomes.commandKey, commandKey))
     .limit(1);
   return outcome ?? null;

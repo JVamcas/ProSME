@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
-import { getCurrentUser } from "@/auth/authorization/current-user";
+import { getAuthenticatedPageUser } from "@/platform/auth/ServerAuthNavigation";
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { can } from "@/auth/authorization/policy";
 import { FundingCallList } from "@/modules/funding-calls/ui/FundingCallList";
@@ -16,7 +16,7 @@ export default async function FundingCallsPage({
 }: {
   searchParams: Promise<{ fundingCallId?: string }>;
 }) {
-  const user = await getCurrentUser();
+  const user = await getAuthenticatedPageUser();
   if (!user || !can(user, permissionCodes.fundingCallRead)) {
     redirect("/unauthorized");
   }
@@ -33,6 +33,7 @@ export default async function FundingCallsPage({
       <FundingCallList
         canCreate={can(user, permissionCodes.fundingCallCreate)}
         canDelete={can(user, permissionCodes.fundingCallDelete)}
+        canWithdrawForAmendment={can(user, permissionCodes.fundingCallWithdrawForAmendmentAll)}
         fundingCallId={fundingCallId.success ? fundingCallId.data : undefined}
       />
     </PageShell>

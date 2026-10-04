@@ -111,7 +111,7 @@ describe("standard form catalogue", () => {
     }
   });
 
-  it("keeps deferred repeatable forms out of the seed", () => {
+  it("keeps forms outside the current standard catalogue out of the seed", () => {
     const codes = new Set(createStandardForms().map((form) => form.code));
 
     expect(codes.has("FINANCIAL_REVIEW")).toBe(false);
@@ -170,12 +170,11 @@ describe("standard form catalogue", () => {
         "PROJECT_OBJECTIVES",
         "PROJECT_DURATION_MONTHS",
         "REQUESTED_GRANT_AMOUNT",
-        "BUDGET_BREAKDOWN",
+        "BUDGET_LINES",
         "APPLICANT_COFUNDING_AMOUNT",
+        "TEAM_MEMBERS",
         "TEAM_CV_DOCUMENT",
-        "PRIMARY_INDICATOR",
-        "PRIMARY_INDICATOR_BASELINE",
-        "PRIMARY_INDICATOR_TARGET",
+        "PROJECT_INDICATORS",
         "DECLARATION_ACCURACY_CONFIRMATION",
         "DATA_PROCESSING_CONSENT",
       ]),

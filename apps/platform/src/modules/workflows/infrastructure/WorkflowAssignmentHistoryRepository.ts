@@ -8,6 +8,9 @@ export type AssignmentHistoryEntry = {
   action: string;
   actorId: string;
   assignedUserId: string | null;
+  assignedUserName: string | null;
+  assignedRoleId: string | null;
+  assignedRoleName: string | null;
   occurredAt: string;
   previousUserId: string | null;
   reason: string | null;
@@ -39,12 +42,19 @@ export async function readAssignmentHistory(
         audit.before ->> 'assignedUserId' AS "previousUserId",
         COALESCE(audit.after ->> 'assignedUserId',
           audit.after ->> 'replacementUserId') AS "assignedUserId",
-        audit.after ->> 'status' AS status,
+        assigned_user.display_name AS "assignedUserName",
+        audit.after ->> 'assignedRoleId' AS "assignedRoleId",
+        assigned_role.name AS "assignedRoleName",
+        COALESCE(audit.after ->> 'assignmentStatus', audit.after ->> 'status') AS status,
         audit.reason, audit.created_at AS "occurredAt"
       FROM app_workflow_audit_entries audit
       JOIN slot_tasks ON slot_tasks.id = audit.task_id
+      LEFT JOIN app_users assigned_user ON assigned_user.id::text = COALESCE(
+        audit.after ->> 'assignedUserId', audit.after ->> 'replacementUserId'
+      )
+      LEFT JOIN app_roles assigned_role ON assigned_role.id::text = audit.after ->> 'assignedRoleId'
       WHERE audit.action IN (
-        'TASK_CREATED', 'TASK_ASSIGNED', 'TASK_CLAIMED', 'TASK_STARTED',
+        'TASK_CREATED', 'TASK_ASSIGNED', 'TASK_REASSIGNED', 'TASK_CLAIMED', 'TASK_STARTED',
         'TASK_IN_PROGRESS', 'TASK_RELEASED', 'TASK_REPLACED',
         'TASK_COMPLETED', 'TASK_CANCELLED'
       )
@@ -57,6 +67,7 @@ export async function readAssignmentHistory(
     SELECT (SELECT count(*)::integer FROM history) AS total,
       page.sequence, page."taskId", page."reviewerSlot", page.action,
       page."actorId", page."previousUserId", page."assignedUserId",
+      page."assignedUserName", page."assignedRoleId", page."assignedRoleName",
       page.status, page.reason, page."occurredAt"
     FROM (SELECT 1) anchor
     LEFT JOIN page ON TRUE
@@ -69,6 +80,9 @@ export async function readAssignmentHistory(
     reviewerSlot: number | null;
     action: string | null;
     actorId: string | null;
+    assignedUserName: string | null;
+    assignedRoleId: string | null;
+    assignedRoleName: string | null;
     previousUserId: string | null;
     assignedUserId: string | null;
     status: string | null;
@@ -80,6 +94,9 @@ export async function readAssignmentHistory(
       action: row.action!,
       actorId: row.actorId!,
       assignedUserId: row.assignedUserId,
+      assignedUserName: row.assignedUserName,
+      assignedRoleId: row.assignedRoleId,
+      assignedRoleName: row.assignedRoleName,
       occurredAt: new Date(row.occurredAt!).toISOString(),
       previousUserId: row.previousUserId,
       reason: row.reason,

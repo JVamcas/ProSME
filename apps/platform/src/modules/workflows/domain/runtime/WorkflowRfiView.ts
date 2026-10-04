@@ -1,4 +1,8 @@
-import type { FormFieldType, FormOption } from "@/modules/forms/FormTypes";
+import type {
+  FormField,
+  FormFieldType,
+  FormOption,
+} from "@/modules/forms/FormTypes";
 import type { WorkflowRfiStatus } from "./WorkflowRfi";
 
 export type WorkflowRfiSummary = {
@@ -18,6 +22,7 @@ export type WorkflowRfiSummary = {
 };
 
 export type WorkflowRfiEditableField = {
+  definition?: FormField;
   currentValue: unknown;
   label: string;
   options: FormOption[];

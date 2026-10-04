@@ -21,7 +21,7 @@ const input = {
   stageInstanceId,
   target: {
     applicationId: "30000000-0000-4000-8000-000000000001",
-    applicationReference: "SME-2026-001",
+    applicationReference: "SME Fund-2026-001",
     fundingOpportunityTitle: "Growth Fund",
     stageName: "Technical review",
     workflowInstanceId: "40000000-0000-4000-8000-000000000001",

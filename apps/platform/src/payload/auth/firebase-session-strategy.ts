@@ -7,7 +7,7 @@ export const firebaseSessionStrategy: AuthStrategy = {
   name: "firebase-session",
   authenticate: async ({ headers, payload }) => {
     const [{ verifyFirebaseSessionFromHeaders }, { findUserByFirebaseSubject }] = await Promise.all([
-      import("@/auth/firebase/session"),
+      import("@/platform/auth/firebase/ServerFirebaseSession"),
       import("@/db/repositories/UserRepository"),
     ]);
     const identity = await verifyFirebaseSessionFromHeaders(headers);

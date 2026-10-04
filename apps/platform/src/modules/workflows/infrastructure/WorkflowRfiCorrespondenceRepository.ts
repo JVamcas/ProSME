@@ -24,14 +24,27 @@ export async function saveOwnedWorkflowRfiDraft(
   actorId: string,
   input: SaveWorkflowRfiDraftInput,
 ) {
-  const [rfi] = await transaction.select({
-    editableFieldPaths: workflowRfis.editableFieldPaths,
-  }).from(workflowRfis).where(and(
-    eq(workflowRfis.id, input.requestInformationId),
-    eq(workflowRfis.recipientUserId, actorId),
-    eq(workflowRfis.status, "OPEN"),
-  )).for("update", { of: workflowRfis }).limit(1);
+  const [rfi] = await transaction
+    .select({
+      deadlineAt: workflowRfis.deadlineAt,
+      editableFieldPaths: workflowRfis.editableFieldPaths,
+    })
+    .from(workflowRfis)
+    .where(
+      and(
+        eq(workflowRfis.id, input.requestInformationId),
+        eq(workflowRfis.recipientUserId, actorId),
+        eq(workflowRfis.status, "OPEN"),
+      ),
+    )
+    .for("update", { of: workflowRfis })
+    .limit(1);
   if (!rfi) throw new ResourceNotFoundError("open information request");
+  if (rfi.deadlineAt <= new Date()) {
+    throw new ResourceConflictError(
+      "The response deadline has passed. This request is locked.",
+    );
+  }
   if (
     Object.keys(input.fieldValues).some(
       (path) => !rfi.editableFieldPaths.includes(path),
@@ -41,12 +54,19 @@ export async function saveOwnedWorkflowRfiDraft(
       "The draft contains a field that is not editable for this request.",
     );
   }
-  const [draft] = await transaction.select({
-    rowVersion: workflowRfiDrafts.rowVersion,
-  }).from(workflowRfiDrafts).where(and(
-    eq(workflowRfiDrafts.rfiId, input.requestInformationId),
-    eq(workflowRfiDrafts.respondentUserId, actorId),
-  )).for("update").limit(1);
+  const [draft] = await transaction
+    .select({
+      rowVersion: workflowRfiDrafts.rowVersion,
+    })
+    .from(workflowRfiDrafts)
+    .where(
+      and(
+        eq(workflowRfiDrafts.rfiId, input.requestInformationId),
+        eq(workflowRfiDrafts.respondentUserId, actorId),
+      ),
+    )
+    .for("update")
+    .limit(1);
   if ((draft?.rowVersion ?? 0) !== input.expectedRowVersion) {
     throw new ResourceConflictError(
       "This response draft changed. Refresh and reconcile your changes.",
@@ -62,14 +82,20 @@ export async function saveOwnedWorkflowRfiDraft(
     });
     return { rowVersion: 1, updatedAt: now.toISOString() };
   }
-  const [updated] = await transaction.update(workflowRfiDrafts).set({
-    fieldValues: input.fieldValues,
-    rowVersion: draft.rowVersion + 1,
-    updatedAt: now,
-  }).where(and(
-    eq(workflowRfiDrafts.rfiId, input.requestInformationId),
-    eq(workflowRfiDrafts.rowVersion, draft.rowVersion),
-  )).returning({ rowVersion: workflowRfiDrafts.rowVersion });
+  const [updated] = await transaction
+    .update(workflowRfiDrafts)
+    .set({
+      fieldValues: input.fieldValues,
+      rowVersion: draft.rowVersion + 1,
+      updatedAt: now,
+    })
+    .where(
+      and(
+        eq(workflowRfiDrafts.rfiId, input.requestInformationId),
+        eq(workflowRfiDrafts.rowVersion, draft.rowVersion),
+      ),
+    )
+    .returning({ rowVersion: workflowRfiDrafts.rowVersion });
   if (!updated) throw new ResourceConflictError("The response draft changed.");
   return { rowVersion: updated.rowVersion, updatedAt: now.toISOString() };
 }
@@ -79,35 +105,47 @@ export async function addAssignedWorkflowRfiFollowUp(
   actorId: string,
   input: AddWorkflowRfiFollowUpInput & { taskId: string },
 ) {
-  const [rfi] = await transaction.select({
-    stageInstanceId: workflowRfis.stageInstanceId,
-    workflowInstanceId: workflowRfis.workflowInstanceId,
-  }).from(workflowRfis).innerJoin(
-    workflowTasks,
-    and(
-      eq(workflowTasks.id, workflowRfis.taskId),
-      eq(workflowTasks.id, input.taskId),
-      sql`(
+  const [rfi] = await transaction
+    .select({
+      stageInstanceId: workflowRfis.stageInstanceId,
+      workflowInstanceId: workflowRfis.workflowInstanceId,
+    })
+    .from(workflowRfis)
+    .innerJoin(
+      workflowTasks,
+      and(
+        eq(workflowTasks.id, workflowRfis.taskId),
+        eq(workflowTasks.id, input.taskId),
+        sql`(
         ${workflowTasks.assignedUserId} = ${actorId}::uuid
         OR ${workflowTasks.assignedRoleId} IN (
           SELECT role_id FROM app_user_roles WHERE user_id = ${actorId}::uuid
         )
       )`,
-    ),
-  ).where(and(
-    eq(workflowRfis.id, input.requestInformationId),
-    eq(workflowRfis.status, "OPEN"),
-  )).for("update", { of: workflowRfis }).limit(1);
-  if (!rfi) throw new ResourceNotFoundError("assigned open information request");
+      ),
+    )
+    .where(
+      and(
+        eq(workflowRfis.id, input.requestInformationId),
+        eq(workflowRfis.status, "OPEN"),
+      ),
+    )
+    .for("update", { of: workflowRfis })
+    .limit(1);
+  if (!rfi)
+    throw new ResourceNotFoundError("assigned open information request");
   const occurredAt = new Date();
-  const [entry] = await transaction.insert(workflowRfiCorrespondence).values({
-    authorType: "STAFF",
-    authorUserId: actorId,
-    entryType: "FOLLOW_UP",
-    message: input.message,
-    rfiId: input.requestInformationId,
-    createdAt: occurredAt,
-  }).returning({ id: workflowRfiCorrespondence.id });
+  const [entry] = await transaction
+    .insert(workflowRfiCorrespondence)
+    .values({
+      authorType: "STAFF",
+      authorUserId: actorId,
+      entryType: "FOLLOW_UP",
+      message: input.message,
+      rfiId: input.requestInformationId,
+      createdAt: occurredAt,
+    })
+    .returning({ id: workflowRfiCorrespondence.id });
   if (!entry) throw new ResourceConflictError("The follow-up was not saved.");
   const payload = {
     correspondenceId: entry.id,

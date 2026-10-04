@@ -3,7 +3,7 @@
 import { ArrowRight, UserRound } from "lucide-react";
 
 import { GeneralButton } from "@/components/ui/button";
-import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
+import { DataTable, type DataTableColumn } from "@/shared/ui/DataTable";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatLocalDateTime24 } from "@/lib/dateUtils";
 import type { WorkflowCoiReviewRow } from "../../api/WorkflowCoiReviewTypes";

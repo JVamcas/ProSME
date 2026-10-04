@@ -9,10 +9,16 @@ export const conditionFieldTypes = [
 
 export type ConditionFieldType = (typeof conditionFieldTypes)[number];
 
+export type ConditionFieldSource = {
+  label: string;
+  name?: string;
+};
+
 export type ConditionFieldDefinition = {
   key: string;
   label: string;
   type: ConditionFieldType;
+  source?: readonly ConditionFieldSource[];
 };
 
 export type ConditionValueShape = "NONE" | "SINGLE" | "LIST" | "RANGE";

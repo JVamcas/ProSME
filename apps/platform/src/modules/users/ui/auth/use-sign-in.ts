@@ -5,6 +5,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 
+import { authNavigationHref, safeReturnTo } from "@/platform/auth/AuthNavigation";
 import { authClientService } from "@/platform/auth/firebase/ClientAuthService";
 import {
   signInSchema,
@@ -20,7 +21,7 @@ function signInError(error: unknown) {
   return getFirebaseErrorMessage(error);
 }
 
-export function useSignIn(nextPath?: string) {
+export function useSignIn(returnTo?: string) {
   const router = useRouter();
   const form = useForm<SignInValues>({
     defaultValues: {
@@ -39,11 +40,11 @@ export function useSignIn(nextPath?: string) {
 
     try {
       const session = await signIn.mutateAsync(values);
-      router.replace(nextPath ?? session.defaultPath);
+      router.replace(safeReturnTo(returnTo) ?? session.defaultPath);
       router.refresh();
     } catch (caught) {
       if (caught instanceof Error && caught.message === "email-not-verified") {
-        router.replace("/verify-email");
+        router.replace(authNavigationHref("/verify-email", returnTo));
       }
     }
   }

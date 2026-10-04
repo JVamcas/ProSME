@@ -6,7 +6,7 @@ import type {
   WorkflowEditorView,
   WorkflowStageInput,
 } from "@/modules/workflows/domain/definitions/WorkflowTypes";
-import { useSaveWorkflowGraph } from "@/modules/workflows/WorkflowHooks";
+import { useDeleteWorkflowAction } from "./useDeleteWorkflowAction";
 import { WorkflowActionDialog } from "./WorkflowActionDialog";
 
 type Props = {
@@ -26,37 +26,19 @@ export function WorkflowActionOverlays({
   onCloseDelete,
   stage,
 }: Props) {
-  const deleteMutation = useSaveWorkflowGraph(editor);
+  const deleteMutation = useDeleteWorkflowAction(editor);
 
   async function deleteAction(action: WorkflowActionDefinition) {
     if (!stage) return;
-    await deleteMutation.mutateAsync({
-      stages: editor.graph.stages.map((item) =>
-        item.stableKey === stage.stableKey
-          ? {
-              ...item,
-              actions: item.actions
-                .filter((current) => current.stableKey !== action.stableKey)
-                .map((current, index) => ({
-                  ...current,
-                  displayOrder: index + 1,
-                })),
-              tasks: item.tasks.map((task) => ({
-                ...task,
-                actionKeys: task.actionKeys.filter(
-                  (actionKey) => actionKey !== action.stableKey,
-                ),
-              })),
-            }
-          : item,
-      ),
-      transitions: editor.graph.transitions.filter(
-        (transition) =>
-          transition.sourceStageKey !== stage.stableKey ||
-          transition.actionKey !== action.stableKey,
-      ),
-    });
-    onCloseDelete();
+    try {
+      await deleteMutation.mutateAsync({
+        stageKey: stage.stableKey,
+        actionKey: action.stableKey,
+      });
+      onCloseDelete();
+    } catch {
+      // Keep the confirmation open; the mutation displays the server error.
+    }
   }
 
   return (
@@ -78,14 +60,12 @@ export function WorkflowActionOverlays({
         isOpen={actionToDelete !== null}
         message={
           <p>
-            Delete <strong>{actionToDelete?.label}</strong> from this stage?
-            Its transitions and Task bindings will also be deleted.
+            Delete <strong>{actionToDelete?.label}</strong> from this stage? Its
+            transitions and Task bindings will also be deleted.
           </p>
         }
         onCancel={onCloseDelete}
-        onConfirm={() =>
-          actionToDelete && void deleteAction(actionToDelete)
-        }
+        onConfirm={() => actionToDelete && void deleteAction(actionToDelete)}
         title="Delete workflow action"
       />
     </>

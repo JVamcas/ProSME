@@ -1,13 +1,10 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { GeneralButton } from "@/components/ui/button";
 import { CheckboxField } from "@/components/ui/form-field";
-import {
-  FormInput,
-  FormTextarea,
-} from "@/components/ui/form-fields";
+import { FormInput, FormTextarea } from "@/components/ui/form-fields";
 import { StepProgress } from "@/components/ui/step-progress";
 import type {
   ChecklistConfigurationItem,
@@ -19,11 +16,7 @@ import { WorkflowTaskPreviewSection } from "./definitions/WorkflowTaskPreviewSec
 import { WorkflowTaskDocumentsSection } from "./WorkflowTaskDocumentsSection";
 
 type TaskWorkSectionId =
-  | "form"
-  | "checklist"
-  | "documents"
-  | "scoring"
-  | "comments";
+  "form" | "checklist" | "documents" | "scoring" | "comments";
 
 type TaskWorkSection = {
   content: ReactNode;
@@ -49,6 +42,8 @@ export type WorkflowTaskWorkSectionsProps = {
     mandatory: boolean;
   }[];
   disabled: boolean;
+  readOnly?: boolean;
+  taskId?: string;
   documentUpload?: {
     error?: string;
     onFile: (requirementId: string, file: File) => void;
@@ -58,6 +53,7 @@ export type WorkflowTaskWorkSectionsProps = {
   displayMode: WorkflowTaskDisplayMode;
   documentRequirements: DocumentRequirementItem[];
   finalActions?: ReactNode;
+  onFinalStepChange?: (final: boolean) => void;
   form?: { content: ReactNode; title: string };
   scoring: ScoringConfiguration | null;
   status: WorkflowTaskWorkStatus;
@@ -85,12 +81,12 @@ function ChecklistContent({
           <CheckboxField
             containerClassName="font-semibold text-brand-navy"
             disabled={disabled}
-            label={(
+            label={
               <span>
                 {item.label}
                 <RequiredMark required={item.required} />
               </span>
-            )}
+            }
             name={`items.${index}.accepted`}
           />
           <FormTextarea
@@ -149,7 +145,7 @@ function ScoringContent({
             min={criterion.scaleMinimum}
             name={`scores.${index}.score`}
             registrationOptions={{
-              setValueAs: (value) => value === "" ? null : Number(value),
+              setValueAs: (value) => (value === "" ? null : Number(value)),
             }}
             required
             step="any"
@@ -226,19 +222,26 @@ function SectionsLayout({
 function StepLayout({
   disabled,
   finalActions,
+  onFinalStepChange,
   sections,
 }: {
   disabled: boolean;
   finalActions?: ReactNode;
+  onFinalStepChange?: (final: boolean) => void;
   sections: TaskWorkSection[];
 }) {
-  const firstIncomplete = sections.find((section) => section.status !== "Completed");
+  const firstIncomplete = sections.find(
+    (section) => section.status !== "Completed",
+  );
   const [selectedId, setSelectedId] = useState<TaskWorkSectionId>(
     firstIncomplete?.id ?? sections[0].id,
   );
-  const current = sections.find((section) => section.id === selectedId)
-    ?? sections[0];
+  const current =
+    sections.find((section) => section.id === selectedId) ?? sections[0];
   const currentIndex = sections.indexOf(current);
+  useEffect(() => {
+    onFinalStepChange?.(currentIndex === sections.length - 1);
+  }, [currentIndex, sections.length, onFinalStepChange]);
   const completedIds = sections
     .filter((section) => section.status === "Completed")
     .map((section) => section.id);
@@ -300,59 +303,90 @@ export function WorkflowTaskWorkSections({
   checklistItems,
   commentFields,
   disabled,
+  readOnly = false,
+  taskId,
   documentUpload,
   displayMode,
   documentRequirements,
   finalActions,
+  onFinalStepChange,
   form,
   scoring,
   status,
 }: WorkflowTaskWorkSectionsProps) {
   const sections: TaskWorkSection[] = [
-    ...(form ? [{
-      content: form.content,
-      id: "form" as const,
-      status: status.form,
-      title: form.title,
-    }] : []),
-    ...(checklistItems.length ? [{
-      content: <ChecklistContent disabled={disabled} items={checklistItems} />,
-      id: "checklist" as const,
-      status: status.checklist,
-      title: "Checklist",
-    }] : []),
-    ...(documentRequirements.length ? [{
-      content: (
-        <WorkflowTaskDocumentsSection
-          disabled={disabled}
-          requirements={documentRequirements}
-          upload={documentUpload}
-        />
-      ),
-      id: "documents" as const,
-      status: status.documents,
-      title: "Documents",
-    }] : []),
-    ...(scoring?.criteria.length ? [{
-      content: <ScoringContent disabled={disabled} scoring={scoring} />,
-      id: "scoring" as const,
-      status: status.scoring,
-      title: "Scoring",
-    }] : []),
-    ...(commentFields.length ? [{
-      content: <CommentsContent disabled={disabled} fields={commentFields} />,
-      id: "comments" as const,
-      status: status.comments,
-      title: "Comments & Recommendations",
-    }] : []),
+    ...(form
+      ? [
+          {
+            content: form.content,
+            id: "form" as const,
+            status: status.form,
+            title: form.title,
+          },
+        ]
+      : []),
+    ...(checklistItems.length
+      ? [
+          {
+            content: (
+              <ChecklistContent disabled={disabled || readOnly} items={checklistItems} />
+            ),
+            id: "checklist" as const,
+            status: status.checklist,
+            title: "Checklist",
+          },
+        ]
+      : []),
+    ...(documentRequirements.length
+      ? [
+          {
+            content: (
+              <WorkflowTaskDocumentsSection
+                disabled={disabled || readOnly}
+                taskId={taskId}
+                requirements={documentRequirements}
+                upload={documentUpload}
+              />
+            ),
+            id: "documents" as const,
+            status: status.documents,
+            title: "Documents",
+          },
+        ]
+      : []),
+    ...(scoring?.criteria.length
+      ? [
+          {
+            content: <ScoringContent disabled={disabled || readOnly} scoring={scoring} />,
+            id: "scoring" as const,
+            status: status.scoring,
+            title: "Scoring",
+          },
+        ]
+      : []),
+    ...(commentFields.length
+      ? [
+          {
+            content: (
+              <CommentsContent disabled={disabled || readOnly} fields={commentFields} />
+            ),
+            id: "comments" as const,
+            status: status.comments,
+            title: "Comments & Recommendations",
+          },
+        ]
+      : []),
   ];
 
   if (!sections.length) return null;
-  return displayMode === "SECTIONS"
-    ? <SectionsLayout disabled={disabled} sections={sections} />
-    : <StepLayout
+  return displayMode === "SECTIONS" ? (
+    <SectionsLayout disabled={disabled} sections={sections} />
+  ) : (
+    <StepLayout
       disabled={disabled}
       finalActions={finalActions}
+      onFinalStepChange={onFinalStepChange}
       sections={sections}
-    />;
+    />
+  );
 }

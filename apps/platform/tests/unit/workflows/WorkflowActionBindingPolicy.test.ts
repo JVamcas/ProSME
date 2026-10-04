@@ -24,7 +24,7 @@ function graph() {
     displayOrder: 2,
     enabled: true,
     label: "Request information",
-    reasonCodeRequired: false,
+    reasonRequired: false,
     stableKey: "REQUEST_INFORMATION",
   });
   return value;
@@ -90,15 +90,41 @@ describe("workflow action binding policy", () => {
     ]);
   });
 
+  it("auto-binds Return to contributing and decision tasks without duplicating it", () => {
+    const previous = graph();
+    const next = structuredClone(previous);
+    next.stages[0].actions.push(
+      createDefaultWorkflowCommonActions().find(
+        (action) => action.actionType === "RETURN",
+      )!,
+    );
+    next.stages[0].tasks.push({
+      ...next.stages[0].tasks[0],
+      stableKey: "CONTRIBUTION",
+      taskType: "CONTRIBUTING",
+      actionKeys: [],
+    });
+    const reconciled = reconcileWorkflowActionBindings(previous, next);
+    expect(
+      reconciled.stages[0].tasks.every((task) =>
+        task.actionKeys.includes("RETURN"),
+      ),
+    ).toBe(true);
+    expect(reconcileWorkflowActionBindings(reconciled, reconciled)).toEqual(
+      reconciled,
+    );
+    expect(next.stages[0].actions.at(-1)?.reasonRequired).toBe(false);
+  });
+
   it("creates enabled, valid common-action templates for a new stage", () => {
     const actions = createDefaultWorkflowCommonActions(
       "79e20de0-3558-4d63-90a4-8c9f5125df07",
     );
     expect(actions.map((action) => action.actionType)).toEqual([
       "REQUEST_INFORMATION",
-      "REFER",
       "PUT_ON_HOLD",
       "RESUME",
+      "RETURN",
       "ESCALATE",
     ]);
     expect(actions.every((action) => action.enabled)).toBe(true);

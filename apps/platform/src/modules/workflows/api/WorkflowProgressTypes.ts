@@ -1,20 +1,29 @@
+import type { WorkflowCompletionRequirements } from "./WorkflowCompletionRequirementsTypes";
+import type { WorkflowGraphInput } from "../domain/definitions/WorkflowTypes";
 import type { StageInstanceStatus } from "../domain/runtime/StageInstance";
 import type { WorkflowInstanceStatus } from "../domain/runtime/WorkflowInstance";
+import type { WorkflowTaskType } from "../domain/definitions/WorkflowTaskDefinition";
 
 export type WorkflowProgressTask = {
+  processingStatus?: "ON_HOLD" | null;
   actionedAt: string | null;
   assignedRoleName: string | null;
   assignedUserEmail: string | null;
   assignedUserName: string | null;
   canOpen: boolean;
+  blockedReason?: string | null;
   dueAt: string | null;
   id: string;
   name: string;
   required: boolean;
   status: string;
+  taskType: WorkflowTaskType;
+  planned?: boolean;
+  configuredReviewerCount?: number;
 };
 
 export type WorkflowProgressStage = {
+  processingStatus?: "ON_HOLD" | null;
   activatedAt: string | null;
   completedAt: string | null;
   description: string;
@@ -22,17 +31,28 @@ export type WorkflowProgressStage = {
   iterationNumber: number | null;
   name: string;
   sequence: number;
-  status: StageInstanceStatus;
+  stableKey: string;
+  returnedAt?: string | null;
+  status: StageInstanceStatus | "RETURNED";
   tasks: WorkflowProgressTask[];
+  completionRequirements?: WorkflowCompletionRequirements | null;
+};
+
+export type WorkflowTakenPath = {
+  transitionId: string;
+  targetStageKey: string | null;
 };
 
 export type WorkflowProgressView = {
+  processingStatus?: "ON_HOLD" | null;
   completedAt: string | null;
+  graph: WorkflowGraphInput | null;
   id: string;
   name: string;
   stages: WorkflowProgressStage[];
   startedAt: string;
   status: WorkflowInstanceStatus;
   terminalOutcome: string | null;
+  takenPaths: WorkflowTakenPath[];
   versionNumber: number;
 };

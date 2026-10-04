@@ -1,4 +1,5 @@
 import "server-only";
+import { workflowDocumentEvidenceIsCurrent } from "./WorkflowDocumentEvidenceReadiness";
 
 import { and, eq, inArray, sql } from "drizzle-orm";
 
@@ -10,6 +11,7 @@ import type {
 } from "../domain/runtime/WorkflowRfi";
 import type { WorkflowActionExecutionTransaction } from "./WorkflowActionExecutionRepository";
 import { appendWorkflowRfiCreationRecords } from "./WorkflowRfiCreationRecordsRepository";
+import { assertWorkflowRfiFieldSelection } from "./WorkflowRfiFieldRepository";
 import {
   workflowRfiDocumentRequests,
   workflowRfiCorrespondence,
@@ -48,8 +50,8 @@ async function findCreationReplay(
     .limit(1);
   if (!row) return null;
   if (
-    row.requesterId !== request.requesterId
-    || row.taskId !== request.source.taskId
+    row.requesterId !== request.requesterId ||
+    row.taskId !== request.source.taskId
   ) {
     throw new ResourceConflictError(
       "That idempotency key was already used for another information request.",
@@ -95,7 +97,10 @@ async function lockCreationTarget(
         ),
       ),
     )
-    .innerJoin(applications, eq(applications.id, workflowInstances.applicationId))
+    .innerJoin(
+      applications,
+      eq(applications.id, workflowInstances.applicationId),
+    )
     .innerJoin(
       stageTaskActionBindings,
       eq(
@@ -136,17 +141,23 @@ async function assertRequestedDocuments(
   const rows = await transaction
     .select({ id: workflowStageDocumentRequirements.id })
     .from(workflowStageDocumentRequirements)
-    .where(and(
-      inArray(workflowStageDocumentRequirements.id, requirementIds),
-      eq(workflowStageDocumentRequirements.taskDefinitionId, taskDefinitionId),
-      eq(workflowStageDocumentRequirements.uploader, "APPLICANT"),
-      sql`NOT EXISTS (
+    .where(
+      and(
+        inArray(workflowStageDocumentRequirements.id, requirementIds),
+        eq(
+          workflowStageDocumentRequirements.taskDefinitionId,
+          taskDefinitionId,
+        ),
+        eq(workflowStageDocumentRequirements.uploader, "APPLICANT"),
+        sql`NOT EXISTS (
         SELECT 1 FROM app_workflow_document_evidence_versions evidence
         WHERE evidence.application_id = ${request.applicationId}::uuid
           AND evidence.requirement_id = ${workflowStageDocumentRequirements.id}
+          AND ${workflowDocumentEvidenceIsCurrent(sql`${request.source.taskId}::uuid`)}
           AND (evidence.valid_until IS NULL OR evidence.valid_until > now())
       )`,
-    ));
+      ),
+    );
   if (rows.length !== requirementIds.length) {
     throw new ResourceConflictError(
       "Requested documents must be missing applicant-owned requirements on this task.",
@@ -161,32 +172,42 @@ export async function createWorkflowRfi(
   const replay = await findCreationReplay(transaction, request);
   if (replay) return replay;
   const target = await lockCreationTarget(transaction, request);
-  await assertRequestedDocuments(transaction, request, target.taskDefinitionId);
+  await Promise.all([
+    assertRequestedDocuments(transaction, request, target.taskDefinitionId),
+    assertWorkflowRfiFieldSelection(
+      transaction,
+      request.applicationId,
+      request.editableFieldPaths,
+    ),
+  ]);
   const occurredAt = new Date();
   const deadlineAt = new Date(
     occurredAt.getTime() + request.deadline.days * 24 * 60 * 60 * 1_000,
   );
-  const [rfi] = await transaction.insert(workflowRfis).values({
-    actionDefinitionId: request.source.actionDefinitionId,
-    applicationId: request.applicationId,
-    continuationBehavior: request.continuation.behavior,
-    correlationId: request.correlationId,
-    createdAt: occurredAt,
-    deadlineAt,
-    editableFieldPaths: [...request.editableFieldPaths],
-    expiryAction: request.deadline.expiryAction,
-    idempotencyKey: request.idempotencyKey,
-    initiationType: request.initiationType,
-    instructions: request.instructions,
-    question: request.question,
-    recipientUserId: target.recipientUserId,
-    reminderDayOffsets: [...request.deadline.reminderDayOffsets],
-    requesterId: request.requesterId,
-    stageInstanceId: request.source.stageInstanceId,
-    taskId: request.source.taskId,
-    updatedAt: occurredAt,
-    workflowInstanceId: request.source.workflowInstanceId,
-  }).returning({ id: workflowRfis.id });
+  const [rfi] = await transaction
+    .insert(workflowRfis)
+    .values({
+      actionDefinitionId: request.source.actionDefinitionId,
+      applicationId: request.applicationId,
+      continuationBehavior: request.continuation.behavior,
+      correlationId: request.correlationId,
+      createdAt: occurredAt,
+      deadlineAt,
+      editableFieldPaths: [...request.editableFieldPaths],
+      expiryAction: request.deadline.expiryAction,
+      idempotencyKey: request.idempotencyKey,
+      initiationType: request.initiationType,
+      instructions: request.instructions,
+      question: request.question,
+      recipientUserId: target.recipientUserId,
+      reminderDayOffsets: [...request.deadline.reminderDayOffsets],
+      requesterId: request.requesterId,
+      stageInstanceId: request.source.stageInstanceId,
+      taskId: request.source.taskId,
+      updatedAt: occurredAt,
+      workflowInstanceId: request.source.workflowInstanceId,
+    })
+    .returning({ id: workflowRfis.id });
   if (!rfi) throw new ResourceConflictError("The information request changed.");
   await transaction.insert(workflowRfiParticipants).values([
     {
@@ -298,6 +319,7 @@ export async function createStageActivationWorkflowRfi(
         SELECT 1 FROM app_workflow_document_evidence_versions evidence
         WHERE evidence.application_id = workflow.application_id
           AND evidence.requirement_id = requirement.id
+          AND ${workflowDocumentEvidenceIsCurrent(sql`task.id`)}
           AND (evidence.valid_until IS NULL OR evidence.valid_until > now())
       )
     ORDER BY requirement.name, requirement.id
@@ -323,10 +345,11 @@ export async function createStageActivationWorkflowRfi(
       expiryAction: first.configuration.expiryAction,
       reminderDayOffsets: first.configuration.reminderDayOffsets,
     },
-    editableFieldPaths: first.configuration.editableFieldPaths,
+    editableFieldPaths: [],
     idempotencyKey: `AUTO_RFI:${input.stageInstanceId}`,
     initiationType: "STAGE_ACTIVATION",
-    instructions: "Upload every requested document before submitting your response.",
+    instructions:
+      "Upload every requested document before submitting your response.",
     participantScope: first.configuration.participantScope,
     question: `Please provide: ${rows.map((row) => row.requirementName).join(", ")}.`,
     recipientScope: first.configuration.recipientScope,

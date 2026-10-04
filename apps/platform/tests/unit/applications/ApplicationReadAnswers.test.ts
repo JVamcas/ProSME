@@ -111,4 +111,56 @@ describe("application read answers", () => {
       [{ key: "CONSENT", label: "Declaration accepted", value: "No" }],
     ]);
   });
+
+  it("renders structured repeatable rows with their configured labels", () => {
+    const repeatableForm: FormRuntimeSchema = {
+      ...form,
+      fields: [{
+        columnSpan: 1,
+        key: "BUDGET_LINES",
+        label: "Budget lines",
+        order: 1,
+        repeatable: {
+          addLabel: "Add budget line",
+          fields: [
+            {
+              columnSpan: 1,
+              key: "CATEGORY",
+              label: "Category",
+              order: 1,
+              required: true,
+              type: "TEXT",
+            },
+            {
+              columnSpan: 1,
+              key: "AMOUNT",
+              label: "Amount",
+              order: 2,
+              required: true,
+              type: "CURRENCY",
+            },
+          ],
+          itemLabel: "Budget line",
+          maximumItems: 20,
+          minimumItems: 1,
+        },
+        required: true,
+        sectionId: "project",
+        type: "REPEATABLE_GROUP",
+      }],
+    };
+
+    expect(applicationReadSections(repeatableForm, {
+      BUDGET_LINES: [
+        { AMOUNT: 1250, CATEGORY: "Equipment" },
+        { AMOUNT: 500, CATEGORY: "Training" },
+      ],
+    })[0]?.answers).toEqual([{
+      key: "BUDGET_LINES",
+      label: "Budget lines",
+      value:
+        "1. Category: Equipment; Amount: N$ 1,250\n"
+        + "2. Category: Training; Amount: N$ 500",
+    }]);
+  });
 });

@@ -42,7 +42,6 @@ vi.mock("@/modules/funding-calls/infrastructure/FundingCallRepository", () => ({
   updateDraftFundingCall: vi.fn(),
 }));
 import { permissionCodes } from "@/auth/authorization/permissions";
-import type { AuthenticatedUser } from "@/auth/types";
 import { RequestValidationError } from "@/lib/resource-errors";
 import {
   createFundingCall,
@@ -66,60 +65,17 @@ import {
 import { findTestableEligibilityRuleSetForEvaluation } from "@/modules/eligibility/infrastructure/EligibilityEvaluationRepository";
 import { workflowTemplateVersionIsBindable } from "@/modules/workflows/infrastructure/WorkflowRepository";
 
-const actorId = "10000000-0000-4000-8000-000000000001";
-const callId = "00000000-0000-4000-8000-000000000042";
-const formVersionId = "20000000-0000-4000-8000-000000000001";
-const eligibilityRuleSetVersionId = "30000000-0000-4000-8000-000000000001";
-const workflowTemplateVersionId = "40000000-0000-4000-8000-000000000001";
-const input = {
-  applicationDuplicatePolicy: "one_per_business" as const,
-  closesAt: "2027-03-31T15:00:00.000Z",
-  description: "Growth funding for qualifying SMEs.",
-  eligibilitySummary: "Registered Namibian SMEs may qualify.",
+import {
+  actorId,
+  callId,
   eligibilityRuleSetVersionId,
   formVersionId,
-  fundingInstrument: "Grant",
-  maximumGrantAmount: "500000.00",
-  minimumGrantAmount: "50000.00",
-  opensAt: "2027-02-01T06:00:00.000Z",
-  publicContactEmail: "funding@example.test",
-  publicContactName: "SME Fund",
-  publicContactPhone: null,
-  reference: "SME-2027-01",
-  slug: "sme-growth-fund-2027",
-  thematicArea: "Business growth",
-  title: "SME Growth Fund 2027",
-  totalBudgetEnvelope: "10000000.00",
+  input,
+  stored,
+  user,
   workflowTemplateVersionId,
-};
-const stored = {
-  ...input,
-  closesAt: new Date(input.closesAt),
-  createdAt: new Date("2026-09-20T08:00:00.000Z"),
-  createdBy: actorId,
-  id: callId,
-  opensAt: new Date(input.opensAt),
-  rowVersion: 1,
-  status: "DRAFT" as const,
-  suspendedFromStatus: null,
-  updatedAt: new Date("2026-09-20T08:00:00.000Z"),
-  updatedBy: actorId,
-};
-function user(grants: string[]): AuthenticatedUser {
-  return {
-    capabilities: new Set(grants),
-    createdAt: new Date(),
-    displayName: "Funding administrator",
-    email: "funding-admin@example.test",
-    id: actorId,
-    identitySubject: "funding-admin-subject",
-    lastLoginAt: null,
-    roleCodes: new Set(),
-    status: "active",
-    updatedAt: new Date(),
-    userType: "staff",
-  };
-}
+} from "../../support/FundingCallServiceFixture";
+
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(eligibilityRuleSetVersionIsBindable).mockResolvedValue(true);

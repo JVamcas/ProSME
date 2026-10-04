@@ -97,6 +97,20 @@ function queryClient() {
   return client;
 }
 
+function formAction(label: string) {
+  return Array.from(
+    document.body.querySelectorAll<HTMLElement>('[role="menuitem"]'),
+  ).find((item) => item.textContent === label);
+}
+
+async function openFormActions(container: HTMLElement) {
+  await act(async () => {
+    container.querySelector<HTMLButtonElement>(
+      '[aria-label="Actions for Finance Review"]',
+    )?.click();
+  });
+}
+
 afterEach(() => {
   document.body.replaceChildren();
 });
@@ -122,8 +136,8 @@ describe("form definition dialog", () => {
       )?.click();
     });
 
-    expect(container.textContent).toContain("Version 2");
-    expect(container.textContent).toContain("Version 1");
+    expect(container.textContent).toContain("v2");
+    expect(container.textContent).toContain("v1");
     expect(container.textContent).toContain("Retired");
     expect(container.querySelector('[aria-label="Finance Review versions"]'))
       .not.toBeNull();
@@ -151,18 +165,11 @@ describe("form definition dialog", () => {
       );
     });
 
-    expect(container.querySelector(
-      '[aria-label="Preview Finance Review"]',
-    )).not.toBeNull();
-    expect(container.querySelector(
-      '[aria-label="Publish Finance Review"]',
-    )).not.toBeNull();
-    expect(container.querySelector<HTMLButtonElement>(
-      '[aria-label="Retire Finance Review"]',
-    )?.disabled).toBe(true);
-    expect(container.querySelector<HTMLButtonElement>(
-      '[aria-label="Clone Finance Review"]',
-    )?.disabled).toBe(true);
+    await openFormActions(container);
+    expect(formAction("Preview")).toBeDefined();
+    expect(formAction("Publish")).toBeDefined();
+    expect(formAction("Retire")?.getAttribute("aria-disabled")).toBe("true");
+    expect(formAction("Clone")?.getAttribute("aria-disabled")).toBe("true");
 
     await act(async () => {
       Array.from(container.querySelectorAll("button"))
@@ -194,11 +201,8 @@ describe("form definition dialog", () => {
       );
     });
 
-    await act(async () => {
-      container.querySelector<HTMLButtonElement>(
-        '[aria-label="Edit Finance Review"]',
-      )?.click();
-    });
+    await openFormActions(container);
+    await act(async () => formAction("Edit")?.click());
 
     expect(document.body.textContent).toContain("Edit form");
     expect(document.body.textContent).toContain("Form code");

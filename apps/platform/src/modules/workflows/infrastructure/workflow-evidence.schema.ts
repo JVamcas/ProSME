@@ -5,6 +5,7 @@ import {
   index,
   integer,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uniqueIndex,
@@ -14,6 +15,7 @@ import {
 import { applications } from "@/modules/applications/infrastructure/application.schema";
 import { users } from "@/db/schema/identity";
 import { workflowStageDocumentRequirements } from "./workflow-stage-requirements.schema";
+import { workflowTasks } from "./workflow-runtime.schema";
 
 export const workflowDocumentEvidenceVersions = pgTable(
   "app_workflow_document_evidence_versions",
@@ -62,6 +64,21 @@ export const workflowDocumentEvidenceVersions = pgTable(
       "app_workflow_document_evidence_size_check",
       sql`${table.sizeBytes} > 0`,
     ),
+  ],
+);
+
+export const workflowTaskDocumentEvidence = pgTable(
+  "app_workflow_task_document_evidence",
+  {
+    taskId: uuid("task_id")
+      .notNull()
+      .references(() => workflowTasks.id, { onDelete: "restrict" }),
+    documentVersionId: uuid("document_version_id")
+      .notNull()
+      .references(() => workflowDocumentEvidenceVersions.id, { onDelete: "restrict" }),
+  },
+  (table) => [
+    primaryKey({ columns: [table.taskId, table.documentVersionId] }),
   ],
 );
 

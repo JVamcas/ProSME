@@ -9,6 +9,10 @@ import { permissionCodes } from "@/auth/authorization/permissions";
 import { PermissionDeniedError } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import { IdempotencyConflictError } from "@/lib/resource-errors";
+import {
+  notificationErrorCodes,
+  NotificationValidationError,
+} from "@/modules/notifications/domain/NotificationErrors";
 import { submitOwnedApplication } from "@/modules/applications/infrastructure/ApplicationSubmissionRepository";
 import {
   ApplicationSubmissionConflictError,
@@ -45,7 +49,7 @@ describe("application submission service", () => {
   it("authorizes and passes the confirmed versioned command", async () => {
     const result = {
       applicationId,
-      reference: "SME-2027-01-2026-000001",
+      reference: "SME Fund-2027-01-2026-000001",
       submittedAt: "2026-09-15T08:00:00.000Z",
       workflowInstanceId: "69e20de0-3558-4d63-90a4-8c9f5125df07",
       workflowTemplateVersionId: "59e20de0-3558-4d63-90a4-8c9f5125df07",
@@ -130,6 +134,26 @@ describe("application submission service", () => {
       "reused-key",
       correlationId,
     )).rejects.toBeInstanceOf(IdempotencyConflictError);
+  });
+
+  it("does not expose notification configuration details to applicants", async () => {
+    vi.mocked(submitOwnedApplication).mockRejectedValue(
+      new NotificationValidationError(
+        notificationErrorCodes.invalidRecipient,
+        "Notification application.submitted cannot be sent: ASSIGNED_USER is missing.",
+      ),
+    );
+
+    await expect(submitApplication(
+      applicant([permissionCodes.fundingApplicationSubmit]),
+      applicationId,
+      command,
+      "notification-configuration-error",
+      correlationId,
+    )).rejects.toMatchObject({
+      message: expect.stringContaining("still saved as a draft"),
+      name: "ApplicationSubmissionConflictError",
+    });
   });
 
   it("uses the submission conflict error family", () => {

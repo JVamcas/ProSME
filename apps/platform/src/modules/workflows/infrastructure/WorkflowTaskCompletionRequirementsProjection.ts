@@ -1,23 +1,10 @@
 import "server-only";
 
 import { sql } from "drizzle-orm";
+import { workflowTaskDocumentRequirements } from "./WorkflowDocumentEvidenceReadiness";
 
 export const workflowTaskCompletionRequirementsProjection = sql`
-  COALESCE((
-    SELECT jsonb_agg(jsonb_build_object(
-      'mandatory', document.mandatory,
-      'name', document.name,
-      'stableKey', document.stable_key,
-      'evidenceUploaded', EXISTS (
-        SELECT 1
-        FROM app_workflow_document_evidence_versions evidence
-        WHERE evidence.application_id = workflow.application_id
-          AND evidence.requirement_id = document.id
-      )
-    ))
-    FROM app_workflow_stage_document_requirements document
-    WHERE document.task_definition_id = definition.id
-  ), '[]'::jsonb) AS "documentRequirements",
+  ${workflowTaskDocumentRequirements(sql`task.id`, sql`definition.id`)} AS "documentRequirements",
   (
     SELECT jsonb_build_object(
       'aggregation', scoring.aggregation,
@@ -32,7 +19,7 @@ export const workflowTaskCompletionRequirementsProjection = sql`
           'weight', criterion.weight
         ))
         FROM app_workflow_stage_scoring_criteria criterion
-        WHERE criterion.stage_id = scoring.stage_id
+        WHERE criterion.task_definition_id = scoring.task_definition_id
       ), '[]'::jsonb)
     )
     FROM app_workflow_stage_scoring_configurations scoring

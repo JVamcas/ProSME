@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+
+import { authNavigationHref } from "@/platform/auth/AuthNavigation";
 import { FormProvider } from "react-hook-form";
 
 import { GeneralButton } from "@/components/ui/button";
@@ -13,7 +15,7 @@ import {
 } from "./auth-styles";
 import { usePasswordReset } from "./use-password-reset";
 
-export function ForgotPasswordForm() {
+export function ForgotPasswordForm({ returnTo }: { returnTo?: string }) {
   const form = usePasswordReset();
 
   return (
@@ -42,7 +44,7 @@ export function ForgotPasswordForm() {
           {form.busy ? "Please wait…" : "Send reset instructions"}
         </GeneralButton>
         <Link
-          href="/sign-in"
+          href={authNavigationHref("/sign-in", returnTo)}
           className={`block text-center text-sm ${authLinkClassName}`}
         >
           Return to sign in

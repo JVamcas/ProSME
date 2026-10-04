@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
+vi.mock("@/modules/workflows/application/runtime/ServerWorkflowRfiNotificationService", () => ({
+  captureWorkflowRfiLifecycleNotification: vi.fn(),
+}));
 vi.mock(
   "@/modules/workflows/infrastructure/WorkflowActionExecutionConnection",
   () => ({ withWorkflowActionExecutionTransaction: vi.fn() }),
@@ -21,6 +24,7 @@ vi.mock(
 );
 
 import type { AuthenticatedUser } from "@/auth/types";
+import { captureWorkflowRfiLifecycleNotification } from "@/modules/workflows/application/runtime/ServerWorkflowRfiNotificationService";
 import {
   addWorkflowRfiFollowUp,
   closeWorkflowRfi,
@@ -81,6 +85,9 @@ describe("ServerWorkflowRfiService", () => {
       actorId,
       expect.objectContaining({ requestInformationId }),
     );
+    expect(captureWorkflowRfiLifecycleNotification).toHaveBeenCalledWith(
+      {}, requestInformationId, "responded", correlationId,
+    );
   });
 
   it("denies a response without the canonical permission", () => {
@@ -93,6 +100,7 @@ describe("ServerWorkflowRfiService", () => {
       requestInformationId,
     })).toThrow();
     expect(respondToOwnedWorkflowRfi).not.toHaveBeenCalled();
+    expect(captureWorkflowRfiLifecycleNotification).not.toHaveBeenCalled();
   });
 
   it("does not mask an assigned-task context mismatch", async () => {
@@ -107,6 +115,30 @@ describe("ServerWorkflowRfiService", () => {
         requestInformationId,
       },
     )).rejects.toThrow("assigned information request not found");
+    expect(captureWorkflowRfiLifecycleNotification).not.toHaveBeenCalled();
+  });
+
+  it("queues closure in the same transaction after the assigned request closes", async () => {
+    vi.mocked(closeAssignedWorkflowRfi).mockResolvedValue({
+      rowVersion: 3,
+      status: "CLOSED",
+    });
+    await expect(closeWorkflowRfi(
+      user("funding.application.information-request.assigned.close"),
+      { correlationId, expectedRowVersion: 2, requestInformationId },
+    )).resolves.toEqual({ rowVersion: 3, status: "CLOSED" });
+    expect(captureWorkflowRfiLifecycleNotification).toHaveBeenCalledWith(
+      {}, requestInformationId, "closed", correlationId,
+    );
+  });
+
+  it("propagates closure notification failure so the transaction rolls back", async () => {
+    vi.mocked(closeAssignedWorkflowRfi).mockResolvedValue({ rowVersion: 3, status: "CLOSED" });
+    vi.mocked(captureWorkflowRfiLifecycleNotification).mockRejectedValueOnce(new Error("capture failed"));
+    await expect(closeWorkflowRfi(
+      user("funding.application.information-request.assigned.close"),
+      { correlationId, expectedRowVersion: 2, requestInformationId },
+    )).rejects.toThrow("capture failed");
   });
 
   it("saves an applicant draft only with own-respond permission", async () => {

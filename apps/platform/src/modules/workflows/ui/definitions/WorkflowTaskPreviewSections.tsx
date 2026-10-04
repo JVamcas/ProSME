@@ -17,7 +17,7 @@ export function WorkflowTaskPreviewSummary({
       completedCount={0}
       message={requiredCount
         ? `0 of ${requiredCount} required items complete`
-        : `${sectionCount} configured sections`}
+        : `${sectionCount} configured ${sectionCount === 1 ? "section" : "sections"}`}
       status="Not started"
       totalCount={requiredCount}
     />

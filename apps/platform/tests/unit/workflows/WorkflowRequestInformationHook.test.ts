@@ -1,9 +1,18 @@
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
+vi.mock(
+  "@/modules/workflows/application/runtime/ServerWorkflowRfiNotificationService",
+  () => ({
+    captureWorkflowRfiCreatedNotification: vi.fn(),
+  }),
+);
+
 vi.mock("@/modules/workflows/infrastructure/WorkflowRfiRepository", () => ({
   createWorkflowRfi: vi.fn(),
 }));
+
+import { captureWorkflowRfiCreatedNotification } from "@/modules/workflows/application/runtime/ServerWorkflowRfiNotificationService";
 
 import {
   buildRequestInformationCreationRequest,
@@ -23,7 +32,18 @@ const correlationId = "90000000-0000-4000-8000-000000000001";
 const idempotencyKey = "a0000000-0000-4000-8000-000000000001";
 const requirementId = "b0000000-0000-4000-8000-000000000001";
 
-function request() {
+function request(
+  deadlineOverrides?: {
+    deadlineDays?: number;
+    expiryAction?: "CLOSE_REQUEST";
+    reminderDayOffsets?: number[];
+  },
+  runtimeOverrides?: {
+    deadlineDays: boolean;
+    expiryAction: boolean;
+    reminderDayOffsets: boolean;
+  },
+) {
   return buildRequestInformationCreationRequest({
     actorId,
     command: {
@@ -33,6 +53,7 @@ function request() {
       idempotencyKey,
       input: {
         actionType: "REQUEST_INFORMATION",
+        deadlineOverrides,
         editableFieldPaths: ["application.financial.turnover"],
         instructions: "Please clarify the turnover amount.",
         requestedDocumentRequirementIds: [requirementId],
@@ -48,6 +69,7 @@ function request() {
         configuration: {
           continuation: "RESUME_SOURCE_TASK",
           deadlineDays: 10,
+          runtimeOverrides,
           editableFieldPaths: ["application.financial.turnover"],
           expiryAction: "RETURN",
           participantScope: "APPLICATION_OWNER_AND_REQUESTER",
@@ -58,7 +80,7 @@ function request() {
         enabled: true,
         id: actionDefinitionId,
         label: "Request information",
-        reasonCodeRequired: false,
+        reasonRequired: false,
         stableKey: "REQUEST_INFORMATION",
       },
       stage: {
@@ -134,5 +156,51 @@ describe("workflow request information hook", () => {
       createRequestInformation(transaction, request()),
     ).resolves.toMatchObject({ status: "OPEN" });
     expect(createWorkflowRfi).toHaveBeenCalledWith(transaction, request());
+    expect(captureWorkflowRfiCreatedNotification).toHaveBeenCalledWith(
+      transaction,
+      "c0000000-0000-4000-8000-000000000001",
+    );
+  });
+});
+
+describe("request information effective deadline persistence", () => {
+  const enabled = {
+    deadlineDays: true,
+    expiryAction: true,
+    reminderDayOffsets: true,
+  };
+
+  it("passes effective overrides to the request repository", async () => {
+    const overridden = request(
+      {
+        deadlineDays: 6,
+        expiryAction: "CLOSE_REQUEST",
+        reminderDayOffsets: [2, 4],
+      },
+      enabled,
+    );
+    expect(overridden.deadline).toEqual({
+      days: 6,
+      expiryAction: "CLOSE_REQUEST",
+      reminderDayOffsets: [2, 4],
+    });
+    const transaction = {} as never;
+    await createRequestInformation(transaction, overridden);
+    expect(createWorkflowRfi).toHaveBeenLastCalledWith(transaction, overridden);
+  });
+
+  it("keeps omitted settings at their configured defaults", () => {
+    expect(request({ deadlineDays: 20 }, enabled).deadline).toEqual({
+      days: 20,
+      expiryAction: "RETURN",
+      reminderDayOffsets: [3],
+    });
+  });
+
+  it("rejects disallowed settings before creation", () => {
+    expect(() => request({ deadlineDays: 20 })).toThrow("cannot be overridden");
+    expect(() => request({ deadlineDays: 2 }, enabled)).toThrow(
+      "before the deadline",
+    );
   });
 });

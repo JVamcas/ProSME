@@ -12,6 +12,7 @@ services:
       - ../.env
     environment:
       DATABASE_URL: ${DATABASE_URL}
+      ENVIRONMENT: ${ENVIRONMENT:-local}
       GCS_DOCUMENTS_BUCKET: ${GCS_DOCUMENTS_BUCKET:-smepro}
       GOOGLE_CLOUD_PROJECT: ${GOOGLE_CLOUD_PROJECT:-msmepro}
       NODE_ENV: production
@@ -29,12 +30,15 @@ services:
       context: ..
       dockerfile: apps/platform/Dockerfile
       target: runtime
+      args:
+        ENVIRONMENT: ${ENVIRONMENT:-local}
     restart: unless-stopped
     init: true
     env_file:
       - ../.env
     environment:
       DATABASE_URL: ${DATABASE_URL}
+      ENVIRONMENT: ${ENVIRONMENT:-local}
       HOSTNAME: 0.0.0.0
       NEXT_TELEMETRY_DISABLED: "1"
       NODE_ENV: production
@@ -69,8 +73,8 @@ services:
     networks:
       - platform
 
-  notification-scheduler:
-    container_name: smefund-${ENVIRONMENT:-local}-notification-scheduler
+  scheduler:
+    container_name: smefund-${ENVIRONMENT:-local}-scheduler
     image: smefund-${ENVIRONMENT:-local}-platform
     command:
       - node
@@ -78,9 +82,13 @@ services:
     restart: unless-stopped
     init: true
     environment:
-      NOTIFICATION_PROCESSOR_INTERVAL_MS: ${NOTIFICATION_PROCESSOR_INTERVAL_MS:-60000}
+      NOTIFICATION_PROCESSOR_INTERVAL_MS: ${NOTIFICATION_PROCESSOR_INTERVAL_MS:-30000}
       NOTIFICATION_PROCESSOR_SECRET: ${NOTIFICATION_PROCESSOR_SECRET}
       NOTIFICATION_PROCESSOR_URL: http://app:3008/api/internal/notifications/process
+      WORKFLOW_PROCESSOR_SECRET: ${WORKFLOW_PROCESSOR_SECRET:-${NOTIFICATION_PROCESSOR_SECRET}}
+      WORKFLOW_PROCESSOR_URL: http://app:3008/api/internal/workflows/process
+      WORKFLOW_PROCESSOR_INTERVAL_MS: ${WORKFLOW_PROCESSOR_INTERVAL_MS:-60000}
+      WORKFLOW_SCHEDULER_REQUEST_TIMEOUT_MS: ${WORKFLOW_SCHEDULER_REQUEST_TIMEOUT_MS:-60000}
       NOTIFICATION_SCHEDULER_MAX_CONSECUTIVE_FAILURES: ${NOTIFICATION_SCHEDULER_MAX_CONSECUTIVE_FAILURES:-5}
       NOTIFICATION_SCHEDULER_REQUEST_TIMEOUT_MS: ${NOTIFICATION_SCHEDULER_REQUEST_TIMEOUT_MS:-60000}
     depends_on:

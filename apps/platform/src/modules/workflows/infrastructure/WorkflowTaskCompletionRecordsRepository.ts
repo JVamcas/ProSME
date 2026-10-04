@@ -1,6 +1,7 @@
 import "server-only";
 
 import { sql } from "drizzle-orm";
+import { resolveCompletedTaskEscalation } from "./WorkflowEscalationRepository";
 
 import type { getDatabase } from "@/db/client";
 import type {
@@ -59,4 +60,8 @@ export async function appendWorkflowTaskCompletionRecords(
       ${JSON.stringify(result)}::jsonb, ${input.correlationId}::uuid)
     ON CONFLICT (event_code, aggregate_id) DO NOTHING
   `);
+  if (result.taskStatus === "COMPLETED") {
+    await resolveCompletedTaskEscalation(transaction, input);
+  }
+
 }

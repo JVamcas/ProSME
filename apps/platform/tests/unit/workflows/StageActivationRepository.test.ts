@@ -12,6 +12,10 @@ vi.mock(
   "@/modules/workflows/infrastructure/WorkflowTaskAutoAssignmentRepository",
   () => ({ allocateStageReviewers: vi.fn() }),
 );
+vi.mock(
+  "@/modules/workflows/infrastructure/WorkflowReworkDataRepository",
+  () => ({ initializeWorkflowReworkData: vi.fn() }),
+);
 
 import { workflowAuditEntries, workflowEvents } from "@/db/schema";
 import { createStageInstance } from "@/modules/workflows/infrastructure/StageInstanceRepository";
@@ -21,6 +25,8 @@ import {
 } from "@/modules/workflows/infrastructure/StageActivationRepository";
 import { createWorkflowTasks } from "@/modules/workflows/infrastructure/WorkflowTaskWriteRepository";
 import { allocateStageReviewers } from "@/modules/workflows/infrastructure/WorkflowTaskAutoAssignmentRepository";
+import { initializeWorkflowReworkData } from "@/modules/workflows/infrastructure/WorkflowReworkDataRepository";
+import { stageActivationTarget } from "../../support/StageActivationTargetFixture";
 
 const activatedAt = new Date("2026-09-21T09:00:00.000Z");
 const stageId = "11111111-1111-4111-8111-111111111111";
@@ -35,6 +41,9 @@ const select = vi.fn(() => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(initializeWorkflowReworkData).mockResolvedValue([
+    { taskId, sourceTaskId: "99999999-9999-4999-8999-999999999999" },
+  ]);
   vi.mocked(allocateStageReviewers).mockResolvedValue(
     new Map([
       [
@@ -97,7 +106,7 @@ describe("stage activation repository", () => {
     expect(execute).toHaveBeenCalledOnce();
   });
 
-  it("persists the stage, tasks, current pointer, event, and audit atomically", async () => {
+  it.each([null, "RETAIN", "CLEAR"] as const)("persists stage activation with retention policy %s atomically", async (dataHandling) => {
     const inserted: Array<{ table: unknown; value: unknown }> = [];
     const insert = vi.fn((table: unknown) => ({
       values: vi.fn((value: unknown) => {
@@ -116,30 +125,8 @@ describe("stage activation repository", () => {
         actorId: "77777777-7777-4777-8777-777777777777",
         correlationId: "88888888-8888-4888-8888-888888888888",
         iterationNumber: 1,
-        target: {
-          application: {},
-          applicationId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-          applicationReference: "SME-2026-001",
-          eligibility: { eligible: true, outcome: "ELIGIBLE" },
-          entryCondition: null,
-          fundingCall: {},
-          fundingOpportunityTitle: "Growth Fund",
-          joinPredecessorStageKeys: [
-            "TECHNICAL_ASSESSMENT",
-            "FINANCIAL_REVIEW",
-          ],
-          repeatable: false,
-          slaHours: 24,
-          stageDefinitionId: "44444444-4444-4444-8444-444444444444",
-          stageKey: "SCREENING",
-          stageName: "Screening",
-          publicStatus: {
-            status: "UNDER_REVIEW",
-            label: "Under review",
-            description: "Your application is under review.",
-          },
-          workflowInstanceId: "33333333-3333-4333-8333-333333333333",
-        },
+        returnContext: dataHandling ? { dataHandling } : null,
+        target: stageActivationTarget,
         tasks: [
           {
             formVersionId: null,
@@ -156,6 +143,23 @@ describe("stage activation repository", () => {
     );
 
     expect(result.stage.id).toBe(stageId);
+    if (dataHandling) {
+      expect(result.tasks[0].supersedesTaskId)
+        .toBe("99999999-9999-4999-8999-999999999999");
+      expect(initializeWorkflowReworkData).toHaveBeenCalledWith(
+        expect.anything(),
+        {
+          actorId: "77777777-7777-4777-8777-777777777777",
+          correlationId: "88888888-8888-4888-8888-888888888888",
+          dataHandling,
+          stageInstanceId: stageId,
+        },
+      );
+      expect(vi.mocked(createWorkflowTasks).mock.invocationCallOrder[0])
+        .toBeLessThan(vi.mocked(initializeWorkflowReworkData).mock.invocationCallOrder[0]);
+    } else {
+      expect(initializeWorkflowReworkData).not.toHaveBeenCalled();
+    }
     expect(createWorkflowTasks).toHaveBeenCalledWith(
       expect.anything(),
       [1, 2, 3].map((reviewerSlot) =>
@@ -243,25 +247,10 @@ describe("stage activation repository", () => {
       correlationId: "88888888-8888-4888-8888-888888888888",
       iterationNumber: 1,
       target: {
-        application: {},
-        applicationId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-        applicationReference: "SME-2026-001",
+        ...stageActivationTarget,
         eligibility: null,
-        entryCondition: null,
-        fundingCall: {},
-        fundingOpportunityTitle: "Growth Fund",
         joinPredecessorStageKeys: [],
-        repeatable: false,
         slaHours: null,
-        stageDefinitionId: "44444444-4444-4444-8444-444444444444",
-        stageKey: "SCREENING",
-        stageName: "Screening",
-        publicStatus: {
-          status: "UNDER_REVIEW",
-          label: "Under review",
-          description: "Your application is under review.",
-        },
-        workflowInstanceId: "33333333-3333-4333-8333-333333333333",
       },
       tasks: [
         {

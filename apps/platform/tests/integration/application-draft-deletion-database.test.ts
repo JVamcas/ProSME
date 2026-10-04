@@ -5,9 +5,7 @@ vi.mock("server-only", () => ({}));
 
 import { deleteOwnedApplicationDraft } from "@/modules/applications/infrastructure/ApplicationDeletionRepository";
 import {
-  createOwnedApplication,
   findOwnedApplication,
-  findOwnedApplicationByOpportunity,
   listOwnedApplications,
 } from "@/modules/applications/infrastructure/ApplicationRepository";
 import { createPendingApplicationDocumentVersion } from "@/modules/applications/infrastructure/ApplicationDocumentRepository";
@@ -36,16 +34,21 @@ afterAll(async () => {
 
 const describeDatabase = enabled ? describe : describe.skip;
 
+async function createTestApplication() {
+  const result = await pool!.query<{ id: string }>(
+    `INSERT INTO app_applications (
+       owner_user_id, funding_opportunity_id, funding_opportunity_title,
+       eligibility_rule_set_version_id, form_version_id, duplicate_policy
+     ) VALUES ($1, $2, 'Draft Autosave Fund', $3, $4, 'one_per_business')
+     RETURNING id`,
+    [firstOwnerId, draftOpportunityId, eligibilityRuleSetVersionId, formVersionId],
+  );
+  return result.rows[0]!.id;
+}
+
 describeDatabase("draft deletion in PostgreSQL", () => {
   it("hides only an owned draft, preserves audit, and releases its duplicate slot", async () => {
-    const id = await createOwnedApplication({
-      duplicatePolicy: "one_per_business",
-      eligibilityRuleSetVersionId,
-      formVersionId,
-      fundingOpportunityId: draftOpportunityId,
-      fundingOpportunityTitle: "Draft Autosave Fund",
-      ownerUserId: firstOwnerId,
-    });
+    const id = await createTestApplication();
     expect(id).toBeTruthy();
     const input = {
       applicationId: id!,
@@ -67,10 +70,6 @@ describeDatabase("draft deletion in PostgreSQL", () => {
       actorId: firstOwnerId,
     })).resolves.toBe("not_found");
     await expect(findOwnedApplication(firstOwnerId, id!)).resolves.toBeNull();
-    await expect(findOwnedApplicationByOpportunity(
-      firstOwnerId,
-      draftOpportunityId,
-    )).resolves.toBeNull();
     const listed = await listOwnedApplications({
       limit: 10,
       ownerUserId: firstOwnerId,
@@ -95,14 +94,7 @@ describeDatabase("draft deletion in PostgreSQL", () => {
       sizeBytes: 512,
     })).resolves.toBeNull();
 
-    const replacementId = await createOwnedApplication({
-      duplicatePolicy: "one_per_business",
-      eligibilityRuleSetVersionId,
-      formVersionId,
-      fundingOpportunityId: draftOpportunityId,
-      fundingOpportunityTitle: "Draft Autosave Fund",
-      ownerUserId: firstOwnerId,
-    });
+    const replacementId = await createTestApplication();
     expect(replacementId).toBeTruthy();
     expect(replacementId).not.toBe(id);
   });

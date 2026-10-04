@@ -1,13 +1,16 @@
 "use client";
 
+import { CheckboxField } from "@/components/ui/form-field";
 import { GeneralButtonLink } from "@/components/ui/button";
-import { FormDateTimeInput } from "@/components/ui/form-date-time-input";
+import { FormDateTimeInput } from "@/shared/ui/FormDateTimeInput";
 import {
   FormInput,
   FormSelect,
 } from "@/components/ui/form-fields";
 import { MoneyField } from "@/components/ui/money-field";
 import { FormRichTextField } from "@/shared/ui/FormRichTextField";
+import type { FundingCallView } from "../api/FundingCallTransport";
+import { FundingCallThumbnailField } from "./FundingCallThumbnailField";
 
 export type FundingCallStepId =
   | "basics"
@@ -34,6 +37,17 @@ type VersionOption = {
   label: string;
   value: string;
 };
+
+function AttachmentLockNotice({ locked }: { locked: boolean }) {
+  if (!locked) return null;
+  return (
+    <p className="md:col-span-2 text-sm leading-6 text-brand-navy/75" role="status">
+      The application form, eligibility ruleset and workflow versions cannot be
+      changed because applications have already been created for this funding call.
+      Create or clone a funding call to use different versions.
+    </p>
+  );
+}
 
 function StepIntroduction({
   children,
@@ -138,10 +152,12 @@ export function ScheduleStep({ opensAt }: { opensAt: string }) {
 }
 
 export function ApplicationStep({
+  attachmentsLocked = false,
   disabled,
   loading,
   options,
 }: {
+  attachmentsLocked?: boolean;
   disabled: boolean;
   loading: boolean;
   options: VersionOption[];
@@ -154,13 +170,14 @@ export function ApplicationStep({
       <FormSelect
         key={loading ? "form-loading" : "form-ready"}
         containerClassName="md:col-span-2"
-        disabled={disabled || loading}
+        disabled={disabled || loading || attachmentsLocked}
         infoTooltip="Draft calls may bind draft or published forms for configuration and testing. The form must be published before the funding call can be published."
         items={options}
         label="Application form version"
         name="formVersionId"
         placeholder={loading ? "Loading form versions…" : "Select a form version"}
       />
+      <AttachmentLockNotice locked={attachmentsLocked} />
       <div className="md:col-span-2 rounded-xl border border-brand-navy/10 bg-brand-cream/60 p-4 text-sm leading-6 text-brand-navy/70">
         Applicant declarations and required document uploads are defined by this Application Form Version. They are not configured again on the Funding Call.
       </div>
@@ -175,16 +192,24 @@ export function ApplicationStep({
         label="Application limit"
         name="applicationDuplicatePolicy"
       />
+      <CheckboxField
+        containerClassName="md:col-span-2"
+        description="Withdrawn applications do not count towards the application limit. A new application must still meet the call’s submission requirements and closing date."
+        label="Allow a new application after withdrawal"
+        name="allowResubmissionAfterWithdrawal"
+      />
     </>
   );
 }
 
 export function EligibilityStep({
+  attachmentsLocked = false,
   configureHref,
   disabled,
   loading,
   options,
 }: {
+  attachmentsLocked?: boolean;
   configureHref?: string;
   disabled: boolean;
   loading: boolean;
@@ -198,13 +223,14 @@ export function EligibilityStep({
       <FormSelect
         key={loading ? "eligibility-loading" : "eligibility-ready"}
         containerClassName="md:col-span-2"
-        disabled={disabled || loading}
+        disabled={disabled || loading || attachmentsLocked}
         infoTooltip="Draft calls may bind draft or published rulesets for configuration and testing. The ruleset must be published before the funding call can be published."
         items={options}
         label="Eligibility ruleset"
         name="eligibilityRuleSetVersionId"
         placeholder={loading ? "Loading eligibility rulesets…" : "Select an eligibility ruleset"}
       />
+      <AttachmentLockNotice locked={attachmentsLocked} />
       {configureHref ? (
         <div className="md:col-span-2">
           <GeneralButtonLink
@@ -221,10 +247,12 @@ export function EligibilityStep({
 }
 
 export function WorkflowStep({
+  attachmentsLocked = false,
   disabled,
   loading,
   options,
 }: {
+  attachmentsLocked?: boolean;
   disabled: boolean;
   loading: boolean;
   options: VersionOption[];
@@ -237,13 +265,14 @@ export function WorkflowStep({
       <FormSelect
         key={loading ? "workflow-loading" : "workflow-ready"}
         containerClassName="md:col-span-2"
-        disabled={disabled || loading}
+        disabled={disabled || loading || attachmentsLocked}
         infoTooltip="Draft calls may bind draft or published workflows for configuration and testing. The workflow must be published before the funding call can be published."
         items={options}
         label="Workflow template version"
         name="workflowTemplateVersionId"
         placeholder={loading ? "Loading workflow versions…" : "Select a workflow template version"}
       />
+      <AttachmentLockNotice locked={attachmentsLocked} />
       <div className="md:col-span-2 rounded-xl border border-brand-navy/10 bg-brand-cream/60 p-4 text-sm leading-6 text-brand-navy/70">
         Stages, scoring, responsibilities and conflict-of-interest controls are owned by the selected Workflow Template Version and are not configured again here.
       </div>
@@ -251,7 +280,13 @@ export function WorkflowStep({
   );
 }
 
-export function PublicContentStep() {
+export function PublicContentStep({
+  call,
+  disabled,
+}: {
+  call?: FundingCallView;
+  disabled: boolean;
+}) {
   return (
     <>
       <StepIntroduction title="Public content">
@@ -262,6 +297,7 @@ export function PublicContentStep() {
         label="Public eligibility summary"
         name="eligibilitySummary"
       />
+      <FundingCallThumbnailField call={call} disabled={disabled} />
       <FormInput label="Public contact name" name="publicContactName" />
       <FormInput
         label="Public contact email"

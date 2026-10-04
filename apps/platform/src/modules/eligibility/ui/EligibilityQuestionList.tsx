@@ -4,8 +4,8 @@ import { useState } from "react";
 
 import { EditButton } from "@/components/ui/action-buttons";
 import { GeneralButton } from "@/components/ui/button";
-import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
-import { DraggableDialog } from "@/components/ui/draggable-dialog";
+import { DataTable, type DataTableColumn } from "@/shared/ui/DataTable";
+import { DraggableDialog } from "@/shared/ui/DraggableDialog";
 import { Pagination } from "@/components/ui/pagination";
 import { formatLocalDateTime24 } from "@/lib/dateUtils";
 import type { EligibilityQuestionInput } from "../api/EligibilityQuestionSchemas";

@@ -6,9 +6,15 @@ import { permissionCodes } from "@/auth/authorization/permissions";
 import { requirePermission } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import type { DocumentStorage } from "@/integrations/storage/DocumentStorage";
-import { gcsObjectPrefixes } from "@/integrations/storage/GcsObjectPrefixes";
+import {
+  gcsObjectPathSegments,
+  resolveGcsObjectPath,
+} from "@/integrations/storage/GcsObjectPath";
 import { GoogleCloudDocumentStorage } from "@/integrations/storage/GoogleCloudDocumentStorage";
-import { RequestValidationError, ResourceNotFoundError } from "@/lib/resource-errors";
+import {
+  RequestValidationError,
+  ResourceNotFoundError,
+} from "@/lib/resource-errors";
 import {
   safeWorkflowEvidenceFileName,
   validateWorkflowEvidenceFile,
@@ -36,9 +42,9 @@ export async function uploadOwnedWorkflowRfiDocument(
     applicationId,
     requestInformationId,
   );
-  if (rfi.status !== "OPEN") {
+  if (rfi.status !== "OPEN" || new Date(rfi.deadlineAt) <= new Date()) {
     throw new RequestValidationError(
-      "Documents cannot be changed after the response is submitted.",
+      "Documents cannot be changed after submission or the response deadline.",
     );
   }
   const requirement = rfi.requestedDocuments.find(
@@ -50,14 +56,14 @@ export async function uploadOwnedWorkflowRfiDocument(
     );
   }
   const validated = validateWorkflowEvidenceFile(file, requirement);
-  const objectKey = [
-    gcsObjectPrefixes.users,
+  const objectKey = resolveGcsObjectPath(
+    ...gcsObjectPathSegments.users,
     actor.id,
     "workflow-evidence",
     applicationId,
     requirementId,
     `${randomUUID()}${validated.extension}`,
-  ].join("/");
+  );
   await storage.put({
     body: Buffer.from(await file.arrayBuffer()),
     contentType: validated.contentType,
@@ -66,6 +72,7 @@ export async function uploadOwnedWorkflowRfiDocument(
   try {
     const version = await createDocumentEvidenceVersion({
       applicationId,
+      taskId: rfi.taskId,
       contentType: validated.contentType,
       objectKey,
       originalName: safeWorkflowEvidenceFileName(file.name),

@@ -2,8 +2,8 @@
 
 import { CircleDollarSign } from "lucide-react";
 
-import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
-import { PortalErrorState } from "@/components/layout/PortalErrorState";
+import { PortalLoadingState } from "@/shared/ui/portal/PortalLoadingState";
+import { PortalErrorState } from "@/shared/ui/portal/PortalErrorState";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { PageShell } from "@/shared/ui/PageShell";
 import {
@@ -26,6 +26,7 @@ export function FundingCallEditor({
   canSuspend,
   canUpdate,
   canWithdraw,
+  canWithdrawForAmendment,
   canWithdrawOwnRequest,
   id,
 }: {
@@ -38,6 +39,7 @@ export function FundingCallEditor({
   canSuspend: boolean;
   canUpdate: boolean;
   canWithdraw: boolean;
+  canWithdrawForAmendment: boolean;
   canWithdrawOwnRequest: boolean;
   id: string;
 }) {
@@ -66,6 +68,7 @@ export function FundingCallEditor({
           canResume={canResume}
           canSuspend={canSuspend}
           canWithdraw={canWithdraw}
+          canWithdrawForAmendment={canWithdrawForAmendment}
         />
       </div>
     </div>

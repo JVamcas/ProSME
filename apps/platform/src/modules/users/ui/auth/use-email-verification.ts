@@ -3,24 +3,28 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 
+import { authNavigationHref } from "@/platform/auth/AuthNavigation";
 import { authClientService } from "@/platform/auth/firebase/ClientAuthService";
 import { getFirebaseErrorMessage } from "@/platform/auth/firebase/errors";
 
 const verificationQueryKey = ["auth", "email-verification"] as const;
 
-function verificationNotice(resendSucceeded: boolean, verified?: boolean) {
+export function emailVerificationNotice(
+  resendSucceeded: boolean,
+  verified?: boolean,
+) {
   if (resendSucceeded) {
     return "A new verification link has been sent. Check your inbox and spam folder.";
   }
 
   if (verified === false) {
-    return "Firebase has not confirmed your email yet. Open the link, then check again.";
+    return "Your email address is not verified yet. Open the verification link we emailed you, then select “I have verified my email” again.";
   }
 
   return "";
 }
 
-export function useEmailVerification() {
+export function useEmailVerification(returnTo?: string) {
   const router = useRouter();
   const status = useQuery({
     queryFn: authClientService.getEmailVerificationStatus,
@@ -34,7 +38,7 @@ export function useEmailVerification() {
     mutationFn: authClientService.completeEmailVerification,
     onSuccess(verified) {
       if (verified) {
-        router.replace("/sign-in");
+        router.replace(authNavigationHref("/sign-in", returnTo));
       }
     },
   });
@@ -50,7 +54,7 @@ export function useEmailVerification() {
   }
 
   const caughtError = resend.error ?? verification.error ?? status.error;
-  const notice = verificationNotice(resend.isSuccess, verification.data);
+  const notice = emailVerificationNotice(resend.isSuccess, verification.data);
 
   return {
     busy: resend.isPending || verification.isPending,

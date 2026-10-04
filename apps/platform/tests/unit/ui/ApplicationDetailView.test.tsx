@@ -9,28 +9,32 @@ const model: ApplicationDetailModel = {
   backHref: "/portal/applications",
   backLabel: "My applications",
   businessDetails: [],
-  documents: [{
-    href: "/api/portal/applications/id/documents/version/download",
-    key: "version",
-    name: "Business plan.pdf",
-    sizeBytes: 2048,
-    type: "Business plan",
-  }],
+  documents: [
+    {
+      href: "/api/portal/applications/id/documents/version/download",
+      key: "version",
+      name: "Business plan.pdf",
+      sizeBytes: 2048,
+      type: "Business plan",
+    },
+  ],
   facts: [
-    { label: "Business name", value: "Example SME" },
+    { label: "Business name", value: "Example SME Fund" },
     { label: "Funding opportunity", value: "Growth Grant" },
-    { label: "Application reference", value: "SME-001" },
+    { label: "Application reference", value: "SME Fund-001" },
     { label: "Form completion", value: "100%" },
     { label: "Amount requested", value: "N$ 250,000" },
     { label: "Project location", value: "Windhoek" },
     { label: "Submission date", value: "24 Sep 2026" },
   ],
-  reference: "SME-001",
-  sections: [{
-    key: "project",
-    title: "Project summary",
-    answers: [{ key: "GOAL", label: "Goal", value: "Expand production" }],
-  }],
+  reference: "SME Fund-001",
+  sections: [
+    {
+      key: "project",
+      title: "Project summary",
+      answers: [{ key: "GOAL", label: "Goal", value: "Expand production" }],
+    },
+  ],
   statusDescription: "Your application is being reviewed.",
   statusLabel: "Under review",
   statusBadgeLabel: "IN PROGRESS",
@@ -65,5 +69,22 @@ describe("shared application detail view", () => {
 
     expect(markup).toContain("Requests for information");
     expect(markup).toContain("Response submitted—awaiting review");
+  });
+  it("opens the available Workflow Progress tab when requested", () => {
+    const markup = renderToStaticMarkup(
+      <ApplicationDetailView
+        model={model}
+        initialTab="workflow-progress"
+        workflowProgress={<p>Workflow state</p>}
+      />,
+    );
+    expect(markup).toMatch(/aria-selected="true"[^>]*>Workflow Progress/);
+  });
+
+  it("falls back to Overview when the requested workflow tab is unavailable", () => {
+    const markup = renderToStaticMarkup(
+      <ApplicationDetailView model={model} initialTab="workflow-progress" />,
+    );
+    expect(markup).toMatch(/aria-selected="true"[^>]*>Overview/);
   });
 });

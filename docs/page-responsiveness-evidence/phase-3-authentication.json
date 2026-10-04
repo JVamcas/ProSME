@@ -1,0 +1,3289 @@
+{
+  "source": "isolated production test server; functional and performance requests; timing only",
+  "observations": [
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1035.0
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.89
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.7
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.69
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.03
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.43
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.48
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.57
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.77
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.61
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.36
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.45
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.37
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.47
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.37
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.6
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.62
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.46
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.4
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.73
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.56
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.87
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.37
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.76
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.59
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.42
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.37
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.05
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.57
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.76
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.61
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.44
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.41
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.72
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.63
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.45
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.67
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.55
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.44
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.38
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.46
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.43
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.37
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.52
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.46
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.37
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.79
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.4
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.62
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.91
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1583.61
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.84
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.76
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.68
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.72
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.73
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.89
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.62
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 3.01
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.94
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.91
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.68
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.82
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.75
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.71
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 3.53
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.53
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.57
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.64
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.45
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 3.1
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.64
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.59
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.53
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.47
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.21
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.48
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.58
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 2.63
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.6
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.72
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 5.4
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.77
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.57
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.64
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.58
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.77
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.09
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.59
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 4.74
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 3.34
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.62
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.04
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.46
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.55
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.81
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.84
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.48
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.93
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.75
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.67
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.86
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.62
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.71
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.37
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.89
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 26.62
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 25.97
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 2250.59
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.22
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.5
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.19
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.87
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.01
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.57
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.54
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.66
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.78
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.58
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 2.47
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.77
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.87
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.99
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 2.06
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.2
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 2.0
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.22
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.57
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 3.59
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.85
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.86
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.55
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.73
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.48
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.95
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.67
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.39
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.63
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.84
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.46
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.8
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.71
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.55
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.43
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.48
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.89
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.53
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.47
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.65
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.84
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.63
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.77
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 5.26
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.64
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.84
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.56
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.82
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.78
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.49
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.54
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.05
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.7
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.9
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.84
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.76
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.09
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1175.58
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.59
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.64
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.53
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.49
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.83
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.39
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.55
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.48
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.92
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.7
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.26
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.9
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 5.04
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.46
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.92
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.73
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.16
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 3.77
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.73
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.65
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.66
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.7
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.59
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.36
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.81
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.44
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.52
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.96
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.79
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 5.09
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.76
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.53
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.59
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.94
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.59
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.66
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.11
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 5.6
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.58
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 5.24
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.89
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.43
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.62
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.0
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.58
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.5
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.51
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.59
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.02
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.0
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.49
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.1
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.5
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.61
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.82
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.57
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.88
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.71
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.59
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.67
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.08
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.43
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.8
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.73
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.7
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 2.46
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.44
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.38
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.75
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 6.16
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.47
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.54
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.47
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.83
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.85
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.57
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.64
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.12
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.59
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.62
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.58
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.34
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.43
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.47
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.37
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.48
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.73
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.41
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.54
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.41
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.19
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.46
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.69
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.72
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.66
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.66
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.41
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.72
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.4
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.62
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.42
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.42
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.43
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.39
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.73
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.45
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.04
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.44
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.41
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.46
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.43
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.74
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.51
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.75
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.59
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.39
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.38
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.42
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.58
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.64
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.43
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.44
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.42
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.37
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.66
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.38
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.55
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.48
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.38
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.46
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.54
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.58
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.63
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.46
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.47
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.52
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.49
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.42
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.56
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.44
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.38
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.62
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.67
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.61
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.45
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.89
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.21
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.4
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.06
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.78
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.44
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.58
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.47
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.36
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.76
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.55
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.38
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.83
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.42
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.64
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.38
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.43
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.43
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.68
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.36
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.78
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.65
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.38
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.76
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.47
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.49
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.41
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.73
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.53
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.41
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.49
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.36
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.39
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.59
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.7
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.42
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.67
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.64
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.58
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.58
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.44
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.42
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.46
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.54
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.48
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.53
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.39
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.44
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.61
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.41
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.5
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.42
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.72
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.64
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.42
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.9
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.48
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.5
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.04
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.51
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.41
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.7
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.39
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.56
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.39
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.47
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.36
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.4
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.42
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.46
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.47
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.68
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.48
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.55
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.67
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.63
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.78
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.63
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.49
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.52
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.4
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.74
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.43
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.42
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.36
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.47
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.42
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.41
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.51
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.56
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.39
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.64
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.53
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.4
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.4
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.54
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.43
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.42
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.35
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.81
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.48
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1113.72
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.58
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.49
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.45
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.49
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.39
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.42
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.4
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.48
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.99
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.44
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.35
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.76
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.83
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.7
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.55
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.4
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.9
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.77
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.47
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.44
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.42
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.39
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.41
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.8
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 3.22
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.59
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.52
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.36
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.48
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.78
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.56
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.56
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.63
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.79
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.63
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.38
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.4
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.51
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.42
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.99
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.59
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.28
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.46
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.67
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.55
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.37
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.42
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.46
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.61
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.71
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.44
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.57
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.97
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.57
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.41
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.43
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 3.23
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.74
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.82
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 4.97
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.74
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.64
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.45
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.66
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.51
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.5
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.64
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.75
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.68
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.13
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.6
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.5
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.75
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.61
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.63
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.87
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.72
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.81
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.73
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.78
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.85
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.75
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.54
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.67
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.03
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.86
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.56
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.54
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.88
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.44
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.11
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.65
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.02
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.63
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.62
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.02
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.47
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 2.84
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.85
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.41
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.69
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.62
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.48
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.45
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.46
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.66
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.67
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.42
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.66
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.49
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.44
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.57
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.43
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.48
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.49
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.43
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.53
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.51
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.42
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.38
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.76
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.44
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.75
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.45
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.48
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.66
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.97
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.45
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.64
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.49
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.44
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.48
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.55
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.58
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.42
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.66
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.41
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.82
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.21
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.69
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.55
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.6
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.5
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.64
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.8
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.43
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.55
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.57
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.52
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.53
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.51
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.61
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.81
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.73
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.43
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.43
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.57
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.63
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.5
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.52
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.42
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.5
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.56
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.41
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.46
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.45
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.4
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.38
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.75
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.62
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.43
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.52
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.41
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.41
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.59
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.37
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.5
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.52
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.69
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.58
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.43
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.38
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.38
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.41
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.39
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.37
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.45
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.47
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.47
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.56
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.4
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.43
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.62
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.69
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.44
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.76
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.56
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.59
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.52
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.73
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.88
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.42
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.41
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.56
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.39
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.76
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.62
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.66
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.41
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.44
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.59
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.52
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.37
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.53
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.71
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.57
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.51
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.41
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.61
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.84
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.02
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.47
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.44
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.61
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.42
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.32
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.43
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.42
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.38
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.57
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.55
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.42
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.39
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.4
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.56
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 1.11
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.48
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.57
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.49
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.61
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.85
+    },
+    {
+      "checkRevoked": false,
+      "succeeded": true,
+      "durationMs": 0.37
+    }
+  ],
+  "warmDefinition": "successful standard verifications below 100 ms; cold certificate fetches retained separately",
+  "warmCount": 651,
+  "warmMedianMs": 0.58,
+  "coldCount": 5
+}

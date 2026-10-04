@@ -41,6 +41,7 @@ export function WorkflowTemplateCreateForm({ onCompleted, template }: Props) {
       await updateMutation.mutateAsync({
         ...input,
         expectedRowVersion: template.currentVersion.rowVersion,
+        versionId: template.currentVersion.id,
       });
     } else {
       await createMutation.mutateAsync(input);

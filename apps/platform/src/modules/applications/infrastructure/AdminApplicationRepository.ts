@@ -1,4 +1,5 @@
 import "server-only";
+import { workflowHasActiveApplicationHold } from "@/modules/workflows/infrastructure/WorkflowHoldQueries";
 
 import { sql } from "drizzle-orm";
 
@@ -120,6 +121,8 @@ function applicationQuery(input: {
     WITH filtered AS (
       SELECT
         application.id AS "applicationId",
+        CASE WHEN workflow.status = 'ACTIVE' AND ${workflowHasActiveApplicationHold(sql`workflow.id`)}
+          THEN 'ON_HOLD' ELSE NULL END AS "processingStatus",
         application.reference AS "reference",
         COALESCE(
           NULLIF(business.trading_name, ''),
@@ -206,6 +209,8 @@ function detailQuery(input: {
 }) {
   return sql`
     SELECT application.id AS "applicationId",
+      CASE WHEN workflow.status = 'ACTIVE' AND ${workflowHasActiveApplicationHold(sql`workflow.id`)}
+        THEN 'ON_HOLD' ELSE NULL END AS "processingStatus",
       COALESCE(application.reference, application.id::text) AS reference,
       applicant.display_name AS "applicantName",
       COALESCE(

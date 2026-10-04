@@ -1,6 +1,6 @@
 "use client";
 
-import { PortalErrorState } from "@/components/layout/PortalErrorState";
+import { PortalErrorState } from "@/shared/ui/portal/PortalErrorState";
 
 export default function ErrorBoundary({
   error,

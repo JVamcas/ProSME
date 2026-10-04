@@ -24,7 +24,7 @@ vi.mock("@/shared/ui/Toast", () => ({
   toast: { error: mocks.toastError },
 }));
 
-vi.mock("@/modules/applications/ApplicationHooks", () => ({
+vi.mock("@/modules/applications/ui/useApplications", () => ({
   useSubmitApplication: () => ({ isPending: false, mutateAsync: mocks.submit }),
   useOwnApplication: () => ({
     data: mocks.draft,
@@ -86,10 +86,8 @@ function draft(rowVersion: number): ApplicationDraftView {
       actionRequired: false,
     },
     businessName: "Selected business",
-    businessSection: {},
     createdAt: "2026-09-23T08:00:00.000Z",
     currentSection: "business",
-    declarationsSection: {},
     draftResponse: {
       id: "30000000-0000-4000-8000-000000000001",
       rowVersion,
@@ -97,22 +95,13 @@ function draft(rowVersion: number): ApplicationDraftView {
       values: { NAME: "Selected business", NOTES: "Draft answer" },
     },
     eligibilityRuleSetVersionId: "40000000-0000-4000-8000-000000000001",
-    financialSection: {},
     form,
     formVersionId: form.versionId,
     fundingOpportunityId: "60000000-0000-4000-8000-000000000001",
     fundingOpportunityTitle: "Growth Fund",
     id: applicationId,
     progressPercent: 0,
-    projectSection: {},
     rowVersion,
-    sectionCompletion: {
-      business: false,
-      declarations: false,
-      documents: false,
-      financial: false,
-      project: false,
-    },
     status: "draft",
     updatedAt: "2026-09-23T08:00:00.000Z",
   };
@@ -164,7 +153,7 @@ describe("application form editor", () => {
     });
     mocks.submit.mockResolvedValue({
       applicationId,
-      reference: "SME-001",
+      reference: "SME Fund-001",
       submittedAt: "2026-09-23T08:00:00.000Z",
       workflowInstanceId: "workflow-1",
       workflowTemplateVersionId: "template-1",
@@ -196,7 +185,7 @@ describe("application form editor", () => {
       readinessToken: "ready-token",
     });
     expect(container.textContent).toContain("Application submitted");
-    expect(container.textContent).toContain("SME-001");
+    expect(container.textContent).toContain("SME Fund-001");
 
     await act(async () => root.unmount());
   });

@@ -8,7 +8,6 @@ import {
   listOwnedApplications,
 } from "@/modules/applications/infrastructure/ApplicationRepository";
 import { readOwnedApplicationStatusHistory } from "@/modules/applications/infrastructure/ApplicationStatusHistoryRepository";
-import { createOwnedApplication } from "@/modules/applications/infrastructure/ApplicationRepository";
 import {
   businessOpportunityId,
   draftOpportunityId,
@@ -26,6 +25,21 @@ const pool = enabled
   : null;
 const ids: string[] = [];
 
+async function createTestApplication(
+  ownerUserId: string,
+  fundingOpportunityId: string,
+) {
+  const result = await pool!.query<{ id: string }>(
+    `INSERT INTO app_applications (
+       owner_user_id, funding_opportunity_id, funding_opportunity_title,
+       eligibility_rule_set_version_id, form_version_id, duplicate_policy
+     ) VALUES ($1, $2, 'Read model fund', $3, $4, 'one_per_business')
+     RETURNING id`,
+    [ownerUserId, fundingOpportunityId, eligibilityRuleSetVersionId, formVersionId],
+  );
+  return result.rows[0]!.id;
+}
+
 beforeAll(async () => {
   if (!pool) return;
   await seedApplicationDatabaseFixture((text, values) => pool.query(text, values));
@@ -34,15 +48,7 @@ beforeAll(async () => {
     [firstOwnerId, draftOpportunityId],
     [secondOwnerId, draftOpportunityId],
   ]) {
-    const id = await createOwnedApplication({
-      duplicatePolicy: "one_per_business",
-      eligibilityRuleSetVersionId,
-      formVersionId,
-      fundingOpportunityId,
-      fundingOpportunityTitle: "Read model fund",
-      ownerUserId,
-    });
-    ids.push(id!);
+    ids.push(await createTestApplication(ownerUserId, fundingOpportunityId));
   }
   await pool.query(
     `UPDATE app_applications SET updated_at = CASE id

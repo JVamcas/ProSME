@@ -18,7 +18,7 @@ export type AdminDashboardActivity = {
 export type AdminDashboardView = {
   activities: AdminDashboardActivity[];
   metrics: {
-    informationRequests: number | null;
+    informationRequests: number;
     pendingDecision: number;
     totalApplications: number;
     underReview: number;

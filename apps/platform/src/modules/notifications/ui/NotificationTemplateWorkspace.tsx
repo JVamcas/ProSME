@@ -1,11 +1,17 @@
 "use client";
 
-import { ArrowUpToLine } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 
-import { PortalErrorState } from "@/components/layout/PortalErrorState";
-import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
-import { GeneralButton } from "@/components/ui/button";
+import { PortalErrorState } from "@/shared/ui/portal/PortalErrorState";
+import { PortalLoadingState } from "@/shared/ui/portal/PortalLoadingState";
+import { DraggableDialog } from "@/shared/ui/DraggableDialog";
+import { NotificationTemplateEditForm } from "./NotificationTemplateEditForm";
+import { ActionMenu, type ActionMenuItem } from "@/shared/ui/ActionMenu";
+import {
+  DataTable,
+  type DataTableColumn,
+} from "@/shared/ui/DataTable";
 import { formatLocalDateTime24 } from "@/lib/dateUtils";
 import { Badge } from "@/shared/ui/Badge";
 import type {
@@ -44,54 +50,94 @@ function VersionBadge({ status }: { status: NotificationTemplateVersionSummary["
   return <Badge variant={variant}>{status}</Badge>;
 }
 
-function VersionRow({
+function versionColumns({
+  canEdit,
+  onEdit,
   canPublish,
   onPublish,
   publishing,
-  version,
 }: {
   canPublish: boolean;
-  onPublish: () => void;
+  onPublish: (versionId: string, versionNumber: number) => void;
   publishing: boolean;
-  version: NotificationTemplateVersionSummary;
-}) {
-  return (
-    <tr className="border-t border-brand-navy/10">
-      <td className="whitespace-nowrap px-4 py-4 text-sm font-semibold text-brand-navy">
-        v{version.versionNumber}
-      </td>
-      <td className="whitespace-nowrap px-4 py-4">
-        <VersionBadge status={version.status} />
-      </td>
-      <td className="min-w-52 px-4 py-4 text-sm text-brand-navy/75">
-        {version.sourceFileName}
-      </td>
-      <td className="whitespace-nowrap px-4 py-4 text-sm text-brand-navy/65">
-        {formatLocalDateTime24(version.createdAt)}
-      </td>
-      <td className="whitespace-nowrap px-4 py-4 text-sm text-brand-navy/65">
-        {formatLocalDateTime24(version.publishedAt)}
-      </td>
-      <td className="px-4 py-4 text-right">
-        {version.status === "DRAFT" && canPublish ? (
-          <GeneralButton
-            aria-label={`Publish version ${version.versionNumber}`}
-            disabled={publishing}
-            onClick={onPublish}
-            size="icon-compact"
-            variant="outline"
-          >
-            <ArrowUpToLine aria-hidden="true" className="size-4" />
-          </GeneralButton>
-        ) : (
-          <span className="text-sm text-brand-navy/40">—</span>
-        )}
-      </td>
-    </tr>
-  );
+  canEdit: boolean;
+  onEdit: (version: NotificationTemplateVersionSummary) => void;
+}): DataTableColumn<NotificationTemplateVersionSummary>[] {
+  return [
+    {
+      accessorKey: "versionNumber",
+      header: "Version",
+      cell: ({ row }) => (
+        <span className="font-semibold text-brand-navy">
+          v{row.original.versionNumber}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => <VersionBadge status={row.original.status} />,
+    },
+    {
+      accessorKey: "subjectTemplate",
+      header: "Email subject",
+    },
+    {
+      accessorKey: "sourceFileName",
+      header: "Source file",
+    },
+    {
+      accessorKey: "createdAt",
+      header: "Imported at",
+      cell: ({ row }) => formatLocalDateTime24(row.original.createdAt),
+    },
+    {
+      accessorKey: "publishedAt",
+      header: "Published at",
+      cell: ({ row }) => formatLocalDateTime24(row.original.publishedAt),
+    },
+    {
+      id: "actions",
+      enableSorting: false,
+      header: "Actions",
+      cell: ({ row }) => {
+        const version = row.original;
+        const items: ActionMenuItem[] = [];
+
+        if (canEdit) {
+          items.push({
+            id: "edit",
+            label: "Edit email subject",
+            onAction: () => onEdit(version),
+          });
+        }
+
+        if (version.status === "DRAFT" && canPublish) {
+          items.push({
+            id: "publish",
+            label: "Publish version",
+            disabled: publishing,
+            onAction: () => onPublish(version.id, version.versionNumber),
+          });
+        }
+
+        if (items.length === 0) {
+          return <span className="text-sm text-brand-navy/40">—</span>;
+        }
+
+        return (
+          <ActionMenu
+            items={items}
+            label={`Actions for version ${version.versionNumber}`}
+          />
+        );
+      },
+    },
+  ];
 }
 
 export function NotificationTemplateWorkspace({
+  canEdit,
   canPublish,
   channelCode,
   initialData,
@@ -101,7 +147,9 @@ export function NotificationTemplateWorkspace({
   channelCode: string;
   initialData: NotificationTemplateTargetDetail;
   targetId: string;
+  canEdit: boolean;
 }) {
+  const [editing, setEditing] = useState<NotificationTemplateVersionSummary | null>(null);
   const query = useNotificationTemplateTarget(channelCode, targetId, initialData);
   const publish = usePublishNotificationTemplate(channelCode, targetId);
 
@@ -129,8 +177,34 @@ export function NotificationTemplateWorkspace({
     }
   }
 
+  const columns = versionColumns({
+    canEdit,
+    onEdit: setEditing,
+    canPublish,
+    onPublish: (versionId, versionNumber) => {
+      void publishVersion(versionId, versionNumber);
+    },
+    publishing: publish.isPending,
+  });
+
   return (
     <div className="space-y-6">
+      <DraggableDialog
+        isOpen={editing !== null}
+        onClose={() => setEditing(null)}
+        size="lg"
+        title={`Edit template${editing ? ` v${editing.versionNumber}` : ""}`}
+      >
+        {editing ? (
+          <NotificationTemplateEditForm
+            key={editing.id}
+            channelCode={channelCode}
+            targetId={targetId}
+            version={editing}
+            onSaved={() => setEditing(null)}
+          />
+        ) : null}
+      </DraggableDialog>
       <section className="rounded-[1.75rem] border border-brand-navy/10 bg-brand-white p-6 shadow-sm">
         <div className="grid gap-5 lg:grid-cols-3">
           <SummaryField label="Template name" value={target.label} />
@@ -147,7 +221,7 @@ export function NotificationTemplateWorkspace({
         ) : null}
       </section>
 
-      <section className="rounded-[1.75rem] border border-brand-navy/10 bg-brand-white p-5 shadow-sm sm:p-6">
+      <section className="rounded-t-[1.75rem] border border-brand-navy/10 bg-brand-white p-5 shadow-sm sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-brand-navy/10 pb-4">
           <div>
             <div className="flex flex-wrap items-center gap-2">
@@ -161,40 +235,16 @@ export function NotificationTemplateWorkspace({
             </p>
           </div>
         </div>
-        {versions.length ? (
-          <div className="mt-3 overflow-x-auto rounded-2xl border border-brand-navy/10">
-            <table className="w-full border-collapse text-left">
-              <thead className="bg-brand-cream/50">
-                <tr className="text-xs font-bold text-brand-navy/65">
-                  <th className="px-4 py-3">Version</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Source file</th>
-                  <th className="px-4 py-3">Imported at</th>
-                  <th className="px-4 py-3">Published at</th>
-                  <th className="px-4 py-3 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {versions.map((version) => (
-                  <VersionRow
-                    canPublish={canPublish}
-                    key={version.id}
-                    onPublish={() => void publishVersion(
-                      version.id,
-                      version.versionNumber,
-                    )}
-                    publishing={publish.isPending}
-                    version={version}
-                  />
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <p className="py-8 text-center text-sm text-brand-navy/60">
-            No versions have been imported yet.
-          </p>
-        )}
+        <div className="mt-3">
+          <DataTable
+            columns={columns}
+            data={versions}
+            density="compact"
+            emptyMessage="No versions have been imported yet."
+            minWidth={840}
+            rowKey={(version) => version.id}
+          />
+        </div>
       </section>
 
       <section className="rounded-2xl bg-brand-cream/50 p-5">

@@ -6,9 +6,9 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn() }),
 }));
 
-import { WorkflowStageFlow } from "@/components/admin/workflows/WorkflowStageFlow";
+import { WorkflowStageFlow } from "@/modules/workflows/ui/definitions/WorkflowStageFlow";
 import { WorkflowDefinitionCreateForm } from "@/components/admin/workflows/WorkflowDefinitionCreateForm";
-import { WorkflowDefinitionDetailsCard } from "@/components/admin/workflows/WorkflowDefinitionDetailsCard";
+import { WorkflowDefinitionDetailsCard } from "@/modules/workflows/ui/definitions/WorkflowDefinitionDetailsCard";
 import { WorkflowDefinitionsWorkspace } from "@/components/admin/workflows/WorkflowDefinitionsWorkspace";
 import { WorkflowDefinitionsTable } from "@/components/admin/workflows/WorkflowDefinitionsTable";
 import { referenceWorkflow } from "../../support/ReferenceWorkflowFixture";
@@ -23,7 +23,7 @@ describe("workflow configuration UI", () => {
         label: "Advance review",
         actionType: "APPROVE_ADVANCE",
         enabled: true,
-        reasonCodeRequired: false,
+        reasonRequired: false,
         displayOrder: 1,
         configuration: {},
       },
@@ -64,7 +64,7 @@ describe("workflow configuration UI", () => {
     expect(markup).toContain(
       'aria-label="Submission and pre-screening stage configuration"',
     );
-    expect(markup.match(/role="tab"/g)).toHaveLength(7);
+    expect(markup.match(/role="tab"/g)).toHaveLength(6);
     expect(markup).toContain("Checklists");
     expect(markup).toContain("Documents");
     expect(markup).toContain("Scoring");
@@ -75,17 +75,18 @@ describe("workflow configuration UI", () => {
     expect(markup).toContain("No COI gate");
     expect(markup).toContain("Tasks (1)");
     expect(markup).toContain("Actions (1)");
-    expect(markup).toContain("Transitions (1)");
+    expect(markup).toContain("Destination");
     const tabDescriptions = [
       "Define the work and assignment rules for this stage.",
       "Define the checks reviewers must complete during this stage.",
       "Specify the documents required to complete this stage.",
-      "Define the criteria and aggregation method used to score this stage.",
+      "Configure scoring separately for each workflow task.",
       "Define comments and recommendations requested from assigned task reviewers.",
       "Configure the decisions users can make during this stage.",
-      "Define how this stage routes to another stage or a terminal outcome.",
     ];
-    tabDescriptions.forEach((description) => expect(markup).toContain(description));
+    tabDescriptions.forEach((description) =>
+      expect(markup).toContain(description),
+    );
     expect(markup).toContain("Completeness screening");
     expect(markup).toContain("Advance review");
     expect(markup).toContain("Approve / Advance");

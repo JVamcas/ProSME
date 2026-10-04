@@ -4,7 +4,7 @@ import { Plus } from "lucide-react";
 import { useState } from "react";
 
 import { GeneralButton } from "@/components/ui/button";
-import { DraggableDialog } from "@/components/ui/draggable-dialog";
+import { DraggableDialog } from "@/shared/ui/DraggableDialog";
 import { getErrorMessage } from "@/lib/client-http";
 import { ConfirmationDialog } from "@/shared/ui/ConfirmationDialog";
 import { toast } from "@/shared/ui/Toast";
@@ -42,7 +42,11 @@ export function WorkflowTemplateAdminWorkspace({
   const templates = useWorkflowTemplates(page, pageSize);
   const cloneTemplate = useCloneWorkflowTemplate();
   const deleteTemplate = useDeleteWorkflowTemplate();
-  const publishTemplate = useWorkflowListLifecycle("publish");
+  const publishTemplate = useWorkflowListLifecycle(
+    "publish",
+    undefined,
+    publishCandidate?.currentVersion.id,
+  );
   const emptyMessage = templates.isLoading
     ? "Loading workflow templates…"
     : (templates.error?.message ??

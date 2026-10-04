@@ -129,7 +129,7 @@ export const workflowActionExecutions = pgTable(
     taskId: uuid("task_id").references((): AnyPgColumn => workflowTasks.id, {
       onDelete: "restrict",
     }),
-    reasonCode: text("reason_code"),
+    reason: text("reason"),
     comment: text("comment"),
     normalizedInput: jsonb("normalized_input")
       .$type<Record<string, unknown>>()
@@ -213,11 +213,18 @@ export const workflowTasks = pgTable(
       table.assignedUserId,
     ).where(sql`${table.assignedUserId} IS NOT NULL
       AND ${table.status} <> 'CANCELLED'`),
+    index("app_workflow_tasks_scope_idx").on(
+      table.stageInstanceId,
+      table.workflowTaskDefinitionId,
+    ),
     index("app_workflow_tasks_assignment_idx").on(
       table.status,
       table.assignedRoleId,
       table.assignedUserId,
     ),
+    index("app_workflow_tasks_deadline_idx")
+      .on(table.dueAt, table.stageInstanceId)
+      .where(sql`${table.status} IN ('PENDING', 'IN_PROGRESS')`),
   ],
 );
 

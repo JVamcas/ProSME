@@ -1,7 +1,7 @@
 import "server-only";
 
-import { timingSafeEqual } from "node:crypto";
 import { z } from "zod";
+import { isAuthorizedServiceProcessorRequest } from "@/platform/jobs/ServiceProcessorAuthorization";
 
 const processorConfigurationSchema = z.object({
   NOTIFICATION_PROCESSOR_BATCH_SIZE: z.coerce
@@ -52,9 +52,5 @@ export function isAuthorizedNotificationProcessorRequest(
   authorizationHeader: string | null,
   expectedSecret: string,
 ): boolean {
-  if (!authorizationHeader?.startsWith("Bearer ")) return false;
-  const suppliedSecret = authorizationHeader.slice("Bearer ".length);
-  const supplied = Buffer.from(suppliedSecret);
-  const expected = Buffer.from(expectedSecret);
-  return supplied.length === expected.length && timingSafeEqual(supplied, expected);
+  return isAuthorizedServiceProcessorRequest(authorizationHeader, expectedSecret);
 }

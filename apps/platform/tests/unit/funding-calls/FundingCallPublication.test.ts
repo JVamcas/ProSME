@@ -5,6 +5,7 @@ import { captureFundingCallPublication } from "@/modules/funding-calls/domain/Fu
 describe("funding call publication snapshot", () => {
   it("captures exact public content, bindings, dates, and documents", () => {
     const call = {
+      allowResubmissionAfterWithdrawal: true,
       applicationDuplicatePolicy: "one_per_business" as const,
       closesAt: new Date("2027-03-31T15:00:00.000Z"),
       createdAt: new Date("2026-09-20T08:00:00.000Z"),
@@ -21,13 +22,13 @@ describe("funding call publication snapshot", () => {
       publicContactEmail: "funding@example.test",
       publicContactName: "SME Fund",
       publicContactPhone: null,
-      reference: "SME-2027-01",
+      reference: "SME Fund-2027-01",
       rowVersion: 4,
       slug: "sme-growth-fund-2027",
       status: "DRAFT" as const,
       suspendedFromStatus: null,
       thematicArea: "Business growth",
-      title: "SME Growth Fund 2027",
+      title: "SME Fund Growth Fund 2027",
       totalBudgetEnvelope: "10000000.00",
       updatedAt: new Date("2026-09-21T08:00:00.000Z"),
       updatedBy: "10000000-0000-4000-8000-000000000002",
@@ -38,6 +39,7 @@ describe("funding call publication snapshot", () => {
     ];
 
     expect(captureFundingCallPublication(call, publicDocuments)).toMatchObject({
+      allowResubmissionAfterWithdrawal: true,
       closesAt: "2027-03-31T15:00:00.000Z",
       eligibilityRuleSetVersionId: call.eligibilityRuleSetVersionId,
       formVersionId: call.formVersionId,

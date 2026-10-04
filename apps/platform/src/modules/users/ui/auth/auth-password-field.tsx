@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { authNavigationHref } from "@/platform/auth/AuthNavigation";
+
 import { FormInput } from "@/components/ui/form-fields";
 import {
   authFieldClassName,
@@ -10,15 +12,17 @@ import {
 type AuthPasswordFieldProps = {
   autoComplete: "current-password" | "new-password";
   showForgotPassword?: boolean;
+  returnTo?: string;
 };
 
 export function AuthPasswordField({
   autoComplete,
+  returnTo,
   showForgotPassword = false,
 }: AuthPasswordFieldProps) {
   const forgotPasswordLink = showForgotPassword ? (
     <Link
-      href="/forgot-password"
+      href={authNavigationHref("/forgot-password", returnTo)}
       className={`mb-2 text-xs ${authLinkClassName}`}
     >
       Forgot password?

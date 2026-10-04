@@ -46,6 +46,9 @@ export const fundingCalls = pgTable(
       () => workflowDefinitionVersions.id,
       { onDelete: "restrict" },
     ),
+    allowResubmissionAfterWithdrawal: boolean("allow_resubmission_after_withdrawal")
+      .notNull()
+      .default(false),
     applicationDuplicatePolicy: text("application_duplicate_policy")
       .$type<ApplicationDuplicatePolicy>()
       .notNull()
@@ -70,9 +73,15 @@ export const fundingCalls = pgTable(
     suspendedFromStatus: text("suspended_from_status").$type<
       "SCHEDULED" | "LIVE"
     >(),
+    attachmentsLockedAt: timestamp("attachments_locked_at", {
+      withTimezone: true,
+    }),
     publicContactName: text("public_contact_name"),
     publicContactEmail: text("public_contact_email"),
     publicContactPhone: text("public_contact_phone"),
+    thumbnailContentType: text("thumbnail_content_type"),
+    thumbnailFileName: text("thumbnail_file_name"),
+    thumbnailObjectKey: text("thumbnail_object_key"),
     rowVersion: integer("row_version").notNull().default(1),
     createdBy: uuid("created_by")
       .notNull()
@@ -139,6 +148,18 @@ export const fundingCalls = pgTable(
       sql`${table.closesAt} > ${table.opensAt}`,
     ),
     check(
+      "app_funding_calls_thumbnail_metadata_check",
+      sql`(
+          ${table.thumbnailContentType} is null
+          and ${table.thumbnailFileName} is null
+          and ${table.thumbnailObjectKey} is null
+        ) or (
+          ${table.thumbnailContentType} in ('image/jpeg', 'image/png', 'image/webp')
+          and length(trim(${table.thumbnailFileName})) > 0
+          and length(trim(${table.thumbnailObjectKey})) > 0
+        )`,
+    ),
+    check(
       "app_funding_calls_row_version_check",
       sql`${table.rowVersion} > 0`,
     ),
@@ -187,6 +208,8 @@ export const fundingCallLifecycleHistory = pgTable(
         'RESUME',
         'CLOSE',
         'WITHDRAW',
+        'WITHDRAW_FOR_AMENDMENT',
+        'WITHDRAW_APPROVAL_REQUEST',
         'ARCHIVE'
       )`,
     ),

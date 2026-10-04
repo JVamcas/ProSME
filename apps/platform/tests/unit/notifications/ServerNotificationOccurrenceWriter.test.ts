@@ -11,9 +11,9 @@ import { insertNotificationOccurrence } from "@/modules/notifications/infrastruc
 const context = {
   applicationId: "10000000-0000-4000-8000-000000000001",
   applicationOwnerUserId: "10000000-0000-4000-8000-000000000002",
-  applicationReference: "SME-2026-001",
-  correlationId: "submission:SME-2026-001",
-  fundingOpportunityTitle: "SME Growth Fund",
+  applicationReference: "SME Fund-2026-001",
+  correlationId: "submission:SME Fund-2026-001",
+  fundingOpportunityTitle: "SME Fund Growth Fund",
   ownerDisplayName: "Applicant One",
   ownerEmail: "Applicant@Example.test",
   sourceIdempotencyKey: "submission-1",
@@ -97,6 +97,25 @@ describe("server notification occurrence writer", () => {
         recipients: [expect.objectContaining({
           recipientType: "ASSIGNED_USER",
         })],
+      }),
+    );
+  });
+
+  it("preserves both relationships when the same user is owner and assignee", async () => {
+    await captureNotificationOccurrence({} as never, {
+      ...input,
+      recipients: [
+        input.recipients[0],
+        { ...input.recipients[0], recipientType: "ASSIGNED_USER" },
+      ],
+    });
+    expect(insertNotificationOccurrence).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        recipients: [
+          expect.objectContaining({ recipientType: "APPLICATION_OWNER" }),
+          expect.objectContaining({ recipientType: "ASSIGNED_USER" }),
+        ],
       }),
     );
   });

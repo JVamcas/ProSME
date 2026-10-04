@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  type AnyPgColumn,
   boolean,
   check,
   index,
@@ -39,12 +40,11 @@ export const workflowReworks = pgTable(
     targetStageInstanceId: uuid("target_stage_instance_id")
       .notNull()
       .references(() => stageInstances.id, { onDelete: "restrict" }),
-    continuationStageInstanceId: uuid("continuation_stage_instance_id")
-      .references(() => stageInstances.id, { onDelete: "restrict" }),
-    reason: text("reason").notNull(),
-    dataHandling: text("data_handling")
-      .$type<"RETAIN" | "CLEAR">()
-      .notNull(),
+    continuationStageInstanceId: uuid(
+      "continuation_stage_instance_id",
+    ).references(() => stageInstances.id, { onDelete: "restrict" }),
+    reason: text("reason"),
+    dataHandling: text("data_handling").$type<"RETAIN" | "CLEAR">().notNull(),
     createdBy: uuid("created_by")
       .notNull()
       .references(() => users.id, { onDelete: "restrict" }),
@@ -59,10 +59,6 @@ export const workflowReworks = pgTable(
     index("app_workflow_reworks_runtime_idx").on(
       table.workflowInstanceId,
       table.createdAt,
-    ),
-    check(
-      "app_workflow_reworks_reason_check",
-      sql`length(btrim(${table.reason})) > 0`,
     ),
     check(
       "app_workflow_reworks_data_handling_check",
@@ -158,11 +154,11 @@ export const workflowHolds = pgTable(
     taskId: uuid("task_id").references(() => workflowTasks.id, {
       onDelete: "restrict",
     }),
-    scope: text("scope").$type<"STAGE">().notNull().default("STAGE"),
+    scope: text("scope").$type<"TASK" | "STAGE" | "APPLICATION">().notNull().default("STAGE"),
     previousStageStatus: text("previous_stage_status")
       .$type<"ACTIVE">()
       .notNull(),
-    reasonCode: text("reason_code"),
+    reason: text("reason"),
     comment: text("comment"),
     reviewAt: timestamp("review_at", { withTimezone: true }),
     status: text("status")
@@ -172,9 +168,7 @@ export const workflowHolds = pgTable(
     heldBy: uuid("held_by")
       .notNull()
       .references(() => users.id, { onDelete: "restrict" }),
-    heldAt: timestamp("held_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    heldAt: timestamp("held_at", { withTimezone: true }).notNull().defaultNow(),
     resumedBy: uuid("resumed_by").references(() => users.id, {
       onDelete: "restrict",
     }),
@@ -186,19 +180,25 @@ export const workflowHolds = pgTable(
     ),
     uniqueIndex("app_workflow_holds_active_stage_unique")
       .on(table.stageInstanceId)
-      .where(sql`${table.status} = 'ACTIVE'`),
+      .where(sql`${table.status} = 'ACTIVE' AND ${table.scope} = 'STAGE'`),
+    uniqueIndex("app_workflow_holds_active_task_unique")
+      .on(table.taskId)
+      .where(sql`${table.status} = 'ACTIVE' AND ${table.scope} = 'TASK'`),
+    uniqueIndex("app_workflow_holds_active_application_unique")
+      .on(table.workflowInstanceId)
+      .where(sql`${table.status} = 'ACTIVE' AND ${table.scope} = 'APPLICATION'`),
     index("app_workflow_holds_runtime_idx").on(
       table.workflowInstanceId,
       table.heldAt,
     ),
-    check("app_workflow_holds_scope_check", sql`${table.scope} = 'STAGE'`),
+    index("app_workflow_holds_review_idx")
+      .on(table.reviewAt)
+      .where(sql`${table.status} = 'ACTIVE'`),
+    check("app_workflow_holds_task_scope_check", sql`${table.scope} <> 'TASK' OR ${table.taskId} IS NOT NULL`),
+    check("app_workflow_holds_scope_check", sql`${table.scope} IN ('TASK', 'STAGE', 'APPLICATION')`),
     check(
       "app_workflow_holds_status_check",
       sql`${table.status} in ('ACTIVE', 'RESUMED')`,
-    ),
-    check(
-      "app_workflow_holds_reason_check",
-      sql`${table.reasonCode} is not null or length(btrim(coalesce(${table.comment}, ''))) > 0`,
     ),
   ],
 );
@@ -223,7 +223,7 @@ export const workflowDeferrals = pgTable(
     continuation: text("continuation")
       .$type<"RESUME_ON_DATE" | "EXPLICIT_TRANSFER">()
       .notNull(),
-    reasonCode: text("reason_code"),
+    reason: text("reason"),
     comment: text("comment"),
     resumeAt: timestamp("resume_at", { withTimezone: true }),
     targetFundingCallId: uuid("target_funding_call_id").references(
@@ -269,10 +269,6 @@ export const workflowDeferrals = pgTable(
       sql`${table.status} in ('ACTIVE', 'RESUMED', 'TRANSFERRED')`,
     ),
     check(
-      "app_workflow_deferrals_reason_check",
-      sql`${table.reasonCode} is not null or length(btrim(coalesce(${table.comment}, ''))) > 0`,
-    ),
-    check(
       "app_workflow_deferrals_target_check",
       sql`(${table.mode} = 'DATE' and ${table.continuation} = 'RESUME_ON_DATE'
           and ${table.resumeAt} is not null and ${table.targetFundingCallId} is null)
@@ -287,6 +283,10 @@ export const workflowEscalations = pgTable(
   "app_workflow_escalations",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    parentEscalationId: uuid("parent_escalation_id").references(
+      (): AnyPgColumn => workflowEscalations.id,
+      { onDelete: "restrict" },
+    ),
     actionExecutionId: uuid("action_execution_id")
       .notNull()
       .references(() => workflowActionExecutions.id, { onDelete: "restrict" }),
@@ -300,7 +300,7 @@ export const workflowEscalations = pgTable(
       .notNull()
       .references(() => workflowTasks.id, { onDelete: "restrict" }),
     trigger: text("trigger")
-      .$type<"MANUAL" | "SLA_BREACH" | "CONDITION">()
+      .$type<"MANUAL" | "SLA_BREACH" | "CONDITION" | "RFI_EXPIRY">()
       .notNull(),
     targetType: text("target_type").$type<"ROLE" | "USER">().notNull(),
     targetRoleId: uuid("target_role_id").references(() => roles.id, {
@@ -321,7 +321,7 @@ export const workflowEscalations = pgTable(
       () => users.id,
       { onDelete: "restrict" },
     ),
-    reasonCode: text("reason_code"),
+    reason: text("reason"),
     comment: text("comment"),
     status: text("status")
       .$type<"ACTIVE" | "RESOLVED">()
@@ -337,23 +337,25 @@ export const workflowEscalations = pgTable(
       onDelete: "restrict",
     }),
     resolvedAt: timestamp("resolved_at", { withTimezone: true }),
-    resolutionActionExecutionId: uuid("resolution_action_execution_id")
-      .references(() => workflowActionExecutions.id, { onDelete: "restrict" }),
+    resolutionActionExecutionId: uuid(
+      "resolution_action_execution_id",
+    ).references(() => workflowActionExecutions.id, { onDelete: "restrict" }),
   },
   (table) => [
     uniqueIndex("app_workflow_escalations_execution_unique").on(
       table.actionExecutionId,
     ),
-    uniqueIndex("app_workflow_escalations_active_task_unique")
+    index("app_workflow_escalations_active_task_idx")
       .on(table.taskId)
       .where(sql`${table.status} = 'ACTIVE'`),
+    index("app_workflow_escalations_parent_idx").on(table.parentEscalationId),
     index("app_workflow_escalations_runtime_idx").on(
       table.workflowInstanceId,
       table.status,
     ),
     check(
       "app_workflow_escalations_trigger_check",
-      sql`${table.trigger} in ('MANUAL', 'SLA_BREACH', 'CONDITION')`,
+      sql`${table.trigger} in ('MANUAL', 'SLA_BREACH', 'CONDITION', 'RFI_EXPIRY')`,
     ),
     check(
       "app_workflow_escalations_responsibility_check",
@@ -369,10 +371,6 @@ export const workflowEscalations = pgTable(
           and ${table.targetUserId} is null)
         or (${table.targetType} = 'USER' and ${table.targetUserId} is not null
           and ${table.targetRoleId} is null)`,
-    ),
-    check(
-      "app_workflow_escalations_reason_check",
-      sql`${table.reasonCode} is not null or length(btrim(coalesce(${table.comment}, ''))) > 0`,
     ),
   ],
 );

@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import type { z } from "zod";
 
 import { GeneralButton } from "@/components/ui/button";
-import { DraggableDialog } from "@/components/ui/draggable-dialog";
+import { DraggableDialog } from "@/shared/ui/DraggableDialog";
 import { CheckboxField } from "@/components/ui/form-field";
 import {
   FormInput,
