@@ -1,3 +1,4 @@
+import type { WorkflowRfiRuntimeOverrides } from "./WorkflowRequestInformationDeadline";
 import type { WorkflowPublicStatusMapping } from "../definitions/WorkflowStageDefinition";
 
 export type ApproveAdvanceConfiguration = Record<string, never>;
@@ -17,6 +18,7 @@ export type RejectConfiguration = {
 export type RequestInformationConfiguration = {
   continuation: "RESUME_SOURCE_TASK";
   deadlineDays: number;
+  runtimeOverrides?: WorkflowRfiRuntimeOverrides;
   editableFieldPaths: string[];
   reminderDayOffsets: number[];
   expiryAction: "CLOSE_REQUEST" | "ESCALATE" | "RETURN";

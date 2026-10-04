@@ -9,6 +9,7 @@ import type { WorkflowTransitionDefinition } from "@/modules/workflows/domain/tr
 import { WorkflowTerminalApplicantStatus } from "./WorkflowTerminalApplicantStatus";
 import { workflowRouteDestination } from "./WorkflowActionEditorRoutes";
 import { workflowActionTypeItems } from "./WorkflowActionFormSchema";
+import { WorkflowRfiDeadlineReview } from "../rfi/WorkflowRfiDeadlineReview";
 
 type Props = {
   action: WorkflowActionDefinition;
@@ -60,6 +61,9 @@ export function WorkflowActionReviewStep({
           />
         </div>
       </dl>
+      {action.actionType === "REQUEST_INFORMATION" ? (
+        <WorkflowRfiDeadlineReview configuration={action.configuration} />
+      ) : null}
       <div>
         <h3 className="text-sm font-bold text-brand-navy">
           Routing ({routes.length})

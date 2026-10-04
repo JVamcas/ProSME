@@ -1,4 +1,9 @@
 import { z } from "zod";
+import {
+  parseWorkflowRfiReminderOffsets,
+  workflowRfiDeadlineSettingsSchema,
+  workflowRfiRuntimeOverridesSchema,
+} from "../../domain/actions/WorkflowRequestInformationDeadline";
 import { workflowPublicStatuses } from "@/modules/workflows/domain/definitions/WorkflowStageDefinition";
 
 import { workflowActionTypes } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
@@ -16,11 +21,6 @@ function isStableKeyList(value: string) {
     new Set(values).size === values.length &&
     values.every((item) => stableKeyPattern.test(item))
   );
-}
-
-function reminderOffsets(value: string) {
-  if (!value.trim()) return [];
-  return value.split(/[\n,]/).map((item) => Number(item.trim()));
 }
 
 function requiredFor(
@@ -59,6 +59,7 @@ export const workflowActionFormSchema = z
     deadlineDays: z.number().int().positive().max(365).optional(),
     editableFieldPaths: z.string(),
     reminderDayOffsets: z.string(),
+    runtimeOverrides: workflowRfiRuntimeOverridesSchema.optional(),
     expiryAction: z.enum(["CLOSE_REQUEST", "ESCALATE", "RETURN"]),
     dataHandling: z.enum(["RETAIN", "CLEAR"]),
     returnToReferrer: z.boolean(),
@@ -127,26 +128,23 @@ export const workflowActionFormSchema = z
         "deadlineDays",
         context,
       );
-      const offsets = reminderOffsets(values.reminderDayOffsets);
-      if (
-        offsets.some((offset) => !Number.isInteger(offset) || offset <= 0) ||
-        new Set(offsets).size !== offsets.length
-      ) {
-        context.addIssue({
-          code: "custom",
-          message: "Use unique positive whole days separated by commas.",
-          path: ["reminderDayOffsets"],
+      if (values.deadlineDays !== undefined) {
+        const deadline = workflowRfiDeadlineSettingsSchema.safeParse({
+          deadlineDays: values.deadlineDays,
+          expiryAction: values.expiryAction,
+          reminderDayOffsets: parseWorkflowRfiReminderOffsets(
+            values.reminderDayOffsets,
+          ),
         });
-      }
-      if (
-        values.deadlineDays &&
-        offsets.some((offset) => offset >= values.deadlineDays!)
-      ) {
-        context.addIssue({
-          code: "custom",
-          message: "Reminder days must fall before the deadline.",
-          path: ["reminderDayOffsets"],
-        });
+        if (!deadline.success) {
+          for (const issue of deadline.error.issues) {
+            context.addIssue({
+              code: "custom",
+              message: issue.message,
+              path: [issue.path[0] ?? "reminderDayOffsets"],
+            });
+          }
+        }
       }
       const fieldPaths = values.editableFieldPaths
         .split(/[\n,]/)

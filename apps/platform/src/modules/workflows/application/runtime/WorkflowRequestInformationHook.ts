@@ -1,5 +1,7 @@
 import "server-only";
 
+import { resolveWorkflowRfiDeadline } from "../../domain/actions/WorkflowRequestInformationDeadline";
+
 import {
   WorkflowActionExecutionError,
   type WorkflowActionInput,
@@ -53,6 +55,16 @@ export function buildRequestInformationCreationRequest(input: {
   target: RequestInformationTarget;
 }): CreateWorkflowRfiRequest {
   const { configuration } = input.target.action;
+  const deadline = resolveWorkflowRfiDeadline(
+    configuration,
+    input.command.input.deadlineOverrides,
+  );
+  if (!deadline.success) {
+    throw new WorkflowActionExecutionError(
+      "INVALID_ACTION_INPUT",
+      deadline.issues[0].message,
+    );
+  }
   const taskId = input.target.task?.id;
   if (!taskId) {
     throw new WorkflowActionExecutionError(
@@ -79,9 +91,9 @@ export function buildRequestInformationCreationRequest(input: {
     },
     correlationId: input.command.correlationId,
     deadline: {
-      days: configuration.deadlineDays,
-      expiryAction: configuration.expiryAction,
-      reminderDayOffsets: configuration.reminderDayOffsets,
+      days: deadline.data.deadlineDays,
+      expiryAction: deadline.data.expiryAction,
+      reminderDayOffsets: deadline.data.reminderDayOffsets,
     },
     editableFieldPaths: input.command.input.editableFieldPaths,
     idempotencyKey: input.command.idempotencyKey,

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { WorkflowTaskAction } from "@/modules/work-queue/TaskTypes";
 import { emptyWorkflowActionInputMetadata } from "@/modules/workflows/domain/actions/WorkflowActionAvailability";
 import {
+  actionFormDefaults,
   actionFormSchema,
   actionInput,
 } from "@/modules/workflows/ui/tasks/WorkflowTaskActionForm";
@@ -136,5 +137,136 @@ describe("per-request application field selection", () => {
       expiryAction: "CLOSE_REQUEST",
       editableFieldPaths: [],
     });
+  });
+});
+
+describe("request information runtime response settings", () => {
+  function configurableAction(
+    flags = {
+      deadlineDays: true,
+      expiryAction: true,
+      reminderDayOffsets: true,
+    },
+  ): WorkflowTaskAction {
+    return {
+      ...action,
+      requiredInput: {
+        ...action.requiredInput,
+        requestInformationDeadline: {
+          deadlineDays: 10,
+          expiryAction: "CLOSE_REQUEST",
+          reminderDayOffsets: [3, 7],
+          runtimeOverrides: flags,
+        },
+      },
+    };
+  }
+
+  it("prefills the definition defaults and sends only settings with enabled switches", () => {
+    const current = configurableAction({
+      deadlineDays: true,
+      expiryAction: false,
+      reminderDayOffsets: true,
+    });
+    expect(actionFormDefaults(current)).toMatchObject({
+      deadlineDays: 10,
+      expiryAction: "CLOSE_REQUEST",
+      reminderDayOffsets: "3, 7",
+    });
+    expect(
+      actionInput(current, {
+        ...values,
+        deadlineDays: 6,
+        reminderDayOffsets: "2, 4",
+        expiryAction: "CLOSE_REQUEST",
+      }),
+    ).toMatchObject({
+      deadlineOverrides: { deadlineDays: 6, reminderDayOffsets: [2, 4] },
+    });
+    expect(
+      actionInput(current, {
+        ...values,
+        deadlineDays: 6,
+        reminderDayOffsets: "2, 4",
+      }),
+    ).not.toHaveProperty("deadlineOverrides.expiryAction");
+  });
+
+  it("lets staff clear enabled reminders", () => {
+    const current = configurableAction();
+    const parsed = actionFormSchema(current).parse({
+      ...values,
+      deadlineDays: 10,
+      expiryAction: "CLOSE_REQUEST",
+      reminderDayOffsets: "",
+    });
+    expect(actionInput(current, parsed)).toMatchObject({
+      deadlineOverrides: { reminderDayOffsets: [] },
+    });
+  });
+
+  it("keeps overrides absent when every switch is disabled", () => {
+    const current = configurableAction({
+      deadlineDays: false,
+      expiryAction: false,
+      reminderDayOffsets: false,
+    });
+    expect(actionInput(current, values)).not.toHaveProperty(
+      "deadlineOverrides",
+    );
+  });
+
+  it("rejects an unsupported expiry selection", () => {
+    expect(
+      actionFormSchema(configurableAction()).safeParse({
+        ...values,
+        deadlineDays: 10,
+        expiryAction: "RETURN",
+        reminderDayOffsets: "3, 7",
+      }).success,
+    ).toBe(false);
+  });
+
+  it.each(["2, 2", "0", "1.5", "2,", "3, 5"])(
+    "validates runtime reminders %s against the effective deadline",
+    (reminderDayOffsets) => {
+      expect(
+        actionFormSchema(configurableAction()).safeParse({
+          ...values,
+          deadlineDays: 5,
+          expiryAction: "CLOSE_REQUEST",
+          reminderDayOffsets,
+        }).success,
+      ).toBe(false);
+    },
+  );
+
+  it("uses locked defaults for validation and serialization", () => {
+    const current = configurableAction({
+      deadlineDays: true,
+      expiryAction: false,
+      reminderDayOffsets: false,
+    });
+    expect(
+      actionFormSchema(current).safeParse({
+        ...values,
+        deadlineDays: 5,
+        reminderDayOffsets: "",
+      }).success,
+    ).toBe(false);
+    expect(
+      actionInput(current, {
+        ...values,
+        deadlineDays: 20,
+        reminderDayOffsets: "1",
+      }),
+    ).toMatchObject({ deadlineOverrides: { deadlineDays: 20 } });
+    expect(
+      actionInput(current, {
+        ...values,
+        deadlineDays: 20,
+        reminderDayOffsets: "1",
+      }),
+    ).not.toHaveProperty("deadlineOverrides.reminderDayOffsets");
   });
 });
