@@ -28,6 +28,7 @@ const commandPermissions = {
   RESUME: permissionCodes.fundingCallResume,
   SUSPEND: permissionCodes.fundingCallSuspend,
   WITHDRAW: permissionCodes.fundingCallWithdraw,
+  WITHDRAW_FOR_AMENDMENT: permissionCodes.fundingCallWithdrawForAmendmentAll,
 } as const;
 
 export async function changeFundingCallLifecycleStatus(

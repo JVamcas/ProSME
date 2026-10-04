@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
+vi.mock("@/modules/forms/infrastructure/WorkflowTaskFormResponseRepository", () => ({
+  readWorkflowTaskFormResponse: vi.fn(),
+}));
 vi.mock("@/modules/forms/infrastructure/FormRepository", () => ({
   getFormRuntime: vi.fn(),
 }));
@@ -14,10 +17,12 @@ vi.mock("@/modules/forms/application/FormTaskRuntimeContext", () => ({
   exposeTaskFormRuntimeContext: vi.fn(),
 }));
 
+import { readWorkflowTaskFormResponse } from "@/modules/forms/infrastructure/WorkflowTaskFormResponseRepository";
+import { PermissionDeniedError } from "@/auth/authorization/policy";
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { defaultWorkflowElementPermissions } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
 import type { AuthenticatedUser } from "@/auth/types";
-import { getTaskForm } from "@/modules/forms/application/ServerFormsService";
+import { getTaskForm } from "@/modules/forms/application/ServerTaskFormReadService";
 import { exposeTaskFormRuntimeContext } from "@/modules/forms/application/FormTaskRuntimeContext";
 import { getFormRuntime } from "@/modules/forms/infrastructure/FormRepository";
 import { readFormResponse } from "@/modules/forms/infrastructure/FormResponseRepository";
@@ -103,5 +108,44 @@ describe("task form runtime context", () => {
     });
     expect(result.schema.versionId).toBe(versionId);
     expect(result.taskRowVersion).toBe(3);
+  });
+});
+
+
+describe("oversight task form reads", () => {
+  it("reads the assignee's saved response for the pinned version", async () => {
+    vi.mocked(readWorkflowTaskFormResponse).mockResolvedValue({
+      status: "DRAFT",
+      values: { recommendation: "Saved reviewer response" },
+      rowVersion: 4,
+      completedAt: null,
+    } as never);
+    const result = await getTaskForm({
+      ...actor,
+      capabilities: new Set([permissionCodes.workflowTaskAllRead]),
+    }, taskId);
+    expect(result.readOnly).toBe(true);
+    expect(result.response?.values).toEqual({ recommendation: "Saved reviewer response" });
+    expect(readWorkflowTaskRuntimeContext).toHaveBeenCalledWith(actorId, taskId, true, [permissionCodes.workflowTaskAllRead]);
+    expect(readWorkflowTaskFormResponse).toHaveBeenCalledWith(taskId, versionId);
+    expect(readFormResponse).not.toHaveBeenCalled();
+  });
+
+  it("uses the immutable completed response snapshot", async () => {
+    const snapshot = { versionId, versionNumber: 2, fields: [], sections: [] };
+    vi.mocked(readWorkflowTaskFormResponse).mockResolvedValue({
+      status: "COMPLETED", definitionSnapshot: snapshot, completedAt: null,
+    } as never);
+    const result = await getTaskForm({
+      ...actor, capabilities: new Set([permissionCodes.workflowTaskAllRead]),
+    }, taskId);
+    expect(result.schema).toBe(snapshot);
+  });
+
+  it("rejects reads before loading runtime data without task read permission", async () => {
+    await expect(getTaskForm({ ...actor, capabilities: new Set() }, taskId))
+      .rejects.toBeInstanceOf(PermissionDeniedError);
+    expect(readWorkflowTaskRuntimeContext).not.toHaveBeenCalled();
+    expect(readWorkflowTaskFormResponse).not.toHaveBeenCalled();
   });
 });

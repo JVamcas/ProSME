@@ -10,7 +10,7 @@ vi.mock(
 );
 
 import type { AuthenticatedUser } from "@/auth/types";
-import { getWorkflowTask } from "@/modules/work-queue/ServerWorkflowTaskService";
+import { getWorkflowTask } from "@/modules/work-queue/application/ServerWorkflowTaskService";
 import { readWorkflowTask } from "@/modules/workflows/infrastructure/WorkflowTaskRepository";
 import { getWorkflowActionAvailability } from "@/modules/workflows/application/runtime/ServerWorkflowActionAvailabilityService";
 import { workflowTaskServiceFixture as task } from "../../support/WorkflowTaskServiceFixture";

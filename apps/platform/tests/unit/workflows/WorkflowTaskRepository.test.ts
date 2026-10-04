@@ -38,3 +38,41 @@ describe("workflow task detail projection", () => {
     expect(query.params).toContain(taskId);
   });
 });
+
+
+describe("workflow task oversight projection", () => {
+  it.each([false, true])("uses explicit all-task scope (%s) without widening default reads", async (allowAll) => {
+    execute.mockResolvedValue({ rows: [] });
+    await readWorkflowTask(actorId, taskId, allowAll);
+    const query = new PgDialect().sqlToQuery(execute.mock.calls[0]![0]);
+    expect(query.params).toContain(allowAll);
+    expect(query.sql).toContain('AS "assignedToActor"');
+    expect(query.sql).toContain('AS "assignedUserName"');
+    expect(query.sql).toContain('AS "coiCleared"');
+    expect(query.sql).toMatch(/AND \(\$\d+ OR \(/);
+    expect(query.sql).toContain("task.assigned_user_id =");
+    expect(query.sql).toContain("task_evidence.task_id = task.id");
+    expect(query.params).toContain(taskId);
+  });
+});
+
+
+it("applies configured view permissions before loading task evidence", async () => {
+  execute.mockResolvedValue({ rows: [] });
+  await readWorkflowTask(actorId, taskId, false, ["workflow.task.assigned.read"]);
+  const query = new PgDialect().sqlToQuery(execute.mock.calls[0]![0]);
+  expect(query.sql).toContain("definition.permissions ->> 'view' IN (");
+  expect(query.params).toContain("workflow.task.assigned.read");
+});
+
+
+it("enforces peer review release for administrative reads", async () => {
+  execute.mockResolvedValue({ rows: [] });
+  await readWorkflowTask(actorId, taskId, true);
+  const query = new PgDialect().sqlToQuery(execute.mock.calls[0]![0]);
+  expect(query.sql).toContain("definition.reviewer_count > 1");
+  expect(query.sql).toContain("definition.review_release <> 'IMMEDIATE'");
+  expect(query.sql).toContain("own_review.workflow_task_definition_id = definition.id");
+  expect(query.sql).toContain("release_threshold.first_satisfied = true");
+  expect(query.sql).toContain("released_rework.source_stage_instance_id = stage.id");
+});

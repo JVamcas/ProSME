@@ -6,6 +6,8 @@ import { getDatabase } from "@/db/client";
 import type { TaskDetail } from "@/modules/work-queue/TaskTypes";
 import type { WorkflowElementPermissions } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
 import { workflowTaskHasActiveHold, workflowTaskHoldSummaries } from "./WorkflowHoldQueries";
+import { workflowTaskPeerReadAllowed } from "./WorkflowTaskPeerReadSql";
+import { workflowTaskViewPermissionMatches } from "./WorkflowTaskViewPermissionSql";
 import { workflowTaskEffectiveDeadline } from "./WorkflowSlaDeadline";
 import { workflowDocumentEvidenceIsCurrent } from "./WorkflowDocumentEvidenceReadiness";
 
@@ -33,11 +35,17 @@ type TaskDetailRow = Omit<
   dueAt: Date | string | null;
   result: unknown;
   permissions: WorkflowElementPermissions;
+  assignedToActor: boolean;
+  coiCleared: boolean;
+  stageStatus: string;
+  workflowStatus: string;
 };
 
 export async function readWorkflowTask(
   actorId: string,
   taskId: string,
+  allowAll = false,
+  viewPermissions?: readonly string[],
 ): Promise<TaskDetailRow | null> {
   const result = await getDatabase().execute(sql`
     SELECT task.id AS "taskInstanceId", task.status AS "taskStatus",
@@ -148,6 +156,11 @@ export async function readWorkflowTask(
         WHERE scoring.task_definition_id = definition.id
       ) AS scoring,
       definition.permissions,
+      task.assigned_user_id = ${actorId}::uuid AS "assignedToActor",
+      assignee.display_name AS "assignedUserName",
+      assigned_role.name AS "assignedRoleName",
+      app_workflow_task_coi_cleared(task.id, ${actorId}::uuid) AS "coiCleared",
+      stage.status AS "stageStatus", workflow.status AS "workflowStatus",
       stage_definition.name AS "stageName",
       stage.id AS "stageInstanceId", stage.row_version AS "runtimeVersion",
       workflow.id AS "workflowInstanceId",
@@ -168,13 +181,19 @@ export async function readWorkflowTask(
     JOIN app_workflow_instances workflow ON workflow.id = stage.workflow_instance_id
     JOIN app_applications application ON application.id = workflow.application_id
     JOIN app_users applicant ON applicant.id = application.owner_user_id
+    LEFT JOIN app_users assignee ON assignee.id = task.assigned_user_id
+    LEFT JOIN app_roles assigned_role ON assigned_role.id = task.assigned_role_id
     LEFT JOIN app_business_profiles business
       ON business.id::text = application.business_section ->> 'businessId'
     WHERE task.id = ${taskId}::uuid
-      AND app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
-      AND workflow.status = 'ACTIVE'
-      AND stage.status IN ('ACTIVE', 'BLOCKED')
-      AND task.assigned_user_id = ${actorId}::uuid
+      AND ${workflowTaskPeerReadAllowed(actorId, sql`task`, sql`definition`, sql`stage`)}
+      AND (${allowAll} OR ${workflowTaskViewPermissionMatches(sql`definition.permissions`, viewPermissions)})
+      AND (${allowAll} OR (
+        app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
+        AND workflow.status = 'ACTIVE'
+        AND stage.status IN ('ACTIVE', 'BLOCKED')
+        AND task.assigned_user_id = ${actorId}::uuid
+      ))
   `);
   return (result.rows[0] as TaskDetailRow | undefined) ?? null;
 }

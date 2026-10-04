@@ -80,6 +80,7 @@ const application = {
   currentSection: "business" as const,
   declarationAcceptance: null,
   declarationsSection: {},
+  allowResubmissionAfterWithdrawal: false,
   duplicatePolicy: "one_per_business" as const,
   eligibilityRuleSetVersionId: rulesVersionId,
   financialSection: {},

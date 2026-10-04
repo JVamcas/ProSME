@@ -24,6 +24,7 @@ import {
 } from "./ApplicationDetailQueries";
 import { invalidateApplicationViews } from "./invalidateApplicationViews";
 import { workQueueQueryKeys } from "@/modules/work-queue/ui/WorkQueueQueryKeys";
+import { toast } from "@/shared/ui/Toast";
 export { applicationQueryKeys } from "./ApplicationQueryKeys";
 
 export function useApplications() {
@@ -86,6 +87,11 @@ export function useCreateApplication() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: clientApplicationService.createApplication,
+    onError: (error) => {
+      toast.error("Application could not be started", {
+        description: error.message,
+      });
+    },
     onSuccess: (application) => {
       queryClient.setQueryData(
         applicationQueryKeys.detail(application.id),

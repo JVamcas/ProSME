@@ -25,6 +25,7 @@ export const workflowStageEditorStepFields = {
     "enabled",
     "optional",
     "repeatable",
+    "allowApplicantWithdrawal",
     "coiGated",
     "coiFormVersionId",
   ],

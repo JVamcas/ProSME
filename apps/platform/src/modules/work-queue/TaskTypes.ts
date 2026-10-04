@@ -95,6 +95,9 @@ export type AuthoritativeEligibilityTaskResult = {
 };
 
 export type TaskDetail = {
+  readOnly?: boolean;
+  assignedUserName?: string | null;
+  assignedRoleName?: string | null;
   processingStatus?: "ON_HOLD" | null;
   holds?: import("@/modules/workflows/domain/runtime/WorkflowHold").WorkflowHoldSummary[];
   actions: WorkflowTaskAction[];

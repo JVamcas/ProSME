@@ -1,5 +1,6 @@
 import type { WorkflowActionDefinition } from "./WorkflowActionDefinition";
 import { isWorkflowStageDecisionAction } from "./WorkflowActionDefinition";
+import { removeWorkflowWithdrawalActions } from "../definitions/WorkflowApplicantWithdrawal";
 import type {
   WorkflowGraphInput,
   WorkflowStageInput,
@@ -98,9 +99,10 @@ export function reconcileWorkflowActionBindings(
   previous: WorkflowGraphInput | null,
   next: WorkflowGraphInput,
 ): WorkflowGraphInput {
+  const graph = removeWorkflowWithdrawalActions(next);
   return {
-    ...next,
-    stages: next.stages.map((stage) =>
+    ...graph,
+    stages: graph.stages.map((stage) =>
       reconcileWorkflowStageActionBindings(
         previousStage(previous, stage),
         stage,

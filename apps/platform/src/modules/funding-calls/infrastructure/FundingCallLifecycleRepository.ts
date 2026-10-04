@@ -36,6 +36,7 @@ const notificationEvents: Partial<Record<
   RESUME: "funding-call.resumed",
   SUSPEND: "funding-call.suspended",
   WITHDRAW: "funding-call.withdrawn",
+  WITHDRAW_FOR_AMENDMENT: "funding-call.returned-for-amendment",
 };
 
 export type FundingCallLifecycleInput = LifecycleActor & {
@@ -122,7 +123,10 @@ export async function transitionFundingCall(
   input: FundingCallLifecycleInput,
 ): Promise<FundingCallLifecycleResult> {
   const reason = input.reason?.trim() || null;
-  if (input.command === "RETURN_FOR_AMENDMENT" && !reason) {
+  if (
+    ["RETURN_FOR_AMENDMENT", "WITHDRAW_FOR_AMENDMENT"].includes(input.command)
+    && !reason
+  ) {
     throw new Error("A reason is required to return a funding call to Draft.");
   }
   return getDatabase().transaction(async (transaction) => {
@@ -161,7 +165,9 @@ export async function transitionFundingCall(
         status: transition.targetStatus,
         suspendedFromStatus: transition.suspendedFromStatus,
         updatedAt: input.now,
-        updatedBy: input.actorId ?? current.updatedBy,
+        updatedBy: input.command === "WITHDRAW_FOR_AMENDMENT"
+          ? current.updatedBy
+          : input.actorId ?? current.updatedBy,
       })
       .where(and(
         eq(fundingCalls.id, input.fundingCallId),

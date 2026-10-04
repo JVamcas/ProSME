@@ -2,6 +2,7 @@ import type { FundingCall, FundingCallPublicDocument } from "./FundingCall";
 
 type PublicationFields = Pick<
   FundingCall,
+  | "allowResubmissionAfterWithdrawal"
   | "applicationDuplicatePolicy"
   | "description"
   | "eligibilityRuleSetVersionId"
@@ -35,6 +36,7 @@ export function captureFundingCallPublication(
   publicDocuments: FundingCallPublicDocument[],
 ): FundingCallPublicationSnapshot {
   return {
+    allowResubmissionAfterWithdrawal: call.allowResubmissionAfterWithdrawal,
     applicationDuplicatePolicy: call.applicationDuplicatePolicy,
     closesAt: call.closesAt.toISOString(),
     description: call.description,

@@ -1,9 +1,10 @@
 import "server-only";
 
-import { and, desc, eq, isNull, or } from "drizzle-orm";
+import { and, desc, eq, or } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
 import { businessProfiles } from "@/db/schema/profiles";
+import { findApplicationPolicyConflict } from "./ApplicationDuplicatePolicyRepository";
 import { attachedBusinessFieldValues } from "../domain/AttachedApplicationForm";
 import { eligibilityRuleSetVersions } from "@/modules/eligibility/infrastructure/eligibility-ruleset.schema";
 import { formVersions } from "@/modules/forms/infrastructure/form.schema";
@@ -38,6 +39,7 @@ export type CreateDraftResult =
       kind:
         | "business_required"
         | "duplicate"
+        | "resubmission_not_allowed"
         | "idempotency_conflict"
         | "unavailable"
         | "unowned_business";
@@ -77,16 +79,18 @@ async function bindingIsPublished(
   formVersionId: string,
   eligibilityRuleSetVersionId: string,
 ) {
-  const [form] = await transaction
-    .select({ status: formVersions.status })
-    .from(formVersions)
-    .where(eq(formVersions.id, formVersionId))
-    .limit(1);
-  const [rules] = await transaction
-    .select({ status: eligibilityRuleSetVersions.status })
-    .from(eligibilityRuleSetVersions)
-    .where(eq(eligibilityRuleSetVersions.id, eligibilityRuleSetVersionId))
-    .limit(1);
+  const [[form], [rules]] = await Promise.all([
+    transaction
+      .select({ status: formVersions.status })
+      .from(formVersions)
+      .where(eq(formVersions.id, formVersionId))
+      .limit(1),
+    transaction
+      .select({ status: eligibilityRuleSetVersions.status })
+      .from(eligibilityRuleSetVersions)
+      .where(eq(eligibilityRuleSetVersions.id, eligibilityRuleSetVersionId))
+      .limit(1),
+  ]);
   return form?.status === "PUBLISHED" && rules?.status === "PUBLISHED";
 }
 
@@ -98,34 +102,14 @@ async function readOwnedBusiness(
   const [business] = await transaction
     .select()
     .from(businessProfiles)
-    .where(and(
-      eq(businessProfiles.id, businessId),
-      eq(businessProfiles.userId, actorUserId),
-    ))
+    .where(
+      and(
+        eq(businessProfiles.id, businessId),
+        eq(businessProfiles.userId, actorUserId),
+      ),
+    )
     .limit(1);
   return business ?? null;
-}
-
-async function hasDuplicate(
-  transaction: ApplicationTransaction,
-  input: CreateDraftInput,
-  fundingCallId: string,
-  policy: "none" | "one_per_applicant" | "one_per_business",
-) {
-  if (policy === "none") return false;
-  const scope = policy === "one_per_applicant"
-    ? eq(applications.ownerUserId, input.actorUserId)
-    : eq(applications.businessId, input.businessId!);
-  const [duplicate] = await transaction
-    .select({ id: applications.id })
-    .from(applications)
-    .where(and(
-      eq(applications.fundingOpportunityId, fundingCallId),
-      isNull(applications.deletedAt),
-      scope,
-    ))
-    .limit(1);
-  return Boolean(duplicate);
 }
 
 async function createDraftInTransaction(
@@ -149,10 +133,10 @@ async function createDraftInTransaction(
   const call = await lockFundingCall(transaction, input.fundingCallIdOrSlug);
   const now = new Date();
   if (
-    !call
-    || !["LIVE", "SCHEDULED"].includes(call.status)
-    || now < call.opensAt
-    || now >= call.closesAt
+    !call ||
+    !["LIVE", "SCHEDULED"].includes(call.status) ||
+    now < call.opensAt ||
+    now >= call.closesAt
   ) {
     return { kind: "unavailable" };
   }
@@ -175,13 +159,13 @@ async function createDraftInTransaction(
   const rulesVersionId = binding?.eligibilityRuleSetVersionId;
   const duplicatePolicy = binding?.applicationDuplicatePolicy;
   if (
-    !binding
-    || !formVersionId
-    || !rulesVersionId
-    || !["none", "one_per_applicant", "one_per_business"].includes(
+    !binding ||
+    !formVersionId ||
+    !rulesVersionId ||
+    !["none", "one_per_applicant", "one_per_business"].includes(
       duplicatePolicy ?? "",
-    )
-    || !await bindingIsPublished(transaction, formVersionId, rulesVersionId)
+    ) ||
+    !(await bindingIsPublished(transaction, formVersionId, rulesVersionId))
   ) {
     return { kind: "unavailable" };
   }
@@ -194,19 +178,22 @@ async function createDraftInTransaction(
   if (input.businessId && !business) {
     return { kind: "unowned_business" };
   }
-  if (await hasDuplicate(
-    transaction,
-    input,
-    call.id,
-    duplicatePolicy!,
-  )) {
-    return { kind: "duplicate" };
-  }
+  const allowResubmissionAfterWithdrawal =
+    binding.allowResubmissionAfterWithdrawal ?? false;
+  const conflict = await findApplicationPolicyConflict(transaction, {
+    ownerUserId: input.actorUserId,
+    businessId: input.businessId,
+    fundingCallId: call.id,
+    duplicatePolicy: duplicatePolicy!,
+    allowResubmissionAfterWithdrawal,
+  });
+  if (conflict) return { kind: conflict };
   const [application] = await transaction
     .insert(applications)
     .values({
       businessId: input.businessId,
       duplicatePolicy: duplicatePolicy!,
+      allowResubmissionAfterWithdrawal,
       eligibilityRuleSetVersionId: rulesVersionId,
       formVersionId,
       fundingOpportunityId: call.id,

@@ -1,7 +1,7 @@
 import "server-only";
 
 import { permissionCodes } from "@/auth/authorization/permissions";
-import { requirePermission } from "@/auth/authorization/policy";
+import { can, requireAnyPermission, requirePermission } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import {
   ResourceConflictError,
@@ -12,6 +12,8 @@ import {
   changeTaskCoi,
   readTaskCoiGate,
 } from "../../infrastructure/WorkflowCoiRepository";
+import { readWorkflowTaskAccess } from "../../infrastructure/WorkflowTaskAccessRepository";
+import { WorkflowTaskUnavailableError } from "./ServerWorkflowTaskReadService";
 import { readPendingWorkflowCoiReview } from "../../infrastructure/WorkflowCoiReviewRepository";
 import { replaceWorkflowReviewer } from "../../infrastructure/WorkflowReviewerReplacementRepository";
 
@@ -19,12 +21,31 @@ export async function getWorkflowTaskCoi(
   user: AuthenticatedUser | null,
   taskId: string,
 ) {
-  const actor = requirePermission(
-    user,
+  const actor = requireAnyPermission(user, [
     permissionCodes.workflowTaskAssignedRead,
-  );
-  const gate = await readTaskCoiGate(actor.id, taskId);
-  if (!gate) throw new ResourceNotFoundError("workflow task");
+    permissionCodes.workflowTaskAllRead,
+  ]);
+  const gate = can(actor, permissionCodes.workflowTaskAssignedRead)
+    ? await readTaskCoiGate(actor.id, taskId)
+    : null;
+  if (!gate) {
+    if (!can(actor, permissionCodes.workflowTaskAllRead)) {
+      throw new WorkflowTaskUnavailableError();
+    }
+    const task = await readWorkflowTaskAccess(actor.id, taskId);
+    if (!task) throw new WorkflowTaskUnavailableError();
+    return {
+      form: null,
+      taskId: task.taskId,
+      taskName: task.taskName,
+      taskStatus: task.taskStatus,
+      rowVersion: task.rowVersion,
+      gated: false,
+      state: "NOT_APPLICABLE",
+      cleared: false,
+      readOnly: true,
+    };
+  }
   if (gate.gated && !gate.coiFormVersionId) {
     throw new ResourceConflictError(
       "The workflow has no bound Conflict of Interest form version.",

@@ -1,14 +1,31 @@
+import Link from "next/link";
+
 import type { FundingCallView } from "../api/FundingCallTransport";
 import { SanitizedRichTextContent } from "@/shared/ui/SanitizedRichTextContent";
 
-function Detail({ label, value }: { label: string; value: string | null }) {
+function Detail({
+  label,
+  value,
+  href,
+}: {
+  label: string;
+  value: string | null;
+  href?: string | null;
+}) {
   return (
     <div>
       <dt className="text-xs font-bold uppercase tracking-wide text-brand-navy/55">
         {label}
       </dt>
       <dd className="mt-1 break-words text-sm text-brand-navy">
-        {value || "Not provided"}
+        {value && href ? (
+          <Link
+            className="rounded-sm underline underline-offset-4 hover:text-brand-orange focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange"
+            href={href}
+          >
+            {value}
+          </Link>
+        ) : value || "Not provided"}
       </dd>
     </div>
   );
@@ -40,14 +57,24 @@ export function FundingCallReadOnlyReview({ call }: { call: FundingCallView }) {
         <Detail label="Opens" value={new Date(call.opensAt).toLocaleString()} />
         <Detail label="Closes" value={new Date(call.closesAt).toLocaleString()} />
         <Detail label="Application limit" value={call.applicationDuplicatePolicy} />
-        <Detail label="Application Form Version" value={call.formVersionId} />
+        <Detail
+          label="New application after withdrawal"
+          value={call.allowResubmissionAfterWithdrawal ? "Allowed" : "Not allowed"}
+        />
+        <Detail
+          label="Application Form Version"
+          value={call.formVersionId}
+          href={call.versionLinks?.applicationForm}
+        />
         <Detail
           label="Eligibility Ruleset Version"
           value={call.eligibilityRuleSetVersionId}
+          href={call.versionLinks?.eligibilityRuleSet}
         />
         <Detail
           label="Workflow Template Version"
           value={call.workflowTemplateVersionId}
+          href={call.versionLinks?.workflowTemplate}
         />
         <Detail label="Public contact" value={call.publicContactName} />
         <Detail label="Public email" value={call.publicContactEmail} />

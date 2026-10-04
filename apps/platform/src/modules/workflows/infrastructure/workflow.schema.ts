@@ -118,6 +118,9 @@ export const workflowStageDefinitions = pgTable(
     applicantLabel: text("applicant_label").notNull(),
     applicantDescription: text("applicant_description").notNull(),
     repeatable: boolean("repeatable").notNull().default(false),
+    allowApplicantWithdrawal: boolean("allow_applicant_withdrawal")
+      .notNull()
+      .default(true),
     coiGated: boolean("coi_gated").notNull().default(false),
     coiFormVersionId: uuid("coi_form_version_id").references(
       () => formVersions.id,

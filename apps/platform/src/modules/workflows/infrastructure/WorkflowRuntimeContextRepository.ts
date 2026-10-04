@@ -7,6 +7,8 @@ import type {
   PriorStageRuntimeValues,
   WorkflowTaskRuntimeContextSource,
 } from "@/modules/workflows/domain/WorkflowRuntimeContext";
+import { workflowTaskPeerReadAllowed } from "./WorkflowTaskPeerReadSql";
+import { workflowTaskViewPermissionMatches } from "./WorkflowTaskViewPermissionSql";
 import { buildStageCompletionValues } from "@/modules/workflows/engine/StageCompletionContext";
 import type { ConditionFieldDefinition } from "@/modules/conditions/domain/ConditionConfiguration";
 import type { WorkflowElementPermissions } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
@@ -41,6 +43,8 @@ type RuntimeContextRow = {
   stageName: string;
   stageStartedAt: Date;
   stageStatus: string;
+  taskAssignedUserId: string | null;
+  taskCoiCleared: boolean;
   taskDefinitionId: string;
   taskInstanceId: string;
   taskKey: string;
@@ -118,6 +122,8 @@ function toRuntimeContextSource(row: RuntimeContextRow) {
       status: row.stageStatus,
     },
     task: {
+      assignedUserId: row.taskAssignedUserId,
+      coiCleared: row.taskCoiCleared,
       definitionId: row.taskDefinitionId,
       id: row.taskInstanceId,
       key: row.taskKey,
@@ -140,6 +146,8 @@ function toRuntimeContextSource(row: RuntimeContextRow) {
 export async function readWorkflowTaskRuntimeContext(
   actorId: string,
   taskInstanceId: string,
+  allowAll = false,
+  viewPermissions?: readonly string[],
 ): Promise<WorkflowTaskRuntimeContextSource | null> {
   const result = await getDatabase().execute(sql`
     SELECT application.id AS "applicationId",
@@ -175,6 +183,8 @@ export async function readWorkflowTaskRuntimeContext(
       stage_definition.code AS "stageKey",
       stage_definition.name AS "stageName",
       task.id AS "taskInstanceId",
+      task.assigned_user_id AS "taskAssignedUserId",
+      app_workflow_task_coi_cleared(task.id, ${actorId}::uuid) AS "taskCoiCleared",
       task.workflow_task_definition_id AS "taskDefinitionId",
       task.status AS "taskStatus",
       task.row_version AS "taskRowVersion",
@@ -251,24 +261,19 @@ export async function readWorkflowTaskRuntimeContext(
         )
     ) history ON TRUE
     WHERE task.id = ${taskInstanceId}::uuid
-      AND app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
+      AND ${workflowTaskPeerReadAllowed(actorId, sql`task`, sql`task_definition`, sql`stage`)}
+      AND (${allowAll} OR ${workflowTaskViewPermissionMatches(sql`task_definition.permissions`, viewPermissions)})
+      AND (${allowAll} OR app_workflow_task_coi_cleared(task.id, ${actorId}::uuid))
       AND task.form_version_id IS NOT NULL
       AND (
         (inherited_form.enabled AND verification.form_version_id IS NOT NULL)
         OR (NOT inherited_form.enabled AND binding.task_definition_id IS NOT NULL)
       )
-      AND workflow.status = 'ACTIVE'
-      AND stage.status = 'ACTIVE'
-      AND (
-        task.assigned_user_id = ${actorId}::uuid
-        OR (
-          task.assigned_user_id IS NULL
-          AND task.assigned_role_id IN (
-            SELECT role_id FROM app_user_roles
-            WHERE user_id = ${actorId}::uuid
-          )
-        )
-      )
+      AND (${allowAll} OR (
+        workflow.status = 'ACTIVE'
+        AND stage.status IN ('ACTIVE', 'BLOCKED')
+        AND task.assigned_user_id = ${actorId}::uuid
+      ))
   `);
   const row = result.rows[0] as RuntimeContextRow | undefined;
   return row ? toRuntimeContextSource(row) : null;

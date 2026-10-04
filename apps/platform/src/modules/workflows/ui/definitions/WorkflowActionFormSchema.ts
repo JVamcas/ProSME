@@ -79,6 +79,13 @@ export const workflowActionFormSchema = z
       .refine((value) => !value || stableKeyPattern.test(value)),
   })
   .superRefine((values, context) => {
+    if (values.actionType === "WITHDRAW") {
+      context.addIssue({
+        code: "custom",
+        message: "Configure applicant withdrawal in the stage Behaviour step.",
+        path: ["actionType"],
+      });
+    }
     if (values.actionType === "REFER") {
       context.addIssue({
         code: "custom",
@@ -207,6 +214,5 @@ export const workflowActionTypeItems = [
   { label: "Escalate", value: "ESCALATE" },
   { label: "Put on Hold", value: "PUT_ON_HOLD" },
   { label: "Resume", value: "RESUME" },
-  { label: "Withdraw", value: "WITHDRAW" },
   { label: "Defer", value: "DEFER" },
 ] as const;

@@ -1,6 +1,26 @@
+import type { AuthenticatedUser } from "@/auth/types";
 import { defaultWorkflowElementPermissions } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
 
+export const workflowTaskActorFixture: AuthenticatedUser = {
+  id: "20000000-0000-4000-8000-000000000002",
+  email: "reviewer@example.test",
+  displayName: "Reviewer",
+  userType: "staff",
+  status: "active",
+  createdAt: new Date("2026-01-01T00:00:00Z"),
+  updatedAt: new Date("2026-01-01T00:00:00Z"),
+  lastLoginAt: null,
+  identitySubject: "test-reviewer",
+  capabilities: new Set(),
+  roleCodes: new Set(),
+};
+
+
 export const workflowTaskServiceFixture = {
+  assignedToActor: true,
+  coiCleared: true,
+  stageStatus: "ACTIVE",
+  workflowStatus: "ACTIVE",
   applicantName: "Applicant",
   applicationId: "79e20de0-3558-4d63-90a4-8c9f5125df08",
   businessName: "Business",

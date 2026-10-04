@@ -29,6 +29,7 @@ const actorId = "10000000-0000-4000-8000-000000000001";
 const callId = "00000000-0000-4000-8000-000000000042";
 const clonedId = "00000000-0000-4000-8000-000000000043";
 const cloned = {
+  allowResubmissionAfterWithdrawal: false,
   applicationDuplicatePolicy: "one_per_business" as const,
   closesAt: new Date("2027-03-31T15:00:00.000Z"),
   createdAt: new Date("2026-09-23T08:00:00.000Z"),

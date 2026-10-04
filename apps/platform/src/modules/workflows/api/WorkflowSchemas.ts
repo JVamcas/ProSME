@@ -141,6 +141,8 @@ export const workflowStageSchema = z
     description: z.string().trim().max(1000).default(""),
     enabled: z.boolean(),
     optional: z.boolean(),
+    // Older graph payloads omit this; persistence applies the enabled default.
+    allowApplicantWithdrawal: z.boolean().optional(),
     displayOrder: z.number().int().positive(),
     publicStatusMapping: z.object({
       status: z.enum(workflowPublicStatuses),

@@ -14,12 +14,17 @@ export default async function WorkflowTaskPage({
   params: Promise<{ id: string }>;
 }) {
   const user = await getAuthenticatedPageUser();
-  if (!can(user, permissionCodes.workflowTaskAssignedRead)) {
+  if (
+    !can(user, permissionCodes.workflowTaskAssignedRead) &&
+    !can(user, permissionCodes.workflowTaskAllRead)
+  ) {
     redirect("/unauthorized");
   }
   const { id } = await params;
   return (
     <WorkflowTaskWorkspace
+      canReadAllTasks={can(user, permissionCodes.workflowTaskAllRead)}
+      canReadAssignedTasks={can(user, permissionCodes.workflowTaskAssignedRead)}
       canReadWorkflowProgress={
         can(user, permissionCodes.workflowInstanceAssignedRead) ||
         can(user, permissionCodes.workflowInstanceAllRead)

@@ -9,7 +9,7 @@ import {
   formFields,
   formSections,
   formVersions,
-} from "@/db/schema";
+} from "./form.schema";
 import type { FormPurpose } from "@/modules/forms/FormTypes";
 import type {
   FormDefinitionPage,
@@ -277,9 +277,9 @@ async function readSections(versionId: string) {
     .orderBy(asc(formSections.order));
 }
 
-export async function getFormEditor(definitionId: string) {
+export async function getFormEditor(definitionId: string, versionId?: string) {
   const database = getDatabase();
-  const [definitions, versions] = await Promise.all([
+  const [definitions, versions, selectedVersions] = await Promise.all([
     database
       .select()
       .from(formDefinitions)
@@ -290,11 +290,22 @@ export async function getFormEditor(definitionId: string) {
       .from(formVersions)
       .where(eq(formVersions.formDefinitionId, definitionId))
       .orderBy(desc(formVersions.versionNumber)),
+    versionId
+      ? database
+          .select()
+          .from(formVersions)
+          .where(and(
+            eq(formVersions.formDefinitionId, definitionId),
+            eq(formVersions.id, versionId),
+          ))
+          .limit(1)
+      : Promise.resolve(null),
   ]);
   const [definition] = definitions;
   if (!definition) return null;
-  const version =
-    versions.find((item) => item.status === "DRAFT") ?? versions[0];
+  const version = selectedVersions
+    ? selectedVersions[0]
+    : versions.find((item) => item.status === "DRAFT") ?? versions[0];
   if (!version) return null;
   const [fields, sections] = await Promise.all([
     readFormFields(version.id),

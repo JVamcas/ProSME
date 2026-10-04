@@ -87,12 +87,14 @@ export function FundingCallGovernanceActions({
             disabled={governance.isPending}
             onClick={submitForApproval}
             type="button"
+            size="compact"
           >
             {governance.isPending ? "Submitting…" : "Submit for approval"}
           </GeneralButton>
         ) : null}
         {call.status === "APPROVAL_PENDING" && canApprove ? (
           <GeneralButton
+            size="compact"
             disabled={governance.isPending}
             onClick={approve}
             type="button"
@@ -102,6 +104,7 @@ export function FundingCallGovernanceActions({
         ) : null}
         {call.status === "APPROVAL_PENDING" && canWithdrawOwnRequest ? (
           <GeneralButton
+            size="compact"
             disabled={governance.isPending}
             onClick={withdraw}
             type="button"
@@ -112,6 +115,7 @@ export function FundingCallGovernanceActions({
         ) : null}
         {call.status === "APPROVAL_PENDING" && canReturn ? (
           <GeneralButton
+            size="compact"
             disabled={governance.isPending}
             onClick={() => setReturnDialogOpen(true)}
             type="button"

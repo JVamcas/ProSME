@@ -16,8 +16,8 @@ import {
 import type { FormField, FormSection } from "@/modules/forms/FormTypes";
 import type { FormDisplayMode } from "@/modules/forms/FormTypes";
 
-export function useFormEditorController(id: string) {
-  const query = useFormEditor(id);
+export function useFormEditorController(id: string, versionId?: string) {
+  const query = useFormEditor(id, versionId);
   const update = useUpdateForm(id);
   const clone = useCloneForm();
   const publish = useFormLifecycle("publish");

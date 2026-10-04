@@ -46,6 +46,7 @@ import {
   updateDraftFundingCall,
 } from "../infrastructure/FundingCallRepository";
 import { readFundingCalls } from "../infrastructure/FundingCallAdminListRepository";
+import { readFundingCallDetail } from "../infrastructure/FundingCallDetailRepository";
 import {
   cloneFundingCallRecord,
   deleteFundingCallRecord,
@@ -55,6 +56,10 @@ import {
   resolveFundingCallEligibilityContext,
 } from "../ServerFundingCallEligibilityContextIntegration";
 import { toFundingCallView } from "./FundingCallViewMapper";
+import {
+  assertFundingCallAttachmentsUnchanged,
+  FundingCallAttachmentsLockedError,
+} from "../domain/FundingCallAttachmentPolicy";
 
 async function requireEligibilityCompatibility(
   call: Pick<
@@ -169,9 +174,23 @@ export async function getFundingCall(
   id: string,
 ): Promise<FundingCallView> {
   requirePermission(user, permissionCodes.fundingCallRead);
-  const call = await readFundingCallById(id);
-  if (!call) throw new ResourceNotFoundError("funding call");
-  return toFundingCallView(call);
+  const detail = await readFundingCallDetail(id);
+  if (!detail) throw new ResourceNotFoundError("funding call");
+  const { call, formDefinitionId, eligibilityRuleSetId, workflowDefinitionId } = detail;
+  return {
+    ...toFundingCallView(call),
+    versionLinks: {
+      applicationForm: formDefinitionId && call.formVersionId
+        ? `/admin/settings/forms/${formDefinitionId}?versionId=${call.formVersionId}`
+        : null,
+      eligibilityRuleSet: eligibilityRuleSetId && call.eligibilityRuleSetVersionId
+        ? `/admin/settings/eligibility-rulesets/${eligibilityRuleSetId}?versionId=${call.eligibilityRuleSetVersionId}`
+        : null,
+      workflowTemplate: workflowDefinitionId && call.workflowTemplateVersionId
+        ? `/admin/workflows/${workflowDefinitionId}?versionId=${call.workflowTemplateVersionId}`
+        : null,
+    },
+  };
 }
 
 export async function getFundingCallByPublicIdentifier(
@@ -254,15 +273,26 @@ export async function updateFundingCall(
   input: FundingCallUpdateInput,
 ): Promise<FundingCallView> {
   const actor = requirePermission(user, permissionCodes.fundingCallEditDraft);
-  await requireBindableBindings(input, id);
-  const updated = await updateDraftFundingCall(actor.id, id, input);
-  if (updated) return toFundingCallView(updated);
-
   const existing = await readFundingCallById(id);
   if (!existing) throw new ResourceNotFoundError("funding call");
-  throw new ResourceConflictError(
-    existing.status === "DRAFT"
-      ? "The funding call changed. Refresh it before saving again."
-      : "Only draft funding calls can be edited.",
-  );
+  if (existing.status !== "DRAFT") {
+    throw new ResourceConflictError("Only draft funding calls can be edited.");
+  }
+  if (existing.rowVersion !== input.expectedRowVersion) {
+    throw new ResourceConflictError("The funding call changed. Refresh it before saving again.");
+  }
+  try {
+    assertFundingCallAttachmentsUnchanged(existing, input);
+    if (!existing.attachmentsLockedAt) {
+      await requireBindableBindings(input, id);
+    }
+    const updated = await updateDraftFundingCall(actor.id, id, input);
+    if (updated) return toFundingCallView(updated);
+  } catch (error) {
+    if (error instanceof FundingCallAttachmentsLockedError) {
+      throw new ResourceConflictError(error.message);
+    }
+    throw error;
+  }
+  throw new ResourceConflictError("The funding call changed. Refresh it before saving again.");
 }

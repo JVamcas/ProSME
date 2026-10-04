@@ -241,6 +241,7 @@ function LoadedDynamicFormTask({
 
 export function DynamicFormTask({
   taskId,
+  readOnly = false,
   eligibilityEvaluation,
   eligibilityTask = false,
   eligibilityActionContainer,
@@ -250,6 +251,7 @@ export function DynamicFormTask({
   onFinalStepChange,
 }: {
   taskId: string;
+  readOnly?: boolean;
   eligibilityEvaluation?: AuthoritativeEligibilityTaskResult | null;
   eligibilityTask?: boolean;
   eligibilityActionContainer?: HTMLElement | null;
@@ -274,6 +276,22 @@ export function DynamicFormTask({
         onAction={() => void query.refetch()}
         title="Form could not be loaded"
       />
+    );
+  }
+  if (readOnly || query.data.readOnly) {
+    return (
+      <FormRenderer
+        definition={query.data.schema}
+        formData={query.data.response?.values ?? {}}
+        onChange={() => undefined}
+        onSubmit={() => undefined}
+        readOnly
+        runtimeContext={query.data.context}
+      >
+        <p className="mt-4 text-sm text-brand-navy/65">
+          Saved form responses · Read-only
+        </p>
+      </FormRenderer>
     );
   }
   return (

@@ -19,9 +19,17 @@ import {
   WorkflowTaskReviewLayout,
   WorkflowTaskReviewSummary,
 } from "@/modules/workflows/ui/WorkflowTaskReviewLayout";
+import { ReadOnlyTaskReview } from "./ReadOnlyTaskReview";
 import { workflowTaskReviewReadiness } from "./WorkflowTaskReviewReadiness";
 
 export function WorkflowTaskReviewPanel({ task }: { task: TaskDetail }) {
+  if (task.readOnly) {
+    return <ReadOnlyTaskReview task={task} />;
+  }
+  return <AssignedTaskReview task={task} />;
+}
+
+function AssignedTaskReview({ task }: { task: TaskDetail }) {
   const router = useRouter();
   const completion = useCompleteWorkflowTask(task.taskInstanceId);
   const [eligibilityActionContainer, setEligibilityActionContainer] =

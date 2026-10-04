@@ -28,6 +28,12 @@ function user(
 }
 
 describe("portal access policy", () => {
+  it("allows operations access with only all-task read permission", () => {
+    const reader = user([permissionCodes.workflowTaskAllRead]);
+    expect(getAvailablePortalSpaces(reader)).toEqual(["operations"]);
+    expect(getDefaultAuthenticatedPath(reader)).toBe("/admin");
+  });
+
   it("rejects active staff without an applicant-scoped capability", () => {
     const staff = user([permissionCodes.fundingApplicationAllRead]);
 

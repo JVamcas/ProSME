@@ -1,9 +1,9 @@
 "use client";
 
-import { useFormEditorController } from "./FormEditorController";
-import { FormEditorMutationError } from "./FormEditorLifecycleActions";
-import { FormEditorBody } from "./FormEditorBody";
-import { FormEditorTopSection } from "./FormEditorTopSection";
+import { useFormEditorController } from "./useFormEditorController";
+import { FormEditorMutationError } from "@/components/admin/forms/FormEditorLifecycleActions";
+import { FormEditorBody } from "@/components/admin/forms/FormEditorBody";
+import { FormEditorTopSection } from "@/components/admin/forms/FormEditorTopSection";
 import { FormPreviewDialog } from "@/modules/forms/ui/renderer/FormPreviewDialog";
 
 type FormEditorController = ReturnType<typeof useFormEditorController>;
@@ -138,13 +138,15 @@ export function FormEditorWorkspace({
   canRetire,
   canUpdate,
   id,
+  versionId,
 }: {
   canPublish: boolean;
   canRetire: boolean;
   canUpdate: boolean;
   id: string;
+  versionId?: string;
 }) {
-  const controller = useFormEditorController(id);
+  const controller = useFormEditorController(id, versionId);
   const { query } = controller;
   if (query.isPending) return <p>Loading form…</p>;
   if (query.isError || !controller.editor) {

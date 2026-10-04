@@ -1,7 +1,7 @@
 import "server-only";
 
 import { createHash } from "node:crypto";
-import { and, desc, eq, isNull, ne } from "drizzle-orm";
+import { and, desc, eq, isNull } from "drizzle-orm";
 
 import type { DatabaseTransaction } from "@/db/client";
 import {
@@ -20,6 +20,7 @@ import {
   findRuntimeEligibilityRuleSetForEvaluation,
   InvalidEligibilityEvaluationRuleSetError,
 } from "@/modules/eligibility/infrastructure/EligibilityEvaluationRepository";
+import { findApplicationPolicyConflict } from "./ApplicationDuplicatePolicyRepository";
 import { readTransactionalApplicationReadiness } from "./ApplicationTransactionalReadiness";
 
 type ValidationInput = {
@@ -57,30 +58,6 @@ async function readApplication(
     ? await query.for("update").limit(1)
     : await query.limit(1);
   return rows[0] ?? null;
-}
-
-async function hasDuplicateSubmission(
-  transaction: DatabaseTransaction,
-  application: typeof applications.$inferSelect,
-) {
-  if (application.duplicatePolicy === "none") return false;
-  const duplicateScope = application.duplicatePolicy === "one_per_applicant"
-    ? eq(applications.ownerUserId, application.ownerUserId)
-    : application.businessId
-      ? eq(applications.businessId, application.businessId)
-      : undefined;
-  if (!duplicateScope) return false;
-  const [duplicate] = await transaction
-    .select({ id: applications.id })
-    .from(applications)
-    .where(and(
-      ne(applications.id, application.id),
-      eq(applications.fundingOpportunityId, application.fundingOpportunityId),
-      eq(applications.status, "submitted"),
-      duplicateScope,
-    ))
-    .limit(1);
-  return Boolean(duplicate);
 }
 
 async function eligibilityServiceAvailable(
@@ -155,7 +132,14 @@ export async function validateApplicationSubmissionState(
       ))
       .orderBy(desc(fundingCallPublicationRevisions.revisionNumber))
       .limit(1),
-    hasDuplicateSubmission(transaction, application),
+    findApplicationPolicyConflict(transaction, {
+      applicationId: application.id,
+      ownerUserId: application.ownerUserId,
+      businessId: application.businessId,
+      fundingCallId: application.fundingOpportunityId,
+      duplicatePolicy: application.duplicatePolicy,
+      allowResubmissionAfterWithdrawal: application.allowResubmissionAfterWithdrawal,
+    }),
   ]);
   const business = businessRows[0] ?? null;
   const fundingCall = callRows[0] ?? null;
@@ -206,6 +190,8 @@ export async function validateApplicationSubmissionState(
     && application.eligibilityRuleSetVersionId
       === fundingCall.eligibilityRuleSetVersionId
     && application.duplicatePolicy === fundingCall.applicationDuplicatePolicy
+    && application.allowResubmissionAfterWithdrawal
+      === (publicationRevision.snapshot.allowResubmissionAfterWithdrawal ?? false)
     && workflowAvailable
     && eligibilityAvailable,
   );
@@ -235,8 +221,12 @@ export async function validateApplicationSubmissionState(
   if (duplicate) {
     blockers.push(blocker(
       "duplicate",
-      "DUPLICATE_SUBMISSION",
-      "A submission already exists for this Funding Call under its application limit.",
+      duplicate === "resubmission_not_allowed"
+        ? "RESUBMISSION_NOT_ALLOWED"
+        : "DUPLICATE_SUBMISSION",
+      duplicate === "resubmission_not_allowed"
+        ? "This funding call does not allow a new application after withdrawal."
+        : "An application already exists for this funding call under its application limit.",
     ));
   }
   if (!workflowAvailable) {
@@ -258,6 +248,8 @@ export async function validateApplicationSubmissionState(
     : null;
   const configurationFingerprint = fingerprint({
     duplicatePolicy: fundingCall?.applicationDuplicatePolicy ?? null,
+    allowResubmissionAfterWithdrawal:
+      publicationRevision?.snapshot.allowResubmissionAfterWithdrawal ?? false,
     eligibilityRuleSetVersionId: fundingCall?.eligibilityRuleSetVersionId ?? null,
     formVersionId: fundingCall?.formVersionId ?? null,
     fundingCallRowVersion: fundingCall?.rowVersion ?? null,

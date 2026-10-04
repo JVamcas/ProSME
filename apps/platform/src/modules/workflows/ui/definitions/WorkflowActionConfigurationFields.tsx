@@ -4,7 +4,6 @@ import { CheckboxField } from "@/components/ui/form-field";
 import {
   FormInput,
   FormSelect,
-  FormTextarea,
 } from "@/components/ui/form-fields";
 import type { WorkflowActionType } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
 import type { WorkflowAssignmentOptions } from "@/modules/workflows/domain/definitions/WorkflowTypes";
@@ -15,30 +14,6 @@ type Props = {
   deferTargetType: "DATE" | "FUNDING_CALL";
   escalationTargetType: "ROLE" | "USER";
 };
-
-function KeyListField({
-  label,
-  name,
-  placeholder,
-  required = true,
-}: {
-  label: string;
-  name: string;
-  placeholder: string;
-  required?: boolean;
-}) {
-  return (
-    <FormTextarea
-      containerClassName="sm:col-span-2"
-      infoTooltip="Use uppercase stable keys separated by commas or new lines."
-      label={label}
-      name={name}
-      placeholder={placeholder}
-      required={required}
-      rows={2}
-    />
-  );
-}
 
 function RequestInformationFields() {
   return (
@@ -178,29 +153,7 @@ function ActionConfigurationFields({
     case "RESUME":
       return null;
     case "WITHDRAW":
-      return (
-        <>
-          <KeyListField
-            label="Allowed stage keys"
-            name="allowedStageKeys"
-            placeholder="SUBMITTED, UNDER_REVIEW"
-          />
-          <FormSelect
-            containerClassName="sm:col-span-2"
-            items={[
-              { label: "Resubmission not allowed", value: "NOT_ALLOWED" },
-              { label: "Create a new application", value: "NEW_APPLICATION" },
-              {
-                label: "Reopen withdrawn application",
-                value: "REOPEN_WITHDRAWN",
-              },
-            ]}
-            label="Resubmission rule"
-            name="resubmissionRule"
-            required
-          />
-        </>
-      );
+      return null;
     case "DEFER":
       return <DeferFields targetType={deferTargetType} />;
   }

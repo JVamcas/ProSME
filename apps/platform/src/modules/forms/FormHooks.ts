@@ -31,6 +31,8 @@ export const formQueryKeys = {
     input.pageSize,
   ] as const,
   detail: (id: string) => ["admin", "forms", id] as const,
+  version: (id: string, versionId: string) =>
+    ["admin", "forms", id, "version", versionId] as const,
   task: (id: string) => ["admin", "tasks", id, "form"] as const,
   publishedRuntime: (versionId: string) =>
     ["admin", "forms", "published", versionId] as const,
@@ -44,11 +46,13 @@ export function useForms(input: FormListInput) {
   });
 }
 
-export function useFormEditor(id: string) {
+export function useFormEditor(id: string, versionId?: string) {
   return useQuery({
     enabled: Boolean(id),
-    queryKey: formQueryKeys.detail(id),
-    queryFn: () => clientFormsService.get(id),
+    queryKey: versionId
+      ? formQueryKeys.version(id, versionId)
+      : formQueryKeys.detail(id),
+    queryFn: () => clientFormsService.get(id, versionId),
   });
 }
 

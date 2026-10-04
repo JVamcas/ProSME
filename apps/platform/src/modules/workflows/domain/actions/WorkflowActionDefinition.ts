@@ -9,14 +9,14 @@ export const supportedWorkflowActionTypes = [
   "ESCALATE",
   "PUT_ON_HOLD",
   "RESUME",
-  "WITHDRAW",
   "DEFER",
 ] as const;
 
-// Refer remains readable for historical definitions and execution records.
+// Removed staff actions remain readable for historical definitions and records.
 export const workflowActionTypes = [
   ...supportedWorkflowActionTypes,
   "REFER",
+  "WITHDRAW",
 ] as const;
 
 export type WorkflowActionType = (typeof workflowActionTypes)[number];

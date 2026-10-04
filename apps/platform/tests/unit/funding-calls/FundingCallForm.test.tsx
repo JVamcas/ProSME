@@ -58,6 +58,7 @@ vi.mock("@/shared/ui/FormRichTextField", () => ({
 }));
 
 const call: FundingCallView = {
+  allowResubmissionAfterWithdrawal: false,
   applicationDuplicatePolicy: "one_per_business",
   closesAt: "2027-03-31T15:00:00.000Z",
   createdAt: "2026-09-20T08:00:00.000Z",
@@ -94,6 +95,37 @@ afterEach(async () => {
 });
 
 describe("FundingCallForm", () => {
+  it("keeps all three attachments selected and disabled after an application exists", async () => {
+    const pinnedWorkflowVersionId = "10000000-0000-4000-8000-000000000099";
+    optionState.pending = false;
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    await act(async () => root?.render(
+      <FundingCallForm
+        call={{
+          ...call,
+          attachmentsLockedAt: "2026-10-01T08:00:00.000Z",
+          workflowTemplateVersionId: pinnedWorkflowVersionId,
+        }}
+        onSubmit={vi.fn()}
+      />,
+    ));
+    for (const [step, field, versionId] of [
+      ["Application", "formVersionId", formVersionId],
+      ["Eligibility", "eligibilityRuleSetVersionId", eligibilityVersionId],
+      ["Workflow", "workflowTemplateVersionId", pinnedWorkflowVersionId],
+    ]) {
+      await act(async () => {
+        container.querySelector<HTMLButtonElement>(`[aria-label^="${step},"]`)?.click();
+      });
+      const selector = container.querySelector<HTMLSelectElement>(`[name="${field}"]`);
+      expect(selector?.disabled).toBe(true);
+      expect(selector?.value).toBe(versionId);
+      expect(container.textContent).toContain("applications have already been created");
+    }
+  });
+
   it("restores an incomplete creation draft at its saved step", async () => {
     optionState.pending = false;
     const container = document.createElement("div");
@@ -109,6 +141,7 @@ describe("FundingCallForm", () => {
             rowVersion: 3,
             updatedAt: "2026-09-29T08:00:00.000Z",
             values: {
+              allowResubmissionAfterWithdrawal: false,
               applicationDuplicatePolicy: "one_per_business",
               closesAt: "",
               description: "",

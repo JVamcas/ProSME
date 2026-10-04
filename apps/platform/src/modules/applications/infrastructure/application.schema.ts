@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  boolean,
   check,
   index,
   integer,
@@ -51,6 +52,9 @@ export const applications = pgTable("app_applications", {
     .$type<ApplicationDuplicatePolicy>()
     .notNull()
     .default("one_per_business"),
+  allowResubmissionAfterWithdrawal: boolean("allow_resubmission_after_withdrawal")
+    .notNull()
+    .default(false),
   reference: text("reference"),
   latestDraftResponseId: uuid("latest_draft_response_id"),
   submissionSnapshotId: uuid("submission_snapshot_id"),
@@ -104,10 +108,19 @@ export const applications = pgTable("app_applications", {
 }, (table) => [
   uniqueIndex("app_applications_business_opportunity_unique")
     .on(table.businessId, table.fundingOpportunityId)
-    .where(sql`${table.deletedAt} IS NULL AND ${table.duplicatePolicy} = 'one_per_business' AND ${table.businessId} IS NOT NULL`),
+    .where(sql`
+      ${table.deletedAt} IS NULL
+      AND ${table.duplicatePolicy} = 'one_per_business'
+      AND ${table.businessId} IS NOT NULL
+      AND ${table.status} <> 'withdrawn'
+    `),
   uniqueIndex("app_applications_applicant_opportunity_unique")
     .on(table.ownerUserId, table.fundingOpportunityId)
-    .where(sql`${table.deletedAt} IS NULL AND ${table.duplicatePolicy} = 'one_per_applicant'`),
+    .where(sql`
+      ${table.deletedAt} IS NULL
+      AND ${table.duplicatePolicy} = 'one_per_applicant'
+      AND ${table.status} <> 'withdrawn'
+    `),
   uniqueIndex("app_applications_unassigned_draft_unique")
     .on(table.ownerUserId, table.fundingOpportunityId)
     .where(sql`${table.deletedAt} IS NULL AND ${table.duplicatePolicy} = 'one_per_business' AND ${table.businessId} IS NULL AND ${table.status} = 'draft'`),

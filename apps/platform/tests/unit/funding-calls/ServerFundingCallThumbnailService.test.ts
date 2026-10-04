@@ -1,13 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
+vi.mock("@/modules/funding-calls/infrastructure/PublicFundingCallRepository", () => ({
+  readPublicFundingCallById: vi.fn(),
+}));
 vi.mock("@/integrations/storage/GcsObjectPath", () => ({
   gcsObjectPathSegments: { utilities: { fundingCalls: ["funding-calls"] } },
   resolveGcsObjectPath: (...segments: string[]) => segments.join("/"),
 }));
 vi.mock("@/modules/funding-calls/infrastructure/FundingCallRepository", () => ({
   readFundingCallById: vi.fn(),
-  readPublicFundingCallById: vi.fn(),
 }));
 vi.mock("@/modules/funding-calls/infrastructure/FundingCallThumbnailRepository", () => ({
   updateFundingCallThumbnailRecord: vi.fn(),
@@ -23,6 +25,7 @@ import { updateFundingCallThumbnailRecord } from "@/modules/funding-calls/infras
 const actorId = "10000000-0000-4000-8000-000000000001";
 const callId = "20000000-0000-4000-8000-000000000001";
 const stored = {
+  allowResubmissionAfterWithdrawal: false,
   applicationDuplicatePolicy: "one_per_business" as const,
   closesAt: new Date("2027-03-01T00:00:00.000Z"),
   createdAt: new Date("2026-09-01T00:00:00.000Z"),

@@ -40,13 +40,19 @@ function OpportunityResults({
 }) {
   const router = useRouter();
   const creation = useCreateApplication();
+
   async function apply(fundingCallIdOrSlug: string) {
-    const application = await creation.mutateAsync({
-      businessId,
-      fundingCallIdOrSlug,
-    });
-    router.push(`/portal/applications/${application.id}/edit`);
+    try {
+      const application = await creation.mutateAsync({
+        businessId,
+        fundingCallIdOrSlug,
+      });
+      router.push(`/portal/applications/${application.id}/edit`);
+    } catch {
+      // The creation hook shows the error toast; keep the selection for retry.
+    }
   }
+
   return (
     <div className="mt-5 grid gap-4">
       {items.map((opportunity) => {
@@ -69,11 +75,6 @@ function OpportunityResults({
           />
         );
       })}
-      {creation.isError ? (
-        <p className="text-sm font-semibold text-brand-navy" role="alert">
-          {creation.error.message}
-        </p>
-      ) : null}
     </div>
   );
 }

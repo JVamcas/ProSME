@@ -168,6 +168,7 @@ export type FormResponse = {
 };
 
 export type TaskFormData = {
+  readOnly?: boolean;
   context: Readonly<Record<
     string,
     import("./engine/FormRuntimeContext").FormContextValue

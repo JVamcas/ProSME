@@ -49,7 +49,7 @@ const columns: DataTableColumn<WorkflowProgressTask>[] = [
     cell: ({ row }) => {
       const task = row.original;
       if (task.planned) return <span>{task.name}</span>;
-      if (task.blockedReason) {
+      if (!task.canOpen && task.blockedReason) {
         return (
           <div>
             <span
@@ -65,6 +65,8 @@ const columns: DataTableColumn<WorkflowProgressTask>[] = [
           </div>
         );
       }
+
+      if (!task.canOpen) return <span>{task.name}</span>;
 
       return (
         <ArrowLink href={`/admin/tasks/${row.original.id}`}>

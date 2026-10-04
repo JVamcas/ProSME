@@ -4,6 +4,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { z } from "zod";
+import { useRouter } from "next/navigation";
+import { ActionMenu } from "@/shared/ui/ActionMenu";
+import { toast } from "@/shared/ui/Toast";
 
 import { GeneralButton } from "@/components/ui/button";
 import { DraggableDialog } from "@/shared/ui/DraggableDialog";
@@ -19,6 +22,8 @@ type Props = {
   canResume: boolean;
   canSuspend: boolean;
   canWithdraw: boolean;
+  canWithdrawForAmendment?: boolean;
+  display?: "buttons" | "menu";
 };
 
 const reasonSchema = z.object({
@@ -30,11 +35,18 @@ const labels: Record<Command, string> = {
   ARCHIVE: "Archive",
   RESUME: "Resume",
   SUSPEND: "Suspend",
-  WITHDRAW: "Withdraw",
+  WITHDRAW: "Permanently withdraw",
+  WITHDRAW_FOR_AMENDMENT: "Withdraw and return to Draft",
 };
 
 function availableActions(props: Props): Command[] {
   const actions: Command[] = [];
+  if (
+    props.canWithdrawForAmendment
+    && ["APPROVED", "SCHEDULED", "LIVE", "SUSPENDED"].includes(props.call.status)
+  ) {
+    actions.push("WITHDRAW_FOR_AMENDMENT");
+  }
   if (
     props.canSuspend
     && (props.call.status === "SCHEDULED" || props.call.status === "LIVE")
@@ -54,6 +66,7 @@ function availableActions(props: Props): Command[] {
 }
 
 export function FundingCallExceptionalActions(props: Props) {
+  const router = useRouter();
   const mutation = useChangeFundingCallLifecycleStatus(props.call.id);
   const [command, setCommand] = useState<Command | null>(null);
   const form = useForm<ReasonInput>({
@@ -68,31 +81,53 @@ export function FundingCallExceptionalActions(props: Props) {
   };
   const submit = form.handleSubmit(async ({ reason }) => {
     if (!command) return;
-    await mutation.mutateAsync({
-      command,
-      expectedRowVersion: props.call.rowVersion,
-      reason,
-    });
-    close();
+    try {
+      await mutation.mutateAsync({
+        command,
+        expectedRowVersion: props.call.rowVersion,
+        reason,
+      });
+      form.reset();
+      setCommand(null);
+      if (command === "WITHDRAW_FOR_AMENDMENT") {
+        toast.success("Funding call returned to Draft. Fresh approval is required before publishing.");
+        router.push(`/admin/funding-calls/${props.call.id}`);
+      }
+    } catch {
+      // The mutation error is shown in the dialog; keep the reason for retry.
+    }
   });
 
   if (!actions.length) return null;
 
   return (
     <>
-      <div className="flex flex-wrap gap-3">
-        {actions.map((action) => (
-          <GeneralButton
-            disabled={mutation.isPending}
-            key={action}
-            onClick={() => setCommand(action)}
-            type="button"
-            variant={action === "WITHDRAW" ? "danger" : "outlineOrange"}
-          >
-            {labels[action]}
-          </GeneralButton>
-        ))}
-      </div>
+      {props.display === "menu" ? (
+        <ActionMenu
+          label={`Funding call actions for ${props.call.title}`}
+          items={actions.map((action) => ({
+            id: action,
+            label: labels[action],
+            disabled: mutation.isPending,
+            destructive: action === "WITHDRAW",
+            onAction: () => setCommand(action),
+          }))}
+        />
+      ) : (
+        <div className="flex flex-wrap gap-3">
+          {actions.map((action) => (
+            <GeneralButton
+              disabled={mutation.isPending}
+              key={action}
+              onClick={() => setCommand(action)}
+              type="button"
+              variant={action === "WITHDRAW" ? "danger" : "outlineOrange"}
+            >
+              {labels[action]}
+            </GeneralButton>
+          ))}
+        </div>
+      )}
       <DraggableDialog
         isOpen={Boolean(command)}
         onClose={close}
@@ -101,6 +136,19 @@ export function FundingCallExceptionalActions(props: Props) {
       >
         <FormProvider {...form}>
           <form className="space-y-5" onSubmit={submit}>
+            {command === "WITHDRAW_FOR_AMENDMENT" ? (
+              <p className="text-sm leading-6 text-brand-navy/75">
+                This call will return to Draft for editing and require fresh approval
+                before publishing. New applications and draft submissions will stop.
+                Existing submitted applications, tasks and deadlines will continue unchanged.
+              </p>
+            ) : command === "WITHDRAW" || command === "SUSPEND" ? (
+              <p className="text-sm leading-6 text-brand-navy/75">
+                New applications and draft submissions will stop. Existing submitted
+                applications, tasks and deadlines will continue unchanged.
+                {command === "WITHDRAW" ? " This withdrawal is permanent." : ""}
+              </p>
+            ) : null}
             <FormTextarea
               disabled={mutation.isPending}
               label={`${command ? labels[command] : "Action"} reason`}

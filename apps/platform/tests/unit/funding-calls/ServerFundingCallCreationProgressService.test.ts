@@ -27,6 +27,7 @@ const draft = {
   rowVersion: 1,
   updatedAt: new Date("2026-09-29T08:00:00.000Z"),
   values: {
+    allowResubmissionAfterWithdrawal: false,
     applicationDuplicatePolicy: "one_per_business" as const,
     closesAt: "",
     description: "",

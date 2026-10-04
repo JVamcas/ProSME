@@ -129,6 +129,9 @@ export function WorkflowStageActionTable({
   onEdit,
   stage,
 }: Props) {
+  const visibleActions = stage.actions.filter(
+    (action) => action.actionType !== "WITHDRAW",
+  );
   const taskNamesByActionKey = new Map<string, string[]>();
   for (const task of stage.tasks) {
     for (const actionKey of task.actionKeys) {
@@ -152,7 +155,7 @@ export function WorkflowStageActionTable({
             <Plus className="size-4" /> Add action
           </GeneralButton>
         }
-        count={stage.actions.length}
+        count={visibleActions.length}
         description="Configure the decisions users can make during this stage."
         title="Actions"
       />
@@ -165,7 +168,7 @@ export function WorkflowStageActionTable({
           onEdit,
           taskNamesByActionKey,
         )}
-        data={stage.actions}
+        data={visibleActions}
         emptyMessage="No actions have been added to this stage."
         minWidth={1080}
       />

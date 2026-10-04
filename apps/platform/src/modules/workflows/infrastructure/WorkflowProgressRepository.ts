@@ -32,7 +32,7 @@ import {
 import { transitionExecutionTargets } from "./workflow-parallel.schema";
 import { workflowTaskPrerequisitesComplete } from "./WorkflowTaskPrerequisiteReadiness";
 
-type ProgressTaskRecord = Omit<WorkflowProgressTask, "canOpen"> & {
+export type ProgressTaskRecord = Omit<WorkflowProgressTask, "canOpen"> & {
   assignedRoleCode: string | null;
   assignedUserId: string | null;
   taskDefinitionId: string | null;

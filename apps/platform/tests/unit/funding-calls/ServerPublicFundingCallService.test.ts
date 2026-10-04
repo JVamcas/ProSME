@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
-vi.mock("@/modules/funding-calls/infrastructure/FundingCallRepository", () => ({
+vi.mock("@/modules/funding-calls/infrastructure/PublicFundingCallRepository", () => ({
   readPublicFundingCallById: vi.fn(),
   readPublicFundingCallBySlug: vi.fn(),
   readPublicFundingCalls: vi.fn(),
@@ -17,7 +17,7 @@ import {
   readPublicFundingCallBySlug,
   readPublicFundingCalls,
   type PublicFundingCallRecord,
-} from "@/modules/funding-calls/infrastructure/FundingCallRepository";
+} from "@/modules/funding-calls/infrastructure/PublicFundingCallRepository";
 
 const call: PublicFundingCallRecord = {
   closesAt: new Date("2026-10-31T22:00:00.000Z"),

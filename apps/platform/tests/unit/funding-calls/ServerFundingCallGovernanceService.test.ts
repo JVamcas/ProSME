@@ -25,6 +25,7 @@ import { readFundingCallById } from "@/modules/funding-calls/infrastructure/Fund
 const actorId = "10000000-0000-4000-8000-000000000001";
 const callId = "00000000-0000-4000-8000-000000000042";
 const call = {
+  allowResubmissionAfterWithdrawal: false,
   applicationDuplicatePolicy: "one_per_business" as const,
   closesAt: new Date("2027-03-31T15:00:00.000Z"),
   createdAt: new Date("2026-09-20T08:00:00.000Z"),
@@ -83,7 +84,28 @@ beforeEach(() => {
 });
 
 describe("funding call governance service", () => {
-  it("requires the create permission to submit a draft", async () => {
+  it.each([
+    permissionCodes.fundingCallCreate,
+    permissionCodes.fundingCallEditDraft,
+    permissionCodes.fundingCallApproveAll,
+  ])("does not infer submission authority from %s", async (grant) => {
+    await expect(changeFundingCallGovernanceStatus(
+      user([grant]), callId,
+      { command: "SUBMIT_FOR_APPROVAL", expectedRowVersion: 4 },
+      "submit-key", "correlation-id",
+    )).rejects.toBeInstanceOf(PermissionDeniedError);
+    expect(changeFundingCallGovernance).not.toHaveBeenCalled();
+  });
+
+  it("does not infer return authority from approval permission", async () => {
+    await expect(changeFundingCallGovernanceStatus(
+      user([permissionCodes.fundingCallApproveAll]), callId,
+      { command: "RETURN_FOR_AMENDMENT", expectedRowVersion: 4, reason: "Clarify" },
+      "return-key", "correlation-id",
+    )).rejects.toBeInstanceOf(PermissionDeniedError);
+  });
+
+  it("requires the submit permission to submit a draft", async () => {
     await expect(changeFundingCallGovernanceStatus(
       user([permissionCodes.fundingCallRead]),
       callId,
@@ -103,7 +125,7 @@ describe("funding call governance service", () => {
     });
 
     const result = await changeFundingCallGovernanceStatus(
-      user([permissionCodes.fundingCallCreate]),
+      user([permissionCodes.fundingCallSubmitAll]),
       callId,
       { command: "SUBMIT_FOR_APPROVAL", expectedRowVersion: 4 },
       "submit-key",
@@ -159,7 +181,7 @@ describe("funding call governance service", () => {
     });
 
     await changeFundingCallGovernanceStatus(
-      user([permissionCodes.fundingCallApproveAll]),
+      user([permissionCodes.fundingCallReturnAll]),
       callId,
       {
         command: "RETURN_FOR_AMENDMENT",

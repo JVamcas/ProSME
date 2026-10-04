@@ -42,6 +42,7 @@ export async function insertWorkflowGraph(
     name: stage.name,
     optional: stage.optional,
     repeatable: stage.repeatable,
+    allowApplicantWithdrawal: stage.allowApplicantWithdrawal ?? true,
     sequence: stage.displayOrder,
     slaHours: stage.slaHours ?? null,
     versionId,

@@ -99,3 +99,17 @@ describe("workflow task runtime context query", () => {
     ]);
   });
 });
+
+
+it.each([false, true])("keeps form read scope explicit and task-local (%s)", async (allowAll) => {
+  const execute = vi.fn().mockResolvedValue({ rows: [] });
+  vi.mocked(getDatabase).mockReturnValue({ execute } as never);
+  await readWorkflowTaskRuntimeContext(actorId, taskId, allowAll, ["workflow.task.assigned.read"]);
+  const query = new PgDialect().sqlToQuery(execute.mock.calls[0]![0]);
+  expect(query.params).toContain(allowAll);
+  expect(query.sql).toContain("task.assigned_user_id =");
+  expect(query.sql).not.toContain("app_user_roles");
+  expect(query.sql).toContain("task_definition.permissions ->> 'view' IN (");
+  expect(query.sql).toContain("own_review.workflow_task_definition_id = task_definition.id");
+  expect(query.params).toContain(taskId);
+});

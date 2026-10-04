@@ -14,7 +14,7 @@ vi.mock(
 
 import { permissionCodes } from "@/auth/authorization/permissions";
 import type { AuthenticatedUser } from "@/auth/types";
-import { completeChecklistTask } from "@/modules/work-queue/ServerWorkflowTaskService";
+import { completeChecklistTask } from "@/modules/work-queue/application/ServerWorkflowTaskService";
 import {
   readChecklistTaskCompletion,
   writeChecklistTaskCompletion,

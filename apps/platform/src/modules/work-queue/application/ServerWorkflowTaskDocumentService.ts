@@ -19,6 +19,7 @@ import {
   createDocumentEvidenceVersion,
   findDocumentEvidenceVersion,
 } from "@/modules/workflows/infrastructure/WorkflowDocumentEvidenceRepository";
+import { getReadableWorkflowTask } from "@/modules/workflows/application/runtime/ServerWorkflowTaskReadService";
 import { readWorkflowTask } from "@/modules/workflows/infrastructure/WorkflowTaskRepository";
 import { getWorkflowTask } from "./ServerWorkflowTaskService";
 
@@ -101,10 +102,7 @@ export async function createWorkflowTaskDocumentDownload(
   versionId: string,
   storage: DocumentStorage = new GoogleCloudDocumentStorage(),
 ) {
-  const actor = requireAuthenticatedUser(user);
-  const task = await readWorkflowTask(actor.id, taskId);
-  if (!task) throw new ResourceNotFoundError("workflow task");
-  requirePermission(actor, task.permissions.view);
+  const { task } = await getReadableWorkflowTask(user, taskId);
   const requirement = task.documentRequirements.find(
     (item) => item.document?.versionId === versionId,
   );
