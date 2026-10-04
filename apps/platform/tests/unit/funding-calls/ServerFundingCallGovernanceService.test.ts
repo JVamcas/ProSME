@@ -84,7 +84,28 @@ beforeEach(() => {
 });
 
 describe("funding call governance service", () => {
-  it("requires the create permission to submit a draft", async () => {
+  it.each([
+    permissionCodes.fundingCallCreate,
+    permissionCodes.fundingCallEditDraft,
+    permissionCodes.fundingCallApproveAll,
+  ])("does not infer submission authority from %s", async (grant) => {
+    await expect(changeFundingCallGovernanceStatus(
+      user([grant]), callId,
+      { command: "SUBMIT_FOR_APPROVAL", expectedRowVersion: 4 },
+      "submit-key", "correlation-id",
+    )).rejects.toBeInstanceOf(PermissionDeniedError);
+    expect(changeFundingCallGovernance).not.toHaveBeenCalled();
+  });
+
+  it("does not infer return authority from approval permission", async () => {
+    await expect(changeFundingCallGovernanceStatus(
+      user([permissionCodes.fundingCallApproveAll]), callId,
+      { command: "RETURN_FOR_AMENDMENT", expectedRowVersion: 4, reason: "Clarify" },
+      "return-key", "correlation-id",
+    )).rejects.toBeInstanceOf(PermissionDeniedError);
+  });
+
+  it("requires the submit permission to submit a draft", async () => {
     await expect(changeFundingCallGovernanceStatus(
       user([permissionCodes.fundingCallRead]),
       callId,
@@ -104,7 +125,7 @@ describe("funding call governance service", () => {
     });
 
     const result = await changeFundingCallGovernanceStatus(
-      user([permissionCodes.fundingCallCreate]),
+      user([permissionCodes.fundingCallSubmitAll]),
       callId,
       { command: "SUBMIT_FOR_APPROVAL", expectedRowVersion: 4 },
       "submit-key",
@@ -160,7 +181,7 @@ describe("funding call governance service", () => {
     });
 
     await changeFundingCallGovernanceStatus(
-      user([permissionCodes.fundingCallApproveAll]),
+      user([permissionCodes.fundingCallReturnAll]),
       callId,
       {
         command: "RETURN_FOR_AMENDMENT",

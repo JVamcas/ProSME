@@ -12,6 +12,7 @@ export async function seedWithdrawalPolicyScenario(
     allowedStages?: [boolean, boolean];
     secondStageStatus?: "ACTIVE" | "BLOCKED" | "COMPLETED" | "NOT_STARTED";
     allowResubmission?: boolean;
+    applicationAllowResubmission?: boolean;
     duplicatePolicy?: "none" | "one_per_applicant" | "one_per_business";
   } = {},
 ) {
@@ -159,7 +160,7 @@ export async function seedWithdrawalPolicyScenario(
       businessId,
       callId,
       duplicatePolicy,
-      allowResubmission,
+      options.applicationAllowResubmission ?? allowResubmission,
       formVersionId,
       rulesVersionId,
     ],

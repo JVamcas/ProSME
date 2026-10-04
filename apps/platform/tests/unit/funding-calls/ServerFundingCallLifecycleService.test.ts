@@ -88,6 +88,35 @@ beforeEach(() => {
 });
 
 describe("funding call exceptional lifecycle", () => {
+  it.each([
+    permissionCodes.fundingCallWithdraw,
+    permissionCodes.fundingCallEditDraft,
+    permissionCodes.fundingCallPublish,
+  ])("does not infer amendment authority from %s", async (grant) => {
+    await expect(changeFundingCallLifecycleStatus(
+      user([grant]), callId,
+      { command: "WITHDRAW_FOR_AMENDMENT", expectedRowVersion: 4, reason: "Amend" },
+      "amend-key", "correlation-id",
+    )).rejects.toBeInstanceOf(PermissionDeniedError);
+    expect(transitionFundingCall).not.toHaveBeenCalled();
+  });
+
+  it.each(["APPROVED", "SCHEDULED", "LIVE", "SUSPENDED"] as const)(
+    "returns %s to Draft using explicit amendment authority", async (status) => {
+      vi.mocked(readFundingCallById).mockResolvedValue({
+        ...call, status, suspendedFromStatus: status === "SUSPENDED" ? "LIVE" : null,
+      });
+      vi.mocked(transitionFundingCall).mockResolvedValue({
+        call: { ...call, status: "DRAFT", rowVersion: 5 }, kind: "transitioned",
+      });
+      await expect(changeFundingCallLifecycleStatus(
+        user([permissionCodes.fundingCallWithdrawForAmendmentAll]), callId,
+        { command: "WITHDRAW_FOR_AMENDMENT", expectedRowVersion: 4, reason: "Amend" },
+        "amend-key", "correlation-id",
+      )).resolves.toMatchObject({ status: "DRAFT", rowVersion: 5 });
+    },
+  );
+
   it("requires the command-specific permission", async () => {
     await expect(changeFundingCallLifecycleStatus(
       user([permissionCodes.fundingCallPublish]),

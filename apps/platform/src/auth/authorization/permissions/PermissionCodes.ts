@@ -34,6 +34,9 @@ export const permissionCodes = {
   fundingCallRead: "funding.call.read",
   fundingCallCreate: "funding.call.create",
   fundingCallEditDraft: "funding.call.edit-draft",
+  fundingCallSubmitAll: "funding.call.submit.all",
+  fundingCallReturnAll: "funding.call.return.all",
+  fundingCallWithdrawForAmendmentAll: "funding.call.withdraw-for-amendment.all",
   fundingCallApproveAll: "funding.call.approve.all",
   fundingCallApprovalRequestOwnWithdraw:
     "funding.call.approval-request.own.withdraw",

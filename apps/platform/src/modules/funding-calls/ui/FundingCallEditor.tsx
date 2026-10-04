@@ -26,6 +26,7 @@ export function FundingCallEditor({
   canSuspend,
   canUpdate,
   canWithdraw,
+  canWithdrawForAmendment,
   canWithdrawOwnRequest,
   id,
 }: {
@@ -38,6 +39,7 @@ export function FundingCallEditor({
   canSuspend: boolean;
   canUpdate: boolean;
   canWithdraw: boolean;
+  canWithdrawForAmendment: boolean;
   canWithdrawOwnRequest: boolean;
   id: string;
 }) {
@@ -66,6 +68,7 @@ export function FundingCallEditor({
           canResume={canResume}
           canSuspend={canSuspend}
           canWithdraw={canWithdraw}
+          canWithdrawForAmendment={canWithdrawForAmendment}
         />
       </div>
     </div>

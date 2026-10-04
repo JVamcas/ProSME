@@ -14,6 +14,7 @@ export const fundingCallLifecycleCommands = [
   "RESUME",
   "CLOSE",
   "WITHDRAW",
+  "WITHDRAW_FOR_AMENDMENT",
   "ARCHIVE",
 ] as const;
 
@@ -67,6 +68,12 @@ const fixedTransitions: Partial<
     LIVE: "WITHDRAWN",
     SCHEDULED: "WITHDRAWN",
     SUSPENDED: "WITHDRAWN",
+  },
+  WITHDRAW_FOR_AMENDMENT: {
+    APPROVED: "DRAFT",
+    SCHEDULED: "DRAFT",
+    LIVE: "DRAFT",
+    SUSPENDED: "DRAFT",
   },
 };
 

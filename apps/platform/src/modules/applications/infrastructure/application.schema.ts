@@ -108,10 +108,19 @@ export const applications = pgTable("app_applications", {
 }, (table) => [
   uniqueIndex("app_applications_business_opportunity_unique")
     .on(table.businessId, table.fundingOpportunityId)
-    .where(sql`${table.deletedAt} IS NULL AND ${table.duplicatePolicy} = 'one_per_business' AND ${table.businessId} IS NOT NULL AND (${table.status} <> 'withdrawn' OR NOT ${table.allowResubmissionAfterWithdrawal})`),
+    .where(sql`
+      ${table.deletedAt} IS NULL
+      AND ${table.duplicatePolicy} = 'one_per_business'
+      AND ${table.businessId} IS NOT NULL
+      AND ${table.status} <> 'withdrawn'
+    `),
   uniqueIndex("app_applications_applicant_opportunity_unique")
     .on(table.ownerUserId, table.fundingOpportunityId)
-    .where(sql`${table.deletedAt} IS NULL AND ${table.duplicatePolicy} = 'one_per_applicant' AND (${table.status} <> 'withdrawn' OR NOT ${table.allowResubmissionAfterWithdrawal})`),
+    .where(sql`
+      ${table.deletedAt} IS NULL
+      AND ${table.duplicatePolicy} = 'one_per_applicant'
+      AND ${table.status} <> 'withdrawn'
+    `),
   uniqueIndex("app_applications_unassigned_draft_unique")
     .on(table.ownerUserId, table.fundingOpportunityId)
     .where(sql`${table.deletedAt} IS NULL AND ${table.duplicatePolicy} = 'one_per_business' AND ${table.businessId} IS NULL AND ${table.status} = 'draft'`),

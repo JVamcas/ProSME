@@ -186,7 +186,13 @@ export const fundingCallPublishSchema = z.object({
 });
 
 export const fundingCallLifecycleCommandSchema = z.object({
-  command: z.enum(["SUSPEND", "RESUME", "WITHDRAW", "ARCHIVE"]),
+  command: z.enum([
+    "SUSPEND",
+    "RESUME",
+    "WITHDRAW",
+    "WITHDRAW_FOR_AMENDMENT",
+    "ARCHIVE",
+  ]),
   expectedRowVersion: z.number().int().positive(),
   reason: z.string().trim().min(1).max(1000),
 });

@@ -1,3 +1,4 @@
+import { fundingCallPermissionCatalogue } from "./FundingCallPermissionCatalogue";
 import {
   cmsPermissionActions,
   cmsPermissionCode,
@@ -58,71 +59,7 @@ const staticPermissionCatalogue: readonly PermissionDefinition[] = [
     "Update own business",
     "Update businesses owned by the signed-in user.",
   ),
-  define(
-    permissionCodes.fundingCallRead,
-    "Read funding calls",
-    "Read funding calls.",
-  ),
-  define(
-    permissionCodes.fundingCallCreate,
-    "Create funding calls",
-    "Create draft funding calls and submit them for approval.",
-  ),
-  define(
-    permissionCodes.fundingCallEditDraft,
-    "Edit draft funding calls",
-    "Edit draft funding calls and resubmit drafts returned for amendment.",
-  ),
-  define(
-    permissionCodes.fundingCallApproveAll,
-    "Review funding calls",
-    "Approve or return pending funding calls subject to maker-checker policy.",
-  ),
-  define(
-    permissionCodes.fundingCallApprovalRequestOwnWithdraw,
-    "Withdraw own funding call approval requests",
-    "Withdraw an approval request submitted by the signed-in user when policy permits.",
-  ),
-  define(
-    permissionCodes.fundingCallPublish,
-    "Publish funding calls",
-    "Publish funding calls.",
-  ),
-  define(
-    permissionCodes.fundingCallSuspend,
-    "Suspend funding calls",
-    "Suspend a Scheduled or Live funding call with a reason.",
-  ),
-  define(
-    permissionCodes.fundingCallResume,
-    "Resume funding calls",
-    "Resume a suspended funding call according to its effective dates.",
-  ),
-  define(
-    permissionCodes.fundingCallWithdraw,
-    "Withdraw funding calls",
-    "Permanently withdraw a published funding call with a reason.",
-  ),
-  define(
-    permissionCodes.fundingCallArchive,
-    "Archive funding calls",
-    "Archive a Closed or Withdrawn funding call.",
-  ),
-  define(
-    permissionCodes.fundingCallDelete,
-    "Delete funding calls",
-    "Delete funding calls.",
-  ),
-  define(
-    permissionCodes.fundingCallEligibilityCreate,
-    "Run eligibility checks",
-    "Create a funding-call eligibility assessment.",
-  ),
-  define(
-    permissionCodes.fundingCallEligibilityOwnRead,
-    "Read own eligibility checks",
-    "Read eligibility assessments owned by the signed-in user.",
-  ),
+  ...fundingCallPermissionCatalogue,
   define(
     permissionCodes.eligibilityRuleSetRead,
     "Read eligibility rulesets",

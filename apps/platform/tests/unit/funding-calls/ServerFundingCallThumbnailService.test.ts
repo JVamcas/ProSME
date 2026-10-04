@@ -1,13 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
+vi.mock("@/modules/funding-calls/infrastructure/PublicFundingCallRepository", () => ({
+  readPublicFundingCallById: vi.fn(),
+}));
 vi.mock("@/integrations/storage/GcsObjectPath", () => ({
   gcsObjectPathSegments: { utilities: { fundingCalls: ["funding-calls"] } },
   resolveGcsObjectPath: (...segments: string[]) => segments.join("/"),
 }));
 vi.mock("@/modules/funding-calls/infrastructure/FundingCallRepository", () => ({
   readFundingCallById: vi.fn(),
-  readPublicFundingCallById: vi.fn(),
 }));
 vi.mock("@/modules/funding-calls/infrastructure/FundingCallThumbnailRepository", () => ({
   updateFundingCallThumbnailRecord: vi.fn(),

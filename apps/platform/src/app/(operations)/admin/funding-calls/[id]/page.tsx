@@ -28,15 +28,13 @@ export default async function FundingCallPage({
       canApprove={can(user, permissionCodes.fundingCallApproveAll)}
       canArchive={can(user, permissionCodes.fundingCallArchive)}
       canPublish={can(user, permissionCodes.fundingCallPublish)}
-      canReturn={can(user, permissionCodes.fundingCallApproveAll)}
+      canReturn={can(user, permissionCodes.fundingCallReturnAll)}
       canResume={can(user, permissionCodes.fundingCallResume)}
-      canSubmit={
-        can(user, permissionCodes.fundingCallCreate)
-        || can(user, permissionCodes.fundingCallEditDraft)
-      }
+      canSubmit={can(user, permissionCodes.fundingCallSubmitAll)}
       canSuspend={can(user, permissionCodes.fundingCallSuspend)}
       canUpdate={can(user, permissionCodes.fundingCallEditDraft)}
       canWithdraw={can(user, permissionCodes.fundingCallWithdraw)}
+      canWithdrawForAmendment={can(user, permissionCodes.fundingCallWithdrawForAmendmentAll)}
       canWithdrawOwnRequest={can(
         user,
         permissionCodes.fundingCallApprovalRequestOwnWithdraw,

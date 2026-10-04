@@ -20,6 +20,21 @@ import {
 import { FundingCallReviewStep } from "./FundingCallReviewStep";
 import type { LocalFormInput } from "./FundingCallFormSchema";
 
+function attachedVersionOptions(
+  options: { label: string; value: string }[],
+  selectedId: string | null | undefined,
+  locked: boolean,
+) {
+  if (!locked || !selectedId || options.some((option) => option.value === selectedId)) {
+    return options;
+  }
+  return [{ label: "Current attached version (locked)", value: selectedId }, ...options];
+}
+
+function attachedVersionLabel(id: string | null | undefined, locked: boolean) {
+  return id && locked ? "Current attached version (locked)" : "Not selected";
+}
+
 export function FundingCallFormSection({
   call,
   currentStep,
@@ -30,6 +45,7 @@ export function FundingCallFormSection({
   disabled: boolean;
 }) {
   const form = useFormContext<LocalFormInput>();
+  const attachmentsLocked = Boolean(call?.attachmentsLockedAt);
   const eligibilityVersions = useBindableEligibilityRuleSetVersions();
   const formVersions = useBindableApplicationFormVersions();
   const workflowVersions = useBindableWorkflowTemplateVersions();
@@ -62,18 +78,24 @@ export function FundingCallFormSection({
   if (currentStep === "application") {
     return (
       <ApplicationStep
+        attachmentsLocked={attachmentsLocked}
         disabled={disabled}
         loading={formVersions.isPending}
-        options={(formVersions.data ?? []).map((version) => ({
-          label: `${version.formName} — version ${version.versionNumber} · ${version.status ?? "PUBLISHED"}`,
-          value: version.versionId,
-        }))}
+        options={attachedVersionOptions(
+          (formVersions.data ?? []).map((version) => ({
+            label: `${version.formName} — version ${version.versionNumber} · ${version.status ?? "PUBLISHED"}`,
+            value: version.versionId,
+          })),
+          formVersionId,
+          attachmentsLocked,
+        )}
       />
     );
   }
   if (currentStep === "eligibility") {
     return (
       <EligibilityStep
+        attachmentsLocked={attachmentsLocked}
         configureHref={
           call &&
           selectedEligibility &&
@@ -83,22 +105,31 @@ export function FundingCallFormSection({
         }
         disabled={disabled}
         loading={eligibilityVersions.isPending}
-        options={(eligibilityVersions.data ?? []).map((version) => ({
-          label: `${version.ruleSetName} — version ${version.versionNumber} · ${version.status}`,
-          value: version.versionId,
-        }))}
+        options={attachedVersionOptions(
+          (eligibilityVersions.data ?? []).map((version) => ({
+            label: `${version.ruleSetName} — version ${version.versionNumber} · ${version.status}`,
+            value: version.versionId,
+          })),
+          eligibilityVersionId,
+          attachmentsLocked,
+        )}
       />
     );
   }
   if (currentStep === "workflow") {
     return (
       <WorkflowStep
+        attachmentsLocked={attachmentsLocked}
         disabled={disabled}
         loading={workflowVersions.isPending}
-        options={(workflowVersions.data ?? []).map((version) => ({
-          label: `${version.name} — version ${version.versionNumber} · ${version.status}`,
-          value: version.versionId,
-        }))}
+        options={attachedVersionOptions(
+          (workflowVersions.data ?? []).map((version) => ({
+            label: `${version.name} — version ${version.versionNumber} · ${version.status}`,
+            value: version.versionId,
+          })),
+          workflowVersionId,
+          attachmentsLocked,
+        )}
       />
     );
   }
@@ -108,22 +139,22 @@ export function FundingCallFormSection({
   return (
     <FundingCallReviewStep
       eligibility={{
-        id: selectedEligibility?.versionId ?? null,
+        id: selectedEligibility?.versionId ?? eligibilityVersionId ?? null,
         label: selectedEligibility
           ? `${selectedEligibility.ruleSetName} — version ${selectedEligibility.versionNumber} · ${selectedEligibility.status}`
-          : "Not selected",
+          : attachedVersionLabel(eligibilityVersionId, attachmentsLocked),
       }}
       formVersion={{
-        id: selectedForm?.versionId ?? null,
+        id: selectedForm?.versionId ?? formVersionId ?? null,
         label: selectedForm
           ? `${selectedForm.formName} — version ${selectedForm.versionNumber} · ${selectedForm.status ?? "PUBLISHED"}`
-          : "Not selected",
+          : attachedVersionLabel(formVersionId, attachmentsLocked),
       }}
       workflow={{
-        id: selectedWorkflow?.versionId ?? null,
+        id: selectedWorkflow?.versionId ?? workflowVersionId ?? null,
         label: selectedWorkflow
           ? `${selectedWorkflow.name} — version ${selectedWorkflow.versionNumber} · ${selectedWorkflow.status}`
-          : "Not selected",
+          : attachedVersionLabel(workflowVersionId, attachmentsLocked),
       }}
     />
   );

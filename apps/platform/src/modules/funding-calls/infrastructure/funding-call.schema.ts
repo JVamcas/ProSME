@@ -73,6 +73,9 @@ export const fundingCalls = pgTable(
     suspendedFromStatus: text("suspended_from_status").$type<
       "SCHEDULED" | "LIVE"
     >(),
+    attachmentsLockedAt: timestamp("attachments_locked_at", {
+      withTimezone: true,
+    }),
     publicContactName: text("public_contact_name"),
     publicContactEmail: text("public_contact_email"),
     publicContactPhone: text("public_contact_phone"),
@@ -205,6 +208,8 @@ export const fundingCallLifecycleHistory = pgTable(
         'RESUME',
         'CLOSE',
         'WITHDRAW',
+        'WITHDRAW_FOR_AMENDMENT',
+        'WITHDRAW_APPROVAL_REQUEST',
         'ARCHIVE'
       )`,
     ),

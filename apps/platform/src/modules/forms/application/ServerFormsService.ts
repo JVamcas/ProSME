@@ -120,8 +120,8 @@ function versionView(version: {
   };
 }
 
-async function editorView(definitionId: string) {
-  const editor = await getFormEditor(definitionId);
+async function editorView(definitionId: string, versionId?: string) {
+  const editor = await getFormEditor(definitionId, versionId);
   if (!editor) throw new ResourceNotFoundError("form");
   return {
     allowedActions: allowedActions(editor.version.status),
@@ -171,9 +171,13 @@ export async function getPublishedFormPreview(
   return runtime;
 }
 
-export async function getForm(user: AuthenticatedUser | null, definitionId: string) {
+export async function getForm(
+  user: AuthenticatedUser | null,
+  definitionId: string,
+  versionId?: string,
+) {
   requirePermission(user, permissionCodes.workflowFormRead);
-  return editorView(definitionId);
+  return editorView(definitionId, versionId);
 }
 
 export async function createNewForm(

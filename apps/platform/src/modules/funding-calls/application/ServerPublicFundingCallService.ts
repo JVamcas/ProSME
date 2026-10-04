@@ -15,7 +15,7 @@ import {
   readPublicFundingCallById,
   readPublicFundingCalls,
   type PublicFundingCallRecord,
-} from "../infrastructure/FundingCallRepository";
+} from "../infrastructure/PublicFundingCallRepository";
 
 const cursorSchema = z.object({
   id: z.uuid(),

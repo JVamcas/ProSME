@@ -55,7 +55,7 @@ export function SelectedFundingCallApplication({
       });
       router.push(`/portal/applications/${application.id}/edit`);
     } catch {
-      // The mutation exposes the error below so the applicant can retry.
+      // The creation hook shows the error toast; keep the selection for retry.
     }
   }
 
@@ -70,19 +70,12 @@ export function SelectedFundingCallApplication({
         onSubmit={startApplication}
       >
         {(businessId) => (
-          <>
-            <GeneralButton
-              disabled={creation.isPending || !businessId}
-              type="submit"
-            >
-              {creation.isPending ? "Starting…" : "Start application"}
-            </GeneralButton>
-            {creation.isError ? (
-              <p className="text-sm font-semibold text-brand-navy" role="alert">
-                {creation.error.message}
-              </p>
-            ) : null}
-          </>
+          <GeneralButton
+            disabled={creation.isPending || !businessId}
+            type="submit"
+          >
+            {creation.isPending ? "Starting…" : "Start application"}
+          </GeneralButton>
         )}
       </ApplicationBusinessSelection>
     </section>

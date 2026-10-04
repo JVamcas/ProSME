@@ -35,6 +35,7 @@ import { permissionCodes } from "@/auth/authorization/permissions";
 import { PermissionDeniedError } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import { updateFundingCall } from "@/modules/funding-calls/application/ServerFundingCallService";
+import { formVersionIsBindable } from "@/modules/forms/infrastructure/FormRepository";
 import {
   readFundingCallById,
   updateDraftFundingCall,
@@ -97,11 +98,55 @@ function user(grants: string[]): AuthenticatedUser {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(formVersionIsBindable).mockReset().mockResolvedValue(true);
   vi.mocked(readFundingCallById).mockResolvedValue(stored);
 });
 
 describe("ServerFundingCallService draft updates", () => {
-  it("denies draft edits without the canonical create permission", async () => {
+  it.each([
+    "formVersionId",
+    "eligibilityRuleSetVersionId",
+    "workflowTemplateVersionId",
+  ] as const)("rejects changing locked %s", async (field) => {
+    vi.mocked(readFundingCallById).mockResolvedValue({
+      ...stored,
+      attachmentsLockedAt: new Date(),
+    });
+    await expect(updateFundingCall(
+      user([permissionCodes.fundingCallEditDraft]),
+      callId,
+      { ...input, [field]: null },
+    )).rejects.toThrow("applications have already been created");
+    expect(updateDraftFundingCall).not.toHaveBeenCalled();
+  });
+
+  it("allows metadata amendments while the exact attachments stay locked", async () => {
+    vi.mocked(formVersionIsBindable).mockResolvedValueOnce(false);
+    const locked = { ...stored, attachmentsLockedAt: new Date() };
+    vi.mocked(readFundingCallById).mockResolvedValue(locked);
+    vi.mocked(updateDraftFundingCall).mockResolvedValue({
+      ...locked,
+      title: "Amended funding call",
+      rowVersion: 2,
+    });
+    await expect(updateFundingCall(
+      user([permissionCodes.fundingCallEditDraft]),
+      callId,
+      { ...input, title: "Amended funding call" },
+    )).resolves.toMatchObject({ title: "Amended funding call", rowVersion: 2 });
+    expect(formVersionIsBindable).not.toHaveBeenCalled();
+  });
+
+  it("rejects stale drafts before checking attachments or writing", async () => {
+    await expect(updateFundingCall(
+      user([permissionCodes.fundingCallEditDraft]),
+      callId,
+      { ...input, expectedRowVersion: 2 },
+    )).rejects.toThrow("changed");
+    expect(updateDraftFundingCall).not.toHaveBeenCalled();
+  });
+
+  it("denies draft edits without the explicit edit permission", async () => {
     await expect(updateFundingCall(
       user([permissionCodes.fundingCallRead]),
       callId,
@@ -110,7 +155,7 @@ describe("ServerFundingCallService draft updates", () => {
     expect(updateDraftFundingCall).not.toHaveBeenCalled();
   });
 
-  it("uses the create permission to edit a draft", async () => {
+  it("uses the explicit edit permission to edit a draft", async () => {
     vi.mocked(updateDraftFundingCall).mockResolvedValue({
       ...stored,
       rowVersion: 2,

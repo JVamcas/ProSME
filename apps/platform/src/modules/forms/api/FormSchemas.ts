@@ -11,6 +11,10 @@ import {
 } from "@/modules/forms/FormTypes";
 import { repeatableGroupConfigurationSchema } from "./RepeatableGroupSchemas";
 
+export const formEditorVersionQuerySchema = z.object({
+  versionId: z.uuid().optional(),
+});
+
 const code = z
   .string()
   .trim()

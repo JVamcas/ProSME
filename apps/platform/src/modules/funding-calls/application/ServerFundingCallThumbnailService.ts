@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { requirePermission } from "@/auth/authorization/policy";
+import { readPublicFundingCallById } from "../infrastructure/PublicFundingCallRepository";
 import type { AuthenticatedUser } from "@/auth/types";
 import type { DocumentStorage } from "@/integrations/storage/DocumentStorage";
 import {
@@ -18,7 +19,6 @@ import {
 import type { FundingCallView } from "../api/FundingCallTransport";
 import {
   readFundingCallById,
-  readPublicFundingCallById,
 } from "../infrastructure/FundingCallRepository";
 import { updateFundingCallThumbnailRecord } from "../infrastructure/FundingCallThumbnailRepository";
 import { toFundingCallView } from "./FundingCallViewMapper";

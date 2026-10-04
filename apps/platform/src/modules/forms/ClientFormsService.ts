@@ -50,8 +50,9 @@ function create(input: CreateFormInput) {
   });
 }
 
-function get(id: string) {
-  return requestData<FormEditorView>(`/api/admin/forms/${id}`, {
+function get(id: string, versionId?: string) {
+  const query = versionId ? `?${new URLSearchParams({ versionId })}` : "";
+  return requestData<FormEditorView>(`/api/admin/forms/${id}${query}`, {
     cache: "no-store",
   });
 }

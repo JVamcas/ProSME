@@ -5,6 +5,7 @@ export function toFundingCallView(call: FundingCall): FundingCallView {
   const { thumbnailObjectKey, ...visibleCall } = call;
   return {
     ...visibleCall,
+    attachmentsLockedAt: call.attachmentsLockedAt?.toISOString() ?? null,
     closesAt: call.closesAt.toISOString(),
     createdAt: call.createdAt.toISOString(),
     opensAt: call.opensAt.toISOString(),
