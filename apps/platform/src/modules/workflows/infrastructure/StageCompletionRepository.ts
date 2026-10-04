@@ -1,3 +1,4 @@
+import type { StageCompletionSubmission } from "../engine/StageCompletionContext";
 import "server-only";
 import { lockWorkflowRuntimeForStage } from "./WorkflowRuntimeLock";
 import { workflowStageHasActiveHold } from "./WorkflowHoldQueries";
@@ -52,10 +53,7 @@ export type StageCompletionTarget = {
   workflowVersionId: string;
 };
 
-export type StageCompletionValueRow = {
-  responseValues: Record<string, unknown> | null;
-  taskResult: Record<string, unknown> | null;
-};
+export type StageCompletionValueRow = StageCompletionSubmission;
 
 async function readCompletionTargets(
   transaction: Pick<StageCompletionTransaction, "select">,

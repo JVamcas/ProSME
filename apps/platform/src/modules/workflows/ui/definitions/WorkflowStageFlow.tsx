@@ -1,5 +1,7 @@
 "use client";
 
+import { isSameWorkflowTaskRequirement } from "../../domain/definitions/WorkflowTaskRequirementIdentity";
+
 import type {
   WorkflowGraphInput,
   WorkflowStageInput,
@@ -75,13 +77,9 @@ export function WorkflowStageFlow(props: WorkflowStageFlowProps) {
         stage.stableKey === selectedStage.stableKey
           ? {
               ...stage,
-              checklistItems: [...stage.checklistItems]
-                .filter((item) => item.key !== checklistItem.key)
-                .sort((left, right) => left.displayOrder - right.displayOrder)
-                .map((item, index) => ({
-                  ...item,
-                  displayOrder: index + 1,
-                })),
+              checklistItems: stage.checklistItems.filter(
+                (item) => !isSameWorkflowTaskRequirement(item, checklistItem),
+              ),
             }
           : stage,
       ),
@@ -100,7 +98,7 @@ export function WorkflowStageFlow(props: WorkflowStageFlowProps) {
           ? {
               ...stage,
               documentRequirements: stage.documentRequirements.filter(
-                (item) => item.name !== requirement.name,
+                (item) => !isSameWorkflowTaskRequirement(item, requirement),
               ),
             }
           : stage,
@@ -125,11 +123,16 @@ export function WorkflowStageFlow(props: WorkflowStageFlowProps) {
   );
 }
 
-export type WorkflowStageFlowViewModel =
-  ReturnType<typeof useWorkflowStageFlowController> & {
-    openStageDelete: (stage: WorkflowStageInput) => void;
-    deleteStage: (graph: WorkflowGraphInput) => Promise<void>;
-    deleteTask: (task: WorkflowTaskInput) => Promise<void>;
-    deleteChecklistItem: (item: WorkflowStageChecklistDefinition) => Promise<void>;
-    deleteDocumentRequirement: (requirement: WorkflowStageDocumentRequirement) => Promise<void>;
-  };
+export type WorkflowStageFlowViewModel = ReturnType<
+  typeof useWorkflowStageFlowController
+> & {
+  openStageDelete: (stage: WorkflowStageInput) => void;
+  deleteStage: (graph: WorkflowGraphInput) => Promise<void>;
+  deleteTask: (task: WorkflowTaskInput) => Promise<void>;
+  deleteChecklistItem: (
+    item: WorkflowStageChecklistDefinition,
+  ) => Promise<void>;
+  deleteDocumentRequirement: (
+    requirement: WorkflowStageDocumentRequirement,
+  ) => Promise<void>;
+};

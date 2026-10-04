@@ -4,6 +4,7 @@ import {
   boolean,
   check,
   doublePrecision,
+  foreignKey,
   index,
   integer,
   jsonb,
@@ -53,11 +54,11 @@ export const workflowStageChecklistDefinitions = pgTable(
   (table) => [
     check("app_stage_checklists_key_nonempty_check", sql`${table.key} <> ''`),
     uniqueIndex("app_stage_checklists_stage_key_unique").on(
-      table.stageId,
+      table.taskDefinitionId,
       table.key,
     ),
     uniqueIndex("app_stage_checklists_stage_order_unique").on(
-      table.stageId,
+      table.taskDefinitionId,
       table.displayOrder,
     ),
     index("app_stage_checklists_task_idx").on(table.taskDefinitionId),
@@ -83,8 +84,14 @@ export const workflowStageCommentFields = pgTable(
   },
   (table) => [
     check("app_stage_comments_key_nonempty_check", sql`${table.key} <> ''`),
-    uniqueIndex("app_stage_comments_stage_key_unique").on(table.stageId, table.key),
-    uniqueIndex("app_stage_comments_stage_order_unique").on(table.stageId, table.displayOrder),
+    uniqueIndex("app_stage_comments_stage_key_unique").on(
+      table.taskDefinitionId,
+      table.key,
+    ),
+    uniqueIndex("app_stage_comments_stage_order_unique").on(
+      table.taskDefinitionId,
+      table.displayOrder,
+    ),
     index("app_stage_comments_task_idx").on(table.taskDefinitionId),
   ],
 );
@@ -111,9 +118,7 @@ export const workflowStageDocumentRequirements = pgTable(
       .notNull()
       .default(false),
     uploader: text("uploader").$type<WorkflowDocumentActor>().notNull(),
-    verifier: text("verifier")
-      .$type<WorkflowDocumentVerifierActor>()
-      .notNull(),
+    verifier: text("verifier").$type<WorkflowDocumentVerifierActor>().notNull(),
     templateReference: text("template_reference").notNull().default(""),
   },
   (table) => [
@@ -122,11 +127,11 @@ export const workflowStageDocumentRequirements = pgTable(
       sql`${table.stableKey} ~ '^[A-Z][A-Z0-9_]{1,79}$'`,
     ),
     uniqueIndex("app_stage_documents_stage_key_unique").on(
-      table.stageId,
+      table.taskDefinitionId,
       table.stableKey,
     ),
     uniqueIndex("app_stage_documents_stage_name_unique").on(
-      table.stageId,
+      table.taskDefinitionId,
       table.name,
     ),
     index("app_stage_documents_stage_idx").on(table.stageId),
@@ -138,17 +143,21 @@ export const workflowStageScoringConfigurations = pgTable(
   "app_workflow_stage_scoring_configurations",
   {
     stageId: uuid("stage_id")
-      .primaryKey()
+      .notNull()
       .references(() => workflowStageDefinitions.id, { onDelete: "restrict" }),
     aggregation: text("aggregation")
       .$type<WorkflowScoringAggregation>()
       .notNull(),
     taskDefinitionId: uuid("task_definition_id")
-      .notNull()
+      .primaryKey()
       .references(() => stageTaskDefinitions.id, { onDelete: "restrict" }),
   },
   (table) => [
     index("app_stage_scoring_task_idx").on(table.taskDefinitionId),
+    uniqueIndex("app_stage_scoring_configuration_stage_task_unique").on(
+      table.stageId,
+      table.taskDefinitionId,
+    ),
   ],
 );
 
@@ -156,11 +165,8 @@ export const workflowStageScoringCriteria = pgTable(
   "app_workflow_stage_scoring_criteria",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    stageId: uuid("stage_id")
-      .notNull()
-      .references(() => workflowStageScoringConfigurations.stageId, {
-        onDelete: "restrict",
-      }),
+    stageId: uuid("stage_id").notNull(),
+    taskDefinitionId: uuid("task_definition_id").notNull(),
     stableKey: text("stable_key").notNull(),
     criterion: text("criterion").notNull(),
     description: text("description").notNull().default(""),
@@ -172,16 +178,24 @@ export const workflowStageScoringCriteria = pgTable(
     mandatoryComment: boolean("mandatory_comment").notNull().default(false),
   },
   (table) => [
+    foreignKey({
+      name: "app_stage_scoring_criterion_configuration_fk",
+      columns: [table.stageId, table.taskDefinitionId],
+      foreignColumns: [
+        workflowStageScoringConfigurations.stageId,
+        workflowStageScoringConfigurations.taskDefinitionId,
+      ],
+    }).onDelete("restrict"),
     check(
       "app_stage_scoring_criteria_stable_key_check",
       sql`${table.stableKey} ~ '^[A-Z][A-Z0-9_]{1,79}$'`,
     ),
     uniqueIndex("app_stage_scoring_criteria_key_unique").on(
-      table.stageId,
+      table.taskDefinitionId,
       table.stableKey,
     ),
     uniqueIndex("app_stage_scoring_criteria_name_unique").on(
-      table.stageId,
+      table.taskDefinitionId,
       table.criterion,
     ),
     index("app_stage_scoring_criteria_stage_idx").on(table.stageId),

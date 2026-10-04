@@ -1,4 +1,8 @@
 import { z } from "zod";
+import {
+  workflowRfiDeadlineOverrideSchema,
+  resolveWorkflowRfiDeadline,
+} from "./WorkflowRequestInformationDeadline";
 import { workflowHoldScopes } from "../runtime/WorkflowHold";
 
 import { richTextToPlainText } from "@/shared/utils/RichText";
@@ -36,6 +40,7 @@ export const workflowActionInputSchema = z
       .object({
         ...commonInput,
         actionType: z.literal("REQUEST_INFORMATION"),
+        deadlineOverrides: workflowRfiDeadlineOverrideSchema.optional(),
         editableFieldPaths: z
           .array(fieldKeySchema)
           .max(100)
@@ -267,7 +272,11 @@ export function validateActionInputAgainstConfiguration(
     case "REQUEST_INFORMATION":
       if (input.actionType !== "REQUEST_INFORMATION") return null;
       // The repository validates selected fields against the application’s form.
-      return null;
+      const deadline = resolveWorkflowRfiDeadline(
+        action.configuration,
+        input.deadlineOverrides,
+      );
+      return deadline.success ? null : deadline.issues[0].message;
     case "ESCALATE":
       return null;
     case "PUT_ON_HOLD":

@@ -117,7 +117,7 @@ export const workflowStageScoringSchema = z
       context.addIssue({
         code: "custom",
         message:
-          "Scoring criterion stable keys must be unique within the stage.",
+          "Scoring criterion stable keys must be unique within the task.",
         path: ["criteria"],
       });
     }
@@ -127,7 +127,7 @@ export const workflowStageScoringSchema = z
     if (new Set(criterionNames).size !== criterionNames.length) {
       context.addIssue({
         code: "custom",
-        message: "Scoring criteria must be unique within the stage.",
+        message: "Scoring criteria must be unique within the task.",
         path: ["criteria"],
       });
     }
@@ -160,7 +160,7 @@ export const workflowStageSchema = z
     documentRequirements: z
       .array(workflowStageDocumentRequirementSchema)
       .max(100),
-    scoring: workflowStageScoringSchema.nullable(),
+    scoring: z.array(workflowStageScoringSchema).max(100).nullable(),
     initial: z.boolean(),
     slaHours: z.number().int().positive().max(8760).nullable().optional(),
     actions: z.array(workflowActionDefinitionSchema),
@@ -181,21 +181,23 @@ export const workflowStageSchema = z
         path: ["coiFormVersionId"],
       });
     }
-    const checklistKeys = stage.checklistItems.map((item) => item.key);
+    const checklistKeys = stage.checklistItems.map(
+      (item) => `${item.taskStableKey}:${item.key}`,
+    );
     if (new Set(checklistKeys).size !== checklistKeys.length) {
       context.addIssue({
         code: "custom",
-        message: "Checklist keys must be unique within the stage.",
+        message: "Checklist keys must be unique within the task.",
         path: ["checklistItems"],
       });
     }
     const checklistOrders = stage.checklistItems.map(
-      (item) => item.displayOrder,
+      (item) => `${item.taskStableKey}:${item.displayOrder}`,
     );
     if (new Set(checklistOrders).size !== checklistOrders.length) {
       context.addIssue({
         code: "custom",
-        message: "Checklist display orders must be unique within the stage.",
+        message: "Checklist display orders must be unique within the task.",
         path: ["checklistItems"],
       });
     }
@@ -227,12 +229,12 @@ export const workflowStageSchema = z
     });
     for (const property of ["key", "displayOrder"] as const) {
       const values = (stage.commentFields ?? []).map(
-        (field) => field[property],
+        (field) => `${field.taskStableKey}:${field[property]}`,
       );
       if (new Set(values).size !== values.length) {
         context.addIssue({
           code: "custom",
-          message: `Comment field ${property} must be unique within the stage.`,
+          message: `Comment field ${property} must be unique within the task.`,
           path: ["commentFields"],
         });
       }
@@ -246,13 +248,24 @@ export const workflowStageSchema = z
         });
       }
     });
-    if (stage.scoring && !taskKeys.has(stage.scoring.taskStableKey)) {
-      context.addIssue({
-        code: "custom",
-        message: "Scoring must reference a task in the same stage.",
-        path: ["scoring", "taskStableKey"],
-      });
-    }
+    const scoringTasks = new Set<string>();
+    (stage.scoring ?? []).forEach((scoring, index) => {
+      if (!taskKeys.has(scoring.taskStableKey)) {
+        context.addIssue({
+          code: "custom",
+          message: "Scoring must reference a task in the same stage.",
+          path: ["scoring", index, "taskStableKey"],
+        });
+      }
+      if (scoringTasks.has(scoring.taskStableKey)) {
+        context.addIssue({
+          code: "custom",
+          message: "Only one scoring configuration is allowed per task.",
+          path: ["scoring", index, "taskStableKey"],
+        });
+      }
+      scoringTasks.add(scoring.taskStableKey);
+    });
     stage.documentRequirements.forEach((requirement, index) => {
       if (!taskKeys.has(requirement.taskStableKey)) {
         context.addIssue({
@@ -263,24 +276,25 @@ export const workflowStageSchema = z
         });
       }
     });
-    const documentNames = stage.documentRequirements.map((requirement) =>
-      requirement.name.toLowerCase(),
+    const documentNames = stage.documentRequirements.map(
+      (requirement) =>
+        `${requirement.taskStableKey}:${requirement.name.toLowerCase()}`,
     );
     const documentKeys = stage.documentRequirements.map(
-      (requirement) => requirement.stableKey,
+      (requirement) => `${requirement.taskStableKey}:${requirement.stableKey}`,
     );
     if (new Set(documentKeys).size !== documentKeys.length) {
       context.addIssue({
         code: "custom",
         message:
-          "Document requirement stable keys must be unique within the stage.",
+          "Document requirement stable keys must be unique within the task.",
         path: ["documentRequirements"],
       });
     }
     if (new Set(documentNames).size !== documentNames.length) {
       context.addIssue({
         code: "custom",
-        message: "Document requirement names must be unique within the stage.",
+        message: "Document requirement names must be unique within the task.",
         path: ["documentRequirements"],
       });
     }

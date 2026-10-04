@@ -47,32 +47,34 @@ describe("workflow stage document requirements", () => {
   it("requires one enabled task-bound RFI action for automatic requests", () => {
     const stage = stageWithDocumentRequirements();
     stage.documentRequirements[0].requestOnStageActivation = true;
-    expect(validateWorkflowStage(
-      workflowStageSchema.parse(stage),
-      0,
-    ).map((item) => item.code)).toContain(
-      "AUTO_RFI_ACTION_REQUIRED",
-    );
+    expect(
+      validateWorkflowStage(workflowStageSchema.parse(stage), 0).map(
+        (item) => item.code,
+      ),
+    ).toContain("AUTO_RFI_ACTION_REQUIRED");
 
-    const action = requestInformation("REQUEST_DOCUMENTS", "Request documents", 1);
+    const action = requestInformation(
+      "REQUEST_DOCUMENTS",
+      "Request documents",
+      1,
+    );
     stage.actions.push(action);
     stage.tasks[0].actionKeys.push(action.stableKey);
-    expect(validateWorkflowStage(
-      workflowStageSchema.parse(stage),
-      0,
-    ).map((item) => item.code)).not
-      .toContain("AUTO_RFI_ACTION_REQUIRED");
+    expect(
+      validateWorkflowStage(workflowStageSchema.parse(stage), 0).map(
+        (item) => item.code,
+      ),
+    ).not.toContain("AUTO_RFI_ACTION_REQUIRED");
   });
 
   it("rejects automatic requests for staff-owned documents", () => {
     const stage = stageWithDocumentRequirements();
     stage.documentRequirements[1].requestOnStageActivation = true;
-    expect(validateWorkflowStage(
-      workflowStageSchema.parse(stage),
-      0,
-    ).map((item) => item.code)).toContain(
-      "AUTO_RFI_APPLICANT_OWNER_REQUIRED",
-    );
+    expect(
+      validateWorkflowStage(workflowStageSchema.parse(stage), 0).map(
+        (item) => item.code,
+      ),
+    ).toContain("AUTO_RFI_APPLICANT_OWNER_REQUIRED");
   });
 
   it("keeps an empty optional expiry blank and validates entered days", () => {
@@ -80,17 +82,21 @@ describe("workflow stage document requirements", () => {
 
     for (const value of [null, undefined, ""]) {
       expect(parseOptionalExpiryDays(value)).toBeNull();
-      expect(workflowStageDocumentRequirementFormSchema.safeParse({
-        ...requirement,
-        expiryDays: parseOptionalExpiryDays(value),
-      }).success).toBe(true);
+      expect(
+        workflowStageDocumentRequirementFormSchema.safeParse({
+          ...requirement,
+          expiryDays: parseOptionalExpiryDays(value),
+        }).success,
+      ).toBe(true);
     }
 
     expect(parseOptionalExpiryDays("180")).toBe(180);
-    expect(workflowStageDocumentRequirementFormSchema.safeParse({
-      ...requirement,
-      expiryDays: parseOptionalExpiryDays("0"),
-    }).success).toBe(false);
+    expect(
+      workflowStageDocumentRequirementFormSchema.safeParse({
+        ...requirement,
+        expiryDays: parseOptionalExpiryDays("0"),
+      }).success,
+    ).toBe(false);
   });
 
   it("accepts every configured document requirement field", () => {
@@ -117,7 +123,7 @@ describe("workflow stage document requirements", () => {
     expect(result.success).toBe(false);
     if (result.success) return;
     expect(result.error.issues.map((issue) => issue.message)).toContain(
-      "Document requirement names must be unique within the stage.",
+      "Document requirement names must be unique within the task.",
     );
   });
 
@@ -131,7 +137,8 @@ describe("workflow stage document requirements", () => {
     if (result.success) return;
     expect(result.error.issues).toContainEqual(
       expect.objectContaining({
-        message: "Document requirements must reference a task in the same stage.",
+        message:
+          "Document requirements must reference a task in the same stage.",
         path: ["documentRequirements", 0, "taskStableKey"],
       }),
     );

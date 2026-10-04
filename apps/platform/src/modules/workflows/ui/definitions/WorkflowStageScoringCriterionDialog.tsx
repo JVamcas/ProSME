@@ -8,7 +8,7 @@ import { DraggableDialog } from "@/shared/ui/DraggableDialog";
 import { CheckboxField } from "@/components/ui/form-field";
 import { FormInput, FormTextarea } from "@/components/ui/form-fields";
 import { useSaveWorkflowGraph } from "@/modules/workflows/WorkflowHooks";
-import type { WorkflowStageScoringCriterion } from "@/modules/workflows/domain/definitions/WorkflowStageScoringDefinition";
+import type { WorkflowTaskScoringCriterion } from "@/modules/workflows/domain/definitions/WorkflowStageScoringDefinition";
 import type {
   WorkflowEditorView,
   WorkflowStageInput,
@@ -19,10 +19,11 @@ import {
 } from "./WorkflowStageScoringFormSchema";
 
 type Props = {
-  criterion?: WorkflowStageScoringCriterion;
+  criterion?: WorkflowTaskScoringCriterion;
   editor: WorkflowEditorView;
   onClose: () => void;
   stage: WorkflowStageInput;
+  taskStableKey: string;
 };
 
 export function WorkflowStageScoringCriterionDialog({
@@ -30,9 +31,13 @@ export function WorkflowStageScoringCriterionDialog({
   editor,
   onClose,
   stage,
+  taskStableKey,
 }: Props) {
   const mutation = useSaveWorkflowGraph(editor);
-  const criteria = stage.scoring?.criteria ?? [];
+  const scoring = stage.scoring?.find(
+    (configuration) => configuration.taskStableKey === taskStableKey,
+  );
+  const criteria = scoring?.criteria ?? [];
   const form = useForm<WorkflowStageScoringCriterionFormValues>({
     defaultValues: {
       stableKey: criterion?.stableKey ?? "",
@@ -48,23 +53,24 @@ export function WorkflowStageScoringCriterionDialog({
 
   const submit = form.handleSubmit(async (values) => {
     const duplicateKey = criteria.some(
-      (item) => item.stableKey === values.stableKey
-        && item.stableKey !== criterion?.stableKey,
+      (item) =>
+        item.stableKey === values.stableKey &&
+        item.stableKey !== criterion?.stableKey,
     );
     if (duplicateKey) {
       form.setError("stableKey", {
-        message: "Stable key must be unique in this stage.",
+        message: "Stable key must be unique in this task.",
       });
       return;
     }
     const duplicateName = criteria.some(
       (item) =>
-        item.criterion.toLowerCase() === values.criterion.toLowerCase()
-        && item.criterion !== criterion?.criterion,
+        item.criterion.toLowerCase() === values.criterion.toLowerCase() &&
+        item.criterion !== criterion?.criterion,
     );
     if (duplicateName) {
       form.setError("criterion", {
-        message: "Criterion must be unique in this stage.",
+        message: "Criterion must be unique in this task.",
       });
       return;
     }
@@ -73,25 +79,31 @@ export function WorkflowStageScoringCriterionDialog({
       ...values,
     };
     await mutation.mutateAsync({
-      stages: editor.graph.stages.map((item) =>
-        item.stableKey === stage.stableKey
-          ? {
-              ...item,
-              scoring: {
-                aggregation: item.scoring?.aggregation ?? "WEIGHTED_AVERAGE",
-                criteria: criterion
-                  ? criteria.map((current) =>
-                      current.criterion === criterion.criterion
-                        ? nextCriterion
-                        : current,
-                    )
-                  : [...criteria, nextCriterion],
-                taskStableKey:
-                  item.scoring?.taskStableKey ?? item.tasks[0]?.stableKey ?? "",
-              },
-            }
-          : item,
-      ),
+      stages: editor.graph.stages.map((item) => {
+        if (item.stableKey !== stage.stableKey) return item;
+        const configurations = item.scoring ?? [];
+        const nextScoring = {
+          aggregation: scoring?.aggregation ?? ("WEIGHTED_AVERAGE" as const),
+          criteria: criterion
+            ? criteria.map((current) =>
+                current.stableKey === criterion.stableKey
+                  ? nextCriterion
+                  : current,
+              )
+            : [...criteria, nextCriterion],
+          taskStableKey,
+        };
+        return {
+          ...item,
+          scoring: scoring
+            ? configurations.map((configuration) =>
+                configuration.taskStableKey === taskStableKey
+                  ? nextScoring
+                  : configuration,
+              )
+            : [...configurations, nextScoring],
+        };
+      }),
       transitions: editor.graph.transitions,
     });
     onClose();

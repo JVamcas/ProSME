@@ -43,5 +43,5 @@ export type WorkflowStageDefinition = {
   checklistItems: WorkflowStageChecklistDefinition[];
   commentFields?: WorkflowStageCommentField[];
   documentRequirements: WorkflowStageDocumentRequirement[];
-  scoring: WorkflowStageScoringDefinition | null;
+  scoring: WorkflowStageScoringDefinition[] | null;
 };

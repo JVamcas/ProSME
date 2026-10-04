@@ -213,6 +213,10 @@ export const workflowTasks = pgTable(
       table.assignedUserId,
     ).where(sql`${table.assignedUserId} IS NOT NULL
       AND ${table.status} <> 'CANCELLED'`),
+    index("app_workflow_tasks_scope_idx").on(
+      table.stageInstanceId,
+      table.workflowTaskDefinitionId,
+    ),
     index("app_workflow_tasks_assignment_idx").on(
       table.status,
       table.assignedRoleId,

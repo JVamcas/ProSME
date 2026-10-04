@@ -1,10 +1,8 @@
 "use client";
 
+import { WorkflowRfiDeadlineFields } from "../rfi/WorkflowRfiDeadlineFields";
 import { CheckboxField } from "@/components/ui/form-field";
-import {
-  FormInput,
-  FormSelect,
-} from "@/components/ui/form-fields";
+import { FormInput, FormSelect } from "@/components/ui/form-fields";
 import type { WorkflowActionType } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
 import type { WorkflowAssignmentOptions } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 
@@ -14,35 +12,6 @@ type Props = {
   deferTargetType: "DATE" | "FUNDING_CALL";
   escalationTargetType: "ROLE" | "USER";
 };
-
-function RequestInformationFields() {
-  return (
-    <>
-      <FormInput
-        label="Response deadline (days)"
-        max={365}
-        min={1}
-        name="deadlineDays"
-        registrationOptions={{ valueAsNumber: true }}
-        required
-        type="number"
-      />
-      <FormSelect
-        items={[{ label: "Close request", value: "CLOSE_REQUEST" }]}
-        label="On expiry"
-        name="expiryAction"
-        required
-      />
-      <FormInput
-        containerClassName="sm:col-span-2"
-        infoTooltip="Comma-separated days after the request. Every reminder must occur before the response deadline."
-        label="Reminder day offsets"
-        name="reminderDayOffsets"
-        placeholder="3, 7"
-      />
-    </>
-  );
-}
 
 function EscalationFields({
   assignmentOptions,
@@ -116,7 +85,7 @@ function ActionConfigurationFields({
     case "REJECT":
       return null;
     case "REQUEST_INFORMATION":
-      return <RequestInformationFields />;
+      return <WorkflowRfiDeadlineFields configureOverrides />;
     case "RETURN":
       return (
         <>

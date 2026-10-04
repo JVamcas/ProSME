@@ -1,5 +1,7 @@
 "use client";
 
+import { isSameWorkflowTaskRequirement } from "../../domain/definitions/WorkflowTaskRequirementIdentity";
+
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FormProvider, useForm } from "react-hook-form";
 
@@ -55,22 +57,26 @@ export function WorkflowStageChecklistDialog({
 
   const submit = form.handleSubmit(async (values) => {
     const duplicateKey = checklistItems.some(
-      (item) => item.key === values.key && item.key !== checklistItem?.key,
+      (item) =>
+        item.taskStableKey === values.taskStableKey &&
+        item.key === values.key &&
+        !isSameWorkflowTaskRequirement(item, checklistItem),
     );
     if (duplicateKey) {
       form.setError("key", {
-        message: "Checklist key must be unique in this stage.",
+        message: "Checklist key must be unique in this task.",
       });
       return;
     }
     const duplicateOrder = checklistItems.some(
       (item) =>
+        item.taskStableKey === values.taskStableKey &&
         item.displayOrder === values.displayOrder &&
-        item.key !== checklistItem?.key,
+        !isSameWorkflowTaskRequirement(item, checklistItem),
     );
     if (duplicateOrder) {
       form.setError("displayOrder", {
-        message: "Display order must be unique in this stage.",
+        message: "Display order must be unique in this task.",
       });
       return;
     }
@@ -86,7 +92,9 @@ export function WorkflowStageChecklistDialog({
               ...item,
               checklistItems: checklistItem
                 ? checklistItems.map((current) =>
-                    current.key === checklistItem.key ? nextItem : current,
+                    isSameWorkflowTaskRequirement(current, checklistItem)
+                      ? nextItem
+                      : current,
                   )
                 : [...checklistItems, nextItem],
             }

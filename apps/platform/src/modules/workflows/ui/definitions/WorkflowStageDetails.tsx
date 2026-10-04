@@ -18,7 +18,7 @@ import type { WorkflowStageDocumentRequirement } from "@/modules/workflows/domai
 import { WorkflowStageScoringTable } from "@/modules/workflows/ui/definitions/WorkflowStageScoringTable";
 import type { WorkflowStageCommentField } from "@/modules/workflows/domain/definitions/WorkflowStageCommentField";
 import { WorkflowStageCommentFieldTable } from "@/modules/workflows/ui/definitions/WorkflowStageCommentFieldTable";
-import type { WorkflowStageScoringCriterion } from "@/modules/workflows/domain/definitions/WorkflowStageScoringDefinition";
+import type { WorkflowTaskScoringCriterion } from "@/modules/workflows/domain/definitions/WorkflowStageScoringDefinition";
 import { Badge, type BadgeProps } from "@/shared/ui/Badge";
 
 type Props = {
@@ -31,7 +31,7 @@ type Props = {
   onAddTask: () => void;
   onAddChecklistItem: () => void;
   onAddDocumentRequirement: () => void;
-  onAddScoringCriterion: () => void;
+  onAddScoringCriterion: (taskStableKey: string) => void;
   onAddCommentField: () => void;
   onDelete: () => void;
   onDeleteAction: (action: WorkflowActionDefinition) => void;
@@ -47,12 +47,8 @@ type Props = {
   onEditDocumentRequirement: (
     requirement: WorkflowStageDocumentRequirement,
   ) => void;
-  onDeleteScoringCriterion: (
-    criterion: WorkflowStageScoringCriterion,
-  ) => void;
-  onEditScoringCriterion: (
-    criterion: WorkflowStageScoringCriterion,
-  ) => void;
+  onDeleteScoringCriterion: (criterion: WorkflowTaskScoringCriterion) => void;
+  onEditScoringCriterion: (criterion: WorkflowTaskScoringCriterion) => void;
   onDeleteCommentField: (field: WorkflowStageCommentField) => void;
   onEditCommentField: (field: WorkflowStageCommentField) => void;
   onPreviewTask: (task: WorkflowTaskInput) => void;
@@ -152,6 +148,7 @@ export function WorkflowStageDetails({
       content: (
         <StageTabContent>
           <WorkflowStageScoringTable
+            key={stage.stableKey}
             canEdit={canEdit}
             editor={editor}
             onAdd={onAddScoringCriterion}
@@ -194,12 +191,7 @@ export function WorkflowStageDetails({
       ),
     },
   ] satisfies readonly TabItem<
-    | "tasks"
-    | "checklists"
-    | "documents"
-    | "scoring"
-    | "comments"
-    | "actions"
+    "tasks" | "checklists" | "documents" | "scoring" | "comments" | "actions"
   >[];
 
   return (
@@ -266,15 +258,23 @@ function StageConfiguration({ stage }: { stage: WorkflowStageInput }) {
         </div>
       ) : null}
       <div>
-        <dt className="text-xs font-semibold text-brand-navy/55">Display order</dt>
+        <dt className="text-xs font-semibold text-brand-navy/55">
+          Display order
+        </dt>
         <dd className="text-brand-navy">{stage.displayOrder}</dd>
       </div>
       <div className="sm:col-span-2">
-        <dt className="text-xs font-semibold text-brand-navy/55">Description</dt>
-        <dd className="text-brand-navy">{stage.description || "No description"}</dd>
+        <dt className="text-xs font-semibold text-brand-navy/55">
+          Description
+        </dt>
+        <dd className="text-brand-navy">
+          {stage.description || "No description"}
+        </dd>
       </div>
       <div>
-        <dt className="text-xs font-semibold text-brand-navy/55">Configuration</dt>
+        <dt className="text-xs font-semibold text-brand-navy/55">
+          Configuration
+        </dt>
         <dd className="mt-1.5 flex flex-wrap gap-2">
           {badges.map((badge) => (
             <Badge key={badge.label} variant={badge.variant}>

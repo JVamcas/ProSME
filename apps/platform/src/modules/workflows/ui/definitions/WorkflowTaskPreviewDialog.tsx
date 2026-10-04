@@ -5,9 +5,7 @@ import {
   usePublishedFormRuntime,
   usePublishedForms,
 } from "@/modules/forms/FormHooks";
-import type {
-  PublishedFormOption,
-} from "@/modules/forms/FormTypes";
+import type { PublishedFormOption } from "@/modules/forms/FormTypes";
 import { WorkflowTaskFormPreview } from "./WorkflowTaskFormPreview";
 import type { WorkflowTaskAction } from "@/modules/work-queue/TaskTypes";
 import { WorkflowTaskActions } from "@/modules/workflows/ui/tasks/WorkflowTaskActions";
@@ -21,9 +19,7 @@ import type {
   WorkflowStageInput,
   WorkflowTaskInput,
 } from "@/modules/workflows/domain/definitions/WorkflowTypes";
-import {
-  WorkflowTaskPreviewSummary,
-} from "./WorkflowTaskPreviewSections";
+import { WorkflowTaskPreviewSummary } from "./WorkflowTaskPreviewSections";
 import { WorkflowTaskWorkSections } from "@/modules/workflows/ui/WorkflowTaskWorkSections";
 
 import {
@@ -47,7 +43,7 @@ export function WorkflowTaskPreviewDialog({
   const inheritsEligibilityForm = workflowTaskInheritsEligibilityForm(task);
   const formVersionId = inheritsEligibilityForm
     ? null
-    : task.formBinding?.formVersionId ?? null;
+    : (task.formBinding?.formVersionId ?? null);
   const form = usePublishedFormRuntime(formVersionId);
   const publishedForms = usePublishedForms();
   const actions = workflowTaskPreviewActions(stage, task);
@@ -61,8 +57,11 @@ export function WorkflowTaskPreviewDialog({
     (requirement) => requirement.taskStableKey === task.stableKey,
   );
   const hasDocuments = taskDocuments.length > 0;
-  const hasScoring = stage.scoring?.taskStableKey === task.stableKey
-    && Boolean(stage.scoring.criteria.length);
+  const taskScoring =
+    stage.scoring?.find(
+      (scoring) => scoring.taskStableKey === task.stableKey,
+    ) ?? null;
+  const hasScoring = Boolean(taskScoring?.criteria.length);
   const commentFields = (stage.commentFields ?? [])
     .filter((field) => field.taskStableKey === task.stableKey)
     .sort((left, right) => left.displayOrder - right.displayOrder);
@@ -73,16 +72,15 @@ export function WorkflowTaskPreviewDialog({
     hasDocuments,
     hasScoring,
     commentFields.length > 0,
-  ]
-    .filter(Boolean).length;
-  const showActionsInFinalStep = displayMode === "STEP_PROGRESS"
-    && sectionCount > 0;
+  ].filter(Boolean).length;
+  const showActionsInFinalStep =
+    displayMode === "STEP_PROGRESS" && sectionCount > 0;
   const requiredCount =
-    (form.data?.fields.filter((field) => field.required).length ?? 0)
-    + requiredChecklistCount
-    + taskDocuments.filter((item) => item.mandatory).length
-    + (hasScoring ? stage.scoring?.criteria.length ?? 0 : 0)
-    + commentFields.filter((field) => field.mandatory).length;
+    (form.data?.fields.filter((field) => field.required).length ?? 0) +
+    requiredChecklistCount +
+    taskDocuments.filter((item) => item.mandatory).length +
+    (hasScoring ? (taskScoring?.criteria.length ?? 0) : 0) +
+    commentFields.filter((field) => field.mandatory).length;
   const formName = workflowTaskPreviewFormName(
     publishedForms.data,
     formVersionId ?? undefined,
@@ -140,25 +138,23 @@ export function WorkflowTaskPreviewDialog({
                   ) : (
                     <WorkflowTaskFormPreview form={form} />
                   ),
-                  title: inheritsEligibilityForm && !formVersionId
-                    ? "Eligibility verification"
-                    : formName,
+                  title:
+                    inheritsEligibilityForm && !formVersionId
+                      ? "Eligibility verification"
+                      : formName,
                 }
               : undefined
           }
-          scoring={
-            stage.scoring?.taskStableKey === task.stableKey
-              ? stage.scoring
-              : null
-          }
+          scoring={taskScoring}
           status={{
             checklist: `${requiredChecklistCount} required items`,
             comments: `${commentFields.filter((field) => field.mandatory).length} required fields`,
             documents: `${taskDocuments.filter((item) => item.mandatory).length} required documents`,
-            form: inheritsEligibilityForm && !formVersionId
-              ? "From funding call"
-              : `${form.data?.fields.filter((field) => field.required).length ?? 0} required fields`,
-            scoring: `${hasScoring ? stage.scoring?.criteria.length ?? 0 : 0} criteria`,
+            form:
+              inheritsEligibilityForm && !formVersionId
+                ? "From funding call"
+                : `${form.data?.fields.filter((field) => field.required).length ?? 0} required fields`,
+            scoring: `${hasScoring ? (taskScoring?.criteria.length ?? 0) : 0} criteria`,
           }}
         />
       </WorkflowTaskReviewLayout>
@@ -183,7 +179,9 @@ export function workflowTaskPreviewFormName(
   forms: PublishedFormOption[] | undefined,
   versionId: string | undefined,
 ) {
-  return forms?.find((form) => form.versionId === versionId)?.formName ?? "Form";
+  return (
+    forms?.find((form) => form.versionId === versionId)?.formName ?? "Form"
+  );
 }
 
 export function workflowTaskPreviewActions(
@@ -192,11 +190,7 @@ export function workflowTaskPreviewActions(
 ) {
   const selected = new Set(task.actionKeys);
   return stage.actions
-    .filter(
-      (action) =>
-        action.enabled
-        && selected.has(action.stableKey),
-    )
+    .filter((action) => action.enabled && selected.has(action.stableKey))
     .sort((left, right) => left.displayOrder - right.displayOrder)
     .map((action) => ({
       actionType: action.actionType,

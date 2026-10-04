@@ -1,5 +1,6 @@
 "use client";
 
+import { WorkflowRfiDeadlineFields } from "../rfi/WorkflowRfiDeadlineFields";
 import { useFormContext, useWatch } from "react-hook-form";
 import { CheckboxField } from "@/components/ui/form-field";
 import { FormSelect } from "@/components/ui/form-fields";
@@ -19,6 +20,7 @@ export function WorkflowTaskInformationRequestFields({
   task: TaskDetail;
 }) {
   const form = useFormContext<ActionValues>();
+  const deadline = action.requiredInput.requestInformationDeadline;
   const selectedFields = useWatch({
     control: form.control,
     name: "editableFieldPaths",
@@ -38,6 +40,27 @@ export function WorkflowTaskInformationRequestFields({
   );
   return (
     <>
+      {deadline ? (
+        <section
+          aria-label="Response settings"
+          className="grid gap-4 sm:grid-cols-2"
+        >
+          <p className="text-sm text-muted-foreground sm:col-span-2">
+            Enabled settings can be changed for this request. Other settings use
+            the action defaults.
+          </p>
+          <WorkflowRfiDeadlineFields
+            expiryAction={deadline.expiryAction}
+            runtimeOverrides={
+              deadline.runtimeOverrides ?? {
+                deadlineDays: false,
+                expiryAction: false,
+                reminderDayOffsets: false,
+              }
+            }
+          />
+        </section>
+      ) : null}
       <FormRichTextField
         label="Instructions for applicant"
         name="instructions"

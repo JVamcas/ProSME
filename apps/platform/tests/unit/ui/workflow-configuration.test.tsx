@@ -80,11 +80,13 @@ describe("workflow configuration UI", () => {
       "Define the work and assignment rules for this stage.",
       "Define the checks reviewers must complete during this stage.",
       "Specify the documents required to complete this stage.",
-      "Define the criteria and aggregation method used to score this stage.",
+      "Configure scoring separately for each workflow task.",
       "Define comments and recommendations requested from assigned task reviewers.",
       "Configure the decisions users can make during this stage.",
     ];
-    tabDescriptions.forEach((description) => expect(markup).toContain(description));
+    tabDescriptions.forEach((description) =>
+      expect(markup).toContain(description),
+    );
     expect(markup).toContain("Completeness screening");
     expect(markup).toContain("Advance review");
     expect(markup).toContain("Approve / Advance");

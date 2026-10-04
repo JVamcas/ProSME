@@ -1,6 +1,6 @@
 import { useMemo, type ReactNode } from "react";
 import { ResizableSidebarLayout } from "@/shared/ui/ResizableSidebarLayout";
-import { WorkflowStageDetails } from "@/components/admin/workflows/WorkflowStageDetails";
+import { WorkflowStageDetails } from "@/modules/workflows/ui/definitions/WorkflowStageDetails";
 import { WorkflowStagesHeader } from "@/components/admin/workflows/WorkflowStageFlowParts";
 import { WorkflowFlowToolbar } from "../WorkflowFlowToolbar";
 import { WorkflowStageList } from "@/modules/workflows/ui/definitions/WorkflowStageList";

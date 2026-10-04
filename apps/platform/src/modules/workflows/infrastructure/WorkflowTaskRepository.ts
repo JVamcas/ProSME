@@ -5,7 +5,10 @@ import { sql } from "drizzle-orm";
 import { getDatabase } from "@/db/client";
 import type { TaskDetail } from "@/modules/work-queue/TaskTypes";
 import type { WorkflowElementPermissions } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
-import { workflowTaskHasActiveHold, workflowTaskHoldSummaries } from "./WorkflowHoldQueries";
+import {
+  workflowTaskHasActiveHold,
+  workflowTaskHoldSummaries,
+} from "./WorkflowHoldQueries";
 import { workflowTaskPeerReadAllowed } from "./WorkflowTaskPeerReadSql";
 import { workflowTaskViewPermissionMatches } from "./WorkflowTaskViewPermissionSql";
 import { workflowTaskEffectiveDeadline } from "./WorkflowSlaDeadline";
@@ -149,7 +152,7 @@ export async function readWorkflowTask(
               'weight', criterion.weight
             ) ORDER BY criterion.criterion)
             FROM app_workflow_stage_scoring_criteria criterion
-            WHERE criterion.stage_id = scoring.stage_id
+            WHERE criterion.task_definition_id = scoring.task_definition_id
           ), '[]'::jsonb)
         )
         FROM app_workflow_stage_scoring_configurations scoring

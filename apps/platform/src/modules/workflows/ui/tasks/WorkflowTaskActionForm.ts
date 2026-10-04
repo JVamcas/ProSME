@@ -1,4 +1,9 @@
 import { z } from "zod";
+import {
+  parseWorkflowRfiReminderOffsets,
+  resolveWorkflowRfiDeadline,
+  workflowRfiDeadlineFields,
+} from "../../domain/actions/WorkflowRequestInformationDeadline";
 import { workflowHoldScopes } from "../../domain/runtime/WorkflowHold";
 import type { WorkflowTaskAction } from "@/modules/work-queue/TaskTypes";
 import type { WorkflowActionInput } from "../../domain/actions/WorkflowActionExecution";
@@ -9,6 +14,9 @@ export function actionFormSchema(action: WorkflowTaskAction) {
   return z
     .object({
       confirmed: z.boolean(),
+      deadlineDays: workflowRfiDeadlineFields.deadlineDays.optional(),
+      expiryAction: workflowRfiDeadlineFields.expiryAction.optional(),
+      reminderDayOffsets: z.string().optional(),
       holdScope: z
         .union([z.enum(workflowHoldScopes), z.literal("")])
         .optional(),
@@ -28,6 +36,50 @@ export function actionFormSchema(action: WorkflowTaskAction) {
       reviewDate: z.union([z.iso.datetime({ local: true }), z.literal("")]),
     })
     .superRefine((values, context) => {
+      const deadlineConfiguration =
+        action.requiredInput.requestInformationDeadline;
+      if (
+        action.actionType === "REQUEST_INFORMATION" &&
+        deadlineConfiguration
+      ) {
+        const deadline = resolveWorkflowRfiDeadline(
+          deadlineConfiguration,
+          requestInformationDeadlineOverrides(action, values),
+        );
+        if (!deadline.success) {
+          for (const issue of deadline.issues) {
+            const field =
+              issue.path[0] === "reminderDayOffsets" &&
+              !deadlineConfiguration.runtimeOverrides?.reminderDayOffsets
+                ? "deadlineDays"
+                : (issue.path[0] ?? "deadlineDays");
+            context.addIssue({
+              code: "custom",
+              message: issue.message,
+              path: [field],
+            });
+          }
+        }
+        const overrides = deadlineConfiguration.runtimeOverrides;
+        if (overrides?.deadlineDays && values.deadlineDays === undefined) {
+          context.addIssue({
+            code: "custom",
+            message: "Enter a deadline.",
+            path: ["deadlineDays"],
+          });
+        }
+        if (
+          overrides?.expiryAction &&
+          values.expiryAction !== "CLOSE_REQUEST" &&
+          values.expiryAction !== deadlineConfiguration.expiryAction
+        ) {
+          context.addIssue({
+            code: "custom",
+            message: "Choose a supported expiry action.",
+            path: ["expiryAction"],
+          });
+        }
+      }
       if (
         action.actionType === "PUT_ON_HOLD" &&
         !action.requiredInput.holdScopes?.some(
@@ -152,6 +204,12 @@ export function actionFormDefaults(action: WorkflowTaskAction): ActionValues {
   );
   return {
     confirmed: false,
+    deadlineDays: action.requiredInput.requestInformationDeadline?.deadlineDays,
+    expiryAction: action.requiredInput.requestInformationDeadline?.expiryAction,
+    reminderDayOffsets:
+      action.requiredInput.requestInformationDeadline?.reminderDayOffsets.join(
+        ", ",
+      ) ?? "",
     holdScope: action.requiredInput.holdScopes?.includes("TASK")
       ? "TASK"
       : (action.requiredInput.holdScopes?.[0] ?? ""),
@@ -187,12 +245,14 @@ export function actionInput(
   const common = {
     ...(values.reason ? { reason: values.reason } : {}),
   };
+  const deadlineOverrides = requestInformationDeadlineOverrides(action, values);
   switch (action.actionType) {
     case "REJECT":
       return { ...common, actionType: "REJECT" };
     case "REQUEST_INFORMATION":
       return {
         actionType: "REQUEST_INFORMATION",
+        ...(Object.keys(deadlineOverrides).length ? { deadlineOverrides } : {}),
         editableFieldPaths: [
           ...values.editableFieldPaths,
           ...(values.requestDetailedInformation
@@ -255,4 +315,29 @@ export function actionInput(
     default:
       return { ...common, actionType: action.actionType };
   }
+}
+
+export function requestInformationDeadlineOverrides(
+  action: WorkflowTaskAction,
+  values: {
+    deadlineDays?: number;
+    expiryAction?: "CLOSE_REQUEST" | "ESCALATE" | "RETURN";
+    reminderDayOffsets?: string;
+  },
+) {
+  const overrides =
+    action.requiredInput.requestInformationDeadline?.runtimeOverrides;
+  return {
+    ...(overrides?.deadlineDays ? { deadlineDays: values.deadlineDays } : {}),
+    ...(overrides?.expiryAction && values.expiryAction === "CLOSE_REQUEST"
+      ? { expiryAction: values.expiryAction }
+      : {}),
+    ...(overrides?.reminderDayOffsets
+      ? {
+          reminderDayOffsets: parseWorkflowRfiReminderOffsets(
+            values.reminderDayOffsets ?? "",
+          ),
+        }
+      : {}),
+  };
 }

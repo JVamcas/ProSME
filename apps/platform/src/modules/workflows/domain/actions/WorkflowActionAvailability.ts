@@ -1,3 +1,4 @@
+import type { WorkflowRfiDeadlineConfiguration } from "./WorkflowRequestInformationDeadline";
 import type { WorkflowActionDefinition } from "./WorkflowActionDefinition";
 import type { WorkflowActionType } from "./WorkflowActionDefinition";
 import type { WorkflowRfiFieldOption } from "../runtime/WorkflowRfiFields";
@@ -17,6 +18,7 @@ export type WorkflowActionPresentationVariant =
   (typeof workflowActionPresentationVariants)[number];
 
 export type WorkflowActionInputMetadata = {
+  requestInformationDeadline?: WorkflowRfiDeadlineConfiguration;
   holdScopes?: readonly import("../runtime/WorkflowHold").WorkflowHoldScope[];
   resumableHolds?: readonly import("../runtime/WorkflowHold").WorkflowHoldSummary[];
   escalationTargets?: readonly {
@@ -123,6 +125,14 @@ export function workflowActionInputMetadata(
   const isRequest = action.actionType === "REQUEST_INFORMATION";
   const isHold = action.actionType === "PUT_ON_HOLD";
   return {
+    requestInformationDeadline: isRequest
+      ? {
+          deadlineDays: action.configuration.deadlineDays,
+          expiryAction: action.configuration.expiryAction,
+          reminderDayOffsets: action.configuration.reminderDayOffsets,
+          runtimeOverrides: action.configuration.runtimeOverrides,
+        }
+      : undefined,
     controlDefaults:
       action.actionType === "RETURN" || action.actionType === "REFER"
         ? action.configuration

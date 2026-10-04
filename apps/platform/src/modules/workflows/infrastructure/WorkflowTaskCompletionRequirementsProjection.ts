@@ -19,7 +19,7 @@ export const workflowTaskCompletionRequirementsProjection = sql`
           'weight', criterion.weight
         ))
         FROM app_workflow_stage_scoring_criteria criterion
-        WHERE criterion.stage_id = scoring.stage_id
+        WHERE criterion.task_definition_id = scoring.task_definition_id
       ), '[]'::jsonb)
     )
     FROM app_workflow_stage_scoring_configurations scoring

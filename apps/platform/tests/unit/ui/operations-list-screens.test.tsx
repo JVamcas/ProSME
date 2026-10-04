@@ -116,7 +116,12 @@ describe("operations list screens", () => {
         <ApplicationsTable />
       </QueryClientProvider>,
     );
-    expect(markup).toContain("SMEF-2026-000123");
+    expect(markup).toContain("Application ID");
+    expect(markup).toContain("1695f976-2acd-44ff-b30b-39c9c5ff6c27");
+    expect(markup).toContain(
+      'href="/admin/applications/1695f976-2acd-44ff-b30b-39c9c5ff6c27"',
+    );
+    expect(markup).not.toContain("SMEF-2026-000123");
     expect(markup).toContain("Database Business");
     expect(markup).toContain("Published opportunity");
     expect(markup).toContain("Application filters");

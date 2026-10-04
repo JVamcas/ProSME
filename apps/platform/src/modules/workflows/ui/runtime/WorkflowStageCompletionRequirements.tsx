@@ -2,6 +2,7 @@ import { CheckCircle2, Clock3, CircleAlert } from "lucide-react";
 
 import type { WorkflowCompletionRequirement } from "../../api/WorkflowCompletionRequirementsTypes";
 import type { WorkflowProgressStage } from "../../api/WorkflowProgressTypes";
+import { StatusBadge } from "@/components/ui/status-badge";
 
 const stateLabels = {
   MET: "Met",
@@ -29,13 +30,11 @@ function Requirement({
             aria-hidden="true"
             className={`mt-0.5 size-4 shrink-0 ${requirement.state === "MET" ? "text-brand-green" : "text-brand-orange"}`}
           />
-          <span className="break-words">{requirement.label}</span>
+          <span className="wrap-break-word">{requirement.label}</span>
         </span>
-        <span className="text-xs font-medium">
-          {stateLabels[requirement.state]}
-        </span>
+        <StatusBadge status={stateLabels[requirement.state]} label={stateLabels[requirement.state]}/>
       </div>
-      <p className="ml-6 mt-1 break-words text-xs text-brand-navy/65">
+      <p className="ml-6 mt-1 wrap-break-word text-xs text-brand-navy/65">
         {requirement.detail}
       </p>
       {requirement.children?.length ? (

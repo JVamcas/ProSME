@@ -1,4 +1,9 @@
 import { z } from "zod";
+import {
+  workflowRfiDeadlineFields,
+  workflowRfiRuntimeOverridesSchema,
+  validateWorkflowRfiReminderDeadline,
+} from "./WorkflowRequestInformationDeadline";
 import { workflowPublicStatuses } from "@/modules/workflows/domain/definitions/WorkflowStageDefinition";
 
 import { conditionGroupSchema } from "@/modules/conditions/domain/ConditionSerialization";
@@ -60,35 +65,14 @@ export const rejectConfigurationSchema = z
 export const requestInformationConfigurationSchema = z
   .object({
     continuation: z.literal("RESUME_SOURCE_TASK"),
-    deadlineDays: z.number().int().positive().max(365),
+    ...workflowRfiDeadlineFields,
+    runtimeOverrides: workflowRfiRuntimeOverridesSchema.optional(),
     editableFieldPaths: uniqueFieldPathListSchema,
-    reminderDayOffsets: z.array(z.number().int().positive().max(365)).max(20),
-    expiryAction: z.enum(["CLOSE_REQUEST", "ESCALATE", "RETURN"]),
     participantScope: z.literal("APPLICATION_OWNER_AND_REQUESTER"),
     recipientScope: z.literal("APPLICATION_OWNER"),
   })
   .strict()
-  .superRefine((configuration, context) => {
-    const uniqueOffsets = new Set(configuration.reminderDayOffsets);
-    if (uniqueOffsets.size !== configuration.reminderDayOffsets.length) {
-      context.addIssue({
-        code: "custom",
-        message: "Reminder day offsets must be unique.",
-        path: ["reminderDayOffsets"],
-      });
-    }
-    if (
-      configuration.reminderDayOffsets.some(
-        (offset) => offset >= configuration.deadlineDays,
-      )
-    ) {
-      context.addIssue({
-        code: "custom",
-        message: "Reminder days must fall before the deadline.",
-        path: ["reminderDayOffsets"],
-      });
-    }
-  });
+  .superRefine(validateWorkflowRfiReminderDeadline);
 
 export const returnConfigurationSchema = z
   .object({

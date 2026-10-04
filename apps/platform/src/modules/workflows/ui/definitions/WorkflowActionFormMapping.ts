@@ -1,3 +1,4 @@
+import { parseWorkflowRfiReminderOffsets } from "../../domain/actions/WorkflowRequestInformationDeadline";
 import type {
   WorkflowEditorView,
   WorkflowStageInput,
@@ -14,14 +15,6 @@ function keys(value: string) {
     .split(/[\n,]/)
     .map((item) => item.trim())
     .filter(Boolean);
-}
-
-function numbers(value: string) {
-  if (!value.trim()) return [];
-  return value
-    .split(/[\n,]/)
-    .map((item) => Number(item.trim()))
-    .filter((item) => Number.isInteger(item));
 }
 
 export function workflowActionFormDefaults(
@@ -45,6 +38,11 @@ export function workflowActionFormDefaults(
     deadlineDays: undefined,
     editableFieldPaths: "",
     reminderDayOffsets: "",
+    runtimeOverrides: {
+      deadlineDays: false,
+      expiryAction: false,
+      reminderDayOffsets: false,
+    },
     expiryAction: "CLOSE_REQUEST",
     dataHandling: "RETAIN",
     returnToReferrer: true,
@@ -84,6 +82,8 @@ export function workflowActionFormDefaults(
       return {
         ...defaults,
         deadlineDays: action.configuration.deadlineDays,
+        runtimeOverrides:
+          action.configuration.runtimeOverrides ?? defaults.runtimeOverrides,
         editableFieldPaths: action.configuration.editableFieldPaths.join(", "),
         reminderDayOffsets: action.configuration.reminderDayOffsets.join(", "),
         expiryAction: "CLOSE_REQUEST",
@@ -159,7 +159,13 @@ function configuration(values: WorkflowActionFormValues) {
         continuation: "RESUME_SOURCE_TASK" as const,
         deadlineDays: values.deadlineDays,
         editableFieldPaths: [],
-        reminderDayOffsets: numbers(values.reminderDayOffsets),
+        reminderDayOffsets: parseWorkflowRfiReminderOffsets(
+          values.reminderDayOffsets,
+        ),
+        ...(values.runtimeOverrides &&
+        Object.values(values.runtimeOverrides).some(Boolean)
+          ? { runtimeOverrides: values.runtimeOverrides }
+          : {}),
         expiryAction: "CLOSE_REQUEST" as const,
         participantScope: "APPLICATION_OWNER_AND_REQUESTER" as const,
         recipientScope: "APPLICATION_OWNER" as const,

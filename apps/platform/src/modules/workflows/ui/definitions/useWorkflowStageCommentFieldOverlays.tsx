@@ -1,5 +1,7 @@
 "use client";
 
+import { isSameWorkflowTaskRequirement } from "../../domain/definitions/WorkflowTaskRequirementIdentity";
+
 import { useState } from "react";
 
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
@@ -18,7 +20,9 @@ export function useWorkflowStageCommentFieldOverlays(
   const [dialog, setDialog] = useState<
     "create" | WorkflowStageCommentField | null
   >(null);
-  const [toDelete, setToDelete] = useState<WorkflowStageCommentField | null>(null);
+  const [toDelete, setToDelete] = useState<WorkflowStageCommentField | null>(
+    null,
+  );
   const mutation = useSaveWorkflowGraph(editor);
 
   async function deleteField(field: WorkflowStageCommentField) {
@@ -29,7 +33,7 @@ export function useWorkflowStageCommentFieldOverlays(
           ? {
               ...item,
               commentFields: (item.commentFields ?? []).filter(
-                (current) => current.key !== field.key,
+                (current) => !isSameWorkflowTaskRequirement(current, field),
               ),
             }
           : item,
