@@ -53,6 +53,7 @@ const graphSelection = {
     publicLabel: workflowStageDefinitions.applicantLabel,
     publicDescription: workflowStageDefinitions.applicantDescription,
     repeatable: workflowStageDefinitions.repeatable,
+    allowApplicantWithdrawal: workflowStageDefinitions.allowApplicantWithdrawal,
     coiGated: workflowStageDefinitions.coiGated,
     coiFormVersionId: workflowStageDefinitions.coiFormVersionId,
     slaHours: workflowStageDefinitions.slaHours,
@@ -67,7 +68,7 @@ const graphSelection = {
     condition: workflowActionDefinitions.condition,
     configuration: workflowActionDefinitions.configuration,
     enabled: workflowActionDefinitions.enabled,
-    reasonCodeRequired: workflowActionDefinitions.reasonCodeRequired,
+    reasonRequired: workflowActionDefinitions.reasonRequired,
     displayOrder: workflowActionDefinitions.displayOrder,
   },
   task: {
@@ -105,6 +106,8 @@ const graphSelection = {
     fromStageId: workflowTransitionDefinitions.fromStageId,
     actionKey: workflowTransitionDefinitions.actionKey,
     terminalOutcome: workflowTransitionDefinitions.terminalOutcome,
+    terminalApplicantStatus:
+      workflowTransitionDefinitions.terminalApplicantStatus,
     priority: workflowTransitionDefinitions.priority,
     condition: workflowTransitionDefinitions.condition,
   },
@@ -208,6 +211,7 @@ function assembleGraph(rows: Awaited<ReturnType<typeof loadGraphRows>>) {
             description: stage.publicDescription,
           },
           repeatable: stage.repeatable,
+          allowApplicantWithdrawal: stage.allowApplicantWithdrawal,
           coiGated: stage.coiGated,
           coiFormVersionId: stage.coiFormVersionId,
           entryCondition: stage.entryCondition,
@@ -232,7 +236,10 @@ function assembleGraph(rows: Awaited<ReturnType<typeof loadGraphRows>>) {
       }
       if (target && joinPredecessor?.predecessorStageId) {
         const predecessorKey = codes.get(joinPredecessor.predecessorStageId);
-        if (predecessorKey && !target.joinPredecessorStageKeys.includes(predecessorKey)) {
+        if (
+          predecessorKey &&
+          !target.joinPredecessorStageKeys.includes(predecessorKey)
+        ) {
           target.joinPredecessorStageKeys.push(predecessorKey);
         }
       }
@@ -269,6 +276,7 @@ function assembleGraph(rows: Awaited<ReturnType<typeof loadGraphRows>>) {
           sourceStageKey: codes.get(transition.fromStageId) ?? "",
           priority: transition.priority,
           terminalOutcome: transition.terminalOutcome,
+          terminalApplicantStatus: transition.terminalApplicantStatus,
           condition: transition.condition,
           targetStageKeys: [],
         });
@@ -276,8 +284,11 @@ function assembleGraph(rows: Awaited<ReturnType<typeof loadGraphRows>>) {
       if (transition?.id && transitionTarget?.targetStageId) {
         const targetStageKey = codes.get(transitionTarget.targetStageId);
         const assembledTransition = transitions.get(transition.id);
-        if (targetStageKey && assembledTransition
-          && !assembledTransition.targetStageKeys.includes(targetStageKey)) {
+        if (
+          targetStageKey &&
+          assembledTransition &&
+          !assembledTransition.targetStageKeys.includes(targetStageKey)
+        ) {
           assembledTransition.targetStageKeys.push(targetStageKey);
         }
       }

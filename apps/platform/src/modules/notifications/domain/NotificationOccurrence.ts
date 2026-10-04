@@ -13,6 +13,7 @@ export const notificationCaptureRecipientSchema = z.object({
     "APPLICATION_OWNER",
     "ASSIGNED_USER",
     "FUNDING_CALL_STAKEHOLDER",
+    "ACTION_ACTOR",
   ]),
   resolutionPath: z.string().trim().min(1).max(200),
   userId: z.uuid(),
@@ -45,8 +46,11 @@ export function normalizeNotificationRecipients(
     }
     const recipient = result.data;
     const normalizedEmail = recipient.email.trim().toLowerCase();
-    if (!uniqueRecipients.has(normalizedEmail)) {
-      uniqueRecipients.set(normalizedEmail, {
+    // Preserve both relationships when an owner is also an assignee. Delivery
+    // persistence still deduplicates by channel/email after resolving UI rules.
+    const relationshipKey = `${recipient.recipientType}:${normalizedEmail}`;
+    if (!uniqueRecipients.has(relationshipKey)) {
+      uniqueRecipients.set(relationshipKey, {
         ...recipient,
         email: recipient.email.trim(),
         normalizedEmail,

@@ -1,29 +1,12 @@
 import type { WorkflowGraphInput } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import { referenceWorkflowTransitionsFixture } from "./ReferenceWorkflowTransitionFixture";
 import {
+  checklistItem,
   emptyStageConditions,
   referenceTaskDefaults,
   reviewOutcomes,
   routingAction,
 } from "./ReferenceWorkflowFixtureHelpers";
-
-function checklistItem(
-  taskStableKey: string,
-  key: string,
-  text: string,
-  displayOrder: number,
-) {
-  return {
-    displayOrder,
-    evidenceRequirement: "NONE" as const,
-    key,
-    mandatory: true,
-    notes: "",
-    responseType: "YES_NO" as const,
-    taskStableKey,
-    text,
-  };
-}
 
 export const referenceWorkflow: WorkflowGraphInput = {
   stages: [
@@ -35,6 +18,7 @@ export const referenceWorkflow: WorkflowGraphInput = {
       optional: false,
       displayOrder: 1,
       repeatable: false,
+      allowApplicantWithdrawal: true,
       coiGated: false,
       coiFormVersionId: null,
       ...emptyStageConditions,
@@ -92,6 +76,7 @@ export const referenceWorkflow: WorkflowGraphInput = {
       optional: false,
       displayOrder: 2,
       repeatable: false,
+      allowApplicantWithdrawal: true,
       coiGated: false,
       coiFormVersionId: null,
       ...emptyStageConditions,
@@ -137,6 +122,7 @@ export const referenceWorkflow: WorkflowGraphInput = {
       optional: false,
       displayOrder: 3,
       repeatable: false,
+      allowApplicantWithdrawal: true,
       coiGated: true,
       coiFormVersionId: "79e20de0-3558-4d63-90a4-8c9f5125df11",
       ...emptyStageConditions,
@@ -185,6 +171,7 @@ export const referenceWorkflow: WorkflowGraphInput = {
       optional: false,
       displayOrder: 4,
       repeatable: false,
+      allowApplicantWithdrawal: true,
       coiGated: true,
       coiFormVersionId: "79e20de0-3558-4d63-90a4-8c9f5125df11",
       ...emptyStageConditions,
@@ -226,6 +213,7 @@ export const referenceWorkflow: WorkflowGraphInput = {
       optional: false,
       displayOrder: 5,
       repeatable: false,
+      allowApplicantWithdrawal: true,
       coiGated: true,
       coiFormVersionId: "79e20de0-3558-4d63-90a4-8c9f5125df11",
       ...emptyStageConditions,
@@ -263,6 +251,7 @@ export const referenceWorkflow: WorkflowGraphInput = {
       optional: false,
       displayOrder: 6,
       repeatable: false,
+      allowApplicantWithdrawal: true,
       coiGated: false,
       coiFormVersionId: null,
       ...emptyStageConditions,

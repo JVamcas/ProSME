@@ -11,6 +11,9 @@ export const workflowPublicStatuses = [
   "OUTCOME_AVAILABLE",
   "CLOSED",
   "WITHDRAWN",
+  "INELIGIBLE",
+  "REJECTED",
+  "REJECTED_INCOMPLETE",
 ] as const;
 
 export type WorkflowPublicStatus = (typeof workflowPublicStatuses)[number];
@@ -27,6 +30,7 @@ export type WorkflowStageDefinition = {
   name: string;
   description: string;
   enabled: boolean;
+  allowApplicantWithdrawal?: boolean;
   optional: boolean;
   displayOrder: number;
   publicStatusMapping: WorkflowPublicStatusMapping;
@@ -39,5 +43,5 @@ export type WorkflowStageDefinition = {
   checklistItems: WorkflowStageChecklistDefinition[];
   commentFields?: WorkflowStageCommentField[];
   documentRequirements: WorkflowStageDocumentRequirement[];
-  scoring: WorkflowStageScoringDefinition | null;
+  scoring: WorkflowStageScoringDefinition[] | null;
 };

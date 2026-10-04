@@ -12,6 +12,7 @@ export type FundingCallGovernanceOutcome =
 
 export type FundingCallGovernanceSnapshot = Pick<
   FundingCall,
+  | "allowResubmissionAfterWithdrawal"
   | "applicationDuplicatePolicy"
   | "closesAt"
   | "description"
@@ -45,6 +46,7 @@ export function createFundingCallGovernanceSnapshot(
   call: FundingCall,
 ): SerializedFundingCallGovernanceSnapshot {
   return {
+    allowResubmissionAfterWithdrawal: call.allowResubmissionAfterWithdrawal,
     applicationDuplicatePolicy: call.applicationDuplicatePolicy,
     closesAt: call.closesAt.toISOString(),
     description: call.description,

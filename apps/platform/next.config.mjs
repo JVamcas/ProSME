@@ -2,6 +2,7 @@ import { withPayload } from "@payloadcms/next/withPayload";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { scopeCmsThemeHeaders } from "./config/scope-cms-theme-headers.js";
 import { loadEnvironment } from "./config/load-environment.js";
 
 loadEnvironment();
@@ -25,4 +26,9 @@ const nextConfig = {
   reactStrictMode: true,
 };
 
-export default withPayload(nextConfig);
+const payloadConfig = withPayload(nextConfig);
+const payloadHeaders = payloadConfig.headers;
+payloadConfig.headers = async () =>
+  scopeCmsThemeHeaders(await payloadHeaders());
+
+export default payloadConfig;

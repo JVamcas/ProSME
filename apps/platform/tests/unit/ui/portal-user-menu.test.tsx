@@ -5,8 +5,8 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { PortalUserMenu } from "@/components/layout/portal-user-menu";
-import { createQueryClient } from "@/lib/query-client";
+import { PortalUserMenu } from "@/shared/ui/portal/portal-user-menu";
+import { createQueryClient } from "@/shared/utils/createQueryClient";
 import type { PortalContext } from "@/modules/profiles/ProfileTypes";
 
 vi.mock("next/navigation", () => ({

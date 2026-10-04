@@ -3,7 +3,7 @@ import { FormProvider, useForm } from "react-hook-form";
 import { describe, expect, it } from "vitest";
 
 import { GeneralButton, IconButton } from "@/components/ui/button";
-import { FormDateInput } from "@/components/ui/form-date-input";
+import { FormDateInput } from "@/shared/ui/FormDateInput";
 import { CheckboxField } from "@/components/ui/form-field";
 import { FormInput, FormSelect } from "@/components/ui/form-fields";
 import { MoneyField } from "@/components/ui/money-field";

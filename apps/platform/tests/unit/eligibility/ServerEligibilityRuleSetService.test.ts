@@ -79,14 +79,14 @@ describe("ServerEligibilityRuleSetService", () => {
 
     await createNewEligibilityRuleSet(
       user([permissionCodes.eligibilityRuleSetCreate]),
-      { code: "SME", description: "SME rules", name: "SME" },
+      { code: "SME Fund", description: "SME Fund rules", name: "SME Fund" },
     );
 
     expect(createEligibilityRuleSet).toHaveBeenCalledWith({
       actorId,
-      code: "SME",
-      description: "SME rules",
-      name: "SME",
+      code: "SME Fund",
+      description: "SME Fund rules",
+      name: "SME Fund",
     });
   });
 
@@ -126,11 +126,11 @@ describe("ServerEligibilityRuleSetService", () => {
     await updateEligibilityRuleSetMetadata(
       user([permissionCodes.eligibilityRuleSetUpdate]),
       ruleSetId,
-      { code: "SME", description: "Updated rules", name: "SME Fund" },
+      { code: "SME Fund", description: "Updated rules", name: "SME Fund" },
     );
 
     expect(updateEligibilityRuleSetDefinition).toHaveBeenCalledWith({
-      code: "SME",
+      code: "SME Fund",
       description: "Updated rules",
       name: "SME Fund",
       ruleSetId,

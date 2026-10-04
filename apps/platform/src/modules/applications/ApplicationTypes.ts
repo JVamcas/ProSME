@@ -33,6 +33,7 @@ export type AdminApplicationStage = {
 };
 
 export type AdminApplicationOverview = {
+  processingStatus?: "ON_HOLD" | null;
   applicantName: string;
   applicationId: string;
   businessName: string | null;
@@ -51,15 +52,16 @@ export type AdminApplicationOverview = {
   submittedAt: string;
 };
 
-import type {
-  ApplicationBusinessSection,
-  ApplicationFinancialSection,
-  ApplicationProjectSection,
-  ApplicationSection,
-  ApplicationSectionCompletion,
-} from "./ApplicationSchemas";
-import type { ApplicationDeclarationsSection } from "./ApplicationDeclarationSchemas";
 import type { FormRuntimeSchema } from "@/modules/forms/FormTypes";
+
+export type ApplicationSection =
+  | "business"
+  | "project"
+  | "financial"
+  | "documents"
+  | "declarations";
+
+export type ApplicationSectionCompletion = Record<ApplicationSection, boolean>;
 
 export type ApplicationSummary = {
   canWithdraw?: boolean;
@@ -99,14 +101,9 @@ export type ApplicationPage = {
 };
 
 export type ApplicationView = ApplicationSummary & {
-  businessSection: Partial<ApplicationBusinessSection>;
-  declarationsSection: Partial<ApplicationDeclarationsSection>;
-  financialSection: Partial<ApplicationFinancialSection>;
   eligibilityRuleSetVersionId: string;
   formVersionId: string;
-  projectSection: Partial<ApplicationProjectSection>;
   rowVersion: number;
-  sectionCompletion: ApplicationSectionCompletion;
 };
 
 export type ApplicationReadView = {
@@ -154,6 +151,7 @@ export type AdminApplicationStatusFilter =
   (typeof adminApplicationStatuses)[number];
 
 export type AdminApplicationListRow = {
+  processingStatus?: "ON_HOLD" | null;
   activeStageName: string | null;
   activeTaskCount: number;
   applicantName: string;

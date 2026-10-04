@@ -1,17 +1,16 @@
 import { z } from "zod";
+import {
+  workflowRfiDeadlineOverrideSchema,
+  resolveWorkflowRfiDeadline,
+} from "./WorkflowRequestInformationDeadline";
+import { workflowHoldScopes } from "../runtime/WorkflowHold";
 
 import { richTextToPlainText } from "@/shared/utils/RichText";
 
 import type { WorkflowActionDefinition } from "./WorkflowActionDefinition";
 
 const commentSchema = z.string().trim().min(1).max(4_000).optional();
-const reasonCodeSchema = z
-  .string()
-  .trim()
-  .min(1)
-  .max(80)
-  .regex(/^[A-Z][A-Z0-9_]*$/)
-  .optional();
+const reasonSchema = z.string().trim().min(1).max(4_000).optional();
 const fieldKeySchema = z
   .string()
   .trim()
@@ -20,123 +19,160 @@ const fieldKeySchema = z
   .regex(/^[A-Za-z][A-Za-z0-9_.]*$/);
 const commonInput = {
   comment: commentSchema,
-  reasonCode: reasonCodeSchema,
+  reason: reasonSchema,
 };
 
-export const workflowActionInputSchema = z.discriminatedUnion("actionType", [
-  z
-    .object({
-      ...commonInput,
-      actionType: z.literal("APPROVE_ADVANCE"),
-    })
-    .strict(),
-  z
-    .object({
-      actionType: z.literal("REJECT"),
-      comment: z.string().trim().min(1).max(4_000),
-      reasonCode: z.never().optional(),
-    })
-    .strict(),
-  z
-    .object({
-      ...commonInput,
-      actionType: z.literal("REQUEST_INFORMATION"),
-      editableFieldPaths: z.array(fieldKeySchema).max(100),
-      instructions: z
-        .string()
-        .trim()
-        .min(1)
-        .max(12_000)
-        .refine((value) => richTextToPlainText(value).length > 0, {
-          message: "Enter instructions for the applicant.",
-        }),
-      requestedDocumentRequirementIds: z
-        .array(z.uuid())
-        .max(100)
-        .refine(
-          (values) => new Set(values).size === values.length,
-          "Requested document requirements must be unique.",
-        )
-        .default([]),
-    })
-    .strict(),
-  z
-    .object({
-      ...commonInput,
-      actionType: z.literal("RETURN"),
-    })
-    .strict(),
-  z
-    .object({
-      ...commonInput,
-      actionType: z.literal("REFER"),
-      question: z.string().trim().min(1).max(4_000),
-    })
-    .strict(),
-  z
-    .object({
-      ...commonInput,
-      actionType: z.literal("ESCALATE"),
-    })
-    .strict(),
-  z
-    .object({
-      ...commonInput,
-      actionType: z.literal("PUT_ON_HOLD"),
-      reviewDate: z.iso.date().optional(),
-    })
-    .strict(),
-  z
-    .object({
-      ...commonInput,
-      actionType: z.literal("RESUME"),
-    })
-    .strict(),
-  z
-    .object({
-      ...commonInput,
-      actionType: z.literal("WITHDRAW"),
-      confirmed: z.literal(true),
-    })
-    .strict(),
-  z
-    .object({
-      ...commonInput,
-      actionType: z.literal("DEFER"),
-      targetType: z.enum(["DATE", "FUNDING_CALL"]),
-      targetDate: z.iso.date().optional(),
-      targetCallKey: z.string().trim().min(2).max(80).optional(),
-    })
-    .strict()
-    .superRefine((input, context) => {
-      if (input.targetType === "DATE" && !input.targetDate) {
-        context.addIssue({
-          code: "custom",
-          message: "A target date is required.",
-          path: ["targetDate"],
-        });
-      }
-      if (input.targetType === "FUNDING_CALL" && !input.targetCallKey) {
-        context.addIssue({
-          code: "custom",
-          message: "A target funding call is required.",
-          path: ["targetCallKey"],
-        });
-      }
-    }),
-]).superRefine((input, context) => {
-  if (
-    input.actionType === "REQUEST_INFORMATION" &&
-    input.editableFieldPaths.length === 0 &&
-    input.requestedDocumentRequirementIds.length === 0
-  ) {
-    context.addIssue({
-      code: "custom",
-      message: "Request detailed information, at least one document, or both.",
-      path: ["editableFieldPaths"],
-    });
-  }
-});
+export const workflowActionInputSchema = z
+  .discriminatedUnion("actionType", [
+    z
+      .object({
+        ...commonInput,
+        actionType: z.literal("APPROVE_ADVANCE"),
+      })
+      .strict(),
+    z
+      .object({
+        ...commonInput,
+        actionType: z.literal("REJECT"),
+      })
+      .strict(),
+    z
+      .object({
+        ...commonInput,
+        actionType: z.literal("REQUEST_INFORMATION"),
+        deadlineOverrides: workflowRfiDeadlineOverrideSchema.optional(),
+        editableFieldPaths: z
+          .array(fieldKeySchema)
+          .max(100)
+          .refine(
+            (paths) => new Set(paths).size === paths.length,
+            "Editable fields must be unique.",
+          ),
+        instructions: z
+          .string()
+          .trim()
+          .min(1)
+          .max(12_000)
+          .refine((value) => richTextToPlainText(value).length > 0, {
+            message: "Enter instructions for the applicant.",
+          }),
+        requestedDocumentRequirementIds: z
+          .array(z.uuid())
+          .max(100)
+          .refine(
+            (values) => new Set(values).size === values.length,
+            "Requested document requirements must be unique.",
+          )
+          .default([]),
+      })
+      .strict(),
+    z
+      .object({
+        ...commonInput,
+        actionType: z.literal("RETURN"),
+        targetStageDefinitionId: z.uuid().optional(),
+        dataHandling: z.enum(["RETAIN", "CLEAR"]).optional(),
+      })
+      .strict(),
+    z
+      .object({
+        ...commonInput,
+        actionType: z.literal("REFER"),
+        targetStageDefinitionId: z.uuid().optional(),
+        sourceTaskBehavior: z.enum(["BLOCKED", "OPEN"]).optional(),
+        returnToReferrer: z.boolean().optional(),
+        question: z.string().trim().min(1).max(4_000),
+      })
+      .strict(),
+    z
+      .object({
+        ...commonInput,
+        actionType: z.literal("ESCALATE"),
+        targetType: z.enum(["ROLE", "USER"]).optional(),
+        targetId: z.uuid().optional(),
+      })
+      .strict()
+      .superRefine((input, context) => {
+        if (Boolean(input.targetType) !== Boolean(input.targetId)) {
+          context.addIssue({
+            code: "custom",
+            message:
+              "Choose both the destination type and destination user or role.",
+            path: [input.targetType ? "targetId" : "targetType"],
+          });
+        }
+      }),
+    z
+      .object({
+        ...commonInput,
+        actionType: z.literal("PUT_ON_HOLD"),
+        scope: z.enum(workflowHoldScopes),
+        reviewDate: z
+          .union([z.iso.date(), z.iso.datetime({ offset: true })])
+          .optional(),
+      })
+      .strict(),
+    z
+      .object({
+        ...commonInput,
+        actionType: z.literal("RESUME"),
+        holdId: z.uuid().optional(),
+      })
+      .strict(),
+    z
+      .object({
+        ...commonInput,
+        actionType: z.literal("WITHDRAW"),
+        confirmed: z.literal(true),
+      })
+      .strict(),
+    z
+      .object({
+        ...commonInput,
+        actionType: z.literal("DEFER"),
+        targetType: z.enum(["DATE", "FUNDING_CALL"]),
+        targetDate: z.iso.date().optional(),
+        targetCallKey: z.string().trim().min(2).max(80).optional(),
+      })
+      .strict()
+      .superRefine((input, context) => {
+        if (input.targetType === "DATE" && !input.targetDate) {
+          context.addIssue({
+            code: "custom",
+            message: "A target date is required.",
+            path: ["targetDate"],
+          });
+        }
+        if (input.targetType === "FUNDING_CALL" && !input.targetCallKey) {
+          context.addIssue({
+            code: "custom",
+            message: "A target funding call is required.",
+            path: ["targetCallKey"],
+          });
+        }
+      }),
+  ])
+  .superRefine((input, context) => {
+    if (input.actionType === "REFER") {
+      context.addIssue({
+        code: "custom",
+        message: "Refer has been removed. Use Return for rework.",
+        path: ["actionType"],
+      });
+    }
+    if (
+      input.actionType === "REQUEST_INFORMATION" &&
+      input.editableFieldPaths.length === 0 &&
+      input.requestedDocumentRequirementIds.length === 0
+    ) {
+      context.addIssue({
+        code: "custom",
+        message:
+          "Request detailed information, at least one document, or both.",
+        path: ["editableFieldPaths"],
+      });
+    }
+  });
 
 export const workflowActionExecutionRequestSchema = z
   .object({
@@ -167,13 +203,20 @@ export type WorkflowActionExecutionResult = {
       | "NONE"
       | "STAGE_ACTIVE"
       | "STAGE_BLOCKED"
+      | "TASK_HELD"
+      | "WORKFLOW_HELD"
+      | "HOLD_ENDED"
       | "STAGE_ACTIVATED"
       | "JOIN_PENDING"
       | "WORKFLOW_COMPLETED"
       | "WORKFLOW_REJECTED"
       | "WORKFLOW_WITHDRAWN";
     targets: Array<{
-      outcome: "ACTIVATED" | "ALREADY_ACTIVE" | "ENTRY_CONDITION_FAILED" | "JOIN_PENDING";
+      outcome:
+        | "ACTIVATED"
+        | "ALREADY_ACTIVE"
+        | "ENTRY_CONDITION_FAILED"
+        | "JOIN_PENDING";
       targetStageInstanceId: string | null;
       targetStageName: string;
     }>;
@@ -212,49 +255,31 @@ export function validateActionInputAgainstConfiguration(
   input: WorkflowActionInput,
   sourceStageKey: string,
 ): string | null {
+  if (action.actionType === "REFER") {
+    return "Refer has been removed. Use Return for rework.";
+  }
   if (action.actionType !== input.actionType) {
     return "The action payload type does not match the configured action.";
   }
-  if (action.reasonCodeRequired && !input.reasonCode) {
-    return "A reason code is required for this action.";
+  if (
+    action.actionType !== "REQUEST_INFORMATION" &&
+    action.reasonRequired &&
+    !input.reason?.trim()
+  ) {
+    return "A reason is required for this action.";
   }
   switch (action.actionType) {
-    case "REJECT":
-      return input.comment ? null : "A reason is required for this rejection.";
     case "REQUEST_INFORMATION":
       if (input.actionType !== "REQUEST_INFORMATION") return null;
-      if (
-        input.editableFieldPaths.some(
-          (path) => !action.configuration.editableFieldPaths.includes(path),
-        )
-      ) {
-        return "The request contains an editable field that is not configured.";
-      }
-      return null;
-    case "RETURN":
-      return action.configuration.reasonRequired &&
-        !input.reasonCode &&
-        !input.comment
-        ? "A return reason or comment is required."
-        : null;
+      // The repository validates selected fields against the application’s form.
+      const deadline = resolveWorkflowRfiDeadline(
+        action.configuration,
+        input.deadlineOverrides,
+      );
+      return deadline.success ? null : deadline.issues[0].message;
     case "ESCALATE":
-      if (!input.reasonCode && !input.comment) {
-        return "An escalation reason or comment is required.";
-      }
-      return action.configuration.trigger === "MANUAL" ||
-        action.configuration.trigger === "CONDITION"
-        ? null
-        : "This escalation is not available for manual execution.";
+      return null;
     case "PUT_ON_HOLD":
-      if (!input.reasonCode && !input.comment) {
-        return "A hold reason or comment is required.";
-      }
-      if (
-        input.reasonCode &&
-        !action.configuration.reasonCodes.includes(input.reasonCode)
-      ) {
-        return "The hold reason is not configured for this action.";
-      }
       return action.configuration.reviewDateRequired &&
         input.actionType === "PUT_ON_HOLD" &&
         !input.reviewDate
@@ -267,9 +292,6 @@ export function validateActionInputAgainstConfiguration(
         ? null
         : "Withdrawal is not configured for this stage.";
     case "DEFER":
-      if (!input.reasonCode && !input.comment) {
-        return "A deferral reason or comment is required.";
-      }
       if (
         input.actionType !== "DEFER" ||
         input.targetType !== action.configuration.targetType

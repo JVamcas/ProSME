@@ -45,7 +45,7 @@ export async function readTaskCoiGate(actorId: string, taskId: string) {
       AND clearance.user_id = ${actorId}::uuid
       AND clearance.form_version_id = stage_definition.coi_form_version_id
     WHERE task.id = ${taskId}::uuid
-      AND stage.status = 'ACTIVE' AND workflow.status = 'ACTIVE'
+      AND stage.status IN ('ACTIVE', 'BLOCKED') AND workflow.status = 'ACTIVE'
       AND task.assigned_user_id = ${actorId}::uuid
   `);
   return (result.rows[0] as GateRow | undefined) ?? null;

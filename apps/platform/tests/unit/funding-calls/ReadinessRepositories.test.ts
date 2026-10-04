@@ -145,7 +145,7 @@ describe("publication readiness repository projections", () => {
     )).resolves.toEqual([document]);
     await expect(readFundingCallIdentifierConflicts({
       id: "00000000-0000-4000-8000-000000000001",
-      reference: "SME-2027-01",
+      reference: "SME Fund-2027-01",
       slug: "growth-fund",
     })).resolves.toEqual({ reference: false, slug: true });
   });

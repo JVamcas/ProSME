@@ -22,6 +22,7 @@ vi.mock("@/modules/funding-calls/FundingCallHooks", () => ({
 
 function values(title = ""): FundingCallCreationProgressValues {
   return {
+    allowResubmissionAfterWithdrawal: false,
     applicationDuplicatePolicy: "one_per_business",
     closesAt: "",
     description: "",

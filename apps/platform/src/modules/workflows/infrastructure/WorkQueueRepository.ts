@@ -1,14 +1,23 @@
 import "server-only";
+import { workflowTaskHasActiveHold, workflowTaskHoldSummaries } from "./WorkflowHoldQueries";
 
 import { sql } from "drizzle-orm";
 
+import { canCancelOwnEscalation } from "./WorkflowEscalationTrackingSql";
 import { getDatabase } from "@/db/client";
-import type { WorkQueueListInput, WorkQueueRow } from "@/modules/work-queue/WorkQueueTypes";
+import type {
+  WorkQueueListInput,
+  WorkQueueRow,
+} from "@/modules/work-queue/WorkQueueTypes";
 import type { WorkQueueCursor } from "@/modules/work-queue/WorkQueueCursor";
+import { workflowTaskEffectiveDeadline } from "./WorkflowSlaDeadline";
 
 const actionableStatuses = sql`('PENDING', 'IN_PROGRESS')`;
 
-type QueueDatabaseRow = Omit<WorkQueueRow, "claimedAt" | "createdAt" | "dueAt"> & {
+type QueueDatabaseRow = Omit<
+  WorkQueueRow,
+  "claimedAt" | "createdAt" | "dueAt"
+> & {
   claimedAt: Date | string | null;
   createdAt: Date | string | null;
   dueAt: Date | string | null;
@@ -16,10 +25,15 @@ type QueueDatabaseRow = Omit<WorkQueueRow, "claimedAt" | "createdAt" | "dueAt"> 
 };
 
 function scopeFilter(scope: WorkQueueListInput["scope"]) {
-  if (scope === "overdue") return sql`task.due_at < CURRENT_TIMESTAMP`;
+  const running = sql`stage.status = 'ACTIVE' AND NOT ${workflowTaskHasActiveHold(sql`task`)} AND NOT EXISTS (
+    SELECT 1 FROM app_workflow_rfis rfi WHERE rfi.task_id = task.id AND rfi.status = 'OPEN'
+  )`;
+  if (scope === "overdue") {
+    return sql`${running} AND deadline.effective_due_at < CURRENT_TIMESTAMP`;
+  }
   if (scope === "due-soon") {
-    return sql`task.due_at >= CURRENT_TIMESTAMP
-      AND task.due_at <= CURRENT_TIMESTAMP + INTERVAL '48 hours'`;
+    return sql`${running} AND deadline.effective_due_at >= CURRENT_TIMESTAMP
+      AND deadline.effective_due_at <= CURRENT_TIMESTAMP + INTERVAL '48 hours'`;
   }
   return sql`TRUE`;
 }
@@ -51,66 +65,57 @@ function cursorFilter(cursor?: WorkQueueCursor) {
   )`;
 }
 
-function escalationTarget(actorId: string) {
-  return sql`EXISTS (
-    SELECT 1 FROM app_workflow_escalations escalation
-    WHERE escalation.task_id = task.id
-      AND escalation.status = 'ACTIVE'
-      AND (
-        escalation.target_user_id = ${actorId}::uuid
-        OR EXISTS (
-          SELECT 1 FROM app_user_roles escalation_role
-          WHERE escalation_role.user_id = ${actorId}::uuid
-            AND escalation_role.role_id = escalation.target_role_id
-        )
-      )
-  )`;
-}
-
 function routedToActor(actorId: string) {
   return sql`(
     task.assigned_user_id = ${actorId}::uuid
-    OR ${escalationTarget(actorId)}
   )`;
 }
 
-function queueQuery(input: WorkQueueListInput, actorId: string, cursor?: WorkQueueCursor) {
+function visibleToActor(actorId: string) {
+  return sql`(${routedToActor(actorId)} OR outgoing.id IS NOT NULL)`;
+}
+
+function queueQuery(
+  input: WorkQueueListInput,
+  actorId: string,
+  cursor?: WorkQueueCursor,
+) {
   return sql`
     WITH filtered AS (
       SELECT
         task.id AS "taskInstanceId",
         definition.code AS "taskDefinitionCode",
         definition.name AS "taskName",
-        CASE WHEN ${routedToActor(actorId)}
+        CASE WHEN ${visibleToActor(actorId)}
           AND app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
           THEN application.id ELSE NULL END AS "applicationId",
-        CASE WHEN ${routedToActor(actorId)}
+        CASE WHEN ${visibleToActor(actorId)}
           AND app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
           THEN application.reference ELSE 'Hidden until COI reviewed' END AS "reference",
-        CASE WHEN ${routedToActor(actorId)}
+        CASE WHEN ${visibleToActor(actorId)}
           AND app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
           THEN NULLIF(COALESCE(business.trading_name, business.legal_name), '')
           ELSE NULL END AS "businessName",
-        CASE WHEN ${routedToActor(actorId)}
+        CASE WHEN ${visibleToActor(actorId)}
           AND app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
           THEN applicant.display_name ELSE 'Hidden until COI reviewed' END AS "applicantName",
+        CASE WHEN ${visibleToActor(actorId)}
+          AND app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
+          THEN application.funding_opportunity_title
+          ELSE NULL END AS "fundingCallTitle",
         stage_definition.name AS "stageName",
-        CASE WHEN stage.status = 'BLOCKED' AND EXISTS (
-          SELECT 1 FROM app_workflow_holds hold
-          WHERE hold.stage_instance_id = stage.id AND hold.status = 'ACTIVE'
-        ) THEN 'On hold. Open the task to review or resume it.'
+        CASE WHEN app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
+          AND request.id IS NOT NULL THEN jsonb_build_object(
+            'id', request.id, 'status', request.status,
+            'createdAt', request.created_at, 'deadlineAt', request.deadline_at,
+            'respondedAt', request.responded_at
+          ) ELSE NULL END AS "informationRequest",
+        CASE WHEN ${workflowTaskHasActiveHold(sql`task`)} THEN 'On hold. Open the task to review or resume it.'
           WHEN stage.status = 'BLOCKED' AND EXISTS (
             SELECT 1 FROM app_workflow_deferrals deferral
             WHERE deferral.stage_instance_id = stage.id
               AND deferral.status = 'ACTIVE'
           ) THEN 'Deferred. Open the task to review its continuation.'
-          WHEN EXISTS (
-            SELECT 1 FROM app_workflow_escalations escalation
-            WHERE escalation.task_id = task.id
-              AND escalation.status = 'ACTIVE'
-              AND escalation.block_until_resolved
-          ) AND NOT ${escalationTarget(actorId)}
-            THEN 'Blocked pending escalation resolution.'
           WHEN definition.task_type = 'STAGE_DECISION' AND EXISTS (
           SELECT 1
           FROM app_workflow_tasks prerequisite
@@ -122,14 +127,22 @@ function queueQuery(input: WorkQueueListInput, actorId: string, cursor?: WorkQue
             AND prerequisite.status NOT IN ('COMPLETED', 'CANCELLED')
         ) THEN 'Available when all contributing tasks are complete.'
           ELSE NULL END AS "taskBlockedReason",
+        CASE WHEN ${workflowTaskHasActiveHold(sql`task`)} THEN 'ON_HOLD' ELSE NULL END AS "processingStatus",
+        CASE WHEN app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
+          THEN ${workflowTaskHoldSummaries(sql`task`)} ELSE '[]'::jsonb END AS holds,
         NULL::text AS "priority",
-        task.status AS "taskStatus",
+        CASE WHEN outgoing.id IS NOT NULL THEN 'ESCALATED'
+          ELSE task.status END AS "taskStatus",
+        CASE WHEN outgoing.id IS NOT NULL THEN jsonb_build_object(
+          'id', outgoing.id,
+          'canCancel', ${canCancelOwnEscalation(actorId, sql`task`, sql`outgoing`)}
+        ) ELSE NULL END AS "outgoingEscalation",
         definition.task_type AS "taskType",
         task.assigned_role_id AS "assignedRoleId",
         role.name AS "assignedRoleName",
         task.assigned_user_id AS "assignedUserId",
         assignee.display_name AS "assignedUserName",
-        task.due_at AS "dueAt",
+        deadline.effective_due_at AS "dueAt",
         task.claimed_at AS "claimedAt",
         task.created_at AS "createdAt",
         task.row_version AS "rowVersion"
@@ -142,12 +155,34 @@ function queueQuery(input: WorkQueueListInput, actorId: string, cursor?: WorkQue
       JOIN app_users applicant ON applicant.id = application.owner_user_id
       LEFT JOIN app_business_profiles business
         ON business.id::text = application.business_section ->> 'businessId'
+      LEFT JOIN LATERAL (
+        SELECT escalation.id, escalation.escalated_at
+        FROM app_workflow_escalations escalation
+        WHERE escalation.task_id = task.id
+          AND escalation.status = 'ACTIVE' AND escalation.trigger = 'MANUAL'
+          AND escalation.source_assigned_user_id = ${actorId}::uuid
+          AND escalation.escalated_by = ${actorId}::uuid
+          AND task.assigned_user_id IS DISTINCT FROM ${actorId}::uuid
+        ORDER BY escalation.escalated_at DESC, escalation.id DESC LIMIT 1
+      ) outgoing ON TRUE
       LEFT JOIN app_roles role ON role.id = task.assigned_role_id
       LEFT JOIN app_users assignee ON assignee.id = task.assigned_user_id
+      LEFT JOIN LATERAL (
+        SELECT rfi.id, rfi.status, rfi.created_at, rfi.deadline_at, rfi.responded_at
+        FROM app_workflow_rfis rfi
+        WHERE rfi.task_id = task.id
+        ORDER BY CASE WHEN rfi.status = 'OPEN' THEN 0
+          WHEN rfi.status = 'RESPONDED' THEN 1 ELSE 2 END,
+          rfi.created_at DESC, rfi.id DESC
+        LIMIT 1
+      ) request ON TRUE
+      CROSS JOIN LATERAL (
+        SELECT date_trunc('milliseconds', ${workflowTaskEffectiveDeadline(sql`task`)}) AS effective_due_at
+      ) deadline
       WHERE workflow.status = 'ACTIVE'
         AND stage.status IN ('ACTIVE', 'BLOCKED')
         AND task.status IN ${actionableStatuses}
-        AND ${routedToActor(actorId)}
+        AND ${visibleToActor(actorId)}
         AND ${scopeFilter(input.scope)}
         AND ${searchFilter(actorId, input.search)}
     )
@@ -166,6 +201,16 @@ function queueQuery(input: WorkQueueListInput, actorId: string, cursor?: WorkQue
 function toQueueRow(row: QueueDatabaseRow): WorkQueueRow {
   return {
     ...row,
+    informationRequest: row.informationRequest
+      ? {
+          ...row.informationRequest,
+          createdAt: new Date(row.informationRequest.createdAt).toISOString(),
+          deadlineAt: new Date(row.informationRequest.deadlineAt).toISOString(),
+          respondedAt: row.informationRequest.respondedAt
+            ? new Date(row.informationRequest.respondedAt).toISOString()
+            : null,
+        }
+      : null,
     claimedAt: row.claimedAt ? new Date(row.claimedAt).toISOString() : null,
     createdAt: new Date(row.createdAt!).toISOString(),
     dueAt: row.dueAt ? new Date(row.dueAt).toISOString() : null,
@@ -177,7 +222,9 @@ export async function readWorkQueue(
   input: WorkQueueListInput,
   cursor?: WorkQueueCursor,
 ) {
-  const result = await getDatabase().execute(queueQuery(input, actorId, cursor));
+  const result = await getDatabase().execute(
+    queueQuery(input, actorId, cursor),
+  );
   const rows = result.rows as unknown as QueueDatabaseRow[];
   return {
     items: rows.filter((row) => row.taskInstanceId !== null).map(toQueueRow),

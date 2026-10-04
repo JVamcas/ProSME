@@ -1,8 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
+vi.mock(
+  "@/modules/workflows/application/runtime/ServerWorkflowRfiNotificationService",
+  () => ({
+    captureWorkflowRfiCreatedNotification: vi.fn(),
+  }),
+);
+
 vi.mock("@/modules/workflows/infrastructure/StageActivationRepository", () => ({
   findStageIteration: vi.fn(),
+  loadStageReworkIteration: vi.fn(),
   loadIncompleteJoinPredecessors: vi.fn(),
   loadPriorStageContext: vi.fn(),
   loadStageActivationTasks: vi.fn(),
@@ -13,15 +21,22 @@ vi.mock("@/modules/workflows/infrastructure/StageActivationRepository", () => ({
 vi.mock("@/modules/workflows/infrastructure/WorkflowRfiRepository", () => ({
   createStageActivationWorkflowRfi: vi.fn(),
 }));
-vi.mock("@/modules/workflows/application/runtime/ServerWorkflowTaskAssignmentNotificationService", () => ({
-  captureWorkflowTaskAssignmentNotification: vi.fn(),
-}));
+vi.mock(
+  "@/modules/workflows/application/runtime/ServerWorkflowTaskAssignmentNotificationService",
+  () => ({
+    captureWorkflowTaskAssignmentNotification: vi.fn(),
+  }),
+);
 
+import { captureWorkflowRfiCreatedNotification } from "@/modules/workflows/application/runtime/ServerWorkflowRfiNotificationService";
+
+import { createStageActivationWorkflowRfi } from "@/modules/workflows/infrastructure/WorkflowRfiRepository";
 import { activateStageInTransaction } from "@/modules/workflows/application/runtime/ServerStageActivationService";
 import { captureWorkflowTaskAssignmentNotification } from "@/modules/workflows/application/runtime/ServerWorkflowTaskAssignmentNotificationService";
 import { basicOperators } from "@/modules/conditions/engine/BasicOperators";
 import {
   findStageIteration,
+  loadStageReworkIteration,
   loadIncompleteJoinPredecessors,
   loadPriorStageContext,
   loadStageActivationTasks,
@@ -60,7 +75,7 @@ const passingCondition = {
 const target = {
   application: { requestedAmount: 250_000 },
   applicationId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-  applicationReference: "SME-2026-001",
+  applicationReference: "SME Fund-2026-001",
   eligibility: { eligible: true, outcome: "ELIGIBLE" },
   entryCondition: passingCondition,
   fundingCall: { maximumAmount: 500_000 },
@@ -92,22 +107,90 @@ const taskDefinition = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(createStageActivationWorkflowRfi).mockResolvedValue(null);
   vi.mocked(lockStageActivationTarget).mockResolvedValue(target);
   vi.mocked(findStageIteration).mockResolvedValue(null);
+  vi.mocked(loadStageReworkIteration).mockResolvedValue({
+    nextIterationNumber: 2,
+    activeStageInstanceId: null,
+  });
   vi.mocked(loadIncompleteJoinPredecessors).mockResolvedValue([]);
   vi.mocked(loadPriorStageContext).mockResolvedValue([]);
   vi.mocked(loadStageActivationTasks).mockResolvedValue([taskDefinition]);
   vi.mocked(persistStageActivation).mockResolvedValue({
     stage: { id: "77777777-7777-4777-8777-777777777777" },
-    tasks: [{
-      assignedUserId: "99999999-9999-4999-8999-999999999999",
-      id: "88888888-8888-4888-8888-888888888888",
-      workflowTaskDefinitionId: taskDefinition.id,
-    }],
+    tasks: [
+      {
+        assignedUserId: "99999999-9999-4999-8999-999999999999",
+        id: "88888888-8888-4888-8888-888888888888",
+        workflowTaskDefinitionId: taskDefinition.id,
+      },
+    ],
   } as never);
 });
 
 describe("server stage activation service", () => {
+  it("opens fresh tasks on a completed nonrepeatable stage during onward rework", async () => {
+    await expect(
+      activateStageInTransaction({} as never, {
+        ...input,
+        iterationStrategy: "REWORK",
+        returnContext: {
+          sourceStageInstanceId: "origin",
+          dataHandling: "RETAIN",
+        },
+      }),
+    ).resolves.toMatchObject({ kind: "activated" });
+    expect(persistStageActivation).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({ iterationNumber: 2, tasks: [taskDefinition] }),
+    );
+  });
+
+  it("does not duplicate an already active rework target", async () => {
+    vi.mocked(loadStageReworkIteration).mockResolvedValue({
+      nextIterationNumber: 3,
+      activeStageInstanceId: "active-rework",
+    });
+    await expect(
+      activateStageInTransaction({} as never, {
+        ...input,
+        iterationStrategy: "REWORK",
+        returnContext: { sourceStageInstanceId: "origin" },
+      }),
+    ).resolves.toEqual({
+      kind: "already_active",
+      stageInstanceId: "active-rework",
+    });
+    expect(persistStageActivation).not.toHaveBeenCalled();
+  });
+
+  it("keeps ordinary repetition restrictions without a rework context", async () => {
+    await expect(
+      activateStageInTransaction({} as never, {
+        ...input,
+        iterationStrategy: "REWORK",
+      }),
+    ).resolves.toMatchObject({ kind: "invalid_iteration" });
+    expect(persistStageActivation).not.toHaveBeenCalled();
+  });
+  it("creates an explicit rework iteration even when ordinary stage repetition is disabled", async () => {
+    await expect(
+      activateStageInTransaction({} as never, {
+        ...input,
+        iterationNumber: 2,
+        returnContext: {
+          dataHandling: "CLEAR",
+          sourceStageInstanceId: "source",
+        },
+      }),
+    ).resolves.toMatchObject({ kind: "activated" });
+    expect(persistStageActivation).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({ iterationNumber: 2 }),
+    );
+  });
+
   it("creates one stage and its configured tasks after conditions pass", async () => {
     await expect(
       activateStageInTransaction({} as never, input),
@@ -129,11 +212,13 @@ describe("server stage activation service", () => {
       expect.anything(),
       expect.objectContaining({
         stageInstanceId: "77777777-7777-4777-8777-777777777777",
-        tasks: [{
-          assignedUserId: "99999999-9999-4999-8999-999999999999",
-          id: "88888888-8888-4888-8888-888888888888",
-          name: "Review application",
-        }],
+        tasks: [
+          {
+            assignedUserId: "99999999-9999-4999-8999-999999999999",
+            id: "88888888-8888-4888-8888-888888888888",
+            name: "Review application",
+          },
+        ],
       }),
     );
   });
@@ -179,10 +264,7 @@ describe("server stage activation service", () => {
   it("keeps a join inactive while a predecessor is incomplete", async () => {
     vi.mocked(lockStageActivationTarget).mockResolvedValue({
       ...target,
-      joinPredecessorStageKeys: [
-        "TECHNICAL_ASSESSMENT",
-        "FINANCIAL_REVIEW",
-      ],
+      joinPredecessorStageKeys: ["TECHNICAL_ASSESSMENT", "FINANCIAL_REVIEW"],
     });
     vi.mocked(loadIncompleteJoinPredecessors).mockResolvedValue([
       "FINANCIAL_REVIEW",
@@ -195,5 +277,19 @@ describe("server stage activation service", () => {
       kind: "join_pending",
     });
     expect(persistStageActivation).not.toHaveBeenCalled();
+  });
+  it("captures notifications for automatically created information requests", async () => {
+    const transaction = {} as never;
+    const requestInformationId = "99999999-9999-4999-8999-999999999999";
+    vi.mocked(createStageActivationWorkflowRfi).mockResolvedValue({
+      deadlineAt: new Date("2026-10-13T09:00:00.000Z"),
+      requestInformationId,
+      status: "OPEN",
+    });
+    await activateStageInTransaction(transaction, input);
+    expect(captureWorkflowRfiCreatedNotification).toHaveBeenCalledWith(
+      transaction,
+      requestInformationId,
+    );
   });
 });

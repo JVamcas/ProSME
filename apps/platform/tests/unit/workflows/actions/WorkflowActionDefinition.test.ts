@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import { workflowActionDefinitionSchema } from "@/modules/workflows/api/WorkflowSchemas";
-import { workflowActionTypes } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
+import { reject } from "@/modules/workflows/domain/standard/StandardWorkflowBuilders";
+import { supportedWorkflowActionTypes } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
 import { referenceWorkflow } from "../../../support/ReferenceWorkflowFixture";
 import { validateWorkflowGraph } from "@/modules/workflows/WorkflowValidation";
 import {
@@ -14,7 +15,7 @@ const action = {
   label: "Approve review",
   actionType: "APPROVE_ADVANCE" as const,
   enabled: true,
-  reasonCodeRequired: false,
+  reasonRequired: false,
   displayOrder: 1,
   configuration: {},
 };
@@ -34,29 +35,23 @@ describe("WorkflowActionDefinition", () => {
       REQUEST_INFORMATION: {
         continuation: "RESUME_SOURCE_TASK",
         deadlineDays: 10,
-        editableFieldPaths: ["BUSINESS_PLAN"],
+        editableFieldPaths: [],
         reminderDayOffsets: [3, 7],
-        expiryAction: "ESCALATE",
+        expiryAction: "CLOSE_REQUEST",
         participantScope: "APPLICATION_OWNER_AND_REQUESTER",
         recipientScope: "APPLICATION_OWNER",
       },
       RETURN: {
         dataHandling: "RETAIN",
-        reasonRequired: true,
-      },
-      REFER: {
-        returnToReferrer: true,
-        sourceTaskBehavior: "BLOCKED",
       },
       ESCALATE: {
         blockUntilResolved: true,
-        responsibility: "SHARE",
+        responsibility: "TRANSFER",
         targetType: "ROLE",
         targetId: "79e20de0-3558-4d63-90a4-8c9f5125df07",
-        trigger: "SLA_BREACH",
+        trigger: "MANUAL",
       },
       PUT_ON_HOLD: {
-        reasonCodes: ["EXTERNAL_REVIEW"],
         reviewDateRequired: true,
         scope: "STAGE",
       },
@@ -71,7 +66,7 @@ describe("WorkflowActionDefinition", () => {
         targetDate: "2027-01-15",
       },
     } as const;
-    for (const actionType of workflowActionTypes) {
+    for (const actionType of supportedWorkflowActionTypes) {
       const parsed = workflowActionDefinitionSchema.safeParse({
         ...action,
         actionType,
@@ -83,6 +78,50 @@ describe("WorkflowActionDefinition", () => {
         toWorkflowActionDefinition(workflowActionFormDefaults(parsed.data, 1)),
       ).toEqual(parsed.data);
     }
+  });
+
+  it.each(["RETAIN", "SHARE"])("rejects escalation responsibility %s", (responsibility) => {
+    expect(workflowActionDefinitionSchema.safeParse({
+      ...action,
+      actionType: "ESCALATE",
+      configuration: {
+        blockUntilResolved: true,
+        responsibility,
+        targetType: "USER",
+        targetId: "79e20de0-3558-4d63-90a4-8c9f5125df07",
+        trigger: "MANUAL",
+      },
+    }).success).toBe(false);
+  });
+
+  it("rejects automatic SLA escalation configuration", () => {
+    expect(workflowActionDefinitionSchema.safeParse({
+      ...action,
+      actionType: "ESCALATE",
+      configuration: {
+        blockUntilResolved: true,
+        responsibility: "TRANSFER",
+        targetType: "USER",
+        targetId: "79e20de0-3558-4d63-90a4-8c9f5125df07",
+        trigger: "SLA_BREACH",
+      },
+    }).success).toBe(false);
+  });
+
+  it("keeps historical Refer definitions readable but rejects them from a workflow graph", () => {
+    const legacyRefer = workflowActionDefinitionSchema.parse({
+      ...action,
+      actionType: "REFER",
+      configuration: {
+        returnToReferrer: true,
+        sourceTaskBehavior: "BLOCKED",
+      },
+    });
+    const graph = structuredClone(referenceWorkflow);
+    graph.stages[0].actions.push(legacyRefer);
+    expect(validateWorkflowGraph(graph).errors).toContainEqual(
+      expect.objectContaining({ code: "REMOVED_ACTION_TYPE" }),
+    );
   });
 
   it("rejects arbitrary action types and invalid stable keys", () => {
@@ -161,5 +200,28 @@ describe("WorkflowActionDefinition", () => {
       label: "Advance",
     };
     expect(toWorkflowActionDefinition(values).configuration).toEqual({});
+  });
+  it("requires terminal rejection to cancel all open tasks and stages", () => {
+    const terminal = reject("REJECT", "Reject", 1);
+    expect(workflowActionDefinitionSchema.safeParse(terminal).success).toBe(
+      true,
+    );
+    if (
+      terminal.actionType !== "REJECT" ||
+      terminal.configuration.outcome.type !== "TERMINAL"
+    ) {
+      throw new Error("Expected terminal rejection fixture.");
+    }
+    for (const field of ["cancelOpenTasks", "cancelOpenStageInstances"]) {
+      expect(
+        workflowActionDefinitionSchema.safeParse({
+          ...terminal,
+          configuration: {
+            ...terminal.configuration,
+            outcome: { ...terminal.configuration.outcome, [field]: false },
+          },
+        }).success,
+      ).toBe(false);
+    }
   });
 });

@@ -1,4 +1,6 @@
 import "server-only";
+import { lockWorkflowRuntimeForTask } from "./WorkflowRuntimeLock";
+import { workflowTaskHasActiveHold } from "./WorkflowHoldQueries";
 
 import { sql } from "drizzle-orm";
 
@@ -6,6 +8,7 @@ import { getDatabase, type DatabaseTransaction } from "@/db/client";
 
 export type AppendDocumentEvidenceVersionInput = {
   applicationId: string;
+  taskId: string;
   contentType: string;
   objectKey: string;
   originalName: string;
@@ -26,6 +29,7 @@ export async function appendDocumentEvidenceVersion(
   transaction: DatabaseTransaction,
   input: AppendDocumentEvidenceVersionInput,
 ) {
+  await lockWorkflowRuntimeForTask(transaction, input.taskId);
   const lockIdentity = `${input.applicationId}:${input.requirementId}`;
   await transaction.execute(sql`
     SELECT pg_advisory_xact_lock(hashtextextended(${lockIdentity}, 0))
@@ -48,14 +52,28 @@ export async function appendDocumentEvidenceVersion(
     JOIN app_workflow_instances workflow
       ON workflow.application_id = ${input.applicationId}::uuid
       AND workflow.workflow_template_version_id = stage.version_id
+    JOIN app_workflow_tasks task ON task.id = ${input.taskId}::uuid
+      AND task.workflow_task_definition_id = requirement.task_definition_id
+    JOIN app_workflow_stage_instances task_stage
+      ON task_stage.id = task.stage_instance_id
+      AND task_stage.workflow_instance_id = workflow.id
     LEFT JOIN app_workflow_document_evidence_versions evidence
       ON evidence.application_id = workflow.application_id
       AND evidence.requirement_id = requirement.id
     WHERE requirement.id = ${input.requirementId}::uuid
+      AND NOT ${workflowTaskHasActiveHold(sql`task`)}
+      AND task.status IN ('PENDING', 'IN_PROGRESS')
+      AND task_stage.status = 'ACTIVE' AND workflow.status = 'ACTIVE'
     GROUP BY requirement.id
     RETURNING id, version_number AS "versionNumber"
   `);
-  return result.rows[0] ?? null;
+  const version = result.rows[0];
+  if (!version) return null;
+  await transaction.execute(sql`
+    INSERT INTO app_workflow_task_document_evidence (task_id, document_version_id)
+    VALUES (${input.taskId}::uuid, ${version.id}::uuid)
+  `);
+  return version;
 }
 
 export async function createDocumentEvidenceVersion(

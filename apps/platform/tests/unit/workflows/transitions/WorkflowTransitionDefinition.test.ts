@@ -71,6 +71,7 @@ describe("WorkflowTransitionDefinition", () => {
       actionKey: "ADVANCE",
       targetStageKeys: ["ASSESSMENT"],
       terminalOutcome: null,
+      terminalApplicantStatus: null,
       priority: 1,
       condition: null,
     });
@@ -94,13 +95,15 @@ describe("WorkflowTransitionDefinition", () => {
   });
 
   it("rejects unstructured transition conditions", () => {
-    expect(workflowTransitionSchema.safeParse({
-      sourceStageKey: "SCREENING",
-      actionKey: "ADVANCE",
-      targetStageKeys: ["ASSESSMENT"],
-      priority: 1,
-      condition: { rules: [] },
-    }).success).toBe(false);
+    expect(
+      workflowTransitionSchema.safeParse({
+        sourceStageKey: "SCREENING",
+        actionKey: "ADVANCE",
+        targetStageKeys: ["ASSESSMENT"],
+        priority: 1,
+        condition: { rules: [] },
+      }).success,
+    ).toBe(false);
   });
 
   it("rejects an action that is not configured on the source stage", () => {

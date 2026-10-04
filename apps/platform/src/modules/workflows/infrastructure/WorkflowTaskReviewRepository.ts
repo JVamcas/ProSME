@@ -1,5 +1,7 @@
 import "server-only";
+import { lockWorkflowRuntimeForTask } from "./WorkflowRuntimeLock";
 
+import { workflowTaskControlAllowsCompletion } from "./WorkflowTaskControlReadiness";
 import { sql } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
@@ -56,6 +58,7 @@ export async function writeTaskReviewDraft(input: SaveTaskReviewDraftInput & {
   taskId: string;
 }) {
   return getDatabase().transaction(async (transaction) => {
+    await lockWorkflowRuntimeForTask(transaction, input.taskId);
     const locked = await transaction.execute(sql`
       SELECT task.result, task.stage_instance_id AS "stageInstanceId",
         stage.workflow_instance_id AS "workflowInstanceId"
@@ -67,6 +70,7 @@ export async function writeTaskReviewDraft(input: SaveTaskReviewDraftInput & {
         AND app_workflow_task_coi_cleared(task.id, ${input.actorId}::uuid)
         AND task.status IN ('PENDING', 'IN_PROGRESS')
         AND stage.status = 'ACTIVE'
+        AND ${workflowTaskControlAllowsCompletion}
         AND workflow.status = 'ACTIVE'
       FOR UPDATE OF task
     `);

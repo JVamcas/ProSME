@@ -109,6 +109,7 @@ export async function getAdminApplicationDetail(
       form,
       applicationResponseValues(form, lodged.snapshot.form.normalizedValues),
     ),
+    processingStatus: overview.processingStatus,
     statusDescription: overview.publicStatus.description,
     statusLabel: overview.publicStatus.label,
     statusBadgeLabel: applicantDetailProgressLabel(overview.publicStatus.status),

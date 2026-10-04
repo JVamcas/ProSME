@@ -1,4 +1,6 @@
 import "server-only";
+import { evidenceFingerprint } from "../domain/EligibilityEvidenceFingerprint";
+import { terminateWorkflowOnEligibilityFailure } from "@/modules/workflows/application/runtime/ServerWorkflowEligibilityFailureService";
 
 import { permissionCodes } from "@/auth/authorization/permissions";
 import {
@@ -8,6 +10,12 @@ import {
   requirePermission,
 } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
+import type {
+  ApplicationEvaluationSource,
+  BusinessEvaluationSource,
+  CreateAuthoritativeOutcomeInput,
+  FundingCallEvaluationSource,
+} from "../domain/AuthoritativeEligibilityEvaluationSource";
 import type { JsonValue } from "@/modules/conditions/domain/Operand";
 import {
   IdempotencyConflictError,
@@ -34,50 +42,6 @@ import {
   withAuthoritativeEligibilityExecutionTransaction,
 } from "../infrastructure/AuthoritativeEligibilityExecutionRepository";
 
-type FundingCallEvaluationSource = {
-  closesAt: Date;
-  eligibilityRuleSetVersionId: string | null;
-  fundingInstrument: string | null;
-  id: string;
-  maximumGrantAmount: string;
-  minimumGrantAmount: string;
-  opensAt: Date;
-  slug: string;
-  status: string;
-  thematicArea: string | null;
-  title: string;
-  totalBudgetEnvelope: string;
-};
-
-type ApplicationEvaluationSource = {
-  businessSection?: Record<string, JsonValue>;
-  declarationsSection: { compliance?: boolean };
-  eligibilityRuleSetVersionId: string | null;
-  financialSection: { amountRequested?: number };
-  formVersionId?: string | null;
-  id: string;
-  projectSection?: Record<string, JsonValue>;
-  rowVersion: number;
-};
-
-type BusinessEvaluationSource = {
-  employeeCount: number | null;
-  establishedYear: number | null;
-  registrationNumber: string;
-  updatedAt: Date;
-};
-
-type CreateAuthoritativeOutcomeInput = {
-  actorId: string;
-  application: ApplicationEvaluationSource;
-  business: BusinessEvaluationSource;
-  correlationId: string;
-  evaluatedAt: Date;
-  evaluationNumber: number;
-  fundingCall: FundingCallEvaluationSource;
-  workflowTaskId: string | null;
-};
-
 export class AuthoritativeEligibilityUnavailableError extends ResourceConflictError {
   readonly resolutionError: EligibilityInputResolutionError | null;
 
@@ -92,6 +56,7 @@ export class AuthoritativeEligibilityUnavailableError extends ResourceConflictEr
 }
 
 export type ExecuteAuthoritativeEligibilityInput = {
+  confirmHardFailure?: boolean;
   correlationId: string;
   expectedRowVersion: number;
   expectedResponseRowVersion?: number;
@@ -100,27 +65,7 @@ export type ExecuteAuthoritativeEligibilityInput = {
   taskId: string;
 };
 
-function evidenceFingerprint(
-  outcome: Pick<
-    AuthoritativeEligibilityOutcomeWrite,
-    "evaluatedValueProvenance" | "evaluatedValues"
-  >,
-) {
-  const provenance = Object.fromEntries(
-    Object.entries(outcome.evaluatedValueProvenance).map(([path, value]) => [
-      path,
-      {
-        inputDefinitionId: value.inputDefinitionId,
-        sourceDefinitionId: value.sourceDefinitionId,
-        sourceKey: value.sourceKey,
-        sourceKind: value.sourceKind,
-        sourceRecordId: value.sourceRecordId,
-        sourceVersionId: value.sourceVersionId,
-      },
-    ]),
-  );
-  return JSON.stringify({ provenance, values: outcome.evaluatedValues });
-}
+class EligibilityConfirmationRequired extends Error {}
 
 export async function executeAuthoritativeEligibility(
   user: AuthenticatedUser | null,
@@ -129,6 +74,25 @@ export async function executeAuthoritativeEligibility(
   const actor = requireAuthenticatedUser(user);
   return withAuthoritativeEligibilityExecutionTransaction(
     async (transaction) => {
+      const replay = await findAuthoritativeEligibilityExecutionByCommand(
+        transaction,
+        input.idempotencyKey,
+      );
+      if (replay) {
+        if (
+          replay.workflowTaskId !== input.taskId ||
+          replay.evaluatedBy !== actor.id
+        ) {
+          throw new IdempotencyConflictError(
+            "That idempotency key was already used for another evaluation.",
+          );
+        }
+        requirePermission(actor, replay.permissions.edit);
+        if (replay.assignedUserId !== actor.id || !replay.coiCleared) {
+          throw new ResourceNotFoundError("eligibility workflow task");
+        }
+        return eligibilityExecutionResult(replay, replay.taskRowVersion);
+      }
       const target = await lockAuthoritativeEligibilityTask(
         transaction,
         input.taskId,
@@ -139,30 +103,17 @@ export async function executeAuthoritativeEligibility(
       if (!target.assignedToActor) {
         throw new ResourceNotFoundError("eligibility workflow task");
       }
-      const replay = await findAuthoritativeEligibilityExecutionByCommand(
-        transaction,
-        input.idempotencyKey,
-      );
-      if (replay) {
-        if (
-          replay.workflowTaskId !== target.taskId
-          || replay.evaluatedBy !== actor.id
-        ) {
-          throw new IdempotencyConflictError(
-            "That idempotency key was already used for another evaluation.",
-          );
-        }
-        return eligibilityExecutionResult(replay, target.rowVersion);
-      }
       if (target.rowVersion !== input.expectedRowVersion) {
         throw new ResourceConflictError(
           "This eligibility task changed. Refresh and try again.",
         );
       }
-      const canReevaluateCompletedTask = target.status === "COMPLETED"
-        && target.previousOutcome !== null;
-      if (!canReevaluateCompletedTask
-        && !["PENDING", "IN_PROGRESS"].includes(target.status)) {
+      const canReevaluateCompletedTask =
+        target.status === "COMPLETED" && target.previousOutcome !== null;
+      if (
+        !canReevaluateCompletedTask &&
+        !["PENDING", "IN_PROGRESS"].includes(target.status)
+      ) {
         throw new ResourceConflictError(
           "The eligibility task is not ready to run.",
         );
@@ -195,7 +146,9 @@ export async function executeAuthoritativeEligibility(
       let evaluatedFormValues: Record<string, unknown> | undefined;
       if (target.formVersionId) {
         if (!input.values) {
-          throw new ResourceConflictError("Eligibility answers are required to run the evaluation.");
+          throw new ResourceConflictError(
+            "Eligibility answers are required to run the evaluation.",
+          );
         }
         evaluatedFormValues = await saveEligibilityEvaluationForm(transaction, {
           actorId: actor.id,
@@ -216,32 +169,70 @@ export async function executeAuthoritativeEligibility(
           correlationId: input.correlationId,
           evaluatedAt: new Date(),
           evaluationNumber: (target.previousOutcome?.evaluationNumber ?? 0) + 1,
+          evidenceTaskId: target.formVersionId ? target.taskId : undefined,
           fundingCall: target.fundingCall,
           workflowTaskId: target.taskId,
         },
       );
       if (target.previousOutcome) {
         if (
-          evidenceFingerprint(outcome)
-          === evidenceFingerprint(target.previousOutcome)
+          evidenceFingerprint(outcome) ===
+          evidenceFingerprint(target.previousOutcome)
         ) {
           throw new ResourceConflictError(
             "Eligibility evidence has not changed since the last evaluation.",
           );
         }
       }
-      return persistAuthoritativeEligibilityExecution(transaction, {
-        commandKey: input.idempotencyKey,
-        correlationId: input.correlationId,
-        expectedRowVersion: input.expectedRowVersion,
-        outcome,
-        evaluatedFormValues,
-        stageInstanceId: target.stageInstanceId,
-        taskId: target.taskId,
-        workflowInstanceId: target.workflowInstanceId,
-      });
+      if (outcome.hardFailures.length && !input.confirmHardFailure) {
+        // Roll back the temporary answer save as well as any evaluation writes.
+        // A cancelled warning must leave this task available for correction.
+        throw new EligibilityConfirmationRequired();
+      }
+      const result = await persistAuthoritativeEligibilityExecution(
+        transaction,
+        {
+          commandKey: input.idempotencyKey,
+          correlationId: input.correlationId,
+          expectedRowVersion: input.expectedRowVersion,
+          outcome,
+          evaluatedFormValues,
+          stageInstanceId: target.stageInstanceId,
+          taskId: target.taskId,
+          workflowInstanceId: target.workflowInstanceId,
+        },
+      );
+      const terminalStatus = await terminateWorkflowOnEligibilityFailure(
+        transaction,
+        {
+          actorId: actor.id,
+          config: target.config,
+          correlationId: input.correlationId,
+          evaluatedAt: outcome.evaluatedAt,
+          evaluationId: result.evaluationId,
+          hardFailures: outcome.hardFailures,
+          stageInstanceId: target.stageInstanceId,
+          taskId: target.taskId,
+          workflowInstanceId: target.workflowInstanceId,
+        },
+      );
+      if (!terminalStatus) return result;
+      const receipt = await findAuthoritativeEligibilityExecutionByCommand(
+        transaction,
+        input.idempotencyKey,
+      );
+      if (!receipt)
+        throw new ResourceConflictError(
+          "The eligibility receipt is unavailable.",
+        );
+      return eligibilityExecutionResult(receipt, receipt.taskRowVersion);
     },
-  );
+  ).catch((error: unknown) => {
+    if (error instanceof EligibilityConfirmationRequired) {
+      return { confirmationRequired: true as const };
+    }
+    throw error;
+  });
 }
 
 function applicationSourceValues(
@@ -297,7 +288,10 @@ export async function prepareAuthoritativeEligibilityOutcome(
   input: CreateAuthoritativeOutcomeInput,
 ) {
   const versionId = input.application.eligibilityRuleSetVersionId;
-  if (!versionId || versionId !== input.fundingCall.eligibilityRuleSetVersionId) {
+  if (
+    !versionId ||
+    versionId !== input.fundingCall.eligibilityRuleSetVersionId
+  ) {
     throw new AuthoritativeEligibilityUnavailableError(
       "The application is not bound to the Funding Call eligibility version.",
     );
@@ -325,6 +319,7 @@ export async function prepareAuthoritativeEligibilityOutcome(
       fundingCallId: input.fundingCall.id,
       fundingCallValues: fundingCallSourceValues(input.fundingCall),
       ruleSet,
+      workflowTaskId: input.evidenceTaskId,
     });
   } catch (error) {
     if (error instanceof EligibilityInputResolutionError) {
@@ -335,16 +330,12 @@ export async function prepareAuthoritativeEligibilityOutcome(
     }
     throw error;
   }
-  const result = evaluateEligibilityRuleSet(
-    ruleSet,
-    "SCREENING",
-    {
-      application: applicationSourceValues(input.application, input.business),
-      eligibility: resolved.values,
-      fundingCall: fundingCallSourceValues(input.fundingCall),
-      stages: [],
-    },
-  );
+  const result = evaluateEligibilityRuleSet(ruleSet, "SCREENING", {
+    application: applicationSourceValues(input.application, input.business),
+    eligibility: resolved.values,
+    fundingCall: fundingCallSourceValues(input.fundingCall),
+    stages: [],
+  });
   return {
     applicationId: input.application.id,
     contextReference: {
@@ -360,10 +351,7 @@ export async function prepareAuthoritativeEligibilityOutcome(
     evaluationNumber: input.evaluationNumber,
     evaluatedValueProvenance: resolved.provenance,
     evaluatedValues: result.evaluatedValues,
-    finalOutcome: finalOutcome(
-      result.eligible,
-      result.manualScreeningRequired,
-    ),
+    finalOutcome: finalOutcome(result.eligible, result.manualScreeningRequired),
     hardFailures: result.hardFailures,
     manualScreeningRequired: result.manualScreeningRequired,
     ruleOutcomes: result.ruleOutcomes,

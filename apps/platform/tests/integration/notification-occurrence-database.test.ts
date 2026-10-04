@@ -30,7 +30,7 @@ function captureInput(occurrenceKey: string) {
     context: {
       applicationId,
       applicationOwnerUserId: ownerId,
-      applicationReference: "SME-2026-001",
+      applicationReference: "SME Fund-2026-001",
       correlationId: "phase3-correlation",
       fundingOpportunityTitle: "Growth Fund",
       ownerDisplayName: "Applicant One",

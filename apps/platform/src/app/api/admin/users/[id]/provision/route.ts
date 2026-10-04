@@ -12,7 +12,9 @@ export async function POST(request: Request, context: RouteContext) {
   const correlationId = createCorrelationId();
 
   try {
-    const actor = await resolveUserFromHeaders(request.headers);
+    const actor = await resolveUserFromHeaders(request.headers, {
+      checkRevoked: true,
+    });
     const { id } = await context.params;
     const user = await provisionUnprovisionedUser(actor, id);
     return portalRouteSuccess(user, correlationId);

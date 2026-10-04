@@ -4,7 +4,10 @@ import {
   portalRouteError,
   portalRouteSuccess,
 } from "@/lib/api/PortalApiResponse";
-import { formEditorSchema } from "@/modules/forms/api/FormSchemas";
+import {
+  formEditorSchema,
+  formEditorVersionQuerySchema,
+} from "@/modules/forms/api/FormSchemas";
 import {
   getForm,
   updateFormDraft,
@@ -17,8 +20,11 @@ export async function GET(
   const correlationId = createCorrelationId();
   try {
     const { id } = await context.params;
+    const { versionId } = formEditorVersionQuerySchema.parse({
+      versionId: new URL(request.url).searchParams.get("versionId") ?? undefined,
+    });
     return portalRouteSuccess(
-      await getForm(await resolveUserFromHeaders(request.headers), id),
+      await getForm(await resolveUserFromHeaders(request.headers), id, versionId),
       correlationId,
     );
   } catch (error) {

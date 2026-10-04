@@ -1,24 +1,18 @@
+import { mergeUnambiguousSubmissionAliases } from "./WorkflowSubmissionAliases";
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }
 
-function assignRecord(
-  target: Record<string, unknown>,
-  value: unknown,
-) {
+function assignRecord(target: Record<string, unknown>, value: unknown) {
   if (isRecord(value)) Object.assign(target, value);
 }
 
-function assignChecklistItems(
-  target: Record<string, unknown>,
-  value: unknown,
-) {
+function assignChecklistItems(target: Record<string, unknown>, value: unknown) {
   if (!Array.isArray(value)) return;
   value.forEach((item) => {
     if (!isRecord(item) || typeof item.code !== "string") return;
-    const checklist = isRecord(target.checklist)
-      ? target.checklist
-      : {};
+    const checklist = isRecord(target.checklist) ? target.checklist : {};
     const result: Record<string, unknown> = {};
     if (typeof item.accepted === "boolean") {
       target[item.code] = item.accepted;
@@ -54,10 +48,7 @@ function assignDocumentDecisions(
   });
 }
 
-function assignScores(
-  target: Record<string, unknown>,
-  value: unknown,
-) {
+function assignScores(target: Record<string, unknown>, value: unknown) {
   if (isRecord(value)) {
     Object.assign(target, value);
     const scoring = isRecord(target.scoring) ? target.scoring : {};
@@ -87,10 +78,7 @@ function assignScores(
   });
 }
 
-function assignComments(
-  target: Record<string, unknown>,
-  value: unknown,
-) {
+function assignComments(target: Record<string, unknown>, value: unknown) {
   if (Array.isArray(value)) {
     const comments = isRecord(target.comment) ? target.comment : {};
     value.forEach((item) => {
@@ -121,7 +109,7 @@ function assignAction(target: Record<string, unknown>, value: unknown) {
   target.actions = actions;
 }
 
-export function buildStageCompletionValues(
+function buildSubmissionValues(
   rows: readonly {
     responseValues: Record<string, unknown> | null;
     taskResult: Record<string, unknown> | null;
@@ -143,13 +131,29 @@ export function buildStageCompletionValues(
     assignDocumentDecisions(values, taskResult.documents, "document");
     assignDocumentDecisions(values, taskResult.decisions, "decision");
     Object.entries(taskResult).forEach(([key, value]) => {
-      if (!["comments", "decisions", "documents", "items", "scores", "values"]
-        .includes(key)) {
+      if (
+        ![
+          "comments",
+          "decisions",
+          "documents",
+          "items",
+          "scores",
+          "values",
+        ].includes(key)
+      ) {
         result[key] = value;
-        if (![
-          "actions", "checklist", "comment", "decision", "document",
-          "form", "result", "scoring",
-        ].includes(key)) {
+        if (
+          ![
+            "actions",
+            "checklist",
+            "comment",
+            "decision",
+            "document",
+            "form",
+            "result",
+            "scoring",
+          ].includes(key)
+        ) {
           values[key] = value;
         }
       }
@@ -157,5 +161,49 @@ export function buildStageCompletionValues(
   });
   if (Object.keys(form).length) values.form = form;
   if (Object.keys(result).length) values.result = result;
+  return values;
+}
+
+export type StageCompletionSubmission = {
+  responseValues: Record<string, unknown> | null;
+  taskResult: Record<string, unknown> | null;
+  taskId?: string;
+  taskKey?: string;
+  reviewerId?: string | null;
+  reviewerSlot?: number;
+  reviewerCount?: number;
+};
+
+export function buildStageCompletionValues(
+  rows: readonly StageCompletionSubmission[],
+) {
+  const values: Record<string, unknown> = {};
+  const tasks: Record<string, Record<string, unknown>> = {};
+  const seen = new Set<string>();
+  const ambiguous = new Set<string>();
+  for (const row of rows) {
+    const submission = buildSubmissionValues([row]);
+    if (row.taskKey && row.taskId && row.reviewerSlot) {
+      const reviewers = tasks[row.taskKey] ?? {};
+      const reviewerKey = `reviewer_${row.reviewerSlot}`;
+      if (reviewers[reviewerKey]) {
+        throw new Error(
+          `Duplicate submission for task ${row.taskKey}, ${reviewerKey}.`,
+        );
+      }
+      reviewers[reviewerKey] = {
+        ...submission,
+        reviewerId: row.reviewerId ?? null,
+        taskId: row.taskId,
+      };
+      tasks[row.taskKey] = reviewers;
+    }
+    // Existing scalar conditions remain valid only for a single-reviewer task
+    // and an unambiguous field. Multiple reviewers always use scoped paths.
+    if ((row.reviewerCount ?? 1) === 1) {
+      mergeUnambiguousSubmissionAliases(values, submission, seen, ambiguous);
+    }
+  }
+  if (Object.keys(tasks).length) values.task = tasks;
   return values;
 }

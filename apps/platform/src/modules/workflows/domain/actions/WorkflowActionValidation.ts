@@ -19,7 +19,9 @@ export function validateWorkflowActionTargets(
 ): WorkflowValidationIssue[] {
   const stageKeys = new Set(graph.stages.map((stage) => stage.stableKey));
   const actionKeys = new Set(
-    graph.stages.flatMap((stage) => stage.actions.map((action) => action.stableKey)),
+    graph.stages.flatMap((stage) =>
+      stage.actions.map((action) => action.stableKey),
+    ),
   );
   return graph.stages.flatMap((stage, stageIndex) =>
     stage.actions.flatMap((action, actionIndex) => {
@@ -32,19 +34,30 @@ export function validateWorkflowActionTargets(
         message: `${action.label} references unknown stage ${target}.`,
         path,
       }));
+      if (action.actionType === "REFER") {
+        errors.push({
+          code: "REMOVED_ACTION_TYPE",
+          message:
+            "Refer has been removed. Remove this action and its transitions.",
+          path: `stages.${stageIndex}.actions.${actionIndex}.actionType`,
+        });
+      }
       if (action.actionType !== "REJECT") return errors;
       const transitions = graph.transitions.filter(
-        (transition) => transition.sourceStageKey === stage.stableKey
-          && transition.actionKey === action.stableKey,
+        (transition) =>
+          transition.sourceStageKey === stage.stableKey &&
+          transition.actionKey === action.stableKey,
       );
-      const hasTerminalTarget = transitions.some(
-        (transition) => Boolean(transition.terminalOutcome),
+      const hasTerminalTarget = transitions.some((transition) =>
+        Boolean(transition.terminalOutcome),
       );
       const hasStageTarget = transitions.some(
         (transition) => transition.targetStageKeys.length > 0,
       );
-      if (hasTerminalTarget === hasStageTarget
-        || (action.configuration.outcome.type === "TERMINAL") !== hasTerminalTarget) {
+      if (
+        hasTerminalTarget === hasStageTarget ||
+        (action.configuration.outcome.type === "TERMINAL") !== hasTerminalTarget
+      ) {
         errors.push({
           code: "INVALID_REJECTION_OUTCOME",
           message: `${action.label} must use only transitions matching its configured rejection outcome.`,

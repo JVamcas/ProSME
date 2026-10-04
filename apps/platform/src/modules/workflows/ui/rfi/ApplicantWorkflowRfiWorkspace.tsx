@@ -2,192 +2,29 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CheckCircle2 } from "lucide-react";
-import {
-  FormProvider,
-  useForm,
-  useFormContext,
-  useWatch,
-} from "react-hook-form";
-import { z } from "zod";
+import { FormProvider, useForm, useWatch } from "react-hook-form";
 
 import { GeneralButton, GeneralButtonLink } from "@/components/ui/button";
-import {
-  FormInput,
-  FormSelect,
-  FormTextarea,
-} from "@/components/ui/form-fields";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatLocalDateTime24 } from "@/lib/dateUtils";
 import { PageShell } from "@/shared/ui/PageShell";
-import { FormRichTextField } from "@/shared/ui/FormRichTextField";
-import { richTextToPlainText } from "@/shared/utils/RichText";
-import type {
-  WorkflowRfiDetail,
-  WorkflowRfiEditableField,
-} from "../../domain/runtime/WorkflowRfiView";
-import { workflowRfiDetailedResponseFieldPath } from "../../domain/runtime/WorkflowRfi";
+import type { WorkflowRfiDetail } from "../../domain/runtime/WorkflowRfiView";
+import { FormRenderer } from "@/modules/forms/ui/renderer/FormRenderer";
+import {
+  workflowRfiResponseDefinition,
+  workflowRfiResponseSchema,
+  workflowRfiInitialValues,
+} from "./WorkflowRfiResponseForm";
 import {
   useOwnedWorkflowRfi,
   useRespondToWorkflowRfi,
-} from "./WorkflowRfiHooks";
+} from "./useWorkflowRfi";
 import { ApplicantWorkflowRfiDocuments } from "./ApplicantWorkflowRfiDocuments";
 import { WorkflowRfiInstructions } from "./WorkflowRfiInstructions";
 import {
   WorkflowRfiCorrespondence,
   WorkflowRfiDeadline,
 } from "./WorkflowRfiPresentation";
-
-const fieldValueSchema = z.union([z.string(), z.array(z.string())]);
-const responseFormSchema = z.object({
-  fields: z.array(
-    z.object({
-      path: z.string().min(1),
-      value: fieldValueSchema,
-    }),
-  ),
-}).superRefine((values, context) => {
-  values.fields.forEach((field, index) => {
-    if (
-      field.path === workflowRfiDetailedResponseFieldPath &&
-      (typeof field.value !== "string" || !richTextToPlainText(field.value))
-    ) {
-      context.addIssue({
-        code: "custom",
-        message: "Enter the requested detailed response.",
-        path: ["fields", index, "value"],
-      });
-    }
-  });
-});
-type ResponseFormValues = z.infer<typeof responseFormSchema>;
-
-function initialValue(
-  field: WorkflowRfiEditableField,
-  detail: WorkflowRfiDetail,
-) {
-  const value = Object.hasOwn(detail.draft?.fieldValues ?? {}, field.path)
-    ? detail.draft!.fieldValues[field.path]
-    : field.currentValue;
-  if (Array.isArray(value)) return value.map(String);
-  if (typeof value === "boolean") return value ? "true" : "false";
-  return value === null || value === undefined ? "" : String(value);
-}
-
-function submittedValues(
-  values: ResponseFormValues,
-  fields: WorkflowRfiEditableField[],
-) {
-  const types = new Map(fields.map((field) => [field.path, field.type]));
-  return Object.fromEntries(
-    values.fields.map((field) => {
-      const type = types.get(field.path);
-      if (type === "YES_NO") return [field.path, field.value === "true"];
-      if (
-        ["NUMBER", "CURRENCY", "PERCENTAGE"].includes(type ?? "") &&
-        typeof field.value === "string" &&
-        field.value !== ""
-      ) {
-        return [field.path, Number(field.value)];
-      }
-      return [field.path, field.value];
-    }),
-  );
-}
-
-function EditableFieldControl({
-  field,
-  index,
-}: {
-  field: WorkflowRfiEditableField;
-  index: number;
-}) {
-  const name = `fields.${index}.value` as const;
-  if (field.type === "RICH_TEXT") {
-    return (
-      <FormRichTextField
-        label={field.label}
-        name={name}
-        placeholder="Provide the requested detailed information."
-        required
-      />
-    );
-  }
-  if (field.type === "TEXTAREA") {
-    return <FormTextarea label={field.label} name={name} rows={4} />;
-  }
-  if (field.type === "YES_NO") {
-    return (
-      <FormSelect
-        items={[
-          { label: "Yes", value: "true" },
-          { label: "No", value: "false" },
-        ]}
-        label={field.label}
-        name={name}
-        placeholder="Select an answer"
-      />
-    );
-  }
-  if (field.type === "SINGLE_SELECT") {
-    return (
-      <FormSelect
-        items={field.options.map((option) => ({
-          label: option.label,
-          value: option.key,
-        }))}
-        label={field.label}
-        name={name}
-        placeholder="Select an option"
-      />
-    );
-  }
-  if (field.type === "MULTI_SELECT") {
-    return <MultiSelectField field={field} index={index} />;
-  }
-  return (
-    <FormInput
-      label={field.label}
-      name={name}
-      type={
-        ["NUMBER", "CURRENCY", "PERCENTAGE"].includes(field.type)
-          ? "number"
-          : field.type === "DATE"
-            ? "date"
-            : "text"
-      }
-    />
-  );
-}
-
-function MultiSelectField({
-  field,
-  index,
-}: {
-  field: WorkflowRfiEditableField;
-  index: number;
-}) {
-  const name = `fields.${index}.value` as const;
-  const form = useFormContext<ResponseFormValues>();
-  const values = useWatch<ResponseFormValues>({ name }) as string[] | undefined;
-  return (
-    <FormSelect
-      items={field.options.map((option) => ({
-        label: option.label,
-        value: option.key,
-      }))}
-      label={field.label}
-      multiple
-      name={name}
-      onMultipleChange={(next) =>
-        form.setValue(name, next, {
-          shouldDirty: true,
-          shouldValidate: true,
-        })
-      }
-      value={values ?? []}
-    />
-  );
-}
 
 function SubmissionReceipt({ detail }: { detail: WorkflowRfiDetail }) {
   return (
@@ -206,6 +43,22 @@ function SubmissionReceipt({ detail }: { detail: WorkflowRfiDetail }) {
   );
 }
 
+function ResponseSubmitButton({
+  disabled,
+  pending,
+}: {
+  disabled: boolean;
+  pending: boolean;
+}) {
+  return (
+    <div className="flex justify-end">
+      <GeneralButton disabled={disabled} type="submit" variant="success">
+        {pending ? "Submitting…" : "Submit response"}
+      </GeneralButton>
+    </div>
+  );
+}
+
 export function ApplicantWorkflowRfiWorkspace({
   initialDetail,
 }: {
@@ -219,27 +72,33 @@ export function ApplicantWorkflowRfiWorkspace({
   );
   const detail = query.data ?? initialDetail;
   const respond = useRespondToWorkflowRfi(applicationId, detail.id);
-  const form = useForm<ResponseFormValues>({
-    defaultValues: {
-      fields: detail.editableFields.map((field) => ({
-        path: field.path,
-        value: initialValue(field, detail),
-      })),
-    },
-    resolver: zodResolver(responseFormSchema),
+  const definition = workflowRfiResponseDefinition(detail);
+  const form = useForm<{ fieldValues: Record<string, unknown> }>({
+    defaultValues: { fieldValues: workflowRfiInitialValues(detail) },
+    resolver: zodResolver(workflowRfiResponseSchema(definition)),
   });
+  const fieldValues = useWatch({ control: form.control, name: "fieldValues" });
+  const canRespond =
+    detail.status === "OPEN" && new Date(detail.deadlineAt) > new Date();
   const missingDocuments = detail.requestedDocuments.filter(
     (document) => !document.evidence,
   );
 
-  async function submitResponse(values: ResponseFormValues) {
-    if (missingDocuments.length) return;
+  async function submitResponse(values: {
+    fieldValues: Record<string, unknown>;
+  }) {
+    if (missingDocuments.length || !canRespond) return;
     await respond.mutateAsync({
       evidenceVersionIds: detail.requestedDocuments.flatMap((document) =>
         document.evidence ? [document.evidence.versionId] : [],
       ),
       expectedRowVersion: detail.rowVersion,
-      fieldValues: submittedValues(values, detail.editableFields),
+      fieldValues: Object.fromEntries(
+        detail.editableFields.map((field) => [
+          field.path,
+          values.fieldValues[field.path] ?? "",
+        ]),
+      ),
     });
   }
 
@@ -280,30 +139,9 @@ export function ApplicantWorkflowRfiWorkspace({
             <SubmissionReceipt detail={detail} />
           ) : null}
 
-          {detail.status === "OPEN" ? (
+          {canRespond ? (
             <FormProvider {...form}>
-              <form
-                className="space-y-5"
-                onSubmit={(event) => void submit(event)}
-              >
-                {detail.editableFields.length ? (
-                  <section className="rounded-xl border border-brand-navy/10 bg-white p-5 shadow-sm">
-                    <h2 className="font-bold text-brand-navy">
-                      Information to update
-                    </h2>
-                    <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                      {detail.editableFields.map((field, index) => (
-                        <div key={field.path}>
-                          <input
-                            {...form.register(`fields.${index}.path`)}
-                            type="hidden"
-                          />
-                          <EditableFieldControl field={field} index={index} />
-                        </div>
-                      ))}
-                    </div>
-                  </section>
-                ) : null}
+              <section className="space-y-5">
                 {detail.requestedDocuments.length ? (
                   <ApplicantWorkflowRfiDocuments
                     applicationId={applicationId}
@@ -315,19 +153,51 @@ export function ApplicantWorkflowRfiWorkspace({
                     {respond.error.message}
                   </p>
                 ) : null}
-                <div className="flex flex-wrap justify-end gap-3">
-                  <GeneralButton
-                    disabled={
-                      Boolean(missingDocuments.length) || respond.isPending
+                {form.formState.errors.fieldValues?.message ? (
+                  <p className="text-sm text-red-700" role="alert">
+                    {String(form.formState.errors.fieldValues.message)}
+                  </p>
+                ) : null}
+                {detail.editableFields.length ? (
+                  <FormRenderer
+                    definition={definition}
+                    formData={fieldValues}
+                    onChange={(values) =>
+                      form.setValue("fieldValues", values, {
+                        shouldDirty: true,
+                        shouldValidate: true,
+                      })
                     }
-                    type="submit"
-                    variant="success"
+                    onSubmit={(values) => {
+                      form.setValue("fieldValues", values);
+                      void submit();
+                    }}
+                    readOnly={respond.isPending}
+                    showCompleteness={false}
                   >
-                    {respond.isPending ? "Submitting…" : "Submit response"}
-                  </GeneralButton>
-                </div>
-              </form>
+                    <ResponseSubmitButton
+                      disabled={
+                        Boolean(missingDocuments.length) || respond.isPending
+                      }
+                      pending={respond.isPending}
+                    />
+                  </FormRenderer>
+                ) : (
+                  <form onSubmit={(event) => void submit(event)}>
+                    <ResponseSubmitButton
+                      disabled={
+                        Boolean(missingDocuments.length) || respond.isPending
+                      }
+                      pending={respond.isPending}
+                    />
+                  </form>
+                )}
+              </section>
             </FormProvider>
+          ) : detail.status === "OPEN" || detail.status === "EXPIRED" ? (
+            <p className="rounded-xl border border-brand-navy/10 bg-white p-5 text-sm text-brand-navy/70">
+              The response deadline has passed. These fields are locked.
+            </p>
           ) : null}
         </div>
         <WorkflowRfiCorrespondence entries={detail.correspondence} />

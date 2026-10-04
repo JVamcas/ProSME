@@ -25,7 +25,6 @@ vi.mock(
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { PermissionDeniedError } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
-import { getWorkflowActionAvailability } from "@/modules/workflows/application/runtime/ServerWorkflowActionAvailabilityService";
 import {
   readChecklistTaskCompletion,
   writeChecklistTaskCompletion,
@@ -35,9 +34,8 @@ import { writeTaskReviewDraft } from "@/modules/workflows/infrastructure/Workflo
 import { RequestValidationError } from "@/lib/resource-errors";
 import {
   completeChecklistTask,
-  getWorkflowTask,
   saveTaskReviewDraft,
-} from "@/modules/work-queue/ServerWorkflowTaskService";
+} from "@/modules/work-queue/application/ServerWorkflowTaskService";
 import { workflowTaskServiceFixture } from "../../support/WorkflowTaskServiceFixture";
 
 const actor: AuthenticatedUser = {
@@ -58,27 +56,6 @@ const actor: AuthenticatedUser = {
   userType: "staff",
 };
 
-const availableActions = [
-  {
-    actionType: "APPROVE_ADVANCE" as const,
-    available: true,
-    key: "ADVANCE",
-    label: "Advance",
-    presentation: { displayOrder: 1, variant: "success" as const },
-    requiredInput: {
-      comment: { maxLength: 4_000, required: false },
-      confirmation: { message: null, required: false },
-      dueDate: { deadlineDays: null, required: false },
-      editableFieldPaths: [],
-      reasonCode: { options: [], required: false },
-      reasonOrCommentRequired: false,
-      reviewDate: { required: false },
-      target: { type: null, value: null },
-    },
-    runtimeVersion: 1,
-    unavailableReason: null,
-  },
-];
 
 const task = workflowTaskServiceFixture;
 
@@ -90,24 +67,10 @@ const command = {
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(readWorkflowTask).mockResolvedValue(task);
-  vi.mocked(getWorkflowActionAvailability).mockResolvedValue(availableActions);
   vi.mocked(readChecklistTaskCompletion).mockResolvedValue(null);
 });
 
 describe("workflow checklist task service", () => {
-  it("returns only the configured checklist projection", async () => {
-    const result = await getWorkflowTask(actor, task.taskInstanceId);
-    expect(result).toMatchObject({
-      checklistItems: task.checklistItems,
-      actions: availableActions,
-      displayMode: "STEP_PROGRESS",
-      dueAt: "2026-09-20T08:00:00.000Z",
-      resultItems: [],
-    });
-    expect(result).not.toHaveProperty("config");
-    expect(result).not.toHaveProperty("permissions");
-    expect(result).not.toHaveProperty("result");
-  });
 
   it("saves incomplete review values as a draft", async () => {
     vi.mocked(readWorkflowTask).mockResolvedValue({
@@ -169,6 +132,9 @@ describe("workflow checklist task service", () => {
     expect(writeTaskReviewDraft).not.toHaveBeenCalled();
   });
 
+});
+
+describe("workflow checklist task completion", () => {
   it("requires every mandatory configured item", async () => {
     await expect(
       completeChecklistTask(

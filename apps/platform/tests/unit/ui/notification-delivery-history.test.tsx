@@ -24,11 +24,13 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-async function renderHistory() {
+async function renderHistory(canRetry = false) {
   const container = document.createElement("div");
   document.body.append(container);
   const root = createRoot(container);
-  await act(async () => root.render(<NotificationDeliveryHistory />));
+  await act(async () => root.render(
+    <NotificationDeliveryHistory canRetry={canRetry} />,
+  ));
   return { container, root };
 }
 
@@ -61,6 +63,48 @@ describe("notification delivery history states", () => {
     const { container, root } = await renderHistory();
     expect(container.textContent).toContain("No deliveries match");
     expect(container.textContent).toContain("Page 1 of 1");
+    await act(async () => root.unmount());
+  });
+
+  it("offers an authorized redrive action for dead-letter deliveries", async () => {
+    hooks.deliveries = {
+      data: {
+        items: [{
+          applicationReference: "SME Fund-2026-005",
+          attemptCount: 5,
+          channelCode: "EMAIL",
+          createdAt: "2026-09-30T12:00:00.000Z",
+          deliveryId: "81000000-0000-4000-8000-000000000001",
+          eventKey: "application.submitted",
+          failureCode: "NOTIFICATION_RETRY_EXHAUSTED",
+          nextAttemptAt: "2026-09-30T12:15:00.000Z",
+          recipientEmail: "applicant@example.test",
+          recipientName: "Applicant",
+          sentAt: null,
+          status: "DEAD_LETTER",
+          templateVersionNumber: 1,
+          updatedAt: "2026-09-30T12:15:00.000Z",
+        }],
+        page: 1,
+        pageSize: 25,
+        total: 1,
+        totalPages: 1,
+      },
+      error: null,
+      isFetching: false,
+      isPending: false,
+    };
+
+    const { container, root } = await renderHistory(true);
+
+    expect(container.textContent).toContain("Needs attention");
+    expect(container.textContent).toContain("after several attempts");
+    expect(container.textContent).not.toContain("NOTIFICATION_RETRY_EXHAUSTED");
+    expect(container.textContent).toContain("5 attempts");
+    expect(
+      [...container.querySelectorAll("button")]
+        .some((button) => button.textContent?.includes("Retry")),
+    ).toBe(true);
     await act(async () => root.unmount());
   });
 });

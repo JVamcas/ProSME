@@ -1,4 +1,10 @@
 import { z } from "zod";
+import {
+  parseWorkflowRfiReminderOffsets,
+  workflowRfiDeadlineSettingsSchema,
+  workflowRfiRuntimeOverridesSchema,
+} from "../../domain/actions/WorkflowRequestInformationDeadline";
+import { workflowPublicStatuses } from "@/modules/workflows/domain/definitions/WorkflowStageDefinition";
 
 import { workflowActionTypes } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
 
@@ -15,11 +21,6 @@ function isStableKeyList(value: string) {
     new Set(values).size === values.length &&
     values.every((item) => stableKeyPattern.test(item))
   );
-}
-
-function reminderOffsets(value: string) {
-  if (!value.trim()) return [];
-  return value.split(/[\n,]/).map((item) => Number(item.trim()));
 }
 
 function requiredFor(
@@ -48,36 +49,23 @@ export const workflowActionFormSchema = z
     taskStableKeys: z.array(z.string().min(1)).max(100),
     actionType: z.enum(workflowActionTypes),
     enabled: z.boolean(),
-    reasonCodeRequired: z.boolean(),
+    reasonRequired: z.boolean(),
     displayOrder: z.number().int().positive(),
-    reasonCodes: z.string(),
     rejectionOutcomeType: z.enum(["TERMINAL", "TRANSITION"]),
-    cancelOpenStageInstances: z.boolean(),
-    cancelOpenTasks: z.boolean(),
-    rejectionPublicStatus: z.enum([
-      "SUBMITTED",
-      "UNDER_REVIEW",
-      "ACTION_REQUIRED",
-      "OUTCOME_AVAILABLE",
-      "CLOSED",
-      "WITHDRAWN",
-    ]),
+    rejectionPublicStatus: z.enum(workflowPublicStatuses),
     rejectionPublicLabel: z.string().trim().max(120),
     rejectionPublicDescription: z.string().trim().max(300),
     reversibleActionKey: z.string(),
     deadlineDays: z.number().int().positive().max(365).optional(),
     editableFieldPaths: z.string(),
     reminderDayOffsets: z.string(),
+    runtimeOverrides: workflowRfiRuntimeOverridesSchema.optional(),
     expiryAction: z.enum(["CLOSE_REQUEST", "ESCALATE", "RETURN"]),
     dataHandling: z.enum(["RETAIN", "CLEAR"]),
-    reasonRequired: z.boolean(),
     returnToReferrer: z.boolean(),
     sourceTaskBehavior: z.enum(["BLOCKED", "OPEN"]),
     escalationTargetType: z.enum(["ROLE", "USER"]),
     escalationTargetId: z.string(),
-    escalationTrigger: z.enum(["MANUAL", "SLA_BREACH", "CONDITION"]),
-    escalationResponsibility: z.enum(["RETAIN", "SHARE", "TRANSFER"]),
-    escalationBlocksWork: z.boolean(),
     reviewDateRequired: z.boolean(),
     allowedStageKeys: z.string(),
     resubmissionRule: z.enum([
@@ -92,6 +80,21 @@ export const workflowActionFormSchema = z
       .refine((value) => !value || stableKeyPattern.test(value)),
   })
   .superRefine((values, context) => {
+    if (values.actionType === "WITHDRAW") {
+      context.addIssue({
+        code: "custom",
+        message: "Configure applicant withdrawal in the stage Behaviour step.",
+        path: ["actionType"],
+      });
+    }
+    if (values.actionType === "REFER") {
+      context.addIssue({
+        code: "custom",
+        message:
+          "Refer has been removed. Remove this action from the workflow.",
+        path: ["actionType"],
+      });
+    }
     if (values.actionType === "REJECT") {
       if (values.rejectionOutcomeType === "TERMINAL") {
         requiredFor(
@@ -125,33 +128,24 @@ export const workflowActionFormSchema = z
         "deadlineDays",
         context,
       );
-      const offsets = reminderOffsets(values.reminderDayOffsets);
-      if (
-        offsets.some((offset) => !Number.isInteger(offset) || offset <= 0) ||
-        new Set(offsets).size !== offsets.length
-      ) {
-        context.addIssue({
-          code: "custom",
-          message: "Use unique positive whole days separated by commas.",
-          path: ["reminderDayOffsets"],
+      if (values.deadlineDays !== undefined) {
+        const deadline = workflowRfiDeadlineSettingsSchema.safeParse({
+          deadlineDays: values.deadlineDays,
+          expiryAction: values.expiryAction,
+          reminderDayOffsets: parseWorkflowRfiReminderOffsets(
+            values.reminderDayOffsets,
+          ),
         });
+        if (!deadline.success) {
+          for (const issue of deadline.error.issues) {
+            context.addIssue({
+              code: "custom",
+              message: issue.message,
+              path: [issue.path[0] ?? "reminderDayOffsets"],
+            });
+          }
+        }
       }
-      if (
-        values.deadlineDays &&
-        offsets.some((offset) => offset >= values.deadlineDays!)
-      ) {
-        context.addIssue({
-          code: "custom",
-          message: "Reminder days must fall before the deadline.",
-          path: ["reminderDayOffsets"],
-        });
-      }
-      requiredFor(
-        values.editableFieldPaths,
-        "Enter editable field paths.",
-        "editableFieldPaths",
-        context,
-      );
       const fieldPaths = values.editableFieldPaths
         .split(/[\n,]/)
         .map((item) => item.trim())
@@ -176,14 +170,6 @@ export const workflowActionFormSchema = z
         context,
       );
     }
-    if (values.actionType === "PUT_ON_HOLD") {
-      requiredFor(
-        values.reasonCodes,
-        "Enter reason codes.",
-        "reasonCodes",
-        context,
-      );
-    }
     if (values.actionType === "WITHDRAW") {
       requiredFor(
         values.allowedStageKeys,
@@ -204,10 +190,7 @@ export const workflowActionFormSchema = z
         context,
       );
     }
-    const keyLists = [
-      ["reasonCodes", values.reasonCodes],
-      ["allowedStageKeys", values.allowedStageKeys],
-    ] as const;
+    const keyLists = [["allowedStageKeys", values.allowedStageKeys]] as const;
     keyLists.forEach(([path, value]) => {
       if (value && !isStableKeyList(value)) {
         context.addIssue({
@@ -226,10 +209,8 @@ export const workflowActionTypeItems = [
   { label: "Reject", value: "REJECT" },
   { label: "Request Information", value: "REQUEST_INFORMATION" },
   { label: "Return", value: "RETURN" },
-  { label: "Refer", value: "REFER" },
   { label: "Escalate", value: "ESCALATE" },
   { label: "Put on Hold", value: "PUT_ON_HOLD" },
   { label: "Resume", value: "RESUME" },
-  { label: "Withdraw", value: "WITHDRAW" },
   { label: "Defer", value: "DEFER" },
 ] as const;

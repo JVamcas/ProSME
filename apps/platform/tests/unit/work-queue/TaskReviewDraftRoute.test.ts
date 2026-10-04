@@ -4,12 +4,12 @@ vi.mock("server-only", () => ({}));
 vi.mock("@/auth/authorization/current-user", () => ({
   resolveUserFromHeaders: vi.fn().mockResolvedValue(null),
 }));
-vi.mock("@/modules/work-queue/ServerWorkflowTaskService", () => ({
+vi.mock("@/modules/work-queue/application/ServerWorkflowTaskService", () => ({
   saveTaskReviewDraft: vi.fn().mockResolvedValue({ saved: true }),
 }));
 
 import { PUT } from "@/app/api/admin/tasks/[id]/review-draft/route";
-import { saveTaskReviewDraft } from "@/modules/work-queue/ServerWorkflowTaskService";
+import { saveTaskReviewDraft } from "@/modules/work-queue/application/ServerWorkflowTaskService";
 
 const taskId = "c6ee71ce-0ed0-43b9-9381-e2c568634364";
 

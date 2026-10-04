@@ -1,0 +1,134 @@
+{
+  "reference": "auth-optimized G2 build based on 5f1a95eb",
+  "results": [
+    {
+      "audience": "staff",
+      "condition": "cold",
+      "samplesPerBuild": 5,
+      "current": {
+        "feedbackMs": null,
+        "structureMs": 96.70000000298023,
+        "dataMs": 543.868442
+      },
+      "reference": {
+        "structureMs": 273.90000000596046,
+        "dataMs": 500.2705040000001
+      },
+      "g0": {
+        "structureMs": 2183.7000000029802,
+        "dataMs": 2898.4050629999983
+      },
+      "initialDataMs": 583.602785,
+      "fullDataToleranceMet": true
+    },
+    {
+      "audience": "staff",
+      "condition": "warm",
+      "samplesPerBuild": 5,
+      "current": {
+        "feedbackMs": 34.5,
+        "structureMs": 163.29999999701977,
+        "dataMs": 163.29999999701977
+      },
+      "reference": {
+        "structureMs": 211.6000000089407,
+        "dataMs": 211.6000000089407
+      },
+      "g0": {
+        "structureMs": 1175.7999999970198,
+        "dataMs": 1175.7999999970198
+      },
+      "initialDataMs": 407.29999999701977,
+      "fullDataToleranceMet": true
+    },
+    {
+      "audience": "staff",
+      "condition": "delayed",
+      "samplesPerBuild": 5,
+      "current": {
+        "feedbackMs": 26.5,
+        "structureMs": 113.20000000298023,
+        "dataMs": 1562
+      },
+      "reference": {
+        "structureMs": 1626.1000000089407,
+        "dataMs": 1626.1000000089407
+      },
+      "g0": {
+        "structureMs": 1934.2999999970198,
+        "dataMs": 1934.2999999970198
+      },
+      "initialDataMs": 1557.2999999970198,
+      "fullDataToleranceMet": true,
+      "structureImprovementPercent": 93.03855851409152,
+      "g0StructureImprovementPercent": 94.14775370918913,
+      "structureLeadMs": 1444.0999999940395,
+      "structureTargetsMet": true
+    },
+    {
+      "audience": "applicant",
+      "condition": "cold",
+      "samplesPerBuild": 5,
+      "current": {
+        "feedbackMs": null,
+        "structureMs": 146.79999999701977,
+        "dataMs": 494.2709349999932
+      },
+      "reference": {
+        "structureMs": 192.79999999701977,
+        "dataMs": 450.83596700000635
+      },
+      "g0": {
+        "structureMs": 1853.6999999955297,
+        "dataMs": 2189.4623389999906
+      },
+      "initialDataMs": 475.9465210000053,
+      "fullDataToleranceMet": true
+    },
+    {
+      "audience": "applicant",
+      "condition": "warm",
+      "samplesPerBuild": 5,
+      "current": {
+        "feedbackMs": 29.19999998807907,
+        "structureMs": 145.79999999701977,
+        "dataMs": 145.79999999701977
+      },
+      "reference": {
+        "structureMs": 138.40000000596046,
+        "dataMs": 138.40000000596046
+      },
+      "g0": {
+        "structureMs": 905.2000000029802,
+        "dataMs": 905.2000000029802
+      },
+      "initialDataMs": 417,
+      "fullDataToleranceMet": true
+    },
+    {
+      "audience": "applicant",
+      "condition": "delayed",
+      "samplesPerBuild": 5,
+      "current": {
+        "feedbackMs": 28.299999997019768,
+        "structureMs": 112.70000000298023,
+        "dataMs": 1548.6000000089407
+      },
+      "reference": {
+        "structureMs": 1578.2000000029802,
+        "dataMs": 1578.2000000029802
+      },
+      "g0": {
+        "structureMs": 1815.8000000044703,
+        "dataMs": 1815.8000000044703
+      },
+      "initialDataMs": 1542.7000000029802,
+      "fullDataToleranceMet": true,
+      "structureImprovementPercent": 92.85895323769057,
+      "g0StructureImprovementPercent": 93.79336931365224,
+      "structureLeadMs": 1434.6000000089407,
+      "structureTargetsMet": true
+    }
+  ],
+  "allTargetsMet": true
+}

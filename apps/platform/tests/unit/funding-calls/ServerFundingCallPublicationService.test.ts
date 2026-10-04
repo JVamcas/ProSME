@@ -31,6 +31,7 @@ const formVersionId = "20000000-0000-4000-8000-000000000001";
 const eligibilityRuleSetVersionId = "30000000-0000-4000-8000-000000000001";
 const workflowTemplateVersionId = "40000000-0000-4000-8000-000000000001";
 const call = {
+  allowResubmissionAfterWithdrawal: false,
   applicationDuplicatePolicy: "one_per_business" as const,
   closesAt: new Date("2027-03-31T15:00:00.000Z"),
   createdAt: new Date("2026-09-20T08:00:00.000Z"),
@@ -47,13 +48,13 @@ const call = {
   publicContactEmail: null,
   publicContactName: null,
   publicContactPhone: null,
-  reference: "SME-2027-01",
+  reference: "SME Fund-2027-01",
   rowVersion: 1,
   slug: "sme-growth-fund-2027",
   status: "APPROVED" as const,
   suspendedFromStatus: null,
   thematicArea: "Business growth",
-  title: "SME Growth Fund 2027",
+  title: "SME Fund Growth Fund 2027",
   totalBudgetEnvelope: "10000000.00",
   updatedAt: new Date("2026-09-20T08:00:00.000Z"),
   updatedBy: actorId,

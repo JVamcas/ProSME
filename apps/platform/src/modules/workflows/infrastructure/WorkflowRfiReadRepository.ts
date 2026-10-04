@@ -1,4 +1,5 @@
 import "server-only";
+import { workflowDocumentEvidenceIsCurrent } from "./WorkflowDocumentEvidenceReadiness";
 
 import { sql, type SQL } from "drizzle-orm";
 
@@ -151,6 +152,22 @@ function detailQuery(condition: SQL) {
     LEFT JOIN LATERAL (
       SELECT jsonb_agg(jsonb_build_object(
         'path', requested.path,
+        'definition', CASE WHEN field.id IS NULL THEN NULL ELSE jsonb_build_object(
+          'key', field.key,
+          'label', field.label,
+          'type', field.type,
+          'required', field.required,
+          'helpText', field.help_text,
+          'minimum', field.minimum,
+          'maximum', field.maximum,
+          'minLength', field.min_length,
+          'maxLength', field.max_length,
+          'repeatable', field.repeatable_configuration,
+          'options', COALESCE(field_options.items, '[]'::jsonb),
+          'columnSpan', field.column_span,
+          'sectionId', field.section_id,
+          'order', field.display_order
+        ) END,
         'label', COALESCE(field.label, initcap(replace(requested.path, '_', ' '))),
         'type', CASE
           WHEN requested.path = ${workflowRfiDetailedResponseFieldPath}
@@ -198,6 +215,7 @@ function detailQuery(condition: SQL) {
         FROM app_workflow_document_evidence_versions version
         WHERE version.application_id = rfi.application_id
           AND version.requirement_id = requirement.id
+          AND ${workflowDocumentEvidenceIsCurrent(sql`rfi.task_id`, sql`version.id`)}
           AND version.uploaded_by = rfi.recipient_user_id
           AND (version.valid_until IS NULL OR version.valid_until > now())
         ORDER BY version.version_number DESC

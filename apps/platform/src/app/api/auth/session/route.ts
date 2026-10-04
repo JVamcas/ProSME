@@ -12,7 +12,7 @@ import {
 import {
   establishApplicationSession,
   RecentAuthenticationRequiredError,
-} from "@/auth/firebase/ServerSessionService";
+} from "@/platform/auth/ServerSessionService";
 
 const requestSchema = z.object({
   idToken: z.string().min(1),

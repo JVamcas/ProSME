@@ -1,5 +1,6 @@
 import type { WorkflowActionDefinition } from "./WorkflowActionDefinition";
 import { isWorkflowStageDecisionAction } from "./WorkflowActionDefinition";
+import { removeWorkflowWithdrawalActions } from "../definitions/WorkflowApplicantWithdrawal";
 import type {
   WorkflowGraphInput,
   WorkflowStageInput,
@@ -98,9 +99,10 @@ export function reconcileWorkflowActionBindings(
   previous: WorkflowGraphInput | null,
   next: WorkflowGraphInput,
 ): WorkflowGraphInput {
+  const graph = removeWorkflowWithdrawalActions(next);
   return {
-    ...next,
-    stages: next.stages.map((stage) =>
+    ...graph,
+    stages: graph.stages.map((stage) =>
       reconcileWorkflowStageActionBindings(
         previousStage(previous, stage),
         stage,
@@ -119,7 +121,7 @@ export function createDefaultWorkflowCommonActions(
         continuation: "RESUME_SOURCE_TASK",
         deadlineDays: 10,
         editableFieldPaths: ["CLARIFICATION_RESPONSE"],
-        expiryAction: "ESCALATE",
+        expiryAction: "CLOSE_REQUEST",
         participantScope: "APPLICATION_OWNER_AND_REQUESTER",
         recipientScope: "APPLICATION_OWNER",
         reminderDayOffsets: [3, 7],
@@ -127,50 +129,46 @@ export function createDefaultWorkflowCommonActions(
       displayOrder: 1,
       enabled: true,
       label: "Request information",
-      reasonCodeRequired: false,
+      reasonRequired: false,
       stableKey: "REQUEST_INFORMATION",
-    },
-    {
-      actionType: "REFER",
-      configuration: {
-        returnToReferrer: true,
-        sourceTaskBehavior: "BLOCKED",
-      },
-      displayOrder: 2,
-      enabled: true,
-      label: "Refer",
-      reasonCodeRequired: true,
-      stableKey: "REFER",
     },
     {
       actionType: "PUT_ON_HOLD",
       configuration: {
-        reasonCodes: ["OTHER"],
         reviewDateRequired: true,
         scope: "STAGE",
       },
-      displayOrder: 3,
+      displayOrder: 2,
       enabled: true,
       label: "Put on hold",
-      reasonCodeRequired: true,
+      reasonRequired: true,
       stableKey: "PUT_ON_HOLD",
     },
     {
       actionType: "RESUME",
       configuration: { scope: "STAGE" },
-      displayOrder: 4,
+      displayOrder: 3,
       enabled: true,
       label: "Resume",
-      reasonCodeRequired: false,
+      reasonRequired: false,
       stableKey: "RESUME",
     },
   ];
+  actions.push({
+    actionType: "RETURN",
+    configuration: { dataHandling: "RETAIN" },
+    displayOrder: 4,
+    enabled: true,
+    label: "Return for correction",
+    reasonRequired: false,
+    stableKey: "RETURN",
+  });
   if (escalationRoleId) {
     actions.push({
       actionType: "ESCALATE",
       configuration: {
         blockUntilResolved: true,
-        responsibility: "SHARE",
+        responsibility: "TRANSFER",
         targetId: escalationRoleId,
         targetType: "ROLE",
         trigger: "MANUAL",
@@ -178,7 +176,7 @@ export function createDefaultWorkflowCommonActions(
       displayOrder: 5,
       enabled: true,
       label: "Escalate",
-      reasonCodeRequired: false,
+      reasonRequired: true,
       stableKey: "ESCALATE",
     });
   }

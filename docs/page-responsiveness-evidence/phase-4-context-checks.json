@@ -1,0 +1,56 @@
+{
+  "synthetic": true,
+  "results": [
+    {
+      "path": "/api/applications/66666666-6666-4666-8666-666666666661/read-view",
+      "status": 404,
+      "empty": false,
+      "passed": true
+    },
+    {
+      "path": "/api/admin/applications/66666666-6666-4666-8666-666666666661/detail",
+      "status": 404,
+      "empty": false,
+      "passed": true
+    },
+    {
+      "path": "/api/applications/66666666-6666-4666-8666-666666666661/information-requests",
+      "status": 200,
+      "empty": true,
+      "passed": true
+    },
+    {
+      "path": "/api/portal/applications/66666666-6666-4666-8666-666666666661/requests",
+      "status": 200,
+      "empty": true,
+      "passed": true
+    },
+    {
+      "path": "/api/applications/66666666-6666-4666-8666-666666666661/workflow-progress?taskId=08c9add0-6fe1-4adb-a718-eba8b170c262",
+      "status": 403,
+      "empty": false,
+      "passed": true
+    },
+    {
+      "path": "/api/applications/66666666-6666-4666-8666-666666666661/read-view",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "path": "/api/admin/applications/66666666-6666-4666-8666-666666666661/detail",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "path": "/api/applications/66666666-6666-4666-8666-666666666661/workflow-progress",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "path": "/api/applications/66666666-6666-4666-8666-666666666661/read-view",
+      "status": 403,
+      "disabledActor": true,
+      "passed": true
+    }
+  ]
+}

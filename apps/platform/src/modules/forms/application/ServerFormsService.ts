@@ -15,7 +15,6 @@ import {
   saveFormDraft,
 } from "@/modules/forms/infrastructure/FormWriteRepository";
 import {
-  readFormResponse,
   saveDraftFormResponse,
 } from "@/modules/forms/infrastructure/FormResponseRepository";
 import {
@@ -45,8 +44,6 @@ import {
   captureFormResponseValues,
   InvalidFormRuntimeBindingError,
 } from "@/modules/forms/engine/FormRuntimeContext";
-import { readWorkflowTaskRuntimeContext } from "@/modules/workflows/infrastructure/WorkflowRuntimeContextRepository";
-import { exposeTaskFormRuntimeContext } from "@/modules/forms/application/FormTaskRuntimeContext";
 import {
   activeFormDefinition,
   sanitizeFormResponseValues,
@@ -120,8 +117,8 @@ function versionView(version: {
   };
 }
 
-async function editorView(definitionId: string) {
-  const editor = await getFormEditor(definitionId);
+async function editorView(definitionId: string, versionId?: string) {
+  const editor = await getFormEditor(definitionId, versionId);
   if (!editor) throw new ResourceNotFoundError("form");
   return {
     allowedActions: allowedActions(editor.version.status),
@@ -171,9 +168,13 @@ export async function getPublishedFormPreview(
   return runtime;
 }
 
-export async function getForm(user: AuthenticatedUser | null, definitionId: string) {
+export async function getForm(
+  user: AuthenticatedUser | null,
+  definitionId: string,
+  versionId?: string,
+) {
   requirePermission(user, permissionCodes.workflowFormRead);
-  return editorView(definitionId);
+  return editorView(definitionId, versionId);
 }
 
 export async function createNewForm(
@@ -252,38 +253,6 @@ export async function retireForm(
   });
   if (!version) throw new ResourceConflictError("The form version changed or is not published.");
   return version;
-}
-
-export async function getTaskForm(
-  user: AuthenticatedUser | null,
-  taskInstanceId: string,
-) {
-  const actor = requireAuthenticatedUser(user);
-  const task = await readWorkflowTaskRuntimeContext(actor.id, taskInstanceId);
-  if (!task) {
-    throw new ResourceNotFoundError("form task");
-  }
-  requirePermission(actor, task.permissions.view);
-  const [currentSchema, response, context] = await Promise.all([
-    getFormRuntime(task.binding.formVersionId),
-    readFormResponse(actor.id, taskInstanceId, task.binding.formVersionId),
-    exposeTaskFormRuntimeContext(task),
-  ]);
-  const schema = response?.status === "COMPLETED"
-    ? response.definitionSnapshot
-    : currentSchema;
-  if (!schema) throw new ResourceNotFoundError("published form");
-  return {
-    context,
-    schema,
-    response: response
-      ? {
-          ...response,
-          completedAt: toIso(response.completedAt),
-        }
-      : null,
-    taskRowVersion: Number(task.task.rowVersion),
-  };
 }
 
 export async function saveTaskForm(

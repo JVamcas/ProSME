@@ -4,6 +4,7 @@ import type {
   FormRuntimeBindingInput,
 } from "@/modules/forms/domain/FormRuntimeBinding";
 import type { FormField } from "@/modules/forms/FormTypes";
+import { sanitizeFormRichText } from "./FormRichText";
 
 export type FormContextValue =
   | boolean
@@ -173,8 +174,32 @@ export function captureFormResponseValues(
   return Object.fromEntries(
     fields.flatMap((field) => (
       Object.hasOwn(submittedValues, field.key)
-        ? [[field.key, submittedValues[field.key]]]
+        ? [[field.key, capturedFieldValue(field, submittedValues[field.key])]]
         : []
     )),
   );
+}
+
+function capturedFieldValue(field: FormField, value: unknown): unknown {
+  if (field.type === "RICH_TEXT" && typeof value === "string") {
+    return sanitizeFormRichText(value);
+  }
+  if (field.type !== "REPEATABLE_GROUP" || !Array.isArray(value)) {
+    return value;
+  }
+  const itemFields = new Map(
+    (field.repeatable?.fields ?? []).map((item) => [item.key, item]),
+  );
+  return value.map((item) => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) return item;
+    return Object.fromEntries(Object.entries(item).map(([key, child]) => {
+      const itemField = itemFields.get(key);
+      return [
+        key,
+        itemField?.type === "RICH_TEXT" && typeof child === "string"
+          ? sanitizeFormRichText(child)
+          : child,
+      ];
+    }));
+  });
 }

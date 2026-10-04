@@ -4,27 +4,36 @@ import { useRouter } from "next/navigation";
 import { useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
 
-import { GeneralButton } from "@/components/ui/button";
 import { AuthoritativeEligibilityTask } from "@/modules/eligibility/ui/screening/AuthoritativeEligibilityTask";
 import { DynamicFormTask } from "@/modules/forms/ui/renderer/DynamicFormTask";
 import type { TaskDetail } from "@/modules/work-queue/TaskTypes";
-import { useCompleteWorkflowTask } from "@/modules/work-queue/WorkQueueHooks";
+import { useCompleteWorkflowTask } from "@/modules/work-queue/ui/useWorkQueue";
 import {
   ChecklistTaskForm,
   type ReviewDraftState,
 } from "@/modules/work-queue/ui/ChecklistTaskForm";
-import { WorkflowTaskDecisionActions } from "@/modules/work-queue/ui/WorkflowTaskDecisionActions";
-import { isWorkflowStageDecisionAction } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
+import { WorkflowTaskHoldStatus } from "@/modules/workflows/ui/tasks/WorkflowTaskHoldStatus";
+import { WorkflowTaskDecisionActions } from "@/modules/workflows/ui/tasks/WorkflowTaskDecisionActions";
 import { WorkflowTaskPreviewSection } from "@/modules/workflows/ui/definitions/WorkflowTaskPreviewSections";
 import {
   WorkflowTaskReviewLayout,
   WorkflowTaskReviewSummary,
 } from "@/modules/workflows/ui/WorkflowTaskReviewLayout";
-import { formSectionCountsAsComplete } from "./WorkflowTaskProgress";
+import { ReadOnlyTaskReview } from "./ReadOnlyTaskReview";
+import { workflowTaskReviewReadiness } from "./WorkflowTaskReviewReadiness";
 
 export function WorkflowTaskReviewPanel({ task }: { task: TaskDetail }) {
+  if (task.readOnly) {
+    return <ReadOnlyTaskReview task={task} />;
+  }
+  return <AssignedTaskReview task={task} />;
+}
+
+function AssignedTaskReview({ task }: { task: TaskDetail }) {
   const router = useRouter();
   const completion = useCompleteWorkflowTask(task.taskInstanceId);
+  const [eligibilityActionContainer, setEligibilityActionContainer] =
+    useState<HTMLDivElement | null>(null);
   const completeFormRef = useRef<(() => Promise<void>) | null>(null);
   const registerFormCompletion = useCallback(
     (complete: (() => Promise<void>) | null) => {
@@ -52,13 +61,9 @@ export function WorkflowTaskReviewPanel({ task }: { task: TaskDetail }) {
     );
   }, []);
   const onFormStateChange = useCallback(
-    (next: {
-      pending: boolean;
-      ready: boolean;
-    }) => {
+    (next: { pending: boolean; ready: boolean }) => {
       setFormState((current) =>
-        current.pending === next.pending &&
-          current.ready === next.ready
+        current.pending === next.pending && current.ready === next.ready
           ? current
           : next,
       );
@@ -66,98 +71,33 @@ export function WorkflowTaskReviewPanel({ task }: { task: TaskDetail }) {
     [],
   );
 
-  const hasReviewFields =
-    task.hasChecklist ||
-    task.commentFields.length > 0 ||
-    task.documentRequirements.length > 0 ||
-    Boolean(task.scoring?.criteria.length);
-  const hasTaskWork = Boolean(task.formVersionId) || hasReviewFields;
-  const showActionsInFinalStep =
-    task.displayMode === "STEP_PROGRESS" && hasTaskWork;
-  const separateEligibilitySection =
-    task.canEvaluateEligibility && !task.formVersionId;
-  const submitsFormWithTaskAction = Boolean(
-    task.formVersionId &&
-      !task.formCompleted &&
-      task.taskType === "STAGE_DECISION",
-  );
-  const formSectionComplete = formSectionCountsAsComplete({
-    formCompleted: task.formCompleted,
-    pending: formState.pending,
-    ready: formState.ready,
-    taskActionSubmission: submitsFormWithTaskAction,
-  });
-  const sectionCount = [
+  const {
+    actionTask,
+    canComplete,
+    completedCount,
+    eligibilityReady,
+    formIsLastSection,
+    formSectionComplete,
+    formSubmitNeeded,
+    hasTaskWork,
+    sectionCount,
     separateEligibilitySection,
-    Boolean(task.formVersionId),
-    task.hasChecklist,
-    task.documentRequirements.length > 0,
-    Boolean(task.scoring?.criteria.length),
-    task.commentFields.length > 0,
-  ].filter(Boolean).length;
-  const completedCount = [
-    separateEligibilitySection && Boolean(task.eligibilityEvaluation),
-    Boolean(task.formVersionId) && formSectionComplete,
-    task.hasChecklist && task.checklistCompleted,
-    task.documentRequirements.length > 0 && task.documentsCompleted,
-    Boolean(task.scoring?.criteria.length) && task.scoringCompleted,
-    task.commentFields.length > 0 && task.commentCompleted,
-  ].filter(Boolean).length;
-  const reviewReady = !hasReviewFields || reviewState.ready;
-  const eligibilityReady =
-    !task.canEvaluateEligibility || Boolean(task.eligibilityEvaluation);
-  const formReady =
-    !task.formVersionId ||
-    task.formCompleted ||
-    (!task.canEvaluateEligibility && formState.ready);
-  const formSubmitNeeded = Boolean(
-    task.formVersionId && !task.formCompleted && !task.canEvaluateEligibility,
+    showActionsInFinalStep,
+    submitsFormWithTaskAction,
+    taskProgressStatus,
+  } = workflowTaskReviewReadiness(
+    task,
+    reviewState,
+    formState,
+    completion.isPending,
   );
-  const canComplete =
-    task.taskStatus !== "COMPLETED" &&
-    reviewReady &&
-    eligibilityReady &&
-    formReady &&
-    !reviewState.pending &&
-    !formState.pending &&
-    !completion.isPending;
-  const canDecide =
-    eligibilityReady &&
-    (!task.formVersionId ||
-      task.canEvaluateEligibility ||
-      task.formCompleted ||
-      (submitsFormWithTaskAction && formState.ready && !formState.pending)) &&
-    (!task.hasChecklist || task.checklistCompleted) &&
-    (!task.documentRequirements.length || task.documentsCompleted) &&
-    (!task.scoring?.criteria.length || task.scoringCompleted) &&
-    (!task.commentFields.length || task.commentCompleted);
-
-  const changesPending = formState.pending || reviewState.pending;
-  const taskProgressStatus = task.taskStatus === "COMPLETED"
-    ? "Completed"
-    : task.taskType === "STAGE_DECISION" && canDecide
-      ? "Ready for decision"
-      : task.taskStatus === "PENDING"
-        ? "Pending"
-        : "In progress";
-  const actionTask = {
-    ...task,
-    actions: task.actions.map((action) => {
-      if (
-        !changesPending &&
-        (canDecide || !isWorkflowStageDecisionAction(action.actionType))
-      ) {
-        return action;
-      }
-      return {
-        ...action,
-        available: false,
-        unavailableReason: changesPending
-          ? "Wait for the current task changes to save."
-          : "Complete the required task work before making the stage decision.",
-      };
-    }),
-  };
+  const [isFinalReviewStep, setFinalReviewStep] = useState(
+    sectionCount - Number(separateEligibilitySection) <= 1,
+  );
+  const [isFinalFormStep, setFinalFormStep] = useState(!task.formVersionId);
+  const showDecisionActions =
+    (!showActionsInFinalStep || isFinalReviewStep) &&
+    (!formIsLastSection || isFinalFormStep);
 
   function completeTask() {
     completion.mutate(
@@ -182,47 +122,63 @@ export function WorkflowTaskReviewPanel({ task }: { task: TaskDetail }) {
     );
   }
 
+  if (task.processingStatus === "ON_HOLD") {
+    return <HeldTaskReview task={task} />;
+  }
+
   const taskActions = (
     <div className="space-y-4">
-      {task.actions.length ? (
+      {task.actions.length ||
+      task.taskType === "CONTRIBUTING" ||
+      (task.canEvaluateEligibility && task.formVersionId) ? (
         <WorkflowTaskDecisionActions
-          beforeAction={submitsFormWithTaskAction
-            ? async () => {
-                const completeForm = completeFormRef.current;
-                if (!completeForm) {
-                  throw new Error("The task form is not ready to submit.");
+          showDecisionActions={showDecisionActions}
+          eligibilityActionRef={
+            task.canEvaluateEligibility && task.formVersionId
+              ? setEligibilityActionContainer
+              : undefined
+          }
+          additionalItems={
+            task.taskType === "CONTRIBUTING" && showDecisionActions
+              ? [
+                  {
+                    id: "complete-task",
+                    label: completion.isPending
+                      ? "Completing…"
+                      : "Complete Task",
+                    disabled: !canComplete,
+                    description: !eligibilityReady
+                      ? "Run the eligibility ruleset before completing this task."
+                      : !canComplete
+                        ? "Complete the required task work and wait for changes to save."
+                        : undefined,
+                    onAction: formSubmitNeeded
+                      ? () => void completeFormRef.current?.()
+                      : completeTask,
+                  },
+                ]
+              : []
+          }
+          beforeAction={
+            submitsFormWithTaskAction
+              ? async () => {
+                  const completeForm = completeFormRef.current;
+                  if (!completeForm) {
+                    throw new Error("The task form is not ready to submit.");
+                  }
+                  await completeForm();
                 }
-                await completeForm();
-              }
-            : undefined}
+              : undefined
+          }
           task={actionTask}
         />
-      ) : null}
-      {task.taskType === "CONTRIBUTING" ? (
-        <div className="flex justify-end">
-          <GeneralButton
-            disabled={!canComplete}
-            onClick={
-              formSubmitNeeded
-                ? () => completeFormRef.current?.()
-                : completeTask
-            }
-            type="button"
-          >
-            {completion.isPending
-              ? "Completing…"
-              : task.taskStatus === "COMPLETED"
-                ? "Completed"
-                : "Complete Task"}
-          </GeneralButton>
-        </div>
       ) : null}
     </div>
   );
 
   return (
     <WorkflowTaskReviewLayout
-      actions={showActionsInFinalStep ? <></> : taskActions}
+      actions={taskActions}
       sectionCount={sectionCount}
       stageName={task.stageName}
       summary={
@@ -249,13 +205,15 @@ export function WorkflowTaskReviewPanel({ task }: { task: TaskDetail }) {
       ) : null}
       {hasTaskWork ? (
         <ChecklistTaskForm
-          finalActions={showActionsInFinalStep ? taskActions : undefined}
+          onFinalStepChange={setFinalReviewStep}
           formContent={
             task.formVersionId ? (
               <DynamicFormTask
+                eligibilityActionContainer={eligibilityActionContainer}
                 eligibilityEvaluation={task.eligibilityEvaluation}
                 eligibilityTask={task.canEvaluateEligibility}
                 onCompleteTaskForm={registerFormCompletion}
+                onFinalStepChange={setFinalFormStep}
                 onStateChange={onFormStateChange}
                 taskId={task.taskInstanceId}
               />
@@ -267,5 +225,14 @@ export function WorkflowTaskReviewPanel({ task }: { task: TaskDetail }) {
         />
       ) : null}
     </WorkflowTaskReviewLayout>
+  );
+}
+
+function HeldTaskReview({ task }: { task: TaskDetail }) {
+  return (
+    <div className="space-y-4">
+      <WorkflowTaskHoldStatus holds={task.holds ?? []} />
+      <WorkflowTaskDecisionActions task={task} />
+    </div>
   );
 }

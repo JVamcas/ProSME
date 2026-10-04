@@ -7,7 +7,12 @@ import type {
   PriorStageRuntimeValues,
   WorkflowTaskRuntimeContextSource,
 } from "@/modules/workflows/domain/WorkflowRuntimeContext";
-import { buildStageCompletionValues } from "@/modules/workflows/engine/StageCompletionContext";
+import { workflowTaskPeerReadAllowed } from "./WorkflowTaskPeerReadSql";
+import { workflowTaskViewPermissionMatches } from "./WorkflowTaskViewPermissionSql";
+import {
+  buildStageCompletionValues,
+  type StageCompletionSubmission,
+} from "@/modules/workflows/engine/StageCompletionContext";
 import type { ConditionFieldDefinition } from "@/modules/conditions/domain/ConditionConfiguration";
 import type { WorkflowElementPermissions } from "@/modules/workflows/domain/definitions/WorkflowElementPermissions";
 
@@ -41,6 +46,8 @@ type RuntimeContextRow = {
   stageName: string;
   stageStartedAt: Date;
   stageStatus: string;
+  taskAssignedUserId: string | null;
+  taskCoiCleared: boolean;
   taskDefinitionId: string;
   taskInstanceId: string;
   taskKey: string;
@@ -56,7 +63,7 @@ type RuntimeContextRow = {
   workflowVersionNumber: number;
 };
 
-type PriorStageRuntimeValueRow = {
+type PriorStageRuntimeValueRow = StageCompletionSubmission & {
   responseValues: Record<string, unknown> | null;
   stageKey: string;
   taskResult: Record<string, unknown> | null;
@@ -118,6 +125,8 @@ function toRuntimeContextSource(row: RuntimeContextRow) {
       status: row.stageStatus,
     },
     task: {
+      assignedUserId: row.taskAssignedUserId,
+      coiCleared: row.taskCoiCleared,
       definitionId: row.taskDefinitionId,
       id: row.taskInstanceId,
       key: row.taskKey,
@@ -140,6 +149,8 @@ function toRuntimeContextSource(row: RuntimeContextRow) {
 export async function readWorkflowTaskRuntimeContext(
   actorId: string,
   taskInstanceId: string,
+  allowAll = false,
+  viewPermissions?: readonly string[],
 ): Promise<WorkflowTaskRuntimeContextSource | null> {
   const result = await getDatabase().execute(sql`
     SELECT application.id AS "applicationId",
@@ -175,6 +186,8 @@ export async function readWorkflowTaskRuntimeContext(
       stage_definition.code AS "stageKey",
       stage_definition.name AS "stageName",
       task.id AS "taskInstanceId",
+      task.assigned_user_id AS "taskAssignedUserId",
+      app_workflow_task_coi_cleared(task.id, ${actorId}::uuid) AS "taskCoiCleared",
       task.workflow_task_definition_id AS "taskDefinitionId",
       task.status AS "taskStatus",
       task.row_version AS "taskRowVersion",
@@ -182,7 +195,8 @@ export async function readWorkflowTaskRuntimeContext(
       task_definition.name AS "taskName",
       task_definition.permissions,
       task.form_version_id AS "formVersionId",
-      binding.context_fields AS "contextFields",
+      CASE WHEN inherited_form.enabled THEN '[]'::jsonb
+        ELSE binding.context_fields END AS "contextFields",
       COALESCE(history.values, '[]'::jsonb) AS "priorStageValues"
     FROM app_workflow_tasks task
     JOIN app_stage_task_definitions task_definition
@@ -199,8 +213,21 @@ export async function readWorkflowTaskRuntimeContext(
       ON workflow_definition.id = workflow_version.definition_id
     JOIN app_applications application
       ON application.id = workflow.application_id
-    JOIN app_stage_task_form_bindings binding
+    CROSS JOIN LATERAL (
+      SELECT (
+        task_definition.code = 'ELIGIBILITY_VERIFICATION'
+        OR COALESCE(task_definition.config ->> 'formPurpose', '')
+          = 'ELIGIBILITY_VERIFICATION'
+        OR COALESCE(task_definition.config ->> 'command', '')
+          = 'AUTHORITATIVE_ELIGIBILITY'
+      ) AS enabled
+    ) inherited_form
+    LEFT JOIN app_stage_task_form_bindings binding
       ON binding.task_definition_id = task.workflow_task_definition_id
+    LEFT JOIN app_eligibility_rule_set_verification_forms verification
+      ON inherited_form.enabled
+      AND verification.version_id = application.eligibility_rule_set_version_id
+      AND verification.form_version_id = task.form_version_id
     LEFT JOIN LATERAL (
       SELECT outcome.*
       FROM app_authoritative_eligibility_outcomes outcome
@@ -211,6 +238,11 @@ export async function readWorkflowTaskRuntimeContext(
     LEFT JOIN LATERAL (
       SELECT jsonb_agg(jsonb_build_object(
         'stageKey', prior_definition.code,
+        'taskId', prior_task.id,
+        'taskKey', prior_task_definition.stable_key,
+        'reviewerSlot', prior_task.reviewer_slot,
+        'reviewerCount', prior_task_definition.reviewer_count,
+        'reviewerId', prior_task.assigned_user_id,
         'responseValues', response.values,
         'taskResult', prior_task.result
       ) ORDER BY prior_stage.completed_at, prior_task.created_at) AS values
@@ -219,14 +251,29 @@ export async function readWorkflowTaskRuntimeContext(
         ON prior_definition.id = prior_stage.workflow_stage_definition_id
       JOIN app_workflow_tasks prior_task
         ON prior_task.stage_instance_id = prior_stage.id
-      LEFT JOIN app_form_responses response
-        ON response.workflow_task_id = prior_task.id
-        AND (response.status = 'COMPLETED'
-          OR response.values = (prior_task.result -> 'evaluatedFormValues'))
+      JOIN app_stage_task_definitions prior_task_definition
+        ON prior_task_definition.id = prior_task.workflow_task_definition_id
+      LEFT JOIN LATERAL (
+        SELECT submitted.values
+        FROM app_form_responses submitted
+        WHERE submitted.workflow_task_id = prior_task.id
+          AND (submitted.status = 'COMPLETED'
+            OR submitted.values = (prior_task.result -> 'evaluatedFormValues'))
+        ORDER BY submitted.updated_at DESC, submitted.id DESC
+        LIMIT 1
+      ) response ON TRUE
       WHERE prior_stage.workflow_instance_id = workflow.id
         AND prior_stage.id <> stage.id
         AND prior_stage.status = 'COMPLETED'
         AND prior_stage.completed_at <= stage.activated_at
+        AND NOT EXISTS (
+          SELECT 1 FROM app_workflow_stage_instances newer_stage
+          WHERE newer_stage.workflow_instance_id = workflow.id
+            AND newer_stage.workflow_stage_definition_id = prior_stage.workflow_stage_definition_id
+            AND newer_stage.status = 'COMPLETED'
+            AND newer_stage.completed_at <= stage.activated_at
+            AND newer_stage.iteration_number > prior_stage.iteration_number
+        )
         AND prior_task.status = 'COMPLETED'
         AND app_workflow_task_coi_cleared(
           prior_task.id, prior_task.assigned_user_id
@@ -237,20 +284,19 @@ export async function readWorkflowTaskRuntimeContext(
         )
     ) history ON TRUE
     WHERE task.id = ${taskInstanceId}::uuid
-      AND app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
+      AND ${workflowTaskPeerReadAllowed(actorId, sql`task`, sql`task_definition`, sql`stage`)}
+      AND (${allowAll} OR ${workflowTaskViewPermissionMatches(sql`task_definition.permissions`, viewPermissions)})
+      AND (${allowAll} OR app_workflow_task_coi_cleared(task.id, ${actorId}::uuid))
       AND task.form_version_id IS NOT NULL
-      AND workflow.status = 'ACTIVE'
-      AND stage.status = 'ACTIVE'
       AND (
-        task.assigned_user_id = ${actorId}::uuid
-        OR (
-          task.assigned_user_id IS NULL
-          AND task.assigned_role_id IN (
-            SELECT role_id FROM app_user_roles
-            WHERE user_id = ${actorId}::uuid
-          )
-        )
+        (inherited_form.enabled AND verification.form_version_id IS NOT NULL)
+        OR (NOT inherited_form.enabled AND binding.task_definition_id IS NOT NULL)
       )
+      AND (${allowAll} OR (
+        workflow.status = 'ACTIVE'
+        AND stage.status IN ('ACTIVE', 'BLOCKED')
+        AND task.assigned_user_id = ${actorId}::uuid
+      ))
   `);
   const row = result.rows[0] as RuntimeContextRow | undefined;
   return row ? toRuntimeContextSource(row) : null;

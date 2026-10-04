@@ -49,7 +49,7 @@ describe("applicant withdrawal service", () => {
   it("passes actor identity and the stable retry key to the repository", async () => {
     const result = {
       applicationId,
-      reference: "SME-001",
+      reference: "SME Fund-001",
       withdrawnAt: "2026-09-24T08:00:00.000Z",
     };
     vi.mocked(withdrawOwnedApplication).mockResolvedValue({

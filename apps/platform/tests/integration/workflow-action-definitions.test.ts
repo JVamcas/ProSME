@@ -61,7 +61,7 @@ afterAll(async () => {
           label: "Advance review",
           actionType: "APPROVE_ADVANCE" as const,
           enabled: true,
-          reasonCodeRequired: false,
+          reasonRequired: false,
           displayOrder: 1,
           configuration: {},
         },
@@ -70,7 +70,7 @@ afterAll(async () => {
           label: "Reject review",
           actionType: "REJECT" as const,
           enabled: true,
-          reasonCodeRequired: false,
+          reasonRequired: false,
           displayOrder: 2,
           configuration: {
             outcome: { type: "TRANSITION" as const },

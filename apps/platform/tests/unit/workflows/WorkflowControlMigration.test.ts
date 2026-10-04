@@ -7,6 +7,10 @@ const migrationPath = path.resolve(
   process.cwd(),
   "drizzle/0128_workflow_rework_referral_hold.sql",
 );
+const removalMigrationPath = path.resolve(
+  process.cwd(),
+  "drizzle/0154_remove_refer_action.sql",
+);
 
 describe("workflow rework, referral and hold migration", () => {
   it("persists immutable semantic records and prevents overlapping work", async () => {
@@ -34,5 +38,14 @@ describe("workflow rework, referral and hold migration", () => {
     expect(migration).toContain('"sourceTaskBehavior":"BLOCKED"');
     expect(migration).toContain('"scope":"STAGE"');
     expect(migration).toContain("SET repeatable = true");
+  });
+
+  it("disables Refer definitions while preserving their historical records", async () => {
+    const migration = await readFile(removalMigrationPath, "utf8");
+    expect(migration).toContain("UPDATE app_workflow_action_definitions");
+    expect(migration).toContain("SET enabled = FALSE");
+    expect(migration).toContain("action.action_type = 'REFER'");
+    expect(migration).toContain("version.status = 'DRAFT'");
+    expect(migration).not.toContain("DELETE");
   });
 });

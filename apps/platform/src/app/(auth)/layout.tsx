@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 
 import { AppShell } from "@/components/layout/app-shell";
-import { QueryProvider } from "@/components/layout/query-provider";
+import { QueryProvider } from "@/shared/ui/portal/query-provider";
 import { Toast } from "@/shared/ui/Toast";
 import "../globals.css";
 
 export const metadata: Metadata = {
-  title: { default: "Account", template: "%s | ProSME Namibia" },
+  title: { default: "Account", template: "%s | SME Fund Namibia" },
 };
 
 export default function AuthLayout({

@@ -1,4 +1,7 @@
+import { recordReviewThresholdEvaluations } from "./WorkflowReviewThresholdRepository";
 import "server-only";
+import { lockWorkflowRuntimeForTask } from "./WorkflowRuntimeLock";
+import { workflowApprovalEligibilityReady } from "@/modules/workflows/infrastructure/WorkflowApprovalEligibilityReadiness";
 
 import { taskWorkIsReady } from "@/modules/workflows/WorkflowTaskRegistry";
 import type { WorkflowActionType } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
@@ -6,10 +9,7 @@ import {
   shouldCompleteWorkflowTask,
   taskActionMatchesType,
 } from "@/modules/workflows/domain/runtime/WorkflowTaskCompletionPolicy";
-import {
-  loadRequiredTaskCompletions,
-  recordReviewThresholdEvaluations,
-} from "./StageCompletionRepository";
+import { loadRequiredTaskCompletions } from "./StageCompletionRepository";
 import { evaluateStageQuorum } from "./WorkflowQuorumRepository";
 import { readSequentialTransitionAdvancement } from "./RuntimeTransitionAdvancement";
 
@@ -51,6 +51,7 @@ type ExecuteTransition = (
 ) => Promise<SequentialTransitionResult>;
 
 type LockedTask = {
+  approvalEligibilityReady: boolean;
   actionType: WorkflowActionType | null;
   taskType: "CONTRIBUTING" | "STAGE_DECISION";
   formCompleted: boolean;
@@ -141,8 +142,10 @@ async function lockTask(
   transaction: Transaction,
   input: WriteInput,
 ): Promise<LockedTask | null> {
+  await lockWorkflowRuntimeForTask(transaction, input.taskId);
   const locked = await transaction.execute(sql`
-    SELECT task.status AS "taskStatus", task.result,
+    SELECT ${workflowApprovalEligibilityReady(sql`stage.workflow_instance_id`)} AS "approvalEligibilityReady",
+      task.status AS "taskStatus", task.result,
       definition.task_type AS "taskType",
       task.form_version_id IS NOT NULL AS "formRequired",
       (task.form_version_id IS NOT NULL AND EXISTS (
@@ -283,6 +286,12 @@ export async function writeChecklistTaskCompletion(
         if (!quorumSatisfied) return { kind: "conflict" } as const;
       }
       if (!input.actionKey && task.taskType === "STAGE_DECISION") {
+        return { kind: "conflict" } as const;
+      }
+      if (
+        task.actionType === "APPROVE_ADVANCE" &&
+        task.approvalEligibilityReady === false
+      ) {
         return { kind: "conflict" } as const;
       }
       if (input.actionKey && !taskActionMatchesType(task)) {

@@ -1,0 +1,33 @@
+{
+  "date": "2026-10-04",
+  "cleanedUp": true,
+  "syntheticFirebaseIdentitiesRemoved": 2,
+  "firebaseIdentityGuards": "Checked synthetic email prefix, example.test domain and exact test display name before deletion",
+  "testContainersRemoved": [
+    "smefund-responsiveness-test",
+    "smefund-responsiveness-baseline"
+  ],
+  "isolatedDatabasesDropped": [
+    "smefund_responsiveness_test",
+    "smefund_responsiveness_validation"
+  ],
+  "privateFilesAndSourceSnapshotsRemoved": [
+    "runtime-env.json",
+    "browser-session.json",
+    "scope-browser-session.json",
+    "identity-cleanup.json",
+    "scope-identity-cleanup.json",
+    "scope-task.json",
+    "browser-results",
+    "baseline-source",
+    "release-source"
+  ],
+  "existingResourcesPreserved": [
+    "npidsme-hold-verification",
+    "smefund-local-app",
+    "smefund-local-scheduler",
+    "smefund-terminal-migration-test",
+    "smefund-local-db"
+  ],
+  "deploymentPerformed": false
+}

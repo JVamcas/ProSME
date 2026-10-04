@@ -1,0 +1,515 @@
+{
+  "recordedAt": "2026-10-04T09:21:46.654Z",
+  "environment": "Real Firebase; same synthetic identity/token; warm SDK certificate cache; alternating modes; no database reads",
+  "samplesPerOperationAndMode": 20,
+  "cold": [
+    {
+      "operation": "id-token",
+      "durationMs": 831.09652
+    },
+    {
+      "operation": "session-cookie",
+      "durationMs": 1186.3670490000004
+    }
+  ],
+  "summary": [
+    {
+      "operation": "id-token",
+      "standardMedianMs": 0.437778000000435,
+      "revokedCheckMedianMs": 623.6681395000005
+    },
+    {
+      "operation": "session-cookie",
+      "standardMedianMs": 0.41113550000045507,
+      "revokedCheckMedianMs": 588.8578475000013
+    }
+  ],
+  "validation": {
+    "tamperedSessionRejected": true,
+    "standardVerificationChecksSignedSessionUntilExpiry": true,
+    "sensitiveRevokedSessionRejected": true
+  },
+  "cleanedUp": true,
+  "measurements": [
+    {
+      "operation": "id-token",
+      "sample": 0,
+      "checkRevoked": false,
+      "durationMs": 0.3316549999999552
+    },
+    {
+      "operation": "id-token",
+      "sample": 0,
+      "checkRevoked": true,
+      "durationMs": 418.9911400000001
+    },
+    {
+      "operation": "id-token",
+      "sample": 1,
+      "checkRevoked": true,
+      "durationMs": 474.15330899999935
+    },
+    {
+      "operation": "id-token",
+      "sample": 1,
+      "checkRevoked": false,
+      "durationMs": 0.90929800000049
+    },
+    {
+      "operation": "id-token",
+      "sample": 2,
+      "checkRevoked": false,
+      "durationMs": 0.6139929999999367
+    },
+    {
+      "operation": "id-token",
+      "sample": 2,
+      "checkRevoked": true,
+      "durationMs": 645.038509
+    },
+    {
+      "operation": "id-token",
+      "sample": 3,
+      "checkRevoked": true,
+      "durationMs": 621.076078
+    },
+    {
+      "operation": "id-token",
+      "sample": 3,
+      "checkRevoked": false,
+      "durationMs": 0.7308439999997063
+    },
+    {
+      "operation": "id-token",
+      "sample": 4,
+      "checkRevoked": false,
+      "durationMs": 0.37481800000023213
+    },
+    {
+      "operation": "id-token",
+      "sample": 4,
+      "checkRevoked": true,
+      "durationMs": 606.7191280000006
+    },
+    {
+      "operation": "id-token",
+      "sample": 5,
+      "checkRevoked": true,
+      "durationMs": 820.35635
+    },
+    {
+      "operation": "id-token",
+      "sample": 5,
+      "checkRevoked": false,
+      "durationMs": 0.4116540000013629
+    },
+    {
+      "operation": "id-token",
+      "sample": 6,
+      "checkRevoked": false,
+      "durationMs": 0.1234309999999823
+    },
+    {
+      "operation": "id-token",
+      "sample": 6,
+      "checkRevoked": true,
+      "durationMs": 615.1318579999988
+    },
+    {
+      "operation": "id-token",
+      "sample": 7,
+      "checkRevoked": true,
+      "durationMs": 693.1801420000011
+    },
+    {
+      "operation": "id-token",
+      "sample": 7,
+      "checkRevoked": false,
+      "durationMs": 0.4639019999995071
+    },
+    {
+      "operation": "id-token",
+      "sample": 8,
+      "checkRevoked": false,
+      "durationMs": 0.2010629999986122
+    },
+    {
+      "operation": "id-token",
+      "sample": 8,
+      "checkRevoked": true,
+      "durationMs": 626.260201000001
+    },
+    {
+      "operation": "id-token",
+      "sample": 9,
+      "checkRevoked": true,
+      "durationMs": 646.5789259999983
+    },
+    {
+      "operation": "id-token",
+      "sample": 9,
+      "checkRevoked": false,
+      "durationMs": 0.7961900000009337
+    },
+    {
+      "operation": "id-token",
+      "sample": 10,
+      "checkRevoked": false,
+      "durationMs": 0.2714400000004389
+    },
+    {
+      "operation": "id-token",
+      "sample": 10,
+      "checkRevoked": true,
+      "durationMs": 654.5074289999993
+    },
+    {
+      "operation": "id-token",
+      "sample": 11,
+      "checkRevoked": true,
+      "durationMs": 471.77432900000167
+    },
+    {
+      "operation": "id-token",
+      "sample": 11,
+      "checkRevoked": false,
+      "durationMs": 0.6068009999999049
+    },
+    {
+      "operation": "id-token",
+      "sample": 12,
+      "checkRevoked": false,
+      "durationMs": 0.24396300000080373
+    },
+    {
+      "operation": "id-token",
+      "sample": 12,
+      "checkRevoked": true,
+      "durationMs": 596.567121
+    },
+    {
+      "operation": "id-token",
+      "sample": 13,
+      "checkRevoked": true,
+      "durationMs": 658.5533169999999
+    },
+    {
+      "operation": "id-token",
+      "sample": 13,
+      "checkRevoked": false,
+      "durationMs": 0.5544979999995121
+    },
+    {
+      "operation": "id-token",
+      "sample": 14,
+      "checkRevoked": false,
+      "durationMs": 0.29475599999932456
+    },
+    {
+      "operation": "id-token",
+      "sample": 14,
+      "checkRevoked": true,
+      "durationMs": 741.3340630000002
+    },
+    {
+      "operation": "id-token",
+      "sample": 15,
+      "checkRevoked": true,
+      "durationMs": 607.9566680000007
+    },
+    {
+      "operation": "id-token",
+      "sample": 15,
+      "checkRevoked": false,
+      "durationMs": 0.529248999999254
+    },
+    {
+      "operation": "id-token",
+      "sample": 16,
+      "checkRevoked": false,
+      "durationMs": 0.3342640000009851
+    },
+    {
+      "operation": "id-token",
+      "sample": 16,
+      "checkRevoked": true,
+      "durationMs": 685.6978680000011
+    },
+    {
+      "operation": "id-token",
+      "sample": 17,
+      "checkRevoked": true,
+      "durationMs": 752.5621489999976
+    },
+    {
+      "operation": "id-token",
+      "sample": 17,
+      "checkRevoked": false,
+      "durationMs": 0.7341000000014901
+    },
+    {
+      "operation": "id-token",
+      "sample": 18,
+      "checkRevoked": false,
+      "durationMs": 0.2315710000002582
+    },
+    {
+      "operation": "id-token",
+      "sample": 18,
+      "checkRevoked": true,
+      "durationMs": 568.972726
+    },
+    {
+      "operation": "id-token",
+      "sample": 19,
+      "checkRevoked": true,
+      "durationMs": 514.6189259999992
+    },
+    {
+      "operation": "id-token",
+      "sample": 19,
+      "checkRevoked": false,
+      "durationMs": 0.5393719999992754
+    },
+    {
+      "operation": "session-cookie",
+      "sample": 0,
+      "checkRevoked": false,
+      "durationMs": 0.37176800000088406
+    },
+    {
+      "operation": "session-cookie",
+      "sample": 0,
+      "checkRevoked": true,
+      "durationMs": 595.5619670000015
+    },
+    {
+      "operation": "session-cookie",
+      "sample": 1,
+      "checkRevoked": true,
+      "durationMs": 605.7891000000018
+    },
+    {
+      "operation": "session-cookie",
+      "sample": 1,
+      "checkRevoked": false,
+      "durationMs": 0.6310319999975036
+    },
+    {
+      "operation": "session-cookie",
+      "sample": 2,
+      "checkRevoked": false,
+      "durationMs": 0.22328299999935552
+    },
+    {
+      "operation": "session-cookie",
+      "sample": 2,
+      "checkRevoked": true,
+      "durationMs": 517.0190040000016
+    },
+    {
+      "operation": "session-cookie",
+      "sample": 3,
+      "checkRevoked": true,
+      "durationMs": 537.9575819999991
+    },
+    {
+      "operation": "session-cookie",
+      "sample": 3,
+      "checkRevoked": false,
+      "durationMs": 0.4197520000016084
+    },
+    {
+      "operation": "session-cookie",
+      "sample": 4,
+      "checkRevoked": false,
+      "durationMs": 0.13588700000036624
+    },
+    {
+      "operation": "session-cookie",
+      "sample": 4,
+      "checkRevoked": true,
+      "durationMs": 693.8689089999971
+    },
+    {
+      "operation": "session-cookie",
+      "sample": 5,
+      "checkRevoked": true,
+      "durationMs": 548.0302599999995
+    },
+    {
+      "operation": "session-cookie",
+      "sample": 5,
+      "checkRevoked": false,
+      "durationMs": 0.5831130000005942
+    },
+    {
+      "operation": "session-cookie",
+      "sample": 6,
+      "checkRevoked": false,
+      "durationMs": 0.2923269999992044
+    },
+    {
+      "operation": "session-cookie",
+      "sample": 6,
+      "checkRevoked": true,
+      "durationMs": 437.9646130000001
+    },
+    {
+      "operation": "session-cookie",
+      "sample": 7,
+      "checkRevoked": true,
+      "durationMs": 582.1537280000011
+    },
+    {
+      "operation": "session-cookie",
+      "sample": 7,
+      "checkRevoked": false,
+      "durationMs": 0.5343610000018089
+    },
+    {
+      "operation": "session-cookie",
+      "sample": 8,
+      "checkRevoked": false,
+      "durationMs": 0.8323049999999057
+    },
+    {
+      "operation": "session-cookie",
+      "sample": 8,
+      "checkRevoked": true,
+      "durationMs": 445.10988500000167
+    },
+    {
+      "operation": "session-cookie",
+      "sample": 9,
+      "checkRevoked": true,
+      "durationMs": 655.2842770000025
+    },
+    {
+      "operation": "session-cookie",
+      "sample": 9,
+      "checkRevoked": false,
+      "durationMs": 1.205945999998221
+    },
+    {
+      "operation": "session-cookie",
+      "sample": 10,
+      "checkRevoked": false,
+      "durationMs": 0.38992399999915506
+    },
+    {
+      "operation": "session-cookie",
+      "sample": 10,
+      "checkRevoked": true,
+      "durationMs": 622.3098879999998
+    },
+    {
+      "operation": "session-cookie",
+      "sample": 11,
+      "checkRevoked": true,
+      "durationMs": 647.4978540000011
+    },
+    {
+      "operation": "session-cookie",
+      "sample": 11,
+      "checkRevoked": false,
+      "durationMs": 0.43847900000037043
+    },
+    {
+      "operation": "session-cookie",
+      "sample": 12,
+      "checkRevoked": false,
+      "durationMs": 0.16231899999911548
+    },
+    {
+      "operation": "session-cookie",
+      "sample": 12,
+      "checkRevoked": true,
+      "durationMs": 541.4737319999986
+    },
+    {
+      "operation": "session-cookie",
+      "sample": 13,
+      "checkRevoked": true,
+      "durationMs": 755.3292189999993
+    },
+    {
+      "operation": "session-cookie",
+      "sample": 13,
+      "checkRevoked": false,
+      "durationMs": 0.3531070000026375
+    },
+    {
+      "operation": "session-cookie",
+      "sample": 14,
+      "checkRevoked": false,
+      "durationMs": 0.12439900000026682
+    },
+    {
+      "operation": "session-cookie",
+      "sample": 14,
+      "checkRevoked": true,
+      "durationMs": 752.5493309999983
+    },
+    {
+      "operation": "session-cookie",
+      "sample": 15,
+      "checkRevoked": true,
+      "durationMs": 538.0068079999983
+    },
+    {
+      "operation": "session-cookie",
+      "sample": 15,
+      "checkRevoked": false,
+      "durationMs": 0.7833600000012666
+    },
+    {
+      "operation": "session-cookie",
+      "sample": 16,
+      "checkRevoked": false,
+      "durationMs": 0.663126999999804
+    },
+    {
+      "operation": "session-cookie",
+      "sample": 16,
+      "checkRevoked": true,
+      "durationMs": 539.3753559999968
+    },
+    {
+      "operation": "session-cookie",
+      "sample": 17,
+      "checkRevoked": true,
+      "durationMs": 646.8446289999993
+    },
+    {
+      "operation": "session-cookie",
+      "sample": 17,
+      "checkRevoked": false,
+      "durationMs": 0.6353170000002137
+    },
+    {
+      "operation": "session-cookie",
+      "sample": 18,
+      "checkRevoked": false,
+      "durationMs": 0.40251899999930174
+    },
+    {
+      "operation": "session-cookie",
+      "sample": 18,
+      "checkRevoked": true,
+      "durationMs": 846.6587389999986
+    },
+    {
+      "operation": "session-cookie",
+      "sample": 19,
+      "checkRevoked": true,
+      "durationMs": 436.9863349999978
+    },
+    {
+      "operation": "session-cookie",
+      "sample": 19,
+      "checkRevoked": false,
+      "durationMs": 0.3957779999982449
+    }
+  ]
+}

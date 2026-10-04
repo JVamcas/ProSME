@@ -53,7 +53,7 @@ async function mockWorkflowQueries(page: Page) {
       {
         assignedAt: "2026-09-14T00:00:00.000Z",
         fundingOpportunityId: "00000000-0000-4000-8000-000000003301",
-        fundingOpportunityTitle: "SME Growth Fund",
+        fundingOpportunityTitle: "SME Fund Growth Fund",
         rowVersion: 1,
         versionNumber: 1,
         workflowName: "Screen test workflow",
@@ -67,7 +67,7 @@ async function mockWorkflowQueries(page: Page) {
         {
           id: "00000000-0000-4000-8000-000000003301",
           slug: "sme-growth-fund",
-          title: "SME Growth Fund",
+          title: "SME Fund Growth Fund",
         },
       ],
       nextCursor: null,
@@ -147,7 +147,7 @@ describeScreen("real workflow configuration screens", () => {
     await expect(
       page.getByRole("heading", { name: "Current assignments" }),
     ).toBeVisible();
-    await expect(page.getByText("SME Growth Fund").first()).toBeVisible();
+    await expect(page.getByText("SME Fund Growth Fund").first()).toBeVisible();
     await expectAccessibleScreen(page);
 
     await page.getByRole("tab", { name: "Definitions" }).click();

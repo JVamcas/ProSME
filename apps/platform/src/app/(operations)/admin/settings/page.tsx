@@ -1,11 +1,14 @@
 import { redirect } from "next/navigation";
 
-import { getCurrentUser } from "@/auth/authorization/current-user";
+import { getAuthenticatedPageUser } from "@/platform/auth/ServerAuthNavigation";
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { can } from "@/auth/authorization/policy";
 
 export default async function SettingsPage() {
-  const user = await getCurrentUser();
+  const user = await getAuthenticatedPageUser();
+  if (user && can(user, permissionCodes.brandingRead)) {
+    redirect("/admin/settings/branding");
+  }
   if (user && can(user, permissionCodes.workflowFormRead)) {
     redirect("/admin/settings/forms");
   }

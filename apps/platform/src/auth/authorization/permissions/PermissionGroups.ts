@@ -15,6 +15,7 @@ export type PermissionGroupId =
   | "workflow-configuration"
   | "roles"
   | "audit"
+  | "branding"
   | "notifications"
   | "content-management"
   | "integrations";
@@ -52,6 +53,9 @@ export const permissionGroups: readonly PermissionGroup[] = [
       permissionCodes.fundingCallRead,
       permissionCodes.fundingCallCreate,
       permissionCodes.fundingCallEditDraft,
+      permissionCodes.fundingCallSubmitAll,
+      permissionCodes.fundingCallReturnAll,
+      permissionCodes.fundingCallWithdrawForAmendmentAll,
       permissionCodes.fundingCallApproveAll,
       permissionCodes.fundingCallApprovalRequestOwnWithdraw,
       permissionCodes.fundingCallPublish,
@@ -103,8 +107,15 @@ export const permissionGroups: readonly PermissionGroup[] = [
     id: "workflow-tasks",
     label: "Workflow Tasks",
     permissionCodes: [
+      permissionCodes.workflowTaskAssignedHold,
+      permissionCodes.workflowTaskAssignedResume,
+      permissionCodes.workflowStageAllHold,
+      permissionCodes.workflowStageAllResume,
+      permissionCodes.workflowInstanceAllHold,
+      permissionCodes.workflowInstanceAllResume,
       permissionCodes.workflowTaskAssignedRead,
       permissionCodes.workflowTaskAssignedProcess,
+      permissionCodes.workflowEscalationOwnCancel,
       permissionCodes.workflowTaskAssignedDecide,
       permissionCodes.workflowTaskAssign,
       permissionCodes.workflowQuorumAllRecord,
@@ -118,7 +129,11 @@ export const permissionGroups: readonly PermissionGroup[] = [
   {
     id: "workflow-instances",
     label: "Workflow Instances",
-    permissionCodes: [permissionCodes.workflowInstanceAllRead],
+    permissionCodes: [
+      permissionCodes.workflowInstanceAssignedRead,
+      permissionCodes.workflowInstanceAllRead,
+      permissionCodes.workflowDeadlineAllProcess,
+    ],
   },
   {
     id: "workflow-configuration",
@@ -148,6 +163,14 @@ export const permissionGroups: readonly PermissionGroup[] = [
     id: "audit",
     label: "Audit",
     permissionCodes: [permissionCodes.auditRead],
+  },
+  {
+    id: "branding",
+    label: "Branding",
+    permissionCodes: [
+      permissionCodes.brandingRead,
+      permissionCodes.brandingManage,
+    ],
   },
   {
     id: "notifications",

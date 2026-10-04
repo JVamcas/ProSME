@@ -38,7 +38,25 @@ export function routingAction(
     actionType: "APPROVE_ADVANCE",
     configuration: {},
     enabled: true,
-    reasonCodeRequired: false,
+    reasonRequired: false,
     displayOrder: 1,
+  };
+}
+
+export function checklistItem(
+  taskStableKey: string,
+  key: string,
+  text: string,
+  displayOrder: number,
+) {
+  return {
+    displayOrder,
+    evidenceRequirement: "NONE" as const,
+    key,
+    mandatory: true,
+    notes: "",
+    responseType: "YES_NO" as const,
+    taskStableKey,
+    text,
   };
 }

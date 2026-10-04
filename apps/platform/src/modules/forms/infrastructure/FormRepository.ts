@@ -9,7 +9,7 @@ import {
   formFields,
   formSections,
   formVersions,
-} from "@/db/schema";
+} from "./form.schema";
 import type { FormPurpose } from "@/modules/forms/FormTypes";
 import type {
   FormDefinitionPage,
@@ -116,10 +116,12 @@ export async function listBindableFormVersions(purpose: FormPurpose) {
       formDefinitions,
       eq(formDefinitions.id, formVersions.formDefinitionId),
     )
-    .where(and(
-      inArray(formVersions.status, ["DRAFT", "PUBLISHED"]),
-      eq(formDefinitions.purpose, purpose),
-    ))
+    .where(
+      and(
+        inArray(formVersions.status, ["DRAFT", "PUBLISHED"]),
+        eq(formDefinitions.purpose, purpose),
+      ),
+    )
     .orderBy(asc(formDefinitions.name), desc(formVersions.versionNumber));
 }
 
@@ -130,12 +132,17 @@ export async function formVersionIsBindable(
   const [version] = await getDatabase()
     .select({ id: formVersions.id })
     .from(formVersions)
-    .innerJoin(formDefinitions, eq(formDefinitions.id, formVersions.formDefinitionId))
-    .where(and(
-      eq(formVersions.id, versionId),
-      eq(formDefinitions.purpose, purpose),
-      inArray(formVersions.status, ["DRAFT", "PUBLISHED"]),
-    ))
+    .innerJoin(
+      formDefinitions,
+      eq(formDefinitions.id, formVersions.formDefinitionId),
+    )
+    .where(
+      and(
+        eq(formVersions.id, versionId),
+        eq(formDefinitions.purpose, purpose),
+        inArray(formVersions.status, ["DRAFT", "PUBLISHED"]),
+      ),
+    )
     .limit(1);
   return Boolean(version);
 }
@@ -144,10 +151,9 @@ export async function formVersionIsPublished(versionId: string) {
   const [version] = await getDatabase()
     .select({ id: formVersions.id })
     .from(formVersions)
-    .where(and(
-      eq(formVersions.id, versionId),
-      eq(formVersions.status, "PUBLISHED"),
-    ))
+    .where(
+      and(eq(formVersions.id, versionId), eq(formVersions.status, "PUBLISHED")),
+    )
     .limit(1);
   return Boolean(version);
 }
@@ -163,17 +169,22 @@ export async function formVersionIsPublishedForPurpose(
       formDefinitions,
       eq(formDefinitions.id, formVersions.formDefinitionId),
     )
-    .where(and(
-      eq(formVersions.id, versionId),
-      eq(formVersions.status, "PUBLISHED"),
-      eq(formDefinitions.purpose, purpose),
-    ))
+    .where(
+      and(
+        eq(formVersions.id, versionId),
+        eq(formVersions.status, "PUBLISHED"),
+        eq(formDefinitions.purpose, purpose),
+      ),
+    )
     .limit(1);
   return Boolean(version);
 }
 
-async function readFields(versionId: string) {
-  const database = getDatabase();
+export async function readFormFields(
+  versionId: string,
+  database = getDatabase(),
+  keys?: readonly string[],
+) {
   const [fields, options] = await Promise.all([
     database
       .select({
@@ -186,6 +197,7 @@ async function readFields(versionId: string) {
         maxLength: formFields.maxLength,
         minimum: formFields.minimum,
         minLength: formFields.minLength,
+        repeatable: formFields.repeatableConfiguration,
         order: formFields.order,
         required: formFields.required,
         sectionId: formFields.sectionId,
@@ -194,7 +206,12 @@ async function readFields(versionId: string) {
       })
       .from(formFields)
       .innerJoin(formSections, eq(formSections.id, formFields.sectionId))
-      .where(eq(formFields.formVersionId, versionId))
+      .where(
+        and(
+          eq(formFields.formVersionId, versionId),
+          keys ? inArray(formFields.key, [...keys]) : undefined,
+        ),
+      )
       .orderBy(asc(formSections.order), asc(formFields.order)),
     database
       .select({
@@ -205,7 +222,12 @@ async function readFields(versionId: string) {
       })
       .from(formFieldOptions)
       .innerJoin(formFields, eq(formFields.id, formFieldOptions.fieldId))
-      .where(eq(formFields.formVersionId, versionId))
+      .where(
+        and(
+          eq(formFields.formVersionId, versionId),
+          keys ? inArray(formFields.key, [...keys]) : undefined,
+        ),
+      )
       .orderBy(asc(formFieldOptions.order)),
   ]);
   const byField = new Map<string, FormField["options"]>();
@@ -228,6 +250,7 @@ async function readFields(versionId: string) {
     maxLength: field.maxLength ?? undefined,
     minimum: field.minimum ?? undefined,
     minLength: field.minLength ?? undefined,
+    repeatable: field.repeatable ?? undefined,
     options: byField.get(field.id) ?? [],
     order: field.order,
     required: field.required,
@@ -254,9 +277,9 @@ async function readSections(versionId: string) {
     .orderBy(asc(formSections.order));
 }
 
-export async function getFormEditor(definitionId: string) {
+export async function getFormEditor(definitionId: string, versionId?: string) {
   const database = getDatabase();
-  const [definitions, versions] = await Promise.all([
+  const [definitions, versions, selectedVersions] = await Promise.all([
     database
       .select()
       .from(formDefinitions)
@@ -267,13 +290,25 @@ export async function getFormEditor(definitionId: string) {
       .from(formVersions)
       .where(eq(formVersions.formDefinitionId, definitionId))
       .orderBy(desc(formVersions.versionNumber)),
+    versionId
+      ? database
+          .select()
+          .from(formVersions)
+          .where(and(
+            eq(formVersions.formDefinitionId, definitionId),
+            eq(formVersions.id, versionId),
+          ))
+          .limit(1)
+      : Promise.resolve(null),
   ]);
   const [definition] = definitions;
   if (!definition) return null;
-  const version = versions.find((item) => item.status === "DRAFT") ?? versions[0];
+  const version = selectedVersions
+    ? selectedVersions[0]
+    : versions.find((item) => item.status === "DRAFT") ?? versions[0];
   if (!version) return null;
   const [fields, sections] = await Promise.all([
-    readFields(version.id),
+    readFormFields(version.id),
     readSections(version.id),
   ]);
   return {
@@ -298,7 +333,7 @@ export async function getFormRuntime(
     return null;
   }
   const [fields, sections] = await Promise.all([
-    readFields(versionId),
+    readFormFields(versionId),
     readSections(versionId),
   ]);
   return {
@@ -328,7 +363,7 @@ export async function getFormVersionForWrite(versionId: string) {
     .limit(1);
   if (!version) return null;
   return {
-    fields: await readFields(versionId),
+    fields: await readFormFields(versionId),
     version,
   };
 }

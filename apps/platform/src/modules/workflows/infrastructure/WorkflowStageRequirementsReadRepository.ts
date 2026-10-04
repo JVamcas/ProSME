@@ -32,7 +32,10 @@ function loadChecklistRows(versionId: string) {
     .from(workflowStageChecklistDefinitions)
     .innerJoin(
       workflowStageDefinitions,
-      eq(workflowStageDefinitions.id, workflowStageChecklistDefinitions.stageId),
+      eq(
+        workflowStageDefinitions.id,
+        workflowStageChecklistDefinitions.stageId,
+      ),
     )
     .innerJoin(
       stageTaskDefinitions,
@@ -97,7 +100,10 @@ function loadDocumentRows(versionId: string) {
     .from(workflowStageDocumentRequirements)
     .innerJoin(
       workflowStageDefinitions,
-      eq(workflowStageDefinitions.id, workflowStageDocumentRequirements.stageId),
+      eq(
+        workflowStageDefinitions.id,
+        workflowStageDocumentRequirements.stageId,
+      ),
     )
     .innerJoin(
       stageTaskDefinitions,
@@ -117,13 +123,17 @@ function loadScoringConfigurations(versionId: string) {
   return getDatabase()
     .select({
       stageId: workflowStageScoringConfigurations.stageId,
+      taskDefinitionId: workflowStageScoringConfigurations.taskDefinitionId,
       aggregation: workflowStageScoringConfigurations.aggregation,
       taskStableKey: stageTaskDefinitions.stableKey,
     })
     .from(workflowStageScoringConfigurations)
     .innerJoin(
       workflowStageDefinitions,
-      eq(workflowStageDefinitions.id, workflowStageScoringConfigurations.stageId),
+      eq(
+        workflowStageDefinitions.id,
+        workflowStageScoringConfigurations.stageId,
+      ),
     )
     .innerJoin(
       stageTaskDefinitions,
@@ -132,7 +142,11 @@ function loadScoringConfigurations(versionId: string) {
         workflowStageScoringConfigurations.taskDefinitionId,
       ),
     )
-    .where(eq(workflowStageDefinitions.versionId, versionId));
+    .where(eq(workflowStageDefinitions.versionId, versionId))
+    .orderBy(
+      asc(workflowStageScoringConfigurations.stageId),
+      asc(stageTaskDefinitions.displayOrder),
+    );
 }
 
 function loadScoringCriteria(versionId: string) {
@@ -140,6 +154,7 @@ function loadScoringCriteria(versionId: string) {
     .select({
       id: workflowStageScoringCriteria.id,
       stageId: workflowStageScoringCriteria.stageId,
+      taskDefinitionId: workflowStageScoringCriteria.taskDefinitionId,
       stableKey: workflowStageScoringCriteria.stableKey,
       criterion: workflowStageScoringCriteria.criterion,
       description: workflowStageScoringCriteria.description,
@@ -161,15 +176,26 @@ function loadScoringCriteria(versionId: string) {
 }
 
 export async function loadWorkflowStageRequirements(versionId: string) {
-  const [checklists, comments, documents, scoringConfigurations, scoringCriteria]
-    = await Promise.all([
-      loadChecklistRows(versionId),
-      loadCommentRows(versionId),
-      loadDocumentRows(versionId),
-      loadScoringConfigurations(versionId),
-      loadScoringCriteria(versionId),
-    ]);
-  return { checklists, comments, documents, scoringConfigurations, scoringCriteria };
+  const [
+    checklists,
+    comments,
+    documents,
+    scoringConfigurations,
+    scoringCriteria,
+  ] = await Promise.all([
+    loadChecklistRows(versionId),
+    loadCommentRows(versionId),
+    loadDocumentRows(versionId),
+    loadScoringConfigurations(versionId),
+    loadScoringCriteria(versionId),
+  ]);
+  return {
+    checklists,
+    comments,
+    documents,
+    scoringConfigurations,
+    scoringCriteria,
+  };
 }
 
 export function attachWorkflowStageRequirements(
@@ -186,15 +212,24 @@ export function attachWorkflowStageRequirements(
   requirements.documents.forEach(({ stageId, ...item }) => {
     byId.get(stageId)?.documentRequirements.push(item);
   });
-  requirements.scoringConfigurations.forEach(({
-    stageId,
-    aggregation,
-    taskStableKey,
-  }) => {
-    const stage = byId.get(stageId);
-    if (stage) stage.scoring = { aggregation, criteria: [], taskStableKey };
-  });
-  requirements.scoringCriteria.forEach(({ stageId, ...item }) => {
-    byId.get(stageId)?.scoring?.criteria.push(item);
-  });
+  const configurations = new Map<
+    string,
+    NonNullable<WorkflowStageInput["scoring"]>[number]
+  >();
+  requirements.scoringConfigurations.forEach(
+    ({ stageId, taskDefinitionId, aggregation, taskStableKey }) => {
+      const stage = byId.get(stageId);
+      if (!stage) return;
+      const configuration = { aggregation, criteria: [], taskStableKey };
+      configurations.set(taskDefinitionId, configuration);
+      stage.scoring ??= [];
+      stage.scoring.push(configuration);
+    },
+  );
+  requirements.scoringCriteria.forEach(
+    ({ stageId, taskDefinitionId, ...item }) => {
+      void stageId;
+      configurations.get(taskDefinitionId)?.criteria.push(item);
+    },
+  );
 }

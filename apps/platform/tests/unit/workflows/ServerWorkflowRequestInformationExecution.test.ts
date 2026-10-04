@@ -1,12 +1,24 @@
+vi.mock(
+  "@/modules/workflows/infrastructure/WorkflowReviewThresholdRepository",
+  () => ({
+    recordReviewThresholdEvaluations: vi.fn(),
+  }),
+);
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
+vi.mock(
+  "@/modules/workflows/application/runtime/ServerWorkflowRfiNotificationService",
+  () => ({
+    captureWorkflowRfiCreatedNotification: vi.fn(),
+  }),
+);
+
 vi.mock("@/modules/workflows/infrastructure/WorkflowQuorumRepository", () => ({
   evaluateStageQuorum: vi.fn(),
 }));
 vi.mock("@/modules/workflows/infrastructure/StageCompletionRepository", () => ({
   loadRequiredTaskCompletions: vi.fn(),
-  recordReviewThresholdEvaluations: vi.fn(),
 }));
 vi.mock(
   "@/modules/workflows/application/runtime/ServerWorkflowActionContextService",
@@ -51,6 +63,7 @@ import {
   findWorkflowActionExecution,
   lockWorkflowActionExecutionTarget,
   recordWorkflowActionExecution,
+  type WorkflowActionExecutionTarget,
 } from "@/modules/workflows/infrastructure/WorkflowActionExecutionRepository";
 import {
   withWorkflowActionExecutionTransaction,
@@ -64,6 +77,8 @@ const workflowInstanceId = "20000000-0000-4000-8000-000000000001";
 const stageInstanceId = "30000000-0000-4000-8000-000000000001";
 const taskId = "40000000-0000-4000-8000-000000000001";
 
+let executionTarget: WorkflowActionExecutionTarget;
+
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(workflowActionExecutionDatabase).mockReturnValue({} as never);
@@ -71,7 +86,7 @@ beforeEach(() => {
   vi.mocked(withWorkflowActionExecutionTransaction).mockImplementation(
     async (work) => work({} as never),
   );
-  vi.mocked(lockWorkflowActionExecutionTarget).mockResolvedValue({
+  executionTarget = {
     action: {
       actionType: "REQUEST_INFORMATION",
       condition: null,
@@ -88,7 +103,7 @@ beforeEach(() => {
       enabled: true,
       id: "50000000-0000-4000-8000-000000000001",
       label: "Request information",
-      reasonCodeRequired: false,
+      reasonRequired: false,
       stableKey: "REQUEST_INFORMATION",
     },
     stage: {
@@ -107,6 +122,7 @@ beforeEach(() => {
     },
     task: {
       assignedToActor: true,
+      prerequisitesComplete: true,
       id: taskId,
       permissions: {
         decide: "workflow.task.assigned.decide",
@@ -117,7 +133,10 @@ beforeEach(() => {
       rowVersion: 5,
       status: "IN_PROGRESS",
     },
-  } as never);
+  } as WorkflowActionExecutionTarget;
+  vi.mocked(lockWorkflowActionExecutionTarget).mockResolvedValue(
+    executionTarget,
+  );
   vi.mocked(buildWorkflowActionConditionContext).mockResolvedValue({
     application: {},
     eligibility: {},
@@ -169,4 +188,51 @@ describe("request information action execution", () => {
     expect(completeActionTask).not.toHaveBeenCalled();
     expect(recordWorkflowActionExecution).not.toHaveBeenCalled();
   });
+});
+
+describe("server enforcement of response settings overrides", () => {
+  it.each([false, true])(
+    "rejects invalid overrides before request or workflow writes (enabled: %s)",
+    async (enabled) => {
+      if (executionTarget.action.actionType !== "REQUEST_INFORMATION")
+        throw new Error("Invalid fixture");
+      executionTarget.action.configuration.runtimeOverrides = {
+        deadlineDays: enabled,
+        expiryAction: false,
+        reminderDayOffsets: false,
+      };
+      const user = {
+        capabilities: new Set([
+          "workflow.task.assigned.process",
+          "funding.application.information-request.create",
+        ]),
+        id: actorId,
+        status: "active",
+      } as unknown as AuthenticatedUser;
+      await expect(
+        executeWorkflowAction(user, {
+          actionKey: "REQUEST_INFORMATION",
+          correlationId: "90000000-0000-4000-8000-000000000001",
+          expectedRuntimeVersion: 2,
+          idempotencyKey: "a0000000-0000-4000-8000-000000000001",
+          input: {
+            actionType: "REQUEST_INFORMATION",
+            deadlineOverrides: { deadlineDays: enabled ? 2 : 20 },
+            editableFieldPaths: ["application.financial.turnover"],
+            instructions: "Please clarify the turnover amount.",
+            requestedDocumentRequirementIds: [],
+          },
+          sourceStageInstanceId: stageInstanceId,
+          taskId,
+          workflowInstanceId,
+        }),
+      ).rejects.toThrow(
+        enabled ? "before the deadline" : "cannot be overridden",
+      );
+      expect(createWorkflowRfi).not.toHaveBeenCalled();
+      expect(claimWorkflowActionRuntimeVersion).not.toHaveBeenCalled();
+      expect(completeActionTask).not.toHaveBeenCalled();
+      expect(recordWorkflowActionExecution).not.toHaveBeenCalled();
+    },
+  );
 });

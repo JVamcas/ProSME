@@ -1,4 +1,5 @@
 import "server-only";
+import { workflowHasActiveApplicationHold } from "./WorkflowHoldQueries";
 
 import { and, asc, eq, sql } from "drizzle-orm";
 
@@ -18,8 +19,10 @@ import { createStageInstance } from "./StageInstanceRepository";
 import type { WorkflowInstanceTransaction } from "./WorkflowInstanceRepository";
 import { createWorkflowTasks } from "./WorkflowTaskWriteRepository";
 import { resolveEligibilityTaskFormVersion } from "./EligibilityTaskFormRepository";
+import { workflowTaskInheritsEligibilityForm } from "../domain/definitions/WorkflowEligibilityForm";
 import { appendStageActivationAudit } from "./StageActivationAuditRepository";
 import { allocateStageReviewers } from "./WorkflowTaskAutoAssignmentRepository";
+import { initializeWorkflowReworkData } from "./WorkflowReworkDataRepository";
 
 export type StageActivationTransaction = WorkflowInstanceTransaction;
 
@@ -51,11 +54,6 @@ export type StageActivationTaskDefinition = {
   taskType: "CONTRIBUTING" | "STAGE_DECISION";
   roleId: string | null;
   stableKey: string;
-};
-
-export type PriorStageActivationContext = {
-  stableKey: string;
-  values: Record<string, unknown>;
 };
 
 export type ExistingStageIteration = {
@@ -166,6 +164,10 @@ export async function lockStageActivationTarget(
     .limit(1);
 
   if (!row) return null;
+  const paused = await transaction.execute<{ paused: boolean }>(sql`
+    SELECT ${workflowHasActiveApplicationHold(sql`${workflowInstanceId}::uuid`)} AS paused
+  `);
+  if (paused.rows[0]?.paused) return null;
   const content = row.snapshotContent;
   const application = content.application;
   const fundingCall = content.fundingCall;
@@ -236,6 +238,25 @@ export async function nextStageIterationNumber(
   return (result.rows[0] as { iterationNumber: number }).iterationNumber;
 }
 
+export async function loadStageReworkIteration(
+  transaction: Pick<StageActivationTransaction, "execute">,
+  workflowInstanceId: string,
+  stageDefinitionId: string,
+) {
+  const result = await transaction.execute<{
+    nextIterationNumber: number;
+    activeStageInstanceId: string | null;
+  }>(sql`
+    SELECT coalesce(max(iteration_number), 0)::integer + 1 AS "nextIterationNumber",
+      (array_agg(id ORDER BY iteration_number DESC)
+        FILTER (WHERE status IN ('ACTIVE', 'BLOCKED')))[1] AS "activeStageInstanceId"
+    FROM app_workflow_stage_instances
+    WHERE workflow_instance_id = ${workflowInstanceId}::uuid
+      AND workflow_stage_definition_id = ${stageDefinitionId}::uuid
+  `);
+  return result.rows[0];
+}
+
 export async function loadIncompleteJoinPredecessors(
   transaction: Pick<StageActivationTransaction, "execute">,
   workflowInstanceId: string,
@@ -256,7 +277,9 @@ export async function loadIncompleteJoinPredecessors(
       )
     ORDER BY predecessor.code
   `);
-  return (result.rows as Array<{ stageKey: string }>).map((row) => row.stageKey);
+  return (result.rows as Array<{ stageKey: string }>).map(
+    (row) => row.stageKey,
+  );
 }
 
 export async function loadStageActivationTasks(
@@ -304,13 +327,9 @@ export async function persistStageActivation(
       : new Date(
           input.activatedAt.getTime() + input.target.slaHours * 3_600_000,
         );
-  const usesEligibilityForm = (task: (typeof input.tasks)[number]) =>
-    task.stableKey === "ELIGIBILITY_VERIFICATION" ||
-    (task.config &&
-      typeof task.config === "object" &&
-      "formPurpose" in task.config &&
-      task.config.formPurpose === "ELIGIBILITY_VERIFICATION");
-  const needsEligibilityForm = input.tasks.some(usesEligibilityForm);
+  const needsEligibilityForm = input.tasks.some(
+    workflowTaskInheritsEligibilityForm,
+  );
   const eligibilityFormVersionId = needsEligibilityForm
     ? await resolveEligibilityTaskFormVersion(
         transaction,
@@ -335,7 +354,7 @@ export async function persistStageActivation(
         assignedUserId: assignments.get(task.id)?.[index] ?? null,
         createdAt: input.activatedAt,
         dueAt,
-        formVersionId: usesEligibilityForm(task)
+        formVersionId: workflowTaskInheritsEligibilityForm(task)
           ? eligibilityFormVersionId!
           : task.formVersionId,
         stageInstanceId: stage.id,
@@ -344,6 +363,21 @@ export async function persistStageActivation(
       })),
     ),
   );
+  const dataHandling = input.returnContext?.dataHandling;
+  if (dataHandling === "RETAIN" || dataHandling === "CLEAR") {
+    const lineage = await initializeWorkflowReworkData(transaction, {
+      actorId: input.actorId,
+      correlationId: input.correlationId,
+      dataHandling,
+      stageInstanceId: stage.id,
+    });
+    const sources = new Map(
+      lineage.map((link) => [link.taskId, link.sourceTaskId]),
+    );
+    for (const task of tasks) {
+      task.supersedesTaskId = sources.get(task.id) ?? null;
+    }
+  }
   await transaction
     .update(workflowInstances)
     .set({ currentStageInstanceId: stage.id })

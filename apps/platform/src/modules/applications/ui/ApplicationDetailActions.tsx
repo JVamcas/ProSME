@@ -8,9 +8,7 @@ import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { GeneralButton, GeneralButtonLink } from "@/components/ui/button";
 import { ActionMenu, type ActionMenuItem } from "@/shared/ui/ActionMenu";
 import { toast } from "@/shared/ui/Toast";
-import {
-  useDeleteApplicationDraft,
-} from "../ApplicationHooks";
+import { useDeleteApplicationDraft } from "./useApplications";
 import type { ApplicationSummary } from "../ApplicationTypes";
 import { ApplicationWithdrawalForm } from "./ApplicationWithdrawalForm";
 

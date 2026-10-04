@@ -67,8 +67,8 @@ export function sanitizeNotificationHtml(html: string): string {
       "*": ["class", "style"],
       a: ["href", "target", "title"],
       img: ["alt", "height", "src", "width"],
-      td: ["align", "colspan", "rowspan", "valign"],
-      th: ["align", "colspan", "rowspan", "valign"],
+      td: ["align", "bgcolor", "colspan", "rowspan", "valign"],
+      th: ["align", "bgcolor", "colspan", "rowspan", "valign"],
     },
     allowedSchemes: ["http", "https", "mailto"],
     allowedTags: [

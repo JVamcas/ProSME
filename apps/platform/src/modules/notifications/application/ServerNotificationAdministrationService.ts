@@ -37,6 +37,10 @@ import {
   isNotificationEventKey,
   notificationEventCatalogue,
 } from "../domain/NotificationEvent";
+import {
+  isRelationshipNotificationRecipientType,
+  relationshipRecipientTypesForEvent,
+} from "../domain/NotificationRecipient";
 
 function assertConfigurableEvent(eventKey: string) {
   if (
@@ -124,6 +128,20 @@ export async function updateNotificationEventRule(
   const actor = authorizeNotificationOperation(user, "UPDATE_CONFIGURATION");
   assertConfigurableEvent(eventKey);
   const update = notificationEventRuleUpdateSchema.parse(input);
+  const allowedRelationships = new Set(
+    relationshipRecipientTypesForEvent(eventKey),
+  );
+  if (
+    update.recipients.some(
+      (recipient) =>
+        isRelationshipNotificationRecipientType(recipient.recipientType)
+        && !allowedRelationships.has(recipient.recipientType),
+    )
+  ) {
+    throw new ResourceConflictError(
+      "One or more recipient types are unavailable for this event. Choose a recipient supported by the event data.",
+    );
+  }
   const current = (await findNotificationEventRuleRecord(eventKey)) as
     | {
         channels: Array<{ code: string; isEnabled: boolean }>;
@@ -216,7 +234,7 @@ export async function retryNotificationDelivery(
   }
   if (result.outcome === "INELIGIBLE") {
     throw new ResourceConflictError(
-      "Only failed notification deliveries can be retried.",
+      "Only failed or dead-letter notification deliveries can be retried.",
     );
   }
   return result;

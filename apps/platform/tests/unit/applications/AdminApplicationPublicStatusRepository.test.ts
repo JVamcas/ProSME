@@ -22,7 +22,7 @@ beforeEach(() => {
       {
         applicantName: "Applicant",
         applicationId,
-        businessName: "SME",
+        businessName: "SME Fund",
         businessType: null,
         coFunding: null,
         currentStageName: "Administrative and Eligibility Screening",
@@ -30,7 +30,7 @@ beforeEach(() => {
         location: null,
         opportunityTitle: "Growth Grant",
         priority: null,
-        reference: "SME-001",
+        reference: "SME Fund-001",
         requestedAmount: null,
         stages: [],
         submittedAt: new Date("2026-09-24T12:00:00.000Z"),

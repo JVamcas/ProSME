@@ -1,14 +1,14 @@
 "use client";
 
 import Form, { type IChangeEvent } from "@rjsf/core";
-import type {
-  ErrorSchema,
-  ObjectFieldTemplateProps,
-  RJSFSchema,
-} from "@rjsf/utils";
+import type { ObjectFieldTemplateProps, RJSFSchema } from "@rjsf/utils";
 import validator from "@rjsf/validator-ajv8";
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 
+import {
+  formRendererValidationErrors,
+  valuesForFields,
+} from "./FormRendererValidation";
 import { cn } from "@/lib/utils";
 import type { FormRuntimeSchema } from "@/modules/forms/FormTypes";
 import type { FormRuntimeContext } from "@/modules/forms/engine/FormRuntimeContext";
@@ -23,21 +23,24 @@ import {
   FormCompletenessSummary,
   type SupplementalCompletion,
 } from "./FormCompletenessSummary";
-import {
-  formColumnCount,
-  formGridClass,
-} from "./FormLayout";
+import { formColumnCount, formGridClass } from "./FormLayout";
 import {
   FormBaseInputTemplate,
   FormCurrencyWidget,
   FormDateWidget,
   FormFieldTemplate,
   FormRadioWidget,
+  FormRichTextWidget,
   FormPercentageWidget,
   FormSelectWidget,
   FormTextareaWidget,
 } from "./RjsfTheme";
 import { FormStepActions, FormStepProgress } from "./FormStepNavigation";
+import {
+  RepeatableArrayFieldItemTemplate,
+  RepeatableArrayFieldTemplate,
+} from "./RepeatableGroupTemplates";
+import { useFormStepProgress } from "./useFormStepProgress";
 
 export type DynamicFormValues = Record<string, unknown>;
 
@@ -46,37 +49,6 @@ type RendererContext = {
   runtimeContext: FormRuntimeContext;
   sections: RenderSection[];
 };
-
-function valuesForFields(
-  fields: readonly { key: string }[],
-  values: DynamicFormValues,
-) {
-  return Object.fromEntries(
-    fields.map((field) => [field.key, values[field.key]]),
-  );
-}
-
-function hasFormValue(value: unknown) {
-  return value !== undefined
-    && value !== null
-    && value !== ""
-    && (!Array.isArray(value) || value.length > 0);
-}
-
-function invalidFieldMessage(
-  field: FormRuntimeSchema["fields"][number],
-  value: unknown,
-) {
-  if (typeof value === "number") {
-    if (field.minimum != null && value < field.minimum) {
-      return `Enter a value of at least ${field.minimum}.`;
-    }
-    if (field.maximum != null && value > field.maximum) {
-      return `Enter a value no greater than ${field.maximum}.`;
-    }
-  }
-  return "Complete or correct this field before continuing.";
-}
 
 function sectionSpan(columnSpan: RenderSection["columnSpan"]) {
   if (columnSpan === 1) return "col-span-1";
@@ -103,6 +75,15 @@ function FormObjectTemplate(
     RendererContext
   >,
 ) {
+  if (props.fieldPathId.path.length > 0) {
+    return (
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {props.properties.map((property) => (
+          <div key={property.name}>{property.content}</div>
+        ))}
+      </div>
+    );
+  }
   const properties = new Map(
     props.properties.map((property) => [property.name, property.content]),
   );
@@ -114,71 +95,60 @@ function FormObjectTemplate(
       )}
     >
       {props.registry.formContext.sections
-        .filter((section) => (
-          !props.registry.formContext.activeSectionId
-          || section.id === props.registry.formContext.activeSectionId
-        ))
+        .filter(
+          (section) =>
+            !props.registry.formContext.activeSectionId ||
+            section.id === props.registry.formContext.activeSectionId,
+        )
         .map((section) => {
-        return (
-          <section
-            aria-labelledby={`form-section-${section.id}`}
-            className={cn(
-              sectionSpan(section.columnSpan),
-              section.showContainer
-                ? "rounded-2xl border border-brand-navy/10 bg-brand-white p-5"
-                : "",
-            )}
-            key={section.id}
-          >
-            <h2
+          return (
+            <section
+              aria-labelledby={`form-section-${section.id}`}
               className={cn(
-                "font-bold text-brand-navy",
-                !section.showContainer && "sr-only",
+                sectionSpan(section.columnSpan),
+                section.showContainer
+                  ? "rounded-2xl border border-brand-navy/10 bg-brand-white p-5"
+                  : "",
               )}
-              id={`form-section-${section.id}`}
+              key={section.id}
             >
-              {section.title}
-            </h2>
-            {section.showContainer && section.description ? (
-              <p className="mt-1 text-sm text-brand-navy/65">
-                {section.description}
-              </p>
-            ) : null}
-            <div
-              className={cn(
-                "grid gap-5",
-                section.showContainer && "mt-4",
-                sectionColumns(section.columnSpan),
-              )}
-            >
-              {section.fields.map((field) => (
-                <div className={fieldSpan(field.columnSpan)} key={field.key}>
-                  {properties.get(field.key)}
-                </div>
-              ))}
-            </div>
-          </section>
-        );
-      })}
+              <h2
+                className={cn(
+                  "font-bold text-brand-navy",
+                  !section.showContainer && "sr-only",
+                )}
+                id={`form-section-${section.id}`}
+              >
+                {section.title}
+              </h2>
+              {section.showContainer && section.description ? (
+                <p className="mt-1 text-sm text-brand-navy/65">
+                  {section.description}
+                </p>
+              ) : null}
+              <div
+                className={cn(
+                  "grid gap-5",
+                  section.showContainer && "mt-4",
+                  sectionColumns(section.columnSpan),
+                )}
+              >
+                {section.fields.map((field) => (
+                  <div className={fieldSpan(field.columnSpan)} key={field.key}>
+                    {properties.get(field.key)}
+                  </div>
+                ))}
+              </div>
+            </section>
+          );
+        })}
     </div>
   );
 }
 
-export function FormRenderer({
-  children,
-  definition,
-  formData,
-  onChange,
-  onSubmit,
-  penultimateStep,
-  readOnly = false,
-  readOnlyFieldKeys = [],
-  runtimeContext = {},
-  showCompleteness = true,
-  stepPersistenceKey,
-  supplementalCompletion,
-}: {
+type FormRendererProps = {
   children?: ReactNode;
+  onFinalStepChange?: (final: boolean) => void;
   definition: FormRuntimeSchema;
   formData: DynamicFormValues;
   onChange: (values: DynamicFormValues) => void;
@@ -190,16 +160,23 @@ export function FormRenderer({
   showCompleteness?: boolean;
   stepPersistenceKey?: string;
   supplementalCompletion?: SupplementalCompletion;
-}) {
-  const [currentStepId, setCurrentStepId] = useState<string | undefined>(() => {
-    if (!stepPersistenceKey || typeof window === "undefined") return undefined;
+};
 
-    try {
-      return sessionStorage.getItem(stepPersistenceKey) ?? undefined;
-    } catch {
-      return undefined;
-    }
-  });
+export function FormRenderer({
+  children,
+  definition,
+  formData,
+  onChange,
+  onSubmit,
+  onFinalStepChange,
+  penultimateStep,
+  readOnly = false,
+  readOnlyFieldKeys = [],
+  runtimeContext = {},
+  showCompleteness = true,
+  stepPersistenceKey,
+  supplementalCompletion,
+}: FormRendererProps) {
   const [validationAttempted, setValidationAttempted] = useState(false);
   const activeDefinition = useMemo(
     () => activeFormDefinition(definition, formData),
@@ -210,31 +187,34 @@ export function FormRenderer({
     [definition, formData],
   );
   const stepMode = definition.displayMode === "STEPS";
-  const steps = stepMode && penultimateStep
-    ? [
-        ...parsed.sections.slice(0, -1),
-        { id: penultimateStep.id, title: penultimateStep.title },
-        ...parsed.sections.slice(-1),
-      ]
-    : parsed.sections;
-  function navigateToStep(stepId: string | undefined) {
-    if (!stepId) return;
-    setCurrentStepId(stepId);
-    if (!stepPersistenceKey) return;
-
-    try {
-      sessionStorage.setItem(stepPersistenceKey, stepId);
-    } catch {
-      // Navigation still works if browser storage is unavailable.
-    }
-  }
+  const steps =
+    stepMode && penultimateStep
+      ? [
+          ...parsed.sections.slice(0, -1),
+          { id: penultimateStep.id, title: penultimateStep.title },
+          ...parsed.sections.slice(-1),
+        ]
+      : parsed.sections;
+  const { completedStepIds, currentStepId, markStepComplete, navigateToStep } =
+    useFormStepProgress({
+      persistenceKey: stepPersistenceKey,
+      steps,
+    });
 
   const currentIndex = stepMode
-    ? Math.max(0, steps.findIndex((step) => step.id === currentStepId))
+    ? Math.max(
+        0,
+        steps.findIndex((step) => step.id === currentStepId),
+      )
     : 0;
-  const documentStepActive = stepMode
-    && Boolean(penultimateStep)
-    && currentStepId === penultimateStep?.id;
+  const documentStepActive =
+    stepMode &&
+    Boolean(penultimateStep) &&
+    currentStepId === penultimateStep?.id;
+  const isFinalStep = !stepMode || currentIndex === steps.length - 1;
+  useEffect(() => {
+    onFinalStepChange?.(isFinalStep);
+  }, [isFinalStep, onFinalStepChange]);
   const currentSection = documentStepActive
     ? undefined
     : parsed.sections.find((section) => section.id === steps[currentIndex]?.id);
@@ -243,34 +223,12 @@ export function FormRenderer({
         (field) => field.sectionId === currentSection.id,
       )
     : [];
-  const invalidStepFields = validationAttempted
-    ? currentFields.filter((field) => (
-        !validateFormValues(
-          [field],
-          valuesForFields([field], formData),
-          true,
-        )
-      ))
-    : [];
-  const invalidPopulatedFields = activeDefinition.fields.filter((field) => (
-    hasFormValue(formData[field.key])
-    && !validateFormValues(
-      [field],
-      valuesForFields([field], formData),
-      false,
-    )
-  ));
-  const invalidFields = new Map(
-    [...invalidStepFields, ...invalidPopulatedFields].map((field) => (
-      [field.key, field]
-    )),
+  const extraErrors = formRendererValidationErrors(
+    activeDefinition.fields,
+    currentFields,
+    formData,
+    validationAttempted,
   );
-  const extraErrors = Object.fromEntries(
-    [...invalidFields.values()].map((field) => [
-      field.key,
-      { __errors: [invalidFieldMessage(field, formData[field.key])] },
-    ]),
-  ) as ErrorSchema<DynamicFormValues>;
   const context = useMemo(
     () => ({
       activeSectionId: stepMode ? currentSection?.id : undefined,
@@ -279,17 +237,22 @@ export function FormRenderer({
     }),
     [currentSection?.id, parsed.sections, runtimeContext, stepMode],
   );
-  const uiSchema = useMemo(() => ({
-    ...parsed.uiSchema,
-    ...Object.fromEntries(readOnlyFieldKeys.map((key) => [
-      key,
-      {
-        ...parsed.uiSchema[key],
-        "ui:disabled": true,
-        "ui:readonly": true,
-      },
-    ])),
-  }), [parsed.uiSchema, readOnlyFieldKeys]);
+  const uiSchema = useMemo(
+    () => ({
+      ...parsed.uiSchema,
+      ...Object.fromEntries(
+        readOnlyFieldKeys.map((key) => [
+          key,
+          {
+            ...parsed.uiSchema[key],
+            "ui:disabled": true,
+            "ui:readonly": true,
+          },
+        ]),
+      ),
+    }),
+    [parsed.uiSchema, readOnlyFieldKeys],
+  );
   const completeness = useMemo(
     () => calculateFormCompleteness(activeDefinition, formData),
     [activeDefinition, formData],
@@ -307,7 +270,12 @@ export function FormRenderer({
         />
       ) : null}
       {stepMode ? (
-        <FormStepProgress currentIndex={currentIndex} steps={steps} />
+        <FormStepProgress
+          completedStepIds={completedStepIds}
+          currentIndex={currentIndex}
+          onStepChange={navigateToStep}
+          steps={steps}
+        />
       ) : null}
       {documentStepActive ? (
         <>
@@ -315,7 +283,10 @@ export function FormRenderer({
           <FormStepActions
             currentIndex={currentIndex}
             onBack={() => navigateToStep(steps[currentIndex - 1]?.id)}
-            onNext={() => navigateToStep(steps[currentIndex + 1]?.id)}
+            onNext={() => {
+              markStepComplete(steps[currentIndex]?.id);
+              navigateToStep(steps[currentIndex + 1]?.id);
+            }}
             stepCount={steps.length}
           />
         </>
@@ -337,6 +308,8 @@ export function FormRenderer({
           schema={parsed.schema}
           showErrorList={false}
           templates={{
+            ArrayFieldItemTemplate: RepeatableArrayFieldItemTemplate,
+            ArrayFieldTemplate: RepeatableArrayFieldTemplate,
             BaseInputTemplate: FormBaseInputTemplate,
             FieldTemplate: FormFieldTemplate,
             ObjectFieldTemplate: FormObjectTemplate,
@@ -347,6 +320,7 @@ export function FormRenderer({
             currency: FormCurrencyWidget,
             DateWidget: FormDateWidget,
             percentage: FormPercentageWidget,
+            richText: FormRichTextWidget,
             RadioWidget: FormRadioWidget,
             SelectWidget: FormSelectWidget,
             TextareaWidget: FormTextareaWidget,
@@ -360,23 +334,25 @@ export function FormRenderer({
                 navigateToStep(steps[currentIndex - 1]?.id);
               }}
               onNext={() => {
-                if (!readOnly && !validateFormValues(
-                  currentFields,
-                  valuesForFields(currentFields, formData),
-                  true,
-                )) {
+                if (
+                  !readOnly &&
+                  !validateFormValues(
+                    currentFields,
+                    valuesForFields(currentFields, formData),
+                    true,
+                  )
+                ) {
                   setValidationAttempted(true);
                   return;
                 }
                 setValidationAttempted(false);
+                markStepComplete(steps[currentIndex]?.id);
                 navigateToStep(steps[currentIndex + 1]?.id);
               }}
               stepCount={steps.length}
             />
           ) : null}
-          {!stepMode || currentIndex === steps.length - 1
-            ? children
-            : null}
+          {!stepMode || currentIndex === steps.length - 1 ? children : null}
         </Form>
       )}
     </div>

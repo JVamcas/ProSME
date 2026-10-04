@@ -1,3 +1,4 @@
+import type { WorkflowRfiRuntimeOverrides } from "./WorkflowRequestInformationDeadline";
 import type { WorkflowPublicStatusMapping } from "../definitions/WorkflowStageDefinition";
 
 export type ApproveAdvanceConfiguration = Record<string, never>;
@@ -5,8 +6,8 @@ export type ApproveAdvanceConfiguration = Record<string, never>;
 export type RejectConfiguration = {
   outcome:
     | {
-        cancelOpenStageInstances: boolean;
-        cancelOpenTasks: boolean;
+        cancelOpenStageInstances: true;
+        cancelOpenTasks: true;
         publicStatusMapping: WorkflowPublicStatusMapping;
         type: "TERMINAL";
       }
@@ -17,6 +18,7 @@ export type RejectConfiguration = {
 export type RequestInformationConfiguration = {
   continuation: "RESUME_SOURCE_TASK";
   deadlineDays: number;
+  runtimeOverrides?: WorkflowRfiRuntimeOverrides;
   editableFieldPaths: string[];
   reminderDayOffsets: number[];
   expiryAction: "CLOSE_REQUEST" | "ESCALATE" | "RETURN";
@@ -26,7 +28,6 @@ export type RequestInformationConfiguration = {
 
 export type ReturnConfiguration = {
   dataHandling: "RETAIN" | "CLEAR";
-  reasonRequired: boolean;
 };
 
 export type ReferConfiguration = {
@@ -36,14 +37,13 @@ export type ReferConfiguration = {
 
 export type EscalateConfiguration = {
   blockUntilResolved: boolean;
-  responsibility: "RETAIN" | "SHARE" | "TRANSFER";
+  responsibility: "TRANSFER";
   targetType: "ROLE" | "USER";
   targetId: string;
-  trigger: "MANUAL" | "SLA_BREACH" | "CONDITION";
+  trigger: "MANUAL";
 };
 
 export type PutOnHoldConfiguration = {
-  reasonCodes: string[];
   reviewDateRequired: boolean;
   scope: "STAGE";
 };

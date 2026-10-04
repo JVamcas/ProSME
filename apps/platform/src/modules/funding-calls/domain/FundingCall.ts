@@ -19,6 +19,7 @@ export type ApplicationDuplicatePolicy = import(
 ).ApplicationDuplicatePolicy;
 
 export type FundingCall = {
+  allowResubmissionAfterWithdrawal: boolean;
   applicationDuplicatePolicy: ApplicationDuplicatePolicy;
   id: string;
   reference: string;
@@ -38,9 +39,13 @@ export type FundingCall = {
   closesAt: Date;
   status: FundingCallStatus;
   suspendedFromStatus: FundingCallPublishedStatus | null;
+  attachmentsLockedAt?: Date | null;
   publicContactName: string | null;
   publicContactEmail: string | null;
   publicContactPhone: string | null;
+  thumbnailContentType?: string | null;
+  thumbnailFileName?: string | null;
+  thumbnailObjectKey?: string | null;
   rowVersion: number;
   createdBy: string;
   updatedBy: string;

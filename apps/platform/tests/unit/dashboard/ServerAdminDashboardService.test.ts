@@ -1,14 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
-vi.mock("@/db/repositories/AdminDashboardRepository", () => ({
+vi.mock("@/modules/dashboard/infrastructure/AdminDashboardRepository", () => ({
   readAdminDashboard: vi.fn(),
 }));
 
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { PermissionDeniedError } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
-import { readAdminDashboard } from "@/db/repositories/AdminDashboardRepository";
+import { readAdminDashboard } from "@/modules/dashboard/infrastructure/AdminDashboardRepository";
 import { getAdminDashboard } from "@/modules/dashboard/ServerAdminDashboardService";
 
 function staff(granted: string[]): AuthenticatedUser {
@@ -32,6 +32,7 @@ beforeEach(() => {
   vi.mocked(readAdminDashboard).mockResolvedValue({
     activities: [],
     metrics: {
+      informationRequests: 2,
       pendingDecision: 0,
       totalApplications: 0,
       underReview: 0,
@@ -60,20 +61,20 @@ describe("admin dashboard service", () => {
       since: new Date("2026-08-16T10:00:00.000Z"),
       visibility: "all",
     });
-    expect(dashboard.metrics.informationRequests).toBeNull();
+    expect(dashboard.metrics.informationRequests).toBe(2);
   });
 
-  it("limits assigned readers and does not invent request totals", async () => {
+  it("limits assigned readers and returns projected request totals", async () => {
     const dashboard = await getAdminDashboard(
-      staff([
-        permissionCodes.workflowTaskAssignedRead,
-      ]),
+      staff([permissionCodes.workflowTaskAssignedRead]),
       "all",
     );
-    expect(readAdminDashboard).toHaveBeenCalledWith(expect.objectContaining({
-      since: null,
-      visibility: "assigned",
-    }));
-    expect(dashboard.metrics.informationRequests).toBeNull();
+    expect(readAdminDashboard).toHaveBeenCalledWith(
+      expect.objectContaining({
+        since: null,
+        visibility: "assigned",
+      }),
+    );
+    expect(dashboard.metrics.informationRequests).toBe(2);
   });
 });

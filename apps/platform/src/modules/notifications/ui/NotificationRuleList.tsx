@@ -9,7 +9,7 @@ import {
   DeactivateButton,
 } from "@/components/ui/action-buttons";
 import { IconButton } from "@/components/ui/button";
-import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
+import { DataTable, type DataTableColumn } from "@/shared/ui/DataTable";
 import { DataTableFilter } from "@/components/ui/data-table-filter";
 import { FormInput, FormSelect } from "@/components/ui/form-fields";
 import { Badge } from "@/shared/ui/Badge";

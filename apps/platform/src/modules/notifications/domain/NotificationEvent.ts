@@ -1,23 +1,29 @@
 import { z } from "zod";
+import { workflowHoldResumedContextSchema } from "./NotificationWorkflowHoldEvent";
+import {
+  workflowTaskAssignedContextSchema,
+  workflowTaskEscalatedContextSchema,
+} from "./NotificationWorkflowTaskEvent";
+export { workflowTaskAssignedContextSchema } from "./NotificationWorkflowTaskEvent";
+
+import { applicationTerminalStatusContextSchema } from "./NotificationApplicationTerminalEvent";
+import {
+  workflowDeadlineContextSchema,
+  workflowDeadlineEventCatalogue,
+} from "./NotificationWorkflowDeadlineEvent";
+import {
+  applicationOwnerSnapshotSchema,
+  identifierSchema,
+  snapshotEmailSchema,
+  snapshotNameSchema,
+  timestampSchema,
+  uuidSchema,
+} from "./NotificationEventSchemaFields";
 
 import {
   notificationErrorCodes,
   NotificationValidationError,
 } from "./NotificationErrors";
-
-const uuidSchema = z.uuid();
-const snapshotNameSchema = z.string().trim().min(1).max(200);
-const snapshotEmailSchema = z.email().max(320);
-const identifierSchema = z.string().trim().min(1).max(500);
-const timestampSchema = z.iso.datetime({ offset: true });
-
-const applicationOwnerSnapshotSchema = z
-  .object({
-    displayName: snapshotNameSchema,
-    email: snapshotEmailSchema,
-    userId: uuidSchema,
-  })
-  .strict();
 
 export const applicationSubmittedContextSchema = z
   .object({
@@ -34,50 +40,11 @@ export const applicationSubmittedContextSchema = z
   })
   .strict();
 
-const assignedTaskSchema = z
-  .object({
-    assignedUserId: uuidSchema,
-    taskId: uuidSchema,
-    taskName: z.string().trim().min(1).max(300),
-  })
-  .strict();
-
-const assigneeSnapshotSchema = applicationOwnerSnapshotSchema;
-
-export const workflowTaskAssignedContextSchema = z
-  .object({
-    applicationId: uuidSchema,
-    applicationReference: z.string().trim().min(1).max(100),
-    assignedAt: timestampSchema,
-    assignees: z.array(assigneeSnapshotSchema).min(1),
-    correlationId: identifierSchema,
-    fundingOpportunityTitle: z.string().trim().min(1).max(300),
-    sourceIdempotencyKey: identifierSchema,
-    stageInstanceId: uuidSchema,
-    stageName: z.string().trim().min(1).max(300),
-    tasks: z.array(assignedTaskSchema).min(1),
-    workflowInstanceId: uuidSchema,
-  })
-  .strict()
-  .superRefine((context, issueContext) => {
-    const assigneeIds = new Set(
-      context.assignees.map((assignee) => assignee.userId),
-    );
-    for (const [index, task] of context.tasks.entries()) {
-      if (!assigneeIds.has(task.assignedUserId)) {
-        issueContext.addIssue({
-          code: "custom",
-          message: "Task assignee must have a matching assignee snapshot.",
-          path: ["tasks", index, "assignedUserId"],
-        });
-      }
-    }
-  });
 
 const informationRequestContextSchema = z.object({
   applicationId: uuidSchema,
   applicationReference: z.string().trim().min(1).max(100),
-  assignees: z.array(assigneeSnapshotSchema),
+  assignees: z.array(applicationOwnerSnapshotSchema),
   correlationId: identifierSchema,
   fundingOpportunityTitle: z.string().trim().min(1).max(300),
   owner: applicationOwnerSnapshotSchema,
@@ -147,6 +114,7 @@ export const notificationEventKeys = [
   "auth.email.verification",
   "auth.password.reset",
   "application.submitted",
+  "application.terminal-status-reached",
   "funding-call.approval-request-withdrawn",
   "funding-call.approval-requested",
   "funding-call.approved",
@@ -163,6 +131,12 @@ export const notificationEventKeys = [
   "workflow.information-request.closed",
   "workflow.information-request.expired",
   "workflow.task.assigned",
+  "workflow.task.escalated",
+  "workflow.sla.breached",
+  "workflow.information-request.reminder",
+  "workflow.hold.review-due",
+  "workflow.hold.resumed",
+  "workflow.deferral.resumed",
 ] as const;
 
 export type NotificationEventKey = (typeof notificationEventKeys)[number];
@@ -199,6 +173,7 @@ export type NotificationEventContextByKey = {
   "auth.email.verification": z.infer<typeof authenticationEventContextSchema>;
   "auth.password.reset": z.infer<typeof authenticationEventContextSchema>;
   "application.submitted": ApplicationSubmittedContext;
+  "application.terminal-status-reached": z.infer<typeof applicationTerminalStatusContextSchema>;
   "funding-call.approval-request-withdrawn": FundingCallLifecycleContext;
   "funding-call.approval-requested": FundingCallLifecycleContext;
   "funding-call.approved": FundingCallLifecycleContext;
@@ -215,6 +190,12 @@ export type NotificationEventContextByKey = {
   "workflow.information-request.expired": InformationRequestExpiredContext;
   "workflow.information-request.responded": InformationRequestRespondedContext;
   "workflow.task.assigned": WorkflowTaskAssignedContext;
+  "workflow.task.escalated": z.infer<typeof workflowTaskEscalatedContextSchema>;
+  "workflow.sla.breached": z.infer<typeof workflowDeadlineContextSchema>;
+  "workflow.information-request.reminder": z.infer<typeof workflowDeadlineContextSchema>;
+  "workflow.hold.review-due": z.infer<typeof workflowDeadlineContextSchema>;
+  "workflow.hold.resumed": z.infer<typeof workflowHoldResumedContextSchema>;
+  "workflow.deferral.resumed": z.infer<typeof workflowDeadlineContextSchema>;
 };
 
 type NotificationEventDefinition<Key extends NotificationEventKey> = {
@@ -225,6 +206,11 @@ type NotificationEventDefinition<Key extends NotificationEventKey> = {
 };
 
 export const notificationEventCatalogue = {
+  "workflow.hold.resumed": {
+    catalogKey: "WORKFLOW", ruleEligibility: "CONFIGURABLE",
+    key: "workflow.hold.resumed", contextSchema: workflowHoldResumedContextSchema,
+  },
+  ...workflowDeadlineEventCatalogue,
   "auth.email.verification": {
     ruleEligibility: "SYSTEM_ONLY",
     catalogKey: "AUTHENTICATION",
@@ -236,6 +222,12 @@ export const notificationEventCatalogue = {
     catalogKey: "AUTHENTICATION",
     contextSchema: authenticationEventContextSchema,
     key: "auth.password.reset",
+  },
+  "application.terminal-status-reached": {
+    ruleEligibility: "CONFIGURABLE",
+    catalogKey: "APPLICATIONS",
+    contextSchema: applicationTerminalStatusContextSchema,
+    key: "application.terminal-status-reached",
   },
   "application.submitted": {
     ruleEligibility: "CONFIGURABLE",
@@ -332,6 +324,12 @@ export const notificationEventCatalogue = {
     catalogKey: "WORKFLOW",
     contextSchema: informationRequestRespondedContextSchema,
     key: "workflow.information-request.responded",
+  },
+  "workflow.task.escalated": {
+    ruleEligibility: "CONFIGURABLE",
+    catalogKey: "WORKFLOW",
+    contextSchema: workflowTaskEscalatedContextSchema,
+    key: "workflow.task.escalated",
   },
   "workflow.task.assigned": {
     ruleEligibility: "CONFIGURABLE",

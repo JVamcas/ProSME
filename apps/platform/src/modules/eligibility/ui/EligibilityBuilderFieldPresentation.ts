@@ -54,7 +54,8 @@ export function eligibilityBuilderFieldPresentations(
     return {
       builderField: {
         key: field.key,
-        label: `${field.label} [${sourceLabel}]`,
+        label: field.label,
+        source: [{ label: sourceLabel }],
         type: field.type,
       },
       key: field.key,

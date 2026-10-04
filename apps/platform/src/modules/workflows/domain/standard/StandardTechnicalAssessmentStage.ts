@@ -27,7 +27,7 @@ export function createStandardTechnicalAssessmentStage(
       5,
       {
         blockUntilResolved: true,
-        responsibility: "SHARE",
+        responsibility: "TRANSFER",
         targetId: dependencies.roleIds.panel_moderator,
         targetType: "ROLE",
         trigger: "MANUAL",
@@ -81,19 +81,21 @@ export function createStandardTechnicalAssessmentStage(
       status: "UNDER_REVIEW",
     },
     repeatable: true,
-    scoring: {
-      aggregation: "WEIGHTED_AVERAGE",
-      taskStableKey: "TECHNICAL_REVIEW",
-      criteria: criteria.map((criterion) => ({
-        criterion: criterion.label,
-        stableKey: stableKeyFromLabel(criterion.label, "SCORE"),
-        description: "Standard baseline; confirm for each Funding Call.",
-        mandatoryComment: criterion.commentRequired,
-        scaleMaximum: criterion.maximumScore,
-        scaleMinimum: 0,
-        weight: criterion.weight,
-      })),
-    },
+    scoring: [
+      {
+        aggregation: "WEIGHTED_AVERAGE",
+        taskStableKey: "TECHNICAL_REVIEW",
+        criteria: criteria.map((criterion) => ({
+          criterion: criterion.label,
+          stableKey: stableKeyFromLabel(criterion.label, "SCORE"),
+          description: "Standard baseline; confirm for each Funding Call.",
+          mandatoryComment: criterion.commentRequired,
+          scaleMaximum: criterion.maximumScore,
+          scaleMinimum: 0,
+          weight: criterion.weight,
+        })),
+      },
+    ],
     slaHours: 240,
     stableKey: "TECHNICAL_ASSESSMENT",
     tasks: [

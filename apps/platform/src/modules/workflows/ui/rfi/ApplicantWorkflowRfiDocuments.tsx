@@ -7,7 +7,7 @@ import { GeneralButtonAnchor } from "@/components/ui/button";
 import { FileUploadButton } from "@/shared/ui/FileUploadButton";
 import { toast } from "@/shared/ui/Toast";
 import type { WorkflowRfiDetail } from "../../domain/runtime/WorkflowRfiView";
-import { useUploadWorkflowRfiDocument } from "./WorkflowRfiHooks";
+import { useUploadWorkflowRfiDocument } from "./useWorkflowRfi";
 
 const acceptedExtensions = {
   DOCX: [".docx"],

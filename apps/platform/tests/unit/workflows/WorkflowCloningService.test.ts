@@ -56,6 +56,18 @@ beforeEach(() => {
 });
 
 describe("workflow cloning service", () => {
+  it("allows another draft while a mutable draft already exists", async () => {
+    vi.mocked(findDraftByDefinition).mockResolvedValue("existing-draft");
+    await cloneWorkflow(
+      userWith(permissionCodes.workflowDefinitionUpdate),
+      record.definition.id,
+      record.version.id,
+      "correlation-id",
+    );
+    expect(cloneWorkflowVersion).toHaveBeenCalledOnce();
+    expect(findDraftByDefinition).not.toHaveBeenCalled();
+  });
+
   it("creates a mutable copy of the configured graph", async () => {
     const graph = structuredClone(record.graph);
     graph.stages[0].tasks[0].formBinding = {

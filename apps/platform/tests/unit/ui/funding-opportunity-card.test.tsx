@@ -35,6 +35,7 @@ describe("funding opportunity card", () => {
           status: "open",
           summary: "Support for growing Namibian businesses.",
           thematicArea: "Growth",
+          thumbnailUrl: "/api/public/funding-calls/thumbnail",
           title: "Growth Fund",
           totalFundingAmount: 1000000,
         }}
@@ -45,10 +46,11 @@ describe("funding opportunity card", () => {
     expect(markup).toContain("Support for growing Namibian businesses.");
     expect(markup).toContain("N$200,000");
     expect(markup).toContain("Maximum funding");
-    expect(markup).toContain("Closing date");
+    expect(markup).toContain("Closes");
     expect(markup).toContain("Save for later");
     expect(markup).toContain("Funding call categories");
-    expect(markup).toContain('aria-label="Important date: Closes 31 Oct 2026"');
+    expect(markup).toContain("/api/public/funding-calls/thumbnail");
+    expect(markup).toContain("31 Oct 2026");
     expect(markup).toContain(
       `href="/portal/funding-opportunities/${fundingOpportunityId}"`,
     );
@@ -108,11 +110,11 @@ describe("funding opportunity card", () => {
       root.render(<FundingOpportunityCard opportunity={opportunity} />);
     });
     const saveButton = Array.from(container.querySelectorAll("button"))
-      .find((button) => button.textContent?.includes("Save for later"));
+      .find((button) => button.getAttribute("aria-label") === "Save for later");
     expect(saveButton?.getAttribute("aria-pressed")).toBe("false");
 
     await act(async () => saveButton?.click());
-    expect(container.textContent).toContain("Saved for later");
+    expect(container.querySelector('button[aria-label="Remove from saved"]')).not.toBeNull();
     expect(window.localStorage.getItem("sme-fund-saved-opportunities"))
       .toContain(fundingOpportunityId);
 
@@ -121,7 +123,7 @@ describe("funding opportunity card", () => {
     await act(async () => {
       mountedAgain.render(<FundingOpportunityCard opportunity={opportunity} />);
     });
-    expect(container.textContent).toContain("Saved for later");
+    expect(container.querySelector('button[aria-label="Remove from saved"]')).not.toBeNull();
     await act(async () => mountedAgain.unmount());
   });
 });

@@ -25,6 +25,7 @@ vi.mock("@/modules/funding-calls/FundingCallHooks", () => ({
 vi.mock("sonner", () => ({ toast }));
 
 const call: FundingCallView = {
+  allowResubmissionAfterWithdrawal: false,
   applicationDuplicatePolicy: "one_per_business",
   closesAt: "2027-03-31T15:00:00.000Z",
   createdAt: "2026-09-20T08:00:00.000Z",
@@ -40,12 +41,12 @@ const call: FundingCallView = {
   publicContactEmail: null,
   publicContactName: null,
   publicContactPhone: null,
-  reference: "SME-2027-01",
+  reference: "SME Fund-2027-01",
   rowVersion: 4,
   slug: "sme-growth-fund-2027",
   status: "APPROVAL_PENDING",
   thematicArea: "Business growth",
-  title: "SME Growth Fund 2027",
+  title: "SME Fund Growth Fund 2027",
   totalBudgetEnvelope: "10000000.00",
   updatedAt: "2026-09-20T08:00:00.000Z",
   workflowTemplateVersionId: null,

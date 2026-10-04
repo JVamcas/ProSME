@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+
+import { authNavigationHref } from "@/platform/auth/AuthNavigation";
 import { FormProvider } from "react-hook-form";
 
 import { GeneralButton } from "@/components/ui/button";
@@ -16,11 +18,11 @@ import {
 import { useSignIn } from "./use-sign-in";
 
 type SignInFormProps = {
-  nextPath?: string;
+  returnTo?: string;
 };
 
-export function SignInForm({ nextPath }: SignInFormProps) {
-  const form = useSignIn(nextPath);
+export function SignInForm({ returnTo }: SignInFormProps) {
+  const form = useSignIn(returnTo);
 
   return (
     <FormProvider {...form.form}>
@@ -38,7 +40,11 @@ export function SignInForm({ nextPath }: SignInFormProps) {
           className={authFieldClassName}
           labelClassName={authLabelClassName}
         />
-        <AuthPasswordField autoComplete="current-password" showForgotPassword />
+        <AuthPasswordField
+          autoComplete="current-password"
+          returnTo={returnTo}
+          showForgotPassword
+        />
         <AuthFeedback error={form.error} />
         <GeneralButton
           type="submit"
@@ -50,7 +56,7 @@ export function SignInForm({ nextPath }: SignInFormProps) {
         </GeneralButton>
         <p className={authSupportingTextClassName}>
           Don&apos;t have an account?{" "}
-          <Link className={authLinkClassName} href="/register">
+          <Link className={authLinkClassName} href={authNavigationHref("/register", returnTo)}>
             Create an account
           </Link>
         </p>

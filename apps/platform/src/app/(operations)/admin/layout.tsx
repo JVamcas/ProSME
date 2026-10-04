@@ -1,15 +1,15 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-import { getCurrentUser } from "@/auth/authorization/current-user";
+import { getAuthenticatedPageUser } from "@/platform/auth/ServerAuthNavigation";
 import { canAccessOperationsPortal } from "@/auth/authorization/portal-access";
-import { AuthenticatedPortalShell } from "@/components/layout/authenticated-portal-shell";
-import { QueryProvider } from "@/components/layout/query-provider";
+import { AuthenticatedPortalShell } from "@/shared/ui/portal/authenticated-portal-shell";
+import { QueryProvider } from "@/shared/ui/portal/query-provider";
 import { createPortalContext } from "@/modules/profiles/ServerProfileService";
+import { queryIdentity } from "@/shared/utils/createQueryClient";
+import { DashboardNavigationProvider } from "@/modules/dashboard/ui/DashboardNavigationProvider";
 import { Toast } from "@/shared/ui/Toast";
 import "../../globals.css";
-
-
 
 export const metadata: Metadata = {
   title: {
@@ -23,10 +23,7 @@ type AdminLayoutProps = {
 };
 
 export default async function AdminLayout({ children }: AdminLayoutProps) {
-  const user = await getCurrentUser();
-  if (!user) {
-    redirect("/sign-in?next=/admin");
-  }
+  const user = await getAuthenticatedPageUser();
 
   if (!canAccessOperationsPortal(user)) {
     redirect("/unauthorized");
@@ -35,14 +32,18 @@ export default async function AdminLayout({ children }: AdminLayoutProps) {
   return (
     <html lang="en" data-scroll-behavior="smooth">
       <body className="font-sans antialiased">
-        <QueryProvider>
-          <AuthenticatedPortalShell
-            context={createPortalContext(user)}
-            space="operations"
-          >
-            {children}
-          </AuthenticatedPortalShell>
-          <Toast />
+        <QueryProvider
+          identity={queryIdentity(user.id, user.capabilities, user.roleCodes)}
+        >
+          <DashboardNavigationProvider audience="staff">
+            <AuthenticatedPortalShell
+              context={createPortalContext(user)}
+              space="operations"
+            >
+              {children}
+            </AuthenticatedPortalShell>
+            <Toast />
+          </DashboardNavigationProvider>
         </QueryProvider>
       </body>
     </html>

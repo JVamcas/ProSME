@@ -41,8 +41,7 @@ describe("workflow stage checklist definition", () => {
   it("rejects duplicate keys and display orders", () => {
     const stage = stageWithChecklist();
     stage.checklistItems[1].key = stage.checklistItems[0].key;
-    stage.checklistItems[1].displayOrder =
-      stage.checklistItems[0].displayOrder;
+    stage.checklistItems[1].displayOrder = stage.checklistItems[0].displayOrder;
 
     const result = workflowStageSchema.safeParse(stage);
 
@@ -50,8 +49,8 @@ describe("workflow stage checklist definition", () => {
     if (result.success) return;
     expect(result.error.issues.map((issue) => issue.message)).toEqual(
       expect.arrayContaining([
-        "Checklist keys must be unique within the stage.",
-        "Checklist display orders must be unique within the stage.",
+        "Checklist keys must be unique within the task.",
+        "Checklist display orders must be unique within the task.",
       ]),
     );
   });

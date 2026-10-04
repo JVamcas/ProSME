@@ -66,6 +66,7 @@ function contracting(dependencies: StandardWorkflowDependencies) {
       status: "ACTION_REQUIRED",
     },
     repeatable: false,
+    allowApplicantWithdrawal: true,
     scoring: null,
     slaHours: 240,
     stableKey: "CONTRACTING",
@@ -89,9 +90,7 @@ function disbursement(dependencies: StandardWorkflowDependencies) {
   const actions = [
     approve("APPROVE_PAYMENT", "Approve payment", 1),
     approve("PART_PAY", "Part-pay", 2),
-    hold("WITHHOLD_REPORTS", "Withhold pending outstanding reports", 3, [
-      "OUTSTANDING_REPORTS",
-    ]),
+    hold("WITHHOLD_REPORTS", "Withhold pending outstanding reports", 3),
     approve("RECOVER_FUNDS", "Recover funds", 4),
     approve("NEXT_TRANCHE", "Create next tranche", 5),
   ];
@@ -182,7 +181,7 @@ function monitoring(dependencies: StandardWorkflowDependencies) {
     returnAction("RETURN_REVISION", "Return for revision", 2),
     approve("APPROVE_VARIATION", "Approve variation", 3),
     approve("APPROVE_EXTENSION", "Approve no-cost extension", 4),
-    hold("SUSPEND", "Suspend", 5, ["PERFORMANCE_CONCERN", "COMPLIANCE_BREACH"]),
+    hold("SUSPEND", "Suspend", 5),
     reject("TERMINATE_RECOVER", "Terminate and recover", 6),
     approve("NEXT_REPORTING_PERIOD", "Create next reporting period", 7),
   ];
@@ -269,8 +268,8 @@ function closeOut(dependencies: StandardWorkflowDependencies) {
     approve("CLOSE", "Close", 1),
     approve("CLOSE_QUALIFIED", "Close with qualification", 2),
     approve(
-      "REFER_RECOVERY_INVESTIGATION",
-      "Refer for recovery or investigation",
+      "SEND_RECOVERY_INVESTIGATION",
+      "Send to recovery or investigation",
       3,
     ),
     reject("RESTRICT_FUTURE_FUNDING", "Restrict future funding", 4),
@@ -322,6 +321,7 @@ function closeOut(dependencies: StandardWorkflowDependencies) {
       status: "CLOSED",
     },
     repeatable: false,
+    allowApplicantWithdrawal: true,
     scoring: null,
     slaHours: 240,
     stableKey: "EVALUATION_CLOSE_OUT",

@@ -34,7 +34,7 @@ describe("workflow task reviewer preview", () => {
       displayOrder: 2,
       enabled: true,
       label: "Reject",
-      reasonCodeRequired: false,
+      reasonRequired: false,
       stableKey: "REJECT",
     });
     task.actionKeys.push("REJECT");
@@ -175,21 +175,23 @@ describe("workflow task reviewer preview", () => {
         templateReference: "",
       },
     ];
-    stage.scoring = {
-      aggregation: "WEIGHTED_AVERAGE",
-      taskStableKey: stage.tasks[0].stableKey,
-      criteria: [
-        {
-          stableKey: "BUSINESS_VIABILITY",
-          criterion: "Business viability",
-          description: "Assess the business case.",
-          weight: 100,
-          scaleMinimum: 0,
-          scaleMaximum: 10,
-          mandatoryComment: true,
-        },
-      ],
-    };
+    stage.scoring = [
+      {
+        aggregation: "WEIGHTED_AVERAGE",
+        taskStableKey: stage.tasks[0].stableKey,
+        criteria: [
+          {
+            stableKey: "BUSINESS_VIABILITY",
+            criterion: "Business viability",
+            description: "Assess the business case.",
+            weight: 100,
+            scaleMinimum: 0,
+            scaleMaximum: 10,
+            mandatoryComment: true,
+          },
+        ],
+      },
+    ];
     const markup = [
       renderToStaticMarkup(
         createElement(WorkflowTaskPreviewSummary, {
@@ -213,7 +215,7 @@ describe("workflow task reviewer preview", () => {
               requestStatus: "MISSING" as const,
             }),
           ),
-          scoring: stage.scoring,
+          scoring: stage.scoring[0],
           status: previewStatus,
         }),
       ),

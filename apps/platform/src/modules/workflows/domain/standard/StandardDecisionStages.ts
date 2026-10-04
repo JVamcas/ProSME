@@ -5,7 +5,6 @@ import {
   checklist,
   deferDate,
   documentRequirement,
-  refer,
   reject,
   returnAction,
   stage,
@@ -57,6 +56,7 @@ function moderation(dependencies: StandardWorkflowDependencies) {
       status: "UNDER_REVIEW",
     },
     repeatable: false,
+    allowApplicantWithdrawal: true,
     scoring: null,
     slaHours: 120,
     stableKey: "MODERATION",
@@ -160,7 +160,7 @@ function approval(dependencies: StandardWorkflowDependencies) {
     approve("APPROVE_WITH_CONDITIONS", "Approve with conditions", 2),
     approve("PARTIAL_APPROVAL", "Partially approve at reduced amount", 3),
     reject("DECLINE", "Decline", 4, "TRANSITION"),
-    refer("REFER_COMMITTEE", "Refer back to committee", 5),
+    returnAction("RETURN_COMMITTEE", "Return to committee", 5),
   ];
   return stage({
     actions,
@@ -254,6 +254,7 @@ function notificationAppeals(dependencies: StandardWorkflowDependencies) {
       status: "OUTCOME_AVAILABLE",
     },
     repeatable: false,
+    allowApplicantWithdrawal: true,
     scoring: null,
     slaHours: 240,
     stableKey: "NOTIFICATION_APPEALS",

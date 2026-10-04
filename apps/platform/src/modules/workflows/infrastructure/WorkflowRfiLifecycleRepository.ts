@@ -11,21 +11,22 @@ import type {
   RespondToWorkflowRfiInput,
 } from "../domain/runtime/WorkflowRfiSchemas";
 import { workflowRfiDetailedResponseFieldPath } from "../domain/runtime/WorkflowRfi";
+import { applyWorkflowRfiApplicationCorrections } from "@/modules/applications/infrastructure/ApplicationRfiCorrectionRepository";
 import type { WorkflowActionExecutionTransaction } from "./WorkflowActionExecutionRepository";
-import { workflowDocumentEvidenceVersions } from "./workflow-evidence.schema";
 import { appendWorkflowRfiLifecycleRecords } from "./WorkflowRfiLifecycleRecordsRepository";
 import {
   workflowRfiCorrespondence,
-  workflowRfiDocumentRequests,
   workflowRfiResponseDocuments,
   workflowRfiResponses,
   workflowRfis,
 } from "./workflow-rfi.schema";
 import { workflowTasks } from "./workflow-runtime.schema";
 import {
-  sanitizeWorkflowRfiRichText,
-  workflowRfiInstructionsSummary,
-} from "./WorkflowRfiInstructions";
+  findResponseReplay,
+  lockOwnedOpenRfi,
+  assertResponseDocuments,
+} from "./WorkflowRfiResponseValidationRepository";
+import { sanitizeWorkflowRfiRichText } from "./WorkflowRfiInstructions";
 
 export type WorkflowRfiResponseResult = {
   requestInformationId: string;
@@ -33,135 +34,6 @@ export type WorkflowRfiResponseResult = {
   rowVersion: number;
   status: "RESPONDED";
 };
-
-async function findResponseReplay(
-  transaction: WorkflowActionExecutionTransaction,
-  actorId: string,
-  input: RespondToWorkflowRfiInput,
-): Promise<WorkflowRfiResponseResult | null> {
-  const [row] = await transaction
-    .select({
-      requestInformationId: workflowRfiResponses.rfiId,
-      respondentUserId: workflowRfiResponses.respondentUserId,
-      responseId: workflowRfiResponses.id,
-    })
-    .from(workflowRfiResponses)
-    .where(eq(workflowRfiResponses.idempotencyKey, input.idempotencyKey))
-    .limit(1);
-  if (!row) return null;
-  if (
-    row.requestInformationId !== input.requestInformationId
-    || row.respondentUserId !== actorId
-  ) {
-    throw new ResourceConflictError(
-      "That idempotency key was already used for another RFI response.",
-    );
-  }
-  const [rfi] = await transaction
-    .select({ rowVersion: workflowRfis.rowVersion })
-    .from(workflowRfis)
-    .where(eq(workflowRfis.id, row.requestInformationId))
-    .limit(1);
-  if (!rfi) throw new ResourceNotFoundError("information request");
-  return {
-    requestInformationId: row.requestInformationId,
-    responseId: row.responseId,
-    rowVersion: rfi.rowVersion,
-    status: "RESPONDED",
-  };
-}
-
-async function lockOwnedOpenRfi(
-  transaction: WorkflowActionExecutionTransaction,
-  actorId: string,
-  input: RespondToWorkflowRfiInput,
-) {
-  const [rfi] = await transaction
-    .select({
-      actionDefinitionId: workflowRfis.actionDefinitionId,
-      applicationId: workflowRfis.applicationId,
-      editableFieldPaths: workflowRfis.editableFieldPaths,
-      rowVersion: workflowRfis.rowVersion,
-      stageInstanceId: workflowRfis.stageInstanceId,
-      taskId: workflowRfis.taskId,
-      workflowInstanceId: workflowRfis.workflowInstanceId,
-    })
-    .from(workflowRfis)
-    .where(and(
-      eq(workflowRfis.id, input.requestInformationId),
-      eq(workflowRfis.recipientUserId, actorId),
-      eq(workflowRfis.status, "OPEN"),
-    ))
-    .for("update", { of: workflowRfis })
-    .limit(1);
-  if (!rfi) throw new ResourceNotFoundError("open information request");
-  if (rfi.rowVersion !== input.expectedRowVersion) {
-    throw new ResourceConflictError(
-      "This information request changed. Refresh and try again.",
-    );
-  }
-  const submittedPaths = Object.keys(input.fieldValues);
-  if (submittedPaths.some((path) => !rfi.editableFieldPaths.includes(path))) {
-    throw new ResourceConflictError(
-      "The response contains a field that is not editable for this request.",
-    );
-  }
-  if (rfi.editableFieldPaths.includes(workflowRfiDetailedResponseFieldPath)) {
-    const detailedResponse =
-      input.fieldValues[workflowRfiDetailedResponseFieldPath];
-    if (
-      typeof detailedResponse !== "string" ||
-      !workflowRfiInstructionsSummary(detailedResponse)
-    ) {
-      throw new ResourceConflictError("Enter the requested detailed response.");
-    }
-  }
-  return rfi;
-}
-
-async function assertResponseDocuments(
-  transaction: WorkflowActionExecutionTransaction,
-  actorId: string,
-  applicationId: string,
-  input: RespondToWorkflowRfiInput,
-) {
-  const requests = await transaction
-    .select({ requirementId: workflowRfiDocumentRequests.requirementId })
-    .from(workflowRfiDocumentRequests)
-    .where(eq(
-      workflowRfiDocumentRequests.rfiId,
-      input.requestInformationId,
-    ));
-  if (requests.length !== input.evidenceVersionIds.length) {
-    throw new ResourceConflictError(
-      "Supply one current document for every requested requirement.",
-    );
-  }
-  if (!requests.length) return;
-  const evidence = await transaction
-    .select({ requirementId: workflowDocumentEvidenceVersions.requirementId })
-    .from(workflowDocumentEvidenceVersions)
-    .where(and(
-      inArray(workflowDocumentEvidenceVersions.id, input.evidenceVersionIds),
-      eq(workflowDocumentEvidenceVersions.applicationId, applicationId),
-      eq(workflowDocumentEvidenceVersions.uploadedBy, actorId),
-      inArray(
-        workflowDocumentEvidenceVersions.requirementId,
-        requests.map((request) => request.requirementId),
-      ),
-      sql`(${workflowDocumentEvidenceVersions.validUntil} IS NULL
-        OR ${workflowDocumentEvidenceVersions.validUntil} > now())`,
-    ));
-  if (
-    evidence.length !== requests.length
-    || new Set(evidence.map((item) => item.requirementId)).size
-      !== requests.length
-  ) {
-    throw new ResourceConflictError(
-      "Supply one current applicant-uploaded document for every requested requirement.",
-    );
-  }
-}
 
 export async function respondToOwnedWorkflowRfi(
   transaction: WorkflowActionExecutionTransaction,
@@ -171,12 +43,7 @@ export async function respondToOwnedWorkflowRfi(
   const replay = await findResponseReplay(transaction, actorId, input);
   if (replay) return replay;
   const rfi = await lockOwnedOpenRfi(transaction, actorId, input);
-  await assertResponseDocuments(
-    transaction,
-    actorId,
-    rfi.applicationId,
-    input,
-  );
+  await assertResponseDocuments(transaction, actorId, rfi.applicationId, input);
   const detailedResponse =
     input.fieldValues[workflowRfiDetailedResponseFieldPath];
   const fieldValues = {
@@ -188,15 +55,31 @@ export async function respondToOwnedWorkflowRfi(
         }
       : {}),
   };
+  const corrections = await applyWorkflowRfiApplicationCorrections(
+    transaction,
+    {
+      actorId,
+      applicationId: rfi.applicationId,
+      fieldValues: Object.fromEntries(
+        Object.entries(fieldValues).filter(
+          ([path]) => path !== workflowRfiDetailedResponseFieldPath,
+        ),
+      ),
+    },
+  );
+  if (corrections) Object.assign(fieldValues, corrections.after);
   const respondedAt = new Date();
-  const [response] = await transaction.insert(workflowRfiResponses).values({
-    correlationId: input.correlationId,
-    fieldValues,
-    idempotencyKey: input.idempotencyKey,
-    respondentUserId: actorId,
-    respondedAt,
-    rfiId: input.requestInformationId,
-  }).returning({ id: workflowRfiResponses.id });
+  const [response] = await transaction
+    .insert(workflowRfiResponses)
+    .values({
+      correlationId: input.correlationId,
+      fieldValues,
+      idempotencyKey: input.idempotencyKey,
+      respondentUserId: actorId,
+      respondedAt,
+      rfiId: input.requestInformationId,
+    })
+    .returning({ id: workflowRfiResponses.id });
   if (!response) throw new ResourceConflictError("The response was not saved.");
   await transaction.insert(workflowRfiCorrespondence).values({
     authorType: "APPLICANT",
@@ -214,29 +97,42 @@ export async function respondToOwnedWorkflowRfi(
       })),
     );
   }
-  const [updated] = await transaction.update(workflowRfis).set({
-    continuationAppliedAt: respondedAt,
-    respondedAt,
-    rowVersion: rfi.rowVersion + 1,
-    status: "RESPONDED",
-    updatedAt: respondedAt,
-  }).where(and(
-    eq(workflowRfis.id, input.requestInformationId),
-    eq(workflowRfis.rowVersion, rfi.rowVersion),
-    eq(workflowRfis.status, "OPEN"),
-    sql`${workflowRfis.continuationAppliedAt} IS NULL`,
-  )).returning({ rowVersion: workflowRfis.rowVersion });
+  const [updated] = await transaction
+    .update(workflowRfis)
+    .set({
+      continuationAppliedAt: respondedAt,
+      respondedAt,
+      rowVersion: rfi.rowVersion + 1,
+      status: "RESPONDED",
+      updatedAt: respondedAt,
+    })
+    .where(
+      and(
+        eq(workflowRfis.id, input.requestInformationId),
+        eq(workflowRfis.rowVersion, rfi.rowVersion),
+        eq(workflowRfis.status, "OPEN"),
+        sql`${workflowRfis.deadlineAt} > ${respondedAt}`,
+        sql`${workflowRfis.continuationAppliedAt} IS NULL`,
+      ),
+    )
+    .returning({ rowVersion: workflowRfis.rowVersion });
   if (!updated) {
     throw new ResourceConflictError(
       "This information request changed. Refresh and try again.",
     );
   }
-  await transaction.update(workflowTasks).set({
-    rowVersion: sql`${workflowTasks.rowVersion} + 1`,
-  }).where(eq(workflowTasks.id, rfi.taskId));
+  await transaction
+    .update(workflowTasks)
+    .set({
+      rowVersion: sql`${workflowTasks.rowVersion} + 1`,
+    })
+    .where(eq(workflowTasks.id, rfi.taskId));
   await appendWorkflowRfiLifecycleRecords(transaction, {
     actorId,
     correlationId: input.correlationId,
+    details: corrections
+      ? { applicationFieldCorrections: corrections }
+      : undefined,
     fromStatus: "OPEN",
     nextRowVersion: updated.rowVersion,
     occurredAt: respondedAt,
@@ -264,29 +160,37 @@ export async function closeAssignedWorkflowRfi(
   actorId: string,
   input: CloseWorkflowRfiInput,
 ) {
-  const [rfi] = await transaction.select({
-    actionDefinitionId: workflowRfis.actionDefinitionId,
-    applicationId: workflowRfis.applicationId,
-    rowVersion: workflowRfis.rowVersion,
-    stageInstanceId: workflowRfis.stageInstanceId,
-    status: workflowRfis.status,
-    taskId: workflowRfis.taskId,
-    workflowInstanceId: workflowRfis.workflowInstanceId,
-  }).from(workflowRfis).innerJoin(
-    workflowTasks,
-    and(
-      eq(workflowTasks.id, workflowRfis.taskId),
-      sql`(
+  const [rfi] = await transaction
+    .select({
+      actionDefinitionId: workflowRfis.actionDefinitionId,
+      applicationId: workflowRfis.applicationId,
+      rowVersion: workflowRfis.rowVersion,
+      stageInstanceId: workflowRfis.stageInstanceId,
+      status: workflowRfis.status,
+      taskId: workflowRfis.taskId,
+      workflowInstanceId: workflowRfis.workflowInstanceId,
+    })
+    .from(workflowRfis)
+    .innerJoin(
+      workflowTasks,
+      and(
+        eq(workflowTasks.id, workflowRfis.taskId),
+        sql`(
         ${workflowTasks.assignedUserId} = ${actorId}::uuid
         OR ${workflowTasks.assignedRoleId} IN (
           SELECT role_id FROM app_user_roles WHERE user_id = ${actorId}::uuid
         )
       )`,
-    ),
-  ).where(and(
-    eq(workflowRfis.id, input.requestInformationId),
-    inArray(workflowRfis.status, ["OPEN", "RESPONDED"]),
-  )).for("update", { of: workflowRfis }).limit(1);
+      ),
+    )
+    .where(
+      and(
+        eq(workflowRfis.id, input.requestInformationId),
+        inArray(workflowRfis.status, ["OPEN", "RESPONDED"]),
+      ),
+    )
+    .for("update", { of: workflowRfis })
+    .limit(1);
   if (!rfi) throw new ResourceNotFoundError("assigned information request");
   if (rfi.status !== "OPEN" && rfi.status !== "RESPONDED") {
     throw new ResourceConflictError("The request is already terminal.");
@@ -297,19 +201,25 @@ export async function closeAssignedWorkflowRfi(
     );
   }
   const closedAt = new Date();
-  const [updated] = await transaction.update(workflowRfis).set({
-    closedAt,
-    continuationAppliedAt: sql`COALESCE(
-      ${workflowRfis.continuationAppliedAt}, ${closedAt}
+  const [updated] = await transaction
+    .update(workflowRfis)
+    .set({
+      closedAt,
+      continuationAppliedAt: sql`COALESCE(
+      ${workflowRfis.continuationAppliedAt}, least(${workflowRfis.deadlineAt}, ${closedAt})
     )`,
-    rowVersion: rfi.rowVersion + 1,
-    status: "CLOSED",
-    updatedAt: closedAt,
-  }).where(and(
-    eq(workflowRfis.id, input.requestInformationId),
-    eq(workflowRfis.rowVersion, rfi.rowVersion),
-    eq(workflowRfis.status, rfi.status),
-  )).returning({ rowVersion: workflowRfis.rowVersion });
+      rowVersion: rfi.rowVersion + 1,
+      status: "CLOSED",
+      updatedAt: closedAt,
+    })
+    .where(
+      and(
+        eq(workflowRfis.id, input.requestInformationId),
+        eq(workflowRfis.rowVersion, rfi.rowVersion),
+        eq(workflowRfis.status, rfi.status),
+      ),
+    )
+    .returning({ rowVersion: workflowRfis.rowVersion });
   if (!updated) throw new ResourceConflictError("The request changed.");
   await appendWorkflowRfiLifecycleRecords(transaction, {
     actorId,
@@ -335,46 +245,64 @@ export async function expireDueWorkflowRfi(
   transaction: WorkflowActionExecutionTransaction,
   input: {
     actorId: string;
+    actorType?: "USER" | "SYSTEM";
     correlationId: string;
     occurredAt: Date;
     requestInformationId: string;
   },
 ) {
-  const [rfi] = await transaction.select({
-    actionDefinitionId: workflowRfis.actionDefinitionId,
-    applicationId: workflowRfis.applicationId,
-    deadlineAt: workflowRfis.deadlineAt,
-    expiryAction: workflowRfis.expiryAction,
-    rowVersion: workflowRfis.rowVersion,
-    stageInstanceId: workflowRfis.stageInstanceId,
-    taskId: workflowRfis.taskId,
-    workflowInstanceId: workflowRfis.workflowInstanceId,
-  }).from(workflowRfis).where(and(
-    eq(workflowRfis.id, input.requestInformationId),
-    eq(workflowRfis.status, "OPEN"),
-    sql`${workflowRfis.deadlineAt} <= ${input.occurredAt}`,
-  )).for("update", { of: workflowRfis }).limit(1);
+  const [rfi] = await transaction
+    .select({
+      actionDefinitionId: workflowRfis.actionDefinitionId,
+      applicationId: workflowRfis.applicationId,
+      deadlineAt: workflowRfis.deadlineAt,
+      expiryAction: workflowRfis.expiryAction,
+      rowVersion: workflowRfis.rowVersion,
+      stageInstanceId: workflowRfis.stageInstanceId,
+      taskId: workflowRfis.taskId,
+      workflowInstanceId: workflowRfis.workflowInstanceId,
+    })
+    .from(workflowRfis)
+    .where(
+      and(
+        eq(workflowRfis.id, input.requestInformationId),
+        eq(workflowRfis.status, "OPEN"),
+        sql`${workflowRfis.deadlineAt} <= ${input.occurredAt}`,
+      ),
+    )
+    .for("update", { of: workflowRfis })
+    .limit(1);
   if (!rfi) throw new ResourceNotFoundError("due information request");
-  const [updated] = await transaction.update(workflowRfis).set({
-    continuationAppliedAt: input.occurredAt,
-    expiredAt: input.occurredAt,
-    rowVersion: rfi.rowVersion + 1,
-    status: "EXPIRED",
-    updatedAt: input.occurredAt,
-  }).where(and(
-    eq(workflowRfis.id, input.requestInformationId),
-    eq(workflowRfis.rowVersion, rfi.rowVersion),
-    eq(workflowRfis.status, "OPEN"),
-    sql`${workflowRfis.continuationAppliedAt} IS NULL`,
-  )).returning({ rowVersion: workflowRfis.rowVersion });
+  const [updated] = await transaction
+    .update(workflowRfis)
+    .set({
+      continuationAppliedAt: sql`${workflowRfis.deadlineAt}`,
+      expiredAt: input.occurredAt,
+      rowVersion: rfi.rowVersion + 1,
+      status: "EXPIRED",
+      updatedAt: input.occurredAt,
+    })
+    .where(
+      and(
+        eq(workflowRfis.id, input.requestInformationId),
+        eq(workflowRfis.rowVersion, rfi.rowVersion),
+        eq(workflowRfis.status, "OPEN"),
+        sql`${workflowRfis.continuationAppliedAt} IS NULL`,
+      ),
+    )
+    .returning({ rowVersion: workflowRfis.rowVersion });
   if (!updated) throw new ResourceConflictError("The request changed.");
-  await transaction.update(workflowTasks).set({
-    rowVersion: sql`${workflowTasks.rowVersion} + 1`,
-  }).where(eq(workflowTasks.id, rfi.taskId));
+  await transaction
+    .update(workflowTasks)
+    .set({
+      rowVersion: sql`${workflowTasks.rowVersion} + 1`,
+    })
+    .where(eq(workflowTasks.id, rfi.taskId));
   await appendWorkflowRfiLifecycleRecords(transaction, {
     actorId: input.actorId,
     correlationId: input.correlationId,
     details: { expiryAction: rfi.expiryAction },
+    actorType: input.actorType,
     fromStatus: "OPEN",
     nextRowVersion: updated.rowVersion,
     occurredAt: input.occurredAt,

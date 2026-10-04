@@ -2,16 +2,25 @@
 
 import { Plus } from "lucide-react";
 
-import { DeleteButton, EditButton } from "@/components/ui/action-buttons";
 import { GeneralButton } from "@/components/ui/button";
-import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
+import { DataTable, type DataTableColumn } from "@/shared/ui/DataTable";
 import type { WorkflowActionDefinition } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
+import { ActionMenu } from "@/shared/ui/ActionMenu";
 import { WorkflowStageTabHeader } from "./WorkflowStageTabHeader";
-import type { WorkflowStageInput } from "@/modules/workflows/domain/definitions/WorkflowTypes";
+import type {
+  WorkflowGraphInput,
+  WorkflowStageInput,
+} from "@/modules/workflows/domain/definitions/WorkflowTypes";
+import {
+  workflowActionRoutes,
+  workflowRouteDestination,
+} from "./WorkflowActionEditorRoutes";
 import { workflowActionTypeItems } from "./WorkflowActionFormSchema";
+import { StatusBadge } from "@/components/ui/status-badge";
 
 type Props = {
   canEdit: boolean;
+  graph: WorkflowGraphInput;
   onAdd: () => void;
   onDelete: (action: WorkflowActionDefinition) => void;
   onEdit: (action: WorkflowActionDefinition) => void;
@@ -27,6 +36,8 @@ function actionTypeLabel(action: WorkflowActionDefinition) {
 
 function actionColumns(
   canEdit: boolean,
+  graph: WorkflowGraphInput,
+  stage: WorkflowStageInput,
   onDelete: (action: WorkflowActionDefinition) => void,
   onEdit: (action: WorkflowActionDefinition) => void,
   taskNamesByActionKey: ReadonlyMap<string, string[]>,
@@ -34,7 +45,7 @@ function actionColumns(
   return [
     {
       accessorKey: "label",
-      header: "Action",
+      header: "Action Button Label",
       cell: ({ row }) => (
         <span className="font-semibold text-brand-navy">
           {row.original.label}
@@ -43,7 +54,7 @@ function actionColumns(
     },
     {
       id: "task",
-      header: "Tasks",
+      header: "Visible in Tasks",
       cell: ({ row }) => (
         <span className="block max-w-56 whitespace-normal">
           {taskNamesByActionKey.get(row.original.stableKey)?.join(", ") ??
@@ -59,23 +70,50 @@ function actionColumns(
     {
       accessorKey: "enabled",
       header: "Status",
-      cell: ({ row }) => (row.original.enabled ? "Enabled" : "Disabled"),
+      cell: ({ row }) => {
+        const status = row.original.enabled ? "Active" : "Disabled"
+        return (
+          <StatusBadge status={status} label={status} />
+        )
+      },
+    },
+    {
+      id: "routing",
+      header: "Destination",
+      cell: ({ row }) => {
+        const routes = workflowActionRoutes(
+          graph.transitions,
+          stage.stableKey,
+          row.original.stableKey,
+        );
+        if (routes.length === 0) return "--";
+        if (routes.length > 1) return `${routes.length} routes`;
+        return workflowRouteDestination(routes[0], graph);
+      },
     },
     {
       id: "controls",
       header: "Actions",
       enableSorting: false,
       cell: ({ row }) => (
-        <div className="flex justify-start gap-1">
-          <EditButton
-            disabled={!canEdit}
-            onClick={() => onEdit(row.original)}
-            title={`Edit ${row.original.label}`}
-          />
-          <DeleteButton
-            disabled={!canEdit}
-            onClick={() => onDelete(row.original)}
-            title={`Delete ${row.original.label}`}
+        <div className="flex justify-start">
+          <ActionMenu
+            items={[
+              {
+                id: "edit",
+                label: "Edit",
+                disabled: !canEdit,
+                onAction: () => onEdit(row.original),
+              },
+              {
+                id: "delete",
+                label: "Delete",
+                disabled: !canEdit,
+                destructive: true,
+                onAction: () => onDelete(row.original),
+              },
+            ]}
+            label={`Actions for ${row.original.label}`}
           />
         </div>
       ),
@@ -85,11 +123,15 @@ function actionColumns(
 
 export function WorkflowStageActionTable({
   canEdit,
+  graph,
   onAdd,
   onDelete,
   onEdit,
   stage,
 }: Props) {
+  const visibleActions = stage.actions.filter(
+    (action) => action.actionType !== "WITHDRAW",
+  );
   const taskNamesByActionKey = new Map<string, string[]>();
   for (const task of stage.tasks) {
     for (const actionKey of task.actionKeys) {
@@ -113,15 +155,22 @@ export function WorkflowStageActionTable({
             <Plus className="size-4" /> Add action
           </GeneralButton>
         }
-        count={stage.actions.length}
+        count={visibleActions.length}
         description="Configure the decisions users can make during this stage."
         title="Actions"
       />
       <DataTable
-        columns={actionColumns(canEdit, onDelete, onEdit, taskNamesByActionKey)}
-        data={stage.actions}
+        columns={actionColumns(
+          canEdit,
+          graph,
+          stage,
+          onDelete,
+          onEdit,
+          taskNamesByActionKey,
+        )}
+        data={visibleActions}
         emptyMessage="No actions have been added to this stage."
-        minWidth={900}
+        minWidth={1080}
       />
     </section>
   );

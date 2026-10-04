@@ -1,12 +1,15 @@
 "use client";
 
+import { WorkflowTaskHoldStatus } from "@/modules/workflows/ui/tasks/WorkflowTaskHoldStatus";
+import { WorkflowRfiTaskStatus } from "@/modules/workflows/ui/rfi/WorkflowRfiTaskStatus";
 import { LockKeyhole, UserRound } from "lucide-react";
 
-import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
+import { DataTable, type DataTableColumn } from "@/shared/ui/DataTable";
 import { ArrowLink } from "@/components/ui/links";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatLocalDateTime24 } from "@/lib/dateUtils";
 import type { WorkQueueRow } from "../WorkQueueTypes";
+import { workflowTaskTypeLabels } from "@/modules/workflows/ui/WorkflowTaskTypeLabels";
 
 const columns: DataTableColumn<WorkQueueRow>[] = [
   {
@@ -24,24 +27,31 @@ const columns: DataTableColumn<WorkQueueRow>[] = [
     ),
   },
   {
-    accessorKey: "stageName",
-    header: "Stage",
-    cell: ({ row }) => <StatusBadge status={row.original.stageName} />,
+    accessorKey: "fundingCallTitle",
+    header: "Funding call",
+    cell: ({ row }) => row.original.fundingCallTitle ?? "—",
   },
   {
     accessorKey: "taskName",
     header: "Task",
     cell: ({ row }) => {
       const blockedReason = row.original.taskBlockedReason;
-      if (!blockedReason) {
+      if (!blockedReason || row.original.informationRequest || row.original.processingStatus === "ON_HOLD") {
         return (
-          <ArrowLink href={`/admin/tasks/${row.original.taskInstanceId}`}>
-            {row.original.taskName}
-          </ArrowLink>
+          <div className="flex flex-col gap-2">
+            <ArrowLink
+              href={`/admin/applications/${row.original.applicationId}?tab=workflow-progress&taskId=${row.original.taskInstanceId}`}
+            >
+              {row.original.taskName}
+            </ArrowLink>
+            <p className="text-xs text-brand-navy/50">
+              Stage: {row.original.stageName}
+            </p>
+          </div>
         );
       }
       return (
-        <div className="max-w-72">
+        <div className="max-w-72 flex flex-col gap-2">
           <span
             aria-disabled="true"
             className="inline-flex items-center gap-2 text-sm font-bold text-brand-navy/45"
@@ -49,8 +59,8 @@ const columns: DataTableColumn<WorkQueueRow>[] = [
             <LockKeyhole aria-hidden="true" className="size-4 shrink-0" />
             {row.original.taskName}
           </span>
-          <p className="mt-1 text-xs leading-4 text-brand-navy/55">
-            {blockedReason}
+          <p className="text-xs text-brand-navy/50">
+            Stage: {row.original.stageName}
           </p>
         </div>
       );
@@ -61,12 +71,12 @@ const columns: DataTableColumn<WorkQueueRow>[] = [
     header: "Task type",
     cell: ({ row }) => (
       <StatusBadge
-        className={row.original.taskType === "STAGE_DECISION"
-          ? "bg-brand-blue/20"
-          : "bg-brand-gold/30"}
-        label={row.original.taskType === "STAGE_DECISION"
-          ? "Stage decision"
-          : "Contributing"}
+        className={
+          row.original.taskType === "STAGE_DECISION"
+            ? "bg-brand-blue/20"
+            : "bg-brand-gold/30"
+        }
+        label={workflowTaskTypeLabels[row.original.taskType]}
         status={row.original.taskType}
       />
     ),
@@ -74,7 +84,20 @@ const columns: DataTableColumn<WorkQueueRow>[] = [
   {
     accessorKey: "taskStatus",
     header: "Task status",
-    cell: ({ row }) => <StatusBadge status={row.original.taskStatus} />,
+    cell: ({ row }) => (
+      <div className="max-w-72 space-y-2">
+        <StatusBadge status={row.original.processingStatus ?? row.original.taskStatus} />
+        {row.original.taskBlockedReason ? (
+          <p className="text-xs leading-4 text-brand-navy/65">
+            {row.original.taskBlockedReason}
+          </p>
+        ) : null}
+        {row.original.holds?.length ? <WorkflowTaskHoldStatus holds={row.original.holds} /> : null}
+        {row.original.informationRequest ? (
+          <WorkflowRfiTaskStatus request={row.original.informationRequest} />
+        ) : null}
+      </div>
+    ),
   },
   {
     accessorKey: "assignedUserName",
@@ -90,7 +113,7 @@ const columns: DataTableColumn<WorkQueueRow>[] = [
     accessorKey: "createdAt",
     header: "Task created",
     cell: ({ row }) => formatLocalDateTime24(row.original.createdAt),
-  }
+  },
 ];
 
 export function WorkQueueTable({

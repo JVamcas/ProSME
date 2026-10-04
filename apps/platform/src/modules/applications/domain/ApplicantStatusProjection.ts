@@ -45,6 +45,9 @@ const priority = [
   "OUTCOME_AVAILABLE",
   "CLOSED",
   "WITHDRAWN",
+  "INELIGIBLE",
+  "REJECTED",
+  "REJECTED_INCOMPLETE",
 ] as const;
 
 const rfiActionRequired = {

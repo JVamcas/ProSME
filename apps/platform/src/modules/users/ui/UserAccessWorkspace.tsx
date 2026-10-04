@@ -4,15 +4,15 @@ import { useState } from "react";
 import { DEFAULT_PAGE_SIZE } from "@/components/ui/pagination";
 import type { UserAccessListInput } from "@/modules/users/UserAccessTypes";
 
-import { DraggableDialog } from "@/components/ui/draggable-dialog";
+import { DraggableDialog } from "@/shared/ui/DraggableDialog";
 import { Tabs, type TabItem } from "@/components/ui/tabs";
 import { useUserAccess } from "@/modules/users/UserAccessHooks";
 import type { UserAccessRow } from "@/modules/users/UserAccessTypes";
 import { UserRoleAssignmentPanel } from "./UserRoleAssignmentPanel";
 import { UsersTabPanel } from "./UsersTabPanel";
 import { RolePermissionsPanel } from "./RolePermissionsPanel";
-import { PortalLoadingState } from "@/components/layout/PortalLoadingState";
-import { PortalErrorState } from "@/components/layout/PortalErrorState";
+import { PortalLoadingState } from "@/shared/ui/portal/PortalLoadingState";
+import { PortalErrorState } from "@/shared/ui/portal/PortalErrorState";
 
 type AccessTab = "users" | "roles";
 

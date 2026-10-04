@@ -6,7 +6,7 @@ import {
   portalRouteError,
 } from "@/lib/api/PortalApiResponse";
 import { documentDownloadResponse } from "@/lib/api/DocumentDownloadResponse";
-import { createWorkflowTaskDocumentDownload } from "@/modules/work-queue/ServerWorkflowTaskDocumentService";
+import { createWorkflowTaskDocumentDownload } from "@/modules/work-queue/application/ServerWorkflowTaskDocumentService";
 
 const parametersSchema = z.object({
   id: z.uuid(),

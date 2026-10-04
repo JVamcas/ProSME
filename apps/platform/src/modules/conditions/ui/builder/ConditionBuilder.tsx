@@ -1,5 +1,7 @@
 "use client";
 
+import { formatConditionFieldLabel } from "@/modules/conditions/domain/ConditionFieldLabel";
+
 import { useMemo } from "react";
 import {
   QueryBuilder,
@@ -39,7 +41,7 @@ function queryBuilderFields(fields: readonly ConditionFieldDefinition[]): Field[
   return fields.map((field) => ({
     conditionType: field.type,
     inputType: inputType(field),
-    label: field.label,
+    label: formatConditionFieldLabel(field),
     name: field.key,
     valueEditorType: field.type === "BOOLEAN" ? "select" : "text",
     values: field.type === "BOOLEAN"

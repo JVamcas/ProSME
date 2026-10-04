@@ -2,6 +2,7 @@ import type {
   FormField,
   FormFieldType,
   FormOption,
+  RepeatableGroupConfiguration,
   FormSection,
 } from "../FormTypes";
 
@@ -14,6 +15,7 @@ export type FundingApplicationFieldSeed = {
   minimum?: number;
   options?: Array<{ key: string; label: string }>;
   required?: boolean;
+  repeatable?: RepeatableGroupConfiguration;
   type: FormFieldType;
 };
 
@@ -53,6 +55,7 @@ export function buildFundingApplicationDefinition(
       options: options(field.options),
       order: fieldIndex + 1,
       required: field.required ?? false,
+      repeatable: field.repeatable,
       sectionId: sections[sectionIndex].id!,
       type: field.type,
     })),

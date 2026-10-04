@@ -1,4 +1,6 @@
 import "server-only";
+import { lockWorkflowRuntimeForTask } from "@/modules/workflows/infrastructure/WorkflowRuntimeLock";
+import { workflowTaskHasActiveHold } from "@/modules/workflows/infrastructure/WorkflowHoldQueries";
 
 import { and, eq, sql } from "drizzle-orm";
 
@@ -50,6 +52,7 @@ async function lockTask(
   transaction: DatabaseTransaction,
   input: SaveDraftFormResponseInput,
 ): Promise<LockedTask | null> {
+  await lockWorkflowRuntimeForTask(transaction, input.workflowTaskId);
   const [task] = await transaction
     .select({
       assignedUserId: workflowTasks.assignedUserId,
@@ -60,6 +63,7 @@ async function lockTask(
     .from(workflowTasks)
     .where(and(
       eq(workflowTasks.id, input.workflowTaskId),
+      sql`NOT ${workflowTaskHasActiveHold(sql`${workflowTasks}`)}`,
       sql`app_workflow_task_coi_cleared(${workflowTasks.id}, ${input.actorId}::uuid)`,
     ))
     .for("update")

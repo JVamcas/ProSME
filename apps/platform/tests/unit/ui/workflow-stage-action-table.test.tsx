@@ -7,6 +7,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { WorkflowStageActionTable } from "@/modules/workflows/ui/definitions/WorkflowStageActionTable";
 import { referenceWorkflow } from "../../support/ReferenceWorkflowFixture";
 
+(globalThis as typeof globalThis & {
+  IS_REACT_ACT_ENVIRONMENT: boolean;
+}).IS_REACT_ACT_ENVIRONMENT = true;
+
 afterEach(() => {
   document.body.replaceChildren();
 });
@@ -33,6 +37,7 @@ describe("workflow stage action table", () => {
       root.render(
         <WorkflowStageActionTable
           canEdit
+          graph={referenceWorkflow}
           onAdd={vi.fn()}
           onDelete={vi.fn()}
           onEdit={vi.fn()}
@@ -42,10 +47,15 @@ describe("workflow stage action table", () => {
     });
 
     expect(container.querySelector("thead")?.textContent).toContain("Task");
+    expect(container.querySelector("thead")?.textContent).toContain(
+      "Destination",
+    );
     const rows = container.querySelectorAll("tbody tr");
     expect(rows[0]?.textContent).toContain("Pre-screening checklist");
     expect(rows[0]?.textContent).toContain("Second review");
+    expect(rows[0]?.textContent).toContain("Completeness screening");
     expect(rows[1]?.textContent).toContain("Unassigned");
+    expect(rows[1]?.textContent).toContain("--");
 
     await act(async () => root.unmount());
   });

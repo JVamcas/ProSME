@@ -8,7 +8,7 @@ import { GeneralButton, IconButton } from "@/components/ui/button";
 import {
   DataTable,
   type DataTableColumn,
-} from "@/components/ui/data-table";
+} from "@/shared/ui/DataTable";
 import {
   useBusinesses,
   useDeleteBusiness,
@@ -107,33 +107,34 @@ export function BusinessesTable({ canUpdate }: { canUpdate: boolean }) {
 
   return (
     <>
-      <section className="mt-6 overflow-hidden rounded-2xl border border-brand-navy/15 bg-brand-white shadow-sm">
-        <div className="flex items-center justify-between gap-4 border-b border-brand-navy/10 p-5">
-          <div>
-            <h2 className="font-bold text-brand-navy">Businesses</h2>
-            <p className="mt-1 text-sm text-brand-navy/65">
-              Manage your enterprises..
-            </p>
-          </div>
-          {canUpdate ? (
-            <GeneralButton onClick={() => setDialog({ mode: "create" })}>
-              <Plus aria-hidden="true" className="size-4" />
-              Add business
-            </GeneralButton>
-          ) : null}
-        </div>
+      <section className="mt-6 overflow-hidden rounded-t-2xl border border-brand-navy/15 bg-brand-white shadow-sm p-2">
+
         <DataTable
           columns={columns}
           data={data}
           emptyMessage={emptyMessage}
           minWidth={900}
+          toolbar={{
+
+            actions: (
+              <>
+                {
+                  canUpdate ? (
+                    <GeneralButton onClick={() => setDialog({ mode: "create" })}>
+                      <Plus aria-hidden="true" className="size-4" />
+                      Add business
+                    </GeneralButton>
+                  ) : null}
+              </>
+            )
+          }}
           footer={
             <div className="border-t border-brand-navy/10 px-5 py-4 text-xs text-brand-navy/55">
               {data.length} {data.length === 1 ? "business" : "businesses"}
             </div>
           }
         />
-      </section>
+      </section >
       <BusinessDialog
         business={dialog?.mode === "edit" ? dialog.business : undefined}
         isOpen={dialog !== null}

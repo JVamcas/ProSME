@@ -13,6 +13,7 @@ export type FundingCallCreationProgressView = {
 };
 
 export type FundingCallView = {
+  allowResubmissionAfterWithdrawal: boolean;
   applicationDuplicatePolicy: import(
     "@/modules/applications/domain/Application"
   ).ApplicationDuplicatePolicy;
@@ -28,14 +29,23 @@ export type FundingCallView = {
   thematicArea: string | null;
   totalBudgetEnvelope: string;
   workflowTemplateVersionId: string | null;
+  versionLinks?: {
+    applicationForm: string | null;
+    eligibilityRuleSet: string | null;
+    workflowTemplate: string | null;
+  };
   minimumGrantAmount: string;
   maximumGrantAmount: string;
   opensAt: string;
   closesAt: string;
   status: FundingCallStatus;
+  attachmentsLockedAt?: string | null;
   publicContactName: string | null;
   publicContactEmail: string | null;
   publicContactPhone: string | null;
+  thumbnailContentType?: string | null;
+  thumbnailFileName?: string | null;
+  thumbnailUrl?: string | null;
   rowVersion: number;
   createdAt: string;
   updatedAt: string;

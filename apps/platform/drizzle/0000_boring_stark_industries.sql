@@ -73,7 +73,7 @@ INSERT INTO "app_capabilities" ("code", "description") VALUES
 ON CONFLICT ("code") DO NOTHING;
 --> statement-breakpoint
 INSERT INTO "app_roles" ("code", "name", "description") VALUES
-  ('applicant', 'Applicant', 'External SME applicant'),
+  ('applicant', 'Applicant', 'External SME Fund applicant'),
   ('cms_editor', 'CMS Editor', 'Creates and updates content without publishing'),
   ('programme_administrator', 'Programme Administrator', 'Programme operations administrator'),
   ('technical_assessor', 'Technical Assessor', 'Performs technical assessments'),

@@ -97,7 +97,7 @@ describe("notification administration service", () => {
     vi.mocked(listNotificationDeliveryRecords).mockResolvedValue({
       items: [
         {
-          applicationReference: "SME-1",
+          applicationReference: "SME Fund-1",
           deliveryId: "81000000-0000-4000-8000-000000000001",
           recipientEmail: "applicant@example.com",
         },
@@ -171,20 +171,7 @@ describe("notification administration service", () => {
     );
   });
 
-  it("allows recipient identities to be configured by the event rule", async () => {
-    vi.mocked(updateNotificationEventRuleRecord).mockResolvedValue({
-      eventKey: "application.submitted",
-    });
-    vi.mocked(findNotificationEventRuleRecord)
-      .mockResolvedValueOnce({
-        channels: [{ code: "EMAIL", isEnabled: true }],
-        recipientOptions: { roles: [], users: [] },
-        recipients: [{ recipientType: "APPLICATION_OWNER" }],
-      })
-      .mockResolvedValueOnce({
-        eventKey: "application.submitted",
-        recipients: [{ recipientType: "ASSIGNED_USER" }],
-      });
+  it("rejects relationship recipients unavailable when an event is captured", async () => {
     await expect(
       updateNotificationEventRule(
         user([permissionCodes.notificationConfigurationUpdate]),
@@ -203,18 +190,8 @@ describe("notification administration service", () => {
         },
         "correlation-2",
       ),
-    ).resolves.toMatchObject({ eventKey: "application.submitted" });
-    expect(updateNotificationEventRuleRecord).toHaveBeenCalledWith(
-      expect.objectContaining({
-        update: expect.objectContaining({
-          recipients: [
-            expect.objectContaining({
-              recipientType: "ASSIGNED_USER",
-            }),
-          ],
-        }),
-      }),
-    );
+    ).rejects.toThrow("recipient types are unavailable for this event");
+    expect(updateNotificationEventRuleRecord).not.toHaveBeenCalled();
   });
 
   it("accepts an available specific user recipient target", async () => {

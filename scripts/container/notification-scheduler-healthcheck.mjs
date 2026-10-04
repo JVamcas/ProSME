@@ -1,19 +1,30 @@
-import { stat } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 
-const heartbeatPath = "/tmp/notification-scheduler-heartbeat";
-const intervalMs = Number.parseInt(
-  process.env.NOTIFICATION_PROCESSOR_INTERVAL_MS ?? "60000",
-  10,
+const failureLimit = Number.parseInt(
+  process.env.NOTIFICATION_SCHEDULER_MAX_CONSECUTIVE_FAILURES ?? "5", 10,
 );
-const requestTimeoutMs = Number.parseInt(
-  process.env.NOTIFICATION_SCHEDULER_REQUEST_TIMEOUT_MS ?? "60000",
-  10,
-);
-const maximumAgeMs = intervalMs + requestTimeoutMs + 30_000;
 
 try {
-  const heartbeat = await stat(heartbeatPath);
-  if (Date.now() - heartbeat.mtimeMs > maximumAgeMs) process.exit(1);
+  await Promise.all(["notification", "workflow"].map(async (name) => {
+    const prefix = name.toUpperCase();
+    const intervalMs = Number.parseInt(
+      process.env[`${prefix}_PROCESSOR_INTERVAL_MS`] ?? "60000", 10,
+    );
+    const requestTimeoutMs = Number.parseInt(
+      process.env[`${prefix}_SCHEDULER_REQUEST_TIMEOUT_MS`] ?? "60000", 10,
+    );
+    const heartbeatPath = `/tmp/${name}-scheduler-heartbeat`;
+    const [heartbeat, raw] = await Promise.all([
+      stat(heartbeatPath),
+      readFile(heartbeatPath, "utf8"),
+    ]);
+    if (
+      Date.now() - heartbeat.mtimeMs > intervalMs + requestTimeoutMs + 30_000
+      || JSON.parse(raw).consecutiveFailures >= failureLimit
+    ) {
+      throw new Error("Processor is unhealthy.");
+    }
+  }));
 } catch {
-  process.exit(1);
+  process.exitCode = 1;
 }

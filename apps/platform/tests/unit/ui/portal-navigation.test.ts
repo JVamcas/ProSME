@@ -6,7 +6,7 @@ import {
   filterPortalRoutes,
   operationsPortalRoutes,
   portalRoutes,
-} from "@/components/layout/portal-navigation";
+} from "@/shared/ui/portal/portal-navigation";
 
 describe("P3.1 capability-aware portal navigation", () => {
   it("shows only applicant routes allowed by the projection", () => {
@@ -26,7 +26,7 @@ describe("P3.1 capability-aware portal navigation", () => {
   it("matches the accepted applicant information architecture", () => {
     expect(applicantPortalRoutes.map((route) => route.label)).toEqual([
       "Dashboard",
-      "Funding opportunities",
+      "Funding Calls",
       "My businesses",
       "My applications",
       "Notifications",
@@ -41,7 +41,7 @@ describe("P3.1 capability-aware portal navigation", () => {
 
     expect(fundingRoute).toMatchObject({
       href: "/portal/funding-opportunities",
-      label: "Funding opportunities",
+      label: "Funding Calls",
     });
     expect(fundingRoute?.openInNewTab).toBeUndefined();
   });

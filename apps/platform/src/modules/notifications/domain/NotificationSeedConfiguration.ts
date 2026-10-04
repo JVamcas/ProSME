@@ -1,7 +1,25 @@
 import {
+  workflowTaskAssignedEventSeed,
+  workflowEscalationEventSeed,
+  workflowEscalationTemplateSeed,
+} from "./WorkflowTaskNotificationSeed";
+import {
+  applicationTerminalStatusEventSeed,
+  applicationTerminalStatusTemplateSeed,
+} from "./ApplicationTerminalStatusNotificationSeed";
+import {
+  workflowDeadlineEventSeeds,
+  workflowDeadlineTemplateSeeds,
+} from "./WorkflowDeadlineNotificationSeed";
+import {
   notificationEventCatalogue,
   type NotificationEventKey,
 } from "./NotificationEvent";
+import {
+  workflowHoldResumedEventSeed,
+  workflowHoldResumedTemplateSeed,
+} from "./NotificationWorkflowHoldEvent";
+
 import type { NotificationCatalogKey } from "./NotificationEvent";
 import type { NotificationRecipientType } from "./NotificationRecipient";
 import type { NotificationTemplateScope } from "./NotificationTemplate";
@@ -28,6 +46,10 @@ export type NotificationEventSeed = {
 };
 
 export const notificationEventSeeds: readonly NotificationEventSeed[] = [
+  workflowEscalationEventSeed,
+  workflowHoldResumedEventSeed,
+  ...workflowDeadlineEventSeeds,
+  applicationTerminalStatusEventSeed,
   {
     catalogKey: "AUTHENTICATION",
     description: "Confirm the email address belonging to an account.",
@@ -59,17 +81,7 @@ export const notificationEventSeeds: readonly NotificationEventSeed[] = [
     ruleId: "00000000-0000-4000-8000-000000000301",
     ruleRecipientId: "00000000-0000-4000-8000-000000000701",
   },
-  {
-    catalogKey: "WORKFLOW",
-    description: "Workflow tasks were assigned to one or more users.",
-    displayName: "Workflow task assigned",
-    id: "00000000-0000-4000-8000-000000000202",
-    key: "workflow.task.assigned",
-    recipientType: "ASSIGNED_USER",
-    ruleChannelId: "00000000-0000-4000-8000-000000000602",
-    ruleId: "00000000-0000-4000-8000-000000000302",
-    ruleRecipientId: "00000000-0000-4000-8000-000000000702",
-  },
+  workflowTaskAssignedEventSeed,
   {
     catalogKey: "WORKFLOW",
     description: "An information request was issued to an applicant.",
@@ -325,6 +337,10 @@ export const notificationTemplateTargetSeeds: readonly NotificationTemplateTarge
       id: "00000000-0000-4000-8000-000000000503",
       scope: "CATALOG",
     },
+    applicationTerminalStatusTemplateSeed,
+    workflowEscalationTemplateSeed,
+    workflowHoldResumedTemplateSeed,
+    ...workflowDeadlineTemplateSeeds,
     {
       defaultSubjectTemplate: "Application {{applicationReference}} submitted",
       eventKey: "application.submitted",

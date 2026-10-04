@@ -55,7 +55,7 @@ const application = {
   financialSection: { amountRequested: 250_000 },
   id: applicationId,
   rowVersion: 7,
-} as ApplicationRecord;
+} as unknown as ApplicationRecord;
 const business = {
   employeeCount: 0,
   establishedYear: 2024,
@@ -73,7 +73,7 @@ const fundingCall = {
   slug: "sme-growth-fund-2027",
   status: "LIVE",
   thematicArea: "Business growth",
-  title: "SME Growth Fund 2027",
+  title: "SME Fund Growth Fund 2027",
   totalBudgetEnvelope: "10000000.00",
 };
 

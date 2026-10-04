@@ -1,0 +1,444 @@
+{
+  "mode": "production",
+  "viewport": [
+    1440,
+    1000
+  ],
+  "samples": 3,
+  "businessDelayMs": 1500,
+  "recordedAt": "2026-10-03T23:36:26.828Z",
+  "measurements": [
+    {
+      "route": "/admin",
+      "condition": "cold",
+      "sample": 0,
+      "ttfbMs": 1887.8999999985099,
+      "structureMs": 2253.2999999970198,
+      "dataMs": 2888.1091160000005
+    },
+    {
+      "route": "/admin",
+      "condition": "cold",
+      "sample": 1,
+      "ttfbMs": 1101.7999999970198,
+      "structureMs": 1410.0999999940395,
+      "dataMs": 2363.9769749999996
+    },
+    {
+      "route": "/admin",
+      "condition": "cold",
+      "sample": 2,
+      "ttfbMs": 1022.3999999985099,
+      "structureMs": 1675.3999999985099,
+      "dataMs": 2024.5954309999997
+    },
+    {
+      "route": "/admin",
+      "condition": "warm",
+      "sample": 0,
+      "feedbackMs": 153.10000000149012,
+      "structureMs": 729.8999999985099,
+      "dataMs": 729.8999999985099
+    },
+    {
+      "route": "/admin",
+      "condition": "warm",
+      "sample": 1,
+      "feedbackMs": 125.89999999850988,
+      "structureMs": 597.8999999985099,
+      "dataMs": 597.8999999985099
+    },
+    {
+      "route": "/admin",
+      "condition": "warm",
+      "sample": 2,
+      "feedbackMs": 141.5,
+      "structureMs": 1178.7999999970198,
+      "dataMs": 1178.7999999970198
+    },
+    {
+      "route": "/admin",
+      "condition": "delayed",
+      "sample": 0,
+      "feedbackMs": 167.39999999850988,
+      "structureMs": 1570.7000000029802,
+      "dataMs": 1570.7000000029802
+    },
+    {
+      "route": "/admin",
+      "condition": "delayed",
+      "sample": 1,
+      "feedbackMs": 148.30000000447035,
+      "structureMs": 1540.3999999985099,
+      "dataMs": 1540.3999999985099
+    },
+    {
+      "route": "/admin",
+      "condition": "delayed",
+      "sample": 2,
+      "feedbackMs": 192.39999999850988,
+      "structureMs": 1559.8999999985099,
+      "dataMs": 1559.8999999985099
+    },
+    {
+      "route": "/portal",
+      "condition": "cold",
+      "sample": 0,
+      "ttfbMs": 1272.3999999985099,
+      "structureMs": 1792.8999999985099,
+      "dataMs": 2104.7729709999985
+    },
+    {
+      "route": "/portal",
+      "condition": "cold",
+      "sample": 1,
+      "ttfbMs": 1720.0999999940395,
+      "structureMs": 2085.89999999851,
+      "dataMs": 2486.770792000003
+    },
+    {
+      "route": "/portal",
+      "condition": "cold",
+      "sample": 2,
+      "ttfbMs": 1428.1000000014901,
+      "structureMs": 1925.5,
+      "dataMs": 2239.3698719999957
+    },
+    {
+      "route": "/portal",
+      "condition": "warm",
+      "sample": 0,
+      "feedbackMs": 219.29999999701977,
+      "structureMs": 1023.0999999940395,
+      "dataMs": 1023.0999999940395
+    },
+    {
+      "route": "/portal",
+      "condition": "warm",
+      "sample": 1,
+      "feedbackMs": 177.39999999850988,
+      "structureMs": 716.1000000014901,
+      "dataMs": 716.1000000014901
+    },
+    {
+      "route": "/portal",
+      "condition": "warm",
+      "sample": 2,
+      "feedbackMs": 197.80000000447035,
+      "structureMs": 694.2000000029802,
+      "dataMs": 694.2000000029802
+    },
+    {
+      "route": "/portal",
+      "condition": "delayed",
+      "sample": 0,
+      "feedbackMs": 244.19999999552965,
+      "structureMs": 1537.7999999970198,
+      "dataMs": 1537.7999999970198
+    },
+    {
+      "route": "/portal",
+      "condition": "delayed",
+      "sample": 1,
+      "feedbackMs": 172.10000000149012,
+      "structureMs": 1627.6000000014901,
+      "dataMs": 1627.6000000014901
+    },
+    {
+      "route": "/portal",
+      "condition": "delayed",
+      "sample": 2,
+      "feedbackMs": 145,
+      "structureMs": 1559.5,
+      "dataMs": 1559.5
+    },
+    {
+      "route": "/admin/applications/66666666-6666-4666-8666-666666666661",
+      "condition": "cold",
+      "sample": 0,
+      "ttfbMs": 1273.2999999970198,
+      "structureMs": 1793.3999999985099,
+      "dataMs": 2290.4259750000056
+    },
+    {
+      "route": "/admin/applications/66666666-6666-4666-8666-666666666661",
+      "condition": "cold",
+      "sample": 1,
+      "ttfbMs": 2062.5,
+      "structureMs": 2784.10000000149,
+      "dataMs": 3099.570079000012
+    },
+    {
+      "route": "/admin/applications/66666666-6666-4666-8666-666666666661",
+      "condition": "cold",
+      "sample": 2,
+      "ttfbMs": 1587.8999999985099,
+      "structureMs": 2183.7000000029802,
+      "dataMs": 2898.4050629999983
+    },
+    {
+      "route": "/admin/applications/66666666-6666-4666-8666-666666666661",
+      "condition": "warm",
+      "sample": 0,
+      "feedbackMs": null,
+      "structureMs": 1963.8999999985099,
+      "dataMs": 1963.8999999985099
+    },
+    {
+      "route": "/admin/applications/66666666-6666-4666-8666-666666666661",
+      "condition": "warm",
+      "sample": 1,
+      "feedbackMs": null,
+      "structureMs": 1175.7999999970198,
+      "dataMs": 1175.7999999970198
+    },
+    {
+      "route": "/admin/applications/66666666-6666-4666-8666-666666666661",
+      "condition": "warm",
+      "sample": 2,
+      "feedbackMs": null,
+      "structureMs": 985.1000000014901,
+      "dataMs": 985.1000000014901
+    },
+    {
+      "route": "/admin/applications/66666666-6666-4666-8666-666666666661",
+      "condition": "delayed",
+      "sample": 0,
+      "feedbackMs": null,
+      "structureMs": 1866.5,
+      "dataMs": 1866.5
+    },
+    {
+      "route": "/admin/applications/66666666-6666-4666-8666-666666666661",
+      "condition": "delayed",
+      "sample": 1,
+      "feedbackMs": null,
+      "structureMs": 1958.2000000029802,
+      "dataMs": 1958.2000000029802
+    },
+    {
+      "route": "/admin/applications/66666666-6666-4666-8666-666666666661",
+      "condition": "delayed",
+      "sample": 2,
+      "feedbackMs": null,
+      "structureMs": 1934.2999999970198,
+      "dataMs": 1934.2999999970198
+    },
+    {
+      "route": "/portal/applications/66666666-6666-4666-8666-666666666661",
+      "condition": "cold",
+      "sample": 0,
+      "ttfbMs": 2055.5999999940395,
+      "structureMs": 2747.5,
+      "dataMs": 3373.451264000003
+    },
+    {
+      "route": "/portal/applications/66666666-6666-4666-8666-666666666661",
+      "condition": "cold",
+      "sample": 1,
+      "ttfbMs": 1093.1000000014901,
+      "structureMs": 1853.6999999955297,
+      "dataMs": 2133.874868999992
+    },
+    {
+      "route": "/portal/applications/66666666-6666-4666-8666-666666666661",
+      "condition": "cold",
+      "sample": 2,
+      "ttfbMs": 1104.7999999970198,
+      "structureMs": 1238,
+      "dataMs": 2189.4623389999906
+    },
+    {
+      "route": "/portal/applications/66666666-6666-4666-8666-666666666661",
+      "condition": "warm",
+      "sample": 0,
+      "feedbackMs": null,
+      "structureMs": 905.2000000029802,
+      "dataMs": 905.2000000029802
+    },
+    {
+      "route": "/portal/applications/66666666-6666-4666-8666-666666666661",
+      "condition": "warm",
+      "sample": 1,
+      "feedbackMs": null,
+      "structureMs": 803.1999999955297,
+      "dataMs": 803.1999999955297
+    },
+    {
+      "route": "/portal/applications/66666666-6666-4666-8666-666666666661",
+      "condition": "warm",
+      "sample": 2,
+      "feedbackMs": null,
+      "structureMs": 972.5,
+      "dataMs": 972.5
+    },
+    {
+      "route": "/portal/applications/66666666-6666-4666-8666-666666666661",
+      "condition": "delayed",
+      "sample": 0,
+      "feedbackMs": null,
+      "structureMs": 1815.8000000044703,
+      "dataMs": 1815.8000000044703
+    },
+    {
+      "route": "/portal/applications/66666666-6666-4666-8666-666666666661",
+      "condition": "delayed",
+      "sample": 1,
+      "feedbackMs": null,
+      "structureMs": 1827.9000000059605,
+      "dataMs": 1827.9000000059605
+    },
+    {
+      "route": "/portal/applications/66666666-6666-4666-8666-666666666661",
+      "condition": "delayed",
+      "sample": 2,
+      "feedbackMs": null,
+      "structureMs": 1812.2999999970198,
+      "dataMs": 1812.2999999970198
+    },
+    {
+      "route": "/admin/applications",
+      "condition": "cold",
+      "sample": 0,
+      "ttfbMs": 984.8999999985099,
+      "structureMs": 1675.5999999940395,
+      "dataMs": 3539.6651200000197
+    },
+    {
+      "route": "/admin/applications",
+      "condition": "cold",
+      "sample": 1,
+      "ttfbMs": 995.3000000044703,
+      "structureMs": 1738.4000000059605,
+      "dataMs": 2905.932329000003
+    },
+    {
+      "route": "/admin/applications",
+      "condition": "cold",
+      "sample": 2,
+      "ttfbMs": 1133.2999999970198,
+      "structureMs": 1769.7000000029802,
+      "dataMs": 2936.410560999997
+    },
+    {
+      "route": "/admin/applications",
+      "condition": "warm",
+      "sample": 0,
+      "feedbackMs": 8.5,
+      "structureMs": 948.5,
+      "dataMs": 1710.2999999970198
+    },
+    {
+      "route": "/admin/applications",
+      "condition": "warm",
+      "sample": 1,
+      "feedbackMs": 12.299999997019768,
+      "structureMs": 941.5999999940395,
+      "dataMs": 1505.7999999970198
+    },
+    {
+      "route": "/admin/applications",
+      "condition": "warm",
+      "sample": 2,
+      "feedbackMs": 11.600000001490116,
+      "structureMs": 1148.1000000014901,
+      "dataMs": 1724.7999999970198
+    },
+    {
+      "route": "/admin/applications",
+      "condition": "delayed",
+      "sample": 0,
+      "feedbackMs": 20.100000001490116,
+      "structureMs": 976.1000000014901,
+      "dataMs": 1667.6000000014901
+    },
+    {
+      "route": "/admin/applications",
+      "condition": "delayed",
+      "sample": 1,
+      "feedbackMs": 12.100000001490116,
+      "structureMs": 926.2999999970198,
+      "dataMs": 1639.5
+    },
+    {
+      "route": "/admin/applications",
+      "condition": "delayed",
+      "sample": 2,
+      "feedbackMs": 2,
+      "structureMs": 1040,
+      "dataMs": 1609.8999999985099
+    },
+    {
+      "route": "/portal/applications",
+      "condition": "cold",
+      "sample": 0,
+      "ttfbMs": 1475.1999999955297,
+      "structureMs": 2152.1999999955297,
+      "dataMs": 3607.6550049999996
+    },
+    {
+      "route": "/portal/applications",
+      "condition": "cold",
+      "sample": 1,
+      "ttfbMs": 1162.7000000029802,
+      "structureMs": 1653.1000000014901,
+      "dataMs": 3394.5122250000004
+    },
+    {
+      "route": "/portal/applications",
+      "condition": "cold",
+      "sample": 2,
+      "ttfbMs": 1128.5,
+      "structureMs": 1805.7000000029802,
+      "dataMs": 3071.5303970000004
+    },
+    {
+      "route": "/portal/applications",
+      "condition": "warm",
+      "sample": 0,
+      "feedbackMs": 133.70000000298023,
+      "structureMs": 948.8999999985099,
+      "dataMs": 2127.3000000044703
+    },
+    {
+      "route": "/portal/applications",
+      "condition": "warm",
+      "sample": 1,
+      "feedbackMs": 214,
+      "structureMs": 935.2999999970198,
+      "dataMs": 1579.3999999985099
+    },
+    {
+      "route": "/portal/applications",
+      "condition": "warm",
+      "sample": 2,
+      "feedbackMs": 177.69999999552965,
+      "structureMs": 856.1999999955297,
+      "dataMs": 1798.0999999940395
+    },
+    {
+      "route": "/portal/applications",
+      "condition": "delayed",
+      "sample": 0,
+      "feedbackMs": 184.80000000447035,
+      "structureMs": 984.3000000044703,
+      "dataMs": 1744.5
+    },
+    {
+      "route": "/portal/applications",
+      "condition": "delayed",
+      "sample": 1,
+      "feedbackMs": 160,
+      "structureMs": 4964.60000000149,
+      "dataMs": 6249
+    },
+    {
+      "route": "/portal/applications",
+      "condition": "delayed",
+      "sample": 2,
+      "feedbackMs": 143.60000000149012,
+      "structureMs": 929.9000000059605,
+      "dataMs": 2259.4000000059605
+    }
+  ]
+}

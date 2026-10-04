@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, max } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
 import { transactionalOutbox } from "@/db/schema";
@@ -126,20 +126,28 @@ export async function publishApprovedFundingCall(
       .returning({ id: fundingCallLifecycleHistory.id });
     if (!history) return { kind: "idempotency_conflict" };
 
-    const publicDocuments = await transaction
-      .select({
-        label: fundingCallPublicDocuments.label,
-        url: fundingCallPublicDocuments.url,
-      })
-      .from(fundingCallPublicDocuments)
-      .where(and(
-        eq(fundingCallPublicDocuments.fundingCallId, input.fundingCallId),
-        eq(fundingCallPublicDocuments.markedForPublication, true),
-      ))
-      .orderBy(
-        asc(fundingCallPublicDocuments.displayOrder),
-        asc(fundingCallPublicDocuments.id),
-      );
+    const [publicDocuments, [previous]] = await Promise.all([
+      transaction
+        .select({
+          label: fundingCallPublicDocuments.label,
+          url: fundingCallPublicDocuments.url,
+        })
+        .from(fundingCallPublicDocuments)
+        .where(and(
+          eq(fundingCallPublicDocuments.fundingCallId, input.fundingCallId),
+          eq(fundingCallPublicDocuments.markedForPublication, true),
+        ))
+        .orderBy(
+          asc(fundingCallPublicDocuments.displayOrder),
+          asc(fundingCallPublicDocuments.id),
+        ),
+      transaction
+        .select({
+          revisionNumber: max(fundingCallPublicationRevisions.revisionNumber),
+        })
+        .from(fundingCallPublicationRevisions)
+        .where(eq(fundingCallPublicationRevisions.fundingCallId, input.fundingCallId)),
+    ]);
     const [revision] = await transaction
       .insert(fundingCallPublicationRevisions)
       .values({
@@ -149,7 +157,7 @@ export async function publishApprovedFundingCall(
         publishedAt: input.now,
         publishedBy: input.actorId,
         publishedStatus: transition.targetStatus as "SCHEDULED" | "LIVE",
-        revisionNumber: 1,
+        revisionNumber: (previous?.revisionNumber ?? 0) + 1,
         snapshot: captureFundingCallPublication(
           toFundingCall(current),
           publicDocuments,

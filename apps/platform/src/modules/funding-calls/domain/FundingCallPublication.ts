@@ -2,6 +2,7 @@ import type { FundingCall, FundingCallPublicDocument } from "./FundingCall";
 
 type PublicationFields = Pick<
   FundingCall,
+  | "allowResubmissionAfterWithdrawal"
   | "applicationDuplicatePolicy"
   | "description"
   | "eligibilityRuleSetVersionId"
@@ -16,6 +17,9 @@ type PublicationFields = Pick<
   | "reference"
   | "slug"
   | "thematicArea"
+  | "thumbnailContentType"
+  | "thumbnailFileName"
+  | "thumbnailObjectKey"
   | "title"
   | "totalBudgetEnvelope"
   | "workflowTemplateVersionId"
@@ -32,6 +36,7 @@ export function captureFundingCallPublication(
   publicDocuments: FundingCallPublicDocument[],
 ): FundingCallPublicationSnapshot {
   return {
+    allowResubmissionAfterWithdrawal: call.allowResubmissionAfterWithdrawal,
     applicationDuplicatePolicy: call.applicationDuplicatePolicy,
     closesAt: call.closesAt.toISOString(),
     description: call.description,
@@ -49,6 +54,9 @@ export function captureFundingCallPublication(
     reference: call.reference,
     slug: call.slug,
     thematicArea: call.thematicArea,
+    thumbnailContentType: call.thumbnailContentType,
+    thumbnailFileName: call.thumbnailFileName,
+    thumbnailObjectKey: call.thumbnailObjectKey,
     title: call.title,
     totalBudgetEnvelope: call.totalBudgetEnvelope,
     workflowTemplateVersionId: call.workflowTemplateVersionId,

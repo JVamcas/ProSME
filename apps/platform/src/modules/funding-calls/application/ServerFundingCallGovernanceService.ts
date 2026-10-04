@@ -1,10 +1,7 @@
 import "server-only";
 
 import { permissionCodes } from "@/auth/authorization/permissions";
-import {
-  requireAnyPermission,
-  requirePermission,
-} from "@/auth/authorization/policy";
+import { requirePermission } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import {
   IdempotencyConflictError,
@@ -17,11 +14,13 @@ import type { FundingCallView } from "../api/FundingCallTransport";
 import type { FundingCall } from "../domain/FundingCall";
 import { changeFundingCallGovernance } from "../infrastructure/FundingCallGovernanceRepository";
 import { readFundingCallById } from "../infrastructure/FundingCallRepository";
+import { toFundingCallView } from "./FundingCallViewMapper";
 import { validateFundingCallReadiness } from "./ServerFundingCallReadinessService";
 
 const commandPermissions = {
   APPROVE: permissionCodes.fundingCallApproveAll,
-  RETURN_FOR_AMENDMENT: permissionCodes.fundingCallApproveAll,
+  RETURN_FOR_AMENDMENT: permissionCodes.fundingCallReturnAll,
+  SUBMIT_FOR_APPROVAL: permissionCodes.fundingCallSubmitAll,
   WITHDRAW_APPROVAL_REQUEST:
     permissionCodes.fundingCallApprovalRequestOwnWithdraw,
 } as const;
@@ -32,16 +31,6 @@ const sourceStatuses = {
   SUBMIT_FOR_APPROVAL: "DRAFT",
   WITHDRAW_APPROVAL_REQUEST: "APPROVAL_PENDING",
 } as const;
-
-function view(call: FundingCall): FundingCallView {
-  return {
-    ...call,
-    closesAt: call.closesAt.toISOString(),
-    createdAt: call.createdAt.toISOString(),
-    opensAt: call.opensAt.toISOString(),
-    updatedAt: call.updatedAt.toISOString(),
-  };
-}
 
 function conflictMessage(command: FundingCallGovernanceCommandInput["command"]) {
   if (command === "SUBMIT_FOR_APPROVAL") {
@@ -72,12 +61,7 @@ export async function changeFundingCallGovernanceStatus(
   idempotencyKey: string,
   correlationId: string,
 ): Promise<FundingCallView> {
-  const actor = input.command === "SUBMIT_FOR_APPROVAL"
-    ? requireAnyPermission(user, [
-        permissionCodes.fundingCallCreate,
-        permissionCodes.fundingCallEditDraft,
-      ])
-    : requirePermission(user, commandPermissions[input.command]);
+  const actor = requirePermission(user, commandPermissions[input.command]);
   const call = await readFundingCallById(fundingCallId);
   if (!call) throw new ResourceNotFoundError("funding call");
   if (
@@ -131,5 +115,5 @@ export async function changeFundingCallGovernanceStatus(
   if (!("call" in result)) {
     throw new ResourceConflictError(conflictMessage(input.command));
   }
-  return view(result.call);
+  return toFundingCallView(result.call);
 }

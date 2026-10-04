@@ -9,6 +9,7 @@ import {
   ResourceConflictError,
   ResourceNotFoundError,
 } from "@/lib/resource-errors";
+import { NotificationValidationError } from "@/modules/notifications/domain/NotificationErrors";
 import type { ApplicationSubmissionCommandInput } from "./api/ApplicationSubmissionSchemas";
 import { submitOwnedApplication } from "./infrastructure/ApplicationSubmissionRepository";
 
@@ -43,13 +44,26 @@ export async function submitApplication(
     user,
     permissionCodes.fundingApplicationSubmit,
   );
-  const result = await submitOwnedApplication({
-    actorId: actor.id,
-    applicationId,
-    correlationId,
-    ...command,
-    idempotencyKey: requireIdempotencyKey(idempotencyKey),
-  });
+  let result;
+  try {
+    result = await submitOwnedApplication({
+      actorId: actor.id,
+      applicationId,
+      correlationId,
+      ...command,
+      idempotencyKey: requireIdempotencyKey(idempotencyKey),
+    });
+  } catch (error) {
+    if (!(error instanceof NotificationValidationError)) throw error;
+    console.error("Application submission notification validation failed", {
+      code: error.code,
+      correlationId,
+      error,
+    });
+    throw new ApplicationSubmissionConflictError(
+      "Your application is still saved as a draft. A system configuration needs attention before it can be submitted. Please try again later or contact support.",
+    );
+  }
   if (result.kind === "submitted") return result.result;
   if (result.kind === "not_found") {
     throw new ResourceNotFoundError("application draft");

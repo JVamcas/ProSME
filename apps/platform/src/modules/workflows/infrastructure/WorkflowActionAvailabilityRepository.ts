@@ -1,4 +1,6 @@
 import "server-only";
+import { workflowStageHasActiveHold, workflowTaskHasActiveHold } from "./WorkflowHoldQueries";
+import { workflowApprovalEligibilityReady } from "./WorkflowApprovalEligibilityReadiness";
 
 import { and, asc, eq, sql } from "drizzle-orm";
 
@@ -23,6 +25,8 @@ import { workflowEligibilityActionReady } from "./WorkflowEligibilityActionReadi
 import { workflowTaskPrerequisitesComplete } from "./WorkflowTaskPrerequisiteReadiness";
 
 export type WorkflowActionAvailabilitySource = {
+  holdScopes?: import("../domain/runtime/WorkflowHold").WorkflowHoldScope[];
+  resumableHolds?: import("./WorkflowHoldRepository").ActiveWorkflowHold[];
   actions: StoredWorkflowAction[];
   stage: StageCompletionTarget & { rowVersion: number };
   task: {
@@ -52,7 +56,7 @@ export type StoredWorkflowAction = {
   enabled: boolean;
   id: string;
   label: string;
-  reasonCodeRequired: boolean;
+  reasonRequired: boolean;
   stableKey: string;
 };
 
@@ -76,11 +80,8 @@ async function readStage(
           AND deferral.continuation = 'RESUME_ON_DATE'
           AND deferral.resume_at <= CURRENT_TIMESTAMP
       )`,
-      activeHold: sql<boolean>`EXISTS (
-        SELECT 1 FROM app_workflow_holds hold
-        WHERE hold.stage_instance_id = ${stageInstances.id}
-          AND hold.status = 'ACTIVE'
-      )`,
+      approvalEligibilityReady: workflowApprovalEligibilityReady(sql`${stageInstances.workflowInstanceId}`),
+      activeHold: workflowStageHasActiveHold(sql`${stageInstances}`),
       application: {
         business: applications.businessSection,
         declarationAcceptance: applications.declarationAcceptance,
@@ -240,11 +241,10 @@ async function readTask(
             )
           )
       )`,
-      activeHold: sql<boolean>`EXISTS (
-        SELECT 1 FROM app_workflow_holds hold
-        WHERE hold.stage_instance_id = ${workflowTasks.stageInstanceId}
-          AND hold.status = 'ACTIVE'
-      )`,
+      approvalEligibilityReady: workflowApprovalEligibilityReady(
+        sql`${stageInstances.workflowInstanceId}`,
+      ),
+      activeHold: workflowTaskHasActiveHold(sql`${workflowTasks}`),
       activeReferral: sql<boolean>`EXISTS (
         SELECT 1 FROM app_workflow_referrals referral
         WHERE referral.source_task_id = ${workflowTasks.id}
@@ -260,18 +260,6 @@ async function readTask(
             WHERE actor_role.user_id = ${actorId}::uuid
               AND actor_role.role_id = ${workflowTasks.assignedRoleId}
           )
-        ) OR EXISTS (
-          SELECT 1 FROM app_workflow_escalations escalation
-          WHERE escalation.task_id = ${workflowTasks.id}
-            AND escalation.status = 'ACTIVE'
-            AND (
-              escalation.target_user_id = ${actorId}::uuid
-              OR EXISTS (
-                SELECT 1 FROM app_user_roles escalation_role
-                WHERE escalation_role.user_id = ${actorId}::uuid
-                  AND escalation_role.role_id = escalation.target_role_id
-              )
-            )
         )
       )`,
       definitionId: workflowTasks.workflowTaskDefinitionId,
@@ -284,6 +272,10 @@ async function readTask(
       taskType: stageTaskDefinitions.taskType,
     })
     .from(workflowTasks)
+    .innerJoin(
+      stageInstances,
+      eq(stageInstances.id, workflowTasks.stageInstanceId),
+    )
     .innerJoin(
       stageTaskDefinitions,
       eq(stageTaskDefinitions.id, workflowTasks.workflowTaskDefinitionId),
@@ -309,7 +301,7 @@ function selectActions(stageDefinitionId: string, taskDefinitionId?: string) {
     enabled: workflowActionDefinitions.enabled,
     id: workflowActionDefinitions.id,
     label: workflowActionDefinitions.label,
-    reasonCodeRequired: workflowActionDefinitions.reasonCodeRequired,
+    reasonRequired: workflowActionDefinitions.reasonRequired,
     stableKey: workflowActionDefinitions.stableKey,
   };
   if (!taskDefinitionId) {
