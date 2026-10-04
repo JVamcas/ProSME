@@ -2,10 +2,12 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { workQueueQueryKeys } from "@/modules/work-queue/WorkQueueHooks";
-import { clientWorkflowRfiService } from "./ClientWorkflowRfiService";
+import { invalidateApplicationViews } from "@/modules/applications/ui/invalidateApplicationViews";
+import { clientWorkflowRfiService } from "../../ClientWorkflowRfiService";
 
 export const workflowRfiQueryKeys = {
+  contextual: (applicationId: string) =>
+    ["admin", "applications", "detail", applicationId, "requests"] as const,
   application: (applicationId: string) =>
     ["portal", "applications", applicationId, "requests"] as const,
   ownedDetail: (applicationId: string, requestId: string) =>
@@ -15,10 +17,20 @@ export const workflowRfiQueryKeys = {
     ["admin", "tasks", taskId, "requests", requestId] as const,
 };
 
-export function useOwnedWorkflowRfis(applicationId: string) {
+export function useOwnedWorkflowRfis(applicationId: string, enabled = true) {
   return useQuery({
-    queryFn: () => clientWorkflowRfiService.listOwned(applicationId),
+    enabled,
+    queryFn: ({ signal }) =>
+      clientWorkflowRfiService.listOwned(applicationId, signal),
     queryKey: workflowRfiQueryKeys.application(applicationId),
+  });
+}
+
+export function useContextualWorkflowRfis(applicationId: string) {
+  return useQuery({
+    queryKey: workflowRfiQueryKeys.contextual(applicationId),
+    queryFn: ({ signal }) =>
+      clientWorkflowRfiService.listContextual(applicationId, signal),
   });
 }
 
@@ -96,16 +108,7 @@ export function useRespondToWorkflowRfi(
     mutationFn: (
       input: Parameters<typeof clientWorkflowRfiService.respond>[2],
     ) => clientWorkflowRfiService.respond(applicationId, requestId, input),
-    onSuccess: () =>
-      Promise.all([
-        client.invalidateQueries({
-          queryKey: workflowRfiQueryKeys.ownedDetail(applicationId, requestId),
-        }),
-        client.invalidateQueries({
-          queryKey: workflowRfiQueryKeys.application(applicationId),
-        }),
-        client.invalidateQueries({ queryKey: ["portal", "applications"] }),
-      ]),
+    onSuccess: () => invalidateApplicationViews(client, true),
   });
 }
 
@@ -130,9 +133,12 @@ export function useFollowUpWorkflowRfi(taskId: string, requestId: string) {
     mutationFn: (message: string) =>
       clientWorkflowRfiService.followUp(taskId, requestId, message),
     onSuccess: () =>
-      client.invalidateQueries({
-        queryKey: workflowRfiQueryKeys.taskDetail(taskId, requestId),
-      }),
+      Promise.all([
+        client.invalidateQueries({
+          queryKey: workflowRfiQueryKeys.task(taskId),
+        }),
+        invalidateApplicationViews(client, true),
+      ]),
   });
 }
 
@@ -146,10 +152,7 @@ export function useCloseWorkflowRfi(taskId: string, requestId: string) {
         client.invalidateQueries({
           queryKey: workflowRfiQueryKeys.task(taskId),
         }),
-        client.invalidateQueries({ queryKey: workQueueQueryKeys.all }),
-        client.invalidateQueries({
-          queryKey: workflowRfiQueryKeys.taskDetail(taskId, requestId),
-        }),
+        invalidateApplicationViews(client, true),
       ]),
   });
 }

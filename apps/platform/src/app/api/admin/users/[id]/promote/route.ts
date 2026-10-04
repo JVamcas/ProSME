@@ -12,7 +12,9 @@ type RouteContext = { params: Promise<{ id: string }> };
 export async function POST(request: Request, context: RouteContext) {
   const correlationId = createCorrelationId();
   try {
-    const user = await resolveUserFromHeaders(request.headers);
+    const user = await resolveUserFromHeaders(request.headers, {
+      checkRevoked: true,
+    });
     const { id } = await context.params;
     const input = promoteUserSchema.parse(
       await request.json().catch(() => undefined),

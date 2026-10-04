@@ -26,7 +26,7 @@ vi.mock("sonner", () => ({
   toast: { error: mocks.toastError, success: mocks.toastSuccess },
 }));
 
-vi.mock("@/modules/work-queue/WorkQueueHooks", () => ({
+vi.mock("@/modules/work-queue/ui/useWorkQueue", () => ({
   useExecuteWorkflowTaskAction: () => ({
     isPending: false,
     mutateAsync: mocks.mutateAsync,

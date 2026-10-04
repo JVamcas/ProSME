@@ -94,3 +94,39 @@ was matched by synthetic path and start time in private timing-only logs.
 The disposable test identity, isolated databases/servers and private credentials
 are removed after validation. Reproduction requires a newly provisioned isolated
 setup and synthetic session; no reusable credentials are committed.
+
+## Phase 3 and Firebase verification
+
+firebase-authentication.json records the accepted real-SDK verification-policy
+comparison: 20 alternating samples per operation/mode (80 observations, forming 40 comparisons),
+with certificate caches warm. Its two first-verification observations retain the
+cold-certificate cost. The synthetic identity was deleted. The authentication
+change record explains which access-management/verification-email operations
+retain immediate revocation checking and the signed-cookie-until-expiry behavior
+of normal verification.
+
+For G3, the frozen reference is the **auth-optimized G2 build based on 5f1a95eb**,
+not da025565. Both reference/current servers use the same isolated database and
+session; the reference is on localhost:3019 and current on localhost:3018.
+phase-3-auth-optimized-baseline.json is a preliminary three-sample reference.
+phase-3-initial.json retains the first matched five-sample comparison: destination
+structure passed, but warm full-data times regressed beyond tolerance.
+phase-3-warm-revision.json records the fixed follow-up: removing the redundant
+nearest detail-route loading boundary eliminated React's additional 300 ms
+fallback delay. The client workspace still renders its own pending skeleton.
+phase-3-final.json contains the final five-sample cold/warm/delayed comparison;
+phase-3-summary.json records all numerical target checks. phase-3-authentication.json
+retains duration-only production verification samples, with cold fetches kept.
+phase-3-list-controls.json holds three-sample cold/warm list controls; the rendering
+revision only affects detail routes. Set RESPONSIVENESS_APPLICATION_REFERENCE to
+the seeded reference when measuring list readiness (this fixture uses
+SUBMISSION-FUND-2026-000001 instead of the original PERF reference).
+
+phase-3-context-checks.json records nine real authenticated API probes using a
+second synthetic account with only own/assigned grants and no applicable
+ownership/assignment. Denied reads expose no record, scoped RFIs are empty,
+assigned progress is forbidden, and a disabled PostgreSQL account remains
+forbidden despite its signed Firebase session. The allowed actor reads the
+primary staff/own projections and progress. Reviewed screenshots contain only
+synthetic identities and applications. phase-3-files.json lists the focused
+change's files, including architectural migrations and their import consumers.

@@ -19,7 +19,7 @@ import {
   useFollowUpWorkflowRfi,
   useTaskWorkflowRfi,
   useTaskWorkflowRfis,
-} from "./WorkflowRfiHooks";
+} from "./useWorkflowRfi";
 import { WorkflowRfiInstructions } from "./WorkflowRfiInstructions";
 import {
   WorkflowRfiCorrespondence,

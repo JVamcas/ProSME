@@ -9,7 +9,7 @@ import { WorkflowEscalationTrackingPanel } from "@/modules/workflows/ui/tasks/Wo
 import {
   useWorkflowEscalationTracking,
   useWorkflowTask,
-} from "@/modules/work-queue/WorkQueueHooks";
+} from "@/modules/work-queue/ui/useWorkQueue";
 import { useWorkflowCoi } from "@/modules/workflows/ui/runtime/useWorkflowCoi";
 import { WorkflowTaskCoiGate } from "@/modules/workflows/ui/runtime/WorkflowTaskCoiGate";
 import { PageShell } from "@/shared/ui/PageShell";

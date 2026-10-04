@@ -13,7 +13,7 @@ import { usePendingNavigationGuard } from "@/shared/ui/usePendingNavigationGuard
 import {
   useSaveTaskReviewDraft,
   useUploadWorkflowTaskDocument,
-} from "@/modules/work-queue/WorkQueueHooks";
+} from "@/modules/work-queue/ui/useWorkQueue";
 import type {
   SaveTaskReviewDraftInput,
   TaskDetail,

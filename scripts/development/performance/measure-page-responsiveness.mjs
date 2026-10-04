@@ -62,7 +62,7 @@ const routes = [
     path: "/admin/applications",
     source: "/admin",
     heading: "Applications",
-    ready: "PERF-2026-000001",
+    ready: process.env.RESPONSIVENESS_APPLICATION_REFERENCE ?? "PERF-2026-000001",
   },
   {
     path: "/portal/applications",

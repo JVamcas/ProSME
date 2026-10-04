@@ -10,7 +10,7 @@ import { GeneralButton } from "@/components/ui/button";
 import { FormRenderer } from "@/modules/forms/ui/renderer/FormRenderer";
 import { PageShell } from "@/shared/ui/PageShell";
 import { toast } from "@/shared/ui/Toast";
-import { useOwnApplication, useSubmitApplication } from "../ApplicationHooks";
+import { useOwnApplication, useSubmitApplication } from "./useApplications";
 import type { ApplicationSubmission } from "../ApplicationTypes";
 import { applicationDocumentCompletion } from "../domain/ApplicationDocumentPolicy";
 import { attachedBusinessFieldKeys } from "../domain/AttachedApplicationForm";

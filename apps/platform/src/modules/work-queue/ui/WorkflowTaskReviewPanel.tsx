@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { AuthoritativeEligibilityTask } from "@/modules/eligibility/ui/screening/AuthoritativeEligibilityTask";
 import { DynamicFormTask } from "@/modules/forms/ui/renderer/DynamicFormTask";
 import type { TaskDetail } from "@/modules/work-queue/TaskTypes";
-import { useCompleteWorkflowTask } from "@/modules/work-queue/WorkQueueHooks";
+import { useCompleteWorkflowTask } from "@/modules/work-queue/ui/useWorkQueue";
 import {
   ChecklistTaskForm,
   type ReviewDraftState,

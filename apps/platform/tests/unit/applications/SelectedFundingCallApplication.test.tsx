@@ -28,7 +28,7 @@ vi.mock("@/modules/businesses/ui/BusinessDialog", () => ({
 vi.mock("@/modules/funding-calls/FundingOpportunityHooks", () => ({
   useFundingOpportunity: mocks.detail,
 }));
-vi.mock("@/modules/applications/ApplicationHooks", () => ({
+vi.mock("@/modules/applications/ui/useApplications", () => ({
   useCreateApplication: mocks.create,
 }));
 vi.mock("@/modules/applications/ui/useApplicationOpportunityChooser", () => ({

@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useEligibilityTerminationConfirmation } from "@/modules/eligibility/ui/screening/useEligibilityTerminationConfirmation";
 
 const mocks = vi.hoisted(() => ({ mutate: vi.fn(), completed: vi.fn() }));
-vi.mock("@/modules/work-queue/WorkQueueHooks", () => ({
+vi.mock("@/modules/work-queue/ui/useWorkQueue", () => ({
   useEvaluateAuthoritativeEligibility: () => ({
     error: null,
     isPending: false,

@@ -9,7 +9,7 @@ vi.mock("next/navigation", () => ({
     throw new Error("redirected");
   }),
 }));
-vi.mock("@/modules/work-queue/WorkQueueHooks", () => ({
+vi.mock("@/modules/work-queue/ui/useWorkQueue", () => ({
   useWorkflowTask: vi.fn(),
   useWorkflowEscalationTracking: vi.fn(() => ({
     data: null,
@@ -19,7 +19,7 @@ vi.mock("@/modules/work-queue/WorkQueueHooks", () => ({
 vi.mock("@/modules/workflows/ui/runtime/useWorkflowCoi", () => ({
   useWorkflowCoi: vi.fn(),
 }));
-vi.mock("@/modules/applications/ApplicationHooks", () => ({
+vi.mock("@/modules/applications/ui/useApplications", () => ({
   useAdminApplicationDetail: vi.fn(() => ({ isPending: true })),
 }));
 vi.mock("@/modules/work-queue/ui/WorkflowTaskReviewPanel", () => ({
@@ -38,7 +38,7 @@ vi.mock("@/modules/workflows/ui/runtime/WorkflowTaskCoiGate", () => ({
 import WorkflowTaskPage from "@/app/(operations)/admin/tasks/[id]/page";
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { getAuthenticatedPageUser } from "@/platform/auth/ServerAuthNavigation";
-import { useWorkflowTask } from "@/modules/work-queue/WorkQueueHooks";
+import { useWorkflowTask } from "@/modules/work-queue/ui/useWorkQueue";
 import { useWorkflowCoi } from "@/modules/workflows/ui/runtime/useWorkflowCoi";
 import { WorkflowTaskWorkspace } from "@/modules/work-queue/ui/WorkflowTaskWorkspace";
 

@@ -5,7 +5,7 @@ import { useState } from "react";
 
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { EmptyState } from "@/components/ui/empty-state";
-import { useDeleteApplicationDraft } from "@/modules/applications/ApplicationHooks";
+import { useDeleteApplicationDraft } from "@/modules/applications/ui/useApplications";
 import type { ApplicationSummary } from "@/modules/applications/ApplicationTypes";
 import { ApplicationWithdrawalForm } from "@/modules/applications/ui/ApplicationWithdrawalForm";
 import { ApplicationStatusHistoryPanel } from "@/modules/applications/ui/ApplicationStatusHistoryPanel";
@@ -26,15 +26,12 @@ export function ApplicationListContent({
 }) {
   const router = useRouter();
   const deleteDraft = useDeleteApplicationDraft();
-  const [deleteCandidate, setDeleteCandidate] = useState<ApplicationSummary | null>(
-    null,
-  );
-  const [withdrawCandidate, setWithdrawCandidate] = useState<ApplicationSummary | null>(
-    null,
-  );
-  const [historyCandidate, setHistoryCandidate] = useState<ApplicationSummary | null>(
-    null,
-  );
+  const [deleteCandidate, setDeleteCandidate] =
+    useState<ApplicationSummary | null>(null);
+  const [withdrawCandidate, setWithdrawCandidate] =
+    useState<ApplicationSummary | null>(null);
+  const [historyCandidate, setHistoryCandidate] =
+    useState<ApplicationSummary | null>(null);
 
   function renderAction(application: ApplicationSummary) {
     const isDraft = application.status === "draft";
@@ -43,7 +40,8 @@ export function ApplicationListContent({
         id: "edit",
         label: "Edit",
         disabled: !isDraft,
-        onAction: () => router.push(`/portal/applications/${application.id}/edit`),
+        onAction: () =>
+          router.push(`/portal/applications/${application.id}/edit`),
       },
     ];
 
@@ -119,9 +117,11 @@ export function ApplicationListContent({
         isLoading={deleteDraft.isPending}
         isOpen={Boolean(deleteCandidate)}
         loadingText="Deleting…"
-        message={deleteCandidate
-          ? `Delete your draft for ${deleteCandidate.fundingOpportunityTitle}? This draft will be removed from your applications.`
-          : ""}
+        message={
+          deleteCandidate
+            ? `Delete your draft for ${deleteCandidate.fundingOpportunityTitle}? This draft will be removed from your applications.`
+            : ""
+        }
         onCancel={() => {
           if (deleteDraft.isPending) return;
           setDeleteCandidate(null);

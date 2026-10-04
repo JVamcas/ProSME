@@ -9,7 +9,7 @@ import { GeneralButton } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Pagination } from "@/components/ui/pagination";
 import type { PublicFundingCallSummary } from "@/modules/funding-calls/api/PublicFundingCallTransport";
-import { useCreateApplication } from "../ApplicationHooks";
+import { useCreateApplication } from "./useApplications";
 import { ApplicationOpportunitySearch } from "./ApplicationOpportunitySearch";
 import {
   opportunityChooserPageSize,

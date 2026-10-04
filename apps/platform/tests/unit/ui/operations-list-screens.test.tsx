@@ -1,27 +1,30 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("@/modules/applications/ApplicationHooks", () => ({
+vi.mock("@/modules/applications/ui/useApplications", () => ({
   useAdminApplications: () => ({
     data: {
-      items: [{
-        activeStageName: "Completeness screening",
-        activeTaskCount: 1,
-        applicantName: "Applicant from database",
-        applicantStatus: "UNDER_REVIEW",
-        applicationId: "1695f976-2acd-44ff-b30b-39c9c5ff6c27",
-        assignedRoleName: "Programme Officer",
-        assignedUserName: null,
-        businessName: "Database Business",
-        dueAt: "2026-09-18T08:00:00.000Z",
-        fundingCallTitle: "Published opportunity",
-        internalStatus: "Completeness screening",
-        priority: null,
-        reference: "SMEF-2026-000123",
-        requestedAmount: 75000,
-        rowVersion: 2,
-        submittedAt: "2026-09-15T08:00:00.000Z",
-      }],
+      items: [
+        {
+          activeStageName: "Completeness screening",
+          activeTaskCount: 1,
+          applicantName: "Applicant from database",
+          applicantStatus: "UNDER_REVIEW",
+          applicationId: "1695f976-2acd-44ff-b30b-39c9c5ff6c27",
+          assignedRoleName: "Programme Officer",
+          assignedUserName: null,
+          businessName: "Database Business",
+          dueAt: "2026-09-18T08:00:00.000Z",
+          fundingCallTitle: "Published opportunity",
+          internalStatus: "Completeness screening",
+          priority: null,
+          reference: "SMEF-2026-000123",
+          requestedAmount: 75000,
+          rowVersion: 2,
+          submittedAt: "2026-09-15T08:00:00.000Z",
+        },
+      ],
       nextCursor: null,
       total: 1,
     },
@@ -30,7 +33,7 @@ vi.mock("@/modules/applications/ApplicationHooks", () => ({
   }),
 }));
 
-import { ApplicationsTable } from "@/components/admin/applications/ApplicationsTable";
+import { ApplicationsTable } from "@/modules/applications/ui/staff/ApplicationsTable";
 import { ApplicationReview } from "@/components/admin/applications/ApplicationReview";
 import { WorkQueueTable } from "@/modules/work-queue/ui/WorkQueueTable";
 
@@ -108,7 +111,11 @@ describe("operations list screens", () => {
   });
 
   it("renders the real application projection fields", () => {
-    const markup = renderToStaticMarkup(<ApplicationsTable />);
+    const markup = renderToStaticMarkup(
+      <QueryClientProvider client={new QueryClient()}>
+        <ApplicationsTable />
+      </QueryClientProvider>,
+    );
     expect(markup).toContain("SMEF-2026-000123");
     expect(markup).toContain("Database Business");
     expect(markup).toContain("Published opportunity");
@@ -138,12 +145,14 @@ describe("operations list screens", () => {
     const markup = renderToStaticMarkup(
       <WorkQueueTable
         emptyMessage="No tasks"
-        items={[{
-          ...task,
-          taskBlockedReason:
-            "Available when all contributing tasks are complete.",
-          taskType: "STAGE_DECISION",
-        }]}
+        items={[
+          {
+            ...task,
+            taskBlockedReason:
+              "Available when all contributing tasks are complete.",
+            taskType: "STAGE_DECISION",
+          },
+        ]}
       />,
     );
 

@@ -5,7 +5,7 @@ import type {
   AuthoritativeEligibilityExecutionResult,
   clientWorkQueueService,
 } from "@/modules/work-queue/ClientWorkQueueService";
-import { useEvaluateAuthoritativeEligibility } from "@/modules/work-queue/WorkQueueHooks";
+import { useEvaluateAuthoritativeEligibility } from "@/modules/work-queue/ui/useWorkQueue";
 import { EligibilityTerminationDialog } from "./EligibilityTerminationDialog";
 
 type Input = Parameters<typeof clientWorkQueueService.evaluateEligibility>[1];

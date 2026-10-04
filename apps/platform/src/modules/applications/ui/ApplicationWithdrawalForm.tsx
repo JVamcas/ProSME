@@ -9,7 +9,7 @@ import { DraggableDialog } from "@/components/ui/draggable-dialog";
 import { Checkbox, FieldError } from "@/shared/ui/FormPrimitives";
 import { FormTextarea } from "@/components/ui/form-fields";
 
-import { useWithdrawApplication } from "../ApplicationHooks";
+import { useWithdrawApplication } from "./useApplications";
 import type { ApplicationSummary } from "../ApplicationTypes";
 import {
   applicationWithdrawalSchema,

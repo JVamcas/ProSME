@@ -9,13 +9,23 @@ import { Input } from "@/shared/ui/FormPrimitives";
 import { Pagination } from "@/components/ui/pagination";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { cn } from "@/lib/utils";
-import { useAdminApplications } from "@/modules/applications/ApplicationHooks";
+import { useAdminApplications } from "@/modules/applications/ui/useApplications";
 import type {
   AdminApplicationListRow,
   AdminApplicationStatusFilter,
 } from "@/modules/applications/ApplicationTypes";
 import { formatLocalDateTime24 } from "@/lib/dateUtils";
-import { ArrowLink } from "@/components/ui/links";
+import { ApplicationNavigationLink } from "../ApplicationNavigationLink";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { adminApplicationListSchema } from "../../AdminApplicationSchemas";
+import { z } from "zod";
+
+const filterSchema = adminApplicationListSchema.pick({
+  search: true,
+  stage: true,
+});
+type Filters = z.infer<typeof filterSchema>;
 
 const statuses: Array<{
   label: string;
@@ -34,9 +44,13 @@ const columns: DataTableColumn<AdminApplicationListRow>[] = [
     accessorKey: "reference",
     header: "Application",
     cell: ({ row }) => (
-      <ArrowLink href={`/admin/applications/${row.original.applicationId}`}>
+      <ApplicationNavigationLink
+        applicationId={row.original.applicationId}
+        audience="staff"
+        arrow
+      >
         {row.original.reference}
-      </ArrowLink>
+      </ApplicationNavigationLink>
     ),
   },
   {
@@ -66,7 +80,7 @@ const columns: DataTableColumn<AdminApplicationListRow>[] = [
     accessorKey: "submittedAt",
     header: "Submitted",
     cell: ({ row }) => formatLocalDateTime24(row.original.submittedAt),
-  }
+  },
 ];
 
 function StatusTabs({
@@ -99,8 +113,10 @@ function StatusTabs({
 
 export function ApplicationsTable() {
   const [status, setStatus] = useState<AdminApplicationStatusFilter>("all");
-  const [draftSearch, setDraftSearch] = useState("");
-  const [draftStage, setDraftStage] = useState("");
+  const form = useForm<Filters>({
+    resolver: zodResolver(filterSchema),
+    defaultValues: { search: "", stage: "" },
+  });
   const [search, setSearch] = useState("");
   const [stage, setStage] = useState("");
   const [cursors, setCursors] = useState<string[]>([]);
@@ -111,14 +127,13 @@ export function ApplicationsTable() {
     stage: stage || undefined,
     status,
   });
-  const applyFilters = () => {
-    setSearch(draftSearch.trim());
-    setStage(draftStage.trim());
+  const applyFilters = (values: Filters) => {
+    setSearch(values.search?.trim() ?? "");
+    setStage(values.stage?.trim() ?? "");
     setCursors([]);
   };
   const clearFilters = () => {
-    setDraftSearch("");
-    setDraftStage("");
+    form.reset();
     setSearch("");
     setStage("");
     setCursors([]);
@@ -140,7 +155,7 @@ export function ApplicationsTable() {
         <DataTableFilter
           defaultExpanded={false}
           description="Filter the safe application list projection."
-          onApply={applyFilters}
+          onApply={() => void form.handleSubmit(applyFilters)()}
           onClear={clearFilters}
           title="Application filters"
         >
@@ -150,18 +165,21 @@ export function ApplicationsTable() {
               <Input
                 aria-label="Search applications"
                 className="pl-10"
-                onChange={(event) => setDraftSearch(event.target.value)}
                 placeholder="Search reference, applicant, business or opportunity"
-                value={draftSearch}
+                {...form.register("search")}
               />
             </div>
             <Input
               aria-label="Filter by workflow stage"
-              onChange={(event) => setDraftStage(event.target.value)}
               placeholder="Workflow stage"
-              value={draftStage}
+              {...form.register("stage")}
             />
           </div>
+          {Object.values(form.formState.errors).map((error, index) => (
+            <p className="text-sm text-red-700" role="alert" key={index}>
+              {error.message}
+            </p>
+          ))}
         </DataTableFilter>
       </div>
       <DataTable

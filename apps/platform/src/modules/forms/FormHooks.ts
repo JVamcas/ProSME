@@ -8,7 +8,7 @@ import {
 } from "@tanstack/react-query";
 
 import { clientFormsService } from "./ClientFormsService";
-import { workQueueQueryKeys } from "@/modules/work-queue/WorkQueueHooks";
+import { workQueueQueryKeys } from "@/modules/work-queue/ui/useWorkQueue";
 import type {
   CreateFormInput,
   FormListInput,

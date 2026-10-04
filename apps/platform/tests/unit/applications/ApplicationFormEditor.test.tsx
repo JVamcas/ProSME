@@ -24,7 +24,7 @@ vi.mock("@/shared/ui/Toast", () => ({
   toast: { error: mocks.toastError },
 }));
 
-vi.mock("@/modules/applications/ApplicationHooks", () => ({
+vi.mock("@/modules/applications/ui/useApplications", () => ({
   useSubmitApplication: () => ({ isPending: false, mutateAsync: mocks.submit }),
   useOwnApplication: () => ({
     data: mocks.draft,

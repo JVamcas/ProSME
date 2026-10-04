@@ -1,7 +1,7 @@
 import "server-only";
 
 import { provisionApplicant } from "@/db/repositories/UserRepository";
-import { createFirebaseSession } from "./session";
+import { createFirebaseSession } from "./firebase/ServerFirebaseSession";
 
 const maximumAuthenticationAge = 5 * 60 * 1000;
 

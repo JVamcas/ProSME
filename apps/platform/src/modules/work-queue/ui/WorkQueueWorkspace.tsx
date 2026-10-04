@@ -7,7 +7,7 @@ import { DataTableFilter } from "@/components/ui/data-table-filter";
 import { Input } from "@/shared/ui/FormPrimitives";
 import { Pagination } from "@/components/ui/pagination";
 import { cn } from "@/lib/utils";
-import { useWorkQueue } from "@/modules/work-queue/WorkQueueHooks";
+import { useWorkQueue } from "@/modules/work-queue/ui/useWorkQueue";
 import type { WorkQueueScope } from "@/modules/work-queue/WorkQueueTypes";
 import { PageShell } from "@/shared/ui/PageShell";
 import { WorkQueueTable } from "./WorkQueueTable";

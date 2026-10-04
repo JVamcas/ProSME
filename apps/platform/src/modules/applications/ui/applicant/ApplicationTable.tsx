@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import Link from "next/link";
+import { ApplicationNavigationLink } from "../ApplicationNavigationLink";
 
 import { DataTable, type DataTableColumn } from "@/shared/ui/DataTable";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -37,12 +37,13 @@ function applicationColumns(): DataTableColumn<ApplicationSummary>[] {
       accessorKey: "fundingOpportunityTitle",
       header: "Opportunity",
       cell: ({ row }) => (
-        <Link
+        <ApplicationNavigationLink
           className="font-semibold text-brand-orange hover:text-brand-gold hover:underline"
-          href={`/portal/applications/${row.original.id}`}
+          applicationId={row.original.id}
+          audience="applicant"
         >
           {row.original.fundingOpportunityTitle}
-        </Link>
+        </ApplicationNavigationLink>
       ),
     },
     {
@@ -98,12 +99,13 @@ export function ApplicationCards({ items, renderAction }: Props) {
         >
           <div className="flex items-start justify-between gap-3">
             <h2 className="font-bold text-brand-navy">
-              <Link
+              <ApplicationNavigationLink
                 className="hover:text-brand-orange hover:underline"
-                href={`/portal/applications/${application.id}`}
+                applicationId={application.id}
+                audience="applicant"
               >
                 {application.fundingOpportunityTitle}
-              </Link>
+              </ApplicationNavigationLink>
             </h2>
             <StatusBadge status={application.publicStatus.label} />
           </div>

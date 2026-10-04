@@ -1,30 +1,30 @@
 "use client";
 
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 
-import type { ApplicationSubmissionCommandInput } from "./api/ApplicationSubmissionSchemas";
-import type { ApplicationWithdrawalInput } from "./api/ApplicationWithdrawalSchemas";
+import type { ApplicationSubmissionCommandInput } from "../api/ApplicationSubmissionSchemas";
+import type { ApplicationWithdrawalInput } from "../api/ApplicationWithdrawalSchemas";
 
-import type { SaveApplicationDraftInput } from "./ApplicationSchemas";
+import type { SaveApplicationDraftInput } from "../ApplicationSchemas";
 import type {
   AdminApplicationListInput,
   ApplicationListInput,
-} from "./ApplicationTypes";
-import { clientApplicationService } from "./ClientApplicationService";
+} from "../ApplicationTypes";
+import { clientApplicationService } from "../ClientApplicationService";
 
-export const applicationQueryKeys = {
-  all: ["applications"] as const,
-  own: ["portal", "applications"] as const,
-  list: (input: ApplicationListInput) =>
-    ["portal", "applications", "list", input] as const,
-  detail: (id: string) => ["portal", "applications", id] as const,
-  status: (id: string) => ["portal", "applications", id, "status"] as const,
-  statusHistory: (id: string) => ["portal", "applications", id, "status-history"] as const,
-  admin: ["admin", "applications"] as const,
-  adminDetail: (id: string) => ["admin", "applications", "detail", id] as const,
-  adminList: (input: AdminApplicationListInput) =>
-    ["admin", "applications", input] as const,
-};
+import { applicationQueryKeys } from "./ApplicationQueryKeys";
+import {
+  ownApplicationReadViewQuery,
+  staffApplicationDetailQuery,
+} from "./ApplicationDetailQueries";
+import { invalidateApplicationViews } from "./invalidateApplicationViews";
+import { workQueueQueryKeys } from "@/modules/work-queue/ui/WorkQueueQueryKeys";
+export { applicationQueryKeys } from "./ApplicationQueryKeys";
 
 export function useApplications() {
   return useQuery({
@@ -41,11 +41,11 @@ export function useAdminApplications(input: AdminApplicationListInput) {
 }
 
 export function useAdminApplicationDetail(id: string) {
-  return useQuery({
-    enabled: Boolean(id),
-    queryFn: () => clientApplicationService.getAdminApplicationDetail(id),
-    queryKey: applicationQueryKeys.adminDetail(id),
-  });
+  return useQuery({ ...staffApplicationDetailQuery(id), enabled: Boolean(id) });
+}
+
+export function useOwnApplicationReadView(id: string) {
+  return useQuery({ ...ownApplicationReadViewQuery(id), enabled: Boolean(id) });
 }
 
 export function useOwnApplications(input: ApplicationListInput) {
@@ -72,10 +72,11 @@ export function useOwnApplicationStatus(id: string) {
 export function useOwnApplicationStatusHistory(id: string) {
   return useInfiniteQuery({
     queryKey: applicationQueryKeys.statusHistory(id),
-    queryFn: ({ pageParam }) => clientApplicationService.getOwnApplicationStatusHistory(
-      id,
-      pageParam ?? undefined,
-    ),
+    queryFn: ({ pageParam }) =>
+      clientApplicationService.getOwnApplicationStatusHistory(
+        id,
+        pageParam ?? undefined,
+      ),
     initialPageParam: null as string | null,
     getNextPageParam: (page) => page.nextCursor ?? undefined,
   });
@@ -86,8 +87,11 @@ export function useCreateApplication() {
   return useMutation({
     mutationFn: clientApplicationService.createApplication,
     onSuccess: (application) => {
-      queryClient.setQueryData(applicationQueryKeys.detail(application.id), application);
-      void queryClient.invalidateQueries({ queryKey: applicationQueryKeys.own });
+      queryClient.setQueryData(
+        applicationQueryKeys.detail(application.id),
+        application,
+      );
+      void invalidateApplicationViews(queryClient);
     },
   });
 }
@@ -99,10 +103,7 @@ export function useUpdateApplication(id: string) {
       clientApplicationService.saveApplicationDraft(id, input),
     onSuccess: (application) => {
       queryClient.setQueryData(applicationQueryKeys.detail(id), application);
-      void queryClient.invalidateQueries({ queryKey: applicationQueryKeys.own });
-      void queryClient.invalidateQueries({
-        queryKey: ["portal", "applications", id, "readiness"],
-      });
+      void invalidateApplicationViews(queryClient);
     },
   });
 }
@@ -112,10 +113,7 @@ export function useSubmitApplication(id: string) {
   return useMutation({
     mutationFn: (input: ApplicationSubmissionCommandInput) =>
       clientApplicationService.submitApplication(id, input),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: applicationQueryKeys.own });
-      void queryClient.invalidateQueries({ queryKey: applicationQueryKeys.detail(id) });
-    },
+    onSuccess: () => invalidateApplicationViews(queryClient, true),
   });
 }
 
@@ -125,7 +123,13 @@ export function useDeleteApplicationDraft() {
     mutationFn: clientApplicationService.deleteApplicationDraft,
     onSuccess: ({ id }) => {
       queryClient.removeQueries({ queryKey: applicationQueryKeys.detail(id) });
-      void queryClient.invalidateQueries({ queryKey: applicationQueryKeys.own });
+      queryClient.removeQueries({
+        queryKey: applicationQueryKeys.adminDetail(id),
+      });
+      queryClient.removeQueries({
+        queryKey: [...workQueueQueryKeys.all, "workflow-progress", id],
+      });
+      void invalidateApplicationViews(queryClient, true);
     },
   });
 }
@@ -137,19 +141,12 @@ export function useWithdrawApplication() {
       id: string;
       input: ApplicationWithdrawalInput;
       idempotencyKey: string;
-    }) => clientApplicationService.withdrawApplication(
-      command.id,
-      command.input,
-      command.idempotencyKey,
-    ),
-    onSuccess: (result) => {
-      void queryClient.invalidateQueries({ queryKey: applicationQueryKeys.own });
-      void queryClient.invalidateQueries({
-        queryKey: applicationQueryKeys.status(result.applicationId),
-      });
-      void queryClient.invalidateQueries({
-        queryKey: applicationQueryKeys.statusHistory(result.applicationId),
-      });
-    },
+    }) =>
+      clientApplicationService.withdrawApplication(
+        command.id,
+        command.input,
+        command.idempotencyKey,
+      ),
+    onSuccess: () => invalidateApplicationViews(queryClient, true),
   });
 }

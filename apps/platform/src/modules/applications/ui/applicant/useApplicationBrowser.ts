@@ -2,14 +2,10 @@
 
 import { useState } from "react";
 
-import { useOwnApplications } from "@/modules/applications/ApplicationHooks";
+import { useOwnApplications } from "@/modules/applications/ui/useApplications";
 
 export type ApplicationFilter =
-  | "all"
-  | "draft"
-  | "submitted"
-  | "review"
-  | "completed";
+  "all" | "draft" | "submitted" | "review" | "completed";
 export const applicationPageSize = 10;
 
 export function useApplicationBrowser() {
@@ -19,11 +15,12 @@ export function useApplicationBrowser() {
   const query = useOwnApplications({
     after: cursors[pageIndex],
     limit: applicationPageSize,
-    status: filter === "all"
-      ? undefined
-      : filter === "review"
-        ? "under-review"
-        : filter,
+    status:
+      filter === "all"
+        ? undefined
+        : filter === "review"
+          ? "under-review"
+          : filter,
   });
 
   function selectFilter(value: ApplicationFilter) {
@@ -44,7 +41,8 @@ export function useApplicationBrowser() {
   return {
     filter,
     nextPage,
-    onDeletedLastItem: () => setPageIndex((current) => Math.max(0, current - 1)),
+    onDeletedLastItem: () =>
+      setPageIndex((current) => Math.max(0, current - 1)),
     pageIndex,
     previousPage: () => setPageIndex((current) => Math.max(0, current - 1)),
     query,

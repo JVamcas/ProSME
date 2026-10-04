@@ -1,10 +1,12 @@
 # SME Fund Page Responsiveness Phased Implementation Plan
 
-Status: Phases 0–2 implemented and engineering gates accepted on 4 October 2026.
-The user instructed stopping after phase 2; phases 3 and 4 remain unstarted.
+Status: Phases 0–3 implemented and engineering gates accepted on 4 October 2026.
+The user subsequently authorized phase 3 after the Firebase authentication
+latency change. Phase 3 is accepted; phase 4 remains unstarted.
 See [G0](Page_Responsiveness_Phase_0_Gate.md),
-[G1](Page_Responsiveness_Phase_1_Gate.md) and
-[G2](Page_Responsiveness_Phase_2_Gate.md) for acceptance and measured evidence.
+[G1](Page_Responsiveness_Phase_1_Gate.md),
+[G2](Page_Responsiveness_Phase_2_Gate.md) and
+[G3](Page_Responsiveness_Phase_3_Gate.md) for acceptance and measured evidence.
 
 Date: 3 October 2026
 
@@ -139,7 +141,7 @@ recorded below; acceptance evidence is held in each gate record.
 | 0 | This plan and governing contract reviewed | `Page_Responsiveness_Phase_0_Gate.md` | Accepted |
 | 1 | G0 accepted | `Page_Responsiveness_Phase_1_Gate.md` | Accepted |
 | 2 | G1 accepted | `Page_Responsiveness_Phase_2_Gate.md` | Accepted |
-| 3 | G2 accepted | `Page_Responsiveness_Phase_3_Gate.md` | Not started |
+| 3 | G2 accepted | `Page_Responsiveness_Phase_3_Gate.md` | Accepted |
 | 4 | G3 accepted | `Page_Responsiveness_Phase_4_Gate.md` | Not started |
 
 ## Phase 0 Baseline and implementation scope

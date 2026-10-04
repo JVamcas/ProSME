@@ -56,12 +56,14 @@ export function ApplicationsList({
       />
     );
   }
-  const content = <ApplicationListContent
-    canDeleteDraft={canDeleteDraft}
-    canWithdraw={canWithdraw}
-    items={query.data.items}
-    onDeletedLastItem={browser.onDeletedLastItem}
-  />;
+  const content = (
+    <ApplicationListContent
+      canDeleteDraft={canDeleteDraft}
+      canWithdraw={canWithdraw}
+      items={query.data.items}
+      onDeletedLastItem={browser.onDeletedLastItem}
+    />
+  );
   return (
     <section className="mt-6">
       <div className="mb-5 flex justify-end">

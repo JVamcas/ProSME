@@ -2,7 +2,10 @@ import { defineConfig } from "playwright/test";
 
 export default defineConfig({
   testDir: "./tests/e2e",
-  testMatch: "page-responsiveness.spec.ts",
+  testMatch: [
+    "page-responsiveness.spec.ts",
+    "application-responsiveness.spec.ts",
+  ],
   timeout: 45_000,
   workers: 1,
   outputDir: "/tmp/page-responsiveness/browser-results",

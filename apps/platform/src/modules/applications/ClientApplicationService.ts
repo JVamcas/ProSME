@@ -22,6 +22,7 @@ import type {
   ApplicationPage,
   ApplicationSubmission,
   ApplicationDraftView,
+  ApplicationReadView,
 } from "./ApplicationTypes";
 import type { ApplicationDetailModel } from "./ui/ApplicationDetailTypes";
 
@@ -31,10 +32,17 @@ async function getAll() {
   });
 }
 
-function getAdminApplicationDetail(id: string) {
+function getAdminApplicationDetail(id: string, signal?: AbortSignal) {
   return requestData<ApplicationDetailModel>(
     `/api/admin/applications/${encodeURIComponent(id)}/detail`,
-    { cache: "no-store" },
+    { cache: "no-store", signal },
+  );
+}
+
+function getOwnApplicationReadView(id: string, signal?: AbortSignal) {
+  return requestData<ApplicationReadView>(
+    `/api/applications/${encodeURIComponent(id)}/read-view`,
+    { cache: "no-store", signal },
   );
 }
 
@@ -170,6 +178,7 @@ export const clientApplicationService = {
   createApplication,
   deleteApplicationDraft,
   getOwnApplication,
+  getOwnApplicationReadView,
   getOwnApplicationStatus,
   getOwnApplicationStatusHistory,
   getAll,

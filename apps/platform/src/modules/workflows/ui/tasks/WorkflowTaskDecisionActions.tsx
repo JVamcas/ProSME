@@ -18,7 +18,7 @@ import type {
   TaskDetail,
   WorkflowTaskAction,
 } from "@/modules/work-queue/TaskTypes";
-import { useExecuteWorkflowTaskAction } from "@/modules/work-queue/WorkQueueHooks";
+import { useExecuteWorkflowTaskAction } from "@/modules/work-queue/ui/useWorkQueue";
 import { WorkflowTaskActions } from "@/modules/workflows/ui/tasks/WorkflowTaskActions";
 import { isWorkflowStageDecisionAction } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
 import {

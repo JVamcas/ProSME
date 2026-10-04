@@ -22,7 +22,7 @@ vi.mock("@/modules/forms/FormHooks", () => ({
   useTaskForm: () => ({ data: mocks.data, isError: false, isPending: false }),
 }));
 
-vi.mock("@/modules/work-queue/WorkQueueHooks", () => ({
+vi.mock("@/modules/work-queue/ui/useWorkQueue", () => ({
   useEvaluateAuthoritativeEligibility: () => ({
     error: null,
     isPending: false,

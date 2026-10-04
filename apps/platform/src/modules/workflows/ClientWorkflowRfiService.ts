@@ -4,16 +4,24 @@ import { requestData } from "@/lib/client-http";
 import type {
   WorkflowRfiDetail,
   WorkflowRfiSummary,
-} from "../../domain/runtime/WorkflowRfiView";
+} from "./domain/runtime/WorkflowRfiView";
 
 function applicantBase(applicationId: string) {
   return `/api/portal/applications/${applicationId}/requests`;
 }
 
-function listOwned(applicationId: string) {
+function listOwned(applicationId: string, signal?: AbortSignal) {
   return requestData<WorkflowRfiSummary[]>(applicantBase(applicationId), {
     cache: "no-store",
+    signal,
   });
+}
+
+function listContextual(applicationId: string, signal?: AbortSignal) {
+  return requestData<WorkflowRfiSummary[]>(
+    `/api/applications/${encodeURIComponent(applicationId)}/information-requests`,
+    { cache: "no-store", signal },
+  );
 }
 
 function getOwned(applicationId: string, requestId: string) {
@@ -122,6 +130,7 @@ export const clientWorkflowRfiService = {
   getOwned,
   getTask,
   listOwned,
+  listContextual,
   listTask,
   respond,
   saveDraft,

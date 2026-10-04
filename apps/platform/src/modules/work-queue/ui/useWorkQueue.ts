@@ -2,16 +2,13 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { applicationQueryKeys } from "@/modules/applications/ApplicationHooks";
-import { clientWorkQueueService } from "./ClientWorkQueueService";
+import { invalidateApplicationViews } from "@/modules/applications/ui/invalidateApplicationViews";
+import { clientWorkQueueService } from "../ClientWorkQueueService";
 import type { WorkflowActionExecutionRequest } from "@/modules/workflows/domain/actions/WorkflowActionExecution";
-import type { WorkQueueListInput } from "./WorkQueueTypes";
+import type { WorkQueueListInput } from "../WorkQueueTypes";
 
-export const workQueueQueryKeys = {
-  all: ["admin", "work-queue"] as const,
-  list: (input: WorkQueueListInput) => ["admin", "work-queue", input] as const,
-  task: (taskId: string) => ["admin", "work-queue", "task", taskId] as const,
-};
+import { workQueueQueryKeys } from "./WorkQueueQueryKeys";
+export { workQueueQueryKeys } from "./WorkQueueQueryKeys";
 
 export function useWorkQueue(input: WorkQueueListInput) {
   return useQuery({
@@ -34,9 +31,7 @@ export function useCompleteWorkflowTask(taskId: string) {
     mutationFn: (
       input: Parameters<typeof clientWorkQueueService.completeTask>[1],
     ) => clientWorkQueueService.completeTask(taskId, input),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: workQueueQueryKeys.all });
-    },
+    onSuccess: () => invalidateApplicationViews(queryClient, true),
   });
 }
 
@@ -78,12 +73,7 @@ export function useEvaluateAuthoritativeEligibility(taskId: string) {
     onSuccess: (result) => {
       if ("confirmationRequired" in result) return;
       return Promise.all([
-        queryClient.invalidateQueries({ queryKey: applicationQueryKeys.admin }),
-        queryClient.invalidateQueries({ queryKey: applicationQueryKeys.own }),
-        queryClient.invalidateQueries({ queryKey: workQueueQueryKeys.all }),
-        queryClient.invalidateQueries({
-          queryKey: workQueueQueryKeys.task(taskId),
-        }),
+        invalidateApplicationViews(queryClient, true),
         queryClient.invalidateQueries({
           queryKey: ["admin", "tasks", taskId, "form"],
         }),
@@ -107,12 +97,9 @@ export function useExecuteWorkflowTaskAction(taskId: string) {
       ),
     onSuccess: () =>
       Promise.all([
-        queryClient.invalidateQueries({ queryKey: workQueueQueryKeys.all }),
+        invalidateApplicationViews(queryClient, true),
         queryClient.invalidateQueries({
           queryKey: ["admin", "tasks", taskId, "requests"],
-        }),
-        queryClient.invalidateQueries({
-          queryKey: workQueueQueryKeys.task(taskId),
         }),
       ]),
   });
@@ -126,10 +113,7 @@ export function useCancelWorkflowEscalation(taskId: string) {
     ) => clientWorkQueueService.cancelEscalation(taskId, input),
     onSuccess: () =>
       Promise.all([
-        queryClient.invalidateQueries({ queryKey: workQueueQueryKeys.all }),
-        queryClient.invalidateQueries({
-          queryKey: ["admin", "workflow-progress"],
-        }),
+        invalidateApplicationViews(queryClient, true),
         queryClient.invalidateQueries({ queryKey: ["admin", "tasks", taskId] }),
       ]),
     onError: () =>
