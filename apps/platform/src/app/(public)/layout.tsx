@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
-import { AppShell } from "@/components/layout/app-shell";
+import { PublicSiteShell } from "@/modules/content/ui/public/PublicSiteShell";
 import { QueryProvider } from "@/shared/ui/portal/query-provider";
 import { AnalyticsConsent } from "@/integrations/analytics/analytics-consent";
 import { getServerEnvironment } from "@/lib/env/server";
@@ -85,7 +85,9 @@ export default async function RootLayout({ children }: RootLayoutProps) {
       <body className="font-sans antialiased">
         <QueryProvider>
           <PublicContentRefresh />
-          <AppShell mainClassName="public-content">{children}</AppShell>
+          <PublicSiteShell mainClassName="public-content">
+            {children}
+          </PublicSiteShell>
           <AnalyticsConsent
             measurementId={settings.analyticsMeasurementId}
           />

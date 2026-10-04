@@ -1,36 +1,46 @@
+"use client";
+
+import { House } from "lucide-react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import {
+  sidebarHiddenLabelClassName,
+  sidebarIconClassName,
+  sidebarItemClassName,
+  sidebarLabelClassName,
+} from "@/shared/ui/navigation/SidebarItemStyles";
 
-import { getCurrentUser } from "@/auth/authorization/current-user";
-import { canAccessOperationsPortal } from "@/auth/authorization/portal-access";
-
-export default async function CmsNavigationLinks() {
-  const user = await getCurrentUser();
-
-  if (!user) {
-    return null;
-  }
+export default function CmsNavigationLinks({
+  collapsed = false,
+  onNavigate,
+}: {
+  collapsed?: boolean;
+  onNavigate?: () => void;
+}) {
+  const pathname = usePathname();
+  const active =
+    pathname === "/cms" ||
+    pathname === "/cms/home" ||
+    pathname === "/cms/globals/homepage";
 
   return (
-    <div className="cms-navigation-links">
-      <p className="cms-navigation-links__label">Workspace</p>
-      <Link className="cms-navigation-links__link" href="/cms">
-        Content management
+    <nav aria-label="Content management navigation">
+      <Link
+        aria-current={active ? "page" : undefined}
+        className={sidebarItemClassName({ active, collapsed, dark: true })}
+        href="/cms/home"
+        onNavigate={onNavigate}
+        title={collapsed ? "Home Page" : undefined}
+      >
+        <House aria-hidden="true" className={sidebarIconClassName} />
+        <span
+          className={
+            collapsed ? sidebarHiddenLabelClassName : sidebarLabelClassName
+          }
+        >
+          Home Page
+        </span>
       </Link>
-      <Link className="cms-navigation-links__link" href="/cms/home">
-        Home page
-      </Link>
-      {canAccessOperationsPortal(user) ? (
-        <Link className="cms-navigation-links__link" href="/admin">
-          Back to operations
-        </Link>
-      ) : null}
-      <a className="cms-navigation-links__link" href="/" target="_blank" rel="noreferrer">
-        View public website
-        <span className="cms-navigation-links__sr-only"> (opens in a new tab)</span>
-      </a>
-      <p className="cms-navigation-links__label cms-navigation-links__label--content">
-        Content sections
-      </p>
-    </div>
+    </nav>
   );
 }

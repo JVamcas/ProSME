@@ -176,6 +176,7 @@ export interface Media {
   id: number;
   alt: string;
   caption?: string | null;
+  prefix?: string | null;
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -187,6 +188,40 @@ export interface Media {
   height?: number | null;
   focalX?: number | null;
   focalY?: number | null;
+  sizes?: {
+    thumbnail?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    mobile?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    tablet?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    desktop?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+  };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -700,6 +735,7 @@ export interface CmsPrincipalsSelect<T extends boolean = true> {
 export interface MediaSelect<T extends boolean = true> {
   alt?: T;
   caption?: T;
+  prefix?: T;
   updatedAt?: T;
   createdAt?: T;
   url?: T;
@@ -711,6 +747,50 @@ export interface MediaSelect<T extends boolean = true> {
   height?: T;
   focalX?: T;
   focalY?: T;
+  sizes?:
+    | T
+    | {
+        thumbnail?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        mobile?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        tablet?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        desktop?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+      };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1078,20 +1158,44 @@ export interface Footer {
  */
 export interface Homepage {
   id: number;
+  /**
+   * The small line above the main headline.
+   */
   eyebrow?: string | null;
+  /**
+   * The large heading at the top of Home.
+   */
   title?: string | null;
+  /**
+   * The paragraph beneath the headline.
+   */
   summary?: string | null;
+  /**
+   * Choose or upload an image. Edit its Alt field in the media record to describe it for visitors using screen readers.
+   */
   heroImage?: (number | null) | Media;
-  applyLabel: string;
-  applyHref: string;
-  eligibilityLabel: string;
-  trackingLabel: string;
+  /**
+   * The script-style message over the image on desktop and mobile.
+   */
   heroPanelHeading?: string | null;
+  /**
+   * The message in the white quote card on desktop. The attribution is SME Fund Namibia.
+   */
   heroPanelSummary?: string | null;
+  /**
+   * Opens the application journey. Its destination is fixed.
+   */
+  applyLabel: string;
+  /**
+   * Opens Funding Opportunities. Its destination is fixed.
+   */
   fundingButtonLabel?: string | null;
   benefitFunding?: string | null;
   benefitCapacity?: string | null;
   benefitOpportunity?: string | null;
+  applyHref: string;
+  eligibilityLabel: string;
+  trackingLabel: string;
   actionCards?: {
     fundingTitle?: string | null;
     fundingDescription?: string | null;
@@ -1287,16 +1391,16 @@ export interface HomepageSelect<T extends boolean = true> {
   title?: T;
   summary?: T;
   heroImage?: T;
-  applyLabel?: T;
-  applyHref?: T;
-  eligibilityLabel?: T;
-  trackingLabel?: T;
   heroPanelHeading?: T;
   heroPanelSummary?: T;
+  applyLabel?: T;
   fundingButtonLabel?: T;
   benefitFunding?: T;
   benefitCapacity?: T;
   benefitOpportunity?: T;
+  applyHref?: T;
+  eligibilityLabel?: T;
+  trackingLabel?: T;
   actionCards?:
     | T
     | {

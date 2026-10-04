@@ -54,6 +54,8 @@ describe("workflow task runtime context query", () => {
     expect(query.sql).toContain("app_workflow_task_coi_cleared(task.id,");
     expect(query.sql).toContain("task.assigned_user_id =");
     expect(query.sql).toContain("prior_task.result -> 'evaluatedFormValues'");
+    expect(query.sql).toContain("'taskKey', prior_task_definition.code");
+    expect(query.sql).not.toContain("prior_task_definition.stable_key");
     expect(query.sql).toContain("'reviewerSlot', prior_task.reviewer_slot");
     expect(query.sql).toContain("'reviewerId', prior_task.assigned_user_id");
     expect(query.sql).toContain(

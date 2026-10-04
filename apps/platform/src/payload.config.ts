@@ -43,13 +43,14 @@ export default buildConfig({
     },
   ],
   admin: {
+    avatar: {
+      Component: "./modules/content/ui/admin/CmsHeaderAvatar.tsx",
+    },
     components: {
-      beforeNav: [
-        "./modules/content/ui/admin/CmsNavBrand.tsx",
-      ],
-      beforeNavLinks: [
-        "./modules/content/ui/admin/CmsNavigationLinks.tsx",
-      ],
+      graphics: {
+        Icon: "./modules/content/ui/admin/CmsHeaderLabel.tsx",
+      },
+      Nav: "./modules/content/ui/admin/CmsNavigation.tsx",
       beforeDashboard: [
         "./modules/content/ui/admin/CmsHomeDashboardCard.tsx",
       ],

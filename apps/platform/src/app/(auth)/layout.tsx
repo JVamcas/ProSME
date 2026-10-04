@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { AppShell } from "@/components/layout/app-shell";
+import { PublicSiteShell } from "@/modules/content/ui/public/PublicSiteShell";
 import { QueryProvider } from "@/shared/ui/portal/query-provider";
 import { Toast } from "@/shared/ui/Toast";
 import "../globals.css";
@@ -16,7 +16,7 @@ export default function AuthLayout({
     <html lang="en" data-scroll-behavior="smooth">
       <body className="font-sans antialiased">
         <QueryProvider>
-          <AppShell>{children}</AppShell>
+          <PublicSiteShell>{children}</PublicSiteShell>
           <Toast />
         </QueryProvider>
       </body>

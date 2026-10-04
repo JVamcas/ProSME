@@ -13,6 +13,7 @@ import * as migration_20260914_230000_gcs_media_prefix from './20260914_230000_g
 import * as migration_20260921_120000_remove_legacy_eligibility_checker from './20260921_120000_remove_legacy_eligibility_checker';
 import * as migration_20260929_210000_home_guide_content from './20260929_210000_home_guide_content';
 import * as migration_20260929_220000_home_process_version_table from './20260929_220000_home_process_version_table';
+import * as migration_20261004_230000_responsive_media_sizes from './20261004_230000_responsive_media_sizes';
 
 export const migrations = [
   {
@@ -89,5 +90,10 @@ export const migrations = [
     up: migration_20260929_220000_home_process_version_table.up,
     down: migration_20260929_220000_home_process_version_table.down,
     name: '20260929_220000_home_process_version_table'
+  },
+  {
+    up: migration_20261004_230000_responsive_media_sizes.up,
+    down: migration_20261004_230000_responsive_media_sizes.down,
+    name: '20261004_230000_responsive_media_sizes'
   },
 ];

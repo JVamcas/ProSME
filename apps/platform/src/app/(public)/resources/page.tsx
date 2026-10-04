@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Download } from "lucide-react";
 
 import { EmptyState } from "@/components/ui/empty-state";
-import { CmsImage } from "@/components/public/cms-image";
+import { CmsImage } from "@/modules/content/ui/public/CmsImage";
 import { PublicPageHeader } from "@/components/public/public-page-header";
 import { ArrowLink } from "@/components/ui/links";
 import { contentMetadata } from "@/modules/content/ContentMetadata";

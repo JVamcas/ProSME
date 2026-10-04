@@ -1,7 +1,7 @@
 import { BarChart3, Leaf, Users } from "lucide-react";
 
 import type { HomepageContent } from "@/modules/content/ContentTypes";
-import { CmsImage } from "./cms-image";
+import { CmsImage } from "@/modules/content/ui/public/CmsImage";
 import { GeneralButtonLink } from "../ui/button";
 
 type HomeHeroProps = {

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { permissionCodes } from "@/auth/authorization/permissions";
 import type { PortalSpace } from "@/auth/authorization/portal-access";
 import type { PortalContext } from "@/modules/profiles/ProfileTypes";
+import { AppHeader } from "@/shared/ui/navigation/AppHeader";
 import { PortalUserMenu } from "./portal-user-menu";
 
 type PortalTopbarProps = {
@@ -54,7 +55,7 @@ export function PortalTopbar({ context, space }: PortalTopbarProps) {
   );
 
   return (
-    <header className="hidden h-20 items-center justify-between gap-8 border-b border-brand-navy/10 bg-brand-white px-8 lg:flex">
+    <AppHeader className="hidden lg:flex">
       <Link
         className="flex min-h-11 w-full max-w-sm items-center gap-3 rounded-xl border border-brand-navy/20 bg-brand-white px-4 text-sm text-brand-navy/70 hover:border-brand-orange focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-navy"
         href={searchHref}
@@ -66,6 +67,6 @@ export function PortalTopbar({ context, space }: PortalTopbarProps) {
         <NotificationEntry enabled={canViewNotifications} />
         <PortalUserMenu context={context} />
       </div>
-    </header>
+    </AppHeader>
   );
 }

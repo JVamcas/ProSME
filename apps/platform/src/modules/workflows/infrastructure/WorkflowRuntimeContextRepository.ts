@@ -239,7 +239,7 @@ export async function readWorkflowTaskRuntimeContext(
       SELECT jsonb_agg(jsonb_build_object(
         'stageKey', prior_definition.code,
         'taskId', prior_task.id,
-        'taskKey', prior_task_definition.stable_key,
+        'taskKey', prior_task_definition.code,
         'reviewerSlot', prior_task.reviewer_slot,
         'reviewerCount', prior_task_definition.reviewer_count,
         'reviewerId', prior_task.assigned_user_id,

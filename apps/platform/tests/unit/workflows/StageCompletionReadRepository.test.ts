@@ -40,6 +40,8 @@ describe("batched stage completion evidence", () => {
     await loadStageCompletionValuesForStages({ execute } as never, stageIds);
     const query = new PgDialect().sqlToQuery(execute.mock.calls[0][0]);
     expect(query.params).toEqual(stageIds);
+    expect(query.sql).toContain('definition.code AS "taskKey"');
+    expect(query.sql).not.toContain("definition.stable_key");
     expect(query.sql).toContain("task.status = 'COMPLETED'");
     expect(query.sql).toContain(
       "ORDER BY task.created_at, task.id, response.created_at, response.id",

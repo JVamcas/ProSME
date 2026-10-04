@@ -1,10 +1,18 @@
 import type { SerializedEditorState } from "@payloadcms/richtext-lexical/lexical";
+import type { CmsImageSize } from "./ContentImageSizes";
+
+export type CmsImageVariant = {
+  height?: number | null;
+  url: string;
+  width?: number | null;
+};
 
 export type CmsImage = {
   alt: string;
   height?: number | null;
   url: string;
   width?: number | null;
+  sizes?: Partial<Record<CmsImageSize, CmsImageVariant | null>>;
 };
 export type SeoContent = {
   excludeFromSearch?: boolean | null;

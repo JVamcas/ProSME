@@ -1,6 +1,6 @@
 import { CalendarDays, Download, Newspaper } from "lucide-react";
 
-import { CmsImage } from "@/components/public/cms-image";
+import { CmsImage } from "@/modules/content/ui/public/CmsImage";
 import { SectionHeading } from "@/components/public/section-heading";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ArrowLink } from "@/components/ui/links";

@@ -124,7 +124,7 @@ export async function loadStageCompletionValuesForStages(
   if (!stageInstanceIds.length) return [];
   const result = await transaction.execute(sql`
     SELECT task.stage_instance_id AS "stageInstanceId",
-      task.id AS "taskId", definition.stable_key AS "taskKey",
+      task.id AS "taskId", definition.code AS "taskKey",
       task.reviewer_slot AS "reviewerSlot",
       definition.reviewer_count AS "reviewerCount",
       task.assigned_user_id AS "reviewerId",

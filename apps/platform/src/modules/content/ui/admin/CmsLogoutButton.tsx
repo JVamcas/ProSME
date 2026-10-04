@@ -3,10 +3,14 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { GeneralButton } from "@/components/ui/button";
+import { SidebarLogoutControl } from "@/shared/ui/navigation/SidebarLogoutControl";
 import { authClientService } from "@/platform/auth/firebase/ClientAuthService";
 
-export default function CmsLogoutButton() {
+export default function CmsLogoutButton({
+  collapsed = false,
+}: {
+  collapsed?: boolean;
+}) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -27,15 +31,11 @@ export default function CmsLogoutButton() {
 
   return (
     <div className="cms-logout">
-      <GeneralButton
-        className="cms-logout__button"
-        disabled={pending}
-        onClick={logout}
-        type="button"
-        variant="ghost"
-      >
-        {pending ? "Signing out…" : "Sign out"}
-      </GeneralButton>
+      <SidebarLogoutControl
+        collapsed={collapsed}
+        onLogout={logout}
+        pending={pending}
+      />
       {failed ? (
         <p className="cms-logout__error" role="alert">
           Sign out failed. Please try again.

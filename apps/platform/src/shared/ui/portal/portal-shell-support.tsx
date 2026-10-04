@@ -1,7 +1,7 @@
 import { LifeBuoy } from "lucide-react";
 import Link from "next/link";
 
-import { userInitials } from "@/lib/user-initials";
+import { SidebarUserSummary } from "../navigation/SidebarUserSummary";
 import type { PortalContext } from "@/modules/profiles/ProfileTypes";
 
 export function PortalUserSummary({
@@ -14,28 +14,12 @@ export function PortalUserSummary({
   dark?: boolean;
 }) {
   return (
-    <div
-      className={`flex shrink-0 items-center border-y py-4 ${collapsed ? "justify-center" : "gap-3"} ${dark ? "border-white/15" : "border-brand-navy/15"}`}
-      title={
-        collapsed ? `${context.displayName} (${context.email})` : undefined
-      }
-    >
-      <span className="grid size-10 place-items-center rounded-full bg-brand-navy text-sm font-bold text-brand-white">
-        {userInitials(context.displayName) || "SF"}
-      </span>
-      <div className={collapsed ? "sr-only" : "min-w-0"}>
-        <p
-          className={`truncate text-sm font-bold ${dark ? "text-white" : "text-brand-slate-50"}`}
-        >
-          {context.displayName}
-        </p>
-        <p
-          className={`truncate text-xs ${dark ? "text-white/55" : "text-brand-navy/65"}`}
-        >
-          {context.email}
-        </p>
-      </div>
-    </div>
+    <SidebarUserSummary
+      collapsed={collapsed}
+      dark={dark}
+      displayName={context.displayName}
+      email={context.email}
+    />
   );
 }
 

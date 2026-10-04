@@ -1,7 +1,7 @@
 import { Banknote, FileText, MapPinned, Users } from "lucide-react";
 
 import { getStatistics } from "@/modules/content/ServerContentQueries";
-import { CmsImage } from "./cms-image";
+import { CmsImage } from "@/modules/content/ui/public/CmsImage";
 
 type Block = Record<string, unknown>;
 const statisticIcons = [FileText, MapPinned, Banknote, Users];

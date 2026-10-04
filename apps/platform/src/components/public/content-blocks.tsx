@@ -1,7 +1,7 @@
 import Link from "next/link";
 
-import { CmsImage } from "./cms-image";
-import { CmsRichText } from "@/components/ui/cms-rich-text";
+import { CmsImage } from "@/modules/content/ui/public/CmsImage";
+import { CmsRichText } from "@/modules/content/ui/public/CmsRichText";
 import { HomeFunding } from "@/modules/content/ui/public/HomeFunding";
 import { StatisticsBlock } from "./statistics-block";
 import { getFaqs } from "@/modules/content/ServerContentQueries";
