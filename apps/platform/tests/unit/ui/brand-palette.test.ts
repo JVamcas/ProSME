@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const styles = readFileSync(
-  resolve(process.cwd(), "src/app/globals.css"),
+  resolve(process.cwd(), "src/shared/ui/brand-theme.css"),
   "utf8",
 );
 const tokens = readFileSync(
@@ -11,7 +11,7 @@ const tokens = readFileSync(
   "utf8",
 );
 const cmsStyles = readFileSync(
-  resolve(process.cwd(), "src/app/(payload)/custom.scss"),
+  resolve(process.cwd(), "src/modules/content/ui/admin/CmsAdminTheme.ts"),
   "utf8",
 );
 const publicLayout = readFileSync(
@@ -30,7 +30,7 @@ describe("SME Fund brand palette", () => {
     expect(tokens).toContain("--sme-brand-orange: #ff6f00");
     expect(tokens).not.toContain("#ffd400");
     expect(styles).toContain("--color-brand-navy: var(--sme-brand-navy)");
-    expect(cmsStyles).toContain("background: var(--sme-brand-navy)");
+    expect(cmsStyles).toContain("[&_.btn--style-primary]:bg-brand-navy");
   });
 
   it("uses the complete Bahnschrift font with its full weight range", () => {

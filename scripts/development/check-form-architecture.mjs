@@ -1,6 +1,7 @@
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
+import ts from "typescript";
 
 const repositoryRoot = path.resolve(import.meta.dirname, "../..");
 const sourceRoot = path.join(repositoryRoot, "apps/platform/src");
@@ -48,8 +49,36 @@ function checkFormComponent(file, source, failures) {
   }
 }
 
-function checkUseForm(file, source, failures) {
-  const createsForm = /\buseForm(?:<|\()/.test(source);
+export function checkUseForm(file, source, failures) {
+  const parsed = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true);
+  const formHookNames = new Set(["useForm"]);
+
+  for (const statement of parsed.statements) {
+    if (!ts.isImportDeclaration(statement)) continue;
+    const bindings = statement.importClause?.namedBindings;
+    if (!bindings || !ts.isNamedImports(bindings)) continue;
+
+    for (const binding of bindings.elements) {
+      const importedName = binding.propertyName?.text ?? binding.name.text;
+      if (importedName !== "useForm") continue;
+      if (statement.moduleSpecifier.text === "@payloadcms/ui") {
+        // Payload owns its form state; this hook does not create an RHF form.
+        formHookNames.delete(binding.name.text);
+      } else if (statement.moduleSpecifier.text === "react-hook-form") {
+        formHookNames.add(binding.name.text);
+      }
+    }
+  }
+
+  let createsForm = false;
+  function visit(node) {
+    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) &&
+        formHookNames.has(node.expression.text)) {
+      createsForm = true;
+    }
+    ts.forEachChild(node, visit);
+  }
+  visit(parsed);
   if (createsForm && !source.includes("zodResolver")) {
     addFailure(
       failures,
@@ -59,20 +88,26 @@ function checkUseForm(file, source, failures) {
   }
 }
 
-const files = (await collect(sourceRoot)).filter((file) =>
-  sourceExtensions.has(path.extname(file)),
-);
-const failures = [];
+async function main() {
+  const files = (await collect(sourceRoot)).filter((file) =>
+    sourceExtensions.has(path.extname(file)),
+  );
+  const failures = [];
 
-for (const file of files) {
-  const source = await readFile(file, "utf8");
-  checkFormComponent(file, source, failures);
-  checkUseForm(file, source, failures);
+  for (const file of files) {
+    const source = await readFile(file, "utf8");
+    checkFormComponent(file, source, failures);
+    checkUseForm(file, source, failures);
+  }
+
+  if (failures.length > 0) {
+    console.error(`Form architecture violations:\n${failures.join("\n")}`);
+    process.exit(1);
+  }
+
+  console.info(`Form architecture check passed for ${files.length} source files.`);
 }
 
-if (failures.length > 0) {
-  console.error(`Form architecture violations:\n${failures.join("\n")}`);
-  process.exit(1);
+if (process.argv[1] && path.resolve(process.argv[1]) === import.meta.filename) {
+  await main();
 }
-
-console.info(`Form architecture check passed for ${files.length} source files.`);

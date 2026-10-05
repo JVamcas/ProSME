@@ -4,7 +4,7 @@ import { useRef } from "react";
 import styles from "./NavigationSidebar.module.css";
 
 export const sidebarWidths = {
-  expanded: 272,
+  expanded: 320,
   collapsed: 80,
   min: 240,
   max: 480,

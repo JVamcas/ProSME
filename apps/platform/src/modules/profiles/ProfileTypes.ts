@@ -1,5 +1,8 @@
 import type { ApplicantProfileInput } from "./ProfileSchemas";
-import type { PortalSpace } from "@/auth/authorization/portal-access";
+import type {
+  PortalSpace,
+  WorkspaceSpace,
+} from "@/auth/authorization/portal-access";
 import type { AuthenticatedUser } from "@/auth/types";
 
 export type ApplicantProfileView = ApplicantProfileInput & {
@@ -22,6 +25,6 @@ export type PortalContext = {
   status: AuthenticatedUser["status"];
   roleCodes: string[];
   capabilityCodes: string[];
-  availableSpaces: PortalSpace[];
+  availableSpaces: WorkspaceSpace[];
   defaultSpace: PortalSpace;
 };

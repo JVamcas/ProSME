@@ -6,7 +6,11 @@ import type {
   PublicPageContent,
   SiteSettingsContent,
 } from "./ContentTypes";
-import { defaultHomeActionCards, defaultHomeProcess } from "./ContentDefaults";
+import {
+  defaultHomeActionCards,
+  defaultHomeProcess,
+  defaultSupportGroups,
+} from "./ContentDefaults";
 
 export const buildHomepage: HomepageContent = {
   actionCards: defaultHomeActionCards,
@@ -24,10 +28,13 @@ export const buildHomepage: HomepageContent = {
   benefitCapacity: "Build your capacity",
   benefitOpportunity: "Create opportunities",
   process: defaultHomeProcess,
+  supportCards: defaultSupportGroups,
   supportHeading: "Who we support",
-  supportIntroduction: "The SME Fund is open to any Namibian MSME with high potential, inclusive impact and a commitment to growth. Our priority areas include:",
+  supportIntroduction:
+    "The SME Fund is open to any Namibian MSME with high potential, inclusive impact and a commitment to growth. Our priority areas include:",
   newsHeading: "Latest News & Resources",
-  newsIntroduction: "Updates, stories and useful materials for Namibian entrepreneurs.",
+  newsIntroduction:
+    "Updates, stories and useful materials for Namibian entrepreneurs.",
   summary:
     "Funding and business development support for Namibian MSMEs ready to grow.",
   title: "Your business has potential. We help you take the next step.",
@@ -77,8 +84,7 @@ const pageCopy: Record<string, Pick<PublicPageContent, "summary" | "title">> = {
   },
   eligibility: {
     title: "Check your eligibility",
-    summary:
-      "",
+    summary: "",
   },
   events: {
     title: "Events",
@@ -102,7 +108,8 @@ const pageCopy: Record<string, Pick<PublicPageContent, "summary" | "title">> = {
   },
   privacy: {
     title: "Privacy policy",
-    summary: "How this website collects, uses and protects personal information.",
+    summary:
+      "How this website collects, uses and protects personal information.",
   },
   resources: {
     title: "Guides and documents",

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { CmsRichText } from "@/modules/content/ui/public/CmsRichText";
-import { ContentBlocks } from "@/components/public/content-blocks";
+import { ContentBlocks } from "@/modules/content/ui/public/ContentBlocks";
 import { PublicPageHeader } from "@/components/public/public-page-header";
 import { contentMetadata } from "@/modules/content/ContentMetadata";
 import { getPage } from "@/modules/content/ServerContentQueries";

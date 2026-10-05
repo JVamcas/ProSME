@@ -4,8 +4,12 @@ import type { CollectionBeforeChangeHook } from "payload";
 import { getFileKey } from "@payloadcms/plugin-cloud-storage/utilities";
 
 vi.mock("server-only", () => ({}));
+vi.mock("@/payload/access/cms-resource-access", () => ({
+  cmsMediaAccess: () => ({}),
+}));
 
 import { organizeCmsMedia } from "@/modules/content/infrastructure/CmsMediaStorage";
+import { Media } from "@/payload/collections/content/Media";
 import { media } from "@/modules/content/infrastructure/ContentProjection";
 import { CmsImage } from "@/modules/content/ui/public/CmsImage";
 import { CmsRichText } from "@/modules/content/ui/public/CmsRichText";
@@ -76,16 +80,30 @@ describe("responsive CMS media delivery", () => {
     expect(markup).toContain('alt="A business owner"');
   });
 
-  it("keeps older uploads visible through optimization until their variants exist", () => {
-    const legacy = { ...image, sizes: undefined };
-    const source = createCmsImageLoader(legacy)({
-      src: legacy.url,
+  it("optimizes originals smaller than the smallest generated size", () => {
+    const smallImage = { ...image, width: 200, height: 133, sizes: undefined };
+    const source = createCmsImageLoader(smallImage)({
+      src: smallImage.url,
       width: 640,
     });
 
     expect(new URL(source, "https://site.test").searchParams.get("url")).toBe(
       "/api/media/file/original.jpg",
     );
+  });
+
+  it("requires generated sizes for standard raster images", () => {
+    const incomplete = { ...image, sizes: undefined };
+
+    expect(cmsImageSource(incomplete, 640)).toBeUndefined();
+    expect(renderToStaticMarkup(<CmsImage image={incomplete} />)).toBe("");
+  });
+
+  it("uses the vector original without raster thumbnails", () => {
+    const vector = { ...image, url: "/api/media/file/logo.svg", sizes: undefined };
+
+    expect(cmsImageSource(vector, 640)).toBe(vector.url);
+    expect(renderToStaticMarkup(<CmsImage image={vector} />)).not.toContain("/_next/image");
   });
 
   it("projects generated sizes and rejects missing or invalid size URLs", () => {
@@ -167,12 +185,35 @@ async function storageChange(
     "data" | "operation"
   > & {
     originalDoc?: { prefix?: string | null };
+    req?: { file?: { data: Buffer } };
   },
 ) {
-  return organizeCmsMedia(values as Parameters<CollectionBeforeChangeHook>[0]);
+  return organizeCmsMedia({ req: {}, ...values } as Parameters<CollectionBeforeChangeHook>[0]);
 }
 
 describe("CMS media storage folders", () => {
+  it("gives variants different names even when their dimensions are equal", () => {
+    if (typeof Media.upload !== "object") {
+      throw new Error("Media upload configuration is required.");
+    }
+    const names = Media.upload.imageSizes?.map((size) =>
+      size.generateImageName?.({
+        extension: "jpg",
+        originalName: "small-original",
+        sizeName: size.name,
+        width: 200,
+        height: 150,
+      }),
+    );
+
+    expect(names).toEqual([
+      "small-original-thumbnail.jpg",
+      "small-original-mobile.jpg",
+      "small-original-tablet.jpg",
+      "small-original-desktop.jpg",
+    ]);
+  });
+
   it("places originals and variants in one unique environment/CMS media folder", async () => {
     vi.stubEnv("ENVIRONMENT", "dev");
     const first = await storageChange({
@@ -198,16 +239,50 @@ describe("CMS media storage folders", () => {
     }
   });
 
-  it.each(["", "legacy/path", "media/existing-asset"])(
-    "preserves an existing %j folder during updates",
+  it.each(["", "old/path", "media/invalid-folder"])(
+    "moves a replacement file from %j into a UUID folder",
     async (prefix) => {
       const data = await storageChange({
         data: { prefix: "a/different/folder" },
         operation: "update",
         originalDoc: { prefix },
+        req: { file: { data: Buffer.from("image") } },
       });
 
-      expect(data.prefix).toBe(prefix);
+      expect(data.prefix).toMatch(/^media\/[0-9a-f-]{36}$/);
     },
   );
+
+  it("preserves a UUID folder through the storage adapter's internal update", async () => {
+    const prefix = "media/b20395c3-d076-4f44-84a3-bf3c62da071d";
+    const data = await storageChange({
+      data: { prefix: "a/different/folder" },
+      operation: "update",
+      originalDoc: { prefix },
+    });
+
+    expect(data.prefix).toBe(prefix);
+  });
+
+  it("uses a fresh folder when replacing a file already in a UUID folder", async () => {
+    const prefix = "media/b20395c3-d076-4f44-84a3-bf3c62da071d";
+    const data = await storageChange({
+      data: {},
+      operation: "update",
+      originalDoc: { prefix },
+      req: { file: { data: Buffer.from("image") } },
+    });
+
+    expect(data.prefix).toMatch(/^media\/[0-9a-f-]{36}$/);
+    expect(data.prefix).not.toBe(prefix);
+  });
+
+  it("requires migration before metadata-only saves in old folders", async () => {
+    await expect(storageChange({
+      data: { alt: "Updated text" },
+      operation: "update",
+      originalDoc: { prefix: "" },
+      req: {},
+    })).rejects.toThrow("Migrate this media record");
+  });
 });

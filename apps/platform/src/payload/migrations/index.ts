@@ -15,6 +15,8 @@ import * as migration_20260929_210000_home_guide_content from './20260929_210000
 import * as migration_20260929_220000_home_process_version_table from './20260929_220000_home_process_version_table';
 import * as migration_20261004_230000_responsive_media_sizes from './20261004_230000_responsive_media_sizes';
 
+import * as migration_20261005_233000_home_support_cards from "./20261005_233000_home_support_cards";
+
 export const migrations = [
   {
     up: migration_20260911_180817_phase1_payload_foundation.up,
@@ -95,5 +97,9 @@ export const migrations = [
     up: migration_20261004_230000_responsive_media_sizes.up,
     down: migration_20261004_230000_responsive_media_sizes.down,
     name: '20261004_230000_responsive_media_sizes'
+  },
+  {
+    up: migration_20261005_233000_home_support_cards.up,
+    name: "20261005_233000_home_support_cards",
   },
 ];

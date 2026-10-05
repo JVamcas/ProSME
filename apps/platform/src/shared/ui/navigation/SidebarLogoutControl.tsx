@@ -26,6 +26,7 @@ export function SidebarLogoutControl({
       className={cn(
         sidebarItemClassName({ collapsed, dark }),
         sidebarLogoutClassName,
+        collapsed ? "justify-center" : "justify-start",
       )}
       disabled={pending}
       onClick={onLogout}

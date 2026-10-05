@@ -1,0 +1,7 @@
+/* Custom CMS UI shares the app theme without resetting Payload's editors. */
+@layer theme, base, components, utilities;
+@import "../../shared/ui/brand-tokens.css";
+@import "tailwindcss/theme.css" layer(theme);
+@import "../../shared/ui/brand-theme.css";
+/* Explicit utility classes take precedence over Payload element styles. */
+@import "tailwindcss/utilities.css" layer(utilities) source("../../") important;

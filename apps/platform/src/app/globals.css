@@ -1,17 +1,7 @@
 @import "../shared/ui/brand-tokens.css";
 @import "tailwindcss";
 
-@theme inline {
-  --color-brand-white: var(--sme-brand-white);
-  --color-brand-cream: var(--sme-brand-cream);
-  --color-brand-yellow: var(--sme-brand-yellow);
-  --color-brand-blue: var(--sme-brand-blue);
-  --color-brand-navy: var(--sme-brand-navy);
-  --color-brand-gold: var(--sme-brand-gold);
-  --color-brand-green: var(--sme-brand-green);
-  --color-brand-green-soft: var(--sme-brand-green-soft);
-  --color-brand-orange: var(--sme-brand-orange);
-}
+@import "../shared/ui/brand-theme.css";
 
 * {
   box-sizing: border-box;

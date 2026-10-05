@@ -30,14 +30,14 @@ export default function CmsLogoutButton({
   }
 
   return (
-    <div className="cms-logout">
+    <div>
       <SidebarLogoutControl
         collapsed={collapsed}
         onLogout={logout}
         pending={pending}
       />
       {failed ? (
-        <p className="cms-logout__error" role="alert">
+        <p className="mx-3 mt-2 mb-0 text-xs text-brand-navy" role="alert">
           Sign out failed. Please try again.
         </p>
       ) : null}

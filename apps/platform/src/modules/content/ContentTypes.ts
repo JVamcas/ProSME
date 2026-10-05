@@ -54,6 +54,21 @@ export type EligibilityItem = {
   label: string;
 };
 
+export type HomeBannerContent = Pick<
+  HomepageContent,
+  | "eyebrow"
+  | "title"
+  | "summary"
+  | "heroImage"
+  | "heroPanelHeading"
+  | "heroPanelSummary"
+  | "applyLabel"
+  | "fundingButtonLabel"
+  | "benefitFunding"
+  | "benefitCapacity"
+  | "benefitOpportunity"
+>;
+
 export type HomepageContent = {
   actionCards: {
     fundingTitle: string;
@@ -78,8 +93,9 @@ export type HomepageContent = {
   process: {
     heading: string;
     introduction: string;
-    steps: { title: string; description: string }[];
+    steps: { id?: string; title: string; description: string }[];
   };
+  supportCards: { id?: string; label: string; description: string }[];
   supportHeading: string;
   supportIntroduction: string;
   blocks: unknown[];

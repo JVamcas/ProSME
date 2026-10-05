@@ -9,7 +9,9 @@ import {
 import { authorizeContentPreview } from "@/modules/content/ServerContentPreviewService";
 
 function safePath(value: string | null) {
-  return value?.startsWith("/") && !value.startsWith("//") ? value : "/";
+  return value?.startsWith("/") && !value.startsWith("//") && !value.includes("\\")
+    ? value
+    : "/";
 }
 
 export async function GET(request: Request) {
@@ -38,5 +40,7 @@ export async function GET(request: Request) {
   }
 
   (await draftMode()).enable();
-  return NextResponse.redirect(new URL(path, request.url));
+  // A relative Location keeps the browser on the public origin when Next is
+  // reached through a proxy whose internal request URL uses a container host.
+  return new NextResponse(null, { status: 307, headers: { Location: path } });
 }

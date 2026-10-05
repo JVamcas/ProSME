@@ -3,7 +3,15 @@ import type { HomepageContent } from "@/modules/content/ContentTypes";
 
 const icons = [FileText, FileText, Send, BarChart3];
 
-export function HomeProcess({ content }: { content: HomepageContent }) {
+export function HomeProcess({
+  content,
+}: {
+  content: Pick<HomepageContent, "process">;
+}) {
+  const columns =
+    ["lg:grid-cols-1", "lg:grid-cols-1", "lg:grid-cols-2", "lg:grid-cols-3"][
+      content.process.steps.length
+    ] ?? "lg:grid-cols-4";
   return (
     <section className="container pb-14">
       <div>
@@ -14,12 +22,12 @@ export function HomeProcess({ content }: { content: HomepageContent }) {
           {content.process.introduction}
         </p>
       </div>
-      <div className="mt-8 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-        {content.process.steps.map(({ title, description }, index) => {
+      <div className={`mt-8 grid gap-8 sm:grid-cols-2 ${columns}`}>
+        {content.process.steps.map(({ id, title, description }, index) => {
           const Icon = icons[index] ?? FileText;
           return (
-            <div key={title} className="relative text-center">
-              {index < content.process.steps.length - 1 ? (
+            <div key={id ?? index} className="relative text-center">
+              {index < content.process.steps.length - 1 && index % 4 !== 3 ? (
                 <span
                   aria-hidden="true"
                   className="absolute -right-2 left-[72%] top-9 hidden border-t-2 border-dotted border-brand-yellow lg:block"
@@ -33,7 +41,9 @@ export function HomeProcess({ content }: { content: HomepageContent }) {
               <span className="mx-auto grid size-21 place-items-center rounded-full bg-brand-orange/10 text-brand-orange">
                 <Icon className="size-9" strokeWidth={1.8} />
               </span>
-              <h3 className="mt-5 text-lg font-bold text-brand-navy">{title}</h3>
+              <h3 className="mt-5 text-lg font-bold text-brand-navy">
+                {title}
+              </h3>
               <p className="mx-auto mt-2 max-w-55 text-sm leading-5 text-brand-navy/70">
                 {description}
               </p>

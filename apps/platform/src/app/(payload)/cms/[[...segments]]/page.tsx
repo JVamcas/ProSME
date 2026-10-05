@@ -1,7 +1,8 @@
 import config from "@payload-config";
 import { RootPage } from "@payloadcms/next/views";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
+import { homeEditorSectionForPath } from "@/modules/content/ui/admin/HomeEditorSections";
 import { importMap } from "../importMap";
 
 type Props = {
@@ -16,10 +17,24 @@ export default async function PayloadAdminPage(props: Props) {
     redirect("/cms");
   }
 
+  if (
+    (segments.length === 1 && segments[0] === "home") ||
+    (segments.length === 2 && segments.join("/") === "globals/homepage")
+  ) {
+    redirect("/cms/home/banner");
+  }
+
+  const section = homeEditorSectionForPath(`/cms/${segments.join("/")}`);
+  if (segments[0] === "home" && !section) {
+    notFound();
+  }
+
   return RootPage({
     config,
     importMap,
-    params: props.params,
+    params: section
+      ? Promise.resolve({ segments: ["globals", "homepage"] })
+      : props.params,
     searchParams: props.searchParams,
   });
 }

@@ -106,7 +106,7 @@ describe("P3.1 shared authenticated portal shell", () => {
     expect(markup).toContain("You do not have permission");
   });
 
-  it("offers a space switcher only to dual-space users", () => {
+  it("offers permitted links in the three-workspace switcher", () => {
     const dualContext: PortalContext = {
       ...context,
       capabilityCodes: [
@@ -118,10 +118,7 @@ describe("P3.1 shared authenticated portal shell", () => {
     };
     const markup = renderToStaticMarkup(
       <QueryClientProvider client={createQueryClient()}>
-        <AuthenticatedPortalShell
-          context={dualContext}
-          space="applicant"
-        >
+        <AuthenticatedPortalShell context={dualContext} space="applicant">
           <h1>Profile</h1>
         </AuthenticatedPortalShell>
       </QueryClientProvider>,
@@ -129,6 +126,9 @@ describe("P3.1 shared authenticated portal shell", () => {
 
     expect(markup).toContain('aria-label="Switch portal space"');
     expect(markup).toContain('href="/admin"');
+    expect(markup).toContain('aria-disabled="true"');
+    expect(markup).toContain("CMS is not available for your account");
+    expect(markup).not.toContain('href="/cms"');
   });
 
   it("renders permitted nested operations routes closed by default", () => {

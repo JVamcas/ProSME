@@ -7,7 +7,11 @@ import {
 import Link from "next/link";
 import type { HomepageContent } from "@/modules/content/ContentTypes";
 
-export function HomeActions({ content }: { content: HomepageContent }) {
+export function HomeActions({
+  content,
+}: {
+  content: Pick<HomepageContent, "actionCards">;
+}) {
   const actions = [
     {
       href: "/funding",
@@ -36,7 +40,7 @@ export function HomeActions({ content }: { content: HomepageContent }) {
       {actions.map(({ href, icon: Icon, title, text, background }) => (
         <Link
           href={href}
-          key={title}
+          key={href}
           className={`${background} group flex min-h-40 items-center gap-5 rounded-xl border border-white p-5 transition duration-500 hover:-translate-y-1 hover:shadow-lg`}
         >
           <div className="flex-1">

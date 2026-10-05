@@ -8,11 +8,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import CmsNavigation from "@/modules/content/ui/admin/CmsNavigation";
 import CmsNavigationLinks from "@/modules/content/ui/admin/CmsNavigationLinks";
 import CmsSidebar from "@/modules/content/ui/admin/CmsSidebar";
+import { permissionCodes } from "@/auth/authorization/permissions";
 
 const access = vi.hoisted(() => ({
   currentUser: vi.fn(),
   logout: vi.fn(),
-  pathname: "/cms/home",
+  pathname: "/cms",
   mobile: false,
   setNavOpen: vi.fn(),
 }));
@@ -43,8 +44,14 @@ beforeEach(() => {
   access.currentUser.mockResolvedValue({
     displayName: "CMS editor",
     email: "cms@example.test",
+    status: "active",
+    capabilities: new Set([
+      permissionCodes.cmsAccess,
+      permissionCodes.userProfileOwnRead,
+      permissionCodes.workflowTaskAllRead,
+    ]),
   });
-  access.pathname = "/cms/home";
+  access.pathname = "/cms";
   access.mobile = false;
   vi.clearAllMocks();
 });
@@ -56,31 +63,57 @@ async function renderSidebar() {
   const root = createRoot(container);
   await act(async () =>
     root.render(
-      <CmsSidebar displayName="CMS editor" email="cms@example.test" />,
+      <CmsSidebar
+        availableSpaces={["applicant", "operations", "cms"]}
+        displayName="CMS editor"
+        email="cms@example.test"
+      />,
     ),
   );
   return { container, root };
 }
 
 describe("CMS navigation", () => {
-  it("shows Home Page as the only navigation item with the same active item presentation", () => {
+  it("shows an expandable Home Page container without an Overview entry", () => {
     const html = renderToStaticMarkup(<CmsNavigationLinks />);
-    expect(html).toContain('href="/cms/home"');
     expect(html).toContain("Home Page");
-    expect(html.match(/<a\b/g)).toHaveLength(1);
-    expect(html).toContain('aria-current="page"');
+    expect(html).toContain('aria-expanded="false"');
+    expect(html).not.toContain("Overview");
     expect(html).not.toContain('href="/admin"');
   });
 
-  it("keeps Home active while editing its global", () => {
-    access.pathname = "/cms/globals/homepage";
-    expect(renderToStaticMarkup(<CmsNavigationLinks />)).toContain(
-      'aria-current="page"',
+  it.each(["banner", "action-cards", "how-it-works", "who-we-support", "additional-content"])(
+    "expands Home Page and marks only the active %s section",
+    (section) => {
+      access.pathname = `/cms/home/${section}`;
+      const html = renderToStaticMarkup(<CmsNavigationLinks />);
+      expect(html).toContain('aria-expanded="true"');
+      expect(html).toContain('href="/cms/home/banner"');
+      expect(html).toContain('href="/cms/home/action-cards"');
+      expect(html).toContain("Home Page Banner");
+      expect(html).toContain("Action cards");
+      expect(html).toContain('href="/cms/home/how-it-works"');
+      expect(html).toContain('href="/cms/home/who-we-support"');
+      expect(html).toContain('href="/cms/home/additional-content"');
+      expect(html.match(/aria-current="page"/g)).toHaveLength(1);
+      expect(html).not.toContain("/cms/globals/homepage");
+    },
+  );
+
+  it("expands the icon rail from the Home Page container", async () => {
+    const { container, root } = await renderSidebar();
+    await act(async () =>
+      container.querySelector<HTMLButtonElement>(
+        '[aria-label="Collapse navigation sidebar"]',
+      )?.click(),
     );
-    access.pathname = "/cms/collections/news";
-    expect(renderToStaticMarkup(<CmsNavigationLinks />)).not.toContain(
-      'aria-current="page"',
+    await act(async () =>
+      container.querySelector<HTMLButtonElement>('button[title="Home Page"]')?.click(),
     );
+    expect(container.querySelector('[data-sidebar-frame]')?.getAttribute("data-collapsed"))
+      .toBe("false");
+    expect(container.querySelector('a[href="/cms/home/banner"]')).not.toBeNull();
+    await act(async () => root.unmount());
   });
 
   it("uses the shared header, user, navigation and pinned footer without a Query provider", async () => {
@@ -96,10 +129,22 @@ describe("CMS navigation", () => {
     expect(html).toContain("CMS editor");
     expect(html).toContain("cms@example.test");
     expect(html).toContain("Logout");
+    expect(html).toContain('aria-label="Switch portal space"');
+    expect(html).toContain('href="/portal"');
+    expect(html).toContain('href="/admin"');
+    expect(html).toContain('href="/cms"');
   });
 
   it("renders no sidebar without a signed-in application user", async () => {
     access.currentUser.mockResolvedValue(null);
+    expect(await CmsNavigation()).toBeNull();
+  });
+
+  it("renders no CMS sidebar without the canonical CMS grant", async () => {
+    access.currentUser.mockResolvedValue({
+      status: "active",
+      capabilities: new Set(),
+    });
     expect(await CmsNavigation()).toBeNull();
   });
 
@@ -117,8 +162,8 @@ describe("CMS navigation", () => {
         .querySelector("[data-sidebar-frame]")
         ?.getAttribute("data-collapsed"),
     ).toBe("true");
-    expect(container.querySelector('a[title="Home Page"]')).not.toBeNull();
-    expect(container.querySelector("style")?.textContent).toContain("80px");
+    expect(container.querySelector('button[title="Home Page"]')).not.toBeNull();
+    expect(document.documentElement.style.getPropertyValue("--cms-nav-width")).toBe("80px");
     await act(async () =>
       container
         .querySelector<HTMLButtonElement>(
@@ -126,8 +171,9 @@ describe("CMS navigation", () => {
         )
         ?.click(),
     );
-    expect(container.querySelector("style")?.textContent).toContain("272px");
+    expect(document.documentElement.style.getPropertyValue("--cms-nav-width")).toBe("320px");
     await act(async () => root.unmount());
+    expect(document.documentElement.style.getPropertyValue("--cms-nav-width")).toBe("");
   });
 
   it("resizes with the shared keyboard control and bounds", async () => {
@@ -141,7 +187,7 @@ describe("CMS navigation", () => {
       ),
     );
     expect(handle?.getAttribute("aria-valuenow")).toBe("480");
-    expect(container.querySelector("style")?.textContent).toContain("480px");
+    expect(document.documentElement.style.getPropertyValue("--cms-nav-width")).toBe("480px");
     await act(async () =>
       handle?.dispatchEvent(
         new KeyboardEvent("keydown", { bubbles: true, key: "ArrowRight" }),

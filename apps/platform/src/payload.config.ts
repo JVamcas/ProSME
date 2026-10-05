@@ -38,6 +38,10 @@ const environment = getServerEnvironment();
 export default buildConfig({
   bin: [
     {
+      key: "migrate-media",
+      scriptPath: path.resolve(dirname, "payload/scripts/migrate-media.ts"),
+    },
+    {
       key: "seed-database",
       scriptPath: path.resolve(dirname, "payload/seed/seed.ts"),
     },
@@ -51,16 +55,12 @@ export default buildConfig({
         Icon: "./modules/content/ui/admin/CmsHeaderLabel.tsx",
       },
       Nav: "./modules/content/ui/admin/CmsNavigation.tsx",
-      beforeDashboard: [
-        "./modules/content/ui/admin/CmsHomeDashboardCard.tsx",
-      ],
       logout: {
         Button: "./modules/content/ui/admin/CmsLogoutButton.tsx",
       },
       views: {
-        home: {
+        dashboard: {
           Component: "./modules/content/ui/admin/CmsHomeGuide.tsx",
-          path: "/home",
         },
       },
     },

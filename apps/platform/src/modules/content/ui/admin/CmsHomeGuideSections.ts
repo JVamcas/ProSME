@@ -1,64 +1,27 @@
 import type { Homepage } from "@/payload-types";
 
 import { homeBannerEditor } from "./HomeBannerEditorNavigation";
+import { homeActionsEditor } from "./HomeActionsEditorNavigation";
+import { homeEditorSections } from "./HomeEditorSections";
+import { defaultHomeActionCards } from "../../ContentDefaults";
+import { homeImpactContent } from "../../HomeImpactContent";
 
 export type GuideSection = {
   title: string;
   preview: string;
   target?: string;
-  secondaryTarget?: string;
-  secondaryLabel?: string;
   detail?: string;
   image?: string;
 };
 
-function blockSection(
-  block: Record<string, unknown>,
-  index: number,
-): GuideSection | null {
-  if (block.blockType === "callToAction" && block.href === "/how-to-apply") {
-    return null;
-  }
-
-  const names: Record<string, string> = {
-    hero: "Additional hero",
-    richText: "Additional text",
-    callToAction: "Call to action",
-    statistics: "Impact",
-    resourceGrid: "News and resources",
-    faqList: "Frequently asked questions",
-  };
-  const title = names[String(block.blockType)] ?? "Additional content";
-  const heading = typeof block.heading === "string" ? block.heading : title;
-  const image = block.backgroundImage ?? block.image;
-
-  return {
-    title,
-    preview: heading,
-    target: `/cms/globals/homepage#field-layout`,
-    image:
-      image && typeof image === "object" && "url" in image
-        ? String(image.url)
-        : undefined,
-    detail:
-      block.blockType === "statistics"
-        ? `Homepage layout block ${index + 1}. Its own statistics override published programme statistics; an empty list uses those records.`
-        : `Homepage layout block ${index + 1}. Open Layout and select this ${title.toLowerCase()} block.`,
-  };
-}
-
 export function buildHomeGuideSections(
   home: Homepage,
   canEdit: boolean,
-  canEditFundingCall: boolean,
 ): GuideSection[] {
-  const blocks = (home.layout ?? []) as Record<string, unknown>[];
-  const resourceBlocks = blocks
-    .map((block, index) => ({ block, index }))
-    .filter(({ block }) => block.blockType === "resourceGrid");
-  const remainingBlocks = blocks
-    .map((block, index) => ({ block, index }))
-    .filter(({ block }) => block.blockType !== "resourceGrid");
+  const impact = homeImpactContent(
+    home.layout?.find((block) => block.blockType === "statistics"),
+  );
+
   return [
     {
       title: homeBannerEditor.title,
@@ -73,59 +36,37 @@ export function buildHomeGuideSections(
       target: canEdit ? homeBannerEditor.href : undefined,
     },
     {
-      title: "Three action cards",
-      preview: home.actionCards?.fundingTitle ?? "I want funding",
+      title: homeActionsEditor.title,
+      preview: [
+        home.actionCards?.fundingTitle ?? defaultHomeActionCards.fundingTitle,
+        home.actionCards?.eligibilityTitle ??
+          defaultHomeActionCards.eligibilityTitle,
+        home.actionCards?.trackingTitle ?? defaultHomeActionCards.trackingTitle,
+      ].join(" · "),
       detail:
-        "Funding, eligibility and application tracking cards. Their destinations are fixed website links.",
-      target: canEdit ? "/cms/globals/homepage#field-actionCards" : undefined,
+        "The three cards beneath the banner: funding, eligibility and application tracking.",
+      target: canEdit ? homeActionsEditor.href : undefined,
     },
     {
-      title: "Featured funding call",
-      preview: "Current open funding opportunity",
-      detail: "Call details, amounts and dates are managed in operations.",
-      target: canEditFundingCall ? "/admin/funding-calls" : undefined,
-      secondaryTarget: canEdit
-        ? "/cms/globals/homepage#field-fundingSlogan"
-        : undefined,
-      secondaryLabel: "Edit Home slogan",
-    },
-    ...resourceBlocks.flatMap(({ block, index }) => {
-      const section = blockSection(block, index);
-      if (!section) return [];
-
-      return [
-        {
-          ...section,
-          target: canEdit ? section.target : undefined,
-          secondaryTarget: canEdit
-            ? "/cms/globals/homepage#field-newsIntroduction"
-            : undefined,
-          detail:
-            "Home automatically shows the latest two published news articles and two published resources. Edit individual items in their collections.",
-        },
-      ];
-    }),
-    {
-      title: "How it works",
+      title: homeEditorSections["how-it-works"].title,
       preview: home.process?.heading ?? "How it works",
-      detail: home.process?.introduction ?? "Four application steps.",
-      target: canEdit ? "/cms/globals/homepage#field-process" : undefined,
+      detail: `${home.process?.steps?.length ?? 0} steps. Add, remove or reorder process cards.`,
+      target: canEdit ? homeEditorSections["how-it-works"].href : undefined,
     },
     {
-      title: "Who we support",
+      title: homeEditorSections["who-we-support"].title,
       preview: home.supportHeading ?? "Who we support",
-      detail:
-        home.supportIntroduction ??
-        "Support cards are eligibility content entries.",
+      detail: `${home.supportCards?.length ?? 0} support cards. Add, remove or reorder the scrolling cards.`,
+      target: canEdit ? homeEditorSections["who-we-support"].href : undefined,
+    },
+    {
+      title: homeEditorSections["additional-content"].title,
+      preview: impact.heading,
+      detail: "Impact banner heading, background image, statistics and campaign message.",
+      image: impact.backgroundImage?.url,
       target: canEdit
-        ? "/cms/globals/homepage#field-supportHeading"
+        ? homeEditorSections["additional-content"].href
         : undefined,
     },
-    ...remainingBlocks.flatMap(({ block, index }) => {
-      const section = blockSection(block, index);
-      return section
-        ? [{ ...section, target: canEdit ? section.target : undefined }]
-        : [];
-    }),
   ];
 }
