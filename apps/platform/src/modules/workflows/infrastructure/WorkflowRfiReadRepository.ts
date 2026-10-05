@@ -327,9 +327,28 @@ export async function readTaskWorkflowRfis(taskId: string) {
   return result.rows.map(mapSummary);
 }
 
-export async function readApplicationWorkflowRfis(applicationId: string) {
+type ApplicantRfiAccess = {
+  actorId: string;
+  canRead: boolean;
+  canRespond: boolean;
+};
+
+function applicantAccessSelection(access: ApplicantRfiAccess) {
+  return sql`CASE
+    WHEN ${access.canRead}
+      AND application.owner_user_id = ${access.actorId}::uuid
+      AND rfi.recipient_user_id = ${access.actorId}::uuid
+    THEN CASE WHEN ${access.canRespond} THEN 'RESPOND' ELSE 'READ' END
+    ELSE NULL
+  END AS "applicantAccess"`;
+}
+
+export async function readApplicationWorkflowRfis(
+  applicationId: string,
+  applicantAccess: ApplicantRfiAccess,
+) {
   const result = await getDatabase().execute<SummaryRow>(sql`
-    SELECT ${summarySelection}
+    SELECT ${summarySelection}, ${applicantAccessSelection(applicantAccess)}
     FROM app_workflow_rfis rfi
     JOIN app_applications application ON application.id = rfi.application_id
     WHERE rfi.application_id = ${applicationId}::uuid
@@ -341,9 +360,10 @@ export async function readApplicationWorkflowRfis(applicationId: string) {
 export async function readAssignedApplicationWorkflowRfis(
   applicationId: string,
   actorId: string,
+  applicantAccess: ApplicantRfiAccess,
 ) {
   const result = await getDatabase().execute<SummaryRow>(sql`
-    SELECT ${summarySelection}
+    SELECT ${summarySelection}, ${applicantAccessSelection(applicantAccess)}
     FROM app_workflow_rfis rfi
     JOIN app_applications application ON application.id = rfi.application_id
     JOIN app_workflow_tasks assigned_task ON assigned_task.id = rfi.task_id

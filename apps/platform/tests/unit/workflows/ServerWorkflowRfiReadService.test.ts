@@ -1,22 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
-vi.mock(
-  "@/modules/workflows/infrastructure/WorkflowRfiReadRepository",
-  () => ({
-    readApplicationWorkflowRfis: vi.fn(),
-    readAssignedApplicationWorkflowRfis: vi.fn(),
-    readOwnedApplicationRfis: vi.fn(),
-    readOwnedOpenRfiActions: vi.fn(),
-    readOwnedWorkflowRfi: vi.fn(),
-    readTaskWorkflowRfi: vi.fn(),
-    readTaskWorkflowRfis: vi.fn(),
-  }),
-);
-vi.mock(
-  "@/modules/workflows/infrastructure/WorkflowTaskRepository",
-  () => ({ readWorkflowTask: vi.fn() }),
-);
+vi.mock("@/modules/workflows/infrastructure/WorkflowRfiReadRepository", () => ({
+  readApplicationWorkflowRfis: vi.fn(),
+  readAssignedApplicationWorkflowRfis: vi.fn(),
+  readOwnedApplicationRfis: vi.fn(),
+  readOwnedOpenRfiActions: vi.fn(),
+  readOwnedWorkflowRfi: vi.fn(),
+  readTaskWorkflowRfi: vi.fn(),
+  readTaskWorkflowRfis: vi.fn(),
+}));
+vi.mock("@/modules/workflows/infrastructure/WorkflowTaskRepository", () => ({
+  readWorkflowTask: vi.fn(),
+}));
 
 import { permissionCodes } from "@/auth/authorization/permissions";
 import type { AuthenticatedUser } from "@/auth/types";
@@ -87,9 +83,9 @@ describe("ServerWorkflowRfiReadService", () => {
       user(permissionCodes.workflowTaskAssignedRead),
       taskId,
     );
-    expect(readWorkflowTask).toHaveBeenCalledWith(
-      actorId, taskId, false, [permissionCodes.workflowTaskAssignedRead],
-    );
+    expect(readWorkflowTask).toHaveBeenCalledWith(actorId, taskId, false, [
+      permissionCodes.workflowTaskAssignedRead,
+    ]);
     expect(readTaskWorkflowRfis).toHaveBeenCalledWith(taskId);
 
     await expect(listTaskWorkflowRfis(user(), taskId)).rejects.toThrow();
@@ -97,9 +93,12 @@ describe("ServerWorkflowRfiReadService", () => {
 
   it("rejects a task outside the actor's assignment or COI clearance", async () => {
     vi.mocked(readWorkflowTask).mockResolvedValue(null);
-    await expect(listTaskWorkflowRfis(
-      user(permissionCodes.workflowTaskAssignedRead), taskId,
-    )).rejects.toThrow();
+    await expect(
+      listTaskWorkflowRfis(
+        user(permissionCodes.workflowTaskAssignedRead),
+        taskId,
+      ),
+    ).rejects.toThrow();
     expect(readTaskWorkflowRfis).not.toHaveBeenCalled();
   });
 
@@ -109,7 +108,11 @@ describe("ServerWorkflowRfiReadService", () => {
       user(permissionCodes.fundingApplicationAllRead),
       applicationId,
     );
-    expect(readApplicationWorkflowRfis).toHaveBeenCalledWith(applicationId);
+    expect(readApplicationWorkflowRfis).toHaveBeenCalledWith(applicationId, {
+      actorId,
+      canRead: false,
+      canRespond: false,
+    });
     expect(readAssignedApplicationWorkflowRfis).not.toHaveBeenCalled();
   });
 
@@ -122,6 +125,43 @@ describe("ServerWorkflowRfiReadService", () => {
     expect(readAssignedApplicationWorkflowRfis).toHaveBeenCalledWith(
       applicationId,
       actorId,
+      { actorId, canRead: false, canRespond: false },
     );
+  });
+
+  it.each([false, true])(
+    "passes the applicant response grant (%s) for a user with both scopes",
+    async (respond) => {
+      vi.mocked(readApplicationWorkflowRfis).mockResolvedValue([]);
+      await listContextualApplicationRfis(
+        user(
+          permissionCodes.fundingApplicationAllRead,
+          permissionCodes.fundingApplicationInformationRequestOwnRead,
+          ...(respond
+            ? [permissionCodes.fundingApplicationInformationRequestOwnRespond]
+            : []),
+        ),
+        applicationId,
+      );
+      expect(readApplicationWorkflowRfis).toHaveBeenCalledWith(applicationId, {
+        actorId,
+        canRead: true,
+        canRespond: respond,
+      });
+    },
+  );
+
+  it("denies contextual history without a staff read grant", () => {
+    expect(() =>
+      listContextualApplicationRfis(
+        user(
+          permissionCodes.fundingApplicationInformationRequestOwnRead,
+          permissionCodes.fundingApplicationInformationRequestOwnRespond,
+        ),
+        applicationId,
+      ),
+    ).toThrow();
+    expect(readApplicationWorkflowRfis).not.toHaveBeenCalled();
+    expect(readAssignedApplicationWorkflowRfis).not.toHaveBeenCalled();
   });
 });

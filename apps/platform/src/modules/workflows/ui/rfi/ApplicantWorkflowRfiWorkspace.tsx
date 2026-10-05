@@ -15,10 +15,7 @@ import {
   workflowRfiResponseSchema,
   workflowRfiInitialValues,
 } from "./WorkflowRfiResponseForm";
-import {
-  useOwnedWorkflowRfi,
-  useRespondToWorkflowRfi,
-} from "./useWorkflowRfi";
+import { useOwnedWorkflowRfi, useRespondToWorkflowRfi } from "./useWorkflowRfi";
 import { ApplicantWorkflowRfiDocuments } from "./ApplicantWorkflowRfiDocuments";
 import { WorkflowRfiInstructions } from "./WorkflowRfiInstructions";
 import {
@@ -61,8 +58,10 @@ function ResponseSubmitButton({
 
 export function ApplicantWorkflowRfiWorkspace({
   initialDetail,
+  canRespond: hasRespondPermission = false,
 }: {
   initialDetail: WorkflowRfiDetail;
+  canRespond?: boolean;
 }) {
   const applicationId = initialDetail.applicationId;
   const query = useOwnedWorkflowRfi(
@@ -79,7 +78,9 @@ export function ApplicantWorkflowRfiWorkspace({
   });
   const fieldValues = useWatch({ control: form.control, name: "fieldValues" });
   const canRespond =
-    detail.status === "OPEN" && new Date(detail.deadlineAt) > new Date();
+    hasRespondPermission &&
+    detail.status === "OPEN" &&
+    new Date(detail.deadlineAt) > new Date();
   const missingDocuments = detail.requestedDocuments.filter(
     (document) => !document.evidence,
   );
@@ -194,6 +195,10 @@ export function ApplicantWorkflowRfiWorkspace({
                 )}
               </section>
             </FormProvider>
+          ) : detail.status === "OPEN" && !hasRespondPermission ? (
+            <p className="rounded-xl border border-brand-navy/10 bg-white p-5 text-sm text-brand-navy/70">
+              You have read-only access to this information request.
+            </p>
           ) : detail.status === "OPEN" || detail.status === "EXPIRED" ? (
             <p className="rounded-xl border border-brand-navy/10 bg-white p-5 text-sm text-brand-navy/70">
               The response deadline has passed. These fields are locked.

@@ -108,6 +108,7 @@ describe("application detail transports", () => {
     expect(readAssignedApplicationWorkflowRfis).toHaveBeenCalledWith(
       id,
       actor.id,
+      { actorId: actor.id, canRead: false, canRespond: false },
     );
     expect(readApplicationWorkflowRfis).not.toHaveBeenCalled();
   });
@@ -122,7 +123,11 @@ describe("application detail transports", () => {
       context,
     );
     expect(response.status).toBe(200);
-    expect(readApplicationWorkflowRfis).toHaveBeenCalledWith(id);
+    expect(readApplicationWorkflowRfis).toHaveBeenCalledWith(id, {
+      actorId: actor.id,
+      canRead: false,
+      canRespond: false,
+    });
     expect(readAssignedApplicationWorkflowRfis).not.toHaveBeenCalled();
   });
 
