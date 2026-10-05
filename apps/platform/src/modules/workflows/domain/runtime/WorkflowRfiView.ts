@@ -6,6 +6,7 @@ import type {
 import type { WorkflowRfiStatus } from "./WorkflowRfi";
 
 export type WorkflowRfiSummary = {
+  applicantAccess?: "READ" | "RESPOND" | null;
   applicationId: string;
   applicationReference: string;
   applicationTitle: string;

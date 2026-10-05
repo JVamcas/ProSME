@@ -163,9 +163,17 @@ export function StaffApplicationRfiTimeline({
                 <div className="flex shrink-0 items-center gap-3">
                   <StatusBadge status={request.status} />
                   <ArrowLink
-                    href={`/admin/tasks/${request.taskId}?requestId=${request.id}`}
+                    href={
+                      request.applicantAccess
+                        ? `/portal/applications/${request.applicationId}/requests/${request.id}`
+                        : `/admin/tasks/${request.taskId}?requestId=${request.id}`
+                    }
                   >
-                    View request
+                    {request.applicantAccess === "RESPOND" &&
+                    request.status === "OPEN" &&
+                    !request.isOverdue
+                      ? "Respond now"
+                      : "View request"}
                   </ArrowLink>
                 </div>
               </div>

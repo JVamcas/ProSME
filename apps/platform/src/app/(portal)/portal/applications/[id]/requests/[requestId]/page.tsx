@@ -41,5 +41,13 @@ export default async function WorkflowRfiPage({
     if (error instanceof ResourceNotFoundError) notFound();
     throw error;
   });
-  return <ApplicantWorkflowRfiWorkspace initialDetail={detail} />;
+  return (
+    <ApplicantWorkflowRfiWorkspace
+      canRespond={can(
+        user,
+        permissionCodes.fundingApplicationInformationRequestOwnRespond,
+      )}
+      initialDetail={detail}
+    />
+  );
 }

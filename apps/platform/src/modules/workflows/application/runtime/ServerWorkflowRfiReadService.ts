@@ -102,9 +102,24 @@ export function listContextualApplicationRfis(
   applicationId: string,
 ) {
   const actor = requireAuthenticatedUser(user);
+  const applicantAccess = {
+    actorId: actor.id,
+    canRead: can(
+      actor,
+      permissionCodes.fundingApplicationInformationRequestOwnRead,
+    ),
+    canRespond: can(
+      actor,
+      permissionCodes.fundingApplicationInformationRequestOwnRespond,
+    ),
+  };
   if (can(actor, permissionCodes.fundingApplicationAllRead)) {
-    return readApplicationWorkflowRfis(applicationId);
+    return readApplicationWorkflowRfis(applicationId, applicantAccess);
   }
   requirePermission(actor, permissionCodes.workflowTaskAssignedRead);
-  return readAssignedApplicationWorkflowRfis(applicationId, actor.id);
+  return readAssignedApplicationWorkflowRfis(
+    applicationId,
+    actor.id,
+    applicantAccess,
+  );
 }
