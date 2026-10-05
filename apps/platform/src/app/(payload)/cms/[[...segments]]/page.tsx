@@ -12,7 +12,9 @@ type Props = {
 export default async function PayloadAdminPage(props: Props) {
   const { segments = [] } = await props.params;
 
-  if (segments[0] === "login") {
+  const legacyHomeRoute = segments.length === 1 && segments[0] === "home";
+
+  if (segments[0] === "login" || legacyHomeRoute) {
     redirect("/cms");
   }
 

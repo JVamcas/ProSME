@@ -1,39 +1,47 @@
 import { BarChart3, Leaf, Users } from "lucide-react";
 
-import type { HomepageContent } from "@/modules/content/ContentTypes";
+import type { HomeBannerContent } from "@/modules/content/ContentTypes";
 import { CmsImage } from "@/modules/content/ui/public/CmsImage";
-import { GeneralButtonLink } from "../ui/button";
+import { GeneralButtonLink } from "@/components/ui/button";
 
 type HomeHeroProps = {
-  content: HomepageContent;
+  content: HomeBannerContent;
 };
 
 export function HomeHero({ content }: HomeHeroProps) {
   return (
-    <section className="hero hero-animated relative overflow-hidden bg-white">
+    <section className="hero hero-animated @container/banner relative overflow-hidden bg-white font-sans">
       {content.heroImage ? (
         <DesktopHeroImage content={content} />
       ) : (
         <DesktopHeroFallback content={content} />
       )}
 
-      <div className="hero-container relative z-10 grid min-h-[520px] items-center lg:grid-cols-[1.05fr_.95fr]">
-        <div className="hero-copy max-w-[650px] py-14 lg:py-16">
-          <p className="text-[11px] font-bold uppercase tracking-[.2em] text-brand-navy">
+      <div className="hero-container mx-auto w-[min(1720px,calc(100%-2rem))] @min-[640px]/banner:w-[min(1720px,calc(100%-5rem))] relative z-10 grid min-h-130 items-center @5xl/banner:grid-cols-[1.05fr_.95fr]">
+        <div className="hero-copy max-w-162.5 py-14 @5xl/banner:py-16">
+          <p className="m-0 text-[11px] font-bold uppercase tracking-[.2em] text-brand-navy">
             {content.eyebrow}
           </p>
 
           <HeroTitle title={content.title} />
 
-          <p className="mt-5 max-w-lg text-lg leading-7 text-brand-navy/80">
+          <p className="m-0 mt-5 max-w-lg text-lg leading-7 text-brand-navy/80">
             {content.summary}
           </p>
 
           <div className="mt-7 flex flex-wrap gap-3">
-            <GeneralButtonLink variant={"primary"} href={"/portal/applications/new"}>
+            <GeneralButtonLink
+              variant="primary"
+              href="/portal/applications/new"
+              className="border-solid no-underline"
+            >
               {content.applyLabel}
             </GeneralButtonLink>
-            <GeneralButtonLink variant={"outlineOrange"} href={"/funding"}>
+            <GeneralButtonLink
+              variant="outlineOrange"
+              href="/funding"
+              className="border-solid no-underline"
+            >
               {content.fundingButtonLabel}
             </GeneralButtonLink>
           </div>
@@ -45,7 +53,7 @@ export function HomeHero({ content }: HomeHeroProps) {
           </div>
         </div>
 
-        <div className="hidden lg:block" />
+        <div className="hidden @5xl/banner:block" />
       </div>
 
       {content.heroImage ? <MobileHeroImage content={content} /> : null}
@@ -55,7 +63,7 @@ export function HomeHero({ content }: HomeHeroProps) {
 
 function DesktopHeroImage({ content }: HomeHeroProps) {
   return (
-    <div className="hidden lg:block">
+    <div className="hidden @5xl/banner:block">
       <div className="absolute inset-0 opacity-[.045]">
         <CmsImage
           className="h-full w-full object-cover object-left grayscale"
@@ -65,14 +73,14 @@ function DesktopHeroImage({ content }: HomeHeroProps) {
         />
       </div>
 
-      <div className="absolute inset-y-0 left-0 w-[58%] bg-gradient-to-r from-white via-white/95 to-white/65" />
+      <div className="absolute inset-y-0 left-0 w-[58%] bg-linear-to-r from-white via-white/95 to-white/65" />
 
       <div className="absolute inset-y-0 right-0 w-[64%]">
         <CmsImage
           className="h-full w-full object-cover object-top"
           image={content.heroImage}
           priority
-          sizes="64vw"
+          sizes="64cqw"
         />
 
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#fff_0%,rgba(255,255,255,.9)_12%,rgba(255,255,255,.35)_25%,transparent_42%)]" />
@@ -86,7 +94,7 @@ function DesktopHeroImage({ content }: HomeHeroProps) {
 
 function MobileHeroImage({ content }: HomeHeroProps) {
   return (
-    <div className="relative h-[360px] overflow-hidden lg:hidden">
+    <div className="relative h-90 overflow-hidden @5xl/banner:hidden">
       <CmsImage
         className="h-full w-full object-cover object-top"
         image={content.heroImage}
@@ -94,7 +102,7 @@ function MobileHeroImage({ content }: HomeHeroProps) {
         sizes="100vw"
       />
 
-      <div className="absolute inset-0 bg-gradient-to-t from-brand-navy/35 via-transparent to-transparent" />
+      <div className="absolute inset-0 bg-linear-to-t from-brand-navy/35 via-transparent to-transparent" />
       <CampaignMessage heading={content.heroPanelHeading} mobile />
     </div>
   );
@@ -102,14 +110,14 @@ function MobileHeroImage({ content }: HomeHeroProps) {
 
 function DesktopHeroFallback({ content }: HomeHeroProps) {
   return (
-    <div className="absolute inset-y-0 right-0 hidden w-[46%] bg-brand-orange lg:flex lg:items-center lg:justify-center">
-      <div className="brand-pattern absolute inset-0 text-white/10" />
+    <div className="absolute inset-y-0 right-0 hidden w-[46%] bg-brand-orange @5xl/banner:flex @5xl/banner:items-center @5xl/banner:justify-center">
+      <div className="absolute inset-0 text-white/10 bg-[radial-gradient(circle_at_50%_50%,transparent_0_24%,currentColor_25%_39%,transparent_40%),linear-gradient(45deg,transparent_45%,currentColor_46%_54%,transparent_55%)] bg-size-[52px_52px]" />
       <div className="relative max-w-sm rounded-3xl border border-brand-navy/25 bg-white/20 p-8 text-brand-navy backdrop-blur-sm">
-        <p className="text-4xl font-bold leading-tight">
+        <p className="m-0 text-4xl font-bold leading-tight">
           {content.heroPanelHeading}
         </p>
         <div className="mt-6 h-1.5 w-28 rounded-full bg-brand-yellow" />
-        <p className="mt-6 text-sm leading-6 text-brand-navy">
+        <p className="m-0 mt-6 text-sm leading-6 text-brand-navy">
           {content.heroPanelSummary}
         </p>
       </div>
@@ -123,7 +131,7 @@ function HeroTitle({ title }: { title: string }) {
   const emphasis = boundary >= 0 ? title.slice(boundary + 2) : "";
 
   return (
-    <h1 className="mt-4 text-[clamp(2.6rem,4vw,3.35rem)] font-bold leading-[1.04] tracking-[-.035em] text-brand-navy">
+    <h1 className="m-0 mt-4 text-[clamp(2.6rem,4cqw,3.35rem)] font-bold leading-[1.04] tracking-[-.035em] text-brand-navy">
       {lead}
       {emphasis ? (
         <>
@@ -144,10 +152,10 @@ function CampaignMessage({
 }) {
   return (
     <div
-      className={`campaign-script absolute rotate-[-6deg] text-right leading-[.92] text-white [text-shadow:0_2px_5px_rgba(0,0,0,.55)] ${
+      className={`font-['Segoe_Print','Bradley_Hand','Comic_Sans_MS',cursive] italic font-bold absolute -rotate-6 text-right leading-[.92] text-white [text-shadow:0_2px_5px_rgba(0,0,0,.55)] ${
         mobile
           ? "right-5 top-6 w-48 text-3xl"
-          : "right-[4%] top-[9%] w-[220px] text-[clamp(1.8rem,2.15vw,2.45rem)]"
+          : "right-[4%] top-[9%] w-55 text-[clamp(1.8rem,2.15cqw,2.45rem)]"
       }`}
     >
       {heading}
@@ -158,8 +166,8 @@ function CampaignMessage({
 
 function HeroQuote({ message }: { message: string }) {
   return (
-    <div className="absolute bottom-[14%] right-[4%] w-[270px] rounded-xl border border-slate-200 bg-white p-5 shadow-xl">
-      <p className="text-sm font-semibold leading-5 text-brand-navy">
+    <div className="absolute bottom-[14%] right-[4%] w-67.5 rounded-xl border border-solid border-slate-200 bg-white p-5 shadow-xl">
+      <p className="m-0 text-sm font-semibold leading-5 text-brand-navy">
         “{message}”
       </p>
       <div className="mt-3 flex items-center gap-2 text-[10px] text-brand-navy/60">

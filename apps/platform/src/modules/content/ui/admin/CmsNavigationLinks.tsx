@@ -20,7 +20,6 @@ export default function CmsNavigationLinks({
   const pathname = usePathname();
   const active =
     pathname === "/cms" ||
-    pathname === "/cms/home" ||
     pathname === "/cms/globals/homepage";
 
   return (
@@ -28,7 +27,7 @@ export default function CmsNavigationLinks({
       <Link
         aria-current={active ? "page" : undefined}
         className={sidebarItemClassName({ active, collapsed, dark: true })}
-        href="/cms/home"
+        href="/cms"
         onNavigate={onNavigate}
         title={collapsed ? "Home Page" : undefined}
       >

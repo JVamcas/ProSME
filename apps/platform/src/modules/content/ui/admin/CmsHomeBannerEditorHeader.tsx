@@ -25,8 +25,10 @@ export default function CmsHomeBannerEditorHeader() {
 
   return (
     <section id={homeBannerEditor.anchor} ref={heading}>
-      <h2>{homeBannerEditor.title}</h2>
-      <p>
+      <h2 className="m-0 text-2xl font-bold text-brand-navy">
+        {homeBannerEditor.title}
+      </h2>
+      <p className="mt-2 mb-0 text-sm leading-6 text-brand-navy/75">
         Edit the first section visitors see on Home. Save a draft, preview the
         page, then publish when it is ready.
       </p>

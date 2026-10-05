@@ -1,12 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("@/auth/authorization/current-user", () => ({
-  getCurrentUser: async () => null,
-}));
-vi.mock("@/auth/authorization/portal-access", () => ({
-  canAccessOperationsPortal: () => false,
-}));
 vi.mock("@/payload/access/can-access-cms", () => ({
   hasCmsCapability: (user: { capabilities: string[] }, code: string) =>
     user.capabilities.includes(code),
@@ -29,7 +23,7 @@ describe("Home section guide", () => {
       heroImage: { url: "/api/media/file/banner.jpg" },
     } as Homepage;
 
-    const [banner] = buildHomeGuideSections(home, false, false);
+    const [banner] = buildHomeGuideSections(home, false);
 
     expect(banner).toMatchObject({
       title: "Home Page Banner",
@@ -40,7 +34,7 @@ describe("Home section guide", () => {
     expect(banner.target).toBeUndefined();
   });
 
-  it("follows the displayed section order and hides operations editing for CMS users", async () => {
+  it("shows only the banner while other Home sections are introduced incrementally", async () => {
     const req = {
       user: {
         capabilities: ["cms.site-settings.update", "cms.eligibility.read"],
@@ -57,7 +51,6 @@ describe("Home section guide", () => {
             { blockType: "statistics", heading: "Impact heading" },
           ],
         }),
-        find: async () => ({ docs: [] }),
       },
     };
     const component = await CmsHomeGuide({
@@ -68,8 +61,7 @@ describe("Home section guide", () => {
     } as unknown as Parameters<typeof CmsHomeGuide>[0]);
     const markup = renderToStaticMarkup(component);
 
-    const headings = [
-      "Home Page Banner",
+    const removedHeadings = [
       "Three action cards",
       "Featured funding call",
       "News and resources",
@@ -77,18 +69,18 @@ describe("Home section guide", () => {
       "Who we support",
       "Impact",
     ];
-    const positions = headings.map((heading) =>
-      markup.indexOf(`<h2>${heading}</h2>`),
-    );
-
-    expect(positions.every((position) => position >= 0)).toBe(true);
-    expect(positions).toEqual(
-      [...positions].sort((first, second) => first - second),
-    );
+    expect(markup).toMatch(/<h2\b[^>]*>Home Page Banner<\/h2>/);
+    expect(markup.match(/<article/g)).toHaveLength(1);
+    for (const heading of removedHeadings) {
+      expect(markup).not.toContain(heading);
+    }
     expect(markup).toContain("A home headline");
     expect(markup).toContain('href="/cms/globals/homepage#home-page-banner"');
-    expect(markup).toContain("data-cms-shell");
+    // Payload already wraps dashboard views in its template. A nested template
+    // would render a second navigation/sidebar when returning through CMS.
+    expect(markup).not.toContain("data-cms-shell");
     expect(markup).not.toContain('href="/admin/funding-calls"');
-    expect(markup).toContain("Operations access is required");
+    expect(markup).not.toContain("Related content");
+    expect(markup).not.toContain("Appears on every page");
   });
 });

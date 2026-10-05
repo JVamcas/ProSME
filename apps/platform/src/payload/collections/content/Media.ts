@@ -7,7 +7,15 @@ import { organizeCmsMedia } from "@/modules/content/infrastructure/CmsMediaStora
 export const Media: CollectionConfig = {
   slug: "media",
   dbName: "cms_media",
-  admin: { group: "Content", useAsTitle: "alt" },
+  admin: {
+    group: "Content",
+    useAsTitle: "alt",
+    components: {
+      edit: {
+        SaveButton: "./modules/content/ui/admin/CmsDocumentButtons.tsx#CmsSaveButton",
+      },
+    },
+  },
   access: cmsMediaAccess(),
   hooks: { beforeChange: [organizeCmsMedia] },
   upload: {
@@ -21,7 +29,24 @@ export const Media: CollectionConfig = {
     staticDir: "media",
   },
   fields: [
-    { name: "alt", type: "text", required: true },
-    { name: "caption", type: "textarea" },
+    {
+      name: "alt",
+      type: "text",
+      required: true,
+      admin: {
+        components: {
+          Field: "./modules/content/ui/admin/CmsFormFields.tsx#CmsFormInput",
+        },
+      },
+    },
+    {
+      name: "caption",
+      type: "textarea",
+      admin: {
+        components: {
+          Field: "./modules/content/ui/admin/CmsFormFields.tsx#CmsFormTextarea",
+        },
+      },
+    },
   ],
 };

@@ -8,9 +8,9 @@ import React from "react";
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { getAuthenticatedPageUser } from "@/platform/auth/ServerAuthNavigation";
 import { can } from "@/auth/authorization/policy";
+import { cmsAdminClassName } from "@/modules/content/ui/admin/CmsAdminTheme";
 import { importMap } from "./cms/importMap";
-import "@/shared/ui/brand-tokens.css";
-import "./custom.scss";
+import "./tailwind.css";
 
 type Props = { children: React.ReactNode };
 
@@ -31,6 +31,7 @@ export default async function PayloadLayout({ children }: Props) {
       config={config}
       importMap={importMap}
       serverFunction={serverFunction}
+      htmlProps={{ className: cmsAdminClassName }}
     >
       {children}
     </RootLayout>

@@ -54,6 +54,21 @@ export type EligibilityItem = {
   label: string;
 };
 
+export type HomeBannerContent = Pick<
+  HomepageContent,
+  | "eyebrow"
+  | "title"
+  | "summary"
+  | "heroImage"
+  | "heroPanelHeading"
+  | "heroPanelSummary"
+  | "applyLabel"
+  | "fundingButtonLabel"
+  | "benefitFunding"
+  | "benefitCapacity"
+  | "benefitOpportunity"
+>;
+
 export type HomepageContent = {
   actionCards: {
     fundingTitle: string;

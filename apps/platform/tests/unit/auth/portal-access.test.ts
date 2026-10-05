@@ -43,10 +43,7 @@ describe("portal access policy", () => {
   it.each(["suspended", "disabled"] as const)(
     "rejects a %s user even when an applicant capability is granted",
     (status) => {
-      const inactiveUser = user(
-        [permissionCodes.userProfileOwnRead],
-        status,
-      );
+      const inactiveUser = user([permissionCodes.userProfileOwnRead], status);
 
       expect(canAccessApplicantPortal(inactiveUser)).toBe(false);
     },
@@ -69,5 +66,29 @@ describe("portal access policy", () => {
     const contentUser = user([permissionCodes.cmsAccess]);
 
     expect(getDefaultAuthenticatedPath(contentUser)).toBe("/cms");
+    expect(getAvailablePortalSpaces(contentUser)).toEqual(["cms"]);
   });
+
+  it("includes CMS as the third permitted workspace without changing the default portal", () => {
+    const reader = user([
+      permissionCodes.userProfileOwnRead,
+      permissionCodes.workflowTaskAllRead,
+      permissionCodes.cmsAccess,
+    ]);
+    expect(getAvailablePortalSpaces(reader)).toEqual([
+      "applicant",
+      "operations",
+      "cms",
+    ]);
+    expect(getDefaultAuthenticatedPath(reader)).toBe("/admin");
+  });
+
+  it.each(["suspended", "disabled"] as const)(
+    "does not offer CMS to a %s account",
+    (status) => {
+      expect(
+        getAvailablePortalSpaces(user([permissionCodes.cmsAccess], status)),
+      ).toEqual([]);
+    },
+  );
 });

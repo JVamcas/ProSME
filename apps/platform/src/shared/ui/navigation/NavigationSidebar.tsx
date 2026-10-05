@@ -19,6 +19,7 @@ export function NavigationSidebar({
   onClose,
   onToggleCollapsed,
   resizeHandle,
+  surface,
   workspace,
 }: {
   children: ReactNode;
@@ -32,6 +33,7 @@ export function NavigationSidebar({
   onClose?: () => void;
   onToggleCollapsed: () => void;
   resizeHandle?: ReactNode;
+  surface?: "gold";
   workspace?: ReactNode;
 }) {
   return (
@@ -39,10 +41,11 @@ export function NavigationSidebar({
       className={cn(styles.frame, dark ? styles.dark : styles.brand, className)}
       data-collapsed={collapsed}
       data-sidebar-frame
+      data-sidebar-surface={surface}
     >
       <SidebarHeader
         collapsed={collapsed}
-        dark={dark}
+        dark={dark && surface !== "gold"}
         logoHref={logoHref}
         onClose={onClose}
         onToggleCollapsed={onToggleCollapsed}

@@ -9,7 +9,7 @@ export function CmsGuideImage({ src }: { src: string }) {
   if (failed) {
     return (
       <div
-        className="cms-home-section__image-placeholder"
+        className="grid h-30 w-full place-items-center rounded-xl bg-brand-navy/5 p-3 text-center text-sm text-brand-navy"
         role="img"
         aria-label="Image preview unavailable"
       >
@@ -20,7 +20,7 @@ export function CmsGuideImage({ src }: { src: string }) {
 
   return (
     <CmsImage
-      className="cms-home-section__image"
+      className="h-30 w-full rounded-xl object-cover"
       image={{ url: src, alt: "", width: 180, height: 120 }}
       onError={() => setFailed(true)}
       sizes="180px"

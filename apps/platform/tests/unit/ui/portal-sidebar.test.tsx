@@ -83,7 +83,7 @@ describe("portal desktop sidebar", () => {
       '[aria-label="Resize navigation sidebar"]',
     );
 
-    expect(handle?.getAttribute("aria-valuenow")).toBe("272");
+    expect(handle?.getAttribute("aria-valuenow")).toBe("320");
 
     await act(async () => {
       handle?.dispatchEvent(

@@ -1,16 +1,7 @@
 import type { Field } from "payload";
 
 // Unnamed groups organise the editor without changing saved field paths.
-export const homePageBannerFields: Field[] = [
-  {
-    name: "homePageBannerEditor",
-    type: "ui",
-    admin: {
-      components: {
-        Field: "./modules/content/ui/admin/CmsHomeBannerEditorHeader.tsx",
-      },
-    },
-  },
+const bannerFields: Field[] = [
   {
     type: "group",
     label: "Main message",
@@ -134,5 +125,40 @@ export const homePageBannerFields: Field[] = [
         defaultValue: "Create opportunities",
       },
     ],
+  },
+];
+
+function withAppFormInputs(field: Field): Field {
+  if (field.type === "group") {
+    return { ...field, fields: field.fields.map(withAppFormInputs) };
+  }
+
+  if (field.type === "text" || field.type === "textarea") {
+    return {
+      ...field,
+      admin: {
+        ...field.admin,
+        components: {
+          Field: field.type === "textarea"
+            ? "./modules/content/ui/admin/CmsFormFields.tsx#CmsFormTextarea"
+            : "./modules/content/ui/admin/CmsFormFields.tsx#CmsFormInput",
+        },
+      },
+    };
+  }
+
+  return field;
+}
+
+export const homePageBannerFields: Field[] = [
+  {
+    type: "group",
+    label: "Home Page Banner",
+    admin: {
+      components: {
+        Field: "./modules/content/ui/admin/CmsHomeBannerGroupField.tsx",
+      },
+    },
+    fields: bannerFields.map(withAppFormInputs),
   },
 ];

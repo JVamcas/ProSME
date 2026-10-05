@@ -7,6 +7,7 @@ import {
 } from "./policy";
 
 export type PortalSpace = "applicant" | "operations";
+export type WorkspaceSpace = PortalSpace | "cms";
 
 export const applicantScopePermissions = [
   permissionCodes.userProfileOwnRead,
@@ -107,8 +108,8 @@ export function requireOperationsPortalAccess(
 
 export function getAvailablePortalSpaces(
   user: AuthenticatedUser,
-): PortalSpace[] {
-  const spaces: PortalSpace[] = [];
+): WorkspaceSpace[] {
+  const spaces: WorkspaceSpace[] = [];
 
   if (canAccessApplicantPortal(user)) {
     spaces.push("applicant");
@@ -116,6 +117,10 @@ export function getAvailablePortalSpaces(
 
   if (canAccessOperationsPortal(user)) {
     spaces.push("operations");
+  }
+
+  if (can(user, permissionCodes.cmsAccess)) {
+    spaces.push("cms");
   }
 
   return spaces;
@@ -135,9 +140,7 @@ export function getDefaultPortalSpace(
   return null;
 }
 
-export function getDefaultAuthenticatedPath(
-  user: AuthenticatedUser,
-): string {
+export function getDefaultAuthenticatedPath(user: AuthenticatedUser): string {
   const defaultSpace = getDefaultPortalSpace(user);
 
   if (defaultSpace === "operations") {

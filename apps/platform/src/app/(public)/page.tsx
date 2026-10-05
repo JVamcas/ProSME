@@ -1,4 +1,4 @@
-import { HomeHero } from "@/components/public/home-hero";
+import { HomeHero } from "@/modules/content/ui/public/HomeHero";
 import { draftMode } from "next/headers";
 import Link from "next/link";
 import { HomeActions } from "@/components/public/home-actions";

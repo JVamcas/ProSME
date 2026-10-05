@@ -2,8 +2,10 @@
 
 import { NavWrapper } from "@payloadcms/next/client";
 import { useNav, useWindowInfo } from "@payloadcms/ui";
-import { useState } from "react";
+import { useLayoutEffect, useState } from "react";
 import { NavigationSidebar } from "@/shared/ui/navigation/NavigationSidebar";
+import type { WorkspaceSpace } from "@/auth/authorization/portal-access";
+import { PortalSpaceSwitcher } from "@/shared/ui/portal/portal-space-switcher";
 import {
   SidebarResizeHandle,
   sidebarWidths,
@@ -12,9 +14,11 @@ import CmsLogoutButton from "./CmsLogoutButton";
 import CmsNavigationLinks from "./CmsNavigationLinks";
 
 export default function CmsSidebar({
+  availableSpaces,
   displayName,
   email,
 }: {
+  availableSpaces: readonly WorkspaceSpace[];
   displayName: string;
   email: string;
 }) {
@@ -26,9 +30,21 @@ export default function CmsSidebar({
   const isCollapsed = !mobile && collapsed;
   const width = isCollapsed ? sidebarWidths.collapsed : expandedWidth;
 
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    const previousWidth = root.style.getPropertyValue("--cms-nav-width");
+    root.style.setProperty("--cms-nav-width", `${width}px`);
+    return () => {
+      if (previousWidth) {
+        root.style.setProperty("--cms-nav-width", previousWidth);
+      } else {
+        root.style.removeProperty("--cms-nav-width");
+      }
+    };
+  }, [width]);
+
   return (
     <NavWrapper baseClass="nav">
-      <style>{`.template-default:has(.cms-sidebar) { --nav-width: ${width}px; }`}</style>
       <NavigationSidebar
         className="cms-sidebar"
         collapsed={isCollapsed}
@@ -37,8 +53,15 @@ export default function CmsSidebar({
         email={email}
         footer={<CmsLogoutButton collapsed={isCollapsed} />}
         logoHref="/cms"
+        surface="gold"
         onClose={() => setNavOpen(false)}
         onToggleCollapsed={() => setCollapsed((current) => !current)}
+        workspace={
+          <PortalSpaceSwitcher
+            availableSpaces={availableSpaces}
+            currentSpace="cms"
+          />
+        }
         resizeHandle={
           !isCollapsed ? (
             <SidebarResizeHandle
