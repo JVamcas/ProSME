@@ -12,6 +12,7 @@ import {
 } from "@/modules/work-queue/ui/useWorkQueue";
 import { useWorkflowCoi } from "@/modules/workflows/ui/runtime/useWorkflowCoi";
 import { WorkflowTaskCoiGate } from "@/modules/workflows/ui/runtime/WorkflowTaskCoiGate";
+import { WorkflowTaskRfiPanel } from "@/modules/workflows/ui/rfi/WorkflowTaskRfiPanel";
 import { PageShell } from "@/shared/ui/PageShell";
 import { useState } from "react";
 
@@ -19,13 +20,21 @@ export function WorkflowTaskWorkspace({
   taskId,
   canReadAssignedTasks = true,
   canReadAllTasks = false,
+  initialRequestId,
+  canFollowUpRfi = false,
+  canCloseRfi = false,
 }: {
   canReadAssignedTasks?: boolean;
   canReadAllTasks?: boolean;
   canReadWorkflowProgress?: boolean;
   taskId: string;
+  initialRequestId?: string;
+  canFollowUpRfi?: boolean;
+  canCloseRfi?: boolean;
 }) {
-  const [section, setSection] = useState("assigned-task");
+  const [section, setSection] = useState(
+    initialRequestId ? "information-requests" : "assigned-task",
+  );
   const tracking = useWorkflowEscalationTracking(taskId, canReadAssignedTasks);
   const trackingPending = canReadAssignedTasks && tracking.isPending;
   const trackingData = canReadAssignedTasks ? tracking.data : null;
@@ -104,10 +113,13 @@ export function WorkflowTaskWorkspace({
   }
 
   const task = query.data;
+  const canReadTaskRfis = canReadAssignedTasks && !coi.data.readOnly;
 
   return (
     <PageShell
-      actions={<StatusBadge status={task.processingStatus ?? task.taskStatus} />}
+      actions={
+        <StatusBadge status={task.processingStatus ?? task.taskStatus} />
+      }
       description={
         <div className="flex flex-wrap gap-2 text-sm">
           <span className="text-brand-navy/60">
@@ -127,9 +139,11 @@ export function WorkflowTaskWorkspace({
       }
       title={task.readOnly ? "View Workflow Task" : "Review Assigned Task"}
     >
-      {trackingData ? <WorkflowEscalationTrackingPanel task={trackingData} /> : null}
+      {trackingData ? (
+        <WorkflowEscalationTrackingPanel task={trackingData} />
+      ) : null}
       <Tabs
-        selectedId={section}
+        selectedId={canReadTaskRfis ? section : "assigned-task"}
         onSelectionChange={setSection}
         accent="orange"
         ariaLabel="Workflow task sections"
@@ -140,6 +154,22 @@ export function WorkflowTaskWorkspace({
             id: "assigned-task",
             label: task.readOnly ? "Task Details" : "Assigned Task",
           },
+          ...(canReadTaskRfis
+            ? [
+                {
+                  content: (
+                    <WorkflowTaskRfiPanel
+                      canClose={canCloseRfi && !task.readOnly}
+                      canFollowUp={canFollowUpRfi && !task.readOnly}
+                      initialRequestId={initialRequestId}
+                      taskId={taskId}
+                    />
+                  ),
+                  id: "information-requests",
+                  label: "Information requests",
+                },
+              ]
+            : []),
         ]}
         tabListClassName="border-b border-brand-navy/10 px-4"
       />

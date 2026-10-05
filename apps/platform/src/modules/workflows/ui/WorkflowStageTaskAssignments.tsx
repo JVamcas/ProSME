@@ -29,7 +29,8 @@ function Assignment({ task }: { task: WorkflowProgressTask }) {
 
       {task.planned ? (
         <p className="mt-0.5 text-xs text-brand-navy/55">
-          {reviewerCount} {reviewerCount === 1 ? "reviewer" : "reviewers"} · Assigned on activation
+          {reviewerCount} {reviewerCount === 1 ? "reviewer" : "reviewers"} ·
+          Assigned on activation
         </p>
       ) : null}
 
@@ -69,9 +70,14 @@ const columns: DataTableColumn<WorkflowProgressTask>[] = [
       if (!task.canOpen) return <span>{task.name}</span>;
 
       return (
-        <ArrowLink href={`/admin/tasks/${row.original.id}`}>
-          {row.original.name}
-        </ArrowLink>
+        <div>
+          <ArrowLink href={`/admin/tasks/${task.id}`}>{task.name}</ArrowLink>
+          {task.blockedReason ? (
+            <p className="mt-1 text-xs text-brand-navy/55">
+              {task.blockedReason}
+            </p>
+          ) : null}
+        </div>
       );
     },
   },
@@ -88,12 +94,27 @@ const columns: DataTableColumn<WorkflowProgressTask>[] = [
   {
     id: "requirement",
     header: "Requirement",
-    cell: ({ row }) => (row.original.required ? "Mandatory" : "Optional"),
+    cell: ({ row }) => {
+      const task = row.original;
+      if (!task.required) return "Optional";
+      if (
+        task.taskType === "CONTRIBUTING" &&
+        (task.configuredReviewerCount ?? 1) > 1 &&
+        task.requiredReviewCount !== undefined
+      ) {
+        return `${task.requiredReviewCount} of ${task.configuredReviewerCount} reviews required`;
+      }
+      return "Mandatory";
+    },
   },
   {
     accessorKey: "status",
     header: "Status",
-    cell: ({ row }) => <StatusBadge status={row.original.processingStatus ?? row.original.status} />,
+    cell: ({ row }) => (
+      <StatusBadge
+        status={row.original.processingStatus ?? row.original.status}
+      />
+    ),
   },
   {
     id: "actionedAt",

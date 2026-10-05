@@ -45,7 +45,11 @@ export async function readWorkflowActionReadiness(
           stageInstanceId: input.stageInstanceId,
         })
       : true,
-    input.taskId && input.actionTypes.some(workflowActionCompletesTask)
+    input.taskId &&
+    input.actionTypes.some(
+      (type) =>
+        workflowActionCompletesTask(type) || type === "REQUEST_INFORMATION",
+    )
       ? readWorkflowActionTaskReadiness(
           database,
           input.taskId,
@@ -72,6 +76,9 @@ export function workflowActionReadinessReason(
   actionType: WorkflowActionType,
   readiness: Awaited<ReturnType<typeof readWorkflowActionReadiness>>,
 ): string | null {
+  if (actionType === "REQUEST_INFORMATION" && readiness.task?.hasOpenRfi) {
+    return "This task already has an open information request. Follow up or close it first.";
+  }
   if (workflowActionRequiresQuorum(actionType) && !readiness.quorumSatisfied) {
     return "The required participation quorum is absent.";
   }

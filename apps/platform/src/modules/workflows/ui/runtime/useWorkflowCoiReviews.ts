@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { clientWorkflowCoiReviewService } from "../../ClientWorkflowCoiReviewService";
+import { invalidateApplicationViews } from "@/modules/applications/ui/invalidateApplicationViews";
 import type {
   WorkflowCoiReviewDecision,
   WorkflowCoiReviewListInput,
@@ -41,6 +42,7 @@ export function useDecideWorkflowCoiReview(taskId: string) {
         queryClient.invalidateQueries({
           queryKey: ["workflow", "task", taskId, "coi"],
         }),
+        invalidateApplicationViews(queryClient, true),
       ]),
   });
 }

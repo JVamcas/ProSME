@@ -66,8 +66,13 @@ async function requireTaskContext(
   user: AuthenticatedUser | null,
   taskId: string,
 ) {
-  const actor = requireAuthenticatedUser(user);
-  const task = await readWorkflowTask(actor.id, taskId);
+  const actor = requirePermission(
+    user,
+    permissionCodes.workflowTaskAssignedRead,
+  );
+  const task = await readWorkflowTask(actor.id, taskId, false, [
+    ...actor.capabilities,
+  ]);
   if (!task) throw new ResourceNotFoundError("workflow task");
   requirePermission(actor, task.permissions.view);
   return actor;

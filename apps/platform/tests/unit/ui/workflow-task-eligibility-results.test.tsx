@@ -83,6 +83,8 @@ const evaluation = {
 };
 
 const task: TaskDetail = {
+  hasOpenRfi: false,
+  prerequisitesComplete: true,
   actions: [],
   applicantName: "Test applicant",
   applicationId: "44444444-4444-4444-8444-444444444444",

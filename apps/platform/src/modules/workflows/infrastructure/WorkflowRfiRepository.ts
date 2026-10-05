@@ -172,6 +172,23 @@ export async function createWorkflowRfi(
   const replay = await findCreationReplay(transaction, request);
   if (replay) return replay;
   const target = await lockCreationTarget(transaction, request);
+  // Read after acquiring the task lock so concurrent creation sees the
+  // request committed by the previous lock holder.
+  const [openRequest] = await transaction
+    .select({ id: workflowRfis.id })
+    .from(workflowRfis)
+    .where(
+      and(
+        eq(workflowRfis.taskId, request.source.taskId),
+        eq(workflowRfis.status, "OPEN"),
+      ),
+    )
+    .limit(1);
+  if (openRequest) {
+    throw new ResourceConflictError(
+      "This task already has an open information request. Follow up or close it first.",
+    );
+  }
   await Promise.all([
     assertRequestedDocuments(transaction, request, target.taskDefinitionId),
     assertWorkflowRfiFieldSelection(

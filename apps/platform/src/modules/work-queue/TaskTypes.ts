@@ -95,6 +95,8 @@ export type AuthoritativeEligibilityTaskResult = {
 };
 
 export type TaskDetail = {
+  hasOpenRfi: boolean;
+  prerequisitesComplete: boolean;
   readOnly?: boolean;
   assignedUserName?: string | null;
   assignedRoleName?: string | null;

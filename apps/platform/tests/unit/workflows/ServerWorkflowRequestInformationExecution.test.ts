@@ -52,6 +52,9 @@ vi.mock(
 vi.mock("@/modules/workflows/infrastructure/WorkflowRfiRepository", () => ({
   createWorkflowRfi: vi.fn(),
 }));
+vi.mock("@/modules/workflows/infrastructure/WorkflowActionTaskReadinessRepository", () => ({
+  readWorkflowActionTaskReadiness: vi.fn(),
+}));
 
 import type { AuthenticatedUser } from "@/auth/types";
 import { executeWorkflowAction } from "@/modules/workflows/application/runtime/ServerWorkflowActionExecutionService";
@@ -71,6 +74,7 @@ import {
 } from "@/modules/workflows/infrastructure/WorkflowActionExecutionConnection";
 import { configuredActionTargetsAreValid } from "@/modules/workflows/infrastructure/WorkflowActionTargetRepository";
 import { createWorkflowRfi } from "@/modules/workflows/infrastructure/WorkflowRfiRepository";
+import { readWorkflowActionTaskReadiness } from "@/modules/workflows/infrastructure/WorkflowActionTaskReadinessRepository";
 
 const actorId = "10000000-0000-4000-8000-000000000001";
 const workflowInstanceId = "20000000-0000-4000-8000-000000000001";
@@ -81,6 +85,9 @@ let executionTarget: WorkflowActionExecutionTarget;
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(readWorkflowActionTaskReadiness).mockResolvedValue({
+    hasOpenRfi: false, workReady: true,
+  });
   vi.mocked(workflowActionExecutionDatabase).mockReturnValue({} as never);
   vi.mocked(findWorkflowActionExecution).mockResolvedValue(null);
   vi.mocked(withWorkflowActionExecutionTransaction).mockImplementation(

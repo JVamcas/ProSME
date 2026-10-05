@@ -108,7 +108,10 @@ describe("workflow action policy", () => {
     ).available).toBe(true);
   });
 
-  it("blocks a stage decision until contributing tasks are complete", () => {
+});
+
+describe("workflow action state and prerequisites", () => {
+  it("blocks a stage decision until required review thresholds are met", () => {
     const waitingTask = {
       ...target(),
       task: { ...target().task, prerequisitesComplete: false },
@@ -122,7 +125,7 @@ describe("workflow action policy", () => {
       available: false,
       reason: "INVALID_STATE",
       unavailableReason:
-        "Complete all contributing tasks before making the stage decision.",
+        "Meet the required contributing review thresholds before making the stage decision.",
     });
 
     waitingTask.task.prerequisitesComplete = true;

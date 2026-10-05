@@ -2,7 +2,7 @@
 
 import { WorkflowTaskHoldStatus } from "@/modules/workflows/ui/tasks/WorkflowTaskHoldStatus";
 import { WorkflowRfiTaskStatus } from "@/modules/workflows/ui/rfi/WorkflowRfiTaskStatus";
-import { LockKeyhole, UserRound } from "lucide-react";
+import { UserRound } from "lucide-react";
 
 import { DataTable, type DataTableColumn } from "@/shared/ui/DataTable";
 import { ArrowLink } from "@/components/ui/links";
@@ -34,37 +34,16 @@ const columns: DataTableColumn<WorkQueueRow>[] = [
   {
     accessorKey: "taskName",
     header: "Task",
-    cell: ({ row }) => {
-      const blockedReason = row.original.taskBlockedReason;
-      if (!blockedReason || row.original.informationRequest || row.original.processingStatus === "ON_HOLD") {
-        return (
-          <div className="flex flex-col gap-2">
-            <ArrowLink
-              href={`/admin/applications/${row.original.applicationId}?tab=workflow-progress&taskId=${row.original.taskInstanceId}`}
-            >
-              {row.original.taskName}
-            </ArrowLink>
-            <p className="text-xs text-brand-navy/50">
-              Stage: {row.original.stageName}
-            </p>
-          </div>
-        );
-      }
-      return (
-        <div className="max-w-72 flex flex-col gap-2">
-          <span
-            aria-disabled="true"
-            className="inline-flex items-center gap-2 text-sm font-bold text-brand-navy/45"
-          >
-            <LockKeyhole aria-hidden="true" className="size-4 shrink-0" />
-            {row.original.taskName}
-          </span>
-          <p className="text-xs text-brand-navy/50">
-            Stage: {row.original.stageName}
-          </p>
-        </div>
-      );
-    },
+    cell: ({ row }) => (
+      <div className="flex flex-col gap-2">
+        <ArrowLink href={`/admin/tasks/${row.original.taskInstanceId}`}>
+          {row.original.taskName}
+        </ArrowLink>
+        <p className="text-xs text-brand-navy/50">
+          Stage: {row.original.stageName}
+        </p>
+      </div>
+    ),
   },
   {
     accessorKey: "taskType",
@@ -86,13 +65,17 @@ const columns: DataTableColumn<WorkQueueRow>[] = [
     header: "Task status",
     cell: ({ row }) => (
       <div className="max-w-72 space-y-2">
-        <StatusBadge status={row.original.processingStatus ?? row.original.taskStatus} />
+        <StatusBadge
+          status={row.original.processingStatus ?? row.original.taskStatus}
+        />
         {row.original.taskBlockedReason ? (
           <p className="text-xs leading-4 text-brand-navy/65">
             {row.original.taskBlockedReason}
           </p>
         ) : null}
-        {row.original.holds?.length ? <WorkflowTaskHoldStatus holds={row.original.holds} /> : null}
+        {row.original.holds?.length ? (
+          <WorkflowTaskHoldStatus holds={row.original.holds} />
+        ) : null}
         {row.original.informationRequest ? (
           <WorkflowRfiTaskStatus request={row.original.informationRequest} />
         ) : null}

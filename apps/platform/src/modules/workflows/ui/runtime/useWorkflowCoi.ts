@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { clientWorkflowCoiService } from "../../ClientWorkflowCoiService";
+import { invalidateApplicationViews } from "@/modules/applications/ui/invalidateApplicationViews";
 
 const gateKey = (taskId: string) =>
   ["workflow", "task", taskId, "coi"] as const;
@@ -24,6 +25,12 @@ export function useDeclareWorkflowCoi(taskId: string) {
       expectedRowVersion: number;
     }) => clientWorkflowCoiService.declare(taskId, input),
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: gateKey(taskId) }),
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: gateKey(taskId) }),
+        queryClient.invalidateQueries({
+          queryKey: ["admin", "conflict-reviews"],
+        }),
+        invalidateApplicationViews(queryClient, true),
+      ]),
   });
 }

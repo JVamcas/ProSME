@@ -36,7 +36,7 @@ const task = {
 } as unknown as WorkQueueRow;
 
 it.each([false, true])(
-  "links to application Workflow Progress with task context; information request: %s",
+  "links directly to the assigned task; information request: %s",
   (informationRequest) => {
     const row = informationRequest
       ? ({
@@ -54,20 +54,18 @@ it.each([false, true])(
     const markup = renderToStaticMarkup(
       <WorkQueueTable items={[row]} emptyMessage="No work" />,
     );
-    expect(markup).toContain(
-      `/admin/applications/${task.applicationId}?tab=workflow-progress&amp;taskId=${task.taskInstanceId}`,
-    );
+    expect(markup).toContain(`/admin/tasks/${task.taskInstanceId}`);
     expect(markup).toContain("Review application");
   },
 );
 
-it("preserves the disabled task name when blocked without an information request", () => {
+it("allows task access while decision processing is blocked", () => {
   const markup = renderToStaticMarkup(
     <WorkQueueTable
       items={[{ ...task, taskBlockedReason: "Waiting for contributing tasks" }]}
       emptyMessage="No work"
     />,
   );
-  expect(markup).not.toContain("href=");
-  expect(markup).toContain('aria-disabled="true"');
+  expect(markup).toContain(`/admin/tasks/${task.taskInstanceId}`);
+  expect(markup).not.toContain('aria-disabled="true"');
 });

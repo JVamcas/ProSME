@@ -28,4 +28,14 @@ describe("task assignment links", () => {
     }]} />);
     expect(markup).not.toContain('/admin/tasks/task-id');
   });
+
+  it("explains the shared reviewer threshold instead of marking each slot mandatory", () => {
+    const markup = renderToStaticMarkup(
+      <WorkflowStageTaskAssignments tasks={[{
+        ...task, configuredReviewerCount: 3, requiredReviewCount: 2,
+      }]} />,
+    );
+    expect(markup).toContain("2 of 3 reviews required");
+    expect(markup).not.toContain("Mandatory");
+  });
 });

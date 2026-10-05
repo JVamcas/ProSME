@@ -21,7 +21,7 @@ vi.mock("@/modules/workflows/infrastructure/WorkflowGraphRepository", () => ({
 
 import { findWorkflowGraph } from "@/modules/workflows/infrastructure/WorkflowGraphRepository";
 import { readWorkflowCompletionProgress } from "@/modules/workflows/infrastructure/WorkflowCompletionProgressRepository";
-import { basicOperators } from "@/modules/conditions/engine/BasicOperators";
+import { workflowProgressServiceFixture } from "../../support/WorkflowProgressServiceFixture";
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { PermissionDeniedError } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
@@ -84,106 +84,9 @@ describe("workflow progress authorization", () => {
   });
 
   it("links only tasks the actor can read in an active stage", async () => {
-    const task = {
-      actionedAt: null,
-      assignedRoleCode: "programme_officer",
-      assignedRoleName: "Programme Officer",
-      assignedUserEmail: "staff@example.test",
-      assignedUserId: actor.id,
-      taskDefinitionId: "definition-one",
-      reviewerCount: 3,
-      reviewRelease: "STAGE_COMPLETED" as const,
-      thresholdSatisfied: false,
-      prerequisitesComplete: true,
-      assignedUserName: "Staff member",
-      dueAt: null,
-      id: "task-one",
-      name: "Review application",
-      required: true,
-      status: "PENDING",
-      taskType: "CONTRIBUTING" as const,
-      viewPermission: permissionCodes.workflowTaskAssignedRead,
-    };
-    vi.mocked(readWorkflowProgress).mockResolvedValue({
-      completedAt: null,
-      id: "workflow-one",
-      name: "SME Fund workflow",
-      stages: [
-        {
-          activatedAt: "2026-09-20T08:00:00.000Z",
-          completedAt: null,
-          description: "Review",
-          id: "stage-one",
-          iterationNumber: 1,
-          name: "Review",
-          sequence: 1,
-          stableKey: "review",
-          status: "ACTIVE",
-          tasks: [
-            task,
-            { ...task, assignedUserId: "another-user", id: "task-two" },
-            {
-              ...task,
-              assignedUserEmail: null,
-              assignedUserId: null,
-              assignedUserName: null,
-              id: "task-three",
-            },
-          ],
-        },
-      ],
-      startedAt: "2026-09-20T08:00:00.000Z",
-      status: "ACTIVE",
-      terminalOutcome: null,
-      versionNumber: 1,
-      versionId: "bound-version",
-    });
-
-    vi.mocked(readWorkflowCompletionProgress).mockResolvedValue({
-      targets: [
-        {
-          application: { score: 64 },
-          eligibility: {},
-          fundingCall: {},
-          completedAt: null,
-          stageInstanceId: "stage-one",
-          stageDefinitionId: "stage-definition",
-          stageKey: "review",
-          status: "ACTIVE",
-          workflowInstanceId: "workflow-one",
-          workflowVersionId: "bound-version",
-          exitCondition: {
-            id: "exit",
-            kind: "GROUP",
-            combinator: "AND",
-            children: [
-              {
-                id: "score",
-                kind: "CONDITION",
-                operator: basicOperators.EQUALS,
-                leftOperand: { kind: "FIELD", key: "application.score" },
-                rightOperand: { kind: "CONSTANT", value: 70 },
-              },
-            ],
-          },
-        },
-      ],
-      requirements: [
-        {
-          stageInstanceId: "stage-one",
-          taskDefinitionId: "definition-one",
-          taskKey: "review",
-          denominator: 3,
-          completedCount: 0,
-          completedTaskIds: [],
-          completionMode: "ALL",
-          completionPercentage: null,
-          requiredCompletionCount: 3,
-        },
-      ],
-      values: [],
-      priorStages: [],
-    });
+    const { task, record: initialRecord, completion } = workflowProgressServiceFixture(actor.id);
+    vi.mocked(readWorkflowProgress).mockResolvedValue(initialRecord);
+    vi.mocked(readWorkflowCompletionProgress).mockResolvedValue(completion);
     const takenPaths = [
       { transitionId: "executed-route", targetStageKey: "review" },
     ];
@@ -260,10 +163,10 @@ describe("workflow progress authorization", () => {
         applicationId,
       );
       expect(decisionProgress?.stages[0].tasks[0]).toMatchObject({
-        canOpen: prerequisitesComplete,
+        canOpen: true,
         blockedReason: prerequisitesComplete
           ? null
-          : "Complete all contributing tasks before making the stage decision.",
+          : "Meet the required contributing review thresholds before making the stage decision.",
       });
       expect(decisionProgress?.stages[0].tasks[0]).not.toHaveProperty(
         "prerequisitesComplete",
