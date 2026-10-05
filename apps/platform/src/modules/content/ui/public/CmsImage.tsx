@@ -25,6 +25,9 @@ export function CmsImage({
   }
 
   const source = cmsImageSource(image, 1600);
+  if (!source) {
+    return null;
+  }
 
   return (
     <Image

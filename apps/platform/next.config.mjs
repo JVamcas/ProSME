@@ -17,6 +17,12 @@ const nextConfig = {
     useTypeScriptCli: false,
   },
   output: "standalone",
+  images: {
+    localPatterns: [
+      { pathname: "/api/media/file/**" },
+      { pathname: "**", search: "" },
+    ],
+  },
   outputFileTracingRoot: repositoryRoot,
   outputFileTracingIncludes: {
     "/api/internal/notifications/process": [

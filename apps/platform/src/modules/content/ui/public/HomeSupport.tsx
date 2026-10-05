@@ -1,13 +1,21 @@
 import { BarChart3, Leaf, Users, Venus } from "lucide-react";
 
 import { ArrowLink } from "@/components/ui/links";
-import type { EligibilityItem, HomepageContent } from "@/modules/content/ContentTypes";
+import type { HomepageContent } from "@/modules/content/ContentTypes";
 
 const icons = [Users, Venus, BarChart3, Leaf];
 
-export function HomeSupport({ items, content }: { items: EligibilityItem[]; content: HomepageContent }) {
-  const published = items.filter((item) => item.kind === "criterion");
-  const groups = published;
+export function HomeSupport({
+  content,
+  presentation = "marquee",
+}: {
+  content: Pick<
+    HomepageContent,
+    "supportHeading" | "supportIntroduction" | "supportCards"
+  >;
+  presentation?: "marquee" | "grid";
+}) {
+  const groups = content.supportCards;
   return (
     <section className="bg-brand-cream/30 py-12">
       <div className="container">
@@ -23,12 +31,18 @@ export function HomeSupport({ items, content }: { items: EligibilityItem[]; cont
           <ArrowLink href="/eligibility">See eligibility details</ArrowLink>
         </div>
       </div>
-      <div className="support-marquee mt-6 overflow-hidden py-3">
-        <div className="support-track">
-          <SupportGroup groups={groups} />
-          <SupportGroup groups={groups} hidden />
+      {presentation === "grid" ? (
+        <div className="container mt-6">
+          <SupportGroup groups={groups} presentation="grid" />
         </div>
-      </div>
+      ) : (
+        <div className="support-marquee mt-6 overflow-hidden py-3">
+          <div className="support-track">
+            <SupportGroup groups={groups} />
+            <SupportGroup groups={groups} hidden />
+          </div>
+        </div>
+      )}
     </section>
   );
 }
@@ -36,18 +50,27 @@ export function HomeSupport({ items, content }: { items: EligibilityItem[]; cont
 function SupportGroup({
   groups,
   hidden = false,
+  presentation = "marquee",
 }: {
   groups: { label: string; description: string }[];
   hidden?: boolean;
+  presentation?: "marquee" | "grid";
 }) {
   return (
-    <div aria-hidden={hidden || undefined} className="support-group">
+    <div
+      aria-hidden={hidden || undefined}
+      className={
+        presentation === "grid"
+          ? "grid gap-3 md:grid-cols-2 xl:grid-cols-3"
+          : "support-group"
+      }
+    >
       {groups.map((group, index) => {
         const Icon = icons[index % icons.length];
         return (
           <article
-            className="support-card rounded-xl border border-brand-blue/20 bg-white p-5"
-            key={`${hidden ? "copy" : "main"}-${group.label}`}
+            className={`${presentation === "grid" ? "min-w-0" : "support-card"} rounded-xl border border-brand-blue/20 bg-white p-5`}
+            key={`${hidden ? "copy" : "main"}-${index}`}
           >
             <span className="grid size-12 place-items-center rounded-full bg-brand-orange/10 text-brand-orange">
               <Icon className="size-6" />

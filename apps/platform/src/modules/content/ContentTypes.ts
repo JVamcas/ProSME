@@ -93,8 +93,9 @@ export type HomepageContent = {
   process: {
     heading: string;
     introduction: string;
-    steps: { title: string; description: string }[];
+    steps: { id?: string; title: string; description: string }[];
   };
+  supportCards: { id?: string; label: string; description: string }[];
   supportHeading: string;
   supportIntroduction: string;
   blocks: unknown[];

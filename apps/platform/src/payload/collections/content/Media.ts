@@ -24,6 +24,8 @@ export const Media: CollectionConfig = {
       name,
       width,
       withoutEnlargement: true,
+      generateImageName: ({ originalName, extension }) =>
+        `${originalName}-${name}.${extension}`,
     })),
     mimeTypes: ["image/*", "application/pdf"],
     staticDir: "media",

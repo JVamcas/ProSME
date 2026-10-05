@@ -7,7 +7,7 @@ Date: 2026-10-05
 - Applicant, Operations, and Payload CMS use a default expanded sidebar width of 320px, increased from 272px. Existing collapse, resize bounds, keyboard controls, and mobile navigation remain available.
 - Expanded Logout controls align to the left, with the same icon inset as the Help link. Collapsed controls remain centered.
 - The shared workspace switcher always presents Applicant, Operations, and CMS in that order. Only workspaces permitted by the server projection are links; unavailable workspaces are labelled disabled.
-- CMS uses the existing canonical brand gold (`--sme-brand-gold`, `#c9a24d`) with navy text and icons. The switcher highlights only the current workspace using the shared palette tokens.
+- CMS uses the canonical brand yellow (`--sme-brand-yellow`, `#ffca45`, equivalent to `bg-brand-yellow`) with white text and icons. The switcher highlights only the current workspace using the shared palette tokens.
 - CMS workspace availability uses canonical `cms.access` permission checks. Applicant and Operations availability and the default authenticated route retain their existing policies. CMS-only users can use the switcher without creating a portal context.
 - Payload retains its own navigation state and data loading. Its shared sidebar does not require a platform Query provider. The Home Page navigation remains unchanged.
 

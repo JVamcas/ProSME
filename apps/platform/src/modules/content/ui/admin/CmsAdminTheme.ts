@@ -18,8 +18,8 @@ const theme = [
 
 const shell = [
   "[&_.nav]:border-0",
-  "[&_.nav]:bg-brand-gold",
-  "[&_.nav]:text-brand-navy",
+  "[&_.nav]:bg-brand-yellow",
+  "[&_.nav]:text-brand-white",
   String.raw`[&_.nav\_\_scroll]:p-0`,
   String.raw`[&_.nav\_\_scroll]:overflow-hidden`,
   String.raw`[&:has(.nav--nav-open_.cms-sidebar)_.template-default\_\_nav-toggler-wrapper]:hidden`,

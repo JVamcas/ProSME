@@ -25,9 +25,16 @@ import { UnderlineFeatureClient as UnderlineFeatureClient_e70f5e05f09f93e00b997e
 import { BoldFeatureClient as BoldFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { ItalicFeatureClient as ItalicFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { default as default_e2fe971cc551ca80076ea809d5d3cf9a } from '../../../modules/content/ui/admin/CmsHomeBannerGroupField.tsx'
+import { default as default_215e55acb36338729bbb967a1283370f } from '../../../modules/content/ui/admin/CmsHomeActionsGroupField.tsx'
+import { CmsCardListField as CmsCardListField_0fd224774c25d3f2fa4eba12c27f2ab0 } from '../../../modules/content/ui/admin/CmsCardListField.tsx'
+import { CmsCardListRowLabel as CmsCardListRowLabel_0fd224774c25d3f2fa4eba12c27f2ab0 } from '../../../modules/content/ui/admin/CmsCardListField.tsx'
+import { CmsHomeProcessGroupField as CmsHomeProcessGroupField_a919c79f1d80ff6e7030a7b8b3020dad } from '../../../modules/content/ui/admin/CmsHomeListsGroupField.tsx'
+import { CmsHomeSupportGroupField as CmsHomeSupportGroupField_a919c79f1d80ff6e7030a7b8b3020dad } from '../../../modules/content/ui/admin/CmsHomeListsGroupField.tsx'
+import { CmsHomeAdditionalGroupField as CmsHomeAdditionalGroupField_a919c79f1d80ff6e7030a7b8b3020dad } from '../../../modules/content/ui/admin/CmsHomeListsGroupField.tsx'
 import { CmsFormSelect as CmsFormSelect_65523f882c4704f7cfc2743509a1f71d } from '../../../modules/content/ui/admin/CmsFormFields.tsx'
 import { CmsPublishButton as CmsPublishButton_56dac0e05405877c95d4c8c117aba5fa } from '../../../modules/content/ui/admin/CmsDocumentButtons.tsx'
 import { CmsSaveDraftButton as CmsSaveDraftButton_56dac0e05405877c95d4c8c117aba5fa } from '../../../modules/content/ui/admin/CmsDocumentButtons.tsx'
+import { default as default_67ce7d515155dd2fe46a00c6b7076e46 } from '../../../modules/content/ui/admin/CmsHomeSectionEditView.tsx'
 import { default as default_5763e6234a5405f6bc0ed01e521c6e9b } from '../../../modules/content/ui/admin/CmsHeaderAvatar.tsx'
 import { default as default_cc5960ae17e6557b637fc918ea983d9e } from '../../../modules/content/ui/admin/CmsNavigation.tsx'
 import { default as default_336c162c05fce76a5c4f6f078350f16a } from '../../../modules/content/ui/admin/CmsLogoutButton.tsx'
@@ -65,9 +72,16 @@ export const importMap = {
   "@payloadcms/richtext-lexical/client#BoldFeatureClient": BoldFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
   "@payloadcms/richtext-lexical/client#ItalicFeatureClient": ItalicFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
   "./modules/content/ui/admin/CmsHomeBannerGroupField.tsx#default": default_e2fe971cc551ca80076ea809d5d3cf9a,
+  "./modules/content/ui/admin/CmsHomeActionsGroupField.tsx#default": default_215e55acb36338729bbb967a1283370f,
+  "./modules/content/ui/admin/CmsCardListField.tsx#CmsCardListField": CmsCardListField_0fd224774c25d3f2fa4eba12c27f2ab0,
+  "./modules/content/ui/admin/CmsCardListField.tsx#CmsCardListRowLabel": CmsCardListRowLabel_0fd224774c25d3f2fa4eba12c27f2ab0,
+  "./modules/content/ui/admin/CmsHomeListsGroupField.tsx#CmsHomeProcessGroupField": CmsHomeProcessGroupField_a919c79f1d80ff6e7030a7b8b3020dad,
+  "./modules/content/ui/admin/CmsHomeListsGroupField.tsx#CmsHomeSupportGroupField": CmsHomeSupportGroupField_a919c79f1d80ff6e7030a7b8b3020dad,
+  "./modules/content/ui/admin/CmsHomeListsGroupField.tsx#CmsHomeAdditionalGroupField": CmsHomeAdditionalGroupField_a919c79f1d80ff6e7030a7b8b3020dad,
   "./modules/content/ui/admin/CmsFormFields.tsx#CmsFormSelect": CmsFormSelect_65523f882c4704f7cfc2743509a1f71d,
   "./modules/content/ui/admin/CmsDocumentButtons.tsx#CmsPublishButton": CmsPublishButton_56dac0e05405877c95d4c8c117aba5fa,
   "./modules/content/ui/admin/CmsDocumentButtons.tsx#CmsSaveDraftButton": CmsSaveDraftButton_56dac0e05405877c95d4c8c117aba5fa,
+  "./modules/content/ui/admin/CmsHomeSectionEditView.tsx#default": default_67ce7d515155dd2fe46a00c6b7076e46,
   "./modules/content/ui/admin/CmsHeaderAvatar.tsx#default": default_5763e6234a5405f6bc0ed01e521c6e9b,
   "./modules/content/ui/admin/CmsNavigation.tsx#default": default_cc5960ae17e6557b637fc918ea983d9e,
   "./modules/content/ui/admin/CmsLogoutButton.tsx#default": default_336c162c05fce76a5c4f6f078350f16a,

@@ -171,7 +171,7 @@ function HeroQuote({ message }: { message: string }) {
         “{message}”
       </p>
       <div className="mt-3 flex items-center gap-2 text-[10px] text-brand-navy/60">
-        <span className="h-1 w-7 bg-brand-gold" />
+        <span className="h-1 w-7 bg-brand-orange" />
         SME Fund Namibia
       </div>
     </div>

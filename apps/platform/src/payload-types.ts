@@ -1193,9 +1193,6 @@ export interface Homepage {
   benefitFunding?: string | null;
   benefitCapacity?: string | null;
   benefitOpportunity?: string | null;
-  applyHref: string;
-  eligibilityLabel: string;
-  trackingLabel: string;
   actionCards?: {
     fundingTitle?: string | null;
     fundingDescription?: string | null;
@@ -1204,9 +1201,16 @@ export interface Homepage {
     trackingTitle?: string | null;
     trackingDescription?: string | null;
   };
+  applyHref: string;
+  eligibilityLabel: string;
+  trackingLabel: string;
+  newsHeading?: string | null;
   process?: {
     heading?: string | null;
     introduction?: string | null;
+    /**
+     * Add, remove or drag steps to change their order.
+     */
     steps?:
       | {
           title: string;
@@ -1217,9 +1221,21 @@ export interface Homepage {
   };
   supportHeading?: string | null;
   supportIntroduction?: string | null;
+  /**
+   * These are the scrolling cards on Home. Add, remove or drag cards to change their order.
+   */
+  supportCards?:
+    | {
+        label: string;
+        description: string;
+        id?: string | null;
+      }[]
+    | null;
   fundingSlogan?: string | null;
-  newsHeading?: string | null;
   newsIntroduction?: string | null;
+  /**
+   * Add, remove or reorder additional homepage content blocks.
+   */
   layout?:
     | (
         | {
@@ -1398,9 +1414,6 @@ export interface HomepageSelect<T extends boolean = true> {
   benefitFunding?: T;
   benefitCapacity?: T;
   benefitOpportunity?: T;
-  applyHref?: T;
-  eligibilityLabel?: T;
-  trackingLabel?: T;
   actionCards?:
     | T
     | {
@@ -1411,6 +1424,10 @@ export interface HomepageSelect<T extends boolean = true> {
         trackingTitle?: T;
         trackingDescription?: T;
       };
+  applyHref?: T;
+  eligibilityLabel?: T;
+  trackingLabel?: T;
+  newsHeading?: T;
   process?:
     | T
     | {
@@ -1426,8 +1443,14 @@ export interface HomepageSelect<T extends boolean = true> {
       };
   supportHeading?: T;
   supportIntroduction?: T;
+  supportCards?:
+    | T
+    | {
+        label?: T;
+        description?: T;
+        id?: T;
+      };
   fundingSlogan?: T;
-  newsHeading?: T;
   newsIntroduction?: T;
   layout?:
     | T

@@ -2,7 +2,11 @@ import { fileURLToPath } from "node:url";
 import type { Payload } from "payload";
 
 import { findId, seedContext } from "./seed-helpers";
-import { defaultHomeActionCards, defaultHomeProcess } from "@/modules/content/ContentDefaults";
+import {
+  defaultHomeActionCards,
+  defaultHomeProcess,
+  defaultSupportGroups,
+} from "@/modules/content/ContentDefaults";
 
 const impactImageAlt = "Namibian mountain landscape";
 
@@ -17,7 +21,9 @@ async function seedImpactImage(payload: Payload) {
     collection: "media",
     context: seedContext,
     data: { alt: impactImageAlt },
-    filePath: fileURLToPath(new URL("../../../public/brand/pic5.png", import.meta.url)),
+    filePath: fileURLToPath(
+      new URL("../../../public/brand/pic5.png", import.meta.url),
+    ),
     overrideAccess: true,
   });
 
@@ -38,29 +44,39 @@ export async function seedSiteGlobals(payload: Payload) {
         benefitFunding: "Access funding",
         benefitCapacity: "Build your capacity",
         benefitOpportunity: "Create opportunities",
+        supportCards: defaultSupportGroups,
         supportHeading: "Who we support",
-        supportIntroduction: "The SME Fund is open to any Namibian MSME with high potential, inclusive impact and a commitment to growth. Our priority areas include:",
-        newsIntroduction: "Updates, stories and useful materials for Namibian entrepreneurs.",
+        supportIntroduction:
+          "The SME Fund is open to any Namibian MSME with high potential, inclusive impact and a commitment to growth. Our priority areas include:",
+        newsIntroduction:
+          "Updates, stories and useful materials for Namibian entrepreneurs.",
         fundingSlogan: "Brighter businesses. A stronger Namibia.",
         applyHref: "/portal/applications/new",
         applyLabel: "Apply Now",
         eligibilityLabel: "Check My Eligibility",
         eyebrow: "Funding today. A stronger tomorrow.",
         heroPanelHeading: "Bigger businesses. A brighter Namibia.",
-        heroPanelSummary: "Open to eligible MSMEs from all 14 regions and every sector.",
+        heroPanelSummary:
+          "Open to eligible MSMEs from all 14 regions and every sector.",
         layout: [
-          { blockType: "resourceGrid", heading: "Latest News & Resources", limit: 4 },
+          {
+            blockType: "resourceGrid",
+            heading: "Latest News & Resources",
+            limit: 4,
+          },
           {
             blockType: "statistics",
             backgroundImage: impactImageId,
             campaignMessage: "Small Businesses. A Brighter Namibia",
             heading: "Real businesses, lasting impact.",
-            summary: "Together, we’re building a more competitive Namibia that supports MSME growth.",
+            summary:
+              "Together, we’re building a more competitive Namibia that supports MSME growth.",
           },
         ],
         newsHeading: "Latest News & Resources",
         reviewStatus: "approved",
-        summary: "Funding and business development support for Namibian MSMEs ready to grow.",
+        summary:
+          "Funding and business development support for Namibian MSMEs ready to grow.",
         title: "Your business has potential. We help you take the next step.",
         trackingLabel: "Track Application",
         _status: "published",
@@ -86,9 +102,11 @@ export async function seedSiteGlobals(payload: Payload) {
       data: {
         copyright: "© 2026 SME Fund Namibia. All rights reserved.",
         newsletterHeading: "Stay in the loop",
-        newsletterSummary: "Get funding-call updates and approved business resources.",
+        newsletterSummary:
+          "Get funding-call updates and approved business resources.",
         reviewStatus: "approved",
-        summary: "Supporting Namibian MSMEs to grow, compete and create opportunities.",
+        summary:
+          "Supporting Namibian MSMEs to grow, compete and create opportunities.",
         tagline: "Funding today. A stronger tomorrow.",
         _status: "published",
       },
@@ -98,7 +116,8 @@ export async function seedSiteGlobals(payload: Payload) {
       context: seedContext,
       overrideAccess: true,
       data: {
-        address: "Namibia Investment Promotion and Development Board, Windhoek, Namibia",
+        address:
+          "Namibia Investment Promotion and Development Board, Windhoek, Namibia",
         email: "info@smefund.na",
         officeHours: "Monday to Friday, 08:00–17:00",
         reviewStatus: "approved",
@@ -112,7 +131,8 @@ export async function seedSiteGlobals(payload: Payload) {
       data: {
         allowIndexing: true,
         reviewStatus: "approved",
-        siteDescription: "Funding and business development support for Namibian MSMEs.",
+        siteDescription:
+          "Funding and business development support for Namibian MSMEs.",
         siteName: "SME Fund Namibia",
         _status: "published",
       },

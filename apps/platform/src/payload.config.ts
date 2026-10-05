@@ -38,6 +38,10 @@ const environment = getServerEnvironment();
 export default buildConfig({
   bin: [
     {
+      key: "migrate-media",
+      scriptPath: path.resolve(dirname, "payload/scripts/migrate-media.ts"),
+    },
+    {
       key: "seed-database",
       scriptPath: path.resolve(dirname, "payload/seed/seed.ts"),
     },

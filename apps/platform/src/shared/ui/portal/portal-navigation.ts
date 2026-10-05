@@ -146,14 +146,6 @@ export const operationsPortalRoutes: readonly PortalRoute[] = [
     ],
   },
   {
-    id: "admin-cms",
-    href: "/cms",
-    label: "Content management",
-    icon: FileText,
-    space: "operations",
-    requiredPermission: permissionCodes.cmsAccess,
-  },
-  {
     id: "admin-settings",
     href: "/admin/settings",
     label: "Administration",

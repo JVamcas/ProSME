@@ -53,14 +53,16 @@ export default function CmsSidebar({
         email={email}
         footer={<CmsLogoutButton collapsed={isCollapsed} />}
         logoHref="/cms"
-        surface="gold"
+        surface="yellow"
         onClose={() => setNavOpen(false)}
         onToggleCollapsed={() => setCollapsed((current) => !current)}
         workspace={
-          <PortalSpaceSwitcher
-            availableSpaces={availableSpaces}
-            currentSpace="cms"
-          />
+          <div className="[&_a]:text-white [&_p]:text-white [&_[aria-disabled=true]]:text-white/40">
+            <PortalSpaceSwitcher
+              availableSpaces={availableSpaces}
+              currentSpace="cms"
+            />
+          </div>
         }
         resizeHandle={
           !isCollapsed ? (
@@ -73,6 +75,7 @@ export default function CmsSidebar({
       >
         <CmsNavigationLinks
           collapsed={isCollapsed}
+          onRequestExpand={() => setCollapsed(false)}
           onNavigate={() => {
             if (mobile) setNavOpen(false);
           }}

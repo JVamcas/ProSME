@@ -1,4 +1,5 @@
 import type { Field } from "payload";
+import { withAppFormInputs } from "./withAppFormInputs";
 
 // Unnamed groups organise the editor without changing saved field paths.
 const bannerFields: Field[] = [
@@ -127,28 +128,6 @@ const bannerFields: Field[] = [
     ],
   },
 ];
-
-function withAppFormInputs(field: Field): Field {
-  if (field.type === "group") {
-    return { ...field, fields: field.fields.map(withAppFormInputs) };
-  }
-
-  if (field.type === "text" || field.type === "textarea") {
-    return {
-      ...field,
-      admin: {
-        ...field.admin,
-        components: {
-          Field: field.type === "textarea"
-            ? "./modules/content/ui/admin/CmsFormFields.tsx#CmsFormTextarea"
-            : "./modules/content/ui/admin/CmsFormFields.tsx#CmsFormInput",
-        },
-      },
-    };
-  }
-
-  return field;
-}
 
 export const homePageBannerFields: Field[] = [
   {

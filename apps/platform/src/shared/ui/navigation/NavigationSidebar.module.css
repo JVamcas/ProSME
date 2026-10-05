@@ -20,16 +20,16 @@
   --sidebar-icon: var(--sme-brand-navy);
 }
 
-.frame[data-sidebar-surface="gold"],
-.frame[data-sidebar-surface="gold"] .dark {
-  --sidebar-surface: var(--sme-brand-gold);
-  --sidebar-text: var(--sme-brand-navy);
-  --sidebar-name: var(--sme-brand-navy);
-  --sidebar-muted: rgb(10 24 59 / 80%);
-  --sidebar-border: rgb(10 24 59 / 15%);
-  --sidebar-hover: rgb(10 24 59 / 10%);
-  --sidebar-focus: var(--sme-brand-navy);
-  --sidebar-icon: var(--sme-brand-navy);
+.frame[data-sidebar-surface="yellow"],
+.frame[data-sidebar-surface="yellow"] .dark {
+  --sidebar-surface: var(--sme-brand-yellow);
+  --sidebar-text: var(--sme-brand-white);
+  --sidebar-name: var(--sme-brand-white);
+  --sidebar-muted: var(--sme-brand-white);
+  --sidebar-border: rgb(255 255 255 / 25%);
+  --sidebar-hover: rgb(255 255 255 / 10%);
+  --sidebar-focus: var(--sme-brand-white);
+  --sidebar-icon: var(--sme-brand-white);
 }
 
 .frame {

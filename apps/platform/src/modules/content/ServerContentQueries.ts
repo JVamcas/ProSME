@@ -1,12 +1,13 @@
 import "server-only";
 
+import { homeProcessContent, homeSupportContent } from "./HomeListContent";
 import { media, resourceHref } from "./infrastructure/ContentProjection";
 import { readHomeFeed } from "./infrastructure/PayloadHomeFeedRepository";
 
 import { draftMode } from "next/headers";
 import { getPayload, type Where } from "payload";
 import configPromise from "@payload-config";
-import { defaultHomeActionCards, defaultHomeProcess } from "./ContentDefaults";
+import { defaultHomeActionCards } from "./ContentDefaults";
 
 import {
   cmsPermissionCode,
@@ -23,7 +24,6 @@ import {
   getBuildPage,
 } from "./ContentBuildFallbacks";
 import type {
-  CmsImage,
   ContactContent,
   EligibilityItem,
   FaqItem,
@@ -78,12 +78,22 @@ export async function getHomepage(): Promise<HomepageContent> {
   });
   return {
     actionCards: {
-      fundingTitle: page.actionCards?.fundingTitle ?? defaultHomeActionCards.fundingTitle,
-      fundingDescription: page.actionCards?.fundingDescription ?? defaultHomeActionCards.fundingDescription,
-      eligibilityTitle: page.actionCards?.eligibilityTitle ?? defaultHomeActionCards.eligibilityTitle,
-      eligibilityDescription: page.actionCards?.eligibilityDescription ?? defaultHomeActionCards.eligibilityDescription,
-      trackingTitle: page.actionCards?.trackingTitle ?? defaultHomeActionCards.trackingTitle,
-      trackingDescription: page.actionCards?.trackingDescription ?? defaultHomeActionCards.trackingDescription,
+      fundingTitle:
+        page.actionCards?.fundingTitle ?? defaultHomeActionCards.fundingTitle,
+      fundingDescription:
+        page.actionCards?.fundingDescription ??
+        defaultHomeActionCards.fundingDescription,
+      eligibilityTitle:
+        page.actionCards?.eligibilityTitle ??
+        defaultHomeActionCards.eligibilityTitle,
+      eligibilityDescription:
+        page.actionCards?.eligibilityDescription ??
+        defaultHomeActionCards.eligibilityDescription,
+      trackingTitle:
+        page.actionCards?.trackingTitle ?? defaultHomeActionCards.trackingTitle,
+      trackingDescription:
+        page.actionCards?.trackingDescription ??
+        defaultHomeActionCards.trackingDescription,
     },
     applyHref: page.applyHref,
     applyLabel: page.applyLabel,
@@ -93,22 +103,18 @@ export async function getHomepage(): Promise<HomepageContent> {
     heroPanelHeading: page.heroPanelHeading ?? "",
     heroPanelSummary: page.heroPanelSummary ?? "",
     fundingButtonLabel: page.fundingButtonLabel ?? "Funding Opportunities",
-    fundingSlogan: page.fundingSlogan ?? "Brighter businesses. A stronger Namibia.",
+    fundingSlogan:
+      page.fundingSlogan ?? "Brighter businesses. A stronger Namibia.",
     benefitFunding: page.benefitFunding ?? "Access funding",
     benefitCapacity: page.benefitCapacity ?? "Build your capacity",
     benefitOpportunity: page.benefitOpportunity ?? "Create opportunities",
-    process: {
-      heading: page.process?.heading ?? defaultHomeProcess.heading,
-      introduction: page.process?.introduction ?? defaultHomeProcess.introduction,
-      steps: page.process?.steps?.length === 4
-        ? page.process.steps.map((step) => ({ title: step.title, description: step.description }))
-        : defaultHomeProcess.steps,
-    },
-    supportHeading: page.supportHeading ?? "Who we support",
-    supportIntroduction: page.supportIntroduction ?? "The SME Fund is open to any Namibian MSME with high potential, inclusive impact and a commitment to growth. Our priority areas include:",
+    process: homeProcessContent(page.process),
+    ...homeSupportContent(page),
     blocks: page.layout ?? [],
     newsHeading: page.newsHeading ?? "",
-    newsIntroduction: page.newsIntroduction ?? "Updates, stories and useful materials for Namibian entrepreneurs.",
+    newsIntroduction:
+      page.newsIntroduction ??
+      "Updates, stories and useful materials for Namibian entrepreneurs.",
     summary: page.summary ?? "",
     title: page.title ?? "",
     trackingLabel: page.trackingLabel,

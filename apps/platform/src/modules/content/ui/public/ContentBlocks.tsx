@@ -3,7 +3,7 @@ import Link from "next/link";
 import { CmsImage } from "@/modules/content/ui/public/CmsImage";
 import { CmsRichText } from "@/modules/content/ui/public/CmsRichText";
 import { HomeFunding } from "@/modules/content/ui/public/HomeFunding";
-import { StatisticsBlock } from "./statistics-block";
+import { StatisticsBlock } from "@/components/public/statistics-block";
 import { getFaqs } from "@/modules/content/ServerContentQueries";
 
 type Block = Record<string, unknown> & { blockType?: string };
@@ -18,15 +18,20 @@ export async function ContentBlocks({
   return (
     <>
       {await Promise.all(
-        blocks.map((block, index) => renderBlock(block as Block, index, resourceIntroduction)),
+        blocks.map((block, index) =>
+          renderBlock(block as Block, index, resourceIntroduction),
+        ),
       )}
     </>
   );
 }
 
-async function renderBlock(block: Block, index: number, resourceIntroduction?: string) {
+async function renderBlock(
+  block: Block,
+  index: number,
+  resourceIntroduction?: string,
+) {
   const key = `${block.blockType}-${index}`;
-  if (isRemovedEligibilityBanner(block)) return null;
   if (block.blockType === "hero")
     return (
       <section className="section bg-navy text-white" key={key}>
@@ -76,12 +81,24 @@ async function renderBlock(block: Block, index: number, resourceIntroduction?: s
   if (block.blockType === "statistics")
     return <StatisticsBlock block={block} key={key} />;
   if (block.blockType === "resourceGrid")
-    return <ResourceGrid block={block} introduction={resourceIntroduction} key={key} />;
+    return (
+      <ResourceGrid
+        block={block}
+        introduction={resourceIntroduction}
+        key={key}
+      />
+    );
   if (block.blockType === "faqList") return <FaqList block={block} key={key} />;
   return null;
 }
 
-async function ResourceGrid({ block, introduction }: { block: Block; introduction?: string }) {
+async function ResourceGrid({
+  block,
+  introduction,
+}: {
+  block: Block;
+  introduction?: string;
+}) {
   return (
     <HomeFunding
       heading={text(block.heading) || "Latest News & Resources"}
@@ -128,11 +145,4 @@ function image(value: unknown) {
   return value && typeof value === "object" && "url" in value
     ? (value as Parameters<typeof CmsImage>[0]["image"])
     : undefined;
-}
-function isRemovedEligibilityBanner(block: Block) {
-  return (
-    block.blockType === "callToAction" &&
-    text(block.href) === "/eligibility" &&
-    text(block.heading) === "Start with an eligibility check"
-  );
 }
