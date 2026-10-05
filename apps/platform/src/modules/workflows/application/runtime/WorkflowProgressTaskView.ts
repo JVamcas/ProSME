@@ -16,8 +16,7 @@ export function workflowProgressTaskView(
 ): WorkflowProgressTask {
   const released =
     task.reviewRelease === "IMMEDIATE" ||
-    (task.reviewRelease === "THRESHOLD_MET" &&
-      task.thresholdSatisfied) ||
+    (task.reviewRelease === "THRESHOLD_MET" && task.thresholdSatisfied) ||
     context.stageStatus === "COMPLETED" ||
     context.stageStatus === "RETURNED";
   const peerIsHidden =
@@ -65,19 +64,17 @@ export function workflowProgressTaskView(
     task.taskType === "STAGE_DECISION" &&
     ["PENDING", "IN_PROGRESS"].includes(task.status) &&
     prerequisitesComplete === false
-      ? "Complete all contributing tasks before making the stage decision."
+      ? "Meet the required contributing review thresholds before making the stage decision."
       : null;
   return {
     ...details,
     blockedReason,
     canOpen:
-      can(actor, permissionCodes.workflowTaskAllRead) || (
-        !blockedReason &&
-        context.workflowStatus === "ACTIVE" &&
+      can(actor, permissionCodes.workflowTaskAllRead) ||
+      (context.workflowStatus === "ACTIVE" &&
         ["ACTIVE", "BLOCKED"].includes(context.stageStatus) &&
         assignedUserId === actor.id &&
         can(actor, permissionCodes.workflowTaskAssignedRead) &&
-        can(actor, viewPermission)
-      ),
+        can(actor, viewPermission)),
   };
 }

@@ -50,6 +50,11 @@ describe("work queue funding call projection", () => {
         'ELSE NULL END AS "fundingCallTitle"',
       );
       expect(query.params).toContain(actorId);
+      expect(query.sql).toContain("COI declaration required");
+      expect(query.sql).toContain("COI disclosure awaiting independent review");
+      expect(query.sql).toContain("prerequisite_definition.completion_mode");
+      expect(query.sql).toContain("prerequisite_definition.required = TRUE");
+      expect(query.sql).not.toContain("Hidden until COI reviewed");
     },
   );
 });

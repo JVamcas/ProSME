@@ -146,7 +146,7 @@ describe("operations list screens", () => {
     expect(markup).not.toContain(">Claim<");
   });
 
-  it("shows a prerequisite note instead of a link for a blocked decision task", () => {
+  it("keeps blocked decision tasks accessible with a prerequisite note", () => {
     const markup = renderToStaticMarkup(
       <WorkQueueTable
         emptyMessage="No tasks"
@@ -154,7 +154,7 @@ describe("operations list screens", () => {
           {
             ...task,
             taskBlockedReason:
-              "Available when all contributing tasks are complete.",
+              "Meet the required contributing review thresholds before making the stage decision.",
             taskType: "STAGE_DECISION",
           },
         ]}
@@ -163,9 +163,9 @@ describe("operations list screens", () => {
 
     expect(markup).toContain("Stage decision");
     expect(markup).toContain(
-      "Available when all contributing tasks are complete.",
+      "Meet the required contributing review thresholds before making the stage decision.",
     );
-    expect(markup).not.toContain(`/admin/tasks/${task.taskInstanceId}`);
+    expect(markup).toContain(`/admin/tasks/${task.taskInstanceId}`);
   });
 
   it("renders a placeholder when the funding call is hidden", () => {

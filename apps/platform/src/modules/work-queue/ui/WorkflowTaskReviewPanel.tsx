@@ -71,26 +71,23 @@ function AssignedTaskReview({ task }: { task: TaskDetail }) {
     [],
   );
 
-  const {
-    actionTask,
-    canComplete,
-    completedCount,
-    eligibilityReady,
-    formIsLastSection,
-    formSectionComplete,
-    formSubmitNeeded,
-    hasTaskWork,
-    sectionCount,
-    separateEligibilitySection,
-    showActionsInFinalStep,
-    submitsFormWithTaskAction,
-    taskProgressStatus,
-  } = workflowTaskReviewReadiness(
+  const readiness = workflowTaskReviewReadiness(
     task,
     reviewState,
     formState,
     completion.isPending,
   );
+  const {
+    completedCount,
+    formIsLastSection,
+    formSectionComplete,
+    hasTaskWork,
+    sectionCount,
+    separateEligibilitySection,
+    showActionsInFinalStep,
+    taskProgressStatus,
+    taskBlockedReason,
+  } = readiness;
   const [isFinalReviewStep, setFinalReviewStep] = useState(
     sectionCount - Number(separateEligibilitySection) <= 1,
   );
@@ -127,53 +124,20 @@ function AssignedTaskReview({ task }: { task: TaskDetail }) {
   }
 
   const taskActions = (
-    <div className="space-y-4">
-      {task.actions.length ||
-      task.taskType === "CONTRIBUTING" ||
-      (task.canEvaluateEligibility && task.formVersionId) ? (
-        <WorkflowTaskDecisionActions
-          showDecisionActions={showDecisionActions}
-          eligibilityActionRef={
-            task.canEvaluateEligibility && task.formVersionId
-              ? setEligibilityActionContainer
-              : undefined
-          }
-          additionalItems={
-            task.taskType === "CONTRIBUTING" && showDecisionActions
-              ? [
-                  {
-                    id: "complete-task",
-                    label: completion.isPending
-                      ? "Completing…"
-                      : "Complete Task",
-                    disabled: !canComplete,
-                    description: !eligibilityReady
-                      ? "Run the eligibility ruleset before completing this task."
-                      : !canComplete
-                        ? "Complete the required task work and wait for changes to save."
-                        : undefined,
-                    onAction: formSubmitNeeded
-                      ? () => void completeFormRef.current?.()
-                      : completeTask,
-                  },
-                ]
-              : []
-          }
-          beforeAction={
-            submitsFormWithTaskAction
-              ? async () => {
-                  const completeForm = completeFormRef.current;
-                  if (!completeForm) {
-                    throw new Error("The task form is not ready to submit.");
-                  }
-                  await completeForm();
-                }
-              : undefined
-          }
-          task={actionTask}
-        />
-      ) : null}
-    </div>
+    <AssignedTaskActions
+      completionPending={completion.isPending}
+      onCompleteForm={async () => {
+        const completeForm = completeFormRef.current;
+        if (!completeForm)
+          throw new Error("The task form is not ready to submit.");
+        await completeForm();
+      }}
+      onCompleteTask={completeTask}
+      readiness={readiness}
+      setEligibilityActionContainer={setEligibilityActionContainer}
+      showDecisionActions={showDecisionActions}
+      task={task}
+    />
   );
 
   return (
@@ -185,9 +149,10 @@ function AssignedTaskReview({ task }: { task: TaskDetail }) {
         <WorkflowTaskReviewSummary
           completedCount={completedCount}
           message={
-            sectionCount
+            taskBlockedReason ??
+            (sectionCount
               ? `${completedCount} of ${sectionCount} sections complete`
-              : "No configured sections"
+              : "No configured sections")
           }
           status={taskProgressStatus}
           totalCount={sectionCount}
@@ -233,6 +198,75 @@ function HeldTaskReview({ task }: { task: TaskDetail }) {
     <div className="space-y-4">
       <WorkflowTaskHoldStatus holds={task.holds ?? []} />
       <WorkflowTaskDecisionActions task={task} />
+    </div>
+  );
+}
+
+function AssignedTaskActions({
+  task,
+  readiness,
+  completionPending,
+  onCompleteTask,
+  onCompleteForm,
+  showDecisionActions,
+  setEligibilityActionContainer,
+}: {
+  task: TaskDetail;
+  readiness: ReturnType<typeof workflowTaskReviewReadiness>;
+  completionPending: boolean;
+  onCompleteTask: () => void;
+  onCompleteForm: () => Promise<void>;
+  showDecisionActions: boolean;
+  setEligibilityActionContainer: (element: HTMLDivElement | null) => void;
+}) {
+  const {
+    actionTask,
+    canComplete,
+    eligibilityReady,
+    formSubmitNeeded,
+    submitsFormWithTaskAction,
+  } = readiness;
+  return (
+    <div className="space-y-4">
+      {task.actions.length ||
+      task.taskType === "CONTRIBUTING" ||
+      (task.canEvaluateEligibility && task.formVersionId) ? (
+        <WorkflowTaskDecisionActions
+          showDecisionActions={showDecisionActions}
+          eligibilityActionRef={
+            task.canEvaluateEligibility && task.formVersionId
+              ? setEligibilityActionContainer
+              : undefined
+          }
+          additionalItems={
+            task.taskType === "CONTRIBUTING" && showDecisionActions
+              ? [
+                  {
+                    id: "complete-task",
+                    label: completionPending ? "Completing…" : "Complete Task",
+                    disabled: !canComplete,
+                    description: !eligibilityReady
+                      ? "Run the eligibility ruleset before completing this task."
+                      : !canComplete
+                        ? "Complete the required task work and wait for changes to save."
+                        : undefined,
+                    onAction: formSubmitNeeded
+                      ? onCompleteForm
+                      : onCompleteTask,
+                  },
+                ]
+              : []
+          }
+          beforeAction={
+            submitsFormWithTaskAction
+              ? async () => {
+                  await onCompleteForm();
+                }
+              : undefined
+          }
+          task={actionTask}
+        />
+      ) : null}
     </div>
   );
 }

@@ -58,6 +58,8 @@ export function workflowTaskReviewReadiness(
   );
   const canComplete =
     task.taskStatus !== "COMPLETED" &&
+    !task.hasOpenRfi &&
+    task.processingStatus !== "ON_HOLD" &&
     reviewReady &&
     eligibilityReady &&
     formReady &&
@@ -76,14 +78,6 @@ export function workflowTaskReviewReadiness(
     (!task.commentFields.length || task.commentCompleted);
 
   const changesPending = formState.pending || reviewState.pending;
-  const taskProgressStatus =
-    task.taskStatus === "COMPLETED"
-      ? "Completed"
-      : task.taskType === "STAGE_DECISION" && canDecide
-        ? "Ready for decision"
-        : task.taskStatus === "PENDING"
-          ? "Pending"
-          : "In progress";
   const actionTask = {
     ...task,
     actions: task.actions.map((action) => {
@@ -102,6 +96,34 @@ export function workflowTaskReviewReadiness(
       };
     }),
   };
+  const decisionActions = actionTask.actions.filter((action) =>
+    isWorkflowStageDecisionAction(action.actionType),
+  );
+  const decisionAvailable = decisionActions.some((action) => action.available);
+  let taskBlockedReason: string | null = null;
+  let taskProgressStatus =
+    task.taskStatus === "PENDING" ? "Pending" : "In progress";
+  if (task.taskStatus === "COMPLETED") {
+    taskProgressStatus = "Completed";
+  } else if (task.processingStatus === "ON_HOLD") {
+    taskProgressStatus = "On hold";
+    taskBlockedReason =
+      "Resume the applicable holds before continuing this task.";
+  } else if (task.hasOpenRfi) {
+    taskProgressStatus = "Awaiting information";
+    taskBlockedReason =
+      task.taskType === "STAGE_DECISION" && task.prerequisitesComplete
+        ? "Review threshold met — awaiting closure of the open information request."
+        : "Close the open information request before completing this task.";
+  } else if (task.taskType === "STAGE_DECISION") {
+    taskProgressStatus = decisionAvailable
+      ? "Ready for decision"
+      : "Decision blocked";
+    taskBlockedReason = decisionAvailable
+      ? null
+      : (decisionActions.find((action) => action.unavailableReason)
+          ?.unavailableReason ?? "No stage decision is currently available.");
+  }
 
   return {
     actionTask,
@@ -116,6 +138,7 @@ export function workflowTaskReviewReadiness(
     showActionsInFinalStep,
     submitsFormWithTaskAction,
     taskProgressStatus,
+    taskBlockedReason,
     formIsLastSection: Boolean(task.formVersionId) && !hasReviewFields,
   };
 }

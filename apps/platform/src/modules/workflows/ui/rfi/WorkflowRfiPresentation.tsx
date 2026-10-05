@@ -162,8 +162,10 @@ export function StaffApplicationRfiTimeline({
 
                 <div className="flex shrink-0 items-center gap-3">
                   <StatusBadge status={request.status} />
-                  <ArrowLink href={`/admin/tasks/${request.taskId}`}>
-                    Open task
+                  <ArrowLink
+                    href={`/admin/tasks/${request.taskId}?requestId=${request.id}`}
+                  >
+                    View request
                   </ArrowLink>
                 </div>
               </div>

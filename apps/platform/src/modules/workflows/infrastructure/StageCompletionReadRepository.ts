@@ -1,6 +1,7 @@
 import "server-only";
 
 import { sql } from "drizzle-orm";
+import { workflowReviewCompletionEvidence } from "./WorkflowReviewCompletionSql";
 import type { RequiredTaskCompletion } from "../domain/runtime/StageCompletion";
 import type {
   StageCompletionTransaction,
@@ -45,28 +46,12 @@ export async function loadRequiredTaskCompletionsForStages(
   previewFormSubmission = false,
 ): Promise<(RequiredTaskCompletion & { stageInstanceId: string })[]> {
   if (!stageInstanceIds.length) return [];
-  const formEvidenceReady = sql`(
-    task.form_version_id IS NULL
-    OR (
-      ${previewFormSubmission}
-      AND task.id = ${completingTaskId ?? null}::uuid
-      AND definition.task_type = 'STAGE_DECISION'
-      AND COALESCE(definition.config ->> 'command', '') <> 'AUTHORITATIVE_ELIGIBILITY'
-      AND COALESCE(definition.config ->> 'formPurpose', '') <> 'ELIGIBILITY_VERIFICATION'
-    )
-    OR EXISTS (
-      SELECT 1 FROM app_form_responses response
-      WHERE response.workflow_task_id = task.id
-        AND (
-          response.status = 'COMPLETED'
-          OR (
-            (definition.config ->> 'command' = 'AUTHORITATIVE_ELIGIBILITY'
-              OR definition.config ->> 'formPurpose' = 'ELIGIBILITY_VERIFICATION')
-            AND response.values = (task.result -> 'evaluatedFormValues')
-          )
-        )
-    )
-  )`;
+  const completionEvidence = workflowReviewCompletionEvidence(
+    sql`task`,
+    sql`definition`,
+    completingTaskId,
+    previewFormSubmission,
+  );
   const result = await transaction.execute(sql`
     SELECT stage.id AS "stageInstanceId", definition.id AS "taskDefinitionId",
       definition.code AS "taskKey",
@@ -75,26 +60,10 @@ export async function loadRequiredTaskCompletionsForStages(
       definition.completion_percentage AS "completionPercentage",
       definition.reviewer_count AS "denominator",
       count(task.id) FILTER (
-        WHERE (task.status = 'COMPLETED'
-          OR (task.id = ${completingTaskId ?? null}::uuid
-            AND task.status IN ('PENDING', 'IN_PROGRESS')))
-          AND app_workflow_task_coi_cleared(task.id, task.assigned_user_id)
-          AND NOT EXISTS (
-            SELECT 1 FROM app_workflow_tasks successor
-            WHERE successor.supersedes_task_id = task.id
-          )
-          AND ${formEvidenceReady}
+        WHERE ${completionEvidence}
       )::integer AS "completedCount",
       COALESCE(array_agg(task.id ORDER BY task.reviewer_slot) FILTER (
-        WHERE (task.status = 'COMPLETED'
-          OR (task.id = ${completingTaskId ?? null}::uuid
-            AND task.status IN ('PENDING', 'IN_PROGRESS')))
-          AND app_workflow_task_coi_cleared(task.id, task.assigned_user_id)
-          AND NOT EXISTS (
-            SELECT 1 FROM app_workflow_tasks successor
-            WHERE successor.supersedes_task_id = task.id
-          )
-          AND ${formEvidenceReady}
+        WHERE ${completionEvidence}
       ), ARRAY[]::uuid[]) AS "completedTaskIds"
     FROM app_stage_task_definitions definition
     JOIN app_workflow_stage_instances stage

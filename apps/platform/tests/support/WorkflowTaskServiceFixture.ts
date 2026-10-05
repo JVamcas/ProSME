@@ -17,6 +17,8 @@ export const workflowTaskActorFixture: AuthenticatedUser = {
 
 
 export const workflowTaskServiceFixture = {
+  hasOpenRfi: false,
+  prerequisitesComplete: true,
   assignedToActor: true,
   coiCleared: true,
   stageStatus: "ACTIVE",

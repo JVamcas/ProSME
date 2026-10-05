@@ -108,13 +108,13 @@ describe("work queue status context", () => {
     "On hold. Open the task to review or resume it.",
     "Deferred. Open the task to review its continuation.",
     "Blocked pending escalation resolution.",
-    "Available when all contributing tasks are complete.",
+    "Meet the required contributing review thresholds before making the stage decision.",
   ])("puts the blocking context in the status cell: %s", (reason) => {
     const { status, markup } = renderStatus({ taskBlockedReason: reason });
 
     expect(status).toContain("In Progress");
     expect(status).toContain(reason);
-    expect(markup).not.toContain("/admin/applications/application-1?tab=workflow-progress&amp;taskId=task-1");
+    expect(markup).toContain("/admin/tasks/task-1");
   });
 
   it("keeps information-request tasks accessible while displaying hold context", () => {
@@ -125,7 +125,7 @@ describe("work queue status context", () => {
 
     expect(status).toContain("On hold.");
     expect(status).toContain("Information requested");
-    expect(markup).toContain("/admin/applications/application-1?tab=workflow-progress&amp;taskId=task-1");
+    expect(markup).toContain("/admin/tasks/task-1");
   });
 
   it("shows only the lifecycle when there is no request or blocking context", () => {

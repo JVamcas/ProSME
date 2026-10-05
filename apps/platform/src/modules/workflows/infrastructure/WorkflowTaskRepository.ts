@@ -13,6 +13,7 @@ import { workflowTaskPeerReadAllowed } from "./WorkflowTaskPeerReadSql";
 import { workflowTaskViewPermissionMatches } from "./WorkflowTaskViewPermissionSql";
 import { workflowTaskEffectiveDeadline } from "./WorkflowSlaDeadline";
 import { workflowDocumentEvidenceIsCurrent } from "./WorkflowDocumentEvidenceReadiness";
+import { workflowTaskPrerequisitesSatisfied } from "./WorkflowTaskPrerequisiteReadiness";
 
 type TaskDetailRow = Omit<
   TaskDetail,
@@ -52,6 +53,11 @@ export async function readWorkflowTask(
 ): Promise<TaskDetailRow | null> {
   const result = await getDatabase().execute(sql`
     SELECT task.id AS "taskInstanceId", task.status AS "taskStatus",
+      ${workflowTaskPrerequisitesSatisfied(sql`task`, sql`definition`)} AS "prerequisitesComplete",
+      EXISTS (
+        SELECT 1 FROM app_workflow_rfis rfi
+        WHERE rfi.task_id = task.id AND rfi.status = 'OPEN'
+      ) AS "hasOpenRfi",
       CASE WHEN task.status IN ('PENDING', 'IN_PROGRESS') AND ${workflowTaskHasActiveHold(sql`task`)}
         THEN 'ON_HOLD' ELSE NULL END AS "processingStatus",
       ${workflowTaskHoldSummaries(sql`task`)} AS holds,

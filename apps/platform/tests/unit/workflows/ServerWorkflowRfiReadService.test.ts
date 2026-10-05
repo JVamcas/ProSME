@@ -87,10 +87,20 @@ describe("ServerWorkflowRfiReadService", () => {
       user(permissionCodes.workflowTaskAssignedRead),
       taskId,
     );
-    expect(readWorkflowTask).toHaveBeenCalledWith(actorId, taskId);
+    expect(readWorkflowTask).toHaveBeenCalledWith(
+      actorId, taskId, false, [permissionCodes.workflowTaskAssignedRead],
+    );
     expect(readTaskWorkflowRfis).toHaveBeenCalledWith(taskId);
 
     await expect(listTaskWorkflowRfis(user(), taskId)).rejects.toThrow();
+  });
+
+  it("rejects a task outside the actor's assignment or COI clearance", async () => {
+    vi.mocked(readWorkflowTask).mockResolvedValue(null);
+    await expect(listTaskWorkflowRfis(
+      user(permissionCodes.workflowTaskAssignedRead), taskId,
+    )).rejects.toThrow();
+    expect(readTaskWorkflowRfis).not.toHaveBeenCalled();
   });
 
   it("uses all-scope application history when granted", async () => {

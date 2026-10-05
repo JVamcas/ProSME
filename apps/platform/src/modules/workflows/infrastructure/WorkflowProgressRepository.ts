@@ -31,6 +31,7 @@ import {
 
 import { transitionExecutionTargets } from "./workflow-parallel.schema";
 import { workflowTaskPrerequisitesComplete } from "./WorkflowTaskPrerequisiteReadiness";
+import { requiredWorkflowReviewCompletions } from "./WorkflowReviewCompletionSql";
 
 export type ProgressTaskRecord = Omit<WorkflowProgressTask, "canOpen"> & {
   assignedRoleCode: string | null;
@@ -84,6 +85,9 @@ async function loadWorkflowProgressRows(applicationId: string) {
       taskActionedAt: workflowTasks.completedAt,
       taskDefinitionId: stageTaskDefinitions.id,
       reviewerCount: stageTaskDefinitions.reviewerCount,
+      requiredReviewCount: requiredWorkflowReviewCompletions(
+        sql`${stageTaskDefinitions}`,
+      ),
       reviewRelease: stageTaskDefinitions.reviewRelease,
       thresholdSatisfied: sql<boolean>`EXISTS (
         SELECT 1 FROM app_workflow_review_threshold_evaluations evaluation
@@ -231,6 +235,8 @@ export async function readWorkflowProgress(
         assignedRoleCode: row.taskAssignedRoleCode,
         taskDefinitionId: row.taskDefinitionId,
         reviewerCount: row.reviewerCount,
+        configuredReviewerCount: row.reviewerCount ?? 1,
+        requiredReviewCount: row.requiredReviewCount,
         reviewRelease: row.reviewRelease,
         thresholdSatisfied: row.thresholdSatisfied,
         assignedRoleName: row.taskAssignedRoleName,
@@ -242,7 +248,6 @@ export async function readWorkflowProgress(
         ...(planned
           ? {
               planned: true,
-              configuredReviewerCount: row.reviewerCount ?? 1,
             }
           : {}),
         name: row.taskName,

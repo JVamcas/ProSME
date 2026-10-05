@@ -1,5 +1,8 @@
 import "server-only";
-import { workflowTaskHasActiveHold, workflowTaskHoldSummaries } from "./WorkflowHoldQueries";
+import {
+  workflowTaskHasActiveHold,
+  workflowTaskHoldSummaries,
+} from "./WorkflowHoldQueries";
 
 import { sql } from "drizzle-orm";
 
@@ -11,6 +14,7 @@ import type {
 } from "@/modules/work-queue/WorkQueueTypes";
 import type { WorkQueueCursor } from "@/modules/work-queue/WorkQueueCursor";
 import { workflowTaskEffectiveDeadline } from "./WorkflowSlaDeadline";
+import { workflowTaskPrerequisitesSatisfied } from "./WorkflowTaskPrerequisiteReadiness";
 
 const actionableStatuses = sql`('PENDING', 'IN_PROGRESS')`;
 
@@ -91,14 +95,15 @@ function queueQuery(
           THEN application.id ELSE NULL END AS "applicationId",
         CASE WHEN ${visibleToActor(actorId)}
           AND app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
-          THEN application.reference ELSE 'Hidden until COI reviewed' END AS "reference",
+          THEN application.reference ELSE coi_gate.blocked_reason END AS "reference",
         CASE WHEN ${visibleToActor(actorId)}
           AND app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
           THEN NULLIF(COALESCE(business.trading_name, business.legal_name), '')
           ELSE NULL END AS "businessName",
         CASE WHEN ${visibleToActor(actorId)}
           AND app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
-          THEN applicant.display_name ELSE 'Hidden until COI reviewed' END AS "applicantName",
+          THEN applicant.display_name ELSE coi_gate.blocked_reason END AS "applicantName",
+        coi_gate.blocked_reason AS "coiBlockedReason",
         CASE WHEN ${visibleToActor(actorId)}
           AND app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
           THEN application.funding_opportunity_title
@@ -116,16 +121,11 @@ function queueQuery(
             WHERE deferral.stage_instance_id = stage.id
               AND deferral.status = 'ACTIVE'
           ) THEN 'Deferred. Open the task to review its continuation.'
-          WHEN definition.task_type = 'STAGE_DECISION' AND EXISTS (
-          SELECT 1
-          FROM app_workflow_tasks prerequisite
-          JOIN app_stage_task_definitions prerequisite_definition
-            ON prerequisite_definition.id = prerequisite.workflow_task_definition_id
-          WHERE prerequisite.stage_instance_id = task.stage_instance_id
-            AND prerequisite.id <> task.id
-            AND prerequisite_definition.task_type = 'CONTRIBUTING'
-            AND prerequisite.status NOT IN ('COMPLETED', 'CANCELLED')
-        ) THEN 'Available when all contributing tasks are complete.'
+          WHEN NOT ${workflowTaskPrerequisitesSatisfied(sql`task`, sql`definition`)}
+            THEN 'Meet the required contributing review thresholds before making the stage decision.'
+          WHEN app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
+            AND request.status = 'OPEN'
+            THEN 'Close the open information request before completing this task.'
           ELSE NULL END AS "taskBlockedReason",
         CASE WHEN ${workflowTaskHasActiveHold(sql`task`)} THEN 'ON_HOLD' ELSE NULL END AS "processingStatus",
         CASE WHEN app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
@@ -167,6 +167,20 @@ function queueQuery(
       ) outgoing ON TRUE
       LEFT JOIN app_roles role ON role.id = task.assigned_role_id
       LEFT JOIN app_users assignee ON assignee.id = task.assigned_user_id
+      LEFT JOIN app_workflow_application_coi clearance
+        ON clearance.application_id = workflow.application_id
+          AND clearance.user_id = ${actorId}::uuid
+          AND clearance.form_version_id = stage_definition.coi_form_version_id
+      CROSS JOIN LATERAL (
+        SELECT CASE
+          WHEN app_workflow_task_coi_cleared(task.id, ${actorId}::uuid) THEN NULL
+          WHEN clearance.state = 'PENDING_REVIEW'
+            THEN 'COI disclosure awaiting independent review'
+          WHEN clearance.state = 'RECUSED' THEN 'Recused from this application'
+          WHEN clearance.state = 'REVOKED' THEN 'COI clearance revoked'
+          ELSE 'COI declaration required'
+        END AS blocked_reason
+      ) coi_gate
       LEFT JOIN LATERAL (
         SELECT rfi.id, rfi.status, rfi.created_at, rfi.deadline_at, rfi.responded_at
         FROM app_workflow_rfis rfi

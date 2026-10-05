@@ -134,7 +134,7 @@ describe("task workspace workflow progress", () => {
 
       expect(markup).not.toContain("Workflow Progress");
       expect(markup).toContain("Assigned Task");
-      expect(markup).not.toContain("Requests for information");
+      expect(markup).toContain("Information requests");
     },
   );
 

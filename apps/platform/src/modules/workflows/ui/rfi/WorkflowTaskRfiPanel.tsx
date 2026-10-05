@@ -63,11 +63,13 @@ function StaffRfiResponse({
                     detail.response!.fieldValues[field.path] ?? "",
                   )}
                 />
-              ) : Array.isArray(detail.response!.fieldValues[field.path])
-                ? (detail.response!.fieldValues[field.path] as unknown[]).join(
-                    ", ",
-                  )
-                : String(detail.response!.fieldValues[field.path] ?? "—")}
+              ) : Array.isArray(detail.response!.fieldValues[field.path]) ? (
+                (detail.response!.fieldValues[field.path] as unknown[]).join(
+                  ", ",
+                )
+              ) : (
+                String(detail.response!.fieldValues[field.path] ?? "—")
+              )}
             </dd>
           </div>
         ))}
@@ -148,9 +150,13 @@ function FollowUpForm({
 function StaffRfiDetail({
   detail,
   taskId,
+  canClose,
+  canFollowUp,
 }: {
   detail: WorkflowRfiDetail;
   taskId: string;
+  canClose: boolean;
+  canFollowUp: boolean;
 }) {
   const close = useCloseWorkflowRfi(taskId, detail.id);
   return (
@@ -171,10 +177,11 @@ function StaffRfiDetail({
       </section>
       <StaffRfiResponse detail={detail} taskId={taskId} />
       <WorkflowRfiCorrespondence entries={detail.correspondence} />
-      {detail.status === "OPEN" ? (
+      {canFollowUp && detail.status === "OPEN" ? (
         <FollowUpForm detail={detail} taskId={taskId} />
       ) : null}
-      {detail.status === "OPEN" || detail.status === "RESPONDED" ? (
+      {canClose &&
+      (detail.status === "OPEN" || detail.status === "RESPONDED") ? (
         <div className="flex flex-wrap items-center justify-end gap-3">
           {close.isError ? (
             <p className="text-sm text-red-700" role="alert">
@@ -198,9 +205,21 @@ function StaffRfiDetail({
   );
 }
 
-export function WorkflowTaskRfiPanel({ taskId }: { taskId: string }) {
+export function WorkflowTaskRfiPanel({
+  taskId,
+  initialRequestId,
+  canClose = false,
+  canFollowUp = false,
+}: {
+  taskId: string;
+  initialRequestId?: string;
+  canClose?: boolean;
+  canFollowUp?: boolean;
+}) {
   const list = useTaskWorkflowRfis(taskId);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(
+    initialRequestId ?? null,
+  );
   const effectiveSelectedId = selectedId ?? list.data?.[0]?.id ?? null;
   const detail = useTaskWorkflowRfi(taskId, effectiveSelectedId);
 
@@ -287,7 +306,12 @@ export function WorkflowTaskRfiPanel({ taskId }: { taskId: string }) {
               title="Request could not be loaded"
             />
           ) : detail.data ? (
-            <StaffRfiDetail detail={detail.data} taskId={taskId} />
+            <StaffRfiDetail
+              canClose={canClose}
+              canFollowUp={canFollowUp}
+              detail={detail.data}
+              taskId={taskId}
+            />
           ) : null}
         </div>
       </div>

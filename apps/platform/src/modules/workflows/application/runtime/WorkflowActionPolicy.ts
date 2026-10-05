@@ -283,7 +283,7 @@ export function evaluateWorkflowActionPolicy(
   ) {
     return unavailable(
       "INVALID_STATE",
-      "Complete all contributing tasks before making the stage decision.",
+      "Meet the required contributing review thresholds before making the stage decision.",
     );
   }
   if (!input.configurationValid || !input.targetsValid) {

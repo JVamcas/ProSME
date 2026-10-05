@@ -20,6 +20,7 @@ export type WorkflowProgressTask = {
   taskType: WorkflowTaskType;
   planned?: boolean;
   configuredReviewerCount?: number;
+  requiredReviewCount?: number;
 };
 
 export type WorkflowProgressStage = {

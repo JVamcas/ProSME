@@ -42,4 +42,13 @@ describe("workflow progress task read access", () => {
     });
     expect(result).toMatchObject({ canOpen: false, assignedUserName: null, id: "peer-slot-1" });
   });
+
+  it("allows the assignee to open a decision while keeping its blocking reason", () => {
+    const result = workflowProgressTaskView({
+      ...actor, id: "reviewer",
+      capabilities: new Set([permissionCodes.workflowTaskAssignedRead]),
+    }, task, context);
+    expect(result.canOpen).toBe(true);
+    expect(result.blockedReason).toContain("review thresholds");
+  });
 });
