@@ -138,6 +138,13 @@ describe("editable Home card lists", () => {
         (field) => "name" in field && field.name,
       ),
     ).toEqual(["fundingSlogan", "newsIntroduction", "layout"]);
+    const additionalFields = childFields(scoped as Field[]);
+    expect(additionalFields[0]).toMatchObject({ admin: { hidden: true } });
+    expect(additionalFields[1]).toMatchObject({ admin: { hidden: true } });
+    expect(additionalFields[2]).not.toMatchObject({ admin: { hidden: true } });
+    expect(additionalFields[2].admin?.components?.Field).toContain(
+      "CmsHomeImpactField",
+    );
   });
 
   it("preserves native unnamed-group paths so support and additional editors cannot render the banner", () => {

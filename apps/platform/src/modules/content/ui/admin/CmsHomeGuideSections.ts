@@ -4,6 +4,7 @@ import { homeBannerEditor } from "./HomeBannerEditorNavigation";
 import { homeActionsEditor } from "./HomeActionsEditorNavigation";
 import { homeEditorSections } from "./HomeEditorSections";
 import { defaultHomeActionCards } from "../../ContentDefaults";
+import { homeImpactContent } from "../../HomeImpactContent";
 
 export type GuideSection = {
   title: string;
@@ -17,6 +18,10 @@ export function buildHomeGuideSections(
   home: Homepage,
   canEdit: boolean,
 ): GuideSection[] {
+  const impact = homeImpactContent(
+    home.layout?.find((block) => block.blockType === "statistics"),
+  );
+
   return [
     {
       title: homeBannerEditor.title,
@@ -56,9 +61,9 @@ export function buildHomeGuideSections(
     },
     {
       title: homeEditorSections["additional-content"].title,
-      preview: `${home.layout?.length ?? 0} content blocks`,
-      detail:
-        "Manage additional content blocks, the funding slogan and news introduction.",
+      preview: impact.heading,
+      detail: "Impact banner heading, background image, statistics and campaign message.",
+      image: impact.backgroundImage?.url,
       target: canEdit
         ? homeEditorSections["additional-content"].href
         : undefined,

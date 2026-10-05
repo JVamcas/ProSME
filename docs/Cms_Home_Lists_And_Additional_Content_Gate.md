@@ -28,9 +28,12 @@ three on wide screens, and one on mobile.
 - The CMS support preview renders each saved card once in a static Tailwind
   grid: one column on mobile, two on medium screens, three on wide screens.
   Animation copies remain confined to the public scrolling presentation.
-- Additional Content exposes the existing funding slogan, news introduction,
-  and content blocks. Blocks can be added, removed, and reordered. Valid calls
-  to action are rendered rather than silently suppressed.
+- Additional Content edits only the existing impact/statistics banner: heading,
+  introduction, background image, statistics and campaign message. Its live
+  preview uses the same banner component as the public homepage. Other layout
+  blocks retain their stored values and native paths without exposing their
+  fields or generic block controls in this editor. The funding slogan and news
+  introduction remain stored but are excluded from this section's submission.
 - Unnamed group indices remain stable so Payload resolves the correct editor.
   Other sections' stored values remain excluded from the selected submission.
 - Public support and content-block components move into the content module.

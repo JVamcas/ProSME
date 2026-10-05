@@ -5,7 +5,7 @@ vi.mock("@/modules/content/ServerContentQueries", () => ({
   getStatistics: vi.fn(),
 }));
 
-import { StatisticsBlock } from "@/components/public/statistics-block";
+import { StatisticsBlock } from "@/modules/content/ui/public/StatisticsBlock";
 
 describe("Home Impact block", () => {
   it("renders the configured copy and statistics", async () => {

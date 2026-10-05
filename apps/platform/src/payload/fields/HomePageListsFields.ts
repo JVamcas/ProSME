@@ -119,21 +119,25 @@ export const homePageAdditionalFields: Field[] = [
           name: "fundingSlogan",
           type: "text",
           defaultValue: "Brighter businesses. A stronger Namibia.",
+          admin: { hidden: true },
         },
         {
           name: "newsIntroduction",
           type: "textarea",
           defaultValue:
             "Updates, stories and useful materials for Namibian entrepreneurs.",
+          admin: { hidden: true },
         },
         {
           name: "layout",
-          label: "Content blocks",
+          label: "Impact banner",
           type: "blocks",
           blocks: publicContentBlocks,
           admin: {
-            description:
-              "Add, remove or reorder additional homepage content blocks.",
+            components: {
+              Field:
+                "./modules/content/ui/admin/CmsHomeImpactField.tsx#CmsHomeImpactField",
+            },
           },
         },
       ] satisfies Field[]

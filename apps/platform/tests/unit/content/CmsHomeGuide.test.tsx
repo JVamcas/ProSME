@@ -67,7 +67,6 @@ describe("Home section guide", () => {
     const removedHeadings = [
       "Featured funding call",
       "News and resources",
-      "Impact",
     ];
     expect(markup).toMatch(/<h2\b[^>]*>Home Page Banner<\/h2>/);
     expect(markup).toMatch(/<h2\b[^>]*>Action cards<\/h2>/);
@@ -76,6 +75,7 @@ describe("Home section guide", () => {
       expect(markup).not.toContain(heading);
     }
     expect(markup).toContain("A home headline");
+    expect(markup).toContain("Impact heading");
     expect(markup).toContain('href="/cms/home/how-it-works"');
     expect(markup).toContain('href="/cms/home/who-we-support"');
     expect(markup).toContain('href="/cms/home/additional-content"');

@@ -35,7 +35,7 @@ export const homeEditorSections = {
     title: "Additional Content",
     anchor: "home-additional-content",
     href: "/cms/home/additional-content",
-    fields: ["fundingSlogan", "newsIntroduction", "layout"],
+    fields: ["layout"],
   },
   "action-cards": {
     ...homeActionsEditor,

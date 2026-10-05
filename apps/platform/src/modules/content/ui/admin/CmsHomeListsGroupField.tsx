@@ -3,9 +3,11 @@
 import type { GroupFieldClientProps } from "payload";
 import { HomeProcess } from "../public/HomeProcess";
 import { HomeSupport } from "../public/HomeSupport";
+import { HomeImpact } from "../public/HomeImpact";
 import { CmsHomeSectionGroupField } from "./CmsHomeSectionGroupField";
 import { homeEditorSections } from "./HomeEditorSections";
 import { useHomeListPreview } from "./useHomeListPreview";
+import { useHomeImpactPreview } from "./useHomeImpactPreview";
 
 export function CmsHomeProcessGroupField(props: GroupFieldClientProps) {
   const content = useHomeListPreview();
@@ -36,11 +38,16 @@ export function CmsHomeSupportGroupField(props: GroupFieldClientProps) {
 }
 
 export function CmsHomeAdditionalGroupField(props: GroupFieldClientProps) {
+  const content = useHomeImpactPreview();
+
   return (
     <CmsHomeSectionGroupField
       fieldProps={props}
       editor={homeEditorSections["additional-content"]}
-      description="Manage additional homepage content. Add, remove or reorder content blocks, then use Preview to view the page."
-    />
+      description="Edit the impact banner: heading, introduction, background image, statistics and campaign message."
+      previewLabel="Live impact banner preview"
+    >
+      <HomeImpact content={content} />
+    </CmsHomeSectionGroupField>
   );
 }

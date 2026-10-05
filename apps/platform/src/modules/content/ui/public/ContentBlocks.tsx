@@ -3,7 +3,7 @@ import Link from "next/link";
 import { CmsImage } from "@/modules/content/ui/public/CmsImage";
 import { CmsRichText } from "@/modules/content/ui/public/CmsRichText";
 import { HomeFunding } from "@/modules/content/ui/public/HomeFunding";
-import { StatisticsBlock } from "@/components/public/statistics-block";
+import { StatisticsBlock } from "./StatisticsBlock";
 import { getFaqs } from "@/modules/content/ServerContentQueries";
 
 type Block = Record<string, unknown> & { blockType?: string };
