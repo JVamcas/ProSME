@@ -176,6 +176,7 @@ export interface Media {
   id: number;
   alt: string;
   caption?: string | null;
+  documentThumbnail?: (number | null) | Media;
   prefix?: string | null;
   updatedAt: string;
   createdAt: string;
@@ -229,8 +230,8 @@ export interface Media {
  */
 export interface Page {
   id: number;
+  slug?: string | null;
   title: string;
-  slug: string;
   summary?: string | null;
   content: {
     root: {
@@ -247,6 +248,7 @@ export interface Page {
     };
     [k: string]: unknown;
   };
+  featuredImage?: (number | null) | Media;
   layout?:
     | (
         | {
@@ -371,8 +373,7 @@ export interface Page {
           }
       )[]
     | null;
-  featuredImage?: (number | null) | Media;
-  reviewStatus: 'draft' | 'inReview' | 'approved';
+  reviewStatus?: ('draft' | 'inReview' | 'approved') | null;
   /**
    * Internal notes for editors and reviewers.
    */
@@ -428,14 +429,42 @@ export interface News {
  */
 export interface Resource {
   id: number;
+  resourceName: string;
   title: string;
+  /**
+   * Generated from the title when left blank. Keep it stable once published.
+   */
   slug: string;
   description: string;
-  category: string;
+  body?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * Upload DOC, DOCX, PDF, XLS, XLSX, JPEG or PNG. A preview is generated automatically.
+   */
   file?: (number | null) | Media;
+  /**
+   * Overrides the document preview. Remove it to use the automatic preview again.
+   */
   thumbnail?: (number | null) | Media;
+  /**
+   * An uploaded document takes priority over this link.
+   */
   externalUrl?: string | null;
   publishedAt?: string | null;
+  category?: string | null;
   reviewStatus: 'draft' | 'inReview' | 'approved';
   /**
    * Internal notes for editors and reviewers.
@@ -735,6 +764,7 @@ export interface CmsPrincipalsSelect<T extends boolean = true> {
 export interface MediaSelect<T extends boolean = true> {
   alt?: T;
   caption?: T;
+  documentThumbnail?: T;
   prefix?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -797,10 +827,11 @@ export interface MediaSelect<T extends boolean = true> {
  * via the `definition` "pages_select".
  */
 export interface PagesSelect<T extends boolean = true> {
-  title?: T;
   slug?: T;
+  title?: T;
   summary?: T;
   content?: T;
+  featuredImage?: T;
   layout?:
     | T
     | {
@@ -914,7 +945,6 @@ export interface PagesSelect<T extends boolean = true> {
               blockName?: T;
             };
       };
-  featuredImage?: T;
   reviewStatus?: T;
   reviewNotes?: T;
   seoTitle?: T;
@@ -949,14 +979,16 @@ export interface NewsSelect<T extends boolean = true> {
  * via the `definition` "resources_select".
  */
 export interface ResourcesSelect<T extends boolean = true> {
+  resourceName?: T;
   title?: T;
   slug?: T;
   description?: T;
-  category?: T;
+  body?: T;
   file?: T;
   thumbnail?: T;
   externalUrl?: T;
   publishedAt?: T;
+  category?: T;
   reviewStatus?: T;
   reviewNotes?: T;
   seoTitle?: T;
@@ -1233,9 +1265,6 @@ export interface Homepage {
     | null;
   fundingSlogan?: string | null;
   newsIntroduction?: string | null;
-  /**
-   * Add, remove or reorder additional homepage content blocks.
-   */
   layout?:
     | (
         | {
@@ -1282,7 +1311,7 @@ export interface Homepage {
             backgroundImage?: (number | null) | Media;
             campaignMessage?: string | null;
             /**
-             * Leave empty to use the published programme statistics.
+             * Edit each value and label. Add, remove or drag statistics to change their order. An empty list uses published programme statistics.
              */
             items?:
               | {

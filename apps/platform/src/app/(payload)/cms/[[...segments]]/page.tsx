@@ -3,6 +3,7 @@ import { RootPage } from "@payloadcms/next/views";
 import { notFound, redirect } from "next/navigation";
 
 import { homeEditorSectionForPath } from "@/modules/content/ui/admin/HomeEditorSections";
+import { getAboutEditorSegments } from "@/modules/content/ServerCmsPageEditorService";
 import { importMap } from "../importMap";
 
 type Props = {
@@ -15,6 +16,19 @@ export default async function PayloadAdminPage(props: Props) {
 
   if (segments[0] === "login") {
     redirect("/cms");
+  }
+
+  if (segments.length === 1 && segments[0] === "about") {
+    const editorSegments = await getAboutEditorSegments();
+    return RootPage({
+      config,
+      importMap,
+      params: Promise.resolve({ segments: editorSegments }),
+      searchParams: Promise.resolve({
+        ...(await props.searchParams),
+        cmsPage: "about",
+      }),
+    });
   }
 
   if (

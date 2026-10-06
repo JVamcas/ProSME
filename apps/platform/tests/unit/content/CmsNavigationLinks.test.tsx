@@ -74,12 +74,32 @@ async function renderSidebar() {
 }
 
 describe("CMS navigation", () => {
+  it("places Resource Centre directly below About and marks its native editor active", () => {
+    access.pathname = "/cms/collections/resources/42";
+    const html = renderToStaticMarkup(<CmsNavigationLinks />);
+    expect(html.indexOf('href="/cms/about"')).toBeLessThan(
+      html.indexOf('href="/cms/collections/resources"'),
+    );
+    expect(html).toContain(">Resource Centre</span>");
+    expect(html.match(/aria-current="page"/g)).toHaveLength(1);
+  });
   it("shows an expandable Home Page container without an Overview entry", () => {
     const html = renderToStaticMarkup(<CmsNavigationLinks />);
     expect(html).toContain("Home Page");
     expect(html).toContain('aria-expanded="false"');
     expect(html).not.toContain("Overview");
     expect(html).not.toContain('href="/admin"');
+  });
+
+  it("places About after Home as an active top-level sidebar link", () => {
+    access.pathname = "/cms/about";
+    const html = renderToStaticMarkup(<CmsNavigationLinks />);
+    expect(html.indexOf("Home Page")).toBeLessThan(html.indexOf('href="/cms/about"'));
+    expect(html).toContain('aria-current="page"');
+    expect(html).toContain('href="/cms/about"');
+    expect(html).toContain(">About</span>");
+    expect(html).toContain('aria-expanded="false"');
+    expect(html.match(/aria-current="page"/g)).toHaveLength(1);
   });
 
   it.each(["banner", "action-cards", "how-it-works", "who-we-support", "additional-content"])(

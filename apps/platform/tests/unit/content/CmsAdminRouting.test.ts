@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const routing = vi.hoisted(() => ({
   rootPage: vi.fn().mockResolvedValue("CMS view"),
+  aboutSegments: vi.fn().mockResolvedValue(["collections", "pages", "42"]),
   notFound: vi.fn(() => { throw new Error("Not found"); }),
   redirect: vi.fn((path: string) => {
     throw new Error(`Redirect to ${path}`);
@@ -12,6 +13,9 @@ vi.mock("@payload-config", () => ({ default: {} }));
 vi.mock("@payloadcms/next/views", () => ({ RootPage: routing.rootPage }));
 vi.mock("next/navigation", () => ({ redirect: routing.redirect, notFound: routing.notFound }));
 vi.mock("@/app/(payload)/cms/importMap", () => ({ importMap: {} }));
+vi.mock("@/modules/content/ServerCmsPageEditorService", () => ({
+  getAboutEditorSegments: routing.aboutSegments,
+}));
 
 import PayloadAdminPage from "@/app/(payload)/cms/[[...segments]]/page";
 
@@ -78,5 +82,35 @@ describe("CMS admin routing", () => {
     const props = pageProps(["globals", "homepage", "versions"]);
     await expect(PayloadAdminPage(props)).resolves.toBe("CMS view");
     expect(routing.rootPage.mock.calls[0][0].params).toBe(props.params);
+  });
+
+  it("opens the existing About document through Payload at /cms/about", async () => {
+    const props = pageProps(["about"]);
+    await expect(PayloadAdminPage(props)).resolves.toBe("CMS view");
+    const args = routing.rootPage.mock.calls[0][0];
+    await expect(args.params).resolves.toEqual({
+      segments: ["collections", "pages", "42"],
+    });
+    await expect(args.searchParams).resolves.toEqual({ cmsPage: "about" });
+    expect(routing.redirect).not.toHaveBeenCalled();
+  });
+
+  it("preserves preview options when opening About", async () => {
+    await PayloadAdminPage({
+      ...pageProps(["about"]),
+      searchParams: Promise.resolve({ locale: "en" }),
+    });
+    await expect(routing.rootPage.mock.calls[0][0].searchParams).resolves.toEqual({
+      locale: "en",
+      cmsPage: "about",
+    });
+  });
+
+  it("does not render the About document after an authorization failure", async () => {
+    routing.aboutSegments.mockRejectedValueOnce(new Error("Permission denied"));
+    await expect(PayloadAdminPage(pageProps(["about"]))).rejects.toThrow(
+      "Permission denied",
+    );
+    expect(routing.rootPage).not.toHaveBeenCalled();
   });
 });

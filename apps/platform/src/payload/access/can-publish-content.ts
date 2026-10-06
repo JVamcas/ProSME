@@ -50,9 +50,14 @@ export function enforceCmsPublishing(
 
 export function collectionPublishGuard(
   resource: CmsPermissionResource,
+  options: PublishingOptions | ((input: WorkflowInput) => PublishingOptions) = {},
 ): CollectionBeforeChangeHook {
-  return ({ data, originalDoc, req }) =>
-    enforceCmsPublishing(resource, { data, originalDoc, req });
+  return ({ data, originalDoc, req }) => {
+    const input = { data, originalDoc, req };
+    const publishingOptions =
+      typeof options === "function" ? options(input) : options;
+    return enforceCmsPublishing(resource, input, publishingOptions);
+  };
 }
 
 export function globalPublishGuard(

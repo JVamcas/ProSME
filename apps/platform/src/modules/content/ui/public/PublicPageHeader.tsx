@@ -29,7 +29,7 @@ export function PublicPageHeader({
           </p>
         </div>
         <CmsImage
-          className="aspect-[4/3] w-full rounded-3xl object-cover"
+          className="aspect-4/3 w-full rounded-3xl object-cover"
           image={image}
           priority
         />

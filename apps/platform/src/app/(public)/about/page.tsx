@@ -1,17 +1,27 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { CmsRichText } from "@/modules/content/ui/public/CmsRichText";
+import { AboutContent } from "@/modules/content/ui/public/AboutContent";
 import { ContentBlocks } from "@/modules/content/ui/public/ContentBlocks";
-import { PublicPageHeader } from "@/components/public/public-page-header";
 import { contentMetadata } from "@/modules/content/ContentMetadata";
 import { getPage } from "@/modules/content/ServerContentQueries";
 
 
-export async function generateMetadata(): Promise<Metadata> { const page = await getPage("about"); return page ? contentMetadata(page) : {}; }
+export async function generateMetadata(): Promise<Metadata> {
+  const page = await getPage("about");
+  return page ? contentMetadata(page) : {};
+}
 
 export default async function AboutPage() {
   const page = await getPage("about");
-  if (!page) notFound();
-  return <><PublicPageHeader eyebrow="About us" image={page.image} title={page.title} summary={page.summary} /><section className="section bg-white"><div className="container max-w-3xl text-lg leading-8 text-slate-700">{page.content ? <CmsRichText data={page.content} /> : null}</div></section><ContentBlocks blocks={page.blocks} /></>;
+  if (!page) {
+    notFound();
+  }
+
+  return (
+    <>
+      <AboutContent page={page} />
+      <ContentBlocks blocks={page.blocks} />
+    </>
+  );
 }

@@ -4,7 +4,7 @@ import { getPayload } from "payload";
 import configPromise from "@payload-config";
 import type { News, Resource } from "@/payload-types";
 import type { ListingItem } from "../ContentTypes";
-import { media, resourceHref } from "./ContentProjection";
+import { media, resourceHref, resourceThumbnail } from "./ContentProjection";
 import { selectLatestHomeItems } from "../HomeFeedSelection";
 
 async function payloadClient() {
@@ -50,6 +50,7 @@ async function homeItems(
         slug: true,
         description: true,
         category: true,
+        resourceName: true,
         externalUrl: true,
         file: true,
         thumbnail: true,
@@ -57,7 +58,7 @@ async function homeItems(
   const [dated, undated] = await Promise.all([
     payload.find({
       collection,
-      depth: 1,
+      depth: collection === "resources" ? 2 : 1,
       draft: false,
       limit: 2,
       overrideAccess: true,
@@ -72,7 +73,7 @@ async function homeItems(
     }),
     payload.find({
       collection,
-      depth: 1,
+      depth: collection === "resources" ? 2 : 1,
       draft: false,
       limit: 2,
       overrideAccess: true,
@@ -102,9 +103,9 @@ async function homeItems(
 
   return (items as Resource[]).map((item) => ({
     id: item.id,
-    category: item.category,
+    category: item.resourceName || item.category || "Resource",
     href: resourceHref(item.file, item.externalUrl),
-    image: media(item.thumbnail),
+    image: resourceThumbnail(item.thumbnail, item.file),
     slug: item.slug,
     summary: item.description,
     title: item.title,

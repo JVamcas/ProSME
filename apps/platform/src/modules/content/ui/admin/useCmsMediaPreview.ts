@@ -4,7 +4,7 @@ import { useConfig, usePayloadAPI } from "@payloadcms/ui";
 
 import { media } from "../../infrastructure/ContentProjection";
 
-export function useCmsMediaPreview(value: unknown) {
+export function useCmsMediaRecord(value: unknown, depth = 0): unknown {
   const { config } = useConfig();
   const imageId =
     typeof value === "number" || typeof value === "string" ? value : undefined;
@@ -12,11 +12,15 @@ export function useCmsMediaPreview(value: unknown) {
     imageId === undefined
       ? ""
       : `${config.routes.api}/media/${encodeURIComponent(imageId)}`,
-    { initialParams: { depth: 0 } },
+    { initialParams: { depth } },
   );
   // Native Payload APIs retain their last response during selection changes.
   const selectedImage =
-    !isError && !isLoading && data?.id === imageId ? media(data) : undefined;
+    !isError && !isLoading && data?.id === imageId ? data : undefined;
 
-  return media(value) ?? selectedImage;
+  return value && typeof value === "object" ? value : selectedImage;
+}
+
+export function useCmsMediaPreview(value: unknown) {
+  return media(useCmsMediaRecord(value));
 }
