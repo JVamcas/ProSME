@@ -65,3 +65,30 @@ three on wide screens, and one on mobile.
 Support preview follow-up: all 13 focused list tests passed, including the
 single-copy CMS grid and preservation of repeated saved entries. Architecture,
 form architecture, file limits, targeted lint, and type checking passed again.
+
+## Statistics editor and sidebar follow-up — 2026-10-06
+
+- Home Page → Additional Content now labels the banner's editable array
+  **Statistics**, shows expanded cards, and reuses the native card list for
+  adding, removing, duplicating, and reordering values and labels.
+- When the Home array is empty, **Edit displayed statistics** copies the
+  programme statistics currently shown in the preview into Home's native form
+  rows. Editors can change each value and label before saving or publishing.
+  Opening the editor does not copy or save anything automatically. Saved
+  custom rows are not overwritten. Clearing all rows retains the existing
+  fallback to published programme statistics.
+- The copy action respects read-only, disabled, loading, and error states.
+  Existing homepage permissions, draft/publish controls, audit, and cache
+  invalidation continue to handle persistence.
+- The CMS sidebar uses the shared navy theme, including the existing dark
+  workspace switcher and header variants.
+- No database or stored-field changes are required. The Payload import map
+  was regenerated for the new Home-only statistics field component.
+- Focused verification: 4 files and 26 tests passed. Architecture, form
+  architecture, file limits, and type checking passed. Full lint passed with
+  14 existing warnings in unrelated files.
+- Three reported test failures were reproduced against unchanged `HEAD` in
+  an isolated temporary checkout: `home-funding`, `portal-navigation`, and
+  `portal-shell`. Full-suite and production-build results are recorded below
+  after completion. Authenticated browser and deployment acceptance remain
+  pending.

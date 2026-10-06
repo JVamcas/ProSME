@@ -16,7 +16,7 @@ export function useHomeImpactPreview() {
   const content = homeImpactContent(block);
   const backgroundImage = useCmsMediaPreview(block?.backgroundImage);
   const { config } = useConfig();
-  const [{ data }] = usePayloadAPI(
+  const [{ data, isLoading, isError }] = usePayloadAPI(
     content.items.length ? "" : `${config.routes.api}/programme-statistics`,
     {
       initialParams: {
@@ -31,6 +31,8 @@ export function useHomeImpactPreview() {
   return {
     ...content,
     backgroundImage,
+    statisticsLoading: isLoading,
+    statisticsError: isError,
     items: content.items.length
       ? content.items
       : homeImpactContent({ items: data?.docs }).items,

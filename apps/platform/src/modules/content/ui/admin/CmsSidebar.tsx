@@ -53,16 +53,14 @@ export default function CmsSidebar({
         email={email}
         footer={<CmsLogoutButton collapsed={isCollapsed} />}
         logoHref="/cms"
-        surface="yellow"
         onClose={() => setNavOpen(false)}
         onToggleCollapsed={() => setCollapsed((current) => !current)}
         workspace={
-          <div className="[&_a]:text-white [&_p]:text-white [&_[aria-disabled=true]]:text-white/40">
-            <PortalSpaceSwitcher
-              availableSpaces={availableSpaces}
-              currentSpace="cms"
-            />
-          </div>
+          <PortalSpaceSwitcher
+            availableSpaces={availableSpaces}
+            currentSpace="cms"
+            dark
+          />
         }
         resizeHandle={
           !isCollapsed ? (

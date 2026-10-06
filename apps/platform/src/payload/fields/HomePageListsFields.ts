@@ -132,7 +132,33 @@ export const homePageAdditionalFields: Field[] = [
           name: "layout",
           label: "Impact banner",
           type: "blocks",
-          blocks: publicContentBlocks,
+          blocks: publicContentBlocks.map((block) => {
+            if (block.slug !== "statistics") return block;
+
+            return {
+              ...block,
+              fields: block.fields.map((field): Field => {
+                if (field.type !== "array" || field.name !== "items") return field;
+
+                return {
+                  ...field,
+                  label: "Statistics",
+                  labels: { singular: "Statistic", plural: "Statistics" },
+                  admin: {
+                    ...field.admin,
+                    initCollapsed: false,
+                    description:
+                      "Edit each value and label. Add, remove or drag statistics to change their order. An empty list uses published programme statistics.",
+                    components: {
+                      ...cardListAdmin.components,
+                      Field:
+                        "./modules/content/ui/admin/CmsHomeStatisticsField.tsx#CmsHomeStatisticsField",
+                    },
+                  },
+                };
+              }),
+            };
+          }),
           admin: {
             components: {
               Field:
