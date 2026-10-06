@@ -30,6 +30,7 @@ import { CmsCardListField as CmsCardListField_0fd224774c25d3f2fa4eba12c27f2ab0 }
 import { CmsCardListRowLabel as CmsCardListRowLabel_0fd224774c25d3f2fa4eba12c27f2ab0 } from '../../../modules/content/ui/admin/CmsCardListField.tsx'
 import { CmsHomeProcessGroupField as CmsHomeProcessGroupField_a919c79f1d80ff6e7030a7b8b3020dad } from '../../../modules/content/ui/admin/CmsHomeListsGroupField.tsx'
 import { CmsHomeSupportGroupField as CmsHomeSupportGroupField_a919c79f1d80ff6e7030a7b8b3020dad } from '../../../modules/content/ui/admin/CmsHomeListsGroupField.tsx'
+import { CmsHomeStatisticsField as CmsHomeStatisticsField_260baa0c3294410bb1097bfe92357b63 } from '../../../modules/content/ui/admin/CmsHomeStatisticsField.tsx'
 import { CmsHomeImpactField as CmsHomeImpactField_d4088b8669548a82b4f959bca18a0077 } from '../../../modules/content/ui/admin/CmsHomeImpactField.tsx'
 import { CmsHomeAdditionalGroupField as CmsHomeAdditionalGroupField_a919c79f1d80ff6e7030a7b8b3020dad } from '../../../modules/content/ui/admin/CmsHomeListsGroupField.tsx'
 import { CmsFormSelect as CmsFormSelect_65523f882c4704f7cfc2743509a1f71d } from '../../../modules/content/ui/admin/CmsFormFields.tsx'
@@ -78,6 +79,7 @@ export const importMap = {
   "./modules/content/ui/admin/CmsCardListField.tsx#CmsCardListRowLabel": CmsCardListRowLabel_0fd224774c25d3f2fa4eba12c27f2ab0,
   "./modules/content/ui/admin/CmsHomeListsGroupField.tsx#CmsHomeProcessGroupField": CmsHomeProcessGroupField_a919c79f1d80ff6e7030a7b8b3020dad,
   "./modules/content/ui/admin/CmsHomeListsGroupField.tsx#CmsHomeSupportGroupField": CmsHomeSupportGroupField_a919c79f1d80ff6e7030a7b8b3020dad,
+  "./modules/content/ui/admin/CmsHomeStatisticsField.tsx#CmsHomeStatisticsField": CmsHomeStatisticsField_260baa0c3294410bb1097bfe92357b63,
   "./modules/content/ui/admin/CmsHomeImpactField.tsx#CmsHomeImpactField": CmsHomeImpactField_d4088b8669548a82b4f959bca18a0077,
   "./modules/content/ui/admin/CmsHomeListsGroupField.tsx#CmsHomeAdditionalGroupField": CmsHomeAdditionalGroupField_a919c79f1d80ff6e7030a7b8b3020dad,
   "./modules/content/ui/admin/CmsFormFields.tsx#CmsFormSelect": CmsFormSelect_65523f882c4704f7cfc2743509a1f71d,
