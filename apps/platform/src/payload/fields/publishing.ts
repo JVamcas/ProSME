@@ -20,23 +20,13 @@ export const publishingFields: Field[] = [
   },
 ];
 
-// Keep stored notes and version history while removing this control from Home.
+// Home uses Save draft and Publish; retain legacy review data without controls.
 export const homePublishingFields: Field[] = publishingFields.map((field) => {
-  if (field.type === "textarea" && field.name === "reviewNotes") {
+  if (
+    "name" in field &&
+    (field.name === "reviewNotes" || field.name === "reviewStatus")
+  ) {
     return { ...field, admin: { ...field.admin, hidden: true } };
-  }
-
-  if (field.type === "select" && field.name === "reviewStatus") {
-    return {
-      ...field,
-      admin: {
-        ...field.admin,
-        components: {
-          ...field.admin?.components,
-          Field: "./modules/content/ui/admin/CmsFormFields.tsx#CmsFormSelect",
-        },
-      },
-    };
   }
 
   return field;
