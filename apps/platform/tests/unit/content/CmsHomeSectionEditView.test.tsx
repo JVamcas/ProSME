@@ -101,7 +101,6 @@ describe("native homepage section edit view", () => {
       type: "REPLACE_STATE",
       state: {
         "actionCards.fundingTitle": initialState["actionCards.fundingTitle"],
-        reviewStatus: initialState.reviewStatus,
         _status: initialState._status,
       },
     });
@@ -121,7 +120,7 @@ describe("native homepage section edit view", () => {
     expect(editor.getFormState).toHaveBeenLastCalledWith({
       globalSlug: "homepage",
       renderAllFields: false,
-      select: { actionCards: true, reviewStatus: true, _status: true },
+      select: { actionCards: true, _status: true },
     });
     const mediaArgs = { collectionSlug: "media", id: 165 };
     await functions.getFormState(mediaArgs);
@@ -133,7 +132,7 @@ describe("native homepage section edit view", () => {
           fields: [
             { admin: { hidden: true } },
             { name: "actionCards" },
-            { name: "reviewStatus" },
+            { name: "reviewStatus", admin: { hidden: true } },
             { name: "_status" },
           ],
         },

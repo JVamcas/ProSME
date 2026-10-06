@@ -55,7 +55,7 @@ export function homeEditorSectionForPath(
 
 export function homeEditorSelect(section: HomeEditorSection) {
   return Object.fromEntries(
-    [...homeEditorSections[section].fields, "reviewStatus", "_status"].map(
+    [...homeEditorSections[section].fields, "_status"].map(
       (name) => [name, true as const],
     ),
   );

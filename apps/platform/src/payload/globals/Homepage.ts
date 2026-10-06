@@ -25,6 +25,7 @@ export const Homepage: GlobalConfig = {
         edit: {
           default: {
             Component: "./modules/content/ui/admin/CmsHomeSectionEditView.tsx",
+            tab: { condition: () => false },
           },
         },
       },
@@ -39,7 +40,7 @@ export const Homepage: GlobalConfig = {
   access: cmsGlobalAccess(),
   hooks: {
     afterChange: [recordGlobalChange, revalidateGlobal],
-    beforeChange: [globalPublishGuard()],
+    beforeChange: [globalPublishGuard({ approveOnPublish: true })],
   },
   versions: { drafts: true, max: 50 },
   fields: [

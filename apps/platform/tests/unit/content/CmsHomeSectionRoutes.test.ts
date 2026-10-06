@@ -61,6 +61,7 @@ describe("separate homepage section editors", () => {
     });
     expect(names).not.toContain("actionCards");
     expect(names).not.toContain("reviewNotes");
+    expect(names).not.toContain("reviewStatus");
     expect(storedNames(fields)).toContain("actionCards");
   });
 
@@ -68,7 +69,6 @@ describe("separate homepage section editors", () => {
     const scoped = homeEditorFields(fields, "action-cards");
     expect(storedNames(scoped)).toEqual([
       "actionCards",
-      "reviewStatus",
       "_status",
     ]);
     expect(scoped[1]).toBe(fields[1]);
@@ -88,7 +88,6 @@ describe("separate homepage section editors", () => {
     expect(Object.keys(homeEditorFormState(state, "banner"))).toEqual([
       "title",
       "heroImage",
-      "reviewStatus",
       "_status",
       "presentation",
     ]);
@@ -99,7 +98,6 @@ describe("separate homepage section editors", () => {
     expect(Object.keys(homeEditorFormState(state, "action-cards"))).toEqual([
       "actionCards.fundingTitle",
       "actionCards.trackingDescription",
-      "reviewStatus",
       "_status",
       "presentation",
     ]);
