@@ -15,7 +15,7 @@ vi.mock("@/auth/authorization/current-user", () => ({
   getCurrentUser: state.currentUser,
 }));
 
-import { getAboutEditorSegments } from "@/modules/content/ServerCmsPageEditorService";
+import { getPageEditorSegments } from "@/modules/content/ServerCmsPageEditorService";
 
 function grant(...permissions: string[]) {
   state.currentUser.mockResolvedValue({
@@ -31,9 +31,9 @@ beforeEach(() => {
   state.find.mockResolvedValue({ docs: [{ id: 42 }] });
 });
 
-describe("About editor resolution", () => {
-  it("selects only the About identifier, including saved drafts", async () => {
-    await expect(getAboutEditorSegments()).resolves.toEqual([
+describe.each(["about", "how-to-apply", "funding", "eligibility", "faq"] as const)("%s editor resolution", (slug) => {
+  it("selects only the page identifier, including saved drafts", async () => {
+    await expect(getPageEditorSegments(slug)).resolves.toEqual([
       "collections", "pages", "42",
     ]);
     expect(state.find).toHaveBeenCalledWith({
@@ -44,7 +44,7 @@ describe("About editor resolution", () => {
       pagination: false,
       overrideAccess: true,
       select: { slug: true },
-      where: { slug: { equals: "about" } },
+      where: { slug: { equals: slug } },
     });
   });
 
@@ -55,14 +55,14 @@ describe("About editor resolution", () => {
     [permissionCodes.cmsAccess, cmsPermissionCode("news", "read")],
   ])("denies mismatched grants before reading data: %j", async (...grants) => {
     grant(...grants);
-    await expect(getAboutEditorSegments()).rejects.toThrow("Missing required capability");
+    await expect(getPageEditorSegments(slug)).rejects.toThrow("Missing required capability");
     expect(state.getPayload).not.toHaveBeenCalled();
     expect(state.find).not.toHaveBeenCalled();
   });
 
   it("denies signed-out access before reading data", async () => {
     state.currentUser.mockResolvedValue(null);
-    await expect(getAboutEditorSegments()).rejects.toThrow("Authentication is required");
+    await expect(getPageEditorSegments(slug)).rejects.toThrow("Authentication is required");
     expect(state.getPayload).not.toHaveBeenCalled();
   });
 
@@ -71,24 +71,24 @@ describe("About editor resolution", () => {
       status: "inactive",
       capabilities: new Set([permissionCodes.cmsAccess, cmsPermissionCode("pages", "read")]),
     });
-    await expect(getAboutEditorSegments()).rejects.toThrow("Missing required capability");
+    await expect(getPageEditorSegments(slug)).rejects.toThrow("Missing required capability");
     expect(state.getPayload).not.toHaveBeenCalled();
   });
 
-  it("opens native creation only when About is missing and creation is granted", async () => {
+  it("opens native creation only when the page is missing and creation is granted", async () => {
     grant(
       permissionCodes.cmsAccess,
       cmsPermissionCode("pages", "read"),
       cmsPermissionCode("pages", "create"),
     );
     state.find.mockResolvedValue({ docs: [] });
-    await expect(getAboutEditorSegments()).resolves.toEqual([
+    await expect(getPageEditorSegments(slug)).resolves.toEqual([
       "collections", "pages", "create",
     ]);
   });
 
   it("denies creation without the Pages create grant", async () => {
     state.find.mockResolvedValue({ docs: [] });
-    await expect(getAboutEditorSegments()).rejects.toThrow("cms.pages.create");
+    await expect(getPageEditorSegments(slug)).rejects.toThrow("cms.pages.create");
   });
 });

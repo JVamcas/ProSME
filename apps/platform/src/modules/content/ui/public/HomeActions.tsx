@@ -41,9 +41,9 @@ export function HomeActions({
         <Link
           href={href}
           key={href}
-          className={`${background} group flex min-h-40 items-center gap-5 rounded-xl border border-white p-5 transition duration-500 hover:-translate-y-1 hover:shadow-lg`}
+          className={`${background} group flex min-h-40 min-w-0 items-center gap-5 rounded-xl border border-white p-5 transition duration-500 hover:-translate-y-1 hover:shadow-lg`}
         >
-          <div className="flex-1">
+          <div className="min-w-0 flex-1 wrap-break-word">
             <span className="grid size-12 place-items-center rounded-full bg-brand-white text-brand-orange shadow-sm">
               <Icon className="size-6" />
             </span>

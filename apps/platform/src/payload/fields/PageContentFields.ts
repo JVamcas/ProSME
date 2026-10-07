@@ -3,17 +3,26 @@ import type { Field, PayloadRequest } from "payload";
 
 import { approvedPageParagraphs, defaultPages } from "@/modules/content/ContentDefaults";
 import { paragraphsToRichText } from "@/modules/content/ContentRichText";
+import { cmsPageEditor } from "@/modules/content/CmsPageEditors";
 import { withAppFormInputs } from "./withAppFormInputs";
 import { publishingFields } from "./publishing";
 import { seoFields } from "./seo";
-import { pageContentBlocks } from "@/payload/blocks/public-content";
 
 function showPageSettings(data: Record<string, unknown>) {
-  return data.slug !== "about";
+  return !cmsPageEditor(data.slug);
 }
 
-function aboutDefault(req: PayloadRequest, value: unknown) {
-  return req.query?.cmsPage === "about" ? value : undefined;
+function pageDefault(
+  req: PayloadRequest,
+  field: "slug" | "title" | "summary" | "content" | "eyebrow",
+) {
+  const slug = req.query?.cmsPage;
+  if (typeof slug !== "string" || !cmsPageEditor(slug)) return undefined;
+  if (field === "slug") return slug;
+  if (field === "content") {
+    return paragraphsToRichText(approvedPageParagraphs[slug]);
+  }
+  return defaultPages[slug][field];
 }
 
 export const pageSlugField: Field = {
@@ -22,7 +31,7 @@ export const pageSlugField: Field = {
   required: true,
   unique: true,
   index: true,
-  defaultValue: ({ req }) => aboutDefault(req, "about"),
+  defaultValue: ({ req }) => pageDefault(req, "slug"),
   admin: {
     condition: showPageSettings,
   },
@@ -30,17 +39,28 @@ export const pageSlugField: Field = {
 
 const contentFields: Field[] = [
   {
+    name: "eyebrow",
+    label: "Banner label",
+    type: "text",
+    defaultValue: ({ req }) => pageDefault(req, "eyebrow"),
+    admin: {
+      condition: (data) => data.slug === "how-to-apply" || data.slug === "faq",
+    },
+  },
+  {
     name: "title",
     label: "Heading",
     type: "text",
     required: true,
-    defaultValue: ({ req }) => aboutDefault(req, defaultPages.about.title),
+    defaultValue: ({ req }) => pageDefault(req, "title"),
+    admin: { condition: (data) => data.slug !== "funding" && data.slug !== "eligibility" },
   },
   {
     name: "summary",
     label: "Introduction",
     type: "textarea",
-    defaultValue: ({ req }) => aboutDefault(req, defaultPages.about.summary),
+    defaultValue: ({ req }) => pageDefault(req, "summary"),
+    admin: { condition: (data) => data.slug !== "funding" && data.slug !== "eligibility" },
   },
   {
     name: "content",
@@ -53,8 +73,10 @@ const contentFields: Field[] = [
         FixedToolbarFeature(),
       ],
     }),
-    defaultValue: ({ req }) =>
-      aboutDefault(req, paragraphsToRichText(approvedPageParagraphs.about)),
+    defaultValue: ({ req }) => pageDefault(req, "content"),
+    admin: {
+      condition: (data) => data.slug !== "funding" && data.slug !== "eligibility" && data.slug !== "faq",
+    },
   },
   {
     name: "featuredImage",
@@ -71,8 +93,9 @@ export const pageContentFields: Field[] = [
     type: "group",
     label: "Page content",
     admin: {
+      condition: (data) => data.slug !== "funding" && data.slug !== "eligibility",
       components: {
-        Field: "./modules/content/ui/admin/CmsAboutContentGroupField.tsx",
+        Field: "./modules/content/ui/admin/CmsPageContentGroupField.tsx",
       },
     },
     fields: contentFields.map(withAppFormInputs),
@@ -80,7 +103,6 @@ export const pageContentFields: Field[] = [
 ];
 
 const settingsFields: Field[] = [
-  { name: "layout", type: "blocks", blocks: pageContentBlocks },
   ...publishingFields,
   ...seoFields,
 ];

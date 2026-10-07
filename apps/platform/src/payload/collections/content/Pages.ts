@@ -1,4 +1,5 @@
 import type { CollectionConfig } from "payload";
+import { cmsPageEditor } from "@/modules/content/CmsPageEditors";
 
 import { collectionPublishGuard } from "@/payload/access/can-publish-content";
 import { cmsCollectionAccess } from "@/payload/access/cms-resource-access";
@@ -10,6 +11,7 @@ import {
   pageSettingsFields,
   pageSlugField,
 } from "@/payload/fields/PageContentFields";
+import { pageLayoutFields } from "@/payload/fields/PageLayoutFields";
 
 export const Pages: CollectionConfig = {
   slug: "pages",
@@ -34,7 +36,7 @@ export const Pages: CollectionConfig = {
     afterDelete: [recordCollectionDelete, revalidateCollectionDelete],
     beforeChange: [
       collectionPublishGuard("pages", ({ data, originalDoc }) => ({
-        approveOnPublish: (data.slug ?? originalDoc?.slug) === "about",
+        approveOnPublish: Boolean(cmsPageEditor(data.slug ?? originalDoc?.slug)),
       })),
     ],
   },
@@ -42,6 +44,7 @@ export const Pages: CollectionConfig = {
   fields: [
     pageSlugField,
     ...pageContentFields,
+    ...pageLayoutFields,
     ...pageSettingsFields,
   ],
 };

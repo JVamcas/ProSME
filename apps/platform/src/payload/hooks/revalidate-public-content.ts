@@ -20,7 +20,7 @@ export const revalidateCollection: CollectionAfterChangeHook = ({ collection, do
   if (req.context?.skipRevalidation) return doc;
   const root = roots[collection.slug];
   const slug = typeof doc.slug === "string" ? doc.slug : undefined;
-  revalidate([root, root && slug ? `${root}/${slug}` : undefined, collection.slug === "pages" && slug ? `/${slug}` : undefined].filter((path): path is string => Boolean(path)));
+  revalidate(collectionPaths(collection.slug, slug, root));
   return doc;
 };
 
@@ -28,9 +28,24 @@ export const revalidateCollectionDelete: CollectionAfterDeleteHook = ({ collecti
   if (req.context?.skipRevalidation) return doc;
   const root = roots[collection.slug];
   const slug = typeof doc.slug === "string" ? doc.slug : undefined;
-  revalidate([root, root && slug ? `${root}/${slug}` : undefined, collection.slug === "pages" && slug ? `/${slug}` : undefined].filter((path): path is string => Boolean(path)));
+  revalidate(collectionPaths(collection.slug, slug, root));
   return doc;
 };
+
+function collectionPaths(collection: string, slug?: string, root?: string) {
+  const paths = [
+    root,
+    root && slug ? `${root}/${slug}` : undefined,
+    collection === "pages" && slug ? `/${slug}` : undefined,
+  ];
+  if (
+    collection === "eligibility-content" ||
+    (collection === "pages" && (slug === "funding" || slug === "eligibility"))
+  ) {
+    paths.push("/how-to-apply/funding", "/how-to-apply/eligibility");
+  }
+  return paths.filter((path): path is string => Boolean(path));
+}
 
 export const revalidateGlobal: GlobalAfterChangeHook = ({ doc, req }) => {
   if (req.context?.skipRevalidation) return doc;

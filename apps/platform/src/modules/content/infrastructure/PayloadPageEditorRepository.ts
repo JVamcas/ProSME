@@ -2,9 +2,10 @@ import "server-only";
 
 import { getPayload } from "payload";
 import configPromise from "@payload-config";
+import type { CmsPageEditorSlug } from "../CmsPageEditors";
 
 // The editor service checks the platform grants before this private read.
-export async function findAboutEditorPageId(): Promise<number | undefined> {
+export async function findEditorPageId(slug: CmsPageEditorSlug): Promise<number | undefined> {
   const payload = await getPayload({ config: configPromise });
   const result = await payload.find({
     collection: "pages",
@@ -15,7 +16,7 @@ export async function findAboutEditorPageId(): Promise<number | undefined> {
     overrideAccess: true,
     // Payload always includes id in an inclusion projection.
     select: { slug: true },
-    where: { slug: { equals: "about" } },
+    where: { slug: { equals: slug } },
   });
 
   return result.docs[0]?.id;
