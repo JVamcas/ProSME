@@ -46,7 +46,7 @@ it.each(["submit", "withdraw", "workflow", "rfi"])(
     keys.forEach((key) => client.setQueryData(key, { loaded: true }));
     client.setQueryData(["unrelated", "settings"], { loaded: true });
     function Mutation() {
-      const submit = useSubmitApplication("app");
+      const submit = useSubmitApplication("app", "funding-call");
       const withdraw = useWithdrawApplication();
       const workflow = useExecuteWorkflowTaskAction("task");
       const rfi = useRespondToWorkflowRfi("app", "request");

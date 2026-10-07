@@ -127,7 +127,6 @@ export type ContactContent = {
 };
 export type SiteSettingsContent = {
   allowIndexing: boolean;
-  analyticsMeasurementId?: string | null;
   defaultSocialImage?: CmsImage;
   siteDescription: string;
   siteName: string;

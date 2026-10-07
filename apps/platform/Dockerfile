@@ -45,7 +45,10 @@ WORKDIR /workspace
 # PDF first-page rendering and Word/Excel conversion for CMS resources.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-      poppler-utils libreoffice-writer libreoffice-calc fonts-liberation \
+      poppler-utils=22.12.0-2+deb12u3 \
+      libreoffice-writer=4:7.4.7-1+deb12u14 \
+      libreoffice-calc=4:7.4.7-1+deb12u14 \
+      fonts-liberation=1:1.07.4-11 \
     && rm -rf /var/lib/apt/lists/*
 
 RUN groupadd --system --gid 1001 nodejs \

@@ -1,10 +1,10 @@
 import type { LucideIcon } from "lucide-react";
 import {
   Bell,
+  ChartNoAxesCombined,
   BriefcaseBusiness,
   CircleDollarSign,
   ClipboardList,
-  FileText,
   ListTodo,
   LayoutDashboard,
   Store,
@@ -15,12 +15,12 @@ import {
   Workflow,
   BadgeQuestionMark,
   Pipette,
-  BookOpenText,
   RotateCcw,
   ImageIcon,
 } from "lucide-react";
 
 import { permissionCodes } from "@/auth/authorization/permissions";
+import type { NavigationSectionId } from "../navigation/NavigationSections";
 import {
   operationsScopePermissions,
   type PortalSpace,
@@ -36,12 +36,14 @@ export type PortalRoute = {
   requiredPermission?: string;
   requiredAnyPermissions?: readonly string[];
   requiredAllCapabilities?: readonly string[];
+  section?: NavigationSectionId;
   children?: readonly PortalRoute[];
 };
 
 export const applicantPortalRoutes: readonly PortalRoute[] = [
   {
     id: "applicant-dashboard",
+    section: "overview",
     href: "/portal",
     label: "Dashboard",
     icon: LayoutDashboard,
@@ -49,6 +51,7 @@ export const applicantPortalRoutes: readonly PortalRoute[] = [
   },
   {
     id: "funding-opportunities",
+    section: "funding",
     href: "/portal/funding-opportunities",
     label: "Funding Calls",
     icon: BriefcaseBusiness,
@@ -56,6 +59,7 @@ export const applicantPortalRoutes: readonly PortalRoute[] = [
   },
   {
     id: "applicant-businesses",
+    section: "funding",
     href: "/portal/businesses",
     label: "My businesses",
     icon: Store,
@@ -64,6 +68,7 @@ export const applicantPortalRoutes: readonly PortalRoute[] = [
   },
   {
     id: "applicant-applications",
+    section: "funding",
     href: "/portal/applications",
     label: "My applications",
     icon: ClipboardList,
@@ -72,6 +77,7 @@ export const applicantPortalRoutes: readonly PortalRoute[] = [
   },
   {
     id: "applicant-notifications",
+    section: "account",
     href: "/portal/notifications",
     label: "Notifications",
     icon: Bell,
@@ -80,6 +86,7 @@ export const applicantPortalRoutes: readonly PortalRoute[] = [
   },
   {
     id: "applicant-profile",
+    section: "account",
     href: "/portal/profile",
     label: "My profile",
     icon: UserRound,
@@ -91,6 +98,7 @@ export const applicantPortalRoutes: readonly PortalRoute[] = [
 export const operationsPortalRoutes: readonly PortalRoute[] = [
   {
     id: "admin-dashboard",
+    section: "overview",
     href: "/admin",
     label: "Dashboard",
     icon: LayoutDashboard,
@@ -98,7 +106,17 @@ export const operationsPortalRoutes: readonly PortalRoute[] = [
     requiredAnyPermissions: operationsScopePermissions,
   },
   {
+    id: "website-analytics",
+    href: "/admin/analytics/website",
+    label: "Website analytics",
+    icon: ChartNoAxesCombined,
+    space: "operations",
+    section: "analytics",
+    requiredPermission: permissionCodes.reportingWebsiteReadAll,
+  },
+  {
     id: "admin-funding-calls",
+    section: "applications",
     href: "/admin/funding-calls",
     label: "Funding calls",
     icon: CircleDollarSign,
@@ -107,6 +125,7 @@ export const operationsPortalRoutes: readonly PortalRoute[] = [
   },
   {
     id: "admin-my-work",
+    section: "applications",
     href: "/admin/my-work",
     label: "My work",
     icon: ListTodo,
@@ -136,6 +155,7 @@ export const operationsPortalRoutes: readonly PortalRoute[] = [
   },
   {
     id: "admin-applications",
+    section: "applications",
     href: "/admin/applications",
     label: "Applications",
     icon: ClipboardList,
@@ -147,6 +167,7 @@ export const operationsPortalRoutes: readonly PortalRoute[] = [
   },
   {
     id: "admin-settings",
+    section: "administration",
     href: "/admin/settings",
     label: "Administration",
     icon: Settings,
@@ -279,6 +300,7 @@ export const operationsPortalRoutes: readonly PortalRoute[] = [
   },
   {
     id: "admin-users",
+    section: "administration",
     href: "/admin/users",
     label: "Users & access",
     icon: UsersRound,

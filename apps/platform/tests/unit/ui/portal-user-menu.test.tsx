@@ -8,6 +8,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { PortalUserMenu } from "@/shared/ui/portal/portal-user-menu";
 import { createQueryClient } from "@/shared/utils/createQueryClient";
 import type { PortalContext } from "@/modules/profiles/ProfileTypes";
+import sidebarStyles from "@/shared/ui/navigation/NavigationSidebar.module.css";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: vi.fn(), replace: vi.fn() }),
@@ -49,6 +50,8 @@ describe("portal user menu", () => {
       trigger?.click();
     });
     expect(container.querySelector("#portal-user-menu")).not.toBeNull();
+    const logout = container.querySelector("#portal-user-menu button");
+    expect(logout?.classList.contains(sidebarStyles.light)).toBe(true);
 
     await act(async () => {
       document.body.dispatchEvent(

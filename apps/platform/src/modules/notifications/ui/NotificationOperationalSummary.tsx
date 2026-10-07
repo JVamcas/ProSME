@@ -10,18 +10,13 @@ import {
 
 import { PortalErrorState } from "@/shared/ui/portal/PortalErrorState";
 import { PortalLoadingState } from "@/shared/ui/portal/PortalLoadingState";
-import { DashboardMetricCard } from "@/modules/dashboard/ui/DashboardMetricCard";
+import { DashboardMetricCard } from "@/shared/ui/DashboardMetricCard";
 import { useNotificationSummary } from "./useNotificationAdministration";
 
 export function NotificationOperationalSummary() {
   const query = useNotificationSummary();
   if (query.isPending) {
-    return (
-      <PortalLoadingState
-        description="Just a moment..."
-        title=""
-      />
-    );
+    return <PortalLoadingState description="Just a moment..." title="" />;
   }
   if (query.error || !query.data) {
     return (

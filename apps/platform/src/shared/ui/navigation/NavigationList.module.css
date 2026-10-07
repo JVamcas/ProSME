@@ -1,0 +1,39 @@
+.list {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.list > li {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nested {
+  gap: 4px;
+  margin: 4px 0 0 20px;
+  padding-left: 10px;
+  border-left: 1px solid var(--sidebar-border, rgb(255 255 255 / 15%));
+}
+
+.heading {
+  margin: 0 0 8px;
+  padding-inline: 12px;
+  color: inherit;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.5;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  opacity: 0.55;
+}
+
+.list > .section + .section {
+  margin-top: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--sidebar-border);
+}

@@ -9,23 +9,27 @@ import {
   sidebarItemClassName,
   sidebarLogoutClassName,
 } from "./SidebarItemStyles";
+import styles from "./NavigationSidebar.module.css";
 
 export function SidebarLogoutControl({
   collapsed = false,
   dark = true,
   onLogout,
   pending,
+  surface,
 }: {
   collapsed?: boolean;
   dark?: boolean;
   onLogout: () => void;
   pending: boolean;
+  surface?: "light";
 }) {
   return (
     <GeneralButton
       className={cn(
         sidebarItemClassName({ collapsed, dark }),
         sidebarLogoutClassName,
+        surface === "light" && styles.light,
         collapsed ? "justify-center" : "justify-start",
       )}
       disabled={pending}

@@ -1,7 +1,7 @@
 .header,
 :global(.app-header):has(.label) {
-  height: 80px;
-  gap: 32px;
+  height: 64px;
+  gap: 16px;
   border-bottom: 1px solid rgb(10 24 59 / 10%);
   background: var(--sme-brand-white);
   color: var(--sme-brand-navy);

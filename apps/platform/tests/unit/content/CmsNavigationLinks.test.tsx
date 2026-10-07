@@ -74,6 +74,15 @@ async function renderSidebar() {
 }
 
 describe("CMS navigation", () => {
+  it("uses one Website content heading for its three top-level destinations", () => {
+    const html = renderToStaticMarkup(<CmsNavigationLinks />);
+
+    expect(html.match(/>Website content<\/p>/g)).toHaveLength(1);
+    expect(html.indexOf("Website content")).toBeLessThan(html.indexOf("Home Page"));
+    expect(html).toContain("About");
+    expect(html).toContain("Resource Centre");
+  });
+
   it("places Resource Centre directly below About and marks its native editor active", () => {
     access.pathname = "/cms/collections/resources/42";
     const html = renderToStaticMarkup(<CmsNavigationLinks />);

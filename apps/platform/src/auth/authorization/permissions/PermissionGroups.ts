@@ -18,7 +18,8 @@ export type PermissionGroupId =
   | "branding"
   | "notifications"
   | "content-management"
-  | "integrations";
+  | "integrations"
+  | "reporting";
 
 export type PermissionGroup = {
   id: PermissionGroupId;
@@ -28,6 +29,11 @@ export type PermissionGroup = {
 };
 
 export const permissionGroups: readonly PermissionGroup[] = [
+  {
+    id: "reporting",
+    label: "Website Analytics",
+    permissionCodes: [permissionCodes.reportingWebsiteReadAll],
+  },
   {
     id: "user",
     label: "User",

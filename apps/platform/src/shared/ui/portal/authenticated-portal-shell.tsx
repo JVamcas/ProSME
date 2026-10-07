@@ -13,6 +13,7 @@ import { PortalSpaceSwitcher } from "./portal-space-switcher";
 import { PortalTopbar } from "./portal-topbar";
 import { filterPortalRoutes, portalRoutes } from "./portal-navigation";
 import { NavigationSidebar } from "../navigation/NavigationSidebar";
+import { WorkspaceLayout } from "../navigation/WorkspaceLayout";
 import {
   clampSidebarWidth,
   SidebarResizeHandle,
@@ -44,11 +45,14 @@ function Sidebar({
 
   return (
     <aside
-      className="relative sticky top-0 hidden h-screen overflow-hidden bg-brand-orange lg:flex lg:flex-col"
+      className="relative hidden h-full overflow-hidden bg-brand-orange lg:flex lg:flex-col"
       data-collapsed={collapsed}
-      style={
-        dark ? { backgroundColor: "var(--color-brand-navy)", width } : { width }
-      }
+      style={{
+        backgroundColor: dark
+          ? "var(--color-brand-navy)"
+          : "var(--color-brand-orange)",
+        width,
+      }}
     >
       <NavigationSidebar
         collapsed={collapsed}
@@ -96,32 +100,31 @@ export function AuthenticatedPortalShell({
 }: AuthenticatedPortalShellProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(sidebarWidths.expanded);
+  const width = sidebarCollapsed ? sidebarWidths.collapsed : sidebarWidth;
+
   return (
     <CapabilityProvider value={context}>
-      <div
-        className="min-h-screen transition-[grid-template-columns] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none lg:grid"
-        style={{
-          backgroundColor:
-            space === "operations"
-              ? "var(--color-brand-navy)"
-              : "var(--color-brand-orange)",
-          gridTemplateColumns: `${sidebarCollapsed ? sidebarWidths.collapsed : sidebarWidth}px minmax(0, 1fr)`,
-        }}
+      <WorkspaceLayout
+        header={
+          <>
+            <PortalMobileHeader context={context} space={space} />
+            <PortalTopbar context={context} space={space} />
+          </>
+        }
+        sidebar={
+          <Sidebar
+            collapsed={sidebarCollapsed}
+            context={context}
+            onToggleCollapsed={() => setSidebarCollapsed((current) => !current)}
+            onResize={(clientX) => setSidebarWidth(clampSidebarWidth(clientX))}
+            space={space}
+            width={width}
+          />
+        }
+        sidebarWidth={width}
       >
-        <Sidebar
-          collapsed={sidebarCollapsed}
-          context={context}
-          onToggleCollapsed={() => setSidebarCollapsed((current) => !current)}
-          onResize={(clientX) => setSidebarWidth(clampSidebarWidth(clientX))}
-          space={space}
-          width={sidebarCollapsed ? sidebarWidths.collapsed : sidebarWidth}
-        />
-        <div className="min-w-0 bg-brand-white">
-          <PortalMobileHeader context={context} space={space} />
-          <PortalTopbar context={context} space={space} />
-          <main className="w-full p-4 sm:p-6 lg:p-8">{children}</main>
-        </div>
-      </div>
+        {children}
+      </WorkspaceLayout>
     </CapabilityProvider>
   );
 }

@@ -29,6 +29,9 @@ highlighted in the supplied public About screenshot editable as rich text.
   helper text. Existing image data remains stored.
 - About's breadcrumb reads `CMS / About the SME Fund`, using the current heading
   as its label. Native media drawers retain their own navigation context.
+- The redundant Edit tab is hidden above the About editor. The theme selector
+  requires the Pages About content anchor and targets only the main document
+  header's first tab; Versions, API and other document editors retain their tabs.
 - The shared dark-sidebar Logout style overrides the button's navy text color
   so its label remains visible on the navy surface.
 - The inert live preview reuses the public About content component and current
@@ -65,6 +68,21 @@ highlighted in the supplied public About screenshot editable as rich text.
   including Next.js compilation, type checking and page generation using the
   repository's build-time CMS fallbacks.
 - Browser verification: blocked because Chromium cannot load `libnspr4.so`.
+
+### About Edit-tab removal validation
+
+- Focused About, CMS routing and document-control checks: 3 files, 39 tests passed.
+- Production CSS contains the About-scoped selector with `display: none`.
+- Architecture and form architecture: passed for 1,508 source files.
+- File-size limits: passed for 2,206 handwritten files.
+- Repository lint: zero errors and 14 existing warnings.
+- Full suite: 2,609 passed, 227 skipped and the same three failures in
+  `home-funding.test.tsx`, `portal-navigation.test.ts` and `portal-shell.test.tsx`.
+- Production build compiled successfully, then its type-check worker exited
+  with code 1. Separate type checking reported errors in existing working-tree
+  changes to `Resources.ts`, `ResourceEditorFields.test.ts` and
+  `ConfirmedApplicationCollection.test.ts`. Neither gate passed.
+- Browser verification remains blocked by missing `libnspr4.so`.
 
 ## Acceptance
 

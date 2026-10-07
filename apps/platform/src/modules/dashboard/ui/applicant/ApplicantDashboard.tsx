@@ -4,7 +4,7 @@ import type {
   ApplicantDashboardMetrics,
   ApplicantDashboardView,
 } from "@/modules/dashboard/ApplicantDashboardTypes";
-import { DashboardMetricCard } from "@/modules/dashboard/ui/DashboardMetricCard";
+import { DashboardMetricCard } from "@/shared/ui/DashboardMetricCard";
 import { PageShell } from "@/shared/ui/PageShell";
 import { ApplicantRecentActivity } from "./ApplicantRecentActivity";
 

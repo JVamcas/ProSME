@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { hasWebsiteAnalyticsConsent } from "@/modules/reporting/ServerWebsiteAnalyticsCollectionService";
 
 import {
   createCorrelationId,
@@ -42,7 +43,11 @@ export async function POST(
       await request.json(),
     );
     return portalRouteSuccess(
-      await evaluatePublicEligibilitySelfCheck(fundingCallId, input),
+      await evaluatePublicEligibilitySelfCheck(
+        fundingCallId,
+        input,
+        hasWebsiteAnalyticsConsent(request.headers),
+      ),
       correlationId,
     );
   } catch (error) {

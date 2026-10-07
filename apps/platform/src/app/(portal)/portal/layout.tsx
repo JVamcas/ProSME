@@ -9,6 +9,7 @@ import { createApplicantPortalContext } from "@/modules/profiles/ServerProfileSe
 import { queryIdentity } from "@/shared/utils/createQueryClient";
 import { DashboardNavigationProvider } from "@/modules/dashboard/ui/DashboardNavigationProvider";
 import { Toast } from "@/shared/ui/Toast";
+import { WebsiteAnalyticsCollection } from "@/modules/reporting/ui/WebsiteAnalyticsCollection";
 import "../../globals.css";
 
 export const metadata: Metadata = {
@@ -43,6 +44,7 @@ export default async function PortalLayout({ children }: PortalLayoutProps) {
               {children}
             </AuthenticatedPortalShell>
             <Toast />
+            <WebsiteAnalyticsCollection />
           </DashboardNavigationProvider>
         </QueryProvider>
       </body>

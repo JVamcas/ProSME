@@ -180,7 +180,6 @@ export async function getSiteSettings(): Promise<SiteSettingsContent> {
   });
   return {
     allowIndexing: value.allowIndexing ?? false,
-    analyticsMeasurementId: value.analyticsMeasurementId,
     defaultSocialImage: media(value.defaultSocialImage),
     siteDescription: value.siteDescription,
     siteName: value.siteName,

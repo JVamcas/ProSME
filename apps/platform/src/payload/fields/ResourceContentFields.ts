@@ -1,4 +1,7 @@
-import { FixedToolbarFeature, lexicalEditor } from "@payloadcms/richtext-lexical";
+import {
+  FixedToolbarFeature,
+  lexicalEditor,
+} from "@payloadcms/richtext-lexical";
 import type { Field } from "payload";
 
 import { resourceDocumentMimeTypes } from "@/modules/content/ResourceDocumentTypes";
@@ -23,7 +26,7 @@ const contentFields: Field[] = [
     unique: true,
     index: true,
     admin: {
-      description: "Generated from the title when left blank. Keep it stable once published.",
+      hidden: true,
     },
   },
   {
@@ -35,8 +38,12 @@ const contentFields: Field[] = [
     name: "body",
     label: "Resource content",
     type: "richText",
+    admin: { hidden: true },
     editor: lexicalEditor({
-      features: ({ defaultFeatures }) => [...defaultFeatures, FixedToolbarFeature()],
+      features: ({ defaultFeatures }) => [
+        ...defaultFeatures,
+        FixedToolbarFeature(),
+      ],
     }),
   },
   {
@@ -46,7 +53,8 @@ const contentFields: Field[] = [
     relationTo: "media",
     filterOptions: { mimeType: { in: [...resourceDocumentMimeTypes] } },
     admin: {
-      description: "Upload DOC, DOCX, PDF, XLS, XLSX, JPEG or PNG. A preview is generated automatically.",
+      description:
+        "Upload DOC, DOCX, PDF, XLS, XLSX, JPEG or PNG. A preview is generated automatically.",
     },
   },
   {
@@ -56,7 +64,8 @@ const contentFields: Field[] = [
     relationTo: "media",
     filterOptions: { mimeType: { contains: "image/" } },
     admin: {
-      description: "Overrides the document preview. Remove it to use the automatic preview again.",
+      description:
+        "Overrides the document preview. Remove it to use the automatic preview again.",
     },
   },
   {

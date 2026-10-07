@@ -7,6 +7,23 @@ import { PortalSpaceSwitcher } from "@/shared/ui/portal/portal-space-switcher";
 const allSpaces: WorkspaceSpace[] = ["applicant", "operations", "cms"];
 
 describe("workspace switcher", () => {
+  it("uses white labels for available destinations on the applicant surface", () => {
+    const markup = renderToStaticMarkup(
+      <PortalSpaceSwitcher
+        availableSpaces={allSpaces}
+        currentSpace="applicant"
+      />,
+    );
+    const inactiveLinks = [...markup.matchAll(/<a\b[^>]*>[^<]*<\/a>/g)]
+      .map((match) => match[0])
+      .filter((link) => !link.includes('aria-current="page"'));
+
+    for (const link of inactiveLinks) {
+      expect(link).toContain("text-white");
+      expect(link).not.toContain("text-brand-navy");
+    }
+  });
+
   it.each(allSpaces)("highlights only the current %s workspace", (space) => {
     const markup = renderToStaticMarkup(
       <PortalSpaceSwitcher
