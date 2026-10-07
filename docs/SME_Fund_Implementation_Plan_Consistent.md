@@ -3038,7 +3038,7 @@ embedding client role names in runtime code.
 ### Goal
 
 Create independent work for the configured number of reviewers without shared
-responses or accidental identity disclosure.
+responses or accidental disclosure of peer review content.
 
 ### Scope
 
@@ -3049,7 +3049,8 @@ For a Task Definition with multiple reviewers:
 - prevent the same user filling more than one independent slot unless a
   published exception explicitly allows it;
 - prevent one reviewer from editing another reviewer's Task or response;
-- hide peer identities, draft responses, scores and recommendations until the
+- show reviewer identities and assignments to authorized staff;
+- hide peer draft responses, scores and recommendations until the
   configured release/consolidation point;
 - expose only the minimum peer-completion metadata needed by the use case;
 - preserve slot identity when a reviewer is replaced so counts remain stable.
@@ -3065,7 +3066,9 @@ fork.
 2. Each reviewer can access only Tasks permitted by assignment and contextual
    authorization.
 3. Draft and submitted responses cannot overwrite or mutate another slot.
-4. Peer identities and work remain hidden until configuration allows release.
+4. Peer responses, scores and recommendations remain hidden until configuration
+   allows release. Authorized staff can see reviewer identities and assignments
+   before that release point.
 5. Replacement does not inflate the reviewer count or lose the slot's history.
 6. Aggregation includes only valid submitted responses from eligible slots.
 7. Adding a reviewer is an assignment operation, not a new Workflow Action

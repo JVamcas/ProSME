@@ -19,7 +19,7 @@ export function workflowProgressTaskView(
     (task.reviewRelease === "THRESHOLD_MET" && task.thresholdSatisfied) ||
     context.stageStatus === "COMPLETED" ||
     context.stageStatus === "RETURNED";
-  const peerIsHidden =
+  const peerReviewIsHidden =
     !released &&
     task.reviewerCount !== null &&
     task.reviewerCount > 1 &&
@@ -43,14 +43,17 @@ export function workflowProgressTaskView(
   void _reviewRelease;
   void _thresholdSatisfied;
 
-  if (peerIsHidden) {
+  if (peerReviewIsHidden) {
+    const blockedReason =
+      task.reviewRelease === "THRESHOLD_MET"
+        ? "Peer scores and review content are hidden until the required review threshold is met."
+        : "Peer scores and review content are hidden until this stage is completed.";
+
     return {
       ...details,
+      blockedReason,
       processingStatus: null,
       actionedAt: null,
-      assignedRoleName: null,
-      assignedUserEmail: null,
-      assignedUserName: null,
       dueAt: null,
       id: "peer-slot-" + String(context.index + 1),
       status: task.status === "COMPLETED" ? "COMPLETED" : "PENDING",

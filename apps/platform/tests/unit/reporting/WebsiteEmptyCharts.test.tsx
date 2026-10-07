@@ -37,6 +37,45 @@ const emptyFunnel = {
 };
 
 describe("native ECharts analytics rendering", () => {
+  it("fits funnel labels in a narrow chart and restores them after resizing", () => {
+    const chart = init(null, undefined, {
+      renderer: "svg",
+      ssr: true,
+      width: 260,
+      height: 210,
+    });
+    try {
+      chart.setOption(applicationFunnelOption(emptyFunnel));
+      const series = () => (chart.getOption().series as {
+        label: { width: number };
+      }[])[0];
+      expect(series().label.width).toBe(100);
+      expect(chart.renderToSVGString()).not.toContain("NaN");
+      chart.resize({ width: 500, height: 210 });
+      expect(series().label.width).toBe(155);
+    } finally {
+      chart.dispose();
+    }
+  });
+
+  it("separates traffic tools from its legend on narrow screens", () => {
+    const chart = init(null, undefined, {
+      renderer: "svg",
+      ssr: true,
+      width: 260,
+      height: 210,
+    });
+    try {
+      chart.setOption(websiteTrafficOption([], "2026-10-01", "2026-10-07"));
+      const toolbox = () => (chart.getOption().toolbox as { top: number }[])[0];
+      expect(toolbox().top).toBe(32);
+      chart.resize({ width: 500, height: 210 });
+      expect(toolbox().top).toBe(6);
+    } finally {
+      chart.dispose();
+    }
+  });
+
   it("renders four native branded funnel stages with actual zero labels", () => {
     const svg = renderChart(applicationFunnelOption(emptyFunnel));
     expect(svg).toContain('<svg width="500" height="360"');

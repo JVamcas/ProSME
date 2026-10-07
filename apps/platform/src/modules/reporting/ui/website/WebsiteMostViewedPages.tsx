@@ -20,11 +20,8 @@ export function WebsiteMostViewedPages({
       data={data.rows}
       density="compact"
       minWidth={200}
-      footer={
-        data.truncated
-          ? "Top 10 page rows; additional pages are omitted."
-          : undefined
-      }
+      viewportHeight={240}
+      emptyMessage="No page views recorded"
     />
   );
 }

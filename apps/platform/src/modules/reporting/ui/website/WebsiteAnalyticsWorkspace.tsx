@@ -58,7 +58,7 @@ export function WebsiteAnalyticsWorkspace({
         />
       ) : null}
       {data ? (
-        <div className="grid gap-4">
+        <div className="grid min-w-0 gap-4">
           {query.isFetching ? (
             <p role="status" className="sr-only">
               Refreshing website analytics
@@ -94,7 +94,7 @@ export function WebsiteAnalyticsWorkspace({
           >
             {(value) => <WebsiteVisitorGeography data={value} />}
           </WebsiteAnalyticsPanel>
-          <div className="grid items-start gap-4 md:grid-cols-2 2xl:grid-cols-4">
+          <div className="grid min-w-0 items-stretch gap-4 xl:grid-cols-3">
             <WebsiteUserJourneys
               scope={applicationScope}
               application={data.applicationFunnel}
@@ -102,6 +102,8 @@ export function WebsiteAnalyticsWorkspace({
             />
             <WebsiteAnalyticsPanel
               title="Most viewed pages"
+              description="Most popular pages on the website"
+              contentHeight={244}
               scope="Website-wide · top 10"
               result={data.mostViewedPages}
             >
@@ -109,6 +111,8 @@ export function WebsiteAnalyticsWorkspace({
             </WebsiteAnalyticsPanel>
             <WebsiteAnalyticsPanel
               title="Funding call engagement"
+              description="Recorded call views and submitted applications"
+              contentHeight={244}
               scope={applicationScope}
               result={data.fundingCallEngagement}
             >
@@ -116,6 +120,8 @@ export function WebsiteAnalyticsWorkspace({
                 <WebsiteFundingCallEngagement data={value} calls={calls} />
               )}
             </WebsiteAnalyticsPanel>
+          </div>
+          <div className="grid min-w-0 gap-4 lg:grid-cols-2">
             <WebsiteAnalyticsPanel
               title="Eligibility self-checks"
               scope={

@@ -10,6 +10,51 @@ const configuration = {
 const input = { startDate: "2026-10-01", endDate: "2026-10-06" };
 
 describe("website panel projections", () => {
+  it("keeps call views and submissions as event counts, distinct from users", async () => {
+    const id = "00000000-0000-4000-8000-000000000001";
+    const transport = vi.fn().mockResolvedValue({
+      dimensionHeaders: [
+        { name: "customEvent:funding_call_id" },
+        { name: "eventName" },
+      ],
+      metricHeaders: [{ name: "totalUsers" }, { name: "eventCount" }],
+      rows: [
+        {
+          dimensionValues: [{ value: id }, { value: "funding_call_view" }],
+          metricValues: [{ value: "3" }, { value: "8" }],
+        },
+      ],
+    });
+    const result = await new GoogleAnalyticsPanelsAdapter(
+      configuration,
+      transport,
+    ).calls({ ...input, fundingCallId: id });
+    expect(result.data?.rows).toEqual([
+      {
+        fundingCallId: id,
+        event: "funding_call_view",
+        users: 3,
+        events: 8,
+      },
+    ]);
+    expect(transport.mock.calls[0][2]).toMatchObject({
+      metrics: [{ name: "totalUsers" }, { name: "eventCount" }],
+      dimensionFilter: {
+        andGroup: {
+          expressions: [
+            { filter: { fieldName: "eventName" } },
+            {
+              filter: {
+                fieldName: "customEvent:funding_call_id",
+                stringFilter: { value: id },
+              },
+            },
+          ],
+        },
+      },
+    });
+  });
+
   it("retains unknown/unmapped regions and explains its denominator", async () => {
     const transport = vi.fn().mockResolvedValue({
       dimensionHeaders: [{ name: "region" }],

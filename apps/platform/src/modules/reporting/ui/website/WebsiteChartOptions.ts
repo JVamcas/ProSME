@@ -35,6 +35,23 @@ export function websiteTrafficOption(
       top: 6,
       feature: { restore: {}, saveAsImage: { name: "website-traffic" } },
     },
+    media: [
+      {
+        query: { maxWidth: 380 },
+        option: {
+          grid: { left: 36, right: 12, top: 70, bottom: 64 },
+          toolbox: { top: 32 },
+          legend: { textStyle: { fontSize: 10 } },
+        },
+      },
+      {
+        option: {
+          grid: { left: 48, right: 22, top: 55, bottom: 64 },
+          toolbox: { top: 6 },
+          legend: { textStyle: { fontSize: 12 } },
+        },
+      },
+    ],
     tooltip: {
       show: data.length > 0,
       trigger: "axis",

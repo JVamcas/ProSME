@@ -118,10 +118,11 @@ export class GoogleAnalyticsPanelsAdapter {
       fundingCallId: approvedCallDimension(report, row),
       event: stringDimension(report, row, "eventName"),
       users: countMetric(report, row, "totalUsers"),
+      events: countMetric(report, row, "eventCount"),
     }));
     return {
       ...normalizedAnalyticsResult(report, bounded(report, rows)),
-      note: "Ranked call/event rows count tracked users reaching each step independently. Users may appear in multiple calls; these counts must not be summed as site visitors.",
+      note: "Top 100 call/event rows. Views and applications count recorded funding-call-view and application-submit events from consenting users. Older reports without event counts show unavailable values until refreshed.",
     };
   }
 

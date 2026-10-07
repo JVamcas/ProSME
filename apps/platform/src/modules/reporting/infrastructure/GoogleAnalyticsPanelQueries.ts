@@ -73,7 +73,7 @@ export function fundingCallEngagementQuery(input: WebsiteAnalyticsQuery) {
     ...query(
       input,
       ["customEvent:funding_call_id", "eventName"],
-      ["totalUsers"],
+      ["totalUsers", "eventCount"],
       100,
     ),
     dimensionFilter: { andGroup: { expressions } },

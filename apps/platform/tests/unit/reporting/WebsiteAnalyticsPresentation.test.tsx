@@ -75,7 +75,7 @@ describe("D1 presentation contracts", () => {
     const markup = renderToStaticMarkup(<NamibiaVisitorMap regions={[]} />);
     expect(markup).toContain("Interactive map of Namibia’s 14 regions");
     expect(markup).not.toContain("<path");
-    expect(markup).toContain("height:560px");
+    expect(markup).toContain("height:clamp(320px, 60vw, 560px)");
   });
 
   it("keeps one measured journey visible when the other provider request fails", () => {
@@ -103,7 +103,9 @@ describe("D1 presentation contracts", () => {
         scope="Selected funding call"
       />,
     );
-    expect(markup).toContain("2 tracked users completed");
+    expect(markup).toContain("Completed");
+    expect(markup).toContain(">2</td>");
+    expect(markup).toContain("20%");
     expect(markup).toContain("Self-check source failed.");
     expect(markup).toContain("Selected funding call");
   });
@@ -123,7 +125,7 @@ describe("D1 presentation contracts", () => {
       <NavigationList routes={routes} collapsed />,
     );
     expect(markup).toContain('aria-label="Analytics"');
-    expect(markup).toContain('class="sr-only">Analytics');
+    expect(markup).toContain(">Analytics</p>");
     expect(markup).toContain('href="/admin/analytics/website"');
     expect(markup).not.toContain('href="analytics"');
     expect(markup).not.toContain("Website reports");

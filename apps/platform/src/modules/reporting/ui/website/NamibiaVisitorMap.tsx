@@ -14,7 +14,7 @@ export function NamibiaVisitorMap({ regions }: { regions: WebsiteRegion[] }) {
     <div className="relative min-w-0">
       <EChart
         option={option}
-        height={560}
+        height="clamp(320px, 60vw, 560px)"
         map={namibiaChartMap}
         label="Interactive map of Namibia’s 14 regions"
       />

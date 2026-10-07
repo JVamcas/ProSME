@@ -55,6 +55,7 @@ export type DataTableProps<TData extends RowData> = {
   emptyMessage?: string;
   footer?: ReactNode;
   minWidth?: number | string;
+  viewportHeight?: number;
   renderExpandedRow?: (item: TData) => ReactNode;
   rowKey?: (item: TData) => string;
   rowClassName?: (item: TData) => string | undefined;
@@ -102,13 +103,20 @@ function DataTableHeader<TData extends RowData>({
   density,
   expandable,
   table,
+  sticky = false,
 }: {
   density: "default" | "compact";
   expandable: boolean;
   table: DataTableInstance<TData>;
+  sticky?: boolean;
 }) {
   return (
-    <thead className="border-b border-slate-200 bg-slate-100">
+    <thead
+      className={cn(
+        "border-b border-slate-200 bg-slate-100",
+        sticky && "sticky top-0 z-10",
+      )}
+    >
       {table.getHeaderGroups().map((group) => (
         <tr key={group.id}>
           {expandable ? (
@@ -295,6 +303,7 @@ export function DataTable<TData extends RowData>({
   emptyMessage = "No records found",
   footer,
   minWidth,
+  viewportHeight,
   renderExpandedRow,
   rowKey,
   rowClassName,
@@ -333,7 +342,13 @@ export function DataTable<TData extends RowData>({
       ) : null}
 
       <div
-        className="max-w-full overflow-x-auto overscroll-x-contain"
+        className={cn(
+          "max-w-full",
+          viewportHeight === undefined
+            ? "overflow-x-auto overscroll-x-contain"
+            : "overflow-auto overscroll-contain",
+        )}
+        style={{ height: viewportHeight }}
         role="region"
         aria-label={toolbar?.title ?? "Data table"}
         tabIndex={0}
@@ -346,6 +361,7 @@ export function DataTable<TData extends RowData>({
             density={density}
             expandable={Boolean(renderExpandedRow)}
             table={table}
+            sticky={viewportHeight !== undefined}
           />
 
           <DataTableBody

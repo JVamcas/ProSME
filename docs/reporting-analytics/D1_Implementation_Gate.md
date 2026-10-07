@@ -70,6 +70,23 @@ the agreed architecture correction.
 3. Register event-scoped GA custom dimensions `funding_call_id` and
    `page_category` using those event parameter names. `eligibility_outcome` is an
    optional additional custom dimension for provider-side inspection.
+   The funding-call dimension can be registered with
+   `npm run analytics:configure` from the repository root. It uses `GA_PROPERTY_ID`
+   and `GA_SERVICE_ACCOUNT_JSON` (or Application Default Credentials), checks all
+   existing definition pages and creates only a missing event-scoped
+   `funding_call_id`. Preview with `npm run analytics:configure -- --dry-run`.
+   Enable Google Analytics Admin API in the credentials' Cloud project and grant
+   the setup identity Editor or Administrator access to the GA property. The
+   setup command requests `analytics.edit`; normal reporting stays read-only.
+   If the Admin API is disabled, `npm run analytics:configure -- --enable-api`
+   enables that API in the consumer project reported by Google before registering
+   the dimension. This option also requires `serviceusage.services.enable` on
+   that Cloud project and requests the `cloud-platform` OAuth scope. It cannot
+   be combined with `--dry-run`.
+   `--enable-api-with-adc` uses the existing gcloud Application Default Credentials
+   only to enable the Cloud API, while keeping the configured GA credentials for
+   custom-dimension registration. Use this when the GA integration identity cannot
+   enable Cloud APIs; its GA property access still needs to allow registration.
 4. Disable GA enhanced measurement in the web data stream before setting
    `GA_COLLECTION_ENABLED=true`. Automatic history/form/download/outbound
    collection would bypass the application metadata allowlist. The explicit flag

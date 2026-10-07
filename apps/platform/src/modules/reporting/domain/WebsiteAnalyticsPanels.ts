@@ -20,6 +20,8 @@ export type WebsiteCallEngagement = {
   fundingCallId: string;
   event: string;
   users: number;
+  // Older saved reports contain user counts only, not event counts.
+  events?: number;
 };
 export type BoundedWebsiteRows<T> = {
   rows: T[];

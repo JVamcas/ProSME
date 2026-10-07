@@ -83,6 +83,43 @@ describe("workflow progress authorization", () => {
     expect(readWorkflowProgress).toHaveBeenCalledWith(applicationId);
   });
 
+  it("shows peer assignments after the viewer submits while keeping peer scores hidden", async () => {
+    const { record, completion } = workflowProgressServiceFixture(actor.id);
+    const stage = record.stages[0];
+    stage.tasks[0].status = "COMPLETED";
+    stage.tasks[1].assignedUserName = "Peer reviewer";
+    stage.tasks[1].assignedUserEmail = "peer@example.test";
+    vi.mocked(readWorkflowProgress).mockResolvedValue(record);
+    vi.mocked(readWorkflowCompletionProgress).mockResolvedValue(completion);
+
+    const progress = await getWorkflowProgress(
+      {
+        ...actor,
+        capabilities: new Set([
+          permissionCodes.workflowInstanceAllRead,
+          permissionCodes.workflowTaskAllRead,
+          permissionCodes.workflowTaskAssignedRead,
+        ]),
+      },
+      applicationId,
+    );
+
+    expect(progress?.stages[0].tasks[1]).toMatchObject({
+      assignedRoleName: "Programme Officer",
+      assignedUserName: "Peer reviewer",
+      assignedUserEmail: "peer@example.test",
+      blockedReason:
+        "Peer scores and review content are hidden until this stage is completed.",
+      canOpen: false,
+    });
+    const requirements = progress?.stages[0].completionRequirements;
+    expect(requirements).not.toBeNull();
+    expect(JSON.stringify(requirements)).not.toContain("64");
+    expect(requirements?.requirements[1].children?.[0].detail).toContain(
+      "hidden",
+    );
+  });
+
   it("links only tasks the actor can read in an active stage", async () => {
     const { task, record: initialRecord, completion } = workflowProgressServiceFixture(actor.id);
     vi.mocked(readWorkflowProgress).mockResolvedValue(initialRecord);
@@ -130,8 +167,9 @@ describe("workflow progress authorization", () => {
     expect(progress?.stages[0].tasks[0]).not.toHaveProperty("assignedUserId");
     expect(progress?.stages[0].tasks[0]).not.toHaveProperty("viewPermission");
     expect(progress?.stages[0].tasks[1]).toMatchObject({
-      assignedUserEmail: null,
-      assignedUserName: null,
+      assignedRoleName: task.assignedRoleName,
+      assignedUserEmail: task.assignedUserEmail,
+      assignedUserName: task.assignedUserName,
       canOpen: false,
       status: "PENDING",
     });

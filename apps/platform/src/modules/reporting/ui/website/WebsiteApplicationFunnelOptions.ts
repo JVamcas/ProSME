@@ -41,6 +41,41 @@ export function applicationFunnelOption(
       trigger: "item",
       valueFormatter: (value) => `${analyticsCount(Number(value))} users`,
     },
+    media: [
+      {
+        query: { maxWidth: 380 },
+        option: {
+          series: [
+            {
+              label: {
+                width: 100,
+                rich: {
+                  stage: { fontSize: 10, lineHeight: 14 },
+                  count: { fontSize: 14, lineHeight: 20 },
+                },
+              },
+              labelLine: { length: 8 },
+            },
+          ],
+        },
+      },
+      {
+        option: {
+          series: [
+            {
+              label: {
+                width: 155,
+                rich: {
+                  stage: { fontSize: 12, lineHeight: 18 },
+                  count: { fontSize: 18, lineHeight: 26 },
+                },
+              },
+              labelLine: { length: 18 },
+            },
+          ],
+        },
+      },
+    ],
     series: [
       {
         type: "funnel",

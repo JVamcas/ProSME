@@ -23,7 +23,7 @@ export function EChart({
 }: {
   option: EChartsCoreOption;
   label: string;
-  height?: number;
+  height?: number | string;
   map?: EChartMap;
   className?: string;
 }) {
