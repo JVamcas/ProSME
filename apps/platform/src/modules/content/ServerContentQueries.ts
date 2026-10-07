@@ -1,7 +1,7 @@
 import "server-only";
 
 import { homeProcessContent, homeSupportContent } from "./HomeListContent";
-import { media, resourceHref } from "./infrastructure/ContentProjection";
+import { media } from "./infrastructure/ContentProjection";
 import { readHomeFeed } from "./infrastructure/PayloadHomeFeedRepository";
 
 import { draftMode } from "next/headers";
@@ -180,7 +180,6 @@ export async function getSiteSettings(): Promise<SiteSettingsContent> {
   });
   return {
     allowIndexing: value.allowIndexing ?? false,
-    analyticsMeasurementId: value.analyticsMeasurementId,
     defaultSocialImage: media(value.defaultSocialImage),
     siteDescription: value.siteDescription,
     siteName: value.siteName,
@@ -232,32 +231,6 @@ export async function getNews(): Promise<ListingItem[]> {
     image: media(item.image),
     slug: item.slug,
     summary: item.excerpt,
-    title: item.title,
-    ...seo(item),
-  }));
-}
-
-export async function getResources(): Promise<ListingItem[]> {
-  if (isBuildFallbackEnabled()) return [];
-  const payload = await payloadClient();
-  const mode = await queryMode("resources");
-  const result = await payload.find({
-    collection: "resources",
-    depth: 1,
-    draft: mode.draft,
-    limit: 20,
-    overrideAccess: true,
-    sort: "-publishedAt",
-    where: mode.where,
-  });
-  return result.docs.map((item) => ({
-    category: item.category,
-    date: item.publishedAt,
-    href: resourceHref(item.file, item.externalUrl),
-    id: item.id,
-    image: media(item.thumbnail),
-    slug: item.slug,
-    summary: item.description,
     title: item.title,
     ...seo(item),
   }));

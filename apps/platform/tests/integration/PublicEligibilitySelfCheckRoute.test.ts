@@ -35,7 +35,9 @@ describe("public eligibility self-check route", () => {
     });
 
     const response = await route.GET(
-      new Request(`http://localhost/api/public/eligibility-self-checks/${fundingCallId}`),
+      new Request(
+        `http://localhost/api/public/eligibility-self-checks/${fundingCallId}`,
+      ),
       { params: Promise.resolve({ fundingCallId }) },
     );
 
@@ -74,6 +76,7 @@ describe("public eligibility self-check route", () => {
     expect(evaluatePublicEligibilitySelfCheck).toHaveBeenCalledWith(
       fundingCallId,
       input,
+      false,
     );
   });
 });

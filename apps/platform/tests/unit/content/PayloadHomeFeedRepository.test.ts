@@ -8,6 +8,7 @@ vi.mock("@payload-config", () => ({ default: {} }));
 vi.mock("@/modules/content/infrastructure/ContentProjection", () => ({
   media: () => undefined,
   resourceHref: () => undefined,
+  resourceThumbnail: () => undefined,
 }));
 
 import { readHomeFeed } from "@/modules/content/infrastructure/PayloadHomeFeedRepository";

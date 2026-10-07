@@ -57,11 +57,17 @@ function LoadedApplicationDraft({
   const autosave = useApplicationAutosave(applicationId, data);
   const documentRegister = useApplicationDocuments(applicationId);
   const preflight = useApplicationPreflight(applicationId);
-  const submit = useSubmitApplication(applicationId);
-  const [submission, setSubmission] = useState<ApplicationSubmission | null>(null);
+  const submit = useSubmitApplication(applicationId, data.fundingOpportunityId);
+  const [submission, setSubmission] = useState<ApplicationSubmission | null>(
+    null,
+  );
 
   async function submitDraft() {
-    if (autosave.status !== "saved" || preflight.isPending || submit.isPending) {
+    if (
+      autosave.status !== "saved" ||
+      preflight.isPending ||
+      submit.isPending
+    ) {
       return;
     }
 
@@ -69,8 +75,9 @@ function LoadedApplicationDraft({
       const readiness = await preflight.mutateAsync();
       if (!readiness.ready || !readiness.readinessToken) {
         toast.error("Application is not ready to submit", {
-          description: readiness.blockers.map((blocker) => blocker.message).join(" ")
-            || "Complete the outstanding requirements and try again.",
+          description:
+            readiness.blockers.map((blocker) => blocker.message).join(" ") ||
+            "Complete the outstanding requirements and try again.",
         });
         return;
       }
@@ -83,7 +90,8 @@ function LoadedApplicationDraft({
       setSubmission(result);
     } catch (error) {
       toast.error("Application could not be submitted", {
-        description: error instanceof Error ? error.message : "Please try again.",
+        description:
+          error instanceof Error ? error.message : "Please try again.",
       });
     }
   }
@@ -107,7 +115,10 @@ function LoadedApplicationDraft({
   if (documentRegister.isError || !documentRegister.data) {
     return (
       <PortalErrorState
-        description={documentRegister.error?.message ?? "Document requirements are unavailable."}
+        description={
+          documentRegister.error?.message ??
+          "Document requirements are unavailable."
+        }
         onAction={() => void documentRegister.refetch()}
         title="Application could not be loaded"
       />
@@ -119,16 +130,16 @@ function LoadedApplicationDraft({
   }
 
   const hasDocuments = documentRegister.data.requirements.length > 0;
-  const documentCompletion = applicationDocumentCompletion(documentRegister.data);
-  const documents = hasDocuments
-    ? (
-        <ApplicationDocumentRegisterPanel
-          applicationId={applicationId}
-          readOnly={data.status !== "draft"}
-          register={documentRegister.data}
-        />
-      )
-    : null;
+  const documentCompletion = applicationDocumentCompletion(
+    documentRegister.data,
+  );
+  const documents = hasDocuments ? (
+    <ApplicationDocumentRegisterPanel
+      applicationId={applicationId}
+      readOnly={data.status !== "draft"}
+      register={documentRegister.data}
+    />
+  ) : null;
 
   return (
     <PageShell
@@ -186,7 +197,11 @@ function LoadedApplicationDraft({
           {data.status === "draft" ? (
             <div className="flex flex-col items-end gap-3">
               <GeneralButton
-                disabled={autosave.status !== "saved" || preflight.isPending || submit.isPending}
+                disabled={
+                  autosave.status !== "saved" ||
+                  preflight.isPending ||
+                  submit.isPending
+                }
                 type="submit"
               >
                 {preflight.isPending || submit.isPending
@@ -210,12 +225,7 @@ export function ApplicationFormEditor({
   const [reloadVersion, setReloadVersion] = useState(0);
   const application = useOwnApplication(applicationId);
   if (application.isPending) {
-    return (
-      <PortalLoadingState
-        description="Loading application..."
-        title=""
-      />
-    );
+    return <PortalLoadingState description="Loading application..." title="" />;
   }
   if (application.isError || !application.data) {
     return (

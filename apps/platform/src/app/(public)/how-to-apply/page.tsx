@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 
 import { CmsRichText } from "@/modules/content/ui/public/CmsRichText";
 import { ContentBlocks } from "@/modules/content/ui/public/ContentBlocks";
-import { PublicPageHeader } from "@/components/public/public-page-header";
+import { PublicPageHeader } from "@/modules/content/ui/public/PublicPageHeader";
 import { contentMetadata } from "@/modules/content/ContentMetadata";
 import { getPage } from "@/modules/content/ServerContentQueries";
 import { GeneralButtonLink } from "@/components/ui/button";

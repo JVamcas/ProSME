@@ -41,6 +41,7 @@ export async function seedResources(payload: Payload) {
     seedFundingCriteriaThumbnail(payload),
   ]);
   const resource = {
+    resourceName: "Application guide",
     category: "Application guide",
     description: "Approved application criteria and supporting-document requirements for the SME Fund’s first call.",
     externalUrl: "/documents/sme-fund-first-call-funding-criteria.pdf",

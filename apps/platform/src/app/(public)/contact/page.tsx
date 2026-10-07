@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Mail, MapPin } from "lucide-react";
 
 import { ContactForm } from "@/components/public/contact-form";
-import { PublicPageHeader } from "@/components/public/public-page-header";
+import { PublicPageHeader } from "@/modules/content/ui/public/PublicPageHeader";
 import { getContactDetails, getPage } from "@/modules/content/ServerContentQueries";
 import { contentMetadata } from "@/modules/content/ContentMetadata";
 

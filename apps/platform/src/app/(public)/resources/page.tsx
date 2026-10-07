@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
-import { Download } from "lucide-react";
+import { notFound } from "next/navigation";
 
 import { EmptyState } from "@/components/ui/empty-state";
-import { CmsImage } from "@/modules/content/ui/public/CmsImage";
-import { PublicPageHeader } from "@/components/public/public-page-header";
-import { ArrowLink } from "@/components/ui/links";
+import { ResourceCard } from "@/modules/content/ui/public/ResourceCard";
+import { ResourcePagination } from "@/modules/content/ui/public/ResourcePagination";
+import { PublicPageHeader } from "@/modules/content/ui/public/PublicPageHeader";
 import { contentMetadata } from "@/modules/content/ContentMetadata";
-import { getPage, getResources } from "@/modules/content/ServerContentQueries";
+import { getPage } from "@/modules/content/ServerContentQueries";
+import { getResourcePage } from "@/modules/content/ServerResourceCentreService";
 
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -14,11 +15,18 @@ export async function generateMetadata(): Promise<Metadata> {
   return page ? contentMetadata(page) : {};
 }
 
-export default async function ResourcesPage() {
+export default async function ResourcesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string | string[] }>;
+}) {
+  const parameters = await searchParams;
   const [resources, page] = await Promise.all([
-    getResources(),
+    getResourcePage(parameters.page),
     getPage("resources"),
   ]);
+  if (resources.page > Math.max(1, resources.totalPages)) notFound();
+
   return (
     <>
       <PublicPageHeader
@@ -29,43 +37,10 @@ export default async function ResourcesPage() {
       />
       <section className="section bg-brand-cream/30">
         <div className="container">
-          {resources.length ? (
+          {resources.items.length ? (
             <div className="grid gap-5 md:grid-cols-2">
-              {resources.map((item) => (
-                <article
-                  className="overflow-hidden rounded-2xl border border-brand-blue/25 bg-brand-white shadow-[0_12px_35px_rgba(10,24,59,0.08)]"
-                  key={item.id}
-                >
-                  <CmsImage
-                    className="aspect-video w-full object-cover object-top"
-                    image={item.image}
-                  />
-                  <div className="flex items-start gap-5 p-6">
-                    <span className="grid size-12 shrink-0 place-items-center rounded-full bg-brand-orange/10">
-                      <Download className="size-5 text-brand-orange" />
-                    </span>
-                    <div>
-                      <p className="text-xs font-extrabold uppercase tracking-wider text-brand-navy">
-                        {item.category}
-                      </p>
-                      <h2 className="mt-2 text-xl font-bold text-brand-navy">
-                        {item.title}
-                      </h2>
-                      <p className="mt-2 text-sm leading-6 text-brand-navy/75">
-                        {item.summary}
-                      </p>
-                      <ArrowLink
-                        href={item.href ?? `/resources/${item.slug}`}
-                        className="mt-4 underline"
-                        rel="noopener noreferrer"
-                        target="_blank"
-                      >
-                        Open resource
-                        <span className="sr-only"> (opens in a new tab)</span>
-                      </ArrowLink>
-                    </div>
-                  </div>
-                </article>
+              {resources.items.map((item) => (
+                <ResourceCard item={item} key={item.id} />
               ))}
             </div>
           ) : (
@@ -74,6 +49,7 @@ export default async function ResourcesPage() {
               message="Approved documents will appear here when they are published."
             />
           )}
+          {resources.total > 0 ? <ResourcePagination result={resources} /> : null}
         </div>
       </section>
     </>

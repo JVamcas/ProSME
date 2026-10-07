@@ -12,6 +12,7 @@ import {
 } from "react-hook-form";
 
 import { type FormBindingProps, useFormBinding } from "@/components/ui/form-binding";
+import type { FormControlSize } from "@/components/ui/form-fields";
 import { DateCalendarPopover } from "@/shared/ui/FormDateCalendar";
 import {
   DateControl,
@@ -35,6 +36,7 @@ export type FormDateInputProps = FormBindingProps & {
   onFocusValue?: (value: string) => void;
   readOnly?: boolean;
   required?: boolean;
+  size?: FormControlSize;
   value?: string;
 };
 
@@ -79,6 +81,7 @@ function DateInputField({
   readOnly,
   registrationOptions,
   required,
+  size = "default",
   value,
 }: FormDateInputProps) {
   const binding = useFormBinding({ error, name, registrationOptions });
@@ -126,7 +129,7 @@ function DateInputField({
             </span>
           ) : null}
         </DateLabel>
-        <DateControl className={className} error={binding.error} />
+        <DateControl className={className} error={binding.error} size={size} />
         <DateCalendarPopover
           maxValue={parsedMaxValue}
           minValue={parsedMinValue}

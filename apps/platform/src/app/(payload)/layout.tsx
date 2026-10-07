@@ -9,6 +9,8 @@ import { permissionCodes } from "@/auth/authorization/permissions";
 import { getAuthenticatedPageUser } from "@/platform/auth/ServerAuthNavigation";
 import { can } from "@/auth/authorization/policy";
 import { cmsAdminClassName } from "@/modules/content/ui/admin/CmsAdminTheme";
+import cmsWorkspaceStyles from "@/modules/content/ui/admin/CmsWorkspaceLayout.module.css";
+import { WorkspaceFrame } from "@/shared/ui/navigation/WorkspaceLayout";
 import { importMap } from "./cms/importMap";
 import "./tailwind.css";
 
@@ -33,7 +35,9 @@ export default async function PayloadLayout({ children }: Props) {
       serverFunction={serverFunction}
       htmlProps={{ className: cmsAdminClassName }}
     >
-      {children}
+      <WorkspaceFrame className={cmsWorkspaceStyles.frame}>
+        {children}
+      </WorkspaceFrame>
     </RootLayout>
   );
 }

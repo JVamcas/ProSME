@@ -1,4 +1,5 @@
 import { ArrowRight } from "lucide-react";
+import { TrackedCallDocumentLink } from "@/modules/reporting/ui/TrackedCallDocumentLink";
 
 import { GeneralButtonLink } from "@/components/ui/button";
 import type { PublicFundingCallDetail } from "../../api/PublicFundingCallTransport";
@@ -39,12 +40,13 @@ export function PublicFundingCallNextStep({
           <ul className="mt-3 grid gap-2">
             {call.publicDocuments.map((document) => (
               <li key={document.url}>
-                <a
+                <TrackedCallDocumentLink
                   className="inline-flex min-h-11 items-center text-sm font-semibold text-brand-navy underline"
+                  fundingCallId={call.id}
                   href={document.url}
                 >
                   {document.label}
-                </a>
+                </TrackedCallDocumentLink>
               </li>
             ))}
           </ul>

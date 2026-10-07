@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 
 const theme = [
   "[--nav-width:320px]",
-  "[--app-header-height:80px]",
+  "[--app-header-height:64px]",
   "max-[768px]:[--app-header-height:64px]",
   "[--theme-elevation-0:var(--sme-brand-white)]",
   "[--theme-elevation-50:#f9fafb]",
@@ -18,7 +18,7 @@ const theme = [
 
 const shell = [
   "[&_.nav]:border-0",
-  "[&_.nav]:bg-brand-yellow",
+  "[&_.nav]:bg-brand-navy",
   "[&_.nav]:text-brand-white",
   String.raw`[&_.nav\_\_scroll]:p-0`,
   String.raw`[&_.nav\_\_scroll]:overflow-hidden`,
@@ -31,6 +31,8 @@ const shell = [
   "[&_.app-header]:bg-brand-white",
   String.raw`[&_.app-header\_\_content]:px-[32px]`,
   String.raw`max-[768px]:[&_.app-header\_\_content]:px-[16px]`,
+  // Payload renders Edit first; hide it only above the About content editor.
+  String.raw`[&_.template-default\_\_wrap:has(.collection-edit--pages_#about-content)>.doc-header_.doc-tab:first-child]:hidden`,
   "[&_.card]:border",
   "[&_.card]:border-solid",
   "[&_.card]:border-[var(--theme-elevation-200)]",

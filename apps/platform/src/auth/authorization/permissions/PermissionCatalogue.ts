@@ -28,6 +28,11 @@ function define(
 }
 
 const staticPermissionCatalogue: readonly PermissionDefinition[] = [
+  define(
+    permissionCodes.reportingWebsiteReadAll,
+    "Read website analytics across all funding calls",
+    "Read consent-based website metrics and anonymous advisory eligibility aggregates for any funding call. Does not grant access to applicant records or report scheduling.",
+  ),
   ...brandingPermissionCatalogue,
   define(
     permissionCodes.userRead,

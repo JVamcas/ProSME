@@ -4,6 +4,7 @@ import { Menu } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef } from "react";
 
+import { cn } from "@/lib/utils";
 import type { PortalSpace } from "@/auth/authorization/portal-access";
 import { LogoutButton } from "@/shared/ui/portal/LogoutButton";
 import type { PortalContext } from "@/modules/profiles/ProfileTypes";
@@ -16,6 +17,7 @@ import {
 import { PortalHelpLink, PortalUserSummary } from "./portal-shell-support";
 import { PortalSpaceSwitcher } from "./portal-space-switcher";
 import { Logo } from "../Logo";
+import sidebarStyles from "../navigation/NavigationSidebar.module.css";
 
 function useDismissableMenu() {
   const menu = useRef<HTMLDetailsElement>(null);
@@ -72,7 +74,11 @@ function MobileMenu({
       }}
     >
       <div
-        className={`flex h-full w-[min(21rem,90vw)] flex-col overflow-hidden px-4 pb-4 shadow-xl ${dark ? "bg-brand-navy" : "bg-brand-orange"}`}
+        className={cn(
+          "flex h-full w-[min(21rem,90vw)] flex-col overflow-hidden px-4 pb-4 text-white shadow-xl",
+          dark ? sidebarStyles.dark : sidebarStyles.brand,
+          dark ? "bg-brand-navy" : "bg-brand-orange",
+        )}
         onClick={(event) => {
           const target = event.target;
           if (!(target instanceof Element)) return;

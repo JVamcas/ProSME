@@ -49,6 +49,18 @@ async function renderShell() {
 }
 
 describe("portal desktop sidebar", () => {
+  it("keeps the header inside the page column and the sidebar outside it", async () => {
+    const { container, root } = await renderShell();
+    const content = container.querySelector('[data-workspace-slot="content"]');
+    const header = container.querySelector('[data-workspace-slot="header"]');
+    const sidebar = container.querySelector('[data-workspace-slot="sidebar"]');
+
+    expect(content?.contains(header)).toBe(true);
+    expect(content?.contains(sidebar)).toBe(false);
+    expect(sidebar?.contains(container.querySelector("aside"))).toBe(true);
+    await act(async () => root.unmount());
+  });
+
   it("collapses to an icon rail and expands again", async () => {
     const { container, root } = await renderShell();
     const closeButton = container.querySelector<HTMLButtonElement>(
@@ -78,7 +90,9 @@ describe("portal desktop sidebar", () => {
 
   it("resizes with dragging and keyboard controls", async () => {
     const { container, root } = await renderShell();
-    const shell = container.firstElementChild as HTMLDivElement;
+    const shell = container.querySelector<HTMLDivElement>(
+      '[data-workspace-slot="columns"]',
+    )!;
     const handle = container.querySelector<HTMLElement>(
       '[aria-label="Resize navigation sidebar"]',
     );

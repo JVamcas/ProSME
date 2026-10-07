@@ -2,9 +2,17 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { PublicSiteShell } from "@/modules/content/ui/public/PublicSiteShell";
 import { QueryProvider } from "@/shared/ui/portal/query-provider";
-import { AnalyticsConsent } from "@/integrations/analytics/analytics-consent";
+import { WebsiteAnalyticsConsent } from "@/modules/reporting/ui/WebsiteAnalyticsConsent";
+import { Suspense } from "react";
+import {
+  getWebsiteAnalyticsMeasurementId,
+  getWebsiteHeatmapConfiguration,
+} from "@/modules/reporting/ServerWebsiteAnalyticsCollectionService";
 import { getServerEnvironment } from "@/lib/env/server";
-import { getContactDetails, getSiteSettings } from "@/modules/content/ServerContentQueries";
+import {
+  getContactDetails,
+  getSiteSettings,
+} from "@/modules/content/ServerContentQueries";
 import { PublicContentRefresh } from "@/modules/content/ui/public/PublicContentRefresh";
 import { Toast } from "@/shared/ui/Toast";
 import "../globals.css";
@@ -59,6 +67,7 @@ type RootLayoutProps = Readonly<{
 }>;
 
 export default async function RootLayout({ children }: RootLayoutProps) {
+  const heatmap = getWebsiteHeatmapConfiguration();
   const environment = getServerEnvironment();
   const [settings, contact] = await Promise.all([
     getSiteSettings(),
@@ -88,9 +97,12 @@ export default async function RootLayout({ children }: RootLayoutProps) {
           <PublicSiteShell mainClassName="public-content">
             {children}
           </PublicSiteShell>
-          <AnalyticsConsent
-            measurementId={settings.analyticsMeasurementId}
-          />
+          <Suspense fallback={null}>
+            <WebsiteAnalyticsConsent
+              measurementId={getWebsiteAnalyticsMeasurementId()}
+              clarityProjectId={heatmap.projectId}
+            />
+          </Suspense>
           <Toast />
         </QueryProvider>
         <script

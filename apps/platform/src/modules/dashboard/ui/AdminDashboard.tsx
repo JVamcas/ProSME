@@ -1,7 +1,7 @@
 import { ClipboardList, FileQuestion, Gavel, ScanSearch } from "lucide-react";
 
 import type { AdminDashboardView } from "@/modules/dashboard/AdminDashboardTypes";
-import { DashboardMetricCard } from "@/modules/dashboard/ui/DashboardMetricCard";
+import { DashboardMetricCard } from "@/shared/ui/DashboardMetricCard";
 import { PageShell } from "@/shared/ui/PageShell";
 import { AdminDashboardCharts } from "./AdminDashboardCharts";
 import { AdminDashboardPanels } from "./AdminDashboardPanels";

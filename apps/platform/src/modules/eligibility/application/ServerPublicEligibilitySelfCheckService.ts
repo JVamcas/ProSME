@@ -1,12 +1,14 @@
 import "server-only";
-
-import { createHash } from "node:crypto";
+import { collectAnonymousEligibilityOutcome } from "@/modules/reporting/ServerWebsiteAnalyticsCollectionService";
 
 import {
-  ResourceConflictError,
-  ResourceNotFoundError,
-  RequestValidationError,
-} from "@/lib/resource-errors";
+  configurationToken,
+  questionId,
+} from "../domain/PublicEligibilitySelfCheckIdentity";
+import { answersByStableKey } from "./PublicEligibilitySelfCheckAnswers";
+export { PublicEligibilitySelfCheckChangedError } from "../domain/PublicEligibilitySelfCheckErrors";
+
+import { ResourceNotFoundError } from "@/lib/resource-errors";
 import { workflowConditionNodeFieldPaths } from "@/modules/conditions/engine/WorkflowDataResolver";
 import { findPublicFundingCallById } from "@/modules/funding-calls/application/ServerPublicFundingCallService";
 import type {
@@ -16,7 +18,6 @@ import type {
 import type { EligibilityInputDefinition } from "../domain/EligibilityInputDefinition";
 import { evaluateEligibilityRuleSet } from "../engine/EligibilityEvaluator";
 import type {
-  PublicEligibilityAnswer,
   PublicEligibilityGuidance,
   PublicEligibilityQuestion,
   PublicEligibilityQuestionType,
@@ -37,16 +38,11 @@ export class PublicEligibilitySelfCheckUnavailableError extends ResourceNotFound
   }
 }
 
-export class PublicEligibilitySelfCheckChangedError extends ResourceConflictError {
-  constructor() {
-    super("The eligibility questions changed. Review them and try again.");
-    this.name = "PublicEligibilitySelfCheckChangedError";
-  }
-}
-
 class InvalidPublicEligibilitySelfCheckConfigurationError extends Error {
   constructor(path: string) {
-    super(`Eligibility self-check field "${path}" is not publicly configurable.`);
+    super(
+      `Eligibility self-check field "${path}" is not publicly configurable.`,
+    );
     this.name = "InvalidPublicEligibilitySelfCheckConfigurationError";
   }
 }
@@ -58,22 +54,6 @@ function applicableRules(ruleSet: EligibilityEvaluationRuleSet) {
         rule.executionMode === "SELF_CHECK" || rule.executionMode === "BOTH",
     )
     .sort((left, right) => left.order - right.order);
-}
-
-function questionId(versionId: string, path: string) {
-  return createHash("sha256")
-    .update(`${versionId}:${path}`)
-    .digest("hex")
-    .slice(0, 32);
-}
-
-function configurationToken(
-  versionId: string,
-  questions: PublicEligibilityQuestion[],
-) {
-  return createHash("sha256")
-    .update(JSON.stringify({ questions, versionId }))
-    .digest("hex");
 }
 
 const questionTypes = {
@@ -133,16 +113,19 @@ function questionsFor(
   paths: string[],
   inputDefinitions: ReadonlyMap<string, EligibilityInputDefinition>,
 ): PublicEligibilityQuestion[] {
-  const definitions = paths.map((path) => {
-    const definition = inputDefinitions.get(path);
-    if (!definition?.selfCheck) {
-      throw new InvalidPublicEligibilitySelfCheckConfigurationError(path);
-    }
-    return { definition, selfCheck: definition.selfCheck };
-  }).sort(
-    (left, right) => left.definition.order - right.definition.order
-      || left.definition.id.localeCompare(right.definition.id),
-  );
+  const definitions = paths
+    .map((path) => {
+      const definition = inputDefinitions.get(path);
+      if (!definition?.selfCheck) {
+        throw new InvalidPublicEligibilitySelfCheckConfigurationError(path);
+      }
+      return { definition, selfCheck: definition.selfCheck };
+    })
+    .sort(
+      (left, right) =>
+        left.definition.order - right.definition.order ||
+        left.definition.id.localeCompare(right.definition.id),
+    );
   return definitions.map(({ definition, selfCheck }, index) => {
     const path = `eligibility.${definition.stableKey}`;
     return {
@@ -157,9 +140,10 @@ function questionsFor(
         total: definitions.length,
       },
       required: selfCheck.required,
-      section: definition.groupKey && definition.groupLabel
-        ? { key: definition.groupKey, label: definition.groupLabel }
-        : null,
+      section:
+        definition.groupKey && definition.groupLabel
+          ? { key: definition.groupKey, label: definition.groupLabel }
+          : null,
       type: questionTypes[selfCheck.answerType],
     };
   });
@@ -182,15 +166,20 @@ async function loadSelfCheck(fundingCallId: string) {
     const rules = applicableRules(ruleSet);
     if (!rules.length) throw new PublicEligibilitySelfCheckUnavailableError();
     const paths = requiredEligibilityPaths(rules);
-    const inputDefinitions = new Map(inputs
-      .filter((input) => input.availableIn.includes("SELF_CHECK"))
-      .map((input) => [`eligibility.${input.stableKey}`, input]));
+    const inputDefinitions = new Map(
+      inputs
+        .filter((input) => input.availableIn.includes("SELF_CHECK"))
+        .map((input) => [`eligibility.${input.stableKey}`, input]),
+    );
     const questions = questionsFor(ruleSet, paths, inputDefinitions);
-    const pathByQuestionId = new Map([...inputDefinitions].map(
-      ([path]) => [questionId(ruleSet.versionId, path), path],
-    ));
-    const orderedPaths = questions.map(
-      (question) => pathByQuestionId.get(question.id)!,
+    const pathByQuestionId = new Map(
+      [...inputDefinitions].map(([path]) => [
+        questionId(ruleSet.versionId, path),
+        path,
+      ]),
+    );
+    const orderedPaths = questions.map((question) =>
+      pathByQuestionId.get(question.id)!,
     );
     return {
       fundingCall,
@@ -201,7 +190,8 @@ async function loadSelfCheck(fundingCallId: string) {
       ruleSet,
     };
   } catch (error) {
-    if (error instanceof PublicEligibilitySelfCheckUnavailableError) throw error;
+    if (error instanceof PublicEligibilitySelfCheckUnavailableError)
+      throw error;
     if (error instanceof ResourceNotFoundError) {
       throw new PublicEligibilitySelfCheckUnavailableError();
     }
@@ -229,82 +219,6 @@ export async function getPublicEligibilitySelfCheck(
   };
 }
 
-function validateAnswer(
-  answer: PublicEligibilityAnswer | undefined,
-  question: PublicEligibilityQuestion,
-) {
-  if (question.type === "boolean") return typeof answer === "boolean";
-  if (question.type === "number" || question.type === "percentage") {
-    if (typeof answer !== "number" || !Number.isFinite(answer)) return false;
-    return question.type !== "percentage" || (answer >= 0 && answer <= 100);
-  }
-  if (question.type === "date") {
-    if (typeof answer !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(answer)) {
-      return false;
-    }
-    const date = new Date(`${answer}T00:00:00.000Z`);
-    return !Number.isNaN(date.getTime())
-      && date.toISOString().slice(0, 10) === answer;
-  }
-  if (question.type === "multi-select") {
-    if (!Array.isArray(answer) || new Set(answer).size !== answer.length) {
-      return false;
-    }
-    const allowed = new Set(question.options.map((option) => option.value));
-    return answer.length > 0 && answer.every((value) => allowed.has(value));
-  }
-  if (question.type === "single-select" || question.type === "yes-no-na") {
-    return typeof answer === "string"
-      && question.options.some((option) => option.value === answer);
-  }
-  if (question.type === "text") {
-    return typeof answer === "string"
-      && answer.trim().length > 0
-      && answer.length <= 500;
-  }
-  return false;
-}
-
-function answersByStableKey(
-  input: PublicEligibilitySelfCheckInput,
-  ruleSet: EligibilityEvaluationRuleSet,
-  paths: string[],
-  inputDefinitions: ReadonlyMap<string, EligibilityInputDefinition>,
-  questions: PublicEligibilityQuestion[],
-) {
-  const expectedToken = configurationToken(ruleSet.versionId, questions);
-  if (input.configurationToken !== expectedToken) {
-    throw new PublicEligibilitySelfCheckChangedError();
-  }
-  const questionsById = new Map(
-    questions.map((question) => [question.id, question]),
-  );
-  const unexpected = Object.keys(input.answers).some(
-    (id) => !questionsById.has(id),
-  );
-  const missingRequired = questions.some(
-    (question) => question.required && !(question.id in input.answers),
-  );
-  if (unexpected || missingRequired) {
-    throw new RequestValidationError("Review the eligibility answers.");
-  }
-  return Object.fromEntries(
-    paths.map((path) => {
-      const definition = inputDefinitions.get(path)!;
-      const id = questionId(ruleSet.versionId, path);
-      const question = questionsById.get(id)!;
-      const answer = input.answers[id];
-      if (answer === undefined && !question.required) {
-        return [definition.stableKey, null];
-      }
-      if (!validateAnswer(answer, question)) {
-        throw new RequestValidationError("Review the eligibility answers.");
-      }
-      return [definition.stableKey, answer];
-    }),
-  );
-}
-
 function guidance(
   result: ReturnType<typeof evaluateEligibilityRuleSet>,
 ): PublicEligibilityGuidance[] {
@@ -327,6 +241,7 @@ function guidance(
 export async function evaluatePublicEligibilitySelfCheck(
   fundingCallId: string,
   input: PublicEligibilitySelfCheckInput,
+  analyticsConsent = false,
 ): Promise<PublicEligibilitySelfCheckResult> {
   const value = await loadSelfCheck(fundingCallId);
   const answers = answersByStableKey(
@@ -358,7 +273,7 @@ export async function evaluatePublicEligibilitySelfCheck(
     },
     stages: [],
   });
-  return {
+  const response: PublicEligibilitySelfCheckResult = {
     advisory: true,
     applicationsOpen: value.fundingCall.applicationsOpen,
     disclaimer,
@@ -370,4 +285,12 @@ export async function evaluatePublicEligibilitySelfCheck(
         ? "review-required"
         : "likely-eligible",
   };
+  if (analyticsConsent) {
+    await collectAnonymousEligibilityOutcome({
+      fundingCallId: value.fundingCall.id,
+      ruleSetVersionId: value.ruleSet.versionId,
+      outcome: response.outcome,
+    });
+  }
+  return response;
 }

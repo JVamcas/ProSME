@@ -114,11 +114,11 @@ export function useUpdateApplication(id: string) {
   });
 }
 
-export function useSubmitApplication(id: string) {
+export function useSubmitApplication(id: string, fundingCallId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (input: ApplicationSubmissionCommandInput) =>
-      clientApplicationService.submitApplication(id, input),
+      clientApplicationService.submitApplication(id, input, fundingCallId),
     onSuccess: () => invalidateApplicationViews(queryClient, true),
   });
 }

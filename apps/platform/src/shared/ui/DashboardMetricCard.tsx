@@ -1,8 +1,16 @@
 import type { LucideIcon } from "lucide-react";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
+import { DashboardMetricSummary } from "./DashboardMetricSummary";
 
 type DashboardMetricCardProps = {
+  variant?: "default" | "summary";
+  iconTone?: "blue" | "violet";
+  change?: number | null;
+  statusText?: string;
+  title?: string;
+  compact?: boolean;
   icon: LucideIcon;
   href?: string;
   label: string;
@@ -11,14 +19,41 @@ type DashboardMetricCardProps = {
 };
 
 export function DashboardMetricCard({
+  variant = "default",
+  iconTone = "blue",
+  change,
+  statusText,
+  title,
+  compact = false,
   icon: Icon,
   href,
   label,
   supportingText,
   value,
 }: DashboardMetricCardProps) {
+  if (variant === "summary") {
+    return (
+      <DashboardMetricSummary
+        icon={Icon}
+        iconTone={iconTone}
+        change={change}
+        statusText={statusText}
+        title={title}
+        label={label}
+        value={value}
+        supportingText={supportingText}
+      />
+    );
+  }
+
   const content = (
-    <article className="group relative h-full overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-brand-orange/50 hover:shadow-lg">
+    <article
+      className={cn(
+        "group relative h-full overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm",
+        !compact &&
+          "transition-all duration-300 hover:-translate-y-1 hover:border-brand-orange/50 hover:shadow-lg",
+      )}
+    >
       <div className="pointer-events-none absolute -bottom-16 -right-16 size-40 rounded-full bg-brand-orange/8 transition-transform duration-300 group-hover:scale-125" />
 
       <div className="relative flex h-full flex-col">
@@ -40,8 +75,13 @@ export function DashboardMetricCard({
           )}
         </div>
 
-        <div className="mt-6">
-          <strong className="block text-4xl font-bold leading-none tracking-tight text-brand-navy">
+        <div className={compact ? "mt-3" : "mt-6"}>
+          <strong
+            className={cn(
+              "block font-bold leading-none tracking-tight text-brand-navy",
+              compact ? "text-2xl" : "text-4xl",
+            )}
+          >
             {value}
           </strong>
 

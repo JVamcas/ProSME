@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import { CmsRichText } from "@/modules/content/ui/public/CmsRichText";
-import { PublicPageHeader } from "@/components/public/public-page-header";
+import { PublicPageHeader } from "@/modules/content/ui/public/PublicPageHeader";
 import { contentMetadata } from "@/modules/content/ContentMetadata";
 import { getFaqs, getPage } from "@/modules/content/ServerContentQueries";
 

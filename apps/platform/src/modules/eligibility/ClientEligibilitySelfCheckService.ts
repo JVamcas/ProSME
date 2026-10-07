@@ -1,6 +1,7 @@
 "use client";
 
 import { postData, requestData } from "@/lib/client-http";
+import { clientWebsiteAnalyticsService } from "@/modules/reporting/ClientWebsiteAnalyticsService";
 import type {
   PublicEligibilitySelfCheckInput,
   PublicEligibilitySelfCheckResult,
@@ -14,14 +15,19 @@ function get(fundingCallId: string) {
   );
 }
 
-function evaluate(
+async function evaluate(
   fundingCallId: string,
   input: PublicEligibilitySelfCheckInput,
 ) {
-  return postData<
+  const result = await postData<
     PublicEligibilitySelfCheckResult,
     PublicEligibilitySelfCheckInput
   >(`/api/public/eligibility-self-checks/${fundingCallId}`, input);
+  clientWebsiteAnalyticsService.track("eligibility_check_complete", {
+    fundingCallId: result.fundingCallId,
+    outcome: result.outcome,
+  });
+  return result;
 }
 
 export const clientEligibilitySelfCheckService = { evaluate, get };

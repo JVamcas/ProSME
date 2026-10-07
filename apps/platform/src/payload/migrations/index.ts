@@ -16,6 +16,7 @@ import * as migration_20260929_220000_home_process_version_table from './2026092
 import * as migration_20261004_230000_responsive_media_sizes from './20261004_230000_responsive_media_sizes';
 
 import * as migration_20261005_233000_home_support_cards from "./20261005_233000_home_support_cards";
+import * as migration_20261006_170000_resource_centre from "./20261006_170000_resource_centre";
 
 export const migrations = [
   {
@@ -101,5 +102,10 @@ export const migrations = [
   {
     up: migration_20261005_233000_home_support_cards.up,
     name: "20261005_233000_home_support_cards",
+  },
+  {
+    up: migration_20261006_170000_resource_centre.up,
+    down: migration_20261006_170000_resource_centre.down,
+    name: "20261006_170000_resource_centre",
   },
 ];

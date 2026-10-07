@@ -61,12 +61,20 @@ describe("form date input", () => {
     const root = createRoot(container);
 
     await act(async () => {
-      root.render(<FormDateInput label="Date of birth" name="dateOfBirth" />);
+      root.render(
+        <FormDateInput
+          label="Date of birth"
+          name="dateOfBirth"
+          size="compact"
+        />,
+      );
     });
 
     const trigger = container.querySelector<HTMLButtonElement>(
       '[aria-label="Open calendar"]',
     );
+    expect(trigger?.classList.contains("size-6")).toBe(true);
+    expect(trigger?.parentElement?.classList.contains("h-8")).toBe(true);
 
     await act(async () => {
       trigger?.click();

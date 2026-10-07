@@ -193,6 +193,12 @@ Handwritten implementation files must stay within these limits:
 - Do not commit secrets, service-account files, real applicant data, or production exports.
 - Every database change requires a repeatable migration.
 - Add or update tests for changed policies, validation, services, repositories, and protected routes.
-- Before reporting work complete, run lint, type checking, tests, and the production build.
+- Before reporting work complete, run lint, type checking, and tests appropriate
+  to the change.
+- Do not run a production build unless the user explicitly requests one.
+- Do not install or reinstall Chromium, Playwright browsers, or browser system
+  dependencies unless the user explicitly requests that installation. Use an
+  existing browser when available. If browser verification is blocked, report
+  the limitation and continue with the available checks.
 - Do not report a gate as passed without its required evidence and written acceptance.
 - Preserve unrelated user changes and source documents.

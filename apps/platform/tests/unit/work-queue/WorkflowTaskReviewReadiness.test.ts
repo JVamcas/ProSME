@@ -109,3 +109,93 @@ describe("task readiness reflects server action availability", () => {
     ).toBe("Completed");
   });
 });
+
+describe("contributing task form progress", () => {
+  const contributingTask: TaskDetail = {
+    ...task,
+    actions: [],
+    taskStatus: "IN_PROGRESS",
+    taskType: "CONTRIBUTING",
+    formVersionId: "16f2a85b-82a6-4594-9d37-c8ce4f284443",
+    formName: "Committee Review Form",
+    hasChecklist: true,
+    checklistItems: workflowTaskServiceFixture.checklistItems,
+    checklistCompleted: true,
+    documentRequirements: [
+      {
+        acceptedFileTypes: ["PDF"],
+        expiryDays: null,
+        mandatory: true,
+        maximumSizeMb: 10,
+        name: "Committee record",
+        stableKey: "COMMITTEE_RECORD",
+        requestStatus: "SUPPLIED",
+        templateReference: "",
+        uploader: "ASSIGNED_REVIEWER",
+        verifier: "ASSIGNED_REVIEWER",
+      },
+    ],
+    documentsCompleted: true,
+  };
+
+  function contributingReadiness(
+    formState = { pending: false, ready: true },
+    patch: Partial<TaskDetail> = {},
+  ) {
+    return workflowTaskReviewReadiness(
+      { ...contributingTask, ...patch },
+      { pending: false, ready: true },
+      formState,
+      false,
+    );
+  }
+
+  it("counts a valid saved draft in all three sections before task submission", () => {
+    expect(contributingReadiness()).toMatchObject({
+      formSectionComplete: true,
+      completedCount: 3,
+      sectionCount: 3,
+      canComplete: true,
+      formSubmitNeeded: true,
+      taskProgressStatus: "In progress",
+    });
+  });
+
+  it.each([
+    { pending: true, ready: true },
+    { pending: false, ready: false },
+  ])("keeps unsaved or invalid forms outstanding: %j", (formState) => {
+    expect(contributingReadiness(formState)).toMatchObject({
+      formSectionComplete: false,
+      completedCount: 2,
+      sectionCount: 3,
+      canComplete: false,
+    });
+  });
+
+  it("counts a submitted form without requiring another submission", () => {
+    expect(
+      contributingReadiness(
+        { pending: false, ready: false },
+        { formCompleted: true },
+      ),
+    ).toMatchObject({
+      formSectionComplete: true,
+      completedCount: 3,
+      canComplete: true,
+      formSubmitNeeded: false,
+    });
+  });
+
+  it("requires eligibility execution before counting its form as complete", () => {
+    expect(
+      contributingReadiness(undefined, { canEvaluateEligibility: true }),
+    ).toMatchObject({
+      formSectionComplete: false,
+      completedCount: 2,
+      canComplete: false,
+      eligibilityReady: false,
+      formSubmitNeeded: false,
+    });
+  });
+});

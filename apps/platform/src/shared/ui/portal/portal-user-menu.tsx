@@ -85,7 +85,7 @@ export function PortalUserMenu({ context }: { context: PortalContext }) {
               My profile
             </Link>
           ) : null}
-          <LogoutButton tone="brand" />
+          <LogoutButton tone="light" />
         </div>
       ) : null}
     </div>

@@ -21,12 +21,14 @@ export const publishingFields: Field[] = [
 ];
 
 // Home uses Save draft and Publish; retain legacy review data without controls.
-export const homePublishingFields: Field[] = publishingFields.map((field) => {
+export const homePublishingFields: Field[] = publishingFields.map((field): Field => {
   if (
     "name" in field &&
     (field.name === "reviewNotes" || field.name === "reviewStatus")
   ) {
-    return { ...field, admin: { ...field.admin, hidden: true } };
+    const hiddenField: Field = { ...field };
+    hiddenField.admin = { ...hiddenField.admin, hidden: true };
+    return hiddenField;
   }
 
   return field;

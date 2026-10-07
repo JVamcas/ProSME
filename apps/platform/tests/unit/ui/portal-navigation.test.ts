@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { permissionCodes } from "@/auth/authorization/permissions";
+import { groupNavigationRoutes } from "@/shared/ui/navigation/NavigationSections";
 import {
   applicantPortalRoutes,
   filterPortalRoutes,
@@ -9,6 +10,40 @@ import {
 } from "@/shared/ui/portal/portal-navigation";
 
 describe("P3.1 capability-aware portal navigation", () => {
+  it("groups permitted applicant links without empty sections", () => {
+    const routes = filterPortalRoutes(
+      portalRoutes,
+      "applicant",
+      new Set([permissionCodes.userProfileOwnRead]),
+    );
+    const groups = groupNavigationRoutes(routes);
+
+    expect(groups.map((group) => group.label)).toEqual([
+      "Overview",
+      "Funding",
+      "My account",
+    ]);
+    expect(groups.map((group) => group.routes.map((route) => route.href))).toEqual([
+      ["/portal"],
+      ["/portal/funding-opportunities"],
+      ["/portal/profile"],
+    ]);
+    expect(groupNavigationRoutes([])).toEqual([]);
+  });
+
+  it("groups operations links after permission filtering", () => {
+    const routes = filterPortalRoutes(
+      portalRoutes,
+      "operations",
+      new Set([permissionCodes.fundingApplicationAllRead]),
+    );
+
+    expect(groupNavigationRoutes(routes).map((group) => group.label)).toEqual([
+      "Overview",
+      "Application management",
+    ]);
+  });
+
   it("shows only applicant routes allowed by the projection", () => {
     const routes = filterPortalRoutes(
       portalRoutes,
@@ -140,7 +175,7 @@ describe("P3.1 capability-aware portal navigation", () => {
     });
   });
 
-  it("exposes content management only with CMS access", () => {
+  it("keeps CMS access in the workspace switcher rather than duplicating an operations route", () => {
     const withoutCmsAccess = filterPortalRoutes(
       portalRoutes,
       "operations",
@@ -156,13 +191,10 @@ describe("P3.1 capability-aware portal navigation", () => {
     );
 
     expect(withoutCmsAccess.map((route) => route.href)).not.toContain("/cms");
-    expect(withCmsAccess.map((route) => route.href)).toContain("/cms");
+    expect(withCmsAccess.map((route) => route.href)).not.toContain("/cms");
     expect(
       operationsPortalRoutes.find((route) => route.href === "/cms"),
-    ).toMatchObject({
-      label: "Content management",
-      requiredPermission: permissionCodes.cmsAccess,
-    });
+    ).toBeUndefined();
   });
 
   it("removes a parent when all nested routes are inaccessible", () => {

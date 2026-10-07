@@ -11,12 +11,31 @@ export const SiteSettings: GlobalConfig = {
   dbName: "cms_site_settings",
   admin: { group: "Site settings" },
   access: cmsGlobalAccess(),
-  hooks: { afterChange: [recordGlobalChange, revalidateGlobal], beforeChange: [globalPublishGuard()] },
+  hooks: {
+    afterChange: [recordGlobalChange, revalidateGlobal],
+    beforeChange: [globalPublishGuard()],
+  },
   versions: { drafts: true, max: 50 },
   fields: [
-    { name: "siteName", type: "text", defaultValue: "SME Fund Namibia", required: true },
-    { name: "siteDescription", type: "textarea", defaultValue: "Funding and business development support for Namibian MSMEs.", required: true },
-    { name: "analyticsMeasurementId", type: "text", admin: { description: "Optional GA4 measurement ID. Analytics loads only after consent." } },
+    {
+      name: "siteName",
+      type: "text",
+      defaultValue: "SME Fund Namibia",
+      required: true,
+    },
+    {
+      name: "siteDescription",
+      type: "textarea",
+      defaultValue:
+        "Funding and business development support for Namibian MSMEs.",
+      required: true,
+    },
+    {
+      // Preserve the legacy column; runtime analytics uses GA_MEASUREMENT_ID only.
+      name: "analyticsMeasurementId",
+      type: "text",
+      admin: { hidden: true },
+    },
     { name: "allowIndexing", type: "checkbox", defaultValue: true },
     { name: "defaultSocialImage", type: "upload", relationTo: "media" },
     ...publishingFields,

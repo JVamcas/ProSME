@@ -65,11 +65,22 @@ function imageVariant(value: unknown): CmsImageVariant | undefined {
 }
 
 export function resourceHref(file: unknown, externalUrl?: string | null) {
-  if (externalUrl) return externalUrl;
-  return file &&
+  const url = file &&
     typeof file === "object" &&
     "url" in file &&
     typeof file.url === "string"
     ? file.url
     : undefined;
+  return url || externalUrl || undefined;
+}
+
+export function resourceThumbnail(thumbnail: unknown, file: unknown): CmsImage | undefined {
+  const custom = media(thumbnail);
+  if (custom) return custom;
+  if (!file || typeof file !== "object") return undefined;
+
+  if ("mimeType" in file && typeof file.mimeType === "string" && file.mimeType.startsWith("image/")) {
+    return media(file);
+  }
+  return "documentThumbnail" in file ? media(file.documentThumbnail) : undefined;
 }

@@ -7,8 +7,13 @@ import {
   ListOrdered,
   Users,
   FilePlus2,
+  Info,
+  Library,
 } from "lucide-react";
-import { NavigationList } from "@/shared/ui/navigation/NavigationList";
+import {
+  NavigationList,
+  type NavigationRoute,
+} from "@/shared/ui/navigation/NavigationList";
 import { homeEditorSections } from "./HomeEditorSections";
 
 const homeSectionIcons = {
@@ -19,9 +24,10 @@ const homeSectionIcons = {
   "additional-content": FilePlus2,
 };
 
-const homeRoutes = [
+const contentRoutes: readonly NavigationRoute[] = [
   {
     id: "cms-home",
+    section: "content",
     href: "/cms/home",
     label: "Home Page",
     icon: House,
@@ -35,6 +41,20 @@ const homeRoutes = [
         icon,
       };
     }),
+  },
+  {
+    id: "cms-about",
+    section: "content",
+    href: "/cms/about",
+    label: "About",
+    icon: Info,
+  },
+  {
+    id: "cms-resources",
+    section: "content",
+    href: "/cms/collections/resources",
+    label: "Resource Centre",
+    icon: Library,
   },
 ];
 
@@ -54,7 +74,7 @@ export default function CmsNavigationLinks({
       label="Content management navigation"
       onNavigate={onNavigate}
       onRequestExpand={onRequestExpand}
-      routes={homeRoutes}
+      routes={contentRoutes}
     />
   );
 }

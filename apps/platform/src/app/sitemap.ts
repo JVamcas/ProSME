@@ -4,9 +4,9 @@ import { getServerEnvironment } from "@/lib/env/server";
 import {
   getEvents,
   getNews,
-  getResources,
   getSiteSettings,
 } from "@/modules/content/ServerContentQueries";
+import { getResourceSitemapEntries } from "@/modules/content/ServerResourceCentreService";
 import { listPublicFundingCalls } from "@/modules/funding-calls/application/ServerPublicFundingCallService";
 
 
@@ -29,7 +29,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
   const [news, resources, events, calls, settings] = await Promise.all([
     getNews(),
-    getResources(),
+    getResourceSitemapEntries(),
     getEvents(),
     listPublicFundingCalls({ limit: 100 }),
     getSiteSettings(),
@@ -41,9 +41,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const dynamicRoutes = [
     ...news.filter(indexable).map((item) => `/news/${item.slug}`),
-    ...resources
-      .filter((item) => !item.href && indexable(item))
-      .map((item) => `/resources/${item.slug}`),
+    ...resources.map((item) => `/resources/${item.slug}`),
     ...events.filter(indexable).map((item) => `/events/${item.slug}`),
     ...calls.items.map((item) => `/funding/${item.slug}`),
   ];

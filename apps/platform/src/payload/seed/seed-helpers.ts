@@ -1,31 +1,8 @@
 import type { CollectionSlug, Payload } from "payload";
 
-import type { Faq, Page } from "../../payload-types";
+export { paragraphsToRichText as richText } from "@/modules/content/ContentRichText";
 
 export const seedContext = { skipPublishCapability: true, skipRevalidation: true };
-export type SeedRichText = Page["content"] & Faq["answer"];
-
-export function richText(paragraphs: readonly string[]): SeedRichText {
-  return {
-    root: {
-      type: "root",
-      children: paragraphs.map((text) => ({
-        type: "paragraph",
-        children: [{ type: "text", text, version: 1 }],
-        direction: null,
-        format: "",
-        indent: 0,
-        version: 1,
-        textFormat: 0,
-        textStyle: "",
-      })),
-      direction: null,
-      format: "",
-      indent: 0,
-      version: 1,
-    },
-  } as SeedRichText;
-}
 
 export async function findId(
   payload: Payload,

@@ -25,6 +25,7 @@ import type {
   ApplicationReadView,
 } from "./ApplicationTypes";
 import type { ApplicationDetailModel } from "./ui/ApplicationDetailTypes";
+import { clientWebsiteAnalyticsService } from "@/modules/reporting/ClientWebsiteAnalyticsService";
 
 async function getAll() {
   return requestJson<AdminApplication[]>("/api/admin/applications", {
@@ -111,20 +112,32 @@ function getOwnApplicationStatusHistory(id: string, after?: string) {
 }
 
 function getOwnApplicationStatus(id: string) {
-  return requestData<ApplicationSummary>(`/api/portal/applications/${id}/status`, {
-    cache: "no-store",
-  });
+  return requestData<ApplicationSummary>(
+    `/api/portal/applications/${id}/status`,
+    {
+      cache: "no-store",
+    },
+  );
 }
 
-function createApplication(input: CreateApplicationDraftInput) {
-  return requestData<ApplicationDraftView>("/api/portal/applications", {
-    body: JSON.stringify(input),
-    headers: {
-      "Content-Type": "application/json",
-      "Idempotency-Key": crypto.randomUUID(),
+async function createApplication(input: CreateApplicationDraftInput) {
+  const application = await requestData<ApplicationDraftView>(
+    "/api/portal/applications",
+    {
+      body: JSON.stringify(input),
+      headers: {
+        "Content-Type": "application/json",
+        "Idempotency-Key": crypto.randomUUID(),
+      },
+      method: "POST",
     },
-    method: "POST",
-  });
+  );
+  clientWebsiteAnalyticsService.track(
+    "application_start",
+    { fundingCallId: application.fundingOpportunityId },
+    application.id,
+  );
+  return application;
 }
 
 function saveApplicationDraft(id: string, input: SaveApplicationDraftInput) {
@@ -138,11 +151,12 @@ function deleteApplicationDraft(id: string) {
   return deleteData<{ id: string }>(`/api/portal/applications/${id}`);
 }
 
-function submitApplication(
+async function submitApplication(
   id: string,
   input: ApplicationSubmissionCommandInput,
+  fundingCallId: string,
 ) {
-  return requestData<ApplicationSubmission>(
+  const submission = await requestData<ApplicationSubmission>(
     `/api/portal/applications/${id}/submit`,
     {
       body: JSON.stringify(input),
@@ -153,6 +167,14 @@ function submitApplication(
       method: "POST",
     },
   );
+  if (fundingCallId) {
+    clientWebsiteAnalyticsService.track(
+      "application_submit",
+      { fundingCallId },
+      `${submission.applicationId}:${submission.submittedAt}`,
+    );
+  }
+  return submission;
 }
 
 function withdrawApplication(

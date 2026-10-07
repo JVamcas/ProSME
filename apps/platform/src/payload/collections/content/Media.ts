@@ -3,6 +3,8 @@ import type { CollectionConfig } from "payload";
 import { cmsMediaAccess } from "@/payload/access/cms-resource-access";
 import { cmsImageSizes } from "@/modules/content/ContentImageSizes";
 import { organizeCmsMedia } from "@/modules/content/infrastructure/CmsMediaStorage";
+import { generateDocumentThumbnail } from "@/modules/content/ServerResourceThumbnailService";
+import { resourceDocumentMimeTypes } from "@/modules/content/ResourceDocumentTypes";
 
 export const Media: CollectionConfig = {
   slug: "media",
@@ -17,7 +19,7 @@ export const Media: CollectionConfig = {
     },
   },
   access: cmsMediaAccess(),
-  hooks: { beforeChange: [organizeCmsMedia] },
+  hooks: { beforeChange: [organizeCmsMedia, generateDocumentThumbnail] },
   upload: {
     adminThumbnail: "thumbnail",
     imageSizes: cmsImageSizes.map(({ name, width }) => ({
@@ -27,7 +29,7 @@ export const Media: CollectionConfig = {
       generateImageName: ({ originalName, extension }) =>
         `${originalName}-${name}.${extension}`,
     })),
-    mimeTypes: ["image/*", "application/pdf"],
+    mimeTypes: ["image/*", ...resourceDocumentMimeTypes.filter((type) => !type.startsWith("image/"))],
     staticDir: "media",
   },
   fields: [
@@ -49,6 +51,12 @@ export const Media: CollectionConfig = {
           Field: "./modules/content/ui/admin/CmsFormFields.tsx#CmsFormTextarea",
         },
       },
+    },
+    {
+      name: "documentThumbnail",
+      type: "upload",
+      relationTo: "media",
+      admin: { hidden: true, readOnly: true },
     },
   ],
 };

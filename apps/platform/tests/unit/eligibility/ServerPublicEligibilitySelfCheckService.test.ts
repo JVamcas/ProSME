@@ -2,6 +2,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 vi.mock(
+  "@/modules/reporting/infrastructure/AnonymousEligibilityRepository",
+  () => ({
+    recordAnonymousEligibilityCheck: vi.fn(),
+  }),
+);
+vi.mock(
   "@/modules/funding-calls/application/ServerPublicFundingCallService",
   () => ({ findPublicFundingCallById: vi.fn() }),
 );
@@ -9,7 +15,7 @@ vi.mock(
   "@/modules/eligibility/application/ServerEligibilityBindingService",
   () => ({ resolveSelfCheckEligibilityConfiguration: vi.fn() }),
 );
-import { basicOperators } from "@/modules/conditions/engine/BasicOperators";
+import { recordAnonymousEligibilityCheck } from "@/modules/reporting/infrastructure/AnonymousEligibilityRepository";
 import {
   evaluatePublicEligibilitySelfCheck,
   getPublicEligibilitySelfCheck,
@@ -17,154 +23,14 @@ import {
   PublicEligibilitySelfCheckUnavailableError,
 } from "@/modules/eligibility/application/ServerPublicEligibilitySelfCheckService";
 import { resolveSelfCheckEligibilityConfiguration } from "@/modules/eligibility/application/ServerEligibilityBindingService";
-import type {
-  EligibilityEvaluationRule,
-  EligibilityEvaluationRuleSet,
-} from "@/modules/eligibility/domain/EligibilityEvaluation";
-import type { EligibilityInputDefinition } from "@/modules/eligibility/domain/EligibilityInputDefinition";
-import type { SelfCheckQuestionDefinition } from "@/modules/eligibility/domain/EligibilityInputDefinition";
 import { findPublicFundingCallById } from "@/modules/funding-calls/application/ServerPublicFundingCallService";
 
-const fundingCallId = "00000000-0000-4000-8000-000000000042";
-
-function rule(
-  id: string,
-  path: string,
-  expected: boolean | number | string | string[],
-  failureType: EligibilityEvaluationRule["failureType"],
-  executionMode: EligibilityEvaluationRule["executionMode"],
-  applicantMessage: string,
-  order: number,
-): EligibilityEvaluationRule {
-  return {
-    applicantMessage,
-    condition: {
-      conditionGroupId: "10000000-0000-4000-8000-000000000001",
-      conditionId: id,
-      kind: "CONDITION",
-    },
-    conditionDefinition: {
-      id,
-      kind: "CONDITION",
-      leftOperand: { key: path, kind: "FIELD" },
-      operator: basicOperators.EQUALS,
-      rightOperand: { kind: "CONSTANT", value: expected },
-    },
-    executionMode,
-    failureType,
-    id,
-    order,
-    reasonCode: `INTERNAL_${order}`,
-  };
-}
-
-const ruleSet: EligibilityEvaluationRuleSet = {
-  ruleSetId: "20000000-0000-4000-8000-000000000001",
-  rules: [
-    rule(
-      "30000000-0000-4000-8000-000000000001",
-      "eligibility.registered",
-      true,
-      "HARD_FAIL",
-      "BOTH",
-      "The business must be registered.",
-      1,
-    ),
-    rule(
-      "30000000-0000-4000-8000-000000000002",
-      "eligibility.statutory_good_standing",
-      true,
-      "SOFT_FAIL",
-      "SELF_CHECK",
-      "Resolve statutory compliance before applying.",
-      2,
-    ),
-    rule(
-      "30000000-0000-4000-8000-000000000003",
-      "eligibility.bank_account_active",
-      true,
-      "WARNING",
-      "SELF_CHECK",
-      "An active business bank account will be required.",
-      3,
-    ),
-    rule(
-      "30000000-0000-4000-8000-000000000004",
-      "eligibility.annual_turnover",
-      100,
-      "HARD_FAIL",
-      "SCREENING",
-      "Internal screening message.",
-      4,
-    ),
-  ],
-  versionId: "20000000-0000-4000-8000-000000000002",
-  versionNumber: 4,
-};
-
-function selfCheckInput(
-  stableKey: string,
-  prompt: string,
-  availableIn: EligibilityInputDefinition["availableIn"] = ["SELF_CHECK"],
-  order = 1,
-  question: Partial<SelfCheckQuestionDefinition> = {},
-  type: EligibilityInputDefinition["type"] = "BOOLEAN",
-): EligibilityInputDefinition {
-  return {
-    availableIn,
-    createdAt: new Date(),
-    createdBy: "10000000-0000-4000-8000-000000000001",
-    groupKey: null,
-    groupLabel: null,
-    id: `50000000-0000-4000-8000-${stableKey.padEnd(12, "0").slice(0, 12)}`,
-    label: prompt,
-    order,
-    screening: availableIn.includes("SCREENING")
-      ? {
-          sourceDefinitionId: "60000000-0000-4000-8000-000000000001",
-          sourceKey: stableKey,
-          sourceKind: "APPLICATION_FORM_FIELD",
-          sourceVersionId: "60000000-0000-4000-8000-000000000002",
-          valuePath: "value",
-        }
-      : null,
-    selfCheck: {
-      answerType: question.answerType ?? "BOOLEAN",
-      explanation: question.explanation ?? "",
-      helpText: question.helpText ?? "",
-      options: question.options ?? [],
-      prompt,
-      required: question.required ?? true,
-    },
-    stableKey,
-    type,
-    updatedAt: new Date(),
-    updatedBy: "10000000-0000-4000-8000-000000000001",
-    versionId: ruleSet.versionId,
-  };
-}
-
-const fundingCall = {
-  applicationsOpen: true,
-  closesAt: "2026-10-31T22:00:00.000Z",
-  description: "<p>Growth funding.</p>",
-  eligibilitySummary: "Registered SMEs may qualify.",
-  fundingInstrument: "Grant",
-  id: fundingCallId,
-  maximumAmount: 200000,
-  minimumAmount: 50000,
-  opensAt: "2026-09-01T00:00:00.000Z",
-  publicContact: { email: null, name: null, phone: null },
-  publicDocuments: [],
-  reference: "GROWTH-2026",
-  selfCheckAvailable: true,
-  slug: "growth-fund",
-  status: "open" as const,
-  summary: "Growth funding.",
-  thematicArea: "Growth",
-  title: "Growth Fund",
-  totalFundingAmount: 1000000,
-};
+import {
+  fundingCallId,
+  fundingCall,
+  ruleSet,
+  selfCheckInput,
+} from "./fixtures/PublicEligibilitySelfCheckFixture";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -207,8 +73,9 @@ describe("public eligibility self-check", () => {
       "Statutory good standing",
       "Active business bank account",
     ]);
-    expect(resolveSelfCheckEligibilityConfiguration)
-      .toHaveBeenCalledWith(fundingCallId);
+    expect(resolveSelfCheckEligibilityConfiguration).toHaveBeenCalledWith(
+      fundingCallId,
+    );
     expect(workspace).not.toHaveProperty("ruleSetVersionId");
     expect(workspace).not.toHaveProperty("ruleSetVersionNumber");
     expect(JSON.stringify(workspace)).not.toContain("INTERNAL_");
@@ -242,6 +109,38 @@ describe("public eligibility self-check", () => {
     ]);
     expect(JSON.stringify(result)).not.toContain("ruleId");
     expect(JSON.stringify(result)).not.toContain("reasonCode");
+  });
+
+  it("keeps guidance available when consented anonymous logging fails", async () => {
+    const workspace = await getPublicEligibilitySelfCheck(fundingCallId);
+    const answers = Object.fromEntries(
+      workspace.questions.map((question) => [question.id, false]),
+    );
+    vi.mocked(recordAnonymousEligibilityCheck).mockRejectedValue(
+      new Error("database unavailable"),
+    );
+    const warning = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const response = await evaluatePublicEligibilitySelfCheck(
+        fundingCallId,
+        {
+          answers,
+          configurationToken: workspace.configurationToken,
+        },
+        true,
+      );
+      expect(response.outcome).toBe("not-currently-eligible");
+      expect(response.guidance[0].message).toBe(
+        "The business must be registered.",
+      );
+      expect(recordAnonymousEligibilityCheck).toHaveBeenCalledWith({
+        fundingCallId,
+        ruleSetVersionId: ruleSet.versionId,
+        outcome: "not-currently-eligible",
+      });
+    } finally {
+      warning.mockRestore();
+    }
   });
 
   it("rejects a stale ruleset configuration token", async () => {

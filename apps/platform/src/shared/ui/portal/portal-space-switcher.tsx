@@ -43,10 +43,7 @@ export function PortalSpaceSwitcher({
   return (
     <nav aria-label="Switch portal space" className="font-sans">
       <p
-        className={cn(
-          "m-0 mb-2 text-[12px] font-bold uppercase leading-normal tracking-widest",
-          dark ? "text-white/70" : "text-brand-navy/70",
-        )}
+        className="m-0 mb-2 text-[12px] font-bold uppercase leading-normal tracking-widest text-white/70"
       >
         Workspace
       </p>
@@ -66,7 +63,7 @@ export function PortalSpaceSwitcher({
                 className={cn(
                   baseClassName,
                   "cursor-not-allowed",
-                  dark ? "text-white/40" : "text-brand-navy/40",
+                  "text-white/40",
                 )}
                 title={`${details.label} is not available for your account`}
               >
@@ -77,9 +74,7 @@ export function PortalSpaceSwitcher({
           const activeClassName = dark
             ? "bg-brand-blue text-brand-navy"
             : "bg-brand-navy text-brand-white";
-          const inactiveClassName = dark
-            ? "text-white hover:bg-white/10"
-            : "text-brand-navy hover:bg-brand-navy/10";
+          const inactiveClassName = "text-white hover:bg-white/10";
 
           return (
             <Link
@@ -90,9 +85,7 @@ export function PortalSpaceSwitcher({
               title={details.label}
               className={cn(
                 baseClassName,
-                dark
-                  ? "focus-visible:ring-white"
-                  : "focus-visible:ring-brand-navy",
+                "focus-visible:ring-white",
                 "focus-visible:outline-none focus-visible:ring-2",
                 active ? activeClassName : inactiveClassName,
               )}

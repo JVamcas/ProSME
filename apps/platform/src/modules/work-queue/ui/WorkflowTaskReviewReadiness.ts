@@ -24,11 +24,14 @@ export function workflowTaskReviewReadiness(
     !task.formCompleted &&
     task.taskType === "STAGE_DECISION",
   );
+  const formSubmitNeeded = Boolean(
+    task.formVersionId && !task.formCompleted && !task.canEvaluateEligibility,
+  );
   const formSectionComplete = formSectionCountsAsComplete({
     formCompleted: task.formCompleted,
     pending: formState.pending,
     ready: formState.ready,
-    taskActionSubmission: submitsFormWithTaskAction,
+    taskActionSubmission: submitsFormWithTaskAction || formSubmitNeeded,
   });
   const sectionCount = [
     separateEligibilitySection,
@@ -53,9 +56,6 @@ export function workflowTaskReviewReadiness(
     !task.formVersionId ||
     task.formCompleted ||
     (!task.canEvaluateEligibility && formState.ready);
-  const formSubmitNeeded = Boolean(
-    task.formVersionId && !task.formCompleted && !task.canEvaluateEligibility,
-  );
   const canComplete =
     task.taskStatus !== "COMPLETED" &&
     !task.hasOpenRfi &&

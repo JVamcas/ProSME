@@ -43,7 +43,7 @@ describe("P3.1 shared authenticated portal shell", () => {
     expect(markup).toMatch(/<aside[^>]*class="[^"]*bg-brand-orange/);
     expect(markup).toMatch(/<header[^>]*class="[^"]*bg-brand-orange/);
     expect(markup).toContain("background-color:var(--color-brand-orange)");
-    expect(markup).toContain("min-w-0 bg-brand-white");
+    expect(markup).toContain('data-workspace-slot="content"');
     expect(markup).toContain("fixed inset-x-0 bottom-0 top-16");
     expect(markup).toContain('data-sidebar-slot="navigation"');
     expect(markup).toContain('aria-label="Open portal navigation"');
@@ -65,6 +65,19 @@ describe("P3.1 shared authenticated portal shell", () => {
     expect(markup).not.toContain('aria-label="Breadcrumb"');
     expect(markup).toContain("Help and support");
     expect(markup).toContain("SME Fund home");
+  });
+
+  it("places the header in the content column beside the full-height sidebar", () => {
+    const markup = renderShell(<h1>Profile</h1>);
+    const slots = ["columns", "sidebar", "content", "header", "footer"];
+    const positions = slots.map((slot) =>
+      markup.indexOf(`data-workspace-slot="${slot}"`),
+    );
+
+    expect(positions.every((position) => position >= 0)).toBe(true);
+    expect(positions).toEqual([...positions].sort((left, right) => left - right));
+    expect(markup.indexOf("<aside")).toBeLessThan(markup.indexOf("<main"));
+    expect(markup).toContain('aria-label="Workspace"');
   });
 
   it("gates children against the projected capabilities", () => {
@@ -160,7 +173,7 @@ describe("P3.1 shared authenticated portal shell", () => {
     expect(markup).not.toContain('href="/admin/settings/forms"');
   });
 
-  it("renders the CMS link only for permitted operations users", () => {
+  it("renders the CMS workspace link from the server's permitted workspace projection", () => {
     const operationsContext: PortalContext = {
       ...context,
       roleCodes: ["programme_administrator"],
@@ -168,7 +181,7 @@ describe("P3.1 shared authenticated portal shell", () => {
         permissionCodes.fundingApplicationAllRead,
         permissionCodes.cmsAccess,
       ],
-      availableSpaces: ["operations"],
+      availableSpaces: ["operations", "cms"],
       defaultSpace: "operations",
     };
     const markup = renderToStaticMarkup(
@@ -182,7 +195,7 @@ describe("P3.1 shared authenticated portal shell", () => {
       </QueryClientProvider>,
     );
 
-    expect(markup).toContain("Content management");
+    expect(markup).toContain(">CMS</a>");
     expect(markup).toContain('href="/cms"');
   });
 

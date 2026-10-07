@@ -14,6 +14,11 @@ import {
 } from "./SidebarItemStyles";
 import { NavigationPendingIndicator } from "../portal/NavigationPendingIndicator";
 import type { LucideIcon } from "lucide-react";
+import {
+  groupNavigationRoutes,
+  type NavigationSectionId,
+} from "./NavigationSections";
+import styles from "./NavigationList.module.css";
 
 export type NavigationRoute = {
   id: string;
@@ -22,6 +27,7 @@ export type NavigationRoute = {
   icon: LucideIcon;
   openInNewTab?: boolean;
   children?: readonly NavigationRoute[];
+  section?: NavigationSectionId;
 };
 
 function isActive(pathname: string, href: string) {
@@ -153,7 +159,7 @@ function NavigationRouteItem({
       )}
       {hasChildren && childrenVisible && !collapsed ? (
         <ul
-          className="ml-5 grid gap-1 border-l border-white/15 pl-3"
+          className={cn(styles.list, styles.nested)}
           id={childListId}
         >
           {children.map((child) => (
@@ -192,18 +198,35 @@ export function NavigationList({
 
   return (
     <nav aria-label={label}>
-      <ul className="grid gap-1.5">
-        {routes.map((route) => (
-          <NavigationRouteItem
-            collapsed={collapsed}
-            dark={dark}
-            depth={0}
-            key={route.id}
-            onRequestExpand={onRequestExpand}
-            onNavigate={onNavigate}
-            pathname={pathname}
-            route={route}
-          />
+      <ul className={styles.list}>
+        {groupNavigationRoutes(routes).map((group) => (
+          <li className={styles.section} key={group.id} aria-label={group.label}>
+            {group.label ? (
+              <p
+                className={
+                  collapsed
+                    ? sidebarHiddenLabelClassName
+                    : styles.heading
+                }
+              >
+                {group.label}
+              </p>
+            ) : null}
+            <ul className={styles.list}>
+              {group.routes.map((route) => (
+                <NavigationRouteItem
+                  collapsed={collapsed}
+                  dark={dark}
+                  depth={0}
+                  key={route.id}
+                  onRequestExpand={onRequestExpand}
+                  onNavigate={onNavigate}
+                  pathname={pathname}
+                  route={route}
+                />
+              ))}
+            </ul>
+          </li>
         ))}
       </ul>
     </nav>

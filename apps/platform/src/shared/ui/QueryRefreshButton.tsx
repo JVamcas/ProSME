@@ -11,7 +11,7 @@ export function QueryRefreshButton({
   onRefresh: () => void;
 }) {
   return (
-    <GeneralButton disabled={refreshing} onClick={onRefresh} variant="outline">
+    <GeneralButton disabled={refreshing} onClick={onRefresh} variant="outline" size="compact">
       <RefreshCw aria-hidden="true" className="size-4" />
       {refreshing ? "Refreshing…" : "Refresh"}
     </GeneralButton>

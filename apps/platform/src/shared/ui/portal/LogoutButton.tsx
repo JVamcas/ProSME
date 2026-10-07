@@ -8,7 +8,7 @@ export function LogoutButton({
   tone = "dark",
 }: {
   collapsed?: boolean;
-  tone?: "brand" | "dark";
+  tone?: "brand" | "dark" | "light";
 }) {
   const logout = useLogout();
 
@@ -18,6 +18,7 @@ export function LogoutButton({
       dark={tone === "dark"}
       onLogout={() => logout.mutate()}
       pending={logout.isPending}
+      surface={tone === "light" ? "light" : undefined}
     />
   );
 }

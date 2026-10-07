@@ -14,12 +14,12 @@ const DashboardStatusChart = dynamic(
 import type { AdminDashboardStatus } from "@/modules/dashboard/AdminDashboardTypes";
 
 export const colors = [
-  "#0066cc",
-  "#3b82f6",
+  "#6baed6",
   "#c9a24d",
   "#16a34a",
   "#ff6f00",
-  "#6b7280",
+  "#0a183b",
+  "#ffca45",
 ];
 
 export function AdminDashboardCharts({

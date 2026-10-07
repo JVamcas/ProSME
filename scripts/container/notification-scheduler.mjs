@@ -31,20 +31,36 @@ async function heartbeat(name, consecutiveFailures) {
 
 function configuration(name, resultFields) {
   const prefix = name.toUpperCase();
-  const secret = process.env[`${prefix}_PROCESSOR_SECRET`]
-    || process.env.NOTIFICATION_PROCESSOR_SECRET;
+  const secret =
+    process.env[`${prefix}_PROCESSOR_SECRET`] ||
+    process.env.NOTIFICATION_PROCESSOR_SECRET;
   if (!secret || secret.length < 32) {
-    throw new Error(`${prefix}_PROCESSOR_SECRET must have at least 32 characters.`);
+    throw new Error(
+      `${prefix}_PROCESSOR_SECRET must have at least 32 characters.`,
+    );
   }
-  const route = name === "notification" ? "notifications" : "workflows";
+  const routes = {
+    notification: "notifications",
+    workflow: "workflows",
+    reporting: "reporting",
+  };
+  const route = routes[name];
   return {
     name,
     endpoint: processorEndpoint(
-      process.env[`${prefix}_PROCESSOR_URL`]
-        ?? `http://app:3008/api/internal/${route}/process`,
+      process.env[`${prefix}_PROCESSOR_URL`] ??
+        `http://app:3008/api/internal/${route}/process`,
     ),
-    intervalMs: positiveInteger(process.env, `${prefix}_PROCESSOR_INTERVAL_MS`, 60_000),
-    requestTimeoutMs: positiveInteger(process.env, `${prefix}_SCHEDULER_REQUEST_TIMEOUT_MS`, 60_000),
+    intervalMs: positiveInteger(
+      process.env,
+      `${prefix}_PROCESSOR_INTERVAL_MS`,
+      name === "reporting" ? 15_000 : 60_000,
+    ),
+    requestTimeoutMs: positiveInteger(
+      process.env,
+      `${prefix}_SCHEDULER_REQUEST_TIMEOUT_MS`,
+      60_000,
+    ),
     resultFields,
     secret,
   };
@@ -53,8 +69,15 @@ function configuration(name, resultFields) {
 let processors;
 try {
   processors = [
-    configuration("notification", ["claimed", "failed", "processed", "retrying", "sent"]),
+    configuration("notification", [
+      "claimed",
+      "failed",
+      "processed",
+      "retrying",
+      "sent",
+    ]),
     configuration("workflow", ["claimed", "failed", "processed", "skipped"]),
+    configuration("reporting", ["claimed", "failed", "processed", "skipped"]),
   ].map((config) => {
     log("info", "scheduler.processor_started", {
       processor: config.name,
@@ -69,7 +92,10 @@ try {
   });
 } catch (error) {
   log("error", "scheduler.configuration_invalid", {
-    message: error instanceof Error ? error.message : "Invalid scheduler configuration.",
+    message:
+      error instanceof Error
+        ? error.message
+        : "Invalid scheduler configuration.",
   });
   process.exit(1);
 }

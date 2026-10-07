@@ -42,6 +42,15 @@ CMD ["scripts/container/migrate.sh"]
 FROM node:24.13.0-bookworm-slim AS runtime
 WORKDIR /workspace
 
+# PDF first-page rendering and Word/Excel conversion for CMS resources.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+      poppler-utils=22.12.0-2+deb12u3 \
+      libreoffice-writer=4:7.4.7-1+deb12u14 \
+      libreoffice-calc=4:7.4.7-1+deb12u14 \
+      fonts-liberation=1:1.07.4-11 \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN groupadd --system --gid 1001 nodejs \
     && useradd --system --uid 1001 --gid nodejs nextjs
 
