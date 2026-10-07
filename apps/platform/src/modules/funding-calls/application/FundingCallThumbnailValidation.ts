@@ -26,12 +26,16 @@ function safeFileName(fileName: string) {
   return path.basename(fileName).replace(/[^A-Za-z0-9._-]/g, "-").slice(0, 160);
 }
 
-export function validateFundingCallThumbnail(file: File, body: Buffer) {
-  if (!body.length || body.length > fundingCallThumbnailMaximumBytes) {
+export function validateFundingCallThumbnailSize(bytes: number) {
+  if (!bytes || bytes > fundingCallThumbnailMaximumBytes) {
     throw new RequestValidationError(
       "Choose a non-empty thumbnail no larger than 2 MB.",
     );
   }
+}
+
+export function validateFundingCallThumbnail(file: File, body: Buffer) {
+  validateFundingCallThumbnailSize(body.length);
   const extension = path.extname(file.name).toLowerCase() as keyof typeof allowedFiles;
   const allowed = allowedFiles[extension];
   if (!allowed) {

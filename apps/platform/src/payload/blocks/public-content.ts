@@ -96,12 +96,50 @@ export const fundingPrioritiesBlock: Block = {
 
 export const eligibilityFocusSectorsBlock: Block = {
   slug: "eligibilityFocusSectors",
-  labels: { singular: "Eligibility focus sectors", plural: "Eligibility focus sectors" },
+  labels: {
+    singular: "Eligibility focus sectors",
+    plural: "Eligibility focus sectors",
+  },
   fields: [
-    { name: "eyebrow", type: "text", required: true },
-    { name: "heading", type: "text", required: true },
-    { name: "noticeHeading", type: "text", required: true },
-    { name: "notice", type: "textarea", required: true },
+    {
+      name: "eyebrow",
+      type: "text",
+      required: true,
+    },
+    {
+      name: "heading",
+      type: "text",
+      required: true,
+    },
+    {
+      name: "noticeHeading",
+      type: "text",
+      required: true,
+    },
+    {
+      name: "notice",
+      type: "textarea",
+      required: true,
+    },
+    {
+      name: "sectors",
+      dbName: "cms_focus_sector_items",
+      label: "Focus sectors",
+      type: "array",
+      maxRows: 200,
+      fields: [
+        {
+          name: "label",
+          type: "text",
+          required: true,
+        },
+        {
+          name: "description",
+          type: "textarea",
+          defaultValue: "Priority area",
+        },
+      ],
+    },
   ],
 };
 

@@ -23,8 +23,12 @@ beforeEach(() => vi.clearAllMocks());
 
 function editorPath(slug: string) {
   if (slug === "how-to-apply") return ["funding", "application-guide"];
-  if (slug === "funding") return ["funding", "overview"];
-  if (slug === "eligibility") return ["funding", "overview", "focus-sectors"];
+  const overviewPaths: Record<string, string> = {
+    "funding-support": "support",
+    "funding-priority-applicants": "priority-applicants",
+    "funding-focus-sectors": "focus-sectors",
+  };
+  if (overviewPaths[slug]) return ["funding", "overview", overviewPaths[slug]];
   return [slug];
 }
 
@@ -36,6 +40,12 @@ function pageProps(segments: string[]) {
 }
 
 describe("CMS admin routing", () => {
+  it("redirects the combined overview to the support editor", async () => {
+    await expect(PayloadAdminPage(pageProps(["funding", "overview"])))
+      .rejects.toThrow("Redirect to /cms/funding/overview/support");
+    expect(routing.rootPage).not.toHaveBeenCalled();
+  });
+
   it("renders the configured dashboard at /cms", async () => {
     const props = pageProps([]);
     await expect(PayloadAdminPage(props)).resolves.toBe("CMS view");
@@ -117,7 +127,7 @@ describe("CMS admin routing", () => {
     expect(routing.rootPage.mock.calls[0][0].params).toBe(props.params);
   });
 
-  it.each(["about", "how-to-apply", "funding", "eligibility", "faq"])(
+  it.each(["about", "how-to-apply", "funding-support", "funding-priority-applicants", "funding-focus-sectors", "faq"])(
     "opens the existing document through Payload at /cms/%s",
     async (slug) => {
       const props = pageProps(editorPath(slug));
@@ -132,7 +142,7 @@ describe("CMS admin routing", () => {
     },
   );
 
-  it.each(["about", "how-to-apply", "funding", "eligibility", "faq"])(
+  it.each(["about", "how-to-apply", "funding-support", "funding-priority-applicants", "funding-focus-sectors", "faq"])(
     "preserves preview options when opening %s",
     async (slug) => {
       await PayloadAdminPage({
@@ -146,7 +156,7 @@ describe("CMS admin routing", () => {
     },
   );
 
-  it.each(["about", "how-to-apply", "funding", "eligibility", "faq"])(
+  it.each(["about", "how-to-apply", "funding-support", "funding-priority-applicants", "funding-focus-sectors", "faq"])(
     "does not render %s after an authorization failure",
     async (slug) => {
       routing.pageSegments.mockRejectedValueOnce(new Error("Permission denied"));

@@ -90,7 +90,7 @@ describe("public funding-call read model", () => {
       summary: "Support for growing Namibian businesses.",
       summaryHtml: call.description,
       thematicArea: "Growth",
-      thumbnailUrl: `/api/public/funding-calls/${call.id}/thumbnail`,
+      thumbnailUrl: expect.stringContaining(`/api/public/funding-calls/${call.id}/thumbnail?v=`),
       title: "Growth Fund",
       totalFundingAmount: 1000000,
     });
@@ -118,6 +118,21 @@ describe("public funding-call read model", () => {
       publicDocuments: call.publicDocuments,
     });
     expect(result).not.toHaveProperty("eligibilityRuleSetVersionId");
+  });
+
+  it("changes the public thumbnail cache version only when its stored image changes", async () => {
+    vi.mocked(readPublicFundingCallById)
+      .mockResolvedValueOnce(call)
+      .mockResolvedValueOnce({ ...call, title: "Renamed call" })
+      .mockResolvedValueOnce({ ...call, thumbnailObjectKey: "local/utilities/funding-calls/replacement.webp" });
+
+    const original = await findPublicFundingCallById(call.id);
+    const renamed = await findPublicFundingCallById(call.id);
+    const replaced = await findPublicFundingCallById(call.id);
+
+    expect(original?.thumbnailUrl).toBe(renamed?.thumbnailUrl);
+    expect(replaced?.thumbnailUrl).not.toBe(original?.thumbnailUrl);
+    expect(replaced?.thumbnailUrl).not.toContain("utilities");
   });
 
   it("uses server time for upcoming, open, and closed state", () => {

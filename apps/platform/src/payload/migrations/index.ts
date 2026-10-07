@@ -18,8 +18,10 @@ import * as migration_20261004_230000_responsive_media_sizes from './20261004_23
 import * as migration_20261005_233000_home_support_cards from "./20261005_233000_home_support_cards";
 import * as migration_20261006_170000_resource_centre from "./20261006_170000_resource_centre";
 import * as migration_20261007_180000_application_guide_banner from "./20261007_180000_application_guide_banner";
+import * as migration_20261007_200000_independent_funding_overview from "./20261007_200000_independent_funding_overview";
 
 export const migrations = [
+  // Independent section data is copied after all preceding schema migrations.
   {
     up: migration_20260911_180817_phase1_payload_foundation.up,
     down: migration_20260911_180817_phase1_payload_foundation.down,
@@ -113,5 +115,10 @@ export const migrations = [
     up: migration_20261007_180000_application_guide_banner.up,
     down: migration_20261007_180000_application_guide_banner.down,
     name: "20261007_180000_application_guide_banner",
+  },
+  {
+    up: migration_20261007_200000_independent_funding_overview.up,
+    down: migration_20261007_200000_independent_funding_overview.down,
+    name: "20261007_200000_independent_funding_overview",
   },
 ];

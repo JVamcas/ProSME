@@ -2,7 +2,14 @@ import { z } from "zod";
 
 import { richTextToPlainText } from "@/shared/utils/RichText";
 
-export const fundingCallThumbnailMaximumBytes = 2 * 1024 * 1024;
+export { fundingCallThumbnailMaximumBytes } from "../domain/FundingCallThumbnailPolicy";
+
+export const fundingCallThumbnailWidthSchema = z.coerce
+  .number()
+  .int()
+  .min(1)
+  .max(3840)
+  .optional();
 
 const moneySchema = z
   .string()

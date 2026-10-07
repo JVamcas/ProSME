@@ -1,3 +1,21 @@
+import { fundingOverviewSections } from "./FundingOverviewSections";
+
+const overviewEditors = Object.fromEntries(
+  Object.entries(fundingOverviewSections).map(([slug, section]) => [
+    slug,
+    {
+      ...section,
+      anchor: slug,
+      breadcrumb: section.title,
+    },
+  ]),
+) as {
+  [Slug in keyof typeof fundingOverviewSections]: typeof fundingOverviewSections[Slug] & {
+    anchor: string;
+    breadcrumb: string;
+  };
+};
+
 export const cmsPageEditors = {
   about: {
     anchor: "about-content",
@@ -29,6 +47,7 @@ export const cmsPageEditors = {
     breadcrumb: "FAQ",
     href: "/cms/faq",
   },
+  ...overviewEditors,
 } as const;
 
 export type CmsPageEditorSlug = keyof typeof cmsPageEditors;
@@ -37,12 +56,13 @@ export const cmsFundingHref = "/cms/funding";
 export const cmsFundingOverviewHref = "/cms/funding/overview";
 
 export function cmsPageEditorSlugForPath(pathname: string): CmsPageEditorSlug | undefined {
-  if (pathname === cmsPageEditors.about.href) return "about";
-  if (pathname === cmsPageEditors["how-to-apply"].href) return "how-to-apply";
-  if (pathname === cmsFundingOverviewHref) return "funding";
-  if (pathname === cmsPageEditors.eligibility.href) return "eligibility";
-  if (pathname === cmsPageEditors.faq.href) return "faq";
-  return undefined;
+  return (Object.keys(cmsPageEditors) as CmsPageEditorSlug[]).find(
+    (slug) => (
+      slug !== "funding" &&
+      slug !== "eligibility" &&
+      cmsPageEditors[slug].href === pathname
+    ),
+  );
 }
 
 export function cmsPageEditor(slug: unknown) {
@@ -52,6 +72,13 @@ export function cmsPageEditor(slug: unknown) {
     slug === "funding" ||
     slug === "eligibility" ||
     slug === "faq"
+  ) {
+    return cmsPageEditors[slug];
+  }
+  if (
+    slug === "funding-support" ||
+    slug === "funding-priority-applicants" ||
+    slug === "funding-focus-sectors"
   ) {
     return cmsPageEditors[slug];
   }

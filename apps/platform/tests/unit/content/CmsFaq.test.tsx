@@ -142,7 +142,21 @@ describe("FAQ native publishing permissions", () => {
       .toMatchObject({ type: "richText", required: true });
   });
 
-  it("requires FAQ publishing and approval for questions", async () => {
+  it("hides category and review metadata while retaining their stored fields", () => {
+    for (const name of ["category", "reviewStatus", "reviewNotes"]) {
+      const field = FAQs.fields.find(
+        (entry) => "name" in entry && entry.name === name,
+      );
+      expect(field).toMatchObject({ admin: { hidden: true } });
+    }
+    const order = FAQs.fields.find(
+      (field) => "name" in field && field.name === "order",
+    );
+    expect(order).toMatchObject({ type: "number", required: true });
+    expect(order).not.toMatchObject({ admin: { hidden: true } });
+  });
+
+  it("requires FAQ publishing permission and approves through the native Publish action", async () => {
     await expect(publish(FAQs, [cmsPermissionCode("faqs", "publish")]))
       .resolves.toMatchObject({ _status: "published" });
     await expect(publish(FAQs, [cmsPermissionCode("pages", "publish")]))
@@ -150,7 +164,21 @@ describe("FAQ native publishing permissions", () => {
     await expect(publish(FAQs, [cmsPermissionCode("faqs", "update")]))
       .rejects.toThrow("cms.faqs.publish");
     await expect(publish(FAQs, [cmsPermissionCode("faqs", "publish")], "inReview"))
-      .rejects.toThrow("Content must be approved");
+      .resolves.toMatchObject({ _status: "published", reviewStatus: "approved" });
+    await expect(publish(FAQs, [cmsPermissionCode("faqs", "publish")], "draft"))
+      .resolves.toMatchObject({ _status: "published", reviewStatus: "approved" });
+  });
+
+  it("keeps Save Draft from approving a question", async () => {
+    const guard = FAQs.hooks?.beforeChange?.[0];
+    if (!guard) throw new Error("Missing publishing guard");
+    const data = { _status: "draft", reviewStatus: "draft" };
+    const result = await guard({
+      data,
+      req: { user: { capabilities: [cmsPermissionCode("faqs", "update")] } },
+    } as unknown as Parameters<CollectionBeforeChangeHook>[0]);
+
+    expect(result).toMatchObject({ _status: "draft", reviewStatus: "draft" });
   });
 
   it("requires Pages publishing for the banner", async () => {

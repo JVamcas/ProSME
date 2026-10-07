@@ -1,5 +1,7 @@
 import "server-only";
 
+import { createHash } from "node:crypto";
+
 import { z } from "zod";
 
 import { ResourceNotFoundError } from "@/lib/resource-errors";
@@ -45,6 +47,9 @@ function summary(
   now: Date,
 ): PublicFundingCallSummary {
   const status = publicFundingCallStatus(call, now);
+  const thumbnailVersion = call.thumbnailObjectKey
+    ? createHash("sha256").update(call.thumbnailObjectKey).digest("hex").slice(0, 16)
+    : null;
   return {
     applicationsOpen: status === "open",
     closesAt: call.closesAt.toISOString(),
@@ -61,7 +66,7 @@ function summary(
     summaryHtml: call.description,
     thematicArea: call.thematicArea,
     thumbnailUrl: call.thumbnailObjectKey
-      ? `/api/public/funding-calls/${call.id}/thumbnail`
+      ? `/api/public/funding-calls/${call.id}/thumbnail?v=${thumbnailVersion}`
       : null,
     title: call.title,
     totalFundingAmount: Number(call.totalBudgetEnvelope),

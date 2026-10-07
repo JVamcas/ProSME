@@ -10,6 +10,7 @@ import {
   cmsPageEditorSlugForPath,
 } from "@/modules/content/CmsPageEditors";
 import { importMap } from "../importMap";
+import { fundingOverviewSections } from "@/modules/content/FundingOverviewSections";
 
 type Props = {
   params: Promise<{ segments: string[] }>;
@@ -38,6 +39,10 @@ export default async function PayloadAdminPage(props: Props) {
 
   if (segments.length === 1 && segments[0] === "funding") {
     redirect(cmsFundingOverviewHref);
+  }
+
+  if (segments.join("/") === "funding/overview") {
+    redirect(fundingOverviewSections["funding-support"].href);
   }
 
   if (segments.length === 1 && segments[0] === "how-to-apply") {

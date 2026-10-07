@@ -75,12 +75,12 @@ function DesktopHeroImage({ content }: HomeHeroProps) {
 
       <div className="absolute inset-y-0 left-0 w-[58%] bg-linear-to-r from-white via-white/95 to-white/65" />
 
-      <div className="absolute inset-y-0 right-0 w-[64%]">
+      <div className="absolute right-0 top-0 aspect-video h-full">
         <CmsImage
           className="h-full w-full object-cover object-top"
           image={content.heroImage}
           priority
-          sizes="64cqw"
+          sizes="960px"
         />
 
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#fff_0%,rgba(255,255,255,.9)_12%,rgba(255,255,255,.35)_25%,transparent_42%)]" />
@@ -94,7 +94,7 @@ function DesktopHeroImage({ content }: HomeHeroProps) {
 
 function MobileHeroImage({ content }: HomeHeroProps) {
   return (
-    <div className="relative h-90 overflow-hidden @5xl/banner:hidden">
+    <div className="relative aspect-video overflow-hidden @5xl/banner:hidden">
       <CmsImage
         className="h-full w-full object-cover object-top"
         image={content.heroImage}

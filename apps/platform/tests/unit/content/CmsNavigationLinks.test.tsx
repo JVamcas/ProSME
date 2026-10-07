@@ -120,6 +120,15 @@ describe("CMS navigation", () => {
     expect(html.match(/aria-current="page"/g)).toHaveLength(1);
   });
 
+  it("expands Overview and shows its three independent editors", () => {
+    access.pathname = "/cms/funding/overview/priority-applicants";
+    const html = renderToStaticMarkup(<CmsNavigationLinks />);
+    expect(html).toContain('href="/cms/funding/overview/support"');
+    expect(html).toContain('href="/cms/funding/overview/priority-applicants"');
+    expect(html).toContain('href="/cms/funding/overview/focus-sectors"');
+    expect(html.match(/aria-current="page"/g)).toHaveLength(1);
+  });
+
   it("shows FAQ after Funding as the active content link", () => {
     access.pathname = "/cms/faq";
     const html = renderToStaticMarkup(<CmsNavigationLinks />);

@@ -1,5 +1,6 @@
 import { revalidatePath } from "next/cache";
 import type { CollectionAfterChangeHook, CollectionAfterDeleteHook, GlobalAfterChangeHook } from "payload";
+import { fundingOverviewSection } from "@/modules/content/FundingOverviewSections";
 
 const roots: Record<string, string> = {
   events: "/events",
@@ -40,7 +41,9 @@ function collectionPaths(collection: string, slug?: string, root?: string) {
   ];
   if (
     collection === "eligibility-content" ||
-    (collection === "pages" && (slug === "funding" || slug === "eligibility"))
+    (collection === "pages" && (
+      slug === "funding" || slug === "eligibility" || fundingOverviewSection(slug)
+    ))
   ) {
     paths.push("/how-to-apply/funding", "/how-to-apply/eligibility");
   }

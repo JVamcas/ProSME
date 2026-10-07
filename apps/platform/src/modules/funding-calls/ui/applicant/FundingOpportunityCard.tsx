@@ -8,7 +8,6 @@ import {
   FileText,
   Sprout,
 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { useSyncExternalStore, type ReactNode } from "react";
 
@@ -19,6 +18,7 @@ import {
   formatOpportunityDate
 } from "@/modules/funding-calls/ui/FundingOpportunityFormat";
 import { SanitizedRichTextContent } from "@/shared/ui/SanitizedRichTextContent";
+import { FundingCallThumbnailImage } from "../FundingCallThumbnailImage";
 
 const savedStorageKey = "sme-fund-saved-opportunities";
 const savedChangeEvent = "sme-fund-saved-opportunities-changed";
@@ -123,13 +123,11 @@ export function FundingOpportunityCard({
       <div className="flex flex-col sm:flex-row">
         {opportunity.thumbnailUrl ? (
           <div className="relative h-36 w-full shrink-0 bg-brand-cream sm:h-auto sm:w-44 lg:w-52">
-            <Image
+            <FundingCallThumbnailImage
               alt=""
               className="object-cover"
-              fill
               sizes="(min-width: 1024px) 208px, (min-width: 640px) 176px, 100vw"
               src={opportunity.thumbnailUrl}
-              unoptimized
             />
           </div>
         ) : null}

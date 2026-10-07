@@ -12,6 +12,7 @@ import {
   pageSlugField,
 } from "@/payload/fields/PageContentFields";
 import { pageLayoutFields } from "@/payload/fields/PageLayoutFields";
+import { validateFundingOverviewPage } from "@/payload/hooks/validate-funding-overview-page";
 
 export const Pages: CollectionConfig = {
   slug: "pages",
@@ -32,6 +33,7 @@ export const Pages: CollectionConfig = {
   },
   access: cmsCollectionAccess("pages"),
   hooks: {
+    beforeValidate: [validateFundingOverviewPage],
     afterChange: [recordCollectionChange, revalidateCollection],
     afterDelete: [recordCollectionDelete, revalidateCollectionDelete],
     beforeChange: [

@@ -4,12 +4,18 @@ import type { Field, PayloadRequest } from "payload";
 import { approvedPageParagraphs, defaultPages } from "@/modules/content/ContentDefaults";
 import { paragraphsToRichText } from "@/modules/content/ContentRichText";
 import { cmsPageEditor } from "@/modules/content/CmsPageEditors";
+import { fundingOverviewSection } from "@/modules/content/FundingOverviewSections";
 import { withAppFormInputs } from "./withAppFormInputs";
 import { publishingFields } from "./publishing";
 import { seoFields } from "./seo";
 
 function showPageSettings(data: Record<string, unknown>) {
   return !cmsPageEditor(data.slug);
+}
+
+function showPageContent(data: Record<string, unknown>) {
+  return data.slug !== "funding" && data.slug !== "eligibility" &&
+    !fundingOverviewSection(data.slug);
 }
 
 function pageDefault(
@@ -19,6 +25,12 @@ function pageDefault(
   const slug = req.query?.cmsPage;
   if (typeof slug !== "string" || !cmsPageEditor(slug)) return undefined;
   if (field === "slug") return slug;
+  const section = fundingOverviewSection(slug);
+  if (section) {
+    if (field === "title") return section.title;
+    if (field === "content") return paragraphsToRichText([section.title]);
+    return "";
+  }
   if (field === "content") {
     return paragraphsToRichText(approvedPageParagraphs[slug]);
   }
@@ -53,14 +65,14 @@ const contentFields: Field[] = [
     type: "text",
     required: true,
     defaultValue: ({ req }) => pageDefault(req, "title"),
-    admin: { condition: (data) => data.slug !== "funding" && data.slug !== "eligibility" },
+    admin: { condition: showPageContent },
   },
   {
     name: "summary",
     label: "Introduction",
     type: "textarea",
     defaultValue: ({ req }) => pageDefault(req, "summary"),
-    admin: { condition: (data) => data.slug !== "funding" && data.slug !== "eligibility" },
+    admin: { condition: showPageContent },
   },
   {
     name: "content",
@@ -75,7 +87,7 @@ const contentFields: Field[] = [
     }),
     defaultValue: ({ req }) => pageDefault(req, "content"),
     admin: {
-      condition: (data) => data.slug !== "funding" && data.slug !== "eligibility" && data.slug !== "faq",
+      condition: (data) => showPageContent(data) && data.slug !== "faq",
     },
   },
   {
@@ -93,7 +105,7 @@ export const pageContentFields: Field[] = [
     type: "group",
     label: "Page content",
     admin: {
-      condition: (data) => data.slug !== "funding" && data.slug !== "eligibility",
+      condition: showPageContent,
       components: {
         Field: "./modules/content/ui/admin/CmsPageContentGroupField.tsx",
       },
