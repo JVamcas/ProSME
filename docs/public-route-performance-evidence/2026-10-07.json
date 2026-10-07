@@ -1,0 +1,1142 @@
+{
+  "date": "2026-10-07",
+  "scope": {
+    "localOrigin": "http://127.0.0.1:3008",
+    "deployedOrigin": "https://www.smefund.na",
+    "localBuildId": "7zgiFd92-Mpv1rE2vLebw",
+    "localImageId": "a1fcf384f7a40d695709961cec38a5a78bcf8f529211202ba3c799b3f63ae0b1",
+    "profiler": "same production image; isolated port 3018; 768 MiB and one CPU; temporary instrumentation; no rebuild",
+    "browser": "blocked: existing Chromium cannot load libnspr4.so",
+    "htmlCacheControl": "private, no-cache, no-store, max-age=0, must-revalidate",
+    "optimizedImageCacheControl": "public, max-age=14400, must-revalidate",
+    "deployedOptimizedImageCache": "HIT"
+  },
+  "localHtmlRoundSamples": [
+    {
+      "cycle": 1,
+      "path": "/",
+      "status": 200,
+      "ttfbMs": 126.53,
+      "totalMs": 126.9,
+      "bytes": 137771
+    },
+    {
+      "cycle": 1,
+      "path": "/about",
+      "status": 200,
+      "ttfbMs": 279.04,
+      "totalMs": 279.15,
+      "bytes": 45488
+    },
+    {
+      "cycle": 1,
+      "path": "/faq",
+      "status": 200,
+      "ttfbMs": 123.47,
+      "totalMs": 123.68,
+      "bytes": 53501
+    },
+    {
+      "cycle": 1,
+      "path": "/contact",
+      "status": 200,
+      "ttfbMs": 44.54,
+      "totalMs": 44.81,
+      "bytes": 55944
+    },
+    {
+      "cycle": 1,
+      "path": "/resources",
+      "status": 200,
+      "ttfbMs": 71.76,
+      "totalMs": 71.83,
+      "bytes": 57761
+    },
+    {
+      "cycle": 1,
+      "path": "/news",
+      "status": 200,
+      "ttfbMs": 62.45,
+      "totalMs": 62.74,
+      "bytes": 44691
+    },
+    {
+      "cycle": 1,
+      "path": "/how-to-apply",
+      "status": 200,
+      "ttfbMs": 47.23,
+      "totalMs": 47.34,
+      "bytes": 52730
+    },
+    {
+      "cycle": 1,
+      "path": "/how-to-apply/funding",
+      "status": 200,
+      "ttfbMs": 84.98,
+      "totalMs": 85.54,
+      "bytes": 108484
+    },
+    {
+      "cycle": 1,
+      "path": "/privacy",
+      "status": 200,
+      "ttfbMs": 28.31,
+      "totalMs": 28.37,
+      "bytes": 44782
+    },
+    {
+      "cycle": 1,
+      "path": "/brand/sme-fund-logo.svg",
+      "status": 200,
+      "ttfbMs": 7.87,
+      "totalMs": 7.92,
+      "bytes": 5322
+    },
+    {
+      "cycle": 2,
+      "path": "/",
+      "status": 200,
+      "ttfbMs": 44.64,
+      "totalMs": 44.71,
+      "bytes": 137771
+    },
+    {
+      "cycle": 2,
+      "path": "/about",
+      "status": 200,
+      "ttfbMs": 20.34,
+      "totalMs": 20.52,
+      "bytes": 45488
+    },
+    {
+      "cycle": 2,
+      "path": "/faq",
+      "status": 200,
+      "ttfbMs": 33.83,
+      "totalMs": 34.27,
+      "bytes": 53501
+    },
+    {
+      "cycle": 2,
+      "path": "/contact",
+      "status": 200,
+      "ttfbMs": 22.01,
+      "totalMs": 22.08,
+      "bytes": 54816
+    },
+    {
+      "cycle": 2,
+      "path": "/resources",
+      "status": 200,
+      "ttfbMs": 35.73,
+      "totalMs": 35.9,
+      "bytes": 57761
+    },
+    {
+      "cycle": 2,
+      "path": "/news",
+      "status": 200,
+      "ttfbMs": 25.65,
+      "totalMs": 25.86,
+      "bytes": 44691
+    },
+    {
+      "cycle": 2,
+      "path": "/how-to-apply",
+      "status": 200,
+      "ttfbMs": 33.88,
+      "totalMs": 34.18,
+      "bytes": 52622
+    },
+    {
+      "cycle": 2,
+      "path": "/how-to-apply/funding",
+      "status": 200,
+      "ttfbMs": 33.53,
+      "totalMs": 34.03,
+      "bytes": 108608
+    },
+    {
+      "cycle": 2,
+      "path": "/privacy",
+      "status": 200,
+      "ttfbMs": 22.17,
+      "totalMs": 22.25,
+      "bytes": 44782
+    },
+    {
+      "cycle": 2,
+      "path": "/brand/sme-fund-logo.svg",
+      "status": 200,
+      "ttfbMs": 2.49,
+      "totalMs": 2.65,
+      "bytes": 5322
+    },
+    {
+      "cycle": 3,
+      "path": "/",
+      "status": 200,
+      "ttfbMs": 56.94,
+      "totalMs": 57.84,
+      "bytes": 137867
+    },
+    {
+      "cycle": 3,
+      "path": "/about",
+      "status": 200,
+      "ttfbMs": 18.96,
+      "totalMs": 19.02,
+      "bytes": 45488
+    },
+    {
+      "cycle": 3,
+      "path": "/faq",
+      "status": 200,
+      "ttfbMs": 23.09,
+      "totalMs": 23.17,
+      "bytes": 53501
+    },
+    {
+      "cycle": 3,
+      "path": "/contact",
+      "status": 200,
+      "ttfbMs": 18.83,
+      "totalMs": 18.92,
+      "bytes": 54816
+    },
+    {
+      "cycle": 3,
+      "path": "/resources",
+      "status": 200,
+      "ttfbMs": 24.22,
+      "totalMs": 24.48,
+      "bytes": 57761
+    },
+    {
+      "cycle": 3,
+      "path": "/news",
+      "status": 200,
+      "ttfbMs": 28.88,
+      "totalMs": 29.25,
+      "bytes": 44691
+    },
+    {
+      "cycle": 3,
+      "path": "/how-to-apply",
+      "status": 200,
+      "ttfbMs": 17.53,
+      "totalMs": 17.6,
+      "bytes": 52730
+    },
+    {
+      "cycle": 3,
+      "path": "/how-to-apply/funding",
+      "status": 200,
+      "ttfbMs": 23.09,
+      "totalMs": 23.22,
+      "bytes": 108608
+    },
+    {
+      "cycle": 3,
+      "path": "/privacy",
+      "status": 200,
+      "ttfbMs": 22.3,
+      "totalMs": 22.66,
+      "bytes": 44782
+    },
+    {
+      "cycle": 3,
+      "path": "/brand/sme-fund-logo.svg",
+      "status": 200,
+      "ttfbMs": 1.93,
+      "totalMs": 1.98,
+      "bytes": 5322
+    }
+  ],
+  "localAssets": [
+    {
+      "label": "img:/brand/sme-fund-logo.svg",
+      "samples": [
+        {
+          "status": 200,
+          "ttfbMs": 3.51,
+          "totalMs": 3.56,
+          "bytes": 5322
+        },
+        {
+          "status": 200,
+          "ttfbMs": 2.38,
+          "totalMs": 2.42,
+          "bytes": 5322
+        }
+      ]
+    },
+    {
+      "label": "link:/_next/static/css/7c5a0a4e39cd3a5d.css",
+      "samples": [
+        {
+          "status": 200,
+          "ttfbMs": 4.51,
+          "totalMs": 4.83,
+          "bytes": 134916
+        },
+        {
+          "status": 200,
+          "ttfbMs": 2.98,
+          "totalMs": 3.3,
+          "bytes": 134916
+        }
+      ]
+    },
+    {
+      "label": "link:/_next/static/css/b306996aaaea0c30.css",
+      "samples": [
+        {
+          "status": 200,
+          "ttfbMs": 4.41,
+          "totalMs": 4.47,
+          "bytes": 477
+        },
+        {
+          "status": 200,
+          "ttfbMs": 2.39,
+          "totalMs": 2.43,
+          "bytes": 477
+        }
+      ]
+    },
+    {
+      "label": "script:/_next/static/chunks/webpack-b8e3501eeb9cad44.js",
+      "samples": [
+        {
+          "status": 200,
+          "ttfbMs": 4.63,
+          "totalMs": 4.67,
+          "bytes": 6034
+        },
+        {
+          "status": 200,
+          "ttfbMs": 2.64,
+          "totalMs": 2.68,
+          "bytes": 6034
+        }
+      ]
+    },
+    {
+      "label": "script:/_next/static/chunks/87c73c54-fe9448718f10265c.js",
+      "samples": [
+        {
+          "status": 200,
+          "ttfbMs": 3.81,
+          "totalMs": 4.1,
+          "bytes": 201058
+        },
+        {
+          "status": 200,
+          "ttfbMs": 2.02,
+          "totalMs": 2.69,
+          "bytes": 201058
+        }
+      ]
+    },
+    {
+      "label": "script:/_next/static/chunks/1968-381b96066b7f5c7f.js",
+      "samples": [
+        {
+          "status": 200,
+          "ttfbMs": 3.62,
+          "totalMs": 4.25,
+          "bytes": 241354
+        },
+        {
+          "status": 200,
+          "ttfbMs": 2.37,
+          "totalMs": 2.93,
+          "bytes": 241354
+        }
+      ]
+    },
+    {
+      "label": "script:/_next/static/chunks/main-app-10dafcb49048e57c.js",
+      "samples": [
+        {
+          "status": 200,
+          "ttfbMs": 3.07,
+          "totalMs": 3.14,
+          "bytes": 525
+        },
+        {
+          "status": 200,
+          "ttfbMs": 3.57,
+          "totalMs": 3.6,
+          "bytes": 525
+        }
+      ]
+    },
+    {
+      "label": "script:/_next/static/chunks/polyfills-42372ed130431b0a.js",
+      "samples": [
+        {
+          "status": 200,
+          "ttfbMs": 3.77,
+          "totalMs": 3.81,
+          "bytes": 112594
+        },
+        {
+          "status": 200,
+          "ttfbMs": 2.81,
+          "totalMs": 3.15,
+          "bytes": 112594
+        }
+      ]
+    },
+    {
+      "label": "img:/_next/image",
+      "samples": [
+        {
+          "status": 200,
+          "ttfbMs": 130.98,
+          "totalMs": 131.03,
+          "bytes": 3287
+        },
+        {
+          "status": 200,
+          "ttfbMs": 3.09,
+          "totalMs": 3.14,
+          "bytes": 3287
+        }
+      ]
+    },
+    {
+      "label": "img:/brand/giz-logo.svg",
+      "samples": [
+        {
+          "status": 200,
+          "ttfbMs": 12.43,
+          "totalMs": 12.5,
+          "bytes": 43754
+        },
+        {
+          "status": 200,
+          "ttfbMs": 27.06,
+          "totalMs": 27.11,
+          "bytes": 43754
+        }
+      ]
+    },
+    {
+      "label": "img:/_next/image",
+      "samples": [
+        {
+          "status": 200,
+          "ttfbMs": 142.36,
+          "totalMs": 142.43,
+          "bytes": 4081
+        },
+        {
+          "status": 200,
+          "ttfbMs": 2.45,
+          "totalMs": 2.5,
+          "bytes": 4081
+        }
+      ]
+    },
+    {
+      "label": "image:document-preview-desktop.png",
+      "samples": [
+        {
+          "status": 200,
+          "ttfbMs": 17412.21,
+          "totalMs": 17412.26,
+          "bytes": 46232
+        },
+        {
+          "status": 200,
+          "ttfbMs": 2.76,
+          "totalMs": 2.82,
+          "bytes": 46232
+        }
+      ]
+    },
+    {
+      "label": "image:first-call-funding-criteria-thumbnail-desktop.png",
+      "samples": [
+        {
+          "status": 200,
+          "ttfbMs": 6423.14,
+          "totalMs": 6423.27,
+          "bytes": 107954
+        },
+        {
+          "status": 200,
+          "ttfbMs": 2.6,
+          "totalMs": 2.64,
+          "bytes": 107954
+        }
+      ]
+    },
+    {
+      "label": "image:pic5-desktop.png",
+      "samples": [
+        {
+          "status": 200,
+          "ttfbMs": 17666.45,
+          "totalMs": 17666.57,
+          "bytes": 288105
+        },
+        {
+          "status": 200,
+          "ttfbMs": 3.14,
+          "totalMs": 3.2,
+          "bytes": 288105
+        }
+      ]
+    }
+  ],
+  "isolatedHttp": [
+    {
+      "path": "/about",
+      "kind": "html",
+      "status": 200,
+      "ttfbMs": 835.74,
+      "totalMs": 836.2,
+      "bytes": 45488
+    },
+    {
+      "path": "/about",
+      "kind": "html",
+      "status": 200,
+      "ttfbMs": 49.82,
+      "totalMs": 50.17,
+      "bytes": 45488
+    },
+    {
+      "path": "/",
+      "kind": "html",
+      "status": 200,
+      "ttfbMs": 135.02,
+      "totalMs": 135.95,
+      "bytes": 137771
+    },
+    {
+      "path": "/",
+      "kind": "html",
+      "status": 200,
+      "ttfbMs": 70.4,
+      "totalMs": 70.84,
+      "bytes": 137771
+    },
+    {
+      "path": "/api/media/file/pic7-1448x1086.png",
+      "kind": "raw-media",
+      "status": 200,
+      "ttfbMs": 3583.01,
+      "totalMs": 9424.56,
+      "bytes": 3455073
+    },
+    {
+      "path": "/api/media/file/pic7-1448x1086.png",
+      "kind": "raw-media",
+      "status": 200,
+      "ttfbMs": 1539.6,
+      "totalMs": 5922.28,
+      "bytes": 3455073
+    },
+    {
+      "path": "/_next/image",
+      "kind": "optimized-png",
+      "status": 200,
+      "ttfbMs": 11885.51,
+      "totalMs": 11885.67,
+      "bytes": 336263
+    },
+    {
+      "path": "/_next/image",
+      "kind": "optimized-webp",
+      "status": 200,
+      "ttfbMs": 10097.54,
+      "totalMs": 10097.61,
+      "bytes": 46750
+    }
+  ],
+  "isolatedQueryProfiles": [
+    {
+      "path": "/about",
+      "rsc": false,
+      "status": 200,
+      "serverElapsedMs": 835.1,
+      "wireQueryCount": 10,
+      "queriesByFirstTable": {
+        "cms_site_settings": 2,
+        "cms_pages": 4,
+        "cms_contact_details": 2,
+        "cms_header": 1,
+        "cms_footer": 1
+      }
+    },
+    {
+      "path": "/about",
+      "rsc": false,
+      "status": 200,
+      "serverElapsedMs": 49.22,
+      "wireQueryCount": 10,
+      "queriesByFirstTable": {
+        "cms_site_settings": 2,
+        "cms_contact_details": 2,
+        "cms_pages": 4,
+        "cms_header": 1,
+        "cms_footer": 1
+      }
+    },
+    {
+      "path": "/",
+      "rsc": false,
+      "status": 200,
+      "serverElapsedMs": 134.87,
+      "wireQueryCount": 23,
+      "queriesByFirstTable": {
+        "cms_site_settings": 2,
+        "cms_contact_details": 2,
+        "cms_homepage": 1,
+        "cms_header": 1,
+        "cms_footer": 1,
+        "cms_media": 4,
+        "app_funding_calls": 2,
+        "cms_programme_statistics": 2,
+        "cms_news": 4,
+        "cms_resources": 4
+      }
+    },
+    {
+      "path": "/",
+      "rsc": false,
+      "status": 200,
+      "serverElapsedMs": 69.9,
+      "wireQueryCount": 23,
+      "queriesByFirstTable": {
+        "app_funding_calls": 2,
+        "cms_site_settings": 2,
+        "cms_contact_details": 2,
+        "cms_homepage": 1,
+        "cms_header": 1,
+        "cms_footer": 1,
+        "cms_media": 4,
+        "cms_programme_statistics": 2,
+        "cms_news": 4,
+        "cms_resources": 4
+      }
+    },
+    {
+      "path": "/api/media/file/pic7-1448x1086.png",
+      "rsc": false,
+      "status": 200,
+      "serverElapsedMs": 9457.35,
+      "wireQueryCount": 1,
+      "queriesByFirstTable": {
+        "cms_media": 1
+      }
+    },
+    {
+      "path": "/api/media/file/pic7-1448x1086.png",
+      "rsc": false,
+      "status": 200,
+      "serverElapsedMs": 5910.68,
+      "wireQueryCount": 1,
+      "queriesByFirstTable": {
+        "cms_media": 1
+      }
+    },
+    {
+      "path": "/_next/image",
+      "rsc": false,
+      "status": 200,
+      "serverElapsedMs": 11817.89,
+      "wireQueryCount": 1,
+      "queriesByFirstTable": {
+        "cms_media": 1
+      }
+    },
+    {
+      "path": "/_next/image",
+      "rsc": false,
+      "status": 200,
+      "serverElapsedMs": 10071.37,
+      "wireQueryCount": 1,
+      "queriesByFirstTable": {
+        "cms_media": 1
+      }
+    }
+  ],
+  "isolatedStorageCalls": [
+    {
+      "page": "/api/media/file/pic7-1448x1086.png",
+      "host": "www.googleapis.com",
+      "kind": "metadata-or-auth",
+      "status": 200,
+      "elapsedMs": 1005.6273440000004
+    },
+    {
+      "page": "/api/media/file/pic7-1448x1086.png",
+      "host": "storage.googleapis.com",
+      "kind": "metadata-or-auth",
+      "status": 200,
+      "elapsedMs": 1358.4570590000003
+    },
+    {
+      "page": "/api/media/file/pic7-1448x1086.png",
+      "host": "storage.googleapis.com",
+      "kind": "media",
+      "status": 200,
+      "elapsedMs": 7002.747340000002
+    },
+    {
+      "page": "/api/media/file/pic7-1448x1086.png",
+      "host": "storage.googleapis.com",
+      "kind": "metadata-or-auth",
+      "status": 200,
+      "elapsedMs": 371.9215879999974
+    },
+    {
+      "page": "/api/media/file/pic7-1448x1086.png",
+      "host": "storage.googleapis.com",
+      "kind": "media",
+      "status": 200,
+      "elapsedMs": 5525.409824999995
+    },
+    {
+      "page": "/_next/image",
+      "host": "storage.googleapis.com",
+      "kind": "metadata-or-auth",
+      "status": 200,
+      "elapsedMs": 489.61084299998765
+    },
+    {
+      "page": "/_next/image",
+      "host": "storage.googleapis.com",
+      "kind": "media",
+      "status": 200,
+      "elapsedMs": 10255.067169000002
+    },
+    {
+      "page": "/_next/image",
+      "host": "storage.googleapis.com",
+      "kind": "metadata-or-auth",
+      "status": 200,
+      "elapsedMs": 836.4325390000013
+    },
+    {
+      "page": "/_next/image",
+      "host": "storage.googleapis.com",
+      "kind": "media",
+      "status": 200,
+      "elapsedMs": 8936.06813700001
+    }
+  ],
+  "isolatedSyntheticRsc": {
+    "http": [
+      {
+        "path": "/about",
+        "status": 200,
+        "ttfbMs": 966.56,
+        "totalMs": 1794.04,
+        "bytes": 22768
+      },
+      {
+        "path": "/about",
+        "status": 200,
+        "ttfbMs": 89.9,
+        "totalMs": 318.55,
+        "bytes": 22768
+      },
+      {
+        "path": "/",
+        "status": 200,
+        "ttfbMs": 110.34,
+        "totalMs": 467.75,
+        "bytes": 61283
+      },
+      {
+        "path": "/",
+        "status": 200,
+        "ttfbMs": 13.1,
+        "totalMs": 89.23,
+        "bytes": 61283
+      }
+    ],
+    "profiles": [
+      {
+        "path": "/about",
+        "rsc": true,
+        "status": 200,
+        "serverElapsedMs": 1754.43,
+        "wireQueryCount": 10,
+        "queriesByFirstTable": {
+          "cms_site_settings": 2,
+          "cms_pages": 4,
+          "cms_contact_details": 2,
+          "cms_header": 1,
+          "cms_footer": 1
+        }
+      },
+      {
+        "path": "/about",
+        "rsc": true,
+        "status": 200,
+        "serverElapsedMs": 259.33,
+        "wireQueryCount": 10,
+        "queriesByFirstTable": {
+          "cms_site_settings": 2,
+          "cms_contact_details": 2,
+          "cms_pages": 4,
+          "cms_header": 1,
+          "cms_footer": 1
+        }
+      },
+      {
+        "path": "/",
+        "rsc": true,
+        "status": 200,
+        "serverElapsedMs": 456.98,
+        "wireQueryCount": 23,
+        "queriesByFirstTable": {
+          "cms_site_settings": 2,
+          "cms_contact_details": 2,
+          "cms_homepage": 1,
+          "cms_media": 4,
+          "cms_header": 1,
+          "cms_footer": 1,
+          "app_funding_calls": 2,
+          "cms_programme_statistics": 2,
+          "cms_news": 4,
+          "cms_resources": 4
+        }
+      },
+      {
+        "path": "/",
+        "rsc": true,
+        "status": 200,
+        "serverElapsedMs": 86.52,
+        "wireQueryCount": 23,
+        "queriesByFirstTable": {
+          "app_funding_calls": 2,
+          "cms_site_settings": 2,
+          "cms_contact_details": 2,
+          "cms_homepage": 1,
+          "cms_header": 1,
+          "cms_footer": 1,
+          "cms_media": 4,
+          "cms_programme_statistics": 2,
+          "cms_news": 4,
+          "cms_resources": 4
+        }
+      }
+    ]
+  },
+  "deployedFreshConnectionSamples": [
+    {
+      "cycle": 1,
+      "path": "/",
+      "status": 200,
+      "dnsMs": 312.29,
+      "connectMs": 780.75,
+      "tlsMs": 3121.45,
+      "ttfbMs": 5514.24,
+      "totalMs": 8599.55,
+      "bytes": 126546
+    },
+    {
+      "cycle": 1,
+      "path": "/about",
+      "status": 200,
+      "dnsMs": 9.22,
+      "connectMs": 554.75,
+      "tlsMs": 1017.52,
+      "ttfbMs": 3025.86,
+      "totalMs": 3837.19,
+      "bytes": 46610
+    },
+    {
+      "cycle": 1,
+      "path": "/resources",
+      "status": 200,
+      "dnsMs": 7.2,
+      "connectMs": 531.36,
+      "tlsMs": 1220.07,
+      "ttfbMs": 2190.92,
+      "totalMs": 2792.74,
+      "bytes": 51724
+    },
+    {
+      "cycle": 1,
+      "path": "/how-to-apply/funding",
+      "status": 200,
+      "dnsMs": 18.75,
+      "connectMs": 595.07,
+      "tlsMs": 1076.19,
+      "ttfbMs": 2398.08,
+      "totalMs": 3521.11,
+      "bytes": 105415
+    },
+    {
+      "cycle": 2,
+      "path": "/",
+      "status": 200,
+      "dnsMs": 8.37,
+      "connectMs": 354.66,
+      "tlsMs": 688.24,
+      "ttfbMs": 4109.68,
+      "totalMs": 6415.59,
+      "bytes": 126546
+    },
+    {
+      "cycle": 2,
+      "path": "/about",
+      "status": 200,
+      "dnsMs": 6.54,
+      "connectMs": 346.55,
+      "tlsMs": 972.19,
+      "ttfbMs": 1801.48,
+      "totalMs": 2110.76,
+      "bytes": 45482
+    },
+    {
+      "cycle": 2,
+      "path": "/resources",
+      "status": 200,
+      "dnsMs": 6.27,
+      "connectMs": 327.73,
+      "tlsMs": 986.64,
+      "ttfbMs": 1982.1,
+      "totalMs": 2411.47,
+      "bytes": 51724
+    },
+    {
+      "cycle": 2,
+      "path": "/how-to-apply/funding",
+      "status": 200,
+      "dnsMs": 6.1,
+      "connectMs": 382.87,
+      "tlsMs": 732.04,
+      "ttfbMs": 2320.33,
+      "totalMs": 2953.73,
+      "bytes": 105415
+    },
+    {
+      "cycle": 3,
+      "path": "/",
+      "status": 200,
+      "dnsMs": 18.8,
+      "connectMs": 346.43,
+      "tlsMs": 834.4,
+      "ttfbMs": 7257.41,
+      "totalMs": 10954.3,
+      "bytes": 126546
+    },
+    {
+      "cycle": 3,
+      "path": "/about",
+      "status": 200,
+      "dnsMs": 7.86,
+      "connectMs": 314.11,
+      "tlsMs": 844.39,
+      "ttfbMs": 6193.46,
+      "totalMs": 7584.69,
+      "bytes": 45482
+    },
+    {
+      "cycle": 3,
+      "path": "/resources",
+      "status": 200,
+      "dnsMs": 20.83,
+      "connectMs": 598.39,
+      "tlsMs": 1070.35,
+      "ttfbMs": 3354.1,
+      "totalMs": 4285.07,
+      "bytes": 50596
+    },
+    {
+      "cycle": 3,
+      "path": "/how-to-apply/funding",
+      "status": 200,
+      "dnsMs": 5.91,
+      "connectMs": 442.16,
+      "tlsMs": 1955.04,
+      "ttfbMs": 12041.45,
+      "totalMs": 16497.67,
+      "bytes": 105415
+    }
+  ],
+  "deployedCompressedKeepaliveSamples": [
+    {
+      "path": "/brand/sme-fund-logo.svg",
+      "status": 200,
+      "dnsMs": 95.92,
+      "connectMs": 393.05,
+      "tlsMs": 852.12,
+      "ttfbMs": 1209.92,
+      "totalMs": 1211.8,
+      "bytes": 2368
+    },
+    {
+      "path": "/about",
+      "status": 200,
+      "dnsMs": 0.3,
+      "connectMs": 0.0,
+      "tlsMs": 0.0,
+      "ttfbMs": 2215.79,
+      "totalMs": 2217.33,
+      "bytes": 10061
+    },
+    {
+      "path": "/",
+      "status": 200,
+      "dnsMs": 0.02,
+      "connectMs": 0.0,
+      "tlsMs": 0.0,
+      "ttfbMs": 6128.66,
+      "totalMs": 6128.98,
+      "bytes": 20035
+    },
+    {
+      "path": "/brand/sme-fund-logo.svg",
+      "status": 200,
+      "dnsMs": 0.01,
+      "connectMs": 0.0,
+      "tlsMs": 0.0,
+      "ttfbMs": 358.1,
+      "totalMs": 358.28,
+      "bytes": 2368
+    },
+    {
+      "path": "/about",
+      "status": 200,
+      "dnsMs": 0.01,
+      "connectMs": 0.0,
+      "tlsMs": 0.0,
+      "ttfbMs": 1460.57,
+      "totalMs": 1460.76,
+      "bytes": 9879
+    },
+    {
+      "path": "/",
+      "status": 200,
+      "dnsMs": 0.01,
+      "connectMs": 0.0,
+      "tlsMs": 0.0,
+      "ttfbMs": 2675.12,
+      "totalMs": 2676.83,
+      "bytes": 20034
+    },
+    {
+      "path": "/brand/sme-fund-logo.svg",
+      "status": 200,
+      "dnsMs": 0.01,
+      "connectMs": 0.0,
+      "tlsMs": 0.0,
+      "ttfbMs": 372.73,
+      "totalMs": 372.81,
+      "bytes": 2368
+    },
+    {
+      "path": "/resources",
+      "status": 200,
+      "dnsMs": 0.01,
+      "connectMs": 0.0,
+      "tlsMs": 0.0,
+      "ttfbMs": 2517.82,
+      "totalMs": 2518.02,
+      "bytes": 10481
+    }
+  ],
+  "deployedHealthKeepaliveSamples": [
+    {
+      "path": "/brand/sme-fund-logo.svg",
+      "status": 200,
+      "tlsMs": 798.31,
+      "ttfbMs": 1158.69,
+      "totalMs": 1158.86,
+      "bytes": 2368
+    },
+    {
+      "path": "/api/health",
+      "status": 200,
+      "tlsMs": 0.0,
+      "ttfbMs": 869.52,
+      "totalMs": 869.59,
+      "bytes": 64
+    },
+    {
+      "path": "/about",
+      "status": 200,
+      "tlsMs": 0.0,
+      "ttfbMs": 1235.89,
+      "totalMs": 1236.06,
+      "bytes": 9177
+    },
+    {
+      "path": "/brand/sme-fund-logo.svg",
+      "status": 200,
+      "tlsMs": 0.0,
+      "ttfbMs": 308.06,
+      "totalMs": 308.16,
+      "bytes": 2368
+    },
+    {
+      "path": "/api/health",
+      "status": 200,
+      "tlsMs": 0.0,
+      "ttfbMs": 530.85,
+      "totalMs": 530.91,
+      "bytes": 64
+    },
+    {
+      "path": "/about",
+      "status": 200,
+      "tlsMs": 0.0,
+      "ttfbMs": 654.72,
+      "totalMs": 654.93,
+      "bytes": 9159
+    }
+  ],
+  "deployedImageSamples": [
+    {
+      "kind": "optimized-webp",
+      "status": 200,
+      "tlsMs": 1587.47,
+      "ttfbMs": 3363.72,
+      "totalMs": 3943.51,
+      "bytes": 85074
+    },
+    {
+      "kind": "optimized-webp",
+      "status": 200,
+      "tlsMs": 675.0,
+      "ttfbMs": 1429.67,
+      "totalMs": 1901.53,
+      "bytes": 85074
+    },
+    {
+      "kind": "raw-media",
+      "status": 200,
+      "tlsMs": 860.58,
+      "ttfbMs": 1941.13,
+      "totalMs": 28931.16,
+      "bytes": 3878980
+    },
+    {
+      "kind": "raw-media",
+      "status": 200,
+      "tlsMs": 749.92,
+      "ttfbMs": 3591.38,
+      "totalMs": 15042.64,
+      "bytes": 3878980
+    }
+  ],
+  "limitations": [
+    "Small diagnostic sample, not a load test or browser performance benchmark.",
+    "No production database or process access; remote timings include network and proxy time.",
+    "No previous deployment benchmark; commit history identifies code changes, not measured regression causality.",
+    "No production build or application implementation changes.",
+    "Node driver interception covers the external driver only; CMS counts use wire observations and do not provide CMS query durations."
+  ]
+}

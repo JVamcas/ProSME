@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { FormProvider } from "react-hook-form";
 
 import { GeneralButton } from "@/components/ui/button";
 import { FormInput } from "@/components/ui/form-fields";
 import { getFirebaseErrorMessage } from "@/platform/auth/firebase/errors";
 import { AuthCard } from "./auth-card";
+import { AuthForm } from "./AuthForm";
 import { AuthFeedback } from "./auth-feedback";
 import { AuthPasswordField } from "./auth-password-field";
 import {
@@ -85,40 +85,34 @@ export function EmailActionPanel() {
       title="Reset your password"
       description="Choose and confirm your new password."
     >
-      <FormProvider {...form}>
-        <form
-          className="space-y-5"
-          noValidate
-          onSubmit={form.handleSubmit((values) => reset.mutate(values))}
+      <AuthForm form={form} onSubmit={(values) => reset.mutate(values)}>
+        <AuthPasswordField autoComplete="new-password" />
+        <FormInput
+          autoComplete="new-password"
+          className={authFieldClassName}
+          label="Confirm password"
+          labelClassName={authLabelClassName}
+          name="confirmPassword"
+          type="password"
+        />
+        <AuthFeedback
+          error={reset.error ? getFirebaseErrorMessage(reset.error) : ""}
+        />
+        <GeneralButton
+          className="w-full"
+          disabled={reset.isPending}
+          type="submit"
+          variant="primary"
         >
-          <AuthPasswordField autoComplete="new-password" />
-          <FormInput
-            autoComplete="new-password"
-            className={authFieldClassName}
-            label="Confirm password"
-            labelClassName={authLabelClassName}
-            name="confirmPassword"
-            type="password"
-          />
-          <AuthFeedback
-            error={reset.error ? getFirebaseErrorMessage(reset.error) : ""}
-          />
-          <GeneralButton
-            className="w-full"
-            disabled={reset.isPending}
-            type="submit"
-            variant="primary"
-          >
-            {reset.isPending ? "Updating password…" : "Reset password"}
-          </GeneralButton>
-          <Link
-            className={`block text-center text-sm ${authLinkClassName}`}
-            href="/forgot-password"
-          >
-            Request another reset link
-          </Link>
-        </form>
-      </FormProvider>
+          {reset.isPending ? "Updating password…" : "Reset password"}
+        </GeneralButton>
+        <Link
+          className={`block text-center text-sm ${authLinkClassName}`}
+          href="/forgot-password"
+        >
+          Request another reset link
+        </Link>
+      </AuthForm>
     </AuthCard>
   );
 }

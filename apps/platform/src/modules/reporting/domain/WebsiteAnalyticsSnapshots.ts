@@ -18,6 +18,7 @@ export const websitePanelSources = [
   "geography",
   "fundingCallEngagement",
   "selfCheckJourney",
+  "topUserJourneys",
 ] as const;
 
 export type WebsiteSourceName =

@@ -12,12 +12,17 @@ export function getWebsiteAnalyticsMeasurementId() {
 }
 
 export function getWebsiteHeatmapConfiguration() {
-  const projectId = process.env.CLARITY_PROJECT_ID;
+  let timezone = process.env.GA_PROPERTY_TIMEZONE ?? "Africa/Windhoek";
+  try {
+    new Intl.DateTimeFormat("en", { timeZone: timezone }).format();
+  } catch {
+    timezone = "Africa/Windhoek";
+  }
   return {
-    provider: "Microsoft Clarity" as const,
+    provider: "Platform" as const,
     googleAnalyticsEnabled: process.env.GA_COLLECTION_ENABLED === "true",
-    projectId:
-      projectId && /^[a-z0-9]{5,30}$/.test(projectId) ? projectId : null,
+    collectionEnabled: process.env.WEBSITE_HEATMAP_ENABLED === "true",
+    timezone,
   };
 }
 

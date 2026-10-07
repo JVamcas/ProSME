@@ -356,3 +356,46 @@ limitations; actual provider/API dashboard results; Clarity masking and private
 navigation checks; authenticated desktop/mobile/keyboard review; and resolution
 of the unrelated repository-wide gate failures. No written live acceptance is
 claimed. Do not begin R1 on the basis of this implementation record alone.
+
+## Public heatmap capture scope follow-up — 2026-10-07
+
+Scope: the requested D1 public-page capture rules from lines 211–216 of the
+implementation plan. Implementation is reviewable; live provider and browser
+acceptance remain pending.
+
+- Reused `ClientClarityService` and the existing consent interface. Both the
+  accepted UI choice and the stored consent cookie must permit collection.
+  Consent, the exact approved URL and safe page content are checked again after
+  the asynchronous SDK import; withdrawal or navigation cannot start stale capture.
+- The approved routes are `/`, `/about`, `/how-to-apply`,
+  `/how-to-apply/funding`, `/funding`, `/news`, `/events`, `/resources`, `/faq`,
+  `/terms`, `/privacy`, and public funding-call detail routes with valid UUIDs.
+  Authentication, applicant, operations, CMS, contact and eligibility/application
+  form routes, unknown routes, query strings and fragments remain excluded.
+  Same-origin private/form referrers and referrers containing queries/fragments
+  also prevent capture.
+- Body masking is applied before SDK startup. Text/image masking, form and
+  editable-content selectors are configured with no unmask selectors.
+  Pages requesting unmasking are rejected, and newly added unmask attributes or
+  content stop capture. Form focus/input/submission/pointer interaction stops
+  capture before field handlers run, including public newsletter controls.
+- History changes, navigation links, back/forward, fragment changes and page
+  exit stop capture. Returning to a tab checks stored consent. The pinned
+  `clarity-js` 0.8.71 SDK is stopped before calling its consent-denial API,
+  preventing the SDK's active denial path from scheduling a recording restart.
+- Consent wording now explains masked click/scroll capture and the excluded
+  applicant, staff and CMS forms. SDK access stays inside the frontend service.
+- The earlier provider-link description is superseded by the current dashboard:
+  the heatmap panel sits beside eligibility self-checks, has no external link,
+  and reports unavailable. This capture change does not supply an inline heatmap.
+
+Validation: 67 focused tests passed across `ClientClarityService`,
+`WebsiteAnalyticsCollection` and `AnonymousEligibilityCollection`. Changed-file
+lint and standalone type checking passed. Tests use isolated DOM windows and a
+mocked SDK; they verify route/consent exclusions, masking configuration and
+ordering, form/navigation handlers, asynchronous import cancellation and the
+denial/restart regression. They do not establish actual provider payload masking.
+Architecture/form boundary and file-size checks passed. The installed Chromium
+cannot launch because `libnspr4.so` is missing, so browser and live Clarity
+acceptance remain unverified. No production build or full-suite run was performed
+for this focused follow-up.

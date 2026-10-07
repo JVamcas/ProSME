@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 vi.mock(
   "@/modules/reporting/infrastructure/ReportingFundingCallRepository",
@@ -61,6 +61,10 @@ beforeEach(() => {
       sources: {
         traffic: { state: "ready", data: { visitors: 50 } },
         applicationFunnel: { state: "stale", data: { viewedUsers: 5 } },
+        topUserJourneys: {
+          state: "ready",
+          data: { rows: [{ steps: ["resources", "call_details"], users: 7 }] },
+        },
       },
       synchronization: {
         state: "partial",
@@ -73,12 +77,34 @@ beforeEach(() => {
   });
 });
 
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
+
 async function service() {
   return (await import("@/modules/reporting/ServerReportingService"))
     .getWebsiteAnalytics;
 }
 
 describe("reporting authorization and durable reads", () => {
+  it.each([
+    ["true", true],
+    ["", false],
+    ["false", false],
+  ])(
+    "reports platform-owned heatmap collection configuration (%s)",
+    async (enabled, collectionEnabled) => {
+      vi.stubEnv("WEBSITE_HEATMAP_ENABLED", enabled);
+      const result = await (await service())(actor, query);
+      expect(result.heatmap).toEqual({
+        provider: "Platform",
+        state: collectionEnabled ? "ready" : "unavailable",
+        collectionEnabled,
+        note: "Consenting public-page views only. Clicks and scroll depth are stored in the platform.",
+      });
+    },
+  );
+
   it("defines a distinct scoped permission and catalogue group", () => {
     expect(
       getPermissionDefinition(permissionCodes.reportingWebsiteReadAll)
@@ -129,12 +155,21 @@ describe("reporting authorization and durable reads", () => {
     });
     expect(mocks.provider).not.toHaveBeenCalled();
     expect(result.scopes.traffic).toBe("website-wide");
+    expect(result.scopes.topUserJourneys).toBe("public-website");
+    expect(result.topUserJourneys.data?.rows[0].steps).toEqual([
+      "resources",
+      "call_details",
+    ]);
   });
 
   it("reports missing configuration as unavailable rather than demo/zero data", async () => {
     mocks.configuration.mockReturnValue(null);
     const result = await (await service())(actor, query);
     expect(result.traffic).toMatchObject({ state: "unavailable", data: null });
+    expect(result.topUserJourneys).toMatchObject({
+      state: "unavailable",
+      data: null,
+    });
     expect(mocks.projection).not.toHaveBeenCalled();
   });
 });

@@ -10,6 +10,77 @@ const configuration = {
 const input = { startDate: "2026-10-01", endDate: "2026-10-06" };
 
 describe("website panel projections", () => {
+  it("requests observed sequences ranked by users with a top-three bound and website-wide scope", async () => {
+    const transport = vi.fn().mockResolvedValue({
+      dimensionHeaders: [{ name: "customEvent:journey_path" }],
+      metricHeaders: [{ name: "totalUsers" }],
+      rowCount: 7,
+      rows: [
+        {
+          dimensionValues: [
+            { value: "funding>call_details>start_application" },
+          ],
+          metricValues: [{ value: "42" }],
+        },
+        {
+          dimensionValues: [{ value: "resources>call_details" }],
+          metricValues: [{ value: "12" }],
+        },
+      ],
+    });
+    const result = await new GoogleAnalyticsPanelsAdapter(
+      configuration,
+      transport,
+    ).journeys({
+      ...input,
+      fundingCallId: "00000000-0000-4000-8000-000000000001",
+    });
+    expect(result.data).toEqual({
+      rows: [
+        { steps: ["funding", "call_details", "start_application"], users: 42 },
+        { steps: ["resources", "call_details"], users: 12 },
+      ],
+      totalRows: 7,
+      truncated: true,
+    });
+    const body = transport.mock.calls[0][2];
+    expect(body).toMatchObject({
+      limit: "3",
+      dimensions: [{ name: "customEvent:journey_path" }],
+      metrics: [{ name: "totalUsers" }],
+      orderBys: [{ metric: { metricName: "totalUsers" }, desc: true }, {}],
+    });
+    expect(JSON.stringify(body)).toContain("website_journey");
+    expect(JSON.stringify(body)).not.toContain("funding_call_id");
+  });
+
+  it("rejects identifying provider journeys and retains genuine empty results", async () => {
+    const transport = vi.fn().mockResolvedValue({
+      dimensionHeaders: [{ name: "customEvent:journey_path" }],
+      metricHeaders: [{ name: "totalUsers" }],
+      rows: [
+        {
+          dimensionValues: [
+            { value: "resources>/portal/applications/private-id" },
+          ],
+          metricValues: [{ value: "5" }],
+        },
+      ],
+    });
+    const adapter = new GoogleAnalyticsPanelsAdapter(configuration, transport);
+    await expect(adapter.journeys(input)).rejects.toThrow(
+      "Invalid observed route sequence.",
+    );
+    transport.mockResolvedValue({
+      metricHeaders: [{ name: "totalUsers" }],
+      rows: [],
+    });
+    expect(await adapter.journeys(input)).toMatchObject({
+      state: "no-data",
+      data: { rows: [], totalRows: 0, truncated: false },
+    });
+  });
+
   it("keeps call views and submissions as event counts, distinct from users", async () => {
     const id = "00000000-0000-4000-8000-000000000001";
     const transport = vi.fn().mockResolvedValue({

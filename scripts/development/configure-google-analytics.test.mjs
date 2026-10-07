@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
   ensureFundingCallDimension,
+  ensureJourneyDimension,
   enableAnalyticsAdminApi,
   setupErrorMessage,
 } from "./configure-google-analytics.mjs";
@@ -23,6 +24,36 @@ const existing = {
   parameterName: "funding_call_id",
   scope: "EVENT",
 };
+
+test("journey setup creates the event-scoped journey_path dimension", async () => {
+  const { request, calls } = transport([{}, { name: "journey-dimension" }]);
+  const result = await ensureJourneyDimension(request, { propertyId: "123" });
+  assert.equal(result.action, "created");
+  assert.equal(calls[1].data.parameterName, "journey_path");
+  assert.equal(calls[1].data.scope, "EVENT");
+});
+
+test("journey setup preserves an existing dimension and supports dry runs", async () => {
+  const dimension = { ...existing, parameterName: "journey_path" };
+  const present = transport([{ customDimensions: [dimension] }]);
+  assert.equal(
+    (await ensureJourneyDimension(present.request, { propertyId: "123" }))
+      .action,
+    "exists",
+  );
+  assert.equal(present.calls.length, 1);
+  const missing = transport([{}]);
+  assert.equal(
+    (
+      await ensureJourneyDimension(missing.request, {
+        propertyId: "123",
+        dryRun: true,
+      })
+    ).action,
+    "would-create",
+  );
+  assert.equal(missing.calls.length, 1);
+});
 
 test("an existing event-scoped dimension is preserved without writes", async () => {
   const { request, calls } = transport([{ customDimensions: [existing] }]);
@@ -125,13 +156,15 @@ const disabledAdminApi = {
   response: {
     data: {
       error: {
-        details: [{
-          reason: "SERVICE_DISABLED",
-          metadata: {
-            service: "analyticsadmin.googleapis.com",
-            consumer: "projects/12345",
+        details: [
+          {
+            reason: "SERVICE_DISABLED",
+            metadata: {
+              service: "analyticsadmin.googleapis.com",
+              consumer: "projects/12345",
+            },
           },
-        }],
+        ],
       },
     },
   },
@@ -150,21 +183,25 @@ test("API activation targets only the disabled Analytics Admin API's consumer pr
 test("API activation is skipped for unrelated errors or an unverified project", async () => {
   const { request, calls } = transport([]);
   await assert.rejects(enableAnalyticsAdminApi(request, new Error("denied")));
-  await assert.rejects(enableAnalyticsAdminApi(request, {
-    response: {
-      data: {
-        error: {
-          details: [{
-            reason: "SERVICE_DISABLED",
-            metadata: {
-              service: "analyticsadmin.googleapis.com",
-              consumer: "projects/12345/other",
-            },
-          }],
+  await assert.rejects(
+    enableAnalyticsAdminApi(request, {
+      response: {
+        data: {
+          error: {
+            details: [
+              {
+                reason: "SERVICE_DISABLED",
+                metadata: {
+                  service: "analyticsadmin.googleapis.com",
+                  consumer: "projects/12345/other",
+                },
+              },
+            ],
+          },
         },
       },
-    },
-  }));
+    }),
+  );
   assert.equal(calls.length, 0);
 });
 

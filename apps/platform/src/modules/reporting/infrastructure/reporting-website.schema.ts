@@ -67,7 +67,7 @@ export const websiteAnalyticsSourceSnapshots = pgTable(
     ),
     check(
       "app_reporting_website_source_name_check",
-      sql`${table.sourceName} IN ('traffic', 'applicationReach', 'starterCompletion', 'applicationFunnel', 'dailyTraffic', 'mostViewedPages', 'geography', 'fundingCallEngagement', 'selfCheckJourney')`,
+      sql`${table.sourceName} IN ('traffic', 'applicationReach', 'starterCompletion', 'applicationFunnel', 'dailyTraffic', 'mostViewedPages', 'geography', 'fundingCallEngagement', 'selfCheckJourney', 'topUserJourneys')`,
     ),
   ],
 );

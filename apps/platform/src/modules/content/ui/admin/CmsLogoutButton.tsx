@@ -37,7 +37,7 @@ export default function CmsLogoutButton({
         pending={pending}
       />
       {failed ? (
-        <p className="mx-3 mt-2 mb-0 text-xs text-brand-navy" role="alert">
+        <p className="mx-3 mt-2 mb-0 text-xs text-brand-white" role="alert">
           Sign out failed. Please try again.
         </p>
       ) : null}

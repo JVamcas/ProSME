@@ -1,5 +1,6 @@
 import type { WebsiteAnalyticsQuery } from "../api/WebsiteAnalyticsSchemas";
 import type { SelfCheckOutcome } from "./WebsiteAnalyticsCollection";
+import type { WebsiteUserJourney } from "./WebsiteUserJourneys";
 import type {
   WebsiteAnalyticsSynchronization,
   WebsiteMetricChanges,
@@ -84,15 +85,16 @@ export type WebsiteAnalyticsMetrics = {
   gaBrowserCollectionEnabled: boolean;
   coverage: string;
   heatmap: {
-    provider: "Microsoft Clarity";
+    provider: "Platform";
     state: "ready" | "unavailable";
-    accessUrl: string | null;
+    collectionEnabled: boolean;
     note: string;
   };
   scopes: {
     traffic: "website-wide";
     dailyTraffic: "website-wide";
     mostViewedPages: "website-wide";
+    topUserJourneys: "public-website";
     geography: "Namibia";
     fundingCallEngagement: "website-wide" | "funding-call";
     selfCheckJourney: "website-wide" | "funding-call";
@@ -102,6 +104,9 @@ export type WebsiteAnalyticsMetrics = {
   traffic: AnalyticsSourceResult<WebsiteTrafficTotals>;
   dailyTraffic: AnalyticsSourceResult<WebsiteTrafficDay[]>;
   mostViewedPages: AnalyticsSourceResult<BoundedWebsiteRows<WebsiteViewedPage>>;
+  topUserJourneys: AnalyticsSourceResult<
+    BoundedWebsiteRows<WebsiteUserJourney>
+  >;
   geography: AnalyticsSourceResult<WebsiteGeography>;
   fundingCallEngagement: AnalyticsSourceResult<
     BoundedWebsiteRows<WebsiteCallEngagement>

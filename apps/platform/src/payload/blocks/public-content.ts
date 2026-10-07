@@ -67,9 +67,24 @@ const fundingIconOptions = [
 ];
 
 const fundingCardFields = [
-  { name: "icon", type: "select" as const, required: true, options: fundingIconOptions },
-  { name: "title", type: "text" as const, required: true },
-  { name: "description", type: "textarea" as const, required: true },
+  {
+    name: "icon",
+    type: "select" as const,
+    required: true,
+    defaultValue: "grant",
+    options: fundingIconOptions,
+    admin: { hidden: true },
+  },
+  {
+    name: "title",
+    type: "text" as const,
+    required: true,
+  },
+  {
+    name: "description",
+    type: "textarea" as const,
+    required: true,
+  },
 ];
 
 export const fundingSupportBlock: Block = {

@@ -67,16 +67,15 @@ export async function getWebsiteAnalytics(
     gaBrowserCollectionEnabled: heatmap.googleAnalyticsEnabled,
     heatmap: {
       provider: heatmap.provider,
-      state: heatmap.projectId ? "ready" : "unavailable",
-      accessUrl: heatmap.projectId
-        ? `https://clarity.microsoft.com/projects/view/${heatmap.projectId}/heatmaps`
-        : null,
-      note: "",
+      state: heatmap.collectionEnabled ? "ready" : "unavailable",
+      collectionEnabled: heatmap.collectionEnabled,
+      note: "Consenting public-page views only. Clicks and scroll depth are stored in the platform.",
     } as WebsiteAnalyticsMetrics["heatmap"],
     scopes: {
       traffic: "website-wide",
       dailyTraffic: "website-wide",
       mostViewedPages: "website-wide",
+      topUserJourneys: "public-website",
       geography: "Namibia",
       fundingCallEngagement: scope,
       selfCheckJourney: scope,
@@ -93,6 +92,7 @@ export async function getWebsiteAnalytics(
       traffic: unavailable(note),
       dailyTraffic: unavailable(note),
       mostViewedPages: unavailable(note),
+      topUserJourneys: unavailable(note),
       geography: unavailable(note),
       fundingCallEngagement: unavailable(note),
       selfCheckJourney: unavailable(note),

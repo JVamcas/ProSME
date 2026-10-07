@@ -33,6 +33,7 @@ export async function synchronizeWebsiteAnalyticsSources(
       ["geography", () => panels.regions(input)],
       ["fundingCallEngagement", () => panels.calls(input)],
       ["selfCheckJourney", () => panels.selfCheckJourney(input)],
+      ["topUserJourneys", () => panels.journeys(input)],
     );
   }
   const results = await Promise.all(

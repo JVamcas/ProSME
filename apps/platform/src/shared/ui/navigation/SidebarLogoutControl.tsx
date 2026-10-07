@@ -30,6 +30,9 @@ export function SidebarLogoutControl({
         sidebarItemClassName({ collapsed, dark }),
         sidebarLogoutClassName,
         surface === "light" && styles.light,
+        "text-[color:var(--sidebar-text)]",
+        "hover:text-[color:var(--sidebar-name)]",
+        "hover:bg-transparent",
         collapsed ? "justify-center" : "justify-start",
       )}
       disabled={pending}

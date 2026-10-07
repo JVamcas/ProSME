@@ -32,8 +32,8 @@ ERP integration or new D2/D3/R3/R4 routes during these phases.
 ![D1 layout reference with illustrative data](reporting-analytics/d1-website-analytics-reference.png)
 
 Use this latest, denser reference: six metric cards; funnel, traffic and Namibia
-geography row; journeys, pages, call engagement and eligibility row; heatmap access
-strip. Dates, counts, labels and heatmap thumbnail are illustrative, not production
+geography row; journeys, pages and call engagement row; eligibility and platform
+heatmap/scroll-depth panels side by side. Dates, counts, labels and heatmap thumbnail are illustrative, not production
 data. The new section headings below supersede the image's expandable analytics
 parent. Preserve its contrast and density, with responsive stacking on small screens.
 
@@ -157,11 +157,11 @@ authorize, parse responses or calculate business metrics inside JSX.
 | `WebsiteVisitorGeography.tsx` | Compose regional map with region count selection; no geography table |
 | `NamibiaVisitorMap.tsx` | Interactive Namibia regional map with hover/focus detail |
 | `WebsiteVisitorRegionsTable.tsx` | Regional visitors, share and unknown coverage |
-| `WebsiteUserJourneys.tsx` | Observed, predefined journeys with measured counts |
+| `WebsiteUserJourneys.tsx` | Top observed public-page sequences ranked by tracked users |
 | `WebsiteMostViewedPages.tsx` | Ranked, bounded page-view table |
 | `WebsiteFundingCallEngagement.tsx` | Call views and consistently labelled start/submission measures |
 | `WebsiteEligibilityChart.tsx` | Anonymous self-check outcome donut and legend |
-| `WebsiteHeatmapAccess.tsx` | Configured provider access; no fictional live preview |
+| `WebsiteHeatmapPanel.tsx` | Platform-owned click hotspots over masked layout geometry and scroll-depth shares; filter by captured layout and dashboard date/call scope |
 | `useWebsiteAnalytics.ts` | TanStack query keys, cancellation, caching and refresh |
 
 Use Apache ECharts through the shared SVG chart component for every chart,
@@ -212,8 +212,14 @@ Use consent-aware browser tracking through `ClientWebsiteAnalyticsService.ts`;
 components/hooks must not call Google SDKs directly. Send only approved event
 metadata; sanitize page URLs/referrers and omit applicant identifiers, answers,
 free text, documents and reviewer information. Heatmaps capture approved public
-pages with masking, not applicant/staff/CMS forms. Select the provider before its
-integration milestone; do not imply GA supplies heatmaps.
+pages with masking, not applicant/staff/CMS forms. Heatmap capture, storage and
+rendering are platform-owned; Microsoft Clarity is removed. Capture only numeric
+geometry, click cells and maximum scroll depth after explicit consent. Never
+capture DOM text, images, form values, attributes or visitor identities. Separate
+viewport sizes and captured layout versions. Bound traversal, payloads and event
+counts, use passive throttled listeners and idle batched uploads, and aggregate
+in SQL. `WEBSITE_HEATMAP_ENABLED=true` enables collection after migration 0167;
+saved data remains viewable when collection is disabled. GA does not supply heatmaps.
 
 Geography displays Namibia and its 14 regions, filtering GA country to Namibia.
 Verify IP-derived region names against live results; do not use business-profile
@@ -222,7 +228,7 @@ Other panels remain website-wide unless explicitly filtered; label that differen
 Distinct users can appear in multiple calls or regions: do not force grouped counts
 to sum to site-wide users. Agree and label the regional-share denominator.
 
-Journeys show measured predefined paths, not static arrows claiming observed usage.
+Journeys show the top three observed sequences of two or three public-page steps, ranked by tracked users, with readable labels and arrows. Authentication and portal activity are excluded; the public Start application handoff is an endpoint. Empty, failed and stale sources remain explicit.
 Prove the available API query for each; arbitrary GA path exploration is not assumed.
 Log anonymous self-check outcomes, call/ruleset version and timestamp in PostgreSQL;
 retain only approved non-identifying assessment categories, never raw free text or
@@ -283,8 +289,9 @@ Proposed canonical codes: `reporting.website.read.all`,
 `reporting.website-report.read.all` and `reporting.website-schedule.update.all`.
 Add explicit catalogue descriptions/groups and allowed/denied tests. Validate
 target schedule, report kind and recipient eligibility; permission to read
-applications or manage CMS is not reporting authorization. Heatmap access also
-requires the external provider's own account permissions.
+applications or manage CMS is not reporting authorization. Platform heatmap
+reads use `reporting.website.read.all`. Public writes require exact analytics
+consent, same-origin request context and a strict bounded approved-page schema.
 
 Keep pages under `(operations)` and APIs under `app/api`: website read, bounded
 report list/detail and schedule update. Use the existing service-processor
@@ -297,8 +304,8 @@ tables. Reuse audit infrastructure for schedule/recipient changes.
 | Phase | Focused tasks and reviewable result | Required evidence |
 | --- | --- | --- |
 | 1 D1 contracts and visual shell | Fix metrics/scopes and brand mapping; add sidebar sections; compose the reference panels in separate files with typed development fixtures | Permission-filtered/empty/collapsed/mobile navigation tests; brand contrast, responsive and keyboard review. Fixture UI is preview acceptance only |
-| 2 D1 tracking and source proof | Extend consent/service tracking; enable authorized GA property/API access; prove totals, ordered same-call funnel, Namibia regions and predefined journeys | Live test journey; consent/retry/URL sanitization tests; source samples confirm coverage. Agree region and journey limitations before accepting those panels |
-| 3 D1 complete | Persist completed GA aggregates in existing PostgreSQL; bind independent panel results through one SQL projection; add anonymous self-check aggregation; integrate Microsoft Clarity; correct compact KPI cards and keep empty charts visible | Adapter/error/partial-data and authorization tests; SQL projection, refresh lease, outage and restart persistence tests; browser check against reference and real API results. D1 accepted before R1 work |
+| 2 D1 tracking and source proof | Extend consent/service tracking; enable authorized GA property/API access; prove totals, ordered same-call funnel, Namibia regions and observed public journeys | Live test journey; consent/retry/URL sanitization tests; source samples confirm coverage. Agree region and journey limitations before accepting those panels |
+| 3 D1 complete | Persist completed GA aggregates in existing PostgreSQL; bind independent panel results through one SQL projection; add anonymous self-check aggregation; implement platform-owned masked public-page click/scroll heatmaps; correct compact KPI cards and keep empty charts visible | Adapter/error/partial-data and authorization tests; SQL projection, heatmap retry/depth/layout/period scope, refresh lease, outage and restart persistence tests; browser check against reference and real API results. D1 accepted before R1 work |
 | 4 R1 | Add migrations, schedules/runs, report page, typed notification event/template and protected processor; enable only the agreed bi-weekly schedule | Period-boundary, recipient denial, concurrent generation, crash recovery and SQL pagination tests; actual email and saved snapshot reconcile |
 | 5 R2 | Enable calendar-month scheduling through the same generation/rendering/delivery code | Short months, year changes, timezone boundaries and simultaneous schedules; monthly email and history verified |
 
@@ -312,7 +319,7 @@ and unresolved dependencies. A phase cannot claim live acceptance from fixtures.
 
 Inputs can be settled during independent UI work: GA property access and timezone,
 custom dimensions, real region/journey coverage, licensed regional geometry,
-heatmap provider/account, designated recipients, bi-weekly meaning/anchor, send
+heatmap migration/capture activation and browser verification, designated recipients, bi-weekly meaning/anchor, send
 time and source-finalization delay. Do not enable dependent live reporting until
 its required configuration and period policy are agreed.
 

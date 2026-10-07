@@ -1,4 +1,5 @@
 import type { WebsiteAnalyticsQuery } from "../api/WebsiteAnalyticsSchemas";
+import { websiteJourneyLabels } from "../domain/WebsiteUserJourneys";
 
 function query(
   input: WebsiteAnalyticsQuery,
@@ -26,6 +27,38 @@ export function mostViewedPagesQuery(input: WebsiteAnalyticsQuery) {
   return {
     ...query(input, ["pagePath"], ["screenPageViews"], 10),
     orderBys: [{ metric: { metricName: "screenPageViews" }, desc: true }],
+  };
+}
+
+export function topUserJourneysQuery(input: WebsiteAnalyticsQuery) {
+  const stepPattern = `(${Object.keys(websiteJourneyLabels).join("|")})`;
+  return {
+    ...query(input, ["customEvent:journey_path"], ["totalUsers"], 3),
+    dimensionFilter: {
+      andGroup: {
+        expressions: [
+          {
+            filter: {
+              fieldName: "eventName",
+              stringFilter: { matchType: "EXACT", value: "website_journey" },
+            },
+          },
+          {
+            filter: {
+              fieldName: "customEvent:journey_path",
+              stringFilter: {
+                matchType: "FULL_REGEXP",
+                value: `${stepPattern}(>${stepPattern}){1,2}`,
+              },
+            },
+          },
+        ],
+      },
+    },
+    orderBys: [
+      { metric: { metricName: "totalUsers" }, desc: true },
+      { dimension: { dimensionName: "customEvent:journey_path" } },
+    ],
   };
 }
 

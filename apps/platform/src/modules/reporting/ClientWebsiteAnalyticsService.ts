@@ -1,5 +1,7 @@
 "use client";
 
+import { clientWebsiteJourneyService } from "./ClientWebsiteJourneyService";
+import { websiteJourneyStep } from "./domain/WebsiteUserJourneys";
 import {
   isAnalyticsFundingCallId,
   sanitizedAnalyticsReferrer,
@@ -50,6 +52,7 @@ function chooseConsent(value: Exclude<WebsiteAnalyticsConsent, null>) {
   }
   if (value === "declined") {
     lastPage = null;
+    clientWebsiteJourneyService.reset();
     command("consent", "update", { analytics_storage: "denied" });
   }
 }
@@ -62,7 +65,11 @@ function configure(measurementId: string | null | undefined) {
   ) {
     return false;
   }
-  if (!websiteAnalyticsPage(window.location.pathname)) return false;
+  if (!websiteAnalyticsPage(window.location.pathname)) {
+    lastPage = null;
+    clientWebsiteJourneyService.reset();
+    return false;
+  }
   window[`ga-disable-${measurementId}`] = false;
   if (configuredId === measurementId) {
     command("consent", "update", { analytics_storage: "granted" });
@@ -94,17 +101,10 @@ function configure(measurementId: string | null | undefined) {
   return true;
 }
 
-function pageView(pathname: string) {
-  const page = websiteAnalyticsPage(pathname);
-  if (
-    !page ||
-    !configuredId ||
-    readConsent() !== "accepted" ||
-    lastPage === pathname
-  )
-    return;
-  lastPage = pathname;
-  const metadata = {
+function pageMetadata(
+  page: NonNullable<ReturnType<typeof websiteAnalyticsPage>>,
+) {
+  return {
     page_location: `${window.location.origin}${page.path}`,
     page_referrer: sanitizedAnalyticsReferrer(
       document.referrer,
@@ -113,14 +113,60 @@ function pageView(pathname: string) {
     page_title: `SME Fund ${page.category}`,
     page_category: page.category,
   };
+}
+
+function trackJourney(
+  pathname: string,
+  metadata: ReturnType<typeof pageMetadata>,
+) {
+  for (const path of clientWebsiteJourneyService.observe(pathname)) {
+    command("event", "website_journey", { ...metadata, journey_path: path });
+  }
+}
+
+function pageView(pathname: string) {
+  const page = websiteAnalyticsPage(pathname);
+  if (!page) {
+    lastPage = null;
+    clientWebsiteJourneyService.reset();
+    return;
+  }
+  if (!configuredId || readConsent() !== "accepted" || lastPage === pathname)
+    return;
+  lastPage = pathname;
+  const metadata = pageMetadata(page);
   command("set", metadata);
   command("event", "page_view", metadata);
+  trackJourney(pathname, metadata);
   if (
     page.fundingCallId &&
     !pathname.endsWith("/eligibility") &&
     !pathname.endsWith("/apply")
   ) {
     track("funding_call_view", { fundingCallId: page.fundingCallId });
+  }
+}
+
+function publicApplicationHandoff(fundingCallId: string) {
+  try {
+    if (
+      typeof window === "undefined" ||
+      !configuredId ||
+      readConsent() !== "accepted" ||
+      !isAnalyticsFundingCallId(fundingCallId) ||
+      !websiteJourneyStep(window.location.pathname)
+    ) {
+      return;
+    }
+    const page = websiteAnalyticsPage(window.location.pathname)!;
+    // The public apply route redirects server-side, so no page view runs there.
+    // Record the public handoff click without counting it as an application start.
+    trackJourney(
+      `/how-to-apply/funding/${fundingCallId}/apply`,
+      pageMetadata(page),
+    );
+  } catch {
+    // Optional tracking must never prevent the application handoff.
   }
 }
 
@@ -163,13 +209,7 @@ function track(
     }
     command("event", event, {
       funding_call_id: input.fundingCallId,
-      page_category: page.category,
-      page_location: `${window.location.origin}${page.path}`,
-      page_title: `SME Fund ${page.category}`,
-      page_referrer: sanitizedAnalyticsReferrer(
-        document.referrer,
-        window.location.origin,
-      ),
+      ...pageMetadata(page),
       ...(event === "eligibility_check_complete"
         ? { eligibility_outcome: input.outcome }
         : {}),
@@ -183,6 +223,7 @@ export const clientWebsiteAnalyticsService = {
   chooseConsent,
   configure,
   pageView,
+  publicApplicationHandoff,
   readConsent,
   track,
 };
