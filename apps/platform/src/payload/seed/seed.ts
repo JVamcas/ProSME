@@ -1,9 +1,17 @@
-import { getPayload, type SanitizedConfig } from "payload";
+import {
+  commitTransaction,
+  createLocalReq,
+  getPayload,
+  initTransaction,
+  killTransaction,
+  type SanitizedConfig,
+} from "payload";
 
 import { seedFaqs, seedPages } from "./seed-editorial";
 import { seedResources } from "./seed-resources";
 import { seedProgrammeContent } from "./seed-programme";
 import { seedSiteGlobals } from "./seed-site-globals";
+import { seedContext } from "./seed-helpers";
 
 export async function script(config: SanitizedConfig) {
   try {
@@ -16,14 +24,26 @@ export async function script(config: SanitizedConfig) {
 
 async function seedDatabase(config: SanitizedConfig) {
   const payload = await getPayload({ config });
+  const req = await createLocalReq({ context: seedContext }, payload);
+  if (!(await initTransaction(req))) {
+    throw new Error("CMS initialization requires a database transaction");
+  }
 
-  await seedSiteGlobals(payload);
-  await Promise.all([
-    seedPages(payload),
-    seedFaqs(payload),
-    seedProgrammeContent(payload),
-    seedResources(payload),
-  ]);
+  try {
+    await seedSiteGlobals(payload, req);
+    // Payload rolls back req on an operation failure. Keep writes ordered so
+    // later seeds cannot write outside the rolled-back transaction.
+    await seedPages(payload, req);
+    await seedFaqs(payload, req);
+    await seedProgrammeContent(payload, req);
+    await seedResources(payload, req);
+    await commitTransaction(req);
+  } catch (error) {
+    await killTransaction(req);
+    throw error;
+  }
 
-  payload.logger.info("Baseline application content seeded successfully");
+  payload.logger.info(
+    "Baseline CMS initialization completed; existing content preserved",
+  );
 }

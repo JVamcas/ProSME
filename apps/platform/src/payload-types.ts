@@ -231,9 +231,10 @@ export interface Media {
 export interface Page {
   id: number;
   slug?: string | null;
-  title: string;
+  eyebrow?: string | null;
+  title?: string | null;
   summary?: string | null;
-  content: {
+  content?: {
     root: {
       type: string;
       children: {
@@ -247,7 +248,7 @@ export interface Page {
       version: number;
     };
     [k: string]: unknown;
-  };
+  } | null;
   featuredImage?: (number | null) | Media;
   layout?:
     | (
@@ -828,6 +829,7 @@ export interface MediaSelect<T extends boolean = true> {
  */
 export interface PagesSelect<T extends boolean = true> {
   slug?: T;
+  eyebrow?: T;
   title?: T;
   summary?: T;
   content?: T;
@@ -1359,8 +1361,11 @@ export interface Homepage {
 export interface ContactDetail {
   id: number;
   email: string;
-  address: string;
+  /**
+   * Include the country code. Leave blank to hide the telephone card.
+   */
   phone?: string | null;
+  address: string;
   officeHours?: string | null;
   reviewStatus: 'draft' | 'inReview' | 'approved';
   /**
@@ -1558,8 +1563,8 @@ export interface HomepageSelect<T extends boolean = true> {
  */
 export interface ContactDetailsSelect<T extends boolean = true> {
   email?: T;
-  address?: T;
   phone?: T;
+  address?: T;
   officeHours?: T;
   reviewStatus?: T;
   reviewNotes?: T;

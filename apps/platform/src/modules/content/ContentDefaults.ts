@@ -1,4 +1,6 @@
 import type { PublicPageContent, StatisticItem } from "./ContentTypes";
+import { defaultFundingSupport } from "./FundingPageContent";
+import { defaultFocusSectorBlocks, defaultFundingOverviewBlocks } from "./FundingOverviewDefaults";
 
 export const defaultHomeActionCards = {
   fundingTitle: "I want funding",
@@ -50,6 +52,34 @@ export const focusSectors = [
 ];
 
 export const defaultPages: Record<string, PublicPageContent> = {
+  faq: {
+    blocks: [],
+    eyebrow: "Help centre",
+    title: "Frequently asked questions",
+    summary: "Answers to common questions about the SME Fund and application process.",
+    content: null,
+  },
+  funding: {
+    blocks: defaultFundingOverviewBlocks,
+    title: "Funding to move your business forward",
+    summary:
+      "Targeted grants and practical enterprise support for eligible Namibian MSMEs with a feasible model, real traction and ambition to grow.",
+    content: null,
+  },
+  eligibility: {
+    blocks: defaultFocusSectorBlocks,
+    title: "Check your eligibility",
+    summary: "",
+    content: null,
+  },
+  "how-to-apply": {
+    blocks: [],
+    eyebrow: "A guided application",
+    title: "Know what you need before you begin",
+    summary:
+      "Follow the application guidance and prepare your supporting documents in advance.",
+    content: null,
+  },
   about: {
     blocks: [],
     title: "About the SME Fund",
@@ -71,6 +101,17 @@ export const defaultPages: Record<string, PublicPageContent> = {
 };
 
 export const approvedPageParagraphs: Record<string, string[]> = {
+  faq: ["The answers below are maintained by the programme content team."],
+  funding: [defaultFundingSupport.description],
+  eligibility: [
+    "This checker is private and indicative. Final eligibility is confirmed through document verification and formal screening.",
+    "",
+  ],
+  "how-to-apply": [
+    "Check the current funding call and complete the eligibility checker before applying.",
+    "Prepare current, legible PDF copies of the supporting documents listed in the published funding criteria.",
+    "Complete each application section, review the declaration and retain your application reference after submission.",
+  ],
   about: [
     "The SME Fund aims to strengthen the sustainability, competitiveness and growth potential of Micro, Small and Medium Enterprises (MSMEs) in Namibia.",
     "Implemented by the Namibia Investment Promotion and Development Board in partnership with the National Planning Commission and with support from GIZ, the Fund provides grant funding and enterprise development support through a transparent, competitive and merit-based process.",

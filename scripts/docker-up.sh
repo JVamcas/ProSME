@@ -12,6 +12,7 @@ application_service="app"
 migration_service="migrations"
 
 should_build=false
+should_seed=false
 build_arguments=()
 up_arguments=(--remove-orphans)
 
@@ -25,12 +26,14 @@ Options:
   --no-cache         Rebuild without cached layers.
   --pull             Pull newer base images before building.
   --force-recreate   Recreate all containers.
+  --seed             Explicitly initialize baseline data after starting the stack.
   -h, --help         Show this help message.
 
 Build cache older than seven days is pruned after a successful build.
 
 When ENVIRONMENT=local, the local Compose override is applied automatically.
 All other environments use only infrastructure/compose.yaml.
+Routine startup does not seed application or CMS content.
 EOF
 }
 
@@ -54,6 +57,9 @@ while (($# > 0)); do
       ;;
     --force-recreate)
       up_arguments+=(--force-recreate)
+      ;;
+    --seed)
+      should_seed=true
       ;;
     -h|--help)
       print_usage
@@ -135,12 +141,14 @@ fi
 echo "Starting the SME Fund stack..."
 "${compose[@]}" up -d "${up_arguments[@]}"
 
-echo "Seeding baseline application content..."
-"${compose[@]}" run \
-  --rm \
-  --no-deps \
-  "${migration_service}" \
-  npm run db:seed --workspace @prosme/platform
+if [ "${should_seed}" = true ]; then
+  echo "Initializing baseline application content..."
+  "${compose[@]}" run \
+    --rm \
+    --no-deps \
+    "${migration_service}" \
+    npm run db:seed --workspace @prosme/platform
+fi
 
 echo "Waiting for the application health check..."
 for attempt in $(seq 1 24); do

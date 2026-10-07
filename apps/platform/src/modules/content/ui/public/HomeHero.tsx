@@ -17,8 +17,8 @@ export function HomeHero({ content }: HomeHeroProps) {
         <DesktopHeroFallback content={content} />
       )}
 
-      <div className="hero-container mx-auto w-[min(1720px,calc(100%-2rem))] @min-[640px]/banner:w-[min(1720px,calc(100%-5rem))] relative z-10 grid min-h-130 items-center @5xl/banner:grid-cols-[1.05fr_.95fr]">
-        <div className="hero-copy max-w-162.5 py-14 @5xl/banner:py-16">
+      <div className="hero-container relative z-10 mx-auto grid min-h-130 min-w-0 grid-cols-[minmax(0,1fr)] items-center w-[min(1720px,calc(100%-2rem))] @min-[640px]/banner:w-[min(1720px,calc(100%-5rem))] @5xl/banner:grid-cols-[minmax(0,1.05fr)_minmax(0,.95fr)]">
+        <div className="hero-copy min-w-0 max-w-162.5 py-14 @5xl/banner:py-16">
           <p className="m-0 text-[11px] font-bold uppercase tracking-[.2em] text-brand-navy">
             {content.eyebrow}
           </p>
@@ -131,7 +131,7 @@ function HeroTitle({ title }: { title: string }) {
   const emphasis = boundary >= 0 ? title.slice(boundary + 2) : "";
 
   return (
-    <h1 className="m-0 mt-4 text-[clamp(2.6rem,4cqw,3.35rem)] font-bold leading-[1.04] tracking-[-.035em] text-brand-navy">
+    <h1 className="m-0 mt-4 wrap-break-word text-[clamp(2.6rem,4cqw,3.35rem)] font-bold leading-[1.04] tracking-[-.035em] text-brand-navy">
       {lead}
       {emphasis ? (
         <>

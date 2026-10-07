@@ -63,8 +63,20 @@ After creating `.env`, build and start PostgreSQL and the application:
 
 The Bash wrapper validates Compose, builds the standalone image, starts
 PostgreSQL, runs the committed Drizzle and Payload migrations, and waits for the
-application health check. It also runs the single idempotent database seeder on
-every startup. One scheduler service (`notification-scheduler`) starts after the
+application health check. Routine startup and deployment do not run database
+seeders. To initialize baseline data on a new installation, explicitly run:
+
+```bash
+./scripts/docker-up.sh --seed
+```
+
+CMS seeding initializes only unsaved globals and collections with neither
+existing documents nor content audit history. It preserves editorial changes,
+drafts, renamed entries, and previously deleted content. New default content for
+an existing installation must be introduced through a reviewed migration or
+the CMS editor rather than by rerunning the seed.
+
+One scheduler service (`notification-scheduler`) starts after the
 application is healthy. It runs independent asynchronous notification and
 workflow loops (notification delivery every 30 seconds in Compose, workflow
 deadlines every 60 seconds by default). Each loop awaits its bounded

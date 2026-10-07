@@ -202,10 +202,11 @@ export async function getPage(slug: string): Promise<PublicPageContent | null> {
   return page
     ? {
         blocks: page.layout ?? [],
-        content: page.content,
+        content: page.content ?? null,
+        eyebrow: page.eyebrow,
         image: media(page.featuredImage),
         summary: page.summary ?? "",
-        title: page.title,
+        title: page.title ?? "",
         ...seo(page),
       }
     : null;

@@ -9,12 +9,21 @@ import {
   FilePlus2,
   Info,
   Library,
+  ClipboardList,
+  Coins,
+  CircleHelp,
+  Mail,
 } from "lucide-react";
 import {
   NavigationList,
   type NavigationRoute,
 } from "@/shared/ui/navigation/NavigationList";
 import { homeEditorSections } from "./HomeEditorSections";
+import {
+  cmsFundingHref,
+  cmsFundingOverviewHref,
+  cmsPageEditors,
+} from "../../CmsPageEditors";
 
 const homeSectionIcons = {
   banner: Image,
@@ -55,6 +64,41 @@ const contentRoutes: readonly NavigationRoute[] = [
     href: "/cms/collections/resources",
     label: "Resource Centre",
     icon: Library,
+  },
+  {
+    id: "cms-funding",
+    section: "content",
+    href: cmsFundingHref,
+    label: "Funding",
+    icon: Coins,
+    children: [
+      {
+        id: "cms-funding-overview",
+        href: cmsFundingOverviewHref,
+        label: "Overview",
+        icon: Info,
+      },
+      {
+        id: "cms-funding-application-guide",
+        href: cmsPageEditors["how-to-apply"].href,
+        label: "Application guide",
+        icon: ClipboardList,
+      },
+    ],
+  },
+  {
+    id: "cms-faq",
+    section: "content",
+    href: cmsPageEditors.faq.href,
+    label: "FAQ",
+    icon: CircleHelp,
+  },
+  {
+    id: "cms-contact",
+    section: "content",
+    href: "/cms/contact",
+    label: "Contact Us",
+    icon: Mail,
   },
 ];
 

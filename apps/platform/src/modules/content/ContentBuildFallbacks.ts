@@ -8,6 +8,7 @@ import type {
 } from "./ContentTypes";
 import {
   defaultHomeActionCards,
+  defaultPages,
   defaultHomeProcess,
   defaultSupportGroups,
 } from "./ContentDefaults";
@@ -90,18 +91,12 @@ const pageCopy: Record<string, Pick<PublicPageContent, "summary" | "title">> = {
     title: "Events",
     summary: "Official briefings, workshops and enterprise-development events.",
   },
-  faq: {
-    title: "Frequently asked questions",
-    summary: "Answers to common questions about the SME Fund.",
-  },
+  faq: defaultPages.faq,
   funding: {
     title: "Funding to move your business forward",
     summary: "Targeted grants and practical support for Namibian MSMEs.",
   },
-  "how-to-apply": {
-    title: "Know what you need before you begin",
-    summary: "Prepare your application and supporting documents in advance.",
-  },
+  "how-to-apply": defaultPages["how-to-apply"],
   news: {
     title: "Latest news",
     summary: "Official announcements and programme updates.",

@@ -74,13 +74,14 @@ async function renderSidebar() {
 }
 
 describe("CMS navigation", () => {
-  it("uses one Website content heading for its three top-level destinations", () => {
+  it("uses one Website content heading for its top-level destinations", () => {
     const html = renderToStaticMarkup(<CmsNavigationLinks />);
 
     expect(html.match(/>Website content<\/p>/g)).toHaveLength(1);
     expect(html.indexOf("Website content")).toBeLessThan(html.indexOf("Home Page"));
     expect(html).toContain("About");
     expect(html).toContain("Resource Centre");
+    expect(html).toContain("Funding");
   });
 
   it("places Resource Centre directly below About and marks its native editor active", () => {
@@ -108,6 +109,32 @@ describe("CMS navigation", () => {
     expect(html).toContain('href="/cms/about"');
     expect(html).toContain(">About</span>");
     expect(html).toContain('aria-expanded="false"');
+    expect(html.match(/aria-current="page"/g)).toHaveLength(1);
+  });
+
+  it("expands Funding and marks Application guide active", () => {
+    access.pathname = "/cms/funding/application-guide";
+    const html = renderToStaticMarkup(<CmsNavigationLinks />);
+    expect(html).toContain('href="/cms/funding/application-guide"');
+    expect(html).toContain(">Application guide</span>");
+    expect(html.match(/aria-current="page"/g)).toHaveLength(1);
+  });
+
+  it("shows FAQ after Funding as the active content link", () => {
+    access.pathname = "/cms/faq";
+    const html = renderToStaticMarkup(<CmsNavigationLinks />);
+    expect(html).toContain('href="/cms/faq"');
+    expect(html).toContain(">FAQ</span>");
+    expect(html.indexOf(">Funding</span>")).toBeLessThan(html.indexOf('href="/cms/faq"'));
+    expect(html.match(/aria-current="page"/g)).toHaveLength(1);
+  });
+
+  it("shows Contact Us after FAQ as the active content link", () => {
+    access.pathname = "/cms/contact";
+    const html = renderToStaticMarkup(<CmsNavigationLinks />);
+    expect(html).toContain('href="/cms/contact"');
+    expect(html).toContain(">Contact Us</span>");
+    expect(html.indexOf(">FAQ</span>")).toBeLessThan(html.indexOf('href="/cms/contact"'));
     expect(html.match(/aria-current="page"/g)).toHaveLength(1);
   });
 

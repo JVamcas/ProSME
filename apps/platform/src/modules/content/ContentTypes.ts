@@ -21,6 +21,7 @@ export type SeoContent = {
 };
 
 export type PublicPageContent = SeoContent & {
+  eyebrow?: string | null;
   blocks: unknown[];
   content: SerializedEditorState | null;
   image?: CmsImage;

@@ -10,9 +10,9 @@ export function PublicSiteShell({
   mainClassName?: string;
 }) {
   return (
-    <div className="flex min-h-dvh flex-col">
+    <div className="flex min-h-dvh w-full min-w-0 max-w-full flex-col overflow-x-clip">
       <SiteHeader />
-      <main className={cn("flex-1", mainClassName)}>{children}</main>
+      <main className={cn("min-w-0 flex-1", mainClassName)}>{children}</main>
       <SiteFooter />
     </div>
   );

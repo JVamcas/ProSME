@@ -22,7 +22,7 @@ vi.mock("@payloadcms/ui", () => ({
   useStepNav: () => ({ stepNav: [], setStepNav: vi.fn() }),
 }));
 
-import CmsAboutContentGroupField from "@/modules/content/ui/admin/CmsAboutContentGroupField";
+import CmsPageContentGroupField from "@/modules/content/ui/admin/CmsPageContentGroupField";
 import { paragraphsToRichText } from "@/modules/content/ContentRichText";
 import { approvedPageParagraphs, defaultPages } from "@/modules/content/ContentDefaults";
 import { pageContentFields, pageSlugField } from "@/payload/fields/PageContentFields";
@@ -118,7 +118,7 @@ describe("About rich-text editor", () => {
     expect(pageContentFields[0]).not.toHaveProperty("name");
     const fields = storedFields(pageContentFields);
     expect(fields.map((field) => "name" in field && field.name)).toEqual([
-      "title", "summary", "content", "featuredImage",
+      "eyebrow", "title", "summary", "content", "featuredImage",
     ]);
     expect(fields.find((field) => "name" in field && field.name === "content"))
       .toMatchObject({ type: "richText", required: true });
@@ -149,7 +149,7 @@ describe("About rich-text editor", () => {
     body.root.children[0] = paragraph;
     editor.fields.content.value = body;
     const html = renderToStaticMarkup(
-      <CmsAboutContentGroupField {...({ readOnly: true } as GroupFieldClientProps)} />,
+      <CmsPageContentGroupField {...({ readOnly: true } as GroupFieldClientProps)} />,
     );
     expect(html).toContain("Our updated About heading");
     expect(html).toContain("Updated About introduction");
@@ -163,7 +163,7 @@ describe("About rich-text editor", () => {
   it("uses the ordinary native group for other pages", () => {
     editor.fields.slug.value = "privacy";
     const html = renderToStaticMarkup(
-      <CmsAboutContentGroupField {...({} as GroupFieldClientProps)} />,
+      <CmsPageContentGroupField {...({} as GroupFieldClientProps)} />,
     );
     expect(html).toContain("data-native-fields");
     expect(html).not.toContain("Live About preview");

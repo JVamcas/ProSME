@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { CmsRichText } from "@/modules/content/ui/public/CmsRichText";
+import { ApplicationGuideContent } from "@/modules/content/ui/public/ApplicationGuideContent";
 import { ContentBlocks } from "@/modules/content/ui/public/ContentBlocks";
-import { PublicPageHeader } from "@/modules/content/ui/public/PublicPageHeader";
 import { contentMetadata } from "@/modules/content/ContentMetadata";
 import { getPage } from "@/modules/content/ServerContentQueries";
 import { GeneralButtonLink } from "@/components/ui/button";
@@ -21,24 +20,15 @@ export default async function HowToApplyPage() {
   return (
     <>
       <HowToApplyNavigation active="guide" />
-      <PublicPageHeader
-        eyebrow="A guided application"
-        image={page.image}
-        title={page.title}
-        summary={page.summary}
-      />
-      <section className="container py-10">
-        <div className="max-w-3xl">
-          <ApplicantJourney step={1} />
-          <GeneralButtonLink
-            className="mb-8 min-h-11 rounded-lg"
-            href="/how-to-apply/funding"
-          >
-            Explore funding calls
-          </GeneralButtonLink>
-          {page.content ? <CmsRichText data={page.content} /> : null}
-        </div>
-      </section>
+      <ApplicationGuideContent page={page}>
+        <ApplicantJourney step={1} />
+        <GeneralButtonLink
+          className="mb-8 min-h-11 rounded-lg"
+          href="/how-to-apply/funding"
+        >
+          Explore funding calls
+        </GeneralButtonLink>
+      </ApplicationGuideContent>
       <ContentBlocks blocks={page.blocks} />
     </>
   );

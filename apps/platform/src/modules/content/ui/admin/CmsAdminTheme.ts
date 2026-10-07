@@ -31,8 +31,11 @@ const shell = [
   "[&_.app-header]:bg-brand-white",
   String.raw`[&_.app-header\_\_content]:px-[32px]`,
   String.raw`max-[768px]:[&_.app-header\_\_content]:px-[16px]`,
-  // Payload renders Edit first; hide it only above the About content editor.
+  // Payload renders Edit first; hide it above the focused page editors.
   String.raw`[&_.template-default\_\_wrap:has(.collection-edit--pages_#about-content)>.doc-header_.doc-tab:first-child]:hidden`,
+  String.raw`[&_.template-default\_\_wrap:has(.collection-edit--pages_#how-to-apply-content)>.doc-header_.doc-tab:first-child]:hidden`,
+  String.raw`[&_.template-default\_\_wrap:has(.collection-edit--pages_#funding-overview)>.doc-header_.doc-tab:first-child]:hidden`,
+  String.raw`[&_.template-default\_\_wrap:has(.collection-edit--pages_#faq-content)>.doc-header_.doc-tab:first-child]:hidden`,
   "[&_.card]:border",
   "[&_.card]:border-solid",
   "[&_.card]:border-[var(--theme-elevation-200)]",

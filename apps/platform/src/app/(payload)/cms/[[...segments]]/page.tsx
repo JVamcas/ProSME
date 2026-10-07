@@ -3,7 +3,12 @@ import { RootPage } from "@payloadcms/next/views";
 import { notFound, redirect } from "next/navigation";
 
 import { homeEditorSectionForPath } from "@/modules/content/ui/admin/HomeEditorSections";
-import { getAboutEditorSegments } from "@/modules/content/ServerCmsPageEditorService";
+import { getPageEditorSegments } from "@/modules/content/ServerCmsPageEditorService";
+import {
+  cmsFundingOverviewHref,
+  cmsPageEditors,
+  cmsPageEditorSlugForPath,
+} from "@/modules/content/CmsPageEditors";
 import { importMap } from "../importMap";
 
 type Props = {
@@ -18,17 +23,43 @@ export default async function PayloadAdminPage(props: Props) {
     redirect("/cms");
   }
 
-  if (segments.length === 1 && segments[0] === "about") {
-    const editorSegments = await getAboutEditorSegments();
+  if (segments.join("/") === "globals/contact-details") {
+    redirect("/cms/contact");
+  }
+
+  if (segments.length === 1 && segments[0] === "contact") {
+    return RootPage({
+      config,
+      importMap,
+      params: Promise.resolve({ segments: ["globals", "contact-details"] }),
+      searchParams: props.searchParams,
+    });
+  }
+
+  if (segments.length === 1 && segments[0] === "funding") {
+    redirect(cmsFundingOverviewHref);
+  }
+
+  if (segments.length === 1 && segments[0] === "how-to-apply") {
+    redirect(cmsPageEditors["how-to-apply"].href);
+  }
+
+  const cmsPage = cmsPageEditorSlugForPath(`/cms/${segments.join("/")}`);
+  if (cmsPage) {
+    const editorSegments = await getPageEditorSegments(cmsPage);
     return RootPage({
       config,
       importMap,
       params: Promise.resolve({ segments: editorSegments }),
       searchParams: Promise.resolve({
         ...(await props.searchParams),
-        cmsPage: "about",
+        cmsPage,
       }),
     });
+  }
+
+  if (segments[0] === "funding") {
+    notFound();
   }
 
   if (
