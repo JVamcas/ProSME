@@ -1,0 +1,225 @@
+{
+  "runtime": "isolated Next development server, compilation excluded; actual local CMS/GCS objects",
+  "migration": {
+    "migrated": 8,
+    "skipped": 1,
+    "failures": []
+  },
+  "images": [
+    {
+      "id": 165,
+      "size": "desktop",
+      "role": "hero",
+      "sourceBytesBefore": 3455073,
+      "sourceBytesAfter": 66642,
+      "reductionPercent": 98.07,
+      "samples": [
+        {
+          "phase": "cold",
+          "status": 200,
+          "ttfbMs": 4006.26,
+          "totalMs": 4010.54,
+          "bytes": 66642,
+          "cache": "MISS",
+          "cacheControl": "public, max-age=14400, must-revalidate",
+          "sha256": "e10b960a6e2d6c095167801ff2168de14e877d3c87ee0f057022a895bacce482"
+        },
+        {
+          "phase": "warm",
+          "status": 200,
+          "ttfbMs": 58.53,
+          "totalMs": 59.98,
+          "bytes": 66642,
+          "cache": "HIT",
+          "cacheControl": "public, max-age=14400, must-revalidate",
+          "sha256": "e10b960a6e2d6c095167801ff2168de14e877d3c87ee0f057022a895bacce482"
+        },
+        {
+          "phase": "process-restart",
+          "status": 200,
+          "ttfbMs": 69.27,
+          "totalMs": 78.44,
+          "bytes": 66642,
+          "cache": "HIT",
+          "cacheControl": "public, max-age=14400, must-revalidate",
+          "sha256": "e10b960a6e2d6c095167801ff2168de14e877d3c87ee0f057022a895bacce482"
+        }
+      ]
+    },
+    {
+      "id": 174,
+      "size": "mobile",
+      "role": "document-preview",
+      "sourceBytesBefore": 197012,
+      "sourceBytesAfter": 45324,
+      "reductionPercent": 76.99,
+      "samples": [
+        {
+          "phase": "cold",
+          "status": 200,
+          "ttfbMs": 1827.42,
+          "totalMs": 1827.76,
+          "bytes": 45324,
+          "cache": "MISS",
+          "cacheControl": "public, max-age=14400, must-revalidate",
+          "sha256": "9543fd394630367c37d945928e840c97d2e97d55d76501ed1fe855d4efafc300"
+        },
+        {
+          "phase": "warm",
+          "status": 200,
+          "ttfbMs": 37.65,
+          "totalMs": 38.07,
+          "bytes": 45324,
+          "cache": "HIT",
+          "cacheControl": "public, max-age=14400, must-revalidate",
+          "sha256": "9543fd394630367c37d945928e840c97d2e97d55d76501ed1fe855d4efafc300"
+        },
+        {
+          "phase": "process-restart",
+          "status": 200,
+          "ttfbMs": 25.9,
+          "totalMs": 26.36,
+          "bytes": 45324,
+          "cache": "HIT",
+          "cacheControl": "public, max-age=14400, must-revalidate",
+          "sha256": "9543fd394630367c37d945928e840c97d2e97d55d76501ed1fe855d4efafc300"
+        }
+      ]
+    },
+    {
+      "id": 162,
+      "size": "thumbnail",
+      "role": "funding-thumbnail",
+      "sourceBytesBefore": 117310,
+      "sourceBytesAfter": 23792,
+      "reductionPercent": 79.72,
+      "samples": [
+        {
+          "phase": "cold",
+          "status": 200,
+          "ttfbMs": 1518.73,
+          "totalMs": 1519.27,
+          "bytes": 23792,
+          "cache": "MISS",
+          "cacheControl": "public, max-age=14400, must-revalidate",
+          "sha256": "8482ee69c2403f9857865b8c1478cd6fb2911393ae42815ad76dd1aa5db22898"
+        },
+        {
+          "phase": "warm",
+          "status": 200,
+          "ttfbMs": 17.31,
+          "totalMs": 17.71,
+          "bytes": 23792,
+          "cache": "HIT",
+          "cacheControl": "public, max-age=14400, must-revalidate",
+          "sha256": "8482ee69c2403f9857865b8c1478cd6fb2911393ae42815ad76dd1aa5db22898"
+        },
+        {
+          "phase": "process-restart",
+          "status": 200,
+          "ttfbMs": 23.58,
+          "totalMs": 23.87,
+          "bytes": 23792,
+          "cache": "HIT",
+          "cacheControl": "public, max-age=14400, must-revalidate",
+          "sha256": "8482ee69c2403f9857865b8c1478cd6fb2911393ae42815ad76dd1aa5db22898"
+        }
+      ]
+    },
+    {
+      "id": 161,
+      "size": "desktop",
+      "role": "impact-background",
+      "sourceBytesBefore": 3024435,
+      "sourceBytesAfter": 151604,
+      "reductionPercent": 94.99,
+      "samples": [
+        {
+          "phase": "cold",
+          "status": 200,
+          "ttfbMs": 1895.34,
+          "totalMs": 1897.02,
+          "bytes": 151604,
+          "cache": "MISS",
+          "cacheControl": "public, max-age=14400, must-revalidate",
+          "sha256": "9ca64864bcdeca997affa2ffbbbf29aba8ccb4e3a5866891b60e0aab97e269c5"
+        },
+        {
+          "phase": "warm",
+          "status": 200,
+          "ttfbMs": 44.05,
+          "totalMs": 44.76,
+          "bytes": 151604,
+          "cache": "HIT",
+          "cacheControl": "public, max-age=14400, must-revalidate",
+          "sha256": "9ca64864bcdeca997affa2ffbbbf29aba8ccb4e3a5866891b60e0aab97e269c5"
+        },
+        {
+          "phase": "process-restart",
+          "status": 200,
+          "ttfbMs": 24.31,
+          "totalMs": 24.97,
+          "bytes": 151604,
+          "cache": "HIT",
+          "cacheControl": "public, max-age=14400, must-revalidate",
+          "sha256": "9ca64864bcdeca997affa2ffbbbf29aba8ccb4e3a5866891b60e0aab97e269c5"
+        }
+      ]
+    }
+  ],
+  "date": "2026-10-07",
+  "accessChecks": [
+    {
+      "name": "conditional-hit",
+      "status": 304,
+      "bytes": 0,
+      "cache": "HIT",
+      "contentRange": null
+    },
+    {
+      "name": "head-hit",
+      "status": 404,
+      "bytes": 0,
+      "cache": null,
+      "contentRange": null
+    },
+    {
+      "name": "range",
+      "status": 206,
+      "bytes": 16,
+      "cache": null,
+      "contentRange": "bytes 0-15/66642"
+    },
+    {
+      "name": "wrong-prefix",
+      "status": 403,
+      "bytes": 70,
+      "cache": null,
+      "contentRange": null
+    },
+    {
+      "name": "old-prefix",
+      "status": 403,
+      "bytes": 70,
+      "cache": null,
+      "contentRange": null
+    },
+    {
+      "name": "anonymous-write",
+      "status": 403,
+      "bytes": 70,
+      "cache": null,
+      "contentRange": null
+    }
+  ],
+  "scope": {
+    "origin": "http://127.0.0.1:3018",
+    "environment": "local",
+    "productionBuild": false,
+    "productionRedeployment": false,
+    "browserMetrics": false,
+    "coldDefinition": "first generated WebP request with no corresponding delivery-cache entry; API compiled and initialized beforehand",
+    "warmDefinition": "same URL and bytes served from persistent delivery cache",
+    "restartDefinition": "new Next development process with same disk cache; API initialization excluded"
+  }
+}

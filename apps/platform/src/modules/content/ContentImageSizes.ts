@@ -6,3 +6,8 @@ export const cmsImageSizes = [
 ] as const;
 
 export type CmsImageSize = (typeof cmsImageSizes)[number]["name"];
+
+export const cmsImageFormatOptions = {
+  format: "webp",
+  options: { quality: 75, effort: 4 },
+} as const;

@@ -15,7 +15,10 @@ import {
 } from "@/shared/ui/FormPrimitives";
 import type { NotificationEventRuleUpdate } from "../api/NotificationAdministrationSchemas";
 import type { NotificationChannelSummary } from "../api/NotificationTemplateSchemas";
-import { notificationRecipientTypes } from "../domain/NotificationRecipient";
+import {
+  notificationRecipientTypes,
+  type NotificationRecipientType,
+} from "../domain/NotificationRecipient";
 import { notificationRecipientLabel } from "./NotificationRecipientPresentation";
 
 const addRecipientSchema = z
@@ -42,6 +45,7 @@ type AddRecipientValues = z.infer<typeof addRecipientSchema>;
 type Recipient = NotificationEventRuleUpdate["recipients"][number];
 
 type Props = {
+  allowedRecipientTypes?: readonly NotificationRecipientType[];
   channels: NotificationChannelSummary[];
   existingRecipients: Recipient[];
   isOpen: boolean;
@@ -55,6 +59,7 @@ type Props = {
 
 export function NotificationRuleAddRecipientDialog({
   channels,
+  allowedRecipientTypes = notificationRecipientTypes,
   existingRecipients,
   isOpen,
   onAdd,
@@ -77,7 +82,7 @@ export function NotificationRuleAddRecipientDialog({
   useEffect(() => {
     if (!isOpen) return;
     const firstAvailableType =
-      notificationRecipientTypes.find(
+      allowedRecipientTypes.find(
         (type) =>
           type === "SPECIFIC_USER" ||
           type === "SPECIFIC_ROLE" ||
@@ -90,7 +95,7 @@ export function NotificationRuleAddRecipientDialog({
       recipientType: firstAvailableType,
       targetId: "",
     });
-  }, [existingRecipients, form, isOpen]);
+  }, [allowedRecipientTypes, existingRecipients, form, isOpen]);
 
   function isUnavailable(type: AddRecipientValues["recipientType"]) {
     if (type === "SPECIFIC_USER" || type === "SPECIFIC_ROLE") return false;
@@ -151,7 +156,7 @@ export function NotificationRuleAddRecipientDialog({
                   onChange: () => form.setValue("targetId", ""),
                 })}
               >
-                {notificationRecipientTypes.map((type) => (
+                {allowedRecipientTypes.map((type) => (
                   <option
                     disabled={isUnavailable(type)}
                     key={type}

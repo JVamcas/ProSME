@@ -1,8 +1,8 @@
 import { ArrowRight } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 
 import type { PublicFundingCallSummary } from "../../api/PublicFundingCallTransport";
+import { FundingCallThumbnailImage } from "../FundingCallThumbnailImage";
 import { PublicFundingCallFacts } from "./PublicFundingCallFacts";
 import {
   publicEligibilityHref,
@@ -21,13 +21,11 @@ export function PublicFundingCallCard({
     <article className="group relative flex h-full flex-col overflow-hidden rounded-xl border border-brand-navy/15 bg-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-brand-orange/60 hover:shadow-md">
       <div className="relative aspect-[3/2] overflow-hidden bg-brand-cream">
         {call.thumbnailUrl ? (
-          <Image
+          <FundingCallThumbnailImage
             alt=""
             className="object-cover transition duration-300 group-hover:scale-[1.02]"
-            fill
-            sizes="(min-width: 768px) 50vw, 100vw"
+            sizes="(min-width: 640px) 384px, 85vw"
             src={call.thumbnailUrl}
-            unoptimized
           />
         ) : (
           <div

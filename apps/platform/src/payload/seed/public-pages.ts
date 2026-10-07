@@ -1,7 +1,28 @@
-import { approvedPageParagraphs, defaultPages } from "../../modules/content/ContentDefaults";
+import { approvedPageParagraphs, defaultPages, focusSectors } from "../../modules/content/ContentDefaults";
 import { defaultFocusSectorBlocks, defaultFundingOverviewBlocks } from "../../modules/content/FundingOverviewDefaults";
+import {
+  fundingOverviewDefaultBlocks,
+  fundingOverviewSections,
+  type FundingOverviewSlug,
+} from "../../modules/content/FundingOverviewSections";
 
 export const publicPages = [
+  ...(Object.keys(fundingOverviewSections) as FundingOverviewSlug[]).map((slug) => {
+    const section = fundingOverviewSections[slug];
+    const layout = fundingOverviewDefaultBlocks(slug);
+    return {
+      slug,
+      title: section.title,
+      summary: "",
+      paragraphs: [section.title],
+      layout: slug === "funding-focus-sectors"
+        ? [{
+            ...defaultFocusSectorBlocks[0],
+            sectors: focusSectors.map((label) => ({ label, description: "Priority area" })),
+          }]
+        : layout,
+    };
+  }),
   { slug: "about", ...defaultPages.about, paragraphs: approvedPageParagraphs.about },
   {
     slug: "funding",

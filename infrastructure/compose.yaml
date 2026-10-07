@@ -70,6 +70,8 @@ services:
         max-file: "3"
     volumes:
       - payload-media:/workspace/apps/platform/media
+      - image-cache:/workspace/apps/platform/.next/cache/images
+      - cms-media-cache:/workspace/apps/platform/.next/cache/cms-media
     networks:
       - platform
 
@@ -121,6 +123,8 @@ services:
 
 volumes:
   payload-media:
+  image-cache:
+  cms-media-cache:
 
 networks:
   platform:

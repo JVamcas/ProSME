@@ -1,4 +1,4 @@
-import type { CollectionConfig } from "payload";
+import type { CollectionConfig, Field } from "payload";
 import { FixedToolbarFeature, lexicalEditor } from "@payloadcms/richtext-lexical";
 
 import { collectionPublishGuard } from "@/payload/access/can-publish-content";
@@ -21,7 +21,7 @@ export const FAQs: CollectionConfig = {
   hooks: {
     afterChange: [recordCollectionChange, revalidateCollection],
     afterDelete: [recordCollectionDelete, revalidateCollectionDelete],
-    beforeChange: [collectionPublishGuard("faqs")],
+    beforeChange: [collectionPublishGuard("faqs", { approveOnPublish: true })],
   },
   versions: { drafts: true, maxPerDoc: 50 },
   fields: ([
@@ -48,6 +48,7 @@ export const FAQs: CollectionConfig = {
       type: "text",
       defaultValue: "General",
       required: true,
+      admin: { hidden: true },
     },
     {
       name: "order",
@@ -56,6 +57,10 @@ export const FAQs: CollectionConfig = {
       defaultValue: 0,
       required: true,
     },
-    ...publishingFields,
+    ...publishingFields.map((field): Field => {
+      const hiddenField: Field = { ...field };
+      hiddenField.admin = { ...hiddenField.admin, hidden: true };
+      return hiddenField;
+    }),
   ] satisfies CollectionConfig["fields"]).map(withAppFormInputs),
 };

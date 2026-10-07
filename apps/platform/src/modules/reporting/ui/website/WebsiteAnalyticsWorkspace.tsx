@@ -14,7 +14,7 @@ import { WebsiteUserJourneys } from "./WebsiteUserJourneys";
 import { WebsiteMostViewedPages } from "./WebsiteMostViewedPages";
 import { WebsiteFundingCallEngagement } from "./WebsiteFundingCallEngagement";
 import { WebsiteEligibilityChart } from "./WebsiteEligibilityChart";
-import { WebsiteHeatmapAccess } from "./WebsiteHeatmapAccess";
+import { WebsiteHeatmapPanel } from "./WebsiteHeatmapPanel";
 import { useWebsiteAnalytics } from "./useWebsiteAnalytics";
 
 export function WebsiteAnalyticsWorkspace({
@@ -30,6 +30,11 @@ export function WebsiteAnalyticsWorkspace({
   const applicationScope = filters.fundingCallId
     ? "Selected funding call · tracked users"
     : "All calls · journeys may span calls";
+  const heatmapPeriodKey = [
+    filters.startDate,
+    filters.endDate,
+    filters.fundingCallId,
+  ].join(":");
   return (
     <PageShell
       title="Website analytics"
@@ -95,11 +100,7 @@ export function WebsiteAnalyticsWorkspace({
             {(value) => <WebsiteVisitorGeography data={value} />}
           </WebsiteAnalyticsPanel>
           <div className="grid min-w-0 items-stretch gap-4 xl:grid-cols-3">
-            <WebsiteUserJourneys
-              scope={applicationScope}
-              application={data.applicationFunnel}
-              selfCheck={data.selfCheckJourney}
-            />
+            <WebsiteUserJourneys result={data.topUserJourneys} />
             <WebsiteAnalyticsPanel
               title="Most viewed pages"
               description="Most popular pages on the website"
@@ -121,7 +122,7 @@ export function WebsiteAnalyticsWorkspace({
               )}
             </WebsiteAnalyticsPanel>
           </div>
-          <div className="grid min-w-0 gap-4 lg:grid-cols-2">
+          <div className="grid min-w-0 items-stretch gap-4 lg:grid-cols-2">
             <WebsiteAnalyticsPanel
               title="Eligibility self-checks"
               scope={
@@ -133,8 +134,8 @@ export function WebsiteAnalyticsWorkspace({
             >
               {(value) => <WebsiteEligibilityChart data={value} />}
             </WebsiteAnalyticsPanel>
+            <WebsiteHeatmapPanel key={heatmapPeriodKey} period={filters} />
           </div>
-          <WebsiteHeatmapAccess data={data.heatmap} />
         </div>
       ) : null}
     </PageShell>

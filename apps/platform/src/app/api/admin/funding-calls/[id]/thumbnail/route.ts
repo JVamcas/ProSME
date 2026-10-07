@@ -7,6 +7,7 @@ import {
   portalRouteSuccess,
 } from "@/lib/api/PortalApiResponse";
 import { RequestValidationError } from "@/lib/resource-errors";
+import { fundingCallThumbnailWidthSchema } from "@/modules/funding-calls/api/FundingCallSchemas";
 import {
   readFundingCallThumbnail,
   removeFundingCallThumbnail,
@@ -23,6 +24,10 @@ export async function GET(request: Request, context: RouteContext) {
     const thumbnail = await readFundingCallThumbnail(
       await resolveUserFromHeaders(request.headers),
       idSchema.parse((await context.params).id),
+      undefined,
+      fundingCallThumbnailWidthSchema.parse(
+        new URL(request.url).searchParams.get("width") ?? undefined,
+      ),
     );
     return new Response(new Uint8Array(thumbnail.body), {
       headers: {

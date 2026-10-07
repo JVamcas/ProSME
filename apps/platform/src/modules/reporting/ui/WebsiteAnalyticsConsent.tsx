@@ -3,7 +3,8 @@
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { GeneralButton } from "@/components/ui/button";
-import { clientClarityService } from "../ClientClarityService";
+import { clientWebsiteHeatmapCaptureService } from "../ClientWebsiteHeatmapCaptureService";
+import { useWebsiteHeatmapCollection } from "./useWebsiteHeatmapCollection";
 import {
   clientWebsiteAnalyticsService,
   type WebsiteAnalyticsConsent as Consent,
@@ -11,14 +12,19 @@ import {
 
 export function WebsiteAnalyticsConsent({
   measurementId,
-  clarityProjectId,
+  heatmapEnabled = false,
 }: {
   measurementId?: string | null;
-  clarityProjectId?: string | null;
+  heatmapEnabled?: boolean;
 }) {
   const pathname = usePathname();
   const [consent, setConsent] = useState<Consent>(null);
   const [ready, setReady] = useState(false);
+  useWebsiteHeatmapCollection(
+    heatmapEnabled,
+    ready && consent === "accepted",
+    pathname,
+  );
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -38,25 +44,15 @@ export function WebsiteAnalyticsConsent({
     }
   }, [consent, measurementId, pathname, ready]);
 
-  useEffect(() => {
-    if (ready) {
-      void clientClarityService.update(
-        clarityProjectId,
-        consent === "accepted",
-      );
-    }
-    return () => clientClarityService.stop();
-  }, [clarityProjectId, consent, pathname, ready]);
-
   function choose(value: Exclude<Consent, null>) {
     if (value === "declined") {
-      clientClarityService.stop();
+      clientWebsiteHeatmapCaptureService.stop();
     }
     clientWebsiteAnalyticsService.chooseConsent(value);
     setConsent(value);
   }
 
-  if (!ready || (!measurementId && !clarityProjectId)) {
+  if (!ready || (!measurementId && !heatmapEnabled)) {
     return null;
   }
   if (consent !== null) {
@@ -66,7 +62,7 @@ export function WebsiteAnalyticsConsent({
         size="sm"
         variant="navy"
         onClick={() => {
-          clientClarityService.stop();
+          clientWebsiteHeatmapCaptureService.stop();
           clientWebsiteAnalyticsService.chooseConsent("declined");
           setConsent(null);
         }}
@@ -82,9 +78,11 @@ export function WebsiteAnalyticsConsent({
     >
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
         <p className="flex-1 text-sm leading-6 text-white/80">
-          <strong className="text-white">Cookies on this website.</strong> We use
-          optional cookies to understand how you use our website and improve your
-          experience.
+          <strong className="text-white">Cookies on this website.</strong> We
+          use optional cookies to understand how you use our website and improve
+          your experience. If you accept, we also record masked clicks and
+          scrolling on approved public pages. Applicant, staff and CMS forms are
+          excluded.
         </p>
         <div className="flex gap-2">
           <GeneralButton

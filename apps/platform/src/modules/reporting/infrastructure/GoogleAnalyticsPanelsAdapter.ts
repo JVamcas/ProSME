@@ -3,6 +3,10 @@ import "server-only";
 import { z } from "zod";
 import type { WebsiteAnalyticsQuery } from "../api/WebsiteAnalyticsSchemas";
 import { canonicalNamibiaRegion } from "../domain/NamibiaVisitorRegions";
+import {
+  parseWebsiteJourney,
+  type WebsiteUserJourney,
+} from "../domain/WebsiteUserJourneys";
 import type {
   BoundedWebsiteRows,
   WebsiteGeography,
@@ -18,6 +22,7 @@ import {
   dailyTrafficQuery,
   fundingCallEngagementQuery,
   mostViewedPagesQuery,
+  topUserJourneysQuery,
   visitorRegionsQuery,
 } from "./GoogleAnalyticsPanelQueries";
 import { predefinedJourneyQuery } from "./GoogleAnalyticsQueries";
@@ -79,6 +84,22 @@ export class GoogleAnalyticsPanelsAdapter {
       return { path, pageViews: countMetric(report, row, "screenPageViews") };
     });
     return normalizedAnalyticsResult(report, bounded(report, rows));
+  }
+
+  async journeys(input: WebsiteAnalyticsQuery) {
+    const report = await this.read(topUserJourneysQuery(input));
+    const rows: WebsiteUserJourney[] = [];
+    for (const row of report.rows ?? []) {
+      const steps = parseWebsiteJourney(
+        stringDimension(report, row, "customEvent:journey_path"),
+      );
+      if (!steps) throw new Error("Invalid observed route sequence.");
+      rows.push({ steps, users: countMetric(report, row, "totalUsers") });
+    }
+    return {
+      ...normalizedAnalyticsResult(report, bounded(report, rows)),
+      note: "Top three observed sequences of two or three consecutive public-page steps, ranked by tracked users. Sequences overlap; a user can appear in more than one. Public website only, independent of the funding-call filter. Requires journey tracking and the event-scoped journey_path custom dimension; historical funnels cannot supply these sequences.",
+    };
   }
 
   async regions(input: WebsiteAnalyticsQuery) {

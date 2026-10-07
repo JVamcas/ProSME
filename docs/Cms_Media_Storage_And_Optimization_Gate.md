@@ -2,6 +2,11 @@
 
 Date: 2026-10-05
 
+Historical gate record. The 7 October WebP-only delivery, persistent caches and
+local regeneration supersede its optimizer-delivery behavior. See the
+[image remediation follow-up](Public_Route_Performance_Investigation.md#image-remediation-follow-up-7-october-2026)
+for current implementation evidence and deployment limits.
+
 ## Scope and resulting behavior
 
 - All new uploads and replacement files receive a fresh `media/<UUID>` folder

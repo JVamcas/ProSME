@@ -21,8 +21,16 @@ import {
   readFundingCallById,
 } from "../infrastructure/FundingCallRepository";
 import { updateFundingCallThumbnailRecord } from "../infrastructure/FundingCallThumbnailRepository";
+import { processFundingCallThumbnail } from "../infrastructure/FundingCallThumbnailProcessor";
+import {
+  deleteFundingCallThumbnailFiles,
+  fundingCallThumbnailObjectKey,
+} from "../infrastructure/FundingCallThumbnailStorage";
 import { toFundingCallView } from "./FundingCallViewMapper";
-import { validateFundingCallThumbnail } from "./FundingCallThumbnailValidation";
+import {
+  validateFundingCallThumbnail,
+  validateFundingCallThumbnailSize,
+} from "./FundingCallThumbnailValidation";
 
 async function requireCurrentDraft(id: string, expectedRowVersion: number) {
   const call = await readFundingCallById(id);
@@ -52,29 +60,48 @@ export async function uploadFundingCallThumbnail(
 ) {
   const actor = requirePermission(user, permissionCodes.fundingCallEditDraft);
   const current = await requireCurrentDraft(id, expectedRowVersion);
+  validateFundingCallThumbnailSize(file.size);
   const body = Buffer.from(await file.arrayBuffer());
   const validated = validateFundingCallThumbnail(file, body);
+  const variants = await processFundingCallThumbnail(body);
   const objectKey = resolveGcsObjectPath(
     ...gcsObjectPathSegments.utilities.fundingCalls,
     id,
-    `${randomUUID()}${validated.extension}`,
+    `thumbnail-v1-${randomUUID()}`,
+    "1024.webp",
   );
 
-  await storage.put({ body, contentType: validated.contentType, objectKey });
-  const saved = await updateFundingCallThumbnailRecord({
-    actorId: actor.id,
-    expectedRowVersion,
-    fundingCallId: id,
-    thumbnail: { ...validated, objectKey },
-  });
-  if (!saved) {
-    await storage.delete(objectKey).catch(() => undefined);
-    throw new ResourceConflictError(
-      "The funding call changed. Refresh it before changing the thumbnail.",
-    );
+  try {
+    // Wait for every upload before cleanup so a late write cannot orphan a file.
+    const uploads = await Promise.allSettled(variants.map((variant) => storage.put({
+      body: variant.body,
+      contentType: "image/webp",
+      objectKey: fundingCallThumbnailObjectKey(objectKey, variant.width),
+    })));
+    const failed = uploads.find((upload) => upload.status === "rejected");
+    if (failed?.status === "rejected") throw failed.reason;
+
+    const saved = await updateFundingCallThumbnailRecord({
+      actorId: actor.id,
+      expectedRowVersion,
+      fundingCallId: id,
+      thumbnail: {
+        contentType: "image/webp",
+        fileName: validated.fileName.replace(/\.[^.]+$/, ".webp"),
+        objectKey,
+      },
+    });
+    if (!saved) {
+      throw new ResourceConflictError(
+        "The funding call changed. Refresh it before changing the thumbnail.",
+      );
+    }
+  } catch (error) {
+    await deleteFundingCallThumbnailFiles(storage, objectKey);
+    throw error;
   }
   if (current.thumbnailObjectKey && current.thumbnailObjectKey !== objectKey) {
-    await storage.delete(current.thumbnailObjectKey).catch(() => undefined);
+    await deleteFundingCallThumbnailFiles(storage, current.thumbnailObjectKey);
   }
   return updatedView(id);
 }
@@ -99,7 +126,7 @@ export async function removeFundingCallThumbnail(
     );
   }
   if (current.thumbnailObjectKey) {
-    await storage.delete(current.thumbnailObjectKey).catch(() => undefined);
+    await deleteFundingCallThumbnailFiles(storage, current.thumbnailObjectKey);
   }
   return updatedView(id);
 }
@@ -108,6 +135,7 @@ export async function readFundingCallThumbnail(
   user: AuthenticatedUser | null,
   id: string,
   storage: DocumentStorage = new GoogleCloudDocumentStorage(),
+  width?: number,
 ) {
   requirePermission(user, permissionCodes.fundingCallRead);
   const call = await readFundingCallById(id);
@@ -115,7 +143,7 @@ export async function readFundingCallThumbnail(
     throw new ResourceNotFoundError("funding call thumbnail");
   }
   return {
-    body: await storage.read(call.thumbnailObjectKey),
+    body: await storage.read(fundingCallThumbnailObjectKey(call.thumbnailObjectKey, width)),
     contentType: call.thumbnailContentType,
   };
 }
@@ -123,13 +151,14 @@ export async function readFundingCallThumbnail(
 export async function readPublicFundingCallThumbnail(
   id: string,
   storage: DocumentStorage = new GoogleCloudDocumentStorage(),
+  width?: number,
 ) {
   const call = await readPublicFundingCallById(id);
   if (!call?.thumbnailObjectKey || !call.thumbnailContentType) {
     throw new ResourceNotFoundError("funding call thumbnail");
   }
   return {
-    body: await storage.read(call.thumbnailObjectKey),
+    body: await storage.read(fundingCallThumbnailObjectKey(call.thumbnailObjectKey, width)),
     contentType: call.thumbnailContentType,
   };
 }

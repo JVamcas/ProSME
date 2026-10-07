@@ -14,6 +14,7 @@ import {
 } from "@/integrations/storage/GcsObjectPath";
 import { getGoogleCloudStorageOptions } from "@/integrations/storage/GoogleCloudStorageOptions";
 import { Media } from "@/payload/collections/content/Media";
+import { cmsMediaDeliveryPlugin } from "@/modules/content/infrastructure/CmsMediaDeliveryPlugin";
 import { ContactSubmissions } from "@/payload/collections/content/ContactSubmissions";
 import { Events } from "@/payload/collections/content/Events";
 import { FAQs } from "@/payload/collections/content/FAQs";
@@ -106,6 +107,9 @@ export default buildConfig({
       options: getGoogleCloudStorageOptions(),
       useCompositePrefixes: true,
     }),
+    cmsMediaDeliveryPlugin(
+      `${environment.GCS_DOCUMENTS_BUCKET}:${resolveGcsObjectPath(...gcsObjectPathSegments.cms)}`,
+    ),
   ],
   secret: environment.PAYLOAD_SECRET,
   serverURL: environment.PUBLIC_SITE_URL,

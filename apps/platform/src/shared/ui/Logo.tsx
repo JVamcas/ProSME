@@ -29,7 +29,7 @@ export function Logo({
         height={330}
         className={cn(
           "h-auto",
-          compact ? "w-32" : "w-36",
+          compact ? "w-[128px]" : "w-36",
           inverted && "brightness-0 invert",
         )}
       />

@@ -3,6 +3,7 @@ export type NavigationSectionId =
   | "funding"
   | "account"
   | "content"
+  | "reporting"
   | "analytics"
   | "applications"
   | "administration";
@@ -13,6 +14,7 @@ const labels: Record<NavigationSectionId, string> = {
   account: "My account",
   content: "Website content",
   analytics: "Analytics",
+  reporting: "Reporting",
   applications: "Application management",
   administration: "Administration",
 };

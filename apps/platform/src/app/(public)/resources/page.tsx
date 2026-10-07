@@ -38,7 +38,7 @@ export default async function ResourcesPage({
       <section className="section bg-brand-cream/30">
         <div className="container">
           {resources.items.length ? (
-            <div className="grid gap-5 md:grid-cols-2">
+            <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
               {resources.items.map((item) => (
                 <ResourceCard item={item} key={item.id} />
               ))}

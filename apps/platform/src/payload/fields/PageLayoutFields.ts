@@ -1,6 +1,11 @@
 import type { Field } from "payload";
 
 import { defaultPages } from "@/modules/content/ContentDefaults";
+import {
+  fundingOverviewDefaultBlocks,
+  fundingOverviewSection,
+  type FundingOverviewSlug,
+} from "@/modules/content/FundingOverviewSections";
 import { pageContentBlocks } from "@/payload/blocks/public-content";
 import { withAppFormInputs } from "./withAppFormInputs";
 
@@ -49,6 +54,9 @@ export const pageLayoutFields: Field[] = [
         }),
         defaultValue: ({ req }) => {
           const slug = req.query?.cmsPage;
+          if (fundingOverviewSection(slug)) {
+            return fundingOverviewDefaultBlocks(slug as FundingOverviewSlug);
+          }
           return slug === "funding" || slug === "eligibility"
             ? defaultPages[slug].blocks
             : undefined;

@@ -1,4 +1,6 @@
 import type { Homepage } from "@/payload-types";
+import type { CmsImage } from "../../ContentTypes";
+import { media } from "../../infrastructure/ContentProjection";
 
 import { homeBannerEditor } from "./HomeBannerEditorNavigation";
 import { homeActionsEditor } from "./HomeActionsEditorNavigation";
@@ -11,7 +13,7 @@ export type GuideSection = {
   preview: string;
   target?: string;
   detail?: string;
-  image?: string;
+  image?: CmsImage;
 };
 
 export function buildHomeGuideSections(
@@ -26,12 +28,7 @@ export function buildHomeGuideSections(
     {
       title: homeBannerEditor.title,
       preview: home.title ?? homeBannerEditor.title,
-      image:
-        typeof home.heroImage === "object" && home.heroImage
-          ? (home.heroImage.sizes?.thumbnail?.url ??
-            home.heroImage.url ??
-            undefined)
-          : undefined,
+      image: media(home.heroImage),
       detail: home.summary ?? "Headline, image, buttons and benefit captions.",
       target: canEdit ? homeBannerEditor.href : undefined,
     },
@@ -63,7 +60,7 @@ export function buildHomeGuideSections(
       title: homeEditorSections["additional-content"].title,
       preview: impact.heading,
       detail: "Impact banner heading, background image, statistics and campaign message.",
-      image: impact.backgroundImage?.url,
+      image: impact.backgroundImage,
       target: canEdit
         ? homeEditorSections["additional-content"].href
         : undefined,

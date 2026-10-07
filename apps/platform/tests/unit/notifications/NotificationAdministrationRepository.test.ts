@@ -15,6 +15,10 @@ vi.mock("@/db/client", () => ({
   }),
 }));
 
+vi.mock("@/platform/database/client", () => ({
+  getDatabase: () => ({ execute: database.execute, transaction: database.transaction }),
+}));
+
 import {
   listNotificationEventRuleRecords,
   updateNotificationChannelRecord,

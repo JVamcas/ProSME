@@ -22,7 +22,7 @@ function SectionCard({ section }: { section: GuideSection }) {
         section.image && "grid gap-6 sm:grid-cols-[180px_minmax(0,1fr)]",
       )}
     >
-      {section.image ? <CmsGuideImage src={section.image} /> : null}
+      {section.image ? <CmsGuideImage image={section.image} /> : null}
       <div>
         <h2 className="m-0 text-2xl font-semibold text-brand-navy">
           {section.title}

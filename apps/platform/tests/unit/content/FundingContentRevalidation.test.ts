@@ -12,6 +12,9 @@ describe("funding CMS publication cache updates", () => {
   it.each([
     ["pages", "funding"],
     ["pages", "eligibility"],
+    ["pages", "funding-support"],
+    ["pages", "funding-priority-applicants"],
+    ["pages", "funding-focus-sectors"],
     ["eligibility-content", undefined],
   ])("refreshes public funding content when %s / %s changes", (collection, slug) => {
     revalidateCollection({

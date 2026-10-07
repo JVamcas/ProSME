@@ -4,45 +4,17 @@ import {
   websiteAnalyticsPage,
 } from "@/modules/reporting/domain/WebsiteAnalyticsCollection";
 
-const callId = "00000000-0000-4000-8000-000000000042";
-let cookie = "";
-let location: URL;
-let dataLayer: IArguments[];
-let storage: Map<string, string>;
-let appended: unknown[];
+import {
+  createWebsiteAnalyticsBrowserFixture,
+  loadWebsiteAnalyticsService as service,
+} from "../../support/WebsiteAnalyticsBrowserFixture";
 
+const callId = "00000000-0000-4000-8000-000000000042";
+let browser: ReturnType<typeof createWebsiteAnalyticsBrowserFixture>;
 beforeEach(() => {
-  vi.resetModules();
-  cookie = "";
-  location = new URL(
-    "https://example.test/portal/applications/private-id/edit?email=secret#answer",
-  );
-  dataLayer = [];
-  appended = [];
-  storage = new Map();
-  vi.stubGlobal("window", { location, dataLayer });
-  vi.stubGlobal("document", {
-    get cookie() {
-      return cookie;
-    },
-    set cookie(value: string) {
-      cookie = value;
-    },
-    referrer: "https://example.test/register?email=secret",
-    createElement: () => ({}),
-    head: { appendChild: (element: unknown) => appended.push(element) },
-  });
-  vi.stubGlobal("sessionStorage", {
-    getItem: (key: string) => storage.get(key),
-    setItem: (key: string, value: string) => storage.set(key, value),
-  });
+  browser = createWebsiteAnalyticsBrowserFixture();
 });
 afterEach(() => vi.unstubAllGlobals());
-
-async function service() {
-  return (await import("@/modules/reporting/ClientWebsiteAnalyticsService"))
-    .clientWebsiteAnalyticsService;
-}
 
 describe("D1 collection privacy", () => {
   it("templates private routes and excludes staff, CMS, profiles and requests", () => {
@@ -67,23 +39,26 @@ describe("D1 collection privacy", () => {
     expect(
       sanitizedAnalyticsReferrer(
         "https://outside.test/private?email=secret#token",
-        location.origin,
+        browser.location.origin,
       ),
     ).toBe("https://outside.test");
     expect(
       sanitizedAnalyticsReferrer(
         "https://example.test/portal/applications/secret?token=secret",
-        location.origin,
+        browser.location.origin,
       ),
     ).toBe("https://example.test/portal/applications/:id");
     expect(
       sanitizedAnalyticsReferrer(
         "https://example.test/cms?token=secret",
-        location.origin,
+        browser.location.origin,
       ),
     ).toBe("");
     expect(
-      sanitizedAnalyticsReferrer("javascript:alert(1)", location.origin),
+      sanitizedAnalyticsReferrer(
+        "javascript:alert(1)",
+        browser.location.origin,
+      ),
     ).toBe("");
   });
 
@@ -94,20 +69,20 @@ describe("D1 collection privacy", () => {
       "smefund_analytics_consent=declined",
       "smefund_analytics_consent=unexpected",
     ]) {
-      cookie = value;
+      browser.cookie = value;
       expect(analytics.configure("G-TEST123")).toBe(false);
       analytics.track("application_start", { fundingCallId: callId });
     }
-    expect(appended).toHaveLength(0);
-    expect(dataLayer).toHaveLength(0);
+    expect(browser.appended).toHaveLength(0);
+    expect(browser.dataLayer).toHaveLength(0);
   });
 
   it("disables automatic page views and deduplicates confirmed signals across reloads", async () => {
-    cookie = "smefund_analytics_consent=accepted";
+    browser.cookie = "smefund_analytics_consent=accepted";
     let analytics = await service();
     expect(analytics.configure("G-TEST123")).toBe(true);
-    analytics.pageView(location.pathname);
-    analytics.pageView(location.pathname);
+    analytics.pageView(browser.location.pathname);
+    analytics.pageView(browser.location.pathname);
     analytics.track(
       "application_start",
       { fundingCallId: callId },
@@ -126,7 +101,7 @@ describe("D1 collection privacy", () => {
       { fundingCallId: callId },
       "private-id",
     );
-    const commands = dataLayer.map((entry) => Array.from(entry));
+    const commands = browser.dataLayer.map((entry) => Array.from(entry));
     expect(
       commands.filter(
         (entry) => entry[0] === "event" && entry[1] === "application_start",
@@ -145,18 +120,18 @@ describe("D1 collection privacy", () => {
   });
 
   it("allowlists event metadata and stops after consent is withdrawn", async () => {
-    cookie = "smefund_analytics_consent=accepted";
+    browser.cookie = "smefund_analytics_consent=accepted";
     const analytics = await service();
     analytics.configure("G-TEST123");
     analytics.track("application_start", {
       fundingCallId: callId,
       answers: "secret",
     } as never);
-    expect(JSON.stringify(dataLayer)).not.toContain("answers");
+    expect(JSON.stringify(browser.dataLayer)).not.toContain("answers");
     analytics.chooseConsent("declined");
-    const count = dataLayer.length;
+    const count = browser.dataLayer.length;
     analytics.track("application_submit", { fundingCallId: callId });
-    expect(dataLayer).toHaveLength(count);
+    expect(browser.dataLayer).toHaveLength(count);
     expect(
       (window as unknown as Record<string, boolean>)["ga-disable-G-TEST123"],
     ).toBe(true);

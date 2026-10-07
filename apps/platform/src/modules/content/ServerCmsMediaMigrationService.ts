@@ -36,7 +36,12 @@ function hasGeneratedSizes(record: Media) {
   // withoutEnlargement retains original dimensions for larger requested sizes.
   return cmsImageSizes.every(({ name }) => {
     const variant = record.sizes?.[name];
-    return Boolean(variant?.filename && variant.width && variant.height);
+    return Boolean(
+      variant?.filename &&
+      variant.width &&
+      variant.height &&
+      variant.mimeType === "image/webp",
+    );
   });
 }
 

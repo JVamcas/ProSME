@@ -1,5 +1,6 @@
 import { use as registerCharts } from "echarts/core";
 import {
+  CustomChart,
   FunnelChart,
   LineChart,
   MapChart,
@@ -20,6 +21,7 @@ import {
 import { SVGRenderer } from "echarts/renderers";
 
 registerCharts([
+  CustomChart,
   FunnelChart,
   LineChart,
   MapChart,

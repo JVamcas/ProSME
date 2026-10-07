@@ -23,6 +23,10 @@ import type { NotificationChannelSummary } from "../api/NotificationTemplateSche
 import { NotificationRuleAddRecipientDialog } from "./NotificationRuleAddRecipientDialog";
 import { notificationRecipientLabel } from "./NotificationRecipientPresentation";
 
+const websiteReportRecipientTypes = ["SPECIFIC_USER", "SPECIFIC_ROLE"] as const;
+
+import { notificationRuleDetailUpdateValues } from "./NotificationRuleUpdateValues";
+
 type RecipientRow = NotificationEventRuleUpdate["recipients"][number] & {
   id: string;
 };
@@ -51,32 +55,7 @@ export function NotificationRuleRecipientsDialog({
 
   useEffect(() => {
     if (!rule) return;
-    form.reset({
-      eventEnabled: rule.eventEnabled,
-      expectedUpdatedAt: rule.updatedAt,
-      isEnabled: rule.isEnabled,
-      recipients: rule.recipients.map((recipient) => {
-        const base = {
-          channelCodes: recipient.channelCodes,
-          isRequired: recipient.isRequired,
-        };
-        if (recipient.recipientType === "SPECIFIC_USER") {
-          return {
-            ...base,
-            recipientType: "SPECIFIC_USER" as const,
-            targetId: recipient.targetId,
-          };
-        }
-        if (recipient.recipientType === "SPECIFIC_ROLE") {
-          return {
-            ...base,
-            recipientType: "SPECIFIC_ROLE" as const,
-            targetId: recipient.targetId,
-          };
-        }
-        return { ...base, recipientType: recipient.recipientType };
-      }),
-    });
+    form.reset(notificationRuleDetailUpdateValues(rule));
   }, [form, rule]);
 
   const watchedRecipientValues = useWatch({
@@ -145,9 +124,7 @@ export function NotificationRuleRecipientsDialog({
                         !channel.isEnabled && !selected.includes(channel.code)
                       }
                       value={channel.code}
-                      {...form.register(
-                        `recipients.${row.index}.channelCodes`,
-                      )}
+                      {...form.register(`recipients.${row.index}.channelCodes`)}
                     />
                     {channel.displayName}
                     {!channel.isEnabled ? (
@@ -157,8 +134,7 @@ export function NotificationRuleRecipientsDialog({
                     ) : null}
                   </label>
                 ))}
-                {form.formState.errors.recipients?.[row.index]
-                  ?.channelCodes ? (
+                {form.formState.errors.recipients?.[row.index]?.channelCodes ? (
                   <p className="w-full text-xs text-red-700">
                     Select at least one enabled channel.
                   </p>
@@ -267,6 +243,11 @@ export function NotificationRuleRecipientsDialog({
       </FormProvider>
       {rule ? (
         <NotificationRuleAddRecipientDialog
+          allowedRecipientTypes={
+            rule.eventKey.startsWith("reporting.website.")
+              ? websiteReportRecipientTypes
+              : undefined
+          }
           channels={channels}
           existingRecipients={watchedRecipients}
           isOpen={isAdding}

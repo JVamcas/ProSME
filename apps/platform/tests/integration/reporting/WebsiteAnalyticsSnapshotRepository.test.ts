@@ -42,6 +42,10 @@ afterAll(() => fixture.finish());
         state: "unavailable",
         data: null,
       });
+      expect(result.current.sources.topUserJourneys).toMatchObject({
+        state: "unavailable",
+        data: null,
+      });
       expect(result.current.synchronization.state).toBe("pending");
       expect(result.previous).not.toBeNull();
       expect(result.current.changes.visitors).toBeNull();
@@ -77,6 +81,45 @@ afterAll(() => fixture.finish());
       expect(result.current.changes.visitors).toBeCloseTo(0.18);
       expect(result.current.changes.pageViews).toBeCloseTo(0.18);
       expect(result.current.changes.conversion).toBe(0);
+    });
+
+    it("persists and projects ordered journey steps while isolating a journey refresh failure", async () => {
+      await fixture.seed(reportingPeriod);
+      const data = {
+        rows: [
+          {
+            steps: ["funding", "call_details", "start_application"],
+            users: 42,
+          },
+          { steps: ["resources", "call_details"], users: 12 },
+        ],
+        totalRows: 5,
+        truncated: true,
+      };
+      await fixture.client.query(
+        "UPDATE app_reporting_website_source_snapshots SET data = $1, state = 'ready' WHERE source_name = 'topUserJourneys'",
+        [JSON.stringify(data)],
+      );
+      let result = await readStoredWebsiteAnalytics(
+        reportingPeriod,
+        reportingConfiguration,
+      );
+      expect(result.current.sources.topUserJourneys).toMatchObject({
+        state: "ready",
+        data,
+      });
+      await fixture.client.query(
+        `UPDATE app_reporting_website_queries SET failures = '{"topUserJourneys": "failed"}'::jsonb`,
+      );
+      result = await readStoredWebsiteAnalytics(
+        reportingPeriod,
+        reportingConfiguration,
+      );
+      expect(result.current.sources.topUserJourneys).toMatchObject({
+        state: "stale",
+        data,
+      });
+      expect(result.current.sources.traffic.state).toBe("ready");
     });
 
     it("isolates funding-call scope and uses inclusive local eligibility date bounds", async () => {

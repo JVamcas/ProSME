@@ -82,6 +82,10 @@ export function fullBatch(visitors = 100) {
       { viewedUsers: 0, completedSelfCheckUsers: 0 },
       "no-data",
     ),
+    topUserJourneys: storedSource(
+      { rows: [], totalRows: 0, truncated: false },
+      "no-data",
+    ),
   };
 }
 
@@ -126,13 +130,28 @@ export function createReportingDatabaseFixture() {
       );
       await client.query(migration);
       await client.query(migration);
+      const journeysMigration = await readFile(
+        new URL(
+          "../../drizzle/0166_website_user_journeys.sql",
+          import.meta.url,
+        ),
+        "utf8",
+      );
+      await client.query(journeysMigration);
+      await client.query(journeysMigration);
+      const heatmapMigration = await readFile(
+        new URL("../../drizzle/0167_website_heatmaps.sql", import.meta.url),
+        "utf8",
+      );
+      await client.query(heatmapMigration);
+      await client.query(heatmapMigration);
       vi.mocked(getDatabase).mockReturnValue(
         drizzle(client) as ReturnType<typeof getDatabase>,
       );
     },
     async reset() {
       await client.query(
-        "TRUNCATE app_reporting_website_source_snapshots, app_reporting_website_queries, app_reporting_anonymous_eligibility_checks",
+        "TRUNCATE app_reporting_website_source_snapshots, app_reporting_website_queries, app_reporting_anonymous_eligibility_checks, app_reporting_heatmap_clicks, app_reporting_heatmap_views, app_reporting_heatmap_layouts",
       );
     },
     async finish() {

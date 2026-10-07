@@ -3,7 +3,7 @@ import { PgDialect } from "drizzle-orm/pg-core";
 
 const database = vi.hoisted(() => ({ execute: vi.fn(), transaction: vi.fn() }));
 vi.mock("server-only", () => ({}));
-vi.mock("@/db/client", () => ({ getDatabase: () => database }));
+vi.mock("@/platform/database/client", () => ({ getDatabase: () => database }));
 vi.mock("@/platform/auth/firebase/ServerAuthEmailService", () => ({
   generateAuthenticationActionUrl: vi.fn(),
   AuthEmailRequestError: class extends Error {},

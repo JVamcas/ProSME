@@ -1,6 +1,9 @@
+import { fundingOverviewSection } from "@/modules/content/FundingOverviewSections";
+
 const publicPath = (path: string) => `/api/preview?path=${encodeURIComponent(path)}`;
 
 export function pagePreviewUrl({ slug }: { slug?: string | null }) {
+  if (fundingOverviewSection(slug)) return publicPath("/how-to-apply/funding");
   return publicPath(slug ? `/${slug}` : "/");
 }
 

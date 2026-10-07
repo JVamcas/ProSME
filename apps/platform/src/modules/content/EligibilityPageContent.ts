@@ -1,9 +1,26 @@
+import type { EligibilityItem } from "./ContentTypes";
+
 export type EligibilityFocusSection = {
   eyebrow: string;
   heading: string;
   notice: string;
   noticeHeading: string;
 };
+
+export function eligibilityFocusSectorItems(blocks: unknown[]): EligibilityItem[] {
+  const block = blocks.find(isFocusBlock);
+  if (!Array.isArray(block?.sectors)) return [];
+  return block.sectors.flatMap((value) => {
+    if (!value || typeof value !== "object") return [];
+    const { label, description } = value as Record<string, unknown>;
+    if (typeof label !== "string") return [];
+    return [{
+      label,
+      description: typeof description === "string" ? description : "",
+      kind: "focusSector" as const,
+    }];
+  });
+}
 
 export const defaultEligibilityFocusSection: EligibilityFocusSection = {
   eyebrow: "Focus sectors",

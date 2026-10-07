@@ -20,7 +20,7 @@ vi.mock("@/modules/content/ui/admin/useCmsMediaPreview", () => ({
     documentThumbnail: {
       url: "/media/automatic.png",
       alt: "First page",
-      sizes: { thumbnail: { url: "/media/automatic.png", width: 320 } },
+      sizes: { thumbnail: { url: "/media/automatic.webp", width: 320 } },
     },
   }),
 }));
@@ -46,7 +46,7 @@ describe("Native CMS resource editor", () => {
     expect(html).toContain("Funding criteria");
     expect(html).toContain("Approved guidance");
     expect(html).toContain('href="/resources/funding-criteria"');
-    expect(html).toContain("automatic.png");
+    expect(html).toContain("automatic.webp");
     expect(html).toContain('inert=""');
     expect(html).toContain('data-read-only="true"');
   });
@@ -55,11 +55,11 @@ describe("Native CMS resource editor", () => {
     state.thumbnail = {
       url: "/media/custom.png",
       alt: "Custom preview",
-      sizes: { thumbnail: { url: "/media/custom.png", width: 320 } },
+      sizes: { thumbnail: { url: "/media/custom.webp", width: 320 } },
     };
     const props = { path: "" } as GroupFieldClientProps;
-    expect(renderToStaticMarkup(<CmsResourceContentGroupField {...props} />)).toContain("custom.png");
+    expect(renderToStaticMarkup(<CmsResourceContentGroupField {...props} />)).toContain("custom.webp");
     state.thumbnail = undefined;
-    expect(renderToStaticMarkup(<CmsResourceContentGroupField {...props} />)).toContain("automatic.png");
+    expect(renderToStaticMarkup(<CmsResourceContentGroupField {...props} />)).toContain("automatic.webp");
   });
 });

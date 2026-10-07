@@ -31,8 +31,12 @@ export type PermissionGroup = {
 export const permissionGroups: readonly PermissionGroup[] = [
   {
     id: "reporting",
-    label: "Website Analytics",
-    permissionCodes: [permissionCodes.reportingWebsiteReadAll],
+    label: "Website Analytics and Reporting",
+    permissionCodes: [
+      permissionCodes.reportingWebsiteReadAll,
+      permissionCodes.reportingWebsiteReportReadAll,
+      permissionCodes.reportingWebsiteScheduleUpdateAll,
+    ],
   },
   {
     id: "user",

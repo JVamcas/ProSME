@@ -368,6 +368,13 @@ export interface Page {
             heading: string;
             noticeHeading: string;
             notice: string;
+            sectors?:
+              | {
+                  label: string;
+                  description?: string | null;
+                  id?: string | null;
+                }[]
+              | null;
             id?: string | null;
             blockName?: string | null;
             blockType: 'eligibilityFocusSectors';
@@ -432,9 +439,6 @@ export interface Resource {
   id: number;
   resourceName: string;
   title: string;
-  /**
-   * Generated from the title when left blank. Keep it stable once published.
-   */
   slug: string;
   description: string;
   body?: {
@@ -943,6 +947,13 @@ export interface PagesSelect<T extends boolean = true> {
               heading?: T;
               noticeHeading?: T;
               notice?: T;
+              sectors?:
+                | T
+                | {
+                    label?: T;
+                    description?: T;
+                    id?: T;
+                  };
               id?: T;
               blockName?: T;
             };
@@ -1384,9 +1395,6 @@ export interface SiteSetting {
   id: number;
   siteName: string;
   siteDescription: string;
-  /**
-   * Optional GA4 measurement ID. Analytics loads only after consent.
-   */
   analyticsMeasurementId?: string | null;
   allowIndexing?: boolean | null;
   defaultSocialImage?: (number | null) | Media;

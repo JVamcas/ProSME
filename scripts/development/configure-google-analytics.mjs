@@ -11,7 +11,15 @@ const fundingCallDimension = {
   scope: "EVENT",
 };
 
-async function findFundingCallDimension(request, url) {
+const journeyDimension = {
+  parameterName: "journey_path",
+  displayName: "User Journey",
+  description:
+    "Observed sequence of two or three approved public website steps.",
+  scope: "EVENT",
+};
+
+async function findDimension(request, url, definition) {
   let pageToken;
   const seenTokens = new Set();
   do {
@@ -27,8 +35,8 @@ async function findFundingCallDimension(request, url) {
     });
     const existing = response.data.customDimensions?.find(
       (dimension) =>
-        dimension.parameterName === fundingCallDimension.parameterName &&
-        dimension.scope === fundingCallDimension.scope,
+        dimension.parameterName === definition.parameterName &&
+        dimension.scope === definition.scope,
     );
     if (existing) return existing;
     pageToken = response.data.nextPageToken;
@@ -40,27 +48,35 @@ async function findFundingCallDimension(request, url) {
   return null;
 }
 
-export async function ensureFundingCallDimension(
+async function ensureDimension(
   request,
   { propertyId, dryRun = false },
+  definition,
 ) {
   if (!/^\d+$/.test(propertyId ?? "")) {
     throw new Error("Set GA_PROPERTY_ID to the numeric GA property ID.");
   }
-  const url =
-    `https://analyticsadmin.googleapis.com/v1beta/properties/${propertyId}/customDimensions`;
-  const existing = await findFundingCallDimension(request, url);
+  const url = `https://analyticsadmin.googleapis.com/v1beta/properties/${propertyId}/customDimensions`;
+  const existing = await findDimension(request, url, definition);
   if (existing) return { action: "exists", name: existing.name };
   if (dryRun) return { action: "would-create" };
 
   const response = await request({
     url,
     method: "POST",
-    data: fundingCallDimension,
+    data: definition,
     timeout: 15000,
     retry: false,
   });
   return { action: "created", name: response.data.name };
+}
+
+export function ensureFundingCallDimension(request, options) {
+  return ensureDimension(request, options, fundingCallDimension);
+}
+
+export function ensureJourneyDimension(request, options) {
+  return ensureDimension(request, options, journeyDimension);
 }
 
 export function setupErrorMessage(error) {
@@ -119,15 +135,23 @@ export async function enableAnalyticsAdminApi(request, error) {
     );
   }
   if (!operation.done || operation.error) {
-    throw new Error("Admin API activation is incomplete. Check it in Google Cloud before rerunning setup.");
+    throw new Error(
+      "Admin API activation is incomplete. Check it in Google Cloud before rerunning setup.",
+    );
   }
 }
 
 async function main() {
   const args = process.argv.slice(2);
-  const allowedArguments = ["--dry-run", "--enable-api", "--enable-api-with-adc"];
+  const allowedArguments = [
+    "--dry-run",
+    "--enable-api",
+    "--enable-api-with-adc",
+  ];
   if (args.some((argument) => !allowedArguments.includes(argument))) {
-    throw new Error("Usage: npm run analytics:configure -- [--dry-run | --enable-api | --enable-api-with-adc]");
+    throw new Error(
+      "Usage: npm run analytics:configure -- [--dry-run | --enable-api | --enable-api-with-adc]",
+    );
   }
   const propertyId = process.env.GA_PROPERTY_ID;
   if (!/^\d+$/.test(propertyId ?? "")) {
@@ -137,7 +161,9 @@ async function main() {
   const enableApiWithAdc = args.includes("--enable-api-with-adc");
   const enableApi = args.includes("--enable-api") || enableApiWithAdc;
   if (dryRun && enableApi) {
-    throw new Error("A dry run cannot enable the Admin API. Use either --dry-run or --enable-api.");
+    throw new Error(
+      "A dry run cannot enable the Admin API. Use either --dry-run or --enable-api.",
+    );
   }
   let credentials;
   if (process.env.GA_SERVICE_ACCOUNT_JSON) {
@@ -159,7 +185,11 @@ async function main() {
     ...(credentials ? { credentials } : {}),
   });
   const request = (options) => auth.request(options);
-  const configure = () => ensureFundingCallDimension(request, { propertyId, dryRun });
+  const configure = () =>
+    Promise.all([
+      ensureFundingCallDimension(request, { propertyId, dryRun }),
+      ensureJourneyDimension(request, { propertyId, dryRun }),
+    ]);
   let result;
   try {
     result = await configure();
@@ -189,10 +219,20 @@ async function main() {
       throw new Error(setupErrorMessage(retryError));
     }
   }
-  console.log(`${result.action}: funding_call_id (EVENT) on properties/${propertyId}`);
+  for (const [index, parameter] of [
+    "funding_call_id",
+    "journey_path",
+  ].entries()) {
+    console.log(
+      `${result[index].action}: ${parameter} (EVENT) on properties/${propertyId}`,
+    );
+  }
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+) {
   await main().catch((error) => {
     console.error(error.message);
     process.exitCode = 1;

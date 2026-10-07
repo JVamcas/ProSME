@@ -2,6 +2,7 @@ import { AlertCircle, CheckCircle2, RotateCcw } from "lucide-react";
 import Link from "next/link";
 
 import { GeneralButton } from "@/components/ui/button";
+import { clientWebsiteAnalyticsService } from "@/modules/reporting/ClientWebsiteAnalyticsService";
 import type { PublicEligibilitySelfCheckResult as Result } from "../../api/PublicEligibilitySelfCheckTransport";
 
 const outcomeContent = {
@@ -11,8 +12,7 @@ const outcomeContent = {
     title: "You appear eligible to apply",
   },
   "not-currently-eligible": {
-    description:
-      "One or more essential requirements are not currently met.",
+    description: "One or more essential requirements are not currently met.",
     title: "You may not currently be eligible",
   },
   "review-required": {
@@ -83,9 +83,20 @@ export function PublicEligibilitySelfCheckResult({
             <RotateCcw className="size-4" aria-hidden />
             Check again
           </GeneralButton>
-          {result.applicationsOpen && result.outcome !== "not-currently-eligible" ? (
+          {result.applicationsOpen &&
+          result.outcome !== "not-currently-eligible" ? (
             <GeneralButton asChild>
-              <Link href={applicationHref ?? `/portal/applications/new?fundingOpportunityId=${result.fundingCallId}`}>
+              <Link
+                href={
+                  applicationHref ??
+                  `/portal/applications/new?fundingOpportunityId=${result.fundingCallId}`
+                }
+                onClick={() =>
+                  clientWebsiteAnalyticsService.publicApplicationHandoff(
+                    result.fundingCallId,
+                  )
+                }
+              >
                 Start application
               </Link>
             </GeneralButton>

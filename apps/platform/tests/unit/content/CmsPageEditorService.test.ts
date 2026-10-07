@@ -31,7 +31,7 @@ beforeEach(() => {
   state.find.mockResolvedValue({ docs: [{ id: 42 }] });
 });
 
-describe.each(["about", "how-to-apply", "funding", "eligibility", "faq"] as const)("%s editor resolution", (slug) => {
+describe.each(["about", "how-to-apply", "funding-support", "funding-priority-applicants", "funding-focus-sectors", "faq"] as const)("%s editor resolution", (slug) => {
   it("selects only the page identifier, including saved drafts", async () => {
     await expect(getPageEditorSegments(slug)).resolves.toEqual([
       "collections", "pages", "42",

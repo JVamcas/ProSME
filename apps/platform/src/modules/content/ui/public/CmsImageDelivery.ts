@@ -1,13 +1,13 @@
 import type { ImageLoaderProps } from "next/image";
 
 import type { CmsImage, CmsImageVariant } from "../../ContentTypes";
-import { cmsImageSizes } from "../../ContentImageSizes";
 
 export function cmsImageSource(image: CmsImage, width: number): string | undefined {
   const variants = Object.values(image.sizes ?? {})
     .filter(
       (variant): variant is CmsImageVariant & { width: number } =>
         Boolean(variant?.url) &&
+        /\.webp(?:$|\?)/i.test(variant?.url ?? "") &&
         typeof variant?.width === "number" &&
         variant.width > 0,
     )
@@ -20,9 +20,7 @@ export function cmsImageSource(image: CmsImage, width: number): string | undefin
   }
 
   const isVector = /\.svg(?:$|\?)/i.test(image.url);
-  const isSmallOriginal =
-    typeof image.width === "number" && image.width < cmsImageSizes[0].width;
-  if (isVector || isSmallOriginal) {
+  if (isVector) {
     return sameOriginMediaUrl(image.url);
   }
 
@@ -30,12 +28,12 @@ export function cmsImageSource(image: CmsImage, width: number): string | undefin
 }
 
 export function createCmsImageLoader(image: CmsImage) {
-  return ({ width, quality }: ImageLoaderProps) => {
+  return ({ width }: ImageLoaderProps) => {
     const source = cmsImageSource(image, width);
     if (!source) {
-      throw new Error("CMS image has no generated sizes. Run the media migration.");
+      throw new Error("CMS image has no generated WebP sizes. Run the media migration.");
     }
-    return `/_next/image?url=${encodeURIComponent(source)}&w=${width}&q=${quality ?? 75}`;
+    return source;
   };
 }
 

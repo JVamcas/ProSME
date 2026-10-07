@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
   reach: vi.fn(),
   completion: vi.fn(),
   panel: vi.fn(),
+  journeys: vi.fn(),
 }));
 vi.mock("@/modules/reporting/infrastructure/GoogleAnalyticsAdapter", () => ({
   GoogleAnalyticsAdapter: class {
@@ -23,12 +24,43 @@ vi.mock(
       regions = mocks.panel;
       calls = mocks.panel;
       selfCheckJourney = mocks.panel;
+      journeys = mocks.journeys;
     },
   }),
 );
 import { synchronizeWebsiteAnalyticsSources } from "@/modules/reporting/application/WebsiteAnalyticsSourceReads";
 
 describe("independent background provider reads", () => {
+  it("keeps other panels available when journey reporting is not configured", async () => {
+    const successful = {
+      state: "ready",
+      data: {},
+      fetchedAt: "2026-10-07",
+      metadata: null,
+      note: null,
+    };
+    mocks.panel.mockResolvedValue(successful);
+    mocks.journeys.mockRejectedValue(
+      new Error("unregistered private property dimension"),
+    );
+    const result = await synchronizeWebsiteAnalyticsSources(
+      { startDate: "2026-10-01", endDate: "2026-10-06" },
+      {
+        propertyId: "123",
+        timezone: "Africa/Windhoek",
+        collectionStart: "2026-01-01",
+      },
+      true,
+    );
+    expect(result.topUserJourneys).toMatchObject({
+      state: "failure",
+      data: null,
+    });
+    expect(result.applicationFunnel).toEqual(successful);
+    expect(result.mostViewedPages).toEqual(successful);
+    expect(JSON.stringify(result)).not.toContain("private property");
+    mocks.panel.mockClear();
+  });
   it("sanitizes a failed source while keeping completed sources", async () => {
     mocks.traffic.mockRejectedValue(new Error("credential material"));
     const successful = {

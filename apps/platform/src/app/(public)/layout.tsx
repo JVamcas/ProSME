@@ -100,7 +100,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
           <Suspense fallback={null}>
             <WebsiteAnalyticsConsent
               measurementId={getWebsiteAnalyticsMeasurementId()}
-              clarityProjectId={heatmap.projectId}
+              heatmapEnabled={heatmap.collectionEnabled}
             />
           </Suspense>
           <Toast />

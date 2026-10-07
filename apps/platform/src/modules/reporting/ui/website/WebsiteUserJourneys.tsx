@@ -1,114 +1,78 @@
 "use client";
 
-import { DataTable, type DataTableColumn } from "@/shared/ui/DataTable";
-import { InfoTooltip } from "@/shared/ui/InfoTooltip";
-import type {
-  AnalyticsSourceResult,
-  WebsiteOrderedFunnel,
-} from "../../domain/WebsiteAnalyticsMetrics";
-import type { WebsiteSelfCheckJourney } from "../../domain/WebsiteAnalyticsPanels";
-import { analyticsCount, analyticsPercent } from "./WebsiteAnalyticsFormatting";
-import { WebsiteAnalyticsPanelFrame } from "./WebsiteAnalyticsPanel";
-
-type JourneyRow = {
-  path: string;
-  completed: number | null;
-  rate: number | null;
-  note: string | null;
-};
-
-function journeyRow<T extends { viewedUsers: number }>(
-  path: string,
-  result: AnalyticsSourceResult<T>,
-  completed: (data: T) => number,
-): JourneyRow {
-  const usable =
-    result.data !== null &&
-    ["ready", "stale", "no-data"].includes(result.state);
-  const count = usable ? completed(result.data!) : null;
-  const viewed = usable ? result.data!.viewedUsers : 0;
-  return {
-    path,
-    completed: count,
-    rate: count !== null && viewed > 0 ? count / viewed : null,
-    note: result.note,
-  };
-}
-
-const columns: DataTableColumn<JourneyRow>[] = [
-  {
-    accessorKey: "path",
-    header: "Journey",
-    enableSorting: false,
-    cell: ({ row }) => (
-      <div className="flex items-start gap-2">
-        <span className="grid size-5 shrink-0 place-items-center rounded-full bg-slate-100 text-xs">
-          {row.index + 1}
-        </span>
-        <span>{row.original.path}</span>
-        {row.original.note ? (
-          <>
-            <InfoTooltip content={row.original.note} />
-            <span className="sr-only">{row.original.note}</span>
-          </>
-        ) : null}
-      </div>
-    ),
-  },
-  {
-    accessorKey: "completed",
-    header: "Completed",
-    enableSorting: false,
-    cell: ({ row }) => row.original.completed === null
-      ? "Unavailable"
-      : analyticsCount(row.original.completed),
-  },
-  {
-    accessorKey: "rate",
-    header: "Rate",
-    enableSorting: false,
-    cell: ({ row }) => row.original.rate === null
-      ? "—"
-      : analyticsPercent(row.original.rate),
-  },
-];
+import { ArrowRight } from "lucide-react";
+import type { AnalyticsSourceResult } from "../../domain/WebsiteAnalyticsMetrics";
+import type { BoundedWebsiteRows } from "../../domain/WebsiteAnalyticsPanels";
+import {
+  websiteJourneyLabels,
+  type WebsiteUserJourney,
+} from "../../domain/WebsiteUserJourneys";
+import { analyticsCount } from "./WebsiteAnalyticsFormatting";
+import { WebsiteAnalyticsPanel } from "./WebsiteAnalyticsPanel";
 
 export function WebsiteUserJourneys({
-  application,
-  selfCheck,
-  scope,
+  result,
 }: {
-  application: AnalyticsSourceResult<WebsiteOrderedFunnel>;
-  selfCheck: AnalyticsSourceResult<WebsiteSelfCheckJourney>;
-  scope: string;
+  result: AnalyticsSourceResult<BoundedWebsiteRows<WebsiteUserJourney>>;
 }) {
-  const rows = [
-    journeyRow(
-      "View → eligibility check → start → submit",
-      application,
-      (data) => data.submittedUsers,
-    ),
-    journeyRow(
-      "Call viewed → eligibility self-check completed",
-      selfCheck,
-      (data) => data.completedSelfCheckUsers,
-    ),
-  ];
   return (
-    <WebsiteAnalyticsPanelFrame
-      title="User journeys"
-      description="Completion of tracked paths"
+    <WebsiteAnalyticsPanel
+      title="Top user journeys"
+      description="Most common routes taken by users"
       contentHeight={244}
-      details={`${scope}. Completed counts tracked users completing each ordered path. Rate is completed users divided by viewers of that path; paths may overlap.`}
+      scope="Public website · ranked by tracked users · two or three consecutive page steps"
+      result={result}
     >
-      <span className="sr-only">{scope}</span>
-      <DataTable
-        columns={columns}
-        data={rows}
-        density="compact"
-        minWidth={300}
-        viewportHeight={240}
-      />
-    </WebsiteAnalyticsPanelFrame>
+      {(data) =>
+        data.rows.length === 0 ? (
+          <p role="status" className="py-6 text-sm text-brand-navy/70">
+            No user journeys recorded for this period.
+          </p>
+        ) : (
+          <ol
+            aria-label="Top user journeys"
+            className="divide-y divide-brand-blue/20 border-y border-brand-blue/20"
+          >
+            {data.rows.map((journey, index) => (
+              <li
+                key={journey.steps.join(">")}
+                className="flex items-start gap-3 py-4 text-sm text-brand-navy"
+              >
+                <span
+                  aria-hidden="true"
+                  className="grid size-8 shrink-0 place-items-center rounded-full bg-brand-blue/20 font-bold"
+                >
+                  {index + 1}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 leading-6">
+                    {journey.steps.map((step, stepIndex) => (
+                      <span
+                        key={`${step}-${stepIndex}`}
+                        className="inline-flex items-center gap-2"
+                      >
+                        {stepIndex > 0 ? (
+                          <>
+                            <ArrowRight
+                              aria-hidden="true"
+                              className="size-4 shrink-0 text-brand-blue"
+                            />
+                            <span className="sr-only">then</span>
+                          </>
+                        ) : null}
+                        <span>{websiteJourneyLabels[step]}</span>
+                      </span>
+                    ))}
+                  </div>
+                  <p className="mt-1 text-xs text-brand-navy/60">
+                    {analyticsCount(journey.users)} tracked users
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        )
+      }
+    </WebsiteAnalyticsPanel>
   );
 }

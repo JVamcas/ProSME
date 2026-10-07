@@ -26,7 +26,9 @@ export function CmsFaqContentGroupField({
         description="Edit the FAQ banner. Manage the questions and answers below."
         previewLabel="Live FAQ preview"
       >
-        <FaqContent page={page} faqs={content.faqs} />
+        <div className="[&>section:first-child]:px-6 sm:[&>section:first-child]:px-8">
+          <FaqContent page={page} faqs={content.faqs} />
+        </div>
       </CmsHomeSectionGroupField>
       <CmsFaqQuestionsEditor content={content} />
     </>

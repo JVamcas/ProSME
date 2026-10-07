@@ -32,11 +32,13 @@ export function CmsFaqQuestionsEditor({
             ))}
           </ul>
           {!content.faqs.length ? <p>No FAQ questions have been added yet.</p> : null}
-          <CmsCollectionDocumentEditor
-            collectionSlug="faqs"
-            label="Add question"
-            onSave={content.refresh}
-          />
+          <div className="mt-6">
+            <CmsCollectionDocumentEditor
+              collectionSlug="faqs"
+              label="Add question"
+              onSave={content.refresh}
+            />
+          </div>
           {content.hasNextPage || content.hasPrevPage ? (
             <div className="mt-4 flex flex-wrap items-center gap-3">
               <GeneralButton

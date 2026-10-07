@@ -19,6 +19,7 @@ import {
   type NavigationRoute,
 } from "@/shared/ui/navigation/NavigationList";
 import { homeEditorSections } from "./HomeEditorSections";
+import { fundingOverviewSections } from "../../FundingOverviewSections";
 import {
   cmsFundingHref,
   cmsFundingOverviewHref,
@@ -77,6 +78,12 @@ const contentRoutes: readonly NavigationRoute[] = [
         href: cmsFundingOverviewHref,
         label: "Overview",
         icon: Info,
+        children: Object.entries(fundingOverviewSections).map(([slug, section]) => ({
+          id: `cms-${slug}`,
+          href: section.href,
+          label: section.title,
+          icon: Info,
+        })),
       },
       {
         id: "cms-funding-application-guide",

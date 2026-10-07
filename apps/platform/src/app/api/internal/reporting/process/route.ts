@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { AuthenticationRequiredError } from "@/auth/authorization/policy";
 import { logger } from "@/integrations/monitoring/logger";
-import { processWebsiteAnalyticsSynchronization } from "@/modules/reporting/ServerWebsiteAnalyticsSyncService";
+import { processReporting } from "@/modules/reporting/ServerReportingProcessorService";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -9,9 +9,7 @@ export const maxDuration = 60;
 export async function POST(request: Request) {
   const headers = { "Cache-Control": "no-store" };
   try {
-    const data = await processWebsiteAnalyticsSynchronization(
-      request.headers.get("authorization"),
-    );
+    const data = await processReporting(request.headers.get("authorization"));
     return NextResponse.json({ data }, { headers });
   } catch (error) {
     if (error instanceof AuthenticationRequiredError) {

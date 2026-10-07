@@ -1,12 +1,7 @@
 import type { Metadata } from "next";
 import { z } from "zod";
 
-import { eligibilityFocusSection } from "@/modules/content/EligibilityPageContent";
-import { fundingPageSections } from "@/modules/content/FundingPageContent";
-import {
-  getEligibilityContent,
-  getPage,
-} from "@/modules/content/ServerContentQueries";
+import { getFundingOverview } from "@/modules/content/application/ServerFundingOverviewService";
 import { HowToApplyNavigation } from "@/modules/content/ui/public/HowToApplyNavigation";
 import { listPublicFundingCalls } from "@/modules/funding-calls/application/ServerPublicFundingCallService";
 import { PublicFundingPage } from "@/modules/funding-calls/ui/public/PublicFundingPage";
@@ -22,23 +17,20 @@ export default async function FundingPage({
 }) {
   const params = await searchParams;
   const status = filterSchema.safeParse(params.status).data;
-  const [calls, page, eligibilityPage, sectors] = await Promise.all([
+  const [calls, overview] = await Promise.all([
     listPublicFundingCalls({ after: params.after, limit: 20, status }),
-    getPage("funding"),
-    getPage("eligibility"),
-    getEligibilityContent(),
+    getFundingOverview(),
   ]);
-  const sections = fundingPageSections(page?.blocks ?? []);
   return (
     <>
       <HowToApplyNavigation active="funding" />
       <PublicFundingPage
         calls={calls}
-        focus={eligibilityFocusSection(eligibilityPage?.blocks ?? [])}
-        priorities={sections.priorities}
-        sectors={sectors}
+        focus={overview.focus}
+        priorities={overview.priorities}
+        sectors={overview.sectors}
         status={status}
-        support={sections.support}
+        support={overview.support}
       />
     </>
   );
