@@ -20,7 +20,11 @@ describe("Home section guide", () => {
     const home = {
       title: "The current banner headline",
       summary: "The current introduction",
-      heroImage: { url: "/api/media/file/banner.jpg" },
+      heroImage: {
+        url: "/api/media/file/banner.jpg",
+        alt: "Banner",
+        sizes: { thumbnail: { url: "/api/media/file/banner-thumbnail.webp", width: 320 } },
+      },
     } as Homepage;
 
     const sections = buildHomeGuideSections(home, false);
@@ -30,7 +34,10 @@ describe("Home section guide", () => {
       title: "Home Page Banner",
       preview: "The current banner headline",
       detail: "The current introduction",
-      image: "/api/media/file/banner.jpg",
+      image: {
+        url: "/api/media/file/banner.jpg",
+        sizes: { thumbnail: { url: "/api/media/file/banner-thumbnail.webp", width: 320 } },
+      },
     });
     expect(banner.target).toBeUndefined();
     expect(sections[1].title).toBe("Action cards");

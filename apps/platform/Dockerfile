@@ -70,6 +70,8 @@ COPY --chown=nextjs:nodejs --chmod=755 \
     scripts/container/
 
 WORKDIR /workspace/apps/platform
+RUN mkdir -p .next/cache/images .next/cache/cms-media \
+    && chown -R nextjs:nodejs .next/cache
 USER nextjs
 EXPOSE 3008
 

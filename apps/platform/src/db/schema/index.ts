@@ -1,3 +1,4 @@
+export * from "@/modules/reporting/infrastructure/reporting-reports.schema";
 export * from "./authorization";
 export * from "@/modules/reporting/infrastructure/reporting-eligibility.schema";
 export * from "@/modules/reporting/infrastructure/reporting-website.schema";

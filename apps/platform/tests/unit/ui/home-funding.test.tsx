@@ -24,7 +24,7 @@ beforeEach(() => {
           width: 993,
           sizes: {
             thumbnail: {
-              url: "/api/media/file/funding-guide-320.png",
+              url: "/api/media/file/funding-guide-320.webp",
               width: 320,
             },
           },

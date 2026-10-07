@@ -1,8 +1,9 @@
+import { websiteReportRecipientPermissionSql } from "./WebsiteReportRecipientRepository";
 import "server-only";
 
 import { sql } from "drizzle-orm";
 
-import { getDatabase } from "@/db/client";
+import { getDatabase } from "@/platform/database/client";
 import { authorizationAuditEntries } from "@/db/schema";
 import type {
   NotificationCatalogUpdate,
@@ -188,6 +189,7 @@ export async function listNotificationEventRuleRecords(
 }
 
 export async function findNotificationEventRuleRecord(eventKey: string) {
+  const notReporting = !eventKey.startsWith("reporting.website.");
   const result = await getDatabase().execute(sql`
     SELECT catalog.catalog_key AS "catalogKey",
       event.event_key AS "eventKey",
@@ -223,11 +225,17 @@ export async function findNotificationEventRuleRecord(eventKey: string) {
           'email', app_user.email
         ) ORDER BY app_user.display_name, app_user.email), '[]')
           FROM app_users app_user
-          WHERE app_user.status = 'active'),
+          WHERE app_user.status = 'active'
+            AND (${notReporting} OR ${websiteReportRecipientPermissionSql(sql`app_user.id`)})),
         'roles', (SELECT COALESCE(json_agg(json_build_object(
           'id', role.id,
           'name', role.name
-        ) ORDER BY role.name), '[]') FROM app_roles role)
+        ) ORDER BY role.name), '[]') FROM app_roles role
+          WHERE ${notReporting} OR EXISTS (
+            SELECT 1 FROM app_user_roles membership
+            JOIN app_users member ON member.id = membership.user_id AND member.status = 'active'
+            WHERE membership.role_id = role.id AND ${websiteReportRecipientPermissionSql(sql`member.id`)}
+          ))
       ) AS "recipientOptions"
     FROM app_notification_events event
     JOIN app_notification_catalogs catalog ON catalog.id = event.catalog_id

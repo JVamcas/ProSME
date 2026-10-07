@@ -1,12 +1,12 @@
 # SME Fund Reporting and Analytics Implementation Plan
 
-Date: 2026-10-06. Status: planned implementation; phases require separate acceptance.
+Date: 2026-10-06. Updated: 2026-10-07. D1 is complete per user acceptance.
+R1/R2 implementation is recorded in [the delivery gate](Website_Reports_R1_R2_Delivery_Gate.md); live configuration and delivery acceptance remain separate.
 
 Deliver D1 first, then R1 and R2 in small increments. Use the latest generated
 D1 image for layout, the application's canonical tokens for styling, and the
 existing reporting, authorization and notification boundaries for implementation.
-This plan defines the future sidebar arrangement; application code is not changed
-by creating this document.
+The sidebar arrangements below include the delivered reporting routes.
 
 ## Scope and client sources
 
@@ -82,6 +82,7 @@ APPLICATION MANAGEMENT
 
 REPORTING
   Website reports                           /admin/reports/website
+  Report settings                           /admin/reports/settings
 
 ADMINISTRATION
   Administration                            existing children retained
@@ -241,9 +242,8 @@ Keep successful panels usable when another source fails. No demo data in product
 
 ## R1 and R2 persistence and delivery
 
-Implement one fixed website report model and two period schedules. R1's exact
-meaning of bi-weekly (proposed every 14 days, anchored to an agreed date) requires
-agreement; R2 covers the previous calendar month. Align report boundaries with
+Implement one fixed website report model and two period schedules. R1 covers consecutive 14-day periods, with the first period start configured
+in Report settings; R2 covers completed calendar months. Align report boundaries with
 the GA property timezone and the agreed local send time; convert database times
 to UTC. Allow a defined source-finalization delay before generation.
 
@@ -277,8 +277,12 @@ existing renderer does not accept arbitrary HTML through text placeholders.
 Use fixed bounded text/table fields or a narrowly scoped safe report renderer.
 Attachments and customizable report templates are outside this first delivery.
 
-Website reports uses shared tables for history, snapshot detail and schedule
-configuration. Forms use React Hook Form, Zod and `zodResolver`. Snapshot viewing
+Website reports uses shared tables for history and saved source metadata. Saved
+report detail lives at `/admin/reports/website/{reportId}`. As instructed on
+2026-10-07, schedule and delivery-recipient configuration lives at
+`/admin/reports/settings` under Reporting. Reuse notification event rules and
+recipient controls on that page. Forms use React Hook Form, Zod and
+`zodResolver`. Snapshot viewing
 must remain possible during a GA outage. SMTP delivery is at-least-once: database
 idempotency prevents duplicate occurrences, but a send-success/receipt crash can
 still cause retry; do not promise exactly-once delivery without provider support.

@@ -34,6 +34,7 @@ export function isRelationshipNotificationRecipientType(
 export function relationshipRecipientTypesForEvent(
   eventKey: string,
 ): readonly RelationshipNotificationRecipientType[] {
+  if (eventKey.startsWith("reporting.website.")) return [];
   if (eventKey === "application.submitted") {
     return ["APPLICATION_OWNER"];
   }

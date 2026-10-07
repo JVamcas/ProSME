@@ -1,3 +1,4 @@
+import { requireCurrentWebsiteReportRecipient } from "./ServerWebsiteReportDeliveryPolicy";
 import "server-only";
 
 import { randomUUID } from "node:crypto";
@@ -86,6 +87,7 @@ async function dispatchDelivery(input: {
   if (!attemptNumber) return "failed";
 
   try {
+    await requireCurrentWebsiteReportRecipient(input.delivery);
     const systemOnly =
       isNotificationEventKey(input.delivery.eventKey) &&
       notificationEventCatalogue[input.delivery.eventKey].ruleEligibility ===

@@ -10,7 +10,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const editor = vi.hoisted(() => ({
   fields: {} as FormState,
-  media: { id: 12, url: "/impact.jpg", alt: "Namibian mountains", width: 200 },
+  media: {
+    id: 12,
+    url: "/impact.jpg",
+    alt: "Namibian mountains",
+    width: 200,
+    sizes: { thumbnail: { url: "/impact-thumbnail.webp", width: 200 } },
+  },
   mediaLoading: false,
   renderFields: vi.fn(),
   addFieldRow: vi.fn(),
@@ -68,6 +74,7 @@ beforeEach(() => {
     url: "/impact.jpg",
     alt: "Namibian mountains",
     width: 200,
+    sizes: { thumbnail: { url: "/impact-thumbnail.webp", width: 200 } },
   };
   editor.mediaLoading = false;
   editor.fields = {
@@ -111,7 +118,7 @@ describe("Additional Content impact banner", () => {
     expect(markup).toContain("Small Businesses. A Brighter Namibia");
     expect(markup).toContain("200+");
     expect(markup).toContain("MSMEs Targeted");
-    expect(markup).toContain("impact.jpg");
+    expect(markup).toContain("impact-thumbnail.webp");
     expect(markup).toContain('alt="Namibian mountains"');
     expect(markup).toContain("inert");
     expect(markup).toContain('data-read-only="true"');

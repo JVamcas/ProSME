@@ -1,3 +1,4 @@
+import { websiteReportNotificationFields, websiteReportRenderValues } from "./NotificationWebsiteReportEvent";
 import { workflowHoldResumedNotificationFields } from "./NotificationWorkflowHoldEvent";
 import { workflowHoldScopeLabels } from "@/modules/workflows/domain/runtime/WorkflowHold";
 
@@ -16,6 +17,7 @@ export const globalNotificationTemplateFields = [
 ] as const;
 
 export const notificationCatalogTemplateFields = {
+  REPORTING: websiteReportNotificationFields,
   AUTHENTICATION: [...globalNotificationTemplateFields, "actionUrl"],
   APPLICATIONS: [
     ...globalNotificationTemplateFields,
@@ -35,6 +37,8 @@ export const notificationCatalogTemplateFields = {
 } as const satisfies Record<NotificationCatalogKey, readonly string[]>;
 
 export const notificationEventTemplateFields = {
+  "reporting.website.biweekly": websiteReportNotificationFields,
+  "reporting.website.monthly": websiteReportNotificationFields,
   "workflow.sla.breached": workflowDeadlineNotificationFields,
   "workflow.information-request.reminder": workflowDeadlineNotificationFields,
   "workflow.hold.review-due": workflowDeadlineNotificationFields,
@@ -209,6 +213,16 @@ function trustedUrl(baseUrl: string, path: string): string {
 export function buildNotificationRenderValues<Key extends NotificationEventKey>(
   input: RenderValueInput<Key>,
 ): Record<string, string> {
+  if (input.eventKey.startsWith("reporting.website.")) {
+    return {
+      platformName: "SME Fund Namibia",
+      recipientName: input.recipient.displayName,
+      ...websiteReportRenderValues(
+        input.context as NotificationEventContextByKey["reporting.website.biweekly"],
+        input.publicApplicationUrl,
+      ),
+    };
+  }
   if ("kind" in input.context && "scheduledFor" in input.context) {
     const context = input.context as
       | NotificationEventContextByKey["workflow.sla.breached"]

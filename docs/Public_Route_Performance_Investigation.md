@@ -1,6 +1,7 @@
 # Public route performance investigation
 
-Date: 7 October 2026. Investigation only; no application implementation change.
+Date: 7 October 2026. The initial investigation made no implementation changes.
+The image remediation follow-up below records the subsequent focused change.
 
 ## Findings
 
@@ -201,7 +202,95 @@ and [image cache behavior](https://nextjs.org/docs/app/api-reference/components/
 4. Obtain production process/DB timing to explain the remote HTML delay, and
    perform real browser navigation/LCP checks with an existing working browser.
 
-## Validation and limits
+## Image remediation follow-up: 7 October 2026
+
+Follow-up item 1 is implemented in source and measured against local CMS/GCS
+data. Production deployment and production media regeneration remain pending.
+
+- Payload now generates WebP variants at quality 75, with the same four widths
+  and no enlargement. Original uploads retain their original bytes and MIME
+  types. Raster delivery requires generated WebP variants, including small
+  originals; there is no PNG/JPEG/original or optimizer compatibility fallback.
+  SVGs retain native vector delivery.
+- The responsive image loader returns generated variant URLs directly through
+  `/api/media/file`, including the existing UUID prefix. Public images,
+  rich-text uploads and CMS guide previews use that same variant contract.
+- A bounded persistent delivery cache wraps the existing GCS file handler.
+  Payload's file-access check runs first on every request, including hits.
+  Cache hits require its current media document, a matching UUID prefix and
+  a generated WebP filename. Keys include the bucket/environment namespace and
+  document revision. Missing, superseded or mismatched documents cannot use
+  the cache. Range requests still delegate to GCS; errors, originals,
+  documents, SVGs and non-WebP files are not cached by this wrapper.
+- Successful generated-image responses advertise the existing four-hour
+  public cache lifetime and retain ETags. The cache stores complete bytes using
+  atomic replacement, coalesces concurrent misses and is bounded to 2 MiB per
+  entry, 128 MiB total and 512 entries. Cache failures fall back to storage.
+- Compose now mounts separate named volumes for `.next/cache/cms-media` and
+  `.next/cache/images`. Docker prepares both directories for the existing
+  non-root runtime user. Normal app-container replacement retains these
+  environment-scoped volumes. Removing volumes, changing the Compose project,
+  or moving to a host without the volumes requires cache warming again.
+- Storage remains accessed through the authenticated GCS adapter. No public
+  bucket/ACL/IAM change or browser-facing GCS URL was introduced. The existing
+  public media read policy and protected write policy remain intact.
+
+The updated repeatable `cms:migrate:media` command regenerated **eight local
+raster records**, preserving IDs, content references and original bytes. It
+verified the original and generated objects before removing superseded copies.
+One PDF was skipped. No database schema change was needed.
+An immediate repeat migrated zero records, skipped all nine and reported zero
+failures.
+
+[Sanitized image remediation evidence](public-route-performance-evidence/2026-10-07-image-remediation.json)
+records the following local HTTP measurements. The isolated server ran current
+source in **Next development mode** on port 3018; compilation and initial media
+API startup were completed before image sampling. These are storage/delivery
+checks, not a production-to-production performance comparison. The original
+investigation used an older production container. Cold means a missing delivery
+cache entry; warm means the identical URL and bytes returned from that cache.
+
+| Image / generated size | Previous source bytes | WebP bytes | Reduction | Cold TTFB, ms | Warm TTFB, ms | After process restart TTFB, ms |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Hero / desktop | 3,455,073 | 66,642 | 98.07% | 4,006.26 | 58.53 | 69.27 |
+| Document preview / mobile | 197,012 | 45,324 | 76.99% | 1,827.42 | 37.65 | 25.90 |
+| Funding thumbnail / thumbnail | 117,310 | 23,792 | 79.72% | 1,518.73 | 17.31 | 23.58 |
+| Impact background / desktop | 3,024,435 | 151,604 | 94.99% | 1,895.34 | 44.05 | 24.31 |
+
+All cold responses reported `MISS`; all warm and restarted-process responses
+reported `HIT`, with identical SHA-256 hashes and byte counts. Restart reuse was
+measured with the same disk directory; actual production container replacement
+was not performed. The Compose mounts were validated separately from the
+resolved configuration. Cold GCS metadata/download latency is still present;
+the change reduces transfer bytes and removes the request-time transform.
+
+Live local access checks returned 403 for a wrong prefix, a superseded prefix
+and an anonymous write. Conditional delivery returned 304 and a byte range
+returned 206 with the requested 16 bytes. Payload's existing HTTP media endpoint
+returned 404 for HEAD; this change does not add a HEAD route.
+
+Validation: **48 focused test files / 395 tests passed**, including migration,
+direct responsive delivery, CMS previews, persistent cache, concurrency,
+conditional/range handling, corruption, eviction and preserved access settings.
+Architecture and form architecture passed. Type checking passed after the image
+change; the final repeat was blocked by concurrent reporting pages importing
+three not-yet-created UI modules (`WebsiteReportSettingsWorkspace`,
+`WebsiteReportDetailWorkspace` and `WebsiteReportsWorkspace`). Changed-file lint
+passed; full lint completed with zero errors and 13 unrelated warnings before
+the later concurrent reporting additions. The repository file-size gate was
+blocked by the concurrent, untouched
+`NotificationSeedConfiguration.ts` at 408 lines against its 400-line gate limit;
+the files changed for image delivery are within their limits. No production
+build, Docker rebuild/redeployment, full application test suite or browser/LCP
+verification was performed. Deployment acceptance remains open.
+
+For each deployment environment, use the updated migration runner to regenerate
+all existing raster records before switching to the WebP-only application.
+Require zero migration failures, then retain the two cache volumes across app
+replacement. Recheck actual production cold/warm requests after deployment.
+Local regeneration does not update production's environment-scoped objects.
+
+## Initial investigation validation and limits
 
 - Focused existing refresh/image tests: **3 files, 27 tests passed**.
 - Architecture boundaries: **passed for 1,585 source files**.

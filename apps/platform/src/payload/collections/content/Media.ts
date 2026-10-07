@@ -1,7 +1,10 @@
 import type { CollectionConfig } from "payload";
 
 import { cmsMediaAccess } from "@/payload/access/cms-resource-access";
-import { cmsImageSizes } from "@/modules/content/ContentImageSizes";
+import {
+  cmsImageFormatOptions,
+  cmsImageSizes,
+} from "@/modules/content/ContentImageSizes";
 import { organizeCmsMedia } from "@/modules/content/infrastructure/CmsMediaStorage";
 import { generateDocumentThumbnail } from "@/modules/content/ServerResourceThumbnailService";
 import { resourceDocumentMimeTypes } from "@/modules/content/ResourceDocumentTypes";
@@ -26,6 +29,7 @@ export const Media: CollectionConfig = {
       name,
       width,
       withoutEnlargement: true,
+      formatOptions: cmsImageFormatOptions,
       generateImageName: ({ originalName, extension }) =>
         `${originalName}-${name}.${extension}`,
     })),

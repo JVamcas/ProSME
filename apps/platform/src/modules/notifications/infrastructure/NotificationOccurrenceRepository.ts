@@ -1,8 +1,9 @@
+import { websiteReportRecipientPermissionSql } from "./WebsiteReportRecipientRepository";
 import "server-only";
 
 import { and, eq, sql } from "drizzle-orm";
 
-import { getDatabase } from "@/db/client";
+import { getDatabase } from "@/platform/database/client";
 import { notificationDeliveries, notificationOutbox } from "@/db/schema";
 import type {
   NotificationEventContextByKey,
@@ -62,6 +63,7 @@ async function loadEventConfiguration(
   transaction: NotificationOccurrenceTransaction,
   eventKey: NotificationEventKey,
 ): Promise<EventConfigurationRow[]> {
+  const notReporting = !eventKey.startsWith("reporting.website.");
   const result = await transaction.execute<EventConfigurationRow>(sql`
     SELECT channel.is_enabled AS "channelEnabled",
       channel.id AS "channelId",
@@ -87,6 +89,7 @@ async function loadEventConfiguration(
     LEFT JOIN app_users target_user
       ON target_user.id = recipient.recipient_user_id
       AND target_user.status = 'active'
+      AND (${notReporting} OR ${websiteReportRecipientPermissionSql(sql`target_user.id`)})
     LEFT JOIN app_roles recipient_role
       ON recipient_role.id = recipient.recipient_role_id
     LEFT JOIN app_user_roles targeted_user_role
@@ -99,6 +102,7 @@ async function loadEventConfiguration(
     LEFT JOIN app_users role_user
       ON role_user.id = targeted_user_role.user_id
       AND role_user.status = 'active'
+      AND (${notReporting} OR ${websiteReportRecipientPermissionSql(sql`role_user.id`)})
     WHERE event.event_key = ${eventKey}
       AND event.rule_eligibility = 'CONFIGURABLE'
   `);

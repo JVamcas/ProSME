@@ -1,10 +1,11 @@
+import { notificationCatalogSeeds } from "../domain/NotificationCatalogSeedConfiguration";
 import "server-only";
 
 import { notificationEventCatalogue } from "../domain/NotificationEvent";
 
 import { eq, inArray, sql } from "drizzle-orm";
 
-import { getDatabase } from "@/db/client";
+import { getDatabase } from "@/platform/database/client";
 import {
   notificationCatalogs,
   notificationChannels,
@@ -18,7 +19,6 @@ import {
 } from "./notification-rule.schema";
 import {
   emailNotificationChannelSeed,
-  notificationCatalogSeeds,
   notificationEventSeeds,
   configurableNotificationEventSeeds,
   notificationTemplateTargetSeeds,

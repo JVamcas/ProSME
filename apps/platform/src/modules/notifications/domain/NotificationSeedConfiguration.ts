@@ -1,3 +1,4 @@
+import { websiteReportEventSeeds, websiteReportTemplateSeeds } from "./WebsiteReportNotificationSeed";
 import {
   workflowTaskAssignedEventSeed,
   workflowEscalationEventSeed,
@@ -46,6 +47,7 @@ export type NotificationEventSeed = {
 };
 
 export const notificationEventSeeds: readonly NotificationEventSeed[] = [
+  ...websiteReportEventSeeds,
   workflowEscalationEventSeed,
   workflowHoldResumedEventSeed,
   ...workflowDeadlineEventSeeds,
@@ -252,45 +254,6 @@ export const configurableNotificationEventSeeds = notificationEventSeeds.filter(
     notificationEventCatalogue[event.key].ruleEligibility === "CONFIGURABLE",
 );
 
-export type NotificationCatalogSeed = {
-  description: string;
-  displayName: string;
-  id: string;
-  key: NotificationCatalogKey;
-  sortOrder: number;
-};
-
-export const notificationCatalogSeeds: readonly NotificationCatalogSeed[] = [
-  {
-    description: "Mandatory account verification and recovery emails.",
-    displayName: "Authentication",
-    id: "00000000-0000-4000-8000-000000000404",
-    key: "AUTHENTICATION",
-    sortOrder: 5,
-  },
-  {
-    description: "Funding application lifecycle notification events.",
-    displayName: "Applications",
-    id: "00000000-0000-4000-8000-000000000401",
-    key: "APPLICATIONS",
-    sortOrder: 10,
-  },
-  {
-    description: "Workflow runtime notification events.",
-    displayName: "Workflow",
-    id: "00000000-0000-4000-8000-000000000402",
-    key: "WORKFLOW",
-    sortOrder: 20,
-  },
-  {
-    description: "Funding call governance and publication lifecycle events.",
-    displayName: "Funding calls",
-    id: "00000000-0000-4000-8000-000000000403",
-    key: "FUNDING_CALLS",
-    sortOrder: 15,
-  },
-];
-
 export type NotificationTemplateTargetSeed = {
   catalogKey?: NotificationCatalogKey;
   defaultSubjectTemplate: string;
@@ -301,6 +264,7 @@ export type NotificationTemplateTargetSeed = {
 
 export const notificationTemplateTargetSeeds: readonly NotificationTemplateTargetSeed[] =
   [
+    ...websiteReportTemplateSeeds,
     {
       catalogKey: "AUTHENTICATION",
       defaultSubjectTemplate: "Account action for {{platformName}}",

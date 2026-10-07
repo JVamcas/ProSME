@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import type { CmsImage as CmsImageValue } from "../../ContentTypes";
 import { CmsImage } from "../public/CmsImage";
 
-export function CmsGuideImage({ src }: { src: string }) {
+export function CmsGuideImage({ image }: { image: CmsImageValue }) {
   const [failed, setFailed] = useState(false);
 
   if (failed) {
@@ -21,7 +22,7 @@ export function CmsGuideImage({ src }: { src: string }) {
   return (
     <CmsImage
       className="h-30 w-full rounded-xl object-cover"
-      image={{ url: src, alt: "", width: 180, height: 120 }}
+      image={image}
       onError={() => setFailed(true)}
       sizes="180px"
     />
