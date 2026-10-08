@@ -1,134 +1,14 @@
 import assert from "node:assert/strict";
-import { AsyncLocalStorage } from "node:async_hooks";
-import { existsSync, readFileSync } from "node:fs";
-import { createRequire } from "node:module";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-import vm from "node:vm";
-import ts from "typescript";
-import React from "react";
-import { renderToReadableStream } from "next/dist/compiled/react-server-dom-webpack/server.node.js";
-
-const runtimeRequire = createRequire(import.meta.url);
-const directory = path.dirname(fileURLToPath(import.meta.url));
-
-// Run under --conditions=react-server to exercise the installed React cache
-// with its real RSC request dispatcher. Only CMS transport and identity are fixtures.
-const sourceRoot = path.resolve(directory, "../../src");
-const requests = new AsyncLocalStorage();
-const modules = new Map();
-const calls = [];
-let publishedTitle = "Published";
-let draftTitle = "Pending";
-let published = true;
-
-function matches(document, where = {}) {
-  if (where.and) return where.and.every((part) => matches(document, part));
-  return Object.entries(where).every(([key, condition]) => {
-    if ("equals" in condition) return document[key] === condition.equals;
-    if ("exists" in condition) return Boolean(document[key]) === condition.exists;
-    return true;
-  });
-}
-
-const payload = {
-  async find(query) {
-    calls.push(query);
-    const document = {
-      id: 1,
-      slug: "about",
-      title: query.draft ? draftTitle : publishedTitle,
-      summary: "Summary",
-      excerpt: "Excerpt",
-      description: "Description",
-      question: "Question",
-      answer: {},
-      value: "10",
-      label: "Businesses",
-      _status: query.draft || !published ? "draft" : "published",
-      publishedAt: "2026-10-08T00:00:00.000Z",
-      createdAt: "2026-10-01T00:00:00.000Z",
-    };
-    return { docs: matches(document, query.where) ? [document] : [] };
-  },
-  async findGlobal(query) {
-    calls.push(query);
-    return {
-      _status: query.draft || !published ? "draft" : "published",
-      title: query.draft ? draftTitle : publishedTitle,
-      siteName: query.draft ? draftTitle : publishedTitle,
-      siteDescription: "Description",
-      email: "contact@example.test",
-    };
-  },
-};
-
-function loadSource(filename) {
-  if (!path.extname(filename)) {
-    filename = existsSync(`${filename}.ts`)
-      ? `${filename}.ts`
-      : path.join(filename, "index.ts");
-  }
-  if (modules.has(filename)) return modules.get(filename).exports;
-  const loadedModule = { exports: {} };
-  modules.set(filename, loadedModule);
-  const result = ts.transpileModule(readFileSync(filename, "utf8"), {
-    compilerOptions: {
-      module: ts.ModuleKind.CommonJS,
-      target: ts.ScriptTarget.ES2022,
-    },
-    fileName: filename,
-  });
-  function sourceRequire(name) {
-    if (name === "server-only") return {};
-    if (name === "@payload-config") return { default: {} };
-    if (name === "payload") return { getPayload: async () => payload };
-    if (name === "next/headers") {
-      return {
-        draftMode: async () => ({
-          isEnabled: requests.getStore()?.preview ?? false,
-        }),
-      };
-    }
-    if (name === "@/auth/authorization/current-user") {
-      return { getCurrentUser: async () => requests.getStore()?.user ?? null };
-    }
-    if (name.startsWith("@/")) return loadSource(path.join(sourceRoot, name.slice(2)));
-    if (name.startsWith(".")) return loadSource(path.resolve(path.dirname(filename), name));
-    return runtimeRequire(name);
-  }
-  vm.runInThisContext(`(function(require, module, exports) {\n${result.outputText}\n})`, {
-    filename,
-  })(sourceRequire, loadedModule, loadedModule.exports);
-  return loadedModule.exports;
-}
-
-const content = loadSource(
-  path.join(sourceRoot, "modules/content/ServerContentQueries.ts"),
-);
-const resources = loadSource(
-  path.join(sourceRoot, "modules/content/ServerResourceCentreService.ts"),
-);
-
-async function render(read, preview = false, capabilities = [], status = "active") {
-  let value;
-  const errors = [];
-  const user = { status, capabilities: new Set(capabilities) };
-  await requests.run({ preview, user }, async () => {
-    async function Page() {
-      value = await read();
-      return null;
-    }
-    const stream = renderToReadableStream(
-      React.createElement(Page),
-      {},
-      { onError: (error) => errors.push(error) },
-    );
-    await new Response(stream).text();
-  });
-  if (errors.length) throw errors[0];
-  return value;
-}
+import {
+  calls,
+  content,
+  resources,
+  render,
+  invalidate,
+  state,
+  cleanup,
+  readAfterCacheRestart,
+} from "./ContentServerRenderRuntime.mjs";
 
 async function verifyDeduplication() {
   const reads = [
@@ -157,7 +37,7 @@ async function verifyDeduplication() {
       }),
     );
     assert.equal(await content.getPage("different"), null);
-    assert.equal((await content.getListingItem("news", "about")).title, publishedTitle);
+    assert.equal((await content.getListingItem("news", "about")).title, state.publishedTitle);
   });
   // Five globals, six collection reads, four bounded feed reads, resource detail,
   // and a distinct page slug. The three calls per identical getter run only once.
@@ -168,14 +48,25 @@ async function verifyDeduplication() {
 }
 
 async function verifyPublication() {
-  published = false;
+  state.published = false;
+  await invalidate("pages");
+  await invalidate("homepage");
+  await invalidate("resources");
+  await invalidate("news");
   assert.equal(await render(() => content.getPage("about")), null);
   assert.equal(await render(() => content.getHomepage()), null);
-  published = true;
+  state.published = true;
+  await invalidate("pages");
+  await invalidate("homepage");
   assert.equal((await render(() => content.getPage("about"))).title, "Published");
-  publishedTitle = "Republished";
+  state.publishedTitle = "Republished";
+  await invalidate("pages");
   assert.equal((await render(() => content.getPage("about"))).title, "Republished");
-  published = false;
+  state.published = false;
+  await invalidate("pages");
+  await invalidate("homepage");
+  await invalidate("resources");
+  await invalidate("news");
   assert.equal(await render(() => content.getPage("about")), null);
   assert.equal(await render(() => content.getHomepage()), null);
   assert.equal(await render(() => resources.getResource("about")), null);
@@ -188,7 +79,9 @@ async function verifyPublication() {
   );
   assert.equal(homePreview.title, "Pending");
   assert.equal(await render(() => content.getHomepage()), null);
-  published = true;
+  state.published = true;
+  await invalidate("pages");
+  await invalidate("homepage");
   assert.equal((await render(() => content.getHomepage())).title, "Republished");
   return true;
 }
@@ -215,7 +108,7 @@ async function verifyPreview() {
     for (const [grants, status] of deniedSessions) {
       calls.length = 0;
       await render(read, true, grants, status);
-      assert.equal(calls[0].draft, false);
+      assert(calls.every((query) => query.draft === false));
     }
   }
   // Home feed intentionally remains published-only even during Home preview.
@@ -224,7 +117,7 @@ async function verifyPreview() {
     "cms.news.read",
     "cms.resources.read",
   ]);
-  assert.equal(calls.length, 4);
+  assert(calls.length === 0 || calls.length === 4);
   assert(calls.every((query) => query.draft === false));
   const [preview, publicPage] = await Promise.all([
     render(() => content.getPage("about"), true, ["cms.pages.read"]),
@@ -246,16 +139,89 @@ async function verifyBuildFallback() {
   calls.length = 0;
   process.env.SKIP_CMS_PRERENDER = "1";
   try {
-    await render(() => Promise.all([
-      content.getHomepage(),
-      content.getSiteSettings(),
-      content.getPage("about"),
-    ]));
+    await assert.rejects(
+      render(
+        () => Promise.all([
+          content.getHomepage(),
+          content.getSiteSettings(),
+          content.getPage("about"),
+          content.getHomeNewsAndResources(),
+          resources.getResource("about"),
+          resources.getResourcePage("2"),
+        ]),
+        false,
+        [],
+        "active",
+        true,
+      ),
+      /couldn.t be rendered statically/,
+    );
     assert.equal(calls.length, 0);
+    // Even a leaked build env flag must not return placeholders at runtime.
+    assert.equal((await render(() => content.getPage("about"))).title, "Republished");
   } finally {
     delete process.env.SKIP_CMS_PRERENDER;
   }
+  return true;
+}
+
+async function verifyPersistentCache() {
+  await invalidate("pages");
+  calls.length = 0;
   assert.equal((await render(() => content.getPage("about"))).title, "Republished");
+  const coldReads = calls.length;
+  assert.equal(coldReads, 1);
+  assert.equal((await render(() => content.getPage("about"))).title, "Republished");
+  assert.equal(calls.length, coldReads, "A new request must reuse published data");
+  state.publishedTitle = "New publication";
+  assert.equal((await render(() => content.getPage("about"))).title, "Republished");
+  await invalidate("pages");
+  assert.equal((await render(() => content.getPage("about"))).title, "New publication");
+  assert.equal(calls.length, coldReads + 1);
+  await invalidate("media");
+  await render(() => content.getPage("about"));
+  assert.equal(calls.length, coldReads + 2, "Media changes invalidate populated page relationships");
+  assert.equal(await render(() => content.getPage("renamed")), null);
+  state.publishedSlug = "renamed";
+  await invalidate("pages", "renamed", "about");
+  assert.equal(await render(() => content.getPage("about")), null);
+  assert.equal((await render(() => content.getPage("renamed"))).title, "New publication");
+  return true;
+}
+
+async function verifyResourcePagination() {
+  await invalidate("resources");
+  calls.length = 0;
+  const first = await render(() => resources.getResourcePage("1"));
+  assert.equal(first.totalPages, 3);
+  assert.equal(first.total, 25);
+  assert.equal((await render(() => resources.getResourcePage("1"))).total, 25);
+  assert.equal(calls.length, 1);
+  const second = await render(() => resources.getResourcePage("2"));
+  assert.equal(second.page, 2);
+  assert.equal(calls.length, 2);
+  state.resourceTotal = 13;
+  await invalidate("resources");
+  const updated = await Promise.all([
+    render(() => resources.getResourcePage("1")),
+    render(() => resources.getResourcePage("2")),
+    render(() => resources.getResourcePage("3")),
+  ]);
+  assert(updated.every((page) => page.total === 13 && page.totalPages === 2));
+  assert.equal(updated[0].hasNextPage, true);
+  assert.equal(updated[1].hasNextPage, false);
+  assert.deepEqual(updated[2].items, []);
+  return true;
+}
+
+async function verifyRestartIsolation() {
+  assert.equal((await render(() => content.getPage("renamed"))).title, "New publication");
+  state.published = false;
+  await invalidate("pages", "renamed");
+  calls.length = 0;
+  const result = await readAfterCacheRestart("renamed");
+  assert.deepEqual(result.docs, []);
+  assert.equal(calls.length, 1, "Restart must read current publication state");
   return true;
 }
 
@@ -265,9 +231,14 @@ async function verifyBuildFallback() {
     publication: await verifyPublication(),
     preview: await verifyPreview(),
     buildFallback: await verifyBuildFallback(),
+    persistentCache: await verifyPersistentCache(),
+    resourcePagination: await verifyResourcePagination(),
+    restartIsolation: await verifyRestartIsolation(),
   };
+  await cleanup();
   process.stdout.write(JSON.stringify(report));
-})().catch((error) => {
+})().catch(async (error) => {
+  await cleanup();
   console.error(error);
   process.exitCode = 1;
 });

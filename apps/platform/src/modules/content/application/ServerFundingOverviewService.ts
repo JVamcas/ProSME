@@ -1,24 +1,19 @@
 import "server-only";
 
-import { draftMode } from "next/headers";
-
-import { getCurrentUser } from "@/auth/authorization/current-user";
-import { cmsPermissionCode } from "@/auth/authorization/permissions";
-import { can } from "@/auth/authorization/policy";
-import { eligibilityFocusSection, eligibilityFocusSectorItems } from "../EligibilityPageContent";
+import { getContentReadMode } from "./ServerContentReadService";
+import { readPublishedFundingOverview } from "../infrastructure/PublishedContentRepository";
+import {
+  eligibilityFocusSection,
+  eligibilityFocusSectorItems,
+} from "../EligibilityPageContent";
 import { fundingPageSections } from "../FundingPageContent";
 import { readFundingOverviewDocuments } from "../infrastructure/PayloadFundingOverviewRepository";
 
 export async function getFundingOverview() {
-  let documents: Awaited<ReturnType<typeof readFundingOverviewDocuments>> = [];
-  if (process.env.SKIP_CMS_PRERENDER !== "1") {
-    const requested = (await draftMode()).isEnabled;
-    const draft = requested && can(
-      await getCurrentUser(),
-      cmsPermissionCode("pages", "read"),
-    );
-    documents = await readFundingOverviewDocuments(draft);
-  }
+  const { draft } = await getContentReadMode("pages");
+  const documents = draft
+    ? await readFundingOverviewDocuments(true)
+    : await readPublishedFundingOverview();
   const blocks = (slug: string) =>
     documents.find((document) => document.slug === slug)?.layout ?? [];
   const focusBlocks = blocks("funding-focus-sectors");

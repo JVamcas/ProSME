@@ -2,7 +2,9 @@ import "server-only";
 
 import { homeProcessContent, homeSupportContent } from "./HomeListContent";
 import { media } from "./infrastructure/ContentProjection";
-import { readHomeFeed } from "./infrastructure/PayloadHomeFeedRepository";
+import { connection } from "next/server";
+import { getContentReadMode as queryMode } from "./application/ServerContentReadService";
+import * as published from "./infrastructure/PublishedContentRepository";
 import {
   readHomepageDocument,
   readHeaderDocument,
@@ -17,25 +19,9 @@ import {
   readEligibilityContentDocuments,
 } from "./infrastructure/PayloadContentRepository";
 
-import { draftMode } from "next/headers";
 import { cache } from "react";
-import type { Where } from "payload";
 import { defaultHomeActionCards } from "./ContentDefaults";
 
-import {
-  cmsPermissionCode,
-  type CmsPermissionResource,
-} from "@/auth/authorization/permissions";
-import { getCurrentUser } from "@/auth/authorization/current-user";
-import { can } from "@/auth/authorization/policy";
-import {
-  buildContact,
-  buildFooter,
-  buildHeader,
-  buildHomepage,
-  buildSiteSettings,
-  getBuildPage,
-} from "./ContentBuildFallbacks";
 import type {
   ContactContent,
   EligibilityItem,
@@ -51,25 +37,13 @@ import type {
 } from "./ContentTypes";
 
 // React cache shares reads only within one server render, including metadata.
-// New requests recheck publication and preview permissions against current data.
+// Published reads also share a tagged persistent cache; previews bypass it.
 export const getHomeNewsAndResources = cache(
   async function getHomeNewsAndResources() {
-    return readHomeFeed();
+    await connection();
+    return published.readPublishedHomeFeed();
   },
 );
-
-function isBuildFallbackEnabled() {
-  return process.env.SKIP_CMS_PRERENDER === "1";
-}
-
-const queryMode = cache(async function queryMode(resource: CmsPermissionResource) {
-  const requested = (await draftMode()).isEnabled;
-  const draft = requested
-    ? can(await getCurrentUser(), cmsPermissionCode(resource, "read"))
-    : false;
-  const where: Where = draft ? {} : { _status: { equals: "published" } };
-  return { draft, where };
-});
 
 function seo(item: SeoContent): SeoContent {
   return {
@@ -81,9 +55,10 @@ function seo(item: SeoContent): SeoContent {
 
 export const getHomepage = cache(
   async function getHomepage(): Promise<HomepageContent | null> {
-    if (isBuildFallbackEnabled()) return buildHomepage;
     const { draft } = await queryMode("site-settings");
-    const page = await readHomepageDocument(draft);
+    const page = draft
+      ? await readHomepageDocument(true)
+      : await published.readPublishedHomepage();
     if (!draft && page._status !== "published") return null;
     return {
       actionCards: {
@@ -133,9 +108,10 @@ export const getHomepage = cache(
 
 export const getHeader = cache(
   async function getHeader(): Promise<HeaderContent> {
-    if (isBuildFallbackEnabled()) return buildHeader;
     const { draft } = await queryMode("site-settings");
-    const value = await readHeaderDocument(draft);
+    const value = draft
+      ? await readHeaderDocument(true)
+      : await published.readPublishedHeader();
 
     return {
       announcement: value.announcement ?? "",
@@ -148,9 +124,10 @@ export const getHeader = cache(
 
 export const getFooter = cache(
   async function getFooter(): Promise<FooterContent> {
-    if (isBuildFallbackEnabled()) return buildFooter;
     const { draft } = await queryMode("site-settings");
-    const value = await readFooterDocument(draft);
+    const value = draft
+      ? await readFooterDocument(true)
+      : await published.readPublishedFooter();
     return {
       copyright: value.copyright ?? "",
       newsletterHeading: value.newsletterHeading ?? "",
@@ -163,17 +140,19 @@ export const getFooter = cache(
 
 export const getContactDetails = cache(
   async function getContactDetails(): Promise<ContactContent> {
-    if (isBuildFallbackEnabled()) return buildContact;
     const { draft } = await queryMode("site-settings");
-    return readContactDetailsDocument(draft);
+    return draft
+      ? readContactDetailsDocument(true)
+      : published.readPublishedContact();
   },
 );
 
 export const getSiteSettings = cache(
   async function getSiteSettings(): Promise<SiteSettingsContent> {
-    if (isBuildFallbackEnabled()) return buildSiteSettings;
     const { draft } = await queryMode("site-settings");
-    const value = await readSiteSettingsDocument(draft);
+    const value = draft
+      ? await readSiteSettingsDocument(true)
+      : await published.readPublishedSiteSettings();
     return {
       allowIndexing: value.allowIndexing ?? false,
       defaultSocialImage: media(value.defaultSocialImage),
@@ -185,9 +164,10 @@ export const getSiteSettings = cache(
 
 export const getPage = cache(
   async function getPage(slug: string): Promise<PublicPageContent | null> {
-    if (isBuildFallbackEnabled()) return getBuildPage(slug);
     const mode = await queryMode("pages");
-    const result = await readPageDocuments(slug, mode);
+    const result = mode.draft
+      ? await readPageDocuments(slug, mode)
+      : await published.readPublishedPage(slug);
     const page = result.docs[0];
     return page
       ? {
@@ -205,9 +185,10 @@ export const getPage = cache(
 
 export const getNews = cache(
   async function getNews(): Promise<ListingItem[]> {
-    if (isBuildFallbackEnabled()) return [];
     const mode = await queryMode("news");
-    const result = await readNewsDocuments(mode);
+    const result = mode.draft
+      ? await readNewsDocuments(mode)
+      : await published.readPublishedNews();
     return result.docs.map((item) => ({
       body: item.body,
       date: item.publishedAt,
@@ -223,9 +204,10 @@ export const getNews = cache(
 
 export const getEvents = cache(
   async function getEvents(): Promise<ListingItem[]> {
-    if (isBuildFallbackEnabled()) return [];
     const mode = await queryMode("events");
-    const result = await readEventsDocuments(mode);
+    const result = mode.draft
+      ? await readEventsDocuments(mode)
+      : await published.readPublishedEvents();
     return result.docs.map((item) => ({
       body: item.body,
       date: item.startsAt,
@@ -243,9 +225,10 @@ export const getEvents = cache(
 
 export const getFaqs = cache(
   async function getFaqs(): Promise<FaqItem[]> {
-    if (isBuildFallbackEnabled()) return [];
     const mode = await queryMode("faqs");
-    const result = await readFaqsDocuments(mode);
+    const result = mode.draft
+      ? await readFaqsDocuments(mode)
+      : await published.readPublishedFaqs();
     return result.docs.map((item) => ({
       answer: item.answer,
       category: item.category,
@@ -257,18 +240,20 @@ export const getFaqs = cache(
 
 export const getStatistics = cache(
   async function getStatistics(): Promise<StatisticItem[]> {
-    if (isBuildFallbackEnabled()) return [];
     const mode = await queryMode("statistics");
-    const result = await readStatisticsDocuments(mode);
+    const result = mode.draft
+      ? await readStatisticsDocuments(mode)
+      : await published.readPublishedStatistics();
     return result.docs.map(({ value, label }) => ({ value, label }));
   },
 );
 
 export const getEligibilityContent = cache(
   async function getEligibilityContent(): Promise<EligibilityItem[]> {
-    if (isBuildFallbackEnabled()) return [];
     const mode = await queryMode("eligibility");
-    const result = await readEligibilityContentDocuments(mode);
+    const result = mode.draft
+      ? await readEligibilityContentDocuments(mode)
+      : await published.readPublishedEligibility();
     return result.docs.map(({ description, kind, label }) => ({
       description,
       kind,

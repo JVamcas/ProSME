@@ -7,6 +7,9 @@ type RenderEvidence = {
   publication: boolean;
   preview: boolean;
   buildFallback: boolean;
+  persistentCache: boolean;
+  resourcePagination: boolean;
+  restartIsolation: boolean;
 };
 
 let evidence: RenderEvidence;
@@ -34,7 +37,19 @@ describe("CMS reads in the real React server renderer", () => {
     expect(evidence.preview).toBe(true);
   });
 
-  it("does not retain build placeholders in a later runtime request", () => {
+  it("defers build reads and ignores leaked placeholder flags at runtime", () => {
     expect(evidence.buildFallback).toBe(true);
+  });
+
+  it("uses the installed Next cache across requests and expires pages on CMS/media events", () => {
+    expect(evidence.persistentCache).toBe(true);
+  });
+
+  it("separates pagination keys and expires every resource page with its counts", () => {
+    expect(evidence.resourcePagination).toBe(true);
+  });
+
+  it("excludes unpublished content after a restart with old cache files and lost tags", () => {
+    expect(evidence.restartIsolation).toBe(true);
   });
 });

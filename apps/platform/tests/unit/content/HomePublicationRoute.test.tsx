@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { buildHomepage } from "@/modules/content/ContentBuildFallbacks";
+import { homepageFixture } from "../../support/HomepageFixture";
 
 const state = vi.hoisted(() => ({
   homepage: vi.fn(),
@@ -23,7 +23,7 @@ import HomePage from "@/app/(public)/page";
 beforeEach(() => {
   vi.clearAllMocks();
   state.preview = false;
-  state.homepage.mockResolvedValue({ ...buildHomepage, title: "Published Home" });
+  state.homepage.mockResolvedValue({ ...homepageFixture, title: "Published Home" });
   state.fundingCalls.mockResolvedValue({ items: [], total: 0 });
 });
 
@@ -44,7 +44,7 @@ describe("Home publication route", () => {
 
   it("renders an authorized draft supplied by the service with an exit link", async () => {
     state.preview = true;
-    state.homepage.mockResolvedValue({ ...buildHomepage, title: "Pending Home" });
+    state.homepage.mockResolvedValue({ ...homepageFixture, title: "Pending Home" });
     const markup = renderToStaticMarkup(await HomePage());
     expect(markup).toContain("Pending Home");
     expect(markup).toContain("Draft preview");

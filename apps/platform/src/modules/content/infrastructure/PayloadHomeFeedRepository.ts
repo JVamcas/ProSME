@@ -15,10 +15,6 @@ export async function readHomeFeed(): Promise<{
   news: ListingItem[];
   resources: ListingItem[];
 }> {
-  if (process.env.SKIP_CMS_PRERENDER === "1") {
-    return { news: [], resources: [] };
-  }
-
   const payload = await payloadClient();
   const [news, resources] = await Promise.all([
     homeItems(payload, "news"),

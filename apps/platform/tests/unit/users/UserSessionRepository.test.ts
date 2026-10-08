@@ -23,11 +23,12 @@ beforeEach(() => {
 describe("user session persistence", () => {
   it("stores only a hash and bounded deadlines and cleans expired records atomically", async () => {
     database.execute.mockResolvedValueOnce({ rows: [] });
-    database.execute.mockResolvedValueOnce({ rows: [{ expiresAt: new Date() }] });
+    const expiresAt = "2026-10-08 10:30:00.123+00";
+    database.execute.mockResolvedValueOnce({ rows: [{ expiresAt }] });
     const sessionHash = hashSessionCookie("secret-cookie");
     expect(sessionHash).toMatch(/^[a-f0-9]{64}$/);
     expect(sessionHash).not.toContain("secret-cookie");
-    await registerUserSession({
+    const session = await registerUserSession({
       sessionHash,
       userId: "00000000-0000-4000-8000-000000000001",
       firebaseSubject: "owner",
@@ -41,6 +42,25 @@ describe("user session persistence", () => {
     expect(insert.sql).toContain("LEAST(");
     expect(insert.params).toContain(sessionHash);
     expect(insert.params).not.toContain("secret-cookie");
+    expect(session.expiresAt).toBeInstanceOf(Date);
+    expect(session.expiresAt.getTime()).toBe(Date.parse(expiresAt));
+  });
+
+  it.each([
+    ["read", findActiveUserSession],
+    [
+      "renew",
+      (hash: string, subject: string) =>
+        renewUserSession(hash, subject, 1_800_000),
+    ],
+  ])("decodes the raw PostgreSQL deadline for %s", async (_, operation) => {
+    const expiresAt = "2026-10-08 12:30:00.123+02";
+    database.execute.mockResolvedValue({ rows: [{ expiresAt }] });
+
+    const session = await operation("hash", "owner");
+
+    expect(session?.expiresAt).toBeInstanceOf(Date);
+    expect(session?.expiresAt.getTime()).toBe(Date.parse(expiresAt));
   });
 
   it("projects the deadline for an exact own active session in SQL", async () => {

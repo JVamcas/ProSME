@@ -3,6 +3,7 @@ import "server-only";
 import { createHash } from "node:crypto";
 
 import { z } from "zod";
+import { connection } from "next/server";
 
 import { ResourceNotFoundError } from "@/lib/resource-errors";
 import { richTextToPlainText } from "@/shared/utils/RichText";
@@ -115,9 +116,8 @@ function encodeCursor(call: PublicFundingCallRecord) {
 export async function listPublicFundingCalls(
   input: PublicFundingCallListInput,
 ): Promise<PublicFundingCallPage> {
-  if (process.env.SKIP_CMS_PRERENDER === "1") {
-    return { items: [], nextCursor: null, total: 0 };
-  }
+  // Dates and cursor validation must run afresh for every real request.
+  await connection();
   const now = new Date();
   const cursor = input.after ? decodeCursor(input.after) : undefined;
   const result = await readPublicFundingCalls({
@@ -141,7 +141,8 @@ export async function listPublicFundingCalls(
 export async function findPublicFundingCallById(
   id: string,
 ): Promise<PublicFundingCallDetail | null> {
-  if (process.env.SKIP_CMS_PRERENDER === "1" || !z.uuid().safeParse(id).success) {
+  await connection();
+  if (!z.uuid().safeParse(id).success) {
     return null;
   }
   const call = await readPublicFundingCallById(id);

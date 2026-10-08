@@ -8,6 +8,10 @@ import {
 import { organizeCmsMedia } from "@/modules/content/infrastructure/CmsMediaStorage";
 import { generateDocumentThumbnail } from "@/modules/content/ServerResourceThumbnailService";
 import { resourceDocumentMimeTypes } from "@/modules/content/ResourceDocumentTypes";
+import {
+  revalidateCollection,
+  revalidateCollectionDelete,
+} from "@/payload/hooks/revalidate-public-content";
 
 export const Media: CollectionConfig = {
   slug: "media",
@@ -22,7 +26,11 @@ export const Media: CollectionConfig = {
     },
   },
   access: cmsMediaAccess(),
-  hooks: { beforeChange: [organizeCmsMedia, generateDocumentThumbnail] },
+  hooks: {
+    beforeChange: [organizeCmsMedia, generateDocumentThumbnail],
+    afterChange: [revalidateCollection],
+    afterDelete: [revalidateCollectionDelete],
+  },
   upload: {
     adminThumbnail: "thumbnail",
     imageSizes: cmsImageSizes.map(({ name, width }) => ({

@@ -16,8 +16,9 @@ import {
 import { Toast } from "@/shared/ui/Toast";
 import "../globals.css";
 
-// Build-time CMS fallbacks must never become cached public pages.
-export const dynamic = "force-dynamic";
+// Render each request for funding dates and preview authorization. Explicit
+// published-content caches remain enabled (force-dynamic would bypass them).
+export const revalidate = 0;
 
 const bahnschrift = localFont({
   src: "../fonts/bahnschrift.ttf",

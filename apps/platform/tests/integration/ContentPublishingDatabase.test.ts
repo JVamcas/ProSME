@@ -4,7 +4,12 @@ import { cmsPermissionCode } from "@/auth/authorization/permissions";
 
 const session = vi.hoisted(() => ({ preview: false, user: null as unknown }));
 vi.mock("server-only", () => ({}));
-vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
+vi.mock("next/server", () => ({ connection: async () => {} }));
+vi.mock("next/cache", () => ({
+  revalidatePath: vi.fn(),
+  revalidateTag: vi.fn(),
+  unstable_cache: (read: unknown) => read,
+}));
 vi.mock("next/headers", () => ({ draftMode: async () => ({ isEnabled: session.preview }) }));
 vi.mock("@/auth/authorization/current-user", () => ({ getCurrentUser: async () => session.user }));
 vi.mock("@payload-config", async () => import("@/payload.config"));

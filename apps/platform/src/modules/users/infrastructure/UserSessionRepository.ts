@@ -5,6 +5,12 @@ import { sql } from "drizzle-orm";
 import { getDatabase } from "@/platform/database/client";
 
 type SessionExpiry = { expiresAt: Date };
+type SessionExpiryRow = { expiresAt: string };
+
+function toSessionExpiry(row: SessionExpiryRow): SessionExpiry {
+  // Raw Drizzle PostgreSQL queries return timestamps without schema decoding.
+  return { expiresAt: new Date(row.expiresAt) };
+}
 
 export async function registerUserSession(input: {
   sessionHash: string;
@@ -17,7 +23,7 @@ export async function registerUserSession(input: {
     await transaction.execute(sql`
       DELETE FROM app_user_sessions WHERE expires_at <= clock_timestamp()
     `);
-    const result = await transaction.execute<SessionExpiry>(sql`
+    const result = await transaction.execute<SessionExpiryRow>(sql`
       INSERT INTO app_user_sessions (
         session_hash, user_id, firebase_subject, expires_at, absolute_expires_at
       )
@@ -36,7 +42,7 @@ export async function registerUserSession(input: {
     if (!session) {
       throw new Error("Unable to register the application session");
     }
-    return session;
+    return toSessionExpiry(session);
   });
 }
 
@@ -44,7 +50,7 @@ export async function findActiveUserSession(
   sessionHash: string,
   firebaseSubject: string,
 ): Promise<SessionExpiry | null> {
-  const result = await getDatabase().execute<SessionExpiry>(sql`
+  const result = await getDatabase().execute<SessionExpiryRow>(sql`
     SELECT s.expires_at AS "expiresAt"
     FROM app_user_sessions s
     JOIN app_users u ON u.id = s.user_id AND u.status = 'active'
@@ -54,7 +60,8 @@ export async function findActiveUserSession(
       AND s.absolute_expires_at > clock_timestamp()
     LIMIT 1
   `);
-  return result.rows[0] ?? null;
+  const session = result.rows[0];
+  return session ? toSessionExpiry(session) : null;
 }
 
 export async function renewUserSession(
@@ -64,7 +71,7 @@ export async function renewUserSession(
 ): Promise<SessionExpiry | null> {
   // A single conditional write prevents renewal from reviving an expired or
   // deleted session, including a concurrent logout from another tab.
-  const result = await getDatabase().execute<SessionExpiry>(sql`
+  const result = await getDatabase().execute<SessionExpiryRow>(sql`
     UPDATE app_user_sessions s
     SET expires_at = GREATEST(
       s.expires_at,
@@ -81,7 +88,8 @@ export async function renewUserSession(
       AND s.absolute_expires_at > clock_timestamp()
     RETURNING s.expires_at AS "expiresAt"
   `);
-  return result.rows[0] ?? null;
+  const session = result.rows[0];
+  return session ? toSessionExpiry(session) : null;
 }
 
 export async function deleteUserSession(sessionHash: string) {

@@ -10,6 +10,8 @@ const state = vi.hoisted(() => ({
   currentUser: vi.fn(),
 }));
 vi.mock("server-only", () => ({}));
+vi.mock("next/server", () => ({ connection: async () => {} }));
+vi.mock("next/cache", () => ({ unstable_cache: (read: unknown) => read }));
 vi.mock("@payload-config", () => ({ default: {} }));
 vi.mock("payload", () => ({ getPayload: async () => ({ find: state.find }) }));
 vi.mock("next/headers", () => ({ draftMode: state.draftMode }));
