@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { csrfTokensMatch } from "@/auth/csrf/verify-token";
 import { csrfCookieName, getSessionCookieName, readCookie } from "@/auth/firebase/cookies";
+import { endApplicationSession } from "@/platform/auth/ServerSessionActivityService";
 
 export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as { csrfToken?: string } | null;
@@ -10,6 +11,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid CSRF token" }, { status: 403 });
   }
 
+  await endApplicationSession(request.headers);
   const response = NextResponse.json({ success: true });
   response.cookies.set(getSessionCookieName(), "", {
     httpOnly: true,

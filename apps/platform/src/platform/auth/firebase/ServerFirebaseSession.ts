@@ -6,6 +6,7 @@ import { getServerEnvironment } from "@/lib/env/server";
 import { getFirebaseAdminAuth } from "@/auth/firebase/admin";
 import { getSessionCookieName, readCookie } from "@/auth/firebase/cookies";
 import { measureAuthenticationVerification } from "@/platform/monitoring/ServerAuthenticationTiming";
+import { findActiveApplicationSession } from "@/platform/auth/ServerSessionActivityService";
 
 export type FirebaseSessionVerificationOptions = { checkRevoked?: boolean };
 
@@ -73,7 +74,9 @@ export async function verifyFirebaseSessionFromHeaders(
   }
 
   try {
-    return await verifyFirebaseSessionCookie(sessionCookie, options);
+    const identity = await verifyFirebaseSessionCookie(sessionCookie, options);
+    const session = await findActiveApplicationSession(sessionCookie, identity.uid);
+    return session ? identity : null;
   } catch {
     return null;
   }

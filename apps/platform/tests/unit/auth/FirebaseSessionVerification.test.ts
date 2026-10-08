@@ -10,6 +10,9 @@ vi.mock("@/auth/firebase/admin", () => ({ getFirebaseAdminAuth: () => auth }));
 vi.mock("@/lib/env/server", () => ({
   getServerEnvironment: () => ({ SESSION_COOKIE_DAYS: 5 }),
 }));
+vi.mock("@/platform/auth/ServerSessionActivityService", () => ({
+  findActiveApplicationSession: vi.fn(),
+}));
 
 import {
   createFirebaseSession,
@@ -17,6 +20,7 @@ import {
   verifyFirebaseSessionFromHeaders,
 } from "@/platform/auth/firebase/ServerFirebaseSession";
 import { getSessionCookieName } from "@/auth/firebase/cookies";
+import { findActiveApplicationSession } from "@/platform/auth/ServerSessionActivityService";
 
 const identity = {
   uid: "synthetic",
@@ -28,6 +32,9 @@ beforeEach(() => {
   auth.verifyIdToken.mockResolvedValue(identity);
   auth.verifySessionCookie.mockResolvedValue(identity);
   auth.createSessionCookie.mockResolvedValue("session");
+  vi.mocked(findActiveApplicationSession).mockResolvedValue({
+    expiresAt: new Date(Date.now() + 30 * 60 * 1000),
+  });
 });
 
 describe("Firebase verification policy", () => {
@@ -65,6 +72,21 @@ describe("Firebase verification policy", () => {
       identity,
     );
     expect(auth.verifySessionCookie).toHaveBeenCalledExactlyOnceWith("session");
+    expect(findActiveApplicationSession).toHaveBeenCalledWith("session", identity.uid);
+  });
+
+  it("denies expired and pre-migration sessions even if Firebase still accepts the cookie", async () => {
+    vi.mocked(findActiveApplicationSession).mockResolvedValueOnce(null);
+    await expect(verifyFirebaseSessionFromHeaders(new Headers({
+      cookie: `${getSessionCookieName()}=session`,
+    }))).resolves.toBeNull();
+  });
+
+  it("fails closed when the inactivity deadline cannot be checked", async () => {
+    vi.mocked(findActiveApplicationSession).mockRejectedValueOnce(new Error("database offline"));
+    await expect(verifyFirebaseSessionFromHeaders(new Headers({
+      cookie: `${getSessionCookieName()}=session`,
+    }))).resolves.toBeNull();
   });
 
   it("supports explicitly required immediate revocation checks", async () => {

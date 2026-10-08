@@ -35,3 +35,4 @@ export * from "@/modules/workflows/infrastructure/workflow-rfi.schema";
 export * from "@/modules/workflows/infrastructure/workflow-deadline.schema";
 
 export { authEmailRateLimits } from "@/modules/users/infrastructure/auth-email.schema";
+export { userSessions } from "@/modules/users/infrastructure/user-session.schema";

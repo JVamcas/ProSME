@@ -12,6 +12,7 @@ import {
 
 import { postJson, requestJson } from "@/lib/client-http";
 import { getFirebaseClientAuth } from "@/auth/firebase/client";
+import { clientSessionService } from "@/platform/auth/ClientSessionService";
 
 type RegisterAccountInput = {
   confirmPassword: string;
@@ -137,6 +138,7 @@ async function logout() {
   await postJson("/api/auth/logout", {
     csrfToken: await getCsrfToken(),
   });
+  clientSessionService.announceEnded();
 }
 
 async function requestPasswordReset(input: PasswordResetInput) {

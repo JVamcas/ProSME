@@ -9,6 +9,7 @@ import { createApplicantPortalContext } from "@/modules/profiles/ServerProfileSe
 import { queryIdentity } from "@/shared/utils/createQueryClient";
 import { DashboardNavigationProvider } from "@/modules/dashboard/ui/DashboardNavigationProvider";
 import { Toast } from "@/shared/ui/Toast";
+import { SessionActivityMonitor } from "@/platform/auth/ui/SessionActivity";
 import { WebsiteAnalyticsCollection } from "@/modules/reporting/ui/WebsiteAnalyticsCollection";
 import "../../globals.css";
 
@@ -36,6 +37,7 @@ export default async function PortalLayout({ children }: PortalLayoutProps) {
         <QueryProvider
           identity={queryIdentity(user.id, user.capabilities, user.roleCodes)}
         >
+          <SessionActivityMonitor />
           <DashboardNavigationProvider audience="applicant">
             <AuthenticatedPortalShell
               context={createApplicantPortalContext(user)}
