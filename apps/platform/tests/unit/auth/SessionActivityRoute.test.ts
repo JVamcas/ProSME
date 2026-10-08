@@ -7,6 +7,7 @@ vi.mock("@/platform/auth/ServerSessionService", () => ({
 
 import { GET, POST } from "@/app/api/auth/session/activity/route";
 import { readSessionActivity, renewSessionActivity } from "@/platform/auth/ServerSessionService";
+import { sessionIdleMilliseconds } from "@/platform/auth/SessionPolicy";
 import { getSessionCookieName } from "@/auth/firebase/cookies";
 
 const url = "https://fund.example.test/api/auth/session/activity";
@@ -14,7 +15,7 @@ const url = "https://fund.example.test/api/auth/session/activity";
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(readSessionActivity).mockResolvedValue({ expiresAt: Date.now() + 1000, sessionCookie: "cookie" });
-  vi.mocked(renewSessionActivity).mockResolvedValue({ expiresAt: Date.now() + 1_800_000, sessionCookie: "cookie" });
+  vi.mocked(renewSessionActivity).mockResolvedValue({ expiresAt: Date.now() + sessionIdleMilliseconds, sessionCookie: "cookie" });
 });
 
 describe("session activity transport", () => {
@@ -49,8 +50,8 @@ describe("session activity transport", () => {
     expect(cookie).toContain("HttpOnly");
     expect(cookie).toContain("SameSite=lax");
     const age = Number(cookie?.match(/Max-Age=(\d+)/)?.[1]);
-    expect(age).toBeGreaterThanOrEqual(1799);
-    expect(age).toBeLessThanOrEqual(1800);
+    expect(age).toBeGreaterThanOrEqual(299);
+    expect(age).toBeLessThanOrEqual(300);
   });
 
   it("rejects expired sessions without issuing another cookie", async () => {
@@ -64,7 +65,7 @@ describe("session activity transport", () => {
     expect(response.headers.get("set-cookie")).toBeNull();
   });
 
-  it.each([-1, 1_800_001, 1.5, "0", null])("rejects invalid activity timing: %j", async (idleForMilliseconds) => {
+  it.each([-1, 300_001, 1.5, "0", null])("rejects invalid activity timing: %j", async (idleForMilliseconds) => {
     const response = await POST(new Request(url, {
       method: "POST",
       headers: { origin: "https://fund.example.test", "x-session-activity": "1" },

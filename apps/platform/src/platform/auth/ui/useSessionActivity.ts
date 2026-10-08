@@ -59,9 +59,10 @@ export function useSessionActivity() {
 
   useEffect(() => {
     let disposed = false;
-    const channel = typeof BroadcastChannel === "undefined"
-      ? null
-      : new BroadcastChannel("smefund:session-activity");
+    const channel =
+      typeof BroadcastChannel === "undefined"
+        ? null
+        : new BroadcastChannel("smefund:session-activity");
     function expire() {
       if (disposed) return;
       expireClientSession(queryClient);
@@ -98,7 +99,8 @@ export function useSessionActivity() {
       }
     }
     activityEvents.forEach((event) => {
-      window.addEventListener(event, observe, { passive: true });
+      // Capture includes nested scrolling and controls that stop propagation.
+      window.addEventListener(event, observe, { capture: true, passive: true });
     });
     document.addEventListener("visibilitychange", checkVisibility);
     window.addEventListener("focus", checkVisibility);
@@ -107,7 +109,9 @@ export function useSessionActivity() {
       disposed = true;
       activity.stop();
       controller.current = null;
-      activityEvents.forEach((event) => window.removeEventListener(event, observe));
+      activityEvents.forEach((event) => {
+        window.removeEventListener(event, observe, { capture: true });
+      });
       document.removeEventListener("visibilitychange", checkVisibility);
       window.removeEventListener("focus", checkVisibility);
       channel?.close();

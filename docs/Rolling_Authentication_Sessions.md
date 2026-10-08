@@ -1,12 +1,17 @@
 # Rolling authentication sessions
 
-Application sessions have a 30-minute server-enforced inactivity deadline.
+Application sessions have a five-minute server-enforced inactivity deadline.
 Activity monitoring is mounted only in the applicant portal, staff dashboard and
 CMS. Public and authentication pages neither monitor nor renew sessions.
 Pointer, keyboard, touch and scroll activity renews an active session through
 `POST /api/auth/session/activity`. Activity requests are batched at most once per
 minute, with a trailing request after the last interaction. Renewal accounts for
 the time elapsed since that interaction, so batching does not add idle time.
+The first interaction renews immediately, including when a newly mounted page
+inherits a session close to expiry. Activity listeners use capture so scrolling
+inside panels and controls that stop event propagation are still observed.
+Temporary renewal failures retry the recorded interaction with its original
+timestamp; retries do not count as new activity.
 Unattended tabs, status reads, focus checks, background queries and autosave do
 not renew sessions. Active tabs share renewed deadlines; logout notifies other
 tabs and deletes the server session before clearing the browser cookie.
@@ -51,3 +56,17 @@ this change. Real-browser and live Firebase acceptance remain unverified;
 simulated browser tests do not establish live acceptance. A production build
 and the full repository test suite were not run. Rollout acceptance is pending
 the migration and a real authenticated idle/renewal walkthrough.
+
+## Five-minute inactivity update (2026-10-08)
+
+The inactivity policy is now five minutes. No additional database migration is
+required for this update. Existing sessions can retain their previously granted
+deadline until it passes; fresh sign-ins use the five-minute window immediately.
+
+Local validation for this update: 26 authentication/session test files and 164
+tests passed, including continuous activity for twelve minutes, expiry exactly
+five minutes after the last interaction, nested scrolling, stopped keyboard
+events, retry timing, and renewal of a nearly expired inherited session. Type
+checking, architecture/form boundaries, file limits and whitespace checks passed.
+Full lint passed with 13 existing warnings. Deployment and live authenticated
+browser verification remain pending.

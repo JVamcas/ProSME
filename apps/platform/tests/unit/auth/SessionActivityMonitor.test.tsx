@@ -11,6 +11,7 @@ vi.mock("@/platform/auth/ClientSessionService", () => ({
 
 import { ClientRequestError } from "@/lib/client-http";
 import { clientSessionService } from "@/platform/auth/ClientSessionService";
+import { sessionIdleMilliseconds } from "@/platform/auth/SessionPolicy";
 import { SessionActivityMonitor } from "@/platform/auth/ui/SessionActivity";
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
@@ -38,10 +39,10 @@ beforeEach(() => {
   window.history.replaceState(null, "", "/portal/applications?tab=drafts");
   vi.spyOn(window.location, "replace").mockImplementation(() => {});
   vi.mocked(clientSessionService.read).mockImplementation(async () => ({
-    expiresAt: Date.now() + 1_800_000,
+    expiresAt: Date.now() + sessionIdleMilliseconds,
   }));
   vi.mocked(clientSessionService.renew).mockImplementation(async () => ({
-    expiresAt: Date.now() + 1_800_000,
+    expiresAt: Date.now() + sessionIdleMilliseconds,
   }));
   root = createRoot(document.createElement("div"));
   client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -72,6 +73,26 @@ function interaction(trusted: boolean) {
   Object.defineProperty(event, "isTrusted", { value: trusted });
   window.dispatchEvent(event);
 }
+
+it.each(["scroll", "keydown"])(
+  "renews for %s inside a panel even when the event does not reach the bubble listener",
+  async (eventName) => {
+    await mount();
+    const panel = document.createElement("div");
+    document.body.append(panel);
+    panel.addEventListener(eventName, (event) => event.stopPropagation());
+    const event = new Event(eventName, { bubbles: eventName !== "scroll" });
+    Object.defineProperty(event, "isTrusted", { value: true });
+
+    try {
+      await act(async () => panel.dispatchEvent(event));
+      await act(async () => vi.advanceTimersByTimeAsync(60_000));
+      expect(clientSessionService.renew).toHaveBeenCalledOnce();
+    } finally {
+      panel.remove();
+    }
+  },
+);
 
 it("ignores synthetic and hidden-tab events, and does not renew for focus", async () => {
   await mount();
