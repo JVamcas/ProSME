@@ -9,6 +9,7 @@ import { createPortalContext } from "@/modules/profiles/ServerProfileService";
 import { queryIdentity } from "@/shared/utils/createQueryClient";
 import { DashboardNavigationProvider } from "@/modules/dashboard/ui/DashboardNavigationProvider";
 import { Toast } from "@/shared/ui/Toast";
+import { SessionActivityMonitor } from "@/platform/auth/ui/SessionActivity";
 import "../../globals.css";
 
 export const metadata: Metadata = {
@@ -35,6 +36,7 @@ export default async function AdminLayout({ children }: AdminLayoutProps) {
         <QueryProvider
           identity={queryIdentity(user.id, user.capabilities, user.roleCodes)}
         >
+          <SessionActivityMonitor />
           <DashboardNavigationProvider audience="staff">
             <AuthenticatedPortalShell
               context={createPortalContext(user)}

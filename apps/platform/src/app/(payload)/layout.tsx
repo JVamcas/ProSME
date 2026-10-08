@@ -11,6 +11,7 @@ import { can } from "@/auth/authorization/policy";
 import { cmsAdminClassName } from "@/modules/content/ui/admin/CmsAdminTheme";
 import cmsWorkspaceStyles from "@/modules/content/ui/admin/CmsWorkspaceLayout.module.css";
 import { WorkspaceFrame } from "@/shared/ui/navigation/WorkspaceLayout";
+import { CmsSessionActivity } from "@/platform/auth/ui/SessionActivity";
 import { importMap } from "./cms/importMap";
 import "./tailwind.css";
 
@@ -36,6 +37,7 @@ export default async function PayloadLayout({ children }: Props) {
       htmlProps={{ className: cmsAdminClassName }}
     >
       <WorkspaceFrame className={cmsWorkspaceStyles.frame}>
+        <CmsSessionActivity />
         {children}
       </WorkspaceFrame>
     </RootLayout>
