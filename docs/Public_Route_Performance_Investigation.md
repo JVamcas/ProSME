@@ -302,3 +302,70 @@ Local regeneration does not update production's environment-scoped objects.
   documentation-only investigation. No completed implementation gate is claimed.
 - The temporary profiler was removed after measurement. Original app/database
   containers and user changes were preserved.
+
+## Request refresh and CMS read follow-up: 8 October 2026
+
+Follow-up item 2 is implemented in source, including correction of the Home
+unpublish visibility issue found during verification. The public layout no
+longer mounts
+`PublicContentRefresh`; its component and timer/event tests were removed.
+Mounting, pathname changes, the 30-second interval, focus, reconnection,
+`pageshow` and visibility changes no longer trigger that full-route refresh.
+An already-open or browser-restored page can retain its displayed content until
+navigation causes a new server request or the visitor reloads it. Publication
+hooks do not push changes into existing browser sessions.
+
+`ServerContentQueries` now uses module-scoped React `cache` wrappers for CMS
+getters and permission-scoped query mode. Resource detail reads also share a
+request-scoped promise between metadata and content. Concurrent and subsequent
+identical calls within one React server render share their result; different
+slugs and separate requests do not. Payload query construction touched by this
+change moved into `modules/content/infrastructure/PayloadContentRepository.ts`,
+preserving its existing filters, limits, ordering and relationship depths.
+Public routes retain `force-dynamic`. No persistent content/page cache or
+build-placeholder caching was introduced; follow-up item 3 remains separate.
+
+The repeatable `ContentRequestMemoization.test.ts` fixture uses the installed
+React server renderer with its real request cache dispatcher, actual content
+services/repositories and synthetic CMS transport/identity. It verifies shared
+promises across concurrent and sequential consumers, distinct slugs, fresh
+publication changes on a subsequent request, concurrent public/preview isolation,
+resource-specific preview grants, disabled/mismatched sessions and build/runtime
+separation. Its deliberately repeated set of getters makes **17 Payload calls**:
+one per unique global/collection read, four bounded Home-feed reads, one resource
+detail and a second page slug. This is a synthetic read-count assertion, not a
+new live SQL count or route latency measurement.
+
+`ContentPublishingDatabase.test.ts` verifies the actual Payload operations and
+public query service on a disposable PostgreSQL 16 database using the repository
+CMS schema and configuration. Six tests passed. These checks cover:
+
+- Draft page absence, publication, private pending revisions, authorized preview,
+  a mismatched resource grant, unpublication, republication and deletion.
+- Home global draft/public separation and native publication of a pending title.
+- Home unpublish visibility: verification reproduced a pre-existing issue where
+  `findGlobal({ draft: false })` returned the unpublished global base document
+  and the public projection ignored its status. `getHomepage()` now returns null
+  unless the base document is published or the request is an authorized preview.
+  The Home route invokes Next's not-found handling when no public Home is
+  available. Anonymous draft cookies and mismatched resource grants cannot
+  recover unpublished Home content; authorized `cms.site-settings.read` previews
+  still work. Republishing makes Home visible on the next server read.
+
+Home news/resources remain published-only during Home preview, as before.
+Collection previews require both draft mode and the matching active-user CMS
+read permission. Existing preview-route tests verify entry authorization,
+relative redirects on the browser origin and draft-mode exit. Existing
+publication-revalidation and CMS access/publish-guard tests remain green. Four
+Home route tests cover published rendering, absent content with/without draft
+mode and draft rendering with the preview exit link.
+
+Validation: **49 focused test files / 410 tests passed**, plus **6 real Payload /
+PostgreSQL integration tests**. Architecture, form architecture, file-size checks
+and type checking passed. Full lint passed with zero errors and 13 existing
+warnings outside this change. The disposable database/container was removed;
+the application database and running application containers were preserved.
+Existing Chromium could not launch because `libnspr4.so` is missing. No browser
+installation, production build, full application suite, deployment or browser
+navigation/LCP verification was performed. Production performance and browser
+freshness acceptance remain open.

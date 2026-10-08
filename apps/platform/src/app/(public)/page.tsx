@@ -1,5 +1,6 @@
 import { HomeHero } from "@/modules/content/ui/public/HomeHero";
 import { draftMode } from "next/headers";
+import { notFound } from "next/navigation";
 import Link from "next/link";
 import { HomeActions } from "@/modules/content/ui/public/HomeActions";
 import { HomeFundingCall } from "@/modules/funding-calls/ui/public/HomeFundingCall";
@@ -15,6 +16,7 @@ export default async function HomePage() {
     getHomepage(),
     listPublicFundingCalls({ limit: 2, status: "open" }),
   ]);
+  if (!homepage) notFound();
   const newsBlocks = homepage.blocks.filter(isResourceGrid);
   const remainingBlocks = homepage.blocks.filter(
     (block) => !isResourceGrid(block),

@@ -13,7 +13,6 @@ import {
   getContactDetails,
   getSiteSettings,
 } from "@/modules/content/ServerContentQueries";
-import { PublicContentRefresh } from "@/modules/content/ui/public/PublicContentRefresh";
 import { Toast } from "@/shared/ui/Toast";
 import "../globals.css";
 
@@ -93,7 +92,6 @@ export default async function RootLayout({ children }: RootLayoutProps) {
     >
       <body className="font-sans antialiased">
         <QueryProvider>
-          <PublicContentRefresh />
           <PublicSiteShell mainClassName="public-content">
             {children}
           </PublicSiteShell>
