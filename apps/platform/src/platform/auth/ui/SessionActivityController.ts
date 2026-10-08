@@ -15,7 +15,9 @@ type SessionActivityActions = {
 // never extend the session. The server remains authoritative about expiry.
 export class SessionActivityController {
   private expiresAt = 0;
-  private lastRenewedAt = Date.now();
+  // The first interaction must not wait a minute: a newly mounted page can
+  // inherit a session with less than a minute remaining.
+  private lastRenewedAt = Date.now() - sessionActivityIntervalMilliseconds;
   private lastActivityAt = 0;
   private renewalTimer?: ReturnType<typeof setTimeout>;
   private expiryTimer?: ReturnType<typeof setTimeout>;
@@ -100,7 +102,13 @@ export class SessionActivityController {
       this.accept(session);
       if (!this.stopped) this.actions.renewed(session);
     } catch (error) {
-      if (this.actions.isUnauthorized(error)) this.expire();
+      if (this.actions.isUnauthorized(error)) {
+        this.expire();
+      } else {
+        // Retry the same interaction, including its elapsed idle time. A
+        // network failure must not discard activity or create new activity.
+        this.pendingActivity = true;
+      }
     } finally {
       this.busy = false;
       this.scheduleRenewal();
