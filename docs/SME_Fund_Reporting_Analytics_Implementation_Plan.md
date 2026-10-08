@@ -1,333 +1,377 @@
 # SME Fund Reporting and Analytics Implementation Plan
 
-Date: 2026-10-06. Updated: 2026-10-07. D1 is complete per user acceptance.
-R1/R2 implementation is recorded in [the delivery gate](Website_Reports_R1_R2_Delivery_Gate.md); live configuration and delivery acceptance remain separate.
+Date: 2026-10-08.
 
-Deliver D1 first, then R1 and R2 in small increments. Use the latest generated
-D1 image for layout, the application's canonical tokens for styling, and the
-existing reporting, authorization and notification boundaries for implementation.
-The sidebar arrangements below include the delivered reporting routes.
+Status: phases 0–2 implemented in the workspace. Automated evidence, execution
+limits and remaining acceptance boundaries are recorded in the
+[phases 0–2 implementation gate](reporting-analytics/Reporting_Phases_0_2_Implementation_Gate.md).
+Phase completion still requires its own evidence and written acceptance.
 
-## Scope and client sources
+This plan replaces the website-specific R1/R2 implementation with the agreed
+dataset -> SQL template -> configured report -> run -> delivery model.
+It supersedes the previous fixed report, separate Report settings page,
+structured filter-builder proposal, and exclusions of SQL authoring/attachments.
+The [old delivery gate](Website_Reports_R1_R2_Delivery_Gate.md) is historical
+evidence, not acceptance of this replacement.
+D1 analytics remains the accepted source/dashboard baseline, preserved in
+[D1 Analytics Baseline](reporting-analytics/D1_Analytics_Baseline.md).
 
-| Item | Client requirement | Implementation depth here |
-| --- | --- | --- |
-| D1 | Administrator website analytics dashboard | Detailed; first delivery |
-| R1 | Bi-weekly website analytics email | Detailed; after D1 |
-| R2 | Monthly website analytics email | Detailed; reuse R1 machinery |
-| D2 | Staff workflow and programme reporting: pipeline, ageing, turnaround, outcomes, reviewer load, commitments and indicators | Later scope only |
-| D3 | Public CMS-managed programme statistics, maps, charts and exports | Later scope only |
-| R3 | Monthly chatbot interaction analytics | Later scope only; no separate chatbot dashboard requested |
-| R4 | Application data export to Excel or CSV | Later scope only |
-
-Sources: [Terms of Reference](client/Terms%20of%20Reference%20-2.pdf), pages 7–9
-and 12–13; [Workflow Specification](client/ME-Workflow-Engine-Specification.docx),
-section 10; [Inception Report](client/Pro%20SME%20Project%20Inception%20Report.pdf),
-pages 9 and 15. Anonymous eligibility analytics and heatmap/click-tracking
-integration belong to D1. Do not add report builders, chatbot panels, forecasts,
-ERP integration or new D2/D3/R3/R4 routes during these phases.
-
-## D1 visual and brand contract
-
-![D1 layout reference with illustrative data](reporting-analytics/d1-website-analytics-reference.png)
-
-Use this latest, denser reference: six metric cards; funnel, traffic and Namibia
-geography row; journeys, pages and call engagement row; eligibility and platform
-heatmap/scroll-depth panels side by side. Dates, counts, labels and heatmap thumbnail are illustrative, not production
-data. The new section headings below supersede the image's expandable analytics
-parent. Preserve its contrast and density, with responsive stacking on small screens.
-
-Canonical palette: `apps/platform/src/shared/ui/brand-tokens.css` and
-`brand-theme.css`. Use CSS variables and existing variants, not copied image hexes.
-
-| Token | Current value | D1 use |
-| --- | --- | --- |
-| `brand-navy` | `#0a183b` | Sidebar, headings, readable text and chart outlines |
-| `brand-blue` | `#6baed6` | Main traffic series, map selection and chart accents |
-| `brand-gold` | `#c9a24d` | Second series and secondary chart categories |
-| `brand-orange` | `#ff6f00` | Existing action/icon accents and selected emphasis |
-| `brand-yellow` | `#ffca45` | Supporting category/highlight where contrast permits |
-| `brand-green` / `brand-green-soft` | `#16a34a` / `#a8dfbc` | Eligible/completed semantic states |
-| `brand-white` / `brand-cream` | `#ffffff` / `#f6f4e2` | Cards and page surfaces |
-
-The subsequently approved KPI reference uses compact white cards, muted labels
-above values, upper-right blue/violet icon tiles and real previous-period changes.
-For those tiles use the existing Tailwind blue/violet palette; this supersedes the
-earlier instruction to replace those accents. Keep canonical tokens for the rest
-of the dashboard. Reuse
-`GeneralButton`, shared tables, form controls, skeletons, badges, page shell and
-navigation. Evaluate `DashboardMetricCard` for a compact variant; move a touched
-domain-neutral primitive into `shared/ui` when required, without copying it.
-Charts need labelled values/legends and accessible text or table equivalents.
-
-## Sidebar section headings
-
-Add labelled, non-clickable groups to the shared navigation renderer. Keep route
-ownership, permission filtering, active states, pending navigation and nested
-controls. Group metadata must not masquerade as a route or gain a fake `href`.
-
-```text
-Workspace: Applicant | Operations | CMS
-Dashboard
-
-ANALYTICS
-  Website analytics                         /admin/analytics/website
-
-APPLICATION MANAGEMENT
-  Applications
-  Funding calls
-  My work
-    Assigned tasks
-    Conflict reviews
-
-REPORTING
-  Website reports                           /admin/reports/website
-  Report settings                           /admin/reports/settings
-
-ADMINISTRATION
-  Administration                            existing children retained
-  Users & access
-
-Profile and Logout
-```
-
-Derive visible sections after filtering routes; omit empty groups. Hide visual
-heading text in collapsed mode while preserving accessible group labels. Keep
-the existing workspace switcher and mobile navigation behavior. Content management
-remains in CMS; do not duplicate its menu in Operations. Add Website reports when
-its phase ships, with bi-weekly/monthly views inside one page. Do not add links to
-unimplemented features. Evaluate a shared `NavigationSection` type/component and
-keep route declarations separate from rendering if either file becomes unwieldy.
-
-## Ownership and data flow
+## 1. Scope and authority
 
 Follow [AGENTS.md](../AGENTS.md) and the
-[structure contract](SME_Fund_Project_Structure_Contract_FINAL.md). One deployable
-application remains at `apps/platform`; no separate analytics application.
+[structure contract](SME_Fund_Project_Structure_Contract_FINAL.md).
+Everything remains inside the existing application at apps/platform.
+Reporting belongs to src/modules/reporting; notification extensions belong
+to notifications; shared database bootstrap belongs to platform/database.
 
-```text
-Consent-controlled website events → Google Analytics 4
-D1 → useWebsiteAnalytics → ClientReportingService → /api/reporting/website
-   → ServerReportingService → reporting SQL projection → stored GA aggregates + eligibility totals
-Existing scheduler → /api/internal/reporting/process → analytics synchronization service
-   → GoogleAnalyticsAdapter → dedicated reporting tables in existing PostgreSQL
-Later R1/R2 scheduled generation → immutable email report + notification occurrence
-   → existing email dispatch
-```
-
-Use `src/modules/reporting` with flattened client/server services; `domain` owns
-metrics/period rules, `api` owns Zod transport contracts, `infrastructure` owns
-provider adapters/schema/repositories, `application` owns scheduled use cases and
-`ui` owns views/hooks. Firebase remains authentication; this is a separate Google
-Analytics integration. Move the existing analytics consent implementation from
-its legacy integration path into reporting UI when touched. Configure the browser
-measurement ID through environment variables; keep the CMS settings page and hide
-its legacy measurement ID field. Keep provider credentials server-only and outside Payload.
-
-Core totals use GA Data API; ordered funnels use the funnel API behind the same
-adapter. Validate actual API capabilities before binding panels. Bound rows,
-date ranges and external concurrency. D1 persists completed aggregates in dedicated
-tables in the existing PostgreSQL database, rather than depending on a live GA
-request or process-local cache when the dashboard is opened. Raw visitor events
-remain in GA. Store each exact property, timezone, date range and funding-call scope;
-do not sum daily distinct-user counts or reconstruct ordered funnels from daily totals.
-
-`app_reporting_website_queries` records requested report scopes, refresh deadlines
-and bounded worker leases. `app_reporting_website_source_snapshots` retains the last
-successful result for each source independently. Background synchronization updates
-successful sources and records failures without overwriting previous aggregates.
-The dashboard uses one consolidated SQL projection for stored sources, SQL eligibility
-totals and previous-period changes. Authorization precedes all repository access.
-Show pending, stale and unavailable states honestly, with source refresh timestamps.
-Only compare an equal-length previous period when collection covered that period;
-missing reports and zero comparison denominators do not become fabricated percentages.
-
-### D1 files and panel responsibilities
-
-All listed UI files live under `reporting/ui/website`. Each chart is its own
-component in its own file. Chart components receive typed data; they do not fetch,
-authorize, parse responses or calculate business metrics inside JSX.
-
-| File | Responsibility |
+| Requirement | Planned treatment |
 | --- | --- |
-| `WebsiteAnalyticsWorkspace.tsx` | Compose filters, query state and panel grid |
-| `WebsiteAnalyticsFilters.tsx` | Date range, funding call and shared Refresh control |
-| `WebsiteAnalyticsMetrics.tsx` | Compose six instances of the reused metric card |
-| `WebsiteTrafficChart.tsx` | Daily page-view/session series, axes, legend and tooltip |
-| `WebsiteApplicationFunnelChart.tsx` | Four ordered call-view/check/start/submission stages with native labels |
-| `WebsiteVisitorGeography.tsx` | Compose regional map with region count selection; no geography table |
-| `NamibiaVisitorMap.tsx` | Interactive Namibia regional map with hover/focus detail |
-| `WebsiteVisitorRegionsTable.tsx` | Regional visitors, share and unknown coverage |
-| `WebsiteUserJourneys.tsx` | Top observed public-page sequences ranked by tracked users |
-| `WebsiteMostViewedPages.tsx` | Ranked, bounded page-view table |
-| `WebsiteFundingCallEngagement.tsx` | Call views and consistently labelled start/submission measures |
-| `WebsiteEligibilityChart.tsx` | Anonymous self-check outcome donut and legend |
-| `WebsiteHeatmapPanel.tsx` | Platform-owned click hotspots over masked layout geometry and scroll-depth shares; filter by captured layout and dashboard date/call scope |
-| `useWebsiteAnalytics.ts` | TanStack query keys, cancellation, caching and refresh |
+| R1: bi-weekly website analytics email | Configured report using the Website Analytics SQL template; 14-day schedule and generated attachment |
+| R2: monthly website analytics email | Separate configured report using the same template; calendar-month schedule |
+| R4: application export to Excel/CSV | Submitted-snapshot dataset and manually runnable report |
+| D2: pipeline, ageing, turnaround, reviewer load, commitments | Five operational templates/reports using the Workflow Operations dataset |
+| D2: outcomes by reason code | Deferred until workflow reason-code capture returns |
+| D2: indicator performance | Deferred until structured period actuals exist |
+| R3: monthly chatbot interaction analytics | Source dependency: chatbot interaction capture is absent |
+| D3: public programme statistics and visualization exports | Separate CMS/public requirement; not added to the report authoring screens |
+| D1: website analytics | Retain collection, synchronization, storage, dashboard and heatmap behavior |
 
-Use Apache ECharts through the shared SVG chart component for every chart,
-including the dashboard status ring. Use its native four-stage funnel, traffic
-lines and eligibility ring. Visitor geography follows the `geo-choropleth-scatter`
-example with one Namibia geo projection shared by the map and scatter series.
-Shade regions by their recorded user count; place scatter markers at derived
-region centres only for positive recorded counts. These markers represent region
-totals, not individual visitor coordinates. Retain the sourced fourteen-region
-GeoJSON and attribution. The funnel and traffic plotting areas are 360px high
-in a shared two-column row. Geography occupies its own full-width row with a
-560px plotting area; fit the country while preserving its geographic proportions.
-The geography table is omitted. Use the canonical app navy, blue, gold, orange,
-green and cream palette. Funnel labels/counts, legends, tooltips and traffic
-zoom/export controls belong to ECharts. Keep chart explanations and source details
-in the shared information tooltip rather than visible caption paragraphs.
-Search for compatible wrappers before creating
-chart framing or theme helpers. Store an accurately sourced, reusable Namibia
-boundary asset separately; record its source/licence and verify regional keys.
-The generated map is a layout illustration, not authoritative boundary geometry.
+Client sources: [Terms of Reference](client/Terms%20of%20Reference%20-2.pdf),
+pages 7-9 and 12-13; [Workflow Specification](client/ME-Workflow-Engine-Specification.docx),
+section 10; [Inception Report](client/Pro%20SME%20Project%20Inception%20Report.pdf),
+pages 9 and 15. The client specifies outputs; this conversation establishes the
+configurable implementation model. Do not describe SQL authoring as a separately
+requested client feature. No new report charts, forecasts or ERP integration.
 
-Target components/services below 200 lines, pages/routes below 100, functions
-below 80 and tests below 250. Split before reaching those working targets. Respect
-AGENTS hard limits and the stricter current file gate (400 implementation/300 test
-lines); never compress code to pass. Split provider queries by responsibility and
-scheduled generation from schedule administration. No all-charts file.
+## 2. Agreed screens and sidebar
 
-### D1 metrics and collection
+~~~text
+ANALYTICS
+  Website analytics     /admin/analytics/website
 
-Six cards: visitors, page views, average session duration, application starts,
-applications submitted and starter completion rate. Define visitors as GA
-`totalUsers`; use `screenPageViews` and `averageSessionDuration` for traffic.
-Define start/submission cards as tracked users reaching those steps and label
-them accordingly; they are not PostgreSQL application totals. Completion uses
-ordered funnel users submitted / users started; no denominator means unavailable.
+REPORTING
+  Report Definition     /admin/reports/definitions
+  Reports               /admin/reports
+~~~
 
-Track `funding_call_view`, `call_document_download`, `eligibility_check_complete`,
-`application_start` and `application_submit`. Register funding-call/page-category
-dimensions. Fire successful start/submission signals after server confirmation,
-deduplicate retries/rerenders and keep tracking continuous across public/auth/portal
-navigation. The subsequently approved application funnel has four ordered stages:
-Funding Call View, Eligibility Check Completed, Application Started and Application
-Submitted. Query that exact sequence; use contract `d1-v2` so older three-stage
-stored results cannot be displayed as four-stage results. Every call-filtered
-funnel step uses the same call scope; validate cross-call sessions explicitly.
+The two reporting paths above are proposed route names. They remain under
+app/(operations); unrelated navigation and route ownership stay intact.
+Keep permission filtering, empty-group suppression, collapsed accessibility,
+pending navigation and mobile behavior in the existing shared navigation.
 
-Use consent-aware browser tracking through `ClientWebsiteAnalyticsService.ts`;
-components/hooks must not call Google SDKs directly. Send only approved event
-metadata; sanitize page URLs/referrers and omit applicant identifiers, answers,
-free text, documents and reviewer information. Heatmaps capture approved public
-pages with masking, not applicant/staff/CMS forms. Heatmap capture, storage and
-rendering are platform-owned; Microsoft Clarity is removed. Capture only numeric
-geometry, click cells and maximum scroll depth after explicit consent. Never
-capture DOM text, images, form values, attributes or visitor identities. Separate
-viewport sizes and captured layout versions. Bound traversal, payloads and event
-counts, use passive throttled listeners and idle batched uploads, and aggregate
-in SQL. `WEBSITE_HEATMAP_ENABLED=true` enables collection after migration 0167;
-saved data remains viewable when collection is disabled. GA does not supply heatmaps.
+Report Definition has two tabs, each using the existing DataTable:
 
-Geography displays Namibia and its 14 regions, filtering GA country to Namibia.
-Verify IP-derived region names against live results; do not use business-profile
-regions to describe website visitors. Preserve unknown/unmapped/thresholded data.
-Other panels remain website-wide unless explicitly filtered; label that difference.
-Distinct users can appear in multiple calls or regions: do not force grouped counts
-to sum to site-wide users. Agree and label the regional-share denominator.
+- Datasets: system-bootstrapped catalogue; opening one displays approved tables
+  or views, columns, types and join relationships. Administrators cannot edit
+  dataset definitions or add arbitrary tables.
+- Report Templates: searchable/paginated catalogue; opening one provides a
+  dataset selector, SQL editor, parameter definitions and output-column metadata.
+  Administrators author templates against exactly one dataset.
 
-Journeys show the top three observed sequences of two or three public-page steps, ranked by tracked users, with readable labels and arrows. Authentication and portal activity are excluded; the public Start application handoff is an endpoint. Empty, failed and stale sources remain explicit.
-Prove the available API query for each; arbitrary GA path exploration is not assumed.
-Log anonymous self-check outcomes, call/ruleset version and timestamp in PostgreSQL;
-retain only approved non-identifying assessment categories, never raw free text or
-account/session/IP identifiers. Aggregate in SQL. Keep advisory results separate
-from formal eligibility decisions. Test that logging failure cannot block guidance.
+Reports is a searchable/paginated DataTable of configured reports, not generated
+files. Opening a report at /admin/reports/{reportId} shows its selected template
+version, default parameters, schedules, delivery configuration and Run report
+action. Its Runs tab lists executions: datetime, user/system trigger, status,
+rows generated, duration and output/error file access. A selected run can open
+a detail drawer or nested detail route; this is not another sidebar entry.
+Schedules and delivery are owned by this report detail page, not Report settings.
 
-Every panel distinguishes loading, no data, unavailable, failure and stale data.
-Expose collection start, source coverage and relevant GA thresholding/sampling.
-Keep successful panels usable when another source fails. No demo data in production.
+Reuse existing DataTable, Tabs, PageShell, GeneralButton, dialogs, form controls,
+pagination and notification recipient controls. All handwritten forms, including
+parameter configuration and manual run values, use React Hook Form, Zod and
+zodResolver. Monaco's SQL value is a controlled form field. Do not create a
+parallel input/table/dialog system.
 
-## R1 and R2 persistence and delivery
+## 3. Domain and persistence contracts
 
-Implement one fixed website report model and two period schedules. R1 covers consecutive 14-day periods, with the first period start configured
-in Report settings; R2 covers completed calendar months. Align report boundaries with
-the GA property timezone and the agreed local send time; convert database times
-to UTC. Allow a defined source-finalization delay before generation.
+| Entity | Required responsibility and persisted identity |
+| --- | --- |
+| Dataset | Stable system key/version, related exposed tables/views, typed columns, joins/cardinalities, permitted functions and authorization contract |
+| Template/version | Name, dataset/version, SQL, typed ordered parameter definitions, output columns/types, supported formats, author and immutable published version |
+| Report | Stable key/name, selected published template version, parameter defaults, default format, execution-owner principal and report-level delivery configuration |
+| Schedule | Belongs to one report; multiple schedules supported; timezone, period rule/anchor, send time, finalization delay, cursor, enabled state and version |
+| Run | Belongs to one report; optional schedule/version, template/dataset versions, actual parameters, resolved period, format, user/system trigger, idempotency identity, timestamps and row count |
+| Run artifact | Private object reference, filename, MIME type, byte count, checksum and artifact kind: generated output or error file |
+| Delivery | Existing notification occurrence/delivery identities referencing the report/run/artifact; retries and provider status remain notification-owned |
 
-Module-owned repeatable migrations add `app_reporting_schedules`,
-`app_reporting_runs`; anonymous eligibility and D1 source aggregates already exist.
-Schedules hold frequency,
-timezone, period anchor, next due time, enablement and a notification-event reference.
-Reuse existing notification event rules as the authoritative designated-recipient
-configuration; expose or link that configuration from Website reports. Avoid a
-second independently editable recipient list. Only active users with report access
-may receive these reports; revalidate before delivery/retry.
+Proposed new tables are app_reporting_datasets, app_reporting_templates,
+app_reporting_template_versions, app_reporting_reports,
+app_reporting_report_schedules, app_reporting_report_runs and
+app_reporting_run_artifacts. Confirm names against the actual schema before
+migration. Avoid rebuilding the legacy frequency-unique schema under its old
+name or maintaining a compatibility adapter. Dataset SQL views use descriptive
+app_reporting_dataset_* names.
 
-Runs retain schedule/version, period bounds, metric-contract version, scope,
-generated time, immutable normalized data/source metadata, generation state and
-linked occurrence ID. Unique schedule/period identity prevents duplicate generation.
-Email delivery status remains in existing notification tables, not copied status
-flags. Raw GA visitor events stay in GA; only completed aggregates are persisted.
+A published template version is immutable; editing creates a draft/new version.
+A report explicitly selects its version. Updating that selection affects future
+runs. Store exact resolved inputs and source coverage on each run; previous runs
+never change when defaults, schedules, SQL or datasets change.
 
-Claim bounded due work with leases and recovery, request source synchronization
-and wait for completed aggregates for the exact period, then atomically finalize
-the immutable email snapshot, capture occurrence
-and advance schedule. Repeated/crashed/concurrent invocations resume safely.
-Generation failures retry without becoming zeros or advancing past an unsent
-required report. Define a bounded missed-period catch-up policy.
+Use run states QUEUED, PREPARING_SOURCE, RUNNING, SUCCEEDED and FAILED.
+Generation success and delivery success are separate. Multi-record state/event
+writes are transactional and audited; file storage is coordinated through the
+run identity and recorded artifact reference, not assumed to join a DB transaction.
 
-Add typed reporting events, published templates and seed/migration support in
-notifications. Render a branded HTML/plain-text summary of the same D1 metrics,
-top pages/calls, Namibia regions, journeys and eligibility, with period/source
-notes and a link to the authorized saved report. Preserve template escaping; the
-existing renderer does not accept arbitrary HTML through text placeholders.
-Use fixed bounded text/table fields or a narrowly scoped safe report renderer.
-Attachments and customizable report templates are outside this first delivery.
+## 4. SQL editor and server execution
 
-Website reports uses shared tables for history and saved source metadata. Saved
-report detail lives at `/admin/reports/website/{reportId}`. As instructed on
-2026-10-07, schedule and delivery-recipient configuration lives at
-`/admin/reports/settings` under Reporting. Reuse notification event rules and
-recipient controls on that page. Forms use React Hook Form, Zod and
-`zodResolver`. Snapshot viewing
-must remain possible during a GA outage. SMTP delivery is at-least-once: database
-idempotency prevents duplicate occurrences, but a send-success/receipt crash can
-still cause retry; do not promise exactly-once delivery without provider support.
+Use monaco-sql-languages with its PostgreSQL language contribution.
+Its documented completionService accepts custom completion items; supply only
+the selected dataset's tables/views, typed columns, aliases and join guidance.
+It is an editor, not a dataset access policy or query execution engine.
+[Official library documentation](https://github.com/DTStack/monaco-sql-languages)
 
-## Permissions and routes
+Implement a focused compatibility check before installing exact pinned versions:
+PostgreSQL parameters, React 19, Next.js client-only loading, workers, diagnostics
+and dataset completion. The upstream README currently qualifies compatibility
+with monaco-editor 0.37.1; choose and test a compatible pair rather than assuming
+the newest versions work together. Commit the lockfile. Add no optional formatter
+unless necessary for the agreed editor.
 
-Proposed canonical codes: `reporting.website.read.all`,
-`reporting.website-report.read.all` and `reporting.website-schedule.update.all`.
-Add explicit catalogue descriptions/groups and allowed/denied tests. Validate
-target schedule, report kind and recipient eligibility; permission to read
-applications or manage CMS is not reporting authorization. Platform heatmap
-reads use `reporting.website.read.all`. Public writes require exact analytics
-consent, same-origin request context and a strict bounded approved-page schema.
+Use native PostgreSQL positional parameters ($1, $2, etc.) as the initial SQL
+contract, with named labels/types/order in parameter metadata and editor
+suggestions. Example labels are startDate, endDate, timezone and fundingCallId.
+This proposed syntax must pass the compatibility check.
+Bind values through the database driver. Parameters represent values, never
+table names, column names, joins or executable SQL.
+[PostgreSQL parameter execution](https://www.postgresql.org/docs/16/libpq-exec.html)
 
-Keep pages under `(operations)` and APIs under `app/api`: website read, bounded
-report list/detail and schedule update. Use the existing service-processor
-authorization for `/api/internal/reporting/process`; human schedule permissions
-do not replace processor credentials. Services enforce rules; routes never query
-tables. Reuse audit infrastructure for schedule/recipient changes.
+At publication and again at execution, parse the PostgreSQL SQL on the server
+and validate one supported read query with an explicit result projection.
+Permit SELECT and supported read-only CTEs, joins, grouping and aggregates within
+the selected dataset. Validate every relation/column/function, including nested
+queries and CTE bodies; reject data-modifying CTEs, extra statements, SELECT INTO,
+locking clauses, arbitrary functions, system catalogs and cross-dataset access.
+Use parsed structure, not keyword regexes or frontend diagnostics, as the policy.
 
-## Ordered implementation and acceptance
+Execute through a reporting repository with a restricted database role,
+read-only transaction, explicit search path, server-owned resource scope,
+statement/lock timeouts and bounded worker concurrency. Database privileges and
+dataset views/RLS must enforce the permitted scope; a SQL author cannot choose
+another actor or bypass ownership/assignment through editable parameters.
+Read-only mode alone is insufficient to validate a user-authored query.
+[PostgreSQL transaction rules](https://www.postgresql.org/docs/16/sql-set-transaction.html)
 
-| Phase | Focused tasks and reviewable result | Required evidence |
+Dataset tables are approved projections, not broad access to user credentials,
+review comments, documents or raw internal tables. Validate typed parameters,
+defaults and output types server-side. Stream bounded output; exceeding row,
+time or file-size limits fails clearly rather than silently truncating a report.
+Choose and record concrete execution limits and the server parser in phase 2.
+
+## 5. Bootstrap inventory and data semantics
+
+The detailed catalogue, source joins, SQL-template results, parameter defaults,
+schedules and local evidence are in
+[Reporting Bootstrap Inventory](reporting-analytics/Reporting_Bootstrap_Inventory.md).
+The initial inventory is 3 datasets, 7 SQL templates, 8 configured reports,
+2 website schedules, 3 lifecycle events and 3 lifecycle email templates.
+
+Dataset definitions are developer-owned and installed through repeatable
+migrations plus the explicit reporting bootstrap. Seed initial templates and
+report configurations with stable keys after an authorized bootstrap actor is
+available. Normal startup must not initialize CMS content or recreate removed
+website-specific reports.
+
+Bootstrap is idempotent and transactional for related records. Updating a
+system dataset is versioned; do not overwrite administrator-edited templates,
+report defaults, recipients or schedules on rerun. Keep substantial seed SQL
+and metadata in focused declarative seed resources, not giant services.
+Unsupported reports remain recorded source dependencies, not runnable templates
+against nonexistent tables.
+
+## 6. Generation, scheduling and artifacts
+
+Manual and scheduled requests create the same run type. A manual request has
+a caller idempotency key and validated overrides. A scheduled run has a unique
+report/schedule/resolved-period identity. Pin template/configuration versions and
+parameters when the run is created, before asynchronous work begins.
+
+An authenticated processor uses bounded claims, leases and recovery. It prepares
+the exact required sources, records RUNNING and emits generation started once
+per run, executes the SQL, and streams the Excel/CSV output to private storage.
+On successful file persistence, atomically register the artifact, finalize the
+run and capture the success event. A crash after storage upload is recovered
+using the run's deterministic artifact identity; clean up orphaned temporary files.
+If execution fails, persist failed-run diagnostics, retain a sanitized error
+artifact, then capture the failure event. Persist the FAILED state even when
+error storage is unavailable. Cover artifact-write failures explicitly: do not
+claim an attachment exists when storage failed; retry persisting the error artifact
+and recording its event idempotently.
+
+Initial formats are XLSX and CSV; no chart/PDF reporting subsystem.
+Preserve declared column order/types, numeric precision, timezone labels and
+safe spreadsheet text handling. Include coverage and source availability in
+website output; absent source data stays absent, never fabricated as zero.
+The current DocumentStorage interface reads/writes Buffers; add focused stream
+support in the existing storage integration for bounded report export, rather
+than assuming streaming already exists or buffering arbitrarily large results.
+
+R1 uses consecutive 14-day periods; R2 uses complete calendar months. Resolve
+calendar rules in the source timezone, then persist UTC timestamps. Finalization
+delay is generation timing; delivery follows success. Missing source refreshes
+leave a run preparing/retryable, not a zero-filled successful report. Capture
+the distinction between a legitimate no-data source and a failed source.
+Reuse D1 synchronization for exact period/property/contract queries, rather than
+letting administrator SQL call external APIs.
+
+Process missed periods oldest first in bounded batches; keep a retryable source
+failure's cursor pending. A terminal failed period has its failed run/error event
+recorded before the schedule advances to its next period, preventing permanent
+starvation. An explicit retry creates a new attempt linked to the original run;
+worker crash recovery resumes the existing run without duplicate lifecycle events.
+Delivery failures do not rerun SQL or hold later generation indefinitely.
+
+## 7. Lifecycle notifications and delivery
+
+| Proposed event key | Event payload and attachment |
+| --- | --- |
+| reporting.generation.started | Report/run identities, trigger/user, period and start time; no generated attachment |
+| reporting.generation.completed | Report/run identities, completion time, rows, duration, output artifact reference; attach saved XLSX/CSV |
+| reporting.generation.failed | Report/run identities, failure time and error-artifact reference; attach sanitized error file |
+
+Seed all three event definitions and versioned HTML/plain-text email templates.
+Template contexts carry validated scalar metadata and artifact identities, not
+arbitrary HTML, SQL output blobs or applicant values. Events always exist in
+run history; report delivery configuration determines their notification audience.
+The required website success event emails designated administrators. For manual
+reports the requester can download the output; optional event recipients are
+explicit report configuration.
+
+Expose recipient and event-delivery controls in report detail. Reuse existing
+recipient types, outbox, rules, renderer, retry machinery and history; extend
+report-scoped routing so the generic success event can serve different reports.
+Extend notification rule identity to event plus report scope, retaining global
+rules for unrelated events. A report/event selects one authoritative scoped rule;
+its existing recipient/channel bindings own the audience. Capture that rule and
+published email-template version on the occurrence. Report id in event context
+must match the resolved scope, including on retry. Replace the current event-only
+unique rule constraint through a repeatable migration and regression-test global
+notification lookup as well as two reports using the same lifecycle event.
+Keep one authoritative recipient configuration, not independent lists on report
+and notification screens. Resolve each event's recipients per report and
+revalidate active-user/report/dataset access before sending or retrying.
+
+The SMTP sender already supports attachments, but dispatch currently supplies
+only the branding logo. Extend attachment resolution to authorized run artifacts
+and make inline cid optional for ordinary file attachments. Read files through
+the existing private storage adapter; output/error downloads require permission
+and target context checks. Email attachment limits must fail visibly in delivery
+history without changing a successful run into failed generation.
+SMTP is at-least-once; do not claim exactly-once external mail delivery.
+
+## 8. Authorization, ownership and application flow
+
+All permission definitions live in the canonical permissions directory.
+Define granular dataset read, template read/create/update/publish, report
+read/create/update/run, schedule update, delivery update and run read/download
+operations. Use explicit all/assigned/own scopes only where their context is
+implemented and tested. Do not replace them with role-name checks or broad manage.
+A report grant does not automatically grant its dataset's applicant/reviewer data.
+Check source scope before enqueue/execution, on output download and at delivery.
+Use the report configuration owner as the scheduled authorization principal;
+revalidate it rather than trusting a captured grant. The processor credential
+authorizes worker transport, not unrestricted source-data access.
+
+~~~text
+Client view -> TanStack Query hook -> Client<Domain>Service
+  -> app/api/reporting/* -> Server<Domain>Service
+  -> reporting repository / storage adapter / notification use case
+~~~
+
+Use flattened ClientReportDefinitionService, ServerReportDefinitionService,
+ClientReportService and ServerReportService, with focused generation, scheduler
+and bootstrap use cases as needed. Repositories/schemas/execution policy stay in
+reporting/infrastructure or domain as appropriate. Extend the architecture gate
+to recognize approved reporting projection dependencies if necessary; do not
+bypass it through indirection or broad exceptions.
+
+Proposed APIs cover datasets, templates, reports, nested schedules/delivery,
+run creation/history/detail and artifact downloads under /api/reporting.
+Keep /api/internal/reporting/process authenticated; retain its D1
+synchronization responsibility when adding the generic worker. Pages compose
+views; transport routes validate/contextualize input and invoke services.
+Use SQL projections and bounded pagination for catalogues/history.
+
+## 9. Remove the old report implementation first
+
+Phase 1 removes these runtime families rather than retaining them as a fallback:
+
+- Pages: admin/reports/website, its report detail, and admin/reports/settings;
+  sidebar entries Website reports and Report settings.
+- APIs: /api/reporting/website-reports and /api/reporting/website-schedules
+  including their nested detail/update routes.
+- ClientWebsiteReportService, ServerWebsiteReportService,
+  ServerWebsiteReportProcessorService, WebsiteReportSchemas, WebsiteReport
+  domain/period/snapshot/summary code, WebsiteReport* repositories and report UI.
+- WebsiteReport* notification seeds/templates/repositories/policies,
+  NotificationWebsiteReportEvent and their catalogue/context/renderer wiring.
+- Legacy report permissions, schema-index exports, obsolete fixtures/tests and
+  report-specific bootstrap references after checking all actual references.
+
+Keep D1 reporting-website/eligibility/heatmap schemas, collection services,
+Google Analytics adapters, repositories, synchronization, dashboard and tracking.
+Remove only the old generation branch from ServerReportingProcessorService.
+Keep the shared scheduler, processor authentication, health-response contract,
+notification engine, storage and application/workflow data.
+
+Use forward migrations; never rewrite/delete already-applied migrations.
+Inventory target-environment history, pending runs and notification references
+before retiring app_reporting_schedules and app_reporting_runs.
+Prevent new legacy claims and reconcile in-flight work before dropping tables.
+Retain immutable historical evidence and shared notification records as needed;
+remove obsolete configuration without deleting unrelated outbox/audit history.
+No legacy runtime adapters are part of the new design.
+
+Record the old anchor/cursor/timezone/timing and desired enablement as explicit
+inputs to the new website configurations. This preserves reporting-period
+continuity, not the old implementation. Recheck source/recipient readiness before
+the new processor activates those schedules. The phases 0–2 implementation has
+not migrated or deployed the running application database.
+
+## 10. Phased implementation and acceptance
+
+| Phase | Reviewable result | Required evidence before completion |
 | --- | --- | --- |
-| 1 D1 contracts and visual shell | Fix metrics/scopes and brand mapping; add sidebar sections; compose the reference panels in separate files with typed development fixtures | Permission-filtered/empty/collapsed/mobile navigation tests; brand contrast, responsive and keyboard review. Fixture UI is preview acceptance only |
-| 2 D1 tracking and source proof | Extend consent/service tracking; enable authorized GA property/API access; prove totals, ordered same-call funnel, Namibia regions and observed public journeys | Live test journey; consent/retry/URL sanitization tests; source samples confirm coverage. Agree region and journey limitations before accepting those panels |
-| 3 D1 complete | Persist completed GA aggregates in existing PostgreSQL; bind independent panel results through one SQL projection; add anonymous self-check aggregation; implement platform-owned masked public-page click/scroll heatmaps; correct compact KPI cards and keep empty charts visible | Adapter/error/partial-data and authorization tests; SQL projection, heatmap retry/depth/layout/period scope, refresh lease, outage and restart persistence tests; browser check against reference and real API results. D1 accepted before R1 work |
-| 4 R1 | Add migrations, schedules/runs, report page, typed notification event/template and protected processor; enable only the agreed bi-weekly schedule | Period-boundary, recipient denial, concurrent generation, crash recovery and SQL pagination tests; actual email and saved snapshot reconcile |
-| 5 R2 | Enable calendar-month scheduling through the same generation/rendering/delivery code | Short months, year changes, timezone boundaries and simultaneous schedules; monthly email and history verified |
+| 0: plan | Current model, bootstrap inventory, removal scope and dependencies documented | Documentation review; no runtime implementation claimed |
+| 1: clean slate | Old report UI/APIs/services/wiring removed; D1 processor still synchronizes | Reference audit; repeatable forward migration on isolated DB; analytics/notification regression checks; old routes no longer serve reports |
+| 2: datasets and execution policy | Three versioned datasets, typed SQL views, server parser/parameter contract and restricted query executor | PostgreSQL join/projection/precision tests; denied relations/functions/CTEs; allowed/denied/context mismatch; editor compatibility; recorded limits |
+| 3: Report Definition | Dataset read table and template table/editor, parameter schema, immutable publication | Editor diagnostics/completion; publication/validation/version conflicts; schema-driven form checks; protected API/service tests |
+| 4: Reports and manual runs | Configured-report list/detail, defaults, Run action, Runs tab, persisted lifecycle events and private Excel/CSV/error artifacts | Real SQL-to-file reconciliation; zero rows; limit/storage failures; idempotency/concurrent claims/crash recovery; permission revocation/download tests |
+| 5: bootstrap | Seven templates/eight reports installed via explicit idempotent seed | Dataset/template mapping and semantic fixture tests; seed rerun preserves edits; budget rule resolved; unsupported reports absent |
+| 6: schedules | Two website schedules inside report detail, exact-period preparation and bounded catch-up | 14-day/month/year/timezone boundaries; collection coverage; lease/cursor recovery; manual and scheduled generation parity |
+| 7: events and delivery | Three lifecycle events, report-scoped recipient configuration and saved-file attachments | Actual email/file reconciliation; error file receipt; delivery retries do not regenerate; recipient revocation/attachment failure tests |
+| 8: acceptance and activation | Complete approved inventory verified and intended schedules activated | Existing-browser review, live source coverage, private storage, SMTP and deployment evidence; written acceptance with remaining dependencies |
 
-For each implementation phase run architecture/form boundary and file-size gates,
-lint, typecheck, focused and full tests, and production build. Run build and
-standalone typecheck sequentially to avoid generated-type races. Verify repeatable
-migrations on an isolated database. Record browser, live API, email and deployment
-evidence separately from mocks/static checks in a concise phase gate document.
-Baseline failures remain named failures; written acceptance must identify scope
-and unresolved dependencies. A phase cannot claim live acceptance from fixtures.
+Each phase is independently reviewable; do not implement the entire system in
+one unreviewed change. Run architecture/form and file-size gates, lint, typecheck
+and appropriate policy/service/repository/route tests. Use actual isolated
+PostgreSQL for material SQL/migration/concurrency changes. Run broader regressions
+when the affected dependencies justify them. Never call focused fixtures live
+acceptance. Record unrelated baseline failures explicitly.
 
-Inputs can be settled during independent UI work: GA property access and timezone,
-custom dimensions, real region/journey coverage, licensed regional geometry,
-heatmap migration/capture activation and browser verification, designated recipients, bi-weekly meaning/anchor, send
-time and source-finalization delay. Do not enable dependent live reporting until
-its required configuration and period policy are agreed.
+Do not run a production build or install browser/system dependencies unless the
+user explicitly requests it. Browser, live GA, SMTP, deployment and written
+acceptance remain distinct from static/automated checks. Follow the active file
+gate (400 implementation / 300 test lines) and AGENTS function limits; split
+responsibilities and keep readable formatting.
 
-Technical references: [GA dimensions and metrics](https://developers.google.com/analytics/devguides/reporting/data/v1/api-schema),
-[funnel reporting](https://developers.google.com/analytics/devguides/reporting/data/v1/funnels),
-[quotas](https://developers.google.com/analytics/devguides/reporting/data/v1/quotas)
-and [source response metadata](https://developers.google.com/analytics/devguides/reporting/data/v1/rest/v1beta/ResponseMetaData).
+The outstanding decisions and source dependencies are recorded in the inventory.
+The accepted budget rule counts the latest award decision only for terminal
+APPROVED workflows and submitted applications, excluding withdrawals. Phase 2
+records SQL syntax compatibility and concrete execution limits in its gate;
+operational defaults and activation remain subject to their later phases.
+
+## 11. Historical documentation verification record
+
+Recorded on 2026-10-08 for this documentation-only change:
+
+- Local documentation checks passed for four files and 19 relative links,
+  Markdown table/fence structure, bootstrap catalogue counts and preservation
+  of the original D1 specification apart from its relocated image/sidebar link.
+- Architecture and form boundary checks passed for 1,641 source files.
+- File-size check passed for 2,404 handwritten files.
+- Type checking passed. Lint completed with zero errors and 13 existing warnings
+  in application files untouched by this change. Whitespace validation passed.
+
+No application test suite, production build, browser, deployment or email send
+was run for this documentation change. No implementation phase or live gate is
+accepted by these checks; the completed plan is ready for review.

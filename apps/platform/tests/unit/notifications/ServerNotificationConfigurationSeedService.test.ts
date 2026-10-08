@@ -1,4 +1,3 @@
-vi.mock("@/modules/notifications/infrastructure/WebsiteReportNotificationSeedRepository", () => ({ seedWebsiteReportEmailTemplates: vi.fn() }));
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));

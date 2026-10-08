@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { websiteReportContextSchema, websiteReportEventCatalogue } from "./NotificationWebsiteReportEvent";
 import { workflowHoldResumedContextSchema } from "./NotificationWorkflowHoldEvent";
 import {
   workflowTaskAssignedContextSchema,
@@ -112,8 +111,6 @@ export type AuthenticationEventKey =
 export type NotificationRuleEligibility = "CONFIGURABLE" | "SYSTEM_ONLY";
 
 export const notificationEventKeys = [
-  "reporting.website.biweekly",
-  "reporting.website.monthly",
   "auth.email.verification",
   "auth.password.reset",
   "application.submitted",
@@ -174,8 +171,6 @@ export type FundingCallLifecycleContext = z.infer<
 >;
 
 export type NotificationEventContextByKey = {
-  "reporting.website.biweekly": z.infer<typeof websiteReportContextSchema>;
-  "reporting.website.monthly": z.infer<typeof websiteReportContextSchema>;
   "auth.email.verification": z.infer<typeof authenticationEventContextSchema>;
   "auth.password.reset": z.infer<typeof authenticationEventContextSchema>;
   "application.submitted": ApplicationSubmittedContext;
@@ -212,7 +207,6 @@ type NotificationEventDefinition<Key extends NotificationEventKey> = {
 };
 
 export const notificationEventCatalogue = {
-  ...websiteReportEventCatalogue,
   "workflow.hold.resumed": {
     catalogKey: "WORKFLOW", ruleEligibility: "CONFIGURABLE",
     key: "workflow.hold.resumed", contextSchema: workflowHoldResumedContextSchema,

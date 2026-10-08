@@ -1191,6 +1191,48 @@
       "when": 1801785600015,
       "tag": "0169_rolling_user_sessions",
       "breakpoints": true
+    },
+    {
+      "idx": 170,
+      "version": "7",
+      "when": 1801785600016,
+      "tag": "0170_retire_website_reports",
+      "breakpoints": true
+    },
+    {
+      "idx": 171,
+      "version": "7",
+      "when": 1801785600017,
+      "tag": "0171_reporting_dataset_policy",
+      "breakpoints": true
+    },
+    {
+      "idx": 172,
+      "version": "7",
+      "when": 1801785600018,
+      "tag": "0172_reporting_website_application_views",
+      "breakpoints": true
+    },
+    {
+      "idx": 173,
+      "version": "7",
+      "when": 1801785600019,
+      "tag": "0173_reporting_workflow_views",
+      "breakpoints": true
+    },
+    {
+      "idx": 174,
+      "version": "7",
+      "when": 1801785600020,
+      "tag": "0174_reporting_dataset_catalogue",
+      "breakpoints": true
+    },
+    {
+      "idx": 175,
+      "version": "7",
+      "when": 1801785600021,
+      "tag": "0175_workflow_completed_terminal_outcome",
+      "breakpoints": true
     }
   ]
 }

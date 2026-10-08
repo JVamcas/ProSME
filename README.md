@@ -117,7 +117,11 @@ and the `db` service hostname. Non-Compose deployments supply their own
 
 The build uses reusable npm and Next.js BuildKit caches. After a successful
 build, the wrapper removes dangling images and cache entries unused for seven
-days. Inspect or prune Docker storage directly with:
+days (override with `BUILDKIT_CACHE_MAX_AGE_HOURS`). Docker's own BuildKit garbage
+collection can still evict cache when its storage limit is reached.
+Local TypeScript build-info files are excluded from the Docker
+context so running a local type check does not invalidate source-copy layers.
+Inspect or prune Docker storage directly with:
 
 ```bash
 ./scripts/docker-maintenance.sh diagnose

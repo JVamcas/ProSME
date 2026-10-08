@@ -1,5 +1,11 @@
 # R1 and R2 website report persistence and delivery
 
+Historical record: on 2026-10-08 the user agreed to remove this website-specific
+report implementation and replace it with the dataset/SQL-template/configured-report
+model in [the current implementation plan](SME_Fund_Reporting_Analytics_Implementation_Plan.md).
+The evidence below describes the old implementation only. Its removal and the
+replacement have not been implemented or accepted by this documentation change.
+
 Recorded: 2026-10-07. Implementation and focused verification are complete.
 Live browser, GA-to-email reconciliation, SMTP receipt, deployment and written
 phase acceptance remain pending. D1 was accepted by the user before this work.

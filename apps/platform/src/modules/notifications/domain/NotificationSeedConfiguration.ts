@@ -1,4 +1,3 @@
-import { websiteReportEventSeeds, websiteReportTemplateSeeds } from "./WebsiteReportNotificationSeed";
 import {
   workflowTaskAssignedEventSeed,
   workflowEscalationEventSeed,
@@ -47,7 +46,6 @@ export type NotificationEventSeed = {
 };
 
 export const notificationEventSeeds: readonly NotificationEventSeed[] = [
-  ...websiteReportEventSeeds,
   workflowEscalationEventSeed,
   workflowHoldResumedEventSeed,
   ...workflowDeadlineEventSeeds,
@@ -264,7 +262,6 @@ export type NotificationTemplateTargetSeed = {
 
 export const notificationTemplateTargetSeeds: readonly NotificationTemplateTargetSeed[] =
   [
-    ...websiteReportTemplateSeeds,
     {
       catalogKey: "AUTHENTICATION",
       defaultSubjectTemplate: "Account action for {{platformName}}",

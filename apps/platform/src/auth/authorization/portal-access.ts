@@ -30,8 +30,8 @@ export const applicantScopePermissions = [
 ] as const;
 
 export const operationsScopePermissions = [
-  permissionCodes.reportingWebsiteReportReadAll,
-  permissionCodes.reportingWebsiteScheduleUpdateAll,
+  permissionCodes.reportingDatasetReadAll,
+  permissionCodes.reportingQueryExecuteAll,
   permissionCodes.reportingWebsiteReadAll,
   permissionCodes.userRead,
   permissionCodes.userManage,

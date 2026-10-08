@@ -123,12 +123,7 @@ export async function loadClaimedNotificationDeliveries(input: {
       FROM app_notification_template_targets target
       JOIN app_notification_template_versions version
         ON version.template_target_id = target.id
-        AND (
-          (occurrence.event_key IN ('reporting.website.biweekly', 'reporting.website.monthly')
-            AND version.id = delivery.template_version_id AND version.status IN ('PUBLISHED', 'RETIRED'))
-          OR (occurrence.event_key NOT IN ('reporting.website.biweekly', 'reporting.website.monthly')
-            AND version.status = 'PUBLISHED')
-        )
+        AND version.status = 'PUBLISHED'
       JOIN app_notification_events event
         ON event.id = occurrence.event_id
       WHERE target.channel_id = delivery.channel_id
