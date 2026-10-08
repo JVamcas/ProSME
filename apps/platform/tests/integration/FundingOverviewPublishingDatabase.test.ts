@@ -2,7 +2,10 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { commitTransaction, initTransaction, killTransaction, type Payload } from "payload";
 
 vi.mock("server-only", () => ({}));
-vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
+vi.mock("next/cache", () => ({
+  revalidatePath: vi.fn(),
+  revalidateTag: vi.fn(),
+}));
 vi.mock("@/lib/env/server", () => ({
   getDeploymentEnvironment: () => "local",
   getServerEnvironment: () => ({

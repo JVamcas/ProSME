@@ -302,3 +302,167 @@ Local regeneration does not update production's environment-scoped objects.
   documentation-only investigation. No completed implementation gate is claimed.
 - The temporary profiler was removed after measurement. Original app/database
   containers and user changes were preserved.
+
+## Request refresh and CMS read follow-up: 8 October 2026
+
+Follow-up item 2 is implemented in source, including correction of the Home
+unpublish visibility issue found during verification. The public layout no
+longer mounts
+`PublicContentRefresh`; its component and timer/event tests were removed.
+Mounting, pathname changes, the 30-second interval, focus, reconnection,
+`pageshow` and visibility changes no longer trigger that full-route refresh.
+An already-open or browser-restored page can retain its displayed content until
+navigation causes a new server request or the visitor reloads it. Publication
+hooks do not push changes into existing browser sessions.
+
+`ServerContentQueries` now uses module-scoped React `cache` wrappers for CMS
+getters and permission-scoped query mode. Resource detail reads also share a
+request-scoped promise between metadata and content. Concurrent and subsequent
+identical calls within one React server render share their result; different
+slugs and separate requests do not. Payload query construction touched by this
+change moved into `modules/content/infrastructure/PayloadContentRepository.ts`,
+preserving its existing filters, limits, ordering and relationship depths.
+Public routes retain `force-dynamic`. No persistent content/page cache or
+build-placeholder caching was introduced; follow-up item 3 remains separate.
+
+The repeatable `ContentRequestMemoization.test.ts` fixture uses the installed
+React server renderer with its real request cache dispatcher, actual content
+services/repositories and synthetic CMS transport/identity. It verifies shared
+promises across concurrent and sequential consumers, distinct slugs, fresh
+publication changes on a subsequent request, concurrent public/preview isolation,
+resource-specific preview grants, disabled/mismatched sessions and build/runtime
+separation. Its deliberately repeated set of getters makes **17 Payload calls**:
+one per unique global/collection read, four bounded Home-feed reads, one resource
+detail and a second page slug. This is a synthetic read-count assertion, not a
+new live SQL count or route latency measurement.
+
+`ContentPublishingDatabase.test.ts` verifies the actual Payload operations and
+public query service on a disposable PostgreSQL 16 database using the repository
+CMS schema and configuration. Six tests passed. These checks cover:
+
+- Draft page absence, publication, private pending revisions, authorized preview,
+  a mismatched resource grant, unpublication, republication and deletion.
+- Home global draft/public separation and native publication of a pending title.
+- Home unpublish visibility: verification reproduced a pre-existing issue where
+  `findGlobal({ draft: false })` returned the unpublished global base document
+  and the public projection ignored its status. `getHomepage()` now returns null
+  unless the base document is published or the request is an authorized preview.
+  The Home route invokes Next's not-found handling when no public Home is
+  available. Anonymous draft cookies and mismatched resource grants cannot
+  recover unpublished Home content; authorized `cms.site-settings.read` previews
+  still work. Republishing makes Home visible on the next server read.
+
+Home news/resources remain published-only during Home preview, as before.
+Collection previews require both draft mode and the matching active-user CMS
+read permission. Existing preview-route tests verify entry authorization,
+relative redirects on the browser origin and draft-mode exit. Existing
+publication-revalidation and CMS access/publish-guard tests remain green. Four
+Home route tests cover published rendering, absent content with/without draft
+mode and draft rendering with the preview exit link.
+
+Validation: **49 focused test files / 410 tests passed**, plus **6 real Payload /
+PostgreSQL integration tests**. Architecture, form architecture, file-size checks
+and type checking passed. Full lint passed with zero errors and 13 existing
+warnings outside this change. The disposable database/container was removed;
+the application database and running application containers were preserved.
+Existing Chromium could not launch because `libnspr4.so` is missing. No browser
+installation, production build, full application suite, deployment or browser
+navigation/LCP verification was performed. Production performance and browser
+freshness acceptance remain open.
+
+## Published page data cache follow-up: 8 October 2026
+
+Follow-up item 3 is implemented for published CMS page data, shared globals,
+news/events/FAQs/statistics/eligibility content, Home news/resource feeds,
+funding overview copy, resource details, resource listing pages and the resource
+sitemap projection. The cache uses Next's explicit Data Cache with a 300-second
+revalidation interval and source-specific tags. React request memoization remains
+in place for metadata and content consumers. Collection filters, SQL/Payload
+projections, limits and ordering are preserved.
+
+The scope is cached **published page data**, with request-time HTML/RSC rendering.
+The public layout now uses `revalidate = 0` instead of `force-dynamic`, allowing
+explicitly cached data to be reused while keeping request-dependent rendering
+fresh. Full-route HTML/ISR caching is not enabled. This preserves preview
+authorization and the funding information displayed on Home and funding pages;
+it also prevents query-string variants and user-context responses from being
+shared as cached page output.
+
+Build placeholders were removed, together with `ContentBuildFallbacks` and the
+build command's `SKIP_CMS_PRERENDER` setting. Content services use Next's
+`connection()` before accessing Payload or the persistent cache. The public
+funding service does the same before querying PostgreSQL. Prerendering therefore
+defers these reads instead of returning placeholder pages or empty funding
+results. The container build can retain its dummy database configuration without
+populating public content caches from it. A leaked old build flag no longer
+changes runtime results. Synthetic Home values now exist only in test support.
+The installed framework's prerender interruption is exercised by the fixture;
+a complete production build was not run.
+
+CMS change/delete hooks now expire the matching source tag with
+`revalidateTag(tag, { expire: 0 })`, then invalidate affected paths. Publication,
+unpublication, deletion and cached absence all use the same immediate-expiry
+contract: the next server read loads the current published result. Slug renames
+invalidate both the previous and new URLs. Shared globals invalidate the public
+route-group layout, and site settings also invalidate robots output. Media
+change/delete hooks expire the media dependency attached to every published read,
+so populated images, thumbnails and download URLs do not remain embedded in old
+content results. Collection changes also invalidate the sitemap route.
+
+Next queues revalidation during the CMS request and applies it after request work
+finishes; it is not a direct pre-commit cache-file deletion from a Payload hook.
+Standalone Payload scripts without a Next request context retain their existing
+supported behavior, and explicit `skipRevalidation` contexts still opt out.
+Unexpected runtime invalidation errors now propagate instead of being silently
+ignored. The 300-second interval is fallback revalidation, with Next's usual
+background refresh on an age-expired runtime read; it is not a hard maximum age
+for content changed through a script that opted out of events.
+
+Cache keys include the deployment environment and a server-lifetime namespace.
+Next's default file-cache invalidation tags are process-local, so a new process
+must not reuse old files after losing those tags. Restarting creates cold content
+cache entries from current published data. No content-cache volume or deployment
+change was introduced; the existing persistent image volumes are unaffected.
+
+Freshness and authorization boundaries:
+
+- Funding lists/details remain uncached. Each request uses current server time,
+  SQL status/date filtering and cursor validation. Tests cross the exact opening
+  and closing boundaries without a publication event.
+- Resource pages use the validated, normalized page number as a cache-key
+  argument. Rows, totals and page counts are cached together; a resource event
+  expires all page variants, details, sitemap entries and the Home resource feed.
+  The route retains its out-of-range not-found check against refreshed totals.
+- Preview mode and matching active-user CMS permissions are resolved outside the
+  persistent cache on every request. Authorized drafts use uncached reads.
+  Anonymous, disabled and mismatched sessions cannot populate the cache with
+  draft data. Home news/resources retain their published-only preview behavior.
+- Applicant/staff operations and protected media delivery remain outside these
+  published read caches. Their resource-context authorization is unchanged.
+- Cache invalidation does not push new content into an already-open browser
+  document. Visitors receive changes on a new server request; the refresh polling
+  removed in follow-up item 2 remains removed.
+
+`ContentServerRenderFixture.mjs` and its focused runtime helper use the installed
+React server renderer, Next request/prerender stores, `connection()`,
+`unstable_cache`, the default filesystem incremental cache and real revalidation
+APIs. Only CMS transport and identity are synthetic. Evidence covers reuse across
+requests, metadata/content deduplication, publication/unpublication, cached
+absence, slug renames, media invalidation, concurrent public/preview separation,
+disabled and mismatched permissions, build deferral, leaked build flags,
+pagination counts after resource removal and restart isolation with old cache
+files and lost invalidation tags. This is framework/fixture evidence, not a new
+live SQL count, HTTP latency measurement or actual deployment restart.
+
+Framework references: [explicit database-result caching](https://nextjs.org/docs/app/api-reference/functions/unstable_cache),
+[immediate tag expiry](https://nextjs.org/docs/app/api-reference/functions/revalidateTag),
+and [request-time connection](https://nextjs.org/docs/app/api-reference/functions/connection).
+
+Validation: **55 focused test files / 446 tests passed**. Architecture and form
+architecture, file-size checks and type checking passed. Full lint passed with
+zero errors and 13 existing warnings outside this change. The test runner needed
+sandbox escalation for its existing local Node/shell fixture subprocesses; the
+focused suite then passed. No production build, new database integration run,
+full application suite, browser verification, deployment or new performance
+measurement was performed. Production performance and browser acceptance remain
+open. Concurrent user-session changes were preserved.

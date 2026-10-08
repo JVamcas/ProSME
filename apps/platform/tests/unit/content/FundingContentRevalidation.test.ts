@@ -1,8 +1,12 @@
 import type { CollectionAfterChangeHook, CollectionAfterDeleteHook } from "payload";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const cache = vi.hoisted(() => ({ revalidate: vi.fn() }));
-vi.mock("next/cache", () => ({ revalidatePath: cache.revalidate }));
+const cache = vi.hoisted(() => ({ revalidate: vi.fn(), tag: vi.fn() }));
+vi.mock("server-only", () => ({}));
+vi.mock("next/cache", () => ({
+  revalidatePath: cache.revalidate,
+  revalidateTag: cache.tag,
+}));
 
 import { revalidateCollection, revalidateCollectionDelete } from "@/payload/hooks/revalidate-public-content";
 

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
+vi.mock("next/server", () => ({ connection: async () => {} }));
 vi.mock("@/modules/funding-calls/infrastructure/PublicFundingCallRepository", () => ({
   readPublicFundingCallById: vi.fn(),
   readPublicFundingCallBySlug: vi.fn(),
@@ -54,6 +55,25 @@ beforeEach(() => {
 });
 
 describe("public funding-call read model", () => {
+  it("rechecks funding dates on successive requests despite a leaked build flag", async () => {
+    vi.stubEnv("SKIP_CMS_PRERENDER", "1");
+    vi.mocked(readPublicFundingCalls).mockResolvedValue({ items: [call], total: 1 });
+    vi.setSystemTime(new Date(call.opensAt.getTime() - 1));
+    expect((await listPublicFundingCalls({ limit: 20 })).items[0].status).toBe("upcoming");
+    vi.setSystemTime(call.opensAt);
+    expect((await listPublicFundingCalls({ limit: 20 })).items[0].status).toBe("open");
+    vi.setSystemTime(call.closesAt);
+    expect((await listPublicFundingCalls({ limit: 20 })).items[0].status).toBe("closed");
+    expect(readPublicFundingCalls).toHaveBeenCalledTimes(3);
+  });
+
+  it("validates each pagination cursor before a database read", async () => {
+    vi.stubEnv("SKIP_CMS_PRERENDER", "1");
+    await expect(listPublicFundingCalls({ after: "invalid", limit: 20 }))
+      .rejects.toThrow("The pagination cursor is invalid.");
+    expect(readPublicFundingCalls).not.toHaveBeenCalled();
+  });
+
   it("resolves a published call by its UUID", async () => {
     vi.mocked(readPublicFundingCallById).mockResolvedValue(call);
     const result = await findPublicFundingCallById(call.id);
