@@ -15,11 +15,12 @@ export const namibiaVisitorRegions = [
   "Zambezi",
 ] as const;
 
-/** Exact canonical names only until provider aliases have been verified live. */
+/** GA uses the " Region" suffix for Namibia's administrative regions. */
 export function canonicalNamibiaRegion(value: string) {
+  const normalized = value.trim().replace(/\s+region$/i, "").toLowerCase();
   return (
     namibiaVisitorRegions.find(
-      (region) => region.toLowerCase() === value.toLowerCase(),
+      (region) => region.toLowerCase() === normalized,
     ) ?? null
   );
 }

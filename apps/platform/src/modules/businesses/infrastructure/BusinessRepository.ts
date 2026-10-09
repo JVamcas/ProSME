@@ -3,12 +3,10 @@ import "server-only";
 import { and, asc, eq, ne, sql } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
-import {
-  applications,
-  businessProfiles,
-  profileAuditEntries,
-} from "@/db/schema";
+import { applications, profileAuditEntries } from "@/db/schema";
 import type { BusinessProfileInput } from "@/modules/businesses/BusinessSchemas";
+import { businessProfiles } from "./business-profile.schema";
+import { resolvedBusinessSector } from "../domain/BusinessSectors";
 
 const columns = {
   id: businessProfiles.id,
@@ -17,6 +15,7 @@ const columns = {
   registrationNumber: businessProfiles.registrationNumber,
   businessType: businessProfiles.businessType,
   sector: businessProfiles.sector,
+  secondarySector: businessProfiles.secondarySector,
   region: businessProfiles.region,
   physicalAddress: businessProfiles.physicalAddress,
   establishedYear: businessProfiles.establishedYear,
@@ -26,10 +25,17 @@ const columns = {
 };
 
 function values(input: BusinessProfileInput) {
+  const { sectorOther, secondarySectorOther, ...profile } = input;
   return {
-    ...input,
-    establishedYear: input.establishedYear === "" ? null : Number(input.establishedYear),
-    employeeCount: input.employeeCount === "" ? null : Number(input.employeeCount),
+    ...profile,
+    sector: resolvedBusinessSector(input.sector, sectorOther),
+    secondarySector:
+      resolvedBusinessSector(input.secondarySector, secondarySectorOther) ||
+      null,
+    establishedYear:
+      input.establishedYear === "" ? null : Number(input.establishedYear),
+    employeeCount:
+      input.employeeCount === "" ? null : Number(input.employeeCount),
   };
 }
 

@@ -12,6 +12,8 @@ import {
   updateFundingCall,
 } from "@/modules/funding-calls/application/ServerFundingCallService";
 
+import { getFundingCallVersion } from "@/modules/funding-calls/application/ServerFundingCallVersionService";
+
 type RouteContext = { params: Promise<{ id: string }> };
 const idSchema = z.uuid();
 
@@ -19,13 +21,12 @@ export async function GET(request: Request, context: RouteContext) {
   const correlationId = createCorrelationId();
   try {
     const id = idSchema.parse((await context.params).id);
-    return portalRouteSuccess(
-      await getFundingCall(
-        await resolveUserFromHeaders(request.headers),
-        id,
-      ),
-      correlationId,
-    );
+    const user = await resolveUserFromHeaders(request.headers);
+    const selected = new URL(request.url).searchParams.get("versionId");
+    const call = selected
+      ? await getFundingCallVersion(user, id, idSchema.parse(selected))
+      : await getFundingCall(user, id);
+    return portalRouteSuccess(call, correlationId);
   } catch (error) {
     return portalRouteError(error, correlationId);
   }

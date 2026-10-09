@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, eq, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
 import {
@@ -8,6 +8,7 @@ import {
   eligibilityRuleSets,
   eligibilityRuleSetVersions,
 } from "./eligibility-ruleset.schema";
+import { cloneEligibilityVersionContent } from "./EligibilityVersionContentRepository";
 import { eligibilityRuleSetQuestionBindings } from "./eligibility-question.schema";
 
 export async function cloneEligibilityRuleSetVersion(input: {
@@ -25,20 +26,25 @@ export async function cloneEligibilityRuleSetVersion(input: {
     if (!definition) return null;
     const [draft, source, latest] = await Promise.all([
       transaction
-        .select({ id: eligibilityRuleSetVersions.id })
+        .select()
         .from(eligibilityRuleSetVersions)
-        .where(and(
-          eq(eligibilityRuleSetVersions.ruleSetId, input.ruleSetId),
-          eq(eligibilityRuleSetVersions.status, "DRAFT"),
-        ))
+        .where(
+          and(
+            eq(eligibilityRuleSetVersions.ruleSetId, input.ruleSetId),
+            eq(eligibilityRuleSetVersions.status, "DRAFT"),
+          ),
+        )
+        .orderBy(desc(eligibilityRuleSetVersions.versionNumber))
         .limit(1),
       transaction
         .select()
         .from(eligibilityRuleSetVersions)
-        .where(and(
-          eq(eligibilityRuleSetVersions.id, input.sourceVersionId),
-          eq(eligibilityRuleSetVersions.ruleSetId, input.ruleSetId),
-        ))
+        .where(
+          and(
+            eq(eligibilityRuleSetVersions.id, input.sourceVersionId),
+            eq(eligibilityRuleSetVersions.ruleSetId, input.ruleSetId),
+          ),
+        )
         .limit(1),
       transaction
         .select({
@@ -47,12 +53,14 @@ export async function cloneEligibilityRuleSetVersion(input: {
         .from(eligibilityRuleSetVersions)
         .where(eq(eligibilityRuleSetVersions.ruleSetId, input.ruleSetId)),
     ]);
-    if (draft.length || !source[0] || source[0].status === "DRAFT") return null;
+    if (!source[0] || source[0].status === "DRAFT") return null;
+    if (draft[0]) return draft[0];
     const [version] = await transaction
       .insert(eligibilityRuleSetVersions)
       .values({
         createdBy: input.actorId,
         ruleSetId: input.ruleSetId,
+        metadata: source[0].metadata,
         versionNumber: Number(latest[0]?.versionNumber ?? 0) + 1,
       })
       .returning();
@@ -64,10 +72,12 @@ export async function cloneEligibilityRuleSetVersion(input: {
       transaction
         .select()
         .from(eligibilityRuleSetQuestionBindings)
-        .where(eq(
-          eligibilityRuleSetQuestionBindings.versionId,
-          input.sourceVersionId,
-        )),
+        .where(
+          eq(
+            eligibilityRuleSetQuestionBindings.versionId,
+            input.sourceVersionId,
+          ),
+        ),
     ]);
     if (sourceRules.length) {
       await transaction.insert(eligibilityRules).values(
@@ -98,6 +108,12 @@ export async function cloneEligibilityRuleSetVersion(input: {
         })),
       );
     }
+    await cloneEligibilityVersionContent(
+      transaction,
+      input.sourceVersionId,
+      version.id,
+      input.actorId,
+    );
     return version;
   });
 }

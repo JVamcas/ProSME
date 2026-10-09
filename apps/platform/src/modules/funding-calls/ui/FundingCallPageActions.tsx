@@ -3,17 +3,17 @@
 import { toast } from "sonner";
 
 import { GeneralButton } from "@/components/ui/button";
-import {
-  useFundingCall,
-  usePublishFundingCall,
-} from "../FundingCallHooks";
+import type { FundingCallActionRenderer } from "./FundingCallActionTypes";
+import { useFundingCall, usePublishFundingCall } from "../FundingCallHooks";
 
 export function FundingCallPageActions({
   canPublish,
   id,
+  renderActions,
 }: {
   canPublish: boolean;
   id: string;
+  renderActions?: FundingCallActionRenderer;
 }) {
   const query = useFundingCall(id);
   const publish = usePublishFundingCall(id);
@@ -22,16 +22,28 @@ export function FundingCallPageActions({
   function publishFundingCall() {
     if (!call) return;
 
-    publish.mutate(
-      call.rowVersion,
-      {
-        onError: (error) => toast.error(error.message),
-        onSuccess: () => toast.success("Funding call published"),
-      },
-    );
+    publish.mutate(call.rowVersion, {
+      onError: (error) => toast.error(error.message),
+      onSuccess: () => toast.success("Funding call published"),
+    });
   }
 
   if (!call) return null;
+
+  if (renderActions) {
+    return renderActions(
+      call.status === "APPROVED" && canPublish
+        ? [
+            {
+              id: "publish",
+              label: "Publish",
+              disabled: publish.isPending,
+              onAction: publishFundingCall,
+            },
+          ]
+        : [],
+    );
+  }
 
   return (
     <>

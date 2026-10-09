@@ -1,16 +1,16 @@
 "use client";
 
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { FlaskConical } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
 import {
-  CloneButton,
   EditButton,
   PublishButton,
   RetireButton,
 } from "@/components/ui/action-buttons";
-import { GeneralButtonLink } from "@/components/ui/button";
+import { GeneralButton, GeneralButtonLink } from "@/components/ui/button";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { StatusBadge } from "@/components/ui/status-badge";
 import type { EligibilityRuleSetStatus } from "../domain/EligibilityRuleSet";
@@ -39,6 +39,9 @@ export function EligibilityRuleSetHeaderActions({
   initialVersionNumber: number;
   versionId?: string;
 }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const query = useEligibilityRuleSetBuilder(id, versionId);
   const lifecycle = useEligibilityRuleSetLifecycle(id);
   const [confirmingPublish, setConfirmingPublish] = useState(false);
@@ -57,10 +60,13 @@ export function EligibilityRuleSetHeaderActions({
     if (!editor) return;
     try {
       if (action === "CLONE") {
-        await lifecycle.mutateAsync({
+        const draft = await lifecycle.mutateAsync({
           action,
           sourceVersionId: editor.version.id,
         });
+        const params = new URLSearchParams(searchParams.toString());
+        params.set("versionId", draft.version.id);
+        router.replace(`${pathname}?${params}`);
       } else {
         await lifecycle.mutateAsync({
           action,
@@ -81,18 +87,28 @@ export function EligibilityRuleSetHeaderActions({
   return (
     <>
       <StatusBadge status={status} />
-      <EditButton
-        disabled={!isDraft || !canUpdate}
-        onClick={() => document.getElementById("eligibility-rules")
-          ?.scrollIntoView({ behavior: "smooth" })}
-        title="Edit eligibility rules"
-      />
-      <CloneButton
-        disabled={isDraft || !canUpdate || !editor}
-        isLoading={lifecycle.isPending}
-        onClick={() => void runLifecycle("CLONE")}
-        title="Clone ruleset version"
-      />
+      {isDraft ? (
+        <EditButton
+          disabled={!canUpdate || !editor || lifecycle.isPending}
+          onClick={() => {
+            document
+              .getElementById("eligibility-rules")
+              ?.scrollIntoView({ behavior: "smooth" });
+          }}
+          title="Edit eligibility rules"
+        />
+      ) : null}
+      {!isDraft ? (
+        <GeneralButton
+          size="compact"
+          disabled={!canUpdate || !editor || lifecycle.isPending}
+          onClick={() => void runLifecycle("CLONE")}
+        >
+          {status === "PUBLISHED"
+            ? "Edit published version"
+            : "Create draft version"}
+        </GeneralButton>
+      ) : null}
       <PublishButton
         disabled={!isDraft || !canPublish || !publicationReady}
         isLoading={lifecycle.isPending}
@@ -108,9 +124,11 @@ export function EligibilityRuleSetHeaderActions({
         />
       ) : null}
       <GeneralButtonLink
-        href={versionId
-          ? `/admin/settings/eligibility-rulesets/${id}/test?versionId=${versionId}`
-          : `/admin/settings/eligibility-rulesets/${id}/test`}
+        href={
+          versionId
+            ? `/admin/settings/eligibility-rulesets/${id}/test?versionId=${versionId}`
+            : `/admin/settings/eligibility-rulesets/${id}/test`
+        }
         size="compact"
         variant="outlineOrange"
       >
@@ -123,7 +141,7 @@ export function EligibilityRuleSetHeaderActions({
         isLoading={lifecycle.isPending}
         isOpen={confirmingPublish}
         loadingText="Publishing…"
-        message={`Publish ${editor?.definition.name ?? initialName} version ${editor?.version.versionNumber ?? initialVersionNumber}? It will become available for use by its funding call.`}
+        message={`Publish ${editor?.definition.name ?? initialName} version ${editor?.version.versionNumber ?? initialVersionNumber}? It becomes available for explicit selection. Existing funding calls keep their selected versions.`}
         onCancel={() => setConfirmingPublish(false)}
         onConfirm={() => void runLifecycle("PUBLISH")}
         title="Publish eligibility ruleset"

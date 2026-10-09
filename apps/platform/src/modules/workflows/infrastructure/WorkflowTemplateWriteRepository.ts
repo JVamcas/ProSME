@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, eq, inArray, max } from "drizzle-orm";
+import { and, desc, eq, inArray, max } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
 import {
@@ -202,21 +202,52 @@ export async function cloneWorkflowVersion(input: {
       .where(eq(workflowDefinitions.id, input.definitionId))
       .for("update");
     if (!definition) throw new Error("Workflow template not found.");
-    const [latest] = await transaction
-      .select({ value: max(workflowDefinitionVersions.versionNumber) })
-      .from(workflowDefinitionVersions)
-      .where(eq(workflowDefinitionVersions.definitionId, input.definitionId));
+    const [sourceRows, draftRows, latestRows] = await Promise.all([
+      transaction
+        .select({
+          id: workflowDefinitionVersions.id,
+          metadata: workflowDefinitionVersions.metadata,
+        })
+        .from(workflowDefinitionVersions)
+        .where(
+          and(
+            eq(workflowDefinitionVersions.id, input.sourceVersionId),
+            eq(workflowDefinitionVersions.definitionId, input.definitionId),
+          ),
+        )
+        .limit(1),
+      transaction
+        .select({ id: workflowDefinitionVersions.id })
+        .from(workflowDefinitionVersions)
+        .where(
+          and(
+            eq(workflowDefinitionVersions.definitionId, input.definitionId),
+            eq(workflowDefinitionVersions.status, "DRAFT"),
+          ),
+        )
+        .orderBy(desc(workflowDefinitionVersions.versionNumber))
+        .limit(1),
+      transaction
+        .select({ value: max(workflowDefinitionVersions.versionNumber) })
+        .from(workflowDefinitionVersions)
+        .where(eq(workflowDefinitionVersions.definitionId, input.definitionId)),
+    ]);
+    if (!sourceRows[0]) throw new Error("Workflow source version not found.");
+    if (draftRows[0]) return draftRows[0].id;
+    const latest = latestRows[0];
     const [version] = await transaction
       .insert(workflowDefinitionVersions)
       .values({
         createdBy: input.actorId,
         definitionId: input.definitionId,
         versionNumber: (latest?.value ?? 0) + 1,
-        metadata: {
-          code: definition.code,
-          name: definition.name,
-          description: definition.description,
-        },
+        metadata: sourceRows[0].metadata.code
+          ? sourceRows[0].metadata
+          : {
+              code: definition.code,
+              name: definition.name,
+              description: definition.description,
+            },
       })
       .returning();
     await insertWorkflowGraph(transaction, version.id, input.graph);

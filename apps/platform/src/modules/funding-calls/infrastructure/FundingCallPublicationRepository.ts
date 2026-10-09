@@ -1,6 +1,7 @@
 import "server-only";
+import { publishCallIntegrationBindings } from "@/modules/eligibility/infrastructure/EligibilityIntegrationVersionBindingRepository";
 
-import { and, asc, eq, max } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
 import { transactionalOutbox } from "@/db/schema";
@@ -13,7 +14,13 @@ import {
   fundingCallPublicationRevisions,
   fundingCalls,
 } from "./funding-call.schema";
-import { fundingCallPublicDocuments } from "./funding-call-public-document.schema";
+import { fundingCallDraftVersions } from "./funding-call-version.schema";
+import { readWorkingFundingCall } from "./FundingCallVersionRepository";
+import { fundingCallGovernanceReviews } from "./funding-call.schema";
+import {
+  readPublicationBindings,
+  readPublicationDocumentsAndSequence,
+} from "./FundingCallPublicationPreparationRepository";
 import {
   sanitizeFundingCallDescription,
   sanitizeFundingCallEligibilitySummary,
@@ -33,7 +40,7 @@ export type PublishFundingCallResult =
   | { kind: "conflict" }
   | { kind: "idempotency_conflict" };
 
-function toFundingCall(row: typeof fundingCalls.$inferSelect): FundingCall {
+function toFundingCall(row: FundingCall): FundingCall {
   return {
     ...row,
     description: sanitizeFundingCallDescription(row.description),
@@ -57,10 +64,12 @@ export async function readFundingCallPublicationReplay(
       fundingCalls,
       eq(fundingCalls.id, fundingCallLifecycleHistory.fundingCallId),
     )
-    .where(and(
-      eq(fundingCallLifecycleHistory.idempotencyKey, idempotencyKey),
-      eq(fundingCallLifecycleHistory.fundingCallId, fundingCallId),
-    ))
+    .where(
+      and(
+        eq(fundingCallLifecycleHistory.idempotencyKey, idempotencyKey),
+        eq(fundingCallLifecycleHistory.fundingCallId, fundingCallId),
+      ),
+    )
     .limit(1);
   return row?.command === "PUBLISH" ? toFundingCall(row.call) : null;
 }
@@ -69,13 +78,17 @@ export async function publishApprovedFundingCall(
   input: PublishFundingCallInput,
 ): Promise<PublishFundingCallResult> {
   return getDatabase().transaction(async (transaction) => {
-    const [current] = await transaction
+    const [effective] = await transaction
       .select()
       .from(fundingCalls)
       .where(eq(fundingCalls.id, input.fundingCallId))
       .for("update")
       .limit(1);
-    if (!current) return { kind: "conflict" };
+    if (!effective) return { kind: "conflict" };
+    const { call: current, draft } = await readWorkingFundingCall(
+      transaction,
+      effective,
+    );
 
     const [replay] = await transaction
       .select({
@@ -88,23 +101,47 @@ export async function publishApprovedFundingCall(
       )
       .limit(1);
     if (replay) {
-      return replay.command === "PUBLISH"
-        && replay.fundingCallId === input.fundingCallId
+      return replay.command === "PUBLISH" &&
+        replay.fundingCallId === input.fundingCallId
         ? { call: toFundingCall(current), kind: "replayed" }
         : { kind: "idempotency_conflict" };
     }
     if (
-      current.status !== "APPROVED"
-      || current.rowVersion !== input.expectedRowVersion
+      current.status !== "APPROVED" ||
+      current.rowVersion !== input.expectedRowVersion
     ) {
       return { kind: "conflict" };
     }
 
+    if (effective.currentPublishedVersionId) {
+      if (!draft || ["WITHDRAWN", "ARCHIVED"].includes(effective.status)) {
+        return { kind: "conflict" };
+      }
+      const [approval] = await transaction
+        .select({ id: fundingCallGovernanceReviews.id })
+        .from(fundingCallGovernanceReviews)
+        .where(
+          and(
+            eq(fundingCallGovernanceReviews.fundingCallId, current.id),
+            eq(fundingCallGovernanceReviews.fundingCallVersionId, draft.id),
+            eq(fundingCallGovernanceReviews.outcome, "APPROVED"),
+          ),
+        )
+        .limit(1);
+      if (!approval) return { kind: "conflict" };
+    }
+    const bindingsAvailable = await readPublicationBindings(
+      transaction,
+      current,
+    );
+    if (!bindingsAvailable) return { kind: "conflict" };
     const transition = resolveFundingCallTransition(
       current,
       "PUBLISH",
       input.now,
     );
+    const targetStatus =
+      effective.status === "SUSPENDED" ? "SUSPENDED" : transition.targetStatus;
     const nextRowVersion = current.rowVersion + 1;
     const [history] = await transaction
       .insert(fundingCallLifecycleHistory)
@@ -117,8 +154,8 @@ export async function publishApprovedFundingCall(
         fundingCallId: input.fundingCallId,
         idempotencyKey: input.idempotencyKey,
         rowVersion: nextRowVersion,
-        sourceStatus: current.status,
-        targetStatus: transition.targetStatus,
+        sourceStatus: effective.status,
+        targetStatus,
       })
       .onConflictDoNothing({
         target: fundingCallLifecycleHistory.idempotencyKey,
@@ -126,68 +163,70 @@ export async function publishApprovedFundingCall(
       .returning({ id: fundingCallLifecycleHistory.id });
     if (!history) return { kind: "idempotency_conflict" };
 
-    const [publicDocuments, [previous]] = await Promise.all([
-      transaction
-        .select({
-          label: fundingCallPublicDocuments.label,
-          url: fundingCallPublicDocuments.url,
-        })
-        .from(fundingCallPublicDocuments)
-        .where(and(
-          eq(fundingCallPublicDocuments.fundingCallId, input.fundingCallId),
-          eq(fundingCallPublicDocuments.markedForPublication, true),
-        ))
-        .orderBy(
-          asc(fundingCallPublicDocuments.displayOrder),
-          asc(fundingCallPublicDocuments.id),
-        ),
-      transaction
-        .select({
-          revisionNumber: max(fundingCallPublicationRevisions.revisionNumber),
-        })
-        .from(fundingCallPublicationRevisions)
-        .where(eq(fundingCallPublicationRevisions.fundingCallId, input.fundingCallId)),
-    ]);
+    const { publicDocuments, revisionNumber } =
+      await readPublicationDocumentsAndSequence(
+        transaction,
+        input.fundingCallId,
+      );
+    const snapshot = captureFundingCallPublication(current, publicDocuments);
     const [revision] = await transaction
       .insert(fundingCallPublicationRevisions)
       .values({
+        id: draft?.id,
         correlationId: input.correlationId,
         fundingCallId: input.fundingCallId,
         lifecycleHistoryId: history.id,
         publishedAt: input.now,
         publishedBy: input.actorId,
         publishedStatus: transition.targetStatus as "SCHEDULED" | "LIVE",
-        revisionNumber: (previous?.revisionNumber ?? 0) + 1,
-        snapshot: captureFundingCallPublication(
-          toFundingCall(current),
-          publicDocuments,
-        ),
+        revisionNumber,
+        snapshot,
         sourceRowVersion: current.rowVersion,
       })
       .returning({ id: fundingCallPublicationRevisions.id });
+    await publishCallIntegrationBindings(
+      transaction,
+      current.id,
+      revision.id,
+      current.workflowTemplateVersionId!,
+    );
 
+    const {
+      opensAt,
+      closesAt,
+      publicDocuments: _documents,
+      ...configuration
+    } = snapshot;
+    void _documents;
     const [updated] = await transaction
       .update(fundingCalls)
       .set({
+        ...configuration,
+        opensAt: new Date(opensAt),
+        closesAt: new Date(closesAt),
+        currentPublishedVersionId: revision.id,
         rowVersion: nextRowVersion,
-        status: transition.targetStatus,
-        suspendedFromStatus: null,
+        status: targetStatus,
+        suspendedFromStatus:
+          targetStatus === "SUSPENDED"
+            ? (transition.targetStatus as "SCHEDULED" | "LIVE")
+            : null,
         updatedAt: input.now,
         updatedBy: input.actorId,
       })
-      .where(and(
-        eq(fundingCalls.id, input.fundingCallId),
-        eq(fundingCalls.rowVersion, input.expectedRowVersion),
-        eq(fundingCalls.status, "APPROVED"),
-      ))
+      .where(eq(fundingCalls.id, input.fundingCallId))
       .returning();
-    if (!updated) return { kind: "conflict" };
+    if (draft) {
+      await transaction
+        .delete(fundingCallDraftVersions)
+        .where(eq(fundingCallDraftVersions.id, draft.id));
+    }
 
     const eventPayload = {
       fundingCallId: input.fundingCallId,
       publicationRevisionId: revision.id,
       publishedAt: input.now.toISOString(),
-      status: transition.targetStatus,
+      status: targetStatus,
     };
     await transaction.insert(transactionalOutbox).values([
       {
@@ -214,9 +253,9 @@ export async function publishApprovedFundingCall(
       occurredAt: input.now,
       rowVersion: nextRowVersion,
       sourceIdempotencyKey: input.idempotencyKey,
-      sourceStatus: transition.sourceStatus,
+      sourceStatus: effective.status,
       stakeholderUserIds: [current.createdBy],
-      targetStatus: transition.targetStatus,
+      targetStatus,
     });
     return { call: toFundingCall(updated), kind: "published" };
   });

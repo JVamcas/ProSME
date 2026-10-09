@@ -1,4 +1,8 @@
 import "server-only";
+import {
+  bindEligibilityIntegration,
+  readApplicationIntegrationBinding,
+} from "../infrastructure/EligibilityIntegrationBindingRepository";
 
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { requirePermission } from "@/auth/authorization/policy";
@@ -20,12 +24,10 @@ import {
 } from "../domain/EligibilityIntegrationExecution";
 import type { EligibilityIntegrationProviderAdapter } from "../domain/EligibilityIntegration";
 import {
-  bindEligibilityIntegration,
   createEligibilityIntegration,
   createEligibilityIntegrationVersion,
   insertEligibilityIntegrationExecution,
   publishEligibilityIntegrationVersion,
-  readApplicationIntegrationBinding,
   readEligibilityIntegrationCatalogue,
 } from "../infrastructure/EligibilityIntegrationRepository";
 
@@ -92,8 +94,12 @@ export async function bindFundingCallEligibilityIntegration(
     user,
     permissionCodes.integrationEligibilityBind,
   );
-  requirePermission(user, permissionCodes.fundingCallCreate);
-  const result = await bindEligibilityIntegration(actor.id, fundingCallId, input);
+  requirePermission(user, permissionCodes.fundingCallEditDraft);
+  const result = await bindEligibilityIntegration(
+    actor.id,
+    fundingCallId,
+    input,
+  );
   if (result.kind === "NOT_FOUND") {
     throw new ResourceNotFoundError("Funding Call or integration version");
   }
@@ -119,7 +125,8 @@ export async function executeBoundEligibilityIntegration(
     input.applicationId,
     input.bindingId,
   );
-  if (!binding) throw new ResourceNotFoundError("bound eligibility integration");
+  if (!binding)
+    throw new ResourceNotFoundError("bound eligibility integration");
   if (binding.providerAdapterKey !== input.adapter.key) {
     throw new ResourceConflictError(
       "The installed provider adapter does not match the bound integration version.",
@@ -155,7 +162,8 @@ export async function recordManualEligibilityIntegrationResult(
     applicationId,
     bindingId,
   );
-  if (!binding) throw new ResourceNotFoundError("bound eligibility integration");
+  if (!binding)
+    throw new ResourceNotFoundError("bound eligibility integration");
   if (!binding.manualFallbackAllowed) {
     throw new ResourceConflictError(
       "Manual verification is not allowed for this integration binding.",

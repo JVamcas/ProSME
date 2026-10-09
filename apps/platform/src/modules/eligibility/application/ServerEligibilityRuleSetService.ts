@@ -23,9 +23,7 @@ import {
   publishEligibilityRuleSetVersion,
   retireEligibilityRuleSetVersion,
 } from "../infrastructure/EligibilityRuleSetRepository";
-import {
-  cloneEligibilityRuleSetVersion,
-} from "../infrastructure/EligibilityRuleSetCloneRepository";
+import { cloneEligibilityRuleSetVersion } from "../infrastructure/EligibilityRuleSetCloneRepository";
 import {
   InvalidEligibilityQuestionSelectionError,
   updateEligibilityRuleSetDefinition,
@@ -86,9 +84,13 @@ export async function updateEligibilityRuleSetMetadata(
   ruleSetId: string,
   input: CreateEligibilityRuleSetCommand,
 ) {
-  requirePermission(user, permissionCodes.eligibilityRuleSetUpdate);
+  const actor = requirePermission(
+    user,
+    permissionCodes.eligibilityRuleSetUpdate,
+  );
   const definition = await updateEligibilityRuleSetDefinition({
     ...input,
+    actorId: actor.id,
     ruleSetId,
   });
   if (!definition) throw new ResourceNotFoundError("eligibility ruleset");
@@ -119,8 +121,8 @@ export async function updateEligibilityRuleSet(
     }
   } catch (error) {
     if (
-      error instanceof InvalidEligibilityRulesError
-      || error instanceof InvalidEligibilityQuestionSelectionError
+      error instanceof InvalidEligibilityRulesError ||
+      error instanceof InvalidEligibilityQuestionSelectionError
     ) {
       throw new RequestValidationError(error.message);
     }
@@ -158,12 +160,9 @@ export async function publishEligibilityRuleSet(
   const contextIssues = builder.rules.flatMap((rule) =>
     validateConditionGroup(
       rule.condition,
-      eligibilityFieldsForExecutionMode(
-        registry.fields,
-        rule.executionMode,
-      ),
+      eligibilityFieldsForExecutionMode(registry.fields, rule.executionMode),
       conditionBuilderOperators,
-    ).issues.map((issue) => `${rule.reasonCode}: ${issue.message}`)
+    ).issues.map((issue) => `${rule.reasonCode}: ${issue.message}`),
   );
   if (contextIssues.length) {
     throw new RequestValidationError(contextIssues.join(" "));

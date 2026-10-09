@@ -1,7 +1,4 @@
-import type {
-  FormField,
-  FormRuntimeSchema,
-} from "@/modules/forms/FormTypes";
+import type { FormField, FormRuntimeSchema } from "@/modules/forms/FormTypes";
 import { formRichTextAsPlainText } from "@/modules/forms/engine/FormRichText";
 
 export type ApplicationReadAnswer = {
@@ -17,7 +14,7 @@ export type ApplicationReadSection = {
 };
 
 function displayScalar(
-  field: Pick<FormField, "options" | "type">,
+  field: Pick<FormField, "key" | "options" | "type">,
   value: unknown,
 ) {
   const optionLabel = (item: unknown) => {
@@ -28,6 +25,7 @@ function displayScalar(
   if (Array.isArray(value)) return value.map(optionLabel).join(", ");
   if (typeof value === "boolean") return value ? "Yes" : "No";
   if (typeof value === "number") {
+    if (field.key === "BUSINESS_ESTABLISHED_YEAR") return String(value);
     if (field.type === "CURRENCY") {
       return `N$ ${new Intl.NumberFormat("en-NA").format(value)}`;
     }
@@ -43,20 +41,25 @@ function displayScalar(
 }
 
 function displayRepeatableAnswer(field: FormField, value: unknown[]) {
-  const itemFields = [...(field.repeatable?.fields ?? [])]
-    .sort((left, right) => left.order - right.order);
-  return value.map((item, index) => {
-    if (!item || typeof item !== "object" || Array.isArray(item)) {
-      return `${index + 1}. ${String(item)}`;
-    }
-    const row = item as Record<string, unknown>;
-    const values = itemFields.flatMap((itemField) => (
-      hasAnswer(row[itemField.key])
-        ? [`${itemField.label}: ${displayScalar(itemField, row[itemField.key])}`]
-        : []
-    ));
-    return `${index + 1}. ${values.join("; ")}`;
-  }).join("\n");
+  const itemFields = [...(field.repeatable?.fields ?? [])].sort(
+    (left, right) => left.order - right.order,
+  );
+  return value
+    .map((item, index) => {
+      if (!item || typeof item !== "object" || Array.isArray(item)) {
+        return `${index + 1}. ${String(item)}`;
+      }
+      const row = item as Record<string, unknown>;
+      const values = itemFields.flatMap((itemField) =>
+        hasAnswer(row[itemField.key])
+          ? [
+              `${itemField.label}: ${displayScalar(itemField, row[itemField.key])}`,
+            ]
+          : [],
+      );
+      return `${index + 1}. ${values.join("; ")}`;
+    })
+    .join("\n");
 }
 
 function displayAnswer(field: FormField, value: unknown): string {
@@ -67,10 +70,12 @@ function displayAnswer(field: FormField, value: unknown): string {
 }
 
 function hasAnswer(value: unknown) {
-  return value !== null
-    && value !== undefined
-    && value !== ""
-    && (!Array.isArray(value) || value.length > 0);
+  return (
+    value !== null &&
+    value !== undefined &&
+    value !== "" &&
+    (!Array.isArray(value) || value.length > 0)
+  );
 }
 
 export function applicationReadSections(

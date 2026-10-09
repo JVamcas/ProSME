@@ -3,6 +3,7 @@ import "server-only";
 import { and, eq, isNull, ne } from "drizzle-orm";
 import type { DatabaseTransaction } from "@/db/client";
 import type { ApplicationDuplicatePolicy } from "../domain/Application";
+import { fundingCalls } from "@/modules/funding-calls/infrastructure/funding-call.schema";
 import { applications } from "./application.schema";
 
 type ApplicationPolicyContext = {
@@ -19,19 +20,30 @@ export async function findApplicationPolicyConflict(
   transaction: DatabaseTransaction,
   input: ApplicationPolicyContext,
 ): Promise<"duplicate" | "resubmission_not_allowed" | null> {
+  const [call] = await transaction
+    .select({
+      duplicatePolicy: fundingCalls.applicationDuplicatePolicy,
+      allowResubmissionAfterWithdrawal:
+        fundingCalls.allowResubmissionAfterWithdrawal,
+    })
+    .from(fundingCalls)
+    .where(eq(fundingCalls.id, input.fundingCallId))
+    .limit(1);
+  if (!call) return "duplicate";
+  const policy = call;
   if (
-    input.duplicatePolicy === "none" &&
-    input.allowResubmissionAfterWithdrawal
+    policy.duplicatePolicy === "none" &&
+    policy.allowResubmissionAfterWithdrawal
   ) {
     return null;
   }
   const scope =
-    input.duplicatePolicy === "one_per_business" && input.businessId
+    policy.duplicatePolicy === "one_per_business" && input.businessId
       ? eq(applications.businessId, input.businessId)
       : eq(applications.ownerUserId, input.ownerUserId);
-  const statusFilter = input.allowResubmissionAfterWithdrawal
+  const statusFilter = policy.allowResubmissionAfterWithdrawal
     ? ne(applications.status, "withdrawn")
-    : input.duplicatePolicy === "none"
+    : policy.duplicatePolicy === "none"
       ? eq(applications.status, "withdrawn")
       : undefined;
   const [conflict] = await transaction

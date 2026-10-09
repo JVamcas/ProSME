@@ -7,6 +7,7 @@ import {
   fundingOpportunityWorkflowAssignments,
   workflowAuditEntries,
   workflowDefinitionVersions,
+  workflowDefinitions,
 } from "@/db/schema";
 import {
   workflowTemplateCommandSourceStatuses,
@@ -76,6 +77,12 @@ export async function changeWorkflowTemplateLifecycle(
       detachedAssignmentCount = detached.length;
     }
     const now = new Date();
+    if (command === "PUBLISH") {
+      await transaction
+        .update(workflowDefinitions)
+        .set({ ...lockedVersion.metadata, updatedAt: now })
+        .where(eq(workflowDefinitions.id, lockedVersion.definitionId));
+    }
     const [version] = await transaction
       .update(workflowDefinitionVersions)
       .set({

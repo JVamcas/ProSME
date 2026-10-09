@@ -10,7 +10,7 @@ import {
 import {
   createOwnedBusiness,
   listOwnedBusinesses,
-} from "@/db/repositories/BusinessRepository";
+} from "@/modules/businesses/infrastructure/BusinessRepository";
 import {
   findUserByFirebaseSubject,
   provisionApplicant,

@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useCallback, useState } from "react";
 
 import {
@@ -17,6 +18,9 @@ import type { FormField, FormSection } from "@/modules/forms/FormTypes";
 import type { FormDisplayMode } from "@/modules/forms/FormTypes";
 
 export function useFormEditorController(id: string, versionId?: string) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const query = useFormEditor(id, versionId);
   const update = useUpdateForm(id);
   const clone = useCloneForm();
@@ -49,59 +53,66 @@ export function useFormEditorController(id: string, versionId?: string) {
     setSection(target);
     setSectionDialogOpen(true);
   }, []);
-  const saveField = useCallback(async (next: FormField) => {
-    if (!editor) return;
-    const fields = editor.fields.some((item) => item.id === field?.id)
-      ? editor.fields.map((item) =>
-          item.id === field?.id ? { ...next, id: item.id } : item,
-        )
-      : [...editor.fields, next];
-    await update.mutateAsync({
-      expectedRowVersion: editor.version.rowVersion,
-      displayMode: editor.version.displayMode,
-      fields,
-      instructions: editor.version.instructions,
-      sections: editor.sections,
-      submitLabel: editor.version.submitLabel,
-    });
-  }, [editor, field?.id, update]);
+  const saveField = useCallback(
+    async (next: FormField) => {
+      if (!editor) return;
+      const fields = editor.fields.some((item) => item.id === field?.id)
+        ? editor.fields.map((item) =>
+            item.id === field?.id ? { ...next, id: item.id } : item,
+          )
+        : [...editor.fields, next];
+      await update.mutateAsync({
+        versionId: editor.version.id,
+        expectedRowVersion: editor.version.rowVersion,
+        displayMode: editor.version.displayMode,
+        fields,
+        instructions: editor.version.instructions,
+        sections: editor.sections,
+        submitLabel: editor.version.submitLabel,
+      });
+    },
+    [editor, field?.id, update],
+  );
   const removeField = useCallback(() => {
     if (!editor || !fieldToRemove) return;
     update.mutate({
+      versionId: editor.version.id,
       expectedRowVersion: editor.version.rowVersion,
       displayMode: editor.version.displayMode,
-      fields: removeFormField(
-        editor.fields,
-        formFieldIdentity(fieldToRemove),
-      ),
+      fields: removeFormField(editor.fields, formFieldIdentity(fieldToRemove)),
       instructions: editor.version.instructions,
       sections: editor.sections,
       submitLabel: editor.version.submitLabel,
     });
     setFieldToRemove(undefined);
   }, [editor, fieldToRemove, update]);
-  const saveSection = useCallback(async (next: FormSection) => {
-    if (!editor) return;
-    const sections = section
-      ? editor.sections.map((item) =>
-          item.id === section.id ? { ...next, id: item.id } : item,
-        )
-      : [...editor.sections, next];
-    await update.mutateAsync({
-      expectedRowVersion: editor.version.rowVersion,
-      displayMode: editor.version.displayMode,
-      fields: editor.fields,
-      instructions: editor.version.instructions,
-      sections,
-      submitLabel: editor.version.submitLabel,
-    });
-  }, [editor, section, update]);
+  const saveSection = useCallback(
+    async (next: FormSection) => {
+      if (!editor) return;
+      const sections = section
+        ? editor.sections.map((item) =>
+            item.id === section.id ? { ...next, id: item.id } : item,
+          )
+        : [...editor.sections, next];
+      await update.mutateAsync({
+        versionId: editor.version.id,
+        expectedRowVersion: editor.version.rowVersion,
+        displayMode: editor.version.displayMode,
+        fields: editor.fields,
+        instructions: editor.version.instructions,
+        sections,
+        submitLabel: editor.version.submitLabel,
+      });
+    },
+    [editor, section, update],
+  );
   const removeSection = useCallback(() => {
     if (!editor || !sectionToRemove) return;
     const sections = editor.sections
       .filter((item) => item.id !== sectionToRemove.id)
       .map((item, index) => ({ ...item, order: index + 1 }));
     update.mutate({
+      versionId: editor.version.id,
       expectedRowVersion: editor.version.rowVersion,
       displayMode: editor.version.displayMode,
       fields: removeFormSectionFields(editor.fields, sectionToRemove.id ?? ""),
@@ -111,41 +122,67 @@ export function useFormEditorController(id: string, versionId?: string) {
     });
     setSectionToRemove(undefined);
   }, [editor, sectionToRemove, update]);
-  const reorderSections = useCallback((sections: FormSection[]) => {
+  const reorderSections = useCallback(
+    (sections: FormSection[]) => {
+      if (!editor) return;
+      update.mutate({
+        versionId: editor.version.id,
+        expectedRowVersion: editor.version.rowVersion,
+        displayMode: editor.version.displayMode,
+        fields: editor.fields,
+        instructions: editor.version.instructions,
+        sections,
+        submitLabel: editor.version.submitLabel,
+      });
+    },
+    [editor, update],
+  );
+  const reorderFields = useCallback(
+    (fields: FormField[]) => {
+      if (!editor) return;
+      update.mutate({
+        versionId: editor.version.id,
+        expectedRowVersion: editor.version.rowVersion,
+        displayMode: editor.version.displayMode,
+        fields,
+        instructions: editor.version.instructions,
+        sections: editor.sections,
+        submitLabel: editor.version.submitLabel,
+      });
+    },
+    [editor, update],
+  );
+  const updateDisplayMode = useCallback(
+    (displayMode: FormDisplayMode) => {
+      if (!editor || displayMode === editor.version.displayMode) return;
+      update.mutate({
+        displayMode,
+        versionId: editor.version.id,
+        expectedRowVersion: editor.version.rowVersion,
+        fields: editor.fields,
+        instructions: editor.version.instructions,
+        sections: editor.sections,
+        submitLabel: editor.version.submitLabel,
+      });
+    },
+    [editor, update],
+  );
+  function editPublishedVersion() {
     if (!editor) return;
-    update.mutate({
-      expectedRowVersion: editor.version.rowVersion,
-      displayMode: editor.version.displayMode,
-      fields: editor.fields,
-      instructions: editor.version.instructions,
-      sections,
-      submitLabel: editor.version.submitLabel,
-    });
-  }, [editor, update]);
-  const reorderFields = useCallback((fields: FormField[]) => {
-    if (!editor) return;
-    update.mutate({
-      expectedRowVersion: editor.version.rowVersion,
-      displayMode: editor.version.displayMode,
-      fields,
-      instructions: editor.version.instructions,
-      sections: editor.sections,
-      submitLabel: editor.version.submitLabel,
-    });
-  }, [editor, update]);
-  const updateDisplayMode = useCallback((displayMode: FormDisplayMode) => {
-    if (!editor || displayMode === editor.version.displayMode) return;
-    update.mutate({
-      displayMode,
-      expectedRowVersion: editor.version.rowVersion,
-      fields: editor.fields,
-      instructions: editor.version.instructions,
-      sections: editor.sections,
-      submitLabel: editor.version.submitLabel,
-    });
-  }, [editor, update]);
+    clone.mutate(
+      { definitionId: id, sourceVersionId: editor.version.id },
+      {
+        onSuccess: (view) => {
+          const params = new URLSearchParams(searchParams.toString());
+          params.set("versionId", view.version.id);
+          router.replace(`${pathname}?${params}`);
+        },
+      },
+    );
+  }
   return {
     clone,
+    editPublishedVersion,
     dialogOpen,
     editor,
     field,

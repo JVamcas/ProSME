@@ -126,6 +126,46 @@ describe("website panel projections", () => {
     });
   });
 
+  it("maps live GA region names into chart data without changing counts or shares", async () => {
+    const transport = vi.fn().mockResolvedValue({
+      dimensionHeaders: [{ name: "region" }],
+      metricHeaders: [{ name: "totalUsers" }],
+      rows: ["Khomas Region", "Erongo Region", "Omusati Region"].map(
+        (value, index) => ({
+          dimensionValues: [{ value }],
+          metricValues: [{ value: String([10, 5, 2][index]) }],
+        }),
+      ),
+    });
+    const result = await new GoogleAnalyticsPanelsAdapter(
+      configuration,
+      transport,
+    ).regions(input);
+
+    expect(result.state).toBe("ready");
+    expect(result.data?.regionalUserSum).toBe(17);
+    expect(result.data?.regions).toEqual([
+      {
+        providerRegion: "Khomas Region",
+        canonicalRegion: "Khomas",
+        users: 10,
+        share: 10 / 17,
+      },
+      {
+        providerRegion: "Erongo Region",
+        canonicalRegion: "Erongo",
+        users: 5,
+        share: 5 / 17,
+      },
+      {
+        providerRegion: "Omusati Region",
+        canonicalRegion: "Omusati",
+        users: 2,
+        share: 2 / 17,
+      },
+    ]);
+  });
+
   it("retains unknown/unmapped regions and explains its denominator", async () => {
     const transport = vi.fn().mockResolvedValue({
       dimensionHeaders: [{ name: "region" }],

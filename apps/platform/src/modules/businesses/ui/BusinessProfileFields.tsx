@@ -1,9 +1,14 @@
-import { FormInput, FormSelect, FormTextarea } from "@/components/ui/form-fields";
+import {
+  FormInput,
+  FormSelect,
+  FormTextarea,
+} from "@/components/ui/form-fields";
 import {
   businessTypes,
   namibianRegions,
   selectItems,
 } from "@/modules/profiles/ProfileOptions";
+import { BusinessSectorFields } from "./BusinessSectorFields";
 
 export function BusinessProfileFields({ disabled }: { disabled?: boolean }) {
   return (
@@ -14,11 +19,17 @@ export function BusinessProfileFields({ disabled }: { disabled?: boolean }) {
         name="legalName"
         required
       />
-      <FormInput disabled={disabled} label="Trading name" name="tradingName" />
+      <FormInput
+        disabled={disabled}
+        label="Trading name"
+        name="tradingName"
+        required
+      />
       <FormInput
         disabled={disabled}
         label="Registration number"
         name="registrationNumber"
+        required
       />
       <FormSelect
         disabled={disabled}
@@ -28,12 +39,7 @@ export function BusinessProfileFields({ disabled }: { disabled?: boolean }) {
         placeholder="Select a business type"
         required
       />
-      <FormInput
-        disabled={disabled}
-        label="Sector"
-        name="sector"
-        required
-      />
+      <BusinessSectorFields disabled={disabled} />
       <FormSelect
         disabled={disabled}
         label="Region"
@@ -48,12 +54,14 @@ export function BusinessProfileFields({ disabled }: { disabled?: boolean }) {
         name="establishedYear"
         inputMode="numeric"
         maxLength={4}
+        required
       />
       <FormInput
         disabled={disabled}
         label="Number of employees"
         name="employeeCount"
         inputMode="numeric"
+        required
       />
       <FormTextarea
         disabled={disabled}

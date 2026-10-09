@@ -61,10 +61,6 @@ export async function updateWorkflowDefinitionDetails(input: DetailsUpdate) {
       description: input.description,
       name: input.name,
     };
-    await transaction
-      .update(workflowDefinitions)
-      .set({ ...after, updatedAt: new Date() })
-      .where(eq(workflowDefinitions.id, input.definitionId));
     await transaction.insert(workflowAuditEntries).values({
       action: "WORKFLOW_DETAILS_UPDATED",
       actorId: input.actorId,

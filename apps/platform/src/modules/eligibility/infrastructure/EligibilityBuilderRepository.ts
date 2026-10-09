@@ -35,10 +35,7 @@ function editableGroup(
   if (rule.condition.kind === "GROUP") {
     return draft ? { ...storedGroup, id: rule.id } : storedGroup;
   }
-  const condition = findConditionNode(
-    storedGroup,
-    rule.condition.conditionId,
-  );
+  const condition = findConditionNode(storedGroup, rule.condition.conditionId);
   if (!condition || condition.kind !== "CONDITION") {
     throw new Error(`Eligibility rule "${rule.id}" has an invalid condition.`);
   }
@@ -58,8 +55,8 @@ function firstQuestionCode(group: ConditionGroup): string | null {
       continue;
     }
     if (
-      child.leftOperand.kind === "FIELD"
-      && child.leftOperand.key.startsWith("eligibility.")
+      child.leftOperand.kind === "FIELD" &&
+      child.leftOperand.key.startsWith("eligibility.")
     ) {
       return child.leftOperand.key.slice("eligibility.".length);
     }
@@ -75,19 +72,19 @@ export async function findEligibilityRuleSetBuilder(
     ? await findEligibilityRuleSetVersion(versionId)
     : await findEligibilityRuleSet(ruleSetId);
   if (!ruleSet || ruleSet.definition.id !== ruleSetId) return null;
-  const groupIds = [...new Set(
-    ruleSet.rules.map((rule) => rule.condition.conditionGroupId),
-  )];
+  const groupIds = [
+    ...new Set(ruleSet.rules.map((rule) => rule.condition.conditionGroupId)),
+  ];
   const database = getDatabase();
   const [storedGroups, questionBindings] = await Promise.all([
     groupIds.length
       ? database
-        .select({
-          definition: conditionGroups.definition,
-          id: conditionGroups.id,
-        })
-        .from(conditionGroups)
-        .where(inArray(conditionGroups.id, groupIds))
+          .select({
+            definition: conditionGroups.definition,
+            id: conditionGroups.id,
+          })
+          .from(conditionGroups)
+          .where(inArray(conditionGroups.id, groupIds))
       : Promise.resolve([]),
     database
       .select({
@@ -95,7 +92,9 @@ export async function findEligibilityRuleSetBuilder(
         questionId: eligibilityRuleSetQuestionBindings.questionId,
       })
       .from(eligibilityRuleSetQuestionBindings)
-      .where(eq(eligibilityRuleSetQuestionBindings.versionId, ruleSet.version.id)),
+      .where(
+        eq(eligibilityRuleSetQuestionBindings.versionId, ruleSet.version.id),
+      ),
   ]);
   const questionIdsByCode = new Map(
     questionBindings.map((binding) => [binding.code, binding.questionId]),
@@ -110,7 +109,8 @@ export async function findEligibilityRuleSetBuilder(
   const rules = ruleSet.rules.map((rule): EligibilityBuilderRule => {
     if (!rule.id) throw new Error("Stored eligibility rule has no identifier.");
     const group = groups.get(rule.condition.conditionGroupId);
-    if (!group) throw new Error(`Eligibility rule "${rule.id}" has no condition group.`);
+    if (!group)
+      throw new Error(`Eligibility rule "${rule.id}" has no condition group.`);
     const editableCondition = editableGroup(
       rule as EligibilityRule & { id: string },
       group,
@@ -125,7 +125,7 @@ export async function findEligibilityRuleSetBuilder(
       id: rule.id,
       order: rule.order,
       questionId: questionCode
-        ? questionIdsByCode.get(questionCode) ?? ""
+        ? (questionIdsByCode.get(questionCode) ?? "")
         : "",
       reasonCode: rule.reasonCode,
     };
@@ -153,9 +153,9 @@ export async function listEligibilityRuleSets(input: {
   const [result, countResult] = await Promise.all([
     database.execute(sql`
       SELECT definition.id,
-        definition.code,
-        definition.name,
-        definition.description,
+        coalesce(version.metadata->>'code', definition.code) AS code,
+        coalesce(version.metadata->>'name', definition.name) AS name,
+        coalesce(version.metadata->>'description', definition.description) AS description,
         version.id AS "versionId",
         version.version_number AS "version",
         version.row_version AS "versionRowVersion",

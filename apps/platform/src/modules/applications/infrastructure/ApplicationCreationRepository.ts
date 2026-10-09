@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, desc, eq, or } from "drizzle-orm";
+import { and, eq, or } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
 import { businessProfiles } from "@/db/schema/profiles";
@@ -63,15 +63,17 @@ async function lockFundingCall(
 
 async function readPublishedBinding(
   transaction: ApplicationTransaction,
-  fundingCallId: string,
+  fundingCallVersionId: string,
 ) {
   const [revision] = await transaction
-    .select({ snapshot: fundingCallPublicationRevisions.snapshot })
+    .select({
+      id: fundingCallPublicationRevisions.id,
+      snapshot: fundingCallPublicationRevisions.snapshot,
+    })
     .from(fundingCallPublicationRevisions)
-    .where(eq(fundingCallPublicationRevisions.fundingCallId, fundingCallId))
-    .orderBy(desc(fundingCallPublicationRevisions.revisionNumber))
+    .where(eq(fundingCallPublicationRevisions.id, fundingCallVersionId))
     .limit(1);
-  return revision?.snapshot ?? null;
+  return revision ?? null;
 }
 
 async function bindingIsPublished(
@@ -154,10 +156,15 @@ async function createDraftInTransaction(
       ? { applicationId: replay.applicationId, kind: "replayed" }
       : { kind: "idempotency_conflict" };
   }
-  const binding = await readPublishedBinding(transaction, call.id);
+  if (!call.currentPublishedVersionId) return { kind: "unavailable" };
+  const revision = await readPublishedBinding(
+    transaction,
+    call.currentPublishedVersionId,
+  );
+  const binding = revision?.snapshot;
   const formVersionId = binding?.formVersionId;
   const rulesVersionId = binding?.eligibilityRuleSetVersionId;
-  const duplicatePolicy = binding?.applicationDuplicatePolicy;
+  const duplicatePolicy = call.applicationDuplicatePolicy;
   if (
     !binding ||
     !formVersionId ||
@@ -179,7 +186,7 @@ async function createDraftInTransaction(
     return { kind: "unowned_business" };
   }
   const allowResubmissionAfterWithdrawal =
-    binding.allowResubmissionAfterWithdrawal ?? false;
+    call.allowResubmissionAfterWithdrawal;
   const conflict = await findApplicationPolicyConflict(transaction, {
     ownerUserId: input.actorUserId,
     businessId: input.businessId,
@@ -197,6 +204,7 @@ async function createDraftInTransaction(
       eligibilityRuleSetVersionId: rulesVersionId,
       formVersionId,
       fundingOpportunityId: call.id,
+      fundingCallVersionId: revision!.id,
       fundingOpportunityTitle: binding.title,
       ownerUserId: input.actorUserId,
     })
@@ -235,6 +243,7 @@ async function createDraftInTransaction(
       eligibilityRuleSetVersionId: rulesVersionId,
       formVersionId,
       fundingCallId: call.id,
+      fundingCallVersionId: revision!.id,
     },
   });
   return { applicationId: application.id, kind: "created" };

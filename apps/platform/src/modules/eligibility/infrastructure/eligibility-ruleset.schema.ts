@@ -57,6 +57,10 @@ export const eligibilityRuleSetVersions = pgTable(
       .notNull()
       .references(() => eligibilityRuleSets.id, { onDelete: "restrict" }),
     versionNumber: integer("version_number").notNull(),
+    metadata: jsonb("metadata")
+      .$type<Partial<{ code: string; name: string; description: string }>>()
+      .notNull()
+      .default({}),
     status: text("status")
       .$type<EligibilityRuleSetStatus>()
       .notNull()
@@ -120,9 +124,7 @@ export const eligibilityRules = pgTable(
       .$type<"CONDITION" | "GROUP">()
       .notNull(),
     conditionId: uuid("condition_id"),
-    failureType: text("failure_type")
-      .$type<EligibilityFailureType>()
-      .notNull(),
+    failureType: text("failure_type").$type<EligibilityFailureType>().notNull(),
     reasonCode: text("reason_code").notNull(),
     applicantMessage: text("applicant_message").notNull(),
     executionMode: text("execution_mode")
@@ -248,9 +250,12 @@ export const eligibilityInputDefinitions = pgTable(
       }),
     stableKey: text("stable_key").notNull(),
     label: text("label").notNull(),
-    type: text("data_type").$type<"TEXT" | "NUMBER" | "BOOLEAN" | "DATE">()
+    type: text("data_type")
+      .$type<"TEXT" | "NUMBER" | "BOOLEAN" | "DATE">()
       .notNull(),
-    availableIn: text("available_in").array().$type<EligibilityInputMode[]>()
+    availableIn: text("available_in")
+      .array()
+      .$type<EligibilityInputMode[]>()
       .notNull(),
     order: integer("display_order").notNull(),
     groupKey: text("group_key"),
@@ -320,7 +325,8 @@ export const eligibilitySelfCheckQuestions = pgTable(
     explanation: text("explanation").notNull().default(""),
     answerType: text("answer_type").$type<SelfCheckAnswerType>().notNull(),
     required: boolean("required").notNull().default(true),
-    options: jsonb("options").$type<SelfCheckQuestionOption[]>()
+    options: jsonb("options")
+      .$type<SelfCheckQuestionOption[]>()
       .notNull()
       .default([]),
   },

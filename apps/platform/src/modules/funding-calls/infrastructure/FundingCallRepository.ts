@@ -1,22 +1,23 @@
 import "server-only";
+import { copyCallIntegrationBindings } from "@/modules/eligibility/infrastructure/EligibilityIntegrationVersionBindingRepository";
 
-import {
-  and,
-  count,
-  desc,
-  eq,
-  inArray,
-  lt,
-  or,
-} from "drizzle-orm";
+import { and, count, desc, eq, inArray, lt, or } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
+import { authorizationAuditEntries } from "@/db/schema";
 import type {
   FundingCallCreateInput,
   FundingCallUpdateInput,
 } from "../api/FundingCallSchemas";
 import type { FundingCall } from "../domain/FundingCall";
-import { assertFundingCallAttachmentsUnchanged } from "../domain/FundingCallAttachmentPolicy";
+import { canPrepareFundingCallReplacement } from "../domain/FundingCallVersion";
+import { captureFundingCallPublication } from "../domain/FundingCallPublication";
+import { fundingCallDraftVersions } from "./funding-call-version.schema";
+import {
+  readWorkingFundingCall,
+  updateWorkingFundingCall,
+} from "./FundingCallVersionRepository";
+import { fundingCallWorkingView } from "../domain/FundingCallVersion";
 import { publicFundingCallConditions } from "./PublicFundingCallRepository";
 import {
   sanitizeFundingCallDescription,
@@ -64,7 +65,7 @@ export async function insertFundingCall(
   });
 }
 
-export async function readFundingCallById(
+export async function readEffectiveFundingCallById(
   id: string,
 ): Promise<FundingCall | null> {
   const [row] = await getDatabase()
@@ -73,6 +74,24 @@ export async function readFundingCallById(
     .where(eq(fundingCalls.id, id))
     .limit(1);
   return row ? toFundingCall(row) : null;
+}
+
+export async function readFundingCallById(
+  id: string,
+): Promise<FundingCall | null> {
+  return getDatabase().transaction(async (transaction) => {
+    const [effective] = await transaction
+      .select()
+      .from(fundingCalls)
+      .where(eq(fundingCalls.id, id))
+      .limit(1);
+    if (!effective) return null;
+    const { call } = await readWorkingFundingCall(
+      transaction,
+      toFundingCall(effective),
+    );
+    return call;
+  });
 }
 
 export async function readFundingCallByPublicIdentifier(
@@ -98,26 +117,66 @@ export async function updateDraftFundingCall(
 ): Promise<FundingCall | null> {
   const { expectedRowVersion, ...values } = input;
   return getDatabase().transaction(async (transaction) => {
-    // Application creation locks the same call row before recording its binding.
-    const [current] = await transaction
-      .select({
-        attachmentsLockedAt: fundingCalls.attachmentsLockedAt,
-        eligibilityRuleSetVersionId: fundingCalls.eligibilityRuleSetVersionId,
-        formVersionId: fundingCalls.formVersionId,
-        rowVersion: fundingCalls.rowVersion,
-        status: fundingCalls.status,
-        workflowTemplateVersionId: fundingCalls.workflowTemplateVersionId,
-      })
+    // Serialize replacement edits, publication and intake on the stable call row.
+    const [effective] = await transaction
+      .select()
       .from(fundingCalls)
       .where(eq(fundingCalls.id, id))
       .for("update")
       .limit(1);
-    if (
-      !current
-      || current.status !== "DRAFT"
-      || current.rowVersion !== expectedRowVersion
-    ) return null;
-    assertFundingCallAttachmentsUnchanged(current, input);
+    if (!effective || effective.rowVersion !== expectedRowVersion) return null;
+    let { call: current, draft } = await readWorkingFundingCall(
+      transaction,
+      effective,
+    );
+    if (!draft && canPrepareFundingCallReplacement(effective)) {
+      [draft] = await transaction
+        .insert(fundingCallDraftVersions)
+        .values({
+          fundingCallId: id,
+          snapshot: captureFundingCallPublication(effective, []),
+          createdBy: actorId,
+          updatedBy: actorId,
+        })
+        .returning();
+      current = fundingCallWorkingView(effective, draft);
+      await copyCallIntegrationBindings(
+        transaction,
+        id,
+        effective.currentPublishedVersionId!,
+        draft.id,
+        actorId,
+      );
+      await transaction.insert(authorizationAuditEntries).values({
+        action: "funding_call.version.draft_created",
+        actorId,
+        changes: {
+          fundingCallId: id,
+          versionId: draft.id,
+          sourceVersionId: effective.currentPublishedVersionId,
+        },
+      });
+    }
+    if (current.status !== "DRAFT") return null;
+    const changes = {
+      ...values,
+      reference: effective.reference,
+      slug: effective.slug,
+      closesAt: new Date(values.closesAt),
+      description: sanitizeFundingCallDescription(values.description),
+      eligibilitySummary: sanitizeFundingCallEligibilitySummary(
+        values.eligibilitySummary,
+      ),
+      opensAt: new Date(values.opensAt),
+      updatedAt: new Date(),
+      updatedBy: actorId,
+    };
+    if (draft) {
+      return updateWorkingFundingCall(transaction, effective, draft, {
+        ...current,
+        ...changes,
+      });
+    }
     const [updated] = await transaction
       .update(fundingCalls)
       .set({

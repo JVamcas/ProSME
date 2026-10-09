@@ -28,21 +28,21 @@ export const formOptionSchema = z.object({
 });
 
 const optionalNumber = z.preprocess(
-  (value) => value === "" || value === null ? undefined : value,
+  (value) => (value === "" || value === null ? undefined : value),
   z.coerce.number().finite().optional(),
 );
 
 const optionalLength = z.preprocess(
-  (value) => value === "" || value === null ? undefined : value,
+  (value) => (value === "" || value === null ? undefined : value),
   z.coerce.number().int().nonnegative().optional(),
 );
 
 const formFieldSchemaBase = z.object({
   id: z.string().uuid().optional(),
   sectionId: z.string().uuid(),
-  columnSpan: z.coerce.number().pipe(
-    z.union([z.literal(1), z.literal(2), z.literal(3)]),
-  ),
+  columnSpan: z.coerce
+    .number()
+    .pipe(z.union([z.literal(1), z.literal(2), z.literal(3)])),
   key: code,
   label: z.string().trim().min(1).max(160),
   type: z.enum(formFieldTypes),
@@ -58,105 +58,115 @@ const formFieldSchemaBase = z.object({
   visibilityCondition: conditionGroupSchema.nullable().optional(),
 });
 
-export const formFieldSchema = formFieldSchemaBase.superRefine((field, context) => {
-  const supportsOptions = ["SINGLE_SELECT", "MULTI_SELECT"].includes(field.type);
-  const options = field.options ?? [];
-  if (!supportsOptions && options.length) {
-    context.addIssue({
-      code: "custom",
-      message: "Only Single Select and Multi Select fields may have options.",
-      path: ["options"],
-    });
-  }
-  if (supportsOptions && !options.length) {
-    context.addIssue({ code: "custom", message: "Add at least one option.", path: ["options"] });
-  }
-  if (field.type === "REPEATABLE_GROUP" && !field.repeatable) {
-    context.addIssue({
-      code: "custom",
-      message: "Configure the repeatable group fields and row limits.",
-      path: ["repeatable"],
-    });
-  }
-  if (field.type !== "REPEATABLE_GROUP" && field.repeatable) {
-    context.addIssue({
-      code: "custom",
-      message: "Only Repeatable Group fields may have repeatable configuration.",
-      path: ["repeatable"],
-    });
-  }
-  const keys = options.map((option) => option.key);
-  if (new Set(keys).size !== keys.length) {
-    context.addIssue({
-      code: "custom",
-      message: "Option keys must be unique.",
-      path: ["options"],
-    });
-  }
-  if (options.some((option, index) => option.order !== index + 1)) {
-    context.addIssue({
-      code: "custom",
-      message: "Option order must be contiguous and start at one.",
-      path: ["options"],
-    });
-  }
-  const supportsNumberLimits = [
-    "NUMBER",
-    "CURRENCY",
-    "PERCENTAGE",
-  ].includes(field.type);
-  if (!supportsNumberLimits && (
-    field.minimum !== undefined || field.maximum !== undefined
-  )) {
-    context.addIssue({
-      code: "custom",
-      message: "Only numeric fields may have minimum or maximum values.",
-      path: ["minimum"],
-    });
-  }
-  if (
-    field.type === "PERCENTAGE" &&
-    (field.minimum !== undefined && field.minimum < 0 ||
-      field.maximum !== undefined && field.maximum > 100)
-  ) {
-    context.addIssue({
-      code: "custom",
-      message: "Percentage limits must be between zero and one hundred.",
-      path: ["minimum"],
-    });
-  }
-  if (field.type !== "TEXT" && field.type !== "TEXTAREA" && (
-    field.minLength !== undefined || field.maxLength !== undefined
-  )) {
-    context.addIssue({
-      code: "custom",
-      message: "Only Text and Textarea fields may have length limits.",
-      path: ["minLength"],
-    });
-  }
-  if (
-    field.minimum !== undefined &&
-    field.maximum !== undefined &&
-    field.minimum > field.maximum
-  ) {
-    context.addIssue({
-      code: "custom",
-      message: "Minimum cannot be greater than maximum.",
-      path: ["minimum"],
-    });
-  }
-  if (
-    field.minLength !== undefined &&
-    field.maxLength !== undefined &&
-    field.minLength > field.maxLength
-  ) {
-    context.addIssue({
-      code: "custom",
-      message: "Minimum length cannot be greater than maximum length.",
-      path: ["minLength"],
-    });
-  }
-});
+export const formFieldSchema = formFieldSchemaBase.superRefine(
+  (field, context) => {
+    const supportsOptions = ["SINGLE_SELECT", "MULTI_SELECT"].includes(
+      field.type,
+    );
+    const options = field.options ?? [];
+    if (!supportsOptions && options.length) {
+      context.addIssue({
+        code: "custom",
+        message: "Only Single Select and Multi Select fields may have options.",
+        path: ["options"],
+      });
+    }
+    if (supportsOptions && !options.length) {
+      context.addIssue({
+        code: "custom",
+        message: "Add at least one option.",
+        path: ["options"],
+      });
+    }
+    if (field.type === "REPEATABLE_GROUP" && !field.repeatable) {
+      context.addIssue({
+        code: "custom",
+        message: "Configure the repeatable group fields and row limits.",
+        path: ["repeatable"],
+      });
+    }
+    if (field.type !== "REPEATABLE_GROUP" && field.repeatable) {
+      context.addIssue({
+        code: "custom",
+        message:
+          "Only Repeatable Group fields may have repeatable configuration.",
+        path: ["repeatable"],
+      });
+    }
+    const keys = options.map((option) => option.key);
+    if (new Set(keys).size !== keys.length) {
+      context.addIssue({
+        code: "custom",
+        message: "Option keys must be unique.",
+        path: ["options"],
+      });
+    }
+    if (options.some((option, index) => option.order !== index + 1)) {
+      context.addIssue({
+        code: "custom",
+        message: "Option order must be contiguous and start at one.",
+        path: ["options"],
+      });
+    }
+    const supportsNumberLimits = ["NUMBER", "CURRENCY", "PERCENTAGE"].includes(
+      field.type,
+    );
+    if (
+      !supportsNumberLimits &&
+      (field.minimum !== undefined || field.maximum !== undefined)
+    ) {
+      context.addIssue({
+        code: "custom",
+        message: "Only numeric fields may have minimum or maximum values.",
+        path: ["minimum"],
+      });
+    }
+    if (
+      field.type === "PERCENTAGE" &&
+      ((field.minimum !== undefined && field.minimum < 0) ||
+        (field.maximum !== undefined && field.maximum > 100))
+    ) {
+      context.addIssue({
+        code: "custom",
+        message: "Percentage limits must be between zero and one hundred.",
+        path: ["minimum"],
+      });
+    }
+    if (
+      field.type !== "TEXT" &&
+      field.type !== "TEXTAREA" &&
+      (field.minLength !== undefined || field.maxLength !== undefined)
+    ) {
+      context.addIssue({
+        code: "custom",
+        message: "Only Text and Textarea fields may have length limits.",
+        path: ["minLength"],
+      });
+    }
+    if (
+      field.minimum !== undefined &&
+      field.maximum !== undefined &&
+      field.minimum > field.maximum
+    ) {
+      context.addIssue({
+        code: "custom",
+        message: "Minimum cannot be greater than maximum.",
+        path: ["minimum"],
+      });
+    }
+    if (
+      field.minLength !== undefined &&
+      field.maxLength !== undefined &&
+      field.minLength > field.maxLength
+    ) {
+      context.addIssue({
+        code: "custom",
+        message: "Minimum length cannot be greater than maximum length.",
+        path: ["minLength"],
+      });
+    }
+  },
+);
 
 export const formDefinitionSchema = z.object({
   code,
@@ -173,9 +183,9 @@ export const formVersionSchema = z.object({
 
 export const formSectionSchema = z.object({
   id: z.string().uuid().optional(),
-  columnSpan: z.coerce.number().pipe(
-    z.union([z.literal(1), z.literal(2), z.literal(3)]),
-  ),
+  columnSpan: z.coerce
+    .number()
+    .pipe(z.union([z.literal(1), z.literal(2), z.literal(3)])),
   showContainer: z.boolean(),
   key: code,
   title: z.string().trim().min(1).max(160),
@@ -199,6 +209,7 @@ export const formEditorSchema = formDefinitionSchema
     ...formVersionSchema.shape,
     displayMode: z.enum(formDisplayModes).default("SINGLE_PAGE"),
     expectedRowVersion: z.number().int().positive(),
+    versionId: z.uuid().optional(),
     fields: z.array(formFieldSchema).max(100),
     sections: z.array(formSectionSchema).max(50),
   })
@@ -211,7 +222,9 @@ export const formEditorSchema = formDefinitionSchema
         path: ["sections"],
       });
     }
-    const orders = value.sections.map((section) => section.order).sort((a, b) => a - b);
+    const orders = value.sections
+      .map((section) => section.order)
+      .sort((a, b) => a - b);
     if (orders.some((order, index) => order !== index + 1)) {
       context.addIssue({
         code: "custom",
@@ -220,7 +233,7 @@ export const formEditorSchema = formDefinitionSchema
       });
     }
     const sectionIds = new Set(
-      value.sections.flatMap((section) => section.id ? [section.id] : []),
+      value.sections.flatMap((section) => (section.id ? [section.id] : [])),
     );
     const fieldKeys = value.fields.map((field) => field.key);
     if (new Set(fieldKeys).size !== fieldKeys.length) {

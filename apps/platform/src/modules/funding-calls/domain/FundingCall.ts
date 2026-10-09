@@ -14,13 +14,18 @@ export type FundingCallStatus = (typeof fundingCallStatuses)[number];
 
 export type FundingCallPublishedStatus = "SCHEDULED" | "LIVE";
 
-export type ApplicationDuplicatePolicy = import(
-  "@/modules/applications/domain/Application"
-).ApplicationDuplicatePolicy;
+export type ApplicationDuplicatePolicy =
+  import("@/modules/applications/domain/Application").ApplicationDuplicatePolicy;
 
 export type FundingCall = {
   allowResubmissionAfterWithdrawal: boolean;
   applicationDuplicatePolicy: ApplicationDuplicatePolicy;
+  currentPublishedVersionId?: string | null;
+  draftVersionId?: string;
+  viewedPublishedVersionId?: string;
+  effectiveStatus?: FundingCallStatus;
+  effectiveOpensAt?: string;
+  effectiveClosesAt?: string;
   id: string;
   reference: string;
   slug: string;

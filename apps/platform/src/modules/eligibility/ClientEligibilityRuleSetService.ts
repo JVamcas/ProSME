@@ -57,9 +57,7 @@ function updateDefinition(
 }
 
 function versionQuery(versionId?: string) {
-  return versionId
-    ? `?${new URLSearchParams({ versionId }).toString()}`
-    : "";
+  return versionId ? `?${new URLSearchParams({ versionId }).toString()}` : "";
 }
 
 function get(id: string, versionId?: string) {
@@ -94,7 +92,7 @@ function lifecycle(
         versionId: string;
       },
 ) {
-  return requestData<unknown>(
+  return requestData<{ version: { id: string } }>(
     `/api/admin/eligibility-rulesets/${id}/lifecycle`,
     {
       body: JSON.stringify(input),

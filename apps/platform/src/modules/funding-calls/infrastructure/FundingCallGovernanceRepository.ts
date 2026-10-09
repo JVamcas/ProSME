@@ -28,6 +28,11 @@ import {
   sanitizeFundingCallEligibilitySummary,
 } from "./FundingCallRichText";
 
+import {
+  readWorkingFundingCall,
+  updateWorkingFundingCall,
+} from "./FundingCallVersionRepository";
+
 type GovernanceCommand = Extract<
   FundingCallLifecycleCommand,
   | "APPROVE"
@@ -58,7 +63,7 @@ export type FundingCallGovernanceResult =
         | "withdrawal_disabled";
     };
 
-function toFundingCall(row: typeof fundingCalls.$inferSelect): FundingCall {
+function toFundingCall(row: FundingCall): FundingCall {
   return {
     ...row,
     description: sanitizeFundingCallDescription(row.description),
@@ -90,13 +95,17 @@ export async function changeFundingCallGovernance(
 ): Promise<FundingCallGovernanceResult> {
   const reason = input.reason?.trim() || null;
   return getDatabase().transaction(async (transaction) => {
-    const [current] = await transaction
+    const [effective] = await transaction
       .select()
       .from(fundingCalls)
       .where(eq(fundingCalls.id, input.fundingCallId))
       .for("update")
       .limit(1);
-    if (!current) return { kind: "conflict" };
+    if (!effective) return { kind: "conflict" };
+    const { call: current, draft } = await readWorkingFundingCall(
+      transaction,
+      effective,
+    );
 
     const [replay] = await transaction
       .select({
@@ -104,11 +113,13 @@ export async function changeFundingCallGovernance(
         fundingCallId: fundingCallLifecycleHistory.fundingCallId,
       })
       .from(fundingCallLifecycleHistory)
-      .where(eq(fundingCallLifecycleHistory.idempotencyKey, input.idempotencyKey))
+      .where(
+        eq(fundingCallLifecycleHistory.idempotencyKey, input.idempotencyKey),
+      )
       .limit(1);
     if (replay) {
-      return replay.command === input.command
-          && replay.fundingCallId === input.fundingCallId
+      return replay.command === input.command &&
+        replay.fundingCallId === input.fundingCallId
         ? { call: toFundingCall(current), kind: "replayed" }
         : { kind: "idempotency_conflict" };
     }
@@ -128,23 +139,29 @@ export async function changeFundingCallGovernance(
       .limit(1);
     if (!policy) throw new Error("Funding call governance policy is missing.");
 
-    const [pendingReview] = input.command === "SUBMIT_FOR_APPROVAL"
-      ? []
-      : await transaction
-          .select()
-          .from(fundingCallGovernanceReviews)
-          .where(and(
-            eq(fundingCallGovernanceReviews.fundingCallId, input.fundingCallId),
-            eq(fundingCallGovernanceReviews.outcome, "PENDING"),
-          ))
-          .for("update")
-          .limit(1);
+    const [pendingReview] =
+      input.command === "SUBMIT_FOR_APPROVAL"
+        ? []
+        : await transaction
+            .select()
+            .from(fundingCallGovernanceReviews)
+            .where(
+              and(
+                eq(
+                  fundingCallGovernanceReviews.fundingCallId,
+                  input.fundingCallId,
+                ),
+                eq(fundingCallGovernanceReviews.outcome, "PENDING"),
+              ),
+            )
+            .for("update")
+            .limit(1);
     if (input.command !== "SUBMIT_FOR_APPROVAL" && !pendingReview) {
       return { kind: "conflict" };
     }
     if (
-      input.command === "APPROVE"
-      && !canApproveFundingCall(input.actorId, policy, pendingReview!)
+      input.command === "APPROVE" &&
+      !canApproveFundingCall(input.actorId, policy, pendingReview!)
     ) {
       return { kind: "maker_checker_conflict" };
     }
@@ -158,20 +175,31 @@ export async function changeFundingCallGovernance(
     }
 
     const nextRowVersion = current.rowVersion + 1;
-    const [updated] = await transaction
-      .update(fundingCalls)
-      .set({
-        rowVersion: nextRowVersion,
-        status: transition.targetStatus,
-        suspendedFromStatus: transition.suspendedFromStatus,
-        updatedAt: input.now,
-      })
-      .where(and(
-        eq(fundingCalls.id, input.fundingCallId),
-        eq(fundingCalls.rowVersion, input.expectedRowVersion),
-        eq(fundingCalls.status, transition.sourceStatus),
-      ))
-      .returning();
+    const [initialUpdated] = draft
+      ? []
+      : await transaction
+          .update(fundingCalls)
+          .set({
+            rowVersion: nextRowVersion,
+            status: transition.targetStatus,
+            suspendedFromStatus: transition.suspendedFromStatus,
+            updatedAt: input.now,
+          })
+          .where(
+            and(
+              eq(fundingCalls.id, input.fundingCallId),
+              eq(fundingCalls.rowVersion, input.expectedRowVersion),
+              eq(fundingCalls.status, transition.sourceStatus),
+            ),
+          )
+          .returning();
+    const updated = draft
+      ? await updateWorkingFundingCall(transaction, effective, draft, {
+          ...current,
+          status: transition.targetStatus,
+          updatedAt: input.now,
+        })
+      : initialUpdated;
     if (!updated) return { kind: "conflict" };
 
     await transaction.insert(fundingCallLifecycleHistory).values({
@@ -194,6 +222,7 @@ export async function changeFundingCallGovernance(
           toFundingCall(current),
         ),
         creatorId: current.createdBy,
+        fundingCallVersionId: draft?.id,
         fundingCallId: current.id,
         materialEditorId: current.updatedBy,
         submittedAt: input.now,
@@ -210,10 +239,12 @@ export async function changeFundingCallGovernance(
           outcome: outcome(input.command)!,
           reason,
         })
-        .where(and(
-          eq(fundingCallGovernanceReviews.id, pendingReview!.id),
-          eq(fundingCallGovernanceReviews.outcome, "PENDING"),
-        ));
+        .where(
+          and(
+            eq(fundingCallGovernanceReviews.id, pendingReview!.id),
+            eq(fundingCallGovernanceReviews.outcome, "PENDING"),
+          ),
+        );
     }
     await captureFundingCallNotification(transaction, {
       correlationId: input.correlationId,
@@ -233,8 +264,7 @@ export async function changeFundingCallGovernance(
       sourceIdempotencyKey: input.idempotencyKey,
       sourceStatus: transition.sourceStatus,
       stakeholderUserIds:
-        input.command === "RETURN_FOR_AMENDMENT"
-        || input.command === "APPROVE"
+        input.command === "RETURN_FOR_AMENDMENT" || input.command === "APPROVE"
           ? [pendingReview!.submittedBy, current.createdBy]
           : [],
       targetStatus: transition.targetStatus,

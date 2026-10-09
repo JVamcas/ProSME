@@ -2,14 +2,17 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 vi.mock("@/modules/funding-calls/infrastructure/FundingCallRepository", () => ({
-  readFundingCallById: vi.fn(),
+  readEffectiveFundingCallById: vi.fn(),
 }));
-vi.mock("@/modules/funding-calls/infrastructure/FundingCallLifecycleRepository", () => ({
-  listPublishedFundingCallsDueToClose: vi.fn(),
-  listScheduledFundingCallsDueToOpen: vi.fn(),
-  readFundingCallLifecycleReplay: vi.fn(),
-  transitionFundingCall: vi.fn(),
-}));
+vi.mock(
+  "@/modules/funding-calls/infrastructure/FundingCallLifecycleRepository",
+  () => ({
+    listPublishedFundingCallsDueToClose: vi.fn(),
+    listScheduledFundingCallsDueToOpen: vi.fn(),
+    readFundingCallLifecycleReplay: vi.fn(),
+    transitionFundingCall: vi.fn(),
+  }),
+);
 
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { PermissionDeniedError } from "@/auth/authorization/policy";
@@ -26,7 +29,7 @@ import {
   readFundingCallLifecycleReplay,
   transitionFundingCall,
 } from "@/modules/funding-calls/infrastructure/FundingCallLifecycleRepository";
-import { readFundingCallById } from "@/modules/funding-calls/infrastructure/FundingCallRepository";
+import { readEffectiveFundingCallById } from "@/modules/funding-calls/infrastructure/FundingCallRepository";
 
 const actorId = "10000000-0000-4000-8000-000000000001";
 const callId = "00000000-0000-4000-8000-000000000042";
@@ -82,7 +85,7 @@ function user(grants: string[]): AuthenticatedUser {
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(readFundingCallLifecycleReplay).mockResolvedValue(null);
-  vi.mocked(readFundingCallById).mockResolvedValue(call);
+  vi.mocked(readEffectiveFundingCallById).mockResolvedValue(call);
   vi.mocked(listScheduledFundingCallsDueToOpen).mockResolvedValue([]);
   vi.mocked(listPublishedFundingCallsDueToClose).mockResolvedValue([]);
 });
@@ -93,63 +96,89 @@ describe("funding call exceptional lifecycle", () => {
     permissionCodes.fundingCallEditDraft,
     permissionCodes.fundingCallPublish,
   ])("does not infer amendment authority from %s", async (grant) => {
-    await expect(changeFundingCallLifecycleStatus(
-      user([grant]), callId,
-      { command: "WITHDRAW_FOR_AMENDMENT", expectedRowVersion: 4, reason: "Amend" },
-      "amend-key", "correlation-id",
-    )).rejects.toBeInstanceOf(PermissionDeniedError);
+    await expect(
+      changeFundingCallLifecycleStatus(
+        user([grant]),
+        callId,
+        {
+          command: "WITHDRAW_FOR_AMENDMENT",
+          expectedRowVersion: 4,
+          reason: "Amend",
+        },
+        "amend-key",
+        "correlation-id",
+      ),
+    ).rejects.toBeInstanceOf(PermissionDeniedError);
     expect(transitionFundingCall).not.toHaveBeenCalled();
   });
 
   it.each(["APPROVED", "SCHEDULED", "LIVE", "SUSPENDED"] as const)(
-    "returns %s to Draft using explicit amendment authority", async (status) => {
-      vi.mocked(readFundingCallById).mockResolvedValue({
-        ...call, status, suspendedFromStatus: status === "SUSPENDED" ? "LIVE" : null,
+    "returns %s to Draft using explicit amendment authority",
+    async (status) => {
+      vi.mocked(readEffectiveFundingCallById).mockResolvedValue({
+        ...call,
+        status,
+        suspendedFromStatus: status === "SUSPENDED" ? "LIVE" : null,
       });
       vi.mocked(transitionFundingCall).mockResolvedValue({
-        call: { ...call, status: "DRAFT", rowVersion: 5 }, kind: "transitioned",
+        call: { ...call, status: "DRAFT", rowVersion: 5 },
+        kind: "transitioned",
       });
-      await expect(changeFundingCallLifecycleStatus(
-        user([permissionCodes.fundingCallWithdrawForAmendmentAll]), callId,
-        { command: "WITHDRAW_FOR_AMENDMENT", expectedRowVersion: 4, reason: "Amend" },
-        "amend-key", "correlation-id",
-      )).resolves.toMatchObject({ status: "DRAFT", rowVersion: 5 });
+      await expect(
+        changeFundingCallLifecycleStatus(
+          user([permissionCodes.fundingCallWithdrawForAmendmentAll]),
+          callId,
+          {
+            command: "WITHDRAW_FOR_AMENDMENT",
+            expectedRowVersion: 4,
+            reason: "Amend",
+          },
+          "amend-key",
+          "correlation-id",
+        ),
+      ).resolves.toMatchObject({ status: "DRAFT", rowVersion: 5 });
     },
   );
 
   it("requires the command-specific permission", async () => {
-    await expect(changeFundingCallLifecycleStatus(
-      user([permissionCodes.fundingCallPublish]),
-      callId,
-      { command: "SUSPEND", expectedRowVersion: 4, reason: "Pause" },
-      "suspend-key",
-      "correlation-id",
-    )).rejects.toBeInstanceOf(PermissionDeniedError);
+    await expect(
+      changeFundingCallLifecycleStatus(
+        user([permissionCodes.fundingCallPublish]),
+        callId,
+        { command: "SUSPEND", expectedRowVersion: 4, reason: "Pause" },
+        "suspend-key",
+        "correlation-id",
+      ),
+    ).rejects.toBeInstanceOf(PermissionDeniedError);
   });
 
   it("rejects a command from the wrong state", async () => {
-    vi.mocked(readFundingCallById).mockResolvedValue({
+    vi.mocked(readEffectiveFundingCallById).mockResolvedValue({
       ...call,
       status: "DRAFT",
     });
-    await expect(changeFundingCallLifecycleStatus(
-      user([permissionCodes.fundingCallSuspend]),
-      callId,
-      { command: "SUSPEND", expectedRowVersion: 4, reason: "Pause" },
-      "suspend-key",
-      "correlation-id",
-    )).rejects.toBeInstanceOf(ResourceConflictError);
+    await expect(
+      changeFundingCallLifecycleStatus(
+        user([permissionCodes.fundingCallSuspend]),
+        callId,
+        { command: "SUSPEND", expectedRowVersion: 4, reason: "Pause" },
+        "suspend-key",
+        "correlation-id",
+      ),
+    ).rejects.toBeInstanceOf(ResourceConflictError);
     expect(transitionFundingCall).not.toHaveBeenCalled();
   });
 
   it("rejects a stale lifecycle command", async () => {
-    await expect(changeFundingCallLifecycleStatus(
-      user([permissionCodes.fundingCallSuspend]),
-      callId,
-      { command: "SUSPEND", expectedRowVersion: 3, reason: "Pause" },
-      "suspend-key",
-      "correlation-id",
-    )).rejects.toBeInstanceOf(ResourceConflictError);
+    await expect(
+      changeFundingCallLifecycleStatus(
+        user([permissionCodes.fundingCallSuspend]),
+        callId,
+        { command: "SUSPEND", expectedRowVersion: 3, reason: "Pause" },
+        "suspend-key",
+        "correlation-id",
+      ),
+    ).rejects.toBeInstanceOf(ResourceConflictError);
     expect(transitionFundingCall).not.toHaveBeenCalled();
   });
 
@@ -165,12 +194,14 @@ describe("funding call exceptional lifecycle", () => {
       "suspend-key",
       "correlation-id",
     );
-    expect(transitionFundingCall).toHaveBeenCalledWith(expect.objectContaining({
-      actorId,
-      command: "SUSPEND",
-      expectedRowVersion: 4,
-      reason: "Safety review",
-    }));
+    expect(transitionFundingCall).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actorId,
+        command: "SUSPEND",
+        expectedRowVersion: 4,
+        reason: "Safety review",
+      }),
+    );
     expect(result.status).toBe("SUSPENDED");
   });
 });
@@ -178,12 +209,14 @@ describe("funding call exceptional lifecycle", () => {
 describe("funding call lifecycle reconciliation", () => {
   it("opens due calls using a deterministic effective-time key", async () => {
     const now = new Date("2027-02-01T06:00:00.000Z");
-    vi.mocked(listScheduledFundingCallsDueToOpen).mockResolvedValue([{
-      closesAt,
-      id: callId,
-      opensAt,
-      rowVersion: 4,
-    }]);
+    vi.mocked(listScheduledFundingCallsDueToOpen).mockResolvedValue([
+      {
+        closesAt,
+        id: callId,
+        opensAt,
+        rowVersion: 4,
+      },
+    ]);
     vi.mocked(transitionFundingCall).mockResolvedValue({
       call,
       kind: "transitioned",
@@ -193,12 +226,14 @@ describe("funding call lifecycle reconciliation", () => {
       failed: 0,
       transitioned: 1,
     });
-    expect(transitionFundingCall).toHaveBeenCalledWith(expect.objectContaining({
-      command: "OPEN",
-      effectiveTime: opensAt,
-      idempotencyKey: `funding-call:${callId}:OPEN:${opensAt.toISOString()}`,
-      systemActor: "FUNDING_CALL_LIFECYCLE_SCHEDULER",
-    }));
+    expect(transitionFundingCall).toHaveBeenCalledWith(
+      expect.objectContaining({
+        command: "OPEN",
+        effectiveTime: opensAt,
+        idempotencyKey: `funding-call:${callId}:OPEN:${opensAt.toISOString()}`,
+        systemActor: "FUNDING_CALL_LIFECYCLE_SCHEDULER",
+      }),
+    );
   });
 
   it("closes expired calls and isolates individual failures", async () => {
@@ -208,7 +243,10 @@ describe("funding call lifecycle reconciliation", () => {
       { closesAt, id: "00000000-0000-4000-8000-000000000043", rowVersion: 2 },
     ]);
     vi.mocked(transitionFundingCall)
-      .mockResolvedValueOnce({ call: { ...call, status: "CLOSED" }, kind: "transitioned" })
+      .mockResolvedValueOnce({
+        call: { ...call, status: "CLOSED" },
+        kind: "transitioned",
+      })
       .mockRejectedValueOnce(new Error("database unavailable"));
     await expect(closeExpiredFundingCalls(now, 25)).resolves.toEqual({
       attempted: 2,
@@ -218,12 +256,14 @@ describe("funding call lifecycle reconciliation", () => {
   });
 
   it("treats a replayed scheduled command as an idempotent success", async () => {
-    vi.mocked(listScheduledFundingCallsDueToOpen).mockResolvedValue([{
-      closesAt,
-      id: callId,
-      opensAt,
-      rowVersion: 4,
-    }]);
+    vi.mocked(listScheduledFundingCallsDueToOpen).mockResolvedValue([
+      {
+        closesAt,
+        id: callId,
+        opensAt,
+        rowVersion: 4,
+      },
+    ]);
     vi.mocked(transitionFundingCall).mockResolvedValue({
       call,
       kind: "replayed",

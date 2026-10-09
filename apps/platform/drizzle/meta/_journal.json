@@ -1282,6 +1282,34 @@
       "when": 1801785600028,
       "tag": "0182_reporting_day_frequency",
       "breakpoints": true
+    },
+    {
+      "idx": 183,
+      "version": "7",
+      "when": 1801785600029,
+      "tag": "0183_funding_call_versioned_replacements",
+      "breakpoints": true
+    },
+    {
+      "idx": 184,
+      "version": "7",
+      "when": 1801785600030,
+      "tag": "0184_business_secondary_sector",
+      "breakpoints": true
+    },
+    {
+      "idx": 185,
+      "version": "7",
+      "when": 1801785600031,
+      "tag": "0185_asset_version_metadata",
+      "breakpoints": true
+    },
+    {
+      "idx": 186,
+      "version": "7",
+      "when": 1801785600032,
+      "tag": "0186_funding_call_integration_versions",
+      "breakpoints": true
     }
   ]
 }

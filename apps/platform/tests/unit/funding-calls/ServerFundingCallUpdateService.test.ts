@@ -5,24 +5,36 @@ vi.mock("@/modules/forms/infrastructure/FormRepository", () => ({
   formVersionIsBindable: vi.fn(async () => true),
   getConfigurableFormFields: vi.fn(async () => []),
 }));
-vi.mock("@/modules/eligibility/infrastructure/EligibilityRuleSetRepository", () => ({
-  eligibilityRuleSetVersionIsBindable: vi.fn(async () => true),
-}));
-vi.mock("@/modules/eligibility/infrastructure/EligibilityEvaluationRepository", () => ({
-  findTestableEligibilityRuleSetForEvaluation: vi.fn(async () => ({
-    ruleSetId: "30000000-0000-4000-8000-000000000002",
-    rules: [],
-    versionId: "30000000-0000-4000-8000-000000000001",
-    versionNumber: 1,
-  })),
-}));
-vi.mock("@/modules/eligibility/infrastructure/EligibilityInputRepository", () => ({
-  listEligibilityInputs: vi.fn(async () => []),
-}));
-vi.mock("@/modules/funding-calls/ServerFundingCallEligibilityContextIntegration", () => ({
-  resolveEligibilityRuleSetContexts: vi.fn(async () => []),
-  resolveFundingCallEligibilityContext: vi.fn(async () => ({ sources: [] })),
-}));
+vi.mock(
+  "@/modules/eligibility/infrastructure/EligibilityRuleSetRepository",
+  () => ({
+    eligibilityRuleSetVersionIsBindable: vi.fn(async () => true),
+  }),
+);
+vi.mock(
+  "@/modules/eligibility/infrastructure/EligibilityEvaluationRepository",
+  () => ({
+    findTestableEligibilityRuleSetForEvaluation: vi.fn(async () => ({
+      ruleSetId: "30000000-0000-4000-8000-000000000002",
+      rules: [],
+      versionId: "30000000-0000-4000-8000-000000000001",
+      versionNumber: 1,
+    })),
+  }),
+);
+vi.mock(
+  "@/modules/eligibility/infrastructure/EligibilityInputRepository",
+  () => ({
+    listEligibilityInputs: vi.fn(async () => []),
+  }),
+);
+vi.mock(
+  "@/modules/funding-calls/ServerFundingCallEligibilityContextIntegration",
+  () => ({
+    resolveEligibilityRuleSetContexts: vi.fn(async () => []),
+    resolveFundingCallEligibilityContext: vi.fn(async () => ({ sources: [] })),
+  }),
+);
 vi.mock("@/modules/workflows/infrastructure/WorkflowRepository", () => ({
   workflowTemplateVersionIsBindable: vi.fn(async () => true),
 }));
@@ -107,51 +119,93 @@ describe("ServerFundingCallService draft updates", () => {
     "formVersionId",
     "eligibilityRuleSetVersionId",
     "workflowTemplateVersionId",
-  ] as const)("rejects changing locked %s", async (field) => {
+  ] as const)(
+    "allows replacement draft changes to %s without altering existing application pins",
+    async (field) => {
+      vi.mocked(readFundingCallById).mockResolvedValue({
+        ...stored,
+        draftVersionId: "50000000-0000-4000-8000-000000000001",
+        currentPublishedVersionId: "60000000-0000-4000-8000-000000000001",
+        attachmentsLockedAt: null,
+      });
+      vi.mocked(updateDraftFundingCall).mockResolvedValue({
+        ...stored,
+        [field]: null,
+        rowVersion: 2,
+      });
+      await expect(
+        updateFundingCall(
+          user([permissionCodes.fundingCallEditDraft]),
+          callId,
+          { ...input, [field]: null },
+        ),
+      ).resolves.toMatchObject({ [field]: null, rowVersion: 2 });
+    },
+  );
+
+  it("validates replacement bindings even when historical applications exist", async () => {
+    vi.mocked(formVersionIsBindable).mockResolvedValueOnce(false);
     vi.mocked(readFundingCallById).mockResolvedValue({
       ...stored,
       attachmentsLockedAt: new Date(),
     });
-    await expect(updateFundingCall(
-      user([permissionCodes.fundingCallEditDraft]),
-      callId,
-      { ...input, [field]: null },
-    )).rejects.toThrow("applications have already been created");
+    await expect(
+      updateFundingCall(
+        user([permissionCodes.fundingCallEditDraft]),
+        callId,
+        input,
+      ),
+    ).rejects.toThrow("Select a draft or published application form version");
     expect(updateDraftFundingCall).not.toHaveBeenCalled();
   });
 
-  it("allows metadata amendments while the exact attachments stay locked", async () => {
-    vi.mocked(formVersionIsBindable).mockResolvedValueOnce(false);
-    const locked = { ...stored, attachmentsLockedAt: new Date() };
-    vi.mocked(readFundingCallById).mockResolvedValue(locked);
+  it("forks a published call through the replacement repository", async () => {
+    vi.mocked(readFundingCallById).mockResolvedValue({
+      ...stored,
+      status: "LIVE",
+      currentPublishedVersionId: "60000000-0000-4000-8000-000000000001",
+    });
     vi.mocked(updateDraftFundingCall).mockResolvedValue({
-      ...locked,
-      title: "Amended funding call",
+      ...stored,
       rowVersion: 2,
     });
-    await expect(updateFundingCall(
-      user([permissionCodes.fundingCallEditDraft]),
-      callId,
-      { ...input, title: "Amended funding call" },
-    )).resolves.toMatchObject({ title: "Amended funding call", rowVersion: 2 });
-    expect(formVersionIsBindable).not.toHaveBeenCalled();
+    await expect(
+      updateFundingCall(
+        user([permissionCodes.fundingCallEditDraft]),
+        callId,
+        input,
+      ),
+    ).resolves.toMatchObject({ status: "DRAFT" });
+  });
+
+  it("preserves the published reference and public URL", async () => {
+    vi.mocked(readFundingCallById).mockResolvedValue({
+      ...stored,
+      currentPublishedVersionId: "60000000-0000-4000-8000-000000000001",
+    });
+    await expect(
+      updateFundingCall(user([permissionCodes.fundingCallEditDraft]), callId, {
+        ...input,
+        slug: "changed-url",
+      }),
+    ).rejects.toThrow("retains its reference and public URL");
+    expect(updateDraftFundingCall).not.toHaveBeenCalled();
   });
 
   it("rejects stale drafts before checking attachments or writing", async () => {
-    await expect(updateFundingCall(
-      user([permissionCodes.fundingCallEditDraft]),
-      callId,
-      { ...input, expectedRowVersion: 2 },
-    )).rejects.toThrow("changed");
+    await expect(
+      updateFundingCall(user([permissionCodes.fundingCallEditDraft]), callId, {
+        ...input,
+        expectedRowVersion: 2,
+      }),
+    ).rejects.toThrow("changed");
     expect(updateDraftFundingCall).not.toHaveBeenCalled();
   });
 
   it("denies draft edits without the explicit edit permission", async () => {
-    await expect(updateFundingCall(
-      user([permissionCodes.fundingCallRead]),
-      callId,
-      input,
-    )).rejects.toBeInstanceOf(PermissionDeniedError);
+    await expect(
+      updateFundingCall(user([permissionCodes.fundingCallRead]), callId, input),
+    ).rejects.toBeInstanceOf(PermissionDeniedError);
     expect(updateDraftFundingCall).not.toHaveBeenCalled();
   });
 
@@ -167,11 +221,7 @@ describe("ServerFundingCallService draft updates", () => {
       input,
     );
 
-    expect(updateDraftFundingCall).toHaveBeenCalledWith(
-      actorId,
-      callId,
-      input,
-    );
+    expect(updateDraftFundingCall).toHaveBeenCalledWith(actorId, callId, input);
     expect(result.rowVersion).toBe(2);
   });
 });

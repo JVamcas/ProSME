@@ -14,9 +14,7 @@ import {
   retireFormVersion,
   saveFormDraft,
 } from "@/modules/forms/infrastructure/FormWriteRepository";
-import {
-  saveDraftFormResponse,
-} from "@/modules/forms/infrastructure/FormResponseRepository";
+import { saveDraftFormResponse } from "@/modules/forms/infrastructure/FormResponseRepository";
 import {
   completeFormTask,
   readFormTaskCompletion,
@@ -27,9 +25,7 @@ import {
   listForms,
   listPublishedFormVersions,
 } from "@/modules/forms/infrastructure/FormRepository";
-import {
-  readAssignedFormTask,
-} from "@/modules/workflows/infrastructure/WorkflowTaskRepository";
+import { readAssignedFormTask } from "@/modules/workflows/infrastructure/WorkflowTaskRepository";
 import {
   RequestValidationError,
   IdempotencyConflictError,
@@ -205,8 +201,11 @@ export async function updateFormDraft(
     actorId: actor.id,
     definitionId,
   });
-  if (!updated) throw new ResourceConflictError("The form draft changed. Refresh and retry.");
-  return editorView(definitionId);
+  if (!updated)
+    throw new ResourceConflictError(
+      "The form draft changed. Refresh and retry.",
+    );
+  return editorView(definitionId, updated.id);
 }
 
 export async function clonePublishedForm(
@@ -215,9 +214,13 @@ export async function clonePublishedForm(
   sourceVersionId: string,
 ) {
   const actor = requirePermission(user, permissionCodes.workflowFormUpdate);
-  const version = await cloneFormVersion({ actorId: actor.id, definitionId, sourceVersionId });
+  const version = await cloneFormVersion({
+    actorId: actor.id,
+    definitionId,
+    sourceVersionId,
+  });
   if (!version) throw new ResourceNotFoundError("form version");
-  return editorView(definitionId);
+  return editorView(definitionId, version.id);
 }
 
 export async function publishForm(
@@ -235,7 +238,9 @@ export async function publishForm(
     throw new RequestValidationError(result.errors.join(" "));
   }
   if (result.kind === "conflict") {
-    throw new ResourceConflictError("The form draft changed. Refresh and retry.");
+    throw new ResourceConflictError(
+      "The form draft changed. Refresh and retry.",
+    );
   }
   return result.version;
 }
@@ -251,7 +256,10 @@ export async function retireForm(
     actorId: actor.id,
     definitionId,
   });
-  if (!version) throw new ResourceConflictError("The form version changed or is not published.");
+  if (!version)
+    throw new ResourceConflictError(
+      "The form version changed or is not published.",
+    );
   return version;
 }
 
@@ -264,7 +272,8 @@ export async function saveTaskForm(
 ) {
   const actor = requireAuthenticatedUser(user);
   const task = await readAssignedFormTask(actor.id, input.taskInstanceId);
-  if (!task?.formVersionId) throw new ResourceNotFoundError("assigned form task");
+  if (!task?.formVersionId)
+    throw new ResourceNotFoundError("assigned form task");
   requirePermission(actor, task.permissions.edit);
   const schema = await getFormRuntime(task.formVersionId);
   if (!schema) throw new ResourceNotFoundError("published form");
@@ -283,7 +292,10 @@ export async function saveTaskForm(
     workflowTaskId: input.taskInstanceId,
     values,
   });
-  if (!saved) throw new ResourceConflictError("The saved form changed. Refresh and retry.");
+  if (!saved)
+    throw new ResourceConflictError(
+      "The saved form changed. Refresh and retry.",
+    );
   return saved;
 }
 
@@ -298,7 +310,8 @@ export async function completeTaskForm(
 ) {
   const actor = requireAuthenticatedUser(user);
   const task = await readAssignedFormTask(actor.id, input.taskInstanceId);
-  if (!task?.formVersionId) throw new ResourceNotFoundError("assigned form task");
+  if (!task?.formVersionId)
+    throw new ResourceNotFoundError("assigned form task");
   requirePermission(actor, task.permissions.decide);
   const replay = await readFormTaskCompletion({
     actionKey: input.actionKey,
@@ -320,7 +333,9 @@ export async function completeTaskForm(
   const values = sanitizeFormResponseValues(schema, captured);
   const activeDefinition = activeFormDefinition(schema, captured);
   if (!validateFormValues(activeDefinition.fields, values, true)) {
-    throw new RequestValidationError("Complete all required form fields with valid values.");
+    throw new RequestValidationError(
+      "Complete all required form fields with valid values.",
+    );
   }
   const result = await completeFormTask(
     {
@@ -343,5 +358,7 @@ export async function completeTaskForm(
       "That idempotency key was already used with different task data.",
     );
   }
-  throw new ResourceConflictError("The task changed or is no longer assigned to you.");
+  throw new ResourceConflictError(
+    "The task changed or is no longer assigned to you.",
+  );
 }

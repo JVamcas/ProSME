@@ -27,29 +27,34 @@ export async function createSubmissionSnapshot(
       sizeBytes: document.sizeBytes,
       versionNumber: document.versionNumber,
     }))
-    .sort((left, right) => (
-      left.requirementKey.localeCompare(right.requirementKey)
-      || left.id.localeCompare(right.id)
-    ));
+    .sort(
+      (left, right) =>
+        left.requirementKey.localeCompare(right.requirementKey) ||
+        left.id.localeCompare(right.id),
+    );
   const formValues = input.context.response.values;
   const declarationValues = currentFormDeclarationValues(
     input.context.form,
     formValues,
   );
   if (!declarationValues) {
-    throw new Error("Current form declarations must be accepted before submission.");
+    throw new Error(
+      "Current form declarations must be accepted before submission.",
+    );
   }
   const declarationAcceptance = {
     acceptedAt: submittedAt.toISOString(),
     formVersionId: input.context.form.versionId,
     responseRowVersion: input.context.response.rowVersion,
   };
-  const copiedText = (key: string, fallback: string) => (
-    typeof formValues[key] === "string" ? formValues[key] as string : fallback
-  );
-  const copiedNumber = (key: string, fallback: number | null) => (
-    typeof formValues[key] === "number" ? formValues[key] as number : fallback
-  );
+  const copiedText = (key: string, fallback: string) =>
+    typeof formValues[key] === "string"
+      ? (formValues[key] as string)
+      : fallback;
+  const copiedNumber = (key: string, fallback: number | null) =>
+    typeof formValues[key] === "number"
+      ? (formValues[key] as number)
+      : fallback;
   const snapshotContent: ApplicationSubmissionSnapshotContent = {
     applicant: {
       dateOfBirth: input.applicant.dateOfBirth,
@@ -100,6 +105,7 @@ export async function createSubmissionSnapshot(
         input.business.registrationNumber,
       ),
       sector: copiedText("BUSINESS_SECTOR", input.business.sector),
+      secondarySector: copiedText("BUSINESS_SECONDARY_SECTOR", ""),
       tradingName: copiedText(
         "BUSINESS_TRADING_NAME",
         input.business.tradingName,
@@ -124,6 +130,10 @@ export async function createSubmissionSnapshot(
       publishedAt: input.publicationRevision.publishedAt.toISOString(),
       sourceRowVersion: input.publicationRevision.sourceRowVersion,
       statusAtSubmission: input.configuration.status,
+      effectiveDatesAtSubmission: {
+        opensAt: input.configuration.opensAt.toISOString(),
+        closesAt: input.configuration.closesAt.toISOString(),
+      },
       terms: input.publicationRevision.snapshot,
     },
     reference,
@@ -157,8 +167,7 @@ export async function createSubmissionSnapshot(
       responseRowVersion: input.context.response.rowVersion,
       schemaVersion: APPLICATION_SUBMISSION_SNAPSHOT_SCHEMA_VERSION,
       submittedAt,
-      workflowTemplateVersionId:
-        input.configuration.workflowTemplateVersionId,
+      workflowTemplateVersionId: input.configuration.workflowTemplateVersionId,
     })
     .returning({
       canonicalContent: applicationSubmissionSnapshots.canonicalContent,

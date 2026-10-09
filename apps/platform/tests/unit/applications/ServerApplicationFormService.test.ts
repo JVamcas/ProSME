@@ -15,27 +15,41 @@ vi.mock(
 vi.mock("@/modules/applications/infrastructure/ApplicationRepository", () => ({
   findOwnedApplication: vi.fn(),
 }));
-vi.mock("@/modules/applications/infrastructure/AttachedApplicationFormRepository", () => ({
-  getAttachedApplicationForm: vi.fn(),
-}));
+vi.mock(
+  "@/modules/applications/infrastructure/AttachedApplicationFormRepository",
+  () => ({
+    getAttachedApplicationForm: vi.fn(),
+  }),
+);
 vi.mock("@/modules/applications/ServerApplicationService", async () => {
   const errors = await import("@/lib/resource-errors");
   return {
-    ApplicationBusinessConflictError: class extends errors.ResourceConflictError {
-      constructor() { super("Duplicate application."); }
+    ApplicationBusinessConflictError: class
+      extends errors.ResourceConflictError
+    {
+      constructor() {
+        super("Duplicate application.");
+      }
     },
-    ApplicationBusinessUnavailableError: class extends errors.ResourceNotFoundError {},
+    ApplicationBusinessUnavailableError: class
+      extends errors.ResourceNotFoundError {},
     ApplicationConflictError: class extends errors.ResourceConflictError {
-      constructor() { super("Application conflict."); }
+      constructor() {
+        super("Application conflict.");
+      }
     },
     ApplicationNotFoundError: class extends errors.ResourceNotFoundError {},
-    ApplicationOpportunityUnavailableError: class extends errors.ResourceNotFoundError {},
+    ApplicationOpportunityUnavailableError: class
+      extends errors.ResourceNotFoundError {},
   };
 });
 
 import { permissionCodes } from "@/auth/authorization/permissions";
 import type { AuthenticatedUser } from "@/auth/types";
-import { RequestValidationError, ResourceConflictError } from "@/lib/resource-errors";
+import {
+  RequestValidationError,
+  ResourceConflictError,
+} from "@/lib/resource-errors";
 import {
   createApplicationDraft,
   getOwnApplicationDraft,
@@ -86,6 +100,7 @@ const application = {
   financialSection: {},
   formVersionId,
   fundingOpportunityId: "70000000-0000-4000-8000-000000000001",
+  fundingCallVersionId: null,
   fundingOpportunityTitle: "Growth Fund",
   id: applicationId,
   latestDraftResponseId: responseId,
@@ -116,26 +131,30 @@ const response = {
 };
 
 const form = {
-  fields: [{
-    columnSpan: 1 as const,
-    key: "NAME",
-    label: "Name",
-    order: 1,
-    required: true,
-    sectionId: "80000000-0000-4000-8000-000000000001",
-    type: "TEXT" as const,
-  }],
+  fields: [
+    {
+      columnSpan: 1 as const,
+      key: "NAME",
+      label: "Name",
+      order: 1,
+      required: true,
+      sectionId: "80000000-0000-4000-8000-000000000001",
+      type: "TEXT" as const,
+    },
+  ],
   instructions: null,
-  sections: [{
-    columnSpan: 1 as const,
-    description: "",
-    id: "80000000-0000-4000-8000-000000000001",
-    key: "BASIC",
-    order: 1,
-    showContainer: true,
-    title: "Basic information",
-    visibilityCondition: null,
-  }],
+  sections: [
+    {
+      columnSpan: 1 as const,
+      description: "",
+      id: "80000000-0000-4000-8000-000000000001",
+      key: "BASIC",
+      order: 1,
+      showContainer: true,
+      title: "Basic information",
+      visibilityCondition: null,
+    },
+  ],
   submitLabel: "Submit",
   versionId: formVersionId,
   versionNumber: 3,
@@ -168,12 +187,14 @@ describe("application draft creation and exact-version autosave", () => {
       form: { versionId: formVersionId, versionNumber: 3 },
       formVersionId,
     });
-    expect(persistApplicationDraft).toHaveBeenCalledWith(expect.objectContaining({
-      actorUserId: actorId,
-      businessId,
-      fundingCallIdOrSlug: "growth-fund",
-      requestFingerprint: expect.stringMatching(/^[a-f0-9]{64}$/),
-    }));
+    expect(persistApplicationDraft).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actorUserId: actorId,
+        businessId,
+        fundingCallIdOrSlug: "growth-fund",
+        requestFingerprint: expect.stringMatching(/^[a-f0-9]{64}$/),
+      }),
+    );
   });
 
   it("loads the form version stored on the application", async () => {
@@ -188,17 +209,19 @@ describe("application draft creation and exact-version autosave", () => {
   });
 
   it("rejects unknown fields before persisting an autosave", async () => {
-    await expect(saveOwnApplicationDraft(
-      user(permissionCodes.fundingApplicationOwnUpdate),
-      applicationId,
-      {
-        correlationId: "90000000-0000-4000-8000-000000000001",
-        expectedApplicationRowVersion: 2,
-        expectedResponseRowVersion: 1,
-        idempotencyKey: "b0000000-0000-4000-8000-000000000001",
-        values: { UNKNOWN: "not in version three" },
-      },
-    )).rejects.toBeInstanceOf(RequestValidationError);
+    await expect(
+      saveOwnApplicationDraft(
+        user(permissionCodes.fundingApplicationOwnUpdate),
+        applicationId,
+        {
+          correlationId: "90000000-0000-4000-8000-000000000001",
+          expectedApplicationRowVersion: 2,
+          expectedResponseRowVersion: 1,
+          idempotencyKey: "b0000000-0000-4000-8000-000000000001",
+          values: { UNKNOWN: "not in version three" },
+        },
+      ),
+    ).rejects.toBeInstanceOf(RequestValidationError);
     expect(saveApplicationDraftResponse).not.toHaveBeenCalled();
   });
 
@@ -229,16 +252,18 @@ describe("application draft creation and exact-version autosave", () => {
     vi.mocked(saveApplicationDraftResponse).mockResolvedValue({
       kind: "not_writable",
     });
-    await expect(saveOwnApplicationDraft(
-      user(permissionCodes.fundingApplicationOwnUpdate),
-      applicationId,
-      {
-        correlationId: "90000000-0000-4000-8000-000000000001",
-        expectedApplicationRowVersion: 2,
-        expectedResponseRowVersion: 1,
-        idempotencyKey: "d0000000-0000-4000-8000-000000000001",
-        values: { NAME: "Late edit" },
-      },
-    )).rejects.toThrow("no longer accepts draft changes");
+    await expect(
+      saveOwnApplicationDraft(
+        user(permissionCodes.fundingApplicationOwnUpdate),
+        applicationId,
+        {
+          correlationId: "90000000-0000-4000-8000-000000000001",
+          expectedApplicationRowVersion: 2,
+          expectedResponseRowVersion: 1,
+          idempotencyKey: "d0000000-0000-4000-8000-000000000001",
+          values: { NAME: "Late edit" },
+        },
+      ),
+    ).rejects.toThrow("no longer accepts draft changes");
   });
 });

@@ -1,11 +1,13 @@
 "use client";
 
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { GeneralButton } from "@/components/ui/button";
 import { Workflow } from "lucide-react";
 import { useState } from "react";
 
 import { PortalErrorState } from "@/shared/ui/portal/PortalErrorState";
 import { PortalLoadingState } from "@/shared/ui/portal/PortalLoadingState";
-import { CloneButton, PublishButton } from "@/components/ui/action-buttons";
+import { PublishButton } from "@/components/ui/action-buttons";
 import { StatusBadge } from "@/components/ui/status-badge";
 import {
   useCloneWorkflow,
@@ -32,13 +34,18 @@ export function WorkflowEditorWorkspace({
   definitionId,
   versionId,
 }: Props) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const query = useWorkflowEditor(definitionId, true, versionId);
   const clone = useCloneWorkflow(definitionId);
   const publish = useWorkflowListLifecycle("publish", definitionId, versionId);
   const [showPublishConfirmation, setShowPublishConfirmation] = useState(false);
 
   if (query.isLoading) {
-    return <PortalLoadingState title="" description="Loading workflow editor…" />;
+    return (
+      <PortalLoadingState title="" description="Loading workflow editor…" />
+    );
   }
 
   if (query.error || !query.data) {
@@ -53,18 +60,33 @@ export function WorkflowEditorWorkspace({
   const editor = query.data;
   const busy = clone.isPending || publish.isPending;
   const canPublishVersion =
-    canPublish && workflowTemplatePublishableStatuses.includes(editor.version.status);
+    canPublish &&
+    workflowTemplatePublishableStatuses.includes(editor.version.status);
 
   return (
     <>
       <PageShell
         actions={
           <div className="flex flex-wrap gap-2">
-            <CloneButton
-              title={`Clone ${editor.definition.name} to a new version.`}
-              disabled={busy || !canUpdate}
-              onClick={() => clone.mutate(editor.version.id)}
-            />
+            {editor.version.status !== "DRAFT" ? (
+              <GeneralButton
+                size="compact"
+                disabled={busy || !canUpdate}
+                onClick={() =>
+                  clone.mutate(editor.version.id, {
+                    onSuccess: (draft) => {
+                      const params = new URLSearchParams(
+                        searchParams.toString(),
+                      );
+                      params.set("versionId", draft.version.id);
+                      router.replace(`${pathname}?${params}`);
+                    },
+                  })
+                }
+              >
+                Edit published version
+              </GeneralButton>
+            ) : null}
             {canPublishVersion ? (
               <PublishButton
                 disabled={busy}

@@ -1,10 +1,17 @@
 import "server-only";
 
-import { and, eq, sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
 import { authorizationAuditEntries } from "@/db/schema";
-import { fundingCalls } from "./funding-call.schema";
+import {
+  readWorkingFundingCall,
+  updateWorkingFundingCall,
+} from "./FundingCallVersionRepository";
+import {
+  fundingCallPublicationRevisions,
+  fundingCalls,
+} from "./funding-call.schema";
 
 type ThumbnailMetadata = {
   contentType: string;
@@ -19,23 +26,40 @@ export async function updateFundingCallThumbnailRecord(input: {
   thumbnail: ThumbnailMetadata;
 }) {
   return getDatabase().transaction(async (transaction) => {
-    const [updated] = await transaction
-      .update(fundingCalls)
-      .set({
-        rowVersion: sql`${fundingCalls.rowVersion} + 1`,
-        thumbnailContentType: input.thumbnail?.contentType ?? null,
-        thumbnailFileName: input.thumbnail?.fileName ?? null,
-        thumbnailObjectKey: input.thumbnail?.objectKey ?? null,
-        updatedAt: new Date(),
-        updatedBy: input.actorId,
-      })
-      .where(and(
-        eq(fundingCalls.id, input.fundingCallId),
-        eq(fundingCalls.status, "DRAFT"),
-        eq(fundingCalls.rowVersion, input.expectedRowVersion),
-      ))
-      .returning({ id: fundingCalls.id });
-    if (!updated) return false;
+    const [effective] = await transaction
+      .select()
+      .from(fundingCalls)
+      .where(eq(fundingCalls.id, input.fundingCallId))
+      .for("update")
+      .limit(1);
+    if (!effective || effective.rowVersion !== input.expectedRowVersion)
+      return false;
+    const { call, draft } = await readWorkingFundingCall(
+      transaction,
+      effective,
+    );
+    if (call.status !== "DRAFT") return false;
+    const values = {
+      thumbnailContentType: input.thumbnail?.contentType ?? null,
+      thumbnailFileName: input.thumbnail?.fileName ?? null,
+      thumbnailObjectKey: input.thumbnail?.objectKey ?? null,
+      updatedAt: new Date(),
+      updatedBy: input.actorId,
+    };
+    if (draft) {
+      await updateWorkingFundingCall(transaction, effective, draft, {
+        ...call,
+        ...values,
+      });
+    } else {
+      await transaction
+        .update(fundingCalls)
+        .set({
+          ...values,
+          rowVersion: call.rowVersion + 1,
+        })
+        .where(eq(fundingCalls.id, call.id));
+    }
 
     await transaction.insert(authorizationAuditEntries).values({
       action: input.thumbnail
@@ -49,4 +73,15 @@ export async function updateFundingCallThumbnailRecord(input: {
     });
     return true;
   });
+}
+
+export async function fundingCallThumbnailIsPublished(objectKey: string) {
+  const [reference] = await getDatabase()
+    .select({ id: fundingCallPublicationRevisions.id })
+    .from(fundingCallPublicationRevisions)
+    .where(
+      sql`${fundingCallPublicationRevisions.snapshot}->>'thumbnailObjectKey' = ${objectKey}`,
+    )
+    .limit(1);
+  return Boolean(reference);
 }

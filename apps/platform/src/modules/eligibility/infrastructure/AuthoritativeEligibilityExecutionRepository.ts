@@ -115,17 +115,17 @@ export async function lockAuthoritativeEligibilityTask(
       business.registration_number AS "businessRegistrationNumber",
       business.updated_at AS "businessUpdatedAt",
       funding_call.closes_at AS "fundingCallClosesAt",
-      funding_call.eligibility_rule_set_version_id AS "fundingCallEligibilityVersionId",
-      funding_call.funding_instrument AS "fundingCallInstrument",
+      publication.snapshot->>'eligibilityRuleSetVersionId' AS "fundingCallEligibilityVersionId",
+      publication.snapshot->>'fundingInstrument' AS "fundingCallInstrument",
       funding_call.id AS "fundingCallId",
-      funding_call.maximum_grant_amount AS "fundingCallMaximumAmount",
-      funding_call.minimum_grant_amount AS "fundingCallMinimumAmount",
+      publication.snapshot->>'maximumGrantAmount' AS "fundingCallMaximumAmount",
+      publication.snapshot->>'minimumGrantAmount' AS "fundingCallMinimumAmount",
       funding_call.opens_at AS "fundingCallOpensAt",
       funding_call.slug AS "fundingCallSlug",
       funding_call.status AS "fundingCallStatus",
-      funding_call.thematic_area AS "fundingCallThematicArea",
-      funding_call.title AS "fundingCallTitle",
-      funding_call.total_budget_envelope AS "fundingCallTotalBudget",
+      publication.snapshot->>'thematicArea' AS "fundingCallThematicArea",
+      publication.snapshot->>'title' AS "fundingCallTitle",
+      publication.snapshot->>'totalBudgetEnvelope' AS "fundingCallTotalBudget",
       app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
       AND (
         task.assigned_user_id = ${actorId}::uuid
@@ -173,6 +173,8 @@ export async function lockAuthoritativeEligibilityTask(
     JOIN app_business_profiles business ON business.id = application.business_id
     LEFT JOIN app_application_submission_snapshots snapshot
       ON snapshot.id = application.submission_snapshot_id
+    JOIN app_funding_call_publication_revisions publication
+      ON publication.id = application.funding_call_version_id
     JOIN app_funding_calls funding_call
       ON funding_call.id = application.funding_opportunity_id
     LEFT JOIN LATERAL (
@@ -186,7 +188,9 @@ export async function lockAuthoritativeEligibilityTask(
       AND stage.status = 'ACTIVE' AND workflow.status = 'ACTIVE'
     FOR UPDATE OF task
   `);
-  return decodeEligibilityTaskTarget(rows.rows[0] as Record<string, unknown> | undefined);
+  return decodeEligibilityTaskTarget(
+    rows.rows[0] as Record<string, unknown> | undefined,
+  );
 }
 
 function decodeEligibilityTaskTarget(
@@ -282,13 +286,16 @@ function decodeEligibilityTaskTarget(
 export async function findAuthoritativeEligibilityExecutionByCommand(
   transaction: AuthoritativeEligibilityExecutionTransaction,
   commandKey: string,
-): Promise<(AuthoritativeEligibilityOutcome & {
-  permissions: WorkflowElementPermissions;
-  assignedUserId: string | null;
-  coiCleared: boolean;
-  taskRowVersion: number;
-  terminalStatus: string | null;
-}) | null> {
+): Promise<
+  | (AuthoritativeEligibilityOutcome & {
+      permissions: WorkflowElementPermissions;
+      assignedUserId: string | null;
+      coiCleared: boolean;
+      taskRowVersion: number;
+      terminalStatus: string | null;
+    })
+  | null
+> {
   const [outcome] = await transaction
     .select({
       ...getTableColumns(authoritativeEligibilityOutcomes),
@@ -306,8 +313,14 @@ export async function findAuthoritativeEligibilityExecutionByCommand(
       )`,
     })
     .from(authoritativeEligibilityOutcomes)
-    .innerJoin(workflowTasks, eq(workflowTasks.id, authoritativeEligibilityOutcomes.workflowTaskId))
-    .innerJoin(stageTaskDefinitions, eq(stageTaskDefinitions.id, workflowTasks.workflowTaskDefinitionId))
+    .innerJoin(
+      workflowTasks,
+      eq(workflowTasks.id, authoritativeEligibilityOutcomes.workflowTaskId),
+    )
+    .innerJoin(
+      stageTaskDefinitions,
+      eq(stageTaskDefinitions.id, workflowTasks.workflowTaskDefinitionId),
+    )
     .where(eq(authoritativeEligibilityOutcomes.commandKey, commandKey))
     .limit(1);
   return outcome ?? null;

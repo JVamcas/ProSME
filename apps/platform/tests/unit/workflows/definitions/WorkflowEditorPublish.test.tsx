@@ -21,11 +21,15 @@ vi.mock("@/modules/workflows/ui/definitions/WorkflowStageFlow", () => ({
 
 const definitionId = "41111111-1111-4111-8111-111111111111";
 
-(globalThis as typeof globalThis & {
-  IS_REACT_ACT_ENVIRONMENT: boolean;
-}).IS_REACT_ACT_ENVIRONMENT = true;
+(
+  globalThis as typeof globalThis & {
+    IS_REACT_ACT_ENVIRONMENT: boolean;
+  }
+).IS_REACT_ACT_ENVIRONMENT = true;
 
-function editor(status: WorkflowEditorView["version"]["status"]): WorkflowEditorView {
+function editor(
+  status: WorkflowEditorView["version"]["status"],
+): WorkflowEditorView {
   return {
     allowedActions: [],
     definition: {
@@ -48,7 +52,10 @@ function editor(status: WorkflowEditorView["version"]["status"]): WorkflowEditor
   };
 }
 
-async function mount(status: WorkflowEditorView["version"]["status"], canPublish: boolean) {
+async function mount(
+  status: WorkflowEditorView["version"]["status"],
+  canPublish: boolean,
+) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false, staleTime: Infinity } },
   });
@@ -85,8 +92,11 @@ describe("workflow editor publishing", () => {
       ["DRAFT", false, false],
     ] as const) {
       const { container, root } = await mount(status, canPublish);
-      expect(Boolean(container.querySelector('[aria-label="Publish Standard workflow"]')))
-        .toBe(visible);
+      expect(
+        Boolean(
+          container.querySelector('[aria-label="Publish Standard workflow"]'),
+        ),
+      ).toBe(visible);
       await act(async () => root.unmount());
       container.remove();
     }
@@ -100,7 +110,10 @@ describe("workflow editor publishing", () => {
       ...editor("PUBLISHED"),
       version: { ...editor("PUBLISHED").version, number: 1 },
     };
-    client.setQueryData(workflowQueryKeys.detail(definitionId), editor("DRAFT"));
+    client.setQueryData(
+      workflowQueryKeys.detail(definitionId),
+      editor("DRAFT"),
+    );
     client.setQueryData(
       workflowQueryKeys.detail(definitionId, historical.version.id),
       historical,
@@ -124,8 +137,9 @@ describe("workflow editor publishing", () => {
     expect(container.textContent).toContain("v1");
     expect(container.textContent).not.toContain("v2");
     expect(container.querySelector('[data-can-edit="false"]')).not.toBeNull();
-    expect(container.querySelector('[aria-label="Publish Standard workflow"]'))
-      .toBeNull();
+    expect(
+      container.querySelector('[aria-label="Publish Standard workflow"]'),
+    ).toBeNull();
     await act(async () => root.unmount());
   });
 
@@ -133,14 +147,17 @@ describe("workflow editor publishing", () => {
     vi.spyOn(clientWorkflowService, "getEditor")
       .mockResolvedValueOnce(editor("DRAFT"))
       .mockResolvedValue(editor("PUBLISHED"));
-    const publish = vi.spyOn(clientWorkflowService, "lifecycleCommand")
+    const publish = vi
+      .spyOn(clientWorkflowService, "lifecycleCommand")
       .mockResolvedValue(editor("PUBLISHED"));
     const { container, root } = await mount("DRAFT", true);
 
     await act(async () => {
-      container.querySelector<HTMLButtonElement>(
-        '[aria-label="Publish Standard workflow"]',
-      )?.click();
+      container
+        .querySelector<HTMLButtonElement>(
+          '[aria-label="Publish Standard workflow"]',
+        )
+        ?.click();
     });
     expect(document.body.textContent).toContain(
       "Published workflow versions cannot be edited.",
@@ -148,14 +165,23 @@ describe("workflow editor publishing", () => {
     expect(document.body.textContent).toContain("Publish workflow template");
 
     await act(async () => {
-      Array.from(document.body.querySelectorAll<HTMLButtonElement>(
-        '[role="dialog"] button',
-      )).find((button) => button.textContent === "Publish")?.click();
+      Array.from(
+        document.body.querySelectorAll<HTMLButtonElement>(
+          '[role="dialog"] button',
+        ),
+      )
+        .find((button) => button.textContent === "Publish")
+        ?.click();
     });
 
-    expect(publish).toHaveBeenCalledWith(definitionId, "publish", editor("DRAFT"));
-    expect(container.querySelector('[aria-label="Publish Standard workflow"]'))
-      .toBeNull();
+    expect(publish).toHaveBeenCalledWith(
+      definitionId,
+      "publish",
+      editor("DRAFT"),
+    );
+    expect(
+      container.querySelector('[aria-label="Publish Standard workflow"]'),
+    ).toBeNull();
     expect(container.textContent).toContain("Published");
     expect(container.querySelector('[data-can-edit="false"]')).not.toBeNull();
     await act(async () => root.unmount());
@@ -165,11 +191,13 @@ describe("workflow editor publishing", () => {
     const invalid = editor("DRAFT");
     invalid.validation = {
       valid: false,
-      errors: [{
-        code: "INVALID_FORM_VERSION",
-        message: "The bound form is unavailable.",
-        path: "stages.0.tasks.0.formBinding.formVersionId",
-      }],
+      errors: [
+        {
+          code: "INVALID_FORM_VERSION",
+          message: "The bound form is unavailable.",
+          path: "stages.0.tasks.0.formBinding.formVersionId",
+        },
+      ],
       warnings: [],
     };
     vi.spyOn(clientWorkflowService, "getEditor").mockResolvedValue(invalid);
@@ -177,14 +205,20 @@ describe("workflow editor publishing", () => {
     const { container, root } = await mount("DRAFT", true);
 
     await act(async () => {
-      container.querySelector<HTMLButtonElement>(
-        '[aria-label="Publish Standard workflow"]',
-      )?.click();
+      container
+        .querySelector<HTMLButtonElement>(
+          '[aria-label="Publish Standard workflow"]',
+        )
+        ?.click();
     });
     await act(async () => {
-      Array.from(document.body.querySelectorAll<HTMLButtonElement>(
-        '[role="dialog"] button',
-      )).find((button) => button.textContent === "Publish")?.click();
+      Array.from(
+        document.body.querySelectorAll<HTMLButtonElement>(
+          '[role="dialog"] button',
+        ),
+      )
+        .find((button) => button.textContent === "Publish")
+        ?.click();
     });
 
     expect(toast.error).toHaveBeenCalledWith(
@@ -196,3 +230,9 @@ describe("workflow editor publishing", () => {
     await act(async () => root.unmount());
   });
 });
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ replace: vi.fn() }),
+  usePathname: () => "/admin/editor",
+  useSearchParams: () => new URLSearchParams(),
+}));
