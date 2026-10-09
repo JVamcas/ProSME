@@ -6,7 +6,7 @@ import { useEffect } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { toast } from "sonner";
 
-import { BusinessProfileFields } from "@/components/applicant/businesses/BusinessProfileFields";
+import { BusinessProfileFields } from "./BusinessProfileFields";
 import { ProfileFormActions } from "@/components/applicant/profile/ProfileFormActions";
 import {
   useBusiness,
@@ -19,6 +19,7 @@ import {
 } from "@/modules/businesses/BusinessSchemas";
 import { PortalErrorState } from "@/shared/ui/portal/PortalErrorState";
 import { PortalLoadingState } from "@/shared/ui/portal/PortalLoadingState";
+import { businessSectorFormValues } from "../domain/BusinessSectors";
 
 const defaults: BusinessProfileInput = {
   businessType: "",
@@ -29,6 +30,9 @@ const defaults: BusinessProfileInput = {
   region: "",
   registrationNumber: "",
   sector: "",
+  sectorOther: "",
+  secondarySector: "",
+  secondarySectorOther: "",
   tradingName: "",
 };
 
@@ -50,13 +54,15 @@ export function BusinessForm({
   const createBusiness = useCreateBusiness();
   const updateBusiness = useUpdateBusiness(businessId ?? "new");
   const form = useForm<BusinessProfileInput>({
-    defaultValues: initialValues ?? defaults,
+    defaultValues: initialValues
+      ? businessSectorFormValues(initialValues)
+      : defaults,
     resolver: zodResolver(businessProfileSchema),
   });
 
   useEffect(() => {
     if (business.data) {
-      form.reset(business.data);
+      form.reset(businessSectorFormValues(business.data));
     }
   }, [business.data, form]);
 
@@ -92,9 +98,11 @@ export function BusinessForm({
   return (
     <FormProvider {...form}>
       <form
-        className={variant === "card"
-          ? "mt-6 rounded-2xl border border-brand-navy/15 bg-brand-white p-5 shadow-sm sm:p-7"
-          : undefined}
+        className={
+          variant === "card"
+            ? "mt-6 rounded-2xl border border-brand-navy/15 bg-brand-white p-5 shadow-sm sm:p-7"
+            : undefined
+        }
         noValidate
         onSubmit={submit}
       >

@@ -63,7 +63,11 @@ export function FormEditorLifecycleActions({
         type="button"
         variant="outline"
       >
-        {clonePending ? "Creating…" : "Create new draft"}
+        {clonePending
+          ? "Creating…"
+          : isPublished
+            ? "Edit published version"
+            : "Create new draft"}
       </GeneralButton>
     </div>
   );

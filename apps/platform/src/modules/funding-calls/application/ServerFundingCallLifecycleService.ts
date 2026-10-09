@@ -20,7 +20,7 @@ import {
   readFundingCallLifecycleReplay,
   transitionFundingCall,
 } from "../infrastructure/FundingCallLifecycleRepository";
-import { readFundingCallById } from "../infrastructure/FundingCallRepository";
+import { readEffectiveFundingCallById } from "../infrastructure/FundingCallRepository";
 import { toFundingCallView } from "./FundingCallViewMapper";
 
 const commandPermissions = {
@@ -45,11 +45,19 @@ export async function changeFundingCallLifecycleStatus(
     input.command,
   );
   if (replay) return toFundingCallView(replay);
-  const call = await readFundingCallById(fundingCallId);
+  const call = await readEffectiveFundingCallById(fundingCallId);
   if (!call) throw new ResourceNotFoundError("funding call");
   if (call.rowVersion !== input.expectedRowVersion) {
     throw new ResourceConflictError(
       "The funding call changed. Refresh it before continuing.",
+    );
+  }
+  if (
+    input.command === "WITHDRAW_FOR_AMENDMENT" &&
+    call.currentPublishedVersionId
+  ) {
+    throw new ResourceConflictError(
+      "Use Edit in the Actions menu to prepare a replacement while this call remains effective.",
     );
   }
   const now = new Date();
@@ -99,54 +107,59 @@ async function reconcile(
   command: "OPEN" | "CLOSE",
   now: Date,
 ): Promise<ReconciliationResult> {
-  const results = await Promise.allSettled(candidates.map((candidate) =>
-    transitionFundingCall({
-      command,
-      correlationId: crypto.randomUUID(),
-      effectiveTime: candidate.effectiveAt,
-      expectedRowVersion: candidate.rowVersion,
-      fundingCallId: candidate.id,
-      idempotencyKey:
-        `funding-call:${candidate.id}:${command}:${candidate.effectiveAt.toISOString()}`,
-      now,
-      systemActor: "FUNDING_CALL_LIFECYCLE_SCHEDULER",
-    })
-  ));
+  const results = await Promise.allSettled(
+    candidates.map((candidate) =>
+      transitionFundingCall({
+        command,
+        correlationId: crypto.randomUUID(),
+        effectiveTime: candidate.effectiveAt,
+        expectedRowVersion: candidate.rowVersion,
+        fundingCallId: candidate.id,
+        idempotencyKey: `funding-call:${candidate.id}:${command}:${candidate.effectiveAt.toISOString()}`,
+        now,
+        systemActor: "FUNDING_CALL_LIFECYCLE_SCHEDULER",
+      }),
+    ),
+  );
   return {
     attempted: candidates.length,
-    failed: results.filter((result) =>
-      result.status === "rejected"
-      || (result.status === "fulfilled"
-        && !["replayed", "transitioned"].includes(result.value.kind))
+    failed: results.filter(
+      (result) =>
+        result.status === "rejected" ||
+        (result.status === "fulfilled" &&
+          !["replayed", "transitioned"].includes(result.value.kind)),
     ).length,
-    transitioned: results.filter((result) =>
-      result.status === "fulfilled" && result.value.kind === "transitioned"
+    transitioned: results.filter(
+      (result) =>
+        result.status === "fulfilled" && result.value.kind === "transitioned",
     ).length,
   };
 }
 
-export async function openScheduledFundingCalls(
-  now = new Date(),
-  limit = 100,
-) {
+export async function openScheduledFundingCalls(now = new Date(), limit = 100) {
   const due = await listScheduledFundingCallsDueToOpen(now, limit);
-  return reconcile(due.map((call) => ({
-    effectiveAt: call.opensAt,
-    id: call.id,
-    rowVersion: call.rowVersion,
-  })), "OPEN", now);
+  return reconcile(
+    due.map((call) => ({
+      effectiveAt: call.opensAt,
+      id: call.id,
+      rowVersion: call.rowVersion,
+    })),
+    "OPEN",
+    now,
+  );
 }
 
-export async function closeExpiredFundingCalls(
-  now = new Date(),
-  limit = 100,
-) {
+export async function closeExpiredFundingCalls(now = new Date(), limit = 100) {
   const due = await listPublishedFundingCallsDueToClose(now, limit);
-  return reconcile(due.map((call) => ({
-    effectiveAt: call.closesAt,
-    id: call.id,
-    rowVersion: call.rowVersion,
-  })), "CLOSE", now);
+  return reconcile(
+    due.map((call) => ({
+      effectiveAt: call.closesAt,
+      id: call.id,
+      rowVersion: call.rowVersion,
+    })),
+    "CLOSE",
+    now,
+  );
 }
 
 export async function reconcileFundingCallLifecycle(

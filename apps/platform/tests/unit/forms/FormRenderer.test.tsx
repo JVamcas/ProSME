@@ -35,7 +35,8 @@ describe("RJSF form renderer", () => {
     expect(markup).toContain('min="100"');
     expect(markup).toContain('max="1000"');
     expect(markup).toContain("AMOUNT help");
-    expect(markup).toContain('aria-label="Open calendar"');
+    expect(markup).toContain('placeholder="DD/MM/YYYY"');
+    expect(markup).toContain('id="root_START_DATE"');
     expect(markup).toContain("Yes");
     expect(markup).toContain("No");
     expect(markup).toContain("First option");
@@ -101,9 +102,7 @@ describe("RJSF form renderer", () => {
       </FormRenderer>,
     );
 
-    expect(markup).toContain(
-      "grid gap-5 mt-4 grid-cols-1 md:grid-cols-2",
-    );
+    expect(markup).toContain("grid gap-5 mt-4 grid-cols-1 md:grid-cols-2");
     expect(markup.match(/class="col-span-1"/g)).toHaveLength(2);
   });
 
@@ -124,12 +123,8 @@ describe("RJSF form renderer", () => {
       </FormRenderer>,
     );
 
-    expect(markup).toContain(
-      "grid gap-5 mt-4 grid-cols-1 md:grid-cols-2",
-    );
-    expect(markup).toContain(
-      '<div class="col-span-1 md:col-span-2">',
-    );
+    expect(markup).toContain("grid gap-5 mt-4 grid-cols-1 md:grid-cols-2");
+    expect(markup).toContain('<div class="col-span-1 md:col-span-2">');
   });
 
   it("allows a read-only preview to suppress the RJSF submit button", () => {
@@ -170,16 +165,18 @@ describe("RJSF form renderer", () => {
       showContainer: true,
       title: "Hidden details",
       visibilityCondition: {
-      id: "30000000-0000-4000-8000-000000000001",
-      kind: "GROUP",
-      combinator: "AND",
-      children: [{
-        id: "30000000-0000-4000-8000-000000000002",
-        kind: "CONDITION",
-        leftOperand: { kind: "FIELD", key: "APPROVED" },
-        operator: basicOperators.EQUALS,
-        rightOperand: { kind: "CONSTANT", value: true },
-      }],
+        id: "30000000-0000-4000-8000-000000000001",
+        kind: "GROUP",
+        combinator: "AND",
+        children: [
+          {
+            id: "30000000-0000-4000-8000-000000000002",
+            kind: "CONDITION",
+            leftOperand: { kind: "FIELD", key: "APPROVED" },
+            operator: basicOperators.EQUALS,
+            rightOperand: { kind: "CONSTANT", value: true },
+          },
+        ],
       },
     });
 

@@ -21,13 +21,17 @@ const rowVersionSchema = z.coerce.number().int().positive();
 export async function GET(request: Request, context: RouteContext) {
   const correlationId = createCorrelationId();
   try {
+    const params = new URL(request.url).searchParams;
+    const versionId = z
+      .uuid()
+      .optional()
+      .parse(params.get("versionId") ?? undefined);
     const thumbnail = await readFundingCallThumbnail(
       await resolveUserFromHeaders(request.headers),
       idSchema.parse((await context.params).id),
       undefined,
-      fundingCallThumbnailWidthSchema.parse(
-        new URL(request.url).searchParams.get("width") ?? undefined,
-      ),
+      fundingCallThumbnailWidthSchema.parse(params.get("width") ?? undefined),
+      versionId,
     );
     return new Response(new Uint8Array(thumbnail.body), {
       headers: {
@@ -76,9 +80,11 @@ export async function DELETE(request: Request, context: RouteContext) {
       request.json(),
       context.params,
     ]);
-    const expectedRowVersion = z.object({
-      expectedRowVersion: rowVersionSchema,
-    }).parse(input).expectedRowVersion;
+    const expectedRowVersion = z
+      .object({
+        expectedRowVersion: rowVersionSchema,
+      })
+      .parse(input).expectedRowVersion;
     return portalRouteSuccess(
       await removeFundingCallThumbnail(
         user,

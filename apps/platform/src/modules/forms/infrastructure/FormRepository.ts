@@ -26,9 +26,9 @@ export async function listForms(
   const [result, countResult] = await Promise.all([
     database.execute(sql`
     SELECT definition.id,
-      definition.code,
-      definition.name,
-      definition.description,
+      coalesce(latest.metadata->>'code', definition.code) AS code,
+      coalesce(latest.metadata->>'name', definition.name) AS name,
+      coalesce(latest.metadata->>'description', definition.description) AS description,
       definition.purpose,
       definition.active,
       latest.id AS "latestVersionId",
@@ -41,7 +41,7 @@ export async function listForms(
       definition.updated_at AS "updatedAt"
     FROM app_form_definitions definition
     LEFT JOIN LATERAL (
-      SELECT version_number, row_version, status, id
+      SELECT version_number, row_version, status, id, metadata
       FROM app_form_versions
       WHERE form_definition_id = definition.id
       ORDER BY version_number DESC
@@ -87,7 +87,7 @@ export async function listPublishedFormVersions() {
   return getDatabase()
     .select({
       definitionId: formDefinitions.id,
-      formName: formDefinitions.name,
+      formName: sql<string>`coalesce(${formVersions.metadata}->>'name', ${formDefinitions.name})`,
       purpose: formDefinitions.purpose,
       versionId: formVersions.id,
       versionNumber: formVersions.versionNumber,
@@ -105,7 +105,7 @@ export async function listBindableFormVersions(purpose: FormPurpose) {
   return getDatabase()
     .select({
       definitionId: formDefinitions.id,
-      formName: formDefinitions.name,
+      formName: sql<string>`coalesce(${formVersions.metadata}->>'name', ${formDefinitions.name})`,
       status: formVersions.status,
       purpose: formDefinitions.purpose,
       versionId: formVersions.id,
@@ -294,10 +294,12 @@ export async function getFormEditor(definitionId: string, versionId?: string) {
       ? database
           .select()
           .from(formVersions)
-          .where(and(
-            eq(formVersions.formDefinitionId, definitionId),
-            eq(formVersions.id, versionId),
-          ))
+          .where(
+            and(
+              eq(formVersions.formDefinitionId, definitionId),
+              eq(formVersions.id, versionId),
+            ),
+          )
           .limit(1)
       : Promise.resolve(null),
   ]);
@@ -305,14 +307,14 @@ export async function getFormEditor(definitionId: string, versionId?: string) {
   if (!definition) return null;
   const version = selectedVersions
     ? selectedVersions[0]
-    : versions.find((item) => item.status === "DRAFT") ?? versions[0];
+    : (versions.find((item) => item.status === "DRAFT") ?? versions[0]);
   if (!version) return null;
   const [fields, sections] = await Promise.all([
     readFormFields(version.id),
     readSections(version.id),
   ]);
   return {
-    definition,
+    definition: { ...definition, ...version.metadata },
     fields,
     sections,
     version,

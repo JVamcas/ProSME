@@ -1,6 +1,6 @@
 "use client";
 
-import { BusinessForm } from "@/components/applicant/businesses/BusinessForm";
+import { BusinessForm } from "./BusinessForm";
 import { DraggableDialog } from "@/shared/ui/DraggableDialog";
 import type { BusinessView } from "@/modules/businesses/BusinessTypes";
 

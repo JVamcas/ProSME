@@ -1,9 +1,9 @@
 "use client";
 
 import { useFormEditorController } from "./useFormEditorController";
-import { FormEditorMutationError } from "@/components/admin/forms/FormEditorLifecycleActions";
+import { FormEditorMutationError } from "@/modules/forms/ui/FormEditorLifecycleActions";
 import { FormEditorBody } from "@/components/admin/forms/FormEditorBody";
-import { FormEditorTopSection } from "@/components/admin/forms/FormEditorTopSection";
+import { FormEditorTopSection } from "@/modules/forms/ui/FormEditorTopSection";
 import { FormPreviewDialog } from "@/modules/forms/ui/renderer/FormPreviewDialog";
 
 type FormEditorController = ReturnType<typeof useFormEditorController>;
@@ -27,9 +27,10 @@ function FormEditorTopContent({
   isDraft: boolean;
   isPublished: boolean;
 }) {
-  const error = controller.publish.error?.message
-    ?? controller.retire.error?.message
-    ?? controller.clone.error?.message;
+  const error =
+    controller.publish.error?.message ??
+    controller.retire.error?.message ??
+    controller.clone.error?.message;
   return (
     <>
       <FormEditorTopSection
@@ -40,21 +41,22 @@ function FormEditorTopContent({
         editor={editor}
         isDraft={isDraft}
         isPublished={isPublished}
-        onClone={() => controller.clone.mutate({
-          definitionId: id,
-          sourceVersionId: editor.version.id,
-        })}
+        onClone={controller.editPublishedVersion}
         onPreview={() => controller.setPreviewOpen(true)}
-        onPublish={() => controller.publish.mutate({
-          definitionId: id,
-          expectedRowVersion: editor.version.rowVersion,
-          versionId: editor.version.id,
-        })}
-        onRetire={() => controller.retire.mutate({
-          definitionId: id,
-          expectedRowVersion: editor.version.rowVersion,
-          versionId: editor.version.id,
-        })}
+        onPublish={() =>
+          controller.publish.mutate({
+            definitionId: id,
+            expectedRowVersion: editor.version.rowVersion,
+            versionId: editor.version.id,
+          })
+        }
+        onRetire={() =>
+          controller.retire.mutate({
+            definitionId: id,
+            expectedRowVersion: editor.version.rowVersion,
+            versionId: editor.version.id,
+          })
+        }
         publishPending={controller.publish.isPending}
         retirePending={controller.retire.isPending}
       />

@@ -62,6 +62,10 @@ export const formVersions = pgTable(
       .references(() => formDefinitions.id, { onDelete: "restrict" }),
     versionNumber: integer("version_number").notNull(),
     status: text("status").$type<FormStatus>().notNull().default("DRAFT"),
+    metadata: jsonb("metadata")
+      .$type<Partial<{ code: string; name: string; description: string }>>()
+      .notNull()
+      .default({}),
     displayMode: text("display_mode")
       .$type<FormDisplayMode>()
       .notNull()
@@ -130,8 +134,7 @@ export const formSections = pgTable(
     columnSpan: integer("column_span").$type<1 | 2 | 3>().notNull().default(3),
     showContainer: boolean("show_container").notNull().default(true),
     order: integer("display_order").notNull(),
-    visibilityCondition: jsonb("visibility_condition")
-      .$type<ConditionGroup>(),
+    visibilityCondition: jsonb("visibility_condition").$type<ConditionGroup>(),
   },
   (table) => [
     uniqueIndex("app_form_sections_version_key_unique").on(
@@ -180,11 +183,11 @@ export const formFields = pgTable(
     maximum: doublePrecision("maximum"),
     minLength: integer("min_length"),
     maxLength: integer("max_length"),
-    repeatableConfiguration: jsonb("repeatable_configuration")
-      .$type<RepeatableGroupConfiguration>(),
+    repeatableConfiguration: jsonb(
+      "repeatable_configuration",
+    ).$type<RepeatableGroupConfiguration>(),
     order: integer("display_order").notNull(),
-    visibilityCondition: jsonb("visibility_condition")
-      .$type<ConditionGroup>(),
+    visibilityCondition: jsonb("visibility_condition").$type<ConditionGroup>(),
   },
   (table) => [
     uniqueIndex("app_form_fields_version_key_unique").on(
@@ -195,10 +198,7 @@ export const formFields = pgTable(
       table.sectionId,
       table.order,
     ),
-    index("app_form_fields_section_order_idx").on(
-      table.sectionId,
-      table.order,
-    ),
+    index("app_form_fields_section_order_idx").on(table.sectionId, table.order),
     foreignKey({
       columns: [table.sectionId, table.formVersionId],
       foreignColumns: [formSections.id, formSections.formVersionId],
@@ -261,9 +261,6 @@ export const formFieldOptions = pgTable(
       table.fieldId,
       table.order,
     ),
-    check(
-      "app_form_field_options_order_check",
-      sql`${table.order} > 0`,
-    ),
+    check("app_form_field_options_order_check", sql`${table.order} > 0`),
   ],
 );

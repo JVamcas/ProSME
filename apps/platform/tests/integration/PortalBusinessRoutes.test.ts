@@ -4,7 +4,7 @@ vi.mock("server-only", () => ({}));
 vi.mock("@/auth/authorization/current-user", () => ({
   resolveUserFromHeaders: vi.fn(),
 }));
-vi.mock("@/db/repositories/BusinessRepository", () => ({
+vi.mock("@/modules/businesses/infrastructure/BusinessRepository", () => ({
   createOwnedBusiness: vi.fn(),
   deleteOwnedBusiness: vi.fn(),
   findOwnedBusiness: vi.fn(),
@@ -22,7 +22,8 @@ import {
   deleteOwnedBusiness,
   findOwnedBusiness,
   listOwnedBusinesses,
-} from "@/db/repositories/BusinessRepository";
+  updateOwnedBusiness,
+} from "@/modules/businesses/infrastructure/BusinessRepository";
 
 const ownerId = "79e20de0-3558-4d63-90a4-8c9f5125df07";
 const businessId = "99e20de0-3558-4d63-90a4-8c9f5125df07";
@@ -34,11 +35,12 @@ const input = {
   physicalAddress: "1 Independence Avenue",
   region: "Khomas",
   registrationNumber: "CC/2026/1",
-  sector: "Retail",
+  sector: "Manufacturing and value addition",
   tradingName: "Anna Trading",
 };
 const row = {
   ...input,
+  secondarySector: null,
   createdAt: new Date("2026-09-13T00:00:00.000Z"),
   employeeCount: 4,
   establishedYear: 2020,
@@ -67,7 +69,8 @@ function user(granted: string[]): AuthenticatedUser {
 function request(path: string, method = "GET", body?: unknown) {
   return new Request(`http://localhost:3008${path}`, {
     body: body === undefined ? undefined : JSON.stringify(body),
-    headers: body === undefined ? undefined : { "Content-Type": "application/json" },
+    headers:
+      body === undefined ? undefined : { "Content-Type": "application/json" },
     method,
   });
 }
@@ -105,6 +108,68 @@ describe("owned business routes", () => {
     expect(response.status).toBe(200);
     expect(createOwnedBusiness).toHaveBeenCalledWith(ownerId, input);
   });
+
+  it.each(["POST", "PATCH"])(
+    "%s requires Other sector details",
+    async (method) => {
+      vi.mocked(resolveUserFromHeaders).mockResolvedValue(
+        user([permissionCodes.businessOwnUpdate]),
+      );
+      const body = { ...input, secondarySector: "OTHER" };
+      const response =
+        method === "POST"
+          ? await listRoute.POST(
+              request("/api/portal/businesses", method, body),
+            )
+          : await itemRoute.PATCH(
+              request(`/api/portal/businesses/${businessId}`, method, body),
+              { params: Promise.resolve({ id: businessId }) },
+            );
+      expect(response.status).toBe(400);
+      await expect(response.json()).resolves.toMatchObject({
+        error: { fields: { secondarySectorOther: expect.any(Array) } },
+      });
+      expect(createOwnedBusiness).not.toHaveBeenCalled();
+      expect(updateOwnedBusiness).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(["POST", "PATCH"])(
+    "%s rejects missing required business details before writing",
+    async (method) => {
+      vi.mocked(resolveUserFromHeaders).mockResolvedValue(
+        user([permissionCodes.businessOwnUpdate]),
+      );
+      for (const field of [
+        "registrationNumber",
+        "tradingName",
+        "employeeCount",
+        "establishedYear",
+      ]) {
+        for (const value of ["", "   ", undefined]) {
+          const body = { ...input, [field]: value };
+          const response =
+            method === "POST"
+              ? await listRoute.POST(
+                  request("/api/portal/businesses", method, body),
+                )
+              : await itemRoute.PATCH(
+                  request(`/api/portal/businesses/${businessId}`, method, body),
+                  { params: Promise.resolve({ id: businessId }) },
+                );
+          expect(response.status).toBe(400);
+          await expect(response.json()).resolves.toMatchObject({
+            error: {
+              code: "VALIDATION_ERROR",
+              fields: { [field]: expect.any(Array) },
+            },
+          });
+        }
+      }
+      expect(createOwnedBusiness).not.toHaveBeenCalled();
+      expect(updateOwnedBusiness).not.toHaveBeenCalled();
+    },
+  );
 
   it("returns not found without exposing another owner's business", async () => {
     vi.mocked(resolveUserFromHeaders).mockResolvedValue(

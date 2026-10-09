@@ -1,11 +1,11 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
-import { FormEditorLifecycleActions } from "@/components/admin/forms/FormEditorLifecycleActions";
+import { FormEditorLifecycleActions } from "@/modules/forms/ui/FormEditorLifecycleActions";
 
-function renderActions(overrides: Partial<
-  Parameters<typeof FormEditorLifecycleActions>[0]
-> = {}) {
+function renderActions(
+  overrides: Partial<Parameters<typeof FormEditorLifecycleActions>[0]> = {},
+) {
   return renderToStaticMarkup(
     <FormEditorLifecycleActions
       canPublish

@@ -1,10 +1,13 @@
 import "server-only";
 
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
 import { applications } from "@/modules/applications/infrastructure/application.schema";
-import { fundingCallEligibilityIntegrationBindings } from "@/modules/eligibility/infrastructure/eligibility-integration.schema";
+import {
+  fundingCallEligibilityIntegrationBindings,
+  fundingCallVersionIntegrationBindings,
+} from "@/modules/eligibility/infrastructure/eligibility-integration.schema";
 import type { FundingCall } from "../domain/FundingCall";
 import {
   fundingCallGovernanceReviews,
@@ -12,13 +15,15 @@ import {
   fundingCallPublicationRevisions,
   fundingCalls,
 } from "./funding-call.schema";
+import { fundingCallDraftVersions } from "./funding-call-version.schema";
 import { fundingCallPublicDocuments } from "./funding-call-public-document.schema";
 import {
   sanitizeFundingCallDescription,
   sanitizeFundingCallEligibilitySummary,
 } from "./FundingCallRichText";
 
-export type DeleteFundingCallResult = "deleted" | "has_applications" | "not_found";
+export type DeleteFundingCallResult =
+  "deleted" | "has_applications" | "published_history" | "not_found";
 
 function toFundingCall(row: typeof fundingCalls.$inferSelect): FundingCall {
   return {
@@ -57,18 +62,49 @@ export async function cloneFundingCallRecord(
         .from(fundingCallPublicDocuments)
         .where(eq(fundingCallPublicDocuments.fundingCallId, fundingCallId)),
       transaction
-        .select()
+        .select({
+          integrationVersionId:
+            fundingCallEligibilityIntegrationBindings.integrationVersionId,
+          manualFallbackAllowed:
+            fundingCallEligibilityIntegrationBindings.manualFallbackAllowed,
+          providerAdapterKey:
+            fundingCallEligibilityIntegrationBindings.providerAdapterKey,
+          providerDisplayName:
+            fundingCallEligibilityIntegrationBindings.providerDisplayName,
+          secretReference:
+            fundingCallEligibilityIntegrationBindings.secretReference,
+          workflowTemplateVersionId:
+            fundingCallEligibilityIntegrationBindings.workflowTemplateVersionId,
+        })
         .from(fundingCallEligibilityIntegrationBindings)
-        .where(eq(
-          fundingCallEligibilityIntegrationBindings.fundingCallId,
-          fundingCallId,
-        )),
+        .leftJoin(
+          fundingCallVersionIntegrationBindings,
+          eq(
+            fundingCallVersionIntegrationBindings.bindingId,
+            fundingCallEligibilityIntegrationBindings.id,
+          ),
+        )
+        .where(
+          and(
+            eq(
+              fundingCallEligibilityIntegrationBindings.fundingCallId,
+              fundingCallId,
+            ),
+            source.currentPublishedVersionId
+              ? eq(
+                  fundingCallVersionIntegrationBindings.fundingCallVersionId,
+                  source.currentPublishedVersionId,
+                )
+              : isNull(fundingCallVersionIntegrationBindings.bindingId),
+          ),
+        ),
     ]);
     const identifiers = cloneIdentifiers(source);
     const [cloned] = await transaction
       .insert(fundingCalls)
       .values({
-        allowResubmissionAfterWithdrawal: source.allowResubmissionAfterWithdrawal,
+        allowResubmissionAfterWithdrawal:
+          source.allowResubmissionAfterWithdrawal,
         applicationDuplicatePolicy: source.applicationDuplicatePolicy,
         closesAt: source.closesAt,
         createdBy: actorId,
@@ -111,16 +147,18 @@ export async function cloneFundingCallRecord(
     if (integrationBindings.length) {
       await transaction
         .insert(fundingCallEligibilityIntegrationBindings)
-        .values(integrationBindings.map((binding) => ({
-          createdBy: actorId,
-          fundingCallId: cloned.id,
-          integrationVersionId: binding.integrationVersionId,
-          manualFallbackAllowed: binding.manualFallbackAllowed,
-          providerAdapterKey: binding.providerAdapterKey,
-          providerDisplayName: binding.providerDisplayName,
-          secretReference: binding.secretReference,
-          workflowTemplateVersionId: binding.workflowTemplateVersionId,
-        })));
+        .values(
+          integrationBindings.map((binding) => ({
+            createdBy: actorId,
+            fundingCallId: cloned.id,
+            integrationVersionId: binding.integrationVersionId,
+            manualFallbackAllowed: binding.manualFallbackAllowed,
+            providerAdapterKey: binding.providerAdapterKey,
+            providerDisplayName: binding.providerDisplayName,
+            secretReference: binding.secretReference,
+            workflowTemplateVersionId: binding.workflowTemplateVersionId,
+          })),
+        );
     }
     return toFundingCall(cloned);
   });
@@ -131,12 +169,16 @@ export async function deleteFundingCallRecord(
 ): Promise<DeleteFundingCallResult> {
   return getDatabase().transaction(async (transaction) => {
     const [call] = await transaction
-      .select({ id: fundingCalls.id })
+      .select({
+        id: fundingCalls.id,
+        currentPublishedVersionId: fundingCalls.currentPublishedVersionId,
+      })
       .from(fundingCalls)
       .where(eq(fundingCalls.id, fundingCallId))
       .for("update")
       .limit(1);
     if (!call) return "not_found";
+    if (call.currentPublishedVersionId) return "published_history";
 
     const [application] = await transaction
       .select({ id: applications.id })
@@ -146,6 +188,9 @@ export async function deleteFundingCallRecord(
     if (application) return "has_applications";
 
     await transaction
+      .delete(fundingCallDraftVersions)
+      .where(eq(fundingCallDraftVersions.fundingCallId, fundingCallId));
+    await transaction
       .delete(fundingCallPublicationRevisions)
       .where(eq(fundingCallPublicationRevisions.fundingCallId, fundingCallId));
     await transaction
@@ -153,14 +198,18 @@ export async function deleteFundingCallRecord(
       .where(eq(fundingCallGovernanceReviews.fundingCallId, fundingCallId));
     await transaction
       .delete(fundingCallEligibilityIntegrationBindings)
-      .where(eq(
-        fundingCallEligibilityIntegrationBindings.fundingCallId,
-        fundingCallId,
-      ));
+      .where(
+        eq(
+          fundingCallEligibilityIntegrationBindings.fundingCallId,
+          fundingCallId,
+        ),
+      );
     await transaction
       .delete(fundingCallLifecycleHistory)
       .where(eq(fundingCallLifecycleHistory.fundingCallId, fundingCallId));
-    await transaction.delete(fundingCalls).where(eq(fundingCalls.id, fundingCallId));
+    await transaction
+      .delete(fundingCalls)
+      .where(eq(fundingCalls.id, fundingCallId));
     return "deleted";
   });
 }

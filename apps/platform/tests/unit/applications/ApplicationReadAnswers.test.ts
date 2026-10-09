@@ -73,13 +73,61 @@ const form: FormRuntimeSchema = {
 };
 
 describe("application read answers", () => {
+  it.each([2020, "2020"])(
+    "renders establishment year %s without grouping while retaining number formatting",
+    (year) => {
+      const businessForm: FormRuntimeSchema = {
+        ...form,
+        fields: [
+          {
+            columnSpan: 1,
+            key: "BUSINESS_ESTABLISHED_YEAR",
+            label: "Year established",
+            order: 1,
+            required: true,
+            sectionId: "project",
+            type: "NUMBER",
+          },
+          {
+            columnSpan: 1,
+            key: "BUSINESS_EMPLOYEE_COUNT",
+            label: "Number of employees",
+            order: 2,
+            required: true,
+            sectionId: "project",
+            type: "NUMBER",
+          },
+        ],
+      };
+      expect(
+        applicationReadSections(businessForm, {
+          BUSINESS_ESTABLISHED_YEAR: year,
+          BUSINESS_EMPLOYEE_COUNT: 2020,
+        })[0]?.answers,
+      ).toEqual([
+        {
+          key: "BUSINESS_ESTABLISHED_YEAR",
+          label: "Year established",
+          value: "2020",
+        },
+        {
+          key: "BUSINESS_EMPLOYEE_COUNT",
+          label: "Number of employees",
+          value: "2,020",
+        },
+      ]);
+    },
+  );
+
   it("renders every captured dynamic answer in its versioned section and field order", () => {
-    expect(applicationReadSections(form, {
-      CONSENT: false,
-      FUNDING: 850000,
-      GOAL: "Expand production",
-      MARKETS: ["LOCAL", "EXPORT"],
-    })).toEqual([
+    expect(
+      applicationReadSections(form, {
+        CONSENT: false,
+        FUNDING: 850000,
+        GOAL: "Expand production",
+        MARKETS: ["LOCAL", "EXPORT"],
+      }),
+    ).toEqual([
       {
         key: "project",
         title: "Project",
@@ -115,52 +163,58 @@ describe("application read answers", () => {
   it("renders structured repeatable rows with their configured labels", () => {
     const repeatableForm: FormRuntimeSchema = {
       ...form,
-      fields: [{
-        columnSpan: 1,
-        key: "BUDGET_LINES",
-        label: "Budget lines",
-        order: 1,
-        repeatable: {
-          addLabel: "Add budget line",
-          fields: [
-            {
-              columnSpan: 1,
-              key: "CATEGORY",
-              label: "Category",
-              order: 1,
-              required: true,
-              type: "TEXT",
-            },
-            {
-              columnSpan: 1,
-              key: "AMOUNT",
-              label: "Amount",
-              order: 2,
-              required: true,
-              type: "CURRENCY",
-            },
-          ],
-          itemLabel: "Budget line",
-          maximumItems: 20,
-          minimumItems: 1,
+      fields: [
+        {
+          columnSpan: 1,
+          key: "BUDGET_LINES",
+          label: "Budget lines",
+          order: 1,
+          repeatable: {
+            addLabel: "Add budget line",
+            fields: [
+              {
+                columnSpan: 1,
+                key: "CATEGORY",
+                label: "Category",
+                order: 1,
+                required: true,
+                type: "TEXT",
+              },
+              {
+                columnSpan: 1,
+                key: "AMOUNT",
+                label: "Amount",
+                order: 2,
+                required: true,
+                type: "CURRENCY",
+              },
+            ],
+            itemLabel: "Budget line",
+            maximumItems: 20,
+            minimumItems: 1,
+          },
+          required: true,
+          sectionId: "project",
+          type: "REPEATABLE_GROUP",
         },
-        required: true,
-        sectionId: "project",
-        type: "REPEATABLE_GROUP",
-      }],
+      ],
     };
 
-    expect(applicationReadSections(repeatableForm, {
-      BUDGET_LINES: [
-        { AMOUNT: 1250, CATEGORY: "Equipment" },
-        { AMOUNT: 500, CATEGORY: "Training" },
-      ],
-    })[0]?.answers).toEqual([{
-      key: "BUDGET_LINES",
-      label: "Budget lines",
-      value:
-        "1. Category: Equipment; Amount: N$ 1,250\n"
-        + "2. Category: Training; Amount: N$ 500",
-    }]);
+    expect(
+      applicationReadSections(repeatableForm, {
+        BUDGET_LINES: [
+          { AMOUNT: 1250, CATEGORY: "Equipment" },
+          { AMOUNT: 500, CATEGORY: "Training" },
+        ],
+      })[0]?.answers,
+    ).toEqual([
+      {
+        key: "BUDGET_LINES",
+        label: "Budget lines",
+        value:
+          "1. Category: Equipment; Amount: N$ 1,250\n" +
+          "2. Category: Training; Amount: N$ 500",
+      },
+    ]);
   });
 });

@@ -1,10 +1,10 @@
 import "server-only";
 
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
 import { businessProfiles } from "@/db/schema/profiles";
-import { fundingCalls } from "@/modules/funding-calls/infrastructure/funding-call.schema";
+import { fundingCallPublicationRevisions } from "@/modules/funding-calls/infrastructure/funding-call.schema";
 import { fillMissingAttachedBusinessValues } from "../domain/AttachedApplicationForm";
 import {
   applicationAuditEntries,
@@ -43,7 +43,9 @@ export async function readOwnedApplicationDraftResponse(
 ) {
   const [row] = await getDatabase()
     .select({
-      attachedFormVersionId: fundingCalls.formVersionId,
+      attachedFormVersionId: sql<
+        string | null
+      >`${fundingCallPublicationRevisions.snapshot}->>'formVersionId'`,
       business: businessProfiles,
       response: {
         formVersionId: applicationDraftResponses.formVersionId,
@@ -59,8 +61,8 @@ export async function readOwnedApplicationDraftResponse(
       eq(applications.latestDraftResponseId, applicationDraftResponses.id),
     )
     .innerJoin(
-      fundingCalls,
-      eq(fundingCalls.id, applications.fundingOpportunityId),
+      fundingCallPublicationRevisions,
+      eq(fundingCallPublicationRevisions.id, applications.fundingCallVersionId),
     )
     .leftJoin(
       businessProfiles,
@@ -69,20 +71,23 @@ export async function readOwnedApplicationDraftResponse(
         eq(businessProfiles.userId, applications.ownerUserId),
       ),
     )
-    .where(and(
-      eq(applications.id, applicationId),
-      eq(applications.ownerUserId, actorUserId),
-      isNull(applications.deletedAt),
-      eq(applicationDraftResponses.respondentUserId, actorUserId),
-    ))
+    .where(
+      and(
+        eq(applications.id, applicationId),
+        eq(applications.ownerUserId, actorUserId),
+        isNull(applications.deletedAt),
+        eq(applicationDraftResponses.respondentUserId, actorUserId),
+      ),
+    )
     .limit(1);
   if (!row) return null;
   const { business, response } = row;
   if (
-    !business
-    || row.attachedFormVersionId !== response.formVersionId
-    || Object.hasOwn(response.values, "BUSINESS_LEGAL_NAME")
-  ) return response;
+    !business ||
+    row.attachedFormVersionId !== response.formVersionId ||
+    Object.hasOwn(response.values, "BUSINESS_LEGAL_NAME")
+  )
+    return response;
   return {
     ...response,
     values: fillMissingAttachedBusinessValues(response.values, business),
@@ -111,34 +116,38 @@ async function saveDraftInTransaction(
   const [application] = await transaction
     .select()
     .from(applications)
-    .where(and(
-      eq(applications.id, input.applicationId),
-      eq(applications.ownerUserId, input.actorUserId),
-      isNull(applications.deletedAt),
-    ))
+    .where(
+      and(
+        eq(applications.id, input.applicationId),
+        eq(applications.ownerUserId, input.actorUserId),
+        isNull(applications.deletedAt),
+      ),
+    )
     .for("update")
     .limit(1);
   if (!application) return { kind: "not_found" };
   const [response] = await transaction
     .select()
     .from(applicationDraftResponses)
-    .where(and(
-      eq(applicationDraftResponses.id, application.latestDraftResponseId!),
-      eq(applicationDraftResponses.applicationId, application.id),
-      eq(applicationDraftResponses.respondentUserId, input.actorUserId),
-    ))
+    .where(
+      and(
+        eq(applicationDraftResponses.id, application.latestDraftResponseId!),
+        eq(applicationDraftResponses.applicationId, application.id),
+        eq(applicationDraftResponses.respondentUserId, input.actorUserId),
+      ),
+    )
     .for("update")
     .limit(1);
   if (
-    application.status !== "draft"
-    || !response
-    || response.formVersionId !== application.formVersionId
+    application.status !== "draft" ||
+    !response ||
+    response.formVersionId !== application.formVersionId
   ) {
     return { kind: "not_writable" };
   }
   if (
-    application.rowVersion !== input.expectedApplicationRowVersion
-    || response.rowVersion !== input.expectedResponseRowVersion
+    application.rowVersion !== input.expectedApplicationRowVersion ||
+    response.rowVersion !== input.expectedResponseRowVersion
   ) {
     return {
       applicationRowVersion: application.rowVersion,

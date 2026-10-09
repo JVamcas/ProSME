@@ -19,10 +19,6 @@ import { eligibilityRuleSetVersions } from "@/modules/eligibility/infrastructure
 import { workflowDefinitionVersions } from "@/modules/workflows/infrastructure/workflow.schema";
 import type { ApplicationDuplicatePolicy } from "@/modules/applications/domain/Application";
 import type { FundingCallStatus } from "../domain/FundingCall";
-import type {
-  FundingCallGovernanceOutcome,
-  SerializedFundingCallGovernanceSnapshot,
-} from "../domain/FundingCallGovernance";
 import type { FundingCallLifecycleCommand } from "../domain/FundingCallLifecycle";
 import type { FundingCallPublicationSnapshot } from "../domain/FundingCallPublication";
 
@@ -30,15 +26,17 @@ export const fundingCalls = pgTable(
   "app_funding_calls",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    currentPublishedVersionId: uuid("current_published_version_id"),
     reference: text("reference").notNull(),
     slug: text("slug").notNull(),
     title: text("title").notNull(),
     description: text("description").notNull(),
     eligibilitySummary: text("eligibility_summary"),
-    eligibilityRuleSetVersionId: uuid("eligibility_rule_set_version_id")
-      .references(() => eligibilityRuleSetVersions.id, {
-        onDelete: "restrict",
-      }),
+    eligibilityRuleSetVersionId: uuid(
+      "eligibility_rule_set_version_id",
+    ).references(() => eligibilityRuleSetVersions.id, {
+      onDelete: "restrict",
+    }),
     formVersionId: uuid("form_version_id").references(() => formVersions.id, {
       onDelete: "restrict",
     }),
@@ -46,7 +44,9 @@ export const fundingCalls = pgTable(
       () => workflowDefinitionVersions.id,
       { onDelete: "restrict" },
     ),
-    allowResubmissionAfterWithdrawal: boolean("allow_resubmission_after_withdrawal")
+    allowResubmissionAfterWithdrawal: boolean(
+      "allow_resubmission_after_withdrawal",
+    )
       .notNull()
       .default(false),
     applicationDuplicatePolicy: text("application_duplicate_policy")
@@ -69,7 +69,10 @@ export const fundingCalls = pgTable(
     }).notNull(),
     opensAt: timestamp("opens_at", { withTimezone: true }).notNull(),
     closesAt: timestamp("closes_at", { withTimezone: true }).notNull(),
-    status: text("status").$type<FundingCallStatus>().notNull().default("DRAFT"),
+    status: text("status")
+      .$type<FundingCallStatus>()
+      .notNull()
+      .default("DRAFT"),
     suspendedFromStatus: text("suspended_from_status").$type<
       "SCHEDULED" | "LIVE"
     >(),
@@ -159,10 +162,7 @@ export const fundingCalls = pgTable(
           and length(trim(${table.thumbnailObjectKey})) > 0
         )`,
     ),
-    check(
-      "app_funding_calls_row_version_check",
-      sql`${table.rowVersion} > 0`,
-    ),
+    check("app_funding_calls_row_version_check", sql`${table.rowVersion} > 0`),
   ],
 );
 
@@ -182,7 +182,9 @@ export const fundingCallLifecycleHistory = pgTable(
     systemActor: text("system_actor"),
     reason: text("reason"),
     commandTime: timestamp("command_time", { withTimezone: true }).notNull(),
-    effectiveTime: timestamp("effective_time", { withTimezone: true }).notNull(),
+    effectiveTime: timestamp("effective_time", {
+      withTimezone: true,
+    }).notNull(),
     rowVersion: integer("row_version").notNull(),
     correlationId: text("correlation_id").notNull(),
     idempotencyKey: text("idempotency_key").notNull(),
@@ -252,27 +254,6 @@ export const fundingCallLifecycleHistory = pgTable(
     ),
   ],
 );
-export const fundingCallGovernancePolicy = pgTable(
-  "app_funding_call_governance_policy",
-  {
-    id: integer("id").primaryKey().default(1),
-    allowSubmitterWithdrawal: boolean("allow_submitter_withdrawal")
-      .notNull()
-      .default(true),
-    enforceMakerChecker: boolean("enforce_maker_checker")
-      .notNull()
-      .default(true),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-    updatedBy: uuid("updated_by").references(() => users.id, {
-      onDelete: "restrict",
-    }),
-  },
-  (table) => [
-    check("app_funding_call_governance_policy_singleton_check", sql`${table.id} = 1`),
-  ],
-);
 export const fundingCallPublicationRevisions = pgTable(
   "app_funding_call_publication_revisions",
   {
@@ -321,71 +302,7 @@ export const fundingCallPublicationRevisions = pgTable(
     ),
   ],
 );
-export const fundingCallGovernanceReviews = pgTable(
-  "app_funding_call_governance_reviews",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    fundingCallId: uuid("funding_call_id")
-      .notNull()
-      .references(() => fundingCalls.id, { onDelete: "restrict" }),
-    outcome: text("outcome")
-      .$type<FundingCallGovernanceOutcome>()
-      .notNull()
-      .default("PENDING"),
-    submittedBy: uuid("submitted_by")
-      .notNull()
-      .references(() => users.id, { onDelete: "restrict" }),
-    submittedAt: timestamp("submitted_at", { withTimezone: true }).notNull(),
-    submittedRowVersion: integer("submitted_row_version").notNull(),
-    creatorId: uuid("creator_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "restrict" }),
-    materialEditorId: uuid("material_editor_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "restrict" }),
-    configurationSnapshot: jsonb("configuration_snapshot")
-      .$type<SerializedFundingCallGovernanceSnapshot>()
-      .notNull(),
-    decidedBy: uuid("decided_by").references(() => users.id, {
-      onDelete: "restrict",
-    }),
-    decidedAt: timestamp("decided_at", { withTimezone: true }),
-    decisionRowVersion: integer("decision_row_version"),
-    reason: text("reason"),
-  },
-  (table) => [
-    index("app_funding_call_governance_review_call_time_idx").on(
-      table.fundingCallId,
-      table.submittedAt,
-      table.id,
-    ),
-    uniqueIndex("app_funding_call_governance_review_pending_unique")
-      .on(table.fundingCallId)
-      .where(sql`${table.outcome} = 'PENDING'`),
-    check(
-      "app_funding_call_governance_review_outcome_check",
-      sql`${table.outcome} in ('PENDING', 'APPROVED', 'RETURNED', 'WITHDRAWN')`,
-    ),
-    check(
-      "app_funding_call_governance_review_submission_version_check",
-      sql`${table.submittedRowVersion} > 0`,
-    ),
-    check(
-      "app_funding_call_governance_review_decision_check",
-      sql`(${table.outcome} = 'PENDING'
-          and ${table.decidedBy} is null
-          and ${table.decidedAt} is null
-          and ${table.decisionRowVersion} is null
-          and ${table.reason} is null)
-        or (${table.outcome} <> 'PENDING'
-          and ${table.decidedBy} is not null
-          and ${table.decidedAt} is not null
-          and ${table.decisionRowVersion} > ${table.submittedRowVersion})`,
-    ),
-    check(
-      "app_funding_call_governance_review_reason_check",
-      sql`(${table.outcome} = 'RETURNED' and length(trim(${table.reason})) > 0)
-        or (${table.outcome} <> 'RETURNED' and ${table.reason} is null)`,
-    ),
-  ],
-);
+export {
+  fundingCallGovernancePolicy,
+  fundingCallGovernanceReviews,
+} from "./funding-call-governance.schema";

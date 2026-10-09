@@ -1,7 +1,7 @@
 import "server-only";
 
 import { createHash } from "node:crypto";
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, eq, inArray, isNull } from "drizzle-orm";
 
 import type { DatabaseTransaction } from "@/db/client";
 import {
@@ -49,11 +49,13 @@ async function readApplication(
   const query = transaction
     .select()
     .from(applications)
-    .where(and(
-      eq(applications.id, input.applicationId),
-      eq(applications.ownerUserId, input.actorId),
-      isNull(applications.deletedAt),
-    ));
+    .where(
+      and(
+        eq(applications.id, input.applicationId),
+        eq(applications.ownerUserId, input.actorId),
+        isNull(applications.deletedAt),
+      ),
+    );
   const rows = input.lockApplication
     ? await query.for("update").limit(1)
     : await query.limit(1);
@@ -66,38 +68,80 @@ async function eligibilityServiceAvailable(
 ) {
   if (!versionId) return false;
   try {
-    return Boolean(await findRuntimeEligibilityRuleSetForEvaluation(
-      versionId,
-      transaction,
-    ));
+    return Boolean(
+      await findRuntimeEligibilityRuleSetForEvaluation(versionId, transaction),
+    );
   } catch (error) {
     if (error instanceof InvalidEligibilityEvaluationRuleSetError) return false;
     throw error;
   }
 }
 
-export async function validateApplicationSubmissionState(
+async function readPinnedWorkflow(
+  transaction: DatabaseTransaction,
+  versionId: string | null | undefined,
+) {
+  return versionId
+    ? await transaction
+        .select({
+          stageId: workflowStageDefinitions.id,
+          versionId: workflowDefinitionVersions.id,
+        })
+        .from(workflowDefinitionVersions)
+        .innerJoin(
+          workflowStageDefinitions,
+          and(
+            eq(
+              workflowStageDefinitions.versionId,
+              workflowDefinitionVersions.id,
+            ),
+            eq(workflowStageDefinitions.initial, true),
+            eq(workflowStageDefinitions.enabled, true),
+          ),
+        )
+        .where(
+          and(
+            eq(workflowDefinitionVersions.id, versionId),
+            inArray(workflowDefinitionVersions.status, [
+              "PUBLISHED",
+              "RETIRED",
+            ]),
+          ),
+        )
+        .limit(2)
+    : [];
+}
+
+async function readSubmissionConfigurationContext(
   transaction: DatabaseTransaction,
   input: ValidationInput,
+  application: typeof applications.$inferSelect,
 ) {
-  const application = await readApplication(transaction, input);
-  if (!application) return null;
-  const [
-    businessRows,
-    callRows,
-    applicantRows,
-    publicationRows,
-    duplicate,
-  ] = await Promise.all([
+  return Promise.all([
     application.businessId
-      ? transaction.select().from(businessProfiles).where(and(
-          eq(businessProfiles.id, application.businessId),
-          eq(businessProfiles.userId, input.actorId),
-        )).limit(1)
+      ? transaction
+          .select()
+          .from(businessProfiles)
+          .where(
+            and(
+              eq(businessProfiles.id, application.businessId),
+              eq(businessProfiles.userId, input.actorId),
+            ),
+          )
+          .limit(1)
       : Promise.resolve([]),
-    transaction.select().from(fundingCalls).where(
-      eq(fundingCalls.id, application.fundingOpportunityId),
-    ).limit(1),
+    input.lockApplication
+      ? transaction
+          .select()
+          .from(fundingCalls)
+          .where(eq(fundingCalls.id, application.fundingOpportunityId))
+          .for("share")
+          .limit(1)
+      : transaction
+          .select()
+          .from(fundingCalls)
+          .where(eq(fundingCalls.id, application.fundingOpportunityId))
+          .limit(1),
     transaction
       .select({
         dateOfBirth: applicantProfiles.dateOfBirth,
@@ -126,11 +170,19 @@ export async function validateApplicationSubmissionState(
         sourceRowVersion: fundingCallPublicationRevisions.sourceRowVersion,
       })
       .from(fundingCallPublicationRevisions)
-      .where(eq(
-        fundingCallPublicationRevisions.fundingCallId,
-        application.fundingOpportunityId,
-      ))
-      .orderBy(desc(fundingCallPublicationRevisions.revisionNumber))
+      .where(
+        and(
+          eq(
+            fundingCallPublicationRevisions.fundingCallId,
+            application.fundingOpportunityId,
+          ),
+          eq(
+            fundingCallPublicationRevisions.id,
+            application.fundingCallVersionId ??
+              "00000000-0000-0000-0000-000000000000",
+          ),
+        ),
+      )
       .limit(1),
     findApplicationPolicyConflict(transaction, {
       applicationId: application.id,
@@ -138,40 +190,29 @@ export async function validateApplicationSubmissionState(
       businessId: application.businessId,
       fundingCallId: application.fundingOpportunityId,
       duplicatePolicy: application.duplicatePolicy,
-      allowResubmissionAfterWithdrawal: application.allowResubmissionAfterWithdrawal,
+      allowResubmissionAfterWithdrawal:
+        application.allowResubmissionAfterWithdrawal,
     }),
   ]);
+}
+
+export async function validateApplicationSubmissionState(
+  transaction: DatabaseTransaction,
+  input: ValidationInput,
+) {
+  const application = await readApplication(transaction, input);
+  if (!application) return null;
+  const [businessRows, callRows, applicantRows, publicationRows, duplicate] =
+    await readSubmissionConfigurationContext(transaction, input, application);
   const business = businessRows[0] ?? null;
   const fundingCall = callRows[0] ?? null;
   const applicant = applicantRows[0] ?? null;
   const publicationRevision = publicationRows[0] ?? null;
-  const workflowRows = fundingCall?.workflowTemplateVersionId
-    ? await transaction
-        .select({
-          stageId: workflowStageDefinitions.id,
-          versionId: workflowDefinitionVersions.id,
-        })
-        .from(workflowDefinitionVersions)
-        .innerJoin(
-          workflowStageDefinitions,
-          and(
-            eq(
-              workflowStageDefinitions.versionId,
-              workflowDefinitionVersions.id,
-            ),
-            eq(workflowStageDefinitions.initial, true),
-            eq(workflowStageDefinitions.enabled, true),
-          ),
-        )
-        .where(and(
-          eq(
-            workflowDefinitionVersions.id,
-            fundingCall.workflowTemplateVersionId,
-          ),
-          eq(workflowDefinitionVersions.status, "PUBLISHED"),
-        ))
-        .limit(2)
-    : [];
+  const pinnedConfiguration = publicationRevision?.snapshot;
+  const workflowRows = await readPinnedWorkflow(
+    transaction,
+    pinnedConfiguration?.workflowTemplateVersionId,
+  );
   const workflowAvailable = workflowRows.length === 1;
   const eligibilityAvailable = await eligibilityServiceAvailable(
     transaction,
@@ -181,19 +222,16 @@ export async function validateApplicationSubmissionState(
     ? isFundingCallEffectivelyOpen(fundingCall, input.now)
     : false;
   const exactConfiguration = Boolean(
-    fundingCall
-    && applicant
-    && publicationRevision
-    && application.formVersionId
-    && application.formVersionId === fundingCall.formVersionId
-    && application.eligibilityRuleSetVersionId
-    && application.eligibilityRuleSetVersionId
-      === fundingCall.eligibilityRuleSetVersionId
-    && application.duplicatePolicy === fundingCall.applicationDuplicatePolicy
-    && application.allowResubmissionAfterWithdrawal
-      === (publicationRevision.snapshot.allowResubmissionAfterWithdrawal ?? false)
-    && workflowAvailable
-    && eligibilityAvailable,
+    fundingCall &&
+    applicant &&
+    publicationRevision &&
+    application.formVersionId &&
+    application.formVersionId === pinnedConfiguration?.formVersionId &&
+    application.eligibilityRuleSetVersionId &&
+    application.eligibilityRuleSetVersionId ===
+      pinnedConfiguration?.eligibilityRuleSetVersionId &&
+    workflowAvailable &&
+    eligibilityAvailable,
   );
   const context = application.formVersionId
     ? await readTransactionalApplicationReadiness(
@@ -212,36 +250,44 @@ export async function validateApplicationSubmissionState(
     ),
   ];
   if (application.businessId && !business) {
-    blockers.push(blocker(
-      "authority",
-      "REPRESENTATIVE_AUTHORITY_REQUIRED",
-      "You are not authorized to submit for the selected business.",
-    ));
+    blockers.push(
+      blocker(
+        "authority",
+        "REPRESENTATIVE_AUTHORITY_REQUIRED",
+        "You are not authorized to submit for the selected business.",
+      ),
+    );
   }
   if (duplicate) {
-    blockers.push(blocker(
-      "duplicate",
-      duplicate === "resubmission_not_allowed"
-        ? "RESUBMISSION_NOT_ALLOWED"
-        : "DUPLICATE_SUBMISSION",
-      duplicate === "resubmission_not_allowed"
-        ? "This funding call does not allow a new application after withdrawal."
-        : "An application already exists for this funding call under its application limit.",
-    ));
+    blockers.push(
+      blocker(
+        "duplicate",
+        duplicate === "resubmission_not_allowed"
+          ? "RESUBMISSION_NOT_ALLOWED"
+          : "DUPLICATE_SUBMISSION",
+        duplicate === "resubmission_not_allowed"
+          ? "This funding call does not allow a new application after withdrawal."
+          : "An application already exists for this funding call under its application limit.",
+      ),
+    );
   }
   if (!workflowAvailable) {
-    blockers.push(blocker(
-      "workflow",
-      "INITIAL_WORKFLOW_STAGE_UNAVAILABLE",
-      "The submission workflow is unavailable.",
-    ));
+    blockers.push(
+      blocker(
+        "workflow",
+        "INITIAL_WORKFLOW_STAGE_UNAVAILABLE",
+        "The submission workflow is unavailable.",
+      ),
+    );
   }
   if (!eligibilityAvailable) {
-    blockers.push(blocker(
-      "service",
-      "ELIGIBILITY_SERVICE_UNAVAILABLE",
-      "Eligibility validation is temporarily unavailable.",
-    ));
+    blockers.push(
+      blocker(
+        "service",
+        "ELIGIBILITY_SERVICE_UNAVAILABLE",
+        "Eligibility validation is temporarily unavailable.",
+      ),
+    );
   }
   const readiness = context
     ? { ...context.readiness, blockers, ready: blockers.length === 0 }
@@ -249,12 +295,17 @@ export async function validateApplicationSubmissionState(
   const configurationFingerprint = fingerprint({
     duplicatePolicy: fundingCall?.applicationDuplicatePolicy ?? null,
     allowResubmissionAfterWithdrawal:
-      publicationRevision?.snapshot.allowResubmissionAfterWithdrawal ?? false,
-    eligibilityRuleSetVersionId: fundingCall?.eligibilityRuleSetVersionId ?? null,
-    formVersionId: fundingCall?.formVersionId ?? null,
-    fundingCallRowVersion: fundingCall?.rowVersion ?? null,
+      fundingCall?.allowResubmissionAfterWithdrawal ?? false,
+    eligibilityRuleSetVersionId:
+      pinnedConfiguration?.eligibilityRuleSetVersionId ?? null,
+    formVersionId: pinnedConfiguration?.formVersionId ?? null,
+    fundingCallVersionId: application.fundingCallVersionId,
+    opensAt: fundingCall?.opensAt,
+    closesAt: fundingCall?.closesAt,
+    status: fundingCall?.status,
     initialStageId: workflowRows[0]?.stageId ?? null,
-    workflowTemplateVersionId: fundingCall?.workflowTemplateVersionId ?? null,
+    workflowTemplateVersionId:
+      pinnedConfiguration?.workflowTemplateVersionId ?? null,
   });
   const documentFingerprint = fingerprint(
     context?.documents.map((document) => ({
@@ -268,13 +319,17 @@ export async function validateApplicationSubmissionState(
     applicant,
     application,
     business,
-    configuration: fundingCall && workflowRows[0]
-      ? {
-          ...fundingCall,
-          stageId: workflowRows[0].stageId,
-          workflowTemplateVersionId: workflowRows[0].versionId,
-        }
-      : null,
+    configuration:
+      fundingCall && workflowRows[0]
+        ? {
+            ...fundingCall,
+            ...pinnedConfiguration,
+            opensAt: fundingCall.opensAt,
+            closesAt: fundingCall.closesAt,
+            stageId: workflowRows[0].stageId,
+            workflowTemplateVersionId: workflowRows[0].versionId,
+          }
+        : null,
     configurationFingerprint,
     context,
     documentFingerprint,

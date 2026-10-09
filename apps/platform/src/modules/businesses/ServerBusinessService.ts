@@ -10,9 +10,12 @@ import {
   listOwnedBusinesses,
   listOwnedBusinessesForApplication,
   updateOwnedBusiness,
-} from "@/db/repositories/BusinessRepository";
+} from "./infrastructure/BusinessRepository";
 import { ResourceNotFoundError } from "@/lib/resource-errors";
-import type { BusinessProfileInput } from "./BusinessSchemas";
+import {
+  businessProfileSchema,
+  type BusinessProfileInput,
+} from "./BusinessSchemas";
 import type { BusinessView } from "./BusinessTypes";
 
 export class BusinessNotFoundError extends ResourceNotFoundError {
@@ -27,6 +30,7 @@ function view(
 ): BusinessView {
   return {
     ...business,
+    secondarySector: business.secondarySector ?? "",
     establishedYear: business.establishedYear?.toString() ?? "",
     employeeCount: business.employeeCount?.toString() ?? "",
     createdAt: business.createdAt.toISOString(),
@@ -70,7 +74,10 @@ export async function createBusiness(
   input: BusinessProfileInput,
 ) {
   const actor = requirePermission(user, permissionCodes.businessOwnUpdate);
-  const id = await createOwnedBusiness(actor.id, input);
+  const id = await createOwnedBusiness(
+    actor.id,
+    businessProfileSchema.parse(input),
+  );
   return loadOwnedBusiness(actor.id, id);
 }
 
@@ -80,7 +87,11 @@ export async function updateBusiness(
   input: BusinessProfileInput,
 ) {
   const actor = requirePermission(user, permissionCodes.businessOwnUpdate);
-  const updatedId = await updateOwnedBusiness(actor.id, id, input);
+  const updatedId = await updateOwnedBusiness(
+    actor.id,
+    id,
+    businessProfileSchema.parse(input),
+  );
   if (!updatedId) throw new BusinessNotFoundError();
   return loadOwnedBusiness(actor.id, updatedId);
 }

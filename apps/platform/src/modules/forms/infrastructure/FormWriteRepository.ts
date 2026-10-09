@@ -1,14 +1,10 @@
 import "server-only";
 
-import { and, eq, ne, sql } from "drizzle-orm";
+import { and, desc, eq, ne, sql } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
 import { ResourceConflictError } from "@/lib/resource-errors";
-import {
-  formDefinitions,
-  formSections,
-  formVersions,
-} from "@/db/schema";
+import { formDefinitions, formSections, formVersions } from "@/db/schema";
 import type {
   FormDisplayMode,
   FormPurpose,
@@ -51,6 +47,11 @@ export async function createForm(input: {
         formDefinitionId: definition.id,
         instructions: input.instructions ?? null,
         submitLabel: input.submitLabel,
+        metadata: {
+          code: input.code,
+          name: input.name,
+          description: input.description,
+        },
         versionNumber: 1,
       })
       .returning();
@@ -71,34 +72,40 @@ export async function cloneFormVersion(input: {
       .for("update")
       .limit(1);
     if (!definition) return null;
-    const [draft] = await transaction
-      .select({ id: formVersions.id })
-      .from(formVersions)
-      .where(
-        and(
-          eq(formVersions.formDefinitionId, input.definitionId),
-          eq(formVersions.status, "DRAFT"),
-        ),
-      )
-      .limit(1);
-    if (draft) return null;
-    const [latest] = await transaction
-      .select({
-        versionNumber: sql<number>`coalesce(max(${formVersions.versionNumber}), 0)`,
-      })
-      .from(formVersions)
-      .where(eq(formVersions.formDefinitionId, input.definitionId));
-    const [source] = await transaction
-      .select()
-      .from(formVersions)
-      .where(
-        and(
-          eq(formVersions.id, input.sourceVersionId),
-          eq(formVersions.formDefinitionId, input.definitionId),
-        ),
-      )
-      .limit(1);
+    const [draftRows, latestRows, sourceRows] = await Promise.all([
+      transaction
+        .select()
+        .from(formVersions)
+        .where(
+          and(
+            eq(formVersions.formDefinitionId, input.definitionId),
+            eq(formVersions.status, "DRAFT"),
+          ),
+        )
+        .orderBy(desc(formVersions.versionNumber))
+        .limit(1),
+      transaction
+        .select({
+          versionNumber: sql<number>`coalesce(max(${formVersions.versionNumber}), 0)`,
+        })
+        .from(formVersions)
+        .where(eq(formVersions.formDefinitionId, input.definitionId)),
+      transaction
+        .select()
+        .from(formVersions)
+        .where(
+          and(
+            eq(formVersions.id, input.sourceVersionId),
+            eq(formVersions.formDefinitionId, input.definitionId),
+          ),
+        )
+        .limit(1),
+    ]);
+    const draft = draftRows[0];
+    const latest = latestRows[0];
+    const source = sourceRows[0];
     if (!source || source.status === "DRAFT") return null;
+    if (draft) return draft;
     const [version] = await transaction
       .insert(formVersions)
       .values({
@@ -106,6 +113,7 @@ export async function cloneFormVersion(input: {
         displayMode: source.displayMode,
         formDefinitionId: input.definitionId,
         instructions: source.instructions,
+        metadata: source.metadata,
         submissionMode: source.submissionMode,
         submitLabel: source.submitLabel,
         versionNumber: Number(latest.versionNumber) + 1,
@@ -129,6 +137,7 @@ export async function saveFormDraft(input: {
   purpose?: FormPurpose;
   sections: FormSection[];
   submitLabel: string;
+  versionId?: string;
 }) {
   return getDatabase().transaction(async (transaction) => {
     if (input.purpose) {
@@ -142,10 +151,12 @@ export async function saveFormDraft(input: {
         const [published] = await transaction
           .select({ id: formVersions.id })
           .from(formVersions)
-          .where(and(
-            eq(formVersions.formDefinitionId, input.definitionId),
-            ne(formVersions.status, "DRAFT"),
-          ))
+          .where(
+            and(
+              eq(formVersions.formDefinitionId, input.definitionId),
+              ne(formVersions.status, "DRAFT"),
+            ),
+          )
           .limit(1);
         if (published) {
           throw new ResourceConflictError(
@@ -159,6 +170,13 @@ export async function saveFormDraft(input: {
       .set({
         displayMode: input.displayMode ?? "SINGLE_PAGE",
         instructions: input.instructions ?? null,
+        metadata: sql`${formVersions.metadata} || ${JSON.stringify({
+          ...(input.code !== undefined ? { code: input.code } : {}),
+          ...(input.name !== undefined ? { name: input.name } : {}),
+          ...(input.description !== undefined
+            ? { description: input.description }
+            : {}),
+        })}::jsonb`,
         rowVersion: input.expectedRowVersion + 1,
         submitLabel: input.submitLabel,
         updatedAt: new Date(),
@@ -168,17 +186,15 @@ export async function saveFormDraft(input: {
           eq(formVersions.formDefinitionId, input.definitionId),
           eq(formVersions.status, "DRAFT"),
           eq(formVersions.rowVersion, input.expectedRowVersion),
+          input.versionId ? eq(formVersions.id, input.versionId) : undefined,
         ),
       )
       .returning();
     if (!version) return null;
-    if (input.code || input.description !== undefined || input.name || input.purpose) {
+    if (input.purpose) {
       await transaction
         .update(formDefinitions)
         .set({
-          code: input.code,
-          description: input.description,
-          name: input.name,
           purpose: input.purpose,
           updatedAt: new Date(),
         })
@@ -222,12 +238,12 @@ export async function publishFormVersion(input: {
         .from(formSections)
         .where(eq(formSections.formVersionId, input.versionId)),
     ]);
-    const errors = formPublicationErrors(
-      fields,
-      sections,
-      current.submitLabel,
-    );
+    const errors = formPublicationErrors(fields, sections, current.submitLabel);
     if (errors.length) return { errors, kind: "invalid" as const };
+    await transaction
+      .update(formDefinitions)
+      .set({ ...current.metadata, updatedAt: new Date() })
+      .where(eq(formDefinitions.id, input.definitionId));
     const [version] = await transaction
       .update(formVersions)
       .set({

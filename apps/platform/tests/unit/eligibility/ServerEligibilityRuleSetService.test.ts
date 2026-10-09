@@ -1,23 +1,32 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
-vi.mock("@/modules/eligibility/infrastructure/EligibilityRuleSetRepository", () => ({
-  createEligibilityRuleSet: vi.fn(),
-  findEligibilityRuleSet: vi.fn(),
-  findEligibilityRuleSetVersion: vi.fn(),
-  InvalidEligibilityRulesError: class InvalidEligibilityRulesError extends Error {
-    issues = [];
-  },
-  publishEligibilityRuleSetVersion: vi.fn(),
-  retireEligibilityRuleSetVersion: vi.fn(),
-}));
-vi.mock("@/modules/eligibility/infrastructure/EligibilityRuleSetCloneRepository", () => ({
-  cloneEligibilityRuleSetVersion: vi.fn(),
-}));
-vi.mock("@/modules/eligibility/infrastructure/EligibilityRuleSetWriteRepository", () => ({
-  updateEligibilityRuleSetDefinition: vi.fn(),
-  updateEligibilityRuleSetDraft: vi.fn(),
-}));
+vi.mock(
+  "@/modules/eligibility/infrastructure/EligibilityRuleSetRepository",
+  () => ({
+    createEligibilityRuleSet: vi.fn(),
+    findEligibilityRuleSet: vi.fn(),
+    findEligibilityRuleSetVersion: vi.fn(),
+    InvalidEligibilityRulesError: class InvalidEligibilityRulesError extends Error {
+      issues = [];
+    },
+    publishEligibilityRuleSetVersion: vi.fn(),
+    retireEligibilityRuleSetVersion: vi.fn(),
+  }),
+);
+vi.mock(
+  "@/modules/eligibility/infrastructure/EligibilityRuleSetCloneRepository",
+  () => ({
+    cloneEligibilityRuleSetVersion: vi.fn(),
+  }),
+);
+vi.mock(
+  "@/modules/eligibility/infrastructure/EligibilityRuleSetWriteRepository",
+  () => ({
+    updateEligibilityRuleSetDefinition: vi.fn(),
+    updateEligibilityRuleSetDraft: vi.fn(),
+  }),
+);
 
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { PermissionDeniedError } from "@/auth/authorization/policy";
@@ -130,6 +139,7 @@ describe("ServerEligibilityRuleSetService", () => {
     );
 
     expect(updateEligibilityRuleSetDefinition).toHaveBeenCalledWith({
+      actorId,
       code: "SME Fund",
       description: "Updated rules",
       name: "SME Fund",
@@ -138,10 +148,12 @@ describe("ServerEligibilityRuleSetService", () => {
   });
 
   it("denies exact-version reads without their canonical permission", async () => {
-    await expect(getEligibilityRuleSetVersion(
-      user([permissionCodes.eligibilityRuleSetCreate]),
-      versionId,
-    )).rejects.toBeInstanceOf(PermissionDeniedError);
+    await expect(
+      getEligibilityRuleSetVersion(
+        user([permissionCodes.eligibilityRuleSetCreate]),
+        versionId,
+      ),
+    ).rejects.toBeInstanceOf(PermissionDeniedError);
     expect(findEligibilityRuleSetVersion).not.toHaveBeenCalled();
   });
 });

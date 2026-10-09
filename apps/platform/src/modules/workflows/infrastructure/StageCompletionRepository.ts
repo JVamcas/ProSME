@@ -12,6 +12,7 @@ import {
   applications,
   authoritativeEligibilityOutcomes,
   fundingCalls,
+  fundingCallPublicationRevisions,
   stageInstances,
   workflowAuditEntries,
   workflowEvents,
@@ -111,12 +112,12 @@ async function readCompletionTargets(
       fundingCall: {
         closesAt: fundingCalls.closesAt,
         id: fundingCalls.id,
-        maximumAmount: fundingCalls.maximumGrantAmount,
-        minimumAmount: fundingCalls.minimumGrantAmount,
+        maximumAmount: sql<string>`coalesce(${fundingCallPublicationRevisions.snapshot}->>'maximumGrantAmount', ${fundingCalls.maximumGrantAmount})`,
+        minimumAmount: sql<string>`coalesce(${fundingCallPublicationRevisions.snapshot}->>'minimumGrantAmount', ${fundingCalls.minimumGrantAmount})`,
         opensAt: fundingCalls.opensAt,
         slug: fundingCalls.slug,
         status: fundingCalls.status,
-        title: fundingCalls.title,
+        title: sql<string>`coalesce(${fundingCallPublicationRevisions.snapshot}->>'title', ${fundingCalls.title})`,
       },
       stageInstanceId: stageInstances.id,
       stageDefinitionId: stageInstances.workflowStageDefinitionId,
@@ -148,6 +149,10 @@ async function readCompletionTargets(
     .innerJoin(
       fundingCalls,
       eq(fundingCalls.id, applications.fundingOpportunityId),
+    )
+    .leftJoin(
+      fundingCallPublicationRevisions,
+      eq(fundingCallPublicationRevisions.id, applications.fundingCallVersionId),
     )
     .leftJoin(
       authoritativeEligibilityOutcomes,

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
-vi.mock("@/db/repositories/BusinessRepository", () => ({
+vi.mock("@/modules/businesses/infrastructure/BusinessRepository", () => ({
   createOwnedBusiness: vi.fn(),
   deleteOwnedBusiness: vi.fn(),
   findOwnedBusiness: vi.fn(),
@@ -18,13 +18,15 @@ import {
   listOwnedBusinesses,
   listOwnedBusinessesForApplication,
   updateOwnedBusiness,
-} from "@/db/repositories/BusinessRepository";
+  findOwnedBusiness,
+} from "@/modules/businesses/infrastructure/BusinessRepository";
 import {
   BusinessNotFoundError,
   deleteBusiness,
   listApplicationBusinesses,
   listBusinesses,
   updateBusiness,
+  getBusiness,
 } from "@/modules/businesses/ServerBusinessService";
 
 const ownerId = "79e20de0-3558-4d63-90a4-8c9f5125df07";
@@ -37,7 +39,7 @@ const input = {
   physicalAddress: "1 Independence Avenue",
   region: "Khomas",
   registrationNumber: "CC/2026/1",
-  sector: "Retail",
+  sector: "Manufacturing and value addition",
   tradingName: "Anna Trading",
 };
 
@@ -70,12 +72,42 @@ describe("owned business service", () => {
     expect(listOwnedBusinesses).toHaveBeenCalledWith(ownerId);
   });
 
+  it("preserves readable legacy and custom sector text in business responses", async () => {
+    vi.mocked(findOwnedBusiness).mockResolvedValue({
+      ...input,
+      id: businessId,
+      sector: "Legacy local trade",
+      secondarySector: "Custom services",
+      employeeCount: 4,
+      establishedYear: 2020,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    expect(
+      await getBusiness(user([permissionCodes.businessOwnRead]), businessId),
+    ).toMatchObject({
+      sector: "Legacy local trade",
+      secondarySector: "Custom services",
+    });
+  });
+
+  it("validates Other details before persisting an owned update", async () => {
+    await expect(
+      updateBusiness(user([permissionCodes.businessOwnUpdate]), businessId, {
+        ...input,
+        secondarySector: "OTHER",
+      }),
+    ).rejects.toThrow();
+    expect(updateOwnedBusiness).not.toHaveBeenCalled();
+  });
+
   it("marks businesses already used for the application funding call", async () => {
     vi.mocked(listOwnedBusinessesForApplication).mockResolvedValue([
       {
         ...input,
         alreadyApplied: true,
         createdAt: new Date("2026-09-15T08:00:00.000Z"),
+        secondarySector: null,
         employeeCount: 4,
         establishedYear: 2020,
         id: businessId,
@@ -97,7 +129,11 @@ describe("owned business service", () => {
 
   it("rejects updates without business update permission", async () => {
     await expect(
-      updateBusiness(user([permissionCodes.businessOwnRead]), businessId, input),
+      updateBusiness(
+        user([permissionCodes.businessOwnRead]),
+        businessId,
+        input,
+      ),
     ).rejects.toBeInstanceOf(PermissionDeniedError);
     expect(updateOwnedBusiness).not.toHaveBeenCalled();
   });

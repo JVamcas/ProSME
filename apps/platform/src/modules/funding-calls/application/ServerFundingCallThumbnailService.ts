@@ -2,6 +2,7 @@ import "server-only";
 
 import { randomUUID } from "node:crypto";
 
+import { readHistoricalFundingCall } from "../infrastructure/FundingCallVersionRepository";
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { requirePermission } from "@/auth/authorization/policy";
 import { readPublicFundingCallById } from "../infrastructure/PublicFundingCallRepository";
@@ -17,10 +18,11 @@ import {
   ResourceNotFoundError,
 } from "@/lib/resource-errors";
 import type { FundingCallView } from "../api/FundingCallTransport";
+import { readFundingCallById } from "../infrastructure/FundingCallRepository";
 import {
-  readFundingCallById,
-} from "../infrastructure/FundingCallRepository";
-import { updateFundingCallThumbnailRecord } from "../infrastructure/FundingCallThumbnailRepository";
+  fundingCallThumbnailIsPublished,
+  updateFundingCallThumbnailRecord,
+} from "../infrastructure/FundingCallThumbnailRepository";
 import { processFundingCallThumbnail } from "../infrastructure/FundingCallThumbnailProcessor";
 import {
   deleteFundingCallThumbnailFiles,
@@ -73,11 +75,15 @@ export async function uploadFundingCallThumbnail(
 
   try {
     // Wait for every upload before cleanup so a late write cannot orphan a file.
-    const uploads = await Promise.allSettled(variants.map((variant) => storage.put({
-      body: variant.body,
-      contentType: "image/webp",
-      objectKey: fundingCallThumbnailObjectKey(objectKey, variant.width),
-    })));
+    const uploads = await Promise.allSettled(
+      variants.map((variant) =>
+        storage.put({
+          body: variant.body,
+          contentType: "image/webp",
+          objectKey: fundingCallThumbnailObjectKey(objectKey, variant.width),
+        }),
+      ),
+    );
     const failed = uploads.find((upload) => upload.status === "rejected");
     if (failed?.status === "rejected") throw failed.reason;
 
@@ -100,7 +106,11 @@ export async function uploadFundingCallThumbnail(
     await deleteFundingCallThumbnailFiles(storage, objectKey);
     throw error;
   }
-  if (current.thumbnailObjectKey && current.thumbnailObjectKey !== objectKey) {
+  if (
+    current.thumbnailObjectKey &&
+    current.thumbnailObjectKey !== objectKey &&
+    !(await fundingCallThumbnailIsPublished(current.thumbnailObjectKey))
+  ) {
     await deleteFundingCallThumbnailFiles(storage, current.thumbnailObjectKey);
   }
   return updatedView(id);
@@ -125,7 +135,10 @@ export async function removeFundingCallThumbnail(
       "The funding call changed. Refresh it before removing the thumbnail.",
     );
   }
-  if (current.thumbnailObjectKey) {
+  if (
+    current.thumbnailObjectKey &&
+    !(await fundingCallThumbnailIsPublished(current.thumbnailObjectKey))
+  ) {
     await deleteFundingCallThumbnailFiles(storage, current.thumbnailObjectKey);
   }
   return updatedView(id);
@@ -136,14 +149,19 @@ export async function readFundingCallThumbnail(
   id: string,
   storage: DocumentStorage = new GoogleCloudDocumentStorage(),
   width?: number,
+  versionId?: string,
 ) {
   requirePermission(user, permissionCodes.fundingCallRead);
-  const call = await readFundingCallById(id);
+  const call = versionId
+    ? await readHistoricalFundingCall(id, versionId)
+    : await readFundingCallById(id);
   if (!call?.thumbnailObjectKey || !call.thumbnailContentType) {
     throw new ResourceNotFoundError("funding call thumbnail");
   }
   return {
-    body: await storage.read(fundingCallThumbnailObjectKey(call.thumbnailObjectKey, width)),
+    body: await storage.read(
+      fundingCallThumbnailObjectKey(call.thumbnailObjectKey, width),
+    ),
     contentType: call.thumbnailContentType,
   };
 }
@@ -158,7 +176,9 @@ export async function readPublicFundingCallThumbnail(
     throw new ResourceNotFoundError("funding call thumbnail");
   }
   return {
-    body: await storage.read(fundingCallThumbnailObjectKey(call.thumbnailObjectKey, width)),
+    body: await storage.read(
+      fundingCallThumbnailObjectKey(call.thumbnailObjectKey, width),
+    ),
     contentType: call.thumbnailContentType,
   };
 }

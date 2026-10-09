@@ -73,10 +73,9 @@ function saveCreationProgress(input: FundingCallCreationProgressSaveInput) {
 }
 
 function clone(id: string) {
-  return requestData<FundingCallView>(
-    `/api/admin/funding-calls/${id}/clone`,
-    { method: "POST" },
-  );
+  return requestData<FundingCallView>(`/api/admin/funding-calls/${id}/clone`, {
+    method: "POST",
+  });
 }
 
 function deleteFundingCall(id: string) {
@@ -85,10 +84,13 @@ function deleteFundingCall(id: string) {
   });
 }
 
-function get(id: string) {
-  return requestData<FundingCallView>(`/api/admin/funding-calls/${id}`, {
-    cache: "no-store",
-  });
+function get(id: string, versionId?: string) {
+  return requestData<FundingCallView>(
+    `/api/admin/funding-calls/${id}${versionId ? `?versionId=${versionId}` : ""}`,
+    {
+      cache: "no-store",
+    },
+  );
 }
 
 function update(id: string, input: FundingCallUpdateInput) {
@@ -196,6 +198,34 @@ function listBindableWorkflowTemplateVersions() {
   );
 }
 
+function prepareReplacement(id: string, expectedRowVersion: number) {
+  return requestData<FundingCallView>(
+    `/api/admin/funding-calls/${id}/versions`,
+    {
+      method: "POST",
+      headers: jsonHeaders,
+      body: JSON.stringify({ expectedRowVersion }),
+    },
+  );
+}
+
+function versions(id: string, page: number) {
+  return requestData<{
+    items: {
+      id: string;
+      versionNumber: number;
+      publishedAt: string;
+      title: string;
+      current: boolean;
+    }[];
+    page: number;
+    pageSize: number;
+    total: number;
+  }>(`/api/admin/funding-calls/${id}/versions?page=${page}`, {
+    cache: "no-store",
+  });
+}
+
 export const clientFundingCallService = {
   changeLifecycleStatus,
   changeGovernanceStatus,
@@ -209,6 +239,8 @@ export const clientFundingCallService = {
   listBindableFormVersions,
   listBindableWorkflowTemplateVersions,
   publish,
+  prepareReplacement,
+  versions,
   previewReadiness,
   removeThumbnail,
   saveCreationProgress,

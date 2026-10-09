@@ -63,7 +63,7 @@ export async function readWorkflowTask(
       ${workflowTaskHoldSummaries(sql`task`)} AS holds,
       task.row_version AS "rowVersion",
       task.form_version_id AS "formVersionId",
-      form_definition.name AS "formName",
+      coalesce(form_version.metadata->>'name', form_definition.name) AS "formName",
       (task.form_version_id IS NOT NULL AND EXISTS (
         SELECT 1 FROM app_form_responses response
         WHERE response.workflow_task_id = task.id

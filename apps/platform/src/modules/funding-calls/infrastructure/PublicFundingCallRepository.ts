@@ -1,10 +1,25 @@
 import "server-only";
 
-import { and, count, desc, eq, gt, ilike, inArray, lt, lte, or, sql } from "drizzle-orm";
+import {
+  and,
+  count,
+  desc,
+  eq,
+  gt,
+  ilike,
+  inArray,
+  lt,
+  lte,
+  or,
+  sql,
+} from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
 import type { FundingCallPublicationSnapshot } from "../domain/FundingCallPublication";
-import { fundingCallPublicationRevisions, fundingCalls } from "./funding-call.schema";
+import {
+  fundingCallPublicationRevisions,
+  fundingCalls,
+} from "./funding-call.schema";
 import {
   sanitizeFundingCallDescription,
   sanitizeFundingCallEligibilitySummary,
@@ -46,16 +61,9 @@ export type PublicFundingCallQuery = {
 const publishedStatuses = ["SCHEDULED", "LIVE", "CLOSED"] as const;
 
 function latestPublicationCondition() {
-  return and(
-    eq(fundingCallPublicationRevisions.fundingCallId, fundingCalls.id),
-    eq(
-      fundingCallPublicationRevisions.revisionNumber,
-      sql<number>`(
-        select max(revision.revision_number)
-        from app_funding_call_publication_revisions revision
-        where revision.funding_call_id = ${fundingCalls.id}
-      )`,
-    ),
+  return eq(
+    fundingCallPublicationRevisions.id,
+    fundingCalls.currentPublishedVersionId,
   );
 }
 
@@ -145,20 +153,14 @@ export async function readPublicFundingCalls(
     database
       .select(publicSelection)
       .from(fundingCalls)
-      .innerJoin(
-        fundingCallPublicationRevisions,
-        latestPublicationCondition(),
-      )
+      .innerJoin(fundingCallPublicationRevisions, latestPublicationCondition())
       .where(and(...conditions, cursorCondition))
       .orderBy(desc(fundingCalls.opensAt), desc(fundingCalls.id))
       .limit(input.limit + 1),
     database
       .select({ value: count() })
       .from(fundingCalls)
-      .innerJoin(
-        fundingCallPublicationRevisions,
-        latestPublicationCondition(),
-      )
+      .innerJoin(fundingCallPublicationRevisions, latestPublicationCondition())
       .where(and(...conditions)),
   ]);
   return {
@@ -173,10 +175,7 @@ export async function readPublicFundingCallBySlug(
   const [row] = await getDatabase()
     .select(publicSelection)
     .from(fundingCalls)
-    .innerJoin(
-      fundingCallPublicationRevisions,
-      latestPublicationCondition(),
-    )
+    .innerJoin(fundingCallPublicationRevisions, latestPublicationCondition())
     .where(
       and(
         eq(fundingCalls.slug, slug),
@@ -194,10 +193,7 @@ export async function readPublicFundingCallById(
   const [row] = await getDatabase()
     .select(publicSelection)
     .from(fundingCalls)
-    .innerJoin(
-      fundingCallPublicationRevisions,
-      latestPublicationCondition(),
-    )
+    .innerJoin(fundingCallPublicationRevisions, latestPublicationCondition())
     .where(
       and(
         eq(fundingCalls.id, id),

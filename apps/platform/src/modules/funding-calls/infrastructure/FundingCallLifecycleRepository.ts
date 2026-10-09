@@ -26,10 +26,9 @@ type LifecycleActor =
   | { actorId: string; systemActor?: never }
   | { actorId?: never; systemActor: string };
 
-const notificationEvents: Partial<Record<
-  FundingCallLifecycleCommand,
-  FundingCallNotificationEventKey
->> = {
+const notificationEvents: Partial<
+  Record<FundingCallLifecycleCommand, FundingCallNotificationEventKey>
+> = {
   ARCHIVE: "funding-call.archived",
   CLOSE: "funding-call.closed",
   OPEN: "funding-call.opened",
@@ -71,16 +70,21 @@ export async function readFundingCallLifecycleReplay(
   command: FundingCallLifecycleCommand,
 ) {
   const [row] = await getDatabase()
-    .select({ call: fundingCalls, command: fundingCallLifecycleHistory.command })
+    .select({
+      call: fundingCalls,
+      command: fundingCallLifecycleHistory.command,
+    })
     .from(fundingCallLifecycleHistory)
     .innerJoin(
       fundingCalls,
       eq(fundingCalls.id, fundingCallLifecycleHistory.fundingCallId),
     )
-    .where(and(
-      eq(fundingCallLifecycleHistory.idempotencyKey, idempotencyKey),
-      eq(fundingCallLifecycleHistory.fundingCallId, fundingCallId),
-    ))
+    .where(
+      and(
+        eq(fundingCallLifecycleHistory.idempotencyKey, idempotencyKey),
+        eq(fundingCallLifecycleHistory.fundingCallId, fundingCallId),
+      ),
+    )
     .limit(1);
   return row?.command === command ? toFundingCall(row.call) : null;
 }
@@ -94,11 +98,13 @@ export function listScheduledFundingCallsDueToOpen(now: Date, limit: number) {
       rowVersion: fundingCalls.rowVersion,
     })
     .from(fundingCalls)
-    .where(and(
-      eq(fundingCalls.status, "SCHEDULED"),
-      lte(fundingCalls.opensAt, now),
-      gt(fundingCalls.closesAt, now),
-    ))
+    .where(
+      and(
+        eq(fundingCalls.status, "SCHEDULED"),
+        lte(fundingCalls.opensAt, now),
+        gt(fundingCalls.closesAt, now),
+      ),
+    )
     .orderBy(asc(fundingCalls.opensAt), asc(fundingCalls.id))
     .limit(limit);
 }
@@ -111,10 +117,12 @@ export function listPublishedFundingCallsDueToClose(now: Date, limit: number) {
       rowVersion: fundingCalls.rowVersion,
     })
     .from(fundingCalls)
-    .where(and(
-      inArray(fundingCalls.status, ["SCHEDULED", "LIVE", "SUSPENDED"]),
-      lte(fundingCalls.closesAt, now),
-    ))
+    .where(
+      and(
+        inArray(fundingCalls.status, ["SCHEDULED", "LIVE", "SUSPENDED"]),
+        lte(fundingCalls.closesAt, now),
+      ),
+    )
     .orderBy(asc(fundingCalls.closesAt), asc(fundingCalls.id))
     .limit(limit);
 }
@@ -124,8 +132,10 @@ export async function transitionFundingCall(
 ): Promise<FundingCallLifecycleResult> {
   const reason = input.reason?.trim() || null;
   if (
-    ["RETURN_FOR_AMENDMENT", "WITHDRAW_FOR_AMENDMENT"].includes(input.command)
-    && !reason
+    ["RETURN_FOR_AMENDMENT", "WITHDRAW_FOR_AMENDMENT"].includes(
+      input.command,
+    ) &&
+    !reason
   ) {
     throw new Error("A reason is required to return a funding call to Draft.");
   }
@@ -144,11 +154,13 @@ export async function transitionFundingCall(
         fundingCallId: fundingCallLifecycleHistory.fundingCallId,
       })
       .from(fundingCallLifecycleHistory)
-      .where(eq(fundingCallLifecycleHistory.idempotencyKey, input.idempotencyKey))
+      .where(
+        eq(fundingCallLifecycleHistory.idempotencyKey, input.idempotencyKey),
+      )
       .limit(1);
     if (replay) {
-      return replay.command === input.command
-        && replay.fundingCallId === input.fundingCallId
+      return replay.command === input.command &&
+        replay.fundingCallId === input.fundingCallId
         ? { call: toFundingCall(current), kind: "replayed" }
         : { kind: "idempotency_conflict" };
     }
@@ -156,7 +168,17 @@ export async function transitionFundingCall(
       return { kind: "conflict" };
     }
 
-    const transition = resolveFundingCallTransition(current, input.command, input.now);
+    if (
+      input.command === "WITHDRAW_FOR_AMENDMENT" &&
+      current.currentPublishedVersionId
+    ) {
+      return { kind: "conflict" };
+    }
+    const transition = resolveFundingCallTransition(
+      current,
+      input.command,
+      input.now,
+    );
     const nextRowVersion = current.rowVersion + 1;
     const [updated] = await transaction
       .update(fundingCalls)
@@ -165,15 +187,18 @@ export async function transitionFundingCall(
         status: transition.targetStatus,
         suspendedFromStatus: transition.suspendedFromStatus,
         updatedAt: input.now,
-        updatedBy: input.command === "WITHDRAW_FOR_AMENDMENT"
-          ? current.updatedBy
-          : input.actorId ?? current.updatedBy,
+        updatedBy:
+          input.command === "WITHDRAW_FOR_AMENDMENT"
+            ? current.updatedBy
+            : (input.actorId ?? current.updatedBy),
       })
-      .where(and(
-        eq(fundingCalls.id, input.fundingCallId),
-        eq(fundingCalls.rowVersion, input.expectedRowVersion),
-        eq(fundingCalls.status, transition.sourceStatus),
-      ))
+      .where(
+        and(
+          eq(fundingCalls.id, input.fundingCallId),
+          eq(fundingCalls.rowVersion, input.expectedRowVersion),
+          eq(fundingCalls.status, transition.sourceStatus),
+        ),
+      )
       .returning();
     if (!updated) return { kind: "conflict" };
 

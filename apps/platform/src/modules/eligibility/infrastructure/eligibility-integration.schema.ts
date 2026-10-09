@@ -32,16 +32,19 @@ export const eligibilityIntegrationDefinitions = pgTable(
     stableKey: text("stable_key").notNull(),
     name: text("name").notNull(),
     description: text("description").notNull().default(""),
-    createdBy: uuid("created_by").notNull().references(() => users.id, {
-      onDelete: "restrict",
-    }),
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => users.id, {
+        onDelete: "restrict",
+      }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
   },
   (table) => [
-    uniqueIndex("app_eligibility_integrations_stable_key_unique")
-      .on(table.stableKey),
+    uniqueIndex("app_eligibility_integrations_stable_key_unique").on(
+      table.stableKey,
+    ),
   ],
 );
 
@@ -68,9 +71,11 @@ export const eligibilityIntegrationVersions = pgTable(
     rawResponsePolicy: jsonb("raw_response_policy")
       .$type<EligibilityIntegrationRawResponsePolicy>()
       .notNull(),
-    createdBy: uuid("created_by").notNull().references(() => users.id, {
-      onDelete: "restrict",
-    }),
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => users.id, {
+        onDelete: "restrict",
+      }),
     publishedBy: uuid("published_by").references(() => users.id, {
       onDelete: "restrict",
     }),
@@ -125,21 +130,46 @@ export const fundingCallEligibilityIntegrationBindings = pgTable(
     providerAdapterKey: text("provider_adapter_key").notNull(),
     providerDisplayName: text("provider_display_name").notNull(),
     secretReference: text("secret_reference"),
-    createdBy: uuid("created_by").notNull().references(() => users.id, {
-      onDelete: "restrict",
-    }),
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => users.id, {
+        onDelete: "restrict",
+      }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
   },
   (table) => [
-    uniqueIndex("app_funding_call_integration_version_unique").on(
-      table.fundingCallId,
-      table.integrationVersionId,
-    ),
     index("app_funding_call_integration_workflow_idx").on(
       table.workflowTemplateVersionId,
     ),
+  ],
+);
+
+export const fundingCallVersionIntegrationBindings = pgTable(
+  "app_funding_call_version_integration_bindings",
+  {
+    fundingCallId: uuid("funding_call_id")
+      .notNull()
+      .references(() => fundingCalls.id, { onDelete: "restrict" }),
+    fundingCallVersionId: uuid("funding_call_version_id").notNull(),
+    integrationVersionId: uuid("integration_version_id")
+      .notNull()
+      .references(() => eligibilityIntegrationVersions.id, {
+        onDelete: "restrict",
+      }),
+    bindingId: uuid("binding_id")
+      .notNull()
+      .references(() => fundingCallEligibilityIntegrationBindings.id, {
+        onDelete: "restrict",
+      }),
+  },
+  (table) => [
+    uniqueIndex("app_call_version_integration_unique").on(
+      table.fundingCallVersionId,
+      table.integrationVersionId,
+    ),
+    index("app_call_version_integration_binding_idx").on(table.bindingId),
   ],
 );
 

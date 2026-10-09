@@ -1,5 +1,8 @@
 import "server-only";
-import { workflowStageHasActiveHold, workflowTaskHasActiveHold } from "./WorkflowHoldQueries";
+import {
+  workflowStageHasActiveHold,
+  workflowTaskHasActiveHold,
+} from "./WorkflowHoldQueries";
 import { workflowApprovalEligibilityReady } from "./WorkflowApprovalEligibilityReadiness";
 
 import { and, asc, eq, sql } from "drizzle-orm";
@@ -9,6 +12,7 @@ import {
   applications,
   authoritativeEligibilityOutcomes,
   fundingCalls,
+  fundingCallPublicationRevisions,
   stageInstances,
   stageTaskActionBindings,
   stageTaskDefinitions,
@@ -80,7 +84,9 @@ async function readStage(
           AND deferral.continuation = 'RESUME_ON_DATE'
           AND deferral.resume_at <= CURRENT_TIMESTAMP
       )`,
-      approvalEligibilityReady: workflowApprovalEligibilityReady(sql`${stageInstances.workflowInstanceId}`),
+      approvalEligibilityReady: workflowApprovalEligibilityReady(
+        sql`${stageInstances.workflowInstanceId}`,
+      ),
       activeHold: workflowStageHasActiveHold(sql`${stageInstances}`),
       application: {
         business: applications.businessSection,
@@ -112,12 +118,12 @@ async function readStage(
       fundingCall: {
         closesAt: fundingCalls.closesAt,
         id: fundingCalls.id,
-        maximumAmount: fundingCalls.maximumGrantAmount,
-        minimumAmount: fundingCalls.minimumGrantAmount,
+        maximumAmount: sql<string>`coalesce(${fundingCallPublicationRevisions.snapshot}->>'maximumGrantAmount', ${fundingCalls.maximumGrantAmount})`,
+        minimumAmount: sql<string>`coalesce(${fundingCallPublicationRevisions.snapshot}->>'minimumGrantAmount', ${fundingCalls.minimumGrantAmount})`,
         opensAt: fundingCalls.opensAt,
         slug: fundingCalls.slug,
         status: fundingCalls.status,
-        title: fundingCalls.title,
+        title: sql<string>`coalesce(${fundingCallPublicationRevisions.snapshot}->>'title', ${fundingCalls.title})`,
       },
       rowVersion: stageInstances.rowVersion,
       stageDefinitionId: stageInstances.workflowStageDefinitionId,
@@ -144,6 +150,10 @@ async function readStage(
     .innerJoin(
       fundingCalls,
       eq(fundingCalls.id, applications.fundingOpportunityId),
+    )
+    .leftJoin(
+      fundingCallPublicationRevisions,
+      eq(fundingCallPublicationRevisions.id, applications.fundingCallVersionId),
     )
     .leftJoin(
       authoritativeEligibilityOutcomes,

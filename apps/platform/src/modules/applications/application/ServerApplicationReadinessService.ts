@@ -5,7 +5,7 @@ import { requirePermission } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
 import { ResourceNotFoundError } from "@/lib/resource-errors";
 import { isFundingCallEffectivelyOpen } from "@/modules/funding-calls/domain/FundingCallLifecycle";
-import { readFundingCallById } from "@/modules/funding-calls/infrastructure/FundingCallRepository";
+import { readApplicationFundingCallConfiguration } from "../infrastructure/ApplicationFundingCallRepository";
 import { getAttachedApplicationForm } from "../infrastructure/AttachedApplicationFormRepository";
 import { evaluateApplicationReadiness } from "../domain/ApplicationReadiness";
 import { listLatestOwnedApplicationDocumentVersions } from "../infrastructure/ApplicationDocumentRepository";
@@ -22,12 +22,15 @@ export async function getOwnApplicationReadiness(
   );
   const application = await findOwnedApplication(actor.id, applicationId);
   if (!application) throw new ResourceNotFoundError("application");
-  if (!application.formVersionId) {
+  if (!application.formVersionId || !application.fundingCallVersionId) {
     throw new ResourceNotFoundError("application configuration");
   }
   const now = new Date();
   const [call, documents, form, response] = await Promise.all([
-    readFundingCallById(application.fundingOpportunityId),
+    readApplicationFundingCallConfiguration(
+      application.fundingOpportunityId,
+      application.fundingCallVersionId,
+    ),
     listLatestOwnedApplicationDocumentVersions(actor.id, applicationId),
     getAttachedApplicationForm(
       application.formVersionId,
@@ -47,10 +50,11 @@ export async function getOwnApplicationReadiness(
     },
     callOpen: isFundingCallEffectivelyOpen(call, now),
     configurationAvailable: Boolean(
-      application.eligibilityRuleSetVersionId
-      && call.eligibilityRuleSetVersionId === application.eligibilityRuleSetVersionId
-      && call.formVersionId === application.formVersionId
-      && call.workflowTemplateVersionId,
+      application.eligibilityRuleSetVersionId &&
+      call.eligibilityRuleSetVersionId ===
+        application.eligibilityRuleSetVersionId &&
+      call.formVersionId === application.formVersionId &&
+      call.workflowTemplateVersionId,
     ),
     documents,
     evaluatedAt: now,

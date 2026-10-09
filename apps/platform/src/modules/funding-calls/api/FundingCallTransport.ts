@@ -14,9 +14,13 @@ export type FundingCallCreationProgressView = {
 
 export type FundingCallView = {
   allowResubmissionAfterWithdrawal: boolean;
-  applicationDuplicatePolicy: import(
-    "@/modules/applications/domain/Application"
-  ).ApplicationDuplicatePolicy;
+  applicationDuplicatePolicy: import("@/modules/applications/domain/Application").ApplicationDuplicatePolicy;
+  currentPublishedVersionId?: string | null;
+  draftVersionId?: string;
+  viewedPublishedVersionId?: string;
+  effectiveStatus?: FundingCallStatus;
+  effectiveOpensAt?: string;
+  effectiveClosesAt?: string;
   id: string;
   reference: string;
   slug: string;

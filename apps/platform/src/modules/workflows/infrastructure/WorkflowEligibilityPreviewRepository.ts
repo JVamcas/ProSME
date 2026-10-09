@@ -8,12 +8,29 @@ export async function readWorkflowEligibilityFormPreviews(
   definitionId: string,
   versionId: string,
 ): Promise<WorkflowEligibilityFormPreview[] | null> {
-  const result = await getDatabase().execute<WorkflowEligibilityFormPreview>(sql`
+  const result = await getDatabase()
+    .execute<WorkflowEligibilityFormPreview>(sql`
+    WITH contexts AS (
+      SELECT call.id, call.title, call.workflow_template_version_id,
+        call.eligibility_rule_set_version_id
+      FROM app_funding_calls call
+      WHERE NOT EXISTS (
+        SELECT 1 FROM app_funding_call_draft_versions draft
+        WHERE draft.funding_call_id = call.id
+          AND draft.snapshot->>'workflowTemplateVersionId' = ${versionId}
+      )
+      UNION ALL
+      SELECT draft.funding_call_id, draft.snapshot->>'title',
+        (draft.snapshot->>'workflowTemplateVersionId')::uuid,
+        (draft.snapshot->>'eligibilityRuleSetVersionId')::uuid
+      FROM app_funding_call_draft_versions draft
+    )
     SELECT call.id AS "fundingCallId", call.title AS "fundingCallTitle",
       call.eligibility_rule_set_version_id AS "eligibilityRuleSetVersionId",
-      form_version.id AS "formVersionId", form_definition.name AS "formName"
+      form_version.id AS "formVersionId",
+      coalesce(form_version.metadata->>'name', form_definition.name) AS "formName"
     FROM app_workflow_definition_versions workflow_version
-    LEFT JOIN app_funding_calls call
+    LEFT JOIN contexts call
       ON call.workflow_template_version_id = workflow_version.id
     LEFT JOIN app_eligibility_rule_set_versions rules_version
       ON rules_version.id = call.eligibility_rule_set_version_id

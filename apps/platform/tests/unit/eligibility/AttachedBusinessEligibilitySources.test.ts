@@ -2,21 +2,36 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
-vi.mock("@/modules/forms/infrastructure/EligibilityFormSourceRepository", () => ({
-  readEligibilityFormSources: vi.fn(async () => []),
-}));
-vi.mock("@/modules/workflows/infrastructure/WorkflowEligibilitySourceRepository", () => ({
-  readWorkflowEligibilitySources: vi.fn(async () => []),
-}));
-vi.mock("@/modules/eligibility/infrastructure/EligibilityIntegrationRepository", () => ({
-  readEligibilityIntegrationSources: vi.fn(async () => []),
-}));
-vi.mock("@/modules/eligibility/domain/EligibilityIntegrationFieldSources", () => ({
-  integrationOutputSourceDescriptors: vi.fn(() => []),
-}));
-vi.mock("@/modules/funding-calls/infrastructure/FundingCallEligibilityContextRepository", () => ({
-  readEligibilityRuleSetContexts: vi.fn(async () => []),
-}));
+vi.mock(
+  "@/modules/forms/infrastructure/EligibilityFormSourceRepository",
+  () => ({
+    readEligibilityFormSources: vi.fn(async () => []),
+  }),
+);
+vi.mock(
+  "@/modules/workflows/infrastructure/WorkflowEligibilitySourceRepository",
+  () => ({
+    readWorkflowEligibilitySources: vi.fn(async () => []),
+  }),
+);
+vi.mock(
+  "@/modules/eligibility/infrastructure/EligibilityIntegrationBindingRepository",
+  () => ({
+    readEligibilityIntegrationSources: vi.fn(async () => []),
+  }),
+);
+vi.mock(
+  "@/modules/eligibility/domain/EligibilityIntegrationFieldSources",
+  () => ({
+    integrationOutputSourceDescriptors: vi.fn(() => []),
+  }),
+);
+vi.mock(
+  "@/modules/funding-calls/infrastructure/FundingCallEligibilityContextRepository",
+  () => ({
+    readEligibilityRuleSetContexts: vi.fn(async () => []),
+  }),
+);
 vi.mock("@/modules/funding-calls/infrastructure/FundingCallRepository", () => ({
   readFundingCallById: vi.fn(async () => null),
 }));
@@ -61,8 +76,10 @@ describe("business fields on funding-call form attachments", () => {
       title: "Call without form",
       workflowTemplateVersionId: null,
     });
-    expect(context.sources.some((source) => (
-      source.sourceKey === "BUSINESS_LEGAL_NAME"
-    ))).toBe(false);
+    expect(
+      context.sources.some(
+        (source) => source.sourceKey === "BUSINESS_LEGAL_NAME",
+      ),
+    ).toBe(false);
   });
 });

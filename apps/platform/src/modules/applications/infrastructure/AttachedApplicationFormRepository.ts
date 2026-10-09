@@ -1,9 +1,8 @@
 import "server-only";
 
-import { eq } from "drizzle-orm";
-
+import { and, eq, sql } from "drizzle-orm";
 import { getDatabase } from "@/db/client";
-import { fundingCalls } from "@/modules/funding-calls/infrastructure/funding-call.schema";
+import { fundingCallPublicationRevisions } from "@/modules/funding-calls/infrastructure/funding-call.schema";
 import { getFormRuntime } from "@/modules/forms/infrastructure/FormRepository";
 import { attachBusinessFieldsToForm } from "../domain/AttachedApplicationForm";
 
@@ -11,16 +10,21 @@ export async function getAttachedApplicationForm(
   formVersionId: string,
   fundingCallId: string,
 ) {
-  const [form, calls] = await Promise.all([
+  const [form, bindings] = await Promise.all([
     getFormRuntime(formVersionId),
     getDatabase()
-      .select({ formVersionId: fundingCalls.formVersionId })
-      .from(fundingCalls)
-      .where(eq(fundingCalls.id, fundingCallId))
+      .select({ id: fundingCallPublicationRevisions.id })
+      .from(fundingCallPublicationRevisions)
+      .where(
+        and(
+          eq(fundingCallPublicationRevisions.fundingCallId, fundingCallId),
+          sql`${fundingCallPublicationRevisions.snapshot}->>'formVersionId' = ${formVersionId}`,
+        ),
+      )
       .limit(1),
   ]);
   if (!form) return null;
-  return calls[0]?.formVersionId === formVersionId
+  return bindings.length
     ? attachBusinessFieldsToForm(form, fundingCallId)
     : form;
 }

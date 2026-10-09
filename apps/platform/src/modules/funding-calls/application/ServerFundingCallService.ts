@@ -1,4 +1,5 @@
 import "server-only";
+import type { FundingCall } from "../domain/FundingCall";
 
 import { permissionCodes } from "@/auth/authorization/permissions";
 import {
@@ -56,29 +57,33 @@ import {
   resolveFundingCallEligibilityContext,
 } from "../ServerFundingCallEligibilityContextIntegration";
 import { toFundingCallView } from "./FundingCallViewMapper";
-import {
-  assertFundingCallAttachmentsUnchanged,
-  FundingCallAttachmentsLockedError,
-} from "../domain/FundingCallAttachmentPolicy";
+import { canPrepareFundingCallReplacement } from "../domain/FundingCallVersion";
 
 async function requireEligibilityCompatibility(
   call: Pick<
     FundingCallCreateInput,
     "formVersionId" | "title" | "workflowTemplateVersionId"
-  > & { id?: string },
+  > & {
+    id?: string;
+    currentPublishedVersionId?: string | null;
+    draftVersionId?: string;
+  },
   eligibilityVersionId: string,
 ) {
-  const [ruleSet, inputs, existingContexts, proposedContext] = await Promise.all([
-    findTestableEligibilityRuleSetForEvaluation(eligibilityVersionId),
-    listEligibilityInputs(eligibilityVersionId),
-    resolveEligibilityRuleSetContexts(eligibilityVersionId),
-    resolveFundingCallEligibilityContext({
-      formVersionId: call.formVersionId,
-      id: call.id ?? crypto.randomUUID(),
-      title: call.title,
-      workflowTemplateVersionId: call.workflowTemplateVersionId,
-    }),
-  ]);
+  const [ruleSet, inputs, existingContexts, proposedContext] =
+    await Promise.all([
+      findTestableEligibilityRuleSetForEvaluation(eligibilityVersionId),
+      listEligibilityInputs(eligibilityVersionId),
+      resolveEligibilityRuleSetContexts(eligibilityVersionId),
+      resolveFundingCallEligibilityContext({
+        formVersionId: call.formVersionId,
+        id: call.id ?? crypto.randomUUID(),
+        title: call.title,
+        workflowTemplateVersionId: call.workflowTemplateVersionId,
+        currentPublishedVersionId: call.currentPublishedVersionId,
+        draftVersionId: call.draftVersionId,
+      }),
+    ]);
   if (!ruleSet) {
     throw new RequestValidationError(
       "The selected eligibility ruleset version is unavailable.",
@@ -86,19 +91,26 @@ async function requireEligibilityCompatibility(
   }
   const registry = buildEligibilityFieldRegistry({
     contexts: [
-      ...existingContexts.filter((context) => context.fundingCallId !== call.id),
+      ...existingContexts.filter(
+        (context) => context.fundingCallId !== call.id,
+      ),
       proposedContext,
     ],
     inputs,
   });
   const ruleIssues = ruleSet.rules.flatMap((rule) => {
     const available = new Set(
-      eligibilityFieldsForExecutionMode(registry.fields, rule.executionMode)
-        .map((field) => field.key),
+      eligibilityFieldsForExecutionMode(
+        registry.fields,
+        rule.executionMode,
+      ).map((field) => field.key),
     );
     return workflowConditionNodeFieldPaths(rule.conditionDefinition)
       .filter((path) => !available.has(path))
-      .map((path) => `${rule.reasonCode}: field "${path}" is unavailable in ${rule.executionMode}.`);
+      .map(
+        (path) =>
+          `${rule.reasonCode}: field "${path}" is unavailable in ${rule.executionMode}.`,
+      );
   });
   const issues = [
     ...registry.issues.map((issue) => issue.message),
@@ -121,7 +133,10 @@ async function requireBindableBindings(
     | "title"
     | "workflowTemplateVersionId"
   >,
-  fundingCallId?: string,
+  fundingCall?: Pick<
+    FundingCall,
+    "id" | "currentPublishedVersionId" | "draftVersionId"
+  >,
 ) {
   const [formIsBindable, eligibilityIsBindable, workflowIsBindable] =
     await Promise.all([
@@ -129,9 +144,7 @@ async function requireBindableBindings(
         ? formVersionIsBindable(input.formVersionId, "FUNDING_APPLICATION")
         : Promise.resolve(true),
       input.eligibilityRuleSetVersionId
-        ? eligibilityRuleSetVersionIsBindable(
-            input.eligibilityRuleSetVersionId,
-          )
+        ? eligibilityRuleSetVersionIsBindable(input.eligibilityRuleSetVersionId)
         : Promise.resolve(true),
       input.workflowTemplateVersionId
         ? workflowTemplateVersionIsBindable(input.workflowTemplateVersionId)
@@ -154,7 +167,12 @@ async function requireBindableBindings(
   }
   if (input.eligibilityRuleSetVersionId) {
     await requireEligibilityCompatibility(
-      { ...input, id: fundingCallId },
+      {
+        ...input,
+        id: fundingCall?.id,
+        currentPublishedVersionId: fundingCall?.currentPublishedVersionId,
+        draftVersionId: fundingCall?.draftVersionId,
+      },
       input.eligibilityRuleSetVersionId,
     );
   }
@@ -176,19 +194,23 @@ export async function getFundingCall(
   requirePermission(user, permissionCodes.fundingCallRead);
   const detail = await readFundingCallDetail(id);
   if (!detail) throw new ResourceNotFoundError("funding call");
-  const { call, formDefinitionId, eligibilityRuleSetId, workflowDefinitionId } = detail;
+  const { call, formDefinitionId, eligibilityRuleSetId, workflowDefinitionId } =
+    detail;
   return {
     ...toFundingCallView(call),
     versionLinks: {
-      applicationForm: formDefinitionId && call.formVersionId
-        ? `/admin/settings/forms/${formDefinitionId}?versionId=${call.formVersionId}`
-        : null,
-      eligibilityRuleSet: eligibilityRuleSetId && call.eligibilityRuleSetVersionId
-        ? `/admin/settings/eligibility-rulesets/${eligibilityRuleSetId}?versionId=${call.eligibilityRuleSetVersionId}`
-        : null,
-      workflowTemplate: workflowDefinitionId && call.workflowTemplateVersionId
-        ? `/admin/workflows/${workflowDefinitionId}?versionId=${call.workflowTemplateVersionId}`
-        : null,
+      applicationForm:
+        formDefinitionId && call.formVersionId
+          ? `/admin/settings/forms/${formDefinitionId}?versionId=${call.formVersionId}`
+          : null,
+      eligibilityRuleSet:
+        eligibilityRuleSetId && call.eligibilityRuleSetVersionId
+          ? `/admin/settings/eligibility-rulesets/${eligibilityRuleSetId}?versionId=${call.eligibilityRuleSetVersionId}`
+          : null,
+      workflowTemplate:
+        workflowDefinitionId && call.workflowTemplateVersionId
+          ? `/admin/workflows/${workflowDefinitionId}?versionId=${call.workflowTemplateVersionId}`
+          : null,
     },
   };
 }
@@ -229,6 +251,11 @@ export async function deleteFundingCall(
   requirePermission(user, permissionCodes.fundingCallDelete);
   const result = await deleteFundingCallRecord(id);
   if (result === "not_found") throw new ResourceNotFoundError("funding call");
+  if (result === "published_history") {
+    throw new ResourceConflictError(
+      "Published funding call history must be retained. Archive the call instead.",
+    );
+  }
   if (result === "has_applications") {
     throw new ResourceConflictError(
       "Funding calls with applications cannot be deleted.",
@@ -275,24 +302,29 @@ export async function updateFundingCall(
   const actor = requirePermission(user, permissionCodes.fundingCallEditDraft);
   const existing = await readFundingCallById(id);
   if (!existing) throw new ResourceNotFoundError("funding call");
-  if (existing.status !== "DRAFT") {
+  if (
+    existing.status !== "DRAFT" &&
+    !canPrepareFundingCallReplacement(existing)
+  ) {
     throw new ResourceConflictError("Only draft funding calls can be edited.");
   }
   if (existing.rowVersion !== input.expectedRowVersion) {
-    throw new ResourceConflictError("The funding call changed. Refresh it before saving again.");
+    throw new ResourceConflictError(
+      "The funding call changed. Refresh it before saving again.",
+    );
   }
-  try {
-    assertFundingCallAttachmentsUnchanged(existing, input);
-    if (!existing.attachmentsLockedAt) {
-      await requireBindableBindings(input, id);
-    }
-    const updated = await updateDraftFundingCall(actor.id, id, input);
-    if (updated) return toFundingCallView(updated);
-  } catch (error) {
-    if (error instanceof FundingCallAttachmentsLockedError) {
-      throw new ResourceConflictError(error.message);
-    }
-    throw error;
+  if (
+    existing.currentPublishedVersionId &&
+    (input.reference !== existing.reference || input.slug !== existing.slug)
+  ) {
+    throw new ResourceConflictError(
+      "A published funding call retains its reference and public URL.",
+    );
   }
-  throw new ResourceConflictError("The funding call changed. Refresh it before saving again.");
+  await requireBindableBindings(input, existing);
+  const updated = await updateDraftFundingCall(actor.id, id, input);
+  if (updated) return toFundingCallView(updated);
+  throw new ResourceConflictError(
+    "The funding call changed. Refresh it before saving again.",
+  );
 }

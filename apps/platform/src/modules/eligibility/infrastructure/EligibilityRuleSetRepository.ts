@@ -25,20 +25,23 @@ export class InvalidEligibilityRulesError extends Error {
   }
 }
 
-function storedRule(rule: typeof eligibilityRules.$inferSelect): EligibilityRule {
+function storedRule(
+  rule: typeof eligibilityRules.$inferSelect,
+): EligibilityRule {
   return {
     id: rule.id,
     applicantMessage: rule.applicantMessage,
-    condition: rule.conditionKind === "CONDITION"
-      ? {
-          conditionGroupId: rule.conditionGroupId,
-          conditionId: rule.conditionId!,
-          kind: "CONDITION",
-        }
-      : {
-          conditionGroupId: rule.conditionGroupId,
-          kind: "GROUP",
-        },
+    condition:
+      rule.conditionKind === "CONDITION"
+        ? {
+            conditionGroupId: rule.conditionGroupId,
+            conditionId: rule.conditionId!,
+            kind: "CONDITION",
+          }
+        : {
+            conditionGroupId: rule.conditionGroupId,
+            kind: "GROUP",
+          },
     executionMode: rule.executionMode,
     failureType: rule.failureType,
     order: rule.order,
@@ -94,7 +97,7 @@ export async function findEligibilityRuleSetVersion(
   ]);
 
   return {
-    definition: joined.definition,
+    definition: { ...joined.definition, ...joined.version.metadata },
     rules: rules.map(storedRule),
     version: storedVersion(joined.version),
     versions: versions.map(storedVersion),
@@ -147,9 +150,9 @@ export async function eligibilityRuleSetVersionIsBindable(versionId: string) {
 export async function listPublishedEligibilityRuleSetVersions() {
   return getDatabase()
     .select({
-      ruleSetCode: eligibilityRuleSets.code,
+      ruleSetCode: sql<string>`coalesce(${eligibilityRuleSetVersions.metadata}->>'code', ${eligibilityRuleSets.code})`,
       ruleSetId: eligibilityRuleSets.id,
-      ruleSetName: eligibilityRuleSets.name,
+      ruleSetName: sql<string>`coalesce(${eligibilityRuleSetVersions.metadata}->>'name', ${eligibilityRuleSets.name})`,
       versionId: eligibilityRuleSetVersions.id,
       versionNumber: eligibilityRuleSetVersions.versionNumber,
     })
@@ -173,9 +176,9 @@ export async function listPublishedEligibilityRuleSetVersions() {
 export async function listBindableEligibilityRuleSetVersions() {
   return getDatabase()
     .select({
-      ruleSetCode: eligibilityRuleSets.code,
+      ruleSetCode: sql<string>`coalesce(${eligibilityRuleSetVersions.metadata}->>'code', ${eligibilityRuleSets.code})`,
       ruleSetId: eligibilityRuleSets.id,
-      ruleSetName: eligibilityRuleSets.name,
+      ruleSetName: sql<string>`coalesce(${eligibilityRuleSetVersions.metadata}->>'name', ${eligibilityRuleSets.name})`,
       status: eligibilityRuleSetVersions.status,
       versionId: eligibilityRuleSetVersions.id,
       versionNumber: eligibilityRuleSetVersions.versionNumber,
@@ -218,6 +221,11 @@ export async function createEligibilityRuleSet(input: {
       .values({
         createdBy: input.actorId,
         ruleSetId: definition.id,
+        metadata: {
+          code: input.code,
+          name: input.name,
+          description: input.description,
+        },
         versionNumber: 1,
       })
       .returning();
@@ -233,7 +241,10 @@ export async function publishEligibilityRuleSetVersion(input: {
 }) {
   return getDatabase().transaction(async (transaction) => {
     const [current] = await transaction
-      .select({ id: eligibilityRuleSetVersions.id })
+      .select({
+        id: eligibilityRuleSetVersions.id,
+        metadata: eligibilityRuleSetVersions.metadata,
+      })
       .from(eligibilityRuleSetVersions)
       .where(
         and(
@@ -251,9 +262,9 @@ export async function publishEligibilityRuleSetVersion(input: {
       .from(eligibilityRules)
       .where(eq(eligibilityRules.versionId, input.versionId));
     const rules = storedRules.map(storedRule);
-    const groupIds = [...new Set(
-      rules.map((rule) => rule.condition.conditionGroupId),
-    )];
+    const groupIds = [
+      ...new Set(rules.map((rule) => rule.condition.conditionGroupId)),
+    ];
     const storedGroups = groupIds.length
       ? await transaction
           .select({
@@ -275,8 +286,8 @@ export async function publishEligibilityRuleSetVersion(input: {
 
     const [definition] = await transaction
       .select({
-        code: eligibilityRuleSets.code,
-        name: eligibilityRuleSets.name,
+        code: sql<string>`coalesce(${eligibilityRuleSetVersions.metadata}->>'code', ${eligibilityRuleSets.code})`,
+        name: sql<string>`coalesce(${eligibilityRuleSetVersions.metadata}->>'name', ${eligibilityRuleSets.name})`,
         versionNumber: eligibilityRuleSetVersions.versionNumber,
       })
       .from(eligibilityRuleSetVersions)
@@ -293,6 +304,10 @@ export async function publishEligibilityRuleSetVersion(input: {
       versionId: input.versionId,
       versionNumber: definition!.versionNumber,
     });
+    await transaction
+      .update(eligibilityRuleSets)
+      .set({ ...current.metadata, updatedAt: new Date() })
+      .where(eq(eligibilityRuleSets.id, input.ruleSetId));
 
     const [version] = await transaction
       .update(eligibilityRuleSetVersions)

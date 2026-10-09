@@ -1,19 +1,15 @@
 "use client";
 
+import { FundingCallVersionsPanel } from "./FundingCallVersionsPanel";
 import { CircleDollarSign } from "lucide-react";
 
 import { PortalLoadingState } from "@/shared/ui/portal/PortalLoadingState";
 import { PortalErrorState } from "@/shared/ui/portal/PortalErrorState";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { PageShell } from "@/shared/ui/PageShell";
-import {
-  useFundingCall,
-  useUpdateFundingCall,
-} from "../FundingCallHooks";
+import { useFundingCall, useUpdateFundingCall } from "../FundingCallHooks";
 import { FundingCallForm } from "./FundingCallForm";
-import { FundingCallExceptionalActions } from "./FundingCallExceptionalActions";
-import { FundingCallGovernanceActions } from "./FundingCallGovernanceActions";
-import { FundingCallPageActions } from "./FundingCallPageActions";
+import { FundingCallHeaderActions } from "./FundingCallHeaderActions";
 import { FundingCallReadOnlyReview } from "./FundingCallReadOnlyReview";
 
 export function FundingCallEditor({
@@ -53,24 +49,20 @@ export function FundingCallEditor({
       <div className="flex items-center gap-3">
         <StatusBadge status={call.status} />
       </div>
-      <div className="flex flex-wrap gap-2 sm:justify-end">
-        <FundingCallPageActions canPublish={canPublish} id={id} />
-        <FundingCallGovernanceActions
-          call={call}
-          canApprove={canApprove}
-          canReturn={canReturn}
-          canSubmit={canSubmit}
-          canWithdrawOwnRequest={canWithdrawOwnRequest}
-        />
-        <FundingCallExceptionalActions
-          call={call}
-          canArchive={canArchive}
-          canResume={canResume}
-          canSuspend={canSuspend}
-          canWithdraw={canWithdraw}
-          canWithdrawForAmendment={canWithdrawForAmendment}
-        />
-      </div>
+      <FundingCallHeaderActions
+        call={call}
+        canApprove={canApprove}
+        canArchive={canArchive}
+        canPublish={canPublish}
+        canReturn={canReturn}
+        canResume={canResume}
+        canSubmit={canSubmit}
+        canSuspend={canSuspend}
+        canUpdate={canUpdate}
+        canWithdraw={canWithdraw}
+        canWithdrawForAmendment={canWithdrawForAmendment}
+        canWithdrawOwnRequest={canWithdrawOwnRequest}
+      />
     </div>
   ) : undefined;
 
@@ -81,6 +73,13 @@ export function FundingCallEditor({
       icon={<CircleDollarSign />}
       title="Manage funding calls"
     >
+      {call?.draftVersionId ? (
+        <p className="mb-4 rounded-lg bg-brand-blue/10 p-4 text-sm">
+          Preparing a replacement. The current published version remains{" "}
+          {call.effectiveStatus?.toLowerCase()}. Proposed changes take effect
+          only after fresh approval and publication.
+        </p>
+      ) : null}
       {query.isPending ? (
         <PortalLoadingState description="Just a moment..." title="" />
       ) : query.error ? (
@@ -107,6 +106,9 @@ export function FundingCallEditor({
       ) : (
         <FundingCallReadOnlyReview call={call} />
       )}
+      {call?.currentPublishedVersionId ? (
+        <FundingCallVersionsPanel id={id} />
+      ) : null}
     </PageShell>
   );
 }
