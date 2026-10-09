@@ -10,7 +10,7 @@ export type NotificationCatalogSeed = {
 
 export const notificationCatalogSeeds: readonly NotificationCatalogSeed[] = [
   {
-    description: "Scheduled website analytics reports.",
+    description: "Report generation and delivery lifecycle.",
     displayName: "Reporting",
     id: "00000000-0000-4000-8000-000000000405",
     key: "REPORTING",

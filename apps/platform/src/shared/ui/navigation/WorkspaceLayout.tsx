@@ -1,5 +1,4 @@
 import type { CSSProperties, ReactNode } from "react";
-import Link from "next/link";
 
 import { cn } from "@/lib/utils";
 import styles from "./WorkspaceLayout.module.css";
@@ -20,9 +19,6 @@ export function WorkspaceFrame({
       style={style}
     >
       {children}
-      <footer className={styles.footer} data-workspace-slot="footer">
-        <Link href="/">SME Fund</Link>
-      </footer>
     </div>
   );
 }
@@ -40,7 +36,6 @@ export function WorkspaceLayout({
 }) {
   return (
     <WorkspaceFrame
-      className={styles.layout}
       style={{ "--workspace-sidebar-width": `${sidebarWidth}px` } as CSSProperties}
     >
       <section className={styles.section} aria-label="Workspace">

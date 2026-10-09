@@ -1,13 +1,14 @@
 import "server-only";
 
+import { pipeline } from "node:stream/promises";
+import type { Readable } from "node:stream";
+import type { StreamingDocumentStorage } from "./StreamingDocumentStorage";
+
 import { Storage } from "@google-cloud/storage";
 
 import { getServerEnvironment } from "@/lib/env/server";
 import { getGoogleCloudStorageOptions } from "./GoogleCloudStorageOptions";
-import type {
-  DocumentStorage,
-  StoredDocument,
-} from "./DocumentStorage";
+import type { StoredDocument } from "./DocumentStorage";
 
 let storage: Storage | undefined;
 
@@ -24,7 +25,28 @@ function bucketName() {
   return name;
 }
 
-export class GoogleCloudDocumentStorage implements DocumentStorage {
+export class GoogleCloudDocumentStorage implements StreamingDocumentStorage {
+  async putStream(document: {
+    body: Readable;
+    objectKey: string;
+    contentType: string;
+    signal: AbortSignal;
+  }) {
+    const destination = client()
+      .bucket(bucketName())
+      .file(document.objectKey)
+      .createWriteStream({
+        resumable: false,
+        validation: "crc32c",
+        metadata: { contentType: document.contentType },
+      });
+    await pipeline(document.body, destination, { signal: document.signal });
+  }
+
+  readStream(objectKey: string) {
+    return client().bucket(bucketName()).file(objectKey).createReadStream();
+  }
+
   async put(document: StoredDocument) {
     const bucket = client().bucket(bucketName());
     await bucket.file(document.objectKey).save(document.body, {

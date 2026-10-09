@@ -1,6 +1,7 @@
 function fieldErrorMessages(fields?: Record<string, string[]>) {
-  return [...new Set(Object.values(fields ?? {}).flat())]
-    .filter((message) => message.trim().length > 0);
+  return [...new Set(Object.values(fields ?? {}).flat())].filter(
+    (message) => message.trim().length > 0,
+  );
 }
 
 function fieldErrorMessage(fields?: Record<string, string[]>) {
@@ -15,7 +16,9 @@ function fieldErrorMessage(fields?: Record<string, string[]>) {
     remaining > 0
       ? `${remaining} more validation ${remaining === 1 ? "issue requires" : "issues require"} attention.`
       : "",
-  ].filter(Boolean).join(" ");
+  ]
+    .filter(Boolean)
+    .join(" ");
 }
 
 export class ClientRequestError extends Error {
@@ -61,11 +64,11 @@ export function getErrorMessage(error: unknown) {
   }
 
   if (
-    error
-    && typeof error === "object"
-    && "message" in error
-    && typeof error.message === "string"
-    && error.message.trim()
+    error &&
+    typeof error === "object" &&
+    "message" in error &&
+    typeof error.message === "string" &&
+    error.message.trim()
   ) {
     return error.message;
   }
@@ -96,20 +99,14 @@ type DataEnvelope<TData> = {
 
 async function parseResponse<TResponse>(response: Response) {
   const body = (await response.json().catch(() => null)) as
-    | TResponse
-    | ErrorPayload
-    | null;
+    TResponse | ErrorPayload | null;
 
   if (!response.ok) {
     const error = body as ErrorPayload | null;
     const structuredError =
-      error?.error && typeof error.error === "object"
-        ? error.error
-        : undefined;
+      error?.error && typeof error.error === "object" ? error.error : undefined;
     const message =
-      typeof error?.error === "string"
-        ? error.error
-        : structuredError?.message;
+      typeof error?.error === "string" ? error.error : structuredError?.message;
 
     throw new ClientRequestError(
       message ?? "The request could not be completed.",
@@ -126,26 +123,17 @@ async function parseResponse<TResponse>(response: Response) {
   return body as TResponse;
 }
 
-export async function requestJson<TResponse>(
-  path: string,
-  init?: RequestInit,
-) {
+export async function requestJson<TResponse>(path: string, init?: RequestInit) {
   const response = await fetch(path, init);
   return parseResponse<TResponse>(response);
 }
 
-export async function requestData<TData>(
-  path: string,
-  init?: RequestInit,
-) {
+export async function requestData<TData>(path: string, init?: RequestInit) {
   const envelope = await requestJson<DataEnvelope<TData>>(path, init);
   return envelope.data;
 }
 
-export async function postJson<TResponse, TBody>(
-  path: string,
-  body: TBody,
-) {
+export async function postJson<TResponse, TBody>(path: string, body: TBody) {
   return requestJson<TResponse>(path, {
     body: JSON.stringify(body),
     headers: {
@@ -177,4 +165,12 @@ export async function patchData<TData, TBody>(path: string, body: TBody) {
 
 export async function deleteData<TData>(path: string) {
   return requestData<TData>(path, { method: "DELETE" });
+}
+
+export async function requestBlob(path: string, init?: RequestInit) {
+  const response = await fetch(path, init);
+  if (!response.ok) {
+    await parseResponse(response);
+  }
+  return response.blob();
 }

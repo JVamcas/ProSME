@@ -1,3 +1,4 @@
+import { reportingPermissionCatalogue } from "./ReportingPermissionCatalogue";
 import { fundingCallPermissionCatalogue } from "./FundingCallPermissionCatalogue";
 import {
   cmsPermissionActions,
@@ -28,20 +29,21 @@ function define(
 }
 
 const staticPermissionCatalogue: readonly PermissionDefinition[] = [
+  ...reportingPermissionCatalogue,
+  define(
+    permissionCodes.reportingDatasetReadAll,
+    "Read system reporting datasets",
+    "Read versioned dataset definitions and approved columns. Source data access requires its separate contextual permission.",
+  ),
+  define(
+    permissionCodes.reportingQueryExecuteAll,
+    "Execute approved reporting queries across authorized sources",
+    "Execute validated read queries against one system dataset. Requires dataset read and the dataset's source permissions; does not grant source access itself.",
+  ),
   define(
     permissionCodes.reportingWebsiteReadAll,
     "Read website analytics across all funding calls",
     "Read consent-based website metrics and anonymous advisory eligibility aggregates for any funding call. Does not grant access to applicant records or report scheduling.",
-  ),
-  define(
-    permissionCodes.reportingWebsiteReportReadAll,
-    "Read saved website reports",
-    "View all bi-weekly and monthly website report snapshots and delivery history. Does not grant application access or schedule editing.",
-  ),
-  define(
-    permissionCodes.reportingWebsiteScheduleUpdateAll,
-    "Configure website report schedules",
-    "Configure bi-weekly and monthly website reporting periods and delivery times. Notification recipient changes require notification configuration permission.",
   ),
   ...brandingPermissionCatalogue,
   define(

@@ -52,6 +52,18 @@ esac
 }
 
 describe("CMS content during stack startup", () => {
+  it("finishes the migration image build before starting the application image build", () => {
+    const calls = startStack(["--build"]);
+    const builds = calls.filter((call) => call.includes(" build "));
+
+    expect(builds).toHaveLength(2);
+    expect(builds[0]).toMatch(/ build migrations$/);
+    expect(builds[1]).toMatch(/ build app$/);
+    expect(calls.findIndex((call) => call.includes(" up -d "))).toBeGreaterThan(
+      calls.indexOf(builds[1]),
+    );
+  });
+
   it.each([
     { args: [], environment: "local" },
     { args: ["--build", "--force-recreate"], environment: "dev" },

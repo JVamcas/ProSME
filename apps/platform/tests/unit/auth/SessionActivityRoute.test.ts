@@ -19,6 +19,72 @@ beforeEach(() => {
 });
 
 describe("session activity transport", () => {
+  it.each([
+    {
+      internalUrl: "http://0.0.0.0:3008/api/auth/session/activity",
+      origin: "http://localhost:3008",
+      host: "localhost:3008",
+      protocol: "http",
+    },
+    {
+      internalUrl: "https://0.0.0.0:3008/api/auth/session/activity",
+      origin: "https://smefund.na",
+      host: "smefund.na",
+      protocol: "https",
+    },
+    {
+      internalUrl: "http://127.0.0.1:3008/api/auth/session/activity",
+      origin: "https://smefund.na",
+      host: "smefund.na",
+      protocol: "https",
+    },
+  ])("renews through a container or TLS proxy for $origin", async (deployment) => {
+    const response = await POST(new Request(deployment.internalUrl, {
+      method: "POST",
+      headers: {
+        host: deployment.host,
+        origin: deployment.origin,
+        "x-forwarded-proto": deployment.protocol,
+        "x-session-activity": "1",
+        "sec-fetch-site": "same-origin",
+      },
+      body: JSON.stringify({ idleForMilliseconds: 0 }),
+    }));
+
+    expect(response.status).toBe(200);
+    expect(renewSessionActivity).toHaveBeenCalledOnce();
+    expect(response.headers.get("set-cookie")).toContain("Max-Age=");
+  });
+
+  it.each([
+    { origin: "https://attacker.test" },
+    { origin: "https://0.0.0.0:3008" },
+    { origin: "http://smefund.na" },
+    { origin: "null" },
+    { origin: "https://smefund.na", "sec-fetch-site": "cross-site" },
+    { origin: "https://smefund.na", "x-forwarded-proto": "https, http" },
+    { origin: "https://smefund.na", host: "smefund.na/other" },
+    { origin: "https://smefund.na", host: "attacker.test" },
+  ])("rejects mismatched proxy origin metadata: %j", async (headers) => {
+    const response = await POST(new Request(
+      "https://0.0.0.0:3008/api/auth/session/activity",
+      {
+        method: "POST",
+        headers: {
+          host: "smefund.na",
+          "x-forwarded-proto": "https",
+          "x-session-activity": "1",
+          "sec-fetch-site": "same-origin",
+          ...headers,
+        },
+        body: JSON.stringify({ idleForMilliseconds: 0 }),
+      },
+    ));
+
+    expect(response.status).toBe(403);
+    expect(renewSessionActivity).not.toHaveBeenCalled();
+  });
+
   it("reads an uncached deadline without setting cookies or renewing", async () => {
     const response = await GET(new Request(url));
     expect(response.status).toBe(200);

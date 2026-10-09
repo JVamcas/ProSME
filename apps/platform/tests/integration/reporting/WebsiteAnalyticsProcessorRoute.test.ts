@@ -28,9 +28,12 @@ describe("analytics processor route", () => {
   });
   it("returns no-store processor counts and forwards only authorization", async () => {
     const data = {
-      claimed: 1, processed: 1, failed: 0, skipped: 0,
-      reports: { claimed: 0, generated: 0, waiting: 0, failed: 0 },
+      claimed: 1,
+      processed: 1,
+      failed: 0,
+      skipped: 0,
       synchronization: { claimed: 1, processed: 1, failed: 0, skipped: 0 },
+      generation: { claimed: 0, succeeded: 0, failed: 0, preparing: 0 },
     };
     vi.mocked(processReporting).mockResolvedValue(data);
     const response = await POST(
@@ -41,9 +44,7 @@ describe("analytics processor route", () => {
     );
     expect(await response.json()).toEqual({ data });
     expect(response.headers.get("cache-control")).toBe("no-store");
-    expect(processReporting).toHaveBeenCalledWith(
-      "Bearer supplied",
-    );
+    expect(processReporting).toHaveBeenCalledWith("Bearer supplied");
   });
   it("does not expose internal or provider error details", async () => {
     vi.mocked(processReporting).mockRejectedValue(

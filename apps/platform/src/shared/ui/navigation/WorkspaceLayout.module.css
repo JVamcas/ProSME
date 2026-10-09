@@ -1,6 +1,5 @@
 .frame {
   --workspace-header-height: 64px;
-  --workspace-footer-height: 40px;
   display: flex;
   flex-direction: column;
   min-height: 100dvh;
@@ -35,26 +34,6 @@
   display: none;
 }
 
-.footer {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  min-height: var(--workspace-footer-height);
-  padding: 8px 16px;
-  border-top: 1px solid rgb(10 24 59 / 10%);
-  font: 12px/1.5 var(--font-sans, Arial, sans-serif);
-}
-
-.footer a {
-  color: inherit;
-  text-decoration: none;
-}
-
-.footer a:focus-visible {
-  outline: 2px solid var(--sme-brand-navy);
-  outline-offset: 2px;
-}
-
 @media (min-width: 1024px) {
   .columns {
     display: grid;
@@ -73,17 +52,11 @@
   .content {
     grid-column: 2;
   }
-
-  .layout > .footer {
-    margin-left: var(--workspace-sidebar-width);
-    transition: margin-left 300ms cubic-bezier(0.22, 1, 0.36, 1);
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .columns,
-  .sidebar,
-  .layout > .footer {
+  .sidebar {
     transition: none;
   }
 }

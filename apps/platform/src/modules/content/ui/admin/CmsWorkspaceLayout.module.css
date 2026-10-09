@@ -1,6 +1,6 @@
 /* Keep Payload's native content and header beside its full-height sidebar. */
 .frame :global(.template-default) {
-  min-height: calc(100dvh - var(--workspace-footer-height));
+  min-height: 100dvh;
 }
 
 .frame :global(.template-default__wrap) {
@@ -21,10 +21,4 @@
   top: 0;
   height: 100dvh;
   margin-top: 0;
-}
-
-@media (min-width: 1025px) {
-  .frame:has(:global(.template-default--nav-open)) > [data-workspace-slot="footer"] {
-    margin-left: var(--cms-nav-width, 320px);
-  }
 }

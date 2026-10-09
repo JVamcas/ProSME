@@ -117,12 +117,22 @@ and the `db` service hostname. Non-Compose deployments supply their own
 
 The build uses reusable npm and Next.js BuildKit caches. After a successful
 build, the wrapper removes dangling images and cache entries unused for seven
-days. Inspect or prune Docker storage directly with:
+days (override with `BUILDKIT_CACHE_MAX_AGE_HOURS`). Docker's own BuildKit garbage
+collection can still evict cache when its storage limit is reached.
+Local TypeScript build-info files are excluded from the Docker
+context so running a local type check does not invalidate source-copy layers.
+Inspect or prune Docker storage directly with:
 
 ```bash
 ./scripts/docker-maintenance.sh diagnose
 ./scripts/docker-maintenance.sh prune
 ```
+
+The startup wrapper builds the application and migration images one at a time
+to reduce peak memory and disk pressure. Next.js builds use `tsconfig.build.json`,
+which inherits the strict compiler settings but excludes the test tree from
+its type-checking workload. `npm run typecheck` continues to check the complete
+project, including tests. Neither change increases Node's heap allowance.
 
 Payload automatic development schema pushing is disabled. After a schema change, generate and apply a committed Payload migration before starting the application.
 

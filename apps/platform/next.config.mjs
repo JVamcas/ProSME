@@ -17,6 +17,14 @@ const nextConfig = {
     useTypeScriptCli: false,
   },
   output: "standalone",
+  // The PostgreSQL parser resolves its WASM file relative to its own loader.
+  serverExternalPackages: ["libpg-query"],
+  typescript: {
+    tsconfigPath:
+      process.env.NODE_ENV === "production"
+        ? "tsconfig.build.json"
+        : "tsconfig.json",
+  },
   images: {
     localPatterns: [
       { pathname: "/api/media/file/**" },
@@ -25,6 +33,7 @@ const nextConfig = {
   },
   outputFileTracingRoot: repositoryRoot,
   outputFileTracingIncludes: {
+    "/*": ["./node_modules/libpg-query/wasm/libpg-query.wasm"],
     "/api/internal/notifications/process": [
       "./src/modules/notifications/templates/email/auth-*.html",
     ],

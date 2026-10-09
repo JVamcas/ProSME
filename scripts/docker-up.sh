@@ -132,10 +132,9 @@ echo "Validating Docker Compose configuration..."
 if [ "${should_build}" = true ]; then
   "${maintenance_script}" diagnose
   echo "Building application and migration images..."
-  "${compose[@]}" build \
-    "${build_arguments[@]}" \
-    "${application_service}" \
-    "${migration_service}"
+  for service in "${migration_service}" "${application_service}"; do
+    "${compose[@]}" build "${build_arguments[@]}" "${service}"
+  done
 fi
 
 echo "Starting the SME Fund stack..."

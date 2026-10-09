@@ -20,5 +20,8 @@
     "check:architecture": "npm run check:architecture --workspace @prosme/platform",
     "check:files": "npm run check:files --workspace @prosme/platform",
     "check": "npm run check:architecture && npm run check:files && npm run lint && npm run typecheck && npm run test && npm run build"
+  },
+  "devDependencies": {
+    "monaco-editor": "0.37.1"
   }
 }

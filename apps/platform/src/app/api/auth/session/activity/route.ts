@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 
 import { getSessionCookieName } from "@/auth/firebase/cookies";
-import { sessionActivityRequestSchema } from "@/platform/auth/api/SessionActivityRequest";
+import {
+  isSameOriginSessionActivityRequest,
+  sessionActivityRequestSchema,
+} from "@/platform/auth/api/SessionActivityRequest";
 import {
   readSessionActivity,
   renewSessionActivity,
@@ -34,26 +37,25 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  // A custom header plus same-origin verification prevents cross-site renewal.
-  const origin = request.headers.get("origin");
-  const fetchSite = request.headers.get("sec-fetch-site");
-  if (
-    request.headers.get("x-session-activity") !== "1" ||
-    origin !== new URL(request.url).origin ||
-    (fetchSite !== null && fetchSite !== "same-origin")
-  ) {
-    return NextResponse.json({ error: "Invalid session activity request" }, {
-      status: 403,
-      headers: { "Cache-Control": "no-store" },
-    });
+  if (!isSameOriginSessionActivityRequest(request)) {
+    return NextResponse.json(
+      { error: "Invalid session activity request" },
+      {
+        status: 403,
+        headers: { "Cache-Control": "no-store" },
+      },
+    );
   }
   const body = await request.json().catch(() => null);
   const parsed = sessionActivityRequestSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid activity timing" }, {
-      status: 400,
-      headers: { "Cache-Control": "no-store" },
-    });
+    return NextResponse.json(
+      { error: "Invalid activity timing" },
+      {
+        status: 400,
+        headers: { "Cache-Control": "no-store" },
+      },
+    );
   }
   return activityResponse(
     await renewSessionActivity(request.headers, parsed.data.idleForMilliseconds),
