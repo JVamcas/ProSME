@@ -1,3 +1,8 @@
+import {
+  reportingEventKeys,
+  reportingEventCatalogue,
+  type ReportingEventContext,
+} from "./NotificationReportingEvent";
 import { z } from "zod";
 import { workflowHoldResumedContextSchema } from "./NotificationWorkflowHoldEvent";
 import {
@@ -39,7 +44,6 @@ export const applicationSubmittedContextSchema = z
     workflowInstanceId: uuidSchema,
   })
   .strict();
-
 
 const informationRequestContextSchema = z.object({
   applicationId: uuidSchema,
@@ -111,6 +115,7 @@ export type AuthenticationEventKey =
 export type NotificationRuleEligibility = "CONFIGURABLE" | "SYSTEM_ONLY";
 
 export const notificationEventKeys = [
+  ...reportingEventKeys,
   "auth.email.verification",
   "auth.password.reset",
   "application.submitted",
@@ -171,10 +176,15 @@ export type FundingCallLifecycleContext = z.infer<
 >;
 
 export type NotificationEventContextByKey = {
+  "reporting.generation.started": ReportingEventContext;
+  "reporting.generation.completed": ReportingEventContext;
+  "reporting.generation.failed": ReportingEventContext;
   "auth.email.verification": z.infer<typeof authenticationEventContextSchema>;
   "auth.password.reset": z.infer<typeof authenticationEventContextSchema>;
   "application.submitted": ApplicationSubmittedContext;
-  "application.terminal-status-reached": z.infer<typeof applicationTerminalStatusContextSchema>;
+  "application.terminal-status-reached": z.infer<
+    typeof applicationTerminalStatusContextSchema
+  >;
   "funding-call.approval-request-withdrawn": FundingCallLifecycleContext;
   "funding-call.approval-requested": FundingCallLifecycleContext;
   "funding-call.approved": FundingCallLifecycleContext;
@@ -193,7 +203,9 @@ export type NotificationEventContextByKey = {
   "workflow.task.assigned": WorkflowTaskAssignedContext;
   "workflow.task.escalated": z.infer<typeof workflowTaskEscalatedContextSchema>;
   "workflow.sla.breached": z.infer<typeof workflowDeadlineContextSchema>;
-  "workflow.information-request.reminder": z.infer<typeof workflowDeadlineContextSchema>;
+  "workflow.information-request.reminder": z.infer<
+    typeof workflowDeadlineContextSchema
+  >;
   "workflow.hold.review-due": z.infer<typeof workflowDeadlineContextSchema>;
   "workflow.hold.resumed": z.infer<typeof workflowHoldResumedContextSchema>;
   "workflow.deferral.resumed": z.infer<typeof workflowDeadlineContextSchema>;
@@ -207,9 +219,12 @@ type NotificationEventDefinition<Key extends NotificationEventKey> = {
 };
 
 export const notificationEventCatalogue = {
+  ...reportingEventCatalogue,
   "workflow.hold.resumed": {
-    catalogKey: "WORKFLOW", ruleEligibility: "CONFIGURABLE",
-    key: "workflow.hold.resumed", contextSchema: workflowHoldResumedContextSchema,
+    catalogKey: "WORKFLOW",
+    ruleEligibility: "CONFIGURABLE",
+    key: "workflow.hold.resumed",
+    contextSchema: workflowHoldResumedContextSchema,
   },
   ...workflowDeadlineEventCatalogue,
   "auth.email.verification": {

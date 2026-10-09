@@ -34,6 +34,7 @@ export const clientReportService = {
       ConfiguredReportDetails & {
         runDefaults: Record<string, unknown> | null;
         runDefaultsError: string | null;
+        runTimezone: string;
       }
     >(`${base}/${id}`, { signal }),
   save: (input: ConfiguredReportSaveInput, id?: string) =>
@@ -47,6 +48,12 @@ export const clientReportService = {
       headers: { "Content-Type": "application/json" },
       method: "POST",
       body: JSON.stringify(input),
+    }),
+  retry: (id: string, runId: string, idempotencyKey: string) =>
+    requestData<{ id: string }>(`${base}/${id}/runs/${runId}/retry`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ idempotencyKey }),
     }),
   runs: (id: string, input: ReportListInput, signal?: AbortSignal) =>
     requestData<ReportPage<ReportRunSummary>>(

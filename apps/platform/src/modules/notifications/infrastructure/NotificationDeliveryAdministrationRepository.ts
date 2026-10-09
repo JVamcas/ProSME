@@ -2,13 +2,20 @@ import "server-only";
 
 import { sql } from "drizzle-orm";
 
-import { getDatabase } from "@/db/client";
+import { getDatabase } from "@/platform/database/client";
 import { authorizationAuditEntries } from "@/db/schema";
 import type { NotificationDeliveryQuery } from "../api/NotificationAdministrationSchemas";
 import type { NotificationAuditMetadata } from "../domain/NotificationAudit";
 
-function deliveryWhere(query: NotificationDeliveryQuery) {
+function deliveryWhere(
+  query: NotificationDeliveryQuery,
+  scope?: { reportId?: string; datasets: string[] },
+) {
   return sql`WHERE (${query.eventKey ?? null}::text IS NULL OR occurrence.event_key = ${query.eventKey ?? null})
+    AND (${scope?.reportId ?? null}::uuid IS NULL OR occurrence.report_id = ${scope?.reportId ?? null}::uuid)
+    AND (occurrence.report_id IS NULL OR EXISTS (
+      SELECT 1 FROM app_reporting_report_runs run WHERE run.id = occurrence.aggregate_id
+        AND ((run.definition->>'datasetKey') || '/' || (run.definition->>'datasetVersion')) = ANY(${sql.param(scope?.datasets ?? [])}::text[])))
     AND (${query.status ?? null}::text IS NULL OR delivery.status = ${query.status ?? null})
     AND (${query.applicationReference ?? null}::text IS NULL OR occurrence.context->>'applicationReference' ILIKE ${query.applicationReference ? `%${query.applicationReference}%` : null})
     AND (${query.recipient ?? null}::text IS NULL OR delivery.recipient_email ILIKE ${query.recipient ? `%${query.recipient}%` : null} OR delivery.recipient_name ILIKE ${query.recipient ? `%${query.recipient}%` : null})
@@ -18,8 +25,9 @@ function deliveryWhere(query: NotificationDeliveryQuery) {
 
 export async function listNotificationDeliveryRecords(
   query: NotificationDeliveryQuery,
+  scope?: { reportId?: string; datasets: string[] },
 ) {
-  const where = deliveryWhere(query);
+  const where = deliveryWhere(query, scope);
   const orderColumn =
     query.sortField === "status"
       ? sql`delivery.status`
@@ -67,6 +75,7 @@ export async function retryNotificationDeliveryRecord(input: {
   correlationId: string;
   deliveryId: string;
   reason: string;
+  scope?: { reportId?: string; datasets: string[] };
 }) {
   return getDatabase().transaction(async (transaction) => {
     const current = await transaction.execute<{
@@ -76,6 +85,15 @@ export async function retryNotificationDeliveryRecord(input: {
       SELECT outbox_id AS "outboxId", status
       FROM app_notification_deliveries
       WHERE id = ${input.deliveryId}::uuid
+        AND EXISTS (
+          SELECT 1 FROM app_notification_outbox occurrence
+          WHERE occurrence.id = app_notification_deliveries.outbox_id
+            AND (${input.scope?.reportId ?? null}::uuid IS NULL OR occurrence.report_id = ${input.scope?.reportId ?? null}::uuid)
+            AND (occurrence.report_id IS NULL OR EXISTS (
+              SELECT 1 FROM app_reporting_report_runs run WHERE run.id = occurrence.aggregate_id
+                AND ((run.definition->>'datasetKey') || '/' || (run.definition->>'datasetVersion')) = ANY(${sql.param(input.scope?.datasets ?? [])}::text[])
+            ))
+        )
       FOR UPDATE
     `);
     const delivery = current.rows[0];

@@ -4,7 +4,10 @@ import type { ReportRun } from "../domain/Report";
 import { googleAnalyticsConfiguration } from "../infrastructure/GoogleAnalyticsConfiguration";
 import { websiteAnalyticsQueryIdentity } from "../infrastructure/WebsiteAnalyticsQueryIdentity";
 import { registerWebsiteAnalyticsQueries } from "../infrastructure/WebsiteAnalyticsSyncRepository";
-import { reportWebsiteSourceReady } from "../infrastructure/ReportWebsiteSourceRepository";
+import {
+  recordReportSourceCoverage,
+  reportWebsiteSourceReady,
+} from "../infrastructure/ReportWebsiteSourceRepository";
 import { websiteAnalyticsQuerySchema } from "../api/WebsiteAnalyticsSchemas";
 
 export async function prepareReportWebsiteSource(run: ReportRun) {
@@ -28,5 +31,6 @@ export async function prepareReportWebsiteSource(run: ReportRun) {
   });
   const identity = websiteAnalyticsQueryIdentity(period, configuration, true);
   await registerWebsiteAnalyticsQueries([identity]);
-  return reportWebsiteSourceReady(identity.queryKey);
+  if (!(await reportWebsiteSourceReady(identity.queryKey))) return false;
+  return recordReportSourceCoverage(run.id, run.leaseToken, identity.queryKey);
 }

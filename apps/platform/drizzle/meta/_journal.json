@@ -1254,6 +1254,34 @@
       "when": 1801785600024,
       "tag": "0178_reporting_configuration_versions",
       "breakpoints": true
+    },
+    {
+      "idx": 179,
+      "version": "7",
+      "when": 1801785600025,
+      "tag": "0179_reporting_schedules",
+      "breakpoints": true
+    },
+    {
+      "idx": 180,
+      "version": "7",
+      "when": 1801785600026,
+      "tag": "0180_reporting_notification_scope",
+      "breakpoints": true
+    },
+    {
+      "idx": 181,
+      "version": "7",
+      "when": 1801785600027,
+      "tag": "0181_reporting_optional_eligibility_scope",
+      "breakpoints": true
+    },
+    {
+      "idx": 182,
+      "version": "7",
+      "when": 1801785600028,
+      "tag": "0182_reporting_day_frequency",
+      "breakpoints": true
     }
   ]
 }

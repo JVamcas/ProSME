@@ -9,18 +9,25 @@ import { PageShell } from "@/shared/ui/PageShell";
 
 export const metadata: Metadata = { title: "Notification event rules" };
 
-export default async function NotificationEventRulesPage() {
+export default async function NotificationEventRulesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ reportId?: string }>;
+}) {
+  const { reportId } = await searchParams;
   const user = await getAuthenticatedPageUser();
   if (!user || !can(user, permissionCodes.notificationConfigurationRead)) {
     redirect("/unauthorized");
   }
   return (
     <PageShell
-      description="Event rules define the mandatory notifications generated when an application or workflow event occurs. Each rule determines who must be notified and through which enabled channels."
+      description="Event rules configure notification subscriptions for application, workflow and report lifecycle events. Each rule determines who must be notified and through which enabled channels."
       eyebrow="System notification"
       title="Event Rules"
     >
       <NotificationRuleList
+        canUpdateReports={can(user, permissionCodes.reportingDeliveryUpdateAll)}
+        reportId={reportId}
         canUpdate={can(user, permissionCodes.notificationConfigurationUpdate)}
       />
     </PageShell>

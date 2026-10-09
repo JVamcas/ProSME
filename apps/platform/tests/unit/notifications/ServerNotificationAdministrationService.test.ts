@@ -75,10 +75,10 @@ describe("notification administration service", () => {
       ),
     ).resolves.toEqual([]);
 
-    expect(listNotificationEventRuleRecords).toHaveBeenCalledWith({
-      catalogKey: "WORKFLOW",
-      search: "assigned",
-    });
+    expect(listNotificationEventRuleRecords).toHaveBeenCalledWith(
+      { catalogKey: "WORKFLOW", search: "assigned" },
+      [],
+    );
   });
 
   it("denies delivery history without the delivery read permission", async () => {

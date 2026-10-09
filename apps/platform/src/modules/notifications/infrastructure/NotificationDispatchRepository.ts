@@ -20,6 +20,8 @@ export type ClaimedNotificationDelivery = {
   context: NotificationEventContextByKey[NotificationEventKey];
   correlationId: string;
   deliveryId: string;
+  reportId?: string | null;
+  ruleId?: string | null;
   eventKey: NotificationEventKey;
   htmlTemplate: string | null;
   outboxId: string;
@@ -106,6 +108,8 @@ export async function loadClaimedNotificationDeliveries(input: {
       delivery.attempt_count AS "attemptCount",
       occurrence.event_key AS "eventKey",
       occurrence.context,
+      occurrence.report_id AS "reportId",
+      occurrence.rule_id AS "ruleId",
       occurrence.correlation_id AS "correlationId",
       template.id AS "templateVersionId",
       template.subject_template AS "subjectTemplate",
@@ -123,11 +127,12 @@ export async function loadClaimedNotificationDeliveries(input: {
       FROM app_notification_template_targets target
       JOIN app_notification_template_versions version
         ON version.template_target_id = target.id
-        AND version.status = 'PUBLISHED'
+        AND ((occurrence.report_id IS NOT NULL AND version.id = delivery.template_version_id)
+          OR (occurrence.report_id IS NULL AND version.status = 'PUBLISHED'))
       JOIN app_notification_events event
         ON event.id = occurrence.event_id
       WHERE target.channel_id = delivery.channel_id
-        AND (target.is_enabled = true OR occurrence_event.rule_eligibility = 'SYSTEM_ONLY')
+        AND (occurrence.report_id IS NOT NULL OR target.is_enabled = true OR occurrence_event.rule_eligibility = 'SYSTEM_ONLY')
         AND (
           (target.scope = 'EVENT' AND target.event_id = occurrence.event_id)
           OR (target.scope = 'CATALOG' AND target.catalog_id = event.catalog_id)
@@ -212,11 +217,9 @@ export async function recordNotificationDeliveryFailure(input: {
 }) {
   await getDatabase().execute(sql`
     UPDATE app_notification_deliveries delivery
-    SET status = ${input.retry
-      ? "PENDING"
-      : input.deadLetter
-        ? "DEAD_LETTER"
-        : "FAILED"},
+    SET status = ${
+      input.retry ? "PENDING" : input.deadLetter ? "DEAD_LETTER" : "FAILED"
+    },
       template_version_id = ${input.templateVersionId}::uuid,
       last_error_code = ${input.code},
       last_error_message = ${"Delivery failed; see the stable error code."},

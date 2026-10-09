@@ -42,6 +42,8 @@ export const permissionGroups: readonly PermissionGroup[] = [
       permissionCodes.reportingReportCreateAll,
       permissionCodes.reportingReportUpdateAll,
       permissionCodes.reportingReportRunAll,
+      permissionCodes.reportingScheduleUpdateAll,
+      permissionCodes.reportingDeliveryUpdateAll,
       permissionCodes.reportingRunReadAll,
       permissionCodes.reportingRunDownloadAll,
 

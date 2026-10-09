@@ -11,6 +11,7 @@ import {
 
 import { roles } from "@/db/schema/authorization";
 import { users } from "@/db/schema/identity";
+import { reportingReports } from "@/modules/reporting/infrastructure/reporting-definitions.schema";
 import {
   notificationChannels,
   notificationEvents,
@@ -23,6 +24,7 @@ export const notificationEventRules = pgTable(
     eventId: uuid("event_id")
       .notNull()
       .references(() => notificationEvents.id, { onDelete: "restrict" }),
+    reportId: uuid("report_id").references(() => reportingReports.id),
     description: text("description").notNull(),
     isEnabled: boolean("is_enabled").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -33,7 +35,12 @@ export const notificationEventRules = pgTable(
       .defaultNow(),
   },
   (table) => [
-    uniqueIndex("app_notification_event_rules_event_unique").on(table.eventId),
+    uniqueIndex("app_notification_event_rules_event_unique")
+      .on(table.eventId)
+      .where(sql`${table.reportId} IS NULL`),
+    uniqueIndex("app_notification_event_rules_report_unique")
+      .on(table.eventId, table.reportId)
+      .where(sql`${table.reportId} IS NOT NULL`),
   ],
 );
 

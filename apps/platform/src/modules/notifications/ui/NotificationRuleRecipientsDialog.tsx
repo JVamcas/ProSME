@@ -1,8 +1,14 @@
 "use client";
 
+import type { NotificationRecipientType } from "../domain/NotificationRecipient";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useMemo, useState } from "react";
-import { FormProvider, useFieldArray, useForm, useWatch } from "react-hook-form";
+import {
+  FormProvider,
+  useFieldArray,
+  useForm,
+  useWatch,
+} from "react-hook-form";
 
 import { GeneralButton } from "@/components/ui/button";
 import { DataTable } from "@/shared/ui/DataTable";
@@ -22,12 +28,14 @@ import {
 import { notificationRuleDetailUpdateValues } from "./NotificationRuleUpdateValues";
 
 export function NotificationRuleRecipientsDialog({
+  allowedRecipientTypes,
   channels,
   isPending,
   onClose,
   onSubmit,
   rule,
 }: {
+  allowedRecipientTypes?: readonly NotificationRecipientType[];
   channels: NotificationChannelSummary[];
   isPending: boolean;
   onClose: () => void;
@@ -52,7 +60,10 @@ export function NotificationRuleRecipientsDialog({
     control: form.control,
     name: "recipients",
   });
-  const watchedRecipients = useMemo(() => watchedRecipientValues ?? [], [watchedRecipientValues]);
+  const watchedRecipients = useMemo(
+    () => watchedRecipientValues ?? [],
+    [watchedRecipientValues],
+  );
   const columns = useNotificationRuleRecipientColumns({
     channels,
     form,
@@ -69,7 +80,11 @@ export function NotificationRuleRecipientsDialog({
     <RightDrawer
       footer={
         <div className="flex justify-end gap-3">
-          <GeneralButton disabled={isPending} onClick={onClose} variant="outline">
+          <GeneralButton
+            disabled={isPending}
+            onClick={onClose}
+            variant="outline"
+          >
             Cancel
           </GeneralButton>
           <GeneralButton
@@ -87,7 +102,11 @@ export function NotificationRuleRecipientsDialog({
       title="Manage recipients"
     >
       <FormProvider {...form}>
-        <form className="space-y-5" id={formId} onSubmit={form.handleSubmit(onSubmit)}>
+        <form
+          className="space-y-5"
+          id={formId}
+          onSubmit={form.handleSubmit(onSubmit)}
+        >
           <div className="max-sm:[&_table]:block max-sm:[&_thead]:hidden max-sm:[&_tbody]:block max-sm:[&_tbody]:divide-y-0 max-sm:[&_tbody_tr]:mb-3 max-sm:[&_tbody_tr]:block max-sm:[&_tbody_tr]:overflow-hidden max-sm:[&_tbody_tr]:rounded-lg max-sm:[&_tbody_tr]:border max-sm:[&_tbody_tr]:border-slate-200 max-sm:[&_tbody_td]:flex max-sm:[&_tbody_td]:h-auto max-sm:[&_tbody_td]:min-h-12 max-sm:[&_tbody_td]:items-center max-sm:[&_tbody_td]:border-b max-sm:[&_tbody_td]:border-slate-100 max-sm:[&_tbody_td]:px-4 max-sm:[&_tbody_td]:py-3 max-sm:[&_tbody_td:last-child]:border-b-0">
             <DataTable
               columns={columns}
@@ -118,6 +137,7 @@ export function NotificationRuleRecipientsDialog({
       </FormProvider>
       {rule ? (
         <NotificationRuleAddRecipientDialog
+          allowedRecipientTypes={allowedRecipientTypes}
           channels={channels}
           existingRecipients={watchedRecipients}
           isOpen={isAdding}

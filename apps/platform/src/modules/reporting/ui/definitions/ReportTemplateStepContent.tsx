@@ -1,6 +1,7 @@
 "use client";
 
 import { Controller, useFormContext, useWatch } from "react-hook-form";
+import type { ReactNode } from "react";
 import {
   FormInput,
   FormSelect,
@@ -9,6 +10,7 @@ import {
 import type { ReportDataset } from "../../domain/ReportDataset";
 import { ReportSqlEditor } from "./ReportSqlEditor";
 import { ReportTemplateMetadataFields } from "./ReportTemplateMetadataFields";
+import { ReportTemplateReviewCard } from "./ReportTemplateReviewCard";
 import type {
   ReportTemplateFormValues,
   ReportTemplateStep,
@@ -18,15 +20,15 @@ export function ReportTemplateStepContent({
   step,
   datasets,
   disabled,
+  reviewActions,
 }: {
   step: ReportTemplateStep;
   datasets: ReportDataset[];
   disabled: boolean;
+  reviewActions?: ReactNode;
 }) {
   const form = useFormContext<ReportTemplateFormValues>();
   const definition = useWatch({ control: form.control, name: "definition" });
-  const description = useWatch({ control: form.control, name: "description" });
-  const name = useWatch({ control: form.control, name: "name" });
   const selected = datasets.find(
     (dataset) =>
       dataset.key === definition.datasetKey &&
@@ -38,6 +40,7 @@ export function ReportTemplateStepContent({
       <fieldset disabled={disabled} className="grid gap-4 sm:grid-cols-2">
         <FormInput label="Name" name="name" />
         <FormSelect
+          infoTooltip={selected?.description}
           label="Dataset/version"
           value={`${definition.datasetKey}/${definition.datasetVersion}`}
           items={datasets.map((dataset) => ({
@@ -57,11 +60,6 @@ export function ReportTemplateStepContent({
             });
           }}
         />
-        {selected ? (
-          <p className="text-sm text-slate-600 sm:col-span-2">
-            {selected.description}
-          </p>
-        ) : null}
         <FormTextarea
           label="Description"
           name="description"
@@ -106,38 +104,6 @@ export function ReportTemplateStepContent({
   }
 
   return (
-    <div className="space-y-4">
-      <h2 className="font-semibold">Save & publish</h2>
-      <p className="whitespace-pre-wrap text-sm text-slate-600">
-        {description}
-      </p>
-      <dl className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <dt className="text-sm text-slate-600">Name</dt>
-          <dd>{name}</dd>
-        </div>
-        <div>
-          <dt className="text-sm text-slate-600">Dataset/version</dt>
-          <dd>
-            {selected?.name} · v{definition.datasetVersion}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-sm text-slate-600">
-            Parameters / output columns
-          </dt>
-          <dd>
-            {definition.parameters.length} / {definition.columns.length}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-sm text-slate-600">Supported formats</dt>
-          <dd>{definition.formats.join(", ")}</dd>
-        </div>
-      </dl>
-      <p className="text-sm text-slate-600">
-        Save the draft before validating or publishing a version.
-      </p>
-    </div>
+    <ReportTemplateReviewCard dataset={selected} actions={reviewActions} />
   );
 }

@@ -1,3 +1,4 @@
+export * from "@/modules/reporting/infrastructure/reporting-schedules.schema";
 export * from "@/modules/reporting/infrastructure/reporting-definitions.schema";
 export * from "@/modules/reporting/infrastructure/reporting-runs.schema";
 export * from "./authorization";

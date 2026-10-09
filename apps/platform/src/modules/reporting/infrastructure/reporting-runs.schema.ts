@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  type AnyPgColumn,
   check,
   foreignKey,
   index,
@@ -10,6 +11,7 @@ import {
   text,
   timestamp,
   unique,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 import { users } from "@/db/schema/identity";
@@ -23,6 +25,7 @@ import {
   reportingReports,
   reportingTemplateVersions,
 } from "./reporting-definitions.schema";
+import { reportingReportSchedules } from "./reporting-schedules.schema";
 
 export const reportingReportRuns = pgTable(
   "app_reporting_report_runs",
@@ -39,6 +42,18 @@ export const reportingReportRuns = pgTable(
     actorId: uuid("actor_id")
       .notNull()
       .references(() => users.id),
+    scheduleId: uuid("schedule_id").references(
+      (): AnyPgColumn => reportingReportSchedules.id,
+    ),
+    scheduleVersion: integer("schedule_version"),
+    period: jsonb("period").$type<ReportRun["period"]>(),
+    retryOf: uuid("retry_of").references(
+      (): AnyPgColumn => reportingReportRuns.id,
+    ),
+    sourceDeadline: timestamp("source_deadline", { withTimezone: true })
+      .notNull()
+      .default(sql`now() + interval '24 hours'`),
+    sourceCoverage: jsonb("source_coverage"),
     trigger: text("trigger").notNull().default("USER"),
     idempotencyKey: uuid("idempotency_key").notNull(),
     requestHash: text("request_hash").notNull(),
@@ -79,7 +94,7 @@ export const reportingReportRuns = pgTable(
     ).on(table.reportId, table.actorId, table.idempotencyKey),
     check(
       "app_reporting_report_runs_trigger_check",
-      sql`${table.trigger} = 'USER'`,
+      sql`${table.trigger} IN ('USER', 'SYSTEM')`,
     ),
     check(
       "app_reporting_report_runs_format_check",
@@ -90,6 +105,9 @@ export const reportingReportRuns = pgTable(
       sql`${table.status} IN ('QUEUED', 'PREPARING_SOURCE', 'RUNNING', 'SUCCEEDED', 'FAILED')`,
     ),
     check("app_reporting_report_runs_rows_check", sql`${table.rows} >= 0`),
+    uniqueIndex("app_reporting_schedule_period_unique")
+      .on(table.scheduleId, sql`(${table.period}->>'startDate')`)
+      .where(sql`${table.retryOf} IS NULL`),
     index("app_reporting_runs_claim")
       .on(table.availableAt, table.createdAt)
       .where(sql`${table.status} IN ('QUEUED', 'PREPARING_SOURCE', 'RUNNING')`),

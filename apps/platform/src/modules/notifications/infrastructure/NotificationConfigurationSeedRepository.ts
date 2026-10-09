@@ -3,7 +3,7 @@ import "server-only";
 
 import { notificationEventCatalogue } from "../domain/NotificationEvent";
 
-import { eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 
 import { getDatabase } from "@/platform/database/client";
 import {
@@ -190,6 +190,7 @@ export async function seedNotificationConfiguration(): Promise<NotificationConfi
       .values(ruleValues)
       .onConflictDoNothing({
         target: notificationEventRules.eventId,
+        where: sql`${notificationEventRules.reportId} IS NULL`,
       })
       .returning({ id: notificationEventRules.id });
     const rules = await transaction
@@ -198,7 +199,12 @@ export async function seedNotificationConfiguration(): Promise<NotificationConfi
         id: notificationEventRules.id,
       })
       .from(notificationEventRules)
-      .where(inArray(notificationEventRules.eventId, [...eventIds.values()]));
+      .where(
+        and(
+          inArray(notificationEventRules.eventId, [...eventIds.values()]),
+          isNull(notificationEventRules.reportId),
+        ),
+      );
     const ruleIds = new Map(rules.map((rule) => [rule.eventId, rule.id]));
     const recipientValues = configurableNotificationEventSeeds.flatMap(
       (event) => {

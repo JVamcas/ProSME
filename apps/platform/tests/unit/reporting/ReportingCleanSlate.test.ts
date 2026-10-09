@@ -7,6 +7,10 @@ vi.mock("@/modules/reporting/ServerWebsiteAnalyticsSyncService", () => ({
 vi.mock("@/modules/reporting/ServerReportGenerationService", () => ({
   processReportGeneration: vi.fn(),
 }));
+vi.mock("@/modules/reporting/ServerReportScheduleService", () => ({
+  processReportSchedules: vi.fn(),
+}));
+import { processReportSchedules } from "@/modules/reporting/ServerReportScheduleService";
 import { processReportGeneration } from "@/modules/reporting/ServerReportGenerationService";
 import { processReporting } from "@/modules/reporting/ServerReportingProcessorService";
 import { processWebsiteAnalyticsSynchronization } from "@/modules/reporting/ServerWebsiteAnalyticsSyncService";
@@ -30,10 +34,13 @@ describe("clean slate preserves D1 and removes superseded reporting", () => {
     vi.mocked(processWebsiteAnalyticsSynchronization).mockResolvedValue(counts);
     const generation = { claimed: 0, succeeded: 0, failed: 0, preparing: 0 };
     vi.mocked(processReportGeneration).mockResolvedValue(generation);
+    const schedules = { claimed: 0, queued: 0, deferred: 0 };
+    vi.mocked(processReportSchedules).mockResolvedValue(schedules);
     expect(await processReporting("Bearer processor")).toEqual({
       ...counts,
       synchronization: counts,
       generation,
+      schedules,
     });
     expect(processWebsiteAnalyticsSynchronization).toHaveBeenCalledWith(
       "Bearer processor",

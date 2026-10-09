@@ -55,6 +55,30 @@ afterAll(async () => {
     }
     expect(rows.rows).toHaveLength(8);
     expect(
+      (
+        await pool.query(
+          "SELECT frequency_days, enabled FROM app_reporting_report_schedules ORDER BY frequency_days",
+        )
+      ).rows,
+    ).toEqual([
+      { frequency_days: 14, enabled: false },
+      { frequency_days: 30, enabled: false },
+    ]);
+    expect(
+      (
+        await pool.query(
+          "SELECT count(*)::integer AS count FROM app_notification_event_rules WHERE report_id IS NOT NULL AND NOT is_enabled",
+        )
+      ).rows[0].count,
+    ).toBe(24);
+    expect(
+      (
+        await pool.query(
+          "SELECT count(*)::integer AS count FROM app_notification_template_versions version JOIN app_notification_template_targets target ON target.id = version.template_target_id JOIN app_notification_events event ON event.id = target.event_id WHERE event.event_key LIKE 'reporting.generation.%' AND version.status = 'PUBLISHED'",
+        )
+      ).rows[0].count,
+    ).toBe(3);
+    expect(
       (await pool.query("SELECT version FROM app_reporting_report_versions"))
         .rows,
     ).toEqual(Array.from({ length: 8 }, () => ({ version: 1 })));

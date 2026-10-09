@@ -58,8 +58,7 @@ export function ReportConfigurationMetadataFields({
           Report configuration
         </legend>
         <p className="text-sm text-brand-navy/60">
-          Saving changes to the template, period, format or default parameters
-          creates a new report version.
+          Saving changes to the report configuration creates a new report version.
         </p>
         <QuerySection
           query={templates}
@@ -115,10 +114,6 @@ export function ReportConfigurationMetadataFields({
             />
           )}
         </QuerySection>
-        <p className="text-xs text-brand-navy/60">
-          Template versions are assigned automatically. This report keeps its
-          saved template version until a different template is selected.
-        </p>
         <div className="grid gap-4 sm:grid-cols-2">
           <FormSelect
             label="Default period"

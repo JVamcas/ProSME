@@ -1,23 +1,55 @@
 "use client";
+
+import { useRef } from "react";
+import { GeneralButton } from "@/components/ui/button";
 import { RightDrawer } from "@/shared/ui/RightDrawer";
 import { QuerySection } from "@/shared/ui/QuerySection";
 import { Skeleton } from "@/shared/ui/Skeleton";
-import { GeneralButton } from "@/components/ui/button";
-import { useDownloadReportArtifact, useReportRunDetail } from "./useReports";
+import {
+  useDownloadReportArtifact,
+  useReportRunDetail,
+  useRetryReportRun,
+} from "./useReports";
+import { ReportRunCard } from "./ReportRunCard";
+import { ReportRunArtifacts } from "./ReportRunArtifacts";
+import type { ReportArtifact } from "../../domain/Report";
 
 export function ReportRunDrawer({
   reportId,
   runId,
   onClose,
   canDownload,
+  canRun = false,
 }: {
   reportId: string;
   runId?: string;
   onClose: () => void;
   canDownload: boolean;
+  canRun?: boolean;
 }) {
+  const retry = useRetryReportRun(reportId);
+  const retryKey = useRef(crypto.randomUUID());
   const download = useDownloadReportArtifact(reportId);
   const query = useReportRunDetail(reportId, runId);
+
+  async function downloadArtifact(artifact: ReportArtifact) {
+    if (!runId || !canDownload) return;
+    try {
+      const blob = await download.mutateAsync({
+        runId,
+        artifactId: artifact.id,
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = artifact.filename;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch {
+      // The existing mutation displays download errors.
+    }
+  }
+
   return (
     <RightDrawer title="Report run" open={Boolean(runId)} onClose={onClose}>
       <QuerySection
@@ -26,69 +58,39 @@ export function ReportRunDrawer({
         loading={<Skeleton className="h-60" />}
       >
         {(detail) => (
-          <div className="space-y-4">
-            <p>
-              {detail.run.status} · {detail.run.format} ·{" "}
-              {detail.run.rows ?? "—"} rows
-            </p>
-            <p>
-              Template v{detail.run.templateVersion} · report v
-              {detail.run.reportVersion} · {detail.run.timezone}
-            </p>
-            {detail.run.error ? <p role="alert">{detail.run.error}</p> : null}
-            {detail.artifacts.map((artifact) => (
-              <div key={artifact.id}>
-                {canDownload ? (
-                  <GeneralButton
-                    variant="outline"
-                    disabled={download.isPending}
-                    onClick={() => {
-                      void download
-                        .mutateAsync({
-                          runId: detail.run.id,
-                          artifactId: artifact.id,
-                        })
-                        .then((blob) => {
-                          const url = URL.createObjectURL(blob);
-                          const link = document.createElement("a");
-                          link.href = url;
-                          link.download = artifact.filename;
-                          link.click();
-                          setTimeout(() => URL.revokeObjectURL(url), 1000);
-                        })
-                        .catch(() => undefined);
-                    }}
-                  >
-                    {artifact.filename}
-                  </GeneralButton>
-                ) : (
-                  <p>{artifact.filename}</p>
-                )}
-                <p className="text-xs">
-                  {artifact.bytes} bytes · SHA-256 {artifact.checksum}
-                </p>
-              </div>
-            ))}
+          <ReportRunCard run={detail.run} events={detail.events}>
+            {canRun && detail.run.status === "FAILED" ? (
+              <GeneralButton
+                disabled={retry.isPending}
+                onClick={() => {
+                  void retry
+                    .mutateAsync({
+                      runId: detail.run.id,
+                      idempotencyKey: retryKey.current,
+                    })
+                    .then(() => {
+                      retryKey.current = crypto.randomUUID();
+                      onClose();
+                    })
+                    .catch(() => undefined);
+                }}
+              >
+                Retry generation
+              </GeneralButton>
+            ) : null}
+            <ReportRunArtifacts
+              artifacts={detail.artifacts}
+              canDownload={canDownload}
+              downloading={download.isPending}
+              onDownload={(artifact) => void downloadArtifact(artifact)}
+            />
             {detail.run.status === "FAILED" &&
             !detail.artifacts.some((artifact) => artifact.kind === "ERROR") ? (
-              <p>Error file persistence is pending.</p>
-            ) : null}
-            <h3 className="font-semibold">Lifecycle</h3>
-            {detail.events.map((event) => (
-              <p key={event.key}>
-                {event.key} · {new Date(event.occurredAt).toLocaleString()}
+              <p className="text-sm text-brand-navy/60">
+                Error file persistence is pending.
               </p>
-            ))}
-            <h3 className="font-semibold">Resolved parameters</h3>
-            <dl>
-              {Object.entries(detail.run.values).map(([name, value]) => (
-                <div key={name}>
-                  <dt>{name}</dt>
-                  <dd>{value === null ? "No value" : String(value)}</dd>
-                </div>
-              ))}
-            </dl>
-          </div>
+            ) : null}
+          </ReportRunCard>
         )}
       </QuerySection>
     </RightDrawer>

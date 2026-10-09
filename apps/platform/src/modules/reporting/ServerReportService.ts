@@ -1,4 +1,7 @@
+import { z } from "zod";
+import { enqueueReportRetry } from "./infrastructure/ReportRunRetryRepository";
 import "server-only";
+import { findLatestCompletedSchedulePeriod } from "./infrastructure/ReportScheduleRepository";
 import { can, requirePermission } from "@/auth/authorization/policy";
 import { permissionCodes } from "@/auth/authorization/permissions";
 import type { AuthenticatedUser } from "@/auth/types";
@@ -30,6 +33,7 @@ import {
 import { requireReportSourceAccess } from "./application/ReportAccess";
 import { resolveReportRunDefaults } from "./application/ReportRunDefaults";
 import { configuredReportFormSchema } from "./api/ReportFormSchemas";
+import { googleAnalyticsConfiguration } from "./infrastructure/GoogleAnalyticsConfiguration";
 
 export async function getReports(
   user: AuthenticatedUser | null,
@@ -47,13 +51,31 @@ export async function getReport(user: AuthenticatedUser | null, id: string) {
   await requireReportSourceAccess(user, report.definition);
   let runDefaults: Record<string, unknown> | null = null;
   let runDefaultsError: string | null = null;
+  const source = googleAnalyticsConfiguration();
+  const runTimezone =
+    report.definition.datasetKey === "website-analytics"
+      ? (source?.timezone ?? "Africa/Windhoek")
+      : "Africa/Windhoek";
   try {
-    runDefaults = resolveReportRunDefaults(report, {}).values;
+    const runAt = new Date().toISOString();
+    const completedPeriod =
+      source &&
+      report.definition.datasetKey === "website-analytics" &&
+      report.defaults.period === "website-completed"
+        ? await findLatestCompletedSchedulePeriod(report.id, runAt, source)
+        : null;
+    runDefaults = resolveReportRunDefaults(
+      report,
+      {},
+      runAt,
+      undefined,
+      completedPeriod,
+    ).values;
   } catch {
     runDefaultsError =
       "Report defaults need valid parameters or completed source dates before generation.";
   }
-  return { ...report, runDefaults, runDefaultsError };
+  return { ...report, runDefaults, runDefaultsError, runTimezone };
 }
 export async function putReport(
   user: AuthenticatedUser | null,
@@ -114,7 +136,10 @@ export async function runReport(
       "The selected template does not support this format.",
     );
   }
-  const resolved = resolveReportRunDefaults(report, input.values);
+  const resolved = resolveReportRunDefaults(report, {
+    ...report.runDefaults,
+    ...input.values,
+  });
   return enqueueReportRun(report, actor.id, input, format, resolved);
 }
 export async function getReportRuns(
@@ -151,4 +176,19 @@ export async function getReportRun(
   }
   await requireReportSourceAccess(user, detail.run.definition);
   return detail;
+}
+
+export async function retryReportRun(
+  user: AuthenticatedUser | null,
+  reportId: string,
+  runId: string,
+  values: unknown,
+) {
+  const actor = requirePermission(user, permissionCodes.reportingReportRunAll);
+  requirePermission(actor, permissionCodes.reportingQueryExecuteAll);
+  const input = z.object({ idempotencyKey: z.uuid() }).strict().parse(values);
+  const original = await getReportRun(actor, reportId, runId);
+  if (original.run.status !== "FAILED")
+    throw new RequestValidationError("Only failed generation can be retried.");
+  return enqueueReportRetry(actor.id, original.run, input.idempotencyKey);
 }

@@ -24,6 +24,8 @@ export const runSelection = sql`
   id, report_id AS "reportId", report_name AS "reportName", report_version AS "reportVersion",
   template_id AS "templateId", template_version AS "templateVersion", definition,
   actor_id AS "actorId", values, format, run_at::text AS "runAt", timezone, website_scope AS "websiteScope",
+  source_coverage AS "sourceCoverage", trigger, schedule_id AS "scheduleId", schedule_version AS "scheduleVersion", period,
+  retry_of AS "retryOf", source_deadline::text AS "sourceDeadline",
   status, created_at::text AS "createdAt", started_at::text AS "startedAt", finished_at::text AS "finishedAt",
   rows, error, lease_token AS "leaseToken"
 `;
@@ -145,17 +147,21 @@ export async function listReportRuns(
   authorizedDatasets: string[],
 ) {
   const database = getDatabase();
-  const condition = sql`report_id = ${reportId}::uuid AND status ILIKE ${"%" + input.search + "%"}
-    AND ((definition->>'datasetKey') || '/' || (definition->>'datasetVersion')) = ANY(${sql.param(authorizedDatasets)}::text[])`;
+  const condition = sql`run.report_id = ${reportId}::uuid AND run.status ILIKE ${"%" + input.search + "%"}
+    AND ((run.definition->>'datasetKey') || '/' || (run.definition->>'datasetVersion')) = ANY(${sql.param(authorizedDatasets)}::text[])`;
   const [items, count] = await Promise.all([
     database.execute<ReportRunSummary>(sql`
-      SELECT id, status, actor_id AS "actorId", created_at::text AS "createdAt", started_at::text AS "startedAt",
-        finished_at::text AS "finishedAt", rows, format, error FROM app_reporting_report_runs
-      WHERE ${condition} ORDER BY created_at DESC, id DESC
+      SELECT run.id, run.status, run.actor_id AS "actorId",
+        actor.display_name AS "actorName", actor.email AS "actorEmail", run.trigger,
+        run.created_at::text AS "createdAt", run.started_at::text AS "startedAt",
+        run.finished_at::text AS "finishedAt", run.rows, run.format, run.error
+      FROM app_reporting_report_runs run
+      INNER JOIN app_users actor ON actor.id = run.actor_id
+      WHERE ${condition} ORDER BY run.created_at DESC, run.id DESC
       LIMIT ${input.pageSize} OFFSET ${(input.page - 1) * input.pageSize}
     `),
     database.execute<{ total: number }>(
-      sql`SELECT count(*)::integer AS total FROM app_reporting_report_runs WHERE ${condition}`,
+      sql`SELECT count(*)::integer AS total FROM app_reporting_report_runs run WHERE ${condition}`,
     ),
   ]);
   return {

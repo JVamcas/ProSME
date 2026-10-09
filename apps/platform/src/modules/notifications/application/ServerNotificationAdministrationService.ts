@@ -1,6 +1,13 @@
+import {
+  getReportEventRuleScope,
+  getReportDelivery,
+  putReportDelivery,
+} from "@/modules/reporting/ServerReportDeliveryService";
 import "server-only";
 
 import type { AuthenticatedUser } from "@/auth/types";
+import { can } from "@/auth/authorization/policy";
+import { permissionCodes } from "@/auth/authorization/permissions";
 import {
   ResourceConflictError,
   ResourceNotFoundError,
@@ -105,14 +112,22 @@ export async function getNotificationEventRules(
 ) {
   authorizeNotificationOperation(user, "READ_CONFIGURATION");
   const query = notificationEventRuleListQuerySchema.parse(input);
-  return serialize(await listNotificationEventRuleRecords(query));
+  const datasets = await getReportEventRuleScope(user, query.reportId);
+  return serialize(await listNotificationEventRuleRecords(query, datasets));
 }
 
 export async function getNotificationEventRule(
   user: AuthenticatedUser | null,
   eventKey: string,
+  reportId?: string,
 ) {
   authorizeNotificationOperation(user, "READ_CONFIGURATION");
+  if (reportId) {
+    const rules = await getReportDelivery(user, reportId);
+    const rule = rules.find((rule) => rule?.eventKey === eventKey);
+    if (!rule) throw new ResourceNotFoundError("report event rule");
+    return rule;
+  }
   assertConfigurableEvent(eventKey);
   const rule = await findNotificationEventRuleRecord(eventKey);
   if (!rule) throw new ResourceNotFoundError("notification event rule");
@@ -124,8 +139,10 @@ export async function updateNotificationEventRule(
   eventKey: string,
   input: NotificationEventRuleUpdate,
   correlationId: string,
+  reportId?: string,
 ) {
   const actor = authorizeNotificationOperation(user, "UPDATE_CONFIGURATION");
+  if (reportId) return putReportDelivery(actor, reportId, eventKey, input);
   assertConfigurableEvent(eventKey);
   const update = notificationEventRuleUpdateSchema.parse(input);
   const allowedRelationships = new Set(
@@ -134,8 +151,8 @@ export async function updateNotificationEventRule(
   if (
     update.recipients.some(
       (recipient) =>
-        isRelationshipNotificationRecipientType(recipient.recipientType)
-        && !allowedRelationships.has(recipient.recipientType),
+        isRelationshipNotificationRecipientType(recipient.recipientType) &&
+        !allowedRelationships.has(recipient.recipientType),
     )
   ) {
     throw new ResourceConflictError(
@@ -204,7 +221,9 @@ export async function getNotificationDeliveries(
 ) {
   authorizeNotificationOperation(user, "READ_DELIVERY");
   const query = notificationDeliveryQuerySchema.parse(input);
-  const result = await listNotificationDeliveryRecords(query);
+  const result = await listNotificationDeliveryRecords(query, {
+    datasets: await getReportEventRuleScope(user),
+  });
   return {
     items: serialize(result.items),
     page: query.page,
@@ -228,6 +247,11 @@ export async function retryNotificationDelivery(
     correlationId,
     deliveryId,
     reason,
+    scope: {
+      datasets: can(user, permissionCodes.reportingDeliveryUpdateAll)
+        ? await getReportEventRuleScope(user)
+        : [],
+    },
   });
   if (result.outcome === "NOT_FOUND") {
     throw new ResourceNotFoundError("notification delivery");

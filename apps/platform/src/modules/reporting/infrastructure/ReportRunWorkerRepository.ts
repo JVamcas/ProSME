@@ -1,3 +1,5 @@
+import { captureReportingLifecycleEvent } from "@/modules/notifications/application/ReportingRunNotifications";
+import type { ReportingEventKey } from "@/modules/notifications/domain/NotificationReportingEvent";
 import "server-only";
 import { randomUUID } from "node:crypto";
 import { sql } from "drizzle-orm";
@@ -36,13 +38,16 @@ export async function claimReportRun(): Promise<ClaimedReportRun | null> {
 async function insertEvent(
   transaction: DatabaseTransaction,
   run: ReportRun,
-  key: string,
+  key: ReportingEventKey,
   metadata: Record<string, unknown>,
 ) {
   await transaction.execute(sql`
     INSERT INTO app_reporting_run_events(run_id, key, metadata)
     VALUES (${run.id}::uuid, ${key}, ${JSON.stringify(metadata)}::jsonb) ON CONFLICT (run_id, key) DO NOTHING
   `);
+  if (key !== "reporting.generation.failed") {
+    await captureReportingLifecycleEvent(transaction, run.id, key);
+  }
 }
 export async function startReportRun(run: ReportRun) {
   return getDatabase().transaction(async (transaction) => {
@@ -55,7 +60,7 @@ export async function startReportRun(run: ReportRun) {
       return false;
     }
     await insertEvent(transaction, run, "reporting.generation.started", {
-      trigger: "USER",
+      trigger: run.trigger ?? "USER",
       actorId: run.actorId,
     });
     return true;
@@ -147,6 +152,11 @@ export async function registerReportErrorArtifact(
     `);
     if (result.rows.length) {
       await insertArtifact(transaction, run.id, artifact);
+      await captureReportingLifecycleEvent(
+        transaction,
+        run.id,
+        "reporting.generation.failed",
+      );
     }
   });
 }

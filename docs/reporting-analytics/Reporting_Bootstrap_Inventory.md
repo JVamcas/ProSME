@@ -4,13 +4,17 @@ Date: 2026-10-08.
 Companion to [the implementation plan](../SME_Fund_Reporting_Analytics_Implementation_Plan.md).
 The three versioned datasets are implemented by phases 0–2 migrations. Seven
 templates and eight configured reports are implemented through the explicit
-phase 5 seed. Schedules and notification delivery remain later phases. See the
+phase 5 seed. Phase 6–7 extends that explicit seed with two disabled website
+schedules, three lifecycle email templates and disabled scoped event rules.
+Event subscriptions and recipient bindings are managed in Event Rules. See the
 [phases 0–2 gate](Reporting_Phases_0_2_Implementation_Gate.md) and
-[phases 3–5 gate](Reporting_Phases_3_5_Implementation_Gate.md).
+[phases 3–5 gate](Reporting_Phases_3_5_Implementation_Gate.md) and
+[phases 6–7 gate](Reporting_Phases_6_7_Implementation_Gate.md).
 The seed has been verified in disposable PostgreSQL fixtures and run against
 the local application database: seven templates/eight reports were installed,
-and a second invocation created no records. Schedule and delivery policies below
-remain recommendations pending their implementation phases.
+and a second invocation created no records. The phase 6–7 extension is verified
+in disposable PostgreSQL only; target-environment bootstrap, activation and
+delivery acceptance remain pending.
 
 ## 1. Local source evidence
 
@@ -135,13 +139,13 @@ All reports retain the template version and resolved format on every run.
 Template parameter definitions validate report defaults and run overrides.
 The phase 5 seed supplies previous-month defaults for export, turnaround and
 workload, and current snapshots for pipeline, ageing and budget. Both website
-reports use collectionStart through yesterday until phase 6 supplies a completed
-scheduled period. Schedule and delivery entries below remain future policy.
+reports use the latest completed configured schedule period for manual defaults,
+falling back to collectionStart through yesterday when no complete period exists.
 
 | Report key/name | Template | Default parameter resolution | Schedule and delivery |
 | --- | --- | --- | --- |
 | website-biweekly / Bi-weekly Website Analytics | website-analytics | Consecutive 14-day period; website-wide; source timezone | One bi-weekly schedule; success attachment to designated administrators |
-| website-monthly / Monthly Website Analytics | website-analytics | Completed calendar month; website-wide; source timezone | One monthly schedule; success attachment to designated administrators |
+| website-monthly / Monthly Website Analytics | website-analytics | Consecutive 30-day period; website-wide; source timezone | One schedule initially using 30 days; success attachment to designated administrators |
 | application-data-export / Application Data Export | application-export | Previous complete month; all permitted calls; submitted/withdrawn lodged records; any compatible form version | Manual; requester download; event recipients explicitly configurable |
 | application-pipeline / Application Pipeline by Stage | application-pipeline | All permitted calls/stages; current run timestamp | Manual current snapshot; requester download |
 | application-ageing / Application Ageing | application-ageing | All permitted calls/stages; minimumAgeHours=0; current run timestamp | Manual current snapshot; requester download |
@@ -155,16 +159,26 @@ coverage, or report that no completed dates are available. Do not silently exten
 before collectionStart. Snapshots represent state when executed; arbitrary
 historical as-at reconstruction is outside this initial bootstrap.
 
-Carry the observed bi-weekly anchor/cursor, timezone, 09:00 time and 48-hour delay
+Carry the observed bi-weekly anchor/cursor, timezone and 09:00 time
 into explicit replacement configuration after refreshing the target environment
 inventory. Preserve desired enablement as a configuration input; actual activation
 requires validated sources, authorized execution owner and designated recipients.
 These local settings do not authorize a deployment or immediate send.
 
-Proposed monthly defaults are 09:00, 48-hour finalization delay and the GA timezone.
-First full local period would be 2026-11-01 through 2026-11-30 under the observed
-collection start. Keep monthly disabled until configured/verified. Partial October
-can be generated manually and must state its coverage.
+The explicit seed uses the environment's collection start as the counting
+reference for both disabled schedules: frequency 14 days for biweekly and 30
+days for monthly. First generation is due at anchor plus frequency, at 09:00
+in the source timezone. There is no additional finalization delay.
+It preserves existing schedules on rerun. Create a replacement schedule with
+the refreshed intended anchor and leave the seed disabled when the frequency differs;
+existing schedule period settings are immutable to protect their cursor history.
+
+Monthly defaults are 30 days, 09:00 and the GA timezone. With the historical
+observed collection start of 2026-10-06, its first complete 30-day interval would
+be 2026-10-06 through 2026-11-04, due on 2026-11-05. Keep schedules disabled
+until configured and verified. Partial intervals can be generated manually and
+must state their coverage. Historical calendar-month recommendations above are
+source observations; current schedules follow the configured day frequency.
 Operational reports start without schedules; the client has specified no cadence.
 Each configured report nevertheless supports its own schedules.
 
@@ -201,4 +215,5 @@ Historical local evidence informs implementation, not acceptance. Refresh schema
 history, cursors, recipients and collection coverage in every target environment.
 The explicit seed changes templates and report configurations only when invoked.
 Normal startup and the general database seed do not run reporting bootstrap.
-No schedules, recipients, principals or grants are created by this seed.
+The seed creates disabled schedules and scoped rules plus lifecycle email
+templates. It creates no recipients, principals or grants and sends no email.

@@ -33,6 +33,7 @@ describe("analytics processor route", () => {
       failed: 0,
       skipped: 0,
       synchronization: { claimed: 1, processed: 1, failed: 0, skipped: 0 },
+      schedules: { claimed: 0, queued: 0, deferred: 0 },
       generation: { claimed: 0, succeeded: 0, failed: 0, preparing: 0 },
     };
     vi.mocked(processReporting).mockResolvedValue(data);

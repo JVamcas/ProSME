@@ -1,4 +1,5 @@
 export const notificationErrorCodes = {
+  attachmentUnavailable: "NOTIFICATION_ATTACHMENT_UNAVAILABLE",
   unknownEvent: "NOTIFICATION_UNKNOWN_EVENT",
   invalidContext: "NOTIFICATION_INVALID_CONTEXT",
   invalidRecipient: "NOTIFICATION_INVALID_RECIPIENT",

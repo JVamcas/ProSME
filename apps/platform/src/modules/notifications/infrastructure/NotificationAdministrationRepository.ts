@@ -120,6 +120,7 @@ export async function updateNotificationCatalogRecord(input: {
 
 export async function listNotificationEventRuleRecords(
   input: NotificationEventRuleListQuery,
+  authorizedDatasets: string[] = [],
 ) {
   const catalogKey = input.catalogKey || null;
   const searchPattern = input.search ? `%${input.search}%` : null;
@@ -131,6 +132,8 @@ export async function listNotificationEventRuleRecords(
       event.display_name AS "eventName",
       event.description AS "eventDescription",
       event.is_enabled AS "eventEnabled",
+      rule.report_id AS "reportId",
+      report.name AS "reportName",
       rule.is_enabled AS "isEnabled",
       to_char(rule.updated_at AT TIME ZONE 'UTC',
         'YYYY-MM-DD"T"HH24:MI:SS.US') || 'Z' AS "updatedAt",
@@ -162,10 +165,18 @@ export async function listNotificationEventRuleRecords(
     FROM app_notification_events event
     JOIN app_notification_catalogs catalog ON catalog.id = event.catalog_id
     JOIN app_notification_event_rules rule ON rule.event_id = event.id
+    LEFT JOIN app_reporting_reports report ON report.id = rule.report_id
     WHERE event.rule_eligibility = 'CONFIGURABLE'
+      AND (${input.reportId ?? null}::uuid IS NULL OR rule.report_id = ${input.reportId ?? null}::uuid)
+      AND (rule.report_id IS NULL OR EXISTS (
+        SELECT 1 FROM app_reporting_template_versions version
+        WHERE version.template_id = report.template_id AND version.version = report.template_version
+          AND ((version.definition->>'datasetKey') || '/' || (version.definition->>'datasetVersion')) = ANY(${sql.param(authorizedDatasets)}::text[])
+      ))
       AND (${catalogKey}::text IS NULL OR catalog.catalog_key = ${catalogKey})
       AND (${searchPattern}::text IS NULL
         OR event.display_name ILIKE ${searchPattern}
+        OR report.name ILIKE ${searchPattern}
         OR event.event_key ILIKE ${searchPattern}
         OR event.description ILIKE ${searchPattern}
         OR catalog.display_name ILIKE ${searchPattern}
@@ -182,12 +193,15 @@ export async function listNotificationEventRuleRecords(
               OR channel.display_name ILIKE ${searchPattern}
               OR channel.code ILIKE ${searchPattern})
         ))
-    ORDER BY catalog.sort_order, catalog.catalog_key, event.event_key
+    ORDER BY catalog.sort_order, catalog.catalog_key, event.event_key, report.name, rule.id
   `);
   return result.rows;
 }
 
-export async function findNotificationEventRuleRecord(eventKey: string) {
+export async function findNotificationEventRuleRecord(
+  eventKey: string,
+  reportId: string | null = null,
+) {
   const result = await getDatabase().execute(sql`
     SELECT catalog.catalog_key AS "catalogKey",
       event.event_key AS "eventKey",
@@ -195,6 +209,8 @@ export async function findNotificationEventRuleRecord(eventKey: string) {
       event.display_name AS "eventName",
       event.description AS "eventDescription",
       event.is_enabled AS "eventEnabled",
+      rule.report_id AS "reportId",
+      report.name AS "reportName",
       rule.is_enabled AS "isEnabled",
       to_char(rule.updated_at AT TIME ZONE 'UTC',
         'YYYY-MM-DD"T"HH24:MI:SS.US') || 'Z' AS "updatedAt",
@@ -233,12 +249,14 @@ export async function findNotificationEventRuleRecord(eventKey: string) {
     FROM app_notification_events event
     JOIN app_notification_catalogs catalog ON catalog.id = event.catalog_id
     JOIN app_notification_event_rules rule ON rule.event_id = event.id
+    LEFT JOIN app_reporting_reports report ON report.id = rule.report_id
     LEFT JOIN app_notification_event_rule_recipients recipient ON recipient.rule_id = rule.id
     LEFT JOIN app_users target_user ON target_user.id = recipient.recipient_user_id
     LEFT JOIN app_roles target_role ON target_role.id = recipient.recipient_role_id
     WHERE event.event_key = ${eventKey}
+      AND rule.report_id IS NOT DISTINCT FROM ${reportId}::uuid
       AND event.rule_eligibility = 'CONFIGURABLE'
-    GROUP BY catalog.id, event.id, rule.id
+    GROUP BY catalog.id, event.id, rule.id, report.id
   `);
   return result.rows[0];
 }
@@ -248,6 +266,7 @@ export async function updateNotificationEventRuleRecord(input: {
   correlationId: string;
   eventKey: string;
   update: NotificationEventRuleUpdate;
+  reportId?: string;
 }) {
   return getDatabase().transaction(async (transaction) => {
     const rule = await transaction.execute<{ id: string }>(sql`
@@ -256,6 +275,7 @@ export async function updateNotificationEventRuleRecord(input: {
       FROM app_notification_events event
       WHERE rule.event_id = event.id
         AND event.event_key = ${input.eventKey}
+        AND rule.report_id IS NOT DISTINCT FROM ${input.reportId ?? null}::uuid
         AND event.rule_eligibility = 'CONFIGURABLE'
         AND rule.updated_at = ${input.update.expectedUpdatedAt}
       RETURNING rule.id
@@ -263,7 +283,8 @@ export async function updateNotificationEventRuleRecord(input: {
     const ruleId = rule.rows[0]?.id;
     if (!ruleId) return undefined;
 
-    await transaction.execute(sql`
+    if (!input.reportId)
+      await transaction.execute(sql`
       UPDATE app_notification_events
       SET is_enabled = ${input.update.eventEnabled}, updated_at = now()
       WHERE event_key = ${input.eventKey}

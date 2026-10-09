@@ -1,6 +1,13 @@
 import { resolveUserFromHeaders } from "@/auth/authorization/current-user";
-import { createCorrelationId, portalRouteError, portalRouteSuccess } from "@/lib/api/PortalApiResponse";
-import { getNotificationEventRule, updateNotificationEventRule } from "@/modules/notifications/application/ServerNotificationAdministrationService";
+import {
+  createCorrelationId,
+  portalRouteError,
+  portalRouteSuccess,
+} from "@/lib/api/PortalApiResponse";
+import {
+  getNotificationEventRule,
+  updateNotificationEventRule,
+} from "@/modules/notifications/application/ServerNotificationAdministrationService";
 import { notificationEventRuleUpdateSchema } from "@/modules/notifications/api/NotificationAdministrationSchemas";
 
 type Context = { params: Promise<{ eventKey: string }> };
@@ -13,6 +20,7 @@ export async function GET(request: Request, context: Context) {
       await getNotificationEventRule(
         await resolveUserFromHeaders(request.headers),
         decodeURIComponent(eventKey),
+        new URL(request.url).searchParams.get("reportId") ?? undefined,
       ),
       correlationId,
     );
@@ -32,6 +40,7 @@ export async function PATCH(request: Request, context: Context) {
         decodeURIComponent(eventKey),
         input,
         correlationId,
+        new URL(request.url).searchParams.get("reportId") ?? undefined,
       ),
       correlationId,
     );

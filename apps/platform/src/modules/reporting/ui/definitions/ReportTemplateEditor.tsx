@@ -189,6 +189,19 @@ function ReportTemplateForm({
               step={steps.currentStep}
               datasets={datasets}
               disabled={busy}
+              reviewActions={
+                <ReportTemplateActions
+                  canEdit={canEdit}
+                  canPublish={canPublish}
+                  canValidate={granted.has(
+                    permissionCodes.reportingTemplateReadAll,
+                  )}
+                  disabled={save.isPending}
+                  formId={formId}
+                  isDirty={form.formState.isDirty}
+                  template={template}
+                />
+              }
             />
           </div>
         </form>
@@ -201,19 +214,7 @@ function ReportTemplateForm({
           >
             Back
           </GeneralButton>
-          {steps.currentStep === "review" ? (
-            <ReportTemplateActions
-              canEdit={canEdit}
-              canPublish={canPublish}
-              canValidate={granted.has(
-                permissionCodes.reportingTemplateReadAll,
-              )}
-              disabled={save.isPending}
-              formId={formId}
-              isDirty={form.formState.isDirty}
-              template={template}
-            />
-          ) : (
+          {steps.currentStep !== "review" ? (
             <GeneralButton
               key="continue"
               type="button"
@@ -222,7 +223,7 @@ function ReportTemplateForm({
             >
               Continue
             </GeneralButton>
-          )}
+          ) : null}
         </div>
       </FormProvider>
     </PageShell>

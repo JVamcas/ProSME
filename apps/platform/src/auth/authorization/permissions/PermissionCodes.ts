@@ -33,6 +33,8 @@ export const permissionCodes = {
   reportingReportCreateAll: "reporting.report.create.all",
   reportingReportUpdateAll: "reporting.report.update.all",
   reportingReportRunAll: "reporting.report.run.all",
+  reportingScheduleUpdateAll: "reporting.schedule.update.all",
+  reportingDeliveryUpdateAll: "reporting.delivery.update.all",
   reportingRunReadAll: "reporting.run.read.all",
   reportingRunDownloadAll: "reporting.run.download.all",
 

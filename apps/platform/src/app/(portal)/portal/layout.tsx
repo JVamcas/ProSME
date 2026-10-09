@@ -1,3 +1,4 @@
+import { AntdRegistry } from "@ant-design/nextjs-registry";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
@@ -34,21 +35,23 @@ export default async function PortalLayout({ children }: PortalLayoutProps) {
   return (
     <html lang="en" data-scroll-behavior="smooth">
       <body className="font-sans antialiased">
-        <QueryProvider
-          identity={queryIdentity(user.id, user.capabilities, user.roleCodes)}
-        >
-          <SessionActivityMonitor />
-          <DashboardNavigationProvider audience="applicant">
-            <AuthenticatedPortalShell
-              context={createApplicantPortalContext(user)}
-              space="applicant"
-            >
-              {children}
-            </AuthenticatedPortalShell>
-            <Toast />
-            <WebsiteAnalyticsCollection />
-          </DashboardNavigationProvider>
-        </QueryProvider>
+        <AntdRegistry>
+          <QueryProvider
+            identity={queryIdentity(user.id, user.capabilities, user.roleCodes)}
+          >
+            <SessionActivityMonitor />
+            <DashboardNavigationProvider audience="applicant">
+              <AuthenticatedPortalShell
+                context={createApplicantPortalContext(user)}
+                space="applicant"
+              >
+                {children}
+              </AuthenticatedPortalShell>
+              <Toast />
+              <WebsiteAnalyticsCollection />
+            </DashboardNavigationProvider>
+          </QueryProvider>
+        </AntdRegistry>
       </body>
     </html>
   );
