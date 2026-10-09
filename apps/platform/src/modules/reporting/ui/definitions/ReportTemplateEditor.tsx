@@ -2,7 +2,7 @@
 import { toast } from "@/shared/ui/Toast";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useId } from "react";
 import { FormProvider, useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { PageShell } from "@/shared/ui/PageShell";
@@ -20,7 +20,7 @@ import {
   reportTemplateSteps,
   useReportTemplateSteps,
 } from "./useReportTemplateSteps";
-import { ReportTemplateValidationForm } from "./ReportTemplateValidationForm";
+import { ReportTemplateActions } from "./ReportTemplateActions";
 import {
   useReportDatasets,
   useReportTemplate,
@@ -75,6 +75,7 @@ function ReportTemplateForm({
   permissions: string[];
 }) {
   const router = useRouter();
+  const formId = useId();
   const save = useSaveReportTemplate(template?.id);
   const granted = new Set(permissions);
   const canEdit = granted.has(
@@ -149,6 +150,7 @@ function ReportTemplateForm({
       <FormProvider {...form}>
         <form
           className="space-y-6"
+          id={formId}
           onSubmit={(event) => {
             event.preventDefault();
             if (steps.currentStep !== "review" || !canEdit || save.isPending) {
@@ -189,46 +191,40 @@ function ReportTemplateForm({
               disabled={busy}
             />
           </div>
-          <div className="flex justify-between gap-3 border-t border-brand-navy/10 pt-4">
-            <GeneralButton
-              type="button"
-              variant="outline"
-              disabled={steps.currentIndex === 0 || save.isPending}
-              onClick={() => void steps.back()}
-            >
-              Back
-            </GeneralButton>
-            {steps.currentStep === "review" ? (
-              canEdit ? (
-                <GeneralButton
-                  key="save"
-                  type="submit"
-                  disabled={save.isPending}
-                >
-                  Save draft
-                </GeneralButton>
-              ) : null
-            ) : (
-              <GeneralButton
-                key="continue"
-                type="button"
-                disabled={save.isPending}
-                onClick={() => void steps.next()}
-              >
-                Continue
-              </GeneralButton>
-            )}
-          </div>
         </form>
+        <div className="mt-6 flex justify-between gap-3 border-t border-brand-navy/10 pt-4">
+          <GeneralButton
+            type="button"
+            variant="outline"
+            disabled={steps.currentIndex === 0 || save.isPending}
+            onClick={() => void steps.back()}
+          >
+            Back
+          </GeneralButton>
+          {steps.currentStep === "review" ? (
+            <ReportTemplateActions
+              canEdit={canEdit}
+              canPublish={canPublish}
+              canValidate={granted.has(
+                permissionCodes.reportingTemplateReadAll,
+              )}
+              disabled={save.isPending}
+              formId={formId}
+              isDirty={form.formState.isDirty}
+              template={template}
+            />
+          ) : (
+            <GeneralButton
+              key="continue"
+              type="button"
+              disabled={save.isPending}
+              onClick={() => void steps.next()}
+            >
+              Continue
+            </GeneralButton>
+          )}
+        </div>
       </FormProvider>
-      {template && steps.currentStep === "review" ? (
-        <ReportTemplateValidationForm
-          key={template.rowVersion}
-          template={template}
-          canPublish={canPublish}
-          disabled={form.formState.isDirty || save.isPending}
-        />
-      ) : null}
     </PageShell>
   );
 }

@@ -98,5 +98,14 @@ export function configuredReportEditorSchema(
       ...input,
       key: existingKey ?? reportKeyFromName(input.name, "REPORT"),
     }))
-    .pipe(configuredReportFormSchema(definition));
+    .pipe(configuredReportFormSchema(definition))
+    .transform((input) => ({
+      key: input.key,
+      name: input.name,
+      description: input.description,
+      templateId: input.templateId,
+      defaults: input.defaults,
+      format: input.format,
+      rowVersion: input.rowVersion,
+    }));
 }

@@ -6,7 +6,7 @@ import { getErrorMessage } from "@/lib/client-http";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { clientReportService as client } from "../../ClientReportService";
 import type {
-  ConfiguredReportInput,
+  ConfiguredReportSaveInput,
   ReportListInput,
   ManualReportRunInput,
 } from "../../api/ReportManagementSchemas";
@@ -42,7 +42,7 @@ export function useSaveReport(id?: string) {
       toast.error(
         getErrorMessage(error) ?? "The operation could not be completed.",
       ),
-    mutationFn: (input: ConfiguredReportInput) => client.save(input, id),
+    mutationFn: (input: ConfiguredReportSaveInput) => client.save(input, id),
     onSuccess: () => cache.invalidateQueries({ queryKey: keys }),
   });
 }

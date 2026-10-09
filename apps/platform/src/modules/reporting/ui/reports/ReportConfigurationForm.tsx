@@ -9,7 +9,10 @@ import {
 } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { GeneralButton } from "@/components/ui/button";
-import { type ConfiguredReportInput } from "../../api/ReportManagementSchemas";
+import type {
+  ConfiguredReportInput,
+  ConfiguredReportSaveInput,
+} from "../../api/ReportManagementSchemas";
 import type { ConfiguredReport } from "../../domain/Report";
 import { configuredReportEditorSchema } from "../../api/ReportFormSchemas";
 import { ReportParameterFields } from "../ReportParameterFields";
@@ -31,7 +34,7 @@ export function ReportConfigurationForm({
   const form = useForm<
     Omit<ConfiguredReportInput, "key">,
     unknown,
-    ConfiguredReportInput
+    ConfiguredReportSaveInput
   >({
     resolver: (values, context, options) => {
       const schema = configuredReportEditorSchema(
@@ -42,7 +45,7 @@ export function ReportConfigurationForm({
         zodResolver(schema) as Resolver<
           Omit<ConfiguredReportInput, "key">,
           unknown,
-          ConfiguredReportInput
+          ConfiguredReportSaveInput
         >
       )(values, context, options);
     },
@@ -70,8 +73,16 @@ export function ReportConfigurationForm({
   const defaults = useWatch({ control: form.control, name: "defaults" });
   const published = usePublishedReportTemplate(templateId, version);
   const definition = published.data?.definition;
-  async function submit(values: ConfiguredReportInput) {
-    const saved = await save.mutateAsync(values);
+  const { dirtyFields } = form.formState;
+  async function submit(values: ConfiguredReportSaveInput) {
+    const preserveDefaults =
+      report &&
+      values.templateId === report.templateId &&
+      !dirtyFields.defaults;
+    const saved = await save.mutateAsync({
+      ...values,
+      defaults: preserveDefaults ? report.defaults : values.defaults,
+    });
     if (onSaved) {
       onSaved();
     } else {
@@ -102,12 +113,14 @@ export function ReportConfigurationForm({
             templateId={templateId}
             version={version}
             definition={definition}
-          />
-          <ReportParameterFields
-            definitions={parameters}
-            prefix="defaults.values"
-            disabled={save.isPending}
-          />
+            report={report}
+          >
+            <ReportParameterFields
+              definitions={parameters}
+              prefix="defaults.values"
+              disabled={save.isPending}
+            />
+          </ReportConfigurationMetadataFields>
           <div className="flex flex-wrap justify-end gap-3">
             {onCancel ? (
               <GeneralButton

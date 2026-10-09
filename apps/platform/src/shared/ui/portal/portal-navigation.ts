@@ -117,8 +117,8 @@ export const operationsPortalRoutes: readonly PortalRoute[] = [
   {
     id: "admin-report-definitions",
     href: "/admin/reports/templates-definitions",
-    label: "Templates Definition",
-    icon: Workflow,
+    label: "Settings",
+    icon: Settings,
     space: "operations",
     section: "reporting",
     requiredAnyPermissions: [

@@ -13,6 +13,7 @@ const report: ConfiguredReport = {
   templateVersion: 1,
   ownerId: "owner",
   rowVersion: 1,
+  reportVersion: 1,
   format: "XLSX",
   defaults: { period: "explicit", values: {} },
   definition: applicationAgeingTemplate.definition,

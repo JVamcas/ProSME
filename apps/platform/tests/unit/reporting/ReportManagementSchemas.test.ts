@@ -6,6 +6,7 @@ import {
 } from "@/modules/reporting/api/ReportFormSchemas";
 import {
   configuredReportInputSchema,
+  configuredReportSaveSchema,
   reportTemplateInputSchema,
 } from "@/modules/reporting/api/ReportManagementSchemas";
 import { applicationExportTemplate } from "@/modules/reporting/application/bootstrap/ApplicationExportTemplate";
@@ -54,7 +55,8 @@ describe("schema-driven reporting forms", () => {
         name,
       });
       expect(parsed.key).toBe(key);
-      expect(configuredReportInputSchema.safeParse(parsed).success).toBe(true);
+      expect(parsed).not.toHaveProperty("templateVersion");
+      expect(configuredReportSaveSchema.safeParse(parsed).success).toBe(true);
     }
     expect(
       configuredReportEditorSchema(definition).safeParse({

@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { act } from "react";
+import { act, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { permissionCodes } from "@/auth/authorization/permissions";
@@ -10,14 +10,23 @@ import { ReportDetailWorkspace } from "@/modules/reporting/ui/reports/ReportDeta
 const state = vi.hoisted(() => ({
   report: {} as ConfiguredReportDetails,
   save: vi.fn(),
+  run: vi.fn(),
+  runDefaultsError: null as string | null,
 }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: vi.fn() }) }));
-vi.mock("@/shared/ui/Toast", () => ({ toast: { error: vi.fn() } }));
+vi.mock("@/shared/ui/Toast", () => ({
+  toast: { error: vi.fn(), success: vi.fn() },
+}));
 vi.mock("@/modules/reporting/ui/reports/useReports", () => ({
   useReport: () => ({
-    data: { ...state.report, runDefaults: {}, runDefaultsError: null },
+    data: {
+      ...state.report,
+      runDefaults: state.runDefaultsError ? null : state.report.defaults.values,
+      runDefaultsError: state.runDefaultsError,
+    },
   }),
   useSaveReport: () => ({ mutateAsync: state.save, isPending: false }),
+  useRunReport: () => ({ mutateAsync: state.run, isPending: false }),
 }));
 vi.mock("@/modules/reporting/ui/definitions/useReportDefinition", () => ({
   useReportTemplates: () => ({
@@ -35,14 +44,17 @@ vi.mock("@/modules/reporting/ui/definitions/useReportDefinition", () => ({
     data: { definition: state.report.definition },
   }),
 }));
-vi.mock("@/modules/reporting/ui/reports/ManualReportRunForm", () => ({
-  ManualReportRunForm: () => <div>Run report form</div>,
-}));
 vi.mock("@/modules/reporting/ui/reports/ReportRunsTable", () => ({
-  ReportRunsTable: () => <div>Report runs</div>,
+  ReportRunsTable: ({ actions }: { actions?: ReactNode }) => (
+    <div>
+      {actions}
+      Report runs
+    </div>
+  ),
 }));
 vi.mock("@/modules/reporting/ui/reports/ReportRunDrawer", () => ({
-  ReportRunDrawer: () => null,
+  ReportRunDrawer: ({ runId }: { runId?: string }) =>
+    runId ? <div role="dialog">Report run {runId}</div> : null,
 }));
 
 (
@@ -61,7 +73,10 @@ async function render(
     permissionCodes.reportingReportUpdateAll,
     permissionCodes.reportingTemplateReadAll,
   ],
+  runDefaultsError: string | null = null,
 ) {
+  state.runDefaultsError = runDefaultsError;
+  state.run.mockResolvedValue({ id: "queued-run" });
   state.report = {
     id: "report",
     key: "application-ageing",
@@ -78,6 +93,7 @@ async function render(
     format: "XLSX",
     ownerId: "owner",
     rowVersion: 1,
+    reportVersion: 1,
     definition: applicationAgeingTemplate.definition,
   };
   state.save.mockImplementation(async (input) => {
@@ -186,13 +202,98 @@ describe("report configuration read view and drawer", () => {
     expect(container.textContent).toContain("Default parameters");
   });
 
-  it("preserves manual runs and the runs tab for authorized users", async () => {
+  it("opens manual runs from the Runs tab in the right drawer", async () => {
     const container = await render([
       permissionCodes.reportingReportRunAll,
       permissionCodes.reportingRunReadAll,
     ]);
-    expect(container.textContent).toContain("Run report form");
+    expect(document.querySelector("form")).toBeNull();
+    expect(
+      container.querySelector('[role="tabpanel"]:not([inert])')?.textContent,
+    ).not.toContain("Run report");
     await click("Runs");
     expect(container.textContent).toContain("Report runs");
+    await click("Run report");
+    const drawer = document.querySelector('[role="dialog"]')!;
+    expect(drawer.textContent).toContain("Run report");
+    expect(drawer.querySelector("form")).not.toBeNull();
+    expect(
+      drawer.querySelector<HTMLInputElement>('input[type="number"]')?.value,
+    ).toBe("0");
+    await click("Cancel");
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(state.run).not.toHaveBeenCalled();
+  });
+
+  it("closes the form and opens the queued run after submitting", async () => {
+    await render([
+      permissionCodes.reportingReportRunAll,
+      permissionCodes.reportingRunReadAll,
+    ]);
+    await click("Runs");
+    await click("Run report");
+    await submit();
+    expect(state.run).toHaveBeenCalledWith({
+      idempotencyKey: expect.any(String),
+      values: { fundingCallId: null, stageCode: null, minimumAgeHours: 0 },
+      format: "XLSX",
+    });
+    expect(document.querySelector("form")).toBeNull();
+    expect(document.querySelector('[role="dialog"]')?.textContent).toContain(
+      "Report run queued-run",
+    );
+  });
+
+  it("keeps failed runs open with their parameter values", async () => {
+    await render([permissionCodes.reportingReportRunAll]);
+    state.run.mockRejectedValue(new Error("Run failed"));
+    await click("Runs");
+    await click("Run report");
+    await submit();
+    expect(state.run).toHaveBeenCalledOnce();
+    expect(document.querySelector('[role="dialog"] form')).not.toBeNull();
+  });
+
+  it("allows manual runs without fetching or opening run history", async () => {
+    const container = await render([permissionCodes.reportingReportRunAll]);
+    await click("Runs");
+    expect(container.textContent).not.toContain("Report runs");
+    await click("Run report");
+    await submit();
+    expect(state.run).toHaveBeenCalledOnce();
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+  });
+
+  it("keeps history readable without offering manual runs", async () => {
+    const container = await render([permissionCodes.reportingRunReadAll]);
+    await click("Runs");
+    expect(container.textContent).toContain("Report runs");
+    expect(container.textContent).not.toContain("Run report");
+    expect(document.querySelector("form")).toBeNull();
+  });
+
+  it("hides the Runs tab without run or history permissions", async () => {
+    await render([]);
+    expect(
+      [...document.querySelectorAll('[role="tab"]')].map(
+        (tab) => tab.textContent,
+      ),
+    ).toEqual(["Configuration"]);
+  });
+
+  it("shows defaults errors in Runs and disables manual runs", async () => {
+    const container = await render(
+      [permissionCodes.reportingReportRunAll],
+      "Default parameters could not be resolved.",
+    );
+    await click("Runs");
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain(
+      "Default parameters could not be resolved.",
+    );
+    const runButton = [...container.querySelectorAll("button")].find(
+      (button) => button.textContent?.trim() === "Run report",
+    );
+    expect(runButton?.disabled).toBe(true);
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
   });
 });

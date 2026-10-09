@@ -32,11 +32,14 @@ export async function listConfiguredReports(input: ReportListInput) {
     pageSize: input.pageSize,
   };
 }
-export async function findConfiguredReport(id: string) {
+export async function findConfiguredReport(
+  id: string,
+): Promise<ConfiguredReportDetails | null> {
   const result = await getDatabase().execute<ConfiguredReportDetails>(sql`
     SELECT report.id, report.key, report.name, report.description, report.template_id AS "templateId",
       report.template_version AS "templateVersion", report.defaults, report.format,
-      report.owner_id AS "ownerId", report.row_version AS "rowVersion", version.definition,
+      report.owner_id AS "ownerId", report.row_version AS "rowVersion",
+      report.report_version AS "reportVersion", version.definition,
       template.name AS "templateName", dataset.name AS "datasetName"
     FROM app_reporting_reports report JOIN app_reporting_template_versions version
       ON version.template_id = report.template_id AND version.version = report.template_version
@@ -61,15 +64,18 @@ export async function saveConfiguredReport(
         template_version = ${input.templateVersion}, defaults = ${defaults}::jsonb, format = ${input.format},
         row_version = row_version + 1, updated_by = ${actorId}::uuid, updated_at = now()
       WHERE id = ${id}::uuid AND row_version = ${input.rowVersion} AND key = ${input.key}
-      RETURNING id
+      RETURNING id, report_version AS "reportVersion"
     `
       : sql`
       INSERT INTO app_reporting_reports(key, name, description, template_id, template_version, defaults, format, owner_id, updated_by)
       VALUES (${input.key}, ${input.name}, ${input.description}, ${input.templateId}::uuid, ${input.templateVersion},
         ${defaults}::jsonb, ${input.format}, ${actorId}::uuid, ${actorId}::uuid)
-      ON CONFLICT (key) DO NOTHING RETURNING id
+      ON CONFLICT (key) DO NOTHING RETURNING id, report_version AS "reportVersion"
     `;
-    const result = await transaction.execute<{ id: string }>(query);
+    const result = await transaction.execute<{
+      id: string;
+      reportVersion: number;
+    }>(query);
     if (!result.rows[0]) {
       throw new ResourceConflictError(
         "The report key exists or the configuration has changed. Reload before saving.",
@@ -80,6 +86,7 @@ export async function saveConfiguredReport(
       actorId,
       result.rows[0].id,
       id ? "report.updated" : "report.created",
+      { reportVersion: result.rows[0].reportVersion },
     );
     return result.rows[0];
   });

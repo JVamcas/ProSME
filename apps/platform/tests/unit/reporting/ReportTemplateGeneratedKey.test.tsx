@@ -23,6 +23,7 @@ vi.mock("@/modules/reporting/ui/definitions/useReportDefinition", () => ({
   }),
   useReportTemplate: () => ({ data: state.template }),
   useSaveReportTemplate: () => ({ mutateAsync: state.save, isPending: false }),
+  useValidateReportTemplate: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 vi.mock("@/modules/reporting/ui/definitions/ReportSqlEditor", () => ({
   ReportSqlEditor: ({
@@ -166,7 +167,7 @@ describe("template generated keys", () => {
     expect(container.querySelector('[name="key"]')).toBeNull();
     await changeValue('[name="name"]', "Renamed export");
     await continueToReview();
-    expect(container.textContent).toContain("Validate saved draft");
+    expect(container.textContent).not.toContain("Validate saved draft");
     await submit();
     expect(state.save).toHaveBeenCalledWith(
       expect.objectContaining({

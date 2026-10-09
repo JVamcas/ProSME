@@ -100,9 +100,12 @@ export function ReportConfigurationCard({
   return (
     <div className="space-y-6">
       <section className="rounded-xl border border-brand-navy/10 bg-white p-5 sm:p-7">
-        <h2 className="text-lg font-semibold text-brand-navy">
-          Report configuration
-        </h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-semibold text-brand-navy">
+            Report configuration
+          </h2>
+          <Version value={report.reportVersion} />
+        </div>
         <p className="mt-1 text-sm text-brand-navy/60">
           Saved settings for this report
         </p>

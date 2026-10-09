@@ -103,7 +103,7 @@ export async function enqueueReportRun(
       INSERT INTO app_reporting_report_runs(report_id, report_name, report_version,
         template_id, template_version, definition, actor_id, idempotency_key, request_hash,
         values, format, run_at, timezone, website_scope)
-      VALUES (${report.id}::uuid, ${report.name}, ${report.rowVersion}, ${report.templateId}::uuid,
+      VALUES (${report.id}::uuid, ${report.name}, ${report.reportVersion}, ${report.templateId}::uuid,
         ${report.templateVersion}, ${JSON.stringify(report.definition)}::jsonb, ${actorId}::uuid,
         ${input.idempotencyKey}::uuid, ${hash}, ${JSON.stringify(resolved.values)}::jsonb,
         ${format}, ${resolved.runAt}::timestamptz, ${resolved.timezone}, ${JSON.stringify(resolved.websiteScope)}::jsonb)
@@ -133,7 +133,7 @@ export async function enqueueReportRun(
       {
         reportId: report.id,
         templateVersion: report.templateVersion,
-        reportVersion: report.rowVersion,
+        reportVersion: report.reportVersion,
       },
     );
     return { id: result.rows[0].id };

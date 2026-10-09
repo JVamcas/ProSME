@@ -211,7 +211,6 @@ async function draft() {
         name: "Test report",
         description: "Fixture application export.",
         templateId: template.id,
-        templateVersion: 1,
         defaults: { period: "explicit" as const, values: dates },
         format: "CSV" as const,
       };

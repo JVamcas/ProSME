@@ -16,19 +16,14 @@ const columns: DataTableColumn<ReportCatalogueRow>[] = [
     header: "Template",
     cell: ({ row }) => (
       <div className="flex flex-col gap-2">
-        <ArrowLink href={`/admin/reports/templates-definitions/${row.original.id}`}>
+        <ArrowLink href={`/admin/reports/templates-definitions/${row.original.id ?? "--"}`}>
           {row.original.name}
         </ArrowLink>
-        <span className="text-xs text-slate-600">{row.original.key}</span>
+        <span className="text-xs text-slate-600">{row.original.key} . v{row.original.publishedVersion}</span>
       </div>
     ),
   },
-  { accessorKey: "description", header: "Description" },
-  {
-    accessorKey: "publishedVersion",
-    header: "Published version",
-    cell: ({ row }) => row.original.publishedVersion ?? "Draft",
-  },
+  { accessorKey: "description", header: "Description" }
 ];
 export function ReportTemplateTable({ canCreate }: { canCreate: boolean }) {
   const filters = useReportCatalogueFilters();

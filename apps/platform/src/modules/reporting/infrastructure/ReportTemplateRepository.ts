@@ -54,11 +54,17 @@ export async function findReportTemplate(id: string) {
 }
 export async function findPublishedReportTemplate(
   templateId: string,
-  version: number,
+  version?: number,
 ) {
+  const versionCondition =
+    version === undefined
+      ? sql`version.version = template.published_version`
+      : sql`version.version = ${version}`;
   const result = await getDatabase().execute<PublishedReportTemplate>(sql`
-    SELECT template_id AS "templateId", version, definition
-    FROM app_reporting_template_versions WHERE template_id = ${templateId}::uuid AND version = ${version}
+    SELECT version.template_id AS "templateId", version.version, version.definition
+    FROM app_reporting_template_versions version
+    JOIN app_reporting_templates template ON template.id = version.template_id
+    WHERE version.template_id = ${templateId}::uuid AND ${versionCondition}
   `);
   const row = result.rows[0];
   return row

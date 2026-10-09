@@ -119,6 +119,7 @@ try {
     ["tests/integration/reporting/ReportRunsPostgres.test.ts"],
     ["tests/integration/reporting/ReportBootstrapPostgres.test.ts"],
     ["tests/integration/reporting/ReportRecoveryPostgres.test.ts"],
+    ["tests/integration/reporting/ReportConfigurationVersionsPostgres.test.ts"],
   ];
   for (const [index, files] of suites.entries()) {
     const cloneName = `${databaseName}_${index}`;

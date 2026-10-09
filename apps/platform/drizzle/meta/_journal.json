@@ -1247,6 +1247,13 @@
       "when": 1801785600023,
       "tag": "0177_reporting_descriptions",
       "breakpoints": true
+    },
+    {
+      "idx": 178,
+      "version": "7",
+      "when": 1801785600024,
+      "tag": "0178_reporting_configuration_versions",
+      "breakpoints": true
     }
   ]
 }

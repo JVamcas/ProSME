@@ -43,6 +43,12 @@ export const configuredReportInputSchema = z
   })
   .strict();
 export type ConfiguredReportInput = z.infer<typeof configuredReportInputSchema>;
+export const configuredReportSaveSchema = configuredReportInputSchema.omit({
+  templateVersion: true,
+});
+export type ConfiguredReportSaveInput = z.infer<
+  typeof configuredReportSaveSchema
+>;
 export const manualReportRunSchema = z
   .object({
     idempotencyKey: z.uuid(),

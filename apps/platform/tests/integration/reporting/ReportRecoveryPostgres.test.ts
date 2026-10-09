@@ -54,7 +54,6 @@ async function createReport(website = false) {
     name: "Recovery fixture",
     description: "Fixture for interrupted report recovery.",
     templateId: template.id,
-    templateVersion: 1,
     defaults: { period: "explicit", values: dates },
     format: "CSV",
   });
@@ -158,7 +157,6 @@ async function createReport(website = false) {
       name: "Server timestamp",
       description: "Application references with the server run timestamp.",
       templateId: template.id,
-      templateVersion: 1,
       defaults: { period: "explicit", values: {} },
       format: "CSV",
     });
@@ -192,7 +190,6 @@ async function createReport(website = false) {
         description: report.description,
         rowVersion: report.rowVersion,
         templateId: website.templateId,
-        templateVersion: website.templateVersion,
         defaults: website.defaults,
         format: website.format,
       },

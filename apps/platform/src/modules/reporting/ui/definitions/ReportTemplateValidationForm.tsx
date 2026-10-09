@@ -8,6 +8,7 @@ import type { ReportTemplate } from "../../domain/ReportDefinition";
 import { reportParameterValuesSchema } from "../../domain/ReportParameterValues";
 import { ReportParameterFields } from "../ReportParameterFields";
 import { useValidateReportTemplate } from "./useReportDefinition";
+import { reportParameterDefaultValues } from "./ReportParameterPresentation";
 
 type Values = { values: Record<string, unknown> };
 export function ReportTemplateValidationForm({
@@ -27,14 +28,7 @@ export function ReportTemplateValidationForm({
   const form = useForm<Values>({
     resolver: zodResolver(schema) as Resolver<Values>,
     defaultValues: {
-      values: Object.fromEntries(
-        template.definition.parameters
-          .filter(
-            (item) =>
-              item.binding === "value" && item.defaultValue !== undefined,
-          )
-          .map((item) => [item.name, item.defaultValue]),
-      ),
+      values: reportParameterDefaultValues(template.definition.parameters),
     },
   });
   const busy = disabled || validation.isPending || publication.isPending;

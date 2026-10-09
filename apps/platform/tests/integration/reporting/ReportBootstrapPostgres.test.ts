@@ -55,6 +55,10 @@ afterAll(async () => {
     }
     expect(rows.rows).toHaveLength(8);
     expect(
+      (await pool.query("SELECT version FROM app_reporting_report_versions"))
+        .rows,
+    ).toEqual(Array.from({ length: 8 }, () => ({ version: 1 })));
+    expect(
       reportBootstrapTemplates.map((template) => template.key),
     ).not.toContain("chatbot-analytics");
     expect(
@@ -190,17 +194,19 @@ afterAll(async () => {
       },
       true,
     );
+    // Remove the bootstrap key from the catalogue while retaining immutable
+    // configuration history for the existing fixture report.
     await pool.query(
-      "DELETE FROM app_reporting_reports WHERE key = 'website-monthly'",
+      "UPDATE app_reporting_reports SET key = 'fixture-website-monthly' WHERE key = 'website-monthly'",
     );
     await expect(bootstrapReports(actor)).rejects.toThrow("format");
     expect(
       (
         await pool.query(
-          "SELECT count(*)::integer AS total FROM app_reporting_reports",
+          "SELECT count(*)::integer AS total FROM app_reporting_reports WHERE key = 'website-monthly'",
         )
       ).rows[0].total,
-    ).toBe(7);
+    ).toBe(0);
     expect((await getReportTemplate(actor, template.id)).publishedVersion).toBe(
       2,
     );

@@ -23,6 +23,7 @@ export type ConfiguredReport = {
   format: z.infer<typeof reportFormatSchema>;
   ownerId: string;
   rowVersion: number;
+  reportVersion: number;
   definition: z.infer<typeof reportTemplateDefinitionSchema>;
 };
 export type ConfiguredReportCatalogueRow = Pick<

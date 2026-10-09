@@ -20,10 +20,12 @@ export function ManualReportRunForm({
   report,
   values,
   onQueued,
+  onCancel,
 }: {
   report: ConfiguredReport;
   values: Record<string, unknown>;
   onQueued: (id: string) => void;
+  onCancel: () => void;
 }) {
   const run = useRunReport(report.id);
   const schema = z.object({
@@ -42,12 +44,13 @@ export function ManualReportRunForm({
   async function submit(input: Values) {
     const result = await run.mutateAsync(input);
     form.setValue("idempotencyKey", crypto.randomUUID());
+    toast.success("Report queued.");
     onQueued(result.id);
   }
   return (
     <FormProvider {...form}>
       <form
-        className="space-y-4 rounded border p-4"
+        className="space-y-5"
         onSubmit={form.handleSubmit(
           (input) => {
             void submit(input).catch(() => undefined);
@@ -55,7 +58,6 @@ export function ManualReportRunForm({
           () => toast.error("Check the highlighted report parameters."),
         )}
       >
-        <h2 className="font-semibold">Run report</h2>
         <ReportParameterFields
           definitions={report.definition.parameters}
           disabled={run.isPending}
@@ -69,12 +71,19 @@ export function ManualReportRunForm({
           }))}
           disabled={run.isPending}
         />
-        <GeneralButton type="submit" disabled={run.isPending}>
-          Run report
-        </GeneralButton>
-        {run.isSuccess ? (
-          <p role="status">Report queued. View its progress in Runs.</p>
-        ) : null}
+        <div className="flex flex-wrap justify-end gap-3">
+          <GeneralButton
+            type="button"
+            variant="outline"
+            disabled={run.isPending}
+            onClick={onCancel}
+          >
+            Cancel
+          </GeneralButton>
+          <GeneralButton type="submit" disabled={run.isPending}>
+            Run report
+          </GeneralButton>
+        </div>
       </form>
     </FormProvider>
   );

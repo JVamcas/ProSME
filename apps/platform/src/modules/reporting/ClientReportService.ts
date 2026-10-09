@@ -10,7 +10,7 @@ import type {
 } from "./domain/Report";
 import type { ReportPage } from "./domain/ReportDefinition";
 import type {
-  ConfiguredReportInput,
+  ConfiguredReportSaveInput,
   ReportListInput,
   ManualReportRunInput,
 } from "./api/ReportManagementSchemas";
@@ -36,7 +36,7 @@ export const clientReportService = {
         runDefaultsError: string | null;
       }
     >(`${base}/${id}`, { signal }),
-  save: (input: ConfiguredReportInput, id?: string) =>
+  save: (input: ConfiguredReportSaveInput, id?: string) =>
     requestData<{ id: string }>(id ? `${base}/${id}` : base, {
       headers: { "Content-Type": "application/json" },
       method: id ? "PUT" : "POST",

@@ -61,7 +61,6 @@ async function report(format: "CSV" | "XLSX" = "CSV") {
     name: "Run fixture",
     description: "Fixture for private report artifact generation.",
     templateId: template.id,
-    templateVersion: 1,
     defaults: { period: "explicit", values: dates },
     format,
   });
@@ -148,7 +147,6 @@ async function report(format: "CSV" | "XLSX" = "CSV") {
           description: "Edited private artifact fixture.",
           rowVersion: 1,
           templateId: configured.templateId,
-          templateVersion: 1,
           defaults: {
             period: "explicit",
             values: { startDate: "2020-01-01", endDate: "2020-01-02" },

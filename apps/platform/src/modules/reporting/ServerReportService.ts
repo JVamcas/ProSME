@@ -7,11 +7,11 @@ import {
   RequestValidationError,
 } from "@/lib/resource-errors";
 import {
-  configuredReportInputSchema,
+  configuredReportSaveSchema,
   reportListSchema,
   reportingIdSchema,
   manualReportRunSchema,
-  type ConfiguredReportInput,
+  type ConfiguredReportSaveInput,
   type ReportListInput,
   type ManualReportRunInput,
 } from "./api/ReportManagementSchemas";
@@ -57,7 +57,7 @@ export async function getReport(user: AuthenticatedUser | null, id: string) {
 }
 export async function putReport(
   user: AuthenticatedUser | null,
-  values: ConfiguredReportInput,
+  values: ConfiguredReportSaveInput,
   id?: string,
 ) {
   const actor = requirePermission(
@@ -67,27 +67,37 @@ export async function putReport(
       : permissionCodes.reportingReportCreateAll,
   );
   requirePermission(actor, permissionCodes.reportingTemplateReadAll);
-  const input = configuredReportInputSchema.parse(values);
+  const input = configuredReportSaveSchema.parse(values);
+  let pinnedVersion: number | undefined;
   if (id) {
     reportingIdSchema.parse(id);
     if (!input.rowVersion) {
       throw new RequestValidationError("The report version is required.");
     }
+    const existing = await findConfiguredReport(id);
+    if (!existing) {
+      throw new ResourceNotFoundError("report");
+    }
+    await requireReportSourceAccess(actor, existing.definition);
+    if (existing.templateId === input.templateId) {
+      pinnedVersion = existing.templateVersion;
+    }
   }
   const template = await findPublishedReportTemplate(
     input.templateId,
-    input.templateVersion,
+    pinnedVersion,
   );
   if (!template) {
     throw new ResourceNotFoundError("published template version");
   }
   await requireReportSourceAccess(actor, template.definition);
-  configuredReportFormSchema(template.definition).parse(input);
+  const resolvedInput = { ...input, templateVersion: template.version };
+  configuredReportFormSchema(template.definition).parse(resolvedInput);
   resolveReportRunDefaults(
     { defaults: input.defaults, definition: template.definition },
     {},
   );
-  return saveConfiguredReport(actor.id, input, id);
+  return saveConfiguredReport(actor.id, resolvedInput, id);
 }
 export async function runReport(
   user: AuthenticatedUser | null,

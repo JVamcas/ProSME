@@ -286,3 +286,36 @@ Browser acceptance remains unverified: the existing Playwright browser could not
 launch because libnspr4.so is missing. No browser dependencies were installed and
 no production build was run. The disposable database container was removed;
 these checks did not migrate or change the application database.
+
+## Report configuration versions and form cleanup (2026-10-09)
+
+The report editor has two sections: Report details (name and description) and
+Report configuration (template, default period, format and parameter defaults).
+Template version is no longer editable or accepted in the save API. The server
+selects the current published version for new reports or a different template;
+edits using the existing template retain its saved published version.
+
+Migration 0178 separates report configuration versions from optimistic row
+versions. Configuration changes atomically create a new immutable snapshot;
+name/description edits and identical configuration saves retain the configuration
+version. Row versions still change on saves to prevent concurrent overwrites.
+Bootstrap reports receive version-one snapshots, and runs pin the configuration
+version independently of metadata edits. The read card displays this version.
+Untouched parameter defaults are preserved when saving metadata, including cases
+where form controls display implicit template defaults.
+
+Existing report version numbers are preserved from their prior row versions so
+run history retains its identifiers. Only the current pre-migration configuration
+can be snapshotted; earlier configurations were not stored and are not fabricated.
+
+Focused evidence: six unit/DOM files with 55 tests passed. The disposable
+PostgreSQL migration chain, migration reruns and 57 reporting tests passed,
+including configuration-versus-metadata changes, snapshot immutability,
+concurrent stale saves, JSON key-order equality, automatic/pinned template
+selection, run version pinning and populated migration reruns. Type checking,
+architecture/form boundary and file-size checks passed. Lint passed with zero
+errors and 13 unrelated warnings.
+
+The application database was not migrated. Apply migration 0178 before running
+the updated application. Browser, production build, deployment and release
+acceptance were not performed.

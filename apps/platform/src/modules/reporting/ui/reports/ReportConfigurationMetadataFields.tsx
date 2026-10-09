@@ -1,4 +1,6 @@
 "use client";
+
+import type { ReactNode } from "react";
 import { useFormContext } from "react-hook-form";
 import {
   FormInput,
@@ -17,112 +19,146 @@ export function ReportConfigurationMetadataFields({
   templateId,
   version,
   definition,
+  report,
+  children,
 }: {
   disabled: boolean;
   templateId: string;
   version: number;
   definition?: ConfiguredReport["definition"];
+  report?: ConfiguredReport;
+  children: ReactNode;
 }) {
   const form = useFormContext<Omit<ConfiguredReportInput, "key">>();
   const filters = useReportCatalogueFilters();
   const templates = useReportTemplates({ ...filters.input, pageSize: 50 });
+
   return (
-    <fieldset disabled={disabled} className="grid gap-4 sm:grid-cols-2">
-      <FormInput label="Name" name="name" />
-      <QuerySection
-        query={templates}
-        title="templates"
-        loading={<Skeleton className="h-12" />}
+    <>
+      <fieldset disabled={disabled} className="space-y-4">
+        <legend className="text-base font-semibold text-brand-navy">
+          Report details
+        </legend>
+        <p className="text-sm text-brand-navy/60">
+          Changing the name or description keeps the current report version.
+        </p>
+        <FormInput label="Name" name="name" required />
+        <FormTextarea
+          label="Description"
+          name="description"
+          maxLength={2000}
+          required
+        />
+      </fieldset>
+      <fieldset
+        disabled={disabled}
+        className="space-y-4 border-t border-brand-navy/10 pt-5"
       >
-        {(data) => (
+        <legend className="text-base font-semibold text-brand-navy">
+          Report configuration
+        </legend>
+        <p className="text-sm text-brand-navy/60">
+          Saving changes to the template, period, format or default parameters
+          creates a new report version.
+        </p>
+        <QuerySection
+          query={templates}
+          title="templates"
+          loading={<Skeleton className="h-12" />}
+        >
+          {(data) => (
+            <FormSelect
+              label="Template"
+              placeholder="Select a published template"
+              value={templateId}
+              items={[
+                ...(templateId &&
+                !data.items.some((item) => item.id === templateId)
+                  ? [
+                      {
+                        value: templateId,
+                        label: `Selected template · v${version}`,
+                      },
+                    ]
+                  : []),
+                ...data.items
+                  .filter((item) => item.publishedVersion !== null)
+                  .map((item) => ({
+                    value: item.id,
+                    label: `${item.name} · v${
+                      item.id === report?.templateId
+                        ? report.templateVersion
+                        : item.publishedVersion
+                    }`,
+                  })),
+              ]}
+              onChange={(event) => {
+                const selectedId = event.target.value;
+                if (selectedId === templateId) {
+                  return;
+                }
+                const selected = data.items.find(
+                  (item) => item.id === selectedId,
+                );
+                const selectedVersion =
+                  selectedId === report?.templateId
+                    ? report.templateVersion
+                    : (selected?.publishedVersion ?? 1);
+                form.setValue("templateId", selectedId, {
+                  shouldDirty: true,
+                });
+                form.setValue("templateVersion", selectedVersion, {
+                  shouldDirty: true,
+                });
+                form.setValue("defaults.values", {}, { shouldDirty: true });
+              }}
+            />
+          )}
+        </QuerySection>
+        <p className="text-xs text-brand-navy/60">
+          Template versions are assigned automatically. This report keeps its
+          saved template version until a different template is selected.
+        </p>
+        <div className="grid gap-4 sm:grid-cols-2">
           <FormSelect
-            label="Template"
-            placeholder="Select a published template"
-            value={templateId}
-            items={[
-              ...(templateId &&
-              !data.items.some((item) => item.id === templateId)
-                ? [
-                    {
-                      value: templateId,
-                      label: `Selected template · v${version}`,
-                    },
-                  ]
-                : []),
-              ...data.items
-                .filter((item) => item.publishedVersion !== null)
-                .map((item) => ({
-                  value: item.id,
-                  label: `${item.name} · v${item.publishedVersion}`,
-                })),
-            ]}
+            label="Default period"
+            name="defaults.period"
             onChange={(event) => {
-              const selected = data.items.find(
-                (item) => item.id === event.target.value,
-              );
-              form.setValue("templateId", event.target.value, {
-                shouldDirty: true,
-              });
-              form.setValue(
-                "templateVersion",
-                selected?.publishedVersion ?? 1,
-                { shouldDirty: true },
-              );
-              form.setValue("defaults.values", {}, { shouldDirty: true });
+              const period = event.target
+                .value as ConfiguredReportInput["defaults"]["period"];
+              form.setValue("defaults.period", period, { shouldDirty: true });
+              if (period !== "explicit") {
+                const values = { ...form.getValues("defaults.values") };
+                delete values.startDate;
+                delete values.endDate;
+                form.setValue("defaults.values", values, {
+                  shouldDirty: true,
+                });
+              }
             }}
+            items={[
+              {
+                value: "explicit",
+                label: "Explicit values / current snapshot",
+              },
+              { value: "previous-month", label: "Previous complete month" },
+              {
+                value: "website-completed",
+                label: "Website collection start through yesterday",
+              },
+            ]}
           />
-        )}
-      </QuerySection>
-      <FormTextarea
-        label="Description"
-        name="description"
-        maxLength={2000}
-        required
-        containerClassName="sm:col-span-2"
-      />
-      <FormInput
-        label="Published template version"
-        name="templateVersion"
-        type="number"
-        min={1}
-        registrationOptions={{ valueAsNumber: true }}
-      />
-      <FormSelect
-        label="Default period"
-        name="defaults.period"
-        onChange={(event) => {
-          const period = event.target
-            .value as ConfiguredReportInput["defaults"]["period"];
-          form.setValue("defaults.period", period, { shouldDirty: true });
-          if (period !== "explicit") {
-            const values = { ...form.getValues("defaults.values") };
-            delete values.startDate;
-            delete values.endDate;
-            form.setValue("defaults.values", values, {
-              shouldDirty: true,
-            });
-          }
-        }}
-        items={[
-          {
-            value: "explicit",
-            label: "Explicit values / current snapshot",
-          },
-          { value: "previous-month", label: "Previous complete month" },
-          {
-            value: "website-completed",
-            label: "Website collection start through yesterday",
-          },
-        ]}
-      />
-      <FormSelect
-        label="Default format"
-        name="format"
-        items={(definition?.formats ?? ["XLSX", "CSV"]).map((value) => ({
-          value,
-          label: value,
-        }))}
-      />
-    </fieldset>
+          <FormSelect
+            label="Default format"
+            name="format"
+            items={(definition?.formats ?? ["XLSX", "CSV"]).map((value) => ({
+              value,
+              label: value,
+            }))}
+          />
+        </div>
+        {children}
+      </fieldset>
+    </>
   );
 }

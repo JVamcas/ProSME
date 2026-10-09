@@ -84,6 +84,7 @@ export const reportingReports = pgTable(
     ownerId: uuid("owner_id")
       .notNull()
       .references(() => users.id),
+    reportVersion: integer("report_version").notNull().default(1),
     rowVersion: integer("row_version").notNull().default(1),
     updatedBy: uuid("updated_by")
       .notNull()
@@ -111,6 +112,48 @@ export const reportingReports = pgTable(
     check(
       "app_reporting_reports_row_version_check",
       sql`${table.rowVersion} > 0`,
+    ),
+    check(
+      "app_reporting_reports_report_version_check",
+      sql`${table.reportVersion} > 0`,
+    ),
+  ],
+);
+
+export const reportingReportVersions = pgTable(
+  "app_reporting_report_versions",
+  {
+    reportId: uuid("report_id")
+      .notNull()
+      .references(() => reportingReports.id),
+    version: integer("version").notNull(),
+    templateId: uuid("template_id").notNull(),
+    templateVersion: integer("template_version").notNull(),
+    defaults: jsonb("defaults").$type<ConfiguredReport["defaults"]>().notNull(),
+    format: text("format").$type<ReportFormat>().notNull(),
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => users.id),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.reportId, table.version] }),
+    foreignKey({
+      columns: [table.templateId, table.templateVersion],
+      foreignColumns: [
+        reportingTemplateVersions.templateId,
+        reportingTemplateVersions.version,
+      ],
+    }),
+    check(
+      "app_reporting_report_versions_version_check",
+      sql`${table.version} > 0`,
+    ),
+    check(
+      "app_reporting_report_versions_format_check",
+      sql`${table.format} IN ('XLSX', 'CSV')`,
     ),
   ],
 );

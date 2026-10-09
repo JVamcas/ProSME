@@ -1,4 +1,5 @@
 "use client";
+import type { ReactNode } from "react";
 import { DataTable, type DataTableColumn } from "@/shared/ui/DataTable";
 import { GeneralButton } from "@/components/ui/button";
 import { Pagination } from "@/components/ui/pagination";
@@ -12,9 +13,11 @@ import { useReportRuns } from "./useReports";
 export function ReportRunsTable({
   reportId,
   onSelect,
+  actions,
 }: {
   reportId: string;
   onSelect: (id: string) => void;
+  actions?: ReactNode;
 }) {
   const filters = useReportCatalogueFilters();
   const query = useReportRuns(reportId, filters.input);
@@ -34,10 +37,15 @@ export function ReportRunsTable({
     {
       id: "duration",
       header: "Duration",
-      cell: ({ row }) =>
-        row.original.startedAt && row.original.finishedAt
-          ? `${Math.max(0, Math.round((Date.parse(row.original.finishedAt) - Date.parse(row.original.startedAt)) / 1000))}s`
-          : "—",
+      cell: ({ row }) => {
+        const { startedAt, finishedAt } = row.original;
+        if (!startedAt || !finishedAt) return "—";
+        const seconds = Math.max(
+          0,
+          Math.round((Date.parse(finishedAt) - Date.parse(startedAt)) / 1000),
+        );
+        return `${seconds}s`;
+      },
     },
     {
       id: "detail",
@@ -68,6 +76,7 @@ export function ReportRunsTable({
           data={data.items}
           rowKey={(item) => item.id}
           viewportHeight={420}
+          toolbar={{ title: "Runs", actions }}
           footer={
             <Pagination
               page={data.page}
