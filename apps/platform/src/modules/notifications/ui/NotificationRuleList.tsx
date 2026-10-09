@@ -1,5 +1,8 @@
 "use client";
 
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { FormProvider, useForm, useWatch } from "react-hook-form";
 import { UsersRound } from "lucide-react";
 import { useDeferredValue, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -64,11 +67,13 @@ function RecipientSummary({ rule }: { rule: NotificationEventRuleSummary }) {
 
 function ruleColumns({
   canUpdate,
+  canUpdateReports,
   isUpdating,
   onManageRecipients,
   onToggle,
 }: {
   canUpdate: boolean;
+  canUpdateReports: boolean;
   isUpdating: (rule: NotificationEventRuleSummary) => boolean;
   onManageRecipients: (rule: NotificationEventRuleSummary) => void;
   onToggle: (rule: NotificationEventRuleSummary) => void;
@@ -99,6 +104,11 @@ function ruleColumns({
           </p>
         </div>
       ),
+    },
+    {
+      accessorKey: "reportName",
+      header: "Report scope",
+      cell: ({ row }) => row.original.reportName ?? "Global",
     },
     {
       id: "recipients",
@@ -134,7 +144,7 @@ function ruleColumns({
         const rule = row.original;
         return (
           <div className="flex items-center justify-start gap-1">
-            {canUpdate ? (
+            {canUpdate && (!rule.reportId || canUpdateReports) ? (
               <>
                 <IconButton
                   compact
@@ -154,7 +164,7 @@ function ruleColumns({
                   />
                 ) : (
                   <ActivateButton
-                    disabled={isUpdating(rule)}
+                    disabled={isUpdating(rule) || rule.recipients.length === 0}
                     onClick={() => onToggle(rule)}
                     title={`Activate ${rule.eventName}`}
                   />
@@ -200,23 +210,41 @@ function ruleUpdate(
   };
 }
 
-export function NotificationRuleList({ canUpdate }: { canUpdate: boolean }) {
-  const [search, setSearch] = useState("");
-  const [catalogKey, setCatalogKey] = useState("");
+const ruleFilterSchema = z.object({
+  search: z.string().max(200),
+  catalogKey: z.string().max(100),
+});
+export function NotificationRuleList({
+  canUpdate,
+  canUpdateReports = false,
+  reportId,
+}: {
+  canUpdate: boolean;
+  canUpdateReports?: boolean;
+  reportId?: string;
+}) {
+  const form = useForm({
+    resolver: zodResolver(ruleFilterSchema),
+    defaultValues: { search: "", catalogKey: "" },
+  });
+  const search = useWatch({ control: form.control, name: "search" });
+  const catalogKey = useWatch({ control: form.control, name: "catalogKey" });
   const [recipientRule, setRecipientRule] =
     useState<NotificationEventRuleSummary | null>(null);
   const deferredSearch = useDeferredValue(search);
   const filters = useMemo(
     () => ({
       catalogKey: catalogKey || undefined,
+      reportId,
       search: deferredSearch.trim() || undefined,
     }),
-    [catalogKey, deferredSearch],
+    [catalogKey, deferredSearch, reportId],
   );
   const query = useNotificationRules(filters);
   const recipientRuleDetail = useNotificationRule(
     recipientRule?.eventKey ?? "",
     recipientRule !== null,
+    recipientRule?.reportId ?? undefined,
   );
   const catalogs = useNotificationCatalogs();
   const channels = useNotificationChannels();
@@ -226,13 +254,17 @@ export function NotificationRuleList({ canUpdate }: { canUpdate: boolean }) {
     () =>
       ruleColumns({
         canUpdate,
+        canUpdateReports,
         isUpdating: (rule) =>
-          update.isPending && update.variables?.eventKey === rule.eventKey,
+          update.isPending &&
+          update.variables?.eventKey === rule.eventKey &&
+          (update.variables?.reportId ?? null) === (rule.reportId ?? null),
         onManageRecipients: setRecipientRule,
         onToggle: (rule) => {
           void update
             .mutateAsync({
               eventKey: rule.eventKey,
+              reportId: rule.reportId ?? undefined,
               input: ruleUpdate(rule, !rule.isEnabled),
             })
             .then(() => {
@@ -249,45 +281,44 @@ export function NotificationRuleList({ canUpdate }: { canUpdate: boolean }) {
             });
         },
       }),
-    [canUpdate, update],
+    [canUpdate, canUpdateReports, update],
   );
 
   return (
     <div className="space-y-6">
-      <DataTableFilter
-        collapsible={false}
-        contentClassName="grid gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]"
-        isClearDisabled={!hasFilters}
-        onClear={() => {
-          setSearch("");
-          setCatalogKey("");
-        }}
-        title="Search and filters"
-      >
-        <FormInput
-          id="notification-rule-search"
-          label="Search rules"
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder="Search by event, catalog, description, recipient, or channel"
-          type="search"
-          value={search}
-        />
-        <FormSelect
-          id="notification-rule-catalog"
-          items={
-            catalogs.data
-              ?.filter((catalog) => catalog.configurableEventCount > 0)
-              .map((catalog) => ({
-                label: catalog.displayName,
-                value: catalog.catalogKey,
-              })) ?? []
-          }
-          label="Catalog"
-          onChange={(event) => setCatalogKey(event.target.value)}
-          placeholder="All catalogs"
-          value={catalogKey}
-        />
-      </DataTableFilter>
+      <FormProvider {...form}>
+        <DataTableFilter
+          collapsible={false}
+          contentClassName="grid gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]"
+          isClearDisabled={!hasFilters}
+          onClear={() => {
+            form.reset();
+          }}
+          title="Search and filters"
+        >
+          <FormInput
+            id="notification-rule-search"
+            label="Search rules"
+            name="search"
+            placeholder="Search by event, catalog, description, recipient, or channel"
+            type="search"
+          />
+          <FormSelect
+            id="notification-rule-catalog"
+            items={
+              catalogs.data
+                ?.filter((catalog) => catalog.configurableEventCount > 0)
+                .map((catalog) => ({
+                  label: catalog.displayName,
+                  value: catalog.catalogKey,
+                })) ?? []
+            }
+            label="Catalog"
+            name="catalogKey"
+            placeholder="All catalogs"
+          />
+        </DataTableFilter>
+      </FormProvider>
 
       {query.error ? (
         <p className="text-sm text-red-700" role="alert">
@@ -307,13 +338,18 @@ export function NotificationRuleList({ canUpdate }: { canUpdate: boolean }) {
             : "No event rules matched the current filters."
         }
         minWidth={1040}
-        rowKey={(rule) => rule.eventKey}
+        rowKey={(rule) => `${rule.eventKey}:${rule.reportId ?? "global"}`}
         toolbar={{
           description: `${query.data?.length ?? 0} matching rules`,
           title: "Event Rule Register",
         }}
       />
       <NotificationRuleRecipientsDialog
+        allowedRecipientTypes={
+          recipientRule?.reportId
+            ? ["SPECIFIC_USER", "SPECIFIC_ROLE"]
+            : undefined
+        }
         channels={channels.data ?? []}
         isPending={update.isPending}
         onClose={() => setRecipientRule(null)}
@@ -322,6 +358,7 @@ export function NotificationRuleList({ canUpdate }: { canUpdate: boolean }) {
           try {
             await update.mutateAsync({
               eventKey: recipientRule.eventKey,
+              reportId: recipientRule.reportId ?? undefined,
               input,
             });
             toast.success(`Recipients updated for ${recipientRule.eventName}.`);

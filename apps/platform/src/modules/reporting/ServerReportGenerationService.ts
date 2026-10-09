@@ -63,6 +63,11 @@ async function generateClaimedRun(
     return finalizeStoredOutput(run, run.pendingOutput);
   }
   if (!(await prepareReportWebsiteSource(run))) {
+    if (run.sourceDeadline && Date.parse(run.sourceDeadline) < Date.now()) {
+      throw new RequestValidationError(
+        "The exact-period source could not be prepared within 24 hours. Retry this period after source recovery.",
+      );
+    }
     await deferReportSource(run);
     return false;
   }

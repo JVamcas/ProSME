@@ -48,6 +48,8 @@ type EventConfigurationRow = {
   eventDisplayName: string;
   eventEnabled: boolean;
   eventId: string;
+  ruleId: string | null;
+  templateVersionId: string | null;
   recipientId: string | null;
   recipientRequired: boolean | null;
   recipientTargetLabel: string | null;
@@ -61,6 +63,7 @@ type EventConfigurationRow = {
 async function loadEventConfiguration(
   transaction: NotificationOccurrenceTransaction,
   eventKey: NotificationEventKey,
+  reportId: string | null = null,
 ): Promise<EventConfigurationRow[]> {
   const result = await transaction.execute<EventConfigurationRow>(sql`
     SELECT channel.is_enabled AS "channelEnabled",
@@ -68,6 +71,15 @@ async function loadEventConfiguration(
       event.display_name AS "eventDisplayName",
       event.is_enabled AS "eventEnabled",
       event.id AS "eventId",
+      rule.id AS "ruleId",
+      (SELECT version.id FROM app_notification_template_targets target
+        JOIN app_notification_template_versions version ON version.template_target_id = target.id
+        WHERE target.channel_id = channel.id AND target.is_enabled AND version.status = 'PUBLISHED'
+          AND ((target.scope = 'EVENT' AND target.event_id = event.id)
+            OR (target.scope = 'CATALOG' AND target.catalog_id = event.catalog_id)
+            OR target.scope = 'GLOBAL')
+        ORDER BY CASE target.scope WHEN 'EVENT' THEN 1 WHEN 'CATALOG' THEN 2 ELSE 3 END
+        LIMIT 1) AS "templateVersionId",
       recipient.id AS "recipientId",
       recipient.is_required AS "recipientRequired",
       COALESCE(recipient_role.name, target_user.display_name,
@@ -79,6 +91,7 @@ async function loadEventConfiguration(
       COALESCE(target_user.id, role_user.id) AS "targetUserId"
     FROM app_notification_events event
     LEFT JOIN app_notification_event_rules rule ON rule.event_id = event.id
+      AND rule.report_id IS NOT DISTINCT FROM ${reportId}::uuid
     LEFT JOIN app_notification_event_rule_recipients recipient
       ON recipient.rule_id = rule.id
     LEFT JOIN app_notification_event_rule_channels binding
@@ -180,6 +193,7 @@ export async function insertNotificationOccurrence<
   const configuration = await loadEventConfiguration(
     transaction,
     input.eventKey,
+    "reportId" in input.context ? input.context.reportId : null,
   );
   if (configuration.length === 0) {
     throw new Error(`Notification event is not configured: ${input.eventKey}`);
@@ -192,10 +206,11 @@ export async function insertNotificationOccurrence<
       ? input.context.excludedRecipientUserIds
       : [],
   );
-  assertRequiredNotificationRecipients(
-    toRecipientRequirements(bindings, input.recipients, input.eventKey),
-    excludedRecipientUserIds,
-  );
+  if (!("reportId" in input.context))
+    assertRequiredNotificationRecipients(
+      toRecipientRequirements(bindings, input.recipients, input.eventKey),
+      excludedRecipientUserIds,
+    );
   const status =
     bindings.length === 0 ? ("SENT" as const) : ("PENDING" as const);
   const [inserted] = await transaction
@@ -204,6 +219,8 @@ export async function insertNotificationOccurrence<
       aggregateId: input.aggregateId,
       aggregateType: input.aggregateType,
       context: input.context,
+      reportId: "reportId" in input.context ? input.context.reportId : null,
+      ruleId: configuration[0].ruleId,
       correlationId: input.correlationId,
       eventId: configuration[0]!.eventId,
       eventKey: input.eventKey,
@@ -252,6 +269,8 @@ export async function insertNotificationOccurrence<
       if (deliveryMap.has(deliveryKey)) continue;
       deliveryMap.set(deliveryKey, {
         channelId: binding.channelId!,
+        templateVersionId:
+          "reportId" in input.context ? binding.templateVersionId : null,
         outboxId: inserted.id,
         recipientEmail: recipient.email,
         recipientName: recipient.displayName,

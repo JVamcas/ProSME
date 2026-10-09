@@ -55,6 +55,13 @@ export type ReportRun = {
   rows: number | null;
   error: string | null;
   leaseToken: string | null;
+  trigger?: "USER" | "SYSTEM";
+  scheduleId?: string | null;
+  scheduleVersion?: number | null;
+  period?: import("./ReportSchedule").ReportPeriod | null;
+  retryOf?: string | null;
+  sourceDeadline?: string;
+  sourceCoverage?: Record<string, unknown> | null;
 };
 export type ReportRunSummary = Pick<
   ReportRun,
@@ -70,6 +77,7 @@ export type ReportRunSummary = Pick<
 > & {
   actorName: string;
   actorEmail: string;
+  trigger?: "USER" | "SYSTEM";
 };
 export type ReportArtifact = {
   id: string;

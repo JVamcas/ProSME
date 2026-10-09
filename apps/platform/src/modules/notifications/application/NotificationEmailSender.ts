@@ -2,7 +2,7 @@ import type { NotificationErrorCode } from "../domain/NotificationErrors";
 
 export type NotificationEmailMessage = {
   attachments?: Array<{
-    cid: string;
+    cid?: string;
     content: Buffer;
     contentType: string;
     filename: string;

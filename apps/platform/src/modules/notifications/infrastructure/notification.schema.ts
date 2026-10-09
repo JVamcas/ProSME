@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  type AnyPgColumn,
   boolean,
   check,
   index,
@@ -13,6 +14,8 @@ import {
 } from "drizzle-orm/pg-core";
 
 import { users } from "@/db/schema/identity";
+import { reportingReports } from "@/modules/reporting/infrastructure/reporting-definitions.schema";
+import { notificationEventRules } from "./notification-rule.schema";
 import type { NotificationEventContextByKey } from "../domain/NotificationEvent";
 
 export const notificationChannels = pgTable(
@@ -209,6 +212,10 @@ export const notificationOutbox = pgTable(
     eventKey: text("event_key").notNull(),
     aggregateType: text("aggregate_type").notNull(),
     aggregateId: uuid("aggregate_id").notNull(),
+    reportId: uuid("report_id").references(() => reportingReports.id),
+    ruleId: uuid("rule_id").references(
+      (): AnyPgColumn => notificationEventRules.id,
+    ),
     occurrenceKey: text("occurrence_key").notNull(),
     correlationId: text("correlation_id").notNull(),
     context: jsonb("context")

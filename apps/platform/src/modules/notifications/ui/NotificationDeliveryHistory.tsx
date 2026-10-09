@@ -8,13 +8,20 @@ import { z } from "zod";
 import { GeneralButton } from "@/components/ui/button";
 import { DataTable, type DataTableColumn } from "@/shared/ui/DataTable";
 import { DataTableFilter } from "@/components/ui/data-table-filter";
-import { FormInput, FormSelect, FormTextarea } from "@/components/ui/form-fields";
+import {
+  FormInput,
+  FormSelect,
+  FormTextarea,
+} from "@/components/ui/form-fields";
 import { Pagination } from "@/components/ui/pagination";
 import type {
   NotificationDeliveryHistoryItem,
   NotificationDeliveryQuery,
 } from "../api/NotificationAdministrationSchemas";
-import { useNotificationDeliveries, useRetryNotificationDelivery } from "./useNotificationAdministration";
+import {
+  useNotificationDeliveries,
+  useRetryNotificationDelivery,
+} from "./useNotificationAdministration";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatLocalDateTime24 } from "@/lib/dateUtils";
 import { RightDrawer } from "@/shared/ui/RightDrawer";
@@ -48,7 +55,6 @@ const filterDefaults: FilterValues = {
 
 const retrySchema = z.object({ reason: z.string().trim().min(3).max(500) });
 type RetryValues = z.infer<typeof retrySchema>;
-
 
 function deliveryColumns({
   canRetry,
@@ -119,18 +125,17 @@ function deliveryColumns({
       id: "actions",
       header: "Actions",
       enableSorting: false,
-      cell: ({ row }) => canRetry && ["FAILED", "DEAD_LETTER"].includes(
-        row.original.status,
-      ) ? (
-        <GeneralButton
-          onClick={() => onRetry(row.original.deliveryId)}
-          size="compact"
-          type="button"
-          variant="outline"
-        >
-          Retry
-        </GeneralButton>
-      ) : null,
+      cell: ({ row }) =>
+        canRetry && ["FAILED", "DEAD_LETTER"].includes(row.original.status) ? (
+          <GeneralButton
+            onClick={() => onRetry(row.original.deliveryId)}
+            size="compact"
+            type="button"
+            variant="outline"
+          >
+            Retry
+          </GeneralButton>
+        ) : null,
     },
   ];
 }
@@ -141,8 +146,10 @@ function toIso(value: string) {
 
 export function NotificationDeliveryHistory({
   canRetry = false,
+  reportId,
 }: {
   canRetry?: boolean;
+  reportId?: string;
 }) {
   const [query, setQuery] = useState<NotificationDeliveryQuery>({
     page: 1,
@@ -151,8 +158,8 @@ export function NotificationDeliveryHistory({
     sortField: "createdAt",
   });
   const [retryId, setRetryId] = useState<string | null>(null);
-  const deliveries = useNotificationDeliveries(query);
-  const retry = useRetryNotificationDelivery();
+  const deliveries = useNotificationDeliveries(query, reportId);
+  const retry = useRetryNotificationDelivery(reportId);
   const filters = useForm<FilterValues>({
     defaultValues: filterDefaults,
     resolver: zodResolver(filterSchema),
@@ -173,7 +180,7 @@ export function NotificationDeliveryHistory({
       sortDirection: values.sortDirection,
       sortField: values.sortField,
       status: values.status
-        ? values.status as NotificationDeliveryQuery["status"]
+        ? (values.status as NotificationDeliveryQuery["status"])
         : undefined,
     }));
   });
@@ -194,98 +201,11 @@ export function NotificationDeliveryHistory({
   });
   const emptyMessage = deliveries.isPending
     ? "Loading delivery history…"
-    : deliveries.error?.message ?? "No deliveries match the selected filters.";
+    : (deliveries.error?.message ??
+      "No deliveries match the selected filters.");
 
   return (
     <div className="space-y-6">
-      <FormProvider {...filters}>
-        <form onSubmit={submitFilters}>
-          <DataTableFilter
-            contentClassName="md:grid-cols-2 xl:grid-cols-4"
-            defaultExpanded={false}
-            description="Filter and sort notification delivery attempts."
-            isApplying={deliveries.isFetching}
-            onApply={submitFilters}
-            onClear={clearFilters}
-            title="Delivery filters"
-          >
-            <FormInput
-              label="Event key"
-              name="eventKey"
-              placeholder="application.submitted"
-            />
-            <FormSelect
-              items={[
-                { label: "Pending", value: "PENDING" },
-                { label: "Processing", value: "PROCESSING" },
-                { label: "Sent", value: "SENT" },
-                { label: "Failed", value: "FAILED" },
-              ]}
-              label="Status"
-              name="status"
-              placeholder="All statuses"
-            />
-            <FormInput
-              label="Application reference"
-              name="applicationReference"
-            />
-            <FormInput label="Recipient name or email" name="recipient" />
-            <FormInput label="From" name="dateFrom" type="datetime-local" />
-            <FormInput label="To" name="dateTo" type="datetime-local" />
-            <FormSelect
-              items={[
-                { label: "Created time", value: "createdAt" },
-                { label: "Next attempt", value: "nextAttemptAt" },
-                { label: "Status", value: "status" },
-              ]}
-              label="Sort by"
-              name="sortField"
-            />
-            <FormSelect
-              items={[
-                { label: "Newest / descending", value: "desc" },
-                { label: "Oldest / ascending", value: "asc" },
-              ]}
-              label="Sort direction"
-              name="sortDirection"
-            />
-          </DataTableFilter>
-        </form>
-      </FormProvider>
-      {deliveries.error ? (
-        <p className="text-sm text-red-700" role="alert">
-          {deliveries.error.message}
-        </p>
-      ) : null}
-      <DataTable
-        columns={deliveryColumns({ canRetry, onRetry: setRetryId })}
-        data={deliveries.data?.items ?? []}
-        emptyMessage={emptyMessage}
-        footer={deliveries.data ? (
-          <Pagination
-            disabled={deliveries.isFetching}
-            hasNextPage={deliveries.data.page < deliveries.data.totalPages}
-            onNext={() => setQuery((current) => ({
-              ...current,
-              page: current.page + 1,
-            }))}
-            onPageSizeChange={(pageSize) => setQuery((current) => ({
-              ...current,
-              page: 1,
-              pageSize,
-            }))}
-            onPrevious={() => setQuery((current) => ({
-              ...current,
-              page: current.page - 1,
-            }))}
-            page={deliveries.data.page}
-            pageSize={deliveries.data.pageSize}
-            total={deliveries.data.total}
-          />
-        ) : undefined}
-        minWidth={960}
-        rowKey={(item) => item.deliveryId}
-      />
       <RightDrawer
         footer={
           <div className="mt-4 flex gap-3">
@@ -311,7 +231,7 @@ export function NotificationDeliveryHistory({
             className="rounded-2xl border border-brand-orange/30 bg-orange-50 p-5"
             onSubmit={submitRetry}
           >
-          <FormTextarea
+            <FormTextarea
               containerClassName="mt-4"
               label="Reason"
               name="reason"

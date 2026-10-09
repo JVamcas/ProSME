@@ -1,3 +1,5 @@
+import { seedReportingNotificationTemplates } from "@/modules/notifications/application/ReportNotificationConfiguration";
+import { seedReportSchedules } from "./infrastructure/ReportScheduleBootstrapRepository";
 import { reportTemplateQuery } from "./domain/ReportDefinition";
 import "server-only";
 import { requirePermission } from "@/auth/authorization/policy";
@@ -89,7 +91,7 @@ export async function bootstrapReports(user: AuthenticatedUser | null) {
         : {}),
     });
   }
-  return installReportBootstrap(
+  const result = await installReportBootstrap(
     actor.id,
     reportBootstrapTemplates,
     reportBootstrapReports,
@@ -103,4 +105,7 @@ export async function bootstrapReports(user: AuthenticatedUser | null) {
       ]),
     ),
   );
+  await seedReportingNotificationTemplates(actor.id);
+  await seedReportSchedules(configuration);
+  return result;
 }

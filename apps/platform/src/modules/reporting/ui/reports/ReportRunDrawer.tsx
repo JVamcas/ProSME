@@ -1,9 +1,15 @@
 "use client";
 
+import { useRef } from "react";
+import { GeneralButton } from "@/components/ui/button";
 import { RightDrawer } from "@/shared/ui/RightDrawer";
 import { QuerySection } from "@/shared/ui/QuerySection";
 import { Skeleton } from "@/shared/ui/Skeleton";
-import { useDownloadReportArtifact, useReportRunDetail } from "./useReports";
+import {
+  useDownloadReportArtifact,
+  useReportRunDetail,
+  useRetryReportRun,
+} from "./useReports";
 import { ReportRunCard } from "./ReportRunCard";
 import { ReportRunArtifacts } from "./ReportRunArtifacts";
 import type { ReportArtifact } from "../../domain/Report";
@@ -13,12 +19,16 @@ export function ReportRunDrawer({
   runId,
   onClose,
   canDownload,
+  canRun = false,
 }: {
   reportId: string;
   runId?: string;
   onClose: () => void;
   canDownload: boolean;
+  canRun?: boolean;
 }) {
+  const retry = useRetryReportRun(reportId);
+  const retryKey = useRef(crypto.randomUUID());
   const download = useDownloadReportArtifact(reportId);
   const query = useReportRunDetail(reportId, runId);
 
@@ -41,11 +51,7 @@ export function ReportRunDrawer({
   }
 
   return (
-    <RightDrawer
-      title="Report run"
-      open={Boolean(runId)}
-      onClose={onClose}
-    >
+    <RightDrawer title="Report run" open={Boolean(runId)} onClose={onClose}>
       <QuerySection
         query={query}
         title="run"
@@ -53,6 +59,25 @@ export function ReportRunDrawer({
       >
         {(detail) => (
           <ReportRunCard run={detail.run} events={detail.events}>
+            {canRun && detail.run.status === "FAILED" ? (
+              <GeneralButton
+                disabled={retry.isPending}
+                onClick={() => {
+                  void retry
+                    .mutateAsync({
+                      runId: detail.run.id,
+                      idempotencyKey: retryKey.current,
+                    })
+                    .then(() => {
+                      retryKey.current = crypto.randomUUID();
+                      onClose();
+                    })
+                    .catch(() => undefined);
+                }}
+              >
+                Retry generation
+              </GeneralButton>
+            ) : null}
             <ReportRunArtifacts
               artifacts={detail.artifacts}
               canDownload={canDownload}

@@ -108,3 +108,20 @@ export function useDownloadReportArtifact(reportId: string) {
       ),
   });
 }
+
+export function useRetryReportRun(reportId: string) {
+  const cache = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      runId,
+      idempotencyKey,
+    }: {
+      runId: string;
+      idempotencyKey: string;
+    }) => client.retry(reportId, runId, idempotencyKey),
+    onSuccess: () =>
+      cache.invalidateQueries({ queryKey: [...keys, reportId, "runs"] }),
+    onError: (error) =>
+      toast.error(getErrorMessage(error) ?? "Generation could not be retried."),
+  });
+}

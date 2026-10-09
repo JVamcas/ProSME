@@ -1,3 +1,4 @@
+import { resolveReportDeliveryAttachments } from "./ReportDeliveryAttachments";
 import "server-only";
 
 import { randomUUID } from "node:crypto";
@@ -141,7 +142,10 @@ async function dispatchDelivery(input: {
         );
     const result = await input.emailSender.send({
       ...rendered,
-      attachments: [await input.brandingAttachment],
+      attachments: [
+        await input.brandingAttachment,
+        ...(await resolveReportDeliveryAttachments(input.delivery)),
+      ],
       to: input.delivery.recipientEmail,
     });
     await recordNotificationDeliverySuccess({

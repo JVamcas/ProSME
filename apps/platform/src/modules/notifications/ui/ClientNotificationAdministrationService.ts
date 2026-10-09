@@ -35,34 +35,45 @@ function updateCatalog(key: string, input: NotificationCatalogUpdate) {
 
 function listRules(query: NotificationEventRuleListQuery) {
   const search = new URLSearchParams();
+  if (query.reportId) search.set("reportId", query.reportId);
   if (query.catalogKey) search.set("catalogKey", query.catalogKey);
   if (query.search) search.set("search", query.search);
   const suffix = search.size ? `?${search}` : "";
-  return requestData<NotificationEventRuleSummary[]>(`${root}/event-rules${suffix}`);
+  return requestData<NotificationEventRuleSummary[]>(
+    `${root}/event-rules${suffix}`,
+  );
 }
 
-function getRule(key: string) {
-  return requestData<NotificationEventRuleDetail>(keyPath("event-rules", key));
+function getRule(key: string, reportId?: string) {
+  return requestData<NotificationEventRuleDetail>(
+    `${keyPath("event-rules", key)}${reportId ? `?reportId=${reportId}` : ""}`,
+  );
 }
 
-function updateRule(key: string, input: NotificationEventRuleUpdate) {
+function updateRule(
+  key: string,
+  input: NotificationEventRuleUpdate,
+  reportId?: string,
+) {
   return patchData<NotificationEventRuleDetail, NotificationEventRuleUpdate>(
-    keyPath("event-rules", key),
+    `${keyPath("event-rules", key)}${reportId ? `?reportId=${reportId}` : ""}`,
     input,
   );
 }
 
-function listDeliveries(query: NotificationDeliveryQuery) {
+function listDeliveries(query: NotificationDeliveryQuery, reportId?: string) {
   const search = new URLSearchParams();
   Object.entries(query).forEach(([key, value]) => {
     if (value !== undefined && value !== "") search.set(key, String(value));
   });
-  return requestData<NotificationDeliveryPage>(`${root}/deliveries?${search}`);
+  return requestData<NotificationDeliveryPage>(
+    `${reportId ? `/api/reporting/reports/${reportId}/delivery/history` : `${root}/deliveries`}?${search}`,
+  );
 }
 
-function retryDelivery(deliveryId: string, reason: string) {
+function retryDelivery(deliveryId: string, reason: string, reportId?: string) {
   return postData<{ outcome: string }, { reason: string }>(
-    `${root}/deliveries/${encodeURIComponent(deliveryId)}/retry`,
+    `${reportId ? `/api/reporting/reports/${reportId}/delivery/history` : `${root}/deliveries`}/${encodeURIComponent(deliveryId)}/retry`,
     { reason },
   );
 }

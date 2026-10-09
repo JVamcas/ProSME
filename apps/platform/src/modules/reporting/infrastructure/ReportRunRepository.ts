@@ -24,6 +24,8 @@ export const runSelection = sql`
   id, report_id AS "reportId", report_name AS "reportName", report_version AS "reportVersion",
   template_id AS "templateId", template_version AS "templateVersion", definition,
   actor_id AS "actorId", values, format, run_at::text AS "runAt", timezone, website_scope AS "websiteScope",
+  source_coverage AS "sourceCoverage", trigger, schedule_id AS "scheduleId", schedule_version AS "scheduleVersion", period,
+  retry_of AS "retryOf", source_deadline::text AS "sourceDeadline",
   status, created_at::text AS "createdAt", started_at::text AS "startedAt", finished_at::text AS "finishedAt",
   rows, error, lease_token AS "leaseToken"
 `;
@@ -150,7 +152,7 @@ export async function listReportRuns(
   const [items, count] = await Promise.all([
     database.execute<ReportRunSummary>(sql`
       SELECT run.id, run.status, run.actor_id AS "actorId",
-        actor.display_name AS "actorName", actor.email AS "actorEmail",
+        actor.display_name AS "actorName", actor.email AS "actorEmail", run.trigger,
         run.created_at::text AS "createdAt", run.started_at::text AS "startedAt",
         run.finished_at::text AS "finishedAt", run.rows, run.format, run.error
       FROM app_reporting_report_runs run

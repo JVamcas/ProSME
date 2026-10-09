@@ -9,6 +9,7 @@ export const notificationDeliveryIdSchema = z.uuid();
 export const notificationEventRuleListQuerySchema = z
   .object({
     catalogKey: z.string().trim().max(100).optional(),
+    reportId: z.uuid().optional(),
     search: z.string().trim().max(200).optional(),
   })
   .strict();
@@ -37,7 +38,7 @@ export const notificationRuleRecipientUpdateSchema = z.discriminatedUnion(
           "APPLICATION_OWNER",
           "ASSIGNED_USER",
           "FUNDING_CALL_STAKEHOLDER",
-    "ACTION_ACTOR",
+          "ACTION_ACTOR",
         ]),
         targetId: z.null().optional(),
       })
@@ -138,7 +139,10 @@ export type NotificationCatalogDetail = NotificationCatalogSummary & {
 type NotificationConfiguredRecipient = (
   | {
       recipientType:
-        "APPLICATION_OWNER" | "ASSIGNED_USER" | "FUNDING_CALL_STAKEHOLDER" | "ACTION_ACTOR";
+        | "APPLICATION_OWNER"
+        | "ASSIGNED_USER"
+        | "FUNDING_CALL_STAKEHOLDER"
+        | "ACTION_ACTOR";
       targetId: null;
     }
   | {
@@ -151,6 +155,8 @@ type NotificationConfiguredRecipient = (
 };
 
 export type NotificationEventRuleSummary = {
+  reportId?: string | null;
+  reportName?: string | null;
   catalogKey: string;
   catalogName: string;
   eventDescription: string;

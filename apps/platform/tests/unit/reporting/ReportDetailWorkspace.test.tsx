@@ -4,9 +4,15 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { permissionCodes } from "@/auth/authorization/permissions";
 import type { ConfiguredReportDetails } from "@/modules/reporting/domain/Report";
-import { applicationAgeingTemplate } from "@/modules/reporting/application/bootstrap/ApplicationAgeingTemplate";
+import { reportDetailWorkspaceFixture } from "../../support/ReportDetailWorkspaceFixture";
 import { ReportDetailWorkspace } from "@/modules/reporting/ui/reports/ReportDetailWorkspace";
 
+vi.mock("@/modules/reporting/ui/reports/ReportSchedulesPanel", () => ({
+  ReportSchedulesPanel: () => <div>Report schedules</div>,
+}));
+vi.mock("@/modules/reporting/ui/reports/ReportDeliveryPanel", () => ({
+  ReportDeliveryPanel: () => <div>Report delivery</div>,
+}));
 const state = vi.hoisted(() => ({
   report: {} as ConfiguredReportDetails,
   save: vi.fn(),
@@ -77,25 +83,7 @@ async function render(
 ) {
   state.runDefaultsError = runDefaultsError;
   state.run.mockResolvedValue({ id: "queued-run" });
-  state.report = {
-    id: "report",
-    key: "application-ageing",
-    name: "My ageing report",
-    description: "Active applications and their elapsed time.",
-    templateId: "6e3d5d45-5fc7-4bf4-bbee-dc1046e69d05",
-    templateName: "Application Ageing",
-    templateVersion: 1,
-    datasetName: "Workflow Operations",
-    defaults: {
-      period: "explicit",
-      values: { fundingCallId: null, stageCode: null, minimumAgeHours: 0 },
-    },
-    format: "XLSX",
-    ownerId: "owner",
-    rowVersion: 1,
-    reportVersion: 1,
-    definition: applicationAgeingTemplate.definition,
-  };
+  state.report = reportDetailWorkspaceFixture();
   state.save.mockImplementation(async (input) => {
     state.report = { ...state.report, ...input, rowVersion: 2 };
     return { id: state.report.id };
@@ -278,7 +266,7 @@ describe("report configuration read view and drawer", () => {
       [...document.querySelectorAll('[role="tab"]')].map(
         (tab) => tab.textContent,
       ),
-    ).toEqual(["Configuration"]);
+    ).toEqual(["Configuration", "Schedules", "Delivery"]);
   });
 
   it("shows defaults errors in Runs and disables manual runs", async () => {

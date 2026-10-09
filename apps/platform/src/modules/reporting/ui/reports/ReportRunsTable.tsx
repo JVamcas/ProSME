@@ -10,7 +10,6 @@ import type { ReportRunSummary } from "../../domain/Report";
 import { useReportCatalogueFilters } from "../useReportCatalogueFilters";
 import { useReportRuns } from "./useReports";
 import { formatLocalDateTime24 } from "@/lib/dateUtils";
-import { StatusBadge } from "@/components/ui/status-badge";
 
 export function ReportRunsTable({
   reportId,
@@ -31,10 +30,13 @@ export function ReportRunsTable({
     },
     {
       accessorKey: "actorName",
-      header: "User trigger",
+      header: "Trigger / principal",
       cell: ({ row }) => (
         <div className="flex flex-col gap-1">
-          <span className="font-medium">{row.original.actorName}</span>
+          <span className="font-medium">
+            {row.original.trigger === "SYSTEM" ? "System · " : ""}
+            {row.original.actorName}
+          </span>
           <span className="text-xs text-slate-500">
             {row.original.actorEmail}
           </span>

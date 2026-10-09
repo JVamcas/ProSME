@@ -1,3 +1,4 @@
+import { ensureReportNotificationRules } from "@/modules/notifications/application/ReportNotificationConfiguration";
 import "server-only";
 import { sql } from "drizzle-orm";
 import { getDatabase } from "@/platform/database/client";
@@ -81,6 +82,7 @@ export async function saveConfiguredReport(
         "The report key exists or the configuration has changed. Reload before saving.",
       );
     }
+    await ensureReportNotificationRules(transaction, result.rows[0].id);
     await recordReportingAudit(
       transaction,
       actorId,

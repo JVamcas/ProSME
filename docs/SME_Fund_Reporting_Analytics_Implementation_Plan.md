@@ -2,10 +2,12 @@
 
 Date: 2026-10-08.
 
-Status: phases 0–5 implemented in the workspace. Automated evidence, execution
+Status: phases 0–7 implemented in the workspace. Automated evidence, execution
 limits and remaining acceptance boundaries are recorded in the
 [phases 0–2 implementation gate](reporting-analytics/Reporting_Phases_0_2_Implementation_Gate.md)
-and [phases 3–5 implementation gate](reporting-analytics/Reporting_Phases_3_5_Implementation_Gate.md).
+and [phases 3–5 implementation gate](reporting-analytics/Reporting_Phases_3_5_Implementation_Gate.md),
+with schedules and delivery evidence in the
+[phases 6–7 implementation gate](reporting-analytics/Reporting_Phases_6_7_Implementation_Gate.md).
 Phase completion still requires its own evidence and written acceptance.
 
 This plan replaces the website-specific R1/R2 implementation with the agreed
@@ -28,7 +30,7 @@ to notifications; shared database bootstrap belongs to platform/database.
 | Requirement | Planned treatment |
 | --- | --- |
 | R1: bi-weekly website analytics email | Configured report using the Website Analytics SQL template; 14-day schedule and generated attachment |
-| R2: monthly website analytics email | Separate configured report using the same template; calendar-month schedule |
+| R2: monthly website analytics email | Separate configured report using the same template; configurable day frequency, initially 30 days |
 | R4: application export to Excel/CSV | Submitted-snapshot dataset and manually runnable report |
 | D2: pipeline, ageing, turnaround, reviewer load, commitments | Five operational templates/reports using the Workflow Operations dataset |
 | D2: outcomes by reason code | Deferred until workflow reason-code capture returns |
@@ -90,7 +92,7 @@ parallel input/table/dialog system.
 | Dataset | Stable system key/version, name and required description, related exposed tables/views, typed columns, joins/cardinalities, permitted functions and authorization contract |
 | Template/version | Name and required template description, dataset/version, SQL, typed ordered parameter definitions, output columns/types, supported formats, author and immutable published version |
 | Report | Stable key/name and required description, selected published template version, parameter defaults, default format, execution-owner principal and report-level delivery configuration |
-| Schedule | Belongs to one report; multiple schedules supported; timezone, period rule/anchor, send time, finalization delay, cursor, enabled state and version |
+| Schedule | Belongs to one report; multiple schedules supported; counting-reference anchor date, frequency in days, timezone, generation time, cursor, enabled state and version |
 | Run | Belongs to one report; optional schedule/version, template/dataset versions, actual parameters, resolved period, format, user/system trigger, idempotency identity, timestamps and row count |
 | Run artifact | Private object reference, filename, MIME type, byte count, checksum and artifact kind: generated output or error file |
 | Delivery | Existing notification occurrence/delivery identities referencing the report/run/artifact; retries and provider status remain notification-owned |
@@ -213,9 +215,13 @@ The current DocumentStorage interface reads/writes Buffers; add focused stream
 support in the existing storage integration for bounded report export, rather
 than assuming streaming already exists or buffering arbitrarily large results.
 
-R1 uses consecutive 14-day periods; R2 uses complete calendar months. Resolve
-calendar rules in the source timezone, then persist UTC timestamps. Finalization
-delay is generation timing; delivery follows success. Missing source refreshes
+Schedules use an anchor date as the counting reference and a frequency in days.
+R1 initially uses 14 days; R2 initially uses 30 days. First generation is due
+at anchor plus frequency, then at anchor plus two frequencies, and so on.
+Each run covers its completed interval from the previous boundary through the
+day before its generation date. Resolve calendar-day boundaries and generation
+time in the configured timezone, then persist UTC timestamps. No additional
+finalization delay applies; delivery follows success. Missing source refreshes
 leave a run preparing/retryable, not a zero-filled successful report. Capture
 the distinction between a legitimate no-data source and a failed source.
 Reuse D1 synchronization for exact period/property/contract queries, rather than
@@ -244,7 +250,9 @@ The required website success event emails designated administrators. For manual
 reports the requester can download the output; optional event recipients are
 explicit report configuration.
 
-Expose recipient and event-delivery controls in report detail. Reuse existing
+Manage event subscriptions and recipients in the existing Event Rules screen.
+Report detail shows a scoped subscription summary, a link to Event Rules and
+delivery history. Reuse existing
 recipient types, outbox, rules, renderer, retry machinery and history; extend
 report-scoped routing so the generic success event can serve different reports.
 Extend notification rule identity to event plus report scope, retaining global
@@ -345,7 +353,7 @@ not migrated or deployed the running application database.
 | 3: Report Definition | Dataset read table and template table/editor, parameter schema, immutable publication | Editor diagnostics/completion; publication/validation/version conflicts; schema-driven form checks; protected API/service tests |
 | 4: Reports and manual runs | Configured-report list/detail, defaults, Run action, Runs tab, persisted lifecycle events and private Excel/CSV/error artifacts | Real SQL-to-file reconciliation; zero rows; limit/storage failures; idempotency/concurrent claims/crash recovery; permission revocation/download tests |
 | 5: bootstrap | Seven templates/eight reports installed via explicit idempotent seed | Dataset/template mapping and semantic fixture tests; seed rerun preserves edits; budget rule resolved; unsupported reports absent |
-| 6: schedules | Two website schedules inside report detail, exact-period preparation and bounded catch-up | 14-day/month/year/timezone boundaries; collection coverage; lease/cursor recovery; manual and scheduled generation parity |
+| 6: schedules | Two website schedules inside report detail, anchor plus frequency in days, exact-period preparation and bounded catch-up | 14-day/30-day/year/timezone boundaries; collection coverage; lease/cursor recovery; manual and scheduled generation parity |
 | 7: events and delivery | Three lifecycle events, report-scoped recipient configuration and saved-file attachments | Actual email/file reconciliation; error file receipt; delivery retries do not regenerate; recipient revocation/attachment failure tests |
 | 8: acceptance and activation | Complete approved inventory verified and intended schedules activated | Existing-browser review, live source coverage, private storage, SMTP and deployment evidence; written acceptance with remaining dependencies |
 

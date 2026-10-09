@@ -1,4 +1,5 @@
 "use client";
+import { ReportSchedulesPanel } from "./ReportSchedulesPanel";
 import Link from "next/link";
 import { useState } from "react";
 import { PencilLine } from "lucide-react";
@@ -76,6 +77,19 @@ export function ReportDetailWorkspace({
                   label: "Configuration",
                   content: <ReportConfigurationCard report={report} />,
                 },
+                {
+                  id: "schedules",
+                  label: "Schedules",
+                  content: (
+                    <ReportSchedulesPanel
+                      reportId={id}
+                      timezone={report.runTimezone}
+                      canUpdate={granted.has(
+                        permissionCodes.reportingScheduleUpdateAll,
+                      )}
+                    />
+                  ),
+                },
                 ...(canRun || canReadRuns
                   ? [
                       {
@@ -142,6 +156,7 @@ export function ReportDetailWorkspace({
             {canReadRuns ? (
               <ReportRunDrawer
                 reportId={id}
+                canRun={canRun}
                 runId={runId}
                 onClose={() => setRunId(undefined)}
                 canDownload={granted.has(

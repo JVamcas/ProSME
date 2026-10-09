@@ -51,6 +51,9 @@ async function runTests(files, flags) {
       "--",
       "vitest",
       "run",
+      "--maxWorkers=1",
+      "--testTimeout=20000",
+      "--hookTimeout=30000",
       ...files,
     ],
     {
@@ -120,8 +123,23 @@ try {
     ["tests/integration/reporting/ReportBootstrapPostgres.test.ts"],
     ["tests/integration/reporting/ReportRecoveryPostgres.test.ts"],
     ["tests/integration/reporting/ReportConfigurationVersionsPostgres.test.ts"],
+    ["tests/integration/reporting/ReportSchedulesPostgres.test.ts"],
+    ["tests/integration/reporting/ReportScheduleDefaultsPostgres.test.ts"],
+    [
+      "tests/integration/reporting/ReportScheduleFrequencyMigrationPostgres.test.ts",
+    ],
+    ["tests/integration/reporting/ReportDeliveryPostgres.test.ts"],
+    ["tests/integration/reporting/ReportDeliveryFailuresPostgres.test.ts"],
+    ["tests/integration/reporting/ReportEventRulesPostgres.test.ts"],
+    ["tests/integration/reporting/ReportSourceCoveragePostgres.test.ts"],
   ];
   for (const [index, files] of suites.entries()) {
+    if (
+      process.env.REPORTING_TEST_FILTER &&
+      !files.some((file) => file.includes(process.env.REPORTING_TEST_FILTER))
+    ) {
+      continue;
+    }
     const cloneName = `${databaseName}_${index}`;
     const cloneUrl = new URL(testUrl);
     cloneUrl.pathname = `/${cloneName}`;

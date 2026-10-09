@@ -2,6 +2,18 @@ import { permissionCodes } from "./PermissionCodes";
 
 export const reportingPermissionCatalogue = [
   {
+    code: permissionCodes.reportingScheduleUpdateAll,
+    label: "Update schedules for all reports",
+    description:
+      "Configure report schedules. Execution owner and source access are checked separately.",
+  },
+  {
+    code: permissionCodes.reportingDeliveryUpdateAll,
+    label: "Update delivery for all reports",
+    description:
+      "Configure report event recipients. Report and source access are checked separately.",
+  },
+  {
     code: permissionCodes.reportingTemplateReadAll,
     label: "Read all report templates",
     description:
