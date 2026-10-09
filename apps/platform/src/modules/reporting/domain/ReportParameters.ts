@@ -1,7 +1,9 @@
 import { z } from "zod";
 import { reportQueryLimits } from "./ReportQueryLimits";
 
-const decimalSchema = z.string().regex(/^-?(?:0|[1-9]\d{0,27})(?:\.\d{1,10})?$/);
+const decimalSchema = z
+  .string()
+  .regex(/^-?(?:0|[1-9]\d{0,27})(?:\.\d{1,10})?$/);
 export const reportParameterDefinitionSchema = z
   .object({
     name: z.string().regex(/^[a-zA-Z][a-zA-Z0-9]{0,63}$/),
@@ -37,13 +39,27 @@ export const reportParameterDefinitionsSchema = z
     ) {
       context.addIssue({
         code: "custom",
-        message: "Parameters require unique names and consecutive ordered positions.",
+        message:
+          "Parameters require unique names and consecutive ordered positions.",
       });
     }
-    for (const definition of definitions) {
+    for (const [index, definition] of definitions.entries()) {
+      if (definition.defaultValue !== undefined) {
+        const parsed = valueSchema(definition).safeParse(
+          definition.defaultValue,
+        );
+        if (!parsed.success) {
+          context.addIssue({
+            code: "custom",
+            path: [index, "defaultValue"],
+            message: "The default must match the declared parameter type.",
+          });
+        }
+      }
       if (
         (definition.binding === "run-at" && definition.type !== "timestamp") ||
-        (definition.binding === "source-timezone" && definition.type !== "timezone")
+        (definition.binding === "source-timezone" &&
+          definition.type !== "timezone")
       ) {
         context.addIssue({
           code: "custom",
@@ -53,7 +69,9 @@ export const reportParameterDefinitionsSchema = z
     }
   });
 
-export type ReportParameterDefinition = z.infer<typeof reportParameterDefinitionSchema>;
+export type ReportParameterDefinition = z.infer<
+  typeof reportParameterDefinitionSchema
+>;
 
 const timezoneSchema = z
   .string()
@@ -111,7 +129,9 @@ export function bindReportParameters(input: {
           : (values[definition.name] ?? definition.defaultValue);
     // An explicit nullable null must not be replaced by a non-null default.
     const resolved =
-      definition.binding === "value" && Object.hasOwn(values, definition.name)
+      definition.binding === "value" &&
+      Object.hasOwn(values, definition.name) &&
+      values[definition.name] !== undefined
         ? values[definition.name]
         : value;
     return valueSchema(definition).parse(resolved);

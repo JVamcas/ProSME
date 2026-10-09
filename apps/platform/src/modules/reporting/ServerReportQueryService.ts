@@ -3,7 +3,10 @@ import "server-only";
 import { requirePermission } from "@/auth/authorization/policy";
 import { permissionCodes } from "@/auth/authorization/permissions";
 import type { AuthenticatedUser } from "@/auth/types";
-import { reportQuerySchema, type ReportQueryInput } from "./api/ReportQuerySchemas";
+import {
+  reportQuerySchema,
+  type ReportQueryInput,
+} from "./api/ReportQuerySchemas";
 import { bindReportParameters } from "./domain/ReportParameters";
 import { ReportQueryValidationError } from "./domain/ReportQueryLimits";
 import { findReportDataset } from "./infrastructure/ReportDatasetRepository";
@@ -16,29 +19,57 @@ import {
   type ReportQueryScope,
 } from "./infrastructure/ReportQueryRepository";
 
-async function prepareQuery(user: AuthenticatedUser | null, values: ReportQueryInput) {
-  const actor = requirePermission(user, permissionCodes.reportingQueryExecuteAll);
+export type PinnedReportExecution = {
+  runAt: string;
+  timezone: string;
+  websiteScope: { propertyId: string; collectionStart: string } | null;
+};
+
+async function prepareQuery(
+  user: AuthenticatedUser | null,
+  values: ReportQueryInput,
+  pinned?: PinnedReportExecution,
+) {
+  const actor = requirePermission(
+    user,
+    permissionCodes.reportingQueryExecuteAll,
+  );
   requirePermission(actor, permissionCodes.reportingDatasetReadAll);
   const input = reportQuerySchema.parse(values);
-  const dataset = await findReportDataset(input.datasetKey, input.datasetVersion);
+  const dataset = await findReportDataset(
+    input.datasetKey,
+    input.datasetVersion,
+  );
   if (!dataset) {
-    throw new ReportQueryValidationError("The selected dataset version is unavailable.");
+    throw new ReportQueryValidationError(
+      "The selected dataset version is unavailable.",
+    );
   }
   for (const permission of dataset.definition.sourcePermissions) {
     requirePermission(actor, permission);
   }
   const configuration = googleAnalyticsConfiguration();
-  const runAt = new Date().toISOString();
+  const runAt = pinned?.runAt ?? new Date().toISOString();
   const scope: ReportQueryScope = {
     actorId: actor.id,
     datasetKey: dataset.key,
     runAt,
-    timezone: configuration?.timezone ?? "Africa/Windhoek",
+    timezone: pinned?.timezone ?? configuration?.timezone ?? "Africa/Windhoek",
   };
   if (dataset.key === "website-analytics") {
     if (!configuration || !input.websitePeriod) {
       throw new ReportQueryValidationError(
         "Website reporting requires the configured property and an exact source period.",
+      );
+    }
+    if (
+      pinned &&
+      (pinned.websiteScope?.propertyId !== configuration.propertyId ||
+        pinned.websiteScope.collectionStart !== configuration.collectionStart ||
+        pinned.timezone !== configuration.timezone)
+    ) {
+      throw new ReportQueryValidationError(
+        "The website source configuration changed after this run was queued.",
       );
     }
     Object.assign(scope, configuration, input.websitePeriod);
@@ -69,9 +100,13 @@ export async function validateReportQuery(
   );
   if (
     projection.length !== prepared.input.columns.length ||
-    projection.some((name, index) => name !== prepared.input.columns[index].name)
+    projection.some(
+      (name, index) => name !== prepared.input.columns[index].name,
+    )
   ) {
-    throw new ReportQueryValidationError("Declared output columns must match the SQL projection.");
+    throw new ReportQueryValidationError(
+      "Declared output columns must match the SQL projection.",
+    );
   }
   await validateReportOutputContract({
     dataset: prepared.dataset,
@@ -92,8 +127,9 @@ export async function streamReportQuery(
   user: AuthenticatedUser | null,
   values: ReportQueryInput,
   onBatch: ReportBatchConsumer,
+  pinned?: PinnedReportExecution,
 ) {
-  const prepared = await prepareQuery(user, values);
+  const prepared = await prepareQuery(user, values, pinned);
   return executeReportQuery({
     dataset: prepared.dataset,
     sql: prepared.input.sql,

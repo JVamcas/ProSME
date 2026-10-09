@@ -115,6 +115,27 @@ export const operationsPortalRoutes: readonly PortalRoute[] = [
     requiredPermission: permissionCodes.reportingWebsiteReadAll,
   },
   {
+    id: "admin-report-definitions",
+    href: "/admin/reports/templates-definitions",
+    label: "Templates Definition",
+    icon: Workflow,
+    space: "operations",
+    section: "reporting",
+    requiredAnyPermissions: [
+      permissionCodes.reportingDatasetReadAll,
+      permissionCodes.reportingTemplateReadAll,
+    ],
+  },
+  {
+    id: "admin-reports",
+    href: "/admin/reports",
+    label: "Reports",
+    icon: Workflow,
+    space: "operations",
+    section: "reporting",
+    requiredPermission: permissionCodes.reportingReportReadAll,
+  },
+  {
     id: "admin-funding-calls",
     section: "applications",
     href: "/admin/funding-calls",

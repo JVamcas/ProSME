@@ -1,3 +1,4 @@
+import { reportingPermissionCatalogue } from "./ReportingPermissionCatalogue";
 import { fundingCallPermissionCatalogue } from "./FundingCallPermissionCatalogue";
 import {
   cmsPermissionActions,
@@ -28,6 +29,7 @@ function define(
 }
 
 const staticPermissionCatalogue: readonly PermissionDefinition[] = [
+  ...reportingPermissionCatalogue,
   define(
     permissionCodes.reportingDatasetReadAll,
     "Read system reporting datasets",

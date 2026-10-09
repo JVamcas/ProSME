@@ -2,11 +2,15 @@
 
 Date: 2026-10-08.
 Companion to [the implementation plan](../SME_Fund_Reporting_Analytics_Implementation_Plan.md).
-This is the planned seed catalogue. The three versioned datasets are now
-implemented by phases 0–2 migrations; templates, configured reports and schedules
-remain planned. See the [implementation gate](Reporting_Phases_0_2_Implementation_Gate.md).
-The model/sidebar/removal direction is agreed; operational defaults below are
-recommendations pending their implementation phase.
+The three versioned datasets are implemented by phases 0–2 migrations. Seven
+templates and eight configured reports are implemented through the explicit
+phase 5 seed. Schedules and notification delivery remain later phases. See the
+[phases 0–2 gate](Reporting_Phases_0_2_Implementation_Gate.md) and
+[phases 3–5 gate](Reporting_Phases_3_5_Implementation_Gate.md).
+The seed has been verified in disposable PostgreSQL fixtures and run against
+the local application database: seven templates/eight reports were installed,
+and a second invocation created no records. Schedule and delivery policies below
+remain recommendations pending their implementation phases.
 
 ## 1. Local source evidence
 
@@ -121,15 +125,18 @@ submitted. Withdrawals and a later rejection exclude the commitment. Select one
 effective amount per application; do not sum historical approvals, recommended
 payments or the call envelope repeated by joins. Missing required amounts make
 commitment totals NULL with coverage diagnostics. PostgreSQL tests cover terminal
-approval, withdrawal, later rejection and missing amounts. Template/report
-publication and bootstrap remain later phases.
+approval, withdrawal, later rejection and missing amounts. The phase 5 SQL
+template and configured report reuse this accepted projection.
 
 ## 4. Eight configured reports and two schedules
 
 Formats: default XLSX, with CSV available against the same output projection.
 All reports retain the template version and resolved format on every run.
-The defaults below are proposed policy; template parameter definitions validate
-both report defaults and run overrides.
+Template parameter definitions validate report defaults and run overrides.
+The phase 5 seed supplies previous-month defaults for export, turnaround and
+workload, and current snapshots for pipeline, ageing and budget. Both website
+reports use collectionStart through yesterday until phase 6 supplies a completed
+scheduled period. Schedule and delivery entries below remain future policy.
 
 | Report key/name | Template | Default parameter resolution | Schedule and delivery |
 | --- | --- | --- | --- |
@@ -140,7 +147,7 @@ both report defaults and run overrides.
 | application-ageing / Application Ageing | application-ageing | All permitted calls/stages; minimumAgeHours=0; current run timestamp | Manual current snapshot; requester download |
 | workflow-turnaround / Workflow Turnaround | workflow-turnaround | Previous complete month by completion timestamp; all permitted calls/stages/users | Manual; requester download |
 | reviewer-workload / Reviewer Workload | reviewer-workload | Current open tasks plus completions in previous complete month; all permitted calls/reviewers | Manual; requester download |
-| budget-commitments / Budget Commitments against Envelope | budget-commitments | All permitted calls; current run timestamp; terminal-approved latest awards excluding withdrawals | Manual; requester download; planned phase 5 bootstrap |
+| budget-commitments / Budget Commitments against Envelope | budget-commitments | All permitted calls; current run timestamp; terminal-approved latest awards excluding withdrawals | Manual current snapshot; requester download |
 
 Manual website runs default to the latest completed configured reporting period.
 If none exists, use collectionStart through yesterday with explicit partial
@@ -184,13 +191,14 @@ the observed old website rules have zero recipients.
 | Indicator performance | Add stable indicator identities and typed period actuals linked to targets/units; monitoring ratings are not actuals |
 | Monthly chatbot analytics | Implement interaction/unresolved-query capture first; agree metrics, audience and format before its dataset/template |
 | D3 published statistics/chart export | Continue separately in CMS/public visualization scope; editable label/value statistics do not substitute operational outcomes |
-| Effective budget commitments | Accepted terminal approval rule implemented and tested in phase 2; template publication remains phase 3/5 |
+| Effective budget commitments | Accepted terminal approval rule implemented and tested in phase 2; template/report bootstrap implemented and verified in phase 5 |
 | SQL editor/backend parser | Server policy, parameter contract and editor foundation implemented; browser acceptance remains pending |
-| Execution limits/export library | Query limits recorded in phase 2 gate; choose export library/private artifact streaming in phase 4 |
+| Execution limits/export library | Phase 4 uses ExcelJS 4.4.0 streaming XLSX and a streaming CSV writer; private artifact persistence and recovery are verified in fixtures |
 | Scheduled authorization owner | Configure an explicit active PostgreSQL principal with source/report permissions; processor secrets are not a dataset grant |
 | Recipients and activation | Configure authorized recipients per report and verify source/attachment delivery; old local bindings are absent |
 
 Historical local evidence informs implementation, not acceptance. Refresh schema,
 history, cursors, recipients and collection coverage in every target environment.
-No source data, runtime code, schedules, recipients or storage files are changed
-by documenting this inventory.
+The explicit seed changes templates and report configurations only when invoked.
+Normal startup and the general database seed do not run reporting bootstrap.
+No schedules, recipients, principals or grants are created by this seed.

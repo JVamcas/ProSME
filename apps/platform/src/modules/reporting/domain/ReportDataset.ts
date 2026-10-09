@@ -24,7 +24,9 @@ export const reportDatasetDefinitionSchema = z
       .array(
         z
           .object({
-            name: z.string().regex(/^app_reporting_dataset_[a-z0-9_]+_v[1-9][0-9]*$/),
+            name: z
+              .string()
+              .regex(/^app_reporting_dataset_[a-z0-9_]+_v[1-9][0-9]*$/),
             grain: z.string().min(1),
             columns: z
               .array(
@@ -61,6 +63,7 @@ export type ReportDataset = {
   key: ReportDatasetKey;
   version: number;
   name: string;
+  description: string;
   definition: z.infer<typeof reportDatasetDefinitionSchema>;
 };
 

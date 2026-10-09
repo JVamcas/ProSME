@@ -2,9 +2,10 @@
 
 Date: 2026-10-08.
 
-Status: phases 0–2 implemented in the workspace. Automated evidence, execution
+Status: phases 0–5 implemented in the workspace. Automated evidence, execution
 limits and remaining acceptance boundaries are recorded in the
-[phases 0–2 implementation gate](reporting-analytics/Reporting_Phases_0_2_Implementation_Gate.md).
+[phases 0–2 implementation gate](reporting-analytics/Reporting_Phases_0_2_Implementation_Gate.md)
+and [phases 3–5 implementation gate](reporting-analytics/Reporting_Phases_3_5_Implementation_Gate.md).
 Phase completion still requires its own evidence and written acceptance.
 
 This plan replaces the website-specific R1/R2 implementation with the agreed
@@ -50,7 +51,7 @@ ANALYTICS
   Website analytics     /admin/analytics/website
 
 REPORTING
-  Report Definition     /admin/reports/definitions
+  Report Definition     /admin/reports/templates-definitions
   Reports               /admin/reports
 ~~~
 
@@ -86,9 +87,9 @@ parallel input/table/dialog system.
 
 | Entity | Required responsibility and persisted identity |
 | --- | --- |
-| Dataset | Stable system key/version, related exposed tables/views, typed columns, joins/cardinalities, permitted functions and authorization contract |
-| Template/version | Name, dataset/version, SQL, typed ordered parameter definitions, output columns/types, supported formats, author and immutable published version |
-| Report | Stable key/name, selected published template version, parameter defaults, default format, execution-owner principal and report-level delivery configuration |
+| Dataset | Stable system key/version, name and required description, related exposed tables/views, typed columns, joins/cardinalities, permitted functions and authorization contract |
+| Template/version | Name and required template description, dataset/version, SQL, typed ordered parameter definitions, output columns/types, supported formats, author and immutable published version |
+| Report | Stable key/name and required description, selected published template version, parameter defaults, default format, execution-owner principal and report-level delivery configuration |
 | Schedule | Belongs to one report; multiple schedules supported; timezone, period rule/anchor, send time, finalization delay, cursor, enabled state and version |
 | Run | Belongs to one report; optional schedule/version, template/dataset versions, actual parameters, resolved period, format, user/system trigger, idempotency identity, timestamps and row count |
 | Run artifact | Private object reference, filename, MIME type, byte count, checksum and artifact kind: generated output or error file |
@@ -101,6 +102,13 @@ app_reporting_run_artifacts. Confirm names against the actual schema before
 migration. Avoid rebuilding the legacy frequency-unique schema under its old
 name or maintaining a compatibility adapter. Dataset SQL views use descriptive
 app_reporting_dataset_* names.
+
+Every dataset, report template and configured report has a persisted, nonblank
+description of up to 2,000 characters. Initial descriptions summarize the source,
+result-grain and default-scope descriptions in the bootstrap inventory. Dataset
+descriptions are developer-owned; administrators edit template descriptions in
+the Details step and report descriptions in Configuration. Catalogues display
+each description alongside its record.
 
 A published template version is immutable; editing creates a draft/new version.
 A report explicitly selects its version. Updating that selection affects future

@@ -20,18 +20,23 @@ const editorGlobal = globalThis as typeof globalThis & {
 async function initialize() {
   const monaco = await import("monaco-editor/esm/vs/editor/editor.api");
   await import("monaco-sql-languages/esm/languages/pgsql/pgsql.contribution.js");
-  const { setupLanguageFeatures, LanguageIdEnum } = await import("monaco-sql-languages");
+  const { setupLanguageFeatures, LanguageIdEnum } =
+    await import("monaco-sql-languages");
   const previous = editorGlobal.MonacoEnvironment;
   editorGlobal.MonacoEnvironment = {
     ...previous,
     getWorker: (workerId, label) => {
       if (label === LanguageIdEnum.PG) {
-        return new Worker(new URL("./ReportSqlWorker.ts", import.meta.url), { type: "module" });
+        return new Worker(new URL("./ReportSqlWorker.ts", import.meta.url), {
+          type: "module",
+        });
       }
       if (previous?.getWorker) {
         return previous.getWorker(workerId, label);
       }
-      return new Worker(new URL("./ReportEditorWorker.ts", import.meta.url), { type: "module" });
+      return new Worker(new URL("./ReportEditorWorker.ts", import.meta.url), {
+        type: "module",
+      });
     },
   };
   setupLanguageFeatures(LanguageIdEnum.PG, {
@@ -39,7 +44,13 @@ async function initialize() {
     completionItems: {
       enable: true,
       triggerCharacters: [" ", ".", "$"],
-      completionService: async (model, _position, _context, suggestions, entities) => {
+      completionService: async (
+        model,
+        _position,
+        _context,
+        suggestions,
+        entities,
+      ) => {
         const selected = models.get(model);
         if (!selected) {
           return [];
@@ -57,7 +68,11 @@ async function initialize() {
           parameter: monaco.languages.CompletionItemKind.Variable,
         };
         return [
-          ...reportSqlCompletions(selected.dataset, selected.parameters, aliases).map((item) => ({
+          ...reportSqlCompletions(
+            selected.dataset,
+            selected.parameters,
+            aliases,
+          ).map((item) => ({
             ...item,
             kind: kinds[item.kind],
           })),
@@ -75,6 +90,7 @@ async function initialize() {
 
 export async function createReportSqlEditor(input: {
   element: HTMLElement;
+  readOnly?: boolean;
   value: string;
   dataset: ReportDataset;
   parameters: readonly ReportParameterDefinition[];
@@ -85,20 +101,29 @@ export async function createReportSqlEditor(input: {
   models.set(model, input);
   const instance = monaco.editor.create(input.element, {
     model,
+    readOnly: input.readOnly ?? false,
     automaticLayout: true,
     minimap: { enabled: false },
     ariaLabel: "Report SQL",
     tabSize: 2,
     scrollBeyondLastLine: false,
   });
-  const subscription = model.onDidChangeContent(() => input.onChange(model.getValue()));
+  const subscription = model.onDidChangeContent(() =>
+    input.onChange(model.getValue()),
+  );
   return {
+    setReadOnly(readOnly: boolean) {
+      instance.updateOptions({ readOnly });
+    },
     setValue(value: string) {
       if (model.getValue() !== value) {
         model.setValue(value);
       }
     },
-    setDataset(dataset: ReportDataset, parameters: readonly ReportParameterDefinition[]) {
+    setDataset(
+      dataset: ReportDataset,
+      parameters: readonly ReportParameterDefinition[],
+    ) {
       models.set(model, { dataset, parameters });
     },
     dispose() {

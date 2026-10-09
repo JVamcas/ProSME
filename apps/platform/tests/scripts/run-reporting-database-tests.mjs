@@ -6,7 +6,9 @@ import pg from "pg";
 
 // Use a disposable PostgreSQL cluster: migrations also create the restricted reader role.
 if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL must identify a disposable PostgreSQL test cluster.");
+  throw new Error(
+    "DATABASE_URL must identify a disposable PostgreSQL test cluster.",
+  );
 }
 
 const root = fileURLToPath(new URL("../../../../", import.meta.url));
@@ -18,11 +20,17 @@ testUrl.pathname = `/${databaseName}`;
 const admin = new pg.Client({ connectionString: adminUrl.toString() });
 const database = new pg.Client({ connectionString: testUrl.toString() });
 const journal = JSON.parse(
-  await readFile(new URL("../../drizzle/meta/_journal.json", import.meta.url), "utf8"),
+  await readFile(
+    new URL("../../drizzle/meta/_journal.json", import.meta.url),
+    "utf8",
+  ),
 );
 
 async function applyMigration(entry) {
-  const sql = await readFile(new URL(`../../drizzle/${entry.tag}.sql`, import.meta.url), "utf8");
+  const sql = await readFile(
+    new URL(`../../drizzle/${entry.tag}.sql`, import.meta.url),
+    "utf8",
+  );
   await database.query("BEGIN");
   try {
     await database.query(sql);
@@ -36,7 +44,15 @@ async function applyMigration(entry) {
 async function runTests(files, flags) {
   const child = spawn(
     "npm",
-    ["exec", "--workspace", "@prosme/platform", "--", "vitest", "run", ...files],
+    [
+      "exec",
+      "--workspace",
+      "@prosme/platform",
+      "--",
+      "vitest",
+      "run",
+      ...files,
+    ],
     {
       cwd: root,
       stdio: "inherit",
@@ -53,7 +69,9 @@ async function runTests(files, flags) {
       if (code === 0) {
         resolve();
       } else {
-        reject(new Error(`Reporting PostgreSQL tests exited with code ${code}.`));
+        reject(
+          new Error(`Reporting PostgreSQL tests exited with code ${code}.`),
+        );
       }
     });
   });
@@ -68,26 +86,56 @@ try {
   for (const entry of journal.entries.filter((entry) => entry.idx < 170)) {
     await applyMigration(entry);
   }
-  await runTests(["tests/integration/reporting/ReportRetirementPostgres.test.ts"], {
-    RUN_REPORTING_RETIREMENT_TESTS: "true",
-  });
-  const reportingMigrations = journal.entries.filter((entry) => entry.idx >= 170);
+  await runTests(
+    ["tests/integration/reporting/ReportRetirementPostgres.test.ts"],
+    {
+      RUN_REPORTING_RETIREMENT_TESTS: "true",
+    },
+  );
+  const reportingMigrations = journal.entries.filter(
+    (entry) => entry.idx >= 170,
+  );
   for (const entry of reportingMigrations) {
     await applyMigration(entry);
-  }
-  for (const entry of reportingMigrations) {
+    // Verify repeatability at that schema version, before later migrations add
+    // required columns that older seed INSERT statements cannot supply.
     await applyMigration(entry);
   }
   console.log("Full migration chain and reporting migration reruns passed.");
-  await runTests(
+  // Clone the migrated, empty database for each fixture family. Fixed synthetic
+  // form/role codes in the projection fixture require isolation across suites.
+  await database.end();
+  const suites = [
     [
       "tests/integration/reporting/ReportDatasetPostgres.test.ts",
       "tests/integration/reporting/WebsiteAnalyticsSyncRepository.test.ts",
       "tests/integration/reporting/WebsiteAnalyticsSnapshotRepository.test.ts",
       "tests/integration/reporting/WebsiteHeatmapRepository.test.ts",
     ],
-    { RUN_REPORTING_DATABASE_TESTS: "true" },
-  );
+    [
+      "tests/integration/reporting/ReportDefinitionsPostgres.test.ts",
+      "tests/integration/reporting/ReportDescriptionsPostgres.test.ts",
+    ],
+    ["tests/integration/reporting/ReportRunsPostgres.test.ts"],
+    ["tests/integration/reporting/ReportBootstrapPostgres.test.ts"],
+    ["tests/integration/reporting/ReportRecoveryPostgres.test.ts"],
+  ];
+  for (const [index, files] of suites.entries()) {
+    const cloneName = `${databaseName}_${index}`;
+    const cloneUrl = new URL(testUrl);
+    cloneUrl.pathname = `/${cloneName}`;
+    await admin.query(
+      `CREATE DATABASE "${cloneName}" TEMPLATE "${databaseName}"`,
+    );
+    try {
+      await runTests(files, {
+        RUN_REPORTING_DATABASE_TESTS: "true",
+        DATABASE_URL: cloneUrl.toString(),
+      });
+    } finally {
+      await admin.query(`DROP DATABASE "${cloneName}" WITH (FORCE)`);
+    }
+  }
 } finally {
   await database.end();
   if (created) {

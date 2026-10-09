@@ -4,6 +4,8 @@ export const applicationReportDataset: ReportDataset = {
   key: "application-data",
   version: 1,
   name: "Application Data",
+  description:
+    "One submitted application per row, using its immutable submission snapshot.",
   definition: {
     scope: "all",
     sourcePermissions: ["funding.application.all.read"],
@@ -21,7 +23,17 @@ export const applicationReportDataset: ReportDataset = {
       },
     ],
     joins: [],
-    functions: ["sum", "count", "avg", "min", "max", "round", "lower", "date_trunc", "timezone"],
+    functions: [
+      "sum",
+      "count",
+      "avg",
+      "min",
+      "max",
+      "round",
+      "lower",
+      "date_trunc",
+      "timezone",
+    ],
     notes: [],
   },
 };

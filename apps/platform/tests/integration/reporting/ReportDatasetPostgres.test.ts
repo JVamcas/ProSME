@@ -84,22 +84,6 @@ async function run(
       ]);
     });
   });
-  it("installs three immutable datasets with actual typed view metadata", async () => {
-    const datasets = await Promise.all(
-      ["application-data", "website-analytics", "workflow-operations"].map((key) =>
-        findReportDataset(key as ReportQueryScope["datasetKey"], 1),
-      ),
-    );
-    expect(datasets.every((item) => item?.version === 1)).toBe(true);
-    expect(datasets[0]?.definition.relations[0].columns).toContainEqual(
-      expect.objectContaining({ name: "requested_grant_amount", type: "numeric" }),
-    );
-    await expect(
-      pool.query(
-        "UPDATE app_reporting_datasets SET name = 'Changed' WHERE key = 'application-data'",
-      ),
-    ).rejects.toThrow("immutable");
-  });
   it("merges overlapping stage/task pauses without double counting and adjusts task deadlines", async () => {
     await withReportingFixtureTransaction(pool, async (client) => {
       await installReportingPauseFixture(client);

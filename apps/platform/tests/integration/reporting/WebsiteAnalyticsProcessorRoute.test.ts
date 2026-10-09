@@ -13,7 +13,9 @@ import { POST } from "@/app/api/internal/reporting/process/route";
 beforeEach(() => vi.clearAllMocks());
 describe("analytics processor route", () => {
   it("maps service authentication denial to 401", async () => {
-    vi.mocked(processReporting).mockRejectedValue(new AuthenticationRequiredError());
+    vi.mocked(processReporting).mockRejectedValue(
+      new AuthenticationRequiredError(),
+    );
     expect(
       (
         await POST(
@@ -31,6 +33,7 @@ describe("analytics processor route", () => {
       failed: 0,
       skipped: 0,
       synchronization: { claimed: 1, processed: 1, failed: 0, skipped: 0 },
+      generation: { claimed: 0, succeeded: 0, failed: 0, preparing: 0 },
     };
     vi.mocked(processReporting).mockResolvedValue(data);
     const response = await POST(
@@ -44,7 +47,9 @@ describe("analytics processor route", () => {
     expect(processReporting).toHaveBeenCalledWith("Bearer supplied");
   });
   it("does not expose internal or provider error details", async () => {
-    vi.mocked(processReporting).mockRejectedValue(new Error("sensitive provider error"));
+    vi.mocked(processReporting).mockRejectedValue(
+      new Error("sensitive provider error"),
+    );
     const response = await POST(
       new Request("http://localhost/api/internal/reporting/process", {
         method: "POST",

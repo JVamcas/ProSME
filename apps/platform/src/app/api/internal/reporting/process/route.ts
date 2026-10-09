@@ -4,7 +4,7 @@ import { logger } from "@/integrations/monitoring/logger";
 import { processReporting } from "@/modules/reporting/ServerReportingProcessorService";
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
+export const maxDuration = 180;
 
 export async function POST(request: Request) {
   const headers = { "Cache-Control": "no-store" };

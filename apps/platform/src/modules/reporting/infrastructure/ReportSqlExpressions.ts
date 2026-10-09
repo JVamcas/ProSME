@@ -55,7 +55,11 @@ const types = new Set([
 function operator(value: unknown) {
   const path = names(value);
   const name =
-    path.length === 1 ? path[0] : path[0] === "pg_catalog" && path.length === 2 ? path[1] : "";
+    path.length === 1
+      ? path[0]
+      : path[0] === "pg_catalog" && path.length === 2
+        ? path[1]
+        : "";
   if (!operators.has(name)) {
     throw new ReportQueryValidationError("SQL operator is not permitted.");
   }
@@ -81,6 +85,10 @@ export function validateExpression(
   const node = object(contents);
   const visit = (child: unknown) => validateExpression(child, scope, policy);
   switch (kind) {
+    case "List":
+      onlyKeys(node, ["items"]);
+      visit(node.items);
+      return;
     case "ColumnRef":
       onlyKeys(node, ["fields", "location"]);
       resolveColumn(node.fields, scope);
@@ -93,7 +101,9 @@ export function validateExpression(
         Number(position) < 1 ||
         Number(position) > policy.parameterCount
       ) {
-        throw new ReportQueryValidationError("SQL references an undeclared positional parameter.");
+        throw new ReportQueryValidationError(
+          "SQL references an undeclared positional parameter.",
+        );
       }
       policy.parameters.add(Number(position));
       return;
@@ -113,8 +123,13 @@ export function validateExpression(
         "location",
       ]);
       const name = builtinName(node.funcname);
-      if (!policy.functions.includes(name) || (node.agg_star && name !== "count")) {
-        throw new ReportQueryValidationError("SQL function is not permitted by this dataset.");
+      if (
+        !policy.functions.includes(name) ||
+        (node.agg_star && name !== "count")
+      ) {
+        throw new ReportQueryValidationError(
+          "SQL function is not permitted by this dataset.",
+        );
       }
       visit(node.args);
       visit(node.agg_order);
@@ -124,7 +139,13 @@ export function validateExpression(
     case "TypeCast": {
       onlyKeys(node, ["arg", "typeName", "location"]);
       const type = object(node.typeName);
-      onlyKeys(type, ["names", "typmods", "typemod", "arrayBounds", "location"]);
+      onlyKeys(type, [
+        "names",
+        "typmods",
+        "typemod",
+        "arrayBounds",
+        "location",
+      ]);
       if (!types.has(builtinName(type.names))) {
         throw new ReportQueryValidationError("SQL cast type is not permitted.");
       }
@@ -132,7 +153,9 @@ export function validateExpression(
       visit(type.typmods);
       for (const bound of array(type.arrayBounds)) {
         if (object(object(bound).Integer).ival !== -1) {
-          throw new ReportQueryValidationError("Only ordinary parameter arrays are supported.");
+          throw new ReportQueryValidationError(
+            "Only ordinary parameter arrays are supported.",
+          );
         }
       }
       return;
@@ -154,7 +177,9 @@ export function validateExpression(
           "AEXPR_NULLIF",
         ].includes(String(node.kind))
       ) {
-        throw new ReportQueryValidationError("SQL expression operator is not supported.");
+        throw new ReportQueryValidationError(
+          "SQL expression operator is not supported.",
+        );
       }
       operator(node.name);
       visit(node.lexpr);
@@ -166,7 +191,13 @@ export function validateExpression(
       return;
     case "NullTest":
     case "BooleanTest":
-      onlyKeys(node, ["arg", "nulltesttype", "argisrow", "booltesttype", "location"]);
+      onlyKeys(node, [
+        "arg",
+        "nulltesttype",
+        "argisrow",
+        "booltesttype",
+        "location",
+      ]);
       visit(node.arg);
       return;
     case "CoalesceExpr":
@@ -191,11 +222,20 @@ export function validateExpression(
       visit(node.node);
       return;
     case "SubLink":
-      onlyKeys(node, ["subLinkType", "subselect", "testexpr", "operName", "location"]);
+      onlyKeys(node, [
+        "subLinkType",
+        "subselect",
+        "testexpr",
+        "operName",
+        "location",
+      ]);
       if (
-        !["EXISTS_SUBLINK", "EXPR_SUBLINK", "ANY_SUBLINK", "ALL_SUBLINK"].includes(
-          String(node.subLinkType),
-        )
+        ![
+          "EXISTS_SUBLINK",
+          "EXPR_SUBLINK",
+          "ANY_SUBLINK",
+          "ALL_SUBLINK",
+        ].includes(String(node.subLinkType))
       ) {
         throw new ReportQueryValidationError("Unsupported nested query.");
       }
@@ -206,6 +246,8 @@ export function validateExpression(
       policy.select(node.subselect, scope);
       return;
     default:
-      throw new ReportQueryValidationError(`Unsupported SQL expression: ${kind}.`);
+      throw new ReportQueryValidationError(
+        `Unsupported SQL expression: ${kind}.`,
+      );
   }
 }

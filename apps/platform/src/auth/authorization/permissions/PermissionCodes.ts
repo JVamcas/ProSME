@@ -25,6 +25,17 @@ export type CmsPermissionCode =
   `cms.${CmsPermissionResource}.${CmsPermissionAction}`;
 
 export const permissionCodes = {
+  reportingTemplateReadAll: "reporting.template.read.all",
+  reportingTemplateCreateAll: "reporting.template.create.all",
+  reportingTemplateUpdateAll: "reporting.template.update.all",
+  reportingTemplatePublishAll: "reporting.template.publish.all",
+  reportingReportReadAll: "reporting.report.read.all",
+  reportingReportCreateAll: "reporting.report.create.all",
+  reportingReportUpdateAll: "reporting.report.update.all",
+  reportingReportRunAll: "reporting.report.run.all",
+  reportingRunReadAll: "reporting.run.read.all",
+  reportingRunDownloadAll: "reporting.run.download.all",
+
   reportingDatasetReadAll: "reporting.dataset.read.all",
   reportingQueryExecuteAll: "reporting.query.execute.all",
   reportingWebsiteReadAll: "reporting.website.read.all",

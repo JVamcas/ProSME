@@ -69,7 +69,7 @@ describe("P3.1 shared authenticated portal shell", () => {
 
   it("places the header in the content column beside the full-height sidebar", () => {
     const markup = renderShell(<h1>Profile</h1>);
-    const slots = ["columns", "sidebar", "content", "header", "footer"];
+    const slots = ["columns", "sidebar", "content", "header"];
     const positions = slots.map((slot) =>
       markup.indexOf(`data-workspace-slot="${slot}"`),
     );
@@ -78,6 +78,7 @@ describe("P3.1 shared authenticated portal shell", () => {
     expect(positions).toEqual([...positions].sort((left, right) => left - right));
     expect(markup.indexOf("<aside")).toBeLessThan(markup.indexOf("<main"));
     expect(markup).toContain('aria-label="Workspace"');
+    expect(markup).not.toContain('data-workspace-slot="footer"');
   });
 
   it("gates children against the projected capabilities", () => {

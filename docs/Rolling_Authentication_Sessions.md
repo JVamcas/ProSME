@@ -31,6 +31,11 @@ an expired cookie to establish a new session. Fresh sign-in still requires
 recent Firebase authentication. Protected pages redirect to sign-in on expiry,
 preserving their return destination and clearing platform query caches. Payload
 data loading remains outside the platform query provider.
+The origin check uses the incoming `Host` and `X-Forwarded-Proto` because
+Next.js standalone constructs `request.url` with its internal bind address.
+The TLS proxy must preserve `Host` and overwrite `X-Forwarded-Proto`; the
+repository's Nginx configuration does both. Requests still require the activity
+header, a matching browser origin and, when present, same-origin fetch metadata.
 
 ## Rollout and validation
 
@@ -70,3 +75,25 @@ events, retry timing, and renewal of a nearly expired inherited session. Type
 checking, architecture/form boundaries, file limits and whitespace checks passed.
 Full lint passed with 13 existing warnings. Deployment and live authenticated
 browser verification remain pending.
+
+## Container origin correction (2026-10-08)
+
+Credential-free runtime probes reproduced HTTP 403 for valid activity requests
+on both local Docker (`http://localhost:3008`) and the GCP application container
+(`https://smefund.na`, with the TLS proxy headers). The local endpoint accepted
+the internal origin `http://0.0.0.0:3008` and proceeded to HTTP 401 because the
+probe intentionally supplied no session cookie. This isolated the failure to
+the origin check before session authentication or renewal: normal browser
+activity could not extend the initial five-minute cookie.
+
+The corrected transport validates the browser-facing authority and protocol.
+Regression tests reproduce internal/public address differences and confirm
+that cross-site, malformed, wrong-protocol and internal-origin requests remain
+denied. All 175 tests in 26 focused authentication/session files passed, as did
+type checking, architecture/form boundaries, file limits and whitespace checks.
+Full lint passed with 13 existing warnings. A temporary Next.js development
+server accepted both the localhost origin and the HTTPS proxy header combination
+and reached session authentication (HTTP 401 without credentials); a mismatched
+origin remained HTTP 403. The verification server was stopped afterward.
+No production build or deployment was performed; live authenticated
+renewal/idle acceptance remains pending.

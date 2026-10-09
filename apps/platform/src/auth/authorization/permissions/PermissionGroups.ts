@@ -34,6 +34,17 @@ export const permissionGroups: readonly PermissionGroup[] = [
     label: "Website Analytics and Reporting",
     permissionCodes: [
       permissionCodes.reportingDatasetReadAll,
+      permissionCodes.reportingTemplateReadAll,
+      permissionCodes.reportingTemplateCreateAll,
+      permissionCodes.reportingTemplateUpdateAll,
+      permissionCodes.reportingTemplatePublishAll,
+      permissionCodes.reportingReportReadAll,
+      permissionCodes.reportingReportCreateAll,
+      permissionCodes.reportingReportUpdateAll,
+      permissionCodes.reportingReportRunAll,
+      permissionCodes.reportingRunReadAll,
+      permissionCodes.reportingRunDownloadAll,
+
       permissionCodes.reportingQueryExecuteAll,
       permissionCodes.reportingWebsiteReadAll,
     ],

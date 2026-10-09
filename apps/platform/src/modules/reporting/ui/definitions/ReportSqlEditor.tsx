@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
+import { toast } from "@/shared/ui/Toast";
 import type { ReportDataset } from "../../domain/ReportDataset";
 import type { ReportParameterDefinition } from "../../domain/ReportParameters";
 import type { createReportSqlEditor } from "./ReportSqlEditorRuntime";
@@ -13,7 +14,9 @@ export function ReportSqlEditor({
   onChange,
   dataset,
   parameters,
+  readOnly = false,
 }: {
+  readOnly?: boolean;
   value: string;
   onChange: (value: string) => void;
   dataset: ReportDataset;
@@ -21,14 +24,14 @@ export function ReportSqlEditor({
 }) {
   const container = useRef<HTMLDivElement>(null);
   const editor = useRef<SqlEditor | null>(null);
-  const current = useRef({ value, onChange, dataset, parameters });
-  const [error, setError] = useState<string | null>(null);
+  const current = useRef({ value, onChange, dataset, parameters, readOnly });
 
   useEffect(() => {
-    current.current = { value, onChange, dataset, parameters };
+    current.current = { value, onChange, dataset, parameters, readOnly };
+    editor.current?.setReadOnly(readOnly);
     editor.current?.setValue(value);
     editor.current?.setDataset(dataset, parameters);
-  }, [value, onChange, dataset, parameters]);
+  }, [value, onChange, dataset, parameters, readOnly]);
 
   useEffect(() => {
     let cancelled = false;
@@ -49,13 +52,17 @@ export function ReportSqlEditor({
           instance.dispose();
         } else {
           editor.current = instance;
+          instance.setReadOnly(current.current.readOnly);
           instance.setValue(current.current.value);
-          instance.setDataset(current.current.dataset, current.current.parameters);
+          instance.setDataset(
+            current.current.dataset,
+            current.current.parameters,
+          );
         }
       })
       .catch(() => {
         if (!cancelled) {
-          setError("The SQL editor could not be loaded.");
+          toast.error("The SQL editor could not be loaded.");
         }
       });
     return () => {
@@ -68,7 +75,6 @@ export function ReportSqlEditor({
   return (
     <div>
       <div ref={container} className="h-80 rounded border" />
-      {error ? <p role="alert">{error}</p> : null}
     </div>
   );
 }

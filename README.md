@@ -128,6 +128,12 @@ Inspect or prune Docker storage directly with:
 ./scripts/docker-maintenance.sh prune
 ```
 
+The startup wrapper builds the application and migration images one at a time
+to reduce peak memory and disk pressure. Next.js builds use `tsconfig.build.json`,
+which inherits the strict compiler settings but excludes the test tree from
+its type-checking workload. `npm run typecheck` continues to check the complete
+project, including tests. Neither change increases Node's heap allowance.
+
 Payload automatic development schema pushing is disabled. After a schema change, generate and apply a committed Payload migration before starting the application.
 
 The default routes are:

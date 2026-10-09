@@ -8,9 +8,27 @@ import {
 import { applicationReportDataset as dataset } from "../../support/ReportDatasetFixture";
 
 const relation = "app_reporting_dataset_applications_v1";
-const validate = (sql: string, count = 0) => validateReportSql(sql, dataset, count);
+const validate = (sql: string, count = 0) =>
+  validateReportSql(sql, dataset, count);
 
 describe("PostgreSQL reporting AST policy", () => {
+  it("validates every expression inside IN lists", async () => {
+    await expect(
+      validate(
+        `SELECT reference FROM ${relation} WHERE lifecycle_status IN ('submitted', 'withdrawn')`,
+      ),
+    ).resolves.toEqual(["reference"]);
+    await expect(
+      validate(
+        `SELECT reference FROM ${relation} WHERE reference IN ('allowed', pg_sleep(1)::text)`,
+      ),
+    ).rejects.toThrow();
+    await expect(
+      validate(
+        `SELECT reference FROM ${relation} WHERE reference IN ('allowed', (SELECT email FROM app_users))`,
+      ),
+    ).rejects.toThrow();
+  });
   it("supports bound local calendar bounds through PostgreSQL's timezone built-in", async () => {
     await expect(
       validate(
@@ -37,9 +55,12 @@ describe("PostgreSQL reporting AST policy", () => {
     `WITH selected AS (SELECT reference, requested_grant_amount FROM ${relation} WHERE lifecycle_status = $1) SELECT reference, sum(requested_grant_amount) AS total FROM selected GROUP BY reference ORDER BY total LIMIT $2`,
     `SELECT a.reference FROM ${relation} a JOIN ${relation} b ON b.application_id = a.application_id WHERE a.lifecycle_status = ANY($1::text[]) LIMIT $2`,
     `SELECT a.reference FROM ${relation} a WHERE EXISTS (SELECT b.reference FROM ${relation} b WHERE b.application_id = a.application_id AND b.lifecycle_status = $1) LIMIT $2`,
-  ])("accepts supported reads, CTEs, joins, grouping and bound values: %s", async (sql) => {
-    await expect(validate(sql, 2)).resolves.toContain("reference");
-  });
+  ])(
+    "accepts supported reads, CTEs, joins, grouping and bound values: %s",
+    async (sql) => {
+      await expect(validate(sql, 2)).resolves.toContain("reference");
+    },
+  );
 
   it("accepts explicit UNION result sets and safe aggregate star", async () => {
     await expect(
@@ -47,7 +68,9 @@ describe("PostgreSQL reporting AST policy", () => {
         `SELECT reference FROM ${relation} UNION ALL SELECT reference FROM ${relation} ORDER BY reference`,
       ),
     ).resolves.toEqual(["reference"]);
-    await expect(validate(`SELECT count(*) AS total FROM ${relation}`)).resolves.toEqual(["total"]);
+    await expect(
+      validate(`SELECT count(*) AS total FROM ${relation}`),
+    ).resolves.toEqual(["total"]);
   });
 
   it.each([
@@ -94,12 +117,14 @@ describe("PostgreSQL reporting AST policy", () => {
     await expect(
       validate(`SELECT reference FROM ${relation} WHERE reference = $2`, 1),
     ).rejects.toThrow("undeclared");
-    await expect(validate(`SELECT reference FROM ${relation}`, 1)).rejects.toThrow(
-      "Every declared",
+    await expect(
+      validate(`SELECT reference FROM ${relation}`, 1),
+    ).rejects.toThrow("Every declared");
+    await expect(
+      validate(`SELECT sum(requested_grant_amount) FROM ${relation}`),
+    ).rejects.toThrow("alias");
+    await expect(validate("SELECT 1 AS value")).rejects.toThrow(
+      "selected dataset",
     );
-    await expect(validate(`SELECT sum(requested_grant_amount) FROM ${relation}`)).rejects.toThrow(
-      "alias",
-    );
-    await expect(validate("SELECT 1 AS value")).rejects.toThrow("selected dataset");
   });
 });

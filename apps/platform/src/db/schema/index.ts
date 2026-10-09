@@ -1,3 +1,5 @@
+export * from "@/modules/reporting/infrastructure/reporting-definitions.schema";
+export * from "@/modules/reporting/infrastructure/reporting-runs.schema";
 export * from "./authorization";
 export * from "@/modules/reporting/infrastructure/reporting-datasets.schema";
 export * from "@/modules/reporting/infrastructure/reporting-eligibility.schema";

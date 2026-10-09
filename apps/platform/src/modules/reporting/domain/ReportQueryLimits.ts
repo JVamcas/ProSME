@@ -1,3 +1,5 @@
+import { RequestValidationError } from "@/lib/resource-errors";
+
 export const reportQueryLimits = {
   sqlBytes: 32_768,
   astNodes: 10_000,
@@ -12,7 +14,7 @@ export const reportQueryLimits = {
   concurrency: 2,
 } as const;
 
-export class ReportQueryValidationError extends Error {
+export class ReportQueryValidationError extends RequestValidationError {
   constructor(message: string) {
     super(message);
     this.name = "ReportQueryValidationError";
