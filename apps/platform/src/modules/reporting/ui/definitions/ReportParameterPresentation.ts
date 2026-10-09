@@ -29,14 +29,18 @@ export function reportParameterDefaultLabel(
   if (parameter.binding !== "value" || parameter.defaultValue === undefined) {
     return "—";
   }
-  if (parameter.defaultValue === null) {
+  return reportParameterValueLabel(parameter.defaultValue);
+}
+
+export function reportParameterValueLabel(value: unknown) {
+  if (value === null) {
     return "No value";
   }
-  if (Array.isArray(parameter.defaultValue)) {
-    return JSON.stringify(parameter.defaultValue);
+  if (Array.isArray(value)) {
+    return JSON.stringify(value);
   }
-  if (parameter.defaultValue === "") {
+  if (value === "") {
     return "Empty text";
   }
-  return String(parameter.defaultValue);
+  return String(value);
 }

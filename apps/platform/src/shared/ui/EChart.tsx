@@ -52,7 +52,9 @@ export function EChart({
 
   useEffect(() => {
     instance.current?.setOption(option, {
-      replaceMerge: ["series", "graphic", "visualMap"],
+      // Responsive overrides are partial options. Replacement also applies to
+      // those overrides, discarding series they omit or only adjust for layout.
+      replaceMerge: option.media ? [] : ["series", "graphic", "visualMap"],
     });
   }, [option, map]);
 

@@ -7,6 +7,11 @@ import { permissionCodes } from "@/auth/authorization/permissions";
 import type { ReportTemplate } from "@/modules/reporting/domain/ReportDefinition";
 import { applicationExportTemplate } from "@/modules/reporting/application/bootstrap/ApplicationExportTemplate";
 import { ReportTemplateEditor } from "@/modules/reporting/ui/definitions/ReportTemplateEditor";
+import {
+  changeValue,
+  clickButton,
+  submit,
+} from "../../support/ReportTemplateEditorInteractions";
 
 const state = vi.hoisted(() => ({
   save: vi.fn(),
@@ -87,40 +92,6 @@ async function renderEditor(canEdit = true) {
   return container;
 }
 
-async function changeValue(selector: string, value: string) {
-  const input = document.querySelector<HTMLInputElement | HTMLTextAreaElement>(
-    selector,
-  )!;
-  expect(input).not.toBeNull();
-  await act(async () => {
-    const prototype =
-      input instanceof HTMLTextAreaElement
-        ? HTMLTextAreaElement.prototype
-        : HTMLInputElement.prototype;
-    Object.getOwnPropertyDescriptor(prototype, "value")!.set!.call(
-      input,
-      value,
-    );
-    input.dispatchEvent(new Event("input", { bubbles: true }));
-  });
-}
-
-async function submit() {
-  await act(async () =>
-    document
-      .querySelector("form")!
-      .dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })),
-  );
-}
-
-async function clickButton(label: string) {
-  const button = [
-    ...document.querySelectorAll<HTMLButtonElement>("button"),
-  ].find((item) => item.textContent?.trim() === label);
-  expect(button).toBeDefined();
-  await act(async () => button!.click());
-}
-
 async function continueToReview() {
   for (let index = 0; index < 4; index += 1) {
     await clickButton("Continue");
@@ -143,7 +114,36 @@ describe("template generated keys", () => {
     await clickButton("Continue");
     await clickButton("Add column");
     await clickButton("Continue");
-    await submit();
+    const reviewCard = container.querySelector<HTMLElement>(
+      "section[aria-labelledby]",
+    )!;
+    expect(reviewCard.textContent).toContain("New application export");
+    expect(reviewCard.textContent).toContain("Export submitted applications.");
+    expect(reviewCard.textContent).toContain("Application Data");
+    expect(reviewCard.textContent).toContain("0 parameters");
+    expect(reviewCard.textContent).toContain("1 column");
+    expect(reviewCard.textContent).toContain("XLSX");
+    expect(reviewCard.textContent).toContain("CSV");
+    await act(async () => {
+      reviewCard
+        .querySelector<HTMLButtonElement>(
+          'button[aria-label="Report template actions"]',
+        )!
+        .click();
+    });
+    const saveDraft = document.querySelector<HTMLElement>(
+      '[role="menuitem"]',
+    )!;
+    expect(saveDraft.textContent).toBe("Save Draft");
+    await act(async () => {
+      saveDraft.dispatchEvent(
+        new PointerEvent("pointerdown", { bubbles: true, button: 0 }),
+      );
+      saveDraft.dispatchEvent(
+        new PointerEvent("pointerup", { bubbles: true, button: 0 }),
+      );
+      saveDraft.click();
+    });
     expect(state.save).toHaveBeenCalledWith(
       expect.objectContaining({
         key: "new-application-export",

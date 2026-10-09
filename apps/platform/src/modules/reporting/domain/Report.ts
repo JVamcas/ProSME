@@ -67,7 +67,10 @@ export type ReportRunSummary = Pick<
   | "rows"
   | "format"
   | "error"
->;
+> & {
+  actorName: string;
+  actorEmail: string;
+};
 export type ReportArtifact = {
   id: string;
   runId: string;

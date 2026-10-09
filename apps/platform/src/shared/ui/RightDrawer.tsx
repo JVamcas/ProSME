@@ -16,6 +16,7 @@ type RightDrawerProps = {
   open: boolean;
   size?: DrawerSize;
   title: string;
+  titleIcon?: ReactNode;
 };
 
 const sizeClasses: Record<DrawerSize, string> = {
@@ -86,6 +87,7 @@ export function RightDrawer({
   open,
   size = "lg",
   title,
+  titleIcon,
 }: RightDrawerProps) {
   const { rendered, visible } = useDrawerPresence(open);
   const titleId = useId();
@@ -121,18 +123,21 @@ export function RightDrawer({
       >
         <header className="border-b border-brand-navy/10 px-5 py-5 sm:px-7">
           <div className="flex items-start justify-between gap-4">
-            <div>
-              <h2 className="text-xl font-bold text-brand-navy" id={titleId}>
-                {title}
-              </h2>
-              {description ? (
-                <p
-                  className="mt-1 text-sm leading-5 text-brand-navy/65"
-                  id={descriptionId}
-                >
-                  {description}
-                </p>
-              ) : null}
+            <div className="flex min-w-0 items-center gap-3">
+              {titleIcon}
+              <div className="min-w-0">
+                <h2 className="text-xl font-bold text-brand-navy" id={titleId}>
+                  {title}
+                </h2>
+                {description ? (
+                  <p
+                    className="mt-1 text-sm leading-5 text-brand-navy/65"
+                    id={descriptionId}
+                  >
+                    {description}
+                  </p>
+                ) : null}
+              </div>
             </div>
             <button
               aria-label="Close drawer"

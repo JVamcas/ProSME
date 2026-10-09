@@ -1,3 +1,4 @@
+import { AntdRegistry } from "@ant-design/nextjs-registry";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
@@ -33,20 +34,22 @@ export default async function AdminLayout({ children }: AdminLayoutProps) {
   return (
     <html lang="en" data-scroll-behavior="smooth">
       <body className="font-sans antialiased">
-        <QueryProvider
-          identity={queryIdentity(user.id, user.capabilities, user.roleCodes)}
-        >
-          <SessionActivityMonitor />
-          <DashboardNavigationProvider audience="staff">
-            <AuthenticatedPortalShell
-              context={createPortalContext(user)}
-              space="operations"
-            >
-              {children}
-            </AuthenticatedPortalShell>
-            <Toast />
-          </DashboardNavigationProvider>
-        </QueryProvider>
+        <AntdRegistry>
+          <QueryProvider
+            identity={queryIdentity(user.id, user.capabilities, user.roleCodes)}
+          >
+            <SessionActivityMonitor />
+            <DashboardNavigationProvider audience="staff">
+              <AuthenticatedPortalShell
+                context={createPortalContext(user)}
+                space="operations"
+              >
+                {children}
+              </AuthenticatedPortalShell>
+              <Toast />
+            </DashboardNavigationProvider>
+          </QueryProvider>
+        </AntdRegistry>
       </body>
     </html>
   );

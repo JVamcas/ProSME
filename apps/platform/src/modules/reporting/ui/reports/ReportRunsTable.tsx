@@ -9,6 +9,8 @@ import { Skeleton } from "@/shared/ui/Skeleton";
 import type { ReportRunSummary } from "../../domain/Report";
 import { useReportCatalogueFilters } from "../useReportCatalogueFilters";
 import { useReportRuns } from "./useReports";
+import { formatLocalDateTime24 } from "@/lib/dateUtils";
+import { StatusBadge } from "@/components/ui/status-badge";
 
 export function ReportRunsTable({
   reportId,
@@ -25,15 +27,30 @@ export function ReportRunsTable({
     {
       accessorKey: "createdAt",
       header: "Datetime",
-      cell: ({ row }) => new Date(row.original.createdAt).toLocaleString(),
+      cell: ({ row }) => formatLocalDateTime24(row.original.createdAt),
     },
-    { accessorKey: "actorId", header: "User trigger" },
+    {
+      accessorKey: "actorName",
+      header: "User trigger",
+      cell: ({ row }) => (
+        <div className="flex flex-col gap-1">
+          <span className="font-medium">{row.original.actorName}</span>
+          <span className="text-xs text-slate-500">
+            {row.original.actorEmail}
+          </span>
+        </div>
+      ),
+    },
     {
       accessorKey: "status",
       header: "Status",
       cell: ({ row }) => <Badge>{row.original.status}</Badge>,
     },
-    { accessorKey: "rows", header: "Rows" },
+    {
+      accessorKey: "rows",
+      header: "Rows",
+      cell: ({ row }) => row.original.rows ?? 0,
+    },
     {
       id: "duration",
       header: "Duration",

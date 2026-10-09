@@ -319,3 +319,32 @@ errors and 13 unrelated warnings.
 The application database was not migrated. Apply migration 0178 before running
 the updated application. Browser, production build, deployment and release
 acceptance were not performed.
+
+## Report run drawer design follow-up (2026-10-09)
+
+The report run drawer now follows the approved visual preview: a tinted status
+panel containing the actual error, compact format/row/timezone metadata, pinned
+template and report versions, file cards with accessible download buttons and
+collapsed SHA-256 disclosures, a recorded-event timeline, and aligned resolved
+parameter rows. Long filenames truncate visually while retaining the full name
+in the title and download label. Narrow screens stack metadata and parameter
+rows. Current states and empty event/parameter lists remain readable without
+fabricating lifecycle events or replacing saved values with template defaults.
+
+The existing RightDrawer, Badge, IconButton, TanStack Query hooks, client
+service, and protected download endpoint remain the reused interaction path.
+Downloads retain their permission visibility, pending-state disabling, original
+filename, and object URL cleanup. No API, persistence or authorization changes
+are included.
+
+Focused implementation checks passed: four unit/DOM files and 42 tests covering
+all run states, section order, recorded events, resolved value semantics,
+checksum expansion, authorized/unauthorized downloads, pending downloads and
+drawer Escape behavior. Architecture/form boundaries, file-size checks and type
+checking passed. Lint completed with zero errors and 14 warnings outside the
+files changed for this follow-up.
+
+This records focused implementation acceptance only. Browser appearance and
+interaction remain unverified: the existing Chromium executable has missing
+libnspr4, NSS and ALSA libraries. No browser dependencies were installed.
+No production build, deployment or release acceptance was performed.
